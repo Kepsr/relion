@@ -1005,7 +1005,7 @@ class RelionItGui(object):
             self.mask_diameter_entry.config(state=tk.NORMAL)
             self.box_size_entry.config(state=tk.NORMAL)
             self.extract_small_boxsize_entry.config(state=tk.NORMAL)
-            if self.get_var_as_bool(self.auto_boxsize_var):
+            if self.auto_boxsize_var.get() == 1:
                 try:
                     particle_size_angstroms = float(self.particle_max_diam_entry.get())
                     mask_diameter = 1.1 * particle_size_angstroms
@@ -1078,10 +1078,6 @@ class RelionItGui(object):
         # Show initial pixel sizes
         update_box_sizes()
 
-    def get_var_as_bool(self, var):
-        """Helper function to convert a Tk IntVar (linked to a checkbox) to a boolean value"""
-        return True if var.get() == 1 else False
-
     def fetch_options_from_gui(self):
         """
         Fetch the current values from the GUI widgets and store them in the options object.
@@ -1096,40 +1092,42 @@ class RelionItGui(object):
         opts = self.options
         warnings = []
 
-        opts.stop_after_ctf_estimation = self.get_var_as_bool(self.stop_after_ctf_var)
-        opts.do_class2d = self.get_var_as_bool(self.class2d_var)
-        opts.do_class3d = self.get_var_as_bool(self.class3d_var)
-        opts.do_second_pass = self.get_var_as_bool(self.second_pass_var)
-        opts.do_class2d_pass2 = self.get_var_as_bool(self.class2d_pass2_var)
-        opts.do_class3d_pass2 = self.get_var_as_bool(self.class3d_pass2_var)
+        opts.stop_after_ctf_estimation = self.stop_after_ctf_var.get() == 1
+        opts.do_class2d                = self.class2d_var.get() == 1
+        opts.do_class3d                = self.class3d_var.get() == 1
+        opts.do_second_pass            = self.second_pass_var.get() == 1
+        opts.do_class2d_pass2          = self.class2d_pass2_var.get() == 1
+        opts.do_class3d_pass2          = self.class3d_pass2_var.get() == 1
 
-        try:
-            opts.voltage = float(self.voltage_entry.get())
-        except ValueError:
-            raise ValueError("Voltage must be a number")
-        if opts.voltage <= 0.0:
-            warnings.append("- Voltage should be a positive number")
+        def check_number(option, coerce: type, attribute, name: str):
+            """
+            Try to set `option` to `coerce(attribute.get())` 
+            (which will be a number of type `coerce`,
+            where `coerce` is either `float` or `int`).
+            """
+            try:
+                option = coerce(attribute.get())
+            except ValueError:
+                raise ValueError("{} must be a number".format(name))
 
-        try:
-            opts.Cs = float(self.cs_entry.get())
-        except ValueError:
-            raise ValueError("Cs must be a number")
+        def check_positive(option, coerce: type, attribute, name: str):
+            """
+            Try to set `option` to `coerce(attribute.get())` 
+            (which will be a number of type `coerce`,
+            where `coerce` is either `float` or `int`).
+            Thereafter, add warning if `option` is not positive.
+            """
+            check_number(option, coerce, attribute, name)
+            if option <= 0.0:
+                warnings.append("- {} should be a positive number".format(name))
 
-        opts.ctffind_do_phaseshift = self.get_var_as_bool(self.phaseplate_var)
+        check_positive(opts.voltage, float, self.voltage_entry, "Voltage")
+        check_number(opts.Cs, float, self.cs_entry, "Cs")
 
-        try:
-            opts.angpix = float(self.angpix_entry.get())
-        except ValueError:
-            raise ValueError("Pixel size must be a number")
-        if opts.angpix <= 0.0:
-            warnings.append("- Pixel size should be a positive number")
+        opts.ctffind_do_phaseshift = self.phaseplate_var.get() == 1
 
-        try:
-            opts.motioncor_doseperframe = float(self.exposure_entry.get())
-        except ValueError:
-            raise ValueError("Exposure rate must be a number")
-        if opts.motioncor_doseperframe <= 0.0:
-            warnings.append("- Exposure rate should be a positive number")
+        check_positive(opts.angpix, float, self.angpix_entry, "Pixel size")
+        check_positive(opts.motioncor_doseperframe, float, self.exposure_entry, "Exposure rate")
 
         try:
             opts.autopick_LoG_diam_max = float(self.particle_max_diam_entry.get())
@@ -1152,20 +1150,9 @@ class RelionItGui(object):
         opts.autopick_3dreference = self.ref_3d_entry.get()
         if len(opts.autopick_3dreference) > 0 and not os.path.isfile(opts.autopick_3dreference):
             warnings.append("- 3D reference file '{}' does not exist".format(opts.autopick_3dreference))
-
-        try:
-            opts.mask_diameter = float(self.mask_diameter_entry.get())
-        except ValueError:
-            raise ValueError("Mask diameter must be a number")
-        if opts.mask_diameter <= 0:
-            warnings.append("- Mask diameter should be a positive number")
-
-        try:
-            opts.extract_boxsize = int(self.box_size_entry.get())
-        except ValueError:
-            raise ValueError("Box size must be a number")
-        if opts.extract_boxsize <= 0:
-            warnings.append("- Box size should be a positive number")
+        
+        check_positive(opts.mask_diameter, float, self.mask_diameter_entry, "Mask diameter")
+        check_positive(opts.extract_boxsize, int, self.box_size_entry, "Box size")
 
         try:
             opts.extract_small_boxsize = int(self.extract_small_boxsize_entry.get())
