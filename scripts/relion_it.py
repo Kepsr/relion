@@ -266,6 +266,7 @@ import os
 import runpy
 import time
 import traceback
+from collections import OrderedDict
 
 try:
     import Tkinter as tk
@@ -1099,60 +1100,59 @@ class RelionItGui(object):
         opts.do_class2d_pass2          = self.class2d_pass2_var.get() == 1
         opts.do_class3d_pass2          = self.class3d_pass2_var.get() == 1
 
-        def check_number(option, coerce: type, attribute, name: str):
+        def try_get(numtype: type, attribute, name: str):
             """
-            Try to set `option` to `coerce(attribute.get())` 
-            (which will be a number of type `coerce`,
-            where `coerce` is either `float` or `int`).
+            Try to return `numtype(attribute.get())`
+            (where `numtype` is either `float` or `int`).
             """
             try:
-                option = coerce(attribute.get())
+                return coerce(attribute.get())
             except ValueError:
                 raise ValueError("{} must be a number".format(name))
 
-        def check_positive(option, coerce: type, attribute, name: str):
+        def check_positive(option, name: str):
             """
-            Try to set `option` to `coerce(attribute.get())` 
-            (which will be a number of type `coerce`,
-            where `coerce` is either `float` or `int`).
-            Thereafter, add warning if `option` is not positive.
+            Add warning if `option` is not positive.
             """
-            check_number(option, coerce, attribute, name)
             if option <= 0.0:
                 warnings.append("- {} should be a positive number".format(name))
 
-        check_positive(opts.voltage, float, self.voltage_entry, "Voltage")
-        check_number(opts.Cs, float, self.cs_entry, "Cs")
+        opts.voltage = try_get(float, self.voltage_entry, "Voltage")
+        check_positive(opts.voltage, "Voltage")
+
+        opts.Cs = try_get(float, self.cs_entry, "Cs")
 
         opts.ctffind_do_phaseshift = self.phaseplate_var.get() == 1
 
-        check_positive(opts.angpix, float, self.angpix_entry, "Pixel size")
-        check_positive(opts.motioncor_doseperframe, float, self.exposure_entry, "Exposure rate")
+        opts.angpix = try_get(float, self.angpix_entry, "Pixel size")
+        check_positive(opts.angpix, "Pixel size")
 
-        try:
-            opts.autopick_LoG_diam_max = float(self.particle_max_diam_entry.get())
-        except ValueError:
-            if len(self.particle_max_diam_entry.get()) == 0 and opts.stop_after_ctf_estimation:
-                # This was left blank and won't be used, set to zero to avoid errors in calculations later
-                opts.autopick_LoG_diam_max = 0.0
-            else:
-                raise ValueError("Particle longest diameter must be a number")
+        opts.motioncor_doseperframe = try_get(float, self.exposure_entry, "Exposure rate")
+        check_positive(opts.motioncor_doseperframe, "Exposure rate")
 
-        try:
-            opts.autopick_LoG_diam_min = float(self.particle_min_diam_entry.get())
-        except ValueError:
-            if len(self.particle_min_diam_entry.get()) == 0 and opts.stop_after_ctf_estimation:
-                # This was left blank and won't be used, set to zero to avoid errors in calculations later
-                opts.autopick_LoG_diam_min = 0.0
-            else:
-                raise ValueError("Particle shortest diameter must be a number")
+        def try_get_diam(numtype: type, attribute, name: str):
+            try:
+                attr = attribute.get()
+                return numtype(attr)
+            except ValueError:
+                if len(attr) == 0 and opts.stop_after_ctf_estimation:
+                    # This was left blank and won't be used, set to zero to avoid errors in calculations later
+                    return 0.0
+                else:
+                    raise ValueError("{} must be a number".format(name))
+
+        opts.autopick_LoG_diam_max = try_get_diam(float, self.particle_max_diam_entry, "Particle longest diameter")
+        opts.autopick_LoG_diam_min = try_get_diam(float, self.particle_min_diam_entry, "Particle shortest diameter")
 
         opts.autopick_3dreference = self.ref_3d_entry.get()
         if len(opts.autopick_3dreference) > 0 and not os.path.isfile(opts.autopick_3dreference):
             warnings.append("- 3D reference file '{}' does not exist".format(opts.autopick_3dreference))
         
-        check_positive(opts.mask_diameter, float, self.mask_diameter_entry, "Mask diameter")
-        check_positive(opts.extract_boxsize, int, self.box_size_entry, "Box size")
+        opts.mask_diameter = try_get(float, self.mask_diameter_entry, "Mask diameter")
+        check_positive(opts.mask_diameter, "Mask diameter")
+        
+        opts.extract_boxsize = try_get(int, self.box_size_entry, "Box size")
+        check_positive(opts.extract_boxsize"Box size")
 
         try:
             opts.extract_small_boxsize = int(self.extract_small_boxsize_entry.get())
@@ -1235,7 +1235,7 @@ class RelionItGui(object):
             run_pipeline(self.options)
 
 
-def safe_load_star(filename, max_try=5, wait=10, expected=[]):
+def safe_load_star(filename, max_try=5, wait=10, expected: list = []):
     for _ in range(max_try):
         try:
             star = load_star(filename)
@@ -1246,22 +1246,22 @@ def safe_load_star(filename, max_try=5, wait=10, expected=[]):
                entry = entry[key]
             return star
         except:
-            print("safe_load_star is retrying to read: ", filename, ", expected key:", expected)
-            import time
+            print("safe_load_star is retrying to read: {}, expected key: {}".format(filename, expected))
             time.sleep(wait)
-    assert False, "Failed to read a star file: " + filename
+    assert False, "Failed to read a star file: {}".format(filename)
 
 def load_star(filename):
-    from collections import OrderedDict
     
     datasets = OrderedDict()
     current_data = None
     current_colnames = None
     
-    in_loop = 0 # 0: outside 1: reading colnames 2: reading data
+    in_loop = 0 
+    # 0: outside 
+    # 1: reading colnames 
+    # 2: reading data
 
-    for line in open(filename):
-        line = line.strip()
+    for line in map(str.strip, open(filename)):
         
         # remove comments
         comment_pos = line.find('#')
@@ -1308,7 +1308,7 @@ def load_star(filename):
 # Don't get stuck in infinite while True loops....
 def CheckForExit():
     if not os.path.isfile(RUNNING_FILE):
-        print(" RELION_IT:", RUNNING_FILE, "file no longer exists, exiting now ...")
+        print(" RELION_IT: {} file no longer exists, exiting now ...".format(RUNNING_FILE))
         exit(0)
 
 # Allow direct progressing to the second pass
