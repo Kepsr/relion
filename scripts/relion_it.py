@@ -862,35 +862,35 @@ class RelionItGui(object):
         pipeline_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
         tk.Grid.columnconfigure(expt_frame, 1, weight=1)
 
-        tk.Label(pipeline_frame, text="Stop after CTF estimation?").grid(row=row, sticky=tk.W)
+        tk.Label(pipeline_frame, text="Stop after CTF estimation?").grid(row=0, sticky=tk.W)
         self.stop_after_ctf_var = tk.IntVar()
         stop_after_ctf_button = tk.Checkbutton(pipeline_frame, var=self.stop_after_ctf_var)
         stop_after_ctf_button.grid(row=0, column=1, sticky=tk.W)
         if options.stop_after_ctf_estimation:
             stop_after_ctf_button.select()
 
-        tk.Label(pipeline_frame, text="Do 2D classification?").grid(row=row, sticky=tk.W)
+        tk.Label(pipeline_frame, text="Do 2D classification?").grid(row=1, sticky=tk.W)
         self.class2d_var = tk.IntVar()
         class2d_button = tk.Checkbutton(pipeline_frame, var=self.class2d_var)
         class2d_button.grid(row=1, column=1, sticky=tk.W)
         if options.do_class2d:
             class2d_button.select()
 
-        tk.Label(pipeline_frame, text="Do 3D classification?").grid(row=row, sticky=tk.W)
+        tk.Label(pipeline_frame, text="Do 3D classification?").grid(row=2, sticky=tk.W)
         self.class3d_var = tk.IntVar()
         class3d_button = tk.Checkbutton(pipeline_frame, var=self.class3d_var)
         class3d_button.grid(row=2, column=1, sticky=tk.W)
         if options.do_class3d:
             class3d_button.select()
 
-        tk.Label(pipeline_frame, text="Do second pass? (only if no 3D ref)").grid(row=row, sticky=tk.W)
+        tk.Label(pipeline_frame, text="Do second pass? (only if no 3D ref)").grid(row=3, sticky=tk.W)
         self.second_pass_var = tk.IntVar()
         second_pass_button = tk.Checkbutton(pipeline_frame, var=self.second_pass_var)
         second_pass_button.grid(row=3, column=1, sticky=tk.W)
         if options.do_second_pass:
             second_pass_button.select()
 
-        tk.Label(pipeline_frame, text="Do 2D classification (2nd pass)?").grid(row=row, sticky=tk.W)
+        tk.Label(pipeline_frame, text="Do 2D classification (2nd pass)?").grid(row=4, sticky=tk.W)
         self.class2d_pass2_var = tk.IntVar()
         class2d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class2d_pass2_var)
         class2d_pass2_button.grid(row=4, column=1, sticky=tk.W)
@@ -898,7 +898,7 @@ class RelionItGui(object):
         if options.do_class2d_pass2:
             class2d_pass2_button.select()
 
-        tk.Label(pipeline_frame, text="Do 3D classification (2nd pass)?").grid(row=row, sticky=tk.W)
+        tk.Label(pipeline_frame, text="Do 3D classification (2nd pass)?").grid(row=5, sticky=tk.W)
         self.class3d_pass2_var = tk.IntVar()
         class3d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class3d_pass2_var)
         class3d_pass2_button.grid(row=5, column=1, sticky=tk.W)
@@ -1070,7 +1070,7 @@ class RelionItGui(object):
             (where `numtype` is either `float` or `int`).
             """
             try:
-                return coerce(attribute.get())
+                return numtype(attribute.get())
             except ValueError:
                 raise ValueError("{} must be a number".format(name))
 
@@ -1378,6 +1378,7 @@ def WaitForJob(wait_for_this_job, seconds_wait):
             CheckForExit()
             time.sleep(seconds_wait)
 
+
 def find_split_job_output(prefix, n, max_digits=6):
     import os.path
     for i in range(max_digits):
@@ -1386,10 +1387,11 @@ def find_split_job_output(prefix, n, max_digits=6):
             return filename
     return
 
+
 def writeManualPickingGuiFile(particle_diameter):
     if not os.path.isfile('.gui_manualpickrun.job'):
         with open('.gui_manualpickrun.job', 'w') as f:
-            f.write('\n'.join([
+            f.write(''.join(line + '\n' for line in [
                 'job_type == 3',
                 'Pixel size (A) == -1',
                 'Black value: == 0',
@@ -1408,25 +1410,30 @@ def writeManualPickingGuiFile(particle_diameter):
 
 
 def findBestClass(model_star_file, use_resol=True):
+    """
+    Identify the best class given `model_star_file` (a `str`).
+    Return the index of the best class (an `int`), the best resolution (a `float`), and the pixel size.
+    """
     model_star = safe_load_star(model_star_file)
     best_class, best_size, best_resol = 0, 0, 999
     if use_resol:
-        def is_best(curr_size, curr_resol, best_size, best_resol):
+        def isbetter(curr_size, curr_resol, best_size, best_resol):
             return curr_resol < best_resol or (
                 curr_resol == best_resol and curr_size > best_size
             )
     else:
-        def is_best(curr_size, curr_resol, best_size, best_resol):
+        def isbetter(curr_size, curr_resol, best_size, best_resol):
             return curr_size > best_size or (
                 curr_size == best_size and curr_resol < best_resol
             )
-    for class_, size, resol in zip(
+
+    for index, size, resol in zip(
         model_star['model_classes']['rlnReferenceImage'], 
         map(float, model_star['model_classes']['rlnClassDistribution']),
         map(float, model_star['model_classes']['rlnEstimatedResolution']),
     ):
-        if is_best(curr_size, curr_resol, best_size, best_resol):
-            best_class = class_
+        if isbetter(size, resol, best_size, best_resol):
+            best_class = index
             best_size = size
             best_resol = resol
 
@@ -1444,9 +1451,7 @@ def findOutputModelStar(job_dir):
         )
         for output_file in job_star['pipeline_output_edges']['rlnPipeLineEdgeToNode']:
             if output_file.endswith("_model.star"):
-                found = output_file
-                break
-        return found
+                return output_file
     except:
         return
 
@@ -1877,7 +1882,7 @@ def run_pipeline(opts):
                             ipass == 1 and opts.do_class2d_pass2
                         ):
                             class2d_options = [
-                                '{} == {}'.format(question, answer) for question, anwer in [
+                                '{} == {}'.format(question, answer) for question, answer in [
                                     ('Input images STAR file:',              particles_star_file),
                                     ('Number of classes:',                   opts.class2d_nr_classes),
                                     ('Mask diameter (A):',                   opts.mask_diameter),
