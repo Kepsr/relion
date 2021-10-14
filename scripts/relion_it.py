@@ -675,7 +675,7 @@ class RelionItOptions(object):
         out_file.write("# Options file for relion_it.py\n\n")
         seen_start = False
         option_names = [
-            key for key in dir(self) if not is_dunder_name(key) and not callable(getattr(self, key)))
+            key for key in dir(self) if not is_dunder_name(key) and not callable(getattr(self, key))
         ]
 
         # Parse the source code for this class, and write out all comments along with option lines containing new values
@@ -1389,22 +1389,22 @@ def find_split_job_output(prefix, n, max_digits=6):
 def writeManualPickingGuiFile(particle_diameter):
     if not os.path.isfile('.gui_manualpickrun.job'):
         with open('.gui_manualpickrun.job', 'w') as f:
-            f.write('\n'.join("""
-            job_type == 3
-            Pixel size (A) == -1
-            Black value: == 0
-            Blue value:  == 0
-            MetaDataLabel for color: == rlnParticleSelectZScore
-            Scale for CTF image: == 1
-            Particle diameter (A): == {}
-            Blue<>red color particles? == No
-            Highpass filter (A) == -1
-            Lowpass filter (A) == 20
-            Scale for micrographs: == 0.2
-            Red value:  == 2
-            Sigma contrast: == 3
-            White value: == 0
-            """.format(particle_diameter).split()))
+            f.write('\n'.join([
+                'job_type == 3',
+                'Pixel size (A) == -1',
+                'Black value: == 0',
+                'Blue value:  == 0',
+                'MetaDataLabel for color: == rlnParticleSelectZScore',
+                'Scale for CTF image: == 1',
+                'Particle diameter (A): == {}'.format(particle_diameter),
+                'Blue<>red color particles? == No',
+                'Highpass filter (A) == -1',
+                'Lowpass filter (A) == 20',
+                'Scale for micrographs: == 0.2',
+                'Red value:  == 2',
+                'Sigma contrast: == 3',
+                'White value: == 0',
+            ]))
 
 
 def findBestClass(model_star_file, use_resol=True):
@@ -1901,7 +1901,7 @@ def run_pipeline(opts):
                                     ('Ignore CTFs until first peak? == {}',           opts.class2d_ctf_ign1stpeak),
                                     ('Pre-read all particles into RAM? == {}',        opts.refine_preread_images),
                                 ]
-                            ]
+                            ])
 
                             if opts.refine_submit_to_queue:
                                 class2d_options.extend(queue_options)
