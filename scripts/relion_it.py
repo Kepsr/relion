@@ -294,6 +294,14 @@ def is_dunder_name(name):
     return name.startswith('__') and name.endswith('__')
 
 
+def prefix_RELION_IT(msg):
+    return ' RELION_IT: ' + msg
+
+
+def bool_to_word(x):
+    return 'Yes' if x else 'No'
+
+
 class RelionItOptions(object):
     """
     Options for the relion_it pipeline setup script.
@@ -314,12 +322,10 @@ class RelionItOptions(object):
     # Polara = 2.0; Talos/Krios = 2.7; some Cryo-ARM = 1.4
     Cs = 1.4
 
-
     ### Import images (Linux wild card; movies as *.mrc, *.mrcs, *.tiff or *.tif; single-frame micrographs as *.mrc)
     import_images = 'Movies/*.tiff'
     # Are these multi-frame movies? Set to False for single-frame micrographs (and motion-correction will be skipped)
     images_are_movies = True
-
 
     ### MotionCorrection parameters
     # Dose in electrons per squared Angstrom per fraction
@@ -426,7 +432,6 @@ class RelionItOptions(object):
     stop_after_ctf_estimation = False
     # Check every this many minutes if enough particles have been extracted for a new batch of 2D-classification
     batch_repeat_time = 1
-
 
     ### MotionCorrection parameters
     # Use RELION's own implementation of motion-correction (CPU-only) instead of the UCSF implementation?
@@ -641,7 +646,7 @@ class RelionItOptions(object):
     ############ typically no need to change anything below this line
     #######################################################################
 
-    def update_from(self, other):
+    def update_from(self, d):
         """
         Update this RelionItOptions object from a dictionary.
 
@@ -649,19 +654,18 @@ class RelionItOptions(object):
         method to be given a dictionary containing the namespace from a script
         run with ``runpy``.
         """
-        while len(other) > 0:
-            key, value = other.popitem()
-            if not is_dunder_name(key): # exclude __name__, __builtins__ etc.
+        for key, value in d.items():
+            if not is_dunder_name(key):  # exclude __name__, __builtins__ etc.
                 if hasattr(self, key):
                     setattr(self, key, value)
                 else:
-                    print(" RELION_IT: Unrecognised option '{}'".format(key))
+                    print(prefix_RELION_IT("Unrecognised option '{}'".format(key)))
 
-    def print_options(self, out_file=None):
+    def print_options(self, filename):
         """
-        Print the current options.
+        Write the current options to `filename`.
 
-        This method prints the options in the same format as they are read,
+        This method writes the options in the same format as they are read,
         allowing options to be written to a file and re-used.
 
         Args:
@@ -672,42 +676,52 @@ class RelionItOptions(object):
         Raises:
             ValueError: If there is a problem printing the options.
         """
-        out_file.write("# Options file for relion_it.py\n\n")
-        seen_start = False
-        option_names = [
-            key for key in dir(self) if not is_dunder_name(key) and not callable(getattr(self, key))
-        ]
+        # NOTE The writing to stdout mentioned in the above docstring is not implemented.
+        with open(filename, 'w') as out_file:
+            out_file.write("# Options file for relion_it.py\n\n")
+            option_names = [
+                key for key in dir(self) 
+                if not is_dunder_name(key) and not callable(getattr(self, key))
+            ]
 
-        # Parse the source code for this class, and write out all comments along with option lines containing new values
-        for line in inspect.getsourcelines(RelionItOptions)[0]:
-            line = line.strip()
-            if not seen_start:
-                if line != "### General parameters":
-                    # Ignore lines until this one
-                    continue
-                seen_start = True
-            if line == "### End of options":
-                # Stop here
-                break
-            if line.startswith('#') or not line:
-                # Print comments or blank lines as-is
-                out_file.write(line + "\n")
-            else:
-                # Assume all other lines define an option name and value. Replace with new value.
-                equals_index = line.find('=')
-                if equals_index > 0:
-                    option_name = line[:equals_index].strip()
-                    if option_name in option_names:
-                        out_file.write('{} = {}\n'.format(option_name, repr(getattr(self, option_name))))
-                        option_names.remove(option_name)
-                    else:
-                        # This error should not occur.
-                        # If it does, there is probably a programming error.
-                        raise ValueError("Unrecognised option name '{}'".format(option_name))
-        if len(option_names) > 0:
-            # This error should not occur.
-            # If it does, there is probably a programming error.
-            raise ValueError("Some options were not written to the output file: {}".format(option_names))
+            def relevant(lines):
+                seen_start = False
+                for line in map(str.strip, lines):
+                    if not seen_start:
+                        if line != '### General parameters':
+                            # Ignore lines until this one
+                            continue
+                        seen_start = True
+                    if line == '### End of options':
+                        # Stop here
+                        break
+                    yield line
+
+            assignmentpattern = re.compile(r'(.*)=(.*)')
+
+            # Parse the source code for this class,
+            # and write out all comments along with option lines containing new values
+            for line in relevant(inspect.getsourcelines(RelionItOptions)[0]):
+                if line.startswith('#') or not line:
+                    # Print comments and blank lines as-is
+                    out_file.write(line + "\n")
+                else:
+                    # Assume all other lines define an option name and value.
+                    # Replace with new value.
+                    m = re.match(assignmentpattern, line)
+                    if m:
+                        option_name = m.group(1).strip()
+                        if option_name in option_names:
+                            out_file.write('{} = {}\n'.format(option_name, repr(getattr(self, option_name))))
+                            option_names.remove(option_name)
+                        else:
+                            # This error should not occur.
+                            # If it does, there is probably a programming error.
+                            raise ValueError("Unrecognised option name '{}'".format(option_name))
+            if option_names:
+                # This error should not occur.
+                # If it does, there is probably a programming error.
+                raise ValueError("Some options were not written to the output file: {}".format(option_names))
 
 
 class RelionItGui(object):
@@ -717,7 +731,7 @@ class RelionItGui(object):
         self.options = options
 
         # Convenience function for making file browser buttons
-        def new_browse_button(master, var_to_set, filetypes=(('MRC file', '*.mrc'), ('All files', '*'))):
+        def new_browse_button(self, var_to_set, filetypes=(('MRC file', '*.mrc'), ('All files', '*'))):
             def browse_command():
                 chosen_file = tkFileDialog.askopenfilename(filetypes=filetypes)
                 if chosen_file is not None:
@@ -725,18 +739,16 @@ class RelionItGui(object):
                     if chosen_file.startswith(os.getcwd()):
                         chosen_file = os.path.relpath(chosen_file)
                     var_to_set.set(chosen_file)
-            return tk.Button(master, text="Browse...", command=browse_command)
+            return tk.Button(self, text="Browse...", command=browse_command)
 
         ### Create GUI
 
         main_frame = tk.Frame(main_window)
         main_frame.pack(fill=tk.BOTH, expand=1)
 
-        left_frame = tk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.X, expand=1)
-
-        right_frame = tk.Frame(main_frame)
-        right_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.X, expand=1)
+        left_frame, right_frame = 2 * (tk.Frame(main_frame),)
+        for frame, side in zip((left_frame, right_frame), (tk.LEFT, tk.RIGHT)):
+            frame.pack(side=side, anchor=tk.N, fill=tk.X, expand=1)
 
         ###
 
@@ -843,7 +855,7 @@ class RelionItGui(object):
         self.import_images_entry.insert(0, self.options.import_images)
 
         import_button = new_browse_button(
-            project_frame, self.import_images_var, 
+            project_frame, self.import_images_var,
             filetypes=(('Image file', '{*.mrc, *.mrcs, *.tif, *.tiff}'), ('All files', '*'))
         )
         import_button.grid(row=1, column=2)
@@ -1173,12 +1185,11 @@ class RelionItGui(object):
                 default=tkMessageBox.CANCEL
             ):
                 self.calculate_full_options()
-                print(" RELION_IT: Writing all options to {}".format(OPTIONS_FILE))
+                print(prefix_RELION_IT("Writing all options to {}".format(OPTIONS_FILE)))
                 if os.path.isfile(OPTIONS_FILE):
-                    print(" RELION_IT: File {0} already exists; renaming old copy to {0}~".format(OPTIONS_FILE))
+                    print(prefix_RELION_IT("File {0} already exists; renaming old copy to {0}~".format(OPTIONS_FILE)))
                     os.rename(OPTIONS_FILE, OPTIONS_FILE + '~')
-                with open(OPTIONS_FILE, 'w') as optfile:
-                    self.options.print_options(optfile)
+                self.options.print_options(OPTIONS_FILE)
                 return True
         except Exception as ex:
             tkMessageBox.showerror("Error", ex.message)
@@ -1289,7 +1300,7 @@ def load_star(filename):
 # Don't get stuck in an infinite loop
 def CheckForExit():
     if not os.path.isfile(RUNNING_FILE):
-        print(" RELION_IT: {} file no longer exists, exiting now ...".format(RUNNING_FILE))
+        print(prefix_RELION_IT("{} file no longer exists, exiting now ...".format(RUNNING_FILE)))
         exit(0)
 
 
@@ -1305,7 +1316,7 @@ def getSecondPassReference():
 
 def getJobName(name_in_script, done_file):
     jobname = None
-    # See if we've done this job before, 
+    # See if we've done this job before,
     # i.e. whether it is in the done_file
     if os.path.isfile(done_file):
         with open(done_file, 'r') as f:
@@ -1325,7 +1336,7 @@ def addJob(jobtype, name_in_script, done_file, options, alias=None):
     # If we hadn't done it before, add it now
     if not already_had_it:
         command = (
-            'relion_pipeliner' 
+            'relion_pipeliner'
             + ' --addJob {}'.format(jobtype)
             + ' --addJobOptions "{}"'.format(''.join(opt + ';' for opt in options))
         )
@@ -1341,7 +1352,7 @@ def addJob(jobtype, name_in_script, done_file, options, alias=None):
         with open(done_file, 'a') as f:
             f.write('{} = {}\n'.format(name_in_script, jobname))
 
-    # Return the name of the job in the RELION pipeline, 
+    # Return the name of the job in the RELION pipeline,
     # e.g. 'Import/job001/'
     return jobname, already_had_it
 
@@ -1359,20 +1370,23 @@ def RunJobs(jobs, repeat, wait, schedulename):
 
 def WaitForJob(wait_for_this_job, seconds_wait):
     time.sleep(seconds_wait)
-    print(" RELION_IT: waiting for job to finish in {}".format(wait_for_this_job))
+    print(prefix_RELION_IT("waiting for job to finish in {}".format(wait_for_this_job)))
     while True:
         pipeline = safe_load_star(PIPELINE_STAR, expected=['pipeline_processes', 'rlnPipeLineProcessName'])
-        myjobnr = -1
-        for jobnr, jobname in enumerate(pipeline['pipeline_processes']['rlnPipeLineProcessName']):
+        curr_jobnr = -1
+        for jobnr, jobname in enumerate(
+            pipeline['pipeline_processes']['rlnPipeLineProcessName']
+        ):
             if jobname == wait_for_this_job:
-                myjobnr = jobnr
-        if myjobnr < 0:
+                curr_jobnr = jobnr
+        if curr_jobnr < 0:
             print(" ERROR: cannot find {} in {}".format(wait_for_this_job, PIPELINE_STAR))
             exit(1)
 
-        status = int(pipeline['pipeline_processes']['rlnPipeLineProcessStatus'][myjobnr])
-        if status == 2:
-            print(" RELION_IT: job in {} has finished now".format(wait_for_this_job))
+        if int(
+            pipeline['pipeline_processes']['rlnPipeLineProcessStatus'][curr_jobnr]
+        ) == 2:
+            print(prefix_RELION_IT("job in {} has finished now".format(wait_for_this_job)))
             return
         else:
             CheckForExit()
@@ -1380,7 +1394,6 @@ def WaitForJob(wait_for_this_job, seconds_wait):
 
 
 def find_split_job_output(prefix, n, max_digits=6):
-    import os.path
     for i in range(max_digits):
         filename = prefix + str(n).rjust(i, '0') + '.star'
         if os.path.isfile(filename):
@@ -1428,7 +1441,7 @@ def findBestClass(model_star_file, use_resol=True):
             )
 
     for index, size, resol in zip(
-        model_star['model_classes']['rlnReferenceImage'], 
+        model_star['model_classes']['rlnReferenceImage'],
         map(float, model_star['model_classes']['rlnClassDistribution']),
         map(float, model_star['model_classes']['rlnEstimatedResolution']),
     ):
@@ -1437,16 +1450,16 @@ def findBestClass(model_star_file, use_resol=True):
             best_size = size
             best_resol = resol
 
-    print(" RELION_IT: found best class: {} with class size of {} and resolution of {}".format(
+    print(prefix_RELION_IT("found best class: {} with class size of {} and resolution of {}".format(
         best_class, best_size, best_resol
-    ))
+    )))
     return best_class, best_resol, model_star['model_general']['rlnPixelSize']
 
 
 def findOutputModelStar(job_dir):
     try:
         job_star = safe_load_star(
-            "{}job_pipeline.star".format(job_dir), 
+            "{}job_pipeline.star".format(job_dir),
             expected=['pipeline_output_edges', 'rlnPipeLineEdgeToNode']
         )
         for output_file in job_star['pipeline_output_edges']['rlnPipeLineEdgeToNode']:
@@ -1464,7 +1477,7 @@ def run_pipeline(opts):
         opts: options for the pipeline, as a RelionItOptions object.
     """
 
-    # Is this really necessary? 
+    # Is this really necessary?
     # Don't think so...
     if not os.path.isfile(PIPELINE_STAR):
         with open(PIPELINE_STAR, 'w') as writefile:
@@ -1476,7 +1489,7 @@ def run_pipeline(opts):
     with open(RUNNING_FILE, 'w'):
         pass
 
-    # Write mainGUI project file, so GUI won't ask to set up a project
+    # Write main GUI project file, so GUI won't ask to set up a project
     with open('.gui_projectdir', 'w'):
         pass
 
@@ -1486,11 +1499,13 @@ def run_pipeline(opts):
 
     ### Prepare the list of queue arguments for later use
     queue_options = [
-        'Submit to queue? == Yes',
-        'Queue name:  == {}'.format(opts.queue_name),
-        'Queue submit command: == {}'.format(opts.queue_submit_command),
-        'Standard submission script: == {}'.format(opts.queue_submission_template),
-        'Minimum dedicated cores per node: == {}'.format(opts.queue_minimum_dedicated),
+        '{} == {}'.format(question, answer) for question, answer in [
+            ('Submit to queue?',                  'Yes'),
+            ('Queue name: ',                      opts.queue_name),
+            ('Queue submit command:',             opts.queue_submit_command),
+            ('Standard submission script:',       opts.queue_submission_template),
+            ('Minimum dedicated cores per node:', opts.queue_minimum_dedicated),
+        ]
     ]
 
     # If we're only doing motioncorr and ctf estimation,
@@ -1508,7 +1523,7 @@ def run_pipeline(opts):
     if opts.do_second_pass:
         secondpass_ref3d, secondpass_ref3d_angpix = getSecondPassReference()
         if secondpass_ref3d != '':
-            messages = [
+            for msg in [
                 'found {} with angpix= {} as a 3D reference for second pass in file {}'.format(
                     secondpass_ref3d, secondpass_ref3d_angpix, SECONDPASS_REF3D_FILE
                 ),
@@ -1518,9 +1533,8 @@ def run_pipeline(opts):
                 ' updating the reference filename in {}'.format(SECONDPASS_REF3D_FILE),
                 ' deleting relevant jobs (autopick2_job and followings) in {}'.format(SETUP_CHECK_FILE),
                 ' and restarting the pipeline.',
-            ]
-            for msg in messages:
-                print(' RELION_IT: {}'.format(msg))
+            ]:
+                print(prefix_RELION_IT(msg))
             first_pass = 1
             opts.autopick_3dreference = secondpass_ref3d
             opts.autopick_ref_angpix = secondpass_ref3d_angpix
@@ -1535,48 +1549,50 @@ def run_pipeline(opts):
 
         #### Set up the Import job
         import_options = [
-            'Raw input files: == {}'.format(opts.import_images),
-            'Import raw movies/micrographs? == {}'.format('Yes'),
-	        'Pixel size (Angstrom): == {}'.format(opts.angpix),
-	        'Voltage (kV): == {}'.format(opts.voltage),
-            'Spherical aberration (mm): == {}'.format(opts.Cs),
-            'Amplitude contrast: == {}'.format(opts.ampl_contrast),
+            '{} == {}'.format(question, answer) for question, answer in [
+                ('Raw input files:',               opts.import_images),
+                ('Import raw movies/micrographs?', 'Yes'),
+	            ('Pixel size (Angstrom):',         opts.angpix),
+	            ('Voltage (kV):',                  opts.voltage),
+                ('Spherical aberration (mm):',     opts.Cs),
+                ('Amplitude contrast:',            opts.ampl_contrast),
+                ('Are these multi-frame movies?',  bool_to_word(opts.images_are_movies)),
+            ]
         ]
-
-        import_options.append('Are these multi-frame movies? == {}'.format(
-            'Yes' if opts.images_are_movies else 'No'
-        ))
 
         import_job, already_had_it = addJob('Import','import_job', SETUP_CHECK_FILE, import_options)
 
         if opts.images_are_movies:
             #### Set up the MotionCor job
             motioncorr_options = [
-                'Input movies STAR file: == {}movies.star'.format(import_job),
-                'MOTIONCOR2 executable: == {}'.format(opts.motioncor_exe),
-                'Defect file: == {}'.format(opts.motioncor_defectfile),
-                'Gain-reference image: == {}'.format(opts.motioncor_gainreference),
-                'Gain flip: == {}'.format(opts.motioncor_gainflip),
-                'Gain rotation: == {}'.format(opts.motioncor_gainrot),
-                'Do dose-weighting? == Yes',
-                'Dose per frame (e/A2): == {}'.format(opts.motioncor_doseperframe),
-                'Number of patches X: ==  {}'.format(opts.motioncor_patches_x),
-                'Number of patches Y: == {}'.format(opts.motioncor_patches_y),
-                'Bfactor: ==  {}'.format(opts.motioncor_bfactor),
-                'Binning factor: == {}'.format(opts.motioncor_binning),
-                'Which GPUs to use: == {}'.format(opts.motioncor_gpu),
-                'Other MOTIONCOR2 arguments == {}'.format(opts.motioncor_other_args),
-                'Number of threads: == {}'.format(opts.motioncor_threads),
-                'Number of MPI procs: == {}'.format(opts.motioncor_mpi),
-                'Additional arguments: == --eer_upsampling {} --eer_grouping {}'.format(opts.eer_upsampling, opts.eer_grouping),
+                '{} == {}'.format(question, answer) for question, answer in [
+                    ('Input movies STAR file:',    str(import_job) + 'movies.star'),
+                    ('MOTIONCOR2 executable:',     opts.motioncor_exe),
+                    ('Defect file:',               opts.motioncor_defectfile),
+                    ('Gain-reference image:',      opts.motioncor_gainreference),
+                    ('Gain flip:',                 opts.motioncor_gainflip),
+                    ('Gain rotation:',             opts.motioncor_gainrot),
+                    ('Do dose-weighting?',         'Yes'),
+                    ('Dose per frame (e/A2):',     opts.motioncor_doseperframe),
+                    ('Number of patches X:',       opts.motioncor_patches_x),
+                    ('Number of patches Y:',       opts.motioncor_patches_y),
+                    ('Bfactor:',                   opts.motioncor_bfactor),
+                    ('Binning factor:',            opts.motioncor_binning),
+                    ('Which GPUs to use:',         opts.motioncor_gpu),
+                    ('Other MOTIONCOR2 arguments', opts.motioncor_other_args),
+                    ('Number of threads:',         opts.motioncor_threads),
+                    ('Number of MPI procs:',       opts.motioncor_mpi),
+                    ('Additional arguments:',      ' '.join((
+                        '--eer_upsampling', str(opts.eer_upsampling),
+                        '--eer_grouping', str(opts.eer_grouping),
+                    ))),
+                    ('Use RELION\'s own implementation?', bool_to_word(opts.motioncor_do_own)),
+                ]
             ]
 
-            motioncorr_options.append('Use RELION\'s own implementation? == {}'.format(
-                'Yes' if opts.motioncor_do_own else 'No'
-            ))
             if opts.motioncor_do_own:
                 motioncorr_options.append('Save sum of power spectra? == {}'.format(
-                    'Yes' if opts.use_ctffind else 'No'
+                    bool_to_word(opts.use_ctffind)
                 ))
 
             if opts.motioncor_submit_to_queue:
@@ -1601,23 +1617,15 @@ def run_pipeline(opts):
                 ('Which GPUs to use:',         opts.gctf_gpu),
                 ('CTFFIND-4.1 executable:',    opts.ctffind4_exe),
                 ('Number of MPI procs:',       opts.ctffind_mpi),
-            ]
-        ]
-
-        def bool_to_word(x):
-            return 'Yes' if x else 'No'
-
-        ctffind_options.extend([
-            '{} == {}'.format(question, answer) for question, answer in [
                 ('Input micrographs STAR file:', (
                     str(motioncorr_job) + 'corrected_micrographs.star' if opts.images_are_movies else
                     str(import_job) + 'micrographs.star'
                 )),
-                ('Use CTFFIND-4.1?', bool_to_word(opts.use_ctffind)),
-                ('Use Gctf instead?', bool_to_word(not opts.use_ctffind)),
+                ('Use CTFFIND-4.1?',           bool_to_word(opts.use_ctffind)),
+                ('Use Gctf instead?',          bool_to_word(not opts.use_ctffind)),
                 ('Use power spectra from MotionCorr job?', bool_to_word(opts.use_ctffind)),
             ]
-        ])
+        ]
 
         if not opts.use_ctffind:
             ctffind_options.append('Ignore \'Searches\' parameters? == {}'.format(
@@ -1667,20 +1675,15 @@ def run_pipeline(opts):
                     ('Which GPUs to use:',                   opts.autopick_gpu),
                     ('Additional arguments:',                opts.autopick_other_args),
                     ('Number of MPI procs:',                 opts.autopick_mpi),
+                    ('OR: provide a 3D reference?',          bool_to_word(opts.autopick_3dreference != '')),
+                    ('OR: use Laplacian-of-Gaussian?',       bool_to_word(opts.autopick_do_LoG)),
+                    ('Are References CTF corrected?',        bool_to_word(opts.autopick_refs_are_ctf_corrected)),
+                    ('References have inverted contrast?',   bool_to_word(opts.autopick_refs_have_inverted_contrast)),
+                    ('Ignore CTFs until first peak?',        bool_to_word(opts.autopick_refs_ignore_ctf1stpeak)),
+                    ('Use GPU acceleration?',                bool_to_word(opts.autopick_do_gpu and not opts.autopick_do_LoG)),
                 ]
             ]
 
-            # More autopick options
-            autopick_options.extend([
-                '{} == {}'.format(question, bool_to_word(answer)) for question, answer in [
-                    ('OR: provide a 3D reference?',        opts.autopick_3dreference != ''),
-                    ('OR: use Laplacian-of-Gaussian?',     opts.autopick_do_LoG),
-                    ('Are References CTF corrected?',      opts.autopick_refs_are_ctf_corrected),
-                    ('References have inverted contrast?', opts.autopick_refs_have_inverted_contrast),
-                    ('Ignore CTFs until first peak?',      opts.autopick_refs_ignore_ctf1stpeak),
-                    ('Use GPU acceleration?',              opts.autopick_do_gpu and not opts.autopick_do_LoG),
-                ]
-            ])
             if opts.autopick_submit_to_queue:
                 autopick_options.extend(queue_options)
 
@@ -1760,13 +1763,13 @@ def run_pipeline(opts):
         # Now execute the entire preprocessing pipeliner
         preprocess_schedule_name = PREPROCESS_SCHEDULE_PASS1 if ipass == 0 else PREPROCESS_SCHEDULE_PASS2
         RunJobs(runjobs, opts.preprocess_repeat_times, opts.preprocess_repeat_wait, preprocess_schedule_name)
-        print(' RELION_IT: submitted {} pipeliner with {} repeats of the preprocessing jobs'.format(
+        print(prefix_RELION_IT('submitted {} pipeliner with {} repeats of the preprocessing jobs'.format(
             preprocess_schedule_name, opts.preprocess_repeat_times
-        ))
-        print(
-            ' RELION_IT: this pipeliner will run in the background of your shell. ' +
+        )))
+        print(prefix_RELION_IT(' '.join((
+            'this pipeliner will run in the background of your shell.',
             'You can stop it by deleting the file RUNNING_PIPELINER_{}'.format(preprocess_schedule_name)
-        )
+        ))))
 
         # From now on, process extracted particles in batches for 2D or 3D classification,
         # only perform SGD inimodel for first batch and if no 3D reference is available
@@ -1790,24 +1793,24 @@ def run_pipeline(opts):
                     particles_boxsize = opts.extract_boxsize
                 if abs(float(particles_angpix) - float(opts.autopick_ref_angpix)) > 0.01:
                     # Now rescale the reference for 3D classification
-                    print(' RELION_IT: rescaling the 3D reference from pixel size {} to {} and saving the new reference as {}'.format(
+                    print(prefix_RELION_IT('rescaling the 3D reference from pixel size {} to {} and saving the new reference as {}'.format(
                         opts.autopick_ref_angpix, particles_angpix, opts.class3d_reference
-                    ))
+                    )))
                     opts.class3d_reference = opts.autopick_3dreference.replace('.mrc', '_rescaled.mrc')
                     command = (
                         'relion_image_handler'
-                        + ' --i {}'.format(opts.autopick_3dreference)
-                        + ' --o {}'.format(opts.class3d_reference)
-                        + ' --angpix {}'.format(opts.autopick_ref_angpix)
-                        + ' --rescale_angpix {}'.format(particles_angpix)
-                        + ' --new_box {}'.format(particles_boxsize)
+                        + ' --i ' + str(opts.autopick_3dreference)
+                        + ' --o ' + str(opts.class3d_reference)
+                        + ' --angpix ' + str(opts.autopick_ref_angpix)
+                        + ' --rescale_angpix ' + str(particles_angpix)
+                        + ' --new_box ' + str(particles_boxsize)
                     )
                     os.system(command)
 
-            print(
-                ' RELION_IT: now entering an infinite loop for batch-processing of particles. ' +
+            print(prefix_RELION_IT(' '.join((
+                'now entering an infinite loop for batch-processing of particles.',
                 'You can stop this loop by deleting the file {}'.format(RUNNING_FILE)
-            )
+            ))))
 
             # It could be that this is a restart, so check previous_batch1_size in the output directory.
             # Also check the presence of class2d_job_batch_001 in case the first job was not submitted yet.
@@ -1822,7 +1825,6 @@ def run_pipeline(opts):
 
             continue_this_pass = True
             while continue_this_pass:
-
                 have_new_batch = False
                 nr_batches = len(glob.glob(split_job + "particles_split*.star"))
                 for ibatch in range(nr_batches):
@@ -1846,10 +1848,12 @@ def run_pipeline(opts):
 
                             # Run a Select job to get rid of particles with outlier average/stddev values...
                             discard_options = [
-                                'OR select from particles.star: == {}'.format(batch_name),
-                                'OR: select on image statistics? == Yes',
-                                'Sigma-value for discarding images: == {}'.format(opts.discard_sigma),
-                                'Metadata label for images: == rlnImageName',
+                                '{} == {}'.format(question, answer) for question, answer in [
+                                    ('OR select from particles.star:',     batch_name),
+                                    ('OR: select on image statistics?',    'Yes'),
+                                    ('Sigma-value for discarding images:', opts.discard_sigma),
+                                    ('Metadata label for images:',         'rlnImageName'),
+                                ]
                             ]
 
                             discard_job_name = 'discard_job' if ipass == 0 else 'discard2_job'
@@ -1865,9 +1869,9 @@ def run_pipeline(opts):
                             if rerun_batch1 or not already_had_it:
                                 have_new_batch = True
                                 RunJobs([discard_job], 1, 1, 'DISCARD')
-                                print(" RELION_IT: submitted job to discard based on image statistics for {} particles in {}".format(
+                                print(prefix_RELION_IT("submitted job to discard based on image statistics for {} particles in {}".format(
                                     batch_size, batch_name
-                                ))
+                                )))
 
                                 # Wait until Discard job is finished.
                                 # Check every thirty seconds.
@@ -1883,30 +1887,25 @@ def run_pipeline(opts):
                         ):
                             class2d_options = [
                                 '{} == {}'.format(question, answer) for question, answer in [
-                                    ('Input images STAR file:',              particles_star_file),
-                                    ('Number of classes:',                   opts.class2d_nr_classes),
-                                    ('Mask diameter (A):',                   opts.mask_diameter),
-                                    ('Number of iterations:',                opts.class2d_nr_iter),
-                                    ('Angular search range - psi (deg):',    opts.class2d_angle_step),
-                                    ('Offset search range (pix):',           opts.class2d_offset_range),
-                                    ('Offset search step (pix):',            opts.class2d_offset_step),
-                                    ('Number of pooled particles:',          opts.refine_nr_pool),
-                                    ('Which GPUs to use:',                   opts.refine_gpu),
-                                    ('Number of MPI procs:',                 opts.refine_mpi),
-                                    ('Number of threads:',                   opts.refine_threads),
-                                    ('Copy particles to scratch directory:', opts.refine_scratch_disk),
-                                    ('Additional arguments:',                opts.class2d_other_args),
+                                    ('Input images STAR file:',                 particles_star_file),
+                                    ('Number of classes:',                      opts.class2d_nr_classes),
+                                    ('Mask diameter (A):',                      opts.mask_diameter),
+                                    ('Number of iterations:',                   opts.class2d_nr_iter),
+                                    ('Angular search range - psi (deg):',       opts.class2d_angle_step),
+                                    ('Offset search range (pix):',              opts.class2d_offset_range),
+                                    ('Offset search step (pix):',               opts.class2d_offset_step),
+                                    ('Number of pooled particles:',             opts.refine_nr_pool),
+                                    ('Which GPUs to use:',                      opts.refine_gpu),
+                                    ('Number of MPI procs:',                    opts.refine_mpi),
+                                    ('Number of threads:',                      opts.refine_threads),
+                                    ('Copy particles to scratch directory:',    opts.refine_scratch_disk),
+                                    ('Additional arguments:',                   opts.class2d_other_args),
+                                    ('Use fast subsets (for large data sets)?', bool_to_word(batch_size > opts.refine_batchsize_for_fast_subsets)),
+                                    ('Use GPU acceleration?',                   bool_to_word(opts.refine_do_gpu)),
+                                    ('Ignore CTFs until first peak?',           bool_to_word(opts.class2d_ctf_ign1stpeak)),
+                                    ('Pre-read all particles into RAM?',        bool_to_word(opts.refine_preread_images)),
                                 ]
                             ]
-
-                            class2d_options.extend([
-                                question.format(bool_to_word(answer)) for question, answer in [
-                                    ('Use fast subsets (for large data sets)? == {}', batch_size > opts.refine_batchsize_for_fast_subsets),
-                                    ('Use GPU acceleration? == {}',                   opts.refine_do_gpu),
-                                    ('Ignore CTFs until first peak? == {}',           opts.class2d_ctf_ign1stpeak),
-                                    ('Pre-read all particles into RAM? == {}',        opts.refine_preread_images),
-                                ]
-                            ])
 
                             if opts.refine_submit_to_queue:
                                 class2d_options.extend(queue_options)
@@ -1924,7 +1923,7 @@ def run_pipeline(opts):
                             if rerun_batch1 or not already_had_it:
                                 have_new_batch = True
                                 RunJobs([class2d_job], 1, 1, 'CLASS2D')
-                                print(" RELION_IT: submitted 2D classification with {} particles in {}".format(batch_size, class2d_job))
+                                print(prefix_RELION_IT("submitted 2D classification with {} particles in {}".format(batch_size, class2d_job)))
 
                                 # Wait until Class2D job is finished.
                                 # Check every thirty seconds.
@@ -1936,45 +1935,41 @@ def run_pipeline(opts):
                     ) or (
                         ipass == 1 and opts.do_class3d_pass2
                     ):
-
                         # Do SGD initial model generation only in the first pass,
                         # when no reference is provided AND only for the first (complete) batch, for subsequent batches use that model
-                        if (not opts.have_3d_reference) and ipass == 0 and iibatch == 1 and batch_size == opts.batch_size:
+                        if not opts.have_3d_reference and ipass == 0 and iibatch == 1 and batch_size == opts.batch_size:
 
                             inimodel_options = [
-                                'Input images STAR file: == {}'.format(particles_star_file),
-                                'Symmetry: == {}'.format(opts.symmetry),
-                                'Mask diameter (A): == {}'.format(opts.mask_diameter),
-                                'Number of classes: == {}'.format(opts.inimodel_nr_classes),
-                                'Initial angular sampling: == {}'.format(opts.inimodel_angle_step),
-                                'Offset search range (pix): == {}'.format(opts.inimodel_offset_range),
-                                'Offset search step (pix): == {}'.format(opts.inimodel_offset_step),
-                                'Number of initial iterations: == {}'.format(opts.inimodel_nr_iter_initial),
-                                'Number of in-between iterations: == {}'.format(opts.inimodel_nr_iter_inbetween),
-                                'Number of final iterations: == {}'.format(opts.inimodel_nr_iter_final),
-                                'Write-out frequency (iter): == {}'.format(opts.inimodel_freq_writeout),
-                                'Initial resolution (A): == {}'.format(opts.inimodel_resol_ini),
-                                'Final resolution (A): == {}'.format(opts.inimodel_resol_final),
-                                'Initial mini-batch size: == {}'.format(opts.inimodel_batchsize_ini),
-                                'Final mini-batch size: == {}'.format(opts.inimodel_batchsize_final),
-                                'Increased noise variance half-life: == {}'.format(opts.inimodel_sigmafudge_halflife),
-                                'Number of pooled particles: == 1',
-                                'Which GPUs to use: == {}'.format(opts.refine_gpu),
-                                'Number of MPI procs: == {}'.format(opts.refine_mpi),
-                                'Number of threads: == {}'.format(opts.refine_threads),
-                                'Copy particles to scratch directory: == {}'.format(opts.refine_scratch_disk),
-                                'Additional arguments: == {}'.format(opts.inimodel_other_args),
-                            ]
-
-                            inimodel_options.extend([
-                                question.format(bool_to_word(answer)) for question, answer in [
-                                    ('Flatten and enforce non-negative solvent? == {}', opts.inimodel_solvent_flatten),
-                                    ('Skip padding? == {}', opts.refine_skip_padding),
-                                    ('Use GPU acceleration? == {}', opts.refine_do_gpu),
-                                    ('Ignore CTFs until first peak? == {}', opts.inimodel_ctf_ign1stpeak),
-                                    ('Pre-read all particles into RAM? == {}', opts.refine_preread_images),
+                                '{} == {}'.format(question, answer) for question, answer in [
+                                    ('Input images STAR file:',                   particles_star_file),
+                                    ('Symmetry:',                                 opts.symmetry),
+                                    ('Mask diameter (A):',                        opts.mask_diameter),
+                                    ('Number of classes:',                        opts.inimodel_nr_classes),
+                                    ('Initial angular sampling:',                 opts.inimodel_angle_step),
+                                    ('Offset search range (pix):',                opts.inimodel_offset_range),
+                                    ('Offset search step (pix):',                 opts.inimodel_offset_step),
+                                    ('Number of initial iterations:',             opts.inimodel_nr_iter_initial),
+                                    ('Number of in-between iterations:',          opts.inimodel_nr_iter_inbetween),
+                                    ('Number of final iterations:',               opts.inimodel_nr_iter_final),
+                                    ('Write-out frequency (iter):',               opts.inimodel_freq_writeout),
+                                    ('Initial resolution (A):',                   opts.inimodel_resol_ini),
+                                    ('Final resolution (A):',                     opts.inimodel_resol_final),
+                                    ('Initial mini-batch size:',                  opts.inimodel_batchsize_ini),
+                                    ('Final mini-batch size:',                    opts.inimodel_batchsize_final),
+                                    ('Increased noise variance half-life:',       opts.inimodel_sigmafudge_halflife),
+                                    ('Number of pooled particles:',               '1'),
+                                    ('Which GPUs to use:',                        opts.refine_gpu),
+                                    ('Number of MPI procs:',                      opts.refine_mpi),
+                                    ('Number of threads:',                        opts.refine_threads),
+                                    ('Copy particles to scratch directory:',      opts.refine_scratch_disk),
+                                    ('Additional arguments:',                     opts.inimodel_other_args),
+                                    ('Flatten and enforce non-negative solvent?', bool_to_word(opts.inimodel_solvent_flatten)),
+                                    ('Skip padding?',                             bool_to_word(opts.refine_skip_padding)),
+                                    ('Use GPU acceleration?',                     bool_to_word(opts.refine_do_gpu)),
+                                    ('Ignore CTFs until first peak?',             bool_to_word(opts.inimodel_ctf_ign1stpeak)),
+                                    ('Pre-read all particles into RAM?',          bool_to_word(opts.refine_preread_images)),
                                 ]
-                            ])
+                            ]
 
                             if opts.refine_submit_to_queue:
                                 inimodel_options.extend(queue_options)
@@ -1987,7 +1982,7 @@ def run_pipeline(opts):
                             if not already_had_it:
                                 have_new_batch = True
                                 RunJobs([inimodel_job], 1, 1, 'INIMODEL')
-                                print(" RELION_IT: submitted initial model generation with {} particles in {}".format(batch_size, inimodel_job))
+                                print(prefix_RELION_IT("submitted initial model generation with {} particles in {}".format(batch_size, inimodel_job)))
 
                                 # Wait until inimodel job is finished.
                                 # Check every thirty seconds.
@@ -1995,8 +1990,8 @@ def run_pipeline(opts):
 
                             sgd_model_star = findOutputModelStar(inimodel_job)
                             if sgd_model_star is None:
-                                print(" RELION_IT: Initial model generation {} does not contain expected output maps.".format(inimodel_job))
-                                print(" RELION_IT: This job should have finished, but you may continue it from the GUI.")
+                                print(prefix_RELION_IT("Initial model generation {} does not contain expected output maps.".format(inimodel_job)))
+                                print(prefix_RELION_IT("This job should have finished, but you may continue it from the GUI."))
                                 raise Exception("ERROR!! quitting the pipeline.") # TODO: MAKE MORE ROBUST
 
                             # Use the model of the largest class for the 3D classification below
@@ -2011,37 +2006,34 @@ def run_pipeline(opts):
                         if opts.have_3d_reference:
                             # Now perform the actual 3D classification
                             class3d_options = [
-                                'Input images STAR file: == {}'.format(particles_star_file),
-                                'Reference map: == {}'.format(opts.class3d_reference),
-                                'Initial low-pass filter (A): == {}'.format(opts.class3d_ini_lowpass),
-                                'Symmetry: == {}'.format(opts.symmetry),
-                                'Regularisation parameter T: == {}'.format(opts.class3d_T_value),
-                                'Reference mask (optional): == {}'.format(opts.class3d_reference_mask),
-                                'Number of classes: == {}'.format(opts.class3d_nr_classes),
-                                'Mask diameter (A): == {}'.format(opts.mask_diameter),
-                                'Number of iterations: == {}'.format(opts.class3d_nr_iter),
-                                'Angular sampling interval: == {}'.format(opts.class3d_angle_step),
-                                'Offset search range (pix): == {}'.format(opts.class3d_offset_range),
-                                'Offset search step (pix): == {}'.format(opts.class3d_offset_step),
-                                'Number of pooled particles: == {}'.format(opts.refine_nr_pool),
-                                'Which GPUs to use: == {}'.format(opts.refine_gpu),
-                                'Number of MPI procs: == {}'.format(opts.refine_mpi),
-                                'Number of threads: == {}'.format(opts.refine_threads),
-                                'Copy particles to scratch directory: == {}'.format(opts.refine_scratch_disk),
-                                'Additional arguments: == {}'.format(opts.class3d_other_args),
-                            ]
-
-                            class3d_options.extend([
-                                question.format(bool_to_word(answer)) for question, answer in [
-                                    ('Use fast subsets (for large data sets)? == {}', batch_size > opts.refine_batchsize_for_fast_subsets),
-                                    ('Ref. map is on absolute greyscale? == {}', opts.class3d_ref_is_correct_greyscale),
-                                    ('Has reference been CTF-corrected? == {}', opts.class3d_ref_is_ctf_corrected),
-                                    ('Skip padding? == {}', opts.refine_skip_padding),
-                                    ('Use GPU acceleration? == {}', opts.refine_do_gpu),
-                                    ('Ignore CTFs until first peak? == {}', opts.class3d_ctf_ign1stpeak),
-                                    ('Pre-read all particles into RAM? == {}', opts.refine_preread_images),
+                                '{} == {}'.format(question, answer) for question, answer in [
+                                    ('Input images STAR file:',                 particles_star_file),
+                                    ('Reference map:',                          opts.class3d_reference),
+                                    ('Initial low-pass filter (A):',            opts.class3d_ini_lowpass),
+                                    ('Symmetry:',                               opts.symmetry),
+                                    ('Regularisation parameter T:',             opts.class3d_T_value),
+                                    ('Reference mask (optional):',              opts.class3d_reference_mask),
+                                    ('Number of classes:',                      opts.class3d_nr_classes),
+                                    ('Mask diameter (A):',                      opts.mask_diameter),
+                                    ('Number of iterations:',                   opts.class3d_nr_iter),
+                                    ('Angular sampling interval:',              opts.class3d_angle_step),
+                                    ('Offset search range (pix):',              opts.class3d_offset_range),
+                                    ('Offset search step (pix):',               opts.class3d_offset_step),
+                                    ('Number of pooled particles:',             opts.refine_nr_pool),
+                                    ('Which GPUs to use:',                      opts.refine_gpu),
+                                    ('Number of MPI procs:',                    opts.refine_mpi),
+                                    ('Number of threads:',                      opts.refine_threads),
+                                    ('Copy particles to scratch directory:',    opts.refine_scratch_disk),
+                                    ('Additional arguments:',                   opts.class3d_other_args),
+                                    ('Use fast subsets (for large data sets)?', bool_to_word(batch_size > opts.refine_batchsize_for_fast_subsets)),
+                                    ('Ref. map is on absolute greyscale?',      bool_to_word(opts.class3d_ref_is_correct_greyscale)),
+                                    ('Has reference been CTF-corrected?',       bool_to_word(opts.class3d_ref_is_ctf_corrected)),
+                                    ('Skip padding?',                           bool_to_word(opts.refine_skip_padding)),
+                                    ('Use GPU acceleration?',                   bool_to_word(opts.refine_do_gpu)),
+                                    ('Ignore CTFs until first peak?',           bool_to_word(opts.class3d_ctf_ign1stpeak)),
+                                    ('Pre-read all particles into RAM?',        bool_to_word(opts.refine_preread_images)),
                                 ]
-                            ])
+                            ]
 
                             if opts.refine_submit_to_queue:
                                 class3d_options.extend(queue_options)
@@ -2059,7 +2051,7 @@ def run_pipeline(opts):
                             if rerun_batch1 or not already_had_it:
                                 have_new_batch = True
                                 RunJobs([class3d_job], 1, 1, 'CLASS3D')
-                                print(' RELION_IT: submitted 3D classification with {} particles in {}'.format(batch_size, class3d_job))
+                                print(prefix_RELION_IT('submitted 3D classification with {} particles in {}'.format(batch_size, class3d_job)))
 
                                 # Wait until Class2D job is finished.
                                 # Check every thirty seconds.
@@ -2067,8 +2059,8 @@ def run_pipeline(opts):
 
                             class3d_model_star = findOutputModelStar(class3d_job)
                             if class3d_model_star is None:
-                                print(" RELION_IT: 3D Classification {} does not contain expected output maps.".format(class3d_job))
-                                print(" RELION_IT: This job should have finished, but you may continue it from the GUI.")
+                                print(prefix_RELION_IT("3D Classification {} does not contain expected output maps.".format(class3d_job)))
+                                print(prefix_RELION_IT("This job should have finished, but you may continue it from the GUI."))
                                 raise Exception("ERROR!! quitting the pipeline.") # TODO: MAKE MORE ROBUST
 
                             best_class3d_class, best_class3d_resol, best_class3d_angpix = findBestClass(class3d_model_star, use_resol=True)
@@ -2087,25 +2079,28 @@ def run_pipeline(opts):
                                 # Stop the PREPROCESS pipeliner of the first pass by removing its RUNNING file
                                 filename_to_remove = 'RUNNING_PIPELINER_' + preprocess_schedule_name
                                 if os.path.isfile(filename_to_remove):
-                                    print(' RELION_IT: removing file {} to stop the pipeliner from the first pass'.format(filename_to_remove))
+                                    print(prefix_RELION_IT('removing file {} to stop the pipeliner from the first pass'.format(filename_to_remove)))
                                     os.remove(filename_to_remove)
 
                                 # Generate a file to indicate we're in the second pass,
                                 # so that restarts of the python script will be smooth
                                 with open(SECONDPASS_REF3D_FILE, 'w') as writefile:
-                                    writefile.write(str(best_class3d_class) + '\n' + str(best_class3d_angpix) + '\n')
+                                    writefile.write(''.join(str(x) + '\n' for x in (
+                                        best_class3d_class, best_class3d_angpix
+                                    )))
 
                                 # Move out of this ipass of the passes loop....
                                 ibatch = nr_batches + 1
                                 continue_this_pass = False
-                                print(' RELION_IT: moving on to the second pass using {} for template-based autopicking'.format(opts.autopick_3dreference))
+                                print(prefix_RELION_IT('moving on to the second pass using {} for template-based autopicking'.format(opts.autopick_3dreference)))
                                 # break out of the for-loop over the batches
                                 break
-
 
                 if not have_new_batch:
                     CheckForExit()
                     # Don't check the particles.star file too often
+                    # This will raise a NameError,
+                    # since `opts.batch_repeat_time` is not defined.
                     time.sleep(60 * opts.batch_repeat_time)
 
 
@@ -2126,44 +2121,58 @@ def main():
                         help="continue a previous run by loading options from ./relion_it_options.py")
     args = parser.parse_args()
 
-    print(' RELION_IT: -------------------------------------------------------------------------------------------------------------------')
-    print(' RELION_IT: script for automated, on-the-fly single-particle analysis in RELION (>= 3.1)')
-    print(' RELION_IT: authors: Sjors H.W. Scheres, Takanori Nakane & Colin M. Palmer')
-    print(' RELION_IT: ')
-    print(' RELION_IT: usage: ./relion_it.py [extra_options.py [extra_options2.py ....] ] [--gui] [--continue]')
-    print(' RELION_IT: ')
-    print(' RELION_IT: this script will check whether processes are still running using files with names starting with RUNNING')
-    print(' RELION_IT:   you can restart this script after stopping previous processes by deleting all RUNNING files')
-    print(' RELION_IT: this script keeps track of already submitted jobs in a filed called {}'.format(SETUP_CHECK_FILE))
-    print(' RELION_IT:   upon a restart, jobs present in this file will be continued (for preprocessing), or ignored when already finished')
-    print(' RELION_IT: if you would like to re-do a specific job from scratch (e.g. because you changed its parameters)')
-    print(' RELION_IT:   remove that job, and those that depend on it, from the {}'.format(SETUP_CHECK_FILE))
-    print(' RELION_IT: -------------------------------------------------------------------------------------------------------------------')
-    print(' RELION_IT: ')
+    for msg in [
+        '-------------------------------------------------------------------------------------------------------------------',
+        'script for automated, on-the-fly single-particle analysis in RELION (>= 3.1)',
+        'authors: Sjors H.W. Scheres, Takanori Nakane & Colin M. Palmer',
+        '',
+        'usage: ./relion_it.py [extra_options.py [extra_options2.py ....] ] [--gui] [--continue]',
+        '',
+        'this script will check whether processes are still running using files with names starting with RUNNING',
+        '  you can restart this script after stopping previous processes by deleting all RUNNING files',
+        'this script keeps track of already submitted jobs in a filed called {}'.format(SETUP_CHECK_FILE),
+        '  upon a restart, jobs present in this file will be continued (for preprocessing), or ignored when already finished',
+        'if you would like to re-do a specific job from scratch (e.g. because you changed its parameters)',
+        '  remove that job, and those that depend on it, from the {}'.format(SETUP_CHECK_FILE),
+        '-------------------------------------------------------------------------------------------------------------------',
+        '',
+    ]:
+        print(prefix_RELION_IT(msg))
 
     # Make sure no other version of this script are running...
     if os.path.isfile(RUNNING_FILE):
-        print(" RELION_IT: ERROR: {} is already present: delete this file and make sure no other copy of this script is running. Exiting now ...".format(RUNNING_FILE))
+        print(prefix_RELION_IT(' '.join((
+            'ERROR: {} is already present: delete this file and make sure no other copy of this script is running.'.format(RUNNING_FILE),
+            'Exiting now ...'
+        ))))
         exit(0)
 
     # Also make sure the preprocessing pipeliners are stopped before re-starting this script
-    for checkfile in ('RUNNING_PIPELINER_' + x for x in (PREPROCESS_SCHEDULE_PASS1, PREPROCESS_SCHEDULE_PASS2)):
+    for checkfile in ('RUNNING_PIPELINER_' + x for x in (
+        PREPROCESS_SCHEDULE_PASS1, PREPROCESS_SCHEDULE_PASS2
+    )):
         if os.path.isfile(checkfile):
-            print(" RELION_IT: ERROR: {} is already present: delete this file and make sure no relion_pipeliner job is still running. Exiting now ...".format(checkfile))
+            print(prefix_RELION_IT(' '.join((
+                'ERROR: {} is already present: delete this file and make sure no relion_pipeliner job is still running.'.format(checkfile),
+                'Exiting now ...'
+            ))))
             exit(0)
 
     if args.continue_:
-        print(' RELION_IT: continuing a previous run. Options will be loaded from ./relion_it_options.py')
+        print(prefix_RELION_IT(' '.join((
+            'continuing a previous run.',
+            'Options will be loaded from ./relion_it_options.py'
+        ))))
         args.extra_options.append(OPTIONS_FILE)
 
     opts = RelionItOptions()
     for user_opt_file in args.extra_options:
-        print(' RELION_IT: reading options from {}'.format(user_opt_file))
+        print(prefix_RELION_IT('reading options from {}'.format(user_opt_file)))
         user_opts = runpy.run_path(user_opt_file)
         opts.update_from(user_opts)
 
     if args.gui:
-        print(' RELION_IT: launching GUI...')
+        print(prefix_RELION_IT('launching GUI...'))
         tk_root = tk.Tk()
         tk_root.title("relion_it.py setup")
         RelionItGui(tk_root, opts)
@@ -2174,7 +2183,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
