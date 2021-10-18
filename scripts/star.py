@@ -1,15 +1,14 @@
-'''star.py
-Module for reading STAR (Self-defining Text Archive and Retrieval) files.
+'''
+Module for reading STAR (Self-defining Text Archive and Retrieval) files
 '''
 from collections import OrderedDict
 import re
 
 
-def load_star(filename):
-    """
-    Load a STAR (Self-defining Text Archive and Retrieval) file,
-    returning the datasets (of type `OrderedDict`).
-    """
+def load(filename):
+    '''
+    Load a STAR file, returning the datasets (of type `OrderedDict`).
+    '''
 
     datasets = OrderedDict()
     datablock, datanames = None, None
@@ -75,4 +74,3 @@ def load_star(filename):
                     datablock[dataname].append(dataitem)
 
     return datasets
-

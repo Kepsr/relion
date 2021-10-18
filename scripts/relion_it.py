@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.7
-"""
+'''
 relion_it.py
 ============
 
@@ -253,7 +253,7 @@ introduction. Simple customisation can be done by setting appropriate option val
 more substantial changes, you might need to edit the script's Python code to get the behaviour you want. Most of the
 important logic is in the `RelionItOptions.run_pipeline' function so that's a good place to start. Good luck!
 
-"""
+'''
 
 from __future__ import print_function
 from __future__ import division  # always use float division
@@ -267,7 +267,7 @@ import runpy
 import time
 import traceback
 import re
-from star import load_star
+import star
 
 try:
     import Tkinter as tk
@@ -301,17 +301,21 @@ def prefix_RELION_IT(msg):
     return ' RELION_IT: ' + msg
 
 
+def prefix_ERROR(msg):
+    return ' ERROR: ' + msg
+
+
 def bool_to_word(x):
     return 'Yes' if x else 'No'
 
 
 class RelionItOptions(object):
-    """
+    '''
     Options for the relion_it pipeline setup script.
 
     When initialised, this contains default values for all options. 
     Call `update_from` to override the defaults with a dictionary of new values.
-    """
+    '''
     #############################################################################
     # Change the parameters below to reflect your experiment                    #
     # Current defaults reflect cryo-ARM betagal data set of RELION-3.0 tutorial #
@@ -650,13 +654,13 @@ class RelionItOptions(object):
     #######################################################################
 
     def update_from(self, d):
-        """
+        '''
         Update this RelionItOptions object from a dictionary.
 
         Special values (with names like '__xxx__') are removed, allowing this
         method to be given a dictionary containing the namespace from a script
         run with ``runpy``.
-        """
+        '''
         for key, value in d.items():
             if not is_dunder_name(key):  # exclude __name__, __builtins__ etc.
                 if hasattr(self, key):
@@ -665,7 +669,7 @@ class RelionItOptions(object):
                     print(prefix_RELION_IT("Unrecognised option '{}'".format(key)))
 
     def print_options(self, filename):
-        """
+        '''
         Write the current options to `filename`.
 
         This method writes the options in the same format as they are read,
@@ -678,7 +682,7 @@ class RelionItOptions(object):
 
         Raises:
             ValueError: If there is a problem printing the options.
-        """
+        '''
         # NOTE The writing to stdout mentioned in the above docstring is not implemented.
         with open(filename, 'w') as out_file:
             out_file.write("# Options file for relion_it.py\n\n")
@@ -727,9 +731,9 @@ class RelionItOptions(object):
                 raise ValueError("Some options were not written to the output file: {}".format(option_names))
 
     def run_pipeline(self):
-        """
+        '''
         Configure and run the RELION 3 pipeline with the given options.
-        """
+        '''
         # Is this really necessary?
         # Don't think so...
         if not os.path.isfile(PIPELINE_STAR):
@@ -1045,7 +1049,7 @@ class RelionItOptions(object):
                     else:
                         particles_boxsize = self.extract_boxsize
                     if abs(float(particles_angpix) - float(self.autopick_ref_angpix)) > 0.01:
-                        # Now rescale the reference for 3D classification
+                        # Rescale the reference for 3D classification
                         print(prefix_RELION_IT('rescaling the 3D reference from pixel size {} to {} and saving the new reference as {}'.format(
                             self.autopick_ref_angpix, particles_angpix, self.class3d_reference
                         )))
@@ -1362,6 +1366,7 @@ class RelionItGui(object):
     def __init__(self, main_window, options):
         self.main_window = main_window
         self.options = options
+        self.warnings = []
 
         # Convenience function for making file browser buttons
         def new_browse_button(self, var_to_set, filetypes=(('MRC file', '*.mrc'), ('All files', '*'))):
@@ -1400,7 +1405,7 @@ class RelionItGui(object):
         self.cs_entry.insert(0, str(options.Cs))
 
         tk.Label(expt_frame, text="Phase plate?").grid(row=2, sticky=tk.W)
-        self.phaseplate_var = tk.IntVar()
+        self.phaseplate_var = tk.BooleanVar()
         phaseplate_button = tk.Checkbutton(expt_frame, var=self.phaseplate_var)
         phaseplate_button.grid(row=2, column=1, sticky=tk.W)
         if options.ctffind_do_phaseshift:
@@ -1468,9 +1473,9 @@ class RelionItGui(object):
 
         tk.Label(particle_frame, text="Calculate for me:").grid(row=6, sticky=tk.W)
         self.auto_boxsize_var = tk.BooleanVar()
-        auto_boxsize_button = tk.Checkbutton(particle_frame, var=self.auto_boxsize_var)
-        auto_boxsize_button.grid(row=6, column=1, sticky=tk.W)
-        auto_boxsize_button.select()
+        self.auto_boxsize_button = tk.Checkbutton(particle_frame, var=self.auto_boxsize_var)
+        self.auto_boxsize_button.grid(row=6, column=1, sticky=tk.W)
+        self.auto_boxsize_button.select()
 
         ###
 
@@ -1516,163 +1521,55 @@ class RelionItGui(object):
 
         tk.Label(pipeline_frame, text="Do 2D classification?").grid(row=1, sticky=tk.W)
         self.class2d_var = tk.BooleanVar()
-        class2d_button = tk.Checkbutton(pipeline_frame, var=self.class2d_var)
-        class2d_button.grid(row=1, column=1, sticky=tk.W)
+        self.class2d_button = tk.Checkbutton(pipeline_frame, var=self.class2d_var)
+        self.class2d_button.grid(row=1, column=1, sticky=tk.W)
         if options.do_class2d:
-            class2d_button.select()
+            self.class2d_button.select()
 
         tk.Label(pipeline_frame, text="Do 3D classification?").grid(row=2, sticky=tk.W)
         self.class3d_var = tk.BooleanVar()
-        class3d_button = tk.Checkbutton(pipeline_frame, var=self.class3d_var)
-        class3d_button.grid(row=2, column=1, sticky=tk.W)
+        self.class3d_button = tk.Checkbutton(pipeline_frame, var=self.class3d_var)
+        self.class3d_button.grid(row=2, column=1, sticky=tk.W)
         if options.do_class3d:
-            class3d_button.select()
+            self.class3d_button.select()
 
         tk.Label(pipeline_frame, text="Do second pass? (only if no 3D ref)").grid(row=3, sticky=tk.W)
         self.second_pass_var = tk.BooleanVar()
-        second_pass_button = tk.Checkbutton(pipeline_frame, var=self.second_pass_var)
-        second_pass_button.grid(row=3, column=1, sticky=tk.W)
+        self.second_pass_button = tk.Checkbutton(pipeline_frame, var=self.second_pass_var)
+        self.second_pass_button.grid(row=3, column=1, sticky=tk.W)
         if options.do_second_pass:
-            second_pass_button.select()
+            self.second_pass_button.select()
 
         tk.Label(pipeline_frame, text="Do 2D classification (2nd pass)?").grid(row=4, sticky=tk.W)
         self.class2d_pass2_var = tk.BooleanVar()
-        class2d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class2d_pass2_var)
-        class2d_pass2_button.grid(row=4, column=1, sticky=tk.W)
-        class2d_pass2_button.select()
+        self.class2d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class2d_pass2_var)
+        self.class2d_pass2_button.grid(row=4, column=1, sticky=tk.W)
+        self.class2d_pass2_button.select()
         if options.do_class2d_pass2:
-            class2d_pass2_button.select()
+            self.class2d_pass2_button.select()
 
         tk.Label(pipeline_frame, text="Do 3D classification (2nd pass)?").grid(row=5, sticky=tk.W)
         self.class3d_pass2_var = tk.BooleanVar()
-        class3d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class3d_pass2_var)
-        class3d_pass2_button.grid(row=5, column=1, sticky=tk.W)
+        self.class3d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class3d_pass2_var)
+        self.class3d_pass2_button.grid(row=5, column=1, sticky=tk.W)
         if options.do_class3d_pass2:
-            class3d_pass2_button.select()
+            self.class3d_pass2_button.select()
 
         ### Add logic to the box size boxes
 
-        def calculate_box_size(particle_size_pixels):
-            # Use box 20% larger than particle and ensure size is even
-            box_size_exact = 1.2 * particle_size_pixels
-            box_size_int = int(math.ceil(box_size_exact))
-            return box_size_int + box_size_int % 2
+        self.box_size_var.trace('w', self.update_box_size_labels)
+        self.extract_small_boxsize_var.trace('w', self.update_box_size_labels)
 
-        def calculate_downscaled_box_size(box_size_pix, angpix):
-            for small_box_pix in (
-                48, 64, 96, 128, 160, 192, 256, 288, 300, 320, 360,
-                384, 400, 420, 450, 480, 512, 640, 768, 896, 1024,
-            ):
-                # Don't go larger than the original box
-                if small_box_pix > box_size_pix:
-                    return box_size_pix
-                # If Nyquist freq. is better than 8.5 A, use this downscaled box,
-                # otherwise continue to next size up
-                small_box_angpix = angpix * box_size_pix / small_box_pix
-                if small_box_angpix < 4.25:
-                    return small_box_pix
-            # Fall back to a warning message
-            return "Box size is too large!"
-
-        def update_box_size_labels(*args_ignored, **kwargs_ignored):
-            try:
-                angpix = float(self.angpix_entry.get())
-            except ValueError:
-                # Can't update any of the labels without angpix
-                self.mask_diameter_px.config(text="= NNN px")
-                self.box_size_in_angstrom.config(text=u"= NNN \u212B")
-                self.extract_angpix.config(text=u"= NNN \u212B/px")
-                return
-            try:
-                mask_diameter = float(self.mask_diameter_entry.get())
-                mask_diameter_px = mask_diameter / angpix
-                self.mask_diameter_px.config(text="= {:.1f} px".format(mask_diameter_px))
-            except (ValueError, ZeroDivisionError):
-                self.mask_diameter_px.config(text="= NNN px")
-                # Don't return - an error here doesn't stop us calculating the other labels
-            try:
-                box_size = float(self.box_size_entry.get())
-                box_angpix = angpix * box_size
-                self.box_size_in_angstrom.config(text=u"= {:.1f} \u212B".format(box_angpix))
-            except ValueError:
-                # Can't update these without the box size
-                self.box_size_in_angstrom.config(text=u"= NNN \u212B")
-                self.extract_angpix.config(text=u"= NNN \u212B/px")
-                return
-            try:
-                extract_small_boxsize = float(self.extract_small_boxsize_entry.get())
-                small_box_angpix = box_angpix / extract_small_boxsize
-                self.extract_angpix.config(text=u"= {:.3f} \u212B/px".format(small_box_angpix))
-            except (ValueError, ZeroDivisionError):
-                # Can't update the downscaled pixel size unless the downscaled box size is valid
-                self.extract_angpix.config(text=u"= NNN \u212B/px")
-
-        def update_box_sizes(*args_ignored, **kwargs_ignored):
-            # Always activate entry boxes - either we're activating them anyway, or we need to edit the text.
-            # For text editing we need to activate the box first then deactivate again afterwards.
-            self.mask_diameter_entry.config(state=tk.NORMAL)
-            self.box_size_entry.config(state=tk.NORMAL)
-            self.extract_small_boxsize_entry.config(state=tk.NORMAL)
-            if self.auto_boxsize_var.get():
-                try:
-                    particle_size_angstroms = float(self.particle_max_diam_entry.get())
-                    mask_diameter = 1.1 * particle_size_angstroms
-                    self.mask_diameter_entry.delete(0, tk.END)
-                    self.mask_diameter_entry.insert(0, str(mask_diameter))
-                    angpix = float(self.angpix_entry.get())
-                    particle_size_pixels = particle_size_angstroms / angpix
-                    box_size = calculate_box_size(particle_size_pixels)
-                    self.box_size_entry.delete(0, tk.END)
-                    self.box_size_entry.insert(0, str(box_size))
-                    small_boxsize = calculate_downscaled_box_size(int(box_size), angpix)
-                    self.extract_small_boxsize_entry.delete(0, tk.END)
-                    self.extract_small_boxsize_entry.insert(0, str(small_boxsize))
-                except:
-                    # Ignore errors - they will be picked up if the user tries to save the options
-                    pass
-                self.mask_diameter_entry.config(state=tk.DISABLED)
-                self.box_size_entry.config(state=tk.DISABLED)
-                self.extract_small_boxsize_entry.config(state=tk.DISABLED)
-            update_box_size_labels()
-
-        self.box_size_var.trace('w', update_box_size_labels)
-        self.extract_small_boxsize_var.trace('w', update_box_size_labels)
-
-        self.angpix_var.trace('w', update_box_sizes)
-        self.particle_max_diam_var.trace('w', update_box_sizes)
-        auto_boxsize_button.config(command=update_box_sizes)
+        self.angpix_var.trace('w', self.update_box_sizes)
+        self.particle_max_diam_var.trace('w', self.update_box_sizes)
+        self.auto_boxsize_button.config(command=self.update_box_sizes)
 
         ### Add logic to the check boxes
 
-        def update_pipeline_control_state(*args_ignored, **kwargs_ignored):
-            new_state = tk.DISABLED if self.stop_after_ctf_var.get() else tk.NORMAL
-            class2d_button.config(state=new_state)
-            class3d_button.config(state=new_state)
-            self.particle_max_diam_entry.config(state=new_state)
-            self.particle_min_diam_entry.config(state=new_state)
-            self.ref_3d_entry.config(state=new_state)
-            # Update the box size controls with care to avoid activating them when we shouldn't
-            auto_boxsize_button.config(state=new_state)
-            if new_state == tk.DISABLED:
-                self.mask_diameter_entry.config(state=new_state)
-                self.box_size_entry.config(state=new_state)
-                self.extract_small_boxsize_entry.config(state=new_state)
-            else:
-                update_box_sizes()
-            can_do_second_pass = (
-                self.class3d_var.get()
-                and len(self.ref_3d_var.get()) == 0
-                and not self.stop_after_ctf_var.get()
-            )
-            second_pass_button.config(state=tk.NORMAL if can_do_second_pass else tk.DISABLED)
-            will_do_second_pass = can_do_second_pass and self.second_pass_var.get()
-            class2d_pass2_button.config(state=tk.NORMAL if will_do_second_pass else tk.DISABLED)
-            class3d_pass2_button.config(state=tk.NORMAL if will_do_second_pass else tk.DISABLED)
-
-        stop_after_ctf_button.config(command=update_pipeline_control_state)
-        class3d_button.config(command=update_pipeline_control_state)
-        second_pass_button.config(command=update_pipeline_control_state)
-        self.ref_3d_var.trace('w', update_pipeline_control_state)
+        stop_after_ctf_button.config(command=self.update_pipeline_control_state)
+        self.class3d_button.config(command=self.update_pipeline_control_state)
+        self.second_pass_button.config(command=self.update_pipeline_control_state)
+        self.ref_3d_var.trace('w', self.update_pipeline_control_state)
 
         ###
 
@@ -1686,10 +1583,124 @@ class RelionItGui(object):
         self.save_button.pack(padx=5, pady=5, side=tk.RIGHT)
 
         # Show initial pixel sizes
-        update_box_sizes()
+        self.update_box_sizes()
+
+    @staticmethod
+    def calculate_box_size(particlesize):
+        '''Return (even) side length 20% larger than particle.'''
+        boxsize = int(math.ceil(1.2 * particlesize))
+        return boxsize + boxsize % 2
+
+    @staticmethod
+    def calculate_downscaled_box_size(box_size_pix, angpix):
+        for small_box_pix in (
+            48, 64, 96, 128, 160, 192, 256, 288, 300, 320, 360,
+            384, 400, 420, 450, 480, 512, 640, 768, 896, 1024,
+        ):
+            # Don't go larger than the original box
+            if small_box_pix > box_size_pix:
+                return box_size_pix
+            # If Nyquist freq. is better than 8.5 A, use this downscaled box,
+            # otherwise continue to next size up
+            if angpix * box_size_pix / small_box_pix < 4.25:
+                return small_box_pix
+        # Fall back to a warning message
+        return "Box size is too large!"
+
+    def update_box_size_labels(self, *args, **kwargs):
+        try:
+            angpix = float(self.angpix_entry.get())
+        except ValueError:
+            # Can't update any of the labels without angpix
+            self.mask_diameter_px.config(text="= NNN px")
+            self.box_size_in_angstrom.config(text=u"= NNN \u212B")
+            self.extract_angpix.config(text=u"= NNN \u212B/px")
+            return
+        try:
+            mask_diameter = float(self.mask_diameter_entry.get())
+            mask_diameter_px = mask_diameter / angpix
+            self.mask_diameter_px.config(text="= {:.1f} px".format(mask_diameter_px))
+        except (ValueError, ZeroDivisionError):
+            self.mask_diameter_px.config(text="= NNN px")
+            # Don't return - an error here doesn't stop us calculating the other labels
+        try:
+            box_size = float(self.box_size_entry.get())
+            box_angpix = angpix * box_size
+            self.box_size_in_angstrom.config(text=u"= {:.1f} \u212B".format(box_angpix))
+        except ValueError:
+            # Can't update these without the box size
+            self.box_size_in_angstrom.config(text=u"= NNN \u212B")
+            self.extract_angpix.config(text=u"= NNN \u212B/px")
+            return
+        try:
+            extract_small_boxsize = float(self.extract_small_boxsize_entry.get())
+            small_box_angpix = box_angpix / extract_small_boxsize
+            self.extract_angpix.config(text=u"= {:.3f} \u212B/px".format(small_box_angpix))
+        except (ValueError, ZeroDivisionError):
+            # Can't update the downscaled pixel size unless the downscaled box size is valid
+            self.extract_angpix.config(text=u"= NNN \u212B/px")
+
+    def update_box_sizes(self, *args, **kwargs):
+        # Always activate entry boxes - either we're activating them anyway, or we need to edit the text.
+        # For text editing we need to activate the box first then deactivate again afterwards.
+        entries = (
+            self.mask_diameter_entry, 
+            self.box_size_entry, 
+            self.extract_small_boxsize_entry,
+        )
+        for entry in entries:
+            entry.config(state=tk.NORMAL)
+        if self.auto_boxsize_var.get():
+            try:
+                angpix = float(self.angpix_entry.get())
+                particle_size_angstroms = float(self.particle_max_diam_entry.get())
+                particle_size_pixels = particle_size_angstroms / angpix
+                mask_diameter = 1.1 * particle_size_angstroms
+                box_size = self.calculate_box_size(particle_size_pixels)
+                small_boxsize = self.calculate_downscaled_box_size(box_size, angpix)
+
+                for entry, datum in zip(entries, (
+                    mask_diameter,
+                    box_size,
+                    small_boxsize,
+                )):
+                    entry.delete(0, tk.END)
+                    entry.insert(0, str(datum))
+
+            except:
+                # Ignore errors - they will be picked up if the user tries to save the options
+                pass
+            for entry in entries:
+                entry.config(state=tk.DISABLED)
+        self.update_box_size_labels()
+
+    def update_pipeline_control_state(self, *args, **kwargs):
+        new_state = tk.DISABLED if self.stop_after_ctf_var.get() else tk.NORMAL
+        self.class2d_button.config(state=new_state)
+        self.class3d_button.config(state=new_state)
+        self.particle_max_diam_entry.config(state=new_state)
+        self.self.particle_min_diam_entry.config(state=new_state)
+        self.ref_3d_entry.config(state=new_state)
+        # Update the box size controls with care to avoid activating them when we shouldn't
+        self.auto_boxsize_button.config(state=new_state)
+        if new_state == tk.DISABLED:
+            self.mask_diameter_entry.config(state=new_state)
+            self.box_size_entry.config(state=new_state)
+            self.extract_small_boxsize_entry.config(state=new_state)
+        else:
+            self.update_box_sizes()
+        can_do_second_pass = (
+            self.class3d_var.get()
+            and len(self.ref_3d_var.get()) == 0
+            and not self.stop_after_ctf_var.get()
+        )
+        self.second_pass_button.config(state=tk.NORMAL if can_do_second_pass else tk.DISABLED)
+        will_do_second_pass = can_do_second_pass and self.second_pass_var.get()
+        self.class2d_pass2_button.config(state=tk.NORMAL if will_do_second_pass else tk.DISABLED)
+        self.class3d_pass2_button.config(state=tk.NORMAL if will_do_second_pass else tk.DISABLED)
 
     def fetch_options_from_gui(self):
-        """
+        '''
         Fetch the current values from the GUI widgets and store them in the options object.
 
         Returns:
@@ -1697,10 +1708,10 @@ class RelionItGui(object):
 
         Raises:
             ValueError: If an option value is invalid.
-        """
+        '''
 
+        self.warnings = []
         opts = self.options
-        warnings = []
 
         opts.stop_after_ctf_estimation = self.stop_after_ctf_var.get()
         opts.do_class2d                = self.class2d_var.get()
@@ -1710,34 +1721,21 @@ class RelionItGui(object):
         opts.do_class3d_pass2          = self.class3d_pass2_var.get()
 
         def try_get(numtype, attribute, name):
-            """
+            '''
             Try to return `numtype(attribute.get())`
             (where `numtype` is either `float` or `int`).
-            """
+            '''
             try:
                 return numtype(attribute.get())
             except ValueError:
                 raise ValueError("{} must be a number".format(name))
 
         def check_positive(option, name):
-            """
+            '''
             Add warning if `option` is not positive.
-            """
+            '''
             if option <= 0.0:
-                warnings.append("- {} should be a positive number".format(name))
-
-        opts.voltage = try_get(float, self.voltage_entry, "Voltage")
-        check_positive(opts.voltage, "Voltage")
-
-        opts.Cs = try_get(float, self.cs_entry, "Cs")
-
-        opts.ctffind_do_phaseshift = self.phaseplate_var.get() == 1
-
-        opts.angpix = try_get(float, self.angpix_entry, "Pixel size")
-        check_positive(opts.angpix, "Pixel size")
-
-        opts.motioncor_doseperframe = try_get(float, self.exposure_entry, "Exposure rate")
-        check_positive(opts.motioncor_doseperframe, "Exposure rate")
+                self.warnings.append("- {} should be a positive number".format(name))
 
         def try_get_diam(numtype, attribute, name):
             attr = attribute.get()
@@ -1752,7 +1750,20 @@ class RelionItGui(object):
 
         def check_file_exists(filename, name):
             if filename and not os.path.isfile(filename):
-                warnings.append("- {} '{}' does not exist".format(name, filename))
+                self.warnings.append("- {} '{}' does not exist".format(name, filename))
+
+        opts.voltage = try_get(float, self.voltage_entry, "Voltage")
+        check_positive(opts.voltage, "Voltage")
+
+        opts.Cs = try_get(float, self.cs_entry, "Cs")
+
+        opts.ctffind_do_phaseshift = self.phaseplate_var.get()
+
+        opts.angpix = try_get(float, self.angpix_entry, "Pixel size")
+        check_positive(opts.angpix, "Pixel size")
+
+        opts.motioncor_doseperframe = try_get(float, self.exposure_entry, "Exposure rate")
+        check_positive(opts.motioncor_doseperframe, "Exposure rate")
 
         opts.autopick_LoG_diam_max = try_get_diam(float, self.particle_max_diam_entry, "Particle longest diameter")
         opts.autopick_LoG_diam_min = try_get_diam(float, self.particle_min_diam_entry, "Particle shortest diameter")
@@ -1772,22 +1783,20 @@ class RelionItGui(object):
 
         opts.import_images = self.import_images_entry.get()
         if opts.import_images.startswith(('/', '..')):
-            warnings.append("- Movies should be located inside the project directory")
+            self.warnings.append("- Movies should be located inside the project directory")
         if '*' not in opts.import_images:
-            warnings.append("- Pattern for input movies should normally contain a '*' to select more than one file")
+            self.warnings.append("- Pattern for input movies should normally contain a '*' to select more than one file")
 
         opts.motioncor_gainreference = self.gainref_entry.get()
         check_file_exists(opts.motioncor_gainreference, "Gain reference file")
 
-        return warnings
-
     def calculate_full_options(self):
-        """
+        '''
         Update the options from the values that have been fetched from the GUI.
 
         This method uses the values that the user has set in the GUI to calculate a number of other options for the
         script.
-        """
+        '''
         opts = self.options
 
         # If we have a 3D reference, do a single pass with a large batch size
@@ -1804,16 +1813,16 @@ class RelionItGui(object):
         opts.batch_size = 10000 if opts.do_second_pass else 100000
 
     def save_options(self):
-        """
+        '''
         Update the full set of options from the values in the GUI, and save them to a file.
 
         Returns:
             True if the options were valid and saved successfully, otherwise False.
-        """
+        '''
         try:
-            warnings = self.fetch_options_from_gui()
-            if not warnings or tkMessageBox.askokcancel(
-                "Warning", "\n".join(warnings), icon='warning',
+            self.fetch_options_from_gui()
+            if not self.warnings or tkMessageBox.askokcancel(
+                "Warning", "\n".join(self.warnings), icon='warning',
                 default=tkMessageBox.CANCEL
             ):
                 self.calculate_full_options()
@@ -1829,9 +1838,9 @@ class RelionItGui(object):
         return False
 
     def run_pipeline(self):
-        """
+        '''
         Update the full set of options from the values in the GUI, close the GUI and run the pipeline.
-        """
+        '''
         if self.save_options():
             self.main_window.destroy()
             self.options.run_pipeline()
@@ -1840,13 +1849,13 @@ class RelionItGui(object):
 def safe_load_star(filename, max_tries=5, wait=10, expected=[]):
     for _ in range(max_tries):
         try:
-            star = load_star(filename)
+            starfile = star.load(filename)
             # Ensure the expected keys are present
             # By descending through the dictionary
-            entry = star
+            entry = starfile
             for key in expected:
                entry = entry[key]
-            return star
+            return starfile
         except:
             print("safe_load_star is retrying to read: {}, expected key: {}".format(filename, expected))
             time.sleep(wait)
@@ -1882,16 +1891,14 @@ def getJobName(name_in_script, done_file):
                 if elems[0] == name_in_script:
                     jobname = elems[2]
                     break
-
     return jobname
 
 
 def addJob(jobtype, name_in_script, done_file, options, alias=None):
     jobname = getJobName(name_in_script, done_file)
 
-    already_had_it = jobname is not None
-    # If we hadn't done it before, add it now
-    if not already_had_it:
+    # If we didn't before, add it now
+    if jobname is None:
         command = (
             'relion_pipeliner'
             + ' --addJob {}'.format(jobtype)
@@ -1905,13 +1912,12 @@ def addJob(jobtype, name_in_script, done_file, options, alias=None):
         pipeline = safe_load_star(PIPELINE_STAR, expected=['pipeline_processes', 'rlnPipeLineProcessName'])
         jobname = pipeline['pipeline_processes']['rlnPipeLineProcessName'][-1]
 
-        # Now add the jobname to the done_file
         with open(done_file, 'a') as f:
             f.write('{} = {}\n'.format(name_in_script, jobname))
 
     # Return the name of the job in the RELION pipeline,
     # e.g. 'Import/job001/'
-    return jobname, already_had_it
+    return jobname, (jobname is not None)
 
 
 def RunJobs(jobs, repeat, wait, schedulename):
@@ -1925,37 +1931,41 @@ def RunJobs(jobs, repeat, wait, schedulename):
     )
 
 
-def WaitForJob(wait_for_this_job, seconds_wait):
-    time.sleep(seconds_wait)
-    print(prefix_RELION_IT("waiting for job to finish in {}".format(wait_for_this_job)))
+def WaitForJob(job, time=30):
+    '''
+    `job`:  name of job (`str`)
+    `time`: time to wait in seconds
+    '''
+    time.sleep(time)
+    print(prefix_RELION_IT("waiting for job to finish in {}".format(job)))
     while True:
-        pipeline = safe_load_star(PIPELINE_STAR, expected=['pipeline_processes', 'rlnPipeLineProcessName'])
-        curr_jobnr = -1
-        for jobnr, jobname in enumerate(
-            pipeline['pipeline_processes']['rlnPipeLineProcessName']
-        ):
-            if jobname == wait_for_this_job:
-                curr_jobnr = jobnr
-        if curr_jobnr < 0:
-            print(" ERROR: cannot find {} in {}".format(wait_for_this_job, PIPELINE_STAR))
+        pipeline = safe_load_star(
+            PIPELINE_STAR, 
+            expected=['pipeline_processes', 'rlnPipeLineProcessName']
+        )
+        processes = pipeline['pipeline_processes']
+        try:
+            jobnr = processes['rlnPipeLineProcessName'].index(job)
+        except ValueError:
+            print(prefix_ERROR("cannot find {} in {}".format(job, PIPELINE_STAR)))
             exit(1)
 
         if int(
-            pipeline['pipeline_processes']['rlnPipeLineProcessStatus'][curr_jobnr]
+            processes['rlnPipeLineProcessStatus'][jobnr]
         ) == 2:
-            print(prefix_RELION_IT("job in {} has finished now".format(wait_for_this_job)))
+            print(prefix_RELION_IT("job in {} has finished now".format(job)))
             break
-        else:
-            CheckForExit()
-            time.sleep(seconds_wait)
+
+        CheckForExit()
+        time.sleep(time)
 
 
 def find_split_job_output(prefix, n, max_digits=6):
-    for i in range(max_digits):
-        filename = prefix + str(n).rjust(i, '0') + '.star'
+    for filename in (
+        prefix + str(n).rjust(i, '0') + '.star' for i in range(max_digits)
+    ):
         if os.path.isfile(filename):
             return filename
-    return
 
 
 def writeManualPickingGuiFile(particle_diameter):
@@ -1982,10 +1992,10 @@ def writeManualPickingGuiFile(particle_diameter):
 
 
 def findBestClass(model_star_file, use_resol=True):
-    """
+    '''
     Identify the best class given `model_star_file` (a `str`).
     Return the index of the best class (an `int`), the best resolution (a `float`), and the pixel size.
-    """
+    '''
     model_star = safe_load_star(model_star_file)
     best_class, best_size, best_resol = 0, 0, 999
 
@@ -2030,12 +2040,12 @@ def findOutputModelStar(job_dir):
 
 
 def main():
-    """
+    '''
     Run the RELION 3 pipeline.
 
     Options files given as command line arguments will be opened in order and
     used to update the default options.
-    """
+    '''
     # Start by parsing arguments
     # (If --help is given, the program will print a usage message and exit)
     parser = argparse.ArgumentParser()
