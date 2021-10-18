@@ -266,8 +266,8 @@ import os
 import runpy
 import time
 import traceback
-from collections import OrderedDict
 import re
+from star import load_star
 
 try:
     import Tkinter as tk
@@ -1751,7 +1751,7 @@ class RelionItGui(object):
                     raise ValueError("{} must be a number".format(name))
 
         def check_file_exists(filename, name):
-            if len(filename) > 0 and not os.path.isfile(filename):
+            if filename and not os.path.isfile(filename):
                 warnings.append("- {} '{}' does not exist".format(name, filename))
 
         opts.autopick_LoG_diam_max = try_get_diam(float, self.particle_max_diam_entry, "Particle longest diameter")
@@ -1841,7 +1841,6 @@ def safe_load_star(filename, max_tries=5, wait=10, expected=[]):
     for _ in range(max_tries):
         try:
             star = load_star(filename)
-
             # Ensure the expected keys are present
             # By descending through the dictionary
             entry = star
@@ -1852,78 +1851,6 @@ def safe_load_star(filename, max_tries=5, wait=10, expected=[]):
             print("safe_load_star is retrying to read: {}, expected key: {}".format(filename, expected))
             time.sleep(wait)
     raise Exception("Failed to read a star file: {}".format(filename))
-
-
-def load_star(filename):
-    """
-    Load a STAR (Self-defining Text Archive and Retrieval) file,
-    returning the datasets (of type `OrderedDict`).
-    """
-
-    datasets = OrderedDict()
-    datablock, datanames = None, None
-
-    in_loop = 0
-    # 0: outside
-    # 1: reading colnames
-    # 2: reading data
-
-    with open(filename) as readfile:
-        datapattern = re.compile(r'data_(.*)')
-        looppattern = re.compile(r'loop_')
-        namepattern = re.compile(r'_(.*)')
-        for line in map(str.strip, readfile):
-
-            # Remove comments
-            comment_pos = line.find('#')
-            line = line[:comment_pos] if comment_pos > 0 else line
-
-            if not line:
-                in_loop = 0 if in_loop == 2 else in_loop
-                continue
-
-            datamatch = datapattern.match(line)
-            loopmatch = looppattern.match(line)
-            namematch = namepattern.match(line)
-
-            if datamatch:
-                # Start parsing data block
-                blockname = datamatch.group(1)
-                datablock = OrderedDict()
-                datasets[blockname] = datablock
-                in_loop = 0
-
-            elif loopmatch:
-                # Start parsing data loop
-                datanames = []
-                in_loop = 1
-
-            elif namematch:
-                # Read data name
-                dataitems = namematch.group(1).split()
-                dataname, dataitem = dataitems[:2]
-                if in_loop == 1:
-                    # We are inside a data loop
-                    datablock[dataname] = []
-                    datanames.append(dataname)
-                else:
-                    # We are outside a data loop
-                    datablock[dataname] = dataitem
-                if in_loop == 2:
-                    in_loop = 0
-
-            elif in_loop in (1, 2):
-                in_loop = 2
-                dataitems = line.split()
-                assert len(dataitems) == len(datanames), (
-                    "Error in STAR file {}, number of elements in {} does not match number of column names {}".format(
-                        filename, dataitems, datanames
-                    )
-                )
-                for dataname, dataitem in zip(datanames, dataitems):
-                    datablock[dataname].append(dataitem)
-
-    return datasets
 
 
 # Don't get stuck in an infinite loop
@@ -1937,11 +1864,11 @@ def CheckForExit():
 def getSecondPassReference():
     if os.path.isfile(SECONDPASS_REF3D_FILE):
         with open(SECONDPASS_REF3D_FILE, 'r') as readfile:
-            filename, angpix = readfile.readlines()
+            filename, angpix = map(str.strip, readfile.readlines())
     else:
-        filename = ''
-        angpix = '0'
-    return filename.replace('\n',''), angpix.replace('\n','')
+        filename, angpix = '', '0'
+    return filename, angpix
+
 
 def getJobName(name_in_script, done_file):
     jobname = None
@@ -1949,14 +1876,15 @@ def getJobName(name_in_script, done_file):
     # i.e. whether it is in the done_file
     if os.path.isfile(done_file):
         with open(done_file, 'r') as f:
-            for line in f:
-                elems = line.split()
-                if len(elems) < 3: continue
+            for elems in map(str.split, f):
+                if len(elems) < 3:
+                    continue
                 if elems[0] == name_in_script:
                     jobname = elems[2]
                     break
 
     return jobname
+
 
 def addJob(jobtype, name_in_script, done_file, options, alias=None):
     jobname = getJobName(name_in_script, done_file)
