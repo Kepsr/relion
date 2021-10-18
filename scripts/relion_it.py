@@ -289,6 +289,9 @@ PREPROCESS_SCHEDULE_PASS1 = 'PREPROCESS'
 PREPROCESS_SCHEDULE_PASS2 = 'PREPROCESS_PASS2'
 OPTIONS_FILE = 'relion_it_options.py'
 
+# Generators save memory.
+range = xrange
+
 
 def is_dunder_name(name):
     return name.startswith('__') and name.endswith('__')
@@ -306,8 +309,8 @@ class RelionItOptions(object):
     """
     Options for the relion_it pipeline setup script.
 
-    When initialised, this contains default values for all options. Call
-    ``update_from()`` to override the defaults with a dictionary of new values.
+    When initialised, this contains default values for all options. 
+    Call `update_from` to override the defaults with a dictionary of new values.
     """
     #############################################################################
     # Change the parameters below to reflect your experiment                    #
@@ -680,7 +683,7 @@ class RelionItOptions(object):
         with open(filename, 'w') as out_file:
             out_file.write("# Options file for relion_it.py\n\n")
             option_names = [
-                key for key in dir(self) 
+                key for key in dir(self)
                 if not is_dunder_name(key) and not callable(getattr(self, key))
             ]
 
@@ -1445,7 +1448,7 @@ class RelionItGui(object):
         self.mask_diameter_entry.grid(row=3, column=1, sticky=tk.W+tk.E)
         self.mask_diameter_entry.insert(0, str(options.mask_diameter))
         self.mask_diameter_px = tk.Label(particle_frame, text="= NNN px")
-        self.mask_diameter_px.grid(row=3, column=2,sticky=tk.W)
+        self.mask_diameter_px.grid(row=3, column=2, sticky=tk.W)
 
         tk.Label(particle_frame, text="Box size (px):").grid(row=4, sticky=tk.W)
         self.box_size_var = tk.StringVar()  # for data binding
@@ -1453,7 +1456,7 @@ class RelionItGui(object):
         self.box_size_entry.grid(row=4, column=1, sticky=tk.W+tk.E)
         self.box_size_entry.insert(0, str(options.extract_boxsize))
         self.box_size_in_angstrom = tk.Label(particle_frame, text=u"= NNN \u212B")
-        self.box_size_in_angstrom.grid(row=4, column=2,sticky=tk.W)
+        self.box_size_in_angstrom.grid(row=4, column=2, sticky=tk.W)
 
         tk.Label(particle_frame, text="Down-sample to (px):").grid(row=5, sticky=tk.W)
         self.extract_small_boxsize_var = tk.StringVar()  # for data binding
@@ -1461,10 +1464,10 @@ class RelionItGui(object):
         self.extract_small_boxsize_entry.grid(row=5, column=1, sticky=tk.W+tk.E)
         self.extract_small_boxsize_entry.insert(0, str(options.extract_small_boxsize))
         self.extract_angpix = tk.Label(particle_frame, text=u"= NNN \u212B/px")
-        self.extract_angpix.grid(row=5, column=2,sticky=tk.W)
+        self.extract_angpix.grid(row=5, column=2, sticky=tk.W)
 
         tk.Label(particle_frame, text="Calculate for me:").grid(row=6, sticky=tk.W)
-        self.auto_boxsize_var = tk.IntVar()
+        self.auto_boxsize_var = tk.BooleanVar()
         auto_boxsize_button = tk.Checkbutton(particle_frame, var=self.auto_boxsize_var)
         auto_boxsize_button.grid(row=6, column=1, sticky=tk.W)
         auto_boxsize_button.select()
@@ -1505,35 +1508,35 @@ class RelionItGui(object):
         tk.Grid.columnconfigure(expt_frame, 1, weight=1)
 
         tk.Label(pipeline_frame, text="Stop after CTF estimation?").grid(row=0, sticky=tk.W)
-        self.stop_after_ctf_var = tk.IntVar()
+        self.stop_after_ctf_var = tk.BooleanVar()
         stop_after_ctf_button = tk.Checkbutton(pipeline_frame, var=self.stop_after_ctf_var)
         stop_after_ctf_button.grid(row=0, column=1, sticky=tk.W)
         if options.stop_after_ctf_estimation:
             stop_after_ctf_button.select()
 
         tk.Label(pipeline_frame, text="Do 2D classification?").grid(row=1, sticky=tk.W)
-        self.class2d_var = tk.IntVar()
+        self.class2d_var = tk.BooleanVar()
         class2d_button = tk.Checkbutton(pipeline_frame, var=self.class2d_var)
         class2d_button.grid(row=1, column=1, sticky=tk.W)
         if options.do_class2d:
             class2d_button.select()
 
         tk.Label(pipeline_frame, text="Do 3D classification?").grid(row=2, sticky=tk.W)
-        self.class3d_var = tk.IntVar()
+        self.class3d_var = tk.BooleanVar()
         class3d_button = tk.Checkbutton(pipeline_frame, var=self.class3d_var)
         class3d_button.grid(row=2, column=1, sticky=tk.W)
         if options.do_class3d:
             class3d_button.select()
 
         tk.Label(pipeline_frame, text="Do second pass? (only if no 3D ref)").grid(row=3, sticky=tk.W)
-        self.second_pass_var = tk.IntVar()
+        self.second_pass_var = tk.BooleanVar()
         second_pass_button = tk.Checkbutton(pipeline_frame, var=self.second_pass_var)
         second_pass_button.grid(row=3, column=1, sticky=tk.W)
         if options.do_second_pass:
             second_pass_button.select()
 
         tk.Label(pipeline_frame, text="Do 2D classification (2nd pass)?").grid(row=4, sticky=tk.W)
-        self.class2d_pass2_var = tk.IntVar()
+        self.class2d_pass2_var = tk.BooleanVar()
         class2d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class2d_pass2_var)
         class2d_pass2_button.grid(row=4, column=1, sticky=tk.W)
         class2d_pass2_button.select()
@@ -1541,7 +1544,7 @@ class RelionItGui(object):
             class2d_pass2_button.select()
 
         tk.Label(pipeline_frame, text="Do 3D classification (2nd pass)?").grid(row=5, sticky=tk.W)
-        self.class3d_pass2_var = tk.IntVar()
+        self.class3d_pass2_var = tk.BooleanVar()
         class3d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class3d_pass2_var)
         class3d_pass2_button.grid(row=5, column=1, sticky=tk.W)
         if options.do_class3d_pass2:
@@ -1610,7 +1613,7 @@ class RelionItGui(object):
             self.mask_diameter_entry.config(state=tk.NORMAL)
             self.box_size_entry.config(state=tk.NORMAL)
             self.extract_small_boxsize_entry.config(state=tk.NORMAL)
-            if self.auto_boxsize_var.get() == 1:
+            if self.auto_boxsize_var.get():
                 try:
                     particle_size_angstroms = float(self.particle_max_diam_entry.get())
                     mask_diameter = 1.1 * particle_size_angstroms
@@ -1699,12 +1702,12 @@ class RelionItGui(object):
         opts = self.options
         warnings = []
 
-        opts.stop_after_ctf_estimation = self.stop_after_ctf_var.get() == 1
-        opts.do_class2d                = self.class2d_var.get() == 1
-        opts.do_class3d                = self.class3d_var.get() == 1
-        opts.do_second_pass            = self.second_pass_var.get() == 1
-        opts.do_class2d_pass2          = self.class2d_pass2_var.get() == 1
-        opts.do_class3d_pass2          = self.class3d_pass2_var.get() == 1
+        opts.stop_after_ctf_estimation = self.stop_after_ctf_var.get()
+        opts.do_class2d                = self.class2d_var.get()
+        opts.do_class3d                = self.class3d_var.get()
+        opts.do_second_pass            = self.second_pass_var.get()
+        opts.do_class2d_pass2          = self.class2d_pass2_var.get()
+        opts.do_class3d_pass2          = self.class3d_pass2_var.get()
 
         def try_get(numtype, attribute, name):
             """
@@ -1788,14 +1791,13 @@ class RelionItGui(object):
         opts = self.options
 
         # If we have a 3D reference, do a single pass with a large batch size
-        if len(opts.autopick_3dreference) > 0:
-            opts.autopick_do_LoG = False
+        opts.autopick_do_LoG = not opts.autopick_3dreference
+        if opts.autopick_3dreference:
             opts.autopick_refs_min_distance = opts.autopick_LoG_diam_max * 0.7
             opts.class3d_reference = opts.autopick_3dreference
             opts.do_second_pass = False
         else:
             # No 3D reference - do LoG autopicking in the first pass
-            opts.autopick_do_LoG = True
             opts.class3d_reference = ''
 
         # Now set a sensible batch size (leaving batch_size_pass2 at its default 100,000)
@@ -1835,13 +1837,14 @@ class RelionItGui(object):
             self.options.run_pipeline()
 
 
-def safe_load_star(filename, max_try=5, wait=10, expected=[]):
-    for _ in range(max_try):
+def safe_load_star(filename, max_tries=5, wait=10, expected=[]):
+    for _ in range(max_tries):
         try:
             star = load_star(filename)
-            entry = star
 
             # Ensure the expected keys are present
+            # By descending through the dictionary
+            entry = star
             for key in expected:
                entry = entry[key]
             return star
@@ -1864,10 +1867,6 @@ def load_star(filename):
     # 0: outside
     # 1: reading colnames
     # 2: reading data
-
-    def parsedataloop():
-        pass
-
 
     with open(filename) as readfile:
         datapattern = re.compile(r'data_(.*)')
@@ -2017,7 +2016,7 @@ def WaitForJob(wait_for_this_job, seconds_wait):
             pipeline['pipeline_processes']['rlnPipeLineProcessStatus'][curr_jobnr]
         ) == 2:
             print(prefix_RELION_IT("job in {} has finished now".format(wait_for_this_job)))
-            return
+            break
         else:
             CheckForExit()
             time.sleep(seconds_wait)
@@ -2035,20 +2034,22 @@ def writeManualPickingGuiFile(particle_diameter):
     if not os.path.isfile('.gui_manualpickrun.job'):
         with open('.gui_manualpickrun.job', 'w') as f:
             f.write(''.join(line + '\n' for line in [
-                'job_type == 3',
-                'Pixel size (A) == -1',
-                'Black value: == 0',
-                'Blue value:  == 0',
-                'MetaDataLabel for color: == rlnParticleSelectZScore',
-                'Scale for CTF image: == 1',
-                'Particle diameter (A): == {}'.format(particle_diameter),
-                'Blue<>red color particles? == No',
-                'Highpass filter (A) == -1',
-                'Lowpass filter (A) == 20',
-                'Scale for micrographs: == 0.2',
-                'Red value:  == 2',
-                'Sigma contrast: == 3',
-                'White value: == 0',
+                '{} == {}'.format(question, answer) for question, answer in [
+                    ('job_type',                   '3'),
+                    ('Pixel size (A)',             '-1'),
+                    ('Black value:',               '0'),
+                    ('Blue value: ',               '0'),
+                    ('MetaDataLabel for color:',   'rlnParticleSelectZScore'),
+                    ('Scale for CTF image:',       '1'),
+                    ('Particle diameter (A):',     str(particle_diameter)),
+                    ('Blue<>red color particles?', 'No'),
+                    ('Highpass filter (A)',        '-1'),
+                    ('Lowpass filter (A)',         '20'),
+                    ('Scale for micrographs:',     '0.2'),
+                    ('Red value: ',                '2'),
+                    ('Sigma contrast:',            '3'),
+                    ('White value:',               '0'),
+                ]
             ]))
 
 
@@ -2059,6 +2060,7 @@ def findBestClass(model_star_file, use_resol=True):
     """
     model_star = safe_load_star(model_star_file)
     best_class, best_size, best_resol = 0, 0, 999
+
     if use_resol:
         def isbetter(curr_size, curr_resol, best_size, best_resol):
             return curr_resol < best_resol or (
@@ -2089,7 +2091,7 @@ def findBestClass(model_star_file, use_resol=True):
 def findOutputModelStar(job_dir):
     try:
         job_star = safe_load_star(
-            "{}job_pipeline.star".format(job_dir),
+            str(job_dir) + 'job_pipeline.star',
             expected=['pipeline_output_edges', 'rlnPipeLineEdgeToNode']
         )
         for output_file in job_star['pipeline_output_edges']['rlnPipeLineEdgeToNode']:
@@ -2097,7 +2099,6 @@ def findOutputModelStar(job_dir):
                 return output_file
     except:
         return
-
 
 
 def main():
@@ -2135,7 +2136,7 @@ def main():
     ]:
         print(prefix_RELION_IT(msg))
 
-    # Make sure no other version of this script are running...
+    # Exit in case another version of this script is running.
     if os.path.isfile(RUNNING_FILE):
         print(prefix_RELION_IT(' '.join((
             'ERROR: {} is already present: delete this file and make sure no other copy of this script is running.'.format(RUNNING_FILE),
@@ -2143,7 +2144,7 @@ def main():
         ))))
         exit(0)
 
-    # Also make sure the preprocessing pipeliners are stopped before re-starting this script
+    # Exit in case the preprocessing pipeliners are still running.
     for checkfile in ('RUNNING_PIPELINER_' + x for x in (
         PREPROCESS_SCHEDULE_PASS1, PREPROCESS_SCHEDULE_PASS2
     )):
