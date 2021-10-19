@@ -268,6 +268,7 @@ import time
 import traceback
 import re
 import star
+import itertools
 
 try:
     import Tkinter as tk
@@ -692,17 +693,12 @@ class RelionItOptions(object):
             ]
 
             def relevant(lines):
-                seen_start = False
-                for line in map(str.strip, lines):
-                    if not seen_start:
-                        if line != '### General parameters':
-                            # Ignore lines until this one
-                            continue
-                        seen_start = True
-                    if line == '### End of options':
-                        # Stop here
-                        break
-                    yield line
+                return itertools.takewhile(
+                    lambda x: x != '### End of options',
+                    itertools.dropwhile(
+                        lambda x: x != '### General parameters', 
+                        map(str.strip, lines)
+                ))
 
             assignmentpattern = re.compile(r'(.*)=(.*)')
 
@@ -738,8 +734,8 @@ class RelionItOptions(object):
         # Don't think so...
         if not os.path.isfile(PIPELINE_STAR):
             with open(PIPELINE_STAR, 'w') as writefile:
-                writefile.write('data_pipeline_general\n')
-                writefile.write('_rlnPipeLineJobCounter 1\n')
+                for line in ('data_pipeline_general', '_rlnPipeLineJobCounter 1'):
+                    writefile.write(line + '\n')
 
         # Write RUNNING_RELION_IT file
         # When deleted, this script will stop
@@ -751,14 +747,16 @@ class RelionItOptions(object):
             pass
 
         # Set up GUI file for Manualpick job to allow easy viewing of autopick results
-        my_part_diam = self.autopick_LoG_diam_min if self.autopick_do_LoG else self.autopick_refs_min_distance
-        writeManualPickingGuiFile(my_part_diam)
+        writeManualPickingGuiFile(
+            self.autopick_LoG_diam_min if self.autopick_do_LoG else 
+            self.autopick_refs_min_distance
+        )
 
         ### Prepare the list of queue arguments for later use
         queue_options = [
             '{} == {}'.format(question, answer) for question, answer in [
                 ('Submit to queue?',                  'Yes'),
-                ('Queue name: ',                      self.queue_name),
+                ('Queue name:',                       self.queue_name),
                 ('Queue submit command:',             self.queue_submit_command),
                 ('Standard submission script:',       self.queue_submission_template),
                 ('Minimum dedicated cores per node:', self.queue_minimum_dedicated),
@@ -907,6 +905,26 @@ class RelionItOptions(object):
                 runjobs.append(motioncorr_job)
             runjobs.append(ctffind_job)
 
+            do_2d_classification = (
+                ipass == 0 and self.do_class2d
+            ) or (
+                ipass == 1 and self.do_class2d_pass2
+            )
+
+            do_3d_classification = (
+                ipass == 0 and self.do_class3d
+            ) or (
+                ipass == 1 and self.do_class3d_pass2
+            )
+
+            do_classification = do_2d_classification or do_3d_classification
+
+            downscale = (
+                ipass == 0 and self.extract_downscale
+            ) or (
+                ipass == 1 and self.extract2_downscale
+            )
+
             # There is an option to stop on-the-fly processing after CTF estimation
             if not self.stop_after_ctf_estimation:
                 autopick_options = [
@@ -958,22 +976,24 @@ class RelionItOptions(object):
                 # Extract options
                 extract_options = [
                     '{} == {}'.format(question, answer) for question, answer in [
-                        ('Input coordinates: ',                autopick_job + 'coords_suffix_autopick.star'),
-                        ('micrograph STAR file: ',             ctffind_job + 'micrographs_ctf.star'),
-                        ('Diameter background circle (pix): ', self.extract_bg_diameter),
-                        ('Particle box size (pix):',           self.extract_boxsize),
-                        ('Number of MPI procs:',               self.extract_mpi),
+                        ('Input coordinates:',                autopick_job + 'coords_suffix_autopick.star'),
+                        ('micrograph STAR file:',             ctffind_job + 'micrographs_ctf.star'),
+                        ('Diameter background circle (pix):', self.extract_bg_diameter),
+                        ('Particle box size (pix):',          self.extract_boxsize),
+                        ('Number of MPI procs:',              self.extract_mpi),
                     ]
                 ]
 
-                if ipass == 0:
-                    if self.extract_downscale:
-                        extract_options.append('Rescale particles? == Yes')
-                        extract_options.append('Re-scaled size (pixels):  == {}'.format(self.extract_small_boxsize))
-                else:
-                    if self.extract2_downscale:
-                        extract_options.append('Rescale particles? == Yes')
-                        extract_options.append('Re-scaled size (pixels):  == {}'.format(self.extract2_small_boxsize))
+                if downscale:
+                    extract_options.extend([
+                        '{} == {}'.format(question, answer) for question, answer in [
+                            ('Rescale particles?', 'Yes'),
+                            ('Re-scaled size (pixels):', (
+                                self.extract_small_boxsize if ipass == 0 else 
+                                self.extract2_small_boxsize
+                            )),
+                        ]
+                    ])
 
                 if self.extract_submit_to_queue:
                     extract_options.extend(queue_options)
@@ -989,25 +1009,24 @@ class RelionItOptions(object):
                 )
                 runjobs.append(extract_job)
 
-                if (
-                    ipass == 0 and (self.do_class2d or self.do_class3d)
-                ) or (
-                    ipass == 1 and (self.do_class2d_pass2 or self.do_class3d_pass2)
-                ):
+                if do_classification:
                     #### Set up the Select job to split the particle STAR file into batches
                     split_options = [
-                        'OR select from particles.star: == {}particles.star'.format(extract_job),
-                        'OR: split into subsets? == Yes',
-                        'OR: number of subsets:  == -1',
+                        '{} == {}'.format(question, answer) for question, answer in [
+                            ('OR select from particles.star:', extract_job + 'particles.star'),
+                            ('OR: split into subsets?',        'Yes'),
+                            ('OR: number of subsets:',         '-1'),
+                            ('Subset size:', (
+                                self.batch_size if ipass == 0 else 
+                                self.batch_size_pass2
+                            ))
+                        ]
                     ]
 
                     split_job_name, split_alias = (
                         ('split_job',  'into {}'.format(self.batch_size)) if ipass == 0 else
                         ('split2_job', 'into {}'.format(self.batch_size_pass2))
                     )
-                    split_options.append('Subset size:  == {}'.format(
-                        self.batch_size if ipass == 0 else self.batch_size_pass2
-                    ))
 
                     split_job, already_had_it = addJob(
                         'Select', split_job_name, SETUP_CHECK_FILE,
@@ -1032,11 +1051,7 @@ class RelionItOptions(object):
             # only perform SGD inimodel for first batch and if no 3D reference is available
 
             # There is again an option to stop here...
-            if (
-                ipass == 0 and (self.do_class2d or self.do_class3d)
-            ) or (
-                ipass == 1 and (self.do_class2d_pass2 or self.do_class3d_pass2)
-            ):
+            if do_classification:
                 # If necessary, rescale the 3D reference in the second pass!
                 # TODO: rescale initial reference if different from movies?
                 if ipass == 1 and (self.extract_downscale or self.extract2_downscale):
@@ -1091,13 +1106,16 @@ class RelionItOptions(object):
                         batch = safe_load_star(batch_name, expected=['particles', 'rlnMicrographName'])
                         batch_size = len(batch['particles']['rlnMicrographName'])
                         rerun_batch1 = False
-                        if iibatch == 1 and batch_size > previous_batch1_size and batch_size > self.minimum_batch_size:
+                        if ibatch == 0 and batch_size > previous_batch1_size and batch_size > self.minimum_batch_size:
                             previous_batch1_size = batch_size
                             rerun_batch1 = True
 
                         particles_star_file = batch_name
 
-                        # The first batch is special: perform 2D classification with smaller batch size (but at least minimum_batch_size) and keep overwriting in the same output directory
+                        # The first batch is special: 
+                        # perform 2D classification with smaller batch size 
+                        # (but at least minimum_batch_size) 
+                        # and keep overwriting in the same output directory
                         if rerun_batch1 or batch_size == self.batch_size:
 
                             # Discard particles with odd average/stddev values
@@ -1137,11 +1155,7 @@ class RelionItOptions(object):
                                 particles_star_file = discard_job + 'particles.star'
 
                             # 2D classification
-                            if (
-                                ipass == 0 and self.do_class2d
-                            ) or (
-                                ipass == 1 and self.do_class2d_pass2
-                            ):
+                            if do_2d_classification:
                                 class2d_options = [
                                     '{} == {}'.format(question, answer) for question, answer in [
                                         ('Input images STAR file:',                 particles_star_file),
@@ -1187,14 +1201,10 @@ class RelionItOptions(object):
                                     WaitForJob(class2d_job, 30)
 
                         # Perform 3D classification
-                        if (
-                            ipass == 0 and self.do_class3d
-                        ) or (
-                            ipass == 1 and self.do_class3d_pass2
-                        ):
+                        if do_3d_classification:
                             # Do SGD initial model generation only in the first pass,
                             # when no reference is provided AND only for the first (complete) batch, for subsequent batches use that model
-                            if not self.have_3d_reference and ipass == 0 and iibatch == 1 and batch_size == self.batch_size:
+                            if not self.have_3d_reference and ipass == ibatch == 0 and batch_size == self.batch_size:
 
                                 inimodel_options = [
                                     '{} == {}'.format(question, answer) for question, answer in [
@@ -1324,7 +1334,7 @@ class RelionItOptions(object):
 
                                 # Once the first batch in the first pass is completed,
                                 # move on to the second pass
-                                if ipass == 0 and self.do_second_pass and iibatch == 1 and best_class3d_resol < self.minimum_resolution_3dref_2ndpass:
+                                if ipass == ibatch == 0 and self.do_second_pass and best_class3d_resol < self.minimum_resolution_3dref_2ndpass:
                                     self.autopick_3dreference = best_class3d_class
                                     self.autopick_ref_angpix = best_class3d_angpix
                                     self.autopick_2dreferences = ''
@@ -1822,7 +1832,7 @@ class RelionItGui(object):
         try:
             self.fetch_options_from_gui()
             if not self.warnings or tkMessageBox.askokcancel(
-                "Warning", "\n".join(self.warnings), icon='warning',
+                "Warning", "\n".join(self.warnings), icon="warning",
                 default=tkMessageBox.CANCEL
             ):
                 self.calculate_full_options()
@@ -1976,7 +1986,7 @@ def writeManualPickingGuiFile(particle_diameter):
                     ('job_type',                   '3'),
                     ('Pixel size (A)',             '-1'),
                     ('Black value:',               '0'),
-                    ('Blue value: ',               '0'),
+                    ('Blue value:',                '0'),
                     ('MetaDataLabel for color:',   'rlnParticleSelectZScore'),
                     ('Scale for CTF image:',       '1'),
                     ('Particle diameter (A):',     str(particle_diameter)),
@@ -1984,7 +1994,7 @@ def writeManualPickingGuiFile(particle_diameter):
                     ('Highpass filter (A)',        '-1'),
                     ('Lowpass filter (A)',         '20'),
                     ('Scale for micrographs:',     '0.2'),
-                    ('Red value: ',                '2'),
+                    ('Red value:',                 '2'),
                     ('Sigma contrast:',            '3'),
                     ('White value:',               '0'),
                 ]
