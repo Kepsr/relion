@@ -314,7 +314,7 @@ class RelionItOptions(object):
     '''
     Options for the relion_it pipeline setup script.
 
-    When initialised, this contains default values for all options. 
+    When initialised, this contains default values for all options.
     Call `update_from` to override the defaults with a dictionary of new values.
     '''
     #############################################################################
@@ -696,7 +696,7 @@ class RelionItOptions(object):
                 return itertools.takewhile(
                     lambda x: x != '### End of options',
                     itertools.dropwhile(
-                        lambda x: x != '### General parameters', 
+                        lambda x: x != '### General parameters',
                         map(str.strip, lines)
                 ))
 
@@ -748,7 +748,7 @@ class RelionItOptions(object):
 
         # Set up GUI file for Manualpick job to allow easy viewing of autopick results
         writeManualPickingGuiFile(
-            self.autopick_LoG_diam_min if self.autopick_do_LoG else 
+            self.autopick_LoG_diam_min if self.autopick_do_LoG else
             self.autopick_refs_min_distance
         )
 
@@ -989,7 +989,7 @@ class RelionItOptions(object):
                         '{} == {}'.format(question, answer) for question, answer in [
                             ('Rescale particles?', 'Yes'),
                             ('Re-scaled size (pixels):', (
-                                self.extract_small_boxsize if ipass == 0 else 
+                                self.extract_small_boxsize if ipass == 0 else
                                 self.extract2_small_boxsize
                             )),
                         ]
@@ -1017,7 +1017,7 @@ class RelionItOptions(object):
                             ('OR: split into subsets?',        'Yes'),
                             ('OR: number of subsets:',         '-1'),
                             ('Subset size:', (
-                                self.batch_size if ipass == 0 else 
+                                self.batch_size if ipass == 0 else
                                 self.batch_size_pass2
                             ))
                         ]
@@ -1112,9 +1112,9 @@ class RelionItOptions(object):
 
                         particles_star_file = batch_name
 
-                        # The first batch is special: 
-                        # perform 2D classification with smaller batch size 
-                        # (but at least minimum_batch_size) 
+                        # The first batch is special:
+                        # perform 2D classification with smaller batch size
+                        # (but at least minimum_batch_size)
                         # and keep overwriting in the same output directory
                         if rerun_batch1 or batch_size == self.batch_size:
 
@@ -1398,35 +1398,60 @@ class RelionItGui(object):
         for frame, side in zip((left_frame, right_frame), (tk.LEFT, tk.RIGHT)):
             frame.pack(side=side, anchor=tk.N, fill=tk.X, expand=1)
 
+        def makeLabelFrame(text, side):
+            padding = 5
+            frame = tk.LabelFrame(side, text=text, padx=padding, pady=padding)
+            frame.pack(padx=padding, pady=padding, fill=tk.X, expand=1)
+            tk.Grid.columnconfigure(frame, 1, weight=1)
+            return frame
+
         ### Experiment frame
 
-        expt_frame = tk.LabelFrame(left_frame, text="Experimental details", padx=5, pady=5)
-        expt_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
-        tk.Grid.columnconfigure(expt_frame, 1, weight=1)
+        expt_frame = makeLabelFrame("Experimental details", left_frame)
 
-        def makeLabel1(option, labeltext, row):
-            tk.Label(expt_frame, text=labeltext).grid(row=row, sticky=tk.W)
-            entry = tk.Entry(expt_frame)
+        def makeEntry(frame, option, labeltext, row):
+            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
+            entry = tk.Entry(frame)
             entry.grid(row=row, column=1, sticky=tk.W+tk.E)
             entry.insert(0, str(option))
             return entry
-        
-        self.voltage_entry = makeLabel1(options.voltage, "Voltage (kV):", row=0)
 
-        self.cs_entry = makeLabel1(options.Cs, "Cs (mm):", row=1)
+        self.voltage_entry = makeEntry(expt_frame, options.voltage, "Voltage (kV):", row=0)
 
-        tk.Label(expt_frame, text="Phase plate?").grid(row=2, sticky=tk.W)
-        self.phaseplate_var = tk.BooleanVar()
-        phaseplate_button = tk.Checkbutton(expt_frame, var=self.phaseplate_var)
-        phaseplate_button.grid(row=2, column=1, sticky=tk.W)
-        if options.ctffind_do_phaseshift:
-            phaseplate_button.select()
+        self.cs_entry = makeEntry(expt_frame, options.Cs, "Cs (mm):", row=1)
 
-        tk.Label(expt_frame, text=u"Pixel size (\u212B):").grid(row=3, sticky=tk.W)
-        self.angpix_var = tk.StringVar()  # for data binding
-        self.angpix_entry = tk.Entry(expt_frame, textvariable=self.angpix_var)
-        self.angpix_entry.grid(row=3, column=1, sticky=tk.W+tk.E)
-        self.angpix_entry.insert(0, str(options.angpix))
+        def makeButton(frame, option, labeltext, row):
+            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
+            var = tk.BooleanVar()
+            button = tk.Checkbutton(frame, var=var)
+            button.grid(row=row, column=1, sticky=tk.W)
+            if option:
+                button.select()
+            return var, button
+
+        self.phaseplate_var, self.phaseplate_button = makeButton(
+            expt_frame, options.ctffind_do_phaseshift, "Phase plate?", 2
+        )
+
+        def makeLabel(frame, option, labeltext, row, attrtext=''):
+            '''
+            If `attrtext` is supplied, return `var, entry, attr`.
+            Otherwise, return just `var, entry`.
+            '''
+            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
+            var = tk.StringVar()  # for data binding
+            entry = tk.Entry(frame, textvariable=var)
+            entry.grid(row=row, column=1, sticky=tk.W+tk.E)
+            entry.insert(0, str(option))
+            if attrtext:
+                attr = tk.Label(frame, text=attrtext)
+                attr.grid(row=row, column=2, sticky=tk.W)
+                return var, entry, attr
+            return var, entry
+
+        self.angpix_var, self.angpix_entry = makeLabel(
+            expt_frame, options.angpix, u"Pixel size (\u212B):", 3,
+        )
 
         tk.Label(expt_frame, text=u"Exposure rate (e\u207B / \u212B\u00B2 / frame):").grid(row=4, sticky=tk.W)
         self.exposure_entry = tk.Entry(expt_frame)
@@ -1435,32 +1460,7 @@ class RelionItGui(object):
 
         ### Particle frame
 
-        def makeLabel(option, labeltext, row, attrtext=''):
-            '''
-            If `attrtext` is supplied, return `var, entry, attr`.
-            Otherwise, return just `var, entry`.
-            '''
-            tk.Label(particle_frame, text=labeltext).grid(row=row, sticky=tk.W)
-            var = tk.StringVar()  # for data binding
-            entry = tk.Entry(particle_frame, textvariable=var)
-            entry.grid(row=row, column=1, sticky=tk.W+tk.E)
-            entry.insert(0, str(option))
-            if attrtext:
-                attr = tk.Label(particle_frame, text=attrtext)
-                attr.grid(row=row, column=2, sticky=tk.W)
-                return var, entry, attr
-            return var, entry
-        
-        def makeLabel2(option, labeltext, row):
-            tk.Label(particle_frame, text=labeltext).grid(row=row, sticky=tk.W)
-            entry = tk.Entry(particle_frame)
-            entry.grid(row=row, column=1, sticky=tk.W+tk.E, columnspan=2)
-            entry.insert(0, str(option))
-            return entry
-
-        particle_frame = tk.LabelFrame(left_frame, text="Particle details", padx=5, pady=5)
-        particle_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
-        tk.Grid.columnconfigure(particle_frame, 1, weight=1)
+        particle_frame = makeLabelFrame("Particle details", left_frame)
 
         tk.Label(particle_frame, text=u"Longest diameter (\u212B):").grid(row=0, sticky=tk.W)
         self.particle_max_diam_var = tk.StringVar()  # for data binding
@@ -1482,13 +1482,13 @@ class RelionItGui(object):
         new_browse_button(particle_frame, self.ref_3d_var).grid(row=2, column=2)
 
         self.mask_diameter_var, self.mask_diameter_entry, self.mask_diameter_px = makeLabel(
-            options.mask_diameter, u"Mask diameter (\u212B):", row=3, attrtext="= NNN px",
+            particle_frame, options.mask_diameter, u"Mask diameter (\u212B):", row=3, attrtext="= NNN px",
         )
         self.box_size_var, self.box_size_entry, self.box_size_in_angstrom = makeLabel(
-            options.extract_boxsize, "Box size (px):", row=4, attrtext=u"= NNN \u212B",
+            particle_frame, options.extract_boxsize, "Box size (px):", row=4, attrtext=u"= NNN \u212B",
         )
         self.extract_small_boxsize_var, self.extract_small_boxsize_entry, self.extract_angpix = makeLabel(
-            options.extract_small_boxsize, "Down-sample to (px):", row=5, attrtext=u"= NNN \u212B/px",
+            particle_frame, options.extract_small_boxsize, "Down-sample to (px):", row=5, attrtext=u"= NNN \u212B/px",
         )
 
         tk.Label(particle_frame, text="Calculate for me:").grid(row=6, sticky=tk.W)
@@ -1499,81 +1499,48 @@ class RelionItGui(object):
 
         ### Project frame
 
-        project_frame = tk.LabelFrame(right_frame, text="Project details", padx=5, pady=5)
-        project_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
-        tk.Grid.columnconfigure(project_frame, 1, weight=1)
+        project_frame = makeLabelFrame("Project details", right_frame)
 
         tk.Label(project_frame, text="Project directory:").grid(row=0, sticky=tk.W)
         tk.Label(project_frame, text=os.getcwd(), anchor=tk.W).grid(row=0, column=1, sticky=tk.W, columnspan=2)
 
-        tk.Label(project_frame, text="Pattern for movies:").grid(row=1, sticky=tk.W)
-        self.import_images_var = tk.StringVar()  # for data binding
-        self.import_images_entry = tk.Entry(project_frame, textvariable=self.import_images_var)
-        self.import_images_entry.grid(row=1, column=1, sticky=tk.W+tk.E)
-        self.import_images_entry.insert(0, self.options.import_images)
-
-        import_button = new_browse_button(
+        self.import_images_var, self.import_images_entry = makeLabel(
+            project_frame, self.options.import_images, "Pattern for movies:", 1
+        )
+        new_browse_button(
             project_frame, self.import_images_var,
             filetypes=(('Image file', '{*.mrc, *.mrcs, *.tif, *.tiff}'), ('All files', '*'))
+        ).grid(row=1, column=2)
+
+        self.gainref_var, self.gainref_entry = makeLabel(
+            project_frame, self.options.motioncor_gainreference, "Gain reference (optional):", 2
         )
-        import_button.grid(row=1, column=2)
-
-        tk.Label(project_frame, text="Gain reference (optional):").grid(row=2, sticky=tk.W)
-        self.gainref_var = tk.StringVar()  # for data binding
-        self.gainref_entry = tk.Entry(project_frame, textvariable=self.gainref_var)
-        self.gainref_entry.grid(row=2, column=1, sticky=tk.W+tk.E)
-        self.gainref_entry.insert(0, self.options.motioncor_gainreference)
-
-        new_browse_button(project_frame, self.gainref_var).grid(row=2, column=2)
+        new_browse_button(
+            project_frame, self.gainref_var,
+            filetypes=(('MRC file', '*.mrc'), ('All files', '*'))
+        ).grid(row=2, column=2)
 
         ### Pipeline frame
 
-        pipeline_frame = tk.LabelFrame(right_frame, text="Pipeline control", padx=5, pady=5)
-        pipeline_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
-        tk.Grid.columnconfigure(expt_frame, 1, weight=1)
+        pipeline_frame = makeLabelFrame("Pipeline control", right_frame)
 
-        tk.Label(pipeline_frame, text="Stop after CTF estimation?").grid(row=0, sticky=tk.W)
-        self.stop_after_ctf_var = tk.BooleanVar()
-        stop_after_ctf_button = tk.Checkbutton(pipeline_frame, var=self.stop_after_ctf_var)
-        stop_after_ctf_button.grid(row=0, column=1, sticky=tk.W)
-        if options.stop_after_ctf_estimation:
-            stop_after_ctf_button.select()
-
-        tk.Label(pipeline_frame, text="Do 2D classification?").grid(row=1, sticky=tk.W)
-        self.class2d_var = tk.BooleanVar()
-        self.class2d_button = tk.Checkbutton(pipeline_frame, var=self.class2d_var)
-        self.class2d_button.grid(row=1, column=1, sticky=tk.W)
-        if options.do_class2d:
-            self.class2d_button.select()
-
-        tk.Label(pipeline_frame, text="Do 3D classification?").grid(row=2, sticky=tk.W)
-        self.class3d_var = tk.BooleanVar()
-        self.class3d_button = tk.Checkbutton(pipeline_frame, var=self.class3d_var)
-        self.class3d_button.grid(row=2, column=1, sticky=tk.W)
-        if options.do_class3d:
-            self.class3d_button.select()
-
-        tk.Label(pipeline_frame, text="Do second pass? (only if no 3D ref)").grid(row=3, sticky=tk.W)
-        self.second_pass_var = tk.BooleanVar()
-        self.second_pass_button = tk.Checkbutton(pipeline_frame, var=self.second_pass_var)
-        self.second_pass_button.grid(row=3, column=1, sticky=tk.W)
-        if options.do_second_pass:
-            self.second_pass_button.select()
-
-        tk.Label(pipeline_frame, text="Do 2D classification (2nd pass)?").grid(row=4, sticky=tk.W)
-        self.class2d_pass2_var = tk.BooleanVar()
-        self.class2d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class2d_pass2_var)
-        self.class2d_pass2_button.grid(row=4, column=1, sticky=tk.W)
-        self.class2d_pass2_button.select()
-        if options.do_class2d_pass2:
-            self.class2d_pass2_button.select()
-
-        tk.Label(pipeline_frame, text="Do 3D classification (2nd pass)?").grid(row=5, sticky=tk.W)
-        self.class3d_pass2_var = tk.BooleanVar()
-        self.class3d_pass2_button = tk.Checkbutton(pipeline_frame, var=self.class3d_pass2_var)
-        self.class3d_pass2_button.grid(row=5, column=1, sticky=tk.W)
-        if options.do_class3d_pass2:
-            self.class3d_pass2_button.select()
+        (
+            (self.stop_after_ctf_var, self.stop_after_ctf_button),
+            (self.class2d_var,        self.class2d_button),
+            (self.class3d_var,        self.class3d_button),
+            (self.second_pass_var,    self.second_pass_button),
+            (self.class2d_pass2_var,  self.class2d_pass2_button),
+            (self.class3d_pass2_var,  self.class3d_pass2_button),
+        ) = (
+            makeButton(pipeline_frame, option, text, row) for row, (option, text) in enumerate((
+                (options.stop_after_ctf_estimation, "Stop after CTF estimation?"),
+                (options.do_class2d,                "Do 2D classification?"),
+                (options.do_class3d,                "Do 3D classification?"),
+                (options.do_second_pass,            "Do second pass? (only if no 3D ref)"),
+                (options.do_class2d_pass2_var,      "Do 2D classification (2nd pass)?"),
+                (options.do_class3d_pass2,          "Do 3D classification (2nd pass)?"),
+            ))
+        )
 
         ### Add logic to the box size boxes
 
@@ -1664,8 +1631,8 @@ class RelionItGui(object):
         # Always activate entry boxes - either we're activating them anyway, or we need to edit the text.
         # For text editing we need to activate the box first then deactivate again afterwards.
         entries = (
-            self.mask_diameter_entry, 
-            self.box_size_entry, 
+            self.mask_diameter_entry,
+            self.box_size_entry,
             self.extract_small_boxsize_entry,
         )
         for entry in entries:
@@ -1960,7 +1927,7 @@ def WaitForJob(job, time=30):
     print(prefix_RELION_IT("waiting for job to finish in {}".format(job)))
     while True:
         pipeline = safe_load_star(
-            PIPELINE_STAR, 
+            PIPELINE_STAR,
             expected=['pipeline_processes', 'rlnPipeLineProcessName']
         )
         processes = pipeline['pipeline_processes']
