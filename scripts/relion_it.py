@@ -327,7 +327,7 @@ class RelionItOptions(object):
     angpix = 0.885
     # Acceleration voltage (in kV)
     voltage = 200
-    # Polara = 2.0; Talos/Krios = 2.7; some Cryo-ARM = 1.4
+    # Spherical aberration: Polara = 2.0; Talos/Krios = 2.7; some Cryo-ARM = 1.4
     Cs = 1.4
 
     ### Import images (Linux wild card; movies as *.mrc, *.mrcs, *.tiff or *.tif; single-frame micrographs as *.mrc)
@@ -1224,7 +1224,7 @@ class RelionItOptions(object):
                                         ('Initial mini-batch size:',                  self.inimodel_batchsize_ini),
                                         ('Final mini-batch size:',                    self.inimodel_batchsize_final),
                                         ('Increased noise variance half-life:',       self.inimodel_sigmafudge_halflife),
-                                        ('Number of pooled particles:',               '1'),
+                                        ('Number of pooled particles:',               1),
                                         ('Which GPUs to use:',                        self.refine_gpu),
                                         ('Number of MPI procs:',                      self.refine_mpi),
                                         ('Number of threads:',                        self.refine_threads),
@@ -1352,7 +1352,7 @@ class RelionItOptions(object):
                                     # Generate a file to indicate we're in the second pass,
                                     # so that restarts of the python script will be smooth
                                     with open(SECONDPASS_REF3D_FILE, 'w') as writefile:
-                                        writefile.write(''.join(str(x) + '\n' for x in (
+                                        writefile.writelines((str(x) + '\n' for x in (
                                             best_class3d_class, best_class3d_angpix
                                         )))
 
@@ -1398,21 +1398,22 @@ class RelionItGui(object):
         for frame, side in zip((left_frame, right_frame), (tk.LEFT, tk.RIGHT)):
             frame.pack(side=side, anchor=tk.N, fill=tk.X, expand=1)
 
-        ###
+        ### Experiment frame
 
         expt_frame = tk.LabelFrame(left_frame, text="Experimental details", padx=5, pady=5)
         expt_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
         tk.Grid.columnconfigure(expt_frame, 1, weight=1)
 
-        tk.Label(expt_frame, text="Voltage (kV):").grid(row=0, sticky=tk.W)
-        self.voltage_entry = tk.Entry(expt_frame)
-        self.voltage_entry.grid(row=0, column=1, sticky=tk.W+tk.E)
-        self.voltage_entry.insert(0, str(options.voltage))
+        def makeLabel1(option, labeltext, row):
+            tk.Label(expt_frame, text=labeltext).grid(row=row, sticky=tk.W)
+            entry = tk.Entry(expt_frame)
+            entry.grid(row=row, column=1, sticky=tk.W+tk.E)
+            entry.insert(0, str(option))
+            return entry
+        
+        self.voltage_entry = makeLabel1(options.voltage, "Voltage (kV):", row=0)
 
-        tk.Label(expt_frame, text="Cs (mm):").grid(row=1, sticky=tk.W)
-        self.cs_entry = tk.Entry(expt_frame)
-        self.cs_entry.grid(row=1, column=1, sticky=tk.W+tk.E)
-        self.cs_entry.insert(0, str(options.Cs))
+        self.cs_entry = makeLabel1(options.Cs, "Cs (mm):", row=1)
 
         tk.Label(expt_frame, text="Phase plate?").grid(row=2, sticky=tk.W)
         self.phaseplate_var = tk.BooleanVar()
@@ -1432,7 +1433,30 @@ class RelionItGui(object):
         self.exposure_entry.grid(row=4, column=1, sticky=tk.W + tk.E)
         self.exposure_entry.insert(0, str(options.motioncor_doseperframe))
 
-        ###
+        ### Particle frame
+
+        def makeLabel(option, labeltext, row, attrtext=''):
+            '''
+            If `attrtext` is supplied, return `var, entry, attr`.
+            Otherwise, return just `var, entry`.
+            '''
+            tk.Label(particle_frame, text=labeltext).grid(row=row, sticky=tk.W)
+            var = tk.StringVar()  # for data binding
+            entry = tk.Entry(particle_frame, textvariable=var)
+            entry.grid(row=row, column=1, sticky=tk.W+tk.E)
+            entry.insert(0, str(option))
+            if attrtext:
+                attr = tk.Label(particle_frame, text=attrtext)
+                attr.grid(row=row, column=2, sticky=tk.W)
+                return var, entry, attr
+            return var, entry
+        
+        def makeLabel2(option, labeltext, row):
+            tk.Label(particle_frame, text=labeltext).grid(row=row, sticky=tk.W)
+            entry = tk.Entry(particle_frame)
+            entry.grid(row=row, column=1, sticky=tk.W+tk.E, columnspan=2)
+            entry.insert(0, str(option))
+            return entry
 
         particle_frame = tk.LabelFrame(left_frame, text="Particle details", padx=5, pady=5)
         particle_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
@@ -1457,29 +1481,15 @@ class RelionItGui(object):
 
         new_browse_button(particle_frame, self.ref_3d_var).grid(row=2, column=2)
 
-        tk.Label(particle_frame, text=u"Mask diameter (\u212B):").grid(row=3, sticky=tk.W)
-        self.mask_diameter_var = tk.StringVar()  # for data binding
-        self.mask_diameter_entry = tk.Entry(particle_frame, textvariable=self.mask_diameter_var)
-        self.mask_diameter_entry.grid(row=3, column=1, sticky=tk.W+tk.E)
-        self.mask_diameter_entry.insert(0, str(options.mask_diameter))
-        self.mask_diameter_px = tk.Label(particle_frame, text="= NNN px")
-        self.mask_diameter_px.grid(row=3, column=2, sticky=tk.W)
-
-        tk.Label(particle_frame, text="Box size (px):").grid(row=4, sticky=tk.W)
-        self.box_size_var = tk.StringVar()  # for data binding
-        self.box_size_entry = tk.Entry(particle_frame, textvariable=self.box_size_var)
-        self.box_size_entry.grid(row=4, column=1, sticky=tk.W+tk.E)
-        self.box_size_entry.insert(0, str(options.extract_boxsize))
-        self.box_size_in_angstrom = tk.Label(particle_frame, text=u"= NNN \u212B")
-        self.box_size_in_angstrom.grid(row=4, column=2, sticky=tk.W)
-
-        tk.Label(particle_frame, text="Down-sample to (px):").grid(row=5, sticky=tk.W)
-        self.extract_small_boxsize_var = tk.StringVar()  # for data binding
-        self.extract_small_boxsize_entry = tk.Entry(particle_frame, textvariable=self.extract_small_boxsize_var)
-        self.extract_small_boxsize_entry.grid(row=5, column=1, sticky=tk.W+tk.E)
-        self.extract_small_boxsize_entry.insert(0, str(options.extract_small_boxsize))
-        self.extract_angpix = tk.Label(particle_frame, text=u"= NNN \u212B/px")
-        self.extract_angpix.grid(row=5, column=2, sticky=tk.W)
+        self.mask_diameter_var, self.mask_diameter_entry, self.mask_diameter_px = makeLabel(
+            options.mask_diameter, u"Mask diameter (\u212B):", row=3, attrtext="= NNN px",
+        )
+        self.box_size_var, self.box_size_entry, self.box_size_in_angstrom = makeLabel(
+            options.extract_boxsize, "Box size (px):", row=4, attrtext=u"= NNN \u212B",
+        )
+        self.extract_small_boxsize_var, self.extract_small_boxsize_entry, self.extract_angpix = makeLabel(
+            options.extract_small_boxsize, "Down-sample to (px):", row=5, attrtext=u"= NNN \u212B/px",
+        )
 
         tk.Label(particle_frame, text="Calculate for me:").grid(row=6, sticky=tk.W)
         self.auto_boxsize_var = tk.BooleanVar()
@@ -1487,7 +1497,7 @@ class RelionItGui(object):
         self.auto_boxsize_button.grid(row=6, column=1, sticky=tk.W)
         self.auto_boxsize_button.select()
 
-        ###
+        ### Project frame
 
         project_frame = tk.LabelFrame(right_frame, text="Project details", padx=5, pady=5)
         project_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
@@ -1516,7 +1526,7 @@ class RelionItGui(object):
 
         new_browse_button(project_frame, self.gainref_var).grid(row=2, column=2)
 
-        ###
+        ### Pipeline frame
 
         pipeline_frame = tk.LabelFrame(right_frame, text="Pipeline control", padx=5, pady=5)
         pipeline_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
@@ -1981,22 +1991,22 @@ def find_split_job_output(prefix, n, max_digits=6):
 def writeManualPickingGuiFile(particle_diameter):
     if not os.path.isfile('.gui_manualpickrun.job'):
         with open('.gui_manualpickrun.job', 'w') as f:
-            f.write(''.join(line + '\n' for line in [
+            f.writelines((line + '\n' for line in [
                 '{} == {}'.format(question, answer) for question, answer in [
-                    ('job_type',                   '3'),
-                    ('Pixel size (A)',             '-1'),
-                    ('Black value:',               '0'),
-                    ('Blue value:',                '0'),
+                    ('job_type',                   3),
+                    ('Pixel size (A)',             -1),
+                    ('Black value:',               0),
+                    ('Blue value:',                0),
                     ('MetaDataLabel for color:',   'rlnParticleSelectZScore'),
-                    ('Scale for CTF image:',       '1'),
-                    ('Particle diameter (A):',     str(particle_diameter)),
+                    ('Scale for CTF image:',       1),
+                    ('Particle diameter (A):',     particle_diameter),
                     ('Blue<>red color particles?', 'No'),
-                    ('Highpass filter (A)',        '-1'),
-                    ('Lowpass filter (A)',         '20'),
-                    ('Scale for micrographs:',     '0.2'),
-                    ('Red value:',                 '2'),
-                    ('Sigma contrast:',            '3'),
-                    ('White value:',               '0'),
+                    ('Highpass filter (A)',        -1),
+                    ('Lowpass filter (A)',         20),
+                    ('Scale for micrographs:',     0.2),
+                    ('Red value:',                 2),
+                    ('Sigma contrast:',            3),
+                    ('White value:',               0),
                 ]
             ]))
 
