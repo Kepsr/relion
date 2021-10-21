@@ -259,6 +259,7 @@ from __future__ import print_function
 from __future__ import division  # always use float division
 
 import argparse
+import enum
 import glob
 import inspect
 import math
@@ -1405,33 +1406,23 @@ class RelionItGui(object):
             tk.Grid.columnconfigure(frame, 1, weight=1)
             return frame
 
-        ### Experiment frame
-
-        expt_frame = makeLabelFrame("Experimental details", left_frame)
-
         def makeEntry(frame, option, labeltext, row):
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
             entry = tk.Entry(frame)
-            entry.grid(row=row, column=1, sticky=tk.W+tk.E)
+            entry.grid(row=row, column=1, sticky=tk.EW)
             entry.insert(0, str(option))
             return entry
 
-        self.voltage_entry = makeEntry(expt_frame, options.voltage, "Voltage (kV):", row=0)
-
-        self.cs_entry = makeEntry(expt_frame, options.Cs, "Cs (mm):", row=1)
-
-        def makeButton(frame, option, labeltext, row):
+        def makeOffsetEntry(frame, option, labeltext, row, wide=True):
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
-            var = tk.BooleanVar()
-            button = tk.Checkbutton(frame, var=var)
-            button.grid(row=row, column=1, sticky=tk.W)
-            if option:
-                button.select()
-            return var, button
-
-        self.phaseplate_var, self.phaseplate_button = makeButton(
-            expt_frame, options.ctffind_do_phaseshift, "Phase plate?", 2
-        )
+            var = tk.StringVar()  # for data binding
+            entry = tk.Entry(frame, textvariable=var)
+            if wide:
+                entry.grid(row=row, column=1, sticky=tk.EW, columnspan=2)
+            else:
+                entry.grid(row=row, column=1, sticky=tk.EW)
+            entry.insert(0, str(option))
+            return var, entry
 
         def makeLabel(frame, option, labeltext, row, attrtext=''):
             '''
@@ -1441,7 +1432,7 @@ class RelionItGui(object):
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
             var = tk.StringVar()  # for data binding
             entry = tk.Entry(frame, textvariable=var)
-            entry.grid(row=row, column=1, sticky=tk.W+tk.E)
+            entry.grid(row=row, column=1, sticky=tk.EW)
             entry.insert(0, str(option))
             if attrtext:
                 attr = tk.Label(frame, text=attrtext)
@@ -1449,60 +1440,90 @@ class RelionItGui(object):
                 return var, entry, attr
             return var, entry
 
+        def makeButton(frame, option, labeltext, row):
+            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
+            var = tk.BooleanVar()
+            button = tk.Checkbutton(frame, var=var)
+            button.grid(row=row, column=1, sticky=tk.W)
+            if option is None or option:
+                # Buttons not attached to an option are selected by default
+                button.select()
+            return var, button
+
+        ### Experiment frame
+
+        expt_frame = makeLabelFrame("Experimental details", left_frame)
+
+        self.voltage_entry = makeEntry(
+            expt_frame, options.voltage, "Voltage (kV):", 0,
+        )
+
+        self.cs_entry = makeEntry(
+            expt_frame, options.Cs, "Cs (mm):", 1,
+        )
+
+        self.phaseplate_var, self.phaseplate_button = makeButton(
+            expt_frame, options.ctffind_do_phaseshift, "Phase plate?", 2,
+        )
+
         self.angpix_var, self.angpix_entry = makeLabel(
             expt_frame, options.angpix, u"Pixel size (\u212B):", 3,
         )
 
-        tk.Label(expt_frame, text=u"Exposure rate (e\u207B / \u212B\u00B2 / frame):").grid(row=4, sticky=tk.W)
-        self.exposure_entry = tk.Entry(expt_frame)
-        self.exposure_entry.grid(row=4, column=1, sticky=tk.W + tk.E)
-        self.exposure_entry.insert(0, str(options.motioncor_doseperframe))
+        self.exposure_entry = makeEntry(
+            expt_frame, options.motioncor_doseperframe,
+            u"Exposure rate (e\u207B / \u212B\u00B2 / frame):", 4,
+        )
 
         ### Particle frame
 
         particle_frame = makeLabelFrame("Particle details", left_frame)
 
-        tk.Label(particle_frame, text=u"Longest diameter (\u212B):").grid(row=0, sticky=tk.W)
-        self.particle_max_diam_var = tk.StringVar()  # for data binding
-        self.particle_max_diam_entry = tk.Entry(particle_frame, textvariable=self.particle_max_diam_var)
-        self.particle_max_diam_entry.grid(row=0, column=1, sticky=tk.W+tk.E, columnspan=2)
-        self.particle_max_diam_entry.insert(0, str(options.autopick_LoG_diam_max))
+        (
+            (self.particle_max_diam_var, self.particle_max_diam_entry),
+            (self.particle_min_diam_var, self.particle_min_diam_entry),
+        ) = (
+            makeOffsetEntry(
+                particle_frame, option, text, row, True
+            ) for row, (option, text) in enumerate((
+                (options.autopick_LoG_diam_max, u"Longest diameter (\u212B):"),
+                (options.autopick_LoG_diam_min, u"Shortest diameter (\u212B):"),
+            ))
+        )
 
-        tk.Label(particle_frame, text=u"Shortest diameter (\u212B):").grid(row=1, sticky=tk.W)
-        self.particle_min_diam_entry = tk.Entry(particle_frame)
-        self.particle_min_diam_entry.grid(row=1, column=1, sticky=tk.W+tk.E, columnspan=2)
-        self.particle_min_diam_entry.insert(0, str(options.autopick_LoG_diam_min))
-
-        tk.Label(particle_frame, text="3D reference (optional):").grid(row=2, sticky=tk.W)
-        self.ref_3d_var = tk.StringVar()  # for data binding
-        self.ref_3d_entry = tk.Entry(particle_frame, textvariable=self.ref_3d_var)
-        self.ref_3d_entry.grid(row=2, column=1, sticky=tk.W+tk.E)
-        self.ref_3d_entry.insert(0, str(options.autopick_3dreference))
-
+        self.ref_3d_var, self.ref_3d_entry = makeOffsetEntry(
+            particle_frame, options.autopick_3dreference, "3D reference (optional):", 2 , False
+        )
         new_browse_button(particle_frame, self.ref_3d_var).grid(row=2, column=2)
 
-        self.mask_diameter_var, self.mask_diameter_entry, self.mask_diameter_px = makeLabel(
-            particle_frame, options.mask_diameter, u"Mask diameter (\u212B):", row=3, attrtext="= NNN px",
-        )
-        self.box_size_var, self.box_size_entry, self.box_size_in_angstrom = makeLabel(
-            particle_frame, options.extract_boxsize, "Box size (px):", row=4, attrtext=u"= NNN \u212B",
-        )
-        self.extract_small_boxsize_var, self.extract_small_boxsize_entry, self.extract_angpix = makeLabel(
-            particle_frame, options.extract_small_boxsize, "Down-sample to (px):", row=5, attrtext=u"= NNN \u212B/px",
+        (
+            (self.mask_diameter_var,         self.mask_diameter_entry,         self.mask_diameter_px),
+            (self.box_size_var,              self.box_size_entry,              self.box_size_in_angstrom),
+            (self.extract_small_boxsize_var, self.extract_small_boxsize_entry, self.extract_angpix),
+        ) = (
+            makeLabel(
+                particle_frame, option, labeltext, row+3, attrtext
+            ) for row, (option, labeltext, attrtext) in enumerate((
+                (options.mask_diameter,         u"Mask diameter (\u212B):", "= NNN px"),
+                (options.extract_boxsize,       "Box size (px):",           u"= NNN \u212B"),
+                (options.extract_small_boxsize, "Down-sample to (px):",     u"= NNN \u212B/px"),
+            ))
         )
 
-        tk.Label(particle_frame, text="Calculate for me:").grid(row=6, sticky=tk.W)
-        self.auto_boxsize_var = tk.BooleanVar()
-        self.auto_boxsize_button = tk.Checkbutton(particle_frame, var=self.auto_boxsize_var)
-        self.auto_boxsize_button.grid(row=6, column=1, sticky=tk.W)
-        self.auto_boxsize_button.select()
+        self.auto_boxsize_var, self.auto_boxsize_button = makeButton(
+            particle_frame, None, "Calculate for me:", 6
+        )
 
         ### Project frame
 
         project_frame = makeLabelFrame("Project details", right_frame)
 
-        tk.Label(project_frame, text="Project directory:").grid(row=0, sticky=tk.W)
-        tk.Label(project_frame, text=os.getcwd(), anchor=tk.W).grid(row=0, column=1, sticky=tk.W, columnspan=2)
+        tk.Label(project_frame, text="Project directory:").grid(
+            row=0, sticky=tk.W
+        )
+        tk.Label(project_frame, text=os.getcwd(), anchor=tk.W).grid(
+            row=0, column=1, sticky=tk.W, columnspan=2
+        )
 
         self.import_images_var, self.import_images_entry = makeLabel(
             project_frame, self.options.import_images, "Pattern for movies:", 1
@@ -1560,14 +1581,16 @@ class RelionItGui(object):
 
         ###
 
+        padding = 5
+
         button_frame = tk.Frame(right_frame)
-        button_frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
+        button_frame.pack(padx=padding, pady=padding, fill=tk.X, expand=1)
 
         self.run_button = tk.Button(button_frame, text="Save & run", command=self.run_pipeline)
-        self.run_button.pack(padx=5, pady=5, side=tk.RIGHT)
+        self.run_button.pack(padx=padding, pady=padding, side=tk.RIGHT)
 
         self.save_button = tk.Button(button_frame, text="Save options", command=self.save_options)
-        self.save_button.pack(padx=5, pady=5, side=tk.RIGHT)
+        self.save_button.pack(padx=padding, pady=padding, side=tk.RIGHT)
 
         # Show initial pixel sizes
         self.update_box_sizes()
