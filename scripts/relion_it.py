@@ -1413,42 +1413,46 @@ class RelionItGui(object):
             entry.insert(0, str(option))
             return entry
 
-        def makeOffsetEntry(frame, option, labeltext, row, wide=True):
-            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
-            var = tk.StringVar()  # for data binding
-            entry = tk.Entry(frame, textvariable=var)
-            if wide:
-                entry.grid(row=row, column=1, sticky=tk.EW, columnspan=2)
-            else:
-                entry.grid(row=row, column=1, sticky=tk.EW)
-            entry.insert(0, str(option))
-            return var, entry
-
-        def makeLabel(frame, option, labeltext, row, attrtext=''):
+        def makeEntryWithVar(frame, option, labeltext, row):
             '''
-            If `attrtext` is supplied, return `var, entry, attr`.
-            Otherwise, return just `var, entry`.
+            Return `entry, var`.
             '''
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
             var = tk.StringVar()  # for data binding
             entry = tk.Entry(frame, textvariable=var)
             entry.grid(row=row, column=1, sticky=tk.EW)
             entry.insert(0, str(option))
-            if attrtext:
-                attr = tk.Label(frame, text=attrtext)
-                attr.grid(row=row, column=2, sticky=tk.W)
-                return var, entry, attr
-            return var, entry
+            return entry, var
 
-        def makeButton(frame, option, labeltext, row):
+        def makeWideEntryWithVar(frame, option, labeltext, row):
+            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
+            var = tk.StringVar()  # for data binding
+            entry = tk.Entry(frame, textvariable=var)
+            entry.grid(row=row, column=1, sticky=tk.EW, columnspan=2)
+            entry.insert(0, str(option))
+            return entry, var
+
+        def makeEntryWithVarAndAttr(frame, option, labeltext, row, attrtext):
+            '''
+            Return `entry, var, attr`.
+            '''
+            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
+            var = tk.StringVar()  # for data binding
+            entry = tk.Entry(frame, textvariable=var)
+            entry.grid(row=row, column=1, sticky=tk.EW)
+            entry.insert(0, str(option))
+            attr = tk.Label(frame, text=attrtext)
+            attr.grid(row=row, column=2, sticky=tk.W)
+            return entry, var, attr
+
+        def makeButtonWithVar(frame, option, labeltext, row):
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
             var = tk.BooleanVar()
             button = tk.Checkbutton(frame, var=var)
             button.grid(row=row, column=1, sticky=tk.W)
-            if option is None or option:
-                # Buttons not attached to an option are selected by default
+            if option:
                 button.select()
-            return var, button
+            return button, var
 
         ### Experiment frame
 
@@ -1462,11 +1466,11 @@ class RelionItGui(object):
             expt_frame, options.Cs, "Cs (mm):", 1,
         )
 
-        self.phaseplate_var, self.phaseplate_button = makeButton(
+        self.phaseplate_button, self.phaseplate_var = makeButtonWithVar(
             expt_frame, options.ctffind_do_phaseshift, "Phase plate?", 2,
         )
 
-        self.angpix_var, self.angpix_entry = makeLabel(
+        self.angpix_entry, self.angpix_var = makeEntryWithVar(
             expt_frame, options.angpix, u"Pixel size (\u212B):", 3,
         )
 
@@ -1480,28 +1484,28 @@ class RelionItGui(object):
         particle_frame = makeLabelFrame("Particle details", left_frame)
 
         (
-            (self.particle_max_diam_var, self.particle_max_diam_entry),
-            (self.particle_min_diam_var, self.particle_min_diam_entry),
+            (self.particle_max_diam_entry, self.particle_max_diam_var),
+            (self.particle_min_diam_entry, self.particle_min_diam_var),
         ) = (
-            makeOffsetEntry(
-                particle_frame, option, text, row, True
+            makeWideEntryWithVar(
+                particle_frame, option, text, row,
             ) for row, (option, text) in enumerate((
                 (options.autopick_LoG_diam_max, u"Longest diameter (\u212B):"),
                 (options.autopick_LoG_diam_min, u"Shortest diameter (\u212B):"),
             ))
         )
 
-        self.ref_3d_var, self.ref_3d_entry = makeOffsetEntry(
-            particle_frame, options.autopick_3dreference, "3D reference (optional):", 2 , False
+        self.ref_3d_entry, self.ref_3d_var = makeEntryWithVar(
+            particle_frame, options.autopick_3dreference, "3D reference (optional):", 2,
         )
         new_browse_button(particle_frame, self.ref_3d_var).grid(row=2, column=2)
 
         (
-            (self.mask_diameter_var,         self.mask_diameter_entry,         self.mask_diameter_px),
-            (self.box_size_var,              self.box_size_entry,              self.box_size_in_angstrom),
-            (self.extract_small_boxsize_var, self.extract_small_boxsize_entry, self.extract_angpix),
+            (self.mask_diameter_entry,         self.angpix_var, self.mask_diameter_px),
+            (self.box_size_entry,              self.angpix_var, self.box_size_in_angstrom),
+            (self.extract_small_boxsize_entry, self.angpix_var, self.extract_angpix),
         ) = (
-            makeLabel(
+            makeEntryWithVarAndAttr(
                 particle_frame, option, labeltext, row+3, attrtext
             ) for row, (option, labeltext, attrtext) in enumerate((
                 (options.mask_diameter,         u"Mask diameter (\u212B):", "= NNN px"),
@@ -1510,8 +1514,8 @@ class RelionItGui(object):
             ))
         )
 
-        self.auto_boxsize_var, self.auto_boxsize_button = makeButton(
-            particle_frame, None, "Calculate for me:", 6
+        self.auto_boxsize_button, self.auto_boxsize_var = makeButtonWithVar(
+            particle_frame, True, "Calculate for me:", 6
         )
 
         ### Project frame
@@ -1525,7 +1529,7 @@ class RelionItGui(object):
             row=0, column=1, sticky=tk.W, columnspan=2
         )
 
-        self.import_images_var, self.import_images_entry = makeLabel(
+        self.import_images_entry, self.import_images_var = makeEntryWithVar(
             project_frame, self.options.import_images, "Pattern for movies:", 1
         )
         new_browse_button(
@@ -1533,7 +1537,7 @@ class RelionItGui(object):
             filetypes=(('Image file', '{*.mrc, *.mrcs, *.tif, *.tiff}'), ('All files', '*'))
         ).grid(row=1, column=2)
 
-        self.gainref_var, self.gainref_entry = makeLabel(
+        self.gainref_entry, self.gainref_var = makeEntryWithVar(
             project_frame, self.options.motioncor_gainreference, "Gain reference (optional):", 2
         )
         new_browse_button(
@@ -1546,14 +1550,16 @@ class RelionItGui(object):
         pipeline_frame = makeLabelFrame("Pipeline control", right_frame)
 
         (
-            (self.stop_after_ctf_var, self.stop_after_ctf_button),
-            (self.class2d_var,        self.class2d_button),
-            (self.class3d_var,        self.class3d_button),
-            (self.second_pass_var,    self.second_pass_button),
-            (self.class2d_pass2_var,  self.class2d_pass2_button),
-            (self.class3d_pass2_var,  self.class3d_pass2_button),
+            (self.stop_after_ctf_button, self.stop_after_ctf_var),
+            (self.class2d_button,        self.class2d_var),
+            (self.class3d_button,        self.class3d_var),
+            (self.second_pass_button,    self.second_pass_var),
+            (self.class2d_pass2_button,  self.class2d_pass2_var),
+            (self.class3d_pass2_button,  self.class3d_pass2_var),
         ) = (
-            makeButton(pipeline_frame, option, text, row) for row, (option, text) in enumerate((
+            makeButtonWithVar(
+                pipeline_frame, option, text, row
+            ) for row, (option, text) in enumerate((
                 (options.stop_after_ctf_estimation, "Stop after CTF estimation?"),
                 (options.do_class2d,                "Do 2D classification?"),
                 (options.do_class3d,                "Do 3D classification?"),
@@ -1574,9 +1580,11 @@ class RelionItGui(object):
 
         ### Add logic to the check boxes
 
-        stop_after_ctf_button.config(command=self.update_pipeline_control_state)
-        self.class3d_button.config(command=self.update_pipeline_control_state)
-        self.second_pass_button.config(command=self.update_pipeline_control_state)
+        for button in (
+            self.stop_after_ctf_button, self.class3d_button, self.second_pass_button,
+        ):
+            button.config(command=self.update_pipeline_control_state)
+
         self.ref_3d_var.trace('w', self.update_pipeline_control_state)
 
         ###
