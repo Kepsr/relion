@@ -3,8 +3,31 @@ Module for reading STAR (Self-defining Text Archive and Retrieval) files
 '''
 from collections import OrderedDict
 import re
+import time
 
 
+def safe(loadmethod, max_tries=5, wait=10):
+    '''
+    Make a `loadmethod` safe.
+    '''
+    def safemethod(filename, expected=[]):
+        for _ in range(max_tries):
+            try:
+                starfile = loadmethod(filename)
+                # Ensure the expected keys are present
+                # By descending through the dictionary
+                entry = starfile
+                for key in expected:
+                    entry = entry[key]
+                return starfile
+            except:
+                print("safe_load_star is retrying to read: {}, expected key: {}".format(filename, expected))
+                time.sleep(wait)
+        raise Exception("Failed to read a star file: {}".format(filename))
+    return safemethod
+
+
+@safe
 def load(filename):
     '''
     Load a STAR file, returning the datasets (of type `OrderedDict`).

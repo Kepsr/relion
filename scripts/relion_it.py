@@ -259,7 +259,6 @@ from __future__ import print_function
 from __future__ import division  # always use float division
 
 import argparse
-import enum
 import glob
 import inspect
 import math
@@ -268,6 +267,8 @@ import runpy
 import time
 import traceback
 import re
+
+from Tkinter import DoubleVar
 import star
 import itertools
 
@@ -309,6 +310,17 @@ def prefix_ERROR(msg):
 
 def bool_to_word(x):
     return 'Yes' if x else 'No'
+
+
+def captureException(method):
+    def newmethod():
+        try:
+            return method()
+        except Exception as exc:
+            tkMessageBox.showerror("Error", exc.message)
+            traceback.print_exc()
+        return False
+    return newmethod
 
 
 class RelionItOptions(object):
@@ -429,7 +441,7 @@ class RelionItOptions(object):
     batch_size_pass2 = 100000
 
     ###################################################################################
-    ############ Often the parameters below can be kept the same for a given set-up
+    ############ The following parameters can often be kept the same for a given setup
     ###################################################################################
 
     ### Repeat settings for entire pipeline
@@ -663,14 +675,16 @@ class RelionItOptions(object):
         method to be given a dictionary containing the namespace from a script
         run with ``runpy``.
         '''
-        for key, value in d.items():
-            if not is_dunder_name(key):  # exclude __name__, __builtins__ etc.
-                if hasattr(self, key):
-                    setattr(self, key, value)
-                else:
-                    print(prefix_RELION_IT("Unrecognised option '{}'".format(key)))
+        for key, value in [
+            (key, value) for key, value in d.items() if not is_dunder_name(key)
+            # exclude __name__, __builtins__ etc.
+        ]:
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                print(prefix_RELION_IT("Unrecognised option '{}'".format(key)))
 
-    def print_options(self, filename):
+    def write_to(self, filename):
         '''
         Write the current options to `filename`.
 
@@ -678,7 +692,7 @@ class RelionItOptions(object):
         allowing options to be written to a file and re-used.
 
         Args:
-            out_file: A file object (optional). If supplied, options will be
+            `filename`: A file object (optional). If supplied, options will be
                 written to this file, otherwise they will be printed to
                 sys.stdout.
 
@@ -686,8 +700,8 @@ class RelionItOptions(object):
             ValueError: If there is a problem printing the options.
         '''
         # NOTE The writing to stdout mentioned in the above docstring is not implemented.
-        with open(filename, 'w') as out_file:
-            out_file.write("# Options file for relion_it.py\n\n")
+        with open(filename, 'w') as f:
+            f.write("# Options file for relion_it.py\n\n")
             option_names = [
                 key for key in dir(self)
                 if not is_dunder_name(key) and not callable(getattr(self, key))
@@ -708,7 +722,7 @@ class RelionItOptions(object):
             for line in relevant(inspect.getsourcelines(RelionItOptions)[0]):
                 if line.startswith('#') or not line:
                     # Print comments and blank lines as-is
-                    out_file.write(line + "\n")
+                    f.write(line + '\n')
                 else:
                     # Assume all other lines define an option name and value.
                     # Replace with new value.
@@ -716,7 +730,7 @@ class RelionItOptions(object):
                     if m:
                         option_name = m.group(1).strip()
                         if option_name in option_names:
-                            out_file.write('{} = {}\n'.format(option_name, repr(getattr(self, option_name))))
+                            f.write('{} = {}\n'.format(option_name, repr(getattr(self, option_name))))
                             option_names.remove(option_name)
                         else:
                             # This error should not occur.
@@ -767,33 +781,30 @@ class RelionItOptions(object):
         # If we're only doing motioncorr and ctf estimation,
         # forget about the second pass and the batch processing
         if self.stop_after_ctf_estimation:
-            self.do_class2d = False
-            self.do_class3d = False
-            self.do_second_pass = False
+            self.do_class2d, self.do_class3d, self.do_second_pass = False, False, False
 
         nr_passes = 2 if self.do_second_pass else 1
 
-        # If SECONDPASS_REF3D_FILE exists,
-        # go straight into the second pass
-        first_pass = 0
+        startat = 0
         if self.do_second_pass:
             secondpass_ref3d, secondpass_ref3d_angpix = getSecondPassReference()
-            if secondpass_ref3d != '':
+            # If SECONDPASS_REF3D_FILE exists,
+            # Go straight to the second pass
+            if secondpass_ref3d:
                 for msg in [
-                    'found {} with angpix= {} as a 3D reference for second pass in file {}'.format(
+                    'found {} with angpix {} as a 3D reference for second pass in file {}'.format(
                         secondpass_ref3d, secondpass_ref3d_angpix, SECONDPASS_REF3D_FILE
                     ),
                     'if the automatic selection of the reference turned out to be unsatisfactory,',
                     'you can re-run the second pass with another reference by:',
-                    ' stopping the pipeline by deleting RUNNING_*',
+                    ' stopping the pipeline with the shell command `rm RUNNING_*`',
                     ' updating the reference filename in {}'.format(SECONDPASS_REF3D_FILE),
                     ' deleting relevant jobs (autopick2_job and followings) in {}'.format(SETUP_CHECK_FILE),
                     ' and restarting the pipeline.',
                 ]:
                     print(prefix_RELION_IT(msg))
-                first_pass = 1
-                self.autopick_3dreference = secondpass_ref3d
-                self.autopick_ref_angpix = secondpass_ref3d_angpix
+                startat = 1
+                self.autopick_3dreference, self.autopick_ref_angpix = secondpass_ref3d, secondpass_ref3d_angpix
                 self.autopick_2dreferences = ''
                 self.autopick_do_LoG = False
                 self.class3d_reference = secondpass_ref3d
@@ -801,7 +812,7 @@ class RelionItOptions(object):
 
         # Allow to perform two passes through the entire pipeline (PREPROCESS and CLASS2D/3D batches)
         # The second pass, a 3D reference generated in the first pass will be used for template-based autopicking
-        for ipass in range(first_pass, nr_passes):
+        for ipass in range(startat, nr_passes):
 
             #### Set up the Import job
             import_options = [
@@ -816,7 +827,7 @@ class RelionItOptions(object):
                 ]
             ]
 
-            import_job, already_had_it = addJob('Import','import_job', SETUP_CHECK_FILE, import_options)
+            import_job = addJob('Import','import_job', import_options)
 
             if self.images_are_movies:
                 #### Set up the MotionCor job
@@ -854,9 +865,8 @@ class RelionItOptions(object):
                 if self.motioncor_submit_to_queue:
                     motioncorr_options.extend(queue_options)
 
-                motioncorr_job, already_had_it  = addJob(
-                    'MotionCorr', 'motioncorr_job',
-                    SETUP_CHECK_FILE, motioncorr_options,
+                motioncorr_job = addJob(
+                    'MotionCorr', 'motioncorr_job', motioncorr_options,
                 )
 
             # Set up the CtfFind job
@@ -884,12 +894,13 @@ class RelionItOptions(object):
             ]
 
             if not self.use_ctffind:
-                ctffind_options.append('Ignore \'Searches\' parameters? == {}'.format(
-                    bool_to_word(self.ctffind_do_ignore_search_params)
-                ))
-                ctffind_options.append('Perform equi-phase averaging? == {}'.format(
-                    bool_to_word(self.ctffind_do_EPA)
-                ))
+                ctffind_options.extend([
+                    '{} == {}'.format(question, answer) for question, answer in [
+                    ('Ignore \'Searches\' parameters?', bool_to_word(self.ctffind_do_ignore_search_params)),
+                    ('Perform equi-phase averaging?',   bool_to_word(self.ctffind_do_EPA)),
+                    ]
+                ])
+
             ctffind_options.append('Estimate phase shifts? == {}'.format(
                 bool_to_word(self.ctffind_do_phaseshift)
             ))
@@ -897,8 +908,8 @@ class RelionItOptions(object):
             if self.ctffind_submit_to_queue:
                 ctffind_options.extend(queue_options)
 
-            ctffind_job, already_had_it = addJob(
-                'CtfFind', 'ctffind_job', SETUP_CHECK_FILE, ctffind_options
+            ctffind_job = addJob(
+                'CtfFind', 'ctffind_job', ctffind_options
             )
 
             runjobs = [import_job]
@@ -906,25 +917,14 @@ class RelionItOptions(object):
                 runjobs.append(motioncorr_job)
             runjobs.append(ctffind_job)
 
-            do_2d_classification = (
-                ipass == 0 and self.do_class2d
-            ) or (
-                ipass == 1 and self.do_class2d_pass2
-            )
-
-            do_3d_classification = (
-                ipass == 0 and self.do_class3d
-            ) or (
-                ipass == 1 and self.do_class3d_pass2
+            do_2d_classification, do_3d_classification = (
+                (self.do_class2d, self.do_class3d) if ipass == 0 else
+                (self.do_class2d_pass2, self.do_class3d_pass2)
             )
 
             do_classification = do_2d_classification or do_3d_classification
 
-            downscale = (
-                ipass == 0 and self.extract_downscale
-            ) or (
-                ipass == 1 and self.extract2_downscale
-            )
+            downscale = self.extract_downscale if ipass == 0 else self.extract2_downscale
 
             # There is an option to stop on-the-fly processing after CTF estimation
             if not self.stop_after_ctf_estimation:
@@ -964,12 +964,12 @@ class RelionItOptions(object):
                     autopick_options.extend(queue_options)
 
                 autopick_job_name, autopick_alias = (
-                    ('autopick_job',  'pass 1') if ipass == 0 else
-                    ('autopick2_job', 'pass 2')
+                    'autopick{}_job'.format('' if ipass == 0 else ipass + 1),
+                    'pass {}'.format(ipass + 1)
                 )
 
-                autopick_job, already_had_it = addJob(
-                    'AutoPick', autopick_job_name, SETUP_CHECK_FILE,
+                autopick_job = addJob(
+                    'AutoPick', autopick_job_name,
                     autopick_options, alias=autopick_alias,
                 )
                 runjobs.append(autopick_job)
@@ -1000,12 +1000,12 @@ class RelionItOptions(object):
                     extract_options.extend(queue_options)
 
                 extract_job_name, extract_alias = (
-                    ('extract_job',  'pass 1') if ipass == 0 else
-                    ('extract2_job', 'pass 2')
+                    'extract{}_job'.format('' if ipass == 0 else ipass + 1),
+                    'pass {}'.format(ipass + 1)
                 )
 
-                extract_job, already_had_it  = addJob(
-                    'Extract', extract_job_name, SETUP_CHECK_FILE,
+                extract_job = addJob(
+                    'Extract', extract_job_name,
                     extract_options, alias=extract_alias,
                 )
                 runjobs.append(extract_job)
@@ -1016,7 +1016,7 @@ class RelionItOptions(object):
                         '{} == {}'.format(question, answer) for question, answer in [
                             ('OR select from particles.star:', extract_job + 'particles.star'),
                             ('OR: split into subsets?',        'Yes'),
-                            ('OR: number of subsets:',         '-1'),
+                            ('OR: number of subsets:',         -1),
                             ('Subset size:', (
                                 self.batch_size if ipass == 0 else
                                 self.batch_size_pass2
@@ -1025,12 +1025,11 @@ class RelionItOptions(object):
                     ]
 
                     split_job_name, split_alias = (
-                        ('split_job',  'into {}'.format(self.batch_size)) if ipass == 0 else
-                        ('split2_job', 'into {}'.format(self.batch_size_pass2))
+                        'split{}_job'.format('' if ipass == 0 else ipass + 1), 'into {}'.format(self.batch_size)
                     )
 
-                    split_job, already_had_it = addJob(
-                        'Select', split_job_name, SETUP_CHECK_FILE,
+                    split_job = addJob(
+                        'Select', split_job_name,
                         split_options, alias=split_alias
                     )
 
@@ -1087,11 +1086,9 @@ class RelionItOptions(object):
 
                 # It could be that this is a restart, so check previous_batch1_size in the output directory.
                 # Also check the presence of class2d_job_batch_001 in case the first job was not submitted yet.
-                first_split_file = find_split_job_output(split_job + 'particles_split', 1)
-                if not any(x is None for x in (
-                    getJobName("class2d_job_batch_001", SETUP_CHECK_FILE), first_split_file
-                )):
-                    batch1 = safe_load_star(first_split_file, expected=['particles', 'rlnMicrographName'])
+                first_split_file = find_job_number(split_job + 'particles_split', 1)
+                if getJobName("class2d_job_batch_001") is not None and first_split_file is not None:
+                    batch1 = star.load(first_split_file, expected=['particles', 'rlnMicrographName'])
                     previous_batch1_size = len(batch1['particles']['rlnMicrographName'])
                 else:
                     previous_batch1_size = 0
@@ -1100,16 +1097,14 @@ class RelionItOptions(object):
                 while continue_this_pass:
                     have_new_batch = False
                     nr_batches = len(glob.glob(split_job + "particles_split*.star"))
-                    for ibatch in range(nr_batches):
-                        iibatch = ibatch + 1
-                        batch_name = find_split_job_output(split_job + "particles_split", iibatch)
+                    for batchnum in range(nr_batches):
+                        batch_name = find_job_number(split_job + "particles_split", batchnum + 1)
 
-                        batch = safe_load_star(batch_name, expected=['particles', 'rlnMicrographName'])
+                        batch = star.load(batch_name, expected=['particles', 'rlnMicrographName'])
                         batch_size = len(batch['particles']['rlnMicrographName'])
-                        rerun_batch1 = False
-                        if ibatch == 0 and batch_size > previous_batch1_size and batch_size > self.minimum_batch_size:
+                        rerun_batch1 = batchnum == 0 and batch_size > min(previous_batch1_size, self.minimum_batch_size)
+                        if rerun_batch1:
                             previous_batch1_size = batch_size
-                            rerun_batch1 = True
 
                         particles_star_file = batch_name
 
@@ -1132,17 +1127,15 @@ class RelionItOptions(object):
                                     ]
                                 ]
 
-                                discard_job_name = 'discard_job' if ipass == 0 else 'discard2_job'
-
                                 if self.discard_submit_to_queue:
                                     discard_options.extend(queue_options)
 
-                                discard_job, already_had_it = addJob(
-                                    'Select', discard_job_name,
-                                    SETUP_CHECK_FILE, discard_options,
+                                discard_job = addJob(
+                                    'Select', 'discard{}_job'.format('' if ipass == 0 else ipass + 1),
+                                    discard_options,
                                 )
 
-                                if rerun_batch1 or not already_had_it:
+                                if rerun_batch1 or discard_job is None:
                                     have_new_batch = True
                                     RunJobs([discard_job], 1, 1, 'DISCARD')
                                     print(prefix_RELION_IT("submitted job to discard based on image statistics for {} particles in {}".format(
@@ -1150,8 +1143,7 @@ class RelionItOptions(object):
                                     )))
 
                                     # Wait until Discard job is finished.
-                                    # Check every thirty seconds.
-                                    WaitForJob(discard_job, 30)
+                                    WaitForJob(discard_job)
 
                                 particles_star_file = discard_job + 'particles.star'
 
@@ -1183,29 +1175,28 @@ class RelionItOptions(object):
                                     class2d_options.extend(queue_options)
 
                                 jobname, alias = (
-                                    ('class2d_job_batch_{:03d}'.format(iibatch),       'pass1_batch_{:03d}'.format(iibatch)) if ipass == 0 else
-                                    ('class2d_pass2_job_batch_{:03d}'.format(iibatch), 'pass2_batch_{:03d}'.format(iibatch))
+                                    'class2d{}_job_batch_{:03d}'.format('' if ipass == 0 else '_pass{}'.format(ipass + 1), batchnum + 1),
+                                    'pass{}_batch_{:03d}'.format(ipass + 1, batchnum + 1)
                                 )
 
-                                class2d_job, already_had_it = addJob(
-                                    'Class2D', jobname, SETUP_CHECK_FILE,
+                                class2d_job = addJob(
+                                    'Class2D', jobname,
                                     class2d_options, alias=alias
                                 )
 
-                                if rerun_batch1 or not already_had_it:
+                                if rerun_batch1 or class2d_job is None:
                                     have_new_batch = True
                                     RunJobs([class2d_job], 1, 1, 'CLASS2D')
                                     print(prefix_RELION_IT("submitted 2D classification with {} particles in {}".format(batch_size, class2d_job)))
 
                                     # Wait until Class2D job is finished.
-                                    # Check every thirty seconds.
-                                    WaitForJob(class2d_job, 30)
+                                    WaitForJob(class2d_job)
 
                         # Perform 3D classification
                         if do_3d_classification:
                             # Do SGD initial model generation only in the first pass,
                             # when no reference is provided AND only for the first (complete) batch, for subsequent batches use that model
-                            if not self.have_3d_reference and ipass == ibatch == 0 and batch_size == self.batch_size:
+                            if not self.have_3d_reference and ipass == batchnum == 0 and batch_size == self.batch_size:
 
                                 inimodel_options = [
                                     '{} == {}'.format(question, answer) for question, answer in [
@@ -1242,19 +1233,17 @@ class RelionItOptions(object):
                                 if self.refine_submit_to_queue:
                                     inimodel_options.extend(queue_options)
 
-                                inimodel_job, already_had_it = addJob(
-                                    'InitialModel', 'inimodel',
-                                    SETUP_CHECK_FILE, inimodel_options,
+                                inimodel_job = addJob(
+                                    'InitialModel', 'inimodel', inimodel_options,
                                 )
 
-                                if not already_had_it:
+                                if inimodel_job is None:
                                     have_new_batch = True
                                     RunJobs([inimodel_job], 1, 1, 'INIMODEL')
                                     print(prefix_RELION_IT("submitted initial model generation with {} particles in {}".format(batch_size, inimodel_job)))
 
                                     # Wait until inimodel job is finished.
-                                    # Check every thirty seconds.
-                                    WaitForJob(inimodel_job, 30)
+                                    WaitForJob(inimodel_job)
 
                                 sgd_model_star = findOutputModelStar(inimodel_job)
                                 if sgd_model_star is None:
@@ -1307,23 +1296,22 @@ class RelionItOptions(object):
                                     class3d_options.extend(queue_options)
 
                                 jobname, alias = (
-                                    ('class3d_job_batch_{:03d}'.format(iibatch),  'pass1_batch_{:03d}'.format(iibatch)) if ipass == 0 else
-                                    ('class3d2_job_batch_{:03d}'.format(iibatch), 'pass2_batch_{:03d}'.format(iibatch))
+                                    'class3d{}_job_batch_{:03d}'.format('' if ipass == 0 else ipass + 1, batchnum + 1),
+                                    'pass{}_batch_{:03d}'.format(ipass + 1, batchnum + 1),
                                 )
 
-                                class3d_job, already_had_it = addJob(
-                                    'Class3D', jobname, SETUP_CHECK_FILE,
+                                class3d_job = addJob(
+                                    'Class3D', jobname,
                                     class3d_options, alias=alias,
                                 )
 
-                                if rerun_batch1 or not already_had_it:
+                                if rerun_batch1 or class3d_job is None:
                                     have_new_batch = True
                                     RunJobs([class3d_job], 1, 1, 'CLASS3D')
                                     print(prefix_RELION_IT('submitted 3D classification with {} particles in {}'.format(batch_size, class3d_job)))
 
                                     # Wait until Class2D job is finished.
-                                    # Check every thirty seconds.
-                                    WaitForJob(class3d_job, 30)
+                                    WaitForJob(class3d_job)
 
                                 class3d_model_star = findOutputModelStar(class3d_job)
                                 if class3d_model_star is None:
@@ -1335,12 +1323,16 @@ class RelionItOptions(object):
 
                                 # Once the first batch in the first pass is completed,
                                 # move on to the second pass
-                                if ipass == ibatch == 0 and self.do_second_pass and best_class3d_resol < self.minimum_resolution_3dref_2ndpass:
+                                if (
+                                    ipass == batchnum == 0
+                                    and self.do_second_pass
+                                    and best_class3d_resol < self.minimum_resolution_3dref_2ndpass
+                                ):
                                     self.autopick_3dreference = best_class3d_class
+                                    self.class3d_reference = best_class3d_class
                                     self.autopick_ref_angpix = best_class3d_angpix
                                     self.autopick_2dreferences = ''
                                     self.autopick_do_LoG = False
-                                    self.class3d_reference = best_class3d_class
                                     self.have_3d_reference = True
                                     self.autopick_3dref_symmetry = self.symmetry
 
@@ -1351,14 +1343,14 @@ class RelionItOptions(object):
                                         os.remove(filename_to_remove)
 
                                     # Generate a file to indicate we're in the second pass,
-                                    # so that restarts of the python script will be smooth
-                                    with open(SECONDPASS_REF3D_FILE, 'w') as writefile:
-                                        writefile.writelines((str(x) + '\n' for x in (
+                                    # so that the script restarts smoothly
+                                    with open(SECONDPASS_REF3D_FILE, 'w') as f:
+                                        f.writelines((str(x) + '\n' for x in (
                                             best_class3d_class, best_class3d_angpix
                                         )))
 
                                     # Move out of this ipass of the passes loop....
-                                    ibatch = nr_batches + 1
+                                    batchnum = nr_batches + 1
                                     continue_this_pass = False
                                     print(prefix_RELION_IT('moving on to the second pass using {} for template-based autopicking'.format(self.autopick_3dreference)))
                                     # break out of the for-loop over the batches
@@ -1367,8 +1359,6 @@ class RelionItOptions(object):
                     if not have_new_batch:
                         CheckForExit()
                         # Don't check the particles.star file too often
-                        # This will raise a NameError,
-                        # since `self.batch_repeat_time` is not defined.
                         time.sleep(60 * self.batch_repeat_time)
 
 
@@ -1379,30 +1369,21 @@ class RelionItGui(object):
         self.options = options
         self.warnings = []
 
-        # Convenience function for making file browser buttons
-        def new_browse_button(self, var_to_set, filetypes=(('MRC file', '*.mrc'), ('All files', '*'))):
-            def browse_command():
-                chosen_file = tkFileDialog.askopenfilename(filetypes=filetypes)
-                if chosen_file is not None:
-                    # Make path relative if it's in the current directory
-                    if chosen_file.startswith(os.getcwd()):
-                        chosen_file = os.path.relpath(chosen_file)
-                    var_to_set.set(chosen_file)
-            return tk.Button(self, text="Browse...", command=browse_command)
-
         ### Create GUI
 
         main_frame = tk.Frame(main_window)
         main_frame.pack(fill=tk.BOTH, expand=1)
 
         left_frame, right_frame = 2 * (tk.Frame(main_frame),)
-        for frame, side in zip((left_frame, right_frame), (tk.LEFT, tk.RIGHT)):
+        for frame, side in (
+            (left_frame,  tk.LEFT),
+            (right_frame, tk.RIGHT),
+        ):
             frame.pack(side=side, anchor=tk.N, fill=tk.X, expand=1)
 
         def makeLabelFrame(text, side):
-            padding = 5
-            frame = tk.LabelFrame(side, text=text, padx=padding, pady=padding)
-            frame.pack(padx=padding, pady=padding, fill=tk.X, expand=1)
+            frame = tk.LabelFrame(side, text=text, padx=5, pady=5)
+            frame.pack(padx=5, pady=5, fill=tk.X, expand=1)
             tk.Grid.columnconfigure(frame, 1, weight=1)
             return frame
 
@@ -1413,37 +1394,43 @@ class RelionItGui(object):
             entry.insert(0, str(option))
             return entry
 
-        def makeEntryWithVar(frame, option, labeltext, row):
+        def makeEntryWithVar(frame, option, labeltext, row, vartype=tk.StringVar, wide=False):
             '''
             Return `entry, var`.
             '''
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
-            var = tk.StringVar()  # for data binding
+            var = vartype()  # for data binding
             entry = tk.Entry(frame, textvariable=var)
-            entry.grid(row=row, column=1, sticky=tk.EW)
+            if wide:
+                entry.grid(row=row, column=1, sticky=tk.EW, columnspan=2)
+            else:
+                entry.grid(row=row, column=1, sticky=tk.EW)
             entry.insert(0, str(option))
             return entry, var
 
-        def makeWideEntryWithVar(frame, option, labeltext, row):
-            tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
-            var = tk.StringVar()  # for data binding
-            entry = tk.Entry(frame, textvariable=var)
-            entry.grid(row=row, column=1, sticky=tk.EW, columnspan=2)
-            entry.insert(0, str(option))
-            return entry, var
-
-        def makeEntryWithVarAndAttr(frame, option, labeltext, row, attrtext):
+        def makeEntryWithVarAndAttr(frame, option, labeltext, row, attrtext, vartype=tk.StringVar):
             '''
             Return `entry, var, attr`.
             '''
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
-            var = tk.StringVar()  # for data binding
+            var = vartype()  # for data binding
             entry = tk.Entry(frame, textvariable=var)
             entry.grid(row=row, column=1, sticky=tk.EW)
             entry.insert(0, str(option))
             attr = tk.Label(frame, text=attrtext)
             attr.grid(row=row, column=2, sticky=tk.W)
             return entry, var, attr
+
+        # Convenience function for making file browser buttons
+        def makeBrowseButton(frame, var, filetypes):
+            def command():
+                chosen_file = tkFileDialog.askopenfilename(filetypes=filetypes)
+                if chosen_file is not None:
+                    # Make path relative if it's in the current directory
+                    if chosen_file.startswith(os.getcwd()):
+                        chosen_file = os.path.relpath(chosen_file)
+                    var.set(chosen_file)
+            return tk.Button(frame, text="Browse...", command=command)
 
         def makeButtonWithVar(frame, option, labeltext, row):
             tk.Label(frame, text=labeltext).grid(row=row, sticky=tk.W)
@@ -1471,7 +1458,7 @@ class RelionItGui(object):
         )
 
         self.angpix_entry, self.angpix_var = makeEntryWithVar(
-            expt_frame, options.angpix, u"Pixel size (\u212B):", 3,
+            expt_frame, options.angpix, u"Pixel size (\u212B):", 3, vartype=tk.DoubleVar,
         )
 
         self.exposure_entry = makeEntry(
@@ -1487,8 +1474,8 @@ class RelionItGui(object):
             (self.particle_max_diam_entry, self.particle_max_diam_var),
             (self.particle_min_diam_entry, self.particle_min_diam_var),
         ) = (
-            makeWideEntryWithVar(
-                particle_frame, option, text, row,
+            makeEntryWithVar(
+                particle_frame, option, text, row, vartype=tk.DoubleVar, wide=True,
             ) for row, (option, text) in enumerate((
                 (options.autopick_LoG_diam_max, u"Longest diameter (\u212B):"),
                 (options.autopick_LoG_diam_min, u"Shortest diameter (\u212B):"),
@@ -1498,18 +1485,22 @@ class RelionItGui(object):
         self.ref_3d_entry, self.ref_3d_var = makeEntryWithVar(
             particle_frame, options.autopick_3dreference, "3D reference (optional):", 2,
         )
-        new_browse_button(particle_frame, self.ref_3d_var).grid(row=2, column=2)
+        makeBrowseButton(
+            particle_frame, self.ref_3d_var,
+            filetypes=(('MRC file', '*.mrc'), ('All files', '*'))
+        ).grid(row=2, column=2)
 
         (
-            (self.mask_diameter_entry,         self.angpix_var, self.mask_diameter_px),
-            (self.box_size_entry,              self.angpix_var, self.box_size_in_angstrom),
-            (self.extract_small_boxsize_entry, self.angpix_var, self.extract_angpix),
+            (self.mask_diameter_entry,         self.mask_diameter_var,         self.mask_diameter_px),
+            (self.box_size_entry,              self.box_size_var,              self.box_size_in_angstrom),
+            (self.extract_small_boxsize_entry, self.extract_small_boxsize_var, self.extract_angpix),
+            #                                                                  ^ will be used if `self.angpix_entry.get()` fails
         ) = (
             makeEntryWithVarAndAttr(
-                particle_frame, option, labeltext, row+3, attrtext
+                particle_frame, option, labeltext, row+3, attrtext, vartype=DoubleVar,
             ) for row, (option, labeltext, attrtext) in enumerate((
-                (options.mask_diameter,         u"Mask diameter (\u212B):", "= NNN px"),
-                (options.extract_boxsize,       "Box size (px):",           u"= NNN \u212B"),
+                (options.mask_diameter,         u"Mask diameter (\u212B):", "= NNN px"        ),
+                (options.extract_boxsize,       "Box size (px):",           u"= NNN \u212B"   ),
                 (options.extract_small_boxsize, "Down-sample to (px):",     u"= NNN \u212B/px"),
             ))
         )
@@ -1532,7 +1523,7 @@ class RelionItGui(object):
         self.import_images_entry, self.import_images_var = makeEntryWithVar(
             project_frame, self.options.import_images, "Pattern for movies:", 1
         )
-        new_browse_button(
+        makeBrowseButton(
             project_frame, self.import_images_var,
             filetypes=(('Image file', '{*.mrc, *.mrcs, *.tif, *.tiff}'), ('All files', '*'))
         ).grid(row=1, column=2)
@@ -1540,7 +1531,7 @@ class RelionItGui(object):
         self.gainref_entry, self.gainref_var = makeEntryWithVar(
             project_frame, self.options.motioncor_gainreference, "Gain reference (optional):", 2
         )
-        new_browse_button(
+        makeBrowseButton(
             project_frame, self.gainref_var,
             filetypes=(('MRC file', '*.mrc'), ('All files', '*'))
         ).grid(row=2, column=2)
@@ -1571,11 +1562,12 @@ class RelionItGui(object):
 
         ### Add logic to the box size boxes
 
-        self.box_size_var.trace('w', self.update_box_size_labels)
-        self.extract_small_boxsize_var.trace('w', self.update_box_size_labels)
+        for var in (self.box_size_var, self.extract_small_boxsize_var):
+            var.trace('w', self.update_box_size_labels)
 
-        self.angpix_var.trace('w', self.update_box_sizes)
-        self.particle_max_diam_var.trace('w', self.update_box_sizes)
+        for var in (self.angpix_var, self.particle_max_diam_var):
+            var.trace('w', self.update_box_sizes)
+
         self.auto_boxsize_button.config(command=self.update_box_sizes)
 
         ### Add logic to the check boxes
@@ -1626,37 +1618,40 @@ class RelionItGui(object):
         return "Box size is too large!"
 
     def update_box_size_labels(self, *args, **kwargs):
+        def handleboxsize():
+            self.box_size_in_angstrom.config(text=u"= NNN \u212B")
+        def handlemaskdiam():
+            self.mask_diameter_px.config(text="= NNN px")
+        def handleextractangpix():
+            self.extract_angpix.config(text=u"= NNN \u212B/px")
         try:
-            angpix = float(self.angpix_entry.get())
+            angpix = self.angpix_entry.get()
         except ValueError:
             # Can't update any of the labels without angpix
-            self.mask_diameter_px.config(text="= NNN px")
-            self.box_size_in_angstrom.config(text=u"= NNN \u212B")
-            self.extract_angpix.config(text=u"= NNN \u212B/px")
+            handlemaskdiam()
+            handleboxsize()
+            handleextractangpix()
             return
         try:
-            mask_diameter = float(self.mask_diameter_entry.get())
-            mask_diameter_px = mask_diameter / angpix
+            mask_diameter_px = self.mask_diameter_entry.get() / angpix
             self.mask_diameter_px.config(text="= {:.1f} px".format(mask_diameter_px))
         except (ValueError, ZeroDivisionError):
-            self.mask_diameter_px.config(text="= NNN px")
+            handlemaskdiam()
             # Don't return - an error here doesn't stop us calculating the other labels
         try:
-            box_size = float(self.box_size_entry.get())
-            box_angpix = angpix * box_size
+            box_angpix = angpix * self.box_size_entry.get()
             self.box_size_in_angstrom.config(text=u"= {:.1f} \u212B".format(box_angpix))
         except ValueError:
             # Can't update these without the box size
-            self.box_size_in_angstrom.config(text=u"= NNN \u212B")
-            self.extract_angpix.config(text=u"= NNN \u212B/px")
+            handleboxsize()
+            handleextractangpix()
             return
         try:
-            extract_small_boxsize = float(self.extract_small_boxsize_entry.get())
-            small_box_angpix = box_angpix / extract_small_boxsize
+            small_box_angpix = box_angpix / self.extract_small_boxsize_entry.get()
             self.extract_angpix.config(text=u"= {:.3f} \u212B/px".format(small_box_angpix))
         except (ValueError, ZeroDivisionError):
             # Can't update the downscaled pixel size unless the downscaled box size is valid
-            self.extract_angpix.config(text=u"= NNN \u212B/px")
+            handleextractangpix()
 
     def update_box_sizes(self, *args, **kwargs):
         # Always activate entry boxes - either we're activating them anyway, or we need to edit the text.
@@ -1670,8 +1665,8 @@ class RelionItGui(object):
             entry.config(state=tk.NORMAL)
         if self.auto_boxsize_var.get():
             try:
-                angpix = float(self.angpix_entry.get())
-                particle_size_angstroms = float(self.particle_max_diam_entry.get())
+                angpix = self.angpix_entry.get()
+                particle_size_angstroms = self.particle_max_diam_entry.get()
                 particle_size_pixels = particle_size_angstroms / angpix
                 mask_diameter = 1.1 * particle_size_angstroms
                 box_size = self.calculate_box_size(particle_size_pixels)
@@ -1694,17 +1689,21 @@ class RelionItGui(object):
 
     def update_pipeline_control_state(self, *args, **kwargs):
         new_state = tk.DISABLED if self.stop_after_ctf_var.get() else tk.NORMAL
-        self.class2d_button.config(state=new_state)
-        self.class3d_button.config(state=new_state)
-        self.particle_max_diam_entry.config(state=new_state)
-        self.self.particle_min_diam_entry.config(state=new_state)
-        self.ref_3d_entry.config(state=new_state)
+        for button_or_entry in (
+            self.class2d_button,
+            self.class3d_button,
+            self.particle_max_diam_entry,
+            self.particle_min_diam_entry,
+            self.ref_3d_entry,
+            self.auto_boxsize_button,
+        ):
+            button_or_entry.config(state=new_state)
         # Update the box size controls with care to avoid activating them when we shouldn't
-        self.auto_boxsize_button.config(state=new_state)
         if new_state == tk.DISABLED:
-            self.mask_diameter_entry.config(state=new_state)
-            self.box_size_entry.config(state=new_state)
-            self.extract_small_boxsize_entry.config(state=new_state)
+            for entry in (
+                self.mask_diameter_entry, self.box_size_entry, self.extract_small_boxsize_entry,
+            ):
+                entry.config(state=new_state)
         else:
             self.update_box_sizes()
         can_do_second_pass = (
@@ -1777,7 +1776,7 @@ class RelionItGui(object):
 
         opts.ctffind_do_phaseshift = self.phaseplate_var.get()
 
-        opts.angpix = try_get(float, self.angpix_entry, "Pixel size")
+        opts.angpix = try_get(float, self.angpix_entry, "Pixel size")  # XXX This might be redundant, given `self.angpix_entry.get()` should now have type `float`.
         check_positive(opts.angpix, "Pixel size")
 
         opts.motioncor_doseperframe = try_get(float, self.exposure_entry, "Exposure rate")
@@ -1830,6 +1829,7 @@ class RelionItGui(object):
         # Now set a sensible batch size (leaving batch_size_pass2 at its default 100,000)
         opts.batch_size = 10000 if opts.do_second_pass else 100000
 
+    @captureException
     def save_options(self):
         '''
         Update the full set of options from the values in the GUI, and save them to a file.
@@ -1837,22 +1837,18 @@ class RelionItGui(object):
         Returns:
             True if the options were valid and saved successfully, otherwise False.
         '''
-        try:
-            self.fetch_options_from_gui()
-            if not self.warnings or tkMessageBox.askokcancel(
-                "Warning", "\n".join(self.warnings), icon="warning",
-                default=tkMessageBox.CANCEL
-            ):
-                self.calculate_full_options()
-                print(prefix_RELION_IT("Writing all options to {}".format(OPTIONS_FILE)))
-                if os.path.isfile(OPTIONS_FILE):
-                    print(prefix_RELION_IT("File {0} already exists; renaming old copy to {0}~".format(OPTIONS_FILE)))
-                    os.rename(OPTIONS_FILE, OPTIONS_FILE + '~')
-                self.options.print_options(OPTIONS_FILE)
-                return True
-        except Exception as ex:
-            tkMessageBox.showerror("Error", ex.message)
-            traceback.print_exc()
+        self.fetch_options_from_gui()
+        if not self.warnings or tkMessageBox.askokcancel(
+            "Warning", "\n".join(self.warnings), icon="warning",
+            default=tkMessageBox.CANCEL
+        ):
+            self.calculate_full_options()
+            print(prefix_RELION_IT("Writing all options to {}".format(OPTIONS_FILE)))
+            if os.path.isfile(OPTIONS_FILE):
+                print(prefix_RELION_IT("File {0} already exists; renaming old copy to {0}~".format(OPTIONS_FILE)))
+                os.rename(OPTIONS_FILE, OPTIONS_FILE + '~')
+            self.options.write_to(OPTIONS_FILE)
+            return True
         return False
 
     def run_pipeline(self):
@@ -1864,21 +1860,6 @@ class RelionItGui(object):
             self.options.run_pipeline()
 
 
-def safe_load_star(filename, max_tries=5, wait=10, expected=[]):
-    for _ in range(max_tries):
-        try:
-            starfile = star.load(filename)
-            # Ensure the expected keys are present
-            # By descending through the dictionary
-            entry = starfile
-            for key in expected:
-               entry = entry[key]
-            return starfile
-        except:
-            print("safe_load_star is retrying to read: {}, expected key: {}".format(filename, expected))
-            time.sleep(wait)
-    raise Exception("Failed to read a star file: {}".format(filename))
-
 
 # Don't get stuck in an infinite loop
 def CheckForExit():
@@ -1887,55 +1868,48 @@ def CheckForExit():
         exit(0)
 
 
-# Allow direct progressing to the second pass
+# Allow direct progression to the second pass
 def getSecondPassReference():
     if os.path.isfile(SECONDPASS_REF3D_FILE):
-        with open(SECONDPASS_REF3D_FILE, 'r') as readfile:
-            filename, angpix = map(str.strip, readfile.readlines())
+        with open(SECONDPASS_REF3D_FILE, 'r') as f:
+            class_, angpix = map(str.strip, f)
     else:
-        filename, angpix = '', '0'
-    return filename, angpix
+        class_, angpix = '', '0'
+    return class_, angpix
 
 
-def getJobName(name_in_script, done_file):
-    jobname = None
+def getJobName(name_in_script):
     # See if we've done this job before,
-    # i.e. whether it is in the done_file
-    if os.path.isfile(done_file):
-        with open(done_file, 'r') as f:
+    # i.e. whether it is in the SETUP_CHECK_FILE
+    if os.path.isfile(SETUP_CHECK_FILE):
+        with open(SETUP_CHECK_FILE, 'r') as f:
             for elems in map(str.split, f):
-                if len(elems) < 3:
-                    continue
-                if elems[0] == name_in_script:
-                    jobname = elems[2]
-                    break
-    return jobname
+                if len(elems) >= 3 and elems[0] == name_in_script:
+                    return elems[2]
 
 
-def addJob(jobtype, name_in_script, done_file, options, alias=None):
-    jobname = getJobName(name_in_script, done_file)
-
+def addJob(jobtype, name_in_script, options, alias=None):
+    jobname = getJobName(name_in_script)
     # If we didn't before, add it now
     if jobname is None:
         command = (
             'relion_pipeliner'
             + ' --addJob {}'.format(jobtype)
             + ' --addJobOptions "{}"'.format(''.join(opt + ';' for opt in options))
+            + (' --setJobAlias "{}"'.format(alias) if alias is not None else '')
         )
-        if alias is not None:
-            command += ' --setJobAlias "{}"'.format(alias)
         # print("DEBUG: Running " + command)
         os.system(command)
 
-        pipeline = safe_load_star(PIPELINE_STAR, expected=['pipeline_processes', 'rlnPipeLineProcessName'])
+        pipeline = star.load(PIPELINE_STAR, expected=['pipeline_processes', 'rlnPipeLineProcessName'])
         jobname = pipeline['pipeline_processes']['rlnPipeLineProcessName'][-1]
 
-        with open(done_file, 'a') as f:
+        with open(SETUP_CHECK_FILE, 'a') as f:
             f.write('{} = {}\n'.format(name_in_script, jobname))
 
     # Return the name of the job in the RELION pipeline,
     # e.g. 'Import/job001/'
-    return jobname, (jobname is not None)
+    return jobname
 
 
 def RunJobs(jobs, repeat, wait, schedulename):
@@ -1949,36 +1923,37 @@ def RunJobs(jobs, repeat, wait, schedulename):
     )
 
 
-def WaitForJob(job, time=30):
+def WaitForJob(jobname, seconds=30):
     '''
-    `job`:  name of job (`str`)
-    `time`: time to wait in seconds
+    `jobname: str` name of job
+    `seconds: int` time to wait (seconds)
     '''
-    time.sleep(time)
-    print(prefix_RELION_IT("waiting for job to finish in {}".format(job)))
-    while True:
-        pipeline = safe_load_star(
+    time.sleep(seconds)
+    print(prefix_RELION_IT("waiting for job to finish in {}".format(jobname)))
+    
+    def waiting():
+        pipeline = star.load(
             PIPELINE_STAR,
             expected=['pipeline_processes', 'rlnPipeLineProcessName']
         )
         processes = pipeline['pipeline_processes']
         try:
-            jobnr = processes['rlnPipeLineProcessName'].index(job)
+            jobnr = processes['rlnPipeLineProcessName'].index(jobname)
         except ValueError:
-            print(prefix_ERROR("cannot find {} in {}".format(job, PIPELINE_STAR)))
+            print(prefix_ERROR("cannot find {} in {}".format(jobname, PIPELINE_STAR)))
             exit(1)
+        status = int(processes['rlnPipeLineProcessStatus'][jobnr])
+        if status == 2:
+            print(prefix_RELION_IT("job in {} has finished now".format(jobname)))
+            return True
+        return False
 
-        if int(
-            processes['rlnPipeLineProcessStatus'][jobnr]
-        ) == 2:
-            print(prefix_RELION_IT("job in {} has finished now".format(job)))
-            break
-
+    while waiting():
         CheckForExit()
-        time.sleep(time)
+        time.sleep(seconds)
 
 
-def find_split_job_output(prefix, n, max_digits=6):
+def find_job_number(prefix, n, max_digits=6):
     for filename in (
         prefix + str(n).rjust(i, '0') + '.star' for i in range(max_digits)
     ):
@@ -2012,33 +1987,25 @@ def writeManualPickingGuiFile(particle_diameter):
 def findBestClass(model_star_file, use_resol=True):
     '''
     Identify the best class given `model_star_file` (a `str`).
-    Return the index of the best class (an `int`), the best resolution (a `float`), and the pixel size.
+    Return the filename of the best class, its resolution, and the pixel size.
     '''
-    model_star = safe_load_star(model_star_file)
-    best_class, best_size, best_resol = 0, 0, 999
+    model_star = star.load(model_star_file)
 
-    if use_resol:
-        def isbetter(curr_size, curr_resol, best_size, best_resol):
-            return curr_resol < best_resol or (
-                curr_resol == best_resol and curr_size > best_size
-            )
-    else:
-        def isbetter(curr_size, curr_resol, best_size, best_resol):
-            return curr_size > best_size or (
-                curr_size == best_size and curr_resol < best_resol
-            )
+    pair = (
+        (lambda size, resol: (1/resol, size)) if use_resol else 
+        (lambda size, resol: (size, 1/resol))
+    )
 
-    for index, size, resol in zip(
-        model_star['model_classes']['rlnReferenceImage'],
-        map(float, model_star['model_classes']['rlnClassDistribution']),
-        map(float, model_star['model_classes']['rlnEstimatedResolution']),
-    ):
-        if isbetter(size, resol, best_size, best_resol):
-            best_class = index
-            best_size = size
-            best_resol = resol
+    best_class, best_size, best_resol = max(zip(
+        # We are depending on these 3 iterables that we are zipping to be `list`s.
+        # They might actually be `dict`s, in which case we will have to use a dictionary zip.
+        model_star['model_classes']['rlnReferenceImage'],                   # Class
+        map(float, model_star['model_classes']['rlnClassDistribution']),    # Size
+        map(float, model_star['model_classes']['rlnEstimatedResolution']),  # Resolution
+    ), key=lambda (cls, size, resol): pair(size, resol))
+    # Lexicographical comparison
 
-    print(prefix_RELION_IT("found best class: {} with class size of {} and resolution of {}".format(
+    print(prefix_RELION_IT("found best class {} of size {} and resolution {}".format(
         best_class, best_size, best_resol
     )))
     return best_class, best_resol, model_star['model_general']['rlnPixelSize']
@@ -2046,7 +2013,7 @@ def findBestClass(model_star_file, use_resol=True):
 
 def findOutputModelStar(job_dir):
     try:
-        job_star = safe_load_star(
+        job_star = star.load(
             str(job_dir) + 'job_pipeline.star',
             expected=['pipeline_output_edges', 'rlnPipeLineEdgeToNode']
         )
@@ -2101,7 +2068,7 @@ def main():
         exit(0)
 
     # Exit in case the preprocessing pipeliners are still running.
-    for checkfile in ('RUNNING_PIPELINER_' + x for x in (
+    for checkfile in ('RUNNING_PIPELINER_' + pass_ for pass_ in (
         PREPROCESS_SCHEDULE_PASS1, PREPROCESS_SCHEDULE_PASS2
     )):
         if os.path.isfile(checkfile):
