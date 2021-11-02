@@ -888,7 +888,7 @@ class RelionItOptions(object):
             autopick_options, alias=autopick_alias,
         )
 
-    def set_up_extract_job(self, ctffind_job, autopick_job, ipass):
+    def set_up_extract_job(self, ctffind_job, autopick_job, ipass, downscale):
         # Extract options
         extract_options = [
             '{} == {}'.format(question, answer) for question, answer in [
@@ -924,7 +924,7 @@ class RelionItOptions(object):
             extract_options, alias=extract_alias,
         )
 
-    def set_up_split_job(self, ipass):
+    def set_up_split_job(self, extract_job, extract_job, ipass):
         #### Set up the Select job to split the particle STAR file into batches
         split_options = [
             '{} == {}'.format(question, answer) for question, answer in [
@@ -987,7 +987,7 @@ class RelionItOptions(object):
             'InitialModel', 'inimodel', inimodel_options,
         )
 
-    def set_up_class2d_job(self, particles_star_file, batchsize, ipass):
+    def set_up_class2d_job(self, particles_star_file, batchsize, ipass, ibatch):
         class2d_options = [
             '{} == {}'.format(question, answer) for question, answer in [
                 ('Input images STAR file:',                 particles_star_file),
@@ -1042,7 +1042,7 @@ class RelionItOptions(object):
             discard_options,
         )
 
-    def set_up_class3d_job(self, particles_star_file, batchsize, ipass):
+    def set_up_class3d_job(self, particles_star_file, batchsize, ipass, ibatch):
         class3d_options = [
             '{} == {}'.format(question, answer) for question, answer in [
                 ('Input images STAR file:',                 particles_star_file),
@@ -1185,11 +1185,11 @@ class RelionItOptions(object):
                 autopick_job = self.set_up_autopick_job(ctffind_job, ipass)
                 runjobs.append(autopick_job)
 
-                extract_job = self.set_up_extract_job(ctffind_job, autopick_job, ipass)
+                extract_job = self.set_up_extract_job(ctffind_job, autopick_job, ipass, downscale)
                 runjobs.append(extract_job)
 
                 if do_classification:
-                    split_job = self.set_up_split_job(ipass)
+                    split_job = self.set_up_split_job(extract_job, ipass)
                     runjobs.append(split_job)
 
             # Now execute the preprocessing pipeliner
@@ -1288,7 +1288,7 @@ class RelionItOptions(object):
 
                             # 2D classification
                             if do_2d_classification:
-                                class2d_job = self.set_up_class2d_job(particles_star_file, batchsize, ipass)
+                                class2d_job = self.set_up_class2d_job(particles_star_file, batchsize, ipass, ibatch)
 
                                 if rerun_batch1 or class2d_job is None:
                                     have_new_batch = True
@@ -1326,7 +1326,7 @@ class RelionItOptions(object):
 
                             if self.have_3d_reference:
                                 # Now perform the actual 3D classification
-                                class3d_job = self.set_up_class3d_job(particles_star_file, batchsize, ipass)
+                                class3d_job = self.set_up_class3d_job(particles_star_file, batchsize, ipass, ibatch)
 
                                 if rerun_batch1 or class3d_job is None:
                                     have_new_batch = True
