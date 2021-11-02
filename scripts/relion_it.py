@@ -866,7 +866,7 @@ class RelionItOptions(object):
                 ('Which GPUs to use:',                   self.autopick_gpu),
                 ('Additional arguments:',                self.autopick_other_args),
                 ('Number of MPI procs:',                 self.autopick_mpi),
-                ('OR: provide a 3D reference?',          bool_to_word(bool(self.autopick_3dreference)),
+                ('OR: provide a 3D reference?',          bool_to_word(bool(self.autopick_3dreference))),
                 ('OR: use Laplacian-of-Gaussian?',       bool_to_word(self.autopick_do_LoG)),
                 ('Are References CTF corrected?',        bool_to_word(self.autopick_refs_are_ctf_corrected)),
                 ('References have inverted contrast?',   bool_to_word(self.autopick_refs_have_inverted_contrast)),
