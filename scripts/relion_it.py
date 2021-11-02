@@ -924,7 +924,7 @@ class RelionItOptions(object):
             extract_options, alias=extract_alias,
         )
 
-    def set_up_split_job(self, extract_job, extract_job, ipass):
+    def set_up_split_job(self, extract_job, ipass):
         #### Set up the Select job to split the particle STAR file into batches
         split_options = [
             '{} == {}'.format(question, answer) for question, answer in [
