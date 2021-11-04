@@ -6,6 +6,12 @@ import re
 import time
 
 
+def recursivelydescend(d, keys):
+    for k in keys:
+        d = d[k]
+    return d
+
+
 def safe(loadmethod, max_tries=5, wait=10):
     '''
     Make a `loadmethod` safe.
@@ -17,11 +23,10 @@ def safe(loadmethod, max_tries=5, wait=10):
                 # Ensure the expected keys are present
                 # By descending through the dictionary
                 entry = starfile
-                for key in expected:
-                    entry = entry[key]
+                recursivelydescend(entry, expected)
                 return starfile
-            except:
-                print("safe_load_star is retrying to read: {}, expected key: {}".format(filename, expected))
+            except KeyError:
+                print("Just tried (and failed) to read {}, expected key: {}".format(filename, expected))
                 time.sleep(wait)
         raise Exception("Failed to read a star file: {}".format(filename))
     return safemethod
