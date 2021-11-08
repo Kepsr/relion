@@ -267,10 +267,6 @@ import runpy
 import time
 import traceback
 import re
-
-from Tkinter import DoubleVar
-from scripts.star import recursivelydescend
-import star
 import itertools
 
 try:
@@ -284,6 +280,8 @@ except ImportError:
     # so we can ignore the error for now.
     pass
 
+import star
+
 # Constants
 PIPELINE_STAR = 'default_pipeline.star'
 RUNNING_FILE = 'RUNNING_RELION_IT'
@@ -292,9 +290,7 @@ SETUP_CHECK_FILE = 'RELION_IT_SUBMITTED_JOBS'
 PREPROCESS_SCHEDULE_PASS1 = 'PREPROCESS'
 PREPROCESS_SCHEDULE_PASS2 = 'PREPROCESS_PASS2'
 OPTIONS_FILE = 'relion_it_options.py'
-
-# Generators save memory.
-range = xrange
+GUI_PROJECT_FILE = '.gui_projectdir'
 
 
 def is_dunder_name(name):
@@ -311,6 +307,10 @@ def prefix_ERROR(msg):
 
 def bool_to_word(x):
     return 'Yes' if x else 'No'
+
+
+def capfirst(s):
+        return s[0].upper() + s[1:]
 
 
 def captureException(method):
@@ -419,8 +419,6 @@ class RelionItOptions(object):
     ### 3D-classification parameters
     # Number of 3D classes to use
     class3d_nr_classes = 4
-    # Have initial 3D model? If not, calculate one using SGD initial model generation
-    have_3d_reference = False
     # Initial reference model
     class3d_reference = ''
     # Is reference on correct greyscale?
@@ -678,12 +676,17 @@ class RelionItOptions(object):
         '''
         for key, value in [
             (key, value) for key, value in d.items() if not is_dunder_name(key)
-            # exclude __name__, __builtins__ etc.
+            # exclude __name__, __builtins__, etc.
         ]:
             if hasattr(self, key):
                 setattr(self, key, value)
             else:
                 print(prefix_RELION_IT("Unrecognised option '{}'".format(key)))
+
+    def have_3d_reference(self):
+        # Used to determine whether to calculate an initial 3D model 
+        # by SGD initial model generation
+        return bool(self.class3d_reference)
 
     def write_to(self, filename):
         '''
@@ -793,7 +796,7 @@ class RelionItOptions(object):
         return addJob(
             'MotionCorr', 'motioncorr_job', options,
         )
-    
+
     def set_up_ctffind_job(self, import_job, motioncorr_job):
         # Set up the CtfFind job
         options = qaformat([
@@ -834,7 +837,7 @@ class RelionItOptions(object):
             'CtfFind', 'ctffind_job', options
         )
 
-    def set_up_autopick_job(self, ctffind_job, ipass):
+    def set_up_autopick_job(self, ctffind_job, passindex):
         options = qaformat([
             ('Input micrographs for autopick:',      ctffind_job + 'micrographs_ctf.star'),
             ('Min. diameter for LoG filter (A)',     self.autopick_LoG_diam_min),
@@ -868,17 +871,12 @@ class RelionItOptions(object):
         if self.autopick_submit_to_queue:
             options.extend(self.queue_options)
 
-        jobname, jobalias = (
-            'autopick{}_job'.format('' if ipass == 0 else ipass + 1),
-            'pass {}'.format(ipass + 1)
-        )
-
         return addJob(
-            'AutoPick', jobname,
-            options, alias=jobalias,
+            'AutoPick', 'autopick{}_job'.format('' if passindex == 0 else passindex + 1),
+            options, alias='pass {}'.format(passindex + 1),
         )
 
-    def set_up_extract_job(self, ctffind_job, autopick_job, ipass, downscale):
+    def set_up_extract_job(self, ctffind_job, autopick_job, passindex, downscale):
         # Extract options
         options = qaformat([
             ('Input coordinates:',                autopick_job + 'coords_suffix_autopick.star'),
@@ -892,7 +890,7 @@ class RelionItOptions(object):
             options.extend(qaformat([
                 ('Rescale particles?', 'Yes'),
                 ('Re-scaled size (pixels):', (
-                    self.extract_small_boxsize if ipass == 0 else
+                    self.extract_small_boxsize if passindex == 0 else
                     self.extract2_small_boxsize
                 )),
             ]))
@@ -900,36 +898,26 @@ class RelionItOptions(object):
         if self.extract_submit_to_queue:
             options.extend(self.queue_options)
 
-        jobname, jobalias = (
-            'extract{}_job'.format('' if ipass == 0 else ipass + 1),
-            'pass {}'.format(ipass + 1)
-        )
-
         return addJob(
-            'Extract', jobname,
-            options, alias=jobalias,
+            'Extract', 'extract{}_job'.format('' if passindex == 0 else passindex + 1),
+            options, alias='pass {}'.format(passindex + 1),
         )
 
-    def set_up_split_job(self, extract_job, ipass):
+    def set_up_split_job(self, extract_job, passindex):
         #### Set up the Select job to split the particle STAR file into batches
         options = qaformat([
             ('OR select from particles.star:', extract_job + 'particles.star'),
             ('OR: split into subsets?',        'Yes'),
             ('OR: number of subsets:',         -1),
             ('Subset size:', (
-                self.batchsize if ipass == 0 else
+                self.batchsize if passindex == 0 else
                 self.batchsize_pass2
             ))
         ])
 
-        jobname, jobalias = (
-            'split{}_job'.format('' if ipass == 0 else ipass + 1), 
-            'into {}'.format(self.batchsize)
-        )
-
         return addJob(
-            'Select', jobname,
-            options, alias=jobalias
+            'Select', 'split{}_job'.format('' if passindex == 0 else passindex + 1),
+            options, alias='into {}'.format(self.batchsize)
         )
 
     def set_up_inimodel_job(self, particles_star_file):
@@ -970,7 +958,7 @@ class RelionItOptions(object):
             'InitialModel', 'inimodel', options,
         )
 
-    def set_up_class2d_job(self, particles_star_file, batchsize, ipass, ibatch):
+    def set_up_class2d_job(self, particles_star_file, batchsize, passindex, batchindex):
         options = qaformat([
             ('Input images STAR file:',                 particles_star_file),
             ('Number of classes:',                      self.class2d_nr_classes),
@@ -994,17 +982,12 @@ class RelionItOptions(object):
         if self.refine_submit_to_queue:
             options.extend(self.queue_options)
 
-        jobname, alias = (
-            'class2d{}_job_batch_{:03d}'.format('' if ipass == 0 else '_pass' + str(ipass + 1), ibatch + 1),
-            'pass{}_batch_{:03d}'.format(ipass + 1, ibatch + 1)
-        )
-
         return addJob(
-            'Class2D', jobname,
-            options, alias=alias
+            'Class2D', 'class2d{}_job_batch_{:03d}'.format('' if passindex == 0 else '_pass' + str(passindex + 1), batchindex + 1),
+            options, alias='pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
         )
 
-    def set_up_discard_job(self, batchname, ipass):
+    def set_up_discard_job(self, batchname, passindex):
         # Run a Select job to get rid of particles with outlier average/stddev values...
         options = qaformat([
             ('OR select from particles.star:',     batchname),
@@ -1017,11 +1000,11 @@ class RelionItOptions(object):
             options.extend(self.queue_options)
 
         return addJob(
-            'Select', 'discard{}_job'.format('' if ipass == 0 else ipass + 1),
+            'Select', 'discard{}_job'.format('' if passindex == 0 else passindex + 1),
             options,
         )
 
-    def set_up_class3d_job(self, particles_star_file, batchsize, ipass, ibatch):
+    def set_up_class3d_job(self, particles_star_file, batchsize, passindex, batchindex):
         options = qaformat([
             ('Input images STAR file:',                 particles_star_file),
             ('Reference map:',                          self.class3d_reference),
@@ -1053,14 +1036,9 @@ class RelionItOptions(object):
         if self.refine_submit_to_queue:
             options.extend(self.queue_options)
 
-        jobname, alias = (
-            'class3d{}_job_batch_{:03d}'.format('' if ipass == 0 else ipass + 1, ibatch + 1),
-            'pass{}_batch_{:03d}'.format(ipass + 1, ibatch + 1),
-        )
-
         return addJob(
-            'Class3D', jobname,
-            options, alias=alias,
+            'Class3D', 'class3d{}_job_batch_{:03d}'.format('' if passindex == 0 else passindex + 1, batchindex + 1),
+            options, alias='pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1),
         )
 
     def run_pipeline(self):
@@ -1080,7 +1058,7 @@ class RelionItOptions(object):
             pass
 
         # Write main GUI project file, so GUI won't ask to set up a project
-        with open('.gui_projectdir', 'w'):
+        with open(GUI_PROJECT_FILE, 'w'):
             pass
 
         # Set up GUI file for Manualpick job to allow easy viewing of autopick results
@@ -1128,11 +1106,10 @@ class RelionItOptions(object):
                 self.autopick_2dreferences = ''
                 self.autopick_do_LoG = False
                 self.class3d_reference = secondpass_ref3d
-                self.have_3d_reference = True
 
         # Allow to perform two passes through the entire pipeline (PREPROCESS and CLASS2D/3D batches)
         # The second pass, a 3D reference generated in the first pass will be used for template-based autopicking
-        for ipass in range(startat, nr_passes):
+        for passindex in range(startat, nr_passes):
 
             runjobs = []
 
@@ -1147,28 +1124,28 @@ class RelionItOptions(object):
             runjobs.append(ctffind_job)
 
             do_2d_classification, do_3d_classification = (
-                (self.do_class2d, self.do_class3d) if ipass == 0 else
+                (self.do_class2d, self.do_class3d) if passindex == 0 else
                 (self.do_class2d_pass2, self.do_class3d_pass2)
             )
 
             do_classification = do_2d_classification or do_3d_classification
 
-            downscale = self.extract_downscale if ipass == 0 else self.extract2_downscale
+            downscale = self.extract_downscale if passindex == 0 else self.extract2_downscale
 
             # There is an option to stop on-the-fly processing after CTF estimation
             if not self.stop_after_ctf_estimation:
-                autopick_job = self.set_up_autopick_job(ctffind_job, ipass)
+                autopick_job = self.set_up_autopick_job(ctffind_job, passindex)
                 runjobs.append(autopick_job)
 
-                extract_job = self.set_up_extract_job(ctffind_job, autopick_job, ipass, downscale)
+                extract_job = self.set_up_extract_job(ctffind_job, autopick_job, passindex, downscale)
                 runjobs.append(extract_job)
 
                 if do_classification:
-                    split_job = self.set_up_split_job(extract_job, ipass)
+                    split_job = self.set_up_split_job(extract_job, passindex)
                     runjobs.append(split_job)
 
             # Now execute the preprocessing pipeliner
-            preprocess_schedule_name = PREPROCESS_SCHEDULE_PASS1 if ipass == 0 else PREPROCESS_SCHEDULE_PASS2
+            preprocess_schedule_name = PREPROCESS_SCHEDULE_PASS1 if passindex == 0 else PREPROCESS_SCHEDULE_PASS2
             RunJobs(runjobs, self.preprocess_repeat_times, self.preprocess_repeat_wait, preprocess_schedule_name)
             print(prefix_RELION_IT('submitted {} pipeliner with {} repeats of the preprocessing jobs'.format(
                 preprocess_schedule_name, self.preprocess_repeat_times
@@ -1185,7 +1162,7 @@ class RelionItOptions(object):
             if do_classification:
                 # If necessary, rescale the 3D reference in the second pass!
                 # TODO: rescale initial reference if different from movies?
-                if ipass == 1 and (self.extract_downscale or self.extract2_downscale):
+                if passindex == 1 and (self.extract_downscale or self.extract2_downscale):
                     particles_angpix = self.angpix
                     if self.images_are_movies:
                         particles_angpix *= self.motioncor_binning
@@ -1215,8 +1192,10 @@ class RelionItOptions(object):
                     'You can stop this loop by deleting the file {}'.format(RUNNING_FILE)
                 ))))
 
-                # It could be that this is a restart, so check previous_batch1_size in the output directory.
-                # Also check the presence of class2d_job_batch_001 in case the first job was not submitted yet.
+                # It could be that this is a restart,
+                # so check for `previous_batch1_size` in the output directory.
+                # Also check for `class2d_job_batch_001`,
+                # in case the first job was not submitted yet.
                 first_split_file = find_job_number(split_job + 'particles_split', 1)
                 keys = ['particles', 'rlnMicrographName']
                 previous_batch1_size = len(star.recursivelydescend(
@@ -1228,20 +1207,15 @@ class RelionItOptions(object):
                 continue_this_pass = True
                 while continue_this_pass:
                     have_new_batch = False
-                    '''
-                    for batch_name in glob.glob(split_job + 'particle_split*.star'):
-                        # Sort by index
-                    '''
-                    # Surely the below can be shortened (and improved) to the above.
-                    nr_batches = len(glob.glob(split_job + 'particles_split*.star'))
-                    for ibatch in range(nr_batches):
-                        batch_name = find_job_number(split_job + 'particles_split', ibatch + 1)
-                        batchsize = len(star.recursivelydescend(star.load(batch_name, keys), keys))
-                        rerun_batch1 = ibatch == 0 and batchsize > min(previous_batch1_size, self.minimum_batchsize)
+                    for batchindex, batchname in enumerate(sorted(glob.glob(
+                        split_job + 'particle_split*.star'
+                    ))):
+                        batch = star.load(batchname, keys)
+                        batchsize = len(star.recursivelydescend(batch), keys)
+                        rerun_batch1 = batchindex == 0 and batchsize > min(previous_batch1_size, self.minimum_batchsize)
                         if rerun_batch1:
                             previous_batch1_size = batchsize
-
-                        particles_star_file = batch_name
+                        particles_star_file = batchname
 
                         def donewbatch(job, capsname, description, batchsize):
                             RunJobs([job], 1, 1, capsname)
@@ -1256,54 +1230,56 @@ class RelionItOptions(object):
 
                             # Discard particles with odd average/stddev values
                             if self.do_discard_on_image_statistics:
-                                discard_job = self.set_up_discard_job(batch_name, ipass)
+                                discard_job = self.set_up_discard_job(batchname, passindex)
                                 if rerun_batch1 or discard_job is None:
                                     have_new_batch = True
                                     donewbatch(discard_job, 'DISCARD', 'job to discard based on image statistics', batchsize)
-
                                 particles_star_file = discard_job + 'particles.star'
 
                             # 2D classification
                             if do_2d_classification:
-                                class2d_job = self.set_up_class2d_job(particles_star_file, batchsize, ipass, ibatch)
+                                class2d_job = self.set_up_class2d_job(particles_star_file, batchsize, passindex, batchindex)
                                 if rerun_batch1 or class2d_job is None:
                                     have_new_batch = True
                                     donewbatch(class2d_job, 'CLASS2D', '2D classification', batchsize)
 
                         # Perform 3D classification
                         if do_3d_classification:
-                            # Do SGD initial model generation only in the first pass,
-                            # when no reference is provided AND only for the first (complete) batch, for subsequent batches use that model
-                            if not self.have_3d_reference and ipass == ibatch == 0 and batchsize == self.batchsize:
+                            # In the first pass and the first (complete) batch
+                            # if no reference is provided,
+                            # do SGD initial model generation.
+                            # Then use this model for subsequent batches.
+                            if (
+                                passindex == batchindex == 0
+                                and not self.have_3d_reference()
+                                and batchsize == self.batchsize
+                            ):
                                 inimodel_job = self.set_up_inimodel_job(particles_star_file)
                                 if inimodel_job is None:
                                     have_new_batch = True
                                     donewbatch(inimodel_job, 'INIMODEL', 'initial model generation', batchsize)
 
-                                sgd_model_star = findOutputModelStar(inimodel_job, 'Initial model generation')
-                                best_inimodel_class, best_inimodel_resol, best_inimodel_angpix = findBestClass(sgd_model_star, use_resol=True)
-
+                                sgd_model_star = findOutputModelStar(inimodel_job, 'initial model generation')
                                 # Use the model of the largest class for 3D classification
-                                # total_iter = self.inimodel_nr_iter_initial + self.inimodel_nr_iter_inbetween + self.inimodel_nr_iter_final
-                                self.class3d_reference = best_inimodel_class
+                                self.class3d_reference, _resol, _angpix = findBestClass(sgd_model_star, use_resol=True)
+                                # XXX The comment says 'largest', but the code says 'best resolved'.
                                 self.class3d_ref_is_correct_greyscale = True
                                 self.class3d_ref_is_ctf_corrected = True
-                                self.have_3d_reference = True
 
-                            if self.have_3d_reference:
-                                # Now perform the actual 3D classification
-                                class3d_job = self.set_up_class3d_job(particles_star_file, batchsize, ipass, ibatch)
+                            if self.have_3d_reference():
+                                # Do 3D classification
+                                class3d_job = self.set_up_class3d_job(particles_star_file, batchsize, passindex, batchindex)
                                 if rerun_batch1 or class3d_job is None:
                                     have_new_batch = True
                                     donewbatch(class3d_job, 'CLASS3D', '3D classification', batchsize)
 
-                                class3d_model_star = findOutputModelStar(class3d_job, '3D Classification')
+                                class3d_model_star = findOutputModelStar(class3d_job, '3D classification')
                                 best_class3d_class, best_class3d_resol, best_class3d_angpix = findBestClass(class3d_model_star, use_resol=True)
 
                                 # Once the first batch in the first pass is completed,
-                                # move on to the second pass
+                                # progress to the second pass.
                                 if (
-                                    ipass == ibatch == 0
+                                    passindex == batchindex == 0
                                     and self.do_second_pass
                                     and best_class3d_resol < self.minimum_resolution_3dref_2ndpass
                                 ):
@@ -1312,13 +1288,14 @@ class RelionItOptions(object):
                                     self.autopick_ref_angpix = best_class3d_angpix
                                     self.autopick_2dreferences = ''
                                     self.autopick_do_LoG = False
-                                    self.have_3d_reference = True
                                     self.autopick_3dref_symmetry = self.symmetry
 
                                     # Stop the PREPROCESS pipeliner of the first pass by removing its RUNNING file
                                     filename_to_remove = 'RUNNING_PIPELINER_' + preprocess_schedule_name
                                     if os.path.isfile(filename_to_remove):
-                                        print(prefix_RELION_IT('removing file {} to stop the pipeliner from the first pass'.format(filename_to_remove)))
+                                        print(prefix_RELION_IT(
+                                            'removing file {} to stop the pipeliner from the first pass'.format(filename_to_remove)
+                                        ))
                                         os.remove(filename_to_remove)
 
                                     # Generate a file to indicate we're in the second pass,
@@ -1328,16 +1305,17 @@ class RelionItOptions(object):
                                             best_class3d_class, best_class3d_angpix
                                         )))
 
-                                    # Move out of this ipass of the passes loop....
-                                    ibatch = nr_batches + 1
+                                    # Exit this pass
                                     continue_this_pass = False
-                                    print(prefix_RELION_IT('moving on to the second pass using {} for template-based autopicking'.format(self.autopick_3dreference)))
+                                    print(prefix_RELION_IT(
+                                        'moving on to the second pass using {} for template-based autopicking'.format(self.autopick_3dreference)
+                                    ))
                                     # break out of the for-loop over the batches
                                     break
 
                     if not have_new_batch:
                         CheckForExit()
-                        # Don't check the particles.star file too often
+                        # Don't check `particles.star` too often
                         time.sleep(60 * self.batch_repeat_time)
 
 
@@ -1484,7 +1462,7 @@ class RelionItGui(object):
             #                                                                  ^ will be used if `self.angpix_entry.get()` fails
         ) = (
             makeEntryWithVarAndAttr(
-                particle_frame, option, labeltext, row+3, attrtext, vartype=DoubleVar,
+                particle_frame, option, labeltext, row+3, attrtext, vartype=tk.DoubleVar,
             ) for row, (option, labeltext, attrtext) in enumerate((
                 (options.mask_diameter,         u"Mask diameter (\u212B):", "= NNN px"        ),
                 (options.extract_boxsize,       "Box size (px):",           u"= NNN \u212B"   ),
@@ -1926,10 +1904,8 @@ def WaitForJob(jobname, seconds=30):
     print(prefix_RELION_IT("waiting for job to finish in {}".format(jobname)))
 
     def waiting():
-        pipeline = star.load(
-            PIPELINE_STAR,
-            ['pipeline_processes', 'rlnPipeLineProcessName']
-        )
+        keys = ['pipeline_processes', 'rlnPipeLineProcessName']
+        pipeline = star.load(PIPELINE_STAR, keys)
         processes = pipeline['pipeline_processes']
         try:
             jobnr = processes['rlnPipeLineProcessName'].index(jobname)
@@ -1991,6 +1967,7 @@ def findBestClass(model_star_file, use_resol=True):
     Return the filename of the best class, its resolution, and the pixel size.
     '''
     model_star = star.load(model_star_file)
+    model_classes = model_star['model_classes']
 
     pair = (
         (lambda size, resol: (1/resol, size)) if use_resol else
@@ -2000,10 +1977,10 @@ def findBestClass(model_star_file, use_resol=True):
     best_class, best_size, best_resol = max(zip(
         # We are depending on these 3 iterables that we are zipping to be `list`s.
         # They might actually be `dict`s, in which case we will have to use a dictionary zip.
-        model_star['model_classes']['rlnReferenceImage'],                   # Class
-        map(float, model_star['model_classes']['rlnClassDistribution']),    # Size
-        map(float, model_star['model_classes']['rlnEstimatedResolution']),  # Resolution
-    ), key=lambda (cls, size, resol): pair(size, resol))
+        model_classes['rlnReferenceImage'],                   # Class
+        map(float, model_classes['rlnClassDistribution']),    # Size
+        map(float, model_classes['rlnEstimatedResolution']),  # Resolution
+    ), key=lambda (class_, size, resol): pair(size, resol))
     # Lexicographical comparison
 
     print(prefix_RELION_IT("found best class {} of size {} and resolution {}".format(
@@ -2020,7 +1997,7 @@ def findOutputModelStar(job_dir, description=''):
         if output_file.endswith("_model.star"):
             return output_file
 
-    print(prefix_RELION_IT("{} {} does not contain expected output maps.".format(description, job_dir)))
+    print(prefix_RELION_IT("{} {} does not contain expected output maps.".format(capfirst(description), job_dir)))
     print(prefix_RELION_IT("This job should have finished, but you may continue it from the GUI."))
     raise Exception("ERROR!! quitting the pipeline.") # TODO: MAKE MORE ROBUST
 
