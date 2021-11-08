@@ -1900,9 +1900,6 @@ def WaitForJob(jobname, seconds=30):
     `jobname: str` name of job
     `seconds: int` time to wait (seconds)
     '''
-    time.sleep(seconds)
-    print(prefix_RELION_IT("waiting for job to finish in {}".format(jobname)))
-
     def waiting():
         keys = ['pipeline_processes', 'rlnPipeLineProcessName']
         pipeline = star.load(PIPELINE_STAR, keys)
@@ -1915,9 +1912,11 @@ def WaitForJob(jobname, seconds=30):
         status = int(processes['rlnPipeLineProcessStatus'][jobnr])
         if status == 2:
             print(prefix_RELION_IT("job in {} has finished now".format(jobname)))
-            return True
-        return False
+            return False
+        return True
 
+    time.sleep(seconds)
+    print(prefix_RELION_IT("waiting for job to finish in {}".format(jobname)))
     while waiting():
         CheckForExit()
         time.sleep(seconds)
