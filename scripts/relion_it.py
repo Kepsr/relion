@@ -1196,7 +1196,7 @@ class RelionItOptions(object):
                 # so check for `previous_batch1_size` in the output directory.
                 # Also check for `class2d_job_batch_001`,
                 # in case the first job was not submitted yet.
-                first_split_file = find_job_number(split_job + 'particles_split', 1)
+                first_split_file = sorted(glob.glob(split_job, + 'particles_split*.star'))[0]
                 keys = ['particles', 'rlnMicrographName']
                 previous_batch1_size = len(star.recursivelydescend(
                     star.load(first_split_file, keys), keys
@@ -1920,17 +1920,6 @@ def WaitForJob(jobname, seconds=30):
     while waiting():
         CheckForExit()
         time.sleep(seconds)
-
-
-def find_job_number(prefix, n, max_digits=6):
-    # filepattern = re.compile(prefix + '0{,' + str(max_digits) + '}' + str(n) + '.star')
-    possible_filenames = {
-        prefix + str(n).rjust(i, '0') + '.star' for i in range(max_digits)
-    }
-    for filename in filter(os.path.isfile, os.listdir('.')):
-        # if filepattern.match(filename):
-        if filename in possible_filenames:
-            return filename
 
 
 def writeManualPickingGuiFile(particle_diameter):
