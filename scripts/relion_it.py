@@ -287,8 +287,7 @@ PIPELINE_STAR = 'default_pipeline.star'
 RUNNING_FILE = 'RUNNING_RELION_IT'
 SECONDPASS_REF3D_FILE = 'RELION_IT_2NDPASS_3DREF'
 SETUP_CHECK_FILE = 'RELION_IT_SUBMITTED_JOBS'
-PREPROCESS_SCHEDULE_PASS1 = 'PREPROCESS'
-PREPROCESS_SCHEDULE_PASS2 = 'PREPROCESS_PASS2'
+PREPROCESS_SCHEDULE_PASSES = ['PREPROCESS', 'PREPROCESS_PASS2']
 OPTIONS_FILE = 'relion_it_options.py'
 GUI_PROJECT_FILE = '.gui_projectdir'
 
@@ -394,21 +393,32 @@ class RelionItOptions(object):
     ### Extract parameters
     # Box size of particles in the averaged micrographs (in pixels)
     extract_boxsize = 256
-    # Down-scale the particles upon extraction?
-    extract_downscale = False
+    # Down-scale particles upon extraction?
+    extract_downscale = (
+        False,  # First pass 
+        False,  # Second pass
+    )
     # Box size of the down-scaled particles (in pixels)
-    extract_small_boxsize = 64
-    # In second pass, down-scale the particles upon extraction?
-    extract2_downscale = False
-    # In second pass, box size of the down-scaled particles (in pixels)
-    extract2_small_boxsize = 128
+    extract_small_boxsize = (
+        64,   # First pass
+        128,  # Second pass
+    )
 
-    ### Now perform 2D and/or 3D classification with the extracted particles?
-    do_class2d = True
+    ### Perform 2D and/or 3D classification with extracted particles?
+    do_class2d = (
+        True,  # First pass
+        True,  # Second pass
+    )
     # And/or perform 3D classification?
-    do_class3d = True
+    do_class3d = (
+        True,   # First pass
+        False,  # Second pass
+    )
     # Repeat 2D and/or 3D-classification for batches of this many particles
-    batchsize = 10000
+    batchsize = (
+        10000,   # First pass
+        100000,  # Second pass
+    )
     # Number of 2D classes to use
     class2d_nr_classes  = 50
     # Diameter of the mask used for 2D/3D classification (in Angstrom)
@@ -428,16 +438,11 @@ class RelionItOptions(object):
     # Initial lowpass filter on reference
     class3d_ini_lowpass = 40
 
-    ### Use the largest 3D class from the first batch as a 3D reference for a second pass of autopicking? (only when do_class3d is True)
+    ### Use the largest 3D class from the first batch as a 3D reference for a second pass of autopicking? 
+    # (only when `do_class3d[0]` is True)
     do_second_pass = True
     # Only move on to template-based autopicking if the 3D references achieves this resolution (in A)
     minimum_resolution_3dref_2ndpass = 20
-    # In the second pass, perform 2D classification?
-    do_class2d_pass2 = True
-    # In the second pass, perform 3D classification?
-    do_class3d_pass2 = False
-    # Batch size in the second pass
-    batchsize_pass2 = 100000
 
     ###################################################################################
     ############ The following parameters can often be kept the same for a given setup
@@ -456,24 +461,25 @@ class RelionItOptions(object):
     ### MotionCorrection parameters
     # Use RELION's own implementation of motion-correction (CPU-only) instead of the UCSF implementation?
     motioncor_do_own = True
-    # The number of threads (only for RELION's own implementation) is optimal when nr_movie_frames/nr_threads = integer
+    # The number of threads (only for RELION's own implementation)
+    #   Optimal when nr_movie_frames / nr_threads is an integer
     motioncor_threads = 6
     # Exectutable of UCSF MotionCor2
     motioncor_exe = '/public/EM/MOTIONCOR2/MotionCor2'
     # On which GPU(s) to execute UCSF MotionCor2
     motioncor_gpu = '0'
-    # How many MPI processes to use for running motion correction?
+    # Number of MPI processes for motion correction:
     motioncor_mpi = 4
     # Local motion-estimation patches for MotionCor2
-    motioncor_patches_x = 4
-    motioncor_patches_y = 4
+    motioncor_patches_x, motioncor_patches_y = 4, 4
     # B-factor in A^2 for downweighting of high-spatial frequencies
     motioncor_bfactor = 150
     # Use binning=2 for super-resolution movies
     motioncor_binning = 1
     # Provide a defect file for your camera if you have one
     motioncor_defectfile = ''
-    # orientation of the gain-reference w.r.t your movies (if input movies are not yet gain-corrected, e.g. TIFFs)
+    # Gain reference orientation w.r.t movies 
+    #   (if input movies are not yet gain-corrected, e.g. TIFFs)
     motioncor_gainflip = 'No flipping (0)'
     motioncor_gainrot = 'No rotation (0)'
     # Other arguments for MotionCor2
@@ -568,7 +574,7 @@ class RelionItOptions(object):
     # Use GPU-acceleration?
     refine_do_gpu = True
     # Which GPU to use (different from GPU used for pre-processing?)
-    refine_gpu = '1'
+    refine_gpu = 1
     # How many MPI processes to use
     refine_mpi = 1
     # How many threads to use
@@ -750,7 +756,7 @@ class RelionItOptions(object):
         options = qaformat([
             ('Raw input files:',               self.import_images),
             ('Import raw movies/micrographs?', 'Yes'),
-            ('Pixel size (Angstrom):',         self.angpix),
+            ('Pixel size (A):',                self.angpix),
             ('Voltage (kV):',                  self.voltage),
             ('Spherical aberration (mm):',     self.Cs),
             ('Amplitude contrast:',            self.ampl_contrast),
@@ -759,7 +765,7 @@ class RelionItOptions(object):
 
         return addJob('Import', 'import_job', options)
 
-    def set_up_motioncor_job(self, import_job):
+    def set_up_motioncorr_job(self, import_job):
         #### Set up the MotionCor job
         options = qaformat([
             ('Input movies STAR file:',    import_job + 'movies.star'),
@@ -840,20 +846,20 @@ class RelionItOptions(object):
     def set_up_autopick_job(self, ctffind_job, passindex):
         options = qaformat([
             ('Input micrographs for autopick:',      ctffind_job + 'micrographs_ctf.star'),
-            ('Min. diameter for LoG filter (A)',     self.autopick_LoG_diam_min),
-            ('Max. diameter for LoG filter (A)',     self.autopick_LoG_diam_max),
-            ('Maximum resolution to consider (A)',   self.autopick_lowpass),
+            ('Min. diameter for LoG filter (A):',    self.autopick_LoG_diam_min),
+            ('Max. diameter for LoG filter (A):',    self.autopick_LoG_diam_max),
+            ('Maximum resolution to consider (A):',  self.autopick_lowpass),
             ('Adjust default threshold (stddev):',   self.autopick_LoG_adjust_threshold),
             ('Upper threshold (stddev):',            self.autopick_LoG_upper_threshold),
             ('2D references:',                       self.autopick_2dreferences),
             ('3D reference:',                        self.autopick_3dreference),
             ('Symmetry:',                            self.autopick_3dref_symmetry),
-            ('Pixel size in references (A)',         self.autopick_ref_angpix),
+            ('Pixel size in references (A):',        self.autopick_ref_angpix),
             ('3D angular sampling:',                 self.autopick_3dref_sampling),
-            ('In-plane angular sampling (deg)',      self.autopick_inplane_sampling),
+            ('In-plane angular sampling (deg):',     self.autopick_inplane_sampling),
             ('Picking threshold:',                   self.autopick_refs_threshold),
             ('Minimum inter-particle distance (A):', self.autopick_refs_min_distance),
-            ('Mask diameter (A)',                    self.autopick_refs_mask_diam),
+            ('Mask diameter (A):',                   self.autopick_refs_mask_diam),
             ('Maximum stddev noise:',                self.autopick_stddev_noise),
             ('Minimum avg noise:',                   self.autopick_avg_noise),
             ('Shrink factor:',                       self.autopick_shrink_factor),
@@ -888,11 +894,8 @@ class RelionItOptions(object):
 
         if downscale:
             options.extend(qaformat([
-                ('Rescale particles?', 'Yes'),
-                ('Re-scaled size (pixels):', (
-                    self.extract_small_boxsize if passindex == 0 else
-                    self.extract2_small_boxsize
-                )),
+                ('Rescale particles?',       'Yes'),
+                ('Re-scaled size (pixels):', self.extract_small_boxsize[passindex]),
             ]))
 
         if self.extract_submit_to_queue:
@@ -909,15 +912,12 @@ class RelionItOptions(object):
             ('OR select from particles.star:', extract_job + 'particles.star'),
             ('OR: split into subsets?',        'Yes'),
             ('OR: number of subsets:',         -1),
-            ('Subset size:', (
-                self.batchsize if passindex == 0 else
-                self.batchsize_pass2
-            ))
+            ('Subset size:',                   self.batchsize[passindex])
         ])
 
         return addJob(
             'Select', 'split{}_job'.format('' if passindex == 0 else passindex + 1),
-            options, alias='into {}'.format(self.batchsize)
+            options, alias='into {}'.format(self.batchsize[passindex])
         )
 
     def set_up_inimodel_job(self, particles_star_file):
@@ -1076,77 +1076,75 @@ class RelionItOptions(object):
             ('Minimum dedicated cores per node:', self.queue_minimum_dedicated),
         ])
 
-        # If we're only doing motioncorr and ctf estimation,
-        # forget about the second pass and the batch processing
+        # If we're only doing motioncorr and CTF estimation,
+        # forget about the second pass and the batch processing.
         if self.stop_after_ctf_estimation:
-            self.do_class2d, self.do_class3d, self.do_second_pass = False, False, False
+            self.do_class2d[0], self.do_class3d[0], self.do_second_pass = False, False, False
 
         nr_passes = 2 if self.do_second_pass else 1
 
-        startat = 0
-        if self.do_second_pass:
-            secondpass_ref3d, secondpass_ref3d_angpix = getSecondPassReference()
-            # If SECONDPASS_REF3D_FILE exists,
-            # Go straight to the second pass
-            if secondpass_ref3d:
-                for msg in [
-                    'found {} with angpix {} as a 3D reference for second pass in file {}'.format(
-                        secondpass_ref3d, secondpass_ref3d_angpix, SECONDPASS_REF3D_FILE
-                    ),
-                    'if the automatic selection of the reference turned out to be unsatisfactory,',
-                    'you can re-run the second pass with another reference by:',
-                    ' stopping the pipeline with the shell command `rm RUNNING_*`',
-                    ' updating the reference filename in {}'.format(SECONDPASS_REF3D_FILE),
-                    ' deleting relevant jobs (autopick2_job and followings) in {}'.format(SETUP_CHECK_FILE),
-                    ' and restarting the pipeline.',
-                ]:
-                    print(prefix_RELION_IT(msg))
-                startat = 1
-                self.autopick_3dreference, self.autopick_ref_angpix = secondpass_ref3d, secondpass_ref3d_angpix
-                self.autopick_2dreferences = ''
-                self.autopick_do_LoG = False
-                self.class3d_reference = secondpass_ref3d
+        # If `SECONDPASS_REF3D_FILE` exists,
+        # skip the first pass and go straight to the second.
+        secondpass_ref3d, secondpass_ref3d_angpix = getSecondPassReference()
+        startat = 1 if self.do_second_pass and secondpass_ref3d else 0
+        if startat == 1:
+            for msg in [
+                'found {} with angpix {} as a 3D reference for second pass in file {}'.format(
+                    secondpass_ref3d, secondpass_ref3d_angpix, SECONDPASS_REF3D_FILE
+                ),
+                'if the automatic reference selection turned out to be unsatisfactory,',
+                'you can re-run the second pass with another reference by:',
+                ' stopping the pipeline with the shell command `rm RUNNING_*`',
+                ' updating the reference filename in {}'.format(SECONDPASS_REF3D_FILE),
+                ' deleting relevant jobs (autopick2_job and followings) in {}'.format(SETUP_CHECK_FILE),
+                ' and restarting the pipeline.',
+            ]:
+                print(prefix_RELION_IT(msg))
+            self.class3d_reference = secondpass_ref3d
+            self.autopick_3dreference, self.autopick_ref_angpix = secondpass_ref3d, secondpass_ref3d_angpix
+            self.autopick_2dreferences = ''
+            self.autopick_do_LoG = False
 
-        # Allow to perform two passes through the entire pipeline (PREPROCESS and CLASS2D/3D batches)
-        # The second pass, a 3D reference generated in the first pass will be used for template-based autopicking
+        # Perform two passes through the entire pipeline (PREPROCESS and CLASS2D/3D batches).
+        # In the first pass,
+        # a 3D reference will be generated.
+        # In the second pass,
+        # this reference will be used for template-based autopicking.
         for passindex in range(startat, nr_passes):
 
-            runjobs = []
+            jobs = []
 
             import_job = self.set_up_import_job()
-            runjobs.append(import_job)
+            jobs.append(import_job)
 
             if self.images_are_movies:
-                motioncorr_job = self.set_up_motioncor_job(import_job)
-                runjobs.append(motioncorr_job)
+                motioncorr_job = self.set_up_motioncorr_job(import_job)
+                jobs.append(motioncorr_job)
 
             ctffind_job = self.set_up_ctffind_job(import_job, motioncorr_job)
-            runjobs.append(ctffind_job)
+            jobs.append(ctffind_job)
 
-            do_2d_classification, do_3d_classification = (
-                (self.do_class2d, self.do_class3d) if passindex == 0 else
-                (self.do_class2d_pass2, self.do_class3d_pass2)
-            )
-
+            do_2d_classification = self.do_class2d[passindex] 
+            do_3d_classification = self.do_class3d[passindex]
             do_classification = do_2d_classification or do_3d_classification
 
-            downscale = self.extract_downscale if passindex == 0 else self.extract2_downscale
+            downscale = self.extract_downscale[passindex]
 
             # There is an option to stop on-the-fly processing after CTF estimation
             if not self.stop_after_ctf_estimation:
                 autopick_job = self.set_up_autopick_job(ctffind_job, passindex)
-                runjobs.append(autopick_job)
+                jobs.append(autopick_job)
 
                 extract_job = self.set_up_extract_job(ctffind_job, autopick_job, passindex, downscale)
-                runjobs.append(extract_job)
+                jobs.append(extract_job)
 
                 if do_classification:
                     split_job = self.set_up_split_job(extract_job, passindex)
-                    runjobs.append(split_job)
+                    jobs.append(split_job)
 
             # Now execute the preprocessing pipeliner
-            preprocess_schedule_name = PREPROCESS_SCHEDULE_PASS1 if passindex == 0 else PREPROCESS_SCHEDULE_PASS2
-            RunJobs(runjobs, self.preprocess_repeat_times, self.preprocess_repeat_wait, preprocess_schedule_name)
+            preprocess_schedule_name = PREPROCESS_SCHEDULE_PASSES[passindex]
+            RunJobs(jobs, self.preprocess_repeat_times, self.preprocess_repeat_wait, preprocess_schedule_name)
             print(prefix_RELION_IT('submitted {} pipeliner with {} repeats of the preprocessing jobs'.format(
                 preprocess_schedule_name, self.preprocess_repeat_times
             )))
@@ -1161,14 +1159,14 @@ class RelionItOptions(object):
             # There is again an option to stop here...
             if do_classification:
                 # If necessary, rescale the 3D reference in the second pass!
-                # TODO: rescale initial reference if different from movies?
-                if passindex == 1 and (self.extract_downscale or self.extract2_downscale):
+                # TODO rescale initial reference if different from movies?
+                if passindex == 1 and any(self.extract_downscale):
                     particles_angpix = self.angpix
                     if self.images_are_movies:
                         particles_angpix *= self.motioncor_binning
-                    if self.extract2_downscale:
-                        particles_angpix *= self.extract_boxsize / self.extract2_small_boxsize
-                        particles_boxsize = self.extract2_small_boxsize
+                    if self.extract_downscale[1]:
+                        particles_angpix *= self.extract_boxsize / self.extract_small_boxsize[1]
+                        particles_boxsize = self.extract_small_boxsize[1]
                     else:
                         particles_boxsize = self.extract_boxsize
                     if abs(float(particles_angpix) - float(self.autopick_ref_angpix)) > 0.01:
@@ -1188,7 +1186,7 @@ class RelionItOptions(object):
                         os.system(command)
 
                 print(prefix_RELION_IT(' '.join((
-                    'now entering an infinite loop for batch-processing of particles.',
+                    'entering an infinite loop for particle batch-processing.',
                     'You can stop this loop by deleting the file {}'.format(RUNNING_FILE)
                 ))))
 
@@ -1226,7 +1224,7 @@ class RelionItOptions(object):
                         # perform 2D classification with smaller batch size
                         # (but at least minimum_batchsize)
                         # and keep overwriting in the same output directory
-                        if rerun_batch1 or batchsize == self.batchsize:
+                        if rerun_batch1 or batchsize == self.batchsize[0]:
 
                             # Discard particles with odd average/stddev values
                             if self.do_discard_on_image_statistics:
@@ -1252,7 +1250,7 @@ class RelionItOptions(object):
                             if (
                                 passindex == batchindex == 0
                                 and not self.have_3d_reference()
-                                and batchsize == self.batchsize
+                                and batchsize == self.batchsize[0]
                             ):
                                 inimodel_job = self.set_up_inimodel_job(particles_star_file)
                                 if inimodel_job is None:
@@ -1283,9 +1281,8 @@ class RelionItOptions(object):
                                     and self.do_second_pass
                                     and best_class3d_resol < self.minimum_resolution_3dref_2ndpass
                                 ):
-                                    self.autopick_3dreference = best_class3d_class
                                     self.class3d_reference = best_class3d_class
-                                    self.autopick_ref_angpix = best_class3d_angpix
+                                    self.autopick_3dreference, self.autopick_ref_angpix = best_class3d_class, best_class3d_angpix
                                     self.autopick_2dreferences = ''
                                     self.autopick_do_LoG = False
                                     self.autopick_3dref_symmetry = self.symmetry
@@ -1464,9 +1461,9 @@ class RelionItGui(object):
             makeEntryWithVarAndAttr(
                 particle_frame, option, labeltext, row+3, attrtext, vartype=tk.DoubleVar,
             ) for row, (option, labeltext, attrtext) in enumerate((
-                (options.mask_diameter,         u"Mask diameter (\u212B):", "= NNN px"        ),
-                (options.extract_boxsize,       "Box size (px):",           u"= NNN \u212B"   ),
-                (options.extract_small_boxsize, "Down-sample to (px):",     u"= NNN \u212B/px"),
+                (options.mask_diameter,            u"Mask diameter (\u212B):", "= NNN px"        ),
+                (options.extract_boxsize,          "Box size (px):",           u"= NNN \u212B"   ),
+                (options.extract_small_boxsize[0], "Down-sample to (px):",     u"= NNN \u212B/px"),
             ))
         )
 
@@ -1517,11 +1514,11 @@ class RelionItGui(object):
                 pipeline_frame, option, text, row
             ) for row, (option, text) in enumerate((
                 (options.stop_after_ctf_estimation, "Stop after CTF estimation?"),
-                (options.do_class2d,                "Do 2D classification?"),
-                (options.do_class3d,                "Do 3D classification?"),
-                (options.do_second_pass,            "Do second pass? (only if no 3D ref)"),
-                (options.do_class2d_pass2_var,      "Do 2D classification (2nd pass)?"),
-                (options.do_class3d_pass2,          "Do 3D classification (2nd pass)?"),
+                (options.do_class2d[0],             "Do 2D classification?"),
+                (options.do_class3d[0],             "Do 3D classification?"),
+                (options.do_second_pass,            "Do second pass (only if no 3D ref)?"),
+                (options.do_class2d[1],             "Do 2D classification (2nd pass)?"),
+                (options.do_class3d[1],             "Do 3D classification (2nd pass)?"),
             ))
         )
 
@@ -1696,11 +1693,11 @@ class RelionItGui(object):
         opts = self.options
 
         opts.stop_after_ctf_estimation = self.stop_after_ctf_var.get()
-        opts.do_class2d                = self.class2d_var.get()
-        opts.do_class3d                = self.class3d_var.get()
+        opts.do_class2d[0]             = self.class2d_var.get()
+        opts.do_class2d[1]             = self.class2d_pass2_var.get()
+        opts.do_class3d[0]             = self.class3d_var.get()
+        opts.do_class3d[1]             = self.class3d_pass2_var.get()
         opts.do_second_pass            = self.second_pass_var.get()
-        opts.do_class2d_pass2          = self.class2d_pass2_var.get()
-        opts.do_class3d_pass2          = self.class3d_pass2_var.get()
 
         def try_get(numtype, attribute, name):
             '''
@@ -1759,9 +1756,9 @@ class RelionItGui(object):
         opts.extract_boxsize = try_get(int, self.box_size_entry, "Box size")
         check_positive(opts.extract_boxsize, "Box size")
 
-        opts.extract_small_boxsize, opts.extract2_small_boxsize = 2 * (try_get(int, self.extract_small_boxsize_entry, "Down-sampled box size"),)
-        opts.extract_downscale, opts.extract2_downscale = 2 * (True,)
-        check_positive(opts.extract_small_boxsize, "Down-sampled box size")
+        opts.extract_small_boxsize = 2 * (try_get(int, self.extract_small_boxsize_entry, "Down-sampled box size"),)
+        opts.extract_downscale = True, True
+        check_positive(opts.extract_small_boxsize[0], "Down-sampled box size")
 
         opts.import_images = self.import_images_entry.get()
         if opts.import_images.startswith(('/', '..')):
@@ -1791,8 +1788,8 @@ class RelionItGui(object):
             # No 3D reference - do LoG autopicking in the first pass
             opts.class3d_reference = ''
 
-        # Now set a sensible batch size (leaving batchsize_pass2 at its default 100,000)
-        opts.batchsize = 10000 if opts.do_second_pass else 100000
+        # Now set a sensible batch size (leaving the batch size for the second pass at its default 100,000)
+        opts.batchsize[0] = 10000 if opts.do_second_pass else 100000
 
     @captureException
     def save_options(self):
@@ -1817,9 +1814,7 @@ class RelionItGui(object):
         return False
 
     def run_pipeline(self):
-        '''
-        Update the full set of options from the values in the GUI, close the GUI and run the pipeline.
-        '''
+        # Update options from GUI, close GUI, run pipeline.
         if self.save_options():
             self.main_window.destroy()
             self.options.run_pipeline()
@@ -1829,7 +1824,7 @@ class RelionItGui(object):
 # Don't get stuck in an infinite loop
 def CheckForExit():
     if not os.path.isfile(RUNNING_FILE):
-        print(prefix_RELION_IT("{} file no longer exists, exiting now ...".format(RUNNING_FILE)))
+        print(prefix_RELION_IT("file {} no longer exists. Exiting...".format(RUNNING_FILE)))
         exit(0)
 
 
@@ -1926,16 +1921,16 @@ def writeManualPickingGuiFile(particle_diameter):
     if not os.path.isfile('.gui_manualpickrun.job'):
         with open('.gui_manualpickrun.job', 'w') as f:
             f.writelines((line + '\n' for line in qaformat([
-                ('job_type',                   3),
-                ('Pixel size (A)',             -1),
+                ('job_type:',                  3),
+                ('Pixel size (A):',            -1),
                 ('Black value:',               0),
                 ('Blue value:',                0),
                 ('MetaDataLabel for color:',   'rlnParticleSelectZScore'),
                 ('Scale for CTF image:',       1),
                 ('Particle diameter (A):',     particle_diameter),
                 ('Blue<>red color particles?', 'No'),
-                ('Highpass filter (A)',        -1),
-                ('Lowpass filter (A)',         20),
+                ('Highpass filter (A):',       -1),
+                ('Lowpass filter (A):',        20),
                 ('Scale for micrographs:',     0.2),
                 ('Red value:',                 2),
                 ('Sigma contrast:',            3),
@@ -1987,7 +1982,8 @@ def findOutputModelStar(job_dir, description=''):
 
     print(prefix_RELION_IT("{} {} does not contain expected output maps.".format(capfirst(description), job_dir)))
     print(prefix_RELION_IT("This job should have finished, but you may continue it from the GUI."))
-    raise Exception("ERROR!! quitting the pipeline.") # TODO: MAKE MORE ROBUST
+    raise Exception("ERROR!! quitting the pipeline.") 
+    # TODO Make more robust
 
 
 def main():
@@ -2034,9 +2030,9 @@ def main():
         exit(0)
 
     # Exit in case the preprocessing pipeliners are still running.
-    for checkfile in ('RUNNING_PIPELINER_' + pass_ for pass_ in (
-        PREPROCESS_SCHEDULE_PASS1, PREPROCESS_SCHEDULE_PASS2
-    )):
+    for checkfile in (
+        'RUNNING_PIPELINER_' + pass_ for pass_ in PREPROCESS_SCHEDULE_PASSES
+    ):
         if os.path.isfile(checkfile):
             print(prefix_RELION_IT(prefix_ERROR(' '.join((
                 '{} is already present: delete this file and make sure no relion_pipeliner job is still running.'.format(checkfile),
