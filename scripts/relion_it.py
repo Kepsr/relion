@@ -304,7 +304,7 @@ def prefix_ERROR(msg):
     return ' ERROR: ' + msg
 
 
-def bool_to_word(x):
+def yesno(x):
     return 'Yes' if x else 'No'
 
 
@@ -319,7 +319,15 @@ def captureException(method):
         except Exception as exc:
             tkMessageBox.showerror("Error", exc.message)
             traceback.print_exc()
-        return False
+    return newmethod
+
+
+def withRenaming(method):
+    def newmethod(self, filename):
+        if os.path.isfile(filename):
+            print(prefix_RELION_IT("File {0} already exists. Renaming old copy to {0}~".format(filename)))
+            os.rename(filename, filename + '~')
+        method(self, filename)
     return newmethod
 
 
@@ -348,12 +356,13 @@ class RelionItOptions(object):
     # Are these multi-frame movies? Set to False for single-frame micrographs (and motion-correction will be skipped)
     images_are_movies = True
 
-    ### MotionCorrection parameters
-    # Dose in electrons per squared Angstrom per fraction
+    ### Motion-correction parameters
+    # Dose (electrons per square Angstrom per fraction)
     motioncor_doseperframe = 1.277
     # Gain-reference image in MRC format (only necessary if input movies are not yet gain-corrected, e.g. compressed TIFFs from K2)
     motioncor_gainreference = 'Movies/gain.mrc'
-    # EER upsampling (1 = 4K, 2 = 8K). If you use 8K rendering, the pixel size (angpix) MUST be the half of the physical pixel size and the motioncor_binning should be 2.
+    # EER upsampling (1 = 4K, 2 = 8K). 
+    # If you use 8K rendering, the pixel size (angpix) MUST be the half of the physical pixel size and the motioncor_binning should be 2.
     eer_upsampling = 1
     # EER fractionation. The dose rate (motioncor_doseperframe) is e/A2/fraction after this fractionation.
     eer_grouping = 20
@@ -367,15 +376,14 @@ class RelionItOptions(object):
     # Minimum and maximum diameter in Angstrom for the LoG filter
     autopick_LoG_diam_min = 150
     autopick_LoG_diam_max = 180
-    # Use positive values (0-1) to pick fewer particles; use negative values (-1-0) to pick more particles
+    # To pick fewer particles, use positive values: (0,1]
+    # To pick more particles, use negative values: [-1,0)
     autopick_LoG_adjust_threshold = 0.0
     autopick_LoG_upper_threshold = 999.0
     #
-    # OR:
-    #
-    # References for reference-based picking (when autopick_do_LoG = False)
+    # OR: 2D references for reference-based picking (when autopick_do_LoG = False)
     autopick_2dreferences = ''
-    # OR: provide a 3D references for reference-based picking (when autopick_do_LoG = False)
+    # OR: 3D references for reference-based picking (when autopick_do_LoG = False)
     autopick_3dreference = ''
 
     # Threshold for reference-based autopicking (threshold 0 will pick too many particles. Default of 0.4 is hopefully better. Ultimately, just hope classification will sort it all out...)
@@ -393,39 +401,25 @@ class RelionItOptions(object):
     ### Extract parameters
     # Box size of particles in the averaged micrographs (in pixels)
     extract_boxsize = 256
-    # Down-scale particles upon extraction?
-    extract_downscale = (
-        False,  # First pass 
-        False,  # Second pass
-    )
-    # Box size of the down-scaled particles (in pixels)
-    extract_small_boxsize = (
-        64,   # First pass
-        128,  # Second pass
-    )
+    # Down-scale particles upon extraction? (1st pass, 2nd pass)
+    extract_downscale = (False, False)
+    # Box size of the down-scaled particles (in pixels) (1st pass, 2nd pass)
+    extract_small_boxsize = (64, 128)
 
-    ### Perform 2D and/or 3D classification with extracted particles?
-    do_class2d = (
-        True,  # First pass
-        True,  # Second pass
-    )
-    # And/or perform 3D classification?
-    do_class3d = (
-        True,   # First pass
-        False,  # Second pass
-    )
-    # Repeat 2D and/or 3D-classification for batches of this many particles
-    batchsize = (
-        10000,   # First pass
-        100000,  # Second pass
-    )
+    # 2D / 3D classification of extracted particles
+    # Perform 2D classification? (1st pass, 2nd pass)
+    do_class2d = (True, True)
+    # Perform 3D classification? (1st pass, 2nd pass)
+    do_class3d = (True, False)
+    # Repeat 2D and/or 3D-classification for batches of this many particles  (1st pass, 2nd pass)
+    batchsize = (10000, 100000)
     # Number of 2D classes to use
     class2d_nr_classes  = 50
     # Diameter of the mask used for 2D/3D classification (in Angstrom)
     mask_diameter = 190
     # Symmetry group (when using SGD for initial model generation, C1 may work best)
     symmetry = 'C1'
-    #
+
     ### 3D-classification parameters
     # Number of 3D classes to use
     class3d_nr_classes = 4
@@ -438,11 +432,12 @@ class RelionItOptions(object):
     # Initial lowpass filter on reference
     class3d_ini_lowpass = 40
 
-    ### Use the largest 3D class from the first batch as a 3D reference for a second pass of autopicking? 
-    # (only when `do_class3d[0]` is True)
-    do_second_pass = True
+    ### Use the largest 3D class from the first batch as a 3D reference for a second pass of autopicking?
+    # (only when `do_class3d[0]`)
     # Only move on to template-based autopicking if the 3D references achieves this resolution (in A)
     minimum_resolution_3dref_2ndpass = 20
+    
+    do_pass = [True, True]
 
     ###################################################################################
     ############ The following parameters can often be kept the same for a given setup
@@ -453,13 +448,15 @@ class RelionItOptions(object):
     preprocess_repeat_times = 999
     # Wait at least this many minutes between each repeat cycle
     preprocess_repeat_wait = 1
-    ### Stop after CTF estimation? I.e., skip autopicking, extraction, 2D/3D classification, etc?
+    ### Stop after CTF estimation?
+    # (skip autopicking, extraction, 2D/3D classification, etc)
     stop_after_ctf_estimation = False
-    # Check every this many minutes if enough particles have been extracted for a new batch of 2D-classification
+    # How many minutes should there be between checks
+    # that enough particles have been extracted for a new batch of 2D classification?
     batch_repeat_time = 1
 
-    ### MotionCorrection parameters
-    # Use RELION's own implementation of motion-correction (CPU-only) instead of the UCSF implementation?
+    ### Motion-correction parameters
+    # Use RELION's own (CPU-only) motion-correction instead of the UCSF implementation?
     motioncor_do_own = True
     # The number of threads (only for RELION's own implementation)
     #   Optimal when nr_movie_frames / nr_threads is an integer
@@ -467,7 +464,7 @@ class RelionItOptions(object):
     # Exectutable of UCSF MotionCor2
     motioncor_exe = '/public/EM/MOTIONCOR2/MotionCor2'
     # On which GPU(s) to execute UCSF MotionCor2
-    motioncor_gpu = '0'
+    motioncor_gpu = [0]
     # Number of MPI processes for motion correction:
     motioncor_mpi = 4
     # Local motion-estimation patches for MotionCor2
@@ -478,7 +475,7 @@ class RelionItOptions(object):
     motioncor_binning = 1
     # Provide a defect file for your camera if you have one
     motioncor_defectfile = ''
-    # Gain reference orientation w.r.t movies 
+    # Gain reference orientation w.r.t movies
     #   (if input movies are not yet gain-corrected, e.g. TIFFs)
     motioncor_gainflip = 'No flipping (0)'
     motioncor_gainrot = 'No rotation (0)'
@@ -498,37 +495,39 @@ class RelionItOptions(object):
     ctffind_defocus_max = 50000
     ctffind_defocus_min = 5000
     ctffind_defocus_step = 500
-    # For Gctf: ignore parameters on the 'Searches' tab?
-    ctffind_do_ignore_search_params = True
-    # For Gctf: perform equi-phase averaging?
-    ctffind_do_EPA = True
-    # Also estimate phase shifts (for VPP data)
+    # Which software to use for CTF correction
+    # 'ctffind' for Alexis Rohou's CTFFIND4 (CPU-only)
+    # 'gctf' for Kai Zhang's Gctf (GPU-accelerated)
+    ctf_software = 'ctffind'
+    # Estimate phase shifts (for Volta phase plate [VPP] data)
     ctffind_do_phaseshift = False
-    # Executable to Kai Zhang's Gctf
-    gctf_exe = '/public/EM/Gctf/bin/Gctf'
-    # On which GPU(s) to execute Gctf
-    gctf_gpu = '0'
-    # Use Alexis Rohou's CTFFIND4 (CPU-only) instead?
-    use_ctffind = True
-    # Executable for Alexis Rohou's CTFFIND4
+    # CTFFind options
+    # CTFFIND4 executable
     ctffind4_exe = '/public/EM/ctffind/ctffind.exe'
     # How many MPI processes to use for running CTF estimation?
     ctffind_mpi = 8
     # Submit CTF estimation job to the cluster?
     ctffind_submit_to_queue = False
+    # Gctf executable
+    gctf_exe = '/public/EM/Gctf/bin/Gctf'
+    # On which GPU(s) to execute Gctf
+    gctf_gpu = [0]
+    # For Gctf: ignore parameters on the 'Searches' tab?
+    gctf_ignore_search_params = True
+    # For Gctf: perform equi-phase averaging?
+    gctf_do_EPA = True
 
     ### Autopick parameters
-    # Use GPU-acceleration for autopicking?
-    autopick_do_gpu = True
     # Which GPU(s) to use for autopicking
-    autopick_gpu = '0'
+    # To not use GPU-acceleration for autopicking, let `autopick_gpus = []`
+    autopick_gpus = [0]
     # Low-pass filter for auto-picking the micrographs
     autopick_lowpass = 20
     # Shrink factor for faster picking (0 = fastest; 1 = slowest)
     autopick_shrink_factor = 0
     # How many MPI processes to use for running auto-picking?
     autopick_mpi = 1
-     # Additional arguments for autopicking
+    # Additional arguments for autopicking
     autopick_other_args = ''
     # Submit Autopick job to the cluster?
     autopick_submit_to_queue = False
@@ -544,13 +543,16 @@ class RelionItOptions(object):
     autopick_inplane_sampling = 10
     # Symmetry of the 3D reference for autopicking
     autopick_3dref_symmetry = 'C1'
-    # 3D angular sampling for generating projections of the 3D reference for autopicking (30 degrees is usually enough)
-    autopick_3dref_sampling = '30 degrees'
-    # Pixel size in the provided 2D/3D references (negative for same as in motion-corrected movies)
+    # 3D angular sampling for generating projections of the 3D reference for autopicking 
+    # (30 degrees is usually enough)
+    autopick_3dref_sampling = 30
+    # Pixel size in the provided 2D/3D references 
+    # Having this negative will cause Relion to use the pixel size of the motion-corrected movies
     autopick_ref_angpix = -1
 
     ### Extract parameters
-    # Diameter for background normalisation (in pixels; negative value: default is 75% box size)
+    # Diameter for background normalisation (pixels)
+    # Having this negative value will cause Relion to use the default box size (75%)
     extract_bg_diameter = -1
     # How many MPI processes to use for running particle extraction?
     extract_mpi = 1
@@ -571,12 +573,11 @@ class RelionItOptions(object):
     refine_scratch_disk = ''
     # Number of pooled particles?
     refine_nr_pool = 10
-    # Use GPU-acceleration?
-    refine_do_gpu = True
     # Which GPU to use (different from GPU used for pre-processing?)
-    refine_gpu = 1
+    # To not use GPU-acceleration for refinement, let `refine_gpus = []`
+    refine_gpus = [1]
     # How many MPI processes to use
-    refine_mpi = 1
+    refine_mpi_procs = 1
     # How many threads to use
     refine_threads = 6
     # Skip padding?
@@ -592,13 +593,14 @@ class RelionItOptions(object):
     # Number of iterations to perform in 2D classification
     # Must be at least 20 for fast subsets
     class2d_nr_iter = 20
-    # Rotational search step (in degrees)
+    # Rotational search step (degrees)
     class2d_angle_step = 6
-    # Offset search range (in pixels)
+    # Offset search range (pixels)
     class2d_offset_range = 5
-    # Offset search step (in pixels)
+    # Offset search step (pixels)
     class2d_offset_step = 1
-    # Option to ignore the CTFs until their first peak (try this if all particles go into very few classes)
+    # Option to ignore the CTFs until their first peak 
+    # This option is recommended if all particles go into very few classes
     class2d_ctf_ign1stpeak = False
     # Additional arguments to pass to relion-refine
     class2d_other_args = ''
@@ -611,13 +613,13 @@ class RelionItOptions(object):
     class3d_reference_mask = ''
     # Option to ignore the CTFs until their first peak (try this if all particles go into very few classes)
     class3d_ctf_ign1stpeak = False
-    # Regularisation parameter (T)
+    # Regularisation parameter T
     class3d_T_value = 4
     # Angular sampling step
-    class3d_angle_step = '7.5 degrees'
-    # Offset search range (in pixels)
+    class3d_angle_step = 7.5
+    # Offset search range (pixels)
     class3d_offset_range = 5
-    # Offset search step (in pixels)
+    # Offset search step (pixels)
     class3d_offset_step = 1
     # Additional arguments to pass to relion-refine
     class3d_other_args = ''
@@ -629,11 +631,11 @@ class RelionItOptions(object):
     inimodel_ctf_ign1stpeak = False
     # Enforce non-negative solvent?
     inimodel_solvent_flatten = True
-    # Initial angular sampling
-    inimodel_angle_step = '15 degrees'
-    # Initial search range (in pixels)
+    # Initial angular sampling (degrees)
+    inimodel_angle_step = 15
+    # Initial search range (pixels)
     inimodel_offset_range = 6
-    # Initial offset search step (in pixels)
+    # Initial offset search step (pixels)
     inimodel_offset_step = 2
     # Number of initial iterations
     inimodel_nr_iter_initial = 50
@@ -643,9 +645,9 @@ class RelionItOptions(object):
     inimodel_nr_iter_final = 50
     # Frequency to write out information
     inimodel_freq_writeout = 10
-    # Initial resolution (in A)
+    # Initial resolution (A)
     inimodel_resol_ini = 35
-    # Final resolution (in A)
+    # Final resolution (A)
     inimodel_resol_final = 15
     # Initial mini-batch size
     inimodel_batchsize_ini = 100
@@ -654,7 +656,7 @@ class RelionItOptions(object):
     # Increased noise variance half-life (off, i.e. -1, by default; values of ~1000 have been observed to be useful in difficult cases)
     inimodel_sigmafudge_halflife = -1
     # Additional arguments to pass to relion_refine (skip annealing to get rid of outlier particles)
-    inimodel_other_args = ' --sgd_skip_anneal '
+    inimodel_other_args = '--sgd_skip_anneal'
 
     ### Cluster submission settings
     # Name of the queue to which to submit the job
@@ -687,13 +689,9 @@ class RelionItOptions(object):
             if hasattr(self, key):
                 setattr(self, key, value)
             else:
-                print(prefix_RELION_IT("Unrecognised option '{}'".format(key)))
+                print(prefix_RELION_IT("Unrecognised option {}".format(repr(key))))
 
-    def have_3d_reference(self):
-        # Used to determine whether to calculate an initial 3D model 
-        # by SGD initial model generation
-        return bool(self.class3d_reference)
-
+    @withRenaming
     def write_to(self, filename):
         '''
         Write the current options to `filename`.
@@ -710,8 +708,14 @@ class RelionItOptions(object):
             ValueError: If there is a problem printing the options.
         '''
         # NOTE The writing to stdout mentioned in the above docstring is not implemented.
+        # NOTE This method requires that every assignment statement
+        # between '### End of options' and '### General parameters'
+        # occupy only a single line.
         with open(filename, 'w') as f:
-            f.write("# Options file for relion_it.py\n\n")
+            f.writelines(line + '\n' for line in (
+                "# Options file for relion_it.py",
+                "",
+            ))
             option_names = [
                 key for key in dir(self)
                 if not is_dunder_name(key) and not callable(getattr(self, key))
@@ -727,29 +731,35 @@ class RelionItOptions(object):
 
             assignmentpattern = re.compile(r'(.*)=(.*)')
 
-            # Parse the source code for this class,
-            # and write out all comments along with option lines containing new values
-            for line in relevant(inspect.getsourcelines(RelionItOptions)[0]):
-                if line.startswith('#') or not line:
-                    # Print comments and blank lines as-is
-                    f.write(line + '\n')
-                else:
-                    # Assume all other lines define an option name and value.
-                    # Replace with new value.
-                    m = re.match(assignmentpattern, line)
-                    if m:
-                        option_name = m.group(1).strip()
-                        if option_name in option_names:
-                            f.write('{} = {}\n'.format(option_name, repr(getattr(self, option_name))))
-                            option_names.remove(option_name)
-                        else:
-                            # This error should not occur.
-                            # If it does, there is probably a programming error.
-                            raise ValueError("Unrecognised option name '{}'".format(option_name))
-            if option_names:
-                # This error should not occur.
-                # If it does, there is probably a programming error.
-                raise ValueError("Some options were not written to the output file: {}".format(option_names))
+            def outlines():
+                # Parse the source code for this class,
+                # and write out all comments along with option lines containing new values
+                sourcelines, _ = inspect.getsourcelines(self.__class__)
+                for line in relevant(sourcelines):
+                    if line.startswith('#') or not line:
+                        # Print comments and blank lines as-is
+                        yield line
+                    else:
+                        # Assume all other lines define an option name and value.
+                        # Replace with new value.
+                        m = re.match(assignmentpattern, line)
+                        if m:
+                            key, oldvalue = map(str.strip, m.groups())
+                            try:
+                                newvalue = getattr(self, key)
+                                yield '{} = {}'.format(key, repr(newvalue))
+                                option_names.remove(key)
+                            except AttributeError:
+                                # This error should not occur.
+                                # If it does, there is probably a programming error.
+                                raise AttributeError("Unrecognised option name '{}'".format(key))
+                if option_names:
+                    # This error should not occur.
+                    # If it does, there is probably a programming error.
+                    raise ValueError("Some options were not written to the output file: {}".format(option_names))
+
+            for line in outlines():
+                f.write(line + '\n')
 
     def set_up_import_job(self):
         #### Set up the Import job
@@ -760,12 +770,12 @@ class RelionItOptions(object):
             ('Voltage (kV):',                  self.voltage),
             ('Spherical aberration (mm):',     self.Cs),
             ('Amplitude contrast:',            self.ampl_contrast),
-            ('Are these multi-frame movies?',  bool_to_word(self.images_are_movies)),
+            ('Are these multi-frame movies?',  yesno(self.images_are_movies)),
         ])
 
         return addJob('Import', 'import_job', options)
 
-    def set_up_motioncorr_job(self, import_job):
+    def set_up_motioncor_job(self, import_job):
         #### Set up the MotionCor job
         options = qaformat([
             ('Input movies STAR file:',    import_job + 'movies.star'),
@@ -780,30 +790,24 @@ class RelionItOptions(object):
             ('Number of patches Y:',       self.motioncor_patches_y),
             ('Bfactor:',                   self.motioncor_bfactor),
             ('Binning factor:',            self.motioncor_binning),
-            ('Which GPUs to use:',         self.motioncor_gpu),
+            ('Which GPUs to use:',         ' '.join(map(str, self.motioncor_gpu))),
             ('Other MOTIONCOR2 arguments', self.motioncor_other_args),
             ('Number of threads:',         self.motioncor_threads),
             ('Number of MPI procs:',       self.motioncor_mpi),
-            ('Additional arguments:',      ' '.join((
-                '--eer_upsampling', str(self.eer_upsampling),
-                '--eer_grouping', str(self.eer_grouping),
-            ))),
-            ('Use RELION\'s own implementation?', bool_to_word(self.motioncor_do_own)),
-        ])
-
-        if self.motioncor_do_own:
-            options.extend(qaformat([
-                ('Save sum of power spectra?', bool_to_word(self.use_ctffind)),
-            ]))
-
-        if self.motioncor_submit_to_queue:
-            options.extend(self.queue_options)
-
-        return addJob(
-            'MotionCorr', 'motioncorr_job', options,
+            ('Additional arguments:',      command_line_format([
+                ('--eer_upsampling', self.eer_upsampling),
+                ('--eer_grouping',   self.eer_grouping),
+            ])),
+            ('Use RELION\'s own implementation?', yesno(self.motioncor_do_own)),
+        ]) + (qaformat([
+            ('Save sum of power spectra?', yesno(self.ctf_software == 'ctffind')),
+        ]) if self.motioncor_do_own else []) + (
+            self.queue_options if self.motioncor_submit_to_queue else []
         )
 
-    def set_up_ctffind_job(self, import_job, motioncorr_job):
+        return addJob('MotionCor', 'motioncor_job', options)
+
+    def set_up_ctffind_job(self, import_job, motioncor_job):
         # Set up the CtfFind job
         options = qaformat([
             ('Amount of astigmatism (A):', self.ctffind_astigmatism),
@@ -814,34 +818,24 @@ class RelionItOptions(object):
             ('Maximum resolution (A):',    self.ctffind_maxres),
             ('Minimum resolution (A):',    self.ctffind_minres),
             ('Gctf executable:',           self.gctf_exe),
-            ('Which GPUs to use:',         self.gctf_gpu),
+            ('Which GPUs to use:',         ' '.join(map(str, self.gctf_gpu))),
             ('CTFFIND-4.1 executable:',    self.ctffind4_exe),
             ('Number of MPI procs:',       self.ctffind_mpi),
             ('Input micrographs STAR file:', (
-                str(motioncorr_job) + 'corrected_micrographs.star' if self.images_are_movies else
+                str(motioncor_job) + 'corrected_micrographs.star' if self.images_are_movies else
                 str(import_job) + 'micrographs.star'
             )),
-            ('Use CTFFIND-4.1?',           bool_to_word(self.use_ctffind)),
-            ('Use Gctf instead?',          bool_to_word(not self.use_ctffind)),
-            ('Use power spectra from MotionCorr job?', bool_to_word(self.use_ctffind)),
-        ])
+            ('Use CTFFIND-4.1?',           yesno(self.ctf_software == 'ctffind')),
+            ('Use Gctf instead?',          yesno(self.ctf_software == 'gctf')),
+            ('Use power spectra from MotionCor job?', yesno(self.ctf_software == 'ctffind')),
+        ] + (([
+            ('Ignore \'Searches\' parameters?', yesno(self.gctf_ignore_search_params)),
+            ('Perform equi-phase averaging?',   yesno(self.gctf_do_EPA)),
+        ]) if self.ctf_software == 'gctf' else []) + ([
+            ('Estimate phase shifts?', yesno(self.ctffind_do_phaseshift))
+        ]) + (self.queue_options if self.ctffind_submit_to_queue else []))
 
-        if not self.use_ctffind:
-            options.extend(qaformat([
-                ('Ignore \'Searches\' parameters?', bool_to_word(self.ctffind_do_ignore_search_params)),
-                ('Perform equi-phase averaging?',   bool_to_word(self.ctffind_do_EPA)),
-            ]))
-
-        options.extend(qaformat([
-            ('Estimate phase shifts?', bool_to_word(self.ctffind_do_phaseshift))
-        ]))
-
-        if self.ctffind_submit_to_queue:
-            options.extend(self.queue_options)
-
-        return addJob(
-            'CtfFind', 'ctffind_job', options
-        )
+        return addJob('CtfFind', 'ctffind_job', options)
 
     def set_up_autopick_job(self, ctffind_job, passindex):
         options = qaformat([
@@ -855,7 +849,7 @@ class RelionItOptions(object):
             ('3D reference:',                        self.autopick_3dreference),
             ('Symmetry:',                            self.autopick_3dref_symmetry),
             ('Pixel size in references (A):',        self.autopick_ref_angpix),
-            ('3D angular sampling:',                 self.autopick_3dref_sampling),
+            ('3D angular sampling (deg):',           self.autopick_3dref_sampling),
             ('In-plane angular sampling (deg):',     self.autopick_inplane_sampling),
             ('Picking threshold:',                   self.autopick_refs_threshold),
             ('Minimum inter-particle distance (A):', self.autopick_refs_min_distance),
@@ -863,22 +857,22 @@ class RelionItOptions(object):
             ('Maximum stddev noise:',                self.autopick_stddev_noise),
             ('Minimum avg noise:',                   self.autopick_avg_noise),
             ('Shrink factor:',                       self.autopick_shrink_factor),
-            ('Which GPUs to use:',                   self.autopick_gpu),
+            ('Which GPUs to use:',                   ' '.join(map(str, self.autopick_gpus))),
             ('Additional arguments:',                self.autopick_other_args),
             ('Number of MPI procs:',                 self.autopick_mpi),
-            ('OR: provide a 3D reference?',          bool_to_word(bool(self.autopick_3dreference))),
-            ('OR: use Laplacian-of-Gaussian?',       bool_to_word(self.autopick_do_LoG)),
-            ('Are References CTF corrected?',        bool_to_word(self.autopick_refs_are_ctf_corrected)),
-            ('References have inverted contrast?',   bool_to_word(self.autopick_refs_have_inverted_contrast)),
-            ('Ignore CTFs until first peak?',        bool_to_word(self.autopick_refs_ignore_ctf1stpeak)),
-            ('Use GPU acceleration?',                bool_to_word(self.autopick_do_gpu and not self.autopick_do_LoG)),
+            ('OR: provide a 3D reference?',          yesno((self.autopick_3dreference))),
+            ('OR: use Laplacian-of-Gaussian?',       yesno(self.autopick_do_LoG)),
+            ('Are References CTF corrected?',        yesno(self.autopick_refs_are_ctf_corrected)),
+            ('References have inverted contrast?',   yesno(self.autopick_refs_have_inverted_contrast)),
+            ('Ignore CTFs until first peak?',        yesno(self.autopick_refs_ignore_ctf1stpeak)),
+            ('Use GPU acceleration?',                yesno(self.autopick_gpus and not self.autopick_do_LoG)),
         ])
 
         if self.autopick_submit_to_queue:
             options.extend(self.queue_options)
 
         return addJob(
-            'AutoPick', 'autopick{}_job'.format('' if passindex == 0 else passindex + 1),
+            'AutoPick', 'autopick{}_job'.format(passindex + 1),
             options, alias='pass {}'.format(passindex + 1),
         )
 
@@ -902,7 +896,7 @@ class RelionItOptions(object):
             options.extend(self.queue_options)
 
         return addJob(
-            'Extract', 'extract{}_job'.format('' if passindex == 0 else passindex + 1),
+            'Extract', 'extract{}_job'.format(passindex + 1),
             options, alias='pass {}'.format(passindex + 1),
         )
 
@@ -916,7 +910,7 @@ class RelionItOptions(object):
         ])
 
         return addJob(
-            'Select', 'split{}_job'.format('' if passindex == 0 else passindex + 1),
+            'Select', 'split{}_job'.format(passindex + 1),
             options, alias='into {}'.format(self.batchsize[passindex])
         )
 
@@ -926,7 +920,7 @@ class RelionItOptions(object):
             ('Symmetry:',                                 self.symmetry),
             ('Mask diameter (A):',                        self.mask_diameter),
             ('Number of classes:',                        self.inimodel_nr_classes),
-            ('Initial angular sampling:',                 self.inimodel_angle_step),
+            ('Initial angular sampling (deg):',           self.inimodel_angle_step),
             ('Offset search range (pix):',                self.inimodel_offset_range),
             ('Offset search step (pix):',                 self.inimodel_offset_step),
             ('Number of initial iterations:',             self.inimodel_nr_iter_initial),
@@ -939,24 +933,22 @@ class RelionItOptions(object):
             ('Final mini-batch size:',                    self.inimodel_batchsize_final),
             ('Increased noise variance half-life:',       self.inimodel_sigmafudge_halflife),
             ('Number of pooled particles:',               1),
-            ('Which GPUs to use:',                        self.refine_gpu),
-            ('Number of MPI procs:',                      self.refine_mpi),
+            ('Which GPUs to use:',                        ' '.join(map(str, self.refine_gpus))),
+            ('Number of MPI procs:',                      self.refine_mpi_procs),
             ('Number of threads:',                        self.refine_threads),
             ('Copy particles to scratch directory:',      self.refine_scratch_disk),
             ('Additional arguments:',                     self.inimodel_other_args),
-            ('Flatten and enforce non-negative solvent?', bool_to_word(self.inimodel_solvent_flatten)),
-            ('Skip padding?',                             bool_to_word(self.refine_skip_padding)),
-            ('Use GPU acceleration?',                     bool_to_word(self.refine_do_gpu)),
-            ('Ignore CTFs until first peak?',             bool_to_word(self.inimodel_ctf_ign1stpeak)),
-            ('Pre-read all particles into RAM?',          bool_to_word(self.refine_preread_images)),
+            ('Flatten and enforce non-negative solvent?', yesno(self.inimodel_solvent_flatten)),
+            ('Skip padding?',                             yesno(self.refine_skip_padding)),
+            ('Use GPU acceleration?',                     yesno(self.refine_gpus)),
+            ('Ignore CTFs until first peak?',             yesno(self.inimodel_ctf_ign1stpeak)),
+            ('Pre-read all particles into RAM?',          yesno(self.refine_preread_images)),
         ])
 
         if self.refine_submit_to_queue:
             options.extend(self.queue_options)
 
-        return addJob(
-            'InitialModel', 'inimodel', options,
-        )
+        return addJob('InitialModel', 'inimodel', options)
 
     def set_up_class2d_job(self, particles_star_file, batchsize, passindex, batchindex):
         options = qaformat([
@@ -968,22 +960,22 @@ class RelionItOptions(object):
             ('Offset search range (pix):',              self.class2d_offset_range),
             ('Offset search step (pix):',               self.class2d_offset_step),
             ('Number of pooled particles:',             self.refine_nr_pool),
-            ('Which GPUs to use:',                      self.refine_gpu),
-            ('Number of MPI procs:',                    self.refine_mpi),
+            ('Which GPUs to use:',                      ' '.join(map(str, self.refine_gpus))),
+            ('Number of MPI procs:',                    self.refine_mpi_procs),
             ('Number of threads:',                      self.refine_threads),
             ('Copy particles to scratch directory:',    self.refine_scratch_disk),
             ('Additional arguments:',                   self.class2d_other_args),
-            ('Use fast subsets (for large data sets)?', bool_to_word(batchsize > self.refine_batchsize_for_fast_subsets)),
-            ('Use GPU acceleration?',                   bool_to_word(self.refine_do_gpu)),
-            ('Ignore CTFs until first peak?',           bool_to_word(self.class2d_ctf_ign1stpeak)),
-            ('Pre-read all particles into RAM?',        bool_to_word(self.refine_preread_images)),
+            ('Use fast subsets (for large data sets)?', yesno(batchsize > self.refine_batchsize_for_fast_subsets)),
+            ('Use GPU acceleration?',                   yesno(self.refine_gpus)),
+            ('Ignore CTFs until first peak?',           yesno(self.class2d_ctf_ign1stpeak)),
+            ('Pre-read all particles into RAM?',        yesno(self.refine_preread_images)),
         ])
 
         if self.refine_submit_to_queue:
             options.extend(self.queue_options)
 
         return addJob(
-            'Class2D', 'class2d{}_job_batch_{:03d}'.format('' if passindex == 0 else '_pass' + str(passindex + 1), batchindex + 1),
+            'Class2D', 'class2d_pass{}_job_batch_{:03d}'.format(passindex + 1, batchindex + 1),
             options, alias='pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
         )
 
@@ -1000,7 +992,7 @@ class RelionItOptions(object):
             options.extend(self.queue_options)
 
         return addJob(
-            'Select', 'discard{}_job'.format('' if passindex == 0 else passindex + 1),
+            'Select', 'discard{}_job'.format(passindex + 1),
             options,
         )
 
@@ -1015,60 +1007,37 @@ class RelionItOptions(object):
             ('Number of classes:',                      self.class3d_nr_classes),
             ('Mask diameter (A):',                      self.mask_diameter),
             ('Number of iterations:',                   self.class3d_nr_iter),
-            ('Angular sampling interval:',              self.class3d_angle_step),
+            ('Angular sampling interval:',              '{} degrees'.format(self.class3d_angle_step)),
             ('Offset search range (pix):',              self.class3d_offset_range),
             ('Offset search step (pix):',               self.class3d_offset_step),
             ('Number of pooled particles:',             self.refine_nr_pool),
-            ('Which GPUs to use:',                      self.refine_gpu),
-            ('Number of MPI procs:',                    self.refine_mpi),
+            ('Which GPUs to use:',                      ' '.join(map(str, self.refine_gpus))),
+            ('Number of MPI procs:',                    self.refine_mpi_procs),
             ('Number of threads:',                      self.refine_threads),
             ('Copy particles to scratch directory:',    self.refine_scratch_disk),
             ('Additional arguments:',                   self.class3d_other_args),
-            ('Use fast subsets (for large data sets)?', bool_to_word(batchsize > self.refine_batchsize_for_fast_subsets)),
-            ('Ref. map is on absolute greyscale?',      bool_to_word(self.class3d_ref_is_correct_greyscale)),
-            ('Has reference been CTF-corrected?',       bool_to_word(self.class3d_ref_is_ctf_corrected)),
-            ('Skip padding?',                           bool_to_word(self.refine_skip_padding)),
-            ('Use GPU acceleration?',                   bool_to_word(self.refine_do_gpu)),
-            ('Ignore CTFs until first peak?',           bool_to_word(self.class3d_ctf_ign1stpeak)),
-            ('Pre-read all particles into RAM?',        bool_to_word(self.refine_preread_images)),
+            ('Use fast subsets (for large data sets)?', yesno(batchsize > self.refine_batchsize_for_fast_subsets)),
+            ('Ref. map is on absolute greyscale?',      yesno(self.class3d_ref_is_correct_greyscale)),
+            ('Has reference been CTF-corrected?',       yesno(self.class3d_ref_is_ctf_corrected)),
+            ('Skip padding?',                           yesno(self.refine_skip_padding)),
+            ('Use GPU acceleration?',                   yesno(self.refine_gpus)),
+            ('Ignore CTFs until first peak?',           yesno(self.class3d_ctf_ign1stpeak)),
+            ('Pre-read all particles into RAM?',        yesno(self.refine_preread_images)),
         ])
 
         if self.refine_submit_to_queue:
             options.extend(self.queue_options)
 
         return addJob(
-            'Class3D', 'class3d{}_job_batch_{:03d}'.format('' if passindex == 0 else passindex + 1, batchindex + 1),
+            'Class3D', 'class3d_pass{}_job_batch_{:03d}'.format(passindex + 1, batchindex + 1),
             options, alias='pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1),
         )
 
-    def run_pipeline(self):
-        '''
-        Configure and run the RELION 3 pipeline with the given options.
-        '''
-        # Is this really necessary?
-        # Don't think so...
-        if not os.path.isfile(PIPELINE_STAR):
-            with open(PIPELINE_STAR, 'w') as writefile:
-                for line in ('data_pipeline_general', '_rlnPipeLineJobCounter 1'):
-                    writefile.write(line + '\n')
-
-        # Write RUNNING_RELION_IT file
-        # When deleted, this script will stop
-        with open(RUNNING_FILE, 'w'):
-            pass
-
-        # Write main GUI project file, so GUI won't ask to set up a project
-        with open(GUI_PROJECT_FILE, 'w'):
-            pass
-
-        # Set up GUI file for Manualpick job to allow easy viewing of autopick results
-        writeManualPickingGuiFile(
-            self.autopick_LoG_diam_min if self.autopick_do_LoG else
-            self.autopick_refs_min_distance
-        )
-
-        ### Prepare the list of queue arguments for later use
-        self.queue_options = qaformat([
+    @property
+    def queue_options(self): 
+        '''List of queue arguments'''
+        # Only relevant if `self.motioncor_submit_to_queue`
+        return qaformat([
             ('Submit to queue?',                  'Yes'),
             ('Queue name:',                       self.queue_name),
             ('Queue submit command:',             self.queue_submit_command),
@@ -1076,18 +1045,44 @@ class RelionItOptions(object):
             ('Minimum dedicated cores per node:', self.queue_minimum_dedicated),
         ])
 
-        # If we're only doing motioncorr and CTF estimation,
+    def run_pipeline(self):
+        '''
+        Configure and run the RELION 3 pipeline with the given options.
+        '''
+        # If there is no `default_pipeline.star`, make one.
+        # Not really necessary.
+        if not os.path.isfile(PIPELINE_STAR):
+            with open(PIPELINE_STAR, 'w') as f:
+                f.writelines((line + '\n' for line in (
+                    'data_pipeline_general',
+                    '_rlnPipeLineJobCounter 1',
+                )))
+
+        # Create `RUNNING_RELION_IT`.
+        # When deleted, this script will stop.
+        with open(RUNNING_FILE, 'w'):
+            pass
+
+        # Create main GUI project file, so GUI won't ask to set up a project.
+        with open(GUI_PROJECT_FILE, 'w'):
+            pass
+
+        # Set up GUI file for Manualpick job to allow easy viewing of autopick results.
+        writeManualPickingGuiFile(
+            self.autopick_LoG_diam_min if self.autopick_do_LoG else
+            self.autopick_refs_min_distance
+        )
+
+        # If we're only doing motioncor and CTF estimation,
         # forget about the second pass and the batch processing.
         if self.stop_after_ctf_estimation:
-            self.do_class2d[0], self.do_class3d[0], self.do_second_pass = False, False, False
-
-        nr_passes = 2 if self.do_second_pass else 1
+            self.do_class2d[0], self.do_class3d[0], self.do_pass[1] = False, False, False
 
         # If `SECONDPASS_REF3D_FILE` exists,
         # skip the first pass and go straight to the second.
         secondpass_ref3d, secondpass_ref3d_angpix = getSecondPassReference()
-        startat = 1 if self.do_second_pass and secondpass_ref3d else 0
-        if startat == 1:
+        startat = int(self.do_pass[1] and bool(secondpass_ref3d))
+        if self.do_pass[1] and secondpass_ref3d:
             for msg in [
                 'found {} with angpix {} as a 3D reference for second pass in file {}'.format(
                     secondpass_ref3d, secondpass_ref3d_angpix, SECONDPASS_REF3D_FILE
@@ -1110,7 +1105,7 @@ class RelionItOptions(object):
         # a 3D reference will be generated.
         # In the second pass,
         # this reference will be used for template-based autopicking.
-        for passindex in range(startat, nr_passes):
+        for passindex in range(startat, len(filter(bool, self.do_pass))):
 
             jobs = []
 
@@ -1118,13 +1113,13 @@ class RelionItOptions(object):
             jobs.append(import_job)
 
             if self.images_are_movies:
-                motioncorr_job = self.set_up_motioncorr_job(import_job)
-                jobs.append(motioncorr_job)
+                motioncor_job = self.set_up_motioncor_job(import_job)
+                jobs.append(motioncor_job)
 
-            ctffind_job = self.set_up_ctffind_job(import_job, motioncorr_job)
+            ctffind_job = self.set_up_ctffind_job(import_job, motioncor_job)
             jobs.append(ctffind_job)
 
-            do_2d_classification = self.do_class2d[passindex] 
+            do_2d_classification = self.do_class2d[passindex]
             do_3d_classification = self.do_class3d[passindex]
             do_classification = do_2d_classification or do_3d_classification
 
@@ -1175,15 +1170,13 @@ class RelionItOptions(object):
                             self.autopick_ref_angpix, particles_angpix, self.class3d_reference
                         )))
                         self.class3d_reference = self.autopick_3dreference.replace('.mrc', '_rescaled.mrc')
-                        command = (
-                            'relion_image_handler'
-                            + ' --i ' + str(self.autopick_3dreference)
-                            + ' --o ' + str(self.class3d_reference)
-                            + ' --angpix ' + str(self.autopick_ref_angpix)
-                            + ' --rescale_angpix ' + str(particles_angpix)
-                            + ' --new_box ' + str(particles_boxsize)
-                        )
-                        os.system(command)
+                        os.system('relion_image_handler ' + command_line_format([
+                            ('--i',              self.autopick_3dreference),
+                            ('--o',              self.class3d_reference),
+                            ('--angpix',         self.autopick_ref_angpix),
+                            ('--rescale_angpix', particles_angpix),
+                            ('--new_box',        particles_boxsize),
+                        ]))
 
                 print(prefix_RELION_IT(' '.join((
                     'entering an infinite loop for particle batch-processing.',
@@ -1219,27 +1212,26 @@ class RelionItOptions(object):
                             RunJobs([job], 1, 1, capsname)
                             print(prefix_RELION_IT("submitted {} with {} particles in {}".format(description, batchsize, job)))
                             WaitForJob(job)
+                            return True
 
                         # The first batch is special:
-                        # perform 2D classification with smaller batch size
-                        # (but at least minimum_batchsize)
-                        # and keep overwriting in the same output directory
+                        # Perform 2D classification with a batch size smaller than before 
+                        # (but no less than `minimum_batchsize`).
+                        # Keep overwriting in the same output directory.
                         if rerun_batch1 or batchsize == self.batchsize[0]:
 
                             # Discard particles with odd average/stddev values
                             if self.do_discard_on_image_statistics:
                                 discard_job = self.set_up_discard_job(batchname, passindex)
                                 if rerun_batch1 or discard_job is None:
-                                    have_new_batch = True
-                                    donewbatch(discard_job, 'DISCARD', 'job to discard based on image statistics', batchsize)
+                                    have_new_batch = donewbatch(discard_job, 'DISCARD', 'job to discard based on image statistics', batchsize)
                                 particles_star_file = discard_job + 'particles.star'
 
                             # 2D classification
                             if do_2d_classification:
                                 class2d_job = self.set_up_class2d_job(particles_star_file, batchsize, passindex, batchindex)
                                 if rerun_batch1 or class2d_job is None:
-                                    have_new_batch = True
-                                    donewbatch(class2d_job, 'CLASS2D', '2D classification', batchsize)
+                                    have_new_batch = donewbatch(class2d_job, 'CLASS2D', '2D classification', batchsize)
 
                         # Perform 3D classification
                         if do_3d_classification:
@@ -1249,13 +1241,14 @@ class RelionItOptions(object):
                             # Then use this model for subsequent batches.
                             if (
                                 passindex == batchindex == 0
-                                and not self.have_3d_reference()
+                                and not self.class3d_reference
                                 and batchsize == self.batchsize[0]
                             ):
+                                # Calculate an initial 3D model
+                                # by SGD initial model generation
                                 inimodel_job = self.set_up_inimodel_job(particles_star_file)
                                 if inimodel_job is None:
-                                    have_new_batch = True
-                                    donewbatch(inimodel_job, 'INIMODEL', 'initial model generation', batchsize)
+                                    have_new_batch = donewbatch(inimodel_job, 'INIMODEL', 'initial model generation', batchsize)
 
                                 sgd_model_star = findOutputModelStar(inimodel_job, 'initial model generation')
                                 # Use the model of the largest class for 3D classification
@@ -1264,12 +1257,11 @@ class RelionItOptions(object):
                                 self.class3d_ref_is_correct_greyscale = True
                                 self.class3d_ref_is_ctf_corrected = True
 
-                            if self.have_3d_reference():
+                            if self.class3d_reference:
                                 # Do 3D classification
                                 class3d_job = self.set_up_class3d_job(particles_star_file, batchsize, passindex, batchindex)
                                 if rerun_batch1 or class3d_job is None:
-                                    have_new_batch = True
-                                    donewbatch(class3d_job, 'CLASS3D', '3D classification', batchsize)
+                                    have_new_batch = donewbatch(class3d_job, 'CLASS3D', '3D classification', batchsize)
 
                                 class3d_model_star = findOutputModelStar(class3d_job, '3D classification')
                                 best_class3d_class, best_class3d_resol, best_class3d_angpix = findBestClass(class3d_model_star, use_resol=True)
@@ -1278,7 +1270,7 @@ class RelionItOptions(object):
                                 # progress to the second pass.
                                 if (
                                     passindex == batchindex == 0
-                                    and self.do_second_pass
+                                    and self.do_pass[1]
                                     and best_class3d_resol < self.minimum_resolution_3dref_2ndpass
                                 ):
                                     self.class3d_reference = best_class3d_class
@@ -1516,7 +1508,7 @@ class RelionItGui(object):
                 (options.stop_after_ctf_estimation, "Stop after CTF estimation?"),
                 (options.do_class2d[0],             "Do 2D classification?"),
                 (options.do_class3d[0],             "Do 3D classification?"),
-                (options.do_second_pass,            "Do second pass (only if no 3D ref)?"),
+                (options.do_pass[1],                "Do second pass (only if no 3D ref)?"),
                 (options.do_class2d[1],             "Do 2D classification (2nd pass)?"),
                 (options.do_class3d[1],             "Do 3D classification (2nd pass)?"),
             ))
@@ -1556,28 +1548,6 @@ class RelionItGui(object):
 
         # Show initial pixel sizes
         self.update_box_sizes()
-
-    @staticmethod
-    def calculate_box_size(particlesize):
-        '''Return (even) side length 20% larger than particle.'''
-        boxsize = int(math.ceil(1.2 * particlesize))
-        return boxsize + boxsize % 2
-
-    @staticmethod
-    def calculate_downscaled_box_size(box_size_pix, angpix):
-        for small_box_pix in (
-            48, 64, 96, 128, 160, 192, 256, 288, 300, 320, 360,
-            384, 400, 420, 450, 480, 512, 640, 768, 896, 1024,
-        ):
-            # Don't go larger than the original box
-            if small_box_pix > box_size_pix:
-                return box_size_pix
-            # If Nyquist freq. is better than 8.5 A, use this downscaled box,
-            # otherwise continue to next size up
-            if angpix * box_size_pix / small_box_pix < 4.25:
-                return small_box_pix
-        # Fall back to a warning message
-        return "Box size is too large!"
 
     def update_box_size_labels(self, *args, **kwargs):
         def handleboxsize():
@@ -1631,8 +1601,8 @@ class RelionItGui(object):
                 particle_size_angstroms = self.particle_max_diam_entry.get()
                 particle_size_pixels = particle_size_angstroms / angpix
                 mask_diameter = 1.1 * particle_size_angstroms
-                box_size = self.calculate_box_size(particle_size_pixels)
-                small_boxsize = self.calculate_downscaled_box_size(box_size, angpix)
+                box_size = calculate_box_size(particle_size_pixels)
+                small_boxsize = calculate_downscaled_box_size(box_size, angpix)
 
                 for entry, datum in zip(entries, (
                     mask_diameter,
@@ -1670,7 +1640,7 @@ class RelionItGui(object):
             self.update_box_sizes()
         can_do_second_pass = (
             self.class3d_var.get()
-            and len(self.ref_3d_var.get()) == 0
+            and not self.ref_3d_var.get()
             and not self.stop_after_ctf_var.get()
         )
         self.second_pass_button.config(state=tk.NORMAL if can_do_second_pass else tk.DISABLED)
@@ -1693,11 +1663,9 @@ class RelionItGui(object):
         opts = self.options
 
         opts.stop_after_ctf_estimation = self.stop_after_ctf_var.get()
-        opts.do_class2d[0]             = self.class2d_var.get()
-        opts.do_class2d[1]             = self.class2d_pass2_var.get()
-        opts.do_class3d[0]             = self.class3d_var.get()
-        opts.do_class3d[1]             = self.class3d_pass2_var.get()
-        opts.do_second_pass            = self.second_pass_var.get()
+        opts.do_class2d                = self.class2d_var.get(), self.class2d_pass2_var.get()
+        opts.do_class3d                = self.class3d_var.get(), self.class3d_pass2_var.get()
+        opts.do_pass[1]                = self.second_pass_var.get()
 
         def try_get(numtype, attribute, name):
             '''
@@ -1778,18 +1746,16 @@ class RelionItGui(object):
         '''
         opts = self.options
 
-        # If we have a 3D reference, do a single pass with a large batch size
+        # No 3D reference - do LoG autopicking in the first pass
         opts.autopick_do_LoG = not opts.autopick_3dreference
+        opts.class3d_reference = opts.autopick_3dreference
+        # If we have a 3D reference, do a single pass with a large batch size
         if opts.autopick_3dreference:
             opts.autopick_refs_min_distance = opts.autopick_LoG_diam_max * 0.7
-            opts.class3d_reference = opts.autopick_3dreference
-            opts.do_second_pass = False
-        else:
-            # No 3D reference - do LoG autopicking in the first pass
-            opts.class3d_reference = ''
+            opts.do_pass[1] = False
 
         # Now set a sensible batch size (leaving the batch size for the second pass at its default 100,000)
-        opts.batchsize[0] = 10000 if opts.do_second_pass else 100000
+        opts.batchsize[0] = 10000 if opts.do_pass[1] else 100000
 
     @captureException
     def save_options(self):
@@ -1801,24 +1767,45 @@ class RelionItGui(object):
         '''
         self.fetch_options_from_gui()
         if not self.warnings or tkMessageBox.askokcancel(
-            "Warning", "\n".join(self.warnings), icon="warning",
-            default=tkMessageBox.CANCEL
+            'Warning', '\n'.join(self.warnings),
+            icon='warning', default=tkMessageBox.CANCEL,
         ):
             self.calculate_full_options()
             print(prefix_RELION_IT("Writing all options to {}".format(OPTIONS_FILE)))
-            if os.path.isfile(OPTIONS_FILE):
-                print(prefix_RELION_IT("File {0} already exists; renaming old copy to {0}~".format(OPTIONS_FILE)))
-                os.rename(OPTIONS_FILE, OPTIONS_FILE + '~')
             self.options.write_to(OPTIONS_FILE)
-            return True
-        return False
+            return
+        raise Exception()
 
     def run_pipeline(self):
         # Update options from GUI, close GUI, run pipeline.
-        if self.save_options():
+        try:
+            self.save_options()
             self.main_window.destroy()
             self.options.run_pipeline()
+        except Exception:
+            pass
 
+
+def calculate_box_size(particlesize):
+    '''Return an even side length 20% larger than particle.'''
+    boxsize = int(math.ceil(1.2 * particlesize))
+    return boxsize + boxsize % 2
+
+
+def calculate_downscaled_box_size(box_size_pix, angpix):
+    for small_box_pix in (
+        48, 64, 96, 128, 160, 192, 256, 288, 300, 320, 360,
+        384, 400, 420, 450, 480, 512, 640, 768, 896, 1024,
+    ):
+        # Don't go larger than the original box
+        if small_box_pix > box_size_pix:
+            return box_size_pix
+        # If Nyquist freq. is better than 8.5 A, use this downscaled box,
+        # otherwise continue to next size up
+        if angpix * box_size_pix / small_box_pix < 4.25:
+            return small_box_pix
+    # Fall back to a warning message
+    raise Exception("Box size is too large!")
 
 
 # Don't get stuck in an infinite loop
@@ -1849,22 +1836,27 @@ def getJobName(name_in_script):
 
 
 def addJob(jobtype, name_in_script, options, alias=None):
+    '''
+    Given a job type, its name in the script, a list of options, and an optional alias:
+    Look for whether this job has already been completed.
+    If not, pass it to `relion_pipeliner`.
+    Return `jobname`.
+    '''
     jobname = getJobName(name_in_script)
-    # If we didn't before, add it now
+    # If this job hasn't already been added to the pipeline, add it.
     if jobname is None:
-        command = (
-            'relion_pipeliner'
-            + ' --addJob {}'.format(jobtype)
-            + ' --addJobOptions "{}"'.format(''.join(opt + ';' for opt in options))
-            + (' --setJobAlias "{}"'.format(alias) if alias is not None else '')
-        )
-        # print("DEBUG: Running " + command)
-        os.system(command)
+        os.system('relion_pipeliner' + command_line_format([
+            ('--addJob',        jobtype),
+            ('--addJobOptions', '"{}"'.format(''.join(opt + ';' for opt in options))),
+        ] + [
+            ('--setJobAlias',   '"{}"'.format(alias))
+        ] if alias is not None else []))
 
         keys = ['pipeline_processes', 'rlnPipeLineProcessName']
         pipeline = star.load(PIPELINE_STAR, keys)
         jobname = star.recursivelydescend(pipeline, keys)[-1]
 
+        # Add entry in `RELION_IT_SUBMITTED_JOBS`
         with open(SETUP_CHECK_FILE, 'a') as f:
             f.write('{} = {}\n'.format(name_in_script, jobname))
 
@@ -1880,14 +1872,12 @@ def RunJobs(jobs, repeat, wait, schedulename):
     `wait` how long to wait (minutes)
     `schedulename`
     '''
-    os.system(
-        'relion_pipeliner'
-        + ' --schedule {}'.format(schedulename)
-        + ' --repeat {}'.format(repeat)
-        + ' --min_wait {}'.format(wait)
-        + ' --RunJobs "{}"'.format(' '.join(jobs))
-        + ' &'
-    )
+    os.system('relion_pipeliner ' + command_line_format((
+        ('--schedule', schedulename),
+        ('--repeat',   repeat),
+        ('--min_wait', wait),
+        ('--RunJobs',  '"{}"'.format(' '.join(jobs))),
+    )) + ' &')
 
 
 def WaitForJob(jobname, seconds=30):
@@ -1944,6 +1934,10 @@ def qaformat(qapairs):
     ]
 
 
+def command_line_format(kvpairs):
+    return ' '.join(('{} {}'.format(k, v) for k, v in kvpairs))
+
+
 def findBestClass(model_star_file, use_resol=True):
     '''
     Identify the best class given `model_star_file` (a `str`).
@@ -1982,7 +1976,7 @@ def findOutputModelStar(job_dir, description=''):
 
     print(prefix_RELION_IT("{} {} does not contain expected output maps.".format(capfirst(description), job_dir)))
     print(prefix_RELION_IT("This job should have finished, but you may continue it from the GUI."))
-    raise Exception("ERROR!! quitting the pipeline.") 
+    raise Exception("ERROR!! quitting the pipeline.")
     # TODO Make more robust
 
 
