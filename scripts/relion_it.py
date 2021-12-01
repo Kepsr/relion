@@ -341,13 +341,14 @@ class QAList(list):
     def inline(self):
         return ' '.join(pair + ';' for pair in self.formatted_pairs())
 
+
 class Command(object):
 
     def __init__(self, executable, options):
         self.executable = executable
         self.options = options
 
-    def str(self):
+    def __str__(self):
         return self.executable + ' ' + self.inline_options()
 
     def formatted_pairs(self):
@@ -355,6 +356,360 @@ class Command(object):
 
     def inline_options(self):
         return ' '.join(self.formatted_pairs())
+
+
+class Job(object):
+
+    jobtype = ''
+    name_in_script = ''
+    alias = None
+
+    def __init__(self, options):
+        self.options = options
+
+    def add_to_pipeline(self):
+        addJob(self.jobtype, self.name_in_script, self.options, self.alias)
+
+
+class ImportJob(Job):
+
+    jobtype = 'Import'
+    name_in_script = 'import_job'
+
+    def __init__(self, options):
+        #### Set up the Import job
+        self.options = QAList([
+            ('Raw input files:',               options.import_images),
+            ('Import raw movies/micrographs?', 'Yes'),
+            ('Pixel size (A):',                options.angpix),
+            ('Voltage (kV):',                  options.voltage),
+            ('Spherical aberration (mm):',     options.Cs),
+            ('Amplitude contrast:',            options.ampl_contrast),
+            ('Are these multi-frame movies?',  yesno(options.images_are_movies)),
+        ])
+    
+        # def set_up(self):
+        self.add_to_pipeline()
+        self.name = getjobname()
+        options.jobs.append(self.name)
+
+
+class MotionCorJob(Job):
+
+    jobtype = 'MotionCor'
+    name_in_script = 'motioncor_job'
+
+    def __init__(self, options, import_job):
+        #### Set up the MotionCor job
+        self.options = QAList([
+            ('Input movies STAR file:',    import_job.name + 'movies.star'),
+            ('MOTIONCOR2 executable:',     options.motioncor_exe),
+            ('Defect file:',               options.motioncor_defectfile),
+            ('Gain-reference image:',      options.motioncor_gainreference),
+            ('Gain flip:',                 options.motioncor_gainflip),
+            ('Gain rotation:',             options.motioncor_gainrot),
+            ('Do dose-weighting?',         'Yes'),
+            ('Dose per frame (e/A2):',     options.motioncor_doseperframe),
+            ('Number of patches X:',       options.motioncor_patches_x),
+            ('Number of patches Y:',       options.motioncor_patches_y),
+            ('Bfactor:',                   options.motioncor_bfactor),
+            ('Binning factor:',            options.motioncor_binning),
+            ('Which GPUs to use:',         ' '.join(map(str, options.motioncor_gpu))),
+            ('Other MOTIONCOR2 arguments', options.motioncor_other_args),
+            ('Number of threads:',         options.motioncor_threads),
+            ('Number of MPI procs:',       options.motioncor_mpi),
+            ('Additional arguments:',      ' '.join('{} {}'.format(k, v) for k, v in [
+                ('--eer_upsampling', options.eer_upsampling),
+                ('--eer_grouping',   options.eer_grouping),
+            ])),
+            ('Use RELION\'s own implementation?', yesno(options.motioncor_do_own)),
+        ] + ([
+            ('Save sum of power spectra?', yesno(options.ctf_software == 'ctffind')),
+        ] if options.motioncor_do_own else [])) + (
+            options.queue_options if options.motioncor_submit_to_queue else []
+        )
+
+        self.add_to_pipeline()
+        self.name = getjobname()
+        options.jobs.append(self.name)
+
+
+class CTFFindJob(Job):
+
+    jobtype = 'CtfFind'
+    name_in_script = 'ctffind_job'
+
+    def __init__(self, options, micrographs_star_file):
+        # Set up the CtfFind job
+        gctf_options = [
+            ('Ignore \'Searches\' parameters?', yesno(options.gctf_ignore_search_params)),
+            ('Perform equi-phase averaging?',   yesno(options.gctf_do_EPA)),
+        ] if options.ctf_software == 'gctf' else []
+
+        self.options = QAList([
+            ('Amount of astigmatism (A):', options.ctffind_astigmatism),
+            ('FFT box size (pix):',        options.ctffind_boxsize),
+            ('Maximum defocus value (A):', options.ctffind_defocus_max),
+            ('Minimum defocus value (A):', options.ctffind_defocus_min),
+            ('Defocus step size (A):',     options.ctffind_defocus_step),
+            ('Maximum resolution (A):',    options.ctffind_maxres),
+            ('Minimum resolution (A):',    options.ctffind_minres),
+            ('Gctf executable:',           options.gctf_exe),
+            ('Which GPUs to use:',         ' '.join(map(str, options.gctf_gpu))),
+            ('CTFFIND-4.1 executable:',    options.ctffind4_exe),
+            ('Number of MPI procs:',       options.ctffind_mpi),
+            ('Input micrographs STAR file:', micrographs_star_file),
+                
+                # motioncor_job.name + 'corrected_micrographs.star' if options.images_are_movies else
+                # import_job.name + 'micrographs.star'
+            ('Use CTFFIND-4.1?',                      yesno(options.ctf_software == 'ctffind')),
+            ('Use Gctf instead?',                     yesno(options.ctf_software == 'gctf')),
+            ('Use power spectra from MotionCor job?', yesno(options.ctf_software == 'ctffind')),
+        ] + gctf_options + [
+            ('Estimate phase shifts?', yesno(options.ctffind_do_phaseshift)),
+        ]) + (options.queue_options if options.ctffind_submit_to_queue else [])
+
+        self.add_to_pipeline()
+        self.name = getjobname()
+        options.jobs.append(self.name)
+
+
+class AutopickJob(Job):
+
+    jobtype = 'AutoPick'
+
+    def __init__(self, options, passindex, ctffind_job):
+        self.options = QAList([
+            ('Input micrographs for autopick:',      ctffind_job.name + 'micrographs_ctf.star'),
+            ('Min. diameter for LoG filter (A):',    options.autopick_LoG_diam_min),
+            ('Max. diameter for LoG filter (A):',    options.autopick_LoG_diam_max),
+            ('Maximum resolution to consider (A):',  options.autopick_lowpass),
+            ('Adjust default threshold (stddev):',   options.autopick_LoG_adjust_threshold),
+            ('Upper threshold (stddev):',            options.autopick_LoG_upper_threshold),
+            ('2D references:',                       options.autopick_2dreferences),
+            ('3D reference:',                        options.autopick_3dreference),
+            ('Symmetry:',                            options.autopick_3dref_symmetry),
+            ('Pixel size in references (A):',        options.autopick_ref_angpix),
+            ('3D angular sampling (deg):',           options.autopick_3dref_sampling),
+            ('In-plane angular sampling (deg):',     options.autopick_inplane_sampling),
+            ('Picking threshold:',                   options.autopick_refs_threshold),
+            ('Minimum inter-particle distance (A):', options.autopick_refs_min_distance),
+            ('Mask diameter (A):',                   options.autopick_refs_mask_diam),
+            ('Maximum stddev noise:',                options.autopick_stddev_noise),
+            ('Minimum avg noise:',                   options.autopick_avg_noise),
+            ('Shrink factor:',                       options.autopick_shrink_factor),
+            ('Which GPUs to use:',                   ' '.join(map(str, options.autopick_gpus))),
+            ('Additional arguments:',                options.autopick_other_args),
+            ('Number of MPI procs:',                 options.autopick_mpi),
+            ('OR: provide a 3D reference?',          yesno((options.autopick_3dreference))),
+            ('OR: use Laplacian-of-Gaussian?',       yesno(options.autopick_do_LoG)),
+            ('Are References CTF corrected?',        yesno(options.autopick_refs_are_ctf_corrected)),
+            ('References have inverted contrast?',   yesno(options.autopick_refs_have_inverted_contrast)),
+            ('Ignore CTFs until first peak?',        yesno(options.autopick_refs_ignore_ctf1stpeak)),
+            ('Use GPU acceleration?',                yesno(options.autopick_gpus and not options.autopick_do_LoG)),
+        ])
+
+        if options.autopick_submit_to_queue:
+            self.options.extend(options.queue_options)
+
+        self.name_in_script = 'autopick{}_job'.format(passindex + 1)
+        self.alias='pass {}'.format(passindex + 1)
+
+        self.add_to_pipeline()
+        self.name = getjobname()
+        options.jobs.append(self.name)
+
+
+class ExtractJob(Job):
+
+    jobtype = 'Extract'
+
+    def __init__(self, options, passindex, autopick_job, ctffind_job):
+        # Extract options
+        self.options = QAList([
+            ('Input coordinates:',                autopick_job.name + 'coords_suffix_autopick.star'),
+            ('micrograph STAR file:',             ctffind_job.name + 'micrographs_ctf.star'),
+            ('Diameter background circle (pix):', options.extract_bg_diameter),
+            ('Particle box size (pix):',          options.extract_boxsize),
+            ('Number of MPI procs:',              options.extract_mpi),
+        ])
+
+        if options.extract_downscale[passindex]:
+            self.options.extend(QAList([
+                ('Rescale particles?',       'Yes'),
+                ('Re-scaled size (pixels):', options.extract_small_boxsize[passindex]),
+            ]))
+
+        if options.extract_submit_to_queue:
+            self.options.extend(options.queue_options)
+
+        self.name_in_script = 'extract{}_job'.format(passindex + 1)
+        self.alias = 'pass {}'.format(passindex + 1)
+        self.add_to_pipeline()
+        self.name = getjobname()
+        options.jobs.append(self.name)
+
+
+class SplitJob(Job):
+    ''' Select job to split the particles into batches.
+    '''
+
+    jobtype = 'Select'
+
+    def __init__(self, options, passindex, extract_job):
+        self.options = QAList([
+            ('OR select from particles.star:', extract_job.name + 'particles.star'),
+            ('OR: split into subsets?',        'Yes'),
+            ('OR: number of subsets:',         -1),
+            ('Subset size:',                   options.batchsize[passindex])
+        ])
+
+        self.name_in_script = 'split{}_job'.format(passindex + 1)
+        self.alias = 'into {}'.format(options.batchsize[passindex])
+        self.add_to_pipeline()
+        self.name = getjobname()
+        options.jobs.append(self.name)
+
+
+class InimodelJob(Job):
+
+    jobtype = 'InitialModel'
+    name_in_script = 'inimodel'
+
+    def __init__(self, options, particles_star_file):
+        self.options = QAList([
+            ('Input images STAR file:',                   particles_star_file),
+            ('Symmetry:',                                 options.symmetry),
+            ('Mask diameter (A):',                        options.mask_diameter),
+            ('Number of classes:',                        options.inimodel_nr_classes),
+            ('Initial angular sampling (deg):',           options.inimodel_angle_step),
+            ('Offset search range (pix):',                options.inimodel_offset_range),
+            ('Offset search step (pix):',                 options.inimodel_offset_step),
+            ('Number of initial iterations:',             options.inimodel_nr_iter_initial),
+            ('Number of in-between iterations:',          options.inimodel_nr_iter_inbetween),
+            ('Number of final iterations:',               options.inimodel_nr_iter_final),
+            ('Write-out frequency (iter):',               options.inimodel_freq_writeout),
+            ('Initial resolution (A):',                   options.inimodel_resol_ini),
+            ('Final resolution (A):',                     options.inimodel_resol_final),
+            ('Initial mini-batch size:',                  options.inimodel_batchsize_ini),
+            ('Final mini-batch size:',                    options.inimodel_batchsize_final),
+            ('Increased noise variance half-life:',       options.inimodel_sigmafudge_halflife),
+            ('Number of pooled particles:',               1),
+            ('Which GPUs to use:',                        ' '.join(map(str, options.refine_gpus))),
+            ('Number of MPI procs:',                      options.refine_mpi_procs),
+            ('Number of threads:',                        options.refine_threads),
+            ('Copy particles to scratch directory:',      options.refine_scratch_disk),
+            ('Additional arguments:',                     options.inimodel_other_args),
+            ('Flatten and enforce non-negative solvent?', yesno(options.inimodel_solvent_flatten)),
+            ('Skip padding?',                             yesno(options.refine_skip_padding)),
+            ('Use GPU acceleration?',                     yesno(options.refine_gpus)),
+            ('Ignore CTFs until first peak?',             yesno(options.inimodel_ctf_ign1stpeak)),
+            ('Pre-read all particles into RAM?',          yesno(options.refine_preread_images)),
+        ])
+
+        if options.refine_submit_to_queue:
+            self.options.extend(options.queue_options)
+
+        self.add_to_pipeline()
+        self.name = getjobname()
+
+
+class Class2DJob(Job):
+
+    jobtype = 'Class2D'
+
+    def __init__(self, options, passindex, batchindex, particles_star_file, batchsize):
+        self.options = QAList([
+            ('Input images STAR file:',                 particles_star_file),
+            ('Number of classes:',                      options.class2d_nr_classes),
+            ('Mask diameter (A):',                      options.mask_diameter),
+            ('Number of iterations:',                   options.class2d_nr_iter),
+            ('Angular search range - psi (deg):',       options.class2d_angle_step),
+            ('Offset search range (pix):',              options.class2d_offset_range),
+            ('Offset search step (pix):',               options.class2d_offset_step),
+            ('Number of pooled particles:',             options.refine_nr_pool),
+            ('Which GPUs to use:',                      ' '.join(map(str, options.refine_gpus))),
+            ('Number of MPI procs:',                    options.refine_mpi_procs),
+            ('Number of threads:',                      options.refine_threads),
+            ('Copy particles to scratch directory:',    options.refine_scratch_disk),
+            ('Additional arguments:',                   options.class2d_other_args),
+            ('Use fast subsets (for large data sets)?', yesno(batchsize > options.refine_batchsize_for_fast_subsets)),
+            ('Use GPU acceleration?',                   yesno(options.refine_gpus)),
+            ('Ignore CTFs until first peak?',           yesno(options.class2d_ctf_ign1stpeak)),
+            ('Pre-read all particles into RAM?',        yesno(options.refine_preread_images)),
+        ])
+
+        if options.refine_submit_to_queue:
+            self.options.extend(options.queue_options)
+
+        self.name_in_script = 'class2d_pass{}_job_batch_{:03d}'.format(passindex + 1, batchindex + 1)
+        self.alias = 'pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
+        self.add_to_pipeline()
+        self.name = getjobname()
+
+
+class DiscardJob(Job):
+    '''A Select job to get rid of particles with outlier average/stddev values...
+    '''
+
+    jobtype = 'Select'
+
+    def __init__(self, options, passindex, batchname):
+        self.options = QAList([
+            ('OR select from particles.star:',     batchname),
+            ('OR: select on image statistics?',    'Yes'),
+            ('Sigma-value for discarding images:', options.discard_sigma),
+            ('Metadata label for images:',         'rlnImageName'),
+        ])
+
+        if options.discard_submit_to_queue:
+            self.options.extend(options.queue_options)
+
+        self.name_in_script = 'discard{}_job'.format(passindex + 1)
+        self.add_to_pipeline()
+        self.name = getjobname()
+
+
+class Class3DJob(Job):
+
+    jobtype = 'Class3D'
+
+    def __init__(self, options, passindex, batchindex, particles_star_file, batchsize):
+        self.options = QAList([
+            ('Input images STAR file:',                 particles_star_file),
+            ('Reference map:',                          options.class3d_reference),
+            ('Initial low-pass filter (A):',            options.class3d_ini_lowpass),
+            ('Symmetry:',                               options.symmetry),
+            ('Regularisation parameter T:',             options.class3d_T_value),
+            ('Reference mask (optional):',              options.class3d_reference_mask),
+            ('Number of classes:',                      options.class3d_nr_classes),
+            ('Mask diameter (A):',                      options.mask_diameter),
+            ('Number of iterations:',                   options.class3d_nr_iter),
+            ('Angular sampling interval:',              '{} degrees'.format(options.class3d_angle_step)),
+            ('Offset search range (pix):',              options.class3d_offset_range),
+            ('Offset search step (pix):',               options.class3d_offset_step),
+            ('Number of pooled particles:',             options.refine_nr_pool),
+            ('Which GPUs to use:',                      ' '.join(map(str, options.refine_gpus))),
+            ('Number of MPI procs:',                    options.refine_mpi_procs),
+            ('Number of threads:',                      options.refine_threads),
+            ('Copy particles to scratch directory:',    options.refine_scratch_disk),
+            ('Additional arguments:',                   options.class3d_other_args),
+            ('Use fast subsets (for large data sets)?', yesno(batchsize > options.refine_batchsize_for_fast_subsets)),
+            ('Ref. map is on absolute greyscale?',      yesno(options.class3d_ref_is_correct_greyscale)),
+            ('Has reference been CTF-corrected?',       yesno(options.class3d_ref_is_ctf_corrected)),
+            ('Skip padding?',                           yesno(options.refine_skip_padding)),
+            ('Use GPU acceleration?',                   yesno(options.refine_gpus)),
+            ('Ignore CTFs until first peak?',           yesno(options.class3d_ctf_ign1stpeak)),
+            ('Pre-read all particles into RAM?',        yesno(options.refine_preread_images)),
+        ])
+
+        if options.refine_submit_to_queue:
+            self.options.extend(options.queue_options)
+
+        self.name_in_script = 'class3d_pass{}_job_batch_{:03d}'.format(passindex + 1, batchindex + 1)
+        self.alias = 'pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
+        self.add_to_pipeline()
+        self.name = getjobname()
 
 
 class RelionItOptions(object):
@@ -387,7 +742,7 @@ class RelionItOptions(object):
     motioncor_doseperframe = 1.277
     # Gain-reference image in MRC format (only necessary if input movies are not yet gain-corrected, e.g. compressed TIFFs from K2)
     motioncor_gainreference = 'Movies/gain.mrc'
-    # EER upsampling (1 = 4K, 2 = 8K). 
+    # EER upsampling (1 = 4K, 2 = 8K).
     # If you use 8K rendering, the pixel size (angpix) MUST be the half of the physical pixel size and the motioncor_binning should be 2.
     eer_upsampling = 1
     # EER fractionation. The dose rate (motioncor_doseperframe) is e/A2/fraction after this fractionation.
@@ -462,7 +817,7 @@ class RelionItOptions(object):
     # (only when `do_class3d[0]`)
     # Only move on to template-based autopicking if the 3D references achieves this resolution (in A)
     minimum_resolution_3dref_2ndpass = 20
-    
+
     do_pass = [True, True]
 
     ###################################################################################
@@ -569,10 +924,10 @@ class RelionItOptions(object):
     autopick_inplane_sampling = 10
     # Symmetry of the 3D reference for autopicking
     autopick_3dref_symmetry = 'C1'
-    # 3D angular sampling for generating projections of the 3D reference for autopicking 
+    # 3D angular sampling for generating projections of the 3D reference for autopicking
     # (30 degrees is usually enough)
     autopick_3dref_sampling = 30
-    # Pixel size in the provided 2D/3D references 
+    # Pixel size in the provided 2D/3D references
     # Having this negative will cause Relion to use the pixel size of the motion-corrected movies
     autopick_ref_angpix = -1
 
@@ -625,7 +980,7 @@ class RelionItOptions(object):
     class2d_offset_range = 5
     # Offset search step (pixels)
     class2d_offset_step = 1
-    # Option to ignore the CTFs until their first peak 
+    # Option to ignore the CTFs until their first peak
     # This option is recommended if all particles go into very few classes
     class2d_ctf_ign1stpeak = False
     # Additional arguments to pass to relion-refine
@@ -787,306 +1142,9 @@ class RelionItOptions(object):
             for line in outlines():
                 f.write(line + '\n')
 
-    def set_up_import_job(self):
-        #### Set up the Import job
-        options = QAList([
-            ('Raw input files:',               self.import_images),
-            ('Import raw movies/micrographs?', 'Yes'),
-            ('Pixel size (A):',                self.angpix),
-            ('Voltage (kV):',                  self.voltage),
-            ('Spherical aberration (mm):',     self.Cs),
-            ('Amplitude contrast:',            self.ampl_contrast),
-            ('Are these multi-frame movies?',  yesno(self.images_are_movies)),
-        ])
-
-        jobname = addJob('Import', 'import_job', options)
-        self.jobs.append(jobname)
-        self.import_job = jobname
-        return jobname
-
-    def set_up_motioncor_job(self):
-        #### Set up the MotionCor job
-        options = QAList([
-            ('Input movies STAR file:',    self.import_job + 'movies.star'),
-            ('MOTIONCOR2 executable:',     self.motioncor_exe),
-            ('Defect file:',               self.motioncor_defectfile),
-            ('Gain-reference image:',      self.motioncor_gainreference),
-            ('Gain flip:',                 self.motioncor_gainflip),
-            ('Gain rotation:',             self.motioncor_gainrot),
-            ('Do dose-weighting?',         'Yes'),
-            ('Dose per frame (e/A2):',     self.motioncor_doseperframe),
-            ('Number of patches X:',       self.motioncor_patches_x),
-            ('Number of patches Y:',       self.motioncor_patches_y),
-            ('Bfactor:',                   self.motioncor_bfactor),
-            ('Binning factor:',            self.motioncor_binning),
-            ('Which GPUs to use:',         ' '.join(map(str, self.motioncor_gpu))),
-            ('Other MOTIONCOR2 arguments', self.motioncor_other_args),
-            ('Number of threads:',         self.motioncor_threads),
-            ('Number of MPI procs:',       self.motioncor_mpi),
-            ('Additional arguments:',      ' '.join('{} {}'.format(k, v) for k, v in [
-                ('--eer_upsampling', self.eer_upsampling),
-                ('--eer_grouping',   self.eer_grouping),
-            ])),
-            ('Use RELION\'s own implementation?', yesno(self.motioncor_do_own)),
-        ] + ([
-            ('Save sum of power spectra?', yesno(self.ctf_software == 'ctffind')),
-        ] if self.motioncor_do_own else [])) + (
-            self.queue_options if self.motioncor_submit_to_queue else []
-        )
-
-        jobname = addJob('MotionCor', 'motioncor_job', options)
-        self.jobs.append(jobname)
-        self.motioncor_job = jobname
-        return jobname
-
-    def set_up_ctffind_job(self):
-        # Set up the CtfFind job
-        gctf_options = [
-            ('Ignore \'Searches\' parameters?', yesno(self.gctf_ignore_search_params)),
-            ('Perform equi-phase averaging?',   yesno(self.gctf_do_EPA)),
-        ] if self.ctf_software == 'gctf' else []
-
-        options = QAList([
-            ('Amount of astigmatism (A):', self.ctffind_astigmatism),
-            ('FFT box size (pix):',        self.ctffind_boxsize),
-            ('Maximum defocus value (A):', self.ctffind_defocus_max),
-            ('Minimum defocus value (A):', self.ctffind_defocus_min),
-            ('Defocus step size (A):',     self.ctffind_defocus_step),
-            ('Maximum resolution (A):',    self.ctffind_maxres),
-            ('Minimum resolution (A):',    self.ctffind_minres),
-            ('Gctf executable:',           self.gctf_exe),
-            ('Which GPUs to use:',         ' '.join(map(str, self.gctf_gpu))),
-            ('CTFFIND-4.1 executable:',    self.ctffind4_exe),
-            ('Number of MPI procs:',       self.ctffind_mpi),
-            ('Input micrographs STAR file:', (
-                self.motioncor_job + 'corrected_micrographs.star' if self.images_are_movies else
-                self.import_job + 'micrographs.star'
-            )),
-            ('Use CTFFIND-4.1?',                      yesno(self.ctf_software == 'ctffind')),
-            ('Use Gctf instead?',                     yesno(self.ctf_software == 'gctf')),
-            ('Use power spectra from MotionCor job?', yesno(self.ctf_software == 'ctffind')),
-        ] + gctf_options + [
-            ('Estimate phase shifts?', yesno(self.ctffind_do_phaseshift)),
-        ]) + (self.queue_options if self.ctffind_submit_to_queue else [])
-
-        jobname = addJob('CtfFind', 'ctffind_job', options)
-        self.jobs.append(jobname)
-        self.ctffind_job = jobname
-        return jobname
-
-    def set_up_autopick_job(self, passindex):
-        options = QAList([
-            ('Input micrographs for autopick:',      self.ctffind_job + 'micrographs_ctf.star'),
-            ('Min. diameter for LoG filter (A):',    self.autopick_LoG_diam_min),
-            ('Max. diameter for LoG filter (A):',    self.autopick_LoG_diam_max),
-            ('Maximum resolution to consider (A):',  self.autopick_lowpass),
-            ('Adjust default threshold (stddev):',   self.autopick_LoG_adjust_threshold),
-            ('Upper threshold (stddev):',            self.autopick_LoG_upper_threshold),
-            ('2D references:',                       self.autopick_2dreferences),
-            ('3D reference:',                        self.autopick_3dreference),
-            ('Symmetry:',                            self.autopick_3dref_symmetry),
-            ('Pixel size in references (A):',        self.autopick_ref_angpix),
-            ('3D angular sampling (deg):',           self.autopick_3dref_sampling),
-            ('In-plane angular sampling (deg):',     self.autopick_inplane_sampling),
-            ('Picking threshold:',                   self.autopick_refs_threshold),
-            ('Minimum inter-particle distance (A):', self.autopick_refs_min_distance),
-            ('Mask diameter (A):',                   self.autopick_refs_mask_diam),
-            ('Maximum stddev noise:',                self.autopick_stddev_noise),
-            ('Minimum avg noise:',                   self.autopick_avg_noise),
-            ('Shrink factor:',                       self.autopick_shrink_factor),
-            ('Which GPUs to use:',                   ' '.join(map(str, self.autopick_gpus))),
-            ('Additional arguments:',                self.autopick_other_args),
-            ('Number of MPI procs:',                 self.autopick_mpi),
-            ('OR: provide a 3D reference?',          yesno((self.autopick_3dreference))),
-            ('OR: use Laplacian-of-Gaussian?',       yesno(self.autopick_do_LoG)),
-            ('Are References CTF corrected?',        yesno(self.autopick_refs_are_ctf_corrected)),
-            ('References have inverted contrast?',   yesno(self.autopick_refs_have_inverted_contrast)),
-            ('Ignore CTFs until first peak?',        yesno(self.autopick_refs_ignore_ctf1stpeak)),
-            ('Use GPU acceleration?',                yesno(self.autopick_gpus and not self.autopick_do_LoG)),
-        ])
-
-        if self.autopick_submit_to_queue:
-            options.extend(self.queue_options)
-
-        jobname = addJob(
-            'AutoPick', 'autopick{}_job'.format(passindex + 1),
-            options, alias='pass {}'.format(passindex + 1),
-        )
-        self.jobs.append(jobname)
-        self.autopick_job = jobname
-        return jobname
-
-    def set_up_extract_job(self, passindex):
-        # Extract options
-        options = QAList([
-            ('Input coordinates:',                self.autopick_job + 'coords_suffix_autopick.star'),
-            ('micrograph STAR file:',             self.ctffind_job + 'micrographs_ctf.star'),
-            ('Diameter background circle (pix):', self.extract_bg_diameter),
-            ('Particle box size (pix):',          self.extract_boxsize),
-            ('Number of MPI procs:',              self.extract_mpi),
-        ])
-
-        if self.extract_downscale[passindex]:
-            options.extend(QAList([
-                ('Rescale particles?',       'Yes'),
-                ('Re-scaled size (pixels):', self.extract_small_boxsize[passindex]),
-            ]))
-
-        if self.extract_submit_to_queue:
-            options.extend(self.queue_options)
-        
-        jobname = addJob(
-            'Extract', 'extract{}_job'.format(passindex + 1),
-            options, alias='pass {}'.format(passindex + 1),
-        )
-        self.jobs.append(jobname)
-        self.extract_job = jobname
-        return jobname
-
-    def set_up_split_job(self, passindex):
-        #### Set up the Select job to split the particle STAR file into batches
-        options = QAList([
-            ('OR select from particles.star:', self.extract_job + 'particles.star'),
-            ('OR: split into subsets?',        'Yes'),
-            ('OR: number of subsets:',         -1),
-            ('Subset size:',                   self.batchsize[passindex])
-        ])
-
-        jobname = addJob(
-            'Select', 'split{}_job'.format(passindex + 1),
-            options, alias='into {}'.format(self.batchsize[passindex])
-        )
-        self.jobs.append(jobname)
-        self.split_job = jobname
-        return jobname
-
-    def set_up_inimodel_job(self, particles_star_file):
-        options = QAList([
-            ('Input images STAR file:',                   particles_star_file),
-            ('Symmetry:',                                 self.symmetry),
-            ('Mask diameter (A):',                        self.mask_diameter),
-            ('Number of classes:',                        self.inimodel_nr_classes),
-            ('Initial angular sampling (deg):',           self.inimodel_angle_step),
-            ('Offset search range (pix):',                self.inimodel_offset_range),
-            ('Offset search step (pix):',                 self.inimodel_offset_step),
-            ('Number of initial iterations:',             self.inimodel_nr_iter_initial),
-            ('Number of in-between iterations:',          self.inimodel_nr_iter_inbetween),
-            ('Number of final iterations:',               self.inimodel_nr_iter_final),
-            ('Write-out frequency (iter):',               self.inimodel_freq_writeout),
-            ('Initial resolution (A):',                   self.inimodel_resol_ini),
-            ('Final resolution (A):',                     self.inimodel_resol_final),
-            ('Initial mini-batch size:',                  self.inimodel_batchsize_ini),
-            ('Final mini-batch size:',                    self.inimodel_batchsize_final),
-            ('Increased noise variance half-life:',       self.inimodel_sigmafudge_halflife),
-            ('Number of pooled particles:',               1),
-            ('Which GPUs to use:',                        ' '.join(map(str, self.refine_gpus))),
-            ('Number of MPI procs:',                      self.refine_mpi_procs),
-            ('Number of threads:',                        self.refine_threads),
-            ('Copy particles to scratch directory:',      self.refine_scratch_disk),
-            ('Additional arguments:',                     self.inimodel_other_args),
-            ('Flatten and enforce non-negative solvent?', yesno(self.inimodel_solvent_flatten)),
-            ('Skip padding?',                             yesno(self.refine_skip_padding)),
-            ('Use GPU acceleration?',                     yesno(self.refine_gpus)),
-            ('Ignore CTFs until first peak?',             yesno(self.inimodel_ctf_ign1stpeak)),
-            ('Pre-read all particles into RAM?',          yesno(self.refine_preread_images)),
-        ])
-
-        if self.refine_submit_to_queue:
-            options.extend(self.queue_options)
-
-        jobname = addJob('InitialModel', 'inimodel', options)
-        self.inimodel_job = jobname
-        return jobname
-
-    def set_up_class2d_job(self, passindex, batchindex, particles_star_file, batchsize):
-        options = QAList([
-            ('Input images STAR file:',                 particles_star_file),
-            ('Number of classes:',                      self.class2d_nr_classes),
-            ('Mask diameter (A):',                      self.mask_diameter),
-            ('Number of iterations:',                   self.class2d_nr_iter),
-            ('Angular search range - psi (deg):',       self.class2d_angle_step),
-            ('Offset search range (pix):',              self.class2d_offset_range),
-            ('Offset search step (pix):',               self.class2d_offset_step),
-            ('Number of pooled particles:',             self.refine_nr_pool),
-            ('Which GPUs to use:',                      ' '.join(map(str, self.refine_gpus))),
-            ('Number of MPI procs:',                    self.refine_mpi_procs),
-            ('Number of threads:',                      self.refine_threads),
-            ('Copy particles to scratch directory:',    self.refine_scratch_disk),
-            ('Additional arguments:',                   self.class2d_other_args),
-            ('Use fast subsets (for large data sets)?', yesno(batchsize > self.refine_batchsize_for_fast_subsets)),
-            ('Use GPU acceleration?',                   yesno(self.refine_gpus)),
-            ('Ignore CTFs until first peak?',           yesno(self.class2d_ctf_ign1stpeak)),
-            ('Pre-read all particles into RAM?',        yesno(self.refine_preread_images)),
-        ])
-
-        if self.refine_submit_to_queue:
-            options.extend(self.queue_options)
-
-        return addJob(
-            'Class2D', 'class2d_pass{}_job_batch_{:03d}'.format(passindex + 1, batchindex + 1),
-            options, alias='pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
-        )
-
-    def set_up_discard_job(self, passindex, batchname):
-        # Run a Select job to get rid of particles with outlier average/stddev values...
-        options = QAList([
-            ('OR select from particles.star:',     batchname),
-            ('OR: select on image statistics?',    'Yes'),
-            ('Sigma-value for discarding images:', self.discard_sigma),
-            ('Metadata label for images:',         'rlnImageName'),
-        ])
-
-        if self.discard_submit_to_queue:
-            options.extend(self.queue_options)
-
-        jobname = addJob(
-            'Select', 'discard{}_job'.format(passindex + 1),
-            options,
-        )
-        self.discard_job = jobname
-        return jobname
-
-    def set_up_class3d_job(self, passindex, batchindex, particles_star_file, batchsize):
-        options = QAList([
-            ('Input images STAR file:',                 particles_star_file),
-            ('Reference map:',                          self.class3d_reference),
-            ('Initial low-pass filter (A):',            self.class3d_ini_lowpass),
-            ('Symmetry:',                               self.symmetry),
-            ('Regularisation parameter T:',             self.class3d_T_value),
-            ('Reference mask (optional):',              self.class3d_reference_mask),
-            ('Number of classes:',                      self.class3d_nr_classes),
-            ('Mask diameter (A):',                      self.mask_diameter),
-            ('Number of iterations:',                   self.class3d_nr_iter),
-            ('Angular sampling interval:',              '{} degrees'.format(self.class3d_angle_step)),
-            ('Offset search range (pix):',              self.class3d_offset_range),
-            ('Offset search step (pix):',               self.class3d_offset_step),
-            ('Number of pooled particles:',             self.refine_nr_pool),
-            ('Which GPUs to use:',                      ' '.join(map(str, self.refine_gpus))),
-            ('Number of MPI procs:',                    self.refine_mpi_procs),
-            ('Number of threads:',                      self.refine_threads),
-            ('Copy particles to scratch directory:',    self.refine_scratch_disk),
-            ('Additional arguments:',                   self.class3d_other_args),
-            ('Use fast subsets (for large data sets)?', yesno(batchsize > self.refine_batchsize_for_fast_subsets)),
-            ('Ref. map is on absolute greyscale?',      yesno(self.class3d_ref_is_correct_greyscale)),
-            ('Has reference been CTF-corrected?',       yesno(self.class3d_ref_is_ctf_corrected)),
-            ('Skip padding?',                           yesno(self.refine_skip_padding)),
-            ('Use GPU acceleration?',                   yesno(self.refine_gpus)),
-            ('Ignore CTFs until first peak?',           yesno(self.class3d_ctf_ign1stpeak)),
-            ('Pre-read all particles into RAM?',        yesno(self.refine_preread_images)),
-        ])
-
-        if self.refine_submit_to_queue:
-            options.extend(self.queue_options)
-
-        jobname = addJob(
-            'Class3D', 'class3d_pass{}_job_batch_{:03d}'.format(passindex + 1, batchindex + 1),
-            options, alias='pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1),
-        )
-        self.class3d_job = jobname
-        return jobname
 
     @property
-    def queue_options(self): 
+    def queue_options(self):
         '''List of queue arguments'''
         # Only relevant if `self.motioncor_submit_to_queue`
         return QAList([
@@ -1120,10 +1178,11 @@ class RelionItOptions(object):
             pass
 
         # Set up GUI file for Manualpick job to allow easy viewing of autopick results.
-        writeManualPickingGuiFile(
-            self.autopick_LoG_diam_min if self.autopick_do_LoG else
-            self.autopick_refs_min_distance
-        )
+        if not os.path.isfile('.gui_manualpickrun.job'):
+            writeManualPickingGuiFile(
+                self.autopick_LoG_diam_min if self.autopick_do_LoG else
+                self.autopick_refs_min_distance
+            )
 
         # If we're only doing motioncor and CTF estimation,
         # forget about the second pass and the batch processing.
@@ -1160,10 +1219,12 @@ class RelionItOptions(object):
         for passindex in range(startat, len(filter(bool, self.do_pass))):
 
             self.jobs = []
-            self.set_up_import_job()
-            if self.images_are_movies:
-                self.set_up_motioncor_job()
-            self.set_up_ctffind_job()
+            import_job = ImportJob(self)
+            micrographs_star_file = (
+                MotionCorJob(self, import_job).name + 'corrected_micrographs.star' if self.images_are_movies else 
+                import_job.name + 'micrographs.star'
+            )
+            ctffind_job = CTFFindJob(self, micrographs_star_file)
 
             do_2d_classification = self.do_class2d[passindex]
             do_3d_classification = self.do_class3d[passindex]
@@ -1171,10 +1232,10 @@ class RelionItOptions(object):
 
             # There is an option to stop on-the-fly processing after CTF estimation
             if not self.stop_after_ctf_estimation:
-                self.set_up_autopick_job(passindex)
-                self.set_up_extract_job(passindex)
+                autopick_job = AutopickJob(self, passindex, ctffind_job)
+                extract_job = ExtractJob(self, passindex, autopick_job, ctffind_job)
                 if do_classification:
-                    self.set_up_split_job(passindex)
+                    split_job = SplitJob(self, passindex, extract_job)
 
             # Now execute the preprocessing pipeliner
             preprocess_schedule_name = PREPROCESS_SCHEDULE_PASSES[passindex]
@@ -1226,19 +1287,19 @@ class RelionItOptions(object):
                 # so check for `previous_batch1_size` in the output directory.
                 # Also check for `class2d_job_batch_001`,
                 # in case the first job was not submitted yet.
-                first_split_file = sorted(glob.glob(self.split_job, + 'particles_split*.star'))[0]
+                first_split_file = sorted(glob.glob(split_job.name, + 'particles_split*.star'))[0]
                 keys = ['particles', 'rlnMicrographName']
                 previous_batch1_size = len(star.recursivelydescend(
                     star.load(first_split_file, keys), keys
                 )) if (
-                    find_job_in_SETUP_CHECKFILE('class2d_job_batch_001') is not None and first_split_file is not None
+                    SETUP_CHECK_FILE_find_job('class2d_job_batch_001') is not None and first_split_file is not None
                 ) else 0
 
                 continue_this_pass = True
                 while continue_this_pass:
                     have_new_batch = False
                     for batchindex, batchname in enumerate(sorted(glob.glob(
-                        self.split_job + 'particle_split*.star'
+                        split_job.name + 'particle_split*.star'
                     ))):
                         batch = star.load(batchname, keys)
                         batchsize = len(star.recursivelydescend(batch), keys)
@@ -1248,28 +1309,28 @@ class RelionItOptions(object):
                         particles_star_file = batchname
 
                         def donewbatch(job, capsname, description, batchsize):
-                            RunJobs([job], 1, 1, capsname)
-                            print(prefix_RELION_IT("submitted {} with {} particles in {}".format(description, batchsize, job)))
+                            RunJobs([job.name], 1, 1, capsname)
+                            print(prefix_RELION_IT("submitted {} with {} particles in {}".format(description, batchsize, job.name)))
                             WaitForJob(job)
                             return True
 
                         # The first batch is special:
-                        # Perform 2D classification with a batch size smaller than before 
+                        # Perform 2D classification with a batch size smaller than before
                         # (but no less than `minimum_batchsize`).
                         # Keep overwriting in the same output directory.
                         if rerun_batch1 or batchsize == self.batchsize[0]:
 
                             # Discard particles with odd mean/stddev values
                             if self.do_discard_on_image_statistics:
-                                self.set_up_discard_job(passindex, batchname)
-                                if rerun_batch1 or self.discard_job is None:
-                                    have_new_batch = donewbatch(self.discard_job, 'DISCARD', 'job to discard based on image statistics', batchsize)
-                                particles_star_file = self.discard_job + 'particles.star'
+                                discard_job = DiscardJob(self, passindex, batchname)
+                                if rerun_batch1 or discard_job.name is None:
+                                    have_new_batch = donewbatch(discard_job, 'DISCARD', 'job to discard based on image statistics', batchsize)
+                                particles_star_file = discard_job.name + 'particles.star'
 
                             # 2D classification
                             if do_2d_classification:
-                                class2d_job = self.set_up_class2d_job(passindex, batchindex, particles_star_file, batchsize)
-                                if rerun_batch1 or class2d_job is None:
+                                class2d_job = Class2DJob(self, passindex, batchindex, particles_star_file, batchsize)
+                                if rerun_batch1 or class2d_job.name is None:
                                     have_new_batch = donewbatch(class2d_job, 'CLASS2D', '2D classification', batchsize)
 
                         # Perform 3D classification
@@ -1285,11 +1346,11 @@ class RelionItOptions(object):
                             ):
                                 # Calculate an initial 3D model
                                 # by SGD initial model generation
-                                self.set_up_inimodel_job(particles_star_file)
-                                if self.inimodel_job is None:
-                                    have_new_batch = donewbatch(self.inimodel_job, 'INIMODEL', 'initial model generation', batchsize)
+                                inimodel_job = InimodelJob(self, particles_star_file)
+                                if inimodel_job.name is None:
+                                    have_new_batch = donewbatch(inimodel_job, 'INIMODEL', 'initial model generation', batchsize)
 
-                                sgd_model_star = findOutputModelStar(self.inimodel_job, 'initial model generation')
+                                sgd_model_star = findOutputModelStar(inimodel_job.name, 'initial model generation')
                                 # Use the model of the largest class for 3D classification
                                 self.class3d_reference, _resol, _angpix = findBestClass(sgd_model_star, use_resol=True)
                                 # XXX The comment says 'largest', but the code says 'best resolved'.
@@ -1298,11 +1359,11 @@ class RelionItOptions(object):
 
                             if self.class3d_reference:
                                 # Do 3D classification
-                                self.set_up_class3d_job(passindex, batchindex, particles_star_file, batchsize)
-                                if rerun_batch1 or self.class3d_job is None:
-                                    have_new_batch = donewbatch(self.class3d_job, 'CLASS3D', '3D classification', batchsize)
+                                class3d_job = Class3DJob(self, passindex, batchindex, particles_star_file, batchsize)
+                                if rerun_batch1 or class3d_job.name is None:
+                                    have_new_batch = donewbatch(class3d_job, 'CLASS3D', '3D classification', batchsize)
 
-                                class3d_model_star = findOutputModelStar(self.class3d_job, '3D classification')
+                                class3d_model_star = findOutputModelStar(class3d_job.name, '3D classification')
                                 best_class3d_class, best_class3d_resol, best_class3d_angpix = findBestClass(class3d_model_star, use_resol=True)
 
                                 # Once the first batch in the first pass is completed,
@@ -1864,52 +1925,24 @@ def getSecondPassReference():
     return class_, angpix
 
 
-def find_job_in_SETUP_CHECKFILE(name_in_script):
-    '''
-    Look for whether this job has already been completed.
-    '''
-    # See if we've done this job before,
-    # i.e. whether it is in the SETUP_CHECK_FILE
-    if os.path.isfile(SETUP_CHECK_FILE):
-        with open(SETUP_CHECK_FILE, 'r') as f:
-            for tokens in map(str.split, f):
-                # Assuming lines follow the pattern 'key = value'
-                if len(tokens) >= 3 and tokens[0] == name_in_script:
-                    return tokens[2]
-            # else:
-            #     raise Exception('{} not found!'.format(name_in_script))
-    # else:
-    #     raise FileNotFoundError
-
-
-def write_to_SETUP_CHECK_FILE(add_job_method):
-    def addJob_with_logging(jobtype, name_in_script, options, alias=None):
-        '''Add entry in `RELION_IT_SUBMITTED_JOBS`'''
-        jobname = add_job_method(jobtype, options, alias)
-        with open(SETUP_CHECK_FILE, 'a') as f:
-            f.write('{} = {}\n'.format(name_in_script, jobname))
-        return jobname
-    return addJob_with_logging
-
-
-def read_from_SETUP_CHECK_FILE(add_job_method):
+def SETUP_CHECK_FILE_readwrite(add_job_method):
     def addJob_with_checking(jobtype, name_in_script, options, alias=None):
         '''
         Given a job's name in the script, look for whether it has already been completed.
-        If not, add it to the pipeliner.
+        If not, add it to the pipeliner and add an entry in `RELION_IT_SUBMITTED_JOBS`.
         '''
-        jobname = find_job_in_SETUP_CHECKFILE(name_in_script)
+        jobname = SETUP_CHECK_FILE_find_job(name_in_script)
         # Check whether this job has already been added to the pipeline.
         if jobname is None:
             # Only add this job if it hasn't already been added.
-            jobname = add_job_method(jobtype, name_in_script, options, alias)
-        return jobname
+            add_job_method(jobtype, options, alias)
+            # Add an entry in the SETUP_CHECK_FILE
+            with open(SETUP_CHECK_FILE, 'a') as f:
+                f.write('{} = {}\n'.format(name_in_script, getjobname()))
     return addJob_with_checking
 
 
-# TODO @read_from_and_write_to_SETUP_CHECK_FILE
-@read_from_SETUP_CHECK_FILE
-@write_to_SETUP_CHECK_FILE
+@SETUP_CHECK_FILE_readwrite
 def addJob(jobtype, options, alias=None):
     '''
     Given a job type, a list of options, and an optional alias:
@@ -1919,17 +1952,31 @@ def addJob(jobtype, options, alias=None):
         ('--addJob',        jobtype),
         ('--addJobOptions', '"{}"'.format(options.inline())),
     ])
-    if alias is not None: 
+    if alias is not None:
         command.options.append(('--setJobAlias', '"{}"'.format(alias)))
     os.system(str(command))
 
-    # Get jobname
+
+def SETUP_CHECK_FILE_find_job(name_in_script, setup_check_file=SETUP_CHECK_FILE):
+    '''
+    Look for whether this job has already been completed.
+    '''
+    # See if we've done this job before,
+    # i.e. whether it is in the SETUP_CHECK_FILE
+    if os.path.isfile(setup_check_file):
+        with open(setup_check_file, 'r') as f:
+            for tokens in map(str.split, f):
+                # Assuming lines follow the pattern 'name_in_script = jobname'
+                if len(tokens) >= 3 and tokens[0] == name_in_script:
+                    return tokens[2]  # jobname
+
+
+def getjobname():
+    # Return the name of the job in the RELION pipeline most recently submitted,
+    # e.g. 'Import/job001/'
     keys = ['pipeline_processes', 'rlnPipeLineProcessName']
     pipeline = star.load(PIPELINE_STAR, keys)
-    jobname = star.recursivelydescend(pipeline, keys)[-1]  # or [2]?
-    # Return the name of the job in the RELION pipeline,
-    # e.g. 'Import/job001/'
-    return jobname
+    return star.recursivelydescend(pipeline, keys)[-1]
 
 
 def RunJobs(jobs, repeat, min_wait, schedule):
@@ -1972,25 +2019,23 @@ def WaitForJob(jobname, seconds=30):
 
 
 def writeManualPickingGuiFile(particle_diameter):
-    guifile = '.gui_manualpickrun.job'
-    if not os.path.isfile(guifile):
-        with open(guifile, 'w') as f:
-            f.writelines([line + '\n' for line in QAList([
-                ('job_type:',                  3),
-                ('Pixel size (A):',            -1),
-                ('Black value:',               0),
-                ('Blue value:',                0),
-                ('MetaDataLabel for color:',   'rlnParticleSelectZScore'),
-                ('Scale for CTF image:',       1),
-                ('Particle diameter (A):',     particle_diameter),
-                ('Blue<>red color particles?', 'No'),
-                ('Highpass filter (A):',       -1),
-                ('Lowpass filter (A):',        20),
-                ('Scale for micrographs:',     0.2),
-                ('Red value:',                 2),
-                ('Sigma contrast:',            3),
-                ('White value:',               0),
-            ]).formatted_pairs()])
+    with open('.gui_manualpickrun.job', 'w') as f:
+        f.writelines([line + '\n' for line in QAList([
+            ('job_type:',                  3),
+            ('Pixel size (A):',            -1),
+            ('Black value:',               0),
+            ('Blue value:',                0),
+            ('MetaDataLabel for color:',   'rlnParticleSelectZScore'),
+            ('Scale for CTF image:',       1),
+            ('Particle diameter (A):',     particle_diameter),
+            ('Blue<>red color particles?', 'No'),
+            ('Highpass filter (A):',       -1),
+            ('Lowpass filter (A):',        20),
+            ('Scale for micrographs:',     0.2),
+            ('Red value:',                 2),
+            ('Sigma contrast:',            3),
+            ('White value:',               0),
+        ]).formatted_pairs()])
 
 
 def findBestClass(model_star_file, use_resol=True):
