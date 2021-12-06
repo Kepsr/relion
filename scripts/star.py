@@ -145,8 +145,8 @@ def load(filename):
                 in_loop = 0
 
             elems = line[1:].split()
+            key, value = elems[:2]
             if in_loop == 1:
-                key, value = elems[:2]
                 current_colnames.append(key)
                 current_data[key] = []
             else:
