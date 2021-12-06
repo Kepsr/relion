@@ -335,7 +335,10 @@ class QAList(list):
         return ['{} == {}'.format(question, answer) for question, answer in self]
 
     def inline(self):
-        return ' '.join(pair + ';' for pair in self.formatted_pairs())
+        return ''.join(pair + ';' for pair in self.formatted_pairs())
+    
+    def __add__(self, other):
+        return QAList(list(self) + list(other))
 
 
 class Command(object):
@@ -393,7 +396,7 @@ class ImportJob(Job):
         self.options = QAList([
             ('Raw input files:',               options.import_images),
             ('Import raw movies/micrographs?', 'Yes'),
-            ('Pixel size (A):',                options.angpix),
+            ('Pixel size (Angstrom):',         options.angpix),
             ('Voltage (kV):',                  options.voltage),
             ('Spherical aberration (mm):',     options.Cs),
             ('Amplitude contrast:',            options.ampl_contrast),
@@ -408,7 +411,7 @@ class ImportJob(Job):
 
 class MotionCorJob(Job):
 
-    jobtype = 'MotionCor'
+    jobtype = 'MotionCorr'
     name_in_script = 'motioncor_job'
 
     def __init__(self, options, movies_star_file):
@@ -469,9 +472,9 @@ class CTFFindJob(Job):
             ('CTFFIND-4.1 executable:',    options.ctffind4_exe),
             ('Number of MPI procs:',       options.ctffind_mpi),
             ('Input micrographs STAR file:', micrographs_star_file),
-            ('Use CTFFIND-4.1?',                      yesno(options.ctf_software == 'ctffind')),
-            ('Use Gctf instead?',                     yesno(options.ctf_software == 'gctf')),
-            ('Use power spectra from MotionCor job?', yesno(options.ctf_software == 'ctffind')),
+            ('Use CTFFIND-4.1?',                       yesno(options.ctf_software == 'ctffind')),
+            ('Use Gctf instead?',                      yesno(options.ctf_software == 'gctf')),
+            ('Use power spectra from MotionCorr job?', yesno(options.ctf_software == 'ctffind')),
         ] + gctf_options + [
             ('Estimate phase shifts?', yesno(options.ctffind_do_phaseshift)),
         ]) + (options.queue_options if options.ctffind_submit_to_queue else [])
@@ -488,20 +491,20 @@ class AutopickJob(Job):
     def __init__(self, options, passindex, ctffind_job):
         self.options = QAList([
             ('Input micrographs for autopick:',      ctffind_job.name + 'micrographs_ctf.star'),
-            ('Min. diameter for LoG filter (A):',    options.autopick_LoG_diam_min),
-            ('Max. diameter for LoG filter (A):',    options.autopick_LoG_diam_max),
-            ('Maximum resolution to consider (A):',  options.autopick_lowpass),
+            ('Min. diameter for LoG filter (A)',     options.autopick_LoG_diam_min),
+            ('Max. diameter for LoG filter (A)',     options.autopick_LoG_diam_max),
+            ('Maximum resolution to consider (A)',   options.autopick_lowpass),
             ('Adjust default threshold (stddev):',   options.autopick_LoG_adjust_threshold),
             ('Upper threshold (stddev):',            options.autopick_LoG_upper_threshold),
             ('2D references:',                       options.autopick_2dreferences),
             ('3D reference:',                        options.autopick_3dreference),
             ('Symmetry:',                            options.autopick_3dref_symmetry),
-            ('Pixel size in references (A):',        options.autopick_ref_angpix),
-            ('3D angular sampling (deg):',           options.autopick_3dref_sampling),
-            ('In-plane angular sampling (deg):',     options.autopick_inplane_sampling),
+            ('Pixel size in references (A)',         options.autopick_ref_angpix),
+            ('3D angular sampling:',                 options.autopick_3dref_sampling),
+            ('In-plane angular sampling (deg)',      options.autopick_inplane_sampling),
             ('Picking threshold:',                   options.autopick_refs_threshold),
             ('Minimum inter-particle distance (A):', options.autopick_refs_min_distance),
-            ('Mask diameter (A):',                   options.autopick_refs_mask_diam),
+            ('Mask diameter (A)',                    options.autopick_refs_mask_diam),
             ('Maximum stddev noise:',                options.autopick_stddev_noise),
             ('Minimum avg noise:',                   options.autopick_avg_noise),
             ('Shrink factor:',                       options.autopick_shrink_factor),
@@ -517,7 +520,7 @@ class AutopickJob(Job):
         ])
 
         if options.autopick_submit_to_queue:
-            self.options.extend(options.queue_options)
+            self.options += options.queue_options
 
         self.name_in_script = 'autopick{}_job'.format(passindex + 1)
         self.alias='pass {}'.format(passindex + 1)
@@ -534,21 +537,21 @@ class ExtractJob(Job):
     def __init__(self, options, passindex, autopick_job, ctffind_job):
         # Extract options
         self.options = QAList([
-            ('Input coordinates:',                autopick_job.name + 'coords_suffix_autopick.star'),
-            ('micrograph STAR file:',             ctffind_job.name + 'micrographs_ctf.star'),
-            ('Diameter background circle (pix):', options.extract_bg_diameter),
-            ('Particle box size (pix):',          options.extract_boxsize),
-            ('Number of MPI procs:',              options.extract_mpi),
+            ('Input coordinates: ',                autopick_job.name + 'coords_suffix_autopick.star'),
+            ('micrograph STAR file: ',             ctffind_job.name + 'micrographs_ctf.star'),
+            ('Diameter background circle (pix): ', options.extract_bg_diameter),
+            ('Particle box size (pix):',           options.extract_boxsize),
+            ('Number of MPI procs:',               options.extract_mpi),
         ])
 
         if options.extract_downscale[passindex]:
-            self.options.extend(QAList([
+            self.options += QAList([
                 ('Rescale particles?',       'Yes'),
                 ('Re-scaled size (pixels):', options.extract_small_boxsize[passindex]),
-            ]))
+            ])
 
         if options.extract_submit_to_queue:
-            self.options.extend(options.queue_options)
+            self.options += options.queue_options
 
         self.name_in_script = 'extract{}_job'.format(passindex + 1)
         self.alias = 'pass {}'.format(passindex + 1)
@@ -567,8 +570,8 @@ class SplitJob(Job):
         self.options = QAList([
             ('OR select from particles.star:', extract_job.name + 'particles.star'),
             ('OR: split into subsets?',        'Yes'),
-            ('OR: number of subsets:',         -1),
-            ('Subset size:',                   options.batchsize[passindex])
+            ('OR: number of subsets: ',        -1),
+            ('Subset size: ',                  options.batchsize[passindex])
         ])
 
         self.name_in_script = 'split{}_job'.format(passindex + 1)
@@ -595,7 +598,7 @@ class DiscardJob(Job):
         ])
 
         if options.discard_submit_to_queue:
-            self.options.extend(options.queue_options)
+            self.options += options.queue_options
 
         self.name_in_script = 'discard{}_job'.format(passindex + 1)
         self.add_to_pipeline()
@@ -641,7 +644,7 @@ class InimodelJob(Job):
         ])
 
         if options.refine_submit_to_queue:
-            self.options.extend(options.queue_options)
+            self.options += options.queue_options
 
         self.add_to_pipeline()
         self.name = check_whether_job_done(self.name_in_script) or most_recently_submitted_job()
@@ -675,7 +678,7 @@ class Class2DJob(Job):
         ])
 
         if options.refine_submit_to_queue:
-            self.options.extend(options.queue_options)
+            self.options += options.queue_options
 
         self.name_in_script = 'class2d_job_pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
         # e.g. 'class2d_job_pass1_batch_001'
@@ -720,7 +723,7 @@ class Class3DJob(Job):
         ])
 
         if options.refine_submit_to_queue:
-            self.options.extend(options.queue_options)
+            self.options += options.queue_options
 
         self.name_in_script = 'class3d_job_pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
         self.alias = 'pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
@@ -1304,7 +1307,7 @@ class RelionItOptions(object):
                 # Also check for `class2d_job_pass1_batch_001`,
                 # in case the first job was not submitted yet.
                 try:
-                    first_split_file = sorted(glob.glob(split_job.name, + 'particles_split*.star'))[0]
+                    first_split_file = sorted(glob.glob(split_job.name + 'particles_split*.star'))[0]
                 except IndexError:
                     first_split_file = None
                 keys = ['particles', 'rlnMicrographName']
@@ -1966,6 +1969,7 @@ def addJob(jobtype, options, alias=None):
     Given a job type, a list of options, and an optional alias:
     Pass the job to `relion_pipeliner` and return its `jobname`.
     '''
+    print(options.inline())
     command = Command('relion_pipeliner', [
         ('--addJob',        jobtype),
         ('--addJobOptions', '"{}"'.format(options.inline())),
@@ -2100,9 +2104,9 @@ def main():
     parser.add_argument("--continue", action="store_true", dest="continue_",
                         help="continue a previous run by loading options from ./relion_it_options.py")
     args = parser.parse_args()
-
+    rows, columns = map(int, os.popen('stty size', 'r').read().split())
     for msg in [
-        '-------------------------------------------------------------------------------------------------------------------',
+        (columns - 12) * '-',
         'script for automated, on-the-fly single-particle analysis in RELION (>= 3.1)',
         'authors: Sjors H.W. Scheres, Takanori Nakane & Colin M. Palmer',
         '',
@@ -2114,7 +2118,7 @@ def main():
         '  upon a restart, jobs present in this file will be continued (for preprocessing), or ignored when already finished',
         'if you would like to re-do a specific job from scratch (e.g. because you changed its parameters)',
         '  remove that job, and those that depend on it, from the {}'.format(SETUP_CHECK_FILE),
-        '-------------------------------------------------------------------------------------------------------------------',
+        (columns - 12) * '-',
         '',
     ]:
         print(prefix_RELION_IT(msg))
