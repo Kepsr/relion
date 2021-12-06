@@ -46,13 +46,14 @@ def strip_comment(line):
 def load(filename):
 
     datablocks = OrderedDict()
-    datablock = None
-    datanames = None
 
     loop_state = 0
     # 0: outside
     # 1: reading datanames
     # 2: reading dataitems
+
+    blockcodepattern = re.compile(r'data_(.*)')
+    datanamepattern = re.compile(r'_(.*)')
 
     with open(filename) as file:
         for line in map(strip_comment, file):
@@ -61,33 +62,33 @@ def load(filename):
                 if loop_state == 2:
                     loop_state = 0
                 continue
+            
+            blockcodematch = blockcodepattern.match(line)
+            datanamematch = datanamepattern.match(line)
 
-            if line.startswith("data_"):
+            if blockcodematch:
                 # Enter a data block
                 loop_state = 0
-                blockcode = line[5:]
+                blockcode = blockcodematch.group(1)
                 datablock = OrderedDict()
                 datablocks[blockcode] = datablock
 
-            elif line.startswith("loop_"):
+            elif line == "loop_":
                 # Enter a data loop
                 loop_state = 1
                 datanames = []
 
-            elif line.startswith("_"):
-                # If inside a loop (reading data items)
-                if loop_state == 2:
-                    # Exit loop
-                    loop_state = 0
-                tokens = line[1:].split()
-
+            elif datanamematch:
+                tokens = datanamematch.group(1).split()
                 # If inside a loop (reading data names)
                 if loop_state == 1:
                     dataname = tokens[0]
                     datanames.append(dataname)
+                    # Begin new array
                     datablock[dataname] = []
-                # If outside a loop
                 else:
+                    loop_state = 0
+                    # Make sure outside loop
                     dataname, dataitem = tokens[:2]
                     datablock[dataname] = dataitem
 
