@@ -1,5 +1,8 @@
 '''
-Module for reading STAR (Self-defining Text Archive and Retrieval) files
+Module for reading STAR (Self-defining Text Archive and Retrieval) files.
+See:
+
+https://www.iucr.org/__data/assets/file/0013/11416/star.5.html
 '''
 from collections import OrderedDict
 import re
@@ -35,15 +38,15 @@ def safe(loadmethod, max_tries=5, wait=10):
 # @safe
 # def load(filename):
 #     '''
-#     Load a STAR file, returning the datasets (of type `OrderedDict`).
+#     Load a STAR file, returning the datablocks (of type `OrderedDict`).
 #     '''
 
-#     datasets = OrderedDict()
+#     datablocks = OrderedDict()
 #     datablock, datanames = None, None
 
-#     in_loop = 0
+#     loop_state = 0
 #     # 0: outside
-#     # 1: reading colnames
+#     # 1: reading datanames
 #     # 2: reading data
 
 #     with open(filename) as readfile:
@@ -57,7 +60,7 @@ def safe(loadmethod, max_tries=5, wait=10):
 #             line = line[:comment_pos] if comment_pos > 0 else line
 
 #             if not line:
-#                 in_loop = 0 if in_loop == 2 else in_loop
+#                 loop_state = 0 if loop_state == 2 else loop_state
 #                 continue
 
 #             datamatch = datapattern.match(line)
@@ -66,15 +69,15 @@ def safe(loadmethod, max_tries=5, wait=10):
 
 #             if datamatch:
 #                 # Start parsing data block
-#                 blockname = datamatch.group(1)
+#                 blockcode = datamatch.group(1)
 #                 datablock = OrderedDict()
-#                 datasets[blockname] = datablock
-#                 in_loop = 0
+#                 datablocks[blockcode] = datablock
+#                 loop_state = 0
 
 #             elif loopmatch:
 #                 # Start parsing data loop
 #                 datanames = []
-#                 in_loop = 1
+#                 loop_state = 1
 
 #             elif namematch:
 #                 # Read data name
@@ -82,18 +85,18 @@ def safe(loadmethod, max_tries=5, wait=10):
 #                 if len(dataitems) < 2:
 #                     print(line)
 #                 dataname, dataitem = dataitems[:2]
-#                 if in_loop == 1:
+#                 if loop_state == 1:
 #                     # We are inside a data loop
 #                     datablock[dataname] = []
 #                     datanames.append(dataname)
 #                 else:
 #                     # We are outside a data loop
 #                     datablock[dataname] = dataitem
-#                 if in_loop == 2:
-#                     in_loop = 0
+#                 if loop_state == 2:
+#                     loop_state = 0
 
-#             elif in_loop in (1, 2):
-#                 in_loop = 2
+#             elif loop_state in (1, 2):
+#                 loop_state = 2
 #                 dataitems = line.split()
 #                 assert len(dataitems) == len(datanames), (
 #                     "Error in STAR file {}, number of elements in {} does not match number of column names {}".format(
@@ -103,63 +106,76 @@ def safe(loadmethod, max_tries=5, wait=10):
 #                 for dataname, dataitem in zip(datanames, dataitems):
 #                     datablock[dataname].append(dataitem)
 
-#     return datasets
+#     return datablocks
+
+
+def strip_comment(line):
+    line = line.strip()
+    if '#' in line:
+        return line[:line.find('#')]
+    return line
 
 
 @safe
 def load(filename):
 
-    datasets = OrderedDict()
-    current_data = None
-    current_colnames = None
+    datablocks = OrderedDict()
+    datablock = None
+    datanames = None
 
-    in_loop = 0
+    loop_state = 0
     # 0: outside
-    # 1: reading colnames
-    # 2: reading data
+    # 1: reading datanames
+    # 2: reading dataitems
 
-    for line in open(filename):
-        line = line.strip()
-        # remove comments
-        if '#' in line:
-            line = line[:line.find('#')]
+    for line in map(strip_comment, open(filename)):
 
         if not line:
-            if in_loop == 2:
-                in_loop = 0
+            if loop_state == 2:
+                loop_state = 0
             continue
 
         if line.startswith("data_"):
-            in_loop = 0
-
-            data_name = line[5:]
-            current_data = OrderedDict()
-            datasets[data_name] = current_data
+            # Enter a data block
+            loop_state = 0
+            blockcode = line[5:]
+            datablock = OrderedDict()
+            datablocks[blockcode] = datablock
 
         elif line.startswith("loop_"):
-            current_colnames = []
-            in_loop = 1
+            # Enter a data loop
+            loop_state = 1
+            datanames = []
 
         elif line.startswith("_"):
-            if in_loop == 2:
-                in_loop = 0
+            # If inside a loop (reading data items)
+            if loop_state == 2:
+                # Exit loop
+                loop_state = 0
+            tokens = line[1:].split()
 
-            elems = line[1:].split()
-            key = elems[0]
-            if in_loop == 1:
-                current_colnames.append(key)
-                current_data[key] = []
+            # If inside a loop (reading data names)
+            if loop_state == 1:
+                dataname = tokens[0]
+                datanames.append(dataname)
+                datablock[dataname] = []
+            # If outside a loop
             else:
-                value = elems[1]
-                current_data[key] = value
+                dataname, dataitem = tokens[:2]
+                datablock[dataname] = dataitem
 
-        elif in_loop:
-            in_loop = 2
-            elems = line.split()
-            assert len(elems) == len(current_colnames), (
-                "Error in STAR file {}, number of elements in {} does not match number of column names {}".format(filename, elems, current_colnames)
+        # If inside a loop
+        elif loop_state:
+            # Read dataitems
+            loop_state = 2
+            dataitems = line.split()
+            assert len(datanames) == len(dataitems), (
+                "Error in STAR file {}, number of data items in {} does not match number of data names {}".format(filename, dataitems, datanames)
             )
-            for i, elem in enumerate(elems):
-                current_data[current_colnames[i]].append(elem)
+            for dataname, dataitem in zip(datanames, dataitems):
+                datablock[dataname].append(dataitem)
+        
+        # else:
+        #     raise SyntaxError(f'Line could not be parsed: {line}')
 
-    return datasets
+    return datablocks
