@@ -171,7 +171,7 @@ for auto-picking and classification.
 relion_it.py makes an effort to try to identify a suitable reference to use from the classes produced by the
 InitialModel job, but if it selects an inappropriate reference, you can change it by stopping the pipelines and
 script ("rm RUNNING_*"), updating the reference filename stored in the file named `RELION_IT_2NDPASS_3DREF', deleting
-the relevant jobs (`autopick2_job' and those following) from the `RELION_IT_SUBMITTED_JOBS' file, then restarting the
+the relevant jobs (`autopick_job_pass2' and those following) from the `RELION_IT_SUBMITTED_JOBS' file, then restarting the
 pipeline with "relion_it.py --continue".
 
 
@@ -256,39 +256,25 @@ important logic is in the `RelionItOptions.run_pipeline' function so that's a go
 '''
 
 from __future__ import print_function
-from __future__ import division  # always use float division
+from __future__ import division  # So that / does floating-point division
 
 import argparse
 import glob
 import inspect
-import math
 import os
 import runpy
 import time
-import traceback
 import re
 import itertools
-
-try:
-    import Tkinter as tk
-    import tkMessageBox
-    import tkFileDialog
-except ImportError:
-    # The GUI is optional.
-    # If the user requests it,
-    # it will fail when it tries to open
-    # so we can ignore the error for now.
-    pass
-
 import star
 from relion_it_gui import RelionItGui, OPTIONS_FILE
 
 # Constants
 PIPELINE_STAR = 'default_pipeline.star'
 RUNNING_FILE = 'RUNNING_RELION_IT'
-SECONDPASS_REF3D_FILE = 'RELION_IT_2NDPASS_3DREF'
 SETUP_CHECK_FILE = 'RELION_IT_SUBMITTED_JOBS'
 PREPROCESS_SCHEDULE_PASSES = ['PREPROCESS_PASS' + str(n + 1) for n in range(2)]
+REF3D_FILES = ['RELION_IT_3DREF_PASS' + str(n + 1) for n in range(2)]
 GUI_PROJECT_FILE = '.gui_projectdir'
 
 
@@ -324,9 +310,6 @@ class QAList(list):
     def formatted_pairs(self):
         return ['{} == {}'.format(question, answer) for question, answer in self]
 
-    def inline(self):
-        return ''.join(pair + ';' for pair in self.formatted_pairs())
-
     def __add__(self, other):
         return QAList(list(self) + list(other))
 
@@ -338,13 +321,10 @@ class Command(object):
         self.options = options
 
     def __str__(self):
-        return self.executable + ' ' + self.inline_options()
+        return ' '.join([self.executable] + self.formatted_pairs())
 
     def formatted_pairs(self):
         return ['{} {}'.format(k, v) for k, v in self.options]
-
-    def inline_options(self):
-        return ' '.join(self.formatted_pairs())
 
 
 class Job(object):
@@ -393,7 +373,6 @@ class ImportJob(Job):
             ('Are these multi-frame movies?',  yesno(options.images_are_movies)),
         ])
 
-        # def set_up(self):
         self.add_to_pipeline()
         self.name = most_recently_submitted_job()
         options.jobs.append(self.name)
@@ -1198,20 +1177,20 @@ class RelionItOptions(object):
         if self.stop_after_ctf_estimation:
             self.do_class2d[0], self.do_class3d[0], self.do_pass[1] = False, False, False
 
-        # If `SECONDPASS_REF3D_FILE` exists,
+        # If `REF3D_FILES[1]` exists,
         # skip the first pass and go straight to the second.
         secondpass_ref3d, secondpass_ref3d_angpix = getSecondPassReference()
         startat = int(self.do_pass[1] and bool(secondpass_ref3d))
         if self.do_pass[1] and secondpass_ref3d:
             for msg in [
                 'found {} with angpix {} as a 3D reference for second pass in file {}'.format(
-                    secondpass_ref3d, secondpass_ref3d_angpix, SECONDPASS_REF3D_FILE
+                    secondpass_ref3d, secondpass_ref3d_angpix, REF3D_FILES[1]
                 ),
                 'if the automatic reference selection turned out to be unsatisfactory,',
                 'you can re-run the second pass with another reference by:',
                 ' stopping the pipeline with the shell command `rm RUNNING_*`',
-                ' updating the reference filename in {}'.format(SECONDPASS_REF3D_FILE),
-                ' deleting relevant jobs (autopick2_job and followings) in {}'.format(SETUP_CHECK_FILE),
+                ' updating the reference filename in {}'.format(REF3D_FILES[1]),
+                ' deleting relevant jobs (autopick_job_pass2 and followings) in {}'.format(SETUP_CHECK_FILE),
                 ' and restarting the pipeline.',
             ]:
                 print(prefix_RELION_IT(msg))
@@ -1411,7 +1390,7 @@ class RelionItOptions(object):
 
                                     # Generate a file to indicate we're in the second pass,
                                     # so that the script restarts smoothly
-                                    with open(SECONDPASS_REF3D_FILE, 'w') as f:
+                                    with open(REF3D_FILES[1], 'w') as f:
                                         f.writelines((str(x) + '\n' for x in (
                                             best_class3d_class, best_class3d_angpix
                                         )))
@@ -1439,8 +1418,8 @@ def CheckForExit():
 
 # Allow direct progression to the second pass
 def getSecondPassReference():
-    if os.path.isfile(SECONDPASS_REF3D_FILE):
-        with open(SECONDPASS_REF3D_FILE, 'r') as f:
+    if os.path.isfile(REF3D_FILES[1]):
+        with open(REF3D_FILES[1], 'r') as f:
             class_, angpix = map(str.strip, f)
     else:
         class_, angpix = '', '0'
@@ -1469,10 +1448,11 @@ def addJob(jobtype, options, alias=None):
     Given a job type, a list of options, and an optional alias:
     Pass the job to `relion_pipeliner` and return its `jobname`.
     '''
-    print(options.inline())
     command = Command('relion_pipeliner', [
         ('--addJob',        jobtype),
-        ('--addJobOptions', '"{}"'.format(options.inline())),
+        ('--addJobOptions', '"{}"'.format(''.join(
+            pair + ';' for pair in options.formatted_pairs()
+        ))),
     ])
     if alias is not None:
         command.options.append(('--setJobAlias', '"{}"'.format(alias)))
@@ -1513,10 +1493,10 @@ def RunJobs(jobs, repeat, min_wait, schedule):
     ])) + ' &')  # Background
 
 
-def WaitForJob(jobname, seconds=30):
+def WaitForJob(jobname, wait=30):
     '''
     `jobname: str` name of job
-    `seconds: int` time to wait (seconds)
+    `wait: int` time to wait (wait)
     '''
     def waiting():
         keys = ['pipeline_processes', 'rlnPipeLineProcessName']
@@ -1533,11 +1513,11 @@ def WaitForJob(jobname, seconds=30):
             return False
         return True
 
-    time.sleep(seconds)
+    time.sleep(wait)
     print(prefix_RELION_IT("waiting for job to finish in {}".format(jobname)))
     while waiting():
         CheckForExit()
-        time.sleep(seconds)
+        time.sleep(wait)
 
 
 def writeManualPickingGuiFile(particle_diameter):
