@@ -145,11 +145,12 @@ def load(filename):
                 in_loop = 0
 
             elems = line[1:].split()
-            key, value = elems[:2]
+            key = elems[0]
             if in_loop == 1:
                 current_colnames.append(key)
                 current_data[key] = []
             else:
+                value = elems[1]
                 current_data[key] = value
 
         elif in_loop:
