@@ -339,10 +339,6 @@ class Job(object):
     def add_to_pipeline(self):
         addJob(self.jobtype, self.name_in_script, self.options, self.alias)
 
-    @property
-    def capsname(self):
-        return self.jobtype.upper()
-
     def findOutputModelStar(self):
         keys = ['pipeline_output_edges', 'rlnPipeLineEdgeToNode']
         job_star = star.load(self.name + 'job_pipeline.star', keys)
@@ -555,7 +551,6 @@ class DiscardJob(Job):
     '''
 
     jobtype = 'Select'
-    capsname = 'discard'.upper()
     description = 'job to discard based on image statistics'
 
     def __init__(self, options, passindex, particles_star_file):
@@ -578,7 +573,6 @@ class InimodelJob(Job):
 
     jobtype = 'InitialModel'
     name_in_script = 'inimodel'
-    capsname = name_in_script.upper()
     description = 'initial model generation'
 
     def __init__(self, options, particles_star_file):
@@ -622,7 +616,6 @@ class InimodelJob(Job):
 class Class2DJob(Job):
 
     jobtype = 'Class2D'
-    capsname = jobtype.upper()
     description = '2D classification'
 
     def __init__(self, options, passindex, batchindex, particles_star_file, batchsize):
@@ -659,7 +652,6 @@ class Class2DJob(Job):
 class Class3DJob(Job):
 
     jobtype = 'Class3D'
-    capsname = jobtype.upper()
     description = '3D classification'
 
     def __init__(self, options, passindex, batchindex, particles_star_file, batchsize):
@@ -698,6 +690,23 @@ class Class3DJob(Job):
         self.alias = 'pass{}_batch_{:03d}'.format(passindex + 1, batchindex + 1)
         self.add_to_pipeline()
         self.name = check_whether_job_done(self.name_in_script) or most_recently_submitted_job()
+
+
+
+class Batch(object):
+    
+    def __init__(self, job, schedule, batchsize):
+        self.job = job
+        self.schedule = schedule
+        self.batchsize = batchsize
+    
+    def run_and_wait(self):
+        RunJobs([self.job.name], 1, 1, self.schedule)
+        print(prefix_RELION_IT("submitted {} with {} particles in {}".format(
+            self.job.description, self.batchsize, self.job.name
+        )))
+        WaitForJob(self.job)
+        return True
 
 
 class RelionItOptions(object):
@@ -1310,30 +1319,24 @@ class RelionItOptions(object):
                             previous_batch1_size = batchsize
                         particles_star_file = batchname
 
-                        def donewbatch(job, batchsize):
-                            RunJobs([job.name], 1, 1, job.capsname)
-                            print(prefix_RELION_IT("submitted {} with {} particles in {}".format(job.description, batchsize, job.name)))
-                            WaitForJob(job)
-                            return True
-
                         # The first batch is special:
                         # Perform 2D classification with a batch size smaller than before
                         # (but no less than `minimum_batchsize`).
                         # Keep overwriting in the same output directory.
-                        if batchsize == self.batchsize[0] or rerun_batch1:
+                        if batchindex == 0 or rerun_batch1:
 
                             # Discard particles with odd mean/stddev values
                             if self.do_discard_on_image_statistics:
                                 discard_job = DiscardJob(self, passindex, batchname)
                                 if check_whether_job_done(discard_job.name_in_script) is None or rerun_batch1:
-                                    new_batches.append(donewbatch(discard_job, batchsize))
+                                    new_batches.append(Batch('DISCARD', discard_job, batchsize).run_and_wait())
                                 particles_star_file = discard_job.name + 'particles.star'
 
                             # 2D classification
                             if do_2d_classification:
                                 class2d_job = Class2DJob(self, passindex, batchindex, particles_star_file, batchsize)
                                 if check_whether_job_done(class2d_job.name_in_script) is None or rerun_batch1:
-                                    new_batches.append(donewbatch(class2d_job, batchsize))
+                                    new_batches.append(Batch('CLASS2D', class2d_job, batchsize).run_and_wait())
 
                         # Perform 3D classification
                         if do_3d_classification:
@@ -1344,13 +1347,12 @@ class RelionItOptions(object):
                             if (
                                 passindex == batchindex == 0
                                 and not self.class3d_reference
-                                and batchsize == self.batchsize[0]
                             ):
                                 # Calculate an initial 3D model
                                 # by SGD initial model generation
                                 inimodel_job = InimodelJob(self, particles_star_file)
                                 if check_whether_job_done(inimodel_job.name_in_script) is None:
-                                    new_batches.append(donewbatch(inimodel_job, batchsize))
+                                    new_batches.append(Batch('INIMODEL', inimodel_job, batchsize).run_and_wait())
 
                                 sgd_model_star = inimodel_job.findOutputModelStar()
                                 # Use the model of the largest class for 3D classification
@@ -1363,7 +1365,7 @@ class RelionItOptions(object):
                                 # Do 3D classification
                                 class3d_job = Class3DJob(self, passindex, batchindex, particles_star_file, batchsize)
                                 if check_whether_job_done(class3d_job.name_in_script) is None or rerun_batch1:
-                                    new_batches.append(donewbatch(class3d_job, batchsize))
+                                    new_batches.append(Batch('CLASS3D', class3d_job, batchsize).run_and_wait())
 
                                 class3d_model_star = class3d_job.findOutputModelStar()
                                 best_class3d_class, best_class3d_resol, best_class3d_angpix = findBestClass(class3d_model_star, use_resol=True)
@@ -1395,7 +1397,6 @@ class RelionItOptions(object):
                                             best_class3d_class, best_class3d_angpix
                                         )))
 
-                                    # Exit this pass
                                     move_to_next_pass = True
                                     print(prefix_RELION_IT(
                                         'moving on to the second pass using {} for template-based autopicking'.format(self.autopick_3dreference)
