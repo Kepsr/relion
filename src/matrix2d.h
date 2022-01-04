@@ -76,8 +76,8 @@
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_MATRIX2D(m) \
-    for (int i=0; i<(m).mdimy; i++) \
-        for (int j=0; j<(m).mdimx; j++)
+    for (int i = 0; i < (m).mdimy; i++) \
+        for (int j = 0; j < (m).mdimx; j++)
 
 /** Access to a matrix element
  * v is the array, i and j define the element v_ij.
@@ -87,7 +87,7 @@
  * val = MAT_ELEM(m, 0, 0);
  * @endcode
  */
-#define MAT_ELEM(m,i,j) ((m).mdata[(i)*(m).mdimx+(j)])
+#define MAT_ELEM(m,i,j) ((m).mdata[(i) * (m).mdimx + (j)])
 
 /** X dimension of the matrix
  */
@@ -104,33 +104,36 @@ template<typename T>
 class Matrix2D;
 
 template<typename T>
-void ludcmp(const Matrix2D<T>& A, Matrix2D<T>& LU, Matrix1D< int >& indx, T& d);
+void ludcmp(const Matrix2D<T>& A, Matrix2D<T>& LU, Matrix1D<int>& indx, T& d);
 
 template<typename T>
-void lubksb(const Matrix2D<T>& LU, Matrix1D< int >& indx, Matrix1D<T>& b);
+void lubksb(const Matrix2D<T>& LU, Matrix1D<int>& indx, Matrix1D<T>& b);
 
 template<typename T>
-void svdcmp(const Matrix2D< T >& a,
-            Matrix2D< RFLOAT >& u,
-            Matrix1D< RFLOAT >& w,
-            Matrix2D< RFLOAT >& v);
+void svdcmp(
+    const Matrix2D<T>& a, 
+    Matrix2D<RFLOAT>& u, Matrix1D<RFLOAT>& w, Matrix2D<RFLOAT>& v
+);
 
-void svbksb(Matrix2D< RFLOAT >& u,
-            Matrix1D< RFLOAT >& w,
-            Matrix2D< RFLOAT >& v,
-            Matrix1D< RFLOAT >& b,
-            Matrix1D< RFLOAT >& x);
+void svbksb(
+    Matrix2D<RFLOAT>& u,
+    Matrix1D<RFLOAT>& w,
+    Matrix2D<RFLOAT>& v,
+    Matrix1D<RFLOAT>& b,
+    Matrix1D<RFLOAT>& x
+);
 
 template<typename T>
-void solve(const Matrix2D<T>& A,
-		   const Matrix1D<T>& b,
-           Matrix1D< RFLOAT >& result,
-           RFLOAT tolerance);
+void solve(
+    const Matrix2D<T>& A,
+    const Matrix1D<T>& b,
+    Matrix1D<RFLOAT>& result,
+    RFLOAT tolerance
+);
 
 /** Matrix2D class */
 template<typename T>
-class Matrix2D
-{
+class Matrix2D {
 public:
     // The array itself
     T* mdata;
@@ -151,54 +154,46 @@ public:
     /// @{
     /** Empty constructor
      */
-    Matrix2D()
-    {
+    Matrix2D() {
         coreInit();
     }
 
     /** Dimension constructor
      */
-    Matrix2D(int Ydim, int Xdim)
-    {
+    Matrix2D(int Ydim, int Xdim) {
         coreInit();
         resize(Ydim, Xdim);
     }
 
     /** Copy constructor
      */
-    Matrix2D(const Matrix2D<T>& v)
-    {
+    Matrix2D(const Matrix2D<T>& v) {
         coreInit();
         *this = v;
     }
 
     /** Destructor.
      */
-    ~Matrix2D()
-    {
+    ~Matrix2D() {
         coreDeallocate();
     }
 
     /** Assignment.
      *
-     * You can build as complex assignment expressions as you like. Multiple
-     * assignment is allowed.
+     * You can build assignment expressions as complex as you like. 
+     * Multiple assignment is allowed.
      *
      * @code
      * v1 = v2 + v3;
      * v1 = v2 = v3;
      * @endcode
      */
-    Matrix2D<T>& operator=(const Matrix2D<T>& op1)
-    {
-        if (&op1 != this)
-        {
-            if (MAT_XSIZE(*this)!=MAT_XSIZE(op1) ||
-                MAT_YSIZE(*this)!=MAT_YSIZE(op1))
+    Matrix2D<T>& operator=(const Matrix2D<T>& op1) {
+        if (&op1 != this) {
+            if (MAT_XSIZE(*this) != MAT_XSIZE(op1) || MAT_YSIZE(*this) != MAT_YSIZE(op1))
                 resize(op1);
             memcpy(mdata,op1.mdata,op1.mdim*sizeof(T));
         }
-
         return *this;
     }
     //@}
@@ -460,17 +455,17 @@ public:
 
     /** Matrix element access
      */
-	T& operator()(int i, int j)
+    T& operator()(int i, int j)
     {
         return MAT_ELEM((*this),i,j);
     }
-	
-	// for constant matrices (the compiler will pick the right version)
-	const T& operator()(int i, int j) const
+    
+    // for constant matrices (the compiler will pick the right version)
+    const T& operator()(int i, int j) const
     {
         return MAT_ELEM((*this),i,j);
     }
-	
+    
     /** Parenthesis operator for phyton
     */
     void setVal(T val,int y, int x)
@@ -542,8 +537,8 @@ public:
 
         if (mdimx != op1.size())
         {
-        	std::cerr << " mdimx= " << mdimx << " opp1.size()= " << op1.size() << std::endl;
-        	REPORT_ERROR("Not compatible sizes in matrix by vector");
+            std::cerr << " mdimx= " << mdimx << " opp1.size()= " << op1.size() << std::endl;
+            REPORT_ERROR("Not compatible sizes in matrix by vector");
         }
 
         if (!op1.isCol())
@@ -679,7 +674,7 @@ public:
         for (int i = 0; i < mdimy; i++)
              for (int j = 0; j < mdimx; j++)
                  if (ABS( (*this)(i,j) ) < accuracy)
-                	 (*this)(i,j) = 0.;
+                     (*this)(i,j) = 0.;
     }
 
     /// @name Utilities for Matrix2D
@@ -817,7 +812,7 @@ public:
      * according to the shape.
      *
      * @code
-     * Matrix2D< RFLOAT > m = fromVector(v);
+     * Matrix2D<RFLOAT> m = fromVector(v);
      * @endcode
      */
     void fromVector(const Matrix1D<T>& op1)
@@ -855,7 +850,7 @@ public:
      * matrix.
      *
      * @code
-     * Matrix1D< RFLOAT > v;
+     * Matrix1D<RFLOAT> v;
      * m.toVector(v);
      * @endcode
      */
@@ -919,7 +914,7 @@ public:
      * logical not physical.
      *
      * @code
-     * std::vector< RFLOAT > v;
+     * std::vector<RFLOAT> v;
      * m.getRow(-2, v);
      * @endcode
      */
@@ -948,7 +943,7 @@ public:
      * choosen column.
      *
      * @code
-     * std::vector< RFLOAT > v;
+     * std::vector<RFLOAT> v;
      * m.getCol(-1, v);
      * @endcode
      */
@@ -1056,7 +1051,7 @@ public:
         }
 
         // Perform decomposition
-        Matrix1D< int > indx;
+        Matrix1D<int> indx;
         T d;
         Matrix2D<T> LU;
         ludcmp(*this, LU, indx, d);
@@ -1091,93 +1086,72 @@ public:
      * pseudoinverse is returned.
      *
      * @code
-     * Matrix2D< RFLOAT > m1_inv;
+     * Matrix2D<RFLOAT> m1_inv;
      * m1.inv(m1_inv);
      * @endcode
      */
-    void inv(Matrix2D<T>& result) const
-    {
+    void inv(Matrix2D<T>& result) const {
 
-        if (mdimx == 0 || mdimy == 0)
-        {
-        	REPORT_ERROR("Inverse: Matrix is empty");
+        if (mdimx == 0 || mdimy == 0) {
+            REPORT_ERROR("Inverse: Matrix is empty");
         }
         // Initialise output
         result.initZeros(mdimx, mdimy);
 
-        if (mdimx == 3 && mdimy == 3)
-        {
-        	MAT_ELEM(result, 0, 0) =   MAT_ELEM((*this), 2, 2)*MAT_ELEM((*this), 1, 1)-MAT_ELEM((*this), 2, 1)*MAT_ELEM((*this), 1, 2);
-        	MAT_ELEM(result, 0, 1) = -(MAT_ELEM((*this), 2, 2)*MAT_ELEM((*this), 0, 1)-MAT_ELEM((*this), 2, 1)*MAT_ELEM((*this), 0, 2));
-        	MAT_ELEM(result, 0, 2) =   MAT_ELEM((*this), 1, 2)*MAT_ELEM((*this), 0, 1)-MAT_ELEM((*this), 1, 1)*MAT_ELEM((*this), 0, 2);
-        	MAT_ELEM(result, 1, 0) = -(MAT_ELEM((*this), 2, 2)*MAT_ELEM((*this), 1, 0)-MAT_ELEM((*this), 2, 0)*MAT_ELEM((*this), 1, 2));
-        	MAT_ELEM(result, 1, 1) =   MAT_ELEM((*this), 2, 2)*MAT_ELEM((*this), 0, 0)-MAT_ELEM((*this), 2, 0)*MAT_ELEM((*this), 0, 2);
-        	MAT_ELEM(result, 1, 2) = -(MAT_ELEM((*this), 1, 2)*MAT_ELEM((*this), 0, 0)-MAT_ELEM((*this), 1, 0)*MAT_ELEM((*this), 0, 2));
-        	MAT_ELEM(result, 2, 0) =   MAT_ELEM((*this), 2, 1)*MAT_ELEM((*this), 1, 0)-MAT_ELEM((*this), 2, 0)*MAT_ELEM((*this), 1, 1);
-        	MAT_ELEM(result, 2, 1) = -(MAT_ELEM((*this), 2, 1)*MAT_ELEM((*this), 0, 0)-MAT_ELEM((*this), 2, 0)*MAT_ELEM((*this), 0, 1));
-        	MAT_ELEM(result, 2, 2) =   MAT_ELEM((*this), 1, 1)*MAT_ELEM((*this), 0, 0)-MAT_ELEM((*this), 1, 0)*MAT_ELEM((*this), 0, 1);
-        	RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM(result, 0, 0) +
-        			     MAT_ELEM((*this), 1, 0) * MAT_ELEM(result, 0, 1) +
-        			     MAT_ELEM((*this), 2, 0) * MAT_ELEM(result, 0, 2);
-        	result /= tmp;
-        }
-        else if (mdimx == 2 && mdimy == 2)
-        {
-        	MAT_ELEM(result, 0, 0) = MAT_ELEM((*this), 1, 1);
-        	MAT_ELEM(result, 0, 1) = -MAT_ELEM((*this), 0, 1);
-        	MAT_ELEM(result, 1, 0) = -MAT_ELEM((*this), 1, 0);
-        	MAT_ELEM(result, 1, 1) =  MAT_ELEM((*this), 0, 0);
-        	RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM((*this), 1, 1) -
-					     MAT_ELEM((*this), 0, 1) * MAT_ELEM((*this), 1, 0);
-        	result /= tmp;
-        }
-        else
-        {
+        if (mdimx == 3 && mdimy == 3) {
+            for (int i = 0; i <= 2; i++) {
+                MAT_ELEM(result, i, 0) = (i == 0 || i == 2 ? 1 : -1) * (MAT_ELEM((*this), 2, (i == 0 || i == 1 ? 2 : 1)) * MAT_ELEM((*this), 1, (i == 0 ? 1 : 0)) - MAT_ELEM((*this), 2, (i == 0 ? 1 : 0)) * MAT_ELEM((*this), 1, (i == 0 || i == 1 ? 2 : 1)));
+                MAT_ELEM(result, i, 1) = (i == 0 || i == 2 ? -1 : 1) * (MAT_ELEM((*this), 2, (i == 0 || i == 1 ? 2 : 1)) * MAT_ELEM((*this), 0, (i == 0 ? 1 : 0)) - MAT_ELEM((*this), 2, (i == 0 ? 1 : 0)) * MAT_ELEM((*this), 0, (i == 0 || i == 1 ? 2 : 1)));
+                MAT_ELEM(result, i, 2) = (i == 0 || i == 2 ? 1 : -1) * (MAT_ELEM((*this), 1, (i == 0 || i == 1 ? 2 : 1)) * MAT_ELEM((*this), 0, (i == 0 ? 1 : 0)) - MAT_ELEM((*this), 1, (i == 0 ? 1 : 0)) * MAT_ELEM((*this), 0, (i == 0 || i == 1 ? 2 : 1)));   
+            }
+            RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM(result, 0, 0) + MAT_ELEM((*this), 1, 0) * MAT_ELEM(result, 0, 1) + MAT_ELEM((*this), 2, 0) * MAT_ELEM(result, 0, 2);
+            result /= tmp;
+        } else if (mdimx == 2 && mdimy == 2) {
+            MAT_ELEM(result, 0, 0) = MAT_ELEM((*this), 1, 1);
+            MAT_ELEM(result, 0, 1) = -MAT_ELEM((*this), 0, 1);
+            MAT_ELEM(result, 1, 0) = -MAT_ELEM((*this), 1, 0);
+            MAT_ELEM(result, 1, 1) =  MAT_ELEM((*this), 0, 0);
+            RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM((*this), 1, 1) - MAT_ELEM((*this), 0, 1) * MAT_ELEM((*this), 1, 0);
+            result /= tmp;
+        } else {
 
-			// Perform SVD decomposition
-			Matrix2D< RFLOAT > u, v;
-			Matrix1D< RFLOAT > w;
-			svdcmp(*this, u, w, v); // *this = U * W * V^t
+            // Perform SVD
+            Matrix2D<RFLOAT> u, v;
+            Matrix1D<RFLOAT> w;
+            svdcmp(*this, u, w, v); // *this = U * W * V^t
 
-			RFLOAT tol = computeMax() * XMIPP_MAX(mdimx, mdimy) * 1e-14;
+            RFLOAT tol = computeMax() * XMIPP_MAX(mdimx, mdimy) * 1e-14;
 
-			// Compute W^-1
-			bool invertible = false;
-			FOR_ALL_ELEMENTS_IN_MATRIX1D(w)
-			{
-				if (ABS(VEC_ELEM(w,i)) > tol)
-				{
-					VEC_ELEM(w,i) = 1.0 / VEC_ELEM(w,i);
-					invertible = true;
-				}
-				else
-					VEC_ELEM(w,i) = 0.0;
-			}
+            // Compute W^-1
+            bool invertible = false;
+            FOR_ALL_ELEMENTS_IN_MATRIX1D(w) {
+                if (ABS(VEC_ELEM(w, i)) > tol) {
+                    VEC_ELEM(w, i) = 1.0 / VEC_ELEM(w, i);
+                    invertible = true;
+                } else {
+                    VEC_ELEM(w, i) = 0.0;
+                }
+            }
 
-			if (!invertible)
-				return;
+            if (!invertible)
+                return;
 
-			// Compute V*W^-1
-			FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
-			MAT_ELEM(v,i,j) *= VEC_ELEM(w,j);
+            // Compute V*W^-1
+            FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
+            MAT_ELEM(v, i, j) *= VEC_ELEM(w, j);
 
-			// Compute Inverse
-			for (int i = 0; i < mdimx; i++)
-				for (int j = 0; j < mdimy; j++)
-					for (int k = 0; k < mdimx; k++)
-						MAT_ELEM(result,i,j) += (T) MAT_ELEM(v,i,k) * MAT_ELEM(u,j,k);
-
+            // Compute Inverse
+            for (int i = 0; i < mdimx; i++)
+                for (int j = 0; j < mdimy; j++)
+                    for (int k = 0; k < mdimx; k++)
+                        MAT_ELEM(result, i, j) += (T) MAT_ELEM(v, i, k) * MAT_ELEM(u, j, k);
        }
-
     }
 
-    /** Inverse of a matrix
-     */
-    Matrix2D<T> inv() const
-    {
+    // Matrix inverse
+    Matrix2D<T> inv() const {
         Matrix2D<T> result;
         inv(result);
-
         return result;
     }
 
@@ -1188,18 +1162,14 @@ public:
      *     std::cout << "The matrix is identity\n";
      * @endcode
      */
-    bool isIdentity() const
-    {
+    bool isIdentity() const {
         for (int i = 0; i < mdimy; i++)
             for (int j = 0; j < mdimx; j++)
-                if (i != j)
-                {
-                    if (ABS(MAT_ELEM(*this,i,j)) > XMIPP_EQUAL_ACCURACY)
+                if (i != j) {
+                    if (ABS(MAT_ELEM(*this, i, j)) > XMIPP_EQUAL_ACCURACY)
                         return false;
-                }
-                else
-                {
-                    if (ABS(MAT_ELEM(*this,i,j) - 1.) > XMIPP_EQUAL_ACCURACY )
+                } else {
+                    if (ABS(MAT_ELEM(*this, i, j) - 1.) > XMIPP_EQUAL_ACCURACY )
                         return false;
                 }
         return true;
@@ -1210,8 +1180,7 @@ public:
 // Implementation of the vector*matrix
 // Documented in matrix1D.h
 template<typename T>
-Matrix1D<T> Matrix1D<T>::operator*(const Matrix2D<T>& M)
-{
+Matrix1D<T> Matrix1D<T>::operator*(const Matrix2D<T>& M) {
     Matrix1D<T> result;
 
     if (VEC_XSIZE(*this) != MAT_YSIZE(M))
@@ -1233,44 +1202,39 @@ Matrix1D<T> Matrix1D<T>::operator*(const Matrix2D<T>& M)
  * These functions are not methods of Matrix2D
  */
 //@{
-/** LU Decomposition
- */
+// LU Decomposition
 template<typename T>
-void ludcmp(const Matrix2D<T>& A, Matrix2D<T>& LU, Matrix1D< int >& indx, T& d)
-{
+void ludcmp(const Matrix2D<T>& A, Matrix2D<T>& LU, Matrix1D<int>& indx, T& d) {
     LU = A;
-    if (VEC_XSIZE(indx)!=A.mdimx)
+    if (VEC_XSIZE(indx) != A.mdimx)
         indx.resize(A.mdimx);
-    ludcmp(LU.adaptForNumericalRecipes2(), A.mdimx,
-           indx.adaptForNumericalRecipes(), &d);
+    ludcmp(
+        LU.adaptForNumericalRecipes2(), A.mdimx, 
+        indx.adaptForNumericalRecipes(), &d
+    );
 }
 
-/** LU Backsubstitution
- */
+// LU Backsubstitution
 template<typename T>
-void lubksb(const Matrix2D<T>& LU, Matrix1D< int >& indx, Matrix1D<T>& b)
-{
-    lubksb(LU.adaptForNumericalRecipes2(), indx.size(),
-           indx.adaptForNumericalRecipes(),
-           b.adaptForNumericalRecipes());
+void lubksb(const Matrix2D<T>& LU, Matrix1D<int>& indx, Matrix1D<T>& b) {
+    lubksb(
+        LU.adaptForNumericalRecipes2(), indx.size(), 
+        indx.adaptForNumericalRecipes(), b.adaptForNumericalRecipes()
+    );
 }
 
-/** SVD Backsubstitution
- */
-void svbksb(Matrix2D< RFLOAT >& u,
-            Matrix1D< RFLOAT >& w,
-            Matrix2D< RFLOAT >& v,
-            Matrix1D< RFLOAT >& b,
-            Matrix1D< RFLOAT >& x);
+// SVD Backsubstitution
+void svbksb(
+    Matrix2D<RFLOAT>& u, Matrix1D<RFLOAT>& w, Matrix2D<RFLOAT>& v, 
+    Matrix1D<RFLOAT>& b, Matrix1D<RFLOAT>& x
+);
 
-/** SVD Decomposition (through numerical recipes)
- */
+// Singular Value Decomposition (from numerical_recipes)
 template<typename T>
-void svdcmp(const Matrix2D< T >& a,
-            Matrix2D< RFLOAT >& u,
-            Matrix1D< RFLOAT >& w,
-            Matrix2D< RFLOAT >& v)
-{
+void svdcmp(
+    const Matrix2D<T>& a, 
+    Matrix2D<RFLOAT>& u, Matrix1D<RFLOAT>& w, Matrix2D<RFLOAT>& v
+) {
     // svdcmp only works with RFLOAT
     typeCast(a, u);
 
@@ -1278,19 +1242,16 @@ void svdcmp(const Matrix2D< T >& a,
     w.initZeros(u.mdimx);
     v.initZeros(u.mdimx, u.mdimx);
 
-    // Call to the numerical recipes routine
-    svdcmp(u.mdata,
-           u.mdimy, u.mdimx,
-           w.vdata,
-           v.mdata);
+    // Call the numerical recipes routine
+    svdcmp(u.mdata, u.mdimy, u.mdimx, w.vdata, v.mdata);
 }
 
-/** Solve system of linear equations (Ax=b) through SVD Decomposition (through numerical recipes)
- */
+// Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
-void solve(const Matrix2D< T >& A, const Matrix1D< T >& b,
-                  Matrix1D< RFLOAT >& result, RFLOAT tolerance)
-{
+void solve(
+    const Matrix2D<T>& A, const Matrix1D<T>& b,
+    Matrix1D<RFLOAT>& result, RFLOAT tolerance
+) {
     if (A.mdimx == 0)
         REPORT_ERROR("Solve: Matrix is empty");
 
@@ -1298,15 +1259,15 @@ void solve(const Matrix2D< T >& A, const Matrix1D< T >& b,
         REPORT_ERROR("Solve: Matrix is not squared");*/
 
     if (A.mdimy != b.vdim)
-        REPORT_ERROR("Solve: Different sizes of Matrix and Vector");
+        REPORT_ERROR("Solve: Differently sized Matrix and Vector");
 
     /*if (b.isRow())
         REPORT_ERROR("Solve: Not correct vector shape");*/
 
     // First perform de single value decomposition
     // Xmipp interface that calls to svdcmp of numerical recipes
-    Matrix2D< RFLOAT > u, v;
-    Matrix1D< RFLOAT > w;
+    Matrix2D<RFLOAT> u, v;
+    Matrix1D<RFLOAT> w;
     svdcmp(A, u, w, v);
 
     // Here is checked if eigenvalues of the svd decomposition are acceptable
@@ -1320,7 +1281,7 @@ void solve(const Matrix2D< T >& A, const Matrix1D< T >& b,
     result.resize(b.vdim);
 
     // Xmipp interface that calls to svdksb of numerical recipes
-    Matrix1D< RFLOAT > bd;
+    Matrix1D<RFLOAT> bd;
     typeCast(b, bd);
     svbksb(u, w, v, bd, result);
 }
@@ -1350,65 +1311,65 @@ void solve(const Matrix2D<T>& A, const Matrix2D<T>& b, Matrix2D<T>& result)
 /** Least-squares rigid transformation between two sets of 3D coordinates
  *
 RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::vector<Matrix1D<RFLOAT> > &set2,
-		Matrix2D<RFLOAT> &Rot, Matrix1D<RFLOAT> &trans)
+        Matrix2D<RFLOAT> &Rot, Matrix1D<RFLOAT> &trans)
 {
-	Matrix2D<RFLOAT> A;
-	Matrix1D<RFLOAT> avg1, avg2;
+    Matrix2D<RFLOAT> A;
+    Matrix1D<RFLOAT> avg1, avg2;
 
-	if (set1.size() != set2.size())
-		REPORT_ERROR("lsq_rigid_body_transformation ERROR: unequal set size");
+    if (set1.size() != set2.size())
+        REPORT_ERROR("lsq_rigid_body_transformation ERROR: unequal set size");
 
-	// Calculate average of set1 and set2
-	avg1 = vectorR3(0., 0., 0.);
-	avg2 = vectorR3(0., 0., 0.);
-	for (int i = 0; i < set1.size(); i++)
-	{
-		if (set1[i].vdim != 3)
-			REPORT_ERROR("lsq_rigid_body_transformation ERROR: not a 3-point set1");
-		if (set2[i].vdim != 3)
-			REPORT_ERROR("lsq_rigid_body_transformation ERROR: not a 3-point set2");
-		avg1 += set1[i];
-		avg2 += set2[i];
-	}
-	avg1 /= (RFLOAT)set1.size();
-	avg2 /= (RFLOAT)set1.size();
+    // Calculate average of set1 and set2
+    avg1 = vectorR3(0., 0., 0.);
+    avg2 = vectorR3(0., 0., 0.);
+    for (int i = 0; i < set1.size(); i++)
+    {
+        if (set1[i].vdim != 3)
+            REPORT_ERROR("lsq_rigid_body_transformation ERROR: not a 3-point set1");
+        if (set2[i].vdim != 3)
+            REPORT_ERROR("lsq_rigid_body_transformation ERROR: not a 3-point set2");
+        avg1 += set1[i];
+        avg2 += set2[i];
+    }
+    avg1 /= (RFLOAT)set1.size();
+    avg2 /= (RFLOAT)set1.size();
 
-	A.initZeros(3, 3);
-	Rot.initZeros(4,4);
-	for (int i = 0; i < set1.size(); i++)
-	{
-		// fill A
-		A(0, 0) += (XX(set1[i]) - XX(avg1)) * (XX(set2[i]) - XX(avg2));
-		A(0, 1) += (XX(set1[i]) - XX(avg1)) * (YY(set2[i]) - YY(avg2));
-		A(0, 2) += (XX(set1[i]) - XX(avg1)) * (ZZ(set2[i]) - ZZ(avg2));
-		A(1, 0) += (YY(set1[i]) - YY(avg1)) * (XX(set2[i]) - XX(avg2));
-		A(1, 1) += (YY(set1[i]) - YY(avg1)) * (YY(set2[i]) - YY(avg2));
-		A(1, 2) += (YY(set1[i]) - YY(avg1)) * (ZZ(set2[i]) - ZZ(avg2));
-		A(2, 0) += (ZZ(set1[i]) - ZZ(avg1)) * (XX(set2[i]) - XX(avg2));
-		A(2, 1) += (ZZ(set1[i]) - ZZ(avg1)) * (YY(set2[i]) - YY(avg2));
-		A(2, 2) += (ZZ(set1[i]) - ZZ(avg1)) * (ZZ(set2[i]) - ZZ(avg2));
-	}
+    A.initZeros(3, 3);
+    Rot.initZeros(4,4);
+    for (int i = 0; i < set1.size(); i++)
+    {
+        // fill A
+        A(0, 0) += (XX(set1[i]) - XX(avg1)) * (XX(set2[i]) - XX(avg2));
+        A(0, 1) += (XX(set1[i]) - XX(avg1)) * (YY(set2[i]) - YY(avg2));
+        A(0, 2) += (XX(set1[i]) - XX(avg1)) * (ZZ(set2[i]) - ZZ(avg2));
+        A(1, 0) += (YY(set1[i]) - YY(avg1)) * (XX(set2[i]) - XX(avg2));
+        A(1, 1) += (YY(set1[i]) - YY(avg1)) * (YY(set2[i]) - YY(avg2));
+        A(1, 2) += (YY(set1[i]) - YY(avg1)) * (ZZ(set2[i]) - ZZ(avg2));
+        A(2, 0) += (ZZ(set1[i]) - ZZ(avg1)) * (XX(set2[i]) - XX(avg2));
+        A(2, 1) += (ZZ(set1[i]) - ZZ(avg1)) * (YY(set2[i]) - YY(avg2));
+        A(2, 2) += (ZZ(set1[i]) - ZZ(avg1)) * (ZZ(set2[i]) - ZZ(avg2));
+    }
 
-	Matrix2D< RFLOAT > U, V;
-	Matrix1D< RFLOAT > w;
+    Matrix2D<RFLOAT> U, V;
+    Matrix1D<RFLOAT> w;
 
-	// TODO: check inverse, transpose etc etc!!!
+    // TODO: check inverse, transpose etc etc!!!
 
-	// Optimal rotation
-	svdcmp(A, U, w, V);
-	Rot = V.transpose() * U;
+    // Optimal rotation
+    svdcmp(A, U, w, V);
+    Rot = V.transpose() * U;
 
-	// Optimal translation
-	trans = avg1 - Rot * avg2;
+    // Optimal translation
+    trans = avg1 - Rot * avg2;
 
-	// return the squared difference term
-	RFLOAT error = 0.;
-	for (int i = 0; i < set1.size(); i++)
-	{
-		error += (Rot * set2[i] + trans - set1[i]).sum2();
-	}
+    // return the squared difference term
+    RFLOAT error = 0.;
+    for (int i = 0; i < set1.size(); i++)
+    {
+        error += (Rot * set2[i] + trans - set1[i]).sum2();
+    }
 
-	return error;
+    return error;
 
 }
 */
