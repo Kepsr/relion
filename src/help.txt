@@ -1,0 +1,87 @@
+RELION is developed in the groups of:
+
+Sjors H.W. Scheres at the MRC Laboratory of Molecular Biology
+ - Sjors H.W. Scheres
+ - Shaoda He
+ - Takanori Nakane
+ - Jasenko Zivanov
+ - Liyi Dong
+ - Dari Kimanius
+
+and Erik Lindahl at Stockholm University
+ - Erik Lindahl
+ - Björn O. Forsber
+
+Note that RELION is completely free, open-source software. You can redistribute it and/or modify it for your own purposes, but please do make sure the contribution of the developers are acknowledged appropriately. In order to maintain an overview of existing versions, a notification regarding any redistribution of the code (and modified versions thereof) is appreciated (contact Sjors directly).
+
+If RELION is useful in your work, please cite us. Relevant papers are:
+
+* General Bayesian approach (and first mention of RELION):
+    Scheres (2012) J. Mol. Biol. (PMID: 22100448)
+
+* RELION implementation details and the 3D auto-refine procedure:
+    Scheres (2012) J. Struct. Biol. (PMID: 23000701)
+
+* Gold-standard FSC and the relevance of the 0.143 criterion:
+    Scheres & Chen (2012) Nat. Meth. (PMID: 22842542)
+
+* Correction of mask effects on the FSC curve by randomised phases:
+    Chen et al. (2013) Ultramicroscopy (PMID: 23872039)
+
+* Auto-picking :
+    Scheres (2014) J. Struct. Biol. (PMID: 25486611)
+
+* Sub-tomogram averaging :
+    Bharat et al. (2015) Structure (PMID: 26256537)
+
+* RELION 2.0 GPU capability and autopicking acceleration:
+    Kimanius et al. (2016) eLife (PMID: 27845625)
+
+* Helical reconstruction:\n\
+    He & Scheres (2017) J, Struct. Biol. (PMID: 28193500)
+
+* RELION 3.0 CTFRefine, RelionIt, CPU acceleration, Ewald sphere correction:
+    Zivanov et al. (2018) eLife (PMID: 30412051)
+
+* Multibody refinement:
+    Nakane et al. (2018) eLife (PMID: 29856314)
+
+* Bayesian Polishing:
+    Zivanov et al. (2019) IUCrJ (PMID: 30713699)
+
+* Higher-order aberration correction, magnification anisotropy correction
+    Zivanov et al. (2020) IUCrJ (PMID: 32148853)
+
+* Amyloid structure determination:
+    Scheres (2020) Acta Crystallor. D (PMID: 32038040)
+
+
+Please also cite relevant papers when you used external programs or their algorithms re-implemented in RELION:
+
+* MOTIONCOR2 algorithm for beam-induced motion correction:
+    Zheng et al (2017) Nat. Meth. (PMID: 28250466)
+
+* CTFFIND4 for CTF-estimation:
+    Rohou & Grigorieff (2015) J. Struct. Biol. (PMID: 26278980)
+
+* GCTF for CTF-estimation:
+    Zhang (2016) J. Struct. Biol. (PMID: 26592709)
+
+* Stochastic Gradient Descent for initial model generation:
+    Punjani et al. (2017) Nat. Meth. (PMID: 28165473)
+
+* ResMap for local-resolution estimation:
+    Kucukelbir et al. (2014) Nat. Meth. (PMID: 24213166)
+
+* Symmetry relaxation:
+    Ilca et al. (2019) Nature (PMID: 31142835)
+    Abrishami et al. (2020) Prog. Biophys. Mol. Biol. (PMID: 32470354)
+
+* Postscript plots are made using CPlot2D from http://www.amzsaki.com
+
+About the startup screen:
+
+The map shown is the cryo-EM map of mouse heavy-chain apoferritin
+at 1.54 A (EMDB-9865). This is the highest resolution single particle
+reconstruction map deposited to EMDB as of August 2019. The raw dataset
+is also available at EMPIAR-10248.

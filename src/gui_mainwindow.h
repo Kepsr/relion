@@ -515,7 +515,10 @@ class GuiMainWindow: public Fl_Window {
 
 };
 
-
-
-
 #endif /* SRC_NEWGUI_MAINWINDOW_CPP_ */
+
+constexpr std::string gethelptext() {
+    std::ifstream ifs("help.txt");
+    std::string content(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+    return content;
+}
