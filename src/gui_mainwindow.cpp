@@ -3011,7 +3011,7 @@ void GuiMainWindow::cb_about(Fl_Widget* o, void* v) {
 }
 
 void GuiMainWindow::cb_about_i() {
-    ShowHelpText *help = new ShowHelpText("RELION" " " RELION_SHORT_VERSION " " gethelptext());
+    ShowHelpText *help = new ShowHelpText(gethelptext());
 }
 
 void GuiMainWindow::cb_quit(Fl_Widget* o, void* v) {

@@ -132,7 +132,7 @@ bool calcCCofHelicalSymmetry(
 	//std::vector<RFLOAT> sin_rec, cos_rec, dev_voxel, dev_chunk;
 	std::vector<RFLOAT> sin_rec, cos_rec;
 
-	if ( (STARTINGZ(v) != FIRST_XMIPP_INDEX(ZSIZE(v))) || (STARTINGY(v) != FIRST_XMIPP_INDEX(YSIZE(v))) || (STARTINGX(v) != FIRST_XMIPP_INDEX(XSIZE(v))) )
+	if ( (STARTINGZ(v) != Xmipp::init(ZSIZE(v))) || (STARTINGY(v) != Xmipp::init(YSIZE(v))) || (STARTINGX(v) != Xmipp::init(XSIZE(v))) )
 		REPORT_ERROR("helix.cpp::calcCCofHelicalSymmetry(): The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
 
 	// Check r_max
@@ -1151,7 +1151,7 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
 	if ( (YSIZE(v) < 10) || (XSIZE(v) < 10) )
 		REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): Input 2D MultidimArray should be larger than 10*10 pixels!");
 
-	if ( (STARTINGY(v) != FIRST_XMIPP_INDEX(YSIZE(v))) || (STARTINGX(v) != FIRST_XMIPP_INDEX(XSIZE(v))) )
+	if ( (STARTINGY(v) != Xmipp::init(YSIZE(v))) || (STARTINGX(v) != Xmipp::init(XSIZE(v))) )
 		REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): The origin of input 2D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
 
 	box_len = (XSIZE(v) < YSIZE(v)) ? XSIZE(v) : YSIZE(v);
@@ -3133,7 +3133,7 @@ void makeHelicalReference3D(
 	RFLOAT x0, y0, z0;
 	x0 = tube_diameter_pix / 2.;
 	y0 = 0.;
-	z0 = (RFLOAT)(FIRST_XMIPP_INDEX(box_size));
+	z0 = (RFLOAT)(Xmipp::init(box_size));
 	vec0.clear();
 	vec0.resize(2);
 	XX(vec0) = x0;
@@ -3153,7 +3153,7 @@ void makeHelicalReference3D(
 		x1 = XX(vec1);
 		y1 = YY(vec1);
 		z1 = z0 + (RFLOAT)(id) * rise_pix;
-		if (z1 > LAST_XMIPP_INDEX(box_size))
+		if (z1 > Xmipp::last(box_size))
 			break;
 
 		for (int Cn = 0; Cn < sym_Cn; Cn++)
@@ -3179,9 +3179,9 @@ void makeHelicalReference3D(
 						y3 = ROUND(y2) + dy;
 						z3 = ROUND(z2) + dz;
 
-						if ( (x3 < FIRST_XMIPP_INDEX(box_size)) || (x3 > LAST_XMIPP_INDEX(box_size))
-								|| (y3 < FIRST_XMIPP_INDEX(box_size)) || (y3 > LAST_XMIPP_INDEX(box_size))
-								|| (z3 < FIRST_XMIPP_INDEX(box_size)) || (z3 > LAST_XMIPP_INDEX(box_size)) )
+						if ( (x3 < Xmipp::init(box_size)) || (x3 > Xmipp::last(box_size))
+								|| (y3 < Xmipp::init(box_size)) || (y3 > Xmipp::last(box_size))
+								|| (z3 < Xmipp::init(box_size)) || (z3 > Xmipp::last(box_size)) )
 							continue;
 
 						_x = (RFLOAT)(x3) - x2;
@@ -3264,7 +3264,7 @@ void makeHelicalReference3DWithPolarity(
 	//x0 = tube_diameter_pix / 2.;
 	//y0 = 0.;
 	// NEW - To generate references with Dn symmetry. TODO: Am I doing what I want?
-	z0 = rise_pix * FLOOR((RFLOAT)(FIRST_XMIPP_INDEX(box_size)) / rise_pix);
+	z0 = rise_pix * FLOOR((RFLOAT)(Xmipp::init(box_size)) / rise_pix);
 	x0 = (tube_diameter_pix / 2.) * cos( (PI * twist_deg * z0) / (rise_pix * 180.) );
 	y0 = (tube_diameter_pix / 2.) * sin( (PI * twist_deg * z0) / (rise_pix * 180.) );
 	vec0.clear();
@@ -3277,8 +3277,7 @@ void makeHelicalReference3DWithPolarity(
 	vec2.resize(2);
 
 	append_additional_densities = false;
-	for (int id = 0; ;id++)
-	{
+	for (int id = 0; true; id++) {
 		RFLOAT rot1_deg, x1, y1, z1;
 		rot1_deg = (RFLOAT)(id) * twist_deg;
 		rotation2DMatrix(rot1_deg, matrix1, false);
@@ -3287,11 +3286,10 @@ void makeHelicalReference3DWithPolarity(
 		x1 = XX(vec1);
 		y1 = YY(vec1);
 		z1 = z0 + (RFLOAT)(id) * rise_pix;
-		if (z1 > LAST_XMIPP_INDEX(box_size))
+		if (z1 > Xmipp::last(box_size))
 			break;
 
-		for (int Cn = 0; Cn < sym_Cn; Cn++)
-		{
+		for (int Cn = 0; Cn < sym_Cn; Cn++) {
 			RFLOAT rot2_deg, x2, y2, z2;
 			rot2_deg = (360.) * (RFLOAT)(Cn) / (RFLOAT)(sym_Cn);
 			rotation2DMatrix(rot2_deg, matrix2, false);
@@ -3314,9 +3312,9 @@ void makeHelicalReference3DWithPolarity(
 						y3 = ROUND(y2) + dy;
 						z3 = ROUND(z2) + dz;
 
-						if ( (x3 < FIRST_XMIPP_INDEX(box_size)) || (x3 > LAST_XMIPP_INDEX(box_size))
-								|| (y3 < FIRST_XMIPP_INDEX(box_size)) || (y3 > LAST_XMIPP_INDEX(box_size))
-								|| (z3 < FIRST_XMIPP_INDEX(box_size)) || (z3 > LAST_XMIPP_INDEX(box_size)) )
+						if ( (x3 < Xmipp::init(box_size)) || (x3 > Xmipp::last(box_size))
+								|| (y3 < Xmipp::init(box_size)) || (y3 > Xmipp::last(box_size))
+								|| (z3 < Xmipp::init(box_size)) || (z3 > Xmipp::last(box_size)) )
 							continue;
 
 						_x = (RFLOAT)(x3) - x2;
@@ -3377,9 +3375,9 @@ void makeHelicalReference3DWithPolarity(
 							y2 = ROUND(y1 + dy);
 							z2 = ROUND(z1 + dz);
 
-							if ( (x2 < FIRST_XMIPP_INDEX(box_size)) || (x2 > LAST_XMIPP_INDEX(box_size))
-									|| (y2 < FIRST_XMIPP_INDEX(box_size)) || (y2 > LAST_XMIPP_INDEX(box_size))
-									|| (z2 < FIRST_XMIPP_INDEX(box_size)) || (z2 > LAST_XMIPP_INDEX(box_size)) )
+							if ( (x2 < Xmipp::init(box_size)) || (x2 > Xmipp::last(box_size))
+									|| (y2 < Xmipp::init(box_size)) || (y2 > Xmipp::last(box_size))
+									|| (z2 < Xmipp::init(box_size)) || (z2 > Xmipp::last(box_size)) )
 								continue;
 
 							_x = (RFLOAT)(x2) - x1;
@@ -3964,12 +3962,12 @@ void cutOutPartOfHelix(
 	vout.initZeros(new_boxdim, new_boxdim, new_boxdim);
 
 	// Fill in values
-	long int old_ymax = YSIZE(vin) + FIRST_XMIPP_INDEX(YSIZE(vin));
-	long int old_xmax = XSIZE(vin) + FIRST_XMIPP_INDEX(XSIZE(vin));
-	long int old_x0 = FIRST_XMIPP_INDEX(XSIZE(vin));
-	long int old_y0 = FIRST_XMIPP_INDEX(YSIZE(vin));
-	long int old_z0 = FIRST_XMIPP_INDEX(ZSIZE(vin));
-	long int new_z0 = FIRST_XMIPP_INDEX(ZSIZE(vout));
+	long int old_ymax = YSIZE(vin) + Xmipp::init(YSIZE(vin));
+	long int old_xmax = XSIZE(vin) + Xmipp::init(XSIZE(vin));
+	long int old_x0 = Xmipp::init(XSIZE(vin));
+	long int old_y0 = Xmipp::init(YSIZE(vin));
+	long int old_z0 = Xmipp::init(ZSIZE(vin));
+	long int new_z0 = Xmipp::init(ZSIZE(vout));
     for (long int zi = 0; zi < ZSIZE(vout); zi++)
     {
     	// Z subscript is out of range

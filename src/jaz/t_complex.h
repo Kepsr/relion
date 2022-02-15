@@ -121,6 +121,7 @@ class tComplex
 			return real;
 		}
 
+        // The complex conjugate
         tComplex conj() const
         {
             return tComplex(real, -imag);

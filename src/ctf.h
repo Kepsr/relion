@@ -78,16 +78,18 @@ class CTF {
 
     public:
 
-        /// Acceleration voltage (kilovolts)
+        // Acceleration voltage (kilovolts)
         RFLOAT kV;
 
-        /// Defocus in U (in Angstroms). Positive values are underfocused
+        // Defocus in U (in Angstroms). 
+        // Positive values are underfocused.
         RFLOAT DeltafU;
 
-        /// Defocus in V (in Angstroms). Postive values are underfocused
+        // Defocus in V (in Angstroms). 
+        // Positive values are underfocused.
         RFLOAT DeltafV;
 
-        /// Azimuthal angle (between X and U) in degrees
+        // Azimuthal angle (between X and U) in degrees
         RFLOAT azimuthal_angle;
 
         // Electron wavelength (Angstroms)
@@ -95,29 +97,34 @@ class CTF {
 
         // Radius of the aperture (in micras)
         // RFLOAT aperture;
-        // Spherical aberration (in milimeters). Typical value 5.6
+
+        // Spherical aberration (in millimeters). 
+        // Typical value 5.6
         RFLOAT Cs;
 
-        /// Chromatic aberration (in milimeters). Typical value 2
+        // Chromatic aberration (in millimeters). 
+        // Typical value 2
         RFLOAT Ca;
 
-        /** Mean energy loss (eV) due to interaction with sample.
-            Typical value 1*/
+        // Mean energy loss (in eV) due to interaction with sample.
+        // Typical value 1
         RFLOAT espr;
 
-        /// Objective lens stability (deltaI/I) (ppm). Typical value 1
+        // Objective lens stability (deltaI/I) (ppm). 
+        // Typical value 1
         RFLOAT ispr;
 
-        /// Convergence cone semiangle (in mrad). Typical value 0.5
+        // Convergence cone semiangle (in mrad). 
+        // Typical value 0.5
         RFLOAT alpha;
 
-        /// Longitudinal mechanical displacement (Angstrom). Typical value 100
+        // Longitudinal mechanical displacement (Angstrom). Typical value 100
         RFLOAT DeltaF;
 
-        /// Transversal mechanical displacement (Angstrom). Typical value 3
+        // Transversal mechanical displacement (Angstrom). Typical value 3
         RFLOAT DeltaR;
 
-        /// Amplitude contrast. Typical values 0.07 for cryo, 0.2 for negative stain
+        // Amplitude contrast. Typical values 0.07 for cryo, 0.2 for negative stain
         RFLOAT Q0;
 
         // B-factor fall-off
@@ -130,7 +137,7 @@ class CTF {
         RFLOAT phase_shift;
 
         /** Empty constructor. */
-        CTF() :
+        CTF():
             kV(200), DeltafU(0), DeltafV(0), azimuthal_angle(0), phase_shift(0),
             Cs(0), Bfac(0), Q0(0), scale(1), obsModel(0), opticsGroup(0)
         {}
@@ -161,7 +168,7 @@ class CTF {
         void setValues(
             RFLOAT _defU, RFLOAT _defV, RFLOAT _defAng, 
             RFLOAT _voltage, RFLOAT _Cs, RFLOAT _Q0, 
-            RFLOAT _Bfac, RFLOAT _scale = 1., RFLOAT _phase_shift = 0.
+            RFLOAT _Bfac, RFLOAT _scale = 1.0, RFLOAT _phase_shift = 0.0
         );
 
         /** Set all values explicitly in 3.1 */
@@ -180,11 +187,11 @@ class CTF {
         /** Write to output. */
         void write(std::ostream &out);
 
-        /// Set up the CTF object, read parameters from MetaDataTables with micrograph and particle information
-        /// If no MDmic is provided or it does not contain certain parameters, these parameters are tried to be read from MDimg
+        // Set up the CTF object, read parameters from MetaDataTables with micrograph and particle information
+        // If no MDmic is provided or it does not contain certain parameters, these parameters are tried to be read from MDimg
         void initialise();
 
-        /// Compute CTF at (U,V). Continuous frequencies
+        // Compute CTF at (U,V). Continuous frequencies
         inline RFLOAT getCTF(
             RFLOAT X, RFLOAT Y,
             bool do_abs = false, bool do_only_flip_phases = false,
@@ -193,24 +200,28 @@ class CTF {
         ) const {
             if (obsModel != 0 && obsModel->hasMagMatrices) {
                 const Matrix2D<RFLOAT>& M = obsModel->getMagMatrix(opticsGroup);
-                RFLOAT Xd = M(0,0) * X + M(0,1) * Y;
-                RFLOAT Yd = M(1,0) * X + M(1,1) * Y;
+                RFLOAT Xd = M(0, 0) * X + M(0, 1) * Y;
+                RFLOAT Yd = M(1, 0) * X + M(1, 1) * Y;
 
                 X = Xd;
                 Y = Yd;
             }
 
-            RFLOAT u2 = X * X + Y * Y;
+            RFLOAT u2 = X * X + Y * Y;  // u2 is the squared hypotenuse length of a right triangle with side lengths X, Y
             RFLOAT u4 = u2 * u2;
 
             // if (u2>=ua2) return 0;
             //RFLOAT deltaf = getDeltaF(X, Y);
             //RFLOAT gamma = K1 * deltaf * u2 + K2 * u4 - K5 - K3 + gammaOffset;
             RFLOAT gamma = K1 * (Axx * X * X + 2.0 * Axy * X * Y + Ayy * Y * Y) + K2 * u4 - K5 - K3 + gammaOffset;
+            // Quadratic: xx + 2xy + yy
 
             RFLOAT retval;
 
-            retval = ((do_intact_until_first_peak && ABS(gamma) < PI/2.) || (do_intact_after_first_peak && ABS(gamma) > PI/2.)) ? 1.0 : -sin(gamma);
+            retval = (
+                (do_intact_until_first_peak && ABS(gamma) < PI / 2.0) || 
+                (do_intact_after_first_peak && ABS(gamma) > PI / 2.0)
+            ) ? 1.0 : -sin(gamma);
 
             if (do_damping) {
                 RFLOAT E = exp(K4 * u2); // B-factor decay (K4 = -Bfac/4);
@@ -220,7 +231,7 @@ class CTF {
             if (do_abs) {
                 retval = ABS(retval);
             } else if (do_only_flip_phases) {
-                retval = (retval < 0.) ? -1. : 1.;
+                retval = SGN(retval);
             }
 
             retval *= scale;
@@ -266,32 +277,32 @@ class CTF {
             #endif
             Complex retval;
             retval.real = cosx;
-            retval.imag = (is_positive) ? sinx : -sinx;
+            retval.imag = is_positive ? sinx : -sinx;
 
             return retval;
         }
 
-        /// Compute Deltaf at a given direction (no longer used by getCTF)
+        // Compute Deltaf at a given direction (no longer used by getCTF)
         inline RFLOAT getDeltaF(RFLOAT X, RFLOAT Y) const {
             if (ABS(X) < XMIPP_EQUAL_ACCURACY && ABS(Y) < XMIPP_EQUAL_ACCURACY)
                 return 0;
 
             RFLOAT ellipsoid_ang = atan2(Y, X) - rad_azimuth;
             /*
-            * For a derivation of this formulae confer
-            * Principles of Electron Optics page 1380
-            * in particular term defocus and twofold axial astigmatism
-            * take into account that a1 and a2 are the coefficient
-            * of the zernike polynomials difference of defocus at 0
-            * and at 45 degrees. In this case a2=0
+            * For a derivation of this formula, 
+            * see Principles of Electron Optics p. 1380.
+            * In particular, term defocus and twofold axial astigmatism
+            * take into account that a1 and a2 are 
+            * the coefficient of the Zernike polynomials difference of defocus 
+            * at 0 and at 45 degrees.
+            * In this case, a2 = 0.
             */
-            RFLOAT cos_ellipsoid_ang_2 = cos(2 * ellipsoid_ang);
-            return (defocus_average + defocus_deviation * cos_ellipsoid_ang_2);
+            return defocus_average + defocus_deviation * cos(2 * ellipsoid_ang);
 
         }
 
-        /// Generate (Fourier-space, i.e. FFTW format) image with all CTF values.
-        /// The dimensions of the result array should have been set correctly already
+        // Generate (Fourier-space, i.e. FFTW format) image with all CTF values.
+        // The dimensions of the result array should have been set correctly already
         void getFftwImage(
             MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix, 
             bool do_abs = false, bool do_only_flip_phases = false, 
@@ -305,8 +316,8 @@ class CTF {
             bool is_positive, float angle
         );
 
-        /// Generate a centered image (with hermitian symmetry)
-        /// The dimensions of the result array should have been set correctly already
+        // Generate a centered image (with Hermitian symmetry)
+        // The dimensions of the result array should have been set correctly already
         void getCenteredImage(
             MultidimArray<RFLOAT> &result, RFLOAT angpix,
             bool do_abs = false, bool do_only_flip_phases = false, 
@@ -314,8 +325,8 @@ class CTF {
             bool do_intact_after_first_peak = false
         );
 
-        /// Generate a 1D profile along defocusAngle
-        /// The dimensions of the result array should have been set correctly already, i.e. at the image size!
+        // Generate a 1D profile along defocusAngle
+        // The dimensions of the result array should have been set correctly already, i.e. at the image size!
         void get1DProfile(
             MultidimArray<RFLOAT> &result, RFLOAT angle, RFLOAT angpix,
             bool do_abs = false, bool do_only_flip_phases = false, 
@@ -344,5 +355,6 @@ class CTF {
         double getAxx();
         double getAxy();
         double getAyy();
-    };
+
+};
 #endif

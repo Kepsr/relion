@@ -17,7 +17,7 @@
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
  ***************************************************************************/
-
+using std::string, std::vector;
 
 #ifndef SRC_PIPELINE_JOBS_H_
 #define SRC_PIPELINE_JOBS_H_
@@ -48,9 +48,7 @@
 
 
 #define HAS_MPI true
-#define HAS_NOT_MPI false
 #define HAS_THREAD true
-#define HAS_NOT_THREAD false
 
 #define RADIO_SAMPLING 0
 #define RADIO_NODETYPE 1
@@ -76,56 +74,57 @@
 #define DEFAULTMPIRUN "mpirun"
 #define DEFAULTSCRATCHDIR ""
 
-static const std::vector<std::string> job_undefined_options{
-	"undefined"
+static const vector<string> job_undefined_options {
+    "undefined"
 };
 
-static const std::vector<std::string> job_boolean_options{
-	"Yes",
-	"No"
+static const vector<string> job_boolean_options {
+    "Yes",
+    "No"
 };
 
-static const std::vector<std::string> job_sampling_options{
-	"30 degrees",
-	"15 degrees",
-	"7.5 degrees",
-	"3.7 degrees",
-	"1.8 degrees",
-	"0.9 degrees",
-	"0.5 degrees",
-	"0.2 degrees",
-	"0.1 degrees"
+static const vector<string> job_sampling_options {
+    "30 degrees",
+    "15 degrees",
+    "7.5 degrees",
+    "3.7 degrees",
+    "1.8 degrees",
+    "0.9 degrees",
+    "0.5 degrees",
+    "0.2 degrees",
+    "0.1 degrees"
 };
 // Modify the loop in JobOption::getHealPixOrder when you add more choices!
 
-static const std::vector<std::string> job_nodetype_options{
-	"Particle coordinates (*.box, *_pick.star)",
-	"Particles STAR file (.star)",
-	"Movie-particles STAR file (.star)",
-	"2D references (.star or .mrcs)",
-	"Micrographs STAR file (.star)",
-	"3D reference (.mrc)",
-	"3D mask (.mrc)",
-	"Unfiltered half-map (unfil.mrc)"
+
+static const vector<string> job_nodetype_options {
+    "Particle coordinates (*.box, *_pick.star)",
+    "Particles STAR file (.star)",
+    "Movie-particles STAR file (.star)",
+    "2D references (.star or .mrcs)",
+    "Micrographs STAR file (.star)",
+    "3D reference (.mrc)",
+    "3D mask (.mrc)",
+    "Unfiltered half-map (unfil.mrc)"
 };
 
-static const std::vector<std::string> job_gain_rotation_options{
-	"No rotation (0)",
-	"90 degrees (1)",
-	"180 degrees (2)",
-	"270 degrees (3)"
+static const vector<string> job_gain_rotation_options {
+    "No rotation (0)",
+    "90 degrees (1)",
+    "180 degrees (2)",
+    "270 degrees (3)"
 };
 
-static const std::vector<std::string> job_gain_flip_options{
-	"No flipping (0)",
-	"Flip upside down (1)",
-	"Flip left to right (2)"
+static const vector<string> job_gain_flip_options {
+    "No flipping (0)",
+    "Flip upside down (1)",
+    "Flip left to right (2)"
 };
 
-static const std::vector<std::string> job_ctffit_options{
-	"No",
-	"Per-micrograph",
-	"Per-particle"
+static const vector<string> job_ctffit_options {
+    "No",
+    "Per-micrograph",
+    "Per-particle"
 };
 
 // To have a line on the GUI to change the minimum number of dedicated in a job
@@ -215,287 +214,375 @@ static bool do_allow_change_minimum_dedicated;
 #define PROC_FINISHED_FAILURE 3 // reported an error
 #define PROC_FINISHED_ABORTED 4 // aborted by the user
 
-struct gui_layout
-{
-    /// Name for the tab
-    std::string tabname;
-    /// y-position
+
+struct gui_layout {
+    string tabname;
     int ypos;
-    ///
     RFLOAT w;
 };
 
-class Node
-{
-	public:
-	std::string name; // what's my name?
-	int type; // which type of node am I?
-	std::vector<long int> inputForProcessList; 	  //list of processes that use this Node as input
-	long int outputFromProcess;   //Which process made this Node
 
-	// Constructor
-	Node(std::string _name, int _type)
-	{
-		name = _name;
-		type = _type;
-		outputFromProcess = -1;
-	}
+class Node {
 
-	// Destructor
-	// Do not delete the adjacent nodes here... They will be deleted by graph destructor
-	~Node()
-	{
-		inputForProcessList.clear();
-	}
+    public:
+
+        string name;
+        int type;
+        // list of processes that use this Node as input
+        vector<long int> inputForProcessList;
+        // Which process made this Node
+        long int outputFromProcess;
+
+    // Constructor
+    Node(string _name, int _type) {
+        name = _name;
+        type = _type;
+        outputFromProcess = -1;
+    }
+
+    // Destructor
+    ~Node() {
+        // Do not delete the adjacent nodes here... They will be deleted by graph destructor
+        inputForProcessList.clear();
+    }
 
 };
 
 // Helper function to get the outputnames of refine jobs
-std::vector<Node> getOutputNodesRefine(std::string outputname, int iter, int K, int dim, int nr_bodies=1);
+vector<Node> getOutputNodesRefine(
+    string outputname, int iter, int K, int dim, int nr_bodies = 1
+);
 
-// One class to store any type of Option for a GUI entry
-class JobOption
-{
-public:
-	// Get HealPix order from string. Returns -1 when failed.
-	static int getHealPixOrder(std::string s);
+// A class to store any type of Option for a GUI entry
+class JobOption {
 
-	// Get a f/p/m character for CTF fitting. Returns "" when failed.
-	static std::string getCtfFitString(std::string option);
+    public:
 
-public:
+        // Get HealPix order from string. Return -1 on failure.
+        static int getHealPixOrder(string s);
 
-	std::string label;
-	std::string label_gui;
-	int joboption_type;
-	std::string variable;
-	std::string value;
-	std::string default_value;
-	std::string helptext;
-	float min_value;
-	float max_value;
-	float step_value;
-	int node_type;
-	std::string pattern;
-	std::string directory;
-	std::vector<std::string> radio_options;
+        // Get a f/p/m character for CTF fitting. Return "" on failutre.
+        static string getCtfFitString(string option);
 
-public:
+    public:
 
-	// Any constructor
-	JobOption(std::string _label, std::string _default_value, std::string _helptext);
+        string label;
+        string label_gui;
+        int joboption_type;
+        string variable;
+        string value;
+        string default_value;
+        string helptext;
+        float min_value;
+        float max_value;
+        float step_value;
+        int node_type;
+        string pattern;
+        string directory;
+        vector<string> radio_options;
 
-	// FileName constructor
-	JobOption(std::string _label, std::string  _default_value, std::string _pattern, std::string _directory, std::string _helptext);
+    public:
 
-	// InputNode constructor
-	JobOption(std::string _label, int _nodetype, std::string _default_value, std::string _pattern, std::string _helptext);
+        // Any constructor
+        JobOption(string _label, string _default_value, string _helptext);
 
-	// Radio constructor
-	JobOption(std::string _label, std::vector<std::string> radio_options, int ioption,  std::string _helptext);
+        // FileName constructor
+        JobOption(
+            string _label, string  _default_value, string _pattern,
+            string _directory, string _helptext
+        );
 
-	// Boolean constructor
-	JobOption(std::string _label, bool _boolvalue, std::string _helptext);
+        // InputNode constructor
+        JobOption(
+            string _label, int _nodetype, string _default_value,
+            string _pattern, string _helptext
+        );
 
-	// Slider constructor
-	JobOption(std::string _label, float _default_value, float _min_value, float _max_value, float _step_value, std::string _helptext);
+        // Radio constructor
+        JobOption(
+            string _label, vector<string> radio_options,
+            int ioption, string _helptext
+        );
 
-	// Write to a STAR file
-	void writeToMetaDataTable(MetaDataTable& MD) const;
+        // Boolean constructor
+        JobOption(string _label, bool _boolvalue, string _helptext);
 
-	// Empty constructor
-	JobOption() { clear(); }
+        // Slider constructor
+        JobOption(
+            string _label, float _default_value, float _min_value,
+            float _max_value, float _step_value, string _helptext
+        );
 
-	// Empty destructor
-	~JobOption() { clear(); }
+        // Write to a STAR file
+        void writeToMetaDataTable(MetaDataTable& MD) const;
 
-	void clear();
+        // Empty constructor
+        JobOption() { clear(); }
 
-	// Set values of label, value, default_value and helptext (common for all types)
-	void initialise(std::string _label, std::string _default_value, std::string _helptext);
+        // Empty destructor
+        ~JobOption() { clear(); }
 
-	// Contains $$ for SchedulerVariable
-	bool isSchedulerVariable();
+        void clear();
 
-	// Get a string value
-	std::string getString();
+        // Set values of label, value, default_value and helptext (common for all types)
+        void initialise(string _label, string _default_value, string _helptext);
 
-	// Set a string value
-	void setString(std::string set_to);
+        // Contains $$ for SchedulerVariable
+        bool isSchedulerVariable();
 
-	// Get a string value
-	Node getNode();
+        // Get a string value
+        string getString();
 
-	// Get a numbered value
-	float getNumber(std::string &errmsg);
+        // Set a string value
+        void setString(string newvalue);
 
-	// Get a boolean value
-	bool getBoolean();
+        // Get a string value
+        Node getNode();
 
-	// Read value from an ifstream. Return false if cannot find it
-	bool readValue(std::ifstream& in);
+        // Get a numbered value
+        float getNumber(string &errmsg);
 
-	// Write value to an ostream
-	void writeValue(std::ostream& out);
+        // Get a boolean value
+        bool getBoolean();
+
+        // Read value from an ifstream. Return false on failure.
+        bool readValue(std::ifstream& in);
+
+        // Write value to an ostream
+        // Format: label == value
+        void writeValue(std::ostream& out);
 };
 
-class RelionJob
-{
+class RelionJob {
 
-public:
+    public:
 
-	// The name of this job
-	std::string outputName;
+        // The name of this job
+        string outputName;
 
-	// The alias to this job
-	std::string alias;
+        // The alias to this job
+        string alias;
 
-	// Name of the hidden file
-	std::string hidden_name;
+        // Name of the hidden file
+        string hidden_name;
 
-	// Which job type is this?
-	int type;
+        // Which job type is this?
+        int type;
 
-	// Is this a continuation job?
-	bool is_continue;
+        // Is this a continuation job?
+        bool is_continue;
 
-	// List of Nodes of input to this process
-	std::vector<Node> inputNodes;
+        // List of Nodes of input to this process
+        vector<Node> inputNodes;
 
-	// List of Nodes of output from this process
-	std::vector<Node> outputNodes;
+        // List of Nodes of output from this process
+        vector<Node> outputNodes;
 
-	// All the options to this job
-	std::map<std::string, JobOption > joboptions;
+        // All the options to this job
+        std::map<string, JobOption > joboptions;
 
+    public:
 
-public:
-	// Constructor
-	RelionJob() { clear(); };
+        // Constructor
+        RelionJob() { clear(); };
 
-	// Empty Destructor
-	~RelionJob() { clear(); };
+        // Empty Destructor
+        ~RelionJob() { clear(); };
 
-	// Clear everything
-	void clear()
-	{
-		outputName = alias = "";
-		type = -1;
-		inputNodes.clear();
-		outputNodes.clear();
-		joboptions.clear();
-		is_continue = false;
-	}
+        // Clear everything
+        void clear() {
+            outputName = alias = "";
+            type = -1;
+            inputNodes.clear();
+            outputNodes.clear();
+            joboptions.clear();
+            is_continue = false;
+        }
 
-	// Returns true if the option is present in joboptions
-	bool containsLabel(std::string label, std::string &option);
+        // Returns true if the option is present in joboptions
+        bool containsLabel(string label, string &option);
 
-	// Set this option in the job
-	void setOption(std::string setOptionLine);
+        // Set this option in the job
+        void setOption(string setOptionLine);
 
-	// write/read settings to disc
-	// fn is a directory name (e.g. Refine3D/job123/) or a STAR file
-	bool read(std::string fn, bool &_is_continue, bool do_initialise = false); // return false if unsuccessful
-	void write(std::string fn);
+        // write/read settings to disc
+        // fn is a directory name (e.g. Refine3D/job123/) or a STAR file
+        bool read(
+            string fn,
+            bool &_is_continue, bool do_initialise = false
+        );
+        // return false if unsuccessful
+        void write(string fn);
 
-	// Write the job submission script
-	bool saveJobSubmissionScript(std::string newfilename, std::string outputname, std::vector<std::string> commands, std::string &error_message);
+        // Write the job submission script
+        bool saveJobSubmissionScript(
+            string newfilename, string outputname,
+            vector<string> commands, string &error_message
+        );
 
-	// Initialise pipeline stuff for each job, return outputname
-	void initialisePipeline(std::string &outputname, std::string defaultname, int job_counter);
+        // Initialise pipeline stuff for each job, return outputname
+        void initialisePipeline(
+            string &outputname, string defaultname, int job_counter
+        );
 
-	// Prepare the final (job submission or combined (mpi) command of possibly multiple lines)
-	// Returns true to go ahead, and false to cancel
-	bool prepareFinalCommand(std::string &outputname, std::vector<std::string> &commands, std::string &final_command,
-			bool do_makedir, std::string &warning_message);
+        // Prepare the final (job submission or combined (mpi) command of possibly multiple lines)
+        // Returns true to go ahead, and false to cancel
+        bool prepareFinalCommand(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir,
+            string &warning_message
+        );
 
-	// Initialise the generic RelionJob
-	void initialise(int job_type);
+        // Initialise the generic RelionJob
+        void initialise(int job_type);
 
-	// Generic getCommands
-	bool getCommands(std::string &outputname, std::vector<std::string> &commands,
-	 		std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        // Generic getCommands
+        bool getCommands(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	// Now all the specific job types are defined
-	void initialiseImportJob();
-	bool getCommandsImportJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        // Now all the specific job types are defined
+        void initialiseImportJob();
+        bool getCommandsImportJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseMotioncorrJob();
-	bool getCommandsMotioncorrJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseMotioncorrJob();
+        bool getCommandsMotioncorrJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseCtffindJob();
-	bool getCommandsCtffindJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseCtffindJob();
+        bool getCommandsCtffindJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseManualpickJob();
-	bool getCommandsManualpickJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseManualpickJob();
+        bool getCommandsManualpickJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseAutopickJob();
-	bool getCommandsAutopickJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseAutopickJob();
+        bool getCommandsAutopickJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseExtractJob();
-	bool getCommandsExtractJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseExtractJob();
+        bool getCommandsExtractJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseSelectJob();
-	bool getCommandsSelectJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseSelectJob();
+        bool getCommandsSelectJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseClass2DJob();
-	bool getCommandsClass2DJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseClass2DJob();
+        bool getCommandsClass2DJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseInimodelJob();
-	bool getCommandsInimodelJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseInimodelJob();
+        bool getCommandsInimodelJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseClass3DJob();
-	bool getCommandsClass3DJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseClass3DJob();
+        bool getCommandsClass3DJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseAutorefineJob();
-	bool getCommandsAutorefineJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseAutorefineJob();
+        bool getCommandsAutorefineJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseMultiBodyJob();
-	bool getCommandsMultiBodyJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseMultiBodyJob();
+        bool getCommandsMultiBodyJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseMaskcreateJob();
-	bool getCommandsMaskcreateJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseMaskcreateJob();
+        bool getCommandsMaskcreateJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseJoinstarJob();
-	bool getCommandsJoinstarJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseJoinstarJob();
+        bool getCommandsJoinstarJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseSubtractJob();
-	bool getCommandsSubtractJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseSubtractJob();
+        bool getCommandsSubtractJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialisePostprocessJob();
-	bool getCommandsPostprocessJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialisePostprocessJob();
+        bool getCommandsPostprocessJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseLocalresJob();
-	bool getCommandsLocalresJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseLocalresJob();
+        bool getCommandsLocalresJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseMotionrefineJob();
-	bool getCommandsMotionrefineJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseMotionrefineJob();
+        bool getCommandsMotionrefineJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseCtfrefineJob();
-	bool getCommandsCtfrefineJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseCtfrefineJob();
+        bool getCommandsCtfrefineJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 
-	void initialiseExternalJob();
-	bool getCommandsExternalJob(std::string &outputname, std::vector<std::string> &commands,
-			std::string &final_command, bool do_makedir, int job_counter, std::string &error_message);
+        void initialiseExternalJob();
+        bool getCommandsExternalJob(
+            string &outputname, vector<string> &commands,
+            string &final_command, bool do_makedir, int job_counter,
+            string &error_message
+        );
 };
 
 #endif /* SRC_PIPELINE_JOBS_H_ */

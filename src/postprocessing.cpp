@@ -196,8 +196,11 @@ bool Postprocessing::getMask()
 		Im().setXmippOrigin();
 
 		// Check values are between 0 and 1
-		RFLOAT avg, stddev, minval, maxval;
-		Im().computeStats(avg, stddev, minval, maxval);
+		std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Im().computeStats();
+		RFLOAT avg = std::get<0>(statstuple);
+		RFLOAT stddev = std::get<1>(statstuple);
+		RFLOAT minval = std::get<2>(statstuple);
+		RFLOAT maxval = std::get<3>(statstuple);
 
 		long summask = 0;
 		FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Im())

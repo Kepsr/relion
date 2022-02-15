@@ -21,78 +21,54 @@
 
 std::string pipeline_control_outputname = "";
 
-int pipeline_control_relion_exit(int mode)
-{
+int pipeline_control_relion_exit(int mode) {
 
-    if (pipeline_control_outputname != "")
-    {
-		std::ofstream  fh;
-		std::string fn = pipeline_control_outputname;
-		if (mode==0)
-		{
-			fn += RELION_JOB_EXIT_SUCCESS;
-		}
-		else if (mode==1)
-		{
-			fn += RELION_JOB_EXIT_FAILURE;
-			std::cout << std::endl << " RELION version: " << g_RELION_VERSION << std::endl << " exiting with an error ..." << std::endl;
-		}
-		else if (mode==2)
-		{
-			fn += RELION_JOB_EXIT_ABORTED;
-			std::cout << std::endl << " exiting with an abort ..." << std::endl;
-		}
-		else
-		{
-			std::cerr << " ERROR: undefined mode! " << std::endl;
-			return 12;
-		}
-		fh.open(fn.c_str(), std::ios::out);
-		if (!fh)
-		{
-			std::cerr << " ERROR: cannot touch file: " << fn << std::endl;
-			return 13;
-		}
-		fh.close();
-	}
+    if (pipeline_control_outputname != "") {
+        std::ofstream fh;
+        std::string fn = pipeline_control_outputname;
+        if (mode == 0) {
+            fn += RELION_JOB_EXIT_SUCCESS;
+        } else if (mode == 1) {
+            fn += RELION_JOB_EXIT_FAILURE;
+            std::cout << std::endl << " RELION version: " << g_RELION_VERSION << std::endl << " exiting with an error ..." << std::endl;
+        } else if (mode == 2) {
+            fn += RELION_JOB_EXIT_ABORTED;
+            std::cout << std::endl << " exiting with an abort ..." << std::endl;
+        } else {
+            std::cerr << " ERROR: undefined mode! " << std::endl;
+            return 12;
+        }
+        fh.open(fn.c_str(), std::ios::out);
+        if (!fh) {
+            std::cerr << " ERROR: cannot touch file: " << fn << std::endl;
+            return 13;
+        }
+        fh.close();
+    }
 
-	// Still return 0 for success, and non-zero for failure/abort as in stdlib
-	return mode;
+    // Still return 0 for success, and non-zero for failure/abort as in stdlib
+    return mode;
 
 }
 
-bool pipeline_control_check_abort_job()
-{
-	if (pipeline_control_outputname == "")
-    	return false;
+bool pipeline_control_check_abort_job() {
+    if (pipeline_control_outputname == "")
+        return false;
 
-	struct stat buffer;
-	if (stat((pipeline_control_outputname+RELION_JOB_ABORT_NOW).c_str(), &buffer) == 0)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-
+    struct stat buffer;
+    return stat(
+        (pipeline_control_outputname + RELION_JOB_ABORT_NOW).c_str(), &buffer
+    ) == 0
 }
 
-void pipeline_control_delete_exit_files()
-{
-	struct stat buffer;
-	if (stat((pipeline_control_outputname+RELION_JOB_EXIT_SUCCESS).c_str(), &buffer) == 0)
-	{
-		remove((pipeline_control_outputname+RELION_JOB_EXIT_SUCCESS).c_str());
-	}
+void pipeline_control_delete_exit_files() {
+    struct stat buffer;
+    if (stat((pipeline_control_outputname + RELION_JOB_EXIT_SUCCESS).c_str(), &buffer) == 0)
+        remove((pipeline_control_outputname + RELION_JOB_EXIT_SUCCESS).c_str());
 
-	if (stat((pipeline_control_outputname+RELION_JOB_EXIT_FAILURE).c_str(), &buffer) == 0)
-	{
-		remove((pipeline_control_outputname+RELION_JOB_EXIT_FAILURE).c_str());
-	}
+    if (stat((pipeline_control_outputname + RELION_JOB_EXIT_FAILURE).c_str(), &buffer) == 0)
+        remove((pipeline_control_outputname + RELION_JOB_EXIT_FAILURE).c_str());
 
-	if (stat((pipeline_control_outputname+RELION_JOB_EXIT_ABORTED).c_str(), &buffer) == 0)
-	{
-		remove((pipeline_control_outputname+RELION_JOB_EXIT_ABORTED).c_str());
-	}
+    if (stat((pipeline_control_outputname + RELION_JOB_EXIT_ABORTED).c_str(), &buffer) == 0)
+        remove((pipeline_control_outputname + RELION_JOB_EXIT_ABORTED).c_str());
 }

@@ -433,7 +433,7 @@ void Projector::computeFourierTransformMap(
 	windowFourierTransform(Faux2, padding_factor * ori_size);
 	ft2.inverseFourierTransform(Faux2, tt2());
 	tt2().setXmippOrigin();
-	tt2().window(FIRST_XMIPP_INDEX(ori_size), FIRST_XMIPP_INDEX(ori_size), LAST_XMIPP_INDEX(ori_size), LAST_XMIPP_INDEX(ori_size));
+	tt2().window(Xmipp::init(ori_size), Xmipp::init(ori_size), Xmipp::last(ori_size), Xmipp::last(ori_size));
 	tt2.write("Fdata_proj.spi");
 	std::cerr << "written Fdata_proj.spi" << std::endl;
 	REPORT_ERROR("STOP");

@@ -51,8 +51,9 @@
 
 
 // Object Constructor
-RelionError::RelionError(const std::string &what, const std::string &fileArg, const long lineArg)
-{
+RelionError::RelionError(
+    const std::string &what, const std::string &fileArg, const long lineArg
+) {
 #ifdef __GNUC__
     const int SZ_BUF = 100;
     backtrace_buffer = new void*[SZ_BUF];
@@ -60,8 +61,8 @@ RelionError::RelionError(const std::string &what, const std::string &fileArg, co
 #endif
 
     msg = "ERROR: \n" + what;
-    file= fileArg;
-    line=lineArg;
+    file = fileArg;
+    line = lineArg;
 
     std::cerr << "in: " << file << ", line " << line << "\n";
 	std::cerr << msg << std::endl;
@@ -69,8 +70,7 @@ RelionError::RelionError(const std::string &what, const std::string &fileArg, co
 }
 
 // Show message
-std::ostream& operator << (std::ostream& o, RelionError& XE)
-{
+std::ostream& operator << (std::ostream& o, RelionError& XE) {
 
 #ifdef __GNUC__
     o << "=== Backtrace  ===" << std::endl;

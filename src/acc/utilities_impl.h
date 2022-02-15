@@ -230,7 +230,7 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
 
     // Make a holder for the spectral profile and copy to the GPU
     // AccDataTypes::Image<XFLOAT> NoiseSpectra(sigmaNoiseSpectra, ptrFactory);
-    AccPtr<XFLOAT> NoiseSpectra = RandomImage.make<XFLOAT>(sigmaNoiseSpectra.nzyxdim);
+    AccPtr<XFLOAT> NoiseSpectra = RandomImage.make<XFLOAT>(sigmaNoiseSpectra.nzyxdim());
     NoiseSpectra.allAlloc();
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigmaNoiseSpectra)
@@ -309,10 +309,10 @@ static void TranslateAndNormCorrect(MultidimArray<RFLOAT > &img_in,
 		bool DATA3D)
 {
 	//Temporary array because translate is out-of-place
-	AccPtr<XFLOAT> temp = img_out.make<XFLOAT>(img_in.nzyxdim);
+	AccPtr<XFLOAT> temp = img_out.make<XFLOAT>(img_in.nzyxdim());
 	temp.allAlloc();
 
-	for (unsigned long i = 0; i < img_in.nzyxdim; i++)
+	for (unsigned long i = 0; i < img_in.nzyxdim(); i++)
 		temp[i] = (XFLOAT) img_in.data[i];
 
 	temp.cpToDevice();
@@ -335,15 +335,15 @@ static void TranslateAndNormCorrect(MultidimArray<RFLOAT > &img_in,
 #ifdef CUDA
 	int BSZ = ( (int) ceilf(( float)temp.getSize() /(float)BLOCK_SIZE));
 	if (DATA3D)
-		CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
+		CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
 	else
-		CudaKernels::cuda_kernel_translate2D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim,img_in.xdim,img_in.ydim,xOff,yOff);
+		CudaKernels::cuda_kernel_translate2D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,xOff,yOff);
 	//LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
 #else
 	if (DATA3D)
-		CpuKernels::cpu_translate3D<XFLOAT>(temp(),img_out(),img_in.zyxdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
+		CpuKernels::cpu_translate3D<XFLOAT>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
 	else
-		CpuKernels::cpu_translate2D<XFLOAT>(temp(),img_out(),img_in.zyxdim,img_in.xdim,img_in.ydim,xOff,yOff);
+		CpuKernels::cpu_translate2D<XFLOAT>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,xOff,yOff);
 #endif
 }
 template <class MlClass>
@@ -387,7 +387,7 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
 			d_Fimg.cpToHost();
 			d_Fimg.streamSync();
 			img_out.initZeros(zSize, ySize, xSize);
-			for (unsigned long i = 0; i < img_out.nzyxdim; i ++)
+			for (unsigned long i = 0; i < img_out.nzyxdim(); i ++)
 			{
 				img_out.data[i].real = (RFLOAT) d_Fimg[i].x;
 				img_out.data[i].imag = (RFLOAT) d_Fimg[i].y;

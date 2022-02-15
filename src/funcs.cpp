@@ -55,85 +55,81 @@
 #include <fstream>
 #include <typeinfo>
 
-void fitStraightLine(const std::vector<fit_point2D> &points, RFLOAT &slope, RFLOAT &intercept, RFLOAT &corr_coeff)
-{
-	// From: http://mathworld.wolfram.com/LeastSquaresFitting.html
-	// ss_xx = Sum_i x_i^2 - n ave_x^2
-	// ss_yy = Sum_i y_i^2 - n ave_y^2
-	// ss_xy = Sum_i x_i * y_i - n ave_x n_ave_y
-	// slope = xx_xy / ss_xx
-	// intercept = ave_y - slope * ave_x
-	// corr_coeff = ss_xy^2 / (ss_xx * ss_yy)
-	RFLOAT ss_xy = 0.;
-	RFLOAT ss_xx = 0.;
-	RFLOAT ss_yy = 0.;
-	RFLOAT ave_x = 0.;
-	RFLOAT ave_y = 0.;
-	RFLOAT sum_w = 0.;
-	for (int i = 0; i < points.size(); i++)
-	{
-		ave_x += points[i].w * points[i].x;
-		ave_y += points[i].w * points[i].y;
-		sum_w += points[i].w;
-		ss_xx += points[i].w * points[i].x * points[i].x;
-		ss_yy += points[i].w * points[i].y * points[i].y;
-		ss_xy += points[i].w * points[i].x * points[i].y;
-	}
-	ave_x /= sum_w;
-	ave_y /= sum_w;
-	ss_xx -= sum_w * ave_x * ave_x;
-	ss_yy -= sum_w * ave_y * ave_y;
-	ss_xy -= sum_w * ave_x * ave_y;
+void fitStraightLine(
+    const std::vector<fit_point2D> &points, RFLOAT &slope, RFLOAT &intercept, RFLOAT &corr_coeff
+) {
+    // From: http://mathworld.wolfram.com/LeastSquaresFitting.html
+    // ss_xx = Sum_i x_i^2 - n ave_x^2
+    // ss_yy = Sum_i y_i^2 - n ave_y^2
+    // ss_xy = Sum_i x_i * y_i - n ave_x n_ave_y
+    // slope = xx_xy / ss_xx
+    // intercept = ave_y - slope * ave_x
+    // corr_coeff = ss_xy^2 / (ss_xx * ss_yy)
+    RFLOAT ss_xy = 0.;
+    RFLOAT ss_xx = 0.;
+    RFLOAT ss_yy = 0.;
+    RFLOAT ave_x = 0.;
+    RFLOAT ave_y = 0.;
+    RFLOAT sum_w = 0.;
+    for (int i = 0; i < points.size(); i++) {
+        ave_x += points[i].w * points[i].x;
+        ave_y += points[i].w * points[i].y;
+        sum_w += points[i].w;
+        ss_xx += points[i].w * points[i].x * points[i].x;
+        ss_yy += points[i].w * points[i].y * points[i].y;
+        ss_xy += points[i].w * points[i].x * points[i].y;
+    }
+    ave_x /= sum_w;
+    ave_y /= sum_w;
+    ss_xx -= sum_w * ave_x * ave_x;
+    ss_yy -= sum_w * ave_y * ave_y;
+    ss_xy -= sum_w * ave_x * ave_y;
 
-	//std::cerr << " ss_xx= " << ss_xx << " ss_yy= " << ss_yy << " ss_xy= " << ss_xy << std::endl;
-	//std::cerr << " sum_w= " << sum_w << " ave_x= " << ave_x << " ave_y= " << ave_y << std::endl;
-	if (ss_xx > 0.)
-	{
-		slope = ss_xy / ss_xx;
-		intercept = ave_y - slope * ave_x;
-		corr_coeff = ss_xy * ss_xy / (ss_xx * ss_yy);
-	}
-	else
-	{
-		intercept = slope = corr_coeff = 0.;
-	}
+    //std::cerr << " ss_xx= " << ss_xx << " ss_yy= " << ss_yy << " ss_xy= " << ss_xy << std::endl;
+    //std::cerr << " sum_w= " << sum_w << " ave_x= " << ave_x << " ave_y= " << ave_y << std::endl;
+    if (ss_xx > 0.) {
+        slope = ss_xy / ss_xx;
+        intercept = ave_y - slope * ave_x;
+        corr_coeff = ss_xy * ss_xy / (ss_xx * ss_yy);
+    } else {
+        intercept = slope = corr_coeff = 0.;
+    }
 }
 
-void fitLeastSquaresPlane(const std::vector<fit_point3D> & points, RFLOAT &plane_a, RFLOAT &plane_b, RFLOAT &plane_c)
-{
-    RFLOAT  D = 0;
-    RFLOAT  E = 0;
-    RFLOAT  F = 0;
-    RFLOAT  G = 0;
-    RFLOAT  H = 0;
-    RFLOAT  I = 0;
-    RFLOAT  J = 0;
-    RFLOAT  K = 0;
-    RFLOAT  L = 0;
-    RFLOAT  W2 = 0;
-    RFLOAT  error = 0;
-    RFLOAT  denom = 0;
+void fitLeastSquaresPlane(
+    const std::vector<fit_point3D> & points, RFLOAT &plane_a, RFLOAT &plane_b, RFLOAT &plane_c
+) {
+    RFLOAT D = 0;
+    RFLOAT E = 0;
+    RFLOAT F = 0;
+    RFLOAT G = 0;
+    RFLOAT H = 0;
+    RFLOAT I = 0;
+    RFLOAT J = 0;
+    RFLOAT K = 0;
+    RFLOAT L = 0;
+    RFLOAT W2 = 0;
+    RFLOAT denom = 0;
 
-    for (int i = 0; i < points.size(); i++)
-    {
+    for (int i = 0; i < points.size(); i++) {
         W2 = points[i].w * points[i].w;
         D += points[i].x * points[i].x * W2 ;
         E += points[i].x * points[i].y * W2 ;
-        F += points[i].x * W2 ;
+        F += points[i].x * W2;
         G += points[i].y * points[i].y * W2 ;
-        H += points[i].y * W2 ;
+        H += points[i].y * W2;
         I += 1 * W2 ;
         J += points[i].x * points[i].z * W2 ;
         K += points[i].y * points[i].z * W2 ;
-        L += points[i].z * W2 ;
+        L += points[i].z * W2;
     }
 
     denom = F * F * G - 2 * E * F * H + D * H * H + E * E * I - D * G * I;
 
     // X axis slope
-    plane_a = (H * H * J - G * I * J + E * I * K + F * G * L - H * (F * K + E * L)) / denom;
+    plane_a = (H * H * J - G * I * J + E * I * K + F * G * L - H * F * K - H * E * L) / denom;
     // Y axis slope
-    plane_b = (E * I * J + F * F * K - D * I * K + D * H * L - F * (H * J + E * L)) / denom;
+    plane_b = (E * I * J + F * F * K - D * I * K + D * H * L - F * H * J - F * E * L) / denom;
     // Z axis intercept
     plane_c = (F * G * J - E * H * J - E * F * K + D * H * K + E * E * L - D * G * L) / denom;
 }
@@ -141,81 +137,67 @@ void fitLeastSquaresPlane(const std::vector<fit_point3D> & points, RFLOAT &plane
 
 
 /* Value of a blob --------------------------------------------------------- */
-RFLOAT kaiser_value(RFLOAT r, RFLOAT a, RFLOAT alpha, int m)
-{
+RFLOAT kaiser_value(RFLOAT r, RFLOAT a, RFLOAT alpha, int m) {
     RFLOAT rda, rdas, arg, w;
     rda = r / a;
     rdas = rda * rda;
-    if (rdas <= 1.0)
-    {
+    if (rdas <= 1.0) {
         arg = alpha * sqrt(1.0 - rdas);
-        if (m == 0)
-        {
-            w = bessi0(arg) / bessi0(alpha);
+        switch (m) {
+            case 0:
+                w = bessi0(arg) / bessi0(alpha);
+                break;
+            case 1:
+                w = sqrt(1.0 - rdas);
+                if (alpha != 0.0)
+                    w *= bessi1(arg) / bessi1(alpha);
+                break;
+            case 2:
+                w = pow(sqrt(1.0 - rdas), 2);
+                if (alpha != 0.0)
+                    w *= bessi2(arg) / bessi2(alpha);
+                break;
+            case 3:
+                w = pow(sqrt(1.0 - rdas), 3);
+                if (alpha != 0.0)
+                    w *= bessi3(arg) / bessi3(alpha);
+                break;
+            case 4:
+                w = pow(sqrt(1.0 - rdas), 4);
+                if (alpha != 0.0)
+                    w *= bessi4(arg) / bessi4(alpha);
+                break;
+            default:
+                REPORT_ERROR("m out of range in kaiser_value()");
         }
-        else if (m == 1)
-        {
-            w = sqrt (1.0 - rdas);
-            if (alpha != 0.0)
-                w *= bessi1(arg) / bessi1(alpha);
-        }
-        else if (m == 2)
-        {
-            w = sqrt (1.0 - rdas);
-            w = w * w;
-            if (alpha != 0.0)
-                w *= bessi2(arg) / bessi2(alpha);
-        }
-        else if (m == 3)
-        {
-            w = sqrt (1.0 - rdas);
-            w = w * w * w;
-            if (alpha != 0.0)
-                w *= bessi3(arg) / bessi3(alpha);
-        }
-        else if (m == 4)
-        {
-            w = sqrt (1.0 - rdas);
-            w = w * w * w *w;
-            if (alpha != 0.0)
-                w *= bessi4(arg) / bessi4(alpha);
-        }
-        else REPORT_ERROR("m out of range in kaiser_value()");
+    } else {
+        return 0.0;
     }
-    else
-        w = 0.0;
     return w;
 }
 /* Line integral through a blob -------------------------------------------- */
 /* Value of line integral through Kaiser-Bessel radial function
    (n >=2 dimensions) at distance s from center of function.
    Parameter m = 0, 1, or 2. */
-RFLOAT kaiser_proj(RFLOAT s, RFLOAT a, RFLOAT alpha, int m)
-{
+RFLOAT kaiser_proj(RFLOAT s, RFLOAT a, RFLOAT alpha, int m) {
     RFLOAT sda, sdas, w, arg, p;
     sda = s / a;
     sdas = sda * sda;
     w = 1.0 - sdas;
-    if (w > 1.0e-10)
-    {
+    if (w > 1.0e-10) {
         arg = alpha * sqrt(w);
-        if (m == 0)
-        {
+        if (m == 0) {
             if (alpha == 0.0)
                 p = 2.0 * a * sqrt(w);
             else
                 p = (2.0 * a / alpha) * sinh(arg) / bessi0(alpha);
-        }
-        else if (m == 1)
-        {
+        } else if (m == 1) {
             if (alpha == 0.0)
                 p = 2.0 * a * w * sqrt(w) * (2.0 / 3.0);
             else
                 p = (2.0 * a / alpha) * sqrt(w) * (cosh(arg) - sinh(arg) / arg)
                     / bessi1(alpha);
-        }
-        else if (m == 2)
-        {
+        } else if (m == 2) {
             if (alpha == 0.0)
                 p = 2.0 * a * w * w * sqrt(w) * (8.0 / 15.0);
             else
@@ -229,20 +211,16 @@ RFLOAT kaiser_proj(RFLOAT s, RFLOAT a, RFLOAT alpha, int m)
     return p;
 }
 /* Fourier value of a blob ------------------------------------------------- */
-RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m)
-{
+RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m) {
     RFLOAT sigma = sqrt(ABS(alpha * alpha - (2. * PI * a * w) * (2. * PI * a * w)));
-    if (m == 2)
-    {
+    if (m == 2) {
         if (2.*PI*a*w > alpha)
             return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*bessj3_5(sigma)
                     / (bessi0(alpha)*pow(sigma, 3.5));
         else
             return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*bessi3_5(sigma)
                     / (bessi0(alpha)*pow(sigma, 3.5));
-    }
-    else if (m == 0)
-    {
+    } else if (m == 0) {
         if (2*PI*a*w > alpha)
             return  pow(2.*PI, 3. / 2.)*pow(a, 3)*bessj1_5(sigma)
                     / (bessi0(alpha)*pow(sigma, 1.5));
@@ -251,34 +229,22 @@ RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m)
                     / (bessi0(alpha)*pow(sigma, 1.5));
     }
     else
-    	REPORT_ERROR("m out of range in kaiser_Fourier_value()");
+        REPORT_ERROR("m out of range in kaiser_Fourier_value()");
 }
 /* Volume integral of a blob ----------------------------------------------- */
-RFLOAT  basvolume(RFLOAT a, RFLOAT alpha, int m, int n)
-{
-    RFLOAT  hn, tpi, v;
+RFLOAT basvolume(RFLOAT a, RFLOAT alpha, int m, int n) {
+    RFLOAT hn, tpi, v;
     hn = 0.5 * n;
     tpi = 2.0 * PI;
-    if (alpha == 0.0)
-    {
-        if ((n / 2)*2 == n)           /* n even                               */
-            v = pow(tpi, hn) * in_zeroarg(n / 2 + m) / in_zeroarg(m);
-        else                        /* n odd                                */
-            v = pow(tpi, hn) * inph_zeroarg(n / 2 + m) / in_zeroarg(m);
-    }
-    else
-    {                        /* alpha > 0.0                          */
-        if ((n / 2)*2 == n)           /* n even                               */
-            v = pow(tpi / alpha, hn) * i_n(n / 2 + m, alpha) / i_n(m, alpha);
-        else                        /* n odd                                */
-            v = pow(tpi / alpha, hn) * i_nph(n / 2 + m, alpha) / i_n(m, alpha);
-    }
-    return v * pow(a, (RFLOAT)n);
+    return (alpha == 0.0) ? (
+        ((n / 2) * 2 == n) ? (pow(tpi, hn) * in_zeroarg(n / 2 + m) / in_zeroarg(m)) : (pow(tpi, hn) * inph_zeroarg(n / 2 + m) / in_zeroarg(m))
+    ) : (
+        ((n / 2) * 2 == n) ? (pow(tpi / alpha, hn) * i_n(n / 2 + m, alpha) / i_n(m, alpha)) : (pow(tpi / alpha, hn) * i_nph(n / 2 + m, alpha) / i_n(m, alpha))
+    ) * pow(a, (RFLOAT)n);
 }
 /* Bessel function I_n (x),  n = 0, 1, 2, ...
  Use ONLY for small values of n     */
-RFLOAT i_n(int n, RFLOAT x)
-{
+RFLOAT i_n(int n, RFLOAT x) {
     int i;
     RFLOAT i_ns1, i_n, i_np1;
     if (n == 0)   return bessi0(x);
@@ -286,8 +252,7 @@ RFLOAT i_n(int n, RFLOAT x)
     if (x == 0.0) return 0.0;
     i_ns1 = bessi0(x);
     i_n   = bessi1(x);
-    for (i = 1; i < n; i++)
-    {
+    for (i = 1; i < n; i++) {
         i_np1 = i_ns1 - (2 * i) / x * i_n;
         i_ns1 = i_n;
         i_n   = i_np1;
@@ -295,8 +260,7 @@ RFLOAT i_n(int n, RFLOAT x)
     return i_n;
 }
 /*.....Bessel function I_(n+1/2) (x),  n = 0, 1, 2, ..........................*/
-RFLOAT i_nph(int n, RFLOAT x)
-{
+RFLOAT i_nph(int n, RFLOAT x) {
     int i;
     RFLOAT r2dpix;
     RFLOAT i_ns1, i_n, i_np1;
@@ -313,13 +277,11 @@ RFLOAT i_nph(int n, RFLOAT x)
     return i_n;
 }
 /*....Limit (z->0) of (1/z)^n I_n(z)..........................................*/
-RFLOAT in_zeroarg(int n)
-{
+RFLOAT in_zeroarg(int n) {
     int i;
     RFLOAT fact;
     fact = 1.0;
-    for (i = 1; i <= n; i++)
-    {
+    for (i = 1; i <= n; i++) {
         fact *= 0.5 / i;
     }
     return fact;
@@ -570,21 +532,21 @@ RFLOAT icdf_FSnedecor(int d1, int d2, RFLOAT p)
 void init_random_generator(int seed)
 {
     if (seed < 0)
-    	randomize_random_generator();
+        randomize_random_generator();
     else
-    	srand(static_cast <unsigned> (seed) );
+        srand(static_cast <unsigned> (seed) );
 }
 
 void randomize_random_generator()
 {
-	srand(static_cast <unsigned> (time(NULL)) );
+    srand(static_cast <unsigned> (time(NULL)) );
 }
 
 float rnd_unif(float a, float b)
 {
 
 
-	if (a == b)
+    if (a == b)
         return a;
     else
         return a + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(b-a)));
@@ -598,7 +560,7 @@ float rnd_gaus(float mu, float sigma)
   static int call = 0;
 
   if (sigma == 0)
-	  return mu;
+      return mu;
 
   if (call == 1)
   {
@@ -626,7 +588,7 @@ float rnd_gaus(float mu, float sigma)
 
 float rnd_student_t(RFLOAT nu, float mu, float sigma)
 {
-	REPORT_ERROR("rnd_student_t currently not implemented!");
+    REPORT_ERROR("rnd_student_t currently not implemented!");
 }
 
 
@@ -762,53 +724,53 @@ void swapbytes(char* v, unsigned long n)
 
 void HSL2RGB(RFLOAT H, RFLOAT S, RFLOAT L, RFLOAT &R, RFLOAT &G, RFLOAT &B)
 {
-	if (S < XMIPP_EQUAL_ACCURACY)
-	{
-		R = G = B = L;
-	}
-	else
-	{
+    if (S < XMIPP_EQUAL_ACCURACY)
+    {
+        R = G = B = L;
+    }
+    else
+    {
 
-		RFLOAT temp1 = (L < 0.5) ? L * (1.0 + S) : L + S - L * S;
-		RFLOAT temp2 = 2 * L - temp1;
-		RFLOAT tR = H + 0.33333;
-		RFLOAT tG = H;
-		RFLOAT tB = H - 0.33333;
-		realWRAP(tR, 0., 1.);
-		realWRAP(tG, 0., 1.);
-		realWRAP(tB, 0., 1.);
+        RFLOAT temp1 = (L < 0.5) ? L * (1.0 + S) : L + S - L * S;
+        RFLOAT temp2 = 2 * L - temp1;
+        RFLOAT tR = H + 0.33333;
+        RFLOAT tG = H;
+        RFLOAT tB = H - 0.33333;
+        realWRAP(tR, 0., 1.);
+        realWRAP(tG, 0., 1.);
+        realWRAP(tB, 0., 1.);
 
-		// Red
-		if (6*tR < 1.)
-			R = temp2 + (temp1 - temp2) * 6 * tR;
-		else if (2*tR < 1.)
-			R = temp1;
-		else if (3*tR < 2.)
-			R = temp2 + (temp1 - temp2) * (0.6666 - tR) * 6;
-		else
-			R = temp2;
+        // Red
+        if (6*tR < 1.)
+            R = temp2 + (temp1 - temp2) * 6 * tR;
+        else if (2*tR < 1.)
+            R = temp1;
+        else if (3*tR < 2.)
+            R = temp2 + (temp1 - temp2) * (0.6666 - tR) * 6;
+        else
+            R = temp2;
 
-		// Green
-		if (6*tG < 1.)
-			G = temp2 + (temp1 - temp2) * 6 * tG;
-		else if (2*tG < 1.)
-			G = temp1;
-		else if (3*tG < 2.)
-			G = temp2 + (temp1 - temp2) * (0.6666 - tG) * 6;
-		else
-			G = temp2;
+        // Green
+        if (6*tG < 1.)
+            G = temp2 + (temp1 - temp2) * 6 * tG;
+        else if (2*tG < 1.)
+            G = temp1;
+        else if (3*tG < 2.)
+            G = temp2 + (temp1 - temp2) * (0.6666 - tG) * 6;
+        else
+            G = temp2;
 
-		// Blue
-		if (6*tB < 1.)
-			B = temp2 + (temp1 - temp2) * 6 * tB;
-		else if (2*tB < 1.)
-			B = temp1;
-		else if (3*tB < 2.)
-			B = temp2 + (temp1 - temp2) * (0.6666 - tB) * 6;
-		else
-			B = temp2;
+        // Blue
+        if (6*tB < 1.)
+            B = temp2 + (temp1 - temp2) * 6 * tB;
+        else if (2*tB < 1.)
+            B = temp1;
+        else if (3*tB < 2.)
+            B = temp2 + (temp1 - temp2) * (0.6666 - tB) * 6;
+        else
+            B = temp2;
 
-	}
+    }
 }
 
 

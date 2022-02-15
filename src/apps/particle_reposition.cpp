@@ -132,8 +132,10 @@ public:
 			Imic_sum.initZeros(Imic_in());
 			Imic_sum.setXmippOrigin();
 			// Get mean and stddev of the input micrograph
-			RFLOAT stddev_mic, mean_mic, dummy;
-			Imic_in().computeStats(mean_mic, stddev_mic, dummy, dummy);
+			// The min and max are not used
+			std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Imic_in().computeStats();
+			stddev_mic = std::get<0>(statstuple);
+			mean_mic = std::get<1>(statstuple);
 
 			int optics_group_mic;
 			DFi.getValue(EMDL_IMAGE_OPTICS_GROUP, optics_group_mic);

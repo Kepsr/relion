@@ -79,8 +79,8 @@ void CTF::readByGroup(
 }
 
 void CTF::readValue(
-    EMDLabel label, RFLOAT& dest, RFLOAT defaultVal, 
-    long int particle, int opticsGroup, 
+    EMDLabel label, RFLOAT& dest, RFLOAT defaultVal,
+    long int particle, int opticsGroup,
     const MetaDataTable& partMdt, const ObservationModel* obs
 ) {
     if (!partMdt.getValue(label, dest, particle)) {
@@ -131,8 +131,8 @@ void CTF::read(const MetaDataTable &MD1, const MetaDataTable &MD2, long int obje
 }
 
 void CTF::setValues(
-    RFLOAT _defU,    RFLOAT _defV,  RFLOAT _defAng, 
-    RFLOAT _voltage, RFLOAT _Cs,    RFLOAT _Q0, 
+    RFLOAT _defU,    RFLOAT _defV,  RFLOAT _defAng,
+    RFLOAT _voltage, RFLOAT _Cs,    RFLOAT _Q0,
     RFLOAT _Bfac,    RFLOAT _scale, RFLOAT _phase_shift
 ) {
     kV              = _voltage;
@@ -218,7 +218,7 @@ void CTF::initialise() {
     //    e: electron charge
     // lambda=0.387832/sqrt(kV * (1.+0.000978466*kV)); // Hewz: Angstroms
     // lambda=h/sqrt(2*m*e*kV)
-    lambda = 12.2643247 / sqrt(local_kV * (1.0 + local_kV * 0.978466e-6)); 
+    lambda = 12.2643247 / sqrt(local_kV * (1.0 + local_kV * 0.978466e-6));
     // See http://en.wikipedia.org/wiki/Electron_diffraction
 
     // Helpful constants
@@ -226,13 +226,13 @@ void CTF::initialise() {
     //          = K1*deltaf(u)*u^2         +K2*u^4
     K1 = PI / 2 * 2 * lambda;
     K2 = PI / 2 * local_Cs * lambda * lambda * lambda;
-    K3 = atan(Q0/sqrt(1 - Q0 * Q0));
+    K3 = atan(Q0 / sqrt(1 - Q0 * Q0));
     K4 = -Bfac / 4.;
 
-    // Phase shift in radian
+    // Phase shift in radians
     K5 = DEG2RAD(phase_shift);
 
-    if (Q0 < 0. || Q0 > 1.)
+    if (Q0 < 0.0 || Q0 > 1.0)
         REPORT_ERROR("CTF::initialise ERROR: AmplitudeContrast Q0 cannot be smaller than zero or larger than one!");
 
     if (ABS(DeltafU) < 1e-6 && ABS(DeltafV) < 1e-6 && ABS(Q0) < 1e-6 && ABS(Cs) < 1e-6)
@@ -301,7 +301,7 @@ t2Vector<RFLOAT> CTF::getGammaGrad(RFLOAT X, RFLOAT Y) const {
     );
 }
 
-/* Generate a complete CTF Image ------------------------------------------------------ */
+// Generate a complete CTF Image ----------------------------------------------
 void CTF::getFftwImage(
     MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
@@ -311,7 +311,7 @@ void CTF::getFftwImage(
     // Here, calculate the CTF in a 2x larger box to support finer oscillations,
     // and then rescale the large CTF to simulate the effect of the windowing operation
     if (do_ctf_padding) {
-        bool ctf_premultiplied=false;
+        bool ctf_premultiplied = false;
         if (obsModel != 0) {
             ctf_premultiplied = obsModel->getCtfPremultiplied(opticsGroup);
         }
@@ -319,7 +319,7 @@ void CTF::getFftwImage(
         // two-fold padding, increased to 4-fold padding for pre-multiplied CTFs
         int orixdim_pad = 2 * orixdim;
         int oriydim_pad = 2 * oriydim;
-        // TODO: Such a big box may not be really necessary.....
+        // TODO: Such a big box may not really be necessary...
         if (ctf_premultiplied) {
             orixdim_pad *= 2;
             oriydim_pad *= 2;
@@ -355,8 +355,8 @@ void CTF::getFftwImage(
         }
 
         resizeMap(Mctf, orixdim);
-        Mctf.setXmippOrigin();
 
+        Mctf.setXmippOrigin();
         // From whole to half
         for (int i = 0 ; i < YSIZE(result); i++) {
             // Don't take the middle row of the half-transform
@@ -386,14 +386,13 @@ void CTF::getFftwImage(
         RFLOAT ys = (RFLOAT)oriydim * angpix;
 
         if (obsModel != 0 && obsModel->hasEvenZernike) {
-            if (orixdim != oriydim) {
-                REPORT_ERROR_STR("CTF::getFftwImage: symmetric aberrations are currently only " << "supported for square images.\n");
-            }
+
+            ensure_square(orixdim, oriydim);
 
             if (obsModel->getBoxSize(opticsGroup) != orixdim) {
                 REPORT_ERROR_STR(
                     "CTF::getFftwImage: requested output image size "
-                    << orixdim 
+                    << orixdim
                     << " is not consistent with that in the optics group table "
                     << obsModel->getBoxSize(opticsGroup) << "\n"
                 );
@@ -401,8 +400,8 @@ void CTF::getFftwImage(
 
             if (fabs(obsModel->getPixelSize(opticsGroup) - angpix) > 1e-4) {
                 REPORT_ERROR_STR(
-                    "CTF::getFftwImage: requested pixel size " 
-                    << angpix 
+                    "CTF::getFftwImage: requested pixel size "
+                    << angpix
                     << " is not consistent with that in the optics group table "
                     << obsModel->getPixelSize(opticsGroup) << "\n"
                 );
@@ -410,16 +409,16 @@ void CTF::getFftwImage(
 
             const Image<RFLOAT>& gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
 
-            for (int y1 = 0; y1 < result.ydim; y1++)
-            for (int x1 = 0; x1 < result.xdim; x1++) {
-                RFLOAT x = x1 / xs;
-                RFLOAT y = y1 <= result.ydim/2? y1 / ys : (y1 - result.ydim) / ys;
+            for (int i = 0; i < result.ydim; i++)
+            for (int j = 0; j < result.xdim; j++) {
+                RFLOAT x = j / xs;
+                RFLOAT y = i <= result.ydim / 2 ? i / ys : (i - result.ydim) / ys;
 
-                const int x0 = x1;
-                const int y0 = y1 <= result.ydim/2? y1 : gammaOffset.data.ydim + y1 - result.ydim;
+                const int x0 = j;
+                const int y0 = i <= result.ydim / 2 ? i : gammaOffset.data.ydim + i - result.ydim;
 
-                DIRECT_A2D_ELEM(result, y1, x1) = getCTF(
-                    x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak, 
+                DIRECT_A2D_ELEM(result, i, j) = getCTF(
+                    x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, gammaOffset(y0, x0), do_intact_after_first_peak
                 );
             }
@@ -429,7 +428,7 @@ void CTF::getFftwImage(
                 RFLOAT y = (RFLOAT)ip / ys;
 
                 DIRECT_A2D_ELEM(result, i, j) = getCTF(
-                    x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak, 
+                    x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, 0.0, do_intact_after_first_peak
                 );
             }
@@ -437,16 +436,15 @@ void CTF::getFftwImage(
     }
 }
 
-/* Generate a complete CTFP (complex) image (with sector along angle) ------------------------------------------------------ */
+// Generate a complete CTFP (complex) image (with sector along angle) ---------
 void CTF::getCTFPImage(
     MultidimArray<Complex> &result, int orixdim, int oriydim, RFLOAT angpix,
     bool is_positive, float angle
 ) {
-    if (angle < 0 || angle >= 360.0) {
-        REPORT_ERROR("CTF::getCTFPImage: angle should be in [0,360>");
-    }
+    if (angle < 0.0 || angle >= 360.0)
+        REPORT_ERROR("CTF::getCTFPImage: angle should be in the interval [0,360)");
 
-    // Angles larger than 180 degrees are the inverse of the other half!
+    // Flip angles greater than 180 degrees
     if (angle >= 180.0) {
         angle -= 180.0;
         is_positive = !is_positive;
@@ -458,54 +456,55 @@ void CTF::getCTFPImage(
     RFLOAT ys = (RFLOAT)oriydim * angpix;
 
     if (obsModel != 0 && obsModel->hasEvenZernike) {
-        if (orixdim != oriydim) {
-            REPORT_ERROR_STR(
-                "CTF::getFftwImage: symmetric aberrations are currently only " 
-                << "supported for square images.\n"
-            );
-        }
+        
+        ensure_square(orixdim, oriydim);
 
         const Image<RFLOAT>& gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
 
         if (gammaOffset.data.xdim < result.xdim || gammaOffset.data.ydim < result.ydim) {
             REPORT_ERROR_STR(
-                "CTF::getFftwImage: requested output image is larger than the original: "
-                << gammaOffset.data.xdim << "x" << gammaOffset.data.ydim << " available, "
-                << result.xdim << "x" << result.ydim << " requested\n"
+                "CTF::getFftwImage: size requested for output image "
+                <<< "is greater than size of original image: "
+                << result.xdim << "×" << result.ydim << " was requested, but only "
+                << gammaOffset.data.xdim << "×" << gammaOffset.data.ydim << " is available\n"
             );
         }
 
-        for (int y1 = 0; y1 < result.ydim; y1++)
-        for (int x1 = 0; x1 < result.xdim; x1++) {
-            RFLOAT x = x1 / xs;
-            RFLOAT y = y1 <= result.ydim/2? y1 / ys : (y1 - result.ydim) / ys;
-            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / sqrt(x * x + y * y)) : 0; // dot-product with Y-axis: (0,1)
-            const int x0 = x1;
-            const int y0 = y1 <= result.ydim/2? y1 : gammaOffset.data.ydim + y1 - result.ydim;
+        // Why do we have i <= YSIZE(result) / 2 here, but i < XSIZE(result) below?
+        for (int i = 0, ip = 0; i < YSIZE(result); i++, ip = i <= YSIZE(result) / 2 ? i : i - YSIZE(result))
+        for (int j = 0, jp = 0; j < XSIZE(result); j++, jp = j) {
+            RFLOAT x = (RFLOAT)jp / xs;
+            RFLOAT y = (RFLOAT)ip / ys;
+            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
+            const int x0 = j;
+            const int y0 = i <= YSIZE(result) / 2 ? ip : YSIZE(gammaOffset.data) + ip;
 
-            DIRECT_A2D_ELEM(result, y1, x1) = getCTFP(
-                x, y, 
+            DIRECT_A2D_ELEM(result, i, j) = getCTFP(
+                x, y,
                 (myangle >= anglerad ? is_positive : !is_positive),
                 gammaOffset(y0, x0)
             );
         }
     } else {
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
+        // FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
+        for (long int i = 0, ip = 0; i < YSIZE(result); i++, ip = i < XSIZE(result) ? i : i - YSIZE(result)) \
+        for (long int j = 0, jp = 0; j < XSIZE(result); j++, jp = j) {
+            // If i < XSIZE(result), ip = i. Else, ip = i - YSIZE(result).
             RFLOAT x = (RFLOAT)jp / xs;
             RFLOAT y = (RFLOAT)ip / ys;
-            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
+            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
 
             DIRECT_A2D_ELEM(result, i, j) = getCTFP(
-                x, y, (myangle >= anglerad ? is_positive : !is_positive)
+                x, y,
+                (myangle >= anglerad ? is_positive : !is_positive)
             );
         }
     }
-    // Special line along the vertical Y-axis, where FFTW stores both Friedel mates and Friedel symmetry needs to remain
+    // Special line along the vertical (Y-)axis, where FFTW stores both Friedel mates and Friedel symmetry needs to remain
     if (angle == 0.0) {
         int dim = YSIZE(result);
-        int hdim = dim / 2;
 
-        for (int i = hdim + 1; i < dim; i++) {
+        for (int i = dim / 2 + 1; i < dim; i++) {
             DIRECT_A2D_ELEM(result, i, 0) = conj(DIRECT_A2D_ELEM(result, dim - i, 0));
         }
     }
@@ -513,7 +512,7 @@ void CTF::getCTFPImage(
 
 void CTF::getCenteredImage(
     MultidimArray<RFLOAT> &result, RFLOAT Tm,
-    bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak, 
+    bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_intact_after_first_peak
 ) {
     result.setXmippOrigin();
@@ -524,15 +523,15 @@ void CTF::getCenteredImage(
         RFLOAT x = (RFLOAT)j / xs;
         RFLOAT y = (RFLOAT)i / ys;
         A2D_ELEM(result, i, j) = getCTF(
-            x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak, 
+            x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
     }
 }
 
 void CTF::get1DProfile(
-    MultidimArray < RFLOAT > &result, RFLOAT angle, RFLOAT Tm,
-    bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak, 
+    MultidimArray<RFLOAT> &result, RFLOAT angle, RFLOAT Tm,
+    bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_intact_after_first_peak
 ) {
 
@@ -543,7 +542,7 @@ void CTF::get1DProfile(
         RFLOAT x = (COSD(angle) * (RFLOAT)i) / xs;
         RFLOAT y = (SIND(angle) * (RFLOAT)i) / xs;
         A1D_ELEM(result, i) = getCTF(
-            x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak, 
+            x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
     }
@@ -579,46 +578,50 @@ void CTF::applyWeightEwaldSphereCurvature(
         RFLOAT deltaf = u2 > 0.0 ? std::abs(astigDefocus / u2) : 0.0;
         RFLOAT inv_d = sqrt(u2);
         RFLOAT aux = 2.0 * deltaf * lambda * inv_d / particle_diameter;
-        RFLOAT A = (aux > 1.0) ? 0.0 : (acos(aux) - aux * sqrt(1 - x * x)) * 2.0 / PI;
+        RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
         // sin(acos(x)) is almost 50% slower than sqrt(1 - x * x)
 
-        DIRECT_A2D_ELEM(result, i, j) = 1.0 + A * (2.0 * fabs(sin(gamma)) - 1.0);
-        // Keep everything on the same scale inside RELION, where we use sin(chi), not 2sin(chi)
-        DIRECT_A2D_ELEM(result, i, j) *= 0.5;
+        DIRECT_A2D_ELEM(result, i, j) = 0.5 * (A * (2.0 * fabs(sin(gamma)) - 1.0) + 1.0);
+        // Within RELION, sin(chi) is used rather than 2 * sin(chi).
+        // Hence the 0.5 above to keep everything on the same scale.
     }
 }
 
 void CTF::applyWeightEwaldSphereCurvature_new(
-    MultidimArray<RFLOAT>& result, int orixdim, int oriydim, 
+    MultidimArray<RFLOAT>& result, int orixdim, int oriydim,
     RFLOAT angpix, RFLOAT particle_diameter
 ) {
     const int s = oriydim;
-    const int sh = s / 2 + 1;
+    const int half_s = s / 2 + 1;
     const double as = angpix * s;
     const double Dpx = particle_diameter / angpix;
 
     for (int yi = 0; yi < s;  yi++)
-    for (int xi = 0; xi < sh; xi++) {
+    for (int xi = 0; xi < half_s; xi++) {
         const double x = xi / as;
-        const double y = yi < sh? yi / as : (yi - s) / as;
+        const double y = yi < half_s ? yi / as : (yi - s) / as;
 
         // shift of this frequency resulting from CTF:
         const t2Vector<RFLOAT> shift2D = RFLOAT(1.0 / (2 * angpix * PI)) * getGammaGrad(x, y);
         const double shift1D = 2.0 * shift2D.length();
 
-        // angle between the intersection points of the two circles and the center
+        // Let two circles of equal size intersect at exactly two points.
+        // Let alpha be the angle between
+        // one intersection point,
+        // the centre of either circle,
+        // and the other intersection point.
         const double alpha = shift1D > Dpx ? 0.0 : 2.0 * acos(shift1D / Dpx);
 
-        // area of intersection between the two circles, divided by the area of the circle
-        RFLOAT A = (alpha == 0.0) ? 0.0 : (1.0/PI) * (alpha - sin(alpha));
+        // Then the area of intersection between the two circles,
+        // divided by the area of either circle will be:
+        RFLOAT A = alpha == 0.0 ? 0.0 : (alpha - sin(alpha)) / PI;
 
         // abs. value of CTFR (no damping):
         const double ctf_val = getCTF(x, y, true, false, false, false, 0.0);
 
-        DIRECT_A2D_ELEM(result, yi, xi) = 1.0 + A * (2.0 * ctf_val - 1.0);
-
-        // Keep everything on the same scale inside RELION, where we use sin(chi), not 2sin(chi)
-        DIRECT_A2D_ELEM(result, yi, xi) *= 0.5;
+        DIRECT_A2D_ELEM(result, yi, xi) = 0.5 * (A * (2.0 * ctf_val - 1.0) + 1.0);
+        // Within RELION, sin(chi) is used rather than 2 * sin(chi).
+        // Hence the 0.5 above to keep everything on the same scale.
     }
 }
 
@@ -632,12 +635,12 @@ void CTF::applyWeightEwaldSphereCurvature_noAniso(
         RFLOAT x = (RFLOAT)jp / xs;
         RFLOAT y = (RFLOAT)ip / ys;
         RFLOAT deltaf = fabs(getDeltaF(x, y));
-        RFLOAT inv_d = sqrt(x * x + y * y);
-        RFLOAT aux = (2. * deltaf * lambda * inv_d) / (particle_diameter);
-        RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - x * x)) * 2.0 / PI;
-        DIRECT_A2D_ELEM(result, i, j) = 1. + A * (2.0 * fabs(getCTF(x, y)) - 1.0);
-        // Keep everything on the same scale inside RELION, where we use sin(chi), not 2sin(chi)
-        DIRECT_A2D_ELEM(result, i, j) *= 0.5;
+        RFLOAT inv_d = Pythag(x, y);
+        RFLOAT aux = 2.0 * deltaf * lambda * inv_d / particle_diameter;
+        RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
+        DIRECT_A2D_ELEM(result, i, j) = 0.5 * (A * (2.0 * fabs(getCTF(x, y)) - 1.0) + 1.0);
+        // Within RELION, sin(chi) is used rather than 2 * sin(chi).
+        // Hence the 0.5 above to keep everything on the same scale.
     }
 }
 
@@ -656,4 +659,14 @@ double CTF::getAxy() {
 
 double CTF::getAyy() {
     return Ayy;
+}
+
+
+void ensure_square(int orixdim, int oriydim) {
+    if (orixdim != oriydim) {
+        REPORT_ERROR_STR(
+            "CTF::getFftwImage: currently, symmetric aberrations are supported "
+            << "only for square images.\n"
+        );
+    }
 }

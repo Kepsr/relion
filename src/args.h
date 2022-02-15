@@ -91,10 +91,9 @@ template <typename T> class Matrix1D;
  *
  * @endcode
  */
-std::string getParameter(int argc,
-                char** argv,
-                std::string param,
-                std::string option = "NULL");
+std::string getParameter(
+    int argc, char** argv, std::string param, std::string option = "NULL"
+);
 
 /** Get boolean parameters from the command line.
  * @ingroup CommandLineFunctions
@@ -116,93 +115,99 @@ std::string getParameter(int argc,
 bool checkParameter(int argc, char** argv, std::string param);
 
 
-class IOParser
-{
-private:
+class IOParser {
 
-	std::vector<std::string> options;
-	std::vector<std::string> hiddenOptions;
-	std::vector<std::string> usages;
-	std::vector<bool>        optionals;
-	std::vector<std::string> defaultvalues;
-	std::vector<int>         section_numbers;
-	std::vector<std::string> section_names;
-	std::vector<std::string> error_messages;
-	std::vector<std::string> warning_messages;
+    private:
 
-	int current_section;
+        std::vector<std::string> options;
+        std::vector<std::string> hiddenOptions;
+        std::vector<std::string> usages;
+        std::vector<bool>        optionals;
+        std::vector<std::string> defaultvalues;
+        std::vector<int>         section_numbers;
+        std::vector<std::string> section_names;
+        std::vector<std::string> error_messages;
+        std::vector<std::string> warning_messages;
 
-	// The original command line
-	int argc;
-	char** argv;
+        int current_section;
 
-public:
+        // The original command line
+        int argc;
+        char** argv;
 
-    /** Constructor */
-    IOParser();
+    public:
 
-    /** Copy constructor */
-    IOParser(const IOParser &in);
+        // Constructor 
+        IOParser();
 
-    /**Assignment operator */
-    IOParser& operator= (const IOParser &in);
+        // Copy constructor 
+        IOParser(const IOParser &in);
 
-    /** Destructor */
-    ~IOParser();
+        //Assignment operator 
+        IOParser& operator= (const IOParser &in);
 
-    /** Copy everything from input to this */
-    void copy(const IOParser &in);
+        // Destructor 
+        ~IOParser();
 
-    /** Clear object */
-    void clear();
+        // Copy everything from input to this 
+        void copy(const IOParser &in);
 
-    /** Store pointer to command line */
-    void setCommandLine(int _argc, char** _argv);
+        // Clear object 
+        void clear();
 
-    /** Check whether option exists in the stored options */
-    bool optionExists(std::string option);
+        // Store pointer to command line 
+        void setCommandLine(int _argc, char** _argv);
 
-    /** Add a section to the parser, and set the current section to the newly created one, returns number of current section */
-    int addSection(std::string name);
+        // Check whether option exists in the stored options 
+        bool optionExists(std::string option);
 
-    /** Set the current section to this number */
-    void setSection(int number);
+        // Add a section to the parser, and set the current section to the newly created one, returns number of current section 
+        int addSection(std::string name);
 
-    /** Get the current section to this number */
-    int getSection()
-    {
-    	return current_section;
-    }
+        // Set the current section to this index
+        void setSection(int number);
 
-    /** Add an option to the object list */
-    void addOption(std::string option, std::string usage, std::string defaultvalue = "NULL", bool hidden = false);
+        // Get the current section to this index
+        int getSection() { return current_section; }
 
-    /** Get the value from the command line, and adds option to the list if it did not yet exist */
-    std::string getOption(std::string option, std::string usage, std::string defaultvalue = "NULL", bool hidden = false);
+        // Add an option to the object list 
+        void addOption(
+            std::string option, std::string usage, 
+            std::string defaultvalue = "NULL", bool hidden = false
+        );
 
-    /** Returns true if option was given and false if not, and adds option to the list if it did not yet exist */
-	bool checkOption(std::string option, std::string usage, std::string defaultvalue = "false", bool hidden = false);
+        // Get the value from the command line, and adds option to the list if it did not yet exist 
+        std::string getOption(
+            std::string option, std::string usage, 
+            std::string defaultvalue = "NULL", bool hidden = false
+        );
 
-    /** Checks the whole command line and reports an error if it contains an undefined option */
-    bool commandLineContainsUndefinedOption();
+        // Returns true if option was given and false if not, and adds option to the list if it did not yet exist 
+        bool checkOption(
+            std::string option, std::string usage, 
+            std::string defaultvalue = "false", bool hidden = false
+        );
 
-    /** Write the stored command line to outstream */
-    void writeCommandLine(std::ostream &outstream);
+        // Checks the whole command line and reports an error if it contains an undefined option 
+        bool commandLineContainsUndefinedOption();
 
-    /** Returns true is there were any error messages (and prints them if verb>0 */
-    bool checkForErrors(int verb = 1);
+        // Write the stored command line to outstream 
+        void writeCommandLine(std::ostream &outstream);
 
-    /** Check the whole command line for invalid arguments, if found add to the error messages */
-    void checkForUnknownArguments();
+        // Returns true is there were any error messages (and prints them if verb>0 
+        bool checkForErrors(int verb = 1);
 
-    /** Write one line of the usage to outstream */
-    void writeUsageOneLine(int i, std::ostream &out);
+        // Check the whole command line for invalid arguments, if found add to the error messages 
+        void checkForUnknownArguments();
 
-    /** Write one section of the usage to outstream */
-   void writeUsageOneSection(int section, std::ostream &out);
+        // Write one line of the usage to outstream 
+        void writeUsageOneLine(int i, std::ostream &out);
 
-    /** Write the usage for all options to outstream */
-    void writeUsage(std::ostream &outstream);
+        // Write one section of the usage to outstream 
+        void writeUsageOneSection(int section, std::ostream &out);
+
+        // Write the usage for all options to outstream 
+        void writeUsage(std::ostream &outstream);
 };
 
 /*
@@ -211,8 +216,10 @@ public:
  *  	, delimited for threads within each rank
  * and outputs a rank-major array which supplies
  * a mapping as input for distribution of ranks
- * and threads over the availiable/specfied GPUs.
+ * and threads over the available/specified GPUs.
  */
-void untangleDeviceIDs(std::string &tangled, std::vector < std::vector < std::string > > &untangled);
+void untangleDeviceIDs(
+    std::string &tangled, std::vector<std::vector<std::string>> &untangled
+);
 
 #endif

@@ -1917,7 +1917,7 @@ void selfApplyBeamTilt2(MultidimArray<Complex > &Fimg, RFLOAT beamtilt_x, RFLOAT
 	RFLOAT boxsize = angpix * ori_size;
 	RFLOAT factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize);
 
-	for (unsigned n = 0 ; n < Fimg.yxdim; n ++)
+	for (unsigned n = 0 ; n < Fimg.yxdim(); n ++)
 	{
 		unsigned i = n / Fimg.xdim;
 		unsigned j = n % Fimg.xdim;

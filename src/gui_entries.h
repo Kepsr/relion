@@ -145,11 +145,7 @@ extern bool create_scheduler_gui;
 #define TOGGLE_ALWAYS_DEACTIVATE 2
 #define TOGGLE_LEAVE_ACTIVE 3
 
-static Fl_Menu_Item bool_options[] = {
-			      {"Yes"},
-			      {"No"},
-			      {0} // this should be the last entry
-			      };
+static Fl_Menu_Item bool_options[] = {{"Yes"}, {"No"}, {0}};
 
 // A text to Float converter that raises an error window.
 float fltkTextToFloat(const char* str);
@@ -209,8 +205,7 @@ public:
 	 *  defaultvalue is what will appear by default in the input value
 	 *  help is the additional help text. If it is set to NULL, no help button will be displayed
 	 */
-    GuiEntry()
-    {
+    GuiEntry() {
     	deactivate_option = -1;
     	inp = NULL;
 		help = NULL;
@@ -244,26 +239,26 @@ public:
     // Deactivate this entry if the input boolean is true
     void deactivate(bool do_deactivate = true);
 
-    /** Call-back functions for the help button
+    /** Callback functions for the help button
      *  The method of using two functions of static void and inline void was copied from:
      *  http://www3.telus.net/public/robark/
      */
     static void cb_help(Fl_Widget*, void*);
     void cb_help_i();
 
-    // Call-back functions for the browse button
+    // Callback functions for the browse button
     static void cb_browse(Fl_Widget*, void*);
     void cb_browse_i();
 
-    // Call-back functions for the browse button
+    // Callback functions for the browse button
     static void cb_browse_node(Fl_Widget*, void*);
     void cb_browse_node_i();
 
-    // Call-back functions for the menu
+    // Callback functions for the menu
     static void cb_menu(Fl_Widget*, void*);
     void cb_menu_i();
 
-    // Call-back functions for the slider
+    // Callback functions for the slider
     static void cb_slider(Fl_Widget*, void*);
     void cb_slider_i();
 

@@ -280,10 +280,13 @@ class star_handler_parameters
 		{
 			Image<RFLOAT> img;
 			FileName fn_img;
-			RFLOAT avg, stddev, minval, maxval;
 			MDin.getValue(EMDL::str2Label(discard_label), fn_img);
 			img.read(fn_img);
-			img().computeStats(avg, stddev, minval, maxval);
+			std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = img().computeStats();
+			RFLOAT avg = std::get<0>(statstuple);
+			RFLOAT stddev = std::get<1>(statstuple);
+			RFLOAT minval = std::get<2>(statstuple);
+			RFLOAT maxval = std::get<3>(statstuple);
 			sum_avg += avg;
 			sum2_avg += avg * avg;
 			sum_stddev += stddev;
@@ -293,7 +296,8 @@ class star_handler_parameters
 			stddevs.push_back(stddev);
 
 			ii++;
-			if (ii%100 == 0) progress_bar(ii);
+			if (ii % 100 == 0)
+				progress_bar(ii);
 		}
 
 		progress_bar(MDin.numberOfObjects());

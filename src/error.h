@@ -82,20 +82,20 @@
  * This is the class type for the errors thrown by the exceptions
  */
 
-class RelionError
-{
-public:
-    /** Error code */
-    int __errno;
+class RelionError {
 
-    /** Message shown */
-    std::string msg;
+   public:
+      /** Error code */
+      int __errno;
 
-    /** File produstd::cing the error */
-    std::string file;
+      /** Message shown */
+      std::string msg;
 
-    /** Line number */
-    long line;
+      /** File produstd::cing the error */
+      std::string file;
+
+      /** Line number */
+      long line;
 
 #ifdef __GNUC__
     /**
@@ -126,8 +126,10 @@ public:
     size_t size;
 #endif
 
-    RelionError(const std::string& what, const std::string &fileArg, const long lineArg);
-    friend std::ostream& operator<<(std::ostream& o, RelionError& XE);
+   RelionError(
+      const std::string& what, const std::string &fileArg, const long lineArg
+   );
+   friend std::ostream& operator<<(std::ostream& o, RelionError& XE);
 };
 
 #define RAMERR "\n\

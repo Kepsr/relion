@@ -925,7 +925,7 @@ void radialAverage(const MultidimArray< T >& m,
 
     distances(7) = (int) floor(sqrt(x * x + y * y + z * z));
 
-    int dim = (int) CEIL(distances.computeMax()) + 1;
+    int dim = (int) CEIL(distances.max()) + 1;
     if (rounding)
         dim++;
 

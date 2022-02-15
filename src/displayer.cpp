@@ -2884,18 +2884,18 @@ void Displayer::run()
 				REPORT_ERROR("Displayer::run() ERROR: only MRC maps are allowed...");
 
 			// Use a single minval and maxval for all slice
-			if (minval == maxval)
-			{
+			if (minval == maxval) {
 				Image<RFLOAT> It;
 				It.read(fn_in);
-				It().computeDoubleMinMax(minval, maxval);
+				std::pair<RFLOAT, RFLOAT> minmaxpair = It().minmax();
+				minval = minmaxpair.first;
+				maxval = minmaxpair.second;
 			}
 
 			// Trick MD with :mrcs extension....
-			for (int n = 0; n < ZSIZE(img()); n++)
-			{
+			for (int n = 0; n < ZSIZE(img()); n++) {
 				FileName fn_tmp;
-				fn_tmp.compose(n+1,fn_in);
+				fn_tmp.compose(n + 1, fn_in);
 				fn_tmp += ":mrcs";
 				MDin.addObject();
 				MDin.setValue(EMDL_IMAGE_NAME, fn_tmp);

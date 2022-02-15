@@ -1021,7 +1021,7 @@ void getAllSquaredDifferencesCoarse(
 		long int group_id = baseMLO->mydata.getGroupId(op.part_id, img_id);
 		RFLOAT my_pixel_size = baseMLO->mydata.getImagePixelSize(op.part_id, img_id);
 		int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, img_id);
-		unsigned long image_size = op.local_Minvsigma2[img_id].nzyxdim;
+		unsigned long image_size = op.local_Minvsigma2[img_id].nzyxdim();
 		bool ctf_premultiplied = baseMLO->mydata.obsModel.getCtfPremultiplied(optics_group);
 
 		/*====================================
@@ -1237,7 +1237,7 @@ void getAllSquaredDifferencesFine(
 		long int group_id = baseMLO->mydata.getGroupId(op.part_id, img_id);
 		RFLOAT my_pixel_size = baseMLO->mydata.getImagePixelSize(op.part_id, img_id);
 		int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, img_id);
-		unsigned long image_size = op.local_Minvsigma2[img_id].nzyxdim;
+		unsigned long image_size = op.local_Minvsigma2[img_id].nzyxdim();
 		bool ctf_premultiplied = baseMLO->mydata.obsModel.getCtfPremultiplied(optics_group);
 
 		MultidimArray<Complex > Fref;
@@ -2559,7 +2559,7 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 		MultidimArray<Complex > Fimg, Fimg_nonmask;
 		windowFourierTransform(op.Fimg[img_id], Fimg, baseMLO->image_current_size[optics_group]); //TODO PO isen't this already done in getFourierTransformsAndCtfs?
 		windowFourierTransform(op.Fimg_nomask[img_id], Fimg_nonmask, baseMLO->image_current_size[optics_group]);
-		unsigned long image_size = Fimg.nzyxdim;
+		unsigned long image_size = Fimg.nzyxdim();
 
 		size_t re_offset = 0*(size_t)image_size;
 		size_t im_offset = 1*(size_t)image_size;

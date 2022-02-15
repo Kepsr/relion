@@ -89,28 +89,26 @@ typedef enum
 /** Write mode
  * This class defines the writing behavior.
  */
-typedef enum
-{
-	WRITE_OVERWRITE, //forget about the old file and overwrite it
-	WRITE_APPEND,	 //append and object at the end of a stack, so far can not append stacks
-	WRITE_REPLACE,	 //replace a particular object by another
-	WRITE_READONLY	 //only can read the file
+typedef enum {
+	WRITE_OVERWRITE, // Forget about the old file and overwrite it
+	WRITE_APPEND,	 // Append and object at the end of a stack, so far can not append stacks
+	WRITE_REPLACE,	 // Replace a particular object by another
+	WRITE_READONLY	 // Only can read the file
 } WriteMode;
 
 extern "C" {
-	typedef struct TiffInMemory
-	{
+
+	typedef struct TiffInMemory {
 		unsigned char *buf;
 		tsize_t size;
 		toff_t pos;
 	} TiffInMemory;
 
-	static tsize_t TiffInMemoryReadProc(thandle_t handle, tdata_t buf, tsize_t read_size)
-	{
+	static tsize_t TiffInMemoryReadProc(thandle_t handle, tdata_t buf, tsize_t read_size) {
 		TiffInMemory *tiff_handle = (TiffInMemory*)handle;
-#ifdef TIFF_DEBUG
-		std::cout << "TiffInMemoryReadProc: read_size = " << read_size << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
-#endif
+		#ifdef TIFF_DEBUG
+			std::cout << "TiffInMemoryReadProc: read_size = " << read_size << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
+		#endif
 		if (tiff_handle->pos + read_size >= tiff_handle->size)
 			REPORT_ERROR("TiffInMemoryReadProc: seeking beyond the end of the buffer.");
 
@@ -1199,8 +1197,11 @@ public:
 	 */
 	void setStatisticsInHeader()
 	{
-		RFLOAT avg,stddev,minval,maxval;
-		data.computeStats(avg, stddev, minval, maxval);
+		std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = data.computeStats();
+		RFLOAT avg = std::get<0>(statstuple);
+		RFLOAT stddev = std::get<1>(statstuple);
+		RFLOAT minval = std::get<2>(statstuple);
+		RFLOAT maxval = std::get<3>(statstuple);
 		MDMainHeader.setValue(EMDL_IMAGE_STATS_AVG, avg);
 		MDMainHeader.setValue(EMDL_IMAGE_STATS_STDDEV, stddev);
 		MDMainHeader.setValue(EMDL_IMAGE_STATS_MIN, minval);

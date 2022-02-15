@@ -170,10 +170,9 @@ class Matrix2D {
             coreDeallocate();
         }
 
-        /* Assignment
+        /** Assignment
         *
-        * You can build assignment expressions as complex as you like.
-        * Multiple assignment is allowed.
+        * Arbitrarily complex assignment expressions can be built.
         *
         * @code
         * v1 = v2 + v3;
@@ -186,7 +185,7 @@ class Matrix2D {
                     resize(op1);
                 memcpy(mdata,op1.mdata,op1.mdim*sizeof(T));
             }
-            return *this;
+            return *this;  // Propagating `*this` permits multiple assignment
         }
         //@}
 
@@ -241,7 +240,7 @@ class Matrix2D {
             }
 
             T * new_mdata;
-            size_t YXdim=Ydim*Xdim;
+            size_t YXdim = Ydim * Xdim;
 
             try {
                 new_mdata = new T [YXdim];
@@ -249,18 +248,10 @@ class Matrix2D {
                 REPORT_ERROR("Allocate: No space left");
             }
 
-            // Copy needed elements, fill with 0 if necessary
-            for (int i = 0; i < Ydim; i++) {
-                for (int j = 0; j < Xdim; j++) {
-                    T val;
-                    if (i >= mdimy || j >= mdimx) {
-                        val = 0;
-                    } else {
-                        val = mdata[i * mdimx + j];
-                    }
-                    new_mdata[i * Xdim + j] = val;
-                }
-            }
+            for (int i = 0; i < Ydim; i++)
+                for (int j = 0; j < Xdim; j++)
+                    // Copy needed elements, fill with 0 if necessary
+                    new_mdata[i * Xdim + j] = (i >= mdimy || j >= mdimx) ? 0 : mdata[i * mdimx + j];
 
             // Deallocate old vector
             coreDeallocate();
@@ -350,17 +341,17 @@ class Matrix2D {
         * @endcode
         */
         void initZeros() {
-            memset(mdata,0,mdimx*mdimy*sizeof(T));
+            memset(mdata, 0, mdimx * mdimy * sizeof(T));
         }
 
-        // Initialize to zeros with a given size
+        // Initialise to zeros with a given size
         void initZeros(int Ydim, int Xdim) {
             if (mdimx != Xdim || mdimy != Ydim)
                 resize(Ydim, Xdim);
             memset(mdata, 0, mdimx * mdimy * sizeof(T));
         }
 
-        /** Initialize to zeros following a pattern.
+        /** Initialise to zeros following a pattern.
         *
         * All values are set to 0, and the origin and size of the pattern are
         * adopted.
@@ -371,9 +362,9 @@ class Matrix2D {
         */
         template <typename T1>
         void initZeros(const Matrix2D<T1>& op) {
-            if (mdimx!=op.mdimx || mdimy!=op.mdimy)
+            if (mdimx != op.mdimx || mdimy != op.mdimy)
                 resize(op);
-            memset(mdata,0,mdimx*mdimy*sizeof(T));
+            memset(mdata, 0, mdimx * mdimy * sizeof(T));
         }
 
         /** 2D Identity matrix of current size
@@ -421,7 +412,7 @@ class Matrix2D {
         void setVal(T val, int y, int x) {
             MAT_ELEM((*this),y,x)=val;
         }
-        
+
         // Parenthesis operator for phyton
         T getVal(int y, int x) const {
             return MAT_ELEM((*this),y,x);
@@ -463,7 +454,7 @@ class Matrix2D {
                 mdata[i] /= op1;
         }
 
-        /** Matrix by vector multiplication
+        /** Matrix * vector multiplication
         *
         * @code
         * v2 = A*v1;
@@ -474,7 +465,7 @@ class Matrix2D {
 
             if (mdimx != op1.size()) {
                 std::cerr << " mdimx= " << mdimx << " opp1.size()= " << op1.size() << std::endl;
-                REPORT_ERROR("Not compatible sizes in matrix by vector");
+                REPORT_ERROR("Incompatible sizes in matrix by vector");
             }
 
             if (!op1.isCol())
@@ -509,7 +500,7 @@ class Matrix2D {
             return result;
         }
 
-        /** Matrix summation
+        /** Matrix addition
         *
         * @code
         * C = A + B;
@@ -518,7 +509,7 @@ class Matrix2D {
         Matrix2D<T> operator+(const Matrix2D<T>& op1) const {
             Matrix2D<T> result;
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
-                REPORT_ERROR("operator+: Not same sizes in matrix summation");
+                REPORT_ERROR("operator+: Not same sizes in matrix addition");
 
             result.initZeros(mdimy, mdimx);
             for (int i = 0; i < mdimy; i++)
@@ -528,7 +519,7 @@ class Matrix2D {
             return result;
         }
 
-        /** Matrix summation
+        /** In-place matrix addition
         *
         * @code
         * A += B;
@@ -536,7 +527,7 @@ class Matrix2D {
         */
         void operator+=(const Matrix2D<T>& op1) const {
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
-                REPORT_ERROR("operator+=: Not same sizes in matrix summation");
+                REPORT_ERROR("operator+=: Not same sizes in matrix addition");
 
             for (int i = 0; i < mdimy; i++)
                 for (int j = 0; j < mdimx; j++)
@@ -552,7 +543,7 @@ class Matrix2D {
         Matrix2D<T> operator-(const Matrix2D<T>& op1) const {
             Matrix2D<T> result;
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
-                REPORT_ERROR("operator-: Not same sizes in matrix summation");
+                REPORT_ERROR("operator-: Not same sizes in matrix subtraction");
 
             result.initZeros(mdimy, mdimx);
             for (int i = 0; i < mdimy; i++)
@@ -562,7 +553,7 @@ class Matrix2D {
             return result;
         }
 
-        /** Matrix subtraction
+        /** In-place matrix subtraction
         *
         * @code
         * A -= B;
@@ -570,14 +561,14 @@ class Matrix2D {
         */
         void operator-=(const Matrix2D<T>& op1) const {
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
-                REPORT_ERROR("operator-=: Not same sizes in matrix summation");
+                REPORT_ERROR("operator-=: Not same sizes in matrix subtraction");
 
             for (int i = 0; i < mdimy; i++)
                 for (int j = 0; j < mdimx; j++)
                     MAT_ELEM(*this,i, j) -= MAT_ELEM(op1, i, j);
         }
 
-        /** Equality.
+        /** Equality
         *
         * Returns true if this object has the same shape (origin and size)
         * as the argument and the same values (to within machine epsilon).
@@ -607,33 +598,30 @@ class Matrix2D {
 
         /// @name Utilities for Matrix2D
         //@{
-        /** Maximum of the values in the array.
-        *
-        * The returned value is of the same type as the type of the array.
-        */
-        T computeMax() const {
+
+        // Greatest value in an array
+        T max() const {
             if (mdim <= 0)
                 return static_cast<T>(0);
 
             T maxval = mdata[0];
-            for (int n = 0; n < mdim; n++)
+            for (int n = 0; n < mdim; n++) {
                 if (mdata[n] > maxval)
                     maxval = mdata[n];
+            }
             return maxval;
         }
 
-        /** Minimum of the values in the array.
-        *
-        * The returned value is of the same type as the type of the array.
-        */
-        T computeMin() const {
+        // Least value in an array
+        T min() const {
             if (mdim <= 0)
-                return static_cast< T >(0);
+                return static_cast<T>(0);
 
             T minval = mdata[0];
-            for (int n = 0; n < mdim; n++)
+            for (int n = 0; n < mdim; n++) {
                 if (mdata[n] < minval)
                     minval = mdata[n];
+            }
             return minval;
         }
 
@@ -656,9 +644,10 @@ class Matrix2D {
 
         /** Produce a 1D pointer suitable for working with Numerical Recipes (2)
         *
-        * This function meets the same goal as the one before, however this one
-        * work with 2D arrays as a single pointer. The first element of the array
-        * is pointed by result[1*Xdim+1], and in general result[i*Xdim+j]
+        * This function meets the same goal as the one before,
+        * however this one works with 2D arrays as a single pointer.
+        * result[i * Xdim + j]
+        * result[1 * Xdim + 1] points to the first element of the array,
         */
         T* adaptForNumericalRecipes2() const {
             return mdata - 1 - mdimx;
@@ -700,12 +689,11 @@ class Matrix2D {
                 ostrm << "NULL matrix\n";
             } else {
                 ostrm << std::endl;
-                RFLOAT max_val = v.computeMax();
-                int prec = bestPrecision(max_val, 10);
-
+                RFLOAT max_val = v.max();
+                int epsilon = bestPrecision(max_val, 10);
                 for (int i = 0; i < v.Ydim(); i++) {
                     for (int j = 0; j < v.Xdim(); j++) {
-                        ostrm << std::setw(13) << floatToString((RFLOAT) v(i, j), 10, prec) << ' ';
+                        ostrm << std::setw(13) << floatToString((RFLOAT) v(i, j), 10, epsilon) << ' ';
                     }
                     ostrm << std::endl;
                 }
@@ -734,19 +722,17 @@ class Matrix2D {
             if (op1.isRow()) {
                 if (mdimy != 1 || mdimx != VEC_XSIZE(op1))
                     resize(1, VEC_XSIZE(op1));
-
                 for (int j = 0; j < VEC_XSIZE(op1); j++)
                     MAT_ELEM(*this,0, j) = VEC_ELEM(op1,j);
             } else {
                 if (mdimy != 1 || mdimx != VEC_XSIZE(op1))
                     resize(VEC_XSIZE(op1), 1);
-
                 for (int i = 0; i < VEC_XSIZE(op1); i++)
                     MAT_ELEM(*this,i, 0) = VEC_ELEM(op1,i);
             }
         }
 
-        /** Makes a vector from a matrix
+        /** Make a vector from a matrix
         *
         * An exception is thrown if the matrix is not a single row or a single
         * column. The origin of the vector is set according to the one of the
@@ -926,15 +912,15 @@ class Matrix2D {
 
             for (int i = 0; i < mdimy; i++) {
                 bool all_zeros = true;
-                for (int j = 0; j < mdimx; j++)
-                    if (ABS(MAT_ELEM((*this),i, j)) > XMIPP_EQUAL_ACCURACY)
-                    {
+                for (int j = 0; j < mdimx; j++) {
+                    if (ABS(MAT_ELEM((*this),i, j)) > XMIPP_EQUAL_ACCURACY) {
                         all_zeros = false;
                         break;
                     }
-
-                if (all_zeros)
+                }
+                if (all_zeros) {
                     return 0;
+                }
             }
 
             // Perform decomposition
@@ -952,7 +938,7 @@ class Matrix2D {
 
         /** Algebraic transpose of a matrix
         *
-        * You can use the transpose in as complex expressions as you like. 
+        * You can use the transpose in as complex expressions as you like.
         * The origin of the vector is not changed.
         *
         * @code
@@ -962,9 +948,11 @@ class Matrix2D {
         Matrix2D<T> transpose() const {
             Matrix2D<T> result(mdimx, mdimy);
             FOR_ALL_ELEMENTS_IN_MATRIX2D(result)
-            MAT_ELEM(result,i,j) = MAT_ELEM((*this),j,i);
+                MAT_ELEM(result,i,j) = MAT_ELEM((*this),j,i);
             return result;
         }
+
+        // XXX Why doesn't Matrix2D.inv just return a matrix, rather than modify a pre-existing one?
 
         /** Matrix pseudoinverse
         * https://en.wikipedia.org/wiki/Moore–Penrose_inverse
@@ -979,28 +967,27 @@ class Matrix2D {
         */
         void inv(Matrix2D<T>& result) const {
 
-            if (mdimx == 0 || mdimy == 0) {
+            if (mdimx == 0 || mdimy == 0)
                 REPORT_ERROR("Inverse: Matrix is empty");
-            }
             // Initialise output
             result.initZeros(mdimx, mdimy);
 
             if (mdimx == 3 && mdimy == 3) {
-                int sign, a, b, c, d;
+                int a, b, c, d;
                 for (int i = 0; i <= 2; i++) {
                     for (int j = 0; j <= 2; j++) {
-                        sign = (i + j) % 2 == 0 ? 1 : -1;
-                        a = 1 + (j != 2);
-                        b = 1 + (i != 2);
-                        c = j == 0;
-                        d = i == 0;
-                        MAT_ELEM(result, i, j) = sign * (
-                            MAT_ELEM((*this), a, b) * MAT_ELEM((*this), c, d) - 
-                            MAT_ELEM((*this), a, d) * MAT_ELEM((*this), c, b)
-                        );
+                        a = (j - 1) % 3;
+                        b = (i - 1) % 3;
+                        c = (j + 1) % 3;
+                        d = (i + 1) % 3;
+                        MAT_ELEM(result, i, j) = MAT_ELEM((*this), a, b) * MAT_ELEM((*this), c, d) -
+                                                 MAT_ELEM((*this), a, d) * MAT_ELEM((*this), c, b);
                     }
                 }
-                RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM(result, 0, 0) + MAT_ELEM((*this), 1, 0) * MAT_ELEM(result, 0, 1) + MAT_ELEM((*this), 2, 0) * MAT_ELEM(result, 0, 2);
+                // Multiply first column of `this` with first row of `result`
+                RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM(result, 0, 0) +
+                             MAT_ELEM((*this), 1, 0) * MAT_ELEM(result, 0, 1) +
+                             MAT_ELEM((*this), 2, 0) * MAT_ELEM(result, 0, 2);
                 result /= tmp;
             } else if (mdimx == 2 && mdimy == 2) {
                 int sign, a, b;
@@ -1020,7 +1007,7 @@ class Matrix2D {
                 Matrix1D<RFLOAT> w;
                 svdcmp(*this, u, w, v); // *this = U * W * V^t
 
-                RFLOAT tol = computeMax() * XMIPP_MAX(mdimx, mdimy) * 1e-14;
+                RFLOAT tol = max() * XMIPP_MAX(mdimx, mdimy) * 1e-14;
 
                 // Compute W^-1
                 bool invertible = false;
@@ -1038,7 +1025,7 @@ class Matrix2D {
 
                 // Compute V*W^-1
                 FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
-                MAT_ELEM(v, i, j) *= VEC_ELEM(w, j);
+                    MAT_ELEM(v, i, j) *= VEC_ELEM(w, j);
 
                 // Compute inverse
                 for (int i = 0; i < mdimx; i++)
@@ -1077,7 +1064,7 @@ class Matrix2D {
         //@}
 };
 
-// Implementation of vector * matrix
+// vector * matrix
 // Documented in matrix1D.h
 template<typename T>
 Matrix1D<T> Matrix1D<T>::operator*(const Matrix2D<T>& M) {
@@ -1171,13 +1158,11 @@ void solve(
     svdcmp(A, u, w, v);
 
     // Check if eigenvalues of the SVD are acceptable.
-    // If a value is lower than tolerance, then it's zeroed, 
-    // as this increases the precision of the routine.
-    FOR_ALL_ELEMENTS_IN_MATRIX1D(w) {
-        if (w(i) < tolerance) { 
-            w(i) = 0; 
-        }
-    }
+    // If a value is lower than the tolerance, it is made zero,
+    // to improve the routine's precision.
+    FOR_ALL_ELEMENTS_IN_MATRIX1D(w)
+        if (w(i) < tolerance)
+            w(i) = 0;
 
     // Set size of matrices
     result.resize(b.vdim);
@@ -1188,7 +1173,7 @@ void solve(
     svbksb(u, w, v, bd, result);
 }
 
-// Solve system of linear equations (Ax=b), x and b being matrices 
+// Solve a system of linear equations (Ax=b), where x and b are matrices,
 // by SVD Decomposition (through Gauss-Jordan numerical recipes)
 template<typename T>
 void solve(const Matrix2D<T>& A, const Matrix2D<T>& b, Matrix2D<T>& result) {
@@ -1205,7 +1190,7 @@ void solve(const Matrix2D<T>& A, const Matrix2D<T>& b, Matrix2D<T>& result) {
     result = b;
     Matrix2D<T> Aux = A;
     gaussj(
-        Aux.adaptForNumericalRecipes2(), Aux.mdimy, 
+        Aux.adaptForNumericalRecipes2(), Aux.mdimy,
         result.adaptForNumericalRecipes2(), b.mdimx
     );
 }
@@ -1276,14 +1261,14 @@ RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::
 
 /** Type casting
  *
- * If we have an integer array and we need a RFLOAT one, we can use this function. 
+ * If we have an integer array and we need a RFLOAT one, we can use this function.
  * The conversion is done by type casting each element.
  * If n >= 0, only the nth volumes will be converted, otherwise all NSIZE volumes.
  */
 template<typename T1, typename T2>
 void typeCast(const Matrix2D<T1>& v1,  Matrix2D<T2>& v2) {
     if (v1.mdim == 0) {
-        v2.clear(); 
+        v2.clear();
         return;
     }
 

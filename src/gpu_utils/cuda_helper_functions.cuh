@@ -431,10 +431,10 @@ void selfApplyBeamTilt2(MultidimArray<Complex > &Fimg, RFLOAT beamtilt_x, RFLOAT
 template <typename T>
 void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allocator)
 {
-	CudaGlobalPtr<XFLOAT >  img_in (v.nzyxdim, allocator);   // with original data pointer
-//	CudaGlobalPtr<XFLOAT >  img_aux(v.nzyxdim, allocator);   // temporary holder
+	CudaGlobalPtr<XFLOAT >  img_in (v.nzyxdim(), allocator);   // with original data pointer
+//	CudaGlobalPtr<XFLOAT >  img_aux(v.nzyxdim(), allocator);   // temporary holder
 
-	for (unsigned i = 0; i < v.nzyxdim; i ++)
+	for (unsigned i = 0; i < v.nzyxdim(); i ++)
 		img_in[i] = (XFLOAT) v.data[i];
 
 	img_in.put_on_device();
@@ -486,9 +486,9 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
 		}
 
 
-		dim3 dim(ceilf((float)(v.nzyxdim/(float)(2*CFTT_BLOCK_SIZE))));
+		dim3 dim(ceilf((float)(v.nzyxdim()/(float)(2*CFTT_BLOCK_SIZE))));
 		cuda_kernel_centerFFT_2D<<<dim,CFTT_BLOCK_SIZE>>>(img_in.d_ptr,
-										  v.nzyxdim,
+										  v.nzyxdim(),
 										  XSIZE(v),
 										  YSIZE(v),
 										  xshift,
@@ -499,7 +499,7 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
 
 //		HANDLE_ERROR(cudaStreamSynchronize(0));
 
-		for (unsigned i = 0; i < v.nzyxdim; i ++)
+		for (unsigned i = 0; i < v.nzyxdim(); i ++)
 			v.data[i] = (T) img_in[i];
 
 	}

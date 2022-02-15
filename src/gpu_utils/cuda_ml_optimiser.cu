@@ -267,7 +267,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 		// Apply (rounded) old offsets first
 		my_old_offset.selfROUND();
 
-		int img_size = img.data.nzyxdim;
+		int img_size = img.data.nzyxdim();
 		CudaGlobalPtr<XFLOAT> d_img(img_size,0,cudaMLO->devBundle->allocator);
 		CudaGlobalPtr<XFLOAT> temp(img_size,0,cudaMLO->devBundle->allocator);
 		d_img.device_alloc();
@@ -451,7 +451,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 		d_Fimg.streamSync();
 
 		Fimg.initZeros(current_size_z, current_size_y, current_size_x);
-		for (int i = 0; i < Fimg.nzyxdim; i ++)
+		for (int i = 0; i < Fimg.nzyxdim(); i ++)
 		{
 			Fimg.data[i].real = (RFLOAT) d_Fimg[i].x;
 			Fimg.data[i].imag = (RFLOAT) d_Fimg[i].y;
@@ -572,7 +572,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 
 //			dim3 block_dim = 1; //TODO
 //			cuda_kernel_softMaskOutsideMap<<<block_dim,SOFTMASK_BLOCK_SIZE>>>(	~d_img,
-//																				img().nzyxdim,
+//																				img().nzyxdim(),
 //																				img.data.xdim,
 //																				img.data.ydim,
 //																				img.data.zdim,
@@ -594,7 +594,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 			softMaskSum.device_init(0.f);
 			softMaskSum_bg.device_init(0.f);
 			cuda_kernel_softMaskBackgroundValue<<<block_dim,SOFTMASK_BLOCK_SIZE>>>(	~d_img,
-																				img().nzyxdim,
+																				img().nzyxdim(),
 																				img.data.xdim,
 																				img.data.ydim,
 																				img.data.zdim,
@@ -614,7 +614,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 			softMaskSum.streamSync();
 
 			cuda_kernel_cosineFilter<<<block_dim,SOFTMASK_BLOCK_SIZE>>>(	~d_img,
-																			img().nzyxdim,
+																			img().nzyxdim(),
 																			img.data.xdim,
 																			img.data.ydim,
 																			img.data.zdim,
@@ -745,7 +745,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 		d_Fimg.streamSync();
 		d_Fimg.cp_to_host();
 		d_Fimg.streamSync();
-		for (int i = 0; i < Fimg.nzyxdim; i ++)
+		for (int i = 0; i < Fimg.nzyxdim(); i ++)
 		{
 			Fimg.data[i].real = (RFLOAT) d_Fimg[i].x;
 			Fimg.data[i].imag = (RFLOAT) d_Fimg[i].y;
@@ -857,7 +857,7 @@ void getAllSquaredDifferencesCoarse(
 			sp.itrans_min, sp.itrans_max, op.Fimgs, dummy, op.Fctfs, dummy, dummy,
 			op.local_Fctfs, op.local_sqrtXi2, op.local_Minvsigma2s);
 
-	unsigned image_size = op.local_Minvsigma2s[0].nzyxdim;
+	unsigned image_size = op.local_Minvsigma2s[0].nzyxdim();
 
 	CTOC(cudaMLO->timer,"diff_pre_gpu");
 
@@ -1101,7 +1101,7 @@ void getAllSquaredDifferencesFine(unsigned exp_ipass,
 	MultidimArray<Complex > Fref;
 	Fref.resize(op.local_Minvsigma2s[0]);
 
-	unsigned image_size = op.local_Minvsigma2s[0].nzyxdim;
+	unsigned image_size = op.local_Minvsigma2s[0].nzyxdim();
 
 	CTOC(cudaMLO->timer,"diff_pre_gpu");
 
@@ -1990,7 +1990,7 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 	}
 	// wsum_sigma2_offset is just a RFLOAT
 	thr_wsum_sigma2_offset = 0.;
-	unsigned image_size = op.Fimgs[0].nzyxdim;
+	unsigned image_size = op.Fimgs[0].nzyxdim();
 
 	CTOC(cudaMLO->timer,"store_init");
 

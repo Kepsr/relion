@@ -42,7 +42,7 @@ public:
 
 	template <typename T1>
 	Image(MultidimArray<T1> img, AccPtrFactory &f):
-		AccPtr<T>(f.make<T>(img.nzyxdim)),
+		AccPtr<T>(f.make<T>(img.nzyxdim()),
 		x(img.xdim), y(img.ydim), z(img.zdim), fourier(false)
 	{}
 
@@ -129,7 +129,7 @@ public:
 	{
 		if (img.xdim != x || img.ydim != y || img.zdim != z)
 		{
-			if (img.nzyxdim > AccPtr<T>::getSize())
+			if (img.nzyxdim() > AccPtr<T>::getSize())
 			{
 				AccPtr<T>::freeIfSet();
 				setSize(img);
@@ -145,9 +145,9 @@ public:
 		T *ptr = AccPtr<T>::getHostPtr();
 
 		if (sizeof(T) == sizeof(T1))
-			memcpy(ptr, img.data, sizeof(T)*img.nzyxdim);
+			memcpy(ptr, img.data, sizeof(T)*img.nzyxdim();
 		else
-			for (unsigned long i = 0; i < img.nzyxdim; i++)
+			for (unsigned long i = 0; i < img.nzyxdim(); i++)
 				ptr[i] = (T) img.data[i];
 	}
 
@@ -155,9 +155,9 @@ public:
 	void getHost(MultidimArray<T1> &img)
 	{
 
-		if(img.nzyxdim!=AccPtr<T>::getSize())
+		if (img.nzyxdim() != AccPtr<T>::getSize())
 		{
-			if(img.nzyxdim==0)
+			if (img.nzyxdim() == 0)
 				img.resize(z,y,x);
 			else
 				CRITICAL("Trying to fill host-array with data from an array with different size!")
@@ -165,9 +165,9 @@ public:
 		T *ptr = AccPtr<T>::getHostPtr();
 
 		if (sizeof(T) == sizeof(T1))
-			memcpy(img.data, ptr, sizeof(T)*img.nzyxdim);
+			memcpy(img.data, ptr, sizeof(T)*img.nzyxdim();
 		else
-			for (unsigned long i = 0; i < img.nzyxdim; i++)
+			for (unsigned long i = 0; i < img.nzyxdim(); i++)
 				img.data[i] = (T1) ptr[i];
 	}
 };

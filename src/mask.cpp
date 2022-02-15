@@ -266,9 +266,8 @@ void softMaskOutsideMapForHelix(
 void softMaskOutsideMap(MultidimArray<RFLOAT> &vol, MultidimArray<RFLOAT> &msk, bool invert_mask)
 {
 
-	if (msk.computeMax() > 1. || msk.computeMin() < 0.)
-	{
-		std::cerr << " msk.computeMax()= " << msk.computeMax() << " msk.computeMin()= " << msk.computeMin() << std::endl;
+	if (msk.min() < 0.0 || msk.max() > 1.0) {
+		std::cerr << " msk.max() = " << msk.max() << "; msk.min() = " << msk.min() << ";" << std::endl;
 		REPORT_ERROR("ERROR: Values in the solvent mask should be between zero and one.");
 	}
 	if (!(msk.sameShape(vol)))

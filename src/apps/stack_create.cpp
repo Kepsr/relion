@@ -98,10 +98,10 @@ class stack_create_parameters
 			{
 				MD.getValue(EMDL_IMAGE_NAME, fn_img);
 				in.read(fn_img);
-				xdim=XSIZE(in());
-				ydim=YSIZE(in());
-				zdim=ZSIZE(in());
-				is_first=false;
+				xdim = in().xdim;
+				ydim = in().ydim;
+				zdim = in().zdim;
+				is_first = false;
 			}
 
 			if (do_split_per_micrograph)

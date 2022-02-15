@@ -380,17 +380,17 @@ int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE)
 		if (MDMainHeader.getValue(EMDL_IMAGE_STATS_MIN, aux))
 			header->amin = (float)aux;
 		else
-			header->amin = (float)data.computeMin();
+			header->amin = (float)data.min();
 
 		if (MDMainHeader.getValue(EMDL_IMAGE_STATS_MAX, aux))
 			header->amax = (float)aux;
 		else
-			header->amax = (float)data.computeMax();
+			header->amax = (float)data.max();
 
 		if (MDMainHeader.getValue(EMDL_IMAGE_STATS_AVG, aux))
 			header->amean = (float)aux;
 		else
-			header->amean = (float)data.computeAvg();
+			header->amean = (float)data.average();
 
 		if (MDMainHeader.getValue(EMDL_IMAGE_STATS_STDDEV, aux))
 			header->arms = (float)aux;

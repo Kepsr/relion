@@ -1308,9 +1308,9 @@ void applyLocalSymmetry(MultidimArray<RFLOAT>& sym_map,
 	{
 		radius2 = radius * radius;
 		radiusw2 = (radius + cosine_width_pix) * (radius + cosine_width_pix);
-		xinit = FIRST_XMIPP_INDEX(XSIZE(sym_map));
-		yinit = FIRST_XMIPP_INDEX(YSIZE(sym_map));
-		zinit = FIRST_XMIPP_INDEX(ZSIZE(sym_map));
+		xinit = Xmipp::init(XSIZE(sym_map));
+		yinit = Xmipp::init(YSIZE(sym_map));
+		zinit = Xmipp::init(ZSIZE(sym_map));
 
 		FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(sym_map)
 		{
@@ -2457,12 +2457,12 @@ void local_symmetry_parameters::run()
 			std::cout << " Mask #" << imask + 1 << " : center of mass XYZ = (" << XX(com0_int) << ", " << YY(com0_int) << ", " << ZZ(com0_int) << ") pixel(s)."<< std::endl;
 
 			// Crop the mask and the corresponding region of the map
-			z0 = ROUND(ZZ(com0_int)) + FIRST_XMIPP_INDEX(cropdim);
-			zf = ROUND(ZZ(com0_int)) + LAST_XMIPP_INDEX(cropdim);
-			y0 = ROUND(YY(com0_int)) + FIRST_XMIPP_INDEX(cropdim);
-			yf = ROUND(YY(com0_int)) + LAST_XMIPP_INDEX(cropdim);
-			x0 = ROUND(XX(com0_int)) + FIRST_XMIPP_INDEX(cropdim);
-			xf = ROUND(XX(com0_int)) + LAST_XMIPP_INDEX(cropdim);
+			z0 = ROUND(ZZ(com0_int)) + Xmipp::init(cropdim);
+			zf = ROUND(ZZ(com0_int)) + Xmipp::last(cropdim);
+			y0 = ROUND(YY(com0_int)) + Xmipp::init(cropdim);
+			yf = ROUND(YY(com0_int)) + Xmipp::last(cropdim);
+			x0 = ROUND(XX(com0_int)) + Xmipp::init(cropdim);
+			xf = ROUND(XX(com0_int)) + Xmipp::last(cropdim);
 
 			std::cout << " Mask #" << imask + 1 << " : cropped box size = " << cropdim << " pixels." << std::endl;
 #ifdef DEBUG
@@ -2554,12 +2554,12 @@ void local_symmetry_parameters::run()
 				ZZ(com1_diff) = ZZ(com1_float) - ZZ(com1_int);
 
 				// Crop this region
-				z0 = ROUND(ZZ(com1_int)) + FIRST_XMIPP_INDEX(cropdim);
-				zf = ROUND(ZZ(com1_int)) + LAST_XMIPP_INDEX(cropdim);
-				y0 = ROUND(YY(com1_int)) + FIRST_XMIPP_INDEX(cropdim);
-				yf = ROUND(YY(com1_int)) + LAST_XMIPP_INDEX(cropdim);
-				x0 = ROUND(XX(com1_int)) + FIRST_XMIPP_INDEX(cropdim);
-				xf = ROUND(XX(com1_int)) + LAST_XMIPP_INDEX(cropdim);
+				z0 = ROUND(ZZ(com1_int)) + Xmipp::init(cropdim);
+				zf = ROUND(ZZ(com1_int)) + Xmipp::last(cropdim);
+				y0 = ROUND(YY(com1_int)) + Xmipp::init(cropdim);
+				yf = ROUND(YY(com1_int)) + Xmipp::last(cropdim);
+				x0 = ROUND(XX(com1_int)) + Xmipp::init(cropdim);
+				xf = ROUND(XX(com1_int)) + Xmipp::last(cropdim);
 #ifdef DEBUG
 				std::cout << " Window: x0, y0, z0 = " << x0 << ", " << y0 << ", " << z0 << "; xf, yf, zf = " << xf << ", " << yf << ", " << zf << std::endl;
 #endif

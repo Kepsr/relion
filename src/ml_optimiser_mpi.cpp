@@ -824,7 +824,7 @@ void MlOptimiserMpi::expectation()
 			fn_tmp.compose("PPref_", i,"dat");
 			std::ofstream f;
 			f.open(fn_tmp.c_str());
-			for (unsigned long j = 0; j < mymodel.PPref[i].data.nzyxdim; j++)
+			for (unsigned long j = 0; j < mymodel.PPref[i].data.nzyxdim(); j++)
 				f << mymodel.PPref[i].data.data[j].real << std::endl;
 			f.close();
 		}
@@ -1450,7 +1450,7 @@ void MlOptimiserMpi::expectation()
 
 					for (int j = 0; j < b->backprojectors.size(); j++)
 					{
-						unsigned long s = wsum_model.BPref[j].data.nzyxdim;
+						unsigned long s = wsum_model.BPref[j].data.nzyxdim();
 						XFLOAT *reals = new XFLOAT[s];
 						XFLOAT *imags = new XFLOAT[s];
 						XFLOAT *weights = new XFLOAT[s];
@@ -1524,7 +1524,7 @@ void MlOptimiserMpi::expectation()
 
 				for (int j = 0; j < b->backprojectors.size(); j++)
 				{
-					unsigned long s = wsum_model.BPref[j].data.nzyxdim;
+					unsigned long s = wsum_model.BPref[j].data.nzyxdim();
 					XFLOAT *reals = NULL;
 					XFLOAT *imags = NULL;
 					XFLOAT *weights = NULL;
