@@ -63,9 +63,9 @@
         after "enum errors" has been removed (see below)
  */
 #define FOR_ALL_OBJECTS_IN_METADATA_TABLE(table) for ( \
-        long int index = table.firstObject(); \
-        0 <= index && index < table.numberOfObjects(); \
-        index = table.nextObject() \
+        long int index = (table).firstObject(); \
+        0 <= index && index < (table).numberOfObjects(); \
+        index = (table).nextObject() \
     )
 
 /*	class MetaDataTable:
@@ -125,9 +125,6 @@ class MetaDataTable {
     // Number of labels of each type
     long doubleLabels, intLabels, boolLabels, stringLabels, doubleVectorLabels, unknownLabels;
 
-    // Is this a 2D table or a 1D list?
-    bool isList;
-
     // Name of the metadata table
     std::string name;
 
@@ -137,7 +134,7 @@ class MetaDataTable {
     // The version number of the file format (multiplied by 10,000)
     int version;
 
-public:
+    public:
 
     MetaDataTable();
 
@@ -148,11 +145,8 @@ public:
 
     ~MetaDataTable();
 
-    bool isAList() {
-        return isList;
-    }
-
-    void setIsList(bool is_list);
+    // Is this a 1D list (as opposed to a 2D table)?
+    bool isList;
 
     bool isEmpty() const;
     size_t numberOfObjects() const;
@@ -210,8 +204,7 @@ public:
     // add missing labels that are present in 'app'
     void addMissingLabels(const MetaDataTable* app);
 
-    // add all rows from app to the end of the table and
-    // insert all missing labels
+    // add all rows from app to the end of the table and insert all missing labels
     void append(const MetaDataTable& app);
 
     // Get metadatacontainer for objectID (current_objectID if objectID < 0)

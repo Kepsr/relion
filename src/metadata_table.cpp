@@ -125,10 +125,6 @@ MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
     return *this;
 }
 
-void MetaDataTable::setIsList(bool is_list) {
-    isList = is_list;
-}
-
 MetaDataTable::~MetaDataTable() {
     for (long i = 0; i < objects.size(); i++) {
         delete objects[i];
@@ -196,7 +192,7 @@ int MetaDataTable::getVersion() const {
     return version;
 }
 
-int MetaDataTable::getCurrentVersion( {
+int MetaDataTable::getCurrentVersion() {
     return CURRENT_MDT_VERSION;
 }
 
@@ -673,8 +669,8 @@ MetaDataContainer* MetaDataTable::getObject(long objectID) const {
 
 void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
     if (objectID < 0) {
-        objectID = current_objectID
-    };
+        objectID = current_objectID;
+    }
 
     checkObjectID(objectID, "MetaDataTable::setObject");
     addMissingLabels(data->table);
@@ -803,7 +799,7 @@ long int MetaDataTable::goToObject(long int objectID) {
 }
 
 long int MetaDataTable::readStarLoop(std::ifstream& in, bool do_only_count) {
-    setIsList(false);
+    isList = false;
 
     //Read column labels
     int labelPosition = 0;
@@ -887,7 +883,7 @@ long int MetaDataTable::readStarLoop(std::ifstream& in, bool do_only_count) {
 }
 
 bool MetaDataTable::readStarList(std::ifstream& in) {
-    setIsList(true);
+    isList = true;
     addObject();
     long int objectID = objects.size() - 1;
 
@@ -1048,7 +1044,8 @@ void MetaDataTable::write(std::ostream& out) {
             if (l == EMDL_UNKNOWN_LABEL) {
                 const long offset = unknownLabelPosition2Offset[i];
                 out << "_" << unknownLabelNames[offset]<< " #" << (n_printed++) << " \n";
-            } else if (l != EMDL_COMMENT && l != EMDL_SORTED_IDX) // EMDL_SORTED_IDX is only for internal use, never write it out! {
+            } else if (l != EMDL_COMMENT && l != EMDL_SORTED_IDX) {
+                // EMDL_SORTED_IDX is only for internal use, never write it out! 
                 out << "_" << EMDL::label2Str(l) << " #" << (n_printed++) << " \n";
             }
         }
@@ -1618,7 +1615,7 @@ MetaDataTable subsetMetaDataTable(
         }
 
         if (do_include) {
-            MDout.addObject(MDin.getObject(current_object));
+            MDout.addObject(MDin.getObject(index));
         }
     }
 
@@ -1644,7 +1641,7 @@ MetaDataTable subsetMetaDataTable(
         bool found = (val.find(search_str) != std::string::npos);
 
         if ((!exclude && found) || (exclude && !found)) {
-            MDout.addObject(MDin.getObject(current_object));
+            MDout.addObject(MDin.getObject(index));
         }
     }
 
@@ -1689,18 +1686,18 @@ MetaDataTable removeDuplicatedParticles(
         RFLOAT val1, val2;
         MDin.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, val1);
         MDin.getValue(EMDL_IMAGE_COORD_X, val2);
-        xs[current_object] = -val1 * origin_scale + val2;
+        xs[index] = -val1 * origin_scale + val2;
         MDin.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, val1);
         MDin.getValue(EMDL_IMAGE_COORD_Y, val2);
-        ys[current_object] = -val1 * origin_scale + val2;
+        ys[index] = -val1 * origin_scale + val2;
 
         if (dataIs3D) {
             MDin.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, val1);
             MDin.getValue(EMDL_IMAGE_COORD_Z, val2);
-            zs[current_object] = -val1 * origin_scale + val2;
+            zs[index] = -val1 * origin_scale + val2;
         }
 
-        grouped[mic_name].push_back(current_object);
+        grouped[mic_name].push_back(index);
     }
 
     // find duplicate
@@ -1729,10 +1726,10 @@ MetaDataTable removeDuplicatedParticles(
     MetaDataTable MDout, MDremoved;
     long n_removed = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        if (valid[current_object]) {
-            MDout.addObject(MDin.getObject(current_object));
+        if (valid[index]) {
+            MDout.addObject(MDin.getObject(index));
         } else {
-            MDremoved.addObject(MDin.getObject(current_object));
+            MDremoved.addObject(MDin.getObject(index));
             n_removed++;
         }
     }
