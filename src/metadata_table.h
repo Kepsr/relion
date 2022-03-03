@@ -163,7 +163,7 @@ class MetaDataTable {
     int getVersion() const;
     static int getCurrentVersion();
 
-    // getValue: returns true if the label exists
+    // Currently returns true if the label exists
     // objectID is 0-indexed.
     template<class T>
     bool getValue(EMDLabel label, T& value, long objectID = -1) const;
@@ -190,7 +190,7 @@ class MetaDataTable {
     // This is redundant and will be removed in 3.2.
     bool labelExists(EMDLabel name) const;
 
-    // Check whether a label is contained in activeLabels.
+    // Does 'activeLabels' contain 'label'?
     bool containsLabel(const EMDLabel label, const std::string unknownLabel="") const;
 
     std::vector<EMDLabel> getActiveLabels() const;
@@ -198,13 +198,13 @@ class MetaDataTable {
     // Deactivate a column from a table, so that it is no longer written out
     void deactivateLabel(EMDLabel label, std::string unknownLabel="");
 
-    // add a new label and update all objects
+    // Add a new label and update all objects
     void addLabel(EMDLabel label, std::string unknownLabel="");
 
-    // add missing labels that are present in 'app'
+    // Add missing labels that are present in 'app'.
     void addMissingLabels(const MetaDataTable* app);
 
-    // add all rows from app to the end of the table and insert all missing labels
+    // Append all rows from 'app' to the end of the table and insert all missing labels.
     void append(const MetaDataTable& app);
 
     // Get metadatacontainer for objectID (current_objectID if objectID < 0)
@@ -292,17 +292,25 @@ class MetaDataTable {
     void write(const FileName & fn_out);
 
     // Make a histogram of a column
-    void columnHistogram(EMDLabel label, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY, int verb = 0, CPlot2D *plot2D = NULL,
-                         long int nr_bin = -1, RFLOAT hist_min = -LARGE_NUMBER, RFLOAT hist_max = LARGE_NUMBER,
-                         bool do_fractional_instead = false, bool do_cumulative_instead = false);
+    void columnHistogram(
+        EMDLabel label, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
+        int verb = 0, CPlot2D *plot2D = NULL, long int nr_bin = -1,
+        RFLOAT hist_min = -LARGE_NUMBER, RFLOAT hist_max = LARGE_NUMBER,
+        bool do_fractional_instead = false, bool do_cumulative_instead = false
+    );
 
-    static void histogram(std::vector<RFLOAT> &values, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY, int verb = 0,
-                          std::string title="Histogram", CPlot2D *plot2D = NULL,
-                          long int nr_bin = -1, RFLOAT hist_min = -LARGE_NUMBER, RFLOAT hist_max = LARGE_NUMBER,
-                          bool do_fractional_instead = false, bool do_cumulative_instead = false);
+    static void histogram(
+        std::vector<RFLOAT> &values, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
+        int verb = 0, std::string title="Histogram", CPlot2D *plot2D = NULL, long int nr_bin = -1,
+        RFLOAT hist_min = -LARGE_NUMBER, RFLOAT hist_max = LARGE_NUMBER,
+        bool do_fractional_instead = false, bool do_cumulative_instead = false
+    );
 
-    void addToCPlot2D(CPlot2D *plot2D, EMDLabel xaxis, EMDLabel yaxis,
-                      double red=0., double green=0., double blue=0., double linewidth = 1.0, std::string marker="");
+    void addToCPlot2D(
+        CPlot2D *plot2D, EMDLabel xaxis, EMDLabel yaxis,
+        double red=0., double green=0., double blue=0., double linewidth = 1.0,
+        std::string marker=""
+    );
 
     void printLabels(std::ostream& ost);
 
@@ -328,7 +336,7 @@ class MetaDataTable {
     template<class T>
     bool isTypeCompatible(EMDLabel label, T& value) const;
 
-private:
+    private:
 
     // Check if 'id' corresponds to an actual object.
     // Crash if it does not.
@@ -343,25 +351,29 @@ private:
 void compareMetaDataTable(
     MetaDataTable &MD1, MetaDataTable &MD2,
     MetaDataTable &MDboth, MetaDataTable &MDonly1, MetaDataTable &MDonly2,
-    EMDLabel label1, double eps = 0., 
-    EMDLabel label2 = EMDL_UNDEFINED, 
+    EMDLabel label1, double eps = 0.0,
+    EMDLabel label2 = EMDL_UNDEFINED,
     EMDLabel label3 = EMDL_UNDEFINED
 );
 
 // find a subset of the input metadata table that has corresponding entries between the specified min and max values
 MetaDataTable subsetMetaDataTable(
-    MetaDataTable &MDin, EMDLabel label, RFLOAT min_value, RFLOAT max_value
+    MetaDataTable &MDin, EMDLabel label,
+    RFLOAT min_value, RFLOAT max_value
 );
 
 // find a subset of the input metadata table that has corresponding entries with or without a given substring
 MetaDataTable subsetMetaDataTable(
-    MetaDataTable &MDin, EMDLabel label, std::string search_str, bool exclude=false
+    MetaDataTable &MDin, EMDLabel label,
+    std::string search_str, bool exclude=false
 );
 
 // remove duplicated particles that are in the same micrograph (mic_label) and within a given threshold [px]
 // OriginX/Y are multiplied by origin_scale before added to CoordinateX/Y to compensate for down-sampling
 MetaDataTable removeDuplicatedParticles(
-    MetaDataTable &MDin, EMDLabel mic_label, RFLOAT threshold, RFLOAT origin_scale=1.0, FileName fn_removed="", bool verb=true
+    MetaDataTable &MDin, EMDLabel mic_label,
+    RFLOAT threshold, RFLOAT origin_scale=1.0,
+    FileName fn_removed="", bool verb=true
 );
 
 #ifdef METADATA_TABLE_TYPE_CHECK
@@ -394,17 +406,19 @@ bool MetaDataTable::isTypeCompatible(EMDLabel label, T& value) const {
 }
 #endif
 
+/// TODO: Return value or, if the label does not exist, raise error.
 template<class T>
-bool MetaDataTable::getValue(EMDLabel label, T& value, long objectID) const {
-    if (label < 0 || label >= EMDL_LAST_LABEL) return false;
+bool MetaDataTable::getValue(EMDLabel label, long objectID) const {
 
-    if (label == EMDL_UNKNOWN_LABEL)
-        REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
+    T value;
+    if (label < 0 || label >= EMDL_LAST_LABEL) throw "Label not recognised";
 
-#ifdef METADATA_TABLE_TYPE_CHECK
-    if (!isTypeCompatible(label, value))
-        REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::getValue for label " + EMDL::label2Str(label));
-#endif
+    if (label == EMDL_UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
+
+    #ifdef METADATA_TABLE_TYPE_CHECK
+        if (!isTypeCompatible(label, value))
+            REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::getValue for label " + EMDL::label2Str(label));
+    #endif
 
     const long off = label2offset[label];
     if (off > -1) {
@@ -415,23 +429,24 @@ bool MetaDataTable::getValue(EMDLabel label, T& value, long objectID) const {
         };
 
         objects[objectID]->getValue(off, value);
-        return true;
+        return value;
     } else {
-        return false;
+        throw "Negative offset";
     }
 }
 
+
+/// TODO: value rather than &value
 template<class T>
 bool MetaDataTable::setValue(EMDLabel label, const T &value, long int objectID) {
-    if (label < 0 || label >= EMDL_LAST_LABEL) 
-        return false;
-    if (label == EMDL_UNKNOWN_LABEL)
-        REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
 
-#ifdef METADATA_TABLE_TYPE_CHECK
-    if (!isTypeCompatible(label, value))
-        REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));
-#endif
+    if (label < 0 || label >= EMDL_LAST_LABEL) return false;
+
+    if (label == EMDL_UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
+
+    #ifdef METADATA_TABLE_TYPE_CHECK
+        if (!isTypeCompatible(label, value)) REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));
+    #endif
 
     long off = label2offset[label];
 
@@ -446,12 +461,10 @@ bool MetaDataTable::setValue(EMDLabel label, const T &value, long int objectID) 
         checkObjectID(objectID, "MetaDataTable::setValue");
     }
 
-    if (off > -1) {
-        objects[objectID]->setValue(off, value);
-        return true;
-    } else {
-        return false;
-    }
+    if (off <= -1) return false;
+
+    objects[objectID]->setValue(off, value);
+    return true;
 }
 
 #endif
