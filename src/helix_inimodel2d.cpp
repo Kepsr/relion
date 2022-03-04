@@ -363,11 +363,11 @@ void HelixAligner::getHelicesFromMics() {
     }
 
     // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
+    // Surely imic should be part of the for loop?
     long int imic = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
         imic++;
-        FileName fn_mic;
-        MDmics.getValue(EMDL_MICROGRAPH_NAME, fn_mic);
+        FileName fn_mic = MDmics.getValue(EMDL_MICROGRAPH_NAME);
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
         FileName fn_coord = fn_coord_dir + fn_post.withoutExtension() + fn_coord_suffix;
