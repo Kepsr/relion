@@ -18,10 +18,10 @@
  * author citations must be preserved.
  ***************************************************************************/
 
-//#define DEBUG_CHECKSIZES
-//#define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-//#define PRINT_GPU_MEM_INFO
-//#define DEBUG_BODIES
+// #define DEBUG_CHECKSIZES
+// #define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+// #define PRINT_GPU_MEM_INFO
+// #define DEBUG_BODIES
 
 #ifdef TIMING
         #define RCTIC(timer,label) (timer.tic(label))
@@ -43,9 +43,9 @@
 #include "src/error.h"
 #include "src/ml_optimiser.h"
 #ifdef CUDA
-#include "src/acc/cuda/cuda_ml_optimiser.h"
-#include <nvToolsExt.h>
-#include <cuda_profiler_api.h>
+    #include "src/acc/cuda/cuda_ml_optimiser.h"
+    #include <nvToolsExt.h>
+    #include <cuda_profiler_api.h>
 #endif
 #ifdef ALTCPU
     #include <atomic>
@@ -66,21 +66,17 @@ ThreadManager * global_ThreadManager;
 
 /** ========================== Threaded parallelization of expectation === */
 
-void globalThreadExpectationSomeParticles(ThreadArgument &thArg)
-{
+void globalThreadExpectationSomeParticles(ThreadArgument &thArg) {
     MlOptimiser *MLO = (MlOptimiser*) thArg.workClass;
 
-    try
-    {
-#ifdef CUDA
+    try {
+        #ifdef CUDA
         if (MLO->do_gpu)
             ((MlOptimiserCuda*) MLO->cudaOptimisers[thArg.thread_id])->doThreadExpectationSomeParticles(thArg.thread_id);
         else
-#endif
+        #endif
         MLO->doThreadExpectationSomeParticles(thArg.thread_id);
-    }
-    catch (RelionError XE)
-    {
+    } catch (RelionError XE) {
         RelionError *gE = new RelionError(XE.msg, XE.file, XE.line);
         gE->msg = XE.msg;
         MLO->threadException = gE;
@@ -90,19 +86,16 @@ void globalThreadExpectationSomeParticles(ThreadArgument &thArg)
 
 /** ========================== I/O operations  =========================== */
 
-void MlOptimiser::usage()
-{
+void MlOptimiser::usage() {
     parser.writeUsage(std::cout);
 }
 
-void MlOptimiser::read(int argc, char **argv, int rank)
-{
-//#define DEBUG_READ
+void MlOptimiser::read(int argc, char **argv, int rank) {
+    // #define DEBUG_READ
 
     parser.setCommandLine(argc, argv);
 
-    if (checkParameter(argc, argv, "--continue"))
-    {
+    if (checkParameter(argc, argv, "--continue")) {
         // Do this before reading in the data.star file below!
         do_preread_images   = checkParameter(argc, argv, "--preread_images");
         do_parallel_disc_io = !checkParameter(argc, argv, "--no_parallel_disc_io");
@@ -115,27 +108,25 @@ void MlOptimiser::read(int argc, char **argv, int rank)
 
         // And look for additional command-line options...
         parseContinue(argc, argv);
-    }
-    else
-    {
+    } else {
         // Start a new run from scratch
         parseInitial(argc, argv);
     }
 }
 
-void MlOptimiser::parseContinue(int argc, char **argv)
-{
-#ifdef DEBUG
+void MlOptimiser::parseContinue(int argc, char **argv) {
+    #ifdef DEBUG
     std::cerr << "Entering parseContinue" << std::endl;
-#endif
+    #endif
 
     int general_section = parser.addSection("General options");
     // Not all parameters are accessible here...
     FileName fn_out_new = parser.getOption("--o", "Output rootname", "OLD_ctX");
-    if (fn_out_new == "OLD_ctX" || fn_out_new == fn_out )
+    if (fn_out_new == "OLD_ctX" || fn_out_new == fn_out ) {
         fn_out += "_ct" + integerToString(iter);
-    else
+    } else {
         fn_out = fn_out_new;
+    }
 
     do_force_converge =  parser.checkOption("--force_converge", "Force an auto-refinement run to converge immediately upon continuation.");
 
@@ -151,10 +142,8 @@ void MlOptimiser::parseContinue(int argc, char **argv)
 
     // Also allow change of padding...
     fnt = parser.getOption("--pad", "Oversampling factor for the Fourier transforms of the references", "OLD");
-    if (fnt != "OLD")
-    {
-        if (textToInteger(fnt) != mymodel.padding_factor)
-        {
+    if (fnt != "OLD") {
+        if (textToInteger(fnt) != mymodel.padding_factor) {
             if (mymodel.nr_bodies > 1)
                 REPORT_ERROR("ERROR: cannot change padding factor in a continuation of a multi-body refinement...");
             mymodel.padding_factor = textToInteger(fnt);
@@ -164,13 +153,9 @@ void MlOptimiser::parseContinue(int argc, char **argv)
     }
 
     // Is this a new multi-body refinement?
-    if (fn_body_masks_was_empty && fn_body_masks != "None")
-        do_initialise_bodies = true;
-    else
-        do_initialise_bodies = false;
+    do_initialise_bodies = fn_body_masks_was_empty && fn_body_masks != "None";
 
-    if (do_initialise_bodies)
-    {
+    if (do_initialise_bodies) {
         ini_high = textToFloat(parser.getOption("--ini_high", "Resolution (in Angstroms) to which to limit refinement in the first iteration ", "-1"));
 
         mymodel.norm_body_mask_overlap = parser.checkOption("--multibody_norm_overlap", "Overlapping regions between bodies are normalized. This reduces memory requirements.");
@@ -259,8 +244,7 @@ void MlOptimiser::parseContinue(int argc, char **argv)
         write_every_sgd_iter = textToInteger(fnt);
 
     fnt = parser.getOption("--relax_sym", "The symmetry to be relaxed", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         sampling.fn_sym_relax = fnt;
     }
 
@@ -275,15 +259,12 @@ void MlOptimiser::parseContinue(int argc, char **argv)
 
     // Check whether angular sampling has changed
     // Do not do this for auto_refine, but make sure to do this when initialising multi-body refinement!
-    if (!do_auto_refine || do_initialise_bodies)
-    {
+    if (!do_auto_refine || do_initialise_bodies) {
         directions_have_changed = false;
         fnt = parser.getOption("--healpix_order", "Healpix order for the angular sampling rate on the sphere (before oversampling): hp2=15deg, hp3=7.5deg, etc", "OLD");
-        if (fnt != "OLD")
-        {
+        if (fnt != "OLD") {
             int _order = textToInteger(fnt);
-            if (_order != sampling.healpix_order)
-            {
+            if (_order != sampling.healpix_order) {
                 directions_have_changed = true;
                 sampling.healpix_order = _order;
             }
@@ -294,15 +275,13 @@ void MlOptimiser::parseContinue(int argc, char **argv)
             sampling.psi_step = textToFloat(fnt);
 
         fnt = parser.getOption("--offset_range", "Search range for origin offsets (in pixels)", "OLD");
-        if (fnt != "OLD")
-        {
+        if (fnt != "OLD") {
             sampling.offset_range = textToFloat(fnt);
             sampling.offset_range *= mymodel.pixel_size; // sampling.offset_range is in Angstroms, but command line in pixels!
         }
 
         fnt = parser.getOption("--offset_step", "Sampling rate for origin offsets (in pixels)", "OLD");
-        if (fnt != "OLD")
-        {
+        if (fnt != "OLD") {
             sampling.offset_step = textToFloat(fnt);
             sampling.offset_step *= mymodel.pixel_size; // sampling.offset_step is in Angstroms, but command line in pixels!
         }
@@ -316,64 +295,49 @@ void MlOptimiser::parseContinue(int argc, char **argv)
     RFLOAT _sigma_rot, _sigma_tilt, _sigma_psi, _sigma_off;
     int _mode;
     fnt = parser.getOption("--sigma_ang", "Stddev on all three Euler angles for local angular searches (of +/- 3 stddev)", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         mymodel.orientational_prior_mode = PRIOR_ROTTILT_PSI;
         mymodel.sigma2_rot = mymodel.sigma2_tilt = mymodel.sigma2_psi = textToFloat(fnt) * textToFloat(fnt);
     }
     fnt = parser.getOption("--sigma_rot", "Stddev on the first Euler angle for local angular searches (of +/- 3 stddev)", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         mymodel.orientational_prior_mode = PRIOR_ROTTILT_PSI;
         mymodel.sigma2_rot = textToFloat(fnt) * textToFloat(fnt);
     }
     fnt = parser.getOption("--sigma_tilt", "Stddev on the first Euler angle for local angular searches (of +/- 3 stddev)", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         mymodel.orientational_prior_mode = PRIOR_ROTTILT_PSI;
         mymodel.sigma2_tilt = textToFloat(fnt) * textToFloat(fnt);
     }
     fnt = parser.getOption("--sigma_psi", "Stddev on the in-plane angle for local angular searches (of +/- 3 stddev)", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         mymodel.orientational_prior_mode = PRIOR_ROTTILT_PSI;
         mymodel.sigma2_psi = textToFloat(fnt) * textToFloat(fnt);
     }
     fnt = parser.getOption("--sigma_off", "Stddev. on the translations", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         mymodel.sigma2_offset = textToFloat(fnt) * textToFloat(fnt);
     }
     fnt = parser.getOption("--helical_inner_diameter", "Inner diameter of helical tubes in Angstroms (for masks of helical references and particles)", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         helical_tube_inner_diameter = textToFloat(fnt);
     }
     fnt = parser.getOption("--helical_outer_diameter", "Outer diameter of helical tubes in Angstroms (for masks of helical references and particles)", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         helical_tube_outer_diameter = textToFloat(fnt);
     }
     fnt = parser.getOption("--perturb", "Perturbation factor for the angular sampling (0=no perturb; 0.5=perturb)", "OLD");
-    if (fnt != "OLD")
-    {
+    if (fnt != "OLD") {
         sampling.perturbation_factor = textToFloat(fnt);
     }
 
-    if (parser.checkOption("--skip_align", "Skip orientational assignment (only classify)?"))
-        do_skip_align = true;
-    else
-        do_skip_align = false; // do_skip_align should normally be false...
+    // do_skip_align should normally be false
+    do_skip_align = parser.checkOption("--skip_align", "Skip orientational assignment (only classify)?");
 
-    if (parser.checkOption("--skip_rotate", "Skip rotational assignment (only translate and classify)?"))
-        do_skip_rotate = true;
-    else
-        do_skip_rotate = false; // do_skip_rotate should normally be false...
+    // do_skip_rotate should normally be false...
+    do_skip_rotate = parser.checkOption("--skip_rotate", "Skip rotational assignment (only translate and classify)?");
 
-    if (parser.checkOption("--bimodal_psi", "Do bimodal searches of psi angle?")) // Oct07,2015 - Shaoda, bimodal psi
-        do_bimodal_psi = true;
-    else
-        do_bimodal_psi = false;
+    do_bimodal_psi = parser.checkOption("--bimodal_psi", "Do bimodal searches of psi angle?"); // 7 Oct 2015 - Shaoda, bimodal psi
 
     do_skip_maximization = parser.checkOption("--skip_maximize", "Skip maximization step (only write out data.star file)?");
 
@@ -408,31 +372,30 @@ void MlOptimiser::parseContinue(int argc, char **argv)
     do_reuse_scratch = parser.checkOption("--reuse_scratch", "Re-use data on scratchdir, instead of wiping it and re-copying all data. This works only when ALL particles have already been cached.");
     keep_scratch = parser.checkOption("--keep_scratch", "Don't remove scratch after convergence. Following jobs that use EXACTLY the same particles should use --reuse_scratch.");
 
-#ifdef ALTCPU
+    #ifdef ALTCPU
     do_cpu = parser.checkOption("--cpu", "Use intel vectorisation implementation for CPU");
-#else
-        do_cpu = false;
-#endif
+    #else
+    do_cpu = false;
+    #endif
 
     failsafe_threshold = textToInteger(parser.getOption("--failsafe_threshold", "Maximum number of particles permitted to be drop, due to zero sum of weights, before exiting with an error (GPU only).", "40"));
 
     do_gpu = parser.checkOption("--gpu", "Use available gpu resources for some calculations");
     gpu_ids = parser.getOption("--gpu", "Device ids for each MPI-thread","default");
-#ifndef CUDA
-    if(do_gpu)
-    {
+    #ifndef CUDA
+    if (do_gpu) {
         std::cerr << "+ WARNING : Relion was compiled without CUDA of at least version 7.0 - you do NOT have support for GPUs" << std::endl;
         do_gpu = false;
     }
-#endif
+    #endif
     double temp_reqSize = textToDouble(parser.getOption("--free_gpu_memory", "GPU device memory (in Mb) to leave free after allocation.", "0"));
-    if(!do_zero_mask)
+    if (!do_zero_mask)
         temp_reqSize += 100;
     temp_reqSize *= 1000*1000;
-    if(temp_reqSize<0)
+    if (temp_reqSize<0)
         REPORT_ERROR("Invalid free_gpu_memory value.");
     else
-        requested_free_gpu_memory =  temp_reqSize;
+        requested_free_gpu_memory = temp_reqSize;
 
     // only allow switching ON solvent_fsc, not off
     if (parser.checkOption("--solvent_correct_fsc", "Correct FSC curve for the effects of the solvent mask?"))
@@ -480,22 +443,19 @@ void MlOptimiser::parseContinue(int argc, char **argv)
 
 }
 
-void MlOptimiser::parseInitial(int argc, char **argv)
-{
+void MlOptimiser::parseInitial(int argc, char **argv) {
 #ifdef DEBUG_READ
     std::cerr<<"MlOptimiser::parseInitial Entering "<<std::endl;
 #endif
 
     // Read/initialise mymodel and sampling from a STAR file
     FileName fn_model = getParameter(argc, argv, "--model", "None");
-    if (fn_model != "None")
-    {
+    if (fn_model != "None") {
         mymodel.read(fn_model);
     }
     // Read in the sampling information from a _sampling.star file
     FileName fn_sampling = getParameter(argc, argv, "--sampling", "None");
-    if (fn_sampling != "None")
-    {
+    if (fn_sampling != "None") {
         sampling.read(fn_sampling);
     }
 
@@ -701,17 +661,17 @@ void MlOptimiser::parseInitial(int argc, char **argv)
     do_gpu = parser.checkOption("--gpu", "Use available gpu resources for some calculations");
     gpu_ids = parser.getOption("--gpu", "Device ids for each MPI-thread","default");
 #ifndef CUDA
-    if(do_gpu)
+    if (do_gpu)
     {
         std::cerr << "+ WARNING : Relion was compiled without CUDA of at least version 7.0 - you do NOT have support for GPUs" << std::endl;
         do_gpu = false;
     }
 #endif
     double temp_reqSize = textToDouble(parser.getOption("--free_gpu_memory", "GPU device memory (in Mb) to leave free after allocation.", "0"));
-    if(!do_zero_mask)
+    if (!do_zero_mask)
         temp_reqSize += 100;
     temp_reqSize *= 1000*1000;
-    if(temp_reqSize<0)
+    if (temp_reqSize<0)
         REPORT_ERROR("Invalid free_gpu_memory value.");
     else
         requested_free_gpu_memory =  temp_reqSize;
@@ -831,139 +791,134 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread)
     MD.readStar(in, "optimiser_general");
     in.close();
 
-    if (!MD.getValue(EMDL_OPTIMISER_OUTPUT_ROOTNAME, fn_out) ||
-        !MD.getValue(EMDL_OPTIMISER_MODEL_STARFILE, fn_model) ||
-        !MD.getValue(EMDL_OPTIMISER_DATA_STARFILE, fn_data) ||
-        !MD.getValue(EMDL_OPTIMISER_SAMPLING_STARFILE, fn_sampling) ||
-        !MD.getValue(EMDL_OPTIMISER_ITERATION_NO, iter) ||
-        !MD.getValue(EMDL_OPTIMISER_NR_ITERATIONS, nr_iter) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_SPLIT_RANDOM_HALVES, do_split_random_halves) ||
-        !MD.getValue(EMDL_OPTIMISER_LOWRES_JOIN_RANDOM_HALVES, low_resol_join_halves) ||
-        !MD.getValue(EMDL_OPTIMISER_ADAPTIVE_OVERSAMPLING, adaptive_oversampling) ||
-        !MD.getValue(EMDL_OPTIMISER_ADAPTIVE_FRACTION, adaptive_fraction) ||
-        !MD.getValue(EMDL_OPTIMISER_RANDOM_SEED, random_seed) ||
-        !MD.getValue(EMDL_OPTIMISER_PARTICLE_DIAMETER, particle_diameter) ||
-        !MD.getValue(EMDL_OPTIMISER_WIDTH_MASK_EDGE, width_mask_edge) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_ZERO_MASK, do_zero_mask) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_SOLVENT_FLATTEN, do_solvent) ||
-        !MD.getValue(EMDL_OPTIMISER_SOLVENT_MASK_NAME, fn_mask) ||
-        !MD.getValue(EMDL_OPTIMISER_SOLVENT_MASK2_NAME, fn_mask2) ||
-        !MD.getValue(EMDL_OPTIMISER_TAU_SPECTRUM_NAME, fn_tau) ||
-        !MD.getValue(EMDL_OPTIMISER_MAX_COARSE_SIZE, max_coarse_size) ||
-        !MD.getValue(EMDL_OPTIMISER_HIGHRES_LIMIT_EXP, strict_highres_exp) ||
-        !MD.getValue(EMDL_OPTIMISER_INCR_SIZE, incr_size) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_MAP, do_map) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_AUTO_REFINE, do_auto_refine) ||
-        !MD.getValue(EMDL_OPTIMISER_AUTO_LOCAL_HP_ORDER, autosampling_hporder_local_searches) ||
-        !MD.getValue(EMDL_OPTIMISER_NR_ITER_WO_RESOL_GAIN, nr_iter_wo_resol_gain) ||
-        !MD.getValue(EMDL_OPTIMISER_BEST_RESOL_THUS_FAR, best_resol_thus_far) ||
-        !MD.getValue(EMDL_OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES, nr_iter_wo_large_hidden_variable_changes) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_SKIP_ALIGN, do_skip_align) ||
-        //!MD.getValue(EMDL_OPTIMISER_DO_SKIP_ROTATE, do_skip_rotate) ||
-        !MD.getValue(EMDL_OPTIMISER_ACCURACY_ROT, acc_rot) ||
-        !MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_ORIENTS, current_changes_optimal_orientations) ||
-        !MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_OFFSETS, current_changes_optimal_offsets) ||
-        !MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_CLASSES, current_changes_optimal_classes) ||
-        !MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS, smallest_changes_optimal_orientations) ||
-        !MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS, smallest_changes_optimal_offsets) ||
-        !MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES, smallest_changes_optimal_classes) ||
-        !MD.getValue(EMDL_OPTIMISER_HAS_CONVERGED, has_converged) ||
-        !MD.getValue(EMDL_OPTIMISER_HAS_HIGH_FSC_AT_LIMIT, has_high_fsc_at_limit) ||
-        !MD.getValue(EMDL_OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO, has_large_incr_size_iter_ago) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_CORRECT_NORM, do_norm_correction) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_CORRECT_SCALE, do_scale_correction) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_CORRECT_CTF, do_ctf_correction) ||
-        !MD.getValue(EMDL_OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK, intact_ctf_first_peak) ||
-        !MD.getValue(EMDL_OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED, ctf_phase_flipped) ||
-        !MD.getValue(EMDL_OPTIMISER_DO_ONLY_FLIP_CTF_PHASES, only_flip_phases) ||
-        !MD.getValue(EMDL_OPTIMISER_REFS_ARE_CTF_CORRECTED, refs_are_ctf_corrected) ||
-        !MD.getValue(EMDL_OPTIMISER_FIX_SIGMA_NOISE, fix_sigma_noise) ||
-        !MD.getValue(EMDL_OPTIMISER_FIX_SIGMA_OFFSET, fix_sigma_offset) ||
-        !MD.getValue(EMDL_OPTIMISER_MAX_NR_POOL, nr_pool)  )
+    try {
+        fn_out = MD.getValue(EMDL_OPTIMISER_OUTPUT_ROOTNAME);
+        fn_model = MD.getValue(EMDL_OPTIMISER_MODEL_STARFILE);
+        fn_data = MD.getValue(EMDL_OPTIMISER_DATA_STARFILE);
+        fn_sampling = MD.getValue(EMDL_OPTIMISER_SAMPLING_STARFILE);
+        iter = MD.getValue(EMDL_OPTIMISER_ITERATION_NO);
+        nr_iter = MD.getValue(EMDL_OPTIMISER_NR_ITERATIONS);
+        do_split_random_halves = MD.getValue(EMDL_OPTIMISER_DO_SPLIT_RANDOM_HALVES);
+        low_resol_join_halves = MD.getValue(EMDL_OPTIMISER_LOWRES_JOIN_RANDOM_HALVES);
+        adaptive_oversampling = MD.getValue(EMDL_OPTIMISER_ADAPTIVE_OVERSAMPLING);
+        adaptive_fraction = MD.getValue(EMDL_OPTIMISER_ADAPTIVE_FRACTION);
+        random_seed = MD.getValue(EMDL_OPTIMISER_RANDOM_SEED);
+        particle_diameter = MD.getValue(EMDL_OPTIMISER_PARTICLE_DIAMETER);
+        width_mask_edge = MD.getValue(EMDL_OPTIMISER_WIDTH_MASK_EDGE);
+        do_zero_mask = MD.getValue(EMDL_OPTIMISER_DO_ZERO_MASK);
+        do_solvent = MD.getValue(EMDL_OPTIMISER_DO_SOLVENT_FLATTEN);
+        fn_mask = MD.getValue(EMDL_OPTIMISER_SOLVENT_MASK_NAME);
+        fn_mask2 = MD.getValue(EMDL_OPTIMISER_SOLVENT_MASK2_NAME);
+        fn_tau = MD.getValue(EMDL_OPTIMISER_TAU_SPECTRUM_NAME);
+        max_coarse_size = MD.getValue(EMDL_OPTIMISER_MAX_COARSE_SIZE);
+        strict_highres_exp = MD.getValue(EMDL_OPTIMISER_HIGHRES_LIMIT_EXP);
+        incr_size = MD.getValue(EMDL_OPTIMISER_INCR_SIZE);
+        do_map = MD.getValue(EMDL_OPTIMISER_DO_MAP);
+        do_auto_refine = MD.getValue(EMDL_OPTIMISER_DO_AUTO_REFINE);
+        autosampling_hporder_local_searches = MD.getValue(EMDL_OPTIMISER_AUTO_LOCAL_HP_ORDER);
+        nr_iter_wo_resol_gain = MD.getValue(EMDL_OPTIMISER_NR_ITER_WO_RESOL_GAIN);
+        best_resol_thus_far = MD.getValue(EMDL_OPTIMISER_BEST_RESOL_THUS_FAR);
+        nr_iter_wo_large_hidden_variable_changes = MD.getValue(EMDL_OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES);
+        do_skip_align = MD.getValue(EMDL_OPTIMISER_DO_SKIP_ALIGN);
+        // do_skip_rotate = MD.getValue(EMDL_OPTIMISER_DO_SKIP_ROTATE);
+        acc_rot = MD.getValue(EMDL_OPTIMISER_ACCURACY_ROT);
+        current_changes_optimal_orientations = MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_ORIENTS);
+        current_changes_optimal_offsets = MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_OFFSETS);
+        current_changes_optimal_classes = MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_CLASSES);
+        smallest_changes_optimal_orientations = MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS);
+        smallest_changes_optimal_offsets = MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS);
+        smallest_changes_optimal_classes = MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES);
+        has_converged = MD.getValue(EMDL_OPTIMISER_HAS_CONVERGED);
+        has_high_fsc_at_limit = MD.getValue(EMDL_OPTIMISER_HAS_HIGH_FSC_AT_LIMIT);
+        has_large_incr_size_iter_ago = MD.getValue(EMDL_OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO);
+        do_norm_correction = MD.getValue(EMDL_OPTIMISER_DO_CORRECT_NORM);
+        do_scale_correction = MD.getValue(EMDL_OPTIMISER_DO_CORRECT_SCALE);
+        do_ctf_correction = MD.getValue(EMDL_OPTIMISER_DO_CORRECT_CTF);
+        intact_ctf_first_peak = MD.getValue(EMDL_OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK);
+        ctf_phase_flipped = MD.getValue(EMDL_OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED);
+        only_flip_phases = MD.getValue(EMDL_OPTIMISER_DO_ONLY_FLIP_CTF_PHASES);
+        refs_are_ctf_corrected = MD.getValue(EMDL_OPTIMISER_REFS_ARE_CTF_CORRECTED);
+        fix_sigma_noise = MD.getValue(EMDL_OPTIMISER_FIX_SIGMA_NOISE);
+        fix_sigma_offset = MD.getValue(EMDL_OPTIMISER_FIX_SIGMA_OFFSET);
+        nr_pool = MD.getValue(EMDL_OPTIMISER_MAX_NR_POOL);
+    } catch (const char* errmsg) {
         REPORT_ERROR("MlOptimiser::readStar: incorrect optimiser_general table");
+    }
 
     // Backward compatibility with RELION-1.4
-    if (!MD.getValue(EMDL_OPTIMISER_LOCAL_SYMMETRY_FILENAME, fn_local_symmetry))
-        fn_local_symmetry = "None";
-    if (!MD.getValue(EMDL_OPTIMISER_DO_HELICAL_REFINE, do_helical_refine))
-        do_helical_refine = false;
-    if (!MD.getValue(EMDL_OPTIMISER_IGNORE_HELICAL_SYMMETRY, ignore_helical_symmetry))
-        ignore_helical_symmetry = false;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_TWIST_INITIAL, helical_twist_initial))
-        helical_twist_initial = 0.;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_RISE_INITIAL, helical_rise_initial))
-            helical_rise_initial = 0.;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_Z_PERCENTAGE, helical_z_percentage))
-        helical_z_percentage = 0.3;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_NSTART, helical_nstart))
-        helical_nstart = 1;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_TUBE_INNER_DIAMETER, helical_tube_inner_diameter))
-        helical_tube_inner_diameter = -1.;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER, helical_tube_outer_diameter))
-        helical_tube_outer_diameter = -1.;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, do_helical_symmetry_local_refinement))
-        do_helical_symmetry_local_refinement = false;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_SIGMA_DISTANCE, helical_sigma_distance))
-        helical_sigma_distance = -1.;
-    if (!MD.getValue(EMDL_OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED, helical_keep_tilt_prior_fixed))
-            helical_keep_tilt_prior_fixed = false;
-    // New SGD (13Feb2018)
-    if (!MD.getValue(EMDL_OPTIMISER_DO_SGD, do_sgd))
-        do_sgd = false;
-    if (!MD.getValue(EMDL_OPTIMISER_DO_STOCHASTIC_EM, do_avoid_sgd))
-        do_avoid_sgd = false;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_INI_ITER, sgd_ini_iter))
-        sgd_ini_iter = 50;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_FIN_ITER, sgd_fin_iter))
-        sgd_fin_iter = 50;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_INBETWEEN_ITER, sgd_inbetween_iter))
-        sgd_inbetween_iter = 200;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_INI_RESOL, sgd_ini_resol))
-        sgd_ini_resol = 35.;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_FIN_RESOL, sgd_fin_resol))
-        sgd_fin_resol = 15.;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_INI_SUBSET_SIZE, sgd_ini_subset_size))
-        sgd_ini_subset_size = 100;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_FIN_SUBSET_SIZE, sgd_fin_subset_size))
-        sgd_fin_subset_size = 500;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_MU, mu))
-        mu = 0.9;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_SIGMA2FUDGE_INI, sgd_sigma2fudge_ini))
-        sgd_sigma2fudge_ini = 8.;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, sgd_sigma2fudge_halflife))
-        sgd_sigma2fudge_halflife = -1;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_SKIP_ANNNEAL, do_sgd_skip_anneal))
-        do_sgd_skip_anneal = false;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_SUBSET_SIZE, subset_size))
-        subset_size = -1;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_STEPSIZE, sgd_stepsize))
-        sgd_stepsize = 0.5;
-    if (!MD.getValue(EMDL_OPTIMISER_SGD_WRITE_EVERY_SUBSET, write_every_sgd_iter))
-        write_every_sgd_iter = 1;
-    if (!MD.getValue(EMDL_BODY_STAR_FILE, fn_body_masks))
-        fn_body_masks = "None";
-    if (!MD.getValue(EMDL_OPTIMISER_DO_SOLVENT_FSC, do_phase_random_fsc))
-        do_phase_random_fsc = false;
-    if (!MD.getValue(EMDL_OPTIMISER_FAST_SUBSETS, do_fast_subsets))
-        do_fast_subsets = false;
-    if (!MD.getValue(EMDL_OPTIMISER_DO_EXTERNAL_RECONSTRUCT, do_external_reconstruct))
-        do_external_reconstruct = false;
-    // backward compatibility with relion-3.0
-    if (!MD.getValue(EMDL_OPTIMISER_ACCURACY_TRANS_ANGSTROM, acc_trans))
-    {
-        if (!MD.getValue(EMDL_OPTIMISER_ACCURACY_TRANS, acc_trans))
-            REPORT_ERROR("MlOptimiser::readStar::ERROR no accuracy of translations defined!");
+    #define TRYSETVAR(var, emdl_index, defaultval) try { \
+        var = MD.getValue(emdl_index); \
+    } catch (const char* errmsg) { \
+        var = defaultval; \
     }
-    if (!MD.getValue(EMDL_OPTIMISER_FOURIER_MASK, fn_fourier_mask))
-        fn_fourier_mask = "None";
 
-    if (do_split_random_halves &&
-        !MD.getValue(EMDL_OPTIMISER_MODEL_STARFILE2, fn_model2))
+    TRYSETVAR(fn_local_symmetry,                    EMDL_OPTIMISER_LOCAL_SYMMETRY_FILENAME,           "None");
+    TRYSETVAR(do_helical_refine,                    EMDL_OPTIMISER_DO_HELICAL_REFINE,                 false);
+    TRYSETVAR(ignore_helical_symmetry,              EMDL_OPTIMISER_IGNORE_HELICAL_SYMMETRY,           false);
+    TRYSETVAR(helical_twist_initial,                EMDL_OPTIMISER_HELICAL_TWIST_INITIAL,              0.0);
+    TRYSETVAR(helical_rise_initial,                 EMDL_OPTIMISER_HELICAL_RISE_INITIAL,               0.0);
+    TRYSETVAR(helical_z_percentage,                 EMDL_OPTIMISER_HELICAL_Z_PERCENTAGE,               0.3);
+    TRYSETVAR(helical_nstart,                       EMDL_OPTIMISER_HELICAL_NSTART,                     1);
+    TRYSETVAR(helical_tube_inner_diameter,          EMDL_OPTIMISER_HELICAL_TUBE_INNER_DIAMETER,       -1.0);
+    TRYSETVAR(helical_tube_outer_diameter,          EMDL_OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER,       -1.0);
+    TRYSETVAR(do_helical_symmetry_local_refinement, EMDL_OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, false);
+    TRYSETVAR(helical_sigma_distance,               EMDL_OPTIMISER_HELICAL_SIGMA_DISTANCE,            -1.0);
+    TRYSETVAR(helical_keep_tilt_prior_fixed,        EMDL_OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED,     false);
+
+    // New SGD (13 Feb 2018)
+    TRYSETVAR(do_sgd,                   EMDL_OPTIMISER_DO_SGD,                    false);
+    TRYSETVAR(do_avoid_sgd,             EMDL_OPTIMISER_DO_STOCHASTIC_EM,          false);
+    TRYSETVAR(sgd_ini_iter,             EMDL_OPTIMISER_SGD_INI_ITER,              50);
+    TRYSETVAR(sgd_fin_iter,             EMDL_OPTIMISER_SGD_FIN_ITER,              50);
+    TRYSETVAR(sgd_inbetween_iter,       EMDL_OPTIMISER_SGD_INBETWEEN_ITER,        200);
+    TRYSETVAR(sgd_ini_resol,            EMDL_OPTIMISER_SGD_INI_RESOL,             35.0);
+    TRYSETVAR(sgd_fin_resol,            EMDL_OPTIMISER_SGD_FIN_RESOL,             15.0);
+    TRYSETVAR(sgd_ini_subset_size,      EMDL_OPTIMISER_SGD_INI_SUBSET_SIZE,       100);
+    TRYSETVAR(sgd_fin_subset_size,      EMDL_OPTIMISER_SGD_FIN_SUBSET_SIZE,       500);
+    TRYSETVAR(mu,                       EMDL_OPTIMISER_SGD_MU,                    0.9);
+    TRYSETVAR(sgd_sigma2fudge_ini,      EMDL_OPTIMISER_SGD_SIGMA2FUDGE_INI,       8.0);
+    TRYSETVAR(sgd_sigma2fudge_halflife, EMDL_OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, -1);
+    TRYSETVAR(do_sgd_skip_anneal,       EMDL_OPTIMISER_SGD_SKIP_ANNNEAL,         false);
+    TRYSETVAR(subset_size,              EMDL_OPTIMISER_SGD_SUBSET_SIZE,          -1);
+    TRYSETVAR(sgd_stepsize,             EMDL_OPTIMISER_SGD_STEPSIZE,              0.5);
+    TRYSETVAR(write_every_sgd_iter,     EMDL_OPTIMISER_SGD_WRITE_EVERY_SUBSET,    1);
+    TRYSETVAR(fn_body_masks,            EMDL_BODY_STAR_FILE,                     "None");
+    TRYSETVAR(do_phase_random_fsc,      EMDL_OPTIMISER_DO_SOLVENT_FSC,           false);
+    TRYSETVAR(do_fast_subsets,          EMDL_OPTIMISER_FAST_SUBSETS,             false);
+    TRYSETVAR(do_external_reconstruct,  EMDL_OPTIMISER_DO_EXTERNAL_RECONSTRUCT,  false);
+
+    #undef TRYSETVAR
+
+    // Backwards compatibility with RELION 3.0
+    try {
+        acc_trans = MD.getValue(EMDL_OPTIMISER_ACCURACY_TRANS_ANGSTROM);
+    } catch (const char* errmsg) {
+        try {
+            acc_trans = MD.getValue(EMDL_OPTIMISER_ACCURACY_TRANS);
+        } catch (const char* errmsg) {
+            REPORT_ERROR("MlOptimiser::readStar::ERROR no accuracy of translations defined!");
+        }
+    }
+    try {
+        fn_fourier_mask = MD.getValue(EMDL_OPTIMISER_FOURIER_MASK);
+    } catch (const char* errmsg) {
+        fn_fourier_mask = "None";
+    }
+
+    if (do_split_random_halves) {
+        try {
+            fn_model2 = MD.getValue(EMDL_OPTIMISER_MODEL_STARFILE2);
+        } catch (const char* errmsg) {
             REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 not found in optimiser_general table");
-    if (do_split_random_halves && fn_model2 == "")
-        REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 is empty. Probably you specified an optimiser STAR file generated with --force_converge. You cannot perform continuation or subtraction from this file. Please use one from the previous iteration.");
-    if (!MD.getValue(EMDL_OPTIMISER_LOWRES_LIMIT_EXP, strict_lowres_exp))
-        strict_lowres_exp = -1.;
+        }
+        if (fn_model2 == "")
+            REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 is empty. Probably you specified an optimiser STAR file generated with --force_converge. You cannot perform continuation or subtraction from this file. Please use one from the previous iteration.");
+        try {
+            strict_lowres_exp = MD.getValue(EMDL_OPTIMISER_LOWRES_LIMIT_EXP);
+        } catch (const char* errmsg) {
+            strict_lowres_exp = -1.0;
+        }
+    }
 
     // Initialise some stuff for first-iteration only (not relevant here...)
     do_calculate_initial_sigma_noise = false;
@@ -980,113 +935,94 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread)
 
     // Then read in sampling, mydata and mymodel stuff
     // If do_preread_images: when not do_parallel_disc_io: only the leader reads all images into RAM; otherwise: everyone reads in images into RAM
-#ifdef DEBUG_READ
+    #ifdef DEBUG_READ
     std::cerr<<"MlOptimiser::readStar before data."<<std::endl;
-#endif
+    #endif
     bool do_preread = (do_preread_images) ? (do_parallel_disc_io || rank == 0) : false;
     if (do_prevent_preread) do_preread = false;
     bool is_helical_segment = (do_helical_refine) || ((mymodel.ref_dim == 2) && (helical_tube_outer_diameter > 0.));
     mydata.read(fn_data, false, false, do_preread, is_helical_segment);
 
-#ifdef DEBUG_READ
+    #ifdef DEBUG_READ
     std::cerr<<"MlOptimiser::readStar before model."<<std::endl;
-#endif
-    if (do_split_random_halves)
-    {
-        if (debug_split_random_half == 1)
-        {
+    #endif
+    if (do_split_random_halves) {
+        if (debug_split_random_half == 1) {
             mymodel.read(fn_model);
-        }
-        else if (debug_split_random_half == 2)
-        {
+        } else if (debug_split_random_half == 2) {
+            mymodel.read(fn_model2);
+        } else if (rank % 2 == 1) {
+            mymodel.read(fn_model);
+        } else {
             mymodel.read(fn_model2);
         }
-        else if (rank % 2 == 1)
-        {
-            mymodel.read(fn_model);
-        }
-        else
-        {
-            mymodel.read(fn_model2);
-        }
-    }
-    else
-    {
+    } else {
         mymodel.read(fn_model);
     }
     // Set up the bodies in the model, if this is a continuation of a multibody refinement (otherwise this is done in initialiseGeneral)
-    if (fn_body_masks != "None")
-    {
+    if (fn_body_masks != "None") {
         mymodel.initialiseBodies(fn_body_masks, fn_out, false, rank); // also_initialise_rest = false
 
         if (mymodel.nr_bodies != mydata.nr_bodies)
             REPORT_ERROR("ERROR: Unequal number of bodies in model.star and data.star files!");
     }
 
-#ifdef DEBUG_READ
+    #ifdef DEBUG_READ
     std::cerr<<"MlOptimiser::readStar before sampling."<<std::endl;
-#endif
+    #endif
     sampling.read(fn_sampling);
 
-#ifdef DEBUG_READ
+    #ifdef DEBUG_READ
     std::cerr<<"MlOptimiser::readStar done."<<std::endl;
-#endif
+    #endif
 }
 
 
-void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_write_optimiser, bool do_write_model, int random_subset)
-{
+void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_write_optimiser, bool do_write_model, int random_subset) {
     if (subset_size > 0 && (iter % write_every_sgd_iter) != 0 && iter != nr_iter)
         return;
 
     FileName fn_root, fn_tmp, fn_model, fn_model2, fn_data, fn_sampling, fn_root2;
     std::ofstream  fh;
-    if (iter > -1)
+    if (iter > -1) {
         fn_root.compose(fn_out+"_it", iter, "", 3);
-    else
+    } else {
         fn_root = fn_out;
+    }
     // fn_root2 is used to write out the model and optimiser, and adds a subset number in SGD
     fn_root2 = fn_root;
     bool do_write_bild = !(do_skip_align || do_skip_rotate || do_sgd);
 
     // First write "main" STAR file with all information from this run
     // Do this for random_subset==0 and random_subset==1
-    if (do_write_optimiser && random_subset < 2)
-    {
-        fn_tmp = fn_root2+"_optimiser.star";
+    if (do_write_optimiser && random_subset < 2) {
+        fn_tmp = fn_root2 + "_optimiser.star";
         fh.open((fn_tmp).c_str(), std::ios::out);
-        if (!fh)
-            REPORT_ERROR( (std::string)"MlOptimiser::write: Cannot write file: " + fn_tmp);
+        if (!fh) REPORT_ERROR((std::string) "MlOptimiser::write: Cannot write file: " + fn_tmp);
 
         // Write the command line as a comment in the header
         fh << "# RELION optimiser; version " << g_RELION_VERSION <<std::endl;
         fh << "# ";
         parser.writeCommandLine(fh);
 
-        if (do_split_random_halves && !do_join_random_halves)
-        {
+        if (do_split_random_halves && !do_join_random_halves) {
             fn_model  = fn_root2 + "_half1_model.star";
             fn_model2 = fn_root2 + "_half2_model.star";
-        }
-        else
-        {
+        } else {
             fn_model = fn_root2 + "_model.star";
         }
         fn_data = fn_root + "_data.star";
         fn_sampling = fn_root + "_sampling.star";
 
         MetaDataTable MD;
-        MD.setIsList(true);
+        MD.isList = true;
         MD.setName("optimiser_general");
         MD.addObject();
         MD.setValue(EMDL_OPTIMISER_OUTPUT_ROOTNAME, fn_out);
-        if (do_split_random_halves)
-        {
+        if (do_split_random_halves) {
             MD.setValue(EMDL_OPTIMISER_MODEL_STARFILE, fn_model);
             MD.setValue(EMDL_OPTIMISER_MODEL_STARFILE2, fn_model2);
-        }
-        else
-        {
+        } else {
             MD.setValue(EMDL_OPTIMISER_MODEL_STARFILE, fn_model);
         }
         MD.setValue(EMDL_OPTIMISER_DATA_STARFILE, fn_data);
@@ -1215,16 +1151,16 @@ void MlOptimiser::initialise()
         for(int i=0; i<devCount; i++ )
                 {
                     HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, i));
-                        if(deviceProp.major>CUDA_CC_MAJOR)
+                        if (deviceProp.major>CUDA_CC_MAJOR)
                             compatibleDevices+=1;
-                           else if(deviceProp.major==CUDA_CC_MAJOR && deviceProp.minor>=CUDA_CC_MINOR)
+                           else if (deviceProp.major==CUDA_CC_MAJOR && deviceProp.minor>=CUDA_CC_MINOR)
                             compatibleDevices+=1;
                         //else
                         //std::cout << "Found a " << deviceProp.name << " GPU with compute-capability " << deviceProp.major << "." << deviceProp.minor << std::endl;
                 }
-        if(compatibleDevices==0)
+        if (compatibleDevices==0)
             REPORT_ERROR("You have no GPUs compatible with RELION (CUDA-capable and compute-capability >= 3.5");
-        else if(compatibleDevices!=devCount)
+        else if (compatibleDevices!=devCount)
             std::cerr << "WARNING : at least one of your GPUs is not compatible with RELION (CUDA-capable and compute-capability >= 3.5)" << std::endl;
 
         std::vector < std::vector < std::string > > allThreadIDs;
@@ -1238,7 +1174,7 @@ void MlOptimiser::initialise()
         else
         {
             fullAutomaticMapping=false;
-            if(allThreadIDs[0].size()!=nr_threads)
+            if (allThreadIDs[0].size()!=nr_threads)
             {
                 std::cout << " Will distribute threads over devices ";
                 for (int j = 0; j < allThreadIDs[0].size(); j++)
@@ -1312,36 +1248,34 @@ void MlOptimiser::initialise()
     fftw_plan_with_nthreads(nr_threads);
 #endif
 
-    if (fn_sigma != "")
-    {
+    if (fn_sigma != "") {
         // Read in sigma_noise spetrum from file DEVELOPMENTAL!!! FOR DEBUGGING ONLY....
         MetaDataTable MDsigma;
         RFLOAT val;
         int idx;
         MDsigma.read(fn_sigma);
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma)
-        {
-            MDsigma.getValue(EMDL_SPECTRAL_IDX, idx);
-            MDsigma.getValue(EMDL_MLMODEL_SIGMA2_NOISE, val);
+        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
+            idx = MDsigma.getValue(EMDL_SPECTRAL_IDX);
+            val = MDsigma.getValue(EMDL_MLMODEL_SIGMA2_NOISE);
             if (idx < XSIZE(mymodel.sigma2_noise[0]))
                 mymodel.sigma2_noise[0](idx) = val;
         }
-        if (idx < XSIZE(mymodel.sigma2_noise[0]) - 1)
-        {
-            if (verb > 0) std::cout<< " WARNING: provided sigma2_noise-spectrum has fewer entries ("<<idx+1<<") than needed ("<<XSIZE(mymodel.sigma2_noise[0])<<"). Set rest to zero..."<<std::endl;
+        if (idx < XSIZE(mymodel.sigma2_noise[0]) - 1) {
+            if (verb > 0)
+                std::cout
+                << " WARNING: provided sigma2_noise-spectrum has fewer entries ("
+                << idx + 1 << ") than needed (" << XSIZE(mymodel.sigma2_noise[0]) 
+                << "). Set rest to zero..." << std::endl;
         }
 
         mydata.getNumberOfImagesPerGroup(mymodel.nr_particles_per_group);
-        for (int igroup = 0; igroup< mymodel.nr_groups; igroup++)
-        {
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
             // Use the same spectrum for all classes
             mymodel.sigma2_noise[igroup] =  mymodel.sigma2_noise[0];
             // We set wsum_model.sumw_group as in calculateSumOfPowerSpectraAndAverageImage
             wsum_model.sumw_group[igroup] = mymodel.nr_particles_per_group[igroup];
         }
-    }
-    else if (do_calculate_initial_sigma_noise || do_average_unaligned)
-    {
+    } else if (do_calculate_initial_sigma_noise || do_average_unaligned) {
         MultidimArray<RFLOAT> Mavg;
 
         // Calculate initial sigma noise model from power_class spectra of the individual images
@@ -1364,19 +1298,15 @@ void MlOptimiser::initialise()
         mymodel.initialiseDataVersusPrior(fix_tau); // fix_tau was set in initialiseGeneral
 
     // Check minimum group size of 10 particles
-    if (verb > 0)
-    {
+    if (verb > 0) {
         bool do_warn = false;
-        for (int igroup = 0; igroup< mymodel.nr_groups; igroup++)
-        {
-            if (mymodel.nr_particles_per_group[igroup] < 10)
-            {
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
+            if (mymodel.nr_particles_per_group[igroup] < 10) {
                 std:: cout << "WARNING: There are only " << mymodel.nr_particles_per_group[igroup] << " particles in group " << igroup + 1 << std::endl;
                 do_warn = true;
             }
         }
-        if (do_warn)
-        {
+        if (do_warn) {
             std:: cout << "WARNING: You may want to consider joining some micrographs into larger groups to obtain more robust noise estimates. " << std::endl;
             std:: cout << "         You can do so by using the same rlnMicrographName label for particles from multiple different micrographs in the input STAR file. " << std::endl;
         }
@@ -1386,55 +1316,49 @@ void MlOptimiser::initialise()
     write(DONT_WRITE_SAMPLING, DO_WRITE_DATA, DO_WRITE_OPTIMISER, DO_WRITE_MODEL, 0);
 
 
-#ifdef DEBUG
+    #ifdef DEBUG
     std::cerr<<"MlOptimiser::initialise Done"<<std::endl;
-#endif
+    #endif
 }
 
-void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank)
-{
+void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
     int ref_box_size = XSIZE(mymodel.Iref[0]);
 
     Image<RFLOAT> Isolvent;
-    RFLOAT mask_pixel_size;
     Isolvent.read(_fn_mask);
     Isolvent().setXmippOrigin();
-    Isolvent.MDMainHeader.getValue(EMDL_IMAGE_SAMPLINGRATE_X, mask_pixel_size);
+    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue(EMDL_IMAGE_SAMPLINGRATE_X);
 
     bool need_new_mask = false;
-    if (fabs(mask_pixel_size-mymodel.pixel_size) > 0.001)
-    {
+    if (fabs(mask_pixel_size-mymodel.pixel_size) > 0.001) {
         need_new_mask = true;
 
-        if (verb > 0)
-        {
+        if (verb > 0) {
             std::cerr << " + WARNING: solvent mask pixel size: " << mask_pixel_size
-                    << " is not the same as the reference pixel size: " << mymodel.pixel_size << std::endl;
+            << " is not the same as the reference pixel size: " << mymodel.pixel_size << std::endl;
             std::cerr << " + WARNING: re-scaling the mask... " << std::endl;
         }
 
-        if (rank == 0) // only leader writes out the new mask
-        {
+        if (rank == 0) {
+            // Only the leader writes out the new mask
             int rescale_size = ROUND(XSIZE(Isolvent()) * mask_pixel_size / mymodel.pixel_size);
-            rescale_size += rescale_size % 2; //make even in case it is not already
+            rescale_size += rescale_size % 2;  // Ensure divisibility by 2
             resizeMap(Isolvent(), rescale_size);
             Isolvent.setSamplingRateInHeader(mymodel.pixel_size);
         }
     }
 
-    if (XSIZE(Isolvent()) != ref_box_size)
-    {
+    if (XSIZE(Isolvent()) != ref_box_size) {
         need_new_mask = true;
 
-        if (verb > 0)
-        {
+        if (verb > 0) {
             std::cerr << " + WARNING: solvent mask box size: " << XSIZE(Isolvent())
-                    << " is not the same as the reference box size: " << ref_box_size << std::endl;
+            << " is not the same as the reference box size: " << ref_box_size << std::endl;
             std::cerr << " + WARNING: re-windowing the mask... " << std::endl;
         }
 
-        if (rank == 0) // only leader writes out the new mask
-        {
+        if (rank == 0) {
+            // Only the leader writes out the new mask
             Isolvent().setXmippOrigin();
             Isolvent().window(
                 Xmipp::init(ref_box_size), Xmipp::init(ref_box_size), Xmipp::init(ref_box_size), 
@@ -1451,25 +1375,21 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank)
 
         if (verb > 0) {
             std::cerr << " + WARNING: solvent mask minimum: " << solv_min
-                    << " or maximum: " << solv_max << " are outside the [0,1] range."<< std::endl;
+            << " or maximum: " << solv_max << " are outside the [0,1] range." << std::endl;
             std::cerr << " + WARNING: thresholding the mask value to [0,1] range ... " << std::endl;
         }
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isolvent()) {
-            if (DIRECT_MULTIDIM_ELEM(Isolvent(),n) < 0.) DIRECT_MULTIDIM_ELEM(Isolvent(), n) = 0.;
-            else if (DIRECT_MULTIDIM_ELEM(Isolvent(),n) > 1.) DIRECT_MULTIDIM_ELEM(Isolvent(), n) = 1.;
+            if (DIRECT_MULTIDIM_ELEM(Isolvent(), n) < 0.0) DIRECT_MULTIDIM_ELEM(Isolvent(), n) = 0.0;
+            else if (DIRECT_MULTIDIM_ELEM(Isolvent(), n) > 1.0) DIRECT_MULTIDIM_ELEM(Isolvent(), n) = 1.0;
         }
     }
 
-    if (need_new_mask)
-    {
+    if (need_new_mask) {
         // everyone should know about the new mask
-        if (solvent_nr == 1)
-        {
+        if (solvent_nr == 1) {
             _fn_mask = fn_out + "_solvent_mask.mrc";
-        }
-        else
-        {
+        } else {
             _fn_mask = fn_out + "_solvent" + integerToString(solvent_nr) + ".mrc";
         }
         if (rank == 0) Isolvent.write(_fn_mask);
@@ -1478,12 +1398,11 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank)
     return;
 }
 
-void MlOptimiser::initialiseGeneral(int rank)
-{
+void MlOptimiser::initialiseGeneral(int rank) {
 
-#ifdef DEBUG
+    #ifdef DEBUG
     std::cerr << "Entering initialiseGeneral" << std::endl;
-#endif
+    #endif
 
 #ifdef TIMING
     //DIFFF = timer.setNew("difff");
@@ -2145,32 +2064,24 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
 
             // Read image from disc
             Image<RFLOAT> img;
-            if (do_preread_images && do_parallel_disc_io)
-            {
+            if (do_preread_images && do_parallel_disc_io) {
                 img().reshape(mydata.particles[part_id].images[img_id].img);
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mydata.particles[part_id].images[img_id].img)
-                {
-                    DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(mydata.particles[part_id].images[img_id].img, n);
+                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mydata.particles[part_id].images[img_id].img) {
+                    DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT) DIRECT_MULTIDIM_ELEM(mydata.particles[part_id].images[img_id].img, n);
                 }
-            }
-            else
-            {
-                if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img))
-                {
-                    MDimg.getValue(EMDL_IMAGE_NAME, fn_img);
-                }
-                else if (!do_parallel_disc_io)
-                {
+            } else {
+                if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img)) {
+                    fn_img = MDimg.getValue(EMDL_IMAGE_NAME);
+                } else if (!do_parallel_disc_io) {
                     // When not doing parallel disk IO,
                     // only those MPI processes running on the same node as the leader have scratch.
                     fn_img.decompose(dump, fn_stack);
                     if (!exists(fn_stack))
-                        MDimg.getValue(EMDL_IMAGE_NAME, fn_img);
+                        fn_img = MDimg.getValue(EMDL_IMAGE_NAME);
                 }
 
                 fn_img.decompose(dump, fn_stack);
-                if (fn_stack != fn_open_stack)
-                {
+                if (fn_stack != fn_open_stack) {
                     hFile.openFile(fn_stack, WRITE_READONLY);
                     fn_open_stack = fn_stack;
                 }
@@ -2178,41 +2089,47 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 img().setXmippOrigin();
             }
 
-            // May24,2015 - Shaoda & Sjors, Helical refinement
-            RFLOAT psi_deg = 0., tilt_deg = 0.;
-            bool is_helical_segment = (do_helical_refine) || ((mymodel.ref_dim == 2) && (helical_tube_outer_diameter > 0.));
-            if (is_helical_segment)
-            {
-                if (!MDimg.getValue(EMDL_ORIENT_PSI_PRIOR, psi_deg))
-                {
-                    if (!MDimg.getValue(EMDL_ORIENT_PSI, psi_deg))
+            // 24 May 2015 - Shaoda & Sjors, Helical refinement
+            RFLOAT psi_deg = 0.0, tilt_deg = 0.0;
+            bool is_helical_segment = do_helical_refine || (mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0);
+            if (is_helical_segment) {
+                try {
+                    psi_deg = MDimg.getValue(EMDL_ORIENT_PSI_PRIOR);
+                } catch (const char* errmsg) {
+                    try {
+                        psi_deg = MDimg.getValue(EMDL_ORIENT_PSI);
+                    } catch (const char* errmsg) {
                         REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Psi priors of helical segments are missing!");
+                    }
                 }
-                if (!MDimg.getValue(EMDL_ORIENT_TILT_PRIOR, tilt_deg))
-                {
-                    if (!MDimg.getValue(EMDL_ORIENT_TILT, tilt_deg))
+                try {
+                    tilt_deg = MDimg.getValue(EMDL_ORIENT_TILT_PRIOR);
+                } catch (const char* errmsg) {
+                    try {
+                        tilt_deg = MDimg.getValue(EMDL_ORIENT_TILT);
+                    } catch (const char* errmsg) {
                         REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Tilt priors of helical segments are missing!");
+                    }
                 }
             }
 
             // Check that the average in the noise area is approximately zero and the stddev is one
-            if (!dont_raise_norm_error && verb > 0)
-            {
+            if (!dont_raise_norm_error && verb > 0) {
                 // NEW METHOD
                 RFLOAT sum, sum2, sphere_radius_pix, cyl_radius_pix;
                 cyl_radius_pix = helical_tube_outer_diameter / (2. * my_pixel_size);
                 sphere_radius_pix = particle_diameter / (2. * my_pixel_size);
-                calculateBackgroundAvgStddev(img, sum, sum2, (int)(ROUND(sphere_radius_pix)), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
+                calculateBackgroundAvgStddev(img, sum, sum2, (int) (ROUND(sphere_radius_pix)), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
 
                 // Average should be close to zero, i.e. max +/-50% of stddev...
                 // Stddev should be close to one, i.e. larger than 0.5 and smaller than 2)
-                if (ABS(sum/sum2) > 0.5 || sum2 < 0.5 || sum2 > 2.0)
-                {
+                if (ABS(sum/sum2) > 0.5 || sum2 < 0.5 || sum2 > 2.0) {
                     std::cerr << " fn_img= " << fn_img << " bg_avg= " << sum << " bg_stddev= " << sum2 << std::flush;
-                    if (is_helical_segment)
+                    if (is_helical_segment) {
                         std::cerr << " tube_bg_radius= " << cyl_radius_pix << " psi_deg= " << psi_deg << " tilt_deg= " << tilt_deg << " (this is a particle from a helix)" << std::flush;
-                    else
+                    } else {
                         std::cerr << " bg_radius= " << sphere_radius_pix << std::flush;
+                    }
                     std::cerr << std::endl;
                     std::cerr << "WARNING: It appears that these images have not been normalised to an average background value of 0 and a stddev value of 1. \n \
                             Note that the average and stddev values for the background are calculated: \n \
@@ -2226,17 +2143,15 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
 
 
             // Apply a similar softMask as below (assume zero translations)
-            if (do_zero_mask)
-            {
-                // May24,2015 - Shaoda & Sjors, Helical refinement
-                if (is_helical_segment)
-                {
-                    softMaskOutsideMapForHelix(img(), psi_deg, tilt_deg, (particle_diameter / (2. * my_pixel_size)),
-                            (helical_tube_outer_diameter / (2. * my_pixel_size)), width_mask_edge);
-                }
-                else
-                {
-                    softMaskOutsideMap(img(), particle_diameter / (2. * my_pixel_size), width_mask_edge);
+            if (do_zero_mask) {
+                // 24 May 2015 - Shaoda & Sjors, Helical refinement
+                if (is_helical_segment) {
+                    softMaskOutsideMapForHelix(
+                        img(), psi_deg, tilt_deg, particle_diameter / (2.0 * my_pixel_size),
+                        helical_tube_outer_diameter / (2.0 * my_pixel_size), width_mask_edge
+                    );
+                } else {
+                    softMaskOutsideMap(img(), particle_diameter / (2.0 * my_pixel_size), width_mask_edge);
                 }
             }
 
@@ -2255,17 +2170,17 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             if (fabs(XSIZE(img()) - mymodel.ori_size) > 0) {
                 switch (mymodel.data_dim) {
                     case 2:
-                        img().window(
-                            Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size),
-                            Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
-                        );
-                        break;
+                    img().window(
+                        Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size),
+                        Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
+                    );
+                    break;
                     case 3:
-                        img().window(
-                            Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size),
-                            Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
-                        );
-                        break;
+                    img().window(
+                        Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size),
+                        Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
+                    );
+                    break;
                 }
             }
             Mavg += img();
@@ -2301,10 +2216,10 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 init_random_generator(random_seed + part_id);
                 // Randomize the initial orientations for initial reference generation at this step....
                 // TODO: this is not an even angular distribution....
-                RFLOAT rot  = (mymodel.ref_dim == 2) ? 0. : rnd_unif() * 360.;
-                RFLOAT tilt = (mymodel.ref_dim == 2) ? 0. : rnd_unif() * 180.;
-                RFLOAT psi  = rnd_unif() * 360.;
-                int iclass  = rnd_unif() * mymodel.nr_classes;
+                RFLOAT rot  = (mymodel.ref_dim == 2) ? 0. : rnd_unif () * 360.;
+                RFLOAT tilt = (mymodel.ref_dim == 2) ? 0. : rnd_unif () * 180.;
+                RFLOAT psi  = rnd_unif () * 360.;
+                int iclass  = rnd_unif () * mymodel.nr_classes;
                 if (iclass == mymodel.nr_classes)
                     iclass = mymodel.nr_classes - 1;
                 if (iclass >= mymodel.nr_classes) {
@@ -2538,7 +2453,7 @@ void MlOptimiser::iterate()
         std::cerr << std::endl << std::endl;
         std::cerr << "MlOptimiser::iterate()" << std::endl;
         std::cerr << "iter = " << iter << ", do_helical_refine == " << std::flush;
-        if(do_helical_refine)
+        if (do_helical_refine)
             std::cerr << "true" << std::flush;
         else
             std::cerr << "false" << std::flush;
@@ -2780,7 +2695,7 @@ void MlOptimiser::expectation()
         HANDLE_ERROR(cudaDeviceSynchronize());
         for (int i = 0; i < accDataBundles.size(); i ++)
         {
-            if(((MlDeviceBundle*)accDataBundles[i])->device_id >= devCount || ((MlDeviceBundle*)accDataBundles[i])->device_id < 0 )
+            if (((MlDeviceBundle*)accDataBundles[i])->device_id >= devCount || ((MlDeviceBundle*)accDataBundles[i])->device_id < 0 )
             {
                 //std::cerr << " using device_id=" << ((MlDeviceBundle*)accDataBundles[i])->device_id << " (device no. " << ((MlDeviceBundle*)accDataBundles[i])->device_id+1 << ") which is not within the available device range" << devCount << std::endl;
                 CRITICAL(ERR_GPUID);
@@ -2828,7 +2743,7 @@ void MlOptimiser::expectation()
             int mdlY = mymodel.PPref[iclass].data.ydim;
             int mdlZ = mymodel.PPref[iclass].data.zdim;
             size_t mdlXYZ;
-            if(mdlZ == 0)
+            if (mdlZ == 0)
                 mdlXYZ = (size_t)mdlX*(size_t)mdlY;
             else
                 mdlXYZ = (size_t)mdlX*(size_t)mdlY*(size_t)mdlZ;
@@ -2880,7 +2795,7 @@ void MlOptimiser::expectation()
     {
         if (do_sgd)
         {
-            if(do_avoid_sgd) std::cout << " Stochastic Expectation Maximisation iteration " << iter << " of " << nr_iter;
+            if (do_avoid_sgd) std::cout << " Stochastic Expectation Maximisation iteration " << iter << " of " << nr_iter;
             else std::cout << " Stochastic Gradient Descent iteration " << iter << " of " << nr_iter;
         }
         else
@@ -3123,8 +3038,8 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb)
         }
         else
         {
-            int randir = (int)(rnd_unif() * sampling.NrDirections() );
-            int ranpsi = (int)(rnd_unif() * sampling.NrPsiSamplings() );
+            int randir = (int)(rnd_unif () * sampling.NrDirections() );
+            int ranpsi = (int)(rnd_unif () * sampling.NrPsiSamplings() );
             sampling.getDirection(randir, ran_rot, ran_tilt);
             sampling.getPsiAngle(ranpsi, ran_psi);
         }
@@ -3475,7 +3390,7 @@ void MlOptimiser::expectationSomeParticles(long int my_first_part_id, long int m
         tbb::parallel_for(my_first_part_id, my_last_part_id+1, [&](long int i) {
             CpuOptimiserType::reference ref = tbbCpuOptimiser.local();
             MlOptimiserCpu *cpuOptimiser = (MlOptimiserCpu *)ref;
-            if(cpuOptimiser == NULL) {
+            if (cpuOptimiser == NULL) {
                 cpuOptimiser = new MlOptimiserCpu(this, (MlDataBundle*)accDataBundles[0], "cpu_optimiser");
                 cpuOptimiser->resetData();
                 ref = cpuOptimiser;
@@ -3874,7 +3789,7 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
             printf("%4.8f \n",DIRECT_MULTIDIM_ELEM(exp_Mweight, n));
         }
         //For tests we want to exit now
-        //if(iter == 2)
+        //if (iter == 2)
         //	exit(0);
 
 #endif
@@ -4091,10 +4006,10 @@ void MlOptimiser::maximization()
                             (iclass==0));
                 }
 
-                if(do_sgd)
+                if (do_sgd)
                 {
                     // Use stochastic expectation maximisation, instead of SGD.
-                    if(do_avoid_sgd)
+                    if (do_avoid_sgd)
                     {
                         if (iter < sgd_ini_iter)
                         {
@@ -4325,7 +4240,7 @@ void MlOptimiser::maximizationOtherParameters()
         for (int igroup = 0; igroup < mymodel.nr_groups; igroup++)
         {
             RFLOAT tsum = wsum_model.sigma2_noise[igroup].sum();
-            if(tsum!=0)
+            if (tsum!=0)
             {
                 // Factor 2 because of the 2-dimensionality of the complex-plane
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.sigma2_noise[igroup])
@@ -5179,7 +5094,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             // May 18, 2015 - Shaoda & Sjors - Helical refinement (orientational searches)
             std::cerr << "MlOptimiser::getFourierTransformsAndCtfs()" << std::endl;
             std::cerr << " Transform old Cartesian offsets to helical ones..." << std::endl;
-            if(my_old_offset.size() == 2)
+            if (my_old_offset.size() == 2)
             {
                 std::cerr << "  psi_deg = " << psi_deg << " degrees" << std::endl;
                 std::cerr << "  old_offset(x, y) = (" << XX(my_old_offset) << ", " << YY(my_old_offset) << ")" << std::endl;
@@ -5212,7 +5127,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             }
 #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
             std::cerr << " Set r (translation along helical axis) to zero..." << std::endl;
-            if(my_old_offset.size() == 2)
+            if (my_old_offset.size() == 2)
                 std::cerr << "  old_offset_helix(r, p) = (" << XX(my_old_offset_helix_coords) << ", " << YY(my_old_offset_helix_coords) << ")" << std::endl;
             else
                 std::cerr << "  old_offset_helix(p1, p2, z) = (" << XX(my_old_offset_helix_coords) << ", " << YY(my_old_offset_helix_coords) << "," << ZZ(my_old_offset_helix_coords) << ")" << std::endl;
@@ -5221,7 +5136,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             transformCartesianAndHelicalCoords(my_old_offset_helix_coords, my_old_offset, rot_deg, tilt_deg, psi_deg, HELICAL_TO_CART_COORDS);
 #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
             std::cerr << " Transform helical offsets back to Cartesian ones..." << std::endl;
-            if(my_old_offset.size() == 2)
+            if (my_old_offset.size() == 2)
                 std::cerr << "  old_offset(x, y) = (" << XX(my_old_offset) << ", " << YY(my_old_offset) << ")" << std::endl;
             else
                 std::cerr << "  old_offset(x, y, z) = (" << XX(my_old_offset) << ", " << YY(my_old_offset) << ", " << ZZ(my_old_offset) << ")" << std::endl;
@@ -5239,7 +5154,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         if ( (do_helical_refine) && (!ignore_helical_symmetry) )
         {
             std::cerr << " Apply (rounded) old offsets (r = 0, p) & (psi, tilt) for helices..." << std::endl;
-            if(my_old_offset.size() == 2)
+            if (my_old_offset.size() == 2)
                 std::cerr << "  old_offset(x, y) = (" << XX(my_old_offset) << ", " << YY(my_old_offset) << ")" << std::endl;
             else
                 std::cerr << "  old_offset(x, y, z) = (" << XX(my_old_offset) << ", " << YY(my_old_offset) << ", " << ZZ(my_old_offset) << ")" << std::endl;
@@ -5270,7 +5185,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
         if ( (do_helical_refine) && (!ignore_helical_symmetry) )
         {
-            if(exp_old_offset[img_id].size() == 2)
+            if (exp_old_offset[img_id].size() == 2)
                 std::cerr << "exp_old_offset = (" << XX(exp_old_offset[img_id]) << ", " << YY(exp_old_offset[img_id][img_id]) << ")" << std::endl;
             else
                 std::cerr << "exp_old_offset = (" << XX(exp_old_offset[img_id]) << ", " << YY(exp_old_offset[img_id]) << ", " << ZZ(exp_old_offset[img_id]) << ")" << std::endl;
@@ -5873,7 +5788,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
             std::cerr << " MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(): do_shifts_onthefly && !do_gpu" << std::endl;
 #endif
         }
-        else if(!(do_gpu || do_cpu))
+        else if (!(do_gpu || do_cpu))
         {
 #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
             Image<RFLOAT> img_save_ori, img_save_mask, img_save_nomask;
@@ -7056,7 +6971,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
         {
             if (maximum_significants > 0 )
             {
-                if(my_nr_significant_coarse_samples < maximum_significants)
+                if (my_nr_significant_coarse_samples < maximum_significants)
                 {
                     if (exp_ipass==0)
                         my_nr_significant_coarse_samples++;
@@ -7814,7 +7729,7 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
                                                 std::cerr << "MlOptimiser::storeWeightedSums()" << std::endl;
                                                 std::cerr << "Bring xy(z) shifts back to Cartesian coordinates for output in the STAR file" << std::endl;
                                                 std::cerr << " itrans = " << itrans << ", iover_trans = " << iover_trans << std::endl;
-                                                if(shifts.size() == 2)
+                                                if (shifts.size() == 2)
                                                 {
                                                     std::cerr << "  old_psi = " << old_psi << " degrees" << std::endl;
                                                     std::cerr << "  Helical offsets (r, p) = (" << XX(shifts) << ", " << YY(shifts) << ")" << std::endl;
@@ -7827,7 +7742,7 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
 #endif
                                                 transformCartesianAndHelicalCoords(shifts, shifts, old_rot, old_tilt, old_psi, HELICAL_TO_CART_COORDS);
 #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-                                                if(shifts.size() == 2)
+                                                if (shifts.size() == 2)
                                                     std::cerr << "  Cartesian offsets (x, y) = (" << XX(shifts) << ", " << YY(shifts) << ")" << std::endl;
                                                 else
                                                     std::cerr << "  Cartesian offsets (x, y, z) = (" << XX(shifts) << ", " << YY(shifts) << ", " << ZZ(shifts) << ")" << std::endl;
@@ -8077,8 +7992,7 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
             long int ori_img_id = mydata.particles[part_id].images[img_id].id;
             RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, img_id);
 
-            for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++)
-            {
+            for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
 
                 if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
                     continue;
@@ -8087,46 +8001,43 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
                 RFLOAT rot, tilt, psi, xoff, yoff, zoff = 0.;
                 int old_iclass, iclass;
 
-                if (mymodel.nr_bodies > 1)
-                {
+                if (mymodel.nr_bodies > 1) {
 
                     // Old optimal parameters
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ROT,  old_rot, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_TILT, old_tilt, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_PSI,  old_psi, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, old_xoff, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, old_yoff, ori_img_id);
-                    if (mymodel.data_dim == 3)
-                    {
-                        mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, old_zoff, ori_img_id);
+                    old_rot  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ROT,  ori_img_id);
+                    old_tilt = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_TILT, ori_img_id);
+                    old_psi  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_PSI,  ori_img_id);
+                    old_xoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTRO, ori_img_id);
+                    old_yoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTRO, ori_img_id);
+                    if (mymodel.data_dim == 3) {
+                        old_zoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                     }
                     old_iclass = 0;
 
                     // New optimal parameters
-                    rot = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS);
-                    tilt = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS);
-                    psi = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS);
-                    xoff = my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS);
-                    yoff = my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS);
+                    #define METADATA_BODY_GET(i) DIRECT_A2D_ELEM(exp_metadata, metadata_offset, i + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS);
+                    rot = METADATA_BODY_GET(0);
+                    tilt = METADATA_BODY_GET(1);
+                    psi = METADATA_BODY_GET(2);
+                    xoff = my_pixel_size * METADATA_BODY_GET(3);
+                    yoff = my_pixel_size * METADATA_BODY_GET(4);
                     if (mymodel.data_dim == 3)
-                        zoff = my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS);
+                        zoff = my_pixel_size * METADATA_BODY_GET(5);
+                    #undef METADATA_BODY_GET
                     iclass = 0;
 
-                }
-                else
-                {
+                } else {
 
                     // Old optimal parameters
-                    mydata.MDimg.getValue(EMDL_ORIENT_ROT,  old_rot, ori_img_id);
-                    mydata.MDimg.getValue(EMDL_ORIENT_TILT, old_tilt, ori_img_id);
-                    mydata.MDimg.getValue(EMDL_ORIENT_PSI,  old_psi, ori_img_id);
-                    mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, old_xoff, ori_img_id);
-                    mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, old_yoff, ori_img_id);
-                    if (mymodel.data_dim == 3)
-                    {
-                        mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, old_zoff, ori_img_id);
+                    old_rot = mydata.MDimg.getValue(EMDL_ORIENT_ROT,   ori_img_id);
+                    old_tilt = mydata.MDimg.getValue(EMDL_ORIENT_TILT, ori_img_id);
+                    old_psi = mydata.MDimg.getValue(EMDL_ORIENT_PSI,   ori_img_id);
+                    old_xoff = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+                    old_yoff = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+                    if (mymodel.data_dim == 3) {
+                        old_zoff = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                     }
-                    mydata.MDimg.getValue(EMDL_PARTICLE_CLASS, old_iclass, ori_img_id);
+                    old_iclass = mydata.MDimg.getValue(EMDL_PARTICLE_CLASS, ori_img_id);
 
                     // New optimal parameters
                     rot = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
@@ -8136,16 +8047,16 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
                     yoff = my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF);
                     if (mymodel.data_dim == 3)
                         zoff = my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF);
-                    iclass = (int)DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS);
+                    iclass = (int) DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS);
 
                 }
 
-                // Some orientational distance....
+                // Some orientational distance...
                 sum_changes_optimal_orientations += sampling.calculateAngularDistance(rot, tilt, psi, old_rot, old_tilt, old_psi);
-                sum_changes_optimal_offsets += (xoff-old_xoff)*(xoff-old_xoff) + (yoff-old_yoff)*(yoff-old_yoff) + (zoff-old_zoff)*(zoff-old_zoff);
+                sum_changes_optimal_offsets += (xoff - old_xoff) * (xoff - old_xoff) + (yoff - old_yoff) * (yoff - old_yoff) + (zoff - old_zoff) * (zoff - old_zoff);
                 if (iclass != old_iclass)
-                    sum_changes_optimal_classes += 1.;
-                sum_changes_count += 1.;
+                    sum_changes_optimal_classes += 1.0;
+                sum_changes_count += 1.0;
 
             } // end loop ibody
 
@@ -8428,7 +8339,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             if (mymodel.ref_dim == 3)
                             {
                                 // Randomly change rot, tilt or psi
-                                RFLOAT ran = rnd_unif();
+                                RFLOAT ran = rnd_unif ();
                                 if (ran < 0.3333)
                                     rot2 = rot1 + ang_error;
                                 else if (ran < 0.6667)
@@ -8444,7 +8355,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         else
                         {
                             // Randomly change xoff or yoff
-                            RFLOAT ran = rnd_unif();
+                            RFLOAT ran = rnd_unif ();
                             if (mymodel.data_dim == 3)
                             {
                                 if (ran < 0.3333)
@@ -9123,124 +9034,100 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
         }
     }
 
-    for (long int part_id_sorted = first_part_id, metadata_offset = 0; part_id_sorted <= last_part_id; part_id_sorted++)
-    {
+    for (long int part_id_sorted = first_part_id, metadata_offset = 0; part_id_sorted <= last_part_id; part_id_sorted++) {
 
         long int part_id = mydata.sorted_idx[part_id_sorted];
-        for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++, metadata_offset++)
-        {
+        for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++, metadata_offset++) {
 
             long int ori_img_id = mydata.particles[part_id].images[img_id].id;
             RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, img_id);
             int my_image_size = mydata.getOpticsImageSize(mydata.getOpticsGroup(part_id, img_id));
 
             // Get the image names from the MDimg table
-            FileName fn_img="", fn_rec_img="", fn_ctf="";
+            FileName fn_img = "", fn_rec_img = "", fn_ctf = "";
             if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img))
-                            mydata.MDimg.getValue(EMDL_IMAGE_NAME, fn_img, ori_img_id);
+                fn_img = mydata.MDimg.getValue(EMDL_IMAGE_NAME, ori_img_id);
 
-            if (mymodel.data_dim == 3 && do_ctf_correction)
-            {
+            if (mymodel.data_dim == 3 && do_ctf_correction) {
                 // Also read the CTF image from disc
-                if (!mydata.getImageNameOnScratch(part_id, img_id, fn_ctf, true))
-                {
-                    if (!mydata.MDimg.getValue(EMDL_CTF_IMAGE, fn_ctf, ori_img_id))
+                if (!mydata.getImageNameOnScratch(part_id, img_id, fn_ctf, true)) {
+                    try {
+                        fn_ctf = mydata.MDimg.getValue(EMDL_CTF_IMAGE, ori_img_id);
+                    } catch (const char* errmsg) {
                         REPORT_ERROR("MlOptimiser::getMetaAndImageDataSubset ERROR: cannot find rlnCtfImage for 3D CTF correction!");
+                    }
                 }
             }
-            if (has_converged && do_use_reconstruct_images)
-            {
-                mydata.MDimg.getValue(EMDL_IMAGE_RECONSTRUCT_NAME, fn_rec_img, ori_img_id);
+            if (has_converged && do_use_reconstruct_images) {
+                fn_rec_img = mydata.MDimg.getValue(EMDL_IMAGE_RECONSTRUCT_NAME, ori_img_id);
             }
 
-            if (do_also_imagedata)
-            {
+            if (do_also_imagedata) {
                 if (my_image_size != common_image_size)
                     REPORT_ERROR("ERROR: non-parallel disc I/O is not supported when images with different box sizes are present in the data set.");
 
                 // First read the image from disc or get it from the preread images in the mydata structure
                 Image<RFLOAT> img, rec_img;
-                if (do_preread_images)
-                {
+                if (do_preread_images) {
                     img().reshape(mydata.particles[part_id].images[img_id].img);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mydata.particles[part_id].images[img_id].img)
-                    {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mydata.particles[part_id].images[img_id].img) {
                         DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(mydata.particles[part_id].images[img_id].img, n);
                     }
-                }
-                else
-                {
+                } else {
                     // only open new stacks
                     fn_img.decompose(dump, fn_stack);
-                    if (fn_stack != fn_open_stack)
-                    {
+                    if (fn_stack != fn_open_stack) {
                         hFile.openFile(fn_stack, WRITE_READONLY);
                         fn_open_stack = fn_stack;
                     }
                     img.readFromOpenFile(fn_img, hFile, -1, false);
                     img().setXmippOrigin();
                 }
-                if (XSIZE(img()) != XSIZE(exp_imagedata) || YSIZE(img()) != YSIZE(exp_imagedata) )
-                {
+                if (XSIZE(img()) != XSIZE(exp_imagedata) || YSIZE(img()) != YSIZE(exp_imagedata)) {
                     std::cerr << " fn_img= " << fn_img << " XSIZE(img())= " << XSIZE(img()) << " YSIZE(img())= " << YSIZE(img()) << std::endl;
                     std::cerr << " while XSIZE(exp_imagedata)= " << XSIZE(exp_imagedata) << " and YSIZE(exp_imagedata)= " << YSIZE(exp_imagedata) << std::endl;
                     REPORT_ERROR("MlOptimiser::getMetaAndImageDataSubset ERROR: incorrect image size");
                 }
-                if (has_converged && do_use_reconstruct_images)
-                {
+                if (has_converged && do_use_reconstruct_images) {
                     rec_img.read(fn_rec_img);
-                    if (XSIZE(rec_img()) != XSIZE(exp_imagedata) || YSIZE(rec_img()) != YSIZE(exp_imagedata) )
-                    {
+                    if (XSIZE(rec_img()) != XSIZE(exp_imagedata) || YSIZE(rec_img()) != YSIZE(exp_imagedata)) {
                         std::cerr << " fn_rec_img= " << fn_rec_img << " XSIZE(rec_img())= " << XSIZE(rec_img()) << " YSIZE(rec_img())= " << YSIZE(rec_img()) << std::endl;
                         REPORT_ERROR("MlOptimiser::getMetaAndImageDataSubset ERROR: incorrect reconstruct_image size");
                     }
                 }
-                if (mymodel.data_dim == 3)
-                {
+                if (mymodel.data_dim == 3) {
 
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img())
-                    {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
                         DIRECT_A3D_ELEM(exp_imagedata, k, i, j) = DIRECT_A3D_ELEM(img(), k, i, j);
                     }
 
-                    if (do_ctf_correction)
-                    {
+                    if (do_ctf_correction) {
                         img.read(fn_ctf);
-                        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img())
-                        {
+                        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
                             DIRECT_A3D_ELEM(exp_imagedata, my_image_size + k, i, j) = DIRECT_A3D_ELEM(img(), k, i, j);
                         }
                     }
 
-                    if (has_converged && do_use_reconstruct_images)
-                    {
-                        int offset = (do_ctf_correction) ? 2 * my_image_size : my_image_size;
-                        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img())
-                        {
+                    if (has_converged && do_use_reconstruct_images) {
+                        int offset = do_ctf_correction ? 2 * my_image_size : my_image_size;
+                        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
                             DIRECT_A3D_ELEM(exp_imagedata, offset + k, i, j) = DIRECT_A3D_ELEM(rec_img(), k, i, j);
                         }
                     }
 
-                }
-                else
-                {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img())
-                    {
+                } else {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img()) {
                         DIRECT_A3D_ELEM(exp_imagedata, metadata_offset, i, j) = DIRECT_A2D_ELEM(img(), i, j);
                     }
 
-                    if (has_converged && do_use_reconstruct_images)
-                    {
-                        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img())
-                        {
+                    if (has_converged && do_use_reconstruct_images) {
+                        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
                             DIRECT_A3D_ELEM(exp_imagedata, metadata_offset, i, j) = DIRECT_A2D_ELEM(rec_img(), i, j);
                         }
                     }
 
                 }
-            }
-            else
-            {
+            } else {
                 exp_fn_img += fn_img + "\n";
                 if (fn_ctf != "")
                     exp_fn_ctf += fn_ctf + "\n";
@@ -9249,96 +9136,76 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
             }
 
             // Now get the metadata
-            int iaux;
-            mydata.MDimg.getValue(EMDL_ORIENT_ROT,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT), ori_img_id);
-            mydata.MDimg.getValue(EMDL_ORIENT_TILT, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT), ori_img_id);
-            mydata.MDimg.getValue(EMDL_ORIENT_PSI,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI), ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT) = mydata.MDimg.getValue(EMDL_ORIENT_ROT, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT) = mydata.MDimg.getValue(EMDL_ORIENT_TIL, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI) = mydata.MDimg.getValue(EMDL_ORIENT_PSI, ori_img_id);
             RFLOAT xoff_A, yoff_A, zoff_A;
-            mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, xoff_A, ori_img_id);
-            mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, yoff_A, ori_img_id);
+            xoff_A = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+            yoff_A = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
             DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_XOFF) = xoff_A / my_pixel_size;
             DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF) = yoff_A / my_pixel_size;
-            if (mymodel.data_dim == 3)
-            {
-                mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, zoff_A, ori_img_id);
+            if (mymodel.data_dim == 3) {
+                zoff_A = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                 DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF) = zoff_A / my_pixel_size;
             }
 
-            mydata.MDimg.getValue(EMDL_PARTICLE_CLASS, iaux, ori_img_id);
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS) = (RFLOAT)iaux;
-            mydata.MDimg.getValue(EMDL_PARTICLE_DLL,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_DLL), ori_img_id);
-            mydata.MDimg.getValue(EMDL_PARTICLE_PMAX, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PMAX), ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS) = mydata.MDimg.getValue(EMDL_PARTICLE_CLASS, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_DLL)   = mydata.MDimg.getValue(EMDL_PARTICLE_DLL, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PMAX)  = mydata.MDimg.getValue(EMDL_PARTICLE_PMAX, ori_img_id);
 
-            // 5jul17: we do not need EMDL_PARTICLE_NR_SIGNIFICANT_SAMPLES for calculations. Send randomsubset instead!
-            if (do_split_random_halves)
-                mydata.MDimg.getValue(EMDL_PARTICLE_RANDOM_SUBSET, iaux, ori_img_id);
-            else
-                mydata.MDimg.getValue(EMDL_PARTICLE_NR_SIGNIFICANT_SAMPLES, iaux, ori_img_id);
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NR_SIGN) = (RFLOAT)iaux;
-            if (!mydata.MDimg.getValue(EMDL_IMAGE_NORM_CORRECTION, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM), ori_img_id))
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM) = 1.;
+            // 5 July 2017: we do not need EMDL_PARTICLE_NR_SIGNIFICANT_SAMPLES for calculations. Send randomsubset instead!
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NR_SIGN) = do_split_random_halves ?
+                mydata.MDimg.getValue(EMDL_PARTICLE_RANDOM_SUBSET, ori_img_id) : mydata.MDimg.getValue(EMDL_PARTICLE_NR_SIGNIFICANT_SAMPLES, ori_img_id);
+            try {
+                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM) = mydata.MDimg.getValue(EMDL_IMAGE_NORM_CORRECTION, ori_img_id);
+            } catch (const char* errmsg) {
+                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM) = 1.0;
+            }
 
-            // If the priors are NOT set, then set their values to 999.
-            if (!mydata.MDimg.getValue(EMDL_ORIENT_ROT_PRIOR,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT_PRIOR), ori_img_id))
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT_PRIOR) = 999.;
-            if (!mydata.MDimg.getValue(EMDL_ORIENT_TILT_PRIOR, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT_PRIOR), ori_img_id))
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT_PRIOR) = 999.;
-            if (!mydata.MDimg.getValue(EMDL_ORIENT_PSI_PRIOR,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI_PRIOR), ori_img_id))
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI_PRIOR) = 999.;
-            if (mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_PRIOR_ANGSTROM, xoff_A, ori_img_id))
-            {
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_XOFF_PRIOR) = xoff_A / my_pixel_size;
+            // If the priors are not set, set them to 999.0.
+            #define TRYSET(metadata_index, emdl_index) try { \
+                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, metadata_index) = mydata.MDimg.getValue(emdl_index, ori_img_id); \
+            } catch (const char* errmsg) { \
+                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, metadata_index) = 999.0; \
             }
-            else
-            {
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_XOFF_PRIOR) = 999.;
+            #define TRYSET_DIV_PIXELSIZE(var, metadata_index, emdl_index) try { \
+                var = mydata.MDimg.getValue(emdl_index, ori_img_id); \
+                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, metadata_index) = v / my_pixel_size; \
+            } catch (const char* errmsg) { \
+                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, metadata_index) = 999.0; \
             }
-            if (mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_PRIOR_ANGSTROM, yoff_A, ori_img_id))
-            {
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF_PRIOR) = yoff_A / my_pixel_size;
+            TRYSET(METADATA_ROT_PRIOR,  EMDL_ORIENT_ROT_PRIOR);
+            TRYSET(METADATA_TILT_PRIOR, EMDL_ORIENT_TILT_PRIOR);
+            TRYSET(METADATA_PSI_PRIOR,  EMDL_ORIENT_PSI_PRIOR);
+            TRYSET_DIV_PIXELSIZE(xoff_A, METADATA_XOFF_PRIOR, EMDL_ORIENT_ORIGIN_X_PRIOR_ANGSTROM);
+            TRYSET_DIV_PIXELSIZE(yoff_A, METADATA_YOFF_PRIOR, EMDL_ORIENT_ORIGIN_Y_PRIOR_ANGSTROM);
+            if (mymodel.data_dim == 3) {
+                TRYSET_DIV_PIXELSIZE(zoff_A, METADATA_ZOFF_PRIOR, EMDL_ORIENT_ORIGIN_Z_PRIOR_ANGSTROM);
             }
-            else
-            {
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF_PRIOR) = 999.;
-            }
-            if (mymodel.data_dim == 3)
-            {
-                if (mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_PRIOR_ANGSTROM, zoff_A, ori_img_id))
-                {
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF_PRIOR) = zoff_A / my_pixel_size;
-                }
-                else
-                {
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF_PRIOR) = 999.;
-                }
-            }
-            if (!mydata.MDimg.getValue(EMDL_ORIENT_PSI_PRIOR_FLIP_RATIO,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI_PRIOR_FLIP_RATIO), ori_img_id))
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI_PRIOR_FLIP_RATIO) = 999.;
+            TRYSET(METADATA_PSI_PRIOR_FLIP_RATIO, EMDL_ORIENT_PSI_PRIOR_FLIP_RATIO);
+            #undef TRYSET
+            #undef TRYSET_DIV_PIXELSIZE
 
             // The following per-particle parameters are passed around through metadata
             // Note beamtilt is no longer part of this: it is now in the optics group
-            if (do_ctf_correction)
-            {
-                long int mic_id = mydata.getMicrographId(part_id, img_id);
+            if (do_ctf_correction) {
+                long int mic_id = mydata.getMicrographId(part_id, img_id);  // Unused
                 RFLOAT DeltafU, DeltafV, azimuthal_angle, Bfac, kfac, phase_shift;
 
-                if (!mydata.MDimg.getValue(EMDL_CTF_DEFOCUSU, DeltafU, ori_img_id))
-                    DeltafU=0;
+                #define TRYSETVAR(var, emdl_index, defaut_val) try { \
+                    var = mydata.MDimg.getValue(emdl_index, ori_img_id); \
+                } catch (const char* errmsg) { \
+                    var = defaut_val; \
+                }
 
-                if (!mydata.MDimg.getValue(EMDL_CTF_DEFOCUSV, DeltafV, ori_img_id))
-                    DeltafV=DeltafU;
+                TRYSETVAR(DeltafU, EMDL_CTF_DEFOCUSU, 0);
+                TRYSETVAR(DeltafV, EMDL_CTF_DEFOCUSV, DeltafV);
+                TRYSETVAR(azimuthal_angle, EMDL_CTF_DEFOCUS_ANGLE, 0);
+                TRYSETVAR(Bfac, EMDL_CTF_BFACTOR, 0.0);
+                TRYSETVAR(kfac, EMDL_CTF_SCALEFACTOR, 1.0);
+                TRYSETVAR(phase_shift, EMDL_CTF_PHASESHIFT, 0.0);
 
-                if (!mydata.MDimg.getValue(EMDL_CTF_DEFOCUS_ANGLE, azimuthal_angle, ori_img_id))
-                    azimuthal_angle=0;
-
-                if (!mydata.MDimg.getValue(EMDL_CTF_BFACTOR, Bfac, ori_img_id))
-                    Bfac=0.;
-
-                if (!mydata.MDimg.getValue(EMDL_CTF_SCALEFACTOR, kfac, ori_img_id))
-                    kfac=1.;
-
-                if (!mydata.MDimg.getValue(EMDL_CTF_PHASESHIFT, phase_shift, ori_img_id))
-                    phase_shift=0.;
+                #undef TRYSETVAR
 
                 DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CTF_DEFOCUS_U) = DeltafU;
                 DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CTF_DEFOCUS_V) = DeltafV;
@@ -9350,36 +9217,28 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
             }
 
             // For multi-body refinement
-            if (mymodel.nr_bodies > 1)
-            {
-                for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++)
-                {
-                    int icol_rot  = 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                    int icol_tilt = 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                    int icol_psi  = 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                    int icol_xoff = 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                    int icol_yoff = 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                    int icol_zoff = 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                    RFLOAT rot, tilt, psi, xoff, yoff, zoff=0.;
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ROT, rot, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_TILT, tilt, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_PSI,  psi, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, xoff, ori_img_id);
-                    mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, yoff, ori_img_id);
-                    if (mymodel.data_dim == 3)
-                        mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, zoff, ori_img_id);
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_rot)  = rot;
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_tilt) = tilt;
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_psi)  = psi;
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_xoff) = xoff / my_pixel_size;
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_yoff) = yoff / my_pixel_size;
-                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_zoff) = zoff / my_pixel_size;
+            if (mymodel.nr_bodies > 1) {
+                for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
+                    RFLOAT rot, tilt, psi, xoff, yoff, zoff = 0.0;
+                    try {
+                        rot  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ROT,  ori_img_id);
+                        tilt = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_TILT, ori_img_id);
+                        psi  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_PSI,  ori_img_id);
+                        xoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+                        yoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+                        if (mymodel.data_dim == 3)
+                            zoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+                    } catch (const char* errmsg) {}
+                    #define MULTIBODY_METADATA_INDEX(i) i + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(0)) = rot;
+                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(1)) = tilt;
+                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(2)) = psi;
+                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(3)) = xoff / my_pixel_size;
+                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(4)) = yoff / my_pixel_size;
+                    DIRECT_A2D_ELEM(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(5)) = zoff / my_pixel_size;
+                    #undef MULTIBODY_METADATA_INDEX
                 }
             }
-
-        } // end for img_id
-
-    } // end for part_id
-
+        }
+    }
 }
-
