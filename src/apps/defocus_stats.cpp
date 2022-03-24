@@ -5,8 +5,7 @@
 
 using namespace gravis;
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	IOParser parser;
 	std::string starFn;
 
@@ -21,12 +20,11 @@ int main(int argc, char *argv[])
 	
 	double mu(0.0), var(0.0);
 	
-	for (int i = 0; i < mdt0.numberOfObjects(); i++)
-	{
+	for (int i = 0; i < mdt0.numberOfObjects(); i++) {
 		double u, v;
 		
-		mdt0.getValue(EMDL_CTF_DEFOCUSU, u, i);
-		mdt0.getValue(EMDL_CTF_DEFOCUSU, v, i);
+		mdt0.getValue(EMDL::CTF_DEFOCUSU, u, i);
+		mdt0.getValue(EMDL::CTF_DEFOCUSU, v, i);
 		
 		double a = 0.5 * (u + v);
 		
@@ -37,17 +35,16 @@ int main(int argc, char *argv[])
 	
 	std::cout << "mu: " << mu << "\n";
 	
-	for (int i = 0; i < mdt0.numberOfObjects(); i++)
-	{
+	for (int i = 0; i < mdt0.numberOfObjects(); i++) {
 		double u, v;
 		
-		mdt0.getValue(EMDL_CTF_DEFOCUSU, u, i);
-		mdt0.getValue(EMDL_CTF_DEFOCUSU, v, i);
+		mdt0.getValue(EMDL::CTF_DEFOCUSU, u, i);
+		mdt0.getValue(EMDL::CTF_DEFOCUSU, v, i);
 		
 		double a = 0.5 * (u + v);
 		double d = a - mu;
 		
-		var += d*d;
+		var += d * d;
 	}
 	
 	var /= (double) (mdt0.numberOfObjects() - 1);

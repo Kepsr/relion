@@ -35,20 +35,16 @@ const double MotionParamEstimator::velScale = 10000.0;
 const double MotionParamEstimator::divScale = 1.0;
 const double MotionParamEstimator::accScale = 1000.0;
 
-MotionParamEstimator::MotionParamEstimator()
-:   paramsRead(false), ready(false)
-{
-}
+MotionParamEstimator::MotionParamEstimator(): paramsRead(false), ready(false) {}
 
-void MotionParamEstimator::read(IOParser& parser, int argc, char *argv[])
-{
+void MotionParamEstimator::read(IOParser& parser, int argc, char *argv[]) {
     parser.addSection("Parameter estimation");
 
     estim2 = parser.checkOption("--params2", "Estimate 2 parameters instead of motion");
     estim3 = parser.checkOption("--params3", "Estimate 3 parameters instead of motion");
 
     align_frac = textToDouble(parser.getOption("--align_frac", "Fraction of pixels to be used for alignment", "0.5"));
-    eval_frac = textToDouble(parser.getOption("--eval_frac", "Fraction of pixels to be used for evaluation", "0.5"));
+    eval_frac  = textToDouble(parser.getOption("--eval_frac", "Fraction of pixels to be used for evaluation", "0.5"));
 
     minParticles = textToInteger(parser.getOption("--min_p", "Minimum number of particles on which to estimate the parameters", "1000"));
     group = textToInteger(parser.getOption("--par_group", "Estimate parameters for this optics group only (negative means all)", "-1")) - 1;
@@ -70,89 +66,81 @@ void MotionParamEstimator::init(
     const std::vector<MetaDataTable>& allMdts,
     MotionEstimator* motionEstimator,
     ReferenceMap* reference,
-    ObservationModel* obsModel)
-{
-    if (!paramsRead)
-    {
+    ObservationModel* obsModel
+) {
+    if (!paramsRead) {
         REPORT_ERROR("ERROR: MotionParamEstimator::init: MotionParamEstimator has not read its cmd-line parameters.");
     }
 
     this->verb = verb;
     this->nr_omp_threads = nr_omp_threads;
     this->debug = debug;
-	this->outPath = outPath;
+    this->outPath = outPath;
     this->fc = fc;
     this->motionEstimator = motionEstimator;
     this->obsModel = obsModel;
     this->reference = reference;
 
-	this->s_ref = reference->s;
+    this->s_ref = reference->s;
 
-	std::vector<int> allS, allSh;
-	obsModel->getBoxSizes(allS, allSh);
+    std::vector<int> allS, allSh;
+    obsModel->getBoxSizes(allS, allSh);
 
-	if (group < 0)
-	{
-		if (!obsModel->allPixelSizesIdentical()
-		 || !obsModel->allBoxSizesIdentical())
-		{
-			REPORT_ERROR_STR("MotionParamEstimator::init: unable to estimate motion parameters for all \n"
-						 << "optics groups simultaneously due to varying pixel and box sizes.\n"
-						 << "Please estimate them separately for each optics group (--par_group).");
-		}
+    if (group < 0) {
+        if (
+            !obsModel->allPixelSizesIdentical() || !obsModel->allBoxSizesIdentical()
+        ) {
+            REPORT_ERROR_STR(
+                "MotionParamEstimator::init: unable to estimate motion parameters for all \n"
+                << "optics groups simultaneously due to varying pixel and box sizes.\n"
+                << "Please estimate them separately for each optics group (--par_group)."
+            );
+        }
 
-		s = allS[0];
-		sh = allSh[0];
+        s  = allS [0];
+        sh = allSh[0];
 
-		group = 0;
+        group = 0;
 
-		allGroups = true;
+        allGroups = true;
 
-		if (verb > 0)
-		{
-			std::cout << " + estimating motion parameters for all optics groups simultaneously ..."
-					  << std::endl;
-		}
-	}
-	else
-	{
-		s = allS[group];
-		sh = allSh[group];
+        if (verb > 0) {
+            std::cout << " + estimating motion parameters for all optics groups simultaneously ..."
+                      << std::endl;
+        }
+    } else {
+        s  = allS [group];
+        sh = allSh[group];
 
-		allGroups = false;
+        allGroups = false;
 
-		if (verb > 0)
-		{
-			std::cout << " + estimating motion parameters for optics group "
-					  << obsModel->getGroupName(group) << " ..." << std::endl;
-		}
-	}
+        if (verb > 0) {
+            std::cout << " + estimating motion parameters for optics group "
+                      << obsModel->getGroupName(group) << " ..." << std::endl;
+        }
+    }
 
-    if (!motionEstimator->isReady())
-    {
+    if (!motionEstimator->isReady()) {
         REPORT_ERROR("ERROR: MotionParamEstimator initialized before MotionEstimator.");
     }
 
-    if (eval_frac + align_frac > 1.000001)
-    {
+    if (eval_frac + align_frac > 1.000001) {
         REPORT_ERROR_STR("ERROR: Alignment and evaluation sets are intersecting. "
-			<< "Please make sure that --align_frac and --eval_frac do not add up to more than 1.");
+            << "Please make sure that --align_frac and --eval_frac do not add up to more than 1.");
     }
 
-    if (estim2 && estim3)
-    {
+    if (estim2 && estim3) {
         REPORT_ERROR("ERROR: Only 2 or 3 parameters can be estimated (--params2 or --params3), not both.");
     }
 
-	k_out = reference->k_out;
+    k_out = reference->k_out;
 
-	k_cutoff = (int)(k_out * sqrt(align_frac) + 0.5);
-	k_eval = (int)(k_out * sqrt(1.0 - eval_frac) + 0.5);
+    k_cutoff = (int) (k_out * sqrt(align_frac)      + 0.5);
+    k_eval   = (int) (k_out * sqrt(1.0 - eval_frac) + 0.5);
 
-    if (verb > 0)
-    {
-		double k_cutoff_Angst = reference->angToPix(k_cutoff);
-		double k_eval_Angst = reference->angToPix(k_eval);
+    if (verb > 0) {
+        double k_cutoff_Angst = reference->angToPix(k_cutoff);
+        double k_eval_Angst   = reference->angToPix(k_eval);
 
         std::cout << " + maximum frequency to consider for alignment: "
             << k_cutoff_Angst << " A (" << k_cutoff << " ref. px)" << std::endl;
@@ -168,8 +156,7 @@ void MotionParamEstimator::init(
 
     std::vector<double> randNums(mc);
 
-    for (int m = 0; m < mc; m++)
-    {
+    for (int m = 0; m < mc; m++) {
         randNums[m] = rand() / (double)RAND_MAX;
     }
 
@@ -178,13 +165,11 @@ void MotionParamEstimator::init(
     int pc = 0;
     mdts.clear();
 
-    if (verb > 0)
-    {
+    if (verb > 0) {
         std::cout << " + micrographs randomly selected for parameter optimization:" << std::endl;
     }
 
-    for (int i = 0; i < order.size(); i++)
-    {
+    for (int i = 0; i < order.size(); i++) {
         const int m = order[i];
 
         const int pcm = allMdts[m].numberOfObjects();
@@ -192,39 +177,31 @@ void MotionParamEstimator::init(
         // motion estimation does not work on one single particle
         if (pcm < 2) continue;
 
-		if (allGroups)
-		{
-			mdts.push_back(allMdts[m]);
-			pc += pcm;
-		}
-		else
-		{
-			MetaDataTable rightGroup;
+        if (allGroups) {
+            mdts.push_back(allMdts[m]);
+            pc += pcm;
+        } else {
+            MetaDataTable rightGroup;
 
-			for (int p = 0; p < pcm; p++)
-			{
-				if (obsModel->getOpticsGroup(allMdts[m], p) == group)
-				{
-					rightGroup.addObject(allMdts[m].getObject(p));
-				}
-			}
+            for (int p = 0; p < pcm; p++) {
+                if (obsModel->getOpticsGroup(allMdts[m], p) == group) {
+                    rightGroup.addObject(allMdts[m].getObject(p));
+                }
+            }
 
-			mdts.push_back(rightGroup);
-			pc += rightGroup.numberOfObjects();
-		}
+            mdts.push_back(rightGroup);
+            pc += rightGroup.numberOfObjects();
+        }
 
-        if (verb > 0)
-        {
+        if (verb > 0) {
             std::string mn;
-            allMdts[m].getValue(EMDL_MICROGRAPH_NAME, mn, 0);
+            allMdts[m].getValue(EMDL::MICROGRAPH_NAME, mn, 0);
 
             std::cout << "        " << m << ": " << mn << std::endl;
         }
 
-        if (pc >= minParticles)
-        {
-            if (verb > 0)
-            {
+        if (pc >= minParticles) {
+            if (verb > 0) {
                 std::cout << "\n + " << pc << " particles found in "
                           << mdts.size() << " micrographs\n";
             }
@@ -233,8 +210,7 @@ void MotionParamEstimator::init(
         }
     }
 
-    if (verb > 0 && pc < minParticles)
-    {
+    if (verb > 0 && pc < minParticles) {
         std::cout << "\n   - Warning: this dataset does not contain " << minParticles
                   << " particles (--min_p) in micrographs with at least 2 particles\n";
     }
@@ -242,16 +218,14 @@ void MotionParamEstimator::init(
     ready = true;
 }
 
-void MotionParamEstimator::run()
-{
+void MotionParamEstimator::run() {
     #ifdef TIMING
-        timeSetup = paramTimer.setNew(" time_Setup ");
-        timeOpt = paramTimer.setNew(" time_Opt ");
-        timeEval = paramTimer.setNew(" time_Eval ");
+    timeSetup = paramTimer.setNew(" time_Setup ");
+    timeOpt = paramTimer.setNew(" time_Opt ");
+    timeEval = paramTimer.setNew(" time_Eval ");
     #endif
 
-    if (!ready)
-    {
+    if (!ready) {
         REPORT_ERROR("ERROR: MotionParamEstimator::run: MotionParamEstimator not initialized.");
     }
 
@@ -268,92 +242,81 @@ void MotionParamEstimator::run()
     std::cout.setf(std::ios::fixed, std::ios::floatfield);
     std::cout.precision(5);
 
-    if (estim2)
-    {
+    if (estim2) {
         opt = estimateTwoParamsNM(sV, sD, sA, iniStep, conv, maxIters);
     }
 
-    if (estim3)
-    {
+    if (estim3) {
         opt = estimateThreeParamsNM(sV, sD, sA, iniStep, conv, maxIters);
     }
 
     std::cout.setf(std::ios::floatfield);
 
-    d3Vector nrm(
-        opt[0] * velScale,
-        opt[1] * divScale,
-        opt[2] * accScale);
+    d3Vector nrm(opt[0] * velScale, opt[1] * divScale, opt[2] * accScale);
 
     // round result to conv / 2 (the min. radius of the optimization simplex)
     d3Vector rnd(
-        conv * 0.5 * ((int)(2.0*nrm[0]/conv + 0.5)) / velScale,
-        conv * 0.5 * ((int)(2.0*nrm[1]/conv + 0.5)) / divScale,
-        conv * 0.5 * ((int)(2.0*nrm[2]/conv + 0.5)) / accScale);
+        conv * 0.5 * ((int) (2.0 * nrm[0] / conv + 0.5)) / velScale,
+        conv * 0.5 * ((int) (2.0 * nrm[1] / conv + 0.5)) / divScale,
+        conv * 0.5 * ((int) (2.0 * nrm[2] / conv + 0.5)) / accScale
+    );
 
-    if (estim2)
-    {
-        rnd[2] = sA;
-    }
+    if (estim2) { rnd[2] = sA; }
 
-    if (opt[2] <= 0.0)
-    {
-        rnd[2] = -1;
-    }
+    if (opt[2] <= 0.0) { rnd[2] = -1; }
 
     std::cout << "\ngood parameters:"
               << " --s_vel " << rnd[0]
               << " --s_div " << rnd[1]
               << " --s_acc " << rnd[2] << "\n\n";
 
-	FileName newdir = FileName(outPath).beforeLastOf("/");
-	std::string command = " mkdir -p " + newdir;
-	int ret = system(command.c_str());
+    FileName newdir = FileName(outPath).beforeLastOf("/");
+    std::string command = " mkdir -p " + newdir;
+    int ret = system(command.c_str());
 
-	std::string paramFn;
+    std::string paramFn;
 
-	if (allGroups)
-	{
-		paramFn = "opt_params_all_groups.txt";
-	}
-	else
-	{
-		paramFn = "opt_params_group_" + obsModel->getGroupName(group) + ".txt";
-	}
+    if (allGroups) {
+        paramFn = "opt_params_all_groups.txt";
+    } else {
+        paramFn = "opt_params_group_" + obsModel->getGroupName(group) + ".txt";
+    }
 
-	std::ofstream ofs(outPath+paramFn);
-	ofs << rnd[0] << " ";
-	ofs << rnd[1] << " ";
-	ofs << rnd[2] << std::endl;
-	ofs.close();
+    std::ofstream ofs(outPath + paramFn);
+    ofs << rnd[0] << " ";
+    ofs << rnd[1] << " ";
+    ofs << rnd[2] << std::endl;
+    ofs.close();
 
-	std::cout << "written to " << (outPath+paramFn) << std::endl;
+    std::cout << "written to " << (outPath + paramFn) << std::endl;
 
     #ifdef TIMING
-        paramTimer.printTimes(true);
+    paramTimer.printTimes(true);
     #endif
 }
 
-bool MotionParamEstimator::anythingToDo()
-{
+bool MotionParamEstimator::anythingToDo() {
     return estim2 || estim3;
 }
 
 d4Vector MotionParamEstimator::estimateTwoParamsNM(
-        double sig_v_0, double sig_d_0, double sig_acc, double inStep, double conv, int maxIters)
-{
+    double sig_v_0, double sig_d_0, double sig_acc, 
+    double inStep, double conv, int maxIters
+) {
     std::cout << "\nit: \t s_vel: \t s_div: \t s_acc: \t fsc:\n\n";
 
     TwoHyperParameterProblem thpp(*this, sig_acc);
 
     std::vector<double> initial = TwoHyperParameterProblem::motionToProblem(
-            d2Vector(sig_v_0, sig_d_0));
+        d2Vector(sig_v_0, sig_d_0)
+    );
 
     double minTsc;
 
     std::vector<double> final = NelderMead::optimize(
-            initial, thpp, inStep, conv, maxIters,
-            1.0, 2.0, 0.5, 0.5, false, &minTsc);
+        initial, thpp, inStep, conv, maxIters,
+        1.0, 2.0, 0.5, 0.5, false, &minTsc
+    );
 
     d2Vector vd = TwoHyperParameterProblem::problemToMotion(final);
 
@@ -361,20 +324,22 @@ d4Vector MotionParamEstimator::estimateTwoParamsNM(
 }
 
 d4Vector MotionParamEstimator::estimateThreeParamsNM(
-        double sig_v_0, double sig_d_0, double sig_a_0, double inStep, double conv, int maxIters)
-{
+    double sig_v_0, double sig_d_0, double sig_a_0, double inStep, double conv, int maxIters
+) {
     std::cout << "\nit: \t s_vel: \t s_div: \t s_acc: \t fsc:\n\n";
 
     ThreeHyperParameterProblem thpp(*this);
 
     std::vector<double> initial = ThreeHyperParameterProblem::motionToProblem(
-            d3Vector(sig_v_0, sig_d_0, sig_a_0));
+        d3Vector(sig_v_0, sig_d_0, sig_a_0)
+    );
 
     double minTsc;
 
     std::vector<double> final = NelderMead::optimize(
-            initial, thpp, inStep, conv, maxIters,
-            1.0, 2.0, 0.5, 0.5, false, &minTsc);
+        initial, thpp, inStep, conv, maxIters,
+        1.0, 2.0, 0.5, 0.5, false, &minTsc
+    );
 
     d3Vector vd = ThreeHyperParameterProblem::problemToMotion(final);
 
@@ -383,8 +348,8 @@ d4Vector MotionParamEstimator::estimateThreeParamsNM(
 
 void MotionParamEstimator::evaluateParams(
     const std::vector<d3Vector>& sig_vals,
-    std::vector<double>& TSCs)
-{
+    std::vector<double>& TSCs
+) {
     const int paramCount = sig_vals.size();
     TSCs.resize(paramCount);
 
@@ -392,8 +357,7 @@ void MotionParamEstimator::evaluateParams(
     std::vector<double> sig_d_vals_px(paramCount);
     std::vector<double> sig_a_vals_px(paramCount);
 
-    for (int i = 0; i < paramCount; i++)
-    {
+    for (int i = 0; i < paramCount; i++) {
         sig_v_vals_px[i] = motionEstimator->normalizeSigVel(sig_vals[i][0], reference->angpix);
         sig_d_vals_px[i] = motionEstimator->normalizeSigDiv(sig_vals[i][1], reference->angpix);
         sig_a_vals_px[i] = motionEstimator->normalizeSigAcc(sig_vals[i][2], reference->angpix);
@@ -404,24 +368,21 @@ void MotionParamEstimator::evaluateParams(
 
     const int gc = mdts.size();
 
-    for (long g = 0; g < gc; g++)
-    {
+    // Micrographs
+    for (long g = 0; g < gc; g++) {
         const int pc = mdts[g].numberOfObjects();
 
         if (pc < 2) continue; // not really needed, mdts are pre-screened
 
         pctot += pc;
 
-        if (debug)
-        {
+        if (debug) {
             std::cout << "    micrograph " << (g+1) << " / " << mdts.size() << ": "
                 << pc << " particles [" << pctot << " total]" << std::endl;
         }
 
-        for (int i = 0; i < paramCount; i++)
-        {
-            if (debug)
-            {
+        for (int i = 0; i < paramCount; i++) {
+            if (debug) {
                 std::cout << "        evaluating: " << sig_vals[i] << std::endl;
             }
 
@@ -434,25 +395,22 @@ void MotionParamEstimator::evaluateParams(
                     sig_v_vals_px[i], sig_a_vals_px[i], sig_d_vals_px[i],
                     alignmentSet.positions[g], alignmentSet.globComp[g]);
 
-			if (debug)
-            {
-				std::stringstream sts;
-				sts << "debug-track_" << sig_vals[i][0] << "_" << sig_vals[i][1] << "_" << sig_vals[i][2] << ".dat";
+            if (debug) {
+                std::stringstream sts;
+                sts << "debug-track_" << sig_vals[i][0] << "_" << sig_vals[i][1] << "_" << sig_vals[i][2] << ".dat";
 
-				std::ofstream debugStr(sts.str());
+                std::ofstream debugStr(sts.str());
 
-				for (int p = 0; p < pc; p++)
-				{
-					for (int f = 0; f < fc; f++)
-					{
-						debugStr << tracks[p][f] << std::endl;
-					}
+                for (int p = 0; p < pc; p++) {
+                    for (int f = 0; f < fc; f++) {
+                        debugStr << tracks[p][f] << std::endl;
+                    }
 
-					debugStr << std::endl;
-				}
+                    debugStr << std::endl;
+                }
 
-				debugStr.close();
-			}
+                debugStr.close();
+            }
 
             RCTOC(paramTimer,timeOpt);
 
@@ -462,23 +420,17 @@ void MotionParamEstimator::evaluateParams(
 
             RCTOC(paramTimer,timeEval);
         }
-
-    } // micrographs
-
-    if (debug)
-    {
-        std::cout << std::endl;
     }
+
+    if (debug) { std::cout << std::endl; }
 
     RCTIC(paramTimer,timeEval);
 
     // compute final TSC
-    for (int i = 0; i < paramCount; i++)
-    {
+    for (int i = 0; i < paramCount; i++) {
         double wg = tscsAs[i][1] * tscsAs[i][2];
 
-        if (wg > 0.0)
-        {
+        if (wg > 0.0) {
             TSCs[i] = tscsAs[i][0] / sqrt(wg);
         }
     }
@@ -486,22 +438,19 @@ void MotionParamEstimator::evaluateParams(
     RCTOC(paramTimer,timeEval);
 }
 
-void MotionParamEstimator::prepAlignment()
-{
+void MotionParamEstimator::prepAlignment() {
     std::cout << " + preparing alignment data... " << std::endl;
 
     const std::vector<Image<RFLOAT>>& dmgWgh = motionEstimator->computeDamageWeights(group);
     std::vector<Image<RFLOAT>> alignDmgWgh(fc);
 
-    for (int f = 0; f < fc; f++)
-    {
-        alignDmgWgh[f] = FilterHelper::raisedCosEnvFreq2D(dmgWgh[f], k_cutoff-1, k_cutoff+1);
+    for (int f = 0; f < fc; f++) {
+        alignDmgWgh[f] = FilterHelper::raisedCosEnvFreq2D(dmgWgh[f], k_cutoff - 1, k_cutoff + 1);
     }
 
-    alignmentSet = AlignmentSet<float>(mdts, fc, s, k_eval+2, k_out);
+    alignmentSet = AlignmentSet<float>(mdts, fc, s, k_eval + 2, k_out);
 
-    for (int f = 0; f < fc; f++)
-    {
+    for (int f = 0; f < fc; f++) {
         alignmentSet.accelerate(dmgWgh[f], alignmentSet.damage[f]);
     }
 
@@ -511,8 +460,7 @@ void MotionParamEstimator::prepAlignment()
 
     int pctot = 0;
 
-    for (long g = 0; g < gc; g++)
-    {
+    for (long g = 0; g < gc; g++) {
         const int pc = mdts[g].numberOfObjects();
 
         if (pc < 2) continue;
@@ -525,38 +473,34 @@ void MotionParamEstimator::prepAlignment()
         std::vector<std::vector<Image<Complex>>> movie;
         std::vector<std::vector<Image<RFLOAT>>> movieCC;
 
-        try
-        {
+        try {
             motionEstimator->prepMicrograph(
                 mdts[g], fts, alignDmgWgh,
-				0,
+                0,
                 movie, movieCC,
                 alignmentSet.positions[g],
                 alignmentSet.initialTracks[g],
-                alignmentSet.globComp[g]);
-        }
-        catch (RelionError XE)
-        {
+                alignmentSet.globComp[g]
+            );
+        } catch (RelionError XE) {
             std::cerr << "warning: unable to load micrograph #" << (g+1) << std::endl;
             continue;
         }
 
-		const int maxRangeP = 2 * motionEstimator->getCCPad() * maxRange;
+        const int maxRangeP = 2 * motionEstimator->getCCPad() * maxRange;
 
         #pragma omp parallel for num_threads(nr_omp_threads)
-        for (int p = 0; p < pc; p++)
-        {
-			for (int f = 0; f < fc; f++)
-            {
-				if (maxRange > 0)
-                {
+        for (int p = 0; p < pc; p++) {
+            for (int f = 0; f < fc; f++) {
+                if (maxRange > 0) {
                     movieCC[p][f] = FilterHelper::cropCorner2D(movieCC[p][f], maxRangeP, maxRangeP);
                 }
 
                 alignmentSet.copyCC(g, p, f, movieCC[p][f]);
 
                 Image<Complex> pred = reference->predict(
-                    mdts[g], p, *obsModel, ReferenceMap::Opposite);
+                    mdts[g], p, *obsModel, ReferenceMap::Opposite
+                );
 
                 alignmentSet.accelerate(movie[p][f], alignmentSet.obs[g][p][f]);
                 alignmentSet.accelerate(pred, alignmentSet.pred[g][p]);
@@ -572,4 +516,3 @@ void MotionParamEstimator::prepAlignment()
 
     std::cout << "   done\n";
 }
-

@@ -20,8 +20,13 @@
 
 #include "src/particle_subtractor.h"
 
-void ParticleSubtractor::read(int argc, char **argv)
-{
+
+// Like modulo, but return the modulus instead of zero.
+static inline int modulo_alt(int x, int y) {
+    return (x - 1) % y + 1;
+}
+
+void ParticleSubtractor::read(int argc, char **argv) {
     parser.setCommandLine(argc, argv);
     int gen_section = parser.addSection("General options");
     fn_opt = parser.getOption("--i", "Name of optimiser.star file from refinement/classification to use for subtraction", "");
@@ -45,41 +50,34 @@ void ParticleSubtractor::read(int argc, char **argv)
     if (parser.checkForErrors())
         REPORT_ERROR("Errors encountered on the command line (see above), exiting...");
 
-    if ((fn_opt == "" && fn_revert == "") || (fn_opt != "" && fn_revert != ""))
+    if ((fn_opt == "") == (fn_revert == ""))
         REPORT_ERROR("Please specify only one of --i OR --revert");
 }
 
-void ParticleSubtractor::usage()
-{
+void ParticleSubtractor::usage() {
     parser.writeUsage(std::cout);
 }
 
-void ParticleSubtractor::divideLabour(int _rank, int _size, long int &my_first, long int &my_last)
-{
-    if (opt.do_split_random_halves)
-    {
+void ParticleSubtractor::divideLabour(int _rank, int _size, long int &my_first, long int &my_last) {
+    if (opt.do_split_random_halves) {
         if (size < 2) REPORT_ERROR("You need to run this program with at least 2 MPI processes for subtraction of 3D auto-refine jobs");
         opt.mydata.divideParticlesInRandomHalves(0, opt.do_helical_refine);
 
-        int my_halfset = (_rank % 2 == 1) ? 1 : 2;
-        int mysize = (my_halfset == 1) ? _size / 2 : _size / 2 + _size % 2;
+        int my_halfset = modulo_alt(_rank, 2)
+        int mysize = my_halfset == 1 ? _size / 2 : _size / 2 + _size % 2;
         divide_equally(opt.mydata.numberOfParticles(my_halfset), mysize, _rank / 2, my_first, my_last);
-        if (my_halfset == 2)
-        {
+        if (my_halfset == 2) {
             my_first += opt.mydata.numberOfParticles(1);
-            my_last += opt.mydata.numberOfParticles(1);
+            my_last  += opt.mydata.numberOfParticles(1);
         }
-    }
-    else
-    {
+    } else {
         divide_equally(opt.mydata.numberOfParticles(), _size, _rank, my_first, my_last);
     }
     //std::cerr << " rank= " << _rank << "size= " << _size << " my_first= " << my_first << " my_last= " << my_last << std::endl;
 }
 
 // Initialise some stuff after reading
-void ParticleSubtractor::initialise(int _rank, int _size)
-{
+void ParticleSubtractor::initialise(int _rank, int _size) {
     rank = _rank;
     size = _size;
 
@@ -90,8 +88,7 @@ void ParticleSubtractor::initialise(int _rank, int _size)
 
     // Make directory for output particles
     if (fn_out[fn_out.length()-1] != '/') fn_out += "/";
-    if (verb > 0)
-    {
+    if (verb > 0) {
         int res = system(("mkdir -p " + fn_out + "Particles").c_str());
     }
 
@@ -99,18 +96,16 @@ void ParticleSubtractor::initialise(int _rank, int _size)
     nr_particles_in_optics_group.resize(opt.mydata.obsModel.opticsMdt.numberOfObjects(), 0);
 
     // Overwrite the particles STAR file with a smaller subset
-    if (fn_sel != "")
-    {
+    if (fn_sel != "") {
         opt.mydata.clear();
-        bool is_helical_segment = (opt.do_helical_refine) || ((opt.mymodel.ref_dim == 2) && (opt.helical_tube_outer_diameter > 0.));
+        bool is_helical_segment = opt.do_helical_refine || (opt.mymodel.ref_dim == 2 && opt.helical_tube_outer_diameter > 0.0);
         opt.mydata.read(fn_sel, false, false, false, is_helical_segment);
     }
 
     divideLabour(rank, size, my_first_part_id, my_last_part_id);
 
     Image<RFLOAT> Imask;
-    if (fn_msk != "" && !do_ssnr)
-    {
+    if (fn_msk != "" && !do_ssnr) {
         if (verb > 0) std::cout << " + Reading in mask ... " << std::endl;
         // Mask stuff
         Imask.read(fn_msk);
@@ -122,44 +117,37 @@ void ParticleSubtractor::initialise(int _rank, int _size)
         if (minval < 0.0 || maxval > 1.0) {
             REPORT_ERROR("ERROR: the keep_inside mask has values outside the range [0,1]");
         }
-    }
-    else
-    {
+    } else {
         Imask().initZeros(opt.mymodel.Iref[0]);
     }
 
-    if (do_ssnr)
-    {
-        sum_S2.initZeros(opt.mymodel.ori_size/2+1);
-        sum_N2.initZeros(opt.mymodel.ori_size/2+1);
-        sum_count.initZeros(opt.mymodel.ori_size/2+1);
+    if (do_ssnr) {
+        sum_S2.   initZeros(opt.mymodel.ori_size / 2 + 1);
+        sum_N2.   initZeros(opt.mymodel.ori_size / 2 + 1);
+        sum_count.initZeros(opt.mymodel.ori_size / 2 + 1);
     }
 
-    if (do_recenter_on_mask)
-    {
+    if (do_recenter_on_mask) {
         Imask().centerOfMass(new_center);
         do_center = true;
-    }
-    else if ((int)XX(new_center) != 9999 && (int)YY(new_center) != 9999 && (int)ZZ(new_center) != 9999)
-    {
+    } else if (
+        (int) XX(new_center) != 9999 && 
+        (int) YY(new_center) != 9999 && 
+        (int) ZZ(new_center) != 9999
+    ) {
         do_center = true;
-    }
-    else
-    {
+    } else {
         new_center.initZeros();
         do_center = false;
     }
 
-    if (verb > 0 && (do_center || opt.fn_body_masks != "None"))
-    {
+    if (verb > 0 && (do_center || opt.fn_body_masks != "None")) {
         std::cout << " + The subtracted particles will be re-centred on projections of 3D-coordinate: ("
                   << new_center(0) << " , " << new_center(1) << " , " << new_center(2) << ")" << std::endl;
     }
 
-    if (opt.fn_body_masks != "None")
-    {
-        if (verb > 0)
-        {
+    if (opt.fn_body_masks != "None") {
+        if (verb > 0) {
             std::cout << " + Initialising multi-body subtraction ..." << std::endl;
         }
 
@@ -172,21 +160,18 @@ void ParticleSubtractor::initialise(int _rank, int _size)
         // Find out which body has the biggest overlap with the keepmask, use these orientations
         RFLOAT best_overlap = 0.;
         subtract_body = -1;
-        for (int ibody = 0; ibody < opt.mymodel.nr_bodies; ibody++)
-        {
-            if (!Imask().sameShape(opt.mymodel.masks_bodies[ibody]))
-            {
+        for (int ibody = 0; ibody < opt.mymodel.nr_bodies; ibody++) {
+            if (!Imask().sameShape(opt.mymodel.masks_bodies[ibody])) {
                 Imask().printShape();
                 opt.mymodel.masks_bodies[ibody].printShape();
                 REPORT_ERROR("ERROR: input mask is not of same shape as body masks.");
             }
 
-            RFLOAT overlap = 0.;
+            RFLOAT overlap = 0.0;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
                 overlap += DIRECT_MULTIDIM_ELEM(opt.mymodel.masks_bodies[ibody], n) * DIRECT_MULTIDIM_ELEM(Imask(), n);
 
-            if (overlap > best_overlap)
-            {
+            if (overlap > best_overlap) {
                 best_overlap = overlap;
                 subtract_body = ibody;
             }
@@ -195,36 +180,28 @@ void ParticleSubtractor::initialise(int _rank, int _size)
         if (subtract_body < 0) REPORT_ERROR("ERROR: input mask does not overlap with any of the bodies....");
 
         // Apply the inverse of the keepmask to all the mask_bodies
-        for (int obody = 0; obody < opt.mymodel.nr_bodies; obody++)
-        {
+        for (int obody = 0; obody < opt.mymodel.nr_bodies; obody++) {
             int ii = DIRECT_A2D_ELEM(opt.mymodel.pointer_body_overlap, subtract_body, obody);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
-            {
-                DIRECT_MULTIDIM_ELEM(opt.mymodel.masks_bodies[ii], n) *= (1. - DIRECT_MULTIDIM_ELEM(Imask(), n));
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask()) {
+                DIRECT_MULTIDIM_ELEM(opt.mymodel.masks_bodies[ii], n) *= 1.0 - DIRECT_MULTIDIM_ELEM(Imask(), n);
             }
         }
-    }
-    else
-    {
+    } else {
         // For normal refinement/classification: just apply the inverse of keepmask to the references
-        for (int iclass = 0; iclass < opt.mymodel.nr_classes; iclass++)
-        {
-            if (!Imask().sameShape(opt.mymodel.Iref[iclass]))
-            {
+        for (int iclass = 0; iclass < opt.mymodel.nr_classes; iclass++) {
+            if (!Imask().sameShape(opt.mymodel.Iref[iclass])) {
                 Imask().printShape();
                 opt.mymodel.Iref[iclass].printShape();
                 REPORT_ERROR("ERROR: input mask is not of same shape as reference inside the optimiser.");
             }
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
-            {
-                DIRECT_MULTIDIM_ELEM(opt.mymodel.Iref[iclass], n) *= (1. - DIRECT_MULTIDIM_ELEM(Imask(), n));
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask()) {
+                DIRECT_MULTIDIM_ELEM(opt.mymodel.Iref[iclass], n) *= 1.0 - DIRECT_MULTIDIM_ELEM(Imask(), n);
             }
         }
     }
 
-    if (verb > 0)
-    {
+    if (verb > 0) {
         std::cout << " + Calculating Fourier transforms of the maps ..." << std::endl;
     }
 
@@ -233,43 +210,40 @@ void ParticleSubtractor::initialise(int _rank, int _size)
 
     // ensure even boxsize of subtracted images
     if (boxsize > 0)
-        boxsize -= boxsize%2;
+        boxsize -= boxsize % 2;
 }
 
-void ParticleSubtractor::revert()
-{
+void ParticleSubtractor::revert() {
     ObservationModel obsModel;
     MetaDataTable MD;
 
     ObservationModel::loadSafely(fn_revert, obsModel, MD);
 
-    if (!MD.containsLabel(EMDL_IMAGE_ORI_NAME))
+    if (!MD.containsLabel(EMDL::IMAGE_ORI_NAME))
         REPORT_ERROR("The input STAR file does not contain the rlnImageOriginalName column.");
 
-    if (!MD.containsLabel(EMDL_IMAGE_NAME))
+    if (!MD.containsLabel(EMDL::IMAGE_NAME))
         REPORT_ERROR("The input STAR file does not contain the rlnImageName column");
 
     // Swap image names
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD)
-    {
+    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         FileName f1, f2;
-        MD.getValue(EMDL_IMAGE_ORI_NAME, f1);
-        MD.getValue(EMDL_IMAGE_NAME, f2);
-        MD.setValue(EMDL_IMAGE_ORI_NAME, f2);
-        MD.setValue(EMDL_IMAGE_NAME, f1);
+        MD.getValue(EMDL::IMAGE_ORI_NAME, f1);
+        MD.getValue(EMDL::IMAGE_NAME,     f2);
+        MD.setValue(EMDL::IMAGE_ORI_NAME, f2);
+        MD.setValue(EMDL::IMAGE_NAME,     f1);
     }
 
     // Fix box size
     std::vector<bool> fixed_box_size(obsModel.numberOfOpticsGroups(), false);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD)
-    {
+    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         const int og = obsModel.getOpticsGroup(MD);
         if (fixed_box_size[og])
             continue;
 
         FileName img_name, fn_img;
         long int dummy;
-        MD.getValue(EMDL_IMAGE_NAME, img_name);
+        MD.getValue(EMDL::IMAGE_NAME, img_name);
         img_name.decompose(dummy, fn_img);
 
         if (!exists(fn_img))
@@ -279,30 +253,28 @@ void ParticleSubtractor::revert()
         if (XSIZE(Ihead()) != YSIZE(Ihead()))
             REPORT_ERROR("Particle " + img_name + " is not square.");
         obsModel.setBoxSize(og, XSIZE(Ihead()));
-        obsModel.opticsMdt.setValue(EMDL_IMAGE_SIZE, XSIZE(Ihead()), og);
+        obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, XSIZE(Ihead()), og);
 
         fixed_box_size[og] = true;
     }
 
-    for (int i = 0; i < obsModel.numberOfOpticsGroups(); i++)
-    {
-        if (!fixed_box_size[i])
+    for (int i = 0; i < obsModel.numberOfOpticsGroups(); i++) {
+        if (!fixed_box_size[i]) {
             std::cerr << "WARNING: could not determine the box size of optics group " << obsModel.getGroupName(i) << std::endl;
-        else
+        } else {
             std::cout << "The box size of the optics group " << obsModel.getGroupName(i) << " was updated to " << obsModel.getBoxSize(i) << " px" << std::endl;
+        }
     }
 
     obsModel.save(MD, fn_out + "original.star");
     std::cout << "Writen " << (fn_out + "original.star") << std::endl;
 }
 
-void ParticleSubtractor::run()
-{
+void ParticleSubtractor::run() {
 
     long int nr_parts = my_last_part_id - my_first_part_id + 1;
-    long int barstep = XMIPP_MAX(1, nr_parts/120);
-    if (verb > 0)
-    {
+    long int barstep = XMIPP_MAX(1, nr_parts / 120);
+    if (verb > 0) {
         if (do_ssnr) std::cout << " + Calculating SNR for all particles ..." << std::endl;
         else std::cout << " + Subtracting all particles ..." << std::endl;
         time_config();
@@ -311,12 +283,10 @@ void ParticleSubtractor::run()
 
     MDimg_out.clear();
     //for (long int part_id_sorted = my_first_part_id, cc = 0; part_id_sorted <= my_last_part_id; part_id_sorted++, cc++)
-    for (long int part_id_sorted = my_first_part_id, cc = 0; part_id_sorted <= my_last_part_id; part_id_sorted++, cc++)
-    {
+    for (long int part_id_sorted = my_first_part_id, cc = 0; part_id_sorted <= my_last_part_id; part_id_sorted++, cc++) {
 
         //long int part_id = opt.mydata.sorted_idx[part_id_sorted];
-        if (cc % barstep == 0)
-        {
+        if (cc % barstep == 0) {
             if (pipeline_control_check_abort_job())
                 exit(RELION_EXIT_ABORTED);
         }
@@ -330,92 +300,76 @@ void ParticleSubtractor::run()
     if (verb > 0) progress_bar(nr_parts);
 }
 
-void ParticleSubtractor::saveStarFile(int myrank)
-{
+void ParticleSubtractor::saveStarFile(int myrank) {
 
-    if (do_ssnr)
-    {
+    if (do_ssnr) {
 
         // Only leader writes out the STAR file
-        if (myrank==0)
-        {
+        if (myrank == 0) {
             MetaDataTable MD;
-            for (int ires = 0; ires < XSIZE(sum_S2); ires++)
-            {
+            for (int ires = 0; ires < XSIZE(sum_S2); ires++) {
                 MD.addObject();
-                MD.setValue(EMDL_SPECTRAL_IDX, ires);
-                MD.setValue(EMDL_RESOLUTION, opt.mymodel.getResolution(ires));
-                MD.setValue(EMDL_RESOLUTION_ANGSTROM, opt.mymodel.getResolutionAngstrom(ires));
-                MD.setValue(EMDL_MLMODEL_SSNR_REF, sum_S2(ires)/sum_N2(ires));
-                MD.setValue(EMDL_MLMODEL_TAU2_REF, sum_S2(ires) / sum_count(ires) );
-                MD.setValue(EMDL_MLMODEL_SIGMA2_NOISE, sum_N2(ires) / sum_count(ires) );
+                MD.setValue(EMDL::SPECTRAL_IDX, ires);
+                MD.setValue(EMDL::RESOLUTION, opt.mymodel.getResolution(ires));
+                MD.setValue(EMDL::RESOLUTION_ANGSTROM, opt.mymodel.getResolutionAngstrom(ires));
+                MD.setValue(EMDL::MLMODEL_SSNR_REF, sum_S2(ires)/sum_N2(ires));
+                MD.setValue(EMDL::MLMODEL_TAU2_REF, sum_S2(ires) / sum_count(ires) );
+                MD.setValue(EMDL::MLMODEL_SIGMA2_NOISE, sum_N2(ires) / sum_count(ires) );
             }
             std::cout << " Writing out STAR file with spectral SNR in: " << fn_out << "spectral_snr.star" << " ..." << std::endl;
             MD.write(fn_out+"spectral_snr.star");
         }
 
-    }
-    else
-    {
+    } else {
 
         // Reset image size in optics table, if the images were rewindowed in a different box
-        if (boxsize > 0)
-        {
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(opt.mydata.obsModel.opticsMdt)
-            {
-                opt.mydata.obsModel.opticsMdt.setValue(EMDL_IMAGE_SIZE, boxsize);
+        if (boxsize > 0) {
+            FOR_ALL_OBJECTS_IN_METADATA_TABLE(opt.mydata.obsModel.opticsMdt) {
+                opt.mydata.obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, boxsize);
             }
         }
 
         // Remove origin prior columns if present, as we have re-centered.
-        if (do_center || opt.fn_body_masks != "None")
-        {
-            if (MDimg_out.containsLabel(EMDL_ORIENT_ORIGIN_X_PRIOR_ANGSTROM))
-            {
-                MDimg_out.deactivateLabel(EMDL_ORIENT_ORIGIN_X_PRIOR_ANGSTROM);
+        if (do_center || opt.fn_body_masks != "None") {
+            if (MDimg_out.containsLabel(EMDL::ORIENT_ORIGIN_X_PRIOR_ANGSTROM)) {
+                MDimg_out.deactivateLabel(EMDL::ORIENT_ORIGIN_X_PRIOR_ANGSTROM);
             }
-            if (MDimg_out.containsLabel(EMDL_ORIENT_ORIGIN_Y_PRIOR_ANGSTROM))
-            {
-                MDimg_out.deactivateLabel(EMDL_ORIENT_ORIGIN_Y_PRIOR_ANGSTROM);
+            if (MDimg_out.containsLabel(EMDL::ORIENT_ORIGIN_Y_PRIOR_ANGSTROM)) {
+                MDimg_out.deactivateLabel(EMDL::ORIENT_ORIGIN_Y_PRIOR_ANGSTROM);
             }
         }
 
         FileName fn_star;
-        if (size == 0)
-        {
+        if (size == 0) {
             fn_star = fn_out + "particles_subtracted.star";
-            MDimg_out.deactivateLabel(EMDL_IMAGE_ID);
-        }
-        else
-        {
+            MDimg_out.deactivateLabel(EMDL::IMAGE_ID);
+        } else {
             fn_star = fn_out + "Particles/subtracted_rank" + integerToString(myrank) + "star";
         }
         opt.mydata.obsModel.save(MDimg_out, fn_star);
 
     }
 
-#ifdef DEBUG
+    #ifdef DEBUG
     std::cout << "myrank = " << myrank << " size = " << size << " my_first = " << my_first << " my_last = " << my_last << " num_items = " << MD.numberOfObjects() << " writing to " << fn_star << std::endl;
-#endif
+    #endif
 }
 
-void ParticleSubtractor::combineStarFile(int myrank)
-{
+void ParticleSubtractor::combineStarFile(int myrank) {
 
     if (do_ssnr) return;
 
     if (myrank != 0) REPORT_ERROR("BUG: this function should only be called by leader!");
 
     MetaDataTable MD;
-    for (int i = 1; i < size; i++)
-    {
+    for (int i = 1; i < size; i++) {
         FileName fn_star = fn_out + "Particles/subtracted_rank" + integerToString(i) + "star";
         MD.read(fn_star, "particles");
         MDimg_out.append(MD);
     }
 
-    MDimg_out.sort(EMDL_IMAGE_ID);
-    MDimg_out.deactivateLabel(EMDL_IMAGE_ID);
+    MDimg_out.sort(EMDL::IMAGE_ID);
+    MDimg_out.deactivateLabel(EMDL::IMAGE_ID);
     opt.mydata.obsModel.save(MDimg_out, fn_out + "particles_subtracted.star");
 
     std::cout << " + Saved STAR file with " << MDimg_out.numberOfObjects()
@@ -450,7 +404,7 @@ FileName ParticleSubtractor::getParticleName(
 
     imgno_to_filename[imgno] = fn_img;
     #ifdef DEBUG
-        std::cout << "rank = " << rank << " imgno = " << imgno << " fn_img = " << fn_img << std::endl;
+    std::cout << "rank = " << rank << " imgno = " << imgno << " fn_img = " << fn_img << std::endl;
     #endif
     return fn_img;
 }
@@ -466,7 +420,7 @@ void ParticleSubtractor::subtractOneParticle(
     img().setXmippOrigin();
 
     // Make sure gold-standard is adhered to!
-    int my_subset = (rank % 2 == 1) ? 1 : 2;
+    int my_subset = modulo_alt(rank, 2);
     if (opt.do_split_random_halves && my_subset != opt.mydata.getRandomSubset(part_id)) {
         std::cerr << " rank= " << rank << " part_id= " << part_id << " opt.mydata.getRandomSubset(part_id)= " << opt.mydata.getRandomSubset(part_id) << std::endl;
         REPORT_ERROR("BUG:: gold-standard separation of halves is broken!");
@@ -479,25 +433,26 @@ void ParticleSubtractor::subtractOneParticle(
     Matrix2D<RFLOAT> Aori;
     RFLOAT rot, tilt, psi, xoff, yoff, zoff, mynorm, scale;
     int myclass = 0;
-    if (!ignore_class && opt.mydata.MDimg.containsLabel(EMDL_PARTICLE_CLASS)) {
-        opt.mydata.MDimg.getValue(EMDL_PARTICLE_CLASS, myclass, ori_img_id);
+    if (!ignore_class && opt.mydata.MDimg.containsLabel(EMDL::PARTICLE_CLASS)) {
+        opt.mydata.MDimg.getValue(EMDL::PARTICLE_CLASS, myclass, ori_img_id);
         if (myclass > opt.mymodel.nr_classes) {
             std::cerr << "A particle belongs to class " << myclass << " while the number of classes in the optimiser.star is only " << opt.mymodel.nr_classes << "." << std::endl;
             REPORT_ERROR("Tried to subtract a non-existing class from a particle. If you have performed non-alignment Class3D after Refine3D and want to subtract a map from the Refine3D job, use the --ignore_class option.");
         }
         myclass--; // Count from zero instead of one
     }
-    opt.mydata.MDimg.getValue(EMDL_ORIENT_ROT, rot, ori_img_id);
-    opt.mydata.MDimg.getValue(EMDL_ORIENT_TILT, tilt, ori_img_id);
-    opt.mydata.MDimg.getValue(EMDL_ORIENT_PSI, psi, ori_img_id);
-    opt.mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, XX(my_old_offset), ori_img_id);
-    opt.mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, YY(my_old_offset), ori_img_id);
-    if (opt.mymodel.data_dim == 3) opt.mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ZZ(my_old_offset), ori_img_id);
+    opt.mydata.MDimg.getValue(EMDL::ORIENT_ROT,  rot,  ori_img_id);
+    opt.mydata.MDimg.getValue(EMDL::ORIENT_TILT, tilt, ori_img_id);
+    opt.mydata.MDimg.getValue(EMDL::ORIENT_PSI,  psi,  ori_img_id);
+    opt.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, XX(my_old_offset), ori_img_id);
+    opt.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, YY(my_old_offset), ori_img_id);
+    if (opt.mymodel.data_dim == 3)
+        opt.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ZZ(my_old_offset), ori_img_id);
     // As of v3.1, offsets are in Angstrom: convert back to pixels!
     my_old_offset /= my_pixel_size;
 
     // Apply the norm_correction term
-    if (!opt.mydata.MDimg.getValue(EMDL_IMAGE_NORM_CORRECTION, mynorm, ori_img_id)) 
+    if (!opt.mydata.MDimg.getValue(EMDL::IMAGE_NORM_CORRECTION, mynorm, ori_img_id)) 
         mynorm = 1.0;
     if (opt.do_norm_correction) 
         img() *= opt.mymodel.avg_norm_correction / mynorm;
@@ -517,7 +472,6 @@ void ParticleSubtractor::subtractOneParticle(
         selfTranslate(img(), my_old_offset, WRAP);
         // keep track of the differences between the rounded and the original offsets
         my_residual_offset -= my_old_offset;
-
     }
 
     // Now that the particle is centered (for multibody), get the FourierTransform of the particle
@@ -532,7 +486,7 @@ void ParticleSubtractor::subtractOneParticle(
         if (opt.mymodel.data_dim == 3) {
             Image<RFLOAT> Ictf;
             FileName fn_ctf;
-            opt.mydata.MDimg.getValue(EMDL_CTF_IMAGE, fn_ctf, ori_img_id);
+            opt.mydata.MDimg.getValue(EMDL::CTF_IMAGE, fn_ctf, ori_img_id);
             Ictf.read(fn_ctf);
 
             if (XSIZE(Ictf()) == YSIZE(Ictf())) {
@@ -572,13 +526,13 @@ void ParticleSubtractor::subtractOneParticle(
 
             Matrix1D<RFLOAT> body_offset(3);
             RFLOAT body_rot, body_tilt, body_psi;
-            opt.mydata.MDbodies[obody].getValue(EMDL_ORIENT_ROT, body_rot, ori_img_id);
-            opt.mydata.MDbodies[obody].getValue(EMDL_ORIENT_TILT, body_tilt, ori_img_id);
-            opt.mydata.MDbodies[obody].getValue(EMDL_ORIENT_PSI,  body_psi, ori_img_id);
-            opt.mydata.MDbodies[obody].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, XX(body_offset), ori_img_id);
-            opt.mydata.MDbodies[obody].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, YY(body_offset), ori_img_id);
+            opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ROT, body_rot, ori_img_id);
+            opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_TILT, body_tilt, ori_img_id);
+            opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_PSI,  body_psi, ori_img_id);
+            opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, XX(body_offset), ori_img_id);
+            opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, YY(body_offset), ori_img_id);
             if (opt.mymodel.data_dim == 3) {
-                opt.mydata.MDbodies[obody].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ZZ(body_offset), ori_img_id);
+                opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ZZ(body_offset), ori_img_id);
             }
 
             // As of v3.1, offsets are in Angstrom: convert back to pixels!
@@ -630,15 +584,15 @@ void ParticleSubtractor::subtractOneParticle(
         Euler_matrix2angles(Abody, rot, tilt, psi);
 
         // Store the optimal orientations in the MDimg table
-        opt.mydata.MDimg.setValue(EMDL_ORIENT_ROT, rot, ori_img_id);
-        opt.mydata.MDimg.setValue(EMDL_ORIENT_TILT, tilt, ori_img_id);
-        opt.mydata.MDimg.setValue(EMDL_ORIENT_PSI, psi, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_ROT, rot, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_TILT, tilt, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_PSI, psi, ori_img_id);
 
         // Also get refined offset for this body
-        opt.mydata.MDbodies[subtract_body].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, XX(my_refined_ibody_offset), ori_img_id);
-        opt.mydata.MDbodies[subtract_body].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, YY(my_refined_ibody_offset), ori_img_id);
+        opt.mydata.MDbodies[subtract_body].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, XX(my_refined_ibody_offset), ori_img_id);
+        opt.mydata.MDbodies[subtract_body].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, YY(my_refined_ibody_offset), ori_img_id);
         if (opt.mymodel.data_dim == 3) {
-            opt.mydata.MDbodies[subtract_body].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ZZ(my_refined_ibody_offset), ori_img_id);
+            opt.mydata.MDbodies[subtract_body].getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ZZ(my_refined_ibody_offset), ori_img_id);
         }
         // As of v3.1, offsets are in Angstrom: convert back to pixels!
         my_refined_ibody_offset /= my_pixel_size;
@@ -658,13 +612,13 @@ void ParticleSubtractor::subtractOneParticle(
 
         // Shift in opposite direction as offsets in the STAR file
         shiftImageInFourierTransform(
-            Fsubtrahend, Fsubtrahend, (RFLOAT)XSIZE(img()),
+            Fsubtrahend, Fsubtrahend, (RFLOAT) XSIZE(img()),
             -XX(my_old_offset), -YY(my_old_offset), -ZZ(my_old_offset)
         );
 
         if (do_center) {
             // Re-center the output particle to a new centre...
-            my_residual_offset = my_old_offset - A3D_pure_rot * (new_center * opt.mymodel.pixel_size / my_pixel_size);
+            my_residual_offset = my_old_offset - A3D_pure_rot * new_center * opt.mymodel.pixel_size / my_pixel_size;
         }
     }
 
@@ -711,9 +665,9 @@ void ParticleSubtractor::subtractOneParticle(
                 RFLOAT N2 = norm( dAkij(Fimg, k, i, j) );
                 // division by two keeps the numbers similar to tau2 and sigma2_noise,
                 // which are per real/imaginary component
-                sum_S2(idx_remapped) += S2 / 2.;
-                sum_N2(idx_remapped) += N2 / 2.;
-                sum_count(idx_remapped) += 1.;
+                sum_S2(idx_remapped) += S2 / 2.0;
+                sum_N2(idx_remapped) += N2 / 2.0;
+                sum_count(idx_remapped) += 1.0;
             }
         }
     } else {
@@ -729,11 +683,10 @@ void ParticleSubtractor::subtractOneParticle(
             selfTranslate(img(), centering_offset, WRAP);
 
             // Set the non-integer difference between the rounded centering offset and the actual offsets in the STAR file
-            opt.mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, my_pixel_size * XX(my_residual_offset), ori_img_id);
-            opt.mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, my_pixel_size * YY(my_residual_offset), ori_img_id);
-            if (opt.mymodel.data_dim == 3)
-            {
-                opt.mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, my_pixel_size * ZZ(my_residual_offset), ori_img_id);
+            opt.mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_pixel_size * XX(my_residual_offset), ori_img_id);
+            opt.mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_pixel_size * YY(my_residual_offset), ori_img_id);
+            if (opt.mymodel.data_dim == 3) {
+                opt.mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_pixel_size * ZZ(my_residual_offset), ori_img_id);
             }
         }
 
@@ -755,10 +708,10 @@ void ParticleSubtractor::subtractOneParticle(
 
         // Now write out the image & set filenames in output metadatatable
         FileName fn_img = getParticleName(counter, rank, optics_group);
-        opt.mydata.MDimg.setValue(EMDL_IMAGE_NAME, fn_img, ori_img_id);
-        opt.mydata.MDimg.setValue(EMDL_IMAGE_ORI_NAME, opt.mydata.particles[part_id].images[0].name, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::IMAGE_NAME, fn_img, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::IMAGE_ORI_NAME, opt.mydata.particles[part_id].images[0].name, ori_img_id);
         //Also set the original order in the input STAR file for later combination
-        opt.mydata.MDimg.setValue(EMDL_IMAGE_ID, ori_img_id, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::IMAGE_ID, ori_img_id, ori_img_id);
         MDimg_out.addObject();
         MDimg_out.setObject(opt.mydata.MDimg.getObject(ori_img_id));
 

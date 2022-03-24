@@ -19,88 +19,78 @@
  ***************************************************************************/
 #include "src/ctffind_runner_mpi.h"
 
-void CtffindRunnerMpi::read(int argc, char **argv)
-{
-	// Define a new MpiNode
-	node = new MpiNode(argc, argv);
+void CtffindRunnerMpi::read(int argc, char **argv) {
+    // Define a new MpiNode
+    node = new MpiNode(argc, argv);
 
-	// First read in non-parallelisation-dependent variables
-	CtffindRunner::read(argc, argv);
+    // First read in non-parallelisation-dependent variables
+    CtffindRunner::read(argc, argv);
 
-	// Don't put any output to screen for mpi followers
-	verb = (node->isLeader()) ? 1 : 0;
+    // Don't put any output to screen for mpi followers
+    verb = node->isLeader();
 
-	// Possibly also read parallelisation-dependent variables here
+    // Possibly also read parallelisation-dependent variables here
 
-	// Print out MPI info
-	printMpiNodesMachineNames(*node);
+    // Print out MPI info
+    printMpiNodesMachineNames(*node);
 }
 
-void CtffindRunnerMpi::run()
-{
-	if (!do_only_join_results)
-	{
-		// Each node does part of the work
-		long int my_first_micrograph, my_last_micrograph, my_nr_micrographs;
-		divide_equally(fn_micrographs.size(), node->size, node->rank, my_first_micrograph, my_last_micrograph);
-		my_nr_micrographs = my_last_micrograph - my_first_micrograph + 1;
+void CtffindRunnerMpi::run() {
+    if (!do_only_join_results) {
+        // Each node does part of the work
+        long int my_first_micrograph, my_last_micrograph, my_nr_micrographs;
+        divide_equally(fn_micrographs.size(), node->size, node->rank, my_first_micrograph, my_last_micrograph);
+        my_nr_micrographs = my_last_micrograph - my_first_micrograph + 1;
 
-		int barstep;
-		if (verb > 0)
-		{
-			if (do_use_gctf)
-				std::cout << " Estimating CTF parameters using Kai Zhang's Gctf ..." << std::endl;
-			else
-				std::cout << " Estimating CTF parameters using Niko Grigorieff's CTFFIND ..." << std::endl;
-			init_progress_bar(my_nr_micrographs);
-			barstep = XMIPP_MAX(1, my_nr_micrographs / 60);
-		}
+        int barstep;
+        if (verb > 0) {
+            if (do_use_gctf) {
+                std::cout << " Estimating CTF parameters using Kai Zhang's Gctf ..." << std::endl;
+            } else {
+                std::cout << " Estimating CTF parameters using Niko Grigorieff's CTFFIND ..." << std::endl;
+            }
+            init_progress_bar(my_nr_micrographs);
+            barstep = XMIPP_MAX(1, my_nr_micrographs / 60);
+        }
 
-		std::vector<std::string> allmicnames;
-		for (long int imic = my_first_micrograph; imic <= my_last_micrograph; imic++)
-		{
+        std::vector<std::string> allmicnames;
+        for (long int imic = my_first_micrograph; imic <= my_last_micrograph; imic++) {
 
-			// Abort through the pipeline_control system
-			if (pipeline_control_check_abort_job())
-				MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_ABORTED);
+            // Abort through the pipeline_control system
+            if (pipeline_control_check_abort_job())
+                MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_ABORTED);
 
-			// Get angpix and voltage from the optics groups:
-			obsModel.opticsMdt.getValue(EMDL_CTF_CS, Cs, optics_group_micrographs[imic]-1);
-			obsModel.opticsMdt.getValue(EMDL_CTF_VOLTAGE, Voltage, optics_group_micrographs[imic]-1);
-			obsModel.opticsMdt.getValue(EMDL_CTF_Q0, AmplitudeConstrast, optics_group_micrographs[imic]-1);
-			obsModel.opticsMdt.getValue(EMDL_MICROGRAPH_PIXEL_SIZE, angpix, optics_group_micrographs[imic]-1);
+            // Get angpix and voltage from the optics groups:
+            obsModel.opticsMdt.getValue(EMDL::CTF_CS, Cs, optics_group_micrographs[imic] - 1);
+            obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE, Voltage, optics_group_micrographs[imic] - 1);
+            obsModel.opticsMdt.getValue(EMDL::CTF_Q0, AmplitudeConstrast, optics_group_micrographs[imic] - 1);
+            obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix, optics_group_micrographs[imic] - 1);
 
-			if (do_use_gctf)
-			{
-				//addToGctfJobList(imic, allmicnames);
-				executeGctf(imic, allmicnames, imic == my_last_micrograph, node->rank);
-			}
-			else if (is_ctffind4)
-			{
-				executeCtffind4(imic);
-			}
-			else
-			{
-				executeCtffind3(imic);
-			}
+            if (do_use_gctf) {
+                //addToGctfJobList(imic, allmicnames);
+                executeGctf(imic, allmicnames, imic == my_last_micrograph, node->rank);
+            } else if (is_ctffind4) {
+                executeCtffind4(imic);
+            } else {
+                executeCtffind3(imic);
+            }
 
-			if (verb > 0 && imic % barstep == 0)
-				progress_bar(imic);
+            if (verb > 0 && imic % barstep == 0)
+                progress_bar(imic);
 
-		}
+        }
 
-		//if (do_use_gctf && allmicnames.size() > 0)
-		//	executeGctf(allmicnames);
+        //if (do_use_gctf && allmicnames.size() > 0)
+        //	executeGctf(allmicnames);
 
-		if (verb > 0)
-			progress_bar(my_nr_micrographs);
-	}
+        if (verb > 0)
+            progress_bar(my_nr_micrographs);
+    }
 
-	MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 
-	// Only the leader writes the joined result file
-	if (node->isLeader())
-	{
-		joinCtffindResults();
-	}
+    // Only the leader writes the joined result file
+    if (node->isLeader()) {
+        joinCtffindResults();
+    }
 }

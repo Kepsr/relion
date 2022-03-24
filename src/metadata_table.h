@@ -52,7 +52,7 @@
  @code
  FOR_ALL_OBJECTS_IN_METADATA(metadata) {
    RFLOAT rot;
-   DF.getValue( EMDL_ANGLEROT, rot);
+   DF.getValue( EMDL::ANGLEROT, rot);
  }
  @endcode
 
@@ -105,9 +105,9 @@ class MetaDataTable {
     // The length of label2offset is always equal to the number of defined labels (~320)
     // e.g.:
     // the value of "defocus-U" for row r is stored in:
-    //	 objects[r]->doubles[label2offset[EMDL_CTF_DEFOCUSU]]
+    //	 objects[r]->doubles[label2offset[EMDL::CTF_DEFOCUSU]]
     // the value of "image name" is stored in:
-    //	 objects[r]->strings[label2offset[EMDL_IMAGE_NAME]]
+    //	 objects[r]->strings[label2offset[EMDL::IMAGE_NAME]]
     std::vector<long> label2offset;
 
     /** What labels have been read from a docfile/metadata file
@@ -166,7 +166,7 @@ class MetaDataTable {
     // Currently returns true if the label exists
     // objectID is 0-indexed.
     template<class T>
-    bool getValue(EMDLabel label, T& value, long objectID = -1) const;
+    bool getValue(EMDLabel label, long objectID = -1) const;
 
     bool getValueToString(EMDLabel label, std::string &value, long int objectID = -1, bool escape=false) const;
 
@@ -352,8 +352,8 @@ void compareMetaDataTable(
     MetaDataTable &MD1, MetaDataTable &MD2,
     MetaDataTable &MDboth, MetaDataTable &MDonly1, MetaDataTable &MDonly2,
     EMDLabel label1, double eps = 0.0,
-    EMDLabel label2 = EMDL_UNDEFINED,
-    EMDLabel label3 = EMDL_UNDEFINED
+    EMDLabel label2 = EMDL::UNDEFINED,
+    EMDLabel label3 = EMDL::UNDEFINED
 );
 
 // find a subset of the input metadata table that has corresponding entries between the specified min and max values
@@ -411,13 +411,13 @@ template<class T>
 bool MetaDataTable::getValue(EMDLabel label, long objectID) const {
 
     T value;
-    if (label < 0 || label >= EMDL_LAST_LABEL) throw "Label not recognised";
+    if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 
-    if (label == EMDL_UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
+    if (label == EMDL::UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
 
     #ifdef METADATA_TABLE_TYPE_CHECK
-        if (!isTypeCompatible(label, value))
-            REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::getValue for label " + EMDL::label2Str(label));
+    if (!isTypeCompatible(label, value))
+        REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::getValue for label " + EMDL::label2Str(label));
     #endif
 
     const long off = label2offset[label];
@@ -440,12 +440,12 @@ bool MetaDataTable::getValue(EMDLabel label, long objectID) const {
 template<class T>
 bool MetaDataTable::setValue(EMDLabel label, const T &value, long int objectID) {
 
-    if (label < 0 || label >= EMDL_LAST_LABEL) return false;
+    if (label < 0 || label >= EMDL::LAST_LABEL) return false;
 
-    if (label == EMDL_UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
+    if (label == EMDL::UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
 
     #ifdef METADATA_TABLE_TYPE_CHECK
-        if (!isTypeCompatible(label, value)) REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));
+    if (!isTypeCompatible(label, value)) REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));
     #endif
 
     long off = label2offset[label];

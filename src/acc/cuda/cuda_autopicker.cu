@@ -383,10 +383,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     if (basePckr->do_ctf) {
         // Search for this micrograph in the metadata table
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(basePckr->MDmic) {
-            FileName fn_tmp = basePckr->MDmic.getValue(EMDL_MICROGRAPH_NAME);
+            FileName fn_tmp = basePckr->MDmic.getValue(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
                 ctf.readByGroup(basePckr->MDmic, &basePckr->obsModel);
-                Fctf.resize(basePckr->workSize,basePckr->workSize/2+1);
+                Fctf.resize(basePckr->workSize,basePckr->workSize / 2 + 1);
                 ctf.getFftwImage(Fctf, basePckr->micrograph_size, basePckr->micrograph_size, basePckr->angpix, false, false, basePckr->intact_ctf_first_peak, true);
                 break;
             }
@@ -704,7 +704,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 fn_tmp.compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
                 It.read(fn_tmp);
                 Mccf_best = It();
-                expected_Pratio = It.MDMainHeader.getValue(EMDL_IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the image's header
+                expected_Pratio = It.MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the image's header
 
                 fn_tmp.compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestPSI.spi");
                 It.read(fn_tmp);
@@ -914,7 +914,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 Image<RFLOAT> It;
                 It() = Mccf_best;
                 // Store expected_Pratio in the header of the image..
-                It.MDMainHeader.setValue(EMDL_IMAGE_STATS_MAX, expected_Pratio);  // Store expected_Pratio in the header of the image
+                It.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Store expected_Pratio in the header of the image
                 fn_tmp.compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
                 It.write(fn_tmp);
 
@@ -1070,11 +1070,11 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         MetaDataTable MDout;
         for (int ipeak = 0; ipeak < peaks.size(); ipeak++) {
             MDout.addObject();
-            MDout.setValue(EMDL_IMAGE_COORD_X, (RFLOAT)(peaks[ipeak].x) / scale);
-            MDout.setValue(EMDL_IMAGE_COORD_Y, (RFLOAT)(peaks[ipeak].y) / scale);
-            MDout.setValue(EMDL_PARTICLE_CLASS, peaks[ipeak].ref + 1); // start counting at 1
-            MDout.setValue(EMDL_PARTICLE_AUTOPICK_FOM, peaks[ipeak].fom);
-            MDout.setValue(EMDL_ORIENT_PSI, peaks[ipeak].psi);
+            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)(peaks[ipeak].x) / scale);
+            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)(peaks[ipeak].y) / scale);
+            MDout.setValue(EMDL::PARTICLE_CLASS, peaks[ipeak].ref + 1); // start counting at 1
+            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, peaks[ipeak].fom);
+            MDout.setValue(EMDL::ORIENT_PSI, peaks[ipeak].psi);
         }
         FileName fn_tmp = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + ".star";
         MDout.write(fn_tmp);

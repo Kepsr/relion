@@ -240,7 +240,7 @@ void gaussj(T *a, int n, T *b, int m) {
             for (k = 1; k <= n; k++)
                 SWAP(a[k * n + indxr[l]], a[k * n + indxc[l]], temp);
     }
-    free_Tvector(ipiv, 1, n);
+    free_Tvector(ipiv,  1, n);
     free_Tvector(indxr, 1, n);
     free_Tvector(indxc, 1, n);
 }

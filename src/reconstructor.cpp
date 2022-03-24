@@ -19,8 +19,7 @@
  ***************************************************************************/
 #include "src/reconstructor.h"
 
-void Reconstructor::read(int argc, char **argv)
-{
+void Reconstructor::read(int argc, char **argv) {
     parser.setCommandLine(argc, argv);
 
     int general_section = parser.addSection("General options");
@@ -60,10 +59,8 @@ void Reconstructor::read(int argc, char **argv)
 
     int expert_section = parser.addSection("Expert options");
     fn_sub = parser.getOption("--subtract","Subtract projections of this map from the images used for reconstruction", "");
-    if (parser.checkOption("--NN", "Use nearest-neighbour instead of linear interpolation before gridding correction"))
-        interpolator = NEAREST_NEIGHBOUR;
-    else
-        interpolator = TRILINEAR;
+    interpolator = parser.checkOption("--NN", "Use nearest-neighbour instead of linear interpolation before gridding correction") ?
+        NEAREST_NEIGHBOUR : TRILINEAR;
     blob_radius = textToFloat(parser.getOption("--blob_r", "Radius of blob for gridding interpolation", "1.9"));
     blob_order = textToInteger(parser.getOption("--blob_m", "Order of blob for gridding interpolation", "0"));
     blob_alpha = textToFloat(parser.getOption("--blob_a", "Alpha-value of blob for gridding interpolation", "15"));
@@ -94,39 +91,32 @@ void Reconstructor::read(int argc, char **argv)
         REPORT_ERROR("Errors encountered on the command line (see above), exiting...");
 }
 
-void Reconstructor::usage()
-{
+void Reconstructor::usage() {
     parser.writeUsage(std::cout);
 }
 
-void Reconstructor::initialise()
-{
-    do_reconstruct_ctf = (ctf_dim > 0);
-    if (do_reconstruct_ctf)
-    {
+void Reconstructor::initialise() {
+    do_reconstruct_ctf = ctf_dim > 0;
+    if (do_reconstruct_ctf) {
         do_ctf = false;
-        padding_factor = 1.;
+        padding_factor = 1.0;
     }
 
     do_ignore_optics = false;
     // Read MetaData file, which should have the image names and their angles!
-    if (fn_debug == "")
-    {
+    if (fn_debug == "") {
         ObservationModel::loadSafely(fn_sel, obsModel, DF, "particles", 0, false);
-        if (obsModel.opticsMdt.numberOfObjects() == 0)
-        {
+        if (obsModel.opticsMdt.numberOfObjects() == 0) {
             do_ignore_optics = true;
             DF.read(fn_sel);
         }
     }
 
-    if (verb > 0 && (subset == 1 || subset == 2) && !DF.containsLabel(EMDL_PARTICLE_RANDOM_SUBSET))
-    {
+    if (verb > 0 && (subset == 1 || subset == 2) && !DF.containsLabel(EMDL::PARTICLE_RANDOM_SUBSET)) {
         REPORT_ERROR("The rlnRandomSubset column is missing in the input STAR file.");
     }
 
-    if (verb > 0 && (chosen_class >= 0) && !DF.containsLabel(EMDL_PARTICLE_CLASS))
-    {
+    if (verb > 0 && (chosen_class >= 0) && !DF.containsLabel(EMDL::PARTICLE_CLASS)) {
         REPORT_ERROR("The rlnClassNumber column is missing in the input STAR file.");
     }
 
@@ -141,85 +131,64 @@ void Reconstructor::initialise()
         model.read(fn_noise);
 
     // Get dimension of the images
-    if (do_reconstruct_ctf)
-    {
+    if (do_reconstruct_ctf) {
         output_boxsize = ctf_dim;
-    }
-    else
-    {
+    } else {
         (DF).firstObject();
-        DF.getValue(EMDL_IMAGE_NAME, fn_img);
+        DF.getValue(EMDL::IMAGE_NAME, fn_img);
 
-        if (image_path != "")
-        {
-            fn_img = image_path + "/" + fn_img.substr(fn_img.find_last_of("/")+1);
+        if (image_path != "") {
+            fn_img = image_path + "/" + fn_img.substr(fn_img.find_last_of("/") + 1);
         }
 
         Image<RFLOAT> img0;
         img0.read(fn_img, false);
-        output_boxsize=(int)XSIZE(img0());
+        output_boxsize = (int) XSIZE(img0());
         // When doing Ewald-curvature correction or when having optics groups: allow reconstructing smaller box than the input images (which should have large boxes!!)
-        if ((do_ewald || !do_ignore_optics) && newbox > 0)
-        {
+        if ((do_ewald || !do_ignore_optics) && newbox > 0) {
             output_boxsize = newbox;
         }
 
-        if (do_3d_rot)
+        if (do_3d_rot) {
             data_dim = 3;
-        else // If not specifically provided, we autodetect it
-        {
-            if (do_ignore_optics)
-            {
+        } else {
+            // If not specifically provided, we autodetect it
+            if (do_ignore_optics) {
                 data_dim = img0().getDim();
                 std::cout << " + Taking data dimensions from the first image: " << data_dim << std::endl;
-            }
-            else
-            {
-                obsModel.opticsMdt.getValue(EMDL_IMAGE_DIMENSIONALITY, data_dim, 0);
+            } else {
+                obsModel.opticsMdt.getValue(EMDL::IMAGE_DIMENSIONALITY, data_dim, 0);
                 std::cout << " + Taking data dimensions from the first optics group: " << data_dim << std::endl;
             }
         }
     }
 
-    if (angpix < 0.)
-    {
-        if (do_ignore_optics)
-        {
-            if (DF.containsLabel(EMDL_CTF_MAGNIFICATION) && DF.containsLabel(EMDL_CTF_DETECTOR_PIXEL_SIZE))
-            {
+    if (angpix < 0.0) {
+        if (do_ignore_optics) {
+            if (
+                DF.containsLabel(EMDL::CTF_MAGNIFICATION) && DF.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)
+            ) {
                 RFLOAT mag, dstep;
-                DF.getValue(EMDL_CTF_MAGNIFICATION, mag);
-                DF.getValue(EMDL_CTF_DETECTOR_PIXEL_SIZE, dstep);
+                DF.getValue(EMDL::CTF_MAGNIFICATION, mag);
+                DF.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, dstep);
                 angpix = 10000. * dstep / mag;
                 if (verb > 0)
                     std::cout << " + Using pixel size calculated from magnification and detector pixel size in the input STAR file: " << angpix << std::endl;
-            }
-            else
-            {
+            } else {
                 REPORT_ERROR("ERROR: cannot find pixel size in input STAR file, provide it using --angpix");
             }
-        }
-        else
-        {
+        } else {
             angpix = obsModel.getPixelSize(0);
             std::cout << " + Taking angpix from the first optics group: " << angpix << std::endl;
         }
     }
-
-    if (maxres < 0.)
-        r_max = -1;
-    else
-        r_max = CEIL(output_boxsize * angpix / maxres);
+    r_max = maxres < 0.0 ? -1 : CEIL(output_boxsize * angpix / maxres);
 }
 
-void Reconstructor::run()
-{
-    if (fn_debug != "")
-    {
+void Reconstructor::run() {
+    if (fn_debug != "") {
         readDebugArrays();
-    }
-    else
-    {
+    } else {
         initialise();
         backproject();
     }
@@ -227,8 +196,7 @@ void Reconstructor::run()
     reconstruct();
 }
 
-void Reconstructor::readDebugArrays()
-{
+void Reconstructor::readDebugArrays() {
     if (verb > 0)
         std::cout << " + Reading in the debug arrays ... " << std::endl;
 
@@ -240,8 +208,7 @@ void Reconstructor::readDebugArrays()
     backprojector = BackProjector(debug_ori_size, 3, fn_sym, interpolator, padding_factor, r_min_nn, blob_order, blob_radius, blob_alpha, data_dim, skip_gridding);
 
     backprojector.initialiseDataAndWeight(debug_size);
-    if (verb > 0)
-    {
+    if (verb > 0) {
         std::cout << " Size of data array: " ;
         backprojector.data.printShape();
         std::cout << " Size of weight array: " ;
@@ -249,38 +216,32 @@ void Reconstructor::readDebugArrays()
     }
 
     It().setXmippOrigin();
-    It().xinit=0;
+    It().xinit = 0;
 
-    if (verb > 0)
-    {
+    if (verb > 0) {
         std::cout << " Size of reconstruction: " ;
         It().printShape();
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It())
-    {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
         A3D_ELEM(backprojector.data, k, i, j).real = A3D_ELEM(It(), k, i, j);
     }
-    It.read(fn_debug+"_data_imag.mrc");
+    It.read(fn_debug + "_data_imag.mrc");
     It().setXmippOrigin();
-    It().xinit=0;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It())
-    {
+    It().xinit = 0;
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
         A3D_ELEM(backprojector.data, k, i, j).imag = A3D_ELEM(It(), k, i, j);
     }
     It.read(fn_debug+"_weight.mrc");
     It().setXmippOrigin();
-    It().xinit=0;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It())
-    {
+    It().xinit = 0;
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
         A3D_ELEM(backprojector.weight, k, i, j) = A3D_ELEM(It(), k, i, j);
     }
     output_boxsize = debug_ori_size;
 }
 
-void Reconstructor::backproject(int rank, int size)
-{
-    if (fn_sub != "")
-    {
+void Reconstructor::backproject(int rank, int size) {
+    if (fn_sub != "") {
         projector = Projector(output_boxsize, interpolator, padding_factor, r_min_nn);
         Image<RFLOAT> sub;
         sub.read(fn_sub);
@@ -294,16 +255,14 @@ void Reconstructor::backproject(int rank, int size)
     backprojector.initZeros(2 * r_max);
 
     long int nr_parts = DF.numberOfObjects();
-    long int barstep = XMIPP_MAX(1, nr_parts/(size*120));
-    if (verb > 0)
-    {
+    long int barstep = XMIPP_MAX(1, nr_parts / (size * 120));
+    if (verb > 0) {
         std::cout << " + Back-projecting all images ..." << std::endl;
         time_config();
         init_progress_bar(nr_parts);
     }
 
-    for (long int ipart = 0; ipart < nr_parts; ipart++)
-    {
+    for (long int ipart = 0; ipart < nr_parts; ipart++) {
         if (ipart % size == rank)
             backprojectOneParticle(ipart);
 
@@ -315,8 +274,7 @@ void Reconstructor::backproject(int rank, int size)
         progress_bar(nr_parts);
 }
 
-void Reconstructor::backprojectOneParticle(long int p)
-{
+void Reconstructor::backprojectOneParticle(long int p) {
     RFLOAT rot, tilt, psi, fom, r_ewald_sphere;
     Matrix2D<RFLOAT> A3D;
     MultidimArray<RFLOAT> Fctf;
@@ -324,8 +282,8 @@ void Reconstructor::backprojectOneParticle(long int p)
     FourierTransformer transformer;
 
     int randSubset = 0, classid = 0;
-    DF.getValue(EMDL_PARTICLE_RANDOM_SUBSET, randSubset, p);
-    DF.getValue(EMDL_PARTICLE_CLASS, classid, p);
+    DF.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
+    DF.getValue(EMDL::PARTICLE_CLASS, classid, p);
 
     if (subset >= 1 && subset <= 2 && randSubset != subset)
         return;
@@ -334,25 +292,21 @@ void Reconstructor::backprojectOneParticle(long int p)
         return;
 
     // Rotations
-    if (ref_dim == 2)
-    {
-        rot = tilt = 0.;
-    }
-    else
-    {
-        DF.getValue(EMDL_ORIENT_ROT, rot, p);
-        DF.getValue(EMDL_ORIENT_TILT, tilt, p);
+    if (ref_dim == 2) {
+        rot = tilt = 0.0;
+    } else {
+        DF.getValue(EMDL::ORIENT_ROT,  rot,  p);
+        DF.getValue(EMDL::ORIENT_TILT, tilt, p);
     }
 
     psi = 0.;
-    DF.getValue(EMDL_ORIENT_PSI, psi, p);
+    DF.getValue(EMDL::ORIENT_PSI, psi, p);
 
-    if (angular_error > 0.)
-    {
-        rot += rnd_gaus(0., angular_error);
-        tilt += rnd_gaus(0., angular_error);
-        psi += rnd_gaus(0., angular_error);
-        //std::cout << rnd_gaus(0., angular_error) << std::endl;
+    if (angular_error > 0.0) {
+        rot  += rnd_gaus(0.0, angular_error);
+        tilt += rnd_gaus(0.0, angular_error);
+        psi  += rnd_gaus(0.0, angular_error);
+        // std::cout << rnd_gaus(0., angular_error) << std::endl;
     }
 
     Euler_angles2matrix(rot, tilt, psi, A3D);
@@ -360,12 +314,11 @@ void Reconstructor::backprojectOneParticle(long int p)
     // If we are considering Ewald sphere curvature, the mag. matrix
     // has to be provided to the backprojector explicitly
     // (to avoid creating an Ewald ellipsoid)
-    int opticsGroup=-1;
+    int opticsGroup = -1;
     int myBoxSize = output_boxsize; // Without optics groups, the output box size is always the same as the one from the input images
     RFLOAT myPixelSize = angpix; // Without optics groups, the pixel size is always the same as the one from the input images
     bool ctf_premultiplied = false;
-    if (!do_ignore_optics)
-    {
+    if (!do_ignore_optics) {
         opticsGroup = obsModel.getOpticsGroup(DF, p);
         myBoxSize = obsModel.getBoxSize(opticsGroup);
         myPixelSize = obsModel.getPixelSize(opticsGroup);
@@ -373,8 +326,7 @@ void Reconstructor::backprojectOneParticle(long int p)
         if (do_ewald && ctf_premultiplied)
             REPORT_ERROR("We cannot perform Ewald sphere correction on CTF premultiplied particles.");
         Matrix2D<RFLOAT> magMat;
-        if (!do_ewald)
-        {
+        if (!do_ewald) {
             A3D = obsModel.applyAnisoMag(A3D, opticsGroup);
         }
         A3D = obsModel.applyScaleDifference(A3D, opticsGroup, output_boxsize, angpix);
@@ -382,32 +334,28 @@ void Reconstructor::backprojectOneParticle(long int p)
 
     // Translations (either through phase-shifts or in real space
     trans.initZeros();
-    DF.getValue( EMDL_ORIENT_ORIGIN_X_ANGSTROM, XX(trans), p);
-    DF.getValue( EMDL_ORIENT_ORIGIN_Y_ANGSTROM, YY(trans), p);
+    DF.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, XX(trans), p);
+    DF.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, YY(trans), p);
 
-    if (shift_error > 0.)
-    {
-        XX(trans) += rnd_gaus(0., shift_error);
-        YY(trans) += rnd_gaus(0., shift_error);
+    if (shift_error > 0.0) {
+        XX(trans) += rnd_gaus(0.0, shift_error);
+        YY(trans) += rnd_gaus(0.0, shift_error);
     }
 
-    if (data_dim == 3)
-    {
+    if (data_dim == 3) {
         trans.resize(3);
-        DF.getValue( EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ZZ(trans), p);
+        DF.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ZZ(trans), p);
 
-        if (shift_error > 0.)
-        {
-            ZZ(trans) += rnd_gaus(0., shift_error);
+        if (shift_error > 0.0) {
+            ZZ(trans) += rnd_gaus(0.0, shift_error);
         }
     }
 
     // As of v3.1, shifts are in Angstroms in the STAR files, convert back to pixels here
-    trans/= myPixelSize;
+    trans /= myPixelSize;
 
-    if (do_fom_weighting)
-    {
-        DF.getValue( EMDL_PARTICLE_FOM, fom, p);
+    if (do_fom_weighting) {
+        DF.getValue(EMDL::PARTICLE_FOM, fom, p);
     }
 
     // Use either selfTranslate OR shiftImageInFourierTransform!!
@@ -417,41 +365,38 @@ void Reconstructor::backprojectOneParticle(long int p)
     FileName fn_img;
     Image<RFLOAT> img;
 
-    if (!do_reconstruct_ctf && fn_noise == "")
-    {
-        DF.getValue(EMDL_IMAGE_NAME, fn_img, p);
+    if (!do_reconstruct_ctf && fn_noise == "") {
+        DF.getValue(EMDL::IMAGE_NAME, fn_img, p);
         img.read(fn_img);
         img().setXmippOrigin();
         transformer.FourierTransform(img(), F2D);
         CenterFFTbySign(F2D);
 
-        if (ABS(XX(trans)) > 0. || ABS(YY(trans)) > 0. || ABS(ZZ(trans)) > 0. ) // ZZ(trans) is 0 in case data_dim=2
-        {
+        if (ABS(XX(trans)) > 0.0 || ABS(YY(trans)) > 0.0 || ABS(ZZ(trans)) > 0.0) {
+            // ZZ(trans) is 0 in case data_dim=2
             shiftImageInFourierTransform(F2D, F2D, XSIZE(img()), XX(trans), YY(trans), ZZ(trans));
         }
-    }
-    else
-    {
-        if (data_dim == 3) F2D.resize(myBoxSize, myBoxSize, myBoxSize / 2 + 1);
-        else F2D.resize(myBoxSize, myBoxSize / 2 + 1);
+    } else {
+        if (data_dim == 3) {
+            F2D.resize(myBoxSize, myBoxSize, myBoxSize / 2 + 1);
+        } else {
+            F2D.resize(myBoxSize,            myBoxSize / 2 + 1);
+        }
     }
 
-    if (fn_noise != "")
-    {
+    if (fn_noise != "") {
         // TODO: Refactor code duplication from relion_project!
         FileName fn_group;
-        if (DF.containsLabel(EMDL_MLMODEL_GROUP_NAME))
-            DF.getValue(EMDL_MLMODEL_GROUP_NAME, fn_group);
-        else if (DF.containsLabel(EMDL_MICROGRAPH_NAME))
-            DF.getValue(EMDL_MICROGRAPH_NAME, fn_group);
+        if (DF.containsLabel(EMDL::MLMODEL_GROUP_NAME))
+            DF.getValue(EMDL::MLMODEL_GROUP_NAME, fn_group);
+        else if (DF.containsLabel(EMDL::MICROGRAPH_NAME))
+            DF.getValue(EMDL::MICROGRAPH_NAME, fn_group);
         else
             REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --i file...");
 
         int my_mic_id = -1;
-        for (int mic_id = 0; mic_id < model.group_names.size(); mic_id++)
-        {
-            if (fn_group == model.group_names[mic_id])
-            {
+        for (int mic_id = 0; mic_id < model.group_names.size(); mic_id++) {
+            if (fn_group == model.group_names[mic_id]) {
                 my_mic_id = mic_id;
                 break;
             }
@@ -459,87 +404,74 @@ void Reconstructor::backprojectOneParticle(long int p)
 
         if (my_mic_id < 0) REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
 
-        RFLOAT normcorr = 1.;
-        if (DF.containsLabel(EMDL_IMAGE_NORM_CORRECTION)) DF.getValue(EMDL_IMAGE_NORM_CORRECTION, normcorr);
+        RFLOAT normcorr = 1.0;
+        if (DF.containsLabel(EMDL::IMAGE_NORM_CORRECTION)) {
+            DF.getValue(EMDL::IMAGE_NORM_CORRECTION, normcorr);
+        }
 
         // Make coloured noise image
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D)
-        {
-            int ires = ROUND(sqrt((RFLOAT)(kp*kp + ip*ip + jp*jp)));
-            ires = XMIPP_MIN(ires, myBoxSize/2); // at freqs higher than Nyquist: use last sigma2 value
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
+            int ires = ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
+            ires = XMIPP_MIN(ires, myBoxSize / 2); // at freqs higher than Nyquist: use last sigma2 value
 
             RFLOAT sigma = sqrt(DIRECT_A1D_ELEM(model.sigma2_noise[my_mic_id], ires));
-            DIRECT_A3D_ELEM(F2D, k, i, j).real += rnd_gaus(0., sigma);
-            DIRECT_A3D_ELEM(F2D, k, i, j).imag += rnd_gaus(0., sigma);
+            DIRECT_A3D_ELEM(F2D, k, i, j).real += rnd_gaus(0.0, sigma);
+            DIRECT_A3D_ELEM(F2D, k, i, j).imag += rnd_gaus(0.0, sigma);
         }
     }
 
     Fctf.resize(F2D);
-    Fctf.initConstant(1.);
+    Fctf.initConstant(1.0);
 
     // Apply CTF if necessary
-    if (do_ctf || do_reconstruct_ctf)
-    {
+    if (do_ctf || do_reconstruct_ctf) {
 
         // Also allow 3D CTF correction here
-        if (data_dim == 3)
-        {
+        if (data_dim == 3) {
             Image<RFLOAT> Ictf;
             FileName fn_ctf;
-            if (!DF.getValue(EMDL_CTF_IMAGE, fn_ctf, p))
+            if (!DF.getValue(EMDL::CTF_IMAGE, fn_ctf, p))
                 REPORT_ERROR("ERROR: cannot find rlnCtfImage for 3D CTF correction!");
             Ictf.read(fn_ctf);
 
             // If there is a redundant half, get rid of it
-            if (XSIZE(Ictf()) == YSIZE(Ictf()))
-            {
+            if (XSIZE(Ictf()) == YSIZE(Ictf())) {
                 Ictf().setXmippOrigin();
-                FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf)
-                {
+                FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                     DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                 }
-            }
-            // otherwise, just window the CTF to the current resolution
-            else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1)
-            {
+            } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+                // otherwise, just window the CTF to the current resolution
                 windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
-            }
-            // if dimensions are neither cubical nor FFTW, stop
-            else
-            {
+            } else {
+                // if dimensions are neither cubical nor FFTW, stop
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
             }
-        }
-        else
-        {
+        } else {
             CTF ctf;
-            if (do_ignore_optics)
-            {
+            if (do_ignore_optics) {
                 ctf.read(DF, DF, p);
-            }
-            else
-            {
+            } else {
                 ctf.readByGroup(DF, &obsModel, p);
             }
 
-            ctf.getFftwImage(Fctf, myBoxSize, myBoxSize, myPixelSize,
-                             ctf_phase_flipped, only_flip_phases,
-                             intact_ctf_first_peak, true);
+            ctf.getFftwImage(
+                Fctf, myBoxSize, myBoxSize, myPixelSize,
+                ctf_phase_flipped, only_flip_phases,
+                intact_ctf_first_peak, true
+            );
 
-            if (!do_ignore_optics)
-            {
+            if (!do_ignore_optics) {
                 obsModel.demodulatePhase(DF, p, F2D);
                 obsModel.divideByMtf(DF, p, F2D);
             }
 
             // Ewald-sphere curvature correction
-            if (do_ewald)
-            {
+            if (do_ewald) {
                 applyCTFPandCTFQ(F2D, ctf, transformer, F2DP, F2DQ, skip_mask);
 
-                if (!skip_weighting)
-                {
+                if (!skip_weighting) {
                     // Also calculate W, store again in Fctf
                     ctf.applyWeightEwaldSphereCurvature_noAniso(Fctf, myBoxSize, myBoxSize, myPixelSize, mask_diameter);
                 }
@@ -551,82 +483,62 @@ void Reconstructor::backprojectOneParticle(long int p)
     }
 
     // Subtract reference projection
-    if (fn_sub != "")
-    {
+    if (fn_sub != "") {
         Fsub.resize(F2D);
         projector.get2DFourierTransform(Fsub, A3D);
 
         // Apply CTF if necessary
-        if (do_ctf)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub)
-            {
+        if (do_ctf) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
                 DIRECT_MULTIDIM_ELEM(Fsub, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
             }
         }
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub)
-        {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
             DIRECT_MULTIDIM_ELEM(F2D, n) -= DIRECT_MULTIDIM_ELEM(Fsub, n);
         }
         // Back-project difference image
         backprojector.set2DFourierTransform(F2D, A3D);
-    }
-    else
-    {
-        if (do_reconstruct_ctf)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D)
-            {
-                DIRECT_MULTIDIM_ELEM(F2D, n)  = DIRECT_MULTIDIM_ELEM(Fctf, n);
+    } else {
+        if (do_reconstruct_ctf) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+                DIRECT_MULTIDIM_ELEM(F2D, n) = DIRECT_MULTIDIM_ELEM(Fctf, n);
                 if (do_reconstruct_ctf2)
                     DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
-                DIRECT_MULTIDIM_ELEM(Fctf, n) = 1.;
+                DIRECT_MULTIDIM_ELEM(Fctf, n) = 1.0;
             }
-        }
-        else if (do_ewald)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D)
-            {
+        } else if (do_ewald) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
                 DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
             }
-        }
-        // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
-        else if (do_ctf)
-        {
-            if (!ctf_premultiplied)
-            {
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D)
-                {
-                    DIRECT_MULTIDIM_ELEM(F2D, n)  *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+        } else if (do_ctf) {
+            // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
+            if (!ctf_premultiplied) {
+                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+                    DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                 }
             }
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fctf)
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fctf) {
                 DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
             }
         }
 
         // Do the following after squaring the CTFs!
-        if (do_fom_weighting)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D)
-            {
+        if (do_fom_weighting) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
                 DIRECT_MULTIDIM_ELEM(F2D, n)  *= fom;
                 DIRECT_MULTIDIM_ELEM(Fctf, n) *= fom;
             }
         }
 
-        if (read_weights)
-        {
+        if (read_weights) {
             std::string name, fullName;
 
-            DF.getValue(EMDL_IMAGE_NAME, fullName, 0);
-            name = fullName.substr(fullName.find("@")+1);
+            DF.getValue(EMDL::IMAGE_NAME, fullName, 0);
+            name = fullName.substr(fullName.find("@") + 1);
 
-            if (image_path != "")
-            {
-                name = image_path + "/" + name.substr(name.find_last_of("/")+1);
+            if (image_path != "") {
+                name = image_path + "/" + name.substr(name.find_last_of("/") + 1);
             }
 
             std::string wghName = name;
@@ -635,71 +547,60 @@ void Reconstructor::backprojectOneParticle(long int p)
             Image<RFLOAT> wgh;
             wgh.read(wghName);
 
-            if (   Fctf.ndim != wgh().ndim
-                || Fctf.zdim != wgh().zdim
-                || Fctf.ydim != wgh().ydim
-                || Fctf.xdim != wgh().xdim)
-            {
+            if (
+                Fctf.ndim != wgh().ndim ||
+                Fctf.zdim != wgh().zdim ||
+                Fctf.ydim != wgh().ydim ||
+                Fctf.xdim != wgh().xdim
+            ) {
                 REPORT_ERROR(wghName + " and " + name + " are of unequal size.\n");
             }
 
             for (long int n = 0; n < Fctf.ndim; n++)
             for (long int z = 0; z < Fctf.zdim; z++)
             for (long int y = 0; y < Fctf.ydim; y++)
-            for (long int x = 0; x < Fctf.xdim; x++)
-            {
+            for (long int x = 0; x < Fctf.xdim; x++) {
                 DIRECT_NZYX_ELEM(Fctf, n, z, y, x) *= DIRECT_NZYX_ELEM(wgh(), n, z, y, x);
             }
         }
 
         DIRECT_A2D_ELEM(F2D, 0, 0) = 0.0;
 
-        if (do_ewald)
-        {
+        if (do_ewald) {
             Matrix2D<RFLOAT> magMat;
 
-            if (!do_ignore_optics && obsModel.hasMagMatrices)
-            {
+            if (!do_ignore_optics && obsModel.hasMagMatrices) {
                 magMat = obsModel.getMagMatrix(opticsGroup);
-            }
-            else
-            {
-                magMat = Matrix2D<RFLOAT>(2,2);
+            } else {
+                magMat = Matrix2D<RFLOAT>(2, 2);
                 magMat.initIdentity();
             }
 
-            backprojector.set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, true, &magMat);
+            backprojector.set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, true,  &magMat);
             backprojector.set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, false, &magMat);
-        }
-        else
-        {
+        } else {
             backprojector.set2DFourierTransform(F2D, A3D, &Fctf);
         }
     }
-
-
 }
 
-void Reconstructor::reconstruct()
-{
+void Reconstructor::reconstruct() {
     bool do_map = false;
     bool do_use_fsc = false;
     MultidimArray<RFLOAT> fsc, dummy;
     Image<RFLOAT> vol;
-    fsc.resize(output_boxsize/2+1);
+    fsc.resize(output_boxsize / 2 + 1);
 
-    if (fn_fsc != "")
-    {
+    if (fn_fsc != "") {
         do_map = true;
-        do_use_fsc =true;
+        do_use_fsc = true;
         MetaDataTable MDfsc;
         MDfsc.read(fn_fsc);
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDfsc)
-        {
+        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDfsc) {
             int idx;
             RFLOAT val;
-            MDfsc.getValue(EMDL_SPECTRAL_IDX, idx);
-            MDfsc.getValue(EMDL_MLMODEL_FSC_HALVES_REF, val);
+            MDfsc.getValue(EMDL::SPECTRAL_IDX, idx);
+            MDfsc.getValue(EMDL::MLMODEL_FSC_HALVES_REF, val);
             fsc(idx) = val;
         }
     }
@@ -709,73 +610,63 @@ void Reconstructor::reconstruct()
 
     backprojector.symmetrise(nr_helical_asu, helical_twist, helical_rise/angpix);
 
-    if (do_reconstruct_ctf)
-    {
+    if (do_reconstruct_ctf) {
 
         vol().initZeros(ctf_dim, ctf_dim, ctf_dim);
         vol().setXmippOrigin();
 
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol())
-        {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol()) {
             int jp = j;
             int ip = i;
             int kp = k;
 
             // for negative j's: use inverse
-            if (j < 0)
-            {
+            if (j < 0) {
                 jp = -j;
                 ip = -i;
                 kp = -k;
             }
 
-            if (jp >= STARTINGX(backprojector.data) && jp <= FINISHINGX(backprojector.data) &&
-                    ip >= STARTINGY(backprojector.data) && ip <= FINISHINGY(backprojector.data) &&
-                    kp >= STARTINGZ(backprojector.data) && kp <= FINISHINGZ(backprojector.data))
-            {
-                if (A3D_ELEM(backprojector.weight, kp, ip, jp) > 0.)
-                {
+            if (
+                jp >= STARTINGX(backprojector.data) && jp <= FINISHINGX(backprojector.data) &&
+                ip >= STARTINGY(backprojector.data) && ip <= FINISHINGY(backprojector.data) &&
+                kp >= STARTINGZ(backprojector.data) && kp <= FINISHINGZ(backprojector.data)
+            ) {
+                if (A3D_ELEM(backprojector.weight, kp, ip, jp) > 0.0) {
                     A3D_ELEM(vol(), k, i, j) = A3D_ELEM(backprojector.data, kp, ip, jp) / A3D_ELEM(backprojector.weight, kp, ip, jp);
                     if (do_reconstruct_ctf2)
                         A3D_ELEM(vol(), k, i, j) = sqrt(A3D_ELEM(vol(), k, i, j));
                 }
             }
         }
-    }
-    else
-    {
+    } else {
 
-        if (do_debug)
-        {
+        if (do_debug) {
             Image<RFLOAT> It;
             FileName fn_tmp = fn_out.withoutExtension();
             It().resize(backprojector.data);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
                 DIRECT_MULTIDIM_ELEM(It(), n) = (DIRECT_MULTIDIM_ELEM(backprojector.data, n)).real;
             }
             It.write(fn_tmp+"_data_real.mrc");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
                 DIRECT_MULTIDIM_ELEM(It(), n) = (DIRECT_MULTIDIM_ELEM(backprojector.data, n)).imag;
             }
             It.write(fn_tmp+"_data_imag.mrc");
-            It()=backprojector.weight;
+            It() = backprojector.weight;
             It.write(fn_tmp+"_weight.mrc");
         }
 
         MultidimArray<RFLOAT> tau2;
-        if (do_use_fsc) backprojector.updateSSNRarrays(1., tau2, dummy, dummy, dummy, fsc, do_use_fsc, true);
+        if (do_use_fsc) backprojector.updateSSNRarrays(1.0, tau2, dummy, dummy, dummy, fsc, do_use_fsc, true);
 
-        if (do_external_reconstruct)
-        {
+        if (do_external_reconstruct) {
             FileName fn_root = fn_out.withoutExtension();
-            backprojector.externalReconstruct(vol(),
-                    fn_root,
-                    tau2, dummy, dummy, dummy, false, 1., 1);
-        }
-        else
-        {
+            backprojector.externalReconstruct(
+                vol(), fn_root,
+                tau2, dummy, dummy, dummy, false, 1.0, 1
+            );
+        } else {
             backprojector.reconstruct(vol(), iter, do_map, tau2);
         }
     }
@@ -785,25 +676,22 @@ void Reconstructor::reconstruct()
     vol.write(fn_out);
     if (verb > 0)
         std::cout << " + Done! Written output map in: "<<fn_out<<std::endl;
-
-
 }
 
-void Reconstructor::applyCTFPandCTFQ(MultidimArray<Complex> &Fin, CTF &ctf, FourierTransformer &transformer,
-        MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask)
-{
+void Reconstructor::applyCTFPandCTFQ(
+    MultidimArray<Complex> &Fin, CTF &ctf, FourierTransformer &transformer,
+    MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask
+) {
     //FourierTransformer transformer;
     outP.resize(Fin);
     outQ.resize(Fin);
-    float angle_step = 180./nr_sectors;
-    for (float angle = 0.; angle < 180.;  angle +=angle_step)
-    {
+    float angle_step = 180.0 / nr_sectors;
+    for (float angle = 0.0; angle < 180.0; angle += angle_step) {
         MultidimArray<Complex> CTFP(Fin), Fapp(Fin);
         MultidimArray<RFLOAT> Iapp(YSIZE(Fin), YSIZE(Fin));
         // Two passes: one for CTFP, one for CTFQ
-        for (int ipass = 0; ipass < 2; ipass++)
-        {
-            bool is_my_positive = (ipass == 1) ? is_reverse : !is_reverse;
+        for (int ipass = 0; ipass < 2; ipass++) {
+            bool is_my_positive = (ipass == 1) == is_reverse;
 
             // Get CTFP and multiply the Fapp with it
             ctf.getCTFPImage(CTFP, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
@@ -815,7 +703,7 @@ void Reconstructor::applyCTFPandCTFQ(MultidimArray<Complex> &Fin, CTF &ctf, Four
                 CenterFFTbySign(Fapp);
                 transformer.inverseFourierTransform(Fapp, Iapp);
 
-                softMaskOutsideMap(Iapp, ROUND(mask_diameter/(angpix*2.)), (RFLOAT)width_mask_edge);
+                softMaskOutsideMap(Iapp, ROUND(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 
                 // Re-box to a smaller size if necessary....
                 if (newbox > 0 && newbox < YSIZE(Fin)) {
@@ -832,64 +720,56 @@ void Reconstructor::applyCTFPandCTFQ(MultidimArray<Complex> &Fin, CTF &ctf, Four
             }
 
             // First time round: resize the output arrays
-            if (ipass == 0 && fabs(angle) < XMIPP_EQUAL_ACCURACY)
-            {
+            if (ipass == 0 && fabs(angle) < XMIPP_EQUAL_ACCURACY) {
                 outP.resize(Fapp);
                 outQ.resize(Fapp);
             }
 
             // Now set back the right parts into outP (first pass) or outQ (second pass)
-            float anglemin = angle + 90. - (0.5*angle_step);
-            float anglemax = angle + 90. + (0.5*angle_step);
+            float anglemin = angle + 90.0 - (0.5 * angle_step);
+            float anglemax = angle + 90.0 + (0.5 * angle_step);
 
             // angles larger than 180
             bool is_angle_reverse = false;
-            if (anglemin >= 180.)
-            {
-                anglemin -= 180.;
-                anglemax -= 180.;
+            if (anglemin >= 180.0) {
+                anglemin -= 180.0;
+                anglemax -= 180.0;
                 is_angle_reverse = true;
             }
             MultidimArray<Complex> *myCTFPorQ, *myCTFPorQb;
-            if (is_angle_reverse)
-            {
-                myCTFPorQ  = (ipass == 0) ? &outQ : &outP;
-                myCTFPorQb = (ipass == 0) ? &outP : &outQ;
-            }
-            else
-            {
-                myCTFPorQ  = (ipass == 0) ? &outP : &outQ;
-                myCTFPorQb = (ipass == 0) ? &outQ : &outP;
+            if (is_angle_reverse) {
+                myCTFPorQ  = ipass == 0 ? &outQ : &outP;
+                myCTFPorQb = ipass == 0 ? &outP : &outQ;
+            } else {
+                myCTFPorQ  = ipass == 0 ? &outP : &outQ;
+                myCTFPorQb = ipass == 0 ? &outQ : &outP;
             }
 
             // Deal with sectors with the Y-axis in the middle of the sector...
             bool do_wrap_max = false;
-            if (anglemin < 180. && anglemax > 180.)
-            {
-                anglemax -= 180.;
+            if (anglemin < 180.0 && anglemax > 180.0) {
+                anglemax -= 180.0;
                 do_wrap_max = true;
             }
 
             // use radians instead of degrees
             anglemin = DEG2RAD(anglemin);
             anglemax = DEG2RAD(anglemax);
-            FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP)
-            {
-                RFLOAT x = (RFLOAT)jp;
-                RFLOAT y = (RFLOAT)ip;
-                RFLOAT myangle = (x*x+y*y > 0) ? acos(y/sqrt(x*x+y*y)) : 0; // dot-product with Y-axis: (0,1)
+            FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
+                RFLOAT x = (RFLOAT) jp;
+                RFLOAT y = (RFLOAT) ip;
+                RFLOAT myangle = x * x + y * y > 0 ? acos(y / sqrt(x * x + y * y)) : 0; // dot-product with Y-axis: (0,1)
                 // Only take the relevant sector now...
-                if (do_wrap_max)
-                {
-                    if (myangle >= anglemin)
+                if (do_wrap_max) {
+                    if (myangle >= anglemin) {
                         DIRECT_A2D_ELEM(*myCTFPorQ, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
-                    else if (myangle < anglemax)
+                    } else if (myangle < anglemax) {
                         DIRECT_A2D_ELEM(*myCTFPorQb, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
-                }
-                else
-                {
-                    if (myangle >= anglemin && myangle < anglemax)
+                    }
+                } else {
+                    if (myangle >= anglemin && myangle < anglemax) {
                         DIRECT_A2D_ELEM(*myCTFPorQ, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
+                    }
                 }
             }
         }

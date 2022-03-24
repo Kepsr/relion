@@ -974,7 +974,7 @@ class Image {
      * @endcode
      */
     int dataType() const {
-        return MDMainHeader.getValue(EMDL_IMAGE_DATATYPE);
+        return MDMainHeader.getValue(EMDL::IMAGE_DATATYPE);
     }
 
     /** Sampling rate in X
@@ -985,7 +985,7 @@ class Image {
     */
     RFLOAT samplingRateX(const long int n = 0) const {
         try {
-            return MDMainHeader.getValue(EMDL_IMAGE_SAMPLINGRATE_X);
+            return MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
         } catch (const char* errmsg) {
             return 1.0;
         }
@@ -999,7 +999,7 @@ class Image {
     */
     RFLOAT samplingRateY(const long int n = 0) const {
         try {
-            MDMainHeader.getValue(EMDL_IMAGE_SAMPLINGRATE_Y);
+            MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
         } catch (const char* errmsg) {
             return 1.0;
         }
@@ -1013,19 +1013,19 @@ class Image {
     // Set image statistics in the main header
     void setStatisticsInHeader() {
         std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statistics = data.computeStats();
-        MDMainHeader.setValue(EMDL_IMAGE_STATS_AVG,    std::get<0>(statistics));
-        MDMainHeader.setValue(EMDL_IMAGE_STATS_STDDEV, std::get<1>(statistics));
-        MDMainHeader.setValue(EMDL_IMAGE_STATS_MIN,    std::get<2>(statistics));
-        MDMainHeader.setValue(EMDL_IMAGE_STATS_MAX,    std::get<3>(statistics));
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    std::get<0>(statistics));
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, std::get<1>(statistics));
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    std::get<2>(statistics));
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    std::get<3>(statistics));
     }
 
     void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y = -1.0, RFLOAT rate_z = -1.0) {
-        MDMainHeader.setValue(EMDL_IMAGE_SAMPLINGRATE_X, rate_x);
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x);
         if (rate_y < 0.0) rate_y = rate_x;
-        MDMainHeader.setValue(EMDL_IMAGE_SAMPLINGRATE_Y, rate_y);
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y);
         if (ZSIZE(data) > 1) {
             if (rate_z < 0.0) rate_z = rate_x;
-            MDMainHeader.setValue(EMDL_IMAGE_SAMPLINGRATE_Z, rate_z);
+            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate_z);
         }
     }
 

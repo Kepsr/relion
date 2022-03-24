@@ -22,25 +22,25 @@
 
 // #define PREP_TIMING
 #ifdef PREP_TIMING
-    Timer timer;
-    int TIMING_TOP = timer.setNew("extractParticlesFromFieldOfView");
-    int TIMING_READ_COORD = timer.setNew("readInCoordinateFile");
-    int TIMING_BIAS_CORRECT = timer.setNew("biasCorrect");
-    int TIMING_EXTCT_FROM_FRAME = timer.setNew("extractParticlesFromOneFrame");
-    int TIMING_READ_IMG = timer.setNew("-readImg");
-    int TIMING_WINDOW = timer.setNew("-window");
-    int TIMING_BOUNDARY = timer.setNew("-checkBoundary");
-    int TIMING_PRE_IMG_OPS = timer.setNew("-performPerImageOperations");
-    int TIMING_NORMALIZE = timer.setNew("--normalize");
-    int TIMING_INV_CONT = timer.setNew("--invert_contrast");
-    int TIMING_COMP_STATS = timer.setNew("--computeStats");
-    int TIMING_PER_IMG_OP_WRITE = timer.setNew("--write");
-    int TIMING_REST = timer.setNew("-rest");
-    #define TIMING_TIC(id) timer.tic(id)
-    #define TIMING_TOC(id) timer.toc(id)
+Timer timer;
+int TIMING_TOP              = timer.setNew("extractParticlesFromFieldOfView");
+int TIMING_READ_COORD       = timer.setNew("readInCoordinateFile");
+int TIMING_BIAS_CORRECT     = timer.setNew("biasCorrect");
+int TIMING_EXTCT_FROM_FRAME = timer.setNew("extractParticlesFromOneFrame");
+int TIMING_READ_IMG         = timer.setNew("-readImg");
+int TIMING_WINDOW           = timer.setNew("-window");
+int TIMING_BOUNDARY         = timer.setNew("-checkBoundary");
+int TIMING_PRE_IMG_OPS      = timer.setNew("-performPerImageOperations");
+int TIMING_NORMALIZE        = timer.setNew("--normalize");
+int TIMING_INV_CONT         = timer.setNew("--invert_contrast");
+int TIMING_COMP_STATS       = timer.setNew("--computeStats");
+int TIMING_PER_IMG_OP_WRITE = timer.setNew("--write");
+int TIMING_REST             = timer.setNew("-rest");
+#define TIMING_TIC(id) timer.tic(id)
+#define TIMING_TOC(id) timer.toc(id)
 #else
-    #define TIMING_TIC(id)
-    #define TIMING_TOC(id)
+#define TIMING_TIC(id)
+#define TIMING_TOC(id)
 #endif
 
 /// HACK: Imitate a context manager.
@@ -115,8 +115,8 @@ void Preprocessing::initialise() {
         REPORT_ERROR("Provide either --extract or --operate_on");
 
     // Make sure the output directory name ends with a '/'
-    if (fn_part_dir[fn_part_dir.length()-1] != '/')
-        fn_part_dir+="/";
+    if (fn_part_dir[fn_part_dir.length() - 1] != '/')
+        fn_part_dir += "/";
 
     // Set up which coordinate files to extract particles from (or to join STAR file for)
     if (do_extract) {
@@ -134,10 +134,10 @@ void Preprocessing::initialise() {
         // Read in the micrographs STAR file
         ObservationModel::loadSafely(fn_star_in, obsModelMic, MDmics, "micrographs", verb);
 
-        if (!MDmics.containsLabel(EMDL_MICROGRAPH_NAME))
+        if (!MDmics.containsLabel(EMDL::MICROGRAPH_NAME))
             REPORT_ERROR("Preprocessing::initialise ERROR: Input micrograph STAR file has no rlnMicrographName column!");
 
-        if (!obsModelMic.opticsMdt.containsLabel(EMDL_MICROGRAPH_PIXEL_SIZE))
+        if (!obsModelMic.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE))
             REPORT_ERROR("Preprocessing::initialise ERROR: Input micrograph STAR file has no rlnMicrographPixelSize column!");
 
         // Get the dimensionality of the micrographs
@@ -148,19 +148,19 @@ void Preprocessing::initialise() {
         int xdim, ydim, zdim;
         long int ndim;
         MDmics.goToObject(0);
-        FileName fn_mic = MDmics.getValue(EMDL_MICROGRAPH_NAME);
+        FileName fn_mic = MDmics.getValue(EMDL::MICROGRAPH_NAME);
         Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
         std::tuple<int, int, int, long int> dimensions = Imic.getDimensions();
         int xdim = std::get<0>(dimensions);
         int ydim = std::get<1>(dimensions);
         int zdim = std::get<2>(dimensions);
         long int ndim = std::get<3>(dimensions);
-        dimensionality = (zdim > 1) ? 3 : 2;
+        dimensionality = zdim > 1 ? 3 : 2;
 
-        if ((do_phase_flip||do_premultiply_ctf) && !MDmics.containsLabel(EMDL_CTF_DEFOCUSU))
+        if ((do_phase_flip || do_premultiply_ctf) && !MDmics.containsLabel(EMDL::CTF_DEFOCUSU))
             REPORT_ERROR("Preprocessing::initialise ERROR: No CTF information found in the input micrograph STAR-file");
 
-        mic_star_has_ctf = MDmics.containsLabel(EMDL_CTF_DEFOCUSU);
+        mic_star_has_ctf = MDmics.containsLabel(EMDL::CTF_DEFOCUSU);
 
         if (fn_data != "") {
             if (verb > 0) {
@@ -168,7 +168,7 @@ void Preprocessing::initialise() {
                 std::cout << " + " << fn_data << std::endl;
             }
             ObservationModel::loadSafely(fn_data, obsModelPart, MDimg, "particles", verb);
-            data_star_has_ctf = MDimg.containsLabel(EMDL_CTF_DEFOCUSU);
+            data_star_has_ctf = MDimg.containsLabel(EMDL::CTF_DEFOCUSU);
 
             if (do_recenter && ref_angpix <= 0) {
                 if (!obsModelPart.allPixelSizesIdentical())
@@ -189,14 +189,14 @@ void Preprocessing::initialise() {
         } else {
             data_star_has_ctf = false;
             // Make sure the coordinate file directory names end with a '/'
-            if (fn_coord_dir != "ASINPUT" && fn_coord_dir[fn_coord_dir.length()-1] != '/')
+            if (fn_coord_dir != "ASINPUT" && fn_coord_dir[fn_coord_dir.length() - 1] != '/')
                 fn_coord_dir += "/";
 
             // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
             if (verb > 0 && fn_data == "") {
                 FileName fn_mic;
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
-                    fn_mic = MDmics.getValue(EMDL_MICROGRAPH_NAME);
+                    fn_mic = MDmics.getValue(EMDL::MICROGRAPH_NAME);
                     FileName fn_coord = getCoordinateFileName(fn_mic);
                     if (!exists(fn_coord))
                         std::cerr << "Warning: coordinate file " << fn_coord << " does not exist..." << std::endl;
@@ -215,7 +215,7 @@ void Preprocessing::initialise() {
 
     if (do_extract || fn_operate_in != "") {
         // Check whether to do re-scaling
-        do_rescale = (scale > 0);
+        do_rescale = scale > 0;
         if (do_rescale && scale % 2 != 0) {
             scale++;
             std::cerr << " Warning: only re-scaling to even-sized images is allowed in RELION, setting scale to: " << scale << std::endl;
@@ -234,7 +234,7 @@ void Preprocessing::initialise() {
 
         // Extract helical segments
         if (do_extract_helix) {
-            if (!do_extract || (fn_operate_in != ""))
+            if (!do_extract || fn_operate_in != "")
                 REPORT_ERROR("ERROR: cannot perform operations on helical segments other than extraction");
             if (do_normalise && helical_tube_outer_diameter < 0)
                 REPORT_ERROR("ERROR: please provide a tube radius that defines the background area when normalising helical segments...");
@@ -250,10 +250,10 @@ void Preprocessing::run() {
     }
 
     if (verb > 0)
-        std::cout << " Done preprocessing!" <<std::endl;
+        std::cout << " Done preprocessing!" << std::endl;
 
     #ifdef PREP_TIMING
-        timer.printTimes(false);
+    timer.printTimes(false);
     #endif
 }
 
@@ -270,7 +270,7 @@ void Preprocessing::joinAllStarFiles() {
         current_object1 = MDmics.nextObject()
     ) {
         // Micrograph filename
-        FileName fn_mic = MDmics.getValue(EMDL_MICROGRAPH_NAME);
+        FileName fn_mic = MDmics.getValue(EMDL::MICROGRAPH_NAME);
 
         // Get the filename of the STAR file for just this micrograph
         FileName fn_star = getOutputFileNameRoot(fn_mic) + "_extract.star";
@@ -290,7 +290,7 @@ void Preprocessing::joinAllStarFiles() {
         }
 
         imic++;
-    } // end loop over all micrographs
+    }
 
     // Write out the joined star files
     if (fn_part_star != "") {
@@ -300,8 +300,8 @@ void Preprocessing::joinAllStarFiles() {
             std::string optgroup_name;
             RFLOAT mic_angpix;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModelMic.opticsMdt) {
-                mic_angpix = obsModelMic.opticsMdt.getValue(EMDL_MICROGRAPH_PIXEL_SIZE);
-                optgroup_name = obsModelMic.opticsMdt.getValue(EMDL_IMAGE_OPTICS_GROUP_NAME);
+                mic_angpix = obsModelMic.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE);
+                optgroup_name = obsModelMic.opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME);
 
                 optics_group_mic_angpix.insert(std::make_pair(optgroup_name, mic_angpix));
             }
@@ -314,7 +314,7 @@ void Preprocessing::joinAllStarFiles() {
         std::set<std::string> isOgPresent;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
             og = myOutObsModel->getOpticsGroup(MDout);
-            optgroup_name = myOutObsModel->opticsMdt.getValue(EMDL_IMAGE_OPTICS_GROUP_NAME, og);
+            optgroup_name = myOutObsModel->opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME, og);
             isOgPresent.insert(optgroup_name);
         }
 
@@ -323,9 +323,9 @@ void Preprocessing::joinAllStarFiles() {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(myOutObsModel->opticsMdt) {
             // Find the pixel size for the original micrograph
             if (fn_data == "") {
-                my_angpix = obsModelMic.opticsMdt.getValue(EMDL_MICROGRAPH_PIXEL_SIZE);
+                my_angpix = obsModelMic.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE);
             } else {
-                optgroup_name = myOutObsModel->opticsMdt.getValue(EMDL_IMAGE_OPTICS_GROUP_NAME);
+                optgroup_name = myOutObsModel->opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME);
                 if (optics_group_mic_angpix.count(optgroup_name) == 0) {
                     if (isOgPresent.count(optgroup_name) != 0) {
                         REPORT_ERROR("ERROR: optics group \"" + optgroup_name + "\" does not exist in micrograph STAR file...");
@@ -339,18 +339,22 @@ void Preprocessing::joinAllStarFiles() {
 
             if (do_rescale)
                 my_angpix *= (RFLOAT)extract_size / (RFLOAT)scale;
-            myOutObsModel->opticsMdt.setValue(EMDL_IMAGE_PIXEL_SIZE, my_angpix);
+            myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, my_angpix);
 
-            if (do_rewindow) myOutObsModel->opticsMdt.setValue(EMDL_IMAGE_SIZE, window);
-            else if (do_rescale) myOutObsModel->opticsMdt.setValue(EMDL_IMAGE_SIZE, scale);
-            else myOutObsModel->opticsMdt.setValue(EMDL_IMAGE_SIZE, extract_size);
+            if (do_rewindow) {
+                myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_SIZE, window);
+            } else if (do_rescale) {
+                myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_SIZE, scale);
+            } else {
+                myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_SIZE, extract_size);
+            }
 
-            myOutObsModel->opticsMdt.setValue(EMDL_IMAGE_DIMENSIONALITY, dimensionality);
+            myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_DIMENSIONALITY, dimensionality);
 
             if (do_premultiply_ctf)
-                myOutObsModel->opticsMdt.setValue(EMDL_OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, true);
+                myOutObsModel->opticsMdt.setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, true);
 
-            int igroup = myOutObsModel->opticsMdt.getValue(EMDL_IMAGE_OPTICS_GROUP);
+            int igroup = myOutObsModel->opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP);
             if (my_angpix < 0) {
                 std::cerr << "optics group \"" + optgroup_name + "\" will be removed because no extracted particle belong to it." << std::endl;
             } else {
@@ -359,14 +363,14 @@ void Preprocessing::joinAllStarFiles() {
         }
 
         if (fn_data == "") {
-            myOutObsModel->opticsMdt.deactivateLabel(EMDL_MICROGRAPH_PIXEL_SIZE);
+            myOutObsModel->opticsMdt.deactivateLabel(EMDL::MICROGRAPH_PIXEL_SIZE);
         }
 
         // Remove absent optics groups; After this, NOTHING should be done except for saving. obsModel's internal data structure is now corrupted!
         og = 0;
         while (og < myOutObsModel->opticsMdt.numberOfObjects()) {
             RFLOAT og_angpix;
-            myOutObsModel->opticsMdt.getValue(EMDL_IMAGE_PIXEL_SIZE, og_angpix, og);
+            myOutObsModel->opticsMdt.getValue(EMDL::IMAGE_PIXEL_SIZE, og_angpix, og);
             if (og_angpix < 0) {
                 myOutObsModel->opticsMdt.removeObject(og);
             } else {
@@ -397,7 +401,7 @@ void Preprocessing::runExtractParticles() {
         if (pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        fn_mic = MDmics.getValue(EMDL_MICROGRAPH_NAME);
+        fn_mic = MDmics.getValue(EMDL::MICROGRAPH_NAME);
         int optics_group = obsModelMic.getOpticsGroup(MDmics);
 
         // Set the pixel size for this micrograph
@@ -464,8 +468,8 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                 int ypos = num2 + num4 / 2;
 
                 MD.addObject();
-                MD.setValue(EMDL_IMAGE_COORD_X, (RFLOAT)xpos);
-                MD.setValue(EMDL_IMAGE_COORD_Y, (RFLOAT)ypos);
+                MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)xpos);
+                MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)ypos);
             } else {
                 // Try reading as plain ASCII....
                 // The first line might be a special header (as in ximdisp or xmipp2 format)
@@ -481,12 +485,12 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                         sscanf(words[1].c_str(), "%d", &num2)
                     ) {
                         MD.addObject();
-                        MD.setValue(EMDL_IMAGE_COORD_X, (RFLOAT)num1);
-                        MD.setValue(EMDL_IMAGE_COORD_Y, (RFLOAT)num2);
+                        MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)num1);
+                        MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)num2);
 
                         // It could also be a X,Y,Z coordinate...
                         if (words.size() > 2 && sscanf(words[2].c_str(), "%d", &num3))
-                            MD.setValue(EMDL_IMAGE_COORD_Z, (RFLOAT) num3);
+                            MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT) num3);
                     }
                 } else {
                     // All other lines contain x, y as first two entries, and possibly a Z-coordinate as well.
@@ -499,11 +503,11 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                     int num3;
 
                     MD.addObject();
-                    MD.setValue(EMDL_IMAGE_COORD_X, (RFLOAT)num1);
-                    MD.setValue(EMDL_IMAGE_COORD_Y, (RFLOAT)num2);
+                    MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)num1);
+                    MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)num2);
                     // It could also be a X,Y,Z coordinate...
                     if (words.size() > 2 && sscanf(words[2].c_str(), "%d", &num3))
-                        MD.setValue(EMDL_IMAGE_COORD_Z, (RFLOAT)num3);
+                        MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT)num3);
                 }
             }
         }
@@ -589,10 +593,11 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
     } else {
         FileName fn_coord = getCoordinateFileName(fn_mic);
         if (!exists(fn_coord)) return false;
-        if (do_extract_helix)
+        if (do_extract_helix) {
             readHelicalCoordinates(fn_mic, fn_coord, MDin);
-        else
+        } else {
             readCoordinates(fn_coord, MDin);
+        }
     }
     });
 
@@ -602,12 +607,12 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
         if (ABS(extract_bias_x) > 0 || ABS(extract_bias_y) > 0) {
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
                 RFLOAT xcoor, ycoor;
-                xcoor = MDin.getValue(EMDL_IMAGE_COORD_X);
-                ycoor = MDin.getValue(EMDL_IMAGE_COORD_Y);
+                xcoor = MDin.getValue(EMDL::IMAGE_COORD_X);
+                ycoor = MDin.getValue(EMDL::IMAGE_COORD_Y);
                 xcoor += extract_bias_x;
                 ycoor += extract_bias_y;
-                MDin.setValue(EMDL_IMAGE_COORD_X, xcoor);
-                MDin.setValue(EMDL_IMAGE_COORD_Y, ycoor);
+                MDin.setValue(EMDL::IMAGE_COORD_X, xcoor);
+                MDin.setValue(EMDL::IMAGE_COORD_Y, ycoor);
             }
         }
         });
@@ -634,7 +639,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
         long int my_current_nr_images = 0;
         RFLOAT all_avg = 0;
         RFLOAT all_stddev = 0;
-        RFLOAT all_minval = LARGE_NUMBER;
+        RFLOAT all_minval =  LARGE_NUMBER;
         RFLOAT all_maxval = -LARGE_NUMBER;
 
         extractParticlesFromOneMicrograph(
@@ -667,11 +672,11 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 ) {
     Image<RFLOAT> Ipart, Imic, Itmp;
 
-    bool MDin_has_optics_group = MD.containsLabel(EMDL_IMAGE_OPTICS_GROUP); // i.e. re-extracting
-    bool MDin_has_beamtilt = MD.containsLabel(EMDL_IMAGE_BEAMTILT_X) || MD.containsLabel(EMDL_IMAGE_BEAMTILT_Y);
-    bool MDin_has_ctf = MD.containsLabel(EMDL_CTF_DEFOCUSU);
-    bool MDin_has_tiltgroup = MD.containsLabel(EMDL_PARTICLE_BEAM_TILT_CLASS);
-    int my_extract_size = do_phase_flip || do_premultiply_ctf ? premultiply_ctf_extract_size : extract_size;
+    bool MDin_has_optics_group = MD.containsLabel(EMDL::IMAGE_OPTICS_GROUP); // i.e. re-extracting
+    bool MDin_has_beamtilt     = MD.containsLabel(EMDL::IMAGE_BEAMTILT_X) || MD.containsLabel(EMDL::IMAGE_BEAMTILT_Y);
+    bool MDin_has_ctf          = MD.containsLabel(EMDL::CTF_DEFOCUSU);
+    bool MDin_has_tiltgroup    = MD.containsLabel(EMDL::PARTICLE_BEAM_TILT_CLASS);
+    int my_extract_size        = do_phase_flip || do_premultiply_ctf ? premultiply_ctf_extract_size : extract_size;
     RFLOAT my_angpix;
 
     TICTOC(TIMING_READ_IMG, {
@@ -691,7 +696,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
         // Micrograph STAR file might not have a box size
         obsModelMic.setBoxSize(optics_group, my_extract_size);
-        my_angpix = obsModelMic.opticsMdt.getValue(EMDL_MICROGRAPH_PIXEL_SIZE, optics_group);
+        my_angpix = obsModelMic.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group);
     }
 
     // Now window all particles from the micrograph
@@ -703,8 +708,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         RFLOAT dxpos, dypos, dzpos;
         long int xpos, ypos, zpos;
         long int x0, xF, y0, yF, z0, zF;
-        dxpos = MD.getValue(EMDL_IMAGE_COORD_X);
-        dypos = MD.getValue(EMDL_IMAGE_COORD_Y);
+        dxpos = MD.getValue(EMDL::IMAGE_COORD_X);
+        dypos = MD.getValue(EMDL::IMAGE_COORD_Y);
         xpos = (long int) dxpos;
         ypos = (long int) dypos;
 
@@ -713,16 +718,18 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         y0 = ypos + Xmipp::init(my_extract_size);
         yF = ypos + Xmipp::last(my_extract_size);
         if (dimensionality == 3) {
-            dzpos = MD.getValue(EMDL_IMAGE_COORD_Z);
+            dzpos = MD.getValue(EMDL::IMAGE_COORD_Z);
             zpos = (long int) dzpos;
             z0 = zpos + Xmipp::init(extract_size);
             zF = zpos + Xmipp::last(extract_size);
         }
 
         // Discard particles that are completely outside the micrograph and print a warning
-        if (yF < 0 || y0 >= YSIZE(Imic()) || xF < 0 || x0 >= XSIZE(Imic()) ||
-                (dimensionality==3 && (zF < 0 || z0 >= ZSIZE(Imic())) ) )
-        {
+        if (
+                                     xF < 0 || x0 >= XSIZE(Imic()) ||
+                                     yF < 0 || y0 >= YSIZE(Imic()) || 
+            (dimensionality == 3 && (zF < 0 || z0 >= ZSIZE(Imic())))
+        ) {
             std::cerr << " micrograph x,y,z,n-size= " << XSIZE(Imic()) << " , " << YSIZE(Imic()) << " , " << ZSIZE(Imic()) << " , " << NSIZE(Imic()) << std::endl;
             std::cerr << " particle position= " << xpos << " , " << ypos;
             if (dimensionality == 3)
@@ -737,15 +744,16 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             optics_group = obsModelPart.getOpticsGroup(MD);
             if (obsModelPart.getBoxSize(optics_group) != my_extract_size)
                 obsModelPart.setBoxSize(optics_group, my_extract_size);
-            my_angpix = obsModelPart.opticsMdt.getValue(EMDL_MICROGRAPH_PIXEL_SIZE, optics_group);
+            my_angpix = obsModelPart.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group);
         }
 
         TICTOC(TIMING_WINDOW, {
         // extract one particle in Ipart
-        if (dimensionality == 3)
+        if (dimensionality == 3) {
             Imic().window(Ipart(), z0, y0, x0, zF, yF, xF);
-        else
+        } else {
             Imic().window(Ipart(), y0, x0, yF, xF, mic_avg);
+        }
         Ipart().setXmippOrigin();
         });
 
@@ -762,17 +770,17 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             // But we are doing this after extraction, so there is not much merit...
             ctf.getFftwImage(Fctf, my_extract_size, my_extract_size, my_angpix, false, do_phase_flip, do_ctf_intact_first_peak, true, false);
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT)
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
                 DIRECT_MULTIDIM_ELEM(FT, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
             }
 
             transformer.inverseFourierTransform(FT, Ipart());
 
-            if (extract_size != premultiply_ctf_extract_size)
-            {
-                Ipart().window(Xmipp::init(extract_size), Xmipp::init(extract_size),
-                               Xmipp::last(extract_size),  Xmipp::last(extract_size));
+            if (extract_size != premultiply_ctf_extract_size) {
+                Ipart().window(
+                    Xmipp::init(extract_size), Xmipp::init(extract_size),
+                    Xmipp::last(extract_size),  Xmipp::last(extract_size)
+                );
             }
         }
 
@@ -782,52 +790,46 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         Ipart().setXmippOrigin();
 
         // X-boundaries
-        if (x0 < 0 || xF >= XSIZE(Imic()) )
-        {
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart())
-            {
-                if (j + xpos < 0)
+        if (x0 < 0 || xF >= XSIZE(Imic())) {
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
+                if (j + xpos < 0) {
                     A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, i, -xpos);
-                else if (j + xpos >= XSIZE(Imic()))
+                } else if (j + xpos >= XSIZE(Imic())) {
                     A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, i, XSIZE(Imic()) - xpos - 1);
+                }
             }
         }
 
         // Y-boundaries
-        if (y0 < 0 || yF >= YSIZE(Imic()))
-        {
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart())
-            {
-                if (i + ypos < 0)
+        if (y0 < 0 || yF >= YSIZE(Imic())) {
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
+                if (i + ypos < 0) {
                     A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, -ypos, j);
-                else if (i + ypos >= YSIZE(Imic()))
+                } else if (i + ypos >= YSIZE(Imic())) {
                     A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, YSIZE(Imic()) - ypos - 1, j);
+                }
             }
         }
 
-        if (dimensionality == 3)
-        {
+        if (dimensionality == 3) {
             // Z-boundaries
-            if (z0 < 0 || zF >= ZSIZE(Imic()))
-            {
-                FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart())
-                {
-                    if (k + zpos < 0)
+            if (z0 < 0 || zF >= ZSIZE(Imic())) {
+                FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
+                    if (k + zpos < 0) {
                         A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), -zpos, i, j);
-                    else if (k + zpos >= ZSIZE(Imic()))
+                    } else if (k + zpos >= ZSIZE(Imic())) {
                         A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), ZSIZE(Imic()) - zpos - 1, i, j);
+                    }
                 }
             }
         }
 
         // 2D projection of 3D sub-tomograms
-        if (dimensionality == 3 && do_project_3d)
-        {
+        if (dimensionality == 3 && do_project_3d) {
             // Project the 3D sub-tomogram into a 2D particle again
             Image<RFLOAT> Iproj(YSIZE(Ipart()), XSIZE(Ipart()));
             Iproj().setXmippOrigin();
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ipart())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 DIRECT_A2D_ELEM(Iproj(), i, j) += DIRECT_A3D_ELEM(Ipart(), k, i, j);
             }
             Ipart = Iproj;
@@ -840,8 +842,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         tilt_deg = psi_deg = 0.0;
         if (do_extract_helix) {
             // If priors do not exist, errors will occur in 'readHelicalCoordinates()'.
-            tilt_deg = MD.getValue(EMDL_ORIENT_TILT_PRIOR);
-            psi_deg = MD.getValue(EMDL_ORIENT_PSI_PRIOR);
+            tilt_deg = MD.getValue(EMDL::ORIENT_TILT_PRIOR);
+            psi_deg  = MD.getValue(EMDL::ORIENT_PSI_PRIOR);
         }
 
         TICTOC(TIMING_PRE_IMG_OPS, {
@@ -856,17 +858,18 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         TICTOC(TIMING_REST, {
         // Also store all the particles information in the STAR file
         FileName fn_img;
-        if (Ipart().getDim() == 3)
+        if (Ipart().getDim() == 3) {
             fn_img.compose(fn_output_img_root, my_current_nr_images + ipos + 1, "mrc");
-        else
+        } else {
             fn_img.compose(my_current_nr_images + ipos + 1, fn_output_img_root + ".mrcs"); // start image counting in stacks at 1!
-        MD.setValue(EMDL_IMAGE_NAME, fn_img);
-        MD.setValue(EMDL_MICROGRAPH_NAME, fn_mic);
+        }
+        MD.setValue(EMDL::IMAGE_NAME,      fn_img);
+        MD.setValue(EMDL::MICROGRAPH_NAME, fn_mic);
 
         // Set the optics group for this particle to the one from the micrograph
         if (!MDin_has_optics_group) {
-            int optics_group = MDmics.getValue(EMDL_IMAGE_OPTICS_GROUP, imic);
-            MD.setValue(EMDL_IMAGE_OPTICS_GROUP, optics_group);
+            int optics_group = MDmics.getValue(EMDL::IMAGE_OPTICS_GROUP, imic);
+            MD.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group);
         }
 
         // Also fill in the per-particle CTF parameters
@@ -874,13 +877,13 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             // Only set CTF parameters from the micrographs STAR file if the input STAR file did not contain it!
             if (!MDin_has_ctf || keep_ctf_from_micrographs) {
                 RFLOAT maxres, fom;
-                if (MDmics.containsLabel(EMDL_CTF_MAXRES)) {
-                    maxres = MDmics.getValue(EMDL_CTF_MAXRES, imic);
-                    MD.setValue(EMDL_CTF_MAXRES, maxres);
+                if (MDmics.containsLabel(EMDL::CTF_MAXRES)) {
+                    maxres = MDmics.getValue(EMDL::CTF_MAXRES, imic);
+                    MD.setValue(EMDL::CTF_MAXRES, maxres);
                 }
-                if (MDmics.containsLabel(EMDL_CTF_FOM)) {
-                    fom = MDmics.getValue(EMDL_CTF_FOM, imic);
-                    MD.setValue(EMDL_CTF_FOM, fom);
+                if (MDmics.containsLabel(EMDL::CTF_FOM)) {
+                    fom = MDmics.getValue(EMDL::CTF_FOM, imic);
+                    MD.setValue(EMDL::CTF_FOM, fom);
                 }
 
                 ctf.write(MD);
@@ -889,21 +892,21 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             // Only set beamtilt from the micrographs STAR file if the input STAR file did not contain it!
             if (!MDin_has_beamtilt || keep_ctf_from_micrographs) {
                 RFLOAT tilt_x, tilt_y;
-                if (MDmics.containsLabel(EMDL_IMAGE_BEAMTILT_X)) {
-                    tilt_x = MDmics.getValue(EMDL_IMAGE_BEAMTILT_X, imic);
-                    MD.setValue(EMDL_IMAGE_BEAMTILT_X, tilt_x);
+                if (MDmics.containsLabel(EMDL::IMAGE_BEAMTILT_X)) {
+                    tilt_x = MDmics.getValue(EMDL::IMAGE_BEAMTILT_X, imic);
+                    MD.setValue(EMDL::IMAGE_BEAMTILT_X, tilt_x);
                 }
-                if (MDmics.containsLabel(EMDL_IMAGE_BEAMTILT_Y)) {
-                    tilt_y = MDmics.getValue(EMDL_IMAGE_BEAMTILT_Y, imic);
-                    MD.setValue(EMDL_IMAGE_BEAMTILT_Y, tilt_y);
+                if (MDmics.containsLabel(EMDL::IMAGE_BEAMTILT_Y)) {
+                    tilt_y = MDmics.getValue(EMDL::IMAGE_BEAMTILT_Y, imic);
+                    MD.setValue(EMDL::IMAGE_BEAMTILT_Y, tilt_y);
                 }
             }
 
             // Copy rlnBeamTiltGroupName from the micrograph STAR file only when absent in the particle STAR file
             // for backwards compatibility with release 3.0
-            if (!MDin_has_tiltgroup && MDmics.containsLabel(EMDL_PARTICLE_BEAM_TILT_CLASS)) {
-                int tilt_class = MDmics.getValue(EMDL_PARTICLE_BEAM_TILT_CLASS, imic);
-                MD.setValue(EMDL_PARTICLE_BEAM_TILT_CLASS, tilt_class);
+            if (!MDin_has_tiltgroup && MDmics.containsLabel(EMDL::PARTICLE_BEAM_TILT_CLASS)) {
+                int tilt_class = MDmics.getValue(EMDL::PARTICLE_BEAM_TILT_CLASS, imic);
+                MD.setValue(EMDL::PARTICLE_BEAM_TILT_CLASS, tilt_class);
             }
         }
         });
@@ -930,8 +933,7 @@ void Preprocessing::runOperateOnInputFile() {
     RFLOAT all_maxval = -LARGE_NUMBER;
     init_progress_bar(Nimg);
     int barstep = XMIPP_MAX(1, Nimg / 120);
-    for (long int i = 0; i < Nimg; i++)
-    {
+    for (long int i = 0; i < Nimg; i++) {
         FileName fn_tmp;
 
         // Read in individual miages from the stack
@@ -939,10 +941,12 @@ void Preprocessing::runOperateOnInputFile() {
         Ipart.read(fn_operate_in, true, i);
 
         RFLOAT tilt_deg, psi_deg;
-        tilt_deg = psi_deg = 0.;
-        performPerImageOperations(Ipart, fn_operate_out.withoutExtension(), i, Nimg,
-                tilt_deg, psi_deg,
-                all_avg, all_stddev, all_minval, all_maxval);
+        tilt_deg = psi_deg = 0.0;
+        performPerImageOperations(
+            Ipart, fn_operate_out.withoutExtension(), i, Nimg,
+            tilt_deg, psi_deg,
+            all_avg, all_stddev, all_minval, all_maxval
+        );
 
         // progress bar
         if (i % barstep == 0) progress_bar(i);
@@ -954,17 +958,13 @@ void Preprocessing::runOperateOnInputFile() {
 }
 
 void Preprocessing::performPerImageOperations(
-        Image<RFLOAT> &Ipart,
-        FileName fn_output_img_root,
-        long int image_nr,
-        long int nr_of_images,
-        RFLOAT tilt_deg,
-        RFLOAT psi_deg,
-        RFLOAT &all_avg,
-        RFLOAT &all_stddev,
-        RFLOAT &all_minval,
-        RFLOAT &all_maxval)
-{
+    Image<RFLOAT> &Ipart,
+    FileName fn_output_img_root,
+    long int image_nr,  long int nr_of_images,
+    RFLOAT tilt_deg,    RFLOAT psi_deg,
+    RFLOAT &all_avg,    RFLOAT &all_stddev,
+    RFLOAT &all_minval, RFLOAT &all_maxval
+) {
 
     Ipart().setXmippOrigin();
 
@@ -977,11 +977,13 @@ void Preprocessing::performPerImageOperations(
     TICTOC(TIMING_NORMALIZE, {
     // 24 June 2015 - Shaoda, helical segments
     if (do_normalise) {
-        RFLOAT bg_helical_radius = (helical_tube_outer_diameter * 0.5) / angpix;
+        RFLOAT bg_helical_radius = helical_tube_outer_diameter * 0.5 / angpix;
         if (do_rescale)
             bg_helical_radius *= scale / extract_size;
-        normalise(Ipart, bg_radius, white_dust_stddev, black_dust_stddev, do_ramp,
-                do_extract_helix, bg_helical_radius, tilt_deg, psi_deg);
+        normalise(
+            Ipart, bg_radius, white_dust_stddev, black_dust_stddev, do_ramp,
+            do_extract_helix, bg_helical_radius, tilt_deg, psi_deg
+        );
     }
     });
 
@@ -992,17 +994,17 @@ void Preprocessing::performPerImageOperations(
     // Calculate mean, stddev, min and max
     TICTOC(TIMING_COMP_STATS, {
     std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Ipart().computeStats();
-    RFLOAT avg = std::get<0>(statstuple);
+    RFLOAT avg    = std::get<0>(statstuple);
     RFLOAT stddev = std::get<1>(statstuple);
     RFLOAT minval = std::get<2>(statstuple);
     RFLOAT maxval = std::get<3>(statstuple);
     });
 
     if (Ipart().getDim() == 3) {
-        Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_MIN, minval);
-        Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_MAX, maxval);
-        Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_AVG, avg);
-        Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_STDDEV, stddev);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    minval);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    maxval);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    avg);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stddev);
         Ipart.setSamplingRateInHeader(output_angpix);
 
         TIMING_TIC(TIMING_PER_IMG_OP_WRITE);
@@ -1015,27 +1017,28 @@ void Preprocessing::performPerImageOperations(
         // Keep track of overall statistics
         all_minval = XMIPP_MIN(minval, all_minval);
         all_maxval = XMIPP_MAX(maxval, all_maxval);
-        all_avg	+= avg;
-        all_stddev += stddev*stddev;
+        all_avg	   += avg;
+        all_stddev += stddev * stddev;
 
         // Last particle: reset the min, max, avg and stddev values in the main header
         if (image_nr == nr_of_images - 1) {
             all_avg /= nr_of_images;
             all_stddev = sqrt(all_stddev / nr_of_images);
-            Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_MIN, all_minval);
-            Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_MAX, all_maxval);
-            Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_AVG, all_avg);
-            Ipart.MDMainHeader.setValue(EMDL_IMAGE_STATS_STDDEV, all_stddev);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, all_minval);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, all_maxval);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, all_avg);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, all_stddev);
             Ipart.setSamplingRateInHeader(output_angpix);
         }
 
         TICTOC(TIMING_PER_IMG_OP_WRITE, {
         // Write this particle to the stack on disc
         // First particle: write stack in overwrite mode, from then on just append to it
-        if (image_nr == 0)
+        if (image_nr == 0) {
             Ipart.write(fn_output_img_root + ".mrcs", -1, nr_of_images > 1, WRITE_OVERWRITE);
-        else
-            Ipart.write(fn_output_img_root + ".mrcs", -1, false, WRITE_APPEND);
+        } else {
+            Ipart.write(fn_output_img_root + ".mrcs", -1, false,            WRITE_APPEND);
+        }
         });
     }
 }
@@ -1051,7 +1054,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
     // To upgrade to ObsModel, the following no longer works.
     // MDresult.read(fn_data, "particles", NULL, fn_post);
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
-        FileName fn_mic_in_particle_star = MDimg.getValue(EMDL_MICROGRAPH_NAME);
+        FileName fn_mic_in_particle_star = MDimg.getValue(EMDL::MICROGRAPH_NAME);
         if (fn_mic_in_particle_star.contains(fn_post))
             /// BUG: current_object not declared
             MDresult.addObject(MDimg.getObject(current_object));
@@ -1061,8 +1064,8 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
     if (MDresult.numberOfObjects() > 0) {
         MDresult.goToObject(0);
 
-        bool contains_xy = (MDresult.containsLabel(EMDL_ORIENT_ORIGIN_X_ANGSTROM) && MDresult.containsLabel(EMDL_ORIENT_ORIGIN_Y_ANGSTROM));
-        bool contains_z = (MDresult.containsLabel(EMDL_ORIENT_ORIGIN_Z_ANGSTROM));
+        bool contains_xy = (MDresult.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) && MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM));
+        bool contains_z = (MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM));
 
         if (do_recenter && !contains_xy) {
             REPORT_ERROR("Preprocessing::initialise ERROR: input _data.star file does not contain rlnOriginX/YAngst for re-centering.");
@@ -1071,7 +1074,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
         RFLOAT xoff, yoff, zoff, rot, tilt, psi, xcoord, ycoord, zcoord, diffx, diffy, diffz;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDresult) {
             // Get the optics group for this particle
-            /// TODO: FIXME: How can we guarantee optics group IDs are consistent among Part and Mic?
+            /// FIXME: How can we guarantee optics group IDs are consistent among Part and Mic?
             int optics_group = obsModelMic.getOpticsGroup(MDresult);
             particle_angpix = obsModelPart.getPixelSize(optics_group);
             rescale_fndata = particle_angpix / angpix; // angpix is the pixel size of this micrograph
@@ -1079,19 +1082,19 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
             // reset input offsets
             if (do_reset_offsets) {
                 if (contains_xy) {
-                    MDresult.setValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, 0.0);
-                    MDresult.setValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
                 }
                 if (contains_z) {
-                    MDresult.setValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
                 }
             } else if (ABS(rescale_fndata - 1.0) > 1e-6 || do_recenter) {
                 // re-scale or re-center (irrelevant if do_reset_offsets)
                 Matrix1D<RFLOAT> my_projected_center(3);
                 my_projected_center.initZeros();
 
-                xoff = MDresult.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM);
-                yoff = MDresult.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM);
+                xoff = MDresult.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+                yoff = MDresult.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
 
                 xoff /= particle_angpix; // Now in run_data's pixels
                 yoff /= particle_angpix;
@@ -1101,9 +1104,9 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     fabs(recenter_y) > 0.0 || 
                     fabs(recenter_z) > 0.0
                 )) {
-                    rot = MDresult.getValue(EMDL_ORIENT_ROT);
-                    tilt = MDresult.getValue(EMDL_ORIENT_TILT);
-                    psi = MDresult.getValue(EMDL_ORIENT_PSI);
+                    rot  = MDresult.getValue(EMDL::ORIENT_ROT);
+                    tilt = MDresult.getValue(EMDL::ORIENT_TILT);
+                    psi  = MDresult.getValue(EMDL::ORIENT_PSI);
 
                     // Project the center-coordinates
                     Matrix1D<RFLOAT> my_center(3);
@@ -1123,8 +1126,8 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                 yoff *= rescale_fndata;
 
                 if (do_recenter) {
-                    xcoord = MDresult.getValue(EMDL_IMAGE_COORD_X);
-                    ycoord = MDresult.getValue(EMDL_IMAGE_COORD_Y);
+                    xcoord = MDresult.getValue(EMDL::IMAGE_COORD_X);
+                    ycoord = MDresult.getValue(EMDL::IMAGE_COORD_Y);
 
                     diffx = xoff - ROUND(xoff);
                     diffy = yoff - ROUND(yoff);
@@ -1132,32 +1135,30 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     ycoord -= ROUND(yoff);
                     xoff = diffx;
                     yoff = diffy;
-                    MDresult.setValue(EMDL_IMAGE_COORD_X, xcoord);
-                    MDresult.setValue(EMDL_IMAGE_COORD_Y, ycoord);
+                    MDresult.setValue(EMDL::IMAGE_COORD_X, xcoord);
+                    MDresult.setValue(EMDL::IMAGE_COORD_Y, ycoord);
                 }
 
-                MDresult.setValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, angpix * xoff);
-                MDresult.setValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, angpix * yoff);
+                MDresult.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * xoff);
+                MDresult.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * yoff);
                 if (contains_z) {
-                    zoff = MDresult.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM);
+                    zoff = MDresult.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
                     zoff /= particle_angpix;
                     zoff -= ZZ(my_projected_center);
                     zoff *= rescale_fndata;
 
                     if (do_recenter) {
-                        zcoord = MDresult.getValue(EMDL_IMAGE_COORD_Z);
+                        zcoord = MDresult.getValue(EMDL::IMAGE_COORD_Z);
                         diffz = zoff - ROUND(zoff);
                         zcoord -= ROUND(zoff);
                         zoff = diffz;
-                        MDresult.setValue(EMDL_IMAGE_COORD_Z, zcoord);
+                        MDresult.setValue(EMDL::IMAGE_COORD_Z, zcoord);
                     }
-                    MDresult.setValue(EMDL_ORIENT_ORIGIN_Z, angpix * zoff);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Z, angpix * zoff);
                 }
             }
-
         }
     }
-
     return MDresult;
 }
 

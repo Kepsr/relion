@@ -58,20 +58,20 @@ void CTF::readByGroup(
     opticsGroup = 0;
 
     if (obs != 0) {
-        partMdt.getValue(EMDL_IMAGE_OPTICS_GROUP, opticsGroup, particle);
+        partMdt.getValue(EMDL::IMAGE_OPTICS_GROUP, opticsGroup, particle);
     }
 
     opticsGroup--;
 
-    readValue(EMDL_CTF_VOLTAGE,       kV,              200,     particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_DEFOCUSU,      DeltafU,         0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_DEFOCUSV,      DeltafV,         DeltafU, particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_DEFOCUS_ANGLE, azimuthal_angle, 0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_CS,            Cs,              0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_BFACTOR,       Bfac,            0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_SCALEFACTOR,   scale,           1,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_Q0,            Q0,              0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL_CTF_PHASESHIFT,    phase_shift,     0,       particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_VOLTAGE,       kV,              200,     particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_DEFOCUSU,      DeltafU,         0,       particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_DEFOCUSV,      DeltafV,         DeltafU, particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle, 0,       particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_CS,            Cs,              0,       particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_BFACTOR,       Bfac,            0,       particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_SCALEFACTOR,   scale,           1,       particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_Q0,            Q0,              0,       particle, opticsGroup, partMdt, obs);
+    readValue(EMDL::CTF_PHASESHIFT,    phase_shift,     0,       particle, opticsGroup, partMdt, obs);
 
     initialise();
 
@@ -91,40 +91,40 @@ void CTF::readValue(
 }
 
 void CTF::read(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
-    if (!MD1.getValue(EMDL_CTF_VOLTAGE, kV, objectID))
-        if (!MD2.getValue(EMDL_CTF_VOLTAGE, kV, objectID))
+    if (!MD1.getValue(EMDL::CTF_VOLTAGE, kV, objectID))
+        if (!MD2.getValue(EMDL::CTF_VOLTAGE, kV, objectID))
             kV = 200;
 
-    if (!MD1.getValue(EMDL_CTF_DEFOCUSU, DeltafU, objectID))
-        if (!MD2.getValue(EMDL_CTF_DEFOCUSU, DeltafU, objectID))
+    if (!MD1.getValue(EMDL::CTF_DEFOCUSU, DeltafU, objectID))
+        if (!MD2.getValue(EMDL::CTF_DEFOCUSU, DeltafU, objectID))
             DeltafU = 0;
 
-    if (!MD1.getValue(EMDL_CTF_DEFOCUSV, DeltafV, objectID))
-        if (!MD2.getValue(EMDL_CTF_DEFOCUSV, DeltafV, objectID))
+    if (!MD1.getValue(EMDL::CTF_DEFOCUSV, DeltafV, objectID))
+        if (!MD2.getValue(EMDL::CTF_DEFOCUSV, DeltafV, objectID))
             DeltafV = DeltafU;
 
-    if (!MD1.getValue(EMDL_CTF_DEFOCUS_ANGLE, azimuthal_angle, objectID))
-        if (!MD2.getValue(EMDL_CTF_DEFOCUS_ANGLE, azimuthal_angle, objectID))
+    if (!MD1.getValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle, objectID))
+        if (!MD2.getValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle, objectID))
             azimuthal_angle = 0;
 
-    if (!MD1.getValue(EMDL_CTF_CS, Cs, objectID))
-        if (!MD2.getValue(EMDL_CTF_CS, Cs, objectID))
+    if (!MD1.getValue(EMDL::CTF_CS, Cs, objectID))
+        if (!MD2.getValue(EMDL::CTF_CS, Cs, objectID))
             Cs = 0;
 
-    if (!MD1.getValue(EMDL_CTF_BFACTOR, Bfac, objectID))
-        if (!MD2.getValue(EMDL_CTF_BFACTOR, Bfac, objectID))
+    if (!MD1.getValue(EMDL::CTF_BFACTOR, Bfac, objectID))
+        if (!MD2.getValue(EMDL::CTF_BFACTOR, Bfac, objectID))
             Bfac = 0;
 
-    if (!MD1.getValue(EMDL_CTF_SCALEFACTOR, scale, objectID))
-        if (!MD2.getValue(EMDL_CTF_SCALEFACTOR, scale, objectID))
+    if (!MD1.getValue(EMDL::CTF_SCALEFACTOR, scale, objectID))
+        if (!MD2.getValue(EMDL::CTF_SCALEFACTOR, scale, objectID))
             scale = 1;
 
-    if (!MD1.getValue(EMDL_CTF_Q0, Q0, objectID))
-        if (!MD2.getValue(EMDL_CTF_Q0, Q0, objectID))
+    if (!MD1.getValue(EMDL::CTF_Q0, Q0, objectID))
+        if (!MD2.getValue(EMDL::CTF_Q0, Q0, objectID))
             Q0 = 0;
 
-    if (!MD1.getValue(EMDL_CTF_PHASESHIFT, phase_shift, objectID))
-        if (!MD2.getValue(EMDL_CTF_PHASESHIFT, phase_shift, objectID))
+    if (!MD1.getValue(EMDL::CTF_PHASESHIFT, phase_shift, objectID))
+        if (!MD2.getValue(EMDL::CTF_PHASESHIFT, phase_shift, objectID))
             phase_shift = 0;
 
     initialise();
@@ -163,9 +163,9 @@ void CTF::setValuesByGroup(
     scale           = _scale;
     phase_shift     = _phase_shift;
 
-    obs->opticsMdt.getValue(EMDL_CTF_VOLTAGE, kV, opticsGroup);
-    obs->opticsMdt.getValue(EMDL_CTF_CS, Cs, opticsGroup);
-    obs->opticsMdt.getValue(EMDL_CTF_Q0, Q0, opticsGroup);
+    obs->opticsMdt.getValue(EMDL::CTF_VOLTAGE, kV, opticsGroup);
+    obs->opticsMdt.getValue(EMDL::CTF_CS, Cs, opticsGroup);
+    obs->opticsMdt.getValue(EMDL::CTF_Q0, Q0, opticsGroup);
 
     initialise();
 
@@ -182,15 +182,15 @@ void CTF::read(const MetaDataTable &MD) {
 /** Write to an existing object in a MetaDataTable. */
 void CTF::write(MetaDataTable &MD) {
     // From version-3.1 onwards: store kV, Cs, Q0 in optics table
-    // MD.setValue(EMDL_CTF_VOLTAGE, kV);
-    MD.setValue(EMDL_CTF_DEFOCUSU, DeltafU);
-    MD.setValue(EMDL_CTF_DEFOCUSV, DeltafV);
-    MD.setValue(EMDL_CTF_DEFOCUS_ANGLE, azimuthal_angle);
-    // MD.setValue(EMDL_CTF_CS, Cs);
-    MD.setValue(EMDL_CTF_BFACTOR, Bfac);
-    MD.setValue(EMDL_CTF_SCALEFACTOR, scale);
-    MD.setValue(EMDL_CTF_PHASESHIFT, phase_shift);
-    // MD.setValue(EMDL_CTF_Q0, Q0);
+    // MD.setValue(EMDL::CTF_VOLTAGE, kV);
+    MD.setValue(EMDL::CTF_DEFOCUSU, DeltafU);
+    MD.setValue(EMDL::CTF_DEFOCUSV, DeltafV);
+    MD.setValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle);
+    // MD.setValue(EMDL::CTF_CS, Cs);
+    MD.setValue(EMDL::CTF_BFACTOR, Bfac);
+    MD.setValue(EMDL::CTF_SCALEFACTOR, scale);
+    MD.setValue(EMDL::CTF_PHASESHIFT, phase_shift);
+    // MD.setValue(EMDL::CTF_Q0, Q0);
 }
 
 /* Write ------------------------------------------------------------------- */
@@ -290,7 +290,7 @@ t2Vector<RFLOAT> CTF::getGammaGrad(RFLOAT X, RFLOAT Y) const {
     }
 
     RFLOAT u2 = X * X + Y * Y;
-    //RFLOAT u4 = u2 * u2;
+    // RFLOAT u4 = u2 * u2;
 
     // u4 = (X² + Y²)²
     // du4/dx = 2 (X² + Y²) 2 X = 4 (X³ + XY²) = 4 u2 X
@@ -452,8 +452,8 @@ void CTF::getCTFPImage(
 
     float anglerad = DEG2RAD(angle);
 
-    RFLOAT xs = (RFLOAT)orixdim * angpix;
-    RFLOAT ys = (RFLOAT)oriydim * angpix;
+    RFLOAT xs = (RFLOAT) orixdim * angpix;
+    RFLOAT ys = (RFLOAT) oriydim * angpix;
 
     if (obsModel != 0 && obsModel->hasEvenZernike) {
         
@@ -552,8 +552,8 @@ void CTF::applyWeightEwaldSphereCurvature(
     MultidimArray<RFLOAT>& result, int orixdim, int oriydim,
     RFLOAT angpix, RFLOAT particle_diameter
 ) {
-    RFLOAT xs = (RFLOAT)orixdim * angpix;
-    RFLOAT ys = (RFLOAT)oriydim * angpix;
+    RFLOAT xs = (RFLOAT) orixdim * angpix;
+    RFLOAT ys = (RFLOAT) oriydim * angpix;
 
     Matrix2D<RFLOAT> M(2,2);
 
@@ -564,8 +564,8 @@ void CTF::applyWeightEwaldSphereCurvature(
     }
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-        RFLOAT xu = (RFLOAT)jp / xs;
-        RFLOAT yu = (RFLOAT)ip / ys;
+        RFLOAT xu = (RFLOAT) jp / xs;
+        RFLOAT yu = (RFLOAT) ip / ys;
 
         RFLOAT x = M(0, 0) * xu + M(0, 1) * yu;
         RFLOAT y = M(1, 0) * xu + M(1, 1) * yu;
@@ -629,11 +629,11 @@ void CTF::applyWeightEwaldSphereCurvature_noAniso(
     MultidimArray <RFLOAT> &result, int orixdim, int oriydim,
     RFLOAT angpix, RFLOAT particle_diameter
 ) {
-    RFLOAT xs = (RFLOAT)orixdim * angpix;
-    RFLOAT ys = (RFLOAT)oriydim * angpix;
+    RFLOAT xs = (RFLOAT) orixdim * angpix;
+    RFLOAT ys = (RFLOAT) oriydim * angpix;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-        RFLOAT x = (RFLOAT)jp / xs;
-        RFLOAT y = (RFLOAT)ip / ys;
+        RFLOAT x = (RFLOAT) jp / xs;
+        RFLOAT y = (RFLOAT) ip / ys;
         RFLOAT deltaf = fabs(getDeltaF(x, y));
         RFLOAT inv_d = Pythag(x, y);
         RFLOAT aux = 2.0 * deltaf * lambda * inv_d / particle_diameter;

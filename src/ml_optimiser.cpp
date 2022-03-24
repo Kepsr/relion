@@ -769,12 +769,11 @@ void MlOptimiser::parseInitial(int argc, char **argv) {
 #endif
 }
 
-void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread)
-{
-//#define DEBUG_READ
-#ifdef DEBUG_READ
+void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread) {
+    // #define DEBUG_READ
+    #ifdef DEBUG_READ
     std::cerr<<"MlOptimiser::readStar entering ..."<<std::endl;
-#endif
+    #endif
 
     if (rank == 0)
         std::cout << " Reading in optimiser.star ..." << std::endl;
@@ -792,55 +791,55 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread)
     in.close();
 
     try {
-        fn_out = MD.getValue(EMDL_OPTIMISER_OUTPUT_ROOTNAME);
-        fn_model = MD.getValue(EMDL_OPTIMISER_MODEL_STARFILE);
-        fn_data = MD.getValue(EMDL_OPTIMISER_DATA_STARFILE);
-        fn_sampling = MD.getValue(EMDL_OPTIMISER_SAMPLING_STARFILE);
-        iter = MD.getValue(EMDL_OPTIMISER_ITERATION_NO);
-        nr_iter = MD.getValue(EMDL_OPTIMISER_NR_ITERATIONS);
-        do_split_random_halves = MD.getValue(EMDL_OPTIMISER_DO_SPLIT_RANDOM_HALVES);
-        low_resol_join_halves = MD.getValue(EMDL_OPTIMISER_LOWRES_JOIN_RANDOM_HALVES);
-        adaptive_oversampling = MD.getValue(EMDL_OPTIMISER_ADAPTIVE_OVERSAMPLING);
-        adaptive_fraction = MD.getValue(EMDL_OPTIMISER_ADAPTIVE_FRACTION);
-        random_seed = MD.getValue(EMDL_OPTIMISER_RANDOM_SEED);
-        particle_diameter = MD.getValue(EMDL_OPTIMISER_PARTICLE_DIAMETER);
-        width_mask_edge = MD.getValue(EMDL_OPTIMISER_WIDTH_MASK_EDGE);
-        do_zero_mask = MD.getValue(EMDL_OPTIMISER_DO_ZERO_MASK);
-        do_solvent = MD.getValue(EMDL_OPTIMISER_DO_SOLVENT_FLATTEN);
-        fn_mask = MD.getValue(EMDL_OPTIMISER_SOLVENT_MASK_NAME);
-        fn_mask2 = MD.getValue(EMDL_OPTIMISER_SOLVENT_MASK2_NAME);
-        fn_tau = MD.getValue(EMDL_OPTIMISER_TAU_SPECTRUM_NAME);
-        max_coarse_size = MD.getValue(EMDL_OPTIMISER_MAX_COARSE_SIZE);
-        strict_highres_exp = MD.getValue(EMDL_OPTIMISER_HIGHRES_LIMIT_EXP);
-        incr_size = MD.getValue(EMDL_OPTIMISER_INCR_SIZE);
-        do_map = MD.getValue(EMDL_OPTIMISER_DO_MAP);
-        do_auto_refine = MD.getValue(EMDL_OPTIMISER_DO_AUTO_REFINE);
-        autosampling_hporder_local_searches = MD.getValue(EMDL_OPTIMISER_AUTO_LOCAL_HP_ORDER);
-        nr_iter_wo_resol_gain = MD.getValue(EMDL_OPTIMISER_NR_ITER_WO_RESOL_GAIN);
-        best_resol_thus_far = MD.getValue(EMDL_OPTIMISER_BEST_RESOL_THUS_FAR);
-        nr_iter_wo_large_hidden_variable_changes = MD.getValue(EMDL_OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES);
-        do_skip_align = MD.getValue(EMDL_OPTIMISER_DO_SKIP_ALIGN);
-        // do_skip_rotate = MD.getValue(EMDL_OPTIMISER_DO_SKIP_ROTATE);
-        acc_rot = MD.getValue(EMDL_OPTIMISER_ACCURACY_ROT);
-        current_changes_optimal_orientations = MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_ORIENTS);
-        current_changes_optimal_offsets = MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_OFFSETS);
-        current_changes_optimal_classes = MD.getValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_CLASSES);
-        smallest_changes_optimal_orientations = MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS);
-        smallest_changes_optimal_offsets = MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS);
-        smallest_changes_optimal_classes = MD.getValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES);
-        has_converged = MD.getValue(EMDL_OPTIMISER_HAS_CONVERGED);
-        has_high_fsc_at_limit = MD.getValue(EMDL_OPTIMISER_HAS_HIGH_FSC_AT_LIMIT);
-        has_large_incr_size_iter_ago = MD.getValue(EMDL_OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO);
-        do_norm_correction = MD.getValue(EMDL_OPTIMISER_DO_CORRECT_NORM);
-        do_scale_correction = MD.getValue(EMDL_OPTIMISER_DO_CORRECT_SCALE);
-        do_ctf_correction = MD.getValue(EMDL_OPTIMISER_DO_CORRECT_CTF);
-        intact_ctf_first_peak = MD.getValue(EMDL_OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK);
-        ctf_phase_flipped = MD.getValue(EMDL_OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED);
-        only_flip_phases = MD.getValue(EMDL_OPTIMISER_DO_ONLY_FLIP_CTF_PHASES);
-        refs_are_ctf_corrected = MD.getValue(EMDL_OPTIMISER_REFS_ARE_CTF_CORRECTED);
-        fix_sigma_noise = MD.getValue(EMDL_OPTIMISER_FIX_SIGMA_NOISE);
-        fix_sigma_offset = MD.getValue(EMDL_OPTIMISER_FIX_SIGMA_OFFSET);
-        nr_pool = MD.getValue(EMDL_OPTIMISER_MAX_NR_POOL);
+        fn_out = MD.getValue(EMDL::OPTIMISER_OUTPUT_ROOTNAME);
+        fn_model = MD.getValue(EMDL::OPTIMISER_MODEL_STARFILE);
+        fn_data = MD.getValue(EMDL::OPTIMISER_DATA_STARFILE);
+        fn_sampling = MD.getValue(EMDL::OPTIMISER_SAMPLING_STARFILE);
+        iter = MD.getValue(EMDL::OPTIMISER_ITERATION_NO);
+        nr_iter = MD.getValue(EMDL::OPTIMISER_NR_ITERATIONS);
+        do_split_random_halves = MD.getValue(EMDL::OPTIMISER_DO_SPLIT_RANDOM_HALVES);
+        low_resol_join_halves = MD.getValue(EMDL::OPTIMISER_LOWRES_JOIN_RANDOM_HALVES);
+        adaptive_oversampling = MD.getValue(EMDL::OPTIMISER_ADAPTIVE_OVERSAMPLING);
+        adaptive_fraction = MD.getValue(EMDL::OPTIMISER_ADAPTIVE_FRACTION);
+        random_seed = MD.getValue(EMDL::OPTIMISER_RANDOM_SEED);
+        particle_diameter = MD.getValue(EMDL::OPTIMISER_PARTICLE_DIAMETER);
+        width_mask_edge = MD.getValue(EMDL::OPTIMISER_WIDTH_MASK_EDGE);
+        do_zero_mask = MD.getValue(EMDL::OPTIMISER_DO_ZERO_MASK);
+        do_solvent = MD.getValue(EMDL::OPTIMISER_DO_SOLVENT_FLATTEN);
+        fn_mask = MD.getValue(EMDL::OPTIMISER_SOLVENT_MASK_NAME);
+        fn_mask2 = MD.getValue(EMDL::OPTIMISER_SOLVENT_MASK2_NAME);
+        fn_tau = MD.getValue(EMDL::OPTIMISER_TAU_SPECTRUM_NAME);
+        max_coarse_size = MD.getValue(EMDL::OPTIMISER_MAX_COARSE_SIZE);
+        strict_highres_exp = MD.getValue(EMDL::OPTIMISER_HIGHRES_LIMIT_EXP);
+        incr_size = MD.getValue(EMDL::OPTIMISER_INCR_SIZE);
+        do_map = MD.getValue(EMDL::OPTIMISER_DO_MAP);
+        do_auto_refine = MD.getValue(EMDL::OPTIMISER_DO_AUTO_REFINE);
+        autosampling_hporder_local_searches = MD.getValue(EMDL::OPTIMISER_AUTO_LOCAL_HP_ORDER);
+        nr_iter_wo_resol_gain = MD.getValue(EMDL::OPTIMISER_NR_ITER_WO_RESOL_GAIN);
+        best_resol_thus_far = MD.getValue(EMDL::OPTIMISER_BEST_RESOL_THUS_FAR);
+        nr_iter_wo_large_hidden_variable_changes = MD.getValue(EMDL::OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES);
+        do_skip_align = MD.getValue(EMDL::OPTIMISER_DO_SKIP_ALIGN);
+        // do_skip_rotate = MD.getValue(EMDL::OPTIMISER_DO_SKIP_ROTATE);
+        acc_rot = MD.getValue(EMDL::OPTIMISER_ACCURACY_ROT);
+        current_changes_optimal_orientations = MD.getValue(EMDL::OPTIMISER_CHANGES_OPTIMAL_ORIENTS);
+        current_changes_optimal_offsets = MD.getValue(EMDL::OPTIMISER_CHANGES_OPTIMAL_OFFSETS);
+        current_changes_optimal_classes = MD.getValue(EMDL::OPTIMISER_CHANGES_OPTIMAL_CLASSES);
+        smallest_changes_optimal_orientations = MD.getValue(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS);
+        smallest_changes_optimal_offsets = MD.getValue(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS);
+        smallest_changes_optimal_classes = MD.getValue(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES);
+        has_converged = MD.getValue(EMDL::OPTIMISER_HAS_CONVERGED);
+        has_high_fsc_at_limit = MD.getValue(EMDL::OPTIMISER_HAS_HIGH_FSC_AT_LIMIT);
+        has_large_incr_size_iter_ago = MD.getValue(EMDL::OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO);
+        do_norm_correction = MD.getValue(EMDL::OPTIMISER_DO_CORRECT_NORM);
+        do_scale_correction = MD.getValue(EMDL::OPTIMISER_DO_CORRECT_SCALE);
+        do_ctf_correction = MD.getValue(EMDL::OPTIMISER_DO_CORRECT_CTF);
+        intact_ctf_first_peak = MD.getValue(EMDL::OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK);
+        ctf_phase_flipped = MD.getValue(EMDL::OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED);
+        only_flip_phases = MD.getValue(EMDL::OPTIMISER_DO_ONLY_FLIP_CTF_PHASES);
+        refs_are_ctf_corrected = MD.getValue(EMDL::OPTIMISER_REFS_ARE_CTF_CORRECTED);
+        fix_sigma_noise = MD.getValue(EMDL::OPTIMISER_FIX_SIGMA_NOISE);
+        fix_sigma_offset = MD.getValue(EMDL::OPTIMISER_FIX_SIGMA_OFFSET);
+        nr_pool = MD.getValue(EMDL::OPTIMISER_MAX_NR_POOL);
     } catch (const char* errmsg) {
         REPORT_ERROR("MlOptimiser::readStar: incorrect optimiser_general table");
     }
@@ -852,69 +851,69 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread)
         var = defaultval; \
     }
 
-    TRYSETVAR(fn_local_symmetry,                    EMDL_OPTIMISER_LOCAL_SYMMETRY_FILENAME,           "None");
-    TRYSETVAR(do_helical_refine,                    EMDL_OPTIMISER_DO_HELICAL_REFINE,                 false);
-    TRYSETVAR(ignore_helical_symmetry,              EMDL_OPTIMISER_IGNORE_HELICAL_SYMMETRY,           false);
-    TRYSETVAR(helical_twist_initial,                EMDL_OPTIMISER_HELICAL_TWIST_INITIAL,              0.0);
-    TRYSETVAR(helical_rise_initial,                 EMDL_OPTIMISER_HELICAL_RISE_INITIAL,               0.0);
-    TRYSETVAR(helical_z_percentage,                 EMDL_OPTIMISER_HELICAL_Z_PERCENTAGE,               0.3);
-    TRYSETVAR(helical_nstart,                       EMDL_OPTIMISER_HELICAL_NSTART,                     1);
-    TRYSETVAR(helical_tube_inner_diameter,          EMDL_OPTIMISER_HELICAL_TUBE_INNER_DIAMETER,       -1.0);
-    TRYSETVAR(helical_tube_outer_diameter,          EMDL_OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER,       -1.0);
-    TRYSETVAR(do_helical_symmetry_local_refinement, EMDL_OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, false);
-    TRYSETVAR(helical_sigma_distance,               EMDL_OPTIMISER_HELICAL_SIGMA_DISTANCE,            -1.0);
-    TRYSETVAR(helical_keep_tilt_prior_fixed,        EMDL_OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED,     false);
+    TRYSETVAR(fn_local_symmetry,                    EMDL::OPTIMISER_LOCAL_SYMMETRY_FILENAME,           "None");
+    TRYSETVAR(do_helical_refine,                    EMDL::OPTIMISER_DO_HELICAL_REFINE,                 false);
+    TRYSETVAR(ignore_helical_symmetry,              EMDL::OPTIMISER_IGNORE_HELICAL_SYMMETRY,           false);
+    TRYSETVAR(helical_twist_initial,                EMDL::OPTIMISER_HELICAL_TWIST_INITIAL,              0.0);
+    TRYSETVAR(helical_rise_initial,                 EMDL::OPTIMISER_HELICAL_RISE_INITIAL,               0.0);
+    TRYSETVAR(helical_z_percentage,                 EMDL::OPTIMISER_HELICAL_Z_PERCENTAGE,               0.3);
+    TRYSETVAR(helical_nstart,                       EMDL::OPTIMISER_HELICAL_NSTART,                     1);
+    TRYSETVAR(helical_tube_inner_diameter,          EMDL::OPTIMISER_HELICAL_TUBE_INNER_DIAMETER,       -1.0);
+    TRYSETVAR(helical_tube_outer_diameter,          EMDL::OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER,       -1.0);
+    TRYSETVAR(do_helical_symmetry_local_refinement, EMDL::OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, false);
+    TRYSETVAR(helical_sigma_distance,               EMDL::OPTIMISER_HELICAL_SIGMA_DISTANCE,            -1.0);
+    TRYSETVAR(helical_keep_tilt_prior_fixed,        EMDL::OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED,     false);
 
     // New SGD (13 Feb 2018)
-    TRYSETVAR(do_sgd,                   EMDL_OPTIMISER_DO_SGD,                    false);
-    TRYSETVAR(do_avoid_sgd,             EMDL_OPTIMISER_DO_STOCHASTIC_EM,          false);
-    TRYSETVAR(sgd_ini_iter,             EMDL_OPTIMISER_SGD_INI_ITER,              50);
-    TRYSETVAR(sgd_fin_iter,             EMDL_OPTIMISER_SGD_FIN_ITER,              50);
-    TRYSETVAR(sgd_inbetween_iter,       EMDL_OPTIMISER_SGD_INBETWEEN_ITER,        200);
-    TRYSETVAR(sgd_ini_resol,            EMDL_OPTIMISER_SGD_INI_RESOL,             35.0);
-    TRYSETVAR(sgd_fin_resol,            EMDL_OPTIMISER_SGD_FIN_RESOL,             15.0);
-    TRYSETVAR(sgd_ini_subset_size,      EMDL_OPTIMISER_SGD_INI_SUBSET_SIZE,       100);
-    TRYSETVAR(sgd_fin_subset_size,      EMDL_OPTIMISER_SGD_FIN_SUBSET_SIZE,       500);
-    TRYSETVAR(mu,                       EMDL_OPTIMISER_SGD_MU,                    0.9);
-    TRYSETVAR(sgd_sigma2fudge_ini,      EMDL_OPTIMISER_SGD_SIGMA2FUDGE_INI,       8.0);
-    TRYSETVAR(sgd_sigma2fudge_halflife, EMDL_OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, -1);
-    TRYSETVAR(do_sgd_skip_anneal,       EMDL_OPTIMISER_SGD_SKIP_ANNNEAL,         false);
-    TRYSETVAR(subset_size,              EMDL_OPTIMISER_SGD_SUBSET_SIZE,          -1);
-    TRYSETVAR(sgd_stepsize,             EMDL_OPTIMISER_SGD_STEPSIZE,              0.5);
-    TRYSETVAR(write_every_sgd_iter,     EMDL_OPTIMISER_SGD_WRITE_EVERY_SUBSET,    1);
-    TRYSETVAR(fn_body_masks,            EMDL_BODY_STAR_FILE,                     "None");
-    TRYSETVAR(do_phase_random_fsc,      EMDL_OPTIMISER_DO_SOLVENT_FSC,           false);
-    TRYSETVAR(do_fast_subsets,          EMDL_OPTIMISER_FAST_SUBSETS,             false);
-    TRYSETVAR(do_external_reconstruct,  EMDL_OPTIMISER_DO_EXTERNAL_RECONSTRUCT,  false);
+    TRYSETVAR(do_sgd,                   EMDL::OPTIMISER_DO_SGD,                    false);
+    TRYSETVAR(do_avoid_sgd,             EMDL::OPTIMISER_DO_STOCHASTIC_EM,          false);
+    TRYSETVAR(sgd_ini_iter,             EMDL::OPTIMISER_SGD_INI_ITER,              50);
+    TRYSETVAR(sgd_fin_iter,             EMDL::OPTIMISER_SGD_FIN_ITER,              50);
+    TRYSETVAR(sgd_inbetween_iter,       EMDL::OPTIMISER_SGD_INBETWEEN_ITER,        200);
+    TRYSETVAR(sgd_ini_resol,            EMDL::OPTIMISER_SGD_INI_RESOL,             35.0);
+    TRYSETVAR(sgd_fin_resol,            EMDL::OPTIMISER_SGD_FIN_RESOL,             15.0);
+    TRYSETVAR(sgd_ini_subset_size,      EMDL::OPTIMISER_SGD_INI_SUBSET_SIZE,       100);
+    TRYSETVAR(sgd_fin_subset_size,      EMDL::OPTIMISER_SGD_FIN_SUBSET_SIZE,       500);
+    TRYSETVAR(mu,                       EMDL::OPTIMISER_SGD_MU,                    0.9);
+    TRYSETVAR(sgd_sigma2fudge_ini,      EMDL::OPTIMISER_SGD_SIGMA2FUDGE_INI,       8.0);
+    TRYSETVAR(sgd_sigma2fudge_halflife, EMDL::OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, -1);
+    TRYSETVAR(do_sgd_skip_anneal,       EMDL::OPTIMISER_SGD_SKIP_ANNNEAL,         false);
+    TRYSETVAR(subset_size,              EMDL::OPTIMISER_SGD_SUBSET_SIZE,          -1);
+    TRYSETVAR(sgd_stepsize,             EMDL::OPTIMISER_SGD_STEPSIZE,              0.5);
+    TRYSETVAR(write_every_sgd_iter,     EMDL::OPTIMISER_SGD_WRITE_EVERY_SUBSET,    1);
+    TRYSETVAR(fn_body_masks,            EMDL::BODY_STAR_FILE,                     "None");
+    TRYSETVAR(do_phase_random_fsc,      EMDL::OPTIMISER_DO_SOLVENT_FSC,           false);
+    TRYSETVAR(do_fast_subsets,          EMDL::OPTIMISER_FAST_SUBSETS,             false);
+    TRYSETVAR(do_external_reconstruct,  EMDL::OPTIMISER_DO_EXTERNAL_RECONSTRUCT,  false);
 
     #undef TRYSETVAR
 
     // Backwards compatibility with RELION 3.0
     try {
-        acc_trans = MD.getValue(EMDL_OPTIMISER_ACCURACY_TRANS_ANGSTROM);
+        acc_trans = MD.getValue(EMDL::OPTIMISER_ACCURACY_TRANS_ANGSTROM);
     } catch (const char* errmsg) {
         try {
-            acc_trans = MD.getValue(EMDL_OPTIMISER_ACCURACY_TRANS);
+            acc_trans = MD.getValue(EMDL::OPTIMISER_ACCURACY_TRANS);
         } catch (const char* errmsg) {
             REPORT_ERROR("MlOptimiser::readStar::ERROR no accuracy of translations defined!");
         }
     }
     try {
-        fn_fourier_mask = MD.getValue(EMDL_OPTIMISER_FOURIER_MASK);
+        fn_fourier_mask = MD.getValue(EMDL::OPTIMISER_FOURIER_MASK);
     } catch (const char* errmsg) {
         fn_fourier_mask = "None";
     }
 
     if (do_split_random_halves) {
         try {
-            fn_model2 = MD.getValue(EMDL_OPTIMISER_MODEL_STARFILE2);
+            fn_model2 = MD.getValue(EMDL::OPTIMISER_MODEL_STARFILE2);
         } catch (const char* errmsg) {
             REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 not found in optimiser_general table");
         }
         if (fn_model2 == "")
             REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 is empty. Probably you specified an optimiser STAR file generated with --force_converge. You cannot perform continuation or subtraction from this file. Please use one from the previous iteration.");
         try {
-            strict_lowres_exp = MD.getValue(EMDL_OPTIMISER_LOWRES_LIMIT_EXP);
+            strict_lowres_exp = MD.getValue(EMDL::OPTIMISER_LOWRES_LIMIT_EXP);
         } catch (const char* errmsg) {
             strict_lowres_exp = -1.0;
         }
@@ -1018,95 +1017,95 @@ void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_writ
         MD.isList = true;
         MD.setName("optimiser_general");
         MD.addObject();
-        MD.setValue(EMDL_OPTIMISER_OUTPUT_ROOTNAME, fn_out);
+        MD.setValue(EMDL::OPTIMISER_OUTPUT_ROOTNAME, fn_out);
         if (do_split_random_halves) {
-            MD.setValue(EMDL_OPTIMISER_MODEL_STARFILE, fn_model);
-            MD.setValue(EMDL_OPTIMISER_MODEL_STARFILE2, fn_model2);
+            MD.setValue(EMDL::OPTIMISER_MODEL_STARFILE, fn_model);
+            MD.setValue(EMDL::OPTIMISER_MODEL_STARFILE2, fn_model2);
         } else {
-            MD.setValue(EMDL_OPTIMISER_MODEL_STARFILE, fn_model);
+            MD.setValue(EMDL::OPTIMISER_MODEL_STARFILE, fn_model);
         }
-        MD.setValue(EMDL_OPTIMISER_DATA_STARFILE, fn_data);
-        MD.setValue(EMDL_OPTIMISER_SAMPLING_STARFILE, fn_sampling);
-        MD.setValue(EMDL_OPTIMISER_ITERATION_NO, iter);
-        MD.setValue(EMDL_OPTIMISER_NR_ITERATIONS, nr_iter);
-        MD.setValue(EMDL_OPTIMISER_DO_SPLIT_RANDOM_HALVES, do_split_random_halves);
-        MD.setValue(EMDL_OPTIMISER_LOWRES_JOIN_RANDOM_HALVES, low_resol_join_halves);
-        MD.setValue(EMDL_OPTIMISER_ADAPTIVE_OVERSAMPLING, adaptive_oversampling);
-        MD.setValue(EMDL_OPTIMISER_ADAPTIVE_FRACTION, adaptive_fraction);
-        MD.setValue(EMDL_OPTIMISER_RANDOM_SEED, random_seed);
-        MD.setValue(EMDL_OPTIMISER_PARTICLE_DIAMETER, particle_diameter);
-        MD.setValue(EMDL_OPTIMISER_WIDTH_MASK_EDGE, width_mask_edge);
-        MD.setValue(EMDL_OPTIMISER_DO_ZERO_MASK, do_zero_mask);
-        MD.setValue(EMDL_OPTIMISER_DO_SOLVENT_FLATTEN, do_solvent);
-        MD.setValue(EMDL_OPTIMISER_DO_SOLVENT_FSC, do_phase_random_fsc);
-        MD.setValue(EMDL_OPTIMISER_SOLVENT_MASK_NAME, fn_mask);
-        MD.setValue(EMDL_OPTIMISER_SOLVENT_MASK2_NAME, fn_mask2);
-        MD.setValue(EMDL_BODY_STAR_FILE, fn_body_masks);
-        MD.setValue(EMDL_OPTIMISER_TAU_SPECTRUM_NAME, fn_tau);
-        MD.setValue(EMDL_OPTIMISER_MAX_COARSE_SIZE, max_coarse_size);
-        MD.setValue(EMDL_OPTIMISER_HIGHRES_LIMIT_EXP, strict_highres_exp);
-        MD.setValue(EMDL_OPTIMISER_LOWRES_LIMIT_EXP, strict_lowres_exp);
-        MD.setValue(EMDL_OPTIMISER_INCR_SIZE, incr_size);
-        MD.setValue(EMDL_OPTIMISER_DO_MAP, do_map);
-        MD.setValue(EMDL_OPTIMISER_FAST_SUBSETS, do_fast_subsets);
-        MD.setValue(EMDL_OPTIMISER_DO_EXTERNAL_RECONSTRUCT, do_external_reconstruct);
-        MD.setValue(EMDL_OPTIMISER_DO_SGD, do_sgd);
-        MD.setValue(EMDL_OPTIMISER_DO_STOCHASTIC_EM, do_avoid_sgd);
-        MD.setValue(EMDL_OPTIMISER_SGD_INI_ITER, sgd_ini_iter);
-        MD.setValue(EMDL_OPTIMISER_SGD_FIN_ITER, sgd_fin_iter);
-        MD.setValue(EMDL_OPTIMISER_SGD_INBETWEEN_ITER, sgd_inbetween_iter);
-        MD.setValue(EMDL_OPTIMISER_SGD_INI_RESOL, sgd_ini_resol);
-        MD.setValue(EMDL_OPTIMISER_SGD_FIN_RESOL, sgd_fin_resol);
-        MD.setValue(EMDL_OPTIMISER_SGD_INI_SUBSET_SIZE, sgd_ini_subset_size);
-        MD.setValue(EMDL_OPTIMISER_SGD_FIN_SUBSET_SIZE, sgd_fin_subset_size);
-        MD.setValue(EMDL_OPTIMISER_SGD_MU, mu);
-        MD.setValue(EMDL_OPTIMISER_SGD_SIGMA2FUDGE_INI, sgd_sigma2fudge_ini);
-        MD.setValue(EMDL_OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, sgd_sigma2fudge_halflife);
-        MD.setValue(EMDL_OPTIMISER_SGD_SKIP_ANNNEAL, do_sgd_skip_anneal);
-        MD.setValue(EMDL_OPTIMISER_SGD_SUBSET_SIZE, subset_size);
-        MD.setValue(EMDL_OPTIMISER_SGD_WRITE_EVERY_SUBSET, write_every_sgd_iter);
-        MD.setValue(EMDL_OPTIMISER_SGD_STEPSIZE, sgd_stepsize);
-        MD.setValue(EMDL_OPTIMISER_DO_AUTO_REFINE, do_auto_refine);
-        MD.setValue(EMDL_OPTIMISER_AUTO_LOCAL_HP_ORDER, autosampling_hporder_local_searches);
-        MD.setValue(EMDL_OPTIMISER_NR_ITER_WO_RESOL_GAIN, nr_iter_wo_resol_gain);
-        MD.setValue(EMDL_OPTIMISER_BEST_RESOL_THUS_FAR,best_resol_thus_far);
-        MD.setValue(EMDL_OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES, nr_iter_wo_large_hidden_variable_changes);
-        MD.setValue(EMDL_OPTIMISER_DO_SKIP_ALIGN, do_skip_align);
-        MD.setValue(EMDL_OPTIMISER_DO_SKIP_ROTATE, do_skip_rotate);
-        MD.setValue(EMDL_OPTIMISER_ACCURACY_ROT, acc_rot);
-        MD.setValue(EMDL_OPTIMISER_ACCURACY_TRANS_ANGSTROM, acc_trans);
-        MD.setValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_ORIENTS, current_changes_optimal_orientations);
-        MD.setValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_OFFSETS, current_changes_optimal_offsets);
-        MD.setValue(EMDL_OPTIMISER_CHANGES_OPTIMAL_CLASSES, current_changes_optimal_classes);
-        MD.setValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS, smallest_changes_optimal_orientations);
-        MD.setValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS, smallest_changes_optimal_offsets);
-        MD.setValue(EMDL_OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES, smallest_changes_optimal_classes);
-        MD.setValue(EMDL_OPTIMISER_LOCAL_SYMMETRY_FILENAME, fn_local_symmetry);
-        MD.setValue(EMDL_OPTIMISER_DO_HELICAL_REFINE, do_helical_refine);
-        MD.setValue(EMDL_OPTIMISER_IGNORE_HELICAL_SYMMETRY, ignore_helical_symmetry);
-        MD.setValue(EMDL_OPTIMISER_FOURIER_MASK, fn_fourier_mask);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_TWIST_INITIAL, helical_twist_initial);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_RISE_INITIAL, helical_rise_initial);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_Z_PERCENTAGE, helical_z_percentage);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_NSTART, helical_nstart);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_TUBE_INNER_DIAMETER, helical_tube_inner_diameter);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER, helical_tube_outer_diameter);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, do_helical_symmetry_local_refinement);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_SIGMA_DISTANCE, helical_sigma_distance);
-        MD.setValue(EMDL_OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED, helical_keep_tilt_prior_fixed);
-        MD.setValue(EMDL_OPTIMISER_HAS_CONVERGED, has_converged);
-        MD.setValue(EMDL_OPTIMISER_HAS_HIGH_FSC_AT_LIMIT, has_high_fsc_at_limit);
-        MD.setValue(EMDL_OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO, has_large_incr_size_iter_ago);
-        MD.setValue(EMDL_OPTIMISER_DO_CORRECT_NORM, do_norm_correction);
-        MD.setValue(EMDL_OPTIMISER_DO_CORRECT_SCALE, do_scale_correction);
-        MD.setValue(EMDL_OPTIMISER_DO_CORRECT_CTF, do_ctf_correction);
-        MD.setValue(EMDL_OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK, intact_ctf_first_peak);
-        MD.setValue(EMDL_OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED, ctf_phase_flipped);
-        MD.setValue(EMDL_OPTIMISER_DO_ONLY_FLIP_CTF_PHASES, only_flip_phases);
-        MD.setValue(EMDL_OPTIMISER_REFS_ARE_CTF_CORRECTED, refs_are_ctf_corrected);
-        MD.setValue(EMDL_OPTIMISER_FIX_SIGMA_NOISE, fix_sigma_noise);
-        MD.setValue(EMDL_OPTIMISER_FIX_SIGMA_OFFSET, fix_sigma_offset);
-        MD.setValue(EMDL_OPTIMISER_MAX_NR_POOL, nr_pool);
+        MD.setValue(EMDL::OPTIMISER_DATA_STARFILE, fn_data);
+        MD.setValue(EMDL::OPTIMISER_SAMPLING_STARFILE, fn_sampling);
+        MD.setValue(EMDL::OPTIMISER_ITERATION_NO, iter);
+        MD.setValue(EMDL::OPTIMISER_NR_ITERATIONS, nr_iter);
+        MD.setValue(EMDL::OPTIMISER_DO_SPLIT_RANDOM_HALVES, do_split_random_halves);
+        MD.setValue(EMDL::OPTIMISER_LOWRES_JOIN_RANDOM_HALVES, low_resol_join_halves);
+        MD.setValue(EMDL::OPTIMISER_ADAPTIVE_OVERSAMPLING, adaptive_oversampling);
+        MD.setValue(EMDL::OPTIMISER_ADAPTIVE_FRACTION, adaptive_fraction);
+        MD.setValue(EMDL::OPTIMISER_RANDOM_SEED, random_seed);
+        MD.setValue(EMDL::OPTIMISER_PARTICLE_DIAMETER, particle_diameter);
+        MD.setValue(EMDL::OPTIMISER_WIDTH_MASK_EDGE, width_mask_edge);
+        MD.setValue(EMDL::OPTIMISER_DO_ZERO_MASK, do_zero_mask);
+        MD.setValue(EMDL::OPTIMISER_DO_SOLVENT_FLATTEN, do_solvent);
+        MD.setValue(EMDL::OPTIMISER_DO_SOLVENT_FSC, do_phase_random_fsc);
+        MD.setValue(EMDL::OPTIMISER_SOLVENT_MASK_NAME, fn_mask);
+        MD.setValue(EMDL::OPTIMISER_SOLVENT_MASK2_NAME, fn_mask2);
+        MD.setValue(EMDL::BODY_STAR_FILE, fn_body_masks);
+        MD.setValue(EMDL::OPTIMISER_TAU_SPECTRUM_NAME, fn_tau);
+        MD.setValue(EMDL::OPTIMISER_MAX_COARSE_SIZE, max_coarse_size);
+        MD.setValue(EMDL::OPTIMISER_HIGHRES_LIMIT_EXP, strict_highres_exp);
+        MD.setValue(EMDL::OPTIMISER_LOWRES_LIMIT_EXP, strict_lowres_exp);
+        MD.setValue(EMDL::OPTIMISER_INCR_SIZE, incr_size);
+        MD.setValue(EMDL::OPTIMISER_DO_MAP, do_map);
+        MD.setValue(EMDL::OPTIMISER_FAST_SUBSETS, do_fast_subsets);
+        MD.setValue(EMDL::OPTIMISER_DO_EXTERNAL_RECONSTRUCT, do_external_reconstruct);
+        MD.setValue(EMDL::OPTIMISER_DO_SGD, do_sgd);
+        MD.setValue(EMDL::OPTIMISER_DO_STOCHASTIC_EM, do_avoid_sgd);
+        MD.setValue(EMDL::OPTIMISER_SGD_INI_ITER, sgd_ini_iter);
+        MD.setValue(EMDL::OPTIMISER_SGD_FIN_ITER, sgd_fin_iter);
+        MD.setValue(EMDL::OPTIMISER_SGD_INBETWEEN_ITER, sgd_inbetween_iter);
+        MD.setValue(EMDL::OPTIMISER_SGD_INI_RESOL, sgd_ini_resol);
+        MD.setValue(EMDL::OPTIMISER_SGD_FIN_RESOL, sgd_fin_resol);
+        MD.setValue(EMDL::OPTIMISER_SGD_INI_SUBSET_SIZE, sgd_ini_subset_size);
+        MD.setValue(EMDL::OPTIMISER_SGD_FIN_SUBSET_SIZE, sgd_fin_subset_size);
+        MD.setValue(EMDL::OPTIMISER_SGD_MU, mu);
+        MD.setValue(EMDL::OPTIMISER_SGD_SIGMA2FUDGE_INI, sgd_sigma2fudge_ini);
+        MD.setValue(EMDL::OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, sgd_sigma2fudge_halflife);
+        MD.setValue(EMDL::OPTIMISER_SGD_SKIP_ANNNEAL, do_sgd_skip_anneal);
+        MD.setValue(EMDL::OPTIMISER_SGD_SUBSET_SIZE, subset_size);
+        MD.setValue(EMDL::OPTIMISER_SGD_WRITE_EVERY_SUBSET, write_every_sgd_iter);
+        MD.setValue(EMDL::OPTIMISER_SGD_STEPSIZE, sgd_stepsize);
+        MD.setValue(EMDL::OPTIMISER_DO_AUTO_REFINE, do_auto_refine);
+        MD.setValue(EMDL::OPTIMISER_AUTO_LOCAL_HP_ORDER, autosampling_hporder_local_searches);
+        MD.setValue(EMDL::OPTIMISER_NR_ITER_WO_RESOL_GAIN, nr_iter_wo_resol_gain);
+        MD.setValue(EMDL::OPTIMISER_BEST_RESOL_THUS_FAR,best_resol_thus_far);
+        MD.setValue(EMDL::OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES, nr_iter_wo_large_hidden_variable_changes);
+        MD.setValue(EMDL::OPTIMISER_DO_SKIP_ALIGN, do_skip_align);
+        MD.setValue(EMDL::OPTIMISER_DO_SKIP_ROTATE, do_skip_rotate);
+        MD.setValue(EMDL::OPTIMISER_ACCURACY_ROT, acc_rot);
+        MD.setValue(EMDL::OPTIMISER_ACCURACY_TRANS_ANGSTROM, acc_trans);
+        MD.setValue(EMDL::OPTIMISER_CHANGES_OPTIMAL_ORIENTS, current_changes_optimal_orientations);
+        MD.setValue(EMDL::OPTIMISER_CHANGES_OPTIMAL_OFFSETS, current_changes_optimal_offsets);
+        MD.setValue(EMDL::OPTIMISER_CHANGES_OPTIMAL_CLASSES, current_changes_optimal_classes);
+        MD.setValue(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS, smallest_changes_optimal_orientations);
+        MD.setValue(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS, smallest_changes_optimal_offsets);
+        MD.setValue(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES, smallest_changes_optimal_classes);
+        MD.setValue(EMDL::OPTIMISER_LOCAL_SYMMETRY_FILENAME, fn_local_symmetry);
+        MD.setValue(EMDL::OPTIMISER_DO_HELICAL_REFINE, do_helical_refine);
+        MD.setValue(EMDL::OPTIMISER_IGNORE_HELICAL_SYMMETRY, ignore_helical_symmetry);
+        MD.setValue(EMDL::OPTIMISER_FOURIER_MASK, fn_fourier_mask);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_TWIST_INITIAL, helical_twist_initial);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_RISE_INITIAL, helical_rise_initial);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_Z_PERCENTAGE, helical_z_percentage);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_NSTART, helical_nstart);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_TUBE_INNER_DIAMETER, helical_tube_inner_diameter);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER, helical_tube_outer_diameter);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, do_helical_symmetry_local_refinement);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_SIGMA_DISTANCE, helical_sigma_distance);
+        MD.setValue(EMDL::OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED, helical_keep_tilt_prior_fixed);
+        MD.setValue(EMDL::OPTIMISER_HAS_CONVERGED, has_converged);
+        MD.setValue(EMDL::OPTIMISER_HAS_HIGH_FSC_AT_LIMIT, has_high_fsc_at_limit);
+        MD.setValue(EMDL::OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO, has_large_incr_size_iter_ago);
+        MD.setValue(EMDL::OPTIMISER_DO_CORRECT_NORM, do_norm_correction);
+        MD.setValue(EMDL::OPTIMISER_DO_CORRECT_SCALE, do_scale_correction);
+        MD.setValue(EMDL::OPTIMISER_DO_CORRECT_CTF, do_ctf_correction);
+        MD.setValue(EMDL::OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK, intact_ctf_first_peak);
+        MD.setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED, ctf_phase_flipped);
+        MD.setValue(EMDL::OPTIMISER_DO_ONLY_FLIP_CTF_PHASES, only_flip_phases);
+        MD.setValue(EMDL::OPTIMISER_REFS_ARE_CTF_CORRECTED, refs_are_ctf_corrected);
+        MD.setValue(EMDL::OPTIMISER_FIX_SIGMA_NOISE, fix_sigma_noise);
+        MD.setValue(EMDL::OPTIMISER_FIX_SIGMA_OFFSET, fix_sigma_offset);
+        MD.setValue(EMDL::OPTIMISER_MAX_NR_POOL, nr_pool);
 
         MD.write(fh);
         fh.close();
@@ -1255,8 +1254,8 @@ void MlOptimiser::initialise()
         int idx;
         MDsigma.read(fn_sigma);
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
-            idx = MDsigma.getValue(EMDL_SPECTRAL_IDX);
-            val = MDsigma.getValue(EMDL_MLMODEL_SIGMA2_NOISE);
+            idx = MDsigma.getValue(EMDL::SPECTRAL_IDX);
+            val = MDsigma.getValue(EMDL::MLMODEL_SIGMA2_NOISE);
             if (idx < XSIZE(mymodel.sigma2_noise[0]))
                 mymodel.sigma2_noise[0](idx) = val;
         }
@@ -1327,7 +1326,7 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
     Image<RFLOAT> Isolvent;
     Isolvent.read(_fn_mask);
     Isolvent().setXmippOrigin();
-    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue(EMDL_IMAGE_SAMPLINGRATE_X);
+    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
 
     bool need_new_mask = false;
     if (fabs(mask_pixel_size-mymodel.pixel_size) > 0.001) {
@@ -1907,7 +1906,7 @@ void MlOptimiser::initialiseGeneral(int rank) {
         do_scale_correction = false;
 
     // Check for rlnReconstructImageName in the data.star file. If it is present, set do_use_reconstruct_images to true
-    do_use_reconstruct_images = mydata.MDimg.containsLabel(EMDL_IMAGE_RECONSTRUCT_NAME);
+    do_use_reconstruct_images = mydata.MDimg.containsLabel(EMDL::IMAGE_RECONSTRUCT_NAME);
     if (do_use_reconstruct_images && verb > 0)
         std::cout <<" Using rlnReconstructImageName from the input data.star file!" << std::endl;
 
@@ -2071,13 +2070,13 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 }
             } else {
                 if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img)) {
-                    fn_img = MDimg.getValue(EMDL_IMAGE_NAME);
+                    fn_img = MDimg.getValue(EMDL::IMAGE_NAME);
                 } else if (!do_parallel_disc_io) {
                     // When not doing parallel disk IO,
                     // only those MPI processes running on the same node as the leader have scratch.
                     fn_img.decompose(dump, fn_stack);
                     if (!exists(fn_stack))
-                        fn_img = MDimg.getValue(EMDL_IMAGE_NAME);
+                        fn_img = MDimg.getValue(EMDL::IMAGE_NAME);
                 }
 
                 fn_img.decompose(dump, fn_stack);
@@ -2094,19 +2093,19 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             bool is_helical_segment = do_helical_refine || (mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0);
             if (is_helical_segment) {
                 try {
-                    psi_deg = MDimg.getValue(EMDL_ORIENT_PSI_PRIOR);
+                    psi_deg = MDimg.getValue(EMDL::ORIENT_PSI_PRIOR);
                 } catch (const char* errmsg) {
                     try {
-                        psi_deg = MDimg.getValue(EMDL_ORIENT_PSI);
+                        psi_deg = MDimg.getValue(EMDL::ORIENT_PSI);
                     } catch (const char* errmsg) {
                         REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Psi priors of helical segments are missing!");
                     }
                 }
                 try {
-                    tilt_deg = MDimg.getValue(EMDL_ORIENT_TILT_PRIOR);
+                    tilt_deg = MDimg.getValue(EMDL::ORIENT_TILT_PRIOR);
                 } catch (const char* errmsg) {
                     try {
-                        tilt_deg = MDimg.getValue(EMDL_ORIENT_TILT);
+                        tilt_deg = MDimg.getValue(EMDL::ORIENT_TILT);
                     } catch (const char* errmsg) {
                         REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Tilt priors of helical segments are missing!");
                     }
@@ -8004,13 +8003,13 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
                 if (mymodel.nr_bodies > 1) {
 
                     // Old optimal parameters
-                    old_rot  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ROT,  ori_img_id);
-                    old_tilt = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_TILT, ori_img_id);
-                    old_psi  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_PSI,  ori_img_id);
-                    old_xoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTRO, ori_img_id);
-                    old_yoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTRO, ori_img_id);
+                    old_rot  = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ROT,  ori_img_id);
+                    old_tilt = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_TILT, ori_img_id);
+                    old_psi  = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_PSI,  ori_img_id);
+                    old_xoff = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTRO, ori_img_id);
+                    old_yoff = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTRO, ori_img_id);
                     if (mymodel.data_dim == 3) {
-                        old_zoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+                        old_zoff = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                     }
                     old_iclass = 0;
 
@@ -8029,15 +8028,15 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
                 } else {
 
                     // Old optimal parameters
-                    old_rot = mydata.MDimg.getValue(EMDL_ORIENT_ROT,   ori_img_id);
-                    old_tilt = mydata.MDimg.getValue(EMDL_ORIENT_TILT, ori_img_id);
-                    old_psi = mydata.MDimg.getValue(EMDL_ORIENT_PSI,   ori_img_id);
-                    old_xoff = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
-                    old_yoff = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+                    old_rot = mydata.MDimg.getValue(EMDL::ORIENT_ROT,   ori_img_id);
+                    old_tilt = mydata.MDimg.getValue(EMDL::ORIENT_TILT, ori_img_id);
+                    old_psi = mydata.MDimg.getValue(EMDL::ORIENT_PSI,   ori_img_id);
+                    old_xoff = mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+                    old_yoff = mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
                     if (mymodel.data_dim == 3) {
-                        old_zoff = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+                        old_zoff = mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                     }
-                    old_iclass = mydata.MDimg.getValue(EMDL_PARTICLE_CLASS, ori_img_id);
+                    old_iclass = mydata.MDimg.getValue(EMDL::PARTICLE_CLASS, ori_img_id);
 
                     // New optimal parameters
                     rot = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
@@ -8906,39 +8905,39 @@ void MlOptimiser::setMetaDataSubset(long int first_part_id, long int last_part_i
             // SHWS: Upon request of Juha Huiskonen, 5apr2016
             if (mymodel.ref_dim > 2)
             {
-                mydata.MDimg.setValue(EMDL_ORIENT_ROT,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT), ori_img_id);
-                mydata.MDimg.setValue(EMDL_ORIENT_TILT, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT), ori_img_id);
+                mydata.MDimg.setValue(EMDL::ORIENT_ROT,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT), ori_img_id);
+                mydata.MDimg.setValue(EMDL::ORIENT_TILT, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT), ori_img_id);
             }
-            mydata.MDimg.setValue(EMDL_ORIENT_PSI,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI), ori_img_id);
-            mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_XOFF), ori_img_id);
-            mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF), ori_img_id);
+            mydata.MDimg.setValue(EMDL::ORIENT_PSI,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI), ori_img_id);
+            mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_XOFF), ori_img_id);
+            mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF), ori_img_id);
             if (mymodel.data_dim == 3)
             {
-                mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF), ori_img_id);
+                mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_pixel_size * DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF), ori_img_id);
             }
-            mydata.MDimg.setValue(EMDL_PARTICLE_CLASS, (int)DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS) , ori_img_id);
-            mydata.MDimg.setValue(EMDL_PARTICLE_DLL,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_DLL), ori_img_id);
-            mydata.MDimg.setValue(EMDL_PARTICLE_PMAX, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PMAX), ori_img_id);
-            mydata.MDimg.setValue(EMDL_PARTICLE_NR_SIGNIFICANT_SAMPLES,(int)DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NR_SIGN), ori_img_id);
-            mydata.MDimg.setValue(EMDL_IMAGE_NORM_CORRECTION, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM), ori_img_id);
+            mydata.MDimg.setValue(EMDL::PARTICLE_CLASS, (int)DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS) , ori_img_id);
+            mydata.MDimg.setValue(EMDL::PARTICLE_DLL,  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_DLL), ori_img_id);
+            mydata.MDimg.setValue(EMDL::PARTICLE_PMAX, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PMAX), ori_img_id);
+            mydata.MDimg.setValue(EMDL::PARTICLE_NR_SIGNIFICANT_SAMPLES,(int)DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NR_SIGN), ori_img_id);
+            mydata.MDimg.setValue(EMDL::IMAGE_NORM_CORRECTION, DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM), ori_img_id);
 
             // For the moment, CTF, prior and transformation matrix info is NOT updated...
             RFLOAT prior_x = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_XOFF_PRIOR);
             RFLOAT prior_y = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF_PRIOR);
             if (prior_x < 999.)
             {
-                mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_X_PRIOR_ANGSTROM, my_pixel_size * prior_x, ori_img_id);
+                mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_X_PRIOR_ANGSTROM, my_pixel_size * prior_x, ori_img_id);
             }
             if (prior_y < 999.)
             {
-                mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_Y_PRIOR_ANGSTROM, my_pixel_size * prior_y, ori_img_id);
+                mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_Y_PRIOR_ANGSTROM, my_pixel_size * prior_y, ori_img_id);
             }
             if (mymodel.data_dim == 3)
             {
                 RFLOAT prior_z = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF_PRIOR);
                 if (prior_z < 999.)
                 {
-                    mydata.MDimg.setValue(EMDL_ORIENT_ORIGIN_Z_PRIOR_ANGSTROM, my_pixel_size * prior_z, ori_img_id);
+                    mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_Z_PRIOR_ANGSTROM, my_pixel_size * prior_z, ori_img_id);
                 }
             }
 
@@ -8959,13 +8958,13 @@ void MlOptimiser::setMetaDataSubset(long int first_part_id, long int last_part_i
                     RFLOAT xoff = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_xoff);
                     RFLOAT yoff = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_yoff);
                     RFLOAT zoff = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, icol_zoff);
-                    mydata.MDbodies[ibody].setValue(EMDL_ORIENT_ROT, rot, ori_img_id);
-                    mydata.MDbodies[ibody].setValue(EMDL_ORIENT_TILT, tilt, ori_img_id);
-                    mydata.MDbodies[ibody].setValue(EMDL_ORIENT_PSI,  psi, ori_img_id);
-                    mydata.MDbodies[ibody].setValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, my_pixel_size * xoff, ori_img_id);
-                    mydata.MDbodies[ibody].setValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, my_pixel_size * yoff, ori_img_id);
+                    mydata.MDbodies[ibody].setValue(EMDL::ORIENT_ROT, rot, ori_img_id);
+                    mydata.MDbodies[ibody].setValue(EMDL::ORIENT_TILT, tilt, ori_img_id);
+                    mydata.MDbodies[ibody].setValue(EMDL::ORIENT_PSI,  psi, ori_img_id);
+                    mydata.MDbodies[ibody].setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_pixel_size * xoff, ori_img_id);
+                    mydata.MDbodies[ibody].setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_pixel_size * yoff, ori_img_id);
                     if (mymodel.data_dim == 3)
-                        mydata.MDbodies[ibody].setValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, my_pixel_size * zoff, ori_img_id);
+                        mydata.MDbodies[ibody].setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_pixel_size * zoff, ori_img_id);
                 }
             }
 
@@ -9046,20 +9045,20 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
             // Get the image names from the MDimg table
             FileName fn_img = "", fn_rec_img = "", fn_ctf = "";
             if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img))
-                fn_img = mydata.MDimg.getValue(EMDL_IMAGE_NAME, ori_img_id);
+                fn_img = mydata.MDimg.getValue(EMDL::IMAGE_NAME, ori_img_id);
 
             if (mymodel.data_dim == 3 && do_ctf_correction) {
                 // Also read the CTF image from disc
                 if (!mydata.getImageNameOnScratch(part_id, img_id, fn_ctf, true)) {
                     try {
-                        fn_ctf = mydata.MDimg.getValue(EMDL_CTF_IMAGE, ori_img_id);
+                        fn_ctf = mydata.MDimg.getValue(EMDL::CTF_IMAGE, ori_img_id);
                     } catch (const char* errmsg) {
                         REPORT_ERROR("MlOptimiser::getMetaAndImageDataSubset ERROR: cannot find rlnCtfImage for 3D CTF correction!");
                     }
                 }
             }
             if (has_converged && do_use_reconstruct_images) {
-                fn_rec_img = mydata.MDimg.getValue(EMDL_IMAGE_RECONSTRUCT_NAME, ori_img_id);
+                fn_rec_img = mydata.MDimg.getValue(EMDL::IMAGE_RECONSTRUCT_NAME, ori_img_id);
             }
 
             if (do_also_imagedata) {
@@ -9136,28 +9135,28 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
             }
 
             // Now get the metadata
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT) = mydata.MDimg.getValue(EMDL_ORIENT_ROT, ori_img_id);
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT) = mydata.MDimg.getValue(EMDL_ORIENT_TIL, ori_img_id);
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI) = mydata.MDimg.getValue(EMDL_ORIENT_PSI, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT) = mydata.MDimg.getValue(EMDL::ORIENT_ROT, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT) = mydata.MDimg.getValue(EMDL::ORIENT_TIL, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI) = mydata.MDimg.getValue(EMDL::ORIENT_PSI, ori_img_id);
             RFLOAT xoff_A, yoff_A, zoff_A;
-            xoff_A = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
-            yoff_A = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+            xoff_A = mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+            yoff_A = mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
             DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_XOFF) = xoff_A / my_pixel_size;
             DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF) = yoff_A / my_pixel_size;
             if (mymodel.data_dim == 3) {
-                zoff_A = mydata.MDimg.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+                zoff_A = mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                 DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF) = zoff_A / my_pixel_size;
             }
 
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS) = mydata.MDimg.getValue(EMDL_PARTICLE_CLASS, ori_img_id);
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_DLL)   = mydata.MDimg.getValue(EMDL_PARTICLE_DLL, ori_img_id);
-            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PMAX)  = mydata.MDimg.getValue(EMDL_PARTICLE_PMAX, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CLASS) = mydata.MDimg.getValue(EMDL::PARTICLE_CLASS, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_DLL)   = mydata.MDimg.getValue(EMDL::PARTICLE_DLL, ori_img_id);
+            DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PMAX)  = mydata.MDimg.getValue(EMDL::PARTICLE_PMAX, ori_img_id);
 
-            // 5 July 2017: we do not need EMDL_PARTICLE_NR_SIGNIFICANT_SAMPLES for calculations. Send randomsubset instead!
+            // 5 July 2017: we do not need EMDL::PARTICLE_NR_SIGNIFICANT_SAMPLES for calculations. Send randomsubset instead!
             DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NR_SIGN) = do_split_random_halves ?
-                mydata.MDimg.getValue(EMDL_PARTICLE_RANDOM_SUBSET, ori_img_id) : mydata.MDimg.getValue(EMDL_PARTICLE_NR_SIGNIFICANT_SAMPLES, ori_img_id);
+                mydata.MDimg.getValue(EMDL::PARTICLE_RANDOM_SUBSET, ori_img_id) : mydata.MDimg.getValue(EMDL::PARTICLE_NR_SIGNIFICANT_SAMPLES, ori_img_id);
             try {
-                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM) = mydata.MDimg.getValue(EMDL_IMAGE_NORM_CORRECTION, ori_img_id);
+                DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM) = mydata.MDimg.getValue(EMDL::IMAGE_NORM_CORRECTION, ori_img_id);
             } catch (const char* errmsg) {
                 DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_NORM) = 1.0;
             }
@@ -9174,15 +9173,15 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
             } catch (const char* errmsg) { \
                 DIRECT_A2D_ELEM(exp_metadata, metadata_offset, metadata_index) = 999.0; \
             }
-            TRYSET(METADATA_ROT_PRIOR,  EMDL_ORIENT_ROT_PRIOR);
-            TRYSET(METADATA_TILT_PRIOR, EMDL_ORIENT_TILT_PRIOR);
-            TRYSET(METADATA_PSI_PRIOR,  EMDL_ORIENT_PSI_PRIOR);
-            TRYSET_DIV_PIXELSIZE(xoff_A, METADATA_XOFF_PRIOR, EMDL_ORIENT_ORIGIN_X_PRIOR_ANGSTROM);
-            TRYSET_DIV_PIXELSIZE(yoff_A, METADATA_YOFF_PRIOR, EMDL_ORIENT_ORIGIN_Y_PRIOR_ANGSTROM);
+            TRYSET(METADATA_ROT_PRIOR,  EMDL::ORIENT_ROT_PRIOR);
+            TRYSET(METADATA_TILT_PRIOR, EMDL::ORIENT_TILT_PRIOR);
+            TRYSET(METADATA_PSI_PRIOR,  EMDL::ORIENT_PSI_PRIOR);
+            TRYSET_DIV_PIXELSIZE(xoff_A, METADATA_XOFF_PRIOR, EMDL::ORIENT_ORIGIN_X_PRIOR_ANGSTROM);
+            TRYSET_DIV_PIXELSIZE(yoff_A, METADATA_YOFF_PRIOR, EMDL::ORIENT_ORIGIN_Y_PRIOR_ANGSTROM);
             if (mymodel.data_dim == 3) {
-                TRYSET_DIV_PIXELSIZE(zoff_A, METADATA_ZOFF_PRIOR, EMDL_ORIENT_ORIGIN_Z_PRIOR_ANGSTROM);
+                TRYSET_DIV_PIXELSIZE(zoff_A, METADATA_ZOFF_PRIOR, EMDL::ORIENT_ORIGIN_Z_PRIOR_ANGSTROM);
             }
-            TRYSET(METADATA_PSI_PRIOR_FLIP_RATIO, EMDL_ORIENT_PSI_PRIOR_FLIP_RATIO);
+            TRYSET(METADATA_PSI_PRIOR_FLIP_RATIO, EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO);
             #undef TRYSET
             #undef TRYSET_DIV_PIXELSIZE
 
@@ -9198,12 +9197,12 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
                     var = defaut_val; \
                 }
 
-                TRYSETVAR(DeltafU, EMDL_CTF_DEFOCUSU, 0);
-                TRYSETVAR(DeltafV, EMDL_CTF_DEFOCUSV, DeltafV);
-                TRYSETVAR(azimuthal_angle, EMDL_CTF_DEFOCUS_ANGLE, 0);
-                TRYSETVAR(Bfac, EMDL_CTF_BFACTOR, 0.0);
-                TRYSETVAR(kfac, EMDL_CTF_SCALEFACTOR, 1.0);
-                TRYSETVAR(phase_shift, EMDL_CTF_PHASESHIFT, 0.0);
+                TRYSETVAR(DeltafU, EMDL::CTF_DEFOCUSU, 0);
+                TRYSETVAR(DeltafV, EMDL::CTF_DEFOCUSV, DeltafV);
+                TRYSETVAR(azimuthal_angle, EMDL::CTF_DEFOCUS_ANGLE, 0);
+                TRYSETVAR(Bfac, EMDL::CTF_BFACTOR, 0.0);
+                TRYSETVAR(kfac, EMDL::CTF_SCALEFACTOR, 1.0);
+                TRYSETVAR(phase_shift, EMDL::CTF_PHASESHIFT, 0.0);
 
                 #undef TRYSETVAR
 
@@ -9221,13 +9220,13 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
                 for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
                     RFLOAT rot, tilt, psi, xoff, yoff, zoff = 0.0;
                     try {
-                        rot  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ROT,  ori_img_id);
-                        tilt = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_TILT, ori_img_id);
-                        psi  = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_PSI,  ori_img_id);
-                        xoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
-                        yoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+                        rot  = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ROT,  ori_img_id);
+                        tilt = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_TILT, ori_img_id);
+                        psi  = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_PSI,  ori_img_id);
+                        xoff = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+                        yoff = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
                         if (mymodel.data_dim == 3)
-                            zoff = mydata.MDbodies[ibody].getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+                            zoff = mydata.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                     } catch (const char* errmsg) {}
                     #define MULTIBODY_METADATA_INDEX(i) i + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
                     DIRECT_A2D_ELEM(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(0)) = rot;

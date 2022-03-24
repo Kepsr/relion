@@ -164,12 +164,12 @@ int  readIMAGIC(long int img_select) {
         header->densmax = header->avdens + header->sigma;
     }
 
-    MDMainHeader.setValue(EMDL_IMAGE_STATS_MIN, (RFLOAT) header->densmin);
-    MDMainHeader.setValue(EMDL_IMAGE_STATS_MAX, (RFLOAT) header->densmax);
-    MDMainHeader.setValue(EMDL_IMAGE_STATS_AVG, (RFLOAT) header->avdens);
-    MDMainHeader.setValue(EMDL_IMAGE_STATS_STDDEV, (RFLOAT) header->sigma);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, (RFLOAT) header->densmin);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, (RFLOAT) header->densmax);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, (RFLOAT) header->avdens);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sigma);
     setSamplingRateInHeader((RFLOAT) 1.0);
-    MDMainHeader.setValue(EMDL_IMAGE_DATATYPE, (int) datatype);
+    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype);
 
     offset = 0;   // separate header file
 
@@ -254,16 +254,16 @@ void  writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE) {
 
     if (!MDMainHeader.isEmpty()) {
         try {
-            header->densmin = (float) MDMainHeader.getValue(EMDL_IMAGE_STATS_MIN);
+            header->densmin = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN);
         } catch (const char* errmsg) {}
         try {
-            header->densmax = (float) MDMainHeader.getValue(EMDL_IMAGE_STATS_MAX);
+            header->densmax = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);
         } catch (const char* errmsg) {}
         try {
-            header->avdens = (float) MDMainHeader.getValue(EMDL_IMAGE_STATS_AVG);
+            header->avdens = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG);
         } catch (const char* errmsg) {}
         try {
-            float sigma = (float) MDMainHeader.getValue(EMDL_IMAGE_STATS_STDDEV);
+            float sigma = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV);
             header->sigma = sigma;
             header->varian = sigma * sigma;
         } catch (const char* errmsg) {}

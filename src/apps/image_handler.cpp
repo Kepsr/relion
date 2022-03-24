@@ -35,11 +35,11 @@ class image_handler_parameters {
 
     public:
 
-        FileName fn_in, fn_out, fn_sel, fn_img, fn_sym, fn_sub, fn_mult, fn_div, fn_add, fn_subtract, fn_mask, fn_fsc, fn_adjust_power, fn_correct_ampl, fn_fourfilter, fn_cosDPhi;
+    FileName fn_in, fn_out, fn_sel, fn_img, fn_sym, fn_sub, fn_mult, fn_div, fn_add, fn_subtract, fn_mask, fn_fsc, fn_adjust_power, fn_correct_ampl, fn_fourfilter, fn_cosDPhi;
 
-        int bin_avg, avg_first, avg_last, edge_x0, edge_xF, edge_y0, edge_yF, filter_edge_width, new_box, minr_ampl_corr, my_new_box_size;
+    int bin_avg, avg_first, avg_last, edge_x0, edge_xF, edge_y0, edge_yF, filter_edge_width, new_box, minr_ampl_corr, my_new_box_size;
 
-        bool do_add_edge, do_invert_hand, do_flipXY, do_flipmXY, do_flipZ, do_flipX, do_flipY, do_shiftCOM, do_stats, do_calc_com, do_avg_ampl, do_avg_ampl2, do_avg_ampl2_ali, do_average, do_remove_nan, do_average_all_frames, do_power, do_ignore_optics, do_optimise_scale_subtract;
+    bool do_add_edge, do_invert_hand, do_flipXY, do_flipmXY, do_flipZ, do_flipX, do_flipY, do_shiftCOM, do_stats, do_calc_com, do_avg_ampl, do_avg_ampl2, do_avg_ampl2_ali, do_average, do_remove_nan, do_average_all_frames, do_power, do_ignore_optics, do_optimise_scale_subtract;
 
     RFLOAT multiply_constant, divide_constant, add_constant, subtract_constant, threshold_above, threshold_below, angpix, requested_angpix, real_angpix, force_header_angpix, lowpass, highpass, logfilter, bfactor, shift_x, shift_y, shift_z, replace_nan, randomize_at, optimise_bfactor_subtract;
     // PNG options
@@ -204,169 +204,128 @@ class image_handler_parameters {
         if (do_add_edge) {
             // Treat X-boundaries
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
-                if (j < edge_x0)
+                if (j < edge_x0) {
                     DIRECT_A2D_ELEM(Iin(), i, j) = DIRECT_A2D_ELEM(Iin(), i, edge_x0);
-                else if (j > edge_xF)
+                } else if (j > edge_xF) {
                     DIRECT_A2D_ELEM(Iin(), i, j) = DIRECT_A2D_ELEM(Iin(), i, edge_xF);
+                }
             }
             // Treat Y-boundaries
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin())
-            {
-                if (i < edge_y0)
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
+                if (i < edge_y0) {
                     DIRECT_A2D_ELEM(Iin(), i, j) = DIRECT_A2D_ELEM(Iin(), edge_y0, j);
-                else if (i > edge_yF)
+                } else if (i > edge_yF) {
                     DIRECT_A2D_ELEM(Iin(), i, j) = DIRECT_A2D_ELEM(Iin(), edge_yF, j);
+                }
             }
         }
 
         // Flipping: this needs to be done from Iin to Iout (i.e. can't be done on-line on Iout only!)
-        if (do_flipXY)
-        {
+        if (do_flipXY) {
             // Flip X/Y
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
                 DIRECT_A2D_ELEM(Iout(), i, j) = DIRECT_A2D_ELEM(Iin(), j, i);
-
             }
-        }
-        else if (do_flipmXY)
-        {
+        } else if (do_flipmXY) {
             // Flip mX/Y
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
                 DIRECT_A2D_ELEM(Iout(), i, j) = DIRECT_A2D_ELEM(Iin(), XSIZE(Iin()) - 1 - j, YSIZE(Iin()) - 1 - i);
             }
-        }
-        else
-        {
+        } else {
             Iout = Iin;
         }
 
         // From here on also 3D options
-        if (do_remove_nan)
-        {
+        if (do_remove_nan) {
             Iout().setXmippOrigin();
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout()) {
                 if (std::isnan(DIRECT_A3D_ELEM(Iout(), k, i, j)) || std::isinf(DIRECT_A3D_ELEM(Iout(), k, i, j)))
                     DIRECT_A3D_ELEM(Iout(), k, i, j) = replace_nan;
             }
         }
 
-        if (randomize_at > 0.)
-        {
-            int iran = XSIZE(Iin())* angpix / randomize_at;
+        if (randomize_at > 0.0) {
+            int iran = XSIZE(Iin()) * angpix / randomize_at;
             Iout = Iin;
             randomizePhasesBeyond(Iout(), iran);
         }
-        if (fabs(multiply_constant - 1.) > 0.)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+        if (fabs(multiply_constant - 1.0) > 0.0) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) *= multiply_constant;
             }
-        }
-        else if (fabs(divide_constant - 1.) > 0.)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+        } else if (fabs(divide_constant - 1.0) > 0.0) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) /= divide_constant;
             }
-        }
-        else if (fabs(add_constant) > 0.)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+        } else if (fabs(add_constant) > 0.0) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) += add_constant;
             }
-        }
-        else if (fabs(subtract_constant) > 0.)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+        } else if (fabs(subtract_constant) > 0.0) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) -= subtract_constant;
             }
-        }
-        else if (fn_mult != "")
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+        } else if (fn_mult != "") {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) *= DIRECT_A3D_ELEM(Iop(), k, i, j);
             }
-        }
-        else if (fn_div != "")
-        {
+        } else if (fn_div != "") {
             bool is_first = true;
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
-                if (ABS(DIRECT_A3D_ELEM(Iop(), k, i, j)) < 1e-10)
-                {
-                    if (is_first)
-                    {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+                if (ABS(DIRECT_A3D_ELEM(Iop(), k, i, j)) < 1e-10) {
+                    if (is_first) {
                         std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
                         is_first = false;
                     }
-                    DIRECT_A3D_ELEM(Iout(), k, i, j) = 0.;
-                }
-                else
+                    DIRECT_A3D_ELEM(Iout(), k, i, j) = 0.0;
+                } else {
                     DIRECT_A3D_ELEM(Iout(), k, i, j) /= DIRECT_A3D_ELEM(Iop(), k, i, j);
+                }
             }
-        }
-        else if (fn_add != "")
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+        } else if (fn_add != "") {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) += DIRECT_A3D_ELEM(Iop(), k, i, j);
             }
-        }
-        else if (fn_subtract != "")
-        {
-            RFLOAT my_scale = 1., best_diff2 ;
-            if (do_optimise_scale_subtract)
-            {
-                if (fn_mask == "")
-                {
+        } else if (fn_subtract != "") {
+            RFLOAT my_scale = 1.0, best_diff2 ;
+            if (do_optimise_scale_subtract) {
+                if (fn_mask == "") {
                     Imask(). resize(Iop());
-                    Imask().initConstant(1.);
+                    Imask().initConstant(1.0);
                 }
 
-                if (optimise_bfactor_subtract > 0.)
-                {
+                if (optimise_bfactor_subtract > 0.0) {
                     MultidimArray< Complex > FTop, FTop_bfac;
                     FourierTransformer transformer;
                     MultidimArray<RFLOAT> Isharp(Iop());
                     transformer.FourierTransform(Iop(), FTop);
 
-                    RFLOAT my_bfac, smallest_diff2=99.e99;
-                    for (RFLOAT bfac = -optimise_bfactor_subtract; bfac <= optimise_bfactor_subtract; bfac+= 10.)
-                    {
+                    RFLOAT my_bfac, smallest_diff2 = 99.0e99;
+                    for (RFLOAT bfac = -optimise_bfactor_subtract; bfac <= optimise_bfactor_subtract; bfac += 10.0) {
                         FTop_bfac = FTop;
                         applyBFactorToMap(FTop_bfac, XSIZE(Iop()), bfac, angpix);
                         transformer.inverseFourierTransform(FTop_bfac, Isharp);
                         RFLOAT scale, diff2;
 
-                        RFLOAT sum_aa = 0., sum_xa = 0., sum_xx = 0.;
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin())
-                        {
+                        RFLOAT sum_aa = 0.0, sum_xa = 0.0, sum_xx = 0.0;
+                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
                             RFLOAT w = DIRECT_MULTIDIM_ELEM(Imask(), n) * DIRECT_MULTIDIM_ELEM(Imask(), n);
                             RFLOAT x = DIRECT_MULTIDIM_ELEM(Iin(), n);
                             RFLOAT a = DIRECT_MULTIDIM_ELEM(Isharp, n);
-                            sum_aa += w*a*a;
-                            sum_xa += w*x*a;
-                            sum_xx += w*x*x;
+                            sum_aa += w * a * a;
+                            sum_xa += w * x * a;
+                            sum_xx += w * x * x;
                         }
-                        scale = sum_xa/sum_aa;
+                        scale = sum_xa / sum_aa;
 
-                        diff2 = 0.;
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin())
-                        {
+                        diff2 = 0.0;
+                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
                             RFLOAT w = DIRECT_MULTIDIM_ELEM(Imask(), n);
                             RFLOAT x = DIRECT_MULTIDIM_ELEM(Iin(), n);
                             RFLOAT a = DIRECT_MULTIDIM_ELEM(Isharp, n);
                             diff2 += w * w * (x - scale * a) * (x - scale * a);
                         }
-                        if (diff2 < smallest_diff2)
-                        {
+                        if (diff2 < smallest_diff2) {
                             smallest_diff2 = diff2;
                             my_bfac = bfac;
                             my_scale = scale;
@@ -376,73 +335,59 @@ class image_handler_parameters {
                     applyBFactorToMap(FTop, XSIZE(Iop()), my_bfac, angpix);
                     transformer.inverseFourierTransform(FTop, Iop());
 
-                }
-                else
-                {
-                    RFLOAT sum_aa = 0., sum_xa = 0.;
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin())
-                    {
+                } else {
+                    RFLOAT sum_aa = 0.0, sum_xa = 0.0;
+                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
                         RFLOAT w = DIRECT_MULTIDIM_ELEM(Imask(), n);
                         RFLOAT x = DIRECT_MULTIDIM_ELEM(Iin(), n);
                         RFLOAT a = DIRECT_MULTIDIM_ELEM(Iop(), n);
-                        sum_aa += w*w*a*a;
-                        sum_xa += w*w*x*a;
+                        sum_aa += w * w * a * a;
+                        sum_xa += w * w * x * a;
                     }
-                    my_scale = sum_xa/sum_aa;
+                    my_scale = sum_xa / sum_aa;
                     std::cout << " Optimised scale = " << my_scale << std::endl;
 
                 }
             }
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) -= my_scale * DIRECT_A3D_ELEM(Iop(), k, i, j);
             }
-        }
-        else if (fn_fsc != "")
-        {
+        } else if (fn_fsc != "") {
             MultidimArray<RFLOAT> fsc;
             MetaDataTable MDfsc;
             getFSC(Iout(), Iop(), fsc);
             MDfsc.setName("fsc");
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc)
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc) {
                 MDfsc.addObject();
                 RFLOAT res = (i > 0) ? (XSIZE(Iout()) * angpix / (RFLOAT)i) : 999.;
-                MDfsc.setValue(EMDL_SPECTRAL_IDX, (int)i);
-                MDfsc.setValue(EMDL_RESOLUTION, 1./res);
-                MDfsc.setValue(EMDL_RESOLUTION_ANGSTROM, res);
-                MDfsc.setValue(EMDL_POSTPROCESS_FSC_GENERAL, DIRECT_A1D_ELEM(fsc, i));
+                MDfsc.setValue(EMDL::SPECTRAL_IDX, (int)i);
+                MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
+                MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
+                MDfsc.setValue(EMDL::POSTPROCESS_FSC_GENERAL, DIRECT_A1D_ELEM(fsc, i));
             }
             MDfsc.write(std::cout);
-        }
-        else if (do_power)
-        {
+        } else if (do_power) {
             MultidimArray<RFLOAT> spectrum;
             getSpectrum(Iout(), spectrum, POWER_SPECTRUM);
             MetaDataTable MDpower;
             MDpower.setName("power");
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(spectrum)
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(spectrum) {
                 if (i > XSIZE(Iout()) / 2 + 1) break; // getSpectrum returns beyond Nyquist!!
 
                 MDpower.addObject();
-                RFLOAT res = (i > 0) ? (XSIZE(Iout()) * angpix / (RFLOAT)i) : 999.;
-                MDpower.setValue(EMDL_SPECTRAL_IDX, (int)i);
-                MDpower.setValue(EMDL_RESOLUTION, 1./res);
-                MDpower.setValue(EMDL_RESOLUTION_ANGSTROM, res);
-                MDpower.setValue(EMDL_MLMODEL_POWER_REF, DIRECT_A1D_ELEM(spectrum, i));
+                RFLOAT res = i > 0 ? XSIZE(Iout()) * angpix / (RFLOAT) i : 999.0;
+                MDpower.setValue(EMDL::SPECTRAL_IDX, (int) i);
+                MDpower.setValue(EMDL::RESOLUTION, 1.0 / res);
+                MDpower.setValue(EMDL::RESOLUTION_ANGSTROM, res);
+                MDpower.setValue(EMDL::MLMODEL_POWER_REF, DIRECT_A1D_ELEM(spectrum, i));
             }
             MDpower.write(std::cout);
-        }
-        else if (fn_adjust_power != "")
-        {
+        } else if (fn_adjust_power != "") {
             MultidimArray<RFLOAT> spectrum;
             getSpectrum(Iop(), spectrum, AMPLITUDE_SPECTRUM);
             adaptSpectrum(Iin(), Iout(), spectrum, AMPLITUDE_SPECTRUM);
-        }
-        else if (fn_cosDPhi != "")
-        {
+        } else if (fn_cosDPhi != "") {
             MultidimArray<RFLOAT> cosDPhi;
             MetaDataTable MDcos;
 
@@ -453,30 +398,24 @@ class image_handler_parameters {
 
             getCosDeltaPhase(FT1, FT2, cosDPhi);
             MDcos.setName("cos");
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(cosDPhi)
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(cosDPhi) {
                 MDcos.addObject();
-                RFLOAT res = (i > 0) ? (XSIZE(Iout()) * angpix / (RFLOAT)i) : 999.;
-                MDcos.setValue(EMDL_SPECTRAL_IDX, (int)i);
-                MDcos.setValue(EMDL_RESOLUTION, 1./res);
-                MDcos.setValue(EMDL_RESOLUTION_ANGSTROM, res);
-                MDcos.setValue(EMDL_POSTPROCESS_FSC_GENERAL, DIRECT_A1D_ELEM(cosDPhi, i));
+                RFLOAT res = i > 0 ? XSIZE(Iout()) * angpix / (RFLOAT) i : 999.0;
+                MDcos.setValue(EMDL::SPECTRAL_IDX, (int) i);
+                MDcos.setValue(EMDL::RESOLUTION, 1.0 / res);
+                MDcos.setValue(EMDL::RESOLUTION_ANGSTROM, res);
+                MDcos.setValue(EMDL::POSTPROCESS_FSC_GENERAL, DIRECT_A1D_ELEM(cosDPhi, i));
             }
             MDcos.write(std::cout);
-        }
-        else if (fn_correct_ampl != "")
-        {
+        } else if (fn_correct_ampl != "") {
             MultidimArray<Complex> FT;
             transformer.FourierTransform(Iin(), FT, false);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT)
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
                 DIRECT_MULTIDIM_ELEM(FT, n) /=  DIRECT_MULTIDIM_ELEM(avg_ampl, n);
             }
             transformer.inverseFourierTransform();
             Iout = Iin;
-        }
-        else if (fn_fourfilter != "")
-        {
+        } else if (fn_fourfilter != "") {
             MultidimArray<Complex> FT;
             transformer.FourierTransform(Iin(), FT, false);
 
@@ -485,90 +424,79 @@ class image_handler_parameters {
             rotation2DMatrix(psi, A);
 
             Iop().setXmippOrigin();
-            FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT)
-            {
+            FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
                 int jpp = ROUND(jp * A(0, 0) + ip * A(0, 1));
                 int ipp = ROUND(jp * A(1, 0) + ip * A(1, 1));
                 int kpp = kp;
-                RFLOAT fil;
-                if (jpp >= STARTINGX(Iop()) && jpp <= FINISHINGX(Iop()) && ipp >= STARTINGY(Iop()) && ipp <= FINISHINGY(Iop()))
-                    fil = A3D_ELEM(Iop(), kpp, ipp, jpp);
-                else
-                    fil = 0.;
+                RFLOAT fil = (
+                    jpp >= STARTINGX(Iop()) && jpp <= FINISHINGX(Iop()) && 
+                    ipp >= STARTINGY(Iop()) && ipp <= FINISHINGY(Iop())
+                ) ? A3D_ELEM(Iop(), kpp, ipp, jpp) : 0.0;
                 DIRECT_A3D_ELEM(FT, k, i, j) *=  fil;
             }
             transformer.inverseFourierTransform();
             Iout = Iin;
         }
 
-        if (fabs(bfactor) > 0.)
+        if (fabs(bfactor) > 0.0)
             applyBFactorToMap(Iout(), bfactor, angpix);
 
-        if (logfilter > 0.)
-        {
+        if (logfilter > 0.0) {
             LoGFilterMap(Iout(), logfilter, angpix);
             RFLOAT avg, stddev, minval, maxval;
             //Iout().statisticsAdjust(0,1);
         }
 
-        if (lowpass > 0.)
-        {
-            if (directional != "")
+        if (lowpass > 0.0) {
+            if (directional != "") {
                 directionalFilterMap(Iout(), lowpass, angpix, directional, filter_edge_width);
-            else
+            } else {
                 lowPassFilterMap(Iout(), lowpass, angpix, filter_edge_width);
+            }
         }
 
-        if (highpass > 0.)
+        if (highpass > 0.0) {
             highPassFilterMap(Iout(), highpass, angpix, filter_edge_width);
+        }
 
-        if (do_flipX)
-        {
+        if (do_flipX) {
             // For input:  0, 1, 2, 3, 4, 5 (XSIZE = 6)
             // This gives: 5, 4, 3, 2, 1, 0
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, i, XSIZE(Iin()) - 1 - j);
             }
-        }
-        else if (do_flipY)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+        } else if (do_flipY) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, YSIZE(Iin()) - 1 - i, j);
             }
-        }
-        else if (do_flipZ)
-        {
+        } else if (do_flipZ) {
             if (ZSIZE(Iout()) < 2)
                 REPORT_ERROR("ERROR: this is not a 3D map, so cannot be flipped in Z");
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), ZSIZE(Iin()) - 1 - k, i, j);
             }
-        }
-        else if (do_invert_hand)
-        {
+        } else if (do_invert_hand) {
             // For input:  0, 1, 2, 3, 4, 5 (XSIZE = 6)
             // This gives: 0, 5, 4, 3, 2, 1
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin())
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 long int dest_x = (j == 0) ? 0 : (XSIZE(Iin()) - j);
                 DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, i, dest_x);
             }
         }
 
         // Shifting
-        if (do_shiftCOM)
+        if (do_shiftCOM) {
             selfTranslateCenterOfMassToCenter(Iout(), DONT_WRAP, true); // verbose=true!
-        else if (fabs(shift_x) > 0. || fabs(shift_y) > 0. || fabs(shift_z) > 0.)
-        {
+        } else if (
+            fabs(shift_x) > 0.0 || 
+            fabs(shift_y) > 0.0 || 
+            fabs(shift_z) > 0.0
+        ) {
             Matrix1D<RFLOAT> shift(2);
             XX(shift) = shift_x;
             YY(shift) = shift_y;
-            if (zdim > 1)
-            {
+            if (zdim > 1) {
                 shift.resize(3);
                 ZZ(shift) = shift_z;
             }
@@ -576,8 +504,7 @@ class image_handler_parameters {
         }
 
         // Re-scale
-        if (requested_angpix > 0.)
-        {
+        if (requested_angpix > 0.0) {
             int oldxsize = XSIZE(Iout());
             int oldysize = YSIZE(Iout());
             int oldsize = oldxsize;
@@ -591,7 +518,7 @@ class image_handler_parameters {
             }
 
             int newsize = ROUND(oldsize * (angpix / requested_angpix));
-            newsize -= newsize % 2; //make even in case it is not already
+            newsize -= newsize % 2; // Force divisibility by 2
 
             real_angpix = oldsize * angpix / newsize;
             if (fabs(real_angpix - requested_angpix) / requested_angpix > 0.001)
@@ -603,8 +530,8 @@ class image_handler_parameters {
             if (oldxsize != oldysize && Iout().getDim() == 2) {
                 int newxsize = ROUND(oldxsize * (angpix / real_angpix));
                 int newysize = ROUND(oldysize * (angpix / real_angpix));;
-                newxsize -= newxsize%2; //make even in case it is not already
-                newysize -= newysize%2; //make even in case it is not already
+                newxsize -= newxsize % 2; // Force divisibility by 2
+                newysize -= newysize % 2; // Force divisibility by 2
                 Iout().setXmippOrigin();
                 Iout().window(
                     Xmipp::init(newysize), Xmipp::init(newxsize),
@@ -719,63 +646,59 @@ class image_handler_parameters {
             if (fn_out.getExtension() != "mrcs")
                 std::cout << "NOTE: the input (--i) is a STAR file but the output (--o) does not have .mrcs extension. The output is treated as a suffix, not a path." << std::endl;
             FileName fn_img;
-            MD.getValue(EMDL_IMAGE_NAME, fn_img, 0);
+            MD.getValue(EMDL::IMAGE_NAME, fn_img, 0);
             fn_img.decompose(slice_id, fn_stem);
             input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
         } else if (input_is_stack) {
             if (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)) {
                 MD.addObject();
-                MD.setValue(EMDL_IMAGE_NAME, fn_in);
+                MD.setValue(EMDL::IMAGE_NAME, fn_in);
             } else {
                 // Read the header to get the number of images inside the stack and generate that many lines in the MD
                 Image<RFLOAT> tmp;
                 FileName fn_tmp;
-                tmp.read(fn_in, false); //false means do not read image now, only header
-                for (int i = 1; i <= NSIZE(tmp()); i++)
-                {
+                tmp.read(fn_in, false); // false means do not read image now, only header
+                for (int i = 1; i <= NSIZE(tmp()); i++) {
                     MD.addObject();
                     fn_tmp.compose(i, fn_in);
-                    MD.setValue(EMDL_IMAGE_NAME, fn_tmp);
+                    MD.setValue(EMDL::IMAGE_NAME, fn_tmp);
                 }
             }
-        }
-        else
-        {
+        } else {
             // Just individual image input
             MD.addObject();
-            MD.setValue(EMDL_IMAGE_NAME, fn_in);
+            MD.setValue(EMDL::IMAGE_NAME, fn_in);
         }
 
         int i_img = 0;
         time_config();
-           if (verb > 0)
-               init_progress_bar(MD.numberOfObjects());
+        if (verb > 0)
+            init_progress_bar(MD.numberOfObjects());
 
         bool do_md_out = false;
-           FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD)
-        {
+        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             FileName fn_img;
-            if (do_average_all_frames)
-            {
-                MD.getValue(EMDL_MICROGRAPH_MOVIE_NAME, fn_img);
-            }
-            else
-            {
-                MD.getValue(EMDL_IMAGE_NAME, fn_img);
+            if (do_average_all_frames) {
+                MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_img);
+            } else {
+                MD.getValue(EMDL::IMAGE_NAME, fn_img);
             }
 
             // For fourfilter...
             RFLOAT psi;
-            if (!MD.getValue(EMDL_ORIENT_PSI, psi))
+            if (!MD.getValue(EMDL::ORIENT_PSI, psi))
                 psi =0.;
 
             Image<RFLOAT> Iin;
             // Initialise for the first image
-            if (i_img == 0)
-            {
+            if (i_img == 0) {
                 Image<RFLOAT> Ihead;
                 Ihead.read(fn_img, false);
-                Ihead.getDimensions(xdim, ydim, zdim, ndim);
+                std::tuple<int, int, int, long int> dimensions = Ihead.getDimensions();
+                int xdim = std::get<0>(dimensions);
+                int ydim = std::get<1>(dimensions);
+                int zdim = std::get<2>(dimensions);
+                long int ndim = std::get<3>(dimensions);
 
                 if (zdim > 1 && (do_add_edge || do_flipXY || do_flipmXY))
                     REPORT_ERROR("ERROR: you cannot perform 2D operations like --add_edge, --flipXY or --flipmXY on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
@@ -783,74 +706,66 @@ class image_handler_parameters {
                 if (zdim > 1 && (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)))
                     REPORT_ERROR("ERROR: you cannot perform movie-averaging operations on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
 
-                if (fn_mult != "")
+                if (fn_mult != "") {
                     Iop.read(fn_mult);
-                else if (fn_div != "")
+                } else if (fn_div != "") {
                     Iop.read(fn_div);
-                else if (fn_add != "")
+                } else if (fn_add != "") {
                     Iop.read(fn_add);
-                else if (fn_subtract != "")
-                {
+                } else if (fn_subtract != "") {
                     Iop.read(fn_subtract);
-                    if (do_optimise_scale_subtract && fn_mask != "") Imask.read(fn_mask);
-                }
-                else if (fn_fsc != "")
+                    if (do_optimise_scale_subtract && fn_mask != "") {
+                        Imask.read(fn_mask);
+                    }
+                } else if (fn_fsc != "") {
                     Iop.read(fn_fsc);
-                else if (fn_cosDPhi != "")
+                } else if (fn_cosDPhi != "") {
                     Iop.read(fn_cosDPhi);
-                else if (fn_adjust_power != "")
+                } else if (fn_adjust_power != "") {
                     Iop.read(fn_adjust_power);
-                else if (fn_fourfilter != "")
+                } else if (fn_fourfilter != "") {
                     Iop.read(fn_fourfilter);
-                else if (fn_correct_ampl != "")
-                {
+                } else if (fn_correct_ampl != "") {
                     Iop.read(fn_correct_ampl);
 
                     // Calculate by the radial average in the Fourier domain
                     MultidimArray<RFLOAT> spectrum, count;
                     spectrum.initZeros(YSIZE(Iop()));
                     count.initZeros(YSIZE(Iop()));
-                    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop())
-                    {
-                        long int idx = ROUND(sqrt(kp*kp + ip*ip + jp*jp));
+                    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
+                        long int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
                         spectrum(idx) += dAkij(Iop(), k, i, j);
-                        count(idx) += 1.;
+                        count(idx) += 1.0;
                     }
-                    FOR_ALL_ELEMENTS_IN_ARRAY1D(spectrum)
-                    {
-                        if (A1D_ELEM(count, i) > 0.)
+                    FOR_ALL_ELEMENTS_IN_ARRAY1D(spectrum) {
+                        if (A1D_ELEM(count, i) > 0.0)
                             A1D_ELEM(spectrum, i) /= A1D_ELEM(count, i);
                     }
 
-                    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop())
-                    {
-                            long int idx = ROUND(sqrt(kp*kp + ip*ip + jp*jp));
-                            if (idx > minr_ampl_corr)
+                    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
+                            long int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
+                            if (idx > minr_ampl_corr) {
                                 dAkij(Iop(), k, i, j) /= spectrum(idx);
-                            else
-                                dAkij(Iop(), k, i, j) = 1.;
+                            } else {
+                                dAkij(Iop(), k, i, j) = 1.0;
+                            }
                     }
                     avg_ampl = Iop();
                     Iop.write("test.mrc");
                 }
 
-                if (fn_mult != "" || fn_div != "" || fn_add != "" || fn_subtract != "" || fn_fsc != "" || fn_adjust_power != "" ||fn_fourfilter != "")
+                if (fn_mult != "" || fn_div != "" || fn_add != "" || fn_subtract != "" || fn_fsc != "" || fn_adjust_power != "" || fn_fourfilter != "")
                     if (XSIZE(Iop()) != xdim || YSIZE(Iop()) != ydim || ZSIZE(Iop()) != zdim)
                         REPORT_ERROR("Error: operate-image is not of the correct size");
 
-                if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali)
-                {
-                    avg_ampl.initZeros(zdim, ydim, xdim/2+1);
-                }
-                else if (do_average || do_average_all_frames)
-                {
+                if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali) {
+                    avg_ampl.initZeros(zdim, ydim, xdim / 2 + 1);
+                } else if (do_average || do_average_all_frames) {
                     avg_ampl.initZeros(zdim, ydim, xdim);
                 }
-
             }
 
-            if (do_stats)
-            {
+            if (do_stats) {
                 // only write statistics to screen
                 Iin.read(fn_img);
                 std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Iin().computeStats();
@@ -860,9 +775,7 @@ class image_handler_parameters {
                 RFLOAT maxval = std::get<3>(statstuple);
                 RFLOAT header_angpix = Iin.samplingRateX();
                 std::cout << fn_img << " : (x, y, z, n) = " << XSIZE(Iin()) << " × "<< YSIZE(Iin()) << " × " << ZSIZE(Iin()) << " × " << NSIZE(Iin()) << " ; avg = " << avg << " stddev = " << stddev << " minval = " <<minval << " maxval = " << maxval << "; angpix = " << header_angpix << std::endl;
-            }
-            else if (do_calc_com)
-            {
+            } else if (do_calc_com) {
                 Matrix1D <RFLOAT> com(3);
                 Iin.read(fn_img);
                 Iin().setXmippOrigin();
@@ -871,70 +784,52 @@ class image_handler_parameters {
                 if (VEC_XSIZE(com) > 1) std::cout << " y " << YY(com);
                 if (VEC_XSIZE(com) > 2) std::cout << " z " << ZZ(com);
                 std::cout << std::endl;
-            }
-            else if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali)
-            {
+            } else if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali) {
                 Iin.read(fn_img);
 
-                if (do_avg_ampl2_ali)
-                {
-                    RFLOAT xoff = 0.;
-                    RFLOAT yoff = 0.;
-                    RFLOAT psi = 0.;
-                    MD.getValue(EMDL_ORIENT_ORIGIN_X, xoff);
-                    MD.getValue(EMDL_ORIENT_ORIGIN_Y, yoff);
-                    MD.getValue(EMDL_ORIENT_PSI, psi);
+                if (do_avg_ampl2_ali) {
+                    RFLOAT xoff = 0.0;
+                    RFLOAT yoff = 0.0;
+                    RFLOAT psi  = 0.0;
+                    MD.getValue(EMDL::ORIENT_ORIGIN_X, xoff);
+                    MD.getValue(EMDL::ORIENT_ORIGIN_Y, yoff);
+                    MD.getValue(EMDL::ORIENT_PSI, psi);
                     // Apply the actual transformation
                     Matrix2D<RFLOAT> A;
                     rotation2DMatrix(psi, A);
-                    MAT_ELEM(A,0, 2) = xoff;
-                    MAT_ELEM(A,1, 2) = yoff;
+                    MAT_ELEM(A, 0, 2) = xoff;
+                    MAT_ELEM(A, 1, 2) = yoff;
                     selfApplyGeometry(Iin(), A, IS_NOT_INV, DONT_WRAP);
                 }
 
                 MultidimArray<Complex> FT;
                 transformer.FourierTransform(Iin(), FT);
 
-                if (do_avg_ampl)
-                {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT)
-                    {
+                if (do_avg_ampl) {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
                         DIRECT_MULTIDIM_ELEM(avg_ampl, n) +=  abs(DIRECT_MULTIDIM_ELEM(FT, n));
                     }
-                }
-                else if (do_avg_ampl2 || do_avg_ampl2_ali)
-                {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT)
-                    {
+                } else if (do_avg_ampl2 || do_avg_ampl2_ali) {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
                         DIRECT_MULTIDIM_ELEM(avg_ampl, n) +=  norm(DIRECT_MULTIDIM_ELEM(FT, n));
                     }
                 }
-            }
-            else if (do_average)
-            {
+            } else if (do_average) {
                 Iin.read(fn_img);
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin())
-                {
+                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
                     DIRECT_MULTIDIM_ELEM(avg_ampl, n) +=  DIRECT_MULTIDIM_ELEM(Iin(), n);
                 }
-            }
-            else if (do_average_all_frames)
-            {
+            } else if (do_average_all_frames) {
                 Iin.read(fn_img);
-                for (int n = 0; n < ndim; n++)
-                {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(avg_ampl)
-                    {
+                for (int n = 0; n < ndim; n++) {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(avg_ampl) {
                         DIRECT_A3D_ELEM(avg_ampl, k, i, j) +=  DIRECT_NZYX_ELEM(Iin(), n, k, i, j);
                     }
                 }
-            }
-            else if (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0))
-            {
+            } else if (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)) {
                 // movie-frame averaging operations
                 int avgndim = 1;
-                if (bin_avg > 0)
-                {
+                if (bin_avg > 0) {
                     avgndim = ndim / bin_avg;
                 }
                 Image<RFLOAT> Iavg(xdim, ydim, zdim, avgndim);
@@ -946,73 +841,56 @@ class image_handler_parameters {
                 if (NSIZE(Iavg()) > 1 && ( fn_ext.contains("mrc") && !fn_ext.contains("mrcs") ) )
                     REPORT_ERROR("ERROR: trying to write a stack into an MRC image. Use .mrcs extensions for stacks!");
 
-                for (long int nn = 0; nn < ndim; nn++)
-                {
+                for (long int nn = 0; nn < ndim; nn++) {
                     Iin.read(fn_img, true, nn);
-                    if (bin_avg > 0)
-                    {
+                    if (bin_avg > 0) {
                         int myframe = nn / bin_avg;
-                        if (myframe < avgndim)
-                        {
-                            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin())
-                            {
+                        if (myframe < avgndim) {
+                            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
                                 DIRECT_NZYX_ELEM(Iavg(),myframe,0,i,j) += DIRECT_A2D_ELEM(Iin(), i, j); // just store sum
                             }
                         }
-                    }
-                    else if (avg_first >= 0 && avg_last >= 0 && nn+1 >= avg_first && nn+1 <= avg_last) // add one to start counting at 1
-                    {
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin())
-                        {
+                    } else if (avg_first >= 0 && avg_last >= 0 && nn + 1 >= avg_first && nn + 1 <= avg_last) {
+                        //                                           ^ Start counting at 1
+                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
                             DIRECT_MULTIDIM_ELEM(Iavg(), n) += DIRECT_MULTIDIM_ELEM(Iin(), n); // just store sum
                         }
                     }
                 }
                 Iavg.write(fn_out);
-            }
-            else
-            {
+            } else {
                 Iin.read(fn_img);
                 FileName my_fn_out;
 
-                if (fn_out.getExtension() == "mrcs" && !fn_out.contains("@"))
-                {
+                if (fn_out.getExtension() == "mrcs" && !fn_out.contains("@")) {
                     // current_object starts counting from 0, thus needs to be incremented.
                     my_fn_out.compose(current_object + 1, fn_out);
-                }
-                else
-                {
-                    if (input_is_stack)
-                    {
+                } else {
+                    if (input_is_stack) {
                         my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
                         long int dummy;
                         FileName fn_tmp;
                         my_fn_out.decompose(dummy, fn_tmp);
                         n_images[fn_tmp]++; // this is safe. see https://stackoverflow.com/questions/16177596/stdmapstring-int-default-initialization-of-value.
                         my_fn_out.compose(n_images[fn_tmp], fn_tmp);
-                    }
-                    else if (input_is_star)
-                    {
+                    } else if (input_is_star) {
                         my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
-                    }
-                    else
-                    {
+                    } else {
                         my_fn_out = fn_out;
                     }
                 }
                 perImageOperations(Iin, my_fn_out, psi);
                 do_md_out = true;
-                MD.setValue(EMDL_IMAGE_NAME, my_fn_out);
+                MD.setValue(EMDL::IMAGE_NAME, my_fn_out);
             }
 
-            i_img+=ndim;
+            i_img += ndim;
             if (verb > 0)
-                progress_bar(i_img/ndim);
+                progress_bar(i_img / ndim);
         }
 
 
-        if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali || do_average || do_average_all_frames)
-        {
+        if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali || do_average || do_average_all_frames) {
             avg_ampl /= (RFLOAT)i_img;
             Iout() = avg_ampl;
             Iout.write(fn_out);
@@ -1021,28 +899,20 @@ class image_handler_parameters {
         if (verb > 0)
             progress_bar(MD.numberOfObjects());
 
-        if (do_md_out && fn_in.getExtension() == "star")
-        {
+        if (do_md_out && fn_in.getExtension() == "star") {
             FileName fn_md_out = fn_in.insertBeforeExtension("_" + fn_out);
 
-            if (do_ignore_optics)
-            {
+            if (do_ignore_optics) {
                 MD.write(fn_md_out);
-            }
-            else
-            {
-                if (my_new_box_size > 0)
-                {
-                    FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt)
-                    {
-                        obsModel.opticsMdt.setValue(EMDL_IMAGE_SIZE, my_new_box_size);
+            } else {
+                if (my_new_box_size > 0) {
+                    FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+                        obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, my_new_box_size);
                     }
                 }
-                if (real_angpix > 0)
-                {
-                    FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt)
-                    {
-                        obsModel.opticsMdt.setValue(EMDL_IMAGE_PIXEL_SIZE, real_angpix);
+                if (real_angpix > 0) {
+                    FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+                        obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, real_angpix);
                     }
                 }
                 obsModel.save(MD, fn_md_out);
@@ -1053,22 +923,16 @@ class image_handler_parameters {
     }
 };
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     image_handler_parameters prm;
 
-    try
-    {
+    try {
         prm.read(argc, argv);
-
         prm.run();
-
-    }
-    catch (RelionError XE)
-    {
-            //prm.usage();
-            std::cerr << XE;
-            return RELION_EXIT_FAILURE;
+    } catch (RelionError XE) {
+        // prm.usage();
+        std::cerr << XE;
+        return RELION_EXIT_FAILURE;
     }
     return RELION_EXIT_SUCCESS;
 }

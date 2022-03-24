@@ -36,39 +36,32 @@
 
 
 
-void BackProjector::initialiseDataAndWeight(int current_size)
-{
-
+void BackProjector::initialiseDataAndWeight(int current_size) {
     initialiseData(current_size);
     weight.resize(data);
-
 }
 
-void BackProjector::initZeros(int current_size)
-{
-
+void BackProjector::initZeros(int current_size) {
     initialiseDataAndWeight(current_size);
     data.initZeros();
     weight.initZeros();
 }
 
-void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
-                                    const Matrix2D<RFLOAT> &A,
-                                      const MultidimArray<RFLOAT> *Mweight,
-                                      RFLOAT r_ewald_sphere, bool is_positive_curvature,
-                                      Matrix2D<RFLOAT>* magMatrix)
-{
+void BackProjector::backproject2Dto3D(
+    const MultidimArray<Complex > &f2d,
+    const Matrix2D<RFLOAT> &A,
+    const MultidimArray<RFLOAT> *Mweight,
+    RFLOAT r_ewald_sphere, bool is_positive_curvature,
+    Matrix2D<RFLOAT>* magMatrix
+) {
     RFLOAT m00, m10, m01, m11;
 
-    if (magMatrix != 0)
-    {
-        m00 = (*magMatrix)(0,0);
-        m10 = (*magMatrix)(1,0);
-        m01 = (*magMatrix)(0,1);
-        m11 = (*magMatrix)(1,1);
-    }
-    else
-    {
+    if (magMatrix != 0) {
+        m00 = (*magMatrix)(0, 0);
+        m10 = (*magMatrix)(1, 0);
+        m01 = (*magMatrix)(0, 1);
+        m11 = (*magMatrix)(1, 1);
+    } else {
         m00 = 1.0;
         m10 = 0.0;
         m01 = 0.0;
@@ -80,21 +73,21 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
     Ainv = A.inv();
 
     // Go from the 2D slice coordinates to the 3D coordinates
-    Ainv *= (RFLOAT)padding_factor;  // take scaling into account directly
+    Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
     // max_r2 and min_r2_nn are defined in 3D-space
-    const int max_r2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
+    const int max_r2    = ROUND(r_max    * padding_factor) * ROUND(r_max    * padding_factor);
     const int min_r2_nn = ROUND(r_min_nn * padding_factor) * ROUND(r_min_nn * padding_factor);
 
     // precalculated coefficients for ellipse determination (see further down)
 
     // first, make sure A contains 2D distortion (lowercase 2D, uppercase 3D):
-    const RFLOAT Am_Xx = Ainv(0,0) * m00 + Ainv(0,1) * m10;
-    const RFLOAT Am_Xy = Ainv(0,0) * m01 + Ainv(0,1) * m11;
-    const RFLOAT Am_Yx = Ainv(1,0) * m00 + Ainv(1,1) * m10;
-    const RFLOAT Am_Yy = Ainv(1,0) * m01 + Ainv(1,1) * m11;
-    const RFLOAT Am_Zx = Ainv(2,0) * m00 + Ainv(2,1) * m10;
-    const RFLOAT Am_Zy = Ainv(2,0) * m01 + Ainv(2,1) * m11;
+    const RFLOAT Am_Xx = Ainv(0, 0) * m00 + Ainv(0, 1) * m10;
+    const RFLOAT Am_Xy = Ainv(0, 0) * m01 + Ainv(0, 1) * m11;
+    const RFLOAT Am_Yx = Ainv(1, 0) * m00 + Ainv(1, 1) * m10;
+    const RFLOAT Am_Yy = Ainv(1, 0) * m01 + Ainv(1, 1) * m11;
+    const RFLOAT Am_Zx = Ainv(2, 0) * m00 + Ainv(2, 1) * m10;
+    const RFLOAT Am_Zy = Ainv(2, 0) * m01 + Ainv(2, 1) * m11;
 
     // next, precompute (Am)^t Am into AtA:
     const RFLOAT AtA_xx = Am_Xx * Am_Xx + Am_Yx * Am_Yx + Am_Zx * Am_Zx;
@@ -102,8 +95,8 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
     const RFLOAT AtA_yy = Am_Xy * Am_Xy + Am_Yy * Am_Yy + Am_Zy * Am_Zy;
     const RFLOAT AtA_xy2 = AtA_xy * AtA_xy;
 
-//#define DEBUG_BACKP
-#ifdef DEBUG_BACKP
+    //#define DEBUG_BACKP
+    #ifdef DEBUG_BACKP
     std::cerr << " XSIZE(f2d)= "<< XSIZE(f2d) << std::endl;
     std::cerr << " YSIZE(f2d)= "<< YSIZE(f2d) << std::endl;
     std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
@@ -113,30 +106,25 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
     std::cerr << " STARTINGZ(data)= "<< STARTINGZ(data) << std::endl;
     std::cerr << " r_max= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
-#endif
+    #endif
 
     // precalculate inverse of Ewald sphere diameter
-    RFLOAT inv_diam_ewald = (r_ewald_sphere > 0.0)? 1.0 / (2.0 * r_ewald_sphere) : 0.0;
+    RFLOAT inv_diam_ewald = r_ewald_sphere > 0.0 ? 1.0 / 2.0 * r_ewald_sphere : 0.0;
 
-    if (!is_positive_curvature)
-    {
+    if (!is_positive_curvature) {
         inv_diam_ewald *= -1.0;
     }
 
     const int s  = YSIZE(f2d);
     const int sh = XSIZE(f2d);
 
-    for (int i = 0; i < s; i++)
-    {
+    for (int i = 0; i < s; i++) {
         int y, first_allowed_x;
 
-        if (i < sh)
-        {
+        if (i < sh) {
             y = i;
             first_allowed_x = 0;
-        }
-        else
-        {
+        } else {
             y = i - s;
             // x == 0 plane is stored twice in the FFTW format. Don't set it twice in backprojection!
             first_allowed_x = 1;
@@ -166,20 +154,16 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
         if (first_x < first_allowed_x) first_x = first_allowed_x;
         if (last_x > sh - 1) last_x = sh - 1;
 
-        for (int x = first_x; x <= last_x; x++)
-        {
+        for (int x = first_x; x <= last_x; x++) {
             // Get the value from the input image
             Complex my_val = DIRECT_A2D_ELEM(f2d, i, x);
 
             RFLOAT my_weight;
 
             // Get the weight
-            if (Mweight != NULL)
-            {
+            if (Mweight != NULL) {
                 my_weight = DIRECT_A2D_ELEM(*Mweight, i, x);
-            }
-            else
-            {
+            } else {
                 my_weight = 1.0;
             }
 
@@ -212,34 +196,26 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
 
             RFLOAT z_on_ewaldp = inv_diam_ewald * (xu * xu + yu * yu);
 
-            RFLOAT xp = Ainv(0,0) * xu + Ainv(0,1) * yu + Ainv(0,2) * z_on_ewaldp;
-            RFLOAT yp = Ainv(1,0) * xu + Ainv(1,1) * yu + Ainv(1,2) * z_on_ewaldp;
-            RFLOAT zp = Ainv(2,0) * xu + Ainv(2,1) * yu + Ainv(2,2) * z_on_ewaldp;
+            RFLOAT xp = Ainv(0, 0) * xu + Ainv(0, 1) * yu + Ainv(0, 2) * z_on_ewaldp;
+            RFLOAT yp = Ainv(1, 0) * xu + Ainv(1, 1) * yu + Ainv(1, 2) * z_on_ewaldp;
+            RFLOAT zp = Ainv(2, 0) * xu + Ainv(2, 1) * yu + Ainv(2, 2) * z_on_ewaldp;
 
-            double r2_3D = xp*xp + yp*yp + zp*zp;
+            double r2_3D = xp * xp + yp * yp + zp * zp;
 
             // redundant:
-            if (r2_3D > max_r2)
-            {
+            if (r2_3D > max_r2) {
                 continue;
             }
 
-            if (interpolator == TRILINEAR || r2_3D < min_r2_nn)
-            {
-                bool is_neg_x;
+            if (interpolator == TRILINEAR || r2_3D < min_r2_nn) {
+                bool is_neg_x = xp < 0;
 
                 // Only asymmetric half is stored
-                if (xp < 0)
-                {
+                if (is_neg_x) {
                     // Get complex conjugated hermitian symmetry pair
                     xp = -xp;
                     yp = -yp;
                     zp = -zp;
-                    is_neg_x = true;
-                }
-                else
-                {
-                    is_neg_x = false;
                 }
 
                 // Trilinear interpolation (with physical coords)
@@ -259,16 +235,15 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
                 z0 -= STARTINGZ(data);
                 int z1 = z0 + 1;
 
-                if (x0 < 0 || x0+1 >= data.xdim
-                 || y0 < 0 || y0+1 >= data.ydim
-                 || z0 < 0 || z0+1 >= data.zdim)
-                {
-                    continue;
-                }
+                if (
+                    x0 < 0 || x0 + 1 >= data.xdim ||
+                    y0 < 0 || y0 + 1 >= data.ydim ||
+                    z0 < 0 || z0 + 1 >= data.zdim
+                ) continue;
 
-                RFLOAT mfx = 1. - fx;
-                RFLOAT mfy = 1. - fy;
-                RFLOAT mfz = 1. - fz;
+                RFLOAT mfx = 1.0 - fx;
+                RFLOAT mfy = 1.0 - fy;
+                RFLOAT mfz = 1.0 - fz;
 
                 RFLOAT dd000 = mfz * mfy * mfx;
                 RFLOAT dd001 = mfz * mfy *  fx;
@@ -279,8 +254,7 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
                 RFLOAT dd110 =  fz *  fy * mfx;
                 RFLOAT dd111 =  fz *  fy *  fx;
 
-                if (is_neg_x)
-                {
+                if (is_neg_x) {
                     my_val = conj(my_val);
                 }
 
@@ -303,105 +277,86 @@ void BackProjector::backproject2Dto3D(const MultidimArray<Complex > &f2d,
                 DIRECT_A3D_ELEM(weight, z1, y1, x0) += dd110 * my_weight;
                 DIRECT_A3D_ELEM(weight, z1, y1, x1) += dd111 * my_weight;
 
-            } // endif TRILINEAR
-            else if (interpolator == NEAREST_NEIGHBOUR )
-            {
+            } else if (interpolator == NEAREST_NEIGHBOUR) {
                 int x0 = ROUND(xp);
                 int y0 = ROUND(yp);
                 int z0 = ROUND(zp);
 
-                bool is_neg_x;
+                bool is_neg_x = x0 < 0;
 
-                if (x0 < 0)
-                {
+                if (is_neg_x) {
                     // Get complex conjugated hermitian symmetry pair
                     x0 = -x0;
                     y0 = -y0;
                     z0 = -z0;
-                    is_neg_x = true;
-                }
-                else
-                {
-                    is_neg_x = false;
                 }
 
                 const int xr = x0 - STARTINGX(data);
                 const int yr = y0 - STARTINGY(data);
                 const int zr = z0 - STARTINGZ(data);
 
-                if (xr < 0 || xr >= data.xdim
-                 || yr < 0 || yr >= data.ydim
-                 || zr < 0 || zr >= data.zdim)
-                {
-                    continue;
-                }
+                if (
+                    xr < 0 || xr >= data.xdim ||
+                    yr < 0 || yr >= data.ydim ||
+                    zr < 0 || zr >= data.zdim
+                ) continue;
 
-                if (is_neg_x)
-                {
-                    DIRECT_A3D_ELEM(data, zr, yr, xr) += conj(my_val);
+                if (is_neg_x) {
+                    DIRECT_A3D_ELEM(data,   zr, yr, xr) += conj(my_val);
+                    DIRECT_A3D_ELEM(weight, zr, yr, xr) += my_weight;
+                } else {
+                    DIRECT_A3D_ELEM(data,   zr, yr, xr) += my_val;
                     DIRECT_A3D_ELEM(weight, zr, yr, xr) += my_weight;
                 }
-                else
-                {
-                    DIRECT_A3D_ELEM(data, zr, yr, xr) += my_val;
-                    DIRECT_A3D_ELEM(weight, zr, yr, xr) += my_weight;
-                }
-            } // endif NEAREST_NEIGHBOUR
-            else
-            {
+            } else {
                 REPORT_ERROR("FourierInterpolator::backproject%%ERROR: unrecognized interpolator ");
             }
-        } // endif x-loop
-    } // endif y-loop
+        }
+    }
 }
 
-void BackProjector::backproject1Dto2D(const MultidimArray<Complex > &f1d,
-                                      const Matrix2D<RFLOAT> &A,
-                                      const MultidimArray<RFLOAT> *Mweight)
-{
+void BackProjector::backproject1Dto2D(
+    const MultidimArray<Complex > &f1d,
+    const Matrix2D<RFLOAT> &A,
+    const MultidimArray<RFLOAT> *Mweight
+) {
     Matrix2D<RFLOAT> Ainv = A.inv();
-    Ainv *= (RFLOAT)padding_factor;  // take scaling into account directly
+    Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
     const int r_max_src = XSIZE(f1d) - 1;
 
-    const int r_max_ref = r_max * padding_factor;
+    const int r_max_ref   = r_max * padding_factor;
     const int r_max_ref_2 = r_max_ref * r_max_ref;
 
     // currently not used for some reason
     //const int r_min_NN_ref_2 = r_min_nn * r_min_nn * padding_factor * padding_factor;
 
-    for (int x = 0; x <= r_max_src; x++)
-    {
+    for (int x = 0; x <= r_max_src; x++) {
         RFLOAT my_weight;
 
-        if (Mweight != NULL)
-        {
+        if (Mweight != NULL) {
             my_weight = DIRECT_A1D_ELEM(*Mweight, x);
 
-            if (my_weight <= 0.) continue;
-        }
-        else
-        {
-            my_weight = 1.;
+            if (my_weight <= 0.0) continue;
+        } else {
+            my_weight = 1.0;
         }
 
         Complex my_val = DIRECT_A1D_ELEM(f1d, x);
 
         // Get logical coordinates in the 3D map
-        RFLOAT xp = Ainv(0,0) * x;
-        RFLOAT yp = Ainv(1,0) * x;
+        RFLOAT xp = Ainv(0, 0) * x;
+        RFLOAT yp = Ainv(1, 0) * x;
 
-        const RFLOAT r_ref_2 = xp*xp + yp*yp;
+        const RFLOAT r_ref_2 = xp * xp + yp * yp;
 
         if (r_ref_2 > r_max_ref_2) continue;
 
-        if (interpolator == TRILINEAR /* && r_ref_2 < r_min_NN_ref_2*/)
-        {
+        if (interpolator == TRILINEAR /* && r_ref_2 < r_min_NN_ref_2*/) {
             // Only asymmetric half is stored
             const bool is_neg_x = xp < 0;
 
-            if (is_neg_x)
-            {
+            if (is_neg_x) {
                 // Get complex conjugated hermitian symmetry pair
                 xp = -xp;
                 yp = -yp;
@@ -419,16 +374,15 @@ void BackProjector::backproject1Dto2D(const MultidimArray<Complex > &f1d,
             y0 -=  STARTINGY(data);
             const int y1 = y0 + 1;
 
-            const RFLOAT mfx = 1. - fx;
-            const RFLOAT mfy = 1. - fy;
+            const RFLOAT mfx = 1.0 - fx;
+            const RFLOAT mfy = 1.0 - fy;
 
             const RFLOAT dd00 = mfy * mfx;
             const RFLOAT dd01 = mfy *  fx;
             const RFLOAT dd10 =  fy * mfx;
             const RFLOAT dd11 =  fy *  fx;
 
-            if (is_neg_x)
-            {
+            if (is_neg_x) {
                 my_val = conj(my_val);
             }
 
@@ -444,56 +398,47 @@ void BackProjector::backproject1Dto2D(const MultidimArray<Complex > &f1d,
             DIRECT_A2D_ELEM(weight, y1, x0) += dd10 * my_weight;
             DIRECT_A2D_ELEM(weight, y1, x1) += dd11 * my_weight;
 
-        } // endif TRILINEAR
-        else if (interpolator == NEAREST_NEIGHBOUR )
-        {
+        } else if (interpolator == NEAREST_NEIGHBOUR ) {
             const int x0 = ROUND(xp);
             const int y0 = ROUND(yp);
 
-            if (x0 < 0)
-            {
-                A2D_ELEM(data, -y0, -x0) += conj(my_val);
+            if (x0 < 0) {
+                A2D_ELEM(data,   -y0, -x0) += conj(my_val);
                 A2D_ELEM(weight, -y0, -x0) += my_weight;
-            }
-            else
-            {
-                A2D_ELEM(data, y0, x0) += my_val;
+            } else {
+                A2D_ELEM(data,   y0, x0) += my_val;
                 A2D_ELEM(weight, y0, x0) += my_weight;
             }
-        } // endif NEAREST_NEIGHBOUR
-        else
-        {
+        } else {
             REPORT_ERROR("FourierInterpolator::backproject1Dto2D%%ERROR: unrecognized interpolator ");
         }
-    } // endif x-loop
+    }
 }
 
-void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
-                                 const Matrix2D<RFLOAT> &A,
-                                 const MultidimArray<RFLOAT> *Mweight,
-                                 Matrix2D<RFLOAT>* magMatrix)
-{
+void BackProjector::backrotate2D(
+    const MultidimArray<Complex > &f2d,
+    const Matrix2D<RFLOAT> &A,
+    const MultidimArray<RFLOAT> *Mweight,
+    Matrix2D<RFLOAT>* magMatrix
+) {
     Matrix2D<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT)padding_factor;  // take scaling into account directly
 
     RFLOAT m00, m10, m01, m11;
 
-    if (magMatrix != 0)
-    {
-        m00 = (*magMatrix)(0,0);
-        m10 = (*magMatrix)(1,0);
-        m01 = (*magMatrix)(0,1);
-        m11 = (*magMatrix)(1,1);
-    }
-    else
-    {
+    if (magMatrix != 0) {
+        m00 = (*magMatrix)(0, 0);
+        m10 = (*magMatrix)(1, 0);
+        m01 = (*magMatrix)(0, 1);
+        m11 = (*magMatrix)(1, 1);
+    } else {
         m00 = 1.0;
         m10 = 0.0;
         m01 = 0.0;
         m11 = 1.0;
     }
 
-    const int r_max_ref = r_max * padding_factor;
+    const int r_max_ref   = r_max * padding_factor;
     const int r_max_ref_2 = r_max_ref * r_max_ref;
 
     int min_r2_nn = r_min_nn * r_min_nn * padding_factor * padding_factor;
@@ -501,10 +446,10 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
     // precalculated coefficients for ellipse determination (see further down)
 
     // first, make sure A contains 2D distortion (lowercase 2D, uppercase 3D):
-    const RFLOAT Am_Xx = Ainv(0,0) * m00 + Ainv(0,1) * m10;
-    const RFLOAT Am_Xy = Ainv(0,0) * m01 + Ainv(0,1) * m11;
-    const RFLOAT Am_Yx = Ainv(1,0) * m00 + Ainv(1,1) * m10;
-    const RFLOAT Am_Yy = Ainv(1,0) * m01 + Ainv(1,1) * m11;
+    const RFLOAT Am_Xx = Ainv(0, 0) * m00 + Ainv(0, 1) * m10;
+    const RFLOAT Am_Xy = Ainv(0, 0) * m01 + Ainv(0, 1) * m11;
+    const RFLOAT Am_Yx = Ainv(1, 0) * m00 + Ainv(1, 1) * m10;
+    const RFLOAT Am_Yy = Ainv(1, 0) * m01 + Ainv(1, 1) * m11;
 
     // next, precompute (Am)^t Am into AtA:
     const RFLOAT AtA_xx = Am_Xx * Am_Xx + Am_Yx * Am_Yx;
@@ -512,8 +457,8 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
     const RFLOAT AtA_yy = Am_Xy * Am_Xy + Am_Yy * Am_Yy;
     const RFLOAT AtA_xy2 = AtA_xy * AtA_xy;
 
-//#define DEBUG_BACKROTATE
-#ifdef DEBUG_BACKROTATE
+    //#define DEBUG_BACKROTATE
+    #ifdef DEBUG_BACKROTATE
     std::cerr << " XSIZE(f2d)= "<< XSIZE(f2d) << std::endl;
     std::cerr << " YSIZE(f2d)= "<< YSIZE(f2d) << std::endl;
     std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
@@ -523,21 +468,17 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
     std::cerr << " STARTINGZ(data)= "<< STARTINGZ(data) << std::endl;
     std::cerr << " max_r= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
-#endif
+    #endif
     const int s  = YSIZE(f2d);
     const int sh = XSIZE(f2d);
 
-    for (int i = 0; i < s; i++)
-    {
+    for (int i = 0; i < s; i++) {
         int y, first_allowed_x;
 
-        if (i < sh)
-        {
+        if (i < sh) {
             y = i;
             first_allowed_x = 0;
-        }
-        else
-        {
+        } else {
             y = i - s;
             // x == 0 plane is stored twice in the FFTW format. Don't set it twice in backprojection!
             first_allowed_x = 1;
@@ -554,7 +495,7 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
         // where: q := -AtA_xy y / AtA_xx,
         //        d := sqrt((AtA_xy y)^2 - AtA_xx (AtA_yy y^2 - R^2)) / AtA_xx
 
-        RFLOAT discr = AtA_xy2 * y*y - AtA_xx * (AtA_yy * y*y - r_max_ref_2);
+        RFLOAT discr = AtA_xy2 * y * y - AtA_xx * (AtA_yy * y * y - r_max_ref_2);
 
         if (discr < 0.0) continue; // no points inside ellipse for this y
 
@@ -567,19 +508,15 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
         if (first_x < first_allowed_x) first_x = first_allowed_x;
         if (last_x > sh - 1) last_x = sh - 1;
 
-        for (int x = first_x; x <= last_x; x++)
-        {
+        for (int x = first_x; x <= last_x; x++) {
             RFLOAT my_weight;
 
-            if (Mweight != NULL)
-            {
+            if (Mweight != NULL) {
                 my_weight = DIRECT_A2D_ELEM(*Mweight, i, x);
 
                 if (my_weight <= 0.f) continue;
-            }
-            else
-            {
-                my_weight = 1.;
+            } else {
+                my_weight = 1.0;
             }
 
             // Get the relevant value in the input image
@@ -589,17 +526,15 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
             RFLOAT xu = m00 * x + m01 * y;
             RFLOAT yu = m10 * x + m11 * y;
 
-            RFLOAT xp = Ainv(0,0) * xu + Ainv(0,1) * yu;
-            RFLOAT yp = Ainv(1,0) * xu + Ainv(1,1) * yu;
+            RFLOAT xp = Ainv(0, 0) * xu + Ainv(0, 1) * yu;
+            RFLOAT yp = Ainv(1, 0) * xu + Ainv(1, 1) * yu;
 
             RFLOAT r_ref_2 = xp * xp + yp * yp;
 
-            if (interpolator == TRILINEAR || r_ref_2 < min_r2_nn)
-            {
+            if (interpolator == TRILINEAR || r_ref_2 < min_r2_nn) {
                 const bool is_neg_x = xp < 0;
                 // Only asymmetric half is stored
-                if (is_neg_x)
-                {
+                if (is_neg_x) {
                     // Get complex conjugated hermitian symmetry pair
                     xp = -xp;
                     yp = -yp;
@@ -617,16 +552,15 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
                 y0 -=  STARTINGY(data);
                 const int y1 = y0 + 1;
 
-                const RFLOAT mfx = 1. - fx;
-                const RFLOAT mfy = 1. - fy;
+                const RFLOAT mfx = 1.0 - fx;
+                const RFLOAT mfy = 1.0 - fy;
 
                 const RFLOAT dd00 = mfy * mfx;
                 const RFLOAT dd01 = mfy *  fx;
                 const RFLOAT dd10 =  fy * mfx;
                 const RFLOAT dd11 =  fy *  fx;
 
-                if (is_neg_x)
-                {
+                if (is_neg_x) {
                     my_val = conj(my_val);
                 }
 
@@ -642,35 +576,29 @@ void BackProjector::backrotate2D(const MultidimArray<Complex > &f2d,
                 DIRECT_A2D_ELEM(weight, y1, x0) += dd10 * my_weight;
                 DIRECT_A2D_ELEM(weight, y1, x1) += dd11 * my_weight;
 
-            } // endif TRILINEAR
-            else if (interpolator == NEAREST_NEIGHBOUR )
-            {
+            } else if (interpolator == NEAREST_NEIGHBOUR) {
                 const int x0 = ROUND(xp);
                 const int y0 = ROUND(yp);
 
-                if (x0 < 0)
-                {
-                    A2D_ELEM(data, -y0, -x0) += conj(my_val);
+                if (x0 < 0) {
+                    A2D_ELEM(data,   -y0, -x0) += conj(my_val);
                     A2D_ELEM(weight, -y0, -x0) += my_weight;
-                }
-                else
-                {
-                    A2D_ELEM(data, y0, x0) += my_val;
+                } else {
+                    A2D_ELEM(data,   y0, x0) += my_val;
                     A2D_ELEM(weight, y0, x0) += my_weight;
                 }
-            } // endif NEAREST_NEIGHBOUR
-            else
-            {
+            } else {
                 REPORT_ERROR("FourierInterpolator::backrotate2D%%ERROR: unrecognized interpolator ");
             }
-        } // endif x-loop
-    } // endif y-loop
+        }
+    }
 }
 
-void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
-                                 const Matrix2D<RFLOAT> &A,
-                                 const MultidimArray<RFLOAT> *Mweight)
-{
+void BackProjector::backrotate3D(
+    const MultidimArray<Complex > &f3d,
+    const Matrix2D<RFLOAT> &A,
+    const MultidimArray<RFLOAT> *Mweight
+) {
     // f3d should already be in the right size (ori_size,orihalfdim)
     // AND the points outside max_r should already be zero.
 
@@ -685,8 +613,8 @@ void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
 
     const int r_min_NN_ref_2 = r_min_nn * r_min_nn * padding_factor * padding_factor;
 
-//#define DEBUG_BACKROTATE
-#ifdef DEBUG_BACKROTATE
+    //#define DEBUG_BACKROTATE
+    #ifdef DEBUG_BACKROTATE
     std::cerr << " XSIZE(f3d)= "<< XSIZE(f3d) << std::endl;
     std::cerr << " YSIZE(f3d)= "<< YSIZE(f3d) << std::endl;
     std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
@@ -696,20 +624,16 @@ void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
     std::cerr << " STARTINGZ(data)= "<< STARTINGZ(data) << std::endl;
     std::cerr << " max_r= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
-#endif
+    #endif
 
-    for (int k = 0; k < ZSIZE(f3d); k++)
-    {
+    for (int k = 0; k < ZSIZE(f3d); k++) {
         int z, x_min;
 
         // Don't search beyond square with side max_r
-        if (k <= r_max_src)
-        {
+        if (k <= r_max_src) {
             z = k;
             x_min = 0;
-        }
-        else
-        {
+        } else {
             z = k - ZSIZE(f3d);
             /// TODO: still check this better in the 3D case!!!
             // x==0 (y,z)-plane is stored twice in the FFTW format. Don't set it twice in BACKPROJECTION!
@@ -718,9 +642,8 @@ void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
 
         int z2 = z * z;
 
-        for (int i = 0; i < YSIZE(f3d); i++)
-        {
-            int y = (i <= r_max_src)? i : i - YSIZE(f3d);
+        for (int i = 0; i < YSIZE(f3d); i++) {
+            int y = i <= r_max_src ? i : i - YSIZE(f3d);
             int y2 = y * y;
 
             const RFLOAT yz2 = y2 + z2;
@@ -730,40 +653,34 @@ void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
 
             const int x_max = FLOOR(sqrt(r_max_src_2 - yz2));
 
-            for (int x = x_min; x <= x_max; x++)
-            {
+            for (int x = x_min; x <= x_max; x++) {
                 // Get logical coordinates in the 3D map
-                RFLOAT xp = Ainv(0,0) * x + Ainv(0,1) * y + Ainv(0,2) * z;
-                RFLOAT yp = Ainv(1,0) * x + Ainv(1,1) * y + Ainv(1,2) * z;
-                RFLOAT zp = Ainv(2,0) * x + Ainv(2,1) * y + Ainv(2,2) * z;
+                RFLOAT xp = Ainv(0, 0) * x + Ainv(0, 1) * y + Ainv(0, 2) * z;
+                RFLOAT yp = Ainv(1, 0) * x + Ainv(1, 1) * y + Ainv(1, 2) * z;
+                RFLOAT zp = Ainv(2, 0) * x + Ainv(2, 1) * y + Ainv(2, 2) * z;
 
-                const int r_ref_2 = xp*xp + yp*yp + zp*zp;
+                const int r_ref_2 = xp * xp + yp * yp + zp * zp;
 
                 if (r_ref_2 > r_max_ref_2) continue;
 
                 RFLOAT my_weight;
 
                 // Get the weight
-                if (Mweight != NULL)
-                {
+                if (Mweight != NULL) {
                     my_weight = DIRECT_A3D_ELEM(*Mweight, k, i, x);
 
-                    if (my_weight <= 0.) continue;
-                }
-                else
-                {
-                    my_weight = 1.;
+                    if (my_weight <= 0.0) continue;
+                } else {
+                    my_weight = 1.0;
                 }
 
                 Complex my_val = DIRECT_A3D_ELEM(f3d, k, i, x);
 
-                if (interpolator == TRILINEAR || r_ref_2 < r_min_NN_ref_2)
-                {
+                if (interpolator == TRILINEAR || r_ref_2 < r_min_NN_ref_2) {
                     // Only asymmetric half is stored
                     bool is_neg_x = xp < 0;
 
-                    if (is_neg_x)
-                    {
+                    if (is_neg_x) {
                         // Get complex conjugated hermitian symmetry pair
                         xp = -xp;
                         yp = -yp;
@@ -787,9 +704,9 @@ void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
                     z0 -=  STARTINGZ(data);
                     const int z1 = z0 + 1;
 
-                    const RFLOAT mfx = 1. - fx;
-                    const RFLOAT mfy = 1. - fy;
-                    const RFLOAT mfz = 1. - fz;
+                    const RFLOAT mfx = 1.0 - fx;
+                    const RFLOAT mfy = 1.0 - fy;
+                    const RFLOAT mfz = 1.0 - fz;
 
                     const RFLOAT dd000 = mfz * mfy * mfx;
                     const RFLOAT dd001 = mfz * mfy *  fx;
@@ -800,8 +717,7 @@ void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
                     const RFLOAT dd110 =  fz *  fy * mfx;
                     const RFLOAT dd111 =  fz *  fy *  fx;
 
-                    if (is_neg_x)
-                    {
+                    if (is_neg_x) {
                         my_val = conj(my_val);
                     }
 
@@ -825,37 +741,30 @@ void BackProjector::backrotate3D(const MultidimArray<Complex > &f3d,
                     DIRECT_A3D_ELEM(weight, z1, y1, x0) += dd110 * my_weight;
                     DIRECT_A3D_ELEM(weight, z1, y1, x1) += dd111 * my_weight;
 
-                } // endif TRILINEAR
-                else if (interpolator == NEAREST_NEIGHBOUR )
-                {
+                } else if (interpolator == NEAREST_NEIGHBOUR) {
                     const int x0 = ROUND(xp);
                     const int y0 = ROUND(yp);
                     const int z0 = ROUND(zp);
 
-                    if (x0 < 0)
-                    {
-                        A3D_ELEM(data, -z0, -y0, -x0) += conj(my_val);
+                    if (x0 < 0) {
+                        A3D_ELEM(data,   -z0, -y0, -x0) += conj(my_val);
                         A3D_ELEM(weight, -z0, -y0, -x0) += my_weight;
-                    }
-                    else
-                    {
-                        A3D_ELEM(data, z0, y0, x0) += my_val;
+                    } else {
+                        A3D_ELEM(data,   z0, y0, x0) += my_val;
                         A3D_ELEM(weight, z0, y0, x0) += my_weight;
                     }
-
-                } // endif NEAREST_NEIGHBOUR
-                else
-                {
+                } else {
                     REPORT_ERROR("BackProjector::backrotate3D%%ERROR: unrecognized interpolator ");
                 }
-            } // endif x-loop
-        } // endif y-loop
-    } // endif z-loop
+            }
+        }
+    }
 }
 
-void BackProjector::getLowResDataAndWeight(MultidimArray<Complex > &lowres_data, MultidimArray<RFLOAT> &lowres_weight,
-                                           int lowres_r_max)
-{
+void BackProjector::getLowResDataAndWeight(
+    MultidimArray<Complex> &lowres_data, MultidimArray<RFLOAT> &lowres_weight,
+    int lowres_r_max
+) {
 
     const int lowres_r2_max = ROUND(padding_factor * lowres_r_max) * ROUND(padding_factor * lowres_r_max);
     const int lowres_pad_size = 2 * (ROUND(padding_factor * lowres_r_max) + 1) + 1;
@@ -868,35 +777,31 @@ void BackProjector::getLowResDataAndWeight(MultidimArray<Complex > &lowres_data,
     lowres_data.clear();
     lowres_weight.clear();
 
-    if (ref_dim == 2)
-    {
-        lowres_data.resize(lowres_pad_size, lowres_pad_size / 2 + 1);
+    if (ref_dim == 2) {
+        lowres_data  .resize(lowres_pad_size, lowres_pad_size / 2 + 1);
         lowres_weight.resize(lowres_pad_size, lowres_pad_size / 2 + 1);
-    }
-    else
-    {
-        lowres_data.resize(lowres_pad_size, lowres_pad_size, lowres_pad_size / 2 + 1);
+    } else {
+        lowres_data  .resize(lowres_pad_size, lowres_pad_size, lowres_pad_size / 2 + 1);
         lowres_weight.resize(lowres_pad_size, lowres_pad_size, lowres_pad_size / 2 + 1);
     }
     lowres_data.setXmippOrigin();
-    lowres_data.xinit=0;
+    lowres_data.xinit = 0;
     lowres_weight.setXmippOrigin();
-    lowres_weight.xinit=0;
+    lowres_weight.xinit = 0;
 
     // fill lowres arrays with relevant values
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data)
-    {
-        if (k*k + i*i + j*j <= lowres_r2_max)
-        {
-            A3D_ELEM(lowres_data, k, i, j) = A3D_ELEM(data, k , i, j);
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
+        if (k * k + i * i + j * j <= lowres_r2_max) {
+            A3D_ELEM(lowres_data,   k, i, j) = A3D_ELEM(data,   k , i, j);
             A3D_ELEM(lowres_weight, k, i, j) = A3D_ELEM(weight, k , i, j);
         }
     }
 }
 
-void BackProjector::setLowResDataAndWeight(MultidimArray<Complex > &lowres_data, MultidimArray<RFLOAT> &lowres_weight,
-                                           int lowres_r_max)
-{
+void BackProjector::setLowResDataAndWeight(
+    MultidimArray<Complex > &lowres_data, MultidimArray<RFLOAT> &lowres_weight,
+    int lowres_r_max
+) {
 
     const int lowres_r2_max = ROUND(padding_factor * lowres_r_max) * ROUND(padding_factor * lowres_r_max);
     const int lowres_pad_size = 2 * (ROUND(padding_factor * lowres_r_max) + 1) + 1;
@@ -906,47 +811,56 @@ void BackProjector::setLowResDataAndWeight(MultidimArray<Complex > &lowres_data,
         REPORT_ERROR("BackProjector::getLowResDataAndWeight%%ERROR: lowres_r_max is bigger than r_max");
 
     // Check sizes of lowres_data and lowres_weight
-    if (YSIZE(lowres_data) != lowres_pad_size || XSIZE(lowres_data) != lowres_pad_size / 2 + 1 ||
-            (ref_dim ==3 && ZSIZE(lowres_data) != lowres_pad_size) )
+    if (
+        YSIZE(lowres_data) != lowres_pad_size || 
+        XSIZE(lowres_data) != lowres_pad_size / 2 + 1 || (
+        ZSIZE(lowres_data) != lowres_pad_size && ref_dim == 3
+        )
+    )
         REPORT_ERROR("BackProjector::setLowResDataAndWeight%%ERROR: lowres_data is not of expected size...");
-    if (YSIZE(lowres_weight) != lowres_pad_size || XSIZE(lowres_weight) != lowres_pad_size / 2 + 1 ||
-            (ref_dim ==3 && ZSIZE(lowres_weight) != lowres_pad_size) )
+    if (
+        YSIZE(lowres_weight) != lowres_pad_size || 
+        XSIZE(lowres_weight) != lowres_pad_size / 2 + 1 || (
+        ZSIZE(lowres_weight) != lowres_pad_size && ref_dim == 3
+        )
+    )
         REPORT_ERROR("BackProjector::setLowResDataAndWeight%%ERROR: lowres_weight is not of expected size...");
 
     // Re-set origin to the expected place
     lowres_data.setXmippOrigin();
-    lowres_data.xinit=0;
+    lowres_data.xinit = 0;
     lowres_weight.setXmippOrigin();
-    lowres_weight.xinit=0;
+    lowres_weight.xinit = 0;
 
     // Overwrite data and weight with the lowres arrays
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data)
-    {
-        if (k*k + i*i + j*j <= lowres_r2_max)
-        {
-            A3D_ELEM(data, k, i, j) = A3D_ELEM(lowres_data, k , i, j);
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
+        if (k * k + i * i + j * j <= lowres_r2_max) {
+            A3D_ELEM(data,   k, i, j) = A3D_ELEM(lowres_data,   k , i, j);
             A3D_ELEM(weight, k, i, j) = A3D_ELEM(lowres_weight, k , i, j);
         }
     }
 }
 
-void BackProjector::getDownsampledAverage(MultidimArray<Complex>& avg, bool divide) const
-{
+void BackProjector::getDownsampledAverage(
+    MultidimArray<Complex>& avg, bool divide
+) const {
     MultidimArray<RFLOAT> down_weight;
 
     // Pre-set down_data and down_weight sizes
     const int down_size = 2 * (r_max + 1) + 1;
 
     // Short side of data array
-    switch (ref_dim)
-    {
-    case 2:
+    switch (ref_dim) {
+
+        case 2:
         avg.initZeros(down_size, down_size / 2 + 1);
         break;
-    case 3:
+
+        case 3:
         avg.initZeros(down_size, down_size, down_size / 2 + 1);
         break;
-    default:
+
+        default:
         REPORT_ERROR("BackProjector::getDownsampledAverage%%ERROR: Dimension of the data array should be 2 or 3");
     }
     // Set origin in the y.z-center, but on the left side for x.
@@ -957,57 +871,54 @@ void BackProjector::getDownsampledAverage(MultidimArray<Complex>& avg, bool divi
 
     // Now calculate the down-sized sum
     int kp, ip, jp;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(data)
-    {
-        kp = ROUND((RFLOAT)k/padding_factor);
-        ip = ROUND((RFLOAT)i/padding_factor);
-        jp = ROUND((RFLOAT)j/padding_factor);
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(data) {
+        kp = ROUND((RFLOAT) k / padding_factor);
+        ip = ROUND((RFLOAT) i / padding_factor);
+        jp = ROUND((RFLOAT) j / padding_factor);
 
-// TMP
-//#define CHECK_SIZE
-#ifdef CHECK_SIZE
-        if (kp > FINISHINGZ(avg) || ip > FINISHINGY(avg) || jp > FINISHINGX(avg) ||
-            kp < STARTINGZ(avg) || ip < STARTINGY(avg) || jp < STARTINGX(avg))
-        {
+        // TMP
+        //#define CHECK_SIZE
+        #ifdef CHECK_SIZE
+        if (
+            ip < STARTINGY(avg) || ip > FINISHINGY(avg) 
+            jp < STARTINGX(avg) || jp > FINISHINGX(avg) || 
+            kp < STARTINGZ(avg) || kp > FINISHINGZ(avg) || 
+        ) {
             std::cerr << " kp= " << kp << " ip= " << ip << " jp= " << jp << std::endl;
             avg.printShape();
             REPORT_ERROR("BackProjector::getDownsampledAverage: indices out of range");
         }
-#endif
+        #endif
         A3D_ELEM(avg, kp, ip, jp) += A3D_ELEM(data, k , i, j);
         A3D_ELEM(down_weight, kp, ip, jp) += (divide? A3D_ELEM(weight, k , i, j) : 1.0);
     }
 
     // Calculate the straightforward average in the downsampled arrays
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(avg)
-    {
-        if (DIRECT_MULTIDIM_ELEM(down_weight, n) > 0.)
-        {
+    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(avg) {
+        if (DIRECT_MULTIDIM_ELEM(down_weight, n) > 0.0) {
             DIRECT_MULTIDIM_ELEM(avg, n) /= DIRECT_MULTIDIM_ELEM(down_weight, n);
-        }
-        else
-        {
-            DIRECT_MULTIDIM_ELEM(avg, n) = 0.;
+        } else {
+            DIRECT_MULTIDIM_ELEM(avg, n) = 0.0;
         }
     }
 }
 
-void BackProjector::calculateDownSampledFourierShellCorrelation(const MultidimArray<Complex>& avg1,
-                                                                const MultidimArray<Complex>& avg2,
-                                                                MultidimArray<RFLOAT>& fsc) const
-{
+void BackProjector::calculateDownSampledFourierShellCorrelation(
+    const MultidimArray<Complex>& avg1,
+    const MultidimArray<Complex>& avg2,
+    MultidimArray<RFLOAT>& fsc
+) const {
     if (!avg1.sameShape(avg2))
         REPORT_ERROR("ERROR BackProjector::calculateDownSampledFourierShellCorrelation: two arrays have different sizes");
 
     MultidimArray<RFLOAT> num, den1, den2;
-    num.initZeros(ori_size/2 + 1);
+    num.initZeros(ori_size / 2 + 1);
     den1.initZeros(num);
     den2.initZeros(num);
     fsc.initZeros(num);
 
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(avg1)
-    {
-        const RFLOAT R = sqrt(k*k + i*i + j*j);
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(avg1) {
+        const RFLOAT R = sqrt(k * k + i * i + j * j);
 
         if (R > r_max) continue;
 
@@ -1024,18 +935,16 @@ void BackProjector::calculateDownSampledFourierShellCorrelation(const MultidimAr
         den2(idx) += nrmz2;
     }
 
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(fsc)
-    {
-        if (den1(i)*den2(i) > 0.)
-        {
-            fsc(i) = num(i)/sqrt(den1(i)*den2(i));
+    FOR_ALL_ELEMENTS_IN_ARRAY1D(fsc) {
+        if (den1(i) * den2(i) > 0.0) {
+            fsc(i) = num(i) / sqrt(den1(i) * den2(i));
         }
     }
 
     // Always set zero-resolution shell to FSC=1
     // Raimond Ravelli reported a problem with FSC=1 at res=0 on 13feb2013...
     // (because of a suboptimal normalisation scheme, but anyway)
-    fsc(0) = 1.;
+    fsc(0) = 1.0;
 }
 
 void BackProjector::updateSSNRarrays(
@@ -1054,21 +963,21 @@ void BackProjector::updateSSNRarrays(
     MultidimArray<RFLOAT> tau2 = tau2_io;
     MultidimArray<RFLOAT> counter;
     const int max_r2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
-    RFLOAT oversampling_correction = (ref_dim == 3) ? (padding_factor * padding_factor * padding_factor) : (padding_factor * padding_factor);
+    RFLOAT oversampling_correction = ref_dim == 3 ? padding_factor * padding_factor * padding_factor : padding_factor * padding_factor;
 
     // First calculate the radial average of the (inverse of the) power of the noise in the reconstruction
     // This is the left-hand side term in the nominator of the Wiener-filter-like update formula
     // and it is stored inside the weight vector
     // Then, if (do_map) add the inverse of tau2-spectrum values to the weight
-    sigma2.initZeros(ori_size/2 + 1);
-    counter.initZeros(ori_size/2 + 1);
+    sigma2.initZeros(ori_size / 2 + 1);
+    counter.initZeros(ori_size / 2 + 1);
     FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
         const int r2 = k * k + i * i + j * j;
         if (r2 < max_r2) {
             int ires = ROUND(sqrt((RFLOAT)r2) / padding_factor);
             RFLOAT invw = oversampling_correction * A3D_ELEM(weight, k, i, j);
             DIRECT_A1D_ELEM(sigma2, ires) += invw;
-            DIRECT_A1D_ELEM(counter, ires) += 1.;
+            DIRECT_A1D_ELEM(counter, ires) += 1.0;
         }
     }
 
@@ -1085,10 +994,10 @@ void BackProjector::updateSSNRarrays(
         }
     }
 
-    tau2.reshape(ori_size/2 + 1);
-    data_vs_prior.initZeros(ori_size/2 + 1);
-    fourier_coverage.initZeros(ori_size/2 + 1);
-    counter.initZeros(ori_size/2 + 1);
+    tau2.reshape(ori_size / 2 + 1);
+    data_vs_prior.initZeros(ori_size / 2 + 1);
+    fourier_coverage.initZeros(ori_size / 2 + 1);
+    counter.initZeros(ori_size / 2 + 1);
     if (update_tau2_with_fsc) {
         // Then calculate new tau2 values, based on the FSC
         if (!fsc.sameShape(sigma2) || !fsc.sameShape(tau2)) {
@@ -1106,7 +1015,7 @@ void BackProjector::updateSSNRarrays(
                 myfsc = sqrt(2.0 * myfsc / (myfsc + 1.0));
             }
             myfsc = XMIPP_MIN(0.999, myfsc);
-            RFLOAT myssnr = myfsc / (1. - myfsc);
+            RFLOAT myssnr = myfsc / (1.0 - myfsc);
             // Sjors 29nov2017 try tau2_fudge for pulling harder on Refine3D runs...
             myssnr *= tau2_fudge;
             RFLOAT fsc_based_tau = myssnr * DIRECT_A1D_ELEM(sigma2, i);
@@ -1125,12 +1034,12 @@ void BackProjector::updateSSNRarrays(
             RFLOAT invw = A3D_ELEM(weight, k, i, j);
 
             RFLOAT invtau2;
-            if (DIRECT_A1D_ELEM(tau2, ires) > 0.) {
+            if (DIRECT_A1D_ELEM(tau2, ires) > 0.0) {
                 // Calculate inverse of tau2
-                invtau2 = 1. / (oversampling_correction * tau2_fudge * DIRECT_A1D_ELEM(tau2, ires));
+                invtau2 = 1.0 / (oversampling_correction * tau2_fudge * DIRECT_A1D_ELEM(tau2, ires));
             } else if (DIRECT_A1D_ELEM(tau2, ires) == 0.0) {
                 // If tau2 is zero, use small value instead
-                invtau2 = 1./ ( 0.001 * invw);
+                invtau2 = 1.0 / (0.001 * invw);
             } else {
                 std::cerr << " sigma2= " << sigma2 << std::endl;
                 std::cerr << " fsc= " << fsc << std::endl;
@@ -1170,7 +1079,7 @@ void BackProjector::updateSSNRarrays(
 
     // Calculate Fourier coverage in each shell
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fourier_coverage) {
-        if (DIRECT_A1D_ELEM(counter, i) > 0.)
+        if (DIRECT_A1D_ELEM(counter, i) > 0.0)
             DIRECT_A1D_ELEM(fourier_coverage, i) /= DIRECT_A1D_ELEM(counter, i);
     }
 
@@ -1193,9 +1102,9 @@ void BackProjector::externalReconstruct(
     int verb
 ) {
 
-    FileName fn_recons = fn_out+"_external_reconstruct.mrc";
-    FileName fn_star = fn_out+"_external_reconstruct.star";
-    FileName fn_out_star = fn_out+"_external_reconstruct_out.star";
+    FileName fn_recons = fn_out + "_external_reconstruct.mrc";
+    FileName fn_star = fn_out + "_external_reconstruct.star";
+    FileName fn_out_star = fn_out + "_external_reconstruct_out.star";
     MultidimArray<RFLOAT> fsc_halves = fsc_halves_io;
     MultidimArray<RFLOAT> tau2 = tau2_io;
 
@@ -1204,17 +1113,23 @@ void BackProjector::externalReconstruct(
 
     // Write out data array
     Image<Complex> Idata;
-    if (ref_dim == 2) Idata().resize(pad_size, pad_size/2+1);
-    else Idata().resize(pad_size, pad_size, pad_size/2+1);
+    if (ref_dim == 2) {
+        Idata().resize(pad_size, pad_size / 2 + 1);
+    } else {
+        Idata().resize(pad_size, pad_size, pad_size / 2 + 1);
+    }
     Projector::decenter(data, Idata(), max_r2);
     windowFourierTransform(Idata(), padoridim);
-    ComplexIO::write(Idata(), fn_out+"_external_reconstruct_data", ".mrc");
+    ComplexIO::write(Idata(), fn_out + "_external_reconstruct_data", ".mrc");
     Idata.clear();
 
     // Write out weight array
     Image<RFLOAT> Iweight;
-    if (ref_dim == 2) Iweight().resize(pad_size, pad_size/2+1);
-    else Iweight().resize(pad_size, pad_size, pad_size/2+1);
+    if (ref_dim == 2) {
+        Iweight().resize(pad_size, pad_size / 2 + 1);
+    } else {
+        Iweight().resize(pad_size, pad_size, pad_size / 2 + 1);
+    }
     Projector::decenter(weight, Iweight(), max_r2);
     windowFourierTransform(Iweight(), padoridim);
     Iweight.write(fn_out+"_external_reconstruct_weight.mrc");
@@ -1224,31 +1139,30 @@ void BackProjector::externalReconstruct(
     MetaDataTable MDlist, MDtau;
 
     MDlist.setName("external_reconstruct_general");
-    MDlist.setIsList(true);
+    MDlist.isList = true;
     MDlist.addObject();
-    MDlist.setValue(EMDL_OPTIMISER_EXTERNAL_RECONS_DATA_REAL, fn_out+"_external_reconstruct_data_real.mrc");
-    MDlist.setValue(EMDL_OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, fn_out+"_external_reconstruct_data_imag.mrc");
-    MDlist.setValue(EMDL_OPTIMISER_EXTERNAL_RECONS_WEIGHT, fn_out+"_external_reconstruct_weight.mrc");
-    MDlist.setValue(EMDL_OPTIMISER_EXTERNAL_RECONS_RESULT, fn_recons);
-    MDlist.setValue(EMDL_OPTIMISER_EXTERNAL_RECONS_NEWSTAR, fn_out_star);
-    MDlist.setValue(EMDL_MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge);
-    MDlist.setValue(EMDL_MLMODEL_PADDING_FACTOR, padding_factor);
-    MDlist.setValue(EMDL_MLMODEL_DIMENSIONALITY, ref_dim);
-    MDlist.setValue(EMDL_MLMODEL_ORIGINAL_SIZE, ori_size);
-    MDlist.setValue(EMDL_MLMODEL_CURRENT_SIZE, 2*r_max);
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, fn_out + "_external_reconstruct_data_real.mrc");
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, fn_out + "_external_reconstruct_data_imag.mrc");
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT, fn_out + "_external_reconstruct_weight.mrc");
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT, fn_recons);
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_NEWSTAR, fn_out_star);
+    MDlist.setValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge);
+    MDlist.setValue(EMDL::MLMODEL_PADDING_FACTOR, padding_factor);
+    MDlist.setValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim);
+    MDlist.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size);
+    MDlist.setValue(EMDL::MLMODEL_CURRENT_SIZE, 2 * r_max);
 
     MDtau.setName("external_reconstruct_tau2");
-    for (int ii = 0; ii < XSIZE(tau2); ii++)
-    {
+    for (int ii = 0; ii < XSIZE(tau2); ii++) {
         MDtau.addObject();
-        MDtau.setValue(EMDL_SPECTRAL_IDX, ii);
-        MDtau.setValue(EMDL_MLMODEL_TAU2_REF, tau2(ii));
-        MDtau.setValue(EMDL_MLMODEL_FSC_HALVES_REF, fsc_halves(ii));
+        MDtau.setValue(EMDL::SPECTRAL_IDX, ii);
+        MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2(ii));
+        MDtau.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves(ii));
     }
 
     std::ofstream  fh;
     fh.open((fn_star).c_str(), std::ios::out);
-    if (!fh) 
+    if (!fh)
         REPORT_ERROR((std::string)"BackProjector::externalReconstruct: Cannot write file: " + fn_star);
     MDlist.write(fh);
     MDtau.write(fh);
@@ -1263,7 +1177,7 @@ void BackProjector::externalReconstruct(
     }
     std::string command = std::string(my_exec) + " " + fn_star;
 
-    if (verb > 0) 
+    if (verb > 0)
         std::cout << std::endl << " + Making system call for external reconstruction: " << command << std::endl;
 
     int res = system(command.c_str());
@@ -1283,23 +1197,23 @@ void BackProjector::externalReconstruct(
         MetaDataTable MDnewtau;
         MDnewtau.read(fn_out_star);
 
-        if (!MDnewtau.containsLabel(EMDL_SPECTRAL_IDX))
+        if (!MDnewtau.containsLabel(EMDL::SPECTRAL_IDX))
             REPORT_ERROR("ERROR: external reconstruct output STAR file does not contain spectral idx!");
 
         // Directly update tau2 spectrum
         int idx;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnewtau) {
-            MDnewtau.getValue(EMDL_SPECTRAL_IDX, idx);
+            MDnewtau.getValue(EMDL::SPECTRAL_IDX, idx);
 
-            if (idx >= XSIZE(tau2_io)) 
+            if (idx >= XSIZE(tau2_io))
                 continue;
 
-            if (MDnewtau.containsLabel(EMDL_MLMODEL_TAU2_REF)) {
-                MDnewtau.getValue(EMDL_MLMODEL_TAU2_REF, tau2_io(idx));
+            if (MDnewtau.containsLabel(EMDL::MLMODEL_TAU2_REF)) {
+                MDnewtau.getValue(EMDL::MLMODEL_TAU2_REF, tau2_io(idx));
                 data_vs_prior(idx) = tau2_io(idx) / sigma2_ref(idx);
-            } else if (MDnewtau.containsLabel(EMDL_POSTPROCESS_FSC_GENERAL)) {
-                MDnewtau.getValue(EMDL_SPECTRAL_IDX, idx);
-                MDnewtau.getValue(EMDL_POSTPROCESS_FSC_GENERAL, fsc_halves_io(idx));
+            } else if (MDnewtau.containsLabel(EMDL::POSTPROCESS_FSC_GENERAL)) {
+                MDnewtau.getValue(EMDL::SPECTRAL_IDX, idx);
+                MDnewtau.getValue(EMDL::POSTPROCESS_FSC_GENERAL, fsc_halves_io(idx));
 
                 RFLOAT myfsc = XMIPP_MAX(0.001, fsc_halves_io(idx));
                 if (iswhole) {
@@ -1317,7 +1231,7 @@ void BackProjector::externalReconstruct(
             }
         }
 
-        if (verb > 0) 
+        if (verb > 0)
             std::cout << " + External reconstruction successfully updated external tau2 array ... " << std::endl;
     }
 
@@ -1335,45 +1249,45 @@ void BackProjector::reconstruct(
     Image<RFLOAT>* weight_out
 ) {
     #ifdef TIMING
-        Timer ReconTimer;
-        int ReconS_1 = ReconTimer.setNew(" RcS1_Init ");
-        int ReconS_2 = ReconTimer.setNew(" RcS2_Shape&Noise ");
-        int ReconS_2_5 = ReconTimer.setNew(" RcS2.5_Regularize ");
-        int ReconS_3 = ReconTimer.setNew(" RcS3_skipGridding ");
-        int ReconS_4 = ReconTimer.setNew(" RcS4_doGridding_norm ");
-        int ReconS_5 = ReconTimer.setNew(" RcS5_doGridding_init ");
-        int ReconS_6 = ReconTimer.setNew(" RcS6_doGridding_iter ");
-        int ReconS_7 = ReconTimer.setNew(" RcS7_doGridding_apply ");
-        int ReconS_8 = ReconTimer.setNew(" RcS8_blobConvolute ");
-        int ReconS_9 = ReconTimer.setNew(" RcS9_blobResize ");
-        int ReconS_10 = ReconTimer.setNew(" RcS10_blobSetReal ");
-        int ReconS_11 = ReconTimer.setNew(" RcS11_blobSetTemp ");
-        int ReconS_12 = ReconTimer.setNew(" RcS12_blobTransform ");
-        int ReconS_13 = ReconTimer.setNew(" RcS13_blobCenterFFT ");
-        int ReconS_14 = ReconTimer.setNew(" RcS14_blobNorm1 ");
-        int ReconS_15 = ReconTimer.setNew(" RcS15_blobSoftMask ");
-        int ReconS_16 = ReconTimer.setNew(" RcS16_blobNorm2 ");
-        int ReconS_17 = ReconTimer.setNew(" RcS17_WindowReal ");
-        int ReconS_18 = ReconTimer.setNew(" RcS18_GriddingCorrect ");
-        int ReconS_19 = ReconTimer.setNew(" RcS19_tauInit ");
-        int ReconS_20 = ReconTimer.setNew(" RcS20_tausetReal ");
-        int ReconS_21 = ReconTimer.setNew(" RcS21_tauTransform ");
-        int ReconS_22 = ReconTimer.setNew(" RcS22_tautauRest ");
-        int ReconS_23 = ReconTimer.setNew(" RcS23_tauShrinkToFit ");
-        int ReconS_24 = ReconTimer.setNew(" RcS24_extra ");
+    Timer ReconTimer;
+    int ReconS_1 = ReconTimer.setNew(" RcS1_Init ");
+    int ReconS_2 = ReconTimer.setNew(" RcS2_Shape&Noise ");
+    int ReconS_2_5 = ReconTimer.setNew(" RcS2.5_Regularize ");
+    int ReconS_3 = ReconTimer.setNew(" RcS3_skipGridding ");
+    int ReconS_4 = ReconTimer.setNew(" RcS4_doGridding_norm ");
+    int ReconS_5 = ReconTimer.setNew(" RcS5_doGridding_init ");
+    int ReconS_6 = ReconTimer.setNew(" RcS6_doGridding_iter ");
+    int ReconS_7 = ReconTimer.setNew(" RcS7_doGridding_apply ");
+    int ReconS_8 = ReconTimer.setNew(" RcS8_blobConvolute ");
+    int ReconS_9 = ReconTimer.setNew(" RcS9_blobResize ");
+    int ReconS_10 = ReconTimer.setNew(" RcS10_blobSetReal ");
+    int ReconS_11 = ReconTimer.setNew(" RcS11_blobSetTemp ");
+    int ReconS_12 = ReconTimer.setNew(" RcS12_blobTransform ");
+    int ReconS_13 = ReconTimer.setNew(" RcS13_blobCenterFFT ");
+    int ReconS_14 = ReconTimer.setNew(" RcS14_blobNorm1 ");
+    int ReconS_15 = ReconTimer.setNew(" RcS15_blobSoftMask ");
+    int ReconS_16 = ReconTimer.setNew(" RcS16_blobNorm2 ");
+    int ReconS_17 = ReconTimer.setNew(" RcS17_WindowReal ");
+    int ReconS_18 = ReconTimer.setNew(" RcS18_GriddingCorrect ");
+    int ReconS_19 = ReconTimer.setNew(" RcS19_tauInit ");
+    int ReconS_20 = ReconTimer.setNew(" RcS20_tausetReal ");
+    int ReconS_21 = ReconTimer.setNew(" RcS21_tauTransform ");
+    int ReconS_22 = ReconTimer.setNew(" RcS22_tautauRest ");
+    int ReconS_23 = ReconTimer.setNew(" RcS23_tauShrinkToFit ");
+    int ReconS_24 = ReconTimer.setNew(" RcS24_extra ");
     #endif
 
-        RCTIC(ReconTimer,ReconS_1);
-        const int max_r2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
-        RFLOAT oversampling_correction = (ref_dim == 3) ? (padding_factor * padding_factor * padding_factor) : (padding_factor * padding_factor);
+    RCTIC(ReconTimer, ReconS_1);
+    const int max_r2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
+    RFLOAT oversampling_correction = (ref_dim == 3) ? (padding_factor * padding_factor * padding_factor) : (padding_factor * padding_factor);
 
     //#define DEBUG_RECONSTRUCT
     #ifdef DEBUG_RECONSTRUCT
-        Image<RFLOAT> ttt;
-        FileName fnttt;
-        ttt() = weight;
-        ttt.write("reconstruct_initial_weight.spi");
-        std::cerr << " pad_size= " << pad_size << " padding_factor= " << padding_factor << " max_r2= " << max_r2 << std::endl;
+    Image<RFLOAT> ttt;
+    FileName fnttt;
+    ttt() = weight;
+    ttt.write("reconstruct_initial_weight.spi");
+    std::cerr << " pad_size= " << pad_size << " padding_factor= " << padding_factor << " max_r2= " << max_r2 << std::endl;
     #endif
 
     // Set Fconv to the right size
@@ -1411,13 +1325,12 @@ void BackProjector::reconstruct(
                 RFLOAT invw = DIRECT_A3D_ELEM(Fweight, k, i, j);
 
                 RFLOAT invtau2;
-                if (DIRECT_A1D_ELEM(tau2, ires) > 0.) {
+                if (DIRECT_A1D_ELEM(tau2, ires) > 0.0) {
                     // Calculate inverse of tau2
-                    invtau2 = 1. / (oversampling_correction * tau2_fudge * DIRECT_A1D_ELEM(tau2, ires));
+                    invtau2 = 1.0 / (oversampling_correction * tau2_fudge * DIRECT_A1D_ELEM(tau2, ires));
                 } else if (DIRECT_A1D_ELEM(tau2, ires) < 1e-20) {
                     // If tau2 is zero, use small value instead
-                    if (invw > 1e-20) invtau2 = 1./ ( 0.001 * invw);
-                    else invtau2 = 0.;
+                    invtau2 = invw > 1e-20 ? 1.0 / (0.001 * invw) : 0.0;
                 } else {
                     std::cerr << " tau2= " << tau2 << std::endl;
                     REPORT_ERROR("ERROR BackProjector::reconstruct: Negative or zero values encountered for tau2 spectrum!");
@@ -1432,11 +1345,11 @@ void BackProjector::reconstruct(
                 }
             }
         }
-    } //end if do_map
+    }
 
-    RCTOC(ReconTimer,ReconS_2_5);
+    RCTOC(ReconTimer, ReconS_2_5);
     if (skip_gridding) {
-        RCTIC(ReconTimer,ReconS_3);
+        RCTIC(ReconTimer, ReconS_3);
         Fconv.initZeros(); // to remove any stuff from the input volume
         Projector::decenter(data, Fconv, max_r2);
 
@@ -1457,14 +1370,17 @@ void BackProjector::reconstruct(
                     REPORT_ERROR("BUG: ires >=XSIZE(radavg_weight) ");
                 }
                 DIRECT_A1D_ELEM(radavg_weight, ires) += DIRECT_A3D_ELEM(Fweight, k, i, j);
-                DIRECT_A1D_ELEM(counter, ires) += 1.;
+                DIRECT_A1D_ELEM(counter, ires) += 1.0;
             }
         }
 
         // Calculate 1/1000th of radial averaged weight
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(radavg_weight) {
-            if (DIRECT_A1D_ELEM(counter, i) > 0. || DIRECT_A1D_ELEM(radavg_weight, i) > 0.) {
-                DIRECT_A1D_ELEM(radavg_weight, i) /= 1000.* DIRECT_A1D_ELEM(counter, i);
+            if (
+                DIRECT_A1D_ELEM(counter,       i) > 0.0 || 
+                DIRECT_A1D_ELEM(radavg_weight, i) > 0.0
+            ) {
+                DIRECT_A1D_ELEM(radavg_weight, i) /= 1000.0 * DIRECT_A1D_ELEM(counter, i);
             } else {
                 std::cerr << " counter= " << counter << std::endl;
                 std::cerr << " radavg_weight= " << radavg_weight << std::endl;
@@ -1476,8 +1392,8 @@ void BackProjector::reconstruct(
         // perform XMIPP_MAX on all weight elements, and do division of data/weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
             const int r2 = kp * kp + ip * ip + jp * jp;
-            const int ires = FLOOR(sqrt((RFLOAT)r2) / padding_factor);
-            const RFLOAT weight =  XMIPP_MAX(DIRECT_A3D_ELEM(Fweight, k, i, j), DIRECT_A1D_ELEM(radavg_weight, (ires < r_max) ? ires : (r_max - 1)));
+            const int ires = FLOOR(sqrt((RFLOAT) r2) / padding_factor);
+            const RFLOAT weight =  XMIPP_MAX(DIRECT_A3D_ELEM(Fweight, k, i, j), DIRECT_A1D_ELEM(radavg_weight, ires < r_max ? ires : r_max - 1));
             if (weight == 0) {
                 if (!have_warned) {
                     std::cerr << " WARNING: ignoring divide by zero in skip_gridding: ires = " << ires << " kp = " << kp << " ip = " << ip << " jp = " << jp << std::endl;
@@ -1490,11 +1406,11 @@ void BackProjector::reconstruct(
             }
         }
     } else {
-        RCTIC(ReconTimer,ReconS_4);
+        RCTIC(ReconTimer, ReconS_4);
 
         // Divide both data and Fweight by normalisation factor to prevent FFT's with very large values....
         #ifdef DEBUG_RECONSTRUCT
-            std::cerr << " normalise= " << normalise << std::endl;
+        std::cerr << " normalise= " << normalise << std::endl;
         #endif
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fweight) {
             DIRECT_MULTIDIM_ELEM(Fweight, n) /= normalise;
@@ -1503,15 +1419,15 @@ void BackProjector::reconstruct(
             DIRECT_MULTIDIM_ELEM(data, n) /= normalise;
         }
 
-        RCTOC(ReconTimer,ReconS_4);
-        RCTIC(ReconTimer,ReconS_5);
+        RCTOC(ReconTimer, ReconS_4);
+        RCTIC(ReconTimer, ReconS_5);
 
         // Initialise Fnewweight with 1's and 0's. (also see comments below)
         FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
             if (k * k + i * i + j * j < max_r2) {
-                A3D_ELEM(weight, k, i, j) = 1.;
+                A3D_ELEM(weight, k, i, j) = 1.0;
             } else {
-                A3D_ELEM(weight, k, i, j) = 0.;
+                A3D_ELEM(weight, k, i, j) = 0.0;
             }
         }
         // Fnewweight can become too large for a float: always keep this one in double-precision
@@ -1519,12 +1435,12 @@ void BackProjector::reconstruct(
         Fnewweight.reshape(Fconv);
         decenter(weight, Fnewweight, max_r2);
 
-        RCTOC(ReconTimer,ReconS_5);
+        RCTOC(ReconTimer, ReconS_5);
         // Iterative algorithm as in  Eq. [14] in Pipe & Menon (1999)
         // or Eq. (4) in Matej (2001)
         for (int iter = 0; iter < max_iter_preweight; iter++) {
             //std::cout << "    iteration " << (iter+1) << "/" << max_iter_preweight << "\n";
-            RCTIC(ReconTimer,ReconS_6);
+            RCTIC(ReconTimer, ReconS_6);
             // Set Fnewweight * Fweight in the transformer
             // In Matej et al (2001), weights w_P^i are convoluted with the kernel,
             // and the initial w_P^0 are 1 at each sampling point
@@ -1540,7 +1456,7 @@ void BackProjector::reconstruct(
             // Note that convoluteRealSpace acts on the complex array inside the transformer
             convoluteBlobRealSpace(transformer, false);
 
-            RFLOAT w, corr_min = LARGE_NUMBER, corr_max = -LARGE_NUMBER, corr_avg=0., corr_nn=0.;
+            RFLOAT w, corr_min = LARGE_NUMBER, corr_max = -LARGE_NUMBER, corr_avg = 0.0, corr_nn = 0.0;
 
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fconv) {
                 if (kp * kp + ip * ip + jp * jp < max_r2) {
@@ -1551,34 +1467,33 @@ void BackProjector::reconstruct(
                     corr_min = XMIPP_MIN(corr_min, w);
                     corr_max = XMIPP_MAX(corr_max, w);
                     corr_avg += w;
-                    corr_nn += 1.;
+                    corr_nn += 1.0;
                     // Apply division of Eq. [14] in Pipe & Menon (1999)
                     DIRECT_A3D_ELEM(Fnewweight, k, i, j) /= w;
                 }
             }
 
-            RCTOC(ReconTimer,ReconS_6);
+            RCTOC(ReconTimer, ReconS_6);
 
-        #ifdef DEBUG_RECONSTRUCT
-                    std::cerr << " PREWEIGHTING ITERATION: "<< iter + 1 << " OF " << max_iter_preweight << std::endl;
-                    // report of maximum and minimum values of current conv_weight
-                    std::cerr << " corr_avg= " << corr_avg / corr_nn << std::endl;
-                    std::cerr << " corr_min= " << corr_min << std::endl;
-                    std::cerr << " corr_max= " << corr_max << std::endl;
-        #endif
+            #ifdef DEBUG_RECONSTRUCT
+            std::cerr << " PREWEIGHTING ITERATION: "<< iter + 1 << " OF " << max_iter_preweight << std::endl;
+            // report of maximum and minimum values of current conv_weight
+            std::cerr << " corr_avg= " << corr_avg / corr_nn << std::endl;
+            std::cerr << " corr_min= " << corr_min << std::endl;
+            std::cerr << " corr_max= " << corr_max << std::endl;
+            #endif
         }
 
-        RCTIC(ReconTimer,ReconS_7);
+        RCTIC(ReconTimer, ReconS_7);
 
         #ifdef DEBUG_RECONSTRUCT
-                Image<double> tttt;
-                tttt()=Fnewweight;
-                tttt.write("reconstruct_gridding_weight.spi");
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv)
-                {
-                    DIRECT_MULTIDIM_ELEM(ttt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fconv, n));
-                }
-                ttt.write("reconstruct_gridding_correction_term.spi");
+        Image<double> tttt;
+        tttt()=Fnewweight;
+        tttt.write("reconstruct_gridding_weight.spi");
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv) {
+            DIRECT_MULTIDIM_ELEM(ttt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fconv, n));
+        }
+        ttt.write("reconstruct_gridding_correction_term.spi");
         #endif
 
         // Clear memory
@@ -1602,8 +1517,8 @@ void BackProjector::reconstruct(
         // Clear memory
         Fnewweight.clear();
 
-        RCTOC(ReconTimer,ReconS_7);
-    } // end if !skip_gridding
+        RCTOC(ReconTimer, ReconS_7);
+    }
 
     // Gridding theory says one now has to interpolate the fine grid onto the coarse one using a blob kernel
     // and then do the inverse transform and divide by the FT of the blob (i.e. do the gridding correction)
@@ -1614,63 +1529,60 @@ void BackProjector::reconstruct(
 
         // Apply the same blob-convolution as above to the data array
         // Mask real-space map beyond its original size to prevent aliasing in the downsampling step below
-        RCTIC(ReconTimer,ReconS_8);
+        RCTIC(ReconTimer, ReconS_8);
         convoluteBlobRealSpace(transformer, true);
-        RCTOC(ReconTimer,ReconS_8);
-        RCTIC(ReconTimer,ReconS_9);
+        RCTOC(ReconTimer, ReconS_8);
+        RCTIC(ReconTimer, ReconS_9);
         // Now just pick every 3rd pixel in Fourier-space (i.e. down-sample)
         // and do a final inverse FT
         if (ref_dim == 2)
             vol_out.resize(ori_size, ori_size);
         else
             vol_out.resize(ori_size, ori_size, ori_size);
-        RCTOC(ReconTimer,ReconS_9);
-        RCTIC(ReconTimer,ReconS_10);
+        RCTOC(ReconTimer, ReconS_9);
+        RCTIC(ReconTimer, ReconS_10);
         FourierTransformer transformer2;
         MultidimArray<Complex > Ftmp;
         transformer2.setReal(vol_out); // cannot use the first transformer because Fconv is inside there!!
         transformer2.getFourierAlias(Ftmp);
-        RCTOC(ReconTimer,ReconS_10);
-        RCTIC(ReconTimer,ReconS_11);
+        RCTOC(ReconTimer, ReconS_10);
+        RCTIC(ReconTimer, ReconS_11);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Ftmp) {
-            if (kp * kp + ip * ip + jp * jp < r_max * r_max)
-            {
+            if (kp * kp + ip * ip + jp * jp < r_max * r_max) {
                 DIRECT_A3D_ELEM(Ftmp, k, i, j) = FFTW_ELEM(Fconv, kp * padding_factor, ip * padding_factor, jp * padding_factor);
-            }
-            else
-            {
-                DIRECT_A3D_ELEM(Ftmp, k, i, j) = 0.;
+            } else {
+                DIRECT_A3D_ELEM(Ftmp, k, i, j) = 0.0;
             }
         }
-        RCTOC(ReconTimer,ReconS_11);
-        RCTIC(ReconTimer,ReconS_13);
+        RCTOC(ReconTimer, ReconS_11);
+        RCTIC(ReconTimer, ReconS_13);
         CenterFFTbySign(Ftmp);
-        RCTOC(ReconTimer,ReconS_13);
-        RCTIC(ReconTimer,ReconS_12);
+        RCTOC(ReconTimer, ReconS_13);
+        RCTIC(ReconTimer, ReconS_12);
         // inverse FFT leaves result in vol_out
         transformer2.inverseFourierTransform();
-        RCTOC(ReconTimer,ReconS_12);
-        RCTIC(ReconTimer,ReconS_14);
+        RCTOC(ReconTimer, ReconS_12);
+        RCTIC(ReconTimer, ReconS_14);
         // Un-normalize FFTW (because original FFTs were done with the size of 2D FFTs)
-        if (ref_dim==3)
+        if (ref_dim == 3)
             vol_out /= ori_size;
-        RCTOC(ReconTimer,ReconS_14);
-        RCTIC(ReconTimer,ReconS_15);
+        RCTOC(ReconTimer, ReconS_14);
+        RCTIC(ReconTimer, ReconS_15);
         // Mask out corners to prevent aliasing artefacts
         softMaskOutsideMap(vol_out);
-        RCTOC(ReconTimer,ReconS_15);
-        RCTIC(ReconTimer,ReconS_16);
+        RCTOC(ReconTimer, ReconS_15);
+        RCTIC(ReconTimer, ReconS_16);
         // Gridding correction for the blob
-        RFLOAT normftblob = tab_ftblob(0.);
+        RFLOAT normftblob = tab_ftblob(0.0);
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_out) {
 
-            RFLOAT r = sqrt((RFLOAT)(k*k+i*i+j*j));
+            RFLOAT r = sqrt((RFLOAT)(k * k + i * i + j * j));
             RFLOAT rval = r / (ori_size * padding_factor);
             A3D_ELEM(vol_out, k, i, j) /= tab_ftblob(rval) / normftblob;
             //if (k==0 && i==0)
             //	std::cerr << " j= " << j << " rval= " << rval << " tab_ftblob(rval) / normftblob= " << tab_ftblob(rval) / normftblob << std::endl;
         }
-        RCTOC(ReconTimer,ReconS_16);
+        RCTOC(ReconTimer, ReconS_16);
 
     #else
 
@@ -1687,46 +1599,45 @@ void BackProjector::reconstruct(
         // Now do inverse FFT and window to original size in real-space
         // Pass the transformer to prevent making and clearing a new one before clearing the one declared above....
         // The latter may give memory problems as detected by electric fence....
-        RCTIC(ReconTimer,ReconS_17);
+        RCTIC(ReconTimer, ReconS_17);
         windowToOridimRealSpace(transformer, vol_out, printTimes);
-        RCTOC(ReconTimer,ReconS_17);
+        RCTOC(ReconTimer, ReconS_17);
 
     #endif
 
     #ifdef DEBUG_RECONSTRUCT
-        ttt()=vol_out;
-        ttt.write("reconstruct_before_gridding_correction.spi");
+    ttt() = vol_out;
+    ttt.write("reconstruct_before_gridding_correction.spi");
     #endif
 
     // Correct for the linear/nearest-neighbour interpolation that led to the data array
-    RCTIC(ReconTimer,ReconS_18);
+    RCTIC(ReconTimer, ReconS_18);
 
     griddingCorrect(vol_out);
 
-    RCTOC(ReconTimer,ReconS_18);
-    RCTIC(ReconTimer,ReconS_23);
+    RCTOC(ReconTimer, ReconS_18);
+    RCTIC(ReconTimer, ReconS_23);
 
     // Completely empty the transformer object
     transformer.cleanup();
     // Now can use extra mem to move data into smaller array space
     vol_out.shrinkToFit();
 
-    RCTOC(ReconTimer,ReconS_23);
+    RCTOC(ReconTimer, ReconS_23);
 
     #ifdef TIMING
-        if(printTimes)
-            ReconTimer.printTimes(true);
+    if (printTimes) ReconTimer.printTimes(true);
     #endif
 
 
     #ifdef DEBUG_RECONSTRUCT
-        std::cerr<<"done with reconstruct"<<std::endl;
+    std::cerr << "done with reconstruct" << std::endl;
     #endif
 
     if (weight_out != 0) {
-        weight_out->data = MultidimArray<RFLOAT>(1, ori_size, ori_size, ori_size/2+1);
+        weight_out->data = MultidimArray<RFLOAT>(1, ori_size, ori_size, ori_size / 2 + 1);
 
-        Image<RFLOAT> count(ori_size/2+1, ori_size, ori_size);
+        Image<RFLOAT> count(ori_size / 2 + 1, ori_size, ori_size);
         count.data.initZeros();
 
         // downsample while considering padding:
@@ -1735,12 +1646,12 @@ void BackProjector::reconstruct(
         for (long int y = 0; y < Fweight.ydim; y++)
         for (long int x = 0; x < Fweight.xdim; x++) {
             int xl = x;
-            int yl = y < Fweight.ydim/2? y : y - Fweight.ydim;
-            int zl = z < Fweight.zdim/2? z : z - Fweight.zdim;
+            int yl = y < Fweight.ydim / 2 ? y : y - Fweight.ydim;
+            int zl = z < Fweight.zdim / 2 ? z : z - Fweight.zdim;
 
             if (
-                xl == Fweight.xdim - 1 || 
-                yl == Fweight.ydim / 2 || yl == -Fweight.ydim / 2 - 1 || 
+                xl == Fweight.xdim - 1 ||
+                yl == Fweight.ydim / 2 || yl == -Fweight.ydim / 2 - 1 ||
                 zl == Fweight.zdim / 2 || zl == -Fweight.zdim / 2 - 1
             ) {
                 continue;
@@ -1764,21 +1675,19 @@ void BackProjector::reconstruct(
 
         for (long int z = 0; z < ori_size; z++)
         for (long int y = 0; y < ori_size; y++)
-        for (long int x = 0; x < ori_size/2 + 1; x++)
-        {
+        for (long int x = 0; x < ori_size / 2 + 1; x++) {
             const RFLOAT c = DIRECT_A3D_ELEM(count.data, z, y, x);
 
-            if (c > 0.0)
-            {
-                DIRECT_A3D_ELEM(weight_out->data, z, y, x) *= pad3/c;
+            if (c > 0.0) {
+                DIRECT_A3D_ELEM(weight_out->data, z, y, x) *= pad3 / c;
             }
         }
     }
-
 }
 
-void BackProjector::symmetrise(int nr_helical_asu, RFLOAT helical_twist, RFLOAT helical_rise, int threads)
-{
+void BackProjector::symmetrise(
+    int nr_helical_asu, RFLOAT helical_twist, RFLOAT helical_rise, int threads
+) {
     // First make sure the input arrays are obeying Hermitian symmetry,
     // which is assumed in the rotation operators of both helical and point group symmetry
     enforceHermitianSymmetry();
@@ -1789,28 +1698,26 @@ void BackProjector::symmetrise(int nr_helical_asu, RFLOAT helical_twist, RFLOAT 
     applyPointGroupSymmetry(threads);
 }
 
-void BackProjector::enforceHermitianSymmetry()
-{
-    for (int iz = STARTINGZ(data); iz <=FINISHINGZ(data); iz++)
-    {
+void BackProjector::enforceHermitianSymmetry() {
+    for (int iz = STARTINGZ(data); iz <=FINISHINGZ(data); iz++) {
         // Make sure all points are only included once.
-        int starty = (iz < 0) ? 0 : 1;
-        for (int iy = starty; iy <= FINISHINGY(data); iy++)
-        {
+        int starty = iz >= 0;
+        for (int iy = starty; iy <= FINISHINGY(data); iy++) {
             // I just need to sum the two points, not divide by 2!
             Complex fsum = (A3D_ELEM(data, iz, iy, 0) + conj(A3D_ELEM(data, -iz, -iy, 0)));
-            A3D_ELEM(data, iz, iy, 0) = fsum;
+            A3D_ELEM(data,  iz,  iy, 0) = fsum;
             A3D_ELEM(data, -iz, -iy, 0) = conj(fsum);
             RFLOAT sum = (A3D_ELEM(weight, iz, iy, 0) + A3D_ELEM(weight, -iz, -iy, 0));
-            A3D_ELEM(weight, iz, iy, 0) = sum;
+            A3D_ELEM(weight,  iz,  iy, 0) = sum;
             A3D_ELEM(weight, -iz, -iy, 0) = sum;
         }
     }
 }
 
-void BackProjector::applyHelicalSymmetry(int nr_helical_asu, RFLOAT helical_twist, RFLOAT helical_rise)
-{
-    if ( (nr_helical_asu < 2) || (ref_dim != 3) )
+void BackProjector::applyHelicalSymmetry(
+    int nr_helical_asu, RFLOAT helical_twist, RFLOAT helical_rise
+) {
+    if (nr_helical_asu < 2 || ref_dim != 3)
         return;
 
     int rmax2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
@@ -1829,42 +1736,34 @@ void BackProjector::applyHelicalSymmetry(int nr_helical_asu, RFLOAT helical_twis
     // First symmetry operator (not stored in SL) is the identity matrix
     sum_weight = weight;
     sum_data = data;
-    int h_min = -nr_helical_asu/2;
-    int h_max = -h_min + nr_helical_asu%2;
-    for (int hh = h_min; hh < h_max; hh++)
-    {
-        if (hh != 0) // h==0 is done before the for loop (where sum_data = data)
-        {
+    int h_min = -nr_helical_asu / 2;
+    int h_max = -h_min + nr_helical_asu % 2;
+    for (int hh = h_min; hh < h_max; hh++) {
+        if (hh != 0) {
+            // h==0 is done before the for loop (where sum_data = data)
             RFLOAT rot_ang = hh * (-helical_twist);
             rotation3DMatrix(rot_ang, 'Z', R);
             R.setSmallValuesToZero(); // TODO: invert rotation matrix?
 
             // Loop over all points in the output (i.e. rotated, or summed) array
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight)
-            {
-                x = (RFLOAT)j; // STARTINGX(sum_weight) is zero!
-                y = (RFLOAT)i;
-                z = (RFLOAT)k;
-                r2 = x*x + y*y + z*z;
-                if (r2 <= rmax2)
-                {
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight) {
+                x = (RFLOAT) j; // STARTINGX(sum_weight) is zero!
+                y = (RFLOAT) i;
+                z = (RFLOAT) k;
+                r2 = x * x + y * y + z * z;
+                if (r2 <= rmax2) {
                     // coords_output(x,y) = A * coords_input (xp,yp)
                     xp = x * R(0, 0) + y * R(0, 1) + z * R(0, 2);
                     yp = x * R(1, 0) + y * R(1, 1) + z * R(1, 2);
                     zp = x * R(2, 0) + y * R(2, 1) + z * R(2, 2);
 
+                    is_neg_x = xp < 0;
                     // Only asymmetric half is stored
-                    if (xp < 0)
-                    {
+                    if (is_neg_x) {
                         // Get complex conjugated hermitian symmetry pair
                         xp = -xp;
                         yp = -yp;
                         zp = -zp;
-                        is_neg_x = true;
-                    }
-                    else
-                    {
-                        is_neg_x = false;
                     }
 
                     // Trilinear interpolation (with physical coords)
@@ -1884,18 +1783,19 @@ void BackProjector::applyHelicalSymmetry(int nr_helical_asu, RFLOAT helical_twis
                     z0 -= STARTINGZ(data);
                     z1 = z0 + 1;
 
-#ifdef CHECK_SIZE
-                    if (x0 < 0 || y0 < 0 || z0 < 0 ||
+                    #ifdef CHECK_SIZE
+                    if (
+                        x0 < 0 || y0 < 0 || z0 < 0 ||
                         x1 < 0 || y1 < 0 || z1 < 0 ||
-                        x0 >= XSIZE(data) || y0  >= YSIZE(data) || z0 >= ZSIZE(data) ||
-                        x1 >= XSIZE(data) || y1  >= YSIZE(data)  || z1 >= ZSIZE(data) 	)
-                    {
+                        x0 >= XSIZE(data) || y0 >= YSIZE(data) || z0 >= ZSIZE(data) ||
+                        x1 >= XSIZE(data) || y1 >= YSIZE(data) || z1 >= ZSIZE(data)
+                    ) {
                         std::cerr << " x0= " << x0 << " y0= " << y0 << " z0= " << z0 << std::endl;
                         std::cerr << " x1= " << x1 << " y1= " << y1 << " z1= " << z1 << std::endl;
                         data.printShape();
                         REPORT_ERROR("BackProjector::applyPointGroupSymmetry: checksize!!!");
                     }
-#endif
+                    #endif
                     // First interpolate (complex) data
                     d000 = DIRECT_A3D_ELEM(data, z0, y0, x0);
                     d001 = DIRECT_A3D_ELEM(data, z0, y0, x1);
@@ -1920,8 +1820,7 @@ void BackProjector::applyHelicalSymmetry(int nr_helical_asu, RFLOAT helical_twis
                         ddd = conj(ddd);
 
                     // Also apply a phase shift for helical translation along Z
-                    if (ABS(helical_rise) > 0.)
-                    {
+                    if (ABS(helical_rise) > 0.0) {
                         RFLOAT zshift = hh * helical_rise;
                         zshift /= - ori_size * (RFLOAT)padding_factor;
                         RFLOAT dotp = 2 * PI * (z * zshift);
@@ -1956,74 +1855,63 @@ void BackProjector::applyHelicalSymmetry(int nr_helical_asu, RFLOAT helical_twis
 
                     A3D_ELEM(sum_weight, k, i, j) +=  LIN_INTERP(fz, ddxy0, ddxy1);
 
-                } // end if r2 <= rmax2
-             } // end loop over all elements of sum_weight
-        } // end if hh!=0
-    } // end loop over hh
+                }
+            }       
+        }
+    }
 
     data = sum_data;
     weight = sum_weight;
 }
 
-void BackProjector::applyPointGroupSymmetry(int threads)
-{
+void BackProjector::applyPointGroupSymmetry(int threads) {
 
-//#define DEBUG_SYMM
-#ifdef DEBUG_SYMM
+    // #define DEBUG_SYMM
+    #ifdef DEBUG_SYMM
     std::cerr << " SL.SymsNo()= " << SL.SymsNo() << std::endl;
     std::cerr << " SL.true_symNo= " << SL.true_symNo << std::endl;
-#endif
+    #endif
 
     int rmax2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
-    if (SL.SymsNo() > 0 && ref_dim == 3)
-    {
+    if (SL.SymsNo() > 0 && ref_dim == 3) {
         Matrix2D<RFLOAT> L(4, 4), R(4, 4); // A matrix from the list
         MultidimArray<RFLOAT> sum_weight;
-        MultidimArray<Complex > sum_data;
+        MultidimArray<Complex> sum_data;
 
         // First symmetry operator (not stored in SL) is the identity matrix
         sum_weight = weight;
         sum_data = data;
         // Loop over all other symmetry operators
-        for (int isym = 0; isym < SL.SymsNo(); isym++)
-        {
+        for (int isym = 0; isym < SL.SymsNo(); isym++) {
             SL.get_matrices(isym, L, R);
-#ifdef DEBUG_SYMM
+            #ifdef DEBUG_SYMM
             std::cerr << " isym= " << isym << " R= " << R << std::endl;
-#endif
+            #endif
             // Loop over all points in the output (i.e. rotated, or summed) array
 
             #pragma omp parallel for num_threads(threads)
-            for (long int k=STARTINGZ(sum_weight); k<=FINISHINGZ(sum_weight); k++)
-            for (long int i=STARTINGY(sum_weight); i<=FINISHINGY(sum_weight); i++)
-            for (long int j=STARTINGX(sum_weight); j<=FINISHINGX(sum_weight); j++)
-            {
-                RFLOAT x = (RFLOAT)j; // STARTINGX(sum_weight) is zero!
-                RFLOAT y = (RFLOAT)i;
-                RFLOAT z = (RFLOAT)k;
-                RFLOAT r2 = x*x + y*y + z*z;
+            for (long int k = STARTINGZ(sum_weight); k <= FINISHINGZ(sum_weight); k++)
+            for (long int i = STARTINGY(sum_weight); i <= FINISHINGY(sum_weight); i++)
+            for (long int j = STARTINGX(sum_weight); j <= FINISHINGX(sum_weight); j++) {
+                RFLOAT x = (RFLOAT) j; // STARTINGX(sum_weight) is zero!
+                RFLOAT y = (RFLOAT) i;
+                RFLOAT z = (RFLOAT) k;
+                RFLOAT r2 = x * x + y * y + z * z;
 
-                if (r2 <= rmax2)
-                {
+                if (r2 <= rmax2) {
                     // coords_output(x,y) = A * coords_input (xp,yp)
                     RFLOAT xp = x * R(0, 0) + y * R(0, 1) + z * R(0, 2);
                     RFLOAT yp = x * R(1, 0) + y * R(1, 1) + z * R(1, 2);
                     RFLOAT zp = x * R(2, 0) + y * R(2, 1) + z * R(2, 2);
 
-                    bool is_neg_x;
+                    bool is_neg_x = xp < 0;
 
                     // Only asymmetric half is stored
-                    if (xp < 0)
-                    {
+                    if (is_neg_x) {
                         // Get complex conjugated hermitian symmetry pair
                         xp = -xp;
                         yp = -yp;
                         zp = -zp;
-                        is_neg_x = true;
-                    }
-                    else
-                    {
-                        is_neg_x = false;
                     }
 
                     // Trilinear interpolation (with physical coords)
@@ -2043,18 +1931,19 @@ void BackProjector::applyPointGroupSymmetry(int threads)
                     z0 -= STARTINGZ(data);
                     int z1 = z0 + 1;
 
-#ifdef CHECK_SIZE
-                    if (x0 < 0 || y0 < 0 || z0 < 0 ||
+                    #ifdef CHECK_SIZE
+                    if (
+                        x0 < 0 || y0 < 0 || z0 < 0 ||
                         x1 < 0 || y1 < 0 || z1 < 0 ||
                         x0 >= XSIZE(data) || y0  >= YSIZE(data) || z0 >= ZSIZE(data) ||
-                        x1 >= XSIZE(data) || y1  >= YSIZE(data)  || z1 >= ZSIZE(data) 	)
-                    {
+                        x1 >= XSIZE(data) || y1  >= YSIZE(data) || z1 >= ZSIZE(data)
+                    ) {
                         std::cerr << " x0= " << x0 << " y0= " << y0 << " z0= " << z0 << std::endl;
                         std::cerr << " x1= " << x1 << " y1= " << y1 << " z1= " << z1 << std::endl;
                         data.printShape();
                         REPORT_ERROR("BackProjector::applyPointGroupSymmetry: checksize!!!");
                     }
-#endif
+                    #endif
                     // First interpolate (complex) data
                     Complex d000 = DIRECT_A3D_ELEM(data, z0, y0, x0);
                     Complex d001 = DIRECT_A3D_ELEM(data, z0, y0, x1);
@@ -2074,14 +1963,8 @@ void BackProjector::applyPointGroupSymmetry(int threads)
                     Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
 
                     // Take complex conjugated for half with negative x
-                    if (is_neg_x)
-                    {
-                        A3D_ELEM(sum_data, k, i, j) += conj(LIN_INTERP(fz, dxy0, dxy1));
-                    }
-                    else
-                    {
-                        A3D_ELEM(sum_data, k, i, j) += LIN_INTERP(fz, dxy0, dxy1);
-                    }
+                    A3D_ELEM(sum_data, k, i, j) += is_neg_x ?
+                        conj(LIN_INTERP(fz, dxy0, dxy1)) : LIN_INTERP(fz, dxy0, dxy1);
 
                     // Then interpolate (real) weight
                     RFLOAT dd000 = DIRECT_A3D_ELEM(weight, z0, y0, x0);
@@ -2103,11 +1986,9 @@ void BackProjector::applyPointGroupSymmetry(int threads)
 
                     A3D_ELEM(sum_weight, k, i, j) += LIN_INTERP(fz, ddxy0, ddxy1);
 
-                } // end if r2 <= rmax2
-
-            } // end loop over all elements of sum_weight
-
-        } // end loop over symmetry operators
+                }
+            }
+        }
 
         data = sum_data;
         weight = sum_weight;
@@ -2124,25 +2005,25 @@ void BackProjector::applyPointGroupSymmetry(int threads)
 
 }
 
-void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool do_mask)
-{
+void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool do_mask) {
 
     MultidimArray<RFLOAT> Mconv;
     int padhdim = pad_size / 2;
 
     // Set up right dimension of real-space array
     // TODO: resize this according to r_max!!!
-    if (ref_dim==2)
+    if (ref_dim == 2) {
         Mconv.reshape(pad_size, pad_size);
-    else
+    } else {
         Mconv.reshape(pad_size, pad_size, pad_size);
+    }
 
     // inverse FFT
     transformer.setReal(Mconv);
     transformer.inverseFourierTransform();
 
     // Blob normalisation in Fourier space
-    RFLOAT normftblob = tab_ftblob(0.);
+    RFLOAT normftblob = tab_ftblob(0.0);
 
     // TMP DEBUGGING
     //struct blobtype blob;
@@ -2151,30 +2032,31 @@ void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool
     //blob.alpha = 15;
 
     // Multiply with FT of the blob kernel
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Mconv)
-    {
-        int kp = (k < padhdim) ? k : k - pad_size;
-        int ip = (i < padhdim) ? i : i - pad_size;
-        int jp = (j < padhdim) ? j : j - pad_size;
-        RFLOAT rval = sqrt ( (RFLOAT)(kp * kp + ip * ip + jp * jp) ) / (ori_size * padding_factor);
+    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Mconv) {
+        int kp = k < padhdim ? k : k - pad_size;
+        int ip = i < padhdim ? i : i - pad_size;
+        int jp = j < padhdim ? j : j - pad_size;
+        RFLOAT rval = sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)) / (ori_size * padding_factor);
         //if (kp==0 && ip==0 && jp > 0)
         //	std::cerr << " jp= " << jp << " rval= " << rval << " tab_ftblob(rval) / normftblob= " << tab_ftblob(rval) / normftblob << " ori_size/2= " << ori_size/2 << std::endl;
         // In the final reconstruction: mask the real-space map beyond its original size to prevent aliasing ghosts
         // Note that rval goes until 1/2 in the oversampled map
-        if (do_mask && rval > 1./(2. * padding_factor))
-            DIRECT_A3D_ELEM(Mconv, k, i, j) = 0.;
-        else
-            DIRECT_A3D_ELEM(Mconv, k, i, j) *= (tab_ftblob(rval) / normftblob);
+        if (do_mask && rval > 1.0 / (2.0 * padding_factor)) {
+            DIRECT_A3D_ELEM(Mconv, k, i, j) = 0.0;
+        } else {
+            DIRECT_A3D_ELEM(Mconv, k, i, j) *= tab_ftblob(rval) / normftblob;
+        }
     }
 
     // forward FFT to go back to Fourier-space
     transformer.FourierTransform();
 }
 
-void BackProjector::windowToOridimRealSpace(FourierTransformer &transformer, MultidimArray<RFLOAT> &Mout, bool printTimes)
-{
+void BackProjector::windowToOridimRealSpace(
+    FourierTransformer &transformer, MultidimArray<RFLOAT> &Mout, bool printTimes
+) {
 
-#ifdef TIMING
+    #ifdef TIMING
     Timer OriDimTimer;
     int OriDim1  = OriDimTimer.setNew(" OrD1_getFourier ");
     int OriDim2  = OriDimTimer.setNew(" OrD2_windowFFT ");
@@ -2185,90 +2067,87 @@ void BackProjector::windowToOridimRealSpace(FourierTransformer &transformer, Mul
     int OriDim7  = OriDimTimer.setNew(" OrD7_window ");
     int OriDim8  = OriDimTimer.setNew(" OrD8_norm ");
     int OriDim9  = OriDimTimer.setNew(" OrD9_softMask ");
-#endif
+    #endif
 
-    RCTIC(OriDimTimer,OriDim1);
+    RCTIC(OriDimTimer, OriDim1);
     MultidimArray<Complex>& Fin = transformer.getFourierReference();
-    RCTOC(OriDimTimer,OriDim1);
-    RCTIC(OriDimTimer,OriDim2);
-    MultidimArray<Complex > Ftmp;
+    RCTOC(OriDimTimer, OriDim1);
+    RCTIC(OriDimTimer, OriDim2);
+    MultidimArray<Complex> Ftmp;
     // Size of padded real-space volume
     int padoridim = ROUND(padding_factor * ori_size);
     // make sure padoridim is even
-    padoridim += padoridim%2;
+    padoridim += padoridim % 2;
     RFLOAT normfft;
 
-//#define DEBUG_WINDOWORIDIMREALSPACE
-#ifdef DEBUG_WINDOWORIDIMREALSPACE
+    // #define DEBUG_WINDOWORIDIMREALSPACE
+    #ifdef DEBUG_WINDOWORIDIMREALSPACE
     Image<RFLOAT> tt;
     tt().reshape(ZSIZE(Fin), YSIZE(Fin), XSIZE(Fin));
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin)
-    {
+    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
         DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
     }
     tt.write("windoworidim_Fin.spi");
-#endif
+    #endif
 
     // Resize incoming complex array to the correct size
     windowFourierTransform(Fin, padoridim);
-    RCTOC(OriDimTimer,OriDim2);
-    RCTIC(OriDimTimer,OriDim3);
-     if (ref_dim == 2)
-    {
+    RCTOC(OriDimTimer, OriDim2);
+    RCTIC(OriDimTimer, OriDim3);
+    if (ref_dim == 2) {
         Mout.reshape(padoridim, padoridim);
-        if (data_dim == 2)
-            normfft = (RFLOAT)(padding_factor * padding_factor);
-        else
-            normfft = (RFLOAT)(padding_factor * padding_factor * ori_size);
-    }
-    else
-    {
+        normfft = (RFLOAT) (
+            data_dim == 2 ? 
+            padding_factor * padding_factor : 
+            padding_factor * padding_factor * ori_size
+        );
+    } else {
         Mout.reshape(padoridim, padoridim, padoridim);
-        if (data_dim == 3)
-            normfft = (RFLOAT)(padding_factor * padding_factor * padding_factor);
-        else
-            normfft = (RFLOAT)(padding_factor * padding_factor * padding_factor * ori_size);
+        normfft = (RFLOAT) (
+            data_dim == 3 ?
+            padding_factor * padding_factor * padding_factor :
+            padding_factor * padding_factor * padding_factor * ori_size
+        );
     }
     Mout.setXmippOrigin();
-    RCTOC(OriDimTimer,OriDim3);
+    RCTOC(OriDimTimer, OriDim3);
 
-#ifdef DEBUG_WINDOWORIDIMREALSPACE
+    #ifdef DEBUG_WINDOWORIDIMREALSPACE
     tt().reshape(ZSIZE(Fin), YSIZE(Fin), XSIZE(Fin));
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin)
-    {
+    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
         DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
     }
     tt.write("windoworidim_Fresized.spi");
-#endif
+    #endif
 
     // Shift the map back to its origin
-    RCTIC(OriDimTimer,OriDim6);
+    RCTIC(OriDimTimer, OriDim6);
     CenterFFTbySign(Fin);
-    RCTOC(OriDimTimer,OriDim6);
+    RCTOC(OriDimTimer, OriDim6);
 
     // Do the inverse FFT
-    RCTIC(OriDimTimer,OriDim4);
+    RCTIC(OriDimTimer, OriDim4);
     transformer.setReal(Mout);
-    RCTOC(OriDimTimer,OriDim4);
-    RCTIC(OriDimTimer,OriDim5);
-#ifdef TIMING
-    if(printTimes)
+    RCTOC(OriDimTimer, OriDim4);
+    RCTIC(OriDimTimer, OriDim5);
+    #ifdef TIMING
+    if (printTimes)
         std::cout << std::endl << "FFTrealDims = (" << transformer.fReal->xdim << " , " << transformer.fReal->ydim << " , " << transformer.fReal->zdim << " ) " << std::endl;
-#endif
+    #endif
     transformer.inverseFourierTransform();
-    RCTOC(OriDimTimer,OriDim5);
+    RCTOC(OriDimTimer, OriDim5);
     //transformer.inverseFourierTransform(Fin, Mout);
     Fin.clear();
     transformer.fReal = NULL; // Make sure to re-calculate fftw plan
     Mout.setXmippOrigin();
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-        tt()=Mout;
-        tt.write("windoworidim_Munwindowed.spi");
+    tt() = Mout;
+    tt.write("windoworidim_Munwindowed.spi");
     #endif
 
     // Window in real-space
-    RCTIC(OriDimTimer,OriDim7);
+    RCTIC(OriDimTimer, OriDim7);
     if (ref_dim == 2) {
         Mout.window(
             Xmipp::init(ori_size), Xmipp::init(ori_size),
@@ -2281,37 +2160,36 @@ void BackProjector::windowToOridimRealSpace(FourierTransformer &transformer, Mul
         );
     }
     Mout.setXmippOrigin();
-    RCTOC(OriDimTimer,OriDim7);
+    RCTOC(OriDimTimer, OriDim7);
     // Normalisation factor of FFTW
     // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
-    RCTIC(OriDimTimer,OriDim8);
+    RCTIC(OriDimTimer, OriDim8);
     Mout /= normfft;
-    RCTOC(OriDimTimer,OriDim8);
+    RCTOC(OriDimTimer, OriDim8);
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-        tt()=Mout;
-        tt.write("windoworidim_Mwindowed.spi");
+    tt() = Mout;
+    tt.write("windoworidim_Mwindowed.spi");
     #endif
 
     // Mask out corners to prevent aliasing artefacts
-    RCTIC(OriDimTimer,OriDim9);
+    RCTIC(OriDimTimer, OriDim9);
     softMaskOutsideMap(Mout);
-    RCTOC(OriDimTimer,OriDim9);
+    RCTOC(OriDimTimer, OriDim9);
 
-#ifdef DEBUG_WINDOWORIDIMREALSPACE
-    tt()=Mout;
+    #ifdef DEBUG_WINDOWORIDIMREALSPACE
+    tt() = Mout;
     tt.write("windoworidim_Mwindowed_masked.spi");
     FourierTransformer ttf;
     ttf.FourierTransform(Mout, Fin);
     tt().resize(ZSIZE(Fin), YSIZE(Fin), XSIZE(Fin));
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin)
-    {
+    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
         DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
     }
     tt.write("windoworidim_Fnew.spi");
-#endif
+    #endif
 
-#ifdef TIMING
-    if(printTimes)
+    #ifdef TIMING
+    if (printTimes)
         OriDimTimer.printTimes(true);
-#endif
+    #endif
 }

@@ -23,112 +23,97 @@
 #include <src/micrograph_model.h>
 #include <src/jaz/io/star_converter.h>
 
-class star_converter
-{
-public:
+class star_converter {
 
-	FileName fn_in, fn_out;
-	IOParser parser;
-	RFLOAT Cs, Q0;
+    public:
 
-	void usage()
-	{
-		parser.writeUsage(std::cerr);
-	}
+    FileName fn_in, fn_out;
+    IOParser parser;
+    RFLOAT Cs, Q0;
 
-	void read(int argc, char **argv)
-	{
-		parser.setCommandLine(argc, argv);
+    void usage() { parser.writeUsage(std::cerr); }
 
-		int general_section = parser.addSection("Options");
-		fn_in = parser.getOption("--i", "Input STAR file to be converted", "None");
-		fn_out = parser.getOption("--o", "Output STAR file to be written", "None");
-		Cs = textToFloat(parser.getOption("--Cs", "Spherical aberration (mm)", "-1"));
-		Q0 = textToFloat(parser.getOption("--Q0", "Amplitude contrast", "-1"));
+    void read(int argc, char **argv) {
+        parser.setCommandLine(argc, argv);
 
-		if (fn_in == "None" || fn_out == "None")
-		{
-			usage();
-			REPORT_ERROR("Please specify input and output file names");
-		}
-	}
+        int general_section = parser.addSection("Options");
+        fn_in = parser.getOption("--i", "Input STAR file to be converted", "None");
+        fn_out = parser.getOption("--o", "Output STAR file to be written", "None");
+        Cs = textToFloat(parser.getOption("--Cs", "Spherical aberration (mm)", "-1"));
+        Q0 = textToFloat(parser.getOption("--Q0", "Amplitude contrast", "-1"));
 
-	void run()
-	{
-		MetaDataTable mdt;
-		MetaDataTable mdtOut, optOut;
-		mdt.read(fn_in);
-		const bool isMotionCorrSTAR = mdt.containsLabel(EMDL_MICROGRAPH_METADATA_NAME);
-		StarConverter::convert_3p0_particlesTo_3p1(mdt, mdtOut, optOut, "", false); // don't die
+        if (fn_in == "None" || fn_out == "None") {
+            usage();
+            REPORT_ERROR("Please specify input and output file names");
+        }
+    }
 
-		if (mdt.containsLabel(EMDL_IMAGE_NAME))
-		{
-			std::cout << "The input is a particle STAR file" << std::endl;
-			mdtOut.setName("particles");
-		}
-		else if (isMotionCorrSTAR)
-		{
-			std::cout << "The input is a STAR file from a MotionCorr job." << std::endl;
-			std::cout << "The (binned) pixel size and the voltage are taken from the first metadata STAR file." << std::endl;
-			FileName fn_meta;
-			if (!mdtOut.getValue(EMDL_MICROGRAPH_METADATA_NAME, fn_meta, 0))
-				REPORT_ERROR("Failed to find the metadata STAR file");
+    void run() {
+        MetaDataTable mdt;
+        MetaDataTable mdtOut, optOut;
+        mdt.read(fn_in);
+        const bool isMotionCorrSTAR = mdt.containsLabel(EMDL::MICROGRAPH_METADATA_NAME);
+        StarConverter::convert_3p0_particlesTo_3p1(mdt, mdtOut, optOut, "", false); // don't die
 
-			Micrograph mic(fn_meta);
-			std::cout << "- voltage: " << mic.voltage << std::endl;
-			optOut.setValue(EMDL_CTF_VOLTAGE, mic.voltage);
+        if (mdt.containsLabel(EMDL::IMAGE_NAME)) {
+            std::cout << "The input is a particle STAR file" << std::endl;
+            mdtOut.setName("particles");
+        } else if (isMotionCorrSTAR) {
+            std::cout << "The input is a STAR file from a MotionCorr job." << std::endl;
+            std::cout << "The (binned) pixel size and the voltage are taken from the first metadata STAR file." << std::endl;
+            FileName fn_meta;
+            if (!mdtOut.getValue(EMDL::MICROGRAPH_METADATA_NAME, fn_meta, 0))
+                REPORT_ERROR("Failed to find the metadata STAR file");
 
-			std::cout << "- unbinned pixel size: " << mic.angpix << std::endl;
-			std::cout << "- binning factor: " << mic.getBinningFactor() << std::endl;
-			const RFLOAT angpix = mic.angpix * mic.getBinningFactor();
-			std::cout << "- binned pixel size: " << angpix << std::endl;
-			optOut.setValue(EMDL_MICROGRAPH_PIXEL_SIZE, angpix);
+            Micrograph mic(fn_meta);
+            std::cout << "- voltage: " << mic.voltage << std::endl;
+            optOut.setValue(EMDL::CTF_VOLTAGE, mic.voltage);
 
-			std::cout << "\nThe other microscope parameters must be specified in the command line." << std::endl;
-			if (Cs < 0)
-				REPORT_ERROR("Please specify the spherical aberration (mm) in the --Cs option.");
-			std::cout << "- spherical aberration: " << Cs << std::endl;
-			optOut.setValue(EMDL_CTF_CS, Cs);
-			if (Q0 < 0)
-				REPORT_ERROR("Please specify the amplitude contrast in the --Q0 option");
-			std::cout << "- amplitude contrast: " << Q0 << std::endl;
-			optOut.setValue(EMDL_CTF_Q0, Q0);
+            std::cout << "- unbinned pixel size: " << mic.angpix << std::endl;
+            std::cout << "- binning factor: " << mic.getBinningFactor() << std::endl;
+            const RFLOAT angpix = mic.angpix * mic.getBinningFactor();
+            std::cout << "- binned pixel size: " << angpix << std::endl;
+            optOut.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix);
 
-			std::cout << "\nAll necessary information is ready." << std::endl;
+            std::cout << "\nThe other microscope parameters must be specified in the command line." << std::endl;
+            if (Cs < 0)
+                REPORT_ERROR("Please specify the spherical aberration (mm) in the --Cs option.");
+            std::cout << "- spherical aberration: " << Cs << std::endl;
+            optOut.setValue(EMDL::CTF_CS, Cs);
+            if (Q0 < 0)
+                REPORT_ERROR("Please specify the amplitude contrast in the --Q0 option");
+            std::cout << "- amplitude contrast: " << Q0 << std::endl;
+            optOut.setValue(EMDL::CTF_Q0, Q0);
 
-			mdtOut.setName("micrographs");
-		}
-		else
-		{
-			std::cout << "The input is a micrograph STAR file with CTF information." << std::endl;
-			mdtOut.setName("micrographs");
-		}
-	
-		std::ofstream of(fn_out);
+            std::cout << "\nAll necessary information is ready." << std::endl;
 
-		optOut.write(of);
-		mdtOut.write(of);
-		of.close();
+            mdtOut.setName("micrographs");
+        } else {
+            std::cout << "The input is a micrograph STAR file with CTF information." << std::endl;
+            mdtOut.setName("micrographs");
+        }
+    
+        std::ofstream of(fn_out);
 
-		std::cout << "\nWritten " << fn_out << std::endl;
-		std::cout << "Please carefully examine the optics group table at the beginning of the output to make sure the information is correct." << std::endl;
-	}
+        optOut.write(of);
+        mdtOut.write(of);
+        of.close();
+
+        std::cout << "\nWritten " << fn_out << std::endl;
+        std::cout << "Please carefully examine the optics group table at the beginning of the output to make sure the information is correct." << std::endl;
+    }
 };
 
-int main(int argc, char *argv[])
-{
-	star_converter app;
+int main(int argc, char *argv[]) {
+    star_converter app;
 
-	try
-	{
-		app.read(argc, argv);
-		app.run();
-	}
-	catch (RelionError XE)
-	{
-        	std::cerr << XE;
-	        return RELION_EXIT_FAILURE;
-	}
+    try {
+        app.read(argc, argv);
+        app.run();
+    } catch (RelionError XE) {
+        std::cerr << XE;
+        return RELION_EXIT_FAILURE;
+    }
 
-	return RELION_EXIT_SUCCESS;
+    return RELION_EXIT_SUCCESS;
 }
