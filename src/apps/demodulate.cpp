@@ -55,9 +55,8 @@ int main(int argc, char *argv[]) {
         std::vector<Image<Complex>> obs;
         obs = StackHelper::loadStackFS(mdts[m], "", nr_omp_threads, false);
 
-        std::string name, fullName;
-        mdts[m].getValue(EMDL::IMAGE_NAME, fullName, 0);
-        name = fullName.substr(fullName.find("@") + 1);
+        std::string fullName = mdts[m].getValue(EMDL::IMAGE_NAME, 0);
+        std::string name = fullName.substr(fullName.find("@") + 1);
 
         for (int p = 0; p < pc; p++) {
             obsModel.demodulatePhase(mdts[m], p, obs[p].data);
@@ -109,12 +108,8 @@ int main(int argc, char *argv[]) {
             mdt1.addLabel(lab);
 
             for (int p = 0; p < tpc; p++) {
-                int opticsGroup;
-                mdt1.getValue(EMDL::IMAGE_OPTICS_GROUP, opticsGroup, p);
-                opticsGroup--;
-
-                double v;
-                obsModel.opticsMdt.getValue(lab, v, opticsGroup);
+                int opticsGroup = --mdt1.getValue(EMDL::IMAGE_OPTICS_GROUP, p);
+                double v = obsModel.opticsMdt.getValue(lab, opticsGroup);
                 mdt1.setValue(lab, v, p);
             }
         }

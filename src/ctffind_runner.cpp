@@ -97,21 +97,21 @@ void CtffindRunner::initialise() {
         char *penv;
         penv = getenv("RELION_CTFFIND_EXECUTABLE");
         if (penv != NULL)
-            fn_ctffind_exe = (std::string)penv;
+            fn_ctffind_exe = (std::string) penv;
     }
     // Get the GCTF executable
     if (do_use_gctf && fn_gctf_exe == "") {
         char *penv;
         penv = getenv("RELION_GCTF_EXECUTABLE");
         if (penv != NULL)
-            fn_gctf_exe = (std::string)penv;
+            fn_gctf_exe = (std::string) penv;
     }
 
     fn_shell = "csh";
     char *shell_name;
     shell_name = getenv("RELION_SHELL");
     if (shell_name != NULL)
-        fn_shell = (std::string)shell_name;
+        fn_shell = (std::string) shell_name;
 
     if (do_use_gctf && ctf_win > 0)
         REPORT_ERROR("ERROR: Running Gctf together with --ctfWin is not implemented, please use CTFFIND instead.");
@@ -132,7 +132,7 @@ void CtffindRunner::initialise() {
         do_use_without_doseweighting = false;
 
     // Make sure fn_out ends with a slash
-    if (fn_out[fn_out.length()-1] != '/')
+    if (fn_out[fn_out.length() - 1] != '/')
         fn_out += "/";
 
 
@@ -154,19 +154,17 @@ void CtffindRunner::initialise() {
         optics_group_micrographs_all.clear();
         fn_micrographs_ctf_all.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            FileName fn_mic;
-            MDin.getValue(EMDL::MICROGRAPH_NAME, fn_mic);
+            FileName fn_mic = MDin.getValue(EMDL::MICROGRAPH_NAME);
 
             fn_micrographs_all.push_back(fn_mic); // Dose weighted image
 
             if (do_use_without_doseweighting)
-                MDin.getValue(EMDL::MICROGRAPH_NAME_WODOSE, fn_mic);
+                fn_mic = MDin.getValue(EMDL::MICROGRAPH_NAME_WODOSE);
             else if (use_given_ps)
-                MDin.getValue(EMDL::CTF_POWER_SPECTRUM, fn_mic);
+                fn_mic = MDin.getValue(EMDL::CTF_POWER_SPECTRUM);
             fn_micrographs_ctf_all.push_back(fn_mic); // Image for CTF estsimation
 
-            int optics_group;
-            MDin.getValue(EMDL::IMAGE_OPTICS_GROUP, optics_group);
+            int optics_group = MDin.getValue(EMDL::IMAGE_OPTICS_GROUP);
             optics_group_micrographs_all.push_back(optics_group);
         }
     } else {
@@ -231,7 +229,7 @@ void CtffindRunner::initialise() {
 
         if (continue_old) {
             FileName fn_microot = fn_mic_ctf_given_all[imic].withoutExtension();
-            RFLOAT defU, defV, defAng, CC, HT, CS, AmpCnst, XMAG, DStep, maxres=-1., valscore = -1., phaseshift = 0.;
+            RFLOAT defU, defV, defAng, CC, HT, CS, AmpCnst, XMAG, DStep, maxres= -1.0, valscore = -1.0, phaseshift = 0.0;
             if (getCtffindResults(
                 fn_microot, defU, defV, defAng, CC,
                 HT, CS, AmpCnst, XMAG, DStep, maxres, valscore, phaseshift, false
@@ -358,10 +356,10 @@ void CtffindRunner::run() {
                 exit(RELION_EXIT_ABORTED);
 
             // Get angpix and voltage from the optics groups:
-            obsModel.opticsMdt.getValue(EMDL::CTF_CS, Cs, optics_group_micrographs[imic] - 1);
-            obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE, Voltage, optics_group_micrographs[imic] - 1);
-            obsModel.opticsMdt.getValue(EMDL::CTF_Q0, AmplitudeConstrast, optics_group_micrographs[imic] - 1);
-            obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix, optics_group_micrographs[imic] - 1);
+            Cs                 = obsModel.opticsMdt.getValue(EMDL::CTF_CS,                optics_group_micrographs[imic] - 1);
+            Voltage            = obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE,           optics_group_micrographs[imic] - 1);
+            AmplitudeConstrast = obsModel.opticsMdt.getValue(EMDL::CTF_Q0,                optics_group_micrographs[imic] - 1);
+            angpix             = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group_micrographs[imic] - 1);
 
             if (do_use_gctf) {
                 executeGctf(imic, allmicnames, imic + 1 == fn_micrographs.size());

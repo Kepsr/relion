@@ -103,9 +103,7 @@ void MotionEM::computeInitial() {
         posProb[p] = std::vector<Image<RFLOAT>>(fc);
         velProb[p] = std::vector<Image<RFLOAT>>(fc - 1);
 
-        int randSubset;
-        viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
-        randSubset -= 1;
+        int randSubset = viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
         pred[p] = obsModel.predictObservation(
             randSubset == 0 ? projector0 : projector1, viewParams, p, true, true

@@ -220,7 +220,7 @@ void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine)
                 mic_name = micrographs[mic_id].name;
                 if (divide_according_to_helical_tube_id) {
                     long int ori_img_id = getOriginalImageId(part_id, 0);
-                    MDimg.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID, helical_tube_id, ori_img_id);
+                    helical_tube_id = MDimg.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID, ori_img_id);
                     if (helical_tube_id < 1)
                         REPORT_ERROR("ERROR Experiment::divideParticlesInRandomHalves: Helical tube ID should be positive integer!");
                     mic_name += std::string("_TUBEID_");
@@ -267,7 +267,7 @@ void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine)
                 mic_name = micrographs[mic_id].name;
                 if (divide_according_to_helical_tube_id) {
                     long int ori_img_id = getOriginalImageId(part_id, 0);
-                    MDimg.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID, helical_tube_id, ori_img_id);
+                    helical_tube_id = MDimg.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID, ori_img_id);
                     if (helical_tube_id < 1)
                         REPORT_ERROR("ERROR Experiment::divideParticlesInRandomHalves: Helical tube ID should be positive integer!");
                     mic_name += std::string("_TUBEID_");
@@ -367,17 +367,16 @@ void Experiment::initialiseBodies(int _nr_bodies) {
         bool is_3d = (MDimg.containsLabel(EMDL::ORIENT_ORIGIN_Z));
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
             MDbody.addObject();
-            RFLOAT norm, zero = 0.0, ninety = 90.0;
-            MDimg.getValue(EMDL::IMAGE_NORM_CORRECTION, norm);
+            RFLOAT zero = 0.0, ninety = 90.0;  // Is this an lvalue / rvalue thing?
+            RFLOAT norm = MDimg.getValue(EMDL::IMAGE_NORM_CORRECTION);
             MDbody.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, zero);
             MDbody.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, zero);
             MDbody.setValue(EMDL::ORIENT_ROT, zero);
             MDbody.setValue(EMDL::ORIENT_TILT, ninety);
             MDbody.setValue(EMDL::ORIENT_PSI, zero);
             MDbody.setValue(EMDL::IMAGE_NORM_CORRECTION, norm);
-            if (is_3d) {
-                MDbody.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zero);
-            }
+            if (is_3d)
+            MDbody.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zero);
         }
         // Now just fill all bodies with that MDbody
         MDbodies.resize(nr_bodies, MDbody);
@@ -543,13 +542,15 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
             exit(RELION_EXIT_ABORTED);
 
         long int imgno;
-        FileName fn_img, fn_ctf, fn_stack, fn_new;
+        FileName fn_ctf, fn_stack, fn_new;
         Image<RFLOAT> img;
-        MDimg.getValue(EMDL::IMAGE_NAME, fn_img);
+        FileName fn_img = MDimg.getValue(EMDL::IMAGE_NAME);
 
-        int optics_group = 0;
-        if (MDimg.getValue(EMDL::IMAGE_OPTICS_GROUP, optics_group)) {
-            optics_group--;
+        int optics_group;
+        try {
+            optics_group = --MDimg.getValue(EMDL::IMAGE_OPTICS_GROUP);
+        } catch (const char *errmsg) {
+            optics_group = 0;
         }
 
         // Get the size of the first particle
@@ -557,9 +558,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
             Image<RFLOAT> tmp;
             tmp.read(fn_img, false); // false means: only read the header!
             one_part_space = ZYXSIZE(tmp()) * sizeof(float); // MRC images are stored in floats!
-            bool myis3D = (ZSIZE(tmp()) > 1);
-            if (myis3D != is_3D)
-                REPORT_ERROR("BUG: inconsistent is_3D values!");
+            if (is_3D != ZSIZE(tmp()) > 1) REPORT_ERROR("BUG: inconsistent is_3D values!");
             // add MRC header size for subtomograms, which are stored as 1 MRC file each
             if (is_3D) {
                 one_part_space += 1024;
@@ -596,8 +595,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group]+1)+".mrc";
                 img.write(fn_new);
                 if (also_do_ctf_image) {
-                    FileName fn_ctf;
-                    MDimg.getValue(EMDL::CTF_IMAGE, fn_ctf);
+                    FileName fn_ctf = MDimg.getValue(EMDL::CTF_IMAGE);
                     img.read(fn_ctf);
                     fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group]+1)+".mrc";
                     img.write(fn_new);
@@ -749,8 +747,7 @@ void Experiment::read(
         star_contains_micname = MDimg.containsLabel(EMDL::MICROGRAPH_NAME);
         if (star_contains_micname) {
             // See if the micrograph names contain an "@", i.e. whether they are movies and we are inside polishing or so.
-            FileName fn_mic;
-            MDimg.getValue(EMDL::MICROGRAPH_NAME, fn_mic);
+            FileName fn_mic = MDimg.getValue(EMDL::MICROGRAPH_NAME);
             if (fn_mic.contains("@")) {
                 is_mic_a_movie = true;
                 MDimg.newSort(EMDL::MICROGRAPH_NAME, false, true); // sort on part AFTER "@"
@@ -788,12 +785,12 @@ void Experiment::read(
             int optics_group = obsModel.getOpticsGroup(MDimg, ori_img_id);
 
             // Add new micrographs or get mic_id for existing micrograph
-            FileName mic_name=""; // Filename instead of string because will decompose below
+            FileName mic_name = ""; // Filename instead of string because will decompose below
             if (star_contains_micname) {
                 long int idx = micrographs.size();
-                std::string last_mic_name = idx > 0 ? micrographs[idx-1].name : "";
+                std::string last_mic_name = idx > 0 ? micrographs[idx - 1].name : "";
 
-                MDimg.getValue(EMDL::MICROGRAPH_NAME, mic_name, ori_img_id);
+                mic_name = MDimg.getValue(EMDL::MICROGRAPH_NAME, ori_img_id);
 
                 // All frames of a movie belong to the same micrograph
                 if (is_mic_a_movie)
@@ -821,7 +818,7 @@ void Experiment::read(
                     std::string group_name;
                     // Check whether there is a group label, if not use a group for each micrograph
                     if (MDimg.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-                        MDimg.getValue(EMDL::MLMODEL_GROUP_NAME, group_name, ori_img_id);
+                        group_name = MDimg.getValue(EMDL::MLMODEL_GROUP_NAME, ori_img_id);
                     } else {
                         FileName fn_pre, fn_jobnr, fn_post;
                         decomposePipelineFileName(mic_name, fn_pre, fn_jobnr, fn_post);
@@ -854,19 +851,19 @@ void Experiment::read(
 
             // If there is an EMDL::PARTICLE_RANDOM_SUBSET entry in the input STAR-file, then set the random_subset, otherwise use default (0)
             int my_random_subset;
-            if (!MDimg.getValue(EMDL::PARTICLE_RANDOM_SUBSET, my_random_subset, ori_img_id)) {
+            try {
+                my_random_subset = MDimg.getValue(EMDL::PARTICLE_RANDOM_SUBSET, ori_img_id);
+            } catch (const char *errmsg) {
                 my_random_subset = 0;
             }
 
             // Add this image to an existing particle, or create a new particle
-            std::string part_name;
-            long int part_id = -1;
-
-            MDimg.getValue(
+            std::string part_name = MDimg.getValue(
                 MDimg.containsLabel(EMDL::PARTICLE_NAME) ? EMDL::PARTICLE_NAME : EMDL::IMAGE_NAME,
-                part_name, ori_img_id
+                ori_img_id
             );
 
+            long int part_id = -1;
             if (MDimg.containsLabel(EMDL::PARTICLE_NAME) && !do_ignore_particle_name) {
                 // Only search ori_particles for the last (original) micrograph
                 for (long int i = last_part_id; i < particles.size(); i++) {
@@ -885,8 +882,7 @@ void Experiment::read(
             }
 
             // Create a new image in this particle
-            FileName img_name;
-            MDimg.getValue(EMDL::IMAGE_NAME, img_name, ori_img_id);
+            FileName img_name = MDimg.getValue(EMDL::IMAGE_NAME, ori_img_id);
 
             bool do_cache = prev_img_name != img_name || prev_optics_group != optics_group;
             #ifdef DEBUG_SCRATCH
@@ -998,11 +994,11 @@ void Experiment::read(
             // If doing 3D helical reconstruction and PRIORs exist
             RFLOAT tilt = 0.0, psi = 0.0;
             if (have_tiltpsi)
-                MDimg.getValue(EMDL::ORIENT_TILT, tilt);
+                tilt = MDimg.getValue(EMDL::ORIENT_TILT);
             // If ANGLEs do not exist or they are all set to 0 (from a Class2D job), copy values of PRIORs to ANGLEs
             if (!have_tiltpsi || (have_tiltpsi && ABS(tilt) < 0.001)) {
-                MDimg.getValue(EMDL::ORIENT_TILT_PRIOR, tilt);
-                MDimg.getValue(EMDL::ORIENT_PSI_PRIOR,  psi);
+                tilt = MDimg.getValue(EMDL::ORIENT_TILT_PRIOR);
+                psi  = MDimg.getValue(EMDL::ORIENT_PSI_PRIOR);
                 MDimg.setValue(EMDL::ORIENT_TILT,       tilt);
                 MDimg.setValue(EMDL::ORIENT_PSI,        psi);
             }
@@ -1010,8 +1006,7 @@ void Experiment::read(
     }
 
     // Set is_3D from MDopt
-    int mydim;
-    obsModel.opticsMdt.getValue(EMDL::IMAGE_DIMENSIONALITY, mydim, 0);
+    int mydim = obsModel.opticsMdt.getValue(EMDL::IMAGE_DIMENSIONALITY, 0);
     is_3D = mydim == 3;
 
     #ifdef DEBUG_READ

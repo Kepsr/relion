@@ -345,7 +345,6 @@ void readRelionFormatMasksAndOperators(
     bool verb
 ) {
     MetaDataTable MD;
-    FileName fn_mask;
     std::vector<Matrix1D<RFLOAT> > dummy;
     Matrix1D<RFLOAT> op, op_i;
     bool is_maskname_found = false;
@@ -382,7 +381,7 @@ void readRelionFormatMasksAndOperators(
     // Load mask names
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         is_maskname_found = false;
-        MD.getValue(EMDL::MASK_NAME, fn_mask);
+        FileName fn_mask = MD.getValue(EMDL::MASK_NAME);
 
         for (int id_mask = 0; id_mask < fn_mask_list.size(); id_mask++) {
             if (fn_mask_list[id_mask] == fn_mask) {
@@ -410,17 +409,17 @@ void readRelionFormatMasksAndOperators(
 
         // Find all operators for this mask
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-            MD.getValue(EMDL::MASK_NAME, fn_mask);
+            FileName fn_mask = MD.getValue(EMDL::MASK_NAME);
             if (fn_mask != fn_mask_list[id_mask])
                 continue;
 
             // Get this operator
-            MD.getValue(EMDL::ORIENT_ROT, aa);
-            MD.getValue(EMDL::ORIENT_TILT, bb);
-            MD.getValue(EMDL::ORIENT_PSI, gg);
-            MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, dx);
-            MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, dy);
-            MD.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, dz);
+            aa = MD.getValue(EMDL::ORIENT_ROT);
+            bb = MD.getValue(EMDL::ORIENT_TILT);
+            gg = MD.getValue(EMDL::ORIENT_PSI);
+            dx = MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            dy = MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+            dz = MD.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
             // Re-calculate angles so that they follow the conventions in RELION!
             standardiseEulerAngles(aa, bb, gg, aa, bb, gg);
@@ -511,8 +510,8 @@ void readRelionFormatMasksWithoutOperators(
     fns.clear();
     ids.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        MD.getValue(EMDL::MASK_NAME, fn);
-        MD.getValue(EMDL::AREA_ID, id);
+        fn = MD.getValue(EMDL::MASK_NAME);
+        id = MD.getValue(EMDL::AREA_ID);
         fns.push_back(fn);
         ids.push_back(id);
         if (id <= 0)
@@ -1704,9 +1703,9 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
 
     if (XSIZE(img()) != YSIZE(img()) || XSIZE(img()) != ZSIZE(img()))
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
-    img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, x_angpix);
-    img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y, y_angpix);
-    img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z, z_angpix);
+    x_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
+    y_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
+    z_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z);
 
     // Initialise vol_rec
     vol_rec.initZeros(img());
@@ -1851,9 +1850,9 @@ void separateMasksKMeans(
         REPORT_ERROR("ERROR: Image file " + fn_in + " is an invalid 3D map! (< 10 X 10 X 10 pixels)");
     if ( (XSIZE(img()) != YSIZE(img())) || (XSIZE(img()) != ZSIZE(img())) )
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
-    img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, x_angpix);
-    img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y, y_angpix);
-    img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z, z_angpix);
+    x_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
+    y_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
+    z_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z);
 
     // Count voxels with positive values
     pos_val_ctr = 0;

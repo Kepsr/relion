@@ -61,10 +61,10 @@ void CtffindRunnerMpi::run() {
                 MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_ABORTED);
 
             // Get angpix and voltage from the optics groups:
-            obsModel.opticsMdt.getValue(EMDL::CTF_CS, Cs, optics_group_micrographs[imic] - 1);
-            obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE, Voltage, optics_group_micrographs[imic] - 1);
-            obsModel.opticsMdt.getValue(EMDL::CTF_Q0, AmplitudeConstrast, optics_group_micrographs[imic] - 1);
-            obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix, optics_group_micrographs[imic] - 1);
+            Cs                 = obsModel.opticsMdt.getValue(EMDL::CTF_CS,                optics_group_micrographs[imic] - 1);
+            Voltage            = obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE,           optics_group_micrographs[imic] - 1);
+            AmplitudeConstrast = obsModel.opticsMdt.getValue(EMDL::CTF_Q0,                optics_group_micrographs[imic] - 1);
+            angpix             = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group_micrographs[imic] - 1);
 
             if (do_use_gctf) {
                 //addToGctfJobList(imic, allmicnames);

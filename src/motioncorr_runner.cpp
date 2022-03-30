@@ -218,12 +218,10 @@ void MotioncorrRunner::initialise() {
         fn_micrographs.clear();
         optics_group_micrographs.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            FileName fn_mic;
-            MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_mic);
+            FileName fn_mic = MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME);
             fn_micrographs.push_back(fn_mic);
 
-            int optics_group;
-            MDin.getValue(EMDL::IMAGE_OPTICS_GROUP, optics_group);
+            int optics_group = MDin.getValue(EMDL::IMAGE_OPTICS_GROUP);
             optics_group_micrographs.push_back(optics_group);
         }
     } else {
@@ -421,8 +419,8 @@ void MotioncorrRunner::run() {
         Micrograph mic(fn_micrographs[imic], fn_gain_reference, bin_factor, eer_upsampling, eer_grouping);
 
         // Get angpix and voltage from the optics groups:
-        obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE, voltage, optics_group_micrographs[imic] - 1);
-        obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, angpix, optics_group_micrographs[imic] - 1);
+        voltage = obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE,                    optics_group_micrographs[imic] - 1);
+        angpix  = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, optics_group_micrographs[imic] - 1);
 
         bool result = false;
         if (do_own) {
@@ -809,10 +807,10 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
     // In the opticsMdt, set EMDL::MICROGRAPH_PIXEL_SIZE (i.e. possibly binned pixel size).
     // Keep EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE for MTF correction
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
-        RFLOAT my_angpix;
-        obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, my_angpix);
-        my_angpix *= bin_factor;
-        obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, my_angpix);
+        obsModel.opticsMdt.setValue(
+            EMDL::MICROGRAPH_PIXEL_SIZE, 
+            (RFLOAT) (obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE) * bin_factor)
+        );
     }
     obsModel.save(MDavg, fn_out + "corrected_micrographs.star", "micrographs");
 

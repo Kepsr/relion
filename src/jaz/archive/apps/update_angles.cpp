@@ -189,18 +189,15 @@ int main(int argc, char *argv[]) {
 
     std::vector<MetaDataTable> mdts = StackHelper::splitByStack(&mdt0);
 
-    RFLOAT Cs, lambda, kV;
-
-    mdt0.getValue(EMDL::CTF_CS, Cs, 0);
-    mdt0.getValue(EMDL::CTF_VOLTAGE, kV, 0);
+    RFLOAT Cs = mdt0.getValue(EMDL::CTF_CS,      0);
+    RFLOAT kV = mdt0.getValue(EMDL::CTF_VOLTAGE, 0);
 
     RFLOAT V = kV * 1e3;
-    lambda = 12.2643247 / sqrt(V * (1.0 + V * 0.978466e-6));
+    RFLOAT lambda = 12.2643247 / sqrt(V * (1.0 + V * 0.978466e-6));
 
     if (angpix <= 0.0) {
-        RFLOAT mag, dstep;
-        mdts[0].getValue(EMDL::CTF_MAGNIFICATION, mag, 0);
-        mdts[0].getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, dstep, 0);
+        RFLOAT mag   = mdts[0].getValue(EMDL::CTF_MAGNIFICATION,       0);
+        RFLOAT dstep = mdts[0].getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, 0);
         angpix = 10000 * dstep / mag;
     }
 
@@ -238,8 +235,7 @@ int main(int argc, char *argv[]) {
 
         #pragma omp parallel for num_threads(nr_omp_threads)
         for (long p = 0; p < pc; p++) {
-            int randSubset;
-            mdts[g].getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
+            int randSubset = mdts[g].getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
             randSubset -= 1;
 
             if (quadratic) {
@@ -306,11 +302,9 @@ int main(int argc, char *argv[]) {
 
                 if (min.length() > 1.0) min /= min.length();
 
-                double rot, tilt, psi;
-
-                mdts[g].getValue(EMDL::ORIENT_ROT, rot, p);
-                mdts[g].getValue(EMDL::ORIENT_TILT, tilt, p);
-                mdts[g].getValue(EMDL::ORIENT_PSI, psi, p);
+                double rot  = mdts[g].getValue(EMDL::ORIENT_ROT,  p);
+                double tilt = mdts[g].getValue(EMDL::ORIENT_TILT, p);
+                double psi  = mdts[g].getValue(EMDL::ORIENT_PSI,  p);
 
                 rot += min[0] * deltaAngle;
                 tilt += min[1] * deltaAngle;

@@ -122,15 +122,16 @@ int main(int argc, char *argv[]) {
     partMdt.read(particlesStar);
 
     for (int p = 0; p < partMdt.numberOfObjects(); p++) {
+
         d3Vector partCoord, partOff;
 
-        partMdt.getValue(EMDL::IMAGE_COORD_X, partCoord.x, p);
-        partMdt.getValue(EMDL::IMAGE_COORD_Y, partCoord.y, p);
-        partMdt.getValue(EMDL::IMAGE_COORD_Z, partCoord.z, p);
+        partCoord.x = partMdt.getValue(EMDL::IMAGE_COORD_X, p);
+        partCoord.y = partMdt.getValue(EMDL::IMAGE_COORD_Y, p);
+        partCoord.z = partMdt.getValue(EMDL::IMAGE_COORD_Z, p);
 
-        partMdt.getValue(EMDL::ORIENT_ORIGIN_X, partOff.x, p);
-        partMdt.getValue(EMDL::ORIENT_ORIGIN_Y, partOff.y, p);
-        partMdt.getValue(EMDL::ORIENT_ORIGIN_Z, partOff.z, p);
+        partOff.x = partMdt.getValue(EMDL::ORIENT_ORIGIN_X, p);
+        partOff.y = partMdt.getValue(EMDL::ORIENT_ORIGIN_Y, p);
+        partOff.z = partMdt.getValue(EMDL::ORIENT_ORIGIN_Z, p);
 
         d3Vector partPos = partCoord + partOff;
         partPos.z -= z_offset;

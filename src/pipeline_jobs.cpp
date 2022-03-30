@@ -365,17 +365,16 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
         }
 
         MDhead.read(fn_star, "job");
-        MDhead.getValue(EMDL::JOB_TYPE, type);
-        MDhead.getValue(EMDL::JOB_IS_CONTINUE, is_continue);
+        type = MDhead.getValue(EMDL::JOB_TYPE);
+        is_continue = MDhead.getValue(EMDL::JOB_IS_CONTINUE);
         _is_continue = is_continue;
         if (do_initialise)
             initialise(type);
 
         MDvals.read(fn_star, "joboptions_values");
-        string label, value;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDvals) {
-            MDvals.getValue(EMDL::JOBOPTION_VARIABLE, label);
-            MDvals.getValue(EMDL::JOBOPTION_VALUE, value);
+            string label = MDvals.getValue(EMDL::JOBOPTION_VARIABLE);
+            string value = MDvals.getValue(EMDL::JOBOPTION_VALUE);
             if (joboptions.find(label) == joboptions.end()) {
                 std::cerr << "WARNING: cannot find " << label << " in the defined joboptions. Ignoring it ..." << std::endl;
             } else {

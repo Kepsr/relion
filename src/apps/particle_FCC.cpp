@@ -74,16 +74,14 @@ int main(int argc, char *argv[]) {
     for (int m = 0; m <= maxMG; m++) {
         std::vector<Image<Complex>> obs, pred;
         
-        int opticsGroup;
-        allMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, opticsGroup, 0);
-        opticsGroup--;
+        int opticsGroup = --allMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, 0);
         
         // both defocus_tit and tilt_fit need the same observations
         obs = StackHelper::loadStackFS(allMdts[m], "", threads, true, &obsModel);
         
         pred = reference.predictAll(
             allMdts[m], obsModel, 
-            oppositeHalf? ReferenceMap::Opposite : ReferenceMap::Own, 
+            oppositeHalf ? ReferenceMap::Opposite : ReferenceMap::Own,
             threads, predictCTF, true, false
         );
         
@@ -93,7 +91,7 @@ int main(int argc, char *argv[]) {
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {
             const double xx = x;
-            const double yy = (y + s/2) % s - s/2;
+            const double yy = (y + s / 2) % s - s / 2;
             
             const int r = (int)(sqrt(xx*xx + yy*yy) + 0.5);
             

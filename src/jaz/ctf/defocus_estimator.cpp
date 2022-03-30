@@ -185,9 +185,8 @@ void DefocusEstimator::writeEPS(const MetaDataTable& mdt) {
     const int pc = mdt.numberOfObjects();
 
     for (int p = 0; p < pc; p++) {
-        RFLOAT defU, defV;
-        mdt.getValue(EMDL::CTF_DEFOCUSU, defU, p);
-        mdt.getValue(EMDL::CTF_DEFOCUSV, defV, p);
+        RFLOAT defU = mdt.getValue(EMDL::CTF_DEFOCUSU, p);
+        RFLOAT defV = mdt.getValue(EMDL::CTF_DEFOCUSV, p);
         defU = (defU + defV) / 2.;
 
         min_defocus = XMIPP_MIN(min_defocus, defU);
@@ -195,19 +194,17 @@ void DefocusEstimator::writeEPS(const MetaDataTable& mdt) {
     }
 
     for (int p = 0; p < pc; p++) {
-        RFLOAT defU, defV;
-        RFLOAT xcoor, ycoor;
 
-        mdt.getValue(EMDL::IMAGE_COORD_X, xcoor, p);
-        mdt.getValue(EMDL::IMAGE_COORD_Y, ycoor, p);
-        mdt.getValue(EMDL::CTF_DEFOCUSU, defU, p);
-        mdt.getValue(EMDL::CTF_DEFOCUSV, defV, p);
+        RFLOAT xcoor = mdt.getValue(EMDL::IMAGE_COORD_X, p);
+        RFLOAT ycoor = mdt.getValue(EMDL::IMAGE_COORD_Y, p);
+        RFLOAT defU  = mdt.getValue(EMDL::CTF_DEFOCUSU,  p);
+        RFLOAT defV  = mdt.getValue(EMDL::CTF_DEFOCUSV,  p);
 
         defU = (defU + defV) / 2.0;
 
         RFLOAT val  = (defU - min_defocus) / (max_defocus - min_defocus);
         const RFLOAT eps = 1e-10;
-        if (max_defocus - min_defocus < eps) val = 0.5; // to avoid NaN in color
+        if (max_defocus - min_defocus < eps) { val = 0.5; } // to avoid NaN in color
 
         CDataSet dataSet;
 
@@ -312,14 +309,12 @@ void DefocusEstimator::bruteForceFit(
                 angpix[og], &u, &v, defocusRange
             );
 
-            /*if (debug)
-            {
-                double u0, v0;
-                mdt.getValue(EMDL::CTF_DEFOCUSU, u0, p);
-                mdt.getValue(EMDL::CTF_DEFOCUSV, v0, p);
+            /* if (debug) {
+                double u0 = mdt.getValue(EMDL::CTF_DEFOCUSU, p);
+                double v0 = mdt.getValue(EMDL::CTF_DEFOCUSV, p);
 
                 std::cout << u0 << " -> " << u << ", " << v0 << " -> " << v << "\n";
-            }*/
+            } */
 
             mdt.setValue(EMDL::CTF_DEFOCUSU, u, p);
             mdt.setValue(EMDL::CTF_DEFOCUSV, v, p);

@@ -286,16 +286,20 @@ int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERW
 
     if (!MDMainHeader.isEmpty()) {
         #ifdef DEBUG
-        std::cerr<<"Non-empty MDMainHeader"<<std::endl;
+        std::cerr << "Non-empty MDMainHeader" << std::endl;
         #endif
-        if (MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN,    aux))
-            header->fmin = (float) aux;
-        if (MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX,    aux))
-            header->fmax = (float) aux;
-        if (MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG,    aux))
-            header->av   = (float) aux;
-        if (MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV, aux))
-            header->sig  = (float) aux;
+        try {
+            header->fmin = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN);
+        } catch (const char *errmsg) {}
+        try {
+            header->fmax = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);
+        } catch (const char *errmsg) {}
+        try {
+            header->av = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG);
+        } catch (const char *errmsg) {}
+        try {
+            header->sig = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV);
+        } catch (const char *errmsg) {}
     }
     // For multi-image files
     if (Ndim > 1 || mode == WRITE_APPEND || isStack) {
@@ -303,7 +307,7 @@ int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERW
         header->inuse =  1;
         header->maxim = Ndim;
         if (mode == WRITE_APPEND)
-            header->maxim = replaceNsize +1;
+            header->maxim = replaceNsize + 1;
     } else {
         header->istack = 0;
         header->inuse = 0;

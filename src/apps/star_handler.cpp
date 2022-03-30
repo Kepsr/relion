@@ -193,8 +193,8 @@ class star_handler_parameters {
         read_check_ignore_optics(MD1, fn_in);
 
         label1 = EMDL::str2Label(fn_label1);
-        label2 = (fn_label2 == "") ? EMDL_UNDEFINED : EMDL::str2Label(fn_label2);
-        label3 = (fn_label3 == "") ? EMDL_UNDEFINED : EMDL::str2Label(fn_label3);
+        label2 = (fn_label2 == "") ? EMDL::UNDEFINED : EMDL::str2Label(fn_label2);
+        label3 = (fn_label3 == "") ? EMDL::UNDEFINED : EMDL::str2Label(fn_label3);
 
         compareMetaDataTable(MD1, MD2, MDboth, MDonly1, MDonly2, label1, eps, label2, label3);
 
@@ -260,9 +260,8 @@ class star_handler_parameters {
         std::vector<RFLOAT> avgs, stddevs;
         long int ii = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+            FileName fn_img = MDin.getValue(EMDL::str2Label(discard_label));
             Image<RFLOAT> img;
-            FileName fn_img;
-            MDin.getValue(EMDL::str2Label(discard_label), fn_img);
             img.read(fn_img);
             std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = img().computeStats();
             RFLOAT avg = std::get<0>(statstuple);
@@ -338,14 +337,13 @@ class star_handler_parameters {
             obsModels.push_back(myobsModel);
         }
 
-        // Combine optics groups with the same EMDL_IMAGE_OPTICS_GROUP_NAME, make new ones for those with a different name
+        // Combine optics groups with the same EMDL::IMAGE_OPTICS_GROUP_NAME, make new ones for those with a different name
         if (!do_ignore_optics) {
             std::vector<std::string> optics_group_uniq_names;
 
             // Initialise optics_group_uniq_names with the first table
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
-                std::string myname;
-                obsModel.opticsMdt.getValue(EMDL_IMAGE_OPTICS_GROUP_NAME, myname);
+                std::string myname = obsModel.opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME);
                 optics_group_uniq_names.push_back(myname);
             }
 
@@ -355,8 +353,7 @@ class star_handler_parameters {
 
                 std::vector<int> new_optics_groups;
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsin[MDs_id]) {
-                    int tmp;
-                    MDsin[MDs_id].getValue(EMDL_IMAGE_OPTICS_GROUP, tmp);
+                    int tmp = MDsin[MDs_id].getValue(EMDL::IMAGE_OPTICS_GROUP);
                     new_optics_groups.push_back(tmp);
                 }
 
@@ -364,10 +361,8 @@ class star_handler_parameters {
                 unique_opticsMdt.addMissingLabels(&obsModels[obs_id].opticsMdt);
 
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModels[obs_id].opticsMdt) {
-                    std::string myname;
-                    int my_optics_group;
-                    obsModels[obs_id].opticsMdt.getValue(EMDL_IMAGE_OPTICS_GROUP_NAME, myname);
-                    obsModels[obs_id].opticsMdt.getValue(EMDL_IMAGE_OPTICS_GROUP, my_optics_group);
+                    std::string myname          = obsModels[obs_id].opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME);
+                    int         my_optics_group = obsModels[obs_id].opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP);
 
                     // Check whether this name is unique
                     bool is_uniq = true;
@@ -385,7 +380,7 @@ class star_handler_parameters {
 
                         optics_group_uniq_names.push_back(myname);
                         // Add the line to the global obsModel
-                        obsModels[obs_id].opticsMdt.setValue(EMDL_IMAGE_OPTICS_GROUP, new_group);
+                        obsModels[obs_id].opticsMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, new_group);
 
                         unique_opticsMdt.addObject();
                         unique_opticsMdt.setObject(obsModels[obs_id].opticsMdt.getObject());
@@ -405,8 +400,7 @@ class star_handler_parameters {
                         current_object2 < MDsin[MDs_id].numberOfObjects() && current_object2 >= 0;
                         current_object2 = MDsin[MDs_id].nextObject()
                     ) {
-                        int old_optics_group;
-                        MDsin[MDs_id].getValue(EMDL_IMAGE_OPTICS_GROUP, old_optics_group, current_object2);
+                        int old_optics_group = MDsin[MDs_id].getValue(EMDL::IMAGE_OPTICS_GROUP, current_object2);
                         if (old_optics_group == my_optics_group)
                             new_optics_groups[current_object2] = new_group;
                     }
@@ -415,14 +409,14 @@ class star_handler_parameters {
                 obsModels[obs_id].opticsMdt = unique_opticsMdt;
 
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsin[MDs_id]) {
-                    MDsin[MDs_id].setValue(EMDL_IMAGE_OPTICS_GROUP, new_optics_groups[current_object]);
+                    MDsin[MDs_id].setValue(EMDL::IMAGE_OPTICS_GROUP, new_optics_groups[current_object]);
 
                     // Also rename the rlnGroupName to not have groups overlapping from different optics groups
-                    std::string name;
-                    if (MDsin[MDs_id].getValue(EMDL_MLMODEL_GROUP_NAME, name)) {
+                    try {
+                        std::string name = MDsin[MDs_id].getValue(EMDL::MLMODEL_GROUP_NAME);
                         name = "optics" + integerToString(new_optics_groups[current_object]) + "_" + name;
-                        MDsin[MDs_id].setValue(EMDL_MLMODEL_GROUP_NAME, name);
-                    }
+                        MDsin[MDs_id].setValue(EMDL::MLMODEL_GROUP_NAME, name);
+                    } catch (const char* errmsg) {}
                 }
             }
 
@@ -441,34 +435,34 @@ class star_handler_parameters {
             bool has_ctf_premultiplied = false, has_not_ctf_premultiplied = false;
             for (int i = 0; i < fns_in.size(); i++) {
                 if (
-                    MDoptics[i].containsLabel(EMDL_IMAGE_BEAMTILT_X) ||
-                    MDoptics[i].containsLabel(EMDL_IMAGE_BEAMTILT_Y)
+                    MDoptics[i].containsLabel(EMDL::IMAGE_BEAMTILT_X) ||
+                    MDoptics[i].containsLabel(EMDL::IMAGE_BEAMTILT_Y)
                 ) {
                     has_beamtilt = true;
                 } else {
                     has_not_beamtilt = true;  // What?
                 }
                 if (
-                    MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_00) &&
-                    MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_01) &&
-                    MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_10) &&
-                    MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_11)
+                    MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_00) &&
+                    MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_01) &&
+                    MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_10) &&
+                    MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_11)
                 ) {
                     has_anisomag = true;
                 } else {
                     has_not_anisomag = true;  // What?
                 }
-                if (MDoptics[i].containsLabel(EMDL_IMAGE_ODD_ZERNIKE_COEFFS)) {
+                if (MDoptics[i].containsLabel(EMDL::IMAGE_ODD_ZERNIKE_COEFFS)) {
                     has_odd_zernike = true;
                 } else {
                     has_not_odd_zernike = true;  // What?
                 }
-                if (MDoptics[i].containsLabel(EMDL_IMAGE_EVEN_ZERNIKE_COEFFS)) {
+                if (MDoptics[i].containsLabel(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS)) {
                     has_even_zernike = true;
                 } else {
                     has_not_even_zernike = true;  // What?
                 }
-                if (MDoptics[i].containsLabel(EMDL_OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED)) {
+                if (MDoptics[i].containsLabel(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED)) {
                     has_ctf_premultiplied = true;
                 } else {
                     has_not_ctf_premultiplied = true;  // What?
@@ -480,56 +474,56 @@ class star_handler_parameters {
 
             for (int i = 0; i < fns_in.size(); i++) {
                 if (has_beamtilt && has_not_beamtilt) {
-                    if (!MDoptics[i].containsLabel(EMDL_IMAGE_BEAMTILT_X)) {
+                    if (!MDoptics[i].containsLabel(EMDL::IMAGE_BEAMTILT_X)) {
                         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDoptics[i]) {
-                            MDoptics[i].setValue(EMDL_IMAGE_BEAMTILT_X, 0.);
+                            MDoptics[i].setValue(EMDL::IMAGE_BEAMTILT_X, 0.);
                         }
                     }
-                    if (!MDoptics[i].containsLabel(EMDL_IMAGE_BEAMTILT_Y)) {
+                    if (!MDoptics[i].containsLabel(EMDL::IMAGE_BEAMTILT_Y)) {
                         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDoptics[i]) {
-                            MDoptics[i].setValue(EMDL_IMAGE_BEAMTILT_Y, 0.);
+                            MDoptics[i].setValue(EMDL::IMAGE_BEAMTILT_Y, 0.);
                         }
                     }
                 }
 
                 if (has_anisomag && has_not_anisomag) {
                     if (!(
-                        MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_00) &&
-                        MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_01) &&
-                        MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_10) &&
-                        MDoptics[i].containsLabel(EMDL_IMAGE_MAG_MATRIX_11)
+                        MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_00) &&
+                        MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_01) &&
+                        MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_10) &&
+                        MDoptics[i].containsLabel(EMDL::IMAGE_MAG_MATRIX_11)
                     )) {
                         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDoptics[i]) {
-                            MDoptics[i].setValue(EMDL_IMAGE_MAG_MATRIX_00, 1.);
-                            MDoptics[i].setValue(EMDL_IMAGE_MAG_MATRIX_01, 0.);
-                            MDoptics[i].setValue(EMDL_IMAGE_MAG_MATRIX_10, 0.);
-                            MDoptics[i].setValue(EMDL_IMAGE_MAG_MATRIX_11, 1.);
+                            MDoptics[i].setValue(EMDL::IMAGE_MAG_MATRIX_00, 1.);
+                            MDoptics[i].setValue(EMDL::IMAGE_MAG_MATRIX_01, 0.);
+                            MDoptics[i].setValue(EMDL::IMAGE_MAG_MATRIX_10, 0.);
+                            MDoptics[i].setValue(EMDL::IMAGE_MAG_MATRIX_11, 1.);
                         }
                     }
                 }
 
                 if (has_odd_zernike && has_not_odd_zernike) {
                     std::vector<RFLOAT> six_zeros(6, 0);
-                    if (!MDoptics[i].containsLabel(EMDL_IMAGE_ODD_ZERNIKE_COEFFS)) {
+                    if (!MDoptics[i].containsLabel(EMDL::IMAGE_ODD_ZERNIKE_COEFFS)) {
                         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDoptics[i]) {
-                            MDoptics[i].setValue(EMDL_IMAGE_ODD_ZERNIKE_COEFFS, six_zeros);
+                            MDoptics[i].setValue(EMDL::IMAGE_ODD_ZERNIKE_COEFFS, six_zeros);
                         }
                     }
                 }
 
                 if (has_even_zernike && has_not_even_zernike) {
                     std::vector<RFLOAT> nine_zeros(9, 0);
-                    if (!MDoptics[i].containsLabel(EMDL_IMAGE_EVEN_ZERNIKE_COEFFS)) {
+                    if (!MDoptics[i].containsLabel(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS)) {
                         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDoptics[i]) {
-                            MDoptics[i].setValue(EMDL_IMAGE_EVEN_ZERNIKE_COEFFS, nine_zeros);
+                            MDoptics[i].setValue(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS, nine_zeros);
                         }
                     }
                 }
 
                 if (has_ctf_premultiplied && has_not_ctf_premultiplied) {
-                    if (!MDoptics[i].containsLabel(EMDL_OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED)) {
+                    if (!MDoptics[i].containsLabel(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED)) {
                         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDoptics[i]) {
-                            MDoptics[i].setValue(EMDL_OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, false);
+                            MDoptics[i].setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, false);
                         }
                     }
                 }
@@ -543,7 +537,7 @@ class star_handler_parameters {
         MDout = MetaDataTable::combineMetaDataTables(MDsin);
 
         //Deactivate the group_name column
-        MDout.deactivateLabel(EMDL_MLMODEL_GROUP_NO);
+        MDout.deactivateLabel(EMDL::MLMODEL_GROUP_NO);
 
         if (fn_check != "") {
             EMDLabel label = EMDL::str2Label(fn_check);
@@ -554,7 +548,7 @@ class star_handler_parameters {
             FileName fn_this, fn_prev = "";
             MetaDataTable MDsort;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
-                MDout.getValue(label, fn_this);
+                fn_this = MDout.getValue(label);
                 MDsort.addObject();
                 MDsort.setValue(label, fn_this);
             }
@@ -562,7 +556,7 @@ class star_handler_parameters {
             MDsort.newSort(label);
             long int nr_duplicates = 0;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsort) {
-                MDsort.getValue(label, fn_this);
+                fn_this = MDsort.getValue(label);
                 if (fn_this == fn_prev) {
                     nr_duplicates++;
                     std::cerr << " WARNING: duplicate entry: " << fn_this << std::endl;
@@ -631,13 +625,13 @@ class star_handler_parameters {
             std::cout << " Written: " <<fnt << " with " << MDouts[isplit].numberOfObjects() << " objects." << std::endl;
 
             MDnodes.addObject();
-            MDnodes.setValue(EMDL_PIPELINE_NODE_NAME, fnt);
+            MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt);
             int type =
                 MD.getName() == "micrographs" ? NODE_MICS :
                 MD.getName() == "movies" ? NODE_MOVIES :
                 NODE_PART_DATA;  // Otherwise, just assume these are particles.
 
-            MDnodes.setValue(EMDL_PIPELINE_NODE_TYPE, type);
+            MDnodes.setValue(EMDL::PIPELINE_NODE_TYPE, type);
         }
 
         // write out the star file with the output nodes
@@ -669,16 +663,16 @@ class star_handler_parameters {
                     if (fn_operate2 != "") MD.setValue(label2, val);
                     if (fn_operate3 != "") MD.setValue(label3, val);
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
-                    MD.getValue(label1, val);
+                    val = MD.getValue(label1);
                     val = multiply_by * val + add_to;
                     MD.setValue(label1, val);
                     if (fn_operate2 != "") {
-                        MD.getValue(label2, val);
+                        val = MD.getValue(label2);
                         val = multiply_by * val + add_to;
                         MD.setValue(label2, val);
                     }
                     if (fn_operate3 != "") {
-                        MD.getValue(label3, val);
+                        val = MD.getValue(label3);
                         val = multiply_by * val + add_to;
                         MD.setValue(label3, val);
                     }
@@ -691,16 +685,16 @@ class star_handler_parameters {
                     if (fn_operate2 != "") MD.setValue(label2, val);
                     if (fn_operate3 != "") MD.setValue(label3, val);
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
-                    MD.getValue(label1, val);
+                    val = MD.getValue(label1);
                     val = multiply_by * val + add_to;
                     MD.setValue(label1, val);
                     if (fn_operate2 != "") {
-                        MD.getValue(label2, val);
+                        val = MD.getValue(label2);
                         val = multiply_by * val + add_to;
                         MD.setValue(label2, val);
                     }
                     if (fn_operate3 != "") {
-                        MD.getValue(label3, val);
+                        val = MD.getValue(label3);
                         val = multiply_by * val + add_to;
                         MD.setValue(label3, val);
                     }
@@ -728,8 +722,8 @@ class star_handler_parameters {
     void center() {
         MetaDataTable MD;
         read_check_ignore_optics(MD, fn_in, "particles");
-        bool do_contains_xy = (MD.containsLabel(EMDL_ORIENT_ORIGIN_X_ANGSTROM) && MD.containsLabel(EMDL_ORIENT_ORIGIN_Y_ANGSTROM));
-        bool do_contains_z = (MD.containsLabel(EMDL_ORIENT_ORIGIN_Z_ANGSTROM));
+        bool do_contains_xy = (MD.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) && MD.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM));
+        bool do_contains_z = (MD.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM));
 
         if (!do_contains_xy) {
             REPORT_ERROR("ERROR: input STAR file does not contain rlnOriginX/Y for re-centering.");
@@ -749,16 +743,15 @@ class star_handler_parameters {
             if (do_ignore_optics) {
                 angpix = cl_angpix;
             } else {
-                MD.getValue(EMDL_IMAGE_OPTICS_GROUP, optics_group);
-                optics_group--;
+                optics_group = --MD.getValue(EMDL::IMAGE_OPTICS_GROUP);
                 angpix = obsModel.getPixelSize(optics_group);
             }
 
-            MD.getValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, xoff);
-            MD.getValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, yoff);
-            MD.getValue(EMDL_ORIENT_ROT, rot);
-            MD.getValue(EMDL_ORIENT_TILT, tilt);
-            MD.getValue(EMDL_ORIENT_PSI, psi);
+            xoff = MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            yoff = MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+            rot  = MD.getValue(EMDL::ORIENT_ROT);
+            tilt = MD.getValue(EMDL::ORIENT_TILT);
+            psi  = MD.getValue(EMDL::ORIENT_PSI);
 
             xoff /= angpix;
             yoff /= angpix;
@@ -771,15 +764,15 @@ class star_handler_parameters {
             yoff -= YY(my_projected_center);
 
             // Set back the new centers
-            MD.setValue(EMDL_ORIENT_ORIGIN_X_ANGSTROM, xoff*angpix);
-            MD.setValue(EMDL_ORIENT_ORIGIN_Y_ANGSTROM, yoff*angpix);
+            MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix);
+            MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff * angpix);
 
             // also allow 3D data (subtomograms)
             if (do_contains_z) {
-                MD.getValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, zoff);
+                zoff = MD.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
                 zoff /= angpix;
                 zoff -= ZZ(my_projected_center);
-                MD.setValue(EMDL_ORIENT_ORIGIN_Z_ANGSTROM, zoff*angpix);
+                MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix);
             }
         }
 
@@ -821,34 +814,19 @@ class star_handler_parameters {
 
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             if (EMDL::isDouble(label)) {
-                RFLOAT aux;
-                if (set_value) aux = textToFloat(add_col_value);
-                else MD.getValue(source_label, aux);
-
+                RFLOAT aux = set_value ? textToFloat(add_col_value) : MD.getValue(source_label);
                 MD.setValue(label, aux);
             } else if (EMDL::isInt(label)) {
-                long aux;
-                if (set_value) aux = textToInteger(add_col_value);
-                else MD.getValue(source_label, aux);
-
+                long aux = set_value ? textToInteger(add_col_value) : MD.getValue(source_label);
                 MD.setValue(label, aux);
             } else if (EMDL::isBool(label)) {
-                bool aux;
-                if (set_value) aux = (bool)textToInteger(add_col_value);
-                else MD.getValue(source_label, aux);
-
+                bool aux = set_value ? textToInteger(add_col_value) : MD.getValue(source_label);
                 MD.setValue(label, aux);
             } else if (EMDL::isString(label)) {
-                std::string aux;
-                if (set_value) aux = add_col_value;
-                else MD.getValue(source_label, aux);
-
+                std::string aux = set_value ? add_col_value : MD.getValue(source_label);
                 MD.setValue(label, add_col_value);
             } else if (EMDL::isString(label)) {
-                std::string auxStr;
-                if (set_value) auxStr = add_col_value;
-                else MD.getValueToString(source_label, auxStr);
-
+                std::string auxStr = set_value ? add_col_value : MD.getValueToString(source_label);
                 MD.setValueFromString(label, add_col_value);
             }
         }
@@ -885,8 +863,11 @@ class star_handler_parameters {
         read_check_ignore_optics(MD, fn_in, "particles");
 
         EMDLabel mic_label;
-        if (MD.containsLabel(EMDL_MICROGRAPH_NAME)) mic_label = EMDL_MICROGRAPH_NAME;
-        else REPORT_ERROR("The input STAR file does not contain rlnMicrographName column.");
+        if (MD.containsLabel(EMDL::MICROGRAPH_NAME)) {
+            mic_label = EMDL::MICROGRAPH_NAME;
+        } else {
+            REPORT_ERROR("The input STAR file does not contain rlnMicrographName column.");
+        }
 
         RFLOAT particle_angpix = 1.0; // rlnOriginX/YAngst is always 1 A/px.
 

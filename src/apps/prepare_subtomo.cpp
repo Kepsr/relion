@@ -277,7 +277,7 @@ class prepare_subtomo {
         // Check whether each tomogram sits in a separate folder
         fns_tomo.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
-            MD_tomo.getValue(EMDL::MICROGRAPH_NAME, fn1);
+            fn1 = MD_tomo.getValue(EMDL::MICROGRAPH_NAME);
             fns_tomo.push_back(fn1);
         }
         if (fns_tomo.size() < 1)
@@ -297,12 +297,12 @@ class prepare_subtomo {
         Image<RFLOAT> img;
         int xdim = 0, ydim = 0, zdim = 0;
         long int ndim = 0, nr_frames = 0, nr_lines = 0;
-        RFLOAT xx = 0., yy = 0., zz = 0.;
+        RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
         bool is_star_coords = false, is_txt_coords = false;
         MD_tmp.clear();
         img.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
-            MD_tomo.getValue(EMDL::MICROGRAPH_NAME, fn1);
+            fn1 = MD_tomo.getValue(EMDL::MICROGRAPH_NAME);
             std::cout << " 3D reconstructed tomogram in STAR file: " << fn1 << std::flush;
 
             // Check 3D reconstructed tomogram
@@ -528,8 +528,7 @@ class prepare_subtomo {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
             std::cout << std::endl;
 
-            FileName fn_tomo;
-            MD_tomo.getValue(EMDL::MICROGRAPH_NAME, fn_tomo);
+            FileName fn_tomo = MD_tomo.getValue(EMDL::MICROGRAPH_NAME);
             std::cout << "#### Processing tomogram " << fn_tomo << " ... ####" << std::endl;
 
             FileName dir_ctf = fn_tomo.beforeLastOf("/") + "/Ctffind";
@@ -754,8 +753,8 @@ class prepare_subtomo {
                 !MD_ctf_results.containsLabel(EMDL::MICROGRAPH_NAME)
             ) REPORT_ERROR("micrographs_ctf.star should contain _rlnDefocusU, _rlnDefocusV and _rlnMicrographName! Please check whether CTF estimation was done successfully.");
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_ctf_results) {
-                MD_ctf_results.getValue(EMDL::CTF_DEFOCUSU, du);
-                MD_ctf_results.getValue(EMDL::CTF_DEFOCUSV, dv);
+                du = MD_ctf_results.getValue(EMDL::CTF_DEFOCUSU);
+                dv = MD_ctf_results.getValue(EMDL::CTF_DEFOCUSV);
                 avg_defoci.push_back(du); // TODO: Why just read in defocusU but not with defocusV and defocusAngle ???
             }
             if (do_use_trials_for_ctffind) {
@@ -810,7 +809,7 @@ class prepare_subtomo {
             Image<RFLOAT> img;
             int xdim = 0, ydim = 0, zdim = 0;
             long int ndim = 0;
-            RFLOAT calc_angpix = 10000. * PixelSize / Magnification;
+            RFLOAT calc_angpix = 10000.0 * PixelSize / Magnification;
             std::cout << " Calculated pixel size = " << calc_angpix << " Angstrom(s)" << std::endl;
             std::cout << " Extract XYZN dimensions of the tomogram " << fn_tomo << std::endl;
             img.read(fn_tomo, false);
@@ -822,7 +821,6 @@ class prepare_subtomo {
             std::cout << " Tomogram XYZN dimensions = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
             std::cout << " Writing out .star files to make 3D CTF volumes..." << std::endl;
 
-            RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
             int nr_subtomo = 0;
             bool write_star_file = false;
             FileName fn_subtomo_star, fn_subtomo_mrc;
@@ -869,11 +867,12 @@ class prepare_subtomo {
             if (MD_coords.numberOfObjects() < 1)
                 REPORT_ERROR("MD_coords is empty! It reads from .coord or .star file: " + fn_coords);
             nr_subtomo = 0;
+            RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_coords) {
                 nr_subtomo++;
-                MD_coords.getValue(EMDL::IMAGE_COORD_X, xx);
-                MD_coords.getValue(EMDL::IMAGE_COORD_Y, yy);
-                MD_coords.getValue(EMDL::IMAGE_COORD_Z, zz);
+                xx = MD_coords.getValue(EMDL::IMAGE_COORD_X);
+                yy = MD_coords.getValue(EMDL::IMAGE_COORD_Y);
+                zz = MD_coords.getValue(EMDL::IMAGE_COORD_Z);
 
                 write_star_file = (do_skip_ctf_correction && nr_subtomo == 1) || !do_skip_ctf_correction;
                 if (!write_star_file) continue; // TODO: check this! OK. I think it is fine.

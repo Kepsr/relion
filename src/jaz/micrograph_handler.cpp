@@ -59,8 +59,6 @@ void MicrographHandler::init(
         ObservationModel::loadSafely(corrMicFn, obsModel, corrMic, "micrographs", verb, false);
         mic2meta.clear();
 
-        std::string micName, metaName;
-
         if (!corrMic.containsLabel(EMDL::MICROGRAPH_NAME)) {
             REPORT_ERROR(" The corrected_micrographs STAR file does not contain rlnMicrographName label.");
         }
@@ -69,8 +67,8 @@ void MicrographHandler::init(
         }
 
         for (int i = 0; i < corrMic.numberOfObjects(); i++) {
-            corrMic.getValueToString(EMDL::MICROGRAPH_NAME, micName, i);
-            corrMic.getValueToString(EMDL::MICROGRAPH_METADATA_NAME, metaName, i);
+            std::string micName  = corrMic.getValueToString(EMDL::MICROGRAPH_NAME,          i);
+            std::string metaName = corrMic.getValueToString(EMDL::MICROGRAPH_METADATA_NAME, i);
             // remove the pipeline job prefix
             FileName fn_pre, fn_jobnr, fn_post;
             decomposePipelineFileName(micName, fn_pre, fn_jobnr, fn_post);

@@ -119,9 +119,7 @@ int readTIFF(
         }
         #ifdef DEBUG_TIFF
         std::cout << "resolutionUnit = " << resolutionUnit << " xResolution = " << xResolution << std::endl;
-        RFLOAT angpix;
-        MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, angpix);
-        std::cout << "pixel size = " << angpix << std::endl;
+        std::cout << "pixel size = " << (RFLOAT) MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X) << std::endl;
         #endif
     }
 

@@ -81,8 +81,6 @@ class particle_symmetry_expand_parameters {
 
     void run() {
         MetaDataTable DFi, DFo;
-        RFLOAT rot, tilt, psi, x, y;
-        RFLOAT rotp, tiltp, psip, xp, yp;
         Matrix2D<RFLOAT> L(3,3), R(3,3); // A matrix from the list
         RFLOAT z_start, z_stop, z_step; // for helices
         SymList SL;
@@ -119,18 +117,20 @@ class particle_symmetry_expand_parameters {
             }
         }
 
-        int barstep = XMIPP_MAX(1, DFi.numberOfObjects()/ 60);
+        int barstep = XMIPP_MAX(1, DFi.numberOfObjects() / 60);
         init_progress_bar(DFi.numberOfObjects());
         DFo.clear();
 
+        RFLOAT rot,  tilt,  psi,  x,  y;
+        RFLOAT rotp, tiltp, psip, xp, yp;
         long int imgno = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(DFi) {
 
-            DFi.getValue(EMDL::ORIENT_ROT, rot);
-            DFi.getValue(EMDL::ORIENT_TILT, tilt);
-            DFi.getValue(EMDL::ORIENT_PSI, psi);
-            DFi.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, x);
-            DFi.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, y);
+            rot  = DFi.getValue(EMDL::ORIENT_ROT);
+            tilt = DFi.getValue(EMDL::ORIENT_TILT);
+            psi  = DFi.getValue(EMDL::ORIENT_PSI);
+            x    = DFi.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            y    = DFi.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
 
             if (do_helix) {
                 for (RFLOAT z_pos = z_start; z_pos <= z_stop; z_pos += z_step) {

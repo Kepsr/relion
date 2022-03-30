@@ -49,12 +49,11 @@
 #define CURRENT_MDT_VERSION 30001
 
 /** For all objects.
- @code
- FOR_ALL_OBJECTS_IN_METADATA(metadata) {
-   RFLOAT rot;
-   DF.getValue( EMDL::ANGLEROT, rot);
- }
- @endcode
+    @code
+    FOR_ALL_OBJECTS_IN_METADATA(metadata) {
+        RFLOAT rot = DF.getValue(EMDL::ANGLEROT);
+    }
+    @endcode
 
  This is not thread-safe because current_objectID is updated!
 
@@ -163,12 +162,10 @@ class MetaDataTable {
     int getVersion() const;
     static int getCurrentVersion();
 
-    // Currently returns true if the label exists
-    // objectID is 0-indexed.
     template<class T>
-    bool getValue(EMDLabel label, long objectID = -1) const;
+    T getValue(EMDL::EMDLabel label, long objectID = -1) const;
 
-    bool getValueToString(EMDLabel label, std::string &value, long int objectID = -1, bool escape=false) const;
+    bool getValueToString(EMDL::EMDLabel label, std::string &value, long int objectID = -1, bool escape=false) const;
 
     std::string getUnknownLabelNameAt(int i) const;
 
@@ -176,19 +173,19 @@ class MetaDataTable {
     // If no objectID is given, the internal iterator 'current_objectID' is used
     // objectID is 0-indexed.
     template<class T>
-    bool setValue(EMDLabel name, const T &value, long int objectID = -1);
+    bool setValue(EMDL::EMDLabel name, const T &value, long int objectID = -1);
 
     bool setUnknownValue(int labelPosition, const std::string &value);
-    bool setValueFromString(EMDLabel label, const std::string &value, long int objectID = -1);
+    bool setValueFromString(EMDL::EMDLabel label, const std::string &value, long int objectID = -1);
 
     // Sort the order of the elements based on the values in the input label
     // (only numbers, no strings/bools)
-    void sort(EMDLabel name, bool do_reverse = false, bool only_set_index = false, bool do_random = false);
+    void sort(EMDL::EMDLabel name, bool do_reverse = false, bool only_set_index = false, bool do_random = false);
     void newSort(const EMDLabel name, bool do_reverse = false, bool do_sort_after_at = false, bool do_sort_before_at = false);
 
     // Check whether a label is defined in the table.
     // This is redundant and will be removed in 3.2.
-    bool labelExists(EMDLabel name) const;
+    bool labelExists(EMDL::EMDLabel name) const;
 
     // Does 'activeLabels' contain 'label'?
     bool containsLabel(const EMDLabel label, const std::string unknownLabel="") const;
@@ -196,10 +193,10 @@ class MetaDataTable {
     std::vector<EMDLabel> getActiveLabels() const;
 
     // Deactivate a column from a table, so that it is no longer written out
-    void deactivateLabel(EMDLabel label, std::string unknownLabel="");
+    void deactivateLabel(EMDL::EMDLabel label, std::string unknownLabel="");
 
     // Add a new label and update all objects
-    void addLabel(EMDLabel label, std::string unknownLabel="");
+    void addLabel(EMDL::EMDLabel label, std::string unknownLabel="");
 
     // Add missing labels that are present in 'app'.
     void addMissingLabels(const MetaDataTable* app);
@@ -334,7 +331,7 @@ class MetaDataTable {
     };
 
     template<class T>
-    bool isTypeCompatible(EMDLabel label, T& value) const;
+    bool isTypeCompatible(EMDL::EMDLabel label, T& value) const;
 
     private:
 
@@ -379,7 +376,7 @@ MetaDataTable removeDuplicatedParticles(
 #ifdef METADATA_TABLE_TYPE_CHECK
 //#pragma message("typecheck enabled")
 template<class T>
-bool MetaDataTable::isTypeCompatible(EMDLabel label, T& value) const {
+bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label, T& value) const {
     // remove const appended by setValue()
     typedef typename std::remove_const<T>::type U;
 
@@ -406,9 +403,10 @@ bool MetaDataTable::isTypeCompatible(EMDLabel label, T& value) const {
 }
 #endif
 
-/// TODO: Return value or, if the label does not exist, raise error.
-template<class T>
-bool MetaDataTable::getValue(EMDLabel label, long objectID) const {
+/// Return value or, if the label does not exist, raise error.
+// objectID is 0-indexed.
+template<typename T>
+T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
 
     T value;
     if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
@@ -429,16 +427,16 @@ bool MetaDataTable::getValue(EMDLabel label, long objectID) const {
         };
 
         objects[objectID]->getValue(off, value);
-        return value;
     } else {
         throw "Negative offset";
     }
+    return value;
 }
 
 
 /// TODO: value rather than &value
 template<class T>
-bool MetaDataTable::setValue(EMDLabel label, const T &value, long int objectID) {
+bool MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int objectID) {
 
     if (label < 0 || label >= EMDL::LAST_LABEL) return false;
 

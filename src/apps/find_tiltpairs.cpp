@@ -118,26 +118,25 @@ class angular_error_parameters {
         if (!MDtil.containsLabel(EMDL::IMAGE_COORD_X) || !MDtil.containsLabel(EMDL::IMAGE_COORD_Y))
             REPORT_ERROR("ERROR: Tilted STAR file does not contain the rlnCoordinateX or Y labels");
 
-        RFLOAT x, y;
-
         p_unt.clear();
+        RFLOAT x, y;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDunt) {
-            MDunt.getValue(EMDL::IMAGE_COORD_X, x);
-            MDunt.getValue(EMDL::IMAGE_COORD_Y, y);
-            p_unt.push_back((int)x);
-            p_unt.push_back((int)y);
+            x = MDunt.getValue(EMDL::IMAGE_COORD_X);
+            y = MDunt.getValue(EMDL::IMAGE_COORD_Y);
+            p_unt.push_back((int) x);
+            p_unt.push_back((int) y);
         }
         p_til.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtil) {
-            MDtil.getValue(EMDL::IMAGE_COORD_X, x);
-            MDtil.getValue(EMDL::IMAGE_COORD_Y, y);
-            p_til.push_back((int)x);
-            p_til.push_back((int)y);
+            x = MDtil.getValue(EMDL::IMAGE_COORD_X);
+            y = MDtil.getValue(EMDL::IMAGE_COORD_Y);
+            p_til.push_back((int) x);
+            p_til.push_back((int) y);
         }
 
         // Initialize best transformation params
         best_x = best_y = 9999;
-        best_rot = best_tilt = 9999.;
+        best_rot = best_tilt = 9999.0;
     }
 
     int getNumberOfPairs(int dx=0, int dy=0) {

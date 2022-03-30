@@ -107,13 +107,11 @@ int main(int argc, char *argv[]) {
                 ccsRs[t], 1e-12, pad * max_shift, pad * max_shift
             );
 
-            if (shift.x >= sh2) shift.x -= s2;
-            if (shift.y >= sh2) shift.y -= s2;
+            if (shift.x >= sh2) { shift.x -= s2; }
+            if (shift.y >= sh2) { shift.y -= s2; }
 
-            double xoff, yoff;
-
-            allMdts[m].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff, p);
-            allMdts[m].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff, p);
+            double xoff = allMdts[m].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
+            double yoff = allMdts[m].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
 
             xoff /= angpix;
             yoff /= angpix;

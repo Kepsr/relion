@@ -100,75 +100,75 @@ void MlModel::read(FileName fn_in) {
     // Open input file
     std::ifstream in(fn_in.data(), std::ios_base::in);
     if (in.fail())
-        REPORT_ERROR( (std::string) "MlModel::readStar: File " + fn_in + " cannot be read." );
+        REPORT_ERROR((std::string) "MlModel::readStar: File " + fn_in + " cannot be read.");
 
     MetaDataTable MDclass, MDgroup, MDlog, MDsigma, MDbodies;
 
     // Read general stuff
     MDlog.readStar(in, "model_general");
-    if (
-        !MDlog.getValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim) ||
-        !MDlog.getValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size) ||
-        !MDlog.getValue(EMDL::MLMODEL_CURRENT_RESOLUTION, current_resolution) ||
-        !MDlog.getValue(EMDL::MLMODEL_CURRENT_SIZE, current_size) ||
-        !MDlog.getValue(EMDL::MLMODEL_PADDING_FACTOR, padding_factor) ||
-        !MDlog.getValue(EMDL::MLMODEL_INTERPOLATOR, interpolator) ||
-        !MDlog.getValue(EMDL::MLMODEL_MINIMUM_RADIUS_NN_INTERPOLATION, r_min_nn) ||
-        !MDlog.getValue(EMDL::MLMODEL_PIXEL_SIZE, pixel_size) ||
-        !MDlog.getValue(EMDL::MLMODEL_NR_CLASSES, nr_classes) ||
-        !MDlog.getValue(EMDL::MLMODEL_NR_GROUPS, nr_groups) ||
-        !MDlog.getValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge_factor) ||
-        !MDlog.getValue(EMDL::MLMODEL_NORM_CORRECTION_AVG, avg_norm_correction) ||
-        !MDlog.getValue(EMDL::MLMODEL_PRIOR_MODE, orientational_prior_mode) ||
-        !MDlog.getValue(EMDL::MLMODEL_SIGMA_ROT, sigma2_rot) ||
-        !MDlog.getValue(EMDL::MLMODEL_SIGMA_TILT, sigma2_tilt) ||
-        !MDlog.getValue(EMDL::MLMODEL_SIGMA_PSI, sigma2_psi) ||
-        !MDlog.getValue(EMDL::MLMODEL_LL, LL) ||
-        !MDlog.getValue(EMDL::MLMODEL_AVE_PMAX, ave_Pmax)
-    ) {
+    try {
+        ref_dim                  = MDlog.getValue(EMDL::MLMODEL_DIMENSIONALITY);
+        ori_size                 = MDlog.getValue(EMDL::MLMODEL_ORIGINAL_SIZE);
+        current_resolution       = MDlog.getValue(EMDL::MLMODEL_CURRENT_RESOLUTION);
+        current_size             = MDlog.getValue(EMDL::MLMODEL_CURRENT_SIZE);
+        padding_factor           = MDlog.getValue(EMDL::MLMODEL_PADDING_FACTOR);
+        interpolator             = MDlog.getValue(EMDL::MLMODEL_INTERPOLATOR);
+        r_min_nn                 = MDlog.getValue(EMDL::MLMODEL_MINIMUM_RADIUS_NN_INTERPOLATION);
+        pixel_size               = MDlog.getValue(EMDL::MLMODEL_PIXEL_SIZE);
+        nr_classes               = MDlog.getValue(EMDL::MLMODEL_NR_CLASSES);
+        nr_groups                = MDlog.getValue(EMDL::MLMODEL_NR_GROUPS);
+        tau2_fudge_factor        = MDlog.getValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR);
+        avg_norm_correction      = MDlog.getValue(EMDL::MLMODEL_NORM_CORRECTION_AVG);
+        orientational_prior_mode = MDlog.getValue(EMDL::MLMODEL_PRIOR_MODE);
+        sigma2_rot               = MDlog.getValue(EMDL::MLMODEL_SIGMA_ROT);
+        sigma2_tilt              = MDlog.getValue(EMDL::MLMODEL_SIGMA_TILT);
+        sigma2_psi               = MDlog.getValue(EMDL::MLMODEL_SIGMA_PSI);
+        LL                       = MDlog.getValue(EMDL::MLMODEL_LL);
+        ave_Pmax                 = MDlog.getValue(EMDL::MLMODEL_AVE_PMAX);
+    } catch (const char *errmsg) {
         REPORT_ERROR("MlModel::readStar: incorrect model_general table");
     }
 
-    if (!MDlog.getValue(EMDL::MLMODEL_SIGMA_OFFSET_ANGSTROM, sigma2_offset)) {
-        if (MDlog.getValue(EMDL::MLMODEL_SIGMA_OFFSET, sigma2_offset)) {
-            sigma2_offset *= pixel_size;
-        } else {
-            REPORT_ERROR("MlModel::readStar: incorrect model_general table: cannot find sigma_offset");
-        }
+    try {
+        sigma2_offset = MDlog.getValue(EMDL::MLMODEL_SIGMA_OFFSET_ANGSTROM);
+    } catch (const char *errmsg) try {
+        sigma2_offset = MDlog.getValue(EMDL::MLMODEL_SIGMA_OFFSET) * pixel_size;
+    } catch (const char *errmsg) {
+        REPORT_ERROR("MlModel::readStar: incorrect model_general table: cannot find sigma_offset");
     }
-
 
     // Retain compability with model files written by Relion prior to 1.4
-    if (!MDlog.getValue(EMDL::MLMODEL_DIMENSIONALITY_DATA, data_dim))
-        data_dim = 2;
-    if (!MDlog.getValue(EMDL::MLMODEL_NR_BODIES, nr_bodies))
-        nr_bodies = 1;
-    if (!MDlog.getValue(EMDL::MLMODEL_IS_HELIX, is_helix))
-        is_helix = false;
-    if (is_helix) {
-        if (nr_bodies != 1)
-            REPORT_ERROR("MlModel::readStar: incorrect nr_bodies for helix");
+
+    #define TRY_MDLOG_GET(variable, label, defaultvalue) \
+    try {
+        (variable) = MDlog.getValue(label);
+    } catch (const char *errmsg) {
+        (variable) = (defaultvalue);
     }
-    if (!MDlog.getValue(EMDL::MLMODEL_HELICAL_NR_ASU, helical_nr_asu))
-        helical_nr_asu = 1;
-    if (!MDlog.getValue(EMDL::MLMODEL_HELICAL_TWIST_MIN, helical_twist_min))
-        helical_twist_min = 0.0;
-    if (!MDlog.getValue(EMDL::MLMODEL_HELICAL_TWIST_MAX, helical_twist_max))
-        helical_twist_max = 0.0;
-    if (!MDlog.getValue(EMDL::MLMODEL_HELICAL_TWIST_INITIAL_STEP, helical_twist_inistep))
-        helical_twist_inistep = 0.0;
-    if (!MDlog.getValue(EMDL::MLMODEL_HELICAL_RISE_MIN, helical_rise_min))
-        helical_rise_min = 0.0;
-    if (!MDlog.getValue(EMDL::MLMODEL_HELICAL_RISE_MAX, helical_rise_max))
-        helical_rise_max = 0.0;
-    if (!MDlog.getValue(EMDL::MLMODEL_HELICAL_RISE_INITIAL_STEP, helical_rise_inistep))
-        helical_rise_inistep = 0.0;
+
+    TRY_MDLOG_GET(data_dim,  EMDL::MLMODEL_DIMENSIONALITY_DATA, 2)
+    TRY_MDLOG_GET(nr_bodies, EMDL::MLMODEL_NR_BODIES,           1)
+    TRY_MDLOG_GET(is_helix,  EMDL::MLMODEL_IS_HELIX,            false)
+
+    if (is_helix && nr_bodies != 1) {
+        REPORT_ERROR("MlModel::readStar: incorrect nr_bodies for helix");
+    }
+
+    TRY_MDLOG_GET(helical_nr_asu, EMDL::MLMODEL_HELICAL_NR_ASU, 1)
+
+    TRY_MDLOG_GET(helical_twist_min,     EMDL::MLMODEL_HELICAL_TWIST_MIN,          0.0)
+    TRY_MDLOG_GET(helical_twist_max,     EMDL::MLMODEL_HELICAL_TWIST_MAX,          0.0)
+    TRY_MDLOG_GET(helical_twist_inistep, EMDL::MLMODEL_HELICAL_TWIST_INITIAL_STEP, 0.0)
+
+    TRY_MDLOG_GET(helical_rise_min,      EMDL::MLMODEL_HELICAL_RISE_MIN,           0.0)
+    TRY_MDLOG_GET(helical_rise_max,      EMDL::MLMODEL_HELICAL_RISE_MAX,           0.0)
+    TRY_MDLOG_GET(helical_rise_inistep,  EMDL::MLMODEL_HELICAL_RISE_INITIAL_STEP,  0.0)
 
     // Treat classes or bodies (for multi-body refinement) in the same way...
     int nr_classes_bodies = nr_bodies > 1 ? nr_bodies : nr_classes;
 
     if (nr_classes > 1 && nr_bodies > 1)
-        REPORT_ERROR("MlModel::readStar: nr_classes and nr_bodies cannot be both larger than one.");
+        REPORT_ERROR("MlModel::readStar: nr_classes and nr_bodies cannot both be greater than 1.");
 
     // Take inverse again of current resolution:
     current_resolution = 1.0 / current_resolution;
@@ -182,56 +182,55 @@ void MlModel::read(FileName fn_in) {
     initialise();
 
     // Read classes
-    FileName fn_tmp, fn_tmp2;
     Image<RFLOAT> img;
     MDclass.readStar(in, nr_bodies > 1 ? "model_bodies" : "model_classes");
 
     int iclass = 0;
     do_sgd = false;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDclass) {
-        if (!MDclass.getValue(EMDL::MLMODEL_ACCURACY_TRANS_ANGSTROM, acc_trans[iclass])) {
-            if (MDclass.getValue(EMDL::MLMODEL_ACCURACY_TRANS, acc_trans[iclass])) {
-                acc_trans[iclass] *= pixel_size;
-            } else {
-                REPORT_ERROR("MlModel::readStar: incorrect model_classes/bodies table: no acc_trans");
-            }
+        try {
+            acc_trans[iclass] = MDclass.getValue(EMDL::MLMODEL_ACCURACY_TRANS_ANGSTROM);
+        } catch (const char *errmsg) try {
+            acc_trans[iclass] = MDclass.getValue(EMDL::MLMODEL_ACCURACY_TRANS) * pixel_size;
+        } catch (const char *errmsg) {
+            REPORT_ERROR("MlModel::readStar: incorrect model_classes/bodies table: no acc_trans");
         }
 
-        if (
-            !MDclass.getValue(EMDL::MLMODEL_REF_IMAGE, fn_tmp) ||
-            !MDclass.getValue(EMDL::MLMODEL_ACCURACY_ROT, acc_rot[iclass])
-        ) {
+        FileName fn_tmp;
+        try {
+            fn_tmp          = MDclass.getValue(EMDL::MLMODEL_REF_IMAGE);
+            acc_rot[iclass] = MDclass.getValue(EMDL::MLMODEL_ACCURACY_ROT);
+        } catch (const char *errmsg) {
             REPORT_ERROR("MlModel::readStar: incorrect model_classes/bodies table: no ref_image or acc_rot");
         }
-        // backwards compatible
-        if (!MDclass.getValue(EMDL::MLMODEL_ESTIM_RESOL_REF, estimated_resolution[iclass]))
-            estimated_resolution[iclass] = 0.0;
-        if (!MDclass.getValue(EMDL::MLMODEL_FOURIER_COVERAGE_TOTAL_REF, total_fourier_coverage[iclass]))
-            total_fourier_coverage[iclass] = 0.0;
-        if (ref_dim == 2)
-            if (
-                !MDclass.getValue(EMDL::MLMODEL_PRIOR_OFFX_CLASS, XX(prior_offset_class[iclass])) ||
-                !MDclass.getValue(EMDL::MLMODEL_PRIOR_OFFY_CLASS, YY(prior_offset_class[iclass]))
-            ) {
-                REPORT_ERROR("MlModel::readStar: incorrect model_classes/bodies table: no offset priors for 2D classes");
-            }
-        if (iclass == 0 || nr_bodies == 1) // there is only one pdf_class for multibody, but multiple for classification!
-            if (!MDclass.getValue(EMDL::MLMODEL_PDF_CLASS, pdf_class[iclass]))
-                REPORT_ERROR("MlModel::readStar: incorrect model_classes table: no pdf_class");
-        if (is_helix) {
-            if (
-                !MDclass.getValue(EMDL::MLMODEL_HELICAL_RISE, helical_rise[iclass]) ||
-                !MDclass.getValue(EMDL::MLMODEL_HELICAL_TWIST, helical_twist[iclass])
-            ) {
-                REPORT_ERROR("MlModel::readStar: incorrect helical parameters");
-            }
+
+        // Backwards compatibility
+        TRY_MDLOG_GET(estimated_resolution  [iclass], EMDL::MLMODEL_ESTIM_RESOL_REF,            0.0)
+        TRY_MDLOG_GET(total_fourier_coverage[iclass], EMDL::MLMODEL_FOURIER_COVERAGE_TOTAL_REF, 0.0)
+
+        #undef TRY_MDLOG_GET
+
+        if (ref_dim == 2) try {
+            XX(prior_offset_class[iclass]) = MDclass.getValue(EMDL::MLMODEL_PRIOR_OFFX_CLASS);
+            YY(prior_offset_class[iclass]) = MDclass.getValue(EMDL::MLMODEL_PRIOR_OFFY_CLASS);
+        } catch (const char *errmsg) {
+            REPORT_ERROR("MlModel::readStar: incorrect model_classes/bodies table: no offset priors for 2D classes");
+        }
+        if (iclass == 0 || nr_bodies == 1) try {
+            // there is only one pdf_class for multibody, but multiple for classification!
+            pdf_class[iclass] = MDclass.getValue(EMDL::MLMODEL_PDF_CLASS);
+        } (catch const char *errmsg) {
+            REPORT_ERROR("MlModel::readStar: incorrect model_classes table: no pdf_class");
+        }
+        if (is_helix) try {
+            helical_rise [iclass] = MDclass.getValue(EMDL::MLMODEL_HELICAL_RISE);
+            helical_twist[iclass] = MDclass.getValue(EMDL::MLMODEL_HELICAL_TWIST);
+        } catch (const char *errmsg) {
+            REPORT_ERROR("MlModel::readStar: incorrect helical parameters");
         }
         if (nr_bodies > 1) {
-            if (MDclass.containsLabel(EMDL::BODY_KEEP_FIXED)) {
-                MDclass.getValue(EMDL::BODY_KEEP_FIXED, keep_fixed_bodies[iclass]);
-            } else {
-                keep_fixed_bodies[iclass] = 0;
-            }
+            keep_fixed_bodies[iclass] = MDclass.containsLabel(EMDL::BODY_KEEP_FIXED) ? 
+                MDclass.getValue(EMDL::BODY_KEEP_FIXED) : 0;
         }
 
         // Read in actual reference image
@@ -240,55 +239,49 @@ void MlModel::read(FileName fn_in) {
         Iref[iclass] = img();
 
         // Check to see whether there is a SGD-gradient entry as well
-        if (MDclass.getValue(EMDL::MLMODEL_SGD_GRADIENT_IMAGE, fn_tmp)) {
+        try {
+            fn_tmp = MDclass.getValue(EMDL::MLMODEL_SGD_GRADIENT_IMAGE);
             do_sgd = true;
             if (iclass == 0)
                 Igrad.resize(nr_classes);
             img.read(fn_tmp);
             Igrad[iclass] = img();
-        }
+        } catch (const char *errmsg) {}
         iclass++;
     }
 
     // Read group stuff
     MDgroup.readStar(in, "model_groups");
-    long int igroup, optics_group;
+    // long int optics_group;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDgroup) {
-        if (!MDgroup.getValue(EMDL::MLMODEL_GROUP_NO, igroup)) {
-            REPORT_ERROR("MlModel::readStar: incorrect model_groups table");
-        }
-        //Start counting of groups at 1, not at 0....
-        if (
-            !MDgroup.getValue(EMDL::MLMODEL_GROUP_SCALE_CORRECTION, scale_correction[igroup - 1]) ||
-            !MDgroup.getValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, nr_particles_per_group[igroup - 1]) ||
-            !MDgroup.getValue(EMDL::MLMODEL_GROUP_NAME, group_names[igroup-1])
-        ) {
+        try {
+            long int igroup = MDgroup.getValue(EMDL::MLMODEL_GROUP_NO);
+            // Groups are indexed from 1.
+            scale_correction      [igroup - 1] = MDgroup.getValue(EMDL::MLMODEL_GROUP_SCALE_CORRECTION);
+            nr_particles_per_group[igroup - 1] = MDgroup.getValue(EMDL::MLMODEL_GROUP_NR_PARTICLES);
+            group_names           [igroup - 1] = MDgroup.getValue(EMDL::MLMODEL_GROUP_NAME);
+        } catch (const char *errmsg) {
             REPORT_ERROR("MlModel::readStar: incorrect model_groups table");
         }
     }
 
     // Read SSNR, noise reduction, tau2_class spectra for each class
     for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
-        if (nr_bodies > 1) {
-            MDsigma.readStar(in, "model_body_" + integerToString(iclass + 1));
-        } else {
-            MDsigma.readStar(in, "model_class_" + integerToString(iclass + 1));
-        }
-        int idx;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
-            if (!MDsigma.getValue(EMDL::SPECTRAL_IDX, idx))
-                REPORT_ERROR("MlModel::readStar: incorrect table model_class/body_"+integerToString(iclass + 1));
-            if (
-                !MDsigma.getValue(EMDL::MLMODEL_DATA_VS_PRIOR_REF, data_vs_prior_class[iclass](idx)) ||
-                !MDsigma.getValue(EMDL::MLMODEL_TAU2_REF, tau2_class[iclass](idx)) ||
-                !MDsigma.getValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves_class[iclass](idx)) ||
-                !MDsigma.getValue(EMDL::MLMODEL_SIGMA2_REF, sigma2_class[iclass](idx))
-            ) {
-                REPORT_ERROR("MlModel::readStar: incorrect table model_class/body_"+integerToString(iclass + 1));
+        MDsigma.readStar(in, (nr_bodies > 1 ? "model_body_" : "model_class_") + integerToString(iclass + 1));
+        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) try {
+            int idx = MDsigma.getValue(EMDL::SPECTRAL_IDX);
+            data_vs_prior_class   [iclass](idx) = MDsigma.getValue(EMDL::MLMODEL_DATA_VS_PRIOR_REF);
+            tau2_class            [iclass](idx) = MDsigma.getValue(EMDL::MLMODEL_TAU2_REF);
+            fsc_halves_class      [iclass](idx) = MDsigma.getValue(EMDL::MLMODEL_FSC_HALVES_REF);
+            sigma2_class          [iclass](idx) = MDsigma.getValue(EMDL::MLMODEL_SIGMA2_REF);
+            // Backwards compatibility with STAR files without Fourier coverage
+            try {
+            fourier_coverage_class[iclass](idx) = MDsigma.getValue(EMDL::MLMODEL_FOURIER_COVERAGE_REF);
+            } catch (const char *errmsg) {
+            fourier_coverage_class[iclass](idx) = 0.0;
             }
-            // backwards compatible with STAR files without Fourier coverage
-            if (!MDsigma.getValue(EMDL::MLMODEL_FOURIER_COVERAGE_REF, fourier_coverage_class[iclass](idx)))
-                fourier_coverage_class[iclass](idx) = 0.0;
+        } catch (const char *errmsg) {
+            REPORT_ERROR("MlModel::readStar: incorrect table model_class/body_" + integerToString(iclass + 1));
         }
     }
 
@@ -299,12 +292,11 @@ void MlModel::read(FileName fn_in) {
 
         if (nr_particles_per_group[igroup] > 0) {
             MDsigma.readStar(in, "model_group_" + integerToString(igroup + 1));
-            int idx;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
-                if (!MDsigma.getValue(EMDL::SPECTRAL_IDX, idx))
-                    REPORT_ERROR("MlModel::readStar: incorrect table model_group_" + integerToString(igroup + 1));
-                if (!MDsigma.getValue(EMDL::MLMODEL_SIGMA2_NOISE, sigma2_noise[igroup](idx)))
-                    REPORT_ERROR("MlModel::readStar: incorrect table model_group_" + integerToString(igroup + 1));
+            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) try {
+                int idx                   = MDsigma.getValue(EMDL::SPECTRAL_IDX);
+                sigma2_noise[igroup](idx) = MDsigma.getValue(EMDL::MLMODEL_SIGMA2_NOISE);
+            } catch (const char *errmsg) {
+                REPORT_ERROR("MlModel::readStar: incorrect table model_group_" + integerToString(igroup + 1));
             }
         } else {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigma2_noise[igroup]) {
@@ -316,19 +308,14 @@ void MlModel::read(FileName fn_in) {
     // Read pdf_direction models for each class
     if (ref_dim == 3) {
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
-            if (nr_bodies > 1) {
-                MDclass.readStar(in, "model_pdf_orient_body_" + integerToString(iclass + 1));
-            } else {
-                MDclass.readStar(in, "model_pdf_orient_class_" + integerToString(iclass + 1));
-            }
+            MDclass.readStar(in, (nr_bodies > 1 ? "model_pdf_orient_body_" : "model_pdf_orient_class_") + integerToString(iclass + 1));
             pdf_direction[iclass].clear();
-            RFLOAT aux;
             std::vector<RFLOAT> vaux;
             vaux.clear();
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDclass) {
-                if (!MDclass.getValue(EMDL::MLMODEL_PDF_ORIENT, aux))
-                    REPORT_ERROR("MlModel::readStar: incorrect table model_pdf_orient_class_" + integerToString(iclass + 1));
-                vaux.push_back(aux);
+            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDclass) try {
+                vaux.push_back((RFLOAT) MDclass.getValue(EMDL::MLMODEL_PDF_ORIENT));
+            } catch (const char *errmsg) {
+                REPORT_ERROR("MlModel::readStar: incorrect table model_pdf_orient_class_" + integerToString(iclass + 1));
             }
             pdf_direction[iclass].resize(vaux.size());
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(pdf_direction[iclass]) {
@@ -621,8 +608,8 @@ void  MlModel::readTauSpectrum(FileName fn_tau, int verb) {
     int idx;
     MDtau.read(fn_tau);
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtau) {
-        MDtau.getValue(EMDL::SPECTRAL_IDX, idx);
-        MDtau.getValue(EMDL::MLMODEL_TAU2_REF, val);
+        idx = MDtau.getValue(EMDL::SPECTRAL_IDX);
+        val = MDtau.getValue(EMDL::MLMODEL_TAU2_REF);
         if (idx < XSIZE(tau2_class[0]))
             tau2_class[0](idx) = tau2_fudge_factor * val;
     }
@@ -648,7 +635,7 @@ void MlModel::initialiseFromImages(
         if (verb > 0) std::cerr << " WARNING: input particles STAR file does not have a column for image dimensionality, assuming 2D images ..." << std::endl;
         data_dim = 2;
     } else {
-        _mydata.obsModel.opticsMdt.getValue(EMDL::IMAGE_DIMENSIONALITY, data_dim, 0);
+        data_dim = _mydata.obsModel.opticsMdt.getValue(EMDL::IMAGE_DIMENSIONALITY, 0);
     }
 
     // Read references into memory
@@ -661,10 +648,18 @@ void MlModel::initialiseFromImages(
         if (fn_ref.isStarFile()) {
             MetaDataTable MDref;
             MDref.read(fn_ref, "model_classes");
-            if (!MDref.getValue(EMDL::MLMODEL_REF_IMAGE, fn_tmp)) // if we did not find the meta-data label _rlnReferenceImage in a directed search, try more generally
+            try {
+                fn_tmp = MDref.getValue(EMDL::MLMODEL_REF_IMAGE);
+            } catch (const char *errmsg) {
+                // if we did not find the meta-data label _rlnReferenceImage in a directed search, try more generally
                 MDref.read(fn_ref);
-            if (!MDref.getValue(EMDL::MLMODEL_REF_IMAGE, fn_tmp)) // if we still did not find the meta-data label _rlnReferenceImage, report an error
+            }
+            try {
+                fn_tmp = MDref.getValue(EMDL::MLMODEL_REF_IMAGE);
+            } catch (const char* errmsg) {
+                // if we still did not find the meta-data label _rlnReferenceImage, report an error
                 REPORT_ERROR("When specifying a .star-file as --ref input, you need to have the _rlnReferenceImage field");
+            }
 
             do_generate_seeds = false;
             // ignore nr_classes from the command line, use number of entries in STAR file
@@ -672,18 +667,16 @@ void MlModel::initialiseFromImages(
             Iref.clear();
             Igrad.clear();
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDref) {
-                MDref.getValue(EMDL::MLMODEL_REF_IMAGE, fn_tmp);
+                fn_tmp = MDref.getValue(EMDL::MLMODEL_REF_IMAGE);
                 img.read(fn_tmp);
                 img().setXmippOrigin();
                 if (_ref_angpix > 0.0) {
                     pixel_size = _ref_angpix;
                 } else {
-                    RFLOAT header_pixel_size;
+                    RFLOAT header_pixel_size = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
                     if (nr_classes == 0) {
-                        img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, header_pixel_size);
                         pixel_size = header_pixel_size;
                     } else {
-                        img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, header_pixel_size);
                         if (fabs(header_pixel_size - pixel_size) > 0.001) {
                             REPORT_ERROR("MlModel::readImages ERROR: different models have different pixel sizes in their headers!");
                         }
@@ -706,8 +699,7 @@ void MlModel::initialiseFromImages(
             if (_ref_angpix > 0.0) {
                 pixel_size = _ref_angpix;
             } else {
-                RFLOAT header_pixel_size;
-                img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, header_pixel_size);
+                RFLOAT header_pixel_size = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
                 if (header_pixel_size <= 0) {
                     std::cerr << " header_pixel_size = " << header_pixel_size << std::endl;
                     REPORT_ERROR("MlModel::initialiseFromImages: Pixel size of reference image is not set!");
@@ -743,7 +735,7 @@ void MlModel::initialiseFromImages(
 
     // Make sure that the model has the same box and pixel size as (the first optics group of) the data
     RFLOAT pixel_size_first_optics_group = _mydata.getOpticsPixelSize(0);
-    int box_size_first_optics_group = _mydata.getOpticsImageSize(0);
+    int box_size_first_optics_group      = _mydata.getOpticsImageSize(0);
 
     if (fn_ref != "None") {
 
@@ -848,7 +840,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
     Matrix1D<RFLOAT> one_direction(3);
     bool has_rotate_directions = false;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        MD.getValue(EMDL::BODY_MASK_NAME, fn_mask);
+        fn_mask = MD.getValue(EMDL::BODY_MASK_NAME);
         Imask.read(fn_mask);
         std::pair<RFLOAT, RFLOAT> minmaxpair = Imask().minmax();
         RFLOAT minval = minmaxpair.first;
@@ -884,8 +876,8 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         // Get which body to rotate relative to
         int relative_to = -1;
         if (MD.containsLabel(EMDL::BODY_ROTATE_RELATIVE_TO)) {
-            MD.getValue(EMDL::BODY_ROTATE_RELATIVE_TO, relative_to);
-            relative_to--;// numbering in STAR file starts with 1
+            relative_to = --MD.getValue(EMDL::BODY_ROTATE_RELATIVE_TO);
+            // numbering in STAR file starts with 1
         }
         relatives_to.push_back(relative_to);
 
@@ -895,31 +887,29 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
             MD.containsLabel(EMDL::BODY_ROTATE_DIRECTION_Z)
         ) {
             has_rotate_directions = true;
-            MD.getValue(EMDL::BODY_ROTATE_DIRECTION_X, XX(one_direction));
-            MD.getValue(EMDL::BODY_ROTATE_DIRECTION_Y, YY(one_direction));
-            MD.getValue(EMDL::BODY_ROTATE_DIRECTION_Z, ZZ(one_direction));
+            XX(one_direction) = MD.getValue(EMDL::BODY_ROTATE_DIRECTION_X);
+            YY(one_direction) = MD.getValue(EMDL::BODY_ROTATE_DIRECTION_Y);
+            ZZ(one_direction) = MD.getValue(EMDL::BODY_ROTATE_DIRECTION_Z);
             rotate_direction_bodies.push_back(one_direction);
         }
 
         RFLOAT val;
         if (MD.containsLabel(EMDL::BODY_SIGMA_ANG)) {
-            MD.getValue(EMDL::BODY_SIGMA_ANG, val);
+            val = MD.getValue(EMDL::BODY_SIGMA_ANG);
             sigma_tilt_bodies[nr_bodies] = val;
-            sigma_psi_bodies[nr_bodies] = val;
+            sigma_psi_bodies [nr_bodies] = val;
         } else {
             if (!(MD.containsLabel(EMDL::BODY_SIGMA_TILT) && MD.containsLabel(EMDL::BODY_SIGMA_PSI)) )
                 REPORT_ERROR("ERROR: either provide rlnBodySigmaAngles OR provide rlnBodySigmaTilt and rlnBodySigmaPsi in the body STAR file.");
-            MD.getValue(EMDL::BODY_SIGMA_TILT, val);
-            sigma_tilt_bodies[nr_bodies] = val;
-            MD.getValue(EMDL::BODY_SIGMA_PSI, val);
-            sigma_psi_bodies[nr_bodies] = val;
+            sigma_tilt_bodies[nr_bodies] = MD.getValue(EMDL::BODY_SIGMA_TILT);
+            sigma_psi_bodies [nr_bodies] = MD.getValue(EMDL::BODY_SIGMA_PSI);
         }
 
-        if (MD.getValue(EMDL::BODY_SIGMA_OFFSET_ANGSTROM, val)) {
-            sigma_offset_bodies[nr_bodies] = val;
-        } else if (MD.getValue(EMDL::BODY_SIGMA_OFFSET, val)) {
-            val *= pixel_size;
-        } else {
+        try {
+            sigma_offset_bodies[nr_bodies] = MD.getValue(EMDL::BODY_SIGMA_OFFSET_ANGSTROM);
+        } catch (const char *errmsg) try {
+            sigma_offset_bodies[nr_bodies] = MD.getValue(EMDL::BODY_SIGMA_OFFSET) * pixel_size;
+        } catch (const char *errmsg) {
             REPORT_ERROR("ERROR: the body STAR file should contain a rlnBodySigmaOffsetAngst column for the prior on the offsets for each body");
         }
 
@@ -986,8 +976,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         if (MD.containsLabel(EMDL::BODY_REFERENCE_NAME)) {
             int ibody = 0;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-                FileName fn_ref;
-                MD.getValue(EMDL::BODY_REFERENCE_NAME, fn_ref);
+                FileName fn_ref = MD.getValue(EMDL::BODY_REFERENCE_NAME);
                 if (fn_ref != "None") {
                     Image<RFLOAT> img;
                     img.read(fn_ref);
@@ -1003,7 +992,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
     pointer_body_overlap.resize(nr_bodies, nr_bodies);
     pointer_body_overlap_inv.resize(nr_bodies);
 
-//#define DEBUG_OVERLAP
+    // #define DEBUG_OVERLAP
     if (norm_body_mask_overlap) {
         MultidimArray<RFLOAT> sum_mask = masks_bodies[0];
         for (int ibody = 1; ibody < nr_bodies; ibody++)
@@ -1377,11 +1366,11 @@ void MlWsumModel::initZeros() {
     }
 }
 
-//#define DEBUG_PACK
+// #define DEBUG_PACK
 #ifdef DEBUG_PACK
-#define MAX_PACK_SIZE	  100000
+#define MAX_PACK_SIZE 100000
 #else
-// Approximately 1024*1024*1024/8/2 ~ 0.5 Gb
+// Approximately 1024 * 1024 * 1024 / 8 / 2 ~ 0.5 Gb
 #define MAX_PACK_SIZE 671010000
 #endif
 

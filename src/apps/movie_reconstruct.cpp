@@ -196,9 +196,8 @@ void MovieReconstructor::initialise() {
     // Don't die even if conversion failed. Polishing does not use obsModel from a motion correction STAR file
     ObservationModel::loadSafely(fn_corrmic, obsModel, corrMic, "micrographs", verb, false);
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(corrMic) {
-        std::string micName, metaName;
-        corrMic.getValueToString(EMDL::MICROGRAPH_NAME, micName);
-        corrMic.getValueToString(EMDL::MICROGRAPH_METADATA_NAME, metaName);
+        std::string micName  = corrMic.getValueToString(EMDL::MICROGRAPH_NAME);
+        std::string metaName = corrMic.getValueToString(EMDL::MICROGRAPH_METADATA_NAME);
         // remove the pipeline job prefix
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineFileName(micName, fn_pre, fn_jobnr, fn_post);
@@ -252,7 +251,7 @@ void MovieReconstructor::backproject(int rank, int size) {
     int frame_no = frame; // 1-indexed
     // Loop over movies
     for (int imov = 0; imov < nr_movies; imov++) {
-        mdts[imov].getValue(EMDL::MICROGRAPH_NAME, fn_mic, 0);
+        fn_mic = mdts[imov].getValue(EMDL::MICROGRAPH_NAME, 0);
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
 		// std::cout << "fn_post = " << fn_post << std::endl;
@@ -331,14 +330,14 @@ void MovieReconstructor::backproject(int rank, int size) {
                 #endif
 
                 int this_subset = 0;
-                mdts[imov].getValue(EMDL::PARTICLE_RANDOM_SUBSET, this_subset, ipart);
+                this_subset = mdts[imov].getValue(EMDL::PARTICLE_RANDOM_SUBSET, ipart);
 
                 if (subset >= 1 && subset <= 2 && this_subset != subset) continue;
                 n_processed++;
 
                 const int opticsGroup = obsModel.getOpticsGroup(mdts[imov], ipart); // 0-indexed
                 const RFLOAT data_angpix = data_angpixes[opticsGroup];
-                mdts[imov].getValue(EMDL::IMAGE_NAME, fn_img, ipart);
+                fn_img = mdts[imov].getValue(EMDL::IMAGE_NAME, ipart);
                 fn_img.decompose(stack_id, fn_stack);
                 #ifdef DEBUG
                 std::cout << "\tstack_id = " << stack_id << " fn_stack = " << fn_stack << std::endl;
@@ -346,11 +345,11 @@ void MovieReconstructor::backproject(int rank, int size) {
                 if (stack_id > trajectories.size())
                     REPORT_ERROR("Missing trajectory!");
 
-                RFLOAT coord_x, coord_y, origin_x, origin_y, traj_x, traj_y;
-                mdts[imov].getValue(EMDL::IMAGE_COORD_X, coord_x, ipart); // in micrograph pixel
-                mdts[imov].getValue(EMDL::IMAGE_COORD_Y, coord_y, ipart);
-                mdts[imov].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, origin_x, ipart); // in Angstrom
-                mdts[imov].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, origin_y, ipart);
+                // RFLOAT traj_x, traj_y;
+                RFLOAT coord_x  = mdts[imov].getValue(EMDL::IMAGE_COORD_X, ipart); // in micrograph pixel
+                RFLOAT coord_y  = mdts[imov].getValue(EMDL::IMAGE_COORD_Y, ipart);
+                RFLOAT origin_x = mdts[imov].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ipart); // in Angstrom
+                RFLOAT origin_y = mdts[imov].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ipart);
                 #ifdef DEBUG
                 std::cout << "\t\tcoord_mic_px = (" << coord_x << ", " << coord_y << ")";
                 std::cout << " origin_angst = (" << origin_x << ", " << origin_y << ")";
@@ -449,16 +448,16 @@ void MovieReconstructor::backproject(int rank, int size) {
 }
 
 void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, MultidimArray<Complex> &F2D, int this_subset) {
-    RFLOAT rot, tilt, psi, fom, r_ewald_sphere;
+    RFLOAT fom, r_ewald_sphere;
     Matrix2D<RFLOAT> A3D;
     MultidimArray<RFLOAT> Fctf;
     Matrix1D<RFLOAT> trans(2);
     FourierTransformer transformer;
 
     // Rotations
-    mdt.getValue(EMDL::ORIENT_ROT, rot, p);
-    mdt.getValue(EMDL::ORIENT_TILT, tilt, p);
-    mdt.getValue(EMDL::ORIENT_PSI, psi, p);
+    RFLOAT rot  = mdt.getValue(EMDL::ORIENT_ROT,  p);
+    RFLOAT tilt = mdt.getValue(EMDL::ORIENT_TILT, p);
+    RFLOAT psi  = mdt.getValue(EMDL::ORIENT_PSI,  p);
     Euler_angles2matrix(rot, tilt, psi, A3D);
 
     // If we are considering Ewald sphere curvature, the mag. matrix
@@ -466,8 +465,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
     // (to avoid creating an Ewald ellipsoid)
     const bool ctf_premultiplied = false;
     const int opticsGroup = obsModel.getOpticsGroup(mdt, p);
-    #pragma omp critical(MovieReconstructor_backprojectOneParticle)
-    {
+    #pragma omp critical(MovieReconstructor_backprojectOneParticle) {
         if (obsModel.getPixelSize(opticsGroup) != angpix)
             obsModel.setPixelSize(opticsGroup, angpix);
         if (obsModel.getBoxSize(opticsGroup) != output_boxsize)

@@ -1201,19 +1201,18 @@ void BackProjector::externalReconstruct(
             REPORT_ERROR("ERROR: external reconstruct output STAR file does not contain spectral idx!");
 
         // Directly update tau2 spectrum
-        int idx;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnewtau) {
-            MDnewtau.getValue(EMDL::SPECTRAL_IDX, idx);
+            int idx = MDnewtau.getValue(EMDL::SPECTRAL_IDX);
 
             if (idx >= XSIZE(tau2_io))
                 continue;
 
             if (MDnewtau.containsLabel(EMDL::MLMODEL_TAU2_REF)) {
-                MDnewtau.getValue(EMDL::MLMODEL_TAU2_REF, tau2_io(idx));
+                tau2_io(idx)       = MDnewtau.getValue(EMDL::MLMODEL_TAU2_REF);
                 data_vs_prior(idx) = tau2_io(idx) / sigma2_ref(idx);
             } else if (MDnewtau.containsLabel(EMDL::POSTPROCESS_FSC_GENERAL)) {
-                MDnewtau.getValue(EMDL::SPECTRAL_IDX, idx);
-                MDnewtau.getValue(EMDL::POSTPROCESS_FSC_GENERAL, fsc_halves_io(idx));
+                idx                = MDnewtau.getValue(EMDL::SPECTRAL_IDX);
+                fsc_halves_io(idx) = MDnewtau.getValue(EMDL::POSTPROCESS_FSC_GENERAL);
 
                 RFLOAT myfsc = XMIPP_MAX(0.001, fsc_halves_io(idx));
                 if (iswhole) {

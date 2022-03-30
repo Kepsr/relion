@@ -206,18 +206,16 @@ void AutoPicker::initialise() {
         ObservationModel::loadSafely(fn_in, obsModel, MDmic, "micrographs", verb);
         fn_micrographs.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmic) {
-            FileName fn_mic;
-            MDmic.getValue(EMDL::MICROGRAPH_NAME, fn_mic);
+            FileName fn_mic = MDmic.getValue(EMDL::MICROGRAPH_NAME);
             fn_micrographs.push_back(fn_mic);
         }
 
         // Check all optics groups have the same pixel size (check for same micrograph size is performed while running through all of them)
         if (!obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE))
             REPORT_ERROR("The input does not contain the rlnMicrographPixelSize column.");
-        obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix, 0);
+        angpix = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, 0);
         for (int optics_group = 1; optics_group < obsModel.numberOfOpticsGroups(); optics_group++) {
-            RFLOAT my_angpix;
-            obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, my_angpix, optics_group);
+            RFLOAT my_angpix = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group);
             if (fabs(angpix - my_angpix) > 0.01) {
                 REPORT_ERROR("ERROR: different pixel size for the different optics groups, perform autopicking separately per optics group.");
             }
@@ -345,10 +343,16 @@ void AutoPicker::initialise() {
             Image<RFLOAT> Iref;
 
             FileName fn_img;
-            if (!MDref.getValue(EMDL::MLMODEL_REF_IMAGE, fn_img)) {
-                if (!MDref.getValue(EMDL::IMAGE_NAME, fn_img))
+            try {
+                fn_img = MDref.getValue(EMDL::MLMODEL_REF_IMAGE);
+            } catch (const char *errmsg) {
+                try {
+                    fn_img = MDref.getValue(EMDL::IMAGE_NAME);
+                } catch (const char* errmsg) {
                     REPORT_ERROR("AutoPicker::initialise ERROR: either provide rlnReferenceImage or rlnImageName in the reference STAR file!");
+                }
             }
+
             #ifdef DEBUG
             std::cerr << " Reference fn= " << fn_img << std::endl;
             #endif
@@ -851,10 +855,9 @@ void AutoPicker::generatePDFLogfile() {
             long nr_pick = MD.numberOfObjects();
             total_nr_picked += nr_pick;
             if (MD.containsLabel(EMDL::PARTICLE_AUTOPICK_FOM)) {
-                RFLOAT fom, avg_fom = 0.0;
+                RFLOAT avg_fom = 0.0;
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-                    MD.getValue(EMDL::PARTICLE_AUTOPICK_FOM, fom);
-                    avg_fom += fom;
+                    avg_fom += MD.getValue(EMDL::PARTICLE_AUTOPICK_FOM);
                 }
                 avg_fom /= nr_pick;
                 // mis-use MetadataTable to conveniently make histograms and value-plots
@@ -2429,8 +2432,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
             // Search for this micrograph in the metadata table
             bool found = false;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmic) {
-                FileName fn_tmp;
-                MDmic.getValue(EMDL::MICROGRAPH_NAME, fn_tmp);
+                FileName fn_tmp = MDmic.getValue(EMDL::MICROGRAPH_NAME);
                 if (fn_tmp == fn_mic) {
                     ctf.readByGroup(MDmic, &obsModel);
                     found = true;
@@ -2722,8 +2724,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         // Search for this micrograph in the metadata table
         bool found = false;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmic) {
-            FileName fn_tmp;
-            MDmic.getValue(EMDL::MICROGRAPH_NAME, fn_tmp);
+            FileName fn_tmp = MDmic.getValue(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
                 ctf.readByGroup(MDmic, &obsModel);
                 Fctf.resize(downsize_mic, downsize_mic / 2 + 1);
@@ -2899,7 +2900,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 fn_tmp.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
                 It.read(fn_tmp);
                 Mccf_best = It();
-                It.MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Retrieve expected_Pratio from the header of the image
+                expected_Pratio = It.MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the header of the image
 
                 fn_tmp.compose(getOutputRootName(fn_mic)+"_"+fn_out+"_ref", iref,"_bestPSI.spi");
                 It.read(fn_tmp);

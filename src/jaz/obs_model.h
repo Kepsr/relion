@@ -158,7 +158,7 @@ class ObservationModel
 		/* Check whether the optics groups appear in the correct order.
 		   This makes it possible to access a group g through:
 
-		       opticsMdt.getValue(label, dest, g-1);
+		       opticsMdt.getValue(label, g-1);
 		*/
 		bool opticsGroupsSorted() const;
 

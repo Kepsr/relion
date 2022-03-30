@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
             const int ogNew = opticsOut.numberOfObjects() - 1;
 
-            opticsOut.setValue(EMDL::IMAGE_OPTICS_GROUP, ogNew+1, ogNew);
+            opticsOut.setValue(EMDL::IMAGE_OPTICS_GROUP, ogNew + 1, ogNew);
 
             optGrTransl[i][g] = ogNew;
         }
@@ -50,13 +50,10 @@ int main(int argc, char *argv[]) {
             particleOut.addObject(particleMdts[i].getObject(p));
 
             const int pNew = particleOut.numberOfObjects() - 1;
-
-            int og0;
-            particleOut.getValue(EMDL::IMAGE_OPTICS_GROUP, og0, pNew);
-            og0--;
+            int og0 = --particleOut.getValue(EMDL::IMAGE_OPTICS_GROUP, pNew);
 
             int og1 = optGrTransl[i][og0];
-            particleOut.setValue(EMDL::IMAGE_OPTICS_GROUP, og1+1, pNew);
+            particleOut.setValue(EMDL::IMAGE_OPTICS_GROUP, og1 + 1, pNew);
         }
     }
 

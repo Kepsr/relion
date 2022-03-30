@@ -86,9 +86,9 @@ class align_symmetry {
 
         /// TODO: parallelise?
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDang) {
-            MDang.getValue(EMDL::ORIENT_ROT, rot);
-            MDang.getValue(EMDL::ORIENT_TILT, tilt);
-            MDang.getValue(EMDL::ORIENT_PSI, psi);
+            rot  = MDang.getValue(EMDL::ORIENT_ROT);
+            tilt = MDang.getValue(EMDL::ORIENT_TILT);
+            psi  = MDang.getValue(EMDL::ORIENT_PSI);
 
             Euler_rotation3DMatrix(rot, tilt, psi, A3D);
             F2D.initZeros();
@@ -172,9 +172,9 @@ class align_symmetry {
                 }
 
                 MDang.addObject();
-                MDang.setValue(EMDL::ORIENT_ROT, rot);
+                MDang.setValue(EMDL::ORIENT_ROT,  rot);
                 MDang.setValue(EMDL::ORIENT_TILT, tilt);
-                MDang.setValue(EMDL::ORIENT_PSI, psi);
+                MDang.setValue(EMDL::ORIENT_PSI,  psi);
             }
         }
 
@@ -194,12 +194,10 @@ class align_symmetry {
 
         // Global search
         std::cout << " Searching globally ..." << std::endl;
-        int best_at;
-        best_at = search(MDang, projector);
-
-        MDang.getValue(EMDL::ORIENT_ROT, rot, best_at);
-        MDang.getValue(EMDL::ORIENT_TILT, tilt, best_at);
-        MDang.getValue(EMDL::ORIENT_PSI, psi, best_at);
+        int best_at = search(MDang, projector);
+        rot  = MDang.getValue(EMDL::ORIENT_ROT,  best_at);
+        tilt = MDang.getValue(EMDL::ORIENT_TILT, best_at);
+        psi  = MDang.getValue(EMDL::ORIENT_PSI,  best_at);
         std::cout << " The best solution is ROT = " << rot << " TILT = " << tilt << " PSI = " << psi << std::endl << std::endl;
 
         // Local refinement
@@ -214,17 +212,17 @@ class align_symmetry {
                     if (only_rot && k != 0) continue;
 
                     MDang.addObject();
-                    MDang.setValue(EMDL::ORIENT_ROT, rot + i * search_step);
+                    MDang.setValue(EMDL::ORIENT_ROT,  rot  + i * search_step);
                     MDang.setValue(EMDL::ORIENT_TILT, tilt + j * search_step);
-                    MDang.setValue(EMDL::ORIENT_PSI, psi + k * search_range);
+                    MDang.setValue(EMDL::ORIENT_PSI,  psi  + k * search_range);
                 }
             }
         }
-        best_at = search(MDang, projector);
 
-        MDang.getValue(EMDL::ORIENT_ROT, rot, best_at);
-        MDang.getValue(EMDL::ORIENT_TILT, tilt, best_at);
-        MDang.getValue(EMDL::ORIENT_PSI, psi, best_at);
+        best_at = search(MDang, projector);
+        rot  = MDang.getValue(EMDL::ORIENT_ROT,  best_at);
+        tilt = MDang.getValue(EMDL::ORIENT_TILT, best_at);
+        psi  = MDang.getValue(EMDL::ORIENT_PSI,  best_at);
         std::cout << " The refined solution is ROT = " << rot << " TILT = " << tilt << " PSI = " << psi << std::endl << std::endl;
 
         std::cout << " Now rotating the original (full size) volume ..." << std::endl << std::endl;

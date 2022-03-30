@@ -232,9 +232,7 @@ void MotionEstimator::process(
         newdir = newdir.beforeLastOf("/");
 
         if (debug) {
-            std::string mgName;
-            mdts[g].getValue(EMDL::MICROGRAPH_NAME, mgName, 0);
-
+            std::string mgName = mdts[g].getValue(EMDL::MICROGRAPH_NAME, 0);
             std::cout << "    movie = " << mgName << std::endl;
         }
 
@@ -269,8 +267,7 @@ void MotionEstimator::process(
                 mdts[g], fts, damageWeights[ogmg], ogmg,
                 movie, movieCC, positions, initialTracks, globComp);
         } catch (RelionError e) {
-            std::string mgName;
-            mdts[g].getValue(EMDL::MICROGRAPH_NAME, mgName, 0);
+            std::string mgName = mdts[g].getValue(EMDL::MICROGRAPH_NAME, 0);
 
             std::cerr << " - Warning: unable to load raw movie frames for " << mgName << ". "
                       << " Possible reasons include lack of the metadata STAR file, "
@@ -356,8 +353,8 @@ void MotionEstimator::prepMicrograph(
     std::vector<d2Vector> myGlobComp;
 
     for (int p = 0; p < pc; p++) {
-        mdt.getValue(EMDL::IMAGE_COORD_X, positions[p].x, p);
-        mdt.getValue(EMDL::IMAGE_COORD_Y, positions[p].y, p);
+        positions[p].x = mdt.getValue(EMDL::IMAGE_COORD_X, p);
+        positions[p].y = mdt.getValue(EMDL::IMAGE_COORD_Y, p);
     }
 
     movie = micrographHandler->loadMovie(

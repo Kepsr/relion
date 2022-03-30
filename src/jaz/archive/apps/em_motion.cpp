@@ -215,13 +215,11 @@ int main(int argc, char *argv[]) {
     MetaDataTable mdt0;
     mdt0.read(starFn);
 
-    RFLOAT Cs, lambda, kV;
-
-    mdt0.getValue(EMDL::CTF_CS, Cs, 0);
-    mdt0.getValue(EMDL::CTF_VOLTAGE, kV, 0);
+    RFLOAT Cs = mdt0.getValue(EMDL::CTF_CS,      0);
+    RFLOAT kV = mdt0.getValue(EMDL::CTF_VOLTAGE, 0);
 
     RFLOAT V = kV * 1e3;
-    lambda = 12.2643247 / sqrt(V * (1.0 + V * 0.978466e-6));
+    RFLOAT lambda = 12.2643247 / sqrt(V * (1.0 + V * 0.978466e-6));
 
     std::cout << "transforming references...\n";
 
@@ -233,9 +231,8 @@ int main(int argc, char *argv[]) {
 
     std::vector<MetaDataTable> mdts = StackHelper::splitByStack(&mdt0);
 
-    RFLOAT mag, dstep;
-    mdts[0].getValue(EMDL::CTF_MAGNIFICATION, mag, 0);
-    mdts[0].getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, dstep, 0);
+    RFLOAT mag   = mdts[0].getValue(EMDL::CTF_MAGNIFICATION,       0);
+    RFLOAT dstep = mdts[0].getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, 0);
     RFLOAT angpix = 10000 * dstep / mag;
 
     ObservationModel obsModel(angpix);
@@ -248,10 +245,9 @@ int main(int argc, char *argv[]) {
     const long g0 = minMG;
 
 
-    std::string name, fullName, movieName;
-    mdts[0].getValue(EMDL::IMAGE_NAME, fullName, 0);
-    mdts[0].getValue(EMDL::MICROGRAPH_NAME, movieName, 0);
-    name = fullName.substr(fullName.find("@") + 1);
+    std::string fullName  = mdts[0].getValue(EMDL::IMAGE_NAME,      0);
+    std::string movieName = mdts[0].getValue(EMDL::MICROGRAPH_NAME, 0);
+    std::string name = fullName.substr(fullName.find("@") + 1);
 
     std::string finName = moviePath == "" ? name : 
         moviePath + "/" + movieName.substr(movieName.find_last_of("/") + 1);
@@ -363,12 +359,11 @@ int main(int argc, char *argv[]) {
         std::vector<double> defoci(pc);
 
         for (int p = 0; p < pc; p++) {
-            mdts[g].getValue(EMDL::IMAGE_COORD_X, positions[p].x, p);
-            mdts[g].getValue(EMDL::IMAGE_COORD_Y, positions[p].y, p);
+            positions[p].x = mdts[g].getValue(EMDL::IMAGE_COORD_X, p);
+            positions[p].y = mdts[g].getValue(EMDL::IMAGE_COORD_Y, p);
 
-            double du, dv;
-            mdts[g].getValue(EMDL::CTF_DEFOCUSU, du, p);
-            mdts[g].getValue(EMDL::CTF_DEFOCUSV, dv, p);
+            double du = mdts[g].getValue(EMDL::CTF_DEFOCUSU, p);
+            double dv = mdts[g].getValue(EMDL::CTF_DEFOCUSV, p);
 
             defoci[p] = 0.5 * (du + dv) / angpix;
         }
@@ -601,9 +596,7 @@ int main(int argc, char *argv[]) {
                         }
                     }
 
-                    int randSubset;
-                    mdts[g].getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
-                    randSubset -= 1;
+                    int randSubset = mdts[g].getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
                     pred = obsModel.predictObservation(
                         randSubset == 0 ? projector1 : projector0, mdts[g], p, true, true

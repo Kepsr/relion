@@ -51,11 +51,11 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
     md2.newSort(EMDL::MICROGRAPH_NAME);
 
     const long lc = md2.numberOfObjects();
-    std::string lastName = "", curName;
+    std::string lastName = "";
     long curInd = -1;
 
     for (int i = 0; i < lc; i++) {
-        md2.getValue(EMDL::MICROGRAPH_NAME, curName, i);
+        std::string curName = md2.getValue(EMDL::MICROGRAPH_NAME, i);
 
         if (curName != lastName) {
             lastName = curName;
@@ -90,8 +90,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
         REPORT_ERROR("StackHelper::splitByStack: " + EMDL::label2Str(EMDL::IMAGE_NAME) + " missing in meta_data_table.\n");
     }
 
-    std::string testString;
-    mdt->getValue(EMDL::IMAGE_NAME, testString, 0);
+    std::string testString = mdt->getValue(EMDL::IMAGE_NAME, 0);
 
     if (testString.find("@") < 0) {
         REPORT_ERROR("StackHelper::splitByStack: " + EMDL::label2Str(EMDL::IMAGE_NAME) + " does not contain an '@'.\n");
@@ -101,13 +100,12 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
     md2.newSort(EMDL::IMAGE_NAME, false, true);
 
     const long lc = md2.numberOfObjects();
-    std::string lastName = "", curName, curFullName;
+    std::string lastName = "";
     long curInd = -1;
 
     for (int i = 0; i < lc; i++) {
-        md2.getValue(EMDL::IMAGE_NAME, curFullName, i);
-
-        curName = curFullName.substr(curFullName.find("@") + 1);
+        std::string curFullName = md2.getValue(EMDL::IMAGE_NAME, i);
+        std::string curName = curFullName.substr(curFullName.find("@") + 1);
 
         if (curName != lastName) {
             lastName = curName;
@@ -131,9 +129,8 @@ std::vector<Image<RFLOAT>> StackHelper::loadStack(
     std::vector<Image<RFLOAT>> out(mdt->numberOfObjects());
     const long ic = mdt->numberOfObjects();
 
-    std::string name, fullName;
-    mdt->getValue(EMDL::IMAGE_NAME, fullName, 0);
-    name = fullName.substr(fullName.find("@") + 1);
+    std::string fullName = mdt->getValue(EMDL::IMAGE_NAME, 0);
+    std::string name = fullName.substr(fullName.find("@") + 1);
 
     if (path != "") {
         name = path + "/" + name.substr(name.find_last_of("/") + 1);
@@ -141,8 +138,7 @@ std::vector<Image<RFLOAT>> StackHelper::loadStack(
 
     #pragma omp parallel for num_threads(threads)
     for (long i = 0; i < ic; i++) {
-        std::string sliceName;
-        mdt->getValue(EMDL::IMAGE_NAME, sliceName, i);
+        std::string sliceName = mdt->getValue(EMDL::IMAGE_NAME, i);
         out[i].read(sliceName, true, -1, false, true);
     }
 
@@ -161,9 +157,8 @@ std::vector<Image<Complex>> StackHelper::loadStackFS(
 
     const long ic = mdt.numberOfObjects();
 
-    std::string name, fullName;
-    mdt.getValue(EMDL::IMAGE_NAME, fullName, 0);
-    name = fullName.substr(fullName.find("@")+1);
+    std::string fullName = mdt.getValue(EMDL::IMAGE_NAME, 0);
+    std::string name = fullName.substr(fullName.find("@") + 1);
 
     if (path != "") {
         name = path + "/" + name.substr(name.find_last_of("/") + 1);
@@ -181,8 +176,7 @@ std::vector<Image<Complex>> StackHelper::loadStackFS(
         int optGroup = obs->getOpticsGroup(mdt, i);
         double angpix = obs->getPixelSize(optGroup);
 
-        std::string sliceName;
-        mdt.getValue(EMDL::IMAGE_NAME, sliceName, i);
+        std::string sliceName = mdt.getValue(EMDL::IMAGE_NAME, i);
         Image<RFLOAT> in;
         in.read(sliceName, true, -1, false, true);
 
@@ -191,15 +185,13 @@ std::vector<Image<Complex>> StackHelper::loadStackFS(
         if (centerParticle) {
             const int s = in.data.ydim;
 
-            double xoff, yoff;
-
-            mdt.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff, i);
-            mdt.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff, i);
+            double xoff = mdt.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i);
+            double yoff = mdt.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i);
 
             xoff /= angpix;
             yoff /= angpix;
 
-            shiftImageInFourierTransform(out[i](), out[i](), s, xoff - s/2, yoff - s/2);
+            shiftImageInFourierTransform(out[i](), out[i](), s, xoff - s / 2, yoff - s / 2);
         }
     }
 
@@ -226,10 +218,9 @@ std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
     std::vector<std::vector<Image<RFLOAT>>> out(mdt->numberOfObjects());
     const long pc = mdt->numberOfObjects();
 
-    std::string name, fullName, movieName;
-    mdt->getValue(EMDL::IMAGE_NAME, fullName, 0);
-    mdt->getValue(EMDL::MICROGRAPH_NAME, movieName, 0);
-    name = fullName.substr(fullName.find("@") + 1);
+    std::string fullName  = mdt->getValue(EMDL::IMAGE_NAME, 0);
+    std::string movieName = mdt->getValue(EMDL::MICROGRAPH_NAME, 0);
+    std::string name = fullName.substr(fullName.find("@") + 1);
 
     std::string finName = moviePath == "" ?
         name : moviePath + "/" + movieName.substr(movieName.find_last_of("/") + 1);
@@ -422,10 +413,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
             out[p][f] = Image<Complex>(sqMg, sqMg);
 
-            double xpC, ypC;
-
-            mdt->getValue(EMDL::IMAGE_COORD_X, xpC, p);
-            mdt->getValue(EMDL::IMAGE_COORD_Y, ypC, p);
+            double xpC = mdt->getValue(EMDL::IMAGE_COORD_X, p);
+            double ypC = mdt->getValue(EMDL::IMAGE_COORD_Y, p);
 
             const double xpO = (int) (coordsPs * xpC / dataPs);
             const double ypO = (int) (coordsPs * ypC / dataPs);
@@ -537,16 +526,14 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
             out[p][f] = Image<Complex>(sqMg,sqMg);
 
-            double xpC, ypC;
-
-            mdt->getValue(EMDL::IMAGE_COORD_X, xpC, p);
-            mdt->getValue(EMDL::IMAGE_COORD_Y, ypC, p);
+            double xpC = mdt->getValue(EMDL::IMAGE_COORD_X, p);
+            double ypC = mdt->getValue(EMDL::IMAGE_COORD_Y, p);
 
             const double xpO = (int)(coordsPs * xpC / dataPs);
             const double ypO = (int)(coordsPs * ypC / dataPs);
 
-            int x0 = (int)round(xpO * dataPs / moviePs) - sqMg / 2;
-            int y0 = (int)round(ypO * dataPs / moviePs) - sqMg / 2;
+            int x0 = (int) round(xpO * dataPs / moviePs) - sqMg / 2;
+            int y0 = (int) round(ypO * dataPs / moviePs) - sqMg / 2;
 
             if (offsets_in != 0 && offsets_out != 0) {
                 double dxM = (*offsets_in)[p][f].x * outPs / moviePs;

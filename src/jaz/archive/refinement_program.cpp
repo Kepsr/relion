@@ -252,52 +252,46 @@ int RefinementProgram::init(int argc, char *argv[]) {
         mdt0.read(starFn);
 
         if (Cs < 0.0) {
-            mdt0.getValue(EMDL::CTF_CS, Cs, 0);
+            Cs = mdt0.getValue(EMDL::CTF_CS, 0);
             std::cout << " + Using spherical aberration from the input STAR file: " << Cs << "\n";
         } else {
             setForAll(EMDL::CTF_CS, Cs);
         }
 
         if (kV < 0.0) {
-            mdt0.getValue(EMDL::CTF_VOLTAGE, kV, 0);
+            kV = mdt0.getValue(EMDL::CTF_VOLTAGE, 0);
             std::cout << " + Using voltage from the input STAR file: " << kV << " kV\n";
         } else {
             setForAll(EMDL::CTF_VOLTAGE, kV);
         }
 
         if (angpix <= 0.0) {
-            RFLOAT mag, dstep;
-            mdt0.getValue(EMDL::CTF_MAGNIFICATION, mag, 0);
-            mdt0.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, dstep, 0);
+            RFLOAT mag   = mdt0.getValue(EMDL::CTF_MAGNIFICATION,       0);
+            RFLOAT dstep = mdt0.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, 0);
             angpix = 10000 * dstep / mag;
-
             std::cout << " + Using pixel size calculated from magnification and detector pixel size in the input STAR file: " << angpix << "\n";
         }
 
-        if (doesMovies) {
-            if (movie_toReplace != "") {
-                std::string name;
+        if (doesMovies && movie_toReplace != "") {
+            for (int i = 0; i < mdt0.numberOfObjects(); i++) {
+                std::string name = mdt0.getValue(EMDL::MICROGRAPH_NAME, i);
 
-                for (int i = 0; i < mdt0.numberOfObjects(); i++) {
-                    mdt0.getValue(EMDL::MICROGRAPH_NAME, name, i);
+                if (i == 0) { std::cout << name << " -> "; }
 
-                    if (i == 0) { std::cout << name << " -> "; }
+                std::string::size_type pos0 = name.find(movie_toReplace);
 
-                    std::string::size_type pos0 = name.find(movie_toReplace);
+                if (pos0 != std::string::npos) {
+                    std::string::size_type pos1 = pos0 + movie_toReplace.length();
 
-                    if (pos0 != std::string::npos) {
-                        std::string::size_type pos1 = pos0 + movie_toReplace.length();
+                    std::string before = name.substr(0, pos0);
+                    std::string after = pos1 < name.length() ? name.substr(pos1) : "";
 
-                        std::string before = name.substr(0, pos0);
-                        std::string after = pos1 < name.length() ? name.substr(pos1) : "";
-
-                        name = before + movie_replaceBy + after;
-                    }
-
-                    if (i == 0) std::cout << name << "\n";
-
-                    mdt0.setValue(EMDL::MICROGRAPH_NAME, name, i);
+                    name = before + movie_replaceBy + after;
                 }
+
+                if (i == 0) std::cout << name << "\n";
+
+                mdt0.setValue(EMDL::MICROGRAPH_NAME, name, i);
             }
         }
 
@@ -361,18 +355,10 @@ double RefinementProgram::pixToAngstFreq(double p) {
 
 void RefinementProgram::loadInitialMovieValues() {
     if (preextracted) {
-        std::string name, fullName, movieName;
-        mdts[0].getValue(EMDL::IMAGE_NAME, fullName, 0);
-        mdts[0].getValue(EMDL::MICROGRAPH_NAME, movieName, 0);
-        name = fullName.substr(fullName.find("@") + 1);
-
-        std::string finName;
-
-        if (imgPath == "") {
-            finName = name;
-        } else {
-            finName = imgPath + "/" + movieName.substr(movieName.find_last_of("/")+1);
-        }
+        std::string fullName  = mdts[0].getValue(EMDL::IMAGE_NAME,      0);
+        std::string movieName = mdts[0].getValue(EMDL::MICROGRAPH_NAME, 0);
+        std::string name = fullName.substr(fullName.find("@") + 1);
+        std::string finName = imgPath == "" ? name : imgPath + "/" + movieName.substr(movieName.find_last_of("/") + 1);
 
         Image<RFLOAT> stack0;
         stack0.read(finName, false);
@@ -381,12 +367,11 @@ void RefinementProgram::loadInitialMovieValues() {
         const bool zstack = stack0.data.zdim > 1;
         const int stackSize = zstack ? stack0.data.zdim : stack0.data.ndim;
 
-        fc = lastFrame < 0 ? stackSize / pc0 - firstFrame : lastFrame + 1 - firstFrame;
+        fc = (lastFrame < 0 ? stackSize / pc0 : lastFrame + 1) - firstFrame;
     } else {
         if (hasCorrMic) {
-            std::string mgFn;
-            mdts[0].getValueToString(EMDL::MICROGRAPH_NAME, mgFn, 0);
 
+            std::string mgFn = mdts[0].getValueToString(EMDL::MICROGRAPH_NAME, 0);
             std::string metaFn = mic2meta[mgFn];
 
             if (meta_path != "") {
@@ -395,21 +380,23 @@ void RefinementProgram::loadInitialMovieValues() {
 
             micrograph = Micrograph(metaFn);
 
+            std::cout << " + Using movie pixel size from ";
             if (movie_angpix <= 0) {
                 movie_angpix = micrograph.angpix;
-                std::cout << " + Using movie pixel size from " << metaFn << ": " << movie_angpix << " A\n";
+                std::cout <<  metaFn  << ": " << movie_angpix << " A\n";
             } else {
-                std::cout << " + Using movie pixel size from command line: " << movie_angpix << " A\n";
+                std::cout << "command line: " << movie_angpix << " A\n";
             }
 
+            std::cout << " + Using coord. pixel size from ";
             if (coords_angpix <= 0) {
                 coords_angpix = micrograph.angpix * micrograph.getBinningFactor();
-                std::cout << " + Using coord. pixel size from " << metaFn << ": " << coords_angpix << " A\n";
+                std::cout <<  metaFn  << ": " << coords_angpix << " A\n";
             } else {
-                std::cout << " + Using coord. pixel size from command line: " << coords_angpix << " A\n";
+                std::cout << "command line: " << coords_angpix << " A\n";
             }
 
-            fc = lastFrame < 0 ? micrograph.getNframes() - firstFrame : lastFrame + 1 - firstFrame;
+            fc = (lastFrame < 0 ? micrograph.getNframes() : lastFrame + 1) - firstFrame;
         } else {
             REPORT_ERROR("You can no longer use this program without micrograph metadata STAR files.");
         }
@@ -513,10 +500,8 @@ void RefinementProgram::setForAll(EMDLabel label, RFLOAT value) {
 }
 
 std::string RefinementProgram::getMicrographTag(int m) {
-    std::string tag;
-    mdts[m].getValue(EMDL::IMAGE_NAME, tag, 0);
+    std::string tag = mdts[m].getValue(EMDL::IMAGE_NAME, 0);
     tag = tag.substr(0,tag.find_last_of('.'));
     tag = tag.substr(tag.find_first_of('@') + 1);
-
     return tag;
 }

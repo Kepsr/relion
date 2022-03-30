@@ -58,24 +58,23 @@ class ext_recons_parameters {
 
         MetaDataTable MDlist, MDtau;
         MDlist.read(fn_star, "external_reconstruct_general");
-        MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, fn_data_real);
-        MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, fn_data_imag);
-        MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT, fn_weight);
-        MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT, fn_recons);
-        MDlist.getValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge);
-        MDlist.getValue(EMDL::MLMODEL_PADDING_FACTOR, padding_factor);
-        MDlist.getValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim);
-        MDlist.getValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size);
-        MDlist.getValue(EMDL::MLMODEL_CURRENT_SIZE, current_size);
+        fn_data_real   = MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL);
+        fn_data_imag   = MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG);
+        fn_weight      = MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT);
+        fn_recons      = MDlist.getValue(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT);
+        tau2_fudge     = MDlist.getValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR);
+        padding_factor = MDlist.getValue(EMDL::MLMODEL_PADDING_FACTOR);
+        ref_dim        = MDlist.getValue(EMDL::MLMODEL_DIMENSIONALITY);
+        ori_size       = MDlist.getValue(EMDL::MLMODEL_ORIGINAL_SIZE);
+        current_size   = MDlist.getValue(EMDL::MLMODEL_CURRENT_SIZE);
 
-        if (fn_out != "") fn_recons = fn_out;
+        if (fn_out != "") { fn_recons = fn_out; }
 
         MDtau.read(fn_star, "external_reconstruct_tau2");
         tau2.resize(MDtau.numberOfObjects());
         int idx = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtau) {
-            RFLOAT mytau2;
-            MDtau.getValue(EMDL::MLMODEL_TAU2_REF, mytau2);
+            RFLOAT mytau2 = MDtau.getValue(EMDL::MLMODEL_TAU2_REF);
             DIRECT_MULTIDIM_ELEM(tau2, idx) = mytau2;
             idx++;
         }
@@ -90,7 +89,7 @@ class ext_recons_parameters {
 
         Image<Complex> Idata;
         Image<RFLOAT> Iweight;
-        std::string fn_ext = "."+fn_data_real.getExtension();
+        std::string fn_ext = "." + fn_data_real.getExtension();
         std::string fn_root = fn_data_real.beforeFirstOf("_real");
         ComplexIO::read(Idata, fn_root, fn_ext);
         Iweight.read(fn_weight);

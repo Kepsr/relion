@@ -263,13 +263,12 @@ void FrameRecombiner::process(
 
         for (int p = 0; do_recenter && p < pc; p++) {
             // FIXME: code duplication from preprocess.cpp
-            RFLOAT xoff, yoff, xcoord, ycoord;
             Matrix1D<RFLOAT> my_projected_center(3);
             my_projected_center.initZeros();
 
-            mdtOut.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff, p); // in A
-            mdtOut.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff, p);
-//			std::cout << "IN  xoff = " << xoff << " yoff = " << yoff;
+            RFLOAT xoff = mdtOut.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p); // in A
+            RFLOAT yoff = mdtOut.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
+			// std::cout << "IN  xoff = " << xoff << " yoff = " << yoff;
             xoff /= ref_angpix; // Now in reference pixels
             yoff /= ref_angpix;
 
@@ -278,10 +277,9 @@ void FrameRecombiner::process(
                 fabs(recenter_y) > 0.0 || 
                 fabs(recenter_z) > 0.0
             ) {
-                RFLOAT rot, tilt, psi;
-                mdtOut.getValue(EMDL::ORIENT_ROT, rot, p);
-                mdtOut.getValue(EMDL::ORIENT_TILT, tilt, p);
-                mdtOut.getValue(EMDL::ORIENT_PSI, psi, p);
+                RFLOAT rot  = mdtOut.getValue(EMDL::ORIENT_ROT,  p);
+                RFLOAT tilt = mdtOut.getValue(EMDL::ORIENT_TILT, p);
+                RFLOAT psi  = mdtOut.getValue(EMDL::ORIENT_PSI,  p);
 
                 // Project the center-coordinates
                 Matrix1D<RFLOAT> my_center(3);
@@ -298,9 +296,9 @@ void FrameRecombiner::process(
             xoff = xoff * ref_angpix / coords_angpix; // Now in (possibly binned) micrograph's pixel
             yoff = yoff * ref_angpix / coords_angpix;
 
-            mdtOut.getValue(EMDL::IMAGE_COORD_X, xcoord, p);
-            mdtOut.getValue(EMDL::IMAGE_COORD_Y, ycoord, p);
-//			std::cout << " xcoord = " << xcoord << " ycoord = " << ycoord << std::endl;;
+            RFLOAT xcoord = mdtOut.getValue(EMDL::IMAGE_COORD_X, p);
+            RFLOAT ycoord = mdtOut.getValue(EMDL::IMAGE_COORD_Y, p);
+			// std::cout << " xcoord = " << xcoord << " ycoord = " << ycoord << std::endl;;
             xcoord -= ROUND(xoff);
             ycoord -= ROUND(yoff);
             xoff   -= ROUND(xoff);
@@ -591,8 +589,7 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromBfacs(
     double bfacOff = 0.0;
 
     for (int f = 0; f < fc; f++) {
-        double b;
-        mdt.getValue(EMDL::POSTPROCESS_BFACTOR, b, f);
+        double b = mdt.getValue(EMDL::POSTPROCESS_BFACTOR, f);
 
         if (b > bfacOff) bfacOff = b;
     }
@@ -600,11 +597,10 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromBfacs(
     const double cf = 8.0 * angpix_ref * angpix_ref * sh * sh;
 
     for (int f = 0; f < fc; f++) {
-        double b, k;
-        mdt.getValue(EMDL::POSTPROCESS_BFACTOR,               b, f);
-        mdt.getValue(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, k, f);
+        double b = mdt.getValue(EMDL::POSTPROCESS_BFACTOR,               f);
+        double k = mdt.getValue(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, f);
 
-        bkFacs[f] = d2Vector(sqrt(-cf/(b-bfacOff-1)), exp(k));
+        bkFacs[f] = d2Vector(sqrt(-cf / (b - bfacOff - 1)), exp(k));
     }
 
     freqWeights = DamageHelper::computeWeights(bkFacs, sh);

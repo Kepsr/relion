@@ -32,8 +32,6 @@
 #include "config.h"
 #endif
 
-#define SAFESET(var, value) (var = (std::isfinite(value)) ? value : var)
-
 #define MRCSIZE 1024 // Minimum size of the MRC header (when nsymbt = 0)
 
 ///@defgroup MRC MRC File format
@@ -357,37 +355,38 @@ int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) 
     header->nzStart = (int) 0;
 
     if (!MDMainHeader.isEmpty()) {
-        header->amin  = MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN, aux)    ? (float) aux : (float) data.min();
-        header->amax  = MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX, aux)    ? (float) aux : (float) data.max();
-        header->amean = MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG, aux)    ? (float) aux : (float) data.average();
-        header->arms  = MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV, aux) ? (float) aux : (float) data.computeStddev();
 
-        // if (MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_X, aux))
-        //	SAFESET(header->nxStart,(int)(aux-0.5));
+        try { header->amin  = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN);    } catch (const char *errmsg) { header->amin  = (float) data.min();           }
+        try { header->amax  = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);    } catch (const char *errmsg) { header->amax  = (float) data.max();           }
+        try { header->amean = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG);    } catch (const char *errmsg) { header->amean = (float) data.average();       }
+        try { header->arms  = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV); } catch (const char *errmsg) { header->arms  = (float) data.computeStddev(); }
 
-        if (MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, aux2)) {
-            // header is init to zero
-            SAFESET(header->xOrigin, (float) (header->nxStart * aux2));
-            SAFESET(header->a, (float) aux2 * header->nx);
-        }
+        // int nxStart, nyStart, nzStart;
+        float xOrigin, yOrigin, zOrigin, a, b, c;
 
-        // if (MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_Y, aux))
-        //	SAFESET(header->nyStart,(int)(aux-0.5));
+        // aux = MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_X);
+        // if (std::isfinite(nxStart = aux - 0.5)) { header->nxStart = nxStart; }
 
-        if (MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y, aux2)) {
-            // header is init to zero
-            SAFESET(header->yOrigin, (float) (header->nyStart * aux2));
-            SAFESET(header->b, (float)aux2 * header->ny);
-        }
+        aux2 = (float) MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X)
+        // header is init to zero
+        if (std::isfinite(xOrigin = header->nxStart * aux2)) { header->xOrigin = xOrigin; }
+        if (std::isfinite(a       = header->nx      * aux2)) { header->a       = a; }
 
-        // if (MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_Z, aux))
-        //	SAFESET(header->nzStart,(int)(aux-0.5));
+        // aux = MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_Y, aux);
+        // if (std::isfinite(nyStart = aux - 0.5)) { header->nyStart = nyStart; }
 
-        if (MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z, aux2)) {
-            // header is init to zero
-            SAFESET(header->zOrigin, (float) (header->nzStart * aux2));
-            SAFESET(header->c, (float)aux2 * header->nz);
-        }
+        aux2 = MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
+        // header is init to zero
+        if (std::isfinite(yOrigin = header->nyStart * aux2)) { header->yOrigin = yOrigin; }
+        if (std::isfinite(b       = header->ny      * aux2)) { header->b       = b; }
+
+        // aux = MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_Z);
+        // if (std::isfinite(nzStart = aux - 0.5)) { header->nzStart = nzStart; }
+
+        aux2 = MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z);
+        // header is init to zero
+        if (std::isfinite(zOrigin = header->nzStart * aux2)) { header->zOrigin = zOrigin; }
+        if (std::isfinite(c       = header->nz      * aux2)) { header->c       = c; }
 
     }
 

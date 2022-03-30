@@ -228,18 +228,14 @@ class tiltpair_plot_parameters {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDu) {
 
             // Read input data
-            RFLOAT rot1,  tilt1,  psi1;
-            RFLOAT rot2,  tilt2,  psi2;
-            RFLOAT rot2p, tilt2p, psi2p;
-            RFLOAT best_tilt, best_alpha, best_beta;
-            RFLOAT distp;
+            // RFLOAT best_tilt, best_alpha, best_beta;
 
-            MDu.getValue(EMDL::ORIENT_ROT, rot1);
-            MDt.getValue(EMDL::ORIENT_ROT, rot2, iline);
-            MDu.getValue(EMDL::ORIENT_TILT, tilt1);
-            MDt.getValue(EMDL::ORIENT_TILT, tilt2, iline);
-            MDu.getValue(EMDL::ORIENT_PSI, psi1);
-            MDt.getValue(EMDL::ORIENT_PSI, psi2, iline);
+            RFLOAT rot1  = MDu.getValue(EMDL::ORIENT_ROT);
+            RFLOAT rot2  = MDt.getValue(EMDL::ORIENT_ROT, iline);
+            RFLOAT tilt1 = MDu.getValue(EMDL::ORIENT_TILT);
+            RFLOAT tilt2 = MDt.getValue(EMDL::ORIENT_TILT, iline);
+            RFLOAT psi1  = MDu.getValue(EMDL::ORIENT_PSI);
+            RFLOAT psi2  = MDt.getValue(EMDL::ORIENT_PSI, iline);
             iline++;
 
             // Bring both angles to a normalized set
@@ -251,10 +247,10 @@ class tiltpair_plot_parameters {
             psi2  = realWRAP(psi2,  -180, 180);
 
             // Apply rotations to find the minimum distance angles
-            rot2p  = rot2;
-            tilt2p = tilt2;
-            psi2p  = psi2;
-            distp  = check_symmetries(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);
+            RFLOAT rot2p  = rot2;
+            RFLOAT tilt2p = tilt2;
+            RFLOAT psi2p  = psi2;
+            RFLOAT distp  = check_symmetries(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);
 
             // Calculate distance to user-defined point
             RFLOAT xp, yp, x, y;

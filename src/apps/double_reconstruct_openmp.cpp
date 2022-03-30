@@ -272,7 +272,7 @@ class reconstruct_parameters {
 
             // Get dimension of the images
 
-            mdt0.getValue(EMDL::IMAGE_NAME, fn_img, 0);
+            fn_img = mdt0.getValue(EMDL::IMAGE_NAME, 0);
 
 
             Projector subProjector(sub.data.xdim, interpolator, padding_factor, r_min_nn);
@@ -337,25 +337,24 @@ class reconstruct_parameters {
                     const long pc = obsR.size();
 
                     for (int p = 0; p < pc; p++) {
-                        int randSubset;
-                        table.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
+                        int randSubset = table.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
                         randSubset--;
 
                         // Rotations
                         if (ref_dim == 2) {
                             rot = tilt = 0.0;
                         } else {
-                            table.getValue(EMDL::ORIENT_ROT, rot, p);
-                            table.getValue(EMDL::ORIENT_TILT, tilt, p);
+                            rot  = table.getValue(EMDL::ORIENT_ROT,  p);
+                            tilt = table.getValue(EMDL::ORIENT_TILT, p);
                         }
 
                         psi = 0.0;
-                        table.getValue(EMDL::ORIENT_PSI, psi, p);
+                        psi = table.getValue(EMDL::ORIENT_PSI, p);
 
                         if (angular_error > 0.0) {
-                            rot += rnd_gaus(0.0, angular_error);
+                            rot  += rnd_gaus(0.0, angular_error);
                             tilt += rnd_gaus(0.0, angular_error);
-                            psi += rnd_gaus(0.0, angular_error);
+                            psi  += rnd_gaus(0.0, angular_error);
                             //std::cout << rnd_gaus(0.0, angular_error) << std::endl;
                         }
 
@@ -376,8 +375,8 @@ class reconstruct_parameters {
 
                         // Translations (either through phase-shifts or in real space
                         trans.initZeros();
-                        table.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, XX(trans), p);
-                        table.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, YY(trans), p);
+                        XX(trans) = table.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
+                        YY(trans) = table.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
 
                         XX(trans) /= pixelsize;
                         YY(trans) /= pixelsize;
@@ -389,7 +388,7 @@ class reconstruct_parameters {
 
                         if (do_3d_rot) {
                             trans.resize(3);
-                            table.getValue( EMDL::ORIENT_ORIGIN_Z, ZZ(trans), p);
+                            ZZ(trans) = table.getValue(EMDL::ORIENT_ORIGIN_Z, p);
 
                             if (shift_error > 0.0) {
                                 ZZ(trans) += rnd_gaus(0.0, shift_error);
@@ -397,7 +396,7 @@ class reconstruct_parameters {
                         }
 
                         if (do_fom_weighting) {
-                            table.getValue( EMDL::PARTICLE_FOM, fom, p);
+                            fom = table.getValue(EMDL::PARTICLE_FOM, p);
                         }
 
                         MultidimArray<Complex> Fsub, F2D, F2DP, F2DQ;

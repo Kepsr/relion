@@ -203,6 +203,7 @@ std::string MetaDataTable::getUnknownLabelNameAt(int i) const {
     return unknownLabelNames[unknownLabelPosition2Offset[i]];
 }
 
+/// TODO: Make pure.
 bool MetaDataTable::getValueToString(EMDL::EMDLabel label, std::string &value, long objectID, bool escape) const {
     // SHWS 18 Jul 2018: this function previously had a stringstream, but it greatly slowed down
     // writing of large STAR files in some strange circumstances 
@@ -211,68 +212,62 @@ bool MetaDataTable::getValueToString(EMDL::EMDLabel label, std::string &value, l
     //
     // JZ 9aug2018: still using a stringstream for vector<double> fields
     // => Avoid vector-valued columns in particle star-files.
+    #define FALSE_ON_ERRMSG(value, label, objectID) \
+    try { \
+        value = getValue(label, objectID); \
+    } catch (const char *errmsg) { \
+        return false; \
+    }
 
     char buffer[14];
 
     if (EMDL::isString(label)) {
-        if (!getValue(label, value, objectID))
-            return false;
-
-        if (escape)
-            escapeStringForSTAR(value);
-
+        FALSE_ON_ERRMSG(value, label, objectID)
+        if (escape) escapeStringForSTAR(value);
         return true;
-    }
-    else {
+    } else {
         if (EMDL::isDouble(label)) {
             double v;
-            if(!getValue(label, v, objectID)) return false;
+            FALSE_ON_ERRMSG(v, label, objectID)
 
-            if ((ABS(v) > 0. && ABS(v) < 0.001) || ABS(v) > 100000.) {
-                if (v < 0.) {
-                    snprintf(buffer,13, "%12.5e", v);
+            if ((ABS(v) > 0.0 && ABS(v) < 0.001) || ABS(v) > 100000.0) {
+                if (v < 0.0) {
+                    snprintf(buffer, 13, "%12.5e", v);
+                } else {
+                    snprintf(buffer, 13, "%12.6e", v);
                 }
-                else {
-                    snprintf(buffer,13, "%12.6e", v);
-                }
-            }
-            else {
-                if (v < 0.) {
-                    snprintf(buffer,13, "%12.5f", v);
-                }
-                else {
-                    snprintf(buffer,13, "%12.6f", v);
+            } else {
+                if (v < 0.0) {
+                    snprintf(buffer, 13, "%12.5f", v);
+                } else {
+                    snprintf(buffer, 13, "%12.6f", v);
                 }
             }
-        }
-        else if (EMDL::isInt(label)) {
+        } else if (EMDL::isInt(label)) {
             long v;
-            if (!getValue(label, v, objectID)) return false;
-            snprintf(buffer,13, "%12ld", v);
-        }
-        else if (EMDL::isBool(label)) {
+            FALSE_ON_ERRMSG(v, label, objectID);
+            snprintf(buffer, 13, "%12ld", v);
+        } else if (EMDL::isBool(label)) {
             bool v;
-            if (!getValue(label, v, objectID)) return false;
-            snprintf(buffer,13, "%12d", (int)v);
-        }
-        else if (EMDL::isDoubleVector(label)) {
-            std::vector<double> v;
-            getValue(label, v, objectID);
+            FALSE_ON_ERRMSG(v, label, objectID)
+            snprintf(buffer, 13, "%12d", (int) v);
+        } else if (EMDL::isDoubleVector(label)) {
+            std::vector<double> v = getValue(label, objectID);
 
             if (v.size() == 0) {
                 value = "[]";
-            }
-            else {
+            } else {
                 std::stringstream sts;
 
                 sts << std::setprecision(12);
                 sts << '[';
 
-                for (int i = 0; i < v.size()-1; i++) {
+                for (int i = 0; i < v.size() - 1; i++) {
                     sts << v[i] << ',';
                 }
+                sts << v[v.size() - 1];
 
-                sts << v[v.size()-1] << ']';
+                sts << ']';
 
                 value = sts.str();
             }
@@ -284,6 +279,7 @@ bool MetaDataTable::getValueToString(EMDL::EMDLabel label, std::string &value, l
 
         return true;
     }
+    #undef FALSE_ON_ERRMSG
 }
 
 bool MetaDataTable::setUnknownValue(int labelPosition, const std::string &value) {
@@ -429,21 +425,20 @@ void MetaDataTable::sort(
         REPORT_ERROR("MetadataTable::sort%% " + errorMsg("can only sorted numbers"));
     }
 
-    std::vector<std::pair<double, long int> > vp;
+    std::vector<std::pair<double, long int>> vp;
     vp.reserve(objects.size());
     long int i = 0;
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(*this) {
         double dval;
         if (do_random) {
-            dval = (double)rand();
+            dval = (double) rand();
         } else if (EMDL::isInt(name)) {
-            long val;
-            getValue(name, val);
+            long val = getValue(name);
             dval = (double) val;
         } else {
             // EMDL::isDouble(name)
-            getValue(name, dval);
+            dval = getValue(name);
         }
 
         vp.push_back(std::make_pair(dval, i));
@@ -1071,7 +1066,7 @@ void MetaDataTable::write(std::ostream& out) {
                     out << val << " ";
                 }
                 if (l == EMDL::COMMENT) {
-                    getValue(EMDL::COMMENT, entryComment, idx);
+                    entryComment = getValue(EMDL::COMMENT, idx);
                 }
             }
             if (entryComment != std::string("")) {
@@ -1099,7 +1094,7 @@ void MetaDataTable::write(std::ostream& out) {
                 int w = unknownLabelNames[offset].length();
                 if (w > maxWidth) maxWidth = w;
             } else {
-                getValue(EMDL::COMMENT, entryComment, 0);
+                entryComment = getValue(EMDL::COMMENT, 0);
             }
         }
 
@@ -1152,27 +1147,15 @@ void MetaDataTable::columnHistogram(
         REPORT_ERROR(errorMsg("The column specified is not present in the MetaDataTable."));
 
     std::vector<RFLOAT> values;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(*this)
-    {
+    FOR_ALL_OBJECTS_IN_METADATA_TABLE(*this) {
         RFLOAT val;
-        if (EMDL::isDouble(label))
-        {
-            getValue(label, val);
-        }
-        else if (EMDL::isInt(label))
-        {
-            long aux;
-            getValue(label, aux);
-            val = aux;
-        }
-        else if (EMDL::isBool(label))
-        {
-            bool aux;
-            getValue(label, aux);
-            val = aux ? 1 : 0;
-        }
-        else
-        {
+        if (EMDL::isDouble(label)) {
+            val = getValue(label);
+        } else if (EMDL::isInt(label)) {
+            val = (long) getValue(label);
+        } else if (EMDL::isBool(label)) {
+            val = (bool) getValue(label);
+        } else {
             REPORT_ERROR("Cannot use --stat_column for this type of column");
         }
         values.push_back(val);
@@ -1427,15 +1410,15 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
         current_object1 = MD1.nextObject()
     ) {
         if (EMDL::isString(label1)) {
-            MD1.getValue(label1, mystr1);
+            mystr1 = MD1.getValue(label1);
         } else if (EMDL::isInt(label1)) {
-            MD1.getValue(label1, myint1);
+            myint1 = MD1.getValue(label1);
         } else if (EMDL::isDouble(label1)) {
-            MD1.getValue(label1, myd1);
+            myd1 = MD1.getValue(label1);
             if (label2 != EMDL::UNDEFINED)
-                MD1.getValue(label2, mydy1);
+            mydy1 = MD1.getValue(label2);
             if (label3 != EMDL::UNDEFINED)
-                MD1.getValue(label3, mydz1);
+            mydz1 = MD1.getValue(label3);
         } else {
             REPORT_ERROR("compareMetaDataTableEqualLabel ERROR: only implemented for strings, integers or doubles");
         }
@@ -1447,7 +1430,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
             current_object2 = MD2.nextObject()
         ) {
             if (EMDL::isString(label1)) {
-                MD2.getValue(label1, mystr2);
+                mystr2 = MD2.getValue(label1);
                 if (strcmp(mystr1.c_str(), mystr2.c_str()) == 0) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
@@ -1456,7 +1439,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
                 }
             }
             else if (EMDL::isInt(label1)) {
-                MD2.getValue(label1, myint2);
+                myint2 = MD2.getValue(label1);
                 if ( ABS(myint2 - myint1) <= ROUND(eps) ) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
@@ -1465,16 +1448,18 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
                 }
             }
             else if (EMDL::isDouble(label1)) {
-                MD2.getValue(label1, myd2);
+                myd2 = MD2.getValue(label1);
                 if (label2 != EMDL::UNDEFINED)
-                    MD2.getValue(label2, mydy2);
+                mydy2 = MD2.getValue(label2);
                 if (label3 != EMDL::UNDEFINED)
-                    MD2.getValue(label3, mydz2);
+                mydz2 = MD2.getValue(label3);
 
-                double dist = sqrt( (myd1 - myd2) * (myd1 - myd2) +
-                                    (mydy1 - mydy2) * (mydy1 - mydy2) +
-                                    (mydz1 - mydz2) * (mydz1 - mydz2) );
-                if ( ABS(dist) <= eps ) {
+                double dist = sqrt(
+                    (myd1  - myd2)  * (myd1  - myd2)  +
+                    (mydy1 - mydy2) * (mydy1 - mydy2) +
+                    (mydz1 - mydz2) * (mydz1 - mydz2)
+                );
+                if (ABS(dist) <= eps) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
                     //std::cerr << " current_object1= " << current_object1 << std::endl;
@@ -1603,18 +1588,9 @@ MetaDataTable subsetMetaDataTable(
 
     MetaDataTable MDout;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        bool do_include = false;
-        if (EMDL::isInt(label)) {
-            long val;
-            MDin.getValue(label, val);
-            do_include = ((RFLOAT)val <= max_value && (RFLOAT)val >= min_value);
-        } else {
-            RFLOAT val;
-            MDin.getValue(label, val);
-            do_include = ((RFLOAT)val <= max_value && (RFLOAT)val >= min_value);
-        }
+        RFLOAT val = EMDL::isInt(label) ? (long) MDin.getValue(label) : MDin.getValue(label);
 
-        if (do_include) {
+        if (val <= max_value && val >= min_value) {
             MDout.addObject(MDin.getObject(index));
         }
     }
@@ -1635,12 +1611,11 @@ MetaDataTable subsetMetaDataTable(
 
     MetaDataTable MDout;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        std::string val;
-        MDin.getValue(label, val);
 
-        bool found = (val.find(search_str) != std::string::npos);
+        std::string val = MDin.getValue(label);
+        bool found = val.find(search_str) != std::string::npos;
 
-        if ((!exclude && found) || (exclude && !found)) {
+        if (exclude != found) {
             MDout.addObject(MDin.getObject(index));
         }
     }
@@ -1679,22 +1654,22 @@ MetaDataTable removeDuplicatedParticles(
     std::map<std::string, std::vector<long>> grouped;
     // Populate xs and ys
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        std::string mic_name;
-        MDin.getValue(mic_label, mic_name);
 
-        // This is such an ugly way to get x and y.
+        std::string mic_name = MDin.getValue(mic_label);
         RFLOAT val1, val2;
-        MDin.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, val1);
-        MDin.getValue(EMDL::IMAGE_COORD_X, val2);
+
+        val1 = MDin.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+        val2 = MDin.getValue(EMDL::IMAGE_COORD_X);
         xs[index] = -val1 * origin_scale + val2;
-        MDin.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, val1);
-        MDin.getValue(EMDL::IMAGE_COORD_Y, val2);
+
+        val1 = MDin.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+        val1 = MDin.getValue(EMDL::IMAGE_COORD_Y);
         ys[index] = -val1 * origin_scale + val2;
 
         if (dataIs3D) {
-            MDin.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, val1);
-            MDin.getValue(EMDL::IMAGE_COORD_Z, val2);
-            zs[index] = -val1 * origin_scale + val2;
+        val1 = MDin.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+        val2 = MDin.getValue(EMDL::IMAGE_COORD_Z);
+        zs[index] = -val1 * origin_scale + val2;
         }
 
         grouped[mic_name].push_back(index);

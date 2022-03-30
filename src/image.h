@@ -999,7 +999,7 @@ class Image {
     */
     RFLOAT samplingRateY(const long int n = 0) const {
         try {
-            MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
+            return MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
         } catch (const char* errmsg) {
             return 1.0;
         }

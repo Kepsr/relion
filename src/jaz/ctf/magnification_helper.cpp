@@ -408,11 +408,10 @@ void MagnificationHelper::adaptAstigmatism(
         std::vector<d2Matrix> A(pc), D(pc), Q(pc);
 
         for (long int p = 0; p < pc; p++) {
-            double deltafU, deltafV, phiDeg;
 
-            partMdts[m].getValue(EMDL::CTF_DEFOCUSU, deltafU, p);
-            partMdts[m].getValue(EMDL::CTF_DEFOCUSV, deltafV, p);
-            partMdts[m].getValue(EMDL::CTF_DEFOCUS_ANGLE, phiDeg, p);
+            double deltafU = partMdts[m].getValue(EMDL::CTF_DEFOCUSU, p);
+            double deltafV = partMdts[m].getValue(EMDL::CTF_DEFOCUSV, p);
+            double phiDeg  = partMdts[m].getValue(EMDL::CTF_DEFOCUS_ANGLE, p);
 
             const double phi = DEG2RAD(phiDeg);
 
@@ -428,9 +427,7 @@ void MagnificationHelper::adaptAstigmatism(
 
         if (perParticle) {
             for (long int p = 0; p < pc; p++) {
-                int og;
-                partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, og, p);
-                og--;
+                int og = --partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, p);
 
                 d2Matrix A2 = Mit[og] * A[p] * Mi[og];
 
@@ -459,9 +456,7 @@ void MagnificationHelper::adaptAstigmatism(
                 d2Matrix A_mean(0.0, 0.0, 0.0, 0.0);
 
                 for (long int p = 0; p < pc; p++) {
-                    int ogp;
-                    partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, ogp, p);
-                    ogp--;
+                    int ogp = --partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, p);
 
                     if (ogp == og) {
                         A_mean += A[p] * (1.0 / (double) pc);
@@ -483,9 +478,7 @@ void MagnificationHelper::adaptAstigmatism(
                 double meanDef_mean = 0.5 * (deltafU_mean_neg + deltafV_mean_neg);
 
                 for (long int p = 0; p < pc; p++) {
-                    int ogp;
-                    partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, ogp, p);
-                    ogp--;
+                    int ogp = --partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, p);
 
                     if (ogp == og) {
                         d2Matrix Ap2 = Mit[og] * A[p] * Mi[og];

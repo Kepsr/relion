@@ -389,8 +389,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     if (basePckr->do_ctf) {
         // Search for this micrograph in the metadata table
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(basePckr->MDmic) {
-            FileName fn_tmp;
-            basePckr->MDmic.getValue(EMDL::MICROGRAPH_NAME, fn_tmp);
+            FileName fn_tmp = basePckr->MDmic.getValue(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
                 ctf.read(basePckr->MDmic, basePckr->MDmic);
                 Fctf.resize(basePckr->workSize,basePckr->workSize / 2 + 1);
@@ -646,7 +645,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 fn_tmp.compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
                 It.read(fn_tmp);
                 Mccf_best = It();
-                It.MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Retrieve expected_Pratio from the header of the image
+                expected_Pratio = It.MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the header of the image
 
                 fn_tmp.compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestPSI.spi");
                 It.read(fn_tmp);

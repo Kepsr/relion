@@ -225,7 +225,7 @@ int manualpickerGuiWindow::fill() {
     viewctf_buttons.clear();
     number_picked.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        MDin.getValue(EMDL::MICROGRAPH_NAME, fn_mic);
+        fn_mic = MDin.getValue(EMDL::MICROGRAPH_NAME);
         // Display the name of the micrograph
         global_fn_mics.push_back(fn_mic);
 
@@ -264,7 +264,7 @@ int manualpickerGuiWindow::fill() {
 
         // Button to display the CTF image
         if (global_has_ctf) {
-            MDin.getValue(EMDL::CTF_IMAGE, fn_ctf);
+            fn_ctf = MDin.getValue(EMDL::CTF_IMAGE);
             global_fn_ctfs.push_back(fn_ctf);
             // Button to display the CTF image
             Fl_Button *myviewctf = new Fl_Button(MXCOL3, current_y, MWCOL4, ystep - 5, "CTF");
@@ -273,8 +273,7 @@ int manualpickerGuiWindow::fill() {
             viewctf_buttons.push_back(myviewctf);
 
             Fl_Text_Buffer *textbuffDF = new Fl_Text_Buffer();
-            RFLOAT defocus;
-            MDin.getValue(EMDL::CTF_DEFOCUSU, defocus);
+            RFLOAT defocus = MDin.getValue(EMDL::CTF_DEFOCUSU);
 
             std::ostringstream os;
             os << defocus;
@@ -314,12 +313,11 @@ void manualpickerGuiWindow::readOutputStarfile() {
         MetaDataTable MDout;
 
         ObservationModel::loadSafely(fn_sel, obsModel, MDout, "micrographs");
-        FileName fn_mic, fn_mic_in;
         for (int imic = 0; imic < selected.size(); imic++) {
-            MDin.getValue(EMDL::MICROGRAPH_NAME, fn_mic_in, imic);
+            FileName fn_mic_in = MDin.getValue(EMDL::MICROGRAPH_NAME, imic);
             bool has_found = false;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
-                MDout.getValue(EMDL::MICROGRAPH_NAME, fn_mic);
+                FileName fn_mic = MDout.getValue(EMDL::MICROGRAPH_NAME);
                 // Which one in the input metadatatable was this one?
                 if (fn_mic == fn_mic_in) {
                     has_found = true;
@@ -335,7 +333,7 @@ void manualpickerGuiWindow::readOutputStarfile() {
                 count_displays[imic]->color(GUI_INPUT_COLOR, GUI_INPUT_COLOR);
                 count_displays[imic]->activate();
                 if (global_has_ctf)
-                    viewctf_buttons[imic]->activate();
+                viewctf_buttons[imic]->activate();
             } else {
                 check_buttons[imic]->value(0);
                 text_displays[imic]->color(GUI_BACKGROUND_COLOR, GUI_BACKGROUND_COLOR);
@@ -344,7 +342,7 @@ void manualpickerGuiWindow::readOutputStarfile() {
                 count_displays[imic]->color(GUI_BACKGROUND_COLOR, GUI_BACKGROUND_COLOR);
                 count_displays[imic]->deactivate();
                 if (global_has_ctf)
-                    viewctf_buttons[imic]->deactivate();
+                viewctf_buttons[imic]->deactivate();
             }
         }
     }
@@ -500,7 +498,7 @@ void ManualPicker::initialise() {
     if (fn_in.isStarFile()) {
         ObservationModel::loadSafely(fn_in, obsModel, MDin, "micrographs");
         if (obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE)) {
-            obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, global_angpix, 0);
+            global_angpix = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, 0);
             std::cout << " Setting angpix to " << global_angpix << " based on the input STAR file... " << std::endl;
         } else {
             if (global_angpix < 0.0) {

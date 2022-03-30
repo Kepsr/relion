@@ -58,7 +58,7 @@ void CTF::readByGroup(
     opticsGroup = 0;
 
     if (obs != 0) {
-        partMdt.getValue(EMDL::IMAGE_OPTICS_GROUP, opticsGroup, particle);
+        opticsGroup = partMdt.getValue(EMDL::IMAGE_OPTICS_GROUP, particle);
     }
 
     opticsGroup--;
@@ -78,54 +78,94 @@ void CTF::readByGroup(
     obsModel = obs;
 }
 
+/// TODO: Return dest
 void CTF::readValue(
     EMDLabel label, RFLOAT& dest, RFLOAT defaultVal,
     long int particle, int opticsGroup,
     const MetaDataTable& partMdt, const ObservationModel* obs
 ) {
-    if (!partMdt.getValue(label, dest, particle)) {
-        if (opticsGroup < 0 || !obs->opticsMdt.getValue(label, dest, opticsGroup)) {
-            dest = defaultVal;
-        }
+    try {
+        dest = partMdt.getValue(label, particle);
+    } catch (const char *errmsg) try {
+        if (opticsGroup < 0) { throw "Negative optics group!"; }
+        dest = obs->opticsMdt.getValue(label, opticsGroup);
+    } catch (const char *errmsg) {
+        dest = defaultVal;
     }
 }
 
 void CTF::read(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
-    if (!MD1.getValue(EMDL::CTF_VOLTAGE, kV, objectID))
-        if (!MD2.getValue(EMDL::CTF_VOLTAGE, kV, objectID))
-            kV = 200;
 
-    if (!MD1.getValue(EMDL::CTF_DEFOCUSU, DeltafU, objectID))
-        if (!MD2.getValue(EMDL::CTF_DEFOCUSU, DeltafU, objectID))
-            DeltafU = 0;
+    try {
+        kV = MD1.getValue(EMDL::CTF_VOLTAGE, objectID);
+    } catch (const char *errmsg) try {
+        kV = MD2.getValue(EMDL::CTF_VOLTAGE, objectID);
+    } catch (const char *errmsg) {
+        kV = 200;
+    }
 
-    if (!MD1.getValue(EMDL::CTF_DEFOCUSV, DeltafV, objectID))
-        if (!MD2.getValue(EMDL::CTF_DEFOCUSV, DeltafV, objectID))
-            DeltafV = DeltafU;
+    try {
+        DeltafU = MD1.getValue(EMDL::CTF_DEFOCUSU, objectID);
+    } catch (const char *errmsg) try {
+        DeltafU = MD2.getValue(EMDL::CTF_DEFOCUSU, objectID);
+    } catch (const char *errmsg) 
+        DeltafU = 0;
 
-    if (!MD1.getValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle, objectID))
-        if (!MD2.getValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle, objectID))
-            azimuthal_angle = 0;
+    try {
+        DeltafV = MD1.getValue(EMDL::CTF_DEFOCUSV, objectID);
+    } catch (const char *errmsg) try {
+        DeltafV = MD2.getValue(EMDL::CTF_DEFOCUSV, objectID);
+    } catch (const char *errmsg) 
+        DeltafV = DeltafU;
+    }
 
-    if (!MD1.getValue(EMDL::CTF_CS, Cs, objectID))
-        if (!MD2.getValue(EMDL::CTF_CS, Cs, objectID))
-            Cs = 0;
+    try {
+        azimuthal_angle = MD1.getValue(EMDL::CTF_DEFOCUS_ANGLE, objectID);
+    } catch (const char *errmsg) try {
+        azimuthal_angle = MD2.getValue(EMDL::CTF_DEFOCUS_ANGLE, objectID);
+    } catch (const char *errmsg) 
+        azimuthal_angle = 0;
+    }
 
-    if (!MD1.getValue(EMDL::CTF_BFACTOR, Bfac, objectID))
-        if (!MD2.getValue(EMDL::CTF_BFACTOR, Bfac, objectID))
-            Bfac = 0;
+    try {
+        Cs = MD1.getValue(EMDL::CTF_CS, objectID);
+    } catch (const char *errmsg) try {
+        Cs = MD2.getValue(EMDL::CTF_CS, objectID);
+    } catch (const char *errmsg) 
+        Cs = 0;
+    }
 
-    if (!MD1.getValue(EMDL::CTF_SCALEFACTOR, scale, objectID))
-        if (!MD2.getValue(EMDL::CTF_SCALEFACTOR, scale, objectID))
-            scale = 1;
+    try {
+        Bfac = MD1.getValue(EMDL::CTF_BFACTOR, objectID);
+    } catch (const char *errmsg) try {
+        Bfac = MD2.getValue(EMDL::CTF_BFACTOR, objectID);
+    } catch (const char *errmsg) 
+        Bfac = 0;
+    }
 
-    if (!MD1.getValue(EMDL::CTF_Q0, Q0, objectID))
-        if (!MD2.getValue(EMDL::CTF_Q0, Q0, objectID))
-            Q0 = 0;
+    try {
+        scale = MD1.getValue(EMDL::CTF_SCALEFACTOR, objectID);
+    } catch (const char *errmsg) try {
+        scale = MD2.getValue(EMDL::CTF_SCALEFACTOR, objectID);
+    } catch (const char *errmsg) 
+        scale = 1;
+    }
 
-    if (!MD1.getValue(EMDL::CTF_PHASESHIFT, phase_shift, objectID))
-        if (!MD2.getValue(EMDL::CTF_PHASESHIFT, phase_shift, objectID))
-            phase_shift = 0;
+    try {
+        Q0 = MD1.getValue(EMDL::CTF_Q0, objectID);
+    } catch (const char *errmsg) try {
+        Q0 = MD2.getValue(EMDL::CTF_Q0, objectID);
+    } catch (const char *errmsg) 
+        Q0 = 0;
+    }
+
+    try {
+        phase_shift = MD1.getValue(EMDL::CTF_PHASESHIFT, objectID);
+    } catch (const char *errmsg) try {
+        phase_shift = MD2.getValue(EMDL::CTF_PHASESHIFT, objectID);
+    } catch (const char *errmsg) 
+        phase_shift = 0;
+    }
 
     initialise();
 }
@@ -163,9 +203,9 @@ void CTF::setValuesByGroup(
     scale           = _scale;
     phase_shift     = _phase_shift;
 
-    obs->opticsMdt.getValue(EMDL::CTF_VOLTAGE, kV, opticsGroup);
-    obs->opticsMdt.getValue(EMDL::CTF_CS, Cs, opticsGroup);
-    obs->opticsMdt.getValue(EMDL::CTF_Q0, Q0, opticsGroup);
+    kV = obs->opticsMdt.getValue(EMDL::CTF_VOLTAGE, opticsGroup);
+    Cs = obs->opticsMdt.getValue(EMDL::CTF_CS,      opticsGroup);
+    Q0 = obs->opticsMdt.getValue(EMDL::CTF_Q0,      opticsGroup);
 
     initialise();
 

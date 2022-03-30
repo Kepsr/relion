@@ -136,17 +136,11 @@ class ctf_toolbox_parameters {
                 int og = obsModel.getOpticsGroup(MD);
                 RFLOAT angpix = obsModel.getPixelSize(og);
 
-                FileName fn_img, my_fn_out;
-                if (do_mic_name) {
-                    MD.getValue(EMDL::MICROGRAPH_NAME, fn_img);
-                } else {
-                    MD.getValue(EMDL::IMAGE_NAME, fn_img);
-                }
-
-                my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
+                FileName fn_img = MD.getValue(do_mic_name ? EMDL::MICROGRAPH_NAME : EMDL::IMAGE_NAME);
+                FileName my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
 
                 // Now do the actual work
-                MD.getValue(EMDL::IMAGE_NAME, fn_img);
+                fn_img = MD.getValue(EMDL::IMAGE_NAME);
 
                 Image<RFLOAT> img;
                 MultidimArray<Complex> Fimg;

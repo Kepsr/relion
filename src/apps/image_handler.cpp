@@ -429,7 +429,7 @@ class image_handler_parameters {
                 int ipp = ROUND(jp * A(1, 0) + ip * A(1, 1));
                 int kpp = kp;
                 RFLOAT fil = (
-                    jpp >= STARTINGX(Iop()) && jpp <= FINISHINGX(Iop()) && 
+                    jpp >= STARTINGX(Iop()) && jpp <= FINISHINGX(Iop()) &&
                     ipp >= STARTINGY(Iop()) && ipp <= FINISHINGY(Iop())
                 ) ? A3D_ELEM(Iop(), kpp, ipp, jpp) : 0.0;
                 DIRECT_A3D_ELEM(FT, k, i, j) *=  fil;
@@ -489,8 +489,8 @@ class image_handler_parameters {
         if (do_shiftCOM) {
             selfTranslateCenterOfMassToCenter(Iout(), DONT_WRAP, true); // verbose=true!
         } else if (
-            fabs(shift_x) > 0.0 || 
-            fabs(shift_y) > 0.0 || 
+            fabs(shift_x) > 0.0 ||
+            fabs(shift_y) > 0.0 ||
             fabs(shift_z) > 0.0
         ) {
             Matrix1D<RFLOAT> shift(2);
@@ -645,8 +645,7 @@ class image_handler_parameters {
             }
             if (fn_out.getExtension() != "mrcs")
                 std::cout << "NOTE: the input (--i) is a STAR file but the output (--o) does not have .mrcs extension. The output is treated as a suffix, not a path." << std::endl;
-            FileName fn_img;
-            MD.getValue(EMDL::IMAGE_NAME, fn_img, 0);
+            FileName fn_img = MD.getValue(EMDL::IMAGE_NAME, 0);
             fn_img.decompose(slice_id, fn_stem);
             input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
         } else if (input_is_stack) {
@@ -677,17 +676,15 @@ class image_handler_parameters {
 
         bool do_md_out = false;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-            FileName fn_img;
-            if (do_average_all_frames) {
-                MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_img);
-            } else {
-                MD.getValue(EMDL::IMAGE_NAME, fn_img);
-            }
+            FileName fn_img = MD.getValue(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
 
             // For fourfilter...
             RFLOAT psi;
-            if (!MD.getValue(EMDL::ORIENT_PSI, psi))
-                psi =0.;
+            try {
+                psi = MD.getValue(EMDL::ORIENT_PSI);
+            } catch (const char* errmsg) {
+                psi = 0.0;
+            }
 
             Image<RFLOAT> Iin;
             // Initialise for the first image
@@ -791,9 +788,9 @@ class image_handler_parameters {
                     RFLOAT xoff = 0.0;
                     RFLOAT yoff = 0.0;
                     RFLOAT psi  = 0.0;
-                    MD.getValue(EMDL::ORIENT_ORIGIN_X, xoff);
-                    MD.getValue(EMDL::ORIENT_ORIGIN_Y, yoff);
-                    MD.getValue(EMDL::ORIENT_PSI, psi);
+                    xoff = MD.getValue(EMDL::ORIENT_ORIGIN_X);
+                    yoff = MD.getValue(EMDL::ORIENT_ORIGIN_Y);
+                    psi  = MD.getValue(EMDL::ORIENT_PSI);
                     // Apply the actual transformation
                     Matrix2D<RFLOAT> A;
                     rotation2DMatrix(psi, A);

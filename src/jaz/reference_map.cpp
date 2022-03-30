@@ -51,13 +51,10 @@ void ReferenceMap::load(int verb, bool debug) {
         FileName fn_half1, fn_half2, fn_mask;
         MetaDataTable MD;
         MD.read(fscFn, "general");
-        bool star_is_valid = (
-            MD.getValue(EMDL::POSTPROCESS_UNFIL_HALFMAP1, fn_half1) &&
-            MD.getValue(EMDL::POSTPROCESS_UNFIL_HALFMAP2, fn_half2) &&
-            MD.getValue(EMDL::MASK_NAME,                  fn_mask);
-        )
-
-        if (star_is_valid) {
+        try {
+            fn_half1 = MD.getValue(EMDL::POSTPROCESS_UNFIL_HALFMAP1);
+            fn_half2 = MD.getValue(EMDL::POSTPROCESS_UNFIL_HALFMAP2);
+            fn_mask  = MD.getValue(EMDL::MASK_NAME);
             if (verb > 0) {
                 std::cout << " + The names of the reference half maps and the mask were taken from the PostProcess STAR file.\n";
                 std::cout << "   - Half map 1: " << fn_half1 << "\n";
@@ -67,7 +64,7 @@ void ReferenceMap::load(int verb, bool debug) {
             reconFn0 = fn_half1;
             reconFn1 = fn_half2;
             maskFn = fn_mask;
-        } else {
+        } catch (const char *errmsg) {
             REPORT_ERROR("could not get filenames for unfiltered half maps from the postprocess STAR file.");
         }
     }
@@ -221,9 +218,7 @@ Image<Complex> ReferenceMap::predict(
 ) {
     Image<Complex> pred;
 
-    int randSubset;
-    mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
-    randSubset -= 1;
+    int randSubset = mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
     int pi = hs == Own ? randSubset : 1 - randSubset;
 
@@ -263,9 +258,7 @@ Volume<t2Vector<Complex>> ReferenceMap::predictComplexGradient(
 ) {
     Volume<t2Vector<Complex>> pred;
 
-    int randSubset;
-    mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
-    randSubset -= 1;
+    int randSubset = mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
     int pi = hs == Own ? randSubset : 1 - randSubset;
 
@@ -302,9 +295,7 @@ Image<Complex> ReferenceMap::predict(
     HalfSet hs,
     bool applyCtf, bool applyTilt, bool applyShift
 ) {
-    int randSubset;
-    mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
-    randSubset -= 1;
+    int randSubset = mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
     int pi = hs == Own ? randSubset : 1 - randSubset;
     return obs.predictObservation(
         projectors[pi], mdt, p, applyCtf, applyTilt, applyShift

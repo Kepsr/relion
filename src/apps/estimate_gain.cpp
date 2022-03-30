@@ -77,9 +77,11 @@ class estimate_gain {
             std::cout << "Number of movies in the STAR file: " << n_total_movies << std::endl;
         }
 
-        FileName fn_img;
-        if (!MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_img, 0))
+        try {
+            FileName fn_img = MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME, 0);
+        } catch (const char* errmsg) {
             REPORT_ERROR("The input STAR file does not contain the rlnMicrographMovieName column.");
+        }
 
         Image<RFLOAT> Ihead;
         std::vector<Image<RFLOAT>> Isums(n_threads);
@@ -90,7 +92,7 @@ class estimate_gain {
             std::cout << "Randomised the order of input movies." << std::endl;
         }
 
-        MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_img, 0);
+        fn_img = MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME, 0);
         if (EERRenderer::isEER(fn_img)) {
             EERRenderer renderer;
             renderer.read(fn_img, eer_upsampling);
@@ -122,7 +124,7 @@ class estimate_gain {
         }
 
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_img);
+            fn_img = MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME);
 
             int n_frames;
             if (!EERRenderer::isEER(fn_img)) {

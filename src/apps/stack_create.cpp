@@ -69,8 +69,11 @@ class stack_create_parameters {
         if (do_ignore_optics && (do_apply_trans || do_apply_trans_only))
             REPORT_ERROR("ERROR: you cannot ignore optics and apply transformations");
 
-        if (do_ignore_optics) MD.read(fn_star);
-        else ObservationModel::loadSafely(fn_star, obsModel, MD, "particles");
+        if (do_ignore_optics) {
+            MD.read(fn_star);
+        } else {
+            ObservationModel::loadSafely(fn_star, obsModel, MD, "particles");
+        }
 
         // Check for rlnImageName label
         if (!MD.containsLabel(EMDL::IMAGE_NAME))
@@ -85,12 +88,12 @@ class stack_create_parameters {
         std::vector<int> mics_ndims;
 
         // First get number of images and their size
-        int ndim=0;
-        bool is_first=true;
+        int ndim = 0;
+        bool is_first = true;
         int xdim, ydim, zdim;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             if (is_first) {
-                MD.getValue(EMDL::IMAGE_NAME, fn_img);
+                fn_img = MD.getValue(EMDL::IMAGE_NAME);
                 in.read(fn_img);
                 xdim = in().xdim;
                 ydim = in().ydim;
@@ -99,7 +102,7 @@ class stack_create_parameters {
             }
 
             if (do_split_per_micrograph) {
-                MD.getValue(EMDL::MICROGRAPH_NAME, fn_mic);
+                fn_mic = MD.getValue(EMDL::MICROGRAPH_NAME);
                 bool have_found = false;
                 for (int m = 0; m < fn_mics.size(); m++) {
                     if (fn_mic == fn_mics[m]) {
@@ -157,35 +160,24 @@ class stack_create_parameters {
             int n = 0;
             init_progress_bar(ndim);
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-                FileName fn_mymic;
-                if (do_split_per_micrograph) {
-                    MD.getValue(EMDL::MICROGRAPH_NAME, fn_mymic);
-                } else {
-                    fn_mymic = "";
-                }
 
-                int optics_group;
-                MD.getValue(EMDL::IMAGE_OPTICS_GROUP, optics_group);
-                optics_group--;
-                RFLOAT angpix;
-                if (do_ignore_optics) angpix = 1.0;
-                else angpix = obsModel.getPixelSize(optics_group);
+                FileName fn_mymic = do_split_per_micrograph ? MD.getValue(EMDL::MICROGRAPH_NAME) : "";
+                int optics_group = --MD.getValue(EMDL::IMAGE_OPTICS_GROUP);
+                RFLOAT angpix = do_ignore_optics ? 1.0 : obsModel.getPixelSize(optics_group);
 
                 if (fn_mymic == fn_mic) {
 
-                    MD.getValue(EMDL::IMAGE_NAME, fn_img);
+                    fn_img = MD.getValue(EMDL::IMAGE_NAME);
                     in.read(fn_img);
 
                     if (do_apply_trans || do_apply_trans_only) {
-                        RFLOAT xoff, ori_xoff;
-                        RFLOAT yoff, ori_yoff;
-                        RFLOAT psi, ori_psi;
-                        MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_xoff);
-                        MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_yoff);
-                        MD.getValue(EMDL::ORIENT_PSI, ori_psi);
+                        RFLOAT ori_xoff = MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+                        RFLOAT ori_yoff = MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+                        RFLOAT ori_psi  = MD.getValue(EMDL::ORIENT_PSI);
                         ori_xoff /= angpix;
                         ori_yoff /= angpix;
 
+                        RFLOAT xoff, yoff, psi;
                         if (do_apply_trans_only) {
                             xoff = ROUND(ori_xoff);
                             yoff = ROUND(ori_yoff);
@@ -234,8 +226,8 @@ class stack_create_parameters {
             std::cout << "Written out: " << fn_out << std::endl;
         }
 
-        if (do_ignore_optics) MD.write(fn_root+".star");
-        else obsModel.save(MD, fn_root+".star", "particles");
+        if (do_ignore_optics) { MD.write(fn_root+".star"); }
+        else { obsModel.save(MD, fn_root+".star", "particles"); }
         std::cout << "Written out: " << fn_root << ".star" << std::endl;
         std::cout << "Done!" <<std::endl;
     }

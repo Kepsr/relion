@@ -89,15 +89,14 @@ void ThirdOrderPolynomialModel::read(std::ifstream &fh, std::string block_name) 
     coeffY.resize(NUM_COEFFS_PER_DIM); coeffY.initZeros();
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        int idx;
-        RFLOAT val;
 
-        if (
-            !MD.getValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, idx) ||
-            !MD.getValue(EMDL::MICROGRAPH_MOTION_COEFF, val)
-        ) {
+        try {
+            int    idx = MD.getValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX);
+            RFLOAT val = MD.getValue(EMDL::MICROGRAPH_MOTION_COEFF);
+        } catch (const char *errmsg) {
             REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: missing index or coefficients");
         }
+
         if (idx >= 0 && idx < NUM_COEFFS_PER_DIM) {
             coeffX(idx) = val;
         } else if (idx >= NUM_COEFFS_PER_DIM && idx < NUM_COEFFS) {
@@ -392,62 +391,52 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
     // Read Image metadata
     MDglobal.readStar(in, "general");
 
-    if (
-        !MDglobal.getValue(EMDL::IMAGE_SIZE_X, width)    ||
-        !MDglobal.getValue(EMDL::IMAGE_SIZE_Y, height)   ||
-        !MDglobal.getValue(EMDL::IMAGE_SIZE_Z, n_frames) ||
-        !MDglobal.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fnMovie)
-    ) {
+    try {
+        width    = MDglobal.getValue(EMDL::IMAGE_SIZE_X);
+        height   = MDglobal.getValue(EMDL::IMAGE_SIZE_Y);
+        n_frames = MDglobal.getValue(EMDL::IMAGE_SIZE_Z);
+        fnMovie  = MDglobal.getValue(EMDL::MICROGRAPH_MOVIE_NAME);
+    } catch (const char *errmsg) {
         REPORT_ERROR("MicrographModel::read: insufficient general information in " + fn_in);
     }
 
     globalShiftX.resize(n_frames, NOT_OBSERVED);
     globalShiftY.resize(n_frames, NOT_OBSERVED);
 
-    if (!MDglobal.getValue(EMDL::MICROGRAPH_GAIN_NAME, fnGain))
-        fnGain = "";
+    #define TRY_ASSIGN_FROM_MDT(assignmenttarget, table, label, defaultvalue) \
+    try { (assignmenttarget) = (table).getValue((label)); } \
+    catch (const char *errmsg) { (assignmenttarget) = (defaultvalue); }
 
-    if (!MDglobal.getValue(EMDL::MICROGRAPH_DEFECT_FILE, fnDefect))
-        fnDefect = "";
-
-    if (!MDglobal.getValue(EMDL::MICROGRAPH_BINNING, binning))
-        binning = 1.0;
-
-    if (!MDglobal.getValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, angpix))
-        angpix = -1;
-
-    if (!MDglobal.getValue(EMDL::MICROGRAPH_PRE_EXPOSURE, pre_exposure))
-        pre_exposure = -1;
-
-    if (!MDglobal.getValue(EMDL::MICROGRAPH_DOSE_RATE, dose_per_frame))
-        dose_per_frame = -1;
-
-    if (!MDglobal.getValue(EMDL::CTF_VOLTAGE, voltage))
-        voltage = -1;
-
-    if (!MDglobal.getValue(EMDL::MICROGRAPH_START_FRAME, first_frame))
-        first_frame = 1; // 1-indexed
+    TRY_ASSIGN_FROM_MDT(fnGain,         MDglobal, EMDL::MICROGRAPH_GAIN_NAME,   "");
+    TRY_ASSIGN_FROM_MDT(fnDefect,       MDglobal, EMDL::MICROGRAPH_DEFECT_FILE, "");
+    TRY_ASSIGN_FROM_MDT(binning,        MDglobal, EMDL::MICROGRAPH_BINNING,     1.0);
+    TRY_ASSIGN_FROM_MDT(angpix,         MDglobal, EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, -1);
+    TRY_ASSIGN_FROM_MDT(pre_exposure,   MDglobal, EMDL::MICROGRAPH_PRE_EXPOSURE, -1);
+    TRY_ASSIGN_FROM_MDT(dose_per_frame, MDglobal, EMDL::MICROGRAPH_DOSE_RATE, -1);
+    TRY_ASSIGN_FROM_MDT(voltage,        MDglobal, EMDL::CTF_VOLTAGE, -1);
+    TRY_ASSIGN_FROM_MDT(first_frame,    MDglobal, EMDL::MICROGRAPH_START_FRAME, 1);  // 1-indexed
 
     if (EERRenderer::isEER(fnMovie)) {
-        if (!MDglobal.getValue(EMDL::MICROGRAPH_EER_UPSAMPLING, eer_upsampling))
-            eer_upsampling = -1;
 
-        if (!MDglobal.getValue(EMDL::MICROGRAPH_EER_GROUPING, eer_grouping))
-            eer_grouping = -1;
+        TRY_ASSIGN_FROM_MDT(eer_upsampling, MDglobal, EMDL::MICROGRAPH_EER_UPSAMPLING, -1);
+        TRY_ASSIGN_FROM_MDT(eer_grouping,   MDglobal, EMDL::MICROGRAPH_EER_GROUPING,   -1);
+
     }
 
-    int model_version;
+    #undef TRY_ASSIGN_FROM_MDT
+
     model = NULL;
-    if (MDglobal.getValue(EMDL::MICROGRAPH_MOTION_MODEL_VERSION, model_version)) {
+    try {
+        int model_version = MDglobal.getValue(EMDL::MICROGRAPH_MOTION_MODEL_VERSION);
         if (model_version == MOTION_MODEL_THIRD_ORDER_POLYNOMIAL) {
-            model = new ThirdOrderPolynomialModel();
+            model = new ThirdOrderPolynomialModel();  // Where does this memory get deallocated?
         } else if (model_version == (int) MOTION_MODEL_NULL) {
             model = NULL;
         } else {
             std::cerr << "Warning: Ignoring unknown motion model " << model_version << std::endl;
         }
-    } else {
-            std::cerr << "Warning: local motion model is absent in the micrograph star file." << std::endl;
+    } catch (const char *errmsg) {
+        std::cerr << "Warning: local motion model is absent in the micrograph star file." << std::endl;
     }
 
     if (model != NULL) {
@@ -461,32 +450,32 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
     MDglobal.readStar(in, "global_shift");
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDglobal) {
-        if (
-            !MDglobal.getValue(EMDL::MICROGRAPH_FRAME_NUMBER, frame) ||
-            !MDglobal.getValue(EMDL::MICROGRAPH_SHIFT_X, shiftX)     ||
-            !MDglobal.getValue(EMDL::MICROGRAPH_SHIFT_Y, shiftY)
-        ) {
+        try {
+            frame  = MDglobal.getValue(EMDL::MICROGRAPH_FRAME_NUMBER);
+            shiftX = MDglobal.getValue(EMDL::MICROGRAPH_SHIFT_X);
+            shiftY = MDglobal.getValue(EMDL::MICROGRAPH_SHIFT_Y);
+        } catch (const char *errmsg) {
             REPORT_ERROR("MicrographModel::read: incorrect global_shift table in " + fn_in);
         }
 
         // frame is 1-indexed!
         globalShiftX[frame - 1] = shiftX;
-            globalShiftY[frame - 1] = shiftY;
+        globalShiftY[frame - 1] = shiftY;
     }
 
     if (read_hotpixels) {
         MDhot.readStar(in, "hot_pixels");
         RFLOAT x, y;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDhot) {
-            if (
-                !MDhot.getValue(EMDL::IMAGE_COORD_X, x) ||
-                !MDhot.getValue(EMDL::IMAGE_COORD_Y, y)
-            ) {
+            try {
+                x = MDhot.getValue(EMDL::IMAGE_COORD_X);
+                y = MDhot.getValue(EMDL::IMAGE_COORD_Y);
+            } catch (const char *errmsg) {
                 REPORT_ERROR("MicrographModel::read: incorrect hot_pixels table in " + fn_in);
             }
 
-            hotpixelX.push_back((int)x);
-            hotpixelY.push_back((int)y);
+            hotpixelX.push_back((int) x);
+            hotpixelY.push_back((int) y);
         }
     }
 }

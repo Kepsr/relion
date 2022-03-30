@@ -127,46 +127,37 @@ std::vector<std::vector<Image<RFLOAT>>> MotionHelper::movieCC(
 
     Image<Complex> pred;
 
-    for (int p = 0; p < pc; p++)
-    {
+    for (int p = 0; p < pc; p++) {
         out[p] = std::vector<Image<RFLOAT>>(fc);
 
-        for (int f = 0; f < fc; f++)
-        {
+        for (int f = 0; f < fc; f++) {
             out[p][f] = Image<RFLOAT>(s,s);
         }
 
-        int randSubset;
-        viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
+        int randSubset = viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
         randSubset -= 1;
 
-        if (randSubset == 0)
-        {
+        if (randSubset == 0) {
             pred = obsModel.predictObservation(projector0, viewParams, p, true, true);
-        }
-        else
-        {
+        } else {
             pred = obsModel.predictObservation(projector1, viewParams, p, true, true);
         }
 
         noiseNormalize(pred, sigma2, pred);
 
         #pragma omp parallel for num_threads(threads)
-        for (int f = 0; f < fc; f++)
-        {
+        for (int f = 0; f < fc; f++) {
             int t = omp_get_thread_num();
 
             for (int y = 0; y < s; y++)
-            for (int x = 0; x < sh; x++)
-            {
+            for (int x = 0; x < sh; x++) {
                 ccsFs[t](y,x) = movie[p][f](y,x) * damageWeights[f](y,x) * pred(y,x).conj();
             }
 
             fts[t].inverseFourierTransform(ccsFs[t](), ccsRs[t]());
 
             for (int y = 0; y < s; y++)
-            for (int x = 0; x < s; x++)
-            {
+            for (int x = 0; x < s; x++) {
                 out[p][f](y,x) = s * s * ccsRs[t](y,x);
             }
         }
@@ -395,13 +386,14 @@ std::vector<std::vector<d2Vector>> MotionHelper::readTracksInPix(
     }
 
     MetaDataTable mdt;
-
     mdt.readStar(ifs, "general");
 
     int pc;
-
-    if (!mdt.getValue(EMDL::PARTICLE_NUMBER, pc)) {
+    try {
+        pc = mdt.getValue(EMDL::PARTICLE_NUMBER);
+    } catch (const char *errmsg) {
         REPORT_ERROR("MotionHelper::readTracks: missing particle number in " + fn + ".");
+
     }
 
     std::vector<std::vector<d2Vector>> out(pc);
@@ -423,9 +415,8 @@ std::vector<std::vector<d2Vector>> MotionHelper::readTracksInPix(
         out[p] = std::vector<d2Vector>(fc);
 
         for (int f = 0; f < fc; f++) {
-            mdt.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, out[p][f].x, f);
-            mdt.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, out[p][f].y, f);
-
+            out[p][f].x = mdt.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, f);
+            out[p][f].y = mdt.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, f);
             out[p][f] /= angpix;
         }
     }

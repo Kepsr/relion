@@ -446,8 +446,7 @@ int CtfRefiner::getVerbosityLevel() {
 }
 
 FileName CtfRefiner::getOutputFilenameRoot(const MetaDataTable &mdt, std::string outPath) {
-    FileName fn_mic;
-    mdt.getValue(EMDL::MICROGRAPH_NAME, fn_mic, 0);
+    FileName fn_mic = mdt.getValue(EMDL::MICROGRAPH_NAME, 0);
     FileName fn_pre, fn_jobnr, fn_post;
     decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
 

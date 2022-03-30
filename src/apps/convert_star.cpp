@@ -61,9 +61,11 @@ class star_converter {
         } else if (isMotionCorrSTAR) {
             std::cout << "The input is a STAR file from a MotionCorr job." << std::endl;
             std::cout << "The (binned) pixel size and the voltage are taken from the first metadata STAR file." << std::endl;
-            FileName fn_meta;
-            if (!mdtOut.getValue(EMDL::MICROGRAPH_METADATA_NAME, fn_meta, 0))
+            try {
+                FileName fn_meta = mdtOut.getValue(EMDL::MICROGRAPH_METADATA_NAME, 0);
+            } catch (const char *errmsg) {
                 REPORT_ERROR("Failed to find the metadata STAR file");
+            }
 
             Micrograph mic(fn_meta);
             std::cout << "- voltage: " << mic.voltage << std::endl;

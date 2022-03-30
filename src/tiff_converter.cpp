@@ -46,7 +46,7 @@ void TIFFConverter::read(int argc, char **argv) {
     thresh_reliable = textToInteger(parser.getOption("--thresh", "Number of success needed to consider a pixel reliable", "50"));
     do_estimate = parser.checkOption("--estimate_gain", "Estimate gain");
 
-    int eer_section = parser.addSection("EER rendering options");	
+    int eer_section = parser.addSection("EER rendering options");
     eer_grouping = textToInteger(parser.getOption("--eer_grouping", "EER grouping", "40"));
     eer_upsampling = textToInteger(parser.getOption("--eer_upsampling", "EER upsampling (1 = 4K or 2 = 8K)", "1"));
     // --eer_upsampling 3 is only for debugging. Hidden.
@@ -75,7 +75,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
 
     for (int iframe = 0; iframe < nframes; iframe++) {
         int error = 0, changed = 0, stable = 0, negative = 0;
-        
+
         frame.read(fn_movie, true, iframe, false, true);
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error, changed, negative)
@@ -88,7 +88,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
             } else if (val < 0) {
                 // #define DEBUG
                 #ifdef DEBUG
-                printf(" negative: %s frame %2d pos %4d %4d obs % 8.4f gain %.4f\n", 
+                printf(" negative: %s frame %2d pos %4d %4d obs % 8.4f gain %.4f\n",
                        fn_movie.c_str(), iframe, n / XSIZE(gain()), n % XSIZE(gain()), (double)val, (double)gain_here);
                 #endif
                 negative++;
@@ -167,7 +167,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
 
     for (int iframe = 0; iframe < nframes; iframe++) {
         int error = 0;
-        
+
         frame.read(fn_movie, true, iframe, false, true);
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error)
@@ -175,7 +175,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
             const float val = DIRECT_MULTIDIM_ELEM(frame(), n);
             const float gain_here = DIRECT_MULTIDIM_ELEM(gain(), n);
             bool is_bad = DIRECT_MULTIDIM_ELEM(defects(), n) < thresh_reliable;
-            
+
             if (is_bad) {
                 // TODO: implement other strategy
                 DIRECT_MULTIDIM_ELEM(buf, n) = val;
@@ -220,7 +220,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
                     );
                 }
             }
-            
+
             DIRECT_MULTIDIM_ELEM(buf, n) = ival;
         }
 
@@ -245,7 +245,7 @@ void TIFFConverter::only_compress(FileName fn_movie, FileName fn_tiff) {
         frame.read(fn_movie, false, -1, false, true); // select_img -1, mmap false, is_2D true
         const int nframes = NSIZE(frame());
         const float angpix = frame.samplingRateX();
-        
+
         for (int iframe = 0; iframe < nframes; iframe++) {
             frame.read(fn_movie, true, iframe, false, true);
             write_tiff_one_page(tif, frame(), angpix, decide_filter(XSIZE(frame())), deflate_level, line_by_line);
@@ -295,7 +295,6 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
     if (fn_out[fn_out.size() - 1] != '/')
         fn_out += "/";
 
-    FileName fn_first;
     FileName fn_in_ext = fn_in.getExtension();
 
     if (fn_in_ext == "star") {
@@ -305,8 +304,11 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         if (MD.numberOfObjects() == 0)
             MD.read(fn_in, "");
 
-        if (!MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_first, 0))
+        try {
+            FileName fn_first = MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, 0);
+        } catch (const char *errmsg) {
             REPORT_ERROR("The input STAR file does not contain the rlnMicrographMovieName column");
+        }
 
         std::cout << "The number of movies in the input: " << MD.numberOfObjects() << std::endl;
     } else if (fn_in_ext == "lst") {
@@ -320,7 +322,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         }
         f.close();
 
-        MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_first, 0);		
+        fn_first = MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, 0);
     } else {
         MD.addObject();
         MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_in);
@@ -342,7 +344,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
                 std::cout << "Read an EER gain file " << fn_gain << " NX = " << XSIZE(gain()) << " NY = " << YSIZE(gain()) << std::endl;
                 std::cout << "Taking inverse and re-scaling (when necessary)." << std::endl;
                 gain.write(fn_out + "gain-reference.mrc");
-                std::cout << "Written " + fn_out + "gain-reference.mrc. Please use this file as a gain reference when processing the converted movies.\n" << std::endl; 	
+                std::cout << "Written " + fn_out + "gain-reference.mrc. Please use this file as a gain reference when processing the converted movies.\n" << std::endl;
             } else {
                 std::cerr << "WARNING: Note that an EER gain reference is the inverse of those expected for TIFF movies. You can convert your gain reference file with --gain option." << std::endl;
             }
@@ -352,7 +354,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
             REPORT_ERROR("--estimate_gain does not make sense for EER movies.");
     } else {
         if (do_estimate)
-            MD.randomiseOrder();	
+            MD.randomiseOrder();
 
         // Check type and mode of the input
         Image<RFLOAT> Ihead;
@@ -402,7 +404,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
 
             if (rank == 0 && fn_gain != "") {
                 gain.write(fn_out + "gain-reference.mrc");
-                std::cout << "Written " + fn_out + "gain-reference.mrc. Please use this file as a gain reference when processing the converted movies.\n" << std::endl; 	
+                std::cout << "Written " + fn_out + "gain-reference.mrc. Please use this file as a gain reference when processing the converted movies.\n" << std::endl;
             }
         }
     }
@@ -447,14 +449,12 @@ void TIFFConverter::processOneMovie(FileName fn_movie, FileName fn_tiff) {
 
 void TIFFConverter::run() {
     long int my_first, my_last;
-     divide_equally(MD.numberOfObjects(), total_ranks, rank, my_first, my_last); // MPI parallelization
+    divide_equally(MD.numberOfObjects(), total_ranks, rank, my_first, my_last); // MPI parallelization
 
     for (long i = my_first; i <= my_last; i++) {
-        FileName fn_movie, fn_tiff;
-        MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_movie, i);
-
-        fn_tiff = fn_out + fn_movie.withoutExtension() + ".tif";
-        if (only_do_unfinished && !do_estimate && exists(fn_tiff)) {			
+        FileName fn_movie = MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, i);
+        FileName fn_tiff  = fn_out + fn_movie.withoutExtension() + ".tif";
+        if (only_do_unfinished && !do_estimate && exists(fn_tiff)) {
             std::cout << "Skipping already processed " << fn_movie << std::endl;
             continue;
         }

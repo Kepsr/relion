@@ -369,8 +369,7 @@ void Preprocessing::joinAllStarFiles() {
         // Remove absent optics groups; After this, NOTHING should be done except for saving. obsModel's internal data structure is now corrupted!
         og = 0;
         while (og < myOutObsModel->opticsMdt.numberOfObjects()) {
-            RFLOAT og_angpix;
-            myOutObsModel->opticsMdt.getValue(EMDL::IMAGE_PIXEL_SIZE, og_angpix, og);
+            RFLOAT og_angpix = myOutObsModel->opticsMdt.getValue(EMDL::IMAGE_PIXEL_SIZE, og);
             if (og_angpix < 0) {
                 myOutObsModel->opticsMdt.removeObject(og);
             } else {

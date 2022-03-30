@@ -194,9 +194,7 @@ void MotionParamEstimator::init(
         }
 
         if (verb > 0) {
-            std::string mn;
-            allMdts[m].getValue(EMDL::MICROGRAPH_NAME, mn, 0);
-
+            std::string mn = allMdts[m].getValue(EMDL::MICROGRAPH_NAME, 0);
             std::cout << "        " << m << ": " << mn << std::endl;
         }
 

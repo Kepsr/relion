@@ -169,9 +169,7 @@ std::vector<std::vector<Image<RFLOAT>>> MotionRefinement::movieCC(
             out[p][f] = Image<RFLOAT>(s,s);
         }
 
-        int randSubset;
-        viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, randSubset, p);
-        randSubset -= 1;
+        int randSubset = viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
         pred = obsModel.predictObservation(
             randSubset == 0 ? projector0 : projector1, viewParams, p, true, true
@@ -658,20 +656,20 @@ void MotionRefinement::writeTracks(
 }
 
 std::vector<std::vector<d2Vector>> MotionRefinement::readTracks(std::string fn) {
-    std::ifstream ifs(fn);
 
+    std::ifstream ifs(fn);
     if (ifs.fail()) {
         REPORT_ERROR("MotionRefinement::readTracks: unable to read " + fn + ".");
     }
 
     MetaDataTable mdt;
-
     mdt.readStar(ifs, "general");
 
     int pc;
-
-    if (!mdt.getValue(EMDL::PARTICLE_NUMBER, pc)) {
-        REPORT_ERROR("MotionRefinement::readTracks: missing particle number in "+fn+".");
+    try {
+        pc = mdt.getValue(EMDL::PARTICLE_NUMBER);
+    } catch (const char* errmsg) {
+        REPORT_ERROR("MotionRefinement::readTracks: missing particle number in " + fn + ".");
     }
 
     std::vector<std::vector<d2Vector>> out(pc);
@@ -691,10 +689,9 @@ std::vector<std::vector<d2Vector>> MotionRefinement::readTracks(std::string fn) 
         lastFc = fc;
 
         out[p] = std::vector<d2Vector>(fc);
-
         for (int f = 0; f < fc; f++) {
-            mdt.getValue(EMDL::ORIENT_ORIGIN_X, out[p][f].x, f);
-            mdt.getValue(EMDL::ORIENT_ORIGIN_Y, out[p][f].y, f);
+            out[p][f].x = mdt.getValue(EMDL::ORIENT_ORIGIN_X, f);
+            out[p][f].y = mdt.getValue(EMDL::ORIENT_ORIGIN_Y, f);
         }
     }
 

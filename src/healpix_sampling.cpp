@@ -171,30 +171,49 @@ void HealpixSampling::read(FileName fn_in) {
     MD.readStar(in, "sampling_general");
     in.close();
 
-    if (
-        !MD.getValue(EMDL::SAMPLING_IS_3D, is_3D) ||
-        !MD.getValue(EMDL::SAMPLING_IS_3D_TRANS, is_3d_trans) ||
-        !MD.getValue(EMDL::SAMPLING_PSI_STEP, psi_step) ||
-        !MD.getValue(EMDL::SAMPLING_OFFSET_RANGE, offset_range) ||
-        !MD.getValue(EMDL::SAMPLING_OFFSET_STEP, offset_step) ||
-        !MD.getValue(EMDL::SAMPLING_PERTURBATION_FACTOR, perturbation_factor)
-    ) REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table");
+    try {
+        is_3D               = MD.getValue(EMDL::SAMPLING_IS_3D);
+        is_3d_trans         = MD.getValue(EMDL::SAMPLING_IS_3D_TRANS);
+        psi_step            = MD.getValue(EMDL::SAMPLING_PSI_STEP);
+        offset_range        = MD.getValue(EMDL::SAMPLING_OFFSET_RANGE);
+        offset_step         = MD.getValue(EMDL::SAMPLING_OFFSET_STEP);
+        perturbation_factor = MD.getValue(EMDL::SAMPLING_PERTURBATION_FACTOR);
+    } catch (const char* errmsg) {
+        REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table");
+    }
 
     // Shaoda 19 Jun 2015: Helical translational searches (backwards compatibility)
-    if (!MD.getValue(EMDL::SAMPLING_HELICAL_OFFSET_STEP, helical_offset_step))
+    try {
+        helical_offset_step = MD.getValue(EMDL::SAMPLING_HELICAL_OFFSET_STEP);
+    } catch (const char *errmsg) {
         helical_offset_step = -1.0;
+    }
 
     // SHWS 27 Feb 2020: older star files will not yet have original sampling parameters, just use current ones (backwards compatibility)
-    if (!MD.getValue(EMDL::SAMPLING_OFFSET_STEP_ORI, offset_step_ori)) offset_step_ori = offset_step;
-    if (!MD.getValue(EMDL::SAMPLING_OFFSET_RANGE_ORI, offset_range_ori)) offset_range_ori = offset_range;
-    if (!MD.getValue(EMDL::SAMPLING_PSI_STEP_ORI, psi_step_ori)) psi_step_ori = psi_step;
+    try { 
+        offset_step_ori = MD.getValue(EMDL::SAMPLING_OFFSET_STEP_ORI); 
+    } catch (const char *errmsg) {
+        offset_step_ori = offset_step;
+    };
+    try { 
+        offset_range_ori = MD.getValue(EMDL::SAMPLING_OFFSET_RANGE_ORI); 
+    } catch (const char *errmsg) {
+        offset_range_ori = offset_range;
+    };
+    try { 
+        psi_step_ori = MD.getValue(EMDL::SAMPLING_PSI_STEP_ORI); 
+    } catch (const char *errmsg) {
+        psi_step_ori = psi_step;
+    };
 
     if (is_3D) {
-        if (
-            !MD.getValue(EMDL::SAMPLING_HEALPIX_ORDER, healpix_order) ||
-            !MD.getValue(EMDL::SAMPLING_SYMMETRY, fn_sym) ||
-            !MD.getValue(EMDL::SAMPLING_LIMIT_TILT, limit_tilt)
-        ) REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table for 3D sampling");
+        try {
+            healpix_order = MD.getValue(EMDL::SAMPLING_HEALPIX_ORDER);
+            fn_sym        = MD.getValue(EMDL::SAMPLING_SYMMETRY);
+            limit_tilt    = MD.getValue(EMDL::SAMPLING_LIMIT_TILT);
+        } catch (const char *errmsg) {
+            REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table for 3D sampling");
+        }
 
         // For 3D samplings reset psi_step to -1:
         // By default it will then be set to the healpix sampling
@@ -202,8 +221,11 @@ void HealpixSampling::read(FileName fn_in) {
         psi_step = -1.0;
 
         // SHWS 27Feb2020: backwards compatibility: older star files will not yet have original sampling parameters, just use current ones
-        if (!MD.getValue(EMDL::SAMPLING_HEALPIX_ORDER_ORI, healpix_order_ori))
+        try {
+            healpix_order_ori = MD.getValue(EMDL::SAMPLING_HEALPIX_ORDER_ORI);
+        } catch (const char *errmsg) {
             healpix_order_ori = healpix_order;
+        }
 
     } else {
         fn_sym = "irrelevant";
@@ -214,14 +236,13 @@ void HealpixSampling::read(FileName fn_in) {
 }
 
 void HealpixSampling::write(FileName fn_out) {
-    MetaDataTable MD;
-    std::ofstream fh;
-    FileName fn_tmp;
 
-    fn_tmp = fn_out + "_sampling.star";
+    FileName fn_tmp = fn_out + "_sampling.star";
+    std::ofstream fh;
     fh.open((fn_tmp).c_str(), std::ios::out);
     if (!fh) REPORT_ERROR((std::string) "HealpixSampling::write: Cannot write file: " + fn_tmp);
 
+    MetaDataTable MD;
     MD.isList = true;
     MD.addObject();
     MD.setName("sampling_general");

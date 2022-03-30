@@ -60,9 +60,8 @@ int main(int argc, char *argv[]) {
     MetaDataTable mdt;
     mdt.read(starFn);
 
-    RFLOAT mag, dstep;
-    mdt.getValue(EMDL::CTF_MAGNIFICATION, mag, 0);
-    mdt.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, dstep, 0);
+    RFLOAT mag   = mdt.getValue(EMDL::CTF_MAGNIFICATION,       0);
+    RFLOAT dstep = mdt.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, 0);
     double angpix = 10000 * dstep / mag;
 
     int sh = s / 2 + 1;
@@ -93,14 +92,14 @@ int main(int argc, char *argv[]) {
         CTF ctf;
         ctf.read(mdt, mdt, p);
 
-        RFLOAT as = (RFLOAT)s * angpix;
+        RFLOAT as = (RFLOAT) s * angpix;
 
         for (long int i = 0; i < s;  i++)
         for (long int j = 0; j < sh; j++) {
             const int x = j;
-            const int y = i < sh? i : i - s;
+            const int y = i < sh ? i : i - s;
 
-            RFLOAT cf = ctf.getCtfFreq(x/as, y/as) / (as * PI);
+            RFLOAT cf = ctf.getCtfFreq(x / as, y / as) / (as * PI);
             double cfa = std::abs(cf);
 
             for (int c = 0; c < perCnt; c++) {
@@ -111,10 +110,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    {
-        std::string command = " mkdir -p ctf_test";
-        int ret = system(command.c_str());
-    }
+    system("mkdir -p ctf_test");
 
     for (int c = 0; c < perCnt; c++) {
         for (int t = 1; t < threads; t++) {
