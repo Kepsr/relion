@@ -106,7 +106,7 @@ extern "C" {
     } TiffInMemory;
 
     static tsize_t TiffInMemoryReadProc(thandle_t handle, tdata_t buf, tsize_t read_size) {
-        TiffInMemory *tiff_handle = (TiffInMemory*)handle;
+        TiffInMemory *tiff_handle = (TiffInMemory *) handle;
         #ifdef TIFF_DEBUG
             std::cout << "TiffInMemoryReadProc: read_size = " << read_size << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
         #endif
@@ -160,11 +160,11 @@ extern "C" {
         #ifdef TIFF_DEBUG
             std::cout << __func__ << std::endl;
         #endif
-        return ((TiffInMemory*)handle)->size;
+        return ((TiffInMemory *) handle)->size;
     }
 
     static int TiffInMemoryMapFileProc(thandle_t handle, tdata_t *base, toff_t *size) {
-        TiffInMemory *tiff_handle = (TiffInMemory*)handle;
+        TiffInMemory *tiff_handle = (TiffInMemory *) handle;
         #ifdef TIFF_DEBUG
             std::cout << __func__ << std::endl;
         #endif
@@ -237,8 +237,8 @@ class fImageHandler {
         fileName = fileName.removeFileFormat();
 
         size_t found = fileName.find_first_of("%");
-        if (found!=std::string::npos)
-          fileName = fileName.substr(0, found) ;
+        if (found != std::string::npos)
+            fileName = fileName.substr(0, found) ;
 
         exist = exists(fileName);
 
@@ -276,12 +276,12 @@ class fImageHandler {
 
         isTiff = ext_name.contains("tif");
         if (isTiff && mode != WRITE_READONLY)
-            REPORT_ERROR((std::string)"TIFF is supported only for reading");
+            REPORT_ERROR((std::string) "TIFF is supported only for reading");
 
         // Open image file
         if (
-            ( isTiff && ((ftiff = TIFFOpen(fileName.c_str(), "r")) == NULL)) ||
-            (!isTiff && ((fimg  = fopen(fileName.c_str(), wmChar.c_str())) == NULL))
+             isTiff && (ftiff = TIFFOpen(fileName.c_str(), "r"))            == NULL ||
+            !isTiff && (fimg  = fopen   (fileName.c_str(), wmChar.c_str())) == NULL
         ) {
             REPORT_ERROR((std::string) "Image::" __func__ " cannot open: " + name);
         }
@@ -343,7 +343,7 @@ class Image {
 
     public:
 
-    MultidimArray<T> data; // Image data
+    MultidimArray<T> data;      // Image data
     MetaDataTable MDMainHeader; // File metadata
 
     private:
@@ -357,8 +357,7 @@ class Image {
     unsigned long offset; // Data offset
     int swap; // Perform byte swapping upon reading
     long int replaceNsize; // Stack size in the replace case
-    bool _exists;  // does target file exists?
-    // equal 0 is not exists or not a stack
+    bool _exists;  // Does the target file exist? 0 if file does not exist or is not a stack.
     bool mmapOn; // Mapping when loading from file
     int mFd; // Handle the file in reading method and mmap
     size_t mappedSize; // Size of the mapped file
@@ -388,7 +387,7 @@ class Image {
      * Image I(64,64);
      * @endcode
      */
-    Image(long int Xdim, long int Ydim, long int Zdim=1, long int Ndim=1) {
+    Image(long int Xdim, long int Ydim, long int Zdim = 1, long int Ndim = 1) {
         mmapOn = false;
         clear();
         data.resize(Ndim, Zdim, Ydim, Xdim);
@@ -400,7 +399,7 @@ class Image {
      */
     void clear() {
         if (mmapOn) {
-            munmap(data.data-offset,mappedSize);
+            munmap(data.data - offset,mappedSize);
             close(mFd);
             data.data = NULL;
         } else {
@@ -413,7 +412,7 @@ class Image {
         offset = 0;
         swap = 0;
         clearHeader();
-        replaceNsize=0;
+        replaceNsize = 0;
         mmapOn = false;
     }
 
@@ -422,12 +421,24 @@ class Image {
 
     ~Image() { clear(); }
 
+    // Read/write functions for different file formats
 
-    // Specific read functions for different file formats
-    #include "src/rwSPIDER.h"
-    #include "src/rwMRC.h"
-    #include "src/rwIMAGIC.h"
-    #include "src/rwTIFF.h"
+    int readSPIDER(long int img_select)
+
+    int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE)
+
+    int readMRC(long int img_select, bool isStack=false, const FileName &name="")
+
+    int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE)
+
+    int readIMAGIC(long int img_select);
+
+    void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE);
+
+    int readTIFF(
+        TIFF* ftiff, long int img_select, 
+        bool readdata=false, bool isStack=false, const FileName &name=""
+    )
 
     /** Is this file an image?
      *
@@ -790,8 +801,7 @@ class Image {
             data.data = reinterpret_cast<T*> (map+offset);
         } else {
             // Reset select to get the correct offset
-            if (select_img < 0)
-                select_img = 0;
+            if (select_img < 0) { select_img = 0; }
 
             char* page = NULL;
 
@@ -808,63 +818,44 @@ class Image {
                 printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            if (pagesize > pagemax)
-                page = (char *) askMemory(pagemax*sizeof(char));
-            else
-                page = (char *) askMemory(pagesize*sizeof(char));
+            page = (char *) askMemory(std::max(pagesize, pagemax) * sizeof(char));
 
             // Because we requested XYSIZE to be even for UHalf, this is always safe.
-            int error_fseek = fseek(fimg, myoffset, SEEK_SET);
-            if (error_fseek != 0)
-                return -1;
+            if (fseek(fimg, myoffset, SEEK_SET) != 0) return -1;
 
-            for (size_t myn=0; myn<NSIZE(data); myn++)
-            {
-                for (size_t myj=0; myj<pagesize; myj+=pagemax) //pagesize size of object
-                {
+            for (size_t myn = 0; myn < NSIZE(data); myn++) {
+                for (size_t myj = 0; myj < pagesize; myj += pagemax) {
+                    //pagesize size of object
                     // Read next page. Divide pages larger than pagemax
                     readsize = pagesize - myj;
-                    if ( readsize > pagemax )
-                        readsize = pagemax;
+                    if (readsize > pagemax) { readsize = pagemax; }
 
-                    if (datatype == UHalf)
-                        readsize_n = readsize * 2;
-                    else
-                        readsize_n = readsize/datatypesize;
+                    readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
 
-#ifdef DEBUG
+                    #ifdef DEBUG
                     std::cout << "NX = " << XSIZE(data) << " NY = " << YSIZE(data) << " NZ = " << ZSIZE(data) << std::endl;
                     std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " readsize_n = " << readsize_n << std::endl;
-#endif
+                    #endif
 
-                    //Read page from disc
-                    size_t result = fread( page, readsize, 1, fimg );
-                    if (result != 1)
-                        return -2;
+                    // Read page from disc
+                    if (fread(page, readsize, 1, fimg) != 1) return -2;
 
-                    //swap per page
-                    if (swap)
-                        swapPage(page, readsize, datatype);
+                    // swap per page
+                    if (swap) swapPage(page, readsize, datatype);
                     // cast to T per page
                     castPage2T(page, MULTIDIM_ARRAY(data) + haveread_n, datatype, readsize_n);
                     haveread_n += readsize_n;
                 }
-                if ( pad > 0 )
-                {
-                    //fread( padpage, pad, 1, fimg);
-                    error_fseek = fseek( fimg, pad, SEEK_CUR );
-                    if (error_fseek != 0)
-                        return -1;
+                if (pad > 0) {
+                    // fread( padpage, pad, 1, fimg);
+                    if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
                 }
             }
-            //if ( pad > 0 )
-            //	  freeMemory(padpage, pad*sizeof(char));
-            if (page != NULL) {
-                freeMemory(page, pagesize * sizeof(char));
-            }
+            // if (pad > 0) { freeMemory(padpage, pad * sizeof(char)); }
+            if (page != NULL) { freeMemory(page, pagesize * sizeof(char)); }
 
         #ifdef DEBUG
-            printf("DEBUG img_read_data: Finished reading and converting data\n");
+        printf("DEBUG img_read_data: Finished reading and converting data\n");
         #endif
 
         }
@@ -884,12 +875,13 @@ class Image {
      * image1() = image2() + image3();
      * @endcode
      */
-    MultidimArray<T>& operator()() {
+    MultidimArray<T>& operator () () {
         /// NOTE: [jhooker] Is this the most intuitive way to acces data?
+        // Why not just make data public?
         return data;
     }
 
-    const MultidimArray<T>& operator()() const {
+    const MultidimArray<T>& operator () () const {
         return data;
     }
 
@@ -906,7 +898,7 @@ class Image {
     * I(-3, -3) = I(-3, -2);
     * @endcode
     */
-    T& operator()(int i, int j) const {
+    T& operator () (int i, int j) const {
         // return A2D_ELEM(data, i, j);
         return data.data[(j - data.xinit) + data.xdim * (i - data.yinit)];
     }
@@ -938,17 +930,17 @@ class Image {
      * I(-3, -3, 1) = I(-3, -2, 0);
      * @endcode
      */
-    T& operator()(int k, int i, int j) const {
+    T& operator () (int k, int i, int j) const {
         return A3D_ELEM(data, k, i, j);
     }
 
-    /** Get file name
+    /** const reference to filename
      *
      * @code
      * std::cout << "Image name = " << I.name() << std::endl;
      * @endcode
      */
-    const FileName & name() const {
+    const FileName& name() const {
         return filename;
     }
 
@@ -974,7 +966,7 @@ class Image {
      * @endcode
      */
     int dataType() const {
-        return MDMainHeader.getValue(EMDL::IMAGE_DATATYPE);
+        return MDMainHeader.getValue<int>(EMDL::IMAGE_DATATYPE);
     }
 
     /** Sampling rate in X
@@ -985,7 +977,7 @@ class Image {
     */
     RFLOAT samplingRateX(const long int n = 0) const {
         try {
-            return MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
+            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
         } catch (const char* errmsg) {
             return 1.0;
         }
@@ -999,7 +991,7 @@ class Image {
     */
     RFLOAT samplingRateY(const long int n = 0) const {
         try {
-            return MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
+            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y);
         } catch (const char* errmsg) {
             return 1.0;
         }
@@ -1030,16 +1022,12 @@ class Image {
     }
 
     // Show image properties
-    friend std::ostream& operator<<(std::ostream& o, const Image<T>& I) {
+    friend std::ostream& operator << (std::ostream& o, const Image<T>& I) {
         o << "Image type   : ";
         o << "Real-space image" << std::endl;
 
         o << "Reversed	   : ";
-        if (I.swap) {
-            o << "TRUE"  << std::endl;
-        } else {
-            o << "FALSE" << std::endl;
-        }
+        o << (I.swap ? "TRUE" : "FALSE") << std::endl;
 
         o << "Data type    : ";
         switch (I.dataType()) {
@@ -1089,24 +1077,24 @@ class Image {
 
     /** Sum this object with other file and keep in this object
       */
-    void sumWithFile(const FileName &fn)
-    {
+    void sumWithFile(const FileName &fn) {
         Image<T> aux;
         aux.read(fn);
-        (*this)()+=aux();
+        (*this)() += aux();
     }
 
-    int readTiffInMemory(void* buf, size_t size, bool readdata=true, long int select_img = -1,
-                         bool mapData = false, bool is_2D = false)
-    {
+    int readTiffInMemory(
+        void* buf, size_t size, bool readdata = true, long int select_img = -1,
+        bool mapData = false, bool is_2D = false
+    ) {
         int err = 0;
 
         TiffInMemory handle;
-        handle.buf = (unsigned char*)buf;
+        handle.buf = (unsigned char *) buf;
         handle.size = size;
         handle.pos = 0;
         // Check whether to read the data or only the header
-        dataflag = ( readdata ) ? 1 : -1;
+        dataflag = readdata ? 1 : -1;
 
         // Check whether to map the data or not
         mmapOn = mapData;
@@ -1115,26 +1103,29 @@ class Image {
         MDMainHeader.clear();
         MDMainHeader.addObject();
 
-        TIFF* ftiff = TIFFClientOpen("in-memory-tiff", "r", (thandle_t)&handle,
-                                     TiffInMemoryReadProc, TiffInMemoryWriteProc, TiffInMemorySeekProc,
-                                     TiffInMemoryCloseProc, TiffInMemorySizeProc, TiffInMemoryMapFileProc,
-                                     TiffInMemoryUnmapFileProc);
+        TIFF* ftiff = TIFFClientOpen(
+            "in-memory-tiff", "r", (thandle_t) &handle,
+            TiffInMemoryReadProc,  TiffInMemoryWriteProc, TiffInMemorySeekProc,
+            TiffInMemoryCloseProc, TiffInMemorySizeProc,  TiffInMemoryMapFileProc,
+            TiffInMemoryUnmapFileProc
+        );
         err = readTIFF(ftiff, select_img, readdata, true, "in-memory-tiff");
         TIFFClose(ftiff);
 
         return err;
     }
 
-private:
+    private:
+
     int _read(
-        const FileName &name, fImageHandler &hFile, bool readdata=true, long int select_img = -1,
+        const FileName &name, fImageHandler &hFile, bool readdata = true, long int select_img = -1,
         bool mapData = false, bool is_2D = false
     ) {
         // Exit code
         int err = 0;
 
         // Check whether to read the data or only the header
-        dataflag = ( readdata ) ? 1 : -1;
+        dataflag = readdata ? 1 : -1;
 
         // Check whether to map the data or not
         mmapOn = mapData;
@@ -1172,20 +1163,20 @@ private:
             ext_name.contains("spi") || ext_name.contains("xmp") || 
             ext_name.contains("stk") || ext_name.contains("vol")
         ) {
-            // mrc stack MUST go BEFORE plain MRC
+            // MRC stack MUST go BEFORE plain MRC
             err = readSPIDER(select_img);
         } else if (ext_name.contains("mrcs") || (is_2D && ext_name.contains("mrc"))) {
-            // mrc stack MUST go BEFORE plain MRC
+            // MRC stack MUST go BEFORE plain MRC
             err = readMRC(select_img, true, name);
         } else if (ext_name.contains("tif")) {
             err = readTIFF(hFile.ftiff, select_img, readdata, true, name);
         } else if (select_img >= 0 && ext_name.contains("mrc")) {
             REPORT_ERROR("Image::read ERROR: stacks of images in MRC-format should have extension .mrcs; .mrc extensions are reserved for 3D maps.");
         } else if (ext_name.contains("mrc")) {
-            // mrc 3D map
+            // MRC 3D map
             err = readMRC(select_img, false, name);
         } else if (ext_name.contains("img") || ext_name.contains("hed")) {
-            // imagic is always an stack
+            // IMAGIC is always a stack
             err = readIMAGIC(select_img);
         } else if (ext_name.contains("dm")) {
             REPORT_ERROR("The Digital Micrograph format (DM3, DM4) is not supported. You can convert it to MRC by other programs, for example, dm2mrc in IMOD.");

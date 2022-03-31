@@ -29,6 +29,7 @@
 #define RWIMAGIC_H_
 
 #include "src/metadata_label.h"
+#include "src/image.h"
 
 #define IMAGICSIZE 1024 // Size of the IMAGIC header for each image
 
@@ -105,7 +106,9 @@ struct IMAGIChead {
 /** Imagic reader
   * @ingroup Imagic
 */
-int  readIMAGIC(long int img_select) {
+
+template<typename T>
+int Image<T>::readIMAGIC(long int img_select) {
     #ifdef DEBUG
     printf("DEBUG readIMAGIC: Reading Imagic file\n");
     #endif
@@ -113,13 +116,13 @@ int  readIMAGIC(long int img_select) {
     IMAGIChead* header = new IMAGIChead;
 
     if (fread(header, IMAGICSIZE, 1, fhed) < 1)
-        REPORT_ERROR((std::string)"readIMAGIC: header file of " + filename + " cannot be read");
+        REPORT_ERROR((std::string) "readIMAGIC: header file of " + filename + " cannot be read");
 
     // Determine byte order and swap bytes if from little-endian machine
-    char* b = (char *) header;
+    char *b = (char *) header;
     long int extent = IMAGICSIZE - 916;  // exclude char bytes from swapping
     if ((abs(header->nyear) > SWAPTRIG) || (header->ixlp > SWAPTRIG)) {
-        for (i = 0; i < extent; i += 4)
+        for (int i = 0; i < extent; i += 4)
             if (i != 56)          // exclude type string
                 swapbytes(b + i, 4);
     }
@@ -164,9 +167,9 @@ int  readIMAGIC(long int img_select) {
         header->densmax = header->avdens + header->sigma;
     }
 
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, (RFLOAT) header->densmin);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, (RFLOAT) header->densmax);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, (RFLOAT) header->avdens);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->densmin);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->densmax);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->avdens);
     MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sigma);
     setSamplingRateInHeader((RFLOAT) 1.0);
     MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype);
@@ -203,7 +206,8 @@ int  readIMAGIC(long int img_select) {
 /** Imagic Writer
   * @ingroup Imagic
 */
-void  writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE) {
+template <typename T>
+void Image<T>::writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE) {
     //    if ( p->transform != NoTransform )
     //        img_convert_fourier(p, Centered);
 
@@ -213,9 +217,9 @@ void  writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE) {
     long int Zdim = ZSIZE(data);
     long int Ndim = NSIZE(data);
 
-    // fill in the file header
+    // Fill in the file header
     header->nhfr = 1;
-    header->npix2 = Xdim*Ydim;
+    header->npix2 = Xdim * Ydim;
     header->npixel = header->npix2;
     header->iylp = Xdim;
     header->ixlp = Ydim;
@@ -254,16 +258,16 @@ void  writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE) {
 
     if (!MDMainHeader.isEmpty()) {
         try {
-            header->densmin = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN);
+            header->densmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN);
         } catch (const char* errmsg) {}
         try {
-            header->densmax = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);
+            header->densmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX);
         } catch (const char* errmsg) {}
         try {
-            header->avdens = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG);
+            header->avdens = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG);
         } catch (const char* errmsg) {}
         try {
-            float sigma = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV);
+            float sigma = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV);
             header->sigma = sigma;
             header->varian = sigma * sigma;
         } catch (const char* errmsg) {}

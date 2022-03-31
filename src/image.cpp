@@ -338,14 +338,14 @@ void rescale(Image<RFLOAT> &I, int mysize) {
 
     // Try to rescale entries in I.MDmainheader
     try {
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, I.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X) * (RFLOAT) olddim / (RFLOAT) mysize);
+        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X) * (RFLOAT) olddim / (RFLOAT) mysize);
     } catch (const char* errmsg) {}
     try {
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, I.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y) * (RFLOAT) olddim / (RFLOAT) mysize);
+        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y) * (RFLOAT) olddim / (RFLOAT) mysize);
     } catch (const char* errmsg) {}
     if (I().getDim() == 3)
     try {
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, I.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z) * (RFLOAT) olddim / (RFLOAT) mysize);
+        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z) * (RFLOAT) olddim / (RFLOAT) mysize);
     } catch (const char* errmsg) {}
 }
 
@@ -387,10 +387,11 @@ void getImageContrast(
     if (redo_minmax) {
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(image) {
             RFLOAT val = DIRECT_MULTIDIM_ELEM(image, n);
-            if (val > maxval)
+                   if (val > maxval) {
                 DIRECT_MULTIDIM_ELEM(image, n) = maxval;
-            else if (val < minval)
+            } else if (val < minval) {
                 DIRECT_MULTIDIM_ELEM(image, n) = minval;
+            }
         }
     }
 }

@@ -25,15 +25,18 @@
 #include "config.h"
 #endif
 
+#include "src/image.h"
+
 // I/O prototypes
 /** TIFF Reader
   * @ingroup TIFF
 */
-int readTIFF(
-    TIFF* ftiff, long int img_select, 
+template <typename T>
+int Image<T>::readTIFF(
+    TIFF* ftiff, long int img_select,
     bool readdata=false, bool isStack=false, const FileName &name=""
 ) {
-    //#define DEBUG_TIFF
+    // #define DEBUG_TIFF
     #ifdef DEBUG_TIFF
     printf("DEBUG readTIFF: Reading TIFF file. img_select %d\n", img_select);
     #endif
@@ -44,9 +47,9 @@ int readTIFF(
     uint32 width, length; // apparent dimensions in the file
     uint16 sampleFormat, bitsPerSample, resolutionUnit;
     float xResolution;
-    
+
     if (
-        TIFFGetField(ftiff, TIFFTAG_IMAGEWIDTH, &width) != 1 ||
+        TIFFGetField(ftiff, TIFFTAG_IMAGEWIDTH,  &width)  != 1 ||
         TIFFGetField(ftiff, TIFFTAG_IMAGELENGTH, &length) != 1
     ) REPORT_ERROR("The input TIFF file does not have the width or height field.");
 
@@ -65,7 +68,7 @@ int readTIFF(
 
     #ifdef DEBUG_TIFF
     printf(
-        "TIFF width %d, length %d, nDim %d, sample format %d, bits per sample %d\n", 
+        "TIFF width %d, length %d, nDim %d, sample format %d, bits per sample %d\n",
         width, length, _nDim, sampleFormat, bitsPerSample
     );
     #endif
@@ -102,7 +105,7 @@ int readTIFF(
         std::cerr << "Unsupported TIFF format in " << name << ": sample format = " << sampleFormat << ", bits per sample = " << bitsPerSample << std::endl;
         REPORT_ERROR("Unsupported TIFF format.\n");
     }
-    
+
     MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int)datatype);
 
     if (
@@ -148,7 +151,7 @@ int readTIFF(
     }
     data.setDimensions(_xDim, _yDim, _zDim, _nDim);
     data.coreAllocateReuse();
-    
+
     /*
     if ( header->mx && header->a!=0)//ux
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X,(RFLOAT)header->a/header->mx);
@@ -178,8 +181,8 @@ int readTIFF(
             TIFFGetFieldDefaulted(ftiff, TIFFTAG_SAMPLEFORMAT,  &cur_sampleFormat);
 
             if (
-                cur_width         != width         || 
-                cur_length        != length        || 
+                cur_width         != width         ||
+                cur_length        != length        ||
                 cur_bitsPerSample != bitsPerSample ||
                 cur_sampleFormat  != sampleFormat
             ) REPORT_ERROR(name + ": All frames in a TIFF should have same width, height and pixel format.\n");
@@ -211,7 +214,7 @@ int readTIFF(
         }
 
         /* Flip the Y axis.
- 
+
            In an MRC file, the origin is bottom-left, +X to the right, +Y to the top.
            (c.f. Fig. 2 of Heymann et al, JSB 2005 https://doi.org/10.1016/j.jsb.2005.06.001
            IMOD's interpretation http://bio3d.colorado.edu/imod/doc/mrc_format.txt)
@@ -238,7 +241,7 @@ int readTIFF(
                     DIRECT_NZYX_ELEM(data, n, z, y2, x) = tmp;
                 }
             }
-        } 
+        }
     }
 
     return 0;

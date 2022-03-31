@@ -32,6 +32,7 @@
 #include "config.h"
 #endif
 
+#include "src/image.h"
 #define MRCSIZE 1024 // Minimum size of the MRC header (when nsymbt = 0)
 
 ///@defgroup MRC MRC File format
@@ -119,9 +120,9 @@ struct MRChead {
 #define LITTLEIEEE 2
 #define LITTLEVAX 3
 int systype() {
-    char *test = (char*)askMemory(12);
-    int *itest = (int*)test;
-    float *ftest = (float*)test;
+    char *test = (char*) askMemory(12);
+    int *itest = (int*) test;
+    float *ftest = (float*) test;
     memcpy(test, "jbh     ", 8);
 
     int type = UNKNOWN_SYSTEM;
@@ -139,14 +140,15 @@ int systype() {
 /** MRC Reader
   * @ingroup MRC
 */
-int readMRC(long int img_select, bool isStack=false, const FileName &name="") {
+template<typename T>
+int Image<T>::readMRC(long int img_select, bool isStack=false, const FileName &name="") {
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG
     printf("DEBUG readMRC: Reading MRC file\n");
     #endif
 
-    MRChead *header = (MRChead*)askMemory(sizeof(MRChead));
+    MRChead *header = (MRChead*) askMemory(sizeof(MRChead));
     if (fread(header, MRCSIZE, 1, fimg) < 1)
         REPORT_ERROR("rwMRC: error in reading header of image " + name);
 
@@ -154,7 +156,7 @@ int readMRC(long int img_select, bool isStack=false, const FileName &name="") {
     swap = 0;
     char *b = (char*) header;
     int i;
-    if ((abs(header->mode) > SWAPTRIG) || (abs(header->nx) > SWAPTRIG)) {
+    if (abs(header->mode) > SWAPTRIG || abs(header->nx) > SWAPTRIG) {
         #ifdef DEBUG
         fprintf(stderr, "Warning: Swapping header byte order for 4-byte types\n");
         #endif
@@ -179,9 +181,9 @@ int readMRC(long int img_select, bool isStack=false, const FileName &name="") {
         std::stringstream Num2;
         if (img_select >= (int)_nDim) {
             // img_select starts from 0, while _nDim from 1
-            Num << (img_select + 1);
+            Num << img_select + 1;
             Num2 << _nDim;
-            REPORT_ERROR((std::string)"readMRC: Image number " + Num.str() + " exceeds stack size " + Num2.str() + " of image " + name);
+            REPORT_ERROR((std::string) "readMRC: Image number " + Num.str() + " exceeds stack size " + Num2.str() + " of image " + name);
         }
     } else {
         replaceNsize = 0;
@@ -265,7 +267,8 @@ int readMRC(long int img_select, bool isStack=false, const FileName &name="") {
 /** MRC Writer
   * @ingroup MRC
 */
-int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) {
+template<typename T>
+int Image<T>::writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) {
     MRChead *header = (MRChead *) askMemory(sizeof(MRChead));
 
     // Map the parameters
