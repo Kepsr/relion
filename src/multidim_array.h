@@ -1090,7 +1090,7 @@ class MultidimArray {
                 // 0 if out of bounds
                 new_data[l * ZYXdim + k * YXdim + i * Xdim + j] = (
                     k >= ZSIZE(*this) || i >= YSIZE(*this) || j >= XSIZE(*this)
-                ) ? 0 : DIRECT_A3D_ELEM(*this, k, i, j);
+                ) ? (T) 0 : DIRECT_A3D_ELEM(*this, k, i, j);
             }
 
             // deallocate old vector
@@ -1203,8 +1203,7 @@ class MultidimArray {
                 return 3;
             if (YSIZE(*this) > 1)
                 return 2;
-            else
-                return 1;
+            return 1;
         }
 
         /** Check dimension.
@@ -4282,17 +4281,17 @@ std::ostream& operator<< (std::ostream& ostrm, const MultidimArray<T>& v) {
 }
 
 template <typename T>
-bool inXbounds(long int i, MultidimArray<T>* arr) {
+bool inXbounds (long int i, const MultidimArray<T> &arr) {
     return arr.firstX() <= i && i <= arr.lastX();
 }
 
 template <typename T>
-bool inYbounds(long int i, MultidimArray<T>* arr) {
+bool inYbounds (long int i, const MultidimArray<T> &arr) {
     return arr.firstY() <= i && i <= arr.lastY();
 }
 
 template <typename T>
-bool inZbounds(long int i, MultidimArray<T>* arr) {
+bool inZbounds (long int i, const MultidimArray<T> &arr) {
     return arr.firstZ() <= i && i <= arr.lastZ();
 }
 
