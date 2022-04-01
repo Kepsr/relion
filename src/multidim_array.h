@@ -481,13 +481,13 @@ class MultidimArray {
         long int xdim;
 
         // Number of elements in YX
-        long int yxdim() { return ydim * xdim; }
+        long int yxdim() const { return ydim * xdim; }
 
         // Number of elements in ZYX
-        long int zyxdim() { return zdim * yxdim(); }
+        long int zyxdim() const { return zdim * yxdim(); }
 
         // Number of elements in NZYX
-        long int nzyxdim() { return ndim * zyxdim(); }
+        long int nzyxdim() const { return ndim * zyxdim(); }
 
         // Z init
         long int zinit;
@@ -2449,7 +2449,7 @@ class MultidimArray {
         std::tuple<RFLOAT, RFLOAT, T, T> computeStats() const {
 
             if (NZYXSIZE(*this) <= 0)
-                return;
+                throw "Statistics cannot be computed for a dimensionless array!";
 
             double sumx = 0;
             double sumxx = 0;
@@ -4089,12 +4089,11 @@ class MultidimArray {
          *
          * This function is ported to Python as assign.
          */
-        MultidimArray<T>& operator=(const MultidimArray<T>& op1) {
-            if (&op1 != this)
-            {
+        MultidimArray<T>& operator = (const MultidimArray<T>& op1) {
+            if (&op1 != this) {
                 if (data == NULL || !sameShape(op1))
                     resize(op1);
-                memcpy(data,op1.data,MULTIDIM_SIZE(op1)*sizeof(T));
+                memcpy(data, op1.data, MULTIDIM_SIZE(op1) * sizeof(T));
             }
             return *this;
         }
