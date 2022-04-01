@@ -2415,7 +2415,6 @@ class MultidimArray {
             #else
                 RFLOAT total = 0;
                 RFLOAT sumofsquares = 0;
-                RFLOAT stddev;
 
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
                     RFLOAT x = static_cast<RFLOAT>(*ptr);
