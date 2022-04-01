@@ -113,7 +113,7 @@ class MetaDataTable {
      *  and/or will be stored on a new metadata file when "save" is
      *  called
      **/
-    std::vector<EMDLabel> activeLabels;
+    std::vector<EMDL::EMDLabel> activeLabels;
 
     std::vector<std::string> unknownLabelNames;
     std::vector<long> unknownLabelPosition2Offset;
@@ -181,16 +181,17 @@ class MetaDataTable {
     // Sort the order of the elements based on the values in the input label
     // (only numbers, no strings/bools)
     void sort(EMDL::EMDLabel name, bool do_reverse = false, bool only_set_index = false, bool do_random = false);
-    void newSort(const EMDLabel name, bool do_reverse = false, bool do_sort_after_at = false, bool do_sort_before_at = false);
+
+    void newSort(const EMDL::EMDLabel name, bool do_reverse = false, bool do_sort_after_at = false, bool do_sort_before_at = false);
 
     // Check whether a label is defined in the table.
     // This is redundant and will be removed in 3.2.
     bool labelExists(EMDL::EMDLabel name) const;
 
     // Does 'activeLabels' contain 'label'?
-    bool containsLabel(const EMDLabel label, const std::string unknownLabel="") const;
+    bool containsLabel(const EMDL::EMDLabel label, const std::string unknownLabel="") const;
 
-    std::vector<EMDLabel> getActiveLabels() const;
+    std::vector<EMDL::EMDLabel> getActiveLabels() const;
 
     // Deactivate a column from a table, so that it is no longer written out
     void deactivateLabel(EMDL::EMDLabel label, std::string unknownLabel="");
@@ -290,7 +291,7 @@ class MetaDataTable {
 
     // Make a histogram of a column
     void columnHistogram(
-        EMDLabel label, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
+        EMDL::EMDLabel label, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
         int verb = 0, CPlot2D *plot2D = NULL, long int nr_bin = -1,
         RFLOAT hist_min = -LARGE_NUMBER, RFLOAT hist_max = LARGE_NUMBER,
         bool do_fractional_instead = false, bool do_cumulative_instead = false
@@ -304,7 +305,7 @@ class MetaDataTable {
     );
 
     void addToCPlot2D(
-        CPlot2D *plot2D, EMDLabel xaxis, EMDLabel yaxis,
+        CPlot2D *plot2D, EMDL::EMDLabel xaxis, EMDL::EMDLabel yaxis,
         double red=0., double green=0., double blue=0., double linewidth = 1.0,
         std::string marker=""
     );
@@ -348,27 +349,27 @@ class MetaDataTable {
 void compareMetaDataTable(
     MetaDataTable &MD1, MetaDataTable &MD2,
     MetaDataTable &MDboth, MetaDataTable &MDonly1, MetaDataTable &MDonly2,
-    EMDLabel label1, double eps = 0.0,
-    EMDLabel label2 = EMDL::UNDEFINED,
-    EMDLabel label3 = EMDL::UNDEFINED
+    EMDL::EMDLabel label1, double eps = 0.0,
+    EMDL::EMDLabel label2 = EMDL::UNDEFINED,
+    EMDL::EMDLabel label3 = EMDL::UNDEFINED
 );
 
 // find a subset of the input metadata table that has corresponding entries between the specified min and max values
 MetaDataTable subsetMetaDataTable(
-    MetaDataTable &MDin, EMDLabel label,
+    MetaDataTable &MDin, EMDL::EMDLabel label,
     RFLOAT min_value, RFLOAT max_value
 );
 
 // find a subset of the input metadata table that has corresponding entries with or without a given substring
 MetaDataTable subsetMetaDataTable(
-    MetaDataTable &MDin, EMDLabel label,
+    MetaDataTable &MDin, EMDL::EMDLabel label,
     std::string search_str, bool exclude=false
 );
 
 // remove duplicated particles that are in the same micrograph (mic_label) and within a given threshold [px]
 // OriginX/Y are multiplied by origin_scale before added to CoordinateX/Y to compensate for down-sampling
 MetaDataTable removeDuplicatedParticles(
-    MetaDataTable &MDin, EMDLabel mic_label,
+    MetaDataTable &MDin, EMDL::EMDLabel mic_label,
     RFLOAT threshold, RFLOAT origin_scale=1.0,
     FileName fn_removed="", bool verb=true
 );
@@ -381,12 +382,14 @@ bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label, T& value) const {
     typedef typename std::remove_const<T>::type U;
 
     // In C++11, this repeat can be avoided by using "if constexpr(...) else static_assert"
-    static_assert(std::is_same<bool, U>::value ||
-                  std::is_same<FileName, U>::value || std::is_same<std::string, U>::value ||
-                  std::is_same<double, U>::value || std::is_same<float, U>::value ||
-                  std::is_same<int, U>::value || std::is_same<long, U>::value ||
-                  std::is_same<std::vector<double>, U>::value || std::is_same<std::vector<float>, U>::value,
-                  "Compile error: wrong type given to MetaDataTable::getValur or setValue");
+    static_assert(
+        std::is_same<bool, U>::value ||
+        std::is_same<FileName, U>::value || std::is_same<std::string, U>::value ||
+        std::is_same<double, U>::value || std::is_same<float, U>::value ||
+        std::is_same<int, U>::value || std::is_same<long, U>::value ||
+        std::is_same<std::vector<double>, U>::value || std::is_same<std::vector<float>, U>::value,
+        "Compile error: wrong type given to MetaDataTable::getValur or setValue"
+    );
 
     if (std::is_same<bool, U>::value)
         return EMDL::isBool(label);
@@ -423,8 +426,8 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
         if (objectID < 0) {
             objectID = current_objectID;
         } else {
-            checkObjectID(objectID, "MetaDataTable::getValue")
-        };
+            checkObjectID(objectID, "MetaDataTable::getValue");
+        }
 
         objects[objectID]->getValue(off, value);
     } else {
