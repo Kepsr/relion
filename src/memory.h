@@ -116,21 +116,21 @@ template <class T> void ask_Tvolume(
     T *** &m, int nsl, int nsh, int nrl, int nrh, int ncl, int nch
 ) {
     if (nsh - nsl + 1 > 1 && nrh - nrl + 1 > 1 && nch - ncl + 1 > 1) {
-        m = (T ***) malloc((unsigned)(nsh - nsl + 1) * sizeof(T**));
+        m = (T ***) malloc((unsigned) (nsh - nsl + 1) * sizeof(T**));
         if (!m) 
-            REPORT_ERROR( "allocation failure 1 in matrix()");
+            REPORT_ERROR("allocation failure 1 in matrix()");
         m -= nsl;
 
         for (int k = nsl; k <= nsh; k++) {
-            m[k] = (T **) malloc((unsigned)(nrh - nrl + 1) * sizeof(T*));
+            m[k] = (T **) malloc((unsigned) (nrh - nrl + 1) * sizeof(T*));
             if (!m[k]) 
-                REPORT_ERROR( "allocation failure 2 in matrix()");
+                REPORT_ERROR("allocation failure 2 in matrix()");
             m[k] -= nrl;
 
             for (int i = nrl;i <= nrh;i++) {
-                m[k][i] = (T *) malloc((unsigned)(nch - ncl + 1) * sizeof(T));
+                m[k][i] = (T *) malloc((unsigned) (nch - ncl + 1) * sizeof(T));
                 if (!m[k][i]) 
-                    REPORT_ERROR( "allocation failure 2 in matrix()");
+                    REPORT_ERROR("allocation failure 2 in matrix()");
                 m[k][i] -= ncl;
             }
         }
@@ -144,11 +144,12 @@ template <class T> void free_Tvolume(
     T *** &m, int nsl, int nsh, int nrl, int nrh, int ncl, int nch
 ) {
     if (m != NULL) {
-        for (int k = nsh;k >= nsl;k--)
-            for (int i = nrh; i >= nrl; i--) 
-                free((char*)(m[k][i] + ncl));
-            free((char*)(m[k] + nrl));
-        free((char*)(m + nsl));
+        for (int k = nsh; k >= nsl; k--) {
+        for (int i = nrh; i >= nrl; i--)
+        free((char*) (m[k][i] + ncl));
+        free((char*) (m[k] + nrl));
+        }
+        free((char*) (m + nsl));
         m = NULL;
     }
 }
