@@ -430,7 +430,7 @@ void CtffindRunner::joinCtffindResults() {
 
     obsModel.save(MDctf, fn_out+"micrographs_ctf.star", "micrographs");
 
-    std::vector<EMDLabel> plot_labels;
+    std::vector<EMDL::EMDLabel> plot_labels;
     plot_labels.push_back(EMDL::CTF_DEFOCUSU);
     plot_labels.push_back(EMDL::CTF_DEFOCUS_ANGLE);
     plot_labels.push_back(EMDL::CTF_ASTIGMATISM);
