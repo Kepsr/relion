@@ -290,12 +290,12 @@ void Preprocessing::joinAllStarFiles() {
         imic++;
     }
 
+    std::string optgroup_name;
     // Write out the joined star files
     if (fn_part_star != "") {
         // Get pixel size in original micrograph from obsModelMic, as this may no longer be present in obsModelPart
         std::map<std::string, RFLOAT> optics_group_mic_angpix;
         if (fn_data != "") {
-            std::string optgroup_name;
             RFLOAT mic_angpix;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModelMic.opticsMdt) {
                 mic_angpix    = obsModelMic.opticsMdt.getValue<RFLOAT>     (EMDL::MICROGRAPH_PIXEL_SIZE);
