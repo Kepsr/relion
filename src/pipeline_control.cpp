@@ -58,7 +58,7 @@ bool pipeline_control_check_abort_job() {
     struct stat buffer;
     return stat(
         (pipeline_control_outputname + RELION_JOB_ABORT_NOW).c_str(), &buffer
-    ) == 0
+    ) == 0;
 }
 
 void pipeline_control_delete_exit_files() {
