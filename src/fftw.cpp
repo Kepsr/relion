@@ -1590,18 +1590,16 @@ void selfApplyBeamTilt(MultidimArray<Complex > &Fimg,
 }
 
 void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &out, int factor) {
-    long int Xdim, Ydim, Zdim, Ndim, XYdim;
-    RFLOAT bg_val, bg_pix, bd_val, bd_pix;
 
     out.clear();
 
     // Check dimensions
     std::tuple<int, int, int, long int> dimensions = v.getDimensions();
-    int Xdim = std::get<0>(dimensions);
-    int Ydim = std::get<1>(dimensions);
-    int Zdim = std::get<2>(dimensions);
+    long int Xdim = std::get<0>(dimensions);
+    long int Ydim = std::get<1>(dimensions);
+    long int Zdim = std::get<2>(dimensions);
     long int Ndim = std::get<3>(dimensions);
-    if ( (Zdim > 1) || (Ndim > 1) )
+    if (Zdim > 1 || Ndim > 1)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray should be 2D.");
     if (Xdim * Ydim <= 16)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray is too small.");
@@ -1609,18 +1607,17 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &ou
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR Padding factor should be larger than 1.");
 
     // Calculate background and border values
-    bg_val = bg_pix = bd_val = bd_pix = 0.;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v)
-    {
+    RFLOAT bg_val, bg_pix, bd_val, bd_pix;
+    bg_val = bg_pix = bd_val = bd_pix = 0.0;
+    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {
         bg_val += DIRECT_A2D_ELEM(v, i, j);
-        bg_pix += 1.;
-        if ( (i == 0) || (j == 0) || (i == (YSIZE(v) - 1)) || (j == (XSIZE(v) - 1)) )
-        {
+        bg_pix += 1.0;
+        if (i == 0 || j == 0 || i == YSIZE(v) - 1 || j == XSIZE(v) - 1) {
             bd_val += DIRECT_A2D_ELEM(v, i, j);
-            bd_pix += 1.;
+            bd_pix += 1.0;
         }
     }
-    if ( (bg_pix < 1.) || (bd_pix < 1.) )
+    if (bg_pix < 1.0 || bd_pix < 1.0)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray is too small.");
     bg_val /= bg_pix;
     bd_val /= bd_pix;
@@ -1629,7 +1626,7 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &ou
     //std::cout << "bd_val = " << bd_val << ", bd_pix = " << bd_pix << std::endl;
 
     // Pad and float output MultidimArray (2x original size by default)
-    XYdim = (Xdim > Ydim) ? (Xdim * factor) : (Ydim * factor);
+    long int XYdim = std::max(Xdim, Ydim) * factor;
     out.resize(XYdim, XYdim);
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
