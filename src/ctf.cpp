@@ -52,6 +52,15 @@
 
 using namespace gravis;
 
+static void ensure_square(int orixdim, int oriydim) {
+    if (orixdim != oriydim) {
+        REPORT_ERROR_STR(
+            "CTF::getFftwImage: currently, symmetric aberrations are supported "
+            << "only for square images.\n"
+        );
+    }
+}
+
 /* Read -------------------------------------------------------------------- */
 void CTF::readByGroup(
     const MetaDataTable &partMdt, ObservationModel* obs, long int particle
@@ -403,8 +412,8 @@ void CTF::getFftwImage(
                 int ip = (i < XSIZE(result)) ? i : i - YSIZE(result);
                 // Don't take the last column from the half-transform
                 for (int j = 0; j < XSIZE(result) - 1; j++) {
-                    // Make just one lookup on Fctf.data
-                    mctfipj = A2D_ELEM(Mctf, ip, j);
+                    // Make just one lookup on Mctf.data
+                    RFLOAT mctfipj = A2D_ELEM(Mctf, ip, j);
                     if (ctf_premultiplied) {
                         // Constrain result[i, j] to the interval [0.0, 1.0]
                         if (mctfipj < 0.0) {
@@ -698,14 +707,4 @@ double CTF::getAxy() {
 
 double CTF::getAyy() {
     return Ayy;
-}
-
-
-void ensure_square(int orixdim, int oriydim) {
-    if (orixdim != oriydim) {
-        REPORT_ERROR_STR(
-            "CTF::getFftwImage: currently, symmetric aberrations are supported "
-            << "only for square images.\n"
-        );
-    }
 }
