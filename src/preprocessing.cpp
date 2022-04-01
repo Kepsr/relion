@@ -270,7 +270,7 @@ void Preprocessing::joinAllStarFiles() {
         current_object1 = MDmics.nextObject()
     ) {
         // Micrograph filename
-        FileName fn_mic = MDmics.getValue(EMDL::MICROGRAPH_NAME);
+        FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
 
         // Get the filename of the STAR file for just this micrograph
         FileName fn_star = getOutputFileNameRoot(fn_mic) + "_extract.star";
@@ -1123,8 +1123,8 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                 yoff *= rescale_fndata;
 
                 if (do_recenter) {
-                    xcoord = MDresult.getValue(EMDL::IMAGE_COORD_X);
-                    ycoord = MDresult.getValue(EMDL::IMAGE_COORD_Y);
+                    xcoord = MDresult.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+                    ycoord = MDresult.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
 
                     diffx = xoff - ROUND(xoff);
                     diffy = yoff - ROUND(yoff);
@@ -1139,13 +1139,13 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                 MDresult.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * xoff);
                 MDresult.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * yoff);
                 if (contains_z) {
-                    zoff = MDresult.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+                    zoff = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
                     zoff /= particle_angpix;
                     zoff -= ZZ(my_projected_center);
                     zoff *= rescale_fndata;
 
                     if (do_recenter) {
-                        zcoord = MDresult.getValue(EMDL::IMAGE_COORD_Z);
+                        zcoord = MDresult.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
                         diffz = zoff - ROUND(zoff);
                         zcoord -= ROUND(zoff);
                         zoff = diffz;
