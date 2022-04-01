@@ -850,7 +850,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         );
         });
 
-        TICTOC(TIMING_REST, {
+        TICTOC(TIMING_REST, ({
         // Also store all the particles information in the STAR file
         FileName fn_img;
         if (Ipart().getDim() == 3) {
@@ -904,7 +904,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
                 MD.setValue(EMDL::PARTICLE_BEAM_TILT_CLASS, tilt_class);
             }
         }
-        });
+
+        }));
 
         ipos++;
     }
