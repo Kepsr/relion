@@ -1589,15 +1589,18 @@ void selfApplyBeamTilt(MultidimArray<Complex > &Fimg,
 
 }
 
-void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &out, int factor)
-{
+void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &out, int factor) {
     long int Xdim, Ydim, Zdim, Ndim, XYdim;
     RFLOAT bg_val, bg_pix, bd_val, bd_pix;
 
     out.clear();
 
     // Check dimensions
-    v.getDimensions(Xdim, Ydim, Zdim, Ndim);
+    std::tuple<int, int, int, long int> dimensions = v.getDimensions();
+    int Xdim = std::get<0>(dimensions);
+    int Ydim = std::get<1>(dimensions);
+    int Zdim = std::get<2>(dimensions);
+    long int Ndim = std::get<3>(dimensions);
     if ( (Zdim > 1) || (Ndim > 1) )
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray should be 2D.");
     if (Xdim * Ydim <= 16)
