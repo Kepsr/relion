@@ -80,18 +80,18 @@ void CTF::readByGroup(
 
 /// TODO: Return dest
 void CTF::readValue(
-    EMDLabel label, RFLOAT& dest, RFLOAT defaultVal,
+    EMDL::EMDLabel label, RFLOAT& dest, RFLOAT defaultVal,
     long int particle, int opticsGroup,
     const MetaDataTable& partMdt, const ObservationModel* obs
 ) {
     try {
-        dest = partMdt.getValue(label, particle);
-    } catch (const char *errmsg) try {
+        dest = partMdt.getValue<RFLOAT>(label, particle);
+    } catch (const char *errmsg) { try {
         if (opticsGroup < 0) { throw "Negative optics group!"; }
-        dest = obs->opticsMdt.getValue(label, opticsGroup);
+        dest = obs->opticsMdt.getValue<RFLOAT>(label, opticsGroup);
     } catch (const char *errmsg) {
         dest = defaultVal;
-    }
+    } }
 }
 
 void CTF::read(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {

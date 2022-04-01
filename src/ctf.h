@@ -149,7 +149,7 @@ class CTF {
         );
 
         void readValue(
-            EMDLabel label, RFLOAT& dest, RFLOAT defaultVal, 
+            EMDL::EMDLabel label, RFLOAT& dest, RFLOAT defaultVal, 
             long int particle, int opticsGroup, 
             const MetaDataTable& partMdt, const ObservationModel* obs
         );
