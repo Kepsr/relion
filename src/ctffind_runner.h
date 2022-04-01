@@ -128,7 +128,7 @@ public:
 	RFLOAT Cs;
 
 	// Amplitude contrast (e.g. 0.07)
-	RFLOAT AmplitudeConstrast;
+	RFLOAT AmplitudeContrast;
 
 	// Magnification
 	RFLOAT Magnification;

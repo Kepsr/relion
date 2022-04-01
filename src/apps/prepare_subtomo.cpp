@@ -80,7 +80,7 @@ class prepare_subtomo {
     RFLOAT Cs;
 
     // Amplitude contrast (e.g. 0.07)
-    RFLOAT AmplitudeConstrast;
+    RFLOAT AmplitudeContrast;
 
     // Magnification
     RFLOAT Magnification;
@@ -122,7 +122,7 @@ class prepare_subtomo {
         fn_ctffind_exe = parser.getOption("--ctffind_exe", "Location of ctffind executable (or through RELION_CTFFIND_EXECUTABLE environment variable)", "/public/EM/ctffind/ctffind.exe");
         Cs = textToFloat(parser.getOption("--CS", "Spherical Aberration (mm) ","2.7"));
         Voltage = textToFloat(parser.getOption("--HT", "Voltage (kV)","300"));
-        AmplitudeConstrast = textToFloat(parser.getOption("--AmpCnst", "Amplitude constrast", "0.07"));
+        AmplitudeContrast = textToFloat(parser.getOption("--AmpCnst", "Amplitude constrast", "0.07"));
         Magnification = textToFloat(parser.getOption("--XMAG", "Magnification", "53000"));
         PixelSize = textToFloat(parser.getOption("--DStep", "Detector pixel size (um)", "11.57"));
 
@@ -203,7 +203,7 @@ class prepare_subtomo {
         // Check CTFFIND or Gctf executables
         if (do_skip_ctf_correction) {
             Cs = 0.;
-            AmplitudeConstrast = 1.;
+            AmplitudeContrast = 1.;
             do_use_trials_for_ctffind = false;
             do_use_only_lower_tilt_defoci = false;
         } else {
@@ -687,7 +687,7 @@ class prepare_subtomo {
                 MD_ctf_results.write(dir_ctf_results + "/micrographs_ctf.star");
             } else {
                 command = "relion_run_ctffind --i " + fn_ctf + " --o " + dir_ctf_results + "/ --CS " + floatToString(Cs)
-                        + " --HT " + floatToString(Voltage) + " --ctfWin -1 --AmpCnst " + floatToString(AmplitudeConstrast)
+                        + " --HT " + floatToString(Voltage) + " --ctfWin -1 --AmpCnst " + floatToString(AmplitudeContrast)
                         + " --DStep " + floatToString(PixelSize) + " --XMAG " + floatToString(Magnification)
                         + " --Box " + floatToString(box_size) + " --dFMin " + floatToString(min_defocus)
                         + " --dFMax " + floatToString(max_defocus) + " --FStep " + floatToString(step_defocus)
@@ -953,7 +953,7 @@ class prepare_subtomo {
                     MD_this_subtomo.setValue(EMDL::CTF_DEFOCUSU, ptcldefocus);
                     MD_this_subtomo.setValue(EMDL::CTF_VOLTAGE, Voltage);
                     MD_this_subtomo.setValue(EMDL::CTF_CS, Cs);
-                    MD_this_subtomo.setValue(EMDL::CTF_Q0, AmplitudeConstrast);
+                    MD_this_subtomo.setValue(EMDL::CTF_Q0, AmplitudeContrast);
                     MD_this_subtomo.setValue(EMDL::ORIENT_ROT, 0.);
                     MD_this_subtomo.setValue(EMDL::ORIENT_TILT, tilt_deg);
                     MD_this_subtomo.setValue(EMDL::ORIENT_PSI, 0.);

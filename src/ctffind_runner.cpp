@@ -41,7 +41,7 @@ void CtffindRunner::read(int argc, char **argv, int rank) {
     // First parameter line in CTFFIND
     Cs = textToFloat(parser.getOption("--CS", "Spherical Aberration (mm) ","-1"));
     Voltage = textToFloat(parser.getOption("--HT", "Voltage (kV)","-1"));
-    AmplitudeConstrast = textToFloat(parser.getOption("--AmpCnst", "Amplitude constrast", "-1"));
+    AmplitudeContrast = textToFloat(parser.getOption("--AmpCnst", "Amplitude constrast", "-1"));
     angpix = textToFloat(parser.getOption("--angpix", "Pixel size in the input micrographs (A)", "-1"));
 
     int ctffind_section = parser.addSection("CTFFIND parameters");
@@ -154,17 +154,17 @@ void CtffindRunner::initialise() {
         optics_group_micrographs_all.clear();
         fn_micrographs_ctf_all.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            FileName fn_mic = MDin.getValue(EMDL::MICROGRAPH_NAME);
+            FileName fn_mic = MDin.getValue<FileName>(EMDL::MICROGRAPH_NAME);
 
             fn_micrographs_all.push_back(fn_mic); // Dose weighted image
 
             if (do_use_without_doseweighting)
-                fn_mic = MDin.getValue(EMDL::MICROGRAPH_NAME_WODOSE);
+                fn_mic = MDin.getValue<FileName>(EMDL::MICROGRAPH_NAME_WODOSE);
             else if (use_given_ps)
-                fn_mic = MDin.getValue(EMDL::CTF_POWER_SPECTRUM);
+                fn_mic = MDin.getValue<FileName>(EMDL::CTF_POWER_SPECTRUM);
             fn_micrographs_ctf_all.push_back(fn_mic); // Image for CTF estsimation
 
-            int optics_group = MDin.getValue(EMDL::IMAGE_OPTICS_GROUP);
+            int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
             optics_group_micrographs_all.push_back(optics_group);
         }
     } else {
@@ -193,11 +193,11 @@ void CtffindRunner::initialise() {
         }
     }
     if (!obsModel.opticsMdt.containsLabel(EMDL::CTF_Q0)) {
-        if (AmplitudeConstrast < 0.0) {
+        if (AmplitudeContrast < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the amplitude contrast, and it is not given through --AmpCnst.");
         }
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
-            obsModel.opticsMdt.setValue(EMDL::CTF_Q0, AmplitudeConstrast);
+            obsModel.opticsMdt.setValue(EMDL::CTF_Q0, AmplitudeContrast);
         }
     }
     if (!obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE)) {
@@ -356,10 +356,10 @@ void CtffindRunner::run() {
                 exit(RELION_EXIT_ABORTED);
 
             // Get angpix and voltage from the optics groups:
-            Cs                 = obsModel.opticsMdt.getValue(EMDL::CTF_CS,                optics_group_micrographs[imic] - 1);
-            Voltage            = obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE,           optics_group_micrographs[imic] - 1);
-            AmplitudeConstrast = obsModel.opticsMdt.getValue(EMDL::CTF_Q0,                optics_group_micrographs[imic] - 1);
-            angpix             = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group_micrographs[imic] - 1);
+            Cs                = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::CTF_CS,                optics_group_micrographs[imic] - 1);
+            Voltage           = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::CTF_VOLTAGE,           optics_group_micrographs[imic] - 1);
+            AmplitudeContrast = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::CTF_Q0,                optics_group_micrographs[imic] - 1);
+            angpix            = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group_micrographs[imic] - 1);
 
             if (do_use_gctf) {
                 executeGctf(imic, allmicnames, imic + 1 == fn_micrographs.size());
@@ -441,7 +441,7 @@ void CtffindRunner::joinCtffindResults() {
     FileName fn_eps, fn_eps_root = fn_out + "micrographs_ctf";
     std::vector<FileName> all_fn_eps;
     for (int i = 0; i < plot_labels.size(); i++) {
-        EMDLabel label = plot_labels[i];
+        EMDL::EMDLabel label = plot_labels[i];
         if (MDctf.containsLabel(label)) {
             // Values for all micrographs
             CPlot2D *plot2Db = new CPlot2D(EMDL::label2Str(label) + " for all micrographs");
@@ -499,19 +499,19 @@ void CtffindRunner::executeGctf(
         std::string command = fn_gctf_exe;
         //command +=  " --ctfstar " + fn_out + "tt_micrographs_ctf.star";
         command +=  " --apix " + floatToString(angpix);
-        command +=  " --cs " + floatToString(Cs);
-        command +=  " --kV " + floatToString(Voltage);
-        command +=  " --ac " + floatToString(AmplitudeConstrast);
-        command += " --astm " + floatToString(amount_astigmatism);
+        command +=  " --cs "   + floatToString(Cs);
+        command +=  " --kV "   + floatToString(Voltage);
+        command +=  " --ac "   + floatToString(AmplitudeContrast);
+        command += " --astm "  + floatToString(amount_astigmatism);
         command +=  " --logsuffix _gctf.log";
 
         if (!do_ignore_ctffind_params) {
             command += " --boxsize " + floatToString(box_size);
-            command += " --resL " + floatToString(resol_min);
-            command += " --resH " + floatToString(resol_max);
-            command += " --defL " + floatToString(min_defocus);
-            command += " --defH " + floatToString(max_defocus);
-            command += " --defS " + floatToString(step_defocus);
+            command += " --resL "    + floatToString(resol_min);
+            command += " --resH "    + floatToString(resol_max);
+            command += " --defL "    + floatToString(min_defocus);
+            command += " --defH "    + floatToString(max_defocus);
+            command += " --defS "    + floatToString(step_defocus);
         }
 
         if (do_phaseshift) {
@@ -606,7 +606,7 @@ void CtffindRunner::executeCtffind3(long int imic) {
     // line 2: diagnostic .ctf image
     fh << fn_ctf << std::endl;
     // line 3: CS[mm], HT[kV], AmpCnst, XMAG, DStep[um]
-    fh << Cs << ", " << Voltage << ", " << AmplitudeConstrast << ", 10000, " << angpix << std::endl;
+    fh << Cs << ", " << Voltage << ", " << AmplitudeContrast << ", 10000, " << angpix << std::endl;
     // line 4: Box, ResMin[A], ResMax[A], dFMin[A], dFMax[A], FStep[A], dAst[A]
     fh << box_size << ", " << resol_min << ", " << resol_max << ", " << min_defocus << ", " << max_defocus << ", " << step_defocus << ", " << amount_astigmatism << std::endl;
     if (is_ctffind4) {
@@ -705,7 +705,7 @@ void CtffindRunner::executeCtffind4(long int imic) {
     fh << ctf_angpix << std::endl;
     fh << Voltage << std::endl;
     fh << Cs << std::endl;
-    fh << AmplitudeConstrast << std::endl;
+    fh << AmplitudeContrast << std::endl;
     fh << ctf_boxsize << std::endl;
     fh << resol_min << std::endl;
     fh << resol_max << std::endl;
