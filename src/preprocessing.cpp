@@ -423,7 +423,7 @@ void Preprocessing::runExtractParticles() {
         micIsUsed = extractParticlesFromFieldOfView(fn_mic, imic);
         })
 
-        if (micIsUsed) MDoutMics.addObject(MDmics.getObject(current_object));
+        if (micIsUsed) MDoutMics.addObject(MDmics.getObject(index));
 
         imic++;
     }
@@ -989,13 +989,12 @@ void Preprocessing::performPerImageOperations(
     });
 
     // Calculate mean, stddev, min and max
-    TICTOC(TIMING_COMP_STATS, {
-    std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Ipart().computeStats();
+    std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple;
+    TICTOC(TIMING_COMP_STATS, { statstuple = Ipart().computeStats(); });
     RFLOAT avg    = std::get<0>(statstuple);
     RFLOAT stddev = std::get<1>(statstuple);
     RFLOAT minval = std::get<2>(statstuple);
     RFLOAT maxval = std::get<3>(statstuple);
-    });
 
     if (Ipart().getDim() == 3) {
         Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    minval);
@@ -1053,16 +1052,15 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
         FileName fn_mic_in_particle_star = MDimg.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         if (fn_mic_in_particle_star.contains(fn_post))
-            /// BUG: current_object not declared
-            MDresult.addObject(MDimg.getObject(current_object));
+            MDresult.addObject(MDimg.getObject(index));
     }
 
     RFLOAT mag2, dstep2, particle_angpix, rescale_fndata = 1.0;
     if (MDresult.numberOfObjects() > 0) {
         MDresult.goToObject(0);
 
-        bool contains_xy = (MDresult.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) && MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM));
-        bool contains_z = (MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM));
+        bool contains_xy = MDresult.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) && MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+        bool contains_z  = MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
         if (do_recenter && !contains_xy) {
             REPORT_ERROR("Preprocessing::initialise ERROR: input _data.star file does not contain rlnOriginX/YAngst for re-centering.");
