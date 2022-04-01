@@ -649,7 +649,7 @@ void CtffindRunner::executeCtffind4(long int imic) {
     std::ofstream  fh;
     fh.open((fn_script).c_str(), std::ios::out);
     if (!fh)
-     REPORT_ERROR( (std::string)"CtffindRunner::execute_ctffind cannot create file: " + fn_script);
+        REPORT_ERROR((std::string) "CtffindRunner::execute_ctffind cannot create file: " + fn_script);
 
     // If given, then put a square window of ctf_win on the micrograph for CTF estimation
     if (ctf_win > 0) {
@@ -719,7 +719,7 @@ void CtffindRunner::executeCtffind4(long int imic) {
     // The default was changed to "yes" in CTFFIND 4.1.8.
     // Ref: http://grigoriefflab.janelia.org/ctffind4
     // So, we say "yes" regardless of the version unless "--fast_search" is specified.
-    fh << (do_fast_search : "no": "yes") << std::endl;
+    fh << (do_fast_search ? "no": "yes") << std::endl;
     // Use a restraint on astigmatism?
     fh << "yes" << std::endl;
     // Expected (tolerated) astigmatism
