@@ -1051,8 +1051,8 @@ void PipeLine::getOutputNodesFromStarFile(int this_job) {
         MDnodes.read(outnodes, "output_nodes");
 
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnodes) {
-            FileName nodename = MDnodes.getValue(EMDL::PIPELINE_NODE_NAME);
-            int      nodetype = MDnodes.getValue(EMDL::PIPELINE_NODE_TYPE);
+            FileName nodename = MDnodes.getValue<FileName>(EMDL::PIPELINE_NODE_NAME);
+            int      nodetype = MDnodes.getValue<int>     (EMDL::PIPELINE_NODE_TYPE);
 
             // if this node does not exist yet, then add it to the pipeline
             if (findNodeByName(nodename) < 0) {
@@ -1307,7 +1307,7 @@ void PipeLine::undeleteJob(FileName fn_undel) {
     MDproc.read(fn_undel, "pipeline_processes");
     std::cout <<"  Undeleting from Trash ... " << std::endl;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDproc) {
-        FileName fn_proc = MDproc.getValue(EMDL::PIPELINE_PROCESS_NAME);
+        FileName fn_proc = MDproc.getValue<FileName>(EMDL::PIPELINE_PROCESS_NAME);
 
         // Copy the job back from the Trash folder
         FileName fn_dest = fn_proc.beforeLastOf("/"); //gets rid of ending "/"
@@ -1633,7 +1633,7 @@ void PipeLine::importJobs(FileName fn_export) {
 
     std::vector<std::string> find_pattern, replace_pattern;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDexported) {
-        FileName expname = MDexported.getValue(EMDL::PIPELINE_PROCESS_NAME);
+        FileName expname = MDexported.getValue<FileName>(EMDL::PIPELINE_PROCESS_NAME);
         find_pattern.push_back(expname);
         // Make a new name for this job
         FileName newname = expname.beforeFirstOf("/") + "/job" + integerToString(job_counter, 3) + "/";
@@ -1780,14 +1780,14 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
     // This if allows for older version of the pipeline without the jobcounter
     // TODO: remove after alpha-testing
     if (MDgen.readStar(in, "pipeline_general")) {
-        jobcounter = MDgen.getValue(EMDL::PIPELINE_JOB_COUNTER);
+        int jobcounter = MDgen.getValue<int>(EMDL::PIPELINE_JOB_COUNTER);
         if (job_counter < 0) REPORT_ERROR("PipeLine::read: rlnPipeLineJobCounter must not be negative!");
     }
 
     MDnode.readStar(in, "pipeline_nodes");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnode) try {
-        std::string name = MDnode.getValue(EMDL::PIPELINE_NODE_NAME);
-        int         type = MDnode.getValue(EMDL::PIPELINE_NODE_TYPE);
+        std::string name = MDnode.getValue<std::string>(EMDL::PIPELINE_NODE_NAME);
+        int         type = MDnode.getValue<int>        (EMDL::PIPELINE_NODE_TYPE);
         Node newNode(name, type);
         nodeList.push_back(newNode);
     } catch (const char *errmsg) {
@@ -1799,10 +1799,10 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
         std::string name, alias;
         int type, status;
         try {
-            name   = MDproc.getValue(EMDL::PIPELINE_PROCESS_NAME);
-            alias  = MDproc.getValue(EMDL::PIPELINE_PROCESS_ALIAS);
-            type   = MDproc.getValue(EMDL::PIPELINE_PROCESS_TYPE);
-            status = MDproc.getValue(EMDL::PIPELINE_PROCESS_STATUS);
+            name   = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
+            alias  = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_ALIAS);
+            type   = MDproc.getValue<int>        (EMDL::PIPELINE_PROCESS_TYPE);
+            status = MDproc.getValue<int>        (EMDL::PIPELINE_PROCESS_STATUS);
         } catch (const char *errmsg) {
             REPORT_ERROR("PipeLine::read: cannot find name or type in pipeline_processes table");
         }
@@ -1833,8 +1833,8 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDedge1) {
         std::string fromnodename, procname;
         try {
-            procname     = MDedge1.getValue(EMDL::PIPELINE_EDGE_PROCESS);
-            fromnodename = MDedge1.getValue(EMDL::PIPELINE_EDGE_FROM);
+            procname     = MDedge1.getValue<std::string>(EMDL::PIPELINE_EDGE_PROCESS);
+            fromnodename = MDedge1.getValue<std::string>(EMDL::PIPELINE_EDGE_FROM);
         } catch (const char *errmsg) {
             REPORT_ERROR("PipeLine::read: cannot find procname or fromnodename in pipeline_edges table");
         }
@@ -1864,8 +1864,8 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDedge2) {
         std::string tonodename, procname;
         try {
-            tonodename = MDedge2.getValue(EMDL::PIPELINE_EDGE_TO);
-            procname   = MDedge2.getValue(EMDL::PIPELINE_EDGE_PROCESS);
+            tonodename = MDedge2.getValue<std::string>(EMDL::PIPELINE_EDGE_TO);
+            procname   = MDedge2.getValue<std::string>(EMDL::PIPELINE_EDGE_PROCESS);
         } catch (const char *errmsg) {
             REPORT_ERROR("PipeLine::read: cannot find procname or tonodename in pipeline_edges table");
         }
