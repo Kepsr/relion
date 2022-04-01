@@ -946,7 +946,7 @@ class Image {
 
     /** Get Image dimensions
      */
-    std::tuple<int, int, int, long int> void getDimensions() const {
+    std::tuple<int, int, int, long int> getDimensions() const {
         return std::make_tuple(XSIZE(data), YSIZE(data), ZSIZE(data), NSIZE(data));
     }
 
