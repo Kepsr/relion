@@ -435,14 +435,14 @@ void applyGeometry(const MultidimArray<T>& V1,
                                 tmp += (T)(wy * wx * DIRECT_A2D_ELEM(V1, n2, m2));
                         }
 
-                        dAij(V2, i, j) = tmp;
+                        DIRECT_A2D_ELEM(V2, i, j) = tmp;
 #ifdef DEBUG_APPYGEO
-                    std::cout << "   val= " << dAij(V2, i, j) << std::endl;
+                    std::cout << "   val= " << DIRECT_A2D_ELEM(V2, i, j) << std::endl;
 #endif
 
                 } // if interp
                 else
-                	dAij(V2, i, j) = outside;
+                	DIRECT_A2D_ELEM(V2, i, j) = outside;
 
                 // Compute new point inside input image
                 xp += Aref(0, 0);
@@ -627,7 +627,7 @@ void applyGeometry(const MultidimArray<T>& V1,
                                 }
                             }
 
-#ifdef DEBUG
+                            #ifdef DEBUG
                             if (show_debug)
                                 std::cout <<
                                 "tmp1=" << DIRECT_A3D_ELEM(V1, o1, n1, m1) << " "
@@ -652,7 +652,7 @@ void applyGeometry(const MultidimArray<T>& V1,
                                 << (T)(wz * wy * wx * DIRECT_A3D_ELEM(V1, o2, n2, m2))
                                 << std::endl <<
                                 "tmp= " << tmp << std::endl;
-#endif
+                            #endif
 
                             dAkij(V2 , k, i, j) = tmp;
                     }
