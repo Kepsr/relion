@@ -144,9 +144,7 @@ void Preprocessing::initialise() {
 
         // Read the header of the micrograph to see how many frames there are.
         Image<RFLOAT> Imic;
-        
-        int xdim, ydim, zdim;
-        long int ndim;
+
         MDmics.goToObject(0);
         FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
@@ -582,9 +580,9 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
 
     if (exists(fn_star) && only_extract_unfinished) return true;
 
+    MetaDataTable MDin, MDout;
     TICTOC(TIMING_READ_COORD, {
     // Read in the coordinates file
-    MetaDataTable MDin, MDout;
     if (fn_data != "") {
         // Search for this micrograph in the MDdata table
         MDin = getCoordinateMetaDataTable(fn_mic);
@@ -629,7 +627,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
         if (dimensionality == 3) {
             do_ramp = false;
             if (do_phase_flip || do_premultiply_ctf) {
-                REPORT_ERROR(__func__ " ERROR: cannot do CTF premultiplication or phase flipping as dimensionality is not 2!");
+                REPORT_ERROR(std::string(__func__) + " ERROR: cannot do CTF premultiplication or phase flipping as dimensionality is not 2!");
             }
         }
 
@@ -674,14 +672,14 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     bool MDin_has_ctf          = MD.containsLabel(EMDL::CTF_DEFOCUSU);
     bool MDin_has_tiltgroup    = MD.containsLabel(EMDL::PARTICLE_BEAM_TILT_CLASS);
     int my_extract_size        = do_phase_flip || do_premultiply_ctf ? premultiply_ctf_extract_size : extract_size;
-    RFLOAT my_angpix;
 
+    RFLOAT my_angpix;
+    RFLOAT mic_avg;
     TICTOC(TIMING_READ_IMG, {
 
     Imic.read(fn_mic);
-
     // Calculate average value in the micrograph, for filling empty region around large-box extraction for premultiplication with CTF
-    RFLOAT mic_avg = Imic().average();
+    mic_avg = Imic().average();
 
     });
 
