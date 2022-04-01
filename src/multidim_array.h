@@ -1176,7 +1176,7 @@ class MultidimArray {
          * dimensions = V.getDimensions();
          * @endcode
          */
-        std::tuple<long int, long int, long int, long int> void getDimensions() const {
+        std::tuple<long int, long int, long int, long int> getDimensions() const {
             return std::make_tuple(XSIZE(*this), YSIZE(*this), ZSIZE(*this), NSIZE(*this));
         }
 
@@ -1825,44 +1825,49 @@ class MultidimArray {
             }
 
             switch (axis) {
+
                 case 'Z':
-                    if !inZbounds(k, (*this))
-                        REPORT_ERROR(std::string(__func__) + ": Multidim subscript (k) out of range");
+                if !inZbounds(k, (*this))
+                    REPORT_ERROR(std::string(__func__) + ": Multidim subscript (k) out of range");
 
-                    k -= firstZ();
-                    M.resize(1, 1, YSIZE(*this), XSIZE(*this));
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
-                        DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
-                    }
-                    STARTINGX(M) = firstX();
-                    STARTINGY(M) = firstY();
-                    break;
+                k -= firstZ();
+                M.resize(1, 1, YSIZE(*this), XSIZE(*this));
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
+                    DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
+                }
+                STARTINGX(M) = firstX();
+                STARTINGY(M) = firstY();
+                break;
+
                 case 'Y':
-                    if !inYbounds(k, (*this))
-                        REPORT_ERROR(std::string(__func__) + ": Multidim subscript (i) out of range");
+                if !inYbounds(k, (*this))
+                    REPORT_ERROR(std::string(__func__) + ": Multidim subscript (i) out of range");
 
-                    k -= firstY();
-                    M.resize(ZSIZE(*this), XSIZE(*this));
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
-                        DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, k, j);
-                    }
-                    STARTINGX(M) = firstX();
-                    STARTINGY(M) = firstZ();
-                    break;
+                k -= firstY();
+                M.resize(ZSIZE(*this), XSIZE(*this));
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
+                    DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, k, j);
+                }
+                STARTINGX(M) = firstX();
+                STARTINGY(M) = firstZ();
+                break;
+
                 case 'X':
-                    if !inXbounds(k, (*this))
-                        REPORT_ERROR(std::string(__func__) + ": Multidim subscript (j) out of range");
+                if !inXbounds(k, (*this))
+                    REPORT_ERROR(std::string(__func__) + ": Multidim subscript (j) out of range");
 
-                    k -= firstX();
-                    M.resize(ZSIZE(*this), YSIZE(*this));
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
-                        DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, j, k);
-                    }
-                    STARTINGX(M) = firstY();
-                    STARTINGY(M) = firstZ();
-                    break;
+                k -= firstX();
+                M.resize(ZSIZE(*this), YSIZE(*this));
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
+                    DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, j, k);
+                }
+                STARTINGX(M) = firstY();
+                STARTINGY(M) = firstZ();
+                break;
+
                 default:
-                    REPORT_ERROR((std::string) (__func__ ": unsupported axis ") + axis);
+                REPORT_ERROR(std::string(__func__) + ": unsupported axis " + axis);
+
             }
         }
 
