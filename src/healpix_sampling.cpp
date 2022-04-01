@@ -172,45 +172,45 @@ void HealpixSampling::read(FileName fn_in) {
     in.close();
 
     try {
-        is_3D               = MD.getValue(EMDL::SAMPLING_IS_3D);
-        is_3d_trans         = MD.getValue(EMDL::SAMPLING_IS_3D_TRANS);
-        psi_step            = MD.getValue(EMDL::SAMPLING_PSI_STEP);
-        offset_range        = MD.getValue(EMDL::SAMPLING_OFFSET_RANGE);
-        offset_step         = MD.getValue(EMDL::SAMPLING_OFFSET_STEP);
-        perturbation_factor = MD.getValue(EMDL::SAMPLING_PERTURBATION_FACTOR);
+        is_3D               = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D);
+        is_3d_trans         = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D_TRANS);
+        psi_step            = MD.getValue<RFLOAT>(EMDL::SAMPLING_PSI_STEP);
+        offset_range        = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_RANGE);
+        offset_step         = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_STEP);
+        perturbation_factor = MD.getValue<RFLOAT>(EMDL::SAMPLING_PERTURBATION_FACTOR);
     } catch (const char* errmsg) {
         REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table");
     }
 
     // Shaoda 19 Jun 2015: Helical translational searches (backwards compatibility)
     try {
-        helical_offset_step = MD.getValue(EMDL::SAMPLING_HELICAL_OFFSET_STEP);
+        helical_offset_step = MD.getValue<RFLOAT>(EMDL::SAMPLING_HELICAL_OFFSET_STEP);
     } catch (const char *errmsg) {
         helical_offset_step = -1.0;
     }
 
     // SHWS 27 Feb 2020: older star files will not yet have original sampling parameters, just use current ones (backwards compatibility)
     try { 
-        offset_step_ori = MD.getValue(EMDL::SAMPLING_OFFSET_STEP_ORI); 
+        offset_step_ori = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_STEP_ORI); 
     } catch (const char *errmsg) {
         offset_step_ori = offset_step;
     };
     try { 
-        offset_range_ori = MD.getValue(EMDL::SAMPLING_OFFSET_RANGE_ORI); 
+        offset_range_ori = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_RANGE_ORI); 
     } catch (const char *errmsg) {
         offset_range_ori = offset_range;
     };
     try { 
-        psi_step_ori = MD.getValue(EMDL::SAMPLING_PSI_STEP_ORI); 
+        psi_step_ori = MD.getValue<RFLOAT>(EMDL::SAMPLING_PSI_STEP_ORI); 
     } catch (const char *errmsg) {
         psi_step_ori = psi_step;
     };
 
     if (is_3D) {
         try {
-            healpix_order = MD.getValue(EMDL::SAMPLING_HEALPIX_ORDER);
-            fn_sym        = MD.getValue(EMDL::SAMPLING_SYMMETRY);
-            limit_tilt    = MD.getValue(EMDL::SAMPLING_LIMIT_TILT);
+            healpix_order = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER);
+            fn_sym        = MD.getValue<FileName>(EMDL::SAMPLING_SYMMETRY);
+            limit_tilt    = MD.getValue<RFLOAT>(EMDL::SAMPLING_LIMIT_TILT);
         } catch (const char *errmsg) {
             REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table for 3D sampling");
         }
@@ -222,7 +222,7 @@ void HealpixSampling::read(FileName fn_in) {
 
         // SHWS 27Feb2020: backwards compatibility: older star files will not yet have original sampling parameters, just use current ones
         try {
-            healpix_order_ori = MD.getValue(EMDL::SAMPLING_HEALPIX_ORDER_ORI);
+            healpix_order_ori = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER_ORI);
         } catch (const char *errmsg) {
             healpix_order_ori = healpix_order;
         }
