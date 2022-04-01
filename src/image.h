@@ -283,12 +283,12 @@ class fImageHandler {
              isTiff && (ftiff = TIFFOpen(fileName.c_str(), "r"))            == NULL ||
             !isTiff && (fimg  = fopen   (fileName.c_str(), wmChar.c_str())) == NULL
         ) {
-            REPORT_ERROR((std::string) "Image::" __func__ " cannot open: " + name);
+            REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + name);
         }
 
         if (headName != "") {
             if ((fhed = fopen(headName.c_str(), wmChar.c_str())) == NULL)
-                REPORT_ERROR((std::string) "Image::" __func__ " cannot open: " + headName);
+                REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + headName);
         } else {
             fhed = NULL;
         }
@@ -601,7 +601,7 @@ class Image {
                 break;
             case UHalf:
                 if (pageSize % 2 != 0) {
-                    REPORT_ERROR("Logic error in " __func__ "; for UHalf, pageSize must be even.");
+                    REPORT_ERROR("Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
                 }
 
                 for (size_t i = 0, ilim = pageSize / 2; i < ilim; i++) {
@@ -727,7 +727,7 @@ class Image {
     void swapPage(char * page, size_t pageNrElements, DataType datatype) {
         unsigned long datatypesize = gettypesize(datatype);
         #ifdef DEBUG
-            std::cerr << "DEBUG " __func__ ": Swapping image data with swap= "
+            std::cerr << "DEBUG " + __func__ + ": Swapping image data with swap= "
             << swap << " datatypesize= " << datatypesize
             << " pageNrElements " << pageNrElements
             << " datatype " << datatype
@@ -736,7 +736,7 @@ class Image {
 
         // Swap bytes if required
         if (swap >= 1) {
-            unsigned long increment = (swap == 1) ? datatypesize : swap;
+            unsigned long increment = swap == 1 ? datatypesize : swap;
             for (unsigned long i = 0; i < pageNrElements; i += increment)
                 swapbytes(page + i, increment);
         }
@@ -746,8 +746,8 @@ class Image {
     int readData(FILE* fimg, long int select_img, DataType datatype, unsigned long pad) {
         // #define DEBUG
         #ifdef DEBUG
-            std::cerr << "entering " __func__ << std::endl;
-            std::cerr << " " __func__ " flag= " << dataflag << std::endl;
+        std::cerr << "entering " + __func__ << std::endl;
+        std::cerr << " " + __func__ + " flag= " << dataflag << std::endl;
         #endif
 
         if (dataflag < 1)
@@ -783,22 +783,24 @@ class Image {
 
         if (mmapOn) {
             if (NSIZE(data) > 1) {
-                REPORT_ERROR("Image Class::" __func__ ": mmap with multiple \
-                             images file not compatible. Try selecting a unique image.");
+                REPORT_ERROR(
+                    "Image Class::" + __func__ + ": mmap with multiple \
+                    images file not compatible. Try selecting a unique image."
+                );
             }
 
             fclose(fimg);
 
             //if ( ( mFd = open(filename.c_str(), O_RDWR, S_IREAD | S_IWRITE) ) == -1 )
             if ((mFd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
-                REPORT_ERROR("Image Class::" __func__ ": Error opening the image file.");
+                REPORT_ERROR("Image Class::" + __func__ + ": Error opening the image file.");
 
             char* map;
             mappedSize = pagesize + offset;
 
             if ((map = (char*) mmap(0,mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1 )
-                REPORT_ERROR("Image Class::" __func__ ": mmap of image file failed.");
-            data.data = reinterpret_cast<T*> (map+offset);
+                REPORT_ERROR("Image Class::" + __func__ + ": mmap of image file failed.");
+            data.data = reinterpret_cast<T*> (map + offset);
         } else {
             // Reset select to get the correct offset
             if (select_img < 0) { select_img = 0; }
