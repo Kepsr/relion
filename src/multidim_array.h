@@ -1504,18 +1504,17 @@ class MultidimArray {
         /** Is this logical index vector outside the bounds of this array? */
         bool outside(const Matrix1D<RFLOAT> &r) const {
             int rsize = r.size();
-            if (rsize < 1)
-                REPORT_ERROR(__func__ ": index vector has too few components");
+            if (rsize < 1) REPORT_ERROR(std::string(__func__) + ": index vector has too few components");
 
             switch (rsize) {
                 case 1:
-                    return outside(XX(r));
+                return outside(XX(r));
                 case 2:
-                    return outside(YY(r), XX(r));
+                return outside(YY(r), XX(r));
                 case 3:
-                    return outside(ZZ(r), YY(r), XX(r));
+                return outside(ZZ(r), YY(r), XX(r));
                 default:
-                    REPORT_ERROR(__func__ ": index vector has too many components");
+                REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
             }
         }
 
@@ -1612,7 +1611,7 @@ class MultidimArray {
         bool isCorner(const Matrix1D<RFLOAT>& v) const {
 
             if (v.size() < 2)
-                REPORT_ERROR(__func__ ": index vector has too few components");
+                REPORT_ERROR(std::string(__func__) + ": index vector has too few components");
 
             switch (XSIZE(*this)) {
                 case 2:
@@ -1627,7 +1626,7 @@ class MultidimArray {
                         (ZZ(v) == firstZ() || ZZ(v) == lastZ())
                     );
                 default:
-                    REPORT_ERROR(__func__ ": index vector has too many components");
+                    REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
             }
 
         }
@@ -1829,7 +1828,7 @@ class MultidimArray {
             switch (axis) {
                 case 'Z':
                     if !inZbounds(k, (*this))
-                        REPORT_ERROR(__func__ ": Multidim subscript (k) out of range");
+                        REPORT_ERROR(std::string(__func__) + ": Multidim subscript (k) out of range");
 
                     k -= firstZ();
                     M.resize(1, 1, YSIZE(*this), XSIZE(*this));
@@ -1841,7 +1840,7 @@ class MultidimArray {
                     break;
                 case 'Y':
                     if !inYbounds(k, (*this))
-                        REPORT_ERROR(__func__ ": Multidim subscript (i) out of range");
+                        REPORT_ERROR(std::string(__func__) + ": Multidim subscript (i) out of range");
 
                     k -= firstY();
                     M.resize(ZSIZE(*this), XSIZE(*this));
@@ -1853,7 +1852,7 @@ class MultidimArray {
                     break;
                 case 'X':
                     if !inXbounds(k, (*this))
-                        REPORT_ERROR(__func__ ": Multidim subscript (j) out of range");
+                        REPORT_ERROR(std::string(__func__) + ": Multidim subscript (j) out of range");
 
                     k -= firstX();
                     M.resize(ZSIZE(*this), YSIZE(*this));
@@ -1883,10 +1882,10 @@ class MultidimArray {
                 return;
 
             if (k < firstZ() || k > lastZ())
-                REPORT_ERROR(__func__ ": MultidimArray subscript (k) out of range");
+                REPORT_ERROR(std::string(__func__) + ": MultidimArray subscript (k) out of range");
 
             if (v.ydim != YSIZE(*this) || v.xdim != XSIZE(*this))
-                REPORT_ERROR(__func__ ": MultidimArray dimensions different from the matrix ones");
+                REPORT_ERROR(std::string(__func__) + ": MultidimArray dimensions different from the matrix ones");
 
             k -= firstZ();
 
