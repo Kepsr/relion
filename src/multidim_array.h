@@ -1827,7 +1827,7 @@ class MultidimArray {
             switch (axis) {
 
                 case 'Z':
-                if !inZbounds(k, (*this))
+                if (!inZbounds(k, (*this)))
                     REPORT_ERROR(std::string(__func__) + ": Multidim subscript (k) out of range");
 
                 k -= firstZ();
@@ -1840,7 +1840,7 @@ class MultidimArray {
                 break;
 
                 case 'Y':
-                if !inYbounds(k, (*this))
+                if (!inYbounds(k, (*this)))
                     REPORT_ERROR(std::string(__func__) + ": Multidim subscript (i) out of range");
 
                 k -= firstY();
@@ -1853,7 +1853,7 @@ class MultidimArray {
                 break;
 
                 case 'X':
-                if !inXbounds(k, (*this))
+                if (!inXbounds(k, (*this)))
                     REPORT_ERROR(std::string(__func__) + ": Multidim subscript (j) out of range");
 
                 k -= firstX();
