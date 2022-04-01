@@ -423,13 +423,13 @@ class Image {
 
     // Read/write functions for different file formats
 
-    int readSPIDER(long int img_select)
+    int readSPIDER(long int img_select);
 
-    int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE)
+    int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
 
-    int readMRC(long int img_select, bool isStack=false, const FileName &name="")
+    int readMRC(long int img_select, bool isStack=false, const FileName &name="");
 
-    int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE)
+    int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE);
 
     int readIMAGIC(long int img_select);
 
@@ -438,7 +438,7 @@ class Image {
     int readTIFF(
         TIFF* ftiff, long int img_select, 
         bool readdata=false, bool isStack=false, const FileName &name=""
-    )
+    );
 
     /** Is this file an image?
      *
