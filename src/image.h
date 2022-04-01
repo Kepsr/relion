@@ -957,7 +957,7 @@ class Image {
     }
 
     /* Is there label in the main header */
-    bool mainContainsLabel(EMDLabel label) const {
+    bool mainContainsLabel(EMDL::EMDLabel label) const {
         return MDMainHeader.containsLabel(label);
     }
 
