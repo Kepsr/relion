@@ -289,25 +289,22 @@ extern std::string floatToString(float F, int _width, int _prec);
         for (long int i=0; i<YSIZE(V); i++) \
             for (long int j=0; j<XSIZE(V); j++)
 
-/** Access to a direct element of a matrix.
+
+/** Physical access to a direct element of a matrix.
  * v is the array, i and j define the element v_ij.
  *
- * Be careful because this is physical access, usually matrices follow the C
- * convention of starting index==0 (X and Y). This function should not be used
- * as it goes against the vector library philosophy unless you explicitly want
- * to access directly to any value in the matrix without taking into account its
- * logical position
+ * Usually matrices follow the C convention of starting index = 0 (X and Y).
+ * Be careful.
+ * This function should not be used as it goes against the vector library philosophy
+ * unless you explicitly want to directly access any value in the matrix
+ * without taking into account its logical position.
  *
  * @code
  * DIRECT_A2D_ELEM(m, 0, 0) = 1;
  * val = DIRECT_A2D_ELEM(m, 0, 0);
  * @endcode
  */
-#define DIRECT_A2D_ELEM(v,i,j) ((v).data[(i)*(v).xdim+(j)])
-
-/** Short alias for DIRECT_A2D_ELEM
- */
-#define dAij(M, i, j) DIRECT_A2D_ELEM(M, i, j)
+#define DIRECT_A2D_ELEM(v, i, j) ((v).data[(i) * (v).xdim + (j)])
 
 /** Matrix element: Logical access
  *
@@ -319,26 +316,27 @@ extern std::string floatToString(float F, int _width, int _prec);
 #define A2D_ELEM(v, i, j) \
     DIRECT_A2D_ELEM(v, (i) - STARTINGY(v), (j) - STARTINGX(v))
 
-/** TRUE if both arrays have the same shape
+/// TODO: Remove SAME_SHAPE2D, since it isn't being used.
+/** Do arrays v1 and v2 have the same shape?
  *
- * Two arrays have the same shape if they have the same size and the same
- * starting point. Be aware that this is a macro which simplifies to a boolean.
+ * Two arrays have the same shape 
+ * if they have the same size and the same starting point. 
+ * Be aware that this macro simplifies to a boolean.
  */
-#define SAME_SHAPE2D(v1, v2) \
-    (XSIZE(v1) == XSIZE(v2) && \
-     YSIZE(v1) == YSIZE(v2) && \
-     STARTINGX(v1) == STARTINGX(v2) && \
-     STARTINGY(v1) == STARTINGY(v2))
+#define SAME_SHAPE2D(v1, v2) ( \
+    XSIZE(v1) == XSIZE(v2) && \
+    YSIZE(v1) == YSIZE(v2) && \
+    STARTINGX(v1) == STARTINGX(v2) && \
+    STARTINGY(v1) == STARTINGY(v2) \
+)
 
 /** For all elements in the array
  *
- * This macro is used to generate loops for the matrix in an easy way. It
- * defines internal indices 'i' and 'j' which ranges the matrix using its
- * mathematical definition (ie, logical access).
+ * This macro is used to easily loop through a matrix.
+ * It defines logical indices 'i' and 'j' which range over the matrix.
  *
  * @code
- * FOR_ALL_ELEMENTS_IN_ARRAY2D(m)
- * {
+ * FOR_ALL_ELEMENTS_IN_ARRAY2D(m) {
  *     std::cout << m(i, j) << " ";
  * }
  * @endcode
@@ -349,20 +347,18 @@ extern std::string floatToString(float F, int _width, int _prec);
 
 /** For all elements in the array, accessed physically
  *
- * This macro is used to generate loops for the matrix in an easy way using
- * physical indices. It defines internal indices 'i' and 'j' which ranges the
- * matrix using its physical definition.
+ * This macro is used to easily loop through a matrix using physical indices.
+ * It defines physical indices 'i' and 'j' which range over the matrix.
  *
  * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(m)
- * {
+ * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(m) {
  *     std::cout << DIRECT_A2D_ELEM(m, i, j) << " ";
  * }
  * @endcode
  */
 #define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(m) \
-    for (long int i=0; i<YSIZE(m); i++) \
-        for (long int j=0; j<XSIZE(m); j++)
+    for (long int i = 0; i < YSIZE(m); i++) \
+    for (long int j = 0; j < XSIZE(m); j++)
 
 /** Vector element: Physical access
  *
@@ -1057,7 +1053,9 @@ class MultidimArray {
             }
 
             // Ask for memory
-            size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
+            size_t YXdim   = Ydim *   Xdim;
+            size_t ZYXdim  = Zdim *  YXdim;
+            size_t NZYXdim = Ndim * ZYXdim;
             int new_mFd = 0;
             FileName newMapFile;
 
@@ -1070,7 +1068,7 @@ class MultidimArray {
 
                     if ((new_mFd = open(newMapFile.c_str(),  O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) ) == -1)
                         REPORT_ERROR("MultidimArray::resize: Error creating map file.");
-                    if ((lseek(new_mFd, NZYXdim*sizeof(T)-1, SEEK_SET) == -1) || (::write(new_mFd,"",1) == -1)) {
+                    if ((lseek(new_mFd, NZYXdim * sizeof(T)-1, SEEK_SET) == -1) || (::write(new_mFd, "", 1) == -1)) {
                         close(new_mFd);
                         REPORT_ERROR("MultidimArray::resize: Error 'stretching' the map file.");
                     }
@@ -1078,7 +1076,7 @@ class MultidimArray {
                     if ((new_data = (T*) mmap(0, NZYXdim * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, new_mFd, 0)) == (void*) -1)
                         REPORT_ERROR("MultidimArray::resize: mmap failed.");
                 } else {
-                    new_data = (T*)RELION_ALIGNED_MALLOC(sizeof(T) * NZYXdim);
+                    new_data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * NZYXdim);
                 }
             } catch (std::bad_alloc &) {
                 REPORT_ERROR("Allocate: No space left");
@@ -1175,14 +1173,11 @@ class MultidimArray {
         /** Return the multidimArray N,Z, Y and X dimensions.
          *
          * @code
-         * V.getDimensions(Xdim, Ydim, Zdim, Ndim);
+         * dimensions = V.getDimensions();
          * @endcode
          */
-        void getDimensions(long int& Xdim, long int& Ydim, long int& Zdim, long int &Ndim) const {
-            Xdim = XSIZE(*this);
-            Ydim = YSIZE(*this);
-            Zdim = ZSIZE(*this);
-            Ndim = NSIZE(*this);
+        std::tuple<long int, long int, long int, long int> void getDimensions() const {
+            return std::make_tuple(XSIZE(*this), YSIZE(*this), ZSIZE(*this), NSIZE(*this));
         }
 
         /** Return the total size of the multidimArray
