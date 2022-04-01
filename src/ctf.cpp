@@ -48,6 +48,7 @@
 #include "src/metadata_table.h"
 #include <src/jaz/obs_model.h>
 #include <src/jaz/gravis/t2Matrix.h>
+#include "src/numerical_recipes.h" // For Pythag
 
 using namespace gravis;
 
@@ -55,12 +56,9 @@ using namespace gravis;
 void CTF::readByGroup(
     const MetaDataTable &partMdt, ObservationModel* obs, long int particle
 ) {
+
     opticsGroup = 0;
-
-    if (obs != 0) {
-        opticsGroup = partMdt.getValue(EMDL::IMAGE_OPTICS_GROUP, particle);
-    }
-
+    if (obs != 0) { opticsGroup = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle); }
     opticsGroup--;
 
     readValue(EMDL::CTF_VOLTAGE,       kV,              200,     particle, opticsGroup, partMdt, obs);
@@ -97,75 +95,76 @@ void CTF::readValue(
 void CTF::read(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
 
     try {
-        kV = MD1.getValue(EMDL::CTF_VOLTAGE, objectID);
-    } catch (const char *errmsg) try {
-        kV = MD2.getValue(EMDL::CTF_VOLTAGE, objectID);
+        kV = MD1.getValue<RFLOAT>(EMDL::CTF_VOLTAGE, objectID);
+    } catch (const char *errmsg) { try {
+        kV = MD2.getValue<RFLOAT>(EMDL::CTF_VOLTAGE, objectID);
     } catch (const char *errmsg) {
         kV = 200;
-    }
+    } }
 
     try {
-        DeltafU = MD1.getValue(EMDL::CTF_DEFOCUSU, objectID);
-    } catch (const char *errmsg) try {
-        DeltafU = MD2.getValue(EMDL::CTF_DEFOCUSU, objectID);
-    } catch (const char *errmsg) 
+        DeltafU = MD1.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, objectID);
+    } catch (const char *errmsg) { try {
+        DeltafU = MD2.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, objectID);
+    } catch (const char *errmsg) {
         DeltafU = 0;
+    } }
 
     try {
-        DeltafV = MD1.getValue(EMDL::CTF_DEFOCUSV, objectID);
-    } catch (const char *errmsg) try {
-        DeltafV = MD2.getValue(EMDL::CTF_DEFOCUSV, objectID);
-    } catch (const char *errmsg) 
+        DeltafV = MD1.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, objectID);
+    } catch (const char *errmsg) { try {
+        DeltafV = MD2.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, objectID);
+    } catch (const char *errmsg) {
         DeltafV = DeltafU;
-    }
+    } }
 
     try {
-        azimuthal_angle = MD1.getValue(EMDL::CTF_DEFOCUS_ANGLE, objectID);
-    } catch (const char *errmsg) try {
-        azimuthal_angle = MD2.getValue(EMDL::CTF_DEFOCUS_ANGLE, objectID);
-    } catch (const char *errmsg) 
+        azimuthal_angle = MD1.getValue<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, objectID);
+    } catch (const char *errmsg) { try {
+        azimuthal_angle = MD2.getValue<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, objectID);
+    } catch (const char *errmsg) {
         azimuthal_angle = 0;
-    }
+    } }
 
     try {
-        Cs = MD1.getValue(EMDL::CTF_CS, objectID);
-    } catch (const char *errmsg) try {
-        Cs = MD2.getValue(EMDL::CTF_CS, objectID);
-    } catch (const char *errmsg) 
+        Cs = MD1.getValue<RFLOAT>(EMDL::CTF_CS, objectID);
+    } catch (const char *errmsg) { try {
+        Cs = MD2.getValue<RFLOAT>(EMDL::CTF_CS, objectID);
+    } catch (const char *errmsg) {
         Cs = 0;
-    }
+    } }
 
     try {
-        Bfac = MD1.getValue(EMDL::CTF_BFACTOR, objectID);
-    } catch (const char *errmsg) try {
-        Bfac = MD2.getValue(EMDL::CTF_BFACTOR, objectID);
-    } catch (const char *errmsg) 
+        Bfac = MD1.getValue<RFLOAT>(EMDL::CTF_BFACTOR, objectID);
+    } catch (const char *errmsg) { try {
+        Bfac = MD2.getValue<RFLOAT>(EMDL::CTF_BFACTOR, objectID);
+    } catch (const char *errmsg) {
         Bfac = 0;
-    }
+    } }
 
     try {
-        scale = MD1.getValue(EMDL::CTF_SCALEFACTOR, objectID);
-    } catch (const char *errmsg) try {
-        scale = MD2.getValue(EMDL::CTF_SCALEFACTOR, objectID);
-    } catch (const char *errmsg) 
+        scale = MD1.getValue<RFLOAT>(EMDL::CTF_SCALEFACTOR, objectID);
+    } catch (const char *errmsg) { try {
+        scale = MD2.getValue<RFLOAT>(EMDL::CTF_SCALEFACTOR, objectID);
+    } catch (const char *errmsg) {
         scale = 1;
-    }
+    } }
 
     try {
-        Q0 = MD1.getValue(EMDL::CTF_Q0, objectID);
-    } catch (const char *errmsg) try {
-        Q0 = MD2.getValue(EMDL::CTF_Q0, objectID);
-    } catch (const char *errmsg) 
+        Q0 = MD1.getValue<RFLOAT>(EMDL::CTF_Q0, objectID);
+    } catch (const char *errmsg) { try {
+        Q0 = MD2.getValue<RFLOAT>(EMDL::CTF_Q0, objectID);
+    } catch (const char *errmsg) {
         Q0 = 0;
-    }
+    } }
 
     try {
-        phase_shift = MD1.getValue(EMDL::CTF_PHASESHIFT, objectID);
-    } catch (const char *errmsg) try {
-        phase_shift = MD2.getValue(EMDL::CTF_PHASESHIFT, objectID);
-    } catch (const char *errmsg) 
+        phase_shift = MD1.getValue<RFLOAT>(EMDL::CTF_PHASESHIFT, objectID);
+    } catch (const char *errmsg) { try {
+        phase_shift = MD2.getValue<RFLOAT>(EMDL::CTF_PHASESHIFT, objectID);
+    } catch (const char *errmsg) {
         phase_shift = 0;
-    }
+    } }
 
     initialise();
 }
@@ -203,9 +202,9 @@ void CTF::setValuesByGroup(
     scale           = _scale;
     phase_shift     = _phase_shift;
 
-    kV = obs->opticsMdt.getValue(EMDL::CTF_VOLTAGE, opticsGroup);
-    Cs = obs->opticsMdt.getValue(EMDL::CTF_CS,      opticsGroup);
-    Q0 = obs->opticsMdt.getValue(EMDL::CTF_Q0,      opticsGroup);
+    kV = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_VOLTAGE, opticsGroup);
+    Cs = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_CS,      opticsGroup);
+    Q0 = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_Q0,      opticsGroup);
 
     initialise();
 
@@ -405,7 +404,7 @@ void CTF::getFftwImage(
                 // Don't take the last column from the half-transform
                 for (int j = 0; j < XSIZE(result) - 1; j++) {
                     // Make just one lookup on Fctf.data
-                    mctfipj = A2D_ELEM(Mctf, ip, j)
+                    mctfipj = A2D_ELEM(Mctf, ip, j);
                     if (ctf_premultiplied) {
                         // Constrain result[i, j] to the interval [0.0, 1.0]
                         if (mctfipj < 0.0) {
@@ -504,9 +503,9 @@ void CTF::getCTFPImage(
         if (gammaOffset.data.xdim < result.xdim || gammaOffset.data.ydim < result.ydim) {
             REPORT_ERROR_STR(
                 "CTF::getFftwImage: size requested for output image "
-                <<< "is greater than size of original image: "
-                << result.xdim << "×" << result.ydim << " was requested, but only "
-                << gammaOffset.data.xdim << "×" << gammaOffset.data.ydim << " is available\n"
+                << "is greater than size of original image: "
+                << result.xdim << "×" << result.ydim << " was requested, "
+                << "but only " << gammaOffset.data.xdim << "×" << gammaOffset.data.ydim << " is available\n"
             );
         }
 
@@ -636,7 +635,7 @@ void CTF::applyWeightEwaldSphereCurvature_new(
     const double as = angpix * s;
     const double Dpx = particle_diameter / angpix;
 
-    for (int yi = 0; yi < s;  yi++)
+    for (int yi = 0; yi <      s;  yi++)
     for (int xi = 0; xi < half_s; xi++) {
         const double x = xi / as;
         const double y = yi < half_s ? yi / as : (yi - s) / as;

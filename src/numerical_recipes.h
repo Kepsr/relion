@@ -92,6 +92,8 @@ void powell(RFLOAT *p, RFLOAT *xi, int n, RFLOAT ftol, int &iter,
 
 // Matrix operations ----------------------------------------------------------
 
+RFLOAT Pythag(RFLOAT a, RFLOAT b);
+
 // LU decomposition
 /* Chapter 2 Section 3: LU DECOMPOSITION */
 #define EPSILON 1.0e-20;
