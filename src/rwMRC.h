@@ -32,7 +32,7 @@
 #include "config.h"
 #endif
 
-#include "src/image.h"
+// #include "src/image.h"
 #define MRCSIZE 1024 // Minimum size of the MRC header (when nsymbt = 0)
 
 ///@defgroup MRC MRC File format
@@ -140,8 +140,7 @@ int systype() {
 /** MRC Reader
   * @ingroup MRC
 */
-template<typename T>
-int Image<T>::readMRC(long int img_select, bool isStack=false, const FileName &name="") {
+int readMRC(long int img_select, bool isStack=false, const FileName &name="") {
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG
@@ -267,8 +266,7 @@ int Image<T>::readMRC(long int img_select, bool isStack=false, const FileName &n
 /** MRC Writer
   * @ingroup MRC
 */
-template<typename T>
-int Image<T>::writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) {
+int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) {
     MRChead *header = (MRChead *) askMemory(sizeof(MRChead));
 
     // Map the parameters
@@ -359,34 +357,34 @@ int Image<T>::writeMRC(long int img_select, bool isStack=false, int mode=WRITE_O
 
     if (!MDMainHeader.isEmpty()) {
 
-        try { header->amin  = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN);    } catch (const char *errmsg) { header->amin  = (float) data.min();           }
-        try { header->amax  = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);    } catch (const char *errmsg) { header->amax  = (float) data.max();           }
-        try { header->amean = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG);    } catch (const char *errmsg) { header->amean = (float) data.average();       }
-        try { header->arms  = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV); } catch (const char *errmsg) { header->arms  = (float) data.computeStddev(); }
+        try { header->amin  = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN);    } catch (const char *errmsg) { header->amin  = (float) data.min();           }
+        try { header->amax  = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX);    } catch (const char *errmsg) { header->amax  = (float) data.max();           }
+        try { header->amean = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG);    } catch (const char *errmsg) { header->amean = (float) data.average();       }
+        try { header->arms  = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV); } catch (const char *errmsg) { header->arms  = (float) data.computeStddev(); }
 
         // int nxStart, nyStart, nzStart;
         float xOrigin, yOrigin, zOrigin, a, b, c;
 
-        // aux = MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_X);
+        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_X);
         // if (std::isfinite(nxStart = aux - 0.5)) { header->nxStart = nxStart; }
 
-        aux2 = (float) MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X)
+        aux2 = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_X);
         // header is init to zero
         if (std::isfinite(xOrigin = header->nxStart * aux2)) { header->xOrigin = xOrigin; }
         if (std::isfinite(a       = header->nx      * aux2)) { header->a       = a; }
 
-        // aux = MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_Y, aux);
+        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Y, aux);
         // if (std::isfinite(nyStart = aux - 0.5)) { header->nyStart = nyStart; }
 
-        aux2 = MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
+        aux2 = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Y);
         // header is init to zero
         if (std::isfinite(yOrigin = header->nyStart * aux2)) { header->yOrigin = yOrigin; }
         if (std::isfinite(b       = header->ny      * aux2)) { header->b       = b; }
 
-        // aux = MDMainHeader.getValue(EMDL::ORIENT_ORIGIN_Z);
+        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Z);
         // if (std::isfinite(nzStart = aux - 0.5)) { header->nzStart = nzStart; }
 
-        aux2 = MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z);
+        aux2 = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Z);
         // header is init to zero
         if (std::isfinite(zOrigin = header->nzStart * aux2)) { header->zOrigin = zOrigin; }
         if (std::isfinite(c       = header->nz      * aux2)) { header->c       = c; }

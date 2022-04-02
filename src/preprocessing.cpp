@@ -148,17 +148,17 @@ void Preprocessing::initialise() {
         MDmics.goToObject(0);
         FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
-        std::tuple<int, int, int, long int> dimensions = Imic.getDimensions();
-        int xdim = std::get<0>(dimensions);
-        int ydim = std::get<1>(dimensions);
-        int zdim = std::get<2>(dimensions);
-        long int ndim = std::get<3>(dimensions);
-        dimensionality = zdim > 1 ? 3 : 2;
-
-        if ((do_phase_flip || do_premultiply_ctf) && !MDmics.containsLabel(EMDL::CTF_DEFOCUSU))
-            REPORT_ERROR("Preprocessing::initialise ERROR: No CTF information found in the input micrograph STAR-file");
+        Dimensions dimensions = Imic.getDimensions();
+             int xdim = dimensions.x;
+             int ydim = dimensions.y;
+             int zdim = dimensions.z;
+        long int ndim = dimensions.n;
+        dimensionality = 2 + (zdim > 1);
 
         mic_star_has_ctf = MDmics.containsLabel(EMDL::CTF_DEFOCUSU);
+
+        if ((do_phase_flip || do_premultiply_ctf) && !mic_star_has_ctf)
+            REPORT_ERROR("Preprocessing::initialise ERROR: No CTF information found in the input micrograph STAR-file");
 
         if (fn_data != "") {
             if (verb > 0) {
@@ -524,15 +524,15 @@ void Preprocessing::readHelicalCoordinates(FileName fn_mic, FileName fn_coord, M
     Image<RFLOAT> Imic;
     Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
 
-    bool is_3D = false;
-    std::tuple<int, int, int, long int> dimensions = Imic.getDimensions();
-    int xdim = std::get<0>(dimensions);
-    int ydim = std::get<1>(dimensions);
-    int zdim = std::get<2>(dimensions);
-    long int ndim = std::get<3>(dimensions);
-    if (ndim != 1) REPORT_ERROR("Preprocessing::readCoordinates ERROR: Extraction of helical segments - " + (std::string)(fn_mic) + " is a stack, not a 2D micrograph or 3D tomogram!");
-    if (zdim > 1) is_3D = true;
+    Dimensions dimensions = Imic.getDimensions();
+         int xdim = dimensions.x;
+         int ydim = dimensions.y;
+         int zdim = dimensions.z;
+    long int ndim = dimensions.n;
 
+    if (ndim != 1) REPORT_ERROR("Preprocessing::readCoordinates ERROR: Extraction of helical segments - " + (std::string)(fn_mic) + " is a stack, not a 2D micrograph or 3D tomogram!");
+
+    bool is_3D = zdim > 1;
     bool is_star = fn_coord.getExtension() == "star";
     bool is_box = fn_coord.getExtension() == "box";
     bool is_coords = fn_coord.getExtension() == "coords";
@@ -988,12 +988,12 @@ void Preprocessing::performPerImageOperations(
     });
 
     // Calculate mean, stddev, min and max
-    std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple;
-    TICTOC(TIMING_COMP_STATS, { statstuple = Ipart().computeStats(); });
-    RFLOAT avg    = std::get<0>(statstuple);
-    RFLOAT stddev = std::get<1>(statstuple);
-    RFLOAT minval = std::get<2>(statstuple);
-    RFLOAT maxval = std::get<3>(statstuple);
+    Stats<RFLOAT> stats;
+    TICTOC(TIMING_COMP_STATS, { stats = Ipart().computeStats(); });
+    RFLOAT avg    = stats.avg;
+    RFLOAT stddev = stats.stddev;
+    RFLOAT minval = stats.min;
+    RFLOAT maxval = stats.max;
 
     if (Ipart().getDim() == 3) {
         Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    minval);

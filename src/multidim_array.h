@@ -56,6 +56,15 @@
 #include "src/matrix2d.h"
 #include "src/complex.h"
 #include <limits>
+using std::pair;
+
+template<typename T>
+struct Stats {
+    RFLOAT avg;
+    RFLOAT stddev;
+    T min;
+    T max;
+};
 
 // Intel MKL provides an FFTW-like interface, so this is enough.
 #include <fftw3.h>
@@ -425,6 +434,13 @@ extern std::string floatToString(float F, int _width, int _prec);
 #define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) for (long int i = 0; i < v.xdim; i++)
 //@}
 
+struct Dimensions {
+    long int x;
+    long int y;
+    long int z;
+    long int n;
+};
+
 // Forward declarations ====================================================
 template<typename T>
 class MultidimArray;
@@ -468,22 +484,17 @@ class MultidimArray {
         bool destroyData;
 
         /// TODO: Replace xdim, ydim, zdim, ydim with a std::tuple<long int, long int, long int, long int>
-
-        std::tuple<long int, long int, long int, long int> dimensions;
+        // tuple<long int, long int, long int, long int> dimensions;
 
         /// TODO: Manage access to xdim, ydim, zdim, ndim.
 
         // Number of images
         long int ndim;
 
-        // Number of elements in Z
-        long int zdim;
-
-        // Number of elements in Y
-        long int ydim;
-
-        // Number of elements in X
+        // Number of elements in X/Y/Z
         long int xdim;
+        long int ydim;
+        long int zdim;
 
         // Number of elements in YX
         long int yxdim() const { return ydim * xdim; }
@@ -494,14 +505,10 @@ class MultidimArray {
         // Number of elements in NZYX
         long int nzyxdim() const { return ndim * zyxdim(); }
 
-        // Z init
-        long int zinit;
-
-        // Y init
-        long int yinit;
-
-        // X init
+        // X/YZ init
         long int xinit;
+        long int yinit;
+        long int zinit;
 
         // Alloc memory or map to a file
         bool mmapOn;
@@ -1175,14 +1182,19 @@ class MultidimArray {
             zinit = v.zinit;
         }
 
-        /** Return the multidimArray N,Z, Y and X dimensions.
+        /** Return a struct containing the N, Z, Y, and X dimensions.
          *
          * @code
          * dimensions = V.getDimensions();
          * @endcode
          */
-        std::tuple<long int, long int, long int, long int> getDimensions() const {
-            return std::make_tuple(XSIZE(*this), YSIZE(*this), ZSIZE(*this), NSIZE(*this));
+        Dimensions getDimensions() const {
+            Dimensions dims;
+            dims.x = XSIZE(*this);
+            dims.y = YSIZE(*this);
+            dims.z = ZSIZE(*this);
+            dims.n = NSIZE(*this);
+            return dims;
         }
 
         /** Return the total size of the multidimArray
@@ -2158,11 +2170,11 @@ class MultidimArray {
          * @endcode
          */
         void printStats(std::ostream& out = std::cout) const {
-            std::tuple<RFLOAT, RFLOAT, T, T> statstuple = computeStats();
-            RFLOAT avgval = std::get<0>(statstuple);
-            RFLOAT devval = std::get<1>(statstuple);
-            T minval = std::get<2>(statstuple);
-            T maxval = std::get<3>(statstuple);
+            Stats<T> stats = computeStats();
+            RFLOAT avgval = stats.avg;
+            RFLOAT devval = stats.stddev;
+            T      minval = stats.min;
+            T      maxval = stats.max;
 
             out.setf(std::ios::showpoint);
             int old_prec = out.precision(7);
@@ -2249,9 +2261,9 @@ class MultidimArray {
          *
          * Call to the 4D function
          */
-        T minIndex(long int& kmin, long int& imin, long int& jmin) const {
+        T minIndex(long int &kmin, long int &imin, long int &jmin) const {
             long int zeroInt = 0;
-            return minIndex(0, kmin, imin, jmin);
+            return minIndex(zeroInt, kmin, imin, jmin);
         }
 
         /** 2D Indices for the minimum element.
@@ -2454,7 +2466,7 @@ class MultidimArray {
          * A single pass through the entire array makes this faster 
          * than separately computing average, standard deviation, minimum, and maximum.
          */
-        std::tuple<RFLOAT, RFLOAT, T, T> computeStats() const {
+        Stats<T> computeStats() const {
 
             if (NZYXSIZE(*this) <= 0)
                 throw "Statistics cannot be computed for a dimensionless array!";
@@ -2496,7 +2508,12 @@ class MultidimArray {
                 stddev = 0;
             }
 
-            return std::make_tuple(avg, stddev, minval, maxval);
+            Stats<T> stats;
+            stats.avg = avg;
+            stats.stddev = stddev;
+            stats.min = minval;
+            stats.max = maxval;
+            return stats;
         }
 
         /** Median
@@ -2605,7 +2622,7 @@ class MultidimArray {
         }
 
         // For use in rangeAdjust
-        std::pair<RFLOAT, RFLOAT> maskminmax(MultidimArray<int> &mask) {
+        pair<RFLOAT, RFLOAT> maskminmax(MultidimArray<int> &mask) {
             RFLOAT min0, max0;
             int* maskptr = mask.data;
 
@@ -2687,11 +2704,11 @@ class MultidimArray {
                 return;
 
             // Surely we just need minmax
-            std::tuple<RFLOAT, RFLOAT, T, T> statstuple = computeStats();
-            RFLOAT avg0 = std::get<0>(statstuple);
-            RFLOAT stddev0 = std::get<1>(statstuple);
-            T minval = std::get<2>(statstuple);
-            T maxval = std::get<3>(statstuple);
+            Stats<T> stats = computeStats();
+            RFLOAT avg0    = stats.avg;
+            RFLOAT stddev0 = stats.stddev;
+            T minval       = stats.min;
+            T maxval       = stats.max;
 
             RFLOAT a, b;
             if (stddev0 == 0) {
@@ -3437,7 +3454,7 @@ class MultidimArray {
         void sorted_index(MultidimArray<long> &idx) const {
             checkDimension(1);
             // Set up a vector of pairs
-            std::vector<std::pair<T, long int>> vp;
+            std::vector<std::pair<T, long int> > vp;
             vp.reserve(XSIZE(*this));
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
                 vp.push_back(std::make_pair(DIRECT_MULTIDIM_ELEM(*this, n), n));
@@ -4134,7 +4151,7 @@ class MultidimArray {
          *
          * This function is not ported to Python.
          */
-        friend std::istream& operator>>(std::istream& in, MultidimArray<T>& v) {
+        friend std::istream& operator >> (std::istream& in, MultidimArray<T>& v) {
             T* ptr;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr)
@@ -4198,14 +4215,14 @@ void forcePositive(MultidimArray<RFLOAT> &V);
 
 /** MultidimArray equality.*/
 template<typename T>
-bool operator==(const MultidimArray<T>& op1, const MultidimArray<T>& op2) {
+bool operator == (const MultidimArray<T>& op1, const MultidimArray<T>& op2) {
     return op1.equal(op2);
 }
 
 /** MultidimArray inequality.*/
 template<typename T>
-bool operator!=(const MultidimArray<T>& op1, const MultidimArray<T>& op2) {
-    return !(op1==op2);
+bool operator != (const MultidimArray<T>& op1, const MultidimArray<T>& op2) {
+    return !(op1 == op2);
 }
 
 /** Reduce both volumes to a common size.
@@ -4246,7 +4263,7 @@ void cutToCommonSize(MultidimArray<T>& V1, MultidimArray<T>& V2) {
  * This function is not ported to Python.
  */
 template <typename T>
-std::ostream& operator<< (std::ostream& ostrm, const MultidimArray<T>& v) {
+std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T>& v) {
     if (v.xdim == 0) {
         ostrm << "NULL Array\n";
     } else {
@@ -4288,25 +4305,24 @@ std::ostream& operator<< (std::ostream& ostrm, const MultidimArray<T>& v) {
 }
 
 template <typename T>
-bool inXbounds (long int i, const MultidimArray<T> &arr) {
+static bool inXbounds (long int i, const MultidimArray<T> &arr) {
     return arr.firstX() <= i && i <= arr.lastX();
 }
 
 template <typename T>
-bool inYbounds (long int i, const MultidimArray<T> &arr) {
+static bool inYbounds (long int i, const MultidimArray<T> &arr) {
     return arr.firstY() <= i && i <= arr.lastY();
 }
 
 template <typename T>
-bool inZbounds (long int i, const MultidimArray<T> &arr) {
+static bool inZbounds (long int i, const MultidimArray<T> &arr) {
     return arr.firstZ() <= i && i <= arr.lastZ();
 }
 
-
 //@}
 
-// Specializations cases for complex numbers
+// Special cases for complex numbers
 template<>
-std::ostream& operator<<(std::ostream& ostrm, const MultidimArray<Complex>& v);
+std::ostream& operator << (std::ostream& ostrm, const MultidimArray<Complex>& v);
 //@}
 #endif

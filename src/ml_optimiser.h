@@ -24,8 +24,8 @@
 #include <pthread.h>
 
 #ifdef ALTCPU
-	#include <tbb/enumerable_thread_specific.h>
-	#include <complex>
+#include <tbb/enumerable_thread_specific.h>
+#include <complex>
 #endif
 
 #include <string>
@@ -91,13 +91,11 @@
 #define MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES 1
 
 // for profiling
-//#define TIMING
+// #define TIMING
 
-class MlOptimiser;
+class MlOptimiser {
 
-class MlOptimiser
-{
-public:
+	public:
 
 	// For GPU-maps
 	std::vector<int> cudaDevices;
@@ -105,7 +103,7 @@ public:
 	std::vector<void*> cudaOptimisers;
 	std::vector<void*> accDataBundles;
 
-#ifdef ALTCPU
+	#ifdef ALTCPU
 	std::vector<void*> cpuOptimisers;
 
 	// Container for TBB thread-local data
@@ -114,8 +112,7 @@ public:
 	CpuOptimiserType   tbbCpuOptimiser;
 
 	std::complex<XFLOAT> **mdlClassComplex __attribute__((aligned(64)));
-#endif
-
+	#endif
 
 	// I/O Parser
 	IOParser parser;
@@ -635,7 +632,7 @@ public:
 	// Trust box size and angpix for the input reference
 	bool do_trust_ref_size;
 
-#ifdef TIMING
+	#ifdef TIMING
 	Timer timer;
 	int TIMING_DIFF_PROJ, TIMING_DIFF_SHIFT, TIMING_DIFF_DIFF2;
 	int TIMING_WSUM_PROJ, TIMING_WSUM_BACKPROJ, TIMING_WSUM_DIFF2, TIMING_WSUM_SUMSHIFT;
@@ -655,9 +652,9 @@ public:
 	int ESS_1, ESS_2, ESS_3, ESS_4;
 	int EINS_1, EINS_2, EINS_3, EINS_4, EINS_5,EINS_6, EINS_7, EINS_8, EINS_9;
 	int EINS_10, EINS_11;
-#endif
+	#endif
 
-public:
+	public:
 
 	MlOptimiser():
 		do_zero_mask(0),

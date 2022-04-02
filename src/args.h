@@ -219,7 +219,7 @@ class IOParser {
  * and threads over the available/specified GPUs.
  */
 void untangleDeviceIDs(
-    std::string &tangled, std::vector<std::vector<std::string>> &untangled
+    std::string &tangled, std::vector<std::vector<std::string> > &untangled
 );
 
 #endif

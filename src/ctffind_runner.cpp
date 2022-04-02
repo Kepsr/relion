@@ -577,11 +577,11 @@ void CtffindRunner::executeCtffind3(long int imic) {
             Xmipp::last(ctf_win), Xmipp::last(ctf_win)
         );
         // Calculate mean, stddev, min and max
-        std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = I().computeStats();
-        RFLOAT avg = std::get<0>(statstuple);
-        RFLOAT stddev = std::get<1>(statstuple);
-        RFLOAT minval = std::get<2>(statstuple);
-        RFLOAT maxval = std::get<3>(statstuple);
+        Stats<RFLOAT> stats = I().computeStats();
+        RFLOAT avg    = stats.avg;
+        RFLOAT stddev = stats.stddev;
+        RFLOAT minval = stats.min;
+        RFLOAT maxval = stats.max;
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, minval);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, maxval);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, avg);
@@ -661,11 +661,11 @@ void CtffindRunner::executeCtffind4(long int imic) {
         I().setXmippOrigin();
         I().window(Xmipp::init(ctf_win), Xmipp::init(ctf_win), Xmipp::last(ctf_win), Xmipp::last(ctf_win));
         // Calculate mean, stddev, min and max
-        std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = I().computeStats();
-        RFLOAT avg = std::get<0>(statstuple);
-        RFLOAT stddev = std::get<1>(statstuple);
-        RFLOAT minval = std::get<2>(statstuple);
-        RFLOAT maxval = std::get<3>(statstuple);
+        Stats<RFLOAT> stats = I().computeStats();
+        RFLOAT avg    = stats.avg;
+        RFLOAT stddev = stats.stddev;
+        RFLOAT minval = stats.min;
+        RFLOAT maxval = stats.max;
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, minval);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, maxval);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, avg);

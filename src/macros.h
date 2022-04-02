@@ -391,12 +391,12 @@ extern const char *g_RELION_VERSION;
 namespace Xmipp {
 
     // The first index of an Xmipp volume/image/array of size 'size'.
-    long int init(int size) {
+    inline long int init(int size) {
         return -(long int) ((float) size / 2.0);
     }
 
     // The last index of an Xmipp volume/image/array of size 'size'.
-    long int last(int size) {
+    inline long int last(int size) {
         return size + init(size) - 1;
     }
 

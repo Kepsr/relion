@@ -1772,11 +1772,11 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
         REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution XSIZE(pdf_direction) != rot_angles.size()!");
     }
 
-    std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = pdf_direction.computeStats();
-    RFLOAT pdfmean = std::get<0>(statstuple);
-    RFLOAT pdfsigma = std::get<1>(statstuple);
-    RFLOAT pdfmin = std::get<2>(statstuple);
-    RFLOAT pdfmax = std::get<3>(statstuple);
+    Stats<RFLOAT> stats = pdf_direction.computeStats();
+    RFLOAT pdfmean  = stats.avg;
+    RFLOAT pdfsigma = stats.stddev;
+    RFLOAT pdfmin   = stats.min;
+    RFLOAT pdfmax   = stats.max;
 
     std::ofstream fh_bild;
     fh_bild.open(fn_bild.c_str(), std::ios::out);

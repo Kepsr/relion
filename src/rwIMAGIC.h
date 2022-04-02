@@ -29,7 +29,7 @@
 #define RWIMAGIC_H_
 
 #include "src/metadata_label.h"
-#include "src/image.h"
+// #include "src/image.h"
 
 #define IMAGICSIZE 1024 // Size of the IMAGIC header for each image
 
@@ -107,8 +107,7 @@ struct IMAGIChead {
   * @ingroup Imagic
 */
 
-template<typename T>
-int Image<T>::readIMAGIC(long int img_select) {
+int readIMAGIC(long int img_select) {
     #ifdef DEBUG
     printf("DEBUG readIMAGIC: Reading Imagic file\n");
     #endif
@@ -206,8 +205,7 @@ int Image<T>::readIMAGIC(long int img_select) {
 /** Imagic Writer
   * @ingroup Imagic
 */
-template <typename T>
-void Image<T>::writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE) {
+void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE) {
     //    if ( p->transform != NoTransform )
     //        img_convert_fourier(p, Centered);
 

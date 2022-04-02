@@ -577,15 +577,15 @@ void HelixAligner::getHelicesFromMics() {
                         }
 
                         // Ad-hoc image normalisation
-                        std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Idown.computeStats();
-                        RFLOAT avg = std::get<0>(statstuple);
-                        RFLOAT stddev = std::get<1>(statstuple);
-                        RFLOAT min = std::get<2>(statstuple);
-                        RFLOAT max = std::get<3>(statstuple);
+                        Stats<RFLOAT> stats = Idown.computeStats();
+                        RFLOAT avg    = stats.avg;
+                        RFLOAT stddev = stats.stddev;
+                        RFLOAT min    = stats.min;
+                        RFLOAT max    = stats.max;
                         Idown -= avg;
                         Idown /= -stddev; // Invert contrast
 
-                        Xrects[Xrects.size()-1].push_back(Idown);
+                        Xrects[Xrects.size() - 1].push_back(Idown);
                     }
                 }
 

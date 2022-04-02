@@ -371,11 +371,11 @@ void getImageContrast(
     bool redo_minmax = sigma_contrast > 0.0 || minval != maxval;
 
     if (sigma_contrast > 0.0 || minval == maxval) {
-        std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = image.computeStats();
-        RFLOAT avg = std::get<0>(statstuple);
-        RFLOAT stddev = std::get<1>(statstuple);
-        minval = std::get<2>(statstuple);
-        maxval = std::get<3>(statstuple);
+        Stats<RFLOAT> stats = image.computeStats();
+        RFLOAT avg    = stats.avg;
+        RFLOAT stddev = stats.stddev;
+        minval        = stats.min;
+        maxval        = stats.max;
 
         if (sigma_contrast > 0.0) {
             minval = avg - sigma_contrast * stddev;

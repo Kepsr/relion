@@ -2309,7 +2309,7 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
         // Calculate power spectrum of the average image
         MultidimArray<RFLOAT> spect;
         getSpectrum(Mavg, spect, POWER_SPECTRUM);
-        spect /= 2.; // because of 2-dimensionality of the complex plane
+        spect /= 2.0; // because of 2-dimensionality of the complex plane
         spect.resize(mymodel.sigma2_noise[0]);
 
         // Set noise spectra, once for each group
@@ -2324,8 +2324,8 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
 
                 // Convert any negative sigma2_noise values to nearby positive value
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(spect) {
-                    auto curr = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n);
-                    auto prev = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n - 1);
+                    RFLOAT curr = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n);
+                    RFLOAT prev = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n - 1);
                     if (curr < 0.0) {
                         if (n - 1 >= 0 && prev > 0.0) {
                             // Use the previous value (if positive)
@@ -2337,7 +2337,7 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
                                     std::cerr << " igroup= " << igroup << " n= " << n << " mymodel.sigma2_noise[igroup]= " << mymodel.sigma2_noise[igroup] << std::endl;
                                     REPORT_ERROR("BUG! cannot find positive values in sigma2_noise spectrum");
                                 }
-                                auto next = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], nn);
+                                RFLOAT next = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], nn);
                                 if (next > 0.0) {
                                     curr = next;
                                     break;

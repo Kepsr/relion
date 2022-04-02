@@ -28,9 +28,9 @@
 #define SEMKEY 826976737978L /* key value for semget() */
 #define PERMS 0666
 #endif
-//#define DEBUG
+// #define DEBUG
 
-//#define PROJ_TIMING
+// #define PROJ_TIMING
 #ifdef PROJ_TIMING
     Timer proj_timer;
     int TIMING_TOP = proj_timer.setNew("PROJECTOR - computeFourierTransformMap");
@@ -68,23 +68,27 @@ void Projector::initialiseData(int current_size) {
     pad_size = 2 * (ROUND(padding_factor * r_max) + 1) + 1;
 
     // Short side of data array
-    switch (ref_dim)
-    {
-    case 2:
+    switch (ref_dim) {
+
+        case 2:
         data.resize(pad_size, pad_size / 2 + 1);
         break;
-    case 3:
+
+        case 3:
         data.resize(pad_size, pad_size, pad_size / 2 + 1);
         break;
-    default:
+
+        default:
         REPORT_ERROR("Projector::resizeData%%ERROR: Dimension of the data array should be 2 or 3");
+
     }
 
     // Set origin in the y.z-center, but on the left side for x.
     data.setXmippOrigin();
-    data.xinit=0;
+    data.xinit = 0;
 
 }
+
 void Projector::initZeros(int current_size) {
     initialiseData(current_size);
     data.initZeros();
@@ -93,14 +97,17 @@ void Projector::initZeros(int current_size) {
 long int Projector::getSize() {
     // Short side of data array
     switch (ref_dim) {
+
         case 2:
         return pad_size * (pad_size / 2 + 1);
+
         case 3:
         return pad_size * pad_size * (pad_size / 2 + 1);
+
         default:
         REPORT_ERROR("Projector::resizeData%%ERROR: Dimension of the data array should be 2 or 3");
-    }
 
+    }
 }
 
 
@@ -132,11 +139,11 @@ void Projector::computeFourierTransformMap(
     size_t mem_req, ws_sz;
     int Faux_sz;
     #endif
-    TICTOC(TIMING_TOP, ({
     RFLOAT normfft;
     int padoridim;
     int n[3];
     bool do_fourier_mask = fourier_mask != NULL;
+    TICTOC(TIMING_TOP, ({
 
     MultidimArray<Complex> Faux;
     MultidimArray<RFLOAT> Mpad;
@@ -231,7 +238,7 @@ void Projector::computeFourierTransformMap(
     #endif
     }));
 
-    TICTOC(TIMING_GRID, {
+    TICTOC(TIMING_GRID, ({
     // First do a gridding pre-correction on the real-space map:
     // Divide by the inverse Fourier transform of the interpolator in Fourier-space
     // 10feb11: at least in 2D case, this seems to be the wrong thing to do!!!
@@ -243,7 +250,7 @@ void Projector::computeFourierTransformMap(
             if (do_gpu) {
                 vol_in.setXmippOrigin();
                 run_griddingCorrect(
-                    ~dvol, interpolator, (RFLOAT)(ori_size * padding_factor), r_min_nn,
+                    ~dvol, interpolator, (RFLOAT) (ori_size * padding_factor), r_min_nn,
                     XSIZE(vol_in), YSIZE(vol_in), ZSIZE(vol_in)
                 );
             } else
@@ -253,9 +260,9 @@ void Projector::computeFourierTransformMap(
             vol_in.setXmippOrigin();
         }
     }
-    });
+    }));
 
-    TICTOC(TIMING_PAD, {
+    TICTOC(TIMING_PAD, ({
     // Pad translated map with zeros
     vol_in.setXmippOrigin();
     Mpad.setXmippOrigin();
@@ -265,8 +272,8 @@ void Projector::computeFourierTransformMap(
             dMpad.accAlloc();
             run_padTranslatedMap(
                 ~dvol, ~dMpad,
-                STARTINGX(vol_in),FINISHINGX(vol_in),STARTINGY(vol_in),FINISHINGY(vol_in),STARTINGZ(vol_in),FINISHINGZ(vol_in),   //Input dimensions
-                STARTINGX(Mpad),  FINISHINGX(Mpad),  STARTINGY(Mpad),  FINISHINGY(Mpad),  STARTINGZ(Mpad),  FINISHINGZ(Mpad)      //Output dimensions
+                STARTINGX(vol_in), FINISHINGX(vol_in), STARTINGY(vol_in), FINISHINGY(vol_in), STARTINGZ(vol_in), FINISHINGZ(vol_in),   //Input dimensions
+                STARTINGX(Mpad),   FINISHINGX(Mpad),   STARTINGY(Mpad),   FINISHINGY(Mpad),   STARTINGZ(Mpad),   FINISHINGZ(Mpad)      //Output dimensions
             );
             dvol.freeDevice();
         }
@@ -275,9 +282,9 @@ void Projector::computeFourierTransformMap(
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) // This will also work for 2D
             A3D_ELEM(Mpad, k, i, j) = A3D_ELEM(vol_in, k, i, j);
     }
-    });
+    }));
 
-    TICTOC(TIMING_TRANS, {
+    TICTOC(TIMING_TRANS, ({
     // Calculate the oversampled Fourier transform
     if (do_heavy)
         #ifdef CUDA
@@ -319,21 +326,21 @@ void Projector::computeFourierTransformMap(
         } else
         #endif
         transformer.FourierTransform(Mpad, Faux, false);
-    });
+    }));
 
-    TICTOC(TIMING_CENTER, {
+    TICTOC(TIMING_CENTER, ({
     // Translate padded map to put origin of FT in the center
     if (do_heavy)
         #ifdef CUDA
-        if (do_gpu) {
-            run_CenterFFTbySign(~dFaux, XSIZE(Faux), YSIZE(Faux), ZSIZE(Faux));
-        } else
+        if (do_gpu)
+        run_CenterFFTbySign(~dFaux, XSIZE(Faux), YSIZE(Faux), ZSIZE(Faux));
+        else
         #endif
         CenterFFTbySign(Faux);
-    });
+    }));
 
     MultidimArray<RFLOAT> counter;
-    TICTOC(TIMING_INIT2, {
+    TICTOC(TIMING_INIT2, ({
     // Free memory: Mpad no longer needed
     #ifdef CUDA
     dMpad.freeIfSet();
@@ -374,9 +381,9 @@ void Projector::computeFourierTransformMap(
     power_spectrum.initZeros(ori_size / 2 + 1);
     counter = power_spectrum;
     counter.initZeros();
-    });
+    }));
 
-    TICTOC(TIMING_FAUX, {
+    TICTOC(TIMING_FAUX, ({
     int max_r2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
     int min_r2 = -1;
     if (min_ires > 0) {
@@ -384,7 +391,7 @@ void Projector::computeFourierTransformMap(
     }
 
     if (do_heavy) {
-        RFLOAT weight = 1.;
+        RFLOAT weight = 1.0;
         #ifdef CUDA
         if (do_gpu) {
             run_calcPowerSpectrum(
@@ -417,7 +424,7 @@ void Projector::computeFourierTransformMap(
                 // Calculate power spectrum
                 int ires = ROUND(sqrt((RFLOAT) r2) / padding_factor);
                 // Factor two because of two-dimensionality of the complex plane
-                DIRECT_A1D_ELEM(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.;
+                DIRECT_A1D_ELEM(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.0;
                 DIRECT_A1D_ELEM(counter, ires) += weight;
 
                 // Apply high pass filter of the reference only after calculating the power spectrum
@@ -425,7 +432,7 @@ void Projector::computeFourierTransformMap(
             }
         }
     }
-    });
+    }));
 
     /*
     FourierTransformer ft2;
@@ -442,7 +449,7 @@ void Projector::computeFourierTransformMap(
     REPORT_ERROR("STOP");
     */
 
-    TICTOC(TIMING_POW, {
+    TICTOC(TIMING_POW, ({
     // Calculate radial average of power spectrum
     if (do_heavy) {
         #ifdef CUDA
@@ -460,7 +467,7 @@ void Projector::computeFourierTransformMap(
             }
         }
     }
-    });
+    }));
 
     }));
     #ifdef CUDA

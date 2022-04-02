@@ -820,11 +820,12 @@ void imposeHelicalSymmetryInRealSpace(
 
     if (v.getDim() != 3)
         REPORT_ERROR("helix.cpp::imposeHelicalSymmetryInRealSpace(): Input helical reference is not 3D! (vol.getDim() = " + integerToString(v.getDim()) + ")");
-    std::tuple<int, int, int, long int> dimensions = v.getDimensions();
-    Xdim = std::get<0>(dimensions);
-    Ydim = std::get<1>(dimensions);
-    Zdim = std::get<2>(dimensions);
-    Ndim = std::get<3>(dimensions);
+    // std::tuple<int, int, int, long int> dimensions = v.getDimensions();
+    Dimensions dimensions = v.getDimensions();
+    Xdim = dimensions.x;
+    Ydim = dimensions.y;
+    Zdim = dimensions.z;
+    Ndim = dimensions.n;
     box_len = Xdim    < Ydim ? Xdim    : Ydim;
     box_len = box_len < Zdim ? box_len : Zdim;
 
@@ -3705,11 +3706,11 @@ void cutOutPartOfHelix(
         REPORT_ERROR("helix.cpp::cutOutPartOfHelix(): Angular range must be larger than 0!");
     ang_deg = ang_deg > 91.0 ? 91.0 : ang_deg;
 
-    std::tuple<int, int, int, long int> dimensions = vin.getDimensions();
-    Xdim = std::get<0>(dimensions);
-    Ydim = std::get<1>(dimensions);
-    Zdim = std::get<2>(dimensions);
-    Ndim = std::get<3>(dimensions);
+    Dimensions dimensions = vin.getDimensions();
+    Xdim = dimensions.x;
+    Ydim = dimensions.y;
+    Zdim = dimensions.z;
+    Ndim = dimensions.n;
     // Surely old_boxdim = min(Xdim, Ydim, Zdim)
     old_boxdim = Xdim < Ydim ? Xdim : Ydim;
     old_boxdim = Zdim < old_boxdim ? Zdim : old_boxdim;
@@ -3734,7 +3735,7 @@ void cutOutPartOfHelix(
         // Loop over X and Y
         for (long int yi = 0; yi < YSIZE(vout); yi++)
         for (long int xi = 0; xi < XSIZE(vout); xi++) {
-            RFLOAT deg = 180.0 * atan2((double)(yi), (double)(xi)) / PI;
+            RFLOAT deg = 180.0 * atan2((double) (yi), (double) (xi)) / PI;
 
             // X or Y subscripts is out of range
             if (ang_deg < 90.0 && (
@@ -4771,11 +4772,11 @@ void Interpolate3DCurves(
     // Read the header of 3D reconstructed tomogram
     img.clear();
     img.read(fn_tomo, false);
-    std::tuple<int, int, int, long int> dimensions = img.getDimensions();
-    xdim_img = std::get<0>(dimensions);
-    ydim_img = std::get<1>(dimensions);
-    zdim_img = std::get<2>(dimensions);
-    ndim_img = std::get<3>(dimensions);
+    Dimensions dimensions = img.getDimensions();
+    xdim_img = dimensions.x;
+    ydim_img = dimensions.y;
+    zdim_img = dimensions.z;
+    ndim_img = dimensions.n;
     if (zdim_img <= 1)
         REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Dimension Z of reconstructed 3D tomogram " + fn_tomo + " is 1!");
     if (ndim_img != 1)

@@ -1227,22 +1227,21 @@ void LoGFilterMap(MultidimArray<RFLOAT > &img, RFLOAT sigma, RFLOAT angpix)
     img.setXmippOrigin();
     int my_xsize = XSIZE(img);
     int my_ysize = YSIZE(img);
-    int my_size = (my_xsize != my_ysize) ? XMIPP_MAX(my_xsize, my_ysize) : my_xsize;
-    if (my_xsize != my_ysize)
-    {
-        if (img.getDim() == 2)
-        {
+    int my_size = XMIPP_MAX(my_xsize, my_ysize);
+    if (my_xsize != my_ysize) {
+        if (img.getDim() == 2) {
             int my_small_size = XMIPP_MIN(my_xsize, my_ysize);
-            std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = img.computeStats();
-            RFLOAT avg = std::get<0>(statstuple);
-            RFLOAT stddev = std::get<1>(statstuple);
-            RFLOAT minn = std::get<2>(statstuple);
-            RFLOAT maxx = std::get<3>(statstuple);
+            Stats<RFLOAT> stats = img.computeStats();
+            RFLOAT avg    = stats.avg;
+            RFLOAT stddev = stats.stddev;
+            RFLOAT minn   = stats.min;
+            RFLOAT maxx   = stats.max;
 
-            img.window(Xmipp::init(my_size), Xmipp::init(my_size),
-                       Xmipp::last(my_size),  Xmipp::last(my_size));
-            if (my_small_size == my_xsize)
-            {
+            img.window(
+                Xmipp::init(my_size), Xmipp::init(my_size),
+                Xmipp::last(my_size), Xmipp::last(my_size)
+            );
+            if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img)
                 {
                     if (j <  Xmipp::init(my_small_size) || j >  Xmipp::last(my_small_size))
@@ -1334,17 +1333,15 @@ void lowPassFilterMap(MultidimArray<RFLOAT > &img, RFLOAT low_pass, RFLOAT angpi
     img.setXmippOrigin();
     int my_xsize = XSIZE(img);
     int my_ysize = YSIZE(img);
-    int my_size = (my_xsize != my_ysize) ? XMIPP_MAX(my_xsize, my_ysize) : my_xsize;
-    if (my_xsize != my_ysize)
-    {
-        if (img.getDim() == 2)
-        {
+    int my_size = XMIPP_MAX(my_xsize, my_ysize);
+    if (my_xsize != my_ysize) {
+        if (img.getDim() == 2) {
             int my_small_size = XMIPP_MIN(my_xsize, my_ysize);
-            std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = img.computeStats();
-            RFLOAT avg = std::get<0>(statstuple);
-            RFLOAT stddev = std::get<1>(statstuple);
-            RFLOAT minn = std::get<2>(statstuple);
-            RFLOAT maxx = std::get<3>(statstuple);
+            Stats<RFLOAT> stats = img.computeStats();
+            RFLOAT avg    = stats.avg;
+            RFLOAT stddev = stats.stddev;
+            RFLOAT minn   = stats.min;
+            RFLOAT maxx   = stats.max;
             img.window(Xmipp::init(my_size), Xmipp::init(my_size),
                        Xmipp::last(my_size),  Xmipp::last(my_size));
             if (my_small_size == my_xsize)
@@ -1466,26 +1463,27 @@ void directionalFilterMap(MultidimArray<Complex > &FT, int ori_size,
 
 }
 
-void directionalFilterMap(MultidimArray<RFLOAT > &img, RFLOAT low_pass, RFLOAT angpix, std::string axis, int filter_edge_width)
-{
+void directionalFilterMap(
+    MultidimArray<RFLOAT> &img, 
+    RFLOAT low_pass, RFLOAT angpix, 
+    std::string axis, int filter_edge_width
+) {
     FourierTransformer transformer;
-    MultidimArray<Complex > FT;
+    MultidimArray<Complex> FT;
 
     // Make this work for maps (or more likely 2D images) that have unequal X and Y dimensions
     img.setXmippOrigin();
     int my_xsize = XSIZE(img);
     int my_ysize = YSIZE(img);
-    int my_size = (my_xsize != my_ysize) ? XMIPP_MAX(my_xsize, my_ysize) : my_xsize;
-    if (my_xsize != my_ysize)
-    {
-        if (img.getDim() == 2)
-        {
+    int my_size = XMIPP_MAX(my_xsize, my_ysize);
+    if (my_xsize != my_ysize) {
+        if (img.getDim() == 2) {
             int my_small_size = XMIPP_MIN(my_xsize, my_ysize);
-            std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = img.computeStats();
-            RFLOAT avg = std::get<0>(statstuple);
-            RFLOAT stddev = std::get<1>(statstuple);
-            RFLOAT minn = std::get<2>(statstuple);
-            RFLOAT maxx = std::get<3>(statstuple);
+            Stats<RFLOAT> stats = img.computeStats();
+            RFLOAT avg    = stats.avg;
+            RFLOAT stddev = stats.stddev;
+            RFLOAT minn   = stats.min;
+            RFLOAT maxx   = stats.max;
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
                 Xmipp::last(my_size),  Xmipp::last(my_size)
@@ -1496,19 +1494,14 @@ void directionalFilterMap(MultidimArray<RFLOAT > &img, RFLOAT low_pass, RFLOAT a
                         A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
                     }
                 }
-            }
-            else
-            {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img)
-                {
+            } else {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (i <  Xmipp::init(my_small_size) || i >  Xmipp::last(my_small_size))
                         A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
                 }
 
             }
-        }
-        else
-        {
+        } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
     }
@@ -1594,11 +1587,11 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &ou
     out.clear();
 
     // Check dimensions
-    std::tuple<int, int, int, long int> dimensions = v.getDimensions();
-    long int Xdim = std::get<0>(dimensions);
-    long int Ydim = std::get<1>(dimensions);
-    long int Zdim = std::get<2>(dimensions);
-    long int Ndim = std::get<3>(dimensions);
+    Dimensions dimensions = v.getDimensions();
+    long int Xdim = dimensions.x;
+    long int Ydim = dimensions.y;
+    long int Zdim = dimensions.z;
+    long int Ndim = dimensions.n;
     if (Zdim > 1 || Ndim > 1)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray should be 2D.");
     if (Xdim * Ydim <= 16)

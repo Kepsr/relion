@@ -1372,11 +1372,11 @@ void AutoPicker::pickCCFPeaks(
     Mccfplot.initZeros();
     Mccfplot.setXmippOrigin();
 
-    std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Mccf.computeStats();
-    RFLOAT avg0 = std::get<0>(statstuple);
-    RFLOAT stddev0 = std::get<1>(statstuple);
-    RFLOAT minccf0 = std::get<2>(statstuple);
-    RFLOAT maxccf0 = std::get<3>(statstuple);
+    Stats<RFLOAT> stats = Mccf.computeStats();
+    RFLOAT avg0 = stats.avg;
+    RFLOAT stddev0 = stats.stddev;
+    RFLOAT minccf0 = stats.min;
+    RFLOAT maxccf0 = stats.max;
 
     // Collect all high ccf pixels
     Mrec.clear();
@@ -2381,11 +2381,11 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         }
 
         // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
-        std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Imic().computeStats();
-        RFLOAT avg0 = std::get<0>(statstuple);
-        RFLOAT stddev0 = std::get<1>(statstuple);
-        RFLOAT minval0 = std::get<2>(statstuple);
-        RFLOAT maxval0 = std::get<3>(statstuple);
+        Stats<RFLOAT> stats = Imic().computeStats();
+        RFLOAT avg0    = stats.avg;
+        RFLOAT stddev0 = stats.stddev;
+        RFLOAT minval0 = stats.min;
+        RFLOAT maxval0 = stats.max;
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
             // Values that are too far from the mean are set to the mean (0)
@@ -2680,11 +2680,11 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     timer.tic(TIMING_A7);
     #endif
     // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
-    std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Imic().computeStats();
-    RFLOAT avg0 = std::get<0>(statstuple);
-    RFLOAT stddev0 = std::get<0>(statstuple);
-    RFLOAT minval0 = std::get<0>(statstuple);
-    RFLOAT maxval0 = std::get<0>(statstuple);
+    Stats<RFLOAT> stats = Imic().computeStats();
+    RFLOAT avg0    = stats.avg;
+    RFLOAT stddev0 = stats.stddev;
+    RFLOAT minval0 = stats.min;
+    RFLOAT maxval0 = stats.max;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
         // Remove pixel values that are too far away from the mean

@@ -36,9 +36,10 @@
 #include "src/symmetries.h"
 #include "src/jaz/complex_io.h"
 
-class BackProjector: public Projector
-{
-public:
+class BackProjector: public Projector {
+
+    public:
+
     // For backward projection: sum of weights
     MultidimArray<RFLOAT> weight;
 
@@ -60,7 +61,7 @@ public:
     // Skip the iterative gridding part of the reconstruction
     bool skip_gridding;
 
-public:
+    public:
 
     BackProjector(){}
 
@@ -72,10 +73,11 @@ public:
      * BackProjector BPref(orisize, 3, "d2");
      * @endcode
      */
-    BackProjector(int _ori_size, int _ref_dim, FileName fn_sym,
-                  int _interpolator = TRILINEAR, float _padding_factor_3d = 2, int _r_min_nn = 10,
-                  int _blob_order = 0, RFLOAT _blob_radius = 1.9, RFLOAT _blob_alpha = 15, int _data_dim = 2, bool _skip_gridding = false)
-    {
+    BackProjector(
+        int _ori_size, int _ref_dim, FileName fn_sym,
+        int _interpolator = TRILINEAR, float _padding_factor_3d = 2, int _r_min_nn = 10,
+        int _blob_order = 0, RFLOAT _blob_radius = 1.9, RFLOAT _blob_alpha = 15, int _data_dim = 2, bool _skip_gridding = false
+    ) {
         // Store original dimension
         ori_size = _ori_size;
 
@@ -106,7 +108,7 @@ public:
         // Precalculate tabulated ftblob values
         //tab_ftblob.initialise(_blob_radius * padding_factor, _blob_alpha, _blob_order, 10000);
         // Sjors 8aug2017: try to fix problems with pad1 reconstrctions
-        tab_ftblob.initialise(_blob_radius * 2., _blob_alpha, _blob_order, 10000);
+        tab_ftblob.initialise(_blob_radius * 2.0, _blob_alpha, _blob_order, 10000);
     }
 
     /** Copy constructor
@@ -118,8 +120,7 @@ public:
      * BackProjector V2(V1);
      * @endcode
      */
-    BackProjector(const BackProjector& op)
-    {
+    BackProjector(const BackProjector& op) {
         clear();
         *this = op;
     }
@@ -129,10 +130,8 @@ public:
      * You can build as complex assignment expressions as you like. Multiple
      * assignment is allowed.
      */
-    BackProjector& operator=(const BackProjector& op)
-    {
-        if (&op != this)
-        {
+    BackProjector& operator = (const BackProjector& op) {
+        if (&op != this) {
             // Projector stuff (is this necessary in C++?)
             data = op.data;
             ori_size = op.ori_size;
@@ -160,13 +159,11 @@ public:
       * FourierInterpolator fourint;
       * @endcode
       */
-    ~BackProjector()
-    {
+    ~BackProjector() {
         clear();
     }
 
-    void clear()
-    {
+    void clear() {
         skip_gridding = false;
         weight.clear();
         Projector::clear();
@@ -182,38 +179,38 @@ public:
     * Set a 2D Fourier Transform back into the 2D or 3D data array
     * Depending on the dimension of the map, this will be a backprojection or a rotation operation
     */
-    void set2DFourierTransform(const MultidimArray<Complex > &img_in,
-                               const Matrix2D<RFLOAT> &A,
-                               const MultidimArray<RFLOAT> *Mweight = NULL,
-                               RFLOAT r_ewald_sphere = -1.,
-                               bool is_positive_curvature = true,
-                               Matrix2D<RFLOAT>* magMatrix = 0)
-    {
+    void set2DFourierTransform(
+        const MultidimArray<Complex> &img_in,
+        const Matrix2D<RFLOAT> &A,
+        const MultidimArray<RFLOAT> *Mweight = NULL,
+        RFLOAT r_ewald_sphere = -1.0,
+        bool is_positive_curvature = true,
+        Matrix2D<RFLOAT>* magMatrix = 0
+    ) {
         // Back-rotation of a 3D Fourier Transform
-        if (img_in.getDim() == 3)
-        {
+        if (img_in.getDim() == 3) {
             if (ref_dim != 3)
                 REPORT_ERROR("Backprojector::set3DFourierTransform%%ERROR: Dimension of the data array should be 3");
             backrotate3D(img_in, A, Mweight);
-        }
-        else if (img_in.getDim() == 1)
-        {
+        } else if (img_in.getDim() == 1) {
             if (ref_dim != 2)
                 REPORT_ERROR("Backprojector::set1DFourierTransform%%ERROR: Dimension of the data array should be 2");
             backproject1Dto2D(img_in, A, Mweight);
         }
-        else
-        {
-            switch (ref_dim)
-            {
-            case 2:
+        else {
+            switch (ref_dim) {
+
+                case 2:
                 backrotate2D(img_in, A, Mweight, magMatrix);
                 break;
-            case 3:
+
+                case 3:
                 backproject2Dto3D(img_in, A, Mweight, r_ewald_sphere, is_positive_curvature, magMatrix);
                 break;
-            default:
+
+                default:
                 REPORT_ERROR("Backprojector::set2DSlice%%ERROR: Dimension of the data array should be 2 or 3");
+
             }
         }
     }

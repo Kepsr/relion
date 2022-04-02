@@ -423,22 +423,27 @@ class Image {
 
     // Read/write functions for different file formats
 
-    int readSPIDER(long int img_select);
+    // int readSPIDER(long int img_select);
 
-    int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
+    // int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
 
-    int readMRC(long int img_select, bool isStack=false, const FileName &name="");
+    // int readMRC(long int img_select, bool isStack=false, const FileName &name="");
 
-    int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE);
+    // int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE);
 
-    int readIMAGIC(long int img_select);
+    // int readIMAGIC(long int img_select);
 
-    void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE);
+    // void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE);
 
-    int readTIFF(
-        TIFF* ftiff, long int img_select, 
-        bool readdata=false, bool isStack=false, const FileName &name=""
-    );
+    // int readTIFF(
+    //     TIFF* ftiff, long int img_select, 
+    //     bool readdata=false, bool isStack=false, const FileName &name=""
+    // );
+
+    #include "src/rwSPIDER.h"
+    #include "src/rwMRC.h"
+    #include "src/rwIMAGIC.h"
+    #include "src/rwTIFF.h"
 
     /** Is this file an image?
      *
@@ -601,7 +606,7 @@ class Image {
                 break;
             case UHalf:
                 if (pageSize % 2 != 0) {
-                    REPORT_ERROR("Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
+                    REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
                 }
 
                 for (size_t i = 0, ilim = pageSize / 2; i < ilim; i++) {
@@ -727,7 +732,7 @@ class Image {
     void swapPage(char * page, size_t pageNrElements, DataType datatype) {
         unsigned long datatypesize = gettypesize(datatype);
         #ifdef DEBUG
-            std::cerr << "DEBUG " + __func__ + ": Swapping image data with swap= "
+            std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
             << swap << " datatypesize= " << datatypesize
             << " pageNrElements " << pageNrElements
             << " datatype " << datatype
@@ -746,8 +751,8 @@ class Image {
     int readData(FILE* fimg, long int select_img, DataType datatype, unsigned long pad) {
         // #define DEBUG
         #ifdef DEBUG
-        std::cerr << "entering " + __func__ << std::endl;
-        std::cerr << " " + __func__ + " flag= " << dataflag << std::endl;
+        std::cerr << "entering " << __func__ << std::endl;
+        std::cerr << " " << __func__ << " flag= " << dataflag << std::endl;
         #endif
 
         if (dataflag < 1)
@@ -784,7 +789,7 @@ class Image {
         if (mmapOn) {
             if (NSIZE(data) > 1) {
                 REPORT_ERROR(
-                    "Image Class::" + __func__ + ": mmap with multiple \
+                    (std::string) "Image Class::" + __func__ + ": mmap with multiple \
                     images file not compatible. Try selecting a unique image."
                 );
             }
@@ -793,13 +798,13 @@ class Image {
 
             //if ( ( mFd = open(filename.c_str(), O_RDWR, S_IREAD | S_IWRITE) ) == -1 )
             if ((mFd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
-                REPORT_ERROR("Image Class::" + __func__ + ": Error opening the image file.");
+                REPORT_ERROR((std::string) "Image Class::" + __func__ + ": Error opening the image file.");
 
             char* map;
             mappedSize = pagesize + offset;
 
             if ((map = (char*) mmap(0,mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1 )
-                REPORT_ERROR("Image Class::" + __func__ + ": mmap of image file failed.");
+                REPORT_ERROR((std::string) "Image Class::" + __func__ + ": mmap of image file failed.");
             data.data = reinterpret_cast<T*> (map + offset);
         } else {
             // Reset select to get the correct offset
@@ -948,8 +953,13 @@ class Image {
 
     /** Get Image dimensions
      */
-    std::tuple<int, int, int, long int> getDimensions() const {
-        return std::make_tuple(XSIZE(data), YSIZE(data), ZSIZE(data), NSIZE(data));
+    Dimensions getDimensions() const {
+        Dimensions dimensions;
+        dimensions.x = XSIZE(data);
+        dimensions.y = YSIZE(data);
+        dimensions.z = ZSIZE(data);
+        dimensions.n = NSIZE(data);
+        return dimensions;
     }
 
     long unsigned int getSize() const {
@@ -1006,11 +1016,11 @@ class Image {
 
     // Set image statistics in the main header
     void setStatisticsInHeader() {
-        std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statistics = data.computeStats();
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    std::get<0>(statistics));
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, std::get<1>(statistics));
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    std::get<2>(statistics));
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    std::get<3>(statistics));
+        Stats<T> statistics = data.computeStats();
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    statistics.avg);
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, statistics.stddev);
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    statistics.min);
+        MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    statistics.max);
     }
 
     void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y = -1.0, RFLOAT rate_z = -1.0) {
@@ -1036,39 +1046,54 @@ class Image {
             case Unknown_Type:
             o << "Undefined data type";
             break;
+
             case UChar:
             o << "Unsigned character or byte type";
             break;
+
             case SChar:
             o << "Signed character (for CCP4)";
             break;
+
             case UShort:
             o << "Unsigned integer (2-byte)";
             break;
+
             case Short:
             o << "Signed integer (2-byte)";
             break;
+
             case UInt:
             o << "Unsigned integer (4-byte)";
             break;
+
             case Int:
             o << "Signed integer (4-byte)";
             break;
+
             case Long:
             o << "Signed integer (4 or 8 byte, depending on system)";
             break;
+
             case Float:
             o << "Floating point (4-byte)";
             break;
+
             case Double:
             o << "Double precision floating point (8-byte)";
             break;
+
             case Boolean:
             o << "Boolean (1-byte?)";
             break;
+
             case UHalf:
             o << "4-bit integer";
             break;
+
+            default:
+            break;
+
         }
         o << std::endl;
 
@@ -1243,11 +1268,11 @@ class Image {
             REPORT_ERROR("write Image ERROR: image is empty!");
 
         // CHECK FOR INCONSISTENCIES BETWEEN data.xdim and x, etc???
-        std::tuple<int, int, int, long int> dimensions = this->getDimensions();
-        int Xdim = std::get<0>(dimensions);
-        int Ydim = std::get<1>(dimensions);
-        int Zdim = std::get<2>(dimensions);
-        long int Ndim = std::get<3>(dimensions);
+        Dimensions dimensions = this->getDimensions();
+        int Xdim = dimensions.x;
+        int Ydim = dimensions.y;
+        int Zdim = dimensions.z;
+        long int Ndim = dimensions.n;
 
         Image<T> auxI;
         replaceNsize = 0; // reset replaceNsize in case image is reused
@@ -1263,11 +1288,11 @@ class Image {
         } else if (_exists && (mode == WRITE_REPLACE || mode == WRITE_APPEND)) {
             auxI.dataflag = -2;
             auxI.read(filNamePlusExt,false);
-            std::tuple<int, int, int, long int> dimensions = auxI.getDimensions();
-            int _Xdim = std::get<0>(dimensions);
-            int _Ydim = std::get<1>(dimensions);
-            int _Zdim = std::get<2>(dimensions);
-            long int _Ndim = std::get<3>(dimensions);
+            Dimensions dimensions = auxI.getDimensions();
+            int _Xdim = dimensions.x;
+            int _Ydim = dimensions.y;
+            int _Zdim = dimensions.z;
+            long int _Ndim = dimensions.n;
             replaceNsize=_Ndim;
             if (Xdim!=_Xdim ||
                Ydim!=_Ydim ||

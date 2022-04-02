@@ -46,28 +46,24 @@
 
 
 // Show a complex array ---------------------------------------------------
-std::ostream& operator<<(std::ostream& ostrm,
-    const MultidimArray< Complex >& v)
-{
-    if (v.xdim == 0)
-        ostrm << "NULL MultidimArray\n";
-    else
-        ostrm << std::endl;
+std::ostream& operator << (std::ostream& ostrm, const MultidimArray<Complex> &v) {
 
-    for (int l = 0; l < NSIZE(v); l++)
-    {
+    if (v.xdim == 0) {
+        ostrm << "NULL MultidimArray\n";
+    } else {
+        ostrm << std::endl;
+    }
+
+    for (int l = 0; l < NSIZE(v); l++) {
         if (NSIZE(v)>1) ostrm << "Image No. " << l << std::endl;
-        for (int k = STARTINGZ(v); k <= FINISHINGZ(v); k++)
-        {
+        for (int k = STARTINGZ(v); k <= FINISHINGZ(v); k++) {
             if (ZSIZE(v)>1) ostrm << "Slice No. " << k << std::endl;
-            for (int i = STARTINGY(v); i <= FINISHINGY(v); i++)
-            {
+            for (int i = STARTINGY(v); i <= FINISHINGY(v); i++) {
                 for (int j = STARTINGX(v); j <= FINISHINGX(v); j++)
                     ostrm << "(" << A3D_ELEM(v, k, i, j).real << "," << A3D_ELEM(v, k, i, j).imag <<")" << ' ';
                 ostrm << std::endl;
             }
         }
     }
-
     return ostrm;
 }

@@ -25,14 +25,13 @@
 #include "config.h"
 #endif
 
-#include "src/image.h"
+// #include "src/image.h"
 
 // I/O prototypes
 /** TIFF Reader
   * @ingroup TIFF
 */
-template <typename T>
-int Image<T>::readTIFF(
+int readTIFF(
     TIFF* ftiff, long int img_select,
     bool readdata=false, bool isStack=false, const FileName &name=""
 ) {

@@ -193,15 +193,15 @@ bool Postprocessing::getMask() {
         Im().setXmippOrigin();
 
         // Check values are between 0 and 1
-        std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Im().computeStats();
-        RFLOAT avg    = std::get<0>(statstuple);
-        RFLOAT stddev = std::get<1>(statstuple);
-        RFLOAT minval = std::get<2>(statstuple);
-        RFLOAT maxval = std::get<3>(statstuple);
+        Stats<RFLOAT> stats = Im().computeStats();
+        RFLOAT avg    = stats.avg;
+        RFLOAT stddev = stats.stddev;
+        RFLOAT minval = stats.min;
+        RFLOAT maxval = stats.max;
 
         long summask = 0;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Im()) {
-            if (DIRECT_MULTIDIM_ELEM(Im(), n) > 0.5) summask++;
+            if (DIRECT_MULTIDIM_ELEM(Im(), n) > 0.5) { summask++; }
         }
         avg = (RFLOAT)summask / (RFLOAT)NZYXSIZE(Im());
         frac_solvent_mask = 0.476 /avg;

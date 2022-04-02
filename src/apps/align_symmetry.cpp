@@ -86,9 +86,9 @@ class align_symmetry {
 
         /// TODO: parallelise?
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDang) {
-            rot  = MDang.getValue(EMDL::ORIENT_ROT);
-            tilt = MDang.getValue(EMDL::ORIENT_TILT);
-            psi  = MDang.getValue(EMDL::ORIENT_PSI);
+            rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
 
             Euler_rotation3DMatrix(rot, tilt, psi, A3D);
             F2D.initZeros();
@@ -108,10 +108,10 @@ class align_symmetry {
 
             if (best_diff2 > diff2) {
                 best_diff2 = diff2;
-                best_at = current_object;
+                best_at = index;
             }
 
-            if (current_object % 30 == 0) progress_bar(current_object);
+            if (index % 30 == 0) progress_bar(index);
             #ifdef DEBUG
             std::cout << rot << " " << tilt << " " << psi << " " << diff2 << std::endl;
             #endif
@@ -195,9 +195,9 @@ class align_symmetry {
         // Global search
         std::cout << " Searching globally ..." << std::endl;
         int best_at = search(MDang, projector);
-        rot  = MDang.getValue(EMDL::ORIENT_ROT,  best_at);
-        tilt = MDang.getValue(EMDL::ORIENT_TILT, best_at);
-        psi  = MDang.getValue(EMDL::ORIENT_PSI,  best_at);
+        rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT,  best_at);
+        tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT, best_at);
+        psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI,  best_at);
         std::cout << " The best solution is ROT = " << rot << " TILT = " << tilt << " PSI = " << psi << std::endl << std::endl;
 
         // Local refinement
@@ -220,9 +220,9 @@ class align_symmetry {
         }
 
         best_at = search(MDang, projector);
-        rot  = MDang.getValue(EMDL::ORIENT_ROT,  best_at);
-        tilt = MDang.getValue(EMDL::ORIENT_TILT, best_at);
-        psi  = MDang.getValue(EMDL::ORIENT_PSI,  best_at);
+        rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT,  best_at);
+        tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT, best_at);
+        psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI,  best_at);
         std::cout << " The refined solution is ROT = " << rot << " TILT = " << tilt << " PSI = " << psi << std::endl << std::endl;
 
         std::cout << " Now rotating the original (full size) volume ..." << std::endl << std::endl;
@@ -242,7 +242,7 @@ class align_symmetry {
         vol_out.write(fn_out);
         std::cout << " The aligned map has been written to " << fn_out << std::endl;
 
-    } // end project function
+    }
 };
 
 int main(int argc, char *argv[]) {
@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
         app.read(argc, argv);
         app.project();
     } catch (RelionError XE) {
-        //prm.usage();
+        // prm.usage();
         std::cerr << XE;
         return RELION_EXIT_FAILURE;
     }

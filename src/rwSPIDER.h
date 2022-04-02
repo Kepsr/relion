@@ -28,7 +28,7 @@
 #ifndef RWSPIDER_H
 #define RWSPIDER_H
 
-#include "src/image.h"
+// #include "src/image.h"
 
 #define SPIDERSIZE 1024 // Minimum size of the SPIDER header (variable)
 ///@defgroup Spider Spider File format
@@ -122,8 +122,7 @@ struct SPIDERhead {
   * @ingroup Spider
 */
 
-template <typename T>
-int Image<T>::readSPIDER(long int img_select) {
+int readSPIDER(long int img_select) {
     #undef DEBUG
     //#define DEBUG
     #ifdef DEBUG
@@ -236,8 +235,7 @@ int Image<T>::readSPIDER(long int img_select) {
 /** Spider Writer
   * @ingroup Spider
 */
-template <typename T>
-int Image<T>::writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE) {
+int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE) {
     // return(1);
     #undef DEBUG
     // #define DEBUG
@@ -293,16 +291,16 @@ int Image<T>::writeSPIDER(long int select_img=-1, bool isStack=false, int mode=W
         std::cerr << "Non-empty MDMainHeader" << std::endl;
         #endif
         try {
-            header->fmin = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MIN);
+            header->fmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN);
         } catch (const char *errmsg) {}
         try {
-            header->fmax = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);
+            header->fmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX);
         } catch (const char *errmsg) {}
         try {
-            header->av = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_AVG);
+            header->av   = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG);
         } catch (const char *errmsg) {}
         try {
-            header->sig = (float) MDMainHeader.getValue(EMDL::IMAGE_STATS_STDDEV);
+            header->sig  = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV);
         } catch (const char *errmsg) {}
     }
     // For multi-image files
