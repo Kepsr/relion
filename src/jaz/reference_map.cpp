@@ -52,9 +52,9 @@ void ReferenceMap::load(int verb, bool debug) {
         MetaDataTable MD;
         MD.read(fscFn, "general");
         try {
-            fn_half1 = MD.getValue(EMDL::POSTPROCESS_UNFIL_HALFMAP1);
-            fn_half2 = MD.getValue(EMDL::POSTPROCESS_UNFIL_HALFMAP2);
-            fn_mask  = MD.getValue(EMDL::MASK_NAME);
+            fn_half1 = MD.getValue<FileName>(EMDL::POSTPROCESS_UNFIL_HALFMAP1);
+            fn_half2 = MD.getValue<FileName>(EMDL::POSTPROCESS_UNFIL_HALFMAP2);
+            fn_mask  = MD.getValue<FileName>(EMDL::MASK_NAME);
             if (verb > 0) {
                 std::cout << " + The names of the reference half maps and the mask were taken from the PostProcess STAR file.\n";
                 std::cout << "   - Half map 1: " << fn_half1 << "\n";
@@ -218,7 +218,7 @@ Image<Complex> ReferenceMap::predict(
 ) {
     Image<Complex> pred;
 
-    int randSubset = mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
+    int randSubset = mdt.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
     int pi = hs == Own ? randSubset : 1 - randSubset;
 
@@ -258,7 +258,7 @@ Volume<t2Vector<Complex>> ReferenceMap::predictComplexGradient(
 ) {
     Volume<t2Vector<Complex>> pred;
 
-    int randSubset = mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
+    int randSubset = mdt.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
     int pi = hs == Own ? randSubset : 1 - randSubset;
 
@@ -295,7 +295,7 @@ Image<Complex> ReferenceMap::predict(
     HalfSet hs,
     bool applyCtf, bool applyTilt, bool applyShift
 ) {
-    int randSubset = mdt.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
+    int randSubset = mdt.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
     int pi = hs == Own ? randSubset : 1 - randSubset;
     return obs.predictObservation(
         projectors[pi], mdt, p, applyCtf, applyTilt, applyShift

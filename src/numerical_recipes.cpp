@@ -64,7 +64,7 @@ void nrerror(const char error_text[])
    idea to put them here, in fact they come from Gabor's group in Feb'84     */
 //  Bessel function of the first kind for order 0 (J_{0})
 RFLOAT bessj0(RFLOAT x) {
-    RFLOAT ax, z;
+    RFLOAT ax, z, z2;
     RFLOAT xx, x2, ans, ans1, ans2;
 
     if ((ax = fabs(x)) < 8.0) {

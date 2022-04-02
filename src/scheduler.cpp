@@ -185,7 +185,7 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
 void  SchedulerOperator::readFromStarFile() const {
     MetaDataTable MD;
     std::string mystring, mystarfile, mytable;
-    EMDLabel mylabel;
+    EMDL::EMDLabel mylabel;
 
     // The localtion is always in input1
     mystring = scheduler_global_strings[input1].value;
@@ -217,16 +217,16 @@ void  SchedulerOperator::readFromStarFile() const {
         type == SCHEDULE_STRING_OPERATOR_READ_STAR
     ) {
         if (EMDL::isDouble(mylabel)) {
-            RFLOAT fval = MD.getValue(mylabel, idx);
+            RFLOAT fval = MD.getValue<RFLOAT>(mylabel, idx);
             scheduler_global_floats[output].value = fval;
         } else if (EMDL::isInt(mylabel)) {
-            int ival = MD.getValue(mylabel, idx);
+            int ival = MD.getValue<int>(mylabel, idx);
             scheduler_global_floats[output].value = ROUND(ival);
         } else if (EMDL::isString(mylabel)) {
-            std::string val = MD.getValue(mylabel, idx);
+            std::string val = MD.getValue<std::string>(mylabel, idx);
             scheduler_global_strings[output].value = val;
         } else if (EMDL::isBool(mylabel)) {
-            bool val = MD.getValue(mylabel, idx);
+            bool val = MD.getValue<bool>(mylabel, idx);
             scheduler_global_bools[output].value = val;
         }
     } else if (
@@ -237,9 +237,9 @@ void  SchedulerOperator::readFromStarFile() const {
     ) {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             if (EMDL::isDouble(mylabel)) {
-                myval = (RFLOAT) MD.getValue(mylabel);
+                myval = MD.getValue<RFLOAT>(mylabel);
             } else if (EMDL::isInt(mylabel)) {
-                myval = (int)    MD.getValue(mylabel);
+                myval = MD.getValue<int>(mylabel);
             } else {
                 REPORT_ERROR("ERROR: metadata label " + EMDL::label2Str(mylabel) + " is not of a number type!");
             }
@@ -259,8 +259,7 @@ void  SchedulerOperator::readFromStarFile() const {
             ii++;
         }
 
-        if (ii > 0)
-            mysum /= (RFLOAT) ii;
+        if (ii > 0) { mysum /= (RFLOAT) ii; }
 
         if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX) {
             scheduler_global_floats[output].value = mymax;
@@ -273,7 +272,7 @@ void  SchedulerOperator::readFromStarFile() const {
                 REPORT_ERROR("Give a positive or a negative value for input2 in sorted_idx: 1 is largest, -1 is smallest value");
             }
             if (idx < 0) {
-                idx = ii + idx;  // smallest value is numberOfObjects - 1
+                idx += ii;  // smallest value is numberOfObjects - 1
             } else {
                 idx--; // now start counting at 0
             }
@@ -586,15 +585,15 @@ void Schedule::read(bool do_lock, FileName fn) {
     // For reading: do the nodes before the general table, in order to set current_node
     MetaDataTable MD;
     MD.readStar(in, "schedule_general");
-    name         = MD.getValue(EMDL::SCHEDULE_GENERAL_NAME);
-    current_node = MD.getValue(EMDL::SCHEDULE_GENERAL_CURRENT_NODE);
+    name         = MD.getValue<std::string>(EMDL::SCHEDULE_GENERAL_NAME);
+    current_node = MD.getValue<std::string>(EMDL::SCHEDULE_GENERAL_CURRENT_NODE);
     MD.clear();
 
     MD.readStar(in, "schedule_floats");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        std::string myname    = MD.getValue(EMDL::SCHEDULE_VAR_FLOAT_NAME);
-        RFLOAT value          = MD.getValue(EMDL::SCHEDULE_VAR_FLOAT_VALUE);
-        RFLOAT original_value = MD.getValue(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE);
+        std::string myname    = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_FLOAT_NAME);
+        RFLOAT value          = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_VALUE);
+        RFLOAT original_value = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE);
         SchedulerFloatVariable myval(value, original_value);
         scheduler_global_floats[myname] = myval;
     }
@@ -602,9 +601,9 @@ void Schedule::read(bool do_lock, FileName fn) {
 
     MD.readStar(in, "schedule_bools");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        std::string myname  = MD.getValue(EMDL::SCHEDULE_VAR_BOOL_NAME);
-        bool value          = MD.getValue(EMDL::SCHEDULE_VAR_BOOL_VALUE);
-        bool original_value = MD.getValue(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE);
+        std::string myname  = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_BOOL_NAME);
+        bool value          = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_VALUE);
+        bool original_value = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE);
         SchedulerBooleanVariable myval(value, original_value);
         scheduler_global_bools[myname] = myval;
     }
@@ -612,9 +611,9 @@ void Schedule::read(bool do_lock, FileName fn) {
 
     MD.readStar(in, "schedule_strings");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        std::string myname         = MD.getValue(EMDL::SCHEDULE_VAR_STRING_NAME);
-        FileName    value          = MD.getValue(EMDL::SCHEDULE_VAR_STRING_VALUE);
-        FileName    original_value = MD.getValue(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE);
+        std::string myname         = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_NAME);
+        FileName    value          = MD.getValue<FileName>(EMDL::SCHEDULE_VAR_STRING_VALUE);
+        FileName    original_value = MD.getValue<FileName>(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE);
         SchedulerStringVariable myval(value, original_value);
         scheduler_global_strings[myname] = myval;
     }
@@ -623,11 +622,11 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.readStar(in, "schedule_operators");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         // RFLOAT constant;
-        std::string myname = MD.getValue(EMDL::SCHEDULE_OPERATOR_NAME);
-        std::string type   = MD.getValue(EMDL::SCHEDULE_OPERATOR_TYPE);
-        std::string input1 = MD.getValue(EMDL::SCHEDULE_OPERATOR_INPUT1);
-        std::string input2 = MD.getValue(EMDL::SCHEDULE_OPERATOR_INPUT2);
-        std::string output = MD.getValue(EMDL::SCHEDULE_OPERATOR_OUTPUT);
+        std::string myname = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_NAME);
+        std::string type   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_TYPE);
+        std::string input1 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT1);
+        std::string input2 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT2);
+        std::string output = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_OUTPUT);
         SchedulerOperator myval(type, input1, input2, output);
         scheduler_global_operators[myname] = myval;
     }
@@ -636,10 +635,10 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.readStar(in, "schedule_jobs");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         // std::string type;
-        std::string myname   = MD.getValue(EMDL::SCHEDULE_JOB_NAME);
-        std::string ori_name = MD.getValue(EMDL::SCHEDULE_JOB_ORI_NAME);
-        std::string mode     = MD.getValue(EMDL::SCHEDULE_JOB_MODE);
-        bool has_started     = MD.getValue(EMDL::SCHEDULE_JOB_HAS_STARTED);
+        std::string myname   = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_NAME);
+        std::string ori_name = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_ORI_NAME);
+        std::string mode     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_MODE);
+        bool has_started     = MD.getValue<bool>(EMDL::SCHEDULE_JOB_HAS_STARTED);
         SchedulerJob myval(myname, mode, has_started);
         jobs[ori_name] = myval;
     }
@@ -648,11 +647,11 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.readStar(in, "schedule_edges");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         // int number;
-        std::string inputname       = MD.getValue(EMDL::SCHEDULE_EDGE_INPUT);
-        std::string outputname      = MD.getValue(EMDL::SCHEDULE_EDGE_OUTPUT);
-        std::string outputname_true = MD.getValue(EMDL::SCHEDULE_EDGE_OUTPUT_TRUE);
-        std::string bool_name       = MD.getValue(EMDL::SCHEDULE_EDGE_BOOLEAN);
-        bool is_fork                = MD.getValue(EMDL::SCHEDULE_EDGE_IS_FORK);
+        std::string inputname       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_INPUT);
+        std::string outputname      = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT);
+        std::string outputname_true = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT_TRUE);
+        std::string bool_name       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_BOOLEAN);
+        bool is_fork                = MD.getValue<bool>(EMDL::SCHEDULE_EDGE_IS_FORK);
         SchedulerEdge myval(inputname, outputname, is_fork, bool_name, outputname_true);
         edges.push_back(myval);
     }
@@ -869,7 +868,8 @@ bool Schedule::isOperator(std::string _name) {
 
 void Schedule::setVariable(std::string name, FileName value) {
     float floatval;
-    if (value != "" && sscanf(value.c_str(), "%f", &floatval)) // is this a number? {
+    if (value != "" && sscanf(value.c_str(), "%f", &floatval)) {
+        // is this a number? 
         if (isFloatVariable(name)) {
             setFloatVariableValue(name, floatval);
         } else {
@@ -878,7 +878,8 @@ void Schedule::setVariable(std::string name, FileName value) {
     } else if (
         value == "true"  || value == "True" || 
         value == "false" || value == "False"
-    ) // or a boolean? {
+    ) {
+        // or a boolean? 
         bool myval = value == "true" || value == "True";
         if (isBooleanVariable(name)) {
             setBooleanVariableValue(name, myval);
@@ -896,14 +897,16 @@ void Schedule::setVariable(std::string name, FileName value) {
 
 void Schedule::setOriginalVariable(std::string name, FileName value) {
     float floatval;
-    if (value != "" && sscanf(value.c_str(), "%f", &floatval)) // is this a number? {
+    if (value != "" && sscanf(value.c_str(), "%f", &floatval)) {
+        // is this a number? 
         if (isFloatVariable(name)) setFloatOriginalVariableValue(name, floatval);
         else addFloatVariable(name, floatval);
     } else if (
         value == "true"  || value == "True" || 
         value == "false" || value == "False"
-    ) // or a boolean? {
-        bool myval = (value == "true" || value == "True");
+    ) {
+        // or a boolean? 
+        bool myval = value == "true" || value == "True";
         if (isBooleanVariable(name)) {
             setBooleanOriginalVariableValue(name, myval);
         } else {
@@ -1349,7 +1352,8 @@ bool Schedule::gotoNextJob() {
             }
 
             if (!op_success) return false;
-        } else // this is a job, get its current_name and options {
+        } else {
+            // this is a job, get its current_name and options 
             return true;
         }
     }

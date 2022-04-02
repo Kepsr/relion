@@ -174,7 +174,12 @@ extern std::string floatToString(float F, int _width, int _prec);
  * }
  * @endcode
  */
-#define FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v) for (long int n = 0, end = v.nzyxdim(); n < end; n++)
+#define FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v) \
+    for (long int n = 0; n < (v).nzyxdim(); n++)
+/// NOTE: It is wasteful to recalculate v.nzyxdim() on every iteration
+// However, precalculating long int end = v.nzyxdim()
+// will lead to the possibility of redeclaration.
+
 
 /** For all direct elements in the array
  *
@@ -3118,14 +3123,6 @@ class MultidimArray {
 
         /** Initialize to zeros with a given size.
          */
-        inline void initZeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
-            if (xdim!=Xdim || ydim!=Ydim || zdim!=Zdim || ndim!=Ndim)
-                reshape(Ndim, Zdim,Ydim,Xdim);
-            memset(data, 0, nzyxdim() * sizeof(T));
-        }
-
-        /** Initialize to zeros with a given size.
-         */
         void initZeros(long int Xdim) {
             initZeros(1, 1, 1, Xdim);
         }
@@ -3140,6 +3137,14 @@ class MultidimArray {
          */
         void initZeros(long int Zdim, long int Ydim, long int Xdim) {
             initZeros(1, Zdim, Ydim, Xdim);
+        }
+
+        /** Initialize to zeros with a given size.
+         */
+        inline void initZeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
+            if (xdim!=Xdim || ydim!=Ydim || zdim!=Zdim || ndim!=Ndim)
+                reshape(Ndim, Zdim,Ydim,Xdim);
+            memset(data, 0, nzyxdim() * sizeof(T));
         }
 
         /** Linear initialization (only for 1D)
@@ -3431,19 +3436,17 @@ class MultidimArray {
         // TODO: check this function!
         void sorted_index(MultidimArray<long> &idx) const {
             checkDimension(1);
-            //Set up a vector of pairs
-            std::vector<std::pair<T,long int> > vp;
+            // Set up a vector of pairs
+            std::vector<std::pair<T, long int>> vp;
             vp.reserve(XSIZE(*this));
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this)
-            {
-                vp.push_back(std::make_pair(DIRECT_MULTIDIM_ELEM(*this,n), n));
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
+                vp.push_back(std::make_pair(DIRECT_MULTIDIM_ELEM(*this, n), n));
             }
             // Sort on the first elements of the pairs
             std::sort(vp.begin(), vp.end());
             idx.resize(XSIZE(*this));
             // Fill the output array with the second elements of the sorted vp
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(idx)
-            {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(idx) {
                 DIRECT_MULTIDIM_ELEM(idx, n) = vp[n].second;
             }
         }
@@ -3456,11 +3459,11 @@ class MultidimArray {
          * given in the fuction have different meanings according to the threshold
          * applied.
          *
-         * abs_above: if |x|>a => x=b
-         * abs_below: if |x|<a => x=b
-         * above:     if  x >a => x=b
-         * below:     if  x <a => x=b
-         * range:     if  x <a => x=a   and    if x>b => x=b
+         * abs_above: if |x| > a => x = b
+         * abs_below: if |x| < a => x = b
+         * above:     if  x  > a => x = b
+         * below:     if  x  < a => x = b
+         * range:     if  x  < a => x = a   and    if x > b => x = b
          *
          * @code
          * v.threshold("abs_above", 10, 10);
@@ -3482,10 +3485,10 @@ class MultidimArray {
          * // will be substituted by its nearest border
          * @endcode
          */
-        void threshold(const std::string& type,
-                    T a,
-                    T b,
-                    MultidimArray<int> * mask = NULL ) {
+        void threshold(
+            const std::string &type, T a, T b,
+            MultidimArray<int> *mask = NULL
+        ) {
             int mode;
 
             if (type == "abs_above")

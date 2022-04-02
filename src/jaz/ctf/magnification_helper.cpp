@@ -409,9 +409,9 @@ void MagnificationHelper::adaptAstigmatism(
 
         for (long int p = 0; p < pc; p++) {
 
-            double deltafU = partMdts[m].getValue(EMDL::CTF_DEFOCUSU, p);
-            double deltafV = partMdts[m].getValue(EMDL::CTF_DEFOCUSV, p);
-            double phiDeg  = partMdts[m].getValue(EMDL::CTF_DEFOCUS_ANGLE, p);
+            double deltafU = partMdts[m].getValue<double>(EMDL::CTF_DEFOCUSU, p);
+            double deltafV = partMdts[m].getValue<double>(EMDL::CTF_DEFOCUSV, p);
+            double phiDeg  = partMdts[m].getValue<double>(EMDL::CTF_DEFOCUS_ANGLE, p);
 
             const double phi = DEG2RAD(phiDeg);
 
@@ -427,7 +427,7 @@ void MagnificationHelper::adaptAstigmatism(
 
         if (perParticle) {
             for (long int p = 0; p < pc; p++) {
-                int og = --partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, p);
+                int og = partMdts[m].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
 
                 d2Matrix A2 = Mit[og] * A[p] * Mi[og];
 
@@ -456,7 +456,7 @@ void MagnificationHelper::adaptAstigmatism(
                 d2Matrix A_mean(0.0, 0.0, 0.0, 0.0);
 
                 for (long int p = 0; p < pc; p++) {
-                    int ogp = --partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, p);
+                    int ogp = partMdts[m].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
 
                     if (ogp == og) {
                         A_mean += A[p] * (1.0 / (double) pc);
@@ -478,7 +478,7 @@ void MagnificationHelper::adaptAstigmatism(
                 double meanDef_mean = 0.5 * (deltafU_mean_neg + deltafV_mean_neg);
 
                 for (long int p = 0; p < pc; p++) {
-                    int ogp = --partMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, p);
+                    int ogp = partMdts[m].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
 
                     if (ogp == og) {
                         d2Matrix Ap2 = Mit[og] * A[p] * Mi[og];

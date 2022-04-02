@@ -259,7 +259,7 @@ void FlexAnalyser::loopThroughParticles(int rank, int size) {
                              : j % 6 == 3 ? "x" 
                              : j % 6 == 4 ? "y" 
                              : j % 6 == 5 ? "z" 
-                             : ""
+                             : "";
             if (stro != "") {
                 stro +=  "-body-" + integerToString(1 + j / 6);
                 f_evec << stro << " ";
@@ -315,9 +315,9 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
     // Get the consensus class, orientational parameters and norm (if present)
     Matrix2D<RFLOAT> Aori;
     // RFLOAT xoff, yoff, zoff;
-    RFLOAT rot  = data.MDimg.getValue(EMDL::ORIENT_ROT,  part_id);
-    RFLOAT tilt = data.MDimg.getValue(EMDL::ORIENT_TILT, part_id);
-    RFLOAT psi  = data.MDimg.getValue(EMDL::ORIENT_PSI,  part_id);
+    RFLOAT rot  = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,  part_id);
+    RFLOAT tilt = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT, part_id);
+    RFLOAT psi  = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,  part_id);
     Euler_angles2matrix(rot, tilt, psi, Aori, false);
 
     RFLOAT my_pixel_size = data.getImagePixelSize(part_id, 0);
@@ -333,13 +333,13 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
     for (int ibody = 0; ibody < model.nr_bodies; ibody++) {
         MultidimArray<RFLOAT> Mbody, Mmask;
         Matrix1D<RFLOAT> body_offset(3), body_offset_3d(3);
-        RFLOAT body_rot  = data.MDbodies[ibody].getValue(EMDL::ORIENT_ROT,               part_id);
-        RFLOAT body_tilt = data.MDbodies[ibody].getValue(EMDL::ORIENT_TILT,              part_id);
-        RFLOAT body_psi  = data.MDbodies[ibody].getValue(EMDL::ORIENT_PSI,               part_id);
-        XX(body_offset)  = data.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, part_id);
-        YY(body_offset)  = data.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, part_id);
+        RFLOAT body_rot  = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_ROT,               part_id);
+        RFLOAT body_tilt = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_TILT,              part_id);
+        RFLOAT body_psi  = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_PSI,               part_id);
+        XX(body_offset)  = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, part_id);
+        YY(body_offset)  = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, part_id);
         if (model.data_dim == 3)
-        ZZ(body_offset)  = data.MDbodies[ibody].getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, part_id);
+        ZZ(body_offset)  = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, part_id);
 
         // As of v3.1, offsets are in Angstrom: convert back to pixels!
         body_offset /= my_pixel_size;
@@ -404,7 +404,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
 
         DFo.addObject();
         DFo.setValue(EMDL::MLMODEL_REF_IMAGE, fn_img);
-        fn_img = data.MDimg.getValue(EMDL::IMAGE_NAME, part_id);
+        fn_img = data.MDimg.getValue<FileName>(EMDL::IMAGE_NAME, part_id);
         DFo.setValue(EMDL::IMAGE_NAME, fn_img);
     }
 }
@@ -612,7 +612,7 @@ void FlexAnalyser::writeAllPCAProjections(std::vector<std::vector<double>> &proj
         REPORT_ERROR((std::string) " FlexAnalyser::writeAllPCAProjections: cannot write to file: " + fnt);
 
     for (long int ipart = 0; ipart < projected_input.size(); ipart++) {
-        fnt = data.MDimg.getValue(EMDL::IMAGE_NAME, ipart);
+        fnt = data.MDimg.getValue<FileName>(EMDL::IMAGE_NAME, ipart);
         fh << fnt << " ";
         for (int ival = 0; ival < projected_input[ipart].size(); ival++) {
             fh.width(15);

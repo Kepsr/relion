@@ -299,7 +299,8 @@ void TiltEstimator::parametricFit(
             scales.push_back(PI);
             labels.push_back("Beamtilt-only fit [-pi, pi] " + obsModel->getGroupName(og));
 
-            #pragma omp critical {
+            #pragma omp critical
+            {
                 optOut.setValue(EMDL::IMAGE_BEAMTILT_X, tilt_x, og);
                 optOut.setValue(EMDL::IMAGE_BEAMTILT_Y, tilt_y, og);
             }
@@ -338,7 +339,7 @@ void TiltEstimator::parametricFit(
             FftwHelper::decenterUnflip2D(fit.data, fitFull.data);
 
             ImageLog::write(
-                fitFull, 
+                fitFull,
                 outPath + "beamtilt_delta-phase_iter-fit_optics-group_" + ogstr + "_N-" + sts.str());
 
             imgs_for_eps.push_back(fitFull);
@@ -350,7 +351,8 @@ void TiltEstimator::parametricFit(
 
             TiltHelper::extractTilt(Zernike_coeffs_opt, tilt_x, tilt_y, Cs, lambda);
 
-            #pragma omp critical {
+            #pragma omp critical
+            {
                 optOut.setValue(EMDL::IMAGE_BEAMTILT_X, tilt_x, og);
                 optOut.setValue(EMDL::IMAGE_BEAMTILT_Y, tilt_y, og);
                 optOut.setValue(EMDL::IMAGE_ODD_ZERNIKE_COEFFS, Zernike_coeffs_opt, og);

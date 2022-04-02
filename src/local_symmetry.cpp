@@ -29,8 +29,8 @@ static std::string str_mask_filename = "MASKFILENAME";
 void sum3DCubicMask(
     const MultidimArray<RFLOAT> v, RFLOAT& val_sum, RFLOAT& val_ctr
 ) {
-    RFLOAT val = 0.;
-    val_sum = val_ctr = 0.;
+    RFLOAT val = 0.0;
+    val_sum = val_ctr = 0.0;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
         val = DIRECT_A3D_ELEM(v, k, i, j);
@@ -340,12 +340,12 @@ void parseDMFormatMasksAndOperators(
 void readRelionFormatMasksAndOperators(
     FileName fn_info,
     std::vector<FileName>& fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT> > >& ops,
+    std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
     RFLOAT angpix,
     bool verb
 ) {
     MetaDataTable MD;
-    std::vector<Matrix1D<RFLOAT> > dummy;
+    std::vector<Matrix1D<RFLOAT>> dummy;
     Matrix1D<RFLOAT> op, op_i;
     bool is_maskname_found = false;
     RFLOAT aa = 0.0, bb = 0.0, gg = 0.0, dx = 0.0, dy = 0.0, dz = 0.0;
@@ -381,7 +381,7 @@ void readRelionFormatMasksAndOperators(
     // Load mask names
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         is_maskname_found = false;
-        FileName fn_mask = MD.getValue(EMDL::MASK_NAME);
+        FileName fn_mask = MD.getValue<FileName>(EMDL::MASK_NAME);
 
         for (int id_mask = 0; id_mask < fn_mask_list.size(); id_mask++) {
             if (fn_mask_list[id_mask] == fn_mask) {
@@ -409,17 +409,17 @@ void readRelionFormatMasksAndOperators(
 
         // Find all operators for this mask
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-            FileName fn_mask = MD.getValue(EMDL::MASK_NAME);
+            FileName fn_mask = MD.getValue<FileName>(EMDL::MASK_NAME);
             if (fn_mask != fn_mask_list[id_mask])
                 continue;
 
             // Get this operator
-            aa = MD.getValue(EMDL::ORIENT_ROT);
-            bb = MD.getValue(EMDL::ORIENT_TILT);
-            gg = MD.getValue(EMDL::ORIENT_PSI);
-            dx = MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-            dy = MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-            dz = MD.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+            aa = MD.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            bb = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            gg = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+            dx = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            dy = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+            dz = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
             // Re-calculate angles so that they follow the conventions in RELION!
             standardiseEulerAngles(aa, bb, gg, aa, bb, gg);
@@ -474,7 +474,7 @@ void readRelionFormatMasksWithoutOperators(
     FileName fn_info,
     std::vector<FileName>& fn_mask_list,
     std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
-    std::vector<std::vector<FileName> >& op_masks,
+    std::vector<std::vector<FileName>>& op_masks,
     bool all_angular_search_ranges_are_global,
     bool verb
 ) {
@@ -483,9 +483,9 @@ void readRelionFormatMasksWithoutOperators(
     std::vector<FileName> fns, fns_empty;
     long int id = 0, ide = 0;
     std::vector<long int> ids;
-    std::vector<std::vector<FileName> > op_masks_tmp;
+    std::vector<std::vector<FileName>> op_masks_tmp;
     Matrix1D<RFLOAT> op_empty;
-    std::vector<Matrix1D<RFLOAT> > ops_empty;
+    std::vector<Matrix1D<RFLOAT>> ops_empty;
 
     // Initialisation
     fn_mask_list.clear();
@@ -510,8 +510,8 @@ void readRelionFormatMasksWithoutOperators(
     fns.clear();
     ids.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        fn = MD.getValue(EMDL::MASK_NAME);
-        id = MD.getValue(EMDL::AREA_ID);
+        fn = MD.getValue<FileName>(EMDL::MASK_NAME);
+        id = MD.getValue<int>(EMDL::AREA_ID);
         fns.push_back(fn);
         ids.push_back(id);
         if (id <= 0)
@@ -608,7 +608,7 @@ void readRelionFormatMasksWithoutOperators(
 void writeRelionFormatMasksAndOperators(
     FileName fn_info,
     const std::vector<FileName>& fn_mask_list,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > >& ops,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
     RFLOAT angpix
 ) {
     MetaDataTable MD;
@@ -690,7 +690,7 @@ void writeRelionFormatLocalSearchOperatorResults(
 
 void readDMFormatMasksAndOperators(FileName fn_info,
     std::vector<FileName>& fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT> > >& op_list,
+    std::vector<std::vector<Matrix1D<RFLOAT>>>& op_list,
     RFLOAT angpix,
     bool verb
 ) {
@@ -709,7 +709,7 @@ void readDMFormatMasksAndOperators(FileName fn_info,
     const std::string str_omat = "OMAT";
     const std::string str_trans = "TRAN";
     Matrix1D<RFLOAT> op, op_i;
-    std::vector<Matrix1D<RFLOAT> > ops;
+    std::vector<Matrix1D<RFLOAT>> ops;
 
     int id_matrix_type = 0;
     RFLOAT a11 = 0.0, a12 = 0.0, a13 = 0.0, a21 = 0.0, a22 = 0.0, a23 = 0.0, a31 = 0.0, a32 = 0.0, a33 = 0.0;
@@ -954,7 +954,7 @@ void readDMFormatMasksAndOperators(FileName fn_info,
 void writeDMFormatMasksAndOperators(
     FileName fn_info,
     const std::vector<FileName>& fn_mask_list,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > >& ops,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
     RFLOAT angpix
 ) {
     if (fn_info.getExtension() == "star")
@@ -1431,7 +1431,7 @@ void getLocalSearchOperatorSamplings(
         sampling.healpix_order = healpix_order;
         sampling.is_3D = sampling.is_3d_trans = true;
         sampling.limit_tilt = -91.0; // Don't limit tilts
-        sampling.psi_step = 360.0 / (6.0 * ROUND(std::pow(2., healpix_order)));
+        sampling.psi_step = 360.0 / (6.0 * ROUND(std::pow(2.0, healpix_order)));
         sampling.offset_range = sampling.offset_step = 1.0; // I don't use Healpix translational samplings
         sampling.random_perturbation = sampling.perturbation_factor = 0.0;
 
@@ -1629,7 +1629,7 @@ void calculateOperatorCC(
 
     // Check the mask, calculate the sum of mask values
     sum3DCubicMask(mask, mask_val_sum, mask_val_ctr);
-    if (mask_val_sum < 1.)
+    if (mask_val_sum < 1.0)
         std::cout << " + WARNING: sum of mask values is smaller than 1! Please check whether it is a correct mask!" << std::endl;
 
     // Calculate all CCs
@@ -1643,7 +1643,7 @@ void calculateOperatorCC(
         Localsym_operator2matrix(op_samplings[iop], op_mat, LOCALSYM_OP_DO_INVERT);
         applyGeometry(dest, vol, op_mat, IS_NOT_INV, DONT_WRAP);
 
-        cc = 0.;
+        cc = 0.0;
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol) {
             mask_val = DIRECT_A3D_ELEM(mask, k, i, j);
             if (mask_val < XMIPP_EQUAL_ACCURACY)
@@ -1680,7 +1680,7 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     RFLOAT x_angpix = 0.0, y_angpix = 0.0, z_angpix = 0.0, float_val = 0.0;
     long int pos_val_ctr = 0, xx = 0, yy = 0, zz = 0;
     int id = 0, int_val = 0;
-    std::queue<Matrix1D<int> > q;
+    std::queue<Matrix1D<int>> q;
     Matrix1D<int> vec1;
     const int K_max = 999;
 
@@ -1703,9 +1703,9 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
 
     if (XSIZE(img()) != YSIZE(img()) || XSIZE(img()) != ZSIZE(img()))
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
-    x_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
-    y_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
-    z_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z);
+    x_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
+    y_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y);
+    z_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z);
 
     // Initialise vol_rec
     vol_rec.initZeros(img());
@@ -1745,8 +1745,8 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
             vec1 = q.front();
             q.pop();
             DIRECT_A3D_ELEM(vol_rec, ZZ(vec1), YY(vec1), XX(vec1)) = id;
-            for (int dz = -1; dz <= 1; dz++) {
-            for (int dy = -1; dy <= 1; dy++) {
+            for (int dz = -1; dz <= 1; dz++)
+            for (int dy = -1; dy <= 1; dy++)
             for (int dx = -1; dx <= 1; dx++) {
 
                 if (dx * dy * dz != 0) continue;
@@ -1811,8 +1811,8 @@ void separateMasksKMeans(
     std::vector<int> vec_rec;
     Matrix1D<int> vec;
     Matrix2D<RFLOAT> mat;
-    RFLOAT a = 0., b = 0., g = 0., x = 0., y = 0., z = 0., val = 0., dist2 = 0, dist2_min = 0.;
-    RFLOAT x_angpix = 0., y_angpix = 0., z_angpix = 0.;
+    RFLOAT a = 0., b = 0., g = 0., x = 0., y = 0., z = 0., val = 0., dist2 = 0, dist2_min = 0.0;
+    RFLOAT x_angpix = 0., y_angpix = 0., z_angpix = 0.0;
     int best_cen = -1, pos_val_ctr = 0;
     long int cen_ptr = 0;
     FileName fn_out;
@@ -1981,7 +1981,7 @@ void separateMasksKMeans(
             ocen[ii] = ncen[ii] / wcen[ii];
 
             ncen[ii] = vectorR3(0., 0., 0.);
-            wcen[ii] = 0.;
+            wcen[ii] = 0.0;
 #ifdef DEBUG
             std::cout << " Centroid #" << ii + 1 << " : XYZ= " << XX(ocen[ii]) << ", " << YY(ocen[ii]) << ", " << ZZ(ocen[ii]) << std::endl;
 #endif
@@ -2140,7 +2140,7 @@ void local_symmetry_parameters::run() {
         unsym_map.read(fn_unsym);
         // sym_map.clear();
 
-        int box_size = std::min({XSIZE(unsym_map(), YSIZE(unsym_map(), ZSIZE(unsym_map()})  // copy-list-initialisation (C++11)
+        int box_size = std::min({XSIZE(unsym_map()), YSIZE(unsym_map()), ZSIZE(unsym_map())});  // copy-list-initialisation (C++11)
 
         applyLocalSymmetry(sym_map(), unsym_map(), fn_mask_list, op_list, (RFLOAT(box_size) * sphere_percentage) / 2.0, width_edge_pix);
         sym_map().setXmippOrigin();
@@ -2257,7 +2257,7 @@ void local_symmetry_parameters::run() {
                 ang_tilt_range < XMIPP_EQUAL_ACCURACY &&
                 ang_psi_range  < XMIPP_EQUAL_ACCURACY
             ) {
-                ang_range = 180.;
+                ang_range = 180.0;
                 std::cout << " Initial searches: reset searching ranges of all 3 Euler angles to +/-180 degrees." << std::endl;
             } else {
                 if (ang_range > (XMIPP_EQUAL_ACCURACY) )
@@ -2570,7 +2570,7 @@ void local_symmetry_parameters::run() {
         /*
         Image<RFLOAT> img1, img2;
         std::vector<Matrix1D<RFLOAT> > op_samplings;
-        RFLOAT aa = 0., bb = 0., gg = 0., dx = 0., dy = 0., dz = 0.;
+        RFLOAT aa = 0., bb = 0., gg = 0., dx = 0., dy = 0., dz = 0.0;
         Matrix2D<RFLOAT> op_mat1, op_mat2;
         Matrix1D<RFLOAT> op_old, op_search_ranges, op_new, trans_vec1, trans_vec2;
 

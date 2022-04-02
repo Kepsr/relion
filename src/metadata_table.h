@@ -51,7 +51,7 @@
 /** For all objects.
     @code
     FOR_ALL_OBJECTS_IN_METADATA(metadata) {
-        RFLOAT rot = DF.getValue(EMDL::ANGLEROT);
+        RFLOAT rot = DF.getValue<RFLOAT>(EMDL::ANGLEROT);
     }
     @endcode
 
@@ -165,7 +165,7 @@ class MetaDataTable {
     template<class T>
     T getValue(EMDL::EMDLabel label, long objectID = -1) const;
 
-    bool getValueToString(EMDL::EMDLabel label, std::string &value, long int objectID = -1, bool escape=false) const;
+    std::string getValueToString(EMDL::EMDLabel label, long int objectID = -1, bool escape=false) const;
 
     std::string getUnknownLabelNameAt(int i) const;
 

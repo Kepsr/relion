@@ -22,13 +22,13 @@ void LegacyObservationModel::predictObservation(
     const int s = proj.ori_size;
     const int sh = s / 2 + 1;
 
-    double xoff = mdt.getValue(EMDL::ORIENT_ORIGIN_X, particle);
-    double yoff = mdt.getValue(EMDL::ORIENT_ORIGIN_Y, particle);
+    double xoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X, particle);
+    double yoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y, particle);
 
     Matrix2D<RFLOAT> A3D;
-    double rot  = mdt.getValue(EMDL::ORIENT_ROT,  particle);
-    double tilt = mdt.getValue(EMDL::ORIENT_TILT, particle);
-    double psi  = mdt.getValue(EMDL::ORIENT_PSI,  particle);
+    double rot  = mdt.getValue<double>(EMDL::ORIENT_ROT,  particle);
+    double tilt = mdt.getValue<double>(EMDL::ORIENT_TILT, particle);
+    double psi  = mdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
     Euler_angles2matrix(rot, tilt, psi, A3D);
 
@@ -53,8 +53,8 @@ void LegacyObservationModel::predictObservation(
 
     if (applyTilt) {
         double tx = 0.0, ty = 0.0;
-        tx = mdt.getValue(EMDL::IMAGE_BEAMTILT_X, particle);
-        ty = mdt.getValue(EMDL::IMAGE_BEAMTILT_Y, particle);
+        tx = mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_X, particle);
+        ty = mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_Y, particle);
 
         if (tx != 0.0 && ty != 0.0) {
             if (anisoTilt) {
@@ -109,15 +109,15 @@ void LegacyObservationModel::insertObservation(
 
     Matrix2D<RFLOAT> A3D;
 
-    RFLOAT rot  = mdt.getValue(EMDL::ORIENT_ROT, particle);
-    RFLOAT tilt = mdt.getValue(EMDL::ORIENT_TILT, particle);
-    RFLOAT psi  = mdt.getValue(EMDL::ORIENT_PSI, particle);
+    RFLOAT rot  = mdt.getValue<RFLOAT>(EMDL::ORIENT_ROT, particle);
+    RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, particle);
+    RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI, particle);
 
     Euler_angles2matrix(rot, tilt, psi, A3D);
 
     double tx = 0.0, ty = 0.0;
-    tx = mdt.getValue(EMDL::ORIENT_ORIGIN_X, particle) + shift_x;
-    ty = mdt.getValue(EMDL::ORIENT_ORIGIN_Y, particle) + shift_y;
+    tx = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X, particle) + shift_x;
+    ty = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y, particle) + shift_y;
 
     MultidimArray<Complex> F2D = img.data;
 
@@ -144,10 +144,10 @@ void LegacyObservationModel::insertObservation(
         double my_tilt_y = 0.0;
 
         if (mdt.containsLabel(EMDL::IMAGE_BEAMTILT_X))
-        my_tilt_x = mdt.getValue(EMDL::IMAGE_BEAMTILT_X, particle);
+        my_tilt_x = mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_X, particle);
 
         if (mdt.containsLabel(EMDL::IMAGE_BEAMTILT_Y))
-        my_tilt_y = mdt.getValue(EMDL::IMAGE_BEAMTILT_Y, particle);
+        my_tilt_y = mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_Y, particle);
 
         selfApplyBeamTilt(F2D, my_tilt_x, my_tilt_y, lambda, Cs, angpix, sh);
     }

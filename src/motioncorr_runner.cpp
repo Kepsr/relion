@@ -218,10 +218,10 @@ void MotioncorrRunner::initialise() {
         fn_micrographs.clear();
         optics_group_micrographs.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            FileName fn_mic = MDin.getValue(EMDL::MICROGRAPH_MOVIE_NAME);
+            FileName fn_mic = MDin.getValue<FileName>(EMDL::MICROGRAPH_MOVIE_NAME);
             fn_micrographs.push_back(fn_mic);
 
-            int optics_group = MDin.getValue(EMDL::IMAGE_OPTICS_GROUP);
+            int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
             optics_group_micrographs.push_back(optics_group);
         }
     } else {
@@ -419,8 +419,8 @@ void MotioncorrRunner::run() {
         Micrograph mic(fn_micrographs[imic], fn_gain_reference, bin_factor, eer_upsampling, eer_grouping);
 
         // Get angpix and voltage from the optics groups:
-        voltage = obsModel.opticsMdt.getValue(EMDL::CTF_VOLTAGE,                    optics_group_micrographs[imic] - 1);
-        angpix  = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, optics_group_micrographs[imic] - 1);
+        voltage = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::CTF_VOLTAGE,                    optics_group_micrographs[imic] - 1);
+        angpix  = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, optics_group_micrographs[imic] - 1);
 
         bool result = false;
         if (do_own) {
@@ -809,20 +809,20 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
         obsModel.opticsMdt.setValue(
             EMDL::MICROGRAPH_PIXEL_SIZE, 
-            (RFLOAT) (obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE) * bin_factor)
+            (RFLOAT) (obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE) * bin_factor)
         );
     }
     obsModel.save(MDavg, fn_out + "corrected_micrographs.star", "micrographs");
 
     // Now generate EPS plot with histograms and combine all EPS into a logfile.pdf
-    std::vector<EMDLabel> plot_labels;
+    std::vector<EMDL::EMDLabel> plot_labels;
     plot_labels.push_back(EMDL::MICROGRAPH_ACCUM_MOTION_TOTAL);
     plot_labels.push_back(EMDL::MICROGRAPH_ACCUM_MOTION_EARLY);
     plot_labels.push_back(EMDL::MICROGRAPH_ACCUM_MOTION_LATE);
     FileName fn_eps, fn_eps_root = fn_out + "corrected_micrographs";
     std::vector<FileName> all_fn_eps;
     for (int i = 0; i < plot_labels.size(); i++) {
-        EMDLabel label = plot_labels[i];
+        EMDL::EMDLabel label = plot_labels[i];
         if (MDavg.containsLabel(label)) {
             // Values for all micrographs
             CPlot2D *plot2Db=new CPlot2D(EMDL::label2Str(label) + " for all micrographs");

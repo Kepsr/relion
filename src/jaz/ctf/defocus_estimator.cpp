@@ -185,9 +185,9 @@ void DefocusEstimator::writeEPS(const MetaDataTable& mdt) {
     const int pc = mdt.numberOfObjects();
 
     for (int p = 0; p < pc; p++) {
-        RFLOAT defU = mdt.getValue(EMDL::CTF_DEFOCUSU, p);
-        RFLOAT defV = mdt.getValue(EMDL::CTF_DEFOCUSV, p);
-        defU = (defU + defV) / 2.;
+        RFLOAT defU = mdt.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, p);
+        RFLOAT defV = mdt.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, p);
+        defU = (defU + defV) / 2.0;
 
         min_defocus = XMIPP_MIN(min_defocus, defU);
         max_defocus = XMIPP_MAX(max_defocus, defU);
@@ -195,10 +195,10 @@ void DefocusEstimator::writeEPS(const MetaDataTable& mdt) {
 
     for (int p = 0; p < pc; p++) {
 
-        RFLOAT xcoor = mdt.getValue(EMDL::IMAGE_COORD_X, p);
-        RFLOAT ycoor = mdt.getValue(EMDL::IMAGE_COORD_Y, p);
-        RFLOAT defU  = mdt.getValue(EMDL::CTF_DEFOCUSU,  p);
-        RFLOAT defV  = mdt.getValue(EMDL::CTF_DEFOCUSV,  p);
+        RFLOAT xcoor = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);
+        RFLOAT ycoor = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, p);
+        RFLOAT defU  = mdt.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU,  p);
+        RFLOAT defV  = mdt.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV,  p);
 
         defU = (defU + defV) / 2.0;
 
@@ -310,8 +310,8 @@ void DefocusEstimator::bruteForceFit(
             );
 
             /* if (debug) {
-                double u0 = mdt.getValue(EMDL::CTF_DEFOCUSU, p);
-                double v0 = mdt.getValue(EMDL::CTF_DEFOCUSV, p);
+                double u0 = mdt.getValue<double>(EMDL::CTF_DEFOCUSU, p);
+                double v0 = mdt.getValue<double>(EMDL::CTF_DEFOCUSV, p);
 
                 std::cout << u0 << " -> " << u << ", " << v0 << " -> " << v << "\n";
             } */

@@ -295,8 +295,8 @@ void BFactorRefiner::writePerMicrographEPS(
     plot2D.SetDrawLegend(false);
     plot2D.SetFlipY(false);
 
-    RFLOAT B = mdt.getValue(EMDL::CTF_BFACTOR,     0);
-    RFLOAT a = mdt.getValue(EMDL::CTF_SCALEFACTOR, 0);
+    RFLOAT B = mdt.getValue<RFLOAT>(EMDL::CTF_BFACTOR,     0);
+    RFLOAT a = mdt.getValue<RFLOAT>(EMDL::CTF_SCALEFACTOR, 0);
 
     CDataSet curve;
     curve.SetDrawMarker(false);
@@ -425,10 +425,10 @@ void BFactorRefiner::writePerParticleEPS(const MetaDataTable& mdt) {
 
     for (int p = 0; p < pc; p++) {
 
-        RFLOAT xcoor = mdt.getValue(EMDL::IMAGE_COORD_X, p);
-        RFLOAT ycoor = mdt.getValue(EMDL::IMAGE_COORD_Y, p);
-        RFLOAT B     = mdt.getValue(EMDL::CTF_BFACTOR, p);
-        RFLOAT a     = mdt.getValue(EMDL::CTF_SCALEFACTOR, p);
+        RFLOAT xcoor = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);
+        RFLOAT ycoor = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, p);
+        RFLOAT B     = mdt.getValue<RFLOAT>(EMDL::CTF_BFACTOR, p);
+        RFLOAT a     = mdt.getValue<RFLOAT>(EMDL::CTF_SCALEFACTOR, p);
 
         RFLOAT aval = 1.0 - a / 2.0;
         RFLOAT bval = 1.01 - (B - min_B) / (max_B - min_B);

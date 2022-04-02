@@ -392,7 +392,7 @@ void MlOptimiserMpi::initialise() {
                 temp.read(fn_data);
 
                 int t_ori_size = temp.getOpticsImageSize(0);
-                // t_ori_size = temp.MDopt.getValue(EMDL::IMAGE_SIZE, 0);
+                // t_ori_size = temp.MDopt.getValue<int>(EMDL::IMAGE_SIZE, 0);
 
                 if (LowBoxLim < t_ori_size) {
                     anticipate_oom = true;
@@ -446,8 +446,8 @@ void MlOptimiserMpi::initialise() {
         int idx;
         MDsigma.read(fn_sigma);
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
-            idx = MDsigma.getValue(EMDL::SPECTRAL_IDX);
-            val = MDsigma.getValue(EMDL::MLMODEL_SIGMA2_NOISE);
+            val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
+            idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
             if (idx < XSIZE(mymodel.sigma2_noise[0]))
                 mymodel.sigma2_noise[0](idx) = val;
         }

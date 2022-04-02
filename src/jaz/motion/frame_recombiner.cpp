@@ -266,8 +266,8 @@ void FrameRecombiner::process(
             Matrix1D<RFLOAT> my_projected_center(3);
             my_projected_center.initZeros();
 
-            RFLOAT xoff = mdtOut.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p); // in A
-            RFLOAT yoff = mdtOut.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
+            RFLOAT xoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p); // in A
+            RFLOAT yoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
 			// std::cout << "IN  xoff = " << xoff << " yoff = " << yoff;
             xoff /= ref_angpix; // Now in reference pixels
             yoff /= ref_angpix;
@@ -277,9 +277,9 @@ void FrameRecombiner::process(
                 fabs(recenter_y) > 0.0 || 
                 fabs(recenter_z) > 0.0
             ) {
-                RFLOAT rot  = mdtOut.getValue(EMDL::ORIENT_ROT,  p);
-                RFLOAT tilt = mdtOut.getValue(EMDL::ORIENT_TILT, p);
-                RFLOAT psi  = mdtOut.getValue(EMDL::ORIENT_PSI,  p);
+                RFLOAT rot  = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
+                RFLOAT tilt = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_TILT, p);
+                RFLOAT psi  = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_PSI,  p);
 
                 // Project the center-coordinates
                 Matrix1D<RFLOAT> my_center(3);
@@ -296,8 +296,8 @@ void FrameRecombiner::process(
             xoff = xoff * ref_angpix / coords_angpix; // Now in (possibly binned) micrograph's pixel
             yoff = yoff * ref_angpix / coords_angpix;
 
-            RFLOAT xcoord = mdtOut.getValue(EMDL::IMAGE_COORD_X, p);
-            RFLOAT ycoord = mdtOut.getValue(EMDL::IMAGE_COORD_Y, p);
+            RFLOAT xcoord = mdtOut.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);
+            RFLOAT ycoord = mdtOut.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, p);
 			// std::cout << " xcoord = " << xcoord << " ycoord = " << ycoord << std::endl;;
             xcoord -= ROUND(xoff);
             ycoord -= ROUND(yoff);
@@ -349,7 +349,8 @@ void FrameRecombiner::process(
                 CTF ctf;
                 ctf.readByGroup(mdtOut, obsModel, p);
                 int og = obsModel->getOpticsGroup(mdtOut, p);
-                #pragma omp critical(FrameRecombiner_process) {
+                #pragma omp critical(FrameRecombiner_process)
+                {
                      if (obsModel->getBoxSize(og) != s_out[og])
                         obsModel->setBoxSize(og, s_out[og]);
                     if (obsModel->getPixelSize(og) != angpix_out[og])
@@ -589,7 +590,7 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromBfacs(
     double bfacOff = 0.0;
 
     for (int f = 0; f < fc; f++) {
-        double b = mdt.getValue(EMDL::POSTPROCESS_BFACTOR, f);
+        double b = mdt.getValue<double>(EMDL::POSTPROCESS_BFACTOR, f);
 
         if (b > bfacOff) bfacOff = b;
     }
@@ -597,8 +598,8 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromBfacs(
     const double cf = 8.0 * angpix_ref * angpix_ref * sh * sh;
 
     for (int f = 0; f < fc; f++) {
-        double b = mdt.getValue(EMDL::POSTPROCESS_BFACTOR,               f);
-        double k = mdt.getValue(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, f);
+        double b = mdt.getValue<double>(EMDL::POSTPROCESS_BFACTOR,               f);
+        double k = mdt.getValue<double>(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, f);
 
         bkFacs[f] = d2Vector(sqrt(-cf / (b - bfacOff - 1)), exp(k));
     }

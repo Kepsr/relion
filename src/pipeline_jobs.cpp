@@ -18,7 +18,7 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/pipeline_jobs.h"
-using std::string, std::vector;
+using std::string;
 
 string errorMsg(string s) {
     return "ERROR: " + s;
@@ -267,8 +267,8 @@ void JobOption::writeValue(std::ostream& out) {
 
 
 template<typename T>
-bool contains(T* arr, T item) {
-    return std::find(std::begin(arr), std::end(arr), item) != std::end(arr)
+static bool elem(T item, std::vector<T> items) {
+    return std::find(std::begin(items), std::end(items), item) != std::end(items);
 }
 
 
@@ -340,7 +340,7 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
             bool read_all = true;
             for (
                 std::map<string, JobOption>::iterator it = joboptions.begin();
-                it != joboptions.end(); ++it;
+                it != joboptions.end(); ++it
             ) {
                 if (!(it->second).readValue(fh))
                     read_all = false;
@@ -365,16 +365,16 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
         }
 
         MDhead.read(fn_star, "job");
-        type = MDhead.getValue(EMDL::JOB_TYPE);
-        is_continue = MDhead.getValue(EMDL::JOB_IS_CONTINUE);
+        type = MDhead.getValue<int>(EMDL::JOB_TYPE);
+        is_continue = MDhead.getValue<bool>(EMDL::JOB_IS_CONTINUE);
         _is_continue = is_continue;
         if (do_initialise)
             initialise(type);
 
         MDvals.read(fn_star, "joboptions_values");
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDvals) {
-            string label = MDvals.getValue(EMDL::JOBOPTION_VARIABLE);
-            string value = MDvals.getValue(EMDL::JOBOPTION_VALUE);
+            string label = MDvals.getValue<string>(EMDL::JOBOPTION_VARIABLE);
+            string value = MDvals.getValue<string>(EMDL::JOBOPTION_VALUE);
             if (joboptions.find(label) == joboptions.end()) {
                 std::cerr << "WARNING: cannot find " << label << " in the defined joboptions. Ignoring it ..." << std::endl;
             } else {
@@ -386,7 +386,8 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
 
     if (have_read) {
         // Just check that went OK
-        int types[] = {
+        // std::vector<int> types = ;
+        if (!elem(type, {
             PROC_IMPORT,
             PROC_MOTIONCORR,
             PROC_CTFFIND,
@@ -407,8 +408,7 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
             PROC_MOTIONREFINE,
             PROC_CTFREFINE,
             PROC_EXTERNAL,
-        };
-        if (!contains(types, type)) {
+        })) {
             // If type isn't recognised
             REPORT_ERROR(errorMsg("cannot find correct job type in " + myfilename + "run.job, with type= " + integerToString(type)));
         }
@@ -2082,7 +2082,7 @@ bool RelionJob::getCommandsExtractJob(
     if (error_message != "")
         return false;
 
-    bg_radius = bg_diameter / 2.0;
+    RFLOAT bg_radius = bg_diameter / 2.0;
     if (joboptions["do_rescale"].getBoolean()) {
         command += " --scale " + joboptions["rescale"].getString();
         bg_radius *= joboptions["rescale"].getNumber(error_message);
@@ -2160,11 +2160,11 @@ void RelionJob::initialiseSelectJob() {
 
     joboptions["do_select_values"] = JobOption("Select based on metadata values?", false, "If set to Yes, the job will be non-interactive and the selected star file will be based only on the value of the corresponding metadata label. Note that this option is only valid for micrographs or particles STAR files.");
     joboptions["select_label"] = JobOption("Metadata label for subset selection:", (string)"rlnCtfMaxResolution", "This column from the input STAR file will be used for the subset selection.");
-    joboptions["select_minval"] = JobOption("Minimum metadata value:",  (string)"-9999.", "Only lines in the input STAR file with the corresponding metadata value larger than or equal to this value will be included in the subset.");
-    joboptions["select_maxval"] = JobOption("Maximum metadata value:",  (string)"9999.", "Only lines in the input STAR file with the corresponding metadata value smaller than or equal to this value will be included in the subset.");
+    joboptions["select_minval"] = JobOption("Minimum metadata value:",  (string) "-9999.", "Only lines in the input STAR file with the corresponding metadata value larger than or equal to this value will be included in the subset.");
+    joboptions["select_maxval"] = JobOption("Maximum metadata value:",  (string) "9999.", "Only lines in the input STAR file with the corresponding metadata value smaller than or equal to this value will be included in the subset.");
 
     joboptions["do_discard"] = JobOption("OR: select on image statistics?", false, "If set to Yes, the job will be non-interactive and all images in the input star file that have average and/or stddev pixel values that are more than the specified sigma-values away from the ensemble mean will be discarded.");
-    joboptions["discard_label"] = JobOption("Metadata label for images:", (string)"rlnImageName", "Specify which column from the input STAR contains the names of the images to be used to calculate the average and stddev values.");
+    joboptions["discard_label"] = JobOption("Metadata label for images:", (string) "rlnImageName", "Specify which column from the input STAR contains the names of the images to be used to calculate the average and stddev values.");
     joboptions["discard_sigma"] = JobOption("Sigma-value for discarding images:", 4, 1, 10, 0.1, "Images with average and/or stddev values that are more than this many times the ensemble stddev away from the ensemble mean will be discarded.");
 
     joboptions["do_split"] = JobOption("OR: split into subsets?", false, "If set to Yes, the job will be non-interactive and the star file will be split into subsets as defined below.");

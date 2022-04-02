@@ -172,8 +172,8 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(frame()) {
-            const float val = DIRECT_MULTIDIM_ELEM(frame(), n);
-            const float gain_here = DIRECT_MULTIDIM_ELEM(gain(), n);
+            const float val       = DIRECT_MULTIDIM_ELEM(frame(), n);
+            const float gain_here = DIRECT_MULTIDIM_ELEM(gain(),  n);
             bool is_bad = DIRECT_MULTIDIM_ELEM(defects(), n) < thresh_reliable;
 
             if (is_bad) {
@@ -295,8 +295,9 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
     if (fn_out[fn_out.size() - 1] != '/')
         fn_out += "/";
 
-    FileName fn_in_ext = fn_in.getExtension();
+    FileName fn_first;
 
+    FileName fn_in_ext = fn_in.getExtension();
     if (fn_in_ext == "star") {
         MD.read(fn_in, "movies");
 
@@ -305,7 +306,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
             MD.read(fn_in, "");
 
         try {
-            FileName fn_first = MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, 0);
+            fn_first = MD.getValue<FileName>(EMDL::MICROGRAPH_MOVIE_NAME, 0);
         } catch (const char *errmsg) {
             REPORT_ERROR("The input STAR file does not contain the rlnMicrographMovieName column");
         }
@@ -322,7 +323,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         }
         f.close();
 
-        fn_first = MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, 0);
+        fn_first = MD.getValue<FileName>(EMDL::MICROGRAPH_MOVIE_NAME, 0);
     } else {
         MD.addObject();
         MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_in);
@@ -452,7 +453,7 @@ void TIFFConverter::run() {
     divide_equally(MD.numberOfObjects(), total_ranks, rank, my_first, my_last); // MPI parallelization
 
     for (long i = my_first; i <= my_last; i++) {
-        FileName fn_movie = MD.getValue(EMDL::MICROGRAPH_MOVIE_NAME, i);
+        FileName fn_movie = MD.getValue<FileName>(EMDL::MICROGRAPH_MOVIE_NAME, i);
         FileName fn_tiff  = fn_out + fn_movie.withoutExtension() + ".tif";
         if (only_do_unfinished && !do_estimate && exists(fn_tiff)) {
             std::cout << "Skipping already processed " << fn_movie << std::endl;

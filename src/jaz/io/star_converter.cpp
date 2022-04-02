@@ -30,7 +30,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
 
     const int particleCount = in.numberOfObjects();
 
-    std::vector<EMDLabel> allOpticsLabels_double(0);
+    std::vector<EMDL::EMDLabel> allOpticsLabels_double(0);
 
     allOpticsLabels_double.push_back(EMDL::CTF_Q0);
     allOpticsLabels_double.push_back(EMDL::IMAGE_BEAMTILT_X);
@@ -41,7 +41,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
     allOpticsLabels_double.push_back(EMDL::CTF_DETECTOR_PIXEL_SIZE);
     allOpticsLabels_double.push_back(EMDL::CTF_MAGNIFICATION);
 
-    std::vector<EMDLabel> opticsLabels_double(0);
+    std::vector<EMDL::EMDLabel> opticsLabels_double(0);
 
     for (int l = 0; l < allOpticsLabels_double.size(); l++) {
         if (in.labelExists(allOpticsLabels_double[l])) {
@@ -60,7 +60,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
         std::vector<double> curVals_double(opticsLabelCount_double);
 
         for (int l = 0; l < opticsLabelCount_double; l++) {
-            curVals_double[l] = in.getValue(opticsLabels_double[l], p);
+            curVals_double[l] = in.getValue<double>(opticsLabels_double[l], p);
         }
 
         for (int g = 0; g < groupValues_double.size(); g++) {
@@ -151,7 +151,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
 
                 FileName fn_img;
                 try {
-                    fn_img = outParticles.getValue(EMDL::IMAGE_NAME, p);
+                    fn_img = outParticles.getValue<FileName>(EMDL::IMAGE_NAME, p);
                 } catch (const char *errmsg) {
                     if (do_die_upon_error) {
                         REPORT_ERROR("BUG: cannot find name for particle...");
@@ -218,8 +218,8 @@ void StarConverter::unifyPixelSize(
     ) {
         for (int i = 0; i < outOptics.numberOfObjects(); i++) {
 
-            double dstep = outOptics.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
-            double mag   = outOptics.getValue(EMDL::CTF_MAGNIFICATION, i);
+            double dstep = outOptics.getValue<double>(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
+            double mag   = outOptics.getValue<double>(EMDL::CTF_MAGNIFICATION, i);
 
             double angpix = 10000 * dstep / mag;
 
@@ -242,41 +242,41 @@ void StarConverter::translateOffsets(
 ) {
     for (int i = 0; i < outParticles.numberOfObjects(); i++) {
 
-        int og = --outParticles.getValue(EMDL::IMAGE_OPTICS_GROUP, i);
-        double angpix = optics.getValue(EMDL::IMAGE_PIXEL_SIZE, og);
+        int og = outParticles.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i) - 1;
+        double angpix = optics.getValue<double>(EMDL::IMAGE_PIXEL_SIZE, og);
 
         if (outParticles.containsLabel(EMDL::ORIENT_ORIGIN_X)) {
-            double x = outParticles.getValue(EMDL::ORIENT_ORIGIN_X, i);
+            double x = outParticles.getValue<double>(EMDL::ORIENT_ORIGIN_X, i);
             outParticles.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, x * angpix, i);
         }
 
         if (outParticles.containsLabel(EMDL::ORIENT_ORIGIN_Y)) {
-            double y = outParticles.getValue(EMDL::ORIENT_ORIGIN_Y, i);
+            double y = outParticles.getValue<double>(EMDL::ORIENT_ORIGIN_Y, i);
             outParticles.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, y * angpix, i);
         }
 
         if (outParticles.containsLabel(EMDL::ORIENT_ORIGIN_Z)) {
-            double z = outParticles.getValue(EMDL::ORIENT_ORIGIN_Z, i);
+            double z = outParticles.getValue<double>(EMDL::ORIENT_ORIGIN_Z, i);
             outParticles.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, z * angpix, i);
         }
 
         if (outParticles.containsLabel(EMDL::ORIENT_ORIGIN_X_PRIOR)) {
-            double x = outParticles.getValue(EMDL::ORIENT_ORIGIN_X_PRIOR, i);
+            double x = outParticles.getValue<double>(EMDL::ORIENT_ORIGIN_X_PRIOR, i);
             outParticles.setValue(EMDL::ORIENT_ORIGIN_X_PRIOR_ANGSTROM, x * angpix, i);
         }
 
         if (outParticles.containsLabel(EMDL::ORIENT_ORIGIN_Y_PRIOR)) {
-            double y = outParticles.getValue(EMDL::ORIENT_ORIGIN_Y_PRIOR, i);
+            double y = outParticles.getValue<double> (EMDL::ORIENT_ORIGIN_Y_PRIOR, i);
             outParticles.setValue(EMDL::ORIENT_ORIGIN_Y_PRIOR_ANGSTROM, y * angpix, i);
         }
 
         if (outParticles.containsLabel(EMDL::ORIENT_ORIGIN_Z_PRIOR)) {
-            double z = outParticles.getValue(EMDL::ORIENT_ORIGIN_Z_PRIOR, i);
+            double z = outParticles.getValue<double>(EMDL::ORIENT_ORIGIN_Z_PRIOR, i);
             outParticles.setValue(EMDL::ORIENT_ORIGIN_Z_PRIOR_ANGSTROM, z * angpix, i);
         }
 
         if (outParticles.containsLabel(EMDL::PARTICLE_HELICAL_TRACK_LENGTH)) {
-            double d = outParticles.getValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH, i);
+            double d = outParticles.getValue<double>(EMDL::PARTICLE_HELICAL_TRACK_LENGTH, i);
             outParticles.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, d * angpix, i);
         }
     }

@@ -103,8 +103,7 @@ std::vector<MetaDataTable> MicrographHandler::cullMissingMovies(
         if (isMoviePresent(mdts[m], false)) {
             good.push_back(mdts[m]);
         } else {
-            FileName fn_movie;
-            mdts[m].getValueToString(EMDL::MICROGRAPH_NAME, fn_movie, 0);
+            FileName fn_movie = mdts[m].getValueToString(EMDL::MICROGRAPH_NAME, 0);
             bad.push_back(fn_movie);
         }
     }
@@ -113,7 +112,7 @@ std::vector<MetaDataTable> MicrographHandler::cullMissingMovies(
         std::cerr << (
             bad.size() == 1 ? 
             " - The movie for the following micrograph is missing:\n" : 
-            " - Movies for the following micrographs are missing:\n";
+            " - Movies for the following micrographs are missing:\n"
         );
 
         for (int i = 0; i < bad.size(); i++) {
@@ -209,12 +208,10 @@ void MicrographHandler::loadInitial(
     int& fc, double& dosePerFrame, std::string& metaFn
 ) {
     if (hasCorrMic) {
-        std::string mgFn;
         FileName fn_pre, fn_jobnr, fn_post;
 
         for (int i = 0, ilim = mdts.size(); i < ilim; i++) {
-            mdts[i].getValueToString(EMDL::MICROGRAPH_NAME, mgFn, 0);
-
+            std::string mgFn = mdts[i].getValueToString(EMDL::MICROGRAPH_NAME, 0);
             // remove the pipeline job prefix
             decomposePipelineFileName(mgFn, fn_pre, fn_jobnr, fn_post);
 
@@ -278,8 +275,7 @@ void MicrographHandler::loadInitial(
             lastFrame - firstFrame + 1;
 
     } else {
-        std::string mgFn0;
-        mdts[0].getValueToString(EMDL::MICROGRAPH_NAME, mgFn0, 0);
+        std::string mgFn0 = mdts[0].getValueToString(EMDL::MICROGRAPH_NAME, 0);
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineFileName(mgFn0, fn_pre, fn_jobnr, fn_post);
 
@@ -344,8 +340,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
 
     const int nr_omp_threads = fts.size();
 
-    std::string mgFn0;
-    mdt.getValueToString(EMDL::MICROGRAPH_NAME, mgFn0, 0);
+    std::string mgFn0 = mdt.getValueToString(EMDL::MICROGRAPH_NAME, 0);
     FileName fn_pre, fn_jobnr, fn_post;
     decomposePipelineFileName(mgFn0, fn_pre, fn_jobnr, fn_post);
 
@@ -649,8 +644,7 @@ std::string MicrographHandler::getMetaName(std::string micName, bool die_on_erro
 int MicrographHandler::determineFrameCount(const MetaDataTable &mdt) {
     int fc = 0;
 
-    std::string mgFn;
-    mdt.getValueToString(EMDL::MICROGRAPH_NAME, mgFn, 0);
+    std::string mgFn = mdt.getValueToString(EMDL::MICROGRAPH_NAME, 0);
 
     FileName fn_pre, fn_jobnr, fn_post;
     decomposePipelineFileName(mgFn, fn_pre, fn_jobnr, fn_post);
@@ -681,9 +675,8 @@ int MicrographHandler::determineFrameCount(const MetaDataTable &mdt) {
 bool MicrographHandler::isMoviePresent(
     const MetaDataTable &mdt, bool die_on_error
 ) {
-    std::string mgFn;
     FileName fn_pre, fn_jobnr, fn_post;
-    mdt.getValueToString(EMDL::MICROGRAPH_NAME, mgFn, 0);
+    std::string mgFn = mdt.getValueToString(EMDL::MICROGRAPH_NAME, 0);
     decomposePipelineFileName(mgFn, fn_pre, fn_jobnr, fn_post);
 
     if (hasCorrMic) {
@@ -703,8 +696,7 @@ bool MicrographHandler::isMoviePresent(
 std::string MicrographHandler::getMovieFilename(
     const MetaDataTable& mdt, bool die_on_error
 ) {
-    std::string mgFn;
-    mdt.getValueToString(EMDL::MICROGRAPH_NAME, mgFn, 0);
+    std::string mgFn = mdt.getValueToString(EMDL::MICROGRAPH_NAME, 0);
 
     FileName fn_pre, fn_jobnr, fn_post;
     decomposePipelineFileName(mgFn, fn_pre, fn_jobnr, fn_post);

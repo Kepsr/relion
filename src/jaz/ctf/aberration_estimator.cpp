@@ -338,7 +338,8 @@ void AberrationEstimator::parametricFit(
 
 
             // extract Q0, Cs, defocus and astigmatism?
-            #pragma omp critical {
+            #pragma omp critical
+            {
                 optOut.setValue(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS, Zernike_coeffs_opt, og);
             }
         }

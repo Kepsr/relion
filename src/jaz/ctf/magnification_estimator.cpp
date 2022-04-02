@@ -109,7 +109,7 @@ void MagnificationEstimator::processMicrograph(
             int threadnum = omp_get_thread_num();
 
             MagnificationHelper::updateScaleFreq(
-                pred[p], predGradient[p], obs[p], ctf, angpix[og], 
+                pred[p], predGradient[p], obs[p], ctf, angpix[og],
                 magEqs[threadnum], do_ctf_padding
             );
         }
@@ -131,7 +131,7 @@ void MagnificationEstimator::processMicrograph(
 }
 
 void MagnificationEstimator::parametricFit(
-    std::vector<MetaDataTable> &mdts, MetaDataTable &optOut, 
+    std::vector<MetaDataTable> &mdts, MetaDataTable &optOut,
     std::vector<FileName> &fn_eps
 ) {
     if (!ready) {
@@ -248,8 +248,9 @@ void MagnificationEstimator::parametricFit(
         svdcmp(mat1, u, eig, vh);
         const RFLOAT mean_mag = (eig(0) + eig(1)) / 2;
         const RFLOAT aniso_mag = fabs(eig(0) - eig(1));// / mean_mag;
-        
-        #pragma omp critical {
+
+        #pragma omp critical
+        {
             optOut.setValue(EMDL::IMAGE_MAG_MATRIX_00, mat1(0, 0), og);
             optOut.setValue(EMDL::IMAGE_MAG_MATRIX_01, mat1(0, 1), og);
             optOut.setValue(EMDL::IMAGE_MAG_MATRIX_10, mat1(1, 0), og);

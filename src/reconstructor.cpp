@@ -135,7 +135,7 @@ void Reconstructor::initialise() {
         output_boxsize = ctf_dim;
     } else {
         (DF).firstObject();
-        fn_img = DF.getValue(EMDL::IMAGE_NAME);
+        fn_img = DF.getValue<FileName>(EMDL::IMAGE_NAME);
 
         if (image_path != "") {
             fn_img = image_path + "/" + fn_img.substr(fn_img.find_last_of("/") + 1);
@@ -157,7 +157,7 @@ void Reconstructor::initialise() {
                 data_dim = img0().getDim();
                 std::cout << " + Taking data dimensions from the first image: " << data_dim << std::endl;
             } else {
-                data_dim = obsModel.opticsMdt.getValue(EMDL::IMAGE_DIMENSIONALITY, 0);
+                data_dim = obsModel.opticsMdt.getValue<int>(EMDL::IMAGE_DIMENSIONALITY, 0);
                 std::cout << " + Taking data dimensions from the first optics group: " << data_dim << std::endl;
             }
         }
@@ -168,8 +168,8 @@ void Reconstructor::initialise() {
             if (
                 DF.containsLabel(EMDL::CTF_MAGNIFICATION) && DF.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)
             ) {
-                RFLOAT mag   = DF.getValue(EMDL::CTF_MAGNIFICATION);
-                RFLOAT dstep = DF.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE);
+                RFLOAT mag   = DF.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
+                RFLOAT dstep = DF.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
                 angpix = 10000. * dstep / mag;
                 if (verb > 0)
                     std::cout << " + Using pixel size calculated from magnification and detector pixel size in the input STAR file: " << angpix << std::endl;
@@ -281,8 +281,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
     FourierTransformer transformer;
 
     int randSubset = 0, classid = 0;
-    randSubset = DF.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
-    classid = DF.getValue(EMDL::PARTICLE_CLASS, p);
+    randSubset = DF.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p);
+    classid    = DF.getValue<int>(EMDL::PARTICLE_CLASS,         p);
 
     if (subset >= 1 && subset <= 2 && randSubset != subset)
         return;
@@ -294,12 +294,12 @@ void Reconstructor::backprojectOneParticle(long int p) {
     if (ref_dim == 2) {
         rot = tilt = 0.0;
     } else {
-        rot =  DF.getValue(EMDL::ORIENT_ROT,  p);
-        tilt = DF.getValue(EMDL::ORIENT_TILT, p);
+        rot =  DF.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
+        tilt = DF.getValue<RFLOAT>(EMDL::ORIENT_TILT, p);
     }
 
     psi = 0.0;
-    psi = DF.getValue(EMDL::ORIENT_PSI, p);
+    psi = DF.getValue<RFLOAT>(EMDL::ORIENT_PSI, p);
 
     if (angular_error > 0.0) {
         rot  += rnd_gaus(0.0, angular_error);
@@ -333,8 +333,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
     // Translations (either through phase-shifts or in real space
     trans.initZeros();
-    XX(trans) = DF.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
-    YY(trans) = DF.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
+    XX(trans) = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
+    YY(trans) = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
 
     if (shift_error > 0.0) {
         XX(trans) += rnd_gaus(0.0, shift_error);
@@ -343,7 +343,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
     if (data_dim == 3) {
         trans.resize(3);
-        ZZ(trans) = DF.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, p);
+        ZZ(trans) = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, p);
 
         if (shift_error > 0.0) {
             ZZ(trans) += rnd_gaus(0.0, shift_error);
@@ -354,7 +354,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     trans /= myPixelSize;
 
     if (do_fom_weighting)
-    fom = DF.getValue(EMDL::PARTICLE_FOM, p);
+    fom = DF.getValue<RFLOAT>(EMDL::PARTICLE_FOM, p);
 
     // Use either selfTranslate OR shiftImageInFourierTransform!!
     //selfTranslate(img(), trans, WRAP);
@@ -364,7 +364,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     Image<RFLOAT> img;
 
     if (!do_reconstruct_ctf && fn_noise == "") {
-        fn_img = DF.getValue(EMDL::IMAGE_NAME, p);
+        fn_img = DF.getValue<FileName>(EMDL::IMAGE_NAME, p);
         img.read(fn_img);
         img().setXmippOrigin();
         transformer.FourierTransform(img(), F2D);
@@ -386,9 +386,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
         // TODO: Refactor code duplication from relion_project!
         FileName fn_group;
         if (DF.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-            fn_group = DF.getValue(EMDL::MLMODEL_GROUP_NAME);
+            fn_group = DF.getValue<FileName>(EMDL::MLMODEL_GROUP_NAME);
         } else if (DF.containsLabel(EMDL::MICROGRAPH_NAME)) {
-            fn_group = DF.getValue(EMDL::MICROGRAPH_NAME);
+            fn_group = DF.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         } else {
             REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --i file...");
         }
@@ -405,7 +405,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
         RFLOAT normcorr = 1.0;
         if (DF.containsLabel(EMDL::IMAGE_NORM_CORRECTION))
-        normcorr = DF.getValue(EMDL::IMAGE_NORM_CORRECTION);
+        normcorr = DF.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
 
         // Make coloured noise image
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
@@ -429,7 +429,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
             Image<RFLOAT> Ictf;
             FileName fn_ctf;
             try {
-                fn_ctf = DF.getValue(EMDL::CTF_IMAGE, p);
+                fn_ctf = DF.getValue<FileName>(EMDL::CTF_IMAGE, p);
             } catch (const char *errmsg) {
                 REPORT_ERROR("ERROR: cannot find rlnCtfImage for 3D CTF correction!");
             }
@@ -533,7 +533,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         }
 
         if (read_weights) {
-            std::string fullName = DF.getValue(EMDL::IMAGE_NAME, 0);
+            std::string fullName = DF.getValue<std::string>(EMDL::IMAGE_NAME, 0);
             std::string name = fullName.substr(fullName.find("@") + 1);
 
             if (image_path != "") {
@@ -596,8 +596,8 @@ void Reconstructor::reconstruct() {
         MetaDataTable MDfsc;
         MDfsc.read(fn_fsc);
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDfsc) {
-            int    idx = MDfsc.getValue(EMDL::SPECTRAL_IDX);
-            RFLOAT val = MDfsc.getValue(EMDL::MLMODEL_FSC_HALVES_REF);
+            int    idx = MDfsc.getValue<int>(EMDL::SPECTRAL_IDX);
+            RFLOAT val = MDfsc.getValue<RFLOAT>(EMDL::MLMODEL_FSC_HALVES_REF);
             fsc(idx) = val;
         }
     }

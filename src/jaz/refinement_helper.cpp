@@ -53,8 +53,8 @@ void RefinementHelper::drawFSC(
     dest1D = std::vector<double>(n);
 
     for (int i = 0; i < n; i++) {
-        int idx = mdt->getValue(EMDL::SPECTRAL_IDX, i);
-        dest1D[i] = mdt->getValue(EMDL::POSTPROCESS_FSC_TRUE, i);
+        int idx   = mdt->getValue<int>   (EMDL::SPECTRAL_IDX,         i);
+        dest1D[i] = mdt->getValue<double>(EMDL::POSTPROCESS_FSC_TRUE, i);
         if (dest1D[i] < thresh) { dest1D[i] = 0.0; }
     }
 
@@ -81,8 +81,8 @@ void RefinementHelper::computeSNR(const MetaDataTable *mdt, Image<RFLOAT> &dest,
     std::vector<double> snr(n);
 
     for (int i = 0; i < n; i++) {
-        int    idx = mdt->getValue(EMDL::SPECTRAL_IDX, i);
-        double fsc = mdt->getValue(EMDL::POSTPROCESS_FSC_TRUE, i);
+        int    idx = mdt->getValue<int>   (EMDL::SPECTRAL_IDX,         i);
+        double fsc = mdt->getValue<double>(EMDL::POSTPROCESS_FSC_TRUE, i);
 
         if (fsc > 1.0 - eps) { fsc = 1.0 - eps; }
         //else if (fsc < eps) fsc = 0.0;
@@ -116,8 +116,8 @@ void RefinementHelper::computeSigInvSq(
     std::vector<double> sigInvSq(n);
 
     for (int i = 0; i < n; i++) {
-        int    idx = mdt->getValue(EMDL::SPECTRAL_IDX, i);
-        double fsc = mdt->getValue(EMDL::POSTPROCESS_FSC_TRUE, i);
+        int    idx = mdt->getValue<int>(EMDL::SPECTRAL_IDX, i);
+        double fsc = mdt->getValue<double>(EMDL::POSTPROCESS_FSC_TRUE, i);
 
         if (fsc > 1.0 - eps) { fsc = 1.0 - eps; }
         // else if (fsc < eps) { fsc = 0.0; }

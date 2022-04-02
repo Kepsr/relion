@@ -102,16 +102,25 @@ void AberrationBasis::offsetCtf(MetaDataTable &mdt, int particle) {
     // identical to CTF::read() and CTF::initialize():
     double kV, DeltafU, DeltafV, azimuthal_angle, Cs, scale, Q0, phase_shift;
 
-    if (!mdt.getValue(EMDL::CTF_VOLTAGE,       kV, particle)) kV = 200;
-    if (!mdt.getValue(EMDL::CTF_DEFOCUSU,      DeltafU, particle)) DeltafU = 0;
-    if (!mdt.getValue(EMDL::CTF_DEFOCUSV,      DeltafV, particle)) DeltafV = DeltafU;
-    if (!mdt.getValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle, particle)) azimuthal_angle = 0;
-    if (!mdt.getValue(EMDL::CTF_CS,            Cs, particle)) Cs = 0;
-    //if (!mdt.getValue(EMDL::CTF_SCALEFACTOR, scale, particle)) scale = 1;
-    if (!mdt.getValue(EMDL::CTF_Q0,            Q0, particle)) Q0 = 0;
-    //if (!mdt.getValue(EMDL::CTF_PHASESHIFT, phase_shift, particle)) phase_shift = 0;
+    #define TRYGETVALUE(variable, label, defaultvalue) \
+    try { \
+        variable = mdt.getValue<RFLOAT>(label, particle); \
+    } catch (const char* errmsg) { \
+        variable = defaultvalue; \
+    }
 
-    //std::cout << DeltafU << ", " << DeltafV << " @ " << azimuthal_angle << "°, " << Cs << ", " << Q0 << "\n";
+    TRYGETVALUE(kV,              EMDL::CTF_VOLTAGE,        200);
+    TRYGETVALUE(DeltafU,         EMDL::CTF_DEFOCUSU,       0);
+    TRYGETVALUE(DeltafV,         EMDL::CTF_DEFOCUSV,       DeltafU);
+    TRYGETVALUE(azimuthal_angle, EMDL::CTF_DEFOCUS_ANGLE,  0);
+    TRYGETVALUE(Cs,              EMDL::CTF_CS,             0);
+    // TRYGETVALUE(scale,           EMDL::CTF_SCALEFACTOR,    1);
+    TRYGETVALUE(Q0,              EMDL::CTF_Q0,             0);
+    // TRYGETVALUE(phase_shift,     EMDL::CTF_PHASESHIFT,     0);
+
+    #undef TRYGETVALUE
+
+    // std::cout << DeltafU << ", " << DeltafV << " @ " << azimuthal_angle << "°, " << Cs << ", " << Q0 << "\n";
 
     double local_Cs = Cs * 1e7;
     double local_kV = kV * 1e3;
@@ -224,7 +233,11 @@ void OriginalBasis::_offsetCtf(
 
     if (b0 < 0) {
         double phase_shift;
-        if (!mdt.getValue(EMDL::CTF_PHASESHIFT, phase_shift, particle)) phase_shift = 0;
+        try {
+            phase_shift = mdt.getValue<double>(EMDL::CTF_PHASESHIFT, particle);
+        } catch (const char *errmsg) {
+            phase_shift = 0;
+        }
 
         phase_shift = phase_shift - RAD2DEG(coefficients[0]);
 

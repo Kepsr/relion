@@ -63,7 +63,7 @@ void ParticleSubtractor::divideLabour(int _rank, int _size, long int &my_first, 
         if (size < 2) REPORT_ERROR("You need to run this program with at least 2 MPI processes for subtraction of 3D auto-refine jobs");
         opt.mydata.divideParticlesInRandomHalves(0, opt.do_helical_refine);
 
-        int my_halfset = modulo_alt(_rank, 2)
+        int my_halfset = modulo_alt(_rank, 2);
         int mysize = my_halfset == 1 ? _size / 2 : _size / 2 + _size % 2;
         divide_equally(opt.mydata.numberOfParticles(my_halfset), mysize, _rank / 2, my_first, my_last);
         if (my_halfset == 2) {
@@ -227,8 +227,8 @@ void ParticleSubtractor::revert() {
 
     // Swap image names
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        FileName f1 = MD.getValue(EMDL::IMAGE_ORI_NAME);
-        FileName f2 = MD.getValue(EMDL::IMAGE_NAME);
+        FileName f1 = MD.getValue<FileName>(EMDL::IMAGE_ORI_NAME);
+        FileName f2 = MD.getValue<FileName>(EMDL::IMAGE_NAME);
         MD.setValue(EMDL::IMAGE_ORI_NAME, f2);
         MD.setValue(EMDL::IMAGE_NAME,     f1);
     }
@@ -240,7 +240,7 @@ void ParticleSubtractor::revert() {
         if (fixed_box_size[og])
             continue;
 
-        FileName img_name = MD.getValue(EMDL::IMAGE_NAME);
+        FileName img_name = MD.getValue<FileName>(EMDL::IMAGE_NAME);
         FileName fn_img;
         long int dummy;
         img_name.decompose(dummy, fn_img);
@@ -433,26 +433,26 @@ void ParticleSubtractor::subtractOneParticle(
     RFLOAT rot, tilt, psi, xoff, yoff, zoff, mynorm, scale;
     int myclass = 0;
     if (!ignore_class && opt.mydata.MDimg.containsLabel(EMDL::PARTICLE_CLASS)) {
-        myclass = opt.mydata.MDimg.getValue(EMDL::PARTICLE_CLASS, ori_img_id);
+        myclass = opt.mydata.MDimg.getValue<int>(EMDL::PARTICLE_CLASS, ori_img_id);
         if (myclass > opt.mymodel.nr_classes) {
             std::cerr << "A particle belongs to class " << myclass << " while the number of classes in the optimiser.star is only " << opt.mymodel.nr_classes << "." << std::endl;
             REPORT_ERROR("Tried to subtract a non-existing class from a particle. If you have performed non-alignment Class3D after Refine3D and want to subtract a map from the Refine3D job, use the --ignore_class option.");
         }
         myclass--; // Count from zero instead of one
     }
-    rot               = opt.mydata.MDimg.getValue(EMDL::ORIENT_ROT,               ori_img_id);
-    tilt              = opt.mydata.MDimg.getValue(EMDL::ORIENT_TILT,              ori_img_id);
-    psi               = opt.mydata.MDimg.getValue(EMDL::ORIENT_PSI,               ori_img_id);
-    XX(my_old_offset) = opt.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
-    YY(my_old_offset) = opt.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+    rot               = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
+    tilt              = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
+    psi               = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
+    XX(my_old_offset) = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+    YY(my_old_offset) = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
     if (opt.mymodel.data_dim == 3)
-    ZZ(my_old_offset) = opt.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+    ZZ(my_old_offset) = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
     // As of v3.1, offsets are in Angstrom: convert back to pixels!
     my_old_offset /= my_pixel_size;
 
     // Apply the norm_correction term
     try {
-        mynorm = opt.mydata.MDimg.getValue(EMDL::IMAGE_NORM_CORRECTION, ori_img_id);
+        mynorm = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, ori_img_id);
     } catch (const char *errmsg) {
         mynorm = 1.0;
     }
@@ -487,7 +487,7 @@ void ParticleSubtractor::subtractOneParticle(
 
     if (opt.do_ctf_correction) {
         if (opt.mymodel.data_dim == 3) {
-            FileName fn_ctf = opt.mydata.MDimg.getValue(EMDL::CTF_IMAGE, ori_img_id);
+            FileName fn_ctf = opt.mydata.MDimg.getValue<FileName>(EMDL::CTF_IMAGE, ori_img_id);
             Image<RFLOAT> Ictf;
             Ictf.read(fn_ctf);
 
@@ -527,13 +527,13 @@ void ParticleSubtractor::subtractOneParticle(
             // Unlike getFourierTransformsAndCtfs, no check for ibody==obody: also subtract rest of subtract_body!
 
             Matrix1D<RFLOAT> body_offset(3);
-            RFLOAT body_rot  = opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ROT,               ori_img_id);
-            RFLOAT body_tilt = opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_TILT,              ori_img_id);
-            RFLOAT body_psi  = opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_PSI,               ori_img_id);
-            XX(body_offset)  = opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
-            YY(body_offset)  = opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+            RFLOAT body_rot  = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
+            RFLOAT body_tilt = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
+            RFLOAT body_psi  = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
+            XX(body_offset)  = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+            YY(body_offset)  = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
             if (opt.mymodel.data_dim == 3)
-            ZZ(body_offset)  = opt.mydata.MDbodies[obody].getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+            ZZ(body_offset)  = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
 
             // As of v3.1, offsets are in Angstrom: convert back to pixels!
             body_offset /= my_pixel_size;
@@ -589,10 +589,10 @@ void ParticleSubtractor::subtractOneParticle(
         opt.mydata.MDimg.setValue(EMDL::ORIENT_PSI, psi, ori_img_id);
 
         // Also get refined offset for this body
-        XX(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
-        YY(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+        XX(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+        YY(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
         if (opt.mymodel.data_dim == 3)
-        ZZ(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+        ZZ(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
         // As of v3.1, offsets are in Angstrom: convert back to pixels!
         my_refined_ibody_offset /= my_pixel_size;
 

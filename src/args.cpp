@@ -177,15 +177,15 @@ void IOParser::setSection(int number) {
     current_section = number;
 }
 
-bool IOParser::optionExists(std::string option) {
-    return element(option, options) || element(option, hiddenOptions);
-}
-
 bool element(std::string option, std::vector<std::string> options) {
     for (int i = 0; i < options.size(); i++)
         if (strcmp(options[i].c_str(), option.c_str()) == 0)
             return true;
     return false;
+}
+
+bool IOParser::optionExists(std::string option) {
+    return element(option, options) || element(option, hiddenOptions);
 }
 
 std::string IOParser::getOption(
@@ -265,25 +265,25 @@ bool IOParser::checkForErrors(int verb) {
     return false;
 }
 
-void IOParser::checkForUnknownArguments() {
-    for (int i = 1; i < argc; i++)
-        if (!is_ok(argv, i))
-            warning_messages.push_back(
-                (std::string)"WARNING: Option " + argv[i] + "\tis not a valid RELION argument"
-            );
-}
-
-bool is_ok(auto argv, int i) {
+bool is_ok(IOParser parser, char** argv, int i) {
     // Valid options should start with "--"
     if (strncmp("--", argv[i], 2) == 0) {
-        return optionExists((std::string)argv[i]) || strncmp("--pipeline_control", argv[i], 18) == 0);
+        return parser.optionExists((std::string) argv[i]) || strncmp("--pipeline_control", argv[i], 18) == 0;
     } else if (strncmp("-", argv[i], 1) == 0) {
         // If argv[i] starts with one "-", it must be a number and argv[i - 1] must be a valid option.
         float testval;
-        return sscanf(argv[i], "%f", &testval) && optionExists(argv[i - 1]);
+        return sscanf(argv[i], "%f", &testval) && parser.optionExists(argv[i - 1]);
     } else {
         return true;
     }
+}
+
+void IOParser::checkForUnknownArguments() {
+    for (int i = 1; i < argc; i++)
+        if (!is_ok(*this, argv, i))
+            warning_messages.push_back(
+                (std::string)"WARNING: Option " + argv[i] + "\tis not a valid RELION argument"
+            );
 }
 
 void IOParser::writeUsageOneLine(int i, std::ostream &out) {

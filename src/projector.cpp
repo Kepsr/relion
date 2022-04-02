@@ -110,16 +110,41 @@ void Projector::computeFourierTransformMap(
     int current_size, int nr_threads, bool do_gridding, bool do_heavy, int min_ires,
     const MultidimArray<RFLOAT>* fourier_mask, bool do_gpu
 ) {
-    TICTOC(TIMING_TOP, {
-
-    TICTOC(TIMING_INIT1, {
-    MultidimArray<RFLOAT> Mpad;
-    MultidimArray<Complex > Faux;
-    FourierTransformer transformer;
+    #ifdef CUDA
+    static int semid = -1;
+    CudaCustomAllocator *allocator;
+    AccPtrFactory ptrFactory;
+    AccPtr<RFLOAT>  dMpad;
+    AccPtr<Complex> dFaux;
+    AccPtr<RFLOAT>  dvol;
+    AccPtr<Complex> ddata;
+    AccPtr<RFLOAT> dfourier_mask;
+    AccPtr<RFLOAT> dpower_spectrum;
+    AccPtr<RFLOAT> dcounter;
+    size_t cudanormfft;
+    cufftType cufft_type;
+    struct sembuf op_lock[2] = {
+        0, 0, 0, /* wait for sem #0 to become 0 */
+        0, 1, SEM_UNDO /* then increment sem #0 by 1 */
+    };
+    struct sembuf op_unlock[1] = { 0, -1, (IPC_NOWAIT | SEM_UNDO) /* decrement sem #0 by 1 (sets it to 0) */ };
+    int fmXsz, fmYsz, fmZsz;
+    size_t mem_req, ws_sz;
+    int Faux_sz;
+    #endif
+    TICTOC(TIMING_TOP, ({
     RFLOAT normfft;
+    int padoridim;
+    int n[3];
+    bool do_fourier_mask = fourier_mask != NULL;
+
+    MultidimArray<Complex> Faux;
+    MultidimArray<RFLOAT> Mpad;
+    FourierTransformer transformer;
+    TICTOC(TIMING_INIT1, ({
 
     // Size of padded real-space volume
-    int padoridim = ROUND(padding_factor * ori_size);
+    padoridim = ROUND(padding_factor * ori_size);
     // make sure padoridim is even
     padoridim += padoridim % 2;
     // Re-calculate padding factor
@@ -127,8 +152,6 @@ void Projector::computeFourierTransformMap(
 
     // Initialize data array of the oversampled transform
     ref_dim = vol_in.getDim();
-
-    bool do_fourier_mask = (fourier_mask != NULL);
 
     // Make Mpad
     switch (ref_dim) {
@@ -153,72 +176,60 @@ void Projector::computeFourierTransformMap(
             normfft = (RFLOAT)(padding_factor * padding_factor * padding_factor * ori_size);
         break;
         default:
-        REPORT_ERROR("Projector::" __func__ "%%ERROR: Dimension of the data array should be 2 or 3");
+        REPORT_ERROR((std::string) "Projector::" + __func__ + "%%ERROR: Dimension of the data array should be 2 or 3");
     }
-#ifdef CUDA
-    static int semid = -1;
-    struct sembuf op_lock[2]=  { 0, 0, 0, /* wait for sem #0 to become 0 */
-                                  0, 1, SEM_UNDO /* then increment sem #0 by 1 */ };
-    struct sembuf op_unlock[1]= { 0, -1, (IPC_NOWAIT | SEM_UNDO) /* decrement sem #0 by 1 (sets it to 0) */ };
+    #ifdef CUDA
 
-    size_t mem_req, ws_sz;
-    int Faux_sz = padoridim*(padoridim/2+1);
-    int n[3] = {padoridim, padoridim, padoridim};
-    cufftType cufft_type = CUFFT_R2C;
-    if (sizeof(RFLOAT) == sizeof(double))
-        cufft_type = CUFFT_D2Z;
+    Faux_sz = padoridim * (padoridim / 2 + 1);
+    n[0] = padoridim; n[1] = padoridim; n[2] = padoridim;
+    cufft_type = CUFFT_R2C;
+    if (sizeof(RFLOAT) == sizeof(double)) { cufft_type = CUFFT_D2Z; }
 
-    if (ref_dim == 3)
-        Faux_sz *= padoridim;
+    if (ref_dim == 3) { Faux_sz *= padoridim; }
 
-    mem_req =  (size_t)1024;
-    if (do_heavy && do_gpu)
-    {
+    mem_req = (size_t) 1024;
+    if (do_heavy && do_gpu) {
         cufftEstimateMany(ref_dim, n, NULL, 0, 0, NULL, 0, 0, cufft_type, 1, &ws_sz);
 
-        mem_req = (size_t)sizeof(RFLOAT)*MULTIDIM_SIZE(vol_in) +                   // dvol
-                  (size_t)sizeof(Complex)*Faux_sz +                                // dFaux
-                  (size_t)sizeof(RFLOAT)*MULTIDIM_SIZE(Mpad) +                     // dMpad
-                  ws_sz + 4096;                                                    // workspace for cuFFT + extra space for alingment
+        mem_req = (size_t) sizeof(RFLOAT) * MULTIDIM_SIZE(vol_in)  // dvol
+                + (size_t) sizeof(Complex) * Faux_sz               // dFaux
+                + (size_t) sizeof(RFLOAT) * MULTIDIM_SIZE(Mpad)    // dMpad
+                + ws_sz + 4096;                                    // workspace for cuFFT + extra space for alingment
     }
 
     CudaCustomAllocator *allocator = NULL;
-    if (do_gpu && do_heavy)
-    {
+    if (do_gpu && do_heavy) {
         int devid;
         size_t mem_free, mem_tot;
         cudaDeviceProp devProp;
-        if (semid <0)
-        {
+        if (semid < 0) {
             HANDLE_ERROR(cudaGetDevice(&devid));
-            if ( ( semid=semget(SEMKEY+devid, 1, IPC_CREAT | PERMS )) < 0 )
+            if ((semid = semget(SEMKEY + devid, 1, IPC_CREAT | PERMS)) < 0)
                 REPORT_ERROR("semget error");
         }
         if (semop(semid, &op_lock[0], 2) < 0)
             REPORT_ERROR("semop lock error");
 
         HANDLE_ERROR(cudaMemGetInfo(&mem_free, &mem_tot));
-        if (mem_free > mem_req)
-            allocator = new CudaCustomAllocator(mem_req, (size_t)16);
-        else
-        {
+        if (mem_free > mem_req) {
+            allocator = new CudaCustomAllocator(mem_req, (size_t) 16);
+        } else {
             do_gpu = false; // change local copy of do_gpu variable
             if (semop(semid, &op_unlock[0], 1) < 0)
                 REPORT_ERROR("semop unlock error");
         }
     }
-    AccPtrFactory ptrFactory(allocator);
-    AccPtr<RFLOAT> dMpad = ptrFactory.make<RFLOAT>(MULTIDIM_SIZE(Mpad));
-    AccPtr<Complex> dFaux = ptrFactory.make<Complex>(Faux_sz);
-    AccPtr<RFLOAT> dvol = ptrFactory.make<RFLOAT>(MULTIDIM_SIZE(vol_in));
-    if (do_heavy && do_gpu)
-    {
+    ptrFactory = allocator;
+    dMpad = ptrFactory.make<RFLOAT>(MULTIDIM_SIZE(Mpad));
+    dFaux = ptrFactory.make<Complex>(Faux_sz);
+    dvol  = ptrFactory.make<RFLOAT>(MULTIDIM_SIZE(vol_in));
+    if (do_heavy && do_gpu) {
         dvol.setHostPtr(MULTIDIM_ARRAY(vol_in));
         dvol.accAlloc();
         dvol.cpToDevice();
     }
-#endif
-    });
+    #endif
+    }));
 
     TICTOC(TIMING_GRID, {
     // First do a gridding pre-correction on the real-space map:
@@ -227,7 +238,7 @@ void Projector::computeFourierTransformMap(
     // TODO: check what is best for subtomo!
     if (do_gridding) {
         // && data_dim != 3)
-        if (do_heavy)
+        if (do_heavy) {
             #ifdef CUDA
             if (do_gpu) {
                 vol_in.setXmippOrigin();
@@ -235,12 +246,12 @@ void Projector::computeFourierTransformMap(
                     ~dvol, interpolator, (RFLOAT)(ori_size * padding_factor), r_min_nn,
                     XSIZE(vol_in), YSIZE(vol_in), ZSIZE(vol_in)
                 );
-            }
-            else
+            } else
             #endif
             griddingCorrect(vol_in);
-        else
+        } else {
             vol_in.setXmippOrigin();
+        }
     }
     });
 
@@ -298,13 +309,13 @@ void Projector::computeFourierTransformMap(
             cufftDestroy(plan);
             fft_ws.freeIfSet();
 
-            size_t normfft = (size_t) padoridim * (size_t) padoridim;
-            if (ref_dim == 3) normfft *= (size_t)padoridim;
+            cudanormfft = (size_t) padoridim * (size_t) padoridim;
+            if (ref_dim == 3) cudanormfft *= (size_t) padoridim;
 
-            if (ref_dim == 2) Faux.reshape(padoridim,(padoridim / 2 + 1));
-            if (ref_dim == 3) Faux.reshape(padoridim,padoridim,(padoridim / 2 + 1));
+            if (ref_dim == 2) Faux.reshape(           padoridim, padoridim / 2 + 1);
+            if (ref_dim == 3) Faux.reshape(padoridim, padoridim, padoridim / 2 + 1);
 
-            scale((RFLOAT*) ~dFaux, 2 * dFaux.getSize(), 1.0 / (RFLOAT) normfft);
+            scale((RFLOAT*) ~dFaux, 2 * dFaux.getSize(), 1.0 / (RFLOAT) cudanormfft);
         } else
         #endif
         transformer.FourierTransform(Mpad, Faux, false);
@@ -321,6 +332,7 @@ void Projector::computeFourierTransformMap(
         CenterFFTbySign(Faux);
     });
 
+    MultidimArray<RFLOAT> counter;
     TICTOC(TIMING_INIT2, {
     // Free memory: Mpad no longer needed
     #ifdef CUDA
@@ -335,12 +347,11 @@ void Projector::computeFourierTransformMap(
     // (other points will be zero because of initZeros() call above
     // Also calculate radial power spectrum
     #ifdef CUDA
-    int fourier_mask_sz = (do_fourier_mask)?MULTIDIM_SIZE(*fourier_mask):16;
-    int fmXsz, fmYsz, fmZsz;
-    AccPtr<Complex> ddata = ptrFactory.make<Complex>(MULTIDIM_SIZE(data));
-    AccPtr<RFLOAT> dfourier_mask = ptrFactory.make<RFLOAT>(fourier_mask_sz);
-    AccPtr<RFLOAT> dpower_spectrum = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
-    AccPtr<RFLOAT> dcounter = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
+    int fourier_mask_sz = do_fourier_mask ? MULTIDIM_SIZE(*fourier_mask) : 16;
+    ddata = ptrFactory.make<Complex>(MULTIDIM_SIZE(data));
+    dfourier_mask = ptrFactory.make<RFLOAT>(fourier_mask_sz);
+    dpower_spectrum = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
+    dcounter = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
 
     if (do_heavy && do_gpu) {
         ddata.accAlloc();
@@ -361,7 +372,7 @@ void Projector::computeFourierTransformMap(
     }
     #endif
     power_spectrum.initZeros(ori_size / 2 + 1);
-    MultidimArray<RFLOAT> counter(power_spectrum);
+    counter = power_spectrum;
     counter.initZeros();
     });
 
@@ -378,7 +389,7 @@ void Projector::computeFourierTransformMap(
         if (do_gpu) {
             run_calcPowerSpectrum(
                 ~dFaux, padoridim, ~ddata, YSIZE(data), ~dpower_spectrum, ~dcounter,
-                max_r2, min_r2, normfft, padding_factor, weight,
+                max_r2, min_r2, cudanormfft, padding_factor, weight,
                 ~dfourier_mask, fmXsz, fmYsz, fmZsz, do_fourier_mask, ref_dim == 3
             );
             ddata.setHostPtr(MULTIDIM_ARRAY(data));
@@ -392,19 +403,25 @@ void Projector::computeFourierTransformMap(
             // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
             // Set data array
             if (r2 <= max_r2) {
-                if (do_fourier_mask) weight = FFTW_ELEM(*fourier_mask, ROUND(kp / padding_factor), ROUND(ip / padding_factor), ROUND(jp / padding_factor));
+                if (do_fourier_mask) {
+                    weight = FFTW_ELEM(
+                        *fourier_mask, 
+                        ROUND(kp / padding_factor), 
+                        ROUND(ip / padding_factor), 
+                        ROUND(jp / padding_factor)
+                    );
+                }
                 // Set data array
                 A3D_ELEM(data, kp, ip, jp) = weight * DIRECT_A3D_ELEM(Faux, k, i, j) * normfft;
 
                 // Calculate power spectrum
-                int ires = ROUND( sqrt((RFLOAT)r2) / padding_factor );
+                int ires = ROUND(sqrt((RFLOAT) r2) / padding_factor);
                 // Factor two because of two-dimensionality of the complex plane
                 DIRECT_A1D_ELEM(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.;
                 DIRECT_A1D_ELEM(counter, ires) += weight;
 
                 // Apply high pass filter of the reference only after calculating the power spectrum
-                if (r2 <= min_r2)
-                    A3D_ELEM(data, kp, ip, jp) = 0;
+                if (r2 <= min_r2) { A3D_ELEM(data, kp, ip, jp) = 0; }
             }
         }
     }
@@ -436,15 +453,16 @@ void Projector::computeFourierTransformMap(
         } else
         #endif
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(power_spectrum) {
-            if (DIRECT_A1D_ELEM(counter, i) < 1.)
-                DIRECT_A1D_ELEM(power_spectrum, i) = 0.;
-            else
+            if (DIRECT_A1D_ELEM(counter, i) < 1.0) {
+                DIRECT_A1D_ELEM(power_spectrum, i) = 0.0;
+            } else {
                 DIRECT_A1D_ELEM(power_spectrum, i) /= DIRECT_A1D_ELEM(counter, i);
+            }
         }
     }
     });
 
-    });
+    }));
     #ifdef CUDA
     ddata.freeIfSet();
     dpower_spectrum.freeIfSet();
@@ -484,7 +502,7 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
                 // trilinear interpolation is convolution with a triangular pulse, which FT is a sinc^2 function
                 A3D_ELEM(vol_in, k, i, j) /= sinc * sinc;
             } else {
-                REPORT_ERROR("BUG Projector::" __func__ ": unrecognised interpolator scheme.");
+                REPORT_ERROR((std::string) "BUG Projector::" + __func__ + ": unrecognised interpolator scheme.");
             }
         // #define DEBUG_GRIDDING_CORRECT
         #ifdef DEBUG_GRIDDING_CORRECT
@@ -632,7 +650,7 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 DIRECT_A2D_ELEM(f2d, i, x) = is_neg_x ?
                     conj(DIRECT_A3D_ELEM(data, zr, yr, xr)) : A3D_ELEM(data, zr, yr, xr);
             } else {
-                REPORT_ERROR("Unrecognized interpolator in Projector::" __func__);
+                REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);
             }
 
         }
@@ -823,7 +841,7 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
                 conj(A2D_ELEM(data, -y0, -x0)) : A2D_ELEM(data, y0, x0);
 
         } else {
-            REPORT_ERROR("Unrecognized interpolator in Projector::" __func__);
+            REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);
         }
     }
 }
@@ -1041,7 +1059,7 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
                         conj(A3D_ELEM(data, -z0, -y0, -x0)) : A3D_ELEM(data, z0, y0, x0);
 
                 } else {
-                    REPORT_ERROR("Unrecognized interpolator in Projector::" __func__);
+                    REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);
                 }
             }
         }

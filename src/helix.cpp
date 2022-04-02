@@ -821,10 +821,10 @@ void imposeHelicalSymmetryInRealSpace(
     if (v.getDim() != 3)
         REPORT_ERROR("helix.cpp::imposeHelicalSymmetryInRealSpace(): Input helical reference is not 3D! (vol.getDim() = " + integerToString(v.getDim()) + ")");
     std::tuple<int, int, int, long int> dimensions = v.getDimensions();
-    int Xdim = std::get<0>(dimensions);
-    int Ydim = std::get<1>(dimensions);
-    int Zdim = std::get<2>(dimensions);
-    long int Ndim = std::get<3>(dimensions);
+    Xdim = std::get<0>(dimensions);
+    Ydim = std::get<1>(dimensions);
+    Zdim = std::get<2>(dimensions);
+    Ndim = std::get<3>(dimensions);
     box_len = Xdim    < Ydim ? Xdim    : Ydim;
     box_len = box_len < Zdim ? box_len : Zdim;
 
@@ -854,8 +854,8 @@ void imposeHelicalSymmetryInRealSpace(
     // Crop the central slices
     v.setXmippOrigin();
     z_max = ((RFLOAT)(Zdim)) * z_percentage / 2.0;
-    if (z_max > (RFLOAT) FINISHINGZ(v) - 1.0))
-        z_max = (RFLOAT) FINISHINGZ(v) - 1.0);
+    if (z_max > (RFLOAT) FINISHINGZ(v) - 1.0)
+        z_max = (RFLOAT) FINISHINGZ(v) - 1.0;
     z_min = -z_max;
     if (z_min < (RFLOAT) STARTINGZ(v) + 1.0)
         z_min = (RFLOAT) STARTINGZ(v) + 1.0;
@@ -1691,7 +1691,7 @@ void convertHelicalTubeCoordsToMetaDataTable(
     bool cut_into_segments
 ) {
     int nr_segments, MDobj_id;
-    RFLOAT psi_deg, psi_rad, x1, y1, x2, y2, dx, dy, xp, yp, step_pix, half_box_size_pix, len_pix, psi_prior_flip_ratio, pitch;
+    RFLOAT psi_deg, psi_rad, x1, y1, x2, y2, dx, dy, step_pix, half_box_size_pix, len_pix, psi_prior_flip_ratio;
     MetaDataTable MD_in;
     std::vector<RFLOAT> x1_coord_list, y1_coord_list, x2_coord_list, y2_coord_list, pitch_list;
     std::vector<int> tube_id_list;
@@ -1732,20 +1732,19 @@ void convertHelicalTubeCoordsToMetaDataTable(
     tube_id_list.clear();
     pitch_list.clear();
     MDobj_id = 0;
-    int id;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
         MDobj_id++;
-        xp = MD_in.getValue(EMDL::IMAGE_COORD_X);
-        yp = MD_in.getValue(EMDL::IMAGE_COORD_Y);
+        RFLOAT xp = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        RFLOAT yp = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         if (MDobj_id % 2) {
             x1_coord_list.push_back(xp);
             y1_coord_list.push_back(yp);
             if (MDin_has_id) {
-                id = MD_in.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID);
+                int id = MD_in.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
                 tube_id_list.push_back(id);
             }
             if (MDin_has_pitch) {
-                pitch = MD_in.getValue(EMDL::PARTICLE_HELICAL_TUBE_PITCH);
+                RFLOAT pitch = MD_in.getValue<RFLOAT>(EMDL::PARTICLE_HELICAL_TUBE_PITCH);
                 pitch_list.push_back(pitch);
             }
         } else {
@@ -1779,6 +1778,8 @@ void convertHelicalTubeCoordsToMetaDataTable(
     // Calculate all coordinates for helical segments
     nr_segments = 0;
     step_pix = nr_asu * rise_A / pixel_size_A;
+    RFLOAT pitch;
+    int id;
     for (int tube_id = 0; tube_id < x1_coord_list.size(); tube_id++) {
         x1 = x1_coord_list[tube_id];
         y1 = y1_coord_list[tube_id];
@@ -1813,8 +1814,8 @@ void convertHelicalTubeCoordsToMetaDataTable(
             continue;
         }
 
-        xp = x1 - (dx * 0.99);
-        yp = y1 - (dy * 0.99);
+        RFLOAT xp = x1 - (dx * 0.99);
+        RFLOAT yp = y1 - (dy * 0.99);
         len_pix = -step_pix;
         while (1) {
             xp += dx;
@@ -1914,26 +1915,26 @@ void combineParticlePriorsWithKaiLocalCTF(
     fom.clear(); maxres.clear(); bfac.clear(); sfac.clear(); phase.clear(); // optional
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_local_ctf) {
-        _x      = MD_local_ctf.getValue(EMDL::IMAGE_COORD_X);           x   .push_back(_x);
-        _y      = MD_local_ctf.getValue(EMDL::IMAGE_COORD_Y);           y   .push_back(_y);
-        _dU     = MD_local_ctf.getValue(EMDL::CTF_DEFOCUSU);            dU  .push_back(_dU);
-        _dV     = MD_local_ctf.getValue(EMDL::CTF_DEFOCUSV);            dV  .push_back(_dV);
-        _dAng   = MD_local_ctf.getValue(EMDL::CTF_DEFOCUS_ANGLE);       dAng.push_back(_dAng);
-        _Cs     = MD_local_ctf.getValue(EMDL::CTF_CS);                  Cs  .push_back(_Cs);
-        _pix    = MD_local_ctf.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE); pix .push_back(_pix);
-        _mag    = MD_local_ctf.getValue(EMDL::CTF_MAGNIFICATION);       mag .push_back(_mag);
-        _Q0     = MD_local_ctf.getValue(EMDL::CTF_Q0);                  Q0  .push_back(_Q0);
-        _volt   = MD_local_ctf.getValue(EMDL::CTF_VOLTAGE);             volt.push_back(_volt);
+        _x      = MD_local_ctf.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);           x   .push_back(_x);
+        _y      = MD_local_ctf.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);           y   .push_back(_y);
+        _dU     = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);            dU  .push_back(_dU);
+        _dV     = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV);            dV  .push_back(_dV);
+        _dAng   = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE);       dAng.push_back(_dAng);
+        _Cs     = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_CS);                  Cs  .push_back(_Cs);
+        _pix    = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE); pix .push_back(_pix);
+        _mag    = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);       mag .push_back(_mag);
+        _Q0     = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_Q0);                  Q0  .push_back(_Q0);
+        _volt   = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_VOLTAGE);             volt.push_back(_volt);
         if (MD_local_ctf.containsLabel(EMDL::CTF_FOM))
-        _fom    = MD_local_ctf.getValue(EMDL::CTF_FOM);                 fom.push_back(_fom);
+        _fom    = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_FOM);                 fom.push_back(_fom);
         if (MD_local_ctf.containsLabel(EMDL::CTF_MAXRES))
-        _maxres = MD_local_ctf.getValue(EMDL::CTF_MAXRES);              maxres.push_back(_maxres);
+        _maxres = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_MAXRES);              maxres.push_back(_maxres);
         if (MD_local_ctf.containsLabel(EMDL::CTF_BFACTOR))
-        _bfac   = MD_local_ctf.getValue(EMDL::CTF_BFACTOR);             bfac.push_back(_bfac);
+        _bfac   = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_BFACTOR);             bfac.push_back(_bfac);
         if (MD_local_ctf.containsLabel(EMDL::CTF_SCALEFACTOR))
-        _sfac   = MD_local_ctf.getValue(EMDL::CTF_SCALEFACTOR);         sfac.push_back(_sfac);
+        _sfac   = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_SCALEFACTOR);         sfac.push_back(_sfac);
         if (MD_local_ctf.containsLabel(EMDL::CTF_PHASESHIFT))
-        _phase  = MD_local_ctf.getValue(EMDL::CTF_PHASESHIFT);          phase.push_back(_phase);
+        _phase  = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_PHASESHIFT);          phase.push_back(_phase);
     }
 
     if (!MD_priors.containsLabel(EMDL::CTF_DEFOCUSU))
@@ -1966,8 +1967,8 @@ void combineParticlePriorsWithKaiLocalCTF(
     ii = -1;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_priors) {
         ii++;
-        _x = MD_priors.getValue(EMDL::IMAGE_COORD_X);
-        _y = MD_priors.getValue(EMDL::IMAGE_COORD_Y);
+        _x = MD_priors.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        _y = MD_priors.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         if (fabs(x[ii] - _x) > 1.001 || fabs(y[ii] - _y) > 1.001)
             REPORT_ERROR("helix.cpp::combineParticlePriorsWithKaiLocalCTF(): Coordinates from the two MetaDataTables do not match.");
 
@@ -2063,7 +2064,7 @@ void removeBadTiltHelicalSegmentsFromDataStar(
     nr_segments_old = nr_segments_new = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
         nr_segments_old++;
-        tilt_deg = MD_in.getValue(EMDL::ORIENT_TILT);
+        tilt_deg = MD_in.getValue<RFLOAT>(EMDL::ORIENT_TILT);
         if (fabs(tilt_deg - 90.0) < max_dev_deg) {
             nr_segments_new++;
             MD_out.addObject(MD_in.getObject());
@@ -2096,8 +2097,8 @@ void removeBadPsiHelicalSegmentsFromDataStar(
     nr_segments_old = nr_segments_new = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
         nr_segments_old++;
-        psi_deg       = MD_in.getValue(EMDL::ORIENT_PSI);
-        psi_prior_deg = MD_in.getValue(EMDL::ORIENT_PSI_PRIOR);
+        psi_deg       = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        psi_prior_deg = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
         diff_psi = ABS(psi_deg - psi_prior_deg);
         if (diff_psi > 180.)
             diff_psi = ABS(diff_psi - 360.);
@@ -2194,10 +2195,10 @@ void convertHelicalSegmentCoordsToMetaDataTable(
     int nr_segments = 0;
     z = 1.0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
-        x = MD_in.getValue(EMDL::IMAGE_COORD_X);
-        y = MD_in.getValue(EMDL::IMAGE_COORD_Y);
+        x = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        y = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         if (is_3D_data)
-        z = MD_in.getValue(EMDL::IMAGE_COORD_Z);
+        z = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
         #ifdef EXCLUDE_SEGMENTS_ON_THE_EDGES
         // Avoid segments lying on the edges of the micrographs
         if (
@@ -2762,9 +2763,9 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
     map_mics.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         mic_name.clear();
-        mic_name = MD.getValue(EMDL::MICROGRAPH_NAME);
+        mic_name = MD.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         if (divide_according_to_helical_tube_id) {
-            helical_tube_id = MD.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID);
+            helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
             if (helical_tube_id < 1)
                 REPORT_ERROR("helix.cpp::divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(): Helical tube ID should be positive integer!");
             mic_name += std::string("_TUBEID_");
@@ -2831,9 +2832,9 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         mic_name.clear();
-        mic_name = MD.getValue(EMDL::MICROGRAPH_NAME);
+        mic_name = MD.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         if (divide_according_to_helical_tube_id) {
-            helical_tube_id = MD.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID);
+            helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
             if (helical_tube_id < 1)
                 REPORT_ERROR("helix.cpp::divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(): Helical tube ID should be positive integer!");
             mic_name += std::string("_TUBEID_");
@@ -3297,8 +3298,8 @@ void sortHelicalTubeID(MetaDataTable& MD) {
 
     int_tube_id = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        str_particle_fullname = MD.getValue(EMDL::IMAGE_NAME);
-        int_tube_id           = MD.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID);
+        str_particle_fullname = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+        int_tube_id           = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
         str_comment = str_particle_name + "@TUBE@" + integerToString(int_tube_id, 6);
         tubes.insert(str_comment);
 
@@ -3316,7 +3317,7 @@ void sortHelicalTubeID(MetaDataTable& MD) {
     tubes.clear();
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        str_comment = MD.getValue(EMDL::IMAGE_NAME);
+        str_comment = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         str_particle_id = str_comment.substr(str_comment.find("@PARTICLE@") + 10);
         str_particle_name = str_comment.substr(0, str_comment.find("@TUBE@"));
         str_comment = str_particle_id + "@" + str_particle_name;
@@ -3562,7 +3563,7 @@ void simulateHelicalSegments(
         if (is_3d_tomo)
             MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
 
-        fn_mic = MD.getValue(EMDL::IMAGE_NAME);
+        fn_mic = MD.getValue<FileName>(EMDL::IMAGE_NAME);
         fn_ext = fn_mic.getExtension();
         fn_mic = fn_mic.withoutExtension() + "_norm." + fn_ext;
         MD.setValue(EMDL::IMAGE_NAME, fn_mic);
@@ -3663,10 +3664,10 @@ void excludeLowCTFCCMicrographs(
     MD_out.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
         nr_mics_old++;
-        cc      = MD_in.getValue(EMDL::CTF_FOM);
-        EPA_res = MD_in.getValue(EMDL::CTF_MAXRES);
-        dU      = MD_in.getValue(EMDL::CTF_DEFOCUSU);
-        dV      = MD_in.getValue(EMDL::CTF_DEFOCUSV);
+        cc      = MD_in.getValue<RFLOAT>(EMDL::CTF_FOM);
+        EPA_res = MD_in.getValue<RFLOAT>(EMDL::CTF_MAXRES);
+        dU      = MD_in.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);
+        dV      = MD_in.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV);
         if (
             cc > cc_min &&
             dU > df_min && dU < df_max &&
@@ -3705,10 +3706,10 @@ void cutOutPartOfHelix(
     ang_deg = ang_deg > 91.0 ? 91.0 : ang_deg;
 
     std::tuple<int, int, int, long int> dimensions = vin.getDimensions();
-    int Xdim = std::get<0>(dimensions);
-    int Ydim = std::get<1>(dimensions);
-    int Zdim = std::get<2>(dimensions);
-    long int Ndim = std::get<3>(dimensions);
+    Xdim = std::get<0>(dimensions);
+    Ydim = std::get<1>(dimensions);
+    Zdim = std::get<2>(dimensions);
+    Ndim = std::get<3>(dimensions);
     // Surely old_boxdim = min(Xdim, Ydim, Zdim)
     old_boxdim = Xdim < Ydim ? Xdim : Ydim;
     old_boxdim = Zdim < old_boxdim ? Zdim : old_boxdim;
@@ -4161,32 +4162,30 @@ void updatePriorsForHelicalReconstruction(
     MDobjectID = -1;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         HelicalSegmentPriorInfoEntry segment;
-        std::string str_mic;
-        int tube_id;
 
         segment.clear();
 
         // KThurber and SHWS
-        str_mic                = MD.getValue(EMDL::MICROGRAPH_NAME);
-        tube_id                = MD.getValue(EMDL::PARTICLE_HELICAL_TUBE_ID);
+        std::string str_mic    = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        int tube_id            = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
         segment.helical_tube_name = str_mic + integerToString(tube_id);
-        segment.track_pos_A    = MD.getValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM);
-        segment.rot_deg        = MD.containsLabel(EMDL::ORIENT_ROT)       ? MD.getValue(EMDL::ORIENT_ROT)       : 0.0;
-        segment.rot_prior_deg  = MD.containsLabel(EMDL::ORIENT_ROT_PRIOR) ? MD.getValue(EMDL::ORIENT_ROT_PRIOR) : segment.rot_deg /* 0.0 */;
-        segment.tilt_deg       = MD.getValue(EMDL::ORIENT_TILT);
-        segment.tilt_prior_deg = MD.getValue(EMDL::ORIENT_TILT_PRIOR);
-        segment.psi_deg        = MD.getValue(EMDL::ORIENT_PSI);
-        segment.psi_prior_deg  = MD.getValue(EMDL::ORIENT_PSI_PRIOR);
-        segment.psi_flip_ratio = MD.getValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO);
-        segment.psi_prior_flip = MD.containsLabel(EMDL::ORIENT_PSI_PRIOR_FLIP) ? MD.getValue(EMDL::ORIENT_PSI_PRIOR_FLIP) : false;
-        segment.classID        = MD.containsLabel(EMDL::PARTICLE_CLASS)        ? MD.getValue(EMDL::PARTICLE_CLASS)        : 1;
+        segment.track_pos_A    = MD.getValue<RFLOAT>(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM);
+        segment.rot_deg        = MD.containsLabel(EMDL::ORIENT_ROT)       ? MD.getValue<RFLOAT>(EMDL::ORIENT_ROT)       : 0.0;
+        segment.rot_prior_deg  = MD.containsLabel(EMDL::ORIENT_ROT_PRIOR) ? MD.getValue<RFLOAT>(EMDL::ORIENT_ROT_PRIOR) : segment.rot_deg /* 0.0 */;
+        segment.tilt_deg       = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+        segment.tilt_prior_deg = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR);
+        segment.psi_deg        = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        segment.psi_prior_deg  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
+        segment.psi_flip_ratio = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO);
+        segment.psi_prior_flip = MD.containsLabel(EMDL::ORIENT_PSI_PRIOR_FLIP) ? MD.getValue<bool>(EMDL::ORIENT_PSI_PRIOR_FLIP) : false;
+        segment.classID        = MD.containsLabel(EMDL::PARTICLE_CLASS)        ? MD.getValue<int>(EMDL::PARTICLE_CLASS)        : 1;
         if (do_auto_refine)
-        segment.subset = MD.getValue(EMDL::PARTICLE_RANDOM_SUBSET); // Do we really need this?
+        segment.subset = MD.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET); // Do we really need this?
 
-        segment.dx_A = MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-        segment.dy_A = MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+        segment.dx_A = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+        segment.dy_A = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
         if (is_3D_data)
-        segment.dz_A = MD.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+        segment.dz_A = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
         segment.checkPsiPolarity();
 
@@ -4286,14 +4285,14 @@ void updateAngularPriorsForHelicalReconstructionFromLastIter(
     // https://en.wikipedia.org/wiki/Loop-invariant_code_motion
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         if (have_tilt && have_tilt_prior && !keep_tilt_prior_fixed) {
-            MD.setValue(EMDL::ORIENT_TILT_PRIOR, MD.getValue(EMDL::ORIENT_TILT));
+            MD.setValue(EMDL::ORIENT_TILT_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_TILT));
         }
         if (have_psi && have_psi_prior) {
-            MD.setValue(EMDL::ORIENT_PSI_PRIOR, MD.getValue(EMDL::ORIENT_PSI));
+            MD.setValue(EMDL::ORIENT_PSI_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_PSI));
         }
         // KThurber add rot section
         if (have_rot && have_rot_prior) {
-            MD.setValue(EMDL::ORIENT_ROT_PRIOR, MD.getValue(EMDL::ORIENT_ROT));
+            MD.setValue(EMDL::ORIENT_ROT_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_ROT));
         }
     }
 }
@@ -4332,12 +4331,13 @@ void grabParticleCoordinates(FileName& fn_in, FileName& fn_out) {
     contain_z_coord = MD_in.containsLabel(EMDL::IMAGE_COORD_Z);
 
     MD_out.clear();
-    RFLOAT x = y = z = 0.0;
+    RFLOAT x, y, z;
+    x = y = z = 0.0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
-        x = MD_in.getValue(EMDL::IMAGE_COORD_X);
-        y = MD_in.getValue(EMDL::IMAGE_COORD_Y);
+        x = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        y = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         if (contain_z_coord)
-        z = MD_in.getValue(EMDL::IMAGE_COORD_Z);
+        z = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
 
         MD_out.addObject();
         MD_out.setValue(EMDL::IMAGE_COORD_X, x);
@@ -4415,13 +4415,13 @@ void transformCartesianToHelicalCoordsForStarFiles(MetaDataTable& MD_in, MetaDat
     MD_out = MD_in;
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
-        rot  = MD_in.getValue(EMDL::ORIENT_ROT);
-        tilt = MD_in.getValue(EMDL::ORIENT_TILT);
-        psi  = MD_in.getValue(EMDL::ORIENT_PSI);
-        xoff = MD_in.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-        yoff = MD_in.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+        rot  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+        tilt = MD_in.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+        psi  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        xoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+        yoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
         if (is_3d_trans)
-        zoff = MD_in.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+        zoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
         transformCartesianAndHelicalCoords(
             xoff, yoff, zoff,
@@ -4467,14 +4467,14 @@ void normaliseHelicalSegments(
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         // Read image name and angular priors
-        img_name = MD.getValue(EMDL::IMAGE_NAME);
+        img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         file_ext = img_name.getExtension();
         rot_deg = tilt_deg = psi_deg = 0.0;
-        tilt_deg = MD.getValue(have_tilt_prior ? EMDL::ORIENT_TILT_PRIOR : EMDL::ORIENT_TILT);
-        psi_deg  = MD.getValue(have_psi_prior  ? EMDL::ORIENT_PSI_PRIOR  : EMDL::ORIENT_PSI);
+        tilt_deg = MD.getValue<RFLOAT>(have_tilt_prior ? EMDL::ORIENT_TILT_PRIOR : EMDL::ORIENT_TILT);
+        psi_deg  = MD.getValue<RFLOAT>(have_psi_prior  ? EMDL::ORIENT_PSI_PRIOR  : EMDL::ORIENT_PSI);
         if (read_angpix_from_star) {
-            det_pixel_size = MD.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE);
-            mag            = MD.getValue(EMDL::CTF_MAGNIFICATION);
+            det_pixel_size = MD.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
+            mag            = MD.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
             pixel_size_A = det_pixel_size * 10000.0 / mag;
         }
         // DEBUG
@@ -4626,9 +4626,9 @@ void HermiteInterpolateOne3DHelicalFilament(
     // Load all manually picked coordinates
     xlist.clear(); ylist.clear(); zlist.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
-        x0 = MD_in.getValue(EMDL::IMAGE_COORD_X);
-        y0 = MD_in.getValue(EMDL::IMAGE_COORD_Y);
-        z0 = MD_in.getValue(EMDL::IMAGE_COORD_Z);
+        x0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        y0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        z0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
         xlist.push_back(x0);
         ylist.push_back(y0);
         zlist.push_back(z0);
@@ -4772,10 +4772,10 @@ void Interpolate3DCurves(
     img.clear();
     img.read(fn_tomo, false);
     std::tuple<int, int, int, long int> dimensions = img.getDimensions();
-    int xdim_img = std::get<0>(dimensions);
-    int ydim_img = std::get<1>(dimensions);
-    int zdim_img = std::get<2>(dimensions);
-    long int ndim_img = std::get<3>(dimensions);
+    xdim_img = std::get<0>(dimensions);
+    ydim_img = std::get<1>(dimensions);
+    zdim_img = std::get<2>(dimensions);
+    ndim_img = std::get<3>(dimensions);
     if (zdim_img <= 1)
         REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Dimension Z of reconstructed 3D tomogram " + fn_tomo + " is 1!");
     if (ndim_img != 1)
@@ -4990,9 +4990,9 @@ void Interpolate3DCurves(
                 !MD.containsLabel(EMDL::IMAGE_COORD_Z)
             ) REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Input coordinate STAR file " + (std::string)(fn_in) + " should contain _rlnCoordinateX Y and Z!");
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-                xx = MD.getValue(EMDL::IMAGE_COORD_X);
-                yy = MD.getValue(EMDL::IMAGE_COORD_Y);
-                zz = MD.getValue(EMDL::IMAGE_COORD_Z);
+                xx = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+                yy = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+                zz = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
                 xlist.push_back(xx);
                 ylist.push_back(yy);
                 zlist.push_back(zz);
@@ -5218,8 +5218,8 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
         // Firstly, check whether the pixel sizes of segments in MD_3d are the same
         Dpix = -1.0, Mag = -1.0, _Dpix = -1.0, _Mag = -1.0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_3d) {
-            _Dpix = MD_3d.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE);
-            _Mag  = MD_3d.getValue(EMDL::CTF_MAGNIFICATION);
+            _Dpix = MD_3d.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
+            _Mag  = MD_3d.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
             if (_Dpix <= 0.0 || _Mag <= 0.0)
                 REPORT_ERROR("helix.cpp::select3DsubtomoFrom2Dproj(): Please ensure that all entries in MetaDataTable 3D subtomograms have valid Dpix and Magnification!");
             if (Dpix < 0.0 && Mag < 0.0) {
@@ -5235,8 +5235,8 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
         // Then, check whether the pixel sizes of segments in MD_2d are the same. Store Dpix and Mag.
         Dpix = -1.0, Mag = -1.0, _Dpix = -1.0, _Mag = -1.0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_2d) {
-            _Dpix = MD_2d.getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE);
-            _Mag  = MD_2d.getValue(EMDL::CTF_MAGNIFICATION);
+            _Dpix = MD_2d.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
+            _Mag  = MD_2d.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
             if (_Dpix <= 0.0 || _Mag <= 0.0)
                 REPORT_ERROR("helix.cpp::select3DsubtomoFrom2Dproj(): Please ensure that all entries in MetaDataTable 2D projections have valid Dpix and Magnification!");
             if (Dpix < 0.0 && Mag < 0.0) {
@@ -5256,11 +5256,11 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
     //xlist.clear(); ylist.clear(); zlist.clear(); idlist.clear();
     mic_list.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_2d) {
-        // xx = MD_2d.getValue(EMDL::IMAGE_COORD_X);
-        // yy = MD_2d.getValue(EMDL::IMAGE_COORD_Y);
-        // zz = MD_2d.getValue(EMDL::IMAGE_COORD_Z);
-        mic_str = MD_2d.getValue(EMDL::MICROGRAPH_NAME);
-        img_str = MD_2d.getValue(EMDL::IMAGE_NAME);
+        // xx = MD_2d.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        // yy = MD_2d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        // zz = MD_2d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
+        mic_str = MD_2d.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        img_str = MD_2d.getValue<std::string>(EMDL::IMAGE_NAME);
 
         // id = textToInteger(img_str.beforeFirstOf("@")); // 6-digit ID
         // xlist.push_back(xx); ylist.push_back(yy); zlist.push_back(zz); idlist.push_back(id);
@@ -5271,11 +5271,11 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
     // Scan through all the subtomograms
     MD_out.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_3d) {
-        // xx = MD_3d.getValue(EMDL::IMAGE_COORD_X);
-        // yy = MD_3d.getValue(EMDL::IMAGE_COORD_Y);
-        // zz = MD_3d.getValue(EMDL::IMAGE_COORD_Z);
-        mic_str = MD_3d.getValue(EMDL::MICROGRAPH_NAME);
-        img_str = MD_3d.getValue(EMDL::IMAGE_NAME);
+        // xx = MD_3d.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        // yy = MD_3d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        // zz = MD_3d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
+        mic_str = MD_3d.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        img_str = MD_3d.getValue<std::string>(EMDL::IMAGE_NAME);
 
         img_str = img_str.withoutExtension();
         if (img_str.length() < id_length)
@@ -5323,9 +5323,10 @@ void averageAsymmetricUnits2D(
         RFLOAT psi, angpix;
         int optics_group;
 
-        fn_img       = MDimgs.getValue(EMDL::IMAGE_NAME);
-        psi          = MDimgs.getValue(EMDL::ORIENT_PSI);
-        optics_group = --MDimgs.getValue(EMDL::IMAGE_OPTICS_GROUP);
+        fn_img       = MDimgs.getValue<FileName>(EMDL::IMAGE_NAME);
+        psi          = MDimgs.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        optics_group = MDimgs.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+        optics_group--;
         angpix = obsModel.getPixelSize(optics_group);
 
         img.read(fn_img);

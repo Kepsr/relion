@@ -730,37 +730,40 @@ void CenterFFT(MultidimArray< T >& v, bool forward)
 
 // Window an FFTW-centered Fourier-transform to a given size
 template<class T>
-void windowFourierTransform(MultidimArray<T > &in, MultidimArray<T > &out, long int newdim)
-{
+void windowFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long int newdim) {
     // Check size of the input array
-    if (YSIZE(in) > 1 && YSIZE(in)/2 + 1 != XSIZE(in))
+    if (YSIZE(in) > 1 && YSIZE(in) / 2 + 1 != XSIZE(in))
         REPORT_ERROR("windowFourierTransform ERROR: the Fourier transform should be of an image with equal sizes in all dimensions!");
-    long int newhdim = newdim/2 + 1;
+    long int newhdim = newdim / 2 + 1;
 
     // If same size, just return input
     // Sjors 5dec2017: only check for xdim is not enough, even/off ydim leaves ambiguity for dim>1
-    if ( newdim == YSIZE(in) && newhdim == XSIZE(in) )
-    {
+    if (newdim == YSIZE(in) && newhdim == XSIZE(in)) {
         out = in;
         return;
     }
 
     // Otherwise apply a windowing operation
     // Initialise output array
-    switch (in.getDim())
-    {
-    case 1:
+    switch (in.getDim()) {
+
+        case 1:
         out.initZeros(newhdim);
         break;
-    case 2:
+
+        case 2:
         out.initZeros(newdim, newhdim);
         break;
-    case 3:
+
+        case 3:
         out.initZeros(newdim, newdim, newhdim);
         break;
-    default:
+
+        default:
         REPORT_ERROR("windowFourierTransform ERROR: dimension should be 1, 2 or 3!");
+
     }
+
     if (newhdim > XSIZE(in))
     {
         long int max_r2 = (XSIZE(in) -1) * (XSIZE(in) - 1);

@@ -134,7 +134,7 @@ std::vector<std::vector<Image<RFLOAT>>> MotionHelper::movieCC(
             out[p][f] = Image<RFLOAT>(s,s);
         }
 
-        int randSubset = viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
+        int randSubset = viewParams.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p);
         randSubset -= 1;
 
         if (randSubset == 0) {
@@ -390,7 +390,7 @@ std::vector<std::vector<d2Vector>> MotionHelper::readTracksInPix(
 
     int pc;
     try {
-        pc = mdt.getValue(EMDL::PARTICLE_NUMBER);
+        pc = mdt.getValue<int>(EMDL::PARTICLE_NUMBER);
     } catch (const char *errmsg) {
         REPORT_ERROR("MotionHelper::readTracks: missing particle number in " + fn + ".");
 
@@ -415,8 +415,8 @@ std::vector<std::vector<d2Vector>> MotionHelper::readTracksInPix(
         out[p] = std::vector<d2Vector>(fc);
 
         for (int f = 0; f < fc; f++) {
-            out[p][f].x = mdt.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, f);
-            out[p][f].y = mdt.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, f);
+            out[p][f].x = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, f);
+            out[p][f].y = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, f);
             out[p][f] /= angpix;
         }
     }
