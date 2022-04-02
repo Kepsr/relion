@@ -59,8 +59,8 @@ void getFourierTransformsAndCtfs(
 
         // What is my particle_id?
         long int part_id = baseMLO->mydata.ori_particles[my_ori_particle].particles_id[ipart];
-        // Which group do I belong?
-        int group_id =baseMLO->mydata.getGroupId(part_id);
+        // Which group do I belong to?
+        int group_id = baseMLO->mydata.getGroupId(part_id);
 
         // Get the right line in the exp_fn_img strings (also exp_fn_recimg and exp_fn_ctfs)
         int istop = 0;
