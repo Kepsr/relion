@@ -305,7 +305,7 @@ void getFourierTransformsAndCtfs(
 
         CTIC(cudaMLO->timer, "makeNoiseMask");
         // Either mask with zeros or noise. Here, make a noise-image that will be optional in the softMask-kernel.
-        AccDataTypes::Image<XFLOAT> RandomImage(img(),ptrFactory);
+        AccDataTypes::Image<XFLOAT> RandomImage(img(), ptrFactory);
 
         if (!baseMLO->do_zero_mask) {
             // prepare a acc-side Random image
@@ -917,7 +917,7 @@ void getAllSquaredDifferencesCoarse(
                 mag = baseMLO->mydata.obsModel.applyAnisoMag(mag, optics_group);
                 mag = baseMLO->mydata.obsModel.applyScaleDifference(mag, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
                 if (!mag.isIdentity()) {
-                    if (MBL.mdimx == 3 && MBL.mdimx == 3) { MBL *= mag; }
+                    MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? MBL * mag : mag;
                 }
 
                 projectorPlans[iclass].setup(
@@ -3026,7 +3026,7 @@ void accDoExpectationOneParticle(MlClass *myInstance, unsigned long part_id_sort
         if (baseMLO->do_firstiter_cc && baseMLO->iter == 1) {
             // In first (CC) iter, use a single reference (and CC)
             sp.iclass_min = sp.iclass_max = 0;
-         else if (
+		} else if (
              baseMLO->do_firstiter_cc && baseMLO->iter == 2 ||
             !baseMLO->do_firstiter_cc && baseMLO->iter == 1
         ) {

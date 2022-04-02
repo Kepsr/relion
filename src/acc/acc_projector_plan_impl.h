@@ -120,14 +120,14 @@ void AccProjectorPlan::setup(
 
     orientation_num = 0;
 
-    Matrix2D<RFLOAT> L(3,3);
-    Matrix2D<RFLOAT> R(3,3);
+    Matrix2D<RFLOAT> L(3, 3);
+    Matrix2D<RFLOAT> R(3, 3);
 
     L.initIdentity();
     R.initIdentity();
 
-    bool doL(false), doR(false);
-    RFLOAT myperturb(0.);
+    bool doL = false, doR = false;
+    RFLOAT myperturb(0.0);
 
     if (L_.mdimx == L.mdimx && L_.mdimy == L.mdimy) {
         doL = true;
@@ -169,7 +169,7 @@ void AccProjectorPlan::setup(
             // In the second pass, check whether one of the translations for this orientation of any of the particles had a significant weight in the first pass
             // if so, proceed with projecting the reference in that direction
 
-            bool do_proceed(false);
+            bool do_proceed = false;
 
             TICTOC(TIMING_PROC_CALC, ({
             if (coarse && pdf_orientation > 0.0) {
