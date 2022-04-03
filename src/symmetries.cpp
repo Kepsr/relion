@@ -47,9 +47,8 @@
 #include "src/symmetries.h"
 
 // Read Symmetry file ======================================================
-// crystal symmetry matices from http://cci.lbl.gov/asu_gallery/
-int SymList::read_sym_file(FileName fn_sym)
-{
+// Crystal symmetry matrices from http://cci.lbl.gov/asu_gallery/
+int SymList::read_sym_file(FileName fn_sym) {
     int i, j;
     FILE *fpoii;
     char line[80];
@@ -64,21 +63,16 @@ int SymList::read_sym_file(FileName fn_sym)
     //check if reserved word
 
     // Open file ---------------------------------------------------------
-    if ((fpoii = fopen(fn_sym.c_str(), "r")) == NULL)
-    {
+    if ((fpoii = fopen(fn_sym.c_str(), "r")) == NULL) {
         //check if reserved word and return group and order
-        if (isSymmetryGroup(fn_sym, pgGroup, pgOrder))
-        {
+        if (isSymmetryGroup(fn_sym, pgGroup, pgOrder)) {
         	fill_symmetry_class(fn_sym, pgGroup, pgOrder, fileContent);
-        }
-        else
+        } else {
             REPORT_ERROR((std::string)"SymList::read_sym_file:Can't open file: "
                      + " or do not recognize symmetry group" + fn_sym);
-    }
-    else
-    {
-        while (fgets(line, 79, fpoii) != NULL)
-        {
+        }
+    } else {
+        while (fgets(line, 79, fpoii) != NULL) {
             if (line[0] == ';' || line[0] == '#' || line[0] == '\0')
             	continue;
 			fileContent.push_back(line);
@@ -94,49 +88,40 @@ int SymList::read_sym_file(FileName fn_sym)
     int no_axis, no_mirror_planes, no_inversion_points;
     no_axis = no_mirror_planes = no_inversion_points = 0;
 
-    for (int n=0; n<fileContent.size(); n++)
-    {
+    for (int n = 0; n < fileContent.size(); n++) {
     	strcpy(line,fileContent[n].c_str());
         auxstr = firstToken(line);
-        if (auxstr == NULL)
-        {
+        if (auxstr == NULL) {
             std::cout << line;
             std::cout << "Wrong line in symmetry file, the line is skipped\n";
             continue;
         }
-        if (strcmp(auxstr, "rot_axis") == 0)
-        {
+        if (strcmp(auxstr, "rot_axis") == 0) {
             auxstr = nextToken();
             fold = textToInteger(auxstr);
             true_symNo += (fold - 1);
             no_axis++;
-        }
-        else if (strcmp(auxstr, "mirror_plane") == 0)
-        {
+        } else if (strcmp(auxstr, "mirror_plane") == 0) {
             true_symNo++;
             no_mirror_planes++;
-        }
-        else if (strcmp(auxstr, "inversion") == 0)
-        {
+        } else if (strcmp(auxstr, "inversion") == 0) {
             true_symNo += 1;
             no_inversion_points = 1;
         }
     }
     // Ask for memory
-    __L.resize(4*true_symNo, 4);
-    __R.resize(4*true_symNo, 4);
+    __L.resize(4 * true_symNo, 4);
+    __R.resize(4 * true_symNo, 4);
     __chain_length.resize(true_symNo);
     __chain_length.initConstant(1);
 
     // Read symmetry parameters
     i = 0;
-    for (int n=0; n<fileContent.size(); n++)
-    {
+    for (int n = 0; n < fileContent.size(); n++) {
         strcpy(line,fileContent[n].c_str());
         auxstr = firstToken(line);
         // Rotational axis ---------------------------------------------------
-        if (strcmp(auxstr, "rot_axis") == 0)
-        {
+        if (strcmp(auxstr, "rot_axis") == 0) {
             auxstr = nextToken();
             fold = textToInteger(auxstr);
             auxstr = nextToken();
@@ -145,31 +130,26 @@ int SymList::read_sym_file(FileName fn_sym)
             YY(axis) = textToDouble(auxstr);
             auxstr = nextToken();
             ZZ(axis) = textToDouble(auxstr);
-            ang_incr = 360. / fold;
+            ang_incr = 360.0 / fold;
             L.initIdentity();
-            for (j = 1, rot_ang = ang_incr; j < fold; j++, rot_ang += ang_incr)
-            {
+            for (j = 1, rot_ang = ang_incr; j < fold; j++, rot_ang += ang_incr) {
                 rotation3DMatrix(rot_ang, axis, R);
                 R.setSmallValuesToZero();
                 set_matrices(i++, L, R.transpose());
             }
             __sym_elements++;
             // inversion ------------------------------------------------------
-        }
-        else if (strcmp(auxstr, "inversion") == 0)
-        {
+        } else if (strcmp(auxstr, "inversion") == 0) {
             L.initIdentity();
             L(2, 2) = -1;
             R.initIdentity();
-            R(0, 0) = -1.;
-            R(1, 1) = -1.;
-            R(2, 2) = -1.;
+            R(0, 0) = -1.0;
+            R(1, 1) = -1.0;
+            R(2, 2) = -1.0;
             set_matrices(i++, L, R);
             __sym_elements++;
             // mirror plane -------------------------------------------------------------
-        }
-        else if (strcmp(auxstr, "mirror_plane") == 0)
-        {
+        } else if (strcmp(auxstr, "mirror_plane") == 0) {
             auxstr = nextToken();
             XX(axis) = textToFloat(auxstr);
             auxstr = nextToken();
@@ -179,7 +159,7 @@ int SymList::read_sym_file(FileName fn_sym)
             L.initIdentity();
             L(2, 2) = -1;
             Matrix2D<RFLOAT> A;
-            alignWithZ(axis,A);
+            alignWithZ(axis, A);
             A = A.transpose();
             R = A * L * A.inv();
             L.initIdentity();
@@ -194,41 +174,36 @@ int SymList::read_sym_file(FileName fn_sym)
 }
 
 // Get matrix ==============================================================
-void SymList::get_matrices(int i, Matrix2D<RFLOAT> &L, Matrix2D<RFLOAT> &R)
-const
-{
-    int k, l;
+void SymList::get_matrices(int i, Matrix2D<RFLOAT> &L, Matrix2D<RFLOAT> &R) const {
     L.initZeros(4, 4);
     R.initZeros(4, 4);
-    for (k = 4 * i; k < 4*i + 4; k++)
-        for (l = 0; l < 4; l++)
-        {
-            L(k - 4*i, l) = __L(k, l);
-            R(k - 4*i, l) = __R(k, l);
-        }
+    for (int k = 4 * i; k < 4 * i + 4; k++)
+    for (int l = 0;     l < 4;         l++) {
+        L(k - 4 * i, l) = __L(k, l);
+        R(k - 4 * i, l) = __R(k, l);
+    }
 }
 
 // Set matrix ==============================================================
-void SymList::set_matrices(int i, const Matrix2D<RFLOAT> &L,
-                           const Matrix2D<RFLOAT> &R)
-{
-    int k, l;
-    for (k = 4 * i; k < 4*i + 4; k++)
-        for (l = 0; l < 4; l++)
-        {
-            __L(k, l) = L(k - 4 * i, l);
-            __R(k, l) = R(k - 4 * i, l);
-        }
+void SymList::set_matrices(int i, const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R) {
+    for (int k = 4 * i; k < 4 * i + 4; k++)
+    for (int l = 0;     l < 4;         l++) {
+        __L(k, l) = L(k - 4 * i, l);
+        __R(k, l) = R(k - 4 * i, l);
+    }
 }
 
-// Add matrix ==============================================================
-void SymList::add_matrices(const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R,
-                           int chain_length)
-{
-    if (MAT_XSIZE(L) != 4 || MAT_YSIZE(L) != 4 || MAT_XSIZE(R) != 4 || MAT_YSIZE(R) != 4)
-        REPORT_ERROR( "SymList::add_matrix: Transformation matrix is not 4x4");
-    if (TrueSymsNo() == SymsNo())
-    {
+// Matrix addition ============================================================
+void SymList::add_matrices(
+    const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R, int chain_length
+) {
+
+    if (
+        MAT_XSIZE(L) != 4 || MAT_YSIZE(L) != 4 || 
+        MAT_XSIZE(R) != 4 || MAT_YSIZE(R) != 4
+    ) REPORT_ERROR( "SymList::add_matrix: Transformation matrix is not 4x4");
+
+    if (TrueSymsNo() == SymsNo()) {
         __L.resize(MAT_YSIZE(__L) + 4, 4);
         __R.resize(MAT_YSIZE(__R) + 4, 4);
         __chain_length.resize(__chain_length.size() + 1);
@@ -240,26 +215,21 @@ void SymList::add_matrices(const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R,
 }
 
 // Compute subgroup ========================================================
-bool found_not_tried(const Matrix2D<int> &tried, int &i, int &j,
-                     int true_symNo)
-{
+bool found_not_tried(
+    const Matrix2D<int> &tried, int &i, int &j, int true_symNo
+) {
     i = j = 0;
     int n = 0;
-    while (n != MAT_YSIZE(tried))
-    {
+    while (n != MAT_YSIZE(tried)) {
         if (tried(i, j) == 0 && !(i >= true_symNo && j >= true_symNo))
             return true;
-        if (i != n)
-        {
+        if (i != n) {
             // Move downwards
             i++;
-        }
-        else
-        {
+        } else {
             // Move leftwards
             j--;
-            if (j == -1)
-            {
+            if (j == -1) {
                 n++;
                 j = n;
                 i = 0;
@@ -269,17 +239,15 @@ bool found_not_tried(const Matrix2D<int> &tried, int &i, int &j,
     return false;
 }
 
-//#define DEBUG
-void SymList::compute_subgroup()
-{
+// #define DEBUG
+void SymList::compute_subgroup() {
     Matrix2D<RFLOAT> I(4, 4);
     I.initIdentity();
     Matrix2D<RFLOAT> L1(4, 4), R1(4, 4), L2(4, 4), R2(4, 4), newL(4, 4), newR(4, 4);
     Matrix2D<int>    tried(true_symNo, true_symNo);
     int i, j;
     int new_chain_length;
-    while (found_not_tried(tried, i, j, true_symNo))
-    {
+    while (found_not_tried(tried, i, j, true_symNo)) {
         tried(i, j) = 1;
 
         get_matrices(i, L1, R1);
@@ -288,32 +256,28 @@ void SymList::compute_subgroup()
         newR = R1 * R2;
         new_chain_length = __chain_length(i) + __chain_length(j);
         Matrix2D<RFLOAT> newR3 = newR;
-        newR3.resize(3,3);
+        newR3.resize(3, 3);
         if (newL.isIdentity() && newR3.isIdentity()) continue;
 
         // Try to find it in current ones
-        bool found;
-        found = false;
-        for (int l = 0; l < SymsNo(); l++)
-        {
+        bool found = false;
+        for (int l = 0; l < SymsNo(); l++) {
         	get_matrices(l, L1, R1);
-            if (newL.equal(L1) && newR.equal(R1))
-            {
+            if (newL.equal(L1) && newR.equal(R1)) {
                 found = true;
                 break;
             }
         }
 
-        if (!found)
-        {
-//#define DEBUG
-#ifdef DEBUG
-           std::cout << "Matrix size " << tried.Xdim() << " "
+        if (!found) {
+            // #define DEBUG
+            #ifdef DEBUG
+            std::cout << "Matrix size " << tried.Xdim() << " "
             << "trying " << i << " " << j << " "
             << "chain length=" << new_chain_length << std::endl;
             std::cout << "Result R Sh\n" << newR;
-#endif
-//#undef DEBUG
+            #endif
+            // #undef DEBUG
             newR.setSmallValuesToZero();
             newL.setSmallValuesToZero();
             add_matrices(newL, newR, new_chain_length);
@@ -326,282 +290,277 @@ void SymList::compute_subgroup()
     is translation is not possible. See URL
     http://xmipp.cnb.uam.es/twiki/bin/view/Xmipp/Symmetry
     for details  */
-bool SymList::isSymmetryGroup(FileName fn_sym, int &pgGroup, int &pgOrder)
-{
-   char G1,G2,G3,G4;
-   char auxChar[3];
-   //each case check lenght, check first letter, second, is number
-   //Non a point group
+bool SymList::isSymmetryGroup(FileName fn_sym, int &pgGroup, int &pgOrder) {
+    char G1, G2, G3, G4;
+    char auxChar[3];
+    // each case check lenght, check first letter, second, is number
+    // Non a point group
 
-   //remove path
-   FileName fn_sym_tmp;
-   fn_sym_tmp=fn_sym.removeDirectories();
-   int mySize=fn_sym_tmp.size();
-   bool return_true;
-   return_true=false;
-   auxChar[2]='\0';
-   //size maybe 4 because n maybe a 2 digit number
-   if(mySize>4 || mySize<1)
-   {
-      pgGroup=-1;
-      pgOrder=-1;
-      return false;
-   }
-   //get the group character by character
-   G1=toupper((fn_sym_tmp.c_str())[0]);
-   G2=toupper((fn_sym_tmp.c_str())[1]);
-   if (mySize > 2)
-   {   G3=toupper((fn_sym_tmp.c_str())[2]);
-       if(mySize > 3)
-           G4=toupper((fn_sym.c_str())[3]);
-   }
-   else
-       G4='\0';
-   //CN
-   if (mySize==2 && G1=='C' && isdigit(G2))
-   {
-       pgGroup=pg_CN;
-       pgOrder=int(G2)-48;
-       return_true=true;
-   }
-   if (mySize==3 && G1=='C' && isdigit(G2) && isdigit(G3))
-   {
-       pgGroup=pg_CN;
-       auxChar[0]=G2;
-       auxChar[1]=G3;
-       pgOrder=atoi(auxChar);
-       return_true=true;
-   }
-   //CI
-   else if (mySize==2 && G1=='C' && G2=='I')
-   {
-       pgGroup=pg_CI;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //CS
-   else if (mySize==2 && G1=='C' && G2=='S')
-   {
-       pgGroup=pg_CS;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //CNH
-   else if (mySize==3 && G1=='C' && isdigit(G2) && G3=='H')
-   {
-       pgGroup=pg_CNH;
-       pgOrder=int(G2)-48;
-       return_true=true;
-   }
-   else if (mySize==4 && G1=='C' && isdigit(G2) && isdigit(G3) && G4=='H')
-   {
-       pgGroup=pg_CNH;
-       auxChar[0]=G2;
-       auxChar[1]=G3;
-       pgOrder=atoi(auxChar);
-       return_true=true;
-   }
-   //CNV
-   else if (mySize==3 && G1=='C' && isdigit(G2) && G3=='V')
-   {
-       pgGroup=pg_CNV;
-       pgOrder=int(G2)-48;
-       return_true=true;
-   }
-   else if (mySize==4 && G1=='C' && isdigit(G2) && isdigit(G3) && G4=='V')
-   {
-       pgGroup=pg_CNV;
-       auxChar[0]=G2;
-       auxChar[1]=G3;
-       pgOrder=atoi(auxChar);
-       return_true=true;
-   }
-   //SN
-   else if (mySize==2 && G1=='S' && isdigit(G2) )
-   {
-       pgGroup=pg_SN;
-       pgOrder=int(G2)-48;
-       return_true=true;
-   }
-   else if (mySize==3 && G1=='S' && isdigit(G2) && isdigit(G3) )
-   {
-       pgGroup=pg_SN;
-       auxChar[0]=G2;
-       auxChar[1]=G3;
-       pgOrder=atoi(auxChar);
-       return_true=true;
-   }
-   //DN
-   else if (mySize==2 && G1=='D' && isdigit(G2) )
-   {
-       pgGroup=pg_DN;
-       pgOrder=int(G2)-48;
-       return_true=true;
-   }
-   if (mySize==3 && G1=='D' && isdigit(G2) && isdigit(G3))
-   {
-       pgGroup=pg_DN;
-       auxChar[0]=G2;
-       auxChar[1]=G3;
-       pgOrder=atoi(auxChar);
-       return_true=true;
-   }
-   //DNV
-   else if (mySize==3 && G1=='D' && isdigit(G2) && G3=='V')
-   {
-       pgGroup=pg_DNV;
-       pgOrder=int(G2)-48;
-       return_true=true;
-   }
-   else if (mySize==4 && G1=='D' && isdigit(G2) && isdigit(G3) && G4=='V')
-   {
-       pgGroup=pg_DNV;
-       auxChar[0]=G2;
-       auxChar[1]=G3;
-       pgOrder=atoi(auxChar);
-       return_true=true;
-   }
-   //DNH
-   else if (mySize==3 && G1=='D' && isdigit(G2) && G3=='H')
-   {
-       pgGroup=pg_DNH;
-       pgOrder=int(G2)-48;
-       return_true=true;
-   }
-   else if (mySize==4 && G1=='D' && isdigit(G2) && isdigit(G3) && G4=='H')
-   {
-       pgGroup=pg_DNH;
-       auxChar[0]=G2;
-       auxChar[1]=G3;
-       pgOrder=atoi(auxChar);
-       return_true=true;
-   }
-   //T
-   else if (mySize==1 && G1=='T')
-   {
-       pgGroup=pg_T;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //TD
-   else if (mySize==2 && G1=='T' && G2=='D')
-   {
-       pgGroup=pg_TD;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //TH
-   else if (mySize==2 && G1=='T' && G2=='H')
-   {
-       pgGroup=pg_TH;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //O
-   else if (mySize==1 && G1=='O')
-   {
-       pgGroup=pg_O;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //OH
-   else if (mySize==2 && G1=='O'&& G2=='H')
-   {
-       pgGroup=pg_OH;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I
-   else if (mySize==1 && G1=='I')
-   {
-       pgGroup=pg_I;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I1
-   else if (mySize==2 && G1=='I'&& G2=='1')
-   {
-       pgGroup=pg_I1;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I2
-   else if (mySize==2 && G1=='I'&& G2=='2')
-   {
-       pgGroup=pg_I2;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I3
-   else if (mySize==2 && G1=='I'&& G2=='3')
-   {
-       pgGroup=pg_I3;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I4
-   else if (mySize==2 && G1=='I'&& G2=='4')
-   {
-       pgGroup=pg_I4;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I5
-   else if (mySize==2 && G1=='I'&& G2=='5')
-   {
-       pgGroup=pg_I5;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //IH
-   else if (mySize==2 && G1=='I'&& G2=='H')
-   {
-       pgGroup=pg_IH;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I1H
-   else if (mySize==3 && G1=='I'&& G2=='1'&& G3=='H')
-   {
-       pgGroup=pg_I1H;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I2H
-   else if (mySize==3 && G1=='I'&& G2=='2'&& G3=='H')
-   {
-       pgGroup=pg_I2H;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I3H
-   else if (mySize==3 && G1=='I'&& G2=='3'&& G3=='H')
-   {
-       pgGroup=pg_I3H;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I4H
-   else if (mySize==3 && G1=='I'&& G2=='4'&& G3=='H')
-   {
-       pgGroup=pg_I4H;
-       pgOrder=-1;
-       return_true=true;
-   }
-   //I5H
-   else if (mySize==3 && G1=='I'&& G2=='5'&& G3=='H')
-   {
-       pgGroup=pg_I5H;
-       pgOrder=-1;
-       return_true=true;
-   }
-//#define DEBUG7
-#ifdef DEBUG7
-std::cerr << "pgGroup" << pgGroup << " pgOrder " << pgOrder << std::endl;
-#endif
-#undef DEBUG7
+    // Remove path
+    FileName fn_sym_tmp = fn_sym.removeDirectories();
+    int mySize = fn_sym_tmp.size();
+    bool return_true = false;
+    auxChar[2] = '\0';
+    // Size may be 4 because n may be a 2-digit number
+    if (mySize > 4 || mySize < 1) {
+        pgGroup = -1;
+        pgOrder = -1;
+        return false;
+    }
 
-   return return_true;
+    // Get the group character by character
+    G1 = toupper((fn_sym_tmp.c_str())[0]);
+    G2 = toupper((fn_sym_tmp.c_str())[1]);
+    if (mySize > 2)
+    G3 = toupper((fn_sym_tmp.c_str())[2]);
+    if (mySize > 3)
+    G4 = toupper((fn_sym.c_str())[3]);
+    // else G4 = '\0';
+
+    // CN
+    if (mySize == 2 && G1 == 'C' && isdigit(G2)) {
+        pgGroup = pg_CN;
+        pgOrder = int(G2)-48;
+        return_true = true;
+    }
+    if (mySize==3 && G1=='C' && isdigit(G2) && isdigit(G3))
+    {
+        pgGroup=pg_CN;
+        auxChar[0]=G2;
+        auxChar[1]=G3;
+        pgOrder=atoi(auxChar);
+        return_true=true;
+    }
+    //CI
+    else if (mySize==2 && G1=='C' && G2=='I')
+    {
+        pgGroup=pg_CI;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //CS
+    else if (mySize==2 && G1=='C' && G2=='S')
+    {
+        pgGroup=pg_CS;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //CNH
+    else if (mySize==3 && G1=='C' && isdigit(G2) && G3=='H')
+    {
+        pgGroup=pg_CNH;
+        pgOrder=int(G2)-48;
+        return_true=true;
+    }
+    else if (mySize==4 && G1=='C' && isdigit(G2) && isdigit(G3) && G4=='H')
+    {
+        pgGroup=pg_CNH;
+        auxChar[0]=G2;
+        auxChar[1]=G3;
+        pgOrder=atoi(auxChar);
+        return_true=true;
+    }
+    //CNV
+    else if (mySize==3 && G1=='C' && isdigit(G2) && G3=='V')
+    {
+        pgGroup=pg_CNV;
+        pgOrder=int(G2)-48;
+        return_true=true;
+    }
+    else if (mySize==4 && G1=='C' && isdigit(G2) && isdigit(G3) && G4=='V')
+    {
+        pgGroup=pg_CNV;
+        auxChar[0]=G2;
+        auxChar[1]=G3;
+        pgOrder=atoi(auxChar);
+        return_true=true;
+    }
+    //SN
+    else if (mySize==2 && G1=='S' && isdigit(G2) )
+    {
+        pgGroup=pg_SN;
+        pgOrder=int(G2)-48;
+        return_true=true;
+    }
+    else if (mySize==3 && G1=='S' && isdigit(G2) && isdigit(G3) )
+    {
+        pgGroup=pg_SN;
+        auxChar[0]=G2;
+        auxChar[1]=G3;
+        pgOrder=atoi(auxChar);
+        return_true=true;
+    }
+    //DN
+    else if (mySize==2 && G1=='D' && isdigit(G2) )
+    {
+        pgGroup=pg_DN;
+        pgOrder=int(G2)-48;
+        return_true=true;
+    }
+    if (mySize==3 && G1=='D' && isdigit(G2) && isdigit(G3))
+    {
+        pgGroup=pg_DN;
+        auxChar[0]=G2;
+        auxChar[1]=G3;
+        pgOrder=atoi(auxChar);
+        return_true=true;
+    }
+    //DNV
+    else if (mySize==3 && G1=='D' && isdigit(G2) && G3=='V')
+    {
+        pgGroup=pg_DNV;
+        pgOrder=int(G2)-48;
+        return_true=true;
+    }
+    else if (mySize==4 && G1=='D' && isdigit(G2) && isdigit(G3) && G4=='V')
+    {
+        pgGroup=pg_DNV;
+        auxChar[0]=G2;
+        auxChar[1]=G3;
+        pgOrder=atoi(auxChar);
+        return_true=true;
+    }
+    //DNH
+    else if (mySize==3 && G1=='D' && isdigit(G2) && G3=='H')
+    {
+        pgGroup=pg_DNH;
+        pgOrder=int(G2)-48;
+        return_true=true;
+    }
+    else if (mySize==4 && G1=='D' && isdigit(G2) && isdigit(G3) && G4=='H')
+    {
+        pgGroup=pg_DNH;
+        auxChar[0]=G2;
+        auxChar[1]=G3;
+        pgOrder=atoi(auxChar);
+        return_true=true;
+    }
+    //T
+    else if (mySize==1 && G1=='T')
+    {
+        pgGroup=pg_T;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //TD
+    else if (mySize==2 && G1=='T' && G2=='D')
+    {
+        pgGroup=pg_TD;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //TH
+    else if (mySize==2 && G1=='T' && G2=='H')
+    {
+        pgGroup=pg_TH;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //O
+    else if (mySize==1 && G1=='O')
+    {
+        pgGroup=pg_O;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //OH
+    else if (mySize==2 && G1=='O'&& G2=='H')
+    {
+        pgGroup=pg_OH;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I
+    else if (mySize==1 && G1=='I')
+    {
+        pgGroup=pg_I;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I1
+    else if (mySize==2 && G1=='I'&& G2=='1')
+    {
+        pgGroup=pg_I1;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I2
+    else if (mySize==2 && G1=='I'&& G2=='2')
+    {
+        pgGroup=pg_I2;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I3
+    else if (mySize==2 && G1=='I'&& G2=='3')
+    {
+        pgGroup=pg_I3;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I4
+    else if (mySize==2 && G1=='I'&& G2=='4')
+    {
+        pgGroup=pg_I4;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I5
+    else if (mySize==2 && G1=='I'&& G2=='5')
+    {
+        pgGroup=pg_I5;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //IH
+    else if (mySize==2 && G1=='I'&& G2=='H')
+    {
+        pgGroup=pg_IH;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I1H
+    else if (mySize==3 && G1=='I'&& G2=='1'&& G3=='H')
+    {
+        pgGroup=pg_I1H;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I2H
+    else if (mySize==3 && G1=='I'&& G2=='2'&& G3=='H')
+    {
+        pgGroup=pg_I2H;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I3H
+    else if (mySize==3 && G1=='I'&& G2=='3'&& G3=='H')
+    {
+        pgGroup=pg_I3H;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I4H
+    else if (mySize==3 && G1=='I'&& G2=='4'&& G3=='H')
+    {
+        pgGroup=pg_I4H;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //I5H
+    else if (mySize==3 && G1=='I'&& G2=='5'&& G3=='H')
+    {
+        pgGroup=pg_I5H;
+        pgOrder=-1;
+        return_true=true;
+    }
+    //#define DEBUG7
+    #ifdef DEBUG7
+    std::cerr << "pgGroup" << pgGroup << " pgOrder " << pgOrder << std::endl;
+    #endif
+    #undef DEBUG7
+
+    return return_true;
 }
 void SymList::fill_symmetry_class(const FileName symmetry, int pgGroup, int pgOrder,
    std::vector<std::string> &fileContent)
