@@ -363,7 +363,7 @@ int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERW
 
     //write only once, ignore select_img
     if (NSIZE(data) == 1 && mode == WRITE_OVERWRITE) {
-        castPage2Datatype(MULTIDIM_ARRAY(data), fdata, Float, datasize_n);
+        castPage2Datatype(fdata, MULTIDIM_ARRAY(data), Float, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
     } else {
         if (mode == WRITE_APPEND) {

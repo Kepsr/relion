@@ -452,7 +452,7 @@ int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) 
     //think about writing in several chunks
 
     if (NSIZE(data) == 1 && mode == WRITE_OVERWRITE) {
-        castPage2Datatype(MULTIDIM_ARRAY(data), fdata, output_type, datasize_n);
+        castPage2Datatype(fdata, MULTIDIM_ARRAY(data), output_type, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
     } else {
         if (mode == WRITE_APPEND) {
@@ -462,7 +462,7 @@ int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) 
         }
 
         for (size_t i = imgStart; i < imgEnd; i++) {
-            castPage2Datatype(MULTIDIM_ARRAY(data) + i * datasize_n, fdata, output_type, datasize_n);
+            castPage2Datatype(fdata, MULTIDIM_ARRAY(data) + i * datasize_n, output_type, datasize_n);
             fwrite(fdata, datasize, 1, fimg);
         }
     }

@@ -108,7 +108,7 @@ extern "C" {
     static tsize_t TiffInMemoryReadProc(thandle_t handle, tdata_t buf, tsize_t read_size) {
         TiffInMemory *tiff_handle = (TiffInMemory *) handle;
         #ifdef TIFF_DEBUG
-            std::cout << "TiffInMemoryReadProc: read_size = " << read_size << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
+        std::cout << "TiffInMemoryReadProc: read_size = " << read_size << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
         #endif
         if (tiff_handle->pos + read_size >= tiff_handle->size)
             REPORT_ERROR("TiffInMemoryReadProc: seeking beyond the end of the buffer.");
@@ -121,26 +121,30 @@ extern "C" {
 
     static tsize_t TiffInMemoryWriteProc(thandle_t handle, tdata_t buf, tsize_t write_size) {
         #ifdef TIFF_DEBUG
-            REPORT_ERROR("TiffInMemoryWriteProc: Not implemented.");
+        REPORT_ERROR("TiffInMemoryWriteProc: Not implemented.");
         #endif
         return -1;
     }
 
     static toff_t TiffInMemorySeekProc(thandle_t handle, toff_t offset, int whence) {
-        TiffInMemory *tiff_handle = (TiffInMemory*)handle;
+        TiffInMemory *tiff_handle = (TiffInMemory*) handle;
         #ifdef TIFF_DEBUG
-            std::cout << "TiffInMemorySeekProc: offset = " << offset << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
+        std::cout << "TiffInMemorySeekProc: offset = " << offset << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
         #endif
         switch (whence) {
+
             case SEEK_SET:
-                tiff_handle->pos = 0;
-                break;
+            tiff_handle->pos = 0;
+            break;
+
             case SEEK_CUR:
-                tiff_handle->pos += offset;
-                break;
+            tiff_handle->pos += offset;
+            break;
+
             case SEEK_END:
-                REPORT_ERROR("TIFFInMemorySeekProc: SEEK_END is not supported.");
-                // break; // intentional to suppress compiler warnings.
+            REPORT_ERROR("TIFFInMemorySeekProc: SEEK_END is not supported.");
+            // break; // intentional to suppress compiler warnings.
+
         }
 
         if (tiff_handle->pos >= tiff_handle->size)
@@ -151,14 +155,14 @@ extern "C" {
 
     static int TiffInMemoryCloseProc(thandle_t handle) {
         #ifdef TIFF_DEBUG
-            std::cout << __func__ << std::endl;
+        std::cout << __func__ << std::endl;
         #endif
         return 0;
     }
 
     static toff_t TiffInMemorySizeProc(thandle_t handle) {
         #ifdef TIFF_DEBUG
-            std::cout << __func__ << std::endl;
+        std::cout << __func__ << std::endl;
         #endif
         return ((TiffInMemory *) handle)->size;
     }
@@ -166,7 +170,7 @@ extern "C" {
     static int TiffInMemoryMapFileProc(thandle_t handle, tdata_t *base, toff_t *size) {
         TiffInMemory *tiff_handle = (TiffInMemory *) handle;
         #ifdef TIFF_DEBUG
-            std::cout << __func__ << std::endl;
+        std::cout << __func__ << std::endl;
         #endif
 
         *base = tiff_handle->buf;
@@ -191,12 +195,12 @@ class fImageHandler {
 
     public:
 
-        FILE*	  fimg;	// Image File handler
-        FILE*	  fhed;	// Image File header handler
-        TIFF*	  ftiff;
-        FileName  ext_name; // Filename extension
-        bool	  exist;    // Does the file exist?
-        bool	  isTiff;   // Is the file a TIFF?
+    FILE     *fimg;	// Image File handler
+    FILE     *fhed;	// Image File header handler
+    TIFF     *ftiff;
+    FileName  ext_name; // Filename extension
+    bool	  exist;    // Does the file exist?
+    bool	  isTiff;   // Is the file a TIFF?
 
     // Empty constructor
     fImageHandler() {
@@ -216,7 +220,7 @@ class fImageHandler {
     void openFile(const FileName &name, int mode = WRITE_READONLY) {
 
         // Close any file that was left open in this handler
-        if ((fimg != NULL || fhed != NULL))
+        if (fimg != NULL || fhed != NULL)
             closeFile();
 
         FileName fileName, headName = "";
@@ -229,8 +233,7 @@ class fImageHandler {
         long int dump;
         name.decompose(dump, fileName);
         // Subtract 1 to have numbering 0...N-1 instead of 1...N
-        if (dump > 0)
-            dump--;
+        if (dump > 0) { dump--; }
 
         // create the filename from a possible input format specifier (file.spi:mrc means "it's called .spi, but it's really a .mrc")
         // file.spi:mrc -> file.spi
@@ -238,7 +241,7 @@ class fImageHandler {
 
         size_t found = fileName.find_first_of("%");
         if (found != std::string::npos)
-            fileName = fileName.substr(0, found) ;
+            fileName = fileName.substr(0, found);
 
         exist = exists(fileName);
 
@@ -349,8 +352,8 @@ class Image {
     private:
 
     FileName filename; // File name
-    FILE* fimg; // Image File handler
-    FILE* fhed; // Image File header handler
+    FILE *fimg; // Image File handler
+    FILE *fhed; // Image File header handler
     bool stayOpen; // To maintain the image file open after read/write
     int dataflag; // Flag to force reading of the data
     unsigned long i; // Current image number (may be > NSIZE)
@@ -395,7 +398,7 @@ class Image {
     }
 
     /** Clear.
-     * Zero-onitialize.
+     * Zero-initialize.
      */
     void clear() {
         if (mmapOn) {
@@ -470,17 +473,12 @@ class Image {
         const FileName &name, bool readdata=true, long int select_img=-1, 
         bool mapData = false, bool is_2D = false
     ) {
-
         if (name == "")
             REPORT_ERROR("ERROR: trying to read image with empty file name!");
-        int err = 0;
         fImageHandler hFile;
         hFile.openFile(name);
-        err = _read(name, hFile, readdata, select_img, mapData, is_2D);
-        // the destructor of fImageHandler will close the file
-
-        // Negative errors are bad
-        return err;
+        return _read(name, hFile, readdata, select_img, mapData, is_2D);
+        // fImageHandler's destructor will close the file
     }
 
     /** Read from an open file
@@ -489,15 +487,14 @@ class Image {
         const FileName &name, fImageHandler &hFile, long int select_img, 
         bool is_2D = false
     ) {
-        int err = 0;
-        err = _read(name, hFile, true, select_img, false, is_2D);
+        int err = _read(name, hFile, true, select_img, false, is_2D);
         // Reposition file pointer for a next read
         rewind(fimg);
         return err;
     }
 
     /** General write function
-     * select_img= which slice should I replace
+     * select_img = which slice should I replace
      * overwrite = 0, append slice
      * overwrite = 1 overwrite slice
      *
@@ -509,174 +506,185 @@ class Image {
         FileName name="", long int select_img=-1, bool isStack=false,
         int mode=WRITE_OVERWRITE
     ) {
-
-        const FileName &fname = (name == "") ? filename : name;
+        const FileName &fname = name == "" ? filename : name;
         fImageHandler hFile;
         hFile.openFile(name, mode);
         _write(fname, hFile, select_img, isStack, mode);
-        // the destructor of fImageHandler will close the file
-
+        // fImageHandler's destructor will close the file
     }
 
     /** Cast a page of data from type dataType to type Tdest
-     *	  input pointer  char *
+     *	  input pointer char *
      */
     void castPage2T(char *page, T *ptrDest, DataType datatype, size_t pageSize ) {
         switch (datatype) {
-            case Unknown_Type:
-                REPORT_ERROR("ERROR: datatype is Unknown_Type");
-            case UChar:
-                if (typeid(T) == typeid(unsigned char)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    unsigned char *ptr = (unsigned char *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptrDest[i] = (T)ptr[i];
-                }
-                break;
-            case SChar:
-                if (typeid(T) == typeid(signed char)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    signed char *ptr = (signed char *)page;
-                    for (size_t i = 0; i < pageSize; i++) {
-                        ptrDest[i] = (T)ptr[i];
-                    }
-                }
-                break;
-            case UShort:
-                if (typeid(T) == typeid(unsigned short)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    unsigned short *ptr = (unsigned short *)page;
-                    for (size_t i = 0; i < pageSize; i++) {
-                        ptrDest[i] = (T)ptr[i];
-                    }
-                }
-                break;
-            case Short:
-                if (typeid(T) == typeid(short)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    short *ptr = (short *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptrDest[i] = (T)ptr[i];
-                }
-                break;
-            case UInt:
-                if (typeid(T) == typeid(unsigned int)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    unsigned int *ptr = (unsigned int *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptrDest[i] = (T)ptr[i];
-                }
-                break;
-            case Int:
-                if (typeid(T) == typeid(int)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    int *ptr = (int *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptrDest[i] = (T)ptr[i];
-                }
-                break;
-            case Long:
-                if (typeid(T) == typeid(long)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    long *ptr = (long *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptrDest[i] = (T)ptr[i];
-                }
-                break;
-            case Float:
-                if (typeid(T) == typeid(float)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    float *ptr = (float *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptrDest[i] = (T)ptr[i];
-                }
-                break;
-            case Double:
-                if (typeid(T) == typeid(RFLOAT)) {
-                    memcpy(ptrDest, page, pageSize * sizeof(T));
-                } else {
-                    RFLOAT *ptr = (RFLOAT *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptrDest[i] = (T)ptr[i];
-                }
-                break;
-            case UHalf:
-                if (pageSize % 2 != 0) {
-                    REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
-                }
 
-                for (size_t i = 0, ilim = pageSize / 2; i < ilim; i++) {
-                    // Here we are assuming the fill-order is LSB2MSB according to IMOD's
-                    // iiProcessReadLine() in libiimod/mrcsec.c.
-                    // The default fill-order in the TIFF specification is MSB2LSB
-                    // but IMOD assumes LSB2MSB even for TIFF.
-                    // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
-                    ptrDest[i * 2 ] = (T)(page[i] & 15); // 1111 = 1+2+4+8 = 15
-                    ptrDest[i * 2 + 1] = (T)((page[i] >> 4) & 15);
+            case Unknown_Type:
+            REPORT_ERROR("ERROR: datatype is Unknown_Type");
+
+            case UChar:
+            if (typeid(T) == typeid(unsigned char)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                unsigned char *ptr = (unsigned char *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptrDest[i] = (T) ptr[i];
+            }
+            break;
+
+            case SChar:
+            if (typeid(T) == typeid(signed char)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                signed char *ptr = (signed char *) page;
+                for (size_t i = 0; i < pageSize; i++) {
+                    ptrDest[i] = (T)ptr[i];
                 }
-                break;
+            }
+            break;
+
+            case UShort:
+            if (typeid(T) == typeid(unsigned short)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                unsigned short *ptr = (unsigned short *) page;
+                for (size_t i = 0; i < pageSize; i++) {
+                    ptrDest[i] = (T)ptr[i];
+                }
+            }
+            break;
+
+            case Short:
+            if (typeid(T) == typeid(short)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                short *ptr = (short *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptrDest[i] = (T) ptr[i];
+            }
+            break;
+
+            case UInt:
+            if (typeid(T) == typeid(unsigned int)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                unsigned int *ptr = (unsigned int *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptrDest[i] = (T) ptr[i];
+            }
+            break;
+
+            case Int:
+            if (typeid(T) == typeid(int)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                int *ptr = (int *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptrDest[i] = (T) ptr[i];
+            }
+            break;
+
+            case Long:
+            if (typeid(T) == typeid(long)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                long *ptr = (long *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptrDest[i] = (T) ptr[i];
+            }
+            break;
+
+            case Float:
+            if (typeid(T) == typeid(float)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                float *ptr = (float *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptrDest[i] = (T) ptr[i];
+            }
+            break;
+
+            case Double:
+            if (typeid(T) == typeid(RFLOAT)) {
+                memcpy(ptrDest, page, pageSize * sizeof(T));
+            } else {
+                RFLOAT *ptr = (RFLOAT *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptrDest[i] = (T) ptr[i];
+            }
+            break;
+
+            case UHalf:
+            if (pageSize % 2 != 0) {
+                REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
+            }
+
+            for (size_t i = 0, ilim = pageSize / 2; i < ilim; i++) {
+                // Here we are assuming the fill-order is LSB2MSB according to IMOD's
+                // iiProcessReadLine() in libiimod/mrcsec.c.
+                // The default fill-order in the TIFF specification is MSB2LSB
+                // but IMOD assumes LSB2MSB even for TIFF.
+                // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
+                ptrDest[i * 2 ] = (T) (page[i] & 15); // 1111 = 1+2+4+8 = 15
+                ptrDest[i * 2 + 1] = (T) ((page[i] >> 4) & 15);
+            }
+            break;
+
             default:
-                std::cerr<<"Datatype= "<<datatype<<std::endl;
-                REPORT_ERROR(" ERROR: cannot cast datatype to T");
+            std::cerr << "Datatype= " << datatype << std::endl;
+            REPORT_ERROR(" ERROR: cannot cast datatype to T");
+
         }
     }
 
     /** Cast page from T to datatype
      *  input pointer char *
      */
-    void castPage2Datatype(T *srcPtr, char *page, DataType datatype, size_t pageSize) {
+    void castPage2Datatype(char *page, T *srcPtr, DataType datatype, size_t pageSize) {
         switch (datatype) {
             case Float:
                 if (typeid(T) == typeid(float)) {
-                    memcpy(page, srcPtr, pageSize*sizeof(T));
+                    memcpy(page, srcPtr, pageSize * sizeof(T));
                 } else {
-                    float *ptr = (float *)page;
+                    float *ptr = (float *) page;
                     for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (float)srcPtr[i];
+                        ptr[i] = (float) srcPtr[i];
                 }
                 break;
             case Double:
                 if (typeid(T) == typeid(RFLOAT)) {
-                    memcpy(page, srcPtr, pageSize*sizeof(T));
+                    memcpy(page, srcPtr, pageSize * sizeof(T));
                 } else {
-                    RFLOAT *ptr = (RFLOAT *)page;
+                    RFLOAT *ptr = (RFLOAT *) page;
                     for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (RFLOAT)srcPtr[i];
+                        ptr[i] = (RFLOAT) srcPtr[i];
                 }
                 break;
             case Short: 
                 if (typeid(T) == typeid(short)) {
-                    memcpy(page, srcPtr, pageSize*sizeof(T));
+                    memcpy(page, srcPtr, pageSize * sizeof(T));
                 } else {
-                    short *ptr = (short *)page;
+                    short *ptr = (short *) page;
                     for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (short)srcPtr[i];
+                        ptr[i] = (short) srcPtr[i];
                 }
                 break;
             case UShort:
                 if (typeid(T) == typeid(unsigned short)) {
-                    memcpy(page, srcPtr, pageSize*sizeof(T));
+                    memcpy(page, srcPtr, pageSize * sizeof(T));
                 } else {
                     unsigned short *ptr = (unsigned short *)page;
                     for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (unsigned short)srcPtr[i];
+                        ptr[i] = (unsigned short) srcPtr[i];
                 }
                 break;
             case UChar:
                 if (typeid(T) == typeid(unsigned char)) {
-                    memcpy(page, srcPtr, pageSize*sizeof(T));
+                    memcpy(page, srcPtr, pageSize * sizeof(T));
                 } else {
-                    unsigned char *ptr = (unsigned char *)page;
+                    unsigned char *ptr = (unsigned char *) page;
                     for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (unsigned char)srcPtr[i];
+                        ptr[i] = (unsigned char) srcPtr[i];
                 }
                 break;
             default:
@@ -722,10 +730,10 @@ class Image {
      * A page of datasize_n elements T is cast to datatype and written to fimg
      * The memory for the casted page is allocated and freed internally.
      */
-    void writePageAsDatatype(FILE * fimg, DataType datatype, size_t datasize_n ) {
+    void writePageAsDatatype(FILE *fimg, DataType datatype, size_t datasize_n ) {
         size_t datasize = datasize_n * gettypesize(datatype);
         char * fdata = (char *) askMemory(datasize);
-        castPage2Datatype(MULTIDIM_ARRAY(data), fdata, datatype, datasize_n);
+        castPage2Datatype(fdata, MULTIDIM_ARRAY(data), datatype, datasize_n);
         fwrite( fdata, datasize, 1, fimg );
         freeMemory(fdata, datasize);
     }
@@ -752,7 +760,7 @@ class Image {
     }
 
     // Read the raw data
-    int readData(FILE* fimg, long int select_img, DataType datatype, unsigned long pad) {
+    int readData(FILE *fimg, long int select_img, DataType datatype, unsigned long pad) {
         // #define DEBUG
         #ifdef DEBUG
         std::cerr << "entering " << __func__ << std::endl;
@@ -800,14 +808,14 @@ class Image {
 
             fclose(fimg);
 
-            //if ( ( mFd = open(filename.c_str(), O_RDWR, S_IREAD | S_IWRITE) ) == -1 )
+            // if ((mFd = open(filename.c_str(), O_RDWR, S_IREAD | S_IWRITE)) == -1)
             if ((mFd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
                 REPORT_ERROR((std::string) "Image Class::" + __func__ + ": Error opening the image file.");
 
             char* map;
             mappedSize = pagesize + offset;
 
-            if ((map = (char*) mmap(0,mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1 )
+            if ((map = (char*) mmap(0,mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
                 REPORT_ERROR((std::string) "Image Class::" + __func__ + ": mmap of image file failed.");
             data.data = reinterpret_cast<T*> (map + offset);
         } else {
@@ -823,10 +831,10 @@ class Image {
             //#define DEBUG
 
             #ifdef DEBUG
-                data.printShape();
-                printf("DEBUG: Page size: %ld offset= %d \n", pagesize, offset);
-                printf("DEBUG: Swap = %d  Pad = %ld  Offset = %ld\n", swap, pad, offset);
-                printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
+            data.printShape();
+            printf("DEBUG: Page size: %ld offset= %d \n", pagesize, offset);
+            printf("DEBUG: Swap = %d  Pad = %ld  Offset = %ld\n", swap, pad, offset);
+            printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
             page = (char *) askMemory(std::max(pagesize, pagemax) * sizeof(char));
@@ -834,11 +842,11 @@ class Image {
             // Because we requested XYSIZE to be even for UHalf, this is always safe.
             if (fseek(fimg, myoffset, SEEK_SET) != 0) return -1;
 
-            for (size_t myn = 0; myn < NSIZE(data); myn++) {
-                for (size_t myj = 0; myj < pagesize; myj += pagemax) {
-                    //pagesize size of object
+            for (size_t n = 0; n < NSIZE(data); n++) {
+                for (size_t j = 0; j < pagesize; j += pagemax) {
+                    // pagesize size of object
                     // Read next page. Divide pages larger than pagemax
-                    readsize = pagesize - myj;
+                    readsize = pagesize - j;
                     if (readsize > pagemax) { readsize = pagemax; }
 
                     readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
@@ -858,7 +866,7 @@ class Image {
                     haveread_n += readsize_n;
                 }
                 if (pad > 0) {
-                    // fread( padpage, pad, 1, fimg);
+                    // fread(padpage, pad, 1, fimg);
                     if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
                 }
             }
@@ -1168,8 +1176,7 @@ class Image {
         long int dump;
         name.decompose(dump, filename);
         // Subtract 1 to have numbering 0...N-1 instead of 1...N
-        if (dump > 0)
-            dump--;
+        if (dump > 0) { dump--; }
         filename = name;
 
         if (select_img == -1)
@@ -1186,7 +1193,7 @@ class Image {
         #endif
         #undef DEBUG
 
-        //Just clear the header before reading
+        // Clear the header before reading
         MDMainHeader.clear();
         MDMainHeader.addObject();
 
