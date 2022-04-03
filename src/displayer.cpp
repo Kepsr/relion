@@ -50,7 +50,7 @@ void DisplayBox::draw() {
     /* Redraw the whole image */
     int depth = (colour_scheme) ? 3 : 1;
     fl_draw_image(
-        (const uchar *) img_data, 
+        (const uchar *) img_data,
         xpos, ypos, (short) xsize_data, (short) ysize_data,
         depth
     );
@@ -74,60 +74,60 @@ void DisplayBox::draw() {
     fl_line(x2, y2, x2, y1);
     fl_line(x2, y1, x1, y1);
 
-    //fl_pop_clip();
+    // fl_pop_clip();
 }
 
 unsigned char rgbToGrey(const unsigned char red, const unsigned char green, const unsigned char blue) {
     switch (colour_scheme) {
 
-        case BLACKGREYREDSCALE:
+        case ColourScheme::black_grey_red:
         if (red == 255) {
             return FLOOR((RFLOAT) (255.0 - blue / 2.0));
         } else {
             return FLOOR((RFLOAT) (red / 2.0));
         }
 
-        case BLUEGREYWHITESCALE:
+        case ColourScheme::blue_grey_white:
         if (red == 0) {
             return FLOOR((RFLOAT)(255.0 - blue) / 2.0);
         } else {
             return FLOOR((RFLOAT) (red / 2.0 + 128.0));
         }
 
-        case BLUEGREYREDSCALE: {
+        case ColourScheme::blue_grey_red: {
         unsigned char Y;
         int X;
-        if (red == 0) { 
+        if (red == 0) {
             X = 0;
-            Y = 255 - blue; 
+            Y = 255 - blue;
         } else if (red == 255) {
             X = 2;
-            Y = 255 - blue; 
-        } else { 
-            X = 1; 
-            Y = blue; 
+            Y = 255 - blue;
+        } else {
+            X = 1;
+            Y = blue;
         }
         return CEIL(85 * ((RFLOAT) Y / 256.0 + X));
         }
 
-        case RAINBOWSCALE: {
+        case ColourScheme::rainbow: {
         unsigned char Y;
         int X;
         if (red > 0) {
             if (red == 255) {
                 X = 0;
-                Y = green; 
+                Y = green;
             } else {
                 X = 1;
-                Y = 255 - red; 
+                Y = 255 - red;
             }
         } else if (green > 0) {
             if (green == 255) {
                 X = 2;
-                Y = blue; 
+                Y = blue;
             } else {
                 X = 3;
-                Y = 255 - green; 
+                Y = 255 - green;
             }
         } else {
             Y = 255; X = 4;
@@ -135,7 +135,7 @@ unsigned char rgbToGrey(const unsigned char red, const unsigned char green, cons
         return 255 - CEIL(64 * ((RFLOAT) Y / 255.0 + X));
         }
 
-        case CYANBLACKYELLOWSCALE:
+        case ColourScheme::cyan_black_yellow:
         if (red > 0) {
             if (red < 255) {
                 return (unsigned char) FLOOR((RFLOAT) red / 3.0 + 128);
@@ -182,7 +182,7 @@ void DisplayBox::setData(
     ysize_data = CEIL(YSIZE(img) * scale);
     xoff = xsize_data < w() ? (w() - xsize_data) / 2 : 0;
     yoff = ysize_data < h() ? (h() - ysize_data) / 2 : 0;
-    if (colour_scheme == GREYSCALE) {
+    if (colour_scheme == ColourScheme::greyscale) {
         img_data = new unsigned char [xsize_data * ysize_data];
     } else {
         img_data = new unsigned char [3 * xsize_data * ysize_data];
@@ -207,7 +207,7 @@ void DisplayBox::setData(
         int line_d = XSIZE(img);
         int dx, dy, sy, xerr, yerr;
 
-        if (colour_scheme == GREYSCALE) {
+        if (colour_scheme == ColourScheme::greyscale) {
             for (dy = ysize_data, sy = 0, yerr = ysize_data, n = 0; dy > 0; dy --) {
                 for (dx = xsize_data, xerr = xsize_data, old_ptr = img.data + sy * line_d; dx > 0; dx --, n++) {
                     img_data[n] = (char)FLOOR((*old_ptr - minval) / step);
@@ -248,7 +248,7 @@ void DisplayBox::setData(
             }
         }
     } else {
-        if (colour_scheme == GREYSCALE) {
+        if (colour_scheme == ColourScheme::greyscale) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(img, n, old_ptr) {
                 img_data[n] = FLOOR((*old_ptr - minval) / step);
             }
@@ -290,10 +290,10 @@ int DisplayBox::unSelect() {
 }
 
 int basisViewerWindow::fillCanvas(
-    int viewer_type, MetaDataTable &MDin, ObservationModel *obsModel, 
-    EMDL::EMDLabel display_label, EMDL::EMDLabel text_label, 
+    int viewer_type, MetaDataTable &MDin, ObservationModel *obsModel,
+    EMDL::EMDLabel display_label, EMDL::EMDLabel text_label,
     bool _do_read_whole_stacks, bool _do_apply_orient,
-    RFLOAT _minval, RFLOAT _maxval, RFLOAT _sigma_contrast, RFLOAT _scale, RFLOAT _ori_scale, 
+    RFLOAT _minval, RFLOAT _maxval, RFLOAT _sigma_contrast, RFLOAT _scale, RFLOAT _ori_scale,
     int _ncol, long int max_nr_images, RFLOAT lowpass, RFLOAT highpass, bool _do_class,
     MetaDataTable *_MDdata, int _nr_regroup, bool _do_recenter,  bool _is_data, MetaDataTable *_MDgroups,
     bool do_allow_save, FileName fn_selected_imgs, FileName fn_selected_parts, int max_nr_parts_per_class
@@ -326,8 +326,8 @@ int basisViewerWindow::fillCanvas(
         canvas.fn_selected_parts = fn_selected_parts;
         canvas.max_nr_parts_per_class = max_nr_parts_per_class;
         canvas.fill(
-            MDin, obsModel, display_label, text_label, _do_apply_orient, 
-            _minval, _maxval, _sigma_contrast, _scale, _ncol, _do_recenter, 
+            MDin, obsModel, display_label, text_label, _do_apply_orient,
+            _minval, _maxval, _sigma_contrast, _scale, _ncol, _do_recenter,
             max_nr_images, lowpass, highpass
         );
         canvas.nr_regroups = _nr_regroup;
@@ -847,7 +847,7 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
     fn_dir += "/";
     if (do_ask) {
         Fl_File_Chooser chooser(
-            fn_dir.c_str(), "(backup_selection.star)", 
+            fn_dir.c_str(), "(backup_selection.star)",
             Fl_File_Chooser::SINGLE, "Choose selection file to load"
         );      // chooser type
         chooser.show();
@@ -990,20 +990,20 @@ void multiViewerCanvas::showOriginalImage(int ipos) {
     cl += " --white " + floatToString(maxval);
 
     switch (colour_scheme) {
-        case (BLACKGREYREDSCALE): 
-        cl += " --colour_fire"; 
+        case (ColourScheme::black_grey_red):
+        cl += " --colour_fire";
         break;
-        case (BLUEGREYWHITESCALE): 
-        cl += " --colour_ice"; 
+        case (ColourScheme::blue_grey_white):
+        cl += " --colour_ice";
         break;
-        case (BLUEGREYREDSCALE): 
-        cl += " --colour_fire-n-ice"; 
+        case (ColourScheme::blue_grey_red):
+        cl += " --colour_fire-n-ice";
         break;
-        case (RAINBOWSCALE): 
-        cl += " --colour_rainbow"; 
+        case (ColourScheme::rainbow):
+        cl += " --colour_rainbow";
         break;
-        case (CYANBLACKYELLOWSCALE): 
-        cl += " --colour_difference"; 
+        case (ColourScheme::cyan_black_yellow):
+        cl += " --colour_difference";
         break;
     }
     // send job in the background
@@ -1039,7 +1039,7 @@ void basisViewerCanvas::saveImage(int ipos) {
         "PNG image (*.png)\tAll Files (*)*", // filter
         Fl_File_Chooser::CREATE, // chooser type
         "Save as"  // title
-    ); 
+    );
     chooser.show();
     // Block until user picks something.
     while (chooser.shown())
@@ -1056,7 +1056,7 @@ void basisViewerCanvas::saveImage(int ipos) {
             pngOut.fill(bRGB(0));
 
     for (size_t n = 0, nlim = xsize * ysize; n < nlim; n++) {
-        if (colour_scheme == GREYSCALE) {
+        if (colour_scheme == ColourScheme::greyscale) {
             unsigned char c = img_data[n];
             pngOut[n] = bRGB(c, c, c);
         } else {
@@ -1303,8 +1303,8 @@ void multiViewerCanvas::showSelectedParticles(int save_selected) {
     if (nparts > 0) {
         basisViewerWindow win(MULTIVIEW_WINDOW_WIDTH, MULTIVIEW_WINDOW_HEIGHT, "Particles in the selected classes");
         win.fillCanvas(
-            MULTIVIEWER, MDpart, obsModel, 
-            EMDL::IMAGE_NAME, text_label, do_read_whole_stacks, do_apply_orient, 
+            MULTIVIEWER, MDpart, obsModel,
+            EMDL::IMAGE_NAME, text_label, do_read_whole_stacks, do_apply_orient,
             0.0, 0.0, 0.0, boxes[0]->scale, ori_scale, ncol, multi_max_nr_images
         );
     } else {
@@ -1430,7 +1430,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
         if (obsModel->opticsMdt.numberOfObjects() > 0 && !do_class) {
             if (
                 metadata_table_name == "micrographs" || (
-                    !MDout.containsLabel(EMDL::IMAGE_NAME) && 
+                    !MDout.containsLabel(EMDL::IMAGE_NAME) &&
                     !MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME)
                 )
             ) {
@@ -1438,7 +1438,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
                 std::cout << "Saved "<< fn_selected_imgs << " with " << nsel << " selected micrographs." << std::endl;
             } else if (
                 metadata_table_name == "movies" || (
-                    !MDout.containsLabel(EMDL::IMAGE_NAME) && 
+                    !MDout.containsLabel(EMDL::IMAGE_NAME) &&
                     MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME)
                 )
             ) {
@@ -1492,7 +1492,7 @@ int singleViewerCanvas::handle(int ev) {
         if (rx < boxes[0]->xsize_data && ry < boxes[0]->ysize_data && rx >= 0 && ry >=0) {
             unsigned char ival;
             int n = ry * boxes[0]->xsize_data + rx;
-            if (colour_scheme == GREYSCALE) {
+            if (colour_scheme == ColourScheme::greyscale) {
                 ival = boxes[0]->img_data[n];
             } else {
                 ival = rgbToGrey(
@@ -1636,8 +1636,8 @@ void pickerViewerCanvas::draw() {
                 }
                 colval = ival;
                 fl_color(
-                    ival >= 1 && ival <= NUM_COLORS ? 
-                    color_choices[ival - 1].labelcolor_ : 
+                    ival >= 1 && ival <= NUM_COLORS ?
+                    color_choices[ival - 1].labelcolor_ :
                     FL_GREEN
                 );
             } else {
@@ -1748,7 +1748,7 @@ int pickerViewerCanvas::handle(int ev) {
             redraw();
             return 1;
         } else if (
-            button == FL_MIDDLE_MOUSE || 
+            button == FL_MIDDLE_MOUSE ||
             button == FL_LEFT_MOUSE && with_shift
         ) {
             boxes[0]->redraw();
@@ -1765,7 +1765,7 @@ int pickerViewerCanvas::handle(int ev) {
             redraw();
             return 1;
         } else if (
-            button == FL_RIGHT_MOUSE || 
+            button == FL_RIGHT_MOUSE ||
             button == FL_LEFT_MOUSE && with_control
         ) {
             redraw();
@@ -1805,7 +1805,7 @@ int pickerViewerCanvas::handle(int ev) {
         }
         return 0;
     } else if (
-        ev == FL_RELEASE || ev == FL_LEAVE || ev == FL_ENTER || 
+        ev == FL_RELEASE || ev == FL_LEAVE || ev == FL_ENTER ||
         ev == FL_MOVE    || ev == FL_FOCUS || ev == FL_UNFOCUS
     ) {
         // Update the drawing every time something happens ....
@@ -1923,9 +1923,9 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
                 REPORT_ERROR("The image in the --color star file does not have the same coordinates as the ones in the --coord file!");
             } else {
                 MDcoords.setValue(
-                    color_label, 
-                    EMDL::isInt(color_label) ? 
-                        MDcolor.getValue<int>(color_label) : 
+                    color_label,
+                    EMDL::isInt(color_label) ?
+                        MDcolor.getValue<int>(color_label) :
                         MDcolor.getValue<RFLOAT>(color_label),
                     iimg
                 );
@@ -1998,12 +1998,12 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
     sigma_contrast_input->color(GUI_INPUT_COLOR);
 
     colour_scheme_choice = new Fl_Choice(x2 - 110, y, inputwidth + 110, height, "Color:");
-    colour_scheme_choice->add("greyscale", 0, 0,0, FL_MENU_VALUE);
-    colour_scheme_choice->add("fire", 0, 0,0, FL_MENU_VALUE);
-    colour_scheme_choice->add("ice", 0, 0,0, FL_MENU_VALUE);
-    colour_scheme_choice->add("fire-n-ice", 0, 0,0, FL_MENU_VALUE);
-    colour_scheme_choice->add("rainbow", 0, 0,0, FL_MENU_VALUE);
-    colour_scheme_choice->add("difference", 0, 0,0, FL_MENU_VALUE);
+    colour_scheme_choice->add("greyscale",  0, 0, 0, FL_MENU_VALUE);
+    colour_scheme_choice->add("fire",       0, 0, 0, FL_MENU_VALUE);
+    colour_scheme_choice->add("ice",        0, 0, 0, FL_MENU_VALUE);
+    colour_scheme_choice->add("fire-n-ice", 0, 0, 0, FL_MENU_VALUE);
+    colour_scheme_choice->add("rainbow",    0, 0, 0, FL_MENU_VALUE);
+    colour_scheme_choice->add("difference", 0, 0, 0, FL_MENU_VALUE);
     colour_scheme_choice->picked(colour_scheme_choice->menu());
     colour_scheme_choice->color(GUI_INPUT_COLOR);
 
@@ -2270,7 +2270,7 @@ void displayerGuiWindow::cb_display_i() {
         cl += " --allow_save ";
         if (fn_parts != "") {
             cl += " --fn_parts " + fn_parts;
-            if (textToInteger(max_parts_per_class_input->value()) > 0) 
+            if (textToInteger(max_parts_per_class_input->value()) > 0)
                 cl += " --max_nr_parts_per_class " + (std::string)max_parts_per_class_input->value();
         }
         if (fn_imgs != "")
@@ -2311,19 +2311,30 @@ void Displayer::read(int argc, char **argv) {
     do_read_whole_stacks = parser.checkOption("--read_whole_stack", "Read entire stacks at once (to speed up when many images of each stack are displayed)");
     show_fourier_amplitudes = parser.checkOption("--show_fourier_amplitudes", "Show amplitudes of 2D Fourier transform?");
     show_fourier_phase_angles = parser.checkOption("--show_fourier_phase_angles", "Show phase angles of 2D Fourier transforms?");
-    if (parser.checkOption("--colour_fire", "Show images in black-grey-white-red colour scheme (highlight high signal)?")) {
-        colour_scheme = BLACKGREYREDSCALE;
-    } else if (parser.checkOption("--colour_ice", "Show images in blue-black-grey-white colour scheme (highlight low signal)?")) {
-        colour_scheme = BLUEGREYWHITESCALE;
-    } else if (parser.checkOption("--colour_fire-n-ice", "Show images in blue-grey-red colour scheme (highlight high&low signal)?")) {
-        colour_scheme = BLUEGREYREDSCALE;
-    } else if (parser.checkOption("--colour_rainbow", "Show images in cyan-blue-black-red-yellow colour scheme?")) {
-        colour_scheme = RAINBOWSCALE;
-    } else if (parser.checkOption("--colour_difference", "Show images in cyan-blue-black-red-yellow colour scheme (for difference images)?")) {
-        colour_scheme = CYANBLACKYELLOWSCALE;
-    } else {
-        colour_scheme = GREYSCALE;
-    }
+
+    colour_scheme =
+    parser.checkOption(
+        "--colour_fire",
+        "Show images in black-grey-white-red colour scheme (highlight high signal)?"
+    ) ? ColourScheme::black_grey_red :
+    parser.checkOption(
+        "--colour_ice",
+        "Show images in blue-black-grey-white colour scheme (highlight low signal)?"
+    ) ? ColourScheme::blue_grey_white :
+    parser.checkOption(
+        "--colour_fire-n-ice",
+        "Show images in blue-grey-red colour scheme (highlight high & low signal)?"
+    ) ? ColourScheme::blue_grey_red :
+    parser.checkOption(
+        "--colour_rainbow",
+        "Show images in cyan-blue-black-red-yellow colour scheme?"
+    ) ? ColourScheme::rainbow :
+    parser.checkOption(
+        "--colour_difference",
+        "Show images in cyan-blue-black-red-yellow colour scheme (for difference images)?"
+    ) ? ColourScheme::cyan_black_yellow :
+        ColourScheme::greyscale;
+
     do_colourbar = parser.checkOption("--colour_bar", "Show colourbar image?");
     do_ignore_optics = parser.checkOption("--ignore_optics", "Ignore information about optics groups in input STAR file?");
 
@@ -2470,11 +2481,11 @@ int Displayer::runGui() {
             "All recognised formats (*.{star,mrc,mrcs})\tSTAR Files (*.star)\tMRC stack (*.mrcs)\tMRC image (*.mrc)\tAll Files (*)*", // filter
             Fl_File_Chooser::SINGLE,  // chooser type
             "Choose file to display"  // title
-        );        
+        );
         chooser.show();
         // Block until user picks something.
-        while (chooser.shown()) { 
-            Fl::wait(); 
+        while (chooser.shown()) {
+            Fl::wait();
         }
 
         // User hit cancel?
@@ -2622,11 +2633,11 @@ void Displayer::run() {
 
         basisViewerWindow win(MULTIVIEW_WINDOW_WIDTH, MULTIVIEW_WINDOW_HEIGHT, fn_in.c_str());
         win.fillCanvas(
-            MULTIVIEWER, MDin, &obsModel, display_label, text_label, 
-            do_read_whole_stacks, do_apply_orient, minval, maxval, 
+            MULTIVIEWER, MDin, &obsModel, display_label, text_label,
+            do_read_whole_stacks, do_apply_orient, minval, maxval,
             sigma_contrast, scale, ori_scale, ncol,
-            max_nr_images,  lowpass, highpass, do_class, 
-            &MDdata, nr_regroups, do_recenter, fn_in.contains("_data.star"), 
+            max_nr_images,  lowpass, highpass, do_class,
+            &MDdata, nr_regroups, do_recenter, fn_in.contains("_data.star"),
             &MDgroups, do_allow_save, fn_selected_imgs, fn_selected_parts, max_nr_parts_per_class
         );
     } else {
@@ -2646,9 +2657,9 @@ void Displayer::run() {
             }
             basisViewerWindow win(MULTIVIEW_WINDOW_WIDTH, MULTIVIEW_WINDOW_HEIGHT, fn_in.c_str());
             win.fillCanvas(
-                MULTIVIEWER, MDin, &obsModel, EMDL::IMAGE_NAME, text_label, 
-                true, false, minval, maxval, 
-                sigma_contrast, scale, ori_scale, ncol, 
+                MULTIVIEWER, MDin, &obsModel, EMDL::IMAGE_NAME, text_label,
+                true, false, minval, maxval,
+                sigma_contrast, scale, ori_scale, ncol,
                 max_nr_images, lowpass, highpass
             );
         } else if (ZSIZE(img()) > 1) {
@@ -2679,9 +2690,9 @@ void Displayer::run() {
 
             basisViewerWindow win(MULTIVIEW_WINDOW_WIDTH, MULTIVIEW_WINDOW_HEIGHT, fn_in.c_str());
             win.fillCanvas(
-                MULTIVIEWER, MDin, &obsModel, EMDL::IMAGE_NAME, text_label, 
-                true, false, minval, maxval, 
-                sigma_contrast, scale, ori_scale, ncol, 
+                MULTIVIEWER, MDin, &obsModel, EMDL::IMAGE_NAME, text_label,
+                true, false, minval, maxval,
+                sigma_contrast, scale, ori_scale, ncol,
                 max_nr_images, lowpass, highpass
             );
         } else {

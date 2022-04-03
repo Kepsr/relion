@@ -245,27 +245,32 @@ class fImageHandler {
 
         exist = exists(fileName);
 
-        std::string wmChar; // Write mode 'character'
+        std::string wmstr; // Write mode string
 
         switch (mode) {
+
             case WRITE_READONLY:
-                if (!exist)
-                    REPORT_ERROR((std::string) "Cannot read file " + fileName + " It does not exist" );
-                wmChar = "r";
-                break;
+            if (!exist)
+                REPORT_ERROR((std::string) "Can't read file " + fileName + ". It doesn't exist!");
+            wmstr = "r";
+            break;
+
             case WRITE_OVERWRITE:
-                wmChar = "w";
-                break;
+            wmstr = "w";
+            break;
+
             case WRITE_APPEND:
-                if (exist) {
-                    wmChar = "r+";
-                } else {
-                    wmChar = "w+";
-                }
-                break;
+            if (exist) {
+                wmstr = "r+";
+            } else {
+                wmstr = "w+";
+            }
+            break;
+
             case WRITE_REPLACE:
-                wmChar = "r+";
-                break;
+            wmstr = "r+";
+            break;
+
         }
 
         if (ext_name.contains("img") || ext_name.contains("hed")) {
@@ -284,13 +289,13 @@ class fImageHandler {
         // Open image file
         if (
              isTiff && (ftiff = TIFFOpen(fileName.c_str(), "r"))            == NULL ||
-            !isTiff && (fimg  = fopen   (fileName.c_str(), wmChar.c_str())) == NULL
+            !isTiff && (fimg  = fopen   (fileName.c_str(), wmstr.c_str())) == NULL
         ) {
             REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + name);
         }
 
         if (headName != "") {
-            if ((fhed = fopen(headName.c_str(), wmChar.c_str())) == NULL)
+            if ((fhed = fopen(headName.c_str(), wmstr.c_str())) == NULL)
                 REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + headName);
         } else {
             fhed = NULL;
@@ -1393,72 +1398,77 @@ void rewindow(Image<RFLOAT> &I, int mysize);
 // Functions belonging to this topic are commented in rw*.h
 //@}
 
-#define GREYSCALE 0
-#define BLACKGREYREDSCALE 1
-#define BLUEGREYWHITESCALE 2
-#define BLUEGREYREDSCALE 3
-#define RAINBOWSCALE 4
-#define CYANBLACKYELLOWSCALE 5
-
 void getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT &minval, RFLOAT &maxval, RFLOAT &sigma_contrast);
 
-inline void greyToRGB(const int color_scheme, const unsigned char grey, unsigned char &red, unsigned char &green, unsigned char &blue)
-{
-    switch (color_scheme)
-    {
-    case GREYSCALE:
+namespace ColourScheme {
+
+    // Different paths through colourspace
+    enum {
+        greyscale, black_grey_red, blue_grey_white, 
+        blue_grey_red, rainbow, cyan_black_yellow
+    };
+
+}
+
+inline void greyToRGB(const int colour_scheme, const unsigned char grey, unsigned char &red, unsigned char &green, unsigned char &blue) {
+    switch (colour_scheme) {
+
+        case ColourScheme::greyscale:
         red = green = blue = grey;
-        break;
-    case BLACKGREYREDSCALE:
-        if (grey >= 128) { red = 255; blue = green = FLOOR((RFLOAT)(255 - grey)*2); }
-        else { red = green = blue = FLOOR((RFLOAT)(grey*2.)); }
-        break;
-    case BLUEGREYWHITESCALE:
-        if (grey >= 128) { red = green = blue = FLOOR((RFLOAT)((grey - 128) * 2)); }
-        else { red = 0; blue = green = FLOOR((RFLOAT)(255 - 2 * grey)); }
-        break;
-    case BLUEGREYREDSCALE:
-    {
-        const RFLOAT a = grey / 85.0; // group
-        const int X = FLOOR(a);	//this is the integer part
-        const unsigned char Y = FLOOR(255 * (a - X)); //fractional part from 0 to 255
-        switch(X)
-        {
-            case 0: red = 0; green = 255-Y; blue = 255 - Y; break;
-            case 1: red = Y; green = Y; blue = Y; break;
-            case 2: red = 255; green = 255-Y; blue = 255 - Y; break;
-            case 3: red = 255; green = 0; blue = 0; break;
+        return;
+
+        case ColourScheme::black_grey_red:
+        if (grey >= 128) {
+            red = 255; 
+            blue = green = FLOOR((RFLOAT) (255 - grey) * 2);
+        } else { 
+            red = green = blue = FLOOR((RFLOAT) (grey * 2.0)); 
+        }
+        return;
+
+        case ColourScheme::blue_grey_white:
+        if (grey >= 128) {
+            red = green = blue = FLOOR((RFLOAT)((grey - 128) * 2));
+        } else { 
+            red = 0; 
+            blue = green = FLOOR((RFLOAT) (255 - 2 * grey));
+        }
+        return;
+
+        case ColourScheme::blue_grey_red: {
+            const RFLOAT a = grey / 85.0; // group
+            const int X = FLOOR(a);	//this is the integer part
+            const unsigned char Y = FLOOR(255 * (a - X)); //fractional part from 0 to 255
+            switch (X) {
+                case 0: red =   0; green = 255 - Y; blue = 255 - Y; break;
+                case 1: red =   Y; green =       Y; blue =       Y; break;
+                case 2: red = 255; green = 255 - Y; blue = 255 - Y; break;
+                case 3: red = 255; green =       0; blue =       0; break;
+            }
+            return;
         }
 
-        break;
-    }
-    case RAINBOWSCALE:
-    {
-        const RFLOAT a = (255 - grey) / 64.; //invert and group
-        const int X = FLOOR(a);
-        const unsigned char Y = FLOOR(255 * (a - X)); //fractional part from 0 to 255
-        switch(X)
-        {
-            case 0: red = 255; green = Y; blue = 0; break;
-            case 1: red = 255 - Y; green = 255; blue = 0; break;
-            case 2: red = 0; green = 255; blue = Y; break;
-            case 3: red = 0; green = 255-Y; blue = 255; break;
-            case 4: red = 0; green = 0; blue = 255; break;
+        case ColourScheme::rainbow: {
+            const RFLOAT a = (255 - grey) / 64.0; //invert and group
+            const int X = FLOOR(a);
+            const unsigned char Y = FLOOR(255 * (a - X)); //fractional part from 0 to 255
+            switch(X) {
+                case 0: red =     255; green =       Y; blue =   0; break;
+                case 1: red = 255 - Y; green =     255; blue =   0; break;
+                case 2: red =       0; green =     255; blue =   Y; break;
+                case 3: red =       0; green = 255 - Y; blue = 255; break;
+                case 4: red =       0; green =       0; blue = 255; break;
+            }
+            return;
         }
-
-        break;
+        case ColourScheme::cyan_black_yellow: {
+            const RFLOAT d_rb = 3 * (grey - 128);
+            const RFLOAT d_g = 3 * (std::abs(grey - 128) - 42);
+            red   = (unsigned char) (FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0,  d_rb))));
+            green = (unsigned char) (FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0,  d_g ))));
+            blue  = (unsigned char) (FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0, -d_rb))));
+            return;
+        }
     }
-    case CYANBLACKYELLOWSCALE:
-    {
-        const RFLOAT d_rb = 3 * (grey - 128);
-        const RFLOAT d_g = 3 * (std::abs(grey - 128) - 42);
-        red   = (unsigned char)(FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0,  d_rb))));
-        green = (unsigned char)(FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0,  d_g))));
-        blue  = (unsigned char)(FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0, -d_rb))));
-
-        break;
-    }
-    }
-    return;
 }
 #endif
