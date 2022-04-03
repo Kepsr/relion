@@ -423,6 +423,15 @@ class Image {
 
     // Read/write functions for different file formats
 
+    #include "src/rwSPIDER.h"
+    #include "src/rwMRC.h"
+    #include "src/rwIMAGIC.h"
+    #include "src/rwTIFF.h"
+
+    // At present, we have these ill-advised mid-class #include directives.
+    // Ideally, they would be replaced by function declarations here in image.h,
+    // with definitions in the relevant places (rwMRC.h/rwIMAGIC.h/rwSPIDER.h/rwTIFF.h).
+
     // int readSPIDER(long int img_select);
 
     // int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
@@ -439,11 +448,6 @@ class Image {
     //     TIFF* ftiff, long int img_select, 
     //     bool readdata=false, bool isStack=false, const FileName &name=""
     // );
-
-    #include "src/rwSPIDER.h"
-    #include "src/rwMRC.h"
-    #include "src/rwIMAGIC.h"
-    #include "src/rwTIFF.h"
 
     /** Is this file an image?
      *
