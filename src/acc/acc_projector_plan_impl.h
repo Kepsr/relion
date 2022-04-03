@@ -250,18 +250,91 @@ void AccProjectorPlan::setup(
 
     int grid_size = ceil((float) orientation_num / (float) BLOCK_SIZE);
 
-    if (sampling.is_3D) {
-        AccUtilities::acc_make_eulers_3D<inverseMatrix, doL, doR>(
-            grid_size, BLOCK_SIZE, eulers.getStream(),
-            ~alphas, ~betas, ~gammas, ~eulers, orientation_num,
-            doL ? ~adjustL : NULL, doR ? ~adjustR : NULL
-        );
+    /// WARNING: Code multiplication !
+
+    if (inverseMatrix) {
+        if (sampling.is_3D) {
+            if (doL && doR)
+                AccUtilities::acc_make_eulers_3D<true, true, true>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, ~adjustL, ~adjustR
+                );
+            else if (doL)
+                AccUtilities::acc_make_eulers_3D<true, true, false>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, ~adjustL, NULL
+                );
+            else if (doR)
+                AccUtilities::acc_make_eulers_3D<true, false, true>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, NULL, ~adjustR
+                );
+            else
+                AccUtilities::acc_make_eulers_3D<true, false, false>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, NULL, NULL
+                );
+        } else
+            AccUtilities::acc_make_eulers_2D<true>(
+                grid_size, BLOCK_SIZE, eulers.getStream(),
+                ~alphas, ~eulers,
+                orientation_num
+            );
     } else {
-        AccUtilities::acc_make_eulers_2D<inverseMatrix>(
-            grid_size, BLOCK_SIZE, eulers.getStream(),
-            ~alphas, ~eulers, orientation_num
-        );
+        if (sampling.is_3D) {
+            if (doL && doR)
+                AccUtilities::acc_make_eulers_3D<false, true, true>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, ~adjustL, ~adjustR
+                );
+            else if (doL)
+                AccUtilities::acc_make_eulers_3D<false, true, false>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, ~adjustL, NULL
+                );
+            else if (doR)
+                AccUtilities::acc_make_eulers_3D<false, false, true>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, NULL, ~adjustR
+                );
+            else
+                AccUtilities::acc_make_eulers_3D<false, false, false>(
+                    grid_size, BLOCK_SIZE, eulers.getStream(),
+                    ~alphas, ~betas, ~gammas, ~eulers,
+                    orientation_num, NULL, NULL
+                );
+        }
+        else
+            AccUtilities::acc_make_eulers_2D<false>(
+                grid_size, BLOCK_SIZE, eulers.getStream(),
+                ~alphas, ~eulers,
+                orientation_num
+            );
     }
+
+    // Why can't this can all just be:
+
+    // if (sampling.is_3D) {
+    //     AccUtilities::acc_make_eulers_3D<inverseMatrix, doL, doR>(
+    //         grid_size, BLOCK_SIZE, eulers.getStream(),
+    //         ~alphas, ~betas, ~gammas, ~eulers, orientation_num,
+    //         doL ? ~adjustL : NULL, doR ? ~adjustR : NULL
+    //     );
+    // } else {
+    //     AccUtilities::acc_make_eulers_2D<inverseMatrix>(
+    //         grid_size, BLOCK_SIZE, eulers.getStream(),
+    //         ~alphas, ~eulers, orientation_num
+    //     );
+    // }
+
+    // ?
 
     }));
 }

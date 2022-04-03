@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 
     BackprojectionHelper::backprojectRaw(ts, dest, maskDest, origin, spacing);
 
-    // write clean tomogram into test00.vtk
+    // Write clean tomogram into test00.vtk
 
     VtkHelper::writeVTK(
         dest, "test00.vtk",
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     VolumeConverter::convert(dest, destImg);
     destImg.write("test00.mrc");
 
-    // add fiducials
+    // Add fiducials
 
     std::ifstream fidFile(fiducialsFile);
     std::vector<d3Vector> fids;
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
         drawPoint(dest, fidG, 1000);
     }
 
-    // write tomogram with fiducials into test01.vtk
+    // Write tomogram with fiducials into test01.vtk
 
     VtkHelper::writeVTK(
         dest, "test01.vtk",
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
         spacing,  spacing,  spacing
     );
 
-    // add particles
+    // Add particles
 
     const double z_offset = 450.0;
 
@@ -125,13 +125,13 @@ int main(int argc, char *argv[]) {
 
         d3Vector partCoord, partOff;
 
-        partCoord.x = partMdt.getValue(EMDL::IMAGE_COORD_X, p);
-        partCoord.y = partMdt.getValue(EMDL::IMAGE_COORD_Y, p);
-        partCoord.z = partMdt.getValue(EMDL::IMAGE_COORD_Z, p);
+        partCoord.x = partMdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);
+        partCoord.y = partMdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, p);
+        partCoord.z = partMdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z, p);
 
-        partOff.x = partMdt.getValue(EMDL::ORIENT_ORIGIN_X, p);
-        partOff.y = partMdt.getValue(EMDL::ORIENT_ORIGIN_Y, p);
-        partOff.z = partMdt.getValue(EMDL::ORIENT_ORIGIN_Z, p);
+        partOff.x = partMdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X, p);
+        partOff.y = partMdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y, p);
+        partOff.z = partMdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z, p);
 
         d3Vector partPos = partCoord + partOff;
         partPos.z -= z_offset;

@@ -20,7 +20,7 @@
 #include "src/pipeline_jobs.h"
 using std::string;
 
-string errorMsg(string s) {
+static string errorMsg(string s) {
     return "ERROR: " + s;
 }
 

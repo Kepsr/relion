@@ -169,8 +169,7 @@ class image_handler_parameters {
             "--colour_difference",
             "Show images in cyan-blue-black-red-yellow colour scheme (for difference images)?"
         ) ? CYANBLACKYELLOWSCALE :
-            color_scheme = GREYSCALE
-        };
+            GREYSCALE;
 
         // Hidden
         fn_cosDPhi = getParameter(argc, argv, "--cos_dphi", "");
@@ -360,8 +359,8 @@ class image_handler_parameters {
             MDfsc.setName("fsc");
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc) {
                 MDfsc.addObject();
-                RFLOAT res = (i > 0) ? (XSIZE(Iout()) * angpix / (RFLOAT)i) : 999.;
-                MDfsc.setValue(EMDL::SPECTRAL_IDX, (int)i);
+                RFLOAT res = i > 0 ? XSIZE(Iout()) * angpix / (RFLOAT) i : 999.0;
+                MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
                 MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
                 MDfsc.setValue(EMDL::POSTPROCESS_FSC_GENERAL, DIRECT_A1D_ELEM(fsc, i));
@@ -645,7 +644,7 @@ class image_handler_parameters {
             }
             if (fn_out.getExtension() != "mrcs")
                 std::cout << "NOTE: the input (--i) is a STAR file but the output (--o) does not have .mrcs extension. The output is treated as a suffix, not a path." << std::endl;
-            FileName fn_img = MD.getValue(EMDL::IMAGE_NAME, 0);
+            FileName fn_img = MD.getValue<FileName>(EMDL::IMAGE_NAME, 0);
             fn_img.decompose(slice_id, fn_stem);
             input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
         } else if (input_is_stack) {
@@ -676,12 +675,12 @@ class image_handler_parameters {
 
         bool do_md_out = false;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-            FileName fn_img = MD.getValue(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
+            FileName fn_img = MD.getValue<FileName>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
 
             // For fourfilter...
             RFLOAT psi;
             try {
-                psi = MD.getValue(EMDL::ORIENT_PSI);
+                psi = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
             } catch (const char* errmsg) {
                 psi = 0.0;
             }
@@ -691,11 +690,11 @@ class image_handler_parameters {
             if (i_img == 0) {
                 Image<RFLOAT> Ihead;
                 Ihead.read(fn_img, false);
-                std::tuple<int, int, int, long int> dimensions = Ihead.getDimensions();
-                int xdim = std::get<0>(dimensions);
-                int ydim = std::get<1>(dimensions);
-                int zdim = std::get<2>(dimensions);
-                long int ndim = std::get<3>(dimensions);
+                Dimensions dimensions = Ihead.getDimensions();
+                     int xdim = dimensions.x;
+                     int ydim = dimensions.y;
+                     int zdim = dimensions.z;
+                long int ndim = dimensions.n;
 
                 if (zdim > 1 && (do_add_edge || do_flipXY || do_flipmXY))
                     REPORT_ERROR("ERROR: you cannot perform 2D operations like --add_edge, --flipXY or --flipmXY on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
@@ -765,11 +764,11 @@ class image_handler_parameters {
             if (do_stats) {
                 // only write statistics to screen
                 Iin.read(fn_img);
-                std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Iin().computeStats();
-                RFLOAT avg = std::get<0>(statstuple);
-                RFLOAT stddev = std::get<1>(statstuple);
-                RFLOAT minval = std::get<2>(statstuple);
-                RFLOAT maxval = std::get<3>(statstuple);
+                Stats<RFLOAT> stats = Iin().computeStats();
+                RFLOAT avg    = stats.avg;
+                RFLOAT stddev = stats.stddev;
+                RFLOAT minval = stats.min;
+                RFLOAT maxval = stats.max;
                 RFLOAT header_angpix = Iin.samplingRateX();
                 std::cout << fn_img << " : (x, y, z, n) = " << XSIZE(Iin()) << " × "<< YSIZE(Iin()) << " × " << ZSIZE(Iin()) << " × " << NSIZE(Iin()) << " ; avg = " << avg << " stddev = " << stddev << " minval = " <<minval << " maxval = " << maxval << "; angpix = " << header_angpix << std::endl;
             } else if (do_calc_com) {
@@ -788,9 +787,9 @@ class image_handler_parameters {
                     RFLOAT xoff = 0.0;
                     RFLOAT yoff = 0.0;
                     RFLOAT psi  = 0.0;
-                    xoff = MD.getValue(EMDL::ORIENT_ORIGIN_X);
-                    yoff = MD.getValue(EMDL::ORIENT_ORIGIN_Y);
-                    psi  = MD.getValue(EMDL::ORIENT_PSI);
+                    xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X);
+                    yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y);
+                    psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
                     // Apply the actual transformation
                     Matrix2D<RFLOAT> A;
                     rotation2DMatrix(psi, A);
@@ -860,8 +859,8 @@ class image_handler_parameters {
                 FileName my_fn_out;
 
                 if (fn_out.getExtension() == "mrcs" && !fn_out.contains("@")) {
-                    // current_object starts counting from 0, thus needs to be incremented.
-                    my_fn_out.compose(current_object + 1, fn_out);
+                    // index starts counting from 0, thus needs to be incremented.
+                    my_fn_out.compose(index + 1, fn_out);
                 } else {
                     if (input_is_stack) {
                         my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);

@@ -112,10 +112,10 @@ class import_parameters {
                 old_nr_files = MDout.numberOfObjects();
                 std::string old_optics_group_name;
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDopt) {
-                    old_optics_group_name = MDopt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME);
+                    old_optics_group_name = MDopt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
                     if (old_optics_group_name == optics_group_name) {
                         do_new_optics_group = false;
-                        optics_group_number = MDopt.getValue(EMDL::IMAGE_OPTICS_GROUP);
+                        optics_group_number = MDopt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
                         break;
                     }
                 }
@@ -147,16 +147,16 @@ class import_parameters {
 
             // Fill in the actual data (movies/micrographs) table
             MDout.setName(tablename);
-            EMDLabel mylabel = (do_movies) ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::MICROGRAPH_NAME;
+            EMDL::EMDLabel mylabel = (do_movies) ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::MICROGRAPH_NAME;
             for (long i = 0; i < nr_input_files; i++) {
                 // Check this file was not yet present in the input STAR file
                 // TODO: this N^2 algorithm might get too expensive with large data sets....
                 bool already_there = false;
                 for (long j = 0; j < old_nr_files; j++) {
-                    FileName oldfile = MDout.getValue(mylabel, j);
+                    FileName oldfile = MDout.getValue<FileName>(mylabel, j);
                     if (oldfile == fns_in[i]) {
                         already_there = true;
-                        int old_optics_group_number = MDout.getValue(EMDL::IMAGE_OPTICS_GROUP, j);
+                        int old_optics_group_number = MDout.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, j);
                         if (old_optics_group_number != optics_group_number) {
                             std::cerr << " fns_in[i]= " << fns_in[i] << " old_optics_group_number= " << old_optics_group_number << " optics_group_number= " << optics_group_number << std::endl;
                             REPORT_ERROR("ERROR: trying to add an pre-existing image with a different optics group!");

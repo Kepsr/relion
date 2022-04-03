@@ -183,7 +183,7 @@ class star_handler_parameters {
 
     void compare() {
         MetaDataTable MD1, MD2, MDonly1, MDonly2, MDboth;
-        EMDLabel label1, label2, label3;
+        EMDL::EMDLabel label1, label2, label3;
 
         // Read in the observationModel
         read_check_ignore_optics(MD2, fn_compare);
@@ -260,14 +260,14 @@ class star_handler_parameters {
         std::vector<RFLOAT> avgs, stddevs;
         long int ii = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            FileName fn_img = MDin.getValue(EMDL::str2Label(discard_label));
+            FileName fn_img = MDin.getValue<FileName>(EMDL::str2Label(discard_label));
             Image<RFLOAT> img;
             img.read(fn_img);
-            std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = img().computeStats();
-            RFLOAT avg = std::get<0>(statstuple);
-            RFLOAT stddev = std::get<1>(statstuple);
-            RFLOAT minval = std::get<2>(statstuple);
-            RFLOAT maxval = std::get<3>(statstuple);
+            Stats<RFLOAT> stats = img().computeStats();
+            RFLOAT avg    = stats.avg;
+            RFLOAT stddev = stats.stddev;
+            RFLOAT minval = stats.min;
+            RFLOAT maxval = stats.max;
             sum_avg += avg;
             sum2_avg += avg * avg;
             sum_stddev += stddev;
@@ -299,7 +299,7 @@ class star_handler_parameters {
                 stddevs[i] > sum_stddev - discard_sigma * sum2_stddev &&
                 stddevs[i] < sum_stddev + discard_sigma * sum2_stddev
             ) {
-                MDout.addObject(MDin.getObject(current_object));
+                MDout.addObject(MDin.getObject(index));
             } else {
                 nr_discard++;
             }
@@ -343,7 +343,7 @@ class star_handler_parameters {
 
             // Initialise optics_group_uniq_names with the first table
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
-                std::string myname = obsModel.opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME);
+                std::string myname = obsModel.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
                 optics_group_uniq_names.push_back(myname);
             }
 
@@ -353,7 +353,7 @@ class star_handler_parameters {
 
                 std::vector<int> new_optics_groups;
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsin[MDs_id]) {
-                    int tmp = MDsin[MDs_id].getValue(EMDL::IMAGE_OPTICS_GROUP);
+                    int tmp = MDsin[MDs_id].getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
                     new_optics_groups.push_back(tmp);
                 }
 
@@ -361,8 +361,8 @@ class star_handler_parameters {
                 unique_opticsMdt.addMissingLabels(&obsModels[obs_id].opticsMdt);
 
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModels[obs_id].opticsMdt) {
-                    std::string myname          = obsModels[obs_id].opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP_NAME);
-                    int         my_optics_group = obsModels[obs_id].opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP);
+                    std::string myname          = obsModels[obs_id].opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
+                    int         my_optics_group = obsModels[obs_id].opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
 
                     // Check whether this name is unique
                     bool is_uniq = true;
@@ -400,7 +400,7 @@ class star_handler_parameters {
                         current_object2 < MDsin[MDs_id].numberOfObjects() && current_object2 >= 0;
                         current_object2 = MDsin[MDs_id].nextObject()
                     ) {
-                        int old_optics_group = MDsin[MDs_id].getValue(EMDL::IMAGE_OPTICS_GROUP, current_object2);
+                        int old_optics_group = MDsin[MDs_id].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, current_object2);
                         if (old_optics_group == my_optics_group)
                             new_optics_groups[current_object2] = new_group;
                     }
@@ -409,12 +409,12 @@ class star_handler_parameters {
                 obsModels[obs_id].opticsMdt = unique_opticsMdt;
 
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsin[MDs_id]) {
-                    MDsin[MDs_id].setValue(EMDL::IMAGE_OPTICS_GROUP, new_optics_groups[current_object]);
+                    MDsin[MDs_id].setValue(EMDL::IMAGE_OPTICS_GROUP, new_optics_groups[index]);
 
                     // Also rename the rlnGroupName to not have groups overlapping from different optics groups
                     try {
-                        std::string name = MDsin[MDs_id].getValue(EMDL::MLMODEL_GROUP_NAME);
-                        name = "optics" + integerToString(new_optics_groups[current_object]) + "_" + name;
+                        std::string name = MDsin[MDs_id].getValue<std::string>(EMDL::MLMODEL_GROUP_NAME);
+                        name = "optics" + integerToString(new_optics_groups[index]) + "_" + name;
                         MDsin[MDs_id].setValue(EMDL::MLMODEL_GROUP_NAME, name);
                     } catch (const char* errmsg) {}
                 }
@@ -540,7 +540,7 @@ class star_handler_parameters {
         MDout.deactivateLabel(EMDL::MLMODEL_GROUP_NO);
 
         if (fn_check != "") {
-            EMDLabel label = EMDL::str2Label(fn_check);
+            EMDL::EMDLabel label = EMDL::str2Label(fn_check);
             if (!MDout.containsLabel(label))
                 REPORT_ERROR("ERROR: the output file does not contain the label to check for duplicates. Is it present in all input files?");
 
@@ -548,7 +548,7 @@ class star_handler_parameters {
             FileName fn_this, fn_prev = "";
             MetaDataTable MDsort;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
-                fn_this = MDout.getValue(label);
+                fn_this = MDout.getValue<FileName>(label);
                 MDsort.addObject();
                 MDsort.setValue(label, fn_this);
             }
@@ -556,7 +556,7 @@ class star_handler_parameters {
             MDsort.newSort(label);
             long int nr_duplicates = 0;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsort) {
-                fn_this = MDsort.getValue(label);
+                fn_this = MDsort.getValue<FileName>(label);
                 if (fn_this == fn_prev) {
                     nr_duplicates++;
                     std::cerr << " WARNING: duplicate entry: " << fn_this << std::endl;
@@ -607,7 +607,7 @@ class star_handler_parameters {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             int my_split = n / size_split;
             if (my_split < nr_split) {
-                MDouts[my_split].addObject(MD.getObject(current_object));
+                MDouts[my_split].addObject(MD.getObject(index));
             } else {
                 break;
             }
@@ -642,7 +642,7 @@ class star_handler_parameters {
     }
 
     void operate() {
-        EMDLabel label1, label2, label3;
+        EMDL::EMDLabel label1, label2, label3;
         label1 = EMDL::str2Label(fn_operate);
         if (fn_operate2 != "") {
             label2 = EMDL::str2Label(fn_operate2);
@@ -663,16 +663,16 @@ class star_handler_parameters {
                     if (fn_operate2 != "") MD.setValue(label2, val);
                     if (fn_operate3 != "") MD.setValue(label3, val);
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
-                    val = MD.getValue(label1);
+                    val = MD.getValue<RFLOAT>(label1);
                     val = multiply_by * val + add_to;
                     MD.setValue(label1, val);
                     if (fn_operate2 != "") {
-                        val = MD.getValue(label2);
+                        val = MD.getValue<RFLOAT>(label2);
                         val = multiply_by * val + add_to;
                         MD.setValue(label2, val);
                     }
                     if (fn_operate3 != "") {
-                        val = MD.getValue(label3);
+                        val = MD.getValue<RFLOAT>(label3);
                         val = multiply_by * val + add_to;
                         MD.setValue(label3, val);
                     }
@@ -685,16 +685,16 @@ class star_handler_parameters {
                     if (fn_operate2 != "") MD.setValue(label2, val);
                     if (fn_operate3 != "") MD.setValue(label3, val);
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
-                    val = MD.getValue(label1);
+                    val = MD.getValue<int>(label1);
                     val = multiply_by * val + add_to;
                     MD.setValue(label1, val);
                     if (fn_operate2 != "") {
-                        val = MD.getValue(label2);
+                        val = MD.getValue<int>(label2);
                         val = multiply_by * val + add_to;
                         MD.setValue(label2, val);
                     }
                     if (fn_operate3 != "") {
-                        val = MD.getValue(label3);
+                        val = MD.getValue<int>(label3);
                         val = multiply_by * val + add_to;
                         MD.setValue(label3, val);
                     }
@@ -743,15 +743,15 @@ class star_handler_parameters {
             if (do_ignore_optics) {
                 angpix = cl_angpix;
             } else {
-                optics_group = --MD.getValue(EMDL::IMAGE_OPTICS_GROUP);
+                optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
                 angpix = obsModel.getPixelSize(optics_group);
             }
 
-            xoff = MD.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-            yoff = MD.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-            rot  = MD.getValue(EMDL::ORIENT_ROT);
-            tilt = MD.getValue(EMDL::ORIENT_TILT);
-            psi  = MD.getValue(EMDL::ORIENT_PSI);
+            xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+            rot  = MD.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            tilt = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
 
             xoff /= angpix;
             yoff /= angpix;
@@ -769,7 +769,7 @@ class star_handler_parameters {
 
             // also allow 3D data (subtomograms)
             if (do_contains_z) {
-                zoff = MD.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+                zoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
                 zoff /= angpix;
                 zoff -= ZZ(my_projected_center);
                 MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix);
@@ -799,8 +799,8 @@ class star_handler_parameters {
         bool set_value = (add_col_value != "");
 
         MetaDataTable MD;
-        EMDLabel label = EMDL::str2Label(add_col_label);
-        EMDLabel source_label;
+        EMDL::EMDLabel label = EMDL::str2Label(add_col_label);
+        EMDL::EMDLabel source_label;
 
         read_check_ignore_optics(MD, fn_in);
         MD.addLabel(label);
@@ -814,16 +814,16 @@ class star_handler_parameters {
 
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             if (EMDL::isDouble(label)) {
-                RFLOAT aux = set_value ? textToFloat(add_col_value) : MD.getValue(source_label);
+                RFLOAT aux = set_value ? textToFloat(add_col_value) : MD.getValue<RFLOAT>(source_label);
                 MD.setValue(label, aux);
             } else if (EMDL::isInt(label)) {
-                long aux = set_value ? textToInteger(add_col_value) : MD.getValue(source_label);
+                long aux = set_value ? textToInteger(add_col_value) : MD.getValue<long int>(source_label);
                 MD.setValue(label, aux);
             } else if (EMDL::isBool(label)) {
-                bool aux = set_value ? textToInteger(add_col_value) : MD.getValue(source_label);
+                bool aux = set_value ? textToInteger(add_col_value) : MD.getValue<bool>(source_label);
                 MD.setValue(label, aux);
             } else if (EMDL::isString(label)) {
-                std::string aux = set_value ? add_col_value : MD.getValue(source_label);
+                std::string aux = set_value ? add_col_value : MD.getValue<std::string>(source_label);
                 MD.setValue(label, add_col_value);
             } else if (EMDL::isString(label)) {
                 std::string auxStr = set_value ? add_col_value : MD.getValueToString(source_label);
@@ -837,7 +837,7 @@ class star_handler_parameters {
 
     void hist_column() {
         MetaDataTable MD;
-        EMDLabel label = EMDL::str2Label(hist_col_label);
+        EMDL::EMDLabel label = EMDL::str2Label(hist_col_label);
 
         std::vector<RFLOAT> values;
 
@@ -862,7 +862,7 @@ class star_handler_parameters {
         MetaDataTable MD;
         read_check_ignore_optics(MD, fn_in, "particles");
 
-        EMDLabel mic_label;
+        EMDL::EMDLabel mic_label;
         if (MD.containsLabel(EMDL::MICROGRAPH_NAME)) {
             mic_label = EMDL::MICROGRAPH_NAME;
         } else {

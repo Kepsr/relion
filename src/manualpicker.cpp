@@ -126,8 +126,8 @@ void cb_viewmic(Fl_Widget* w, void* data) {
         int res = system(command.c_str());
     }
 
-    auto color = first_pick_viewed <= i && i <= last_pick_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
     for (int i = 0; i < viewmic_buttons.size(); i++) {
+        auto color = first_pick_viewed <= i && i <= last_pick_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
         viewmic_buttons[i]->color(color, color);
         viewmic_buttons[i]->redraw();
     }
@@ -146,8 +146,8 @@ void cb_viewctf(Fl_Widget* w, void* data) {
     int res = system(command.c_str());
 
     last_ctf_viewed = imic;
-    auto color = i == last_ctf_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
     for (int i = 0; i < viewctf_buttons.size(); i++) {
+        auto color = i == last_ctf_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
         viewctf_buttons[i]->color(color, color);
     }
 }
@@ -225,7 +225,7 @@ int manualpickerGuiWindow::fill() {
     viewctf_buttons.clear();
     number_picked.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        fn_mic = MDin.getValue(EMDL::MICROGRAPH_NAME);
+        fn_mic = MDin.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         // Display the name of the micrograph
         global_fn_mics.push_back(fn_mic);
 
@@ -264,7 +264,7 @@ int manualpickerGuiWindow::fill() {
 
         // Button to display the CTF image
         if (global_has_ctf) {
-            fn_ctf = MDin.getValue(EMDL::CTF_IMAGE);
+            fn_ctf = MDin.getValue<FileName>(EMDL::CTF_IMAGE);
             global_fn_ctfs.push_back(fn_ctf);
             // Button to display the CTF image
             Fl_Button *myviewctf = new Fl_Button(MXCOL3, current_y, MWCOL4, ystep - 5, "CTF");
@@ -273,7 +273,7 @@ int manualpickerGuiWindow::fill() {
             viewctf_buttons.push_back(myviewctf);
 
             Fl_Text_Buffer *textbuffDF = new Fl_Text_Buffer();
-            RFLOAT defocus = MDin.getValue(EMDL::CTF_DEFOCUSU);
+            RFLOAT defocus = MDin.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);
 
             std::ostringstream os;
             os << defocus;
@@ -314,10 +314,10 @@ void manualpickerGuiWindow::readOutputStarfile() {
 
         ObservationModel::loadSafely(fn_sel, obsModel, MDout, "micrographs");
         for (int imic = 0; imic < selected.size(); imic++) {
-            FileName fn_mic_in = MDin.getValue(EMDL::MICROGRAPH_NAME, imic);
+            FileName fn_mic_in = MDin.getValue<FileName>(EMDL::MICROGRAPH_NAME, imic);
             bool has_found = false;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
-                FileName fn_mic = MDout.getValue(EMDL::MICROGRAPH_NAME);
+                FileName fn_mic = MDout.getValue<FileName>(EMDL::MICROGRAPH_NAME);
                 // Which one in the input metadatatable was this one?
                 if (fn_mic == fn_mic_in) {
                     has_found = true;
@@ -498,7 +498,7 @@ void ManualPicker::initialise() {
     if (fn_in.isStarFile()) {
         ObservationModel::loadSafely(fn_in, obsModel, MDin, "micrographs");
         if (obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE)) {
-            global_angpix = obsModel.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE, 0);
+            global_angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, 0);
             std::cout << " Setting angpix to " << global_angpix << " based on the input STAR file... " << std::endl;
         } else {
             if (global_angpix < 0.0) {

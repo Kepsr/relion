@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
         std::vector<Image<Complex>> obs;
         obs = StackHelper::loadStackFS(mdts[m], "", nr_omp_threads, false);
 
-        std::string fullName = mdts[m].getValue(EMDL::IMAGE_NAME, 0);
+        std::string fullName = mdts[m].getValue<std::string>(EMDL::IMAGE_NAME, 0);
         std::string name = fullName.substr(fullName.find("@") + 1);
 
         for (int p = 0; p < pc; p++) {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     if (!r31) {
         const int tpc = mdt1.numberOfObjects();
 
-        std::vector<EMDLabel> allOpticsLabels_double(0);
+        std::vector<EMDL::EMDLabel> allOpticsLabels_double(0);
 
         allOpticsLabels_double.push_back(EMDL::CTF_Q0);
         allOpticsLabels_double.push_back(EMDL::CTF_CS);
@@ -103,13 +103,13 @@ int main(int argc, char *argv[]) {
         allOpticsLabels_double.push_back(EMDL::CTF_MAGNIFICATION);
 
         for (int l = 0; l < allOpticsLabels_double.size(); l++) {
-            EMDLabel lab = allOpticsLabels_double[l];
+            EMDL::EMDLabel lab = allOpticsLabels_double[l];
 
             mdt1.addLabel(lab);
 
             for (int p = 0; p < tpc; p++) {
-                int opticsGroup = --mdt1.getValue(EMDL::IMAGE_OPTICS_GROUP, p);
-                double v = obsModel.opticsMdt.getValue(lab, opticsGroup);
+                int opticsGroup = mdt1.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
+                double v = obsModel.opticsMdt.getValue<double>(lab, opticsGroup);
                 mdt1.setValue(lab, v, p);
             }
         }

@@ -210,13 +210,6 @@ class NoteEditorWindow: public Fl_Window {
 
 };
 
-static constexpr std::string gethelptext() {
-    // https://stackoverflow.com/questions/2912520/read-file-contents-into-a-string-in-c
-    // https://stackoverflow.com/a/2602060
-    std::ifstream ifs("help.txt");
-    std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-    return "RELION " RELION_SHORT_VERSION "\n\n" + content;
-}
 
 class SchedulerWindow: public Fl_Window {
 

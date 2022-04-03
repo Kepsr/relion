@@ -277,7 +277,7 @@ class prepare_subtomo {
         // Check whether each tomogram sits in a separate folder
         fns_tomo.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
-            fn1 = MD_tomo.getValue(EMDL::MICROGRAPH_NAME);
+            fn1 = MD_tomo.getValue<FileName>(EMDL::MICROGRAPH_NAME);
             fns_tomo.push_back(fn1);
         }
         if (fns_tomo.size() < 1)
@@ -302,18 +302,18 @@ class prepare_subtomo {
         MD_tmp.clear();
         img.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
-            fn1 = MD_tomo.getValue(EMDL::MICROGRAPH_NAME);
+            fn1 = MD_tomo.getValue<FileName>(EMDL::MICROGRAPH_NAME);
             std::cout << " 3D reconstructed tomogram in STAR file: " << fn1 << std::flush;
 
             // Check 3D reconstructed tomogram
             if (!exists(fn1))
                 REPORT_ERROR("Cannot find 3D reconstructed tomogram " + fn1);
             img.read(fn1, false);
-            std::tuple<int, int, int, long int> dimensions = img.getDimensions();
-            int xdim = std::get<0>(dimensions);
-            int ydim = std::get<1>(dimensions);
-            int zdim = std::get<2>(dimensions);
-            long int ndim = std::get<3>(dimensions);
+            Dimensions dimensions = img.getDimensions();
+            xdim = dimensions.x;
+            ydim = dimensions.y;
+            zdim = dimensions.z;
+            ndim = dimensions.n;
             std::cout << " , Dimensions XYZN = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
             if (zdim > 1 && ndim > 1)
                 REPORT_ERROR("Reconstructed 3D tomogram " + fn1 + " is 4D!");
@@ -328,10 +328,10 @@ class prepare_subtomo {
             std::cout << " Tilt series  : " << fn2 << std::flush;
             img.read(fn2, false);
             dimensions = img.getDimensions();
-            int xdim = std::get<0>(dimensions);
-            int ydim = std::get<1>(dimensions);
-            int zdim = std::get<2>(dimensions);
-            long int ndim = std::get<3>(dimensions);
+            xdim = dimensions.x;
+            ydim = dimensions.y;
+            zdim = dimensions.z;
+            ndim = dimensions.n;
             std::cout << " , Dimensions XYZN = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
             if (zdim > 1 && ndim > 1)
                 REPORT_ERROR("Tilt series " + fn2 + " is 4D!");
@@ -449,11 +449,11 @@ class prepare_subtomo {
                 std::cout << "  File .trial  : " << fn2 << std::flush;
                 fn2 += ":mrcs"; // Open this file as .mrcs stack
                 img.read(fn2, false);
-                std::tuple<int, int, int, long int> dimensions = img.getDimensions();
-                int xdim = std::get<0>(dimensions);
-                int ydim = std::get<1>(dimensions);
-                int zdim = std::get<2>(dimensions);
-                long int ndim = std::get<3>(dimensions);
+                Dimensions dimensions = img.getDimensions();
+                     int xdim = dimensions.x;
+                     int ydim = dimensions.y;
+                     int zdim = dimensions.z;
+                long int ndim = dimensions.n;
                 std::cout << " , Dimensions XYZN = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
                 if (zdim > 1 && ndim > 1)
                     REPORT_ERROR("Trial series " + fn2 + " is 4D!");
@@ -528,7 +528,7 @@ class prepare_subtomo {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
             std::cout << std::endl;
 
-            FileName fn_tomo = MD_tomo.getValue(EMDL::MICROGRAPH_NAME);
+            FileName fn_tomo = MD_tomo.getValue<FileName>(EMDL::MICROGRAPH_NAME);
             std::cout << "#### Processing tomogram " << fn_tomo << " ... ####" << std::endl;
 
             FileName dir_ctf = fn_tomo.beforeLastOf("/") + "/Ctffind";
@@ -753,8 +753,8 @@ class prepare_subtomo {
                 !MD_ctf_results.containsLabel(EMDL::MICROGRAPH_NAME)
             ) REPORT_ERROR("micrographs_ctf.star should contain _rlnDefocusU, _rlnDefocusV and _rlnMicrographName! Please check whether CTF estimation was done successfully.");
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_ctf_results) {
-                du = MD_ctf_results.getValue(EMDL::CTF_DEFOCUSU);
-                dv = MD_ctf_results.getValue(EMDL::CTF_DEFOCUSV);
+                du = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);
+                dv = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV);
                 avg_defoci.push_back(du); // TODO: Why just read in defocusU but not with defocusV and defocusAngle ???
             }
             if (do_use_trials_for_ctffind) {
@@ -807,17 +807,17 @@ class prepare_subtomo {
 
             // TODO: consider Y/Z flipped tomograms ? Maybe not. The coordinates have already been flipped when processing the .mod files.
             Image<RFLOAT> img;
-            int xdim = 0, ydim = 0, zdim = 0;
-            long int ndim = 0;
             RFLOAT calc_angpix = 10000.0 * PixelSize / Magnification;
             std::cout << " Calculated pixel size = " << calc_angpix << " Angstrom(s)" << std::endl;
             std::cout << " Extract XYZN dimensions of the tomogram " << fn_tomo << std::endl;
             img.read(fn_tomo, false);
-            std::tuple<int, int, int, long int> dimensions = img.getDimensions();
-            int xdim = std::get<0>(dimensions);
-            int ydim = std::get<1>(dimensions);
-            int zdim = std::get<2>(dimensions);
-            long int ndim = std::get<3>(dimensions);
+            int xdim = 0, ydim = 0, zdim = 0;
+            long int ndim = 0;
+            Dimensions dimensions = img.getDimensions();
+            xdim = dimensions.x;
+            ydim = dimensions.y;
+            zdim = dimensions.z;
+            ndim = dimensions.n;
             std::cout << " Tomogram XYZN dimensions = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
             std::cout << " Writing out .star files to make 3D CTF volumes..." << std::endl;
 
@@ -856,7 +856,7 @@ class prepare_subtomo {
                 MD_coords.read(fn_coords);
 
                 // Append extra columns from MD_coords
-                std::vector<EMDLabel> labels = MD_coords.getActiveLabels();
+                std::vector<EMDL::EMDLabel> labels = MD_coords.getActiveLabels();
                 for (size_t idx = 0; idx < labels.size(); idx++) {
                     if (!MD_part.containsLabel(labels[idx]))
                         MD_part.addLabel(labels[idx]);
@@ -870,9 +870,9 @@ class prepare_subtomo {
             RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_coords) {
                 nr_subtomo++;
-                xx = MD_coords.getValue(EMDL::IMAGE_COORD_X);
-                yy = MD_coords.getValue(EMDL::IMAGE_COORD_Y);
-                zz = MD_coords.getValue(EMDL::IMAGE_COORD_Z);
+                xx = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+                yy = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+                zz = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
 
                 write_star_file = (do_skip_ctf_correction && nr_subtomo == 1) || !do_skip_ctf_correction;
                 if (!write_star_file) continue; // TODO: check this! OK. I think it is fine.

@@ -110,8 +110,8 @@ int main(int argc, char *argv[]) {
             if (shift.x >= sh2) { shift.x -= s2; }
             if (shift.y >= sh2) { shift.y -= s2; }
 
-            double xoff = allMdts[m].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
-            double yoff = allMdts[m].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
+            double xoff = allMdts[m].getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
+            double yoff = allMdts[m].getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
 
             xoff /= angpix;
             yoff /= angpix;

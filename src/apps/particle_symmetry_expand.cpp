@@ -126,11 +126,11 @@ class particle_symmetry_expand_parameters {
         long int imgno = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(DFi) {
 
-            rot  = DFi.getValue(EMDL::ORIENT_ROT);
-            tilt = DFi.getValue(EMDL::ORIENT_TILT);
-            psi  = DFi.getValue(EMDL::ORIENT_PSI);
-            x    = DFi.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-            y    = DFi.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+            rot  = DFi.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            tilt = DFi.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            psi  = DFi.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+            x    = DFi.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            y    = DFi.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
 
             if (do_helix) {
                 for (RFLOAT z_pos = z_start; z_pos <= z_stop; z_pos += z_step) {

@@ -780,11 +780,11 @@ class helix_bilder_parameters {
             long int Xdim, Ydim, Zdim, Ndim;
 
             img.read(fn_in);
-            std::tuple<int, int, int, long int> dimensions = img.getDimensions();
-            int Xdim = std::get<0>(dimensions);
-            int Ydim = std::get<1>(dimensions);
-            int Zdim = std::get<2>(dimensions);
-            long int Ndim = std::get<3>(dimensions);
+            Dimensions dimensions = img.getDimensions();
+            Xdim = dimensions.x;
+            Ydim = dimensions.y;
+            Zdim = dimensions.z;
+            Ndim = dimensions.n;
             img().setXmippOrigin();
 
             if (Xdim != Ydim || Ydim != Zdim)

@@ -34,14 +34,14 @@ int main(int argc, char *argv[]) {
     std::map<std::string, MetaDataTable*> micToSource;
 
     for (int m = 0; m < sourceByMic.size(); m++) {
-        std::string micName = sourceByMic[m].getValue(EMDL::MICROGRAPH_NAME, 0);
+        std::string micName = sourceByMic[m].getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
         micToSource[micName] = &sourceByMic[m];
     }
 
     MetaDataTable out;
 
     for (int m = 0; m < refByMic.size(); m++) {
-        std::string micName = refByMic[m].getValue(EMDL::MICROGRAPH_NAME, 0);
+        std::string micName = refByMic[m].getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
 
         if (micToSource.find(micName) == micToSource.end()) {
             std::cerr << "Warning: " << micName << " not found.\n";
@@ -56,15 +56,15 @@ int main(int argc, char *argv[]) {
         std::vector<d2Vector> posSrc(pcSrc);
 
         for (int p = 0; p < pcSrc; p++) {
-            posSrc[p].x = src->getValue(EMDL::IMAGE_COORD_X, p);
-            posSrc[p].y = src->getValue(EMDL::IMAGE_COORD_Y, p);
+            posSrc[p].x = src->getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);
+            posSrc[p].y = src->getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, p);
         }
 
         std::vector<d2Vector> posRef(pcRef);
 
         for (int p = 0; p < pcRef; p++) {
-            posRef[p].x = refByMic[m].getValue(EMDL::IMAGE_COORD_X, p);
-            posRef[p].y = refByMic[m].getValue(EMDL::IMAGE_COORD_Y, p);
+            posRef[p].x = refByMic[m].getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);
+            posRef[p].y = refByMic[m].getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, p);
         }
 
         int missing = 0, multiple = 0;
@@ -84,8 +84,8 @@ int main(int argc, char *argv[]) {
                 out.addObject(src->getObject(qBest));
                 const int qNew = out.numberOfObjects() - 1;
 
-                int randSubsetSrc = src->       getValue(EMDL::PARTICLE_RANDOM_SUBSET, qBest);
-                int randSubsetRef = refByMic[m].getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
+                int randSubsetSrc = src->       getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, qBest);
+                int randSubsetRef = refByMic[m].getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p);
 
                 if (randSubsetSrc != randSubsetRef) {
                     if (copyAngles && copyOffsets) {
@@ -97,17 +97,17 @@ int main(int argc, char *argv[]) {
                 }
 
                 if (copyAngles) {
-                    double rot  = refByMic[m].getValue(EMDL::ORIENT_ROT,  p);
-                    double tilt = refByMic[m].getValue(EMDL::ORIENT_TILT, p);
-                    double psi  = refByMic[m].getValue(EMDL::ORIENT_PSI,  p);
+                    double rot  = refByMic[m].getValue<double>(EMDL::ORIENT_ROT,  p);
+                    double tilt = refByMic[m].getValue<double>(EMDL::ORIENT_TILT, p);
+                    double psi  = refByMic[m].getValue<double>(EMDL::ORIENT_PSI,  p);
                     out.setValue(EMDL::ORIENT_ROT,  rot, qNew);
                     out.setValue(EMDL::ORIENT_TILT, tilt, qNew);
                     out.setValue(EMDL::ORIENT_PSI,  psi, qNew);
                 }
 
                 if (copyOffsets) {
-                    double xoff = refByMic[m].getValue(EMDL::ORIENT_ORIGIN_X, p);
-                    double yoff = refByMic[m].getValue(EMDL::ORIENT_ORIGIN_Y, p);
+                    double xoff = refByMic[m].getValue<double>(EMDL::ORIENT_ORIGIN_X, p);
+                    double yoff = refByMic[m].getValue<double>(EMDL::ORIENT_ORIGIN_Y, p);
                     out.setValue(EMDL::ORIENT_ORIGIN_X, xoff, qNew);
                     out.setValue(EMDL::ORIENT_ORIGIN_Y, yoff, qNew);
                 }

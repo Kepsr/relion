@@ -50,8 +50,7 @@ int main(int argc, char *argv[]) {
             particleOut.addObject(particleMdts[i].getObject(p));
 
             const int pNew = particleOut.numberOfObjects() - 1;
-            int og0 = --particleOut.getValue(EMDL::IMAGE_OPTICS_GROUP, pNew);
-
+            int og0 = particleOut.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, pNew) - 1;
             int og1 = optGrTransl[i][og0];
             particleOut.setValue(EMDL::IMAGE_OPTICS_GROUP, og1 + 1, pNew);
         }

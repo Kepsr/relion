@@ -96,7 +96,7 @@ class particle_reposition_parameters {
         FileName fn_prevdir = "";
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(DFi) {
 
-            FileName fn_mic = DFi.getValue(EMDL::MICROGRAPH_NAME);
+            FileName fn_mic = DFi.getValue<FileName>(EMDL::MICROGRAPH_NAME);
             FileName fn_mic_out = fn_out == "" ? fn_mic : fn_mic.insertBeforeExtension("_" + fn_out);
             if (fn_odir != "") {
                 FileName fn_pre, fn_jobnr, fn_post;
@@ -125,16 +125,16 @@ class particle_reposition_parameters {
             Imic_sum.setXmippOrigin();
             // Get mean and stddev of the input micrograph
             // The min and max are not used
-            std::tuple<RFLOAT, RFLOAT, RFLOAT, RFLOAT> statstuple = Imic_in().computeStats();
-            stddev_mic = std::get<0>(statstuple);
-            mean_mic = std::get<1>(statstuple);
+            Stats<RFLOAT> stats = Imic_in().computeStats();
+            RFLOAT mean_mic = stats.avg;
+            RFLOAT stddev_mic = stats.stddev;
 
-            int optics_group_mic = DFi.getValue(EMDL::IMAGE_OPTICS_GROUP);
+            int optics_group_mic = DFi.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
             RFLOAT mic_pixel_size = -1.0;
             for (int i = 0; i < obsModelMics.opticsMdt.numberOfObjects(); i++) {
-                int my_optics_group = obsModelMics.opticsMdt.getValue(EMDL::IMAGE_OPTICS_GROUP);
+                int my_optics_group = obsModelMics.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
                 if (my_optics_group == optics_group_mic) {
-                    mic_pixel_size = obsModelMics.opticsMdt.getValue(EMDL::MICROGRAPH_PIXEL_SIZE);
+                    mic_pixel_size = obsModelMics.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE);
                     break;
                 }
             }
@@ -156,7 +156,7 @@ class particle_reposition_parameters {
                 if (do_subtract && fabs(my_pixel_size - mic_pixel_size) > 1e-6)
                     REPORT_ERROR("ERROR: subtract code has only been validated with same pixel size for particles and micrographs... Sorry!");
 
-                FileName fn_mic2 = optimiser.mydata.MDimg.getValue(EMDL::MICROGRAPH_NAME, ori_img_id);
+                FileName fn_mic2 = optimiser.mydata.MDimg.getValue<FileName>(EMDL::MICROGRAPH_NAME, ori_img_id);
                 FileName fn_mic2_pre, fn_mic2_jobnr, fn_mic2_post;
                 decomposePipelineFileName(fn_mic2, fn_mic2_pre, fn_mic2_jobnr, fn_mic2_post);
 
@@ -186,16 +186,16 @@ class particle_reposition_parameters {
                     MDcoord.setObject(optimiser.mydata.MDimg.getObject(ori_img_id));
                     MDcoord.setValue(EMDL::MICROGRAPH_NAME,fn_mic_out);
 
-                    xcoord      = optimiser.mydata.MDimg.getValue(EMDL::IMAGE_COORD_X,            ori_img_id);
-                    ycoord      = optimiser.mydata.MDimg.getValue(EMDL::IMAGE_COORD_Y,            ori_img_id);
-                    rot         = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_ROT,               ori_img_id);
-                    tilt        = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_TILT,              ori_img_id);
-                    psi         = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_PSI,               ori_img_id);
-                    XX(offsets) = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
-                    YY(offsets) = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
+                    xcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_X,            ori_img_id);
+                    ycoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y,            ori_img_id);
+                    rot         = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
+                    tilt        = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
+                    psi         = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
+                    XX(offsets) = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
+                    YY(offsets) = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
                     if (optimiser.mymodel.data_dim == 3) {
-                    ZZ(offsets) = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
-                    zcoord      = optimiser.mydata.MDimg.getValue(EMDL::IMAGE_COORD_Z,            ori_img_id);
+                    ZZ(offsets) = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
+                    zcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z,            ori_img_id);
                     } else {
                     ZZ(offsets) = zcoord = 0.0;
                     }
@@ -203,7 +203,7 @@ class particle_reposition_parameters {
                     // Offsets in pixels
                     offsets /= my_pixel_size;
 
-                    iclass = --optimiser.mydata.MDimg.getValue(EMDL::PARTICLE_CLASS, ori_img_id);
+                    iclass = optimiser.mydata.MDimg.getValue<int>(EMDL::PARTICLE_CLASS, ori_img_id) - 1;
 
                     Euler_angles2matrix(rot, tilt, psi, A);
                     if (do_ctf) {
@@ -229,7 +229,7 @@ class particle_reposition_parameters {
                         if (optimiser.mymodel.data_dim == 3) {
                             Image<RFLOAT> Ictf;
 
-                            FileName fn_ctf = optimiser.mydata.MDimg.getValue(EMDL::CTF_IMAGE, ori_img_id);
+                            FileName fn_ctf = optimiser.mydata.MDimg.getValue<FileName>(EMDL::CTF_IMAGE, ori_img_id);
                             Ictf.read(fn_ctf);
 
                             // If there is a redundant half, get rid of it
@@ -323,8 +323,8 @@ class particle_reposition_parameters {
                         RFLOAT psi_deg = 0.0, tilt_deg = 90.0;
                         RFLOAT part_avg, part_stdev;
                         if (optimiser.do_helical_refine) {
-                            tilt_deg = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_TILT_PRIOR, ori_img_id);
-                            psi_deg  = optimiser.mydata.MDimg.getValue(EMDL::ORIENT_PSI_PRIOR,  ori_img_id);
+                            tilt_deg = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR, ori_img_id);
+                            psi_deg  = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR,  ori_img_id);
                         }
 
                         calculateBackgroundAvgStddev(
@@ -334,7 +334,7 @@ class particle_reposition_parameters {
 
                         // Apply the per-particle norm_correction term
                         if (optimiser.do_norm_correction) {
-                            RFLOAT mynorm = optimiser.mydata.MDimg.getValue(EMDL::IMAGE_NORM_CORRECTION, ori_img_id);
+                            RFLOAT mynorm = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, ori_img_id);
                             // TODO: check whether this is the right way around!!!
                             norm_factor *= mynorm / optimiser.mymodel.avg_norm_correction;
                         }

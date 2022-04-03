@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     for (int m = 0; m <= maxMG; m++) {
         std::vector<Image<Complex>> obs, pred;
         
-        int opticsGroup = --allMdts[m].getValue(EMDL::IMAGE_OPTICS_GROUP, 0);
+        int opticsGroup = allMdts[m].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1;
         
         // both defocus_tit and tilt_fit need the same observations
         obs = StackHelper::loadStackFS(allMdts[m], "", threads, true, &obsModel);

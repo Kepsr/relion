@@ -230,12 +230,12 @@ class tiltpair_plot_parameters {
             // Read input data
             // RFLOAT best_tilt, best_alpha, best_beta;
 
-            RFLOAT rot1  = MDu.getValue(EMDL::ORIENT_ROT);
-            RFLOAT rot2  = MDt.getValue(EMDL::ORIENT_ROT, iline);
-            RFLOAT tilt1 = MDu.getValue(EMDL::ORIENT_TILT);
-            RFLOAT tilt2 = MDt.getValue(EMDL::ORIENT_TILT, iline);
-            RFLOAT psi1  = MDu.getValue(EMDL::ORIENT_PSI);
-            RFLOAT psi2  = MDt.getValue(EMDL::ORIENT_PSI, iline);
+            RFLOAT rot1  = MDu.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            RFLOAT rot2  = MDt.getValue<RFLOAT>(EMDL::ORIENT_ROT, iline);
+            RFLOAT tilt1 = MDu.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            RFLOAT tilt2 = MDt.getValue<RFLOAT>(EMDL::ORIENT_TILT, iline);
+            RFLOAT psi1  = MDu.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+            RFLOAT psi2  = MDt.getValue<RFLOAT>(EMDL::ORIENT_PSI, iline);
             iline++;
 
             // Bring both angles to a normalized set

@@ -158,7 +158,7 @@ class project_parameters {
             MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, name);
             MDopt.setValue(EMDL::CTF_VOLTAGE, 300.0);
             MDopt.setValue(EMDL::CTF_CS, 2.7);
-            angpix = vol.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
+            angpix = vol.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
             MDopt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix);
             MDopt.setValue(EMDL::IMAGE_SIZE, XSIZE(vol()));
             int mydim = do_3d_rot ? 3 : 2;
@@ -266,13 +266,13 @@ class project_parameters {
             long int imgno = 0;
             long int max_imgno = MDang.numberOfObjects() - 1;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDang) {
-                rot  = MDang.getValue(EMDL::ORIENT_ROT);
-                tilt = MDang.getValue(EMDL::ORIENT_TILT);
-                psi  = MDang.getValue(EMDL::ORIENT_PSI);
-                xoff = MDang.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-                yoff = MDang.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+                rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+                tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+                psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+                xoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+                yoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
                 if (do_3d_rot)
-                zoff = MDang.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+                zoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
                 xoff /= angpix;
                 yoff /= angpix;
@@ -301,7 +301,7 @@ class project_parameters {
                 if (do_ctf || do_ctf2) {
                     if (do_3d_rot) {
                         Image<RFLOAT> Ictf;
-                        FileName fn_ctf = MDang.getValue(EMDL::CTF_IMAGE);
+                        FileName fn_ctf = MDang.getValue<FileName>(EMDL::CTF_IMAGE);
                         Ictf.read(fn_ctf);
 
                         // Set the CTF-image in Fctf
@@ -342,11 +342,11 @@ class project_parameters {
                         // This does however mean that I no longer know mic_id of this image: replace by 0....
                         FileName fn_group;
                         if (MDang.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-                            fn_group = MDang.getValue(EMDL::MLMODEL_GROUP_NAME);
+                            fn_group = MDang.getValue<FileName>(EMDL::MLMODEL_GROUP_NAME);
                         } else {
                             if (MDang.containsLabel(EMDL::MICROGRAPH_NAME)) {
                                 FileName fn_orig, fn_pre, fn_jobnr;
-                                fn_orig = MDang.getValue(EMDL::MICROGRAPH_NAME);
+                                fn_orig = MDang.getValue<FileName>(EMDL::MICROGRAPH_NAME);
                                 if (!decomposePipelineFileName(fn_orig, fn_pre, fn_jobnr, fn_group)) {
                                     fn_group = fn_orig; // Not a pipeline filename; use as is
                                 }
@@ -366,7 +366,7 @@ class project_parameters {
 
                         RFLOAT normcorr = 1.0;
                         if (MDang.containsLabel(EMDL::IMAGE_NORM_CORRECTION)) {
-                            normcorr = MDang.getValue(EMDL::IMAGE_NORM_CORRECTION);
+                            normcorr = MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
                         }
 
                         // Add coloured noise
@@ -394,7 +394,7 @@ class project_parameters {
 
                 // Subtract the projection from the corresponding experimental image
                 if (do_subtract_exp || do_simulate) {
-                    fn_expimg = MDang.getValue(EMDL::IMAGE_NAME);
+                    fn_expimg = MDang.getValue<FileName>(EMDL::IMAGE_NAME);
                     MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg); // Store fn_expimg in rlnOriginalParticleName
                     expimg.read(fn_expimg);
                     img() = expimg() - img();
@@ -409,25 +409,25 @@ class project_parameters {
                             random_imgno = rnd_unif()*max_imgno;
                         }
 
-                        rot  = MDang.getValue(EMDL::ORIENT_ROT,               random_imgno);
-                        tilt = MDang.getValue(EMDL::ORIENT_TILT,              random_imgno);
-                        psi  = MDang.getValue(EMDL::ORIENT_PSI,               random_imgno);
-                        xoff = MDang.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, random_imgno);
-                        yoff = MDang.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, random_imgno);
+                        rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT,               random_imgno);
+                        tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT,              random_imgno);
+                        psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI,               random_imgno);
+                        xoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, random_imgno);
+                        yoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, random_imgno);
                         if (do_3d_rot)
-                        zoff = MDang.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, random_imgno);
+                        zoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, random_imgno);
 
                         xoff /= angpix;
                         yoff /= angpix;
                         zoff /= angpix;
                     } else {
-                        rot  = MDang_sim.getValue(EMDL::ORIENT_ROT,               imgno);
-                        tilt = MDang_sim.getValue(EMDL::ORIENT_TILT,              imgno);
-                        psi  = MDang_sim.getValue(EMDL::ORIENT_PSI,               imgno);
-                        xoff = MDang_sim.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, imgno);
-                        yoff = MDang_sim.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, imgno);
+                        rot  = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ROT,               imgno);
+                        tilt = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_TILT,              imgno);
+                        psi  = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_PSI,               imgno);
+                        xoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, imgno);
+                        yoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, imgno);
                         if (do_3d_rot)
-                        zoff = MDang_sim.getValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, imgno);
+                        zoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, imgno);
 
                         xoff /= angpix;
                         yoff /= angpix;
@@ -457,7 +457,7 @@ class project_parameters {
                     if (do_ctf || do_ctf2) {
                         if (do_3d_rot) {
                             Image<RFLOAT> Ictf;
-                            FileName fn_ctf = MDang.getValue(EMDL::CTF_IMAGE);
+                            FileName fn_ctf = MDang.getValue<FileName>(EMDL::CTF_IMAGE);
                             Ictf.read(fn_ctf);
                             Ictf().setXmippOrigin();
 

@@ -121,15 +121,15 @@ class angular_error_parameters {
         p_unt.clear();
         RFLOAT x, y;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDunt) {
-            x = MDunt.getValue(EMDL::IMAGE_COORD_X);
-            y = MDunt.getValue(EMDL::IMAGE_COORD_Y);
+            x = MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+            y = MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
             p_unt.push_back((int) x);
             p_unt.push_back((int) y);
         }
         p_til.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtil) {
-            x = MDtil.getValue(EMDL::IMAGE_COORD_X);
-            y = MDtil.getValue(EMDL::IMAGE_COORD_Y);
+            x = MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+            y = MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
             p_til.push_back((int) x);
             p_til.push_back((int) y);
         }
@@ -260,7 +260,7 @@ class angular_error_parameters {
             // Zero-translations for now (these are added in the x-y loops below)
             MAT_ELEM(Pass, 0, 2) = MAT_ELEM(Pass, 1, 2) = 0.;
             mapOntoTilt();
-            for (int x = x0; x <= xF; x += xStep) {
+            for (int x = x0; x <= xF; x += xStep)
             for (int y = y0; y <= yF; y += yStep, n++) {
 
                 score = do_optimise_nr_pairs ? 
