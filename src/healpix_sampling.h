@@ -34,10 +34,10 @@
 #define NOPRIOR 0
 #define PRIOR_ROTTILT_PSI 1
 
-class HealpixSampling
-{
+class HealpixSampling {
 
-public:
+    public:
+
 	/** Healpix sampling object */
     Healpix_Base healpix_base;
 
@@ -98,7 +98,7 @@ public:
     std::vector<RFLOAT> translations_x, translations_y, translations_z;
 
 
-public:
+    public:
 
     // Empty constructor
     HealpixSampling():
@@ -118,8 +118,7 @@ public:
     {}
 
     // Destructor
-    ~HealpixSampling()
-    {
+    ~HealpixSampling() {
     	directions_ipix.clear();
     	rot_angles.clear();
     	tilt_angles.clear();
@@ -163,13 +162,17 @@ public:
 			bool do_warnpsi = false,
 			bool do_local_searches_helical = false,
 			bool do_helical_refine = false,
-			RFLOAT rise_Angst  = 0.,
-			RFLOAT twist_deg = 0.);
+			RFLOAT rise_Angst  = 0.0,
+			RFLOAT twist_deg = 0.0);
 
     // Initialize the symmetry matrices
-    void initialiseSymMats(FileName fn_sym_, int & pgGroup_,
-    		int & pgOrder_, std::vector <Matrix2D<RFLOAT> > & R_repository,
-			std::vector <Matrix2D<RFLOAT> > & L_repository);
+    void initialiseSymMats(
+        FileName fn_sym_, int &pgGroup_, int &pgOrder_, 
+        // Why pass references? 
+        // Will we ever pass the pgGroup and pgOrder of a HealpixSampling that is not *this?
+        std::vector<Matrix2D<RFLOAT> > &R_repository,
+        std::vector<Matrix2D<RFLOAT> > &L_repository
+    );
 
     // Reset the random perturbation
     void resetRandomlyPerturbedSampling();
@@ -193,13 +196,13 @@ public:
      * For helices, x offsets (along helical axis) should be less within -+0.5 * rise
      * */
     void setTranslations(
-			RFLOAT new_offset_step = -1.,
-    		RFLOAT new_offset_range = -1.,
+			RFLOAT new_offset_step = -1.0,
+    		RFLOAT new_offset_range = -1.0,
     		bool do_local_searches_helical = false,
     		bool do_helical_refine = false,
-			RFLOAT new_helical_offset_step = -1.,
-    		RFLOAT helical_rise_Angst = 0.,
-    		RFLOAT helical_twist_deg = 0.);
+			RFLOAT new_helical_offset_step = -1.0,
+    		RFLOAT helical_rise_Angst = 0.0,
+    		RFLOAT helical_twist_deg = 0.0);
 
     /* Add a single translation */
     void addOneTranslation(
@@ -208,12 +211,12 @@ public:
     		RFLOAT offset_z,
     		bool do_clear = false,
     		bool do_helical_refine = false,
-    		RFLOAT rot_deg = 0.,
-    		RFLOAT tilt_deg = 0.,
-    		RFLOAT psi_deg = 0.);
+    		RFLOAT rot_deg = 0.0,
+    		RFLOAT tilt_deg = 0.0,
+    		RFLOAT psi_deg = 0.0);
 
     /* Set the non-oversampled lists of directions and in-plane rotations */
-    void setOrientations(int _order = -1, RFLOAT _psi_step = -1.);
+    void setOrientations(int _order = -1, RFLOAT _psi_step = -1.0);
 
     /* Add a single orientation */
     void addOneOrientation(RFLOAT rot, RFLOAT tilt, RFLOAT psi, bool do_clear = false);
@@ -239,7 +242,7 @@ public:
     		std::vector<int> &pointer_dir_nonzeroprior, std::vector<RFLOAT> &directions_prior,
     		std::vector<int> &pointer_psi_nonzeroprior, std::vector<RFLOAT> &psi_prior,
 			bool do_bimodal_search_psi = false,
-    		RFLOAT sigma_cutoff = 3., RFLOAT sigma_tilt_from_ninety = -1., RFLOAT sigma_psi_from_zero = -1.);
+    		RFLOAT sigma_cutoff = 3.0, RFLOAT sigma_tilt_from_ninety = -1.0, RFLOAT sigma_psi_from_zero = -1.0);
 
     void selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalReconstruction(
     		RFLOAT prior_rot, RFLOAT prior_tilt, RFLOAT prior_psi,
@@ -249,7 +252,7 @@ public:
     		bool do_auto_refine_local_searches,
     		RFLOAT prior_psi_flip_ratio = 0.5,
 			RFLOAT prior_rot_flip_ratio = 0.5,  // KThurber
-    		RFLOAT sigma_cutoff = 3.);
+    		RFLOAT sigma_cutoff = 3.0);
 
     // Find the symmetry mate by searching the Healpix library
     void findSymmetryMate(long int idir_, RFLOAT prior_,
@@ -382,7 +385,7 @@ public:
      *  width_frac determines how broad each cylinder is. frac=1 means they touch each other
      * */
     void writeBildFileOrientationalDistribution(MultidimArray<RFLOAT> &pdf_direction,
-    		FileName &fn_bild, RFLOAT R, RFLOAT offset = 0.,
+    		FileName &fn_bild, RFLOAT R, RFLOAT offset = 0.0,
 			const Matrix2D<RFLOAT> *Aorient = NULL, const Matrix1D<RFLOAT> *Acom = NULL,
 			RFLOAT Rmax_frac = 0.3, RFLOAT width_frac = 0.5);
 

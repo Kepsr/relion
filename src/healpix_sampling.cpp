@@ -18,9 +18,9 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/healpix_sampling.h"
-//#define DEBUG_SAMPLING
-//#define DEBUG_CHECKSIZES
-//#define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+// #define DEBUG_SAMPLING
+// #define DEBUG_CHECKSIZES
+// #define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
 
 void HealpixSampling::clear() {
     is_3D = false;
@@ -62,7 +62,7 @@ void HealpixSampling::initialise(
     // Set flag for x,y,z-translations
     is_3d_trans = do_3d_trans;
 
-    // By default psi_step is approximate sampling of rot,tilt in 3D; and 10 degrees in 2D
+    // By default psi_step is approximate sampling of rot, tilt in 3D; and 10 degrees in 2D
     if (psi_step < 0) {
         psi_step = is_3D ? 360.0 / (6 * ROUND(std::pow(2.0, healpix_order))) : 10.0;
     }
@@ -96,10 +96,10 @@ void HealpixSampling::initialise(
             t_nr_psi = CEIL((float)t_nr_psi / 32.0) * 32;
 
             if (do_warnpsi)
-                std::cout << " + WARNING: Changing psi sampling rate (before oversampling) to " <<  360./(RFLOAT)t_nr_psi << " degrees, for more efficient GPU calculations" << std::endl;
+                std::cout << " + WARNING: Changing psi sampling rate (before oversampling) to " <<  360.0 / (RFLOAT) t_nr_psi << " degrees, for more efficient GPU calculations" << std::endl;
 
         }
-        psi_step = 360./(RFLOAT)t_nr_psi;
+        psi_step = 360.0 / (RFLOAT) t_nr_psi;
         fn_sym = "C1"; // This may not be set yet if restarting a 2D run....
     }
 
@@ -123,13 +123,13 @@ void HealpixSampling::initialise(
 }
 
 void HealpixSampling::initialiseSymMats(
-    FileName fn_sym_, int& pgGroup_, int& pgOrder_,
-    std::vector <Matrix2D<RFLOAT>> & R_repository_,
-    std::vector <Matrix2D<RFLOAT>> & L_repository_
+    FileName fn_sym_, int &pgGroup_, int &pgOrder_,
+    std::vector<Matrix2D<RFLOAT>> &R_repository_,
+    std::vector<Matrix2D<RFLOAT>> &L_repository_
 ) {
     // Set up symmetry
     SymList SL;
-    SL.isSymmetryGroup(fn_sym_, pgGroup_, pgOrder_);
+    SL.isSymmetryGroup(fn_sym_.removeDirectories(), pgGroup_, pgOrder_);
     SL.read_sym_file(fn_sym_);
 
     // Precalculate (3x3) symmetry matrices
@@ -178,7 +178,7 @@ void HealpixSampling::read(FileName fn_in) {
         offset_range        = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_RANGE);
         offset_step         = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_STEP);
         perturbation_factor = MD.getValue<RFLOAT>(EMDL::SAMPLING_PERTURBATION_FACTOR);
-    } catch (const char* errmsg) {
+    } catch (const char *errmsg) {
         REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table");
     }
 
@@ -1988,7 +1988,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
     std::vector <int> no_redundant_directions_ipix;
 
     RFLOAT my_dotProduct;
-    if (symmetry == pg_CN) {
+    if (symmetry == pg::CN) {
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
@@ -2002,8 +2002,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
             }
         }
     } else if (
-        symmetry == pg_CI  ||
-        symmetry == pg_CS
+        symmetry == pg::CI  ||
+        symmetry == pg::CS
     ) {
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
@@ -2014,7 +2014,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_CNV) {
+    } else if (symmetry  == pg::CNV) {
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
@@ -2027,7 +2027,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_CNH) {
+    } else if (symmetry  == pg::CNH) {
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
@@ -2041,7 +2041,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_SN) {
+    } else if (symmetry  == pg::SN) {
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
@@ -2055,7 +2055,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_DN) {
+    } else if (symmetry  == pg::DN) {
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (sym_order == 1) {
                 // D1 is special!
@@ -2078,7 +2078,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 }
             }
         }
-    } else if (symmetry  == pg_DNV) {
+    } else if (symmetry  == pg::DNV) {
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 rot_angles[i] >= 90.0 &&
@@ -2091,7 +2091,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_DNH) {
+    } else if (symmetry  == pg::DNH) {
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 rot_angles[i] >= 90.0 &&
@@ -2104,7 +2104,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_T) {
+    } else if (symmetry  == pg::T) {
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_3_fold_axis_2(3);
         _3_fold_axis_1_by_3_fold_axis_2 = vectorR3(-0.942809, 0.0, 0.0);
@@ -2131,7 +2131,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_TD) {
+    } else if (symmetry  == pg::TD) {
         // OK
         Matrix1D<RFLOAT> _2_fold_axis_1_by_3_fold_axis_2(3);
         _2_fold_axis_1_by_3_fold_axis_2 = vectorR3(-0.942809, 0.0, 0.0);
@@ -2158,7 +2158,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_TH) {
+    } else if (symmetry  == pg::TH) {
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_2_fold_axis_1(3);
         _3_fold_axis_1_by_2_fold_axis_1 = vectorR3(-0.816496, 0.0, 0.0);
@@ -2185,7 +2185,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_O) {
+    } else if (symmetry  == pg::O) {
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_3_fold_axis_2(3);
         _3_fold_axis_1_by_3_fold_axis_2 = vectorR3(0., -1.0, 1.0);
@@ -2212,7 +2212,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_OH) {
+    } else if (symmetry  == pg::OH) {
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_3_fold_axis_2(3);
         _3_fold_axis_1_by_3_fold_axis_2 = vectorR3(0., -1.0, 1.0);
@@ -2239,7 +2239,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I || symmetry  == pg_I2) {
+    } else if (symmetry  == pg::I || symmetry  == pg::I2) {
         // OK
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = vectorR3(0.0, 1.0, 0.0);
@@ -2266,7 +2266,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I1) {
+    } else if (symmetry  == pg::I1) {
         // OK
         Matrix2D<RFLOAT> A(3, 3);
         Euler_angles2matrix(0, 90, 0, A);
@@ -2296,7 +2296,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I3) {
+    } else if (symmetry  == pg::I3) {
         // OK
         Matrix2D<RFLOAT> A(3, 3);
         Euler_angles2matrix(0, 31.7174745559, 0, A);
@@ -2326,7 +2326,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I4) {
+    } else if (symmetry  == pg::I4) {
         // OK
         Matrix2D<RFLOAT> A(3, 3);
         Euler_angles2matrix(0, -31.7174745559, 0, A);
@@ -2356,11 +2356,11 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I5) {
+    } else if (symmetry  == pg::I5) {
         // OK
-        std::cerr << "ERROR: Symmetry pg_I5 not implemented" << std::endl;
+        std::cerr << "ERROR: Symmetry pg::I5 not implemented" << std::endl;
         exit(0);
-    } else if (symmetry  == pg_IH || symmetry  == pg_I2H) {
+    } else if (symmetry  == pg::IH || symmetry  == pg::I2H) {
         // OK
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = vectorR3(0.0, 1.0, 0.0);
@@ -2390,7 +2390,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I1H) {
+    } else if (symmetry  == pg::I1H) {
         // OK
         Matrix2D<RFLOAT> A(3, 3);
         Euler_angles2matrix(0, 90, 0, A);
@@ -2422,7 +2422,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I3H) {
+    } else if (symmetry  == pg::I3H) {
         // OK
         Matrix2D<RFLOAT> A(3, 3);
         Euler_angles2matrix(0, 31.7174745559, 0, A);
@@ -2455,7 +2455,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I4H) {
+    } else if (symmetry  == pg::I4H) {
         // OK
         Matrix2D<RFLOAT> A(3, 3);
         Euler_angles2matrix(0, -31.7174745559, 0, A);
@@ -2488,9 +2488,9 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 no_redundant_directions_ipix.push_back(directions_ipix[i]);
             }
         }
-    } else if (symmetry  == pg_I5H) {
+    } else if (symmetry  == pg::I5H) {
         // OK
-        std::cerr << "ERROR: pg_I5H Symmetry not implemented" << std::endl;
+        std::cerr << "ERROR: pg::I5H Symmetry not implemented" << std::endl;
         exit(0);
     } else {
         std::cerr << "ERROR: Symmetry " << symmetry  << "is not known" << std::endl;

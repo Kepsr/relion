@@ -64,18 +64,19 @@ int SymList::read_sym_file(FileName fn_sym) {
 
     // Open file ---------------------------------------------------------
     if ((fpoii = fopen(fn_sym.c_str(), "r")) == NULL) {
-        //check if reserved word and return group and order
-        if (isSymmetryGroup(fn_sym, pgGroup, pgOrder)) {
-        	fill_symmetry_class(fn_sym, pgGroup, pgOrder, fileContent);
+        // check if reserved word and return group and order
+        if (isSymmetryGroup(fn_sym.removeDirectories(), pgGroup, pgOrder)) {
+            fill_symmetry_class(fn_sym, pgGroup, pgOrder, fileContent);
         } else {
-            REPORT_ERROR((std::string)"SymList::read_sym_file:Can't open file: "
-                     + " or do not recognize symmetry group" + fn_sym);
+            REPORT_ERROR(
+                (std::string) "SymList::read_sym_file:Can't open file: " + " or do not recognize symmetry group" + fn_sym
+            );
         }
     } else {
         while (fgets(line, 79, fpoii) != NULL) {
             if (line[0] == ';' || line[0] == '#' || line[0] == '\0')
-            	continue;
-			fileContent.push_back(line);
+                continue;
+            fileContent.push_back(line);
         }
         fclose(fpoii);
     }
@@ -89,7 +90,7 @@ int SymList::read_sym_file(FileName fn_sym) {
     no_axis = no_mirror_planes = no_inversion_points = 0;
 
     for (int n = 0; n < fileContent.size(); n++) {
-    	strcpy(line,fileContent[n].c_str());
+        strcpy(line,fileContent[n].c_str());
         auxstr = firstToken(line);
         if (auxstr == NULL) {
             std::cout << line;
@@ -262,7 +263,7 @@ void SymList::compute_subgroup() {
         // Try to find it in current ones
         bool found = false;
         for (int l = 0; l < SymsNo(); l++) {
-        	get_matrices(l, L1, R1);
+            get_matrices(l, L1, R1);
             if (newL.equal(L1) && newR.equal(R1)) {
                 found = true;
                 break;
@@ -286,460 +287,346 @@ void SymList::compute_subgroup() {
     }
 }
 
-/** translate string fn_sym to symmetry group, return false
-    is translation is not possible. See URL
-    http://xmipp.cnb.uam.es/twiki/bin/view/Xmipp/Symmetry
-    for details  */
-bool SymList::isSymmetryGroup(FileName fn_sym, int &pgGroup, int &pgOrder) {
-    char G1, G2, G3, G4;
-    char auxChar[3];
-    // each case check lenght, check first letter, second, is number
-    // Non a point group
+bool SymList::isSymmetryGroup(const std::string &symstring, int &pgGroup, int &pgOrder) {
 
-    // Remove path
-    FileName fn_sym_tmp = fn_sym.removeDirectories();
-    int mySize = fn_sym_tmp.size();
-    bool return_true = false;
-    auxChar[2] = '\0';
-    // Size may be 4 because n may be a 2-digit number
-    if (mySize > 4 || mySize < 1) {
+    int size = symstring.size();
+
+    // The shortest point group names have 1 char:  T/I/O
+    // The longest  point group names have 4 chars: Cxxv/Cxxh/Dxxv/Dxxh (where xx is a 2-digit decimal string)
+    if (size < 1 || size > 4) {
         pgGroup = -1;
         pgOrder = -1;
         return false;
     }
 
     // Get the group character by character
-    G1 = toupper((fn_sym_tmp.c_str())[0]);
-    G2 = toupper((fn_sym_tmp.c_str())[1]);
-    if (mySize > 2)
-    G3 = toupper((fn_sym_tmp.c_str())[2]);
-    if (mySize > 3)
-    G4 = toupper((fn_sym.c_str())[3]);
+    char G1, G2, G3, G4;
+    G1 = toupper(symstring.c_str()[0]);
+    G2 = toupper(symstring.c_str()[1]);
+    if (size > 2)
+    G3 = toupper(symstring.c_str()[2]);
+    if (size > 3)
+    G4 = toupper(symstring.c_str()[3]);
     // else G4 = '\0';
 
-    // CN
-    if (mySize == 2 && G1 == 'C' && isdigit(G2)) {
-        pgGroup = pg_CN;
-        pgOrder = int(G2)-48;
-        return_true = true;
-    }
-    if (mySize==3 && G1=='C' && isdigit(G2) && isdigit(G3))
-    {
-        pgGroup=pg_CN;
-        auxChar[0]=G2;
-        auxChar[1]=G3;
-        pgOrder=atoi(auxChar);
-        return_true=true;
-    }
-    //CI
-    else if (mySize==2 && G1=='C' && G2=='I')
-    {
-        pgGroup=pg_CI;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //CS
-    else if (mySize==2 && G1=='C' && G2=='S')
-    {
-        pgGroup=pg_CS;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //CNH
-    else if (mySize==3 && G1=='C' && isdigit(G2) && G3=='H')
-    {
-        pgGroup=pg_CNH;
-        pgOrder=int(G2)-48;
-        return_true=true;
-    }
-    else if (mySize==4 && G1=='C' && isdigit(G2) && isdigit(G3) && G4=='H')
-    {
-        pgGroup=pg_CNH;
-        auxChar[0]=G2;
-        auxChar[1]=G3;
-        pgOrder=atoi(auxChar);
-        return_true=true;
-    }
-    //CNV
-    else if (mySize==3 && G1=='C' && isdigit(G2) && G3=='V')
-    {
-        pgGroup=pg_CNV;
-        pgOrder=int(G2)-48;
-        return_true=true;
-    }
-    else if (mySize==4 && G1=='C' && isdigit(G2) && isdigit(G3) && G4=='V')
-    {
-        pgGroup=pg_CNV;
-        auxChar[0]=G2;
-        auxChar[1]=G3;
-        pgOrder=atoi(auxChar);
-        return_true=true;
-    }
-    //SN
-    else if (mySize==2 && G1=='S' && isdigit(G2) )
-    {
-        pgGroup=pg_SN;
-        pgOrder=int(G2)-48;
-        return_true=true;
-    }
-    else if (mySize==3 && G1=='S' && isdigit(G2) && isdigit(G3) )
-    {
-        pgGroup=pg_SN;
-        auxChar[0]=G2;
-        auxChar[1]=G3;
-        pgOrder=atoi(auxChar);
-        return_true=true;
-    }
-    //DN
-    else if (mySize==2 && G1=='D' && isdigit(G2) )
-    {
-        pgGroup=pg_DN;
-        pgOrder=int(G2)-48;
-        return_true=true;
-    }
-    if (mySize==3 && G1=='D' && isdigit(G2) && isdigit(G3))
-    {
-        pgGroup=pg_DN;
-        auxChar[0]=G2;
-        auxChar[1]=G3;
-        pgOrder=atoi(auxChar);
-        return_true=true;
-    }
-    //DNV
-    else if (mySize==3 && G1=='D' && isdigit(G2) && G3=='V')
-    {
-        pgGroup=pg_DNV;
-        pgOrder=int(G2)-48;
-        return_true=true;
-    }
-    else if (mySize==4 && G1=='D' && isdigit(G2) && isdigit(G3) && G4=='V')
-    {
-        pgGroup=pg_DNV;
-        auxChar[0]=G2;
-        auxChar[1]=G3;
-        pgOrder=atoi(auxChar);
-        return_true=true;
-    }
-    //DNH
-    else if (mySize==3 && G1=='D' && isdigit(G2) && G3=='H')
-    {
-        pgGroup=pg_DNH;
-        pgOrder=int(G2)-48;
-        return_true=true;
-    }
-    else if (mySize==4 && G1=='D' && isdigit(G2) && isdigit(G3) && G4=='H')
-    {
-        pgGroup=pg_DNH;
-        auxChar[0]=G2;
-        auxChar[1]=G3;
-        pgOrder=atoi(auxChar);
-        return_true=true;
-    }
-    //T
-    else if (mySize==1 && G1=='T')
-    {
-        pgGroup=pg_T;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //TD
-    else if (mySize==2 && G1=='T' && G2=='D')
-    {
-        pgGroup=pg_TD;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //TH
-    else if (mySize==2 && G1=='T' && G2=='H')
-    {
-        pgGroup=pg_TH;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //O
-    else if (mySize==1 && G1=='O')
-    {
-        pgGroup=pg_O;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //OH
-    else if (mySize==2 && G1=='O'&& G2=='H')
-    {
-        pgGroup=pg_OH;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I
-    else if (mySize==1 && G1=='I')
-    {
-        pgGroup=pg_I;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I1
-    else if (mySize==2 && G1=='I'&& G2=='1')
-    {
-        pgGroup=pg_I1;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I2
-    else if (mySize==2 && G1=='I'&& G2=='2')
-    {
-        pgGroup=pg_I2;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I3
-    else if (mySize==2 && G1=='I'&& G2=='3')
-    {
-        pgGroup=pg_I3;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I4
-    else if (mySize==2 && G1=='I'&& G2=='4')
-    {
-        pgGroup=pg_I4;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I5
-    else if (mySize==2 && G1=='I'&& G2=='5')
-    {
-        pgGroup=pg_I5;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //IH
-    else if (mySize==2 && G1=='I'&& G2=='H')
-    {
-        pgGroup=pg_IH;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I1H
-    else if (mySize==3 && G1=='I'&& G2=='1'&& G3=='H')
-    {
-        pgGroup=pg_I1H;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I2H
-    else if (mySize==3 && G1=='I'&& G2=='2'&& G3=='H')
-    {
-        pgGroup=pg_I2H;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I3H
-    else if (mySize==3 && G1=='I'&& G2=='3'&& G3=='H')
-    {
-        pgGroup=pg_I3H;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I4H
-    else if (mySize==3 && G1=='I'&& G2=='4'&& G3=='H')
-    {
-        pgGroup=pg_I4H;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //I5H
-    else if (mySize==3 && G1=='I'&& G2=='5'&& G3=='H')
-    {
-        pgGroup=pg_I5H;
-        pgOrder=-1;
-        return_true=true;
-    }
-    //#define DEBUG7
+    // #define DEBUG7
     #ifdef DEBUG7
-    std::cerr << "pgGroup" << pgGroup << " pgOrder " << pgOrder << std::endl;
+    #define SUCCESS std::cerr << "pgGroup" << pgGroup << " pgOrder " << pgOrder << std::endl; return true;
+    #else
+    #define SUCCESS return true;
     #endif
     #undef DEBUG7
 
-    return return_true;
-}
-void SymList::fill_symmetry_class(const FileName symmetry, int pgGroup, int pgOrder,
-   std::vector<std::string> &fileContent)
-{
+    switch (G1) {
 
-	fileContent.clear();
-	if (pgGroup == pg_CN)
-    {
-    	fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
+        case 'C':
+        if (isdigit(G2) && size == 2) {
+            pgGroup = pg::CN;
+            pgOrder = int(G2) - 48;
+        } else if (isdigit(G2) && isdigit(G3) && size == 3) {
+            pgGroup = pg::CN;
+            pgOrder = atoi(symstring.substr(1, 2).c_str());
+        } else if (G2 == 'I' && size == 2) {
+            pgGroup = pg::CI;
+            pgOrder = -1;
+        } else if (G2 == 'S' && size == 2) {
+            pgGroup = pg::CS;
+            pgOrder = -1;
+        } else if (isdigit(G2) && G3 == 'H' && size == 3) {
+            pgGroup = pg::CNH;
+            pgOrder = int(G2) - 48;
+        } else if (isdigit(G2) && isdigit(G3) && G4 == 'H' && size == 4) {
+            pgGroup = pg::CNH;
+            pgOrder = atoi(symstring.substr(1, 2).c_str());
+        } else if (isdigit(G2) && G3 == 'V' && size == 3) {
+            pgGroup = pg::CNV;
+            pgOrder = int(G2) - 48;
+        } else if (isdigit(G2) && isdigit(G3) && G4 == 'V' && size == 4) {
+            pgGroup = pg::CNV;
+            pgOrder = atoi(symstring.substr(1, 2).c_str());
+        }
+        SUCCESS
+
+        case 'S':
+        if (G1 == 'S' && isdigit(G2) && size == 2) {
+            pgGroup = pg::SN;
+            pgOrder = int(G2) - 48;
+        } else if (G1 == 'S' && isdigit(G2) && isdigit(G3) && size == 3) {
+            pgGroup = pg::SN;
+            pgOrder = atoi(symstring.substr(1, 2).c_str());
+        }
+        SUCCESS
+
+        case 'D':
+        if (isdigit(G2) && size == 2) {
+            pgGroup = pg::DN;
+            pgOrder = int(G2) - 48;
+        } else if (isdigit(G2) && isdigit(G3) && size == 3) {
+            pgGroup = pg::DN;
+            pgOrder = atoi(symstring.substr(1, 2).c_str());
+        } else if (isdigit(G2) && G3 == 'V' && size == 3) {
+            pgGroup = pg::DNV;
+            pgOrder = int(G2) - 48;
+        } else if (isdigit(G2) && isdigit(G3) && G4 == 'V' && size == 4) {
+            pgGroup = pg::DNV;
+            pgOrder = atoi(symstring.substr(1, 2).c_str());
+        } else if (isdigit(G2) && G3 == 'H' && size == 3) {
+            pgGroup = pg::DNH;
+            pgOrder = int(G2) - 48;
+        } else if (isdigit(G2) && isdigit(G3) && G4 == 'H' && size == 4) {
+            pgGroup = pg::DNH;
+            pgOrder = atoi(symstring.substr(1, 2).c_str());
+        }
+        SUCCESS
+
+        case 'T':
+        if (size == 1) {
+            pgGroup = pg::T;
+            pgOrder = -1;
+        } else if (G2 == 'D' && size == 2) {
+            pgGroup = pg::TD;
+            pgOrder = -1;
+        } else if (G2 == 'H' && size == 2) {
+            pgGroup = pg::TH;
+            pgOrder = -1;
+        }
+        SUCCESS
+
+        case 'O':
+        if (size == 1) {
+            pgGroup = pg::O;
+            pgOrder = -1;
+        } else if (G2 == 'H' && size == 2) {
+            pgGroup = pg::OH;
+            pgOrder = -1;
+        }
+        SUCCESS
+    
+        case 'I':
+        if (size == 1) {
+            pgGroup = pg::I;
+            pgOrder = -1;
+        } else if (G2 == '1' && size == 2) {
+            pgGroup = pg::I1;
+            pgOrder = -1;
+        } else if (G2 == '2' && size == 2) {
+            pgGroup = pg::I2;
+            pgOrder = -1;
+        } else if (G2 == '3' && size == 2) {
+            pgGroup = pg::I3;
+            pgOrder = -1;
+        } else if (G2 == '4' && size == 2) {
+            pgGroup = pg::I4;
+            pgOrder = -1;
+        } else if (G2 == '5' && size == 2) {
+            pgGroup = pg::I5;
+            pgOrder = -1;
+        } else if (G2 == 'H' && size == 2) {
+            pgGroup = pg::IH;
+            pgOrder = -1;
+        } else if (G2 == '1' && G3 == 'H' && size == 3) {
+            pgGroup = pg::I1H;
+            pgOrder = -1;
+        } else if (G2 == '2' && G3 == 'H' && size == 3) {
+            pgGroup = pg::I2H;
+            pgOrder = -1;
+        } else if (G2 == '3' && G3 == 'H' && size == 3) {
+            pgGroup = pg::I3H;
+            pgOrder = -1;
+        } else if (G2 == '4' && G3 == 'H' && size == 3) {
+            pgGroup = pg::I4H;
+            pgOrder = -1;
+        } else if (G2 == '5' && G3 == 'H' && size == 3) {
+            pgGroup = pg::I5H;
+            pgOrder = -1;
+        }
+        SUCCESS
+
+        default:
+        return false;
+
     }
-    else if (pgGroup == pg_CI)
-    {
-    	fileContent.push_back("inversion ");
-    }
-    else if (pgGroup == pg_CS)
-    {
-    	fileContent.push_back("mirror_plane 0 0 1");
-    }
-    else if (pgGroup == pg_CNV)
-    {
-    	fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
-    	fileContent.push_back("mirror_plane 0 1 0");
-    }
-    else if (pgGroup == pg_CNH)
-    {
-    	fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
-    	fileContent.push_back("mirror_plane 0 0 1");
-    }
-    else if (pgGroup == pg_SN)
-    {
-        int order = pgOrder / 2;
-		if(2*order != pgOrder)
-		{
-				std::cerr << "ERROR: order for SN group must be even" << std::endl;
-				exit(0);
-		}
-        fileContent.push_back("rot_axis " + integerToString(order) + " 0 0 1");
+    #undef SUCCESS
+}
+
+void SymList::fill_symmetry_class(
+    const FileName symmetry, int pgGroup, int pgOrder, 
+    std::vector<std::string> &fileContent
+) {
+    fileContent.clear();
+
+    switch (pgGroup) {
+
+        case pg::CN:
+        fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
+        break;
+
+        case pg::CI:
         fileContent.push_back("inversion ");
-    }
-    else if (pgGroup == pg_DN)
-    {
-    	if (pgOrder > 1)
-    		fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
-    	fileContent.push_back("rot_axis 2 1 0 0");
-    }
-    else if (pgGroup == pg_DNV)
-    {
-    	if (pgOrder > 1)
-    		fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
+        break;
+
+        case pg::CS:
+        fileContent.push_back("mirror_plane 0 0 1");
+        break;
+
+        case pg::CNV:
+        fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
+        fileContent.push_back("mirror_plane 0 1 0");
+        break;
+
+        case pg::CNH:
+        fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
+        fileContent.push_back("mirror_plane 0 0 1");
+        break;
+
+        case pg::SN:
+        // i.e. S2n
+        if (pgOrder % 2 == 1) {
+            std::cerr << "ERROR: order for SN group must be even" << std::endl;
+            exit(0);
+        }
+        fileContent.push_back("rot_axis " + integerToString(pgOrder / 2) + " 0 0 1");
+        fileContent.push_back("inversion ");
+        break;
+
+        case pg::DN:
+        if (pgOrder > 1)
+        fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
+        fileContent.push_back("rot_axis 2 1 0 0");
+        break;
+
+        case pg::DNV:
+        if (pgOrder > 1)
+        fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
         fileContent.push_back("rot_axis 2 1 0 0");
         fileContent.push_back("mirror_plane 1 0 0");
-    }
-    else if (pgGroup == pg_DNH)
-    {
-    	if (pgOrder > 1)
-    		fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
+        break;
+
+        case pg::DNH:
+        if (pgOrder > 1)
+        fileContent.push_back("rot_axis " + integerToString(pgOrder) + " 0 0 1");
         fileContent.push_back("rot_axis 2 1 0 0");
         fileContent.push_back("mirror_plane 0 0 1");
-    }
-    else if (pgGroup == pg_T)
-    {
+        break;
+
+        case pg::T:
         fileContent.push_back("rot_axis 3  0. 0. 1.");
         fileContent.push_back("rot_axis 2 0. 0.816496 0.577350");
-    }
-    else if (pgGroup == pg_TD)
-    {
+        break;
+
+        case pg::TD:
         fileContent.push_back("rot_axis 3  0. 0. 1.");
         fileContent.push_back("rot_axis 2 0. 0.816496 0.577350");
         fileContent.push_back("mirror_plane 1.4142136 2.4494897 0.0000000");
-    }
-    else if (pgGroup == pg_TH)
-    {
+        break;
+
+        case pg::TH:
         fileContent.push_back("rot_axis 3  0. 0. 1.");
         fileContent.push_back("rot_axis 2 0. -0.816496 -0.577350");
         fileContent.push_back("inversion");
-    }
-    else if (pgGroup == pg_O)
-    {
+        break;
+
+        case pg::O:
         fileContent.push_back("rot_axis 3  .5773502  .5773502 .5773502");
         fileContent.push_back("rot_axis 4 0 0 1");
-    }
-    else if (pgGroup == pg_OH)
-    {
+        break;
+
+        case pg::OH:
         fileContent.push_back("rot_axis 3  .5773502  .5773502 .5773502");
         fileContent.push_back("rot_axis 4 0 0 1");
         fileContent.push_back("mirror_plane 0 1 1");
-    }
-    else if (pgGroup == pg_I || pgGroup == pg_I2)
-    {
+        break;
+
+        case pg::I:
+        case pg::I2:
         fileContent.push_back("rot_axis 2  0 0 1");
         fileContent.push_back("rot_axis 5  0.525731114  0 0.850650807");
         fileContent.push_back("rot_axis 3  0 0.356822076 0.934172364");
-    }
-    else if (pgGroup == pg_I1)
-    {
+        break;
+
+        case pg::I1:
         fileContent.push_back("rot_axis 2  1  	   0	       0");
         fileContent.push_back("rot_axis 5 0.85065080702670 0 -0.5257311142635");
         fileContent.push_back("rot_axis 3 0.9341723640 0.3568220765 0");
-    }
-    else if (pgGroup == pg_I3)
-    {
+        break;
+
+        case pg::I3:
         fileContent.push_back("rot_axis 2  -0.5257311143 0 0.8506508070");
         fileContent.push_back("rot_axis 5  0. 0. 1.");
         fileContent.push_back("rot_axis 3  -0.4911234778630044, 0.3568220764705179, 0.7946544753759428");
-    }
-    else if (pgGroup == pg_I4)
-    {
+        break;
+
+        case pg::I4:
         fileContent.push_back("rot_axis 2  0.5257311143 0 0.8506508070");
         fileContent.push_back("rot_axis 5  0.8944271932547096 0 0.4472135909903704");
         fileContent.push_back("rot_axis 3  0.4911234778630044 0.3568220764705179 0.7946544753759428");
-    }
-    else if (pgGroup == pg_I5)
-    {
-        std::cerr << "ERROR: Symmetry pg_I5 not implemented" << std::endl;
+        break;
+
+        case pg::I5:
+        std::cerr << "ERROR: Symmetry pg::I5 not implemented" << std::endl;
         exit(0);
-    }
-    else if (pgGroup == pg_IH || pgGroup == pg_I2H)
-    {
+
+        case pg::IH:
+        case pg::I2H:
         fileContent.push_back("rot_axis 2  0 0 1");
         fileContent.push_back("rot_axis 5  0.525731114  0 0.850650807");
         fileContent.push_back("rot_axis 3  0 0.356822076 0.934172364");
         fileContent.push_back("mirror_plane 1 0 0");
-    }
-    else if (pgGroup == pg_I1H)
-    {
+        break;
+
+        case pg::I1H:
         fileContent.push_back("rot_axis 2  1  	   0	       0");
         fileContent.push_back("rot_axis 5 0.85065080702670 0 -0.5257311142635");
         fileContent.push_back("rot_axis 3 0.9341723640 0.3568220765 0");
         fileContent.push_back("mirror_plane 0 0 -1");
-    }
-    else if (pgGroup == pg_I3H)
-    {
+        break;
+
+        case pg::I3H:
         fileContent.push_back("rot_axis 2  -0.5257311143 0 0.8506508070");
         fileContent.push_back("rot_axis 5  0. 0. 1.");
         fileContent.push_back("rot_axis 3  -0.4911234778630044, 0.3568220764705179, 0.7946544753759428");
         fileContent.push_back("mirror_plane 0.850650807 0  0.525731114");
-    }
-    else if (pgGroup == pg_I4H)
-    {
+
+        break;
+        case pg::I4H:
         fileContent.push_back("rot_axis 2  0.5257311143 0 0.8506508070");
         fileContent.push_back("rot_axis 5  0.8944271932547096 0 0.4472135909903704");
         fileContent.push_back("rot_axis 3  0.4911234778630044 0.3568220764705179 0.7946544753759428");
         fileContent.push_back("mirror_plane 0.850650807 0 -0.525731114");
-    }
-    else if (pgGroup == pg_I5H)
-    {
-        std::cerr << "ERROR: Symmetry pg_I5H not implemented" << std::endl;
+        break;
+
+        case pg::I5H:
+        std::cerr << "ERROR: Symmetry pg::I5H not implemented" << std::endl;
         exit(0);
-    }
-    else
-    {
+
+        default:
         std::cerr << "ERROR: Symmetry " << symmetry  << "is not known" << std::endl;
         exit(0);
+
     }
 
-//#define DEBUG5
-#ifdef DEBUG5
-    for (int n=0; n<fileContent.size(); n++)
-    	std::cerr << fileContent[n] << std::endl;
-	std::cerr << "fileContent.size()" << fileContent.size() << std::endl;
-#endif
-#undef DEBUG5
+    // #define DEBUG5
+    #ifdef DEBUG5
+    for (int n = 0; n < fileContent.size(); n++)
+        std::cerr << fileContent[n] << std::endl;
+    std::cerr << "fileContent.size()" << fileContent.size() << std::endl;
+    #endif
+    #undef DEBUG5
 }
 
-void SymList::writeDefinition(std::ostream &outstream, FileName fn_sym)
-{
-	read_sym_file(fn_sym);
-	Matrix2D<RFLOAT> L(3,3), R(3,3);
-	outstream << " ++++ Using symmetry group " << fn_sym << ", with the following " << SymsNo()+1 << " transformation matrices:"<< std::endl;
+void SymList::writeDefinition(std::ostream &outstream, FileName fn_sym) {
+    read_sym_file(fn_sym);
+    Matrix2D<RFLOAT> L(3, 3), R(3, 3);
+    outstream << " ++++ Using symmetry group " << fn_sym << ", with the following " << SymsNo() + 1 << " transformation matrices:" << std::endl;
     R.initIdentity();
     outstream << " R(1)= " << R;
-    for (int isym = 0; isym < SymsNo(); isym++)
-    {
+    for (int isym = 0; isym < SymsNo(); isym++) {
         get_matrices(isym, L, R);
         R.resize(3, 3);
         L.resize(3, 3);
         if (!L.isIdentity())
-        	outstream << " L("<< isym+2<<")= "<<L;
-        outstream << " R("<< isym+2<<")= "<<R;
+            outstream << " L(" << isym + 2 << ")= " << L;
+        outstream << " R(" << isym + 2 << ")= " << R;
         RFLOAT alpha, beta, gamma;
         Euler_matrix2angles(R, alpha, beta, gamma);
         outstream << "     Euler angles: " << alpha << " " << beta << " " << gamma << std::endl;
@@ -747,139 +634,85 @@ void SymList::writeDefinition(std::ostream &outstream, FileName fn_sym)
 
 }
 
-RFLOAT SymList::non_redundant_ewald_sphere(int pgGroup, int pgOrder)
-{
-    if (pgGroup == pg_CN)
-    {
-        return 4.*PI/pgOrder;
-    }
-    else if (pgGroup == pg_CI)
-    {
-        return 4.*PI/2.;
-    }
-    else if (pgGroup == pg_CS)
-    {
-        return 4.*PI/2.;
-    }
-    else if (pgGroup == pg_CNV)
-    {
-        return 4.*PI/pgOrder/2;
-    }
-    else if (pgGroup == pg_CNH)
-    {
-        return 4.*PI/pgOrder/2;
-    }
-    else if (pgGroup == pg_SN)
-    {
-        return 4.*PI/pgOrder;
-    }
-    else if (pgGroup == pg_DN)
-    {
-        return 4.*PI/pgOrder/2;
-    }
-    else if (pgGroup == pg_DNV)
-    {
-        return 4.*PI/pgOrder/4;
-    }
-    else if (pgGroup == pg_DNH)
-    {
-        return 4.*PI/pgOrder/4;
-    }
-    else if (pgGroup == pg_T)
-    {
-        return 4.*PI/12;
-    }
-    else if (pgGroup == pg_TD)
-    {
-        return 4.*PI/24;
-    }
-    else if (pgGroup == pg_TH)
-    {
-        return 4.*PI/24;
-    }
-    else if (pgGroup == pg_O)
-    {
-        return 4.*PI/24;
-    }
-    else if (pgGroup == pg_OH)
-    {
-        return 4.*PI/48;
-    }
-    else if (pgGroup == pg_I || pgGroup == pg_I2)
-    {
-        return 4.*PI/60;
-    }
-    else if (pgGroup == pg_I1)
-    {
-        return 4.*PI/60;
-    }
-    else if (pgGroup == pg_I3)
-    {
-        return 4.*PI/60;
-    }
-    else if (pgGroup == pg_I4)
-    {
-        return 4.*PI/60;
-    }
-    else if (pgGroup == pg_I5)
-    {
-        return 4.*PI/60;
-    }
-    else if (pgGroup == pg_IH || pgGroup == pg_I2H)
-    {
-        return 4.*PI/120;
-    }
-    else if (pgGroup == pg_I1H)
-    {
-        return 4.*PI/120;
-    }
-    else if (pgGroup == pg_I3H)
-    {
-        return 4.*PI/120;
-    }
-    else if (pgGroup == pg_I4H)
-    {
-        return 4.*PI/120;
-    }
-    else if (pgGroup == pg_I5H)
-    {
-        return 4.*PI/120;
-    }
-    else
-    {
-        std::cerr << "ERROR: Symmetry group, order=" << pgGroup
-                                                     << " "
-                                                     <<  pgOrder
-                                                     << "is not known"
-                                                     << std::endl;
+RFLOAT SymList::non_redundant_ewald_sphere(int pgGroup, int pgOrder) {
+
+    switch (pgGroup) {
+
+        case pg::CN:
+        case pg::SN:
+        return 4.0 * PI / pgOrder;
+
+        case pg::CI:
+        case pg::CS:
+        return 4.0 * PI / 2.0;
+
+        case pg::CNV:
+        case pg::CNH:
+        case pg::DN:
+        return 4.0 * PI / pgOrder / 2;
+
+        case pg::DNV:
+        case pg::DNH:
+        return 4.0 * PI / pgOrder / 4;
+
+        case pg::T:
+        return 4.0 * PI / 12;
+
+        case pg::TD:
+        case pg::TH:
+        case pg::O:
+        return 4.0 * PI / 24;
+
+        case pg::OH:
+        return 4.0 * PI / 48;
+
+        case pg::I:
+        case pg::I1:
+        case pg::I2:
+        case pg::I3:
+        case pg::I4:
+        case pg::I5:
+        return 4.0 * PI / 60;
+
+        case pg::IH:
+        case pg::I1H:
+        case pg::I2H:
+        case pg::I3H:
+        case pg::I4H:
+        case pg::I5H:
+        return 4.0 * PI / 120;
+
+        default:
+        std::cerr 
+        << "ERROR: Symmetry group, order=" << pgGroup 
+        << " " <<  pgOrder << "is not known" << std::endl;
         exit(0);
+
     }
 }
 
-void symmetriseMap(MultidimArray<RFLOAT> &img, FileName &fn_sym, bool do_wrap)
-{
+void symmetriseMap(MultidimArray<RFLOAT> &img, FileName &fn_sym, bool do_wrap) {
 
-	if (img.getDim() != 3)
-		REPORT_ERROR("symmetriseMap ERROR: symmetriseMap can only be run on 3D maps!");
+    if (img.getDim() != 3)
+        REPORT_ERROR("symmetriseMap ERROR: symmetriseMap can only be run on 3D maps!");
 
-	img.setXmippOrigin();
+    img.setXmippOrigin();
 
-	SymList SL;
-	SL.read_sym_file(fn_sym);
+    SymList SL;
+    SL.read_sym_file(fn_sym);
 
-	Matrix2D<RFLOAT> L(4, 4), R(4, 4); // A matrix from the list
-    MultidimArray<RFLOAT> sum, aux;
-    sum = img;
+    Matrix2D<RFLOAT> L(4, 4), R(4, 4); // A matrix from the list
+    MultidimArray<RFLOAT> sum = img;
+    MultidimArray<RFLOAT> aux;
     aux.resize(img);
 
-	for (int isym = 0; isym < SL.SymsNo(); isym++)
-    {
+    for (int isym = 0; isym < SL.SymsNo(); isym++) {
         SL.get_matrices(isym, L, R);
         applyGeometry(img, aux, R, IS_INV, do_wrap);
         sum += aux;
     }
 
-	// Overwrite the input
-	img = sum / (SL.SymsNo() + 1);
+    // Overwrite the input
+    img = sum / (SL.SymsNo() + 1);
 
 }

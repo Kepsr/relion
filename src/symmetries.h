@@ -53,47 +53,53 @@
 #include "src/funcs.h"
 #include "src/args.h"
 
-/**@defgroup SymmetryLists Symmetry handling
-   @ingroup DataLibrary
-    The symmetry lists are, simply, lists of 2D matrices. It's the way of
-    taking symmetry into account in the reconstruction programs. The
-    symmetry list must contain matrices which express equivalent views to
-    the actual one due to the underlying volume symmetry. The identity matrix
-    is not within the list. You know that symmetry matrices should form
-    a subgroup, when reading a file the subgroup is automatically computed
-    and, when you add or remove a new matrix, the subgroup must be
-    manually computed.
-*/
-//@{
-//point group symmetries
-#define pg_CI  200
-#define pg_CS  201
-#define pg_CN  202
-#define pg_CNV 203
-#define pg_CNH 204
-#define pg_SN  205
-#define pg_DN  206
-#define pg_DNV 207
-#define pg_DNH 208
-#define pg_T   209
-#define pg_TD  210
-#define pg_TH  211
-#define pg_O   212
-#define pg_OH  213
-#define pg_I   214  //default xmipp icosahedaral symmetry
-#define pg_IH  215
+/**
+ * @defgroup SymmetryLists Symmetry handling
+ * @ingroup DataLibrary
+ *
+ *  The symmetry lists are, simply, lists of 2D matrices. It's the way of
+ *  taking symmetry into account in the reconstruction programs. The
+ *  symmetry list must contain matrices which express equivalent views to
+ *  the actual one due to the underlying volume symmetry. The identity matrix
+ *  is not within the list. You know that symmetry matrices should form
+ *  a subgroup, when reading a file the subgroup is automatically computed
+ *  and, when you add or remove a new matrix, the subgroup must be
+ *  manually computed.
+ */
 
-#define pg_I1   216 //no crowther 222
-#define pg_I2   217 //crowther 222-> default in xmipp
-#define pg_I3   218 //52 as used by spider
-#define pg_I4   219 //another 52
-#define pg_I5   220 //another another 52 (used by EMBL-matfb)
+// @{
+// point group symmetries
+namespace pg { enum {
 
-#define pg_I1H  221 //no crowther 222, + mirror plane
-#define pg_I2H  222 //crowther 222-> default in xmipp+ mirror plane
-#define pg_I3H  223 //52 as used by spider+ mirror plane
-#define pg_I4H  224 //another 52+ mirror plane
-#define pg_I5H  225 //another another 52 (used by EMBL-matfb)+ mirror plane
+    // 200..225
+    CI = 200,  // Point group Ci (inversion symmetry)
+    CS,        // Point group Cs (reflection symmetry)
+    CN,        // Point group series Cn (n-fold rotational symmetry)
+    CNV,       // Point group series Cnv (pyramidal symmetry)
+    CNH,       // Point group series Cnh (prismatic symmetry)
+    SN,        // Point group series S2n (rotoreflection symmetry)
+    DN,        // Point group series Dn (dihedral symmetry)
+    DNV,       // Point group series Dnv
+    DNH,       // Point group series Dnh
+    T,         // Point group T (chiral tetrahedral symmetry)
+    TD,        // Point group Td (full tetrahedral symmetry)
+    TH,        // Point group Th (pyritohedral symmetry)
+    O,         // Point group O (chiral octahedral symmetry)
+    OH,        // Point group Oh (full octahedral symmetry)
+    I,         // Point group I (chiral icosahedral symmetry) [default xmipp icosahedaral symmetry]
+    IH,        // Point group Ih (full icosahedral symmetry)
+    I1,        // no crowther 222
+    I2,        // crowther 222-> default in xmipp
+    I3,        // 52 as used by spider
+    I4,        // another 52
+    I5,        // another another 52 (used by EMBL-matfb)
+    I1H,       // no crowther 222, + mirror plane
+    I2H,       // crowther 222-> default in xmipp+ mirror plane
+    I3H,       // 52 as used by spider+ mirror plane
+    I4H,       // another 52+ mirror plane
+    I5H,       // another another 52 (used by EMBL-matfb)+ mirror plane
+
+}; }
 
 /** Number of an image in the reconstruction list.
     This macro returns the index of a symmetry image (after the symmetry matrix
@@ -103,7 +109,7 @@
     within this first numIMG images of the image we want to symmetrize The
     first image in the list is the number 0 */
 #define SYMINDEX(SL, sym_no, i, numIMG) \
-    numIMG+SL.__L.mdimy/4*i+sym_no
+    numIMG + SL.__L.mdimy / 4 * i + sym_no
 
 /** Symmetry List class.
     Internally the symmetry list class is implemented as a single 2D matrix,
@@ -119,7 +125,7 @@
 
     The symmetry file format is
     @code
-    #This is a comment
+    # This is a comment
     # The following line is a 6-fold rotational symmetry axis along Z-axis.
     # The fold is the number of times that the volume can be rotated along
     # the symmetry axis giving the same view from different view points.
@@ -130,9 +136,9 @@
     mirror_plane    0 0 1
     @endcode
 */
-class SymList
-{
-public:
+class SymList {
+
+    public:
     // L and R matrices
     Matrix2D<RFLOAT> __L, __R;
     Matrix1D<int>    __chain_length;
@@ -143,49 +149,56 @@ public:
     int true_symNo;
 
     // Number of Axis, mirrors, ...
-    int              __sym_elements;
+    int __sym_elements;
 
-public:
+    public:
+
     /** Create an empty list.
-        The 2D matrices are 0x0.
-        \\ Ex: SymList SL; */
-    SymList()
-    {
+     *  The 2D matrices are 0 × 0.
+     *  @code
+     *  SymList SL;
+     *  @endcode
+     */
+    SymList() {
         __sym_elements = true_symNo = 0;
     }
 
-    /** translate string fn_sym to symmetry group, return false
-        is translation is not possible. See
-        http://xmipp.cnb.uam.es/twiki/bin/view/Xmipp/Symmetry
-         for details. It also fill the symmetry information  */
-    bool isSymmetryGroup(FileName fn_sym, int &pgGroup, int &pgOrder);
+    /** Translate a string 'symstring' to a symmetry group.
+     *  Return value indicates whether the string was recognised as a symmetry group.
+     *  See URL http://xmipp.cnb.uam.es/twiki/bin/view/Xmipp/Symmetry for details.
+     *  Symmetry information is output to pgGroun and pgOrder.
+     */
+    bool isSymmetryGroup(const std::string &symstring, int &pgGroup, int &pgOrder);
 
-    /** fill fileContect with symmetry information*/
-    void fill_symmetry_class(const FileName symmetry, int pgGroup, int pgOrder,
-                             std::vector<std::string> &fileContent);
+    /** fill fileContent with symmetry information */
+    void fill_symmetry_class(
+        const FileName symmetry, int pgGroup, int pgOrder,
+        std::vector<std::string> &fileContent
+    );
 
-
-    /** Create Symmetry List from a Symmetry file.
-        All the subgroup elements are computed automatically.
-        \\ Ex: SymList SL("sym.txt"); */
-    SymList(const FileName& fn_sym)
-    {
+    /** Create a Symmetry List from a Symmetry file.
+     *  All the subgroup elements are computed automatically.
+     *  @code
+     *  SymList SL("sym.txt");
+     *  @endcode
+     */
+    SymList(const FileName& fn_sym) {
         read_sym_file(fn_sym);
     }
 
     /** Get matrices from the symmetry list.
-        The number of matrices inside the list is given by SymsNo.
-        This function return the 4x4 transformation matrices associated to
-        the one in the list which occupies the position 'i'. The matrix
-        numbering within the list starts at 0. The output transformation
-        matrices is given as a pointer to gain speed.
-        \\ Ex:
-        @code
-           for (i=0; i<SL.SymsNo; i++) {
-               SL.get_matrices(i,L,R);
-               ...
-           }
-        @endcode */
+     *  The number of matrices inside the list is given by SymsNo.
+     *  This function return the 4x4 transformation matrices associated to
+     *  the one in the list which occupies the position 'i'. The matrix
+     *  numbering within the list starts at 0. The output transformation
+     *  matrices is given as a pointer to gain speed.
+     *  @code
+     *  for (i = 0; i < SL.SymsNo(); i++) {
+     *      SL.get_matrices(i, L, R);
+     *      ...
+     *  }
+     *  @endcode
+     */
     void get_matrices(int i, Matrix2D<RFLOAT> &L, Matrix2D<RFLOAT> &R) const;
 
     /** Set a couple of matrices in the symmetry list.
@@ -193,20 +206,23 @@ public:
         This function sets the 4x4 transformation matrices associated to
         the one in the list which occupies the position 'i'. The matrix
         numbering within the list starts at 0.
-        \\ Ex:
         @code
-           for (i=0; i<SL.SymsNo; i++) {
-               SL.set_matrix(i,L,R);
+           for (int i = 0; i < SL.SymsNo(); i++) {
+               SL.set_matrix(i, L, R);
                ...
            }
         @endcode */
     void set_matrices(int i, const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R);
 
     /** Read a symmetry file into a symmetry list.
-        The former symmetry list is overwritten with the new one. All the
-        subgroup members are added to the list. If the accuracy is negative
-        then the subgroup is not generated. return symmetry group
-        \\ Ex: SL.read_sym_file("sym.txt");*/
+        The former symmetry list is overwritten with the new one.
+        All the subgroup members are added to the list.
+        If the accuracy is negative then the subgroup is not generated.
+        return symmetry group
+        @code
+        SL.read_sym_file("sym.txt");
+        @endcode
+     */
     int read_sym_file(FileName fn_sym);
 
     /** Add symmetry matrices to the symmetry list.
@@ -218,8 +234,7 @@ public:
 
         The chain length is the number of single matrices multiplication of
         which the inserted one is compound.*/
-    void add_matrices(const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R,
-                      int chain_length);
+    void add_matrices(const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R, int chain_length);
 
     /** Compute subgroup for this structure.
         After adding or setting a matrix, the subgroup information
@@ -233,15 +248,13 @@ public:
 
     /** Number of symmetry matrices inside the structure.
         This is the number of all the matrices inside the subgroup.
-        \\ Ex:
         @code
-           for (i=0; i<SL.SymsNo; i++) {
-               SL.get_matrix(i,A);
+           for (i = 0; i < SL.SymsNo(); i++) {
+               SL.get_matrix(i, A);
                ...
            }
         @endcode */
-    int SymsNo() const
-    {
+    int SymsNo() const {
         return MAT_YSIZE(__L) / 4;
     }
 
@@ -249,19 +262,16 @@ public:
         This is the number of the matrices which generated the structure,
         notice that it should be always less or equal to the total number
         of matrices in the subgroup. */
-    int TrueSymsNo() const
-    {
+    int TrueSymsNo() const {
         return true_symNo;
     }
 
-    /** Write the symmetry definition (plus all rotation matrices) to ostream
-     *
-     */
+    // Write the symmetry definition (plus all rotation matrices) to an output stream.
     void writeDefinition(std::ostream &outstream, FileName fn_sym);
 
-    /** Return the area of the non redundant part of the Ewald sphere
-    */
-    RFLOAT  non_redundant_ewald_sphere(int pgGroup, int pgOrder);
+    // Return the area of the non redundant part of the Ewald sphere
+    RFLOAT non_redundant_ewald_sphere(int pgGroup, int pgOrder);
+
 };
 
 

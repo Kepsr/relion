@@ -78,7 +78,7 @@ class tiltpair_plot_parameters {
 
         // Get the symmetry point group
         int pgGroup, pgOrder;
-        SL.isSymmetryGroup(fn_sym, pgGroup, pgOrder);
+        SL.isSymmetryGroup(fn_sym.removeDirectories(), pgGroup, pgOrder);
         SL.read_sym_file(fn_sym);
 
         // Make postscript header
