@@ -335,11 +335,10 @@ class helix_bilder_parameters {
         Ydim = textToInteger(parser.getOption("--ydim", "Dimension Y (in pixels) of the micrographs", "4096"));
         z_percentage = textToFloat(parser.getOption("--z_percentage", "Percentage of cropped length (along Z axis, 0.1~0.9)", "0.3"));
 
-        RFLOAT tmp_RFLOAT = 0.;
         if (rise_min_A > rise_max_A)
-            SWAP(rise_min_A, rise_max_A, tmp_RFLOAT);
+            SWAP(RFLOAT, rise_min_A, rise_max_A);
         if (twist_min_deg > twist_max_deg)
-            SWAP(twist_min_deg, twist_max_deg, tmp_RFLOAT);
+            SWAP(RFLOAT, twist_min_deg, twist_max_deg);
 
         // Check for errors in the command-line option
         if (parser.checkForErrors())

@@ -362,14 +362,13 @@ extern const char *g_RELION_VERSION;
 
 /** Returns next positive power_class of 2
  *
- * It is supposed that the given number is positive although it's not needed to
- * be an integer
+ * x is supposed to be positive, but it needn't be an integer.
  *
  * @code
  * next_power = NEXT_POWER_OF_2(1000); // next_power = 1024
  * @endcode
  */
-#define NEXT_POWER_OF_2(x) pow(2, ceil(log((RFLOAT) x) / log(2.0) - XMIPP_EQUAL_ACCURACY))
+#define NEXT_POWER_OF_2(x) (1 << ceil(log((RFLOAT) x) / log(2.0) - XMIPP_EQUAL_ACCURACY))
 
 /** Linear interpolation
  *
@@ -381,11 +380,12 @@ extern const char *g_RELION_VERSION;
 /// @name Miscellaneous
 //@{
 
-/** Swap two values.
+/** Swap two values a and b (both of type T).
  *
- * a, b, and the temporary variable tmp should all be of the same type.
+ * A new scope is entered, where a temporary variable is declared.
+ * The data is exchanged and the scope is exited.
  */
-#define SWAP(a, b, tmp) { tmp = a; a = b; b = tmp; }
+#define SWAP(T, a, b) { T tmp = (a); (a) = (b); (b) = tmp; }
 
 
 namespace Xmipp {

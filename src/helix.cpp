@@ -76,8 +76,8 @@ void makeHelicalSymmetryList(
 
             twist_dev_deg = fabs(list[ii].twist_deg - tmp_list[jj].twist_deg);
             rise_dev_pix  = fabs(list[ii].rise_pix - tmp_list[jj].rise_pix);
-            twist_avg_deg = (fabs(list[ii].twist_deg) + fabs(tmp_list[jj].twist_deg)) / 2.;
-            rise_avg_pix  = (fabs(list[ii].rise_pix) + fabs(tmp_list[jj].rise_pix)) / 2.;
+            twist_avg_deg = (fabs(list[ii].twist_deg) + fabs(tmp_list[jj].twist_deg)) / 2.0;
+            rise_avg_pix  = (fabs(list[ii].rise_pix) + fabs(tmp_list[jj].rise_pix)) / 2.0;
 
             if (twist_avg_deg < err_max) {
                 if (twist_dev_deg < err_max)
@@ -113,7 +113,7 @@ bool calcCCofHelicalSymmetry(
 ) {
     /// TODO: go through every line to find bugs!!!
     int rec_len, r_max_XY, startZ, finishZ;
-    double dist_r_pix, sum_pw1, sum_pw2, sum_n, sum_chunk = 0., sum_chunk_n = 0.;
+    double dist_r_pix, sum_pw1, sum_pw2, sum_n, sum_chunk = 0., sum_chunk_n = 0.0;
     //std::vector<RFLOAT> sin_rec, cos_rec, dev_voxel, dev_chunk;
     std::vector<RFLOAT> sin_rec, cos_rec;
 
@@ -127,13 +127,13 @@ bool calcCCofHelicalSymmetry(
         r_max_pix = (((RFLOAT)(r_max_XY)) - 0.01);
 
     // Set startZ and finishZ
-    startZ = FLOOR( (-1.) * ((RFLOAT)(ZSIZE(v)) * z_percentage * 0.5) );
+    startZ = FLOOR( (-1.0) * ((RFLOAT)(ZSIZE(v)) * z_percentage * 0.5) );
     finishZ = CEIL( ((RFLOAT)(ZSIZE(v))) * z_percentage * 0.5 );
     startZ = (startZ <= (STARTINGZ(v))) ? (STARTINGZ(v) + 1) : (startZ);
     finishZ = (finishZ >= (FINISHINGZ(v))) ? (FINISHINGZ(v) - 1) : (finishZ);
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + (CEIL((RFLOAT(ZSIZE(v)) + 2.) / rise_pix));
+    rec_len = 2 + (CEIL((RFLOAT(ZSIZE(v)) + 2.0) / rise_pix));
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
@@ -231,13 +231,13 @@ bool calcCCofHelicalSymmetry(
         //dev_chunk.push_back(sum_pw2 - sum_pw1 * sum_pw1);
         // Sum_chunk
         sum_chunk += sum_pw2 - sum_pw1 * sum_pw1;
-        sum_chunk_n += 1.;
+        sum_chunk_n += 1.0;
 
         /*
         // Calc dev of this voxel in the chunk
         if (dev_voxel.size() > 1)
         {
-            sum_pw1 = sum_pw2 = 0.;
+            sum_pw1 = sum_pw2 = 0.0;
             for (int id = 0; id < dev_voxel.size(); id++)
             {
                 sum_pw1 += dev_voxel[id];
@@ -293,8 +293,8 @@ bool localSearchHelicalSymmetry(
 
     // Initialise refined helical parameters
     // Check helical parameters
-    rise_refined_A = (rise_min_A + rise_max_A) / 2.;
-    twist_refined_deg = (twist_min_deg + twist_max_deg) / 2.;
+    rise_refined_A = (rise_min_A + rise_max_A) / 2.0;
+    twist_refined_deg = (twist_min_deg + twist_max_deg) / 2.0;
     checkParametersFor3DHelicalReconstruction(
         false, true, 1,
         rise_refined_A,    rise_min_A,    rise_max_A,
@@ -316,9 +316,9 @@ bool localSearchHelicalSymmetry(
     twist_local_max_deg = twist_max_deg;
     if (o_ptr != NULL) {
         (*o_ptr) << " ### RELION helix toolbox - local searches of helical symmetry" << std::endl;
-        (*o_ptr) << " --> Box size = " << ((long int)(XSIZE(v))) << ", Z(%) = " << (z_percentage * 100.)
-                << "%, pixel size = " << pixel_size_A << " Angstroms, inner diameter = " << (cyl_inner_radius_A * 2.)
-                << " Angstroms, outer diameter = " << (cyl_outer_radius_A * 2.) << " Angstroms." << std::endl;
+        (*o_ptr) << " --> Box size = " << ((long int)(XSIZE(v))) << ", Z(%) = " << (z_percentage * 100.0)
+                << "%, pixel size = " << pixel_size_A << " Angstroms, inner diameter = " << (cyl_inner_radius_A * 2.0)
+                << " Angstroms, outer diameter = " << (cyl_outer_radius_A * 2.0) << " Angstroms." << std::endl;
         (*o_ptr) << " --> Searching twist from " << twist_min_deg << " to " << twist_max_deg << " degrees, rise from "
                 << rise_min_A << " to " << rise_max_A << " Angstroms." << std::endl;
     }
@@ -352,7 +352,7 @@ bool localSearchHelicalSymmetry(
     }
 
     rise_inistep_pix = rise_inistep_pix < 1e-5 ? 1e30 : rise_inistep_pix;
-    rise_step_pix = 0.01 * ((fabs(rise_local_min_pix) + fabs(rise_local_max_pix)) / 2.);
+    rise_step_pix = 0.01 * ((fabs(rise_local_min_pix) + fabs(rise_local_max_pix)) / 2.0);
     rise_step_pix = (rise_step_pix < rise_inistep_pix) ? (rise_step_pix) : (rise_inistep_pix);
     nr_rise_samplings = CEIL(fabs(rise_local_min_pix - rise_local_max_pix) / rise_step_pix);
     nr_rise_samplings = nr_rise_samplings > nr_min_samplings ? nr_rise_samplings : nr_min_samplings;
@@ -360,7 +360,7 @@ bool localSearchHelicalSymmetry(
     rise_step_pix = fabs(rise_local_min_pix - rise_local_max_pix) / RFLOAT(nr_rise_samplings);
     if ((fabs(rise_local_min_pix - rise_local_max_pix) / fabs(rise_refined_pix)) < err_max) {
         search_rise = false;
-        rise_step_pix = 0.;
+        rise_step_pix = 0.0;
         rise_min_pix = rise_max_pix = rise_local_min_pix = rise_local_max_pix = rise_refined_pix;
     }
     if (o_ptr != NULL) {
@@ -449,13 +449,13 @@ bool localSearchHelicalSymmetry(
         if (search_twist && twist_refined_deg < twist_min_deg) {
             out_of_range = true;
             search_twist = false;
-            twist_step_deg = 0.;
+            twist_step_deg = 0.0;
             twist_local_min_deg = twist_local_max_deg = twist_refined_deg = twist_min_deg;
         }
         if (search_twist && twist_refined_deg > twist_max_deg) {
             out_of_range = true;
             search_twist = false;
-            twist_step_deg = 0.;
+            twist_step_deg = 0.0;
             twist_local_min_deg = twist_local_max_deg = twist_refined_deg = twist_max_deg;
         }
 
@@ -527,9 +527,9 @@ bool localSearchHelicalSymmetry(
 
         // Decrease step size
         if (search_rise)
-            rise_step_pix /= 2.;
+            rise_step_pix /= 2.0;
         if (search_twist)
-            twist_step_deg /= 2.;
+            twist_step_deg /= 2.0;
     }
 
     if (out_of_range) {
@@ -557,7 +557,7 @@ RFLOAT getHelicalSigma2Rot(
 
     RFLOAT nr_samplings_along_helical_axis = (fabs(helical_rise_Angst)) / helical_offset_step_Angst;
     RFLOAT rot_search_range = (fabs(helical_twist_deg)) / nr_samplings_along_helical_axis;
-    RFLOAT new_rot_step = rot_search_range / 6.;
+    RFLOAT new_rot_step = rot_search_range / 6.0;
     RFLOAT factor = ceil(new_rot_step / rot_step_deg);
     RFLOAT new_sigma2_rot = old_sigma2_rot;
     // RFLOAT factor_max = 10.0;
@@ -581,7 +581,7 @@ bool checkParametersFor3DHelicalReconstruction(
     RFLOAT tube_inner_diameter_A, RFLOAT tube_outer_diameter_A,
     bool verboseOutput
 ) {
-    RFLOAT nr_units_min = 2.; // Minimum nr_particles required along lenZ_max
+    RFLOAT nr_units_min = 2.0; // Minimum nr_particles required along lenZ_max
     RFLOAT rise_range_max_percentage = 0.3334;
 
     // Verbose output
@@ -672,8 +672,8 @@ bool checkParametersFor3DHelicalReconstruction(
         twist_min_deg = twist_max_deg = twist_initial_deg;
         rise_min_A = rise_max_A = rise_initial_A;
     }
-    RFLOAT rise_avg_A = (rise_min_A + rise_max_A) / 2.;
-    RFLOAT twist_avg_deg = (twist_min_deg + twist_max_deg) / 2.;
+    RFLOAT rise_avg_A = (rise_min_A + rise_max_A) / 2.0;
+    RFLOAT twist_avg_deg = (twist_min_deg + twist_max_deg) / 2.0;
 
     // Check helical twist and rise
     if (verboseOutput) {
@@ -744,7 +744,7 @@ bool checkParametersFor3DHelicalReconstruction(
     }
     RFLOAT z_percentage_min = (nr_units_min * rise_max_A) / (pixel_size_A * (RFLOAT)(box_len));
     z_percentage_min = (z_percentage_min < 0.001) ? (0.001) : (z_percentage_min);
-    RFLOAT z_percentage_max = ( (2.) * sqrt( (particle_diameter_A * particle_diameter_A / 4.) - (tube_outer_diameter_A * tube_outer_diameter_A / 4.) ) / pixel_size_A) / ((RFLOAT)(box_len));
+    RFLOAT z_percentage_max = ( (2.0) * sqrt( (particle_diameter_A * particle_diameter_A / 4.0) - (tube_outer_diameter_A * tube_outer_diameter_A / 4.0) ) / pixel_size_A) / ((RFLOAT)(box_len));
     z_percentage_max = (z_percentage_max > 0.999) ? (0.999) : (z_percentage_max);
     if (verboseOutput)
         std::cout << " Z percentage should be > " << z_percentage_min << " and < " << z_percentage_max << " (under current settings)" << std::endl;
@@ -868,7 +868,7 @@ void imposeHelicalSymmetryInRealSpace(
     vout.setXmippOrigin();
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + (CEIL((RFLOAT(Zdim) + 2.) / rise_pix));
+    rec_len = 2 + (CEIL((RFLOAT(Zdim) + 2.0) / rise_pix));
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
@@ -887,7 +887,7 @@ void imposeHelicalSymmetryInRealSpace(
         RFLOAT d = sqrt(dd);
         RFLOAT r = sqrt(rr);
         if (r > r_max || d < d_min || d > D_max) {
-            A3D_ELEM(v, k, i, j) = 0.;
+            A3D_ELEM(v, k, i, j) = 0.0;
             continue;
         }
 
@@ -902,7 +902,7 @@ void imposeHelicalSymmetryInRealSpace(
 
         // Do the average
         RFLOAT pix_sum, pix_weight;
-        pix_sum = pix_weight = 0.;
+        pix_sum = pix_weight = 0.0;
         for (int id = rot_min; id <= rot_max; id++) {
             // Get the sine and cosine value
             RFLOAT sin_val, cos_val;
@@ -1007,7 +1007,7 @@ void searchCnZSymmetry(
     if ( (Ndim != 1) || (Zdim < 5) || (Ydim < 5) || (Xdim < 5) )
         REPORT_ERROR("helix.cpp::searchCnZSymmetry(): Input 3D MultidimArray has Wrong dimensions! (Ndim = " + integerToString(Ndim) + ", Zdim = " + integerToString(Zdim) + ", Ydim = " + integerToString(Ydim) + ", Xdim = " + integerToString(Xdim) + ")");
 
-    if ( (r_max_pix < 2.) || (r_min_pix < 0.) || ((r_max_pix - r_min_pix) < 2.)
+    if ( (r_max_pix < 2.0) || (r_min_pix < 0.0) || ((r_max_pix - r_min_pix) < 2.0)
             || (cn_start <= 1) || (cn_end <= 1) || (cn_start > cn_end) || (cn_end > 36) )
         REPORT_ERROR("helix.cpp::searchCnZSymmetry(): Wrong parameters!");
 
@@ -1061,8 +1061,8 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     half_box_len = box_len / 2 - ((box_len + 1) % 2);
     sphere_radius_pix = sphere_radius_A / pixel_size_A;
     cyl_radius_pix = cyl_outer_radius_A / pixel_size_A;
-    if ( (sphere_radius_pix < 2.) || (sphere_radius_pix > half_box_len)
-            || (cyl_radius_pix < 2.) || (cyl_radius_pix > half_box_len)
+    if ( (sphere_radius_pix < 2.0) || (sphere_radius_pix > half_box_len)
+            || (cyl_radius_pix < 2.0) || (cyl_radius_pix > half_box_len)
             || ( (sphere_radius_pix + 0.001) < cyl_radius_pix ) )
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): Radii of spherical and/or cylindrical masks are invalid!");
 
@@ -1075,7 +1075,7 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     pix_list.clear();
     pix_list.resize(vec_len);
     for (vec_id = 0; vec_id < vec_len; vec_id++)
-        sum_list[vec_id] = pix_list[vec_id] = 0.;
+        sum_list[vec_id] = pix_list[vec_id] = 0.0;
     rotation2DMatrix(psi_deg, R, false);
     R.setSmallValuesToZero();
 
@@ -1096,19 +1096,19 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
         sum_list[vec_id] += A2D_ELEM(v, i, j);
     }
 
-    nr = sum = sum2 = 0.;
+    nr = sum = sum2 = 0.0;
     for (vec_id = 0; vec_id < vec_len; vec_id++)
     {
         if (pix_list[vec_id] > 0.5)
         {
-            nr += 1.;
+            nr += 1.0;
             val = sum_list[vec_id] / pix_list[vec_id];
             sum += val;
             sum2 += val * val;
         }
     }
     if (nr < 0.5)
-        return (-1.);
+        return (-1.0);
     return ( (sum2 / nr) - ((sum / nr) * (sum / nr)) );
 }
 
@@ -1122,17 +1122,17 @@ RFLOAT localSearchPsiFor2DHelicalSegment(
         RFLOAT search_step_deg)
 {
     RFLOAT psi_deg, best_psi_deg, max_cc, cc;
-    if ( (search_step_deg < 0.000001) || (search_step_deg > 2.) )
+    if ( (search_step_deg < 0.000001) || (search_step_deg > 2.0) )
         REPORT_ERROR("helix.cpp::localSearchPsiFor2DHelicalSegment(): Search step of psi angle should be 0.000001~1.999999 degrees!");
     if ( (search_half_range_deg < 0.000001) || (search_half_range_deg < search_step_deg) )
         REPORT_ERROR("helix.cpp::localSearchPsiFor2DHelicalSegment(): Search half range of psi angle should be not be less than 0.000001 degrees or the step size!");
 
-    max_cc = -1.;
-    best_psi_deg = 0.;
+    max_cc = -1.0;
+    best_psi_deg = 0.0;
     for (psi_deg = (ori_psi_deg - search_half_range_deg); psi_deg < (ori_psi_deg + search_half_range_deg); psi_deg += search_step_deg)
     {
         cc = calcCCofPsiFor2DHelicalSegment(v, psi_deg, pixel_size_A, sphere_radius_A, cyl_outer_radius_A);
-        if ( (cc > 0.) && (cc > max_cc) )
+        if ( (cc > 0.0) && (cc > max_cc) )
         {
             max_cc = cc;
             best_psi_deg = psi_deg;
@@ -1142,7 +1142,7 @@ RFLOAT localSearchPsiFor2DHelicalSegment(
     }
     // DEBUG
     //std::cout << "------------------------------------------------" << std::endl;
-    if (max_cc < 0.)
+    if (max_cc < 0.0)
         REPORT_ERROR("helix.cpp::localSearchPsiFor2DHelicalSegment(): Error! No cc values for any psi angles are valid! Check if the input images are blank!");
     return best_psi_deg;
 }
@@ -1158,14 +1158,14 @@ RFLOAT searchPsiFor2DHelicalSegment(
 
     search_half_range_deg = 89.999;
     search_step_deg = 0.5;
-    best_psi_deg = 0.;
+    best_psi_deg = 0.0;
 
     for (nr_iter = 1; nr_iter <= 20; nr_iter++)
     {
         best_psi_deg = localSearchPsiFor2DHelicalSegment(v, pixel_size_A, sphere_radius_A, cyl_outer_radius_A,
                 best_psi_deg, search_half_range_deg, search_step_deg);
         search_half_range_deg = 2. * search_step_deg;
-        search_step_deg /= 2.;
+        search_step_deg /= 2.0;
         if (fabs(search_step_deg) < 0.00001)
             break;
     }
@@ -1237,7 +1237,7 @@ void cutZCentralPartOfSoftMask(
     if (cosine_width < 0.001)
         REPORT_ERROR("helix.cpp::cutZCentralPartOfSoftMask(): Cosine width for soft edge should larger than 0!");
 
-    idz_e = (RFLOAT) Zdim * z_percentage / 2.;
+    idz_e = (RFLOAT) Zdim * z_percentage / 2.0;
     idz_s = idz_e * -1.0;
     idz_s_w = idz_s - cosine_width;
     idz_e_w = idz_e + cosine_width;
@@ -1290,7 +1290,7 @@ void createCylindricalReference(
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
         r = sqrt(i * i + j * j);
         if (r > inner_radius_pix && r < outer_radius_pix) {
-            A3D_ELEM(v, k, i, j) = 1.;
+            A3D_ELEM(v, k, i, j) = 1.0;
             continue;
         }
         dist = -9999.0;
@@ -1387,10 +1387,10 @@ void transformCartesianAndHelicalCoords(
     aux.resize(3);
     XX(aux) = XX(in);
     YY(aux) = YY(in);
-    ZZ(aux) = (dim == 3) ? (ZZ(in)) : (0.);
+    ZZ(aux) = dim == 3 ? ZZ(in) : 0.0;
 
     if (dim == 2)
-        rot_deg = tilt_deg = 0.;
+        rot_deg = tilt_deg = 0.0;
 
     A.clear();
     A.resize(3, 3);
@@ -1417,7 +1417,7 @@ void transformCartesianAndHelicalCoords(
 
 void transformCartesianAndHelicalCoords(
     RFLOAT  xin,  RFLOAT  yin,  RFLOAT  zin,
-    RFLOAT& xout, RFLOAT& yout, RFLOAT& zout,
+    RFLOAT &xout, RFLOAT &yout, RFLOAT &zout,
     RFLOAT rot_deg, RFLOAT tilt_deg, RFLOAT psi_deg,
     int dim,
     bool direction
@@ -1432,12 +1432,12 @@ void transformCartesianAndHelicalCoords(
     XX(in) = xin;
     YY(in) = yin;
     if (dim == 3)
-        ZZ(in) = zin;
+    ZZ(in) = zin;
     transformCartesianAndHelicalCoords(in, out, rot_deg, tilt_deg, psi_deg, direction);
     xout = XX(out);
     yout = YY(out);
     if (dim == 3)
-        zout = ZZ(out);
+    zout = ZZ(out);
     return;
 }
 
@@ -1615,7 +1615,7 @@ void applySoftSphericalMask(
     //	r_max -= 2. * cosine_width;
     //r_max *= 0.45;
     if (sphere_diameter > 0.01 && sphere_diameter / 2.0 < r_max)
-        r_max = sphere_diameter / 2.;
+        r_max = sphere_diameter / 2.0;
     r_max_edge = r_max + cosine_width;
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
@@ -1845,8 +1845,8 @@ void convertHelicalTubeCoordsToMetaDataTable(
                 MD_out.addObject();
                 MD_out.setValue(EMDL::IMAGE_COORD_X, xp);
                 MD_out.setValue(EMDL::IMAGE_COORD_Y, yp);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, (tube_id + 1));
-                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, tube_id + 1);
+                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
                 MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
                 MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix);
                 MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
@@ -2101,8 +2101,8 @@ void removeBadPsiHelicalSegmentsFromDataStar(
         psi_deg       = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
         psi_prior_deg = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
         diff_psi = ABS(psi_deg - psi_prior_deg);
-        if (diff_psi > 180.)
-            diff_psi = ABS(diff_psi - 360.);
+        if (diff_psi > 180.0)
+            diff_psi = ABS(diff_psi - 360.0);
         if (diff_psi < max_dev_deg) {
             nr_segments_new++;
             MD_out.addObject(MD_in.getObject());
@@ -2487,7 +2487,7 @@ void convertEmanHelicalSegmentCoordsToMetaDataTable(
     MD_out.addLabel(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM);
     MD_out.addLabel(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO);
 
-    half_box_size_pix = box_size_pix / 2.;
+    half_box_size_pix = box_size_pix / 2.0;
     psi_prior_flip_ratio = UNIMODAL_PSI_PRIOR_FLIP_RATIO;
     if (bimodal_angular_priors) {
         psi_prior_flip_ratio = BIMODAL_PSI_PRIOR_FLIP_RATIO;
@@ -2923,10 +2923,10 @@ void makeHelicalReference3D(
     rise_pix = rise_A / pixel_size_A;
     tube_diameter_pix = tube_diameter_A / pixel_size_A;
     particle_diameter_pix = particle_diameter_A / pixel_size_A;
-    particle_radius_pix = particle_diameter_pix / 2.;
-    particle_radius_max_pix = (CEIL(particle_diameter_pix / 2.)) + 1;
+    particle_radius_pix = particle_diameter_pix / 2.0;
+    particle_radius_max_pix = (CEIL(particle_diameter_pix / 2.0)) + 1;
 
-    if (particle_diameter_pix < 2.)
+    if (particle_diameter_pix < 2.0)
         REPORT_ERROR("helix.cpp::makeHelicalReference3D(): Particle diameter should be larger than 2 pixels!");
     if ( (tube_diameter_pix < 0.001) || (tube_diameter_pix > (RFLOAT)(box_size)) )
         REPORT_ERROR("helix.cpp::makeHelicalReference3D(): Tube diameter should be larger than 1 pixel and smaller than box size!");
@@ -2936,8 +2936,8 @@ void makeHelicalReference3D(
     out.setXmippOrigin();
 
     RFLOAT x0, y0, z0;
-    x0 = tube_diameter_pix / 2.;
-    y0 = 0.;
+    x0 = tube_diameter_pix / 2.0;
+    y0 = 0.0;
     z0 = (RFLOAT)(Xmipp::init(box_size));
     vec0.clear();
     vec0.resize(2);
@@ -2964,7 +2964,7 @@ void makeHelicalReference3D(
         for (int Cn = 0; Cn < sym_Cn; Cn++)
         {
             RFLOAT rot2_deg, x2, y2, z2;
-            rot2_deg = (360.) * (RFLOAT)(Cn) / (RFLOAT)(sym_Cn);
+            rot2_deg = (360.0) * (RFLOAT)(Cn) / (RFLOAT)(sym_Cn);
             rotation2DMatrix(rot2_deg, matrix2, false);
             vec2 = matrix2 * vec1;
             x2 = XX(vec2);
@@ -3043,12 +3043,12 @@ void makeHelicalReference3DWithPolarity(
     rise_pix = rise_A / pixel_size_A;
     tube_diameter_pix = tube_diameter_A / pixel_size_A;
     particle_diameter_pix = particle_diameter_A / pixel_size_A;
-    particle_radius_pix = particle_diameter_pix / 2.;
-    particle_radius_max_pix = (CEIL(particle_diameter_pix / 2.)) + 1;
+    particle_radius_pix = particle_diameter_pix / 2.0;
+    particle_radius_max_pix = (CEIL(particle_diameter_pix / 2.0)) + 1;
     top_radius_pix = cyl_radius_pix = 0.5 * cyl_diameter_A / pixel_size_A;
     bottom_radius_pix = top_radius_pix * topbottom_ratio;
 
-    if (particle_diameter_pix < 2.)
+    if (particle_diameter_pix < 2.0)
         REPORT_ERROR("helix.cpp::makeHelicalReference3DWithPolarity(): Particle diameter should be larger than 2 pixels!");
     if (tube_diameter_pix < 0.001 || tube_diameter_pix > (RFLOAT) box_size)
         REPORT_ERROR("helix.cpp::makeHelicalReference3DWithPolarity(): Tube diameter should be larger than 1 pixel and smaller than box size!");
@@ -3061,8 +3061,8 @@ void makeHelicalReference3DWithPolarity(
 
     RFLOAT x0, y0, z0;
     // OLD
-    //x0 = tube_diameter_pix / 2.;
-    //y0 = 0.;
+    //x0 = tube_diameter_pix / 2.0;
+    //y0 = 0.0;
     // NEW - To generate references with Dn symmetry. TODO: Am I doing what I want?
     z0 = rise_pix * FLOOR((RFLOAT) Xmipp::init(box_size) / rise_pix);
     x0 = tube_diameter_pix * cos(PI * twist_deg * z0 / (rise_pix * 180.0)) / 2.0;
@@ -3124,7 +3124,7 @@ void makeHelicalReference3DWithPolarity(
                             continue;
 
                         val_old = A3D_ELEM(out, z3, y3, x3);
-                        val_new = 0.;
+                        val_new = 0.0;
 
                         // Draw the shape you want!
                         if (topbottom_ratio > 0.9999) {
@@ -3761,9 +3761,9 @@ void HelicalSegmentPriorInfoEntry::clear() {
     has_wrong_polarity = false;
     subset = classID = 0;
 
-    rot_prior_deg = psi_prior_deg = tilt_prior_deg = 0.;  // KThurber
-    dx_prior_A = dy_prior_A = dz_prior_A = 0.;
-    psi_flip_ratio = 0.;
+    rot_prior_deg = psi_prior_deg = tilt_prior_deg = 0.0;  // KThurber
+    dx_prior_A = dy_prior_A = dz_prior_A = 0.0;
+    psi_flip_ratio = 0.0;
     psi_prior_flip = false; // KThurber
 
 };
@@ -3887,7 +3887,7 @@ void updatePriorsForOneHelicalTube(
             Matrix1D<RFLOAT> this_rot_vec, sum_rot_vec;  // KThurber
 
             // Init
-            this_rot = this_psi = this_tilt = center_pos = this_pos = sum_w = this_w = offset2 = 0.;
+            this_rot = this_psi = this_tilt = center_pos = this_pos = sum_w = this_w = offset2 = 0.0;
             this_ang_vec.initZeros(3);
             this_rot_vec.initZeros(2);	// KThurber
             sum_ang_vec.initZeros(3);
@@ -3923,7 +3923,7 @@ void updatePriorsForOneHelicalTube(
             if (is_3D_data)
                 ZZ(this_trans_vec) = list[id].dz_prior_A = list[id].dz_A; // REFRESH ZOFF PRIOR
 
-            transformCartesianAndHelicalCoords(this_trans_vec, this_trans_vec, (is_3D_data) ? (this_rot) : (0.), (is_3D_data) ? (this_tilt) : (0.), this_psi, CART_TO_HELICAL_COORDS);
+            transformCartesianAndHelicalCoords(this_trans_vec, this_trans_vec, (is_3D_data) ? (this_rot) : (0.0), (is_3D_data) ? (this_tilt) : (0.0), this_psi, CART_TO_HELICAL_COORDS);
             center_trans_vec = this_trans_vec; // Record helical coordinates of the central segment
             if (is_3D_data) {
                 ZZ(this_trans_vec) = 0.0;
@@ -4049,7 +4049,7 @@ void updatePriorsForOneHelicalTube(
                     } else {
                         XX(sum_trans_vec) = XX(center_trans_vec);
                     }
-                    transformCartesianAndHelicalCoords(sum_trans_vec, sum_trans_vec, (is_3D_data) ? (this_rot) : (0.), (is_3D_data) ? (this_tilt) : (0.), this_psi, HELICAL_TO_CART_COORDS); // Averaged translations - use respective averaged tilt and psi
+                    transformCartesianAndHelicalCoords(sum_trans_vec, sum_trans_vec, (is_3D_data) ? (this_rot) : (0.0), (is_3D_data) ? (this_tilt) : (0.0), this_psi, HELICAL_TO_CART_COORDS); // Averaged translations - use respective averaged tilt and psi
                     list[id].dx_prior_A = XX(sum_trans_vec); // REFRESH XOFF PRIOR
                     list[id].dy_prior_A = YY(sum_trans_vec); // REFRESH YOFF PRIOR
                     if (is_3D_data)
@@ -4582,7 +4582,7 @@ void HermiteInterpolateOne3DHelicalFilament(
 ) {
     RFLOAT x0, x1, x2, x3, xa, xb, y0, y1, y2, y3, ya, yb, z0, z1, z2, z3, za, zb, mu1, mu2;
     RFLOAT step_pix, chord_pix, accu_len_pix, present_len_pix, len_pix, psi_prior_flip_ratio, tilt_deg, psi_deg;
-    RFLOAT half_box_size_pix = box_size_pix / 2.;
+    RFLOAT half_box_size_pix = box_size_pix / 2.0;
     int nr_partitions, nr_segments;
     std::vector<RFLOAT> xlist, ylist, zlist;
     Matrix1D<RFLOAT> dr;
@@ -4636,7 +4636,7 @@ void HermiteInterpolateOne3DHelicalFilament(
     }
 
     // Interpolate
-    accu_len_pix = 0.;
+    accu_len_pix = 0.0;
     present_len_pix = -1.0;
     nr_segments = 0;
     dr.initZeros(3);
@@ -4645,7 +4645,7 @@ void HermiteInterpolateOne3DHelicalFilament(
         // sqrt(0.57735 * 0.57735 * 0.57735 * 3) = 1.0, step size is larger than 1 pixel
         // TODO: 1% ? Too expensive computationally? Try 10% ?
         step_pix = interbox_pix < 57.735 ? 0.57735 : interbox_pix / 100.0; // 1%
-        //step_pix = (interbox_pix < 5.7735) ? (0.57735) : (interbox_pix / 10.); // 10%
+        //step_pix = (interbox_pix < 5.7735) ? (0.57735) : (interbox_pix / 10.0); // 10%
 
         // Collect points 0, 1, 2, 3 for interpolations
         x0 = x1 = x2 = x3 = y0 = y1 = y2 = y3 = z0 = z1 = z2 = z3 = 0.0;
@@ -4688,7 +4688,7 @@ void HermiteInterpolateOne3DHelicalFilament(
         for (int ip = 0; ip < nr_partitions; ip++) {
             xa = ya = za = xb = yb = zb = mu1 = mu2 = len_pix = 0.0;
             mu1 = RFLOAT( (RFLOAT(ip)) / (RFLOAT(nr_partitions)) );
-            mu2 = RFLOAT( (RFLOAT(ip) + 1.) / (RFLOAT(nr_partitions)) );
+            mu2 = RFLOAT( (RFLOAT(ip) + 1.0) / (RFLOAT(nr_partitions)) );
             xa = HermiteInterpolate1D(x0, x1, x2, x3, mu1);
             ya = HermiteInterpolate1D(y0, y1, y2, y3, mu1);
             za = HermiteInterpolate1D(z0, z1, z2, z3, mu1);
@@ -4881,20 +4881,20 @@ void Interpolate3DCurves(
             // Name of model ends
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Xdim
             if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3], tmp_char);
-                SWAP(buf_word[1], buf_word[2], tmp_char);
+                SWAP(char, buf_word[0], buf_word[3]);
+                SWAP(char, buf_word[1], buf_word[2]);
             }
             xdim = *(reinterpret_cast<int*>(buf_word));
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Ydim
             if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3], tmp_char);
-                SWAP(buf_word[1], buf_word[2], tmp_char);
+                SWAP(char, buf_word[0], buf_word[3]);
+                SWAP(char, buf_word[1], buf_word[2]);
             }
             ydim = *(reinterpret_cast<int*>(buf_word));
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Zdim
             if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3], tmp_char);
-                SWAP(buf_word[1], buf_word[2], tmp_char);
+                SWAP(char, buf_word[0], buf_word[3]);
+                SWAP(char, buf_word[1], buf_word[2]);
             }
             zdim = *(reinterpret_cast<int*>(buf_word));
             std::cout << " Binning factor = " << binning_factor << std::endl;
@@ -4904,8 +4904,8 @@ void Interpolate3DCurves(
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Number of objects
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Flags
             if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3], tmp_char);
-                SWAP(buf_word[1], buf_word[2], tmp_char);
+                SWAP(char, buf_word[0], buf_word[3]);
+                SWAP(char, buf_word[1], buf_word[2]);
             }
             if ((*(reinterpret_cast<int*>(buf_word))) & 0x00010000) // Check flag #16 - flip YZ?
                 flip_YZ = true;
@@ -4926,8 +4926,8 @@ void Interpolate3DCurves(
 
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Number of 3D points (meshes)
             if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3], tmp_char);
-                SWAP(buf_word[1], buf_word[2], tmp_char);
+                SWAP(char, buf_word[0], buf_word[3]);
+                SWAP(char, buf_word[1], buf_word[2]);
             }
             nr_points = *(reinterpret_cast<int*>(buf_word));
             //std::cout << nr_points << std::endl;
@@ -4941,16 +4941,16 @@ void Interpolate3DCurves(
             for (int id = 0; id < nr_points; id++) {
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(buf_word[0], buf_word[3], tmp_char);
-                    SWAP(buf_word[1], buf_word[2], tmp_char);
+                    SWAP(char, buf_word[0], buf_word[3]);
+                    SWAP(char, buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 xlist.push_back(val);
 
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(buf_word[0], buf_word[3], tmp_char);
-                    SWAP(buf_word[1], buf_word[2], tmp_char);
+                    SWAP(char, buf_word[0], buf_word[3]);
+                    SWAP(char, buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 if (flip_YZ) {
@@ -4961,8 +4961,8 @@ void Interpolate3DCurves(
 
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(buf_word[0], buf_word[3], tmp_char);
-                    SWAP(buf_word[1], buf_word[2], tmp_char);
+                    SWAP(char, buf_word[0], buf_word[3]);
+                    SWAP(char, buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 if (flip_YZ) {
@@ -5141,7 +5141,7 @@ void estimateTiltPsiPriors(
         tilt_rad = acos(ZZ(dr) / vec_len); // 'acos' returns an angle within [0, +pi] radians for tilt
         psi_rad = atan2(YY(dr), -1.0 * XX(dr)); // 'atan2' returns an angle within [-pi, +pi] radians for rot
     } else {
-        psi_rad = (-1.) * atan2(YY(dr), XX(dr));
+        psi_rad = (-1.0) * atan2(YY(dr), XX(dr));
     }
 
     if (dim == 3) tilt_deg = RAD2DEG(tilt_rad);
@@ -5183,7 +5183,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
     //std::vector<RFLOAT> xlist, ylist, zlist, idlist;
     std::vector<std::string> mic_list, img_list;
     int id = 0;
-    //RFLOAT xx = 0., yy = 0., zz = 0.;
+    //RFLOAT xx = 0., yy = 0., zz = 0.0;
     FileName mic_str, img_str;
     const size_t id_length = 6; // 6-digit ID
     bool auto_pixel_size = false;

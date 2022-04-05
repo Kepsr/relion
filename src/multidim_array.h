@@ -3844,24 +3844,24 @@ class MultidimArray {
          */
         void selfReverseX() {
             long int xsize = XSIZE(*this);
-            long int halfSizeX = (long int)(xsize-1)/2;
+            long int halfSizeX = (long int) (xsize - 1) / 2;
             long int ysize = YSIZE(*this);
             long int zsize = ZSIZE(*this);
             long int nsize = NSIZE(*this);
             //0 column should be handled in a different way
             //for even and odd matrices
-            long int start_x = ((xsize%2) ? 0: 1);
+            long int start_x = !(xsize % 2);
 
             for (long int l = 0; l < nsize; l++)
-                for (long int k = 0; k < zsize; k++)
-                    for (long int i = 0; i < ysize; i++)
-                        for (long int j = start_x; j <=  halfSizeX; j++)
-                        {
-                            T aux;
-                            SWAP(DIRECT_NZYX_ELEM(*this, l, k, i, j),
-                                DIRECT_NZYX_ELEM(*this, l, k, i, xsize - j),
-                                aux);
-                        }
+            for (long int k = 0; k < zsize; k++)
+            for (long int i = 0; i < ysize; i++)
+            for (long int j = start_x; j <=  halfSizeX; j++) {
+                SWAP(
+                    T,
+                    DIRECT_NZYX_ELEM(*this, l, k, i, j),
+                    DIRECT_NZYX_ELEM(*this, l, k, i, xsize - j)
+                );
+            }
             //NOTE: line x=0 should not be modified since gets itself by wrapping
             //NOTE center hyper-plane  (dimx/2,y,z)  should remain unchanged
 
@@ -3894,18 +3894,18 @@ class MultidimArray {
             long int nsize = NSIZE(*this);
             //0 column should be handled in a different way
             //for even and odd matrices
-            long int start_y = ((ysize%2) ? 0: 1);
+            long int start_y = !(ysize % 2);
 
             for (long int l = 0; l < nsize; l++)
-                for (long int k = 0; k < zsize; k++)
-                    for (long int i = start_y; i <= halfSizeY; i++)
-                        for (long int j = 0; j < xsize; j++)
-                        {
-                            T aux;
-                            SWAP(DIRECT_NZYX_ELEM(*this, l, k, i, j),
-                                DIRECT_NZYX_ELEM(*this, l, k, ysize - i, j),
-                                aux);
-                        }
+            for (long int k = 0; k < zsize; k++)
+            for (long int i = start_y; i <= halfSizeY; i++)
+            for (long int j = 0; j < xsize; j++) {
+                SWAP(
+                    T,
+                    DIRECT_NZYX_ELEM(*this, l, k, i, j),
+                    DIRECT_NZYX_ELEM(*this, l, k, ysize - i, j)
+                );
+            }
 
             firstY() = -lastY();
         }
@@ -3941,15 +3941,15 @@ class MultidimArray {
 
 
             for (int l = 0; l < nsize; l++)
-                for (int k = start_z; k <= halfSizeZ; k++)
-                    for (int i = 0; i <ysize; i++)
-                        for (int j = 0; j < xsize; j++)
-                        {
-                            T aux;
-                            SWAP(DIRECT_NZYX_ELEM(*this, l, k, i, j),
-                                DIRECT_NZYX_ELEM(*this, l, zsize- k, i, j),
-                                aux);
-                        }
+            for (int k = start_z; k <= halfSizeZ; k++)
+            for (int i = 0; i < ysize; i++)
+            for (int j = 0; j < xsize; j++) {
+                SWAP(
+                    T,
+                    DIRECT_NZYX_ELEM(*this, l, k, i, j),
+                    DIRECT_NZYX_ELEM(*this, l, zsize - k, i, j)
+                );
+            }
 
             firstZ() = -lastZ();
         }

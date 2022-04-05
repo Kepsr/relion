@@ -22,8 +22,6 @@
 // #define DEBUG_CHECKSIZES
 // #define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
 
-inline int iPowerof2(int n) { return 1 << (n); }  // Bitshifts are fast
-
 void HealpixSampling::clear() {
     is_3D = false;
     isRelax = false;

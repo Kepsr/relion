@@ -184,7 +184,6 @@ void lubksb(T *a, int n, int *indx, T b[]) {
 // Solve Ax=b (b=matrix)
 template <class T>
 void gaussj(T *a, int n, T *b, int m) {
-    T temp;
     int *indxc, *indxr, *ipiv;
     int i, icol, irow, j, k, l, ll;
     T big, dum;
@@ -213,9 +212,9 @@ void gaussj(T *a, int n, T *b, int m) {
         ++(ipiv[icol]);
         if (irow != icol) {
             for (l = 1; l <= n; l++)
-                SWAP(a[irow * n + l], a[icol * n + l], temp)
+                SWAP(T, a[irow * n + l], a[icol * n + l])
                 for (l = 1; l <= m; l++)
-                    SWAP(b[irow * n + l], b[icol * n + l], temp)
+                    SWAP(T, b[irow * n + l], b[icol * n + l])
                 }
         indxr[i] = irow;
         indxc[i] = icol;
@@ -240,7 +239,7 @@ void gaussj(T *a, int n, T *b, int m) {
     for (l = n; l >= 1; l--) {
         if (indxr[l] != indxc[l])
             for (k = 1; k <= n; k++)
-                SWAP(a[k * n + indxr[l]], a[k * n + indxc[l]], temp);
+                SWAP(T, a[k * n + indxr[l]], a[k * n + indxc[l]]);
     }
     free_Tvector(ipiv,  1, n);
     free_Tvector(indxr, 1, n);

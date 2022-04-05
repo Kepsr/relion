@@ -439,7 +439,7 @@ class Matrix1D {
 
             T * new_vdata;
             try {
-                new_vdata = new T [Xdim];
+                new_vdata = new T[Xdim];
             } catch (std::bad_alloc &) {
                 REPORT_ERROR("Allocate: No space left");
             }
@@ -992,9 +992,8 @@ class Matrix1D {
         /** Reverse vector values, keep in this object.
          */
         void selfReverse() {
-            for (int j = 0; j <= (int)(vdim - 1) / 2; j++) {
-                T aux;
-                SWAP(vdata[j], vdata[vdim-1-j], aux);
+            for (int j = 0; j <= (int) (vdim - 1) / 2; j++) {
+                SWAP(T, vdata[j], vdata[vdim - 1 - j]);
             }
         }
 
