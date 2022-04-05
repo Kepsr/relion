@@ -34,6 +34,10 @@
 #define NOPRIOR 0
 #define PRIOR_ROTTILT_PSI 1
 
+struct Direction {
+    RFLOAT rot, tilt;
+};
+
 class HealpixSampling {
 
     public:
@@ -279,7 +283,7 @@ class HealpixSampling {
     /* Get the rot and tilt angles in the center of the ipix'th HEALPix sampling pixel
      * This involves calculations in the HEALPix library
      */
-    void getDirectionFromHealPix(long int ipix, RFLOAT &rot, RFLOAT &tilt);
+    Direction getDirectionFromHealPix(long int ipix);
 
     /* Get the translational sampling step in Angstroms */
     RFLOAT getTranslationalSampling(int adaptive_oversampling = 0);

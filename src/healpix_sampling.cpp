@@ -383,12 +383,10 @@ void HealpixSampling::setTranslations(
                         }
                     }
                 }
-            } else {
-                if (max2 < offset_range * offset_range + 0.001) {
-                    // +0.001 prevents precision errors in RELION 3.1
-                    translations_x.push_back(xoff);
-                    translations_y.push_back(yoff);
-                }
+            } else if (max2 < offset_range * offset_range + 0.001) {
+                // +0.001 prevents precision errors in RELION 3.1
+                translations_x.push_back(xoff);
+                translations_y.push_back(yoff);
             }
         }
     }
@@ -432,36 +430,33 @@ void HealpixSampling::setOrientations(int _order, RFLOAT _psi_step) {
     tilt_angles.clear();
     psi_angles.clear();
 
-    if (_order >= 0)
-        healpix_order = _order;
-
     // Setup the HealPix object
     // For adaptive oversampling only precalculate the COARSE sampling!
-    if (_order >= 0)
+    if (_order >= 0) {
+        healpix_order = _order;
         healpix_base.Set(_order, NEST);
+    }
 
     // 3D directions
     if (is_3D) {
-        RFLOAT rot, tilt;
         for (long int ipix = 0; ipix < healpix_base.Npix(); ipix++) {
-            getDirectionFromHealPix(ipix, rot, tilt);
-
+            Direction direction = getDirectionFromHealPix(ipix);
             // Push back as Matrix1D's in the vectors
-            rot_angles.push_back(rot);
-            tilt_angles.push_back(tilt);
+            rot_angles .push_back(direction.rot);
+            tilt_angles.push_back(direction.tilt);
             directions_ipix.push_back(ipix);
 
         }
-        //#define DEBUG_SAMPLING
+        // #define DEBUG_SAMPLING
         #ifdef DEBUG_SAMPLING
         writeAllOrientationsToBild("orients_all.bild", "1 0 0 ", 0.020);
         #endif
         // Now remove symmetry-related pixels if not relaxing symmetry
-        // TODO check size of healpix_base.max_pixrad
+        /// TODO: check size of healpix_base.max_pixrad
         if (!isRelax)
             removeSymmetryEquivalentPoints(0.5 * RAD2DEG(healpix_base.max_pixrad()));
 
-        #ifdef  DEBUG_SAMPLING
+        #ifdef DEBUG_SAMPLING
         writeAllOrientationsToBild("orients_sym.bild", "0 1 0 ", 0.021);
         #endif
 
@@ -486,10 +481,9 @@ void HealpixSampling::setOrientations(int _order, RFLOAT _psi_step) {
         psi_step = _psi_step;
 
     int nr_psi = CEIL(360.0 / psi_step);
-    RFLOAT psi;
     psi_step = 360.0 / (RFLOAT) nr_psi;
     for (int ipsi = 0; ipsi < nr_psi; ipsi++) {
-        psi = ipsi * psi_step;
+        RFLOAT psi = ipsi * psi_step;
         psi_angles.push_back(psi);
     }
 
@@ -1344,16 +1338,16 @@ void HealpixSampling::checkDirection(RFLOAT &rot, RFLOAT &tilt) {
 
 }
 
-void HealpixSampling::getDirectionFromHealPix(long int ipix, RFLOAT &rot, RFLOAT &tilt) {
+Direction HealpixSampling::getDirectionFromHealPix(long int ipix) {
     // this one always has to be double (also for SINGLE_PRECISION CALCULATIONS) for call to external library
     double zz, phi;
     healpix_base.pix2ang_z_phi(ipix, zz, phi);
-    rot = RAD2DEG(phi);
-    tilt = ACOSD(zz);
+    RFLOAT rot = RAD2DEG(phi);
+    RFLOAT tilt = ACOSD(zz);
 
     // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]
     checkDirection(rot, tilt);
-
+    return Direction { rot, tilt };
 }
 
 RFLOAT HealpixSampling::getTranslationalSampling(int adaptive_oversampling) {
