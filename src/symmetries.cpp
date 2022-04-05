@@ -49,27 +49,19 @@
 // Read Symmetry file ======================================================
 // Crystal symmetry matrices from http://cci.lbl.gov/asu_gallery/
 int SymList::read_sym_file(FileName fn_sym) {
-    int i, j;
-    FILE *fpoii;
-    char line[80];
-    char *auxstr;
-    RFLOAT ang_incr, rot_ang;
-    int  fold;
-    Matrix2D<RFLOAT> L(4, 4), R(4, 4);
-    Matrix1D<RFLOAT> axis(3);
-    int pgGroup = 0, pgOrder = 0;
-    std::vector<std::string> fileContent;
-
-    //check if reserved word
 
     // Open file ---------------------------------------------------------
+    FILE *fpoii;
+    std::vector<std::string> fileContent;
+    char line[80];
+    int pgGroup = 0, pgOrder = 0;
     if ((fpoii = fopen(fn_sym.c_str(), "r")) == NULL) {
-        // check if reserved word and return group and order
+        // Check if reserved word and return group and order
         if (isSymmetryGroup(fn_sym.removeDirectories(), pgGroup, pgOrder)) {
             fill_symmetry_class(fn_sym, pgGroup, pgOrder, fileContent);
         } else {
             REPORT_ERROR(
-                (std::string) "SymList::read_sym_file:Can't open file: " + " or do not recognize symmetry group" + fn_sym
+                (std::string) "SymList::read_sym_file: Can't open file or do not recognize symmetry group " + fn_sym
             );
         }
     } else {
@@ -90,22 +82,21 @@ int SymList::read_sym_file(FileName fn_sym) {
     no_axis = no_mirror_planes = no_inversion_points = 0;
 
     for (int n = 0; n < fileContent.size(); n++) {
-        strcpy(line,fileContent[n].c_str());
-        auxstr = firstToken(line);
-        if (auxstr == NULL) {
+        strcpy(line, fileContent[n].c_str());
+        char *token = firstToken(line);
+        if (token == NULL) {
             std::cout << line;
             std::cout << "Wrong line in symmetry file, the line is skipped\n";
             continue;
         }
-        if (strcmp(auxstr, "rot_axis") == 0) {
-            auxstr = nextToken();
-            fold = textToInteger(auxstr);
-            true_symNo += (fold - 1);
+        if (strcmp(token, "rot_axis") == 0) {
+            token = nextToken();
+            true_symNo += textToInteger(token) - 1;
             no_axis++;
-        } else if (strcmp(auxstr, "mirror_plane") == 0) {
+        } else if (strcmp(token, "mirror_plane") == 0) {
             true_symNo++;
             no_mirror_planes++;
-        } else if (strcmp(auxstr, "inversion") == 0) {
+        } else if (strcmp(token, "inversion") == 0) {
             true_symNo += 1;
             no_inversion_points = 1;
         }
@@ -117,30 +108,33 @@ int SymList::read_sym_file(FileName fn_sym) {
     __chain_length.initConstant(1);
 
     // Read symmetry parameters
-    i = 0;
+    int i = 0;
+    Matrix1D<RFLOAT> axis(3);
+    Matrix2D<RFLOAT> L(4, 4), R(4, 4);
     for (int n = 0; n < fileContent.size(); n++) {
         strcpy(line,fileContent[n].c_str());
-        auxstr = firstToken(line);
+        char *token = firstToken(line);
         // Rotational axis ---------------------------------------------------
-        if (strcmp(auxstr, "rot_axis") == 0) {
-            auxstr = nextToken();
-            fold = textToInteger(auxstr);
-            auxstr = nextToken();
-            XX(axis) = textToDouble(auxstr);
-            auxstr = nextToken();
-            YY(axis) = textToDouble(auxstr);
-            auxstr = nextToken();
-            ZZ(axis) = textToDouble(auxstr);
-            ang_incr = 360.0 / fold;
+        if (strcmp(token, "rot_axis") == 0) {
+            token = nextToken();
+            int fold = textToInteger(token);
+            token = nextToken();
+            XX(axis) = textToDouble(token);
+            token = nextToken();
+            YY(axis) = textToDouble(token);
+            token = nextToken();
+            ZZ(axis) = textToDouble(token);
+            RFLOAT ang_incr = 360.0 / fold;
+            RFLOAT rot_ang;
             L.initIdentity();
-            for (j = 1, rot_ang = ang_incr; j < fold; j++, rot_ang += ang_incr) {
+            for (int j = 1, rot_ang = ang_incr; j < fold; j++, rot_ang += ang_incr) {
                 rotation3DMatrix(rot_ang, axis, R);
                 R.setSmallValuesToZero();
                 set_matrices(i++, L, R.transpose());
             }
             __sym_elements++;
             // inversion ------------------------------------------------------
-        } else if (strcmp(auxstr, "inversion") == 0) {
+        } else if (strcmp(token, "inversion") == 0) {
             L.initIdentity();
             L(2, 2) = -1;
             R.initIdentity();
@@ -150,13 +144,13 @@ int SymList::read_sym_file(FileName fn_sym) {
             set_matrices(i++, L, R);
             __sym_elements++;
             // mirror plane -------------------------------------------------------------
-        } else if (strcmp(auxstr, "mirror_plane") == 0) {
-            auxstr = nextToken();
-            XX(axis) = textToFloat(auxstr);
-            auxstr = nextToken();
-            YY(axis) = textToFloat(auxstr);
-            auxstr = nextToken();
-            ZZ(axis) = textToFloat(auxstr);
+        } else if (strcmp(token, "mirror_plane") == 0) {
+            token = nextToken();
+            XX(axis) = textToFloat(token);
+            token = nextToken();
+            YY(axis) = textToFloat(token);
+            token = nextToken();
+            ZZ(axis) = textToFloat(token);
             L.initIdentity();
             L(2, 2) = -1;
             Matrix2D<RFLOAT> A;
@@ -287,6 +281,10 @@ void SymList::compute_subgroup() {
     }
 }
 
+static inline int ctoi(char c) {
+    return int(c) - 48;  // ASCII hack
+}
+
 bool SymList::isSymmetryGroup(const std::string &symstring, int &pgGroup, int &pgOrder) {
 
     int size = symstring.size();
@@ -299,16 +297,6 @@ bool SymList::isSymmetryGroup(const std::string &symstring, int &pgGroup, int &p
         return false;
     }
 
-    // Get the group character by character
-    char G1, G2, G3, G4;
-    G1 = toupper(symstring.c_str()[0]);
-    G2 = toupper(symstring.c_str()[1]);
-    if (size > 2)
-    G3 = toupper(symstring.c_str()[2]);
-    if (size > 3)
-    G4 = toupper(symstring.c_str()[3]);
-    // else G4 = '\0';
-
     // #define DEBUG7
     #ifdef DEBUG7
     #define SUCCESS std::cerr << "pgGroup" << pgGroup << " pgOrder " << pgOrder << std::endl; return true;
@@ -317,130 +305,164 @@ bool SymList::isSymmetryGroup(const std::string &symstring, int &pgGroup, int &p
     #endif
     #undef DEBUG7
 
-    switch (G1) {
+    // Copy symstring into a char* and map to upper case
+    char Gs[size + 1];
+    strcpy(Gs, symstring.c_str()); 
+    for (int i = 0; i < size; i++) {
+        Gs[i] = toupper(Gs[i]);
+    }
+
+    switch (Gs[0]) {
 
         case 'C':
-        if (isdigit(G2) && size == 2) {
+        if (isdigit(Gs[1]) && size == 2) {
             pgGroup = pg::CN;
-            pgOrder = int(G2) - 48;
-        } else if (isdigit(G2) && isdigit(G3) && size == 3) {
+            pgOrder = ctoi(Gs[1]);
+            SUCCESS
+        } else if (isdigit(Gs[1]) && isdigit(Gs[2]) && size == 3) {
             pgGroup = pg::CN;
             pgOrder = atoi(symstring.substr(1, 2).c_str());
-        } else if (G2 == 'I' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == 'I' && size == 2) {
             pgGroup = pg::CI;
             pgOrder = -1;
-        } else if (G2 == 'S' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == 'S' && size == 2) {
             pgGroup = pg::CS;
             pgOrder = -1;
-        } else if (isdigit(G2) && G3 == 'H' && size == 3) {
+            SUCCESS
+        } else if (isdigit(Gs[1]) && Gs[2] == 'H' && size == 3) {
             pgGroup = pg::CNH;
-            pgOrder = int(G2) - 48;
-        } else if (isdigit(G2) && isdigit(G3) && G4 == 'H' && size == 4) {
+            pgOrder = ctoi(Gs[1]);
+            SUCCESS
+        } else if (isdigit(Gs[1]) && isdigit(Gs[2]) && Gs[3] == 'H' && size == 4) {
             pgGroup = pg::CNH;
             pgOrder = atoi(symstring.substr(1, 2).c_str());
-        } else if (isdigit(G2) && G3 == 'V' && size == 3) {
+            SUCCESS
+        } else if (isdigit(Gs[1]) && Gs[2] == 'V' && size == 3) {
             pgGroup = pg::CNV;
-            pgOrder = int(G2) - 48;
-        } else if (isdigit(G2) && isdigit(G3) && G4 == 'V' && size == 4) {
+            pgOrder = ctoi(Gs[1]);
+            SUCCESS
+        } else if (isdigit(Gs[1]) && isdigit(Gs[2]) && Gs[3] == 'V' && size == 4) {
             pgGroup = pg::CNV;
             pgOrder = atoi(symstring.substr(1, 2).c_str());
+            SUCCESS
         }
-        SUCCESS
 
         case 'S':
-        if (G1 == 'S' && isdigit(G2) && size == 2) {
+        if (Gs[0] == 'S' && isdigit(Gs[1]) && size == 2) {
             pgGroup = pg::SN;
-            pgOrder = int(G2) - 48;
-        } else if (G1 == 'S' && isdigit(G2) && isdigit(G3) && size == 3) {
+            pgOrder = ctoi(Gs[1]);
+            SUCCESS
+        } else if (Gs[0] == 'S' && isdigit(Gs[1]) && isdigit(Gs[2]) && size == 3) {
             pgGroup = pg::SN;
             pgOrder = atoi(symstring.substr(1, 2).c_str());
+            SUCCESS
         }
-        SUCCESS
 
         case 'D':
-        if (isdigit(G2) && size == 2) {
+        if (isdigit(Gs[1]) && size == 2) {
             pgGroup = pg::DN;
-            pgOrder = int(G2) - 48;
-        } else if (isdigit(G2) && isdigit(G3) && size == 3) {
+            pgOrder = ctoi(Gs[1]);
+            SUCCESS
+        } else if (isdigit(Gs[1]) && isdigit(Gs[2]) && size == 3) {
             pgGroup = pg::DN;
             pgOrder = atoi(symstring.substr(1, 2).c_str());
-        } else if (isdigit(G2) && G3 == 'V' && size == 3) {
+            SUCCESS
+        } else if (isdigit(Gs[1]) && Gs[2] == 'V' && size == 3) {
             pgGroup = pg::DNV;
-            pgOrder = int(G2) - 48;
-        } else if (isdigit(G2) && isdigit(G3) && G4 == 'V' && size == 4) {
+            pgOrder = ctoi(Gs[1]);
+            SUCCESS
+        } else if (isdigit(Gs[1]) && isdigit(Gs[2]) && Gs[3] == 'V' && size == 4) {
             pgGroup = pg::DNV;
             pgOrder = atoi(symstring.substr(1, 2).c_str());
-        } else if (isdigit(G2) && G3 == 'H' && size == 3) {
+            SUCCESS
+        } else if (isdigit(Gs[1]) && Gs[2] == 'H' && size == 3) {
             pgGroup = pg::DNH;
-            pgOrder = int(G2) - 48;
-        } else if (isdigit(G2) && isdigit(G3) && G4 == 'H' && size == 4) {
+            pgOrder = ctoi(Gs[1]);
+            SUCCESS
+        } else if (isdigit(Gs[1]) && isdigit(Gs[2]) && Gs[3] == 'H' && size == 4) {
             pgGroup = pg::DNH;
             pgOrder = atoi(symstring.substr(1, 2).c_str());
+            SUCCESS
         }
-        SUCCESS
 
         case 'T':
         if (size == 1) {
             pgGroup = pg::T;
             pgOrder = -1;
-        } else if (G2 == 'D' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == 'D' && size == 2) {
             pgGroup = pg::TD;
             pgOrder = -1;
-        } else if (G2 == 'H' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == 'H' && size == 2) {
             pgGroup = pg::TH;
             pgOrder = -1;
+            SUCCESS
         }
-        SUCCESS
 
         case 'O':
         if (size == 1) {
             pgGroup = pg::O;
             pgOrder = -1;
-        } else if (G2 == 'H' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == 'H' && size == 2) {
             pgGroup = pg::OH;
             pgOrder = -1;
+            SUCCESS
         }
-        SUCCESS
     
         case 'I':
         if (size == 1) {
             pgGroup = pg::I;
             pgOrder = -1;
-        } else if (G2 == '1' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == '1' && size == 2) {
             pgGroup = pg::I1;
             pgOrder = -1;
-        } else if (G2 == '2' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == '2' && size == 2) {
             pgGroup = pg::I2;
             pgOrder = -1;
-        } else if (G2 == '3' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == '3' && size == 2) {
             pgGroup = pg::I3;
             pgOrder = -1;
-        } else if (G2 == '4' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == '4' && size == 2) {
             pgGroup = pg::I4;
             pgOrder = -1;
-        } else if (G2 == '5' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == '5' && size == 2) {
             pgGroup = pg::I5;
             pgOrder = -1;
-        } else if (G2 == 'H' && size == 2) {
+            SUCCESS
+        } else if (Gs[1] == 'H' && size == 2) {
             pgGroup = pg::IH;
             pgOrder = -1;
-        } else if (G2 == '1' && G3 == 'H' && size == 3) {
+            SUCCESS
+        } else if (Gs[1] == '1' && Gs[2] == 'H' && size == 3) {
             pgGroup = pg::I1H;
             pgOrder = -1;
-        } else if (G2 == '2' && G3 == 'H' && size == 3) {
+            SUCCESS
+        } else if (Gs[1] == '2' && Gs[2] == 'H' && size == 3) {
             pgGroup = pg::I2H;
             pgOrder = -1;
-        } else if (G2 == '3' && G3 == 'H' && size == 3) {
+            SUCCESS
+        } else if (Gs[1] == '3' && Gs[2] == 'H' && size == 3) {
             pgGroup = pg::I3H;
             pgOrder = -1;
-        } else if (G2 == '4' && G3 == 'H' && size == 3) {
+            SUCCESS
+        } else if (Gs[1] == '4' && Gs[2] == 'H' && size == 3) {
             pgGroup = pg::I4H;
             pgOrder = -1;
-        } else if (G2 == '5' && G3 == 'H' && size == 3) {
+            SUCCESS
+        } else if (Gs[1] == '5' && Gs[2] == 'H' && size == 3) {
             pgGroup = pg::I5H;
             pgOrder = -1;
+            SUCCESS
         }
-        SUCCESS
 
         default:
         return false;

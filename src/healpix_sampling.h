@@ -38,7 +38,7 @@ class HealpixSampling {
 
     public:
 
-	/** Healpix sampling object */
+    /** Healpix sampling object */
     Healpix_Base healpix_base;
 
     /** Random perturbation */
@@ -56,8 +56,9 @@ class HealpixSampling {
 
     /* Translational search range and sampling rate (as of v3.1 in Angstroms!) (and original one)
      */
-    // Jun19,2015 - Shaoda, Helical refinement (all in Angstroms!)
+    // 19 Jun 2015 - Shaoda, Helical refinement (all in Angstroms!)
     RFLOAT offset_range, offset_step, helical_offset_step, offset_range_ori, offset_step_ori;
+    // helical_offset_step: Translations along helical axis
 
     /** Flag whether this is a real 3D sampling */
     bool is_3D;
@@ -73,14 +74,11 @@ class HealpixSampling {
     FileName fn_sym_relax;
 
     /** List of symmetry operators */
-    std::vector <Matrix2D<RFLOAT> > R_repository, L_repository;
+    std::vector <Matrix2D<RFLOAT> > R_repository,       L_repository;
     std::vector <Matrix2D<RFLOAT> > R_repository_relax, L_repository_relax;
 
     /** Two numbers that describe the symmetry group */
-    int pgGroup;
-    int pgOrder;
-    int pgGroupRelaxSym;
-    int pgOrderRelaxSym;
+    int pgGroup, pgOrder, pgGroupRelaxSym, pgOrderRelaxSym;
 
     /** Limited tilt angle range */
     RFLOAT limit_tilt;
@@ -102,30 +100,30 @@ class HealpixSampling {
 
     // Empty constructor
     HealpixSampling():
-    	offset_range(0),
-		offset_step(0),
-		is_3d_trans(false),
-		pgGroup(0),
-		pgGroupRelaxSym(0),
-		perturbation_factor(0),
-		is_3D(false),
-		random_perturbation(0),
-		psi_step(0),
-		limit_tilt(0),
-		healpix_order(0),
-		pgOrder(0),
-		pgOrderRelaxSym(0)
+    offset_range(0),
+    offset_step(0),
+    is_3d_trans(false),
+    pgGroup(0),
+    pgGroupRelaxSym(0),
+    perturbation_factor(0),
+    is_3D(false),
+    random_perturbation(0),
+    psi_step(0),
+    limit_tilt(0),
+    healpix_order(0),
+    pgOrder(0),
+    pgOrderRelaxSym(0)
     {}
 
     // Destructor
     ~HealpixSampling() {
-    	directions_ipix.clear();
-    	rot_angles.clear();
-    	tilt_angles.clear();
-    	psi_angles.clear();
-    	translations_x.clear();
-    	translations_y.clear();
-    	translations_z.clear();
+        directions_ipix.clear();
+        rot_angles.clear();
+        tilt_angles.clear();
+        psi_angles.clear();
+        translations_x.clear();
+        translations_y.clear();
+        translations_z.clear();
     }
 
     // Start from all empty vectors and meaningless parameters
@@ -136,7 +134,7 @@ class HealpixSampling {
      * The in-plane (psi-angle) sampling is linear,
      * input_psi_sampling is modified to contain an integer number of equally-sized sampling points
      * For the 3D-case, a negative input_psi_sampling will result in a psi-sampling similar to the sqrt of a HealPix pixel area.
-	 *
+     *
      * The HEALPix sampling is implemented as described by Gorski et al (2005), The Astrophysical Journal, 622:759-771
      * The order defines the number of sampling points, and thereby the angular sampling rate
      * From this paper is the following table:
@@ -154,24 +152,23 @@ class HealpixSampling {
      * etc...
      *
      * */
-    // May 6, 2015 - Shaoda & Sjors - initialise for helical translations
+    // 6 May 2015 - Shaoda & Sjors - initialise for helical translations
     void initialise(
-			int ref_dim = -1,
-			bool do_3d_trans = false,
-			bool do_changepsi = false,
-			bool do_warnpsi = false,
-			bool do_local_searches_helical = false,
-			bool do_helical_refine = false,
-			RFLOAT rise_Angst  = 0.0,
-			RFLOAT twist_deg = 0.0);
+        int ref_dim = -1,
+        bool do_3d_trans = false,
+        bool do_changepsi = false,
+        bool do_warnpsi = false,
+        bool do_local_searches_helical = false,
+        bool do_helical_refine = false,
+        RFLOAT rise_Angst  = 0.0,
+        RFLOAT twist_deg = 0.0
+    );
 
-    // Initialize the symmetry matrices
+    // Initialise symmetry matrices
     void initialiseSymMats(
-        FileName fn_sym_, int &pgGroup_, int &pgOrder_, 
-        // Why pass references? 
-        // Will we ever pass the pgGroup and pgOrder of a HealpixSampling that is not *this?
-        std::vector<Matrix2D<RFLOAT> > &R_repository,
-        std::vector<Matrix2D<RFLOAT> > &L_repository
+        FileName fn_sym_, int &pgGroup, int &pgOrder,
+        std::vector<Matrix2D<RFLOAT> > &Rs,
+        std::vector<Matrix2D<RFLOAT> > &Ls
     );
 
     // Reset the random perturbation
@@ -196,24 +193,18 @@ class HealpixSampling {
      * For helices, x offsets (along helical axis) should be less within -+0.5 * rise
      * */
     void setTranslations(
-			RFLOAT new_offset_step = -1.0,
-    		RFLOAT new_offset_range = -1.0,
-    		bool do_local_searches_helical = false,
-    		bool do_helical_refine = false,
-			RFLOAT new_helical_offset_step = -1.0,
-    		RFLOAT helical_rise_Angst = 0.0,
-    		RFLOAT helical_twist_deg = 0.0);
+        RFLOAT new_offset_step = -1.0, RFLOAT new_offset_range = -1.0,
+        bool do_local_searches_helical = false, bool do_helical_refine = false,
+        RFLOAT new_helical_offset_step = -1.0,
+        RFLOAT helical_rise_Angst = 0.0, RFLOAT helical_twist_deg = 0.0
+    );
 
     /* Add a single translation */
     void addOneTranslation(
-    		RFLOAT offset_x,
-    		RFLOAT offset_y,
-    		RFLOAT offset_z,
-    		bool do_clear = false,
-    		bool do_helical_refine = false,
-    		RFLOAT rot_deg = 0.0,
-    		RFLOAT tilt_deg = 0.0,
-    		RFLOAT psi_deg = 0.0);
+        RFLOAT offset_x, RFLOAT offset_y, RFLOAT offset_z,
+        bool do_clear = false, bool do_helical_refine = false,
+        RFLOAT rot_deg = 0.0, RFLOAT tilt_deg = 0.0, RFLOAT psi_deg = 0.0
+    );
 
     /* Set the non-oversampled lists of directions and in-plane rotations */
     void setOrientations(int _order = -1, RFLOAT _psi_step = -1.0);
@@ -223,11 +214,18 @@ class HealpixSampling {
 
     /* Write all orientations as a sphere in a bild file
      * Mainly useful for debugging */
-    void writeAllOrientationsToBild(FileName fn_bild, std::string rgb = "1 0 0", RFLOAT size = 0.025);
-    void writeNonZeroPriorOrientationsToBild(FileName fn_bild, RFLOAT rot_prior, RFLOAT tilt_prior,
-    		std::vector<int> &pointer_dir_nonzeroprior, std::string rgb = "0 0 1", RFLOAT size = 0.025);
+    void writeAllOrientationsToBild(
+        FileName fn_bild, 
+        std::string rgb = "1 0 0", RFLOAT size = 0.025
+    );
 
-    /* Sjors, 9nov2015: new rot-priors for DNA-origami-bound refinements
+    void writeNonZeroPriorOrientationsToBild(
+        FileName fn_bild, RFLOAT rot_prior, RFLOAT tilt_prior,
+        std::vector<int> &pointer_dir_nonzeroprior, 
+        std::string rgb = "0 0 1", RFLOAT size = 0.025
+    );
+
+    /* Sjors, 9 Nov 2015: new rot-priors for DNA-origami-bound refinements
      */
     RFLOAT calculateDeltaRot(Matrix1D<RFLOAT> my_direction, RFLOAT rot_prior);
 
@@ -237,28 +235,32 @@ class HealpixSampling {
      */
     // Jun 04 - Shaoda & Sjors, Bimodel psi searches for helices
     void selectOrientationsWithNonZeroPriorProbability(
-    		RFLOAT prior_rot, RFLOAT prior_tilt, RFLOAT prior_psi,
-    		RFLOAT sigma_rot, RFLOAT sigma_tilt, RFLOAT sigma_psi,
-    		std::vector<int> &pointer_dir_nonzeroprior, std::vector<RFLOAT> &directions_prior,
-    		std::vector<int> &pointer_psi_nonzeroprior, std::vector<RFLOAT> &psi_prior,
-			bool do_bimodal_search_psi = false,
-    		RFLOAT sigma_cutoff = 3.0, RFLOAT sigma_tilt_from_ninety = -1.0, RFLOAT sigma_psi_from_zero = -1.0);
+        RFLOAT prior_rot, RFLOAT prior_tilt, RFLOAT prior_psi,
+        RFLOAT sigma_rot, RFLOAT sigma_tilt, RFLOAT sigma_psi,
+        std::vector<int> &pointer_dir_nonzeroprior, std::vector<RFLOAT> &directions_prior,
+        std::vector<int> &pointer_psi_nonzeroprior, std::vector<RFLOAT> &psi_prior,
+        bool do_bimodal_search_psi = false,
+        RFLOAT sigma_cutoff = 3.0, RFLOAT sigma_tilt_from_ninety = -1.0, RFLOAT sigma_psi_from_zero = -1.0
+    );
 
     void selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalReconstruction(
-    		RFLOAT prior_rot, RFLOAT prior_tilt, RFLOAT prior_psi,
-    		RFLOAT sigma_rot, RFLOAT sigma_tilt, RFLOAT sigma_psi,
-    		std::vector<int> &pointer_dir_nonzeroprior, std::vector<RFLOAT> &directions_prior,
-    		std::vector<int> &pointer_psi_nonzeroprior, std::vector<RFLOAT> &psi_prior,
-    		bool do_auto_refine_local_searches,
-    		RFLOAT prior_psi_flip_ratio = 0.5,
-			RFLOAT prior_rot_flip_ratio = 0.5,  // KThurber
-    		RFLOAT sigma_cutoff = 3.0);
+        RFLOAT prior_rot, RFLOAT prior_tilt, RFLOAT prior_psi,
+        RFLOAT sigma_rot, RFLOAT sigma_tilt, RFLOAT sigma_psi,
+        std::vector<int> &pointer_dir_nonzeroprior, std::vector<RFLOAT> &directions_prior,
+        std::vector<int> &pointer_psi_nonzeroprior, std::vector<RFLOAT> &psi_prior,
+        bool do_auto_refine_local_searches,
+        RFLOAT prior_psi_flip_ratio = 0.5,
+        RFLOAT prior_rot_flip_ratio = 0.5,  // KThurber
+        RFLOAT sigma_cutoff = 3.0
+    );
 
     // Find the symmetry mate by searching the Healpix library
-    void findSymmetryMate(long int idir_, RFLOAT prior_,
-    		std::vector<int> &pointer_dir_nonzeroprior,
-			std::vector<RFLOAT> &directions_prior,
-			std::vector<bool> &idir_flag);
+    void findSymmetryMate(
+        long int idir_, RFLOAT prior_,
+        std::vector<int> &pointer_dir_nonzeroprior,
+        std::vector<RFLOAT> &directions_prior,
+        std::vector<bool> &idir_flag
+    );
 
     /** Get the symmetry group of this sampling object
      */
@@ -305,9 +307,11 @@ class HealpixSampling {
 
     /* Get the total number of (oversampled) sampling points, i.e. all (rot, tilt, psi, xoff, yoff) quintets
     */
-    long int NrSamplingPoints(int oversampling_order = 0,
-    		const std::vector<int> *pointer_dir_nonzeroprior = NULL,
-    		const std::vector<int> *pointer_psi_nonzeroprior = NULL);
+    long int NrSamplingPoints(
+        int oversampling_order = 0,
+        const std::vector<int> *pointer_dir_nonzeroprior = NULL,
+        const std::vector<int> *pointer_psi_nonzeroprior = NULL
+    );
 
     /* How often is each orientation oversampled? */
     int oversamplingFactorOrientations(int oversampling_order);
@@ -342,11 +346,13 @@ class HealpixSampling {
      * An oversampling_order == 2 will give rise to 4*4 new (rot, tilt) pairs.
      * etc.
      */
-    void getTranslationsInPixel(long int itrans, int oversampling_order, RFLOAT my_pixel_size,
-    		std::vector<RFLOAT > &my_translations_x,
-    		std::vector<RFLOAT > &my_translations_y,
-    		std::vector<RFLOAT > &my_translations_z,
-			bool do_helical_refine = false);
+    void getTranslationsInPixel(
+        long int itrans, int oversampling_order, RFLOAT my_pixel_size,
+        std::vector<RFLOAT > &my_translations_x,
+        std::vector<RFLOAT > &my_translations_y,
+        std::vector<RFLOAT > &my_translations_z,
+        bool do_helical_refine = false
+    );
 
     /* Get the vectors of (rot, tilt, psi) angle triplets for a more finely (oversampled) sampling
      * The oversampling_order is the difference in order of the original (coarse) and the oversampled (fine) sampling
@@ -358,10 +364,12 @@ class HealpixSampling {
      * If only_nonzero_prior is true, then only the orientations with non-zero prior probabilities will be returned
      * This is for local angular searches
      */
-    void getOrientations(long int idir, long int ipsi, int oversampling_order,
-    		std::vector<RFLOAT > &my_rot, std::vector<RFLOAT > &my_tilt, std::vector<RFLOAT > &my_psi,
-    		std::vector<int> &pointer_dir_nonzeroprior, std::vector<RFLOAT> &directions_prior,
-    		std::vector<int> &pointer_psi_nonzeroprior, std::vector<RFLOAT> &psi_prior);
+    void getOrientations(
+        long int idir, long int ipsi, int oversampling_order,
+        std::vector<RFLOAT> &my_rot, std::vector<RFLOAT> &my_tilt, std::vector<RFLOAT> &my_psi,
+        std::vector<int> &pointer_dir_nonzeroprior, std::vector<RFLOAT> &directions_prior,
+        std::vector<int> &pointer_psi_nonzeroprior, std::vector<RFLOAT> &psi_prior
+    );
 
     /* Gets the vector of psi angles for a more finely (oversampled) sampling and
      * pushes each instance back into the oversampled_orientations vector with the given rot and tilt
@@ -371,13 +379,17 @@ class HealpixSampling {
      * An oversampling_order == 2 will give rise to 4 new psi angles
      * etc.
      */
-    void pushbackOversampledPsiAngles(long int ipsi, int oversampling_order,
-    		RFLOAT rot, RFLOAT tilt, std::vector<RFLOAT> &oversampled_rot,
-    		std::vector<RFLOAT> &oversampled_tilt, std::vector<RFLOAT> &oversampled_psi);
+    void pushbackOversampledPsiAngles(
+        long int ipsi, int oversampling_order,
+        RFLOAT rot, RFLOAT tilt, std::vector<RFLOAT> &oversampled_rot,
+        std::vector<RFLOAT> &oversampled_tilt, std::vector<RFLOAT> &oversampled_psi
+    );
 
     /* Calculate an angular distance between two sets of Euler angles */
-    RFLOAT calculateAngularDistance(RFLOAT rot1, RFLOAT tilt1, RFLOAT psi1,
-    		RFLOAT rot2, RFLOAT tilt2, RFLOAT psi2);
+    RFLOAT calculateAngularDistance(
+        RFLOAT rot1, RFLOAT tilt1, RFLOAT psi1,
+        RFLOAT rot2, RFLOAT tilt2, RFLOAT psi2
+    );
 
     /* Write a BILD file describing the angular distribution
      *  R determines the radius of the sphere on which cylinders will be placed
@@ -385,11 +397,11 @@ class HealpixSampling {
      *  width_frac determines how broad each cylinder is. frac=1 means they touch each other
      * */
     void writeBildFileOrientationalDistribution(MultidimArray<RFLOAT> &pdf_direction,
-    		FileName &fn_bild, RFLOAT R, RFLOAT offset = 0.0,
-			const Matrix2D<RFLOAT> *Aorient = NULL, const Matrix1D<RFLOAT> *Acom = NULL,
-			RFLOAT Rmax_frac = 0.3, RFLOAT width_frac = 0.5);
+            FileName &fn_bild, RFLOAT R, RFLOAT offset = 0.0,
+            const Matrix2D<RFLOAT> *Aorient = NULL, const Matrix1D<RFLOAT> *Acom = NULL,
+            RFLOAT Rmax_frac = 0.3, RFLOAT width_frac = 0.5);
 
-private:
+    private:
 
     /* Eliminate points from the sampling_points_vector and sampling_points_angles vectors
      * that are outside the allowed tilt range.
@@ -409,10 +421,10 @@ private:
 
     /* eliminate symmetry-related points based on simple geometrical considerations,
         symmetry group, symmetry order */
-    void removeSymmetryEquivalentPointsGeometric(const int symmetry, int sym_order,
-												 std::vector <Matrix1D<RFLOAT> >  &sampling_points_vector);
-
-
+    void removeSymmetryEquivalentPointsGeometric(
+        const int symmetry, int sym_order,
+        std::vector<Matrix1D<RFLOAT> >  &sampling_points_vector
+    );
 
 };
 //@}

@@ -22,6 +22,8 @@
 // #define DEBUG_CHECKSIZES
 // #define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
 
+inline int iPowerof2(int n) { return 1 << (n); }  // Bitshifts are fast
+
 void HealpixSampling::clear() {
     is_3D = false;
     isRelax = false;
@@ -29,8 +31,8 @@ void HealpixSampling::clear() {
     fn_sym_relax = "C1";
     limit_tilt = psi_step = offset_range = offset_step = helical_offset_step = psi_step_ori = offset_range_ori = offset_step_ori = 0.0;
     random_perturbation = perturbation_factor = 0.0;
-    // Jun19,2015 - Shaoda, Helical refinement
-    helical_offset_step = -1.;
+    // 19 Jun 2015 - Shaoda, Helical refinement
+    helical_offset_step = -1.0;
     directions_ipix.clear();
     rot_angles.clear();
     tilt_angles.clear();
@@ -54,7 +56,7 @@ void HealpixSampling::initialise(
     RFLOAT rise_Angst, RFLOAT twist_deg
 ) {
     if (ref_dim != -1)
-        is_3D = ref_dim == 3;
+    is_3D = ref_dim == 3;
 
     // Set the symmetry relaxation flag
     isRelax = fn_sym_relax != "";
@@ -64,7 +66,7 @@ void HealpixSampling::initialise(
 
     // By default psi_step is approximate sampling of rot, tilt in 3D; and 10 degrees in 2D
     if (psi_step < 0) {
-        psi_step = is_3D ? 360.0 / (6 * ROUND(std::pow(2.0, healpix_order))) : 10.0;
+        psi_step = is_3D ? 360.0 / (6 * iPowerof2(healpix_order)) : 10.0;
     }
 
     if (perturbation_factor < 0.0 || perturbation_factor > 1.0)
@@ -72,28 +74,17 @@ void HealpixSampling::initialise(
 
     if (is_3D) {
         healpix_base.Set(healpix_order, NEST);
-
         // Set up symmetry
-        R_repository.clear();
-        L_repository.clear();
         initialiseSymMats(fn_sym, pgGroup, pgOrder, R_repository, L_repository);
-
         // Set up symmetry matrices for symmetry relax
-        if (fn_sym_relax != "") {
-            R_repository_relax.clear();
-            L_repository_relax.clear();
-            initialiseSymMats(
-                fn_sym_relax,
-                pgGroupRelaxSym, pgOrderRelaxSym,
-                R_repository_relax, L_repository_relax
-            );
-        }
+        if (fn_sym_relax != "")
+        initialiseSymMats(fn_sym_relax, pgGroupRelaxSym, pgOrderRelaxSym, R_repository_relax, L_repository_relax);
     } else {
         int t_nr_psi = CEIL(360.0 / psi_step);
         if (t_nr_psi % 32 != 0 && do_changepsi) {
 
-            // Force-adjust psi_step to be multiples of 32 (for efficient GPU calculations)
-            t_nr_psi = CEIL((float)t_nr_psi / 32.0) * 32;
+            // Force-adjust psi_step to be a multiple of 32 (for efficient GPU calculations)
+            t_nr_psi = CEIL((float) t_nr_psi / 32.0) * 32;
 
             if (do_warnpsi)
                 std::cout << " + WARNING: Changing psi sampling rate (before oversampling) to " <<  360.0 / (RFLOAT) t_nr_psi << " degrees, for more efficient GPU calculations" << std::endl;
@@ -104,8 +95,8 @@ void HealpixSampling::initialise(
     }
 
     // Store the not-oversampled translations, and make sure oversampled sampling is 1 pixel
-    //setTranslations();
-    // May06,2015 - Shaoda & Sjors, Helical translational searches
+    // setTranslations();
+    // 6 May 2015 - Shaoda & Sjors, Helical translational searches
     setTranslations(-1, -1, do_local_searches_helical, do_helical_refine, -1, rise_Angst, twist_deg);
 
     // Store the non-oversampled projection directions
@@ -114,38 +105,38 @@ void HealpixSampling::initialise(
     // Random perturbation and filling of the directions, psi_angles and translations vectors
     resetRandomlyPerturbedSampling();
 
-    // SHWS 27feb2020: Set original sampling rates to allow 2D/3D classifications using coarser ones in earlier iterations
+    // SHWS 27 Feb 2020: Set original sampling rates to allow 2D/3D classifications using coarser ones in earlier iterations
     healpix_order_ori = healpix_order;
-    psi_step_ori = psi_step;
-    offset_range_ori = offset_range;
-    offset_step_ori = offset_step;
+    psi_step_ori      = psi_step;
+    offset_range_ori  = offset_range;
+    offset_step_ori   = offset_step;
 
 }
 
 void HealpixSampling::initialiseSymMats(
     FileName fn_sym_, int &pgGroup_, int &pgOrder_,
-    std::vector<Matrix2D<RFLOAT>> &R_repository_,
-    std::vector<Matrix2D<RFLOAT>> &L_repository_
+    std::vector<Matrix2D<RFLOAT> > &Rs,
+    std::vector<Matrix2D<RFLOAT> > &Ls
 ) {
     // Set up symmetry
     SymList SL;
     SL.isSymmetryGroup(fn_sym_.removeDirectories(), pgGroup_, pgOrder_);
     SL.read_sym_file(fn_sym_);
 
-    // Precalculate (3x3) symmetry matrices
+    // Precalculate (3×3) symmetry matrices
     Matrix2D<RFLOAT> L(4, 4), R(4, 4);
     Matrix2D<RFLOAT> Identity(3, 3);
     Identity.initIdentity();
-    R_repository_.clear();
-    L_repository_.clear();
-    R_repository_.push_back(Identity);
-    L_repository_.push_back(Identity);
+    Rs.clear();
+    Ls.clear();
+    Rs.push_back(Identity);
+    Ls.push_back(Identity);
     for (int isym = 0; isym < SL.SymsNo(); isym++) {
         SL.get_matrices(isym, L, R);
         R.resize(3, 3);
         L.resize(3, 3);
-        R_repository_.push_back(R);
-        L_repository_.push_back(L);
+        Rs.push_back(R);
+        Ls.push_back(L);
     }
 }
 
@@ -220,7 +211,7 @@ void HealpixSampling::read(FileName fn_in) {
         // Only if the --psi_step option is given on the command line it will be set to something different!
         psi_step = -1.0;
 
-        // SHWS 27Feb2020: backwards compatibility: older star files will not yet have original sampling parameters, just use current ones
+        // SHWS 27 Feb 2020: backwards compatibility: older star files will not yet have original sampling parameters, just use current ones
         try {
             healpix_order_ori = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER_ORI);
         } catch (const char *errmsg) {
@@ -289,26 +280,13 @@ void HealpixSampling::write(FileName fn_out) {
 }
 
 void HealpixSampling::setTranslations(
-    RFLOAT new_offset_step,
-    RFLOAT new_offset_range,
-    bool do_local_searches_helical,
-    bool do_helical_refine,
+    RFLOAT new_offset_step, RFLOAT new_offset_range,
+    bool do_local_searches_helical, bool do_helical_refine,
     RFLOAT new_helical_offset_step,
-    RFLOAT helical_rise_Angst,
-    RFLOAT helical_twist_deg
+    RFLOAT helical_rise_Angst, RFLOAT helical_twist_deg
 ) {
-    // Ordinary single particles
-    int maxp; // Max half nr samplings in all directions
-    RFLOAT xoff, yoff, zoff, max2, old_offset_step, old_offset_range; // Offset lengths
 
-    // Helical refinement
-    int maxh; // Max half nr samplings in along helical axis
-    RFLOAT h_range, old_helical_offset_step; // Translations along helical axis
-
-    // Check old and new offsets
-    old_offset_step = offset_step;  // can be < 0 ??????
-    old_offset_range = offset_range;  // can be < 0 ??????
-    old_helical_offset_step = helical_offset_step;  // can be < 0
+    // Check offsets old and new
     if (new_offset_step > 0.0 && new_offset_range >= 0.0) {
         offset_step  = new_offset_step;
         offset_range = new_offset_range;
@@ -317,12 +295,13 @@ void HealpixSampling::setTranslations(
         REPORT_ERROR("HealpixSampling::setTranslations BUG %% Trying to set translations with uninitialised offset_step!");
     }
     // Sometimes new offsets are set to -1, that means the old offsets remain unchanged.
-    new_offset_step = offset_step;  // > 0
+    new_offset_step  = offset_step;   // >  0
     new_offset_range = offset_range;  // >= 0
 
     // Ordinary single particles
-    maxp = CEIL(offset_range / offset_step); // Perpendicular to helical axis (P1, P2)
-    maxh = maxp;
+    int maxp = CEIL(offset_range / offset_step);  // Max half nr samplings in all directions [Perpendicular to helical axis (P1, P2)]
+    // Helical refinement
+    int maxh = maxp; // Max half nr samplings in along helical axis
     // Helical refinement
     if (do_helical_refine) {
         // Assume all helical parameters are valid (this should be checked before in ml_optimiser.cpp)
@@ -330,31 +309,26 @@ void HealpixSampling::setTranslations(
         helical_twist_deg  = fabs(helical_twist_deg);
 
         // Search range (half) along helical axis = (-0.5 * rise, +0.5 * rise)
-        h_range = (helical_rise_Angst / 2.0);
+        RFLOAT h_range = helical_rise_Angst / 2.0;
 
         // If continue from old run or new offset is not applicable...
         if (new_helical_offset_step < 0.0)
-            new_helical_offset_step = old_helical_offset_step;
+            new_helical_offset_step = helical_offset_step;
 
-        // New_helical_offset_step is not OK.
-        // (1) negative value
-        // (2) larger than before (if there is a valid offset before)
-        // (3) larger than new_offset_step
-        // (4) samplings along helical axis is less than 3
+        // The new helical offset step is not OK if:
         if (
-            new_helical_offset_step < 0.0 || (
-                new_helical_offset_step > old_helical_offset_step &&
-                old_helical_offset_step > 0.0
-            ) || new_helical_offset_step > new_offset_step ||
-            helical_rise_Angst / new_helical_offset_step < 3.0
+            new_helical_offset_step < 0.0 ||                                              // It is negative
+            new_helical_offset_step > new_offset_step ||                                  // It is larger than the new offset step
+            new_helical_offset_step > helical_offset_step && helical_offset_step > 0.0 || // It is larger than the old helical offset step (provided that is valid)
+            3.0 * new_helical_offset_step > helical_rise_Angst                            // It is larger than 1/3 the helical rise (so that the helical axis is sampled fewer than 3 times per rise)
         ) {
-            // First try 'new_offset_step'
+            // Use the new offset step (This will resolve values larger than the new offset step)
             new_helical_offset_step = new_offset_step;
-            // Change to 'old_helical_offset_step' if the old is smaller
-            if (old_helical_offset_step > 0.0 && new_helical_offset_step > old_helical_offset_step)
-                new_helical_offset_step = old_helical_offset_step;
-            // New_helical_offset_step should be finer than 1/3 the helical rise
-            if (helical_rise_Angst / new_helical_offset_step < 3.0)
+            // Use the old helical offset step if that is smaller
+            if (new_helical_offset_step > helical_offset_step && helical_offset_step > 0.0)
+                new_helical_offset_step = helical_offset_step;
+            // Ensure that the new helical offset step is no coarser than 1/3 the helical rise
+            if (3.0 * new_helical_offset_step > helical_rise_Angst)
                 new_helical_offset_step = helical_rise_Angst / 3.0;
         }
 
@@ -362,21 +336,17 @@ void HealpixSampling::setTranslations(
         if (do_local_searches_helical) {
             // Local searches along helical axis
             // Local searches (2*2+1=5 samplings)
-            if (maxh > 2)
-                maxh = 2;
+            if (maxh > 2) { maxh = 2; }
             // New helical offset step is smaller than 1/3 of the old one, samplings should be increased.
-            if (old_helical_offset_step > 0.0 && old_helical_offset_step / new_helical_offset_step > 3)
-                maxh = FLOOR(old_helical_offset_step / new_helical_offset_step); // Use FLOOR here!
+            if (helical_offset_step > 0.0 && helical_offset_step / new_helical_offset_step > 3)
+                maxh = FLOOR(helical_offset_step / new_helical_offset_step); // Use FLOOR here!
             // Local searches should not be wider than 1/3 of the helical rise
-            if (new_helical_offset_step * maxh > helical_rise_Angst / 6.0) {
-                maxh = FLOOR(helical_rise_Angst / 6.0 / new_helical_offset_step); // Use FLOOR here!
-                if (maxh < 1) // At least we should do some searches...
-                    maxh = 1;
+            if (new_helical_offset_step * maxh * 6.0 > helical_rise_Angst) {
+                maxh = FLOOR(helical_rise_Angst / (6.0 * new_helical_offset_step)); // Use FLOOR here!
+                if (maxh < 1) { maxh = 1; }  // We should at least do some searches.
             }
         }
-        // DEBUG - this should not happen
-        if (maxh < 0)
-            maxh = 0;
+        if (maxh < 0) { maxh = 0; }  // DEBUG - this should not happen
         helical_offset_step = new_helical_offset_step;
     }
 
@@ -391,18 +361,18 @@ void HealpixSampling::setTranslations(
     translations_z.clear();
     for (long int ix = -maxh; ix <= maxh; ix++) {
         // For helices use a different step size along helical axis X
-        xoff = ix * (do_helical_refine ? helical_offset_step : offset_step);
+        RFLOAT xoff = ix * (do_helical_refine ? helical_offset_step : offset_step);
         // For helical refinement, exclude xoff outside the range of (-0.5 * rise, +0.5 * rise)
         if (do_helical_refine && ix != 0 && fabs(xoff) > fabs(helical_rise_Angst / 2.0))
             continue;
 
         for (long int iy = -maxp; iy <= maxp; iy++) {
-            yoff = iy * offset_step;
+            RFLOAT yoff = iy * offset_step;
             // For helices do not limit translations along helical axis X
-            max2 = do_helical_refine ? yoff * yoff : xoff * xoff + yoff * yoff;
+            RFLOAT max2 = do_helical_refine ? yoff * yoff : xoff * xoff + yoff * yoff;
             if (is_3d_trans) {
                 for (long int iz = -maxp; iz <= maxp; iz++) {
-                    zoff = iz * offset_step;
+                    RFLOAT zoff = iz * offset_step;
                     if (max2 + zoff * zoff <= offset_range * offset_range) {
                         translations_y.push_back(yoff);
                         if (do_helical_refine) {
@@ -453,7 +423,7 @@ void HealpixSampling::addOneTranslation(
     translations_x.push_back(offset_x);
     translations_y.push_back(offset_y);
     if (is_3d_trans)
-        translations_z.push_back(offset_z);
+    translations_z.push_back(offset_z);
 }
 
 void HealpixSampling::setOrientations(int _order, RFLOAT _psi_step) {
@@ -501,7 +471,7 @@ void HealpixSampling::setOrientations(int _order, RFLOAT _psi_step) {
         removePointsOutsideLimitedTiltAngles();
 
         #ifdef DEBUG_SAMPLING
-        if (ABS(limit_tilt) < 90.)
+        if (ABS(limit_tilt) < 90.0)
             writeAllOrientationsToBild("orients_tilt.bild", "1 1 0 ", 0.022);
         #endif
 
@@ -525,8 +495,8 @@ void HealpixSampling::setOrientations(int _order, RFLOAT _psi_step) {
         psi_angles.push_back(psi);
     }
 
-    //#define DEBUG_SAMPLING
-    #ifdef  DEBUG_SAMPLING
+    // #define DEBUG_SAMPLING
+    #ifdef DEBUG_SAMPLING
     writeAllOrientationsToBild("orients_final.bild", "1 0 0 ", 0.020);
     #endif
 }
@@ -653,7 +623,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
         RFLOAT sumprior = 0.0;
         RFLOAT sumprior_withsigmafromzero = 0.0;
         // Keep track of the closest distance to prevent 0 orientations
-        RFLOAT best_ang = 9999.;
+        RFLOAT best_ang = 9999.0;
         long int best_idir = -999;
 
         for (long int idir = 0; idir < rot_angles.size(); idir++) {
@@ -677,7 +647,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                 if (!isRelax) {
                     RFLOAT best_dotProduct = dotProduct(prior_direction, my_direction);
                     for (int j = 0; j < R_repository.size(); j++) {
-                        sym_direction =  L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
+                        sym_direction = L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
                         RFLOAT my_dotProduct = dotProduct(prior_direction, sym_direction);
                         if (my_dotProduct > best_dotProduct) {
                             best_direction = sym_direction;
@@ -690,7 +660,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                 RFLOAT diffang = ACOSD( dotProduct(best_direction, prior_direction) );
                 if (diffang > 180.0)
                     diffang = ABS(diffang - 360.0);
-                if (do_bimodal_search_psi && (diffang > 90.0))  // KThurber
+                if (do_bimodal_search_psi && diffang > 90.0)  // KThurber
                     diffang = ABS(diffang - 180.0);	// KThurber
 
                 // Only consider differences within sigma_cutoff * sigma_rot
@@ -700,7 +670,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                     // TODO!!! If tilt is zero then any rot will be OK!!!!!
                     //std::cerr<<"Best direction index: "<<idir<<std::endl;
                     pointer_dir_nonzeroprior.push_back(idir);
-                    RFLOAT prior = gaussian1D(diffang, biggest_sigma, 0.);
+                    RFLOAT prior = gaussian1D(diffang, biggest_sigma, 0.0);
                     sumprior += prior;
                     if (isRelax) {
                         idir_flag[idir] = true;
@@ -727,7 +697,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                 RFLOAT diffang = calculateDeltaRot(my_direction, prior_rot);
                 RFLOAT best_diffang = diffang;
                 for (int j = 0; j < R_repository.size(); j++) {
-                    sym_direction =  L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
+                    sym_direction = L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
                     diffang = calculateDeltaRot(sym_direction, prior_rot);
 
                     if (diffang < best_diffang)
@@ -761,7 +731,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                     diffang = ABS(diffang - 360.0);
                 RFLOAT best_diffang = diffang;
                 for (int j = 0; j < R_repository.size(); j++) {
-                    sym_direction =  L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
+                    sym_direction = L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
                     Euler_direction2angles(sym_direction, sym_rot, sym_tilt);
                     diffang = ABS(sym_tilt - prior_tilt);
                     if (diffang > 180.0)
@@ -802,7 +772,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                 RFLOAT best_dotProduct = dotProduct(prior90_direction, my_direction);
                 best_direction = my_direction;
                 for (int j = 0; j < R_repository.size(); j++) {
-                    sym_direction =  L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
+                    sym_direction = L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
                     RFLOAT my_dotProduct = dotProduct(prior90_direction, sym_direction);
                     if (my_dotProduct > best_dotProduct) {
                         best_direction = sym_direction;
@@ -820,7 +790,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                 diffang = ABS(diffang);
 
                 long int mypos = pointer_dir_nonzeroprior.size() - 1;
-                // Check tilt angle is within 3*sigma_tilt_from_ninety
+                // Check tilt angle is within 3 * sigma_tilt_from_ninety
                 if (diffang > sigma_cutoff * sigma_tilt_from_ninety) {
                     pointer_dir_nonzeroprior.pop_back();
                     directions_prior.pop_back();
@@ -842,7 +812,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
         // If there were no directions at all, just select the single nearest one:
         if (directions_prior.size() == 0) {
             pointer_dir_nonzeroprior.push_back(best_idir);
-            //std::cerr<<"No direction has been found"<<std::endl;
+            // std::cerr << "No direction has been found" << std::endl;
             if (best_idir < 0)
                 REPORT_ERROR("HealpixSampling::selectOrientationsWithNonZeroPriorProbability BUG: best_idir < 0");
             if (isRelax) {
@@ -866,7 +836,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
 
     } else {
         pointer_dir_nonzeroprior.push_back(0);
-        directions_prior.push_back(1.);
+        directions_prior.push_back(1.0);
     }
 
     // Psi-angles
@@ -881,7 +851,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
         bool is_nonzero_pdf = false;
         // Sjors 12 Jul 2017: for small tilt-angles, rot-angle may become anything, psi-angle then follows that
         // Therefore, psi-prior may be completely wrong.... The following line would however be a very expensive fix....
-        //if (sigma_psi > 0. && prior_tilt > 10.)
+        //if (sigma_psi > 0. && prior_tilt > 10.0)
         if (sigma_psi > 0.0) {
             RFLOAT diffpsi = ABS(psi_angles[ipsi] - prior_psi);
             if (diffpsi > 180.0)
@@ -966,7 +936,7 @@ void HealpixSampling::findSymmetryMate(long int idir_, RFLOAT prior_,
 ) {
 
     Matrix1D<RFLOAT> my_direction, sym_direction;
-    RFLOAT angular_sampling = DEG2RAD(360.0 / (6 * ROUND(std::pow(2.0, healpix_order)))) * 2; // Calculate the search radius
+    RFLOAT angular_sampling = DEG2RAD(360.0 / (6 * iPowerof2(healpix_order))) * 2; // Calculate the search radius
     // Direction for the best-matched Healpix index
     Euler_angles2direction(rot_angles[idir_], tilt_angles[idir_], my_direction);
 
@@ -977,7 +947,7 @@ void HealpixSampling::findSymmetryMate(long int idir_, RFLOAT prior_,
         RFLOAT alpha;  // For Rot
         RFLOAT beta;   // For Theta
 
-        sym_direction =  L_repository_relax[i] * (my_direction.transpose() * R_repository_relax[i]).transpose();
+        sym_direction = L_repository_relax[i] * (my_direction.transpose() * R_repository_relax[i]).transpose();
         Euler_direction2angles(sym_direction, alpha, beta);
 
         alpha = DEG2RAD(alpha);
@@ -1038,7 +1008,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
 
     if (is_3D) {
         // If tilt prior is less than 20 or larger than 160 degrees, print a warning message
-        //if (fabs(((prior_tilt / 180.) - ROUND(prior_tilt / 180.)) * 180.) < 20.)
+        //if (fabs(((prior_tilt / 180.0) - ROUND(prior_tilt / 180.0)) * 180.0) < 20.0)
         //{
         //	std::cerr << " WARNING: A helical segment is found with tilt prior= " << prior_tilt
         //			<< " degrees. It will probably impact searches of orientations in 3D helical reconstruction."<< std::endl;
@@ -1064,7 +1034,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
                 RFLOAT best_dotProduct = dotProduct(prior_direction, my_direction);
                 best_direction = my_direction;
                 for (int j = 0; j < R_repository.size(); j++) {
-                    sym_direction =  L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
+                    sym_direction = L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
                     RFLOAT my_dotProduct = dotProduct(prior_direction, sym_direction);
                     if (my_dotProduct > best_dotProduct) {
                         best_direction = sym_direction;
@@ -1087,7 +1057,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
                         RFLOAT best_dotProduct2 = dotProduct(prior_direction, my_direction2);
                         best_direction2 = my_direction2;
                         for (int j = 0; j < R_repository.size(); j++) {
-                            sym_direction2 =  L_repository[j] * (my_direction2.transpose() * R_repository[j]).transpose();
+                            sym_direction2 = L_repository[j] * (my_direction2.transpose() * R_repository[j]).transpose();
                             RFLOAT my_dotProduct2 = dotProduct(prior_direction, sym_direction2);
                             if (my_dotProduct2 > best_dotProduct2) {
                                 best_direction2 = sym_direction2;
@@ -1165,7 +1135,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
                 RFLOAT best_tilt = tilt_angles[idir];
                 RFLOAT best_diffang = diffang;
                 for (int j = 0; j < R_repository.size(); j++) {
-                    sym_direction =  L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
+                    sym_direction = L_repository[j] * (my_direction.transpose() * R_repository[j]).transpose();
                     Euler_direction2angles(sym_direction, sym_rot, sym_tilt);
                     diffang = ABS(sym_tilt - prior_tilt);
                     if (diffang > 180.0)
@@ -1197,7 +1167,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
                             best_tilt = sym_tilt;
                         }
                         for (int j = 0; j < R_repository.size(); j++) {
-                            sym_direction2 =  L_repository[j] * (my_direction2.transpose() * R_repository[j]).transpose();
+                            sym_direction2 = L_repository[j] * (my_direction2.transpose() * R_repository[j]).transpose();
                             Euler_direction2angles(sym_direction2, sym_rot, sym_tilt);
                             diffang = ABS(sym_tilt - prior_tilt);
                             if (diffang > 180.0)
@@ -1290,7 +1260,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
 
             // Only consider differences within sigma_cutoff * sigma_psi
             if (diffpsi < sigma_cutoff * sigma_psi) {
-                RFLOAT prior = gaussian1D(diffpsi, sigma_psi, 0.);
+                RFLOAT prior = gaussian1D(diffpsi, sigma_psi, 0.0);
                 if (!do_auto_refine_local_searches) {
                     prior *= is_psi_flipped ? prior_psi_flip_ratio : 1.0 - prior_psi_flip_ratio;
                 }
@@ -1371,12 +1341,8 @@ void HealpixSampling::checkDirection(RFLOAT &rot, RFLOAT &tilt) {
     }
 
     // Ensure -180 <= rot <= +180
-    while (rot < -180.0) {
-        rot += 360.0;
-    }
-    while (rot > +180.0) {
-        rot -= 360.0;
-    }
+    while (rot < -180.0) { rot += 360.0; }
+    while (rot > +180.0) { rot -= 360.0; }
 
 }
 
@@ -1393,19 +1359,19 @@ void HealpixSampling::getDirectionFromHealPix(long int ipix, RFLOAT &rot, RFLOAT
 }
 
 RFLOAT HealpixSampling::getTranslationalSampling(int adaptive_oversampling) {
-    return offset_step / std::pow(2.0, adaptive_oversampling);
+    return offset_step / iPowerof2(adaptive_oversampling);
 }
 
 RFLOAT HealpixSampling::getHelicalTranslationalSampling(int adaptive_oversampling) {
-    return helical_offset_step / std::pow(2.0, adaptive_oversampling);
+    return helical_offset_step / iPowerof2(adaptive_oversampling);
 }
 
 RFLOAT HealpixSampling::getAngularSampling(int adaptive_oversampling) {
     if (is_3D) {
         int order = healpix_order + adaptive_oversampling;
-        return 360.0 / (6 * ROUND(std::pow(2.0, order)));
+        return 360.0 / (6 * iPowerof2(order));
     } else {
-        return psi_step / std::pow(2.0, adaptive_oversampling);
+        return psi_step / iPowerof2(adaptive_oversampling);
     }
 }
 
@@ -1415,9 +1381,8 @@ long int HealpixSampling::NrDirections(
 ) {
     long int mysize = pointer_dir_nonzeroprior != NULL && (*pointer_dir_nonzeroprior).size() > 0 ?
         (*pointer_dir_nonzeroprior).size() : rot_angles.size();
-    if (oversampling_order == 0) return mysize;  // pow(2, 0) = 1
-    return ROUND(std::pow(2.0, oversampling_order * 2)) * mysize;
-    // return (1 << oversampling_order * 2) * mysize;
+    if (oversampling_order == 0) return mysize;  // 1 << 0 is 1
+    return iPowerof2(oversampling_order * 2) * mysize;
 }
 
 long int HealpixSampling::NrPsiSamplings(
@@ -1425,14 +1390,13 @@ long int HealpixSampling::NrPsiSamplings(
 ) {
     long int mysize = pointer_psi_nonzeroprior != NULL && (*pointer_psi_nonzeroprior).size() > 0 ?
         (*pointer_psi_nonzeroprior).size() : psi_angles.size();
-    if (oversampling_order == 0) return mysize;  // pow(2, 0) = 1
-    return ROUND(std::pow(2.0, oversampling_order)) * mysize;
-    // return (1 << oversampling_order) * mysize;
+    if (oversampling_order == 0) return mysize;  // 1 << 0 is 1
+    return iPowerof2(oversampling_order) * mysize;
 }
 
 long int HealpixSampling::NrTranslationalSamplings(int oversampling_order) {
-    if (oversampling_order == 0) return translations_x.size();
-    return ROUND(std::pow(2.0, oversampling_order * (is_3d_trans ? 3 : 2))) * translations_x.size();
+    if (oversampling_order == 0) return translations_x.size();  // 1 << 0 is 1
+    return iPowerof2(oversampling_order * (is_3d_trans ? 3 : 2)) * translations_x.size();
 }
 
 long int HealpixSampling::NrSamplingPoints(
@@ -1447,16 +1411,13 @@ long int HealpixSampling::NrSamplingPoints(
 
 /* How often is each orientation oversampled? */
 int HealpixSampling::oversamplingFactorOrientations(int oversampling_order) {
-    if (is_3D) return ROUND(std::pow(2.0, oversampling_order * 3));
-               return ROUND(std::pow(2.0, oversampling_order));
+    return iPowerof2(is_3D ? oversampling_order * 3 : oversampling_order);
 }
 
 /* How often is each translation oversampled? */
 int HealpixSampling::oversamplingFactorTranslations(int oversampling_order) {
-    if (is_3d_trans) return ROUND(std::pow(2.0, oversampling_order * 3));
-                     return ROUND(std::pow(2.0, oversampling_order * 2));
+    return iPowerof2(oversampling_order * (is_3d_trans ? 3 : 2));
 }
-
 
 void HealpixSampling::getDirection(long int idir, RFLOAT &rot, RFLOAT &tilt) {
 
@@ -1487,16 +1448,17 @@ void HealpixSampling::getTranslationInPixel(long int itrans, RFLOAT my_pixel_siz
 
     #ifdef DEBUG_CHECKSIZES
     if (itrans >= translations_x.size()) {
-        std::cerr<< "itrans= "<<itrans<<" translations_x.size()= "<< translations_x.size() <<std::endl;
+        std::cerr << "itrans= " << itrans << " translations_x.size()= " << translations_x.size() << std::endl;
         REPORT_ERROR("itrans >= translations_x.size()");
     }
     #endif
 
     trans_x = translations_x[itrans] / my_pixel_size;
     trans_y = translations_y[itrans] / my_pixel_size;
-    if (is_3d_trans) { trans_z = translations_z[itrans] / my_pixel_size; }
-}
+    if (is_3d_trans)
+    trans_z = translations_z[itrans] / my_pixel_size;
 
+}
 
 long int HealpixSampling::getPositionSamplingPoint(int iclass, long int idir, long int ipsi, long int itrans) {
     // 4D
@@ -1537,7 +1499,7 @@ void HealpixSampling::getTranslationsInPixel(
         if (is_3d_trans)
         my_translations_z.push_back(translations_z[itrans] / my_pixel_size);
     } else {
-        int nr_oversamples = ROUND(std::pow(2.0, oversampling_order));
+        int nr_oversamples = iPowerof2(oversampling_order);
         // DEBUG
         if (nr_oversamples < 1) {
             std::cerr << "oversampling_order= " << oversampling_order << " nr_oversamples= " << nr_oversamples << std::endl;
@@ -1597,14 +1559,12 @@ void HealpixSampling::getTranslationsInPixel(
         for (int iover = 0; iover < my_translations_x.size(); iover++) {
             // If doing helical refinement, DONT put perturbation onto translations along helical axis???
             my_translations_x[iover] += do_helical_refine && !is_3d_trans ?
-                // Helical reconstruction with 2D segments
-                myperturb_helical :
+                myperturb_helical :  // Helical reconstruction with 2D segments
                 myperturb;
             my_translations_y[iover] += myperturb;
             if (is_3d_trans) {
                 my_translations_z[iover] += do_helical_refine ?
-                    // Helical reconstruction in 3D subtomogram averaging
-                    myperturb_helical :
+                    myperturb_helical :  // Helical reconstruction in 3D subtomogram averaging
                     myperturb;
             }
         }
@@ -1675,7 +1635,6 @@ void HealpixSampling::getOrientations(
         }
     }
 
-
     // Random perturbation
     if (ABS(random_perturbation) > 0.0) {
         RFLOAT myperturb = random_perturbation * getAngularSampling();
@@ -1704,7 +1663,7 @@ void HealpixSampling::pushbackOversampledPsiAngles(
         oversampled_tilt.push_back(tilt);
         oversampled_psi .push_back(psi_angles[ipsi]);
     } else {
-        int nr_ipsi_over = ROUND(std::pow(2.0, oversampling_order));
+        int nr_ipsi_over = iPowerof2(oversampling_order);
         for (int ipsi_over = 0; ipsi_over < nr_ipsi_over; ipsi_over++) {
             RFLOAT overpsi = psi_angles[ipsi] - 0.5 * psi_step + (0.5 + ipsi_over) * psi_step / nr_ipsi_over;
             oversampled_rot .push_back(rot);
@@ -1909,7 +1868,6 @@ void HealpixSampling::removePointsOutsideLimitedTiltAngles() {
 void HealpixSampling::removeSymmetryEquivalentPoints(RFLOAT max_ang) {
     // Maximum distance
     RFLOAT cos_max_ang = cos(DEG2RAD(max_ang));
-    RFLOAT my_dotProduct;
     Matrix1D<RFLOAT> direction(3), direction1(3);
     std::vector<Matrix1D<RFLOAT> > directions_vector;
 
@@ -1922,7 +1880,7 @@ void HealpixSampling::removeSymmetryEquivalentPoints(RFLOAT max_ang) {
     // First call to conventional remove_redundant_points
     removeSymmetryEquivalentPointsGeometric(pgGroup, pgOrder, directions_vector);
 
-    #ifdef  DEBUG_SAMPLING
+    #ifdef DEBUG_SAMPLING
     writeAllOrientationsToBild("orients_sym0.bild", "0 1 0", 0.021);
     #endif
 
@@ -1932,7 +1890,7 @@ void HealpixSampling::removeSymmetryEquivalentPoints(RFLOAT max_ang) {
     // Only a small fraction of the points at the border of the AU is thrown away anyway...
     if (rot_angles.size() < 4000) {
         // Create no_redundant vectors
-        std::vector <Matrix1D<RFLOAT>> no_redundant_directions_vector;
+        std::vector <Matrix1D<RFLOAT> > no_redundant_directions_vector;
         std::vector <RFLOAT> no_redundant_rot_angles;
         std::vector <RFLOAT> no_redundant_tilt_angles;
         std::vector <int> no_redundant_directions_ipix;
@@ -1947,11 +1905,11 @@ void HealpixSampling::removeSymmetryEquivalentPoints(RFLOAT max_ang) {
             // i is probably closer to latest additions: loop backwards over k....
             for (long int k = no_redundant_directions_vector.size() - 1; k >= 0; k--) {
                 for (int j = 0; j < R_repository.size(); j++) {
-                    direction =  L_repository[j] *
+                    direction = L_repository[j] *
                         (no_redundant_directions_vector[k].transpose() *
                          R_repository[j]).transpose();
                     //Calculate distance
-                    my_dotProduct = dotProduct(direction,direction1);
+                    RFLOAT my_dotProduct = dotProduct(direction,direction1);
                     if (my_dotProduct > cos_max_ang) {
                         uniq = false;
                         break;
@@ -1976,18 +1934,18 @@ void HealpixSampling::removeSymmetryEquivalentPoints(RFLOAT max_ang) {
 }
 
 void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
-    const int symmetry, int sym_order, std::vector <Matrix1D<RFLOAT>> &directions_vector
+    const int symmetry, int sym_order, std::vector<Matrix1D<RFLOAT> > &directions_vector
 ) {
     Matrix2D<RFLOAT> L(4, 4), R(4, 4);
     Matrix2D<RFLOAT> aux(3, 3);
     Matrix1D<RFLOAT> row1(3), row2(3), row(3);
 
-    std::vector <Matrix1D<RFLOAT> > no_redundant_directions_vector;
-    std::vector <RFLOAT> no_redundant_rot_angles;
-    std::vector <RFLOAT> no_redundant_tilt_angles;
-    std::vector <int> no_redundant_directions_ipix;
+    std::vector<Matrix1D<RFLOAT> > no_redundant_directions_vector;
+    std::vector<RFLOAT> no_redundant_rot_angles;
+    std::vector<RFLOAT> no_redundant_tilt_angles;
+    std::vector<int> no_redundant_directions_ipix;
 
-    RFLOAT my_dotProduct;
+    /// TODO: switch block
     if (symmetry == pg::CN) {
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
@@ -2018,8 +1976,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
-                rot_angles[i] >=    0.0 / sym_order &&
-                rot_angles[i] <=  180.0 / sym_order
+                rot_angles[i] >=   0.0 / sym_order &&
+                rot_angles[i] <= 180.0 / sym_order
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2031,8 +1989,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
-                rot_angles[i] >= -180.0 / sym_order &&
-                rot_angles[i] <= +180.0 / sym_order &&
+                rot_angles [i] >= -180.0 / sym_order &&
+                rot_angles [i] <= +180.0 / sym_order &&
                 tilt_angles[i] <= 90.0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
@@ -2045,8 +2003,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
-                rot_angles[i] >= -180.0 * 2.0 / sym_order &&
-                rot_angles[i] <= +180.0 * 2.0 / sym_order &&
+                rot_angles [i] >= -180.0 * 2.0 / sym_order &&
+                rot_angles [i] <= +180.0 * 2.0 / sym_order &&
                 tilt_angles[i] <= 90.0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
@@ -2067,8 +2025,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 }
             } else {
                 if (
-                    rot_angles[i] >= -180.0 / sym_order + 90.0 &&
-                    rot_angles[i] <= +180.0 / sym_order + 90.0 &&
+                    rot_angles [i] >= -180.0 / sym_order + 90.0 &&
+                    rot_angles [i] <= +180.0 / sym_order + 90.0 &&
                     tilt_angles[i] <= 90.0
                 ) {
                     no_redundant_rot_angles.push_back(rot_angles[i]);
@@ -2081,8 +2039,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
     } else if (symmetry  == pg::DNV) {
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
-                rot_angles[i] >= 90.0 &&
-                rot_angles[i] <= 180.0 / sym_order + 90.0 &&
+                rot_angles [i] >= 90.0 &&
+                rot_angles [i] <= 180.0 / sym_order + 90.0 &&
                 tilt_angles[i] <= 90.0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
@@ -2094,8 +2052,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
     } else if (symmetry  == pg::DNH) {
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
-                rot_angles[i] >= 90.0 &&
-                rot_angles[i] <= 180.0 / sym_order + 90.0 &&
+                rot_angles [i] >= 90.0 &&
+                rot_angles [i] <= 180.0 / sym_order + 90.0 &&
                 tilt_angles[i] <= 90.0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
@@ -2132,21 +2090,21 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
             }
         }
     } else if (symmetry  == pg::TD) {
-        // OK
         Matrix1D<RFLOAT> _2_fold_axis_1_by_3_fold_axis_2(3);
         _2_fold_axis_1_by_3_fold_axis_2 = vectorR3(-0.942809, 0.0, 0.0);
         _2_fold_axis_1_by_3_fold_axis_2.selfNormalize();
         Matrix1D<RFLOAT> _3_fold_axis_2_by_3_fold_axis_5(3);
         _3_fold_axis_2_by_3_fold_axis_5 = vectorR3(0.471405, 0.272165, 0.7698);
+        // sqrt(2) / 3
         _3_fold_axis_2_by_3_fold_axis_5.selfNormalize();
         Matrix1D<RFLOAT> _3_fold_axis_5_by_2_fold_axis_1(3);
         _3_fold_axis_5_by_2_fold_axis_1 = vectorR3(0.0, 0.471405, -0.666667);
         _3_fold_axis_5_by_2_fold_axis_1.selfNormalize();
         for (long int i = 0; i < rot_angles.size(); i++) {
-        //   if ( rot_angles[i]>=     120. &&
-        //         rot_angles[i]<=   150. ||
-        //         rot_angles[i]==     0
-        //      )
+            // if (
+            //     rot_angles[i] >= 120.0 && rot_angles[i] <= 150.0 ||
+            //     rot_angles[i] == 0.0
+            // )
             if (
                 dotProduct(directions_vector[i], _2_fold_axis_1_by_3_fold_axis_2) >= 0 &&
                 dotProduct(directions_vector[i], _3_fold_axis_2_by_3_fold_axis_5) >= 0 &&
@@ -2170,9 +2128,9 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         _2_fold_axis_2_by_3_fold_axis_1 = vectorR3(-0.408248, -0.707107, 0.0);
         _2_fold_axis_2_by_3_fold_axis_1.selfNormalize();
         for (long int i = 0; i < rot_angles.size(); i++) {
-        //   if ( rot_angles[i]>=     120. &&
-        //         rot_angles[i]<=   150. ||
-        //         rot_angles[i]==     0
+        //   if ( rot_angles[i]>=    120. &&
+        //         rot_angles[i]<=  150. ||
+        //         rot_angles[i]==    0
         //      )
             if (
                 dotProduct(directions_vector[i], _3_fold_axis_1_by_2_fold_axis_1) >= 0 &&
@@ -2197,14 +2155,15 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         _4_fold_axis_by_3_fold_axis_1 = vectorR3(-1.0, 1.0, 0.0);
         _4_fold_axis_by_3_fold_axis_1.selfNormalize();
         for (long int i = 0; i < rot_angles.size(); i++) {
-            if (((
-                rot_angles[i] >= 45.0 &&
-                rot_angles[i] <= 135.0 &&
+            if ((
+                rot_angles [i] == 0.0 ||
+                rot_angles [i] >= 45.0 &&
+                rot_angles [i] <= 135.0 &&
                 tilt_angles[i] <= 90.0
-            ) || rot_angles[i] ==  0.0) && (
+            ) && (
                 dotProduct(directions_vector[i], _3_fold_axis_1_by_3_fold_axis_2) >= 0 &&
-                dotProduct(directions_vector[i], _3_fold_axis_2_by_4_fold_axis) >= 0 &&
-                dotProduct(directions_vector[i], _4_fold_axis_by_3_fold_axis_1) >= 0
+                dotProduct(directions_vector[i], _3_fold_axis_2_by_4_fold_axis)   >= 0 &&
+                dotProduct(directions_vector[i], _4_fold_axis_by_3_fold_axis_1)   >= 0
             )) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2225,13 +2184,13 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         _4_fold_axis_by_3_fold_axis_1.selfNormalize();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if ((
-                rot_angles[i] >= 90.0 &&
-                rot_angles[i] <= 135.0 &&
+                rot_angles [i] >= 90.0 &&
+                rot_angles [i] <= 135.0 &&
                 tilt_angles[i] <= 90.0
             ) && (
                 dotProduct(directions_vector[i], _3_fold_axis_1_by_3_fold_axis_2) >= 0 &&
-                dotProduct(directions_vector[i], _3_fold_axis_2_by_4_fold_axis) >= 0 &&
-                dotProduct(directions_vector[i], _4_fold_axis_by_3_fold_axis_1) >= 0
+                dotProduct(directions_vector[i], _3_fold_axis_2_by_4_fold_axis)   >= 0 &&
+                dotProduct(directions_vector[i], _4_fold_axis_by_3_fold_axis_1)   >= 0
             )) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2257,8 +2216,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
-                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis) >= 0 &&
-                dotProduct(directions_vector[i], _3_fold_axis_by_5_fold_axis_1) >= 0
+                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis)   >= 0 &&
+                dotProduct(directions_vector[i], _3_fold_axis_by_5_fold_axis_1)   >= 0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2287,8 +2246,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
-                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis) >= 0 &&
-                dotProduct(directions_vector[i], _3_fold_axis_by_5_fold_axis_1) >= 0
+                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis)   >= 0 &&
+                dotProduct(directions_vector[i], _3_fold_axis_by_5_fold_axis_1)   >= 0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2317,8 +2276,8 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
-                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis) >= 0 &&
-                dotProduct(directions_vector[i], _3_fold_axis_by_5_fold_axis_1) >= 0
+                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis)   >= 0 &&
+                dotProduct(directions_vector[i], _3_fold_axis_by_5_fold_axis_1)   >= 0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2376,13 +2335,13 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         );
         _3_fold_axis_by_5_fold_axis_1.selfNormalize();
         Matrix1D<RFLOAT> _3_fold_axis_by_2_fold_axis(3);
-        _3_fold_axis_by_2_fold_axis =  vectorR3(1.0, 0.0, 0.0);
+        _3_fold_axis_by_2_fold_axis = vectorR3(1.0, 0.0, 0.0);
         _3_fold_axis_by_2_fold_axis.selfNormalize();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
-                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis) >= 0 &&
-                dotProduct(directions_vector[i], _3_fold_axis_by_2_fold_axis) >= 0
+                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis)   >= 0 &&
+                dotProduct(directions_vector[i], _3_fold_axis_by_2_fold_axis)     >= 0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2408,13 +2367,13 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         );
         _3_fold_axis_by_5_fold_axis_1.selfNormalize();
         Matrix1D<RFLOAT> _3_fold_axis_by_2_fold_axis(3);
-        _3_fold_axis_by_2_fold_axis =  A * vectorR3(1.0, 0.0, 0.0);
+        _3_fold_axis_by_2_fold_axis = A * vectorR3(1.0, 0.0, 0.0);
         _3_fold_axis_by_2_fold_axis.selfNormalize();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
-                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis) >= 0 &&
-                dotProduct(directions_vector[i], _3_fold_axis_by_2_fold_axis) >= 0
+                dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis)   >= 0 &&
+                dotProduct(directions_vector[i], _3_fold_axis_by_2_fold_axis)     >= 0
             ) {
                 no_redundant_rot_angles.push_back(rot_angles[i]);
                 no_redundant_tilt_angles.push_back(tilt_angles[i]);
@@ -2427,7 +2386,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         Matrix2D<RFLOAT> A(3, 3);
         Euler_angles2matrix(0, 31.7174745559, 0, A);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
-        _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0., 0., 1.);
+        _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0., 0., 1.0);
         _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = A * vectorR3(
