@@ -315,22 +315,20 @@ void HealpixSampling::setTranslations(
         if (new_helical_offset_step < 0.0)
             new_helical_offset_step = helical_offset_step;
 
-        // The new helical offset step is not OK if:
-        if (
-            new_helical_offset_step < 0.0 ||                                              // It is negative
-            new_helical_offset_step > new_offset_step ||                                  // It is larger than the new offset step
-            new_helical_offset_step > helical_offset_step && helical_offset_step > 0.0 || // It is larger than the old helical offset step (provided that is valid)
-            3.0 * new_helical_offset_step > helical_rise_Angst                            // It is larger than 1/3 the helical rise (so that the helical axis is sampled fewer than 3 times per rise)
-        ) {
-            // Use the new offset step (This will resolve values larger than the new offset step)
+        // Constrain the new helical offset step
+
+        // If the new helical offset step is negative, or larger than the new offset step, use the new offset step
+        if (new_helical_offset_step < 0.0 || new_helical_offset_step > new_offset_step)
             new_helical_offset_step = new_offset_step;
-            // Use the old helical offset step if that is smaller
-            if (new_helical_offset_step > helical_offset_step && helical_offset_step > 0.0)
-                new_helical_offset_step = helical_offset_step;
-            // Ensure that the new helical offset step is no coarser than 1/3 the helical rise
-            if (3.0 * new_helical_offset_step > helical_rise_Angst)
-                new_helical_offset_step = helical_rise_Angst / 3.0;
-        }
+
+        // Ensure the the new helical offset step is no larger than the last (valid) helical offset step
+        if (new_helical_offset_step > helical_offset_step && helical_offset_step > 0.0)
+            new_helical_offset_step = helical_offset_step;
+
+        // Ensure that the new helical offset step is no larger (coarser) than 1/3 the helical rise 
+        // (so that the helical axis is sampled no fewer than 3 times per helical rise)
+        if (3.0 * new_helical_offset_step > helical_rise_Angst)
+            new_helical_offset_step = helical_rise_Angst / 3.0;
 
         maxh = CEIL(h_range / new_helical_offset_step); // Out of range samplings will be excluded next
         if (do_local_searches_helical) {
