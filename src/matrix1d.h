@@ -993,7 +993,7 @@ class Matrix1D {
          */
         void selfReverse() {
             for (int j = 0; j <= (int) (vdim - 1) / 2; j++) {
-                SWAP(T, vdata[j], vdata[vdim - 1 - j]);
+                SWAP(vdata[j], vdata[vdim - 1 - j]);
             }
         }
 

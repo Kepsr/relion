@@ -4835,10 +4835,8 @@ void Interpolate3DCurves(
 
     // Check endianness - for MOD files only
     int num = 1;
-    bool is_little_endian = false;
-    if (*(char *)&num == 1)
-        is_little_endian = true;
-    //std::cout << is_little_endian << std::endl;
+    bool is_little_endian = *(char *) &num == 1;
+    // std::cout << is_little_endian << std::endl;
 
     // Real work begins...
     MD_all.clear();
@@ -4881,20 +4879,20 @@ void Interpolate3DCurves(
             // Name of model ends
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Xdim
             if (is_little_endian) {
-                SWAP(char, buf_word[0], buf_word[3]);
-                SWAP(char, buf_word[1], buf_word[2]);
+                SWAP(buf_word[0], buf_word[3]);
+                SWAP(buf_word[1], buf_word[2]);
             }
             xdim = *(reinterpret_cast<int*>(buf_word));
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Ydim
             if (is_little_endian) {
-                SWAP(char, buf_word[0], buf_word[3]);
-                SWAP(char, buf_word[1], buf_word[2]);
+                SWAP(buf_word[0], buf_word[3]);
+                SWAP(buf_word[1], buf_word[2]);
             }
             ydim = *(reinterpret_cast<int*>(buf_word));
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Zdim
             if (is_little_endian) {
-                SWAP(char, buf_word[0], buf_word[3]);
-                SWAP(char, buf_word[1], buf_word[2]);
+                SWAP(buf_word[0], buf_word[3]);
+                SWAP(buf_word[1], buf_word[2]);
             }
             zdim = *(reinterpret_cast<int*>(buf_word));
             std::cout << " Binning factor = " << binning_factor << std::endl;
@@ -4904,8 +4902,8 @@ void Interpolate3DCurves(
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Number of objects
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Flags
             if (is_little_endian) {
-                SWAP(char, buf_word[0], buf_word[3]);
-                SWAP(char, buf_word[1], buf_word[2]);
+                SWAP(buf_word[0], buf_word[3]);
+                SWAP(buf_word[1], buf_word[2]);
             }
             if ((*(reinterpret_cast<int*>(buf_word))) & 0x00010000) // Check flag #16 - flip YZ?
                 flip_YZ = true;
@@ -4926,8 +4924,8 @@ void Interpolate3DCurves(
 
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Number of 3D points (meshes)
             if (is_little_endian) {
-                SWAP(char, buf_word[0], buf_word[3]);
-                SWAP(char, buf_word[1], buf_word[2]);
+                SWAP(buf_word[0], buf_word[3]);
+                SWAP(buf_word[1], buf_word[2]);
             }
             nr_points = *(reinterpret_cast<int*>(buf_word));
             //std::cout << nr_points << std::endl;
@@ -4941,16 +4939,16 @@ void Interpolate3DCurves(
             for (int id = 0; id < nr_points; id++) {
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(char, buf_word[0], buf_word[3]);
-                    SWAP(char, buf_word[1], buf_word[2]);
+                    SWAP(buf_word[0], buf_word[3]);
+                    SWAP(buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 xlist.push_back(val);
 
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(char, buf_word[0], buf_word[3]);
-                    SWAP(char, buf_word[1], buf_word[2]);
+                    SWAP(buf_word[0], buf_word[3]);
+                    SWAP(buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 if (flip_YZ) {
@@ -4961,8 +4959,8 @@ void Interpolate3DCurves(
 
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(char, buf_word[0], buf_word[3]);
-                    SWAP(char, buf_word[1], buf_word[2]);
+                    SWAP(buf_word[0], buf_word[3]);
+                    SWAP(buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 if (flip_YZ) {

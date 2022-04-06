@@ -195,12 +195,12 @@ void gaussj(T *a, int n, T *b, int m) {
     for (j = 1; j <= n; j++)
         ipiv[j] = 0;
     for (i = 1; i <= n; i++) {
-        big = (T)0;
+        big = (T) 0;
         for (j = 1; j <= n; j++)
             if (ipiv[j] != 1)
                 for (k = 1; k <= n; k++) {
                     if (ipiv[k] == 0) {
-                        if (fabs((RFLOAT)a[j * n + k]) >= (RFLOAT) big) {
+                        if (fabs((RFLOAT) a[j * n + k]) >= (RFLOAT) big) {
                             big = ABS(a[j * n + k]);
                             irow = j;
                             icol = k;
@@ -211,11 +211,9 @@ void gaussj(T *a, int n, T *b, int m) {
                 }
         ++(ipiv[icol]);
         if (irow != icol) {
-            for (l = 1; l <= n; l++)
-                SWAP(T, a[irow * n + l], a[icol * n + l])
-                for (l = 1; l <= m; l++)
-                    SWAP(T, b[irow * n + l], b[icol * n + l])
-                }
+            for (l = 1; l <= n; l++) SWAP(a[irow * n + l], a[icol * n + l])
+            for (l = 1; l <= m; l++) SWAP(b[irow * n + l], b[icol * n + l])
+        }
         indxr[i] = irow;
         indxc[i] = icol;
         if (a[icol * n + icol] == 0.0)
@@ -239,7 +237,7 @@ void gaussj(T *a, int n, T *b, int m) {
     for (l = n; l >= 1; l--) {
         if (indxr[l] != indxc[l])
             for (k = 1; k <= n; k++)
-                SWAP(T, a[k * n + indxr[l]], a[k * n + indxc[l]]);
+                SWAP(a[k * n + indxr[l]], a[k * n + indxc[l]]);
     }
     free_Tvector(ipiv,  1, n);
     free_Tvector(indxr, 1, n);

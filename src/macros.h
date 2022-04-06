@@ -380,12 +380,18 @@ extern const char *g_RELION_VERSION;
 /// @name Miscellaneous
 //@{
 
-/** Swap two values a and b (both of type T).
+/** Swap two values a and b (of the same size in memory).
  *
  * A new scope is entered, where a temporary variable is declared.
  * The data is exchanged and the scope is exited.
  */
-#define SWAP(T, a, b) { T tmp = (a); (a) = (b); (b) = tmp; }
+#define SWAP(x, y) { \
+    size_t stmp = sizeof(x); \
+    unsigned char tmp[stmp == sizeof(y) ? (signed) stmp : -1]; \
+    memcpy(tmp,  &(y), stmp); \
+    memcpy(&(y), &(x), stmp); \
+    memcpy(&(x),  tmp, stmp); \
+}
 
 
 namespace Xmipp {
