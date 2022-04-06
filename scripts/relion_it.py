@@ -502,11 +502,11 @@ class ExtractJob(Job):
     def __init__(self, options, passindex, coordinates_star_file, micrographs_star_file):
         # Extract options
         self.options = QAList([
-            ('Input coordinates: ',                coordinates_star_file),
-            ('micrograph STAR file: ',             micrographs_star_file),
-            ('Diameter background circle (pix): ', options.extract_bg_diameter),
-            ('Particle box size (pix):',           options.extract_boxsize),
-            ('Number of MPI procs:',               options.extract_mpi),
+            ('Input coordinates:',                coordinates_star_file),
+            ('micrograph STAR file:',             micrographs_star_file),
+            ('Diameter background circle (pix):', options.extract_bg_diameter),
+            ('Particle box size (pix):',          options.extract_boxsize),
+            ('Number of MPI procs:',              options.extract_mpi),
         ])
 
         if options.extract_downscale[passindex]:
@@ -535,8 +535,8 @@ class SplitJob(Job):
         self.options = QAList([
             ('OR select from particles.star:', particles_star_file),
             ('OR: split into subsets?',        'Yes'),
-            ('OR: number of subsets: ',        -1),
-            ('Subset size: ',                  options.batchsize[passindex])
+            ('OR: number of subsets:',         -1),
+            ('Subset size:',                   options.batchsize[passindex])
         ])
 
         self.name_in_script = 'split_job_pass{}'.format(passindex + 1)
@@ -1598,7 +1598,7 @@ def main():
         'this script keeps track of already submitted jobs in a filed called {}'.format(SETUP_CHECK_FILE),
         '  upon a restart, jobs present in this file will be continued (for preprocessing), or ignored when already finished',
         'if you would like to re-do a specific job from scratch (e.g. because you changed its parameters)',
-        '  remove that job, and those that depend on it, from the {}'.format(SETUP_CHECK_FILE),
+        '  remove that job, and those that depend on it, from {}'.format(SETUP_CHECK_FILE),
         (columns - 12) * '-',
         '',
     ]:
