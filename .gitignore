@@ -6,8 +6,17 @@ external
 .idea
 cleanup.sh
 .vscode/
-#Eclipse files
+
+# Eclipse files
 .cproject
 .project
 Debug
 *.pyc
+
+# Doxygen files
+doxyfile
+html
+latex
+
+# Testing scripts
+testenv
