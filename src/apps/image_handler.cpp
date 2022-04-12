@@ -514,7 +514,7 @@ class image_handler_parameters {
             int oldysize = YSIZE(Iout());
             int oldsize = oldxsize;
             if (oldxsize != oldysize && Iout().getDim() == 2) {
-                oldsize = XMIPP_MAX(oldxsize, oldysize);
+                oldsize = std::max(oldxsize, oldysize);
                 Iout().setXmippOrigin();
                 Iout().window(
                     Xmipp::init(oldsize), Xmipp::init(oldsize),

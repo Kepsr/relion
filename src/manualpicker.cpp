@@ -92,7 +92,7 @@ void cb_viewmic(Fl_Widget* w, void* data) {
 
     // Launch the picking window
     first_pick_viewed = imic;
-    last_pick_viewed = XMIPP_MIN(global_fn_mics.size() - 1, imic + nr_simultaneous - 1);
+    last_pick_viewed = std::min((int) global_fn_mics.size() - 1, (int) imic + nr_simultaneous - 1);
     for (int mymic = first_pick_viewed; mymic <= last_pick_viewed; mymic++) {
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineSymlinkName(global_fn_mics[mymic], fn_pre, fn_jobnr, fn_post);

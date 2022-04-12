@@ -954,7 +954,7 @@ void Postprocessing::run_locres(int rank, int size) {
                         break;
                     local_resol = i > 0 ? XSIZE(I1()) * angpix / (RFLOAT) i : 999.0;
                 }
-                local_resol = XMIPP_MIN(locres_minres, local_resol);
+                local_resol = std::min((float) locres_minres, local_resol);
                 if (rank == 0)
                     fh << " kk= " << kk << " ii= " << ii << " jj= " << jj << " local resolution= " << local_resol << std::endl;
 

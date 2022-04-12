@@ -90,7 +90,7 @@ class particle_reposition_parameters {
 
 
         // Loop over all micrographs
-        int barstep = XMIPP_MAX(1, DFi.numberOfObjects() / 60);
+        int barstep = std::max(1, (int) DFi.numberOfObjects() / 60);
         init_progress_bar(DFi.numberOfObjects());
         long int imgno = 0;
         FileName fn_prevdir = "";

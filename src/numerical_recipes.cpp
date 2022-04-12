@@ -198,7 +198,7 @@ void bessjy(RFLOAT x, RFLOAT xnu, RFLOAT *rj, RFLOAT *ry, RFLOAT *rjp, RFLOAT *r
 
     if (x <= 0.0 || xnu < 0.0)
         nrerror("bad arguments in bessjy");
-    nl = (x < XMIN ? (int)(xnu + 0.5) : XMIPP_MAX(0, (int)(xnu - x + 1.5)));
+    nl = x < XMIN ? (int) (xnu + 0.5) : std::max(0, (int) (xnu - x + 1.5));
     xmu = xnu - nl;
     xmu2 = xmu * xmu;
     xi = 1.0 / x;
@@ -461,7 +461,6 @@ RFLOAT betacf(RFLOAT a, RFLOAT b, RFLOAT x) {
 #define GOLD 1.618034
 #define GLIMIT 100.0
 #define TINY 1.0e-20
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define SIGN(a,b) ((b) > 0.0 ? fabs(a) : -fabs(a))
 #define SHFT(a,b,c,d) (a)=(b); (b)=(c); (c)=(d);
 #define F1DIM(x,f) {\
@@ -490,7 +489,7 @@ void mnbrak(
         r = (*bx - *ax) * (*fb - *fc);
         q = (*bx - *cx) * (*fb - *fa);
         u = (*bx) - ((*bx - *cx) * q - (*bx - *ax) * r) /
-            (2.0 * SIGN(MAX(fabs(q - r), TINY), q - r));
+            (2.0 * SIGN(std::max(fabs(q - r), TINY), q - r));
         ulim = (*bx) + GLIMIT * (*cx - *bx);
         if ((*bx - u)*(u - *cx) > 0.0) {
             F1DIM(u,fu);
@@ -662,11 +661,11 @@ void powell(
     ask_Tvector(pt, 1, n);
     ask_Tvector(ptt, 1, n);
     ask_Tvector(xit, 1, n);
-    fret = (*func)(p,prm);
-    for (j = 1;j <= n;j++)
+    fret = (*func)(p, prm);
+    for (j = 1; j <= n; j++)
         pt[j] = p[j];
 
-    for (iter = 1;;(iter)++) {
+    for (iter = 1;; iter++) {
         /* By coss ----- */
         if (show) {
             std::cout << iter << " (" << p[1];
@@ -682,9 +681,8 @@ void powell(
         for (i = 1;i <= n;i++) {
             different_from_0 = false; // CO
             for (j = 1; j <= n; j++) {
-                xit[j] = xi[j*n+i];
-                if (xit[j] != 0)
-                    different_from_0 = true;
+                xit[j] = xi[j * n + i];
+                if (xit[j] != 0) { different_from_0 = true; }
             }
             if (different_from_0) {
                 fptt = fret;
@@ -696,13 +694,11 @@ void powell(
                 /* By coss ----- */
                 if (show) {
                     std::cout << "   (";
-                    if (i == 1)
-                        std::cout << "***";
+                    if (i == 1) { std::cout << "***"; }
                     std::cout << p[1];
                     for (int co = 2; co <= n; co++) {
                         std::cout << ",";
-                        if (co == i)
-                            std::cout << "***";
+                        if (co == i) { std::cout << "***"; }
                         std::cout << p[co];
                     }
                     std::cout << ")--->" << fret << std::endl;
@@ -710,27 +706,28 @@ void powell(
                 /* ------------- */
             }
         }
-        if (2.0*fabs(fp - fret) <= ftol*(fabs(fp) + fabs(fret))) {
+        if (2.0 * fabs(fp - fret) <= ftol * (fabs(fp) + fabs(fret))) {
             free_Tvector(xit, 1, n);
             free_Tvector(ptt, 1, n);
-            free_Tvector(pt, 1, n);
+            free_Tvector(pt,  1, n);
             return;
         }
         if (iter == ITMAX)
             nrerror("Too many iterations in routine POWELL");
-        for (j = 1;j <= n;j++) {
+        for (j = 1; j <= n; j++) {
             ptt[j] = 2.0 * p[j] - pt[j];
-            xit[j] = p[j] - pt[j];
-            pt[j] = p[j];
+            xit[j] =       p[j] - pt[j];
+            pt [j] =       p[j];
         }
-        fptt = (*func)(ptt,prm);
+        fptt = (*func)(ptt, prm);
         if (fptt < fp) {
             #define SQR(a) ((a)*(a))
             t = 2.0 * (fp - 2.0 * fret + fptt) * SQR(fp - fret - del) - del * SQR(fp - fptt);
             if (t < 0.0) {
                 linmin(p, xit, n, fret, func, prm);
-                for (j = 1;j <= n;j++)
-                    xi[j*n+ibig] = xit[j];
+                for (j = 1; j <= n; j++) {
+                    xi[j * n + ibig] = xit[j];
+                }
             }
         }
     }
@@ -778,18 +775,18 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
     bool    Flag;
     int     MaxIterations = SVDMAXITER;
 
-    ask_Tvector(rv1, 0, Columns*Columns - 1);
+    ask_Tvector(rv1, 0, Columns * Columns - 1);
     g = Scale = Norm = 0.0;
-    for (i = 0L; (i < Columns); i++) {
+    for (i = 0L; i < Columns; i++) {
         l = i + 1L;
         rv1[i] = Scale * g;
         g = s = Scale = 0.0;
         if (i < Lines) {
-            for (k = i; (k < Lines); k++) {
+            for (k = i; k < Lines; k++) {
                 Scale += fabs(U[k * Columns + i]);
             }
             if (Scale != 0.0) {
-                for (k = i; (k < Lines); k++) {
+                for (k = i; k < Lines; k++) {
                     U[k * Columns + i] /= Scale;
                     s += U[k * Columns + i] * U[k * Columns + i];
                 }
@@ -797,71 +794,71 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                 g = (0.0 <= f) ? (-sqrt(s)) : (sqrt(s));
                 h = f * g - s;
                 U[i * Columns + i] = f - g;
-                for (j = l; (j < Columns); j++) {
-                    for (s = 0.0, k = i; (k < Lines); k++) {
+                for (j = l; j < Columns; j++) {
+                    for (s = 0.0, k = i; k < Lines; k++) {
                         s += U[k * Columns + i] * U[k * Columns + j];
                     }
                     f = s / h;
-                    for (k = i; (k < Lines); k++) {
+                    for (k = i; k < Lines; k++) {
                         U[k * Columns + j] += f * U[k * Columns + i];
                     }
                 }
-                for (k = i; (k < Lines); k++) {
+                for (k = i; k < Lines; k++) {
                     U[k * Columns + i] *= Scale;
                 }
             }
         }
         W[i] = Scale * g;
         g = s = Scale = 0.0;
-        if ((i < Lines) && (i != (Columns - 1L))) {
-            for (k = l; (k < Columns); k++) {
+        if (i < Lines && i != Columns - 1L) {
+            for (k = l; k < Columns; k++) {
                 Scale += fabs(U[i * Columns + k]);
             }
             if (Scale != 0.0) {
-                for (k = l; (k < Columns); k++) {
+                for (k = l; k < Columns; k++) {
                     U[i * Columns + k] /= Scale;
                     s += U[i * Columns + k] * U[i * Columns + k];
                 }
                 f = U[i * Columns + l];
-                g = (0.0 <= f) ? (-sqrt(s)) : (sqrt(s));
+                g = 0.0 <= f ? -sqrt(s) : sqrt(s);
                 h = f * g - s;
                 U[i * Columns + l] = f - g;
-                for (k = l; (k < Columns); k++) {
+                for (k = l; k < Columns; k++) {
                     rv1[k] = U[i * Columns + k] / h;
                 }
-                for (j = l; (j < Lines); j++) {
-                    for (s = 0.0, k = l; (k < Columns); k++) {
+                for (j = l; j < Lines; j++) {
+                    for (s = 0.0, k = l; k < Columns; k++) {
                         s += U[j * Columns + k] * U[i * Columns + k];
                     }
-                    for (k = l; (k < Columns); k++) {
+                    for (k = l; k < Columns; k++) {
                         U[j * Columns + k] += s * rv1[k];
                     }
                 }
-                for (k = l; (k < Columns); k++) {
+                for (k = l; k < Columns; k++) {
                     U[i * Columns + k] *= Scale;
                 }
             }
         }
-        Norm = ((fabs(W[i]) + fabs(rv1[i])) < Norm) ? (Norm) : (fabs(W[i]) + fabs(rv1[i]));
+        Norm = std::max(Norm, fabs(W[i]) + fabs(rv1[i]));
     }
     for (i = Columns - 1L; (0L <= i); i--) {
         if (i < (Columns - 1L)) {
             if (g != 0.0) {
-                for (j = l; (j < Columns); j++) {
+                for (j = l; j < Columns; j++) {
                     V[j * Columns + i] = U[i * Columns + j] / (U[i * Columns + l] * g);
                 }
-                for (j = l; (j < Columns); j++) {
-                    for (s = 0.0, k = l; (k < Columns); k++) {
+                for (j = l; j < Columns; j++) {
+                    for (s = 0.0, k = l; k < Columns; k++) {
                         s += U[i * Columns + k] * V[k * Columns + j];
                     }
-                    for (k = l; (k < Columns); k++) {
+                    for (k = l; k < Columns; k++) {
                         if (s != 0.0) {
                             V[k * Columns + j] += s * V[k * Columns + i];
                         }
                     }
                 }
             }
-            for (j = l; (j < Columns); j++) {
+            for (j = l; j < Columns; j++) {
                 V[i * Columns + j] = V[j * Columns + i] = 0.0;
             }
         }
@@ -869,55 +866,55 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
         g = rv1[i];
         l = i;
     }
-    for (i = (Lines < Columns) ? (Lines - 1L) : (Columns - 1L); (0L <= i); i--) {
+    for (i = Lines < Columns ? Lines - 1L : Columns - 1L; 0L <= i; i--) {
         l = i + 1L;
         g = W[i];
-        for (j = l; (j < Columns); j++) {
+        for (j = l; j < Columns; j++) {
             U[i * Columns + j] = 0.0;
         }
         if (g != 0.0) {
             g = 1.0 / g;
-            for (j = l; (j < Columns); j++) {
-                for (s = 0.0, k = l; (k < Lines); k++) {
+            for (j = l; j < Columns; j++) {
+                for (s = 0.0, k = l; k < Lines; k++) {
                     s += U[k * Columns + i] * U[k * Columns + j];
                 }
                 f = s * g / U[i * Columns + i];
-                for (k = i; (k < Lines); k++) {
+                for (k = i; k < Lines; k++) {
                     if (f != 0.0) {
                         U[k * Columns + j] += f * U[k * Columns + i];
                     }
                 }
             }
-            for (j = i; (j < Lines); j++) {
+            for (j = i; j < Lines; j++) {
                 U[j * Columns + i] *= g;
             }
         } else {
-            for (j = i; (j < Lines); j++) {
+            for (j = i; j < Lines; j++) {
                 U[j * Columns + i] = 0.0;
             }
         }
         U[i * Columns + i] += 1.0;
     }
-    for (k = Columns - 1L; (0L <= k); k--) {
-        for (its = 1L; (its <= MaxIterations); its++) {
+    for (k = Columns - 1L; 0L <= k; k--) {
+        for (its = 1L; its <= MaxIterations; its++) {
             Flag = true;
-            for (l = k; (0L <= l); l--) {
+            for (l = k; 0L <= l; l--) {
                 nm = l - 1L;
-                if ((fabs(rv1[l]) + Norm) == Norm) {
+                if (fabs(rv1[l]) + Norm == Norm) {
                     Flag = false;
                     break;
                 }
-                if ((fabs(W[nm]) + Norm) == Norm) {
+                if (fabs(W[nm]) + Norm == Norm) {
                     break;
                 }
             }
             if (Flag) {
                 c = 0.0;
                 s = 1.0;
-                for (i = l; (i <= k); i++) {
+                for (i = l; i <= k; i++) {
                     f = s * rv1[i];
                     rv1[i] *= c;
-                    if ((fabs(f) + Norm) == Norm) {
+                    if (fabs(f) + Norm == Norm) {
                         break;
                     }
                     g = W[i];
@@ -926,11 +923,11 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                     h = 1.0 / h;
                     c = g * h;
                     s = -f * h;
-                    for (j = 0L; (j < Lines); j++) {
+                    for (j = 0L; j < Lines; j++) {
                         y = U[j * Columns + nm];
                         z = U[j * Columns + i];
                         U[j * Columns + nm] = y * c + z * s;
-                        U[j * Columns + i] = z * c - y * s;
+                        U[j * Columns + i]  = z * c - y * s;
                     }
                 }
             }
@@ -938,14 +935,14 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
             if (l == k) {
                 if (z < 0.0) {
                     W[k] = -z;
-                    for (j = 0L; (j < Columns); j++) {
+                    for (j = 0L; j < Columns; j++) {
                         V[j * Columns + k] = -V[j * Columns + k];
                     }
                 }
                 break;
             }
             if (its == MaxIterations) {
-                free_Tvector(rv1, 0, Columns*Columns - 1);
+                free_Tvector(rv1, 0, Columns * Columns - 1);
                 return;
             }
             x = W[l];
@@ -955,7 +952,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
             h = rv1[k];
             f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
             g = Pythag(f, 1.0);
-            f = ((x - z) * (x + z) + h * ((y / (f + ((0.0 <= f) ? (fabs(g)) : (-fabs(g))))) - h)) / x;
+            f = ((x - z) * (x + z) + h * ((y / (f + (0.0 <= f ? fabs(g) : -fabs(g)))) - h)) / x;
             c = s = 1.0;
             for (j = l; (j <= nm); j++) {
                 i = j + 1L;
@@ -971,7 +968,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                 g = g * c - x * s;
                 h = y * s;
                 y *= c;
-                for (jj = 0L; (jj < Columns); jj++) {
+                for (jj = 0L; jj < Columns; jj++) {
                     x = V[jj * Columns + j];
                     z = V[jj * Columns + i];
                     V[jj * Columns + j] = x * c + z * s;
@@ -986,7 +983,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                 }
                 f = c * g + s * y;
                 x = c * y - s * g;
-                for (jj = 0L; (jj < Lines); jj++) {
+                for (jj = 0L; jj < Lines; jj++) {
                     y = U[jj * Columns + j];
                     z = U[jj * Columns + i];
                     U[jj * Columns + j] = y * c + z * s;
@@ -998,7 +995,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
             W[k] = x;
         }
     }
-    free_Tvector(rv1, 0, Columns*Columns - 1);
+    free_Tvector(rv1, 0, Columns * Columns - 1);
 }
 
 void svbksb(RFLOAT *u, RFLOAT *w, RFLOAT *v, int m, int n, RFLOAT *b, RFLOAT *x) {
@@ -1009,16 +1006,16 @@ void svbksb(RFLOAT *u, RFLOAT *w, RFLOAT *v, int m, int n, RFLOAT *b, RFLOAT *x)
     for (j = 1; j <= n; j++) {
         s = 0.0;
         if (w[j]) {
-            for (i = 1;i <= m;i++)
-                s += u[i*n+j] * b[i];
+            for (i = 1; i <= m; i++)
+                s += u[i * n + j] * b[i];
             s /= w[j];
         }
         tmp[j] = s;
     }
-    for (j = 1;j <= n;j++) {
+    for (j = 1; j <= n; j++) {
         s = 0.0;
-        for (jj = 1;jj <= n;jj++)
-            s += v[j*n+jj] * tmp[jj];
+        for (jj = 1; jj <= n; jj++)
+            s += v[j * n + jj] * tmp[jj];
         x[j] = s;
     }
     free_Tvector(tmp, 1, n);
@@ -1099,13 +1096,11 @@ RFLOAT gammp(RFLOAT a, RFLOAT x) {
 
     if (x < 0.0 || a <= 0.0)
         nrerror("Invalid arguments in routine gammp");
-    if (x < (a + 1.0)) {
+    if (x < a + 1.0) {
         gser(&gamser, a, x, &gln);
         return gamser;
-    }
-    else
-    {
+    } else {
         gcf(&gammcf, a, x, &gln);
-        return 1.0 -gammcf;
+        return 1.0 - gammcf;
     }
 }

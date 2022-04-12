@@ -1112,15 +1112,13 @@ void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_writ
 
 /** ========================== Initialisation  =========================== */
 
-void MlOptimiser::initialise()
-{
-#ifdef DEBUG
+void MlOptimiser::initialise() {
+    #ifdef DEBUG
     std::cerr<<"MlOptimiser::initialise Entering"<<std::endl;
-#endif
+    #endif
 
-    if (do_gpu)
-    {
-#ifdef CUDA
+    if (do_gpu) {
+        #ifdef CUDA
         int devCount;
         HANDLE_ERROR(cudaGetDeviceCount(&devCount));
 
@@ -1128,66 +1126,56 @@ void MlOptimiser::initialise()
         int compatibleDevices(0);
         // Send device count seen by this follower
         HANDLE_ERROR(cudaGetDeviceCount(&devCount));
-        for(int i=0; i<devCount; i++ )
-                {
-                    HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, i));
-                        if (deviceProp.major>CUDA_CC_MAJOR)
-                            compatibleDevices+=1;
-                           else if (deviceProp.major==CUDA_CC_MAJOR && deviceProp.minor>=CUDA_CC_MINOR)
-                            compatibleDevices+=1;
-                        //else
-                        //std::cout << "Found a " << deviceProp.name << " GPU with compute-capability " << deviceProp.major << "." << deviceProp.minor << std::endl;
-                }
-        if (compatibleDevices==0)
+        for (int i = 0; i < devCount; i++) {
+            HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, i));
+            if (
+                deviceProp.major > CUDA_CC_MAJOR ||
+                deviceProp.major == CUDA_CC_MAJOR && deviceProp.minor >= CUDA_CC_MINOR
+            ) {
+                compatibleDevices += 1;
+            } else {
+                // std::cout << "Found a " << deviceProp.name << " GPU with compute-capability " << deviceProp.major << "." << deviceProp.minor << std::endl;
+            }
+        }
+        if (compatibleDevices == 0) {
             REPORT_ERROR("You have no GPUs compatible with RELION (CUDA-capable and compute-capability >= 3.5");
-        else if (compatibleDevices!=devCount)
+        } else if (compatibleDevices != devCount) {
             std::cerr << "WARNING : at least one of your GPUs is not compatible with RELION (CUDA-capable and compute-capability >= 3.5)" << std::endl;
+        }
 
-        std::vector < std::vector < std::string > > allThreadIDs;
+        std::vector <std::vector<std::string> > allThreadIDs;
         untangleDeviceIDs(gpu_ids, allThreadIDs);
 
         // Sequential initialisation of GPUs on all ranks
-        bool fullAutomaticMapping(true);
-        bool semiAutomaticMapping(true);
-        if (allThreadIDs[0].size()==0 || (!std::isdigit(*gpu_ids.begin())) )
-            std::cout << "gpu-ids not specified, threads will automatically be mapped to devices (incrementally)."<< std::endl;
-        else
-        {
-            fullAutomaticMapping=false;
-            if (allThreadIDs[0].size()!=nr_threads)
-            {
+        bool fullAutomaticMapping = true;
+        bool semiAutomaticMapping = true;
+        if (allThreadIDs[0].size() == 0 || !std::isdigit(*gpu_ids.begin())) {
+            std::cout << "gpu-ids not specified, threads will automatically be mapped to devices (incrementally)." << std::endl;
+        } else {
+            fullAutomaticMapping = false;
+            if (allThreadIDs[0].size() != nr_threads) {
                 std::cout << " Will distribute threads over devices ";
                 for (int j = 0; j < allThreadIDs[0].size(); j++)
                     std::cout << " "  << allThreadIDs[0][j];
                 std::cout  << std::endl;
-            }
-            else
-            {
+            } else {
                 semiAutomaticMapping = false;
                 std::cout << " Using explicit indexing to assign devices ";
                 for (int j = 0; j < allThreadIDs[0].size(); j++)
                     std::cout << " "  << allThreadIDs[0][j];
-                std::cout  << std::endl;
+                std::cout << std::endl;
             }
         }
 
-        for (int i = 0; i < nr_threads; i ++)
-        {
-            int dev_id;
-            if (semiAutomaticMapping)
-            {
+        for (int i = 0; i < nr_threads; i++) {
+            int dev_id = semiAutomaticMapping ? (
+                fullAutomaticMapping ? 
                 // Sjors: hack to make use of several cards; will only work if all MPI followers are on the same node!
                 // Bjorn: Better hack
-                if (fullAutomaticMapping)
-                    dev_id = devCount*i / nr_threads;
-                else
-                    dev_id = textToInteger(allThreadIDs[0][i % (allThreadIDs[0]).size()].c_str());
-                    //dev_id = textToInteger(allThreadIDs[0][(allThreadIDs[0].size()*i)/nr_threads].c_str());
-            }
-            else // not semiAutomatic => explicit
-            {
-                    dev_id = textToInteger(allThreadIDs[0][i].c_str());
-            }
+                devCount * i / nr_threads : 
+                textToInteger(allThreadIDs[0][i % allThreadIDs[0].size()].c_str())
+                // textToInteger(allThreadIDs[0][allThreadIDs[0].size() * i / nr_threads].c_str());
+            ) : textToInteger(allThreadIDs[0][i].c_str());  // not semiAutomatic => explicit
 
 
             std::cout << " Thread " << i << " mapped to device " << dev_id << std::endl;
@@ -1199,8 +1187,7 @@ void MlOptimiser::initialise()
                 if (cudaDevices[j] == dev_id)
                     bundleId = j;
 
-            if (bundleId == -1)
-            {
+            if (bundleId == -1) {
                 bundleId = cudaDevices.size();
                 cudaDevices.push_back(dev_id);
             }
@@ -1208,16 +1195,16 @@ void MlOptimiser::initialise()
             cudaOptimiserDeviceMap.push_back(bundleId);
         }
         mymodel.do_gpu = do_gpu;
-#else
+        #else
         REPORT_ERROR("GPU usage requested, but RELION was compiled without CUDA support");
-#endif
+        #endif
     }
 
     initialiseGeneral();
 
     initialiseWorkLoad();
 
-#ifdef MKLFFT
+    #ifdef MKLFFT
     // Enable multi-threaded FFTW
     int success = fftw_init_threads();
     if (0 == success)
@@ -1226,17 +1213,16 @@ void MlOptimiser::initialise()
     // And allow plans before expectation to run using allowed
     // number of threads
     fftw_plan_with_nthreads(nr_threads);
-#endif
+    #endif
 
     if (fn_sigma != "") {
         // Read in sigma_noise spetrum from file DEVELOPMENTAL!!! FOR DEBUGGING ONLY....
         MetaDataTable MDsigma;
-        RFLOAT val;
-        int idx;
         MDsigma.read(fn_sigma);
+        int idx;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
             idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
-            val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
+            RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
             if (idx < XSIZE(mymodel.sigma2_noise[0]))
                 mymodel.sigma2_noise[0](idx) = val;
         }
@@ -1360,18 +1346,14 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
         }
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isolvent()) {
-            if (DIRECT_MULTIDIM_ELEM(Isolvent(), n) < 0.0) DIRECT_MULTIDIM_ELEM(Isolvent(), n) = 0.0;
+                 if (DIRECT_MULTIDIM_ELEM(Isolvent(), n) < 0.0) DIRECT_MULTIDIM_ELEM(Isolvent(), n) = 0.0;
             else if (DIRECT_MULTIDIM_ELEM(Isolvent(), n) > 1.0) DIRECT_MULTIDIM_ELEM(Isolvent(), n) = 1.0;
         }
     }
 
     if (need_new_mask) {
         // everyone should know about the new mask
-        if (solvent_nr == 1) {
-            _fn_mask = fn_out + "_solvent_mask.mrc";
-        } else {
-            _fn_mask = fn_out + "_solvent" + integerToString(solvent_nr) + ".mrc";
-        }
+        _fn_mask = fn_out + "_solvent" + (solvent_nr == 1 ? "_mask" : integerToString(solvent_nr)) + ".mrc";
         if (rank == 0) Isolvent.write(_fn_mask);
     }
 
@@ -1384,8 +1366,8 @@ void MlOptimiser::initialiseGeneral(int rank) {
     std::cerr << "Entering initialiseGeneral" << std::endl;
     #endif
 
-#ifdef TIMING
-    //DIFFF = timer.setNew("difff");
+    #ifdef TIMING
+    // DIFFF = timer.setNew("difff");
     TIMING_EXP =           timer.setNew("expectation");
     TIMING_EXP_1 =           timer.setNew("expectation_1");
     TIMING_EXP_1a =           timer.setNew("expectation_1a");
@@ -1456,41 +1438,36 @@ void MlOptimiser::initialiseGeneral(int rank) {
     RCT_6 = timer.setNew(" RcT6_updatePdf ");
     RCT_7 = timer.setNew(" RcT7_updateNoise ");
     RCT_8 = timer.setNew(" RcT8_initials ");
-
-#endif
+    #endif
 
     // Check for errors in the command-line option
     if (parser.checkForErrors(verb))
         REPORT_ERROR("Errors encountered on the command line (see above), exiting...");
 
-#ifdef RELION_SINGLE_PRECISION
+        #ifdef RELION_SINGLE_PRECISION
         if (verb > 0)
             std::cout << " Running CPU instructions in single precision. Runs might not be exactly reproducible." << std::endl;
-#else
+        #else
         if (verb > 0)
             std::cout << " Running CPU instructions in double precision. " << std::endl;
-#endif
+        #endif
 
     // print symmetry operators or metadata labels before doing anything else...
-    if (do_print_symmetry_ops)
-    {
-        if (verb > 0)
-        {
+    if (do_print_symmetry_ops) {
+        if (verb > 0) {
             SymList SL;
             SL.writeDefinition(std::cout, sampling.symmetryGroup());
         }
         exit(0);
     }
 
-    if (do_print_metadata_labels)
-    {
+    if (do_print_metadata_labels) {
         if (verb > 0)
             EMDL::printDefinitions(std::cout);
         exit(0);
     }
 
-    if (fn_data == "" || fn_out == "")
-    {
+    if (fn_data == "" || fn_out == "") {
         REPORT_ERROR("ERROR: provide both --i and --o arguments");
     }
 
@@ -1510,15 +1487,13 @@ void MlOptimiser::initialiseGeneral(int rank) {
         do_calculate_initial_sigma_noise = false;
 
 
-    if (do_shifts_onthefly && (do_gpu || do_cpu))
-    {
+    if (do_shifts_onthefly && (do_gpu || do_cpu)) {
         std::cerr << "WARNING: --onthefly_shifts cannot be combined with --cpu or --gpu, setting do_shifts_onthefly to false" << std::endl;
         do_shifts_onthefly = false;
     }
 
     // If we are not continuing an old run, now read in the data and the reference images
-    if (iter == 0)
-    {
+    if (iter == 0) {
         // Read in the experimental image metadata
         // If do_preread_images: only the leader reads all images into RAM
         bool do_preread = (do_preread_images) ? (do_parallel_disc_io || rank == 0) : false;
@@ -1550,8 +1525,7 @@ void MlOptimiser::initialiseGeneral(int rank) {
         readRelionFormatMasksAndOperators(fn_local_symmetry, fn_local_symmetry_masks, fn_local_symmetry_operators, mymodel.pixel_size, false);
 
     // For multi-body refinement: Read in the masks in the input STAR file, add a soft-edge to them, and write them to disc with the standard name
-    if (do_initialise_bodies)
-    {
+    if (do_initialise_bodies) {
 
         if (verb > 0)
             std::cout << " + Initialising multi-body refinement ..." << std::endl;
@@ -1581,8 +1555,7 @@ void MlOptimiser::initialiseGeneral(int rank) {
         smallest_changes_optimal_offsets = 999.0;
         smallest_changes_optimal_orientations = 999.0;
 
-        if (autosampling_hporder_local_searches > sampling.healpix_order)
-        {
+        if (autosampling_hporder_local_searches > sampling.healpix_order) {
             mymodel.sigma2_rot = mymodel.sigma2_tilt = mymodel.sigma2_psi = 0.0;
         }
 
@@ -1600,43 +1573,36 @@ void MlOptimiser::initialiseGeneral(int rank) {
         // Start at iteration 1 again
         iter = 0;
 
-    }
-    else if (fn_body_masks == "")
-    {
+    } else if (fn_body_masks == "") {
         mymodel.nr_bodies = 1;
     }
 
-    if (mymodel.nr_bodies > 1)
-    {
+    if (mymodel.nr_bodies > 1) {
         // This creates a rotation matrix for (rot,tilt,psi) = (0,90,0)
         // It will be used to make all Abody orientation matrices relative to (0,90,0) instead of the more logical (0,0,0)
         // This is useful, as psi-priors are ill-defined around tilt=0, as rot becomes the same as -psi!!
-        rotation3DMatrix(-90., 'Y', A_rot90, false);
+        rotation3DMatrix(-90.0, 'Y', A_rot90, false);
         A_rot90T = A_rot90.transpose();
     }
 
-    if (fn_fourier_mask != "None")
-    {
+    if (fn_fourier_mask != "None") {
         // Used also for continuations...
         Image<RFLOAT> Itmp;
         Itmp.read(fn_fourier_mask);
         helical_fourier_mask = Itmp();
     }
 
-    // Jun09, 2015 - Shaoda, Helical refinement
-    if (do_helical_refine)
-    {
-        if (fn_fourier_mask == "None" && helical_fourier_mask_resols != "")
-        {
+    // 09 Jun 2015 - Shaoda, Helical refinement
+    if (do_helical_refine) {
+        if (fn_fourier_mask == "None" && helical_fourier_mask_resols != "") {
             std::vector<std::string> resols;
             std::vector<RFLOAT> resols_end, resols_start;
 
             int nresols = splitString(helical_fourier_mask_resols, ",", resols);
-            if (resols.size()%2 == 1) REPORT_ERROR("Provide an even number of start-end resolutions for --fourier_exclude_resols");
-            for (int nshell = 0; nshell < resols.size()/2; nshell++)
-            {
-                resols_start.push_back(textToFloat(resols[2*nshell]));
-                resols_end.push_back(textToFloat(resols[2*nshell+1]));
+            if (resols.size() % 2 == 1) REPORT_ERROR("Provide an even number of start-end resolutions for --fourier_exclude_resols");
+            for (int nshell = 0; nshell < resols.size() / 2; nshell++) {
+                resols_start.push_back(textToFloat(resols[2 * nshell    ]));
+                resols_end  .push_back(textToFloat(resols[2 * nshell + 1]));
             }
 
             MultidimArray<RFLOAT> tmpmsk;
@@ -1647,8 +1613,7 @@ void MlOptimiser::initialiseGeneral(int rank) {
 
             // Save the mask to the output directory
             fn_fourier_mask = fn_out + "fourier_mask.mrc";
-            if (verb > 0)
-            {
+            if (verb > 0) {
                 Image<RFLOAT> Itmp;
                 Itmp() = helical_fourier_mask;
                 // use this also for continuation
@@ -1661,60 +1626,51 @@ void MlOptimiser::initialiseGeneral(int rank) {
         if (mymodel.nr_bodies != 1)
             REPORT_ERROR("ERROR: cannot do multi-body refinement for helices!");
 
-        if ( (do_shifts_onthefly) && (!ignore_helical_symmetry) && (verb > 0) )
-        {
+        if (do_shifts_onthefly && !ignore_helical_symmetry && verb > 0) {
             std::cerr << " WARNING: On-the-fly shifts slow down helical reconstructions with CPUs considerably. "
                     << "Enable this option only if limited RAM causes trouble (e.g. too large segment boxes used or in 3D sub-tomogram averaging). "
                     << std::endl;
         }
 
         // Set particle diameter to 90% the box size if user does not give this parameter
-        if (particle_diameter < 0.0)
-        {
+        if (particle_diameter < 0.0) {
             if (verb > 0)
                 std::cout << " Automatically set particle diameter to 90% the box size for 3D helical reconstruction." << std::endl;
 
-            particle_diameter = ((RFLOAT)(mymodel.ori_size));
-            if ( (((RFLOAT)(mymodel.ori_size)) * 0.05) < width_mask_edge)
-                particle_diameter -= 2. * width_mask_edge;
-            particle_diameter *= (0.90 * mymodel.pixel_size);
+            particle_diameter = (RFLOAT) mymodel.ori_size;
+            if ((RFLOAT) mymodel.ori_size * 0.05 < width_mask_edge)
+                particle_diameter -= 2.0 * width_mask_edge;
+            particle_diameter *= 0.90 * mymodel.pixel_size;
         }
 
-        if (ignore_helical_symmetry)
-            mymodel.helical_nr_asu = 1;
+        if (ignore_helical_symmetry) { mymodel.helical_nr_asu = 1; }
 
-        if ( (!do_helical_symmetry_local_refinement) || (ignore_helical_symmetry) )
-        {
+        if (!do_helical_symmetry_local_refinement || ignore_helical_symmetry) {
             mymodel.helical_twist_min = mymodel.helical_twist_max = helical_twist_initial;
             mymodel.helical_rise_min = mymodel.helical_rise_max = helical_rise_initial;
         }
 
-        if (mymodel.ref_dim == 3)
-        {
+        if (mymodel.ref_dim == 3) {
             checkParametersFor3DHelicalReconstruction(
                 ignore_helical_symmetry,
                 do_helical_symmetry_local_refinement,
                 mymodel.helical_nr_asu,
                 helical_rise_initial,
-                mymodel.helical_rise_min,
-                mymodel.helical_rise_max,
+                mymodel.helical_rise_min, mymodel.helical_rise_max,
                 helical_twist_initial,
-                mymodel.helical_twist_min,
-                mymodel.helical_twist_max,
+                mymodel.helical_twist_min, mymodel.helical_twist_max,
                 mymodel.ori_size,
                 mymodel.pixel_size,
                 helical_z_percentage,
                 particle_diameter,
-                helical_tube_inner_diameter,
-                helical_tube_outer_diameter);
+                helical_tube_inner_diameter, helical_tube_outer_diameter
+            );
         }
-    }
-    else
-    {
+    } else {
         if (do_helical_symmetry_local_refinement)
             REPORT_ERROR("ERROR: cannot do local refinement of helical parameters for non-helical segments!");
     }
-    if ( (mymodel.ref_dim == 2) && (helical_tube_outer_diameter > 0.0) && (particle_diameter < helical_tube_outer_diameter) )
+    if (mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0 && particle_diameter < helical_tube_outer_diameter)
         REPORT_ERROR("ERROR: 2D classification: Helical tube diameter should be smaller than particle diameter!");
 
     if (do_always_join_random_halves)
@@ -1722,27 +1678,23 @@ void MlOptimiser::initialiseGeneral(int rank) {
 
     // If fn_tau is provided, read in the tau spectrum
     fix_tau = false;
-    if (fn_tau != "None")
-    {
+    if (fn_tau != "None") {
         fix_tau = true;
         mymodel.readTauSpectrum(fn_tau, verb);
     }
 
-    if (do_auto_refine)
-    {
+    if (do_auto_refine) {
         nr_iter = nr_iter_max;
         has_fine_enough_angular_sampling = false;
         has_converged = false;
 
-        if (mymodel.tau2_fudge_factor > 1. && verb > 0)
-        {
+        if (mymodel.tau2_fudge_factor > 1. && verb > 0) {
             std::cerr << " WARNING: Using tau2_fudge of " <<mymodel.tau2_fudge_factor << ", which will lead to inflated resolution estimates during refinement." << std::endl;
             std::cerr << " WARNING: This option will most likely lead to overfitting and therefore difficult to interpret maps: proceed with caution and know the risks!" << std::endl;
             std::cerr << " WARNING: You have to run postprocessing afterwards to get a reliable, gold-standard resolution estimate! " << std::endl;
         }
 
-        if (iter == 0 && sampling.healpix_order >= autosampling_hporder_local_searches)
-        {
+        if (iter == 0 && sampling.healpix_order >= autosampling_hporder_local_searches) {
             mymodel.orientational_prior_mode = PRIOR_ROTTILT_PSI;
             sampling.is_3D = (mymodel.ref_dim == 3);
             RFLOAT rottilt_step = sampling.getAngularSampling(adaptive_oversampling);
@@ -1751,10 +1703,8 @@ void MlOptimiser::initialiseGeneral(int rank) {
 
         // Check whether we had converged already
         // Jobs often fail in the last iteration, these lines below allow restarting of only the last iteration
-        if (do_auto_refine && iter > 0)
-        {
-            if (do_force_converge)
-            {
+        if (do_auto_refine && iter > 0) {
+            if (do_force_converge) {
                 has_converged = true;
                 do_join_random_halves = true;
                 // In the last iteration, include all data until Nyquist
@@ -1766,24 +1716,23 @@ void MlOptimiser::initialiseGeneral(int rank) {
 
     // Initialise the sampling object (sets prior mode and fills translations and rotations inside sampling object)
     // May06,2015 - Shaoda & Sjors, initialise for helical translations
-    bool do_local_searches_helical = ((do_auto_refine) && (do_helical_refine) &&
-            (sampling.healpix_order >= autosampling_hporder_local_searches));
+    bool do_local_searches_helical = do_auto_refine && do_helical_refine && sampling.healpix_order >= autosampling_hporder_local_searches;
 
-    if (iter == 0)
-    {
+    if (iter == 0) {
         // Sjors 26Jul2019: the sampling.offset_step and range are in Angstroms, but inputs from command line are in pixels!
         // For continuation runs, this is done in parseContinue, but for new refinements this still needs to be done.
         // Use the pixel size from the model for this!
         sampling.offset_range *= mymodel.pixel_size;
         sampling.offset_step *= mymodel.pixel_size;
     }
-    sampling.initialise(mymodel.ref_dim, (mymodel.data_dim == 3), do_gpu, (verb>0),
-            do_local_searches_helical, (do_helical_refine) && (!ignore_helical_symmetry),
-            helical_rise_initial, helical_twist_initial);
+    sampling.initialise(
+        mymodel.ref_dim, mymodel.data_dim == 3, do_gpu, verb > 0,
+        do_local_searches_helical, do_helical_refine && !ignore_helical_symmetry,
+        helical_rise_initial, helical_twist_initial
+    );
 
     // Now that sampling is initialised, also modify sigma2_rot for the helical refinement
-    if (do_auto_refine && do_helical_refine && !ignore_helical_symmetry && iter == 0 && sampling.healpix_order >= autosampling_hporder_local_searches)
-    {
+    if (do_local_searches_helical && !ignore_helical_symmetry && iter == 0) {
         // Aug20,2015 - Shaoda, Helical refinement
         RFLOAT rottilt_step = sampling.getAngularSampling(adaptive_oversampling);
         mymodel.sigma2_rot = getHelicalSigma2Rot(helical_rise_initial, helical_twist_initial, sampling.helical_offset_step, rottilt_step, mymodel.sigma2_rot);
@@ -1793,27 +1742,23 @@ void MlOptimiser::initialiseGeneral(int rank) {
         particle_diameter = (mymodel.ori_size - width_mask_edge) * mymodel.pixel_size;
 
     // For do_average_unaligned, always use initial low_pass filter
-    if (do_average_unaligned && ini_high < 0.0)
-    {
+    if (do_average_unaligned && ini_high < 0.0) {
         // By default, use 0.07 dig.freq. low-pass filter
         // See S.H.W. Scheres (2010) Meth Enzym.
-        ini_high = 1./mymodel.getResolution(ROUND(0.07 * mymodel.ori_size));
+        ini_high = 1.0 / mymodel.getResolution(ROUND(0.07 * mymodel.ori_size));
     }
 
     // For skipped alignments
     // Also do not perturb this orientation, nor do oversampling or priors
     // Switch off on-the-fly shifts, as that will not work when skipping alignments! (it isn't necessary anyway in that case)
-    if (do_skip_align || do_skip_rotate)
-    {
+    if (do_skip_align || do_skip_rotate) {
         mymodel.orientational_prior_mode = NOPRIOR;
         adaptive_oversampling = 0;
         sampling.perturbation_factor = 0.0;
         sampling.random_perturbation = 0.0;
         sampling.addOneOrientation(0.,0.,0., true);
         directions_have_changed = true;
-    }
-    else if (do_only_sample_tilt)
-    {
+    } else if (do_only_sample_tilt) {
         std::cout << " Only sampling tilt, keep rot and psi fixed." << std::endl;
 
         mymodel.orientational_prior_mode = NOPRIOR;
@@ -1824,10 +1769,9 @@ void MlOptimiser::initialiseGeneral(int rank) {
         sampling.directions_ipix.clear();
         sampling.rot_angles.clear();
         sampling.tilt_angles.clear();
-        RFLOAT rot = 0., psi = 0., tilt;
+        RFLOAT rot = 0.0, psi = 0.0, tilt;
         int ipix = 0;
-        for (tilt = -180.0; tilt < 180.0; tilt+= sampling.getAngularSampling(), ipix++)
-        {
+        for (tilt = -180.0; tilt < 180.0; tilt+= sampling.getAngularSampling(), ipix++) {
             sampling.rot_angles.push_back(rot);
             sampling.tilt_angles.push_back(tilt);
             sampling.directions_ipix.push_back(ipix);
@@ -1836,13 +1780,12 @@ void MlOptimiser::initialiseGeneral(int rank) {
         sampling.psi_angles.push_back(psi);
         directions_have_changed = true;
     }
-    if (do_skip_align)
-    {
-        RFLOAT dummy=0.0;
+    if (do_skip_align) {
+        RFLOAT dummy = 0.0;
         sampling.addOneTranslation(dummy, dummy, dummy, true);
         do_shifts_onthefly = false; // on-the-fly shifts are incompatible with do_skip_align!
     }
-    if ( (do_bimodal_psi) && (mymodel.sigma2_psi > 0.0) && (verb > 0) )
+    if (do_bimodal_psi && mymodel.sigma2_psi > 0.0 && verb > 0)
         std::cout << " Using bimodal priors on the psi angle..." << std::endl;
 
     // Resize the pdf_direction arrays to the correct size and fill with an even distribution
@@ -1859,14 +1802,13 @@ void MlOptimiser::initialiseGeneral(int rank) {
     sum_changes_optimal_classes = 0.0;
     sum_changes_count = 0.0;
 
-    if (mymodel.data_dim == 3)
-    {
+    if (mymodel.data_dim == 3) {
 
         // TODO: later do norm correction?!
         // Don't do norm correction for volume averaging at this stage....
         do_norm_correction = false;
 
-        if (!((do_helical_refine) && (!ignore_helical_symmetry)) && !(do_cpu || do_gpu)) // For 3D helical sub-tomogram averaging, either is OK, so let the user decide
+        if ((!do_helical_refine || ignore_helical_symmetry) && !do_cpu && !do_gpu) // For 3D helical sub-tomogram averaging, either is OK, so let the user decide
             do_shifts_onthefly = true; // save RAM for volume data (storing all shifted versions would take a lot!)
 
         if (do_skip_align)
@@ -1876,15 +1818,13 @@ void MlOptimiser::initialiseGeneral(int rank) {
     }
 
     // Tabulated sine and cosine values (for 2D helical segments / 3D helical sub-tomogram averaging with on-the-fly shifts)
-    if ( (do_shifts_onthefly) && (do_helical_refine) && (!ignore_helical_symmetry) )
-    {
+    if (do_shifts_onthefly && do_helical_refine && !ignore_helical_symmetry) {
         tab_sin.initialise(100000);
         tab_cos.initialise(100000);
     }
 
     // Skip scale correction if there are no groups
-    if (mymodel.nr_groups == 1)
-        do_scale_correction = false;
+    if (mymodel.nr_groups == 1) { do_scale_correction = false; }
 
     // Check for rlnReconstructImageName in the data.star file. If it is present, set do_use_reconstruct_images to true
     do_use_reconstruct_images = mydata.MDimg.containsLabel(EMDL::IMAGE_RECONSTRUCT_NAME);
@@ -1892,33 +1832,27 @@ void MlOptimiser::initialiseGeneral(int rank) {
         std::cout <<" Using rlnReconstructImageName from the input data.star file!" << std::endl;
 
     // For new thread-parallelization: each thread does 1 particle, so nr_pool=nr_threads
-    nr_pool = x_pool*nr_threads;
+    nr_pool = x_pool * nr_threads;
 
-    if (do_sgd)
-    {
-
-#ifndef ALLOW_CTF_IN_SGD
+    if (do_sgd) {
+        #ifndef ALLOW_CTF_IN_SGD
         do_ctf_correction = false;
-        if (verb > 0)
-        {
+        if (verb > 0) {
             std::cerr << " + Skipping CTF-modulation in SGD, as mentioned in Claim 1 of patent US10,282,513B2." << std::endl;
             std::cerr << " + Note that the output map will not be CTF-corrrected, and this should be specified for subsequent refinement." << std::endl;
         }
-#endif
+        #endif
 
-        sgd_inires_pix = mymodel.getPixelFromResolution(1./sgd_ini_resol);
-        sgd_finres_pix = mymodel.getPixelFromResolution(1./sgd_fin_resol);
+        sgd_inires_pix = mymodel.getPixelFromResolution(1.0 / sgd_ini_resol);
+        sgd_finres_pix = mymodel.getPixelFromResolution(1.0 / sgd_fin_resol);
         // for continuation jobs (iter>0): could do some more iterations as specified by nr_iter
         nr_iter = sgd_ini_iter + sgd_fin_iter + sgd_inbetween_iter;
-    }
-    else
-    {
+    } else {
         subset_size = -1;
         mu = 0.0;
     }
 
-    if (do_fast_subsets)
-    {
+    if (do_fast_subsets) {
         if (nr_iter < 20)
             REPORT_ERROR("ERROR: when using --fast_subsets you have to perform at least 20 iterations!");
         if (do_auto_refine)
@@ -1932,24 +1866,22 @@ void MlOptimiser::initialiseGeneral(int rank) {
     // Write out unmasked 2D class averages
     do_write_unmasked_refs = (mymodel.ref_dim == 2);
 
-#ifdef DEBUG
+    #ifdef DEBUG
     std::cerr << "Leaving initialiseGeneral" << std::endl;
-#endif
+    #endif
 
 }
 
-void MlOptimiser::initialiseWorkLoad()
-{
+void MlOptimiser::initialiseWorkLoad() {
 
     // Note, this function is overloaded in ml_optimiser_mpi (where random_seed is only set by the leader and then send to all followers!)
 
     // Randomise the order of the particles
-    if (random_seed == -1) random_seed = time(NULL);
+    if (random_seed == -1) { random_seed = time(NULL); }
     // Also randomize random-number-generator for perturbations on the angles
     init_random_generator(random_seed);
 
-    if (do_split_random_halves && debug_split_random_half > 0)
-    {
+    if (do_split_random_halves && debug_split_random_half > 0) {
 
         // Split the data into two random halves
         mydata.divideParticlesInRandomHalves(random_seed, do_helical_refine);
@@ -1960,58 +1892,49 @@ void MlOptimiser::initialiseWorkLoad()
     divide_equally(mydata.numberOfParticles(), 1, 0, my_first_particle_id, my_last_particle_id);
 
     // Now copy particle stacks to scratch if needed
-    if (fn_scratch != "" && !do_preread_images)
-    {
-            mydata.setScratchDirectory(fn_scratch, do_reuse_scratch, 1);
+    if (fn_scratch != "" && !do_preread_images) {
+        mydata.setScratchDirectory(fn_scratch, do_reuse_scratch, 1);
 
-        if (!do_reuse_scratch)
-        {
+        if (!do_reuse_scratch) {
             mydata.prepareScratchDirectory(fn_scratch);
             bool also_do_ctfimage = (mymodel.data_dim == 3 && do_ctf_correction);
             mydata.copyParticlesToScratch(1, true, also_do_ctfimage, keep_free_scratch_Gb);
         }
     }
-
 }
 
-void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT> &Mavg, bool myverb)
-{
+void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT> &Mavg, bool myverb) {
 
-#ifdef DEBUG_INI
+    #ifdef DEBUG_INI
     std::cerr<<"MlOptimiser::calculateSumOfPowerSpectraAndAverageImage Entering"<<std::endl;
-#endif
+    #endif
 
     int barstep, my_nr_particles = my_last_particle_id - my_first_particle_id + 1;
 
     // Initialise Mavg
-    if (mydata.is_3D)
-    {
+    if (mydata.is_3D) {
         Mavg.initZeros(mymodel.ori_size, mymodel.ori_size, mymodel.ori_size);
-    }
-    else
-    {
+    } else {
         Mavg.initZeros(mymodel.ori_size, mymodel.ori_size);
     }
     Mavg.setXmippOrigin();
 
-    if (my_nr_particles < 1)
-    {
-            // Master doesn't do anything here...
-            // But still set Mavg the right size for AllReduce later on
-            return;
+    if (my_nr_particles < 1) {
+        // Master doesn't do anything here...
+        // But still set Mavg the right size for AllReduce later on
+        return;
     }
 
-    if (myverb > 0)
-    {
+    if (myverb > 0) {
         std::cout << " Estimating initial noise spectra " << std::endl;
         init_progress_bar(my_nr_particles);
-        barstep = XMIPP_MAX(1, my_nr_particles / 60);
+        barstep = std::max(1, my_nr_particles / 60);
     }
 
     // Only open stacks once and then read multiple images
     fImageHandler hFile;
     long int dump;
-    FileName fn_open_stack="";
+    FileName fn_open_stack = "";
 
     // Note the loop over the particles (part_id) is MPI-parallelized
     int nr_particles_done = 0;
@@ -2022,18 +1945,14 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
     MetaDataTable MDimg;
 
     // Start reconstructions at ini_high or 0.07 digital frequencies....
-    if (ini_high <= 0.0)
-        wsum_model.current_size = 1./mymodel.getResolution(ROUND(0.07 * mymodel.ori_size));
-    else
-        wsum_model.current_size  = mymodel.getPixelFromResolution(1./ini_high);
+    wsum_model.current_size = ini_high <= 0.0 ?
+        1.0 / mymodel.getResolution(ROUND(0.07 * mymodel.ori_size)) : 
+        mymodel.getPixelFromResolution(1.0 / ini_high);
     wsum_model.initZeros();
 
-    for (long int part_id_sorted = my_first_particle_id; part_id_sorted <= my_last_particle_id; part_id_sorted++, nr_particles_done++)
-    {
-
+    for (long int part_id_sorted = my_first_particle_id; part_id_sorted <= my_last_particle_id; part_id_sorted++, nr_particles_done++) {
         long int part_id = mydata.sorted_idx[part_id_sorted];
-        for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++)
-        {
+        for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++) {
             long int group_id = mydata.getGroupId(part_id, img_id);
             int optics_group = mydata.getOpticsGroup(part_id, img_id);
             RFLOAT my_pixel_size = mydata.getOpticsPixelSize(optics_group);
@@ -2071,7 +1990,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
 
             // 24 May 2015 - Shaoda & Sjors, Helical refinement
             RFLOAT psi_deg = 0.0, tilt_deg = 0.0;
-            bool is_helical_segment = do_helical_refine || (mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0);
+            bool is_helical_segment = do_helical_refine || mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0;
             if (is_helical_segment) {
                 try {
                     psi_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
@@ -2099,11 +2018,11 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 RFLOAT sum, sum2, sphere_radius_pix, cyl_radius_pix;
                 cyl_radius_pix = helical_tube_outer_diameter / (2.0 * my_pixel_size);
                 sphere_radius_pix = particle_diameter / (2.0 * my_pixel_size);
-                calculateBackgroundAvgStddev(img, sum, sum2, (int) (ROUND(sphere_radius_pix)), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
+                calculateBackgroundAvgStddev(img, sum, sum2, (int) ROUND(sphere_radius_pix), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
 
                 // Average should be close to zero, i.e. max +/-50% of stddev...
                 // Stddev should be close to one, i.e. larger than 0.5 and smaller than 2)
-                if (ABS(sum/sum2) > 0.5 || sum2 < 0.5 || sum2 > 2.0) {
+                if (ABS(sum / sum2) > 0.5 || sum2 < 0.5 || sum2 > 2.0) {
                     std::cerr << " fn_img= " << fn_img << " bg_avg= " << sum << " bg_stddev= " << sum2 << std::flush;
                     if (is_helical_segment) {
                         std::cerr << " tube_bg_radius= " << cyl_radius_pix << " psi_deg= " << psi_deg << " tilt_deg= " << tilt_deg << " (this is a particle from a helix)" << std::flush;
@@ -2127,8 +2046,10 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 // 24 May 2015 - Shaoda & Sjors, Helical refinement
                 if (is_helical_segment) {
                     softMaskOutsideMapForHelix(
-                        img(), psi_deg, tilt_deg, particle_diameter / (2.0 * my_pixel_size),
-                        helical_tube_outer_diameter / (2.0 * my_pixel_size), width_mask_edge
+                        img(), psi_deg, tilt_deg,
+                        particle_diameter / (2.0 * my_pixel_size),
+                        helical_tube_outer_diameter / (2.0 * my_pixel_size),
+                        width_mask_edge
                     );
                 } else {
                     softMaskOutsideMap(img(), particle_diameter / (2.0 * my_pixel_size), width_mask_edge);
@@ -2140,7 +2061,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             // Rescale img() onto Mavg, as optics_groups may have different box sizes and pixel sizes...
             // a) rescale to same pixel size
             if (fabs(my_pixel_size - mymodel.pixel_size) > 0.0001) {
-                int rescalesize = ROUND(XSIZE(img()) * (my_pixel_size/ mymodel.pixel_size));
+                int rescalesize = ROUND(XSIZE(img()) * my_pixel_size / mymodel.pixel_size);
                 // Enforce divisibility by 2
                 rescalesize += rescalesize % 2;
                 resizeMap(img(), rescalesize);
@@ -2167,7 +2088,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
 
             // Calculate the power spectrum of this particle
             MultidimArray<RFLOAT> ind_spectrum, count;
-            int spectral_size = (mymodel.ori_size / 2) + 1;
+            int spectral_size = mymodel.ori_size / 2 + 1;
             ind_spectrum.initZeros(spectral_size);
             count.initZeros(spectral_size);
             // recycle the same transformer for all images
@@ -2196,8 +2117,8 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 init_random_generator(random_seed + part_id);
                 // Randomize the initial orientations for initial reference generation at this step....
                 // TODO: this is not an even angular distribution....
-                RFLOAT rot  = (mymodel.ref_dim == 2) ? 0. : rnd_unif () * 360.0;
-                RFLOAT tilt = (mymodel.ref_dim == 2) ? 0. : rnd_unif () * 180.0;
+                RFLOAT rot  = mymodel.ref_dim == 2 ? 0.0 : rnd_unif () * 360.0;
+                RFLOAT tilt = mymodel.ref_dim == 2 ? 0.0 : rnd_unif () * 180.0;
                 RFLOAT psi  = rnd_unif () * 360.0;
                 int iclass  = rnd_unif () * mymodel.nr_classes;
                 if (iclass == mymodel.nr_classes)
@@ -2226,19 +2147,19 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 if (do_ctf_correction && mymodel.data_dim != 3) {
                     CTF ctf;
                     ctf.readByGroup(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
-                    ctf.getFftwImage(Fctf, mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
-                        ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding);
+                    ctf.getFftwImage(
+                        Fctf, mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
+                        ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
+                    );
 
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
                         DIRECT_MULTIDIM_ELEM(Fimg, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                         DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                     }
                 }
-
                 wsum_model.BPref[iclass].set2DFourierTransform(Fimg, A, &Fctf);
             }
-
-        } // end loop img_id
+        }
 
         if (myverb > 0 && nr_particles_done % barstep == 0) {
             progress_bar(nr_particles_done);
@@ -2246,8 +2167,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             if (pipeline_control_check_abort_job())
                 break;
         }
-
-    } // end loop part_id
+    }
 
 
     // Clean up the fftw object completely
@@ -2257,16 +2177,16 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
     if (myverb > 0)
         progress_bar(my_nr_particles);
 
-#ifdef DEBUG_INI
-    std::cerr<<"MlOptimiser::calculateSumOfPowerSpectraAndAverageImage Leaving"<<std::endl;
-#endif
+    #ifdef DEBUG_INI
+    std::cerr << "MlOptimiser::calculateSumOfPowerSpectraAndAverageImage Leaving" << std::endl;
+    #endif
 
 }
 
 void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT> &Mavg) {
 
     #ifdef DEBUG_INI
-        std::cerr<<"MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage Entering"<<std::endl;
+    std::cerr << "MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage Entering" << std::endl;
     #endif
 
     // First calculate average image
@@ -2364,9 +2284,7 @@ void MlOptimiser::initialLowPassFilterReferences() {
             }
             transformer.inverseFourierTransform(Faux, mymodel.Iref[iclass]);
         }
-
     }
-
 }
 
 /** ========================== EM-Iteration  ================================= */
@@ -2394,21 +2312,18 @@ void MlOptimiser::iterateWrapUp() {
     if (!keep_scratch)
         mydata.deleteDataOnScratch();
 
-#ifdef MKLFFT
+    #ifdef MKLFFT
     fftw_cleanup_threads();
-#endif
+    #endif
 }
 
-void MlOptimiser::iterate()
-{
+void MlOptimiser::iterate() {
 
     if (do_split_random_halves && debug_split_random_half == 0)
         REPORT_ERROR("ERROR: Cannot split data into random halves without using MPI! For debugging ONLY, use --debug_split_random_half 1 (or 2)");
 
-
     // launch threads etc
     iterateSetup();
-
 
     // Update the current resolution and image sizes, and precalculate resolution pointers
     // The rest of the time this will be done after maximization and before writing output files,
@@ -2417,8 +2332,7 @@ void MlOptimiser::iterate()
 
     /*
     // If we're doing a restart from subsets, then do not increment the iteration number in the restart!
-    if (subset > 0)
-    {
+    if (subset > 0) {
 
         iter--;
         std::cerr << " iter= " << iter << std::endl;
@@ -2426,40 +2340,32 @@ void MlOptimiser::iterate()
     */
 
     bool has_already_reached_convergence = false;
-    for (iter = iter + 1; iter <= nr_iter; iter++)
-    {
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-        // May18,2015 - Shaoda & Sjors, Helical refinement (orientational searches)
-        std::cerr << std::endl << std::endl;
-        std::cerr << "MlOptimiser::iterate()" << std::endl;
-        std::cerr << "iter = " << iter << ", do_helical_refine == " << std::flush;
-        if (do_helical_refine)
-            std::cerr << "true" << std::flush;
-        else
-            std::cerr << "false" << std::flush;
-        std::cerr << std::endl;
-#endif
+    for (iter = iter + 1; iter <= nr_iter; iter++) {
+        #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+        // 18 May 2015 - Shaoda & Sjors, Helical refinement (orientational searches)
+        std::cerr << "\n\n" 
+        << "MlOptimiser::iterate()\n"
+        << "iter = " << iter << ", do_helical_refine == "
+        << (do_helical_refine ? "true" : "false")
+        << std::endl;
+        #endif
 
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.tic(TIMING_EXP);
-#endif
+        #endif
 
         // Update subset_size
         updateSubsetSize();
 
         // Randomly take different subset of the particles each time we do a new "iteration" in SGD
-        if (random_seed > 0)
-        {
+        if (random_seed > 0) {
             mydata.randomiseParticlesOrder(random_seed+iter, do_split_random_halves,  subset_size < mydata.numberOfParticles() );
-        }
-        else if (verb > 0)
-        {
+        } else if (verb > 0) {
             std::cerr << " WARNING: skipping randomisation of particle order because random_seed equals zero..." << std::endl;
         }
 
-        if (do_auto_refine)
-        {
+        if (do_auto_refine) {
             // Check whether we have converged by now
             // If we have, set do_join_random_halves and do_use_all_data for the next iteration
             checkConvergence();
@@ -2474,30 +2380,26 @@ void MlOptimiser::iterate()
         // Then helical symmetry is applied in Fourier space. It does rise and twist for all asymmetrical units in Fourier space.
         // Finally it applies point group symmetry (such as Cn, ...0).
         // DEBUG
-        if (verb > 0)
-        {
-            if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-            {
+        if (verb > 0) {
+            if (do_helical_refine && !ignore_helical_symmetry) {
                 if (mymodel.helical_nr_asu > 1)
                     std::cout << " Applying helical symmetry from the last iteration for all asymmetrical units in Fourier space..." << std::endl;
-                if ( (iter > 1) && (do_helical_symmetry_local_refinement) )
-                {
+                if (iter > 1 && do_helical_symmetry_local_refinement) {
                     std::cout << " Refining helical symmetry in real space..." << std::endl;
                     std::cout << " Applying refined helical symmetry in real space..." << std::endl;
-                }
-                else
+                } else {
                     std::cout << " Applying helical symmetry from the last iteration in real space..." << std::endl;
+                }
             }
         }
         symmetriseReconstructions();
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_EXP);
         timer.tic(TIMING_MAX);
-#endif
+        #endif
 
-        if (do_skip_maximization)
-        {
+        if (do_skip_maximization) {
             // Only write data.star file and break from the iteration loop
             write(DONT_WRITE_SAMPLING, DO_WRITE_DATA, DONT_WRITE_OPTIMISER, DONT_WRITE_MODEL, 0);
             break;
@@ -2505,43 +2407,41 @@ void MlOptimiser::iterate()
 
         maximization();
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_MAX);
         timer.tic(TIMING_ITER_LOCALSYM);
-#endif
+        #endif
 
         // Apply local symmetry according to a list of masks and their operators
         applyLocalSymmetryForEachRef();
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_ITER_LOCALSYM);
         timer.tic(TIMING_ITER_HELICALREFINE);
-#endif
-        // Shaoda Jul26,2015
+        #endif
+        // Shaoda 26 Jul 2015
         // Helical symmetry refinement and imposition of real space helical symmetry.
-        if (do_helical_refine && mymodel.ref_dim == 3)
-        {
-            if (!ignore_helical_symmetry)
-            {
+        if (do_helical_refine && mymodel.ref_dim == 3) {
+            if (!ignore_helical_symmetry) {
                 makeGoodHelixForEachRef();
             }
 
-            if ( (!do_skip_align) && (!do_skip_rotate) )
-            {
+            if (!do_skip_align && !do_skip_rotate) {
                 updatePriorsForHelicalReconstruction(
-                        mydata.MDimg,
-                        helical_sigma_distance * ((RFLOAT)(mymodel.ori_size)),
-                        mymodel.helical_rise,
-                        mymodel.helical_twist,
-                        helical_nstart,
-                        (mymodel.data_dim == 3),
-                        do_auto_refine,
-                        mymodel.sigma2_rot,
-                        mymodel.sigma2_tilt,
-                        mymodel.sigma2_psi,
-                        mymodel.sigma2_offset,
-                        helical_keep_tilt_prior_fixed,
-                        verb);
+                    mydata.MDimg,
+                    helical_sigma_distance * (RFLOAT) mymodel.ori_size,
+                    mymodel.helical_rise,
+                    mymodel.helical_twist,
+                    helical_nstart,
+                    mymodel.data_dim == 3,
+                    do_auto_refine,
+                    mymodel.sigma2_rot,
+                    mymodel.sigma2_tilt,
+                    mymodel.sigma2_psi,
+                    mymodel.sigma2_offset,
+                    helical_keep_tilt_prior_fixed,
+                    verb
+                );
             }
         }
 
@@ -2549,58 +2449,57 @@ void MlOptimiser::iterate()
         if (do_write_unmasked_refs)
             mymodel.write(fn_out+"_unmasked", sampling, false, true);
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_ITER_HELICALREFINE);
         timer.tic(TIMING_SOLVFLAT);
-#endif
+        #endif
         // Apply masks to the reference images
         // At the last iteration, do not mask the map for validation purposes
         if (do_solvent && !has_converged)
             solventFlatten();
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_SOLVFLAT);
         timer.tic(TIMING_UPDATERES);
-#endif
+        #endif
         // Re-calculate the current resolution, do this before writing to get the correct values in the output files
         updateCurrentResolution();
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_UPDATERES);
         timer.tic(TIMING_ITER_WRITE);
-#endif
+        #endif
         // Write output files
         write(DO_WRITE_SAMPLING, DO_WRITE_DATA, DO_WRITE_OPTIMISER, DO_WRITE_MODEL, 0);
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_ITER_WRITE);
-#endif
+        #endif
 
-#ifdef TIMING
+        #ifdef TIMING
         if (verb > 0)
             timer.printTimes(false);
-#endif
+        #endif
 
 
-    } // end loop iters
+    }
 
-    // delete threads etc
+    // Delete threads etc
     iterateWrapUp();
 
 }
 
-void MlOptimiser::expectation()
-{
+void MlOptimiser::expectation() {
 
-//#define DEBUG_EXP
-#ifdef DEBUG_EXP
+    // #define DEBUG_EXP
+    #ifdef DEBUG_EXP
     std::cerr << "Entering expectation" << std::endl;
-#endif
+    #endif
 
-#ifdef MKLFFT
+    #ifdef MKLFFT
     // Allow parallel FFTW execution
     fftw_plan_with_nthreads(nr_threads);
-#endif
+    #endif
 
     // Initialise some stuff
     // A. Update current size (may have been changed to ori_size in autoAdjustAngularSampling) and resolution pointers
@@ -2609,25 +2508,27 @@ void MlOptimiser::expectation()
     // B. Initialise Fouriertransform, set weights in wsum_model to zero, initialise AB-matrices for FFT-phase shifts, etc
     expectationSetup();
 
-#ifdef DEBUG_EXP
+    #ifdef DEBUG_EXP
     std::cerr << "Expectation: done setup" << std::endl;
-#endif
+    #endif
 
     // C. Calculate expected minimum angular errors (only for 3D refinements)
     // And possibly update orientational sampling automatically
-    if (!((iter==1 && do_firstiter_cc) || do_always_cc) && !(do_skip_align || do_only_sample_tilt) && !do_sgd)
-    {
+    if (!(iter == 1 && do_firstiter_cc) && !do_always_cc && !do_skip_align && !do_only_sample_tilt && !do_sgd) {
         // Set the exp_metadata (but not the exp_imagedata which is not needed for calculateExpectedAngularErrors)
-        int n_trials_acc = (mymodel.ref_dim==3 && mymodel.data_dim != 3) ? 100 : 10;
-        n_trials_acc = XMIPP_MIN(n_trials_acc, mydata.numberOfParticles());
-        getMetaAndImageDataSubset(0, n_trials_acc-1, false);
-        calculateExpectedAngularErrors(0, n_trials_acc-1);
+        int n_trials_acc = std::min(
+            mymodel.ref_dim == 3 && mymodel.data_dim != 3 ? 100 : 10,
+            (int) mydata.numberOfParticles()
+        );
+        getMetaAndImageDataSubset     (0, n_trials_acc - 1, false);
+        calculateExpectedAngularErrors(0, n_trials_acc - 1);
     }
 
     // D. Update the angular sampling (all nodes except leader)
-    if ( ( (do_auto_refine || do_sgd) && iter > 1) ||
-         ( mymodel.nr_classes > 1 && allow_coarser_samplings) )
-    {
+    if (
+        iter > 1 && (do_auto_refine || do_sgd) ||
+        mymodel.nr_classes > 1 && allow_coarser_samplings
+    ) {
         updateAngularSampling();
     }
 
@@ -2636,112 +2537,96 @@ void MlOptimiser::expectation()
 
     // F. Precalculate AB-matrices for on-the-fly shifts
     // Use tabulated sine and cosine values instead for 2D helical segments / 3D helical sub-tomogram averaging with on-the-fly shifts
-    if ( (do_shifts_onthefly) && (!((do_helical_refine) && (!ignore_helical_symmetry))) && !(do_sgd && iter > 1))
+    if (do_shifts_onthefly && (!do_helical_refine || ignore_helical_symmetry) && (!do_sgd || iter <= 1))
         precalculateABMatrices();
 
 
-#ifdef DEBUG_EXP
+    #ifdef DEBUG_EXP
     std::cerr << "Expectation: done setupCheckMemory" << std::endl;
-#endif
+    #endif
 
-#ifdef CUDA
+    #ifdef CUDA
     /************************************************************************/
-    //GPU memory setup
+    // GPU memory setup
 
-    if (do_gpu)
-    {
-        for (int i = 0; i < cudaDevices.size(); i ++)
-        {
+    if (do_gpu) {
+        for (int i = 0; i < cudaDevices.size(); i++) {
             MlDeviceBundle *b = new MlDeviceBundle(this);
             b->setDevice(cudaDevices[i]);
             b->setupFixedSizedObjects();
-            accDataBundles.push_back((void*)b);
+            accDataBundles.push_back((void*) b);
         }
 
         std::vector<unsigned> threadcountOnDevice(accDataBundles.size(),0);
 
-        for (int i = 0; i < cudaOptimiserDeviceMap.size(); i ++)
-        {
+        for (int i = 0; i < cudaOptimiserDeviceMap.size(); i++) {
             std::stringstream didSs;
             didSs << "RRt" << i;
             MlOptimiserCuda *b = new MlOptimiserCuda(this, (MlDeviceBundle*) accDataBundles[cudaOptimiserDeviceMap[i]], didSs.str().c_str());
             b->resetData();
-            cudaOptimisers.push_back((void*)b);
+            cudaOptimisers.push_back((void*) b);
             threadcountOnDevice[cudaOptimiserDeviceMap[i]] ++;
         }
 
         int devCount;
         HANDLE_ERROR(cudaGetDeviceCount(&devCount));
         HANDLE_ERROR(cudaDeviceSynchronize());
-        for (int i = 0; i < accDataBundles.size(); i ++)
-        {
-            if (((MlDeviceBundle*)accDataBundles[i])->device_id >= devCount || ((MlDeviceBundle*)accDataBundles[i])->device_id < 0 )
-            {
-                //std::cerr << " using device_id=" << ((MlDeviceBundle*)accDataBundles[i])->device_id << " (device no. " << ((MlDeviceBundle*)accDataBundles[i])->device_id+1 << ") which is not within the available device range" << devCount << std::endl;
+        for (int i = 0; i < accDataBundles.size(); i++) {
+            if (((MlDeviceBundle*) accDataBundles[i])->device_id >= devCount || ((MlDeviceBundle*) accDataBundles[i])->device_id < 0 ) {
+                // std::cerr << " using device_id=" << ((MlDeviceBundle*) accDataBundles[i])->device_id << " (device no. " << ((MlDeviceBundle*) accDataBundles[i])->device_id + 1 << ") which is not within the available device range" << devCount << std::endl;
                 CRITICAL(ERR_GPUID);
-            }
-            else
+            } else {
                 HANDLE_ERROR(cudaSetDevice(((MlDeviceBundle*)accDataBundles[i])->device_id));
+            }
 
             size_t free, total, allocationSize;
             HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
 
-            size_t required_free = requested_free_gpu_memory + GPU_THREAD_MEMORY_OVERHEAD_MB*1000*1000*threadcountOnDevice[i];
+            size_t required_free = requested_free_gpu_memory + GPU_THREAD_MEMORY_OVERHEAD_MB * 1000 * 1000 * threadcountOnDevice[i];
 
-            if (free < required_free)
-            {
-                printf("WARNING: Ignoring required free GPU memory amount of %zu MB, due to space insufficiency.\n", required_free/1000000);
-                allocationSize = (double)free *0.7;
-            }
-            else
+            if (free < required_free) {
+                printf("WARNING: Ignoring required free GPU memory amount of %zu MB, due to space insufficiency.\n", required_free / 1000000);
+                allocationSize = (double) free * 0.7;
+            } else {
                 allocationSize = free - required_free;
+            }
 
             if (allocationSize < 200000000)
                 printf("WARNING: The available space on the GPU after initialization (%zu MB) might be insufficient for the expectation step.\n", allocationSize/1000000);
 
-#ifdef PRINT_GPU_MEM_INFO
-            printf("INFO: Projector model size %dx%dx%d\n", (int)mymodel.PPref[0].data.xdim, (int)mymodel.PPref[0].data.ydim, (int)mymodel.PPref[0].data.zdim );
+            #ifdef PRINT_GPU_MEM_INFO
+            printf("INFO: Projector model size %dx%dx%d\n", (int) mymodel.PPref[0].data.xdim, (int) mymodel.PPref[0].data.ydim, (int) mymodel.PPref[0].data.zdim);
             printf("INFO: Free memory for Custom Allocator of device bundle %d is %d MB\n", i, (int) ( ((float)allocationSize)/1000000.0 ) );
-#endif
+            #endif
 
-            ((MlDeviceBundle*)accDataBundles[i])->setupTunableSizedObjects(allocationSize);
+            ((MlDeviceBundle*) accDataBundles[i])->setupTunableSizedObjects(allocationSize);
         }
     }
-#endif
-#ifdef ALTCPU
-    if (do_cpu)
-    {
+    #endif
+    #ifdef ALTCPU
+    if (do_cpu) {
         unsigned nr_classes = mymodel.PPref.size();
         // Allocate Array of complex arrays for this class
-        if (posix_memalign((void **)&mdlClassComplex, MEM_ALIGN, nr_classes * sizeof (std::complex<XFLOAT> *)))
+        if (posix_memalign((void **) &mdlClassComplex, MEM_ALIGN, nr_classes * sizeof(std::complex<XFLOAT> *)))
             CRITICAL(RAMERR);
 
         // Set up XFLOAT complex array shared by all threads for each class
-        for (int iclass = 0; iclass < nr_classes; iclass++)
-        {
+        for (int iclass = 0; iclass < nr_classes; iclass++) {
             int mdlX = mymodel.PPref[iclass].data.xdim;
             int mdlY = mymodel.PPref[iclass].data.ydim;
             int mdlZ = mymodel.PPref[iclass].data.zdim;
-            size_t mdlXYZ;
-            if (mdlZ == 0)
-                mdlXYZ = (size_t)mdlX*(size_t)mdlY;
-            else
-                mdlXYZ = (size_t)mdlX*(size_t)mdlY*(size_t)mdlZ;
+            size_t mdlXYZ = mdlZ == 0 ? (size_t) mdlX * (size_t) mdlY : (size_t) mdlX * (size_t) mdlY * (size_t) mdlZ;
 
-            try
-            {
+            try {
                 mdlClassComplex[iclass] = new std::complex<XFLOAT>[mdlXYZ];
-            }
-            catch (std::bad_alloc& ba)
-            {
+            } catch (std::bad_alloc &ba) {
                 CRITICAL(RAMERR);
             }
 
             std::complex<XFLOAT> *pData = mdlClassComplex[iclass];
 
             // Copy results into complex number array
-            for (size_t i = 0; i < mdlXYZ; i ++)
-            {
+            for (size_t i = 0; i < mdlXYZ; i++) {
                 std::complex<XFLOAT> arrayval(
                     (XFLOAT) mymodel.PPref[iclass].data.data[i].real,
                     (XFLOAT) mymodel.PPref[iclass].data.data[i].imag
@@ -2752,34 +2637,29 @@ void MlOptimiser::expectation()
 
         MlDataBundle *b = new MlDataBundle();
         b->setup(this);
-        accDataBundles.push_back((void*)b);
-    }  // do_cpu
-#endif // ALTCPU
+        accDataBundles.push_back((void*) b);
+    }
+    #endif // ALTCPU
     /************************************************************************/
 
-#ifdef MKLFFT
+    #ifdef MKLFFT
     // Single-threaded FFTW execution for code inside parallel processing loop
     fftw_plan_with_nthreads(1);
-#endif
+    #endif
 
     // Now perform real expectation over all particles
     // Use local parameters here, as also done in the same overloaded function in MlOptimiserMpi
 
-    long int my_nr_particles = (subset_size > 0) ? subset_size : mydata.numberOfParticles();
-    int barstep = XMIPP_MAX(1, my_nr_particles / 60);
+    long int my_nr_particles = subset_size > 0 ? subset_size : mydata.numberOfParticles();
+    int barstep = std::max(1, (int) (my_nr_particles / 60));
     long int prev_barstep = 0;
     long int my_first_part_id = 0.0;
     long int my_last_part_id = my_nr_particles - 1;
     long int nr_particles_done = 0;
-    if (verb > 0)
-    {
-        if (do_sgd)
-        {
-            if (do_avoid_sgd) std::cout << " Stochastic Expectation Maximisation iteration " << iter << " of " << nr_iter;
-            else std::cout << " Stochastic Gradient Descent iteration " << iter << " of " << nr_iter;
-        }
-        else
-        {
+    if (verb > 0) {
+        if (do_sgd) {
+            std::cout << (do_avoid_sgd ? " Stochastic Expectation Maximisation iteration " : " Stochastic Gradient Descent iteration ") << iter << " of " << nr_iter;
+        } else {
             std::cout << " Expectation iteration " << iter;
             if (!do_auto_refine)
                 std::cout << " of " << nr_iter;
@@ -2790,22 +2670,21 @@ void MlOptimiser::expectation()
         init_progress_bar(my_nr_particles);
     }
 
-    while (nr_particles_done < my_nr_particles)
-    {
+    while (nr_particles_done < my_nr_particles) {
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.tic(TIMING_EXP_METADATA);
-#endif
+        #endif
 
         long int my_pool_first_part_id = my_first_part_id + nr_particles_done;
-        long int my_pool_last_part_id = XMIPP_MIN(my_last_part_id, my_pool_first_part_id + nr_pool - 1);
+        long int my_pool_last_part_id = std::min(my_last_part_id, my_pool_first_part_id + nr_pool - 1);
 
         // Get the metadata for these particles
         getMetaAndImageDataSubset(my_pool_first_part_id, my_pool_last_part_id, !do_parallel_disc_io);
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_EXP_METADATA);
-#endif
+        #endif
 
         // Abort through the pipeline_control system
         if (pipeline_control_check_abort_job())
@@ -2814,28 +2693,27 @@ void MlOptimiser::expectation()
         // perform the actual expectation step on several particles
         expectationSomeParticles(my_pool_first_part_id, my_pool_last_part_id);
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.tic(TIMING_EXP_CHANGES);
-#endif
+        #endif
 
         // Also monitor the changes in the optimal orientations and classes
         monitorHiddenVariableChanges(my_pool_first_part_id, my_pool_last_part_id);
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_EXP_CHANGES);
         timer.tic(TIMING_EXP_METADATA);
-#endif
+        #endif
 
         // Set the metadata for these particles
         setMetaDataSubset(my_pool_first_part_id, my_pool_last_part_id);
 
-#ifdef TIMING
+        #ifdef TIMING
         timer.toc(TIMING_EXP_METADATA);
-#endif
+        #endif
 
         nr_particles_done += my_pool_last_part_id - my_pool_first_part_id + 1;
-        if (verb > 0 && nr_particles_done - prev_barstep > barstep)
-        {
+        if (verb > 0 && nr_particles_done - prev_barstep > barstep) {
             prev_barstep = nr_particles_done;
             progress_bar(nr_particles_done);
         }
@@ -2845,16 +2723,13 @@ void MlOptimiser::expectation()
     if (verb > 0)
         progress_bar(my_nr_particles);
 
-#ifdef CUDA
-    if (do_gpu)
-    {
-        for (int i = 0; i < accDataBundles.size(); i ++)
-        {
-            MlDeviceBundle* b = ((MlDeviceBundle*)accDataBundles[i]);
+    #ifdef CUDA
+    if (do_gpu) {
+        for (int i = 0; i < accDataBundles.size(); i++) {
+            MlDeviceBundle *b = ((MlDeviceBundle*) accDataBundles[i]);
             b->syncAllBackprojects();
 
-            for (int j = 0; j < b->backprojectors.size(); j++)
-            {
+            for (int j = 0; j < b->backprojectors.size(); j++) {
                 unsigned long s = wsum_model.BPref[j].data.nzyxdim();
                 XFLOAT *reals = new XFLOAT[s];
                 XFLOAT *imags = new XFLOAT[s];
@@ -2862,8 +2737,7 @@ void MlOptimiser::expectation()
 
                 b->backprojectors[j].getMdlData(reals, imags, weights);
 
-                for (unsigned long n = 0; n < s; n++)
-                {
+                for (unsigned long n = 0; n < s; n++) {
                     wsum_model.BPref[j].data.data[n].real += (RFLOAT) reals[n];
                     wsum_model.BPref[j].data.data[n].imag += (RFLOAT) imags[n];
                     wsum_model.BPref[j].weight.data[n] += (RFLOAT) weights[n];
@@ -2881,43 +2755,39 @@ void MlOptimiser::expectation()
                 b->coarseProjectionPlans[j].clear();
         }
 
-        for (int i = 0; i < cudaOptimisers.size(); i ++)
+        for (int i = 0; i < cudaOptimisers.size(); i++)
             delete (MlOptimiserCuda*) cudaOptimisers[i];
 
         cudaOptimisers.clear();
 
 
-        for (int i = 0; i < accDataBundles.size(); i ++)
-        {
+        for (int i = 0; i < accDataBundles.size(); i++) {
 
             ((MlDeviceBundle*)accDataBundles[i])->allocator->syncReadyEvents();
             ((MlDeviceBundle*)accDataBundles[i])->allocator->freeReadyAllocs();
 
-#ifdef DEBUG_CUDA
-            if (((MlDeviceBundle*) accDataBundles[i])->allocator->getNumberOfAllocs() != 0)
-            {
+            #ifdef DEBUG_CUDA
+            if (((MlDeviceBundle*) accDataBundles[i])->allocator->getNumberOfAllocs() != 0) {
                 printf("DEBUG_ERROR: Non-zero allocation count encountered in custom allocator between iterations.\n");
                 ((MlDeviceBundle*) accDataBundles[i])->allocator->printState();
                 fflush(stdout);
                 CRITICAL(ERR_CANZ);
             }
 
-#endif
+        #endif
         }
 
-        for (int i = 0; i < accDataBundles.size(); i ++)
+        for (int i = 0; i < accDataBundles.size(); i++)
             delete (MlDeviceBundle*) accDataBundles[i];
 
         accDataBundles.clear();
     }
-#endif
-#ifdef ALTCPU
-    if (do_cpu)
-    {
+    #endif
+    #ifdef ALTCPU
+    if (do_cpu) {
         MlDataBundle* b = (MlDataBundle*) accDataBundles[0];
 
-        for (int j = 0; j < b->backprojectors.size(); j++)
-        {
+        for (int j = 0; j < b->backprojectors.size(); j++) {
             unsigned long s = wsum_model.BPref[j].data.nzyxdim();
             XFLOAT *reals = NULL;
             XFLOAT *imags = NULL;
@@ -2925,8 +2795,7 @@ void MlOptimiser::expectation()
 
             b->backprojectors[j].getMdlDataPtrs(reals, imags, weights);
 
-            for (unsigned long n = 0; n < s; n++)
-            {
+            for (unsigned long n = 0; n < s; n++) {
                 wsum_model.BPref[j].data.data[n].real += (RFLOAT) reals[n];
                 wsum_model.BPref[j].data.data[n].imag += (RFLOAT) imags[n];
                 wsum_model.BPref[j].weight.data[n] += (RFLOAT) weights[n];
@@ -2944,37 +2813,35 @@ void MlOptimiser::expectation()
 
         // Now clean up
         unsigned nr_classes = mymodel.nr_classes;
-        for (int iclass = 0; iclass < nr_classes; iclass++)
-        {
+        for (int iclass = 0; iclass < nr_classes; iclass++) {
             delete [] mdlClassComplex[iclass];
         }
         free(mdlClassComplex);
 
         tbbCpuOptimiser.clear();
     }
-#endif  // ALTCPU
-#ifdef  MKLFFT
+    #endif
+    #ifdef  MKLFFT
     // Allow parallel FFTW execution to continue now that we are outside the parallel
     // portion of expectation
     fftw_plan_with_nthreads(nr_threads);
-#endif
+    #endif
 
     // Clean up some memory
     for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
         mymodel.PPref[iclass].data.clear();
 
-#ifdef DEBUG_EXP
+    #ifdef DEBUG_EXP
     std::cerr << "Expectation: done " << std::endl;
-#endif
+    #endif
 
 }
 
 
-void MlOptimiser::expectationSetup()
-{
-#ifdef DEBUG
+void MlOptimiser::expectationSetup() {
+    #ifdef DEBUG
     std::cerr << "Entering expectationSetup" << std::endl;
-#endif
+    #endif
 
     // Re-initialise the random seed, because with a noisy_mask, inside the previous iteration different timings of different MPI nodes may have given rise to different number of calls to ran1
     // Use the iteration number so that each iteration has a different random seed
@@ -2984,67 +2851,64 @@ void MlOptimiser::expectationSetup()
     sampling.resetRandomlyPerturbedSampling();
 
     // Initialise Projectors and fill vector with power_spectra for all classes
-    MultidimArray<RFLOAT> *my_fourier_mask = (XSIZE(helical_fourier_mask) > 0) ? &helical_fourier_mask : NULL;
+    MultidimArray<RFLOAT> *my_fourier_mask = XSIZE(helical_fourier_mask) > 0 ? &helical_fourier_mask : NULL;
     mymodel.setFourierTransformMaps(!fix_tau, nr_threads, strict_lowres_exp, my_fourier_mask);
 
     // Initialise all weighted sums to zero
     wsum_model.initZeros();
 
     // If we're doing SGD with gradual decrease of sigma2_fudge: calculate current fudge-factor here
-    if (do_sgd && sgd_sigma2fudge_halflife > 0)
-    {
+    if (do_sgd && sgd_sigma2fudge_halflife > 0) {
         RFLOAT NN = (RFLOAT)(iter * subset_size);
         RFLOAT f = NN / (NN + sgd_sigma2fudge_halflife);
         // new sigma2_fudge = f * 1.0  +  (1 - f) * sgd_ini_sigma2fudge
-        sigma2_fudge = f + (1. - f) * sgd_sigma2fudge_ini;
+        sigma2_fudge = f + (1.0 - f) * sgd_sigma2fudge_ini;
     }
-
 }
 
-void MlOptimiser::expectationSetupCheckMemory(int myverb)
-{
+void MlOptimiser::expectationSetupCheckMemory(int myverb) {
 
     std::vector<int> pointer_dir_nonzeroprior, pointer_psi_nonzeroprior;
     std::vector<RFLOAT> directions_prior, psi_prior;
-    if (mymodel.orientational_prior_mode != NOPRIOR)
-    {
+    if (mymodel.orientational_prior_mode != NOPRIOR) {
         // First select one random direction and psi-angle for selectOrientationsWithNonZeroPriorProbability
         // This is to get an idea how many non-zero probabilities there will be
         RFLOAT ran_rot, ran_tilt, ran_psi;
-        if (mymodel.nr_bodies > 1)
-        {
+        if (mymodel.nr_bodies > 1) {
             ran_rot = ran_psi = 0.0;
             ran_tilt = 90.0;
-        }
-        else
-        {
-            int randir = (int)(rnd_unif () * sampling.NrDirections() );
-            int ranpsi = (int)(rnd_unif () * sampling.NrPsiSamplings() );
+        } else {
+            int randir = (int) (rnd_unif() * sampling.NrDirections());
+            int ranpsi = (int) (rnd_unif() * sampling.NrPsiSamplings());
             sampling.getDirection(randir, ran_rot, ran_tilt);
             sampling.getPsiAngle(ranpsi, ran_psi);
         }
         // Calculate local searches for these angles
-        // Jun04,2015 - Shaoda & Sjors, bimodal psi searches for helices
-        if (do_helical_refine && mymodel.ref_dim == 3)
-        {
-            bool do_auto_refine_local_searches = (do_auto_refine) && (sampling.healpix_order >= autosampling_hporder_local_searches);
-            bool do_classification_local_searches = (!do_auto_refine) && (mymodel.orientational_prior_mode == PRIOR_ROTTILT_PSI)
-                    && (mymodel.sigma2_rot > 0.0) && (mymodel.sigma2_tilt > 0.0) && (mymodel.sigma2_psi > 0.0);
-            bool do_local_angular_searches = (do_auto_refine_local_searches) || (do_classification_local_searches);
-            sampling.selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalReconstruction(ran_rot, ran_tilt, ran_psi,
-                                    sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
-                                    pointer_dir_nonzeroprior, directions_prior, pointer_psi_nonzeroprior, psi_prior,
-                                    do_local_angular_searches);
-        }
-        else if (mymodel.nr_bodies > 1)
-        {
-            sampling.selectOrientationsWithNonZeroPriorProbability(ran_rot, ran_tilt, ran_psi,
-                                    sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
-                                    pointer_dir_nonzeroprior, directions_prior, pointer_psi_nonzeroprior, psi_prior,
-                                    false, 3., mymodel.sigma_tilt_bodies[0], mymodel.sigma_psi_bodies[0]);
-        }
-        else
-        {
+        // 4 Jun 2015 - Shaoda & Sjors, bimodal psi searches for helices
+        if (do_helical_refine && mymodel.ref_dim == 3) {
+            bool do_auto_refine_local_searches = 
+                do_auto_refine && sampling.healpix_order >= autosampling_hporder_local_searches;
+            bool do_classification_local_searches = 
+                !do_auto_refine && mymodel.orientational_prior_mode == PRIOR_ROTTILT_PSI && 
+                mymodel.sigma2_rot > 0.0 && mymodel.sigma2_tilt > 0.0 && mymodel.sigma2_psi > 0.0;
+            bool do_local_angular_searches = do_auto_refine_local_searches || do_classification_local_searches;
+            sampling.selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalReconstruction(
+                ran_rot, ran_tilt, ran_psi,
+                sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
+                pointer_dir_nonzeroprior, directions_prior, 
+                pointer_psi_nonzeroprior, psi_prior,
+                do_local_angular_searches
+            );
+        } else if (mymodel.nr_bodies > 1) {
+            sampling.selectOrientationsWithNonZeroPriorProbability(
+                ran_rot, ran_tilt, ran_psi,
+                sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
+                pointer_dir_nonzeroprior, directions_prior, 
+                pointer_psi_nonzeroprior, psi_prior,
+                false, 3.0, 
+                mymodel.sigma_tilt_bodies[0], mymodel.sigma_psi_bodies[0]
+            );
+        } else {
             sampling.selectOrientationsWithNonZeroPriorProbability(ran_rot, ran_tilt, ran_psi,
                                     sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
                                     pointer_dir_nonzeroprior, directions_prior, pointer_psi_nonzeroprior, psi_prior,
@@ -3053,15 +2917,13 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb)
     }
 
 
-    if (myverb > 0)
-    {
+    if (myverb > 0) {
         // Calculate number of sampled hidden variables:
         int nr_ang_steps = CEIL(PI * particle_diameter * mymodel.current_resolution);
-        RFLOAT myresol_angstep = 360. / nr_ang_steps;
-        std::cout << " CurrentResolution= " << 1./mymodel.current_resolution << " Angstroms, which requires orientationSampling of at least "<< myresol_angstep
-                   <<" degrees for a particle of diameter "<< particle_diameter << " Angstroms"<< std::endl;
-        for (int oversampling = 0; oversampling <= adaptive_oversampling; oversampling++)
-        {
+        RFLOAT myresol_angstep = 360.0 / nr_ang_steps;
+        std::cout << " CurrentResolution= " << 1.0 / mymodel.current_resolution << " Angstroms, which requires orientationSampling of at least " << myresol_angstep
+                   << " degrees for a particle of diameter " << particle_diameter << " Angstroms" << std::endl;
+        for (int oversampling = 0; oversampling <= adaptive_oversampling; oversampling++) {
             std::cout << " Oversampling= " << oversampling << " NrHiddenVariableSamplingPoints= " << mymodel.nr_classes * sampling.NrSamplingPoints(oversampling, &pointer_dir_nonzeroprior, &pointer_psi_nonzeroprior) << std::endl;
             if (sampling.fn_sym_relax != "")
                 std::cout<<"Relaxing symmetry to "<<sampling.fn_sym_relax<<std::endl;
@@ -3079,11 +2941,10 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb)
     }
 
 
-    if (myverb > 1)
-    {
+    if (myverb > 1) {
         // Check whether things will fit into memory
         // Each RFLOAT takes 8 bytes, and their are mymodel.nr_classes references, express in Gb
-        RFLOAT Gb = sizeof(RFLOAT) / (1024. * 1024. * 1024.0);
+        RFLOAT Gb = sizeof(RFLOAT) / (1024.0 * 1024.0 * 1024.0);
         // A. Calculate approximate size of the reference maps
         // Forward projector has complex data, backprojector has complex data and real weight
         RFLOAT mem_references = Gb * mymodel.nr_classes * (2 * MULTIDIM_SIZE((mymodel.PPref[0]).data) + 3 * MULTIDIM_SIZE((wsum_model.BPref[0]).data));
@@ -3091,18 +2952,16 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb)
         RFLOAT mem_pool = Gb * mymodel.nr_classes * sampling.NrSamplingPoints(adaptive_oversampling,
                 &pointer_dir_nonzeroprior, &pointer_psi_nonzeroprior);
         // C. The original image data
-        int nr_pix = (mymodel.data_dim == 2) ? mymodel.current_size * mymodel.current_size : mymodel.current_size * mymodel.current_size * mymodel.current_size;
+        int nr_pix = mymodel.data_dim == 2 ? mymodel.current_size * mymodel.current_size : mymodel.current_size * mymodel.current_size * mymodel.current_size;
         mem_pool += Gb * nr_pix;
-        if (!do_shifts_onthefly)
-        {
+        if (!do_shifts_onthefly) {
             // D. All precalculated shifted images as well (both masked and unmasked)
             mem_pool += Gb * nr_pix * 2 * sampling.NrTranslationalSamplings(adaptive_oversampling);
         }
         // Estimate the rest of the program at 0.1 Gb?
         RFLOAT mem_rest = 0.1; // This one does NOT scale with nr_pool
         // Use tabulated sine and cosine values instead for 2D helical segments / 3D helical sub-tomogram averaging with on-the-fly shifts
-        if ( (do_shifts_onthefly) && (!((do_helical_refine) && (!ignore_helical_symmetry))) )
-        {
+        if (do_shifts_onthefly && (!do_helical_refine || ignore_helical_symmetry)) {
             // E. Store all AB-matrices
             mem_rest += Gb * nr_pix * sampling.NrTranslationalSamplings(adaptive_oversampling);
         }
@@ -3117,23 +2976,19 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb)
         std::cout << " Estimated memory for maximization step > " << total_mem_Gb_max << " Gb."<<std::endl;
     }
 
-#ifdef DEBUG
+    #ifdef DEBUG
     std::cerr << "Leaving expectationSetup" << std::endl;
-#endif
+    #endif
 
 }
 
-void MlOptimiser::precalculateABMatrices()
-{
-
-
+void MlOptimiser::precalculateABMatrices() {
 
     global_fftshifts_ab_coarse.clear();
     global_fftshifts_ab_current.clear();
     global_fftshifts_ab2_coarse.clear();
     global_fftshifts_ab2_current.clear();
-    for (int optics_group = 0; optics_group < mydata.numberOfOpticsGroups(); optics_group++)
-    {
+    for (int optics_group = 0; optics_group < mydata.numberOfOpticsGroups(); optics_group++) {
 
         std::vector<MultidimArray<Complex> > dummy;
         global_fftshifts_ab_coarse.push_back(dummy);
@@ -3145,91 +3000,105 @@ void MlOptimiser::precalculateABMatrices()
 
         // Set the global AB-matrices for the FFT phase-shifted images
         MultidimArray<Complex> Fab_current, Fab_coarse;
-        if (mymodel.data_dim == 3)
-            Fab_current.resize(image_current_size[optics_group], image_current_size[optics_group], image_current_size[optics_group] / 2 + 1);
-        else
-            Fab_current.resize(image_current_size[optics_group], image_current_size[optics_group] / 2 + 1);
+        if (mymodel.data_dim == 3) {
+            Fab_current.resize(
+                image_current_size[optics_group], 
+                image_current_size[optics_group], 
+                image_current_size[optics_group] / 2 + 1
+            );
+        } else {
+            Fab_current.resize(
+                image_current_size[optics_group], 
+                image_current_size[optics_group] / 2 + 1
+            );
+        }
         long int exp_nr_trans = sampling.NrTranslationalSamplings();
         std::vector<RFLOAT> oversampled_translations_x, oversampled_translations_y, oversampled_translations_z;
         // Note that do_shifts_onthefly is incompatible with do_skip_align because of the loop below
-        for (long int itrans = 0; itrans < exp_nr_trans; itrans++)
-        {
+        for (long int itrans = 0; itrans < exp_nr_trans; itrans++) {
             // First get the non-oversampled translations as defined by the sampling object
-            // Feb01,2017 - Shaoda, obsolete, helical reconstuctions never call this function
+            // 1 Feb 2017 - Shaoda, obsolete, helical reconstuctions never call this function
 
             // TODO: see how this works with multiple pixel sizes......
-            sampling.getTranslationsInPixel(itrans, 0, my_pixel_size, oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
-                    (do_helical_refine) && (!ignore_helical_symmetry)); // need getTranslations to add random_perturbation
+            sampling.getTranslationsInPixel(
+                itrans, 0, my_pixel_size, 
+                oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
+                do_helical_refine && !ignore_helical_symmetry
+            ); // need getTranslations to add random_perturbation
 
             // Precalculate AB-matrices
-            RFLOAT tmp_zoff = (mymodel.data_dim == 2) ? (0.0) : oversampled_translations_z[0];
-            getAbMatricesForShiftImageInFourierTransform(Fab_current, Fab_current, (RFLOAT)image_full_size[optics_group], oversampled_translations_x[0], oversampled_translations_y[0], tmp_zoff);
+            RFLOAT tmp_zoff = mymodel.data_dim == 2 ? 0.0 : oversampled_translations_z[0];
+            getAbMatricesForShiftImageInFourierTransform(
+                Fab_current, Fab_current, 
+                (RFLOAT) image_full_size[optics_group], 
+                oversampled_translations_x[0], oversampled_translations_y[0], 
+                tmp_zoff
+            );
 
             windowFourierTransform(Fab_current, Fab_coarse, image_coarse_size[optics_group]);
             global_fftshifts_ab_coarse[optics_group].push_back(Fab_coarse);
-            if (adaptive_oversampling == 0)
-            {
+            if (adaptive_oversampling == 0) {
                 global_fftshifts_ab_current[optics_group].push_back(Fab_current);
-            }
-            else
-            {
+            } else {
                 // Then also loop over all its oversampled relatives
                 // Then loop over all its oversampled relatives
                 // Feb01,2017 - Shaoda, obsolete, helical reconstuctions never call this function
-                sampling.getTranslationsInPixel(itrans, adaptive_oversampling, my_pixel_size, oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
-                        (do_helical_refine) && (!ignore_helical_symmetry));
-                for (long int iover_trans = 0; iover_trans < oversampled_translations_x.size(); iover_trans++)
-                {
+                sampling.getTranslationsInPixel(
+                    itrans, adaptive_oversampling, my_pixel_size,
+                    oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
+                    do_helical_refine && !ignore_helical_symmetry
+                );
+                for (long int iover_trans = 0; iover_trans < oversampled_translations_x.size(); iover_trans++) {
                     // Shift through phase-shifts in the Fourier transform
                     // Note that the shift search range is centered around (exp_old_xoff, exp_old_yoff)
 
-                    RFLOAT tmp_zoff = (mymodel.data_dim == 2) ? (0.0) : oversampled_translations_z[iover_trans];
+                    RFLOAT tmp_zoff = mymodel.data_dim == 2 ? 0.0 : oversampled_translations_z[iover_trans];
                     getAbMatricesForShiftImageInFourierTransform(Fab_current, Fab_current, (RFLOAT)image_full_size[optics_group], oversampled_translations_x[iover_trans], oversampled_translations_y[iover_trans], tmp_zoff);
 
                     global_fftshifts_ab2_current[optics_group].push_back(Fab_current);
-                    if (strict_highres_exp > 0.0)
-                    {
+                    if (strict_highres_exp > 0.0) {
                         windowFourierTransform(Fab_current, Fab_coarse, image_coarse_size[optics_group]);
                         global_fftshifts_ab2_coarse[optics_group].push_back(Fab_coarse);
                     }
                 }
-            } // end else (adaptive_oversampling == 0)
-        } // end loop itrans
+            }
+        }
 
-#ifdef DEBUG_AB
+        #ifdef DEBUG_AB
         std::cerr << " global_fftshifts_ab_coarse[optics_group].size()= " << global_fftshifts_ab_coarse[optics_group].size() << " global_fftshifts_ab_current[optics_group].size()= " << global_fftshifts_ab_current[optics_group].size() << std::endl;
         std::cerr << " global_fftshifts_ab2_coarse[optics_group].size()= " << global_fftshifts_ab2_coarse[optics_group].size() << " global_fftshifts_ab2_current[optics_group].size()= " << global_fftshifts_ab2_current[optics_group].size() << std::endl;
-#endif
-    } // end loop optics_group
+        #endif
+    }
 
 }
 
-void MlOptimiser::expectationSomeParticles(long int my_first_part_id, long int my_last_part_id)
-{
+void MlOptimiser::expectationSomeParticles(
+    long int my_first_part_id, long int my_last_part_id
+) {
 
-#ifdef TIMING
+    #ifdef TIMING
     timer.tic(TIMING_ESP);
-#endif
+    #endif
 
-//#define DEBUG_EXPSOME
-#ifdef DEBUG_EXPSOME
+    // #define DEBUG_EXPSOME
+    #ifdef DEBUG_EXPSOME
     std::cerr << "Entering expectationSomeParticles..." << std::endl;
-#endif
+    #endif
 
     // Use global variables for thread visibility (before there were local ones for similar call in MPI version!)
     exp_my_first_part_id = my_first_part_id;
-    exp_my_last_part_id = my_last_part_id;
+    exp_my_last_part_id  = my_last_part_id;
 
     // Make sure random division is always the same with the same seed
-    if (do_generate_seeds && ((do_firstiter_cc && iter == 2) || (!do_firstiter_cc && iter == 1)) )
-    {
+    if (do_generate_seeds && (
+        iter == 1 && !do_firstiter_cc ||
+        iter == 2 &&  do_firstiter_cc
+    )) {
         // calculate the random class for these SomeParticles
         exp_random_class_some_particles.clear();
-        for (long int part_id_sorted = my_first_part_id; part_id_sorted <= my_last_part_id; part_id_sorted++)
-        {
-                init_random_generator(random_seed + part_id_sorted);
-            int random_class = rand() % mymodel.nr_classes;
-            exp_random_class_some_particles.push_back(random_class);
+        for (long int part_id_sorted = my_first_part_id; part_id_sorted <= my_last_part_id; part_id_sorted++) {
+            init_random_generator(random_seed + part_id_sorted);
+            exp_random_class_some_particles.push_back(rand() % mymodel.nr_classes);
         }
     }
 
@@ -3242,32 +3111,27 @@ void MlOptimiser::expectationSomeParticles(long int my_first_part_id, long int m
     long int my_metadata_offset = 0;
     exp_imgs.clear();
     int metadata_offset = 0;
-    for (long int part_id_sorted = my_first_part_id; part_id_sorted <= my_last_part_id; part_id_sorted++)
-    {
+    for (long int part_id_sorted = my_first_part_id; part_id_sorted <= my_last_part_id; part_id_sorted++) {
 
         long int part_id = mydata.sorted_idx[part_id_sorted];
 
         // If skipping alignment or rotations, then store the old translation and orientation for each particle
         // If we do local angular searches, get the previously assigned angles to center the prior
         bool do_clear = (part_id_sorted == my_first_part_id);
-        if (do_skip_align || do_skip_rotate)
-        {
+        if (do_skip_align || do_skip_rotate) {
             // Also set the rotations
             RFLOAT old_rot, old_tilt, old_psi;
             old_rot = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
             old_tilt = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT);
             old_psi = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI);
             sampling.addOneOrientation(old_rot, old_tilt, old_psi, do_clear);
-        }
-        else if (do_only_sample_tilt)
-        {
+        } else if (do_only_sample_tilt) {
             if (do_clear) // only clear psi_angles for the first particle, as one psi-angle is stored for each particle!
                 sampling.psi_angles.clear();
             RFLOAT old_psi = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI);
             sampling.psi_angles.push_back(old_psi);
         }
-        if (do_skip_align)
-        {
+        if (do_skip_align) {
             // Rounded translations will be applied to the image upon reading,
             // set the unique translation in the sampling object to the fractional difference
             RFLOAT my_old_offset_x, my_old_offset_y, my_old_offset_z;
@@ -3277,22 +3141,16 @@ void MlOptimiser::expectationSomeParticles(long int my_first_part_id, long int m
             my_old_offset_y = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_YOFF);
             rounded_offset_x = my_old_offset_x - ROUND(my_old_offset_x);
             rounded_offset_y = my_old_offset_y - ROUND(my_old_offset_y);
-            if (mymodel.data_dim == 3)
-            {
+            if (mymodel.data_dim == 3) {
                 my_old_offset_z = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ZOFF);
                 rounded_offset_z = my_old_offset_z - ROUND(my_old_offset_z);
             }
-            if (do_helical_refine)
-            {
+            if (do_helical_refine) {
                 rot_deg = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
                 tilt_deg = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT);
                 psi_deg = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI);
             }
 
-            // TODO: this will not work if pixel size is different for different images in one particle....
-            // TODO: this will not work if pixel size is different for different images in one particle....
-            // TODO: this will not work if pixel size is different for different images in one particle....
-            // TODO: this will not work if pixel size is different for different images in one particle....
             // TODO: this will not work if pixel size is different for different images in one particle....
             RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, 0);
             sampling.addOneTranslation(rounded_offset_x * my_pixel_size, rounded_offset_y * my_pixel_size, rounded_offset_z * my_pixel_size,
@@ -3304,59 +3162,49 @@ void MlOptimiser::expectationSomeParticles(long int my_first_part_id, long int m
 
         // Sjors 7 March 2016 to prevent too high disk access... Read in all pooled images simultaneously
         // Don't do this for sub-tomograms to save RAM!
-        if (do_parallel_disc_io && !do_preread_images && mymodel.data_dim != 3)
-        {
+        if (do_parallel_disc_io && !do_preread_images && mymodel.data_dim != 3) {
             // Read in the actual image from disc, only open/close common stacks once
             // Read in all images, only open/close common stacks once
-            for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++, my_metadata_offset++)
-            {
+            for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++, my_metadata_offset++) {
 
                 // Get the filename
-                if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img))
-                {
+                if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img)) {
                     std::istringstream split(exp_fn_img);
-                    for (int i = 0; i <= my_metadata_offset; i++)
-                    {
+                    for (int i = 0; i <= my_metadata_offset; i++) {
                         getline(split, fn_img);
                     }
                 }
 
                 // Only open again a new stackname
                 fn_img.decompose(dump, fn_stack);
-                if (fn_stack != fn_open_stack)
-                {
+                if (fn_stack != fn_open_stack) {
                     hFile.openFile(fn_stack, WRITE_READONLY);
                     fn_open_stack = fn_stack;
                 }
                 Image<RFLOAT> img;
-#ifdef DEBUG_BODIES
+                #ifdef DEBUG_BODIES
                 std::cerr << " fn_img= " << fn_img << " part_id= " << part_id << std::endl;
-#endif
+                #endif
                 img.readFromOpenFile(fn_img, hFile, -1, false);
                 img().setXmippOrigin();
                 exp_imgs.push_back(img());
-
-            } // end loop over all images in this particle
-
-        } // end if do_parallel_disc_io
-
-    } //end loop over part_id
+            }
+        }
+    }
 
 
-#ifdef DEBUG_EXPSOME
+    #ifdef DEBUG_EXPSOME
     std::cerr << " exp_my_first_part_id= " << exp_my_first_part_id << " exp_my_last_part_id= " << exp_my_last_part_id << std::endl;
-#endif
-    if (!do_cpu)
-    {
+    #endif
+    if (!do_cpu) {
         // GPU and traditional CPU case - use RELION's built-in task manager to
         // process multiple particles at once
         exp_ipart_ThreadTaskDistributor->resize(my_last_part_id - my_first_part_id + 1, 1);
         exp_ipart_ThreadTaskDistributor->reset();
         global_ThreadManager->run(globalThreadExpectationSomeParticles);
     }
-#ifdef ALTCPU
-    else
-    {
+    #ifdef ALTCPU
+    else {
         // "New" CPU case - use TBB's tasking system to process multiple
         // particles in parallel.  Like the GPU implementation, the lower-
         // level parallelism is implemented by compiler vectorization
@@ -3366,92 +3214,90 @@ void MlOptimiser::expectationSomeParticles(long int my_first_part_id, long int m
         // Set the size of the TBB thread pool for these particles
         tbb::global_control gc(tbb::global_control::max_allowed_parallelism, nr_threads);
         // process all passed particles in parallel
-        //for(unsigned long i=my_first_part_id; i<=my_last_part_id; i++) {
-        tbb::parallel_for(my_first_part_id, my_last_part_id+1, [&](long int i) {
+        //for (unsigned long i=my_first_part_id; i<=my_last_part_id; i++) {
+        tbb::parallel_for (my_first_part_id, my_last_part_id+1, [&](long int i) {
             CpuOptimiserType::reference ref = tbbCpuOptimiser.local();
             MlOptimiserCpu *cpuOptimiser = (MlOptimiserCpu *)ref;
             if (cpuOptimiser == NULL) {
                 cpuOptimiser = new MlOptimiserCpu(this, (MlDataBundle*)accDataBundles[0], "cpu_optimiser");
                 cpuOptimiser->resetData();
                 ref = cpuOptimiser;
-
                 cpuOptimiser->thread_id = tCount.fetch_add(1);
-            }  // cpuOptimiser == NULL
+            }
 
             cpuOptimiser->expectationOneParticle(i, cpuOptimiser->thread_id);
         });
         //}
-    }  // do_cpu
-#endif  // ifdef ALTCPU
+    }
+    #endif
 
     if (threadException != NULL)
         throw *threadException;
 
-#ifdef TIMING
+    #ifdef TIMING
     timer.toc(TIMING_ESP);
-#endif
-
+    #endif
 
 }
 
 
-void MlOptimiser::doThreadExpectationSomeParticles(int thread_id)
-{
+void MlOptimiser::doThreadExpectationSomeParticles(int thread_id) {
 
-#ifdef TIMING
+    #ifdef TIMING
     // Only time one thread
     if (thread_id == 0)
         timer.tic(TIMING_ESP_THR);
-#endif
+    #endif
 
     size_t first_ipart = 0, last_ipart = 0;
-    while (exp_ipart_ThreadTaskDistributor->getTasks(first_ipart, last_ipart))
-    {
-//#define DEBUG_EXPSOMETHR
-#ifdef DEBUG_EXPSOMETHR
+    while (exp_ipart_ThreadTaskDistributor->getTasks(first_ipart, last_ipart)) {
+        // #define DEBUG_EXPSOMETHR
+        #ifdef DEBUG_EXPSOMETHR
         pthread_mutex_lock(&global_mutex);
         std::cerr << " thread_id= " << thread_id << " first_ipart= " << first_ipart << " last_ipart= " << last_ipart << std::endl;
         std::cerr << " exp_my_first_part_id= " << exp_my_first_part_id << " exp_my_last_part_id= " << exp_my_last_part_id << std::endl;
         pthread_mutex_unlock(&global_mutex);
-#endif
+        #endif
 
-        for (long int ipart = first_ipart; ipart <= last_ipart; ipart++)
-        {
-#ifdef TIMING
+        for (long int ipart = first_ipart; ipart <= last_ipart; ipart++) {
+
+            #ifdef TIMING
             // Only time one thread
-            if (thread_id == 0)
+            if (thread_id == 0) {
                 timer.tic(TIMING_ESP_ONEPART);
-            else if (thread_id == nr_threads -1)
+            } else if (thread_id == nr_threads -1) {
                 timer.tic(TIMING_ESP_ONEPARTN);
-#endif
+            }
+            #endif
+
             expectationOneParticle(exp_my_first_part_id + ipart, thread_id);
 
-#ifdef TIMING
+            #ifdef TIMING
             // Only time one thread
-            if (thread_id == 0)
+            if (thread_id == 0) {
                 timer.toc(TIMING_ESP_ONEPART);
-            else if (thread_id == nr_threads -1)
+            } else if (thread_id == nr_threads -1) {
                 timer.toc(TIMING_ESP_ONEPARTN);
-#endif
+            }
+            #endif
 
         }
     }
 
-#ifdef TIMING
+    #ifdef TIMING
     // Only time one thread
     if (thread_id == 0)
         timer.toc(TIMING_ESP_THR);
-#endif
+    #endif
 
 }
 
 
-void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
-{
-#ifdef TIMING
+void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id) {
+    #ifdef TIMING
     if (part_id_sorted == exp_my_first_part_id)
         timer.tic(TIMING_ESP_INI);
-#endif
+    #endif
 
     long int part_id = mydata.sorted_idx[part_id_sorted];
 
@@ -3464,15 +3310,14 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
     int exp_iclass_min = 0;
     int exp_iclass_max = mymodel.nr_classes - 1;
     // low-pass filter again and generate the seeds
-    if (do_generate_seeds)
-    {
-        if (do_firstiter_cc && iter == 1)
-        {
+    if (do_generate_seeds) {
+        if (iter == 1 && do_firstiter_cc) {
             // In first (CC) iter, use a single reference (and CC)
             exp_iclass_min = exp_iclass_max = 0;
-        }
-        else if ( (do_firstiter_cc && iter == 2) || (!do_firstiter_cc && iter == 1))
-        {
+        } else if (
+            iter == 1 ||
+            iter == 2 &&  do_firstiter_cc
+        ) {
             // In second CC iter, or first iter without CC: generate the seeds
             // Now select a single random class
             // exp_part_id_sorted is already in randomized order (controlled by -seed)
@@ -3485,29 +3330,27 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
     }
 
 
-// This debug is a good one to step through the separate steps of the expectation to see where trouble lies....
-//#define DEBUG_ESP_MEM
-#ifdef DEBUG_ESP_MEM
+    // This debug is a good one to step through the separate steps of the expectation to see where trouble lies....
+    // #define DEBUG_ESP_MEM
+    #ifdef DEBUG_ESP_MEM
 
     std::cerr << "Entering MlOptimiser::expectationOneParticle" << std::endl;
     std::cerr << " part_id= " << part_id << std::endl;
-    if (thread_id==0)
-    {
+    if (thread_id == 0) {
         char c;
         std::cerr << "Before getFourierTransformsAndCtfs, press any key to continue... " << std::endl;
         std::cin >> c;
     }
     global_barrier->wait();
-#endif
+    #endif
 
 
     // Loop over all bodies of the multi-body refinement
     // Basically, subsequently align and store weighted sums for each body
-    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++)
-    {
+    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
 
         // Skip this body if keep_fixed_bodies[ibody] or if it's angular accuracy is worse than 1.5x the sampling rate
-        if ( mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
+        if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
             continue;
 
         // Here define all kind of local arrays that will be needed
@@ -3529,8 +3372,7 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         int my_nr_images = mydata.numberOfImagesInParticle(part_id);
         // Global exp_metadata array has metadata of all ori_particles. Where does my_ori_particle start?
         int metadata_offset = 0;
-        for (long int iori = exp_my_first_part_id; iori <= exp_my_last_part_id; iori++)
-        {
+        for (long int iori = exp_my_first_part_id; iori <= exp_my_last_part_id; iori++) {
             if (iori == part_id_sorted)
                 break;
             metadata_offset += mydata.numberOfImagesInParticle(mydata.sorted_idx[iori]);
@@ -3546,271 +3388,236 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         exp_prior.resize(my_nr_images);
 
         // Then calculate all Fourier Transform of masked and unmasked image and the CTF
-#ifdef TIMING
-        if (part_id_sorted == exp_my_first_part_id)
-        {
+        #ifdef TIMING
+        if (part_id_sorted == exp_my_first_part_id) {
             timer.toc(TIMING_ESP_INI);
             timer.tic(TIMING_ESP_FT);
         }
-#endif
+        #endif
         getFourierTransformsAndCtfs(part_id, ibody, metadata_offset, exp_Fimg, exp_Fimg_nomask, exp_Fctf,
                 exp_old_offset, exp_prior, exp_power_imgs, exp_highres_Xi2_img,
                 exp_pointer_dir_nonzeroprior, exp_pointer_psi_nonzeroprior, exp_directions_prior, exp_psi_prior);
 
-#ifdef TIMING
+        #ifdef TIMING
         if (part_id_sorted == exp_my_first_part_id)
             timer.toc(TIMING_ESP_FT);
-#endif
+        #endif
 
-#ifdef DEBUG_ESP_MEM
-        if (thread_id==0)
-        {
+        #ifdef DEBUG_ESP_MEM
+        if (thread_id == 0) {
             char c;
             std::cerr << " my_nr_images= " << my_nr_images << " metadata_offset= " << metadata_offset << std::endl;
             std::cerr << "After getFourierTransformsAndCtfs, press any key to continue... " << std::endl;
             std::cin >> c;
         }
         global_barrier->wait();
-#endif
+        #endif
 
         // To deal with skipped alignments/rotations
         int exp_itrans_min, exp_itrans_max, exp_idir_min, exp_idir_max, exp_ipsi_min, exp_ipsi_max;
-        if (do_skip_align)
-        {
+        if (do_skip_align) {
             exp_itrans_min = exp_itrans_max = part_id_sorted - exp_my_first_part_id;
-        }
-        else
-        {
+        } else {
             exp_itrans_min = 0;
             exp_itrans_max = sampling.NrTranslationalSamplings() - 1;
         }
-        if (do_skip_align || do_skip_rotate)
-        {
+        if (do_skip_align || do_skip_rotate) {
             exp_idir_min = exp_idir_max = exp_ipsi_min = exp_ipsi_max =
                     part_id_sorted - exp_my_first_part_id;
-        }
-        else if (do_only_sample_tilt)
-        {
+        } else if (do_only_sample_tilt) {
             exp_idir_min = 0;
             exp_idir_max = sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior) - 1;
             exp_ipsi_min = exp_ipsi_max = part_id_sorted - exp_my_first_part_id;
-        }
-        else
-        {
+        } else {
             exp_idir_min = exp_ipsi_min = 0;
-            exp_idir_max = sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior) - 1;
-            exp_ipsi_max = sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior ) - 1;
+            exp_idir_max = sampling.NrDirections  (0, &exp_pointer_dir_nonzeroprior) - 1;
+            exp_ipsi_max = sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior) - 1;
         }
 
         // Initialise significant weight to minus one, so that all coarse sampling points will be handled in the first pass
         exp_significant_weight.resize(my_nr_images, -1.0);
 
         // Only perform a second pass when using adaptive oversampling
-        int nr_sampling_passes = (adaptive_oversampling > 0) ? 2 : 1;
+        int nr_sampling_passes = 1 + (adaptive_oversampling > 0);
 
         // Pass twice through the sampling of the entire space of rot, tilt and psi
         // The first pass uses a coarser angular sampling and possibly smaller FFTs than the second pass.
         // Only those sampling points that contribute to the highest x% of the weights in the first pass are oversampled in the second pass
         // Only those sampling points will contribute to the weighted sums in the third loop below
-        for (int exp_ipass = 0; exp_ipass < nr_sampling_passes; exp_ipass++)
-        {
+        for (int exp_ipass = 0; exp_ipass < nr_sampling_passes; exp_ipass++) {
 
             // Use coarse sampling in the first pass, oversampled one the second pass
-            exp_current_oversampling = (exp_ipass == 0) ? 0 : adaptive_oversampling;
+            exp_current_oversampling = exp_ipass == 0 ? 0 : adaptive_oversampling;
 
-#ifdef DEBUG_ESP_MEM
-            if (thread_id==0)
-            {
+            #ifdef DEBUG_ESP_MEM
+            if (thread_id == 0) {
                 char c;
                 std::cerr << " exp_current_image_size= " << exp_current_image_size << " exp_current_oversampling= " << exp_current_oversampling << " nr_sampling_passes= " << nr_sampling_passes << std::endl;
                 std::cerr << "Before getAllSquaredDifferences, use top to see memory usage and then press any key to continue... " << std::endl;
                 std::cin >> c;
             }
             global_barrier->wait();
-#endif
+            #endif
 
             // Calculate the squared difference terms inside the Gaussian kernel for all hidden variables
-            getAllSquaredDifferences(part_id, ibody, exp_ipass, exp_current_oversampling,
-                    metadata_offset, exp_idir_min, exp_idir_max, exp_ipsi_min, exp_ipsi_max,
-                    exp_itrans_min, exp_itrans_max, exp_iclass_min, exp_iclass_max, exp_min_diff2, exp_highres_Xi2_img,
-                    exp_Fimg, exp_Fctf, exp_Mweight, exp_Mcoarse_significant,
-                    exp_pointer_dir_nonzeroprior, exp_pointer_psi_nonzeroprior, exp_directions_prior, exp_psi_prior,
-                    exp_local_Fimgs_shifted, exp_local_Minvsigma2, exp_local_Fctf, exp_local_sqrtXi2);
+            getAllSquaredDifferences(
+                part_id, ibody, exp_ipass, exp_current_oversampling,
+                metadata_offset, exp_idir_min, exp_idir_max, exp_ipsi_min, exp_ipsi_max,
+                exp_itrans_min, exp_itrans_max, exp_iclass_min, exp_iclass_max, exp_min_diff2, exp_highres_Xi2_img,
+                exp_Fimg, exp_Fctf, exp_Mweight, exp_Mcoarse_significant,
+                exp_pointer_dir_nonzeroprior, exp_pointer_psi_nonzeroprior, exp_directions_prior, exp_psi_prior,
+                exp_local_Fimgs_shifted, exp_local_Minvsigma2, exp_local_Fctf, exp_local_sqrtXi2
+            );
 
-
-#ifdef DEBUG_ESP_MEM
-            if (thread_id==0)
-            {
+            #ifdef DEBUG_ESP_MEM
+            if (thread_id == 0) {
                 char c;
                 std::cerr << "After getAllSquaredDifferences, use top to see memory usage and then press any key to continue... " << std::endl;
                 std::cin >> c;
             }
             global_barrier->wait();
-#endif
+            #endif
 
             // Now convert the squared difference terms to weights,
             // also calculate exp_sum_weight, and in case of adaptive oversampling also exp_significant_weight
-            convertAllSquaredDifferencesToWeights(part_id, ibody, exp_ipass, exp_current_oversampling, metadata_offset,
-                    exp_idir_min, exp_idir_max, exp_ipsi_min, exp_ipsi_max,
-                    exp_itrans_min, exp_itrans_max, exp_iclass_min, exp_iclass_max,
-                    exp_Mweight, exp_Mcoarse_significant, exp_significant_weight,
-                    exp_sum_weight, exp_old_offset, exp_prior, exp_min_diff2,
-                    exp_pointer_dir_nonzeroprior, exp_pointer_psi_nonzeroprior, exp_directions_prior, exp_psi_prior);
+            convertAllSquaredDifferencesToWeights(
+                part_id, ibody, exp_ipass, exp_current_oversampling, metadata_offset,
+                exp_idir_min, exp_idir_max, exp_ipsi_min, exp_ipsi_max,
+                exp_itrans_min, exp_itrans_max, exp_iclass_min, exp_iclass_max,
+                exp_Mweight, exp_Mcoarse_significant, exp_significant_weight,
+                exp_sum_weight, exp_old_offset, exp_prior, exp_min_diff2,
+                exp_pointer_dir_nonzeroprior, exp_pointer_psi_nonzeroprior, exp_directions_prior, exp_psi_prior
+            );
 
-#ifdef DEBUG_ESP_MEM
-        if (thread_id==0)
-        {
+        #ifdef DEBUG_ESP_MEM
+        if (thread_id == 0) {
             char c;
             std::cerr << "After convertAllSquaredDifferencesToWeights, press any key to continue... " << std::endl;
             std::cin >> c;
         }
         global_barrier->wait();
-#endif
+        #endif
 
-        }// end loop over 2 exp_ipass iterations
+        }
 
-#ifdef RELION_TESTING
-        std::string mode;
-        if (do_gpu)
-        {
-            mode="gpu";
-        }
-        else
-        {
-            mode="cpu";
-        }
-        std::cerr << " "<< std::endl;
-        std::cerr << " finished running diffs in  " << mode << " mode."<< std::endl;
+        #ifdef RELION_TESTING
+        std::string mode = do_gpu ? "gpu" : "cpu";
+        std::cerr << " " << std::endl;
+        std::cerr << " finished running diffs in  " << mode << " mode." << std::endl;
         Image<RFLOAT> tt;
         tt().resize(exp_current_image_size, exp_current_image_size);
         MultidimArray<Complex> Fimg1;
         Fimg1 = exp_local_Fimgs_shifted[0][0];
         FourierTransformer transformer;
         transformer.inverseFourierTransform(Fimg1, tt());
-        CenterFFT(tt(),false);
+        CenterFFT(tt(), false);
         std::string fnm = mode + std::string("_out_shifted_image.mrc");
         tt.write(fnm);
         tt().resize(YSIZE(Mresol_coarse[optics_group]),XSIZE(Mresol_coarse[optics_group]));
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tt())
-        {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tt()) {
             DIRECT_MULTIDIM_ELEM(tt(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(Mresol_coarse[optics_group], n);
         }
         fnm = mode + std::string("_out_mresol_coarse.mrc");
         tt.write(fnm);
         tt().resize(YSIZE(Mresol_fine),XSIZE(Mresol_fine[optics_group]));
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tt())
-        {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tt()) {
             DIRECT_MULTIDIM_ELEM(tt(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(Mresol_fine[optics_group], n);
         }
         fnm = mode + std::string("_out_mresol_fine.mrc");
         tt.write(fnm);
         tt().resize(YSIZE(exp_local_Fctfs[0]),XSIZE(exp_local_Fctfs[0]));
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Fctfs[0])
-        {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Fctfs[0]) {
             DIRECT_MULTIDIM_ELEM(tt(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(exp_local_Fctfs[0], n);
         }
         fnm = mode + std::string("_out_ctf.mrc");
         tt.write(fnm);
-//		exp_local_Fctfs[0]), tt());
-//		CenterFFT(tt(),false);
-//		fnm = mode + std::string("_out_ctf.mrc");
-//		tt.write(fnm);
+        // exp_local_Fctfs[0]), tt());
+        // CenterFFT(tt(),false);
+        // fnm = mode + std::string("_out_ctf.mrc");
+        // tt.write(fnm);
         fnm = mode + std::string("_out_10k_weights.txt");
         char *text = &fnm[0];
-        freopen(text,"w",stdout);
-        for(int n=0; n<10000; n++)
-        {
-            printf("%4.8f \n",DIRECT_MULTIDIM_ELEM(exp_Mweight, n)); // << std::endl;
+        freopen(text, "w", stdout);
+        for (int n = 0; n < 10000; n++) {
+            printf("%4.8f \n", DIRECT_MULTIDIM_ELEM(exp_Mweight, n)); // << std::endl;
         }
         fclose(stdout);
-//      	exit(0);
-#endif
+         // exit(0);
+        #endif
         // For the reconstruction step use mymodel.current_size!
         // as of 3.1 no longer needed?? CHECK!! exp_current_image_size = mymodel.current_size;
 
-#ifdef DEBUG_ESP_MEM
-        if (thread_id==0)
-        {
+        #ifdef DEBUG_ESP_MEM
+        if (thread_id == 0) {
             char c;
             std::cerr << "Before storeWeightedSums, press any key to continue... " << std::endl;
             std::cin >> c;
         }
         global_barrier->wait();
-#endif
+        #endif
 
-        storeWeightedSums(part_id, ibody, exp_current_oversampling, metadata_offset,
-                exp_idir_min, exp_idir_max, exp_ipsi_min, exp_ipsi_max,
-                exp_itrans_min, exp_itrans_max, exp_iclass_min, exp_iclass_max,
-                exp_min_diff2, exp_highres_Xi2_img, exp_Fimg, exp_Fimg_nomask, exp_Fctf,
-                exp_power_imgs, exp_old_offset, exp_prior, exp_Mweight, exp_Mcoarse_significant,
-                exp_significant_weight, exp_sum_weight, exp_max_weight,
-                exp_pointer_dir_nonzeroprior, exp_pointer_psi_nonzeroprior, exp_directions_prior, exp_psi_prior,
-                exp_local_Fimgs_shifted, exp_local_Fimgs_shifted_nomask, exp_local_Minvsigma2, exp_local_Fctf, exp_local_sqrtXi2);
+        storeWeightedSums(
+            part_id, ibody, exp_current_oversampling, metadata_offset,
+            exp_idir_min, exp_idir_max, exp_ipsi_min, exp_ipsi_max,
+            exp_itrans_min, exp_itrans_max, exp_iclass_min, exp_iclass_max,
+            exp_min_diff2, exp_highres_Xi2_img, exp_Fimg, exp_Fimg_nomask, exp_Fctf,
+            exp_power_imgs, exp_old_offset, exp_prior, exp_Mweight, exp_Mcoarse_significant,
+            exp_significant_weight, exp_sum_weight, exp_max_weight,
+            exp_pointer_dir_nonzeroprior, exp_pointer_psi_nonzeroprior, exp_directions_prior, exp_psi_prior,
+            exp_local_Fimgs_shifted, exp_local_Fimgs_shifted_nomask, exp_local_Minvsigma2, exp_local_Fctf, exp_local_sqrtXi2
+        );
 
-#ifdef RELION_TESTING
-//		std::string mode;
-        if (do_gpu)
-        {
-            mode="gpu";
-        }
-        else
-        {
-            mode="cpu";
-        }
+        #ifdef RELION_TESTING
+        // std::string mode;
+        mode = do_gpu ? "gpu" : "cpu";
         std::cerr << " "<< std::endl;
-        std::cerr << " finished running diffs in  " << mode << " mode."<< std::endl;
+        std::cerr << " finished running diffs in  " << mode << " mode." << std::endl;
         fnm = mode + std::string("_out_10k_weights_afterstore.txt");
         text = &fnm[0];
         freopen(text,"w",stdout);
         // Write the first 10k diffs to be sure
-        for(int n=0; n<10000; n++)
-        {
+        for (int n = 0; n < 10000; n++) {
             //std::cout << DIRECT_MULTIDIM_ELEM(exp_Mweight, n) << std::endl;
-            printf("%4.8f \n",DIRECT_MULTIDIM_ELEM(exp_Mweight, n));
+            printf("%4.8f \n", DIRECT_MULTIDIM_ELEM(exp_Mweight, n));
         }
-        //For tests we want to exit now
-        //if (iter == 2)
-        //	exit(0);
+        // For tests we want to exit now
+        // if (iter == 2)
+        // 	exit(0);
 
-#endif
+        #endif
 
-#ifdef DEBUG_ESP_MEM
-        if (thread_id==0)
-        {
+        #ifdef DEBUG_ESP_MEM
+        if (thread_id==0) {
             char c;
             std::cerr << "After storeWeightedSums, press any key to continue... " << std::endl;
             std::cin >> c;
         }
         global_barrier->wait();
-#endif
+        #endif
 
-    } // end for ibody
+    }
 
-#ifdef DEBUG_BODIES
+    #ifdef DEBUG_BODIES
     if (part_id_sorted == ROUND(debug1))
         exit(1);
-#endif
+    #endif
 
-#ifdef DEBUG_EXPSINGLE
-        std::cerr << "Leaving expectationOneParticle..." << std::endl;
-#endif
+    #ifdef DEBUG_EXPSINGLE
+    std::cerr << "Leaving expectationOneParticle..." << std::endl;
+    #endif
 
 }
 
-void MlOptimiser::symmetriseReconstructions()
-{
-    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++)
-    {
+void MlOptimiser::symmetriseReconstructions() {
+    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
         if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
             continue;
 
-        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-        {
+        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             // either ibody or iclass can be larger than 0, never 2 at the same time!
-            int ith_recons = (mymodel.nr_bodies > 1) ? ibody : iclass;
+            int ith_recons = mymodel.nr_bodies > 1 ? ibody : iclass;
 
-            if (mymodel.pdf_class[iclass] > 0.0)
-            {
+            if (mymodel.pdf_class[iclass] > 0.0) {
                 // Immediately after expectation process. Do rise and twist for all asymmetrical units in Fourier space
                 // Also convert helical rise to pixels for BPref object
                 wsum_model.BPref[ith_recons].enforceHermitianSymmetry();
@@ -3818,17 +3625,17 @@ void MlOptimiser::symmetriseReconstructions()
                 // Then apply helical and point group symmetry (order irrelevant?)
                 if (mymodel.nr_bodies == 1)
                     wsum_model.BPref[ith_recons].applyHelicalSymmetry(
-                            mymodel.helical_nr_asu,
-                            mymodel.helical_twist[ith_recons],
-                            mymodel.helical_rise[ith_recons] / mymodel.pixel_size);
+                        mymodel.helical_nr_asu,
+                        mymodel.helical_twist[ith_recons],
+                        mymodel.helical_rise[ith_recons] / mymodel.pixel_size
+                    );
 
-                if (fn_multi_sym.size() > ith_recons) // Always false if size=0
-                {
+                // Always false if (size == 0)
+                if (fn_multi_sym.size() > ith_recons) {
                     //Modify symmetry settings
                     wsum_model.BPref[ith_recons].SL.read_sym_file(fn_multi_sym[ith_recons]);
                     std::cerr << " Applying point symmetry " << fn_multi_sym[ith_recons] << " to body/class " << ith_recons << std::endl;
                 }
-
 
                 wsum_model.BPref[ith_recons].applyPointGroupSymmetry();
             }
@@ -3837,165 +3644,150 @@ void MlOptimiser::symmetriseReconstructions()
     return;
 }
 
-void MlOptimiser::applyLocalSymmetryForEachRef()
-{
-    if ( (fn_local_symmetry_masks.size() < 1) || (fn_local_symmetry_operators.size() < 1) )
-        return;
+void MlOptimiser::applyLocalSymmetryForEachRef() {
+
+    if (
+        fn_local_symmetry_masks.size() < 1 ||
+        fn_local_symmetry_operators.size() < 1
+    ) return;
 
     if (verb > 0)
         std::cout << " Applying local symmetry in real space according to " << fn_local_symmetry_operators.size() << " operators..." << std::endl;
 
-    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++)
-    {
+    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
         if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
             continue;
 
-        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-        {
+        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             // either ibody or iclass can be larger than 0, never 2 at the same time!
-            int ith_recons = (mymodel.nr_bodies > 1) ? ibody : iclass;
+            int ith_recons = mymodel.nr_bodies > 1 ? ibody : iclass;
             applyLocalSymmetry(mymodel.Iref[ith_recons], fn_local_symmetry_masks, fn_local_symmetry_operators);
         }
     }
 }
 
-void MlOptimiser::makeGoodHelixForEachRef()
-{
-    if ( (!do_helical_refine) || (ignore_helical_symmetry) || (mymodel.ref_dim == 2) )
+void MlOptimiser::makeGoodHelixForEachRef() {
+    if (!do_helical_refine || ignore_helical_symmetry || mymodel.ref_dim == 2)
         return;
 
-    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++)
-    {
+    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
         if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
             continue;
 
-        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-        {
+        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             // either ibody or iclass can be larger than 0, never 2 at the same time!
-            int ith_recons = (mymodel.nr_bodies > 1) ? ibody : iclass;
-            if (mymodel.pdf_class[iclass] > 0.0)
-            {
-                if ( (iter > 1) && (do_helical_symmetry_local_refinement) )
-                {
+            int ith_recons = mymodel.nr_bodies > 1 ? ibody : iclass;
+            if (mymodel.pdf_class[iclass] > 0.0) {
+                if (iter > 1 && do_helical_symmetry_local_refinement) {
                     localSearchHelicalSymmetry(
-                            mymodel.Iref[ith_recons],
-                            mymodel.pixel_size,
-                            (particle_diameter / 2.0),
-                            (helical_tube_inner_diameter / 2.0),
-                            (helical_tube_outer_diameter / 2.0),
-                            helical_z_percentage,
-                            mymodel.helical_rise_min,
-                            mymodel.helical_rise_max,
-                            mymodel.helical_rise_inistep,
-                            mymodel.helical_rise[iclass],
-                            mymodel.helical_twist_min,
-                            mymodel.helical_twist_max,
-                            mymodel.helical_twist_inistep,
-                            mymodel.helical_twist[iclass]);
-                }
-                imposeHelicalSymmetryInRealSpace(
                         mymodel.Iref[ith_recons],
                         mymodel.pixel_size,
-                        (particle_diameter / 2.0),
-                        (helical_tube_inner_diameter / 2.0),
-                        (helical_tube_outer_diameter / 2.0),
+                        particle_diameter / 2.0,
+                        helical_tube_inner_diameter / 2.0, helical_tube_outer_diameter / 2.0,
                         helical_z_percentage,
-                        mymodel.helical_rise[iclass],
-                        mymodel.helical_twist[iclass],
-                        width_mask_edge);
+                        mymodel.helical_rise_min, mymodel.helical_rise_max,
+                        mymodel.helical_rise_inistep, mymodel.helical_rise[iclass],
+                        mymodel.helical_twist_min, mymodel.helical_twist_max,
+                        mymodel.helical_twist_inistep, mymodel.helical_twist[iclass]
+                    );
+                }
+                imposeHelicalSymmetryInRealSpace(
+                    mymodel.Iref[ith_recons],
+                    mymodel.pixel_size,
+                    particle_diameter / 2.0,
+                    helical_tube_inner_diameter / 2.0,
+                    helical_tube_outer_diameter / 2.0,
+                    helical_z_percentage,
+                    mymodel.helical_rise[iclass],
+                    mymodel.helical_twist[iclass],
+                    width_mask_edge
+                );
             }
         }
     }
 
-    if (verb > 0)
-    {
+    if (verb > 0) {
         outputHelicalSymmetryStatus(
-                iter,
-                helical_rise_initial,
-                mymodel.helical_rise_min,
-                mymodel.helical_rise_max,
-                helical_twist_initial,
-                mymodel.helical_twist_min,
-                mymodel.helical_twist_max,
-                do_helical_symmetry_local_refinement,
-                mymodel.helical_rise,
-                mymodel.helical_twist,
-                0., 0., 0., 0., false,
-                std::cout);
+            iter,
+            helical_rise_initial,
+            mymodel.helical_rise_min, mymodel.helical_rise_max,
+            helical_twist_initial,
+            mymodel.helical_twist_min, mymodel.helical_twist_max,
+            do_helical_symmetry_local_refinement,
+            mymodel.helical_rise, mymodel.helical_twist,
+            0.0, 0.0, 0.0, 0.0, false,
+            std::cout
+        );
     }
     return;
 }
 
-void MlOptimiser::maximization()
-{
+void MlOptimiser::maximization() {
 
-    if (verb > 0)
-    {
+    if (verb > 0) {
         std::cout << " Maximization ..." << std::endl;
         init_progress_bar(mymodel.nr_classes);
     }
 
     // First reconstruct the images for each class
     // multi-body refinement will never get here, as it is only 3D auto-refine and that requires MPI!
-    for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++)
-    {
-        RCTIC(timer,RCT_1);
-        if (mymodel.pdf_class[iclass] > 0. || mymodel.nr_bodies > 1 )
-        {
+    for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++) {
+        RCTIC(timer, RCT_1);
+        if (mymodel.pdf_class[iclass] > 0.0 || mymodel.nr_bodies > 1) {
 
-            if ((wsum_model.BPref[iclass].weight).sum() > XMIPP_EQUAL_ACCURACY)
-            {
+            if (wsum_model.BPref[iclass].weight.sum() > XMIPP_EQUAL_ACCURACY) {
                 MultidimArray<RFLOAT> Iref_old;
+                if (do_sgd) { Iref_old = mymodel.Iref[iclass]; }
 
-                if (do_sgd) Iref_old = mymodel.Iref[iclass];
+                wsum_model.BPref[iclass].updateSSNRarrays(
+                    mymodel.tau2_fudge_factor,
+                    mymodel.tau2_class[iclass],
+                    mymodel.sigma2_class[iclass],
+                    mymodel.data_vs_prior_class[iclass],
+                    mymodel.fourier_coverage_class[iclass],
+                    mymodel.fsc_halves_class[0],
+                    false,
+                    false
+                );
 
-                (wsum_model.BPref[iclass]).updateSSNRarrays(mymodel.tau2_fudge_factor,
+                if (do_external_reconstruct) {
+                    FileName fn_ext_root;
+                    if (iter > -1) {
+                        fn_ext_root.compose(fn_out+"_it", iter, "", 3);
+                    } else {
+                        fn_ext_root = fn_out;
+                    }
+                    fn_ext_root.compose(fn_ext_root + "_class", iclass + 1, "", 3);
+                    wsum_model.BPref[iclass].externalReconstruct(
+                        mymodel.Iref[iclass],
+                        fn_ext_root,
+                        mymodel.fsc_halves_class[iclass],
                         mymodel.tau2_class[iclass],
                         mymodel.sigma2_class[iclass],
                         mymodel.data_vs_prior_class[iclass],
-                        mymodel.fourier_coverage_class[iclass],
-                        mymodel.fsc_halves_class[0],
-                        false,
-                        false);
-
-                if (do_external_reconstruct)
-                {
-                    FileName fn_ext_root;
-                    if (iter > -1) fn_ext_root.compose(fn_out+"_it", iter, "", 3);
-                    else fn_ext_root = fn_out;
-                    fn_ext_root.compose(fn_ext_root+"_class", iclass+1, "", 3);
-                    (wsum_model.BPref[iclass]).externalReconstruct(mymodel.Iref[iclass],
-                            fn_ext_root,
-                            mymodel.fsc_halves_class[iclass],
-                            mymodel.tau2_class[iclass],
-                            mymodel.sigma2_class[iclass],
-                            mymodel.data_vs_prior_class[iclass],
-                            (do_join_random_halves || do_always_join_random_halves),
-                            mymodel.tau2_fudge_factor,
-                            1); // verbose
-                }
-                else
-                {
-                    (wsum_model.BPref[iclass]).reconstruct(mymodel.Iref[iclass],
-                            gridding_nr_iter,
-                            do_map,
-                            mymodel.tau2_class[iclass],
-                            mymodel.tau2_fudge_factor,
-                            wsum_model.pdf_class[iclass],
-                            minres_map,
-                            (iclass==0));
+                        do_join_random_halves || do_always_join_random_halves,
+                        mymodel.tau2_fudge_factor,
+                        1  // verbose
+                    );
+                } else {
+                    wsum_model.BPref[iclass].reconstruct(
+                        mymodel.Iref[iclass],
+                        gridding_nr_iter,
+                        do_map,
+                        mymodel.tau2_class[iclass],
+                        mymodel.tau2_fudge_factor,
+                        wsum_model.pdf_class[iclass],
+                        minres_map,
+                        iclass == 0
+                    );
                 }
 
-                if (do_sgd)
-                {
+                if (do_sgd) {
                     // Use stochastic expectation maximisation, instead of SGD.
-                    if (do_avoid_sgd)
-                    {
-                        if (iter < sgd_ini_iter)
-                        {
-                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[iclass])
-                            {
-                                DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) = XMIPP_MAX(0., DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n));
+                    if (do_avoid_sgd) {
+                        if (iter < sgd_ini_iter) {
+                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[iclass]) {
+                                DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) = std::max(0., DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n));
                             }
                         }
                         mymodel.Iref[iclass] = mymodel.Iref[iclass] - Iref_old;
@@ -4005,63 +3797,57 @@ void MlOptimiser::maximization()
                     // where G_kl^(n) is now in mymodel.Iref[iclass]!!!
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Igrad[iclass])
                         DIRECT_MULTIDIM_ELEM(mymodel.Igrad[iclass], n) = mu * DIRECT_MULTIDIM_ELEM(mymodel.Igrad[iclass], n) +
-                        (1. - mu) * sgd_stepsize * DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n);
+                        (1.0 - mu) * sgd_stepsize * DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n);
 
                     // update formula: V_kl^(n+1) = V_kl^(n) + dV_kl^(n)
                     mymodel.Iref[iclass] = Iref_old + mymodel.Igrad[iclass];
 
-//#define DEBUG_SGD
-#ifdef DEBUG_SGD
-                    FileName fn_tmp="grad_class"+integerToString(iclass)+".spi";
+                    // #define DEBUG_SGD
+                    #ifdef DEBUG_SGD
+                    FileName fn_tmp = "grad_class" + integerToString(iclass) + ".spi";
                     Image<RFLOAT> It;
                     It()=mymodel.Igrad[iclass];
                     It.write(fn_tmp);
-                    fn_tmp="ref_class"+integerToString(iclass)+".spi";
-                    It()=mymodel.Iref[iclass];
+                    fn_tmp = "ref_class" + integerToString(iclass) + ".spi";
+                    It() = mymodel.Iref[iclass];
                     It.write(fn_tmp);
-#endif
+                    #endif
                     // Enforce positivity?
                     // Low-pass filter according to current resolution??
                     // Some sort of regularisation may be necessary....?
-
                 }
             }
+        } else {
+            (do_sgd ? 
+                mymodel.Igrad : // When doing SGD, keep the previous reference and re-initialise the gradient to zero
+                mymodel.Iref    // When not doing SGD, initialise the reference to zero.
+            )[iclass].initZeros();
         }
-        else
-        {
-            // When not doing SGD, initialise to zero, but when doing SGD just keep the previous reference
-            if (!do_sgd)
-                mymodel.Iref[iclass].initZeros();
-            // When doing SGD also re-initialise the gradient to zero
-            if (do_sgd)
-                mymodel.Igrad[iclass].initZeros();
-        }
-        RCTOC(timer,RCT_1);
+        RCTOC(timer, RCT_1);
         if (verb > 0)
             progress_bar(iclass);
     }
 
-    RCTIC(timer,RCT_3);
+    RCTIC(timer, RCT_3);
     // Then perform the update of all other model parameters
     maximizationOtherParameters();
-    RCTOC(timer,RCT_3);
-    RCTIC(timer,RCT_4);
+    RCTOC(timer, RCT_3);
+    RCTIC(timer, RCT_4);
     // Keep track of changes in hidden variables
     updateOverallChangesInHiddenVariables();
-    RCTOC(timer,RCT_4);
+    RCTOC(timer, RCT_4);
     if (verb > 0)
         progress_bar(mymodel.nr_classes);
 
 }
 
-void MlOptimiser::maximizationOtherParameters()
-{
+void MlOptimiser::maximizationOtherParameters() {
     // Note that reconstructions are done elsewhere!
-#ifdef DEBUG
+    #ifdef DEBUG
     std::cerr << "Entering maximizationOtherParameters" << std::endl;
-#endif
+    #endif
 
-    RCTIC(timer,RCT_5);
+    RCTIC(timer, RCT_5);
     // Calculate total sum of weights, and average CTF for each class (for SSNR estimation)
     RFLOAT sum_weight = 0.0;
     for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
@@ -4072,10 +3858,8 @@ void MlOptimiser::maximizationOtherParameters()
     if (sum_weight < XMIPP_EQUAL_ACCURACY)
         return;
 
-
     // Annealing of multiple-references in SGD
-    if (do_sgd && !do_sgd_skip_anneal && mymodel.nr_classes > 1 && iter < sgd_ini_iter + sgd_inbetween_iter)
-    {
+    if (do_sgd && !do_sgd_skip_anneal && mymodel.nr_classes > 1 && iter < sgd_ini_iter + sgd_inbetween_iter) {
         MultidimArray<RFLOAT> Iavg;
         Iavg.initZeros(mymodel.Iref[0]);
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
@@ -4083,11 +3867,9 @@ void MlOptimiser::maximizationOtherParameters()
         Iavg /= (RFLOAT)mymodel.nr_classes;
 
         int diffiter = iter - sgd_ini_iter;
-        RFLOAT frac = RFLOAT(iter - sgd_ini_iter)/RFLOAT(sgd_inbetween_iter);
-        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iavg)
-            {
+        RFLOAT frac = RFLOAT(iter - sgd_ini_iter) / RFLOAT(sgd_inbetween_iter);
+        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iavg) {
                 DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) *= frac;
                 DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) += (1.-frac)*DIRECT_MULTIDIM_ELEM(Iavg, n);
             }
@@ -4095,22 +3877,18 @@ void MlOptimiser::maximizationOtherParameters()
     }
 
     // Update average norm_correction, don't update norm corrections anymore for multi-body refinements!
-    if (do_norm_correction  && mymodel.nr_bodies == 1)
-    {
+    if (do_norm_correction  && mymodel.nr_bodies == 1) {
         mymodel.avg_norm_correction *= mu;
-        mymodel.avg_norm_correction += (1. - mu) * wsum_model.avg_norm_correction / sum_weight;
+        mymodel.avg_norm_correction += (1.0 - mu) * wsum_model.avg_norm_correction / sum_weight;
     }
 
     // Don't update scales in maxCC or in multi-body refinement
-    if (do_scale_correction && !( (iter==1 && do_firstiter_cc) || do_always_cc || mymodel.nr_bodies > 1 ) )
-    {
-        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++)
-        {
+    if (do_scale_correction && (iter != 1 || !do_firstiter_cc) && !do_always_cc && mymodel.nr_bodies <= 1) {
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
             mymodel.scale_correction[igroup] *= mu;
-            if (wsum_model.wsum_reference_power[igroup] > 0.0)
-                mymodel.scale_correction[igroup] += (1. - mu) * wsum_model.wsum_signal_product[igroup] / wsum_model.wsum_reference_power[igroup];
-            else
-                mymodel.scale_correction[igroup] += (1. - mu);
+            mymodel.scale_correction[igroup] += wsum_model.wsum_reference_power[igroup] > 0.0 ?
+                (1.0 - mu) * wsum_model.wsum_signal_product[igroup] / wsum_model.wsum_reference_power[igroup] :
+                (1.0 - mu);
         }
 
         // TODO! Avoid extremities in scale estimates, because they lead to catastrophic events and instabilities in refinement
@@ -4120,14 +3898,14 @@ void MlOptimiser::maximizationOtherParameters()
         std::sort(sorted.begin(), sorted.end());
         RFLOAT median = sorted[mymodel.nr_groups / 2];
 
-        RFLOAT avg_scale_correction = 0., nr_part = 0.0;
-        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++)
-        {
+        RFLOAT avg_scale_correction = 0.0, nr_part = 0.0;
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
 
-            if (mymodel.scale_correction[igroup] > 5. * median)
-                mymodel.scale_correction[igroup] = 5. * median;
-            else if (mymodel.scale_correction[igroup] < median / 5.0)
-                mymodel.scale_correction[igroup] =  median / 5.0;
+            if (mymodel.scale_correction[igroup] > 5.0 * median) {
+                mymodel.scale_correction[igroup] = 5.0 * median;
+            } else if (mymodel.scale_correction[igroup] < median / 5.0) {
+                mymodel.scale_correction[igroup] = median / 5.0;
+            }
 
             avg_scale_correction += (RFLOAT)(mymodel.nr_particles_per_group[igroup]) * mymodel.scale_correction[igroup];
             nr_part += (RFLOAT)(mymodel.nr_particles_per_group[igroup]);
@@ -4135,152 +3913,118 @@ void MlOptimiser::maximizationOtherParameters()
 
         // Constrain average scale_correction to one.
         avg_scale_correction /= nr_part;
-        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++)
-        {
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
             mymodel.scale_correction[igroup] /= avg_scale_correction;
-//#define DEBUG_UPDATE_SCALE
-#ifdef DEBUG_UPDATE_SCALE
-            if (verb > 0)
-            {
-                std::cerr<< "Group "<<igroup+1<<": scale_correction= "<<mymodel.scale_correction[igroup]<<std::endl;
+            // #define DEBUG_UPDATE_SCALE
+            #ifdef DEBUG_UPDATE_SCALE
+            if (verb > 0) {
+                std::cerr << "Group " << igroup + 1 << ": scale_correction= " << mymodel.scale_correction[igroup] << std::endl;
                 for (int i = 0; i < XSIZE(wsum_model.wsum_reference_power[igroup]); i++)
-                    if (wsum_model.wsum_reference_power[igroup](i)> 0.0)
+                    if (wsum_model.wsum_reference_power[igroup](i) > 0.0)
                         std::cerr << " i= " << i << " XA= " << wsum_model.wsum_signal_product[igroup](i)
                                             << " A2= " << wsum_model.wsum_reference_power[igroup](i)
-                                            << " XA/A2= " << wsum_model.wsum_signal_product[igroup](i)/wsum_model.wsum_reference_power[igroup](i) << std::endl;
+                                            << " XA/A2= " << wsum_model.wsum_signal_product[igroup](i) / wsum_model.wsum_reference_power[igroup](i) << std::endl;
 
             }
-#endif
+            #endif
         }
-
     }
-    RCTOC(timer,RCT_5);
-    RCTIC(timer,RCT_6);
+    RCTOC(timer, RCT_5);
+    RCTIC(timer, RCT_6);
     // Update model.pdf_class vector (for each k)
-    for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-    {
+    for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
 
         // Update pdf_class (for SGD: update with taking mu into account! For non-SGD: mu equals zero)
         mymodel.pdf_class[iclass] *= mu;
-        mymodel.pdf_class[iclass] += (1. - mu) * wsum_model.pdf_class[iclass] / sum_weight;
+        mymodel.pdf_class[iclass] += (1.0 - mu) * wsum_model.pdf_class[iclass] / sum_weight;
 
         // for 2D also update priors of translations for each class!
-        if (mymodel.ref_dim == 2)
-        {
-            if (wsum_model.pdf_class[iclass] > 0.0)
-            {
+        if (mymodel.ref_dim == 2) {
+            if (wsum_model.pdf_class[iclass] > 0.0) {
                 mymodel.prior_offset_class[iclass] *= mu;
-                mymodel.prior_offset_class[iclass] += (1. - mu) * wsum_model.prior_offset_class[iclass] / sum_weight;
-            }
-            else
+                mymodel.prior_offset_class[iclass] += (1.0 - mu) * wsum_model.prior_offset_class[iclass] / sum_weight;
+            } else {
                 mymodel.prior_offset_class[iclass].initZeros();
+            }
         }
     }
 
-    for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++)
-    {
+    for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++) {
         // Use sampling.NrDirections() to include all directions (also those with zero prior probability for any given image)
-        if (!(do_skip_align || do_skip_rotate || do_sgd))
-        {
-            for (int idir = 0; idir < sampling.NrDirections(); idir++)
-            {
+        if (!do_skip_align && !do_skip_rotate && !do_sgd) {
+            for (int idir = 0; idir < sampling.NrDirections(); idir++) {
                 mymodel.pdf_direction[iclass](idir) *= mu;
-                mymodel.pdf_direction[iclass](idir) += (1. - mu) * wsum_model.pdf_direction[iclass](idir) / sum_weight;
+                mymodel.pdf_direction[iclass](idir) += (1.0 - mu) * wsum_model.pdf_direction[iclass](idir) / sum_weight;
             }
         }
     }
 
     // Update sigma2_offset
     // Factor 2 because of the 2-dimensionality of the xy-plane
-    if (!fix_sigma_offset && mymodel.nr_bodies == 1)
-    {
+    if (!fix_sigma_offset && mymodel.nr_bodies == 1) {
         mymodel.sigma2_offset *= mu;
-        if (mymodel.data_dim == 3)
-        {
-            if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-                mymodel.sigma2_offset += (1. - mu) * (wsum_model.sigma2_offset) / (2. * sum_weight);
-            else
-                mymodel.sigma2_offset += (1. - mu) * (wsum_model.sigma2_offset) / (3. * sum_weight);
-        }
-        else
-        {
-            if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-                mymodel.sigma2_offset += (1. - mu) * (wsum_model.sigma2_offset) / (1. * sum_weight);
-            else
-                mymodel.sigma2_offset += (1. - mu) * (wsum_model.sigma2_offset) / (2. * sum_weight);
-        }
+        mymodel.sigma2_offset += (1.0 - mu) * wsum_model.sigma2_offset / 
+        (sum_weight * (float) ((mymodel.data_dim == 3 ? 3 : 2) - (do_helical_refine && !ignore_helical_symmetry)));
     }
 
     // TODO: update estimates for sigma2_rot, sigma2_tilt and sigma2_psi!
-    RCTOC(timer,RCT_6);
-    RCTIC(timer,RCT_7);
+    RCTOC(timer, RCT_6);
+    RCTIC(timer, RCT_7);
     // Also refrain from updating sigma_noise after the first iteration with first_iter_cc!
-    if (!fix_sigma_noise && !((iter == 1 && do_firstiter_cc) || do_always_cc) )
-    {
-        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++)
-        {
+    if (!fix_sigma_noise && !(iter == 1 && do_firstiter_cc || do_always_cc)) {
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
             RFLOAT tsum = wsum_model.sigma2_noise[igroup].sum();
-            if (tsum!=0)
-            {
+            if (tsum != 0) {
                 // Factor 2 because of the 2-dimensionality of the complex-plane
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.sigma2_noise[igroup])
-                {
+                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.sigma2_noise[igroup]) {
                     DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) *= mu;
                     DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) +=
                             (1. - mu) * DIRECT_MULTIDIM_ELEM(wsum_model.sigma2_noise[igroup], n ) /
                                 (2. * wsum_model.sumw_group[igroup] * DIRECT_MULTIDIM_ELEM(Npix_per_shell, n));
                     // Watch out for all-zero sigma2 in case of CTF-premultiplication!
                     if (mydata.hasCtfPremultiplied())
-                        DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) = XMIPP_MAX(DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n), 1e-15);
+                        DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) = std::max(DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n), 1e-15);
 
                     // With unequal box sizes and pixel sizes in optics groups, some pixels in the 1D-spectra may contain zeros:
                     // in that case, set sigma2_noise to the value in the previous pixel.
-                    if (DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) < 1e-14 && n > 0)
-                    {
-                        DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n-1);
+                    if (DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) < 1e-14 && n > 0) {
+                        DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n) = DIRECT_MULTIDIM_ELEM(mymodel.sigma2_noise[igroup], n - 1);
                     }
                 }
             }
         }
     }
-    RCTOC(timer,RCT_7);
-    RCTIC(timer,RCT_8);
+    RCTOC(timer, RCT_7);
+    RCTIC(timer, RCT_8);
     // After the first iteration the references are always CTF-corrected
     if (do_ctf_correction)
         refs_are_ctf_corrected = true;
 
     // Some statistics to output
-    mymodel.LL = 	wsum_model.LL;
-    if ((iter==1 && do_firstiter_cc) || do_always_cc)
+    mymodel.LL = wsum_model.LL;
+    if (iter == 1 && do_firstiter_cc || do_always_cc)
         mymodel.LL /= sum_weight; // this now stores the average ccf
     mymodel.ave_Pmax = wsum_model.ave_Pmax / sum_weight;
 
     // After the first, special iteration, apply low-pass filter of -ini_high again
-    if (iter == 1 && do_firstiter_cc)
-    {
+    if (iter == 1 && do_firstiter_cc) {
         initialLowPassFilterReferences();
-        if (ini_high > 0.0)
-        {
+        if (ini_high > 0.0) {
             // Adjust the tau2_class and data_vs_prior_class, because they were calculated on the unfiltered maps
             // This is merely a matter of having correct output in the model.star file (these values are not used in the calculations)
             RFLOAT radius = mymodel.ori_size * mymodel.pixel_size / ini_high;
             radius -= WIDTH_FMASK_EDGE / 2.0;
             RFLOAT radius_p = radius + WIDTH_FMASK_EDGE;
 
-            for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-            {
-                for (int rr = 0; rr < XSIZE(mymodel.tau2_class[iclass]); rr++)
-                {
+            for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
+                for (int rr = 0; rr < XSIZE(mymodel.tau2_class[iclass]); rr++) {
                     RFLOAT r = (RFLOAT)rr;
-                    if (r < radius)
+                    if (r < radius) {
                         continue;
-                    else if (r > radius_p)
-                    {
+                    } else if (r > radius_p) {
                         DIRECT_A1D_ELEM(mymodel.tau2_class[iclass], rr) = 0.0;
                         DIRECT_A1D_ELEM(mymodel.data_vs_prior_class[iclass], rr) = 0.0;
-                    }
-                    else
-                    {
+                    } else {
                         RFLOAT raisedcos = 0.5 - 0.5 * cos(PI * (radius_p - r) / WIDTH_FMASK_EDGE);
                         DIRECT_A1D_ELEM(mymodel.tau2_class[iclass], rr) *= raisedcos * raisedcos;
                         DIRECT_A1D_ELEM(mymodel.data_vs_prior_class[iclass], rr) *= raisedcos * raisedcos;
@@ -4289,48 +4033,40 @@ void MlOptimiser::maximizationOtherParameters()
             }
         }
 
-        if (do_generate_seeds && mymodel.nr_classes > 1)
-        {
+        if (do_generate_seeds && mymodel.nr_classes > 1) {
             // In the first CC-iteration only a single reference was used
             // Now copy this one reference to all K references, for seed generation in the second iteration
-            for (int iclass = 1; iclass < mymodel.nr_classes; iclass++)
-            {
-                mymodel.tau2_class[iclass] =  mymodel.tau2_class[0];
+            for (int iclass = 1; iclass < mymodel.nr_classes; iclass++) {
+                mymodel.tau2_class         [iclass] = mymodel.tau2_class[0];
                 mymodel.data_vs_prior_class[iclass] = mymodel.data_vs_prior_class[0];
-                mymodel.pdf_class[iclass] = mymodel.pdf_class[0] / mymodel.nr_classes;
-                mymodel.pdf_direction[iclass] = mymodel.pdf_direction[0];
-                mymodel.Iref[iclass] = mymodel.Iref[0];
+                mymodel.pdf_class          [iclass] = mymodel.pdf_class[0] / mymodel.nr_classes;
+                mymodel.pdf_direction      [iclass] = mymodel.pdf_direction[0];
+                mymodel.Iref               [iclass] = mymodel.Iref[0];
             }
             mymodel.pdf_class[0] /= mymodel.nr_classes;
         }
-
     }
-    RCTOC(timer,RCT_8);
-#ifdef DEBUG
+    RCTOC(timer, RCT_8);
+    #ifdef DEBUG
     std::cerr << "Leaving maximizationOtherParameters" << std::endl;
-#endif
+    #endif
 }
 
 
-void MlOptimiser::solventFlatten()
-{
-#ifdef DEBUG
+void MlOptimiser::solventFlatten() {
+    #ifdef DEBUG
     std::cerr << "Entering MlOptimiser::solventFlatten" << std::endl;
-#endif
+    #endif
 
     // If we're doing multibody refinement: don't do solvent flattening anymore. This is already done per body
     if (mymodel.nr_bodies > 1)
         return;
 
-
     // If we're doing SGD: enforce non-negativity during the first sgd_ini_iter iterations
-    if (do_sgd && iter < sgd_ini_iter)
-    {
-        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[iclass])
-            {
-                DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) = XMIPP_MAX(0., DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n));
+    if (do_sgd && iter < sgd_ini_iter) {
+        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[iclass]) {
+                DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) = std::max(0.0, DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n));
             }
         }
     }
@@ -4340,42 +4076,32 @@ void MlOptimiser::solventFlatten()
     Isolvent().resize(mymodel.Iref[0]);
     Isolvent().setXmippOrigin();
     Isolvent().initZeros();
-    if (fn_mask == "None")
-    {
-        // Jun09,2015 - Shaoda, Helical refinement
+    if (fn_mask == "None") {
+        // 9 Jun 2015 - Shaoda, Helical refinement
         // Solvent flatten for helices has already been done in 'makeHelicalReferenceInRealSpace()'
-        if (do_helical_refine && mymodel.ref_dim == 3)
-        {
-            if (ignore_helical_symmetry)
-            {
+        if (do_helical_refine && mymodel.ref_dim == 3) {
+            if (ignore_helical_symmetry) {
                 createCylindricalReference(
-                        Isolvent(),
-                        XSIZE(mymodel.Iref[0]),
-                        helical_tube_inner_diameter / mymodel.pixel_size,
-                        helical_tube_outer_diameter / mymodel.pixel_size,
-                        width_mask_edge);
-            }
-            else
-            {
-                FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent())
-                {
+                    Isolvent(),
+                    XSIZE(mymodel.Iref[0]),
+                    helical_tube_inner_diameter / mymodel.pixel_size,
+                    helical_tube_outer_diameter / mymodel.pixel_size,
+                    width_mask_edge
+                );
+            } else {
+                FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent()) {
                     A3D_ELEM(Isolvent(), k, i, j) = 1.0;
                 }
             }
-        }
-        else
-        {
-            RFLOAT radius = (particle_diameter / (2. * mymodel.pixel_size));
+        } else {
+            RFLOAT radius = particle_diameter / (2.0 * mymodel.pixel_size);
             RFLOAT radius_p = radius + width_mask_edge;
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent())
-            {
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent()) {
                 RFLOAT r = sqrt((RFLOAT)(k * k + i * i + j * j));
-                if (r < radius)
-                    A3D_ELEM(Isolvent(), k, i, j) = 1.0;
-                else if (r > radius_p)
-                    A3D_ELEM(Isolvent(), k, i, j) = 0.0;
-                else
-                    A3D_ELEM(Isolvent(), k, i, j) = 0.5 - 0.5 * cos(PI * (radius_p - r) / width_mask_edge );
+                A3D_ELEM(Isolvent(), k, i, j) = 
+                r < radius   ? 1.0 :
+                r > radius_p ? 0.0 :
+                0.5 * (1 - cos(PI * (radius_p - r) / width_mask_edge));
             }
         }
     } else {
@@ -4395,19 +4121,16 @@ void MlOptimiser::solventFlatten()
     }
 
     // Also read a lowpass mask if necessary
-    if (fn_lowpass_mask != "None")
-    {
+    if (fn_lowpass_mask != "None") {
         Ilowpass.read(fn_lowpass_mask);
         Ilowpass().setXmippOrigin();
         if (!Ilowpass().sameShape(Isolvent()))
             REPORT_ERROR("MlOptimiser::solventFlatten ERROR: second solvent mask is of incorrect size.");
     }
 
-    for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-    {
+    for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
         MultidimArray<RFLOAT> Itmp;
-        if (fn_lowpass_mask != "None")
-        {
+        if (fn_lowpass_mask != "None") {
             Itmp = mymodel.Iref[iclass];
             Itmp *= Ilowpass();
             lowPassFilterMap(Itmp, lowpass, mymodel.pixel_size);
@@ -4424,86 +4147,61 @@ void MlOptimiser::solventFlatten()
         // Invert the solvent mask, so that an input mask can be given where 1 is the masked area and 0 is protein....
         if (fn_mask2 != "None")
             softMaskOutsideMap(mymodel.Iref[iclass], Isolvent2(), true);
-
-    } // end for iclass
-#ifdef DEBUG
+    }
+    #ifdef DEBUG
     std::cerr << "Leaving MlOptimiser::solventFlatten" << std::endl;
-#endif
+    #endif
 
 }
 
-void MlOptimiser::updateCurrentResolution()
-{
-#ifdef DEBUG
+void MlOptimiser::updateCurrentResolution() {
+    #ifdef DEBUG
     std::cerr << "Entering MlOptimiser::updateCurrentResolution" << std::endl;
-#endif
+    #endif
 
-    if (do_sgd && !do_split_random_halves)
-    {
+    if (do_sgd && !do_split_random_halves) {
         // Do initial iterations with completely identical K references, 100-particle batch size, enforce non-negativity and 35A resolution limit
-        if (iter < sgd_ini_iter)
-        {
-            mymodel.current_resolution = 1./sgd_ini_resol;
-        }
-        else if (iter < sgd_ini_iter + sgd_inbetween_iter)
-        {
+        if (iter < sgd_ini_iter) {
+            mymodel.current_resolution = 1.0 / sgd_ini_resol;
+        } else if (iter < sgd_ini_iter + sgd_inbetween_iter) {
             int newpixres = sgd_inires_pix + ROUND((RFLOAT(iter - sgd_ini_iter)/RFLOAT(sgd_inbetween_iter))*(sgd_finres_pix - sgd_inires_pix));
             mymodel.current_resolution = mymodel.getResolution(newpixres);
+        } else {
+            mymodel.current_resolution = 1.0 / sgd_fin_resol;
         }
-        else
-        {
-            mymodel.current_resolution = 1./sgd_fin_resol;
-        }
-    }
-    else
-    {
-
-
+    } else {
         RFLOAT best_current_resolution = 0.0;
         int nr_iter_wo_resol_gain_sum_bodies = 0;
-        for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++)
-        {
-
+        for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
             int maxres = 0;
-            if (do_map)
-            {
+            if (do_map) {
                 // Set current resolution
-                if (ini_high > 0. && (iter == 0 || (iter == 1 && do_firstiter_cc)))
-                {
+                if (ini_high > 0.0 && (iter == 0 || iter == 1 && do_firstiter_cc)) {
                     maxres = ROUND(mymodel.ori_size * mymodel.pixel_size / ini_high);
-                }
-                else
-                {
+                } else {
                     // Calculate at which resolution shell the data_vs_prior drops below 1
                     int ires;
-                    for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
-                    {
+                    for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
                         int iclass_body = (mymodel.nr_bodies > 1) ? ibody: iclass;
-                        for (ires = 1; ires < mymodel.ori_size/2; ires++)
-                        {
+                        for (ires = 1; ires < mymodel.ori_size/2; ires++) {
                             if (DIRECT_A1D_ELEM(mymodel.data_vs_prior_class[iclass_body], ires) < 1.0)
                                 break;
                         }
                         // Subtract one shell to be back on the safe side
                         ires--;
 
-                        if (do_split_random_halves && do_auto_refine)
-                        {
+                        if (do_split_random_halves && do_auto_refine) {
                             // Let's also try and check from the high-res side. Sometimes phase-randomisation gives artefacts
                             int ires2;
-                            for (ires2 = mymodel.ori_size/2-1; ires2 >= ires; ires2--)
-                            {
+                            for (ires2 = mymodel.ori_size/2-1; ires2 >= ires; ires2--) {
                                 if (DIRECT_A1D_ELEM(mymodel.data_vs_prior_class[iclass_body], ires2) > 1.0)
                                     break;
                             }
-                            if (ires2 > ires + 3)
-                            {
-                                if (verb > 0)
-                                {
+                            if (ires2 > ires + 3) {
+                                if (verb > 0) {
                                     float higher = mymodel.getResolutionAngstrom(ires2);
                                     float lower  = mymodel.getResolutionAngstrom(ires);
-                                    if (mymodel.nr_bodies > 1)
-                                    {
+                                    if (mymodel.nr_bodies > 1) {
                                         std::cerr << " WARNING: For the " << ibody+1 << "th body:" << std::endl;
                                         std::cerr << " WARNING: FSC dipped below 0.5 and rose again. Using higher resolution of "
                                                   << higher << " A, instead of " << lower << " A." << std::endl;
@@ -4513,37 +4211,35 @@ void MlOptimiser::updateCurrentResolution()
                                 ires = ires2;
                             }
                         }
-
-                        if (ires > maxres)
-                            maxres = ires;
+                        if (ires > maxres) { maxres = ires; }
                     }
 
                     // Never allow smaller maxres than minres_map
-                    maxres = XMIPP_MAX(maxres, minres_map);
+                    maxres = std::max(maxres, minres_map);
                 }
-            }
-            else
-            {
+            } else {
                 // If we are not doing MAP-estimation, set maxres to Nyquist
                 maxres = mymodel.ori_size/2;
             }
             RFLOAT newres = mymodel.getResolution(maxres);
 
             // best resolution over all bodies
-            best_current_resolution = XMIPP_MAX(best_current_resolution, newres);
+            best_current_resolution = std::max(best_current_resolution, newres);
 
             // Check whether resolution improved, if not increase nr_iter_wo_resol_gain
-            //if (newres <= best_resol_thus_far)
-            if (newres <= mymodel.current_resolution+0.0001) // Add 0.0001 to avoid problems due to rounding error
+            // if (newres <= best_resol_thus_far)
+            if (newres <= mymodel.current_resolution + 0.0001) {
+                // Add 0.0001 to avoid problems due to rounding error
                 nr_iter_wo_resol_gain_sum_bodies++;
-            else
+            } else {
                 nr_iter_wo_resol_gain = 0;
+            }
 
             // Store best resolution thus far (but no longer do anything with it anymore...0)
             if (newres > best_resol_thus_far)
                 best_resol_thus_far = newres;
 
-        } // end for ibody
+        }
 
         // Set the new resolution to be the highest resolution over all bodies
         mymodel.current_resolution = best_current_resolution;
@@ -4552,30 +4248,24 @@ void MlOptimiser::updateCurrentResolution()
             nr_iter_wo_resol_gain++;
     }
 
-#ifdef DEBUG
+    #ifdef DEBUG
     std::cerr << "Leaving MlOptimiser::updateCurrentResolution" << std::endl;
-#endif
+    #endif
 
 }
 
-void MlOptimiser::updateImageSizeAndResolutionPointers()
-{
+void MlOptimiser::updateImageSizeAndResolutionPointers() {
 
     // Increment the current_size
     // If we are far from convergence (in the initial stages of refinement) take steps of 25% the image size
     // Do this whenever the FSC at the current_size is larger than 0.2, but NOT when this is in combination with very low Pmax values,
     // in the latter case, over-marginalisation may lead to spuriously high FSCs (2 smoothed maps may look very similar at high-res: all zero!)
     //
-    int maxres = mymodel.getPixelFromResolution(mymodel.current_resolution);
-    if (mymodel.ave_Pmax > 0.1 && has_high_fsc_at_limit)
-    {
-        maxres += ROUND(0.25 * mymodel.ori_size / 2);
-    }
-    else
-    {
-        // If we are near our resolution limit, use incr_size (by default 10 shells)
-        maxres += incr_size;
-    }
+    int maxres = mymodel.getPixelFromResolution(mymodel.current_resolution) + (
+        mymodel.ave_Pmax > 0.1 && has_high_fsc_at_limit ?
+            ROUND(0.25 * mymodel.ori_size / 2) :
+            incr_size  // If we are near our resolution limit, use incr_size (by default 10 shells)
+    );
 
     // Go back from resolution shells (i.e. radius) to image size, which are BTW always even...
     mymodel.current_size = maxres * 2;
@@ -4585,7 +4275,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers()
         mymodel.current_size = mymodel.ori_size;
 
     // current_size can never be larger than ori_size:
-    mymodel.current_size = XMIPP_MIN(mymodel.current_size, mymodel.ori_size);
+    mymodel.current_size = std::min(mymodel.current_size, mymodel.ori_size);
 
     // The current size is also used in wsum_model (in unpacking)
     wsum_model.current_size = mymodel.current_size;
@@ -4593,16 +4283,17 @@ void MlOptimiser::updateImageSizeAndResolutionPointers()
     // Calculate number of pixels per resolution shell
     Npix_per_shell.initZeros(mymodel.ori_size / 2 + 1);
     MultidimArray<RFLOAT> aux;
-    if (mymodel.data_dim == 3)
+    if (mymodel.data_dim == 3) {
         aux.resize(mymodel.ori_size, mymodel.ori_size, mymodel.ori_size / 2 + 1);
-    else
-        aux.resize(mymodel.ori_size, mymodel.ori_size / 2 + 1);
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(aux)
-    {
-        int ires = ROUND(sqrt((RFLOAT)(kp*kp + ip*ip + jp*jp)));
+    } else {
+        aux.resize(                  mymodel.ori_size, mymodel.ori_size / 2 + 1);
+    }
+
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(aux) {
+        int ires = ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
         // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
         // Exclude points beyond XSIZE(Npix_per_shell), and exclude half of the x=0 column that is stored twice in FFTW
-        if (ires < mymodel.ori_size / 2 + 1 && !(jp==0 && ip < 0))
+        if (ires < mymodel.ori_size / 2 + 1 && !(jp == 0 && ip < 0))
             Npix_per_shell(ires) += 1;
     }
 
@@ -4613,8 +4304,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers()
     image_full_size.resize(nr_optics_groups);
     Mresol_fine.resize(nr_optics_groups);
     Mresol_coarse.resize(nr_optics_groups);
-    for (int optics_group = 0; optics_group < nr_optics_groups; optics_group++)
-    {
+    for (int optics_group = 0; optics_group < nr_optics_groups; optics_group++) {
 
         RFLOAT my_pixel_size = mydata.getOpticsPixelSize(optics_group);
         int my_image_size = mydata.getOpticsImageSize(optics_group);
@@ -4624,114 +4314,116 @@ void MlOptimiser::updateImageSizeAndResolutionPointers()
         // Remap from model size to mysize, and keep even!
         image_current_size[optics_group] = 2 * CEIL(0.5 * remap_sizes * mymodel.current_size);
         // Current size can never become bigger than original image size for this optics_group!
-        image_current_size[optics_group] = XMIPP_MIN(my_image_size, image_current_size[optics_group]);
+        image_current_size[optics_group] = std::min(my_image_size, image_current_size[optics_group]);
 
         int my_max_coarse_size = (max_coarse_size > 0) ?  remap_sizes * max_coarse_size : image_full_size[optics_group];
 
         // Update coarse_size
-        if (strict_highres_exp > 0.0)
-        {
+        if (strict_highres_exp > 0.0) {
             // Strictly limit the coarse size to the one corresponding to strict_highres_exp
             image_coarse_size[optics_group] = 2 * ROUND((RFLOAT)(remap_sizes * mymodel.ori_size * mymodel.pixel_size / strict_highres_exp));
-        }
-        else if (adaptive_oversampling > 0.0)
-        {
+        } else if (adaptive_oversampling > 0.0) {
             // Dependency of coarse_size on the angular sampling used in the first pass
-            RFLOAT rotated_distance = (sampling.getAngularSampling() / 360.0) * PI * particle_diameter;
-            RFLOAT keepsafe_factor = (mymodel.ref_dim == 3) ? 1.2 : 1.5;
+            RFLOAT rotated_distance = sampling.getAngularSampling() * PI * particle_diameter / 360.0;
+            RFLOAT keepsafe_factor = mymodel.ref_dim == 3 ? 1.2 : 1.5;
             RFLOAT coarse_resolution = rotated_distance / keepsafe_factor;
             // Note coarse_size should be even-valued!
             image_coarse_size[optics_group] = 2 * CEIL(remap_sizes * mymodel.pixel_size * mymodel.ori_size / coarse_resolution);
             // Coarse size can never be larger than max_coarse_size
-            image_coarse_size[optics_group] = XMIPP_MIN(my_max_coarse_size, image_coarse_size[optics_group]);
-        }
-        else
-        {
+            image_coarse_size[optics_group] = std::min(my_max_coarse_size, image_coarse_size[optics_group]);
+        } else {
             image_coarse_size[optics_group] = image_current_size[optics_group];
         }
 
         // Coarse_size can never become bigger than current_size
-        image_coarse_size[optics_group] = XMIPP_MIN(image_current_size[optics_group], image_coarse_size[optics_group]);
+        image_coarse_size[optics_group] = std::min(image_current_size[optics_group], image_coarse_size[optics_group]);
 
         /// Also update the resolution pointers here
-        if (mymodel.data_dim == 3)
-            Mresol_fine[optics_group].resize(image_current_size[optics_group], image_current_size[optics_group], (image_current_size[optics_group] / 2 + 1));
-        else
-            Mresol_fine[optics_group].resize(image_current_size[optics_group], (image_current_size[optics_group] / 2 + 1));
+        if (mymodel.data_dim == 3) {
+            Mresol_fine[optics_group].resize(
+                image_current_size[optics_group], 
+                image_current_size[optics_group], 
+                image_current_size[optics_group] / 2 + 1
+            );
+        } else {
+            Mresol_fine[optics_group].resize(
+                image_current_size[optics_group], 
+                image_current_size[optics_group] / 2 + 1
+            );
+        }
         Mresol_fine[optics_group].initConstant(-1);
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_fine[optics_group])
-        {
-            int ires = ROUND(sqrt((RFLOAT)(kp*kp + ip*ip + jp*jp)));
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_fine[optics_group]) {
+            int ires = ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
             // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
             // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
-            if (ires < image_current_size[optics_group] / 2 + 1  && !(jp==0 && ip < 0))
-            {
+            if (ires < image_current_size[optics_group] / 2 + 1  && !(jp == 0 && ip < 0)) {
                 DIRECT_A3D_ELEM(Mresol_fine[optics_group], k, i, j) = ires;
             }
         }
 
-        if (mymodel.data_dim == 3)
-            Mresol_coarse[optics_group].resize(image_coarse_size[optics_group], image_coarse_size[optics_group], (image_coarse_size[optics_group] / 2 + 1));
-        else
-            Mresol_coarse[optics_group].resize(image_coarse_size[optics_group], (image_coarse_size[optics_group] / 2 + 1));
+        if (mymodel.data_dim == 3) {
+            Mresol_coarse[optics_group].resize(
+                image_coarse_size[optics_group], 
+                image_coarse_size[optics_group], 
+                image_coarse_size[optics_group] / 2 + 1
+            );
+        } else {
+            Mresol_coarse[optics_group].resize(
+                image_coarse_size[optics_group], 
+                image_coarse_size[optics_group] / 2 + 1
+            );
+        }
 
         Mresol_coarse[optics_group].initConstant(-1);
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_coarse[optics_group])
-        {
-            int ires = ROUND(sqrt((RFLOAT)(kp*kp + ip*ip + jp*jp)));
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_coarse[optics_group]) {
+            int ires = ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
             // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
             // exclude lowest-resolution points
-            if (ires < (image_coarse_size[optics_group] / 2 + 1) && !(jp==0 && ip < 0))
-            {
+            if (ires < image_coarse_size[optics_group] / 2 + 1 && !(jp == 0 && ip < 0)) {
                 DIRECT_A3D_ELEM(Mresol_coarse[optics_group], k, i, j) = ires;
             }
         }
 
-//#define DEBUG_MRESOL
-#ifdef DEBUG_MRESOL
+        // #define DEBUG_MRESOL
+        #ifdef DEBUG_MRESOL
         Image<RFLOAT> img;
         img().resize(YSIZE(Mresol_fine[optics_group]),XSIZE(Mresol_fine[optics_group]));
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img())
-        {
-            DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(Mresol_fine[optics_group], n);
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img()) {
+            DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT) DIRECT_MULTIDIM_ELEM(Mresol_fine[optics_group], n);
         }
         img.write("Mresol_fine.mrc");
-        img().resize(YSIZE(Mresol_coarse[optics_group]),XSIZE(Mresol_coarse[optics_group]));
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img())
-        {
+        img().resize(YSIZE(Mresol_coarse[optics_group]), XSIZE(Mresol_coarse[optics_group]));
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img()) {
             DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(Mresol_coarse[optics_group], n);
         }
         img.write("Mresol_coarse.mrc");
-#endif
+        #endif
 
-#ifdef DEBUG
+        #ifdef DEBUG
         std::cerr << " current_size= " << mymodel.current_size << " optics_group= " << optics_group << " image_current_size= " << image_current_size[optics_group] << " image_coarse_size= " << image_coarse_size[optics_group] << " current_resolution= " << mymodel.current_resolution << std::endl;
-#endif
+        #endif
 
-    } // end loop optics_group
-
-
+    }
 }
 
 
 void MlOptimiser::getFourierTransformsAndCtfs(
-        long int part_id, int ibody, int metadata_offset,
-        std::vector<MultidimArray<Complex > > &exp_Fimg,
-        std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
-        std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-        std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
-        std::vector<Matrix1D<RFLOAT> > &exp_prior,
-        std::vector<MultidimArray<RFLOAT> > &exp_power_img,
-        std::vector<RFLOAT> &exp_highres_Xi2_img,
-        std::vector<int> &exp_pointer_dir_nonzeroprior,
-        std::vector<int> &exp_pointer_psi_nonzeroprior,
-        std::vector<RFLOAT> &exp_directions_prior,
-        std::vector<RFLOAT> &exp_psi_prior)
-{
+    long int part_id, int ibody, int metadata_offset,
+    std::vector<MultidimArray<Complex> > &exp_Fimg,
+    std::vector<MultidimArray<Complex> > &exp_Fimg_nomask,
+    std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
+    std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
+    std::vector<Matrix1D<RFLOAT> > &exp_prior,
+    std::vector<MultidimArray<RFLOAT> > &exp_power_img,
+    std::vector<RFLOAT> &exp_highres_Xi2_img,
+    std::vector<int> &exp_pointer_dir_nonzeroprior,
+    std::vector<int> &exp_pointer_psi_nonzeroprior,
+    std::vector<RFLOAT> &exp_directions_prior,
+    std::vector<RFLOAT> &exp_psi_prior
+) {
 
     FourierTransformer transformer;
-    for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++)
-    {
+    for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++) {
         Image<RFLOAT> img, rec_img;
         MultidimArray<Complex > Fimg, Faux;
         MultidimArray<RFLOAT> Fctf;
@@ -4752,11 +4444,9 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         RFLOAT normcorr = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_NORM);
 
         // Safeguard against gold-standard separation
-        if (do_split_random_halves)
-        {
+        if (do_split_random_halves) {
             int halfset = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_NR_SIGN);
-            if (halfset != my_halfset)
-            {
+            if (halfset != my_halfset) {
                 std::cerr << "BUG!!! halfset= " << halfset << " my_halfset= " << my_halfset << " part_id= " << part_id << std::endl;
                 REPORT_ERROR("BUG! Mixing gold-standard separation!!!!");
             }
@@ -4771,31 +4461,31 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         XX(my_prior)      = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_XOFF_PRIOR);
         YY(my_old_offset) = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_YOFF);
         YY(my_prior)      = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_YOFF_PRIOR);
-        if (mymodel.data_dim == 3)
-        {
+        if (mymodel.data_dim == 3) {
             ZZ(my_old_offset) = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ZOFF);
             ZZ(my_prior)      = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ZOFF_PRIOR);
         }
-        if (mymodel.nr_bodies > 1)
-        {
+        if (mymodel.nr_bodies > 1) {
 
-            // 17May2017: Shift image to the projected COM for this body!
+            // 17 May 2017: Shift image to the projected COM for this body!
             // Aori is the original transformation matrix of the consensus refinement
-            Euler_angles2matrix(DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT),
-                                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT),
-                                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI), Aori, false);
+            Euler_angles2matrix(
+                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT),
+                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT),
+                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI), 
+                Aori, false
+            );
             my_projected_com = Aori * mymodel.com_bodies[ibody];
             // This will have made my_projected_com of size 3 again! resize to mymodel.data_dim
             my_projected_com.resize(mymodel.data_dim);
 
 
-#ifdef DEBUG_BODIES
-            if (part_id == ROUND(debug1))
-            {
-                std::cerr << "ibody: " << ibody+1 << " projected COM: " << XX(my_projected_com) << " , " << YY(my_projected_com) << std::endl;
-                std::cerr << "ibody: " << ibody+1 << " consensus offset: " << XX(my_old_offset) << " , " << YY(my_old_offset) << std::endl;
+            #ifdef DEBUG_BODIES
+            if (part_id == ROUND(debug1)) {
+                std::cerr << "ibody: " << ibody + 1 << " projected COM: " << XX(my_projected_com) << " , " << YY(my_projected_com) << std::endl;
+                std::cerr << "ibody: " << ibody + 1 << " consensus offset: " << XX(my_old_offset) << " , " << YY(my_old_offset) << std::endl;
             }
-#endif
+            #endif
 
             // Subtract the projected COM offset, to position this body in the center
             // Also keep the my_old_offset in my_old_offset_ori
@@ -4803,25 +4493,24 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             my_old_offset -= my_projected_com;
 
             // Also get refined offset for this body
-            icol_xoff = 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-            icol_yoff = 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-            icol_zoff = 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
+            icol_xoff = 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+            icol_yoff = 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+            icol_zoff = 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
             XX(my_refined_ibody_offset) = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_xoff);
             YY(my_refined_ibody_offset) = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_yoff);
             if (mymodel.data_dim == 3)
-                ZZ(my_refined_ibody_offset) = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_zoff);
+            ZZ(my_refined_ibody_offset) = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_zoff);
 
             // For multi-body refinement: set the priors of the translations to zero (i.e. everything centred around consensus offset)
             my_prior.initZeros();
 
-#ifdef DEBUG_BODIES
-                    if (part_id == ROUND(debug1))
-                    {
-                        std::cerr << "ibody: " << ibody+1 << " refined x,y= " << DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_xoff)
-                                << "  , " << DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_yoff) << std::endl;
-                        std::cerr << "FINAL translation ibody: " << ibody+1 << " : " << XX(my_old_offset) << " , " << YY(my_old_offset) << std::endl;
-                    }
-#endif
+            #ifdef DEBUG_BODIES
+            if (part_id == ROUND(debug1)) {
+                std::cerr << "ibody: " << ibody+1 << " refined x,y= " << DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_xoff)
+                        << "  , " << DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_yoff) << std::endl;
+                std::cerr << "FINAL translation ibody: " << ibody+1 << " : " << XX(my_old_offset) << " , " << YY(my_old_offset) << std::endl;
+            }
+            #endif
 
 
         }
@@ -4835,38 +4524,39 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             ZZ(my_prior) = 0.0;
 
         // Orientational priors
-        if (mymodel.nr_bodies > 1 )
-        {
+        if (mymodel.nr_bodies > 1) {
 
             // Centre local searches around the orientation from the previous iteration, this one goes with overall sigma2_ang
             // On top of that, apply prior on the deviation from (0,0,0) with mymodel.sigma_tilt_bodies[ibody] and mymodel.sigma_psi_bodies[ibody]
-            icol_rot  = 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-            icol_tilt = 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-            icol_psi  = 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
+            icol_rot  = 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+            icol_tilt = 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+            icol_psi  = 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
             RFLOAT prior_rot  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_rot);
             RFLOAT prior_tilt = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_tilt);
             RFLOAT prior_psi =  DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_psi);
-            sampling.selectOrientationsWithNonZeroPriorProbability(prior_rot, prior_tilt, prior_psi,
-                                    sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
-                                    exp_pointer_dir_nonzeroprior, exp_directions_prior,
-                                    exp_pointer_psi_nonzeroprior, exp_psi_prior, false, 3.,
-                                    mymodel.sigma_tilt_bodies[ibody], mymodel.sigma_psi_bodies[ibody]);
+            sampling.selectOrientationsWithNonZeroPriorProbability(
+                prior_rot, prior_tilt, prior_psi,
+                sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
+                exp_pointer_dir_nonzeroprior, exp_directions_prior,
+                exp_pointer_psi_nonzeroprior, exp_psi_prior, 
+                false, 3.0,
+                mymodel.sigma_tilt_bodies[ibody], 
+                mymodel.sigma_psi_bodies[ibody]
+            );
 
-        }
-        else if (mymodel.orientational_prior_mode != NOPRIOR && !(do_skip_align || do_skip_rotate || do_only_sample_tilt))
-        {
+        } else if (mymodel.orientational_prior_mode != NOPRIOR && !do_skip_align && !do_skip_rotate && !do_only_sample_tilt) {
             // First try if there are some fixed prior angles
             // For multi-body refinements, ignore the original priors and get the refined residual angles from the previous iteration
-            RFLOAT prior_rot =  DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT_PRIOR);
-            RFLOAT prior_tilt = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT_PRIOR);
-            RFLOAT prior_psi =  DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI_PRIOR);
+            RFLOAT prior_rot            = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT_PRIOR);
+            RFLOAT prior_tilt           = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT_PRIOR);
+            RFLOAT prior_psi            = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI_PRIOR);
             RFLOAT prior_psi_flip_ratio = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI_PRIOR_FLIP_RATIO);
             RFLOAT prior_rot_flip_ratio = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT_PRIOR_FLIP_RATIO);  // Kthurber
 
-            bool do_auto_refine_local_searches = (do_auto_refine) && (sampling.healpix_order >= autosampling_hporder_local_searches);
-            bool do_classification_local_searches = (!do_auto_refine) && (mymodel.orientational_prior_mode == PRIOR_ROTTILT_PSI)
-                    && (mymodel.sigma2_rot > 0.0) && (mymodel.sigma2_tilt > 0.0) && (mymodel.sigma2_psi > 0.0);
-            bool do_local_angular_searches = (do_auto_refine_local_searches) || (do_classification_local_searches);
+            bool do_auto_refine_local_searches = do_auto_refine && sampling.healpix_order >= autosampling_hporder_local_searches;
+            bool do_classification_local_searches = !do_auto_refine && mymodel.orientational_prior_mode == PRIOR_ROTTILT_PSI &&
+                mymodel.sigma2_rot > 0.0 && mymodel.sigma2_tilt > 0.0 && mymodel.sigma2_psi > 0.0;
+            bool do_local_angular_searches = do_auto_refine_local_searches || do_classification_local_searches;
 
             // If there were no defined priors (i.e. their values were 999.0), then use the "normal" angles
             if (prior_rot > 998.99 && prior_rot < 999.01)
@@ -4882,50 +4572,43 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
             // Select only those orientations that have non-zero prior probability
             // Jun04,2015 - Shaoda & Sjors, bimodal psi searches for helices
-            if (do_helical_refine && mymodel.ref_dim == 3)
-            {
-                sampling.selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalReconstruction(prior_rot, prior_tilt, prior_psi,
-                                        sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
-                                        exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior,
-                                        do_local_angular_searches, prior_psi_flip_ratio, prior_rot_flip_ratio);
-            }
-            else
-            {
-                sampling.selectOrientationsWithNonZeroPriorProbability(prior_rot, prior_tilt, prior_psi,
-                                        sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
-                                        exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior,
-                                        ((do_bimodal_psi) && (mymodel.sigma2_psi > 0.0)) );
+            if (do_helical_refine && mymodel.ref_dim == 3) {
+                sampling.selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalReconstruction(
+                    prior_rot, prior_tilt, prior_psi,
+                    sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
+                    exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior,
+                    do_local_angular_searches, prior_psi_flip_ratio, prior_rot_flip_ratio
+                );
+            } else {
+                sampling.selectOrientationsWithNonZeroPriorProbability(
+                    prior_rot, prior_tilt, prior_psi,
+                    sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
+                    exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior,
+                    do_bimodal_psi && mymodel.sigma2_psi > 0.0
+                );
             }
 
             long int nr_orients = sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior) * sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior);
-            if (nr_orients == 0)
-            {
+            if (nr_orients == 0) {
                 std::cerr << " sampling.NrDirections()= " << sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior)
                         << " sampling.NrPsiSamplings()= " << sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior) << std::endl;
                 REPORT_ERROR("Zero orientations fall within the local angular search. Increase the sigma-value(s) on the orientations!");
             }
-
         }
 
         // Get the image and recimg data
-        if (do_parallel_disc_io)
-        {
+        if (do_parallel_disc_io) {
             // If all followers had preread images into RAM: get those now
-            if (do_preread_images)
-            {
+            if (do_preread_images) {
                 img().reshape(mydata.particles[part_id].images[img_id].img);
 
-
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mydata.particles[part_id].images[img_id].img)
-                {
+                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mydata.particles[part_id].images[img_id].img) {
                     DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(mydata.particles[part_id].images[img_id].img, n);
                 }
-            }
-            else
-            {
+            } else {
 
-//#define DEBUG_SIMULTANEOUS_READ
-#ifdef DEBUG_SIMULTANEOUS_READ
+                // #define DEBUG_SIMULTANEOUS_READ
+                #ifdef DEBUG_SIMULTANEOUS_READ
                 // Read from disc
                 FileName fn_img;
                 std::istringstream split(exp_fn_img);
@@ -4937,44 +4620,36 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
                 // Check that this is the same as the image in exp_imgs vector
                 Image<RFLOAT> diff;
-                if (my_metadata_offset >= exp_imgs.size())
-                {
-                    std::cerr << " my_metadata_offset= " <<my_metadata_offset << " exp_imgs.size()= "<<exp_imgs.size()<<std::endl;
+                if (my_metadata_offset >= exp_imgs.size()) {
+                    std::cerr << " my_metadata_offset= " << my_metadata_offset << " exp_imgs.size()= " << exp_imgs.size() << std::endl;
                     REPORT_ERROR("BUG: my_metadata_offset runs out of bounds!");
                 }
                 diff() = img() - exp_imgs[my_metadata_offset];
-                if (diff().max() > 1e-6)
-                {
+                if (diff().max() > 1e-6) {
                     std::cerr << "metadata_offset= " << metadata_offset << " fn_img=" << fn_img << " diff avg=" << diff().average() << std::endl;
                     diff.write("diff.spi");
-                    diff()= exp_imgs[metadata_offset];
+                    diff() = exp_imgs[metadata_offset];
                     diff.write("preread.spi");
                     img.write("img.spi");
                     REPORT_ERROR("unequal pre-read images... BUG!");
                 }
-#else
-                if (mymodel.data_dim == 3)
-                {
+                #else
+                if (mymodel.data_dim == 3) {
 
                     // Read sub-tomograms from disc in parallel (to save RAM in exp_imgs)
                     FileName fn_img;
-                    if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img))
-                    {
+                    if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img)) {
                         std::istringstream split(exp_fn_img);
                         for (int i = 0; i <= my_metadata_offset; i++)
                             getline(split, fn_img);
                     }
                     img.read(fn_img);
                     img().setXmippOrigin();
-                }
-                else
-                {
+                } else {
                     img() = exp_imgs[my_metadata_offset];
                 }
-#endif
-            }
-            if (has_converged && do_use_reconstruct_images)
-            {
+                #endif
+            } if (has_converged && do_use_reconstruct_images) {
 
                 FileName fn_recimg;
                 std::istringstream split2(exp_fn_recimg);
@@ -4984,52 +4659,39 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 rec_img.read(fn_recimg);
                 rec_img().setXmippOrigin();
             }
-        }
-        else
-        {
+        } else {
 
             // Unpack the image from the imagedata
-            if (mymodel.data_dim == 3)
-            {
+            if (mymodel.data_dim == 3) {
                 img().resize(image_full_size[optics_group], image_full_size[optics_group], image_full_size[optics_group]);
                 // Only allow a single image per call of this function!!! nr_pool needs to be set to 1!!!!
                 // This will save memory, as we'll need to store all translated images in memory....
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img())
-                {
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
                     DIRECT_A3D_ELEM(img(), k, i, j) = DIRECT_A3D_ELEM(exp_imagedata, k, i, j);
                 }
                 img().setXmippOrigin();
 
-                if (has_converged && do_use_reconstruct_images)
-                {
+                if (has_converged && do_use_reconstruct_images) {
                     rec_img().resize(image_full_size[optics_group], image_full_size[optics_group], image_full_size[optics_group]);
-                    int offset = (do_ctf_correction) ? 2 * image_full_size[optics_group] : image_full_size[optics_group];
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(rec_img())
-                    {
+                    int offset = do_ctf_correction ? 2 * image_full_size[optics_group] : image_full_size[optics_group];
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(rec_img()) {
                         DIRECT_A3D_ELEM(rec_img(), k, i, j) = DIRECT_A3D_ELEM(exp_imagedata, offset + k, i, j);
                     }
                     rec_img().setXmippOrigin();
-
                 }
-
-            }
-            else
-            {
+            } else {
                 img().resize(image_full_size[optics_group], image_full_size[optics_group]);
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img())
-                {
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img()) {
                     DIRECT_A2D_ELEM(img(), i, j) = DIRECT_A3D_ELEM(exp_imagedata, my_metadata_offset, i, j);
                 }
                 img().setXmippOrigin();
-                if (has_converged && do_use_reconstruct_images)
-                {
+                if (has_converged && do_use_reconstruct_images) {
 
                     /// TODO: this will be WRONG for multi-image particles, but I guess that's not going to happen anyway...
                     int my_nr_particles = exp_my_last_part_id - exp_my_first_part_id + 1;
                     ////////////// TODO: think this through for no-threads here.....
                     rec_img().resize(image_full_size[optics_group], image_full_size[optics_group]);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img())
-                    {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
                         DIRECT_A2D_ELEM(rec_img(), i, j) = DIRECT_A3D_ELEM(exp_imagedata, my_nr_particles + my_metadata_offset, i, j);
                     }
                     rec_img().setXmippOrigin();
@@ -5038,12 +4700,10 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         }
 
         // Apply the norm_correction term
-        if (do_norm_correction)
-        {
-//#define DEBUG_NORM
-#ifdef DEBUG_NORM
-            if (normcorr < 0.001 || normcorr > 1000. || mymodel.avg_norm_correction < 0.001 || mymodel.avg_norm_correction > 1000.0)
-            {
+        if (do_norm_correction) {
+            // #define DEBUG_NORM
+            #ifdef DEBUG_NORM
+            if (normcorr < 0.001 || normcorr > 1000. || mymodel.avg_norm_correction < 0.001 || mymodel.avg_norm_correction > 1000.0) {
                 std::cerr << " ** normcorr= " << normcorr << std::endl;
                 std::cerr << " ** mymodel.avg_norm_correction= " << mymodel.avg_norm_correction << std::endl;
                 std::cerr << " ** fn_img= " << fn_img << " part_id= " << part_id << " img_id= " << img_id << std::endl;
@@ -5052,7 +4712,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 std::cerr << " img_id= " << img_id << std::endl;
                 REPORT_ERROR("Very small or very big (avg) normcorr!");
             }
-#endif
+            #endif
             img() *= mymodel.avg_norm_correction / normcorr;
         }
 
@@ -5793,39 +5453,36 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                 std::cerr << "MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(): Store all translated variants of Fimg" << std::endl;
 #endif
                 // Then loop over all its oversampled relatives
-                for (long int iover_trans = 0; iover_trans < oversampled_translations_x.size(); iover_trans++, my_trans_image++)
-                {
+                for (long int iover_trans = 0; iover_trans < oversampled_translations_x.size(); iover_trans++, my_trans_image++) {
                     // Helical reconstruction: rotate oversampled_translations_x[iover_trans] and oversampled_translations_y[iover_trans] according to rlnAnglePsi of this particle!
                     RFLOAT xshift = 0., yshift = 0., zshift = 0.0;
 
                     xshift = oversampled_translations_x[iover_trans];
                     yshift = oversampled_translations_y[iover_trans];
                     if (mymodel.data_dim == 3)
-                        zshift = oversampled_translations_z[iover_trans];
+                    zshift = oversampled_translations_z[iover_trans];
 
-                    if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-                    {
-                        RFLOAT rot_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
+                    if (do_helical_refine && !ignore_helical_symmetry) {
+                        RFLOAT rot_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
                         RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
-                        RFLOAT psi_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+                        RFLOAT psi_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
+                        #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
                         std::cerr << "Helical xyz shift = (" << xshift << ", " << yshift << ", " << zshift << ")" << std::endl;
-#endif
+                        #endif
                         transformCartesianAndHelicalCoords(xshift, yshift, zshift, xshift, yshift, zshift, rot_deg, tilt_deg, psi_deg, mymodel.data_dim, HELICAL_TO_CART_COORDS);
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+                        #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
                         std::cerr << "Cartesian xyz shift = (" << xshift << ", " << yshift << ", " << zshift << ")" << std::endl;
-#endif
+                        #endif
                     }
 
                     // Shift through phase-shifts in the Fourier transform
                     // Note that the shift search range is centered around (exp_old_xoff, exp_old_yoff)
-                    if (do_masked_shifts)
-                    {
+                    if (do_masked_shifts) {
                         exp_local_Fimgs_shifted[img_id][my_trans_image].resize(Fimg);
-                        shiftImageInFourierTransform(Fimg, exp_local_Fimgs_shifted[img_id][my_trans_image], (RFLOAT)mymodel.ori_size, xshift, yshift, zshift);
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-                        if ( (do_helical_refine) && (!ignore_helical_symmetry) )  // Shall we let 2D classification do this as well?
-                        {
+                        shiftImageInFourierTransform(Fimg, exp_local_Fimgs_shifted[img_id][my_trans_image], (RFLOAT) mymodel.ori_size, xshift, yshift, zshift);
+                        #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+                        if (do_helical_refine && !ignore_helical_symmetry) {
+                            // Shall we let 2D classification do this as well?
                             std::cerr << " Size of Fourier map (Z, Y, X) = "
                                     << ZSIZE(exp_local_Fimgs_shifted[img_id][my_trans_image]) << ", "
                                     << YSIZE(exp_local_Fimgs_shifted[img_id][my_trans_image]) << ", "
@@ -5834,7 +5491,10 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                             MultidimArray<Complex> Faux, Fo;
                             Image<RFLOAT> tt;
                             FourierTransformer transformer;
-                            tt().resize((mymodel.data_dim == 3) ? (mymodel.ori_size) : (1), mymodel.ori_size, mymodel.ori_size);
+                            tt().resize(
+                                mymodel.data_dim == 3 ? mymodel.ori_size : 1, mymodel.ori_size, 
+                                mymodel.ori_size
+                            );
                             Faux = exp_local_Fimgs_shifted[img_id][my_trans_image];
                             windowFourierTransform(Faux, Fo, mymodel.ori_size);
                             transformer.inverseFourierTransform(Fo, tt());
@@ -5845,15 +5505,13 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                             std::string str;
                             std::cin >> str;
                         }
-#endif
+                        #endif
                     }
-                    if (do_also_unmasked)
-                    {
+                    if (do_also_unmasked) {
                         exp_local_Fimgs_shifted_nomask[img_id][my_trans_image].resize(Fimg_nomask);
                         shiftImageInFourierTransform(Fimg_nomask, exp_local_Fimgs_shifted_nomask[img_id][my_trans_image], (RFLOAT)mymodel.ori_size, xshift, yshift, zshift);
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-                        if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-                        {
+                        #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+                        if (do_helical_refine && !ignore_helical_symmetry) {
                             std::cerr << " Size of Fourier map (Z, Y, X) = "
                                     << ZSIZE(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << ", "
                                     << YSIZE(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << ", "
@@ -5873,43 +5531,39 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                             std::string str;
                             std::cin >> str;
                         }
-#endif
+                        #endif
                     }
                 }
             }
         }
     }
-#ifdef TIMING
-    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-    {
+    #ifdef TIMING
+    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
         if (do_also_unmasked)
             timer.toc(TIMING_ESP_PRECW);
         else if (exp_current_oversampling == 0) timer.toc(TIMING_ESP_PREC1);
         else timer.toc(TIMING_ESP_PREC2);
     }
-#endif
-
+    #endif
 }
 
-bool MlOptimiser::isSignificantAnyImageAnyTranslation(long int iorient, int exp_itrans_min, int exp_itrans_max, MultidimArray<bool> &exp_Mcoarse_significant)
-{
+bool MlOptimiser::isSignificantAnyImageAnyTranslation(
+    long int iorient, int exp_itrans_min, int exp_itrans_max,
+    MultidimArray<bool> &exp_Mcoarse_significant
+) {
 
     long int exp_nr_trans = exp_itrans_max - exp_itrans_min + 1;
-    for (long int ipart = 0; ipart < YSIZE(exp_Mcoarse_significant); ipart++)
-    {
+    for (long int ipart = 0; ipart < YSIZE(exp_Mcoarse_significant); ipart++) {
         long int ihidden = iorient * exp_nr_trans;
-        for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++)
-        {
-#ifdef DEBUG_CHECKSIZES
-            if (ihidden >= XSIZE(exp_Mcoarse_significant))
-            {
+        for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++) {
+            #ifdef DEBUG_CHECKSIZES
+            if (ihidden >= XSIZE(exp_Mcoarse_significant)) {
                 std::cerr << " ihidden= " << ihidden << " XSIZE(exp_Mcoarse_significant)= " << XSIZE(exp_Mcoarse_significant) << std::endl;
                 std::cerr << " iorient= " << iorient << " itrans= " << itrans << " exp_nr_trans= " << exp_nr_trans << std::endl;
                 REPORT_ERROR("ihidden > XSIZE: ");
             }
-#endif
-            if (DIRECT_A2D_ELEM(exp_Mcoarse_significant, ipart, ihidden))
-                return true;
+            #endif
+            if (DIRECT_A2D_ELEM(exp_Mcoarse_significant, ipart, ihidden)) return true;
         }
     }
     return false;
@@ -5917,83 +5571,80 @@ bool MlOptimiser::isSignificantAnyImageAnyTranslation(long int iorient, int exp_
 }
 
 
-void MlOptimiser::getAllSquaredDifferences(long int part_id, int ibody,
-        int exp_ipass, int exp_current_oversampling, int metadata_offset,
-        int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
-        int exp_itrans_min, int exp_itrans_max, int exp_iclass_min, int exp_iclass_max,
-        std::vector<RFLOAT> &exp_min_diff2,
-        std::vector<RFLOAT> &exp_highres_Xi2_img,
-        std::vector<MultidimArray<Complex > > &exp_Fimg,
-        std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-        MultidimArray<RFLOAT> &exp_Mweight,
-        MultidimArray<bool> &exp_Mcoarse_significant,
-        std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
-        std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
-        std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
-        std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
-        std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
-        std::vector<RFLOAT> &exp_local_sqrtXi2)
-{
+void MlOptimiser::getAllSquaredDifferences(
+    long int part_id, int ibody,
+    int exp_ipass, int exp_current_oversampling, int metadata_offset,
+    int exp_idir_min,   int exp_idir_max,   int exp_ipsi_min,   int exp_ipsi_max,
+    int exp_itrans_min, int exp_itrans_max, int exp_iclass_min, int exp_iclass_max,
+    std::vector<RFLOAT> &exp_min_diff2,
+    std::vector<RFLOAT> &exp_highres_Xi2_img,
+    std::vector<MultidimArray<Complex> > &exp_Fimg,
+    std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
+    MultidimArray<RFLOAT> &exp_Mweight,
+    MultidimArray<bool> &exp_Mcoarse_significant,
+    std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
+    std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
+    std::vector<std::vector<MultidimArray<Complex> > > &exp_local_Fimgs_shifted,
+    std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
+    std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
+    std::vector<RFLOAT> &exp_local_sqrtXi2
+) {
 
-#ifdef TIMING
+    #ifdef TIMING
     if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-    {
-        if (exp_ipass == 0) timer.tic(TIMING_ESP_DIFF1);
-        else timer.tic(TIMING_ESP_DIFF2);
-    }
-#endif
+        timer.tic(exp_ipass == 0 ? TIMING_ESP_DIFF1 : TIMING_ESP_DIFF2);
+    #endif
 
-//#define DEBUG_GETALLDIFF2
-#ifdef DEBUG_GETALLDIFF2
+    // #define DEBUG_GETALLDIFF2
+    #ifdef DEBUG_GETALLDIFF2
     std::cerr << " ipass= " << exp_ipass << " exp_current_oversampling= " << exp_current_oversampling << std::endl;
     std::cerr << " sampling.NrPsiSamplings(exp_current_oversampling)= " << sampling.NrPsiSamplings(exp_current_oversampling) << std::endl;
     std::cerr << " sampling.NrTranslationalSamplings(exp_current_oversampling)= " << sampling.NrTranslationalSamplings(exp_current_oversampling) << std::endl;
     std::cerr << " sampling.NrSamplingPoints(exp_current_oversampling)= " << sampling.NrSamplingPoints(exp_current_oversampling) << std::endl;
     std::cerr << " sampling.oversamplingFactorOrientations(exp_current_oversampling)= "<<sampling.oversamplingFactorOrientations(exp_current_oversampling) << std::endl;
     std::cerr << " sampling.oversamplingFactorTranslations(exp_current_oversampling)= "<<sampling.oversamplingFactorTranslations(exp_current_oversampling) << std::endl;
-#endif
+    #endif
 
     // Initialise min_diff and exp_Mweight for this pass
     int exp_nr_images = mydata.numberOfImagesInParticle(part_id);
-    long int exp_nr_dir = (do_skip_align || do_skip_rotate) ? 1 : sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior);
-    long int exp_nr_psi = (do_skip_align || do_skip_rotate || do_only_sample_tilt) ? 1 : sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior);
-    long int exp_nr_trans = (do_skip_align) ? 1 : sampling.NrTranslationalSamplings();
+    long int exp_nr_dir = do_skip_align || do_skip_rotate ? 1 : sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior);
+    long int exp_nr_psi = do_skip_align || do_skip_rotate || do_only_sample_tilt ? 1 : sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior);
+    long int exp_nr_trans = do_skip_align ? 1 : sampling.NrTranslationalSamplings();
     long int exp_nr_oversampled_rot = sampling.oversamplingFactorOrientations(exp_current_oversampling);
     long int exp_nr_oversampled_trans = sampling.oversamplingFactorTranslations(exp_current_oversampling);
 
     exp_Mweight.resize(exp_nr_images, mymodel.nr_classes * exp_nr_dir * exp_nr_psi * exp_nr_trans * exp_nr_oversampled_rot * exp_nr_oversampled_trans);
     exp_Mweight.initConstant(-999.0);
-    if (exp_ipass==0)
+    if (exp_ipass == 0)
         exp_Mcoarse_significant.clear();
 
     exp_min_diff2.clear();
     exp_min_diff2.resize(exp_nr_images, LARGE_NUMBER);
 
-    std::vector<MultidimArray<Complex > > dummy;
-    std::vector<std::vector<MultidimArray<Complex > > > dummy2;
+    std::vector<MultidimArray<Complex> > dummy;
+    std::vector<std::vector<MultidimArray<Complex> > > dummy2;
 
-    precalculateShiftedImagesCtfsAndInvSigma2s(false, false, part_id, exp_current_oversampling, metadata_offset,
-            exp_itrans_min, exp_itrans_max, exp_Fimg, dummy, exp_Fctf, exp_local_Fimgs_shifted, dummy2,
-            exp_local_Fctf, exp_local_sqrtXi2, exp_local_Minvsigma2);
+    precalculateShiftedImagesCtfsAndInvSigma2s(
+        false, false, part_id, exp_current_oversampling, metadata_offset,
+        exp_itrans_min, exp_itrans_max, exp_Fimg, dummy, exp_Fctf, exp_local_Fimgs_shifted, dummy2,
+        exp_local_Fctf, exp_local_sqrtXi2, exp_local_Minvsigma2
+    );
 
     // Loop only from exp_iclass_min to exp_iclass_max to deal with seed generation in first iteration
-    for (int exp_iclass = exp_iclass_min; exp_iclass <= exp_iclass_max; exp_iclass++)
-    {
-        if (mymodel.pdf_class[exp_iclass] > 0.0)
-        {
+    for (int exp_iclass = exp_iclass_min; exp_iclass <= exp_iclass_max; exp_iclass++) {
+        if (mymodel.pdf_class[exp_iclass] > 0.0) {
             // Local variables
-            std::vector< RFLOAT > oversampled_rot, oversampled_tilt, oversampled_psi;
-            std::vector< RFLOAT > oversampled_translations_x, oversampled_translations_y, oversampled_translations_z;
-            MultidimArray<Complex > Fimg, Fref, Frefctf, Fimg_otfshift;
+            std::vector<RFLOAT> oversampled_rot, oversampled_tilt, oversampled_psi;
+            std::vector<RFLOAT> oversampled_translations_x, oversampled_translations_y, oversampled_translations_z;
+            MultidimArray<Complex> Fimg, Fref, Frefctf, Fimg_otfshift;
             RFLOAT *Minvsigma2;
             Matrix2D<RFLOAT> A, Abody, Aori;
 
-            if (mymodel.nr_bodies > 1)
-            {
+            if (mymodel.nr_bodies > 1) {
                 // ipart=0 because in multi-body refinement we do not do movie frames!
-                RFLOAT rot_ori = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
+                RFLOAT rot_ori =  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
                 RFLOAT tilt_ori = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT);
-                RFLOAT psi_ori = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI);
+                RFLOAT psi_ori =  DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI);
                 Euler_angles2matrix(rot_ori, tilt_ori, psi_ori, Aori, false);
             }
 
@@ -6003,502 +5654,465 @@ void MlOptimiser::getAllSquaredDifferences(long int part_id, int ibody,
                 Fimg_otfshift.resize(Frefctf);
 
             for (long int idir = exp_idir_min, iorient = 0; idir <= exp_idir_max; idir++)
-            {
-                for (long int ipsi = exp_ipsi_min; ipsi <= exp_ipsi_max; ipsi++, iorient++)
-                {
-                    long int iorientclass = exp_iclass * exp_nr_dir * exp_nr_psi + iorient;
+            for (long int ipsi = exp_ipsi_min; ipsi <= exp_ipsi_max; ipsi++, iorient++) {
+                long int iorientclass = exp_iclass * exp_nr_dir * exp_nr_psi + iorient;
 
-                    // Get prior for this direction and skip calculation if prior==0
-                    RFLOAT pdf_orientation;
-                    if (do_skip_align || do_skip_rotate)
-                    {
-                        #ifdef DEBUG_CHECKSIZES
-                        if (exp_iclass >= mymodel.pdf_class.size())
-                        {
-                            std::cerr<< "exp_iclass= "<<exp_iclass<<" mymodel.pdf_class.size()= "<< mymodel.pdf_class.size() <<std::endl;
-                            REPORT_ERROR("exp_iclass >= mymodel.pdf_class.size()");
-                        }
-                        #endif
-                        pdf_orientation = mymodel.pdf_class[exp_iclass];
+                // Get prior for this direction and skip calculation if prior==0
+                RFLOAT pdf_orientation;
+                if (do_skip_align || do_skip_rotate) {
+                    #ifdef DEBUG_CHECKSIZES
+                    if (exp_iclass >= mymodel.pdf_class.size()) {
+                        std::cerr<< "exp_iclass= "<<exp_iclass<<" mymodel.pdf_class.size()= "<< mymodel.pdf_class.size() <<std::endl;
+                        REPORT_ERROR("exp_iclass >= mymodel.pdf_class.size()");
                     }
-                    else if (mymodel.orientational_prior_mode == NOPRIOR)
-                    {
-#ifdef DEBUG_CHECKSIZES
-                        if (idir >= XSIZE(mymodel.pdf_direction[exp_iclass]))
-                        {
-                            std::cerr<< "idir= "<<idir<<" XSIZE(mymodel.pdf_direction[exp_iclass])= "<< XSIZE(mymodel.pdf_direction[exp_iclass]) <<std::endl;
-                            REPORT_ERROR("idir >= mymodel.pdf_direction[exp_iclass].size()");
-                        }
-#endif
-                        pdf_orientation = DIRECT_MULTIDIM_ELEM(mymodel.pdf_direction[exp_iclass], idir);
+                    #endif
+                    pdf_orientation = mymodel.pdf_class[exp_iclass];
+                } else if (mymodel.orientational_prior_mode == NOPRIOR) {
+                    #ifdef DEBUG_CHECKSIZES
+                    if (idir >= XSIZE(mymodel.pdf_direction[exp_iclass])) {
+                        std::cerr<< "idir= "<<idir<<" XSIZE(mymodel.pdf_direction[exp_iclass])= "<< XSIZE(mymodel.pdf_direction[exp_iclass]) <<std::endl;
+                        REPORT_ERROR("idir >= mymodel.pdf_direction[exp_iclass].size()");
                     }
-                    else
-                    {
-                        pdf_orientation = exp_directions_prior[idir] * exp_psi_prior[ipsi];
-                    }
-                    // In the first pass, always proceed
-                    // In the second pass, check whether one of the translations for this orientation had a significant weight in the first pass
-                    // if so, proceed with projecting the reference in that direction
-                    bool do_proceed = (exp_ipass==0) ? true :
-                        isSignificantAnyImageAnyTranslation(iorientclass, exp_itrans_min, exp_itrans_max, exp_Mcoarse_significant);
-                    if (do_proceed && pdf_orientation > 0.0)
-                    {
-                        // Now get the oversampled (rot, tilt, psi) triplets
-                        // This will be only the original (rot,tilt,psi) triplet in the first pass (exp_current_oversampling==0)
-                        sampling.getOrientations(idir, ipsi, exp_current_oversampling, oversampled_rot, oversampled_tilt, oversampled_psi,
-                                exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior);
-                        // Loop over all oversampled orientations (only a single one in the first pass)
-                        for (long int iover_rot = 0; iover_rot < exp_nr_oversampled_rot; iover_rot++)
-                        {
+                    #endif
+                    pdf_orientation = DIRECT_MULTIDIM_ELEM(mymodel.pdf_direction[exp_iclass], idir);
+                } else {
+                    pdf_orientation = exp_directions_prior[idir] * exp_psi_prior[ipsi];
+                }
+                // In the first pass, always proceed
+                // In the second pass, check whether one of the translations for this orientation had a significant weight in the first pass
+                // if so, proceed with projecting the reference in that direction
+                if ((exp_ipass == 0 || isSignificantAnyImageAnyTranslation(
+                    iorientclass, exp_itrans_min, exp_itrans_max,
+                    exp_Mcoarse_significant
+                )) && pdf_orientation > 0.0) {
+                    // Now get the oversampled (rot, tilt, psi) triplets
+                    // This will be only the original (rot,tilt,psi) triplet in the first pass (exp_current_oversampling==0)
+                    sampling.getOrientations(idir, ipsi, exp_current_oversampling, oversampled_rot, oversampled_tilt, oversampled_psi,
+                            exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior);
+                    // Loop over all oversampled orientations (only a single one in the first pass)
+                    for (long int iover_rot = 0; iover_rot < exp_nr_oversampled_rot; iover_rot++) {
+                        // loop over all images inside this particle
+                        for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++) {
 
-                            // loop over all images inside this particle
-                            for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++)
-                            {
+                            int my_metadata_offset = metadata_offset + img_id;
+                            RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, img_id);
+                            int optics_group = mydata.getOpticsGroup(part_id, img_id);
+                            bool ctf_premultiplied = mydata.obsModel.getCtfPremultiplied(optics_group);
 
-                                int my_metadata_offset = metadata_offset + img_id;
-                                RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, img_id);
-                                int optics_group = mydata.getOpticsGroup(part_id, img_id);
-                                bool ctf_premultiplied = mydata.obsModel.getCtfPremultiplied(optics_group);
+                            // Get the Euler matrix
+                            Euler_angles2matrix(oversampled_rot[iover_rot],
+                                    oversampled_tilt[iover_rot],
+                                    oversampled_psi[iover_rot], A, false);
 
-                                // Get the Euler matrix
-                                Euler_angles2matrix(oversampled_rot[iover_rot],
-                                        oversampled_tilt[iover_rot],
-                                        oversampled_psi[iover_rot], A, false);
+                            // Project the reference map (into Fref)
+                            #ifdef TIMING
+                            // Only time one thread, as I also only time one MPI process
+                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                timer.tic(TIMING_DIFF_PROJ);
+                            #endif
 
-                                // Project the reference map (into Fref)
-#ifdef TIMING
-                                // Only time one thread, as I also only time one MPI process
-                                if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                    timer.tic(TIMING_DIFF_PROJ);
-#endif
+                            // For multi-body refinements, A are only 'residual' orientations, Abody is the complete Euler matrix
+                            if (mymodel.nr_bodies > 1) {
+                                Abody =  Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
+                                Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
+                                Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                                (mymodel.PPref[ibody]).get2DFourierTransform(Fref, Abody);
+                            } else {
+                                A = mydata.obsModel.applyAnisoMag(A, optics_group);
+                                A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                                mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
+                            }
 
 
-                                // For multi-body refinements, A are only 'residual' orientations, Abody is the complete Euler matrix
-                                if (mymodel.nr_bodies > 1)
-                                {
-                                    Abody =  Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
-                                    Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
-                                    Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
-                                    (mymodel.PPref[ibody]).get2DFourierTransform(Fref, Abody);
+                            #ifdef TIMING
+                            // Only time one thread, as I also only time one MPI process
+                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                timer.toc(TIMING_DIFF_PROJ);
+                            #endif
+
+                            Minvsigma2 = exp_local_Minvsigma2[img_id].data;
+
+                            // Apply CTF to reference projection
+                            if (do_ctf_correction && refs_are_ctf_corrected) {
+                                if (ctf_premultiplied) {
+                                    // TODO: ignore CTF until first peak of premultiplied CTF?
+                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
+                                        DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(exp_local_Fctf[img_id], n) * DIRECT_MULTIDIM_ELEM(exp_local_Fctf[img_id], n);
+                                    }
+                                } else {
+                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
+                                        DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(exp_local_Fctf[img_id], n);
+                                    }
                                 }
-                                else
-                                {
-                                    A = mydata.obsModel.applyAnisoMag(A, optics_group);
-                                    A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
-                                    (mymodel.PPref[exp_iclass]).get2DFourierTransform(Fref, A);
+                            } else {
+                                Frefctf = Fref;
+                            }
+
+                            if (do_scale_correction) {
+                                int group_id = mydata.getGroupId(part_id, img_id);
+                                RFLOAT myscale = mymodel.scale_correction[group_id];
+                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf) {
+                                    DIRECT_MULTIDIM_ELEM(Frefctf, n) *= myscale;
                                 }
+                            }
 
+                            long int ihidden = iorientclass * exp_nr_trans;
+                            for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++) {
+                                #ifdef DEBUG_CHECKSIZES
+                                if (exp_ipass > 0 && ihidden >= XSIZE(exp_Mcoarse_significant)) {
+                                    std::cerr << "ihidden= " << ihidden << " XSIZE(exp_Mcoarse_significant)= " << XSIZE(exp_Mcoarse_significant) << std::endl;
+                                    REPORT_ERROR("ihidden >= XSIZE(exp_Mcoarse_significant)");
+                                }
+                                #endif
+                                // In the first pass, always proceed
+                                // In the second pass, check whether this translations (&orientation) had a significant weight in the first pass
+                                if (exp_ipass == 0 || DIRECT_A2D_ELEM(exp_Mcoarse_significant, img_id, ihidden)) {
+                                    // 1 Jun 2015 - Shaoda & Sjors, Helical refinement
+                                    sampling.getTranslationsInPixel(
+                                        itrans, exp_current_oversampling, my_pixel_size, 
+                                        oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
+                                        do_helical_refine && !ignore_helical_symmetry
+                                    );
+                                    for (long int iover_trans = 0; iover_trans < exp_nr_oversampled_trans; iover_trans++) {
+                                        #ifdef TIMING
+                                        // Only time one thread, as I also only time one MPI process
+                                        if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                            timer.tic(TIMING_DIFF2_GETSHIFT);
+                                        #endif
+                                        /// Now get the shifted image
+                                        // Use a pointer to avoid copying the entire array again in this highly expensive loop
+                                        Complex *Fimg_shift;
+                                        if (!do_shifts_onthefly) {
+                                            long int ishift = img_id * exp_nr_oversampled_trans * exp_nr_images +
+                                                (itrans - exp_itrans_min) * exp_nr_oversampled_trans + iover_trans;
+                                            if (do_skip_align)
+                                                ishift = img_id;
+                                            #ifdef DEBUG_CHECKSIZES
+                                            if (ishift >= exp_local_Fimgs_shifted.size()) {
+                                                std::cerr<< "ishift= "<<ishift<<" exp_local_Fimgs_shifted.size()= "<< exp_local_Fimgs_shifted.size() <<std::endl;
+                                                std::cerr << " itrans= " << itrans << std::endl;
+                                                std::cerr << " img_id= " << img_id << std::endl;
+                                                std::cerr << " exp_nr_oversampled_trans= " << exp_nr_oversampled_trans << " exp_nr_trans= " << exp_nr_trans << " iover_trans= " << iover_trans << std::endl;
+                                                REPORT_ERROR("ishift >= exp_local_Fimgs_shifted.size()");
+                                            }
+                                            #endif
+                                            Fimg_shift = exp_local_Fimgs_shifted[img_id][ishift].data;
+                                        } else {
+                                            // Calculate shifted image on-the-fly to save replicating memory in multi-threaded jobs.
+                                            // Feb01,2017 - Shaoda, on-the-fly shifts in helical reconstuctions (2D and 3D)
+                                            if (do_helical_refine && !ignore_helical_symmetry) {
+                                                bool use_coarse_size = false;
+                                                RFLOAT xshift = 0.0, yshift = 0.0, zshift = 0.0;
 
-#ifdef TIMING
-                                // Only time one thread, as I also only time one MPI process
-                                if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                    timer.toc(TIMING_DIFF_PROJ);
-#endif
+                                                xshift = oversampled_translations_x[exp_current_oversampling == 0 ? 0 : iover_trans];
+                                                yshift = oversampled_translations_y[exp_current_oversampling == 0 ? 0 : iover_trans];
+                                                if (mymodel.data_dim == 3)
+                                                zshift = oversampled_translations_z[exp_current_oversampling == 0 ? 0 : iover_trans];
 
-                                Minvsigma2 = exp_local_Minvsigma2[img_id].data;
+                                                RFLOAT rot_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
+                                                RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
+                                                RFLOAT psi_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
+                                                transformCartesianAndHelicalCoords(
+                                                    xshift, yshift, zshift,
+                                                    xshift, yshift, zshift,
+                                                    rot_deg, tilt_deg, psi_deg,
+                                                    mymodel.data_dim,
+                                                    HELICAL_TO_CART_COORDS
+                                                );
 
-                                // Apply CTF to reference projection
-                                if (do_ctf_correction && refs_are_ctf_corrected)
-                                {
-                                    if (ctf_premultiplied)
-                                    {
-                                        // TODO: ignore CTF until first peak of premultiplied CTF?
-                                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref)
-                                        {
-                                            DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(exp_local_Fctf[img_id], n) * DIRECT_MULTIDIM_ELEM(exp_local_Fctf[img_id], n);
+                                                use_coarse_size =
+                                                    exp_current_oversampling == 0 && YSIZE(Frefctf) == image_coarse_size[optics_group] ||
+                                                    exp_current_oversampling >  0 && strict_highres_exp > 0.0;
+                                                shiftImageInFourierTransformWithTabSincos(
+                                                    exp_local_Fimgs_shifted[img_id][0],
+                                                    Fimg_otfshift,
+                                                    (RFLOAT) mymodel.ori_size,
+                                                    (use_coarse_size ? image_coarse_size : image_current_size)[optics_group],
+                                                    tab_sin, tab_cos,
+                                                    xshift, yshift, zshift
+                                                );
+                                            } else {
+                                                Complex *myAB;
+                                                if (exp_current_oversampling == 0) {
+                                                    myAB = (YSIZE(Frefctf) == image_coarse_size[optics_group] ?
+                                                        global_fftshifts_ab_coarse : global_fftshifts_ab_current
+                                                    )[optics_group][itrans].data;
+                                                } else {
+                                                    int iitrans = itrans * exp_nr_oversampled_trans +  iover_trans;
+                                                    myAB = (strict_highres_exp > 0.0 ?
+                                                        global_fftshifts_ab2_coarse : global_fftshifts_ab2_current
+                                                    )[optics_group][iitrans].data;
+                                                }
+                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Fimgs_shifted[img_id][0]) {
+                                                    Complex A = *(myAB + n);
+                                                    Complex X = DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n);
+                                                    DIRECT_MULTIDIM_ELEM(Fimg_otfshift, n) = Complex(
+                                                        A.real * X.real - A.imag * X.imag,  // A dot conj X
+                                                        A.real * X.imag + A.imag * X.real   // A dot (i conj X)
+                                                    );
+                                                }
+                                            }
+                                            Fimg_shift = Fimg_otfshift.data;
                                         }
-                                    }
-                                    else
-                                    {
-                                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref)
-                                        {
-                                            DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(exp_local_Fctf[img_id], n);
+                                        #ifdef TIMING
+                                        // Only time one thread, as I also only time one MPI process
+                                        if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                            timer.toc(TIMING_DIFF2_GETSHIFT);
+                                        #endif
+
+                                        #ifdef TIMING
+                                        // Only time one thread, as I also only time one MPI process
+                                        if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                            timer.tic(TIMING_DIFF_DIFF2);
+                                        #endif
+                                        RFLOAT diff2;
+                                        if (iter == 1 && do_firstiter_cc || do_always_cc) {
+                                            // Do not calculate squared-differences, but signal product
+                                            // Negative values because smaller is worse in this case
+                                            diff2 = 0.0;
+                                            RFLOAT suma2 = 0.0;
+                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf) {
+                                                Complex A = DIRECT_MULTIDIM_ELEM(Frefctf, n);
+                                                Complex X = *(Fimg_shift + n);
+                                                diff2 -= A.real * X.real + A.imag * X.imag;  // A dot X
+                                                suma2 += norm(A);
+                                            }
+                                            // Normalised cross-correlation coefficient: divide by power of reference (power of image is a constant)
+                                            diff2 /= sqrt(suma2) * exp_local_sqrtXi2[img_id];
+                                        } else {
+                                            // Calculate the actual squared difference term of the Gaussian probability function
+                                            // If current_size < mymodel.ori_size diff2 is initialised to the sum of
+                                            // all |Xij|2 terms that lie between current_size and ori_size
+                                            // Factor two because of factor 2 in division below, NOT because of 2-dimensionality of the complex plane!
+                                            diff2 = exp_highres_Xi2_img[img_id] / 2.0;
+                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf)
+                                            {
+                                                RFLOAT diff_real = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real - (*(Fimg_shift + n)).real;
+                                                RFLOAT diff_imag = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag - (*(Fimg_shift + n)).imag;
+                                                diff2 += (diff_real * diff_real + diff_imag * diff_imag) * 0.5 * (*(Minvsigma2 + n));
+                                            }
                                         }
-                                    }
-                                }
-                                else
-                                    Frefctf = Fref;
-
-                                if (do_scale_correction)
-                                {
-                                    int group_id = mydata.getGroupId(part_id, img_id);
-                                    RFLOAT myscale = mymodel.scale_correction[group_id];
-                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf)
-                                    {
-                                        DIRECT_MULTIDIM_ELEM(Frefctf, n) *= myscale;
-                                    }
-                                }
-
-                                long int ihidden = iorientclass * exp_nr_trans;
-                                for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++)
-                                {
-#ifdef DEBUG_CHECKSIZES
-                                    if (exp_ipass > 0 && ihidden >= XSIZE(exp_Mcoarse_significant))
-                                    {
-                                        std::cerr<< "ihidden= "<<ihidden<<" XSIZE(exp_Mcoarse_significant)= "<< XSIZE(exp_Mcoarse_significant) <<std::endl;
-                                        REPORT_ERROR("ihidden >= XSIZE(exp_Mcoarse_significant)");
-                                    }
-#endif
-                                    // In the first pass, always proceed
-                                    // In the second pass, check whether this translations (&orientation) had a significant weight in the first pass
-                                    bool do_proceed = (exp_ipass == 0) ? true : DIRECT_A2D_ELEM(exp_Mcoarse_significant, img_id, ihidden);
-                                    if (do_proceed)
-                                    {
-                                        // Jun01,2015 - Shaoda & Sjors, Helical refinement
-                                        sampling.getTranslationsInPixel(itrans, exp_current_oversampling, my_pixel_size, oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
-                                                (do_helical_refine) && (!ignore_helical_symmetry));
-                                        for (long int iover_trans = 0; iover_trans < exp_nr_oversampled_trans; iover_trans++)
-                                        {
 #ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                                timer.tic(TIMING_DIFF2_GETSHIFT);
-#endif
-                                            /// Now get the shifted image
-                                            // Use a pointer to avoid copying the entire array again in this highly expensive loop
-                                            Complex *Fimg_shift;
-                                            if (!do_shifts_onthefly)
-                                            {
-                                                long int ishift = img_id * exp_nr_oversampled_trans * exp_nr_images +
-                                                        (itrans - exp_itrans_min) * exp_nr_oversampled_trans + iover_trans;
-                                                if (do_skip_align)
-                                                    ishift = img_id;
-#ifdef DEBUG_CHECKSIZES
-                                                if (ishift >= exp_local_Fimgs_shifted.size())
-                                                {
-                                                    std::cerr<< "ishift= "<<ishift<<" exp_local_Fimgs_shifted.size()= "<< exp_local_Fimgs_shifted.size() <<std::endl;
-                                                    std::cerr << " itrans= " << itrans << std::endl;
-                                                    std::cerr << " img_id= " << img_id << std::endl;
-                                                    std::cerr << " exp_nr_oversampled_trans= " << exp_nr_oversampled_trans << " exp_nr_trans= " << exp_nr_trans << " iover_trans= " << iover_trans << std::endl;
-                                                    REPORT_ERROR("ishift >= exp_local_Fimgs_shifted.size()");
-                                                }
-#endif
-                                                Fimg_shift = exp_local_Fimgs_shifted[img_id][ishift].data;
-                                            }
-                                            else
-                                            {
-                                                // Calculate shifted image on-the-fly to save replicating memory in multi-threaded jobs.
-                                                // Feb01,2017 - Shaoda, on-the-fly shifts in helical reconstuctions (2D and 3D)
-                                                if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-                                                {
-                                                    bool use_coarse_size = false;
-                                                    RFLOAT xshift = 0., yshift = 0., zshift = 0.0;
-
-                                                    xshift = (exp_current_oversampling == 0) ? (oversampled_translations_x[0]) : (oversampled_translations_x[iover_trans]);
-                                                    yshift = (exp_current_oversampling == 0) ? (oversampled_translations_y[0]) : (oversampled_translations_y[iover_trans]);
-                                                    if (mymodel.data_dim == 3)
-                                                        zshift = (exp_current_oversampling == 0) ? (oversampled_translations_z[0]) : (oversampled_translations_z[iover_trans]);
-
-                                                    RFLOAT rot_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
-                                                    RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
-                                                    RFLOAT psi_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
-                                                    transformCartesianAndHelicalCoords(
-                                                                xshift, yshift, zshift,
-                                                                xshift, yshift, zshift,
-                                                                rot_deg, tilt_deg, psi_deg,
-                                                                mymodel.data_dim,
-                                                                HELICAL_TO_CART_COORDS);
-
-                                                    use_coarse_size = ((exp_current_oversampling == 0) && (YSIZE(Frefctf) == image_coarse_size[optics_group]))
-                                                            || ((exp_current_oversampling > 0) && (strict_highres_exp > 0.0));
-                                                    shiftImageInFourierTransformWithTabSincos(
-                                                            exp_local_Fimgs_shifted[img_id][0],
-                                                            Fimg_otfshift,
-                                                            (RFLOAT)mymodel.ori_size,
-                                                            (use_coarse_size) ? (image_coarse_size[optics_group]) : (image_current_size[optics_group]),
-                                                            tab_sin, tab_cos,
-                                                            xshift, yshift, zshift);
-                                                }
-                                                else
-                                                {
-                                                    Complex *myAB;
-                                                    if (exp_current_oversampling == 0)
-                                                    {
-                                                        myAB = (YSIZE(Frefctf) == image_coarse_size[optics_group]) ? global_fftshifts_ab_coarse[optics_group][itrans].data
-                                                                : global_fftshifts_ab_current[optics_group][itrans].data;
-                                                    }
-                                                    else
-                                                    {
-                                                        int iitrans = itrans * exp_nr_oversampled_trans +  iover_trans;
-                                                        myAB = (strict_highres_exp > 0.0) ? global_fftshifts_ab2_coarse[optics_group][iitrans].data
-                                                                : global_fftshifts_ab2_current[optics_group][iitrans].data;
-                                                    }
-                                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Fimgs_shifted[img_id][0])
-                                                    {
-                                                        RFLOAT real = (*(myAB + n)).real * (DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).real
-                                                                - (*(myAB + n)).imag *(DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).imag;
-                                                        RFLOAT imag = (*(myAB + n)).real * (DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).imag
-                                                                + (*(myAB + n)).imag *(DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).real;
-                                                        DIRECT_MULTIDIM_ELEM(Fimg_otfshift, n) = Complex(real, imag);
-                                                    }
-                                                }
-                                                Fimg_shift = Fimg_otfshift.data;
-                                            }
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                                timer.toc(TIMING_DIFF2_GETSHIFT);
+                                        // Only time one thread, as I also only time one MPI process
+                                        if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                            timer.toc(TIMING_DIFF_DIFF2);
 #endif
 
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                                timer.tic(TIMING_DIFF_DIFF2);
-#endif
-                                            RFLOAT diff2;
-                                            if ((iter == 1 && do_firstiter_cc) || do_always_cc)
-                                            {
-                                                // Do not calculate squared-differences, but signal product
-                                                // Negative values because smaller is worse in this case
-                                                diff2 = 0.0;
-                                                RFLOAT suma2 = 0.0;
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf)
-                                                {
-                                                    diff2 -= (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real * (*(Fimg_shift + n)).real;
-                                                    diff2 -= (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag * (*(Fimg_shift + n)).imag;
-                                                    suma2 += norm(DIRECT_MULTIDIM_ELEM(Frefctf, n));
-                                                }
-                                                // Normalised cross-correlation coefficient: divide by power of reference (power of image is a constant)
-                                                diff2 /= sqrt(suma2) * exp_local_sqrtXi2[img_id];
-                                            }
-                                            else
-                                            {
-                                                // Calculate the actual squared difference term of the Gaussian probability function
-                                                // If current_size < mymodel.ori_size diff2 is initialised to the sum of
-                                                // all |Xij|2 terms that lie between current_size and ori_size
-                                                // Factor two because of factor 2 in division below, NOT because of 2-dimensionality of the complex plane!
-                                                diff2 = exp_highres_Xi2_img[img_id] / 2.0;
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf)
-                                                {
-                                                    RFLOAT diff_real = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real - (*(Fimg_shift + n)).real;
-                                                    RFLOAT diff_imag = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag - (*(Fimg_shift + n)).imag;
-                                                    diff2 += (diff_real * diff_real + diff_imag * diff_imag) * 0.5 * (*(Minvsigma2 + n));
-                                                }
-                                            }
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                                timer.toc(TIMING_DIFF_DIFF2);
-#endif
-
-                                            // Store all diff2 in exp_Mweight
-                                            long int ihidden_over = sampling.getPositionOversampledSamplingPoint(ihidden, exp_current_oversampling,
-                                                                                                            iover_rot, iover_trans);
+                                        // Store all diff2 in exp_Mweight
+                                        long int ihidden_over = sampling.getPositionOversampledSamplingPoint(ihidden, exp_current_oversampling,
+                                                                                                        iover_rot, iover_trans);
 //#define DEBUG_GETALLDIFF2
 #ifdef DEBUG_GETALLDIFF2
-                                            pthread_mutex_lock(&global_mutex);
-                                            if (itrans == exp_itrans_min && iover_trans == 0 && ipsi == exp_ipsi_min)
-                                            //if (ibody==1 && part_id == 0 && exp_ipass==0 && ihidden_over == 40217)
+                                        pthread_mutex_lock(&global_mutex);
+                                        if (itrans == exp_itrans_min && iover_trans == 0 && ipsi == exp_ipsi_min)
+                                        //if (ibody==1 && part_id == 0 && exp_ipass==0 && ihidden_over == 40217)
+                                        {
+                                            //std::cerr << " iover_rot= "<<iover_rot << "exp_nr_oversampled_rot= " << exp_nr_oversampled_rot << " oversampled_rot[iover_rot]= " << oversampled_rot[iover_rot]
+                                            //		  << " oversampled_tilt[iover_rot]= " << oversampled_tilt[iover_rot]
+                                            //	      << " oversampled_psi[iover_rot]= " <<  oversampled_psi[iover_rot];
+                                            RFLOAT rrot,ttilt,ppsi;
+                                            Euler_matrix2angles(A, rrot,ttilt,ppsi);
+                                            std::cerr << " ihidden_over= " << ihidden_over << " diff2= " << diff2
+                                                    << " rot= " << rrot
+                                                    << " tilt= " << ttilt
+                                                    << " psi= " << ppsi
+                                                    // non-oversampling correct only!!
+                                                    << " x= " << oversampled_translations_x[0] << " y=" << oversampled_translations_y[0];
+                                            //std::cerr << " A= " << A << std::endl;
+                                            //Euler_matrix2angles(Abody, rrot,ttilt,ppsi);
+                                            //std::cerr << " Brot= " << rrot
+                                            //		<< " Btilt= " << ttilt
+                                            //		<< " Bpsi= " << ppsi << std::endl;
+
+                                            FourierTransformer transformer;
+                                            MultidimArray<Complex> Fish;
+                                            Fish.resize(exp_local_Minvsigma2[img_id]);
+                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fish)
                                             {
-                                                //std::cerr << " iover_rot= "<<iover_rot << "exp_nr_oversampled_rot= " << exp_nr_oversampled_rot << " oversampled_rot[iover_rot]= " << oversampled_rot[iover_rot]
-                                                //		  << " oversampled_tilt[iover_rot]= " << oversampled_tilt[iover_rot]
-                                                //	      << " oversampled_psi[iover_rot]= " <<  oversampled_psi[iover_rot];
-                                                RFLOAT rrot,ttilt,ppsi;
-                                                Euler_matrix2angles(A, rrot,ttilt,ppsi);
-                                                std::cerr << " ihidden_over= " << ihidden_over << " diff2= " << diff2
-                                                        << " rot= " << rrot
-                                                        << " tilt= " << ttilt
-                                                        << " psi= " << ppsi
-                                                        // non-oversampling correct only!!
-                                                        << " x= " << oversampled_translations_x[0] << " y=" << oversampled_translations_y[0];
-                                                //std::cerr << " A= " << A << std::endl;
-                                                //Euler_matrix2angles(Abody, rrot,ttilt,ppsi);
-                                                //std::cerr << " Brot= " << rrot
-                                                //		<< " Btilt= " << ttilt
-                                                //		<< " Bpsi= " << ppsi << std::endl;
-
-                                                FourierTransformer transformer;
-                                                MultidimArray<Complex> Fish;
-                                                Fish.resize(exp_local_Minvsigma2[img_id]);
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fish)
-                                                {
-                                                    DIRECT_MULTIDIM_ELEM(Fish, n) = *(Fimg_shift + n);
-                                                }
-                                                Image<RFLOAT> tt;
-                                                int exp_current_image_size;
-                                                if (strict_highres_exp > 0.0)
-                                                    // Use smaller images in both passes and keep a maximum on coarse_size, just like in FREALIGN
-                                                    exp_current_image_size = image_coarse_size[optics_group];
-                                                else if (adaptive_oversampling > 0)
-                                                    // Use smaller images in the first pass, larger ones in the second pass
-                                                    exp_current_image_size = (exp_current_oversampling == 0) ? image_coarse_size[optics_group] : image_current_size[optics_group];
-                                                else
-                                                    exp_current_image_size = image_current_size[optics_group];
-                                                if (mymodel.data_dim == 3)
-                                                    tt().resize(exp_current_image_size, exp_current_image_size, exp_current_image_size);
-                                                else
-                                                    tt().resize(exp_current_image_size, exp_current_image_size);
-                                                transformer.inverseFourierTransform(Fish, tt());
-                                                CenterFFT(tt(),false);
-                                                FileName fnt = "Fimg.spi";
-                                                //fnt.compose("Fimg_shift1_i", ihidden_over, "spi");
-                                                tt.write(fnt);
-
-                                                transformer.inverseFourierTransform(Frefctf, tt());
-                                                CenterFFT(tt(),false);
-                                                fnt="Fref.spi";
-                                                //fnt.compose("Fref1_i", ihidden_over, "spi");
-                                                tt.write(fnt);
-
-
-                                                //for (int i = 0; i< mymodel.scale_correction.size(); i++)
-                                                //	std::cerr << i << " scale="<<mymodel.scale_correction[i]<<std::endl;
-                                                int group_id = mydata.getGroupId(part_id, img_id);
-                                                RFLOAT myscale = mymodel.scale_correction[group_id];
-                                                //std::cerr << " oversampled_rot[iover_rot]= " << oversampled_rot[iover_rot] << " oversampled_tilt[iover_rot]= " << oversampled_tilt[iover_rot] << " oversampled_psi[iover_rot]= " << oversampled_psi[iover_rot] << std::endl;
-                                                //std::cerr << " group_id= " << group_id << " myscale= " << myscale <<std::endl;
-                                                std::cerr << " itrans= " << itrans << " itrans * exp_nr_oversampled_trans +  iover_trans= " << itrans * exp_nr_oversampled_trans +  iover_trans << " ihidden= " << ihidden << std::endl;
-                                                std::cerr <<" part_id= "<<part_id<<" name= "<< mydata.particles[part_id].name << std::endl;
-                                                std::cerr <<" img_id= "<<img_id<<" name= "<< mydata.particles[part_id].images[img_id].name << std::endl;
-
-                                                //std::cerr << " myrank= "<< myrank<<std::endl;
-                                                //std::cerr << "Written Fimg_shift.spi and Fref.spi. Press any key to continue... part_id= " << part_id<< std::endl;
-                                                char c;
-                                                std::cin >> c;
-                                                //exit(0);
+                                                DIRECT_MULTIDIM_ELEM(Fish, n) = *(Fimg_shift + n);
                                             }
-                                            pthread_mutex_unlock(&global_mutex);
+                                            Image<RFLOAT> tt;
+                                            int exp_current_image_size;
+                                            if (strict_highres_exp > 0.0)
+                                                // Use smaller images in both passes and keep a maximum on coarse_size, just like in FREALIGN
+                                                exp_current_image_size = image_coarse_size[optics_group];
+                                            else if (adaptive_oversampling > 0)
+                                                // Use smaller images in the first pass, larger ones in the second pass
+                                                exp_current_image_size = (exp_current_oversampling == 0) ? image_coarse_size[optics_group] : image_current_size[optics_group];
+                                            else
+                                                exp_current_image_size = image_current_size[optics_group];
+                                            if (mymodel.data_dim == 3)
+                                                tt().resize(exp_current_image_size, exp_current_image_size, exp_current_image_size);
+                                            else
+                                                tt().resize(exp_current_image_size, exp_current_image_size);
+                                            transformer.inverseFourierTransform(Fish, tt());
+                                            CenterFFT(tt(),false);
+                                            FileName fnt = "Fimg.spi";
+                                            //fnt.compose("Fimg_shift1_i", ihidden_over, "spi");
+                                            tt.write(fnt);
+
+                                            transformer.inverseFourierTransform(Frefctf, tt());
+                                            CenterFFT(tt(),false);
+                                            fnt="Fref.spi";
+                                            //fnt.compose("Fref1_i", ihidden_over, "spi");
+                                            tt.write(fnt);
+
+
+                                            //for (int i = 0; i< mymodel.scale_correction.size(); i++)
+                                            //	std::cerr << i << " scale="<<mymodel.scale_correction[i]<<std::endl;
+                                            int group_id = mydata.getGroupId(part_id, img_id);
+                                            RFLOAT myscale = mymodel.scale_correction[group_id];
+                                            //std::cerr << " oversampled_rot[iover_rot]= " << oversampled_rot[iover_rot] << " oversampled_tilt[iover_rot]= " << oversampled_tilt[iover_rot] << " oversampled_psi[iover_rot]= " << oversampled_psi[iover_rot] << std::endl;
+                                            //std::cerr << " group_id= " << group_id << " myscale= " << myscale <<std::endl;
+                                            std::cerr << " itrans= " << itrans << " itrans * exp_nr_oversampled_trans +  iover_trans= " << itrans * exp_nr_oversampled_trans +  iover_trans << " ihidden= " << ihidden << std::endl;
+                                            std::cerr <<" part_id= "<<part_id<<" name= "<< mydata.particles[part_id].name << std::endl;
+                                            std::cerr <<" img_id= "<<img_id<<" name= "<< mydata.particles[part_id].images[img_id].name << std::endl;
+
+                                            //std::cerr << " myrank= "<< myrank<<std::endl;
+                                            //std::cerr << "Written Fimg_shift.spi and Fref.spi. Press any key to continue... part_id= " << part_id<< std::endl;
+                                            char c;
+                                            std::cin >> c;
+                                            //exit(0);
+                                        }
+                                        pthread_mutex_unlock(&global_mutex);
 
 #endif
 //#define DEBUG_DIFF2_ISNAN
 #ifdef DEBUG_DIFF2_ISNAN
-                                            if (std::isnan(diff2))
+                                        if (std::isnan(diff2))
+                                        {
+                                            pthread_mutex_lock(&global_mutex);
+                                            std::cerr <<" img_id= "<<img_id<<" name= "<< mydata.particles[part_id].images[img_id].name << std::endl;
+                                            std::cerr << " exp_iclass= " << exp_iclass << std::endl;
+                                            std::cerr << " diff2= " << diff2 << std::endl;
+                                            std::cerr << " exp_highres_Xi2_img[img_id]= " << exp_highres_Xi2_img[img_id] << std::endl;
+                                            std::cerr<< " exp_nr_oversampled_trans="<<exp_nr_oversampled_trans<<std::endl;
+                                            std::cerr<< " exp_nr_oversampled_rot="<<exp_nr_oversampled_rot<<std::endl;
+                                            std::cerr << " iover_rot= " << iover_rot << " iover_trans= " << iover_trans << " ihidden= " << ihidden << std::endl;
+                                            std::cerr << " exp_current_oversampling= " << exp_current_oversampling << std::endl;
+                                            std::cerr << " ihidden_over= " << ihidden_over << " XSIZE(Mweight)= " << XSIZE(exp_Mweight) << std::endl;
+                                            std::cerr << " (mymodel.PPref[exp_iclass]).ori_size= " << (mymodel.PPref[exp_iclass]).ori_size << " (mymodel.PPref[exp_iclass]).r_max= " << (mymodel.PPref[exp_iclass]).r_max << std::endl;
+                                            int group_id = mydata.getGroupId(part_id, img_id);
+                                            std::cerr << " mymodel.scale_correction[group_id]= " << mymodel.scale_correction[group_id] << std::endl;
+                                            if (std::isnan(mymodel.scale_correction[group_id]))
                                             {
-                                                pthread_mutex_lock(&global_mutex);
-                                                std::cerr <<" img_id= "<<img_id<<" name= "<< mydata.particles[part_id].images[img_id].name << std::endl;
-                                                std::cerr << " exp_iclass= " << exp_iclass << std::endl;
-                                                std::cerr << " diff2= " << diff2 << std::endl;
-                                                std::cerr << " exp_highres_Xi2_img[img_id]= " << exp_highres_Xi2_img[img_id] << std::endl;
-                                                std::cerr<< " exp_nr_oversampled_trans="<<exp_nr_oversampled_trans<<std::endl;
-                                                std::cerr<< " exp_nr_oversampled_rot="<<exp_nr_oversampled_rot<<std::endl;
-                                                std::cerr << " iover_rot= " << iover_rot << " iover_trans= " << iover_trans << " ihidden= " << ihidden << std::endl;
-                                                std::cerr << " exp_current_oversampling= " << exp_current_oversampling << std::endl;
-                                                std::cerr << " ihidden_over= " << ihidden_over << " XSIZE(Mweight)= " << XSIZE(exp_Mweight) << std::endl;
-                                                std::cerr << " (mymodel.PPref[exp_iclass]).ori_size= " << (mymodel.PPref[exp_iclass]).ori_size << " (mymodel.PPref[exp_iclass]).r_max= " << (mymodel.PPref[exp_iclass]).r_max << std::endl;
-                                                int group_id = mydata.getGroupId(part_id, img_id);
-                                                std::cerr << " mymodel.scale_correction[group_id]= " << mymodel.scale_correction[group_id] << std::endl;
-                                                if (std::isnan(mymodel.scale_correction[group_id]))
-                                                {
-                                                    for (int i=0; i < mymodel.scale_correction.size(); i++)
-                                                        std::cerr << " i= " << i << " mymodel.scale_correction[i]= " << mymodel.scale_correction[i] << std::endl;
-                                                }
-                                                std::cerr << " group_id= " << group_id << std::endl;
-                                                Image<RFLOAT> It;
-                                                std::cerr << "Frefctf shape= "; Frefctf.printShape(std::cerr);
-                                                MultidimArray<Complex> Fish;
-                                                Fish.resize(exp_local_Minvsigma2[img_id]);
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fish)
-                                                {
-                                                    DIRECT_MULTIDIM_ELEM(Fish, n) = *(Fimg_shift + n);
-                                                }
-                                                std::cerr << "Fimg_shift shape= "; (Fish).printShape(std::cerr);
-                                                It()=exp_local_Fctf[img_id];
-                                                It.write("exp_local_Fctf.spi");
-                                                std::cerr << "written exp_local_Fctf.spi" << std::endl;
-                                                FourierTransformer transformer;
-                                                Image<RFLOAT> tt;
-                                                int exp_current_image_size;
-                                                if (strict_highres_exp > 0.0)
-                                                    // Use smaller images in both passes and keep a maximum on coarse_size, just like in FREALIGN
-                                                    exp_current_image_size = image_coarse_size[optics_group];
-                                                else if (adaptive_oversampling > 0)
-                                                    // Use smaller images in the first pass, larger ones in the second pass
-                                                    exp_current_image_size = (exp_current_oversampling == 0) ? image_coarse_size[optics_group] : image_current_size[optics_group];
-                                                else
-                                                    exp_current_image_size = image_current_size[optics_group];
-                                                tt().resize(exp_current_image_size, exp_current_image_size);
-                                                transformer.inverseFourierTransform(Fish, tt());
-                                                CenterFFT(tt(),false);
-                                                tt.write("Fimg_shift.spi");
-                                                std::cerr << "written Fimg_shift.spi" << std::endl;
-                                                FourierTransformer transformer2;
-                                                tt().initZeros();
-                                                transformer2.inverseFourierTransform(Frefctf, tt());
-                                                CenterFFT(tt(),false);
-                                                tt.write("Frefctf.spi");
-                                                std::cerr << "written Frefctf.spi" << std::endl;
-                                                FourierTransformer transformer3;
-                                                tt().initZeros();
-                                                transformer3.inverseFourierTransform(Fref, tt());
-                                                CenterFFT(tt(),false);
-                                                tt.write("Fref.spi");
-                                                std::cerr << "written Fref.spi" << std::endl;
-                                                std::cerr << " A= " << A << std::endl;
-                                                std::cerr << "written Frefctf.spi" << std::endl;
-
-                                                std::cerr << " exp_iclass= " << exp_iclass << std::endl;
-                                                Fref.resize(exp_local_Minvsigma2[img_id]);
-                                                (mymodel.PPref[exp_iclass]).get2DFourierTransform(Fref, A);
-                                                transformer3.inverseFourierTransform(Fref, tt());
-                                                CenterFFT(tt(),false);
-                                                tt.write("Fref2.spi");
-                                                std::cerr << "written Fref2.spi" << std::endl;
-                                                Image<RFLOAT> Itt;
-                                                Itt().resize(ZSIZE(mymodel.PPref[exp_iclass].data), YSIZE(mymodel.PPref[exp_iclass].data), XSIZE(mymodel.PPref[exp_iclass].data));
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Itt())
-                                                {
-                                                    DIRECT_MULTIDIM_ELEM(Itt(), n) = abs(DIRECT_MULTIDIM_ELEM(mymodel.PPref[exp_iclass].data, n));
-                                                }
-                                                Itt.write("PPref_data.spi");
-                                                REPORT_ERROR("diff2 is not a number");
-                                                pthread_mutex_unlock(&global_mutex);
-                                                exit(0);
+                                                for (int i=0; i < mymodel.scale_correction.size(); i++)
+                                                    std::cerr << " i= " << i << " mymodel.scale_correction[i]= " << mymodel.scale_correction[i] << std::endl;
                                             }
+                                            std::cerr << " group_id= " << group_id << std::endl;
+                                            Image<RFLOAT> It;
+                                            std::cerr << "Frefctf shape= "; Frefctf.printShape(std::cerr);
+                                            MultidimArray<Complex> Fish;
+                                            Fish.resize(exp_local_Minvsigma2[img_id]);
+                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fish)
+                                            {
+                                                DIRECT_MULTIDIM_ELEM(Fish, n) = *(Fimg_shift + n);
+                                            }
+                                            std::cerr << "Fimg_shift shape= "; (Fish).printShape(std::cerr);
+                                            It()=exp_local_Fctf[img_id];
+                                            It.write("exp_local_Fctf.spi");
+                                            std::cerr << "written exp_local_Fctf.spi" << std::endl;
+                                            FourierTransformer transformer;
+                                            Image<RFLOAT> tt;
+                                            int exp_current_image_size;
+                                            if (strict_highres_exp > 0.0)
+                                                // Use smaller images in both passes and keep a maximum on coarse_size, just like in FREALIGN
+                                                exp_current_image_size = image_coarse_size[optics_group];
+                                            else if (adaptive_oversampling > 0)
+                                                // Use smaller images in the first pass, larger ones in the second pass
+                                                exp_current_image_size = (exp_current_oversampling == 0) ? image_coarse_size[optics_group] : image_current_size[optics_group];
+                                            else
+                                                exp_current_image_size = image_current_size[optics_group];
+                                            tt().resize(exp_current_image_size, exp_current_image_size);
+                                            transformer.inverseFourierTransform(Fish, tt());
+                                            CenterFFT(tt(),false);
+                                            tt.write("Fimg_shift.spi");
+                                            std::cerr << "written Fimg_shift.spi" << std::endl;
+                                            FourierTransformer transformer2;
+                                            tt().initZeros();
+                                            transformer2.inverseFourierTransform(Frefctf, tt());
+                                            CenterFFT(tt(),false);
+                                            tt.write("Frefctf.spi");
+                                            std::cerr << "written Frefctf.spi" << std::endl;
+                                            FourierTransformer transformer3;
+                                            tt().initZeros();
+                                            transformer3.inverseFourierTransform(Fref, tt());
+                                            CenterFFT(tt(),false);
+                                            tt.write("Fref.spi");
+                                            std::cerr << "written Fref.spi" << std::endl;
+                                            std::cerr << " A= " << A << std::endl;
+                                            std::cerr << "written Frefctf.spi" << std::endl;
+
+                                            std::cerr << " exp_iclass= " << exp_iclass << std::endl;
+                                            Fref.resize(exp_local_Minvsigma2[img_id]);
+                                            (mymodel.PPref[exp_iclass]).get2DFourierTransform(Fref, A);
+                                            transformer3.inverseFourierTransform(Fref, tt());
+                                            CenterFFT(tt(),false);
+                                            tt.write("Fref2.spi");
+                                            std::cerr << "written Fref2.spi" << std::endl;
+                                            Image<RFLOAT> Itt;
+                                            Itt().resize(ZSIZE(mymodel.PPref[exp_iclass].data), YSIZE(mymodel.PPref[exp_iclass].data), XSIZE(mymodel.PPref[exp_iclass].data));
+                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Itt())
+                                            {
+                                                DIRECT_MULTIDIM_ELEM(Itt(), n) = abs(DIRECT_MULTIDIM_ELEM(mymodel.PPref[exp_iclass].data, n));
+                                            }
+                                            Itt.write("PPref_data.spi");
+                                            REPORT_ERROR("diff2 is not a number");
+                                            pthread_mutex_unlock(&global_mutex);
+                                            exit(0);
+                                        }
 #endif
 //#define DEBUG_VERBOSE
 #ifdef DEBUG_VERBOSE
-                                            pthread_mutex_lock(&global_mutex);
-                                            std::cout <<" name= "<< mydata.particles[part_id].images[img_id].name << " rot= " << oversampled_rot[iover_rot] << " tilt= "<< oversampled_tilt[iover_rot] << " psi= " << oversampled_psi[iover_rot] << std::endl;
-                                            std::cout <<" name= "<< mydata.particles[part_id].images[img_id].name << " ihidden_over= " << ihidden_over << " diff2= " << diff2 << " exp_min_diff2= " << exp_min_diff2 << std::endl;
-                                            pthread_mutex_unlock(&global_mutex);
+                                        pthread_mutex_lock(&global_mutex);
+                                        std::cout <<" name= "<< mydata.particles[part_id].images[img_id].name << " rot= " << oversampled_rot[iover_rot] << " tilt= "<< oversampled_tilt[iover_rot] << " psi= " << oversampled_psi[iover_rot] << std::endl;
+                                        std::cout <<" name= "<< mydata.particles[part_id].images[img_id].name << " ihidden_over= " << ihidden_over << " diff2= " << diff2 << " exp_min_diff2= " << exp_min_diff2 << std::endl;
+                                        pthread_mutex_unlock(&global_mutex);
 #endif
 #ifdef DEBUG_CHECKSIZES
-                                            if (ihidden_over >= XSIZE(exp_Mweight) )
-                                            {
-                                                std::cerr<< " exp_nr_oversampled_trans="<<exp_nr_oversampled_trans<<std::endl;
-                                                std::cerr<< " exp_nr_oversampled_rot="<<exp_nr_oversampled_rot<<std::endl;
-                                                std::cerr << " iover_rot= " << iover_rot << " iover_trans= " << iover_trans << " ihidden= " << ihidden << std::endl;
-                                                std::cerr << " exp_current_oversampling= " << exp_current_oversampling << std::endl;
-                                                std::cerr << " exp_itrans_min= " << exp_itrans_min <<" exp_nr_trans= " << exp_nr_trans << std::endl;
-                                                std::cerr << " exp_itrans_max= " << exp_itrans_max << " iorientclass= " << iorientclass << " itrans= " << itrans << std::endl;
-                                                std::cerr << " exp_nr_dir= " << exp_nr_dir << " exp_idir_min= " << exp_idir_min << " exp_idir_max= " << exp_idir_max << std::endl;
-                                                std::cerr << " exp_nr_psi= " << exp_nr_psi << " exp_ipsi_min= " << exp_ipsi_min << " exp_ipsi_max= " << exp_ipsi_max << std::endl;
-                                                std::cerr << " exp_iclass= " << exp_iclass << std::endl;
-                                                std::cerr << " iorient= " << iorient << std::endl;
-                                                std::cerr << " ihidden_over= " << ihidden_over << " XSIZE(Mweight)= " << XSIZE(exp_Mweight) << std::endl;
-                                                REPORT_ERROR("ihidden_over >= XSIZE(Mweight)");
-                                            }
+                                        if (ihidden_over >= XSIZE(exp_Mweight) )
+                                        {
+                                            std::cerr<< " exp_nr_oversampled_trans="<<exp_nr_oversampled_trans<<std::endl;
+                                            std::cerr<< " exp_nr_oversampled_rot="<<exp_nr_oversampled_rot<<std::endl;
+                                            std::cerr << " iover_rot= " << iover_rot << " iover_trans= " << iover_trans << " ihidden= " << ihidden << std::endl;
+                                            std::cerr << " exp_current_oversampling= " << exp_current_oversampling << std::endl;
+                                            std::cerr << " exp_itrans_min= " << exp_itrans_min <<" exp_nr_trans= " << exp_nr_trans << std::endl;
+                                            std::cerr << " exp_itrans_max= " << exp_itrans_max << " iorientclass= " << iorientclass << " itrans= " << itrans << std::endl;
+                                            std::cerr << " exp_nr_dir= " << exp_nr_dir << " exp_idir_min= " << exp_idir_min << " exp_idir_max= " << exp_idir_max << std::endl;
+                                            std::cerr << " exp_nr_psi= " << exp_nr_psi << " exp_ipsi_min= " << exp_ipsi_min << " exp_ipsi_max= " << exp_ipsi_max << std::endl;
+                                            std::cerr << " exp_iclass= " << exp_iclass << std::endl;
+                                            std::cerr << " iorient= " << iorient << std::endl;
+                                            std::cerr << " ihidden_over= " << ihidden_over << " XSIZE(Mweight)= " << XSIZE(exp_Mweight) << std::endl;
+                                            REPORT_ERROR("ihidden_over >= XSIZE(Mweight)");
+                                        }
 #endif
-                                            DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) = diff2;
+                                        DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) = diff2;
 
-                                            // Keep track of minimum of all diff2, only for the last image in this series
-                                            if (diff2 < exp_min_diff2[img_id])
+                                        // Keep track of minimum of all diff2, only for the last image in this series
+                                        if (diff2 < exp_min_diff2[img_id]) {
+                                            exp_min_diff2[img_id] = diff2;
+                                            /*
+                                            if (part_id == 0)
                                             {
-                                                exp_min_diff2[img_id] = diff2;
-                                                /*
-                                                if (part_id == 0)
-                                                {
-                                                    std::cerr << " part_id= " << part_id << " ihidden_over= " << ihidden_over << " diff2= " << diff2
-                                                    << " x= " << oversampled_translations_x[iover_trans] << " y=" <<oversampled_translations_y[iover_trans]
-                                                    << " iover_trans= "<<iover_trans << "Xi2= " << exp_highres_Xi2_img[img_id] << " Minv_sigma2= " << DIRECT_MULTIDIM_ELEM(exp_local_Minvsigma2[img_id], 10)
-                                                    << " xsize= " << XSIZE(Frefctf)
-                                                    << " Frefctf= " << (DIRECT_MULTIDIM_ELEM(Frefctf, 10)).real
-                                                    << " Fimgshift= " << (*(Fimg_shift + 10)).real
-                                                    << std::endl;
-                                                 }
-                                                 */
-                                            }
-
-                                        } // end loop iover_trans
-                                    } // end if do_proceed translations
-                                } // end loop itrans
-                            } // end loop img_id
-                        }// end loop iover_rot
-                    } // end if do_proceed orientations
-                } // end loop ipsi
-            } // end loop idir
-        } // end if mymodel.pdf_class[iclass] > 0.
-    } // end loop iclass
+                                                std::cerr << " part_id= " << part_id << " ihidden_over= " << ihidden_over << " diff2= " << diff2
+                                                << " x= " << oversampled_translations_x[iover_trans] << " y=" <<oversampled_translations_y[iover_trans]
+                                                << " iover_trans= "<<iover_trans << "Xi2= " << exp_highres_Xi2_img[img_id] << " Minv_sigma2= " << DIRECT_MULTIDIM_ELEM(exp_local_Minvsigma2[img_id], 10)
+                                                << " xsize= " << XSIZE(Frefctf)
+                                                << " Frefctf= " << (DIRECT_MULTIDIM_ELEM(Frefctf, 10)).real
+                                                << " Fimgshift= " << (*(Fimg_shift + 10)).real
+                                                << std::endl;
+                                                }
+                                                */
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 #ifdef TIMING
     if (part_id == mydata.sorted_idx[exp_my_first_part_id])
@@ -6510,24 +6124,24 @@ void MlOptimiser::getAllSquaredDifferences(long int part_id, int ibody,
 }
 
 
-void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ibody, int exp_ipass,
-        int exp_current_oversampling, int metadata_offset,
-        int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
-        int exp_itrans_min, int exp_itrans_max, int exp_iclass_min, int exp_iclass_max,
-        MultidimArray<RFLOAT> &exp_Mweight, MultidimArray<bool> &exp_Mcoarse_significant,
-        std::vector<RFLOAT> &exp_significant_weight, std::vector<RFLOAT> &exp_sum_weight,
-        std::vector<Matrix1D<RFLOAT> > &exp_old_offset, std::vector<Matrix1D<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
-        std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
-        std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior)
-{
+void MlOptimiser::convertAllSquaredDifferencesToWeights(
+    long int part_id, int ibody, int exp_ipass,
+    int exp_current_oversampling, int metadata_offset,
+    int exp_idir_min,   int exp_idir_max,   int exp_ipsi_min, int exp_ipsi_max,
+    int exp_itrans_min, int exp_itrans_max, int exp_iclass_min, int exp_iclass_max,
+    MultidimArray<RFLOAT> &exp_Mweight, MultidimArray<bool> &exp_Mcoarse_significant,
+    std::vector<RFLOAT> &exp_significant_weight, std::vector<RFLOAT> &exp_sum_weight,
+    std::vector<Matrix1D<RFLOAT> > &exp_old_offset, std::vector<Matrix1D<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
+    std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
+    std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior
+) {
 
-#ifdef TIMING
-    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-    {
+    #ifdef TIMING
+    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
         if (exp_ipass == 0) timer.tic(TIMING_ESP_WEIGHT1);
         else timer.tic(TIMING_ESP_WEIGHT2);
     }
-#endif
+    #endif
 
     // Convert the squared differences into weights
     // Note there is only one weight for each part_id, because a whole series of images is treated as one particle
@@ -6539,49 +6153,44 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
     long int exp_nr_oversampled_rot = sampling.oversamplingFactorOrientations(exp_current_oversampling);
     long int exp_nr_oversampled_trans = sampling.oversamplingFactorTranslations(exp_current_oversampling);
 
-    // Initialising...
+    // Initialise
     exp_sum_weight.clear();
     exp_sum_weight.resize(exp_nr_images, 0.0);
 
-    RFLOAT my_sigma2_offset = (mymodel.nr_bodies > 1) ?
-            mymodel.sigma_offset_bodies[ibody]*mymodel.sigma_offset_bodies[ibody] : mymodel.sigma2_offset;
+    RFLOAT my_sigma2_offset = mymodel.nr_bodies > 1 ?
+        mymodel.sigma_offset_bodies[ibody] * mymodel.sigma_offset_bodies[ibody] : 
+        mymodel.sigma2_offset;
 
-//#define DEBUG_CONVERTDIFF2W
-#ifdef DEBUG_CONVERTDIFF2W
+    // #define DEBUG_CONVERTDIFF2W
+    #ifdef DEBUG_CONVERTDIFF2W
     RFLOAT max_weight = -1.0;
     RFLOAT opt_psi, opt_xoff, opt_yoff;
     int opt_iover_rot, opt_iover_trans, opt_ipsi, opt_itrans;
     long int opt_ihidden, opt_ihidden_over;
-#endif
+    #endif
 
     // loop over all images inside this particle
-    for (int img_id = 0; img_id < exp_nr_images; img_id++)
-    {
+    for (int img_id = 0; img_id < exp_nr_images; img_id++) {
         int my_metadata_offset = metadata_offset + img_id;
         RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, img_id);
 
         RFLOAT exp_thisimage_sumweight = 0.0;
         RFLOAT old_offset_x, old_offset_y, old_offset_z;
-        if (mymodel.nr_bodies > 1)
-        {
+        if (mymodel.nr_bodies > 1) {
             old_offset_x = old_offset_y = old_offset_z = 0.0;
-        }
-        else
-        {
+        } else {
             old_offset_x = XX(exp_old_offset[img_id]);
             old_offset_y = YY(exp_old_offset[img_id]);
             if (mymodel.data_dim == 3)
-                old_offset_z = ZZ(exp_old_offset[img_id]);
+            old_offset_z = ZZ(exp_old_offset[img_id]);
         }
 
-        if ((iter == 1 && do_firstiter_cc) || do_always_cc)
-        {
+        if (iter == 1 && do_firstiter_cc || do_always_cc) {
             // Binarize the squared differences array to skip marginalisation
             RFLOAT mymindiff2 = 99.e10;
             long int myminidx = -1;
             // Find the smallest element in this row of exp_Mweight
-            for (long int i = 0; i < XSIZE(exp_Mweight); i++)
-            {
+            for (long int i = 0; i < XSIZE(exp_Mweight); i++) {
 
                 RFLOAT cc = DIRECT_A2D_ELEM(exp_Mweight, img_id, i);
                 // ignore non-determined cc
@@ -6589,68 +6198,56 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
                     continue;
 
                 // just search for the maximum
-                if (cc < mymindiff2)
-                {
+                if (cc < mymindiff2) {
                     mymindiff2 = cc;
                     myminidx = i;
                 }
             }
             // Set all except for the best hidden variable to zero and the smallest element to 1
             for (long int i = 0; i < XSIZE(exp_Mweight); i++)
-                DIRECT_A2D_ELEM(exp_Mweight, img_id, i)= 0.0;
+                DIRECT_A2D_ELEM(exp_Mweight, img_id, i) = 0.0;
 
-            DIRECT_A2D_ELEM(exp_Mweight, img_id, myminidx)= 1.0;
+            DIRECT_A2D_ELEM(exp_Mweight, img_id, myminidx) = 1.0;
             exp_thisimage_sumweight += 1.0;
 
-        }
-        else
-        {
+        } else {
             // Extra normalization
-            RFLOAT pdf_orientation_mean(0),pdf_offset_mean(0);
+            RFLOAT pdf_orientation_mean(0), pdf_offset_mean(0);
             unsigned long pdf_orientation_count(0), pdf_offset_count(0);
-            for (int exp_iclass = exp_iclass_min; exp_iclass <= exp_iclass_max; exp_iclass++)
-            {
+            for (int exp_iclass = exp_iclass_min; exp_iclass <= exp_iclass_max; exp_iclass++) {
+
                 for (long int idir = exp_idir_min, iorient = 0; idir <= exp_idir_max; idir++)
-                    for (long int ipsi = exp_ipsi_min; ipsi <= exp_ipsi_max; ipsi++, iorient++)
-                    {
-                        if (do_skip_align || do_skip_rotate)
-                            pdf_orientation_mean += mymodel.pdf_class[exp_iclass];
-                        else if (mymodel.orientational_prior_mode == NOPRIOR)
-                            pdf_orientation_mean += DIRECT_MULTIDIM_ELEM(mymodel.pdf_direction[exp_iclass], idir);
-                        else
-                            pdf_orientation_mean += exp_directions_prior[idir] * exp_psi_prior[ipsi];
-                        pdf_orientation_count++;
-                    }
+                for (long int ipsi = exp_ipsi_min; ipsi <= exp_ipsi_max; ipsi++, iorient++) {
+                    pdf_orientation_mean += 
+                        do_skip_align || do_skip_rotate ? mymodel.pdf_class[exp_iclass] : 
+                        mymodel.orientational_prior_mode == NOPRIOR ? DIRECT_MULTIDIM_ELEM(mymodel.pdf_direction[exp_iclass], idir) :
+                        exp_directions_prior[idir] * exp_psi_prior[ipsi];
+                    pdf_orientation_count++;
+                }
 
                 RFLOAT myprior_x, myprior_y, myprior_z;
-                if (mymodel.nr_bodies > 1)
-                {
+                if (mymodel.nr_bodies > 1) {
                     myprior_x = myprior_y = myprior_z = 0.0;
                 }
-                else if (mymodel.ref_dim == 2 && !do_helical_refine)
-                {
+                else if (mymodel.ref_dim == 2 && !do_helical_refine) {
                     myprior_x = XX(mymodel.prior_offset_class[exp_iclass]);
                     myprior_y = YY(mymodel.prior_offset_class[exp_iclass]);
-                }
-                else
-                {
+                } else {
                     myprior_x = XX(exp_prior[img_id]);
                     myprior_y = YY(exp_prior[img_id]);
                     if (mymodel.data_dim == 3)
-                        myprior_z = ZZ(exp_prior[img_id]);
+                    myprior_z = ZZ(exp_prior[img_id]);
                 }
-                for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++)
-                {
+                for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++) {
                     RFLOAT offset_x = old_offset_x + sampling.translations_x[itrans];
                     RFLOAT offset_y = old_offset_y + sampling.translations_y[itrans];
                     RFLOAT tdiff2 = 0.0;
-                    if ( (!do_helical_refine) || (ignore_helical_symmetry) || (mymodel.data_dim == 3) )
+                    if (!do_helical_refine || ignore_helical_symmetry || mymodel.data_dim == 3)
                         tdiff2 += (offset_x - myprior_x) * (offset_x - myprior_x);
                     tdiff2 += (offset_y - myprior_y) * (offset_y - myprior_y);
-                    if (mymodel.data_dim == 3)
-                    {
+                    if (mymodel.data_dim == 3) {
                         RFLOAT offset_z = old_offset_z + sampling.translations_z[itrans];
-                        if ( (!do_helical_refine) || (ignore_helical_symmetry) )
+                        if (!do_helical_refine || ignore_helical_symmetry)
                             tdiff2 += (offset_z - myprior_z) * (offset_z - myprior_z);
                     }
                     // As of version 3.1, sigma_offsets are in Angstroms!
@@ -6659,55 +6256,39 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
                     // P(offset|sigma2_offset)
                     // This is the probability of the offset, given the model offset and variance.
                     RFLOAT pdf_offset;
-                    if (my_sigma2_offset < 0.0001)
-                        pdf_offset_mean += ( tdiff2 > 0.0) ? 0. : 1.0;
-                    else
-                        pdf_offset_mean += exp ( tdiff2 / (-2. * my_sigma2_offset) ) / ( 2. * PI * my_sigma2_offset );
-                    pdf_offset_count ++;
+                    pdf_offset_mean += my_sigma2_offset < 0.0001 ? (tdiff2 > 0.0 ? 0.0 : 1.0) : exp(tdiff2 / (-2.0 * my_sigma2_offset)) / (2.0 * PI * my_sigma2_offset);
+                    pdf_offset_count++;
                 }
             }
             pdf_orientation_mean /= (RFLOAT) pdf_orientation_count;
-            pdf_offset_mean /= (RFLOAT) pdf_offset_count;
+            pdf_offset_mean      /= (RFLOAT) pdf_offset_count;
             // Loop from iclass_min to iclass_max to deal with seed generation in first iteration
-            for (int exp_iclass = exp_iclass_min; exp_iclass <= exp_iclass_max; exp_iclass++)
-            {
+            for (int exp_iclass = exp_iclass_min; exp_iclass <= exp_iclass_max; exp_iclass++) {
 
                 // Make PdfOffset calculation much faster...
                 RFLOAT myprior_x, myprior_y, myprior_z;
-                if (mymodel.nr_bodies > 1)
-                {
+                if (mymodel.nr_bodies > 1) {
                     myprior_x = myprior_y = myprior_z = 0.0;
-                }
-                else if (mymodel.ref_dim == 2)
-                {
+                } else if (mymodel.ref_dim == 2) {
                     myprior_x = XX(mymodel.prior_offset_class[exp_iclass]);
                     myprior_y = YY(mymodel.prior_offset_class[exp_iclass]);
-                }
-                else
-                {
+                } else {
                     myprior_x = XX(exp_prior[img_id]);
                     myprior_y = YY(exp_prior[img_id]);
                     if (mymodel.data_dim == 3)
-                        myprior_z = ZZ(exp_prior[img_id]);
+                    myprior_z = ZZ(exp_prior[img_id]);
                 }
-                for (long int idir = exp_idir_min, iorient = 0; idir <= exp_idir_max; idir++)
-                {
-                    for (long int ipsi = exp_ipsi_min; ipsi <= exp_ipsi_max; ipsi++, iorient++)
-                    {
+                for (long int idir = exp_idir_min, iorient = 0; idir <= exp_idir_max; idir++) {
+                    for (long int ipsi = exp_ipsi_min; ipsi <= exp_ipsi_max; ipsi++, iorient++) {
                         long int iorientclass = exp_iclass * exp_nr_dir * exp_nr_psi + iorient;
                         RFLOAT pdf_orientation;
 
                         // Get prior for this direction
-                        if (do_skip_align || do_skip_rotate)
-                        {
+                        if (do_skip_align || do_skip_rotate) {
                             pdf_orientation = mymodel.pdf_class[exp_iclass];
-                        }
-                        else if (mymodel.orientational_prior_mode == NOPRIOR)
-                        {
+                        } else if (mymodel.orientational_prior_mode == NOPRIOR) {
                             pdf_orientation = DIRECT_MULTIDIM_ELEM(mymodel.pdf_direction[exp_iclass], idir);
-                        }
-                        else
-                        {
+                        } else {
                             // P(orientation) = P(idir|dir_prior) * P(ipsi|psi_prior)
                             // This is the probability of the orientation, given the gathered
                             // statistics of all assigned orientations of the dataset, since we
@@ -6720,16 +6301,14 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
 
                         // Loop over all translations
                         long int ihidden = iorientclass * exp_nr_trans;
-                        for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++)
-                        {
-                            // May18,2015 - Shaoda & Sjors - Helical refinement (translational searches)
+                        for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++) {
+                            // 18 May 2015 - Shaoda & Sjors - Helical refinement (translational searches)
                             // Calculate the vector length of myprior
                             RFLOAT mypriors_len2 = myprior_x * myprior_x + myprior_y * myprior_y;
                             if (mymodel.data_dim == 3)
                                 mypriors_len2 += myprior_z * myprior_z;
                             // If it is doing helical refinement AND Cartesian vector myprior has a length > 0, transform the vector to its helical coordinates
-                            if ( (do_helical_refine) && (!ignore_helical_symmetry) && (mypriors_len2 > 0.00001) )
-                            {
+                            if (do_helical_refine && !ignore_helical_symmetry && mypriors_len2 > 0.00001) {
                                 RFLOAT rot_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
                                 RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
                                 RFLOAT psi_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
@@ -6742,13 +6321,12 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
                             RFLOAT offset_x = old_offset_x + sampling.translations_x[itrans];
                             RFLOAT offset_y = old_offset_y + sampling.translations_y[itrans];
                             RFLOAT tdiff2 = 0.0;
-                            if ( (!do_helical_refine) || (ignore_helical_symmetry) || (mymodel.data_dim == 3) )
+                            if (!do_helical_refine || ignore_helical_symmetry || mymodel.data_dim == 3)
                                 tdiff2 += (offset_x - myprior_x) * (offset_x - myprior_x);
                             tdiff2 += (offset_y - myprior_y) * (offset_y - myprior_y);
-                            if (mymodel.data_dim == 3)
-                            {
+                            if (mymodel.data_dim == 3) {
                                 RFLOAT offset_z = old_offset_z + sampling.translations_z[itrans];
-                                if ( (!do_helical_refine) || (ignore_helical_symmetry) )
+                                if (!do_helical_refine || ignore_helical_symmetry)
                                     tdiff2 += (offset_z - myprior_z) * (offset_z - myprior_z);
                             }
 
@@ -6757,62 +6335,51 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
 
                             // P(offset|sigma2_offset)
                             // This is the probability of the offset, given the model offset and variance.
-                            RFLOAT pdf_offset;
-                            if (my_sigma2_offset < 0.0001)
-                                pdf_offset = ( tdiff2 > 0.0) ? 0. : 1.0;
-                            else
-                                pdf_offset = exp ( tdiff2 / (-2. * my_sigma2_offset) ) / ( 2. * PI * my_sigma2_offset );
+                            RFLOAT pdf_offset = my_sigma2_offset < 0.0001 ? (tdiff2 > 0.0 ? 0.0 : 1.0) : exp(tdiff2 / (-2.0 * my_sigma2_offset)) / (2.0 * PI * my_sigma2_offset);
 
                             if (pdf_offset_mean > 0.0)
                                 pdf_offset /= pdf_offset_mean;
 
-#ifdef TIMING
+                            #ifdef TIMING
                             // Only time one thread, as I also only time one MPI process
                             if (part_id == mydata.sorted_idx[exp_my_first_part_id])
                                 timer.tic(TIMING_WEIGHT_EXP);
-#endif
+                            #endif
                             // Now first loop over iover_rot, because that is the order in exp_Mweight as well
                             long int ihidden_over = ihidden * exp_nr_oversampled_rot * exp_nr_oversampled_trans;
-                            for (long int iover_rot = 0; iover_rot < exp_nr_oversampled_rot; iover_rot++)
-                            {
+                            for (long int iover_rot = 0; iover_rot < exp_nr_oversampled_rot; iover_rot++) {
                                 // Then loop over iover_trans
-                                for (long int iover_trans = 0; iover_trans < exp_nr_oversampled_trans; iover_trans++, ihidden_over++)
-                                {
+                                for (long int iover_trans = 0; iover_trans < exp_nr_oversampled_trans; iover_trans++, ihidden_over++) {
                                     // Only exponentiate for determined values of exp_Mweight
                                     // (this is always true in the first pass, but not so in the second pass)
                                     // Only deal with this sampling point if its weight was significant
-                                    if (DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) < 0.0)
-                                    {
+                                    if (DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) < 0.0) {
                                         DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) = 0.0;
-                                    }
-                                    else
-                                    {
+                                    } else {
                                         // Set the weight base to the probability of the parameters given the prior
                                         RFLOAT weight = pdf_orientation * pdf_offset;
                                         RFLOAT diff2 = DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) - exp_min_diff2[img_id];
                                         // next line because of numerical precision of exp-function
-#ifdef RELION_SINGLE_PRECISION
+                                        #ifdef RELION_SINGLE_PRECISION
                                         if (diff2 > 88.0)
                                             weight = 0.0;
-#else
+                                        #else
                                         if (diff2 > 700.0)
                                             weight = 0.0;
-#endif
+                                        #endif
                                         // TODO: use tabulated exp function?
                                         else weight *= exp(-diff2);
 
-
                                         //std::cerr << "ihidden_over= "<<ihidden_over << " weight= " << weight << " diff2= " << diff2
                                         //		<< " pdf_orientation= " << pdf_orientation << " pdf_offset= " << pdf_offset<< std::endl;
-//#define DEBUG_PSIANGLE_PDISTRIBUTION
-#ifdef DEBUG_PSIANGLE_PDISTRIBUTION
-                                        std::cout << ipsi*360./sampling.NrPsiSamplings() << " "<< weight << std::endl;
-#endif
+                                        //#define DEBUG_PSIANGLE_PDISTRIBUTION
+                                        #ifdef DEBUG_PSIANGLE_PDISTRIBUTION
+                                        std::cout << ipsi * 360.0 / sampling.NrPsiSamplings() << " " << weight << std::endl;
+                                        #endif
                                         // Store the weight
                                         DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) = weight;
-#ifdef DEBUG_CHECKSIZES
-                                        if (std::isnan(weight))
-                                        {
+                                        #ifdef DEBUG_CHECKSIZES
+                                        if (std::isnan(weight)) {
                                             pthread_mutex_lock(&global_mutex);
                                             std::cerr<< "weight= "<<weight<<" is not a number! " <<std::endl;
                                             std::cerr << " exp_min_diff2= " << exp_min_diff2 << std::endl;
@@ -6821,48 +6388,42 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
                                             REPORT_ERROR("weight is not a number");
                                             pthread_mutex_unlock(&global_mutex);
                                         }
-#endif
+                                        #endif
                                         // Keep track of sum and maximum of all weights for this particle
                                         // Later add all to exp_thisimage_sumweight, but inside this loop sum to local thisthread_sumweight first
                                         exp_thisimage_sumweight += weight;
-                                    } // end if/else exp_Mweight < 0.
-                                } // end loop iover_trans
-                            }// end loop iover_rot
-#ifdef TIMING
+                                    }
+                                }
+                            }
+                            #ifdef TIMING
                             // Only time one thread, as I also only time one MPI process
                             if (part_id == mydata.sorted_idx[exp_my_first_part_id])
                                 timer.toc(TIMING_WEIGHT_EXP);
-#endif
-                        } // end loop itrans
-                    } // end loop ipsi
-                } // end loop idir
-            } // end loop exp_iclass
-        } // end if iter==1
+                            #endif
+                        }
+                    }
+                }
+            }
+        }
 
         //Store parameters for this image
         exp_sum_weight[img_id] = exp_thisimage_sumweight;
 
         // Check the sum of weights is not zero
-// On a Mac, the isnan function does not compile. Just uncomment the define statement, as this is merely a debugging statement
-//#define MAC_OSX
-#ifndef MAC_OSX
-        if (exp_thisimage_sumweight == 0. || std::isnan(exp_thisimage_sumweight))
-        {
+        // On a Mac, the isnan function does not compile. Just uncomment the define statement, as this is merely a debugging statement
+        // #define MAC_OSX
+        #ifndef MAC_OSX
+        if (exp_thisimage_sumweight == 0. || std::isnan(exp_thisimage_sumweight)) {
             std::cerr << " exp_thisimage_sumweight= " << exp_thisimage_sumweight << std::endl;
             Image<RFLOAT> It;
             It() = exp_Mweight;
             It.write("Mweight.spi");
-            //It() = DEBUGGING_COPY_exp_Mweight;
-            //It.write("Mweight_copy.spi");
+            // It() = DEBUGGING_COPY_exp_Mweight;
+            // It.write("Mweight_copy.spi");
             It().resize(exp_Mcoarse_significant);
-            if (MULTIDIM_SIZE(It()) > 0)
-            {
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It())
-                {
-                    if (DIRECT_MULTIDIM_ELEM(exp_Mcoarse_significant, n))
-                        DIRECT_MULTIDIM_ELEM(It(), n) = 1.0;
-                    else
-                        DIRECT_MULTIDIM_ELEM(It(), n) = 0.0;
+            if (MULTIDIM_SIZE(It()) > 0) {
+                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
+                    DIRECT_MULTIDIM_ELEM(It(), n) = DIRECT_MULTIDIM_ELEM(exp_Mcoarse_significant, n) ? 1.0 : 0.0;
                 }
                 It.write("Mcoarse_significant.spi");
             }
@@ -6882,13 +6443,12 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
             std::cerr << " group_id= " << group_id << " mymodel.scale_correction[group_id]= " << mymodel.scale_correction[group_id] << std::endl;
             std::cerr << " exp_ipass= " << exp_ipass << std::endl;
             std::cerr << " sampling.NrDirections(0, true)= " << sampling.NrDirections()
-                    << " sampling.NrDirections(0, false)= " << sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior) << std::endl;
+                      << " sampling.NrDirections(0, false)= " << sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior) << std::endl;
             std::cerr << " sampling.NrPsiSamplings(0, true)= " << sampling.NrPsiSamplings()
-                    << " sampling.NrPsiSamplings(0, false)= " << sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior) << std::endl;
+                      << " sampling.NrPsiSamplings(0, false)= " << sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior) << std::endl;
             std::cerr << " mymodel.sigma2_noise[group_id]= " << mymodel.sigma2_noise[group_id] << std::endl;
             //std::cerr << " wsum_model.sigma2_noise[group_id]= " << wsum_model.sigma2_noise[group_id] << std::endl;
-            if (do_norm_correction)
-            {
+            if (do_norm_correction) {
                 std::cerr << " mymodel.avg_norm_correction= " << mymodel.avg_norm_correction << std::endl;
                 std::cerr << " wsum_model.avg_norm_correction= " << wsum_model.avg_norm_correction << std::endl;
             }
@@ -6898,36 +6458,32 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
             std::cerr << " exp_min_diff2[img_id]= " << exp_min_diff2[img_id] << std::endl;
             REPORT_ERROR("ERROR!!! zero sum of weights....");
         }
-#endif
-
-    } //end loop img_id
+        #endif
+    }
 
     // Initialise exp_Mcoarse_significant
-    if (exp_ipass==0)
+    if (exp_ipass == 0)
         exp_Mcoarse_significant.resize(exp_nr_images, XSIZE(exp_Mweight));
 
     // Now, for each image,  find the exp_significant_weight that encompasses adaptive_fraction of exp_sum_weight
     exp_significant_weight.clear();
     exp_significant_weight.resize(exp_nr_images, 0.0);
 
-    for (int img_id = 0; img_id < exp_nr_images; img_id++)
-    {
+    for (int img_id = 0; img_id < exp_nr_images; img_id++) {
 
         int my_metadata_offset = metadata_offset + img_id;
-#ifdef TIMING
+        #ifdef TIMING
         if (part_id == mydata.sorted_idx[exp_my_first_part_id])
             timer.tic(TIMING_WEIGHT_SORT);
-#endif
+        #endif
         MultidimArray<RFLOAT> sorted_weight;
         // Get the relevant row for this particle
         exp_Mweight.getRow(img_id, sorted_weight);
 
         // Only select non-zero probabilities to speed up sorting
         long int np = 0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sorted_weight)
-        {
-            if (DIRECT_MULTIDIM_ELEM(sorted_weight, n) > 0.0)
-            {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sorted_weight) {
+            if (DIRECT_MULTIDIM_ELEM(sorted_weight, n) > 0.0) {
                 DIRECT_MULTIDIM_ELEM(sorted_weight, np) = DIRECT_MULTIDIM_ELEM(sorted_weight, n);
                 np++;
             }
@@ -6937,28 +6493,21 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
         // Sort from low to high values
         sorted_weight.sort();
 
-#ifdef TIMING
+        #ifdef TIMING
         if (part_id == mydata.sorted_idx[exp_my_first_part_id])
             timer.toc(TIMING_WEIGHT_SORT);
-#endif
+        #endif
         RFLOAT frac_weight = 0.0;
         RFLOAT my_significant_weight;
         long int my_nr_significant_coarse_samples = 0;
-        for (long int i = XSIZE(sorted_weight) - 1; i >= 0; i--)
-        {
-            if (maximum_significants > 0 )
-            {
-                if (my_nr_significant_coarse_samples < maximum_significants)
-                {
-                    if (exp_ipass==0)
-                        my_nr_significant_coarse_samples++;
+        for (long int i = XSIZE(sorted_weight) - 1; i >= 0; i--) {
+            if (maximum_significants > 0 ) {
+                if (my_nr_significant_coarse_samples < maximum_significants) {
+                    if (exp_ipass == 0) { my_nr_significant_coarse_samples++; }
                     my_significant_weight = DIRECT_A1D_ELEM(sorted_weight, i);
                 }
-            }
-            else
-            {
-                if (exp_ipass==0)
-                    my_nr_significant_coarse_samples++;
+            } else {
+                if (exp_ipass == 0) { my_nr_significant_coarse_samples++; }
                 my_significant_weight = DIRECT_A1D_ELEM(sorted_weight, i);
             }
             frac_weight += DIRECT_A1D_ELEM(sorted_weight, i);
@@ -6966,14 +6515,11 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
                 break;
         }
 
-
-#ifdef DEBUG_SORT
+        #ifdef DEBUG_SORT
         // Check sorted array is really sorted
         RFLOAT prev = 0.0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sorted_weight)
-        {
-            if (DIRECT_MULTIDIM_ELEM(sorted_weight, n) < prev)
-            {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sorted_weight) {
+            if (DIRECT_MULTIDIM_ELEM(sorted_weight, n) < prev) {
                 Image<RFLOAT> It;
                 It()=sorted_weight;
                 It() *= 10000;
@@ -6981,94 +6527,84 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(long int part_id, int ib
                 std::cerr << "written sorted_weight.spi" << std::endl;
                 REPORT_ERROR("Error in sorting!");
             }
-            prev=DIRECT_MULTIDIM_ELEM(sorted_weight, n);
+            prev = DIRECT_MULTIDIM_ELEM(sorted_weight, n);
         }
-#endif
+        #endif
 
-        if (exp_ipass==0 && my_nr_significant_coarse_samples == 0)
-        {
+        if (exp_ipass == 0 && my_nr_significant_coarse_samples == 0) {
             std::cerr << " part_id= " << part_id << " img_id= " << img_id << " adaptive_fraction= " << adaptive_fraction << std::endl;
             std::cerr << " frac-weight= " << frac_weight << std::endl;
             std::cerr << " exp_sum_weight[img_id]= " << exp_sum_weight[img_id] << std::endl;
-            Image<RFLOAT> It;
             std::cerr << " XSIZE(exp_Mweight)= " << XSIZE(exp_Mweight) << std::endl;
-            It()=exp_Mweight;
+            Image<RFLOAT> It;
+            It() = exp_Mweight;
             It() *= 10000;
             It.write("Mweight2.spi");
             std::cerr << "written Mweight2.spi" << std::endl;
             std::cerr << " np= " << np << std::endl;
-            It()=sorted_weight;
+            It() = sorted_weight;
             It() *= 10000;
             std::cerr << " XSIZE(sorted_weight)= " << XSIZE(sorted_weight) << std::endl;
-            if (XSIZE(sorted_weight) > 0)
-            {
+            if (XSIZE(sorted_weight) > 0) {
                 It.write("sorted_weight.spi");
                 std::cerr << "written sorted_weight.spi" << std::endl;
             }
             REPORT_ERROR("my_nr_significant_coarse_samples == 0");
         }
 
-        if (exp_ipass==0)
-        {
+        if (exp_ipass == 0) {
             // Store nr_significant_coarse_samples for this particle
             // Don't do this for multibody, as it would be overwritten for each body,
             // and we also use METADATA_NR_SIGN in the new safeguard for the gold-standard separation
             if (mymodel.nr_bodies == 1)
-                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_NR_SIGN) = (RFLOAT)my_nr_significant_coarse_samples;
+                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_NR_SIGN) = (RFLOAT) my_nr_significant_coarse_samples;
 
             // Keep track of which coarse samplings were significant were significant for this particle
-            for (int ihidden = 0; ihidden < XSIZE(exp_Mcoarse_significant); ihidden++)
-            {
-                if (DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden) >= my_significant_weight)
-                    DIRECT_A2D_ELEM(exp_Mcoarse_significant, img_id, ihidden) = true;
-                else
-                    DIRECT_A2D_ELEM(exp_Mcoarse_significant, img_id, ihidden) = false;
+            for (int ihidden = 0; ihidden < XSIZE(exp_Mcoarse_significant); ihidden++) {
+                DIRECT_A2D_ELEM(exp_Mcoarse_significant, img_id, ihidden) = DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden) >= my_significant_weight;
             }
 
         }
         exp_significant_weight[img_id] = my_significant_weight;
-
-    } // end loop img_id
-
-#ifdef TIMING
-    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-    {
-        if (exp_ipass == 0) timer.toc(TIMING_ESP_WEIGHT1);
-        else timer.toc(TIMING_ESP_WEIGHT2);
     }
-#endif
 
+    #ifdef TIMING
+    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
+        timer.toc(exp_ipass == 0 ? TIMING_ESP_WEIGHT1 : TIMING_ESP_WEIGHT2);
+    }
+    #endif
 }
 
-void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
-        int exp_current_oversampling, int metadata_offset,
-        int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
-        int exp_itrans_min, int exp_itrans_max, int exp_iclass_min, int exp_iclass_max,
-        std::vector<RFLOAT> &exp_min_diff2,
-        std::vector<RFLOAT> &exp_highres_Xi2_img,
-        std::vector<MultidimArray<Complex > > &exp_Fimg,
-        std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
-        std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-        std::vector<MultidimArray<RFLOAT> > &exp_power_img,
-        std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
-        std::vector<Matrix1D<RFLOAT> > &exp_prior,
-        MultidimArray<RFLOAT> &exp_Mweight,
-        MultidimArray<bool> &exp_Mcoarse_significant,
-        std::vector<RFLOAT> &exp_significant_weight,
-        std::vector<RFLOAT> &exp_sum_weight,
-        std::vector<RFLOAT> &exp_max_weight,
-        std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
-        std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
-        std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
-        std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted_nomask,
-        std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
-        std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
-        std::vector<RFLOAT> &exp_local_sqrtXi2)
-{
-#ifdef TIMING
+void MlOptimiser::storeWeightedSums(
+    long int part_id, int ibody,
+    int exp_current_oversampling, int metadata_offset,
+    int exp_idir_min,   int exp_idir_max,   int exp_ipsi_min,   int exp_ipsi_max,
+    int exp_itrans_min, int exp_itrans_max, int exp_iclass_min, int exp_iclass_max,
+    std::vector<RFLOAT> &exp_min_diff2,
+    std::vector<RFLOAT> &exp_highres_Xi2_img,
+    std::vector<MultidimArray<Complex > > &exp_Fimg,
+    std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
+    std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
+    std::vector<MultidimArray<RFLOAT> > &exp_power_img,
+    std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
+    std::vector<Matrix1D<RFLOAT> > &exp_prior,
+    MultidimArray<RFLOAT> &exp_Mweight,
+    MultidimArray<bool> &exp_Mcoarse_significant,
+    std::vector<RFLOAT> &exp_significant_weight,
+    std::vector<RFLOAT> &exp_sum_weight,
+    std::vector<RFLOAT> &exp_max_weight,
+    std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
+    std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
+    std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
+    std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted_nomask,
+    std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
+    std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
+    std::vector<RFLOAT> &exp_local_sqrtXi2
+) {
+    #ifdef TIMING
     if (part_id == mydata.sorted_idx[exp_my_first_part_id])
         timer.tic(TIMING_ESP_WSUM);
-#endif
+    #endif
 
     int exp_nr_images = mydata.numberOfImagesInParticle(part_id);
     long int exp_nr_dir = (do_skip_align || do_skip_rotate) ? 1 : sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior);
@@ -7084,10 +6620,9 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
 
     // In doThreadPrecalculateShiftedImagesCtfsAndInvSigma2s() the origin of the exp_local_Minvsigma2s was omitted.
     // Set those back here
-    for (int img_id = 0; img_id < exp_nr_images; img_id++)
-    {
+    for (int img_id = 0; img_id < exp_nr_images; img_id++) {
         int group_id = mydata.getGroupId(part_id, img_id);
-        DIRECT_MULTIDIM_ELEM(exp_local_Minvsigma2[img_id], 0) = 1. / (sigma2_fudge * DIRECT_A1D_ELEM(mymodel.sigma2_noise[group_id], 0));
+        DIRECT_MULTIDIM_ELEM(exp_local_Minvsigma2[img_id], 0) = 1.0 / (sigma2_fudge * DIRECT_A1D_ELEM(mymodel.sigma2_noise[group_id], 0));
     }
 
     // Initialise the maximum of all weights to a negative value
@@ -7101,8 +6636,7 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
     exp_wsum_norm_correction.resize(exp_nr_images, 0.0);
 
     // For scale_correction
-    if (do_scale_correction)
-    {
+    if (do_scale_correction) {
         exp_wsum_scale_correction_XA.resize(exp_nr_images);
         exp_wsum_scale_correction_AA.resize(exp_nr_images);
         thr_wsum_signal_product_spectra.resize(exp_nr_images);
@@ -7114,15 +6648,13 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
     // Wsum_sigma_noise2 is a 1D-spectrum for each img_id
     thr_wsum_sigma2_noise.resize(exp_nr_images);
 
-    for (int img_id = 0; img_id < exp_nr_images; img_id++)
-    {
+    for (int img_id = 0; img_id < exp_nr_images; img_id++) {
         int optics_group = mydata.getOpticsGroup(part_id, img_id);
         thr_wsum_sigma2_noise[img_id].initZeros(image_full_size[optics_group]/2 + 1);
-        if (do_scale_correction)
-        {
-            exp_wsum_scale_correction_XA[img_id] = 0.0;
-            exp_wsum_scale_correction_AA[img_id] = 0.0;
-            thr_wsum_signal_product_spectra[img_id] = 0.0;
+        if (do_scale_correction) {
+            exp_wsum_scale_correction_XA    [img_id] = 0.0;
+            exp_wsum_scale_correction_AA    [img_id] = 0.0;
+            thr_wsum_signal_product_spectra [img_id] = 0.0;
             thr_wsum_reference_power_spectra[img_id] = 0.0;
         }
     }
@@ -7145,22 +6677,19 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
     // Initialise Minvsigma2 to all-1 for if !do_map
     Minvsigma2.resize(exp_Fimg[0]);
     Minvsigma2.initConstant(1.0);
-    if (do_shifts_onthefly)
-    {
+    if (do_shifts_onthefly) {
         Fimg_otfshift.resize(Frefctf);
         Fimg_otfshift_nomask.resize(Frefctf);
     }
-    if (do_sgd && ! do_avoid_sgd)
-    {
+    if (do_sgd && ! do_avoid_sgd) {
         Fimg_store_sgd.resize(Frefctf);
     }
 
 
-    if (mymodel.nr_bodies > 1)
-    {
-        RFLOAT rot_ori = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
+    if (mymodel.nr_bodies > 1) {
+        RFLOAT rot_ori  = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_ROT);
         RFLOAT tilt_ori = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_TILT);
-        RFLOAT psi_ori = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI);
+        RFLOAT psi_ori  = DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_PSI);
         Euler_angles2matrix(rot_ori, tilt_ori, psi_ori, Aori, false);
     }
 
@@ -7177,8 +6706,7 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
     thr_sumw_group.resize(exp_nr_images, 0.0);
     // wsum_pdf_class is a RFLOAT for each class
     thr_wsum_pdf_class.resize(mymodel.nr_classes, 0.0);
-    if (mymodel.ref_dim == 2)
-    {
+    if (mymodel.ref_dim == 2) {
         thr_wsum_prior_offsetx_class.resize(mymodel.nr_classes, 0.0);
         thr_wsum_prior_offsety_class.resize(mymodel.nr_classes, 0.0);
     }
@@ -7186,615 +6714,538 @@ void MlOptimiser::storeWeightedSums(long int part_id, int ibody,
     thr_wsum_sigma2_offset = 0.0;
 
     // Loop from iclass_min to iclass_max to deal with seed generation in first iteration
-    for (int exp_iclass = exp_iclass_min; exp_iclass <= exp_iclass_max; exp_iclass++)
-    {
-        for (long int idir = exp_idir_min, iorient = 0; idir <= exp_idir_max; idir++)
-        {
-            for (long int ipsi = exp_ipsi_min; ipsi <= exp_ipsi_max; ipsi++, iorient++)
-            {
-                long int iorientclass = exp_iclass * exp_nr_dir * exp_nr_psi + iorient;
+    for (int exp_iclass = exp_iclass_min;            exp_iclass <= exp_iclass_max; exp_iclass++)
+    for (long int idir  = exp_idir_min, iorient = 0; idir <= exp_idir_max;         idir++)
+    for (long int ipsi  = exp_ipsi_min;              ipsi <= exp_ipsi_max;         ipsi++, iorient++) {
+        long int iorientclass = exp_iclass * exp_nr_dir * exp_nr_psi + iorient;
 
-                // Only proceed if there was a significant coarsely sampled translation
-                if (isSignificantAnyImageAnyTranslation(iorientclass, exp_itrans_min, exp_itrans_max, exp_Mcoarse_significant))
-                {
+        // Only proceed if there was a significant coarsely sampled translation
+        if (isSignificantAnyImageAnyTranslation(iorientclass, exp_itrans_min, exp_itrans_max, exp_Mcoarse_significant)) {
 
-                    // Now get the oversampled (rot, tilt, psi) triplets
-                    // This will be only the original (rot,tilt,psi) triplet if (adaptive_oversampling==0)
-                    sampling.getOrientations(idir, ipsi, adaptive_oversampling, oversampled_rot, oversampled_tilt, oversampled_psi,
-                            exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior);
+            // Now get the oversampled (rot, tilt, psi) triplets
+            // This will be only the original (rot,tilt,psi) triplet if (adaptive_oversampling==0)
+            sampling.getOrientations(
+                idir, ipsi, adaptive_oversampling, oversampled_rot, oversampled_tilt, oversampled_psi,
+                exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior
+            );
 
-                    // The order of the looping here has changed for 3.1: different img_id have different optics_group and therefore different applyAnisoMag....
-                    for (int img_id = 0; img_id < exp_nr_images; img_id++)
-                    {
-                        int group_id = mydata.getGroupId(part_id, img_id);
-                        const int optics_group = mydata.getOpticsGroup(part_id, img_id);
-                        int my_metadata_offset = metadata_offset + img_id;
-                        RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, img_id);
-                        bool ctf_premultiplied = mydata.obsModel.getCtfPremultiplied(optics_group);
+            // The order of the looping here has changed for 3.1: different img_id have different optics_group and therefore different applyAnisoMag....
+            for (int img_id = 0; img_id < exp_nr_images; img_id++) {
+                int group_id = mydata.getGroupId(part_id, img_id);
+                const int optics_group = mydata.getOpticsGroup(part_id, img_id);
+                int my_metadata_offset = metadata_offset + img_id;
+                RFLOAT my_pixel_size = mydata.getImagePixelSize(part_id, img_id);
+                bool ctf_premultiplied = mydata.obsModel.getCtfPremultiplied(optics_group);
 
-                        // Loop over all oversampled orientations (only a single one in the first pass)
-                        for (long int iover_rot = 0; iover_rot < exp_nr_oversampled_rot; iover_rot++)
-                        {
-                            rot = oversampled_rot[iover_rot];
-                            tilt = oversampled_tilt[iover_rot];
-                            psi = oversampled_psi[iover_rot];
-                            // Get the Euler matrix
-                            Euler_angles2matrix(rot, tilt, psi, A, false);
+                // Loop over all oversampled orientations (only a single one in the first pass)
+                for (long int iover_rot = 0; iover_rot < exp_nr_oversampled_rot; iover_rot++) {
+                    rot  = oversampled_rot [iover_rot];
+                    tilt = oversampled_tilt[iover_rot];
+                    psi  = oversampled_psi [iover_rot];
+                    // Get the Euler matrix
+                    Euler_angles2matrix(rot, tilt, psi, A, false);
 
 
-                            // For multi-body refinements, A are only 'residual' orientations, Abody is the complete Euler matrix
-                            if (mymodel.nr_bodies > 1)
-                            {
-                                Abody = Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
-                                Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
-                                Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
-                            }
-                            else
-                            {
-                                A = mydata.obsModel.applyAnisoMag(A, optics_group);
-                                A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
-                            }
+                    // For multi-body refinements, A are only 'residual' orientations, Abody is the complete Euler matrix
+                    if (mymodel.nr_bodies > 1) {
+                        Abody = Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
+                        Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
+                        Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                    } else {
+                        A = mydata.obsModel.applyAnisoMag(A, optics_group);
+                        A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                    }
 
-#ifdef TIMING
-                            // Only time one thread, as I also only time one MPI process
-                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                timer.tic(TIMING_WSUM_PROJ);
-#endif
-                            // Project the reference map (into Fref)
-                            if (!do_skip_maximization)
-                            {
-                                if (mymodel.nr_bodies > 1)
-                                {
-                                    mymodel.PPref[ibody].get2DFourierTransform(Fref, Abody);
+                    #ifdef TIMING
+                    // Only time one thread, as I also only time one MPI process
+                    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                        timer.tic(TIMING_WSUM_PROJ);
+                    #endif
+                    // Project the reference map (into Fref)
+                    if (!do_skip_maximization) {
+                        if (mymodel.nr_bodies > 1) {
+                            mymodel.PPref[ibody].get2DFourierTransform(Fref, Abody);
+                        } else {
+                            mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
+                        }
+                    }
+                    #ifdef TIMING
+                    // Only time one thread, as I also only time one MPI process
+                    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                        timer.toc(TIMING_WSUM_PROJ);
+                    #endif
+                    // Inside the loop over all translations and all part_id sum all shift Fimg's and their weights
+                    // Then outside this loop do the actual backprojection
+                    Fimg.initZeros();
+                    Fweight.initZeros();
+
+                    // This is an attempt to speed up illogically slow updates of wsum_sigma2_offset....
+                    // It seems to make a big difference!
+                    RFLOAT myprior_x, myprior_y, myprior_z, old_offset_z;
+                    RFLOAT old_offset_x = XX(exp_old_offset[img_id]);
+                    RFLOAT old_offset_y = YY(exp_old_offset[img_id]);
+                    if (mymodel.ref_dim == 2 && mymodel.nr_bodies == 1) {
+                        myprior_x = XX(mymodel.prior_offset_class[exp_iclass]);
+                        myprior_y = YY(mymodel.prior_offset_class[exp_iclass]);
+                    } else {
+                        myprior_x = XX(exp_prior[img_id]);
+                        myprior_y = YY(exp_prior[img_id]);
+                        if (mymodel.data_dim == 3) {
+                            myprior_z = ZZ(exp_prior[img_id]);
+                            old_offset_z = ZZ(exp_old_offset[img_id]);
+                        }
+                    }
+
+                    if (!do_skip_maximization) {
+                        if (do_map) { Minvsigma2 = exp_local_Minvsigma2[img_id]; }
+                        // else Minvsigma2 was initialised to ones
+                        // Apply CTF to reference projection
+                        if (do_ctf_correction) {
+                            Mctf = exp_local_Fctf[img_id];
+                            if (refs_are_ctf_corrected) {
+                                if (ctf_premultiplied) {
+                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
+                                        DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(Mctf, n) * DIRECT_MULTIDIM_ELEM(Mctf, n);
+                                    }
+                                } else {
+                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
+                                        DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(Mctf, n);
+                                    }
                                 }
-                                else
-                                {
-                                    mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
+                            } else {
+                                Frefctf = Fref;
+                            }
+                        } else {
+                            // initialise because there are multiple particles and Mctf gets selfMultiplied for scale_correction
+                            Mctf.initConstant(1.0);
+                            Frefctf = Fref;
+                        }
+                        if (do_scale_correction) {
+                            RFLOAT myscale = mymodel.scale_correction[group_id];
+                            if (myscale > 10000.0) {
+                                std::cerr << " rlnMicrographScaleCorrection= " << myscale << " group= " << group_id + 1 << std::endl;
+                                REPORT_ERROR("ERROR: rlnMicrographScaleCorrection is very high. Did you normalize your data?");
+                            }
+                            else if (myscale < 0.001) {
+                                if (!have_warned_small_scale) {
+                                    std::cout << " WARNING: ignoring group " << group_id + 1 
+                                    << " with very small or negative scale (" << myscale << ");"
+                                    << " Use larger groups for more stable scale estimates." << std::endl;
+                                    have_warned_small_scale = true;
                                 }
+                                myscale = 0.001;
                             }
-#ifdef TIMING
-                            // Only time one thread, as I also only time one MPI process
-                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                timer.toc(TIMING_WSUM_PROJ);
-#endif
-                            // Inside the loop over all translations and all part_id sum all shift Fimg's and their weights
-                            // Then outside this loop do the actual backprojection
-                            Fimg.initZeros();
-                            Fweight.initZeros();
+                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf) {
+                                DIRECT_MULTIDIM_ELEM(Frefctf, n) *= myscale;
+                            }
+                            // For CTF-terms in BP
+                            Mctf *= myscale;
+                        }
+                    }
 
-                            // This is an attempt to speed up illogically slow updates of wsum_sigma2_offset....
-                            // It seems to make a big difference!
-                            RFLOAT myprior_x, myprior_y, myprior_z, old_offset_z;
-                            RFLOAT old_offset_x = XX(exp_old_offset[img_id]);
-                            RFLOAT old_offset_y = YY(exp_old_offset[img_id]);
-                            if (mymodel.ref_dim == 2 && mymodel.nr_bodies == 1)
-                            {
-                                myprior_x = XX(mymodel.prior_offset_class[exp_iclass]);
-                                myprior_y = YY(mymodel.prior_offset_class[exp_iclass]);
-                            }
-                            else
-                            {
-                                myprior_x = XX(exp_prior[img_id]);
-                                myprior_y = YY(exp_prior[img_id]);
-                                if (mymodel.data_dim == 3)
-                                {
-                                    myprior_z = ZZ(exp_prior[img_id]);
-                                    old_offset_z = ZZ(exp_old_offset[img_id]);
-                                }
-                            }
+                    long int ihidden = iorientclass * exp_nr_trans;
+                    for (long int itrans = exp_itrans_min, iitrans = 0; itrans <= exp_itrans_max; itrans++, ihidden++) {
+                        // 1 Jun 2015 - Shaoda & Sjors, Helical refinement
+                        sampling.getTranslationsInPixel(itrans, exp_current_oversampling, my_pixel_size, oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
+                                (do_helical_refine) && (!ignore_helical_symmetry));
+                        for (long int iover_trans = 0; iover_trans < exp_nr_oversampled_trans; iover_trans++, iitrans++) {
+                            // Only deal with this sampling point if its weight was significant
+                            long int ihidden_over = ihidden * exp_nr_oversampled_trans * exp_nr_oversampled_rot +
+                                    iover_rot * exp_nr_oversampled_trans + iover_trans;
+                            RFLOAT weight = DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over);
+                            // Only sum weights for non-zero weights
+                            if (weight >= exp_significant_weight[img_id]) {
+                                // Normalise the weight (do this after the comparison with exp_significant_weight!)
+                                weight /= exp_sum_weight[img_id];
 
-                            if (!do_skip_maximization)
-                            {
-                                if (do_map)
-                                    Minvsigma2 = exp_local_Minvsigma2[img_id];
-                                // else Minvsigma2 was initialised to ones
-                                // Apply CTF to reference projection
-                                if (do_ctf_correction)
-                                {
-                                    Mctf = exp_local_Fctf[img_id];
-                                    if (refs_are_ctf_corrected)
-                                    {
-                                        if (ctf_premultiplied)
-                                        {
-                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref)
-                                            {
-                                                DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(Mctf, n) * DIRECT_MULTIDIM_ELEM(Mctf, n);
+                                if (!do_skip_maximization) {
+
+                                    #ifdef TIMING
+                                    // Only time one thread, as I also only time one MPI process
+                                    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                        timer.tic(TIMING_WSUM_GETSHIFT);
+                                    #endif
+
+                                    /// Now get the shifted image
+                                    // Use a pointer to avoid copying the entire array again in this highly expensive loop
+                                    Complex *Fimg_shift, *Fimg_shift_nomask;
+                                    if (!do_shifts_onthefly) {
+                                        long int ishift = img_id * exp_nr_oversampled_trans * exp_nr_trans + iitrans;
+                                        Fimg_shift        = exp_local_Fimgs_shifted       [img_id][ishift].data;
+                                        Fimg_shift_nomask = exp_local_Fimgs_shifted_nomask[img_id][ishift].data;
+                                    }
+                                    else {
+                                        // Feb01,2017 - Shaoda, on-the-fly shifts in helical reconstuctions (2D and 3D)
+                                        if (do_helical_refine && !ignore_helical_symmetry) {
+                                            RFLOAT xshift = 0.0, yshift = 0.0, zshift = 0.0;
+
+                                            xshift = oversampled_translations_x[iover_trans];
+                                            yshift = oversampled_translations_y[iover_trans];
+                                            if (mymodel.data_dim == 3)
+                                            zshift = oversampled_translations_z[iover_trans];
+
+                                            RFLOAT rot_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
+                                            RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
+                                            RFLOAT psi_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
+                                            transformCartesianAndHelicalCoords(
+                                                xshift, yshift, zshift,
+                                                xshift, yshift, zshift,
+                                                rot_deg, tilt_deg, psi_deg,
+                                                mymodel.data_dim,
+                                                HELICAL_TO_CART_COORDS
+                                            );
+                                            // Fimg_shift
+                                            shiftImageInFourierTransformWithTabSincos(
+                                                exp_local_Fimgs_shifted[img_id][0],
+                                                Fimg_otfshift,
+                                                (RFLOAT)image_full_size[optics_group],
+                                                image_current_size[optics_group],
+                                                tab_sin, tab_cos,
+                                                xshift, yshift, zshift
+                                            );
+                                            // Fimg_shift_nomask
+                                            shiftImageInFourierTransformWithTabSincos(
+                                                exp_local_Fimgs_shifted_nomask[img_id][0],
+                                                Fimg_otfshift_nomask,
+                                                (RFLOAT) image_full_size[optics_group],
+                                                image_current_size[optics_group],
+                                                tab_sin, tab_cos,
+                                                xshift, yshift, zshift
+                                            );
+                                        } else {
+                                            Complex *myAB = (
+                                                adaptive_oversampling == 0 ? global_fftshifts_ab_current : 
+                                                global_fftshifts_ab2_current
+                                            )[optics_group][iitrans].data;
+                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Fimgs_shifted[img_id][0]) {
+                                                Complex A = *(myAB + n);
+                                                // Fimg_shift
+                                                Complex X = DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n);
+                                                DIRECT_MULTIDIM_ELEM(Fimg_otfshift, n) = Complex(
+                                                    A.real * X.real - A.imag * X.imag, // A dot conj X
+                                                    A.real * X.imag + A.imag * X.real  // A dot (i conj X)
+                                                );
+                                                // Fimg_shift_nomask
+                                                Complex Y = DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted_nomask[img_id][0], n);
+                                                DIRECT_MULTIDIM_ELEM(Fimg_otfshift_nomask, n) = Complex(
+                                                    A.real * Y.real - A.imag * Y.imag,  // A dot conj Y
+                                                    A.real * Y.imag + A.imag * Y.real   // A dot (i conj Y)
+                                                );
                                             }
                                         }
-                                        else
-                                        {
-                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref)
-                                            {
-                                                DIRECT_MULTIDIM_ELEM(Frefctf, n) = DIRECT_MULTIDIM_ELEM(Fref, n) * DIRECT_MULTIDIM_ELEM(Mctf, n);
+                                        Fimg_shift = Fimg_otfshift.data;
+                                        Fimg_shift_nomask = Fimg_otfshift_nomask.data;
+                                    }
+                                    #ifdef TIMING
+                                    // Only time one thread, as I also only time one MPI process
+                                    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
+                                        timer.toc(TIMING_WSUM_GETSHIFT);
+                                        timer.tic(TIMING_WSUM_DIFF2);
+                                    }
+                                    #endif
+
+                                    // Store weighted sum of squared differences for sigma2_noise estimation
+                                    // Suggestion Robert Sinkovitz: merge difference and scale steps to make better use of cache
+                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mresol_fine[optics_group]) {
+                                        int ires = DIRECT_MULTIDIM_ELEM(Mresol_fine[optics_group], n);
+                                        if (ires > -1) {
+                                            // Use FT of masked image for noise estimation!
+                                            Complex A = DIRECT_MULTIDIM_ELEM(Frefctf, n);
+                                            Complex X = *(Fimg_shift + n);
+                                            RFLOAT diff_real = A.real - X.real;
+                                            RFLOAT diff_imag = A.imag - X.imag;
+                                            RFLOAT wdiff2 = weight * (diff_real * diff_real + diff_imag * diff_imag);
+                                            // group-wise sigma2_noise
+                                            DIRECT_MULTIDIM_ELEM(thr_wsum_sigma2_noise[img_id], ires) += wdiff2;
+                                            // For norm_correction
+                                            exp_wsum_norm_correction[img_id] += wdiff2;
+                                            if (do_scale_correction && DIRECT_A1D_ELEM(mymodel.data_vs_prior_class[exp_iclass], ires) > 3.0) {
+                                                RFLOAT AdotX = A.real * X.real + A.imag * X.imag;
+                                                exp_wsum_scale_correction_XA[img_id] += weight * AdotX;
+                                                RFLOAT AdotA = A.real * A.real + A.imag * A.imag;
+                                                exp_wsum_scale_correction_AA[img_id] += weight * AdotA;
                                             }
                                         }
                                     }
-                                    else
-                                    {
-                                        Frefctf = Fref;
+                                    #ifdef TIMING
+                                    // Only time one thread, as I also only time one MPI process
+                                    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
+                                        timer.toc(TIMING_WSUM_DIFF2);
+                                        timer.tic(TIMING_WSUM_LOCALSUMS);
                                     }
-                                }
-                                else
-                                {
-                                    // initialise because there are multiple particles and Mctf gets selfMultiplied for scale_correction
-                                    Mctf.initConstant(1.0);
-                                    Frefctf = Fref;
-                                }
-                                if (do_scale_correction)
-                                {
-                                    RFLOAT myscale = mymodel.scale_correction[group_id];
-                                    if (myscale > 10000.0)
-                                    {
-                                        std::cerr << " rlnMicrographScaleCorrection= " << myscale << " group= " << group_id + 1 << std::endl;
-                                        REPORT_ERROR("ERROR: rlnMicrographScaleCorrection is very high. Did you normalize your data?");
+                                    #endif
+
+                                    // Store sum of weights for this group
+                                    thr_sumw_group[img_id] += weight;
+                                    // Store weights for this class and orientation
+                                    thr_wsum_pdf_class[exp_iclass] += weight;
+
+                                    // The following goes MUCH faster than the original lines below....
+                                    if (mymodel.ref_dim == 2) {
+                                        thr_wsum_prior_offsetx_class[exp_iclass] += weight * my_pixel_size * (old_offset_x + oversampled_translations_x[iover_trans]);
+                                        thr_wsum_prior_offsety_class[exp_iclass] += weight * my_pixel_size * (old_offset_y + oversampled_translations_y[iover_trans]);
                                     }
-                                    else if (myscale < 0.001)
-                                    {
-                                        if (!have_warned_small_scale)
-                                        {
-                                            std::cout << " WARNING: ignoring group " << group_id + 1 << " with very small or negative scale (" << myscale <<
-                                                    "); Use larger groups for more stable scale estimates." << std::endl;
-                                            have_warned_small_scale = true;
+                                    // May18,2015 - Shaoda & Sjors, Helical refinement (translational searches)
+                                    // Calculate the vector length of myprior
+                                    RFLOAT mypriors_len2 = myprior_x * myprior_x + myprior_y * myprior_y;
+                                    if (mymodel.data_dim == 3)
+                                        mypriors_len2 += myprior_z * myprior_z;
+                                    // If it is doing helical refinement AND Cartesian vector myprior has a length > 0, transform the vector to its helical coordinates
+                                    if (do_helical_refine && !ignore_helical_symmetry && mypriors_len2 > 0.00001) {
+                                        RFLOAT rot_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
+                                        RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
+                                        RFLOAT psi_deg  = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
+                                        transformCartesianAndHelicalCoords(
+                                            myprior_x, myprior_y, myprior_z,
+                                            myprior_x, myprior_y, myprior_z,
+                                            rot_deg, tilt_deg, psi_deg,
+                                            mymodel.data_dim, CART_TO_HELICAL_COORDS
+                                        );
+                                    }
+
+                                    if (!do_helical_refine || ignore_helical_symmetry || mymodel.data_dim == 3) {
+                                        RFLOAT diffx = myprior_x - old_offset_x - oversampled_translations_x[iover_trans];
+                                        thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffx * diffx;
+                                    }
+                                    RFLOAT diffy = myprior_y - old_offset_y - oversampled_translations_y[iover_trans];
+                                    thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffy * diffy;
+                                    if (mymodel.data_dim == 3) {
+                                        RFLOAT diffz  = myprior_z - old_offset_z - oversampled_translations_z[iover_trans];
+                                        if (!do_helical_refine || ignore_helical_symmetry)
+                                            thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffz * diffz;
+                                    }
+
+                                    // Store weight for this direction of this class
+                                    if (do_skip_align || do_skip_rotate ) {
+                                        // ignore pdf_direction
+                                    } else if (mymodel.orientational_prior_mode == NOPRIOR) {
+                                        DIRECT_MULTIDIM_ELEM(thr_wsum_pdf_direction[exp_iclass], idir) += weight;
+                                    } else {
+                                        // In the case of orientational priors, get the original number of the direction back
+                                        DIRECT_MULTIDIM_ELEM(thr_wsum_pdf_direction[mymodel.nr_bodies > 1 ? ibody : exp_iclass], exp_pointer_dir_nonzeroprior[idir]) += weight;
+                                    }
+
+                                    #ifdef TIMING
+                                    // Only time one thread, as I also only time one MPI process
+                                    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
+                                        timer.toc(TIMING_WSUM_LOCALSUMS);
+                                        timer.tic(TIMING_WSUM_SUMSHIFT);
+                                    }
+                                    #endif
+
+                                    Complex *Fimg_store;
+                                    if (do_sgd && !do_avoid_sgd) {
+                                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf) {
+                                            (DIRECT_MULTIDIM_ELEM(Fimg_store_sgd, n)).real = (*(Fimg_shift_nomask + n)).real - (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real;
+                                            (DIRECT_MULTIDIM_ELEM(Fimg_store_sgd, n)).imag = (*(Fimg_shift_nomask + n)).imag - (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag;
                                         }
-                                        myscale = 0.001;
+                                        Fimg_store = Fimg_store_sgd.data;
+                                    } else {
+                                        Fimg_store = Fimg_shift_nomask;
                                     }
-                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf)
-                                    {
-                                        DIRECT_MULTIDIM_ELEM(Frefctf, n) *= myscale;
-                                    }
-                                    // For CTF-terms in BP
-                                    Mctf *= myscale;
-                                }
-                            } // end if !do_skip_maximization
+                                    // #define DEBUG_BODIES2
+                                    #ifdef DEBUG_BODIES2
+                                    FourierTransformer transformer;
+                                    MultidimArray<Complex> Ftt(Frefctf);
+                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Ftt)
+                                        DIRECT_MULTIDIM_ELEM(Ftt, n) = *(Fimg_store + n);
 
-                            long int ihidden = iorientclass * exp_nr_trans;
-                            for (long int itrans = exp_itrans_min, iitrans = 0; itrans <= exp_itrans_max; itrans++, ihidden++)
-                            {
-                                // Jun01,2015 - Shaoda & Sjors, Helical refinement
-                                sampling.getTranslationsInPixel(itrans, exp_current_oversampling, my_pixel_size, oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
-                                        (do_helical_refine) && (!ignore_helical_symmetry));
-                                for (long int iover_trans = 0; iover_trans < exp_nr_oversampled_trans; iover_trans++, iitrans++)
-                                {
-                                    // Only deal with this sampling point if its weight was significant
-                                    long int ihidden_over = ihidden * exp_nr_oversampled_trans * exp_nr_oversampled_rot +
-                                            iover_rot * exp_nr_oversampled_trans + iover_trans;
-                                    RFLOAT weight = DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over);
-                                    // Only sum weights for non-zero weights
-                                    if (weight >= exp_significant_weight[img_id])
-                                    {
-                                        // Normalise the weight (do this after the comparison with exp_significant_weight!)
-                                        weight /= exp_sum_weight[img_id];
-
-                                        if (!do_skip_maximization)
-                                        {
-
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                                timer.tic(TIMING_WSUM_GETSHIFT);
-#endif
-
-                                            /// Now get the shifted image
-                                            // Use a pointer to avoid copying the entire array again in this highly expensive loop
-                                            Complex *Fimg_shift, *Fimg_shift_nomask;
-                                            if (!do_shifts_onthefly)
-                                            {
-                                                long int ishift = img_id * exp_nr_oversampled_trans * exp_nr_trans + iitrans;
-                                                Fimg_shift = exp_local_Fimgs_shifted[img_id][ishift].data;
-                                                Fimg_shift_nomask = exp_local_Fimgs_shifted_nomask[img_id][ishift].data;
-                                            }
-                                            else
-                                            {
-                                                // Feb01,2017 - Shaoda, on-the-fly shifts in helical reconstuctions (2D and 3D)
-                                                if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-                                                {
-                                                    RFLOAT xshift = 0., yshift = 0., zshift = 0.0;
-
-                                                    xshift = oversampled_translations_x[iover_trans];
-                                                    yshift = oversampled_translations_y[iover_trans];
-                                                    if (mymodel.data_dim == 3)
-                                                        zshift = oversampled_translations_z[iover_trans];
-
-                                                    RFLOAT rot_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
-                                                    RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
-                                                    RFLOAT psi_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
-                                                    transformCartesianAndHelicalCoords(
-                                                                xshift, yshift, zshift,
-                                                                xshift, yshift, zshift,
-                                                                rot_deg, tilt_deg, psi_deg,
-                                                                mymodel.data_dim,
-                                                                HELICAL_TO_CART_COORDS);
-
-                                                    // Fimg_shift
-                                                    shiftImageInFourierTransformWithTabSincos(
-                                                            exp_local_Fimgs_shifted[img_id][0],
-                                                            Fimg_otfshift,
-                                                            (RFLOAT)image_full_size[optics_group],
-                                                            image_current_size[optics_group],
-                                                            tab_sin, tab_cos,
-                                                            xshift, yshift, zshift);
-                                                    // Fimg_shift_nomask
-                                                    shiftImageInFourierTransformWithTabSincos(
-                                                            exp_local_Fimgs_shifted_nomask[img_id][0],
-                                                            Fimg_otfshift_nomask,
-                                                            (RFLOAT)image_full_size[optics_group],
-                                                            image_current_size[optics_group],
-                                                            tab_sin, tab_cos,
-                                                            xshift, yshift, zshift);
-                                                }
-                                                else
-                                                {
-                                                    Complex* myAB;
-                                                    myAB = (adaptive_oversampling == 0 ) ? global_fftshifts_ab_current[optics_group][iitrans].data : global_fftshifts_ab2_current[optics_group][iitrans].data;
-                                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Fimgs_shifted[img_id][0])
-                                                    {
-                                                        RFLOAT a = (*(myAB + n)).real;
-                                                        RFLOAT b = (*(myAB + n)).imag;
-                                                        // Fimg_shift
-                                                        RFLOAT real = a * (DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).real
-                                                                - b *(DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).imag;
-                                                        RFLOAT imag = a * (DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).imag
-                                                                + b *(DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted[img_id][0], n)).real;
-                                                        DIRECT_MULTIDIM_ELEM(Fimg_otfshift, n) = Complex(real, imag);
-                                                        // Fimg_shift_nomask
-                                                        real = a * (DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted_nomask[img_id][0], n)).real
-                                                                - b *(DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted_nomask[img_id][0], n)).imag;
-                                                        imag = a * (DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted_nomask[img_id][0], n)).imag
-                                                                + b *(DIRECT_MULTIDIM_ELEM(exp_local_Fimgs_shifted_nomask[img_id][0], n)).real;
-                                                        DIRECT_MULTIDIM_ELEM(Fimg_otfshift_nomask, n) = Complex(real, imag);
-                                                    }
-                                                }
-                                                Fimg_shift = Fimg_otfshift.data;
-                                                Fimg_shift_nomask = Fimg_otfshift_nomask.data;
-                                            }
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                            {
-                                                timer.toc(TIMING_WSUM_GETSHIFT);
-                                                timer.tic(TIMING_WSUM_DIFF2);
-                                            }
-#endif
-
-                                            // Store weighted sum of squared differences for sigma2_noise estimation
-                                            // Suggestion Robert Sinkovitz: merge difference and scale steps to make better use of cache
-                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mresol_fine[optics_group])
-                                            {
-                                                int ires = DIRECT_MULTIDIM_ELEM(Mresol_fine[optics_group], n);
-                                                if (ires > -1)
-                                                {
-                                                    // Use FT of masked image for noise estimation!
-                                                    RFLOAT diff_real = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real - (*(Fimg_shift + n)).real;
-                                                    RFLOAT diff_imag = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag - (*(Fimg_shift + n)).imag;
-                                                    RFLOAT wdiff2 = weight * (diff_real*diff_real + diff_imag*diff_imag);
-                                                    // group-wise sigma2_noise
-                                                    DIRECT_MULTIDIM_ELEM(thr_wsum_sigma2_noise[img_id], ires) += wdiff2;
-                                                    // For norm_correction
-                                                    exp_wsum_norm_correction[img_id] += wdiff2;
-                                                    if (do_scale_correction  && DIRECT_A1D_ELEM(mymodel.data_vs_prior_class[exp_iclass], ires) > 3.0)
-                                                    {
-                                                        RFLOAT sumXA, sumA2;
-                                                        sumXA = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real * (*(Fimg_shift + n)).real;
-                                                        sumXA += (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag * (*(Fimg_shift + n)).imag;
-                                                        exp_wsum_scale_correction_XA[img_id] += weight * sumXA;
-                                                        sumA2 = (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real * (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real;
-                                                        sumA2 += (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag * (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag;
-                                                        exp_wsum_scale_correction_AA[img_id] += weight * sumA2;
-                                                    }
-                                                }
-                                            }
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                            {
-                                                timer.toc(TIMING_WSUM_DIFF2);
-                                                timer.tic(TIMING_WSUM_LOCALSUMS);
-                                            }
-#endif
-
-                                            // Store sum of weights for this group
-                                            thr_sumw_group[img_id] += weight;
-                                            // Store weights for this class and orientation
-                                            thr_wsum_pdf_class[exp_iclass] += weight;
-
-                                            // The following goes MUCH faster than the original lines below....
-                                            if (mymodel.ref_dim == 2)
-                                            {
-                                                thr_wsum_prior_offsetx_class[exp_iclass] += weight * my_pixel_size * (old_offset_x + oversampled_translations_x[iover_trans]);
-                                                thr_wsum_prior_offsety_class[exp_iclass] += weight * my_pixel_size * (old_offset_y + oversampled_translations_y[iover_trans]);
-                                            }
-                                            // May18,2015 - Shaoda & Sjors, Helical refinement (translational searches)
-                                            // Calculate the vector length of myprior
-                                            RFLOAT mypriors_len2 = myprior_x * myprior_x + myprior_y * myprior_y;
-                                            if (mymodel.data_dim == 3)
-                                                mypriors_len2 += myprior_z * myprior_z;
-                                            // If it is doing helical refinement AND Cartesian vector myprior has a length > 0, transform the vector to its helical coordinates
-                                            if ( (do_helical_refine) && (!ignore_helical_symmetry) && (mypriors_len2 > 0.00001) )
-                                            {
-                                                RFLOAT rot_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_ROT);
-                                                RFLOAT tilt_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_TILT);
-                                                RFLOAT psi_deg = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PSI);
-                                                transformCartesianAndHelicalCoords(myprior_x, myprior_y, myprior_z, myprior_x, myprior_y, myprior_z, rot_deg, tilt_deg, psi_deg, mymodel.data_dim, CART_TO_HELICAL_COORDS);
-                                            }
-
-                                            if ( (!do_helical_refine) || (ignore_helical_symmetry) || (mymodel.data_dim == 3) )
-                                            {
-                                                RFLOAT diffx = myprior_x - old_offset_x - oversampled_translations_x[iover_trans];
-                                                thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffx * diffx;
-                                            }
-                                            RFLOAT diffy = myprior_y - old_offset_y - oversampled_translations_y[iover_trans];
-                                            thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffy * diffy;
-                                            if (mymodel.data_dim == 3)
-                                            {
-                                                RFLOAT diffz  = myprior_z - old_offset_z - oversampled_translations_z[iover_trans];
-                                                if ( (!do_helical_refine) || (ignore_helical_symmetry) )
-                                                    thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffz * diffz;
-                                            }
-
-                                            // Store weight for this direction of this class
-                                            if (do_skip_align || do_skip_rotate )
-                                            {
-                                                //ignore pdf_direction
-                                            }
-                                            else if (mymodel.orientational_prior_mode == NOPRIOR)
-                                            {
-                                                DIRECT_MULTIDIM_ELEM(thr_wsum_pdf_direction[exp_iclass], idir) += weight;
-                                            }
-                                            else
-                                            {
-                                                // In the case of orientational priors, get the original number of the direction back
-                                                long int mydir = exp_pointer_dir_nonzeroprior[idir];
-                                                if (mymodel.nr_bodies > 1)
-                                                    DIRECT_MULTIDIM_ELEM(thr_wsum_pdf_direction[ibody], mydir) += weight;
-                                                else
-                                                    DIRECT_MULTIDIM_ELEM(thr_wsum_pdf_direction[exp_iclass], mydir) += weight;
-                                            }
-
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                            {
-                                                timer.toc(TIMING_WSUM_LOCALSUMS);
-                                                timer.tic(TIMING_WSUM_SUMSHIFT);
-                                            }
-#endif
-
-                                            Complex *Fimg_store;
-                                            if (do_sgd && !do_avoid_sgd)
-                                            {
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Frefctf)
-                                                {
-                                                    (DIRECT_MULTIDIM_ELEM(Fimg_store_sgd, n)).real = (*(Fimg_shift_nomask + n)).real - (DIRECT_MULTIDIM_ELEM(Frefctf, n)).real;
-                                                    (DIRECT_MULTIDIM_ELEM(Fimg_store_sgd, n)).imag = (*(Fimg_shift_nomask + n)).imag - (DIRECT_MULTIDIM_ELEM(Frefctf, n)).imag;
-                                                }
-                                                Fimg_store = Fimg_store_sgd.data;
-                                            }
-                                            else
-                                            {
-                                                Fimg_store = Fimg_shift_nomask;
-                                            }
-//#define DEBUG_BODIES2
-#ifdef DEBUG_BODIES2
-                                            FourierTransformer transformer;
-                                            MultidimArray<Complex> Ftt(Frefctf);
-                                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Ftt)
-                                                DIRECT_MULTIDIM_ELEM(Ftt, n) = *(Fimg_store + n);
-
-                                            Image<RFLOAT> tt;
-                                            tt().resize(exp_current_image_size, exp_current_image_size);
-                                            transformer.inverseFourierTransform(Ftt, tt());
-                                            CenterFFT(tt(),false);
-                                            FileName fnt;
-                                            fnt= "BPimg_body"+integerToString(ibody+1,1)+"_ihidden"+integerToString(ihidden_over)+".spi";
-                                            tt.write(fnt);
-                                            Ftt = Frefctf;
-                                            tt().resize(exp_current_image_size, exp_current_image_size);
-                                            transformer.inverseFourierTransform(Ftt, tt());
-                                            CenterFFT(tt(),false);
-                                            fnt= "Fref_body"+integerToString(ibody+1,1)+"_ihidden"+integerToString(ihidden_over)+".spi";
-                                            tt.write(fnt);
+                                    Image<RFLOAT> tt;
+                                    tt().resize(exp_current_image_size, exp_current_image_size);
+                                    transformer.inverseFourierTransform(Ftt, tt());
+                                    CenterFFT(tt(),false);
+                                    FileName fnt = "BPimg_body" + integerToString(ibody + 1, 1) + "_ihidden" + integerToString(ihidden_over) + ".spi";
+                                    tt.write(fnt);
+                                    Ftt = Frefctf;
+                                    tt().resize(exp_current_image_size, exp_current_image_size);
+                                    transformer.inverseFourierTransform(Ftt, tt());
+                                    CenterFFT(tt(), false);
+                                    fnt = "Fref_body" + integerToString(ibody + 1, 1) + "_ihidden" + integerToString(ihidden_over) + ".spi";
+                                    tt.write(fnt);
 
 
-                                            std::cerr << " rot= " << rot << " tilt= " << tilt << " psi= " << psi << std::endl;
-                                            std::cerr << " itrans= " << itrans << " iover_trans= " << iover_trans << std::endl;
-                                            std::cerr << " ihidden_over= " << ihidden_over << " weight= " << weight << std::endl;
-                                            std::cerr << "written " << fnt <<std::endl;
-#endif
+                                    std::cerr << " rot= " << rot << " tilt= " << tilt << " psi= " << psi << std::endl;
+                                    std::cerr << " itrans= " << itrans << " iover_trans= " << iover_trans << std::endl;
+                                    std::cerr << " ihidden_over= " << ihidden_over << " weight= " << weight << std::endl;
+                                    std::cerr << "written " << fnt <<std::endl;
+                                    #endif
 
-                                            // Store sum of weight*SSNR*Fimg in data and sum of weight*SSNR in weight
-                                            // Use the FT of the unmasked image to back-project in order to prevent reconstruction artefacts! SS 25oct11
-                                            if (ctf_premultiplied)
-                                            {
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg)
-                                                {
-                                                    RFLOAT myctf = DIRECT_MULTIDIM_ELEM(Mctf, n);
-                                                    RFLOAT weightxinvsigma2 = weight * DIRECT_MULTIDIM_ELEM(Minvsigma2, n);
-                                                    // now Fimg stores sum of all shifted w*Fimg
-                                                    (DIRECT_MULTIDIM_ELEM(Fimg, n)).real += (*(Fimg_store + n)).real * weightxinvsigma2;
-                                                    (DIRECT_MULTIDIM_ELEM(Fimg, n)).imag += (*(Fimg_store + n)).imag * weightxinvsigma2;
-                                                    // now Fweight stores sum of all w and multiply by CTF^2
-                                                    DIRECT_MULTIDIM_ELEM(Fweight, n) += weightxinvsigma2 * myctf * myctf;
-                                                }
-                                            }
-                                            else
-                                            {
-                                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg)
-                                                {
-                                                    RFLOAT myctf = DIRECT_MULTIDIM_ELEM(Mctf, n);
-                                                    RFLOAT weightxinvsigma2 = weight * myctf * DIRECT_MULTIDIM_ELEM(Minvsigma2, n);
-                                                    // now Fimg stores sum of all shifted w*Fimg
-                                                    (DIRECT_MULTIDIM_ELEM(Fimg, n)).real += (*(Fimg_store + n)).real * weightxinvsigma2;
-                                                    (DIRECT_MULTIDIM_ELEM(Fimg, n)).imag += (*(Fimg_store + n)).imag * weightxinvsigma2;
-                                                    // now Fweight stores sum of all w
-                                                    // Note that CTF needs to be squared in Fweight, weightxinvsigma2 already contained one copy
-                                                    DIRECT_MULTIDIM_ELEM(Fweight, n) += weightxinvsigma2 * myctf;
-
-                                                }
-                                            }
-
-#ifdef TIMING
-                                            // Only time one thread, as I also only time one MPI process
-                                            if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                                timer.toc(TIMING_WSUM_SUMSHIFT);
-#endif
-                                        } // end if !do_skip_maximization
-
-                                        // Keep track of max_weight and the corresponding optimal hidden variables
-                                        if (weight > exp_max_weight[img_id])
-                                        {
-                                            // Store optimal image parameters
-                                            exp_max_weight[img_id] = weight;
-
-                                            //This is not necessary as rot, tilt and psi remain unchanged!
-                                            //Euler_matrix2angles(A, rot, tilt, psi);
-
-                                            int icol_rot  = (mymodel.nr_bodies == 1) ? METADATA_ROT  : 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                                            int icol_tilt = (mymodel.nr_bodies == 1) ? METADATA_TILT : 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                                            int icol_psi  = (mymodel.nr_bodies == 1) ? METADATA_PSI  : 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                                            int icol_xoff = (mymodel.nr_bodies == 1) ? METADATA_XOFF : 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                                            int icol_yoff = (mymodel.nr_bodies == 1) ? METADATA_YOFF : 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-                                            int icol_zoff = (mymodel.nr_bodies == 1) ? METADATA_ZOFF : 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + (ibody) * METADATA_NR_BODY_PARAMS;
-
-                                            RFLOAT old_rot = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_rot);
-                                            DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_rot) = rot;
-                                            RFLOAT old_tilt = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_tilt);
-                                            DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_tilt) = tilt;
-                                            RFLOAT old_psi = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_psi);
-                                            DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_psi) = psi;
-                                            Matrix1D<RFLOAT> shifts(mymodel.data_dim);
-
-                                            // include old_offsets for normal refinement (i.e. non multi-body)
-                                            XX(shifts) = XX(exp_old_offset[img_id]) + oversampled_translations_x[iover_trans];
-                                            YY(shifts) = YY(exp_old_offset[img_id]) + oversampled_translations_y[iover_trans];
-                                            if (mymodel.data_dim == 3)
-                                            {
-                                                ZZ(shifts) = ZZ(exp_old_offset[img_id]) + oversampled_translations_z[iover_trans];
-                                            }
-#ifdef DEBUG_BODIES2
-                                            std::cerr << ihidden_over << " weight= " << weight;
-                                            std::cerr << " exp_old_offset= " << exp_old_offset[img_id].transpose() << std::endl;
-                                            std::cerr << " SET: rot= " << rot << " tilt= " << tilt << " psi= " << psi;
-                                            std::cerr << " xx-old= " << XX(exp_old_offset[img_id]);
-                                            std::cerr << " yy-old= " << YY(exp_old_offset[img_id]);
-                                            std::cerr << " add-xx= " << oversampled_translations_x[iover_trans];
-                                            std::cerr << " add-yy= " << oversampled_translations_y[iover_trans];
-                                            std::cerr << " xnew= " << XX(shifts);
-                                            std::cerr << " ynew= " << YY(shifts) << std::endl;
-#endif
-
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-                                            std::cerr << "MlOptimiser::storeWeightedSums()" << std::endl;
-                                            if (mymodel.data_dim == 2)
-                                            {
-                                                std::cerr << " exp_old_offset = (" << XX(exp_old_offset[img_id]) << ", " << YY(exp_old_offset[img_id]) << ")" << std::endl;
-                                                std::cerr << " Oversampled trans = (" << oversampled_translations_x[iover_trans] << ", " << oversampled_translations_y[iover_trans] << ")" << std::endl;
-                                                std::cerr << " shifts = (" << XX(shifts) << ", " << YY(shifts) << ")" << std::endl;
-                                            }
-                                            else
-                                            {
-                                                std::cerr << " exp_old_offset = (" << XX(exp_old_offset[img_id]) << ", " << YY(exp_old_offset[img_id]) << ", " << ZZ(exp_old_offset[img_id]) << ")" << std::endl;
-                                                std::cerr << " Oversampled trans = (" << oversampled_translations_x[iover_trans] << ", " << oversampled_translations_y[iover_trans] << ", " << oversampled_translations_z[iover_trans] << ")" << std::endl;
-                                                std::cerr << " shifts = (" << XX(shifts) << ", " << YY(shifts) << ", " << ZZ(shifts) << ")" << std::endl;
-                                            }
-#endif
-
-                                            // Helical reconstruction: use oldpsi-angle to rotate back the XX(exp_old_offset) + oversampled_translations_x[iover_trans] and
-                                            if ( (do_helical_refine) && (!ignore_helical_symmetry) )
-                                            {
-                                                // Bring xshift, yshift and zshift back to cartesian coords for outputting in the STAR file
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-                                                std::cerr << "MlOptimiser::storeWeightedSums()" << std::endl;
-                                                std::cerr << "Bring xy(z) shifts back to Cartesian coordinates for output in the STAR file" << std::endl;
-                                                std::cerr << " itrans = " << itrans << ", iover_trans = " << iover_trans << std::endl;
-                                                if (shifts.size() == 2)
-                                                {
-                                                    std::cerr << "  old_psi = " << old_psi << " degrees" << std::endl;
-                                                    std::cerr << "  Helical offsets (r, p) = (" << XX(shifts) << ", " << YY(shifts) << ")" << std::endl;
-                                                }
-                                                else
-                                                {
-                                                    std::cerr << "  old_psi = " << old_psi << " degrees, old_tilt = " << old_tilt << " degrees" << std::endl;
-                                                    std::cerr << "  Helical offsets (p1, p2, r) = (" << XX(shifts) << ", " << YY(shifts) << ", " << ZZ(shifts) << ")" << std::endl;
-                                                }
-#endif
-                                                transformCartesianAndHelicalCoords(shifts, shifts, old_rot, old_tilt, old_psi, HELICAL_TO_CART_COORDS);
-#ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-                                                if (shifts.size() == 2)
-                                                    std::cerr << "  Cartesian offsets (x, y) = (" << XX(shifts) << ", " << YY(shifts) << ")" << std::endl;
-                                                else
-                                                    std::cerr << "  Cartesian offsets (x, y, z) = (" << XX(shifts) << ", " << YY(shifts) << ", " << ZZ(shifts) << ")" << std::endl;
-#endif
-                                            }
-
-                                            DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_xoff) = XX(shifts);
-                                            DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_yoff) = YY(shifts);
-                                            if (mymodel.data_dim == 3)
-                                                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_zoff) = ZZ(shifts);
-
-                                            if (ibody == 0)
-                                            {
-                                                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_CLASS) = (RFLOAT)exp_iclass + 1;
-                                                DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PMAX) = exp_max_weight[img_id];
-                                            }
+                                    // Store sum of weight*SSNR*Fimg in data and sum of weight*SSNR in weight
+                                    // Use the FT of the unmasked image to back-project in order to prevent reconstruction artefacts! SS 25oct11
+                                    if (ctf_premultiplied) {
+                                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
+                                            RFLOAT myctf = DIRECT_MULTIDIM_ELEM(Mctf, n);
+                                            RFLOAT weightxinvsigma2 = weight * DIRECT_MULTIDIM_ELEM(Minvsigma2, n);
+                                            // now Fimg stores sum of all shifted w*Fimg
+                                            (DIRECT_MULTIDIM_ELEM(Fimg, n)).real += (*(Fimg_store + n)).real * weightxinvsigma2;
+                                            (DIRECT_MULTIDIM_ELEM(Fimg, n)).imag += (*(Fimg_store + n)).imag * weightxinvsigma2;
+                                            // now Fweight stores sum of all w and multiply by CTF^2
+                                            DIRECT_MULTIDIM_ELEM(Fweight, n) += weightxinvsigma2 * myctf * myctf;
                                         }
-                                    } // end if weight >= exp_significant_weight
-                                } // end loop iover_trans
-                            } // end loop itrans
-#ifdef RELION_TESTING
-                            std::string fnm = std::string("cpu_out_exp_wsum_norm_correction.txt");
-                            char *text = &fnm[0];
-                            freopen(text,"w",stdout);
-                            printf("%4.8f \n",exp_wsum_norm_correction);
-                            fclose(stdout);
-                            //----------
-                            fnm = std::string("cpu_out_thr_wsum_sigma2_noise.txt");
-                            text = &fnm[0];
-                            freopen(text,"w",stdout);
-                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mresol_fine[optics_group])
-                            {
-                                printf("%4.8f \n",thr_wsum_sigma2_noise[0].data[n]);
+                                    } else {
+                                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
+                                            RFLOAT myctf = DIRECT_MULTIDIM_ELEM(Mctf, n);
+                                            RFLOAT weightxinvsigma2 = weight * myctf * DIRECT_MULTIDIM_ELEM(Minvsigma2, n);
+                                            // now Fimg stores sum of all shifted w*Fimg
+                                            (DIRECT_MULTIDIM_ELEM(Fimg, n)).real += (*(Fimg_store + n)).real * weightxinvsigma2;
+                                            (DIRECT_MULTIDIM_ELEM(Fimg, n)).imag += (*(Fimg_store + n)).imag * weightxinvsigma2;
+                                            // now Fweight stores sum of all w
+                                            // Note that CTF needs to be squared in Fweight, weightxinvsigma2 already contained one copy
+                                            DIRECT_MULTIDIM_ELEM(Fweight, n) += weightxinvsigma2 * myctf;
+
+                                        }
+                                    }
+
+                                #ifdef TIMING
+                                    // Only time one thread, as I also only time one MPI process
+                                    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                                        timer.toc(TIMING_WSUM_SUMSHIFT);
+                                #endif
+                                }
+
+                                // Keep track of max_weight and the corresponding optimal hidden variables
+                                if (weight > exp_max_weight[img_id]) {
+                                    // Store optimal image parameters
+                                    exp_max_weight[img_id] = weight;
+
+                                    //This is not necessary as rot, tilt and psi remain unchanged!
+                                    //Euler_matrix2angles(A, rot, tilt, psi);
+
+                                    int icol_rot  = (mymodel.nr_bodies == 1) ? METADATA_ROT  : 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                                    int icol_tilt = (mymodel.nr_bodies == 1) ? METADATA_TILT : 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                                    int icol_psi  = (mymodel.nr_bodies == 1) ? METADATA_PSI  : 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                                    int icol_xoff = (mymodel.nr_bodies == 1) ? METADATA_XOFF : 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                                    int icol_yoff = (mymodel.nr_bodies == 1) ? METADATA_YOFF : 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                                    int icol_zoff = (mymodel.nr_bodies == 1) ? METADATA_ZOFF : 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+
+                                    RFLOAT old_rot = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_rot);
+                                    DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_rot) = rot;
+                                    RFLOAT old_tilt = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_tilt);
+                                    DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_tilt) = tilt;
+                                    RFLOAT old_psi = DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_psi);
+                                    DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_psi) = psi;
+                                    Matrix1D<RFLOAT> shifts(mymodel.data_dim);
+
+                                    // include old_offsets for normal refinement (i.e. non multi-body)
+                                    XX(shifts) = XX(exp_old_offset[img_id]) + oversampled_translations_x[iover_trans];
+                                    YY(shifts) = YY(exp_old_offset[img_id]) + oversampled_translations_y[iover_trans];
+                                    if (mymodel.data_dim == 3)
+                                    ZZ(shifts) = ZZ(exp_old_offset[img_id]) + oversampled_translations_z[iover_trans];
+                                    #ifdef DEBUG_BODIES2
+                                    std::cerr << ihidden_over << " weight= " << weight;
+                                    std::cerr << " exp_old_offset= " << exp_old_offset[img_id].transpose() << std::endl;
+                                    std::cerr << " SET: rot= " << rot << " tilt= " << tilt << " psi= " << psi;
+                                    std::cerr << " xx-old= " << XX(exp_old_offset[img_id]);
+                                    std::cerr << " yy-old= " << YY(exp_old_offset[img_id]);
+                                    std::cerr << " add-xx= " << oversampled_translations_x[iover_trans];
+                                    std::cerr << " add-yy= " << oversampled_translations_y[iover_trans];
+                                    std::cerr << " xnew= " << XX(shifts);
+                                    std::cerr << " ynew= " << YY(shifts) << std::endl;
+                                    #endif
+
+                                    #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+                                    std::cerr << "MlOptimiser::storeWeightedSums()" << std::endl;
+                                    if (mymodel.data_dim == 2) {
+                                        std::cerr << " exp_old_offset = (" << XX(exp_old_offset[img_id]) << ", " << YY(exp_old_offset[img_id]) << ")" << std::endl;
+                                        std::cerr << " Oversampled trans = (" << oversampled_translations_x[iover_trans] << ", " << oversampled_translations_y[iover_trans] << ")" << std::endl;
+                                        std::cerr << " shifts = (" << XX(shifts) << ", " << YY(shifts) << ")" << std::endl;
+                                    } else {
+                                        std::cerr << " exp_old_offset = (" << XX(exp_old_offset[img_id]) << ", " << YY(exp_old_offset[img_id]) << ", " << ZZ(exp_old_offset[img_id]) << ")" << std::endl;
+                                        std::cerr << " Oversampled trans = (" << oversampled_translations_x[iover_trans] << ", " << oversampled_translations_y[iover_trans] << ", " << oversampled_translations_z[iover_trans] << ")" << std::endl;
+                                        std::cerr << " shifts = (" << XX(shifts) << ", " << YY(shifts) << ", " << ZZ(shifts) << ")" << std::endl;
+                                    }
+                                    #endif
+
+                                    // Helical reconstruction: use oldpsi-angle to rotate back the XX(exp_old_offset) + oversampled_translations_x[iover_trans] and
+                                    if (do_helical_refine && !ignore_helical_symmetry) {
+                                        // Bring xshift, yshift and zshift back to cartesian coords for outputting in the STAR file
+                                        #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+                                        std::cerr << "MlOptimiser::storeWeightedSums()" << std::endl;
+                                        std::cerr << "Bring xy(z) shifts back to Cartesian coordinates for output in the STAR file" << std::endl;
+                                        std::cerr << " itrans = " << itrans << ", iover_trans = " << iover_trans << std::endl;
+                                        std::cerr << "  old_psi = " << old_psi << " degrees";
+                                        if (shifts.size() == 2) {
+                                            std::cerr << std::endl;
+                                            std::cerr << "  Helical offsets (r, p) = (" << XX(shifts) << ", " << YY(shifts) << ")" << std::endl;
+                                        } else {
+                                            std::cerr << ", old_tilt = " << old_tilt << " degrees" << std::endl;
+                                            std::cerr << "  Helical offsets (p1, p2, r) = (" << XX(shifts) << ", " << YY(shifts) << ", " << ZZ(shifts) << ")" << std::endl;
+                                        }
+                                        #endif
+                                        transformCartesianAndHelicalCoords(shifts, shifts, old_rot, old_tilt, old_psi, HELICAL_TO_CART_COORDS);
+                                        #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
+                                        std::cerr << "  Cartesian offsets " << (
+                                            shifts.size() == 2 ?
+                                                "(x, y) = (" << XX(shifts) << ", " << YY(shifts) << ")" :
+                                            "(x, y, z) = (" << XX(shifts) << ", " << YY(shifts) << ", " << ZZ(shifts) << ")"
+                                        ) << std::endl;
+                                        #endif
+                                    }
+
+                                    DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_xoff) = XX(shifts);
+                                    DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_yoff) = YY(shifts);
+                                    if (mymodel.data_dim == 3)
+                                    DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, icol_zoff) = ZZ(shifts);
+
+                                    if (ibody == 0) {
+                                        DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_CLASS) = (RFLOAT) exp_iclass + 1;
+                                        DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_PMAX) = exp_max_weight[img_id];
+                                    }
+                                }
                             }
-                            fclose(stdout);
-                            //----------
-                            fnm = std::string("cpu_out_Fweights.txt");
-                            text = &fnm[0];
-                            freopen(text,"w",stdout);
-                            for(int n = 0; n < 1000; n++)
-                            {
-                                printf("%4.8f \n",*(Fweight.data + n*60+50));
-                            }
-                            fclose(stdout);
-#endif
+                        }
+                    }
+                    #ifdef RELION_TESTING
+                    std::string fnm = std::string("cpu_out_exp_wsum_norm_correction.txt");
+                    char *text = &fnm[0];
+                    freopen(text, "w", stdout);
+                    printf("%4.8f \n", exp_wsum_norm_correction);
+                    fclose(stdout);
+                    //----------
+                    fnm = std::string("cpu_out_thr_wsum_sigma2_noise.txt");
+                    text = &fnm[0];
+                    freopen(text, "w", stdout);
+                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mresol_fine[optics_group]) {
+                        printf("%4.8f \n", thr_wsum_sigma2_noise[0].data[n]);
+                    }
+                    fclose(stdout);
+                    //----------
+                    fnm = std::string("cpu_out_Fweights.txt");
+                    text = &fnm[0];
+                    freopen(text, "w", stdout);
+                    for (int n = 0; n < 1000; n++) {
+                        printf("%4.8f \n",*(Fweight.data + n*60+50));
+                    }
+                    fclose(stdout);
+                    #endif
 
-                            if (!do_skip_maximization)
-                            {
-#ifdef TIMING
-                                // Only time one thread, as I also only time one MPI process
-                                if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                    timer.tic(TIMING_WSUM_BACKPROJ);
-#endif
-                                // Perform the actual back-projection.
-                                // This is done with the sum of all (in-plane) shifted Fimg's
-                                // Perform this inside a mutex
-                                int my_mutex = exp_iclass % NR_CLASS_MUTEXES;
-                                pthread_mutex_lock(&global_mutex2[my_mutex]);
-                                if (mymodel.nr_bodies > 1)
-                                    (wsum_model.BPref[ibody]).set2DFourierTransform(Fimg, Abody, &Fweight);
-                                else
-                                    (wsum_model.BPref[exp_iclass]).set2DFourierTransform(Fimg, A, &Fweight);
-                                pthread_mutex_unlock(&global_mutex2[my_mutex]);
-    #ifdef TIMING
-                                // Only time one thread, as I also only time one MPI process
-                                if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-                                    timer.toc(TIMING_WSUM_BACKPROJ);
-    #endif
-                            } // end if !do_skip_maximization
-                        } // end loop iover_rot
-                    } // end loop img_id
-                }// end loop do_proceed
-            } // end loop ipsi
-        } // end loop idir
-    } // end loop iclass
+                    if (!do_skip_maximization) {
+                        #ifdef TIMING
+                        // Only time one thread, as I also only time one MPI process
+                        if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                            timer.tic(TIMING_WSUM_BACKPROJ);
+                        #endif
+                        // Perform the actual back-projection.
+                        // This is done with the sum of all (in-plane) shifted Fimg's
+                        // Perform this inside a mutex
+                        int my_mutex = exp_iclass % NR_CLASS_MUTEXES;
+                        pthread_mutex_lock(&global_mutex2[my_mutex]);
+                        if (mymodel.nr_bodies > 1) {
+                            wsum_model.BPref[ibody].set2DFourierTransform(Fimg, Abody, &Fweight);
+                        } else {
+                            wsum_model.BPref[exp_iclass].set2DFourierTransform(Fimg, A, &Fweight);
+                        }
+                        pthread_mutex_unlock(&global_mutex2[my_mutex]);
+                        #ifdef TIMING
+                        // Only time one thread, as I also only time one MPI process
+                        if (part_id == mydata.sorted_idx[exp_my_first_part_id])
+                            timer.toc(TIMING_WSUM_BACKPROJ);
+                        #endif
+                    }
+                }
+            }
+        }
+    }
 
     // Extend norm_correction and sigma2_noise estimation to higher resolutions for all particles
     // Also calculate dLL for each particle and store in metadata
@@ -8105,7 +7556,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
     }
 
     // Separate angular error estimate for each of the classes
-    acc_rot = acc_trans = 999.0; // later XMIPP_MIN will be taken to find the best class...
+    acc_rot = acc_trans = 999.0; // later minimum will be taken to find the best class...
 
     // P(X | X_1) / P(X | X_2) = exp ( |F_1 - F_2|^2 / (-2 sigma2) )
     // exp(-4.60517) = 0.01
@@ -8442,8 +7893,8 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
             mymodel.orientability_contrib[iclass]   /= mymodel.orientability_contrib[iclass].sum();
 
         // Keep the orientational accuracy of the best class for the auto-sampling approach
-        acc_rot     = XMIPP_MIN(mymodel.acc_rot[iclass], acc_rot);
-        acc_trans   = XMIPP_MIN(mymodel.acc_trans[iclass], acc_trans);
+        acc_rot   = std::min(mymodel.acc_rot[iclass], acc_rot);
+        acc_trans = std::min(mymodel.acc_trans[iclass], acc_trans);
 
 
         // Richard's formula with Greg's constant
@@ -8519,8 +7970,7 @@ void MlOptimiser::updateAngularSampling(bool myverb)
             // Always go down from original healpix order
             sampling.healpix_order = sampling.healpix_order_ori;
             bool is_decreased = false;
-            while (sampling.getAngularSampling(adaptive_oversampling) < 0.8 * my_min_sampling)
-            {
+            while (sampling.getAngularSampling(adaptive_oversampling) < 0.8 * my_min_sampling) {
                 sampling.healpix_order--;
                 is_decreased = true;
             }
@@ -8529,9 +7979,8 @@ void MlOptimiser::updateAngularSampling(bool myverb)
             if (is_decreased) sampling.healpix_order++;
 
             // Don't go beyond original sampling
-            sampling.healpix_order = XMIPP_MIN(sampling.healpix_order, sampling.healpix_order_ori);
-            if (sampling.healpix_order != previous_healpix_order)
-            {
+            sampling.healpix_order = std::min(sampling.healpix_order, sampling.healpix_order_ori);
+            if (sampling.healpix_order != previous_healpix_order) {
                 sampling.setOrientations(sampling.healpix_order, sampling.getAngularSampling());
 
                 // Resize the pdf_direction arrays to the correct size and fill with an even distribution
@@ -8545,14 +7994,11 @@ void MlOptimiser::updateAngularSampling(bool myverb)
                     wsum_model.pdf_direction[iclass].initZeros(mymodel.nr_directions);
 
             }
-        }
-        else
-        {
+        } else {
             // 2D classification
             RFLOAT new_psi_step = 0.8 * acc_rot * iPowerof2(adaptive_oversampling);
-            new_psi_step = XMIPP_MAX(new_psi_step, sampling.psi_step_ori);
-            if (fabs(new_psi_step - sampling.psi_step) > 0.001 )
-            {
+            new_psi_step = std::max(new_psi_step, sampling.psi_step_ori);
+            if (fabs(new_psi_step - sampling.psi_step) > 0.001 ) {
                 sampling.setOrientations(-1, new_psi_step);
             }
         }
@@ -8561,9 +8007,9 @@ void MlOptimiser::updateAngularSampling(bool myverb)
         // Stay a bit on the safe side: 80% of estimated accuracy
         RFLOAT new_offset_step = 0.8 * acc_trans * iPowerof2(adaptive_oversampling);
         // Don't go coarser than the 95% of the offset_range (so at least 5 samplings are done)
-        new_offset_step = XMIPP_MIN(new_offset_step, 0.95*sampling.offset_range);
+        new_offset_step = std::min(new_offset_step, 0.95*sampling.offset_range);
         // Don't go finer than the original offset_step!
-        new_offset_step = XMIPP_MAX(new_offset_step, sampling.offset_step_ori);
+        new_offset_step = std::max(new_offset_step, sampling.offset_step_ori);
         sampling.setTranslations(new_offset_step, sampling.offset_range, false,
                 (do_helical_refine) && (!ignore_helical_symmetry), sampling.helical_offset_step, helical_rise_initial, helical_twist_initial);
 
@@ -8639,42 +8085,38 @@ void MlOptimiser::updateAngularSampling(bool myverb)
 
                 // Prevent very coarse translational samplings: max 1.5
                 // Also stay a bit on the safe side with the translational sampling: 75% of estimated accuracy
-                RFLOAT new_step = XMIPP_MIN(1.5, 0.75 * acc_trans) * iPowerof2(adaptive_oversampling);
+                RFLOAT new_step = std::min(1.5, 0.75 * acc_trans) * iPowerof2(adaptive_oversampling);
 
                 // For subtomogram averaging: use at least half times previous step size
                 if (mymodel.data_dim == 3) // TODO: check: this might just as well work for 2D data...
-                    new_step = XMIPP_MAX(sampling.offset_step / 2., new_step);
+                    new_step = std::max(sampling.offset_step / 2., new_step);
 
                 // Search ranges are five times the last observed changes in offsets
                 // Only 3x for subtomogram averaging....
                 RFLOAT new_range = (mymodel.data_dim == 2) ? 5. * current_changes_optimal_offsets : 3 * current_changes_optimal_offsets;
 
                 // New range can only become 30% bigger than the previous range (to prevent very slow iterations in the beginning)
-                new_range = XMIPP_MIN(1.3*sampling.offset_range, new_range);
+                new_range = std::min(1.3 * sampling.offset_range, new_range);
 
                 // Prevent too narrow searches: always at least 3x3 pixels in the coarse search
-                new_range= XMIPP_MAX(new_range, 1.5 * new_step);
+                new_range = std::max(new_range, 1.5 * new_step);
 
                 // Also prevent too wide searches: that will lead to memory problems:
                 // If steps size < 1/4th of search range, then decrease search range by 50%
-                if (new_range > 4. * new_step)
-                    new_range /= 2.0;
+                if (new_range > 4.0 * new_step) { new_range /= 2.0; }
 
                 // If even that was not enough: use coarser step size and hope things will settle down later...
-                if (new_range > 4. * new_step)
-                    new_step = new_range / 4.0;
+                if (new_range > 4.0 * new_step) { new_step = new_range / 4.0; }
 
                 // Jun08,2015 Shaoda & Sjors, Helical refinement
                 RFLOAT new_helical_offset_step = sampling.helical_offset_step;
-                if (mymodel.ref_dim == 3)
-                {
+                if (mymodel.ref_dim == 3) {
                     // Jun08,2015 Shaoda & Sjors, Helical refinement
                     //new_helical_offset_step /= 2.0;
 
                     // AFTER AUG17,2015
                     // ??? new_step ~= 1/4 * helical_offset_step ??? still divide helical_offset_step by 2 ! That is reasonable... Because it cannot happen (see above)
-                    if (new_step < new_helical_offset_step)
-                        new_helical_offset_step /= 2.0;
+                    if (new_step < new_helical_offset_step) { new_helical_offset_step /= 2.0; }
                 }
 
                 // B. Use twice as fine angular sampling
@@ -8771,7 +8213,7 @@ void MlOptimiser::updateSubsetSize(bool myverb) {
         } else if (iter <= 10) {
             subset_size = 3 * min_parts_per_class * mymodel.nr_classes;
         } else if (iter <= 15) {
-            subset_size = XMIPP_MAX(3 * min_parts_per_class * mymodel.nr_classes, 0.3 * mydata.numberOfParticles());
+            subset_size = std::max((double) (3 * min_parts_per_class * mymodel.nr_classes), 0.3 * mydata.numberOfParticles());
         } else {
             subset_size = -1;
         }

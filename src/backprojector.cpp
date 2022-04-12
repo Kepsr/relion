@@ -1008,13 +1008,13 @@ void BackProjector::updateSSNRarrays(
         }
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(sigma2) {
             // FSC cannot be negative or zero for conversion into tau2
-            RFLOAT myfsc = XMIPP_MAX(0.001, DIRECT_A1D_ELEM(fsc, i));
+            RFLOAT myfsc = std::max(0.001, DIRECT_A1D_ELEM(fsc, i));
             if (iswhole) {
                 // Factor two because of twice as many particles
                 // Sqrt-term to get 60-degree phase errors....
                 myfsc = sqrt(2.0 * myfsc / (myfsc + 1.0));
             }
-            myfsc = XMIPP_MIN(0.999, myfsc);
+            myfsc = std::min(0.999, myfsc);
             RFLOAT myssnr = myfsc / (1.0 - myfsc);
             // Sjors 29nov2017 try tau2_fudge for pulling harder on Refine3D runs...
             myssnr *= tau2_fudge;
@@ -1214,13 +1214,13 @@ void BackProjector::externalReconstruct(
                 idx                = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX);
                 fsc_halves_io(idx) = MDnewtau.getValue<RFLOAT>(EMDL::POSTPROCESS_FSC_GENERAL);
 
-                RFLOAT myfsc = XMIPP_MAX(0.001, fsc_halves_io(idx));
+                RFLOAT myfsc = std::max(0.001, fsc_halves_io(idx));
                 if (iswhole) {
                     // Factor two because of twice as many particles
                     // Sqrt-term to get 60-degree phase errors....
                     myfsc = sqrt(2.0 * myfsc / (myfsc + 1.0));
                 }
-                myfsc = XMIPP_MIN(0.999, myfsc);
+                myfsc = std::min(0.999, myfsc);
                 RFLOAT myssnr = myfsc / (1.0 - myfsc);
                 myssnr *= tau2_fudge;
                 tau2_io(idx) = myssnr * sigma2_ref(idx);
@@ -1388,11 +1388,14 @@ void BackProjector::reconstruct(
         }
 
         bool have_warned = false;
-        // perform XMIPP_MAX on all weight elements, and do division of data/weight
+        // perform std::max on all weight elements, and do division of data/weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
             const int r2 = kp * kp + ip * ip + jp * jp;
             const int ires = FLOOR(sqrt((RFLOAT) r2) / padding_factor);
-            const RFLOAT weight =  XMIPP_MAX(DIRECT_A3D_ELEM(Fweight, k, i, j), DIRECT_A1D_ELEM(radavg_weight, ires < r_max ? ires : r_max - 1));
+            const RFLOAT weight =  std::max(
+                DIRECT_A3D_ELEM(Fweight, k, i, j), 
+                DIRECT_A1D_ELEM(radavg_weight, ires < r_max ? ires : r_max - 1)
+            );
             if (weight == 0) {
                 if (!have_warned) {
                     std::cerr << " WARNING: ignoring divide by zero in skip_gridding: ires = " << ires << " kp = " << kp << " ip = " << ip << " jp = " << jp << std::endl;
@@ -1423,11 +1426,7 @@ void BackProjector::reconstruct(
 
         // Initialise Fnewweight with 1's and 0's. (also see comments below)
         FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
-            if (k * k + i * i + j * j < max_r2) {
-                A3D_ELEM(weight, k, i, j) = 1.0;
-            } else {
-                A3D_ELEM(weight, k, i, j) = 0.0;
-            }
+            A3D_ELEM(weight, k, i, j) = (RFLOAT) (k * k + i * i + j * j < max_r2);
         }
         // Fnewweight can become too large for a float: always keep this one in double-precision
         MultidimArray<double> Fnewweight;
@@ -1461,10 +1460,10 @@ void BackProjector::reconstruct(
                 if (kp * kp + ip * ip + jp * jp < max_r2) {
 
                     // Make sure no division by zero can occur....
-                    w = XMIPP_MAX(1e-6, abs(DIRECT_A3D_ELEM(Fconv, k, i, j)));
+                    w = std::max(1e-6, abs(DIRECT_A3D_ELEM(Fconv, k, i, j)));
                     // Monitor min, max and avg conv_weight
-                    corr_min = XMIPP_MIN(corr_min, w);
-                    corr_max = XMIPP_MAX(corr_max, w);
+                    corr_min = std::min(corr_min, w);
+                    corr_max = std::max(corr_max, w);
                     corr_avg += w;
                     corr_nn += 1.0;
                     // Apply division of Eq. [14] in Pipe & Menon (1999)
@@ -1506,9 +1505,10 @@ void BackProjector::reconstruct(
         Projector::decenter(data, Fconv, max_r2);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv) {
             #ifdef RELION_SINGLE_PRECISION
-                // Prevent numerical instabilities in single-precision reconstruction with very unevenly sampled orientations
-                if (DIRECT_MULTIDIM_ELEM(Fnewweight, n) > 1e20)
-                    DIRECT_MULTIDIM_ELEM(Fnewweight, n) = 1e20;
+            // Prevent numerical instabilities in single-precision reconstruction with very unevenly sampled orientations
+            #define BIGNUM 1e20
+            if (DIRECT_MULTIDIM_ELEM(Fnewweight, n) > BIGNUM) { DIRECT_MULTIDIM_ELEM(Fnewweight, n) = BIGNUM; }
+            #undef BIGNUM
             #endif
             DIRECT_MULTIDIM_ELEM(Fconv, n) *= DIRECT_MULTIDIM_ELEM(Fnewweight, n);
         }
@@ -1575,7 +1575,7 @@ void BackProjector::reconstruct(
         RFLOAT normftblob = tab_ftblob(0.0);
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_out) {
 
-            RFLOAT r = sqrt((RFLOAT)(k * k + i * i + j * j));
+            RFLOAT r = sqrt((RFLOAT) (k * k + i * i + j * j));
             RFLOAT rval = r / (ori_size * padding_factor);
             A3D_ELEM(vol_out, k, i, j) /= tab_ftblob(rval) / normftblob;
             //if (k==0 && i==0)

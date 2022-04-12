@@ -27,7 +27,7 @@ void PreprocessingMpi::read(int argc, char **argv) {
     Preprocessing::read(argc, argv, node->rank);
 
     int mpi_section = parser.addSection("MPI options");
-    max_mpi_nodes =textToInteger(parser.getOption("--max_mpi_nodes", "Limit the number of effective MPI nodes to protect from too heavy disk I/O (thus ignoring larger values from mpirun)", "8"));
+    max_mpi_nodes = textToInteger(parser.getOption("--max_mpi_nodes", "Limit the number of effective MPI nodes to protect from too heavy disk I/O (thus ignoring larger values from mpirun)", "8"));
 
     // Don't put any output to screen for mpi followers
     verb = node->isLeader();
@@ -46,17 +46,16 @@ void PreprocessingMpi::runExtractParticles() {
         // Each node until max_mpi_nodes does part of the work
         long int nr_mics = MDmics.numberOfObjects();
         long int my_first_mic, my_last_mic;
-        int my_nr_nodes = XMIPP_MIN(max_mpi_nodes, node->size);
+        int my_nr_nodes = std::min(max_mpi_nodes, node->size);
         divide_equally(nr_mics, my_nr_nodes, node->rank, my_first_mic, my_last_mic);
         my_nr_mics = my_last_mic - my_first_mic + 1;
-        //std::cerr << " rank= " << node->rank << " my_first_mic= "<<my_first_mic<< " mylastmic= "<< my_last_mic<< " max_mpi_nodes= "<<max_mpi_nodes<<std::endl;
+        // std::cerr << " rank= " << node->rank << " my_first_mic= " << my_first_mic << " mylastmic= " << my_last_mic << " max_mpi_nodes= " << max_mpi_nodes << std::endl;
 
         int barstep;
         if (verb > 0) {
             std::cout << " Extracting particles from the micrographs ..." << std::endl;
             init_progress_bar(my_nr_mics);
-            barstep = XMIPP_MAX(1, my_nr_mics / 60);
-
+            barstep = std::max(1l, my_nr_mics / 60);
         }
 
         FileName fn_mic, fn_olddir = "";

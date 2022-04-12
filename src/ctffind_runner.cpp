@@ -345,7 +345,7 @@ void CtffindRunner::run() {
                 }
             }
             init_progress_bar(fn_micrographs.size());
-            barstep = XMIPP_MAX(1, fn_micrographs.size() / 60);
+            barstep = std::max(1, (int) fn_micrographs.size() / 60);
         }
 
         std::vector<std::string> allmicnames;
@@ -381,7 +381,7 @@ void CtffindRunner::run() {
 }
 
 void CtffindRunner::joinCtffindResults() {
-    long int barstep = XMIPP_MAX(1, fn_micrographs_all.size() / 60);
+    long int barstep = std::max(1l, (long int) (fn_micrographs_all.size() / 60));
     if (verb > 0) {
         std::cout << " Generating logfile.pdf ... " << std::endl;
         init_progress_bar(fn_micrographs_all.size());
@@ -417,12 +417,10 @@ void CtffindRunner::joinCtffindResults() {
             MDctf.setValue(EMDL::CTF_FOM, CC);
             if (fabs(maxres + 999.) > 0.0) {
                 // Put an upper limit on maxres, as gCtf may put 999. now max is 25.
-                MDctf.setValue(EMDL::CTF_MAXRES, XMIPP_MIN(25.0, maxres));
+                MDctf.setValue(EMDL::CTF_MAXRES, std::min(25.0, maxres));
             }
-            if (fabs(phaseshift + 999.0) > 0.0)
-                MDctf.setValue(EMDL::CTF_PHASESHIFT, phaseshift);
-            if (fabs(valscore + 999.0) > 0.0)
-                MDctf.setValue(EMDL::CTF_VALIDATIONSCORE, valscore);
+            if (fabs(phaseshift + 999.0) > 0.0) { MDctf.setValue(EMDL::CTF_PHASESHIFT,      phaseshift); }
+            if (fabs(valscore   + 999.0) > 0.0) { MDctf.setValue(EMDL::CTF_VALIDATIONSCORE, valscore);   }
         }
 
         if (verb > 0 && imic % 60 == 0) progress_bar(imic);

@@ -679,8 +679,10 @@ void MlOptimiserMpi::expectation() {
     MultidimArray<long int> first_last_nr_images(6);
     int first_follower = 1;
     // Use maximum of 100 particles for 3D and 10 particles for 2D estimations
-    int n_trials_acc = mymodel.ref_dim == 3 && mymodel.data_dim != 3 ? 100 : 10;
-    n_trials_acc = XMIPP_MIN(n_trials_acc, mydata.numberOfParticles());
+    int n_trials_acc = std::min(
+        mymodel.ref_dim == 3 && mymodel.data_dim != 3 ? 100 : 10,
+        (int) mydata.numberOfParticles()
+    );
     MPI_Status status;
 
     #ifdef MKLFFT
@@ -1017,7 +1019,7 @@ void MlOptimiserMpi::expectation() {
         timer.tic(TIMING_EXP_5);
         #endif
         try {
-            long int progress_bar_step_size = XMIPP_MAX(1, my_nr_particles / 60);
+            long int progress_bar_step_size = std::max(1l, my_nr_particles / 60);
             long int prev_barstep = 0;
             long int my_first_particle = 0.;
             long int my_last_particle = my_nr_particles - 1;
@@ -1031,7 +1033,7 @@ void MlOptimiserMpi::expectation() {
                 my_last_particle_halfset2 = mydata.numberOfParticles(1) + my_nr_particles;
 
                 if (do_split_random_halves)
-                    progress_bar_step_size = XMIPP_MAX(1, my_nr_particles * 2 / 60);
+                    progress_bar_step_size = std::max(1l, my_nr_particles * 2 / 60);
             }
 
             if (verb > 0) {
@@ -1095,19 +1097,19 @@ void MlOptimiserMpi::expectation() {
                         my_nr_particles_done = nr_particles_done_halfset1;
                         nr_particles_todo = my_last_particle_halfset1 - my_first_particle_halfset1 + 1;
                         JOB_FIRST = nr_particles_done_halfset1;
-                        JOB_LAST  = XMIPP_MIN(my_last_particle_halfset1, JOB_FIRST + nr_pool - 1);
+                        JOB_LAST  = std::min(my_last_particle_halfset1, JOB_FIRST + nr_pool - 1);
                     } else {
                         my_nr_particles_done = nr_particles_done_halfset2;
                         nr_particles_todo = my_last_particle_halfset2 - my_first_particle_halfset2 + 1;
                         JOB_FIRST = mydata.numberOfParticles(1) + nr_particles_done_halfset2;
-                        JOB_LAST  = XMIPP_MIN(my_last_particle_halfset2, JOB_FIRST + nr_pool - 1);
+                        JOB_LAST  = std::min(my_last_particle_halfset2, JOB_FIRST + nr_pool - 1);
                     }
                 } else {
                     random_halfset = 0;
                     my_nr_particles_done = nr_particles_done;
                     nr_particles_todo =  my_last_particle - my_first_particle + 1;
                     JOB_FIRST = nr_particles_done;
-                    JOB_LAST  = XMIPP_MIN(my_last_particle, JOB_FIRST + nr_pool - 1);
+                    JOB_LAST  = std::min(my_last_particle, JOB_FIRST + nr_pool - 1);
                 }
 
                 // Now send out a new job
@@ -1895,7 +1897,7 @@ void MlOptimiserMpi::maximization() {
                             if (do_avoid_sgd) {
                                 if (iter < sgd_ini_iter) {
                                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[ith_recons]) {
-                                        DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n) = XMIPP_MAX(0.0, DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n));
+                                        DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n) = std::max(0.0, DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n));
                                     }
                                 }
                                 mymodel.Iref[ith_recons] = mymodel.Iref[ith_recons] - Iref_old;
@@ -2055,7 +2057,7 @@ void MlOptimiserMpi::maximization() {
                                 if (do_avoid_sgd) {
                                     if (iter < sgd_ini_iter) {
                                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[ith_recons]) {
-                                            DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n) = XMIPP_MAX(0.0, DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n));
+                                            DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n) = std::max(0.0, DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n));
                                         }
                                     }
                                     mymodel.Iref[ith_recons] = mymodel.Iref[ith_recons] - Iref_old;
@@ -2354,7 +2356,7 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
         REPORT_ERROR("BUG: you should not be in MlOptimiserMpi::joinTwoHalvesAtLowResolution!");
 
     // Loop over all classes (this will be just one class for now...)
-    RFLOAT myres = XMIPP_MAX(low_resol_join_halves, 1./mymodel.current_resolution);
+    RFLOAT myres = std::max(low_resol_join_halves, 1./mymodel.current_resolution);
     int lowres_r_max = CEIL(mymodel.ori_size * mymodel.pixel_size / myres);
 
     for (int ibody = 0; ibody< mymodel.nr_bodies; ibody++) {
@@ -2964,7 +2966,7 @@ void MlOptimiserMpi::iterate() {
                     }
 
                     // At least fsc05 - fsc0143 + 5 shells as incr_size
-                    incr_size = XMIPP_MAX(incr_size, fsc0143 - fsc05 + 5);
+                    incr_size = std::max(incr_size, fsc0143 - fsc05 + 5);
                     if (!has_high_fsc_at_limit)
                         has_high_fsc_at_limit = (DIRECT_A1D_ELEM(mymodel.fsc_halves_class[ibody], mymodel.current_size/2 - 1) > 0.2);
                 }

@@ -32,21 +32,21 @@
 
 // #define PROJ_TIMING
 #ifdef PROJ_TIMING
-    Timer proj_timer;
-    int TIMING_TOP = proj_timer.setNew("PROJECTOR - computeFourierTransformMap");
-    int TIMING_GRID = proj_timer.setNew("PROJECTOR - gridCorr");
-    int TIMING_PAD = proj_timer.setNew("PROJECTOR - padTransMap");
-    int TIMING_CENTER = proj_timer.setNew("PROJECTOR - centerFFT");
-    int TIMING_TRANS = proj_timer.setNew("PROJECTOR - transform");
-    int TIMING_FAUX = proj_timer.setNew("PROJECTOR - Faux");
-    int TIMING_POW = proj_timer.setNew("PROJECTOR - power_spectrum");
-    int TIMING_INIT1 = proj_timer.setNew("PROJECTOR - init1");
-    int TIMING_INIT2 = proj_timer.setNew("PROJECTOR - init2");
-    #define TIMING_TIC(id) proj_timer.tic(id)
-    #define TIMING_TOC(id) proj_timer.toc(id)
+Timer proj_timer;
+int TIMING_TOP = proj_timer.setNew("PROJECTOR - computeFourierTransformMap");
+int TIMING_GRID = proj_timer.setNew("PROJECTOR - gridCorr");
+int TIMING_PAD = proj_timer.setNew("PROJECTOR - padTransMap");
+int TIMING_CENTER = proj_timer.setNew("PROJECTOR - centerFFT");
+int TIMING_TRANS = proj_timer.setNew("PROJECTOR - transform");
+int TIMING_FAUX = proj_timer.setNew("PROJECTOR - Faux");
+int TIMING_POW = proj_timer.setNew("PROJECTOR - power_spectrum");
+int TIMING_INIT1 = proj_timer.setNew("PROJECTOR - init1");
+int TIMING_INIT2 = proj_timer.setNew("PROJECTOR - init2");
+#define TIMING_TIC(id) proj_timer.tic(id)
+#define TIMING_TOC(id) proj_timer.toc(id)
 #else
-    #define TIMING_TIC(id)
-    #define TIMING_TOC(id)
+#define TIMING_TIC(id)
+#define TIMING_TOC(id)
 #endif
 
 /// HACK: Imitate a context manager.
@@ -56,13 +56,10 @@ using namespace gravis;
 
 void Projector::initialiseData(int current_size) {
     // By default r_max is half ori_size
-    if (current_size < 0)
-        r_max = ori_size / 2;
-    else
-        r_max = current_size / 2;
+    r_max = (current_size < 0 ? ori_size : current_size) / 2;
 
     // Never allow r_max beyond Nyquist...
-    r_max = XMIPP_MIN(r_max, ori_size / 2);
+    r_max = std::min(r_max, ori_size / 2);
 
     // Set pad_size
     pad_size = 2 * (ROUND(padding_factor * r_max) + 1) + 1;
@@ -115,7 +112,7 @@ long int Projector::getSize() {
 void Projector::computeFourierTransformMap(
     MultidimArray<RFLOAT> &vol_in, MultidimArray<RFLOAT> &power_spectrum,
     int current_size, int nr_threads, bool do_gridding, bool do_heavy, int min_ires,
-    const MultidimArray<RFLOAT>* fourier_mask, bool do_gpu
+    const MultidimArray<RFLOAT> *fourier_mask, bool do_gpu
 ) {
     #ifdef CUDA
     static int semid = -1;
@@ -162,26 +159,33 @@ void Projector::computeFourierTransformMap(
 
     // Make Mpad
     switch (ref_dim) {
+
         case 2:
-        if (do_heavy)
+        if (do_heavy) {
             Mpad.initZeros(padoridim, padoridim);
-        else
+        } else {
             Mpad.reshape(padoridim, padoridim);
-        if (data_dim == 2)
-            normfft = (RFLOAT)(padding_factor * padding_factor);
-        else
-            normfft = (RFLOAT)(padding_factor * padding_factor * ori_size);
+        }
+        normfft = (RFLOAT) (
+            data_dim == 2 ? 
+            padding_factor * padding_factor : 
+            padding_factor * padding_factor * ori_size
+        );
         break;
+
         case 3:
-        if (do_heavy)
+        if (do_heavy) {
             Mpad.initZeros(padoridim, padoridim, padoridim);
-        else
+        } else {
             Mpad.reshape(padoridim, padoridim, padoridim);
-        if (data_dim == 3)
-            normfft = (RFLOAT)(padding_factor * padding_factor * padding_factor);
-        else
-            normfft = (RFLOAT)(padding_factor * padding_factor * padding_factor * ori_size);
+        }
+        normfft = (RFLOAT) (
+            data_dim == 3 ?
+            padding_factor * padding_factor * padding_factor : 
+            padding_factor * padding_factor * padding_factor * ori_size
+        );
         break;
+
         default:
         REPORT_ERROR((std::string) "Projector::" + __func__ + "%%ERROR: Dimension of the data array should be 2 or 3");
     }

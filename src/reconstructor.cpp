@@ -254,7 +254,7 @@ void Reconstructor::backproject(int rank, int size) {
     backprojector.initZeros(2 * r_max);
 
     long int nr_parts = DF.numberOfObjects();
-    long int barstep = XMIPP_MAX(1, nr_parts / (size * 120));
+    long int barstep = std::max(1l, nr_parts / (size * 120));
     if (verb > 0) {
         std::cout << " + Back-projecting all images ..." << std::endl;
         time_config();
@@ -409,8 +409,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
         // Make coloured noise image
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-            int ires = ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
-            ires = XMIPP_MIN(ires, myBoxSize / 2); // at freqs higher than Nyquist: use last sigma2 value
+            int ires = std::min(ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), myBoxSize / 2);
+            // at freqs higher than Nyquist: use last sigma2 value
 
             RFLOAT sigma = sqrt(DIRECT_A1D_ELEM(model.sigma2_noise[my_mic_id], ires));
             DIRECT_A3D_ELEM(F2D, k, i, j).real += rnd_gaus(0.0, sigma);

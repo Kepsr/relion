@@ -866,7 +866,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Imask()) {
             if (A3D_ELEM(Imask(), k, i, j) > 0.05) {
                 int d2 = (k - ZZ(com)) * (k - ZZ(com)) + (i - YY(com)) * (i - YY(com)) + (j - XX(com)) * (j - XX(com));
-                max_d2 = XMIPP_MAX(max_d2, d2);
+                if (d2 > max_d2) { max_d2 = d2; }
             }
         }
         max_radius_mask_bodies[nr_bodies] = CEIL(pixel_size * sqrt((RFLOAT)max_d2));
@@ -1548,7 +1548,7 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
         idx_stop = packed_size;
     } else if (packed_size > MAX_PACK_SIZE) {
         idx_start = (unsigned long long) piece * MAX_PACK_SIZE;
-        idx_stop = XMIPP_MIN(idx_start + MAX_PACK_SIZE, packed_size);
+        idx_stop = std::min(idx_start + MAX_PACK_SIZE, packed_size);
         nr_pieces = CEIL((RFLOAT)packed_size/(RFLOAT)MAX_PACK_SIZE);
     } else {
         idx_start = 0;

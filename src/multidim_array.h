@@ -2624,9 +2624,9 @@ class MultidimArray {
         // For use in rangeAdjust
         pair<RFLOAT, RFLOAT> maskminmax(MultidimArray<int> &mask) {
             RFLOAT min0, max0;
-            int* maskptr = mask.data;
+            int *maskptr = mask.data;
 
-            T* ptr = NULL;
+            T *ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
                 if (*maskptr) {
@@ -2634,8 +2634,8 @@ class MultidimArray {
                     if (n == 0) {
                         min0 = max0 = (RFLOAT)val;
                     } else {
-                        min0 = XMIPP_MIN(min0, val);
-                        max0 = XMIPP_MAX(max0, val);
+                        min0 = std::min(min0, val);
+                        max0 = std::max(max0, val);
                     }
                 }
                 maskptr++;
@@ -3735,16 +3735,19 @@ class MultidimArray {
          * components of the two input arrays. They must have the same shape, if
          * not an exception is thrown
          */
-        friend void MAX(const MultidimArray<T>& v1, const MultidimArray<T>& v2,
-                        MultidimArray<T>& result) {
+        friend void MAX(
+            const MultidimArray<T>& v1, const MultidimArray<T>& v2,
+            MultidimArray<T>& result
+        ) {
             if (!v1.sameShape(v2))
                 REPORT_ERROR("MAX: arrays of different shape");
 
             result.resize(v1);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(result)
-            DIRECT_MULTIDIM_ELEM(result,n) = XMIPP_MAX(
-                                                DIRECT_MULTIDIM_ELEM(v1,n),
-                                                DIRECT_MULTIDIM_ELEM(v2,n));
+            DIRECT_MULTIDIM_ELEM(result, n) = std::max(
+                DIRECT_MULTIDIM_ELEM(v1, n),
+                DIRECT_MULTIDIM_ELEM(v2, n)
+            );
         }
 
         /** MIN
@@ -3753,16 +3756,19 @@ class MultidimArray {
          * components of the two input arrays. They must have the same shape, if
          * not an exception is thrown
          */
-        friend void MIN(const MultidimArray<T>& v1, const MultidimArray<T>& v2,
-                        MultidimArray<T>& result) {
+        friend void MIN(
+            const MultidimArray<T>& v1, const MultidimArray<T>& v2,
+            MultidimArray<T>& result
+        ) {
             if (!v1.sameShape(v2))
                 REPORT_ERROR("MIN: arrays of different shape");
 
             result.resize(v1);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(result)
-            DIRECT_MULTIDIM_ELEM(result,n) = XMIPP_MIN(
-                                                DIRECT_MULTIDIM_ELEM(v1,n),
-                                                DIRECT_MULTIDIM_ELEM(v2,n));
+            DIRECT_MULTIDIM_ELEM(result, n) = std::min(
+                DIRECT_MULTIDIM_ELEM(v1, n),
+                DIRECT_MULTIDIM_ELEM(v2, n)
+            );
         }
 
         /** Sqrt.
@@ -4245,12 +4251,12 @@ bool operator != (const MultidimArray<T>& op1, const MultidimArray<T>& op2) {
  */
 template<typename T>
 void cutToCommonSize(MultidimArray<T>& V1, MultidimArray<T>& V2) {
-    long int z0 = XMIPP_MAX(STARTINGZ(V1),  STARTINGZ(V2));
-    long int zF = XMIPP_MIN(FINISHINGZ(V1), FINISHINGZ(V2));
-    long int y0 = XMIPP_MAX(STARTINGY(V1),  STARTINGY(V2));
-    long int yF = XMIPP_MIN(FINISHINGY(V1), FINISHINGY(V2));
-    long int x0 = XMIPP_MAX(STARTINGX(V1),  STARTINGX(V2));
-    long int xF = XMIPP_MIN(FINISHINGX(V1), FINISHINGX(V2));
+    long int z0 = std::max(STARTINGZ(V1),  STARTINGZ(V2));
+    long int zF = std::min(FINISHINGZ(V1), FINISHINGZ(V2));
+    long int y0 = std::max(STARTINGY(V1),  STARTINGY(V2));
+    long int yF = std::min(FINISHINGY(V1), FINISHINGY(V2));
+    long int x0 = std::max(STARTINGX(V1),  STARTINGX(V2));
+    long int xF = std::min(FINISHINGX(V1), FINISHINGX(V2));
 
     V1.window(z0, y0, x0, zF, yF, xF);
     V2.window(z0, y0, x0, zF, yF, xF);
@@ -4272,7 +4278,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T>& v) {
     T* ptr;
     long int n;
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr)
-    max_val = XMIPP_MAX(max_val, ABS(*ptr));
+    max_val = std::max(max_val, ABS(*ptr));
 
     int prec = bestPrecision(max_val, 10);
 

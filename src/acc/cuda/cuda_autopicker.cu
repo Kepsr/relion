@@ -114,7 +114,7 @@ void AutoPickerCuda::run() {
     if (basePckr->verb > 0) {
         std::cout << " Autopicking ..." << std::endl;
         init_progress_bar(my_nr_micrographs);
-        barstep = XMIPP_MAX(1, my_nr_micrographs / 60);
+        barstep = std::max(1, (int) my_nr_micrographs / 60);
     }
 
     if (!basePckr->do_read_fom_maps) {
@@ -292,7 +292,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     RFLOAT my_size, my_xsize, my_ysize;
     my_xsize = XSIZE(Imic());
     my_ysize = YSIZE(Imic());
-    my_size = (my_xsize != my_ysize) ? XMIPP_MAX(my_xsize, my_ysize) : my_xsize;
+    my_size = std::max(my_xsize, my_ysize);
     if (basePckr->extra_padding > 0)
         my_size += 2 * basePckr->extra_padding;
 

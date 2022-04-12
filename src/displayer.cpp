@@ -399,8 +399,8 @@ int basisViewerWindow::fillPickerViewerCanvas(
     canvas.fn_color = _fn_color;
     canvas.fn_mic = _fn_mic;
     canvas.color_label = EMDL::str2Label(_color_label);
-    canvas.smallest_color_value = XMIPP_MIN(_color_blue_value, _color_red_value);
-    canvas.biggest_color_value = XMIPP_MAX(_color_blue_value, _color_red_value);
+    canvas.smallest_color_value = std::min(_color_blue_value, _color_red_value);
+    canvas.biggest_color_value  = std::max(_color_blue_value, _color_red_value);
     canvas.do_blue_to_red = (_color_blue_value < _color_red_value);
     canvas.do_read_whole_stacks = false;
     if (_fn_coords != "" && exists(_fn_coords)) {
@@ -448,7 +448,7 @@ void basisViewerCanvas::fill(
     if (nr_imgs > 1) {
         std::cout << "Reading in all images..." << std::endl;
         init_progress_bar(nr_imgs);
-        barstep = XMIPP_MAX(1, nr_imgs / 60);
+        barstep = std::max(1, nr_imgs / 60);
     }
 
     nrow = 0;
@@ -569,7 +569,7 @@ void basisViewerCanvas::fill(
                 }
                 icol = my_sorted_ipos % ncol;
                 irow = my_sorted_ipos / ncol;
-                nrow = XMIPP_MAX(nrow, irow + 1);
+                nrow = std::max(nrow, irow + 1);
                 if (my_ipos == 0) {
                     xsize_box = CEIL(_scale * XSIZE(img())) + 2 * xoff; // 2 pixels on each side in between all images
                     ysize_box = CEIL(_scale * YSIZE(img())) + 2 * yoff;
@@ -1647,8 +1647,9 @@ void pickerViewerCanvas::draw() {
                 if (colval + 999.0 < XMIPP_EQUAL_ACCURACY) {
                     fl_color(FL_GREEN);
                 } else {
-                    colval = XMIPP_MAX(colval, smallest_color_value);
-                    colval = XMIPP_MIN(colval, biggest_color_value);
+                    // Bound colval
+                    colval = std::max(colval, smallest_color_value);
+                    colval = std::min(colval, biggest_color_value);
                     unsigned char red, blue;
                     if (do_blue_to_red) {
                         red  = ROUND(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));

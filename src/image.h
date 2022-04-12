@@ -1464,9 +1464,9 @@ inline void greyToRGB(const int colour_scheme, const unsigned char grey, unsigne
         case ColourScheme::cyan_black_yellow: {
             const RFLOAT d_rb = 3 * (grey - 128);
             const RFLOAT d_g = 3 * (std::abs(grey - 128) - 42);
-            red   = (unsigned char) (FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0,  d_rb))));
-            green = (unsigned char) (FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0,  d_g ))));
-            blue  = (unsigned char) (FLOOR(XMIPP_MIN(255.0, XMIPP_MAX(0.0, -d_rb))));
+            red   = (unsigned char) FLOOR(std::min(255.0, std::max(0.0,  d_rb)));
+            green = (unsigned char) FLOOR(std::min(255.0, std::max(0.0,  d_g )));
+            blue  = (unsigned char) FLOOR(std::min(255.0, std::max(0.0, -d_rb)));
             return;
         }
     }

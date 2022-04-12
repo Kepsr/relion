@@ -655,7 +655,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
 
                 // Only consider differences within sigma_cutoff * sigma_rot
                 // TODO: If sigma_rot and sigma_tilt are not the same (NOT for helices)?
-                RFLOAT biggest_sigma = XMIPP_MAX(sigma_rot, sigma_tilt);
+                RFLOAT biggest_sigma = std::max(sigma_rot, sigma_tilt);
                 if (diffang < sigma_cutoff * biggest_sigma) {
                     // TODO!!! If tilt is zero then any rot will be OK!!!!!
                     //std::cerr<<"Best direction index: "<<idir<<std::endl;
@@ -1742,11 +1742,8 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
         // Don't make a cylinder for pdf==0
         if (pdf > 0.0) {
             // Colour from blue to red according to deviations from sigma_pdf
-            RFLOAT colscale = (pdf - pdfmean) / pdfsigma;
-            colscale = XMIPP_MIN(colscale, 5.0);
-            colscale = XMIPP_MAX(colscale, -1.0);
-            colscale /= 6.0;
-            colscale += 1.0 / 6.0; // colscale ranges from 0 (-5 sigma) to 1 (+5 sigma)
+            RFLOAT colscale = (1.0 + std::max(-1.0, std::min((pdf - pdfmean) / pdfsigma, 5.0))) / 6.0;
+            // colscale ranges from 0 (-5 sigma) to 1 (+5 sigma)
 
             // The length of the cylinder will depend on the pdf_direction
             RFLOAT Rp = R + Rmax_frac * R * pdf / pdfmax;

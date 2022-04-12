@@ -117,7 +117,7 @@ class particle_symmetry_expand_parameters {
             }
         }
 
-        int barstep = XMIPP_MAX(1, DFi.numberOfObjects() / 60);
+        int barstep = std::max(1, (int) DFi.numberOfObjects() / 60);
         init_progress_bar(DFi.numberOfObjects());
         DFo.clear();
 

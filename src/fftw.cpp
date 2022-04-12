@@ -657,8 +657,8 @@ void selfScaleToSizeFourier(long int Ydim, long int Xdim, MultidimArray<RFLOAT>&
     FourierTransformer transformerMp;
     transformerMp.setReal(Mpmem);
     transformerMp.getFourierAlias(MpmemFourier);
-    long int ihalf = XMIPP_MIN((YSIZE(MpmemFourier)/2+1),(YSIZE(MmemFourier)/2+1));
-    long int xsize = XMIPP_MIN((XSIZE(MmemFourier)),(XSIZE(MpmemFourier)));
+    long int ihalf = std::min((YSIZE(MpmemFourier)/2+1),(YSIZE(MmemFourier)/2+1));
+    long int xsize = std::min((XSIZE(MmemFourier)),(XSIZE(MpmemFourier)));
     //Init with zero
     MpmemFourier.initZeros();
     for (long int i=0; i<ihalf; i++)
@@ -1213,53 +1213,41 @@ void LoGFilterMap(MultidimArray<Complex > &FT, int ori_size, RFLOAT sigma, RFLOA
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT)
     {
         RFLOAT r2 = (RFLOAT)kp * (RFLOAT)kp + (RFLOAT)ip * (RFLOAT)ip + (RFLOAT)jp * (RFLOAT)jp;
-        DIRECT_A3D_ELEM(FT, k, i, j) *= r2 * exp(-0.5*r2/isigma2) / isigma2;
+        DIRECT_A3D_ELEM(FT, k, i, j) *= r2 * exp(-0.5 * r2 / isigma2) / isigma2;
     }
 
 }
 
-void LoGFilterMap(MultidimArray<RFLOAT > &img, RFLOAT sigma, RFLOAT angpix)
-{
+void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
     FourierTransformer transformer;
-    MultidimArray<Complex > FT;
+    MultidimArray<Complex> FT;
 
     // Make this work for maps (or more likely 2D images) that have unequal X and Y dimensions
     img.setXmippOrigin();
     int my_xsize = XSIZE(img);
     int my_ysize = YSIZE(img);
-    int my_size = XMIPP_MAX(my_xsize, my_ysize);
+    int my_size = std::max(my_xsize, my_ysize);
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
-            int my_small_size = XMIPP_MIN(my_xsize, my_ysize);
+            int my_small_size = std::min(my_xsize, my_ysize);
             Stats<RFLOAT> stats = img.computeStats();
-            RFLOAT avg    = stats.avg;
-            RFLOAT stddev = stats.stddev;
-            RFLOAT minn   = stats.min;
-            RFLOAT maxx   = stats.max;
 
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
                 Xmipp::last(my_size), Xmipp::last(my_size)
             );
             if (my_small_size == my_xsize) {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img)
-                {
-                    if (j <  Xmipp::init(my_small_size) || j >  Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
+                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                }
+            } else {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
+                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             }
-            else
-            {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img)
-                {
-                    if (i <  Xmipp::init(my_small_size) || i >  Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
-                }
-
-            }
-        }
-        else
-        {
+        } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
     }
@@ -1267,103 +1255,89 @@ void LoGFilterMap(MultidimArray<RFLOAT > &img, RFLOAT sigma, RFLOAT angpix)
     LoGFilterMap(FT, XSIZE(img), sigma, angpix);
     transformer.inverseFourierTransform();
     img.setXmippOrigin();
-    if (my_xsize != my_ysize)
-    {
-        if (img.getDim() == 2)
-        {
-            img.window(Xmipp::init(my_ysize), Xmipp::init(my_xsize),
-                       Xmipp::last(my_ysize),	Xmipp::last(my_xsize));
-        }
-        else
-        {
+    if (my_xsize != my_ysize) {
+        if (img.getDim() == 2) {
+            img.window(
+                Xmipp::init(my_ysize), Xmipp::init(my_xsize),
+                Xmipp::last(my_ysize),	Xmipp::last(my_xsize)
+            );
+        } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
     }
-
-
 }
 
-void lowPassFilterMap(MultidimArray<Complex > &FT, int ori_size,
-        RFLOAT low_pass, RFLOAT angpix, int filter_edge_width, bool do_highpass_instead)
-{
+void lowPassFilterMap(
+    MultidimArray<Complex> &FT, int ori_size,
+    RFLOAT low_pass, RFLOAT angpix, int filter_edge_width, bool do_highpass_instead
+) {
 
     // Which resolution shell is the filter?
-    int ires_filter = ROUND((ori_size * angpix)/low_pass);
+    int ires_filter = ROUND((ori_size * angpix) / low_pass);
     int filter_edge_halfwidth = filter_edge_width / 2;
 
     // Soft-edge: from 1 shell less to one shell more:
-    RFLOAT edge_low = XMIPP_MAX(0., (ires_filter - filter_edge_halfwidth) / (RFLOAT)ori_size); // in 1/pix
-    RFLOAT edge_high = XMIPP_MIN(XSIZE(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT)ori_size); // in 1/pix
+    RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    RFLOAT edge_high = std::min((double) XSIZE(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
     RFLOAT edge_width = edge_high - edge_low;
 
     // Put a raised cosine from edge_low to edge_high
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT)
-    {
-        RFLOAT r2 = (RFLOAT)kp * (RFLOAT)kp + (RFLOAT)ip * (RFLOAT)ip + (RFLOAT)jp * (RFLOAT)jp;
-        RFLOAT res = sqrt((RFLOAT)r2)/ori_size; // get resolution in 1/pixel
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
+        RFLOAT r2 = kp * kp + ip * ip + jp * jp;
+        RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
 
-        if (do_highpass_instead)
-        {
-            if (res < edge_low)
-                DIRECT_A3D_ELEM(FT, k, i, j) = 0.;
-            else if (res > edge_high)
+        if (do_highpass_instead) {
+            if (res < edge_low) {
+                DIRECT_A3D_ELEM(FT, k, i, j) = 0.0;
+            } else if (res > edge_high) {
                 continue;
-            else
-                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 - 0.5 * cos( PI * (res-edge_low)/edge_width);
-        }
-        else
-        {
-            if (res < edge_low)
+            } else {
+                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 * (1.0 - cos(PI * (res - edge_low) / edge_width));
+            }
+        } else {
+            if (res < edge_low) {
                 continue;
-            else if (res > edge_high)
+            } else if (res > edge_high) {
                 DIRECT_A3D_ELEM(FT, k, i, j) = 0.;
-            else
-                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 + 0.5 * cos( PI * (res-edge_low)/edge_width);
+            } else {
+                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+            }
         }
     }
 
 
 }
-void lowPassFilterMap(MultidimArray<RFLOAT > &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width)
-{
+void lowPassFilterMap(
+    MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
+) {
     FourierTransformer transformer;
-    MultidimArray<Complex > FT;
+    MultidimArray<Complex> FT;
 
     // Make this work for maps (or more likely 2D images) that have unequal X and Y dimensions
     img.setXmippOrigin();
     int my_xsize = XSIZE(img);
     int my_ysize = YSIZE(img);
-    int my_size = XMIPP_MAX(my_xsize, my_ysize);
+    int my_size = std::max(my_xsize, my_ysize);
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
-            int my_small_size = XMIPP_MIN(my_xsize, my_ysize);
+            int my_small_size = std::min(my_xsize, my_ysize);
             Stats<RFLOAT> stats = img.computeStats();
-            RFLOAT avg    = stats.avg;
-            RFLOAT stddev = stats.stddev;
-            RFLOAT minn   = stats.min;
-            RFLOAT maxx   = stats.max;
-            img.window(Xmipp::init(my_size), Xmipp::init(my_size),
-                       Xmipp::last(my_size),  Xmipp::last(my_size));
-            if (my_small_size == my_xsize)
-            {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img)
-                {
-                    if (j <  Xmipp::init(my_small_size) || j >  Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
+            img.window(
+                Xmipp::init(my_size), Xmipp::init(my_size),
+                Xmipp::last(my_size), Xmipp::last(my_size)
+            );
+            if (my_small_size == my_xsize) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
+                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                }
+            } else {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
+                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             }
-            else
-            {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img)
-                {
-                    if (i <  Xmipp::init(my_small_size) || i >  Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
-                }
-
-            }
-        }
-        else
-        {
+        } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
     }
@@ -1371,96 +1345,86 @@ void lowPassFilterMap(MultidimArray<RFLOAT > &img, RFLOAT low_pass, RFLOAT angpi
     lowPassFilterMap(FT, XSIZE(img), low_pass, angpix, filter_edge_width, false);
     transformer.inverseFourierTransform();
     img.setXmippOrigin();
-    if (my_xsize != my_ysize)
-    {
-        if (img.getDim() == 2)
-        {
-            img.window(Xmipp::init(my_ysize), Xmipp::init(my_xsize),
-                       Xmipp::last(my_ysize),	Xmipp::last(my_xsize));
-        }
-        else
-        {
+    if (my_xsize != my_ysize) {
+        if (img.getDim() == 2) {
+            img.window(
+                Xmipp::init(my_ysize), Xmipp::init(my_xsize),
+                Xmipp::last(my_ysize),	Xmipp::last(my_xsize)
+            );
+        } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
     }
-
-
 }
 
-void highPassFilterMap(MultidimArray<RFLOAT > &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width)
-{
+void highPassFilterMap(
+    MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
+) {
     FourierTransformer transformer;
-    MultidimArray<Complex > FT;
+    MultidimArray<Complex> FT;
     transformer.FourierTransform(img, FT, false);
     lowPassFilterMap(FT, XSIZE(img), low_pass, angpix, filter_edge_width, true);
     transformer.inverseFourierTransform();
 }
 
-void directionalFilterMap(MultidimArray<Complex > &FT, int ori_size,
-        RFLOAT low_pass, RFLOAT angpix, std::string axis, int filter_edge_width)
-{
-
+void directionalFilterMap(
+    MultidimArray<Complex> &FT, int ori_size,
+    RFLOAT low_pass, RFLOAT angpix, std::string axis, int filter_edge_width
+) {
 
     // Which resolution shell is the filter?
-    int ires_filter = ROUND((ori_size * angpix)/low_pass);
+    int ires_filter = ROUND(ori_size * angpix / low_pass);
     int filter_edge_halfwidth = filter_edge_width / 2;
 
     // Soft-edge: from 1 shell less to one shell more:
-    RFLOAT edge_low = XMIPP_MAX(0., (ires_filter - filter_edge_halfwidth) / (RFLOAT)ori_size); // in 1/pix
-    RFLOAT edge_high = XMIPP_MIN(XSIZE(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT)ori_size); // in 1/pix
+    RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    RFLOAT edge_high = std::min((double) XSIZE(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
     RFLOAT edge_width = edge_high - edge_low;
 
-    if (axis == "x" || axis == "X")
-    {
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT)
-        {
+    if (axis == "x" || axis == "X") {
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
 
-            RFLOAT r2 = (RFLOAT)jp * (RFLOAT)jp;
-            RFLOAT res = sqrt((RFLOAT)r2)/ori_size; // get resolution in 1/pixel
+            RFLOAT r2 = jp * jp;
+            /// BUG: sqrt(r2 / ori_size) or sqrt(r2) / ori_size ?
+            RFLOAT res = sqrt(r2 / (RFLOAT) ori_size); // get resolution in 1/pixel
 
-            if (res < edge_low)
+            if (res < edge_low) {
                 continue;
-            else if (res > edge_high)
+            } else if (res > edge_high) {
+                DIRECT_A3D_ELEM(FT, k, i, j) = 0.0;
+            } else {
+                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+            }
+        }
+    } else if (axis == "y" || axis == "Y") {
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
+
+            RFLOAT r2 = ip * ip;
+            RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
+
+            if (res < edge_low) {
+                continue;
+            } else if (res > edge_high) {
                 DIRECT_A3D_ELEM(FT, k, i, j) = 0.;
-            else
-                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 + 0.5 * cos( PI * (res-edge_low)/edge_width);
+            } else {
+                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+            }
+        }
+    } else if  (axis == "z" || axis == "Z") {
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
+
+            RFLOAT r2 = kp * kp;
+            RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
+
+            if (res < edge_low) {
+                continue;
+            } else if (res > edge_high) {
+                DIRECT_A3D_ELEM(FT, k, i, j) = 0.;
+            } else {
+                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+            }
         }
     }
-    else if (axis == "y" || axis == "Y")
-    {
-
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT)
-        {
-
-            RFLOAT r2 = (RFLOAT)ip * (RFLOAT)ip;
-            RFLOAT res = sqrt((RFLOAT)r2)/ori_size; // get resolution in 1/pixel
-
-            if (res < edge_low)
-                continue;
-            else if (res > edge_high)
-                DIRECT_A3D_ELEM(FT, k, i, j) = 0.;
-            else
-                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 + 0.5 * cos( PI * (res-edge_low)/edge_width);
-        }
-    }
-    else if  (axis == "z" || axis == "Z")
-    {
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT)
-        {
-
-            RFLOAT r2 = (RFLOAT)kp * (RFLOAT)kp;
-            RFLOAT res = sqrt((RFLOAT)r2)/ori_size; // get resolution in 1/pixel
-
-            if (res < edge_low)
-                continue;
-            else if (res > edge_high)
-                DIRECT_A3D_ELEM(FT, k, i, j) = 0.;
-            else
-                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.5 + 0.5 * cos( PI * (res-edge_low)/edge_width);
-        }
-    }
-
-
 }
 
 void directionalFilterMap(
@@ -1475,29 +1439,25 @@ void directionalFilterMap(
     img.setXmippOrigin();
     int my_xsize = XSIZE(img);
     int my_ysize = YSIZE(img);
-    int my_size = XMIPP_MAX(my_xsize, my_ysize);
+    int my_size = std::max(my_xsize, my_ysize);
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
-            int my_small_size = XMIPP_MIN(my_xsize, my_ysize);
+            int my_small_size = std::min(my_xsize, my_ysize);
             Stats<RFLOAT> stats = img.computeStats();
-            RFLOAT avg    = stats.avg;
-            RFLOAT stddev = stats.stddev;
-            RFLOAT minn   = stats.min;
-            RFLOAT maxx   = stats.max;
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
-                Xmipp::last(my_size),  Xmipp::last(my_size)
+                Xmipp::last(my_size), Xmipp::last(my_size)
             );
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
-                    if (j <  Xmipp::init(my_small_size) || j >  Xmipp::last(my_small_size)) {
-                        A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
+                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size)) {
+                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
                     }
                 }
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
-                    if (i <  Xmipp::init(my_small_size) || i >  Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(avg, stddev);
+                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
+                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
 
             }
@@ -1509,65 +1469,59 @@ void directionalFilterMap(
     directionalFilterMap(FT, XSIZE(img), low_pass, angpix, axis, filter_edge_width);
     transformer.inverseFourierTransform();
     img.setXmippOrigin();
-    if (my_xsize != my_ysize)
-    {
-        if (img.getDim() == 2)
-        {
-            img.window(Xmipp::init(my_ysize), Xmipp::init(my_xsize),
-                       Xmipp::last(my_ysize),	Xmipp::last(my_xsize));
-        }
-        else
-        {
+    if (my_xsize != my_ysize) {
+        if (img.getDim() == 2) {
+            img.window(
+                Xmipp::init(my_ysize), Xmipp::init(my_xsize),
+                Xmipp::last(my_ysize), Xmipp::last(my_xsize)
+            );
+        } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
     }
-
 }
 
 
-void applyBeamTilt(const MultidimArray<Complex > &Fin, MultidimArray<Complex > &Fout, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
-        RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size)
-{
-
+void applyBeamTilt(
+    const MultidimArray<Complex> &Fin, MultidimArray<Complex> &Fout,
+    RFLOAT beamtilt_x, RFLOAT beamtilt_y,
+    RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size
+) {
     Fout = Fin;
     selfApplyBeamTilt(Fout, beamtilt_x, beamtilt_y, wavelength, Cs, angpix, ori_size);
 }
 
-void selfApplyBeamTilt(MultidimArray<Complex > &Fimg, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
-        RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size)
-{
+void selfApplyBeamTilt(
+    MultidimArray<Complex> &Fimg, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
+    RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size
+) {
     if (Fimg.getDim() != 2)
         REPORT_ERROR("applyBeamTilt can only be done on 2D Fourier Transforms!");
 
     RFLOAT boxsize = angpix * ori_size;
     RFLOAT factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize);
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Fimg)
-    {
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Fimg) {
         RFLOAT delta_phase = factor * (ip * ip + jp * jp) * (ip * beamtilt_y + jp * beamtilt_x);
-        RFLOAT realval = DIRECT_A2D_ELEM(Fimg, i, j).real;
-        RFLOAT imagval = DIRECT_A2D_ELEM(Fimg, i, j).imag;
-        RFLOAT mag = sqrt(realval * realval + imagval * imagval);
-        RFLOAT phas = atan2(imagval, realval) + DEG2RAD(delta_phase); // apply phase shift!
-        realval = mag * cos(phas);
-        imagval = mag * sin(phas);
-        DIRECT_A2D_ELEM(Fimg, i, j) = Complex(realval, imagval);
+        Complex A = DIRECT_A2D_ELEM(Fimg, i, j);
+        RFLOAT mag = sqrt(A.real * A.real + A.imag * A.imag);
+        RFLOAT phas = atan2(A.imag, A.real) + DEG2RAD(delta_phase); // apply phase shift!
+        DIRECT_A2D_ELEM(Fimg, i, j) = Complex(mag * cos(phas), mag * sin(phas));
     }
-
 }
 
-void selfApplyBeamTilt(MultidimArray<Complex > &Fimg,
-        RFLOAT beamtilt_x, RFLOAT beamtilt_y,
-        RFLOAT beamtilt_xx, RFLOAT beamtilt_xy, RFLOAT beamtilt_yy,
-        RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size)
-{
+void selfApplyBeamTilt(
+    MultidimArray<Complex> &Fimg,
+    RFLOAT beamtilt_x, RFLOAT beamtilt_y,
+    RFLOAT beamtilt_xx, RFLOAT beamtilt_xy, RFLOAT beamtilt_yy,
+    RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size
+) {
     if (Fimg.getDim() != 2)
         REPORT_ERROR("applyBeamTilt can only be done on 2D Fourier Transforms!");
 
     RFLOAT boxsize = angpix * ori_size;
     RFLOAT factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize);
 
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Fimg)
-    {
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Fimg) {
         RFLOAT q = beamtilt_xx * jp * jp + 2.0 * beamtilt_xy * ip * jp + beamtilt_yy * ip * ip;
 
         RFLOAT delta_phase = factor * q * (ip * beamtilt_y + jp * beamtilt_x);
@@ -1623,19 +1577,19 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &ou
     out.resize(XYdim, XYdim);
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v)
-    {
+    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {
         A2D_ELEM(out, i + Xmipp::init(YSIZE(v)), j + Xmipp::init(XSIZE(v))) = DIRECT_A2D_ELEM(v, i, j) - bg_val;
     }
 }
 
-void amplitudeOrPhaseMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT > &amp, int output_map_type)
-{
+void amplitudeOrPhaseMap(
+    const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &amp, int output_map_type
+) {
     long int XYdim, maxr2;
     RFLOAT val;
     FourierTransformer transformer;
-    MultidimArray<Complex > Faux;
-    MultidimArray<RFLOAT > out;
+    MultidimArray<Complex> Faux;
+    MultidimArray<RFLOAT> out;
 
     transformer.clear();
     Faux.clear();
@@ -1643,7 +1597,7 @@ void amplitudeOrPhaseMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT >
 
     // Pad and float
     padAndFloat2DMap(v, out);
-    if ( (XSIZE(out) != YSIZE(out)) || (ZSIZE(out) > 1) || (NSIZE(out) > 1) )
+    if (XSIZE(out) != YSIZE(out) || ZSIZE(out) > 1 || NSIZE(out) > 1)
         REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR MultidimArray should be 2D square.");
     XYdim = XSIZE(out);
 
@@ -1655,34 +1609,36 @@ void amplitudeOrPhaseMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT >
     out.setXmippOrigin();
     out.initZeros(XYdim, XYdim);
     maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux)
-    {
-        if ( (ip > STARTINGY(out)) && (ip < FINISHINGY(out))
-                && (jp > STARTINGX(out)) && (jp < FINISHINGX(out))
-                && ((ip * ip + jp * jp) < maxr2) )
-        {
-            if (output_map_type == AMPLITUDE_MAP)
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux) {
+        if (
+            ip > STARTINGY(out) && ip < FINISHINGY(out) &&
+            jp > STARTINGX(out) && jp < FINISHINGX(out) &&
+            (ip * ip + jp * jp) < maxr2
+        ) {
+            if (output_map_type == AMPLITUDE_MAP) {
                 val = FFTW2D_ELEM(Faux, ip, jp).abs();
-            else if (output_map_type == PHASE_MAP)
-                val = (180.) * (FFTW2D_ELEM(Faux, ip, jp).arg()) / PI;
-            else
+            } else if (output_map_type == PHASE_MAP) {
+                val = 180.0 * FFTW2D_ELEM(Faux, ip, jp).arg() / PI;
+            } else {
                 REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR Unknown type of output map.");
+            }
 
             A2D_ELEM(out, -ip, -jp) = A2D_ELEM(out, ip, jp) = val;
         }
     }
-    A2D_ELEM(out, 0, 0) = 0.;
+    A2D_ELEM(out, 0, 0) = 0.0;
     amp.clear();
     amp = out;
 }
 
-void helicalLayerLineProfile(const MultidimArray<RFLOAT > &v, std::string title, std::string fn_eps)
-{
+void helicalLayerLineProfile(
+    const MultidimArray<RFLOAT > &v, std::string title, std::string fn_eps
+) {
     long int XYdim, maxr2;
     FourierTransformer transformer;
-    MultidimArray<Complex > Faux;
-    MultidimArray<RFLOAT > out;
-    std::vector<RFLOAT > ampl_list, ampr_list, nr_pix_list;
+    MultidimArray<Complex> Faux;
+    MultidimArray<RFLOAT> out;
+    std::vector<RFLOAT> ampl_list, ampr_list, nr_pix_list;
 
     transformer.clear();
     Faux.clear();
@@ -1692,8 +1648,9 @@ void helicalLayerLineProfile(const MultidimArray<RFLOAT > &v, std::string title,
 
     // Pad and float
     padAndFloat2DMap(v, out);
-    if ( (XSIZE(out) != YSIZE(out)) || (ZSIZE(out) > 1) || (NSIZE(out) > 1) )
-        REPORT_ERROR("fftw.cpp::helicalLayerLineProfile(): ERROR MultidimArray should be 2D square.");
+    if (
+        XSIZE(out) != YSIZE(out) || ZSIZE(out) > 1 || NSIZE(out) > 1
+    ) REPORT_ERROR("fftw.cpp::helicalLayerLineProfile(): ERROR MultidimArray should be 2D square.");
     XYdim = XSIZE(out);
 
     // Fourier Transform
@@ -1707,14 +1664,12 @@ void helicalLayerLineProfile(const MultidimArray<RFLOAT > &v, std::string title,
     ampr_list.resize(XSIZE(Faux) + 2);
     nr_pix_list.resize(XSIZE(Faux) + 2);
     for (int ii = 0; ii < ampl_list.size(); ii++)
-        ampl_list[ii] = ampr_list[ii] = nr_pix_list[ii] = 0.;
+        ampl_list[ii] = ampr_list[ii] = nr_pix_list[ii] = 0.0;
 
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux)
-    {
-        if ( ((ip * ip + jp * jp) < maxr2) && (ip > 0) )
-        {
-            nr_pix_list[jp] += 1.;
-            ampl_list[jp] += FFTW2D_ELEM(Faux, ip, jp).abs();
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux) {
+        if (ip * ip + jp * jp < maxr2 && ip > 0) {
+            nr_pix_list[jp] += 1.0;
+            ampl_list[jp] += FFTW2D_ELEM(Faux,  ip, jp).abs();
             ampr_list[jp] += FFTW2D_ELEM(Faux, -ip, jp).abs();
         }
     }
@@ -1722,20 +1677,19 @@ void helicalLayerLineProfile(const MultidimArray<RFLOAT > &v, std::string title,
     RFLOAT linewidth = 1.0;
     std::string figTitle = "Helical Layer Line Profile - " + title;
     std::string yTitle = "Reciprocal pixels (padded box size = " + integerToString(XYdim) + ")";
-    for (int ii = 0; ii < (3 * ampl_list.size() / 4 + 1); ii++)
-    {
-        if (nr_pix_list[ii] < 1.)
+    for (int ii = 0; ii < (3 * ampl_list.size() / 4 + 1); ii++) {
+        if (nr_pix_list[ii] < 1.0)
             break; // TODO: IS THIS CORRECT?
         dataSetAmpl.AddDataPoint(CDataPoint(ii, log(ampl_list[ii] / nr_pix_list[ii])));
         dataSetAmpr.AddDataPoint(CDataPoint(ii, log(ampr_list[ii] / nr_pix_list[ii])));
     }
     dataSetAmpl.SetDrawMarker(false);
     dataSetAmpl.SetLineWidth(linewidth);
-    dataSetAmpl.SetDatasetColor(1., 0., 0.);
+    dataSetAmpl.SetDatasetColor(1.0, 0.0, 0.0);
     dataSetAmpl.SetDatasetTitle("ln(amplitudes) (left)");
     dataSetAmpr.SetDrawMarker(false);
     dataSetAmpr.SetLineWidth(linewidth);
-    dataSetAmpr.SetDatasetColor(0., 1., 0.);
+    dataSetAmpr.SetDatasetColor(0.0, 1.0, 0.0);
     dataSetAmpr.SetDatasetTitle("ln(amplitudes) (right)");
     CPlot2D *plot2D = new CPlot2D(figTitle);
     plot2D->SetXAxisSize(600);
@@ -1748,23 +1702,26 @@ void helicalLayerLineProfile(const MultidimArray<RFLOAT > &v, std::string title,
     delete plot2D;
 }
 
-void generateBinaryHelicalFourierMask(MultidimArray<RFLOAT> &mask, std::vector<RFLOAT> exclude_begin, std::vector<RFLOAT> exclude_end, RFLOAT angpix)
-{
+void generateBinaryHelicalFourierMask(
+    MultidimArray<RFLOAT> &mask, 
+    std::vector<RFLOAT> exclude_begin, 
+    std::vector<RFLOAT> exclude_end, 
+    RFLOAT angpix
+) {
     if (exclude_begin.size() != exclude_end.size()) REPORT_ERROR("BUG: generateHelicalFourierMask: provide start-end resolutions for each shell.");
 
-    mask.initConstant(1.);
+    mask.initConstant(1.0);
 
-    bool is_2d = (mask.getDim() == 2);
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(mask)
-    {
+    bool is_2d = mask.getDim() == 2;
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(mask) {
         RFLOAT res;
         if (is_2d) res = (jp == 0) ? 999. : YSIZE(mask) * angpix / fabs(jp); // helical axis along X-axis, so only jp matters!
         else res = (kp == 0) ? 999. : ZSIZE(mask) * angpix / fabs(kp); // helical axis along Z-axis, so only kp matters!
 
-        for (int ishell = 0; ishell < exclude_begin.size(); ishell++)
-        {
-            if (res <= exclude_begin[ishell] && res >= exclude_end[ishell]) DIRECT_A3D_ELEM(mask, k, i, j) = 0.;
+        for (int ishell = 0; ishell < exclude_begin.size(); ishell++) {
+            if (res <= exclude_begin[ishell] && res >= exclude_end[ishell]) {
+                DIRECT_A3D_ELEM(mask, k, i, j) = 0.0;
+            }
         }
     }
-
 }

@@ -405,7 +405,7 @@ void MotioncorrRunner::run() {
             REPORT_ERROR("Bug: by now it should be clear whether to use MotionCor2 or Unblur...");
         }
         init_progress_bar(fn_micrographs.size());
-        barstep = XMIPP_MAX(1, fn_micrographs.size() / 60);
+        barstep = std::max(1ul, fn_micrographs.size() / 60);
     }
 
     for (long int imic = 0; imic < fn_micrographs.size(); imic++) {
@@ -744,7 +744,7 @@ void MotioncorrRunner::saveModel(Micrograph &mic) {
 
 void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
 
-    long int barstep = XMIPP_MAX(1, fn_ori_micrographs.size() / 60);
+    long int barstep = std::max(1ul, fn_ori_micrographs.size() / 60);
     if (verb > 0) {
         std::cout << " Generating logfile.pdf ... " << std::endl;
         init_progress_bar(fn_ori_micrographs.size());
@@ -1186,7 +1186,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
         // 1. Make it square
         RCTIC(TIMING_POWER_SPECTRUM_SQUARE);
-        int ps_size_square = XMIPP_MIN(nx, ny);
+        int ps_size_square = std::min(nx, ny);
         if (nx != ny) {
             F_ps_small.resize(ps_size_square, ps_size_square / 2 + 1);
             NewFFT::FourierTransform(PS_sum(), F_ps);

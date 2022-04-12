@@ -549,7 +549,7 @@ void HelixAligner::getHelicesFromMics() {
                             int oldsize = oldxsize;
 
                             if (oldxsize != oldysize) {
-                                oldsize = XMIPP_MAX( oldxsize, oldysize );
+                                oldsize = std::max(oldxsize, oldysize);
                                 Idown.setXmippOrigin();
                                 Idown.window(
                                     Xmipp::init(oldsize), Xmipp::init(oldsize),

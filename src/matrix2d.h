@@ -1007,7 +1007,7 @@ class Matrix2D {
                 Matrix1D<RFLOAT> w;
                 svdcmp(*this, u, w, v); // *this = U * W * V^t
 
-                RFLOAT tol = max() * XMIPP_MAX(mdimx, mdimy) * 1e-14;
+                RFLOAT tol = max() * std::max(mdimx, mdimy) * 1e-14;
 
                 // Compute W^-1
                 bool invertible = false;

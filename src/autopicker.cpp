@@ -284,7 +284,7 @@ void AutoPicker::initialise() {
             REPORT_ERROR("ERROR: Provide --LoG_diam_max when using the LoG-filter for autopicking");
 
         // Always use skip_side, as algorithms tends to pick on the sides of micrographs
-        autopick_skip_side = XMIPP_MAX(autopick_skip_side, 0.5 * LoG_min_diameter / angpix);
+        autopick_skip_side = std::max(autopick_skip_side, (int) (0.5 * LoG_min_diameter / angpix));
 
         // Fill vector with diameters to be searched
         diams_LoG.clear();
@@ -582,7 +582,7 @@ void AutoPicker::initialise() {
     Imic.read(fn_micrographs[0], false);
     micrograph_xsize = XSIZE(Imic());
     micrograph_ysize = YSIZE(Imic());
-    micrograph_size = (micrograph_xsize != micrograph_ysize) ? XMIPP_MAX(micrograph_xsize, micrograph_ysize) : micrograph_xsize;
+    micrograph_size = (micrograph_xsize != micrograph_ysize) ? std::max(micrograph_xsize, micrograph_ysize) : micrograph_xsize;
     if (extra_padding > 0)
         micrograph_size += 2 * extra_padding;
 
@@ -799,7 +799,7 @@ void AutoPicker::run() {
     if (verb > 0) {
         std::cout << " Autopicking ..." << std::endl;
         init_progress_bar(fn_micrographs.size());
-        barstep = XMIPP_MAX(1, fn_micrographs.size() / 60);
+        barstep = std::max(1, (int) fn_micrographs.size() / 60);
     }
 
     FileName fn_olddir = "";
@@ -837,9 +837,17 @@ void AutoPicker::run() {
         progress_bar(fn_micrographs.size());
 }
 
+static RFLOAT mean(MetaDataTable mdt, EMDL::EMDLabel label, long int n) {
+    RFLOAT mu = 0.0;
+    FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt) {
+        mu += mdt.getValue<RFLOAT>(label);
+    }
+    return mu / (RFLOAT) n;
+}
+
 void AutoPicker::generatePDFLogfile() {
 
-    long int barstep = XMIPP_MAX(1, fn_ori_micrographs.size() / 60);
+    long int barstep = std::max(1l, (long int) fn_ori_micrographs.size() / 60);
     if (verb > 0) {
         std::cout << " Generating logfile.pdf ... " << std::endl;
         init_progress_bar(fn_ori_micrographs.size());
@@ -855,12 +863,10 @@ void AutoPicker::generatePDFLogfile() {
             long nr_pick = MD.numberOfObjects();
             total_nr_picked += nr_pick;
             if (MD.containsLabel(EMDL::PARTICLE_AUTOPICK_FOM)) {
-                RFLOAT avg_fom = 0.0;
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-                    avg_fom += MD.getValue<RFLOAT>(EMDL::PARTICLE_AUTOPICK_FOM);
-                }
-                avg_fom /= nr_pick;
-                // mis-use MetadataTable to conveniently make histograms and value-plots
+
+                RFLOAT avg_fom = mean(MD, EMDL::PARTICLE_AUTOPICK_FOM, nr_pick);
+
+                // Abuse MetadataTable to conveniently make histograms and value-plots
                 MDresult.addObject();
                 MDresult.setValue(EMDL::MICROGRAPH_NAME, fn_ori_micrographs[imic]);
                 MDresult.setValue(EMDL::PARTICLE_AUTOPICK_FOM, avg_fom);
@@ -871,7 +877,6 @@ void AutoPicker::generatePDFLogfile() {
         if (verb > 0 && imic % 60 == 0) progress_bar(imic);
 
     }
-
 
     if (verb > 0) {
         progress_bar(fn_ori_micrographs.size());
@@ -1348,14 +1353,14 @@ void AutoPicker::pickCCFPeaks(
     // Rescale skip_side and particle_diameter_pix
     skip_side = (int) ((float) skip_side * scale);
     particle_diameter_pix *= scale;
-    //int micrograph_core_size = XMIPP_MIN(micrograph_xsize, micrograph_ysize) - skip_side * 2 - 2;
+    // int micrograph_core_size = std::min(micrograph_xsize, micrograph_ysize) - skip_side * 2 - 2;
 
     if (NSIZE(Mccf) != 1 || ZSIZE(Mccf) != 1 || YSIZE(Mccf) != XSIZE(Mccf))
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The micrograph should be a 2D square!");
     if (XSIZE(Mccf) < new_micrograph_xsize || YSIZE(Mccf) < new_micrograph_ysize)
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: Invalid dimensions for Mccf!");
-    //if (micrograph_core_size < 100*scale)
-    //	REPORT_ERROR("autopicker.cpp::pickCCFPeaks: Size of the micrograph is too small compared to that of the particle box!");
+    // if (micrograph_core_size < 100 * scale)
+    // 	REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The micrograph is too small relative to the particle box!");
     if (STARTINGY(Mccf) != Xmipp::init(YSIZE(Mccf)) || STARTINGX(Mccf) != Xmipp::init(XSIZE(Mccf)))
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
     if (Mccf.sameShape(Mclass) == false)
@@ -1625,10 +1630,10 @@ void AutoPicker::pickCCFPeaks(
 }
 
 void AutoPicker::extractHelicalTubes(
-    std::vector<ccfPeak>& peak_list,
-    std::vector<std::vector<ccfPeak>>& tube_coord_list,
-    std::vector<RFLOAT>& tube_len_list,
-    std::vector<std::vector<ccfPeak>>& tube_track_list,
+    std::vector<ccfPeak> &peak_list,
+    std::vector<std::vector<ccfPeak> > &tube_coord_list,
+    std::vector<RFLOAT> &tube_len_list,
+    std::vector<std::vector<ccfPeak> > &tube_track_list,
     RFLOAT particle_diameter_pix, RFLOAT curvature_factor_max,
     RFLOAT interbox_distance_pix, RFLOAT tube_diameter_pix,
     float scale
@@ -2130,14 +2135,14 @@ void AutoPicker::extractHelicalTubes(
 }
 
 void AutoPicker::exportHelicalTubes(
-    const MultidimArray<RFLOAT>& Mccf,
-    MultidimArray<RFLOAT>& Mccfplot,
-    const MultidimArray<int>& Mclass,
-    std::vector<std::vector<ccfPeak>>& tube_coord_list,
-    std::vector<std::vector<ccfPeak>>& tube_track_list,
-    std::vector<RFLOAT>& tube_len_list,
-    FileName& fn_mic_in,
-    FileName& fn_star_out,
+    const MultidimArray<RFLOAT> &Mccf,
+    MultidimArray<RFLOAT> &Mccfplot,
+    const MultidimArray<int> &Mclass,
+    std::vector<std::vector<ccfPeak>> &tube_coord_list,
+    std::vector<std::vector<ccfPeak>> &tube_track_list,
+    std::vector<RFLOAT> &tube_len_list,
+    FileName &fn_mic_in,
+    FileName &fn_star_out,
     RFLOAT particle_diameter_pix,
     RFLOAT tube_length_min_pix,
     int skip_side, float scale
@@ -2368,7 +2373,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         RFLOAT my_size, my_xsize, my_ysize;
         my_xsize = XSIZE(Imic());
         my_ysize = YSIZE(Imic());
-        my_size = my_xsize != my_ysize ? XMIPP_MAX(my_xsize, my_ysize) : my_xsize;
+        my_size = my_xsize != my_ysize ? std::max(my_xsize, my_ysize) : my_xsize;
 
         if (
             my_xsize != micrograph_xsize || 
@@ -2663,7 +2668,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     RFLOAT my_size, my_xsize, my_ysize;
     my_xsize = XSIZE(Imic());
     my_ysize = YSIZE(Imic());
-    my_size = (my_xsize != my_ysize) ? XMIPP_MAX(my_xsize, my_ysize) : my_xsize;
+    my_size = (my_xsize != my_ysize) ? std::max(my_xsize, my_ysize) : my_xsize;
     if (extra_padding > 0)
     my_size += 2 * extra_padding;
 
@@ -3318,7 +3323,7 @@ void AutoPicker::peakSearch(
 
     // Skip the pixels along the side of the micrograph!
     // At least 1, so dont have to check for the borders!
-    skip_side = XMIPP_MAX(1, skip_side);
+    skip_side = std::max(1, skip_side);
     for (
         int i  = Xmipp::init((int) ((float) micrograph_ysize * scale)) + skip_side;
             i <= Xmipp::last((int) ((float) micrograph_ysize * scale)) - skip_side;
@@ -3478,7 +3483,7 @@ int AutoPicker::getGoodFourierDims(int requestedSizeRealX, int lim) {
     if (!do_optimise_scale)
         return requestedSizeRealX;
 
-    int inputPrimeF = XMIPP_MAX(largestPrime(requestedSizeRealX),largestPrime(requestedSizeRealX / 2 + 1));
+    int inputPrimeF = std::max(largestPrime(requestedSizeRealX),largestPrime(requestedSizeRealX / 2 + 1));
     if (inputPrimeF <= LARGEST_ACCEPTABLE_PRIME) {
         if (verb > 0)
             std::cout << " + Will use micrographs scaled to " << requestedSizeRealX << " pixels as requested. The largest prime factor in FFTs is " << inputPrimeF << std::endl;
@@ -3491,22 +3496,22 @@ int AutoPicker::getGoodFourierDims(int requestedSizeRealX, int lim) {
     // Search upwards - can take a long time if unlucky and/or small LARGEST_ACCEPTABLE_PRIME
     int currentU = requestedSizeRealX;
     S_up = 			 largestPrime(currentU);
-    S_up = XMIPP_MAX(largestPrime(currentU / 2 + 1),S_up);
+    S_up = std::max(largestPrime(currentU / 2 + 1),S_up);
     while (S_up >= LARGEST_ACCEPTABLE_PRIME && currentU <= lim + 2) {
         currentU += 2;
         S_up = 			 largestPrime(currentU);
-        S_up = XMIPP_MAX(largestPrime(currentU / 2 + 1), S_up);
+        S_up = std::max(largestPrime(currentU / 2 + 1), S_up);
     }
 
 
     // Search downwards - guaranteed to find in reasonable time
     int currentD = requestedSizeRealX;
     S_down = 		   largestPrime(currentD);
-    S_down = XMIPP_MAX(largestPrime(currentD / 2 + 1), S_down);
+    S_down = std::max(largestPrime(currentD / 2 + 1), S_down);
     while (S_down >= LARGEST_ACCEPTABLE_PRIME) {
         currentD -= 2;
         S_down = 		   largestPrime(currentD);
-        S_down = XMIPP_MAX(largestPrime(currentD / 2 + 1), S_down);
+        S_down = std::max(largestPrime(currentD / 2 + 1), S_down);
     }
 
 

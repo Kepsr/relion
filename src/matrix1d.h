@@ -1021,9 +1021,9 @@ class Matrix1D {
             }
 
             RFLOAT max_val = ABS(v.vdata[0]);
-
-            for (int j = 0; j < v.vdim; j++)
-                max_val = XMIPP_MAX(max_val, v.vdata[j]);
+            for (int j = 0; j < v.vdim; j++) {
+                max_val = std::max(max_val, v.vdata[j]);
+            }
 
             int prec = bestPrecision(max_val, 10);
 
@@ -1136,6 +1136,21 @@ void vectorProduct(
      ZZ(result) = XX(v1) * YY(v2) - YY(v1) * XX(v2);
  }
 
+template <typename T>
+struct LesserGreater {
+
+    T lesser, greater;
+
+    LesserGreater(T x, T y) {
+        if (x > y) {
+            greater = x; lesser = y;
+        } else {
+            greater = y; lesser = x;
+        }
+    }
+
+};
+
 /** Sort two vectors.
   * v1 and v2 must be of the same shape, if not an exception is thrown. After
   * calling this function all components in v1 are the minimum between the
@@ -1149,15 +1164,14 @@ void vectorProduct(
   */
 template<typename T>
 void sortTwoVectors(Matrix1D<T>& v1, Matrix1D<T>& v2) {
-     T temp;
-     if (!v1.sameShape(v2))
-         REPORT_ERROR("sortTwoVectors: vectors are not of the same shape");
+    if (!v1.sameShape(v2))
+        REPORT_ERROR("sortTwoVectors: vectors are not of the same shape");
 
-     for (int j = 0; j < v1.vdim; j++) {
-         temp = XMIPP_MIN(v1.vdata[j], v2.vdata[j]);
-         v2.vdata[j] = XMIPP_MAX(v1.vdata[j], v2.vdata[j]);
-         v1.vdata[j] = temp;
-     }
+    for (int j = 0; j < v1.vdim; j++) {
+        LesserGreater<T> lg (v1.vdata[j], v2.vdata[j]);
+        v1.vdata[j] = lg.lesser;
+        v2.vdata[j] = lg.greater;
+    }
  }
 
 /** Conversion from one type to another.

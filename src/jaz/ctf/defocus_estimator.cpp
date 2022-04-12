@@ -189,8 +189,8 @@ void DefocusEstimator::writeEPS(const MetaDataTable& mdt) {
         RFLOAT defV = mdt.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, p);
         defU = (defU + defV) / 2.0;
 
-        min_defocus = XMIPP_MIN(min_defocus, defU);
-        max_defocus = XMIPP_MAX(max_defocus, defU);
+        if (defU < min_defocus) { min_defocus = defU; }
+        if (defU > max_defocus) { min_defocus = defU; }
     }
 
     for (int p = 0; p < pc; p++) {

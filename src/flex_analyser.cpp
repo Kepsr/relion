@@ -204,8 +204,8 @@ void FlexAnalyser::loopThroughParticles(int rank, int size) {
     long int my_first_particle = 0, my_last_particle = total_nr_particles - 1;
     if (size > 1)
         divide_equally(total_nr_particles, size, rank, my_first_particle, my_last_particle);
-    long int todo_particles = my_last_particle-my_first_particle + 1;
-    long int update_interval = XMIPP_MAX(1, todo_particles / 60);
+    long int todo_particles = my_last_particle - my_first_particle + 1;
+    long int update_interval = std::max(1l, todo_particles / 60);
     if (verb > 0) {
         std::cout << " Processing all particles ... " << std::endl;
         init_progress_bar(todo_particles);
@@ -214,7 +214,7 @@ void FlexAnalyser::loopThroughParticles(int rank, int size) {
     DFo.clear();
     DFo.isList = false;
 
-    std::vector< std::vector<double> > inputdata;
+    std::vector<std::vector<double>> inputdata;
     long int imgno = 0;
     for (long int part_id = my_first_particle; part_id <= my_last_particle; part_id++) {
 

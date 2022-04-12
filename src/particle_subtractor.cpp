@@ -272,10 +272,12 @@ void ParticleSubtractor::revert() {
 void ParticleSubtractor::run() {
 
     long int nr_parts = my_last_part_id - my_first_part_id + 1;
-    long int barstep = XMIPP_MAX(1, nr_parts / 120);
+    long int barstep = std::max(1l, nr_parts / 120);
     if (verb > 0) {
-        if (do_ssnr) std::cout << " + Calculating SNR for all particles ..." << std::endl;
-        else std::cout << " + Subtracting all particles ..." << std::endl;
+        std::cout << (do_ssnr ?
+            " + Calculating SNR for all particles ..." :
+            " + Subtracting all particles ..."
+        ) << std::endl;
         time_config();
         init_progress_bar(nr_parts);
     }

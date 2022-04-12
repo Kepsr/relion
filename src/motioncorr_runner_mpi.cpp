@@ -53,7 +53,7 @@ void MotioncorrRunnerMpi::run() {
         }
 
         init_progress_bar(my_nr_micrographs);
-        barstep = XMIPP_MAX(1, my_nr_micrographs / 60);
+        barstep = std::max(1, (int) my_nr_micrographs / 60);
     }
 
     for (long int imic = my_first_micrograph; imic <= my_last_micrograph; imic++) {

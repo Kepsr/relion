@@ -233,7 +233,7 @@ void CtfRefiner::processSubsetMicrographs(long g_start, long g_end) {
     if (verb > 0) {
         std::cout << " + Performing loop over all micrographs ... " << std::endl;
         init_progress_bar(my_nr_micrographs);
-        barstep = XMIPP_MAX(1, my_nr_micrographs / 60);
+        barstep = std::max(1, my_nr_micrographs / 60);
     }
 
     std::vector<ParFourierTransformer> fts(nr_omp_threads);

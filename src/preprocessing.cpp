@@ -386,7 +386,7 @@ void Preprocessing::runExtractParticles() {
     if (verb > 0) {
         std::cout << " Extracting particles from " << nr_mics << " micrographs ..." << std::endl;
         init_progress_bar(nr_mics);
-        barstep = XMIPP_MAX(1, nr_mics / 60);
+        barstep = std::max(1, (int) nr_mics / 60);
     }
     MetaDataTable MDoutMics;  // during re-extraction we may not always use particles from all mics.
     FileName fn_mic, fn_olddir = "";
@@ -928,7 +928,7 @@ void Preprocessing::runOperateOnInputFile() {
     RFLOAT all_minval = LARGE_NUMBER;
     RFLOAT all_maxval = -LARGE_NUMBER;
     init_progress_bar(Nimg);
-    int barstep = XMIPP_MAX(1, Nimg / 120);
+    int barstep = std::max(1, (int) Nimg / 120);
     for (long int i = 0; i < Nimg; i++) {
         FileName fn_tmp;
 
@@ -1010,8 +1010,8 @@ void Preprocessing::performPerImageOperations(
         TIMING_TOC(TIMING_PER_IMG_OP_WRITE);
     } else {
         // Keep track of overall statistics
-        all_minval = XMIPP_MIN(minval, all_minval);
-        all_maxval = XMIPP_MAX(maxval, all_maxval);
+        all_minval = std::min(minval, all_minval);
+        all_maxval = std::max(maxval, all_maxval);
         all_avg	   += avg;
         all_stddev += stddev * stddev;
 

@@ -59,21 +59,21 @@ class angular_error_parameters {
         size = textToInteger(parser.getOption("--size", "Largest dimension of the micrograph (in pixels), e.g. 4096"));
         dim = textToInteger(parser.getOption("--dim", "Dimension of boxed particles (for EMAN .box files in pixels)", "200"));
         acc = textToFloat(parser.getOption("--acc", "Allowed accuracy (in pixels), e.g. half the particle diameter"));
-        tilt = textToFloat(parser.getOption("--tilt", "Fix tilt angle (in degrees)", "99999."));
-        rot = textToFloat(parser.getOption("--rot", "Fix direction of the tilt axis (in degrees), 0 = along y, 90 = along x", "99999."));
+        tilt = textToFloat(parser.getOption("--tilt", "Fix tilt angle (in degrees)", "99999.0"));
+        rot = textToFloat(parser.getOption("--rot", "Fix direction of the tilt axis (in degrees), 0 = along y, 90 = along x", "99999.0"));
         do_opt = !parser.checkOption("--dont_opt", "Skip optimization of the transformation matrix");
         mind2 = ROUND(acc * acc);
 
         int angle_section = parser.addSection("Specified tilt axis and translational search ranges");
-        tilt0 = textToFloat(parser.getOption("--tilt0", "Minimum tilt angle (in degrees)","0."));
-        tiltF = textToFloat(parser.getOption("--tiltF", "Maximum tilt angle (in degrees)","99999."));
-        if (tiltF == 99999.) tiltF = tilt0;
-        tiltStep = textToFloat(parser.getOption("--tiltStep", "Tilt angle step size (in degrees)","1."));
+        tilt0 = textToFloat(parser.getOption("--tilt0", "Minimum tilt angle (in degrees)","0.0"));
+        tiltF = textToFloat(parser.getOption("--tiltF", "Maximum tilt angle (in degrees)","99999.0"));
+        if (tiltF == 99999.0) { tiltF = tilt0; }
+        tiltStep = textToFloat(parser.getOption("--tiltStep", "Tilt angle step size (in degrees)","1.0"));
 
-        rot0 = textToFloat(parser.getOption("--rot0", "Minimum rot angle (in degrees)","0."));
-        rotF = textToFloat(parser.getOption("--rotF", "Maximum rot angle (in degrees)","99999."));
-        if (rotF == 99999.) rotF = rot0;
-        rotStep = textToFloat(parser.getOption("--rotStep", "Rot angle step size (in degrees)","1."));
+        rot0 = textToFloat(parser.getOption("--rot0", "Minimum rot angle (in degrees)","0.0"));
+        rotF = textToFloat(parser.getOption("--rotF", "Maximum rot angle (in degrees)","99999.0"));
+        if (rotF == 99999.0) { rotF = rot0; }
+        rotStep = textToFloat(parser.getOption("--rotStep", "Rot angle step size (in degrees)","1.0"));
 
         x0 = textToInteger(parser.getOption("--x0", "Minimum X offset (pixels)","-99999"));
         xF = textToInteger(parser.getOption("--xF", "Maximum X offset (pixels)","99999"));
@@ -89,24 +89,23 @@ class angular_error_parameters {
         // If tilt and rot were given: do not search those
         if (tilt != 99999.0) {
             tilt0 = tiltF = tilt;
-            tiltStep = 1.;
+            tiltStep = 1.0;
         }
         if (rot != 99999.0) {
             rot0 = rotF = rot;
-            rotStep = 1.;
+            rotStep = 1.0;
         }
 
         // By default search the entire micrograph
-        x0 = XMIPP_MAX(x0, -size);
-        xF = XMIPP_MIN(xF, size);
+        x0 = std::max(x0, -size);
+        xF = std::min(xF,  size);
         // By default use a xStep of one third the accuracy
-        if (xStep < 0)
-            xStep = acc / 3;
+        if (xStep < 0) { xStep = acc / 3; }
 
         // By default treat y search in the same way as the x-search
-        if (y0 == -99999) y0 = x0;
-        if (yF == 99999)  yF = xF;
-        if (yStep < 0)    yStep = xStep;
+        if (y0 == -99999) { y0 = x0; }
+        if (yF == +99999) { yF = xF; }
+        if (yStep < 0) { yStep = xStep; }
 
         // Done reading, now fill p_unt and p_til
         MDunt.read(fn_unt);
@@ -119,19 +118,15 @@ class angular_error_parameters {
             REPORT_ERROR("ERROR: Tilted STAR file does not contain the rlnCoordinateX or Y labels");
 
         p_unt.clear();
-        RFLOAT x, y;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDunt) {
-            x = MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-            y = MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-            p_unt.push_back((int) x);
-            p_unt.push_back((int) y);
+            p_unt.push_back((int) MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X));
+            p_unt.push_back((int) MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y));
         }
+
         p_til.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtil) {
-            x = MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-            y = MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-            p_til.push_back((int) x);
-            p_til.push_back((int) y);
+            p_til.push_back((int) MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_X));
+            p_til.push_back((int) MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y));
         }
 
         // Initialize best transformation params
@@ -141,53 +136,46 @@ class angular_error_parameters {
 
     int getNumberOfPairs(int dx=0, int dy=0) {
         pairs_t2u.clear();
-        pairs_t2u.resize(p_til.size()/2, -1);
-        int result = 0;
-        for (int u = 0; u < p_map.size() / 2; u++) {
-            for (int t = 0; t < p_til.size() / 2; t++) {
-                // only search over particles that do not have a pair yet
-                if (pairs_t2u[t] < 0) {
-                    int XX = p_map[2 * u] - p_til[2 * t] + dx;
-                    XX *= XX;
-                    int YY = p_map[2 * u + 1]-p_til[2 * t + 1] + dy;
-                    XX += YY * YY;
-                    if (XX < mind2) {
-                        result++;
-                        pairs_t2u[t] = u;
-                        // No longer have to search for all the others in q
-                        break;
-                    }
+        pairs_t2u.resize(p_til.size() / 2, -1);
+        int npairs = 0;
+        for (int u = 0; u < p_map.size() / 2; u++)
+        for (int t = 0; t < p_til.size() / 2; t++) {
+            // only search over particles that do not have a pair yet
+            if (pairs_t2u[t] < 0) {
+                int X = p_map[2 * u    ] - p_til[2 * t    ] + dx;
+                int Y = p_map[2 * u + 1] - p_til[2 * t + 1] + dy;
+                if (X * X + Y * Y < mind2) {
+                    npairs++;
+                    pairs_t2u[t] = u;
+                    // No longer have to search for all the others in q
+                    break;
                 }
             }
         }
-        return result;
+        return npairs;
     }
 
     RFLOAT getAverageDistance(int dx=0, int dy=0) {
-        std::ofstream  fh;
-        FileName fn_map;
-        fn_map = "dist.txt";
+        FileName fn_map = "dist.txt";
+        std::ofstream fh;
         fh.open(fn_map.c_str(), std::ios::out);
 
-        RFLOAT result = 0.;
+        RFLOAT sum_of_distances = 0.0;
         int count = 0;
         for (int t = 0; t < pairs_t2u.size(); t++) {
             int u = pairs_t2u[t];
             if (u >= 0) {
-                int XX = p_map[2 * u] - p_til[2 * t] + dx;
-                XX *= XX;
-                int YY = p_map[2 * u + 1] - p_til[2 * t + 1] + dy;
-                XX += YY * YY;
-                // std::cerr << " sqrt(XX)= " << sqrt(XX) << " t= " << t << " u= " << u << std::endl;
-                result += sqrt(XX);
-                fh << sqrt(XX) << std::endl;
-                count ++;
+                int X = p_map[2 * u    ] - p_til[2 * t    ] + dx;
+                int Y = p_map[2 * u + 1] - p_til[2 * t + 1] + dy;
+                int XXYY = X * X + Y * Y;
+                // std::cerr << " sqrt(XXYY)= " << sqrt(XXYY) << " t= " << t << " u= " << u << std::endl;
+                sum_of_distances += sqrt(XXYY);
+                fh << sqrt(XXYY) << std::endl;
+                count++;
             }
         }
-        result /= (RFLOAT)count;
         fh.close();
-        return result;
-
+        return sum_of_distances / (RFLOAT) count;
     }
 
     int prunePairs(int dx=0, int dy=0) {
@@ -196,26 +184,25 @@ class angular_error_parameters {
         for (int t = 0; t < pairs_t2u.size(); t++) {
             int u = pairs_t2u[t];
             if (u >= 0) {
-                for (int tp = t+1; tp < pairs_t2u.size(); tp++) {
+                for (int tp = t + 1; tp < pairs_t2u.size(); tp++) {
                     int up = pairs_t2u[tp];
                     // Find pairs to the same tilted position
                     if (up == u) {
                         nprune++;
 
                         // Only keep the nearest neighbours as a pair
-                        int XX = p_map[2*u]-p_til[2*t]+dx;
-                        XX*= XX;
-                        int YY = p_map[2*u+1]-p_til[2*t+1]+dy;
-                        XX += YY*YY;
+                        int X = p_map[2 * u    ] - p_til[2 * t    ] + dx;
+                        int Y = p_map[2 * u + 1] - p_til[2 * t + 1] + dy;
 
-                        //up==p
-                        int XXp = p_map[2*u]-p_til[2*tp]+dx;
-                        XXp*= XXp;
-                        int YYp = p_map[2*u+1]-p_til[2*tp+1]+dy;
-                        XXp += YYp*YYp;
+                        // up == p
+                        int Xp = p_map[2 * u]     - p_til[2 * tp    ] + dx;
+                        int Yp = p_map[2 * u + 1] - p_til[2 * tp + 1] + dy;
 
-                        if (XX < XXp) pairs_t2u[tp] = -1;
-                        else          pairs_t2u[t]  = -1;
+                        if (X * X + Y * Y < Xp * Xp + Yp * Yp) {
+                            pairs_t2u[tp] = -1;
+                        } else {
+                            pairs_t2u[t]  = -1;
+                        }
                     }
                 }
             }
@@ -235,19 +222,15 @@ class angular_error_parameters {
         }
     }
 
-
     RFLOAT optimiseTransformationMatrix(bool do_optimise_nr_pairs) {
         std::vector<int> best_pairs_t2u, best_map;
-        RFLOAT score, best_score, best_dist=9999.;
-        if (do_optimise_nr_pairs)
-            best_score = 0.0;
-        else
-            best_score = -999999.0;
+        RFLOAT score, best_dist = 9999.0;
+        RFLOAT best_score = do_optimise_nr_pairs ? 0.0 : -999999.0;
 
-        int nn = XMIPP_MAX(1.0, (rotF - rot0) / rotStep);
-        nn *= XMIPP_MAX(1.0, (tiltF - tilt0) / tiltStep);
-        nn *= XMIPP_MAX(1.0, (xF - x0) / xStep);
-        nn *= XMIPP_MAX(1.0, (yF - y0) / yStep);
+        int nn = std::max(1, (int) ((rotF  - rot0)  / rotStep))
+               * std::max(1, (int) ((tiltF - tilt0) / tiltStep))
+               * std::max(1, (int) ((xF    - x0)    / xStep))
+               * std::max(1, (int) ((yF    - y0)    / yStep));
         int n = 0;
         init_progress_bar(nn);
         for (RFLOAT rot = rot0; rot <= rotF; rot += rotStep)
@@ -258,7 +241,7 @@ class angular_error_parameters {
             Euler_angles2matrix(rot, tilt, psi, Pass);
             //std::cerr << " Pass= " << Pass << std::endl;
             // Zero-translations for now (these are added in the x-y loops below)
-            MAT_ELEM(Pass, 0, 2) = MAT_ELEM(Pass, 1, 2) = 0.;
+            MAT_ELEM(Pass, 0, 2) = MAT_ELEM(Pass, 1, 2) = 0.0;
             mapOntoTilt();
             for (int x = x0; x <= xF; x += xStep)
             for (int y = y0; y <= yF; y += yStep, n++) {
@@ -268,6 +251,7 @@ class angular_error_parameters {
                 /** NOTE: 
                  * There is more than one way of rewarding small values.
                  * We could, for example, take the reciprocal.
+                 * But negation is faster than division.
                  * In general, we seek an appropriate monotonic decreasing function.
                 */
 
@@ -298,7 +282,7 @@ class angular_error_parameters {
         // Update the Passing matrix and the mapping
         Euler_angles2matrix(best_rot, best_tilt, -best_rot, Pass);
         // Zero-translations for now (these are added in the x-y loops below)
-        MAT_ELEM(Pass, 0, 2) = MAT_ELEM(Pass, 1, 2) = 0.;
+        MAT_ELEM(Pass, 0, 2) = MAT_ELEM(Pass, 1, 2) = 0.0;
         mapOntoTilt();
         return best_score;
     }
@@ -314,25 +298,25 @@ class angular_error_parameters {
         for (int t = 0; t < pairs_t2u.size(); t++) {
             int u = pairs_t2u[t];
             if (u >= 0) {
-                Au(0, 0) += (RFLOAT)(p_unt[2*u] * p_unt[2*u]);
-                Au(0, 1) += (RFLOAT)(p_unt[2*u] * p_unt[2*u+1]);
-                Au(0, 2) += (RFLOAT)(p_unt[2*u]);
+                Au(0, 0) += (RFLOAT) (p_unt[2 * u] * p_unt[2 * u    ]);
+                Au(0, 1) += (RFLOAT) (p_unt[2 * u] * p_unt[2 * u + 1]);
+                Au(0, 2) += (RFLOAT) (p_unt[2 * u]);
                 Au(1, 0) = Au(0, 1);
-                Au(1, 1) += (RFLOAT)(p_unt[2*u+1] * p_unt[2*u+1]);
-                Au(1, 2) += (RFLOAT)(p_unt[2*u+1]);
+                Au(1, 1) += (RFLOAT) (p_unt[2 * u + 1] * p_unt[2 * u + 1]);
+                Au(1, 2) += (RFLOAT) (p_unt[2 * u + 1]);
                 Au(2, 0) = Au(0, 2);
                 Au(2, 1) = Au(1, 2);
-                Au(2, 2) += 1.;
+                Au(2, 2) += 1.0;
 
-                Bt(0, 0) += (RFLOAT)(p_til[2*t] * p_unt[2*u]);
-                Bt(0, 1) += (RFLOAT)(p_til[2*t+1] * p_unt[2*u]);
+                Bt(0, 0) += (RFLOAT) (p_til[2 * t    ] * p_unt[2 * u]);
+                Bt(0, 1) += (RFLOAT) (p_til[2 * t + 1] * p_unt[2 * u]);
                 Bt(0, 2) = Au(0, 2);
-                Bt(1, 0) += (RFLOAT)(p_til[2*t] * p_unt[2*u+1]);
-                Bt(1, 1) += (RFLOAT)(p_til[2*t+1] * p_unt[2*u+1]);
+                Bt(1, 0) += (RFLOAT) (p_til[2 * t    ] * p_unt[2 * u + 1]);
+                Bt(1, 1) += (RFLOAT) (p_til[2 * t + 1] * p_unt[2 * u + 1]);
                 Bt(1, 2) = Au(1, 2);
-                Bt(2, 0) += (RFLOAT)(p_til[2*t]);
-                Bt(2, 1) += (RFLOAT)(p_til[2*t+1]);
-                Bt(2,2) += 1.;
+                Bt(2, 0) += (RFLOAT) (p_til[2 * t    ]);
+                Bt(2, 1) += (RFLOAT) (p_til[2 * t + 1]);
+                Bt(2, 2) += 1.0;
             }
         }
 
@@ -340,13 +324,13 @@ class angular_error_parameters {
         solve(Au, Bt, Pass);
         Pass = Pass.transpose();
         std::cout << " Optimised passing matrix= " << Pass << std::endl;
-        //These values can be complete CRAP. Better not show them at all....
-        //RFLOAT rotp, tiltp, psip;
-        //tiltp = acos(Pass(1,1));
-        //rotp = acos(Pass(1,0)/sin(tiltp));
-        //psip = acos(Pass(0,1)/-sin(tiltp));
-        //std::cout << " Optimised tilt angle= " << RAD2DEG(tiltp) << std::endl;
-        //std::cout << " Optimised in-plane rot angles= " << RAD2DEG(rotp) <<" and "<< RAD2DEG(psip) << std::endl;
+        // These values can be complete CRAP. Better not show them at all....
+        // RFLOAT rotp, tiltp, psip;
+        // tiltp = acos(Pass(1, 1));
+        // rotp  = acos(Pass(1, 0) /  sin(tiltp));
+        // psip  = acos(Pass(0, 1) / -sin(tiltp));
+        // std::cout << " Optimised tilt angle= " << RAD2DEG(tiltp) << std::endl;
+        // std::cout << " Optimised in-plane rot angles= " << RAD2DEG(rotp) <<" and "<< RAD2DEG(psip) << std::endl;
         // Map using the new matrix
         mapOntoTilt();
 
@@ -369,14 +353,13 @@ class angular_error_parameters {
 
         #define WRITE_MAPPED
         #ifdef WRITE_MAPPED
-        std::ofstream  fh;
-        FileName fn_map;
-        fn_map = "mapped.box";
+        FileName fn_map = "mapped.box";
+        std::ofstream fh;
         fh.open(fn_map.c_str(), std::ios::out);
-        for (int i = 0; i < p_map.size()/2; i++) {
-            fh << p_map[2*i] + best_x -dim/2<< " " << p_map[2*i+1] + best_y -dim/2<< " "<<dim<<" "<<dim<<" -3"<<std::endl;
-            //if (pairs[i]>=0)
-            //	std::cerr << " i= " << i << " pairs[i]= " << pairs[i] << std::endl;
+        for (int i = 0; i < p_map.size() / 2; i++) {
+            fh << p_map[2 * i] + best_x -dim / 2 << " " << p_map[2 * i + 1] + best_y -dim / 2 << " " << dim << " " << dim << " -3" << std::endl;
+            // if (pairs[i]>=0)
+            //     std::cerr << " i= " << i << " pairs[i]= " << pairs[i] << std::endl;
         }
         fh.close();
         #endif
@@ -386,17 +369,17 @@ class angular_error_parameters {
             npart = getNumberOfPairs();
             nprune = prunePairs();
             avgdist = getAverageDistance();
-            std::cout << " After optimization of the passing matrix: "<<std::endl;
-            std::cout << "  - Number of pruned pairs= "<<nprune<<std::endl;
-            std::cout << "  - Final number of particle pairs= " << npart << " average distance= " <<avgdist<<std::endl;
+            std::cout << " After optimization of the passing matrix: " << std::endl;
+            std::cout << "  - Number of pruned pairs= " << nprune << std::endl;
+            std::cout << "  - Final number of particle pairs= " << npart << " average distance= " << avgdist << std::endl;
 
         }
 
         #ifdef WRITE_MAPPED
         fn_map = "mapped_opt.box";
         fh.open(fn_map.c_str(), std::ios::out);
-        for (int i = 0; i < p_map.size()/2; i++) {
-            fh << p_map[2*i] -dim/2<< " " << p_map[2*i+1] -dim/2<<" "<<dim<<" "<<dim<<" -3"<< std::endl;
+        for (int i = 0; i < p_map.size() / 2; i++) {
+            fh << p_map[2 * i] -dim / 2 << " " << p_map[2 * i + 1] -dim / 2 << " " << dim << " " << dim << " -3" << std::endl;
         }
         fh.close();
         #endif
@@ -407,12 +390,12 @@ class angular_error_parameters {
             int u = pairs_t2u[t];
             if (u >= 0) {
                 MDu.addObject();
-                MDu.setValue(EMDL::IMAGE_COORD_X, ((RFLOAT)(p_unt[2*u])));
-                MDu.setValue(EMDL::IMAGE_COORD_Y, ((RFLOAT)(p_unt[2*u+1])));
+                MDu.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) p_unt[2 * u    ]);
+                MDu.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) p_unt[2 * u + 1]);
 
                 MDt.addObject();
-                MDt.setValue(EMDL::IMAGE_COORD_X, ((RFLOAT)(p_til[2*t])));
-                MDt.setValue(EMDL::IMAGE_COORD_Y, ((RFLOAT)(p_til[2*t+1])));
+                MDt.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) p_til[2 * t    ]);
+                MDt.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) p_til[2 * t + 1]);
             }
         }
         fn_unt = fn_unt.withoutExtension() + "_pairs.star";

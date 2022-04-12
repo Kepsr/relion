@@ -155,28 +155,22 @@ extern const char *g_RELION_VERSION;
     #define SGN0(x) ((x) >= 0 ? ((x) == 0 ? 0 : 1) : -1)
 #endif
 
+#ifndef XMIPP_MIN
 /** Minimum
- *
- * Valid for any kind of numbers (int, short, float, etc).
- *
  * @code
- * min_val = XMIPP_MIN(x, y);
+ * lesser = XMIPP_MIN(x, y);
  * @endcode
  */
-#ifndef XMIPP_MIN
-    #define XMIPP_MIN(x, y) ((x) >= (y) ? (y) : (x))
+#define XMIPP_MIN(x, y) ((x) <= (y) ? (x) : (y))
 #endif
 
+#ifndef XMIPP_MAX
 /** Maximum
- *
- * Valid for any kind of numbers (int, short, float, etc).
- *
  * @code
- * max_val = XMIPP_MAX(x, y);
+ * greater = XMIPP_MAX(x, y);
  * @endcode
  */
-#ifndef XMIPP_MAX
-#define XMIPP_MAX(x, y) ((x) >= (y) ? (x) : (y))
+#define XMIPP_MAX(x, y) ((x) <= (y) ? (y) : (x))
 #endif
 
 /** Round to next integer
@@ -192,7 +186,7 @@ extern const char *g_RELION_VERSION;
  * @endcode
  */
 #ifndef ROUND
-#define ROUND(x) ((x) > 0 ? (int)((x) + 0.5) : (int)((x) - 0.5))
+#define ROUND(x) ((x) > 0 ? (int) ((x) + 0.5) : (int) ((x) - 0.5))
 #endif
 
 /** Round to next larger integer
@@ -207,7 +201,7 @@ extern const char *g_RELION_VERSION;
  * a = CEIL(0.8); // a = 1
  * @endcode
  */
-#define CEIL(x) ((x) == (int)(x) ? (int)(x) : ((x) > 0 ? (int)((x) + 1) : (int)(x)))
+#define CEIL(x) ((x) == (int) (x) ? (int) (x) : ((x) > 0 ? (int) ((x) + 1) : (int) (x)))
 
 /** Round to next smaller integer
  *
@@ -221,13 +215,13 @@ extern const char *g_RELION_VERSION;
  * a = FLOOR(0.8); // a = 0
  * @endcode
  */
-#define FLOOR(x) ((x) == (int)(x) ? (int)(x) : ((x) > 0 ? (int)(x) : (int)((x) - 1)))
+#define FLOOR(x) ((x) == (int) (x) ? (int) (x) : ((x) > 0 ? (int) (x) : (int) ((x) - 1)))
 
 /** Return the fractional part of a value
  *
  * The fractional part of 3.7 is 0.7 and of -3.7 is -0.7.
  */
-#define FRACTION(x) ((x) - (int)(x))
+#define FRACTION(x) ((x) - (int) (x))
 
 /** Clip in a saturation fashion
  *

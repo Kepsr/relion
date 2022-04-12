@@ -50,7 +50,7 @@ void CtffindRunnerMpi::run() {
                 std::cout << " Estimating CTF parameters using Niko Grigorieff's CTFFIND ..." << std::endl;
             }
             init_progress_bar(my_nr_micrographs);
-            barstep = XMIPP_MAX(1, my_nr_micrographs / 60);
+            barstep = std::max(1, (int) my_nr_micrographs / 60);
         }
 
         std::vector<std::string> allmicnames;

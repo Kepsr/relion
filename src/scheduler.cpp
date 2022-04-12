@@ -254,7 +254,7 @@ void  SchedulerOperator::readFromStarFile() const {
                 mymax = myval;
                 idxmax = ii;
             }
-            mymax = XMIPP_MAX(myval, mymax);
+            mymax = std::max(myval, mymax);
             mysum += myval;
             ii++;
         }

@@ -517,7 +517,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
     if (verb > 0 && do_copy) {
         std::cout << " Copying particles to scratch directory: " << fn_scratch << std::endl;
         init_progress_bar(nr_part);
-        barstep = XMIPP_MAX(1, nr_part / 60);
+        barstep = std::max(1, (int) nr_part / 60);
     }
 
     long int one_part_space, used_space = 0.0;
@@ -528,7 +528,6 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
     #endif
     // Loop over all particles and copy them one-by-one
     FileName fn_open_stack = "";
-    fImageHandler hFile;
     long int total_nr_parts_on_scratch = 0;
     nr_parts_on_scratch.resize(numberOfOpticsGroups(), 0);
 
@@ -541,15 +540,11 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
         if (index % check_abort_frequency == 0 && pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        long int imgno;
-        FileName fn_ctf, fn_stack, fn_new;
-        Image<RFLOAT> img;
         FileName fn_img = MDimg.getValue<FileName>(EMDL::IMAGE_NAME);
 
         int optics_group;
         try {
-            optics_group = MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
-            optics_group--;
+            optics_group = MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
         } catch (const char *errmsg) {
             optics_group = 0;
         }
@@ -564,8 +559,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
             if (is_3D) {
                 one_part_space += 1024;
                 also_do_ctf_image = MDimg.containsLabel(EMDL::CTF_IMAGE);
-                if (also_do_ctf_image)
-                    one_part_space *= 2;
+                if (also_do_ctf_image) { one_part_space *= 2; }
             }
             #ifdef DEBUG_SCRATCH
             std::cerr << "one_part_space[" << optics_group << "] = " << one_part_space << std::endl;
@@ -590,15 +584,19 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 break;
             }
 
+            Image<RFLOAT> img;
+            long int imgno;
+            FileName fn_ctf, fn_stack, fn_new;
+            fImageHandler hFile;
             if (is_3D) {
                 // For subtomograms, write individual .mrc files,possibly also CTF images
                 img.read(fn_img);
-                fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group]+1)+".mrc";
+                fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                 img.write(fn_new);
                 if (also_do_ctf_image) {
                     FileName fn_ctf = MDimg.getValue<FileName>(EMDL::CTF_IMAGE);
                     img.read(fn_ctf);
-                    fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group]+1)+".mrc";
+                    fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                     img.write(fn_new);
                 }
             } else {
@@ -944,7 +942,7 @@ void Experiment::read(
             }
         }
         // Even if we don't do multi-body refinement, then nr_bodies is still 1
-        nr_bodies = XMIPP_MAX(nr_bodies, 1);
+        nr_bodies = std::max(nr_bodies, 1);
     }
 
     #ifdef DEBUG_READ
@@ -997,11 +995,11 @@ void Experiment::read(
             if (have_tiltpsi)
                 tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT);
             // If ANGLEs do not exist or they are all set to 0 (from a Class2D job), copy values of PRIORs to ANGLEs
-            if (!have_tiltpsi || (have_tiltpsi && ABS(tilt) < 0.001)) {
+            if (!have_tiltpsi || ABS(tilt) < 0.001) {
                 tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR);
                 psi  = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
-                MDimg.setValue(EMDL::ORIENT_TILT,       tilt);
-                MDimg.setValue(EMDL::ORIENT_PSI,        psi);
+                MDimg.setValue(EMDL::ORIENT_TILT, tilt);
+                MDimg.setValue(EMDL::ORIENT_PSI,  psi);
             }
         }
     }
