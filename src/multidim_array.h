@@ -3191,26 +3191,23 @@ class MultidimArray {
             RFLOAT slope;
             int steps;
 
-            if (mode == "incr")
-            {
-                steps = 1 + (int) FLOOR((RFLOAT) ABS((maxF - minF)) / ((RFLOAT) n));
-                slope = n * SGN(maxF - minF);
-            }
-            else if (mode == "steps")
-            {
+            if (mode == "incr") {
+                steps = 1 + (int) FLOOR((RFLOAT) ABS(maxF - minF) / (RFLOAT) n);
+                slope = n * sgn(maxF - minF); // maxF and minF should not be equal
+            } else if (mode == "steps") {
                 steps = n;
                 slope = (maxF - minF) / (steps - 1);
-            }
-            else
+            } else {
                 REPORT_ERROR("Init_linear: Mode not supported (" + mode + ")");
+            }
 
-            if (steps == 0)
+            if (steps == 0) {
                 clear();
-            else
-            {
+            } else {
                 reshape(steps);
-                for (int i = 0; i < steps; i++)
-                    A1D_ELEM(*this, i) = (T)((RFLOAT) minF + slope * i);
+                for (int i = 0; i < steps; i++) {
+                    A1D_ELEM(*this, i) = (T) ((RFLOAT) minF + slope * i);
+                }
             }
         }
 
@@ -3506,52 +3503,53 @@ class MultidimArray {
             const std::string &type, T a, T b,
             MultidimArray<int> *mask = NULL
         ) {
-            int mode;
 
-            if (type == "abs_above")
-                mode = 1;
-            else if (type == "abs_below")
-                mode = 2;
-            else if (type == "above")
-                mode = 3;
-            else if (type == "below")
-                mode = 4;
-            else if (type == "range")
-                mode = 5;
-            else
-                REPORT_ERROR( static_cast< std::string >("Threshold: mode not supported (" +
-                                                        type + ")"));
+            int mode =
+                type == "abs_above" ?  1 :
+                type == "abs_below" ?  2 :
+                type == "above"     ?  3 :
+                type == "below"     ?  4 :
+                type == "range"     ?  5 :
+                                       0;
+
+            if (mode == 0)
+                REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
 
             T* ptr = NULL;
             long int n;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            {
-                if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask,n) > 0 )
-                {
-                    switch (mode)
-                    {
-                    case 1:
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+                // Hopefully the compiler will hoist this loop-invariant switch block
+                if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+                    switch (mode) {
+
+                        case 1:
                         if (ABS(*ptr) > a)
-                            *ptr = SGN(*ptr) * b;
+                            *ptr = b * sgn(*ptr);
                         break;
-                    case 2:
+
+                        case 2:
                         if (ABS(*ptr) < a)
-                            *ptr = SGN(*ptr) * b;
+                            *ptr = b * sgn(*ptr);
                         break;
-                    case 3:
+
+                        case 3:
                         if (*ptr > a)
                             *ptr = b;
                         break;
-                    case 4:
+
+                        case 4:
                         if (*ptr < a)
                             *ptr = b;
                         break;
-                    case 5:
-                        if (*ptr < a)
+
+                        case 5:
+                        if (*ptr < a) {
                             *ptr = a;
-                        else if (*ptr > b)
+                        } else if (*ptr > b) {
                             *ptr = b;
+                        }
                         break;
+
                     }
                 }
             }
@@ -3562,55 +3560,49 @@ class MultidimArray {
          * Return the number of elements meeting the threshold
          * condition.
          */
-        long int countThreshold(const std::string& type,
-                                    T a,
-                                    T b,
-                                    MultidimArray<int> * mask = NULL ) {
-            int mode;
-
-            if (type == "abs_above")
-                mode = 1;
-            else if (type == "abs_below")
-                mode = 2;
-            else if (type == "above")
-                mode = 3;
-            else if (type == "below")
-                mode = 4;
-            else if (type == "range")
-                mode = 5;
-            else
-                REPORT_ERROR( static_cast< std::string >("CountThreshold: mode not supported (" +
-                                                        type + ")"));
+        long int countThreshold(const std::string& type, T a, T b, MultidimArray<int> *mask = NULL) {
+            int mode = 
+                type == "abs_above" ? 1 :
+                type == "abs_below" ? 2 :
+                type == "above"     ? 3 :
+                type == "below"     ? 4 :
+                type == "range"     ? 5 : 
+                                      0;
+            REPORT_ERROR( static_cast<std::string>("CountThreshold: mode not supported (" + type + ")"));
 
             long int ret = 0;
 
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask,n) > 0 )
-            {
-                switch (mode)
-                {
-                case 1:
+            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+                switch (mode) {
+
+                    case 1:
                     if (ABS(*ptr) > a)
                         ret++;
                     break;
-                case 2:
+
+                    case 2:
                     if (ABS(*ptr) < a)
                         ret++;
                     break;
-                case 3:
+
+                    case 3:
                     if (*ptr > a)
                         ret++;
                     break;
-                case 4:
+
+                    case 4:
                     if (*ptr < a)
                         ret++;
                     break;
-                case 5:
+
+                    case 5:
                     if (*ptr >= a && *ptr <= b)
                         ret++;
                     break;
+
                 }
             }
             return ret;
@@ -3622,14 +3614,14 @@ class MultidimArray {
          * the value in the array is equal to the old value. Set it to 0 for
          * perfect accuracy.
          */
-        void substitute(T oldv,
-                        T newv,
-                        RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
-                        MultidimArray<int> * mask = NULL ) {
+        void substitute(
+            T oldv, T newv, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
+            MultidimArray<int> *mask = NULL
+        ) {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask,n) > 0 )
+            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0 )
                 if (ABS(*ptr - oldv) <= accuracy)
                     *ptr = newv;
         }
@@ -3640,11 +3632,10 @@ class MultidimArray {
          * The accuracy is used to say if the value in the array is equal
          * to the old value.  Set it to 0 for perfect accuracy.
          */
-        void randomSubstitute(T oldv,
-                            T avgv,
-                            T sigv,
-                            RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
-                            MultidimArray<int> * mask = NULL ) {
+        void randomSubstitute(
+            T oldv, T avgv, T sigv, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY, 
+            MultidimArray<int> *mask = NULL
+        ) {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
@@ -3655,25 +3646,18 @@ class MultidimArray {
 
         /** Binarize.
          *
-         * This functions substitutes all values in a volume which are greater
-         * than val+accuracy by 1 and the rest are set to 0. Use threshold to get a
-         * very powerful binarization.
+         * Binarize (set to 1 or 0) each value in a volume according to whether it is greater than val + accuracy.
+         * Use threshold to get a very powerful binarization.
          */
-        void binarize(RFLOAT val = 0,
-                    RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
-                    MultidimArray<int> * mask = NULL ) {
+        void binarize(
+            RFLOAT val = 0, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
+            MultidimArray<int> *mask = NULL
+        ) {
             T* ptr = NULL;
             long int n;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            if ((mask == NULL) || (DIRECT_MULTIDIM_ELEM(*mask,n) > 0) )
-            {
-                if (*ptr <= val + accuracy)
-                {
-                    *ptr = 0;
-                }
-                else
-                {
-                    *ptr = 1;
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+                if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+                    *ptr = *ptr > val + accuracy;
                 }
             }
         }
@@ -3685,8 +3669,9 @@ class MultidimArray {
         void selfROUND() {
             T* ptr = NULL;
             long int n;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr = ROUND(*ptr);
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+                *ptr = ROUND(*ptr);
+            }
         }
 
         /** CEILING

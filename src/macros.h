@@ -128,32 +128,30 @@ extern const char *g_RELION_VERSION;
     #define ABS(x) ((x) >= 0 ? (x) : -(x))
 #endif
 
-/** Sign of
- *
- * Valid for any kind of number (int, short, float, etc). It returns +1 or -1
- *
- * @code
- * if (SGN(x) == -1)
- *     std::cout << "x is negative" << std::endl;
- * @endcode
- */
-#ifndef SGN
-    #define SGN(x) ((x) >= 0 ? 1 : -1)
-#endif
 
-/** Sign of, considering 0 as 0
+/** signum
  *
- * Valid for any kind of number (int, short, float, etc). It returns +1 if the
- * number is positive, -1 if the number is negative, and 0 if the number is 0.
+ * The sign of a value.
+ * Valid for any type T which supports total ordering (i.e. operator <)
+ * and construction from 0.
+ * If n is positive, sgn(n) returns +1.
+ * If n is negative, sgn(n) returns -1.
+ * If n is 0, sgn(n) returns 0.
+ * (where 0, +1, -1 are of type T)
  *
  * @code
- * if (SGN0(x) == -1)
- *     std::cout << "x is negative" << std::endl;
+ * if (sgn(x) == -1) { std::cout << "x is negative" << std::endl; }
  * @endcode
  */
-#ifndef SGN0
-    #define SGN0(x) ((x) >= 0 ? ((x) == 0 ? 0 : 1) : -1)
-#endif
+template <typename T>
+int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
+template <typename T>
+int sgn_nozero(T val) {
+    return val >= 0 ? +1 : -1;
+}
 
 #ifndef XMIPP_MIN
 /** Minimum

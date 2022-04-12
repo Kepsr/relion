@@ -144,39 +144,40 @@ void Euler_direction2angles(Matrix1D<RFLOAT> &v0,
 
 /* Matrix --> Euler angles ------------------------------------------------- */
 #define CHECK
-//#define DEBUG_EULER
-void Euler_matrix2angles(const Matrix2D<RFLOAT> &A, RFLOAT &alpha,
-                         RFLOAT &beta, RFLOAT &gamma)
-{
+// #define DEBUG_EULER
+void Euler_matrix2angles(
+    const Matrix2D<RFLOAT> &A, 
+    RFLOAT &alpha, RFLOAT &beta, RFLOAT &gamma
+) {
     RFLOAT abs_sb, sign_sb;
 
     if (MAT_XSIZE(A) != 3 || MAT_YSIZE(A) != 3)
         REPORT_ERROR( "Euler_matrix2angles: The Euler matrix is not 3x3");
 
     abs_sb = sqrt(A(0, 2) * A(0, 2) + A(1, 2) * A(1, 2));
-    if (abs_sb > 16*FLT_EPSILON)
-    {
+    if (abs_sb > 16 * FLT_EPSILON) {
         gamma = atan2(A(1, 2), -A(0, 2));
-        alpha = atan2(A(2, 1), A(2, 0));
-        if (ABS(sin(gamma)) < FLT_EPSILON)
-            sign_sb = SGN(-A(0, 2) / cos(gamma));
-        // if (sin(alpha)<FLT_EPSILON) sign_sb=SGN(-A(0,2)/cos(gamma));
-        // else sign_sb=(sin(alpha)>0) ? SGN(A(2,1)):-SGN(A(2,1));
-        else
-            sign_sb = (sin(gamma) > 0) ? SGN(A(1, 2)) : -SGN(A(1, 2));
-        beta  = atan2(sign_sb * abs_sb, A(2, 2));
-    }
-    else
-    {
-        if (SGN(A(2, 2)) > 0)
-        {
+        alpha = atan2(A(2, 1), +A(2, 0));
+        if (ABS(sin(gamma)) < FLT_EPSILON) {
+            // cos(gamma) is very close to either +1 or -1
+            sign_sb = sgn_nozero(-A(0, 2)) * sgn(cos(gamma));
+        } else {
+            // sin(gamma) is not zero
+            sign_sb = sgn_nozero(A(1, 2)) * sgn(sin(gamma));
+        }
+        // if (sin(alpha) < FLT_EPSILON) {
+        //     sign_sb = sgn_nozero(-A(0, 2) / cos(gamma));
+        // } else {
+        //     sign_sb = sgn(sin(alpha)) * sgn_nozero(A(2, 1));
+        // }
+        beta = atan2(abs_sb * sign_sb * abs_sb, A(2, 2));
+    } else {
+        if (A(2, 2) >= 0) {
             // Let's consider the matrix as a rotation around Z
             alpha = 0;
             beta  = 0;
             gamma = atan2(-A(1, 0), A(0, 0));
-        }
-        else
-        {
+        } else {
             alpha = 0;
             beta  = PI;
             gamma = atan2(A(1, 0), -A(0, 0));
@@ -187,15 +188,12 @@ void Euler_matrix2angles(const Matrix2D<RFLOAT> &A, RFLOAT &alpha,
     beta  = RAD2DEG(beta);
     alpha = RAD2DEG(alpha);
 
-#ifdef DEBUG_EULER
+    #ifdef DEBUG_EULER
     std::cout << "abs_sb " << abs_sb << std::endl;
-    std::cout << "A(1,2) " << A(1, 2) << " A(0,2) " << A(0, 2) << " gamma "
-    << gamma << std::endl;
-    std::cout << "A(2,1) " << A(2, 1) << " A(2,0) " << A(2, 0) << " alpha "
-    << alpha << std::endl;
-    std::cout << "sign sb " << sign_sb << " A(2,2) " << A(2, 2)
-    << " beta " << beta << std::endl;
-#endif
+    std::cout << "A(1, 2) " << A(1, 2) << " A(0, 2) " << A(0, 2) << " gamma " << gamma << std::endl;
+    std::cout << "A(2, 1) " << A(2, 1) << " A(2, 0) " << A(2, 0) << " alpha " << alpha << std::endl;
+    std::cout << "sign sb " << sign_sb << " A(2, 2) " << A(2, 2) << " beta "  << beta  << std::endl;
+    #endif
 }
 #undef CHECK
 

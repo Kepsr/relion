@@ -216,11 +216,9 @@ class CTF {
             RFLOAT gamma = K1 * (Axx * X * X + 2.0 * Axy * X * Y + Ayy * Y * Y) + K2 * u4 - K5 - K3 + gammaOffset;
             // Quadratic: xx + 2xy + yy
 
-            RFLOAT retval;
-
-            retval = (
-                (do_intact_until_first_peak && ABS(gamma) < PI / 2.0) || 
-                (do_intact_after_first_peak && ABS(gamma) > PI / 2.0)
+            RFLOAT retval = (
+                do_intact_until_first_peak && ABS(gamma) < PI / 2.0 || 
+                do_intact_after_first_peak && ABS(gamma) > PI / 2.0
             ) ? 1.0 : -sin(gamma);
 
             if (do_damping) {
@@ -231,7 +229,7 @@ class CTF {
             if (do_abs) {
                 retval = ABS(retval);
             } else if (do_only_flip_phases) {
-                retval = SGN(retval);
+                retval = retval == 0.0 ? 1.0 : sgn(retval);
             }
 
             retval *= scale;
@@ -239,7 +237,7 @@ class CTF {
             // SHWS 25-2-2019: testing a new idea to improve code stability
             // Don't allow very small values of CTF to prevent division by zero in GPU code
             if (fabs(retval) < 1e-8) {
-                retval = SGN(retval) * 1e-8;
+                retval = (retval == 0.0 ? 1.0 : sgn(retval)) * 1e-8;
             }
 
             return retval;
