@@ -245,9 +245,9 @@ void HelixAligner::initialise() {
     std::cout <<     " *** best_angpix= " << down_angpix << " rectangles xsize= " << 2.0 * crossover_distance / down_angpix << std::endl;
 
     down_size = best_size;
-    yrect  = ROUND(ori_size * angpix / down_angpix);
+    yrect  = round(ori_size * angpix / down_angpix);
     yrect -= yrect % 2;  // Ensure divisibility by 2
-    xrect  = ROUND((2. * crossover_distance)/down_angpix);
+    xrect  = round(2.0 * crossover_distance / down_angpix);
     model.initialise(nr_classes, yrect, xrect);
     max_shift = CEIL(max_shift_A / down_angpix);
     mask_radius_pix = mask_diameter > 0 ? CEIL(mask_diameter / (2.0 * down_angpix)) : yrect / 2 - 2;
@@ -275,8 +275,7 @@ void HelixAligner::readImages() {
 
     std::vector<MultidimArray<RFLOAT>> dummy;
 
-
-    long int ipart=0;
+    long int ipart = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
 
         FileName fn_img;
@@ -557,13 +556,13 @@ void HelixAligner::getHelicesFromMics() {
                                     avg
                                 );
                             }
-                            int newsize = ROUND(oldsize * angpix / down_angpix);
+                            int newsize = round(oldsize * angpix / down_angpix);
                             newsize -= newsize % 2; // Ensure divisibility by 2
                             resizeMap(Idown, newsize);
 
                             if (oldxsize != oldysize) {
-                                int newxsize = ROUND(oldxsize * angpix / down_angpix);
-                                int newysize = ROUND(oldysize * angpix / down_angpix);
+                                int newxsize = round(oldxsize * angpix / down_angpix);
+                                int newysize = round(oldysize * angpix / down_angpix);
                                 // Enforce divisibility by 2
                                 newxsize -= newxsize % 2;
                                 newysize -= newysize % 2;
@@ -1092,7 +1091,7 @@ void HelixAligner::run() {
     // Write out the starting model as well
     writeOut(0);
 
-    int decrease_smear = ROUND((float) max_smear / (float) (nr_iter + 5));
+    int decrease_smear = round((float) max_smear / (float) (nr_iter + 5));
     for (int iter = 1; iter <= nr_iter; iter++) {
 
         if (verb > 0) {

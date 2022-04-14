@@ -849,19 +849,15 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         Imask().setXmippOrigin();
         masks_bodies[nr_bodies] = Imask();
         Imask.setSamplingRateInHeader(pixel_size);
-        // find center-of-mass for rotations around it
+        // For rotations, find center-of-mass (com)
         int mydim = Imask().getDim();
         Matrix1D<RFLOAT> com(mydim);
         Imask().centerOfMass(com);
         com_bodies[nr_bodies].resize(3);
-        XX(com_bodies[nr_bodies]) = ROUND(XX(com)); // ROUND so no interpolation artifacts in selfTranslate(Iref)
-        YY(com_bodies[nr_bodies]) = ROUND(YY(com));
-        if (mydim == 3) {
-            ZZ(com_bodies[nr_bodies]) = ROUND(ZZ(com));
-        } else {
-            ZZ(com_bodies[nr_bodies]) = 0.0;
-        }
-        // find maximum radius of mask around it's COM
+        XX(com_bodies[nr_bodies]) = round(XX(com)); // Round to avoid interpolation artifacts in selfTranslate(Iref)
+        YY(com_bodies[nr_bodies]) = round(YY(com));
+        ZZ(com_bodies[nr_bodies]) = mydim == 3 ? round(ZZ(com)) : 0.0;
+        // Find maximum radius for mask around com
         int max_d2 = 0.0;
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Imask()) {
             if (A3D_ELEM(Imask(), k, i, j) > 0.05) {
@@ -1124,7 +1120,7 @@ void MlModel::setFourierTransformMaps(
 
     int min_ires = -1;
     if (strict_lowres_exp > 0) {
-        min_ires = ROUND(pixel_size * ori_size / strict_lowres_exp);
+        min_ires = round(pixel_size * ori_size / strict_lowres_exp);
 //		std::cout << "MlModel::setFourierTransformMaps: strict_lowres_exp = " << strict_lowres_exp
 //		          << " pixel_size = " << pixel_size << " ori_size = " << ori_size << " min_ires = " << min_ires << std::endl;;
     }

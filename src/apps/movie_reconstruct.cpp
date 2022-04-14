@@ -598,7 +598,7 @@ void MovieReconstructor::applyCTFPandCTFQ(
         MultidimArray<RFLOAT> Iapp(YSIZE(Fin), YSIZE(Fin));
         // Two passes: one for CTFP, one for CTFQ
         for (int ipass = 0; ipass < 2; ipass++) {
-            bool is_my_positive = (ipass == 1) ? is_reverse : !is_reverse;
+            bool is_my_positive = (ipass == 1) == is_reverse;
 
             // Get CTFP and multiply the Fapp with it
             ctf.getCTFPImage(CTFP, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
@@ -610,7 +610,7 @@ void MovieReconstructor::applyCTFPandCTFQ(
                 CenterFFTbySign(Fapp);
                 transformer.inverseFourierTransform(Fapp, Iapp);
 
-                softMaskOutsideMap(Iapp, ROUND(mask_diameter/(angpix*2.)), (RFLOAT)width_mask_edge);
+                softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 
                 // Re-box to a smaller size if necessary.
                 if (output_boxsize < YSIZE(Fin)) {

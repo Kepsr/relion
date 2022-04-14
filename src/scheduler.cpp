@@ -210,24 +210,20 @@ void  SchedulerOperator::readFromStarFile() const {
     long ii = 0;
     MultidimArray<RFLOAT> for_sorting(MD.numberOfObjects());
 
-    long idx = (isFloatVariable(input2)) ? ROUND(scheduler_global_floats[input2].value) : 0;
+    long idx = isFloatVariable(input2) ? round(scheduler_global_floats[input2].value) : 0;
     if (
         type == SCHEDULE_BOOLEAN_OPERATOR_READ_STAR ||
         type == SCHEDULE_FLOAT_OPERATOR_READ_STAR ||
         type == SCHEDULE_STRING_OPERATOR_READ_STAR
     ) {
         if (EMDL::isDouble(mylabel)) {
-            RFLOAT fval = MD.getValue<RFLOAT>(mylabel, idx);
-            scheduler_global_floats[output].value = fval;
+            scheduler_global_floats[output].value = MD.getValue<RFLOAT>(mylabel, idx);
         } else if (EMDL::isInt(mylabel)) {
-            int ival = MD.getValue<int>(mylabel, idx);
-            scheduler_global_floats[output].value = ROUND(ival);
+            scheduler_global_floats[output].value = MD.getValue<int>(mylabel, idx);
         } else if (EMDL::isString(mylabel)) {
-            std::string val = MD.getValue<std::string>(mylabel, idx);
-            scheduler_global_strings[output].value = val;
+            scheduler_global_strings[output].value = MD.getValue<std::string>(mylabel, idx);
         } else if (EMDL::isBool(mylabel)) {
-            bool val = MD.getValue<bool>(mylabel, idx);
-            scheduler_global_bools[output].value = val;
+            scheduler_global_bools[output].value = MD.getValue<bool>(mylabel, idx);
         }
     } else if (
         type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
@@ -325,11 +321,11 @@ bool SchedulerOperator::performOperation() const {
     } else if (type == SCHEDULE_FLOAT_OPERATOR_DIVIDE) {
         scheduler_global_floats[output].value = scheduler_global_floats[input1].value / val2;
     } else if (type == SCHEDULE_FLOAT_OPERATOR_ROUND) {
-        scheduler_global_floats[output].value = ROUND(scheduler_global_floats[input1].value);
+        scheduler_global_floats[output].value = round(scheduler_global_floats[input1].value);
     } else if (type == SCHEDULE_FLOAT_OPERATOR_COUNT_IMAGES) {
+        std::string mytablename = isStringVariable(input2) ? scheduler_global_strings[input2].value : "particles";
         ObservationModel obsmodel;
         MetaDataTable MDimg;
-        std::string mytablename = (isStringVariable(input2)) ? scheduler_global_strings[input2].value : "particles";
         ObservationModel::loadSafely(scheduler_global_strings[input1].value, obsmodel, MDimg, mytablename);
         scheduler_global_floats[output].value = MDimg.numberOfObjects();
     } else if (type == SCHEDULE_FLOAT_OPERATOR_COUNT_WORDS) {
@@ -337,8 +333,8 @@ bool SchedulerOperator::performOperation() const {
         if (scheduler_global_strings[input1].value == "undefined") {
             scheduler_global_floats[output].value = 0;
         } else {
-            std::vector< std::string > splits;
-            int nr_splits = splitString(scheduler_global_strings[input1].value, ",", splits);
+            std::vector<std::string> splits;
+            splitString(scheduler_global_strings[input1].value, ",", splits);
             scheduler_global_floats[output].value = splits.size();
         }
     } else if (type == SCHEDULE_STRING_OPERATOR_JOIN) {
@@ -365,18 +361,16 @@ bool SchedulerOperator::performOperation() const {
         }
     } else if (type == SCHEDULE_STRING_OPERATOR_NTH_WORD) {
 
-        std::vector< std::string > splits;
-        int nr_splits = splitString(scheduler_global_strings[input1].value, ",", splits);
-        int mypos = ROUND(val2);
+        std::vector<std::string> splits;
+        splitString(scheduler_global_strings[input1].value, ",", splits);
+        int mypos = round(val2);
         // for negative Ns, count from the back
-        if (mypos < 0) mypos = splits.size() - mypos + 1;
+        if (mypos < 0) { mypos = splits.size() - mypos + 1; }
         // Started counting at 1, but first element of vector is zero!
         mypos--;
-        if (mypos >= splits.size() || mypos < 0) {
-            scheduler_global_strings[output].value = "undefined";
-        } else {
-            scheduler_global_strings[output].value = splits[mypos];
-        }
+        scheduler_global_strings[output].value = mypos >= splits.size() || mypos < 0 ?
+            "undefined" :
+            splits[mypos];
     } else if (type == SCHEDULE_OPERATOR_TOUCH_FILE) {
         std::cout << " + Touching: " << scheduler_global_strings[input1].value << std::endl;
         touch(scheduler_global_strings[input1].value);
@@ -393,7 +387,7 @@ bool SchedulerOperator::performOperation() const {
         if (scheduler_global_strings[input2].value.contains("/")) {
             FileName mydirs = scheduler_global_strings[input2].value.beforeLastOf("/");
             std::string mycommand = "mkdir -p " + mydirs;
-             int res = system(mycommand.c_str());
+            int res = system(mycommand.c_str());
         }
         // Execute the command
         mycommand += scheduler_global_strings[input1].value + " " + scheduler_global_strings[input2].value;

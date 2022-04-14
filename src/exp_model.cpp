@@ -238,7 +238,7 @@ void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine)
             nr_swaps = 0;
             for (int ptr_a = 0; ptr_a < vec_mics.size() - 1; ptr_a++) {
                 std::pair<std::string, int> tmp;
-                int ptr_b = ROUND(rnd_unif(ptr_a, vec_mics.size() - 1));
+                int ptr_b = round(rnd_unif(ptr_a, vec_mics.size() - 1));
                 if (ptr_b <= ptr_a || ptr_b >= vec_mics.size())
                     continue;
                 nr_swaps++;

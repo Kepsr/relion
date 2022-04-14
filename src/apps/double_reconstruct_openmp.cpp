@@ -163,7 +163,7 @@ class reconstruct_parameters {
                     transformer.inverseFourierTransform(Fapp, Iapp);
                     CenterFFT(Iapp, false);
 
-                    softMaskOutsideMap(Iapp, ROUND(mask_diameter/(angpix*2.)), (RFLOAT)width_mask_edge);
+                    softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 
                     // Re-box to a smaller size if necessary....
                     if (0 < newbox && newbox < YSIZE(Fin)) {

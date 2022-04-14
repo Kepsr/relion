@@ -430,8 +430,8 @@ class image_handler_parameters {
 
             Iop().setXmippOrigin();
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-                int jpp = ROUND(jp * A(0, 0) + ip * A(0, 1));
-                int ipp = ROUND(jp * A(1, 0) + ip * A(1, 1));
+                int jpp = round(jp * A(0, 0) + ip * A(0, 1));
+                int ipp = round(jp * A(1, 0) + ip * A(1, 1));
                 int kpp = kp;
                 RFLOAT fil = (
                     jpp >= STARTINGX(Iop()) && jpp <= FINISHINGX(Iop()) &&
@@ -522,7 +522,7 @@ class image_handler_parameters {
                 );
             }
 
-            int newsize = ROUND(oldsize * (angpix / requested_angpix));
+            int newsize = round(oldsize * (angpix / requested_angpix));
             newsize -= newsize % 2; // Force divisibility by 2
 
             real_angpix = oldsize * angpix / newsize;
@@ -533,8 +533,8 @@ class image_handler_parameters {
             my_new_box_size = newsize;
 
             if (oldxsize != oldysize && Iout().getDim() == 2) {
-                int newxsize = ROUND(oldxsize * (angpix / real_angpix));
-                int newysize = ROUND(oldysize * (angpix / real_angpix));;
+                int newxsize = round(oldxsize * (angpix / real_angpix));
+                int newysize = round(oldysize * (angpix / real_angpix));;
                 newxsize -= newxsize % 2; // Force divisibility by 2
                 newysize -= newysize % 2; // Force divisibility by 2
                 Iout().setXmippOrigin();
@@ -735,7 +735,7 @@ class image_handler_parameters {
                     spectrum.initZeros(YSIZE(Iop()));
                     count.initZeros(YSIZE(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                        long int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
+                        long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
                         spectrum(idx) += dAkij(Iop(), k, i, j);
                         count(idx) += 1.0;
                     }
@@ -745,7 +745,7 @@ class image_handler_parameters {
                     }
 
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                            long int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
+                            long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
                             if (idx > minr_ampl_corr) {
                                 dAkij(Iop(), k, i, j) /= spectrum(idx);
                             } else {

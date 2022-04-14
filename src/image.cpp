@@ -169,7 +169,7 @@ void calculateBackgroundAvgStddev(
         #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
         FileName fn_test;
         Image<RFLOAT> img_test;
-        int angle = ROUND(fabs(psi_deg));
+        int angle = round(fabs(psi_deg));
         fn_test = integerToString(angle);
         if (psi_deg < 0.)
             fn_test = fn_test.addExtension("neg");

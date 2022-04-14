@@ -62,7 +62,7 @@ void Projector::initialiseData(int current_size) {
     r_max = std::min(r_max, ori_size / 2);
 
     // Set pad_size
-    pad_size = 2 * (ROUND(padding_factor * r_max) + 1) + 1;
+    pad_size = 2 * round(padding_factor * r_max) + 3;
 
     // Short side of data array
     switch (ref_dim) {
@@ -148,7 +148,7 @@ void Projector::computeFourierTransformMap(
     TICTOC(TIMING_INIT1, ({
 
     // Size of padded real-space volume
-    padoridim = ROUND(padding_factor * ori_size);
+    padoridim = round(padding_factor * ori_size);
     // make sure padoridim is even
     padoridim += padoridim % 2;
     // Re-calculate padding factor
@@ -167,8 +167,8 @@ void Projector::computeFourierTransformMap(
             Mpad.reshape(padoridim, padoridim);
         }
         normfft = (RFLOAT) (
-            data_dim == 2 ? 
-            padding_factor * padding_factor : 
+            data_dim == 2 ?
+            padding_factor * padding_factor :
             padding_factor * padding_factor * ori_size
         );
         break;
@@ -181,7 +181,7 @@ void Projector::computeFourierTransformMap(
         }
         normfft = (RFLOAT) (
             data_dim == 3 ?
-            padding_factor * padding_factor * padding_factor : 
+            padding_factor * padding_factor * padding_factor :
             padding_factor * padding_factor * padding_factor * ori_size
         );
         break;
@@ -388,11 +388,8 @@ void Projector::computeFourierTransformMap(
     }));
 
     TICTOC(TIMING_FAUX, ({
-    int max_r2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
-    int min_r2 = -1;
-    if (min_ires > 0) {
-        min_r2 = ROUND(min_ires * padding_factor) * ROUND(min_ires * padding_factor);
-    }
+    int max_r2 = round(r_max * padding_factor) * round(r_max * padding_factor);
+    int min_r2 = min_ires > 0 ? round(min_ires * padding_factor) * round(min_ires * padding_factor) : -1;
 
     if (do_heavy) {
         RFLOAT weight = 1.0;
@@ -416,17 +413,17 @@ void Projector::computeFourierTransformMap(
             if (r2 <= max_r2) {
                 if (do_fourier_mask) {
                     weight = FFTW_ELEM(
-                        *fourier_mask, 
-                        ROUND(kp / padding_factor), 
-                        ROUND(ip / padding_factor), 
-                        ROUND(jp / padding_factor)
+                        *fourier_mask,
+                        (int) round(kp / padding_factor),
+                        (int) round(ip / padding_factor),
+                        (int) round(jp / padding_factor)
                     );
                 }
                 // Set data array
                 A3D_ELEM(data, kp, ip, jp) = weight * DIRECT_A3D_ELEM(Faux, k, i, j) * normfft;
 
                 // Calculate power spectrum
-                int ires = ROUND(sqrt((RFLOAT) r2) / padding_factor);
+                int ires = round(sqrt((RFLOAT) r2) / padding_factor);
                 // Factor two because of two-dimensionality of the complex plane
                 DIRECT_A1D_ELEM(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.0;
                 DIRECT_A1D_ELEM(counter, ires) += weight;
@@ -635,11 +632,11 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
 
             } else if (interpolator == NEAREST_NEIGHBOUR) {
                 /// NOTE: Unused
-                int x0 = ROUND(xp);
-                int y0 = ROUND(yp);
-                int z0 = ROUND(zp);
+                int x0 = round(xp);
+                int y0 = round(yp);
+                int z0 = round(zp);
 
-                const bool is_neg_x = (x0 < 0);
+                const bool is_neg_x = x0 < 0;
 
                 if (is_neg_x) {
                     // Get complex conjugate hermitian symmetry pair
@@ -845,8 +842,8 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
             if (is_neg_x) DIRECT_A1D_ELEM(f1d, x) = conj(DIRECT_A1D_ELEM(f1d, x));
 
         } else if (interpolator == NEAREST_NEIGHBOUR ) {
-            const int x0 = ROUND(xp);
-            const int y0 = ROUND(yp);
+            const int x0 = round(xp);
+            const int y0 = round(yp);
 
             DIRECT_A1D_ELEM(f1d, x) = x0 < 0 ?
                 conj(A2D_ELEM(data, -y0, -x0)) : A2D_ELEM(data, y0, x0);
@@ -942,8 +939,8 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
 
             } else if (interpolator == NEAREST_NEIGHBOUR) {
                 /// NOTE: Unused
-                const int x0 = ROUND(xp);
-                const int y0 = ROUND(yp);
+                const int x0 = round(xp);
+                const int y0 = round(yp);
 
                 DIRECT_A2D_ELEM(f2d, i, x) = x0 < 0 ?
                     conj(A2D_ELEM(data, -y0, -x0)) : A2D_ELEM(data, y0, x0);
@@ -1062,9 +1059,9 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
                     if (is_neg_x) DIRECT_A3D_ELEM(f3d, k, i, x) = conj(DIRECT_A3D_ELEM(f3d, k, i, x));
 
                 } else if (interpolator == NEAREST_NEIGHBOUR) {
-                    const int x0 = ROUND(xp);
-                    const int y0 = ROUND(yp);
-                    const int z0 = ROUND(zp);
+                    const int x0 = round(xp);
+                    const int y0 = round(yp);
+                    const int z0 = round(zp);
 
                     DIRECT_A3D_ELEM(f3d, k, i, x) = x0 < 0 ?
                         conj(A3D_ELEM(data, -z0, -y0, -x0)) : A3D_ELEM(data, z0, y0, x0);

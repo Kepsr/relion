@@ -372,7 +372,7 @@ class project_parameters {
                         // Add coloured noise
                         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
                             int Nyquist = model.ori_size / 2;
-                            int ires = std::min(ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), Nyquist);   // at freqs higher than Nyquist: use last sigma2 value
+                            int ires = std::min((int) round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), Nyquist);   // at freqs higher than Nyquist: use last sigma2 value
 
                             RFLOAT sigma = sqrt(DIRECT_A1D_ELEM(model.sigma2_noise[my_mic_id], ires));
                             DIRECT_A3D_ELEM(F2D, k, i, j).real += rnd_gaus(0.0, sigma);

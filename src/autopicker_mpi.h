@@ -12,38 +12,32 @@
 #include "src/autopicker.h"
 #include "src/parallel.h"
 
-class AutoPickerMpi: public AutoPicker
-{
-private:
-	MpiNode *node;
+class AutoPickerMpi: public AutoPicker {
 
-public:
-	/** Destructor, calls MPI_Finalize */
-	~AutoPickerMpi()
-	{
-		delete node;
-	}
+    private:
 
-	/** Read
-	 * This could take care of mpi-parallelisation-dependent variables
-	 */
-	void read(int argc, char **argv);
+    MpiNode *node;
 
-	// Set device-affinity
-	int deviceInitialise();
+    public:
 
-	// Parallelized run function
-	void run();
+    /** Destructor, calls MPI_Finalize */
+    ~AutoPickerMpi() { delete node; }
 
-	int getRank()
-	{
-		return(node->rank);
-	}
+    /** Read
+     * This could take care of mpi-parallelisation-dependent variables
+     */
+    void read(int argc, char **argv);
 
-	MpiNode * getNode()
-	{
-		return(node);
-	}
+    // Set device-affinity
+    int deviceInitialise();
+
+    // Parallelized run function
+    void run();
+
+    int getRank() { return node->rank; }
+
+    MpiNode* getNode() { return node; }
+
 };
 
 #endif /* AUTOPICKER_MPI_H_ */

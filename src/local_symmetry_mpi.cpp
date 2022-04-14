@@ -1,8 +1,7 @@
 #include "src/local_symmetry_mpi.h"
 //#define DEBUG
 
-void local_symmetry_parameters_mpi::read(int argc, char **argv)
-{
+void local_symmetry_parameters_mpi::read(int argc, char **argv) {
     // Define a new MpiNode
     node = new MpiNode(argc, argv);
 
@@ -10,7 +9,7 @@ void local_symmetry_parameters_mpi::read(int argc, char **argv)
     local_symmetry_parameters::read(argc, argv);
 
     // Don't put any output to screen for mpi followers
-    verb = (node->isLeader()) ? 1 : 0;
+    verb = node->isLeader();
 
     // Possibly also read parallelisation-dependent variables here
 
@@ -18,12 +17,11 @@ void local_symmetry_parameters_mpi::read(int argc, char **argv)
     printMpiNodesMachineNames(*node);
 }
 
-void local_symmetry_parameters_mpi::run()
-{
+void local_symmetry_parameters_mpi::run() {
     int nr_masks = 0, nr_ops = 0, nr_total_samplings = 0;
     long int newdim = 0, cropdim = 0, z0 = 0, y0 = 0, x0 = 0, zf = 0, yf = 0, xf = 0, first = 0, last = 0;
-    RFLOAT aa = 0, bb = 0, gg = 0., dx = 0., dy = 0., dz = 0., cc = 0., tmp_binning_factor = 1.;
-    RFLOAT mask_sum = 0., mask_ctr = 0., mask2_sum = 0., mask2_ctr = 0.;
+    RFLOAT aa = 0, bb = 0, gg = 0., dx = 0., dy = 0., dz = 0., cc = 0., tmp_binning_factor = 1.0;
+    RFLOAT mask_sum = 0., mask_ctr = 0., mask2_sum = 0., mask2_ctr = 0.0;
 
     Image<RFLOAT> map, mask, mask2;
     Matrix1D<RFLOAT> op_search_ranges, op, com0_int, com1_int, com1_float, com1_diff, vecR3;
@@ -46,78 +44,73 @@ void local_symmetry_parameters_mpi::run()
     fn_parsed.clear(); fn_tmp.clear(); fn_searched_op_samplings.clear();
 
     // Check options
-    if ( (do_apply_local_symmetry)
-            || (do_duplicate_local_symmetry)
-            || (do_txt2rln)
-            || (do_transform)
-            || (do_debug)
-            || (!do_local_search_local_symmetry_ops) )
-        REPORT_ERROR("ERROR: Please specify '--search' as the only option! For other options use non-parallel version (without '_mpi') instead!");
+    if (
+        do_apply_local_symmetry || 
+        do_duplicate_local_symmetry || 
+        do_txt2rln || 
+        do_transform || 
+        do_debug || 
+        !do_local_search_local_symmetry_ops
+    ) REPORT_ERROR("ERROR: Please specify '--search' as the only option! For other options use non-parallel version (without '_mpi') instead!");
 
     // Leader writes out commands
-    if ( (!show_usage_for_an_option) && (!do_debug) && (node->isLeader()) )
-    {
+    if (!show_usage_for_an_option && !do_debug && node->isLeader()) {
         local_symmetry_parameters::writeCommand("relion_localsym.log", "mpirun -n " + integerToString(node->size) + " `which relion_localsym_mpi`");
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (node->isLeader())
-    {
+    if (node->isLeader()) {
         displayEmptyLine();
 
-#ifdef DEBUG
+        #ifdef DEBUG
         std::cout << " DEBUG: relion_localsym_mpi is running ..." << std::endl;
-#endif
+        #endif
 
         // Leader gets search ranges (in degrees and pixels), sets offset_step (in pixels).
         if (angpix_image < 0.001)
             REPORT_ERROR("Invalid pixel size!");
-        if (fn_op_mask_info_in != "None")
-        {
-            if ( (ang_range < (XMIPP_EQUAL_ACCURACY) )
-                    && (ang_rot_range < (XMIPP_EQUAL_ACCURACY) )
-                    && (ang_tilt_range < (XMIPP_EQUAL_ACCURACY) )
-                    && (ang_psi_range < (XMIPP_EQUAL_ACCURACY) ) )
-            {
-                ang_range = 180.;
+        if (fn_op_mask_info_in != "None") {
+            if (
+                ang_range      < XMIPP_EQUAL_ACCURACY && 
+                ang_rot_range  < XMIPP_EQUAL_ACCURACY && 
+                ang_tilt_range < XMIPP_EQUAL_ACCURACY && 
+                ang_psi_range  < XMIPP_EQUAL_ACCURACY
+            ) {
+                ang_range = 180.0;
                 std::cout << " Initial searches: reset searching ranges of all 3 Euler angles to +/-180 degrees." << std::endl;
-            }
-            else
-            {
-                if (ang_range > (XMIPP_EQUAL_ACCURACY) )
-                    std::cout << " User-defined initial searches: searching ranges of all 3 Euler angles are set to +/-" << ang_range << " degree(s)." << std::endl;
-                else
-                    std::cout << " User-defined initial searches: (rot, tilt, psi) ranges are +/- (" << ang_rot_range << ", " << ang_tilt_range << ", " << ang_psi_range << ") degree(s)." << std::endl;
+            } else {
+                std::cout << " User-defined initial searches: ";
+                if (ang_range > XMIPP_EQUAL_ACCURACY) {
+                    std::cout << "searching ranges of all 3 Euler angles are set to +/-" << ang_range << " degree(s).";
+                } else {
+                    std::cout << "(rot, tilt, psi) ranges are +/- (" << ang_rot_range << ", " << ang_tilt_range << ", " << ang_psi_range << ") degree(s).";
+                }
+                std::cout << std::endl;
             }
         }
         Localsym_composeOperator(
-                op_search_ranges,
-                (ang_range > (XMIPP_EQUAL_ACCURACY)) ? (ang_range) : (ang_rot_range),
-                (ang_range > (XMIPP_EQUAL_ACCURACY)) ? (ang_range) : (ang_tilt_range),
-                (ang_range > (XMIPP_EQUAL_ACCURACY)) ? (ang_range) : (ang_psi_range),
-                (offset_range > (XMIPP_EQUAL_ACCURACY)) ? (offset_range) : (offset_x_range),
-                (offset_range > (XMIPP_EQUAL_ACCURACY)) ? (offset_range) : (offset_y_range),
-                (offset_range > (XMIPP_EQUAL_ACCURACY)) ? (offset_range) : (offset_z_range) );
-        Localsym_scaleTranslations(op_search_ranges, 1. / angpix_image);
+            op_search_ranges,
+            ang_range    > XMIPP_EQUAL_ACCURACY ? ang_range    : ang_rot_range,
+            ang_range    > XMIPP_EQUAL_ACCURACY ? ang_range    : ang_tilt_range,
+            ang_range    > XMIPP_EQUAL_ACCURACY ? ang_range    : ang_psi_range,
+            offset_range > XMIPP_EQUAL_ACCURACY ? offset_range : offset_x_range,
+            offset_range > XMIPP_EQUAL_ACCURACY ? offset_range : offset_y_range,
+            offset_range > XMIPP_EQUAL_ACCURACY ? offset_range : offset_z_range
+        );
+        Localsym_scaleTranslations(op_search_ranges, 1.0 / angpix_image);
         offset_step /= angpix_image;
 
         // Leader parses and reads mask info file
         // Local searches
-        if (fn_op_mask_info_in == "None")
-        {
-            if (fn_info_in.getExtension() == "star")
-            {
+        if (fn_op_mask_info_in == "None") {
+            if (fn_info_in.getExtension() == "star") {
                 readRelionFormatMasksAndOperators(fn_info_in, fn_mask_list, op_list, angpix_image, true);
-            }
-            else
-            {
+            } else {
                 fn_parsed = fn_info_in + std::string(".") + fn_info_in_parsed_ext;
                 parseDMFormatMasksAndOperators(fn_info_in, fn_parsed);
                 readDMFormatMasksAndOperators(fn_parsed, fn_mask_list, op_list, angpix_image, true);
             }
-        }
-        else
-        {
+        } else {
             // Global searches
             std::cout << " Global searches: option --i_mask_info " << fn_info_in << " is ignored." << std::endl;
             readRelionFormatMasksWithoutOperators(fn_op_mask_info_in, fn_mask_list, op_list, op_mask_list, (ang_range > 179.99), true);
@@ -133,9 +126,9 @@ void local_symmetry_parameters_mpi::run()
         map().setXmippOrigin();
         if (!isMultidimArray3DCubic(map()))
             REPORT_ERROR("ERROR: Input map " + fn_unsym + " is not 3D cube!");
-#ifdef DEBUG
+        #ifdef DEBUG
         std::cout << " I am leader. The nxyzdim of map() is " << map().nzyxdim() << std::endl;
-#endif
+        #endif
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -143,12 +136,10 @@ void local_symmetry_parameters_mpi::run()
     node->relion_MPI_Bcast(&nr_masks, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     // All nodes loop over all masks
-    for (int imask = 0; imask < nr_masks; imask++)
-    {
+    for (int imask = 0; imask < nr_masks; imask++) {
         MPI_Barrier(MPI_COMM_WORLD);
 
-        if (node->isLeader())
-        {
+        if (node->isLeader()) {
             displayEmptyLine();
 
             // Leader reads and checks the mask
@@ -171,32 +162,31 @@ void local_symmetry_parameters_mpi::run()
             std::cout << " Mask #" << imask + 1 << " : center of mass XYZ = (" << XX(com0_int) << ", " << YY(com0_int) << ", " << ZZ(com0_int) << ") pixel(s)."<< std::endl;
 
             // Crop the mask and the corresponding region of the map
-            z0 = ROUND(ZZ(com0_int)) + Xmipp::init(cropdim);
-            zf = ROUND(ZZ(com0_int)) + Xmipp::last(cropdim);
-            y0 = ROUND(YY(com0_int)) + Xmipp::init(cropdim);
-            yf = ROUND(YY(com0_int)) + Xmipp::last(cropdim);
-            x0 = ROUND(XX(com0_int)) + Xmipp::init(cropdim);
-            xf = ROUND(XX(com0_int)) + Xmipp::last(cropdim);
+            z0 = round(ZZ(com0_int)) + Xmipp::init(cropdim);
+            zf = round(ZZ(com0_int)) + Xmipp::last(cropdim);
+            y0 = round(YY(com0_int)) + Xmipp::init(cropdim);
+            yf = round(YY(com0_int)) + Xmipp::last(cropdim);
+            x0 = round(XX(com0_int)) + Xmipp::init(cropdim);
+            xf = round(XX(com0_int)) + Xmipp::last(cropdim);
 
             std::cout << " Mask #" << imask + 1 << " : cropped box size = " << cropdim << " pixels." << std::endl;
-#ifdef DEBUG
+            #ifdef DEBUG
             std::cout << " Window: x0, y0, z0 = " << x0 << ", " << y0 << ", " << z0 << "; xf, yf, zf = " << xf << ", " << yf << ", " << zf << std::endl;
-#endif
+            #endif
             mask().window(mask_cropped, z0, y0, x0, zf, yf, xf);
             mask_cropped.setXmippOrigin();
             map().window(src_cropped, z0, y0, x0, zf, yf, xf);
             src_cropped.setXmippOrigin();
 
             // Rescale the map and the mask (if binning_factor > 1), set 'newdim'.
-            tmp_binning_factor = 1.;
+            tmp_binning_factor = 1.0;
             newdim = cropdim;
-            if ((binning_factor - 1.) > XMIPP_EQUAL_ACCURACY)
-            {
+            if ((binning_factor - 1.0) > XMIPP_EQUAL_ACCURACY) {
                 newdim = (long int)(ceil(RFLOAT(cropdim) / binning_factor));
                 if (newdim < 2)
                     REPORT_ERROR("ERROR: Binning factor is too large / Mask is too small!");
-                if ((newdim + 1) < cropdim) // Need rescaling
-                {
+                if ((newdim + 1) < cropdim) {
+                    // Need rescaling
                     // Dimension should always be even
                     if (newdim % 2)
                         newdim++;
@@ -208,14 +198,14 @@ void local_symmetry_parameters_mpi::run()
                     std::cout << " + Rescale cropped box size from " << cropdim << " to " << newdim << " pixels. Binning factor = " << tmp_binning_factor << std::endl;
 
                     // Mask values might go out of range after rescaling. Fix it if it happens
-                    truncateMultidimArray(mask_cropped, 0., 1.);
-                }
-                else
+                    truncateMultidimArray(mask_cropped, 0., 1.0);
+                } else {
                     newdim = cropdim;
+                }
             }
-#ifdef DEBUG
+            #ifdef DEBUG
             std::cout << " newdim= " << newdim << ", cropdim= " << cropdim << std::endl;
-#endif
+            #endif
         }
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -224,8 +214,7 @@ void local_symmetry_parameters_mpi::run()
 
         // Follower allocate space for MultidimArray
         // TODO: check whether the space is allocated and the map is read and successfully broadcast!!!
-        if (! node->isLeader())
-        {
+        if (!node->isLeader()) {
             mask_cropped.clear();
             mask_cropped.initZeros(1, newdim, newdim, newdim);
             mask_cropped.setXmippOrigin();
@@ -235,36 +224,34 @@ void local_symmetry_parameters_mpi::run()
             dest_cropped.clear();
             dest_cropped.initZeros(1, newdim, newdim, newdim);
             dest_cropped.setXmippOrigin();
-#ifdef DEBUG
-            if (node->rank == 1)
-            {
+            #ifdef DEBUG
+            if (node->rank == 1) {
                 std::cout << " I am node rank 1. The nxyzdim of mask_cropped is " << mask_cropped.nzyxdim() << std::endl;
                 std::cout << " I am node rank 1. The nxyzdim of  src_cropped is " <<  src_cropped.nzyxdim() << std::endl;
                 std::cout << " I am node rank 1. The nxyzdim of dest_cropped is " << dest_cropped.nzyxdim() << std::endl;
             }
-#endif
+            #endif
         }
         MPI_Barrier(MPI_COMM_WORLD);
 
         // Leader broadcasts the mask to all nodes
-#ifdef DEBUG
+        #ifdef DEBUG
         if (node->isLeader())
             std::cout << " Leader is broadcasting cropped masked region #" << (imask + 1) << " ..." << std::endl;
-#endif
+        #endif
         node->relion_MPI_Bcast(MULTIDIM_ARRAY(mask_cropped), MULTIDIM_SIZE(mask_cropped), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        node->relion_MPI_Bcast(MULTIDIM_ARRAY(src_cropped), MULTIDIM_SIZE(src_cropped), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
-#ifdef DEBUG
+        node->relion_MPI_Bcast(MULTIDIM_ARRAY(src_cropped),  MULTIDIM_SIZE(src_cropped),  MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        #ifdef DEBUG
         if (node->isLeader())
             std::cout << " Leader has completed broadcasting cropped masked region #" << (imask + 1) << "." << std::endl;
-#endif
+        #endif
 
         // Leader reads total number of operators for this mask
-        if (node->isLeader())
-        {
+        if (node->isLeader()) {
             nr_ops = op_list[imask].size();
-#ifdef DEBUG
+            #ifdef DEBUG
             std::cout << " nr_ops= " << nr_ops << std::endl;
-#endif
+            #endif
         }
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -272,13 +259,11 @@ void local_symmetry_parameters_mpi::run()
         node->relion_MPI_Bcast(&nr_ops, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
         // All nodes loop over all operators of this mask
-        for (int iop = 0; iop < nr_ops; iop++)
-        {
+        for (int iop = 0; iop < nr_ops; iop++) {
             MPI_Barrier(MPI_COMM_WORLD);
 
             // Leader gets sampling points
-            if (node->isLeader())
-            {
+            if (node->isLeader()) {
                 std::cout << std::endl;
 
                 com1_float.initZeros(3);
@@ -287,17 +272,14 @@ void local_symmetry_parameters_mpi::run()
 
                 Localsym_decomposeOperator(op_list[imask][iop], aa, bb, gg, dx, dy, dz, cc);
 
-                if (fn_op_mask_info_in == "None")
-                {
+                if (fn_op_mask_info_in == "None") {
                     // Local searches
                     // Get com1_float. (floating point numbers)
                     // Com1f = R * Com0 + v
                     Euler_angles2matrix(aa, bb, gg, mat1);
                     com1_float = mat1 * com0_int;
                     com1_float += vectorR3(dx, dy, dz);
-                }
-                else
-                {
+                } else {
                     // Global searches
                     // Leader reads and checks the mask
                     std::cout << " Read mask #" << imask + 1 << " operator #" << iop + 1 << " : " << op_mask_list[imask][iop] << " ..." << std::endl;
@@ -326,21 +308,20 @@ void local_symmetry_parameters_mpi::run()
                 ZZ(com1_diff) = ZZ(com1_float) - ZZ(com1_int);
 
                 // Crop this region
-                z0 = ROUND(ZZ(com1_int)) + Xmipp::init(cropdim);
-                zf = ROUND(ZZ(com1_int)) + Xmipp::last(cropdim);
-                y0 = ROUND(YY(com1_int)) + Xmipp::init(cropdim);
-                yf = ROUND(YY(com1_int)) + Xmipp::last(cropdim);
-                x0 = ROUND(XX(com1_int)) + Xmipp::init(cropdim);
-                xf = ROUND(XX(com1_int)) + Xmipp::last(cropdim);
-#ifdef DEBUG
+                z0 = round(ZZ(com1_int)) + Xmipp::init(cropdim);
+                zf = round(ZZ(com1_int)) + Xmipp::last(cropdim);
+                y0 = round(YY(com1_int)) + Xmipp::init(cropdim);
+                yf = round(YY(com1_int)) + Xmipp::last(cropdim);
+                x0 = round(XX(com1_int)) + Xmipp::init(cropdim);
+                xf = round(XX(com1_int)) + Xmipp::last(cropdim);
+                #ifdef DEBUG
                 std::cout << " Window: x0, y0, z0 = " << x0 << ", " << y0 << ", " << z0 << "; xf, yf, zf = " << xf << ", " << yf << ", " << zf << std::endl;
-#endif
+                #endif
                 map().window(dest_cropped, z0, y0, x0, zf, yf, xf);
                 dest_cropped.setXmippOrigin();
 
                 // Do the same rescaling
-                if (newdim != cropdim)
-                {
+                if (newdim != cropdim) {
                     resizeMap(dest_cropped, newdim);
                     dest_cropped.setXmippOrigin();
                 }
@@ -348,29 +329,24 @@ void local_symmetry_parameters_mpi::run()
                 // Leader gets sampling points
                 // Get sampling points - Rescale translational search ranges and steps
                 Localsym_composeOperator(op, aa, bb, gg, XX(com1_diff), YY(com1_diff), ZZ(com1_diff), cc);
-                if (newdim != cropdim)
-                {
-                    Localsym_scaleTranslations(op_search_ranges, 1. / tmp_binning_factor);
-                    offset_step *= 1. / tmp_binning_factor;
-                    Localsym_scaleTranslations(op, 1. / tmp_binning_factor);
+                if (newdim != cropdim) {
+                    Localsym_scaleTranslations(op_search_ranges, 1.0 / tmp_binning_factor);
+                    offset_step *= 1.0 / tmp_binning_factor;
+                    Localsym_scaleTranslations(op, 1.0 / tmp_binning_factor);
                 }
-#ifdef __unix__
+                #ifdef __unix__
                 std::cout << " + Refining " << "\e[1m" << "Mask #" << imask + 1 << " Operator #" << iop + 1 << "\e[0m" << ": " << std::flush;
-#else
+                #else
                 std::cout << " + Refining Mask #" << imask + 1 << " Operator #" << iop + 1 << ": " << std::flush;
-#endif
+                #endif
                 Localsym_outputOperator(op_list[imask][iop], &std::cout, angpix_image);
                 std::cout << std::endl;
                 getLocalSearchOperatorSamplings(
-                        op,
-                        op_search_ranges,
-                        op_samplings,
-                        ang_step,
-                        offset_step,
-                        use_healpix_sampling,
-                        true);
-                if (newdim != cropdim)
-                {
+                    op, op_search_ranges, op_samplings,
+                    ang_step, offset_step,
+                    use_healpix_sampling, true
+                );
+                if (newdim != cropdim) {
                     Localsym_scaleTranslations(op_search_ranges, tmp_binning_factor);
                     offset_step *= tmp_binning_factor;
                     Localsym_scaleTranslations(op, tmp_binning_factor);
@@ -393,22 +369,19 @@ void local_symmetry_parameters_mpi::run()
 
             // All nodes allocate space for op_samplings_batch_packed
             // Allow 10 more empty units to prevent segmentation fault
-            op_samplings_batch_packed.initZeros((nr_total_samplings / (node->size)) + 10, NR_LOCALSYM_PARAMETERS);
+            op_samplings_batch_packed.initZeros(nr_total_samplings / node->size + 10, NR_LOCALSYM_PARAMETERS);
 
             MPI_Barrier(MPI_COMM_WORLD);
 
             // Leader distributes sampling points to all followers
             first = 0; last = 0;
-            if (node->isLeader())
-            {
-                for (int id_rank = (node->size) - 1; id_rank >= 0; id_rank--)
-                {
+            if (node->isLeader()) {
+                for (int id_rank = (node->size) - 1; id_rank >= 0; id_rank--) {
                     divide_equally(nr_total_samplings, node->size, id_rank, first, last);
 
                     // Beware: YSIZE(op_samplings_batch_packed) is larger than (last - first + 1)
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed)
-                    {
-                        if ( (i >= 0) && (i <= (last - first)) )
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
+                        if (i >= 0 && i <= last - first)
                             DIRECT_A2D_ELEM(op_samplings_batch_packed, i, j) = VEC_ELEM(op_samplings[i + first], j);
                     }
 
@@ -417,9 +390,7 @@ void local_symmetry_parameters_mpi::run()
                         node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITAG_LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
                     // If id_rank == 0 (leader), just keep op_samplings_batch_packed to the leader itself
                 }
-            }
-            else
-            {
+            } else {
                 MPI_Status status;
                 // Followers receive sampling points from leader
                 // Important: Followers calculate first and last subscripts!
@@ -430,11 +401,9 @@ void local_symmetry_parameters_mpi::run()
 
             // All nodes unpack sampling points
             op_samplings_batch.clear();
-            for (long int i=0; i<YSIZE(op_samplings_batch_packed); i++)
-            {
+            for (long int i=0; i<YSIZE(op_samplings_batch_packed); i++) {
                 op.initZeros(NR_LOCALSYM_PARAMETERS);
-                for (long int j=0; j<XSIZE(op_samplings_batch_packed); j++)
-                {
+                for (long int j = 0; j < XSIZE(op_samplings_batch_packed); j++) {
                     VEC_ELEM(op, j) = DIRECT_A2D_ELEM(op_samplings_batch_packed, i, j);
                 }
                 op_samplings_batch.push_back(op);
@@ -443,23 +412,18 @@ void local_symmetry_parameters_mpi::run()
 
             // All nodes calculate CC, with leader profiling (DONT SORT!)
             calculateOperatorCC(src_cropped, dest_cropped, mask_cropped, op_samplings_batch, false, node->isLeader());
-            for (int op_id = 0; op_id < op_samplings_batch.size(); op_id++)
-            {
+            for (int op_id = 0; op_id < op_samplings_batch.size(); op_id++) {
                 DIRECT_A2D_ELEM(op_samplings_batch_packed, op_id, CC_POS) = VEC_ELEM(op_samplings_batch[op_id], CC_POS);
             }
             MPI_Barrier(MPI_COMM_WORLD);
 
             // Followers send their results back to leader
-            if (! node->isLeader())
-            {
+            if (!node->isLeader()) {
                 node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITAG_LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
-            }
-            else
-            {
+            } else {
                 MPI_Status status;
 
-                for (int id_rank = 0; id_rank < (node->size); id_rank++)
-                {
+                for (int id_rank = 0; id_rank < (node->size); id_rank++) {
                     divide_equally(op_samplings.size(), node->size, id_rank, first, last);
 
                     // Leader receives op_samplings_batch_packed from followers
@@ -467,21 +431,18 @@ void local_symmetry_parameters_mpi::run()
                         node->relion_MPI_Recv(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITAG_LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
 
                     // Leader does something for itself if id_rank == 0
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed)
-                    {
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
                         // Beware: YSIZE(op_samplings_batch_packed) is larger than (last - first + 1)
-                        if ( (i >= 0) && (i <= (last - first)) )
+                        if (i >= 0 && i <= last - first)
                             VEC_ELEM(op_samplings[i + first], CC_POS) = DIRECT_A2D_ELEM(op_samplings_batch_packed, i, CC_POS);
                     }
                 }
             }
             MPI_Barrier(MPI_COMM_WORLD);
 
-            if (node->isLeader())
-            {
+            if (node->isLeader()) {
                 // TODO: For rescaled maps
-                if (newdim != cropdim)
-                {
+                if (newdim != cropdim) {
                     for (int isamp = 0; isamp < op_samplings.size(); isamp++)
                         Localsym_scaleTranslations(op_samplings[isamp], tmp_binning_factor);
                 }
@@ -489,8 +450,7 @@ void local_symmetry_parameters_mpi::run()
 
                 // TODO: add vectors together!!!
                 // Update com1_float
-                for (int isamp = 0; isamp < op_samplings.size(); isamp++)
-                {
+                for (int isamp = 0; isamp < op_samplings.size(); isamp++) {
                     // Get new_com1
                     // newCom1f = Com1f + best_trans_samp - diff
                     Localsym_shiftTranslations(op_samplings[isamp], com1_float - com1_diff); // equivalently, com1_int
@@ -524,20 +484,20 @@ void local_symmetry_parameters_mpi::run()
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (node->isLeader())
-    {
+    if (node->isLeader()) {
         // Leader writes out new mask info file
-        if (fn_info_out.getExtension() == "star")
+        if (fn_info_out.getExtension() == "star") {
             writeRelionFormatMasksAndOperators(fn_info_out, fn_mask_list, op_list, angpix_image);
-        else
+        } else {
             writeDMFormatMasksAndOperators(fn_info_out, fn_mask_list, op_list, angpix_image);
+        }
 
         displayEmptyLine();
-#ifdef __unix__
+        #ifdef __unix__
         std::cout << " Done! New local symmetry description file: " << "\e[1m" << fn_info_out << "\e[0m" << std::endl;
-#else
+        #else
         std::cout << " Done! New local symmetry description file: " << fn_info_out << std::endl;
-#endif
+        #endif
     }
     MPI_Barrier(MPI_COMM_WORLD);
 }

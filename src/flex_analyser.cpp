@@ -523,7 +523,7 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
         // Sort the vector to calculate average of "nr_maps_per_component" equi-populated bins
         std::sort (project.begin(), project.end());
 
-        long int binwidth = ROUND((double) project.size() / (double) nr_maps_per_component);
+        long int binwidth = round((double) project.size() / (double) nr_maps_per_component);
 
         std::cout << " Calculating 3D models for principal component " << k + 1 << " ... " << std::endl;
 
@@ -638,9 +638,9 @@ void FlexAnalyser::outputSelectedParticles(std::vector< std::vector<double> > &p
         }
     }
 
-    int min = ROUND(select_eigenvalue_min);
-    int max = ROUND(select_eigenvalue_max);
-    FileName fnt = fn_out+"_eval"+integerToString(select_eigenvalue,3)+"_select";
+    int min = round(select_eigenvalue_min);
+    int max = round(select_eigenvalue_max);
+    FileName fnt = fn_out + "_eval" + integerToString(select_eigenvalue, 3) + "_select";
     if (min > -99998)
         fnt += "_min"+integerToString(min);
     if (max < 99998)

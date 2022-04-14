@@ -95,929 +95,935 @@
 
 class MlOptimiser {
 
-	public:
+    public:
 
-	// For GPU-maps
-	std::vector<int> cudaDevices;
-	std::vector<int> cudaOptimiserDeviceMap;
-	std::vector<void*> cudaOptimisers;
-	std::vector<void*> accDataBundles;
+    // For GPU-maps
+    std::vector<int> cudaDevices;
+    std::vector<int> cudaOptimiserDeviceMap;
+    std::vector<void*> cudaOptimisers;
+    std::vector<void*> accDataBundles;
 
-	#ifdef ALTCPU
-	std::vector<void*> cpuOptimisers;
+    #ifdef ALTCPU
+    std::vector<void*> cpuOptimisers;
 
-	// Container for TBB thread-local data
-	typedef tbb::enumerable_thread_specific< void * > CpuOptimiserType;
+    // Container for TBB thread-local data
+    typedef tbb::enumerable_thread_specific< void * > CpuOptimiserType;
 
-	CpuOptimiserType   tbbCpuOptimiser;
+    CpuOptimiserType   tbbCpuOptimiser;
 
-	std::complex<XFLOAT> **mdlClassComplex __attribute__((aligned(64)));
-	#endif
+    std::complex<XFLOAT> **mdlClassComplex __attribute__((aligned(64)));
+    #endif
 
-	// I/O Parser
-	IOParser parser;
+    // I/O Parser
+    IOParser parser;
 
-	// Experimental metadata model
-	Experiment mydata;
+    // Experimental metadata model
+    Experiment mydata;
 
-	// Current ML model
-	MlModel mymodel;
+    // Current ML model
+    MlModel mymodel;
 
-	// Current weighted sums
-	MlWsumModel wsum_model;
+    // Current weighted sums
+    MlWsumModel wsum_model;
 
-	// HEALPix sampling object for coarse sampling
-	HealpixSampling sampling;
+    // HEALPix sampling object for coarse sampling
+    HealpixSampling sampling;
 
-	// Filename for the experimental images
-	FileName fn_data;
+    // Filename for the experimental images
+    FileName fn_data;
 
-	// Output root filename
-	FileName fn_out;
+    // Output root filename
+    FileName fn_out;
 
-	// Filename for input reference images (stack, star or image)
-	FileName fn_ref;
+    // Filename for input reference images (stack, star or image)
+    FileName fn_ref;
 
-	// Generate a 3D model from 2D particles de novo?
-	bool is_3d_model;
+    // Generate a 3D model from 2D particles de novo?
+    bool is_3d_model;
 
-	//User-specified pixel size for the reference
-	RFLOAT ref_angpix;
+    //User-specified pixel size for the reference
+    RFLOAT ref_angpix;
 
-	// Filename for input tau2-spectrum
-	FileName fn_tau;
+    // Filename for input tau2-spectrum
+    FileName fn_tau;
 
-	// Filename for input masks for multi-body refinement
-	FileName fn_body_masks;
+    // Filename for input masks for multi-body refinement
+    FileName fn_body_masks;
 
-	// Initialise bodies for a new multi-body refinement
-	bool do_initialise_bodies;
+    // Initialise bodies for a new multi-body refinement
+    bool do_initialise_bodies;
 
-	// Use subtracted images for reconstructions in multi-body refinement?
-	bool do_reconstruct_subtracted_bodies;
+    // Use subtracted images for reconstructions in multi-body refinement?
+    bool do_reconstruct_subtracted_bodies;
 
-	// Precalculated rotation matrix for (0,90,0) rotation, and its transpose
-	Matrix2D<RFLOAT> A_rot90, A_rot90T;
+    // Precalculated rotation matrix for (0,90,0) rotation, and its transpose
+    Matrix2D<RFLOAT> A_rot90, A_rot90T;
 
-	// Flag to keep tau-spectrum constant
-	bool fix_tau;
+    // Flag to keep tau-spectrum constant
+    bool fix_tau;
 
-	// some parameters for debugging
-	RFLOAT debug1, debug2, debug3;
+    // some parameters for debugging
+    RFLOAT debug1, debug2, debug3;
 
-	// Starting and finishing particles (for parallelisation)
-	long int my_first_particle_id, my_last_particle_id;
+    // Starting and finishing particles (for parallelisation)
+    long int my_first_particle_id, my_last_particle_id;
 
-	// Total number iterations and current iteration
-	int iter, nr_iter, nr_iter_max;
+    // Total number iterations and current iteration
+    int iter, nr_iter, nr_iter_max;
 
-	// Flag whether to split data from the beginning into two random halves
-	bool do_split_random_halves;
+    // Flag whether to split data from the beginning into two random halves
+    bool do_split_random_halves;
 
-	// Debug flag to process 1 half when doing do_split_random_halves, without using MPI
-	int debug_split_random_half;
+    // Debug flag to process 1 half when doing do_split_random_halves, without using MPI
+    int debug_split_random_half;
 
-	// For safe-guarding the gold-standard separation
-	int my_halfset;
+    // For safe-guarding the gold-standard separation
+    int my_halfset;
 
-	// resolution (in Angstrom) to join the two random halves
-	RFLOAT low_resol_join_halves;
+    // resolution (in Angstrom) to join the two random halves
+    RFLOAT low_resol_join_halves;
 
-	// Flag to join random halves again
-	bool do_join_random_halves;
+    // Flag to join random halves again
+    bool do_join_random_halves;
 
-	// Flag to always join random halves, this is a developmental option for testing of sub-optimal FSC-usage only!
-	bool do_always_join_random_halves;
+    // Flag to always join random halves, this is a developmental option for testing of sub-optimal FSC-usage only!
+    bool do_always_join_random_halves;
 
-	// Flag whether to use different images for recnostruction and alignment
-	bool do_use_reconstruct_images;
+    // Flag whether to use different images for recnostruction and alignment
+    bool do_use_reconstruct_images;
 
-	// Flag whether to do CTF correction
-	bool do_ctf_correction;
+    // Flag whether to do CTF correction
+    bool do_ctf_correction;
 
-	// Do not correct CTFs until after the first peak
-	bool intact_ctf_first_peak;
+    // Do not correct CTFs until after the first peak
+    bool intact_ctf_first_peak;
 
-	// Calculate CTF in 2x larger window, and then rescale it to mimic PSF of boxing out small particles (this deals with CTF aliaising)
-	bool do_ctf_padding;
+    // Calculate CTF in 2x larger window, and then rescale it to mimic PSF of boxing out small particles (this deals with CTF aliaising)
+    bool do_ctf_padding;
 
-	// Pnly perform phase-flipping CTF correction
-	bool only_flip_phases;
+    // Pnly perform phase-flipping CTF correction
+    bool only_flip_phases;
 
-	// Images have been CTF phase flipped al;ready
-	bool ctf_phase_flipped;
+    // Images have been CTF phase flipped al;ready
+    bool ctf_phase_flipped;
 
-	// Flag whether current references are ctf corrected
-	bool refs_are_ctf_corrected;
+    // Flag whether current references are ctf corrected
+    bool refs_are_ctf_corrected;
 
-	// Flag whether directions have changed upon continuing an old run
-	bool directions_have_changed;
+    // Flag whether directions have changed upon continuing an old run
+    bool directions_have_changed;
 
-	// Flag whether to do image-wise intensity-scale correction
-	bool do_norm_correction;
+    // Flag whether to do image-wise intensity-scale correction
+    bool do_norm_correction;
 
-	// Flag whether to do group-wise intensity bfactor correction
-	bool do_scale_correction;
+    // Flag whether to do group-wise intensity bfactor correction
+    bool do_scale_correction;
 
-	// Flag whether to use the auto-refine procedure
-	bool do_auto_refine;
+    // Flag whether to use the auto-refine procedure
+    bool do_auto_refine;
 
-	// Flag whether to ignore changes in hidden variables in auto-refine (which makes it faster)
-	bool auto_ignore_angle_changes;
+    // Flag whether to ignore changes in hidden variables in auto-refine (which makes it faster)
+    bool auto_ignore_angle_changes;
 
-	// Flag whether to proceed faster with resolution-based angular sampling updates in auto-refine
-	bool auto_resolution_based_angles;
+    // Flag whether to proceed faster with resolution-based angular sampling updates in auto-refine
+    bool auto_resolution_based_angles;
 
-	// Flag whether to accelerate early iterations of 2D/3D classification with coarser samplings
-	bool allow_coarser_samplings;
+    // Flag whether to accelerate early iterations of 2D/3D classification with coarser samplings
+    bool allow_coarser_samplings;
 
-	// Force auto-refinement to converge
-	bool do_force_converge;
+    // Force auto-refinement to converge
+    bool do_force_converge;
 
-	// Number of iterations without a resolution increase
-	int nr_iter_wo_resol_gain;
+    // Number of iterations without a resolution increase
+    int nr_iter_wo_resol_gain;
 
-	// Best resolution obtained thus far
-	RFLOAT best_resol_thus_far;
+    // Best resolution obtained thus far
+    RFLOAT best_resol_thus_far;
 
-	// Is the FSC still high at the resolution limit?
-	bool has_high_fsc_at_limit;
+    // Is the FSC still high at the resolution limit?
+    bool has_high_fsc_at_limit;
 
-	// How many iterations ago was there a big step in the increase of current_size
-	int has_large_incr_size_iter_ago;
+    // How many iterations ago was there a big step in the increase of current_size
+    int has_large_incr_size_iter_ago;
 
-	// In auto-sampling mode, use local searches from this sampling rate on
-	int autosampling_hporder_local_searches;
+    // In auto-sampling mode, use local searches from this sampling rate on
+    int autosampling_hporder_local_searches;
 
-	// Smallest changes thus far in the optimal translational offsets, orientations and classes
-	RFLOAT smallest_changes_optimal_offsets;
-	RFLOAT smallest_changes_optimal_orientations;
-	int smallest_changes_optimal_classes;
+    // Smallest changes thus far in the optimal translational offsets, orientations and classes
+    RFLOAT smallest_changes_optimal_offsets;
+    RFLOAT smallest_changes_optimal_orientations;
+    int smallest_changes_optimal_classes;
 
-	// Number of iterations without a decrease in OffsetChanges
-	int nr_iter_wo_large_hidden_variable_changes;
+    // Number of iterations without a decrease in OffsetChanges
+    int nr_iter_wo_large_hidden_variable_changes;
 
-	// Strict resolution limits in the expectation step
-	RFLOAT strict_highres_exp, strict_lowres_exp;
+    // Strict resolution limits in the expectation step
+    RFLOAT strict_highres_exp, strict_lowres_exp;
 
-	// Flag to indicate to estimate angular accuracy until current_size (and not coarse_size) when restricting high-res limit in the expectation step
-	// This is used for testing purposes only
-	bool do_acc_currentsize_despite_highres_exp;
+    // Flag to indicate to estimate angular accuracy until current_size (and not coarse_size) when restricting high-res limit in the expectation step
+    // This is used for testing purposes only
+    bool do_acc_currentsize_despite_highres_exp;
 
-	// Global parameters to store accuracy on rot and trans
-	RFLOAT acc_rot, acc_trans;
+    // Global parameters to store accuracy on rot and trans
+    RFLOAT acc_rot, acc_trans;
 
-	// Flag to indicate to use all data out to Nyquist
-	bool do_use_all_data;
+    // Flag to indicate to use all data out to Nyquist
+    bool do_use_all_data;
 
-	// Flag to indicate the refinement has converged
-	bool has_converged;
+    // Flag to indicate the refinement has converged
+    bool has_converged;
 
-	// Flag to indicate that angular sampling in auto-sampling has reached its limit
-	bool has_fine_enough_angular_sampling;
+    // Flag to indicate that angular sampling in auto-sampling has reached its limit
+    bool has_fine_enough_angular_sampling;
 
-	// Minimum and maximum angular sampling to achieve in auto-refinement (in degrees)
-	RFLOAT minimum_angular_sampling, maximum_angular_sampling;
+    // Minimum and maximum angular sampling to achieve in auto-refinement (in degrees)
+    RFLOAT minimum_angular_sampling, maximum_angular_sampling;
 
-	// Flag to keep sigma2_offset fixed
-	bool fix_sigma_offset;
+    // Flag to keep sigma2_offset fixed
+    bool fix_sigma_offset;
 
-	// Flag to keep sigma2_noise fixed
-	bool fix_sigma_noise;
+    // Flag to keep sigma2_noise fixed
+    bool fix_sigma_noise;
 
-	//  Use images only up to a certain resolution in the expectation step (one for each optics_group)
-	// image_coarse_size is for first pass, image_current_size is for second pass, image_full_size is original image size
-	std::vector<int> image_coarse_size, image_current_size, image_full_size;
+    //  Use images only up to a certain resolution in the expectation step (one for each optics_group)
+    // image_coarse_size is for first pass, image_current_size is for second pass, image_full_size is original image size
+    std::vector<int> image_coarse_size, image_current_size, image_full_size;
 
-	// Use images only up to a certain resolution in the expectation step
-	int max_coarse_size;
+    // Use images only up to a certain resolution in the expectation step
+    int max_coarse_size;
 
-	// Particle diameter (in Ang)
-	RFLOAT particle_diameter;
+    // Particle diameter (in Ang)
+    RFLOAT particle_diameter;
 
-	// How many fourier shells should be included beyond the highest shell where evidenceVsPriorRatio < 1?
-	int incr_size;
+    // How many fourier shells should be included beyond the highest shell where evidenceVsPriorRatio < 1?
+    int incr_size;
 
-	// Minimum resolution to perform Bayesian estimates of the model
-	int minres_map;
+    // Minimum resolution to perform Bayesian estimates of the model
+    int minres_map;
 
-	// Flag to flatten solvent
-	bool do_solvent;
+    // Flag to flatten solvent
+    bool do_solvent;
 
-	// Filename for a user-provided mask
-	FileName fn_mask;
+    // Filename for a user-provided mask
+    FileName fn_mask;
 
-	// Correct gold-standard FSC for solvent mask?
-	bool do_phase_random_fsc;
+    // Correct gold-standard FSC for solvent mask?
+    bool do_phase_random_fsc;
 
-	// Filename for a user-provided second solvent mask
-	// This solvent mask will have its own average density and may be useful for example to fill the interior of an icosahedral virus
-	FileName fn_mask2;
+    // Filename for a user-provided second solvent mask
+    // This solvent mask will have its own average density and may be useful for example to fill the interior of an icosahedral virus
+    FileName fn_mask2;
 
-	// Mask for regions to be low-pass filtered
-	FileName fn_lowpass_mask;
-	RFLOAT lowpass;
+    // Mask for regions to be low-pass filtered
+    FileName fn_lowpass_mask;
+    RFLOAT lowpass;
 
-	// Width of the soft-edges of the circular masks
-	int width_mask_edge;
+    // Width of the soft-edges of the circular masks
+    int width_mask_edge;
 
-	// Number of particles to be processed simultaneously
-	int nr_pool;
+    // Number of particles to be processed simultaneously
+    int nr_pool;
 
-	//////////////// Stochastic gradient descent
-	bool do_sgd;
+    //////////////// Stochastic gradient descent
+    bool do_sgd;
 
-	// Avoid problems with SGD patent in cryoSPARC: don't accumulate gradient, but do minibatch maximisation steps instead
-	bool do_avoid_sgd;
+    // Avoid problems with SGD patent in cryoSPARC: don't accumulate gradient, but do minibatch maximisation steps instead
+    bool do_avoid_sgd;
 
-	// Number of initial iterations at low resolution, and without annealing of references
-	int sgd_ini_iter;
+    // Number of initial iterations at low resolution, and without annealing of references
+    int sgd_ini_iter;
 
-	// Number of final iterations at high resolution, and without annealing of reference
-	int sgd_fin_iter;
+    // Number of final iterations at high resolution, and without annealing of reference
+    int sgd_fin_iter;
 
-	// Number of iterations between the initial and the final ones
-	// (during which a linear transform from sgd_ini_resol->sgd_fin_resol and sgd_ini_subset_size->sgd_fin_subset_size will be done)
-	int sgd_inbetween_iter;
+    // Number of iterations between the initial and the final ones
+    // (during which a linear transform from sgd_ini_resol->sgd_fin_resol and sgd_ini_subset_size->sgd_fin_subset_size will be done)
+    int sgd_inbetween_iter;
 
-	// Size of the subsets used in the initial iterations
-	int sgd_ini_subset_size;
+    // Size of the subsets used in the initial iterations
+    int sgd_ini_subset_size;
 
-	//Size of the subsets used in the final iterations
-	int sgd_fin_subset_size;
+    //Size of the subsets used in the final iterations
+    int sgd_fin_subset_size;
 
-	// The resolution in the initial iterations
-	RFLOAT sgd_ini_resol; // in A
+    // The resolution in the initial iterations
+    RFLOAT sgd_ini_resol; // in A
 
-	// The resolution in the final iterations
-	RFLOAT sgd_fin_resol; // in A
+    // The resolution in the final iterations
+    RFLOAT sgd_fin_resol; // in A
 
-	// Skip annealing of multiple reference in SGD
-	// (by default refs are kept the same during sgd_nr_iter_initial and then slowly annealed during sgd_nr_iter_inbetween)
-	bool do_sgd_skip_anneal;
+    // Skip annealing of multiple reference in SGD
+    // (by default refs are kept the same during sgd_nr_iter_initial and then slowly annealed during sgd_nr_iter_inbetween)
+    bool do_sgd_skip_anneal;
 
-	// Momentum update parameter
-	RFLOAT mu;
+    // Momentum update parameter
+    RFLOAT mu;
 
-	// Step size of the gradient updates
-	RFLOAT sgd_stepsize;
+    // Step size of the gradient updates
+    RFLOAT sgd_stepsize;
 
-	// Size of the random subsets
-	long int subset_size;
+    // Size of the random subsets
+    long int subset_size;
 
-	// Every how many iterations should be written to disk when using subsets
-	int write_every_sgd_iter;
+    // Every how many iterations should be written to disk when using subsets
+    int write_every_sgd_iter;
 
-	// Number of particles at which initial sigma2_fudge is reduced by 50%
-	long int sgd_sigma2fudge_halflife;
+    // Number of particles at which initial sigma2_fudge is reduced by 50%
+    long int sgd_sigma2fudge_halflife;
 
-	// Initial sigma2fudge for SGD
-	RFLOAT sgd_sigma2fudge_ini;
+    // Initial sigma2fudge for SGD
+    RFLOAT sgd_sigma2fudge_ini;
 
-	// derived from the above, so not given by user:
-	int sgd_inires_pix; // resolution in pixels at beginning of SGD
-	int sgd_finres_pix; // resolution in pixels at end of SGD
+    // derived from the above, so not given by user:
+    int sgd_inires_pix; // resolution in pixels at beginning of SGD
+    int sgd_finres_pix; // resolution in pixels at end of SGD
 
-	// Use subsets like in cisTEM to speed up 2D/3D classification
-	bool do_fast_subsets;
+    // Use subsets like in cisTEM to speed up 2D/3D classification
+    bool do_fast_subsets;
 
-	// Available memory (in Gigabyte)
-	size_t available_gpu_memory;
-	size_t requested_free_gpu_memory;
+    // Available memory (in Gigabyte)
+    size_t available_gpu_memory;
+    size_t requested_free_gpu_memory;
 
-	// Perform combination of weight through files written on disc
-	bool combine_weights_thru_disc;
+    // Perform combination of weight through files written on disc
+    bool combine_weights_thru_disc;
 
-	// Only print metadata label definitions and exit
-	bool do_print_metadata_labels;
+    // Only print metadata label definitions and exit
+    bool do_print_metadata_labels;
 
-	// Use parallel access to disc?
-	bool do_parallel_disc_io;
+    // Use parallel access to disc?
+    bool do_parallel_disc_io;
 
-	// Use gpu resources?
-	bool do_gpu;
-	bool anticipate_oom;
+    // Use gpu resources?
+    bool do_gpu;
+    bool anticipate_oom;
 
-	// Use alternate cpu implementation
-	bool do_cpu;
+    // Use alternate cpu implementation
+    bool do_cpu;
 
-	// Which GPU devices to use?
-	std::string gpu_ids;
+    // Which GPU devices to use?
+    std::string gpu_ids;
 
-	// Or preread all images into RAM on the leader node?
-	bool do_preread_images;
+    // Or preread all images into RAM on the leader node?
+    bool do_preread_images;
 
-	// Place on scratch disk to copy particle stacks temporarily
-	FileName fn_scratch;
+    // Place on scratch disk to copy particle stacks temporarily
+    FileName fn_scratch;
 
-	// Amount of scratch space to be left free (in Gb)
-	RFLOAT keep_free_scratch_Gb;
+    // Amount of scratch space to be left free (in Gb)
+    RFLOAT keep_free_scratch_Gb;
 
-	// Re-use data on scratch dir, i.e. dont delete data already there and copy again
-	bool do_reuse_scratch;
+    // Re-use data on scratch dir, i.e. dont delete data already there and copy again
+    bool do_reuse_scratch;
 
-	// Don't delete scratch after finishing
-	bool keep_scratch;
+    // Don't delete scratch after finishing
+    bool keep_scratch;
 
-	// Print the symmetry transformation matrices
-	bool do_print_symmetry_ops;
+    // Print the symmetry transformation matrices
+    bool do_print_symmetry_ops;
 
-	/** Name of the multiple symmetry groups */
-	std::vector<FileName> fn_multi_sym;
+    /** Name of the multiple symmetry groups */
+    std::vector<FileName> fn_multi_sym;
 
-	/** Perform reconstruction outside of relion_refine, e.g. for learned priors */
-	bool do_external_reconstruct;
+    /** Perform reconstruction outside of relion_refine, e.g. for learned priors */
+    bool do_external_reconstruct;
 
-	/* Flag whether to use the Adaptive approach as by Tagare et al (2010) J. Struc. Biol.
-	 * where two passes through the integrations are made: a first one with a coarse angular sampling and
-	 * smaller images and a second one with finer angular sampling and larger images
-	 * Only the orientations that accumulate XXX% (adaptive_fraction) of the top weights from the first pass are oversampled in the second pass
-	 * Only these oversampled orientations will then contribute to the weighted sums
-	 * Note that this is a bit different from Tagare et al, in that we do not perform any B-spline interpolation....
-	 *
-	 * For (adaptive_oversampling==0): no adaptive approach is being made, there is only one pass
-	 * For (adaptive_oversampling==1): the coarse sampling grid is 2x coarse than the fine one
-	 * For (adaptive_oversampling==2): the coarse sampling grid is 4x coarse than the fine one
-	 * etc..
-	 *
-	 * */
-	int adaptive_oversampling;
+    /* Flag whether to use the Adaptive approach as by Tagare et al (2010) J. Struc. Biol.
+     * where two passes through the integrations are made: a first one with a coarse angular sampling and
+     * smaller images and a second one with finer angular sampling and larger images
+     * Only the orientations that accumulate XXX% (adaptive_fraction) of the top weights from the first pass are oversampled in the second pass
+     * Only these oversampled orientations will then contribute to the weighted sums
+     * Note that this is a bit different from Tagare et al, in that we do not perform any B-spline interpolation....
+     *
+     * For (adaptive_oversampling==0): no adaptive approach is being made, there is only one pass
+     * For (adaptive_oversampling==1): the coarse sampling grid is 2x coarse than the fine one
+     * For (adaptive_oversampling==2): the coarse sampling grid is 4x coarse than the fine one
+     * etc..
+     *
+     * */
+    int adaptive_oversampling;
 
-	/* Fraction of the weights for which to consider the finer sampling
-	 * The closer to one, the more orientations will be oversampled
-	 * The default is 0.999.
-	 */
-	RFLOAT adaptive_fraction;
+    /* Fraction of the weights for which to consider the finer sampling
+     * The closer to one, the more orientations will be oversampled
+     * The default is 0.999.
+     */
+    RFLOAT adaptive_fraction;
 
-	// Seed for random number generator
-	int random_seed;
+    // Seed for random number generator
+    int random_seed;
 
-	/* Flag to indicate orientational (i.e. rotational AND translational) searches will be skipped */
-	bool do_skip_align;
+    /* Flag to indicate orientational (i.e. rotational AND translational) searches will be skipped */
+    bool do_skip_align;
 
-	/* Flag to indicate rotational searches will be skipped */
-	bool do_skip_rotate;
+    /* Flag to indicate rotational searches will be skipped */
+    bool do_skip_rotate;
 
-	/* Flag to indicate maximization step will be skipped: only data.star file will be written out */
-	bool do_skip_maximization;
+    /* Flag to indicate maximization step will be skipped: only data.star file will be written out */
+    bool do_skip_maximization;
 
-	/* Flag to only sample tilt angles (from -180->180), ignore rot angles: temporary fix for DNA-origami frames */
-	bool do_only_sample_tilt;
+    /* Flag to only sample tilt angles (from -180->180), ignore rot angles: temporary fix for DNA-origami frames */
+    bool do_only_sample_tilt;
 
-	/* Flag to use bimodal prior distributions on psi (2D classification of helical segments) */
-	bool do_bimodal_psi;
+    /* Flag to use bimodal prior distributions on psi (2D classification of helical segments) */
+    bool do_bimodal_psi;
 
-	//////// Special stuff for the first iterations /////////////////
+    //////// Special stuff for the first iterations /////////////////
 
-	// Skip marginalisation in first iteration and use signal cross-product instead of Gaussian
-	bool do_firstiter_cc;
+    // Skip marginalisation in first iteration and use signal cross-product instead of Gaussian
+    bool do_firstiter_cc;
 
-	/// Always perform cross-correlation instead of marginalization
-	bool do_always_cc;
+    /// Always perform cross-correlation instead of marginalization
+    bool do_always_cc;
 
-	// Initial low-pass filter for all references (in digital frequency)
-	RFLOAT ini_high;
+    bool do_cc() {
+        if (do_always_cc) return true;
+        if (do_firstiter_cc) return iter == 1;  // First iteration has index 1
+        return false;
+    };
 
-	// Flag whether to generate seeds
-	// TODO: implement!
-	bool do_generate_seeds;
+    // Initial low-pass filter for all references (in digital frequency)
+    RFLOAT ini_high;
 
-	// Flag whether to calculate the average of the unaligned images (for 2D refinements)
-	bool do_average_unaligned;
+    // Flag whether to generate seeds
+    // TODO: implement!
+    bool do_generate_seeds;
 
-	// Flag whether to calculate initial sigma_noise spectra
-	bool do_calculate_initial_sigma_noise;
+    // Flag whether to calculate the average of the unaligned images (for 2D refinements)
+    bool do_average_unaligned;
 
-	// Flag to switch off error message about normalisation
-	bool dont_raise_norm_error;
+    // Flag whether to calculate initial sigma_noise spectra
+    bool do_calculate_initial_sigma_noise;
 
-	///////////// Helical symmetry /////////////
-	// Flag whether to do helical refinement
-	bool do_helical_refine;
+    // Flag to switch off error message about normalisation
+    bool dont_raise_norm_error;
 
-	// Ignore helical symmetry?
-	bool ignore_helical_symmetry;
+    ///////////// Helical symmetry /////////////
+    // Flag whether to do helical refinement
+    bool do_helical_refine;
 
-	// Initial helical twist in degrees
-	RFLOAT helical_twist_initial;
+    // Ignore helical symmetry?
+    bool ignore_helical_symmetry;
 
-	// Initial helical rise in Angstroms
-	RFLOAT helical_rise_initial;
+    // Initial helical twist in degrees
+    RFLOAT helical_twist_initial;
 
-	// N-number of an N-start helix (only for rotational priors, a la KThurber)
-	int helical_nstart;
+    // Initial helical rise in Angstroms
+    RFLOAT helical_rise_initial;
 
-	// Only expand this amount of Z axis proportion to full when imposing real space helical symmetry
-	RFLOAT helical_z_percentage;
+    // N-number of an N-start helix (only for rotational priors, a la KThurber)
+    int helical_nstart;
 
-	// Inner diameter of helical tubes in Angstroms (for masks of helical references and particles)
-	RFLOAT helical_tube_inner_diameter;
+    // Only expand this amount of Z axis proportion to full when imposing real space helical symmetry
+    RFLOAT helical_z_percentage;
 
-	// Outer diameter of helical tubes in Angstroms (for masks of helical references and particles)
-	RFLOAT helical_tube_outer_diameter;
+    // Inner diameter of helical tubes in Angstroms (for masks of helical references and particles)
+    RFLOAT helical_tube_inner_diameter;
 
-	// Flag whether to do local refinement of helical parameters
-	bool do_helical_symmetry_local_refinement;
+    // Outer diameter of helical tubes in Angstroms (for masks of helical references and particles)
+    RFLOAT helical_tube_outer_diameter;
 
-	// Sigma of distance along the helical tracks (in Angstroms)
-	RFLOAT helical_sigma_distance;
+    // Flag whether to do local refinement of helical parameters
+    bool do_helical_symmetry_local_refinement;
 
-	// Keep helical tilt priors fixed (at 90 degrees) in global angular searches?
-	bool helical_keep_tilt_prior_fixed;
+    // Sigma of distance along the helical tracks (in Angstroms)
+    RFLOAT helical_sigma_distance;
 
-	// Apply fourier_mask for helical refinements
-	std::string helical_fourier_mask_resols;
-	FileName fn_fourier_mask;
-	MultidimArray<RFLOAT> helical_fourier_mask;
+    // Keep helical tilt priors fixed (at 90 degrees) in global angular searches?
+    bool helical_keep_tilt_prior_fixed;
 
-	///////// Hidden stuff, does not work with read/write: only via command-line ////////////////
+    // Apply fourier_mask for helical refinements
+    std::string helical_fourier_mask_resols;
+    FileName fn_fourier_mask;
+    MultidimArray<RFLOAT> helical_fourier_mask;
 
-	// Skip gridding in reconstruction
-	bool skip_gridding;
+    ///////// Hidden stuff, does not work with read/write: only via command-line ////////////////
 
-	// Number of iterations for gridding preweighting reconstruction
-	int gridding_nr_iter;
+    // Skip gridding in reconstruction
+    bool skip_gridding;
 
-	// Flag whether to do group-wise B-factor correction or not
-	bool do_bfactor;
+    // Number of iterations for gridding preweighting reconstruction
+    int gridding_nr_iter;
 
-	// Flag whether to use maximum a posteriori (MAP) estimation
-	bool do_map;
+    // Flag whether to do group-wise B-factor correction or not
+    bool do_bfactor;
 
-	// For debugging/analysis: Name for initial sigma_noise sepctrum;
-	FileName fn_sigma;
+    // Flag whether to use maximum a posteriori (MAP) estimation
+    bool do_map;
 
-	// Multiplicative fdge factor for the sigma estimates
-	RFLOAT sigma2_fudge;
+    // For debugging/analysis: Name for initial sigma_noise sepctrum;
+    FileName fn_sigma;
 
-	// Perform two reconstructions of random halves sequentially (to save memory for very big cases)
-	bool do_sequential_halves_recons;
+    // Multiplicative fdge factor for the sigma estimates
+    RFLOAT sigma2_fudge;
 
-	// Do zero-filled soft-masks instead of noisy masks on experimental particles
-	// This will increase SNR but introduce correlations that are not modelled...
-	// Until now the best refinements have used the noisy mask, not the soft mask....
-	bool do_zero_mask;
+    // Perform two reconstructions of random halves sequentially (to save memory for very big cases)
+    bool do_sequential_halves_recons;
 
-	// Prepare for automated 2D class average selection: nice to have access to unmasked reference
-	bool do_write_unmasked_refs;
+    // Do zero-filled soft-masks instead of noisy masks on experimental particles
+    // This will increase SNR but introduce correlations that are not modelled...
+    // Until now the best refinements have used the noisy mask, not the soft mask....
+    bool do_zero_mask;
 
-	/////////// Keep track of hidden variable changes ////////////////////////
+    // Prepare for automated 2D class average selection: nice to have access to unmasked reference
+    bool do_write_unmasked_refs;
 
-	// Changes from one iteration to the next in the angles
-	RFLOAT current_changes_optimal_orientations, sum_changes_optimal_orientations;
+    /////////// Keep track of hidden variable changes ////////////////////////
 
-	// Changes from one iteration to the next in the translations
-	RFLOAT current_changes_optimal_offsets, sum_changes_optimal_offsets;
+    // Changes from one iteration to the next in the angles
+    RFLOAT current_changes_optimal_orientations, sum_changes_optimal_orientations;
 
-	// Changes from one iteration to the next in the class assignments
-	RFLOAT current_changes_optimal_classes, sum_changes_optimal_classes;
+    // Changes from one iteration to the next in the translations
+    RFLOAT current_changes_optimal_offsets, sum_changes_optimal_offsets;
 
-	// Just count how often the optimal changes are summed
-	RFLOAT sum_changes_count;
+    // Changes from one iteration to the next in the class assignments
+    RFLOAT current_changes_optimal_classes, sum_changes_optimal_classes;
 
-	/////////// Some internal stuff ////////////////////////
+    // Just count how often the optimal changes are summed
+    RFLOAT sum_changes_count;
 
-	// Array with pointers to the resolution of each point in a Fourier-space FFTW-like array (one for each optics_group)
-	std::vector<MultidimArray<int> > Mresol_fine, Mresol_coarse;
-	MultidimArray<int> Npix_per_shell;
+    /////////// Some internal stuff ////////////////////////
 
-	// Verbosity flag
-	int verb;
+    // Array with pointers to the resolution of each point in a Fourier-space FFTW-like array (one for each optics_group)
+    std::vector<MultidimArray<int> > Mresol_fine, Mresol_coarse;
+    MultidimArray<int> Npix_per_shell;
 
-	// Thread Managers for the expectation step: one for all (pooled) particles
-	ThreadTaskDistributor *exp_ipart_ThreadTaskDistributor;
+    // Verbosity flag
+    int verb;
 
-	// Number of threads to run in parallel
-	int x_pool;
-	int nr_threads;
+    // Thread Managers for the expectation step: one for all (pooled) particles
+    ThreadTaskDistributor *exp_ipart_ThreadTaskDistributor;
 
-	//for catching exceptions in threads
-	RelionError * threadException;
+    // Number of threads to run in parallel
+    int x_pool;
+    int nr_threads;
 
-	long int exp_my_first_part_id, exp_my_last_part_id;
-	MultidimArray<RFLOAT> exp_metadata, exp_imagedata;
-	std::string exp_fn_img, exp_fn_ctf, exp_fn_recimg;
-	std::vector<MultidimArray<RFLOAT> > exp_imgs;
-	std::vector<int> exp_random_class_some_particles;
+    //for catching exceptions in threads
+    RelionError * threadException;
 
-	// Calculate translated images on-the-fly
-	bool do_shifts_onthefly;
-	std::vector< std::vector<MultidimArray<Complex> > > global_fftshifts_ab_coarse, global_fftshifts_ab_current, global_fftshifts_ab2_coarse, global_fftshifts_ab2_current;
+    long int exp_my_first_part_id, exp_my_last_part_id;
+    MultidimArray<RFLOAT> exp_metadata, exp_imagedata;
+    std::string exp_fn_img, exp_fn_ctf, exp_fn_recimg;
+    std::vector<MultidimArray<RFLOAT> > exp_imgs;
+    std::vector<int> exp_random_class_some_particles;
 
-	//TMP DEBUGGING
-	MultidimArray<RFLOAT> DEBUGGING_COPY_exp_Mweight;
+    // Calculate translated images on-the-fly
+    bool do_shifts_onthefly;
+    std::vector< std::vector<MultidimArray<Complex> > > global_fftshifts_ab_coarse, global_fftshifts_ab_current, global_fftshifts_ab2_coarse, global_fftshifts_ab2_current;
 
-	//Use different padding factors for the projector (PF+0) and backprojector (PF+1)
-	bool asymmetric_padding;
+    //TMP DEBUGGING
+    MultidimArray<RFLOAT> DEBUGGING_COPY_exp_Mweight;
 
-	//Maximum number of significant weights in coarse pass of expectation
-	int maximum_significants;
+    //Use different padding factors for the projector (PF+0) and backprojector (PF+1)
+    bool asymmetric_padding;
 
-	// Tabulated sine and cosine values (for 3D helical sub-tomogram averaging with on-the-fly shifts)
-	TabSine tab_sin;
-	TabCosine tab_cos;
+    //Maximum number of significant weights in coarse pass of expectation
+    int maximum_significants;
 
-	// Local symmetry information (STAR or plain-text format)
-	FileName fn_local_symmetry;
+    // Tabulated sine and cosine values (for 3D helical sub-tomogram averaging with on-the-fly shifts)
+    TabSine tab_sin;
+    TabCosine tab_cos;
 
-	// Local symmetry - list of masks
-	std::vector<FileName> fn_local_symmetry_masks;
+    // Local symmetry information (STAR or plain-text format)
+    FileName fn_local_symmetry;
 
-	// Local symmetry - list of operators
-	std::vector<std::vector<Matrix1D<RFLOAT> > > fn_local_symmetry_operators;
+    // Local symmetry - list of masks
+    std::vector<FileName> fn_local_symmetry_masks;
 
-	//Maximum number of particles permitted to be drop, due to zero sum of weights, before exiting with an error (GPU only).
-	int failsafe_threshold;
+    // Local symmetry - list of operators
+    std::vector<std::vector<Matrix1D<RFLOAT> > > fn_local_symmetry_operators;
 
-	// Trust box size and angpix for the input reference
-	bool do_trust_ref_size;
+    //Maximum number of particles permitted to be drop, due to zero sum of weights, before exiting with an error (GPU only).
+    int failsafe_threshold;
 
-	#ifdef TIMING
-	Timer timer;
-	int TIMING_DIFF_PROJ, TIMING_DIFF_SHIFT, TIMING_DIFF_DIFF2;
-	int TIMING_WSUM_PROJ, TIMING_WSUM_BACKPROJ, TIMING_WSUM_DIFF2, TIMING_WSUM_SUMSHIFT;
-	int TIMING_EXP, TIMING_MAX, TIMING_RECONS, TIMING_SOLVFLAT, TIMING_UPDATERES;
-	int TIMING_EXP_1,TIMING_EXP_1a,TIMING_EXP_2,TIMING_EXP_3,TIMING_EXP_4,TIMING_EXP_4a,TIMING_EXP_4b,TIMING_EXP_4c,TIMING_EXP_4d,TIMING_EXP_5,TIMING_EXP_6,TIMING_EXP_7,TIMING_EXP_8,TIMING_EXP_9;
-	int TIMING_ESP, TIMING_ESP_THR, TIMING_ESP_ONEPART, TIMING_ESP_ONEPARTN, TIMING_EXP_METADATA, TIMING_EXP_CHANGES;
-	int TIMING_ESP_FT, TIMING_ESP_INI, TIMING_ESP_DIFF1, TIMING_ESP_DIFF2;
-	int TIMING_ESP_DIFF2_A, TIMING_ESP_DIFF2_B, TIMING_ESP_DIFF2_C, TIMING_ESP_DIFF2_D, TIMING_ESP_DIFF2_E;
-	int TIMING_ESP_PREC1, TIMING_ESP_PREC2, TIMING_ESP_PRECW, TIMING_WSUM_GETSHIFT, TIMING_DIFF2_GETSHIFT, TIMING_WSUM_SCALE, TIMING_WSUM_LOCALSUMS;
-	int TIMING_ESP_WEIGHT1, TIMING_ESP_WEIGHT2, TIMING_WEIGHT_EXP, TIMING_WEIGHT_SORT, TIMING_ESP_WSUM;
-	int TIMING_EXTRA1, TIMING_EXTRA2, TIMING_EXTRA3;
-	int TIMING_EXP_SETUP, TIMING_ITER_HELICALREFINE;
-	int TIMING_ITER_WRITE, TIMING_ITER_LOCALSYM;
-
-	int RCT_1, RCT_2, RCT_3, RCT_4, RCT_5, RCT_6, RCT_7, RCT_8;
-	int ES_A, ES_B, ES_C, ES_D, ES_E, ES_F;
-	int ESS_1, ESS_2, ESS_3, ESS_4;
-	int EINS_1, EINS_2, EINS_3, EINS_4, EINS_5,EINS_6, EINS_7, EINS_8, EINS_9;
-	int EINS_10, EINS_11;
-	#endif
-
-	public:
-
-	MlOptimiser():
-		do_zero_mask(0),
-		do_write_unmasked_refs(0),
-		do_generate_seeds(0),
-		sum_changes_count(0),
-		current_changes_optimal_orientations(0),
-		do_average_unaligned(0),
-		sigma2_fudge(0),
-		do_always_cc(0),
-		best_resol_thus_far(0),
-		debug1(0),
-		incr_size(0),
-		has_large_incr_size_iter_ago(0),
-		nr_iter_wo_resol_gain(0),
-		nr_pool(0),
-		refs_are_ctf_corrected(0),
-		has_high_fsc_at_limit(0),
-		do_acc_currentsize_despite_highres_exp(0),
-		low_resol_join_halves(0),
-		do_auto_refine(0),
-		has_converged(0),
-		only_flip_phases(0),
-		gridding_nr_iter(0),
-		do_use_reconstruct_images(0),
-		fix_sigma_noise(0),
-		current_changes_optimal_offsets(0),
-		smallest_changes_optimal_classes(0),
-		do_print_metadata_labels(0),
-		adaptive_fraction(0),
-		do_print_symmetry_ops(0),
-		do_bfactor(0),
-		do_use_all_data(0),
-		minres_map(0),
-		debug2(0),
-		do_always_join_random_halves(0),
-		my_first_particle_id(0),
-		x_pool(1),
-		nr_threads(0),
-		do_shifts_onthefly(0),
-		exp_ipart_ThreadTaskDistributor(0),
-		do_parallel_disc_io(0),
-		sum_changes_optimal_orientations(0),
-		do_solvent(0),
-		strict_highres_exp(0),
-		sum_changes_optimal_classes(0),
-		acc_trans(0),
-		width_mask_edge(0),
-		has_fine_enough_angular_sampling(0),
-		sum_changes_optimal_offsets(0),
-		do_scale_correction(0),
-		ctf_phase_flipped(0),
-		nr_iter_wo_large_hidden_variable_changes(0),
-		adaptive_oversampling(0),
-		nr_iter(0),
-		intact_ctf_first_peak(0),
-		do_join_random_halves(0),
-		do_skip_align(0),
-		do_calculate_initial_sigma_noise(0),
-		fix_sigma_offset(0),
-		do_firstiter_cc(0),
-		exp_my_last_part_id(0),
-		particle_diameter(0),
-		smallest_changes_optimal_orientations(0),
-		verb(0),
-		do_norm_correction(0),
-		fix_tau(0),
-		directions_have_changed(0),
-		acc_rot(0),
-		do_sequential_halves_recons(0),
-		do_skip_rotate(0),
-		current_changes_optimal_classes(0),
-		do_skip_maximization(0),
-		dont_raise_norm_error(0),
-		do_map(0),
-		combine_weights_thru_disc(0),
-		smallest_changes_optimal_offsets(0),
-		exp_my_first_part_id(0),
-		iter(0),
-		my_last_particle_id(0),
-		ini_high(0),
-		do_ctf_correction(0),
-		max_coarse_size(0),
-		autosampling_hporder_local_searches(0),
-		do_split_random_halves(0),
-		debug_split_random_half(0),
-		random_seed(0),
-		do_gpu(0),
-		anticipate_oom(0),
-		do_helical_refine(0),
-		ignore_helical_symmetry(0),
-		helical_twist_initial(0),
-		helical_rise_initial(0),
-		helical_z_percentage(0),
-		helical_tube_inner_diameter(0),
-		helical_tube_outer_diameter(0),
-		do_helical_symmetry_local_refinement(0),
-		helical_sigma_distance(0),
-		helical_keep_tilt_prior_fixed(0),
-		//directional_lowpass(0),
-		asymmetric_padding(false),
-		maximum_significants(-1),
-		threadException(NULL),
+    // Trust box size and angpix for the input reference
+    bool do_trust_ref_size;
+
+    #ifdef TIMING
+    Timer timer;
+    int TIMING_DIFF_PROJ, TIMING_DIFF_SHIFT, TIMING_DIFF_DIFF2;
+    int TIMING_WSUM_PROJ, TIMING_WSUM_BACKPROJ, TIMING_WSUM_DIFF2, TIMING_WSUM_SUMSHIFT;
+    int TIMING_EXP, TIMING_MAX, TIMING_RECONS, TIMING_SOLVFLAT, TIMING_UPDATERES;
+    int TIMING_EXP_1,TIMING_EXP_1a,TIMING_EXP_2,TIMING_EXP_3,TIMING_EXP_4,TIMING_EXP_4a,TIMING_EXP_4b,TIMING_EXP_4c,TIMING_EXP_4d,TIMING_EXP_5,TIMING_EXP_6,TIMING_EXP_7,TIMING_EXP_8,TIMING_EXP_9;
+    int TIMING_ESP, TIMING_ESP_THR, TIMING_ESP_ONEPART, TIMING_ESP_ONEPARTN, TIMING_EXP_METADATA, TIMING_EXP_CHANGES;
+    int TIMING_ESP_FT, TIMING_ESP_INI, TIMING_ESP_DIFF1, TIMING_ESP_DIFF2;
+    int TIMING_ESP_DIFF2_A, TIMING_ESP_DIFF2_B, TIMING_ESP_DIFF2_C, TIMING_ESP_DIFF2_D, TIMING_ESP_DIFF2_E;
+    int TIMING_ESP_PREC1, TIMING_ESP_PREC2, TIMING_ESP_PRECW, TIMING_WSUM_GETSHIFT, TIMING_DIFF2_GETSHIFT, TIMING_WSUM_SCALE, TIMING_WSUM_LOCALSUMS;
+    int TIMING_ESP_WEIGHT1, TIMING_ESP_WEIGHT2, TIMING_WEIGHT_EXP, TIMING_WEIGHT_SORT, TIMING_ESP_WSUM;
+    int TIMING_EXTRA1, TIMING_EXTRA2, TIMING_EXTRA3;
+    int TIMING_EXP_SETUP, TIMING_ITER_HELICALREFINE;
+    int TIMING_ITER_WRITE, TIMING_ITER_LOCALSYM;
+
+    int RCT_1, RCT_2, RCT_3, RCT_4, RCT_5, RCT_6, RCT_7, RCT_8;
+    int ES_A, ES_B, ES_C, ES_D, ES_E, ES_F;
+    int ESS_1, ESS_2, ESS_3, ESS_4;
+    int EINS_1, EINS_2, EINS_3, EINS_4, EINS_5,EINS_6, EINS_7, EINS_8, EINS_9;
+    int EINS_10, EINS_11;
+    #endif
+
+    public:
+
+    MlOptimiser():
+        do_zero_mask(0),
+        do_write_unmasked_refs(0),
+        do_generate_seeds(0),
+        sum_changes_count(0),
+        current_changes_optimal_orientations(0),
+        do_average_unaligned(0),
+        sigma2_fudge(0),
+        do_always_cc(0),
+        best_resol_thus_far(0),
+        debug1(0),
+        incr_size(0),
+        has_large_incr_size_iter_ago(0),
+        nr_iter_wo_resol_gain(0),
+        nr_pool(0),
+        refs_are_ctf_corrected(0),
+        has_high_fsc_at_limit(0),
+        do_acc_currentsize_despite_highres_exp(0),
+        low_resol_join_halves(0),
+        do_auto_refine(0),
+        has_converged(0),
+        only_flip_phases(0),
+        gridding_nr_iter(0),
+        do_use_reconstruct_images(0),
+        fix_sigma_noise(0),
+        current_changes_optimal_offsets(0),
+        smallest_changes_optimal_classes(0),
+        do_print_metadata_labels(0),
+        adaptive_fraction(0),
+        do_print_symmetry_ops(0),
+        do_bfactor(0),
+        do_use_all_data(0),
+        minres_map(0),
+        debug2(0),
+        do_always_join_random_halves(0),
+        my_first_particle_id(0),
+        x_pool(1),
+        nr_threads(0),
+        do_shifts_onthefly(0),
+        exp_ipart_ThreadTaskDistributor(0),
+        do_parallel_disc_io(0),
+        sum_changes_optimal_orientations(0),
+        do_solvent(0),
+        strict_highres_exp(0),
+        sum_changes_optimal_classes(0),
+        acc_trans(0),
+        width_mask_edge(0),
+        has_fine_enough_angular_sampling(0),
+        sum_changes_optimal_offsets(0),
+        do_scale_correction(0),
+        ctf_phase_flipped(0),
+        nr_iter_wo_large_hidden_variable_changes(0),
+        adaptive_oversampling(0),
+        nr_iter(0),
+        intact_ctf_first_peak(0),
+        do_join_random_halves(0),
+        do_skip_align(0),
+        do_calculate_initial_sigma_noise(0),
+        fix_sigma_offset(0),
+        do_firstiter_cc(0),
+        exp_my_last_part_id(0),
+        particle_diameter(0),
+        smallest_changes_optimal_orientations(0),
+        verb(0),
+        do_norm_correction(0),
+        fix_tau(0),
+        directions_have_changed(0),
+        acc_rot(0),
+        do_sequential_halves_recons(0),
+        do_skip_rotate(0),
+        current_changes_optimal_classes(0),
+        do_skip_maximization(0),
+        dont_raise_norm_error(0),
+        do_map(0),
+        combine_weights_thru_disc(0),
+        smallest_changes_optimal_offsets(0),
+        exp_my_first_part_id(0),
+        iter(0),
+        my_last_particle_id(0),
+        ini_high(0),
+        do_ctf_correction(0),
+        max_coarse_size(0),
+        autosampling_hporder_local_searches(0),
+        do_split_random_halves(0),
+        debug_split_random_half(0),
+        random_seed(0),
+        do_gpu(0),
+        anticipate_oom(0),
+        do_helical_refine(0),
+        ignore_helical_symmetry(0),
+        helical_twist_initial(0),
+        helical_rise_initial(0),
+        helical_z_percentage(0),
+        helical_tube_inner_diameter(0),
+        helical_tube_outer_diameter(0),
+        do_helical_symmetry_local_refinement(0),
+        helical_sigma_distance(0),
+        helical_keep_tilt_prior_fixed(0),
+        //directional_lowpass(0),
+        asymmetric_padding(false),
+        maximum_significants(-1),
+        threadException(NULL),
 #ifdef ALTCPU
-		mdlClassComplex(NULL),
+        mdlClassComplex(NULL),
 #endif
-		failsafe_threshold(40),
-		do_trust_ref_size(0)
-	{
+        failsafe_threshold(40),
+        do_trust_ref_size(0)
+    {
 #ifdef ALTCPU
-		tbbCpuOptimiser = CpuOptimiserType((void*)NULL);
+        tbbCpuOptimiser = CpuOptimiserType((void*)NULL);
 #endif
-	};
+    };
 
-	/** ========================== I/O operations  =========================== */
-	/// Print help message
-	void usage();
+    /** ========================== I/O operations  =========================== */
+    /// Print help message
+    void usage();
 
-	/// Interpret command line
-	void read(int argc, char **argv, int rank = 0);
+    /// Interpret command line
+    void read(int argc, char **argv, int rank = 0);
 
-	/// Interpret command line for the initial start of a run
-	void parseInitial(int argc, char **argv);
+    /// Interpret command line for the initial start of a run
+    void parseInitial(int argc, char **argv);
 
-	/// Interpret command line for the re-start of a run
-	void parseContinue(int argc, char **argv);
+    /// Interpret command line for the re-start of a run
+    void parseContinue(int argc, char **argv);
 
-	/// Read from STAR file
-	void read(FileName fn_in, int rank = 0, bool do_prevent_preread = false);
+    /// Read from STAR file
+    void read(FileName fn_in, int rank = 0, bool do_prevent_preread = false);
 
-	// Write files to disc
-	void write(bool do_write_sampling, bool do_write_data, bool do_write_optimiser, bool do_write_model, int random_subset = 0);
+    // Write files to disc
+    void write(bool do_write_sampling, bool do_write_data, bool do_write_optimiser, bool do_write_model, int random_subset = 0);
 
     /** ========================== Initialisation  =========================== */
 
-	// Initialise the whole optimiser
-	void initialise();
+    // Initialise the whole optimiser
+    void initialise();
 
-	// Check the mask is thr ight size
-	void checkMask(FileName &_fn_mask, int solvent_nr, int rank);
+    // Check the mask is thr ight size
+    void checkMask(FileName &_fn_mask, int solvent_nr, int rank);
 
-	// Some general stuff that is shared between MPI and sequential code
-	void initialiseGeneral(int rank = 0);
+    // Some general stuff that is shared between MPI and sequential code
+    void initialiseGeneral(int rank = 0);
 
-	// Randomise particle processing order and resize metadata array
-	void initialiseWorkLoad();
+    // Randomise particle processing order and resize metadata array
+    void initialiseWorkLoad();
 
-	/* Calculates the sum of all individual power spectra and the average of all images for initial sigma_noise estimation
-	 * The rank is passed so that if one splits the data into random halves one can know which random half to treat
-	 */
-	void calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT> &Mavg, bool myverb = true);
+    /* Calculates the sum of all individual power spectra and the average of all images for initial sigma_noise estimation
+     * The rank is passed so that if one splits the data into random halves one can know which random half to treat
+     */
+    void calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT> &Mavg, bool myverb = true);
 
-	/** Use the sum of the individual power spectra to calculate their average and set this in sigma2_noise
-	 * Also subtract the power spectrum of the average images,
-	 * and if (do_average_unaligned) then also set Mavg to all Iref
-	 */
-	void setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT> &Mavg);
+    /** Use the sum of the individual power spectra to calculate their average and set this in sigma2_noise
+     * Also subtract the power spectrum of the average images,
+     * and if (do_average_unaligned) then also set Mavg to all Iref
+     */
+    void setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT> &Mavg);
 
-	/* Perform an initial low-pass filtering of the references
-	 * Note that because of the MAP estimation, this is not necessary inside the refinement
-	 */
-	void initialLowPassFilterReferences();
+    /* Perform an initial low-pass filtering of the references
+     * Note that because of the MAP estimation, this is not necessary inside the refinement
+     */
+    void initialLowPassFilterReferences();
 
-	/** ========================== EM-Iteration  ================================= */
+    /** ========================== EM-Iteration  ================================= */
 
-	/* Launch threads and set up task distributors*/
-	void iterateSetup();
+    /* Launch threads and set up task distributors*/
+    void iterateSetup();
 
-	/* Delete threads and task distributors */
-	void iterateWrapUp();
+    /* Delete threads and task distributors */
+    void iterateWrapUp();
 
-	/* Perform expectation-maximization iterations */
-	void iterate();
+    /* Perform expectation-maximization iterations */
+    void iterate();
 
-	/* Expectation step: loop over all particles
-	 */
-	void expectation();
+    /* Expectation step: loop over all particles
+     */
+    void expectation();
 
-	/* Setup expectation step. We divide the heavy steps over mpi-followers,
-	 * so each call needs a list of which to skip heavy setup for. For
-	 * these classes, only some formatting is done. Data is copied
-	 * explicitly later.*/
-	void expectationSetup(std::vector<bool> cheapSetup);
+    /* Setup expectation step. We divide the heavy steps over mpi-followers,
+     * so each call needs a list of which to skip heavy setup for. For
+     * these classes, only some formatting is done. Data is copied
+     * explicitly later.*/
+    void expectationSetup(std::vector<bool> cheapSetup);
 
-	void expectationSetup();
+    void expectationSetup();
 
-	/* Check whether everything fits into memory, possibly adjust nr_pool and setup thread task managers */
-	void expectationSetupCheckMemory(int myverb = 1);
+    /* Check whether everything fits into memory, possibly adjust nr_pool and setup thread task managers */
+    void expectationSetupCheckMemory(int myverb = 1);
 
-	/* For on-the-fly shifts, precalculates AB-matrices */
-	void precalculateABMatrices();
+    /* For on-the-fly shifts, precalculates AB-matrices */
+    void precalculateABMatrices();
 
-	/* Perform the expectation integration over all k, phi and series elements for a number (some) of pooled particles
-	 * The number of pooled particles is determined by max_nr_pool and some memory checks in expectationSetup()
-	 */
-	void expectationSomeParticles(long int my_first_particle, long int my_last_particle);
+    /* Perform the expectation integration over all k, phi and series elements for a number (some) of pooled particles
+     * The number of pooled particles is determined by max_nr_pool and some memory checks in expectationSetup()
+     */
+    void expectationSomeParticles(long int my_first_particle, long int my_last_particle);
 
-	/* Perform expectation step for some particles using threads */
-	void doThreadExpectationSomeParticles(int thread_id);
+    /* Perform expectation step for some particles using threads */
+    void doThreadExpectationSomeParticles(int thread_id);
 
-	/* Perform the expectation integration over all k, phi and series elements for a given particle */
-	void expectationOneParticle(long int part_id_sorted, int thread_id);
+    /* Perform the expectation integration over all k, phi and series elements for a given particle */
+    void expectationOneParticle(long int part_id_sorted, int thread_id);
 
-	/* Function to call symmetrise of BackProjector helical objects for each class or body
-	 * Do rise and twist for all asymmetrical units in Fourier space
-	 * */
-	void symmetriseReconstructions();
+    /* Function to call symmetrise of BackProjector helical objects for each class or body
+     * Do rise and twist for all asymmetrical units in Fourier space
+     * */
+    void symmetriseReconstructions();
 
-	/* Apply local symmetry according to a list of masks and their operators
-	 * */
-	void applyLocalSymmetryForEachRef();
+    /* Apply local symmetry according to a list of masks and their operators
+     * */
+    void applyLocalSymmetryForEachRef();
 
-	/* Apply helical symmetry (twist and rise) to the central Z slices of real space references. (Do average for every particle)
-	 * Then elongate and fill the perfect helix along Z axis.
-	 * */
-	void makeGoodHelixForEachRef();
+    /* Apply helical symmetry (twist and rise) to the central Z slices of real space references. (Do average for every particle)
+     * Then elongate and fill the perfect helix along Z axis.
+     * */
+    void makeGoodHelixForEachRef();
 
-	/* Maximization step
-	 * Updates the current model: reconstructs and updates all other model parameter
-	 */
-	void maximization();
+    /* Maximization step
+     * Updates the current model: reconstructs and updates all other model parameter
+     */
+    void maximization();
 
-	/* Perform the actual reconstructions
-	 * This is officially part of the maximization, but it is separated because of parallelisation issues.
-	 */
-	void maximizationReconstructClass(int iclass);
+    /* Perform the actual reconstructions
+     * This is officially part of the maximization, but it is separated because of parallelisation issues.
+     */
+    void maximizationReconstructClass(int iclass);
 
-	/* Updates all other model parameters (besides the reconstructions)
-	 */
-	void maximizationOtherParameters();
+    /* Updates all other model parameters (besides the reconstructions)
+     */
+    void maximizationOtherParameters();
 
 
     /** ========================== Deeper functions ================================= */
 
-	/* Apply a solvent flattening to a map
-	 */
-	void solventFlatten();
+    /* Apply a solvent flattening to a map
+     */
+    void solventFlatten();
 
-	/* Updates the current resolution (from data_vs_prior array) and keeps track of best resolution thus far
-	 *  and precalculates a 2D Fourier-space array with pointers to the resolution of each point in a FFTW-centered array
-	 */
-	void updateCurrentResolution();
+    /* Updates the current resolution (from data_vs_prior array) and keeps track of best resolution thus far
+     *  and precalculates a 2D Fourier-space array with pointers to the resolution of each point in a FFTW-centered array
+     */
+    void updateCurrentResolution();
 
-	/* Update the current and coarse image size
-	 *  and precalculates a 2D Fourier-space array with pointers to the resolution of each point in a FFTW-centered array
-	 */
-	void updateImageSizeAndResolutionPointers();
+    /* Update the current and coarse image size
+     *  and precalculates a 2D Fourier-space array with pointers to the resolution of each point in a FFTW-centered array
+     */
+    void updateImageSizeAndResolutionPointers();
 
-	/* Read image and its metadata from disc (threaded over all pooled particles)
-	 */
-	void getFourierTransformsAndCtfs(long int part_id, int ibody, int metadata_offset,
-			std::vector<MultidimArray<Complex > > &exp_Fimg,
-			std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
-			std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-			std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
-			std::vector<Matrix1D<RFLOAT> > &exp_prior,
-			std::vector<MultidimArray<RFLOAT> > &exp_power_img,
-			std::vector<RFLOAT> &exp_highres_Xi2_img,
-			std::vector<int> &exp_pointer_dir_nonzeroprior,
-			std::vector<int> &exp_pointer_psi_nonzeroprior,
-			std::vector<RFLOAT> &exp_directions_prior,
-			std::vector<RFLOAT> &exp_psi_prior);
+    /* Read image and its metadata from disc (threaded over all pooled particles)
+     */
+    void getFourierTransformsAndCtfs(long int part_id, int ibody, int metadata_offset,
+            std::vector<MultidimArray<Complex > > &exp_Fimg,
+            std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
+            std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
+            std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
+            std::vector<Matrix1D<RFLOAT> > &exp_prior,
+            std::vector<MultidimArray<RFLOAT> > &exp_power_img,
+            std::vector<RFLOAT> &exp_highres_Xi2_img,
+            std::vector<int> &exp_pointer_dir_nonzeroprior,
+            std::vector<int> &exp_pointer_psi_nonzeroprior,
+            std::vector<RFLOAT> &exp_directions_prior,
+            std::vector<RFLOAT> &exp_psi_prior);
 
-	/* Store all shifted FourierTransforms in a vector
-	 * also store precalculated 2D matrices with 1/sigma2_noise
-	 */
-	void precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmasked, bool is_for_store_wsums, long int my_particle,
-			int exp_current_oversampling, int metadata_offset,
-			int exp_itrans_min, int exp_itrans_max,
-			std::vector<MultidimArray<Complex > > &exp_Fimg,
-			std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
-			std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-			std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
-			std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted_nomask,
-			std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
-			std::vector<RFLOAT> &exp_local_sqrtXi2,
-			std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2);
+    /* Store all shifted FourierTransforms in a vector
+     * also store precalculated 2D matrices with 1/sigma2_noise
+     */
+    void precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmasked, bool is_for_store_wsums, long int my_particle,
+            int exp_current_oversampling, int metadata_offset,
+            int exp_itrans_min, int exp_itrans_max,
+            std::vector<MultidimArray<Complex > > &exp_Fimg,
+            std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
+            std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
+            std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
+            std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted_nomask,
+            std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
+            std::vector<RFLOAT> &exp_local_sqrtXi2,
+            std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2);
 
-	// Given exp_Mcoarse_significant, check for iorient whether any of the particles has any significant (coarsely sampled) translation
-	bool isSignificantAnyImageAnyTranslation(long int iorient,
-			int exp_itrans_min, int exp_itrans_max, MultidimArray<bool> &exp_Mcoarse_significant);
+    // Given exp_Mcoarse_significant, check for iorient whether any of the particles has any significant (coarsely sampled) translation
+    bool isSignificantAnyImageAnyTranslation(long int iorient,
+            int exp_itrans_min, int exp_itrans_max, MultidimArray<bool> &exp_Mcoarse_significant);
 
-	// Get squared differences for all iclass, idir, ipsi and itrans...
-	void getAllSquaredDifferences(long int part_id, int ibody,
-			int exp_ipass, int exp_current_oversampling, int metadata_offset,
-			int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
-			int exp_itrans_min, int exp_itrans_max, int my_iclass_min, int my_iclass_max,
-			std::vector<RFLOAT> &exp_min_diff2,
-			std::vector<RFLOAT> &exp_highres_Xi2_img,
-			std::vector<MultidimArray<Complex > > &exp_Fimg,
-			std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-			MultidimArray<RFLOAT> &exp_Mweight,
-			MultidimArray<bool> &exp_Mcoarse_significant,
-			std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
-			std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
-			std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
-			std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
-			std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
-			std::vector<RFLOAT> &exp_local_sqrtXi);
+    // Get squared differences for all iclass, idir, ipsi and itrans...
+    void getAllSquaredDifferences(long int part_id, int ibody,
+            int exp_ipass, int exp_current_oversampling, int metadata_offset,
+            int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
+            int exp_itrans_min, int exp_itrans_max, int my_iclass_min, int my_iclass_max,
+            std::vector<RFLOAT> &exp_min_diff2,
+            std::vector<RFLOAT> &exp_highres_Xi2_img,
+            std::vector<MultidimArray<Complex > > &exp_Fimg,
+            std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
+            MultidimArray<RFLOAT> &exp_Mweight,
+            MultidimArray<bool> &exp_Mcoarse_significant,
+            std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
+            std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
+            std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
+            std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
+            std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
+            std::vector<RFLOAT> &exp_local_sqrtXi);
 
-	// Convert all squared difference terms to weights.
-	// Also calculates exp_sum_weight and, for adaptive approach, also exp_significant_weight
-	void convertAllSquaredDifferencesToWeights(long int part_id, int ibody, int exp_ipass,
-			int exp_current_oversampling, int metadata_offset,
-			int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
-			int exp_itrans_min, int exp_itrans_max, int my_iclass_min, int my_iclass_max,
-			MultidimArray<RFLOAT> &exp_Mweight, MultidimArray<bool> &exp_Mcoarse_significant,
-			std::vector<RFLOAT> &exp_significant_weight, std::vector<RFLOAT> &exp_sum_weight,
-			std::vector<Matrix1D<RFLOAT> > &exp_old_offset, std::vector<Matrix1D<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
-			std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
-			std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior);
+    // Convert all squared difference terms to weights.
+    // Also calculates exp_sum_weight and, for adaptive approach, also exp_significant_weight
+    void convertAllSquaredDifferencesToWeights(long int part_id, int ibody, int exp_ipass,
+            int exp_current_oversampling, int metadata_offset,
+            int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
+            int exp_itrans_min, int exp_itrans_max, int my_iclass_min, int my_iclass_max,
+            MultidimArray<RFLOAT> &exp_Mweight, MultidimArray<bool> &exp_Mcoarse_significant,
+            std::vector<RFLOAT> &exp_significant_weight, std::vector<RFLOAT> &exp_sum_weight,
+            std::vector<Matrix1D<RFLOAT> > &exp_old_offset, std::vector<Matrix1D<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
+            std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
+            std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior);
 
-	// Store all relevant weighted sums, also return optimal hidden variables, max_weight and dLL
-	void storeWeightedSums(long int part_id, int ibody,
-			int exp_current_oversampling, int metadata_offset,
-			int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
-			int exp_itrans_min, int exp_itrans_max, int my_iclass_min, int my_iclass_max,
-			std::vector<RFLOAT> &exp_min_diff2,
-			std::vector<RFLOAT> &exp_highres_Xi2_img,
-			std::vector<MultidimArray<Complex > > &exp_Fimg,
-			std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
-			std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-			std::vector<MultidimArray<RFLOAT> > &exp_power_img,
-			std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
-			std::vector<Matrix1D<RFLOAT> > &exp_prior,
-			MultidimArray<RFLOAT> &exp_Mweight,
-			MultidimArray<bool> &exp_Mcoarse_significant,
-			std::vector<RFLOAT> &exp_significant_weight,
-			std::vector<RFLOAT> &exp_sum_weight,
-			std::vector<RFLOAT> &exp_max_weight,
-			std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
-			std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
-			std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
-			std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted_nomask,
-			std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
-			std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
-			std::vector<RFLOAT> &exp_local_sqrtXi2);
+    // Store all relevant weighted sums, also return optimal hidden variables, max_weight and dLL
+    void storeWeightedSums(long int part_id, int ibody,
+            int exp_current_oversampling, int metadata_offset,
+            int exp_idir_min, int exp_idir_max, int exp_ipsi_min, int exp_ipsi_max,
+            int exp_itrans_min, int exp_itrans_max, int my_iclass_min, int my_iclass_max,
+            std::vector<RFLOAT> &exp_min_diff2,
+            std::vector<RFLOAT> &exp_highres_Xi2_img,
+            std::vector<MultidimArray<Complex > > &exp_Fimg,
+            std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
+            std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
+            std::vector<MultidimArray<RFLOAT> > &exp_power_img,
+            std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
+            std::vector<Matrix1D<RFLOAT> > &exp_prior,
+            MultidimArray<RFLOAT> &exp_Mweight,
+            MultidimArray<bool> &exp_Mcoarse_significant,
+            std::vector<RFLOAT> &exp_significant_weight,
+            std::vector<RFLOAT> &exp_sum_weight,
+            std::vector<RFLOAT> &exp_max_weight,
+            std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
+            std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior,
+            std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
+            std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted_nomask,
+            std::vector<MultidimArray<RFLOAT> > &exp_local_Minvsigma2,
+            std::vector<MultidimArray<RFLOAT> > &exp_local_Fctf,
+            std::vector<RFLOAT> &exp_local_sqrtXi2);
 
-	/** Monitor the changes in the optimal translations, orientations and class assignments for some particles */
-	void monitorHiddenVariableChanges(long int my_first_part_id, long int my_last_part_id);
+    /** Monitor the changes in the optimal translations, orientations and class assignments for some particles */
+    void monitorHiddenVariableChanges(long int my_first_part_id, long int my_last_part_id);
 
-	// Updates the overall changes in the hidden variables and keeps track of nr_iter_wo_large_changes_in_hidden_variables
-	void updateOverallChangesInHiddenVariables();
+    // Updates the overall changes in the hidden variables and keeps track of nr_iter_wo_large_changes_in_hidden_variables
+    void updateOverallChangesInHiddenVariables();
 
-	// Calculate expected error in orientational assignments
-	// Based on comparing projections of the model and see how many degrees apart gives rise to difference of power > 3*sigma^ of the noise
-	void calculateExpectedAngularErrors(long int my_first_part_id, long int my_last_part_id);
+    // Calculate expected error in orientational assignments
+    // Based on comparing projections of the model and see how many degrees apart gives rise to difference of power > 3*sigma^ of the noise
+    void calculateExpectedAngularErrors(long int my_first_part_id, long int my_last_part_id);
 
-	// Adjust angular sampling based on the expected angular accuracies for auto-refine procedure
-	void updateAngularSampling(bool verb = true);
+    // Adjust angular sampling based on the expected angular accuracies for auto-refine procedure
+    void updateAngularSampling(bool verb = true);
 
-	// Adjust subset size in fast_subsets or SGD algorithms
-	void updateSubsetSize(bool verb = true);
+    // Adjust subset size in fast_subsets or SGD algorithms
+    void updateSubsetSize(bool verb = true);
 
-	// Check convergence for auto-refine procedure
-	// Also print convergence information to screen for auto-refine procedure
-	void checkConvergence(bool myverb = true);
+    // Check convergence for auto-refine procedure
+    // Also print convergence information to screen for auto-refine procedure
+    void checkConvergence(bool myverb = true);
 
-	// Set metadata of a subset of particles to the experimental model
-	void setMetaDataSubset(long int my_first_part_id, long int my_last_part_id);
+    // Set metadata of a subset of particles to the experimental model
+    void setMetaDataSubset(long int my_first_part_id, long int my_last_part_id);
 
-	// Get metadata array of a subset of particles from the experimental model
-	void getMetaAndImageDataSubset(long int my_first_part_id, long int my_last_part_id, bool do_also_imagedata = true);
+    // Get metadata array of a subset of particles from the experimental model
+    void getMetaAndImageDataSubset(long int my_first_part_id, long int my_last_part_id, bool do_also_imagedata = true);
 
 };
 

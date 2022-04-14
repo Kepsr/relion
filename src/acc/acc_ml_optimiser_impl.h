@@ -325,7 +325,7 @@ void getFourierTransformsAndCtfs(
                 remapped_sigma2_noise.initZeros(XSIZE(img()) / 2 + 1);
                 RFLOAT remap_image_sizes = (baseMLO->image_full_size[optics_group] * my_pixel_size) / (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size);
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(baseMLO->mymodel.sigma2_noise[group_id]) {
-                    int i_remap = ROUND(remap_image_sizes * i);
+                    int i_remap = round(remap_image_sizes * i);
                     if (i_remap < XSIZE(remapped_sigma2_noise))
                         DIRECT_A1D_ELEM(remapped_sigma2_noise, i_remap) = DIRECT_A1D_ELEM(baseMLO->mymodel.sigma2_noise[group_id], i);
                 }
@@ -834,20 +834,22 @@ void getFourierTransformsAndCtfs(
 
             // 23jul17: NEW: as we haven't applied the (nonROUNDED!!)  my_refined_ibody_offset yet, do this now in the FourierTransform
             Faux = op.Fimg.at(img_id);
-            shiftImageInFourierTransform(Faux, op.Fimg.at(img_id), (RFLOAT)baseMLO->image_full_size[optics_group],
-                    XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), (accMLO->dataIs3D) ? ZZ(my_refined_ibody_offset) : 0);
+            shiftImageInFourierTransform(
+                Faux, op.Fimg.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
+                XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), accMLO->dataIs3D ? ZZ(my_refined_ibody_offset) : 0
+            );
             Faux = op.Fimg_nomask.at(img_id);
-            shiftImageInFourierTransform(Faux, op.Fimg_nomask.at(img_id), (RFLOAT)baseMLO->image_full_size[optics_group],
-                    XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), (accMLO->dataIs3D) ? ZZ(my_refined_ibody_offset) : 0);
-        } // end if mymodel.nr_bodies > 1
-
-
-    } // end loop img_id
+            shiftImageInFourierTransform(
+                Faux, op.Fimg_nomask.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
+                XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), accMLO->dataIs3D ? ZZ(my_refined_ibody_offset) : 0
+            );
+        }
+    }
     //accMLO->transformer.clear();
-#ifdef TIMING
+    #ifdef TIMING
     if (part_id == baseMLO->exp_my_first_part_id)
         baseMLO->timer.toc(baseMLO->TIMING_ESP_FT);
-#endif
+    #endif
     GTOC(accMLO->timer, "getFourierTransformsAndCtfs");
     GATHERGPUTIMINGS(accMLO->timer);
 }
@@ -2909,10 +2911,9 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
         // Calculate DLL for each particle
         RFLOAT logsigma2 = 0.;
         RFLOAT remap_image_sizes = (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size) / (my_image_size * my_pixel_size);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->Mresol_fine[optics_group])
-        {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->Mresol_fine[optics_group]) {
             int ires = DIRECT_MULTIDIM_ELEM(baseMLO->Mresol_fine[optics_group], n);
-            int ires_remapped = ROUND(remap_image_sizes * ires);
+            int ires_remapped = round(remap_image_sizes * ires);
             // Note there is no sqrt in the normalisation term because of the 2-dimensionality of the complex-plane
             // Also exclude origin from logsigma2, as this will not be considered in the P-calculations
             if (ires > 0 && ires_remapped < XSIZE(baseMLO->mymodel.sigma2_noise[group_id]))
@@ -2935,44 +2936,36 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
     }
 
     // Now, inside a global_mutex, update the other weighted sums among all threads
-    if (!baseMLO->do_skip_maximization)
-    {
+    if (!baseMLO->do_skip_maximization) {
         pthread_mutex_lock(&global_mutex);
-        for (int img_id = 0; img_id < sp.nr_images; img_id++)
-        {
+        for (int img_id = 0; img_id < sp.nr_images; img_id++) {
             long int igroup = baseMLO->mydata.getGroupId(op.part_id, img_id);
             int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, img_id);
             int my_image_size = baseMLO->mydata.getOpticsImageSize(optics_group);
             RFLOAT my_pixel_size = baseMLO->mydata.getOpticsPixelSize(optics_group);
             RFLOAT remap_image_sizes = (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size) / (my_image_size * my_pixel_size);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(thr_wsum_sigma2_noise[img_id])
-            {
-                int i_resam = ROUND(i * remap_image_sizes);
-                if (i_resam < XSIZE(baseMLO->wsum_model.sigma2_noise[igroup]))
-                {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(thr_wsum_sigma2_noise[img_id]) {
+                int i_resam = round(i * remap_image_sizes);
+                if (i_resam < XSIZE(baseMLO->wsum_model.sigma2_noise[igroup])) {
                     DIRECT_A1D_ELEM(baseMLO->wsum_model.sigma2_noise[igroup], i_resam) += DIRECT_A1D_ELEM(thr_wsum_sigma2_noise[img_id], i);
                 }
             }
             baseMLO->wsum_model.sumw_group[igroup] += thr_sumw_group[img_id];
-            if (baseMLO->do_scale_correction)
-            {
+            if (baseMLO->do_scale_correction) {
                 baseMLO->wsum_model.wsum_signal_product[igroup] += thr_wsum_signal_product_spectra[img_id];
                 baseMLO->wsum_model.wsum_reference_power[igroup] += thr_wsum_reference_power_spectra[img_id];
             }
         }
-        for (int n = 0; n < baseMLO->mymodel.nr_classes; n++)
-        {
+        for (int n = 0; n < baseMLO->mymodel.nr_classes; n++) {
             baseMLO->wsum_model.pdf_class[n] += thr_wsum_pdf_class[n];
-            if (baseMLO->mymodel.ref_dim == 2)
-            {
+            if (baseMLO->mymodel.ref_dim == 2) {
                 XX(baseMLO->wsum_model.prior_offset_class[n]) += thr_wsum_prior_offsetx_class[n];
                 YY(baseMLO->wsum_model.prior_offset_class[n]) += thr_wsum_prior_offsety_class[n];
             }
         }
 
-        for (int n = 0; n < baseMLO->mymodel.nr_classes * baseMLO->mymodel.nr_bodies; n++)
-        {
-            if (!(baseMLO->do_skip_align || baseMLO->do_skip_rotate) )
+        for (int n = 0; n < baseMLO->mymodel.nr_classes * baseMLO->mymodel.nr_bodies; n++) {
+            if (!baseMLO->do_skip_align && !baseMLO->do_skip_rotate)
                 baseMLO->wsum_model.pdf_direction[n] += thr_wsum_pdf_direction[n];
         }
 

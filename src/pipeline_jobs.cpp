@@ -1394,7 +1394,7 @@ bool RelionJob::getCommandsMotioncorrJob(
             return false;
         }
 
-        int grouping_for_ps = ROUND(dose_for_ps / dose_rate);
+        int grouping_for_ps = round(dose_for_ps / dose_rate);
         if (grouping_for_ps == 0)
             grouping_for_ps = 1;
 
@@ -4099,16 +4099,13 @@ bool RelionJob::getCommandsMultiBodyJob(
 
             // Add output node: selected particles star file
             FileName fnt = outputname + "analyse_eval" + integerToString(joboptions["select_eigenval"].getNumber(error_message),3)+"_select";
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
-            int min = ROUND(joboptions["eigenval_min"].getNumber(error_message));
-            if (error_message != "")
-                return false;
+            int min = round(joboptions["eigenval_min"].getNumber(error_message));
+            if (error_message != "") return false;
 
-            int max = ROUND(joboptions["eigenval_max"].getNumber(error_message));
-            if (error_message != "")
-                return false;
+            int max = round(joboptions["eigenval_max"].getNumber(error_message));
+            if (error_message != "") return false;
 
             if (min > -99998)
                 fnt += "_min" + integerToString(min);
@@ -4818,13 +4815,11 @@ bool RelionJob::getCommandsMotionrefineJob(
         command += " --bfac_minfreq " + joboptions["minres"].getString();
         command += " --bfac_maxfreq " + joboptions["maxres"].getString();
 
-        const int window = ROUND(joboptions["extract_size"].getNumber(error_message));
-        if (error_message != "")
-            return false;
+        const int window = round(joboptions["extract_size"].getNumber(error_message));
+        if (error_message != "") return false;
 
-        const int scale = ROUND(joboptions["rescale"].getNumber(error_message));
-        if (error_message != "")
-            return false;
+        const int scale = round(joboptions["rescale"].getNumber(error_message));
+        if (error_message != "") return false;
 
         if (window * scale <= 0) {
             error_message = errorMsg("Please specify both the extraction box size and the downsampled size, or leave both the default (-1)");

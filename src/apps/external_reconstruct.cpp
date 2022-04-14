@@ -96,7 +96,7 @@ class ext_recons_parameters {
 
         // Could there be a 1-pixel different in size? use FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM to be safe
         const int r_max = current_size / 2;
-        const int r_max2 = ROUND(r_max * padding_factor) * ROUND(r_max * padding_factor);
+        const int r_max2 = round(r_max * padding_factor) * round(r_max * padding_factor);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Idata()) {
             if (kp * kp + ip * ip + jp * jp < r_max2) {
                 A3D_ELEM(BP.data, kp, ip, jp) = DIRECT_A3D_ELEM(Idata(), k, i, j);

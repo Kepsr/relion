@@ -301,9 +301,9 @@ bool Postprocessing::findSurfacePixel(
 ) {
     // bring kp, ip, jp onto the sphere
     RFLOAT frac = (RFLOAT) myradius_count / (RFLOAT) idx;
-    int kpp = ROUND(frac * kp);
-    int ipp = ROUND(frac * ip);
-    int jpp = ROUND(frac * jp);
+    int kpp = round(frac * kp);
+    int ipp = round(frac * ip);
+    int jpp = round(frac * jp);
 
     // Search +/- 2 pixels in all directions and choose voxel closest to the circle
     int best_dist = 999;
@@ -315,7 +315,7 @@ bool Postprocessing::findSurfacePixel(
     for (int ippp = ipp - search; ippp <= ipp + search; ippp++)
     for (int jppp = jpp - search; jppp <= jpp + search; jppp++) {
         // Distance to surface on the sphere
-        int dist = ABS(ROUND(sqrt((RFLOAT) (kppp * kppp + ippp * ippp + jppp * jppp))) - myradius_count);
+        int dist = ABS(round(sqrt((RFLOAT) (kppp * kppp + ippp * ippp + jppp * jppp))) - myradius_count);
         int reldist2 = (kppp - kpp) * (kppp - kpp) + (ippp - ipp) * (ippp - ipp) + (jppp - jpp) * (jppp - jpp);
         if (dist < 0.5 && reldist2 < best_dist) {
             best_kpp = kppp;
@@ -341,7 +341,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
     num.initZeros(myradius);
     ravg.initZeros(myradius);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
+        int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
         if (idx >= myradius)
                 continue;
         ravg(idx) += norm(DIRECT_A3D_ELEM(FT, k, i, j));
@@ -362,7 +362,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
     sum3d.setXmippOrigin();
     count3d.resize(sum3d);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
+        int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
         // only correct from fit_minres to Nyquist
         if (idx < minr || idx >= myradius)
             continue;
@@ -387,7 +387,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
 
     // Now divide all elements by the normalized correction term
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
+        int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
         // only correct from fit_minres to Nyquist
         if (idx < minr || idx >= myradius)
             continue;
@@ -534,7 +534,7 @@ void Postprocessing::applyFscWeighting(MultidimArray<Complex > &FT, MultidimArra
     }
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int ires = ROUND(sqrt((RFLOAT)kp * kp + ip * ip + jp * jp));
+        int ires = round(sqrt((RFLOAT)kp * kp + ip * ip + jp * jp));
         if (ires <= ires_max) {
             RFLOAT fsc = DIRECT_A1D_ELEM(my_fsc, ires);
             if (fsc > 0.0) {
@@ -555,7 +555,7 @@ void Postprocessing::makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fi
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         int r2 = kp * kp + ip * ip + jp * jp;
-        int ires = ROUND(sqrt((RFLOAT)r2));
+        int ires = round(sqrt((RFLOAT)r2));
         if (ires < XSIZE(radial_count)) {
             lnF(ires) += abs(DIRECT_A3D_ELEM(FT, k, i, j));
             radial_count(ires)++;
@@ -861,9 +861,9 @@ void Postprocessing::run_locres(int rank, int size) {
     applyBFactorToMap(FTsum, XSIZE(Isum), adhoc_bfac, angpix);
 
     // Step size of locres-sampling in pixels
-    int step_size     = ROUND(locres_sampling / angpix);
-    int maskrad_pix   = ROUND(locres_maskrad  / angpix);
-    int edgewidth_pix = ROUND(locres_edgwidth / angpix);
+    int step_size     = round(locres_sampling / angpix);
+    int maskrad_pix   = round(locres_maskrad  / angpix);
+    int edgewidth_pix = round(locres_edgwidth / angpix);
 
     // Get the unmasked FSC curve
     getFSC(I1(), I2(), fsc_unmasked);
@@ -887,14 +887,14 @@ void Postprocessing::run_locres(int rank, int size) {
 
         fh.open((fn_tmp).c_str(), std::ios::out);
         if (!fh)
-            REPORT_ERROR( (std::string)"MlOptimiser::write: Cannot write file: " + fn_tmp);
+            REPORT_ERROR((std::string) "MlOptimiser::write: Cannot write file: " + fn_tmp);
     }
 
     // Sample the entire volume (within the provided mask)
 
     int myrad = XSIZE(I1()) / 2 - maskrad_pix;
     float myradf = (float) myrad / (float) step_size;
-    long int nr_samplings = ROUND(4.0 / 3.0 * PI * myradf * myradf * myradf);
+    long int nr_samplings = round(4.0 / 3.0 * PI * myradf * myradf * myradf);
     if (verb > 0) {
         std::cout << " Calculating local resolution in " << nr_samplings << " sampling points ..." << std::endl;
         init_progress_bar(nr_samplings);

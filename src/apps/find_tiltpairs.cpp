@@ -62,7 +62,7 @@ class angular_error_parameters {
         tilt = textToFloat(parser.getOption("--tilt", "Fix tilt angle (in degrees)", "99999.0"));
         rot = textToFloat(parser.getOption("--rot", "Fix direction of the tilt axis (in degrees), 0 = along y, 90 = along x", "99999.0"));
         do_opt = !parser.checkOption("--dont_opt", "Skip optimization of the transformation matrix");
-        mind2 = ROUND(acc * acc);
+        mind2 = round(acc * acc);
 
         int angle_section = parser.addSection("Specified tilt axis and translational search ranges");
         tilt0 = textToFloat(parser.getOption("--tilt0", "Minimum tilt angle (in degrees)","0.0"));
@@ -216,8 +216,8 @@ class angular_error_parameters {
             RFLOAT xu = (RFLOAT) p_unt[2 * u];
             RFLOAT yu = (RFLOAT) p_unt[2 * u + 1];
 
-            p_map[2 * u]     = ROUND(MAT_ELEM(Pass, 0, 0) * xu + MAT_ELEM(Pass, 0, 1) * yu + MAT_ELEM(Pass, 0, 2));
-            p_map[2 * u + 1] = ROUND(MAT_ELEM(Pass, 1, 0) * xu + MAT_ELEM(Pass, 1, 1) * yu + MAT_ELEM(Pass, 1, 2));
+            p_map[2 * u]     = round(MAT_ELEM(Pass, 0, 0) * xu + MAT_ELEM(Pass, 0, 1) * yu + MAT_ELEM(Pass, 0, 2));
+            p_map[2 * u + 1] = round(MAT_ELEM(Pass, 1, 0) * xu + MAT_ELEM(Pass, 1, 1) * yu + MAT_ELEM(Pass, 1, 2));
 
         }
     }

@@ -72,11 +72,11 @@ void ColorHelper::writeSignedToEPS(
 
     // header
     outputFile << "%!PS-Adobe-2.0 EPSF-1.2" << "\n";
-    outputFile << "%%BoundingBox: 0 0 " << ROUND(width / rescale)<< " " <<  ROUND(height / rescale) << "\n";
+    outputFile << "%%BoundingBox: 0 0 " << (int) round(width / rescale) << " " << (int) round(height / rescale) << "\n";
     outputFile << "%%Pages: 1" << "\n";
     outputFile << "%%EndComments" << "\n";
     outputFile << "/Times-Roman findfont\n";
-    outputFile << ROUND(10 / rescale) << " scalefont\n";
+    outputFile << (int) round(10 / rescale) << " scalefont\n";
     outputFile << "setfont\n";
 
     // First put all the labels (without scale argument!)
@@ -84,17 +84,17 @@ void ColorHelper::writeSignedToEPS(
     for (int i = 0; i < imgs.size(); i++) {
         xpos = i % col;
         ypos = (row - 1) - i / col;
-        xcoord = xpos * ROUND((xdim + delta) / rescale);
-        ycoord = ypos * ROUND((ydim + delta) / rescale) + ROUND(ydim / rescale);
+        xcoord = xpos * (int) round((xdim + delta) / rescale);
+        ycoord = ypos * (int) round((ydim + delta) / rescale) + (int) round(ydim / rescale);
 
         // Print the label
         outputFile << "newpath\n";
-        outputFile << (int) (xcoord) << " " << (int) (ycoord + ROUND(5 / rescale)) << " moveto\n";
+        outputFile << (int) xcoord << " " << ycoord + (int) round(5 / rescale) << " moveto\n";
         outputFile << "(" << labels[i] << ") show\n";
     }
 
     // one scale statement only!
-    outputFile << ROUND(xdim / rescale) << " " << ROUND(ydim / rescale) << "  scale\n";
+    outputFile << (int) round(xdim / rescale) << " " << (int) round(ydim / rescale) << "  scale\n";
     for (int i = 0; i < imgs.size(); i++) {
         xpos = i % col;
         ypos = (row - 1) - i / col;
@@ -113,7 +113,7 @@ void ColorHelper::writeSignedToEPS(
         long ii = 0;
         for (int y = 0; y < ydim; y++)
         for (int x = 0; x < xdim; x++) {
-            double c = imgs[i](y,x);
+            double c = imgs[i](y, x);
             dRGB myRGB = signedToRedBlue(c, scales[i]);
             outputFile << std::hex << std::setfill('0') << std::setw(2) << (int) myRGB.r * 255;
             outputFile << std::hex << std::setfill('0') << std::setw(2) << (int) myRGB.g * 255;

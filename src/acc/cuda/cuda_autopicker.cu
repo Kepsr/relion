@@ -271,7 +271,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     int Npsi = 360 / basePckr->psi_sampling;
 
-    int min_distance_pix = ROUND(basePckr->min_particle_distance / basePckr->angpix);
+    int min_distance_pix = round(basePckr->min_particle_distance / basePckr->angpix);
     XFLOAT scale = (XFLOAT)basePckr->workSize / (XFLOAT)basePckr->micrograph_size;
 
     // Read in the micrograph

@@ -44,13 +44,13 @@ void makeHelicalSymmetryList(
     std::vector<HelicalSymmetryItem> tmp_list;
 
     if (search_rise) {
-        rise_samplings = ROUND(fabs(rise_max_pix - rise_min_pix) / fabs(rise_step_pix));
+        rise_samplings = round(fabs(rise_max_pix - rise_min_pix) / fabs(rise_step_pix));
     } else {
         rise_min_pix = (rise_min_pix + rise_max_pix) / 2.0;
         rise_samplings = 0;
     }
     if (search_twist) {
-        twist_samplings = ROUND(fabs(twist_max_deg - twist_min_deg) / fabs(twist_step_deg));
+        twist_samplings = round(fabs(twist_max_deg - twist_min_deg) / fabs(twist_step_deg));
     } else {
         twist_min_deg = (twist_min_deg + twist_max_deg) / 2.0;
         twist_samplings = 0;
@@ -1087,9 +1087,9 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
         if (r2 > sphere_radius2_pix)
             continue;
         //xp = x * R(0, 0) + y * R(0, 1);
-        //vec_id = ROUND(xp - x0);
+        //vec_id = round(xp - x0);
         yp = x * R(1, 0) + y * R(1, 1);
-        vec_id = ROUND(yp - y0);
+        vec_id = round(yp - y0);
         if ( (vec_id < 0) || (vec_id >= vec_len) )
             continue;
         pix_list[vec_id]++;
@@ -1191,7 +1191,7 @@ void calcRadialAverage(
         REPORT_ERROR("helix.cpp::calcRadialAverage(): Input 3D MultidimArray has wrong dimensions! (Ndim = " + integerToString(Ndim) + ", Zdim = " + integerToString(Zdim) + ", Ydim = " + integerToString(Ydim) + ", Xdim = " + integerToString(Xdim) + ")");
 
     // Resize and init vectors
-    list_size = ROUND(sqrt(Xdim * Xdim + Ydim * Ydim)) + 2;
+    list_size = round(sqrt(Xdim * Xdim + Ydim * Ydim)) + 2;
     radial_pix_counter_list.resize(list_size);
     radial_avg_val_list.resize(list_size);
     for (ii = 0; ii < list_size; ii++) {
@@ -1202,7 +1202,7 @@ void calcRadialAverage(
     vol = v;
     vol.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
-        dist = ROUND(sqrt(i * i + j * j));
+        dist = round(sqrt(i * i + j * j));
         if (dist < 0 || dist > list_size - 1) continue;
         radial_pix_counter_list[dist] += 1.0;
         radial_avg_val_list[dist]     += A3D_ELEM(vol, k, i, j);
@@ -2783,7 +2783,7 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
     {
         // Randomise
         // 1. Randomise total number of swaps needed
-        nr_swaps = ROUND(rnd_unif (vec_mics.size(), 2. * vec_mics.size()));
+        nr_swaps = round(rnd_unif (vec_mics.size(), 2. * vec_mics.size()));
         // DEBUG
         if (divide_according_to_helical_tube_id)
             std::cout << " Helical tubes= " << vec_mics.size() << ", nr_swaps= " << nr_swaps << std::endl;
@@ -2794,8 +2794,8 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
         {
             int ptr_a, ptr_b;
             std::pair<std::string, int> tmp;
-            ptr_a = ROUND(rnd_unif (0, vec_mics.size()));
-            ptr_b = ROUND(rnd_unif (0, vec_mics.size()));
+            ptr_a = round(rnd_unif (0, vec_mics.size()));
+            ptr_b = round(rnd_unif (0, vec_mics.size()));
             if ( (ptr_a == ptr_b) || (ptr_a < 0 ) || (ptr_b < 0) || (ptr_a >= vec_mics.size()) || (ptr_b >= vec_mics.size()) )
                 continue;
             tmp = vec_mics[ptr_a];
@@ -2980,9 +2980,9 @@ void makeHelicalReference3D(
                         RFLOAT _x, _y, _z, dist, val_old, val_new;
                         int x3, y3, z3;
 
-                        x3 = ROUND(x2) + dx;
-                        y3 = ROUND(y2) + dy;
-                        z3 = ROUND(z2) + dz;
+                        x3 = round(x2) + dx;
+                        y3 = round(y2) + dy;
+                        z3 = round(z2) + dz;
 
                         if ( (x3 < Xmipp::init(box_size)) || (x3 > Xmipp::last(box_size))
                                 || (y3 < Xmipp::init(box_size)) || (y3 > Xmipp::last(box_size))
@@ -3103,11 +3103,10 @@ void makeHelicalReference3DWithPolarity(
                 for (int dy = -particle_radius_max_pix; dy <= particle_radius_max_pix; dy++) {
                     for (int dx = -particle_radius_max_pix; dx <= particle_radius_max_pix; dx++) {
                         RFLOAT _x, _y, _z, dist, val_old, val_new;
-                        int x3, y3, z3;
 
-                        x3 = ROUND(x2) + dx;
-                        y3 = ROUND(y2) + dy;
-                        z3 = ROUND(z2) + dz;
+                        int x3 = round(x2) + dx;
+                        int y3 = round(y2) + dy;
+                        int z3 = round(z2) + dz;
 
                         if (
                             x3 < Xmipp::init(box_size) || x3 > Xmipp::last(box_size) ||
@@ -3161,11 +3160,10 @@ void makeHelicalReference3DWithPolarity(
                 for (int dy = -particle_radius_max_pix / 2.0; dy <= particle_radius_max_pix / 2.0; dy++)
                 for (int dx = -particle_radius_max_pix / 2.0; dx <= particle_radius_max_pix / 2.0; dx++) {
                     RFLOAT _x, _y, _z, dist, val_old, val_new;
-                    int x2, y2, z2;
 
-                    x2 = ROUND(x1 + dx);
-                    y2 = ROUND(y1 + dy);
-                    z2 = ROUND(z1 + dz);
+                    int x2 = round(x1 + dx);
+                    int y2 = round(y1 + dy);
+                    int z2 = round(z1 + dz);
 
                     if (
                         x2 < Xmipp::init(box_size) || x2 > Xmipp::last(box_size) ||
@@ -4390,7 +4388,7 @@ void calculateRadialAvg(MultidimArray<RFLOAT> &v, RFLOAT angpix) {
         rval[ii] = rcount[ii] = 0.0;
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
-        rint = ROUND(sqrt((RFLOAT)(i * i + j * j)));
+        rint = round(sqrt((RFLOAT)(i * i + j * j)));
         if (rint >= size)
             continue;
 
@@ -5311,29 +5309,23 @@ void averageAsymmetricUnits2D(
     FourierTransformer transformer;
     MultidimArray<Complex> Fimg, Faux, Fsum;
 
-
     long int imgno = 0;
     init_progress_bar(MDimgs.numberOfObjects());
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimgs) {
 
-        FileName fn_img;
-        Matrix1D<RFLOAT> in(2), out(2);
+        FileName fn_img       = MDimgs.getValue<FileName>(EMDL::IMAGE_NAME);
+        RFLOAT psi            = MDimgs.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        int optics_group      = MDimgs.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
+        RFLOAT angpix         = obsModel.getPixelSize(optics_group);
+
         Image<RFLOAT> img;
-        RFLOAT psi, angpix;
-        int optics_group;
-
-        fn_img       = MDimgs.getValue<FileName>(EMDL::IMAGE_NAME);
-        psi          = MDimgs.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-        optics_group = MDimgs.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
-        optics_group--;
-        angpix = obsModel.getPixelSize(optics_group);
-
         img.read(fn_img);
         transformer.FourierTransform(img(), Fimg, false);
         Fsum = Fimg; // original image
 
-        //std::cerr << " imgno= " << imgno << " fn_img= " << fn_img << " psi= " << psi << " rise= " << rise  << " angpix= " << angpix << " nr_asu= " << nr_asu << " xsize= " << XSIZE(img()) << std::endl;
+        // std::cerr << " imgno= " << imgno << " fn_img= " << fn_img << " psi= " << psi << " rise= " << rise  << " angpix= " << angpix << " nr_asu= " << nr_asu << " xsize= " << XSIZE(img()) << std::endl;
 
+        Matrix1D<RFLOAT> in(2), out(2);
         for (int i = 2; i <= nr_asu; i++) {
             if (i % 2 == 0) {
                 // one way

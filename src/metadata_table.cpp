@@ -1423,7 +1423,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
             }
             else if (EMDL::isInt(label1)) {
                 myint2 = MD2.getValue<int>(label1);
-                if ( ABS(myint2 - myint1) <= ROUND(eps) ) {
+                if (ABS(myint2 - myint1) <= round(eps)) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
                     MDboth.addObject(MD1.getObject());

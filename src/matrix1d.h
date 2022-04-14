@@ -856,12 +856,11 @@ class Matrix1D {
 
         /** ROUND
          *
-         * Applies a ROUND (look for the nearest larger integer) to each
-         * array element.
+         * Applies round (look for the nearest larger integer) to each array element.
          */
         void selfROUND() {
             for (int i = 0; i < vdim; i++)
-                vdata[i] = ROUND(vdata[i]);
+                vdata[i] = round(vdata[i]);
         }
 
         /** Index for the maximum element.

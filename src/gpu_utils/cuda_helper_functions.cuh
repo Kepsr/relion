@@ -687,7 +687,7 @@ void lowPassFilterMapGPU(
     RFLOAT passLimit = do_highpass ? highpass : lowpass;
 
     // Which resolution shell is the filter?
-    int ires_filter = ROUND(ori_size * angpix / passLimit);
+    int ires_filter = round(ori_size * angpix / passLimit);
     int filter_edge_halfwidth = filter_edge_width / 2;
 
     // Soft-edge: from 1 shell less to one shell more:

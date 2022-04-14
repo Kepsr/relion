@@ -1123,10 +1123,10 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     xcoord = MDresult.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
                     ycoord = MDresult.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
 
-                    diffx = xoff - ROUND(xoff);
-                    diffy = yoff - ROUND(yoff);
-                    xcoord -= ROUND(xoff);
-                    ycoord -= ROUND(yoff);
+                    diffx = xoff - round(xoff);
+                    diffy = yoff - round(yoff);
+                    xcoord -= round(xoff);
+                    ycoord -= round(yoff);
                     xoff = diffx;
                     yoff = diffy;
                     MDresult.setValue(EMDL::IMAGE_COORD_X, xcoord);
@@ -1143,8 +1143,8 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
 
                     if (do_recenter) {
                         zcoord = MDresult.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
-                        diffz = zoff - ROUND(zoff);
-                        zcoord -= ROUND(zoff);
+                        diffz = zoff - round(zoff);
+                        zcoord -= round(zoff);
                         zoff = diffz;
                         MDresult.setValue(EMDL::IMAGE_COORD_Z, zcoord);
                     }

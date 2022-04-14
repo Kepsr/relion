@@ -303,9 +303,9 @@ class particle_reposition_parameters {
                         Image<RFLOAT> Ipart;
                         Ipart().resize(Mpart_mic);
                         Ipart().initConstant(mean_mic); // set areas outside the micrograph to average of micrograph (just like in preprocessing)
-                        Imic_in().xinit = -ROUND(xcoord);
-                        Imic_in().yinit = -ROUND(ycoord);
-                        Imic_in().zinit = -ROUND(zcoord);
+                        Imic_in().xinit = -round(xcoord);
+                        Imic_in().yinit = -round(ycoord);
+                        Imic_in().zinit = -round(zcoord);
                         FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
                             // check the particles do not go off the side
                             int kp = k - STARTINGZ(Imic_in());
@@ -341,15 +341,15 @@ class particle_reposition_parameters {
                     }
 
                     // Reposition Mpart_mic back into the micrograph
-                    Imic_out().xinit = -ROUND(xcoord);
-                    Imic_out().yinit = -ROUND(ycoord);
-                    Imic_out().zinit = -ROUND(zcoord);
-                    Imic_sum.xinit = -ROUND(xcoord);
-                    Imic_sum.yinit = -ROUND(ycoord);
-                    Imic_sum.zinit = -ROUND(zcoord);
+                    Imic_out().xinit = -round(xcoord);
+                    Imic_out().yinit = -round(ycoord);
+                    Imic_out().zinit = -round(zcoord);
+                    Imic_sum.xinit = -round(xcoord);
+                    Imic_sum.yinit = -round(ycoord);
+                    Imic_sum.zinit = -round(zcoord);
                     radius = optimiser.particle_diameter / (2.0 * mic_pixel_size);
                     FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
-                        long int idx = ROUND(sqrt(k * k + i * i + j * j));
+                        long int idx = round(sqrt(k * k + i * i + j * j));
                         if (idx < radius) {
                             // check the particles do not go off the side
                             int kp = k - STARTINGZ(Imic_sum);

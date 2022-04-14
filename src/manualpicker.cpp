@@ -98,7 +98,7 @@ void cb_viewmic(Fl_Widget* w, void* data) {
         decomposePipelineSymlinkName(global_fn_mics[mymic], fn_pre, fn_jobnr, fn_post);
         FileName fn_coord = global_fn_odir + fn_post.withoutExtension() + "_" + global_pickname + ".star";
 
-        int rad = ROUND(global_particle_diameter / (2.0 * global_angpix));
+        int rad = round(global_particle_diameter / (2.0 * global_angpix));
         std::string command;
         command =  "relion_display --pick  --i " + global_fn_mics[mymic];
         command += "  --coords "         + fn_coord;

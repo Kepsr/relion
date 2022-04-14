@@ -1669,13 +1669,13 @@ class MultidimArray {
         T& operator()(const Matrix1D<RFLOAT>& v) const {
             switch (VEC_XSIZE(v)) {
                 case 1:
-                    return A1D_ELEM((*this), ROUND(XX(v)));
+                return A1D_ELEM((*this), round(XX(v)));
                 case 2:
-                    return A2D_ELEM((*this), ROUND(YY(v)), ROUND(XX(v)));
+                return A2D_ELEM((*this), round(YY(v)), round(XX(v)));
                 case 3:
-                    return A3D_ELEM((*this), ROUND(ZZ(v)), ROUND(YY(v)), ROUND(XX(v)));
+                return A3D_ELEM((*this), round(ZZ(v)), round(YY(v)), round(XX(v)));
                 default:
-                    REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
+                REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
             }
         }
 
@@ -3670,7 +3670,7 @@ class MultidimArray {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-                *ptr = ROUND(*ptr);
+                *ptr = round(*ptr);
             }
         }
 

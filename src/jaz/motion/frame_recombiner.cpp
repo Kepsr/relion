@@ -299,10 +299,10 @@ void FrameRecombiner::process(
             RFLOAT xcoord = mdtOut.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);
             RFLOAT ycoord = mdtOut.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, p);
 			// std::cout << " xcoord = " << xcoord << " ycoord = " << ycoord << std::endl;;
-            xcoord -= ROUND(xoff);
-            ycoord -= ROUND(yoff);
-            xoff   -= ROUND(xoff);
-            yoff   -= ROUND(yoff);
+            xcoord -= round(xoff);
+            ycoord -= round(yoff);
+            xoff   -= round(xoff);
+            yoff   -= round(yoff);
             mdtOut.setValue(EMDL::IMAGE_COORD_X, xcoord, p);
             mdtOut.setValue(EMDL::IMAGE_COORD_Y, ycoord, p);
 

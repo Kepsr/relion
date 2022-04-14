@@ -179,8 +179,8 @@ class stack_create_parameters {
 
                         RFLOAT xoff, yoff, psi;
                         if (do_apply_trans_only) {
-                            xoff = ROUND(ori_xoff);
-                            yoff = ROUND(ori_yoff);
+                            xoff = round(ori_xoff);
+                            yoff = round(ori_yoff);
                             psi = 0.0;
                         } else {
                             xoff = ori_xoff;

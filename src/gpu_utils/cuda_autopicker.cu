@@ -55,14 +55,14 @@ AutoPickerCuda::AutoPickerCuda(AutoPicker *basePicker, int dev_id, const char * 
     HANDLE_ERROR(cudaGetDeviceCount(&devCount));
 
     if (dev_id >= devCount) {
-        //std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
+        // std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id + 1 << ") which is higher than the available number of devices=" << devCount << std::endl;
         CRITICAL(ERR_GPUID);
     } else {
         HANDLE_ERROR(cudaSetDevice(dev_id));
     }
 };
 
-AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char * timing_fnm):
+AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char *timing_fnm):
     basePckr(basePicker),
     allocator(new CudaCustomAllocator(0, 1)),
     micTransformer(0, allocator),
@@ -73,6 +73,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
     cudaTransformer2(0, allocator) {
 
     node = basePicker->getNode();
+    /// BUG: class "MpiNode" has no member "isMaster"
     basePicker->verb = node->isMaster() ? 1 : 0;
 
     cudaProjectors.resize(basePckr->Mrefs.size());
@@ -85,7 +86,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
     HANDLE_ERROR(cudaGetDeviceCount(&devCount));
 
     if (dev_id >= devCount) {
-        //std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
+        // std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id + 1 << ") which is higher than the available number of devices=" << devCount << std::endl;
         CRITICAL(ERR_GPUID);
     } else {
         HANDLE_ERROR(cudaSetDevice(dev_id));
@@ -277,11 +278,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     RFLOAT sum_ref_under_circ_mask, sum_ref2_under_circ_mask;
     int my_skip_side = basePckr->autopick_skip_side + basePckr->particle_size / 2;
-    CTF ctf;
 
     int Npsi = 360 / basePckr->psi_sampling;
 
-    int min_distance_pix = ROUND(basePckr->min_particle_distance / basePckr->angpix);
+    int min_distance_pix = round(basePckr->min_particle_distance / basePckr->angpix);
     XFLOAT scale = (XFLOAT) basePckr->workSize / (XFLOAT) basePckr->micrograph_size;
 
     // Read in the micrograph
@@ -391,6 +391,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(basePckr->MDmic) {
             FileName fn_tmp = basePckr->MDmic.getValue(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
+                CTF ctf;
                 ctf.read(basePckr->MDmic, basePckr->MDmic);
                 Fctf.resize(basePckr->workSize,basePckr->workSize / 2 + 1);
                 ctf.getFftwImage(
@@ -622,10 +623,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }
     }
 
-    CudaGlobalPtr< XFLOAT >  d_ctf(Fctf.nzyxdim(), allocator);
+    CudaGlobalPtr<XFLOAT> d_ctf(Fctf.nzyxdim(), allocator);
     if (basePckr->do_ctf) {
         for (int i = 0; i < d_ctf.size; i++)
-            d_ctf[i]=Fctf.data[i];
+            d_ctf[i] = Fctf.data[i];
         d_ctf.put_on_device();
     }
 

@@ -248,43 +248,40 @@ void scale3DMatrix(const Matrix1D< RFLOAT >& sc, Matrix2D< RFLOAT > &m,
  * @endcode
  */
 template<typename T>
-void applyGeometry(const MultidimArray<T>& V1,
-                   MultidimArray<T>& V2,
-                   const Matrix2D< RFLOAT > A,
-                   bool inv,
-                   bool wrap,
-                   T outside = 0)
-{
+void applyGeometry(
+    const MultidimArray<T>& V1,
+    MultidimArray<T>& V2,
+    const Matrix2D<RFLOAT> A,
+    bool inv, bool wrap,
+    T outside = 0
+) {
 
     if (&V1 == &V2)
         REPORT_ERROR("ApplyGeometry: Input array cannot be the same as output array");
 
-    if ( V1.getDim()==2 && ((MAT_XSIZE(A) != 3) || (MAT_YSIZE(A) != 3)) )
+    if (V1.getDim() == 2 && (MAT_XSIZE(A) != 3 || MAT_YSIZE(A) != 3))
         REPORT_ERROR("ApplyGeometry: 2D transformation matrix is not 3x3");
 
-    if ( V1.getDim()==3 && ((MAT_XSIZE(A) != 4) || (MAT_YSIZE(A) != 4)) )
+    if (V1.getDim() == 3 && (MAT_XSIZE(A) != 4 || MAT_YSIZE(A) != 4))
         REPORT_ERROR("ApplyGeometry: 3D transformation matrix is not 4x4");
 
-    if (A.isIdentity())
-    {
-        V2=V1;
+    if (A.isIdentity()) {
+        V2 = V1;
         return;
     }
 
-    if (XSIZE(V1) == 0)
-    {
+    if (XSIZE(V1) == 0) {
         V2.clear();
         return;
     }
 
     Matrix2D<RFLOAT> Ainv;
-    const Matrix2D<RFLOAT> * Aptr=&A;
-    if (!inv)
-    {
+    const Matrix2D<RFLOAT> *Aptr = &A;
+    if (!inv) {
         Ainv = A.inv();
-        Aptr=&Ainv;
+        Aptr = &Ainv;
     }
-    const Matrix2D<RFLOAT> &Aref=*Aptr;
+    const Matrix2D<RFLOAT> &Aref = *Aptr;
 
     // For scalings the output matrix is resized outside to the final
     // size instead of being resized inside the routine with the
@@ -292,8 +289,7 @@ void applyGeometry(const MultidimArray<T>& V1,
     if (XSIZE(V2) == 0)
         V2.resize(V1);
 
-    if (V1.getDim() == 2)
-    {
+    if (V1.getDim() == 2) {
         // 2D transformation
 
         int m1, n1, m2, n2;
@@ -304,10 +300,10 @@ void applyGeometry(const MultidimArray<T>& V1,
         int Xdim, Ydim;
 
         // Find center and limits of image
-        cen_y  = (int)(YSIZE(V2) / 2);
-        cen_x  = (int)(XSIZE(V2) / 2);
-        cen_yp = (int)(YSIZE(V1) / 2);
-        cen_xp = (int)(XSIZE(V1) / 2);
+        cen_y  = YSIZE(V2) / 2;
+        cen_x  = XSIZE(V2) / 2;
+        cen_yp = YSIZE(V1) / 2;
+        cen_xp = XSIZE(V1) / 2;
         minxp  = -cen_xp;
         minyp  = -cen_yp;
         maxxp  = XSIZE(V1) - cen_xp - 1;
@@ -320,16 +316,15 @@ void applyGeometry(const MultidimArray<T>& V1,
         // the original image, make an interpolation with them and put this value
         // at the output pixel
 
-#ifdef DEBUG_APPLYGEO
+        #ifdef DEBUG_APPLYGEO
         std::cout << "A\n" << Aref << std::endl
         << "(cen_x ,cen_y )=(" << cen_x  << "," << cen_y  << ")\n"
         << "(cen_xp,cen_yp)=(" << cen_xp << "," << cen_yp << ")\n"
         << "(min_xp,min_yp)=(" << minxp  << "," << minyp  << ")\n"
         << "(max_xp,max_yp)=(" << maxxp  << "," << maxyp  << ")\n";
-#endif
+        #endif
 
-        for (int i = 0; i < YSIZE(V2); i++)
-        {
+        for (int i = 0; i < YSIZE(V2); i++) {
             // Calculate position of the beginning of the row in the output image
             x = -cen_x;
             y = i - cen_y;
@@ -695,22 +690,20 @@ void selfApplyGeometry(MultidimArray<T>& V1,
  * @endcode
  */
 template<typename T>
-void rotate(const MultidimArray<T>& V1,
-            MultidimArray<T>& V2,
-            RFLOAT ang, char axis = 'Z',
-            bool wrap = DONT_WRAP, T outside = 0)
-{
-    Matrix2D< RFLOAT > tmp;
-    if (V1.getDim()==2)
-    {
-        rotation2DMatrix(ang,tmp);
-    }
-    else if (V1.getDim()==3)
-    {
+void rotate(
+    const MultidimArray<T> &V1,
+    MultidimArray<T> &V2,
+    RFLOAT ang, char axis = 'Z',
+    bool wrap = DONT_WRAP, T outside = 0
+) {
+    Matrix2D<RFLOAT> tmp;
+           if (V1.getDim() == 2) {
+        rotation2DMatrix(ang, tmp);
+    } else if (V1.getDim() == 3) {
         rotation3DMatrix(ang, axis, tmp);
-    }
-    else
+    } else {
         REPORT_ERROR("rotate ERROR: rotate only valid for 2D or 3D arrays");
+    }
 
     applyGeometry(V1, V2, tmp, IS_NOT_INV, wrap, outside);
 }
@@ -721,10 +714,11 @@ void rotate(const MultidimArray<T>& V1,
  * The same as the previous function, but input array is overwritten
  */
 template<typename T>
-void selfRotate(MultidimArray<T>& V1,
-                RFLOAT ang, char axis = 'Z',
-                bool wrap = DONT_WRAP, T outside = 0)
-{
+void selfRotate(
+    MultidimArray<T>& V1,
+    RFLOAT ang, char axis = 'Z',
+    bool wrap = DONT_WRAP, T outside = 0
+) {
     MultidimArray<T> aux = V1;
     rotate(aux, V1, ang, axis, wrap, outside);
 }
@@ -741,18 +735,20 @@ void selfRotate(MultidimArray<T>& V1,
  * @endcode
  */
 template<typename T>
-void translate(const MultidimArray<T> &V1,
-               MultidimArray<T> &V2,
-               const Matrix1D< RFLOAT >& v,
-               bool wrap = WRAP, T outside = 0)
-{
-    Matrix2D< RFLOAT > tmp;
-    if (V1.getDim()==2)
+void translate(
+    const MultidimArray<T> &V1,
+    MultidimArray<T> &V2,
+    const Matrix1D<RFLOAT> &v,
+    bool wrap = WRAP, T outside = 0
+) {
+    Matrix2D<RFLOAT> tmp;
+           if (V1.getDim() == 2) {
         translation2DMatrix(v, tmp);
-    else if (V1.getDim()==3)
+    } else if (V1.getDim() == 3) {
         translation3DMatrix(v, tmp);
-    else
+    } else {
         REPORT_ERROR("translate ERROR: translate only valid for 2D or 3D arrays");
+    }
 
     applyGeometry(V1, V2, tmp, IS_NOT_INV, wrap, outside);
 }
@@ -763,10 +759,11 @@ void translate(const MultidimArray<T> &V1,
  * The same as the previous function, but input array is overwritten
  */
 template<typename T>
-void selfTranslate(MultidimArray<T>& V1,
-                   const Matrix1D< RFLOAT >& v,
-                   bool wrap = WRAP, T outside = 0)
-{
+void selfTranslate(
+    MultidimArray<T>& V1,
+    const Matrix1D< RFLOAT >& v,
+    bool wrap = WRAP, T outside = 0
+) {
     MultidimArray<T> aux = V1;
     translate(aux, V1, v, wrap, outside);
 }
@@ -778,21 +775,21 @@ void selfTranslate(MultidimArray<T>& V1,
  * between 0 and 1.
  */
 template<typename T>
-void translateCenterOfMassToCenter(const MultidimArray<T> &V1,
-                                   MultidimArray<T> &V2,
-                                   bool wrap = WRAP,
-								   bool verb = false)
-{
+void translateCenterOfMassToCenter(
+    const MultidimArray<T> &V1,
+    MultidimArray<T> &V2,
+    bool wrap = WRAP,
+    bool verb = false
+) {
     V2 = V1;
     V2.setXmippOrigin();
     Matrix1D< RFLOAT > center;
     V2.centerOfMass(center);
-    if (verb)
-    {
+    if (verb) {
     	std::cout << " Center of mass: x= " << XX(center) << " y= " << YY(center) << " z= " << ZZ(center) << std::endl;
     }
     center *= -1;
-    translate(V1, V2, center, wrap, (RFLOAT)0.);
+    translate(V1, V2, center, wrap, 0.0);
 }
 
 /** Translate center of mass to center
@@ -801,10 +798,10 @@ void translateCenterOfMassToCenter(const MultidimArray<T> &V1,
  * The same as the previous function, but input array is overwritten
  */
 template<typename T>
-void selfTranslateCenterOfMassToCenter(MultidimArray<T> &V1,
-                                       bool wrap = WRAP,
-									   bool verb = false)
-{
+void selfTranslateCenterOfMassToCenter(
+    MultidimArray<T> &V1,
+    bool wrap = WRAP, bool verb = false
+) {
     MultidimArray<T> aux = V1;
     translateCenterOfMassToCenter(aux, V1, wrap, verb);
 }
@@ -821,31 +818,29 @@ void selfTranslateCenterOfMassToCenter(MultidimArray<T> &V1,
  * @endcode
  */
 template<typename T>
-void scaleToSize(const MultidimArray<T> &V1,
-                 MultidimArray<T> &V2,
-                 int Xdim, int Ydim, int Zdim = 1)
-{
+void scaleToSize(
+    const MultidimArray<T> &V1,
+    MultidimArray<T> &V2,
+    int Xdim, int Ydim, int Zdim = 1
+) {
 
     Matrix2D< RFLOAT > tmp;
-    if (V1.getDim()==2)
-    {
+    if (V1.getDim() == 2) {
         tmp.initIdentity(3);
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) XSIZE(V1);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) YSIZE(V1);
         V2.resize(1, 1, Ydim, Xdim);
-    }
-    else if (V1.getDim()==3)
-    {
+    } else if (V1.getDim() == 3) {
         tmp.initIdentity(4);
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) XSIZE(V1);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) YSIZE(V1);
         tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) ZSIZE(V1);
         V2.resize(1, Zdim, Ydim, Xdim);
-    }
-    else
+    } else {
         REPORT_ERROR("scaleToSize ERROR: scaleToSize only valid for 2D or 3D arrays");
+    }
 
-    applyGeometry(V1, V2, tmp, IS_NOT_INV, WRAP, (T)0);
+    applyGeometry(V1, V2, tmp, IS_NOT_INV, WRAP, (T) 0);
 }
 
 /** Scales to a new size.
@@ -854,9 +849,10 @@ void scaleToSize(const MultidimArray<T> &V1,
  * The same as the previous function, but input array is overwritten
  */
 template<typename T>
-void selfScaleToSize(MultidimArray<T> &V1,
-                     int Xdim, int Ydim, int Zdim = 1)
-{
+void selfScaleToSize(
+    MultidimArray<T> &V1,
+    int Xdim, int Ydim, int Zdim = 1
+) {
     MultidimArray<T> aux = V1;
     scaleToSize(aux, V1, Xdim, Ydim, Zdim);
 }
@@ -882,12 +878,13 @@ void selfScaleToSize(MultidimArray<T> &V1,
  * - and so on.
  */
 template<typename T>
-void radialAverage(const MultidimArray< T >& m,
-                   Matrix1D< int >& center_of_rot,
-                   MultidimArray< T >& radial_mean,
-                   MultidimArray< int >& radial_count,
-                   const bool& rounding = false)
-{
+void radialAverage(
+    const MultidimArray<T> &m,
+    Matrix1D<int> &center_of_rot,
+    MultidimArray<T> &radial_mean,
+    MultidimArray<int> &radial_count,
+    const bool &rounding = false
+) {
     Matrix1D< RFLOAT > idx(3);
 
     // If center_of_rot was written for 2D image
@@ -937,18 +934,13 @@ void radialAverage(const MultidimArray< T >& m,
 
     // Perform the radial sum and count pixels that contribute to every
     // distance
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(m)
-    {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(m) {
         ZZ(idx) = k - ZZ(center_of_rot);
         YY(idx) = i - YY(center_of_rot);
         XX(idx) = j - XX(center_of_rot);
 
         // Determine distance to the center
-        int distance;
-        if (rounding)
-            distance = (int) ROUND(idx.module());
-        else
-            distance = (int) floor(idx.module());
+        int distance = rounding ? round(idx.module()) : floor(idx.module());
 
         // Sum te value to the pixels with the same distance
         radial_mean(distance) += A3D_ELEM(m, k, i, j);

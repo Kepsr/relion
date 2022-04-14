@@ -26,20 +26,18 @@ static pthread_mutex_t lib_lbfgs_mutex = PTHREAD_MUTEX_INITIALIZER;
 std::vector<double> LBFGS::optimize(
     const std::vector<double> &initial,
     const DifferentiableOptimization &opt,
-    bool verbose, int max_iters, double epsilon)
-{
+    bool verbose, int max_iters, double epsilon
+) {
     const int N = initial.size();
 
     lbfgsfloatval_t fx;
     lbfgsfloatval_t* m_x = lbfgs_malloc(N);
 
-    if (m_x == NULL)
-    {
+    if (m_x == NULL) {
         REPORT_ERROR("LBFGS::optimize: Failed to allocate a memory block for variables.\n");
     }
 
-    for (int i = 0; i < N; i++)
-    {
+    for (int i = 0; i < N; i++) {
         m_x[i] = initial[i];
     }
 
@@ -54,25 +52,22 @@ std::vector<double> LBFGS::optimize(
     lbfgs_parameter_init(&param);
 
     param.max_iterations = max_iters;
-	param.epsilon = epsilon;
-	
-    pthread_mutex_lock(&lib_lbfgs_mutex);
-    {
+    param.epsilon = epsilon;
+    
+    pthread_mutex_lock(&lib_lbfgs_mutex); {
         ret = lbfgs(N, m_x, &fx, evaluate, progress, &adapter, &param);
     }
     pthread_mutex_unlock(&lib_lbfgs_mutex);
 
-    if (verbose)
-    {
+    if (verbose) {
         std::cout << "L-BFGS optimization terminated with status code = " << translateError(ret) << "\n";
-		std::cout << "  fx = " << fx << "\n";
-		
+        std::cout << "  fx = " << fx << "\n";
+
     }
 
     std::vector<double> out(N);
 
-    for (int i = 0; i < N; i++)
-    {
+    for (int i = 0; i < N; i++) {
         out[i] = m_x[i];
     }
 
@@ -83,8 +78,7 @@ std::vector<double> LBFGS::optimize(
     return out;
 }
 
-void LBFGS::test()
-{
+void LBFGS::test() {
     RosenbrockBanana rb;
     std::vector<double> initial(2);
     initial[0] = 3.0;
@@ -92,55 +86,53 @@ void LBFGS::test()
 
     std::vector<double> x0 = optimize(initial, rb, false);
 
-	std::cout << "should be close to 1, 1: " << x0[0] << ", " << x0[1] << "\n";
+    std::cout << "should be close to 1, 1: " << x0[0] << ", " << x0[1] << "\n";
 }
 
-std::string LBFGS::translateError(int ret)
-{
-	switch (ret)
-	{
-		case LBFGS_SUCCESS: return "LBFGS_SUCCESS";
-		case LBFGS_STOP: return "LBFGS_STOP";
-		case LBFGS_ALREADY_MINIMIZED: return "LBFGS_ALREADY_MINIMIZED";
-		case LBFGSERR_UNKNOWNERROR: return "LBFGSERR_UNKNOWNERROR";
-		case LBFGSERR_LOGICERROR: return "LBFGSERR_LOGICERROR";
-		case LBFGSERR_OUTOFMEMORY: return "LBFGSERR_OUTOFMEMORY";
-		case LBFGSERR_CANCELED: return "LBFGSERR_CANCELED";
-		case LBFGSERR_INVALID_N: return "LBFGSERR_INVALID_N";
-		case LBFGSERR_INVALID_N_SSE: return "LBFGSERR_INVALID_N_SSE";
-		case LBFGSERR_INVALID_X_SSE: return "LBFGSERR_INVALID_X_SSE";
-		case LBFGSERR_INVALID_EPSILON: return "LBFGSERR_INVALID_EPSILON";
-		case LBFGSERR_INVALID_TESTPERIOD: return "LBFGSERR_INVALID_TESTPERIOD";
-		case LBFGSERR_INVALID_DELTA: return "LBFGSERR_INVALID_DELTA";
-		case LBFGSERR_INVALID_LINESEARCH: return "LBFGSERR_INVALID_LINESEARCH";
-		case LBFGSERR_INVALID_MINSTEP: return "LBFGSERR_INVALID_MINSTEP";
-		case LBFGSERR_INVALID_MAXSTEP: return "LBFGSERR_INVALID_MAXSTEP";
-		case LBFGSERR_INVALID_FTOL: return "LBFGSERR_INVALID_FTOL";
-		case LBFGSERR_INVALID_WOLFE: return "LBFGSERR_INVALID_WOLFE";
-		case LBFGSERR_INVALID_GTOL: return "LBFGSERR_INVALID_GTOL";
-		case LBFGSERR_INVALID_XTOL: return "LBFGSERR_INVALID_XTOL";
-		case LBFGSERR_INVALID_MAXLINESEARCH: return "LBFGSERR_INVALID_MAXLINESEARCH";
-		case LBFGSERR_INVALID_ORTHANTWISE: return "LBFGSERR_INVALID_ORTHANTWISE";
-		case LBFGSERR_INVALID_ORTHANTWISE_START: return "LBFGSERR_INVALID_ORTHANTWISE_START";
-		case LBFGSERR_INVALID_ORTHANTWISE_END: return "LBFGSERR_INVALID_ORTHANTWISE_END";
-		case LBFGSERR_OUTOFINTERVAL: return "LBFGSERR_OUTOFINTERVAL";
-		case LBFGSERR_INCORRECT_TMINMAX: return "LBFGSERR_INCORRECT_TMINMAX";
-		case LBFGSERR_ROUNDING_ERROR: return "LBFGSERR_ROUNDING_ERROR";
-		case LBFGSERR_MINIMUMSTEP: return "LBFGSERR_MINIMUMSTEP";
-		case LBFGSERR_MAXIMUMSTEP: return "LBFGSERR_MAXIMUMSTEP";
-		case LBFGSERR_MAXIMUMLINESEARCH: return "LBFGSERR_MAXIMUMLINESEARCH";
-		case LBFGSERR_MAXIMUMITERATION: return "LBFGSERR_MAXIMUMITERATION";
-		case LBFGSERR_WIDTHTOOSMALL: return "LBFGSERR_WIDTHTOOSMALL";
-		case LBFGSERR_INVALIDPARAMETERS: return "LBFGSERR_INVALIDPARAMETERS";
-		case LBFGSERR_INCREASEGRADIENT: return "LBFGSERR_INCREASEGRADIENT";
-		default: return "uninterpretable error";
-	}
+std::string LBFGS::translateError(int ret) {
+    switch (ret) {
+        case LBFGS_SUCCESS: return "LBFGS_SUCCESS";
+        case LBFGS_STOP: return "LBFGS_STOP";
+        case LBFGS_ALREADY_MINIMIZED: return "LBFGS_ALREADY_MINIMIZED";
+        case LBFGSERR_UNKNOWNERROR: return "LBFGSERR_UNKNOWNERROR";
+        case LBFGSERR_LOGICERROR: return "LBFGSERR_LOGICERROR";
+        case LBFGSERR_OUTOFMEMORY: return "LBFGSERR_OUTOFMEMORY";
+        case LBFGSERR_CANCELED: return "LBFGSERR_CANCELED";
+        case LBFGSERR_INVALID_N: return "LBFGSERR_INVALID_N";
+        case LBFGSERR_INVALID_N_SSE: return "LBFGSERR_INVALID_N_SSE";
+        case LBFGSERR_INVALID_X_SSE: return "LBFGSERR_INVALID_X_SSE";
+        case LBFGSERR_INVALID_EPSILON: return "LBFGSERR_INVALID_EPSILON";
+        case LBFGSERR_INVALID_TESTPERIOD: return "LBFGSERR_INVALID_TESTPERIOD";
+        case LBFGSERR_INVALID_DELTA: return "LBFGSERR_INVALID_DELTA";
+        case LBFGSERR_INVALID_LINESEARCH: return "LBFGSERR_INVALID_LINESEARCH";
+        case LBFGSERR_INVALID_MINSTEP: return "LBFGSERR_INVALID_MINSTEP";
+        case LBFGSERR_INVALID_MAXSTEP: return "LBFGSERR_INVALID_MAXSTEP";
+        case LBFGSERR_INVALID_FTOL: return "LBFGSERR_INVALID_FTOL";
+        case LBFGSERR_INVALID_WOLFE: return "LBFGSERR_INVALID_WOLFE";
+        case LBFGSERR_INVALID_GTOL: return "LBFGSERR_INVALID_GTOL";
+        case LBFGSERR_INVALID_XTOL: return "LBFGSERR_INVALID_XTOL";
+        case LBFGSERR_INVALID_MAXLINESEARCH: return "LBFGSERR_INVALID_MAXLINESEARCH";
+        case LBFGSERR_INVALID_ORTHANTWISE: return "LBFGSERR_INVALID_ORTHANTWISE";
+        case LBFGSERR_INVALID_ORTHANTWISE_START: return "LBFGSERR_INVALID_ORTHANTWISE_START";
+        case LBFGSERR_INVALID_ORTHANTWISE_END: return "LBFGSERR_INVALID_ORTHANTWISE_END";
+        case LBFGSERR_OUTOFINTERVAL: return "LBFGSERR_OUTOFINTERVAL";
+        case LBFGSERR_INCORRECT_TMINMAX: return "LBFGSERR_INCORRECT_TMINMAX";
+        case LBFGSERR_ROUNDING_ERROR: return "LBFGSERR_ROUNDING_ERROR";
+        case LBFGSERR_MINIMUMSTEP: return "LBFGSERR_MINIMUMSTEP";
+        case LBFGSERR_MAXIMUMSTEP: return "LBFGSERR_MAXIMUMSTEP";
+        case LBFGSERR_MAXIMUMLINESEARCH: return "LBFGSERR_MAXIMUMLINESEARCH";
+        case LBFGSERR_MAXIMUMITERATION: return "LBFGSERR_MAXIMUMITERATION";
+        case LBFGSERR_WIDTHTOOSMALL: return "LBFGSERR_WIDTHTOOSMALL";
+        case LBFGSERR_INVALIDPARAMETERS: return "LBFGSERR_INVALIDPARAMETERS";
+        case LBFGSERR_INCREASEGRADIENT: return "LBFGSERR_INCREASEGRADIENT";
+        default: return "uninterpretable error";
+    }
 }
 
 lbfgsfloatval_t LBFGS::evaluate(
     void *instance, const lbfgsfloatval_t *x, lbfgsfloatval_t *g,
-    const int n, const lbfgsfloatval_t step)
-{
+    const int n, const lbfgsfloatval_t step
+) {
     LibLbfgsAdapter* adapter = (LibLbfgsAdapter*) instance;
 
     return adapter->evaluate(x, g, n, step);
@@ -149,31 +141,23 @@ lbfgsfloatval_t LBFGS::evaluate(
 int LBFGS::progress(
     void *instance, const lbfgsfloatval_t *x, const lbfgsfloatval_t *g,
     const lbfgsfloatval_t fx, const lbfgsfloatval_t xnorm, const lbfgsfloatval_t gnorm,
-    const lbfgsfloatval_t step, int n, int k, int ls)
-{
+    const lbfgsfloatval_t step, int n, int k, int ls
+) {
     LibLbfgsAdapter* adapter = (LibLbfgsAdapter*) instance;
 
     return adapter->progress(x, g, fx, xnorm, gnorm, step, n, k, ls);
 }
 
 LBFGS::LibLbfgsAdapter::LibLbfgsAdapter(
-        const DifferentiableOptimization &opt,
-        void *tempStorage, int n, bool verbose)
-:   opt(opt),
-    n(n),
-    verbose(verbose),
-    x_vec(n),
-    grad_vec(n),
-    tempStorage(tempStorage)
-{    
-}
+    const DifferentiableOptimization &opt,
+    void *tempStorage, int n, bool verbose
+): opt(opt), n(n), verbose(verbose), x_vec(n), grad_vec(n), tempStorage(tempStorage) {}
 
 lbfgsfloatval_t LBFGS::LibLbfgsAdapter::evaluate(
-        const lbfgsfloatval_t *x, lbfgsfloatval_t *g,
-        const int n, const lbfgsfloatval_t step)
-{
-    for (int i = 0; i < n; i++)
-    {
+    const lbfgsfloatval_t *x, lbfgsfloatval_t *g,
+    const int n, const lbfgsfloatval_t step
+) {
+    for (int i = 0; i < n; i++) {
         x_vec[i] = x[i];
     }
 
@@ -181,8 +165,7 @@ lbfgsfloatval_t LBFGS::LibLbfgsAdapter::evaluate(
 
     opt.grad(x_vec, grad_vec, tempStorage);
 
-    for (int i = 0; i < n; i++)
-    {
+    for (int i = 0; i < n; i++) {
         g[i] = grad_vec[i];
     }
 
@@ -193,10 +176,9 @@ int LBFGS::LibLbfgsAdapter::progress(
     const lbfgsfloatval_t *x, const lbfgsfloatval_t *g,
     const lbfgsfloatval_t fx, const lbfgsfloatval_t xnorm,
     const lbfgsfloatval_t gnorm, const lbfgsfloatval_t step,
-    int n, int k, int ls)
-{
-    if (verbose)
-    {
+    int n, int k, int ls
+) {
+    if (verbose) {
         std::cout << k << ": " << fx << "\n";
     }
 

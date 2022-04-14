@@ -1501,10 +1501,10 @@ int singleViewerCanvas::handle(int ev) {
             }
             RFLOAT step = (boxes[0]->maxval - boxes[0]->minval) / 255.0;
             RFLOAT dval = ival * step + boxes[0]->minval;
-            int ysc = ROUND(ry / boxes[0]->scale);
-            int xsc = ROUND(rx / boxes[0]->scale);
-            int yscp = ysc - ROUND((boxes[0]->ysize_data / (2.0 * boxes[0]->scale)));
-            int xscp = xsc - ROUND((boxes[0]->xsize_data / (2.0 * boxes[0]->scale)));
+            int ysc = round(ry / boxes[0]->scale);
+            int xsc = round(rx / boxes[0]->scale);
+            int yscp = ysc - round(boxes[0]->ysize_data / (2.0 * boxes[0]->scale));
+            int xscp = xsc - round(boxes[0]->xsize_data / (2.0 * boxes[0]->scale));
             std::cout <<" Image value at (" << xsc << "," << ysc << ") or (" << xscp << "," << yscp << ")~= " << dval <<std::endl;
         }
         return 1;
@@ -1572,8 +1572,7 @@ void singleViewerCanvas::printHelp() {
 }
 
 /*
-int popupSetContrastWindow::fill()
-{
+int popupSetContrastWindow::fill() {
     color(GUI_BACKGROUND_COLOR);
 
     int width = 435;
@@ -1597,7 +1596,7 @@ int popupSetContrastWindow::fill()
     maxval = new Fl_Input(x2, y, inputwidth, height, "White value:");
     maxval->value("0");
     maxval->color(GUI_INPUT_COLOR);
-    y += ROUND(ystep);
+    y += round(ystep);
 
     Fl_Button * applybutton = new Fl_Button(width-120, y, 70, 30, "Apply!");
     applybutton->color(GUI_RUNBUTTON_COLOR);
@@ -1652,11 +1651,11 @@ void pickerViewerCanvas::draw() {
                     colval = std::min(colval, biggest_color_value);
                     unsigned char red, blue;
                     if (do_blue_to_red) {
-                        red  = ROUND(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));
-                        blue = ROUND(255.0 * (biggest_color_value - colval)  / (biggest_color_value - smallest_color_value));
+                        red  = round(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));
+                        blue = round(255.0 * (biggest_color_value - colval)  / (biggest_color_value - smallest_color_value));
                     } else {
-                        blue = ROUND(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));
-                        red  = ROUND(255.0 * (biggest_color_value - colval)  / (biggest_color_value - smallest_color_value));
+                        blue = round(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));
+                        red  = round(255.0 * (biggest_color_value - colval)  / (biggest_color_value - smallest_color_value));
                     }
                     fl_color(red, 0, blue);
                 }
@@ -1666,8 +1665,8 @@ void pickerViewerCanvas::draw() {
         }
 
         int xcoori, ycoori;
-        xcoori = ROUND(xcoor * coord_scale * scale) + scroll->x() - scroll->hscrollbar.value();
-        ycoori = ROUND(ycoor * coord_scale * scale) + scroll->y() - scroll->scrollbar.value();
+        xcoori = round(xcoor * coord_scale * scale) + scroll->x() - scroll->hscrollbar.value();
+        ycoori = round(ycoor * coord_scale * scale) + scroll->y() - scroll->scrollbar.value();
         fl_circle(xcoori, ycoori, particle_radius);
 
         if (do_startend) {
@@ -1698,8 +1697,8 @@ int pickerViewerCanvas::handle(int ev) {
         RFLOAT scale = boxes[0]->scale;
         int xc = (int) Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
         int yc = (int) Fl::event_y() - scroll->y() + scroll->scrollbar.value();
-        RFLOAT xcoor = (RFLOAT) ROUND(xc / (coord_scale * scale));
-        RFLOAT ycoor = (RFLOAT) ROUND(yc / (coord_scale * scale));
+        RFLOAT xcoor = round(xc / (coord_scale * scale));
+        RFLOAT ycoor = round(yc / (coord_scale * scale));
         RFLOAT rad2 = particle_radius * particle_radius / (coord_scale * coord_scale * scale * scale);
         if (button == FL_LEFT_MOUSE && !with_shift && !with_control) {
             // Left mouse for picking
@@ -1974,10 +1973,10 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
     mydisp->buffer(textbuff);
     int x = 170, y = 15, ystep = 27, height = 25,  inputwidth = 50, inputwidth2 = 30;
     int x2 = width - inputwidth - 50;
-    y += ROUND(1.5 * ystep);
+    y += round(1.5 * ystep);
 
     // General box
-    Fl_Box *box1 = new Fl_Box(15, y - ROUND(0.25 * ystep), width - 15, ROUND(2.5 * ystep), "");
+    Fl_Box *box1 = new Fl_Box(15, y - round(0.25 * ystep), width - 15, round(2.5 * ystep), "");
     box1->color(GUI_BACKGROUND_COLOR);
     box1->box(FL_DOWN_BOX);
 
@@ -2008,12 +2007,12 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
     colour_scheme_choice->picked(colour_scheme_choice->menu());
     colour_scheme_choice->color(GUI_INPUT_COLOR);
 
-    y += ROUND(1.75 * ystep);
+    y += round(1.75 * ystep);
 
     if (is_star) {
 
         // STAR box
-        Fl_Box *box2 = new Fl_Box(15, y - ROUND(0.25 * ystep), width - 15, ROUND(3.5 * ystep), "");
+        Fl_Box *box2 = new Fl_Box(15, y - round(0.25 * ystep), width - 15, round(3.5 * ystep), "");
         box2->color(GUI_BACKGROUND_COLOR);
         box2->box(FL_DOWN_BOX);
 
@@ -2039,7 +2038,7 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
         apply_orient_button->color(GUI_INPUT_COLOR);
         read_whole_stack_button = new Fl_Check_Button(x + 160, y, inputwidth, height, "Read whole stacks?");
         read_whole_stack_button->color(GUI_INPUT_COLOR);
-        y += ROUND(1.75 * ystep);
+        y += round(1.75 * ystep);
 
     }
 
@@ -2048,9 +2047,9 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
         // Multiview box
         Fl_Box *box3;
         if (do_allow_save && fn_parts != "") {
-            box3 = new Fl_Box(15, y - ROUND(0.25 * ystep), width - 15, ROUND(2.5 * ystep), "");
+            box3 = new Fl_Box(15, y - round(0.25 * ystep), width - 15, round(2.5 * ystep), "");
         } else {
-            box3 = new Fl_Box(15, y - ROUND(0.25 * ystep), width - 15, ROUND(1.5 * ystep), "");
+            box3 = new Fl_Box(15, y - round(0.25 * ystep), width - 15, round(1.5 * ystep), "");
         }
 
         box3->color(GUI_BACKGROUND_COLOR);
@@ -2077,15 +2076,15 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
             max_parts_per_class_input = new Fl_Input(x2p, y, 40, height, "Max nr selected parts per class:");
             max_parts_per_class_input->value("-1");
             max_parts_per_class_input->color(GUI_INPUT_COLOR);
-            y += ROUND(1.75 * ystep);
+            y += round(1.75 * ystep);
         } else {
-            y += ROUND(1.75 * ystep);
+            y += round(1.75 * ystep);
         }
 
     } else {
         // is_single
         // singleview box
-        Fl_Box *box3 = new Fl_Box(15, y - ROUND(0.25 * ystep), width - 15, ROUND(1.5 * ystep), "");
+        Fl_Box *box3 = new Fl_Box(15, y - round(0.25 * ystep), width - 15, round(1.5 * ystep), "");
         box3->color(GUI_BACKGROUND_COLOR);
         box3->box(FL_DOWN_BOX);
 
@@ -2101,7 +2100,7 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
         angpix_input->color(GUI_INPUT_COLOR);
         angpix_input->value("1");
 
-        y += ROUND(1.75 * ystep);
+        y += round(1.75 * ystep);
     }
 
     // Display button
@@ -2593,7 +2592,7 @@ void Displayer::run() {
         basisViewerWindow win(CEIL(scale * XSIZE(img())), CEIL(scale * YSIZE(img())), fn_in.c_str());
         if (fn_coords == "")
             fn_coords = fn_in.withoutExtension() + "_coords.star";
-        win.fillPickerViewerCanvas(img(), minval, maxval, sigma_contrast, scale, coord_scale, ROUND(scale * particle_radius), do_pick_startend, fn_coords,
+        win.fillPickerViewerCanvas(img(), minval, maxval, sigma_contrast, scale, coord_scale, round(scale * particle_radius), do_pick_startend, fn_coords,
             fn_color, fn_in, color_label, color_blue_value, color_red_value);
     } else if (fn_in.isStarFile()) {
         if (fn_in.contains("_model.star")) {

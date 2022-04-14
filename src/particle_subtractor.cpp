@@ -659,8 +659,8 @@ void ParticleSubtractor::subtractOneParticle(
         // Don't write out subtracted image,
         // only accumulate power of the signal (in Fsubtrahend) divided by the power of the noise (now in Fimg)
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fimg) {
-            long int idx = ROUND(sqrt(kp * kp + ip * ip + jp * jp));
-            int idx_remapped = ROUND(remap_image_sizes * idx);
+            long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+            int idx_remapped = round(remap_image_sizes * idx);
             if (idx_remapped < opt.mymodel.ori_size / 2 + 1) {
                 RFLOAT S2 = norm( dAkij(Fsubtrahend, k, i, j) );
                 RFLOAT N2 = norm( dAkij(Fimg, k, i, j) );

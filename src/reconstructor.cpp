@@ -409,7 +409,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
         // Make coloured noise image
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-            int ires = std::min(ROUND(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), myBoxSize / 2);
+            int ires = std::min((int) round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), myBoxSize / 2);
             // at freqs higher than Nyquist: use last sigma2 value
 
             RFLOAT sigma = sqrt(DIRECT_A1D_ELEM(model.sigma2_noise[my_mic_id], ires));
@@ -700,7 +700,7 @@ void Reconstructor::applyCTFPandCTFQ(
                 CenterFFTbySign(Fapp);
                 transformer.inverseFourierTransform(Fapp, Iapp);
 
-                softMaskOutsideMap(Iapp, ROUND(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
+                softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 
                 // Re-box to a smaller size if necessary....
                 if (newbox > 0 && newbox < YSIZE(Fin)) {
