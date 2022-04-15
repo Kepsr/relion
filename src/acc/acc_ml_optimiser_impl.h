@@ -601,7 +601,7 @@ void getFourierTransformsAndCtfs(
             spectrumAndXi2.accInit(0);
             spectrumAndXi2.streamSync();
 
-            int gridSize = CEIL((float) accMLO->transformer1.fouriers.getSize() / (float) POWERCLASS_BLOCK_SIZE);
+            int gridSize = ceil((float) accMLO->transformer1.fouriers.getSize() / (float) POWERCLASS_BLOCK_SIZE);
             if (accMLO->dataIs3D) {
                 AccUtilities::powerClass<true>(
                     gridSize, POWERCLASS_BLOCK_SIZE,

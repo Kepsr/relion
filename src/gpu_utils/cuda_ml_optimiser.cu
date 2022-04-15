@@ -41,15 +41,14 @@ void getFourierTransformsAndCtfs(
 ) {
         GTIC(cudaMLO->timer, "getFourierTransformsAndCtfs");
         //cudaMLO->timer.cuda_gpu_tic("getFourierTransformsAndCtfs");
-#ifdef TIMING
+    #ifdef TIMING
     if (op.my_ori_particle == baseMLO->exp_my_first_ori_particle)
         baseMLO->timer.tic(baseMLO->TIMING_ESP_FT);
-#endif
+    #endif
     //FourierTransformer transformer;
     CUSTOM_ALLOCATOR_REGION_NAME("GFTCTF");
 
-    for (int ipart = 0; ipart < baseMLO->mydata.ori_particles[my_ori_particle].particles_id.size(); ipart++)
-    {
+    for (int ipart = 0; ipart < baseMLO->mydata.ori_particles[my_ori_particle].particles_id.size(); ipart++) {
         CTIC(cudaMLO->timer, "init");
         FileName fn_img;
         Image<RFLOAT> img, rec_img;
@@ -659,7 +658,7 @@ void getFourierTransformsAndCtfs(
             spectrumAndXi2.device_init(0);
             spectrumAndXi2.streamSync();
 
-            dim3 gridSize = CEIL((float) cudaMLO->transformer1.fouriers.getSize() / (float) POWERCLASS_BLOCK_SIZE);
+            dim3 gridSize = ceil((float) cudaMLO->transformer1.fouriers.getSize() / (float) POWERCLASS_BLOCK_SIZE);
             if (cudaMLO->dataIs3D) {
                 cuda_kernel_powerClass<true><<<gridSize, POWERCLASS_BLOCK_SIZE, 0, 0>>>(
                     ~cudaMLO->transformer1.fouriers,

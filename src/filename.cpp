@@ -222,12 +222,11 @@ std::string FileName::getExtension() const
 }
 
 // Init random .............................................................
-void FileName::initRandom(int length)
-{
+void FileName::initRandom(int length) {
     randomize_random_generator();
     *this = "";
     for (int i = 0; i < length; i++)
-        *this += 'a' + FLOOR(rnd_unif(0, 26));
+        *this += 'a' + floor(rnd_unif(0, 26));
 }
 
 // Add at beginning ........................................................

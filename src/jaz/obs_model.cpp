@@ -876,7 +876,7 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
 
             const int sh = s / 2 + 1;
             mtfImage[optGroup][s] = Image<RFLOAT>(sh, s);
-            Image<RFLOAT>& img = mtfImage[optGroup][s];
+            Image<RFLOAT> &img = mtfImage[optGroup][s];
             const double as = angpix[optGroup] * boxSizes[optGroup];
 
             for (int y = 0; y < s;  y++)
@@ -885,15 +885,15 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
                 const double yy = y < sh ? y / as : (y - s) / as; // logical Y-coordinate in 1/A
 
                 RFLOAT res = sqrt(xx * xx + yy * yy); // get resolution in 1/Ang
-                int i_0 = FLOOR(res / res_per_elem);
+                int i_0 = floor(res / res_per_elem);
                 RFLOAT mtf;
-                // check boundaries of the array
-                if (i_0 >= MULTIDIM_SIZE(mtf_value) - 1) {
-                    mtf = DIRECT_A1D_ELEM(mtf_value,  MULTIDIM_SIZE(mtf_value) - 1);
-                } else if (i_0 <= 0) {
+                if (i_0 <= 0) {
+                    // Check array boundaries
                     mtf = DIRECT_A1D_ELEM(mtf_value, 0);
+                } else if (i_0 >= MULTIDIM_SIZE(mtf_value) - 1) {
+                    mtf = DIRECT_A1D_ELEM(mtf_value,  MULTIDIM_SIZE(mtf_value) - 1);
                 } else {
-                    // linear interpolation:
+                    // Linear interpolation
                     RFLOAT x_0 = DIRECT_A1D_ELEM(mtf_resol, i_0);
                     RFLOAT y_0 = DIRECT_A1D_ELEM(mtf_value, i_0);
                     RFLOAT x_1 = DIRECT_A1D_ELEM(mtf_resol, i_0 + 1);
@@ -918,9 +918,8 @@ const Image<RFLOAT>& ObservationModel::getAverageMtfImage(int s) {
             for (int i = 1; i < mtfImage.size(); i++) {
                 avgMtfImage[s].data += getMtfImage(i, s).data;
             }
-            avgMtfImage[s].data /= (RFLOAT)mtfImage.size();
+            avgMtfImage[s].data /= (RFLOAT) mtfImage.size();
         }
-
     }
 
     return avgMtfImage[s];

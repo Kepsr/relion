@@ -595,9 +595,9 @@ class star_handler_parameters {
         if (nr_split < 0 && size_split < 0) {
             REPORT_ERROR("ERROR: nr_split and size_split are both zero. Set at least one of them to be positive.");
         } else if (nr_split < 0 && size_split > 0) {
-            nr_split = CEIL(1. * n_obj / size_split);
+            nr_split = ceil((double) n_obj / size_split);
         } else if (nr_split > 0 && size_split < 0) {
-            size_split = CEIL(1. * n_obj / nr_split);
+            size_split = ceil((double) n_obj / nr_split);
         }
 
         std::vector<MetaDataTable > MDouts;
@@ -617,12 +617,11 @@ class star_handler_parameters {
         // Sjors 19 Jun 2019: write out a star file with the output nodes
         MetaDataTable MDnodes;
         MDnodes.setName("output_nodes");
-        FileName fnt0;
-        fnt0 = integerToString(nr_split);
+        FileName fnt0 = integerToString(nr_split);
         for (int isplit = 0; isplit < nr_split; isplit ++) {
             FileName fnt = fn_out.insertBeforeExtension("_split"+integerToString(isplit+1));
             write_check_ignore_optics(MDouts[isplit], fnt, MD.getName());
-            std::cout << " Written: " <<fnt << " with " << MDouts[isplit].numberOfObjects() << " objects." << std::endl;
+            std::cout << " Written: " << fnt << " with " << MDouts[isplit].numberOfObjects() << " objects." << std::endl;
 
             MDnodes.addObject();
             MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt);
@@ -636,7 +635,7 @@ class star_handler_parameters {
 
         // write out the star file with the output nodes
         FileName mydir = fn_out.beforeLastOf("/");
-        if (mydir == "") mydir = ".";
+        if (mydir == "") { mydir = "."; }
         MDnodes.write(mydir + "/" + RELION_OUTPUT_NODES);
 
     }

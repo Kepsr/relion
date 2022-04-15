@@ -148,8 +148,8 @@ void BackProjector::backproject2Dto3D(
         RFLOAT d = sqrt(discr) / AtA_xx;
         RFLOAT q = - AtA_xy * y / AtA_xx;
 
-        int first_x = CEIL(q - d);
-        int last_x = FLOOR(q + d);
+        int first_x = ceil(q - d);
+        int last_x = floor(q + d);
 
         if (first_x < first_allowed_x) first_x = first_allowed_x;
         if (last_x > sh - 1) last_x = sh - 1;
@@ -221,16 +221,16 @@ void BackProjector::backproject2Dto3D(
                 // Trilinear interpolation (with physical coords)
                 // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
                 // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-                int x0 = FLOOR(xp);
+                int x0 = floor(xp);
                 RFLOAT fx = xp - x0;
                 int x1 = x0 + 1;
 
-                int y0 = FLOOR(yp);
+                int y0 = floor(yp);
                 RFLOAT fy = yp - y0;
                 y0 -=  STARTINGY(data);
                 int y1 = y0 + 1;
 
-                int z0 = FLOOR(zp);
+                int z0 = floor(zp);
                 RFLOAT fz = zp - z0;
                 z0 -= STARTINGZ(data);
                 int z1 = z0 + 1;
@@ -365,11 +365,11 @@ void BackProjector::backproject1Dto2D(
             // Trilinear interpolation (with physical coords)
             // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
             // In that way use DIRECT_A2D_ELEM, rather than A2D_ELEM
-            const int x0 = FLOOR(xp);
+            const int x0 = floor(xp);
             const RFLOAT fx = xp - x0;
             const int x1 = x0 + 1;
 
-            int y0 = FLOOR(yp);
+            int y0 = floor(yp);
             const RFLOAT fy = yp - y0;
             y0 -=  STARTINGY(data);
             const int y1 = y0 + 1;
@@ -502,8 +502,8 @@ void BackProjector::backrotate2D(
         RFLOAT d = sqrt(discr) / AtA_xx;
         RFLOAT q = - AtA_xy * y / AtA_xx;
 
-        int first_x = CEIL(q - d);
-        int last_x = FLOOR(q + d);
+        int first_x = ceil(q - d);
+        int last_x = floor(q + d);
 
         if (first_x < first_allowed_x) first_x = first_allowed_x;
         if (last_x > sh - 1) last_x = sh - 1;
@@ -543,11 +543,11 @@ void BackProjector::backrotate2D(
                 // Trilinear interpolation (with physical coords)
                 // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
                 // In that way use DIRECT_A2D_ELEM, rather than A2D_ELEM
-                const int x0 = FLOOR(xp);
+                const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
                 const int x1 = x0 + 1;
 
-                int y0 = FLOOR(yp);
+                int y0 = floor(yp);
                 const RFLOAT fy = yp - y0;
                 y0 -=  STARTINGY(data);
                 const int y1 = y0 + 1;
@@ -651,7 +651,7 @@ void BackProjector::backrotate3D(
             // avoid negative square root
             if (yz2 > r_max_src_2) continue;
 
-            const int x_max = FLOOR(sqrt(r_max_src_2 - yz2));
+            const int x_max = floor(sqrt(r_max_src_2 - yz2));
 
             for (int x = x_min; x <= x_max; x++) {
                 // Get logical coordinates in the 3D map
@@ -690,16 +690,16 @@ void BackProjector::backrotate3D(
                     // Trilinear interpolation (with physical coords)
                     // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-                    const int x0 = FLOOR(xp);
+                    const int x0 = floor(xp);
                     const RFLOAT fx = xp - x0;
                     const int x1 = x0 + 1;
 
-                    int y0 = FLOOR(yp);
+                    int y0 = floor(yp);
                     const RFLOAT fy = yp - y0;
                     y0 -=  STARTINGY(data);
                     const int y1 = y0 + 1;
 
-                    int z0 = FLOOR(zp);
+                    int z0 = floor(zp);
                     const RFLOAT fz = zp - z0;
                     z0 -=  STARTINGZ(data);
                     const int z1 = z0 + 1;
@@ -1364,7 +1364,7 @@ void BackProjector::reconstruct(
             // We have to use round_max_r2 = round((r_max * padding_factor)^2).
             // e.g. k = 0, i = 7, j = 28, max_r2 = 841, r_max = 16, padding_factor = 18.
             if (r2 < round_max_r2) {
-                const int ires = FLOOR(sqrt((RFLOAT)r2) / padding_factor);
+                const int ires = floor(sqrt((RFLOAT)r2) / padding_factor);
                 if (ires >= XSIZE(radavg_weight)) {
                     std::cerr << " k= " << k << " i= " << i << " j= " << j << std::endl;
                     std::cerr << " ires= " << ires << " XSIZE(radavg_weight)= " << XSIZE(radavg_weight) << std::endl;
@@ -1393,7 +1393,7 @@ void BackProjector::reconstruct(
         // perform std::max on all weight elements, and do division of data/weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
             const int r2 = kp * kp + ip * ip + jp * jp;
-            const int ires = FLOOR(sqrt((RFLOAT) r2) / padding_factor);
+            const int ires = floor(sqrt((RFLOAT) r2) / padding_factor);
             const RFLOAT weight =  std::max(
                 DIRECT_A3D_ELEM(Fweight, k, i, j), 
                 DIRECT_A1D_ELEM(radavg_weight, ires < r_max ? ires : r_max - 1)
@@ -1770,16 +1770,16 @@ void BackProjector::applyHelicalSymmetry(
                     // Trilinear interpolation (with physical coords)
                     // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-                    x0 = FLOOR(xp);
+                    x0 = floor(xp);
                     fx = xp - x0;
                     x1 = x0 + 1;
 
-                    y0 = FLOOR(yp);
+                    y0 = floor(yp);
                     fy = yp - y0;
                     y0 -=  STARTINGY(data);
                     y1 = y0 + 1;
 
-                    z0 = FLOOR(zp);
+                    z0 = floor(zp);
                     fz = zp - z0;
                     z0 -= STARTINGZ(data);
                     z1 = z0 + 1;
@@ -1918,16 +1918,16 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     // Trilinear interpolation (with physical coords)
                     // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-                    int x0 = FLOOR(xp);
+                    int x0 = floor(xp);
                     RFLOAT fx = xp - x0;
                     int x1 = x0 + 1;
 
-                    int y0 = FLOOR(yp);
+                    int y0 = floor(yp);
                     RFLOAT fy = yp - y0;
                     y0 -=  STARTINGY(data);
                     int y1 = y0 + 1;
 
-                    int z0 = FLOOR(zp);
+                    int z0 = floor(zp);
                     RFLOAT fz = zp - z0;
                     z0 -= STARTINGZ(data);
                     int z1 = z0 + 1;

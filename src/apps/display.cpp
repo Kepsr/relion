@@ -30,30 +30,23 @@
 #include <src/time.h>
 #include <src/displayer.h>
 
-int main(int argc, char *argv[])
-{
-	Displayer prm;
+int main(int argc, char *argv[]) {
+    Displayer prm;
 
-	try
-	{
-		prm.read(argc, argv);
+    try {
+        prm.read(argc, argv);
 
-		if (prm.do_gui)
-		{
-			prm.runGui();
-		}
-		else
-		{
-			prm.initialise();
-			prm.run();
-		}
-	}
-	catch (RelionError XE)
-	{
-		//prm.usage();
-		std::cerr << XE;
-		return RELION_EXIT_FAILURE;
-	}
+        if (prm.do_gui) {
+            prm.runGui();
+        } else {
+            prm.initialise();
+            prm.run();
+        }
+    } catch (RelionError XE) {
+        // prm.usage();
+        std::cerr << XE;
+        return RELION_EXIT_FAILURE;
+    }
 
-	return RELION_EXIT_SUCCESS;
+    return RELION_EXIT_SUCCESS;
 }

@@ -1206,7 +1206,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         RFLOAT ps_angpix = !early_binning ? angpix : angpix * bin_factor;
         int nx_needed = XSIZE(PS_sum());
         if (ps_angpix < target_pixel_size) {
-            nx_needed = CEIL(ps_size_square * ps_angpix / target_pixel_size);
+            nx_needed = ceil(ps_size_square * ps_angpix / target_pixel_size);
             nx_needed += nx_needed % 2;
             ps_angpix = XSIZE(PS_sum()) * ps_angpix / nx_needed;
         }
@@ -1636,8 +1636,8 @@ void MotioncorrRunner::realSpaceInterpolation(
                     model->getShiftAt(z, x, y, x_fitted, y_fitted);
                     x_fitted = ix - x_fitted; y_fitted = iy - y_fitted;
 
-                    int x0 = FLOOR(x_fitted);
-                    int y0 = FLOOR(y_fitted);
+                    int x0 = floor(x_fitted);
+                    int y0 = floor(y_fitted);
                     const int x1 = x0 + 1;
                     const int y1 = y0 + 1;
 
@@ -1723,14 +1723,14 @@ void MotioncorrRunner::realSpaceInterpolation_ThirdOrderPolynomial(
                 #endif
                 x_fitted = ix - x_fitted; y_fitted = iy - y_fitted;
 
-                int x0 = FLOOR(x_fitted);
-                int y0 = FLOOR(y_fitted);
+                int x0 = floor(x_fitted);
+                int y0 = floor(y_fitted);
                 const int x1 = x0 + 1;
                 const int y1 = y0 + 1;
 
-                // some conditions might seem redundant but necessary when overflow happened
-                if (x0 < 0 || x1 < 0) { x0 = 0; valid = false; }
-                if (y0 < 0 || y1 < 0) { y0 = 0; valid = false; }
+                // Some conditions might seem redundant, but they are necessary when overflow happens.
+                if (x0 < 0   || x1 < 0)       { x0 = 0;      valid = false; }
+                if (y0 < 0   || y1 < 0)       { y0 = 0;      valid = false; }
                 if (x1 >= nx || x0 >= nx - 1) { x0 = nx - 1; valid = false; }
                 if (y1 >= ny || y0 >= ny - 1) { y0 = ny - 1; valid = false; }
                 if (!valid) {

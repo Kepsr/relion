@@ -187,10 +187,10 @@ int sgn_nozero(T val) {
 #define ROUND(x) ((x) > 0 ? (int) ((x) + 0.5) : (int) ((x) - 0.5))
 #endif
 
-/** Round to next larger integer
+/** Round up
  *
- * Valid for any kind of numbers (int, short, float, etc). The result is of type
- * integer.
+ * Valid for any numeric type (int, short, float, etc). 
+ * Return an int.
  *
  * @code
  * a = CEIL(-0.8); // a = 0
@@ -201,10 +201,10 @@ int sgn_nozero(T val) {
  */
 #define CEIL(x) ((x) == (int) (x) ? (int) (x) : ((x) > 0 ? (int) ((x) + 1) : (int) (x)))
 
-/** Round to next smaller integer
+/** Round down
  *
- * Valid for any kind of numbers (int, short, float, etc). The result is of type
- * integer.
+ * Valid for any numeric type (int, short, float, etc).
+ * Return an int.
  *
  * @code
  * a = FLOOR(-0.8); // a = -1
@@ -406,31 +406,31 @@ static void PRINT_VERSION_INFO() {
     std::cout << "RELION version: " << g_RELION_VERSION << " "
 
     #if defined(DEBUG) || defined(DEBUG_CUDA)
-        << "(debug-build) "
+    << "(debug-build) "
     #endif
 
     << std::endl << "Precision: BASE="
 
     #ifdef RELION_SINGLE_PRECISION
-        << "single"
+    << "single"
     #else
-        << "double"
+    << "double"
     #endif
 
     #if defined(CUDA) || defined(ALTCPU)
 
         #ifdef CUDA
-            << ", CUDA-ACC="
+        << ", CUDA-ACC="
         #endif
 
         #ifdef ALTCPU
-            << ", VECTOR-ACC="
+        << ", VECTOR-ACC="
         #endif
 
         #ifdef ACC_DOUBLE_PRECISION
-            << "double "
+        << "double "
         #else
-            << "single "
+        << "single "
         #endif
 
     #endif

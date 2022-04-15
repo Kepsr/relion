@@ -604,7 +604,7 @@ class image_handler_parameters {
                 pngOut.fill(gravis::bRGB(0));
 
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iout()) {
-                    const unsigned char val = FLOOR((DIRECT_MULTIDIM_ELEM(Iout(), n) - this_minval) / step);
+                    const unsigned char val = floor((DIRECT_MULTIDIM_ELEM(Iout(), n) - this_minval) / step);
                     unsigned char r, g, b;
                     greyToRGB(color_scheme, val, r, g, b);
                     pngOut[n] = gravis::bRGB(r, g, b);

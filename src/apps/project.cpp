@@ -193,7 +193,7 @@ class project_parameters {
         }
 
         // Now that we have the size of the volume, check r_max
-        r_max = maxres < 0.0 ? XSIZE(vol()) : CEIL(XSIZE(vol()) * angpix / maxres);
+        r_max = maxres < 0.0 ? XSIZE(vol()) : ceil(XSIZE(vol()) * angpix / maxres);
 
         // Set right size of F2D and initialize to zero
         if (do_3d_rot) {

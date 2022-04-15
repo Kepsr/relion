@@ -60,12 +60,12 @@ template <typename T> class Matrix2D;
 /** @name Vectors speed up macros
  *
  * This macros are defined to allow high speed in critical parts of your program.
- * They shouldn't be used systematically 
- * as usually there is no checking on the correctness of the operation you are performing. 
- * Speed comes from three facts: 
+ * They shouldn't be used systematically
+ * as usually there is no checking on the correctness of the operation you are performing.
+ * Speed comes from three facts:
  * 1. They are macros and no function call is performed
  * (although most critical functions are inline functions).
- * 2. There is no checking on the correctness of the operation 
+ * 2. There is no checking on the correctness of the operation
  * (it could be wrong and you are not warned of it).
  * 3. Destination vectors are not returned,
  * saving time in the copy constructor and in the creation/destruction of temporary vectors.
@@ -772,7 +772,7 @@ class Matrix1D {
 
         /** Negation
          *
-         * It is used to build arithmetic expressions. 
+         * It is used to build arithmetic expressions.
          * You can make a minus of anything as long as it is correct semantically.
          *
          * @code
@@ -789,15 +789,15 @@ class Matrix1D {
 
         /** Vector by matrix
          *
-         * Algebraic vector by matrix multiplication. 
+         * Algebraic vector by matrix multiplication.
          * This function is actually implemented in xmippMatrices2D.
          */
         Matrix1D<T> operator * (const Matrix2D<T>& M);
 
         /** Vector element access
          *
-         * Returns the value of a vector logical position. 
-         * In our example we could access from v(-2) to v(2). 
+         * Returns the value of a vector logical position.
+         * In our example we could access from v(-2) to v(2).
          * The elements can be used either by value or by reference.
          *
          * @code
@@ -838,25 +838,25 @@ class Matrix1D {
 
         /** CEILING
          *
-         * Applies a CEILING (least greater integer) to each array element.
+         * Round each array element up.
          */
         void selfCEIL() {
             for (int i = 0; i < vdim; i++)
-                vdata[i] = CEIL(vdata[i]);
+                vdata[i] = ceil(vdata[i]);
         }
 
         /** FLOOR
          *
-         * Applies a FLOOR (greatest lesser integer) to each array element.
+         * Round each array element down.
          */
         void selfFLOOR() {
             for (int i = 0; i < vdim; i++)
-                vdata[i] = FLOOR(vdata[i]);
+                vdata[i] = floor(vdata[i]);
         }
 
         /** ROUND
          *
-         * Applies round (look for the nearest larger integer) to each array element.
+         * Round each array element.
          */
         void selfROUND() {
             for (int i = 0; i < vdim; i++)
@@ -901,7 +901,7 @@ class Matrix1D {
 
         /** Algebraic transpose of vector
          *
-         * You can use the transpose in as complex expressions as you like. 
+         * You can use the transpose in as complex expressions as you like.
          * The original vector is not changed.
          *
          * @code

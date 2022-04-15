@@ -179,7 +179,7 @@ class align_symmetry {
         }
 
         // Now that we have the size of the volume, check r_max
-        r_max = maxres < 0.0 ? boxsize : CEIL(boxsize * work_angpix / maxres);
+        r_max = maxres < 0.0 ? boxsize : ceil(boxsize * work_angpix / maxres);
 
         // Set right size of F2D and initialize to zero
         rotated.reshape(vol_work());

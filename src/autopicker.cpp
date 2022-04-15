@@ -423,7 +423,7 @@ void AutoPicker::initialise() {
             int my_ori_size = XSIZE(Istk());
             Projector projector(my_ori_size, TRILINEAR, padding);
             MultidimArray<RFLOAT> dummy;
-               int lowpass_size = 2 * CEIL(my_ori_size * angpix_ref / lowpass);
+               int lowpass_size = 2 * ceil(my_ori_size * angpix_ref / lowpass);
             projector.computeFourierTransformMap(Istk(), dummy, lowpass_size);
             MultidimArray<RFLOAT> Mref(my_ori_size, my_ori_size);
             MultidimArray<Complex> Fref;
@@ -1560,14 +1560,8 @@ void AutoPicker::pickCCFPeaks(
     Mrec.setXmippOrigin();
     // Sort the peaks from the weakest to the strongest
     for (int new_id = 0; new_id < ccf_peak_list.size(); new_id++) {
-        int x, y, peak_r, old_id;
-        RFLOAT dist2;
         RFLOAT peak_r2 = ccf_peak_list[new_id].r * ccf_peak_list[new_id].r;
-        if (ccf_peak_list[new_id].r > 0.0) {
-            peak_r = CEIL(ccf_peak_list[new_id].r);
-        } else {
-            peak_r = -1.0;
-        }
+        int peak_r = ccf_peak_list[new_id].r > 0.0 ? ceil(ccf_peak_list[new_id].r) : -1;
 
         // Remove peaks with too small/big radii!
         if (peak_r <= 1 || peak_r > particle_diameter_pix / 2.0) {
@@ -1576,12 +1570,11 @@ void AutoPicker::pickCCFPeaks(
         }
         for (int dx = -peak_r; dx <= peak_r; dx++)
         for (int dy = -peak_r; dy <= peak_r; dy++) {
-            dist2 = (RFLOAT)(dx * dx + dy * dy);
-            if (dist2 > peak_r2)
+            if ((RFLOAT) (dx * dx + dy * dy) > peak_r2)
                 continue;
 
-            x = dx + round(ccf_peak_list[new_id].x);
-            y = dy + round(ccf_peak_list[new_id].y);
+            int x = dx + round(ccf_peak_list[new_id].x);
+            int y = dy + round(ccf_peak_list[new_id].y);
 
             // Out of range
             if (
@@ -1591,7 +1584,7 @@ void AutoPicker::pickCCFPeaks(
                 y > (Xmipp::last(new_micrograph_ysize) - skip_side - 1)
             ) continue;
 
-            old_id = A2D_ELEM(Mrec, y, x);
+            int old_id = A2D_ELEM(Mrec, y, x);
             if (old_id >= 0)
                 ccf_peak_list[old_id].r = -1.0;
             A2D_ELEM(Mrec, y, x) = new_id;
@@ -2086,7 +2079,7 @@ void AutoPicker::extractHelicalTubes(
                 dist_total = sqrt(dx * dx + dy * dy);
 
                 nr_segments_float = (dist_left + dist_total) / interbox_distance_pix;
-                nr_segments_int = FLOOR(nr_segments_float);
+                nr_segments_int = floor(nr_segments_float);
                 if (nr_segments_int >= 1) {
                     for (int iseg = 1; iseg <= nr_segments_int; iseg++) {
                         dist = (RFLOAT) iseg * interbox_distance_pix - dist_left;

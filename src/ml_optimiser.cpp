@@ -2919,7 +2919,7 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb) {
 
     if (myverb > 0) {
         // Calculate number of sampled hidden variables:
-        int nr_ang_steps = CEIL(PI * particle_diameter * mymodel.current_resolution);
+        int nr_ang_steps = ceil(PI * particle_diameter * mymodel.current_resolution);
         RFLOAT myresol_angstep = 360.0 / nr_ang_steps;
         std::cout << " CurrentResolution= " << 1.0 / mymodel.current_resolution << " Angstroms, which requires orientationSampling of at least " << myresol_angstep
                    << " degrees for a particle of diameter " << particle_diameter << " Angstroms" << std::endl;
@@ -4312,7 +4312,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
 
         image_full_size[optics_group] = my_image_size;
         // Remap from model size to mysize, and keep even!
-        image_current_size[optics_group] = 2 * CEIL(0.5 * remap_sizes * mymodel.current_size);
+        image_current_size[optics_group] = 2 * ceil(0.5 * remap_sizes * mymodel.current_size);
         // Current size can never become bigger than original image size for this optics_group!
         image_current_size[optics_group] = std::min(my_image_size, image_current_size[optics_group]);
 
@@ -4328,7 +4328,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
             RFLOAT keepsafe_factor = mymodel.ref_dim == 3 ? 1.2 : 1.5;
             RFLOAT coarse_resolution = rotated_distance / keepsafe_factor;
             // Note coarse_size should be even-valued!
-            image_coarse_size[optics_group] = 2 * CEIL(remap_sizes * mymodel.pixel_size * mymodel.ori_size / coarse_resolution);
+            image_coarse_size[optics_group] = 2 * ceil(remap_sizes * mymodel.pixel_size * mymodel.ori_size / coarse_resolution);
             // Coarse size can never be larger than max_coarse_size
             image_coarse_size[optics_group] = std::min(my_max_coarse_size, image_coarse_size[optics_group]);
         } else {
@@ -7859,7 +7859,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
     // For SGD: onyl update initial angular sampling after the sgd_ini_iter have passed
     if (do_sgd) {
         if (iter > sgd_ini_iter) {
-            RFLOAT min_sampling = 360.0 / CEIL(PI * particle_diameter * mymodel.current_resolution);
+            RFLOAT min_sampling = 360.0 / ceil(PI * particle_diameter * mymodel.current_resolution);
             RFLOAT old_rottilt_step = sampling.getAngularSampling(adaptive_oversampling);
             if (old_rottilt_step > min_sampling) {
                 has_fine_enough_angular_sampling = false;
@@ -7890,7 +7890,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
 
             // If doing CC first iteration, there will not be a acc_rot yet: use minimum sampling based on resolution instead
             RFLOAT my_min_sampling = iter == 1 && do_firstiter_cc ? 
-                360.0 / CEIL(PI * particle_diameter * mymodel.current_resolution) : 
+                360.0 / ceil(PI * particle_diameter * mymodel.current_resolution) : 
                 acc_rot;
 
             // 3D classification
@@ -7964,7 +7964,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
 
         // If the angular accuracy and the necessary angular step for the current resolution is finer than the current angular step, make it finer.
         // But don't go to local search until it stabilises or look at change in angles?
-        int nr_ang_steps = CEIL(PI * particle_diameter * mymodel.current_resolution);
+        int nr_ang_steps = ceil(PI * particle_diameter * mymodel.current_resolution);
         RFLOAT myresol_angstep = 360.0 / nr_ang_steps;
         // But don't go down to local searches too early, i.e. at last exhaustive sampling first stabilise resolution
         bool do_proceed_resolution = auto_resolution_based_angles && myresol_angstep < old_rottilt_step && sampling.healpix_order + 1 != autosampling_hporder_local_searches || 

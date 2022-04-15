@@ -81,18 +81,10 @@ unsigned char rgbToGrey(const unsigned char red, const unsigned char green, cons
     switch (colour_scheme) {
 
         case ColourScheme::black_grey_red:
-        if (red == 255) {
-            return FLOOR((RFLOAT) (255.0 - blue / 2.0));
-        } else {
-            return FLOOR((RFLOAT) (red / 2.0));
-        }
+        return floor(red == 255 ? (RFLOAT) 255.0 - blue / 2.0 : (RFLOAT) red / 2.0);
 
         case ColourScheme::blue_grey_white:
-        if (red == 0) {
-            return FLOOR((RFLOAT)(255.0 - blue) / 2.0);
-        } else {
-            return FLOOR((RFLOAT) (red / 2.0 + 128.0));
-        }
+        return floor(red == 0 ? (RFLOAT) (255.0 - blue) / 2.0 : (RFLOAT) red / 2.0 + 128.0);
 
         case ColourScheme::blue_grey_red: {
         unsigned char Y;
@@ -107,7 +99,7 @@ unsigned char rgbToGrey(const unsigned char red, const unsigned char green, cons
             X = 1;
             Y = blue;
         }
-        return CEIL(85 * ((RFLOAT) Y / 256.0 + X));
+        return ceil(85 * ((RFLOAT) Y / 256.0 + X));
         }
 
         case ColourScheme::rainbow: {
@@ -132,23 +124,15 @@ unsigned char rgbToGrey(const unsigned char red, const unsigned char green, cons
         } else {
             Y = 255; X = 4;
         }
-        return 255 - CEIL(64 * ((RFLOAT) Y / 255.0 + X));
+        return 255 - ceil(64 * ((RFLOAT) Y / 255.0 + X));
         }
 
         case ColourScheme::cyan_black_yellow:
-        if (red > 0) {
-            if (red < 255) {
-                return (unsigned char) FLOOR((RFLOAT) red / 3.0 + 128);
-            } else {
-                return (unsigned char) FLOOR((RFLOAT) green / 3.0 + 42 + 128);
-            }
-        } else {
-            if (blue < 255) {
-                return (unsigned char) FLOOR((RFLOAT) - blue / 3.0 + 128);
-            } else {
-                return (unsigned char) FLOOR(-((RFLOAT) green) / 3.0 - 42 + 128);
-            }
-        }
+        return (unsigned char) floor(
+            red > 0 ?
+            (red  < 255 ?  (RFLOAT) red  / 3.0 + 128 :  (RFLOAT) green / 3.0 + 42 + 128) :
+            (blue < 255 ? -(RFLOAT) blue / 3.0 + 128 : -(RFLOAT) green / 3.0 - 42 + 128)
+        );
 
     }
 
@@ -178,8 +162,8 @@ void DisplayBox::setData(
     }
 
     // create array for the scaled image data
-    xsize_data = CEIL(XSIZE(img) * scale);
-    ysize_data = CEIL(YSIZE(img) * scale);
+    xsize_data = ceil(XSIZE(img) * scale);
+    ysize_data = ceil(YSIZE(img) * scale);
     xoff = xsize_data < w() ? (w() - xsize_data) / 2 : 0;
     yoff = ysize_data < h() ? (h() - ysize_data) / 2 : 0;
     if (colour_scheme == ColourScheme::greyscale) {
@@ -210,7 +194,7 @@ void DisplayBox::setData(
         if (colour_scheme == ColourScheme::greyscale) {
             for (dy = ysize_data, sy = 0, yerr = ysize_data, n = 0; dy > 0; dy --) {
                 for (dx = xsize_data, xerr = xsize_data, old_ptr = img.data + sy * line_d; dx > 0; dx --, n++) {
-                    img_data[n] = (char)FLOOR((*old_ptr - minval) / step);
+                    img_data[n] = (char) floor((*old_ptr - minval) / step);
                     old_ptr += xstep;
                     xerr    -= xmod;
                     if (xerr <= 0) {
@@ -229,8 +213,11 @@ void DisplayBox::setData(
         } else {
             for (dy = ysize_data, sy = 0, yerr = ysize_data, n = 0; dy > 0; dy --) {
                 for (dx = xsize_data, xerr = xsize_data, old_ptr = img.data + sy * line_d; dx > 0; dx --, n++) {
-                    unsigned char val = FLOOR((*old_ptr - minval) / step);
-                    greyToRGB(colour_scheme, val, img_data[3*n], img_data[3*n+1], img_data[3*n+2]);
+                    unsigned char val = floor((*old_ptr - minval) / step);
+                    greyToRGB(
+                        colour_scheme, val, 
+                        img_data[3 * n], img_data[3 * n + 1], img_data[3 * n + 2]
+                    );
                     old_ptr += xstep;
                     xerr    -= xmod;
                     if (xerr <= 0) {
@@ -250,12 +237,15 @@ void DisplayBox::setData(
     } else {
         if (colour_scheme == ColourScheme::greyscale) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(img, n, old_ptr) {
-                img_data[n] = FLOOR((*old_ptr - minval) / step);
+                img_data[n] = floor((*old_ptr - minval) / step);
             }
         } else {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(img, n, old_ptr) {
-                unsigned char val = FLOOR((*old_ptr - minval) / step);
-                greyToRGB(colour_scheme, val, img_data[3 * n], img_data[3 * n + 1], img_data[3 * n + 2]);
+                unsigned char val = floor((*old_ptr - minval) / step);
+                greyToRGB(
+                    colour_scheme, val, 
+                    img_data[3 * n], img_data[3 * n + 1], img_data[3 * n + 2]
+                );
             }
         }
     }
@@ -308,9 +298,9 @@ int basisViewerWindow::fillCanvas(
     img.read(fn_img, false);
     int nimgs = MDin.numberOfObjects();
     if (viewer_type == MULTIVIEWER) {
-        int xsize_canvas = _ncol * (CEIL(XSIZE(img()) * _scale) + BOX_OFFSET);
-        int nrow = CEIL((RFLOAT)nimgs/_ncol);
-        int ysize_canvas = nrow * (CEIL(YSIZE(img()) * _scale) + BOX_OFFSET);
+        int xsize_canvas = _ncol * (ceil(XSIZE(img()) * _scale) + BOX_OFFSET);
+        int nrow = ceil((RFLOAT) nimgs / _ncol);
+        int ysize_canvas = nrow * (ceil(YSIZE(img()) * _scale) + BOX_OFFSET);
         multiViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
         canvas.multi_max_nr_images = max_nr_images;
         canvas.SetScroll(&scroll);
@@ -363,8 +353,8 @@ int basisViewerWindow::fillCanvas(
     } else if (viewer_type == SINGLEVIEWER) {
         if (nimgs > 1)
             REPORT_ERROR("ERROR: trying to launch a singleViewerCanvas with multiple images...");
-        int xsize_canvas = CEIL(XSIZE(img()) * _scale);
-        int ysize_canvas = CEIL(YSIZE(img()) * _scale);
+        int xsize_canvas = ceil(XSIZE(img()) * _scale);
+        int ysize_canvas = ceil(YSIZE(img()) * _scale);
         singleViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
         canvas.SetScroll(&scroll);
         canvas.fill(MDin, obsModel, display_label, text_label, _do_apply_orient, _minval, _maxval, _sigma_contrast, _scale, 1);
@@ -387,8 +377,8 @@ int basisViewerWindow::fillPickerViewerCanvas(
 
     // Scroll bars
     Fl_Scroll scroll(0, 0, w(), h());
-    int xsize_canvas = CEIL(XSIZE(image)*_scale);
-    int ysize_canvas = CEIL(YSIZE(image)*_scale);
+    int xsize_canvas = ceil(XSIZE(image) * _scale);
+    int ysize_canvas = ceil(YSIZE(image) * _scale);
     pickerViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
     canvas.particle_radius = _particle_radius;
     canvas.do_startend = _do_startend;
@@ -419,8 +409,8 @@ int basisViewerWindow::fillSingleViewerCanvas(
     Fl_Scroll scroll(0, 0, w(), h());
 
     // Pre-set the canvas to the correct size
-    int xsize_canvas = CEIL(XSIZE(image) * _scale);
-    int ysize_canvas = CEIL(YSIZE(image) * _scale);
+    int xsize_canvas = ceil(XSIZE(image) * _scale);
+    int ysize_canvas = ceil(YSIZE(image) * _scale);
     singleViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
     canvas.SetScroll(&scroll);
     canvas.fill(image, _minval, _maxval, _sigma_contrast, _scale);
@@ -571,8 +561,8 @@ void basisViewerCanvas::fill(
                 irow = my_sorted_ipos / ncol;
                 nrow = std::max(nrow, irow + 1);
                 if (my_ipos == 0) {
-                    xsize_box = CEIL(_scale * XSIZE(img())) + 2 * xoff; // 2 pixels on each side in between all images
-                    ysize_box = CEIL(_scale * YSIZE(img())) + 2 * yoff;
+                    xsize_box = ceil(_scale * XSIZE(img())) + 2 * xoff; // 2 pixels on each side in between all images
+                    ysize_box = ceil(_scale * YSIZE(img())) + 2 * yoff;
                 }
                 int ycoor = irow * ysize_box;
                 int xcoor = icol * xsize_box;
@@ -610,8 +600,8 @@ void basisViewerCanvas::fill(
     xoff = yoff = 0;
     nrow = ncol = 1;
     getImageContrast(image, _minval, _maxval, _sigma_contrast);
-    xsize_box = CEIL(_scale * XSIZE(image));
-    ysize_box = CEIL(_scale * YSIZE(image));
+    xsize_box = ceil(_scale * XSIZE(image));
+    ysize_box = ceil(_scale * YSIZE(image));
     DisplayBox* my_box = new DisplayBox(0, 0, xsize_box, ysize_box, "dummy");
     MetaDataTable MDtmp;
     MDtmp.addObject();
@@ -1015,13 +1005,11 @@ void multiViewerCanvas::showOriginalImage(int ipos) {
     FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img);
-    basisViewerWindow win(CEIL(ori_scale*XSIZE(img())), CEIL(ori_scale*YSIZE(img())), fn_img.c_str());
-    if (sigma_contrast > 0.)
-    {
-        win.fillSingleViewerCanvas(img(), 0., 0., sigma_contrast, ori_scale);
-    } else
-    {
-        win.fillSingleViewerCanvas(img(), boxes[ipos]->minval, boxes[ipos]->maxval, 0., ori_scale);
+    basisViewerWindow win(ceil(ori_scale*XSIZE(img())), ceil(ori_scale*YSIZE(img())), fn_img.c_str());
+    if (sigma_contrast > 0.0) {
+        win.fillSingleViewerCanvas(img(), 0.0, 0.0, sigma_contrast, ori_scale);
+    } else {
+        win.fillSingleViewerCanvas(img(), boxes[ipos]->minval, boxes[ipos]->maxval, 0.0, ori_scale);
     }
     */
 }
@@ -2578,8 +2566,8 @@ void Displayer::run() {
         FOR_ALL_ELEMENTS_IN_ARRAY2D(img()) {
             A2D_ELEM(img(), i, j) = (RFLOAT)j;
         }
-        FileName fnt="colour scheme";
-        basisViewerWindow win(CEIL(scale * XSIZE(img())), CEIL(scale * YSIZE(img())), fnt.c_str());
+        FileName fnt = "colour scheme";
+        basisViewerWindow win(ceil(scale * XSIZE(img())), ceil(scale * YSIZE(img())), fnt.c_str());
         win.fillSingleViewerCanvas(img(), 0.0, 255.0, 0.0, scale);
     } else if (do_pick || do_pick_startend) {
         Image<RFLOAT> img;
@@ -2589,7 +2577,7 @@ void Displayer::run() {
             lowPassFilterMap(img(), lowpass, angpix);
         if (highpass > 0.0)
             highPassFilterMap(img(), highpass, angpix, 25); // use a rather soft high-pass edge of 25 pixels wide
-        basisViewerWindow win(CEIL(scale * XSIZE(img())), CEIL(scale * YSIZE(img())), fn_in.c_str());
+        basisViewerWindow win(ceil(scale * XSIZE(img())), ceil(scale * YSIZE(img())), fn_in.c_str());
         if (fn_coords == "")
             fn_coords = fn_in.withoutExtension() + "_coords.star";
         win.fillPickerViewerCanvas(img(), minval, maxval, sigma_contrast, scale, coord_scale, round(scale * particle_radius), do_pick_startend, fn_coords,
@@ -2709,7 +2697,7 @@ void Displayer::run() {
             RFLOAT new_scale = scale;
             if (show_fourier_amplitudes || show_fourier_phase_angles)
                 new_scale *= 2.;
-            basisViewerWindow win(CEIL(new_scale * XSIZE(img())), CEIL(new_scale * YSIZE(img())), fn_in.c_str());
+            basisViewerWindow win(ceil(new_scale * XSIZE(img())), ceil(new_scale * YSIZE(img())), fn_in.c_str());
             if (show_fourier_amplitudes) {
                 amplitudeOrPhaseMap(img(), img(), AMPLITUDE_MAP);
                 win.fillSingleViewerCanvas(img(), minval, maxval, sigma_contrast, scale);

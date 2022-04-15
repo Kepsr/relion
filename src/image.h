@@ -1420,25 +1420,25 @@ inline void greyToRGB(const int colour_scheme, const unsigned char grey, unsigne
         case ColourScheme::black_grey_red:
         if (grey >= 128) {
             red = 255; 
-            blue = green = FLOOR((RFLOAT) (255 - grey) * 2);
+            blue = green = floor((RFLOAT) (255 - grey) * 2);
         } else { 
-            red = green = blue = FLOOR((RFLOAT) (grey * 2.0)); 
+            red = green = blue = floor((RFLOAT) (grey * 2.0)); 
         }
         return;
 
         case ColourScheme::blue_grey_white:
         if (grey >= 128) {
-            red = green = blue = FLOOR((RFLOAT)((grey - 128) * 2));
+            red = green = blue = floor((RFLOAT)((grey - 128) * 2));
         } else { 
             red = 0; 
-            blue = green = FLOOR((RFLOAT) (255 - 2 * grey));
+            blue = green = floor((RFLOAT) (255 - 2 * grey));
         }
         return;
 
         case ColourScheme::blue_grey_red: {
             const RFLOAT a = grey / 85.0; // group
-            const int X = FLOOR(a);	//this is the integer part
-            const unsigned char Y = FLOOR(255 * (a - X)); //fractional part from 0 to 255
+            const int X = floor(a);	//this is the integer part
+            const unsigned char Y = floor(255 * (a - X)); //fractional part from 0 to 255
             switch (X) {
                 case 0: red =   0; green = 255 - Y; blue = 255 - Y; break;
                 case 1: red =   Y; green =       Y; blue =       Y; break;
@@ -1450,8 +1450,8 @@ inline void greyToRGB(const int colour_scheme, const unsigned char grey, unsigne
 
         case ColourScheme::rainbow: {
             const RFLOAT a = (255 - grey) / 64.0; //invert and group
-            const int X = FLOOR(a);
-            const unsigned char Y = FLOOR(255 * (a - X)); //fractional part from 0 to 255
+            const int X = floor(a);
+            const unsigned char Y = floor(255 * (a - X)); //fractional part from 0 to 255
             switch(X) {
                 case 0: red =     255; green =       Y; blue =   0; break;
                 case 1: red = 255 - Y; green =     255; blue =   0; break;
@@ -1464,9 +1464,9 @@ inline void greyToRGB(const int colour_scheme, const unsigned char grey, unsigne
         case ColourScheme::cyan_black_yellow: {
             const RFLOAT d_rb = 3 * (grey - 128);
             const RFLOAT d_g = 3 * (std::abs(grey - 128) - 42);
-            red   = (unsigned char) FLOOR(std::min(255.0, std::max(0.0,  d_rb)));
-            green = (unsigned char) FLOOR(std::min(255.0, std::max(0.0,  d_g )));
-            blue  = (unsigned char) FLOOR(std::min(255.0, std::max(0.0, -d_rb)));
+            red   = (unsigned char) floor(std::min(255.0, std::max(0.0,  d_rb)));
+            green = (unsigned char) floor(std::min(255.0, std::max(0.0,  d_g )));
+            blue  = (unsigned char) floor(std::min(255.0, std::max(0.0, -d_rb)));
             return;
         }
     }

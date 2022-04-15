@@ -283,7 +283,7 @@ class particle_reposition_parameters {
                     CenterFFT(Mref, false);
                     Mref.setXmippOrigin();
 
-                    int mic_image_size = CEIL(my_image_size * my_pixel_size / mic_pixel_size);
+                    int mic_image_size = ceil(my_image_size * my_pixel_size / mic_pixel_size);
                     MultidimArray<RFLOAT> Mpart_mic = Mref;
                     if (mic_image_size != my_image_size) {
                         resizeMap(Mpart_mic, mic_image_size);

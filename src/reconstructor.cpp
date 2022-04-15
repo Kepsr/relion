@@ -181,7 +181,7 @@ void Reconstructor::initialise() {
             std::cout << " + Taking angpix from the first optics group: " << angpix << std::endl;
         }
     }
-    r_max = maxres < 0.0 ? -1 : CEIL(output_boxsize * angpix / maxres);
+    r_max = maxres < 0.0 ? -1 : ceil(output_boxsize * angpix / maxres);
 }
 
 void Reconstructor::run() {

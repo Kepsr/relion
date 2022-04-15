@@ -865,7 +865,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
                 if (d2 > max_d2) { max_d2 = d2; }
             }
         }
-        max_radius_mask_bodies[nr_bodies] = CEIL(pixel_size * sqrt((RFLOAT)max_d2));
+        max_radius_mask_bodies[nr_bodies] = ceil(pixel_size * sqrt((RFLOAT)max_d2));
 
         // Get which body to rotate relative to
         int relative_to = -1;
@@ -1545,7 +1545,7 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
     } else if (packed_size > MAX_PACK_SIZE) {
         idx_start = (unsigned long long) piece * MAX_PACK_SIZE;
         idx_stop = std::min(idx_start + MAX_PACK_SIZE, packed_size);
-        nr_pieces = CEIL((RFLOAT)packed_size/(RFLOAT)MAX_PACK_SIZE);
+        nr_pieces = ceil((RFLOAT) packed_size / (RFLOAT) MAX_PACK_SIZE);
     } else {
         idx_start = 0;
         idx_stop = packed_size;

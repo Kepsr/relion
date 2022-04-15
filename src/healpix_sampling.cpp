@@ -78,11 +78,11 @@ void HealpixSampling::initialise(
         if (fn_sym_relax != "")
         initialiseSymMats(fn_sym_relax, pgGroupRelaxSym, pgOrderRelaxSym, R_repository_relax, L_repository_relax);
     } else {
-        int t_nr_psi = CEIL(360.0 / psi_step);
+        int t_nr_psi = ceil(360.0 / psi_step);
         if (t_nr_psi % 32 != 0 && do_changepsi) {
 
             // Force-adjust psi_step to be a multiple of 32 (for efficient GPU calculations)
-            t_nr_psi = CEIL((float) t_nr_psi / 32.0) * 32;
+            t_nr_psi = ceil((float) t_nr_psi / 32.0) * 32;
 
             if (do_warnpsi)
                 std::cout << " + WARNING: Changing psi sampling rate (before oversampling) to " <<  360.0 / (RFLOAT) t_nr_psi << " degrees, for more efficient GPU calculations" << std::endl;
@@ -297,7 +297,7 @@ void HealpixSampling::setTranslations(
     new_offset_range = offset_range;  // >= 0
 
     // Ordinary single particles
-    int maxp = CEIL(offset_range / offset_step);  // Max half nr samplings in all directions [Perpendicular to helical axis (P1, P2)]
+    int maxp = ceil(offset_range / offset_step);  // Max half nr samplings in all directions [Perpendicular to helical axis (P1, P2)]
     // Helical refinement
     int maxh = maxp; // Max half nr samplings in along helical axis
     // Helical refinement
@@ -328,17 +328,17 @@ void HealpixSampling::setTranslations(
         if (3.0 * new_helical_offset_step > helical_rise_Angst)
             new_helical_offset_step = helical_rise_Angst / 3.0;
 
-        maxh = CEIL(h_range / new_helical_offset_step); // Out of range samplings will be excluded next
+        maxh = ceil(h_range / new_helical_offset_step); // Out of range samplings will be excluded next
         if (do_local_searches_helical) {
             // Local searches along helical axis
             // Local searches (2*2+1=5 samplings)
             if (maxh > 2) { maxh = 2; }
             // New helical offset step is smaller than 1/3 of the old one, samplings should be increased.
             if (helical_offset_step > 0.0 && helical_offset_step / new_helical_offset_step > 3)
-                maxh = FLOOR(helical_offset_step / new_helical_offset_step); // Use FLOOR here!
+                maxh = floor(helical_offset_step / new_helical_offset_step);
             // Local searches should not be wider than 1/3 of the helical rise
             if (new_helical_offset_step * maxh * 6.0 > helical_rise_Angst) {
-                maxh = FLOOR(helical_rise_Angst / (6.0 * new_helical_offset_step)); // Use FLOOR here!
+                maxh = floor(helical_rise_Angst / (6.0 * new_helical_offset_step));
                 if (maxh < 1) { maxh = 1; }  // We should at least do some searches.
             }
         }
@@ -478,7 +478,7 @@ void HealpixSampling::setOrientations(int _order, RFLOAT _psi_step) {
     if (_psi_step > 0.0)
         psi_step = _psi_step;
 
-    int nr_psi = CEIL(360.0 / psi_step);
+    int nr_psi = ceil(360.0 / psi_step);
     psi_step = 360.0 / (RFLOAT) nr_psi;
     for (int ipsi = 0; ipsi < nr_psi; ipsi++) {
         RFLOAT psi = ipsi * psi_step;

@@ -509,7 +509,7 @@ bool RelionJob::saveJobSubmissionScript(
             return false;
 
         float fnodes = (float) ncores / (float) ndedi;
-        int nnodes = CEIL(fnodes);
+        int nnodes = ceil(fnodes);
         if (fmod(fnodes, 1) > 0) {
             std::cout << "\n";
             std::cout << " Warning! You're using " << nmpi << " MPI processes with " << nthr << " threads each (i.e. " << ncores << " cores), while asking for " << nnodes << " nodes with " << ndedi << " cores.\n";
@@ -880,7 +880,7 @@ XXXmpinodesXXX = The number of MPI nodes; \n \
 XXXthreadsXXX = The number of threads; \n \
 XXXcoresXXX = XXXmpinodesXXX * XXXthreadsXXX; \n \
 XXXdedicatedXXX = The minimum number of dedicated cores on each node; \n \
-XXXnodesXXX = The number of requested nodes = CEIL(XXXcoresXXX / XXXdedicatedXXX); \n \
+XXXnodesXXX = The number of requested nodes = ceil(XXXcoresXXX / XXXdedicatedXXX); \n \
 If these options are not enough for your standard jobs, you may define a user-specified number of extra variables: XXXextra1XXX, XXXextra2XXX, etc. \
 The number of extra variables is controlled through the environment variable RELION_QSUB_EXTRA_COUNT. \
 Their help text is set by the environment variables RELION_QSUB_EXTRA1, RELION_QSUB_EXTRA2, etc \

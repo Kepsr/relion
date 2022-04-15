@@ -292,27 +292,21 @@ void applyGeometry(
     if (V1.getDim() == 2) {
         // 2D transformation
 
-        int m1, n1, m2, n2;
-        RFLOAT x, y, xp, yp;
-        RFLOAT minxp, minyp, maxxp, maxyp;
-        int cen_x, cen_y, cen_xp, cen_yp;
-        RFLOAT wx, wy;
-        int Xdim, Ydim;
-
         // Find center and limits of image
-        cen_y  = YSIZE(V2) / 2;
-        cen_x  = XSIZE(V2) / 2;
-        cen_yp = YSIZE(V1) / 2;
-        cen_xp = XSIZE(V1) / 2;
-        minxp  = -cen_xp;
-        minyp  = -cen_yp;
-        maxxp  = XSIZE(V1) - cen_xp - 1;
-        maxyp  = YSIZE(V1) - cen_yp - 1;
-        Xdim   = XSIZE(V1);
-        Ydim   = YSIZE(V1);
+        int cen_y  = YSIZE(V2) / 2;
+        int cen_x  = XSIZE(V2) / 2;
+        int cen_yp = YSIZE(V1) / 2;
+        int cen_xp = XSIZE(V1) / 2;
+        RFLOAT minxp = -cen_xp;
+        RFLOAT minyp = -cen_yp;
+        RFLOAT maxxp = XSIZE(V1) - cen_xp - 1;
+        RFLOAT maxyp = YSIZE(V1) - cen_yp - 1;
+        int Xdim = XSIZE(V1);
+        int Ydim = YSIZE(V1);
 
-        // Now we go from the output image to the input image, ie, for any pixel
-        // in the output image we calculate which are the corresponding ones in
+        // Now we go from the output image to the input image. 
+        // ie, for any pixel in the output image 
+        // we calculate which are the corresponding ones in
         // the original image, make an interpolation with them and put this value
         // at the output pixel
 
@@ -326,151 +320,133 @@ void applyGeometry(
 
         for (int i = 0; i < YSIZE(V2); i++) {
             // Calculate position of the beginning of the row in the output image
-            x = -cen_x;
-            y = i - cen_y;
+            RFLOAT x = -cen_x;
+            RFLOAT y = i - cen_y;
 
             // Calculate this position in the input image according to the
             // geometrical transformation
             // they are related by
             // coords_output(=x,y) = A * coords_input (=xp,yp)
-            xp = x * Aref(0, 0) + y * Aref(0, 1) + Aref(0, 2);
-            yp = x * Aref(1, 0) + y * Aref(1, 1) + Aref(1, 2);
+            RFLOAT xp = x * Aref(0, 0) + y * Aref(0, 1) + Aref(0, 2);
+            RFLOAT yp = x * Aref(1, 0) + y * Aref(1, 1) + Aref(1, 2);
 
-            for (int j = 0; j < XSIZE(V2); j++)
-            {
-                bool interp;
-                T tmp;
+            for (int j = 0; j < XSIZE(V2); j++) {
 
-#ifdef DEBUG_APPLYGEO
+                #ifdef DEBUG_APPLYGEO
 
                 std::cout << "Computing (" << i << "," << j << ")\n";
                 std::cout << "   (y, x) =(" << y << "," << x << ")\n"
                 << "   before wrapping (y',x')=(" << yp << "," << xp << ") "
                 << std::endl;
-#endif
+                #endif
                 // If the point is outside the image, apply a periodic extension
                 // of the image, what exits by one side enters by the other
-                interp = true;
-                if (wrap)
-                {
-                    if (xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                        xp > maxxp + XMIPP_EQUAL_ACCURACY)
-                        xp = realWRAP(xp, minxp - 0.5, maxxp + 0.5);
+                bool interp = true;
+                if (wrap) {
 
-                    if (yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                        yp > maxyp + XMIPP_EQUAL_ACCURACY)
+                    if (
+                        xp < minxp - XMIPP_EQUAL_ACCURACY ||
+                        xp > maxxp + XMIPP_EQUAL_ACCURACY
+                    ) { xp = realWRAP(xp, minxp - 0.5, maxxp + 0.5); }
 
-                        yp = realWRAP(yp, minyp - 0.5, maxyp + 0.5);
-                }
-                else
-                {
-                    if (xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                        xp > maxxp + XMIPP_EQUAL_ACCURACY)
-                        interp = false;
+                    if (
+                        yp < minyp - XMIPP_EQUAL_ACCURACY ||
+                        yp > maxyp + XMIPP_EQUAL_ACCURACY
+                    ) { yp = realWRAP(yp, minyp - 0.5, maxyp + 0.5); }
 
-                    if (yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                        yp > maxyp + XMIPP_EQUAL_ACCURACY)
-                        interp = false;
-                }
+                } else if (
+                    xp < minxp - XMIPP_EQUAL_ACCURACY ||
+                    xp > maxxp + XMIPP_EQUAL_ACCURACY ||
+                    yp < minyp - XMIPP_EQUAL_ACCURACY ||
+                    yp > maxyp + XMIPP_EQUAL_ACCURACY
+                ) { interp = false; }
 
-#ifdef DEBUG_APPLYGEO
+                #ifdef DEBUG_APPLYGEO
                 std::cout << "   after wrapping (y',x')=(" << yp << "," << xp << ") "
                 << std::endl;
                 std::cout << "   Interp = " << interp << std::endl;
                 // The following line sounds dangerous...
                 //x++;
-#endif
+                #endif
 
-                if (interp)
-                {
-                        // Linear interpolation
+                if (interp) {
+                    // Linear interpolation
 
-                        // Calculate the integer position in input image, be careful
-                        // that it is not the nearest but the one at the top left corner
-                        // of the interpolation square. Ie, (0.7,0.7) would give (0,0)
-                        // Calculate also weights for point m1+1,n1+1
-                        wx = xp + cen_xp;
-                        m1 = (int) wx;
-                        wx = wx - m1;
-                        m2 = m1 + 1;
-                        wy = yp + cen_yp;
-                        n1 = (int) wy;
-                        wy = wy - n1;
-                        n2 = n1 + 1;
+                    // Calculate the integer position in input image. 
+                    // Be careful that it is not the nearest but the one at the top left corner
+                    // of the interpolation square. 
+                    // ie, (0.7, 0.7) would give (0, 0).
+                    // Also calculate weights for point (m1 + 1, n1 + 1).
+                    RFLOAT wx = xp + cen_xp;
+                    int m1 = wx;
+                    wx = wx - m1;
+                    int m2 = m1 + 1;
 
-                        // m2 and n2 can be out by 1 so wrap must be check here
-                        if (wrap)
-                        {
-                            if (m2 >= Xdim)
-                                m2 = 0;
-                            if (n2 >= Ydim)
-                                n2 = 0;
-                        }
+                    RFLOAT wy = yp + cen_yp;
+                    int n1 = wy;
+                    wy = wy - n1;
+                    int n2 = n1 + 1;
 
-#ifdef DEBUG_APPLYGEO
-                        std::cout << "   From (" << n1 << "," << m1 << ") and ("
-                        << n2 << "," << m2 << ")\n";
-                        std::cout << "   wx= " << wx << " wy= " << wy << std::endl;
-#endif
+                    // m2 and n2 can be out by 1 so wrap must be check here
+                    if (wrap) {
+                        if (m2 >= Xdim) { m2 = 0; }
+                        if (n2 >= Ydim) { n2 = 0; }
+                    }
 
-                        // Perform interpolation
-                        // if wx == 0 means that the rightest point is useless for this
-                        // interpolation, and even it might not be defined if m1=xdim-1
-                        // The same can be said for wy.
-                        tmp  = (T)((1 - wy) * (1 - wx) * DIRECT_A2D_ELEM(V1, n1, m1));
+                    #ifdef DEBUG_APPLYGEO
+                    std::cout << "   From (" << n1 << "," << m1 << ") and ("
+                    << n2 << "," << m2 << ")\n";
+                    std::cout << "   wx= " << wx << " wy= " << wy << std::endl;
+                    #endif
+
+                    // Perform interpolation
+                    // if wx == 0 means that the rightest point is useless for this
+                    // interpolation, and even it might not be defined if m1=xdim-1
+                    // The same can be said for wy.
+                    T tmp = ((1 - wy) * (1 - wx) * DIRECT_A2D_ELEM(V1, n1, m1));
+
+                    if (m2 < V1.xdim)
+                        tmp += (T) ((1 - wy) * wx * DIRECT_A2D_ELEM(V1, n1, m2));
+
+                    if (n2 < V1.ydim) {
+                        tmp += (T) (wy * (1 - wx) * DIRECT_A2D_ELEM(V1, n2, m1));
 
                         if (m2 < V1.xdim)
-                            tmp += (T)((1 - wy) * wx * DIRECT_A2D_ELEM(V1, n1, m2));
+                            tmp += (T) (wy * wx * DIRECT_A2D_ELEM(V1, n2, m2));
+                    }
 
-                        if (n2 < V1.ydim)
-                        {
-                            tmp += (T)(wy * (1 - wx) * DIRECT_A2D_ELEM(V1, n2, m1));
-
-                            if (m2 < V1.xdim)
-                                tmp += (T)(wy * wx * DIRECT_A2D_ELEM(V1, n2, m2));
-                        }
-
-                        DIRECT_A2D_ELEM(V2, i, j) = tmp;
-#ifdef DEBUG_APPYGEO
+                    DIRECT_A2D_ELEM(V2, i, j) = tmp;
+                    #ifdef DEBUG_APPYGEO
                     std::cout << "   val= " << DIRECT_A2D_ELEM(V2, i, j) << std::endl;
-#endif
+                    #endif
 
-                } // if interp
-                else
+                } else {
                 	DIRECT_A2D_ELEM(V2, i, j) = outside;
+                }
 
                 // Compute new point inside input image
                 xp += Aref(0, 0);
                 yp += Aref(1, 0);
             }
         }
-    }
-    else
-    {
+    } else {
         // 3D transformation
 
-        int m1, n1, o1, m2, n2, o2;
-        RFLOAT x, y, z, xp, yp, zp;
-        RFLOAT minxp, minyp, maxxp, maxyp, minzp, maxzp;
-        int cen_x, cen_y, cen_z, cen_xp, cen_yp, cen_zp;
-        RFLOAT wx, wy, wz;
-
         // Find center of MultidimArray
-        cen_z = (int)(V2.zdim / 2);
-        cen_y = (int)(V2.ydim / 2);
-        cen_x = (int)(V2.xdim / 2);
-        cen_zp = (int)(V1.zdim / 2);
-        cen_yp = (int)(V1.ydim / 2);
-        cen_xp = (int)(V1.xdim / 2);
-        minxp = -cen_xp;
-        minyp = -cen_yp;
-        minzp = -cen_zp;
-        maxxp = V1.xdim - cen_xp - 1;
-        maxyp = V1.ydim - cen_yp - 1;
-        maxzp = V1.zdim - cen_zp - 1;
+        int cen_z = V2.zdim / 2;
+        int cen_y = V2.ydim / 2;
+        int cen_x = V2.xdim / 2;
+        int cen_zp = V1.zdim / 2;
+        int cen_yp = V1.ydim / 2;
+        int cen_xp = V1.xdim / 2;
+        RFLOAT minxp = -cen_xp;
+        RFLOAT minyp = -cen_yp;
+        RFLOAT minzp = -cen_zp;
+        RFLOAT maxxp = V1.xdim - cen_xp - 1;
+        RFLOAT maxyp = V1.ydim - cen_yp - 1;
+        RFLOAT maxzp = V1.zdim - cen_zp - 1;
 
-#ifdef DEBUG
-
+        #ifdef DEBUG
         std::cout << "Geometry 2 center=("
         << cen_z  << "," << cen_y  << "," << cen_x  << ")\n"
         << "Geometry 1 center=("
@@ -480,7 +456,7 @@ void applyGeometry(
         << "           max=("
         << maxzp  << "," << maxyp  << "," << maxxp  << ")\n"
         ;
-#endif
+        #endif
 
         // Now we go from the output MultidimArray to the input MultidimArray, ie, for any
         // voxel in the output MultidimArray we calculate which are the corresponding
@@ -489,177 +465,167 @@ void applyGeometry(
 
         // V2 is not initialised to 0 because all its pixels are rewritten
         for (int k = 0; k < V2.zdim; k++)
-            for (int i = 0; i < V2.ydim; i++)
-            {
-                // Calculate position of the beginning of the row in the output
-                // MultidimArray
-                x = -cen_x;
-                y = i - cen_y;
-                z = k - cen_z;
+        for (int i = 0; i < V2.ydim; i++) {
+            // Calculate position of the beginning of the row in the output
+            // MultidimArray
+            RFLOAT x = -cen_x;
+            RFLOAT y = i - cen_y;
+            RFLOAT z = k - cen_z;
 
-                // Calculate this position in the input image according to the
-                // geometrical transformation they are related by
-                // coords_output(=x,y) = A * coords_input (=xp,yp)
-                xp = x * Aref(0, 0) + y * Aref(0, 1) + z * Aref(0, 2) + Aref(0, 3);
-                yp = x * Aref(1, 0) + y * Aref(1, 1) + z * Aref(1, 2) + Aref(1, 3);
-                zp = x * Aref(2, 0) + y * Aref(2, 1) + z * Aref(2, 2) + Aref(2, 3);
+            // Calculate this position in the input image according to the
+            // geometrical transformation they are related by
+            // coords_output(=x,y) = A * coords_input (=xp,yp)
+            RFLOAT xp = x * Aref(0, 0) + y * Aref(0, 1) + z * Aref(0, 2) + Aref(0, 3);
+            RFLOAT yp = x * Aref(1, 0) + y * Aref(1, 1) + z * Aref(1, 2) + Aref(1, 3);
+            RFLOAT zp = x * Aref(2, 0) + y * Aref(2, 1) + z * Aref(2, 2) + Aref(2, 3);
 
-                for (int j = 0; j < V2.xdim; j++)
-                {
-                    bool interp;
-                    T tmp;
+            for (int j = 0; j < V2.xdim; j++) {
 
-#ifdef DEBUG
+                #ifdef DEBUG
 
-                    bool show_debug = false;
-                    if ((i == 0 && j == 0 && k == 0) ||
-                        (i == V2.ydim - 1 && j == V2.xdim - 1 && k == V2.zdim - 1))
-                        show_debug = true;
+                bool show_debug = (
+                    i == 0 && j == 0 && k == 0 ||
+                    i == V2.ydim - 1 && j == V2.xdim - 1 && k == V2.zdim - 1
+                );
 
-                    if (show_debug)
-                        std::cout << "(x,y,z)-->(xp,yp,zp)= "
-                        << "(" << x  << "," << y  << "," << z  << ") "
+                if (show_debug)
+                    std::cout << "(x,y,z)-->(xp,yp,zp)= "
+                    << "(" << x  << "," << y  << "," << z  << ") "
+                    << "(" << xp << "," << yp << "," << zp << ")\n";
+                #endif
+
+                // If the point is outside the volume, apply a periodic
+                // extension of the volume, what exits by one side enters by
+                // the other
+                bool interp = true;
+                if (wrap) {
+
+                    if (
+                        xp < minxp - XMIPP_EQUAL_ACCURACY ||
+                        xp > maxxp + XMIPP_EQUAL_ACCURACY
+                    ) { xp = realWRAP(xp, minxp - 0.5, maxxp + 0.5); }
+
+                    if (
+                        yp < minyp - XMIPP_EQUAL_ACCURACY ||
+                        yp > maxyp + XMIPP_EQUAL_ACCURACY
+                    ) { yp = realWRAP(yp, minyp - 0.5, maxyp + 0.5); }
+
+                    if (
+                        zp < minzp - XMIPP_EQUAL_ACCURACY ||
+                        zp > maxzp + XMIPP_EQUAL_ACCURACY
+                    ) { zp = realWRAP(zp, minzp - 0.5, maxzp + 0.5); }
+
+                } else if (
+                    xp < minxp - XMIPP_EQUAL_ACCURACY ||
+                    xp > maxxp + XMIPP_EQUAL_ACCURACY ||
+                    yp < minyp - XMIPP_EQUAL_ACCURACY ||
+                    yp > maxyp + XMIPP_EQUAL_ACCURACY ||
+                    zp < minzp - XMIPP_EQUAL_ACCURACY ||
+                    zp > maxzp + XMIPP_EQUAL_ACCURACY
+                ) { interp = false; }
+
+                if (interp) {
+
+                    // Linear interpolation
+
+                    // Calculate the integer position in input volume, 
+                    // be careful that it is not the nearest but the one at the
+                    // top left corner of the interpolation square. 
+                    // ie (0.7, 0.7) would give (0, 0)
+                    // Also calculate weights for point (m1 + 1, n1 + 1)
+                    RFLOAT wx = xp + cen_xp;
+                    int m1 = wx;
+                    wx = wx - m1;
+                    int m2 = m1 + 1;
+
+                    RFLOAT wy = yp + cen_yp;
+                    int n1 = wy;
+                    wy = wy - n1;
+                    int n2 = n1 + 1;
+
+                    RFLOAT wz = zp + cen_zp;
+                    int o1 = wz;
+                    wz = wz - o1;
+                    int o2 = o1 + 1;
+
+                    #ifdef DEBUG
+
+                    if (show_debug) {
+                        std::cout << "After wrapping(xp,yp,zp)= "
                         << "(" << xp << "," << yp << "," << zp << ")\n";
-#endif
-
-                    // If the point is outside the volume, apply a periodic
-                    // extension of the volume, what exits by one side enters by
-                    // the other
-                    interp  = true;
-                    if (wrap)
-                    {
-                        if (xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                            xp > maxxp + XMIPP_EQUAL_ACCURACY)
-                            xp = realWRAP(xp, minxp - 0.5, maxxp + 0.5);
-
-                        if (yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                            yp > maxyp + XMIPP_EQUAL_ACCURACY)
-                            yp = realWRAP(yp, minyp - 0.5, maxyp + 0.5);
-
-                        if (zp < minzp - XMIPP_EQUAL_ACCURACY ||
-                            zp > maxzp + XMIPP_EQUAL_ACCURACY)
-                            zp = realWRAP(zp, minzp - 0.5, maxzp + 0.5);
+                        std::cout << "(m1,n1,o1)-->(m2,n2,o2)="
+                        << "(" << m1 << "," << n1 << "," << o1 << ") "
+                        << "(" << m2 << "," << n2 << "," << o2 << ")\n";
+                        std::cout << "(wx,wy,wz)="
+                        << "(" << wx << "," << wy << "," << wz << ")\n";
                     }
-                    else
-                    {
-                        if (xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                            xp > maxxp + XMIPP_EQUAL_ACCURACY)
-                            interp = false;
+                    #endif
 
-                        if (yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                            yp > maxyp + XMIPP_EQUAL_ACCURACY)
-                            interp = false;
+                    // Perform interpolation
+                    // if wx == 0 means that the rightest point is useless for
+                    // this interpolation, and even it might not be defined if
+                    // m1=xdim-1
+                    // The same can be said for wy.
+                    T tmp = ((1 - wz) * (1 - wy) * (1 - wx) * DIRECT_A3D_ELEM(V1, o1, n1, m1));
 
-                        if (zp < minzp - XMIPP_EQUAL_ACCURACY ||
-                            zp > maxzp + XMIPP_EQUAL_ACCURACY)
-                            interp = false;
+                    if (m2 < V1.xdim)
+                        tmp += (T) ((1 - wz) * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o1, n1, m2));
+
+                    if (n2 < V1.ydim) {
+                        tmp += (T) ((1 - wz) * wy * (1 - wx) * DIRECT_A3D_ELEM(V1, o1, n2, m1));
+                        if (m2 < V1.xdim)
+                            tmp += (T) ((1 - wz) * wy * wx * DIRECT_A3D_ELEM(V1, o1, n2, m2));
                     }
 
-                    if (interp)
-                    {
-
-                            // Linear interpolation
-
-                            // Calculate the integer position in input volume, be
-                            // careful that it is not the nearest but the one at the
-                            // top left corner of the interpolation square. Ie,
-                            // (0.7,0.7) would give (0,0)
-                            // Calculate also weights for point m1+1,n1+1
-                            wx = xp + cen_xp;
-                            m1 = (int) wx;
-                            wx = wx - m1;
-                            m2 = m1 + 1;
-                            wy = yp + cen_yp;
-                            n1 = (int) wy;
-                            wy = wy - n1;
-                            n2 = n1 + 1;
-                            wz = zp + cen_zp;
-                            o1 = (int) wz;
-                            wz = wz - o1;
-                            o2 = o1 + 1;
-
-#ifdef DEBUG
-
-                            if (show_debug)
-                            {
-                                std::cout << "After wrapping(xp,yp,zp)= "
-                                << "(" << xp << "," << yp << "," << zp << ")\n";
-                                std::cout << "(m1,n1,o1)-->(m2,n2,o2)="
-                                << "(" << m1 << "," << n1 << "," << o1 << ") "
-                                << "(" << m2 << "," << n2 << "," << o2 << ")\n";
-                                std::cout << "(wx,wy,wz)="
-                                << "(" << wx << "," << wy << "," << wz << ")\n";
-                            }
-#endif
-
-                            // Perform interpolation
-                            // if wx == 0 means that the rightest point is useless for
-                            // this interpolation, and even it might not be defined if
-                            // m1=xdim-1
-                            // The same can be said for wy.
-                            tmp  = (T)((1 - wz) * (1 - wy) * (1 - wx) * DIRECT_A3D_ELEM(V1, o1, n1, m1));
-
+                    if (o2 < V1.zdim) {
+                        tmp += (T) (wz * (1 - wy) * (1 - wx) * DIRECT_A3D_ELEM(V1, o2, n1, m1));
+                        if (m2 < V1.xdim)
+                            tmp += (T) (wz * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o2, n1, m2));
+                        if (n2 < V1.ydim) {
+                            tmp += (T) (wz * wy * (1 - wx) * DIRECT_A3D_ELEM(V1, o2, n2, m1));
                             if (m2 < V1.xdim)
-                                tmp += (T)((1 - wz) * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o1, n1, m2));
-
-                            if (n2 < V1.ydim)
-                            {
-                                tmp += (T)((1 - wz) * wy * (1 - wx) * DIRECT_A3D_ELEM(V1, o1, n2, m1));
-                                if (m2 < V1.xdim)
-                                    tmp += (T)((1 - wz) * wy * wx * DIRECT_A3D_ELEM(V1, o1, n2, m2));
-                            }
-
-                            if (o2 < V1.zdim)
-                            {
-                                tmp += (T)(wz * (1 - wy) * (1 - wx) * DIRECT_A3D_ELEM(V1, o2, n1, m1));
-                                if (m2 < V1.xdim)
-                                    tmp += (T)(wz * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o2, n1, m2));
-                                if (n2 < V1.ydim)
-                                {
-                                    tmp += (T)(wz * wy * (1 - wx) * DIRECT_A3D_ELEM(V1, o2, n2, m1));
-                                    if (m2 < V1.xdim)
-                                        tmp += (T)(wz * wy * wx * DIRECT_A3D_ELEM(V1, o2, n2, m2));
-                                }
-                            }
-
-                            #ifdef DEBUG
-                            if (show_debug)
-                                std::cout <<
-                                "tmp1=" << DIRECT_A3D_ELEM(V1, o1, n1, m1) << " "
-                                << (T)((1 - wz) *(1 - wy) *(1 - wx) * DIRECT_A3D_ELEM(V1, o1, n1, m1))
-                                << std::endl <<
-                                "tmp2=" << DIRECT_A3D_ELEM(V1, o1, n1, m2) << " "
-                                << (T)((1 - wz) *(1 - wy) * wx * DIRECT_A3D_ELEM(V1, o1, n1, m2))
-                                << std::endl <<
-                                "tmp3=" << DIRECT_A3D_ELEM(V1, o1, n2, m1) << " "
-                                << (T)((1 - wz) * wy *(1 - wx) * DIRECT_A3D_ELEM(V1, o1, n2, m1))
-                                << std::endl <<
-                                "tmp4=" << DIRECT_A3D_ELEM(V1, o1, n2, m2) << " "
-                                << (T)((1 - wz) * wy * wx * DIRECT_A3D_ELEM(V1, o2, n1, m1))
-                                << std::endl <<
-                                "tmp6=" << DIRECT_A3D_ELEM(V1, o2, n1, m2) << " "
-                                << (T)(wz * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o2, n1, m2))
-                                << std::endl <<
-                                "tmp7=" << DIRECT_A3D_ELEM(V1, o2, n2, m1) << " "
-                                << (T)(wz * wy *(1 - wx) * DIRECT_A3D_ELEM(V1, o2, n2, m1))
-                                << std::endl <<
-                                "tmp8=" << DIRECT_A3D_ELEM(V1, o2, n2, m2) << " "
-                                << (T)(wz * wy * wx * DIRECT_A3D_ELEM(V1, o2, n2, m2))
-                                << std::endl <<
-                                "tmp= " << tmp << std::endl;
-                            #endif
-
-                            dAkij(V2 , k, i, j) = tmp;
+                                tmp += (T) (wz * wy * wx * DIRECT_A3D_ELEM(V1, o2, n2, m2));
+                        }
                     }
-                    else
-                        dAkij(V2, k, i, j) = outside;
 
-                    // Compute new point inside input image
-                    xp += Aref(0, 0);
-                    yp += Aref(1, 0);
-                    zp += Aref(2, 0);
+                    #ifdef DEBUG
+                    if (show_debug)
+                        std::cout <<
+                        "tmp1=" << DIRECT_A3D_ELEM(V1, o1, n1, m1) << " "
+                        << (T) ((1 - wz) *(1 - wy) *(1 - wx) * DIRECT_A3D_ELEM(V1, o1, n1, m1))
+                        << std::endl <<
+                        "tmp2=" << DIRECT_A3D_ELEM(V1, o1, n1, m2) << " "
+                        << (T) ((1 - wz) *(1 - wy) * wx * DIRECT_A3D_ELEM(V1, o1, n1, m2))
+                        << std::endl <<
+                        "tmp3=" << DIRECT_A3D_ELEM(V1, o1, n2, m1) << " "
+                        << (T) ((1 - wz) * wy *(1 - wx) * DIRECT_A3D_ELEM(V1, o1, n2, m1))
+                        << std::endl <<
+                        "tmp4=" << DIRECT_A3D_ELEM(V1, o1, n2, m2) << " "
+                        << (T) ((1 - wz) * wy * wx * DIRECT_A3D_ELEM(V1, o2, n1, m1))
+                        << std::endl <<
+                        "tmp6=" << DIRECT_A3D_ELEM(V1, o2, n1, m2) << " "
+                        << (T) (wz * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o2, n1, m2))
+                        << std::endl <<
+                        "tmp7=" << DIRECT_A3D_ELEM(V1, o2, n2, m1) << " "
+                        << (T) (wz * wy *(1 - wx) * DIRECT_A3D_ELEM(V1, o2, n2, m1))
+                        << std::endl <<
+                        "tmp8=" << DIRECT_A3D_ELEM(V1, o2, n2, m2) << " "
+                        << (T) (wz * wy * wx * DIRECT_A3D_ELEM(V1, o2, n2, m2))
+                        << std::endl <<
+                        "tmp= " << tmp << std::endl;
+                    #endif
+
+                    dAkij(V2 , k, i, j) = tmp;
+                } else {
+                    dAkij(V2, k, i, j) = outside;
                 }
+
+                // Compute new point inside input image
+                xp += Aref(0, 0);
+                yp += Aref(1, 0);
+                zp += Aref(2, 0);
             }
+        }
     }
 }
 
@@ -669,10 +635,11 @@ void applyGeometry(
  * The same as the previous function, but input array is overwritten
  */
 template<typename T>
-void selfApplyGeometry(MultidimArray<T>& V1,
-                       const Matrix2D< RFLOAT > A, bool inv,
-                       bool wrap, T outside = 0)
-{
+void selfApplyGeometry(
+    MultidimArray<T>& V1,
+    const Matrix2D<RFLOAT> A, bool inv,
+    bool wrap, T outside = 0
+) {
     MultidimArray<T> aux = V1;
     V1.initZeros();
     applyGeometry(aux, V1, A, inv, wrap, outside);
@@ -689,6 +656,7 @@ void selfApplyGeometry(MultidimArray<T>& V1,
  * rotate(Vin, Vout, 60);
  * @endcode
  */
+
 template<typename T>
 void rotate(
     const MultidimArray<T> &V1,
@@ -824,7 +792,7 @@ void scaleToSize(
     int Xdim, int Ydim, int Zdim = 1
 ) {
 
-    Matrix2D< RFLOAT > tmp;
+    Matrix2D<RFLOAT> tmp;
     if (V1.getDim() == 2) {
         tmp.initIdentity(3);
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) XSIZE(V1);
@@ -885,7 +853,7 @@ void radialAverage(
     MultidimArray<int> &radial_count,
     const bool &rounding = false
 ) {
-    Matrix1D< RFLOAT > idx(3);
+    Matrix1D<RFLOAT> idx(3);
 
     // If center_of_rot was written for 2D image
     if (center_of_rot.size() < 3)
@@ -893,38 +861,37 @@ void radialAverage(
 
     // First determine the maximum distance that one should expect, to set the
     // dimension of the radial average vector
-    MultidimArray< int > distances(8);
+    MultidimArray<int> distances(8);
 
     RFLOAT z = STARTINGZ(m) - ZZ(center_of_rot);
     RFLOAT y = STARTINGY(m) - YY(center_of_rot);
     RFLOAT x = STARTINGX(m) - XX(center_of_rot);
 
-    distances(0) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(0) = floor(sqrt(x * x + y * y + z * z));
     x = FINISHINGX(m) - XX(center_of_rot);
 
-    distances(1) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(1) = floor(sqrt(x * x + y * y + z * z));
     y = FINISHINGY(m) - YY(center_of_rot);
 
-    distances(2) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(2) = floor(sqrt(x * x + y * y + z * z));
     x = STARTINGX(m) - XX(center_of_rot);
 
-    distances(3) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(3) = floor(sqrt(x * x + y * y + z * z));
     z = FINISHINGZ(m) - ZZ(center_of_rot);
 
-    distances(4) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(4) = floor(sqrt(x * x + y * y + z * z));
     x = FINISHINGX(m) - XX(center_of_rot);
 
-    distances(5) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(5) = floor(sqrt(x * x + y * y + z * z));
     y = STARTINGY(m) - YY(center_of_rot);
 
-    distances(6) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(6) = floor(sqrt(x * x + y * y + z * z));
     x = STARTINGX(m) - XX(center_of_rot);
 
-    distances(7) = (int) floor(sqrt(x * x + y * y + z * z));
+    distances(7) = floor(sqrt(x * x + y * y + z * z));
 
-    int dim = (int) CEIL(distances.max()) + 1;
-    if (rounding)
-        dim++;
+    int dim = ceil(distances.max()) + 1;
+    if (rounding) { dim++; }
 
     // Define the vectors
     radial_mean.resize(dim);

@@ -60,7 +60,7 @@ void ColorHelper::writeSignedToEPS(
     outputFile.open(fn_out.c_str());
 
     int delta = 15;
-    int row = CEIL(nimgs / (RFLOAT) col);
+    int row = ceil(nimgs / (RFLOAT) col);
     int width = col * xdim + (col - 1) * delta;
     int height = row * (ydim + delta);
 

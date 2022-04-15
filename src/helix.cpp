@@ -127,13 +127,13 @@ bool calcCCofHelicalSymmetry(
         r_max_pix = (((RFLOAT)(r_max_XY)) - 0.01);
 
     // Set startZ and finishZ
-    startZ = FLOOR( (-1.0) * ((RFLOAT)(ZSIZE(v)) * z_percentage * 0.5) );
-    finishZ = CEIL( ((RFLOAT)(ZSIZE(v))) * z_percentage * 0.5 );
+    startZ = floor((RFLOAT) ZSIZE(v) * z_percentage * -0.5);
+    finishZ = ceil((RFLOAT) ZSIZE(v) * z_percentage * +0.5);
     startZ = (startZ <= (STARTINGZ(v))) ? (STARTINGZ(v) + 1) : (startZ);
     finishZ = (finishZ >= (FINISHINGZ(v))) ? (FINISHINGZ(v) - 1) : (finishZ);
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + (CEIL((RFLOAT(ZSIZE(v)) + 2.0) / rise_pix));
+    rec_len = 2 + (ceil((RFLOAT(ZSIZE(v)) + 2.0) / rise_pix));
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
@@ -152,15 +152,14 @@ bool calcCCofHelicalSymmetry(
     //dev_chunk.clear();
     // Iterate through all coordinates on Z, Y and then X axes
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
-        RFLOAT xp, yp, zp, fx, fy, fz;
 
         // Test a chunk of Z length = rise
         // for (idz = startZ; (idz <= (startZ + ((int)(floor(rise_pix))))) && (idz <= finishZ); idz++)
-        if ((k < startZ) || (k > (startZ + (FLOOR(rise_pix)))) || (k > finishZ))
+        if (k < startZ || k > startZ + floor(rise_pix) || k > finishZ)
             continue;
 
         dist_r_pix = sqrt(i * i + j * j);
-        if ((dist_r_pix < r_min_pix) || (dist_r_pix > r_max_pix))
+        if (dist_r_pix < r_min_pix || dist_r_pix > r_max_pix)
             continue;
 
         // Pick a voxel in the chunk
@@ -168,7 +167,7 @@ bool calcCCofHelicalSymmetry(
         // dev_voxel.push_back(A3D_ELEM(v, k, i, j));
 
         // Pick other voxels according to this voxel and helical symmetry
-        zp = k;
+        RFLOAT zp = k;
         int rot_id = 0;
         sum_pw1 = A3D_ELEM(v, k, i, j);
         sum_pw2 = A3D_ELEM(v, k, i, j)*A3D_ELEM(v, k, i, j);
@@ -181,42 +180,38 @@ bool calcCCofHelicalSymmetry(
 
             // Twist
             rot_id++;
-            xp = ((RFLOAT)(j)) * cos_rec[rot_id] - ((RFLOAT)(i)) * sin_rec[rot_id];
-            yp = ((RFLOAT)(j)) * sin_rec[rot_id] + ((RFLOAT)(i)) * cos_rec[rot_id];
+            RFLOAT xp = (RFLOAT) j * cos_rec[rot_id] - (RFLOAT) i * sin_rec[rot_id];
+            RFLOAT yp = (RFLOAT) j * sin_rec[rot_id] + (RFLOAT) i * cos_rec[rot_id];
 
             // Trilinear interpolation (with physical coords)
             // Subtract STARTINGX,Y,Z to accelerate access to data
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-            int x0, y0, z0, x1, y1, z1;
-            x0 = FLOOR(xp); fx = xp - x0; x0 -= STARTINGX(v); x1 = x0 + 1;
-            y0 = FLOOR(yp); fy = yp - y0; y0 -= STARTINGY(v); y1 = y0 + 1;
-            z0 = FLOOR(zp); fz = zp - z0; z0 -= STARTINGZ(v); z1 = z0 + 1;
+            int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= STARTINGX(v); int x1 = x0 + 1;
+            int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= STARTINGY(v); int y1 = y0 + 1;
+            int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= STARTINGZ(v); int z1 = z0 + 1;
             // DEBUG
-            if ((x0 < 0) || (y0 < 0) || (z0 < 0) || (x1 >= XSIZE(v)) || (y1 >= YSIZE(v)) || (z1 >= ZSIZE(v))) {
+            if (x0 < 0 || y0 < 0 || z0 < 0 || x1 >= XSIZE(v) || y1 >= YSIZE(v) || z1 >= ZSIZE(v)) {
                 std::cout << " idzidyidx= " << k << ", " << i << ", " << j << ", x0x1y0y1z0z1= " << x0 << ", " << x1 << ", " << y0 << ", " << y1 << ", " << z0 << ", " << z1 << std::endl;
             }
 
-            RFLOAT d000, d001, d010, d011, d100, d101, d110, d111;
-            d000 = DIRECT_A3D_ELEM(v, z0, y0, x0);
-            d001 = DIRECT_A3D_ELEM(v, z0, y0, x1);
-            d010 = DIRECT_A3D_ELEM(v, z0, y1, x0);
-            d011 = DIRECT_A3D_ELEM(v, z0, y1, x1);
-            d100 = DIRECT_A3D_ELEM(v, z1, y0, x0);
-            d101 = DIRECT_A3D_ELEM(v, z1, y0, x1);
-            d110 = DIRECT_A3D_ELEM(v, z1, y1, x0);
-            d111 = DIRECT_A3D_ELEM(v, z1, y1, x1);
+            RFLOAT d000 = DIRECT_A3D_ELEM(v, z0, y0, x0);
+            RFLOAT d001 = DIRECT_A3D_ELEM(v, z0, y0, x1);
+            RFLOAT d010 = DIRECT_A3D_ELEM(v, z0, y1, x0);
+            RFLOAT d011 = DIRECT_A3D_ELEM(v, z0, y1, x1);
+            RFLOAT d100 = DIRECT_A3D_ELEM(v, z1, y0, x0);
+            RFLOAT d101 = DIRECT_A3D_ELEM(v, z1, y0, x1);
+            RFLOAT d110 = DIRECT_A3D_ELEM(v, z1, y1, x0);
+            RFLOAT d111 = DIRECT_A3D_ELEM(v, z1, y1, x1);
 
-            RFLOAT dx00, dx01, dx10, dx11;
-            dx00 = LIN_INTERP(fx, d000, d001);
-            dx01 = LIN_INTERP(fx, d100, d101);
-            dx10 = LIN_INTERP(fx, d010, d011);
-            dx11 = LIN_INTERP(fx, d110, d111);
+            RFLOAT dx00 = LIN_INTERP(fx, d000, d001);
+            RFLOAT dx01 = LIN_INTERP(fx, d100, d101);
+            RFLOAT dx10 = LIN_INTERP(fx, d010, d011);
+            RFLOAT dx11 = LIN_INTERP(fx, d110, d111);
 
-            RFLOAT dxy0, dxy1, ddd;
-            dxy0 = LIN_INTERP(fy, dx00, dx10);
-            dxy1 = LIN_INTERP(fy, dx01, dx11);
+            RFLOAT dxy0 = LIN_INTERP(fy, dx00, dx10);
+            RFLOAT dxy1 = LIN_INTERP(fy, dx01, dx11);
 
-            ddd = LIN_INTERP(fz, dxy0, dxy1);
+            RFLOAT ddd = LIN_INTERP(fz, dxy0, dxy1);
 
             // Record this voxel
             sum_pw1 += ddd;
@@ -334,7 +329,7 @@ bool localSearchHelicalSymmetry(
     nr_max_samplings = 1000;
 
     twist_inistep_deg = twist_inistep_deg < (1e-5) ? 1.0 : twist_inistep_deg;
-    nr_twist_samplings = CEIL(fabs(twist_local_min_deg - twist_local_max_deg) / twist_inistep_deg);
+    nr_twist_samplings = ceil(fabs(twist_local_min_deg - twist_local_max_deg) / twist_inistep_deg);
     nr_twist_samplings = nr_twist_samplings > nr_min_samplings ? nr_twist_samplings : nr_min_samplings;
     nr_twist_samplings = nr_twist_samplings < nr_max_samplings ? nr_twist_samplings : nr_max_samplings;
     twist_step_deg = fabs(twist_local_min_deg - twist_local_max_deg) / RFLOAT(nr_twist_samplings);
@@ -354,7 +349,7 @@ bool localSearchHelicalSymmetry(
     rise_inistep_pix = rise_inistep_pix < 1e-5 ? 1e30 : rise_inistep_pix;
     rise_step_pix = 0.01 * ((fabs(rise_local_min_pix) + fabs(rise_local_max_pix)) / 2.0);
     rise_step_pix = (rise_step_pix < rise_inistep_pix) ? (rise_step_pix) : (rise_inistep_pix);
-    nr_rise_samplings = CEIL(fabs(rise_local_min_pix - rise_local_max_pix) / rise_step_pix);
+    nr_rise_samplings = ceil(fabs(rise_local_min_pix - rise_local_max_pix) / rise_step_pix);
     nr_rise_samplings = nr_rise_samplings > nr_min_samplings ? nr_rise_samplings : nr_min_samplings;
     nr_rise_samplings = nr_rise_samplings < nr_max_samplings ? nr_rise_samplings : nr_max_samplings;
     rise_step_pix = fabs(rise_local_min_pix - rise_local_max_pix) / RFLOAT(nr_rise_samplings);
@@ -868,21 +863,21 @@ void imposeHelicalSymmetryInRealSpace(
     vout.setXmippOrigin();
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + (CEIL((RFLOAT(Zdim) + 2.0) / rise_pix));
+    rec_len = 2 + (ceil((RFLOAT(Zdim) + 2.0) / rise_pix));
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
     cos_rec.resize(rec_len);
     for (int id = 0; id < rec_len; id++)
         #ifdef RELION_SINGLE_PRECISION
-        SINCOSF(DEG2RAD(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOSF(DEG2RAD((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
         #else
-        SINCOS(DEG2RAD(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOS(DEG2RAD((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
         #endif
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
         // Out of the mask
-        RFLOAT dd = (RFLOAT) (i * i + j * j);
+        RFLOAT dd = i * i + j * j;
         RFLOAT rr = dd + (RFLOAT) (k * k);
         RFLOAT d = sqrt(dd);
         RFLOAT r = sqrt(rr);
@@ -892,11 +887,11 @@ void imposeHelicalSymmetryInRealSpace(
         }
 
         // How many voxels should be used to calculate the average?
-        RFLOAT zi = (RFLOAT)(k);
-        RFLOAT yi = (RFLOAT)(i);
-        RFLOAT xi = (RFLOAT)(j);
-        int rot_max = -(CEIL((zi - z_max) / rise_pix));
-        int rot_min = -(FLOOR((zi - z_min) / rise_pix));
+        RFLOAT zi = k;
+        RFLOAT yi = i;
+        RFLOAT xi = j;
+        int rot_max = -ceil((zi - z_max) / rise_pix);
+        int rot_min = -floor((zi - z_min) / rise_pix);
         if (rot_max < rot_min)
             REPORT_ERROR("helix.cpp::makeHelicalReferenceInRealSpace(): ERROR in imposing symmetry!");
 
@@ -922,31 +917,26 @@ void imposeHelicalSymmetryInRealSpace(
             // Trilinear interpolation (with physical coords)
             // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-            int x0, y0, z0, x1, y1, z1;
-            RFLOAT fx, fy, fz;
-            x0 = FLOOR(xp); fx = xp - x0; x0 -= STARTINGX(v); x1 = x0 + 1;
-            y0 = FLOOR(yp); fy = yp - y0; y0 -= STARTINGY(v); y1 = y0 + 1;
-            z0 = FLOOR(zp); fz = zp - z0; z0 -= STARTINGZ(v); z1 = z0 + 1;
+            int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= STARTINGX(v); int x1 = x0 + 1;
+            int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= STARTINGY(v); int y1 = y0 + 1;
+            int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= STARTINGZ(v); int z1 = z0 + 1;
 
-            RFLOAT d000, d001, d010, d011, d100, d101, d110, d111;
-            d000 = DIRECT_A3D_ELEM(v, z0, y0, x0);
-            d001 = DIRECT_A3D_ELEM(v, z0, y0, x1);
-            d010 = DIRECT_A3D_ELEM(v, z0, y1, x0);
-            d011 = DIRECT_A3D_ELEM(v, z0, y1, x1);
-            d100 = DIRECT_A3D_ELEM(v, z1, y0, x0);
-            d101 = DIRECT_A3D_ELEM(v, z1, y0, x1);
-            d110 = DIRECT_A3D_ELEM(v, z1, y1, x0);
-            d111 = DIRECT_A3D_ELEM(v, z1, y1, x1);
+            RFLOAT d000 = DIRECT_A3D_ELEM(v, z0, y0, x0);
+            RFLOAT d001 = DIRECT_A3D_ELEM(v, z0, y0, x1);
+            RFLOAT d010 = DIRECT_A3D_ELEM(v, z0, y1, x0);
+            RFLOAT d011 = DIRECT_A3D_ELEM(v, z0, y1, x1);
+            RFLOAT d100 = DIRECT_A3D_ELEM(v, z1, y0, x0);
+            RFLOAT d101 = DIRECT_A3D_ELEM(v, z1, y0, x1);
+            RFLOAT d110 = DIRECT_A3D_ELEM(v, z1, y1, x0);
+            RFLOAT d111 = DIRECT_A3D_ELEM(v, z1, y1, x1);
 
-            RFLOAT dx00, dx01, dx10, dx11;
-            dx00 = LIN_INTERP(fx, d000, d001);
-            dx01 = LIN_INTERP(fx, d100, d101);
-            dx10 = LIN_INTERP(fx, d010, d011);
-            dx11 = LIN_INTERP(fx, d110, d111);
+            RFLOAT dx00 = LIN_INTERP(fx, d000, d001);
+            RFLOAT dx01 = LIN_INTERP(fx, d100, d101);
+            RFLOAT dx10 = LIN_INTERP(fx, d010, d011);
+            RFLOAT dx11 = LIN_INTERP(fx, d110, d111);
 
-            RFLOAT dxy0, dxy1;
-            dxy0 = LIN_INTERP(fy, dx00, dx10);
-            dxy1 = LIN_INTERP(fy, dx01, dx11);
+            RFLOAT dxy0 = LIN_INTERP(fy, dx00, dx10);
+            RFLOAT dxy1 = LIN_INTERP(fy, dx01, dx11);
 
             pix_sum += LIN_INTERP(fz, dxy0, dxy1);
             pix_weight += 1.0;
@@ -2924,7 +2914,7 @@ void makeHelicalReference3D(
     tube_diameter_pix = tube_diameter_A / pixel_size_A;
     particle_diameter_pix = particle_diameter_A / pixel_size_A;
     particle_radius_pix = particle_diameter_pix / 2.0;
-    particle_radius_max_pix = (CEIL(particle_diameter_pix / 2.0)) + 1;
+    particle_radius_max_pix = ceil(particle_diameter_pix / 2.0) + 1;
 
     if (particle_diameter_pix < 2.0)
         REPORT_ERROR("helix.cpp::makeHelicalReference3D(): Particle diameter should be larger than 2 pixels!");
@@ -3044,7 +3034,7 @@ void makeHelicalReference3DWithPolarity(
     tube_diameter_pix = tube_diameter_A / pixel_size_A;
     particle_diameter_pix = particle_diameter_A / pixel_size_A;
     particle_radius_pix = particle_diameter_pix / 2.0;
-    particle_radius_max_pix = (CEIL(particle_diameter_pix / 2.0)) + 1;
+    particle_radius_max_pix = ceil(particle_diameter_pix / 2.0) + 1;
     top_radius_pix = cyl_radius_pix = 0.5 * cyl_diameter_A / pixel_size_A;
     bottom_radius_pix = top_radius_pix * topbottom_ratio;
 
@@ -3064,7 +3054,7 @@ void makeHelicalReference3DWithPolarity(
     //x0 = tube_diameter_pix / 2.0;
     //y0 = 0.0;
     // NEW - To generate references with Dn symmetry. TODO: Am I doing what I want?
-    z0 = rise_pix * FLOOR((RFLOAT) Xmipp::init(box_size) / rise_pix);
+    z0 = rise_pix * floor((RFLOAT) Xmipp::init(box_size) / rise_pix);
     x0 = tube_diameter_pix * cos(PI * twist_deg * z0 / (rise_pix * 180.0)) / 2.0;
     y0 = tube_diameter_pix * sin(PI * twist_deg * z0 / (rise_pix * 180.0)) / 2.0;
     vec0.clear();
@@ -4679,8 +4669,8 @@ void HermiteInterpolateOne3DHelicalFilament(
         // Chord distance between point 1 and 2
         // TODO: what will happen if the chord length is smaller than step_pix?
         chord_pix = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
-        nr_partitions = int(CEIL(chord_pix / step_pix));
-        nr_partitions = nr_partitions <= 0 ? 1 : nr_partitions;
+        nr_partitions = ceil(chord_pix / step_pix);
+        if (nr_partitions <= 0) { nr_partitions = 1; }
 
         // Partitioning
         for (int ip = 0; ip < nr_partitions; ip++) {

@@ -249,8 +249,8 @@ void HelixAligner::initialise() {
     yrect -= yrect % 2;  // Ensure divisibility by 2
     xrect  = round(2.0 * crossover_distance / down_angpix);
     model.initialise(nr_classes, yrect, xrect);
-    max_shift = CEIL(max_shift_A / down_angpix);
-    mask_radius_pix = mask_diameter > 0 ? CEIL(mask_diameter / (2.0 * down_angpix)) : yrect / 2 - 2;
+    max_shift = ceil(max_shift_A / down_angpix);
+    mask_radius_pix = mask_diameter > 0 ? ceil(mask_diameter / (2.0 * down_angpix)) : yrect / 2 - 2;
     std::cout << " maxres= " << maxres << " angpix= " << angpix << " down_size= " << down_size << std::endl;
     std::cout << " xrect= " << xrect << " yrect= " << yrect << " down_angpix= " << down_angpix << std::endl;
     std::cout << " max_shift= " << max_shift << " mask_radius_pix= "<< mask_radius_pix<< std::endl;
@@ -424,7 +424,7 @@ void HelixAligner::getHelicesFromMics() {
                     xcen = x1 + (x2 - x1) / 2;
                     ycen = y1 + (y2 - y1) / 2;
 
-                    int xsize = FLOOR(sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
+                    int xsize = floor(sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
                     RFLOAT phi = RAD2DEG(atan(RFLOAT(y2 - y1) / RFLOAT(x2 - x1)));
                     MultidimArray<RFLOAT> Ihelix;
                     Ihelix.resize(extract_width, xsize);

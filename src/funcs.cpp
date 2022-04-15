@@ -65,12 +65,12 @@ void fitStraightLine(
     // slope = xx_xy / ss_xx
     // intercept = ave_y - slope * ave_x
     // corr_coeff = ss_xy^2 / (ss_xx * ss_yy)
-    RFLOAT ss_xy = 0.;
-    RFLOAT ss_xx = 0.;
-    RFLOAT ss_yy = 0.;
-    RFLOAT ave_x = 0.;
-    RFLOAT ave_y = 0.;
-    RFLOAT sum_w = 0.;
+    RFLOAT ss_xy = 0.0;
+    RFLOAT ss_xx = 0.0;
+    RFLOAT ss_yy = 0.0;
+    RFLOAT ave_x = 0.0;
+    RFLOAT ave_y = 0.0;
+    RFLOAT sum_w = 0.0;
     for (int i = 0; i < points.size(); i++) {
         ave_x += points[i].w * points[i].x;
         ave_y += points[i].w * points[i].y;
@@ -87,17 +87,18 @@ void fitStraightLine(
 
     //std::cerr << " ss_xx= " << ss_xx << " ss_yy= " << ss_yy << " ss_xy= " << ss_xy << std::endl;
     //std::cerr << " sum_w= " << sum_w << " ave_x= " << ave_x << " ave_y= " << ave_y << std::endl;
-    if (ss_xx > 0.) {
+    if (ss_xx > 0.0) {
         slope = ss_xy / ss_xx;
         intercept = ave_y - slope * ave_x;
-        corr_coeff = ss_xy * ss_xy / (ss_xx * ss_yy);
+        corr_coeff = (ss_xy * ss_xy) / (ss_xx * ss_yy);
     } else {
-        intercept = slope = corr_coeff = 0.;
+        intercept = slope = corr_coeff = 0.0;
     }
 }
 
 void fitLeastSquaresPlane(
-    const std::vector<fit_point3D> & points, RFLOAT &plane_a, RFLOAT &plane_b, RFLOAT &plane_c
+    const std::vector<fit_point3D> &points,
+    RFLOAT &plane_a, RFLOAT &plane_b, RFLOAT &plane_c
 ) {
     RFLOAT D = 0;
     RFLOAT E = 0;
@@ -109,8 +110,6 @@ void fitLeastSquaresPlane(
     RFLOAT K = 0;
     RFLOAT L = 0;
     RFLOAT W2 = 0;
-    RFLOAT denom = 0;
-
     for (int i = 0; i < points.size(); i++) {
         W2 = points[i].w * points[i].w;
         D += points[i].x * points[i].x * W2 ;
@@ -124,7 +123,7 @@ void fitLeastSquaresPlane(
         L += points[i].z * W2;
     }
 
-    denom = F * F * G - 2 * E * F * H + D * H * H + E * E * I - D * G * I;
+    RFLOAT denom = F * F * G - 2 * E * F * H + D * H * H + E * E * I - D * G * I;
 
     // X axis slope
     plane_a = (H * H * J - G * I * J + E * I * K + F * G * L - H * F * K - H * E * L) / denom;
@@ -138,246 +137,220 @@ void fitLeastSquaresPlane(
 
 /* Value of a blob --------------------------------------------------------- */
 RFLOAT kaiser_value(RFLOAT r, RFLOAT a, RFLOAT alpha, int m) {
-    RFLOAT rda, rdas, arg, w;
-    rda = r / a;
-    rdas = rda * rda;
-    if (rdas <= 1.0) {
-        arg = alpha * sqrt(1.0 - rdas);
-        switch (m) {
-            case 0:
-                w = bessi0(arg) / bessi0(alpha);
-                break;
-            case 1:
-                w = sqrt(1.0 - rdas);
-                if (alpha != 0.0)
-                    w *= bessi1(arg) / bessi1(alpha);
-                break;
-            case 2:
-                w = pow(sqrt(1.0 - rdas), 2);
-                if (alpha != 0.0)
-                    w *= bessi2(arg) / bessi2(alpha);
-                break;
-            case 3:
-                w = pow(sqrt(1.0 - rdas), 3);
-                if (alpha != 0.0)
-                    w *= bessi3(arg) / bessi3(alpha);
-                break;
-            case 4:
-                w = pow(sqrt(1.0 - rdas), 4);
-                if (alpha != 0.0)
-                    w *= bessi4(arg) / bessi4(alpha);
-                break;
-            default:
-                REPORT_ERROR("m out of range in kaiser_value()");
-        }
-    } else {
-        return 0.0;
+    RFLOAT rda = r / a;
+    RFLOAT rdas = rda * rda;
+    if (rdas > 1.0) return 0.0;
+    RFLOAT arg = alpha * sqrt(1.0 - rdas);
+    RFLOAT w;
+    switch (m) {
+
+        case 0:
+        w = bessi0(arg) / bessi0(alpha);
+        return w;
+
+        case 1:
+        w = sqrt(1.0 - rdas);
+        if (alpha != 0.0) { w *= bessi1(arg) / bessi1(alpha); }
+        return w;
+
+        case 2:
+        w = pow(sqrt(1.0 - rdas), m);
+        if (alpha != 0.0) { w *= bessi2(arg) / bessi2(alpha); }
+        return w;
+
+        case 3:
+        w = pow(sqrt(1.0 - rdas), m);
+        if (alpha != 0.0) { w *= bessi3(arg) / bessi3(alpha); }
+        return w;
+
+        case 4:
+        w = pow(sqrt(1.0 - rdas), m);
+        if (alpha != 0.0) { w *= bessi4(arg) / bessi4(alpha); }
+        return w;
+
+        default:
+        REPORT_ERROR("m out of range in kaiser_value()");
+
     }
-    return w;
 }
+
 /* Line integral through a blob -------------------------------------------- */
 /* Value of line integral through Kaiser-Bessel radial function
    (n >=2 dimensions) at distance s from center of function.
    Parameter m = 0, 1, or 2. */
 RFLOAT kaiser_proj(RFLOAT s, RFLOAT a, RFLOAT alpha, int m) {
-    RFLOAT sda, sdas, w, arg, p;
-    sda = s / a;
-    sdas = sda * sda;
-    w = 1.0 - sdas;
-    if (w > 1.0e-10) {
-        arg = alpha * sqrt(w);
-        if (m == 0) {
-            if (alpha == 0.0)
-                p = 2.0 * a * sqrt(w);
-            else
-                p = (2.0 * a / alpha) * sinh(arg) / bessi0(alpha);
-        } else if (m == 1) {
-            if (alpha == 0.0)
-                p = 2.0 * a * w * sqrt(w) * (2.0 / 3.0);
-            else
-                p = (2.0 * a / alpha) * sqrt(w) * (cosh(arg) - sinh(arg) / arg)
-                    / bessi1(alpha);
-        } else if (m == 2) {
-            if (alpha == 0.0)
-                p = 2.0 * a * w * w * sqrt(w) * (8.0 / 15.0);
-            else
-                p = (2.0 * a / alpha) * w *
-                    ((3.0 / (arg * arg) + 1.0) * sinh(arg) - (3.0 / arg) * cosh(arg)) / bessi2(alpha);
-        }
-        else REPORT_ERROR("m out of range in kaiser_proj()");
+    RFLOAT sda = s / a;
+    RFLOAT sdas = sda * sda;
+    RFLOAT w = 1.0 - sdas;
+    if (w <= 1.0e-10) return 0.0;
+    RFLOAT arg = alpha * sqrt(w);
+    switch (m) {
+
+        case 0:
+        return 2.0 * a * (alpha == 0.0 ? sqrt(w) :
+            sinh(arg) / bessi0(alpha / alpha));
+
+        case 1:
+        return 2.0 * a * (alpha == 0.0 ? w * sqrt(w) * 2.0 / 3.0 :
+            sqrt(w) * (cosh(arg) - sinh(arg) / arg) / bessi1(alpha) / alpha);
+
+        case 2:
+        return 2.0 * a * (alpha == 0.0 ? w * w * sqrt(w) * 8.0 / 15.0 :
+            w * ((3.0 / (arg * arg) + 1.0) * sinh(arg) - 3.0 / arg * cosh(arg)) / bessi2(alpha) / alpha);
+
+        default:
+        REPORT_ERROR("m out of range in kaiser_proj()");
+
     }
-    else
-        p = 0.0;
-    return p;
 }
+
 /* Fourier value of a blob ------------------------------------------------- */
 RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m) {
-    RFLOAT sigma = sqrt(ABS(alpha * alpha - (2. * PI * a * w) * (2. * PI * a * w)));
-    if (m == 2) {
-        if (2.*PI*a*w > alpha)
-            return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*bessj3_5(sigma)
-                    / (bessi0(alpha)*pow(sigma, 3.5));
-        else
-            return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*bessi3_5(sigma)
-                    / (bessi0(alpha)*pow(sigma, 3.5));
-    } else if (m == 0) {
-        if (2*PI*a*w > alpha)
-            return  pow(2.*PI, 3. / 2.)*pow(a, 3)*bessj1_5(sigma)
-                    / (bessi0(alpha)*pow(sigma, 1.5));
-        else
-            return  pow(2.*PI, 3. / 2.)*pow(a, 3)*bessi1_5(sigma)
-                    / (bessi0(alpha)*pow(sigma, 1.5));
-    }
-    else
+    RFLOAT C = 2.0 * PI * a * w;  // Circumference of a circle of radius a * w
+    RFLOAT sigma = sqrt(ABS(alpha * alpha - C * C));
+    switch (m) {
+
+        case 2: 
+        return pow(2.0 * PI, 1.5) * pow(a, 3.0) * pow(alpha, 2.0)
+            * (C > alpha ? bessj3_5(sigma) : bessi3_5(sigma))
+            / (bessi0(alpha) * pow(sigma, 3.5));
+
+        case 0:
+        return pow(2.0 * PI, 1.5) * pow(a, 3.0)
+            * (C > alpha ? bessj1_5(sigma) : bessi1_5(sigma))
+            / (bessi0(alpha) * pow(sigma, 1.5));
+
+        default:
         REPORT_ERROR("m out of range in kaiser_Fourier_value()");
+
+    }
 }
+
 /* Volume integral of a blob ----------------------------------------------- */
 RFLOAT basvolume(RFLOAT a, RFLOAT alpha, int m, int n) {
-    RFLOAT hn, tpi, v;
-    hn = 0.5 * n;
-    tpi = 2.0 * PI;
-    return (alpha == 0.0) ? (
-        ((n / 2) * 2 == n) ? (pow(tpi, hn) * in_zeroarg(n / 2 + m) / in_zeroarg(m)) : (pow(tpi, hn) * inph_zeroarg(n / 2 + m) / in_zeroarg(m))
-    ) : (
-        ((n / 2) * 2 == n) ? (pow(tpi / alpha, hn) * i_n(n / 2 + m, alpha) / i_n(m, alpha)) : (pow(tpi / alpha, hn) * i_nph(n / 2 + m, alpha) / i_n(m, alpha))
-    ) * pow(a, (RFLOAT)n);
+    RFLOAT hn = 0.5 * n;
+    RFLOAT tpi = 2.0 * PI;
+
+    return alpha == 0.0 ? (
+        n % 2 == 0 ? in_zeroarg(n / 2 + m) : inph_zeroarg(n / 2 + m)
+    ) * pow(tpi, hn) / in_zeroarg(m) : (
+        n % 2 == 0 ? i_n(n / 2 + m, alpha) : i_nph(n / 2 + m, alpha)
+    ) * pow(tpi / alpha, hn) / i_n(m, alpha) * pow(a, (RFLOAT) n);
 }
+
 /* Bessel function I_n (x),  n = 0, 1, 2, ...
  Use ONLY for small values of n     */
 RFLOAT i_n(int n, RFLOAT x) {
-    int i;
-    RFLOAT i_ns1, i_n, i_np1;
     if (n == 0)   return bessi0(x);
     if (n == 1)   return bessi1(x);
     if (x == 0.0) return 0.0;
-    i_ns1 = bessi0(x);
-    i_n   = bessi1(x);
-    for (i = 1; i < n; i++) {
-        i_np1 = i_ns1 - (2 * i) / x * i_n;
+    RFLOAT i_ns1 = bessi0(x);
+    RFLOAT i_n   = bessi1(x);
+    for (int i = 1; i < n; i++) {
+        RFLOAT i_np1 = i_ns1 - 2 * i / x * i_n;
         i_ns1 = i_n;
         i_n   = i_np1;
     }
     return i_n;
 }
+
 /*.....Bessel function I_(n+1/2) (x),  n = 0, 1, 2, ..........................*/
 RFLOAT i_nph(int n, RFLOAT x) {
-    int i;
-    RFLOAT r2dpix;
-    RFLOAT i_ns1, i_n, i_np1;
     if (x == 0.0) return 0.0;
-    r2dpix = sqrt(2.0 / (PI * x));
-    i_ns1 = r2dpix * cosh(x);
-    i_n   = r2dpix * sinh(x);
-    for (i = 1; i <= n; i++)
-    {
-        i_np1 = i_ns1 - (2 * i - 1) / x * i_n;
+    RFLOAT r2dpix = sqrt(2.0 / (PI * x));
+    RFLOAT i_ns1 = r2dpix * cosh(x);
+    RFLOAT i_n   = r2dpix * sinh(x);
+    for (int i = 1; i <= n; i++) {
+        RFLOAT i_np1 = i_ns1 - (2 * i - 1) / x * i_n;
         i_ns1 = i_n;
         i_n   = i_np1;
     }
     return i_n;
 }
+
 /*....Limit (z->0) of (1/z)^n I_n(z)..........................................*/
 RFLOAT in_zeroarg(int n) {
-    int i;
-    RFLOAT fact;
-    fact = 1.0;
-    for (i = 1; i <= n; i++) {
+    RFLOAT fact = 1.0;
+    for (int i = 1; i <= n; i++) {
         fact *= 0.5 / i;
     }
     return fact;
 }
+
 /*.......Limit (z->0) of (1/z)^(n+1/2) I_(n+1/2) (z)..........................*/
-RFLOAT inph_zeroarg(int n)
-{
-    int i;
-    RFLOAT fact;
-    fact = 1.0;
-    for (i = 1; i <= n; i++)
-    {
+RFLOAT inph_zeroarg(int n) {
+    RFLOAT fact = 1.0;
+    for (int i = 1; i <= n; i++) {
         fact *= 1.0 / (2 * i + 1.0);
     }
-    return fact*sqrt(2.0 / PI);
+    return fact * sqrt(2.0 / PI);
 }
+
 /* Zero freq --------------------------------------------------------------- */
-RFLOAT blob_freq_zero(struct blobtype b)
-{
-    return sqrt(b.alpha*b.alpha + 6.9879*6.9879) / (2*PI*b.radius);
+RFLOAT blob_freq_zero(struct blobtype b) {
+    return sqrt(b.alpha * b.alpha + 6.9879 * 6.9879) / (2 * PI * b.radius);
 }
+
 /* Attenuation ------------------------------------------------------------- */
-RFLOAT blob_att(RFLOAT w, struct blobtype b)
-{
+RFLOAT blob_att(RFLOAT w, struct blobtype b) {
     return blob_Fourier_val(w, b) / blob_Fourier_val(0, b);
 }
+
 /* Number of operations ---------------------------------------------------- */
-RFLOAT blob_ops(RFLOAT w, struct blobtype b)
-{
-    return pow(b.alpha*b.alpha + 6.9879*6.9879, 1.5) / b.radius;
+RFLOAT blob_ops(RFLOAT w, struct blobtype b) {
+    return pow(b.alpha * b.alpha + 6.9879 * 6.9879, 1.5) / b.radius;
 }
 
 /* Gaussian value ---------------------------------------------------------- */
-RFLOAT gaussian1D(RFLOAT x, RFLOAT sigma, RFLOAT mu)
-{
-    x -= mu;
-    return 1 / sqrt(2*PI*sigma*sigma)*exp(-0.5*((x / sigma)*(x / sigma)));
+RFLOAT gaussian1D(RFLOAT x, RFLOAT sigma, RFLOAT mu) {
+    RFLOAT xnormalised = (x - mu) / sigma;
+    return 1 / (sigma * sqrt(2 * PI * exp(xnormalised * xnormalised)));
 }
 
 /* t-student value -------------------------------------------------------- */
-RFLOAT tstudent1D(RFLOAT x, RFLOAT df, RFLOAT sigma, RFLOAT mu)
-{
-    x -= mu;
-    RFLOAT norm = exp(gammln((df+1.)/2.)) / exp(gammln(df/2.));
-    norm /= sqrt(df*PI*sigma*sigma);
-    return norm * pow((1 + (x/sigma)*(x/sigma)/df),-((df+1.)/2.));
-
+RFLOAT tstudent1D(RFLOAT x, RFLOAT df, RFLOAT sigma, RFLOAT mu) {
+    RFLOAT t = (x - mu) / sigma;
+    RFLOAT norm = exp(gammln((df + 1.0) / 2.0) - gammln(df / 2.0)) 
+        / (sigma * sqrt(df * PI));  // Not sure that sigma should be there
+    return norm * pow(1 + t * t / df, -(df + 1.0) / 2.0);
 }
 
-RFLOAT gaussian2D(RFLOAT x, RFLOAT y, RFLOAT sigmaX, RFLOAT sigmaY,
-                  RFLOAT ang, RFLOAT muX, RFLOAT muY)
-{
-    // Express x,y in the gaussian internal coordinates
-    x -= muX;
-    y -= muY;
-    RFLOAT xp = cos(ang) * x + sin(ang) * y;
-    RFLOAT yp = -sin(ang) * x + cos(ang) * y;
+RFLOAT gaussian2D(
+    RFLOAT x, RFLOAT y, RFLOAT sigmaX, RFLOAT sigmaY,
+    RFLOAT ang, RFLOAT muX, RFLOAT muY
+) {
+    // x - muX, y - muY are x, y in the gaussian internal coordinates
+    RFLOAT xp = +cos(ang) * x - muX + sin(ang) * y;
+    RFLOAT yp = -sin(ang) * x - muY + cos(ang) * y;
 
     // Now evaluate
-    return 1 / sqrt(2*PI*sigmaX*sigmaY)*exp(-0.5*((xp / sigmaX)*(xp / sigmaX) +
-                                            (yp / sigmaY)*(yp / sigmaY)));
+    return 1 / sqrt(2 * PI * sigmaX * sigmaY * exp(
+        xp / sigmaX * xp / sigmaX + yp / sigmaY * yp / sigmaY
+    ));
 }
 
 /* ICDF Gaussian ----------------------------------------------------------- */
-RFLOAT icdf_gauss(RFLOAT p)
-{
-    const RFLOAT c[] =
-        {
-            2.515517, 0.802853, 0.010328
-        };
-    const RFLOAT d[] =
-        {
-            1.432788, 0.189269, 0.001308
-        };
-    if (p < 0.5)
-    {
+RFLOAT icdf_gauss(RFLOAT p) {
+    const RFLOAT c[] = {2.515517, 0.802853, 0.010328};
+    const RFLOAT d[] = {1.432788, 0.189269, 0.001308};
+    #define icdf_gauss_polynomial(xs) ((xs[2] * t + xs[1]) * t + xs[0])
+    if (p < 0.5) {
         // F^-1(p) = - G^-1(p)
-        RFLOAT t=sqrt(-2.0*log(p));
-        RFLOAT z=t - ((c[2]*t + c[1])*t + c[0]) /
-                 (((d[2]*t + d[1])*t + d[0])*t + 1.0);
+        RFLOAT t = sqrt(-2.0 * log(p));
+        RFLOAT z = t - icdf_gauss_polynomial(c) / (1.0 + t * icdf_gauss_polynomial(d));
         return -z;
-    }
-    else
-    {
+    } else {
         // F^-1(p) = G^-1(1-p)
-        RFLOAT t=sqrt(-2.0*log(1-p));
-        RFLOAT z=t - ((c[2]*t + c[1])*t + c[0]) /
-                 (((d[2]*t + d[1])*t + d[0])*t + 1.0);
+        RFLOAT t = sqrt(-2.0 * log(1 - p));
+        RFLOAT z = t - icdf_gauss_polynomial(c) / (1.0 + t * icdf_gauss_polynomial(d));
         return z;
     }
+    #undef icdf_gauss_polynomial
 }
 
 /* CDF Gaussian ------------------------------------------------------------ */
-RFLOAT cdf_gauss(RFLOAT x)
-{
-    return 0.5 * (1. + erf(x/sqrt(2.)));
+RFLOAT cdf_gauss(RFLOAT x) {
+    return 0.5 * (1.0 + erf(x / sqrt(2.0)));
 }
 
 /*************************************************************************
@@ -421,9 +394,8 @@ arithmetic   domain     # trials      peak         rms
 Cephes Math Library Release 2.8:  June, 2000
 Copyright 1984, 1987, 1995, 2000 by Stephen L. Moshier
 *************************************************************************/
-RFLOAT cdf_tstudent(int k, RFLOAT t)
-{
-    RFLOAT EPS=5E-16;
+RFLOAT cdf_tstudent(int k, RFLOAT t) {
+    RFLOAT EPS = 5E-16;
     RFLOAT result;
     RFLOAT x;
     RFLOAT rk;
@@ -434,127 +406,92 @@ RFLOAT cdf_tstudent(int k, RFLOAT t)
     RFLOAT xsqk;
     int j;
 
-    if ( t==0 )
-    {
-        result = 0.5;
-        return result;
+    if (t == 0) {
+        return 0.5;
     }
-    if ( t<-2.0 )
-    {
+    if (t<-2.0) {
         rk = k;
-        z = rk/(rk+t*t);
-        result = 0.5*betai(0.5*rk, 0.5, z);
-        return result;
+        z = rk / (rk + t * t);
+        return 0.5 * betai(0.5 * rk, 0.5, z);
     }
-    if ( t<0 )
-    {
-        x = -t;
-    }
-    else
-    {
-        x = t;
-    }
+    x = t < 0 ? -t : t;
     rk = k;
-    z = 1.0+x*x/rk;
-    if ( k%2 != 0 )
-    {
-        xsqk = x/sqrt(rk);
-        p = atan(xsqk);
-        if ( k > 1 )
-        {
-            f = 1.0;
-            tz = 1.0;
-            j = 3;
-            while ( j <= k-2 && tz/f > EPS )
-            {
-                tz = tz*((j-1)/(z*j));
-                f = f+tz;
-                j = j+2;
-            }
-            p = p+f*xsqk/z;
-        }
-        p = p*2.0/PI;
-    }
-    else
-    {
+    z = 1.0 + x * x / rk;
+    if (k % 2 == 0)  {
         f = 1.0;
         tz = 1.0;
         j = 2;
-        while ( j<= k-2 && tz/f > EPS)
-        {
-            tz = tz*((j-1)/(z*j));
-            f = f+tz;
-            j = j+2;
+        while (j <= k - 2 && tz / f > EPS) {
+            tz *= (j - 1) / (z * j);
+            f += tz;
+            j += 2;
         }
-        p = f*x/sqrt(z*rk);
+        p = f * x / sqrt(z * rk);
+    } else {
+        xsqk = x / sqrt(rk);
+        p = atan(xsqk);
+        if (k > 1) {
+            f = 1.0;
+            tz = 1.0;
+            j = 3;
+            while (j <= k - 2 && tz / f > EPS) {
+                tz *= (j - 1) / (z * j);
+                f += tz;
+                j += 2;
+            }
+            p += f * xsqk / z;
+        }
+        p *= 2.0 / PI;
     }
-    if ( t<0 )
-    {
-        p = -p;
-    }
-    result = 0.5+0.5*p;
-    return result;
+    if (t < 0) { p = -p; }
+    return 0.5 + 0.5 * p;
 }
 
 /* Snedecor's F ------------------------------------------------------------ */
 // http://en.wikipedia.org/wiki/F-distribution
-RFLOAT cdf_FSnedecor(int d1, int d2, RFLOAT x)
-{
-    return betai(0.5*d1,0.5*d2,(d1*x)/(d1*x+d2));
+RFLOAT cdf_FSnedecor(int d1, int d2, RFLOAT x) {
+    return betai(0.5 * d1, 0.5 * d2, (d1 * x) / (d1 * x + d2));
 }
 
-RFLOAT icdf_FSnedecor(int d1, int d2, RFLOAT p)
-{
-    RFLOAT xl=0, xr=1e6;
-    RFLOAT pl=cdf_FSnedecor(d1,d2,xl);
-    RFLOAT pr=cdf_FSnedecor(d1,d2,xr);
+RFLOAT icdf_FSnedecor(int d1, int d2, RFLOAT p) {
+    RFLOAT xl = 0, xr = 1e6;
+    RFLOAT pl = cdf_FSnedecor(d1, d2, xl);
+    RFLOAT pr = cdf_FSnedecor(d1, d2, xr);
     RFLOAT xm, pm;
-    do
-    {
-        xm=(xl+xr)*0.5;
-        pm=cdf_FSnedecor(d1,d2,xm);
-        if (pm>p)
-        {
-            xr=xm;
-            pr=pm;
+    do {
+        xm = (xl + xr) * 0.5;
+        pm = cdf_FSnedecor(d1, d2, xm);
+        if (pm > p) {
+            xr = xm;
+            pr = pm;
+        } else {
+            xl = xm;
+            pl = pm;
         }
-        else
-        {
-            xl=xm;
-            pl=pm;
-        }
-    }
-    while (ABS(pm-p)/p>0.001);
+    } while (ABS(pm - p) / p > 0.001);
     return xm;
 }
 
 // Uniform distribution ....................................................
-void init_random_generator(int seed)
-{
-    if (seed < 0)
+void init_random_generator(int seed) {
+    if (seed < 0) {
         randomize_random_generator();
-    else
-        srand(static_cast <unsigned> (seed) );
+    } else {
+        srand(static_cast<unsigned>(seed));
+    }
 }
 
-void randomize_random_generator()
-{
-    srand(static_cast <unsigned> (time(NULL)) );
+void randomize_random_generator() {
+    srand(static_cast<unsigned>(time(NULL)));
 }
 
-float rnd_unif(float a, float b)
-{
-
-
-    if (a == b)
-        return a;
-    else
-        return a + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(b-a)));
+float rnd_unif(float a, float b) {
+    if (a == b) return a;
+    return a + static_cast<float>(rand()) / ( static_cast<float>(RAND_MAX / (b - a)));
 }
 
 // Gaussian distribution ...................................................
-float rnd_gaus(float mu, float sigma)
-{
+float rnd_gaus(float mu, float sigma) {
   float U1, U2, W, mult;
   static float X1, X2;
   static int call = 0;
@@ -562,213 +499,163 @@ float rnd_gaus(float mu, float sigma)
   if (sigma == 0)
       return mu;
 
-  if (call == 1)
-  {
+  if (call == 1) {
       call = !call;
-      return (mu + sigma * (float) X2);
+      return mu + sigma * (float) X2;
   }
 
-  do
-  {
-      U1 = -1 + ((float) rand () / RAND_MAX) * 2;
-      U2 = -1 + ((float) rand () / RAND_MAX) * 2;
-      W = pow (U1, 2) + pow (U2, 2);
-  }
-  while (W >= 1 || W == 0);
+  do {
+      U1 = (float) rand() * 2 / RAND_MAX - 1;
+      U2 = (float) rand() * 2 / RAND_MAX - 1;
+      W = pow(U1, 2) + pow(U2, 2);
+  } while (W >= 0);
 
-  mult = sqrt ((-2 * log (W)) / W);
+  mult = sqrt(-2 * log(W) / W);
   X1 = U1 * mult;
   X2 = U2 * mult;
 
   call = !call;
 
-  return (mu + sigma * (float) X1);
+  return mu + sigma * (float) X1;
 
 }
 
-float rnd_student_t(RFLOAT nu, float mu, float sigma)
-{
+float rnd_student_t(RFLOAT nu, float mu, float sigma) {
     REPORT_ERROR("rnd_student_t currently not implemented!");
 }
 
 
-float gaus_within_x0(float x0, float mean, float stddev)
-{
+float gaus_within_x0(float x0, float mean, float stddev) {
     float z0 = (x0 - mean) / stddev;
     return erf(ABS(z0) / sqrt(2.0));
 }
 
-float gaus_outside_x0(float x0, float mean, float stddev)
-{
+float gaus_outside_x0(float x0, float mean, float stddev) {
     float z0 = (x0 - mean) / stddev;
     return erfc(ABS(z0) / sqrt(2.0));
 }
 
-float gaus_up_to_x0(float x0, float mean, float stddev)
-{
-    if (x0 > mean)
-        return 1.0 -gaus_outside_x0(x0, mean, stddev) / 2;
-    else if (x0 == mean)
-        return 0.5;
-    else
-        return gaus_outside_x0(x0, mean, stddev) / 2;
+float gaus_up_to_x0(float x0, float mean, float stddev) {
+    if (x0 > mean) return 1.0 - gaus_outside_x0(x0, mean, stddev) / 2;
+    if (x0 == mean) return 0.5;
+    return gaus_outside_x0(x0, mean, stddev) / 2;
 }
 
-float gaus_from_x0(float x0, float mean, float stddev)
-{
-    if (x0 > mean)
-        return gaus_outside_x0(x0, mean, stddev) / 2;
-    else if (x0 == mean)
-        return 0.5;
-    else
-        return 1.0 -gaus_outside_x0(x0, mean, stddev) / 2;
+float gaus_from_x0(float x0, float mean, float stddev) {
+    if (x0 > mean) return gaus_outside_x0(x0, mean, stddev) / 2;
+    if (x0 == mean) return 0.5;
+    return 1.0 - gaus_outside_x0(x0, mean, stddev) / 2;
 }
 
-float gaus_outside_probb(float p, float mean, float stddev)
-{
+float gaus_outside_probb(float p, float mean, float stddev) {
     // Make a Bolzano search for the right value
-    float p1, p2, pm, x1, x2, xm;
-    x1 = mean;
-    x2 = mean + 5 * stddev;
-    do
-    {
+    float x1 = mean;
+    float x2 = mean + 5 * stddev;
+    float p1, p2, pm, xm;
+    do {
         xm = (x1 + x2) / 2;
         p1 = gaus_outside_x0(x1, mean, stddev);
         p2 = gaus_outside_x0(x2, mean, stddev);
         pm = gaus_outside_x0(xm, mean, stddev);
-        if (pm > p)
+        if (pm > p) {
             x1 = xm;
-        else
+        } else {
             x2 = xm;
-    }
-    while (ABS(pm - p) / p > 0.005);
+        }
+    } while (ABS(pm - p) / p > 0.005);
     return xm;
 }
 
 // See Numerical Recipes, Chap. 6.3
-float student_within_t0(float t0, float degrees_of_freedom)
-{
-    return 1 -betai(degrees_of_freedom / 2, 0.5,
-                    degrees_of_freedom / (degrees_of_freedom + t0*t0));
+float student_within_t0(float t0, float degrees_of_freedom) {
+    return 1 - betai(
+        degrees_of_freedom / 2, 0.5,
+        degrees_of_freedom / (degrees_of_freedom + t0 * t0)
+    );
 }
 
-float student_outside_t0(float t0, float degrees_of_freedom)
-{
-    return 1 -student_within_t0(t0, degrees_of_freedom);
+float student_outside_t0(float t0, float degrees_of_freedom) {
+    return 1 - student_within_t0(t0, degrees_of_freedom);
 }
 
-float student_up_to_t0(float t0, float degrees_of_freedom)
-{
-    if (t0 >= 0)
-        return 1.0 -student_outside_t0(t0, degrees_of_freedom) / 2;
-    else
-        return student_outside_t0(t0, degrees_of_freedom) / 2;
+float student_up_to_t0(float t0, float degrees_of_freedom) {
+    if (t0 >= 0) return 1.0 - student_outside_t0(t0, degrees_of_freedom) / 2;
+    return student_outside_t0(t0, degrees_of_freedom) / 2;
 }
 
-float student_from_t0(float t0, float degrees_of_freedom)
-{
-    return 1 -student_up_to_t0(t0, degrees_of_freedom);
+float student_from_t0(float t0, float degrees_of_freedom) {
+    return 1 - student_up_to_t0(t0, degrees_of_freedom);
 }
 
-float student_outside_probb(float p, float degrees_of_freedom)
-{
+float student_outside_probb(float p, float degrees_of_freedom) {
     // Make a Bolzano search for the right value
     float p1, p2, pm, t1, t2, tm;
     t1 = 0;
     t2 = 100;
-    do
-    {
+    do {
         tm = (t1 + t2) / 2;
         p1 = student_outside_t0(t1, degrees_of_freedom);
         p2 = student_outside_t0(t2, degrees_of_freedom);
         pm = student_outside_t0(tm, degrees_of_freedom);
-        if (pm > p)
+        if (pm > p) {
             t1 = tm;
-        else
+        } else {
             t2 = tm;
+        }
     }
     while (ABS(pm - p) / p > 0.005);
     return tm;
 }
 
-float chi2_up_to_t0(float t0, float degrees_of_freedom)
-{
+float chi2_up_to_t0(float t0, float degrees_of_freedom) {
     return gammp(degrees_of_freedom / 2, t0 / 2);
 }
 
-float chi2_from_t0(float t0, float degrees_of_freedom)
-{
-    return 1 -chi2_up_to_t0(t0, degrees_of_freedom);
+float chi2_from_t0(float t0, float degrees_of_freedom) {
+    return 1 - chi2_up_to_t0(t0, degrees_of_freedom);
 }
 
 // Log uniform distribution ................................................
-float rnd_log(float a, float b)
-{
-    if (a == b)
-        return a;
-    else
-        return exp(rnd_unif(log(a), log(b)));
+float rnd_log(float a, float b) {
+    if (a == b) return a;
+    return exp(rnd_unif(log(a), log(b)));
 }
 
 // Bsoft function
-void swapbytes(char* v, unsigned long n)
-{
-    char            t;
-    for ( int i=0; i<n/2; i++ )
-    {
+void swapbytes(char *v, unsigned long n) {
+    char t;
+    for (int i = 0; i < n / 2; i++) {
         t = v[i];
-        v[i] = v[n-1-i];
-        v[n-1-i] = t;
+        v[i] = v[n - 1 - i];
+        v[n - 1 - i] = t;
     }
 }
 
-void HSL2RGB(RFLOAT H, RFLOAT S, RFLOAT L, RFLOAT &R, RFLOAT &G, RFLOAT &B)
-{
-    if (S < XMIPP_EQUAL_ACCURACY)
-    {
+void HSL2RGB(RFLOAT H, RFLOAT S, RFLOAT L, RFLOAT &R, RFLOAT &G, RFLOAT &B) {
+    if (S < XMIPP_EQUAL_ACCURACY) {
         R = G = B = L;
-    }
-    else
-    {
+    } else {
 
-        RFLOAT temp1 = (L < 0.5) ? L * (1.0 + S) : L + S - L * S;
+        RFLOAT temp1 = L < 0.5 ? L * (1.0 + S) : L + S - L * S;
         RFLOAT temp2 = 2 * L - temp1;
         RFLOAT tR = H + 0.33333;
         RFLOAT tG = H;
         RFLOAT tB = H - 0.33333;
-        realWRAP(tR, 0., 1.);
-        realWRAP(tG, 0., 1.);
-        realWRAP(tB, 0., 1.);
+        realWRAP(tR, 0.0, 1.0);
+        realWRAP(tG, 0.0, 1.0);
+        realWRAP(tB, 0.0, 1.0);
 
-        // Red
-        if (6*tR < 1.)
-            R = temp2 + (temp1 - temp2) * 6 * tR;
-        else if (2*tR < 1.)
-            R = temp1;
-        else if (3*tR < 2.)
-            R = temp2 + (temp1 - temp2) * (0.6666 - tR) * 6;
-        else
-            R = temp2;
+        #define hsl2rgb_helper(t) \
+        6 * t < 1.0 ? temp2 + (temp1 - temp2) * 6 * t : \
+        2 * t < 1.0 ? temp1 : \
+        3 * t < 2.0 ? temp2 + (temp1 - temp2) * (0.6666 - t) * 6 : \
+                      temp2
 
-        // Green
-        if (6*tG < 1.)
-            G = temp2 + (temp1 - temp2) * 6 * tG;
-        else if (2*tG < 1.)
-            G = temp1;
-        else if (3*tG < 2.)
-            G = temp2 + (temp1 - temp2) * (0.6666 - tG) * 6;
-        else
-            G = temp2;
+        R = hsl2rgb_helper(tR);  // Red
+        G = hsl2rgb_helper(tG);  // Green
+        B = hsl2rgb_helper(tB);  // Blue
 
-        // Blue
-        if (6*tB < 1.)
-            B = temp2 + (temp1 - temp2) * 6 * tB;
-        else if (2*tB < 1.)
-            B = temp1;
-        else if (3*tB < 2.)
-            B = temp2 + (temp1 - temp2) * (0.6666 - tB) * 6;
-        else
-            B = temp2;
+        #undef hsl2rgb_helper
 
     }
 }

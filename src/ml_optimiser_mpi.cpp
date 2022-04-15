@@ -2357,7 +2357,7 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
 
     // Loop over all classes (this will be just one class for now...)
     RFLOAT myres = std::max(low_resol_join_halves, 1./mymodel.current_resolution);
-    int lowres_r_max = CEIL(mymodel.ori_size * mymodel.pixel_size / myres);
+    int lowres_r_max = ceil(mymodel.ori_size * mymodel.pixel_size / myres);
 
     for (int ibody = 0; ibody< mymodel.nr_bodies; ibody++) {
         #ifdef DEBUG

@@ -271,7 +271,7 @@ void Postprocessing::divideByMtf(MultidimArray<Complex > &FT) {
             int r2 = kp * kp + ip * ip + jp * jp;
             RFLOAT res = sqrt((RFLOAT) r2) / xsize_ang; // get resolution in 1/Ang
             if (res < 1.0 / (2.0 * angpix)) {
-                int i_0 = FLOOR(res / res_per_elem);
+                int i_0 = floor(res / res_per_elem);
                 RFLOAT mtf;
                 // check boundaries of the array
                 if (i_0 >= MULTIDIM_SIZE(mtf_value) - 1) {
@@ -354,7 +354,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
     }
 
     // Apply correction only beyond low-res fitting of B-factors
-    int minr = FLOOR(XSIZE(FT) * angpix / fit_minres);
+    int minr = floor(XSIZE(FT) * angpix / fit_minres);
     int myradius_count = minr;
     MultidimArray<RFLOAT> sum3d;
     MultidimArray<int> count3d;

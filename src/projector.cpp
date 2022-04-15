@@ -557,7 +557,7 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     for (int i = 0; i < YSIZE(f2d); i++) {
         const int y = (i <= r_max_out)? i : i - YSIZE(f2d);
 
-        const int x_max = FLOOR(sqrt(r_max_out_2 - y * y));
+        const int x_max = floor(sqrt(r_max_out_2 - y * y));
 
         for (int x = 0; x <= x_max; x++) {
             // Guaranteed that: sqrt(x * x + y * y) < r_max_out
@@ -586,16 +586,16 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 // Trilinear interpolation (with physical coords)
                 // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
                 // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-                const int x0 = FLOOR(xp);
+                const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
                 const int x1 = x0 + 1;
 
-                int y0 = FLOOR(yp);
+                int y0 = floor(yp);
                 const RFLOAT fy = yp - y0;
-                y0 -=  STARTINGY(data);
+                y0 -= STARTINGY(data);
                 const int y1 = y0 + 1;
 
-                int z0 = FLOOR(zp);
+                int z0 = floor(zp);
                 const RFLOAT fz = zp - z0;
                 z0 -= STARTINGZ(data);
                 const int z1 = z0 + 1;
@@ -706,16 +706,16 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
             // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX = 0)
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
 
-            int x0 = FLOOR(xp);
+            int x0 = floor(xp);
             double fx = xp - x0;
             int x1 = x0 + 1;
 
-            int y0 = FLOOR(yp);
+            int y0 = floor(yp);
             double fy = yp - y0;
-            y0 -=  STARTINGY(data);
+            y0 -= STARTINGY(data);
             int y1 = y0 + 1;
 
-            int z0 = FLOOR(zp);
+            int z0 = floor(zp);
             double fz = zp - z0;
             z0 -= STARTINGZ(data);
             int z1 = z0 + 1;
@@ -817,13 +817,13 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
             // Trilinear interpolation (with physical coords)
             // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-            const int x0 = FLOOR(xp);
+            const int x0 = floor(xp);
             const RFLOAT fx = xp - x0;
             const int x1 = x0 + 1;
 
-            int y0 = FLOOR(yp);
+            int y0 = floor(yp);
             const RFLOAT fy = yp - y0;
-            y0 -=  STARTINGY(data);
+            y0 -= STARTINGY(data);
             const int y1 = y0 + 1;
 
             // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
@@ -888,7 +888,7 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     for (int i = 0; i < YSIZE(f2d); i++) {
         const int y = (i <= r_max_out)? i : i - YSIZE(f2d);
 
-        const int x_max = FLOOR(sqrt(r_max_out_2 - y * y));
+        const int x_max = floor(sqrt(r_max_out_2 - y * y));
 
         for (int x = 0; x <= x_max; x++) {
             // sqrt(x*x + y*y) guaranteed to be < r_max_out
@@ -913,13 +913,13 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 // Trilinear interpolation (with physical coords)
                 // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
                 // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-                const int x0 = FLOOR(xp);
+                const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
                 const int x1 = x0 + 1;
 
-                int y0 = FLOOR(yp);
+                int y0 = floor(yp);
                 const RFLOAT fy = yp - y0;
-                y0 -=  STARTINGY(data);
+                y0 -= STARTINGY(data);
                 const int y1 = y0 + 1;
 
                 // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
@@ -993,7 +993,7 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
             // avoid negative square root
             if (yz2 > r_max_out_2) continue;
 
-            const int x_max = FLOOR(sqrt(r_max_out_2 - yz2));
+            const int x_max = floor(sqrt(r_max_out_2 - yz2));
 
             for (int x = 0; x <= x_max; x++) {
                 // Get logical coordinates in the 3D map
@@ -1019,18 +1019,18 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
                     // Trilinear interpolation (with physical coords)
                     // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-                    const int x0 = FLOOR(xp);
+                    const int x0 = floor(xp);
                     const RFLOAT fx = xp - x0;
                     const int x1 = x0 + 1;
 
-                    int y0 = FLOOR(yp);
+                    int y0 = floor(yp);
                     const RFLOAT fy = yp - y0;
-                    y0 -=  STARTINGY(data);
+                    y0 -= STARTINGY(data);
                     const int y1 = y0 + 1;
 
-                    int z0 = FLOOR(zp);
+                    int z0 = floor(zp);
                     const RFLOAT fz = zp - z0;
-                    z0 -=  STARTINGZ(data);
+                    z0 -= STARTINGZ(data);
                     const int z1 = z0 + 1;
 
                     // Matrix access can be accelerated through pre-calculation of z0*xydim etc.

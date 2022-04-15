@@ -2101,15 +2101,15 @@ class MultidimArray {
          * (x,y,z) are in logical coordinates.
          */
         T interpolatedElement3D(RFLOAT x, RFLOAT y, RFLOAT z, T outside_value = (T) 0, long int n = 0) {
-            long int x0 = FLOOR(x);
+            long int x0 = floor(x);
             RFLOAT fx = x - x0;
             long int x1 = x0 + 1;
 
-            long int y0 = FLOOR(y);
+            long int y0 = floor(y);
             RFLOAT fy = y - y0;
             long int y1 = y0 + 1;
 
-            long int z0 = FLOOR(z);
+            long int z0 = floor(z);
             RFLOAT fz = z - z0;
             long int z1 = z0 + 1;
 
@@ -2137,10 +2137,10 @@ class MultidimArray {
          * Bilinear interpolation. (x,y) are in logical coordinates.
          */
         inline T interpolatedElement2D(RFLOAT x, RFLOAT y, T outside_value = (T) 0, long int n = 0) const {
-            long int x0 = FLOOR(x);
+            long int x0 = floor(x);
             RFLOAT fx = x - x0;
             long int x1 = x0 + 1;
-            long int y0 = FLOOR(y);
+            long int y0 = floor(y);
             RFLOAT fy = y - y0;
             long int y1 = y0 + 1;
 
@@ -3192,7 +3192,7 @@ class MultidimArray {
             int steps;
 
             if (mode == "incr") {
-                steps = 1 + (int) FLOOR((RFLOAT) ABS(maxF - minF) / (RFLOAT) n);
+                steps = 1 + (int) floor((RFLOAT) ABS(maxF - minF) / (RFLOAT) n);
                 slope = n * sgn(maxF - minF); // maxF and minF should not be equal
             } else if (mode == "steps") {
                 steps = n;
@@ -3664,7 +3664,7 @@ class MultidimArray {
 
         /** ROUND
          *
-         * Applies a ROUND (look for the nearest integer) to each array element.
+         * Round each array element.
          */
         void selfROUND() {
             T* ptr = NULL;
@@ -3676,26 +3676,24 @@ class MultidimArray {
 
         /** CEILING
          *
-         * Applies a CEILING (look for the nearest larger integer) to each
-         * array element.
+         * Round each array element up.
          */
         void selfCEIL() {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr = CEIL(*ptr);
+            *ptr = ceil(*ptr);
         }
 
         /** FLOOR
          *
-         * Applies a FLOOR (look for the nearest larger integer) to each
-         * array element.
+         * Round each array element down.
          */
         void selfFLOOR() {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr = FLOOR(*ptr);
+            *ptr = floor(*ptr);
         }
 
         /** ABS

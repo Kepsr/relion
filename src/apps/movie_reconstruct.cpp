@@ -222,7 +222,7 @@ void MovieReconstructor::initialise() {
     if (do_ewald) do_ctf = true;
     data_dim = 2;
 
-    r_max =  maxres < 0.0 ? -1 : CEIL(output_boxsize * angpix / maxres);
+    r_max =  maxres < 0.0 ? -1 : ceil(output_boxsize * angpix / maxres);
 }
 
 void MovieReconstructor::backproject(int rank, int size) {
