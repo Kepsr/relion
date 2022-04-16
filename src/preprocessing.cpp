@@ -148,7 +148,7 @@ void Preprocessing::initialise() {
         MDmics.goToObject(0);
         FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
         Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
-        Dimensions dimensions = Imic.getDimensions();
+        Image<RFLOAT>::Dimensions dimensions = Imic.getDimensions();
              int xdim = dimensions.x;
              int ydim = dimensions.y;
              int zdim = dimensions.z;
@@ -524,7 +524,7 @@ void Preprocessing::readHelicalCoordinates(FileName fn_mic, FileName fn_coord, M
     Image<RFLOAT> Imic;
     Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
 
-    Dimensions dimensions = Imic.getDimensions();
+    Image<RFLOAT>::Dimensions dimensions = Imic.getDimensions();
          int xdim = dimensions.x;
          int ydim = dimensions.y;
          int zdim = dimensions.z;

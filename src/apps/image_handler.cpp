@@ -696,7 +696,7 @@ class image_handler_parameters {
             if (i_img == 0) {
                 Image<RFLOAT> Ihead;
                 Ihead.read(fn_img, false);
-                Dimensions dimensions = Ihead.getDimensions();
+                Image<RFLOAT>::Dimensions dimensions = Ihead.getDimensions();
                 xdim = dimensions.x;
                 ydim = dimensions.y;
                 zdim = dimensions.z;

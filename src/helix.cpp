@@ -799,14 +799,12 @@ bool checkParametersFor3DHelicalReconstruction(
 }
 
 void imposeHelicalSymmetryInRealSpace(
-    MultidimArray<RFLOAT>& v,
+    MultidimArray<RFLOAT> &v,
     RFLOAT pixel_size_A,
     RFLOAT sphere_radius_A, RFLOAT cyl_inner_radius_A, RFLOAT cyl_outer_radius_A,
     RFLOAT z_percentage,
     RFLOAT rise_A, RFLOAT twist_deg, RFLOAT cosine_width_pix
 ) {
-    bool ignore_helical_symmetry = false;
-    long int Xdim, Ydim, Zdim, Ndim, box_len;
     RFLOAT rise_pix, sphere_radius_pix, cyl_inner_radius_pix, cyl_outer_radius_pix, r_min, r_max, d_min, d_max, D_min, D_max, z_min, z_max;
 
     int rec_len;
@@ -815,14 +813,8 @@ void imposeHelicalSymmetryInRealSpace(
 
     if (v.getDim() != 3)
         REPORT_ERROR("helix.cpp::imposeHelicalSymmetryInRealSpace(): Input helical reference is not 3D! (vol.getDim() = " + integerToString(v.getDim()) + ")");
-    // std::tuple<int, int, int, long int> dimensions = v.getDimensions();
-    Dimensions dimensions = v.getDimensions();
-    Xdim = dimensions.x;
-    Ydim = dimensions.y;
-    Zdim = dimensions.z;
-    Ndim = dimensions.n;
-    box_len = Xdim    < Ydim ? Xdim    : Ydim;
-    box_len = box_len < Zdim ? box_len : Zdim;
+    MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
+    long int box_len = std::min({dimensions.x, dimensions.y, dimensions.z});
 
     // Check helical parameters
     checkParametersFor3DHelicalReconstruction(
@@ -849,12 +841,10 @@ void imposeHelicalSymmetryInRealSpace(
 
     // Crop the central slices
     v.setXmippOrigin();
-    z_max = ((RFLOAT)(Zdim)) * z_percentage / 2.0;
-    if (z_max > (RFLOAT) FINISHINGZ(v) - 1.0)
-        z_max = (RFLOAT) FINISHINGZ(v) - 1.0;
+    z_max = (RFLOAT) dimensions.z * z_percentage / 2.0;
+    if (z_max > (RFLOAT) FINISHINGZ(v) - 1.0) { z_max = (RFLOAT) FINISHINGZ(v) - 1.0; }
     z_min = -z_max;
-    if (z_min < (RFLOAT) STARTINGZ(v) + 1.0)
-        z_min = (RFLOAT) STARTINGZ(v) + 1.0;
+    if (z_min < (RFLOAT) STARTINGZ(v)  + 1.0) { z_min = (RFLOAT) STARTINGZ(v)  + 1.0; }
 
     // Init volumes
     v.setXmippOrigin();
@@ -863,7 +853,7 @@ void imposeHelicalSymmetryInRealSpace(
     vout.setXmippOrigin();
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + (ceil((RFLOAT(Zdim) + 2.0) / rise_pix));
+    rec_len = 2 + ceil((RFLOAT(dimensions.z) + 2.0) / rise_pix);
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
@@ -1433,32 +1423,21 @@ void transformCartesianAndHelicalCoords(
 
 /*
 void makeBlot(
-        MultidimArray<RFLOAT>& v,
-        RFLOAT y,
-        RFLOAT x,
-        RFLOAT r)
-{
-    int Xdim, Ydim, Zdim, Ndim;
-    RFLOAT dist, min;
-    std::tuple<int, int, int, long int> dimensions = v.getDimensions();
-    int Xdim = std::get<0>(dimensions);
-    int Ydim = std::get<1>(dimensions);
-    int Zdim = std::get<2>(dimensions);
-    long int Ndim = std::get<3>(dimensions);
-    if ( (Ndim != 1) || (Zdim != 1) || (YXSIZE(v) <= 2) )
+    MultidimArray<RFLOAT> &v,
+    RFLOAT y, RFLOAT x, RFLOAT r
+) {
+    MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
+    if (dimensions.n != 1 || dimensions.z != 1 || YXSIZE(v) <= 2)
         return;
 
-    min = DIRECT_A2D_ELEM(v, 0, 0);
+    RFLOAT min = DIRECT_A2D_ELEM(v, 0, 0);
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v)
         min = (DIRECT_A2D_ELEM(v, i, j) < min) ? DIRECT_A2D_ELEM(v, i, j) : min;
 
     v.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY2D(v)
-    {
-        dist = (i - y) * (i - y) + (j - x) * (j - x);
-        dist = sqrt(dist);
-        if (dist < r)
-            A2D_ELEM(v, i, j) = min;
+    FOR_ALL_ELEMENTS_IN_ARRAY2D(v) {
+        RFLOAT dist = sqrt((i - y) * (i - y) + (j - x) * (j - x));
+        if (dist < r) { A2D_ELEM(v, i, j) = min; }
     }
     return;
 }
@@ -1539,46 +1518,37 @@ void makeSimpleHelixFromPDBParticle(
 
 /*
 void normalise2DImageSlices(
-        const FileName& fn_in,
-        const FileName& fn_out,
-        int bg_radius,
-        RFLOAT white_dust_stddev,
-        RFLOAT black_dust_stddev)
-{
-    Image<RFLOAT> stack_in, slice;
-    int Xdim, Ydim, Zdim;
-    long int Ndim, ii;
+    const FileName &fn_in, const FileName &fn_out,
+    int bg_radius,
+    RFLOAT white_dust_stddev, RFLOAT black_dust_stddev
+) {
 
-    if ( (fn_in.getExtension() != "mrcs") || (fn_out.getExtension() != "mrcs") )
-    {
+    if (fn_in.getExtension() != "mrcs" || fn_out.getExtension() != "mrcs") {
         REPORT_ERROR("helix.cpp::normalise2DImageSlices(): Input and output should be .mrcs files!");
     }
+    Image<RFLOAT> stack_in;
     stack_in.clear();
     stack_in.read(fn_in, false, -1, false, false); // readData = false, select_image = -1, mapData= false, is_2D = false);
-    std::tuple<int, int, int, long int> dimensions = stack_in.getDimensions();
-    int Xdim = std::get<0>(dimensions);
-    int Ydim = std::get<1>(dimensions);
-    int Zdim = std::get<2>(dimensions);
-    long int Ndim = std::get<3>(dimensions);
+    Image<RFLOAT>::Dimensions dimensions = stack_in.getDimensions();
     std::cout << "File = " << fn_in.c_str() << std::endl;
-    std::cout << "X, Y, Z, N dim = " << Xdim << ", " << Ydim << ", " << Zdim << ", " << Ndim << std::endl;
+    std::cout << "X, Y, Z, N dim = " << dimensions.x << ", " << dimensions.y << ", " << dimensions.z << ", " << dimensions.n << std::endl;
     std::cout << "bg_radius = " << bg_radius << ", white_dust_stddev = " << white_dust_stddev << ", black_dust_stddev = " << black_dust_stddev << std::endl;
-    if ( (Zdim != 1) || (Ndim < 1) || (Xdim < 3) || (Ydim < 3) )
-    {
+    if (dimensions.z != 1 || dimensions.n < 1 || dimensions.x < 3 || dimensions.y < 3) {
         REPORT_ERROR("helix.cpp::normalise2DImageSlices(): Invalid image dimensionality!");
     }
 
-    for (ii = 0; ii < Ndim; ii++)
-    {
+    for (long int ii = 0; ii < dimensions.n; ii++) {
+        Image<RFLOAT> slice;
         slice.read(fn_in, true, ii, false, false);
         normalise(slice, bg_radius, white_dust_stddev, black_dust_stddev, false);
 
         // Write this particle to the stack on disc
         // First particle: write stack in overwrite mode, from then on just append to it
-        if (ii == 0)
-            slice.write(fn_out, -1, (Ndim > 1), WRITE_OVERWRITE);
-        else
+        if (ii == 0) {
+            slice.write(fn_out, -1, dimensions.n > 1, WRITE_OVERWRITE);
+        } else {
             slice.write(fn_out, -1, false, WRITE_APPEND);
+        }
     }
 
     return;
@@ -3678,11 +3648,10 @@ void excludeLowCTFCCMicrographs(
 }
 
 void cutOutPartOfHelix(
-    const MultidimArray<RFLOAT>& vin, MultidimArray<RFLOAT>& vout,
+    const MultidimArray<RFLOAT> &vin, MultidimArray<RFLOAT> &vout,
     long int new_boxdim,
     RFLOAT ang_deg, RFLOAT z_percentage
 ) {
-    long int Xdim, Ydim, Zdim, Ndim, old_boxdim;
 
     vout.clear();
 
@@ -3694,14 +3663,8 @@ void cutOutPartOfHelix(
         REPORT_ERROR("helix.cpp::cutOutPartOfHelix(): Angular range must be larger than 0!");
     ang_deg = ang_deg > 91.0 ? 91.0 : ang_deg;
 
-    Dimensions dimensions = vin.getDimensions();
-    Xdim = dimensions.x;
-    Ydim = dimensions.y;
-    Zdim = dimensions.z;
-    Ndim = dimensions.n;
-    // Surely old_boxdim = min(Xdim, Ydim, Zdim)
-    old_boxdim = Xdim < Ydim ? Xdim : Ydim;
-    old_boxdim = Zdim < old_boxdim ? Zdim : old_boxdim;
+    MultidimArray<RFLOAT>::Dimensions dimensions = vin.getDimensions();
+    long int old_boxdim = std::min({dimensions.x, dimensions.y, dimensions.z});
 
     if (new_boxdim <= 0 || new_boxdim > old_boxdim / 2)
         new_boxdim = old_boxdim / 2;
@@ -4743,10 +4706,8 @@ void Interpolate3DCurves(
     MetaDataTable MD_in, MD_out, MD_all;
     RFLOAT x0, y0, z0, val;
     int nr_points = 0, total_segments = 0, nr_segments = 0;
-    int xdim = 0, ydim = 0, zdim = 0, xdim_img = 0, ydim_img = 0, zdim_img = 0;
-    long int ndim = 0, ndim_img = 0;
     char buf_word[4], buf_qword[16], tmp_char;
-    bool contain_3d_points = false, flip_YZ = false;
+    bool contain_3d_points = false;
 
     // General parameter checks
     if (binning_factor < 1)
@@ -4757,14 +4718,10 @@ void Interpolate3DCurves(
     // Read the header of 3D reconstructed tomogram
     img.clear();
     img.read(fn_tomo, false);
-    Dimensions dimensions = img.getDimensions();
-    xdim_img = dimensions.x;
-    ydim_img = dimensions.y;
-    zdim_img = dimensions.z;
-    ndim_img = dimensions.n;
-    if (zdim_img <= 1)
+    Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
+    if (dimensions.z <= 1)
         REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Dimension Z of reconstructed 3D tomogram " + fn_tomo + " is 1!");
-    if (ndim_img != 1)
+    if (dimensions.n != 1)
         REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Dimension N of reconstructed 3D tomogram " + fn_tomo + " is not 1!");
 
     // Glob all files
@@ -4828,7 +4785,6 @@ void Interpolate3DCurves(
     total_segments = nr_segments = 0;
     for (int fid = 0; fid < fn_in_list.size(); fid++) {
         contain_3d_points = false;
-        flip_YZ = false;
         xlist.clear(); ylist.clear(); zlist.clear();
 
         // Open an input file
@@ -4837,7 +4793,7 @@ void Interpolate3DCurves(
 
         // MOD file format definition: http://bio3d.colorado.edu/imod/doc/binspec.html
         if (fn_in.getExtension() == "mod") {
-            fin.open(fn_in.c_str(), std::ios_base::in|std::ios_base::binary);
+            fin.open(fn_in.c_str(), std::ios_base::in | std::ios_base::binary);
             if (fin.fail())
                 REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Cannot open input file: " + (std::string)(fn_in));
 
@@ -4855,44 +4811,36 @@ void Interpolate3DCurves(
             // Scheme 2
             fin.read(reinterpret_cast<char*>(buf_qword), sizeof(buf_qword)); // Read the first 16 bytes
             fin.read(reinterpret_cast<char*>(buf_qword), sizeof(buf_qword)); // Read the second 16 bytes
-            if ( (buf_qword[0] != 'M') || (buf_qword[1] != 'o') || (buf_qword[2] != 'd') || (buf_qword[3] != 'e') || (buf_qword[4] != 'l') )
+            if (strncmp(buf_qword, "Model", 5) != 0)
                 REPORT_ERROR("helix.cpp::Interpolate3DCurves(): IMOD file header does not contain 'Model' tag!");
             for (int id = 0; id < 6; id++)
                 fin.read(reinterpret_cast<char*>(buf_qword), sizeof(buf_qword)); // Read the next 96 bytes
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Read the next 8 bytes
             // Name of model ends
+            #define ADJUST_FOR_LITTLE_ENDIANNESS \
+            if (is_little_endian) { \
+                SWAP(buf_word[0], buf_word[3]); \
+                SWAP(buf_word[1], buf_word[2]); \
+            }
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Xdim
-            if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3]);
-                SWAP(buf_word[1], buf_word[2]);
-            }
-            xdim = *(reinterpret_cast<int*>(buf_word));
+            ADJUST_FOR_LITTLE_ENDIANNESS
+            int xdim = *reinterpret_cast<int*>(buf_word);
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Ydim
-            if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3]);
-                SWAP(buf_word[1], buf_word[2]);
-            }
-            ydim = *(reinterpret_cast<int*>(buf_word));
+            ADJUST_FOR_LITTLE_ENDIANNESS
+            int ydim = *reinterpret_cast<int*>(buf_word);
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Zdim
-            if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3]);
-                SWAP(buf_word[1], buf_word[2]);
-            }
-            zdim = *(reinterpret_cast<int*>(buf_word));
+            ADJUST_FOR_LITTLE_ENDIANNESS
+            int zdim = *reinterpret_cast<int*>(buf_word);
             std::cout << " Binning factor = " << binning_factor << std::endl;
             std::cout << " Dimensions XYZ   (binned, unflipped coords) = " << xdim << " * " << ydim << " * " << zdim << std::endl;
             std::cout << " Dimensions XYZ (unbinned, unflipped coords) = " << xdim * binning_factor << " * " << ydim * binning_factor << " * " << zdim * binning_factor << std::endl;
-            std::cout << " Dimensions XYZ           (3D tomogram .mrc) = " << xdim_img << " * " << ydim_img << " * " << zdim_img << std::endl;
+            std::cout << " Dimensions XYZ           (3D tomogram .mrc) = " << dimensions.x << " * " << dimensions.y << " * " << dimensions.z << std::endl;
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Number of objects
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Flags
-            if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3]);
-                SWAP(buf_word[1], buf_word[2]);
-            }
-            if ((*(reinterpret_cast<int*>(buf_word))) & 0x00010000) // Check flag #16 - flip YZ?
-                flip_YZ = true;
-            //std::cout << (*(reinterpret_cast<int*>(buf_word))) << std::endl;
+            ADJUST_FOR_LITTLE_ENDIANNESS
+            bool flip_YZ = *reinterpret_cast<int*>(buf_word) & 0x00010000; // Check flag #16 - flip YZ?
+            // std::cout << *reinterpret_cast<int*>(buf_word) << std::endl;
             std::cout << " Model last viewed on Y/Z flipped or rotated image? = " << std::flush;
             std::cout << (flip_YZ ? "TRUE" : "FALSE") << std::endl;
             contain_3d_points = false;
@@ -4908,12 +4856,10 @@ void Interpolate3DCurves(
                 REPORT_ERROR("helix.cpp::Interpolate3DCurves(): IMOD file does not seem to contain manually picked 3D coordiantes!");
 
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Number of 3D points (meshes)
-            if (is_little_endian) {
-                SWAP(buf_word[0], buf_word[3]);
-                SWAP(buf_word[1], buf_word[2]);
-            }
-            nr_points = *(reinterpret_cast<int*>(buf_word));
-            //std::cout << nr_points << std::endl;
+            ADJUST_FOR_LITTLE_ENDIANNESS
+            nr_points = *reinterpret_cast<int*>(buf_word);
+            // std::cout << nr_points << std::endl;
+            #undef ADJUST_FOR_LITTLE_ENDIANNESS
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
             if (nr_points <= 2)
                 REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Input coordinate file: " + (std::string)(fn_in) + " should contain at least 2 points!");
@@ -5056,7 +5002,7 @@ void Interpolate3DCurves(
             MD_in, MD_out,
             nr_segments, nr_asu,
             rise_A, pixel_size_A, box_size_pix, fid + 1,
-            xdim_img, ydim_img, zdim_img,
+            dimensions.x, dimensions.y, dimensions.z,
             bimodal_angular_priors
         );
 

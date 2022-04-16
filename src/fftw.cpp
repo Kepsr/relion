@@ -1500,19 +1500,15 @@ void selfApplyBeamTilt(
 
 }
 
-void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &out, int factor) {
+void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out, int factor) {
 
     out.clear();
 
     // Check dimensions
-    Dimensions dimensions = v.getDimensions();
-    long int Xdim = dimensions.x;
-    long int Ydim = dimensions.y;
-    long int Zdim = dimensions.z;
-    long int Ndim = dimensions.n;
-    if (Zdim > 1 || Ndim > 1)
+    MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
+    if (dimensions.z > 1 || dimensions.n > 1)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray should be 2D.");
-    if (Xdim * Ydim <= 16)
+    if (dimensions.x * dimensions.y <= 16)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray is too small.");
     if (factor <= 1)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR Padding factor should be larger than 1.");
@@ -1536,9 +1532,9 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT > &v, MultidimArray<RFLOAT> &ou
     //std::cout << "bg_val = " << bg_val << ", bg_pix = " << bg_pix << std::endl;
     //std::cout << "bd_val = " << bd_val << ", bd_pix = " << bd_pix << std::endl;
 
-    // Pad and float output MultidimArray (2x original size by default)
-    long int XYdim = std::max(Xdim, Ydim) * factor;
-    out.resize(XYdim, XYdim);
+    // Pad and float output MultidimArray (2× original size by default)
+    long int box_len = std::max(dimensions.x, dimensions.y) * factor;
+    out.resize(box_len, box_len);
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {

@@ -774,14 +774,14 @@ class helix_bilder_parameters {
             MultidimArray<RFLOAT> Msum, Maux1;
             Matrix1D<RFLOAT> transZ(3);
             Image<RFLOAT> img;
-            long int Xdim, Ydim, Zdim, Ndim;
-
             img.read(fn_in);
-            Dimensions dimensions = img.getDimensions();
-            Xdim = dimensions.x;
-            Ydim = dimensions.y;
-            Zdim = dimensions.z;
-            Ndim = dimensions.n;
+
+            Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
+            long int Xdim = dimensions.x;
+            long int Ydim = dimensions.y;
+            long int Zdim = dimensions.z;
+            long int Ndim = dimensions.n;
+
             img().setXmippOrigin();
 
             if (Xdim != Ydim || Ydim != Zdim)

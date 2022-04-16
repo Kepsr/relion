@@ -241,11 +241,11 @@ class prepare_subtomo {
             } else {
                 // Get the CTFFIND executable
                 if (fn_ctffind_exe == "") {
-                    char* penv = getenv ("RELION_CTFFIND_EXECUTABLE");
+                    char *penv = getenv("RELION_CTFFIND_EXECUTABLE");
                     if (penv != NULL)
-                        fn_ctffind_exe = (std::string)penv;
+                        fn_ctffind_exe = (std::string) penv;
                 }
-                if ( (fn_ctffind_exe.length() < 2) && (!exists(fn_ctffind_exe)) )
+                if (fn_ctffind_exe.length() < 2 && !exists(fn_ctffind_exe))
                     REPORT_ERROR("Cannot find CTFFIND executable " + fn_ctffind_exe);
             }
             // TODO: output CTF parameters!
@@ -295,8 +295,7 @@ class prepare_subtomo {
         // Check dependent files
         MetaDataTable MD_tmp;
         Image<RFLOAT> img;
-        int xdim = 0, ydim = 0, zdim = 0;
-        long int ndim = 0, nr_frames = 0, nr_lines = 0;
+        long int nr_frames = 0, nr_lines = 0;
         RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
         bool is_star_coords = false, is_txt_coords = false;
         MD_tmp.clear();
@@ -306,40 +305,38 @@ class prepare_subtomo {
             std::cout << " 3D reconstructed tomogram in STAR file: " << fn1 << std::flush;
 
             // Check 3D reconstructed tomogram
-            if (!exists(fn1))
-                REPORT_ERROR("Cannot find 3D reconstructed tomogram " + fn1);
-            img.read(fn1, false);
-            Dimensions dimensions = img.getDimensions();
-            xdim = dimensions.x;
-            ydim = dimensions.y;
-            zdim = dimensions.z;
-            ndim = dimensions.n;
-            std::cout << " , Dimensions XYZN = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
-            if (zdim > 1 && ndim > 1)
-                REPORT_ERROR("Reconstructed 3D tomogram " + fn1 + " is 4D!");
-            if (xdim < box_size || ydim < box_size)
-                REPORT_ERROR("X and/or Y dimensions of reconstructed 3D tomogram " + fn1 + " is smaller than CTF box_size " + integerToString(box_size));
-            /// TODO: consider Gctf box_size?
+            {
+                if (!exists(fn1)) 
+                    REPORT_ERROR("Cannot find 3D reconstructed tomogram " + fn1);
+                img.read(fn1, false);
+
+                Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
+                std::cout << " , Dimensions XYZN = " << dimensions.x << " * " << dimensions.y << " * " << dimensions.z << " * " << dimensions.n << std::endl;
+                if (dimensions.z > 1 && dimensions.n > 1)
+                    REPORT_ERROR("Reconstructed 3D tomogram " + fn1 + " is 4D!");
+                if (dimensions.x < box_size || dimensions.y < box_size)
+                    REPORT_ERROR("X and/or Y dimensions of reconstructed 3D tomogram " + fn1 + " is smaller than CTF box_size " + integerToString(box_size));
+                /// TODO: consider Gctf box_size?
+            }
+
+            fn2 = fn1.withoutExtension() + ".mrcs";
 
             // Check original tilt series
-            fn2 = fn1.withoutExtension() + ".mrcs";
-            if (!exists(fn2))
-                REPORT_ERROR("Cannot find original tilt series (.mrcs) " + fn2);
-            std::cout << " Tilt series  : " << fn2 << std::flush;
-            img.read(fn2, false);
-            dimensions = img.getDimensions();
-            xdim = dimensions.x;
-            ydim = dimensions.y;
-            zdim = dimensions.z;
-            ndim = dimensions.n;
-            std::cout << " , Dimensions XYZN = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
-            if (zdim > 1 && ndim > 1)
-                REPORT_ERROR("Tilt series " + fn2 + " is 4D!");
-            if (xdim < box_size || ydim < box_size)
-                REPORT_ERROR("X and/or Y dimensions of tilt series " + fn2 + " is smaller than CTF box_size " + integerToString(box_size));
-            nr_frames = zdim * ndim;
-            if (nr_frames < 2)
-                REPORT_ERROR("Tilt series " + fn2 + " contains less than 2 frames!");
+            {
+                if (!exists(fn2))
+                    REPORT_ERROR("Cannot find original tilt series (.mrcs) " + fn2);
+                std::cout << " Tilt series  : " << fn2 << std::flush;
+                img.read(fn2, false);
+                Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
+                std::cout << " , Dimensions XYZN = " << dimensions.x << " * " << dimensions.y << " * " << dimensions.z << " * " << dimensions.n << std::endl;
+                if (dimensions.z > 1 && dimensions.n > 1)
+                    REPORT_ERROR("Tilt series " + fn2 + " is 4D!");
+                if (dimensions.x < box_size || dimensions.y < box_size)
+                    REPORT_ERROR("X and/or Y dimensions of tilt series " + fn2 + " is smaller than CTF box_size " + integerToString(box_size));
+                nr_frames = dimensions.z * dimensions.n;
+                if (nr_frames < 2)
+                    REPORT_ERROR("Tilt series " + fn2 + " contains less than 2 frames!");
+            }
 
             // Check .tlt (optional)
             fn2 = fn1.withoutExtension() + ".tlt";
@@ -392,7 +389,7 @@ class prepare_subtomo {
             fn2 = fn1.withoutExtension() + ".coords";
             fn3 = fn1.withoutExtension() + ".star";
             if (!exists(fn2) && !exists(fn3))
-                REPORT_ERROR("Cannot find .coord OR .star file " + fn2 + " OR " + fn3);
+                REPORT_ERROR("Cannot find .coords file " + fn2 + " OR .star file " + fn3);
             if (exists(fn3)) {
                 std::cout << "  Coords STAR  : " << fn3 << std::endl;
                 MetaDataTable MD_this_tomo;
@@ -449,18 +446,14 @@ class prepare_subtomo {
                 std::cout << "  File .trial  : " << fn2 << std::flush;
                 fn2 += ":mrcs"; // Open this file as .mrcs stack
                 img.read(fn2, false);
-                Dimensions dimensions = img.getDimensions();
-                     int xdim = dimensions.x;
-                     int ydim = dimensions.y;
-                     int zdim = dimensions.z;
-                long int ndim = dimensions.n;
-                std::cout << " , Dimensions XYZN = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
-                if (zdim > 1 && ndim > 1)
+                Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
+                std::cout << " , Dimensions XYZN = " << dimensions.x << " * " << dimensions.y << " * " << dimensions.z << " * " << dimensions.n << std::endl;
+                if (dimensions.z > 1 && dimensions.n > 1)
                     REPORT_ERROR("Trial series " + fn2 + " is 4D!");
-                if (xdim < box_size || ydim < box_size)
+                if (dimensions.x < box_size || dimensions.y < box_size)
                     REPORT_ERROR("X and/or Y dimensions of trial series " + fn2 + " is smaller than CTF box_size " + integerToString(box_size));
-                if (zdim * ndim != nr_frames * 2)
-                    REPORT_ERROR("Trial series has " + integerToString(zdim * ndim) + " frames, not 2X the total frames " + integerToString(nr_frames) + " in the tilt series!");
+                if (dimensions.z * dimensions.n != nr_frames * 2)
+                    REPORT_ERROR("Trial series has " + integerToString(dimensions.z * dimensions.n) + " frames, not 2X the total frames " + integerToString(nr_frames) + " in the tilt series!");
             }
 
             // Create folders for CTF correction
@@ -811,14 +804,8 @@ class prepare_subtomo {
             std::cout << " Calculated pixel size = " << calc_angpix << " Angstrom(s)" << std::endl;
             std::cout << " Extract XYZN dimensions of the tomogram " << fn_tomo << std::endl;
             img.read(fn_tomo, false);
-            int xdim = 0, ydim = 0, zdim = 0;
-            long int ndim = 0;
-            Dimensions dimensions = img.getDimensions();
-            xdim = dimensions.x;
-            ydim = dimensions.y;
-            zdim = dimensions.z;
-            ndim = dimensions.n;
-            std::cout << " Tomogram XYZN dimensions = " << xdim << " * " << ydim << " * " << zdim << " * " << ndim << std::endl;
+            Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
+            std::cout << " Tomogram XYZN dimensions = " << dimensions.x << " * " << dimensions.y << " * " << dimensions.z << " * " << dimensions.n << std::endl;
             std::cout << " Writing out .star files to make 3D CTF volumes..." << std::endl;
 
             int nr_subtomo = 0;
@@ -921,8 +908,8 @@ class prepare_subtomo {
                     defoci = avg_defoci[ida];
                     tilt_deg = tilts[ida];
                     tilt_rad = DEG2RAD(tilt_deg);
-                    xxtomo = float(xx - (xdim / 2) ) * calc_angpix;
-                    zztomo = float(zz - (zdim / 2) ) * calc_angpix;
+                    xxtomo = float(xx - (dimensions.x / 2) ) * calc_angpix;
+                    zztomo = float(zz - (dimensions.z / 2) ) * calc_angpix;
 
                     // Calculating the height difference of the particle from the tilt axis
                     xximg = xxtomo * cos(tilt_rad) + zztomo * sin(tilt_rad);

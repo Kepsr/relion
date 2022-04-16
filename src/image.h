@@ -354,10 +354,10 @@ class Image {
     MultidimArray<T> data;      // Image data
     MetaDataTable MDMainHeader; // File metadata
 
-    // struct Dimensions {
-    //     int x, y, z;
-    //     long int n;
-    // };
+    struct Dimensions {
+        int x, y, z;
+        long int n;
+    };
 
     private:
 
