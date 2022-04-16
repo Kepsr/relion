@@ -1732,15 +1732,12 @@ void AutoPicker::extractHelicalTubes(
             local_dev = 0.0;
             dev_weights = 0.0;
             for (int peak_id1 = 0; peak_id1 < selected_peaks.size(); peak_id1++) {
-                dev0 = ABS(selected_peaks[peak_id1].psi - local_psi);
-                if (dev0 > 180.0)
-                    dev0 = ABS(dev0 - 360.0);
-                if (dev0 > 90.0)
-                    dev0 = ABS(dev0 - 180.0);
+                dev0 = abs(selected_peaks[peak_id1].psi - local_psi);
+                if (dev0 > 180.0) { dev0 = abs(dev0 - 360.0); }
+                if (dev0 >  90.0) { dev0 = abs(dev0 - 180.0); }
 
-                RFLOAT pixel_count = (RFLOAT)(selected_peaks[peak_id1].nr_peak_pixel);
-                if (pixel_count < 1.0)
-                    pixel_count = 1.0;
+                RFLOAT pixel_count = selected_peaks[peak_id1].nr_peak_pixel;
+                if (pixel_count < 1.0) { pixel_count = 1.0; }
                 local_dev += dev0 * pixel_count;
                 dev_weights += pixel_count;
             }
@@ -1755,12 +1752,10 @@ void AutoPicker::extractHelicalTubes(
         // Sort all peaks into dir1, dir2 and others
         psi_dir1 = psi_dir2 = 0.0;
         for (int peak_id1 = 0; peak_id1 < selected_peaks.size(); peak_id1++) {
-            dev0 = ABS(selected_peaks[peak_id1].psi - best_local_psi);
+            dev0 = abs(selected_peaks[peak_id1].psi - best_local_psi);
             dev1 = dev0;
-            if (dev1 > 180.0)
-                dev1 = ABS(dev1 - 360.0);
-            if (dev1 > 90.0)
-                dev1 = ABS(dev1 - 180.0);
+            if (dev1 > 180.0) { dev1 = abs(dev1 - 360.0); }
+            if (dev1 >  90.0) { dev1 = abs(dev1 - 180.0); }
             RFLOAT curvature1 = DEG2RAD(dev1) / selected_peaks[peak_id1].dist;
 
             // Cannot fall into the estimated direction
@@ -1884,7 +1879,7 @@ void AutoPicker::extractHelicalTubes(
                     //std::cout << "  Peak id " << selected_peaks_dir1[ii].id << " x, y, r, psi, psidir1= " << selected_peaks_dir1[ii].x << ", " << selected_peaks_dir1[ii].y
                     //		<< ", " << selected_peaks_dir1[ii].r << ", " << selected_peaks_dir1[ii].psi << ", " << psi_dir1 << std::endl;
 
-                    RFLOAT curvature = DEG2RAD(ABS(selected_peaks_dir1[peak_id1].psi - psi_dir1)) / selected_peaks_dir1[peak_id1].dist;
+                    RFLOAT curvature = DEG2RAD(abs(selected_peaks_dir1[peak_id1].psi - psi_dir1)) / selected_peaks_dir1[peak_id1].dist;
                     if (curvature < curvature_max) {
                         nr_psi_within_range += 1.0;
 
@@ -2012,7 +2007,7 @@ void AutoPicker::extractHelicalTubes(
                     //std::cout << "  Peak id " << selected_peaks_dir2[ii].id << " x, y, r, psi, psidir2= " << selected_peaks_dir2[ii].x << ", " << selected_peaks_dir2[ii].y
                     //		<< ", " << selected_peaks_dir2[ii].r << ", " << selected_peaks_dir2[ii].psi << ", " << psi_dir2 << std::endl;
 
-                    RFLOAT curvature = DEG2RAD(ABS(selected_peaks_dir2[peak_id1].psi - psi_dir2)) / selected_peaks_dir2[peak_id1].dist;
+                    RFLOAT curvature = DEG2RAD(abs(selected_peaks_dir2[peak_id1].psi - psi_dir2)) / selected_peaks_dir2[peak_id1].dist;
                     if (curvature < curvature_max) {
                         nr_psi_within_range += 1.0;
 
@@ -2387,7 +2382,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
             // Values that are too far from the mean are set to the mean (0)
-            if (ABS(DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0 > outlier_removal_zscore)
+            if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0 > outlier_removal_zscore)
                 DIRECT_MULTIDIM_ELEM(Imic(), n) = avg0;
 
             DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0;
@@ -2686,7 +2681,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
         // Remove pixel values that are too far away from the mean
-        if (ABS(DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0 > outlier_removal_zscore)
+        if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0 > outlier_removal_zscore)
             DIRECT_MULTIDIM_ELEM(Imic(), n) = avg0;
 
         DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0;

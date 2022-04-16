@@ -347,7 +347,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     CTICTOC("middlePassFilter", ({
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
         // Remove pixel values that are too far away from the mean
-        if (ABS(DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0 > basePckr->outlier_removal_zscore)
+        if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0 > basePckr->outlier_removal_zscore)
             DIRECT_MULTIDIM_ELEM(Imic(), n) = avg0;
 
         DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0;

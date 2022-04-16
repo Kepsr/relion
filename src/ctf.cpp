@@ -283,7 +283,7 @@ void CTF::initialise() {
     if (Q0 < 0.0 || Q0 > 1.0)
         REPORT_ERROR("CTF::initialise ERROR: AmplitudeContrast Q0 cannot be smaller than zero or larger than one!");
 
-    if (ABS(DeltafU) < 1e-6 && ABS(DeltafV) < 1e-6 && ABS(Q0) < 1e-6 && ABS(Cs) < 1e-6)
+    if (abs(DeltafU) < 1e-6 && abs(DeltafV) < 1e-6 && abs(Q0) < 1e-6 && abs(Cs) < 1e-6)
         REPORT_ERROR("CTF::initialise: ERROR: CTF initialises to all-zero values. Was a correct STAR file provided?");
 
     // express astigmatism as a bilinear form:

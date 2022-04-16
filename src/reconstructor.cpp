@@ -370,7 +370,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         transformer.FourierTransform(img(), F2D);
         CenterFFTbySign(F2D);
 
-        if (ABS(XX(trans)) > 0.0 || ABS(YY(trans)) > 0.0 || ABS(ZZ(trans)) > 0.0) {
+        if (abs(XX(trans)) > 0.0 || abs(YY(trans)) > 0.0 || abs(ZZ(trans)) > 0.0) {
             // ZZ(trans) is 0 in case data_dim=2
             shiftImageInFourierTransform(F2D, F2D, XSIZE(img()), XX(trans), YY(trans), ZZ(trans));
         }

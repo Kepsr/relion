@@ -780,7 +780,7 @@ void shiftImageInFourierTransformWithTabSincos(
     if (in.getDim() == 2) {
         xshift /= -oridim;
         yshift /= -oridim;
-        if (ABS(xshift) < XMIPP_EQUAL_ACCURACY && ABS(yshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY) {
             windowFourierTransform(in, out, newdim);
             return;
         }
@@ -801,7 +801,7 @@ void shiftImageInFourierTransformWithTabSincos(
         xshift /= -oridim;
         yshift /= -oridim;
         zshift /= -oridim;
-        if (ABS(xshift) < XMIPP_EQUAL_ACCURACY && ABS(yshift) < XMIPP_EQUAL_ACCURACY && ABS(zshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY && abs(zshift) < XMIPP_EQUAL_ACCURACY) {
             windowFourierTransform(in, out, newdim);
             return;
         }
@@ -833,7 +833,7 @@ void shiftImageInFourierTransform(
 
         case 1:
         xshift /= -oridim;
-        if (ABS(xshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < XMIPP_EQUAL_ACCURACY) {
             out = in;
             return;
         }
@@ -857,7 +857,7 @@ void shiftImageInFourierTransform(
         case 2:
         xshift /= -oridim;
         yshift /= -oridim;
-        if (ABS(xshift) < XMIPP_EQUAL_ACCURACY && ABS(yshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY) {
             out = in;
             return;
         }
@@ -902,7 +902,7 @@ void shiftImageInFourierTransform(
         xshift /= -oridim;
         yshift /= -oridim;
         zshift /= -oridim;
-        if (ABS(xshift) < XMIPP_EQUAL_ACCURACY && ABS(yshift) < XMIPP_EQUAL_ACCURACY && ABS(zshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY && abs(zshift) < XMIPP_EQUAL_ACCURACY) {
             out = in;
             return;
         }
@@ -974,7 +974,7 @@ void divideBySpectrum(
 
     MultidimArray<RFLOAT> div_spec(spectrum);
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(spectrum) {
-        dAi(div_spec,i) = ABS(dAi(spectrum, i)) > 0.0 ? 1.0 / dAi(spectrum, i) : 1.0;
+        dAi(div_spec,i) = abs(dAi(spectrum, i)) > 0.0 ? 1.0 / dAi(spectrum, i) : 1.0;
     }
     multiplyBySpectrum(Min,div_spec,leave_origin_intact);
 }

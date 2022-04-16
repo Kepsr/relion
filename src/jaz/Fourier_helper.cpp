@@ -20,33 +20,29 @@
 
 #include <src/jaz/Fourier_helper.h>
 
-void FourierHelper::FourierShift2D(MultidimArray<Complex>& img, RFLOAT xshift, RFLOAT yshift)
-{
+void FourierHelper::FourierShift2D(MultidimArray<Complex> &img, RFLOAT xshift, RFLOAT yshift) {
     const long w = img.xdim;
     const long h = img.ydim;
 
     xshift /= h;
     yshift /= h;
 
-    if (ABS(xshift) < XMIPP_EQUAL_ACCURACY && ABS(yshift) < XMIPP_EQUAL_ACCURACY)
-    {
+    if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY) {
         return;
     }
 
     for (long int yy = 0; yy < h; yy++)
-    for (long int xx = 0; xx < w; xx++)
-    {
+    for (long int xx = 0; xx < w; xx++) {
         RFLOAT x = xx;
         RFLOAT y = yy < w? yy : yy - h;
 
         RFLOAT dotp = -2.0 * PI * (x * xshift + y * yshift);
 
         RFLOAT a, b;
-
         #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(dotp, &b, &a);
+        SINCOSF(dotp, &b, &a);
         #else
-            SINCOS(dotp, &b, &a);
+        SINCOS(dotp, &b, &a);
         #endif
 
         RFLOAT c = DIRECT_A2D_ELEM(img, yy, xx).real;

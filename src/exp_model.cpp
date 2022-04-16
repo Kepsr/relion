@@ -995,7 +995,7 @@ void Experiment::read(
             if (have_tiltpsi)
                 tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT);
             // If ANGLEs do not exist or they are all set to 0 (from a Class2D job), copy values of PRIORs to ANGLEs
-            if (!have_tiltpsi || ABS(tilt) < 0.001) {
+            if (!have_tiltpsi || abs(tilt) < 0.001) {
                 tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR);
                 psi  = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
                 MDimg.setValue(EMDL::ORIENT_TILT, tilt);

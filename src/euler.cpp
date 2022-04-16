@@ -158,7 +158,7 @@ void Euler_matrix2angles(
     if (abs_sb > 16 * FLT_EPSILON) {
         gamma = atan2(A(1, 2), -A(0, 2));
         alpha = atan2(A(2, 1), +A(2, 0));
-        if (ABS(sin(gamma)) < FLT_EPSILON) {
+        if (abs(sin(gamma)) < FLT_EPSILON) {
             // cos(gamma) is very close to either +1 or -1
             sign_sb = sgn_nozero(-A(0, 2)) * sgn(cos(gamma));
         } else {
@@ -199,34 +199,27 @@ void Euler_matrix2angles(
 
 #ifdef NEVERDEFINED
 // Michael's method
-void Euler_matrix2angles(Matrix2D<RFLOAT> A, RFLOAT *alpha, RFLOAT *beta,
-                         RFLOAT *gamma)
-{
+void Euler_matrix2angles(
+    Matrix2D<RFLOAT> A, 
+    RFLOAT *alpha, RFLOAT *beta, RFLOAT *gamma
+) {
+
     RFLOAT abs_sb;
-
-    if (ABS(A(1, 1)) > FLT_EPSILON)
-    {
+           if (abs(A(1, 1)) > FLT_EPSILON) {
         abs_sb = sqrt((-A(2, 2) * A(1, 2) * A(2, 1) - A(0, 2) * A(2, 0)) / A(1, 1));
-    }
-    else if (ABS(A(0, 1)) > FLT_EPSILON)
-    {
+    } else if (abs(A(0, 1)) > FLT_EPSILON) {
         abs_sb = sqrt((-A(2, 1) * A(2, 2) * A(0, 2) + A(2, 0) * A(1, 2)) / A(0, 1));
-    }
-    else if (ABS(A(0, 0)) > FLT_EPSILON)
-    {
+    } else if (abs(A(0, 0)) > FLT_EPSILON) {
         abs_sb = sqrt((-A(2, 0) * A(2, 2) * A(0, 2) - A(2, 1) * A(1, 2)) / A(0, 0));
-    }
-    else
+    } else {
         EXIT_ERROR(1, "Don't know how to extract angles");
+    }
 
-    if (abs_sb > FLT_EPSILON)
-    {
+    if (abs_sb > FLT_EPSILON) {
         *beta  = atan2(abs_sb, A(2, 2));
         *alpha = atan2(A(2, 1) / abs_sb, A(2, 0) / abs_sb);
         *gamma = atan2(A(1, 2) / abs_sb, -A(0, 2) / abs_sb);
-    }
-    else
-    {
+    } else {
         *alpha = 0;
         *beta  = 0;
         *gamma = atan2(A(1, 0), A(0, 0));
@@ -238,61 +231,61 @@ void Euler_matrix2angles(Matrix2D<RFLOAT> A, RFLOAT *alpha, RFLOAT *beta,
 }
 #endif
 /* Euler up-down correction ------------------------------------------------ */
-void Euler_up_down(RFLOAT rot, RFLOAT tilt, RFLOAT psi,
-                   RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi)
-{
+void Euler_up_down(
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi,
+    RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi
+)  {
     newrot  = rot;
     newtilt = tilt + 180;
     newpsi  = -(180 + psi);
 }
 
 /* Same view, differently expressed ---------------------------------------- */
-void Euler_another_set(RFLOAT rot, RFLOAT tilt, RFLOAT psi,
-                       RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi)
-{
+void Euler_another_set(
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi,
+    RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi
+) {
     newrot  = rot + 180;
     newtilt = -tilt;
     newpsi  = -180 + psi;
 }
 
 /* Euler mirror Y ---------------------------------------------------------- */
-void Euler_mirrorY(RFLOAT rot, RFLOAT tilt, RFLOAT psi,
-                   RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi)
-{
+void Euler_mirrorY(
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi,
+    RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi
+) {
     newrot  = rot;
     newtilt = tilt + 180;
     newpsi  = -psi;
 }
 
 /* Euler mirror X ---------------------------------------------------------- */
-void Euler_mirrorX(RFLOAT rot, RFLOAT tilt, RFLOAT psi,
-                   RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi)
-{
+void Euler_mirrorX(
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi,
+    RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi
+) {
     newrot  = rot;
     newtilt = tilt + 180;
     newpsi  = 180 - psi;
 }
 
 /* Euler mirror XY --------------------------------------------------------- */
-void Euler_mirrorXY(RFLOAT rot, RFLOAT tilt, RFLOAT psi,
-                    RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi)
-{
+void Euler_mirrorXY(
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi,
+    RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi
+) {
     newrot  = rot;
     newtilt = tilt;
     newpsi  = 180 + psi;
 }
 
 /* Apply a transformation matrix to Euler angles --------------------------- */
-void Euler_apply_transf(const Matrix2D<RFLOAT> &L,
-                        const Matrix2D<RFLOAT> &R,
-                        RFLOAT rot,
-                        RFLOAT tilt,
-                        RFLOAT psi,
-                        RFLOAT &newrot,
-                        RFLOAT &newtilt,
-                        RFLOAT &newpsi)
-{
-
+void Euler_apply_transf(
+    const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R,
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi,
+    RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi
+) {
     Matrix2D<RFLOAT> euler(3, 3), temp;
     Euler_angles2matrix(rot, tilt, psi, euler);
     temp = L * euler * R;
@@ -300,9 +293,9 @@ void Euler_apply_transf(const Matrix2D<RFLOAT> &L,
 }
 
 /* Rotate (3D) MultidimArray with 3 Euler angles ------------------------------------- */
-void Euler_rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi, Matrix2D<RFLOAT> &result)
-{
+void Euler_rotation3DMatrix(
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi, 
+    Matrix2D<RFLOAT> &result
+) {
     Euler_angles2matrix(rot, tilt, psi, result, true);
 }
-
-

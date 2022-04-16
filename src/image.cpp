@@ -190,7 +190,7 @@ void calculateBackgroundAvgStddev(
             coords = A * coords;
 
             // Distance from the point to helical axis (perpendicular to X axis)
-            d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : ABS(YY(coords));
+            d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
 
             if (d > helical_mask_tube_outer_radius_pix) {
                 val = A3D_ELEM(I(), k, i, j);
@@ -280,8 +280,8 @@ void subtractBackgroundRamp(
             XX(coords) = (RFLOAT) j;
             // Rotate
             coords = A * coords;
-            if (ABS(YY(coords)) > helical_mask_tube_outer_radius_pix) {
-                // not implemented for 3D data
+            if (abs(YY(coords)) > helical_mask_tube_outer_radius_pix) {
+                // Not implemented for 3D data
                 point.x = j;
                 point.y = i;
                 point.z = A2D_ELEM(I(), i, j);

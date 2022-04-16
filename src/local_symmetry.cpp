@@ -264,8 +264,8 @@ void standardiseEulerAngles(
 
     // Re-calculate angles so that they follow the conventions in RELION!
     if (
-        ABS(aa_old) > 179.0 ||
-        ABS(gg_old) > 179.0 ||
+        abs(aa_old) > 179.0 ||
+        abs(gg_old) > 179.0 ||
             bb_old  > 179.0 || bb_old < 1.0
     ) {
         Euler_angles2matrix(aa_old, bb_old, gg_old, rot_mat);
@@ -290,8 +290,8 @@ bool sameLocalsymOperators(
     standardiseEulerAngles(aa2, bb2, gg2, aa2, bb2, gg2);
 
     return (
-        ABS(aa1 - aa2) < eps && ABS(bb1 - bb2) < eps && ABS(gg1 - gg2) < eps &&
-        ABS(dx1 - dx2) < eps && ABS(dy1 - dy2) < eps && ABS(dz1 - dz2) < eps
+        abs(aa1 - aa2) < eps && abs(bb1 - bb2) < eps && abs(gg1 - gg2) < eps &&
+        abs(dx1 - dx2) < eps && abs(dy1 - dy2) < eps && abs(dz1 - dz2) < eps
     );
 }
 

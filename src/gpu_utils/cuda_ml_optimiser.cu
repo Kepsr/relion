@@ -458,7 +458,7 @@ void getFourierTransformsAndCtfs(
         RFLOAT Cs = DIRECT_A2D_ELEM(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_CS);
         RFLOAT V = 1000.0 * DIRECT_A2D_ELEM(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_VOLTAGE);
         RFLOAT lambda = 12.2643247 / sqrt(V * (1.0 + V * 0.978466e-6));
-        if (ABS(beamtilt_x) > 0.0 || ABS(beamtilt_y) > 0.0)
+        if (abs(beamtilt_x) > 0.0 || abs(beamtilt_y) > 0.0)
             selfApplyBeamTilt(Fimg, beamtilt_x, beamtilt_y, lambda, Cs,baseMLO->mymodel.pixel_size, baseMLO->mymodel.ori_size);
 
         op.Fimgs_nomask.at(ipart) = Fimg;

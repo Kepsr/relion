@@ -2090,9 +2090,9 @@ void removeBadPsiHelicalSegmentsFromDataStar(
         nr_segments_old++;
         psi_deg       = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
         psi_prior_deg = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
-        diff_psi = ABS(psi_deg - psi_prior_deg);
+        diff_psi = abs(psi_deg - psi_prior_deg);
         if (diff_psi > 180.0)
-            diff_psi = ABS(diff_psi - 360.0);
+            diff_psi = abs(diff_psi - 360.0);
         if (diff_psi < max_dev_deg) {
             nr_segments_new++;
             MD_out.addObject(MD_in.getObject());
@@ -3717,7 +3717,7 @@ void cutOutPartOfHelix(
     long int new_z0 = Xmipp::init(ZSIZE(vout));
     for (long int zi = 0; zi < ZSIZE(vout); zi++) {
         // Z subscript is out of range
-        if ((RFLOAT) ABS(zi + new_z0) / (RFLOAT) ZSIZE(vin) > z_percentage / 2.0)
+        if ((RFLOAT) abs(zi + new_z0) / (RFLOAT) ZSIZE(vin) > z_percentage / 2.0)
             continue;
 
         // Loop over X and Y
@@ -3774,20 +3774,17 @@ bool HelicalSegmentPriorInfoEntry::operator<(const HelicalSegmentPriorInfoEntry 
 };
 
 void HelicalSegmentPriorInfoEntry::checkPsiPolarity() {
-    RFLOAT diff_psi = ABS(psi_deg - psi_prior_deg);
-    has_wrong_polarity = false;
-    if (diff_psi > 180.0)
-        diff_psi = ABS(diff_psi - 360.0);
-    if (diff_psi > 90.0)
-        has_wrong_polarity = true;
+    RFLOAT diff_psi = abs(psi_deg - psi_prior_deg);
+    if (diff_psi > 180.0) { diff_psi = abs(diff_psi - 360.0); }
+    has_wrong_polarity = diff_psi >  90.0;
 };
 
 // KThurber add this entire function
 void flipPsiTiltForHelicalSegment(
     RFLOAT  old_psi, RFLOAT  old_tilt,
-    RFLOAT& new_psi, RFLOAT& new_tilt
+    RFLOAT &new_psi, RFLOAT &new_tilt
 ) {
-    new_psi = old_psi < 0.0 ? old_psi + 180.0 : old_psi - 180.0;
+    new_psi = old_psi - 180.0 * sgn_nozero(old_psi);
     new_tilt = 180.0 - old_tilt;
 }
 

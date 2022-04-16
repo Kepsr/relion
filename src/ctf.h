@@ -217,8 +217,8 @@ class CTF {
             // Quadratic: xx + 2xy + yy
 
             RFLOAT retval = (
-                do_intact_until_first_peak && ABS(gamma) < PI / 2.0 || 
-                do_intact_after_first_peak && ABS(gamma) > PI / 2.0
+                do_intact_until_first_peak && abs(gamma) < PI / 2.0 || 
+                do_intact_after_first_peak && abs(gamma) > PI / 2.0
             ) ? 1.0 : -sin(gamma);
 
             if (do_damping) {
@@ -227,7 +227,7 @@ class CTF {
             }
 
             if (do_abs) {
-                retval = ABS(retval);
+                retval = abs(retval);
             } else if (do_only_flip_phases) {
                 retval = retval == 0.0 ? 1.0 : sgn(retval);
             }
@@ -282,7 +282,7 @@ class CTF {
 
         // Compute Deltaf at a given direction (no longer used by getCTF)
         inline RFLOAT getDeltaF(RFLOAT X, RFLOAT Y) const {
-            if (ABS(X) < XMIPP_EQUAL_ACCURACY && ABS(Y) < XMIPP_EQUAL_ACCURACY)
+            if (abs(X) < XMIPP_EQUAL_ACCURACY && abs(Y) < XMIPP_EQUAL_ACCURACY)
                 return 0;
 
             RFLOAT ellipsoid_ang = atan2(Y, X) - rad_azimuth;

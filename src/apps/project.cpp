@@ -213,7 +213,7 @@ class project_parameters {
             Euler_rotation3DMatrix(rot, tilt, psi, A3D);
             F2D.initZeros();
             projector.get2DFourierTransform(F2D, A3D);
-            if (ABS(xoff) > 0.001 || ABS(yoff) > 0.001 || (do_3d_rot && ABS(zoff) > 0.001)) {
+            if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
                 Matrix1D<RFLOAT> shift(2);
                 XX(shift) = -xoff;
                 YY(shift) = -yoff;
@@ -282,7 +282,7 @@ class project_parameters {
                 F2D.initZeros();
                 projector.get2DFourierTransform(F2D, A3D);
 
-                if (ABS(xoff) > 0.001 || ABS(yoff) > 0.001 || (do_3d_rot && ABS(zoff) > 0.001)) {
+                if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
                     Matrix1D<RFLOAT> shift(2);
                     XX(shift) = -xoff;
                     YY(shift) = -yoff;
@@ -438,7 +438,7 @@ class project_parameters {
                     F2D.initZeros();
                     projector.get2DFourierTransform(F2D, A3D);
 
-                    if (ABS(xoff) > 0.001 || ABS(yoff) > 0.001 || (do_3d_rot && ABS(zoff) > 0.001)) {
+                    if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
                         Matrix1D<RFLOAT> shift(2);
                         XX(shift) = -xoff;
                         YY(shift) = -yoff;

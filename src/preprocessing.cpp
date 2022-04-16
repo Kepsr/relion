@@ -600,7 +600,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
     if (MDin.numberOfObjects() > 0) {
         TICTOC(TIMING_BIAS_CORRECT, {
         // Correct for bias in the picked coordinates
-        if (ABS(extract_bias_x) > 0 || ABS(extract_bias_y) > 0) {
+        if (abs(extract_bias_x) > 0 || abs(extract_bias_y) > 0) {
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
                 RFLOAT xcoor = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
                 RFLOAT ycoor = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
@@ -1082,7 +1082,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                 if (contains_z) {
                     MDresult.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
                 }
-            } else if (ABS(rescale_fndata - 1.0) > 1e-6 || do_recenter) {
+            } else if (abs(rescale_fndata - 1.0) > 1e-6 || do_recenter) {
                 // re-scale or re-center (irrelevant if do_reset_offsets)
                 Matrix1D<RFLOAT> my_projected_center(3);
                 my_projected_center.initZeros();

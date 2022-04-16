@@ -251,7 +251,7 @@ void CudaProjectorPlan::setup(
     Matrix2D<RFLOAT> R(3, 3);
     RFLOAT myperturb = 0.0;
 
-    if (ABS(sampling.random_perturbation) > 0.0) {
+    if (abs(sampling.random_perturbation) > 0.0) {
         myperturb = sampling.random_perturbation * sampling.getAngularSampling();
         if (sampling.is_3D) {
             Euler_angles2matrix(myperturb, myperturb, myperturb, R);
@@ -350,7 +350,7 @@ void CudaProjectorPlan::setup(
     int grid_size = ceil((float) orientation_num / (float) BLOCK_SIZE);
 
     if (sampling.is_3D) {
-        if (ABS(sampling.random_perturbation) > 0.0) {
+        if (abs(sampling.random_perturbation) > 0.0) {
             cuda_kernel_make_eulers_3D<inverseMatrix, true><<<grid_size, BLOCK_SIZE, 0, eulers.getStream()>>>(
                 ~alphas, ~betas, ~gammas, ~eulers, orientation_num, ~perturb
             );

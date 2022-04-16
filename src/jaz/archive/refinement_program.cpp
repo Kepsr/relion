@@ -107,7 +107,7 @@ int RefinementProgram::init(int argc, char *argv[]) {
         } else {
             beamtilt_x = textToFloat(parser.getOption("--beamtilt_x", "Beamtilt in X-direction (in mrad)", "0."));
             beamtilt_y = textToFloat(parser.getOption("--beamtilt_y", "Beamtilt in Y-direction (in mrad)", "0."));
-            applyTilt = ABS(beamtilt_x) > 0.0 || ABS(beamtilt_y) > 0.0;
+            applyTilt = abs(beamtilt_x) > 0.0 || abs(beamtilt_y) > 0.0;
 
             beamtilt_xx = textToFloat(parser.getOption("--beamtilt_xx", "Anisotropic beamtilt, XX-coefficient", "1."));
             beamtilt_xy = textToFloat(parser.getOption("--beamtilt_xy", "Anisotropic beamtilt, XY-coefficient", "0."));

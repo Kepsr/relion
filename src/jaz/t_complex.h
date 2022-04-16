@@ -45,169 +45,135 @@
 #include "src/macros.h"
 
 template<class T>
-class tComplex
-{
-	public:
+class tComplex {
 
-        tComplex()
-        {}
+    public:
 
-        tComplex(T real, T imag = 0)
-        :   real(real),
-            imag(imag)
-        {}
+    T real, imag;
 
+    tComplex() {}
 
-            T real, imag;
+    tComplex(T real, T imag = 0): real(real), imag(imag) {}
 
+    tComplex& operator += (const tComplex &arg) {
+        real += arg.real;
+        imag += arg.imag;
+        return *this;
+    }
+    
+    tComplex& operator -= (const tComplex &arg) {
+        real -= arg.real;
+        imag -= arg.imag;
+        return *this;
+    }
+    
+    tComplex operator - () const {
+        return tComplex<T>(-real, -imag);
+    }
 
-        tComplex& operator += (const tComplex& arg)
-        {
-            real += arg.real;
-            imag += arg.imag;
+    tComplex& operator *= (const tComplex &arg) {
 
-            return *this;
-        }
-		
-		tComplex& operator -= (const tComplex& arg)
-        {
-            real -= arg.real;
-            imag -= arg.imag;
+        T re = real * arg.real - imag * arg.imag;
+        T im = real * arg.imag + imag * arg.real;
 
-            return *this;
-        }
-		
-		tComplex operator - () const
-        {
-            return tComplex<T>(-real, -imag);
-        }
+        real = re;
+        imag = im;
 
-        tComplex& operator *= (const tComplex& arg)
-        {
-            T re = real*arg.real - imag*arg.imag;
-            T im = real*arg.imag + imag*arg.real;
+        return *this;
+    }
 
-            real = re;
-            imag = im;
+    tComplex& operator /= (const tComplex &arg) {
+        T cd = arg.real * arg.real + arg.imag * arg.imag;
 
-            return *this;
-        }
+        T re = real * arg.real + imag * arg.imag;
+        T im = imag * arg.real - real * arg.imag;
 
-        tComplex& operator /= (const tComplex& arg)
-        {
-            T cd = arg.real*arg.real + arg.imag*arg.imag;
+        real = re / cd;
+        imag = im / cd;
 
-            T re = real*arg.real + imag*arg.imag;
-            T im = imag*arg.real - real*arg.imag;
+        return *this;
+    }
+    
+    bool operator == (const tComplex &arg) const {
+        return real == arg.real && imag == arg.imag;
+    }
 
-            real = re/cd;
-            imag = im/cd;
+    bool operator != (const tComplex &arg) const {
+        return !(*this == arg);
+    }
+    
+    operator T() const {
+        return real;
+    }
 
-            return *this;
-        }
-		
-		bool operator == (const tComplex& arg) const
-		{
-			return (real == arg.real && imag == arg.imag);
-		}
-  
-		bool operator != (const tComplex& arg) const
-		{
-			return !(*this == arg);
-		}
-		
-		operator T() const
-		{
-			return real;
-		}
+    // The complex conjugate
+    tComplex conj() const {
+        return tComplex(real, -imag);
+    }
 
-        // The complex conjugate
-        tComplex conj() const
-        {
-            return tComplex(real, -imag);
-        }
+    T abs() const {
+        return sqrt(real * real + imag * imag);
+    }
 
-        T abs() const
-        {
-            return sqrt(real*real + imag*imag);
-        }
+    T norm() const {
+        return real * real + imag * imag;
+    }
 
-        T norm() const
-        {
-            return real*real + imag*imag;
-        }
+    T arg() const {
+        return atan2(imag,real);
+    }
 
-        T arg() const
-        {
-            return atan2(imag,real);
-        }
 };
 
 template <class T> inline
-tComplex<T> conj(const tComplex<T>& op)
-{
-    return op.conj();
-}
+tComplex<T> conj(const tComplex<T> &op) { return op.conj(); }
+
+// The name 'abs' is usually expected to refer to std::abs.
+// Why is this not in t_complex.cpp?
+template <class T> inline
+T abs(const tComplex<T> &op) { return op.abs(); }
 
 template <class T> inline
-T abs(const tComplex<T>& op)
-{
-    return op.abs();
-}
+T norm(const tComplex<T> &op) { return op.norm(); }
 
 template <class T> inline
-T norm(const tComplex<T>& op)
-{
-    return op.norm();
-}
-
-template <class T> inline
-T arg(const tComplex<T>& op)
-{
-    return op.arg();
-}
+T arg(const tComplex<T> &op) { return op.arg(); }
 
 template <class T1, class T2> inline
-tComplex<T1> operator + (const tComplex<T1>& z, const tComplex<T2>& w)
-{
+tComplex<T1> operator + (const tComplex<T1>& z, const tComplex<T2>& w) {
     return tComplex<T1>(z.real + w.real, z.imag + w.imag);
 }
 
 template <class T1, class T2> inline
-tComplex<T1> operator - (const tComplex<T1>& z, const tComplex<T2>& w)
-{
+tComplex<T1> operator - (const tComplex<T1>& z, const tComplex<T2>& w) {
     return tComplex<T1>(z.real - w.real, z.imag - w.imag);
 }
 
 template <class T1, class T2> inline
-tComplex<T1> operator - (const tComplex<T1>& z)
-{
+tComplex<T1> operator - (const tComplex<T1>& z) {
     return tComplex<T1>(-z.real, -z.imag);
 }
 
 template <class T1, class T2> inline
-tComplex<T1> operator * (const tComplex<T1>& z, const tComplex<T2>& w)
-{
+tComplex<T1> operator * (const tComplex<T1>& z, const tComplex<T2>& w) {
     return tComplex<T1>(
         z.real * w.real - z.imag * w.imag,
-        z.real * w.imag + z.imag * w.real);
+        z.real * w.imag + z.imag * w.real
+    );
 }
 
 template <class T1, class T2> inline
-tComplex<T1> operator * (const tComplex<T1>& z, const T2& x)
-{
+tComplex<T1> operator * (const tComplex<T1>& z, const T2& x) {
     return tComplex<T1>(x * z.real, x * z.imag);
 }
 
 template <class T1, class T2> inline
-tComplex<T1> operator * (const T2& x, const tComplex<T1>& z)
-{
+tComplex<T1> operator * (const T2& x, const tComplex<T1>& z) {
     return tComplex<T1>(x * z.real, x * z.imag);
 }
 
 template <class T1, class T2> inline
-tComplex<T1> operator / (const tComplex<T1>& z, const tComplex<T2>& w)
-{
+tComplex<T1> operator / (const tComplex<T1>& z, const tComplex<T2>& w) {
     const T1 d = w.real * w.real + w.imag * w.imag;
 
     return tComplex<T1>(
@@ -216,14 +182,12 @@ tComplex<T1> operator / (const tComplex<T1>& z, const tComplex<T2>& w)
 }
 
 template <class T1, class T2> inline
-tComplex<T1> operator / (const tComplex<T1>& z, const T2& x)
-{
+tComplex<T1> operator / (const tComplex<T1>& z, const T2& x) {
     return tComplex<T1>(z.real / x, z.imag / x);
 }
 
 template <class T> inline
-std::ostream& operator << (std::ostream& os, const tComplex<T>& z)
-{
+std::ostream& operator << (std::ostream& os, const tComplex<T>& z) {
   os << "[" << z.real << ", " << z.imag << "]";
   return os;
 }

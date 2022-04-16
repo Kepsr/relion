@@ -201,7 +201,7 @@ void gaussj(T *a, int n, T *b, int m) {
                 for (k = 1; k <= n; k++) {
                     if (ipiv[k] == 0) {
                         if (fabs((RFLOAT) a[j * n + k]) >= (RFLOAT) big) {
-                            big = ABS(a[j * n + k]);
+                            big = abs(a[j * n + k]);
                             irow = j;
                             icol = k;
                         }

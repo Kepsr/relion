@@ -99,18 +99,19 @@ extern const char *g_RELION_VERSION;
  * @ingroup MacrosConstants
  */
 #ifndef PI
-    #define PI 3.14159265358979323846
+#define PI 3.14159265358979323846
 #endif
 
 /** Equal accuracy
  *
- * In a comparison if two values are closer than this epsilon they are said to
- * be the same. Actually For double precision calculations set to 1e-6, for single-precision set to 1e-4 (finding symmetry subgroups will go wrong otherwise)
+ * An epsilon for determining whether two values should be considered equal.
+ * Value depends on whether RELION is operating in single or in double precision.
+ * Required to correctly find symmetry subgroups.
  */
 #ifdef RELION_SINGLE_PRECISION
-    #define XMIPP_EQUAL_ACCURACY 1e-4
+#define XMIPP_EQUAL_ACCURACY 1e-4
 #else
-    #define XMIPP_EQUAL_ACCURACY 1e-6
+#define XMIPP_EQUAL_ACCURACY 1e-6
 #endif
 //@}
 
@@ -118,25 +119,26 @@ extern const char *g_RELION_VERSION;
 //@{
 /** Absolute value
  *
- * Valid for any kind of number (int, short, float, etc)
+ * Valid for any numeric type (int, short, float, etc).
  *
  * @code
- * x = ABS(x);
+ * magnitude = ABS(x);
  * @endcode
  */
 #ifndef ABS
-    #define ABS(x) ((x) >= 0 ? (x) : -(x))
+#define ABS(x) ((x) >= 0 ? (x) : -(x))
 #endif
 
 
 /** signum
  *
  * The sign of a value.
- * Valid for any type T which supports total ordering (i.e. operator <)
- * and construction from 0.
+ * Valid for any type T which supports 
+ * - total ordering via operator <
+ * - and construction from 0.
  * If n is positive, sgn(n) returns +1.
  * If n is negative, sgn(n) returns -1.
- * If n is 0, sgn(n) returns 0.
+ * If n is 0,        sgn(n) returns  0.
  * (where 0, +1, -1 are of type T)
  *
  * @code
@@ -144,13 +146,13 @@ extern const char *g_RELION_VERSION;
  * @endcode
  */
 template <typename T>
-int sgn(T val) {
+inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
 template <typename T>
-int sgn_nozero(T val) {
-    return val >= 0 ? +1 : -1;
+inline int sgn_nozero(T val) {
+    return val >= T(0) ? +1 : -1;
 }
 
 #ifndef XMIPP_MIN

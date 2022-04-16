@@ -412,8 +412,8 @@ class HealpixSampling {
     /* Eliminate points from the sampling_points_vector and sampling_points_angles vectors
      * that are outside the allowed tilt range.
      * Let tilt angles range from -90 to 90, then:
-     * if (limit_tilt > 0) then top views (that is with ABS(tilt) > limit_tilt) are removed and side views are kept
-     * if (limit_tilt < 0) then side views (that is with ABS(tilt) < limit_tilt) are removed and top views are kept
+     * if (limit_tilt > 0) then top  views (that is with abs(tilt) > limit_tilt) are removed and side views are kept
+     * if (limit_tilt < 0) then side views (that is with abs(tilt) < limit_tilt) are removed and top  views are kept
     */
     void removePointsOutsideLimitedTiltAngles();
 

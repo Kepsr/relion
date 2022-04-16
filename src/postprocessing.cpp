@@ -177,7 +177,7 @@ void Postprocessing::initialise() {
     if (do_auto_mask)
         REPORT_ERROR("Postprocessing:: --auto_mask has been removed. Please make a mask with relion_mask_create beforehand.");
 
-    if (do_auto_bfac && ABS(adhoc_bfac) > 0.0)
+    if (do_auto_bfac && abs(adhoc_bfac) > 0.0)
         REPORT_ERROR("Postprocessing::initialise ERROR: provide either --auto_bfac OR --adhoc_bfac, but not both!");
 }
 
@@ -315,7 +315,7 @@ bool Postprocessing::findSurfacePixel(
     for (int ippp = ipp - search; ippp <= ipp + search; ippp++)
     for (int jppp = jpp - search; jppp <= jpp + search; jppp++) {
         // Distance to surface on the sphere
-        int dist = ABS(round(sqrt((RFLOAT) (kppp * kppp + ippp * ippp + jppp * jppp))) - myradius_count);
+        int dist = abs(round(sqrt((RFLOAT) (kppp * kppp + ippp * ippp + jppp * jppp))) - myradius_count);
         int reldist2 = (kppp - kpp) * (kppp - kpp) + (ippp - ipp) * (ippp - ipp) + (jppp - jpp) * (jppp - jpp);
         if (dist < 0.5 && reldist2 < best_dist) {
             best_kpp = kppp;
@@ -440,7 +440,7 @@ RFLOAT Postprocessing::sharpenMap() {
             std::cout.width(35); std::cout << std::left << "  + intercept of fit: ";   std::cout << global_intercept  << std::endl;
             std::cout.width(35); std::cout << std::left << "  + correlation of fit: "; std::cout << global_corr_coeff << std::endl;
         }
-    } else if (ABS(adhoc_bfac) > 0.0) {
+    } else if (abs(adhoc_bfac) > 0.0) {
         if (verb > 0) {
             std::cout <<"== Using a user-provided (ad-hoc) B-factor ..." <<std::endl;
         }
@@ -450,7 +450,7 @@ RFLOAT Postprocessing::sharpenMap() {
     }
 
     // Now apply the B-factor
-    if (ABS(global_bfactor) > 0.0) {
+    if (abs(global_bfactor) > 0.0) {
         if (verb > 0) {
             std::cout.width(35); std::cout << std::left  <<"  + apply b-factor of: "; std::cout << global_bfactor << std::endl;
         }
@@ -717,7 +717,7 @@ void Postprocessing::writeOutput() {
                 MDextra1.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y);
             }
         }
-        if (do_auto_bfac || ABS(adhoc_bfac) > 0.0) {
+        if (do_auto_bfac || abs(adhoc_bfac) > 0.0) {
             MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, guiniersharpen[i].y);
             if (guiniersharpen[i].y > -99.0) {
                 MDextra2.addObject();
@@ -755,7 +755,7 @@ void Postprocessing::writeOutput() {
             0.0, 0.0, 1.0
         );
     }
-    if (do_auto_bfac || ABS(adhoc_bfac) > 0.0) {
+    if (do_auto_bfac || abs(adhoc_bfac) > 0.0) {
         MDextra2.addToCPlot2D(
             plot2Dc, 
             EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, 

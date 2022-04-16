@@ -103,16 +103,15 @@ class tiltpair_plot_parameters {
 
         RFLOAT rr, th, x, y, r, g, b;
 
-        rr = (tilt_angle / plot_max_tilt)* 250;
-        x = 300. + rr * COSD(alpha);
-        y = 400. + rr * SIND(alpha);
-        value_to_redblue_scale(ABS(90.-beta), 0., 90., r, g, b);
-        fh_eps << x << " " << y << " " << plot_spot_radius << " 0 360 arc closepath "<<r<<" "<<g<<" "<<b<<" setrgbcolor fill stroke\n";
+        rr = tilt_angle / plot_max_tilt * 250;
+        x = 300.0 + rr * COSD(alpha);
+        y = 400.0 + rr * SIND(alpha);
+        value_to_redblue_scale(abs(90.0 - beta), 0.0, 90.0, r, g, b);
+        fh_eps << x << " " << y << " " << plot_spot_radius << " 0 360 arc closepath " << r << " " << g << " " << b << " setrgbcolor fill stroke\n";
     }
 
     void value_to_redblue_scale(RFLOAT val, RFLOAT minF, RFLOAT maxF, RFLOAT &r, RFLOAT &g, RFLOAT &b) {
-        RFLOAT diff, half;
-        half = (maxF - minF)/2.;
+        RFLOAT half = (maxF - minF) / 2.0;
         if (val < half) {
             r = val / half;
             b = 1.0;
@@ -121,7 +120,6 @@ class tiltpair_plot_parameters {
             r = 1.0;
         }
         g = 0.0;
-
     }
 
     RFLOAT check_symmetries(
@@ -130,10 +128,9 @@ class tiltpair_plot_parameters {
     ) {
 
         int imax = SL.SymsNo() + 1;
-        Matrix2D<RFLOAT>  L(4, 4), R(4, 4);  // A matrix from the list
+        Matrix2D<RFLOAT> L(4, 4), R(4, 4);  // A matrix from the list
         RFLOAT best_ang_dist = 3600;
         RFLOAT best_rot2, best_tilt2, best_psi2;
-        RFLOAT tilt_angle, alpha, beta;
 
         for (int i = 0; i < imax; i++) {
             RFLOAT rot2p, tilt2p, psi2p;
@@ -171,9 +168,8 @@ class tiltpair_plot_parameters {
     ) {
         // Transformation matrices
         Matrix1D<RFLOAT> axis(3);
-        Matrix2D<RFLOAT> E1, E2;
         axis.resize(3);
-        RFLOAT aux, sine_tilt_angle;
+        Matrix2D<RFLOAT> E1, E2;
         RFLOAT rot2 = alpha, tilt2 = tilt_angle, psi2 = beta;
 
         // Calculate the transformation from one setting to the second one.
@@ -182,11 +178,11 @@ class tiltpair_plot_parameters {
         E2 = E2 * E1.inv();
 
         // Get the tilt angle (and its sine)
-        aux = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
-        if (ABS(aux) - 1. > XMIPP_EQUAL_ACCURACY)
-            REPORT_ERROR("BUG: aux>1");
+        RFLOAT aux = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
+        if (abs(aux) - 1.0 > XMIPP_EQUAL_ACCURACY)
+            REPORT_ERROR("BUG: aux > 1");
         tilt_angle = ACOSD(aux);
-        sine_tilt_angle = 2. * SIND(tilt_angle);
+        RFLOAT sine_tilt_angle = 2.0 * SIND(tilt_angle);
 
         // Get the tilt axis direction in angles alpha and beta
         if (sine_tilt_angle > XMIPP_EQUAL_ACCURACY) {
@@ -215,10 +211,8 @@ class tiltpair_plot_parameters {
 
         // Return the value that needs to be optimized
         RFLOAT minimizer = 0.0;
-        if (exp_beta < 999.0)
-            minimizer = ABS(beta - exp_beta);
-        if (exp_tilt < 999.0)
-            minimizer += ABS(tilt_angle - exp_tilt);
+        if (exp_beta < 999.0) { minimizer  = abs(beta       - exp_beta); }
+        if (exp_tilt < 999.0) { minimizer += abs(tilt_angle - exp_tilt); }
 
         return minimizer;
     }
@@ -253,12 +247,11 @@ class tiltpair_plot_parameters {
             RFLOAT distp  = check_symmetries(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);
 
             // Calculate distance to user-defined point
-            RFLOAT xp, yp, x, y;
             Matrix1D<RFLOAT> aux2(4);
-            xp = dist_from_tilt * COSD(dist_from_alpha);
-            yp = dist_from_tilt * SIND(dist_from_alpha);
-            x = tilt2p * COSD(rot2p);
-            y = tilt2p * SIND(rot2p);
+            RFLOAT xp = dist_from_tilt * COSD(dist_from_alpha);
+            RFLOAT yp = dist_from_tilt * SIND(dist_from_alpha);
+            RFLOAT x = tilt2p * COSD(rot2p);
+            RFLOAT y = tilt2p * SIND(rot2p);
             aux2(3) = sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y));
             aux2(0) = tilt2p;
             aux2(1) = rot2p;

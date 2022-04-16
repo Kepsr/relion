@@ -178,11 +178,11 @@ void DisplayBox::setData(
 
     // For micrographs use relion-scaling to avoid bias in down-sampled positions
     // For multi-image viewers, do not use this scaling as it is slower...
-    if (do_relion_scale && ABS(scale - 1.0) > 0.01)
+    if (do_relion_scale && abs(scale - 1.0) > 0.01)
         selfScaleToSize(img, xsize_data, ysize_data);
 
     // Use the same nearest-neighbor algorithm as in the copy function of Fl_Image...
-    if (ABS(scale - 1.0) > 0.01 && !do_relion_scale) {
+    if (abs(scale - 1.0) > 0.01 && !do_relion_scale) {
         /// TODO: Use divmod
         int xmod   = XSIZE(img) % xsize_data;
         int xstep  = XSIZE(img) / xsize_data;
@@ -1904,7 +1904,7 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
             RFLOAT x = MDcolor.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
             RFLOAT y = MDcolor.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
 
-            if (ABS(x - my_xpos) + ABS(y - my_ypos) > XMIPP_EQUAL_ACCURACY) {
+            if (abs(x - my_xpos) + abs(y - my_ypos) > XMIPP_EQUAL_ACCURACY) {
                 std::cerr << " _fn_img= " << _fn_img << " iimg= " << iimg << " _fn_mic= " << _fn_mic << std::endl;
                 std::cerr << " x= " << x << " my_xpos= " << my_xpos << std::endl;
                 std::cerr << " y= " << y << " my_ypos= " << my_ypos << std::endl;

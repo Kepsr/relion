@@ -207,7 +207,7 @@ RFLOAT kaiser_proj(RFLOAT s, RFLOAT a, RFLOAT alpha, int m) {
 /* Fourier value of a blob ------------------------------------------------- */
 RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m) {
     RFLOAT C = 2.0 * PI * a * w;  // Circumference of a circle of radius a * w
-    RFLOAT sigma = sqrt(ABS(alpha * alpha - C * C));
+    RFLOAT sigma = sqrt(abs(alpha * alpha - C * C));
     switch (m) {
 
         case 2: 
@@ -468,7 +468,7 @@ RFLOAT icdf_FSnedecor(int d1, int d2, RFLOAT p) {
             xl = xm;
             pl = pm;
         }
-    } while (ABS(pm - p) / p > 0.001);
+    } while (abs(pm - p) / p > 0.001);
     return xm;
 }
 
@@ -527,12 +527,12 @@ float rnd_student_t(RFLOAT nu, float mu, float sigma) {
 
 float gaus_within_x0(float x0, float mean, float stddev) {
     float z0 = (x0 - mean) / stddev;
-    return erf(ABS(z0) / sqrt(2.0));
+    return erf(abs(z0) / sqrt(2.0));
 }
 
 float gaus_outside_x0(float x0, float mean, float stddev) {
     float z0 = (x0 - mean) / stddev;
-    return erfc(ABS(z0) / sqrt(2.0));
+    return erfc(abs(z0) / sqrt(2.0));
 }
 
 float gaus_up_to_x0(float x0, float mean, float stddev) {
@@ -562,7 +562,7 @@ float gaus_outside_probb(float p, float mean, float stddev) {
         } else {
             x2 = xm;
         }
-    } while (ABS(pm - p) / p > 0.005);
+    } while (abs(pm - p) / p > 0.005);
     return xm;
 }
 
@@ -603,7 +603,7 @@ float student_outside_probb(float p, float degrees_of_freedom) {
             t2 = tm;
         }
     }
-    while (ABS(pm - p) / p > 0.005);
+    while (abs(pm - p) / p > 0.005);
     return tm;
 }
 

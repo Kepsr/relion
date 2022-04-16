@@ -277,7 +277,7 @@ class image_handler_parameters {
         } else if (fn_div != "") {
             bool is_first = true;
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                if (ABS(DIRECT_A3D_ELEM(Iop(), k, i, j)) < 1e-10) {
+                if (abs(DIRECT_A3D_ELEM(Iop(), k, i, j)) < 1e-10) {
                     if (is_first) {
                         std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
                         is_first = false;
@@ -697,15 +697,15 @@ class image_handler_parameters {
                 Image<RFLOAT> Ihead;
                 Ihead.read(fn_img, false);
                 Dimensions dimensions = Ihead.getDimensions();
-                     int xdim = dimensions.x;
-                     int ydim = dimensions.y;
-                     int zdim = dimensions.z;
-                long int ndim = dimensions.n;
+                xdim = dimensions.x;
+                ydim = dimensions.y;
+                zdim = dimensions.z;
+                ndim = dimensions.n;
 
                 if (zdim > 1 && (do_add_edge || do_flipXY || do_flipmXY))
                     REPORT_ERROR("ERROR: you cannot perform 2D operations like --add_edge, --flipXY or --flipmXY on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
 
-                if (zdim > 1 && (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)))
+                if (zdim > 1 && (bin_avg > 0 || avg_first >= 0 && avg_last >= 0))
                     REPORT_ERROR("ERROR: you cannot perform movie-averaging operations on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
 
                 if (fn_mult != "") {

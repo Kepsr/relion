@@ -223,7 +223,7 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID,
         if (EMDL::isDouble(label)) {
             double v = getValue<double>(label, objectID);
 
-            if (ABS(v) > 0.0 && ABS(v) < 0.001 || ABS(v) > 100000.0) {
+            if (abs(v) > 0.0 && abs(v) < 0.001 || abs(v) > 100000.0) {
                 if (v < 0.0) {
                     snprintf(buffer, 13, "%12.5e", v);
                 } else {
@@ -1423,7 +1423,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
             }
             else if (EMDL::isInt(label1)) {
                 myint2 = MD2.getValue<int>(label1);
-                if (ABS(myint2 - myint1) <= round(eps)) {
+                if (abs(myint2 - myint1) <= round(eps)) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
                     MDboth.addObject(MD1.getObject());
@@ -1442,7 +1442,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
                     (mydy1 - mydy2) * (mydy1 - mydy2) +
                     (mydz1 - mydz2) * (mydz1 - mydz2)
                 );
-                if (ABS(dist) <= eps) {
+                if (abs(dist) <= eps) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
                     //std::cerr << " current_object1= " << current_object1 << std::endl;

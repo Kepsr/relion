@@ -131,10 +131,10 @@ void AccProjectorPlan::setup(
 
     if (L_.mdimx == L.mdimx && L_.mdimy == L.mdimy) {
         doL = true;
-        L = L_ * L;
+        L = L * L_;
     }
 
-    if (ABS(sampling.random_perturbation) > 0.0) {
+    if (abs(sampling.random_perturbation) > 0.0) {
         myperturb = sampling.random_perturbation * sampling.getAngularSampling();
         if (sampling.is_3D) {
             Euler_angles2matrix(myperturb, myperturb, myperturb, R);
@@ -236,15 +236,13 @@ void AccProjectorPlan::setup(
 
     if (doL) {
         adjustL.hostAlloc();
-        for (int i = 0; i < 9; i++)
-            adjustL[i] = (XFLOAT) L.mdata[i];
+        for (int i = 0; i < 9; i++) { adjustL[i] = (XFLOAT) L.mdata[i]; }
         adjustL.putOnDevice();
     }
 
     if (doR) {
         adjustR.hostAlloc();
-        for (int i = 0; i < 9; i++)
-            adjustR[i] = (XFLOAT) R.mdata[i];
+        for (int i = 0; i < 9; i++) { adjustR[i] = (XFLOAT) R.mdata[i]; }
         adjustR.putOnDevice();
     }
 
@@ -254,69 +252,72 @@ void AccProjectorPlan::setup(
 
     if (inverseMatrix) {
         if (sampling.is_3D) {
-            if (doL && doR)
+            if (doL && doR) {
                 AccUtilities::acc_make_eulers_3D<true, true, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, ~adjustL, ~adjustR
                 );
-            else if (doL)
+            } else if (doL) {
                 AccUtilities::acc_make_eulers_3D<true, true, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, ~adjustL, NULL
                 );
-            else if (doR)
+            } else if (doR) {
                 AccUtilities::acc_make_eulers_3D<true, false, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, NULL, ~adjustR
                 );
-            else
+            } else {
                 AccUtilities::acc_make_eulers_3D<true, false, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, NULL, NULL
                 );
-        } else
+            }
+        } else {
             AccUtilities::acc_make_eulers_2D<true>(
                 grid_size, BLOCK_SIZE, eulers.getStream(),
                 ~alphas, ~eulers,
                 orientation_num
             );
+        }
     } else {
         if (sampling.is_3D) {
-            if (doL && doR)
+            if (doL && doR) {
                 AccUtilities::acc_make_eulers_3D<false, true, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, ~adjustL, ~adjustR
                 );
-            else if (doL)
+            } else if (doL) {
                 AccUtilities::acc_make_eulers_3D<false, true, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, ~adjustL, NULL
                 );
-            else if (doR)
+            } else if (doR) {
                 AccUtilities::acc_make_eulers_3D<false, false, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, NULL, ~adjustR
                 );
-            else
+            } else {
                 AccUtilities::acc_make_eulers_3D<false, false, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
                     ~alphas, ~betas, ~gammas, ~eulers,
                     orientation_num, NULL, NULL
                 );
-        }
-        else
+            }
+        } else {
             AccUtilities::acc_make_eulers_2D<false>(
                 grid_size, BLOCK_SIZE, eulers.getStream(),
                 ~alphas, ~eulers,
                 orientation_num
             );
+        }
     }
 
     // Why can't this can all just be:
@@ -334,7 +335,7 @@ void AccProjectorPlan::setup(
     //     );
     // }
 
-    // ?
+    // ? Can we make doL and doR compile-time constants?
 
     }));
 }

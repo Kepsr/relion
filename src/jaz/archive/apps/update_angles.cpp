@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 
         beamtilt_x = textToFloat(parser.getOption("--beamtilt_x", "Beamtilt in the X-direction (in mrad)", "0."));
         beamtilt_y = textToFloat(parser.getOption("--beamtilt_y", "Beamtilt in the Y-direction (in mrad)", "0."));
-        applyTilt = ABS(beamtilt_x) > 0.0 || ABS(beamtilt_y) > 0.0;
+        applyTilt = abs(beamtilt_x) > 0.0 || abs(beamtilt_y) > 0.0;
 
         kmax = textToInteger(parser.getOption("--kmax", "Max. frequency used for alignment", "-1"));
 

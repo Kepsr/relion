@@ -411,7 +411,7 @@ class reconstruct_parameters {
 
                         transformer.FourierTransform(obsR[p](), F2D);
 
-                        if (ABS(XX(trans)) > 0.0 || ABS(YY(trans)) > 0.0) {
+                        if (abs(XX(trans)) > 0.0 || abs(YY(trans)) > 0.0) {
                             if (do_3d_rot) {
                                 shiftImageInFourierTransform(
                                     F2D, F2D, sPad2D, XX(trans), YY(trans), ZZ(trans)

@@ -2430,7 +2430,7 @@ class MultidimArray {
                 if (N > 1) {
                     var = sumofsquareddeviations / N - 1;
                     // Foreseeing numerical instabilities
-                    stddev = sqrt(static_cast<RFLOAT>(ABS(var)));
+                    stddev = sqrt(static_cast<RFLOAT>(abs(var)));
                 } else {
                     stddev = 0;
                 }
@@ -2452,7 +2452,7 @@ class MultidimArray {
                     RFLOAT var = (sumofsquares / N - avg * avg) * N / (N - 1);
                     // Unbiased sample variance
                     // Foreseeing numerical instabilities
-                    stddev = sqrt(static_cast<RFLOAT>(ABS(var)));
+                    stddev = sqrt(static_cast<RFLOAT>(abs(var)));
                 } else {
                     stddev = 0;
                 }
@@ -2502,7 +2502,7 @@ class MultidimArray {
                 double var = (sumxx / N - avg * avg) * N / (N - 1);
                 // Unbiased sample variance = biased sample variance * N / (N - 1)
                 // Foreseeing numerical instabilities
-                stddev = sqrt(static_cast<RFLOAT>(ABS(var)));
+                stddev = sqrt(static_cast<RFLOAT>(abs(var)));
             } else {
                 // Sample variance is undefined for N <= 1.
                 stddev = 0;
@@ -3192,7 +3192,7 @@ class MultidimArray {
             int steps;
 
             if (mode == "incr") {
-                steps = 1 + (int) floor((RFLOAT) ABS(maxF - minF) / (RFLOAT) n);
+                steps = 1 + floor((RFLOAT) abs(maxF - minF) / (RFLOAT) n);
                 slope = n * sgn(maxF - minF); // maxF and minF should not be equal
             } else if (mode == "steps") {
                 steps = n;
@@ -3523,12 +3523,12 @@ class MultidimArray {
                     switch (mode) {
 
                         case 1:
-                        if (ABS(*ptr) > a)
+                        if (abs(*ptr) > a)
                             *ptr = b * sgn(*ptr);
                         break;
 
                         case 2:
-                        if (ABS(*ptr) < a)
+                        if (abs(*ptr) < a)
                             *ptr = b * sgn(*ptr);
                         break;
 
@@ -3579,12 +3579,12 @@ class MultidimArray {
                 switch (mode) {
 
                     case 1:
-                    if (ABS(*ptr) > a)
+                    if (abs(*ptr) > a)
                         ret++;
                     break;
 
                     case 2:
-                    if (ABS(*ptr) < a)
+                    if (abs(*ptr) < a)
                         ret++;
                     break;
 
@@ -3621,9 +3621,8 @@ class MultidimArray {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0 )
-                if (ABS(*ptr - oldv) <= accuracy)
-                    *ptr = newv;
+            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0)
+                if (abs(*ptr - oldv) <= accuracy) { *ptr = newv; }
         }
 
         /** Substitute a given value by a sample from a Gaussian distribution.
@@ -3639,9 +3638,8 @@ class MultidimArray {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask,n) > 0 )
-                if (ABS(*ptr - oldv) <= accuracy)
-                    *ptr = rnd_gaus(avgv, sigv);
+            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask,n) > 0)
+                if (abs(*ptr - oldv) <= accuracy) { *ptr = rnd_gaus(avgv, sigv); }
         }
 
         /** Binarize.
@@ -3704,7 +3702,7 @@ class MultidimArray {
             T* ptr = NULL;
             long int n;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr = ABS(*ptr);
+            *ptr = abs(*ptr);
         }
 
     #if defined(__APPLE__)
@@ -4156,7 +4154,7 @@ class MultidimArray {
                 return false;
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-                if (ABS(DIRECT_MULTIDIM_ELEM(*this, n) - DIRECT_MULTIDIM_ELEM(op, n)) > accuracy)
+                if (abs(DIRECT_MULTIDIM_ELEM(*this, n) - DIRECT_MULTIDIM_ELEM(op, n)) > accuracy)
                     return false;
             }
 
@@ -4256,12 +4254,13 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T>& v) {
         ostrm << std::endl;
     }
 
-    RFLOAT max_val = ABS(DIRECT_A3D_ELEM(v , 0, 0, 0));
 
-    T* ptr;
+    RFLOAT max_val = abs(DIRECT_A3D_ELEM(v , 0, 0, 0));
+    T *ptr;
     long int n;
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr)
-    max_val = std::max(max_val, ABS(*ptr));
+    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) {
+        max_val = std::max(max_val, std::abs(*ptr));  // What if *ptr is of type Complex?
+    }
 
     int prec = bestPrecision(max_val, 10);
 
@@ -4275,7 +4274,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T>& v) {
             if (NSIZE(v) > 1)
                 ostrm << "Image No. " << l << std::endl;
             for (long int k = STARTINGZ(v); k <= FINISHINGZ(v); k++) {
-                if (ZSIZE(v)>1)
+                if (ZSIZE(v) > 1)
                     ostrm << "Slice No. " << k << std::endl;
                 for (long int i = STARTINGY(v); i <= FINISHINGY(v); i++) {
                     for (long int j = STARTINGX(v); j <= FINISHINGX(v); j++) {

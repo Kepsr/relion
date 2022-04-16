@@ -244,7 +244,7 @@ int bestPrecision(float F, int _width) {
         return 1;
 
     // Otherwise
-    int exp = floor(log10(ABS(F)));
+    int exp = floor(log10(abs(F)));
     int advised_prec;
 
     if (exp >= 0) {
@@ -316,7 +316,7 @@ std::string integerToString(int I, int _width, char fill_with) {
 
     // Check width
     int width = _width;
-    int Iaux = ABS(I);
+    int Iaux = abs(I);
 
     if (width == 0) {
         do {
@@ -333,7 +333,7 @@ std::string integerToString(int I, int _width, char fill_with) {
 
     // Start filling the array
     aux[width--] = '\0';
-    Iaux = ABS(I);
+    Iaux = abs(I);
     do {
         aux[width--] = '0' + (Iaux % 10);
         Iaux /= 10;

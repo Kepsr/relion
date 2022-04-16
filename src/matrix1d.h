@@ -980,9 +980,8 @@ class Matrix1D {
          */
         void selfNormalize() {
             RFLOAT m = module();
-            if (ABS(m) > XMIPP_EQUAL_ACCURACY) {
-                T im=(T) (1.0/m);
-                *this *= im;
+            if (abs(m) > XMIPP_EQUAL_ACCURACY) {
+                *this *= (T) (1.0 / m);
             } else {
                 initZeros();
             }
@@ -1019,7 +1018,7 @@ class Matrix1D {
                 ostrm << std::endl;
             }
 
-            RFLOAT max_val = ABS(v.vdata[0]);
+            RFLOAT max_val = abs(v.vdata[0]);
             for (int j = 0; j < v.vdim; j++) {
                 max_val = std::max(max_val, v.vdata[j]);
             }

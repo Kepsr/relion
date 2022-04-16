@@ -1821,7 +1821,7 @@ void BackProjector::applyHelicalSymmetry(
                         ddd = conj(ddd);
 
                     // Also apply a phase shift for helical translation along Z
-                    if (ABS(helical_rise) > 0.0) {
+                    if (abs(helical_rise) > 0.0) {
                         RFLOAT zshift = hh * helical_rise;
                         zshift /= - ori_size * (RFLOAT)padding_factor;
                         RFLOAT dotp = 2 * PI * (z * zshift);

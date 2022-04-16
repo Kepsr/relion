@@ -576,24 +576,25 @@ class Matrix2D {
         bool equal(
             const Matrix2D<T>& op, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY
         ) const {
-            if (!sameShape(op))
+            if (!sameShape(op)) 
                 return false;
+
             for (int i = 0; i < mdimy; i++)
-                for (int j = 0; j < mdimx; j++)
-                    if (ABS((*this)(i,j) - op(i,j)) > accuracy)
-                        return false;
+            for (int j = 0; j < mdimx; j++)
+            if (abs((*this)(i, j) - op(i, j)) > accuracy)
+                return false;
+
             return true;
         }
         //@}
 
         /// @name Utilities for Matrix2D
         //@{
-        // Set very small values (ABS(val)< accuracy) equal to zero
+        // Set very small values (abs(val) < accuracy) equal to zero
         void setSmallValuesToZero(RFLOAT accuracy = XMIPP_EQUAL_ACCURACY) {
             for (int i = 0; i < mdimy; i++)
-                for (int j = 0; j < mdimx; j++)
-                    if (ABS((*this)(i, j)) < accuracy)
-                        (*this)(i, j) = 0.0;
+            for (int j = 0; j < mdimx; j++)
+            if (abs((*this)(i, j)) < accuracy) { (*this)(i, j) = 0.0; }
         }
 
         /// @name Utilities for Matrix2D
@@ -601,27 +602,23 @@ class Matrix2D {
 
         // Greatest value in an array
         T max() const {
-            if (mdim <= 0)
-                return static_cast<T>(0);
+            if (mdim <= 0) return static_cast<T>(0);
 
             T maxval = mdata[0];
-            for (int n = 0; n < mdim; n++) {
-                if (mdata[n] > maxval)
-                    maxval = mdata[n];
-            }
+            for (int n = 0; n < mdim; n++)
+            if (mdata[n] > maxval) { maxval = mdata[n]; }
+
             return maxval;
         }
 
         // Least value in an array
         T min() const {
-            if (mdim <= 0)
-                return static_cast<T>(0);
+            if (mdim <= 0) return static_cast<T>(0);
 
             T minval = mdata[0];
-            for (int n = 0; n < mdim; n++) {
-                if (mdata[n] < minval)
-                    minval = mdata[n];
-            }
+            for (int n = 0; n < mdim; n++)
+            if (mdata[n] < minval) { minval = mdata[n]; }
+
             return minval;
         }
 
@@ -636,8 +633,8 @@ class Matrix2D {
             ask_Tmatrix(m, 1, mdimy, 1, mdimx);
 
             for (int i = 0; i < mdimy; i++)
-                for (int j = 0; j < mdimx; j++)
-                    m[i+1][j+1] = mdata[i*mdimx + j];
+            for (int j = 0; j < mdimx; j++)
+            m[i + 1][j + 1] = mdata[i * mdimx + j];
 
             return m;
         }
@@ -655,12 +652,12 @@ class Matrix2D {
 
         // Load 2D array from numerical recipes result
         void loadFromNumericalRecipes(T** m, int Ydim, int Xdim) {
-            if (mdimx!=Xdim || mdimy!=Ydim)
+            if (mdimx != Xdim || mdimy != Ydim)
                 resize(Ydim, Xdim);
 
             for (int i = 1; i <= Ydim; i++)
-                for (int j = 1; j <= Xdim; j++)
-                    (*this)(i - 1, j - 1) = m[i][j];
+            for (int j = 1; j <= Xdim; j++)
+            (*this)(i - 1, j - 1) = m[i][j];
         }
 
         // Kill a 2D array produced for numerical recipes
@@ -913,7 +910,7 @@ class Matrix2D {
             for (int i = 0; i < mdimy; i++) {
                 bool all_zeros = true;
                 for (int j = 0; j < mdimx; j++) {
-                    if (ABS(MAT_ELEM((*this),i, j)) > XMIPP_EQUAL_ACCURACY) {
+                    if (abs(MAT_ELEM((*this), i, j)) > XMIPP_EQUAL_ACCURACY) {
                         all_zeros = false;
                         break;
                     }
@@ -948,7 +945,7 @@ class Matrix2D {
         Matrix2D<T> transpose() const {
             Matrix2D<T> result(mdimx, mdimy);
             FOR_ALL_ELEMENTS_IN_MATRIX2D(result)
-                MAT_ELEM(result,i,j) = MAT_ELEM((*this),j,i);
+                MAT_ELEM(result, i, j) = MAT_ELEM((*this), j, i);
             return result;
         }
 
@@ -1012,7 +1009,7 @@ class Matrix2D {
                 // Compute W^-1
                 bool invertible = false;
                 FOR_ALL_ELEMENTS_IN_MATRIX1D(w) {
-                    if (ABS(VEC_ELEM(w, i)) > tol) {
+                    if (abs(VEC_ELEM(w, i)) > tol) {
                         VEC_ELEM(w, i) = 1.0 / VEC_ELEM(w, i);
                         invertible = true;
                     } else {
@@ -1029,9 +1026,9 @@ class Matrix2D {
 
                 // Compute inverse
                 for (int i = 0; i < mdimx; i++)
-                    for (int j = 0; j < mdimy; j++)
-                        for (int k = 0; k < mdimx; k++)
-                            MAT_ELEM(result, i, j) += (T) MAT_ELEM(v, i, k) * MAT_ELEM(u, j, k);
+                for (int j = 0; j < mdimy; j++)
+                for (int k = 0; k < mdimx; k++)
+                MAT_ELEM(result, i, j) += (T) MAT_ELEM(v, i, k) * MAT_ELEM(u, j, k);
             }
         }
 
@@ -1051,14 +1048,11 @@ class Matrix2D {
         */
         bool isIdentity() const {
             for (int i = 0; i < mdimy; i++)
-                for (int j = 0; j < mdimx; j++)
-                    if (i == j) {
-                        if (ABS(MAT_ELEM(*this, i, j) - 1.0) > XMIPP_EQUAL_ACCURACY )
-                            return false;
-                    } else {
-                        if (ABS(MAT_ELEM(*this, i, j)) > XMIPP_EQUAL_ACCURACY)
-                            return false;
-                    }
+            for (int j = 0; j < mdimx; j++) {
+                T elem = MAT_ELEM(*this, i, j);
+                if ((i == j ? abs(elem - 1.0) : abs(elem)) > XMIPP_EQUAL_ACCURACY)
+                    return false;
+            }
             return true;
         }
         //@}
