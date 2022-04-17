@@ -840,10 +840,8 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         fn_mask = MD.getValue<FileName>(EMDL::BODY_MASK_NAME);
         Imask.read(fn_mask);
-        std::pair<RFLOAT, RFLOAT> minmaxpair = Imask().minmax();
-        RFLOAT minval = minmaxpair.first;
-        RFLOAT maxval = minmaxpair.second;
-        if (minval < 0.0 || maxval > 1.0)
+        MultidimArray<RFLOAT>::MinMax range = Imask().minmax();
+        if (range.min < 0.0 || range.max > 1.0)
             REPORT_ERROR("ERROR: the mask " + fn_mask + " has values outside the range [0,1]");
 
         Imask().setXmippOrigin();

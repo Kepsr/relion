@@ -2661,9 +2661,9 @@ void Displayer::run() {
             if (minval == maxval) {
                 Image<RFLOAT> It;
                 It.read(fn_in);
-                std::pair<RFLOAT, RFLOAT> minmaxpair = It().minmax();
-                minval = minmaxpair.first;
-                maxval = minmaxpair.second;
+                MultidimArray<RFLOAT>::MinMax range = It().minmax();
+                minval = range.min;
+                maxval = range.max;
             }
 
             // Trick MD with :mrcs extension....
@@ -2695,8 +2695,9 @@ void Displayer::run() {
             MDin.setValue(EMDL::IMAGE_NAME, fn_in);
             MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
             RFLOAT new_scale = scale;
-            if (show_fourier_amplitudes || show_fourier_phase_angles)
-                new_scale *= 2.;
+            if (show_fourier_amplitudes || show_fourier_phase_angles) { 
+                new_scale *= 2.0; 
+            }
             basisViewerWindow win(ceil(new_scale * XSIZE(img())), ceil(new_scale * YSIZE(img())), fn_in.c_str());
             if (show_fourier_amplitudes) {
                 amplitudeOrPhaseMap(img(), img(), AMPLITUDE_MAP);

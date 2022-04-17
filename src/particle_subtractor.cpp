@@ -111,10 +111,8 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         Imask.read(fn_msk);
         Imask().setXmippOrigin();
 
-        std::pair<RFLOAT, RFLOAT> minmaxpair = Imask().minmax();
-        RFLOAT minval = minmaxpair.first;
-        RFLOAT maxval = minmaxpair.second;
-        if (minval < 0.0 || maxval > 1.0) {
+        MultidimArray<RFLOAT>::MinMax range = Imask().minmax();
+        if (range.min < 0.0 || range.max > 1.0) {
             REPORT_ERROR("ERROR: the keep_inside mask has values outside the range [0,1]");
         }
     } else {

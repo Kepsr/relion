@@ -771,22 +771,18 @@ class helix_bilder_parameters {
                 return;
             }
 
-            MultidimArray<RFLOAT> Msum, Maux1;
             Matrix1D<RFLOAT> transZ(3);
             Image<RFLOAT> img;
             img.read(fn_in);
 
             Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
-            long int Xdim = dimensions.x;
-            long int Ydim = dimensions.y;
-            long int Zdim = dimensions.z;
-            long int Ndim = dimensions.n;
+
+            if (dimensions.x != dimensions.y || dimensions.y != dimensions.z)
+                REPORT_ERROR("Error in the input 3D map: DimX != DimY or DimY != DimZ");
 
             img().setXmippOrigin();
 
-            if (Xdim != Ydim || Ydim != Zdim)
-                REPORT_ERROR("Error in the input 3D map: DimX != DimY or DimY != DimZ");
-
+            MultidimArray<RFLOAT> Msum;
             Msum.clear();
             Msum.initZeros(img());
             Msum.setXmippOrigin();
@@ -797,6 +793,7 @@ class helix_bilder_parameters {
                 if (hh == 0) {
                     Msum += img();
                 } else {
+                    MultidimArray<RFLOAT> Maux1;
                     rotate(img(), Maux1, RFLOAT(hh) * twist_deg);
                     ZZ(transZ) = RFLOAT(hh) * rise_A / pixel_size_A;
                     selfTranslate(Maux1, transZ, WRAP);

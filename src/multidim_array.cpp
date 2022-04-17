@@ -46,7 +46,7 @@
 
 
 // Show a complex array ---------------------------------------------------
-std::ostream& operator << (std::ostream& ostrm, const MultidimArray<Complex> &v) {
+std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v) {
 
     if (v.xdim == 0) {
         ostrm << "NULL MultidimArray\n";

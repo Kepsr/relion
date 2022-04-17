@@ -236,7 +236,7 @@ extern std::string floatToString(float F, int _width, int _prec);
  * an external pointer called ptr.
  *
  * @code
- * T* ptr = NULL;
+ * T *ptr = NULL;
  * long int n;
  * FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v,n,ptr)
  * {
@@ -440,19 +440,19 @@ class MultidimArray;
 
 template<typename T>
 void coreArrayByScalar(
-    const MultidimArray<T>& op1, const T& op2, MultidimArray<T>& result,
+    const MultidimArray<T> &op1, const T& op2, MultidimArray<T>& result,
     const char operation
 );
 
 template<typename T>
 void coreScalarByArray(
-    const T& op1, const MultidimArray<T>& op2, MultidimArray<T>& result,
+    const T &op1, const MultidimArray<T> &op2, MultidimArray<T>& result,
     const char operation
 );
 
 template<typename T>
 void coreArrayByArray(
-    const MultidimArray<T>& op1, const MultidimArray<T>& op2, MultidimArray<T>& result,
+    const MultidimArray<T> &op1, const MultidimArray<T> &op2, MultidimArray<T>& result,
     const char operation
 );
 
@@ -504,7 +504,7 @@ class MultidimArray {
     // Number of elements in NZYX
     long int nzyxdim() const { return ndim * zyxdim(); }
 
-    // X/YZ init
+    // X/Y/Zinit
     long int xinit;
     long int yinit;
     long int zinit;
@@ -1463,7 +1463,7 @@ class MultidimArray {
      */
     template <typename T1>
     inline bool sameShape(
-        const MultidimArray<T1>& op, bool ignore_origin=false
+        const MultidimArray<T1> &op, bool ignore_origin=false
     ) const {
 
         bool samesize = (
@@ -1624,25 +1624,25 @@ class MultidimArray {
      *
      * Is this logical index a corner of this array?
      */
-    bool isCorner(const Matrix1D<RFLOAT>& v) const {
+    bool isCorner(const Matrix1D<RFLOAT> &v) const {
 
         if (v.size() < 2)
             REPORT_ERROR(std::string(__func__) + ": index vector has too few components");
 
         switch (XSIZE(*this)) {
+
             case 2:
-                return (
-                    (XX(v) == firstX() || XX(v) == lastX()) &&
-                    (YY(v) == firstY() || YY(v) == lastY())
-                );
+            return (XX(v) == firstX() || XX(v) == lastX()) &&
+                   (YY(v) == firstY() || YY(v) == lastY());
+
             case 3:
-                return (
-                    (XX(v) == firstX() || XX(v) == lastX()) &&
-                    (YY(v) == firstY() || YY(v) == lastY()) &&
-                    (ZZ(v) == firstZ() || ZZ(v) == lastZ())
-                );
+            return (XX(v) == firstX() || XX(v) == lastX()) &&
+                   (YY(v) == firstY() || YY(v) == lastY()) &&
+                   (ZZ(v) == firstZ() || ZZ(v) == lastZ());
+
             default:
-                REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
+            REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
+
         }
 
     }
@@ -1683,13 +1683,13 @@ class MultidimArray {
     T& operator()(const Matrix1D<long int>& v) const {
         switch (VEC_XSIZE(v)) {
             case 1:
-                return A1D_ELEM((*this), XX(v));
+            return A1D_ELEM((*this), XX(v));
             case 2:
-                return A2D_ELEM((*this), YY(v), XX(v));
+            return A2D_ELEM((*this), YY(v), XX(v));
             case 3:
-                return A3D_ELEM((*this), ZZ(v), YY(v), XX(v));
+            return A3D_ELEM((*this), ZZ(v), YY(v), XX(v));
             default:
-                REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
+            REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
         }
     }
 
@@ -2016,7 +2016,7 @@ class MultidimArray {
      */
     void toPhysical(
         long int  k_log,  long int  i_log,  long int  j_log,
-        long int& k_phys, long int& i_phys, long int& j_phys
+        long int &k_phys, long int &i_phys, long int &j_phys
     ) const {
         k_phys = k_log - firstZ();
         i_phys = i_log - firstY();
@@ -2033,7 +2033,7 @@ class MultidimArray {
      */
     void toLogical(
         long int  k_phys, long int  i_phys, long int  j_phys,
-        long int& k_log,  long int& i_log,  long int& j_log
+        long int &k_log,  long int &i_log,  long int &j_log
     ) const {
         k_log = k_phys + firstZ();
         i_log = i_phys + firstY();
@@ -2050,7 +2050,7 @@ class MultidimArray {
      */
     void toPhysical(
         long int  i_log,  long int  j_log, 
-        long int& i_phys, long int& j_phys
+        long int &i_phys, long int &j_phys
     ) const {
         i_phys = i_log - firstY();
         j_phys = j_log - firstX();
@@ -2066,7 +2066,7 @@ class MultidimArray {
      */
     void toLogical(
         long int  i_phys, long int j_phys, 
-        long int &i_log,  long int& j_log
+        long int &i_log,  long int &j_log
     ) const {
         i_log = i_phys + firstY();
         j_log = j_phys + firstX();
@@ -2080,7 +2080,7 @@ class MultidimArray {
      * v.toPhysical(i_log, i_phys);
      * @endcode
      */
-    void toPhysical(long int i_log, long int& i_phys) const {
+    void toPhysical(long int i_log, long int &i_phys) const {
         i_phys = i_log - firstX();
     }
 
@@ -2092,7 +2092,7 @@ class MultidimArray {
      * v.toLogical(i_phys, i_log);
      * @endcode
      */
-    void toLogical(long int i_phys, long int& i_log) const {
+    void toLogical(long int i_phys, long int &i_log) const {
         i_log = i_phys + firstX();
     }
 
@@ -2201,7 +2201,7 @@ class MultidimArray {
 
         T maxval = data[0];
 
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             if (*ptr > maxval)
@@ -2217,7 +2217,7 @@ class MultidimArray {
 
         T minval = data[0];
 
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         if (*ptr < minval)
@@ -2231,7 +2231,7 @@ class MultidimArray {
      * Return the index of the minimum element of an array.
      * array(l,k,i,j). Returns -1 if the array is empty
      */
-    T minIndex(long int &lmin, long int& kmin, long int& imin, long int& jmin) const {
+    T minIndex(long int &lmin, long int &kmin, long int &imin, long int &jmin) const {
         if (XSIZE(*this) == 0) {
             lmin = kmin = imin = jmin = -1;
             return 0;
@@ -2270,7 +2270,7 @@ class MultidimArray {
      *
      * Call to the 4D function
      */
-    T minIndex(long int& imin, long int& jmin) const {
+    T minIndex(long int &imin, long int &jmin) const {
         long int zeroInt = 0;
         return minIndex(zeroInt, zeroInt, imin, jmin);
     }
@@ -2279,7 +2279,7 @@ class MultidimArray {
      *
      * Call to the 4D function
      */
-    T minIndex(long int& jmin) const {
+    T minIndex(long int &jmin) const {
         long int zeroInt = 0;
         return minIndex(zeroInt, zeroInt, zeroInt, jmin);
     }
@@ -2289,7 +2289,7 @@ class MultidimArray {
      * Return the index of the maximum element of an array.
      * array(l,k,i,j). Returns -1 if the array is empty
      */
-    T maxIndex(long int &lmax, long int& kmax, long int& imax, long int& jmax) const {
+    T maxIndex(long int &lmax, long int &kmax, long int &imax, long int &jmax) const {
         if (XSIZE(*this) == 0) {
             lmax = kmax = imax = jmax = -1;
             return 0;
@@ -2318,7 +2318,7 @@ class MultidimArray {
      *
      * Call to the 4D function
      */
-    T maxIndex(long int& kmax, long int& imax, long int& jmax) const {
+    T maxIndex(long int &kmax, long int &imax, long int &jmax) const {
         long int dum;
         return maxIndex(dum, kmax, imax, jmax);
     }
@@ -2327,7 +2327,7 @@ class MultidimArray {
      *
      * Call to the 4D function
      */
-    T maxIndex(long int& imax, long int& jmax) const {
+    T maxIndex(long int &imax, long int &jmax) const {
         long int dum;
         return maxIndex(dum, dum, imax, jmax);
     }
@@ -2336,36 +2336,32 @@ class MultidimArray {
      *
      * Call to the 4D function
      */
-    T maxIndex(long int& jmax) const {
+    T maxIndex(long int &jmax) const {
         long int dum;
         return maxIndex(dum, dum, dum, jmax);
     }
+
+    struct MinMax { RFLOAT min, max; };
 
     /** Minimum and maximum of the values in the array.
      *
      * As RFLOATs.
      */
-    std::pair<RFLOAT, RFLOAT> minmax() const {
+    MinMax minmax() const {
 
-        RFLOAT minval, maxval;
+        RFLOAT min, max;
 
-        if (NZYXSIZE(*this) <= 0)
-            // Uninitialised RFLOATs.
-            return std::make_pair(minval, maxval);
+        if (NZYXSIZE(*this) <= 0) return { min, max }; // Uninitialised RFLOATs
 
-        minval = maxval = static_cast<RFLOAT>(data[0]);
-
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             T val = *ptr;
-            if (val < minval) {
-                minval = static_cast<RFLOAT>(val);
-            } else if (val > maxval) {
-                maxval = static_cast<RFLOAT>(val);
-            }
+            if (n == 0) { min = max = static_cast<RFLOAT>(val); }
+            else if (val < min) { min = static_cast<RFLOAT>(val); } 
+            else if (val > max) { max = static_cast<RFLOAT>(val); }
         }
-        return std::make_pair(minval, maxval);
+        return { min, max };
     }
 
     /** Average of the values in the array.
@@ -2374,12 +2370,11 @@ class MultidimArray {
      */
     RFLOAT average() const {
         // Arithmetic mean
-        if (NZYXSIZE(*this) <= 0)
-            return 0;
+        if (NZYXSIZE(*this) <= 0) return 0;
 
         RFLOAT sum = 0;
 
-        T* ptr = NULL;
+        T *ptr = NULL;
         long int n;
         // Fold/reduce
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
@@ -2401,7 +2396,7 @@ class MultidimArray {
         RFLOAT avg = 0, stddev = 0;
         long int N = NZYXSIZE(*this);
 
-        T* ptr = NULL;
+        T *ptr = NULL;
         long int n;
 
         #ifdef RELION_SINGLE_PRECISION
@@ -2474,45 +2469,37 @@ class MultidimArray {
         double sumx = 0;
         double sumxx = 0;
 
-        double minval =  std::numeric_limits<double>::max();
-        double maxval = -std::numeric_limits<double>::max();
+        Stats<T> stats;
+        stats.min =  std::numeric_limits<double>::max();
+        stats.max = -std::numeric_limits<double>::max();
 
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         // Make one pass through the array.
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            T Tval = *ptr;
-            double x = static_cast<double>(Tval);
-            sumx += x;
+            T val = *ptr;
+            double x = static_cast<double>(val);
+            sumx  += x;
             sumxx += x * x;
 
-            if (Tval > maxval) {
-                maxval = Tval;
-            } else if (Tval < minval) {
-                minval = Tval;
-            }
+                 if (val > stats.max) { stats.max = val; } 
+            else if (val < stats.min) { stats.min = val; }
         }
 
         long int N = (*this).nzyxdim();
 
-        double avg = sumx / N;
-        double stddev = 0;
+        stats.avg = sumx / N;
         if (N > 1) {
             // Biased sample variance = E[X**2] - E[X]**2
-            double var = (sumxx / N - avg * avg) * N / (N - 1);
+            double var = (sumxx / N - stats.avg * stats.avg) * N / (N - 1);
             // Unbiased sample variance = biased sample variance * N / (N - 1)
             // Foreseeing numerical instabilities
-            stddev = sqrt(static_cast<RFLOAT>(abs(var)));
+            stats.stddev = sqrt(static_cast<RFLOAT>(abs(var)));
         } else {
             // Sample variance is undefined for N <= 1.
-            stddev = 0;
+            stats.stddev = 0;
         }
 
-        Stats<T> stats;
-        stats.avg = avg;
-        stats.stddev = stddev;
-        stats.min = minval;
-        stats.max = maxval;
         return stats;
     }
 
@@ -2564,24 +2551,21 @@ class MultidimArray {
      */
     void rangeAdjust(T minF, T maxF) {
 
-        if (NZYXSIZE(*this) <= 0)
-            return;
+        if (NZYXSIZE(*this) <= 0) return;
 
-        std::pair<RFLOAT, RFLOAT> minmaxpair = minmax();
-        RFLOAT min0 = minmaxpair.first;
-        RFLOAT max0 = minmaxpair.second;
+        MinMax range = minmax();
 
-        // If min0 == max0, the vector is a constant one, 
+        // If range.min == range.max, the vector is a constant one, 
         // so the only possible transformation is to a fixed minF
-        RFLOAT slope = (min0 == max0) ? 0 :
-            static_cast<RFLOAT>(maxF - minF) / 
-            static_cast<RFLOAT>(max0 - min0);
+        RFLOAT slope = range.min == range.max ? 0 :
+            static_cast<RFLOAT>(maxF - minF) /
+            static_cast<RFLOAT>(range.max - range.min);
 
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             // a + b * x
-            *ptr = minF + static_cast<T>(slope * static_cast<RFLOAT>(*ptr - min0));
+            *ptr = minF + static_cast<T>(slope * static_cast<RFLOAT>(*ptr - range.min));
         }
     }
 
@@ -2600,49 +2584,45 @@ class MultidimArray {
     // This function must be explictly implemented outside
     void rangeAdjust(T minF, T maxF, MultidimArray<int> &mask) {
 
-        if (NZYXSIZE(*this) <= 0)
-            return;
+        if (NZYXSIZE(*this) <= 0) return;
 
-        std::pair<RFLOAT, RFLOAT> minmaxpair = maskminmax(mask);
-        RFLOAT min0 = minmaxpair.first;
-        RFLOAT max0 = minmaxpair.second;
+        MinMax range = maskminmax(mask);
 
-        // If min0 == max0, the vector is a constant one,
+        // If range.min == range.max, the vector is a constant one,
         // so the only possible transformation is to a fixed minF
-        RFLOAT slope = (min0 == max0) ? 0 : 
+        RFLOAT slope = range.min == range.max ? 0 : 
             static_cast<RFLOAT>(maxF - minF) /
-            static_cast<RFLOAT>(max0 - min0);
+            static_cast<RFLOAT>(range.max - range.min);
 
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             // a + b * x
-            *ptr = minF + static_cast<T>(slope * static_cast<RFLOAT>(*ptr - min0));
+            *ptr = minF + static_cast<T>(slope * static_cast<RFLOAT>(*ptr - range.min));
         }
     }
 
     // For use in rangeAdjust
-    pair<RFLOAT, RFLOAT> maskminmax(MultidimArray<int> &mask) {
-        RFLOAT min0, max0;
+    MinMax maskminmax(MultidimArray<int> &mask) {
+        RFLOAT min, max;
         int *maskptr = mask.data;
 
-        T *ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             if (*maskptr) {
                 T val = *ptr;
                 if (n == 0) {
-                    min0 = max0 = (RFLOAT)val;
+                    min = max = (RFLOAT) val;
                 } else {
-                    min0 = std::min(min0, val);
-                    max0 = std::max(max0, val);
+                    min = std::min(min, val);
+                    max = std::max(max, val);
                 }
             }
             maskptr++;
         }
-        return std::make_pair(min0, max0);
+        return { min, max };
     }
-
 
     /** Adjust the range of the array to the range of another array in
         a least squares sense.
@@ -2657,14 +2637,11 @@ class MultidimArray {
     // to use T than RFLOAT or will create problem for int multidim arrays
     void rangeAdjust(const MultidimArray<T> &target, const MultidimArray<int> *mask=NULL) {
 
-        if (NZYXSIZE(*this) <= 0)
-            return;
+        if (NZYXSIZE(*this) <= 0) return;
 
-        T* targetptr = target.data;
-        int* maskptr = NULL;
-        if (mask != NULL)
-            maskptr = (*mask).data;
-        T* ptr = NULL;
+        T *targetptr = target.data;
+        int *maskptr = mask == NULL ? NULL : (*mask).data;
+        T *ptr;
         long int n;
         RFLOAT N = 0, sumx = 0, sumy = 0, sumxx = 0, sumxy = 0;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
@@ -2675,15 +2652,14 @@ class MultidimArray {
                 sumy += y; sumxy += x * y;
             }
             targetptr++;
-            if (mask != NULL)
-                maskptr++;
+            if (mask != NULL) { maskptr++; }
         }
-        RFLOAT slope = (N * sumxy - sumx * sumy) / 
-                        (N * sumxx - sumx * sumx);
+        RFLOAT slope = (N * sumxy - sumx * sumy) / (N * sumxx - sumx * sumx);
         RFLOAT intercept = sumy / N - slope * sumx / N;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             // a + b * x
             *ptr = static_cast<RFLOAT>(intercept + slope * static_cast<RFLOAT>(*ptr));
+        }
     }
 
     /** Adjust the average and stddev of the array to given values.
@@ -2700,28 +2676,18 @@ class MultidimArray {
     // This function must be explictly implemented outside.
     void statisticsAdjust(RFLOAT avgF, RFLOAT stddevF) {
 
-        if (NZYXSIZE(*this) == 0)
-            return;
+        if (NZYXSIZE(*this) == 0) return;
 
-        // Surely we just need minmax
         Stats<T> stats = computeStats();
-        RFLOAT avg0    = stats.avg;
-        RFLOAT stddev0 = stats.stddev;
-        T minval       = stats.min;
-        T maxval       = stats.max;
 
-        RFLOAT a, b;
-        if (stddev0 == 0) {
-            a = 0;
-            b = static_cast<RFLOAT>(avgF) - a * static_cast<RFLOAT>(avg0);
+        RFLOAT a = stats.stddev == 0 ? 0 : 
+                   static_cast<RFLOAT>(stddevF)  / static_cast<RFLOAT>(stats.stddev);
+        RFLOAT b = static_cast<RFLOAT>(avgF) - a * static_cast<RFLOAT>(stats.avg);
 
-            T* ptr = NULL;
-            long int n;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-                *ptr = static_cast<T>(a * static_cast<RFLOAT>(*ptr) + b);
-            }
-        } else {
-            a = static_cast<RFLOAT>(stddevF) / static_cast<RFLOAT>(stddev0);
+        T *ptr;
+        long int n;
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+            *ptr = static_cast<T>(a * static_cast<RFLOAT>(*ptr) + b);
         }
     }
     //@}
@@ -2745,35 +2711,31 @@ class MultidimArray {
      *
      * It assumes that the result is already resized.
      */
-    inline friend void coreArrayByArray(
-        const MultidimArray<T>& op1,
-        const MultidimArray<T>& op2, MultidimArray<T>& result,
+    inline friend MultidimArray<T> coreArrayByArray(
+        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2, 
+        MultidimArray<T>& output,
         const char operation
     ) {
-        T* ptrResult = NULL;
-        T* ptrOp1 = NULL;
-        T* ptrOp2 = NULL;
+        T *arg1ptr, *arg2ptr, *optr;
         long int n;
         for (
-            n = 0, ptrResult = result.data, ptrOp1 = op1.data, ptrOp2 = op2.data;
-            n < op1.zyxdim();
-            ++n, ++ptrResult, ++ptrOp1, ++ptrOp2
+            n = 0, optr = output.data, arg1ptr = arg1.data, arg2ptr = arg2.data;
+            n < arg1.zyxdim();
+            ++n, ++arg1ptr, ++arg2ptr, ++optr
         ) {
             switch (operation) {
-                case '+':
-                    *ptrResult = *ptrOp1 + *ptrOp2;
-                    break;
-                case '-':
-                    *ptrResult = *ptrOp1 - *ptrOp2;
-                    break;
-                case '*':
-                    *ptrResult = *ptrOp1 * *ptrOp2;
-                    break;
-                case '/':
-                    *ptrResult = *ptrOp1 / *ptrOp2;
-                    break;
+
+                case '+': *optr = *arg1ptr + *arg2ptr; break;
+
+                case '-': *optr = *arg1ptr - *arg2ptr; break;
+
+                case '*': *optr = *arg1ptr * *arg2ptr; break;
+
+                case '/': *optr = *arg1ptr / *arg2ptr; break;
+
             }
         }
+        return output;
     }
 
     /** Array by array
@@ -2785,73 +2747,70 @@ class MultidimArray {
      * to be a hidden function not useable by normal programmers.
      *
      */
-    inline friend void arrayByArray(const MultidimArray<T>& op1,
-                                    const MultidimArray<T>& op2, MultidimArray<T>& result,
-                                    char operation) {
-        if (!op1.sameShape(op2)) {
-            op1.printShape();
-            op2.printShape();
+    inline friend MultidimArray<T> arrayByArray(
+        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2, 
+        MultidimArray<T> &output, 
+        char operation
+    ) {
+        if (!arg1.sameShape(arg2)) {
+            arg1.printShape();
+            arg2.printShape();
             REPORT_ERROR((std::string) "Array_by_array: different shapes (" + operation + ")");
         }
-        if (result.data == NULL || !result.sameShape(op1))
-            result.resize(op1);
-        coreArrayByArray(op1, op2, result, operation);
+        if (output.data == NULL || !output.sameShape(arg1)) { output.resize(arg1); }
+        return coreArrayByArray(arg1, arg2, output, operation);
     }
 
     /** v3 = v1 + v2.
      */
-    MultidimArray<T> operator+(const MultidimArray<T>& op1) const {
-        MultidimArray<T> tmp;
-        arrayByArray(*this, op1, tmp, '+');
-        return tmp;
+    MultidimArray<T> operator + (const MultidimArray<T> &arg) const {
+        MultidimArray<T> output;
+        return arrayByArray(*this, arg, output, '+');
     }
 
     /** v3 = v1 - v2.
      */
-    MultidimArray<T> operator-(const MultidimArray<T>& op1) const {
-        MultidimArray<T> tmp;
-        arrayByArray(*this, op1, tmp, '-');
-        return tmp;
+    MultidimArray<T> operator - (const MultidimArray<T> &arg) const {
+        MultidimArray<T> output;
+        return arrayByArray(*this, arg, output, '-');
     }
 
     /** v3 = v1 * v2.
      */
-    MultidimArray<T> operator*(const MultidimArray<T>& op1) const {
-        MultidimArray<T> tmp;
-        arrayByArray(*this, op1, tmp, '*');
-        return tmp;
+    MultidimArray<T> operator * (const MultidimArray<T> &arg) const {
+        MultidimArray<T> output;
+        return arrayByArray(*this, arg, output, '*');
     }
 
     /** v3 = v1 / v2.
      */
-    MultidimArray<T> operator/(const MultidimArray<T>& op1) const {
-        MultidimArray<T> tmp;
-        arrayByArray(*this, op1, tmp, '/');
-        return tmp;
+    MultidimArray<T> operator / (const MultidimArray<T> &arg) const {
+        MultidimArray<T> output;
+        return arrayByArray(*this, arg, output, '/');
     }
 
     /** v3 += v2.
      */
-    void operator+=(const MultidimArray<T>& op1) {
-        arrayByArray(*this, op1, *this, '+');
+    MultidimArray<T> operator += (const MultidimArray<T> &arg) {
+        return arrayByArray(*this, arg, *this, '+');
     }
 
     /** v3 -= v2.
      */
-    void operator-=(const MultidimArray<T>& op1) {
-        arrayByArray(*this, op1, *this, '-');
+    MultidimArray<T> operator -= (const MultidimArray<T> &arg) {
+        return arrayByArray(*this, arg, *this, '-');
     }
 
     /** v3 *= v2.
      */
-    void operator*=(const MultidimArray<T>& op1) {
-        arrayByArray(*this, op1, *this, '*');
+    MultidimArray<T> operator *= (const MultidimArray<T> &arg) {
+        return arrayByArray(*this, arg, *this, '*');
     }
 
     /** v3 /= v2.
      */
-    void operator/=(const MultidimArray<T>& op1) {
-        arrayByArray(*this, op1, *this, '/');
+    MultidimArray<T> operator /= (const MultidimArray<T> &arg) {
+        return arrayByArray(*this, arg, *this, '/');
     }
     //@}
 
@@ -2860,8 +2819,7 @@ class MultidimArray {
      * Operations are between an array and a scalar (of the same type as the array).
      * The result must have been defined to be of the same type as the operands.
      *
-     * In this kind of operation each element of array 1 is operated with the
-     * given constant.
+     * In this kind of operation each element of array 1 is operated with the given constant.
      * The result has also got the same shape as the input array and its former content is lost
      *
      * Now would be a good time for ad-hoc polymorphism.
@@ -2874,121 +2832,115 @@ class MultidimArray {
      *
      * This function is not ported to Python.
      */
-    inline friend void coreArrayByScalar(
-        const MultidimArray<T>& op1, const T& op2,
-        MultidimArray<T>& result, const char operation
+    inline friend MultidimArray<T> coreArrayByScalar(
+        const MultidimArray<T> &input, const T &scalar,
+        MultidimArray<T> &output, 
+        const char operation
     ) {
-        T* resultptr = NULL;
-        T* op1ptr = NULL;
-        // These two pointers will move through (respectively) result and op1.
-        // The value stored at op1ptr will be used to assign the value stored at resultptr.
+        T *iptr, *optr;
+        // These two pointers will move through (respectively) input and output.
+        // The value stored at iptr will be used to assign the value stored at optr.
         long int n;
         for (
-            n = 0, resultptr = result.data, op1ptr = op1.data;
-            n < op1.zyxdim();
-            ++n, ++resultptr, ++op1ptr
+            n = 0, optr = output.data, iptr = input.data;
+            n < input.zyxdim();
+            ++n, ++optr, ++iptr
         ) {
             // This switch will be evaluated for EVERY SINGLE LOOP ITERATION.
             // Even though operation never changes.
             // There must be a better way!
             switch (operation) {
-                case '+':
-                    *resultptr = *op1ptr + op2;
-                    break;
-                case '-':
-                    *resultptr = *op1ptr - op2;
-                    break;
-                case '*':
-                    *resultptr = *op1ptr * op2;
-                    break;
-                case '/':
-                    *resultptr = *op1ptr / op2;
-                    break;
+
+                case '+': *optr = *iptr + scalar; break;
+
+                case '-': *optr = *iptr - scalar; break;
+
+                case '*': *optr = *iptr * scalar; break;
+
+                case '/': *optr = *iptr / scalar; break;
+
             }
         }
+        return output;
     }
 
     /** Array (vector) by scalar.
      *
      * Take a vector and a constant,
-     * and apply the necessary operation element-wise.
+     * and apply the appropriate operation element-wise.
      * This is the function which really implements the operations.
      * Simple calls to it perform much faster than calls to the corresponding operators.
      * It is supposed to be hidden from users.
      *
      * This function is not ported to Python.
      */
-    inline friend void arrayByScalar(
-        const MultidimArray<T>& op1, T op2,
-        MultidimArray<T>& result, char operation
+    inline friend MultidimArray<T> arrayByScalar(
+        const MultidimArray<T> &input, T scalar,
+        MultidimArray<T> &output,
+        const char operation  // A char standing in for a function. Ew.
     ) {
-        if (result.data == NULL || !result.sameShape(op1))
-            result.resize(op1);
-        coreArrayByScalar(op1, op2, result, operation);
+        if (output.data == NULL || !output.sameShape(input)) { output.resize(input); }
+        return coreArrayByScalar(input, scalar, output, operation);
     }
 
     /** v3 = v1 + k.
      */
-    MultidimArray<T> operator+(T op1) const {
-        MultidimArray<T> tmp;
-        arrayByScalar(*this, op1, tmp, '+');
-        return tmp;
+    MultidimArray<T> operator + (T scalar) const {
+        MultidimArray<T> output;
+        return arrayByScalar(*this, scalar, output, '+');
     }
 
     /** v3 = v1 - k.
      */
-    MultidimArray<T> operator-(T op1) const {
-        MultidimArray<T> tmp;
-        arrayByScalar(*this, op1, tmp, '-');
-        return tmp;
+    MultidimArray<T> operator - (T scalar) const {
+        MultidimArray<T> output;
+        return arrayByScalar(*this, scalar, output, '-');
     }
 
     /** v3 = v1 * k.
      */
-    MultidimArray<T> operator*(T op1) const {
-        MultidimArray<T> tmp;
-        arrayByScalar(*this, op1, tmp, '*');
-        return tmp;
+    MultidimArray<T> operator * (T scalar) const {
+        MultidimArray<T> output;
+        return arrayByScalar(*this, scalar, output, '*');
     }
 
     /** v3 = v1 / k.
      */
-    MultidimArray<T> operator/(T op1) const {
-        MultidimArray<T> tmp;
-        arrayByScalar(*this, op1, tmp, '/');
-        return tmp;
+    MultidimArray<T> operator / (T scalar) const {
+        MultidimArray<T> output;
+        return arrayByScalar(*this, scalar, output, '/');
     }
 
     /** v3 += k.
      *
      * This function is not ported to Python.
      */
-    void operator+=(const T& op1) {
-        arrayByScalar(*this, op1, *this, '+');
+    MultidimArray<T> operator += (const T &scalar) {
+        return arrayByScalar(*this, scalar, *this, '+');
     }
 
     /** v3 -= k.
      *
      * This function is not ported to Python.
      */
-    void operator-=(const T& op1) {
-        arrayByScalar(*this, op1, *this, '-');
+    MultidimArray<T> operator -= (const T &scalar) {
+        return arrayByScalar(*this, scalar, *this, '-');
     }
 
     /** v3 *= k.
      *
      * This function is not ported to Python.
      */
-    void operator*=(const T& op1) {
-        arrayByScalar(*this, op1, *this, '*');
+    MultidimArray<T> operator *= (const T &scalar) {
+        return arrayByScalar(*this, scalar, *this, '*');
     }
 
     /** v3 /= k.
      *
      * This function is not ported to Python.
      */
-    void operator/=(const T& op1) {
-        arrayByScalar(*this, op1, *this, '/');
+    MultidimArray<T> operator /= (const T &scalar) {
+        return arrayByScalar(*this, scalar, *this, '/');
     }
     //@}
 
@@ -3011,30 +2963,27 @@ class MultidimArray {
      *
      * This function is not ported to Python.
      */
-    inline friend void coreScalarByArray(const T& op1,
-                                        const MultidimArray<T>& op2,
-                                        MultidimArray<T>& result,
-                                        const char operation) {
-        T* ptrResult=NULL;
-        T* ptrOp2=NULL;
+    inline friend MultidimArray<T> coreScalarByArray(
+        const T &scalar,
+        const MultidimArray<T> &input,
+        MultidimArray<T> &output,
+        const char operation
+    ) {
+        T *iptr, *optr;
         long int n;
-        for (n=0, ptrResult=result.data, ptrOp2=op2.data;
-            n < op2.zyxdim(); ++n, ++ptrResult, ++ptrOp2)
-            switch (operation)
-            {
-            case '+':
-                *ptrResult = op1 + *ptrOp2;
-                break;
-            case '-':
-                *ptrResult = op1 - *ptrOp2;
-                break;
-            case '*':
-                *ptrResult = op1 * *ptrOp2;
-                break;
-            case '/':
-                *ptrResult = op1 / *ptrOp2;
-                break;
+        for (n = 0, optr = output.data, iptr = input.data; n < input.zyxdim(); ++n, ++optr, ++iptr)
+            switch (operation) {
+
+                case '+': *optr = scalar + *iptr; break;
+
+                case '-': *optr = scalar - *iptr; break;
+
+                case '*': *optr = scalar * *iptr; break;
+
+                case '/': *optr = scalar / *iptr; break;
+
             }
+            return output;
     }
 
     /** Scalar by array.
@@ -3047,45 +2996,42 @@ class MultidimArray {
      *
      * This function is not ported to Python.
      */
-    inline friend void scalarByArray(T op1,
-                                    const MultidimArray<T>& op2,
-                                    MultidimArray<T>& result,
-                                    char operation) {
-        if (result.data == NULL || !result.sameShape(op2))
-            result.resize(op2);
-        coreScalarByArray(op1, op2, result, operation);
+    inline friend MultidimArray<T> scalarByArray(
+        T scalar,
+        const MultidimArray<T> &input, 
+        MultidimArray<T> &output,
+        char operation
+    ) {
+        if (output.data == NULL || !output.sameShape(input)) { output.resize(input); }
+        return coreScalarByArray(scalar, input, output, operation);
     }
 
     /** v3 = k + v2.
      */
-    friend MultidimArray<T> operator+(T op1, const MultidimArray<T>& op2) {
-        MultidimArray<T> tmp;
-        scalarByArray(op1, op2, tmp, '+');
-        return tmp;
+    friend MultidimArray<T> operator + (T scalar, const MultidimArray<T> &input) {
+        MultidimArray<T> output;
+        return scalarByArray(scalar, input, output, '+');
     }
 
     /** v3 = k - v2.
      */
-    friend MultidimArray<T> operator-(T op1, const MultidimArray<T>& op2) {
-        MultidimArray<T> tmp;
-        scalarByArray(op1, op2, tmp, '-');
-        return tmp;
+    friend MultidimArray<T> operator - (T scalar, const MultidimArray<T> &input) {
+        MultidimArray<T> output;
+        return scalarByArray(scalar, input, output, '-');
     }
 
     /** v3 = k * v2.
      */
-    friend MultidimArray<T> operator*(T op1, const MultidimArray<T>& op2) {
-        MultidimArray<T> tmp;
-        scalarByArray(op1, op2, tmp, '*');
-        return tmp;
+    friend MultidimArray<T> operator * (T scalar, const MultidimArray<T> &input) {
+        MultidimArray<T> output;
+        return scalarByArray(scalar, input, output, '*');
     }
 
     /** v3 = k / v2
      */
-    friend MultidimArray<T> operator/(T op1, const MultidimArray<T>& op2) {
-        MultidimArray<T> tmp;
-        scalarByArray(op1, op2, tmp, '/');
-        return tmp;
+    friend MultidimArray<T> operator / (T scalar, const MultidimArray<T> &input) {
+        MultidimArray<T> output;
+        return scalarByArray(scalar, input, output, '/');
     }
     //@}
 
@@ -3103,10 +3049,9 @@ class MultidimArray {
      * @endcode
      */
     void initConstant(T val) {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        *ptr = val;
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) { *ptr = val; }
     }
 
     /** Initialize to zeros following a pattern.
@@ -3119,9 +3064,8 @@ class MultidimArray {
      * @endcode
      */
     template <typename T1>
-    void initZeros(const MultidimArray<T1>& op) {
-        if (data == NULL || !sameShape(op))
-            reshape(op);
+    void initZeros(const MultidimArray<T1> &op) {
+        if (data == NULL || !sameShape(op)) { reshape(op); }
         memset(data, 0, nzyxdim() * sizeof(T));
     }
 
@@ -3159,7 +3103,7 @@ class MultidimArray {
     /** Initialize to zeros with a given size.
      */
     inline void initZeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
-        if (xdim!=Xdim || ydim!=Ydim || zdim!=Zdim || ndim!=Ndim)
+        if (xdim != Xdim || ydim != Ydim || zdim != Zdim || ndim != Ndim)
             reshape(Ndim, Zdim,Ydim,Xdim);
         memset(data, 0, nzyxdim() * sizeof(T));
     }
@@ -3229,21 +3173,21 @@ class MultidimArray {
      * // the same
      *
      * v.initRandom(0, 1, "gaussian");
-     * // gaussian distribution with 0 mean and stddev=1
+     * // gaussian distribution with 0 mean and stddev=1
      * @endcode
      */
-    void initRandom(RFLOAT op1, RFLOAT op2, const std::string& mode = "uniform") {
-        T* ptr = NULL;
+    void initRandom(RFLOAT op1, RFLOAT op2, const std::string &mode = "uniform") {
+        T *ptr = NULL;
         long int n;
-        if (mode == "uniform")
+               if (mode == "uniform") {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr = static_cast<T>(rnd_unif(op1, op2));
-        else if (mode == "gaussian")
+            { *ptr = static_cast<T>(rnd_unif(op1, op2)); }
+        } else if (mode == "gaussian") {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr = static_cast<T>(rnd_gaus(op1, op2));
-        else
-            REPORT_ERROR( static_cast< std::string >("InitRandom: Mode not supported (" +
-                                                    mode + ")"));
+            { *ptr = static_cast<T>(rnd_gaus(op1, op2)); }
+        } else {
+            REPORT_ERROR(static_cast<std::string>("InitRandom: Mode not supported (" + mode + ")"));
+        }
     }
 
     /** Add noise to actual values.
@@ -3272,24 +3216,25 @@ class MultidimArray {
 
     * @endcode
     */
-    void addNoise(RFLOAT op1,
-                RFLOAT op2,
-                const std::string& mode = "uniform",
-                RFLOAT df = 3.) const {
-        T* ptr = NULL;
+    void addNoise(
+        RFLOAT op1, RFLOAT op2,
+        const std::string &mode = "uniform",
+        RFLOAT df = 3.0
+    ) const {
+        T *ptr = NULL;
         unsigned long int n;
-        if (mode == "uniform")
+               if (mode == "uniform") {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr += static_cast<T>(rnd_unif(op1, op2));
-        else if (mode == "gaussian")
+            { *ptr += static_cast<T>(rnd_unif(op1, op2)); }
+        } else if (mode == "gaussian") {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr += static_cast<T>(rnd_gaus(op1, op2));
-        else if (mode == "student")
+            { *ptr += static_cast<T>(rnd_gaus(op1, op2)); }
+        } else if (mode == "student") {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            *ptr += static_cast<T>(rnd_student_t(df, op1, op2));
-        else
-            REPORT_ERROR( static_cast< std::string >("AddNoise: Mode not supported (" +
-                                                    mode + ")"));
+            { *ptr += static_cast<T>(rnd_student_t(df, op1, op2)); }
+        } else {
+            REPORT_ERROR( static_cast< std::string >("AddNoise: Mode not supported (" + mode + ")"));
+        }
     }
     //@}
 
@@ -3307,18 +3252,18 @@ class MultidimArray {
      * memory is needed to hold the new RFLOAT pointer array.
      */
     T*** adaptForNumericalRecipes3D(long int n = 0) const {
-        T*** m = NULL;
+        T ***m = NULL;
         ask_Tvolume(m, 1, ZSIZE(*this), 1, YSIZE(*this), 1, XSIZE(*this));
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(*this)
-        m[k+1][i+1][j+1] = DIRECT_NZYX_ELEM(*this, n, k, i, j);
+        m[k + 1][i + 1][j + 1] = DIRECT_NZYX_ELEM(*this, n, k, i, j);
 
         return m;
     }
 
     /** Kill a 3D array produced for numerical recipes.
      */
-    void killAdaptationForNumericalRecipes3D(T*** m) const {
+    void killAdaptationForNumericalRecipes3D(T ***m) const {
         free_Tvolume(m, 1, ZSIZE(*this), 1, YSIZE(*this), 1, XSIZE(*this));
     }
 
@@ -3329,11 +3274,11 @@ class MultidimArray {
      * memory is needed to hold the new RFLOAT pointer array.
      */
     T** adaptForNumericalRecipes2D(long int n = 0) const {
-        T** m = NULL;
+        T **m = NULL;
         ask_Tmatrix(m, 1, YSIZE(*this), 1, XSIZE(*this));
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(*this)
-        m[i+1][j+1] = DIRECT_NZYX_ELEM(*this, n, 0, i, j);
+        m[i + 1][j + 1] = DIRECT_NZYX_ELEM(*this, n, 0, i, j);
 
         return m;
     }
@@ -3350,12 +3295,12 @@ class MultidimArray {
 
     /** Load 2D array from numerical recipes result.
      */
-    void loadFromNumericalRecipes2D(T** m, long int Ydim, long int Xdim) {
+    void loadFromNumericalRecipes2D(T **m, long int Ydim, long int Xdim) {
         resize(Ydim, Xdim);
 
         for (long int i = 1; i <= Ydim; i++)
-            for (long int j = 1; j <= Xdim; j++)
-                (*this)(i - 1, j - 1) = m[i][j];
+        for (long int j = 1; j <= Xdim; j++)
+        { (*this)(i - 1, j - 1) = m[i][j]; }
     }
 
     /** Kill a 2D array produced for numerical recipes
@@ -3370,8 +3315,7 @@ class MultidimArray {
      *
      * Nothing needs to be done.
      */
-    void killAdaptationForNumericalRecipes22D(T** m) const
-        {}
+    void killAdaptationForNumericalRecipes22D(T** m) const {}
 
     /** Produce a 1D array suitable for working with Numerical Recipes
      *
@@ -3392,21 +3336,17 @@ class MultidimArray {
      *
      * This function is not ported to Python.
      */
-    void killAdaptationForNumericalRecipes1D(T* m) const
-        {}
+    void killAdaptationForNumericalRecipes1D(T* m) const {}
 
     /** Computes the center of mass of the nth array
      */
     void centerOfMass(Matrix1D<RFLOAT>& center, void * mask=NULL, long int n = 0) {
             center.initZeros(3);
-            RFLOAT mass = 0;
-            MultidimArray< int >* imask = (MultidimArray< int >*) mask;
+            MultidimArray<int> *imask = (MultidimArray<int>*) mask;
 
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(*this)
-            {
-                if ((imask == NULL || NZYX_ELEM(*imask, n, k, i, j)) &&
-                    A3D_ELEM(*this, k, i, j) > 0)
-            {
+            RFLOAT mass = 0;
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(*this) {
+                if ((imask == NULL || NZYX_ELEM(*imask, n, k, i, j)) && A3D_ELEM(*this, k, i, j) > 0) {
                 XX(center) += j * NZYX_ELEM(*this, n, k, i, j);
                 YY(center) += i * NZYX_ELEM(*this, n, k, i, j);
                 ZZ(center) += k * NZYX_ELEM(*this, n, k, i, j);
@@ -3415,14 +3355,11 @@ class MultidimArray {
             }
         }
 
-        if (mass != 0)
-            center /= mass;
+        if (mass != 0) { center /= mass; }
 
-        // resize center to the correct dimensionality
-        if (getDim() == 2)
-            center.resize(2);
-        else if (getDim() == 1)
-            center.resize(1);
+        // Resize center to the correct dimensionality
+        int dim = getDim();
+        if (dim == 1 || dim == 2) { center.resize(dim); }
 
     }
 
@@ -3464,7 +3401,6 @@ class MultidimArray {
             DIRECT_MULTIDIM_ELEM(idx, n) = vp[n].second;
         }
     }
-
 
     /** Several thresholding.
      *
@@ -3510,45 +3446,28 @@ class MultidimArray {
             type == "above"     ?  3 :
             type == "below"     ?  4 :
             type == "range"     ?  5 :
-                                    0;
+                                   0;
 
         if (mode == 0)
             REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
 
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             // Hopefully the compiler will hoist this loop-invariant switch block
             if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
                 switch (mode) {
 
-                    case 1:
-                    if (abs(*ptr) > a)
-                        *ptr = b * sgn(*ptr);
-                    break;
+                    case 1: if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } break;
 
-                    case 2:
-                    if (abs(*ptr) < a)
-                        *ptr = b * sgn(*ptr);
-                    break;
+                    case 2: if (abs(*ptr) < a) { *ptr = b * sgn(*ptr); } break;
 
-                    case 3:
-                    if (*ptr > a)
-                        *ptr = b;
-                    break;
+                    case 3: if (*ptr > a) { *ptr = b; } break;
 
-                    case 4:
-                    if (*ptr < a)
-                        *ptr = b;
-                    break;
+                    case 4: if (*ptr < a) { *ptr = b; } break;
 
-                    case 5:
-                    if (*ptr < a) {
-                        *ptr = a;
-                    } else if (*ptr > b) {
-                        *ptr = b;
-                    }
-                    break;
+                    case 5: if (*ptr < a) { *ptr = a; } else 
+                            if (*ptr > b) { *ptr = b; } break;
 
                 }
             }
@@ -3572,37 +3491,23 @@ class MultidimArray {
 
         long int ret = 0;
 
-        T* ptr = NULL;
+        T *ptr;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
-            switch (mode) {
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+                switch (mode) {
 
-                case 1:
-                if (abs(*ptr) > a)
-                    ret++;
-                break;
+                    case 1: if (abs(*ptr) > a) { ret++; } break;
 
-                case 2:
-                if (abs(*ptr) < a)
-                    ret++;
-                break;
+                    case 2: if (abs(*ptr) < a) { ret++; } break;
 
-                case 3:
-                if (*ptr > a)
-                    ret++;
-                break;
+                    case 3: if (*ptr > a) { ret++; } break;
 
-                case 4:
-                if (*ptr < a)
-                    ret++;
-                break;
+                    case 4: if (*ptr < a) { ret++; } break;
 
-                case 5:
-                if (*ptr >= a && *ptr <= b)
-                    ret++;
-                break;
+                    case 5: if (*ptr >= a && *ptr <= b) { ret++; } break;
 
+                }
             }
         }
         return ret;
@@ -3618,7 +3523,7 @@ class MultidimArray {
         T oldv, T newv, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
         MultidimArray<int> *mask = NULL
     ) {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0)
@@ -3635,7 +3540,7 @@ class MultidimArray {
         T oldv, T avgv, T sigv, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY, 
         MultidimArray<int> *mask = NULL
     ) {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask,n) > 0)
@@ -3644,14 +3549,15 @@ class MultidimArray {
 
     /** Binarize.
      *
-     * Binarize (set to 1 or 0) each value in a volume according to whether it is greater than val + accuracy.
+     * Binarize (set to 1 or 0) each value in a volume, 
+     * according to whether it is greater than val + accuracy.
      * Use threshold to get a very powerful binarization.
      */
     void binarize(
         RFLOAT val = 0, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
         MultidimArray<int> *mask = NULL
     ) {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
@@ -3665,7 +3571,7 @@ class MultidimArray {
      * Round each array element.
      */
     void selfROUND() {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             *ptr = round(*ptr);
@@ -3677,7 +3583,7 @@ class MultidimArray {
      * Round each array element up.
      */
     void selfCEIL() {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         *ptr = ceil(*ptr);
@@ -3688,7 +3594,7 @@ class MultidimArray {
      * Round each array element down.
      */
     void selfFLOOR() {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         *ptr = floor(*ptr);
@@ -3699,7 +3605,7 @@ class MultidimArray {
      * Applies an ABS (absolute value) to each array element.
      */
     void selfABS() {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         *ptr = abs(*ptr);
@@ -3758,7 +3664,7 @@ class MultidimArray {
      * component.
      */
     void selfSQRT() {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         *ptr = static_cast<T>(sqrt(static_cast<RFLOAT>(*ptr)));
@@ -3774,7 +3680,7 @@ class MultidimArray {
      */
     RFLOAT sum() const {
         RFLOAT sum = 0;
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         sum += *ptr;
@@ -3792,7 +3698,7 @@ class MultidimArray {
      */
     RFLOAT sum2() const {
         RFLOAT sum = 0;
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         sum += *ptr * *ptr;
@@ -3804,7 +3710,7 @@ class MultidimArray {
      * Each component of the result is the log10 of the original components.
      */
     void selfLog10() {
-        T* ptr = NULL;
+        T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
         *ptr = static_cast<T>(log10(static_cast<RFLOAT>(*ptr)));
@@ -3875,7 +3781,7 @@ class MultidimArray {
     void selfReverseY() {
         long int xsize = XSIZE(*this);
         long int ysize = YSIZE(*this);
-        long int halfSizeY = (long int)(ysize-1)/2;
+        long int halfSizeY = (long int) (ysize - 1) / 2;
         long int zsize = ZSIZE(*this);
         long int nsize = NSIZE(*this);
         //0 column should be handled in a different way
@@ -3918,19 +3824,18 @@ class MultidimArray {
         long int xsize = XSIZE(*this);
         long int ysize = YSIZE(*this);
         long int zsize = ZSIZE(*this);
-        long int halfSizeZ = (long int)(zsize-1)/2;
+        long int halfSizeZ = (long int) (zsize - 1) / 2;
         long int nsize = NSIZE(*this);
-        //0 column should be handled in a different way
-        //for even and odd matrices
-        long int start_z = ((zsize%2) ? 0: 1);
-
+        // 0 column should be handled in a different way
+        // for even and odd matrices
+        long int start_z = !(zsize % 2);
 
         for (int l = 0; l < nsize; l++)
         for (int k = start_z; k <= halfSizeZ; k++)
         for (int i = 0; i < ysize; i++)
         for (int j = 0; j < xsize; j++) {
             SWAP(
-                DIRECT_NZYX_ELEM(*this, l, k, i, j),
+                DIRECT_NZYX_ELEM(*this, l,         k, i, j),
                 DIRECT_NZYX_ELEM(*this, l, zsize - k, i, j)
             );
         }
@@ -3944,7 +3849,8 @@ class MultidimArray {
      * use bilinear interpolation to return N samples of the line between them.
      */
     void profile(
-        long int x0, long int y0, long int xF, long int yF, long int N, MultidimArray<RFLOAT>& profile
+        long int x0, long int y0, long int xF, long int yF, long int N, 
+        MultidimArray<RFLOAT> &profile
     ) const {
         checkDimension(2);
         profile.initZeros(N);
@@ -3969,15 +3875,11 @@ class MultidimArray {
 
         FileName fn_tmp;
         fn_tmp.initRandom(10);
-        MultidimArray<T>::write(static_cast<std::string>("PPP") +
-                                fn_tmp + ".txt");
+        MultidimArray<T>::write(static_cast<std::string>("PPP") + fn_tmp + ".txt");
 
-        std::ofstream fh_gplot;
-        fh_gplot.open((static_cast<std::string>("PPP") + fn_tmp +
-                    ".gpl").c_str());
+        std::ofstream fh_gplot((static_cast<std::string>("PPP") + fn_tmp + ".gpl").c_str());
         if (!fh_gplot)
-            REPORT_ERROR( static_cast<std::string>("vector::showWithGnuPlot: Cannot open PPP")
-                        + fn_tmp + ".gpl for output");
+            REPORT_ERROR(static_cast<std::string>("vector::showWithGnuPlot: Cannot open PPP") + fn_tmp + ".gpl for output");
         fh_gplot << "set xlabel \"" + xlabel + "\"\n";
         fh_gplot << "plot \"PPP" + fn_tmp + ".txt\" title \"" + title +
         "\" w l\n";
@@ -3996,7 +3898,7 @@ class MultidimArray {
         FileName nam;
         nam.initRandom(15);
 
-        nam = static_cast< std::string >("PPP" + nam + ".txt");
+        nam = static_cast<std::string>("PPP" + nam + ".txt");
         write(nam);
 
         system((static_cast<std::string>("xmipp_edit -i " + nam + " -remove &").c_str()));
@@ -4004,80 +3906,67 @@ class MultidimArray {
 
     /* Write to a binary file
     */
-    void writeBinary(const FileName& fn) const {
-        std::ofstream out;
+    void writeBinary(const FileName &fn) const {
+        std::ofstream ofs(fn.c_str(), std::ios::out | std::ios::binary);
+        if (!ofs)
+            REPORT_ERROR(static_cast<std::string>("MultidimArray::write: File " + fn + " cannot be opened for output"));
 
-        out.open(fn.c_str(), std::ios::out | std::ios::binary);
-        if (!out)
-            REPORT_ERROR(static_cast< std::string >("MultidimArray::write: File " + fn + " cannot be opened for output"));
-
-        T* ptr;
+        T *ptr;
         unsigned long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            out.write(reinterpret_cast< char* >(ptr), sizeof(T));
-
-        out.close();
+            ofs.write(reinterpret_cast<char*>(ptr), sizeof(T));
     }
 
     /** Read from a binary file.
      * The array must be previously resized to the correct size.
      */
-    void readBinary(const FileName& fn) {
-        std::ifstream in;
-        in.open(fn.c_str(), std::ios::in | std::ios::binary);
-        if (!in)
-            REPORT_ERROR(static_cast< std::string>("MultidimArray::read: File " + fn + " not found"));
+    void readBinary(const FileName &fn) {
+        std::ifstream ifs(fn.c_str(), std::ios::in | std::ios::binary);
+        if (!ifs)
+            REPORT_ERROR(static_cast<std::string>("MultidimArray::read: File " + fn + " not found"));
 
-        T* ptr;
+        T *ptr;
         unsigned long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            in.read(reinterpret_cast<char*>(ptr), sizeof(T));
+            ifs.read(reinterpret_cast<char*>(ptr), sizeof(T));
 
-        in.close();
     }
 
     /** Read from a binary file, while summing to the existing array
      * The array must be previously resized to the correct size.
      */
-    void readBinaryAndSum(const FileName& fn) {
-        std::ifstream in;
-        in.open(fn.c_str(), std::ios::in | std::ios::binary);
-        if (!in)
-            REPORT_ERROR(static_cast< std::string>("MultidimArray::read: File " + fn + " not found"));
+    void readBinaryAndSum(const FileName &fn) {
+        std::ifstream ifs(fn.c_str(), std::ios::in | std::ios::binary);
+        if (!ifs)
+            REPORT_ERROR(static_cast<std::string>("MultidimArray::read: File " + fn + " not found"));
 
-        T* ptr;
-        T val;
+        T *ptr;
         unsigned long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            in.read(reinterpret_cast< char* >(&val), sizeof(T));
+            T val;
+            ifs.read(reinterpret_cast<char*>(&val), sizeof(T));
             *ptr += val;
         }
-
-        in.close();
     }
 
     /** Write to an ASCII file.
      */
-    void write(const FileName& fn) const {
-        std::ofstream out;
-        out.open(fn.c_str(), std::ios::out);
-        if (!out)
-            REPORT_ERROR( static_cast< std::string >("MultidimArray::write: File " + fn + " cannot be opened for output"));
+    void write(const FileName &fn) const {
+        std::ofstream ofs(fn.c_str(), std::ios::out);
+        if (!ofs)
+            REPORT_ERROR(static_cast<std::string>("MultidimArray::write: File " + fn + " cannot be opened for output"));
 
-        out << *this;
-        out.close();
+        ofs << *this;
     }
 
     /** Read from an ASCII file.
      */
-    void read(const FileName& fn) const {
-        std::ofstream in;
-        in.open(fn.c_str(), std::ios::in);
-        if (!in)
+    void read(const FileName &fn) const {
+        std::ofstream ofs(fn.c_str(), std::ios::in);
+        if (!ofs)
             REPORT_ERROR(static_cast<std::string>("MultidimArray::read: Cannot read File " + fn));
 
-        in >> *this;
-        in.close();
+        ofs >> *this;
     }
     //@}
 
@@ -4086,8 +3975,8 @@ class MultidimArray {
 
     /** Assignment.
      *
-     * You can build as complex assignment expressions as you like. Multiple
-     * assignment is allowed.
+     * You can build as complex assignment expressions as you like.
+     * Multiple assignment is allowed.
      *
      * @code
      * v1 = v2 + v3;
@@ -4096,7 +3985,7 @@ class MultidimArray {
      *
      * This function is ported to Python as assign.
      */
-    MultidimArray<T>& operator = (const MultidimArray<T>& op1) {
+    MultidimArray<T>& operator = (const MultidimArray<T> &op1) {
         if (&op1 != this) {
             if (data == NULL || !sameShape(op1))
                 resize(op1);
@@ -4115,12 +4004,11 @@ class MultidimArray {
      * v1 = -v2.transpose();
      * @endcode
      */
-    MultidimArray<T> operator-() const {
+    MultidimArray<T> operator - () const {
         MultidimArray<T> tmp(*this);
-        T* ptr;
+        T *ptr;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(tmp, n, ptr)
-        *ptr = -(*ptr);
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(tmp, n, ptr) { *ptr = -(*ptr); }
         return tmp;
     }
 
@@ -4136,10 +4024,9 @@ class MultidimArray {
      * This function is not ported to Python.
      */
     friend std::istream& operator >> (std::istream& in, MultidimArray<T>& v) {
-        T* ptr;
+        T *ptr;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr)
-        in >> *ptr;
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) { in >> *ptr; }
         return in;
     }
 
@@ -4148,7 +4035,7 @@ class MultidimArray {
      * Do these two objects have the same shape (origin and size)
      * and the same values (to within accuracy)?
      */
-    bool equal(const MultidimArray<T>& op, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY) const {
+    bool equal(const MultidimArray<T> &op, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY) const {
 
         if (!sameShape(op) || data == NULL || op.data == NULL)
             return false;
@@ -4197,15 +4084,13 @@ void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) 
  */
 void forcePositive(MultidimArray<RFLOAT> &V);
 
-/** MultidimArray equality.*/
 template<typename T>
-bool operator == (const MultidimArray<T>& op1, const MultidimArray<T>& op2) {
+bool operator == (const MultidimArray<T> &op1, const MultidimArray<T> &op2) {
     return op1.equal(op2);
 }
 
-/** MultidimArray inequality.*/
 template<typename T>
-bool operator != (const MultidimArray<T>& op1, const MultidimArray<T>& op2) {
+bool operator != (const MultidimArray<T> &op1, const MultidimArray<T> &op2) {
     return !(op1 == op2);
 }
 
@@ -4248,18 +4133,18 @@ void cutToCommonSize(MultidimArray<T>& V1, MultidimArray<T>& V2) {
  */
 template <typename T>
 std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T>& v) {
+
     if (v.xdim == 0) {
         ostrm << "NULL Array\n";
     } else {
         ostrm << std::endl;
     }
 
-
     RFLOAT max_val = abs(DIRECT_A3D_ELEM(v , 0, 0, 0));
     T *ptr;
     long int n;
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) {
-        max_val = std::max(max_val, std::abs(*ptr));  // What if *ptr is of type Complex?
+        max_val = std::max(max_val, std::abs(*ptr));
     }
 
     int prec = bestPrecision(max_val, 10);
@@ -4308,6 +4193,6 @@ static bool inZbounds (long int i, const MultidimArray<T> &arr) {
 
 // Special cases for complex numbers
 template<>
-std::ostream& operator << (std::ostream& ostrm, const MultidimArray<Complex>& v);
+std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v);
 //@}
 #endif
