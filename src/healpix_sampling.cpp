@@ -1665,7 +1665,7 @@ RFLOAT HealpixSampling::calculateAngularDistance(
             for (int i = 0; i < 3; i++) {
                 E1.getRow(i, v1);
                 E2.getRow(i, v2);
-                axes_dist += ACOSD(CLIP(dotProduct(v1, v2), -1.0, 1.0));
+                axes_dist += ACOSD(clip(dotProduct(v1, v2), -1.0, 1.0));
             }
             axes_dist /= 3.0;
 

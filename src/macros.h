@@ -133,7 +133,7 @@ extern const char *g_RELION_VERSION;
 /** signum
  *
  * The sign of a value.
- * Valid for any type T which supports 
+ * Valid for any type T which supports
  * - total ordering via operator <
  * - and construction from 0.
  * If n is positive, sgn(n) returns +1.
@@ -191,7 +191,7 @@ inline int sgn_nozero(T val) {
 
 /** Round up
  *
- * Valid for any numeric type (int, short, float, etc). 
+ * Valid for any numeric type (int, short, float, etc).
  * Return an int.
  *
  * @code
@@ -225,16 +225,33 @@ inline int sgn_nozero(T val) {
 
 /** Clip in a saturation fashion
  *
- * CLIP is a macro which acts like a saturation curve, a value x is "clipped" to
- * a range defined by x0 and xF, for example the output values for the following
- * x and CLIP(x,-2,2) would be
- *
+ * clip acts like a saturation curve.
+ * It returns the value of x "clipped" to the closed interval [x0, xF].
+ * x, x0, xF are required to be of identical type T,
+ * which must implement a total ordering via the operators < and >.
+ * For example the following code:
  * @code
- * x = ... -8 -7 -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6 7 8 ...
- * output = ... -2 -2 -2 -2 -2 -2 -2 -1 0 1 2 2 2 2 2 2 2 ...
+ * for (int x = -4; x <= +4; x++) {
+ *     std::cout << "(" << x << " " << clip(x, -2, +2) << ") ";
+ * }
+ * std::cout << std::endl;
+ * @endcode
+ * will output
+ * @code
+ * (-4 -2) (-3 -2) (-2 -2) (-1 -1) (0 0) (1 1) (2 2) (3 2) (4 2)
+ * @endcode
+ *
+ * This function template replaces a macro CLIP.
+ * @code
+ * #define CLIP(x, x0, xF) ((x) < (x0) ? (x0) : ((x) > (xF) ? (xF) : (x)))
  * @endcode
  */
-#define CLIP(x, x0, xF) ((x) < (x0) ? (x0) : ((x) > (xF) ? (xF) : (x)))
+template <typename T>
+T clip(T x, T x0, T xF) {
+    if (x < x0) return x0;
+    if (x > xF) return xF;
+                return x;
+}
 
 /** Wrapping for integers
  *
@@ -344,11 +361,11 @@ inline int sgn_nozero(T val) {
     // Neither sincos or __sincos available, use raw functions.
 
         static void SINCOS(double x, double *s, double *c) {
-            *s = sin(x); 
+            *s = sin(x);
             *c = cos(x);
         }
         static void SINCOSF(float x, float *s, float *c) {
-            *s = sinf(x); 
+            *s = sinf(x);
             *c = cosf(x);
         }
 
@@ -366,7 +383,7 @@ inline int sgn_nozero(T val) {
 
 /** Linear interpolation
  *
- * From low (when a = 0) to high (when a = 1). 
+ * From low (when a = 0) to high (when a = 1).
  * The following value is returned (equal to (a * h) + ((1 - a) * l)
  */
 #define LIN_INTERP(a, l, h) ((l) + ((h) - (l)) * (a))
