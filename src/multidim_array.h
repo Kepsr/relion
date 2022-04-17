@@ -60,10 +60,34 @@ using std::pair;
 
 template<typename T>
 struct Stats {
-    RFLOAT avg;
-    RFLOAT stddev;
-    T min;
-    T max;
+
+    RFLOAT avg, stddev;
+    T min, max;
+
+    /** Print statistics
+     *
+     * No end of line character is written after this print out.
+     *
+     * @code
+     * Stats<RFLOAT> stats = arr.computeStats();
+     * std::cout << "Statistics: ";
+     * stats.print(std::cout);
+     * std::cout << std::endl;
+     * @endcode
+     */
+    void print(std::ostream &out = std::cout) const {
+
+        out.setf(std::ios::showpoint);
+        int old_prec = out.precision(7);
+
+        out << " min= "; out.width(9); out << min;
+        out << " max= "; out.width(9); out << max;
+        out << " avg= "; out.width(9); out << avg;
+        out << " dev= "; out.width(9); out << stddev;
+
+        out.precision(old_prec);
+    }
+
 };
 
 // Intel MKL provides an FFTW-like interface, so this is enough.
@@ -177,9 +201,8 @@ extern std::string floatToString(float F, int _width, int _prec);
  * goes over the pixels in each slice.
  *
  * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v)
- * {
- *     std::cout << DIRECT_MULTIDIM_ELEM(v,n) << " ";
+ * FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v) {
+ *     std::cout << DIRECT_MULTIDIM_ELEM(v, n) << " ";
  * }
  * @endcode
  */
@@ -197,36 +220,34 @@ extern std::string floatToString(float F, int _width, int _prec);
  * ranges over the n volume using its physical definition.
  *
  * @code
- * FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v)
- * {
- *     std::cout << DIRECT_NZYX_ELEM(v,l, k, i, j) << " ";
+ * FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v) {
+ *     std::cout << DIRECT_NZYX_ELEM(v, l, k, i, j) << " ";
  * }
  * @endcode
  */
 #define FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V) \
-    for (long int l=0; l<NSIZE(V); l++) \
-        for (long int k=0; k<ZSIZE(V); k++) \
-            for (long int i=0; i<YSIZE(V); i++)      \
-                for (long int j=0; j<XSIZE(V); j++)
+    for (long int l = 0; l < NSIZE(V); l++) \
+    for (long int k = 0; k < ZSIZE(V); k++) \
+    for (long int i = 0; i < YSIZE(V); i++) \
+    for (long int j = 0; j < XSIZE(V); j++)
 
-/** For all direct elements in the array
+/** For all elements in the array
  *
  * This macro is used to generate loops for the array in an easy
  * manner. It defines internal indices 'l', 'k','i' and 'j' which
  * ranges over the n volume using its logical definition.
  *
  * @code
- * FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v)
- * {
- *     std::cout << NZYX_ELEM(v,l, k, i, j) << " ";
+ * FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v) {
+ *     std::cout << NZYX_ELEM(v, l, k, i, j) << " ";
  * }
  * @endcode
  */
 #define FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V) \
-    for (long int l=0; l<NSIZE(V); l++) \
-        for (long int k=STARTINGZ(V); k<=FINISHINGZ(V); k++) \
-            for (long int i=STARTINGY(V); i<=FINISHINGY(V); i++)     \
-                for (long int j=STARTINGX(V); j<=FINISHINGX(V); j++)
+    for (long int l = 0; l < NSIZE(V); l++) \
+    for (long int k = STARTINGZ(V); k <= FINISHINGZ(V); k++) \
+    for (long int i = STARTINGY(V); i <= FINISHINGY(V); i++) \
+    for (long int j = STARTINGX(V); j <= FINISHINGX(V); j++)
 
 /** For all direct elements in the array, pointer version
  *
@@ -245,7 +266,7 @@ extern std::string floatToString(float F, int _width, int _prec);
  * @endcode
  */
 #define FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) \
-    for ((n) = 0, (ptr) = (v).data; (n) < NZYXSIZE(v); ++(n), ++(ptr))
+    for ((n) = 0, (ptr) = (v).data; (n) < (v).nzyxdim(); ++(n), ++(ptr))
 
 /** Access to a direct element.
  * v is the array, k is the slice (Z), i is the Y index and j is the X index.
@@ -329,20 +350,6 @@ extern std::string floatToString(float F, int _width, int _prec);
  */
 #define A2D_ELEM(v, i, j) \
     DIRECT_A2D_ELEM(v, (i) - STARTINGY(v), (j) - STARTINGX(v))
-
-/// TODO: Remove SAME_SHAPE2D, since it isn't being used.
-/** Do arrays v1 and v2 have the same shape?
- *
- * Two arrays have the same shape
- * if they have the same size and the same starting point.
- * Be aware that this macro simplifies to a boolean.
- */
-#define SAME_SHAPE2D(v1, v2) ( \
-    XSIZE(v1) == XSIZE(v2) && \
-    YSIZE(v1) == YSIZE(v2) && \
-    STARTINGX(v1) == STARTINGX(v2) && \
-    STARTINGY(v1) == STARTINGY(v2) \
-)
 
 /** For all elements in the array
  *
@@ -478,6 +485,9 @@ class MultidimArray {
     bool destroyData;
 
     struct Dimensions {
+        // Essentially a 4D vector.
+        // For vectors and matrices, the higher order dimensions will be 1:
+        // (x, 1, 1) or (x, y, 1).
 
         long int x, y, z, n;
 
@@ -499,13 +509,13 @@ class MultidimArray {
     /// TODO: Manage access to xdim, ydim, zdim, ndim.
 
     // Number of elements in YX
-    long int yxdim() const { return ydim * xdim; }
+    inline long int yxdim() const { return ydim * xdim; }
 
     // Number of elements in ZYX
-    long int zyxdim() const { return zdim * yxdim(); }
+    inline long int zyxdim() const { return zdim * yxdim(); }
 
-    // Number of elements in NZYX
-    long int nzyxdim() const { return ndim * zyxdim(); }
+    // Number of elements in NZYX (could be considered the size of the array)
+    inline long int nzyxdim() const { return ndim * zyxdim(); }
 
     struct Origin {
 
@@ -670,7 +680,7 @@ class MultidimArray {
         }
 
         if (data != NULL)
-            REPORT_ERROR("do not allocate space for an image if you have not deallocate it first");
+            REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
 
         ndim = _ndim;
         zdim = _zdim;
@@ -690,7 +700,7 @@ class MultidimArray {
     void coreAllocate() {
 
         if (data != NULL)
-            REPORT_ERROR("do not allocate space for an image if you have not first deallocated it");
+            REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
 
         if (nzyxdim() < 0)
             REPORT_ERROR("coreAllocate: Cannot allocate a negative number of bytes");
@@ -961,12 +971,10 @@ class MultidimArray {
     template<typename T1>
     void reshape(const MultidimArray<T1> &v) {
         if (
-            NSIZE(*this) != NSIZE(v) || XSIZE(*this) != XSIZE(v) ||
-            YSIZE(*this) != YSIZE(v) || ZSIZE(*this) != ZSIZE(v) ||
+            ndim != v.ndim || xdim != v.xdim ||
+            ydim != v.ydim || zdim != v.zdim ||
             data == NULL
-        ) {
-            reshape(NSIZE(v), ZSIZE(v), YSIZE(v), XSIZE(v));
-        }
+        ) { reshape(v.ndim, v.zdim, v.ydim, v.xdim); }
 
         xinit = v.xinit;
         yinit = v.yinit;
@@ -997,7 +1005,7 @@ class MultidimArray {
         // data can be NULL while xdim etc are set to non-zero values
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
-        if (NZYXSIZE(*this) > 0 && data == NULL) {
+        if (nzyxdim() > 0 && data == NULL) {
             coreAllocate();
             return;
         }
@@ -1076,7 +1084,7 @@ class MultidimArray {
         // data can be NULL while xdim etc are set to non-zero values
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
-        if (NZYXSIZE(*this) > 0 && data == NULL) {
+        if (nzyxdim() > 0 && data == NULL) {
             coreAllocate();
             return;
         }
@@ -1118,7 +1126,7 @@ class MultidimArray {
         for (long int j = 0; j < Xdim; j++) {
             // 0 if out of bounds
             new_data[l * ZYXdim + k * YXdim + i * Xdim + j] = (
-                k >= ZSIZE(*this) || i >= YSIZE(*this) || j >= XSIZE(*this)
+                k >= zdim || i >= ydim || j >= xdim
             ) ? (T) 0 : DIRECT_A3D_ELEM(*this, k, i, j);
         }
 
@@ -1188,11 +1196,10 @@ class MultidimArray {
     template<typename T1>
     void resize(const MultidimArray<T1> &v) {
         if (
-            NSIZE(*this) != NSIZE(v) || XSIZE(*this) != XSIZE(v) ||
-            YSIZE(*this) != YSIZE(v) || ZSIZE(*this) != ZSIZE(v) ||
+            ndim != v.ndim || xdim != v.xdim ||
+            ydim != v.ydim || zdim != v.zdim ||
             data == NULL
-        )
-            resize(NSIZE(v), ZSIZE(v), YSIZE(v), XSIZE(v));
+        ) { resize(v.ndim, v.zdim, v.ydim, v.xdim); }
 
         xinit = v.xinit;
         yinit = v.yinit;
@@ -1208,69 +1215,47 @@ class MultidimArray {
      * @endcode
      */
     Dimensions getDimensions() const {
-        return { XSIZE(*this), YSIZE(*this), ZSIZE(*this), NSIZE(*this) };
+        return { xdim, ydim, zdim, ndim };
     }
 
     Origin getOrigin() const {
-        return { firstX(), firstY(), firstZ() };
+        return { xinit, yinit, zinit };
     }
 
-    /** Return the total size of the multidimArray
-     *
-     * @code
-     * if (V.getSize() > 1) ...
-     * @endcode
-     */
     long int getSize() const {
-        return NZYXSIZE(*this);
+        return nzyxdim();
     }
 
-    /** Return the multidimArray dimension.
+    /** The dimension of an array.
+     *
+     * The number of indices needed to select an element.
      *
      * @code
      * int dim = V.getDim();
      * @endcode
      */
     inline int getDim() const {
-        if (NZYXSIZE(*this) < 1)
-            return 0;
-        if (ZSIZE(*this) > 1)
-            return 3;
-        if (YSIZE(*this) > 1)
-            return 2;
-        return 1;
+        if (nzyxdim() < 1) return 0; // 0-dimensional (dimensionless) array (scalar)
+        if (zdim > 1) return 3;      // 3-dimensional array
+        if (ydim > 1) return 2;      // 2-dimensional array (matrix)
+        return 1;                    // 1-dimensional array (vector)
     }
 
     /** Check dimension.
      *
-     * returns true if the dimension is equal to the argument and false otherwise
-     * It also prints an error message in the latter case.
+     * Is this the array's dimension?
+     * Print an error message if not.
      */
-#define checkDimension(dim) checkDimensionWithDebug(dim, __FILE__, __LINE__)
+    #define checkDimension(dim) checkDimensionWithDebug(dim, __FILE__, __LINE__)
     void checkDimensionWithDebug(int dim, const char *file, int line) const {
         if (getDim() != dim) {
-            std::cerr<<" Check for dimension: "  << dim <<std::endl;
+            std::cerr << " Check for dimension: " << dim << std::endl;
             std::cerr << "MultidimArray shape: ";
             printShape(std::cerr);
             std::cerr << std::endl;
-            std::cerr << "Check called from file "<<file<<" line "<<line<<std::endl;
+            std::cerr << "Check called from file " << file << " line " << line << std::endl;
             exit(1);
         }
-    }
-
-    /** Get size.
-     *
-     * Returns the size of the object in a 4D vector. If the object is a matrix
-     * or a vector, then the higher order dimensions will be set to 1, ie,
-     * (Xdim, 1, 1) or (Xdim, Ydim, 1).
-     *
-     * This function is not ported to Python.
-     */
-    void getSize(int* size) const {
-        size[0] = xdim;
-        size[1] = ydim;
-        size[2] = zdim;
-        size[3] = ndim;
     }
 
     /** Generic window routine (dim independent)
@@ -1282,7 +1267,7 @@ class MultidimArray {
         long int nF, long int zF, long int yF, long int xF,
         T init_value = 0, long n = 0
     ) {
-        if (this->ndim > 1)
+        if (ndim > 1)
             REPORT_ERROR("stack windowing not implemented");
         if (this->zdim > 1) {
             //call 3Dwindow
@@ -1378,8 +1363,8 @@ class MultidimArray {
         T init_value = 0, long n = 0
     ) const {
         result.resize(yF - y0 + 1, xF - x0 + 1);
-        STARTINGY(result) = y0;
-        STARTINGX(result) = x0;
+        result.yinit = y0;
+        result.xinit = x0;
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
             A2D_ELEM(result, i, j) = inside(i, j) ?
@@ -1398,6 +1383,7 @@ class MultidimArray {
         *this = result;
 
     }
+
     /** Put a 1D window to the nth vector
      *
      * The vector is windowed within the two indices given to this function.
@@ -1419,7 +1405,7 @@ class MultidimArray {
         T init_value = 0, long n = 0
     ) const {
         result.resize(xF - x0 + 1);
-        STARTINGX(result) = x0;
+        result.xinit = x0;
 
         for (long int j = x0; j <= xF; j++) {
             A1D_ELEM(result, j) = inside(j) ?
@@ -1449,38 +1435,43 @@ class MultidimArray {
      * @endcode
      */
     void printShape(std::ostream &out = std::cout) const {
-        if (this->ndim > 1)
-            out << " Number of images = " << this->ndim;
+        if (ndim > 1)
+            out << " Number of images = " << ndim;
 
         switch (getDim()) {
+
             case 3:
-                out << " Size(Z,Y,X): " << ZSIZE(*this) << "×" << YSIZE(*this) << "×" << XSIZE(*this)
-                << " k=[" << firstZ() << ".." << lastZ() << "]"
-                << " i=[" << firstY() << ".." << lastY() << "]"
-                << " j=[" << firstX() << ".." << lastX() << "]";
-                break;
+            out << " Size(Z,Y,X): " << zdim << "×" << ydim << "×" << xdim
+            << " k=[" << firstZ() << ".." << lastZ() << "]"
+            << " i=[" << firstY() << ".." << lastY() << "]"
+            << " j=[" << firstX() << ".." << lastX() << "]";
+            break;
+
             case 2:
-                out << " Size(Y,X): " << YSIZE(*this) << "×" << XSIZE(*this)
-                << " i=[" << firstY() << ".." << lastY() << "]"
-                << " j=[" << firstX() << ".." << lastX() << "]";
-                break;
+            out << " Size(Y,X): " << ydim << "×" << xdim
+            << " i=[" << firstY() << ".." << lastY() << "]"
+            << " j=[" << firstX() << ".." << lastX() << "]";
+            break;
+
             case 1:
-                out << " Size(X): " << XSIZE(*this)
-                << " j=[" << firstX() << ".." << lastX() << "]";
-                break;
+            out << " Size(X): " << xdim
+            << " j=[" << firstX() << ".." << lastX() << "]";
+            break;
+
             default:
-                out << " Empty MultidimArray!";
+            out << " Empty MultidimArray!";
+
         }
         out << "\n";
     }
 
     /** sameShape
      *
-     * Do these two arrays have the same shape (size and origin)?
+     * Do these two arrays have the same shape (dimensions and origin)?
      */
     template <typename T1>
     inline bool sameShape(const MultidimArray<T1> &other) const {
-        return getDimensions() == other.getDimensions() && // Same size
+        return getDimensions() == other.getDimensions() && // Same dimensions
                getOrigin()     == other.getOrigin();       // Same origin
     }
 
@@ -1542,6 +1533,9 @@ class MultidimArray {
     inline long int colNumber() const {
         return xdim;
     }
+
+    // Wouldn't it be nice to have this in the Xmipp namespace? As in:
+    // Xmipp::setOrigin(arr);
 
     /** Set logical origin in Xmipp fashion.
      *
@@ -1628,7 +1622,7 @@ class MultidimArray {
         if (v.size() < 2)
             REPORT_ERROR(std::string(__func__) + ": index vector has too few components");
 
-        switch (XSIZE(*this)) {
+        switch (xdim) {
 
             case 2:
             return (XX(v) == firstX() || XX(v) == lastX()) &&
@@ -1783,21 +1777,22 @@ class MultidimArray {
      * @endcode
      */
     void getImage(long n, MultidimArray<T>& M) const {
-        if (XSIZE(*this) == 0) {
+        if (xdim == 0) {
             M.clear();
             return;
         }
 
-        if (n > NSIZE(*this))
-            REPORT_ERROR(" Multidimarray getImage: n larger than NSIZE");
+        if (n > ndim)
+            REPORT_ERROR(" Multidimarray getImage: n larger than ndim (out of bounds)");
 
-        M.resize(1, ZSIZE(*this), YSIZE(*this), XSIZE(*this));
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M)
-        DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
+        M.resize(1, zdim, ydim, xdim);
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M) {
+            DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
+        }
 
-        STARTINGX(M) = firstX();
-        STARTINGY(M) = firstY();
-        STARTINGZ(M) = firstZ();
+        M.xinit = firstX();
+        M.yinit = firstY();
+        M.zinit = firstZ();
     }
 
     /** Set a single 1,2 or 3D image in a multi-image array
@@ -1811,10 +1806,10 @@ class MultidimArray {
         if (xdim == 0)
             return;
 
-        if (n < 0 || n > NSIZE(*this))
+        if (n < 0 || n > ndim)
             REPORT_ERROR("setImage: MultidimArray subscript (n) out of range");
 
-        if (ZSIZE(M) != ZSIZE(*this) || YSIZE(M) != YSIZE(*this) || XSIZE(M) != XSIZE(*this))
+        if (M.zdim != zdim || M.ydim != ydim || M.xdim != xdim)
             REPORT_ERROR("setImage: MultidimArray dimensions different from the input image ones");
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M)
@@ -1835,7 +1830,7 @@ class MultidimArray {
      * @endcode
      */
     void getSlice(long int k, MultidimArray<T>& M, char axis = 'Z', long n = 0) const {
-        if (XSIZE(*this) == 0) {
+        if (xdim == 0) {
             M.clear();
             return;
         }
@@ -1847,12 +1842,12 @@ class MultidimArray {
                 REPORT_ERROR(std::string(__func__) + ": Multidim subscript (k) out of range");
 
             k -= firstZ();
-            M.resize(1, 1, YSIZE(*this), XSIZE(*this));
+            M.resize(1, 1, ydim, xdim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
                 DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
             }
-            STARTINGX(M) = firstX();
-            STARTINGY(M) = firstY();
+            M.xinit = firstX();
+            M.yinit = firstY();
             break;
 
             case 'Y':
@@ -1860,12 +1855,12 @@ class MultidimArray {
                 REPORT_ERROR(std::string(__func__) + ": Multidim subscript (i) out of range");
 
             k -= firstY();
-            M.resize(ZSIZE(*this), XSIZE(*this));
+            M.resize(zdim, xdim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
                 DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, k, j);
             }
-            STARTINGX(M) = firstX();
-            STARTINGY(M) = firstZ();
+            M.xinit = firstX();
+            M.yinit = firstZ();
             break;
 
             case 'X':
@@ -1873,12 +1868,12 @@ class MultidimArray {
                 REPORT_ERROR(std::string(__func__) + ": Multidim subscript (j) out of range");
 
             k -= firstX();
-            M.resize(ZSIZE(*this), YSIZE(*this));
+            M.resize(zdim, ydim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
                 DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, j, k);
             }
-            STARTINGX(M) = firstY();
-            STARTINGY(M) = firstZ();
+            M.xinit = firstY();
+            M.yinit = firstZ();
             break;
 
             default:
@@ -1904,7 +1899,7 @@ class MultidimArray {
         if (k < firstZ() || k > lastZ())
             REPORT_ERROR(std::string(__func__) + ": MultidimArray subscript (k) out of range");
 
-        if (v.ydim != YSIZE(*this) || v.xdim != XSIZE(*this))
+        if (v.ydim != ydim || v.xdim != xdim)
             REPORT_ERROR(std::string(__func__) + ": MultidimArray dimensions different from the matrix ones");
 
         k -= firstZ();
@@ -2157,70 +2152,32 @@ class MultidimArray {
     /// @name Statistics functions
     //@{
 
-    /** Print statistics in current line.
-     *
-     * No end of line character is written after this print out.
-     *
-     * @code
-     * a.computeStats();
-     * std::cout << "Statistics of variable a ";
-     * a.printStats();
-     * std::cout << std::endl;
-     * @endcode
-     */
-    void printStats(std::ostream &out = std::cout) const {
-        Stats<T> stats = computeStats();
-        RFLOAT avgval = stats.avg;
-        RFLOAT devval = stats.stddev;
-        T      minval = stats.min;
-        T      maxval = stats.max;
-
-        out.setf(std::ios::showpoint);
-        int old_prec = out.precision(7);
-
-        out << " min= ";
-        out.width(9);
-        out << minval;
-        out << " max= ";
-        out.width(9);
-        out << maxval;
-        out << " avg= ";
-        out.width(9);
-        out << avgval;
-        out << " dev= ";
-        out.width(9);
-        out << devval;
-
-        out.precision(old_prec);
-    }
-
     T max() const {
-        if (NZYXSIZE(*this) <= 0)
-            return static_cast<T>(0);
+
+        if (nzyxdim() <= 0) return static_cast<T>(0);
 
         T maxval = data[0];
 
         T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (*ptr > maxval)
-                maxval = *ptr;
+            if (*ptr > maxval) { maxval = *ptr; }
         }
 
         return maxval;
     }
 
     T min() const {
-        if (NZYXSIZE(*this) <= 0)
-            return static_cast<T>(0);
+
+        if (nzyxdim() <= 0) return static_cast<T>(0);
 
         T minval = data[0];
 
         T *ptr;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        if (*ptr < minval)
-            minval = *ptr;
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+            if (*ptr < minval) {minval = *ptr;}
+        }
 
         return minval;
     }
@@ -2231,7 +2188,7 @@ class MultidimArray {
      * array(l,k,i,j). Returns -1 if the array is empty
      */
     T minIndex(long int &lmin, long int &kmin, long int &imin, long int &jmin) const {
-        if (XSIZE(*this) == 0) {
+        if (xdim == 0) {
             lmin = kmin = imin = jmin = -1;
             return 0;
         }
@@ -2261,8 +2218,8 @@ class MultidimArray {
      * Call to the 4D function
      */
     T minIndex(long int &kmin, long int &imin, long int &jmin) const {
-        long int zeroInt = 0;
-        return minIndex(zeroInt, kmin, imin, jmin);
+        long int zero = 0;
+        return minIndex(zero, kmin, imin, jmin);
     }
 
     /** 2D Indices for the minimum element.
@@ -2270,8 +2227,8 @@ class MultidimArray {
      * Call to the 4D function
      */
     T minIndex(long int &imin, long int &jmin) const {
-        long int zeroInt = 0;
-        return minIndex(zeroInt, zeroInt, imin, jmin);
+        long int zero = 0;
+        return minIndex(zero, zero, imin, jmin);
     }
 
     /** 1D Indices for the minimum element.
@@ -2279,8 +2236,8 @@ class MultidimArray {
      * Call to the 4D function
      */
     T minIndex(long int &jmin) const {
-        long int zeroInt = 0;
-        return minIndex(zeroInt, zeroInt, zeroInt, jmin);
+        long int zero = 0;
+        return minIndex(zero, zero, zero, jmin);
     }
 
     /** 4D Indices for the maximum element.
@@ -2289,7 +2246,7 @@ class MultidimArray {
      * array(l,k,i,j). Returns -1 if the array is empty
      */
     T maxIndex(long int &lmax, long int &kmax, long int &imax, long int &jmax) const {
-        if (XSIZE(*this) == 0) {
+        if (xdim == 0) {
             lmax = kmax = imax = jmax = -1;
             return 0;
         }
@@ -2350,7 +2307,7 @@ class MultidimArray {
 
         RFLOAT min, max;
 
-        if (NZYXSIZE(*this) <= 0) return { min, max }; // Uninitialised RFLOATs
+        if (nzyxdim() <= 0) return { min, max }; // Uninitialised RFLOATs
 
         T *ptr;
         long int n;
@@ -2369,7 +2326,7 @@ class MultidimArray {
      */
     RFLOAT average() const {
         // Arithmetic mean
-        if (NZYXSIZE(*this) <= 0) return 0;
+        if (nzyxdim() <= 0) return 0;
 
         RFLOAT sum = 0;
 
@@ -2379,7 +2336,7 @@ class MultidimArray {
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             sum += static_cast<RFLOAT>(*ptr);
         }
-        return sum / NZYXSIZE(*this);
+        return sum / nzyxdim();
     }
 
     /** Standard deviation of the values in the array.
@@ -2389,11 +2346,11 @@ class MultidimArray {
      * stddev(N) = sqrt( sum for (int i = 0; i < N; i++) {(x[i] - mean(N)) ** 2} * 1 / N)
      */
     RFLOAT computeStddev() const {
-        if (NZYXSIZE(*this) <= 1)
+        if (nzyxdim() <= 1)
             return 0;
 
         RFLOAT avg = 0, stddev = 0;
-        long int N = NZYXSIZE(*this);
+        long int N = nzyxdim();
 
         T *ptr = NULL;
         long int n;
@@ -2462,7 +2419,7 @@ class MultidimArray {
      */
     Stats<T> computeStats() const {
 
-        if (NZYXSIZE(*this) <= 0)
+        if (nzyxdim() <= 0)
             throw "Statistics cannot be computed for a dimensionless array!";
 
         double sumx = 0;
@@ -2510,14 +2467,14 @@ class MultidimArray {
      */
     RFLOAT median() const {
 
-        if (XSIZE(*this) == 0)
+        if (xdim == 0)
             return 0;
 
-        if (XSIZE(*this) == 1)
+        if (xdim == 1)
             return DIRECT_MULTIDIM_ELEM(*this, 0);
 
         // Copy *this
-        long int N = NZYXSIZE(*this);
+        long int N = nzyxdim();
         MultidimArray<RFLOAT> temp(N);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
             DIRECT_MULTIDIM_ELEM(temp, n) = DIRECT_MULTIDIM_ELEM(*this, n);
@@ -2550,7 +2507,7 @@ class MultidimArray {
      */
     void rangeAdjust(T minF, T maxF) {
 
-        if (NZYXSIZE(*this) <= 0) return;
+        if (nzyxdim() <= 0) return;
 
         MinMax range = minmax();
 
@@ -2583,7 +2540,7 @@ class MultidimArray {
     // This function must be explictly implemented outside
     void rangeAdjust(T minF, T maxF, MultidimArray<int> &mask) {
 
-        if (NZYXSIZE(*this) <= 0) return;
+        if (nzyxdim() <= 0) return;
 
         MinMax range = maskminmax(mask);
 
@@ -2636,10 +2593,10 @@ class MultidimArray {
     // to use T than RFLOAT or will create problem for int multidim arrays
     void rangeAdjust(const MultidimArray<T> &target, const MultidimArray<int> *mask=NULL) {
 
-        if (NZYXSIZE(*this) <= 0) return;
+        if (nzyxdim() <= 0) return;
 
         T *targetptr = target.data;
-        int *maskptr = mask == NULL ? NULL : (*mask).data;
+        int *maskptr = mask == NULL ? NULL : mask->data;
         T *ptr;
         long int n;
         RFLOAT N = 0, sumx = 0, sumy = 0, sumxx = 0, sumxy = 0;
@@ -2663,9 +2620,10 @@ class MultidimArray {
 
     /** Adjust the average and stddev of the array to given values.
      *
-     * A linear operation is performed on the values of the array such
-     * that after it, the average and standard deviation of the array
-     * are the two values set. The array itself is modified.
+     * A linear operation is performed on the values of the array,
+     * after which the array's average shall be avgF
+     * and its standard deviation shall be stddevF.
+     * The array itself is modified.
      *
      * @code
      * v.statisticsAdjust(0, 1);
@@ -2675,7 +2633,7 @@ class MultidimArray {
     // This function must be explictly implemented outside.
     void statisticsAdjust(RFLOAT avgF, RFLOAT stddevF) {
 
-        if (NZYXSIZE(*this) == 0) return;
+        if (nzyxdim() == 0) return;
 
         Stats<T> stats = computeStats();
 
@@ -3252,7 +3210,7 @@ class MultidimArray {
      */
     T*** adaptForNumericalRecipes3D(long int n = 0) const {
         T ***m = NULL;
-        ask_Tvolume(m, 1, ZSIZE(*this), 1, YSIZE(*this), 1, XSIZE(*this));
+        ask_Tvolume(m, 1, zdim, 1, ydim, 1, xdim);
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(*this)
         m[k + 1][i + 1][j + 1] = DIRECT_NZYX_ELEM(*this, n, k, i, j);
@@ -3263,7 +3221,7 @@ class MultidimArray {
     /** Kill a 3D array produced for numerical recipes.
      */
     void killAdaptationForNumericalRecipes3D(T ***m) const {
-        free_Tvolume(m, 1, ZSIZE(*this), 1, YSIZE(*this), 1, XSIZE(*this));
+        free_Tvolume(m, 1, zdim, 1, ydim, 1, xdim);
     }
 
     /** Produce a 2D array suitable for working with Numerical Recipes
@@ -3274,7 +3232,7 @@ class MultidimArray {
      */
     T** adaptForNumericalRecipes2D(long int n = 0) const {
         T **m = NULL;
-        ask_Tmatrix(m, 1, YSIZE(*this), 1, XSIZE(*this));
+        ask_Tmatrix(m, 1, ydim, 1, xdim);
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(*this)
         m[i + 1][j + 1] = DIRECT_NZYX_ELEM(*this, n, 0, i, j);
@@ -3289,7 +3247,7 @@ class MultidimArray {
      * is pointed by result[1*Xdim+1], and in general result[i*Xdim+j]
      */
     T* adaptForNumericalRecipes22D() const {
-        return MULTIDIM_ARRAY(*this) - 1 - XSIZE(*this);
+        return MULTIDIM_ARRAY(*this) - 1 - xdim;
     }
 
     /** Load 2D array from numerical recipes result.
@@ -3307,7 +3265,7 @@ class MultidimArray {
      * The allocated memory is freed.
      */
     void killAdaptationForNumericalRecipes2D(T** m) const {
-        free_Tmatrix(m, 1, YSIZE(*this), 1, XSIZE(*this));
+        free_Tmatrix(m, 1, ydim, 1, xdim);
     }
 
     /** Kill a 2D array produced for numerical recipes, 2.
@@ -3388,13 +3346,13 @@ class MultidimArray {
         checkDimension(1);
         // Set up a vector of pairs
         std::vector<std::pair<T, long int> > vp;
-        vp.reserve(XSIZE(*this));
+        vp.reserve(xdim);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
             vp.push_back(std::make_pair(DIRECT_MULTIDIM_ELEM(*this, n), n));
         }
         // Sort on the first elements of the pairs
         std::sort(vp.begin(), vp.end());
-        idx.resize(XSIZE(*this));
+        idx.resize(xdim);
         // Fill the output array with the second elements of the sorted vp
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(idx) {
             DIRECT_MULTIDIM_ELEM(idx, n) = vp[n].second;
@@ -3735,11 +3693,11 @@ class MultidimArray {
      *
      */
     void selfReverseX() {
-        long int xsize = XSIZE(*this);
+        long int xsize = xdim;
         long int halfSizeX = (long int) (xsize - 1) / 2;
-        long int ysize = YSIZE(*this);
-        long int zsize = ZSIZE(*this);
-        long int nsize = NSIZE(*this);
+        long int ysize = ydim;
+        long int zsize = zdim;
+        long int nsize = ndim;
         //0 column should be handled in a different way
         //for even and odd matrices
         long int start_x = !(xsize % 2);
@@ -3778,11 +3736,11 @@ class MultidimArray {
      *
      */
     void selfReverseY() {
-        long int xsize = XSIZE(*this);
-        long int ysize = YSIZE(*this);
+        long int xsize = xdim;
+        long int ysize = ydim;
         long int halfSizeY = (long int) (ysize - 1) / 2;
-        long int zsize = ZSIZE(*this);
-        long int nsize = NSIZE(*this);
+        long int zsize = zdim;
+        long int nsize = ndim;
         //0 column should be handled in a different way
         //for even and odd matrices
         long int start_y = !(ysize % 2);
@@ -3820,11 +3778,11 @@ class MultidimArray {
      *
      */
     void selfReverseZ() {
-        long int xsize = XSIZE(*this);
-        long int ysize = YSIZE(*this);
-        long int zsize = ZSIZE(*this);
+        long int xsize = xdim;
+        long int ysize = ydim;
+        long int zsize = zdim;
         long int halfSizeZ = (long int) (zsize - 1) / 2;
-        long int nsize = NSIZE(*this);
+        long int nsize = ndim;
         // 0 column should be handled in a different way
         // for even and odd matrices
         long int start_z = !(zsize % 2);
@@ -4056,25 +4014,27 @@ class MultidimArray {
  *
  * If we have an integer array and we need a RFLOAT one, we can use this
  * function. The conversion is done through a type casting of each element
- * If n >= 0, only the nth volumes will be converted, otherwise all NSIZE volumes
+ * If n >= 0, only the nth volumes will be converted, otherwise all ndim volumes
  */
 template<typename T1, typename T2>
 void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) {
-    if (NZYXSIZE(v1) == 0) {
+    if (v1.nzyxdim() == 0) {
         v2.clear();
         return;
     }
 
     if (n < 0) {
         v2.resize(v1);
-        T1* ptr1=NULL;
+        T1 *ptr1;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v1, n, ptr1)
-        DIRECT_MULTIDIM_ELEM(v2, n) = static_cast<T2>(*ptr1);
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v1, n, ptr1) {
+            DIRECT_MULTIDIM_ELEM(v2, n) = static_cast<T2>(*ptr1);
+        }
     } else {
-        v2.resize(ZSIZE(v1), YSIZE(v1), XSIZE(v1));
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v2)
-        DIRECT_A3D_ELEM(v2, k, i, j) = static_cast<T2>DIRECT_NZYX_ELEM(v1, n, k, i, j);
+        v2.resize(v1.zdim, v1.ydim, v1.xdim);
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v2) {
+            DIRECT_A3D_ELEM(v2, k, i, j) = static_cast<T2>DIRECT_NZYX_ELEM(v1, n, k, i, j);
+        }
     }
 }
 
@@ -4116,12 +4076,12 @@ bool operator != (const MultidimArray<T> &op1, const MultidimArray<T> &op2) {
  */
 template<typename T>
 void cutToCommonSize(MultidimArray<T>& V1, MultidimArray<T>& V2) {
-    long int z0 = std::max(STARTINGZ(V1),  STARTINGZ(V2));
-    long int zF = std::min(FINISHINGZ(V1), FINISHINGZ(V2));
-    long int y0 = std::max(STARTINGY(V1),  STARTINGY(V2));
-    long int yF = std::min(FINISHINGY(V1), FINISHINGY(V2));
-    long int x0 = std::max(STARTINGX(V1),  STARTINGX(V2));
-    long int xF = std::min(FINISHINGX(V1), FINISHINGX(V2));
+    long int z0 = std::max(V1.firstZ(), V2.firstZ());
+    long int zF = std::min(V1.lastZ(),  V2.lastZ());
+    long int y0 = std::max(V1.firstY(), V2.firstY());
+    long int yF = std::min(V1.lastY(),  V2.lastY());
+    long int x0 = std::max(V1.firstX(), V2.firstX());
+    long int xF = std::min(V1.lastX(),  V2.lastX());
 
     V1.window(z0, y0, x0, zF, yF, xF);
     V2.window(z0, y0, x0, zF, yF, xF);
@@ -4148,20 +4108,20 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T>& v) {
 
     int prec = bestPrecision(max_val, 10);
 
-    if (YSIZE(v) == 1 && ZSIZE(v) == 1) {
-        for (long int j = STARTINGX(v); j <= FINISHINGX(v); j++) {
+    if (v.ydim == 1 && v.zdim == 1) {
+        for (long int j = v.firstX(); j <= v.lastX(); j++) {
             ostrm << floatToString((RFLOAT) A3D_ELEM(v, 0, 0, j), 10, prec)
             << std::endl;
         }
     } else {
-        for (long int l = 0; l < NSIZE(v); l++) {
-            if (NSIZE(v) > 1)
+        for (long int l = 0; l < v.ndim; l++) {
+            if (v.ndim > 1)
                 ostrm << "Image No. " << l << std::endl;
-            for (long int k = STARTINGZ(v); k <= FINISHINGZ(v); k++) {
-                if (ZSIZE(v) > 1)
+            for (long int k = v.firstZ(); k <= v.lastZ(); k++) {
+                if (v.zdim > 1)
                     ostrm << "Slice No. " << k << std::endl;
-                for (long int i = STARTINGY(v); i <= FINISHINGY(v); i++) {
-                    for (long int j = STARTINGX(v); j <= FINISHINGX(v); j++) {
+                for (long int i = v.firstY(); i <= v.lastY(); i++) {
+                    for (long int j = v.firstX(); j <= v.lastX(); j++) {
                         ostrm << floatToString((RFLOAT) A3D_ELEM(v, k, i, j), 10, prec) << ' ';
                     }
                     ostrm << std::endl;
@@ -4190,7 +4150,7 @@ static bool inZbounds (long int i, const MultidimArray<T> &arr) {
 
 //@}
 
-// Special cases for complex numbers
+// Template specialisation for MultidimArray<Complex>
 template<>
 std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v);
 //@}
