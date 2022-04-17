@@ -1479,17 +1479,9 @@ class MultidimArray {
      * Do these two arrays have the same shape (size and origin)?
      */
     template <typename T1>
-    inline bool sameShape(
-        const MultidimArray<T1> &other, bool ignore_origin=false
-    ) const {
-
-        bool samesize = getDimensions() == other.getDimensions();
-
-        if (ignore_origin) return samesize;
-
-        bool sameorigin = getOrigin() == other.getOrigin();
-
-        return samesize && sameorigin;
+    inline bool sameShape(const MultidimArray<T1> &other) const {
+        return getDimensions() == other.getDimensions() && // Same size
+               getOrigin()     == other.getOrigin();       // Same origin
     }
 
     /** inside for 3D matrices */
