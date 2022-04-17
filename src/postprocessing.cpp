@@ -1029,8 +1029,8 @@ void Postprocessing::run_locres(int rank, int size) {
             Image<RFLOAT> Imask;
             Imask.read(fn_mask);
 
-            if (!I1().sameShape(Imask(), true))
-                REPORT_ERROR("The shape of the input half maps and the mask is not the same.");
+            if (I1().getDimensions() != Imask().getDimensions()) // sameSize()
+                REPORT_ERROR("The shapes of the input half maps and the mask are not the same.");
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
                 if (DIRECT_MULTIDIM_ELEM(Imask(), n) > 0.5)

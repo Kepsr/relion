@@ -333,8 +333,8 @@ extern std::string floatToString(float F, int _width, int _prec);
 /// TODO: Remove SAME_SHAPE2D, since it isn't being used.
 /** Do arrays v1 and v2 have the same shape?
  *
- * Two arrays have the same shape 
- * if they have the same size and the same starting point. 
+ * Two arrays have the same shape
+ * if they have the same size and the same starting point.
  * Be aware that this macro simplifies to a boolean.
  */
 #define SAME_SHAPE2D(v1, v2) ( \
@@ -477,21 +477,24 @@ class MultidimArray {
     // Destroy data
     bool destroyData;
 
-
     struct Dimensions {
-        long int x;
-        long int y;
-        long int z;
-        long int n;
+
+        long int x, y, z, n;
+
+        template <typename T2>
+        bool operator == (T2 other) {
+            return x == other.x && y == other.y && z == other.z && n == other.n;
+        }
+
+        template <typename T2>
+        bool operator != (T2 other) {
+            return !((*this) == other);
+        }
+
     };
 
-    // Number of elements in X/Y/Z
-    long int xdim;
-    long int ydim;
-    long int zdim;
-
-    // Number of images
-    long int ndim;
+    // Number of elements in X/Y/Z and number of images
+    long int xdim, ydim, zdim, ndim;
 
     /// TODO: Manage access to xdim, ydim, zdim, ndim.
 
@@ -504,10 +507,24 @@ class MultidimArray {
     // Number of elements in NZYX
     long int nzyxdim() const { return ndim * zyxdim(); }
 
+    struct Origin {
+
+        long int x, y, z;
+
+        template <typename T2>
+        bool operator == (T2 other) {
+            return x == other.x && y == other.y && z == other.z;
+        }
+
+        template <typename T2>
+        bool operator != (T2 other) {
+            return !((*this) == other);
+        }
+
+    };
+
     // X/Y/Zinit
-    long int xinit;
-    long int yinit;
-    long int zinit;
+    long int xinit, yinit, zinit;
 
     // Alloc memory or map to a file
     bool mmapOn;
@@ -665,7 +682,7 @@ class MultidimArray {
 
     /** Core allocate without dimensions.
      *
-     * It is assumed that the dimensions have already been set 
+     * It is assumed that the dimensions have already been set
      * either with setXdim(x), setYdim(y), setZdim(z), setNdim(n),
      * or with setDimensions(Xdim, Ydim, Zdim, Ndim).
      *
@@ -703,8 +720,8 @@ class MultidimArray {
 
     /** Core allocate without dimensions.
      *
-     * It is assumed that the dimensions have already been set 
-     * either with setXdim(x), setYdim(y), setZdim(z), setNdim(n), 
+     * It is assumed that the dimensions have already been set
+     * either with setXdim(x), setYdim(y), setZdim(z), setNdim(n),
      * or with setDimensions(Xdim, Ydim, Zdim, Ndim).
      *
      */
@@ -1182,19 +1199,20 @@ class MultidimArray {
         zinit = v.zinit;
     }
 
-    /** Return a struct containing the N, Z, Y, and X dimensions.
+    /** Return a struct of the array's X/Y/Z/N dimensions.
+     *
+     * Could also be considered the "size" of the array.
      *
      * @code
      * dimensions = V.getDimensions();
      * @endcode
      */
     Dimensions getDimensions() const {
-        Dimensions dims;
-        dims.x = XSIZE(*this);
-        dims.y = YSIZE(*this);
-        dims.z = ZSIZE(*this);
-        dims.n = NSIZE(*this);
-        return dims;
+        return { XSIZE(*this), YSIZE(*this), ZSIZE(*this), NSIZE(*this) };
+    }
+
+    Origin getOrigin() const {
+        return { firstX(), firstY(), firstZ() };
     }
 
     /** Return the total size of the multidimArray
@@ -1364,7 +1382,7 @@ class MultidimArray {
         STARTINGX(result) = x0;
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
-            A2D_ELEM(result, i, j) = inside(i, j) ? 
+            A2D_ELEM(result, i, j) = inside(i, j) ?
                 NZYX_ELEM(*this, n, 0, i, j) : init_value;
         }
     }
@@ -1419,7 +1437,7 @@ class MultidimArray {
     /** Print shape of multidimensional array.
      *
      * This function shows the size, starting and finishing indices of the
-     * given array. 
+     * given array.
      * No end of line is printed at either the beginning or the end.
      *
      * @code
@@ -1430,9 +1448,9 @@ class MultidimArray {
      * v.printShape(fh);
      * @endcode
      */
-    void printShape(std::ostream& out = std::cout) const {
-        if ((*this).ndim > 1)
-            out << " Number of images = " << (*this).ndim;
+    void printShape(std::ostream &out = std::cout) const {
+        if (this->ndim > 1)
+            out << " Number of images = " << this->ndim;
 
         switch (getDim()) {
             case 3:
@@ -1456,31 +1474,20 @@ class MultidimArray {
         out << "\n";
     }
 
-    /** Same shape.
+    /** sameShape
      *
-     * Returns true if this object has got the same shape (origin and size)
-     * than the argument
+     * Do these two arrays have the same shape (size and origin)?
      */
     template <typename T1>
     inline bool sameShape(
-        const MultidimArray<T1> &op, bool ignore_origin=false
+        const MultidimArray<T1> &other, bool ignore_origin=false
     ) const {
 
-        bool samesize = (
-            NSIZE(*this) == NSIZE(op) &&
-            XSIZE(*this) == XSIZE(op) &&
-            YSIZE(*this) == YSIZE(op) &&
-            ZSIZE(*this) == ZSIZE(op)
-        );
+        bool samesize = getDimensions() == other.getDimensions();
 
-        if (ignore_origin)
-            return samesize;
+        if (ignore_origin) return samesize;
 
-        bool sameorigin = (
-            firstX() == op.firstX() &&
-            firstY() == op.firstY() &&
-            firstZ() == op.firstZ()
-        );
+        bool sameorigin = getOrigin() == other.getOrigin();
 
         return samesize && sameorigin;
     }
@@ -1762,9 +1769,9 @@ class MultidimArray {
 
     /** Vector element access
      *
-     * Returns the value of a vector logical position. 
-     * In our example we could access from v(-2) to v(2). 
-     * The elements can be used either by value or by reference. 
+     * Returns the value of a vector logical position.
+     * In our example we could access from v(-2) to v(2).
+     * The elements can be used either by value or by reference.
      * An exception is thrown if the index is outside the logical range.
      *
      * @code
@@ -2049,7 +2056,7 @@ class MultidimArray {
      * @endcode
      */
     void toPhysical(
-        long int  i_log,  long int  j_log, 
+        long int  i_log,  long int  j_log,
         long int &i_phys, long int &j_phys
     ) const {
         i_phys = i_log - firstY();
@@ -2065,7 +2072,7 @@ class MultidimArray {
      * @endcode
      */
     void toLogical(
-        long int  i_phys, long int j_phys, 
+        long int  i_phys, long int j_phys,
         long int &i_log,  long int &j_log
     ) const {
         i_log = i_phys + firstY();
@@ -2169,7 +2176,7 @@ class MultidimArray {
      * std::cout << std::endl;
      * @endcode
      */
-    void printStats(std::ostream& out = std::cout) const {
+    void printStats(std::ostream &out = std::cout) const {
         Stats<T> stats = computeStats();
         RFLOAT avgval = stats.avg;
         RFLOAT devval = stats.stddev;
@@ -2358,7 +2365,7 @@ class MultidimArray {
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             T val = *ptr;
             if (n == 0) { min = max = static_cast<RFLOAT>(val); }
-            else if (val < min) { min = static_cast<RFLOAT>(val); } 
+            else if (val < min) { min = static_cast<RFLOAT>(val); }
             else if (val > max) { max = static_cast<RFLOAT>(val); }
         }
         return { min, max };
@@ -2386,7 +2393,7 @@ class MultidimArray {
     /** Standard deviation of the values in the array.
      *
      * The returned value is always RFLOAT, regardless of the type of the array.
-     * 
+     *
      * stddev(N) = sqrt( sum for (int i = 0; i < N; i++) {(x[i] - mean(N)) ** 2} * 1 / N)
      */
     RFLOAT computeStddev() const {
@@ -2458,7 +2465,7 @@ class MultidimArray {
     /** Compute statistics.
      *
      * Return the average, standard deviation, minimum and maximum.
-     * A single pass through the entire array makes this faster 
+     * A single pass through the entire array makes this faster
      * than separately computing average, standard deviation, minimum, and maximum.
      */
     Stats<T> computeStats() const {
@@ -2482,11 +2489,11 @@ class MultidimArray {
             sumx  += x;
             sumxx += x * x;
 
-                 if (val > stats.max) { stats.max = val; } 
+                 if (val > stats.max) { stats.max = val; }
             else if (val < stats.min) { stats.min = val; }
         }
 
-        long int N = (*this).nzyxdim();
+        long int N = this->nzyxdim();
 
         stats.avg = sumx / N;
         if (N > 1) {
@@ -2541,7 +2548,7 @@ class MultidimArray {
     /** Adjust the range of the array to a given one.
      *
      * Scale the values of the array
-     * so that they lie between the two values set. 
+     * so that they lie between the two values set.
      * Modify the array itself.
      *
      * @code
@@ -2555,7 +2562,7 @@ class MultidimArray {
 
         MinMax range = minmax();
 
-        // If range.min == range.max, the vector is a constant one, 
+        // If range.min == range.max, the vector is a constant one,
         // so the only possible transformation is to a fixed minF
         RFLOAT slope = range.min == range.max ? 0 :
             static_cast<RFLOAT>(maxF - minF) /
@@ -2571,9 +2578,9 @@ class MultidimArray {
 
     /** Adjust the range of the array to a given one within a mask.
      *
-     * A linear operation is performed on the values of the array 
-     * so that the values of the array are comprissed between the two values set. 
-     * The actual array is modified itself. 
+     * A linear operation is performed on the values of the array
+     * so that the values of the array are comprissed between the two values set.
+     * The actual array is modified itself.
      * The linear transformation is computed within the mask, but it is applied everywhere.
      *
      * @code
@@ -2590,7 +2597,7 @@ class MultidimArray {
 
         // If range.min == range.max, the vector is a constant one,
         // so the only possible transformation is to a fixed minF
-        RFLOAT slope = range.min == range.max ? 0 : 
+        RFLOAT slope = range.min == range.max ? 0 :
             static_cast<RFLOAT>(maxF - minF) /
             static_cast<RFLOAT>(range.max - range.min);
 
@@ -2680,7 +2687,7 @@ class MultidimArray {
 
         Stats<T> stats = computeStats();
 
-        RFLOAT a = stats.stddev == 0 ? 0 : 
+        RFLOAT a = stats.stddev == 0 ? 0 :
                    static_cast<RFLOAT>(stddevF)  / static_cast<RFLOAT>(stats.stddev);
         RFLOAT b = static_cast<RFLOAT>(avgF) - a * static_cast<RFLOAT>(stats.avg);
 
@@ -2712,7 +2719,7 @@ class MultidimArray {
      * It assumes that the result is already resized.
      */
     inline friend MultidimArray<T> coreArrayByArray(
-        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2, 
+        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
         MultidimArray<T>& output,
         const char operation
     ) {
@@ -2748,8 +2755,8 @@ class MultidimArray {
      *
      */
     inline friend MultidimArray<T> arrayByArray(
-        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2, 
-        MultidimArray<T> &output, 
+        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
+        MultidimArray<T> &output,
         char operation
     ) {
         if (!arg1.sameShape(arg2)) {
@@ -2834,7 +2841,7 @@ class MultidimArray {
      */
     inline friend MultidimArray<T> coreArrayByScalar(
         const MultidimArray<T> &input, const T &scalar,
-        MultidimArray<T> &output, 
+        MultidimArray<T> &output,
         const char operation
     ) {
         T *iptr, *optr;
@@ -2998,7 +3005,7 @@ class MultidimArray {
      */
     inline friend MultidimArray<T> scalarByArray(
         T scalar,
-        const MultidimArray<T> &input, 
+        const MultidimArray<T> &input,
         MultidimArray<T> &output,
         char operation
     ) {
@@ -3466,7 +3473,7 @@ class MultidimArray {
 
                     case 4: if (*ptr < a) { *ptr = b; } break;
 
-                    case 5: if (*ptr < a) { *ptr = a; } else 
+                    case 5: if (*ptr < a) { *ptr = a; } else
                             if (*ptr > b) { *ptr = b; } break;
 
                 }
@@ -3480,12 +3487,12 @@ class MultidimArray {
      * condition.
      */
     long int countThreshold(const std::string& type, T a, T b, MultidimArray<int> *mask = NULL) {
-        int mode = 
+        int mode =
             type == "abs_above" ? 1 :
             type == "abs_below" ? 2 :
             type == "above"     ? 3 :
             type == "below"     ? 4 :
-            type == "range"     ? 5 : 
+            type == "range"     ? 5 :
                                     0;
         REPORT_ERROR( static_cast<std::string>("CountThreshold: mode not supported (" + type + ")"));
 
@@ -3537,7 +3544,7 @@ class MultidimArray {
      * to the old value.  Set it to 0 for perfect accuracy.
      */
     void randomSubstitute(
-        T oldv, T avgv, T sigv, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY, 
+        T oldv, T avgv, T sigv, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY,
         MultidimArray<int> *mask = NULL
     ) {
         T *ptr;
@@ -3549,7 +3556,7 @@ class MultidimArray {
 
     /** Binarize.
      *
-     * Binarize (set to 1 or 0) each value in a volume, 
+     * Binarize (set to 1 or 0) each value in a volume,
      * according to whether it is greater than val + accuracy.
      * Use threshold to get a very powerful binarization.
      */
@@ -3849,7 +3856,7 @@ class MultidimArray {
      * use bilinear interpolation to return N samples of the line between them.
      */
     void profile(
-        long int x0, long int y0, long int xF, long int yF, long int N, 
+        long int x0, long int y0, long int xF, long int yF, long int N,
         MultidimArray<RFLOAT> &profile
     ) const {
         checkDimension(2);
@@ -4096,7 +4103,7 @@ bool operator != (const MultidimArray<T> &op1, const MultidimArray<T> &op2) {
 
 /** Reduce both volumes to a common size.
  *
- * Search the range of logical indices for which both volumes have valid values, 
+ * Search the range of logical indices for which both volumes have valid values,
  * and cut both to that size, the corresponding origin is automatically
  * computed.
  *
