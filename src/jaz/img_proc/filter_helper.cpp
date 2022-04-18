@@ -1836,25 +1836,23 @@ void FilterHelper::polarRemap(d2Vector pos, const Image<RFLOAT> &src, Image<RFLO
     maskDest = Image<RFLOAT>(phiRes, rRes, 1);
 
     for (long int ri = 0; ri < rRes; ri++)
-    for (long int p = 0; p < phiRes; p++)
-    {
-        const double r = rMax * ri / (double)rRes;
-        const double phi = 2.0 * PI * p / (double)phiRes;
+    for (long int p = 0; p < phiRes; p++) {
+        const double r = rMax * ri / (double) rRes;
+        const double phi = 2.0 * PI * p / (double) phiRes;
 
-        d2Vector pp = pos + r * d2Vector(cos(phi),sin(phi));
+        // This could be sped up with SINCOS
+        d2Vector pp = pos + r * d2Vector(cos(phi), sin(phi));
 
-        int ppnnx = (int)(pp.x + 0.5);
-        int ppnny = (int)(pp.y + 0.5);
+        int ppnnx = pp.x + 0.5;
+        int ppnny = pp.y + 0.5;
 
         if (   ppnnx > 0 && ppnnx < w - 1
             && ppnny > 0 && ppnny < h - 1
-            && DIRECT_NZYX_ELEM(mask.data, 0, 0, ppnny, ppnnx) > 0.5)
-        {
+            && DIRECT_NZYX_ELEM(mask.data, 0, 0, ppnny, ppnnx) > 0.5
+        ) {
             DIRECT_NZYX_ELEM(dest.data, 0, 0, ri, p) = Interpolation::linearXY(src, pp.x, pp.y, 0);
             DIRECT_NZYX_ELEM(maskDest.data, 0, 0, ri, p) = 1.0;
-        }
-        else
-        {
+        } else {
             DIRECT_NZYX_ELEM(dest.data, 0, 0, ri, p) = 0.0;
             DIRECT_NZYX_ELEM(maskDest.data, 0, 0, ri, p) = 0.0;
         }

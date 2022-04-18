@@ -24,40 +24,49 @@
 #include <src/image.h>
 #include <src/metadata_table.h>
 
-class AberrationBasis
-{
+// Abstract base class
+class AberrationBasis {
+
     public:
 
-        AberrationBasis(int dims);
+    AberrationBasis(int dims);
 
-            std::vector<double> coefficients;
+    std::vector<double> coefficients;
 
-        virtual void getBasisValues(double x, double y, double* dest) = 0;
-        virtual void _offsetCtf(double local_Cs, double lambda,
-                       double rad_azimuth, double defocus_average, double defocus_deviation,
-                       double K1, double K2, double K3, MetaDataTable& mdt, int particle) = 0;
+    virtual void getBasisValues(double x, double y, double *dest) = 0;
+    virtual void _offsetCtf(
+        double local_Cs, double lambda,
+        double rad_azimuth, double defocus_average, double defocus_deviation,
+        double K1, double K2, double K3, MetaDataTable &mdt, int particle
+    ) = 0;
 
-        void offsetCtf(MetaDataTable& mdt, int particle);
+    void offsetCtf(MetaDataTable &mdt, int particle);
+
 };
 
-class OriginalBasis : public AberrationBasis
-{
+class OriginalBasis : public AberrationBasis {
+
     public:
 
-        OriginalBasis();
+    OriginalBasis();
 
-        void getBasisValues(double x, double y, double* dest);
-        void _offsetCtf(double local_Cs, double lambda,
-                   double rad_azimuth, double defocus_average, double defocus_deviation,
-                   double K1, double K2, double K3, MetaDataTable& mdt, int particle);
+    void getBasisValues(double x, double y, double *dest);
+
+    void _offsetCtf(
+        double local_Cs, double lambda,
+        double rad_azimuth, double defocus_average, double defocus_deviation,
+        double K1, double K2, double K3, MetaDataTable &mdt, int particle
+    );
 };
 
-class AberrationFit
-{
+class AberrationFit {
+
     public:
 
-        static OriginalBasis fitBasic(Image<RFLOAT> phase, Image<RFLOAT> weight, double angpix);
-        static Image<RFLOAT> draw(AberrationBasis* fit, double angpix, int s);
+    static OriginalBasis fitBasic(Image<RFLOAT> phase, Image<RFLOAT> weight, double angpix);
+
+    static Image<RFLOAT> draw(AberrationBasis *fit, double angpix, int s);
+
 };
 
 #endif

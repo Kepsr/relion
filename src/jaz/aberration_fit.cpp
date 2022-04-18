@@ -126,8 +126,8 @@ void AberrationBasis::offsetCtf(MetaDataTable &mdt, int particle) {
     double local_kV = kV * 1e3;
     double rad_azimuth = DEG2RAD(azimuthal_angle);
 
-    double defocus_average   = -(DeltafU + DeltafV) * 0.5;
-    double defocus_deviation = -(DeltafU - DeltafV) * 0.5;
+    double defocus_average   = (DeltafU + DeltafV) * -0.5;
+    double defocus_deviation = (DeltafU - DeltafV) * -0.5;
     double lambda = 12.2643247 / sqrt(local_kV * (1.0 + local_kV * 0.978466e-6));
 
     double K1 = (PI / 2) * 2 * lambda;
@@ -139,7 +139,6 @@ void AberrationBasis::offsetCtf(MetaDataTable &mdt, int particle) {
         K1, K2, K3, mdt, particle
     );
 }
-
 
 OriginalBasis::OriginalBasis(): AberrationBasis(5) {}
 
@@ -160,13 +159,13 @@ void OriginalBasis::_offsetCtf(
 
            RFLOAT u2 = X * X + Y * Y;
            RFLOAT u4 = u2 * u2;
-           RFLOAT deltaf = defocus_average + defocus_deviation*cos(2*(atan2(Y, X) - rad_azimuth))
+           RFLOAT deltaf = defocus_average + defocus_deviation*cos(2 * (atan2(Y, X) - rad_azimuth))
 
            argument = K1 * deltaf * u2 + K2 * u4 - K5 - K3
 
                 K1 = PI / 2 * 2 * lambda;
                 K2 = PI / 2 * local_Cs * lambda * lambda * lambda;
-                K3 = atan(Q0/sqrt(1-Q0*Q0));
+                K3 = atan(Q0 / sqrt(1 - Q0 * Q0));
                 K5 = DEG2RAD(phase_shift);
 
                 local_Cs = Cs * 1e7;
@@ -174,22 +173,22 @@ void OriginalBasis::_offsetCtf(
        astigmatism/defocus:
 
            K1 * deltaf * u2
-           = K1 * defocus_average * u2 + defocus_deviation * K1 * cos(2*(phi - rad_azimuth)) * u2
-           = K1 * defocus_average * u2 + defocus_deviation * K1 * cos(2*phi - 2*rad_azimuth) * u2
-           = K1 * defocus_average * u2 + defocus_deviation * K1 * [cos(2*phi) cos(2*rad_azimuth) + sin(2*phi) sin(2*rad_azimuth)] * u2
-           = K1 * defocus_average * u2 + defocus_deviation * K1 * [(cos²(phi) - sin²(phi)) cos(2*rad_azimuth) + 2 sin(phi) cos(phi) sin(2*rad_azimuth)] * u2
-           = K1 * defocus_average * u2 + defocus_deviation * K1 * [(X² - Y²) cos(2*rad_azimuth) + 2 Y X sin(2*rad_azimuth)]
-           = b1 (X² + Y²) + b2 (X² - Y²) + b3 (XY)
+           = K1 * defocus_average * u2 + defocus_deviation * K1 * cos(2 * (phi - rad_azimuth)) * u2
+           = K1 * defocus_average * u2 + defocus_deviation * K1 * cos(2 * phi - 2 * rad_azimuth) * u2
+           = K1 * defocus_average * u2 + defocus_deviation * K1 * [cos(2 * phi) * cos(2 * rad_azimuth) + sin(2 * phi) * sin(2 * rad_azimuth)] * u2
+           = K1 * defocus_average * u2 + defocus_deviation * K1 * [(cos(phi) * cos(phi) - sin(phi) * sin(phi)) * cos(2 * rad_azimuth) + 2 sin(phi) * cos(phi) * sin(2 * rad_azimuth)] * u2
+           = K1 * defocus_average * u2 + defocus_deviation * K1 * [(X * X - Y * Y) * cos(2 * rad_azimuth) + 2 * Y * X sin(2 * rad_azimuth)]
+           = b1 (X * X + Y * Y) + b2 (X * X - Y * Y) + b3 (X * Y)
 
-           where:  b1 = K1 * defocus_average
-                   b2 = K1 * defocus_deviation * cos(2*rad_azimuth)
-                   b3 = 2 * K1 * defocus_deviation * sin(2*rad_azimuth)
+           where:  b1 =     K1 * defocus_average
+                   b2 =     K1 * defocus_deviation * cos(2 * rad_azimuth)
+                   b3 = 2 * K1 * defocus_deviation * sin(2 * rad_azimuth)
 
                    <=>
 
-                   defocus_average = b1 / (PI lambda)
-                   defocus_deviation = sqrt(b2² + b3²/4)/(PI lambda)
-                   rad_azimuth = atan2(b3/2, b2) / 2                        */
+                   defocus_average = b1 / (PI * lambda)
+                   defocus_deviation = sqrt(b2 * b2 + b3 * b3 / 4) / (PI * lambda)
+                   rad_azimuth = atan2(b3 / 2, b2) / 2                        */
 
     double b1 =     K1 * defocus_average                          + coefficients[1];
     double b2 =     K1 * defocus_deviation * cos(2 * rad_azimuth) + coefficients[2];
@@ -201,7 +200,7 @@ void OriginalBasis::_offsetCtf(
 
     double azimuthal_angle = RAD2DEG(new_rad_azimuth);
     double DeltafU = -new_defocus_deviation - new_defocus_average;
-    double DeltafV =  new_defocus_deviation - new_defocus_average;
+    double DeltafV = +new_defocus_deviation - new_defocus_average;
 
 /*     spherical aberration:
 
@@ -209,24 +208,24 @@ void OriginalBasis::_offsetCtf(
             <=>
            PI / 2 * local_Cs * lambda * lambda * lambda = b4;
             <=>
-           local_Cs = 2 * b4 / (PI lambda³)
+           local_Cs = 2 * b4 / (PI * lambda * lambda * lambda)
             <=>
-           Cs = 1e-7 * 2 * b4 / (PI lambda³)            */
+           Cs = 1e-7 * 2 * b4 / (PI * lambda * lambda * lambda)            */
 
-    double b4 = PI * lambda*lambda*lambda * local_Cs / 2.0 + coefficients[4];
-    double Cs = 1e-7 * 2.0 * b4 / (PI * lambda*lambda*lambda);
+    double b4 = PI * lambda * lambda * lambda * local_Cs / 2.0 + coefficients[4];
+    double Cs = 1e-7 * 2.0 * b4 / (PI * lambda * lambda * lambda);
 
     /*     phase shift / amp. contrast:
 
-               K3 = atan(Q0/sqrt(1-Q0*Q0))
+               K3 = atan(Q0 / sqrt(1 - Q0 * Q0))
                 <=>
-               Q0/sqrt(1-Q0²) = tan(K3)
+               Q0 / sqrt(1 - Q0 * Q0) = tan(K3)
                 <=>
-               Q0² = (1 - Q0²) * tan²(K3)
+               Q0 * Q0 = (1 - Q0 * Q0) * tan(K3) * tan(K3)
                 <=>
-               Q0²(1 + tan²K3) = tan²K3
+               Q0 * Q0 * (1 + tan(K3) * tan(K3)) = tan(K3) * tan(K3)
                 <=>
-               Q0 = sqrt(tan²K3/(1 + tan²K3))
+               Q0 = sqrt(tan(K3) * tan(K3) / (1 + tan(K3) * tan(K3)))
     */
 
     double b0 = K3 - coefficients[0];
@@ -255,5 +254,4 @@ void OriginalBasis::_offsetCtf(
     mdt.setValue(EMDL::CTF_CS,            Cs,              particle);
 
     //std::cout << DeltafU << ", " << DeltafV << " @ " << azimuthal_angle << "°, " << Cs << ", " << Q0 << "\n\n";
-
 }

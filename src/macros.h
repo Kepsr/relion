@@ -95,11 +95,11 @@ extern const char *g_RELION_VERSION;
 /// @name Constants
 //@{
 
-/** Pi
+/** π
  * @ingroup MacrosConstants
  */
 #ifndef PI
-#define PI 3.14159265358979323846
+const double PI = 3.14159265358979323846;
 #endif
 
 /** Equal accuracy
@@ -315,7 +315,9 @@ inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
  * angle_in_radians = DEG2RAD(ang_in_degrees);
  * @endcode
  */
-#define DEG2RAD(theta) ((theta) * PI / 180.0)
+// #define DEG2RAD(theta) ((theta) * PI / 180.0)
+
+inline RFLOAT DEG2RAD(RFLOAT theta) { return theta * PI / 180.0; }
 
 /** Radians to degrees
  *
@@ -323,7 +325,9 @@ inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
  * angle_in_degrees = RAD2DEG(ang_in_radians);
  * @endcode
  */
-#define RAD2DEG(theta) ((theta) * 180.0 / PI)
+// #define RAD2DEG(theta) ((theta) * 180.0 / PI)
+
+inline RFLOAT RAD2DEG(RFLOAT theta) { return theta * 180.0 / PI; }
 
 /** cos(theta), where theta is in degrees
  *
@@ -355,7 +359,7 @@ inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
 /** acos(x) in degrees
  *
  * @code
- * if (ASIND(0.5) == 30.)
+ * if (ASIND(0.5) == 30.0)
  *     std::cout << "This is in degrees!\n";
  * @endcode
  */
@@ -363,7 +367,7 @@ inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
 
 /** SINC function
  *
- * The sinc function is defined as sin(PI * x)/(PI * x).
+ * The sinc function is defined as sin(PI * x) / (PI * x).
  */
 #define SINC(x) (((x) < 0.0001 && (x) > -0.0001) ? 1 : sin(PI * (x)) / (PI * (x)))
 
