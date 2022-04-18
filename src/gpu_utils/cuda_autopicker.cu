@@ -159,8 +159,8 @@ void AutoPickerCuda::run() {
 }
 
 void AutoPickerCuda::calculateStddevAndMeanUnderMask(
-    CudaGlobalPtr< CUDACOMPLEX > &d_Fmic, CudaGlobalPtr< CUDACOMPLEX > &d_Fmic2, CudaGlobalPtr< CUDACOMPLEX > &d_Fmsk,
-    int nr_nonzero_pixels_mask, CudaGlobalPtr< XFLOAT > &d_Mstddev, CudaGlobalPtr< XFLOAT > &d_Mmean,
+    CudaGlobalPtr<CUDACOMPLEX> &d_Fmic, CudaGlobalPtr<CUDACOMPLEX> &d_Fmic2, CudaGlobalPtr<CUDACOMPLEX> &d_Fmsk,
+    int nr_nonzero_pixels_mask, CudaGlobalPtr<XFLOAT> &d_Mstddev, CudaGlobalPtr<XFLOAT> &d_Mmean,
     size_t x, size_t y, size_t mic_size, size_t workSize
 ) {
     cudaTransformer2.setSize(workSize,workSize,1);
@@ -485,7 +485,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 basePckr->lowpass, basePckr->highpass,
                 basePckr->angpix,
                 2,
-                true //false = lowpass, true=highpass
+                true // false = lowpass, true=highpass
             );
             micTransformer.fouriers.streamSync();
             micTransformer.backward();

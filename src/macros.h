@@ -255,15 +255,31 @@ T clip(T x, T x0, T xF) {
 
 /** Wrapping for integers
  *
- * intWRAP performs a wrapping in the integer set, when the cycle is finsihed it
- * begins again. For example, for intWRAP(x,-2,2) would be
+ * wrap uses modular arithmetic to "wrap" the integers into a cycle between x0 and xF.
  *
+ * For example the following code:
  * @code
- * x = ... -8 -7 -6 -5 -4 -3 -2 -1  0  1  2  3  4  5  6  7  8 ...
- * output = ...  2 -2 -1  0  1  2 -2 -1  0  1  2 -2 -1  0  1  2 -2 ...
+ * for (int x = -4; x <= +4; x++) {
+ *     std::cout << "(" << x << " " << wrap(x, -2, +2) << ") ";
+ * }
+ * std::cout << std::endl;
+ * @endcode
+ * will output
+ * @code
+ * (-4 1) (-3 2) (-2 -2) (-1 -1) (0 0) (1 1) (2 2) (3 -2) (4 -1)
+ * @endcode
+ *
+ * wrap replaces a macro intWRAP
+ * @code
+ * #define intWRAP(x, x0, xF) (((x) >= (x0) && (x) <= (xF)) ? (x) : ((x) < (x0)) ? ((x) - (int)(((x) - (x0) + 1) / ((xF) - (x0) + 1) - 1) *  ((xF) - (x0) + 1)) : ((x) - (int)(((x) - (xF) - 1) / ((xF) - (x0) + 1) + 1) * ((xF) - (x0) + 1)))
  * @endcode
  */
-#define intWRAP(x, x0, xF) (((x) >= (x0) && (x) <= (xF)) ? (x) : ((x) < (x0)) ? ((x) - (int)(((x) - (x0) + 1) / ((xF) - (x0) + 1) - 1) *  ((xF) - (x0) + 1)) : ((x) - (int)(((x) - (xF) - 1) / ((xF) - (x0) + 1) + 1) * ((xF) - (x0) + 1)))
+inline int wrap(int x, int x0, int xF) {
+    int base = xF - x0 + 1;
+    if (x < x0) return x - ((x - x0 + 1) / base - 1) * base;
+    if (x > xF) return x - ((x - xF - 1) / base + 1) * base;
+    return x;
+}
 
 /** Wrapping for real numbers
  *

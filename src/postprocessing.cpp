@@ -1025,19 +1025,19 @@ void Postprocessing::run_locres(int rank, int size) {
         if (fn_mask != "") {
             std::cout << "Calculating a histogram of local resolutions within the mask." << std::endl;
 
-            std::vector<RFLOAT> values;
             Image<RFLOAT> Imask;
             Imask.read(fn_mask);
 
             if (I1().getDimensions() != Imask().getDimensions()) // sameSize()
-                REPORT_ERROR("The shapes of the input half maps and the mask are not the same.");
+                REPORT_ERROR("The sizes of the input half maps and the mask are not the same.");
 
+            std::vector<RFLOAT> values;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
                 if (DIRECT_MULTIDIM_ELEM(Imask(), n) > 0.5)
                     values.push_back(DIRECT_MULTIDIM_ELEM(I1(), n));
 
             std::vector <RFLOAT> histX, histY;
-            CPlot2D *plot2D=new CPlot2D("");
+            CPlot2D *plot2D = new CPlot2D("");
             FileName fn_eps = fn_out + "_histogram.eps";
             MetaDataTable::histogram(values, histX, histY, verb, "local resolution", plot2D);
             plot2D->OutputPostScriptPlot(fn_eps);
@@ -1094,7 +1094,7 @@ void Postprocessing::run() {
         randomize_at = -1;
 
         if (randomize_at_A > 0.) {
-            randomize_at = (int)(angpix * XSIZE(I1()) / randomize_at_A );
+            randomize_at = (int) (angpix * XSIZE(I1()) / randomize_at_A );
         } else {
             // Check when FSC drops below randomize_fsc_at
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
@@ -1141,8 +1141,7 @@ void Postprocessing::run() {
     // See where corrected FSC drops below 0.143
     int global_resol_i = 0;
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
-        if (DIRECT_A1D_ELEM(fsc_true, i) < 0.143)
-            break;
+        if (DIRECT_A1D_ELEM(fsc_true, i) < 0.143) break;
         global_resol = XSIZE(I1()) * angpix / (RFLOAT) i;
         global_resol_i = i;
     }
@@ -1151,8 +1150,7 @@ void Postprocessing::run() {
     if (do_mask) {
         int unmasked_resol_i = 0;
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
-            if (DIRECT_A1D_ELEM(fsc_unmasked, i) < 0.143)
-                break;
+            if (DIRECT_A1D_ELEM(fsc_unmasked, i) < 0.143) break;
             unmasked_resol_i = i;
         }
         // Check whether global_resol is worse than the unmasked one

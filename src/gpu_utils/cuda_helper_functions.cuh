@@ -126,60 +126,46 @@ void runBackProjectKernel(
         cudaStream_t optStream);
 
 #define INIT_VALUE_BLOCK_SIZE 512
-template< typename T>
-__global__ void cuda_kernel_init_complex_value(
-        T *data,
-        XFLOAT value,
-        size_t size)
-{
+
+template<typename T>
+__global__ void cuda_kernel_init_complex_value(T *data, XFLOAT value, size_t size) {
     size_t idx = blockIdx.x * INIT_VALUE_BLOCK_SIZE + threadIdx.x;
-    if (idx < size)
-    {
+    if (idx < size) {
         data[idx].x = value;
         data[idx].y = value;
     }
 }
 
-template< typename T>
-__global__ void cuda_kernel_init_value(
-        T *data,
-        T value,
-        size_t size)
-{
+template<typename T>
+__global__ void cuda_kernel_init_value(T *data, T value, size_t size) {
     size_t idx = blockIdx.x * INIT_VALUE_BLOCK_SIZE + threadIdx.x;
     if (idx < size)
         data[idx] = value;
 }
 
-template< typename T>
-void deviceInitComplexValue(CudaGlobalPtr<T> &data, XFLOAT value)
-{
-    int grid_size = ceil((float)(data.getSize())/(float)INIT_VALUE_BLOCK_SIZE);
-    cuda_kernel_init_complex_value<T><<< grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream() >>>(
-            ~data,
-            value,
-            data.getSize());
+template<typename T>
+void deviceInitComplexValue(CudaGlobalPtr<T> &data, XFLOAT value) {
+    int grid_size = ceil((float) data.getSize() / (float) INIT_VALUE_BLOCK_SIZE);
+    cuda_kernel_init_complex_value<T><<<grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream()>>>(
+        ~data, value, data.getSize()
+    );
 }
 
-template< typename T>
-void deviceInitValue(CudaGlobalPtr<T> &data, T value)
-{
-    int grid_size = ceil((float)data.getSize()/(float)INIT_VALUE_BLOCK_SIZE);
-    cuda_kernel_init_value<T><<< grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream() >>>(
-            ~data,
-            value,
-            data.getSize());
+template<typename T>
+void deviceInitValue(CudaGlobalPtr<T> &data, T value) {
+    int grid_size = ceil((float) data.getSize() / (float) INIT_VALUE_BLOCK_SIZE);
+    cuda_kernel_init_value<T><<<grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream()>>>(
+        ~data, value, data.getSize()
+    );
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
 }
 
-template< typename T>
-void deviceInitValue(CudaGlobalPtr<T> &data, T value, size_t Size)
-{
-    int grid_size = ceil((float)Size/(float)INIT_VALUE_BLOCK_SIZE);
-    cuda_kernel_init_value<T><<< grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream() >>>(
-            ~data,
-            value,
-            Size);
+template<typename T>
+void deviceInitValue(CudaGlobalPtr<T> &data, T value, size_t Size) {
+    int grid_size = ceil((float) Size / (float) INIT_VALUE_BLOCK_SIZE);
+    cuda_kernel_init_value<T><<<grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream()>>>(
+        ~data, value, Size
+    );
 }
 
 #define WEIGHT_MAP_BLOCK_SIZE 512
@@ -201,7 +187,7 @@ void mapAllWeightsToMweights(
         );
 
 #define OVER_THRESHOLD_BLOCK_SIZE 512
-template< typename T>
+template<typename T>
 __global__ void cuda_kernel_array_over_threshold(
         T *data,
         bool *passed,
@@ -218,7 +204,7 @@ __global__ void cuda_kernel_array_over_threshold(
     }
 }
 
-template< typename T>
+template<typename T>
 void arrayOverThreshold(CudaGlobalPtr<T> &data, CudaGlobalPtr<bool> &passed, T threshold)
 {
     int grid_size = ceil((float)data.getSize()/(float)OVER_THRESHOLD_BLOCK_SIZE);
@@ -231,7 +217,7 @@ void arrayOverThreshold(CudaGlobalPtr<T> &data, CudaGlobalPtr<bool> &passed, T t
 }
 
 #define FIND_IN_CUMULATIVE_BLOCK_SIZE 512
-template< typename T>
+template<typename T>
 __global__ void cuda_kernel_find_threshold_idx_in_cumulative(
         T *data,
         T threshold,
