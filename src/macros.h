@@ -276,9 +276,10 @@ T clip(T x, T x0, T xF) {
  */
 inline int wrap(int x, int x0, int xF) {
     int base = xF - x0 + 1;
-    if (x < x0) return x - ((x - x0 + 1) / base - 1) * base;
-    if (x > xF) return x - ((x - xF - 1) / base + 1) * base;
-    return x;
+    int modulus = x % base;
+    if (modulus < x0) return modulus + base;
+    if (modulus > xF) return modulus - base;
+    return modulus;
 }
 
 /** Wrapping for real numbers
