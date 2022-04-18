@@ -51,7 +51,7 @@ AutoPickerCuda::AutoPickerCuda(
     cudaTransformer2(0, allocator)
 {
     projectors.resize(basePckr->Mrefs.size());
-    have_warned_batching=false;
+    have_warned_batching = false;
     /*======================================================
                         DEVICE SETTINGS
     ======================================================*/
@@ -836,14 +836,14 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                     cuda_kernel_rotateAndCtf<<<blocks, BLOCK_SIZE>>>(
                         ~cudaTransformer1.fouriers,
                         ~d_ctf,
-                        DEG2RAD(basePckr->psi_sampling),
+                        radians(basePckr->psi_sampling),
                         projKernel,
                         startPsi
                     );
                 } else {
                     cuda_kernel_rotateOnly<<<blocks, BLOCK_SIZE>>>(
                         ~cudaTransformer1.fouriers,
-                        DEG2RAD(basePckr->psi_sampling),
+                        radians(basePckr->psi_sampling),
                         projKernel,
                         startPsi
                     );

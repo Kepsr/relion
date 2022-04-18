@@ -329,8 +329,8 @@ class angular_error_parameters {
         // tiltp = acos(Pass(1, 1));
         // rotp  = acos(Pass(1, 0) /  sin(tiltp));
         // psip  = acos(Pass(0, 1) / -sin(tiltp));
-        // std::cout << " Optimised tilt angle= " << RAD2DEG(tiltp) << std::endl;
-        // std::cout << " Optimised in-plane rot angles= " << RAD2DEG(rotp) <<" and "<< RAD2DEG(psip) << std::endl;
+        // std::cout << " Optimised tilt angle= " << degrees(tiltp) << std::endl;
+        // std::cout << " Optimised in-plane rot angles= " << degrees(rotp) <<" and "<< degrees(psip) << std::endl;
         // Map using the new matrix
         mapOntoTilt();
 

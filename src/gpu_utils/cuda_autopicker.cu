@@ -775,13 +775,13 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 if (basePckr->do_ctf) {
                     cuda_kernel_rotateAndCtf<<<blocks, BLOCK_SIZE>>>(
                         ~cudaTransformer1.fouriers, ~d_ctf,
-                        DEG2RAD(basePckr->psi_sampling),
+                        radians(basePckr->psi_sampling),
                         projKernel, startPsi
                     );
                 } else {
                     cuda_kernel_rotateOnly<<<blocks, BLOCK_SIZE>>>(
                         ~cudaTransformer1.fouriers,
-                        DEG2RAD(basePckr->psi_sampling),
+                        radians(basePckr->psi_sampling),
                         projKernel, startPsi
                     );
                 }

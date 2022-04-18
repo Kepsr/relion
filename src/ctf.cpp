@@ -66,9 +66,9 @@ void CTF::readByGroup(
     const MetaDataTable &partMdt, ObservationModel* obs, long int particle
 ) {
 
-    opticsGroup = 0;
-    if (obs != 0) { opticsGroup = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle); }
-    opticsGroup--;
+    opticsGroup = 
+        obs == 0 ? -1 :
+        partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1;
 
     readValue(EMDL::CTF_VOLTAGE,       kV,              200,     particle, opticsGroup, partMdt, obs);
     readValue(EMDL::CTF_DEFOCUSU,      DeltafU,         0,       particle, opticsGroup, partMdt, obs);
@@ -254,7 +254,7 @@ void CTF::initialise() {
     // Change units
     RFLOAT local_Cs = Cs * 1e7;
     RFLOAT local_kV = kV * 1e3;
-    rad_azimuth = DEG2RAD(azimuthal_angle);
+    rad_azimuth = radians(azimuthal_angle);
 
     // Average focus and deviation
     defocus_average   = -(DeltafU + DeltafV) * 0.5;
@@ -278,7 +278,7 @@ void CTF::initialise() {
     K4 = -Bfac / 4.;
 
     // Phase shift in radians
-    K5 = DEG2RAD(phase_shift);
+    K5 = radians(phase_shift);
 
     if (Q0 < 0.0 || Q0 > 1.0)
         REPORT_ERROR("CTF::initialise ERROR: AmplitudeContrast Q0 cannot be smaller than zero or larger than one!");
@@ -390,7 +390,7 @@ void CTF::getFftwImage(
                 // Don't take the last column from the half-transform
                 for (int j = 0; j < XSIZE(Fctf) - 1; j++) {
                     // Make just one lookup on Fctf.data
-                    auto fctfij = DIRECT_A2D_ELEM(Fctf, i, j);
+                    RFLOAT fctfij = DIRECT_A2D_ELEM(Fctf, i, j);
                     if (ctf_premultiplied) {
                         A2D_ELEM(Mctf,  ip,  j) = fctfij * fctfij;
                         A2D_ELEM(Mctf, -ip, -j) = fctfij * fctfij;
@@ -498,7 +498,7 @@ void CTF::getCTFPImage(
         is_positive = !is_positive;
     }
 
-    float anglerad = DEG2RAD(angle);
+    float anglerad = radians(angle);
 
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;

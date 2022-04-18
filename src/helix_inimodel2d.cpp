@@ -425,7 +425,7 @@ void HelixAligner::getHelicesFromMics() {
                     ycen = y1 + (y2 - y1) / 2;
 
                     int xsize = floor(sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
-                    RFLOAT phi = RAD2DEG(atan(RFLOAT(y2 - y1) / RFLOAT(x2 - x1)));
+                    RFLOAT phi = degrees(atan(RFLOAT(y2 - y1) / RFLOAT(x2 - x1)));
                     MultidimArray<RFLOAT> Ihelix;
                     Ihelix.resize(extract_width, xsize);
                     Ihelix.setXmippOrigin();

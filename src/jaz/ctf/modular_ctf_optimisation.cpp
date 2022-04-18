@@ -536,10 +536,10 @@ void ModularCtfOptimisation::writeToTable(const std::vector<double> &x) {
         RFLOAT local_kV = ctf.kV * 1e3;
         const double lambda = 12.2643247 / sqrt(local_kV * (1.0 + local_kV * 0.978466e-6));
 
-        // ph = -K[5] - K[3] = -DEG2RAD(phase_shift) - atan(Q0/sqrt(1-Q0*Q0));
-        // => phase_shift = RAD2DEG(-ph - K[3])
+        // ph = -K[5] - K[3] = -radians(phase_shift) - atan(Q0/sqrt(1-Q0*Q0));
+        // => phase_shift = degrees(-ph - K[3])
         if (modes[Phase] != Fixed)
-            mdt.setValue(EMDL::CTF_PHASESHIFT, RAD2DEG(-ph - K[3]), p);
+            mdt.setValue(EMDL::CTF_PHASESHIFT, degrees(-ph - K[3]), p);
 
         mdt.setValue(EMDL::CTF_DEFOCUSU, defocusU, p);
         mdt.setValue(EMDL::CTF_DEFOCUSV, defocusV, p);

@@ -49,35 +49,33 @@
 #include "src/funcs.h"
 
 /* Euler angles --> matrix ------------------------------------------------- */
-void Euler_angles2matrix(RFLOAT alpha, RFLOAT beta, RFLOAT gamma,
-                         Matrix2D<RFLOAT> &A, bool homogeneous)
-{
-    RFLOAT ca, sa, cb, sb, cg, sg;
-    RFLOAT cc, cs, sc, ss;
+void Euler_angles2matrix(
+    RFLOAT alpha, RFLOAT beta, RFLOAT gamma,
+    Matrix2D<RFLOAT> &A, bool homogeneous
+) {
 
-    if (homogeneous)
-    {
-        A.initZeros(4,4);
-        MAT_ELEM(A,3,3)=1;
-    }
-    else
+    if (homogeneous) {
+        A.initZeros(4, 4);
+        MAT_ELEM(A, 3, 3) = 1;
+    } else {
         if (MAT_XSIZE(A) != 3 || MAT_YSIZE(A) != 3)
             A.resize(3, 3);
+    }
 
-    alpha = DEG2RAD(alpha);
-    beta  = DEG2RAD(beta);
-    gamma = DEG2RAD(gamma);
+    alpha = radians(alpha);
+    beta  = radians(beta);
+    gamma = radians(gamma);
 
-    ca = cos(alpha);
-    cb = cos(beta);
-    cg = cos(gamma);
-    sa = sin(alpha);
-    sb = sin(beta);
-    sg = sin(gamma);
-    cc = cb * ca;
-    cs = cb * sa;
-    sc = sb * ca;
-    ss = sb * sa;
+    RFLOAT ca = cos(alpha);
+    RFLOAT cb = cos(beta);
+    RFLOAT cg = cos(gamma);
+    RFLOAT sa = sin(alpha);
+    RFLOAT sb = sin(beta);
+    RFLOAT sg = sin(gamma);
+    RFLOAT cc = cb * ca;
+    RFLOAT cs = cb * sa;
+    RFLOAT sc = sb * ca;
+    RFLOAT ss = sb * sa;
 
     A(0, 0) =  cg * cc - sg * sa;
     A(0, 1) =  cg * cs + sg * ca;
@@ -91,22 +89,21 @@ void Euler_angles2matrix(RFLOAT alpha, RFLOAT beta, RFLOAT gamma,
 }
 
 /* Euler direction --------------------------------------------------------- */
-void Euler_angles2direction(RFLOAT alpha, RFLOAT beta,
-						    Matrix1D<RFLOAT> &v)
-{
-    RFLOAT ca, sa, cb, sb;
-    RFLOAT sc, ss;
+void Euler_angles2direction(
+    RFLOAT alpha, RFLOAT beta,
+    Matrix1D<RFLOAT> &v
+) {
 
     v.resize(3);
-    alpha = DEG2RAD(alpha);
-    beta  = DEG2RAD(beta);
+    alpha = radians(alpha);
+    beta  = radians(beta);
 
-    ca = cos(alpha);
-    cb = cos(beta);
-    sa = sin(alpha);
-    sb = sin(beta);
-    sc = sb * ca;
-    ss = sb * sa;
+    RFLOAT ca = cos(alpha);
+    RFLOAT cb = cos(beta);
+    RFLOAT sa = sin(alpha);
+    RFLOAT sb = sin(beta);
+    RFLOAT sc = sb * ca;
+    RFLOAT ss = sb * sa;
 
     v(0) = sc;
     v(1) = ss;
@@ -116,9 +113,10 @@ void Euler_angles2direction(RFLOAT alpha, RFLOAT beta,
 /* Euler direction2angles ------------------------------- */
 //gamma is useless but I keep it for simmetry
 //with Euler_direction
-void Euler_direction2angles(Matrix1D<RFLOAT> &v0,
-                            RFLOAT &alpha, RFLOAT &beta)
-{
+void Euler_direction2angles(
+    Matrix1D<RFLOAT> &v0,
+    RFLOAT &alpha, RFLOAT &beta
+) {
 	// Aug25,2015 - Shaoda
 	// This function can recover tilt (b) as small as 0.0001 degrees
 	// It replaces a more complicated version in the code before Aug2015
@@ -130,13 +128,12 @@ void Euler_direction2angles(Matrix1D<RFLOAT> &v0,
     v.selfNormalize();
 
     // Tilt (b) should be [0, +180] degrees. Rot (a) should be [-180, +180] degrees
-    alpha = RAD2DEG(atan2(v(1), v(0))); // 'atan2' returns an angle within [-pi, +pi] radians for rot
-    beta = RAD2DEG(acos(v(2))); // 'acos' returns an angle within [0, +pi] radians for tilt
+    alpha = degrees(atan2(v(1), v(0))); // 'atan2' returns an angle within [-pi, +pi] radians for rot
+    beta = degrees(acos(v(2))); // 'acos' returns an angle within [0, +pi] radians for tilt
 
     // The following is done to keep in line with the results from old codes
     // If tilt (b) = 0 or 180 degrees, sin(b) = 0, rot (a) cannot be calculated from the direction
-    if ( (fabs(beta) < 0.001) || (fabs(beta - 180.) < 0.001) )
-    	alpha = 0.;
+    if (fabs(beta) < 0.001 || fabs(beta - 180.0) < 0.001) {alpha = 0.0;}
 
     return;
 
@@ -149,12 +146,12 @@ void Euler_matrix2angles(
     const Matrix2D<RFLOAT> &A, 
     RFLOAT &alpha, RFLOAT &beta, RFLOAT &gamma
 ) {
-    RFLOAT abs_sb, sign_sb;
 
     if (MAT_XSIZE(A) != 3 || MAT_YSIZE(A) != 3)
         REPORT_ERROR( "Euler_matrix2angles: The Euler matrix is not 3x3");
 
-    abs_sb = sqrt(A(0, 2) * A(0, 2) + A(1, 2) * A(1, 2));
+    RFLOAT abs_sb = sqrt(A(0, 2) * A(0, 2) + A(1, 2) * A(1, 2));
+    RFLOAT sign_sb;
     if (abs_sb > 16 * FLT_EPSILON) {
         gamma = atan2(A(1, 2), -A(0, 2));
         alpha = atan2(A(2, 1), +A(2, 0));
@@ -184,9 +181,9 @@ void Euler_matrix2angles(
         }
     }
 
-    gamma = RAD2DEG(gamma);
-    beta  = RAD2DEG(beta);
-    alpha = RAD2DEG(alpha);
+    gamma = degrees(gamma);
+    beta  = degrees(beta);
+    alpha = degrees(alpha);
 
     #ifdef DEBUG_EULER
     std::cout << "abs_sb " << abs_sb << std::endl;

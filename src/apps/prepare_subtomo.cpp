@@ -188,12 +188,12 @@ class prepare_subtomo {
         std::string line, command;
         std::vector<std::string> words;
         std::vector<FileName> fns_tomo;
-        RFLOAT calc_angpix = 0.;
+        RFLOAT calc_angpix = 0.0;
         int res = 0;
 
         std::cout << " ###################################################################" << std::endl;
         std::cout << " Checking input data ..." << std::endl;
-        if (Magnification < 1.)
+        if (Magnification < 1.0)
             REPORT_ERROR("Invalid magnification!");
         calc_angpix = 10000. * PixelSize / Magnification;
         std::cout << " Calculated pixel size (10000 * DPix / Mag) = " << calc_angpix << " Angstrom(s)" << std::endl;
@@ -202,8 +202,8 @@ class prepare_subtomo {
 
         // Check CTFFIND or Gctf executables
         if (do_skip_ctf_correction) {
-            Cs = 0.;
-            AmplitudeContrast = 1.;
+            Cs = 0.0;
+            AmplitudeContrast = 1.0;
             do_use_trials_for_ctffind = false;
             do_use_only_lower_tilt_defoci = false;
         } else {
@@ -907,7 +907,7 @@ class prepare_subtomo {
                 for (int ida = 0; ida < tilts.size(); ida++) {
                     defoci = avg_defoci[ida];
                     tilt_deg = tilts[ida];
-                    tilt_rad = DEG2RAD(tilt_deg);
+                    tilt_rad = radians(tilt_deg);
                     xxtomo = float(xx - (dimensions.x / 2) ) * calc_angpix;
                     zztomo = float(zz - (dimensions.z / 2) ) * calc_angpix;
 
@@ -941,9 +941,9 @@ class prepare_subtomo {
                     MD_this_subtomo.setValue(EMDL::CTF_VOLTAGE, Voltage);
                     MD_this_subtomo.setValue(EMDL::CTF_CS, Cs);
                     MD_this_subtomo.setValue(EMDL::CTF_Q0, AmplitudeContrast);
-                    MD_this_subtomo.setValue(EMDL::ORIENT_ROT, 0.);
+                    MD_this_subtomo.setValue(EMDL::ORIENT_ROT, 0.0);
                     MD_this_subtomo.setValue(EMDL::ORIENT_TILT, tilt_deg);
-                    MD_this_subtomo.setValue(EMDL::ORIENT_PSI, 0.);
+                    MD_this_subtomo.setValue(EMDL::ORIENT_PSI, 0.0);
                     MD_this_subtomo.setValue(EMDL::CTF_BFACTOR, dose_w);
                     MD_this_subtomo.setValue(EMDL::CTF_SCALEFACTOR, tilt_scale);
                 }

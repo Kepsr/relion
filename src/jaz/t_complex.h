@@ -120,7 +120,7 @@ class tComplex {
     }
 
     T arg() const {
-        return atan2(imag,real);
+        return atan2(imag, real);
     }
 
 };

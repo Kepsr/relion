@@ -36,7 +36,7 @@ Matrix2D<RFLOAT> MagnificationHelper::polarToMatrix(
 
     Matrix2D<RFLOAT> out(2, 2);
 
-    const double angle = DEG2RAD(angleDeg);
+    const double angle = radians(angleDeg);
     const double si = sin(angle), co = cos(angle);
     const double si2 = si * si, co2 = co * co;
 
@@ -86,7 +86,7 @@ void MagnificationHelper::matrixToPolar(
 
     scaleMajor = ev0;
     scaleMinor = ev1;
-    angleDeg = RAD2DEG(atan2(sn,cs));
+    angleDeg = degrees(atan2(sn,cs));
 
     return;
 }
@@ -413,7 +413,7 @@ void MagnificationHelper::adaptAstigmatism(
             double deltafV = partMdts[m].getValue<double>(EMDL::CTF_DEFOCUSV, p);
             double phiDeg  = partMdts[m].getValue<double>(EMDL::CTF_DEFOCUS_ANGLE, p);
 
-            const double phi = DEG2RAD(phiDeg);
+            const double phi = radians(phiDeg);
 
             const double si = sin(phi);
             const double co = cos(phi);

@@ -140,9 +140,9 @@ bool calcCCofHelicalSymmetry(
     cos_rec.resize(rec_len);
     for (int id = 0; id < rec_len; id++) {
         #ifdef RELION_SINGLE_PRECISION
-        SINCOSF(DEG2RAD(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOSF(radians(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
         #else
-        SINCOS(DEG2RAD(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOS(radians(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
         #endif
     }
 
@@ -860,9 +860,9 @@ void imposeHelicalSymmetryInRealSpace(
     cos_rec.resize(rec_len);
     for (int id = 0; id < rec_len; id++)
         #ifdef RELION_SINGLE_PRECISION
-        SINCOSF(DEG2RAD((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOSF(radians((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
         #else
-        SINCOS(DEG2RAD((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOS(radians((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
         #endif
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
@@ -1752,7 +1752,7 @@ void convertHelicalTubeCoordsToMetaDataTable(
             pitch = pitch_list[tube_id];
 
         psi_rad = atan2(y2 - y1, x2 - x1);
-        psi_deg = RAD2DEG(psi_rad);
+        psi_deg = degrees(psi_rad);
         dx = step_pix * cos(psi_rad);
         dy = step_pix * sin(psi_rad);
 
@@ -2356,7 +2356,7 @@ void convertXimdispHelicalTubeCoordsToMetaDataTable(
         x2 = (x[2] + x[3]) / 2.0;
         y2 = (y[2] + y[3]) / 2.0;
         psi_rad = atan2(y2 - y1, x2 - x1);
-        psi_deg = RAD2DEG(psi_rad);
+        psi_deg = degrees(psi_rad);
         dx = step_pix * cos(psi_rad);
         dy = step_pix * sin(psi_rad);
 
@@ -2474,7 +2474,7 @@ void convertEmanHelicalSegmentCoordsToMetaDataTable(
             std::istringstream ss(line.substr(char_offset));
             //std::cout << line.substr(char_offset) << std::endl;
             ss >> x1 >> cdummy >> y1 >> cdummy >> cdummy >> cdummy >> x2 >> cdummy >> y2 >> cdummy >> cdummy >> width;
-            psi_deg = RAD2DEG(atan2(y2 - y1, x2 - x1));
+            psi_deg = degrees(atan2(y2 - y1, x2 - x1));
             len_pix = 0.0;
             x_old = y_old = 1.1e30;
             continue;
@@ -2615,7 +2615,7 @@ void convertEmanHelicalTubeCoordsToMetaDataTable(
         nr_tubes++;
 
         psi_rad = atan2(y2 - y1, x2 - x1);
-        psi_deg = RAD2DEG(psi_rad);
+        psi_deg = degrees(psi_rad);
         dx = step_pix * cos(psi_rad);
         dy = step_pix * sin(psi_rad);
 
@@ -3858,18 +3858,18 @@ void updatePriorsForOneHelicalTube(
 
             // rotation angle all new KThurber
             this_rot = list[id].rot_deg;  // KThurber
-            this_rot_vec(0) = cos(DEG2RAD(this_rot));
-            this_rot_vec(1) = sin(DEG2RAD(this_rot));
+            this_rot_vec(0) = cos(radians(this_rot));
+            this_rot_vec(1) = sin(radians(this_rot));
             sum_rot_vec = this_rot_vec * this_w;
             // for adjusting rot angle by shift along helix
-            center_x_helix = list[id].dx_A * cos(DEG2RAD(this_psi)) - list[id].dy_A * sin(DEG2RAD(this_psi));
+            center_x_helix = list[id].dx_A * cos(radians(this_psi)) - list[id].dy_A * sin(radians(this_psi));
             // end new KThurber
 
             // Analyze translations
             XX(this_trans_vec) = list[id].dx_prior_A = list[id].dx_A; // REFRESH XOFF PRIOR
             YY(this_trans_vec) = list[id].dy_prior_A = list[id].dy_A; // REFRESH YOFF PRIOR
             if (is_3D_data)
-                ZZ(this_trans_vec) = list[id].dz_prior_A = list[id].dz_A; // REFRESH ZOFF PRIOR
+            ZZ(this_trans_vec) = list[id].dz_prior_A = list[id].dz_A; // REFRESH ZOFF PRIOR
 
             transformCartesianAndHelicalCoords(this_trans_vec, this_trans_vec, (is_3D_data) ? (this_rot) : (0.0), (is_3D_data) ? (this_tilt) : (0.0), this_psi, CART_TO_HELICAL_COORDS);
             center_trans_vec = this_trans_vec; // Record helical coordinates of the central segment
@@ -3907,17 +3907,17 @@ void updatePriorsForOneHelicalTube(
                     if (list[idd].classID - 1 >= helical_twist.size()) REPORT_ERROR("ERROR: classID out of range...");
                     if (fabs(helical_twist[list[idd].classID - 1]) > 0.0) {
                         RFLOAT pitch = helical_rise[list[idd].classID - 1] * 180.0 / helical_twist[list[idd].classID - 1];
-                        this_x_helix = list[idd].dx_A * cos(DEG2RAD(list[idd].psi_deg)) - list[idd].dy_A * sin(DEG2RAD(list[idd].psi_deg));
+                        this_x_helix = list[idd].dx_A * cos(radians(list[idd].psi_deg)) - list[idd].dy_A * sin(radians(list[idd].psi_deg));
 
                         // In the second pass, check the direction from large to small distances
-                        RFLOAT sign = (iflip == 1) ? 1.0 : -1.0;
+                        RFLOAT sign = iflip == 1 ? 1.0 : -1.0;
                         this_rot = list[idd].rot_deg + sign * (180.0 / pitch) * (this_pos - center_pos - this_x_helix + center_x_helix);
                     } else {
                         this_rot = list[idd].rot_deg;
                     }
 
-                    this_rot_vec(0) = cos(DEG2RAD(this_rot));
-                    this_rot_vec(1) = sin(DEG2RAD(this_rot));
+                    this_rot_vec(0) = cos(radians(this_rot));
+                    this_rot_vec(1) = sin(radians(this_rot));
                     sum_rot_vec += this_rot_vec * this_w;
 
                     this_psi  = list[idd].psi_deg;
@@ -3929,7 +3929,7 @@ void updatePriorsForOneHelicalTube(
                     XX(this_trans_vec) = list[idd].dx_A;
                     YY(this_trans_vec) = list[idd].dy_A;
                     if (is_3D_data)
-                        ZZ(this_trans_vec) = list[idd].dz_A;
+                    ZZ(this_trans_vec) = list[idd].dz_A;
 
                     transformCartesianAndHelicalCoords(
                         this_trans_vec, this_trans_vec,
@@ -3954,7 +3954,7 @@ void updatePriorsForOneHelicalTube(
                 if (length_rot_vec != 0) {
                     sum_rot_vec(0) = sum_rot_vec(0) / length_rot_vec;
                     sum_rot_vec(1) = sum_rot_vec(1) / length_rot_vec;
-                    this_rot = RAD2DEG(acos(sum_rot_vec(0)));
+                    this_rot = degrees(acos(sum_rot_vec(0)));
                     if (sum_rot_vec(1) < 0.0)
                         this_rot = -1.0 * this_rot;	// if sign negative, angle is negative
                 } else {
@@ -3988,7 +3988,7 @@ void updatePriorsForOneHelicalTube(
                 sum_trans_vec /= sum_w;
                 offset2 = (YY(sum_trans_vec) - YY(center_trans_vec)) * (YY(sum_trans_vec) - YY(center_trans_vec));
                 if (is_3D_data)
-                    offset2 += (XX(sum_trans_vec) - XX(center_trans_vec)) * (XX(sum_trans_vec) - XX(center_trans_vec));
+                offset2 += (XX(sum_trans_vec) - XX(center_trans_vec)) * (XX(sum_trans_vec) - XX(center_trans_vec));
                 if (offset2 > range2_offset) {
                     // only now average translations
                     if (is_3D_data) {
@@ -4001,7 +4001,7 @@ void updatePriorsForOneHelicalTube(
                     list[id].dx_prior_A = XX(sum_trans_vec); // REFRESH XOFF PRIOR
                     list[id].dy_prior_A = YY(sum_trans_vec); // REFRESH YOFF PRIOR
                     if (is_3D_data)
-                        list[id].dz_prior_A = ZZ(sum_trans_vec); // REFRESH ZOFF PRIOR
+                    list[id].dz_prior_A = ZZ(sum_trans_vec); // REFRESH ZOFF PRIOR
                 }
             }
         }
@@ -5073,11 +5073,11 @@ void estimateTiltPsiPriors(
         psi_rad = (-1.0) * atan2(YY(dr), XX(dr));
     }
 
-    if (dim == 3) tilt_deg = RAD2DEG(tilt_rad);
-    psi_deg = RAD2DEG(psi_rad);
+    if (dim == 3) { tilt_deg = degrees(tilt_rad); }
+    psi_deg = degrees(psi_rad);
 }
 
-void readFileHeader(FileName& fn_in, FileName& fn_out, int nr_bytes) {
+void readFileHeader(FileName &fn_in, FileName &fn_out, int nr_bytes) {
     std::ifstream fin;
     std::ofstream fout;
     int nr_blocks = 0, curr_block = 0;

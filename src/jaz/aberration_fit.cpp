@@ -124,7 +124,7 @@ void AberrationBasis::offsetCtf(MetaDataTable &mdt, int particle) {
 
     double local_Cs = Cs * 1e7;
     double local_kV = kV * 1e3;
-    double rad_azimuth = DEG2RAD(azimuthal_angle);
+    double rad_azimuth = radians(azimuthal_angle);
 
     double defocus_average   = (DeltafU + DeltafV) * -0.5;
     double defocus_deviation = (DeltafU - DeltafV) * -0.5;
@@ -166,7 +166,7 @@ void OriginalBasis::_offsetCtf(
                 K1 = PI / 2 * 2 * lambda;
                 K2 = PI / 2 * local_Cs * lambda * lambda * lambda;
                 K3 = atan(Q0 / sqrt(1 - Q0 * Q0));
-                K5 = DEG2RAD(phase_shift);
+                K5 = radians(phase_shift);
 
                 local_Cs = Cs * 1e7;
 
@@ -198,7 +198,7 @@ void OriginalBasis::_offsetCtf(
     double new_defocus_deviation = sqrt(b2 * b2 + b3 * b3 / 4)/(PI * lambda);
     double new_rad_azimuth       = atan2(b3 / 2.0, b2) / 2.0;
 
-    double azimuthal_angle = RAD2DEG(new_rad_azimuth);
+    double azimuthal_angle = degrees(new_rad_azimuth);
     double DeltafU = -new_defocus_deviation - new_defocus_average;
     double DeltafV = +new_defocus_deviation - new_defocus_average;
 
@@ -238,7 +238,7 @@ void OriginalBasis::_offsetCtf(
             phase_shift = 0;
         }
 
-        phase_shift = phase_shift - RAD2DEG(coefficients[0]);
+        phase_shift = phase_shift - degrees(coefficients[0]);
 
         mdt.setValue(EMDL::CTF_PHASESHIFT, phase_shift, particle);
     } else {

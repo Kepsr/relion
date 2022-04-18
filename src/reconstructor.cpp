@@ -170,7 +170,7 @@ void Reconstructor::initialise() {
             ) {
                 RFLOAT mag   = DF.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
                 RFLOAT dstep = DF.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
-                angpix = 10000. * dstep / mag;
+                angpix = 10000.0 * dstep / mag;
                 if (verb > 0)
                     std::cout << " + Using pixel size calculated from magnification and detector pixel size in the input STAR file: " << angpix << std::endl;
             } else {
@@ -749,9 +749,9 @@ void Reconstructor::applyCTFPandCTFQ(
                 do_wrap_max = true;
             }
 
-            // use radians instead of degrees
-            anglemin = DEG2RAD(anglemin);
-            anglemax = DEG2RAD(anglemax);
+            // Convert to radians
+            anglemin = radians(anglemin);
+            anglemax = radians(anglemax);
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
                 RFLOAT x = (RFLOAT) jp;
                 RFLOAT y = (RFLOAT) ip;

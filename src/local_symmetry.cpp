@@ -837,11 +837,11 @@ void readDMFormatMasksAndOperators(FileName fn_info,
                 } else if (id_matrix_type == ROTA_POLAR_TYPE) {
                     // omega, phi, kappa
                     RFLOAT omega = a11, phi = a12, kappa = a13;
-                    RFLOAT ll = sin(DEG2RAD(omega)) * cos(DEG2RAD(phi));
-                    RFLOAT mm = sin(DEG2RAD(omega)) * sin(DEG2RAD(phi));
-                    RFLOAT nn = cos(DEG2RAD(omega));
-                    RFLOAT ck = cos(DEG2RAD(kappa));
-                    RFLOAT sk = sin(DEG2RAD(kappa));
+                    RFLOAT ll = sin(radians(omega)) * cos(radians(phi));
+                    RFLOAT mm = sin(radians(omega)) * sin(radians(phi));
+                    RFLOAT nn = cos(radians(omega));
+                    RFLOAT ck = cos(radians(kappa));
+                    RFLOAT sk = sin(radians(kappa));
 
                     a11 = ll * ll + (mm * mm + nn * nn) * ck;
                     a12 = ll * mm * (1.0 - ck) - nn * sk;

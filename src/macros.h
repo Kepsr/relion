@@ -312,22 +312,18 @@ inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
 /** Degrees to radians
  *
  * @code
- * angle_in_radians = DEG2RAD(ang_in_degrees);
+ * phi = radians(30.0); // 0.5235987755982988
  * @endcode
  */
-// #define DEG2RAD(theta) ((theta) * PI / 180.0)
-
-inline RFLOAT DEG2RAD(RFLOAT theta) { return theta * PI / 180.0; }
+inline RFLOAT radians(RFLOAT theta) { return theta * PI / 180.0; }
 
 /** Radians to degrees
  *
  * @code
- * angle_in_degrees = RAD2DEG(ang_in_radians);
+ * phi = degrees(PI / 6); // 30.0
  * @endcode
  */
-// #define RAD2DEG(theta) ((theta) * 180.0 / PI)
-
-inline RFLOAT RAD2DEG(RFLOAT theta) { return theta * 180.0 / PI; }
+inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
 
 /** cos(theta), where theta is in degrees
  *
@@ -336,7 +332,7 @@ inline RFLOAT RAD2DEG(RFLOAT theta) { return theta * 180.0 / PI; }
  *     std::cout << "This is in degrees!\n";
  * @endcode
  */
-#define COSD(theta) cos(DEG2RAD(theta))
+#define COSD(theta) cos(radians(theta))
 
 /** acos(x) in degrees
  *
@@ -345,7 +341,7 @@ inline RFLOAT RAD2DEG(RFLOAT theta) { return theta * 180.0 / PI; }
  *     std::cout << "This is in degrees!\n";
  * @endcode
  */
-#define ACOSD(x) RAD2DEG(acos(x))
+#define ACOSD(x) degrees(acos(x))
 
 /** sin(theta), where theta is in degrees
  *
@@ -354,7 +350,7 @@ inline RFLOAT RAD2DEG(RFLOAT theta) { return theta * 180.0 / PI; }
  *     std::cout << "This is in degrees!\n";
  * @endcode
  */
-#define SIND(theta) sin(DEG2RAD(theta))
+#define SIND(theta) sin(radians(theta))
 
 /** acos(x) in degrees
  *

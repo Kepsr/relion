@@ -66,7 +66,7 @@ void getOrientations(
             // this one always has to be double (also for SINGLE_PRECISION CALCULATIONS) for call to external library
             double zz, phi;
             HealPixOver.pix2ang_z_phi(overpix, zz, phi);
-            rot = RAD2DEG(phi);
+            rot = degrees(phi);
             tilt = ACOSD(zz);
 
             // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]

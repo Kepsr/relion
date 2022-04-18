@@ -660,8 +660,8 @@ void MovieReconstructor::applyCTFPandCTFQ(
             }
 
             // use radians instead of degrees
-            anglemin = DEG2RAD(anglemin);
-            anglemax = DEG2RAD(anglemax);
+            anglemin = radians(anglemin);
+            anglemax = radians(anglemax);
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
                 RFLOAT x = (RFLOAT)jp;
                 RFLOAT y = (RFLOAT)ip;

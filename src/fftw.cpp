@@ -538,9 +538,9 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
         mu2(idx) += abs2;
         radial_count(idx)++;
 
-        //phases
-        RFLOAT phas1 = RAD2DEG(atan2((DIRECT_A3D_ELEM(FT1, k, i, j)).imag, (DIRECT_A3D_ELEM(FT1, k, i, j)).real));
-        RFLOAT phas2 = RAD2DEG(atan2((DIRECT_A3D_ELEM(FT2, k, i, j)).imag, (DIRECT_A3D_ELEM(FT2, k, i, j)).real));
+        // Phases
+        RFLOAT phas1 = degrees(atan2((DIRECT_A3D_ELEM(FT1, k, i, j)).imag, (DIRECT_A3D_ELEM(FT1, k, i, j)).real));
+        RFLOAT phas2 = degrees(atan2((DIRECT_A3D_ELEM(FT2, k, i, j)).imag, (DIRECT_A3D_ELEM(FT2, k, i, j)).real));
         RFLOAT delta_phas = phas1 - phas2;
         if (delta_phas > +180.0) { delta_phas -= 360.0; }
         if (delta_phas < -180.0) { delta_phas += 360.0; }
@@ -592,8 +592,8 @@ void getCosDeltaPhase(
         if (idx >= XSIZE(FT1))
             continue;
 
-        RFLOAT phas1 = RAD2DEG(atan2((DIRECT_A3D_ELEM(FT1, k, i, j)).imag, (DIRECT_A3D_ELEM(FT1, k, i, j)).real));
-        RFLOAT phas2 = RAD2DEG(atan2((DIRECT_A3D_ELEM(FT2, k, i, j)).imag, (DIRECT_A3D_ELEM(FT2, k, i, j)).real));
+        RFLOAT phas1 = degrees(atan2((DIRECT_A3D_ELEM(FT1, k, i, j)).imag, (DIRECT_A3D_ELEM(FT1, k, i, j)).real));
+        RFLOAT phas2 = degrees(atan2((DIRECT_A3D_ELEM(FT2, k, i, j)).imag, (DIRECT_A3D_ELEM(FT2, k, i, j)).real));
         cosPhi(idx) += cos(phas1 - phas2);
         radial_count(idx) ++;
     }
@@ -1298,7 +1298,7 @@ void lowPassFilterMap(
         if (img.getDim() == 2) {
             img.window(
                 Xmipp::init(my_ysize), Xmipp::init(my_xsize),
-                Xmipp::last(my_ysize),	Xmipp::last(my_xsize)
+                Xmipp::last(my_ysize), Xmipp::last(my_xsize)
             );
         } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
@@ -1399,16 +1399,14 @@ void directionalFilterMap(
             );
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
-                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size)) {
+                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
                         A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
-                    }
                 }
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
                         A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
-
             }
         } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
@@ -1452,7 +1450,7 @@ void selfApplyBeamTilt(
         RFLOAT delta_phase = factor * (ip * ip + jp * jp) * (ip * beamtilt_y + jp * beamtilt_x);
         Complex A = DIRECT_A2D_ELEM(Fimg, i, j);
         RFLOAT mag = sqrt(A.real * A.real + A.imag * A.imag);
-        RFLOAT phas = atan2(A.imag, A.real) + DEG2RAD(delta_phase); // apply phase shift!
+        RFLOAT phas = atan2(A.imag, A.real) + radians(delta_phase); // apply phase shift!
         DIRECT_A2D_ELEM(Fimg, i, j) = Complex(mag * cos(phas), mag * sin(phas));
     }
 }
@@ -1476,7 +1474,7 @@ void selfApplyBeamTilt(
         RFLOAT realval = DIRECT_A2D_ELEM(Fimg, i, j).real;
         RFLOAT imagval = DIRECT_A2D_ELEM(Fimg, i, j).imag;
         RFLOAT mag = sqrt(realval * realval + imagval * imagval);
-        RFLOAT phas = atan2(imagval, realval) + DEG2RAD(delta_phase); // apply phase shift!
+        RFLOAT phas = atan2(imagval, realval) + radians(delta_phase); // apply phase shift!
         realval = mag * cos(phas);
         imagval = mag * sin(phas);
         DIRECT_A2D_ELEM(Fimg, i, j) = Complex(realval, imagval);

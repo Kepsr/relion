@@ -452,7 +452,7 @@ void HealpixSampling::setOrientations(int _order, RFLOAT _psi_step) {
         // Now remove symmetry-related pixels if not relaxing symmetry
         /// TODO: check size of healpix_base.max_pixrad
         if (!isRelax)
-            removeSymmetryEquivalentPoints(0.5 * RAD2DEG(healpix_base.max_pixrad()));
+            removeSymmetryEquivalentPoints(0.5 * degrees(healpix_base.max_pixrad()));
 
         #ifdef DEBUG_SAMPLING
         writeAllOrientationsToBild("orients_sym.bild", "0 1 0 ", 0.021);
@@ -909,7 +909,7 @@ void HealpixSampling::findSymmetryMate(long int idir_, RFLOAT prior_,
     std::vector<RFLOAT> &directions_prior, std::vector<bool> &idir_flag
 ) {
 
-    RFLOAT angular_sampling = DEG2RAD(360.0 / (6 * iPowerof2(healpix_order))) * 2; // Calculate the search radius
+    RFLOAT angular_sampling = radians(360.0 / (6 * iPowerof2(healpix_order))) * 2; // Calculate the search radius
     // Direction for the best-matched Healpix index
     Matrix1D<RFLOAT> my_direction;
     Euler_angles2direction(rot_angles[idir_], tilt_angles[idir_], my_direction);
@@ -921,8 +921,8 @@ void HealpixSampling::findSymmetryMate(long int idir_, RFLOAT prior_,
         RFLOAT alpha, beta;  // For Rot, Theta
         Euler_direction2angles(sym_direction, alpha, beta);
 
-        alpha = DEG2RAD(alpha);
-        beta  = DEG2RAD(beta);
+        alpha = radians(alpha);
+        beta  = radians(beta);
         pointing prior_direction_pointing(beta, alpha); // Object required by healpix function
         std::vector<int> listpix; // Array with the list of indices for the neighbors
         healpix_base.query_disc(prior_direction_pointing, angular_sampling, listpix); // Search healpix for closest indices
@@ -1313,7 +1313,7 @@ Direction HealpixSampling::getDirectionFromHealPix(long int ipix) {
     // this one always has to be double (also for SINGLE_PRECISION CALCULATIONS) for call to external library
     double zz, phi;
     healpix_base.pix2ang_z_phi(ipix, zz, phi);
-    RFLOAT rot = RAD2DEG(phi);
+    RFLOAT rot = degrees(phi);
     RFLOAT tilt = ACOSD(zz);
 
     // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]
@@ -1588,7 +1588,7 @@ void HealpixSampling::getOrientations(
             // this one always has to be double (also for SINGLE_PRECISION CALCULATIONS) for call to external library
             double zz, phi;
             HealPixOver.pix2ang_z_phi(overpix, zz, phi);
-            rot = RAD2DEG(phi);
+            rot = degrees(phi);
             tilt = ACOSD(zz);
 
             // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]
@@ -1827,7 +1827,7 @@ void HealpixSampling::removePointsOutsideLimitedTiltAngles() {
 
 void HealpixSampling::removeSymmetryEquivalentPoints(RFLOAT max_ang) {
     // Maximum distance
-    RFLOAT cos_max_ang = cos(DEG2RAD(max_ang));
+    RFLOAT cos_max_ang = cos(radians(max_ang));
     Matrix1D<RFLOAT> direction(3), direction1(3);
     std::vector<Matrix1D<RFLOAT> > directions_vector;
 

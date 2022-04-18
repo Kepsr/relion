@@ -212,13 +212,13 @@ class reconstruct_parameters {
                         do_wrap_max = true;
                     }
 
-                    // use radians instead of degrees
-                    anglemin = DEG2RAD(anglemin);
-                    anglemax = DEG2RAD(anglemax);
+                    // Convert to radians
+                    anglemin = radians(anglemin);
+                    anglemax = radians(anglemax);
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
-                        RFLOAT x = (RFLOAT)jp;
-                        RFLOAT y = (RFLOAT)ip;
-                        RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
+                        RFLOAT x = jp;
+                        RFLOAT y = ip;
+                        RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
                         // Only take the relevant sector now...
                         if (do_wrap_max) {
                             if (myangle >= anglemin) {

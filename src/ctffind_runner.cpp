@@ -616,7 +616,7 @@ void CtffindRunner::executeCtffind3(long int imic) {
         }
         // line 5: Phase-shifts: $find_phase_shift,$min_ps,$max_ps,$step_ps (in rads)
         if (do_phaseshift) {
-            fh << " 1, " << DEG2RAD(phase_min) << ", " << DEG2RAD(phase_max) << ", " << DEG2RAD(phase_step) << std::endl;
+            fh << " 1, " << radians(phase_min) << ", " << radians(phase_max) << ", " << radians(phase_step) << std::endl;
         } else {
             fh << " 0, 0, 3.15, 0.2" << std::endl;
         }
@@ -724,9 +724,9 @@ void CtffindRunner::executeCtffind4(long int imic) {
     fh << amount_astigmatism << std::endl;
     if (do_phaseshift) {
         fh << "yes" << std::endl;
-        fh << DEG2RAD(phase_min) << std::endl;
-        fh << DEG2RAD(phase_max) << std::endl;
-        fh << DEG2RAD(phase_step) << std::endl;
+        fh << radians(phase_min) << std::endl;
+        fh << radians(phase_max) << std::endl;
+        fh << radians(phase_step) << std::endl;
     } else {
         fh << "no" << std::endl;
     }
@@ -910,11 +910,11 @@ bool CtffindRunner::getCtffind4Results(
             if (words.size() < 7)
                 REPORT_ERROR("ERROR: Unexpected number of words on data line below Columns line in " + fn_log);
             Final_is_found = true;
-            defU = textToFloat(words[1]);
-            defV = textToFloat(words[2]);
+            defU   = textToFloat(words[1]);
+            defV   = textToFloat(words[2]);
             defAng = textToFloat(words[3]);
             if (do_phaseshift)
-                phaseshift = RAD2DEG(textToFloat(words[4]));
+                phaseshift = degrees(textToFloat(words[4]));
             CC = textToFloat(words[5]);
             maxres = words[6] == "inf" ? 999.0 : textToFloat(words[6]);
         }
