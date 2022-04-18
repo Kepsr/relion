@@ -641,9 +641,9 @@ void HSL2RGB(RFLOAT H, RFLOAT S, RFLOAT L, RFLOAT &R, RFLOAT &G, RFLOAT &B) {
         RFLOAT tR = H + 0.33333;
         RFLOAT tG = H;
         RFLOAT tB = H - 0.33333;
-        realWRAP(tR, 0.0, 1.0);
-        realWRAP(tG, 0.0, 1.0);
-        realWRAP(tB, 0.0, 1.0);
+        wrap(tR, 0.0, 1.0);
+        wrap(tG, 0.0, 1.0);
+        wrap(tB, 0.0, 1.0);
 
         #define hsl2rgb_helper(t) \
         6 * t < 1.0 ? temp2 + (temp1 - temp2) * 6 * t : \

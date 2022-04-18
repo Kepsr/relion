@@ -207,7 +207,7 @@ class tiltpair_plot_parameters {
         }
 
         // Let alpha go from 0 to 360 degrees
-        alpha = realWRAP(alpha, 0.0, 360.0);
+        alpha = wrap(alpha, 0.0, 360.0);
 
         // Return the value that needs to be optimized
         RFLOAT minimizer = 0.0;
@@ -233,12 +233,12 @@ class tiltpair_plot_parameters {
             iline++;
 
             // Bring both angles to a normalized set
-            rot1  = realWRAP(rot1,  -180, 180);
-            tilt1 = realWRAP(tilt1, -180, 180);
-            psi1  = realWRAP(psi1,  -180, 180);
-            rot2  = realWRAP(rot2,  -180, 180);
-            tilt2 = realWRAP(tilt2, -180, 180);
-            psi2  = realWRAP(psi2,  -180, 180);
+            rot1  = wrap(rot1,  -180.0, +180.0);
+            tilt1 = wrap(tilt1, -180.0, +180.0);
+            psi1  = wrap(psi1,  -180.0, +180.0);
+            rot2  = wrap(rot2,  -180.0, +180.0);
+            tilt2 = wrap(tilt2, -180.0, +180.0);
+            psi2  = wrap(psi2,  -180.0, +180.0);
 
             // Apply rotations to find the minimum distance angles
             RFLOAT rot2p  = rot2;

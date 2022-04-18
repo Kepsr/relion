@@ -284,17 +284,30 @@ inline int wrap(int x, int x0, int xF) {
 
 /** Wrapping for real numbers
  *
- * realWRAP is used to keep a floating number between a range with a wrapping
- * fashion. For instance, it is used in trigonometry to say that an angle of
- * 5*PI is the same as PI, ie, to keep an angle in the range 0...2*PI
+ * wrap is used to keep a real number within the interval [x0, xF].
+ * It does this by "wrapping" the reals into a cycle.
+ * This is useful when dealing with angles,
+ * which we wish to constrain to the interval [0, 2 * PI].
+ * For instance, 5 * PI ought to be the same as PI.
  *
  * @code
- * Corrected_angle = realWRAP(angle, 0, 2*PI);
+ * wrap(5 * PI, 0, 2 * PI); // returns PI (or close enough)
  * @endcode
+ * 
+ * This replaces a macro realWRAP:
+ * @code
+ * #define realWRAP(x, x0, xF) ((x0) <= (x) && (x) <= (xF) ? \
+ *     (x) : ((x) < (x0)) ? \
+ *     ((x) - (int)(((x) - (x0)) / ((xF) - (x0)) - 1) * ((xF) - (x0))) : ((x) - (int)(((x) - (xF)) / ((xF) - (x0)) + 1) * ((xF) - (x0))))
+ * @endcode
+ *
  */
-#define realWRAP(x, x0, xF) ((x0) <= (x) && (x) <= (xF) ? \
-    (x) : ((x) < (x0)) ? \
-    ((x) - (int)(((x) - (x0)) / ((xF) - (x0)) - 1) * ((xF) - (x0))) : ((x) - (int)(((x) - (xF)) / ((xF) - (x0)) + 1) * ((xF) - (x0))))
+inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
+    RFLOAT range = xF - x0;
+    if (x < x0) return x - range * (int) ((x - x0) / range - 1);
+    if (x > xF) return x - range * (int) ((x - xF) / range + 1);
+    return x;
+}
 
 /** Degrees to radians
  *

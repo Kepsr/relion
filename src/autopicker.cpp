@@ -970,11 +970,9 @@ std::vector<AmyloidCoord> AutoPicker::findNextCandidateCoordinates(
 
             // Small difference in psi-angle with mycoord
             RFLOAT psidiff = fabs(mycoord.psi - mypsi);
-            psidiff = realWRAP(psidiff, 0.0, 360.0);
-            if (psidiff > 180.0)
-                psidiff -= 180.0;
-            if (psidiff > 90.0)
-                psidiff -= 180.0;
+            psidiff = wrap(psidiff, 0.0, 360.0);
+            if (psidiff > 180.0) { psidiff -= 180.0; }
+            if (psidiff >  90.0) { psidiff -= 180.0; }
 
             if (fabs(psidiff) < max_psidiff && myccf > threshold_value) {
                 AmyloidCoord newcoord;
@@ -1105,7 +1103,7 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
         if (prevpsi > -999.)
         {
             RFLOAT psidiff = fabs(mycoord.psi - prevpsi);
-            psidiff = realWRAP(psidiff, 0., 360.);
+            psidiff = wrap(psidiff, 0., 360.);
             if (psidiff > 180.)
                     psidiff -= 180.;
             if (psidiff > 90.)
@@ -1115,7 +1113,7 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
         if (nextpsi > -999.)
         {
             RFLOAT psidiff = fabs(mycoord.psi - nextpsi);
-            psidiff = realWRAP(psidiff, 0., 360.);
+            psidiff = wrap(psidiff, 0., 360.);
             if (psidiff > 180.)
                     psidiff -= 180.;
             if (psidiff > 90.)

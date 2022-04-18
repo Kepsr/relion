@@ -2743,7 +2743,7 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
     {
         // Randomise
         // 1. Randomise total number of swaps needed
-        nr_swaps = round(rnd_unif (vec_mics.size(), 2. * vec_mics.size()));
+        nr_swaps = round(rnd_unif(vec_mics.size(), 2. * vec_mics.size()));
         // DEBUG
         if (divide_according_to_helical_tube_id)
             std::cout << " Helical tubes= " << vec_mics.size() << ", nr_swaps= " << nr_swaps << std::endl;
@@ -2754,8 +2754,8 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
         {
             int ptr_a, ptr_b;
             std::pair<std::string, int> tmp;
-            ptr_a = round(rnd_unif (0, vec_mics.size()));
-            ptr_b = round(rnd_unif (0, vec_mics.size()));
+            ptr_a = round(rnd_unif(0, vec_mics.size()));
+            ptr_b = round(rnd_unif(0, vec_mics.size()));
             if ( (ptr_a == ptr_b) || (ptr_a < 0 ) || (ptr_b < 0) || (ptr_a >= vec_mics.size()) || (ptr_b >= vec_mics.size()) )
                 continue;
             tmp = vec_mics[ptr_a];
@@ -3400,17 +3400,17 @@ void simulateHelicalSegments(
             len_pix = -step_pix;
 
             if (is_3d_tomo) {
-                tilt = rnd_unif (0.01, 179.99); // If realWRAP function works well, set this to 0-180.
+                tilt = rnd_unif(0.01, 179.99); // If wrap function works well, set this to 0-180.
             } else {
-                tilt = rnd_unif (85.0, 95.0);
+                tilt = rnd_unif(85.0, 95.0);
             }
-            rot = rnd_unif (0.01, 359.99);
-            psi = rnd_unif (-179.99, 179.99);
+            rot = rnd_unif(0.01, 359.99);
+            psi = rnd_unif(-179.99, 179.99);
         }
 
         len_pix += step_pix;
-        rot += twist_deg * ((RFLOAT)(nr_asu));
-        rot = realWRAP(rot, -180.0, 180.0); // Does this realWRAP function work well? No...
+        rot += twist_deg * (RFLOAT) nr_asu;
+        rot = wrap(rot, -180.0, +180.0);  // Does this wrap function work well? No...
         rot = rot < -180.0 ? rot + 360.0 : rot;
         rot = rot >  180.0 ? rot - 360.0 : rot;
 

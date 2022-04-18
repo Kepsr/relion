@@ -143,7 +143,7 @@ void HealpixSampling::resetRandomlyPerturbedSampling() {
     // Actual instance of random perturbation
     // Add to the random perturbation from the last iteration, so it keeps changing strongly...
     random_perturbation += rnd_unif(0.5 * perturbation_factor, perturbation_factor);
-    random_perturbation = realWRAP(random_perturbation, -perturbation_factor, perturbation_factor);
+    random_perturbation = wrap(random_perturbation, -perturbation_factor, perturbation_factor);
 
 }
 
@@ -1676,7 +1676,7 @@ RFLOAT HealpixSampling::calculateAngularDistance(
         return min_axes_dist;
     } else {
         RFLOAT diff = abs(psi2 - psi1);
-        return realWRAP(diff, 0.0, 360.0);
+        return wrap(diff, 0.0, 360.0);
     }
 }
 

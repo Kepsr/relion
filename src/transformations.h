@@ -226,7 +226,7 @@ void scale3DMatrix(const Matrix1D< RFLOAT >& sc, Matrix2D< RFLOAT > &m,
  * bilinear interpolation in the input volume. If any of the voxels
  * participating in the interpolation falls outside the input volume,
  * then automatically the corresponding output voxel is set to 0, unless
- * that the wrap flag has been set to 1. In this case if the voxel
+ * that the do_wrap flag has been set to 1. In this case if the voxel
  * falls out by the right hand then it is "wrapped" and the corresponding
  * voxel in the left hand is used. The same is appliable to top-bottom.
  * Usually wrap mode is off. Wrap mode is interesting for translations
@@ -252,7 +252,7 @@ void applyGeometry(
     const MultidimArray<T>& V1,
     MultidimArray<T>& V2,
     const Matrix2D<RFLOAT> A,
-    bool inv, bool wrap,
+    bool inv, bool do_wrap,
     T outside = 0
 ) {
 
@@ -342,17 +342,17 @@ void applyGeometry(
                 // If the point is outside the image, apply a periodic extension
                 // of the image, what exits by one side enters by the other
                 bool interp = true;
-                if (wrap) {
+                if (do_wrap) {
 
                     if (
                         xp < minxp - XMIPP_EQUAL_ACCURACY ||
                         xp > maxxp + XMIPP_EQUAL_ACCURACY
-                    ) { xp = realWRAP(xp, minxp - 0.5, maxxp + 0.5); }
+                    ) { xp = wrap(xp, minxp - 0.5, maxxp + 0.5); }
 
                     if (
                         yp < minyp - XMIPP_EQUAL_ACCURACY ||
                         yp > maxyp + XMIPP_EQUAL_ACCURACY
-                    ) { yp = realWRAP(yp, minyp - 0.5, maxyp + 0.5); }
+                    ) { yp = wrap(yp, minyp - 0.5, maxyp + 0.5); }
 
                 } else if (
                     xp < minxp - XMIPP_EQUAL_ACCURACY ||
@@ -387,8 +387,8 @@ void applyGeometry(
                     wy = wy - n1;
                     int n2 = n1 + 1;
 
-                    // m2 and n2 can be out by 1 so wrap must be check here
-                    if (wrap) {
+                    // m2 and n2 can be out by 1 so do_wrap must be checked here
+                    if (do_wrap) {
                         if (m2 >= Xdim) { m2 = 0; }
                         if (n2 >= Ydim) { n2 = 0; }
                     }
@@ -498,22 +498,22 @@ void applyGeometry(
                 // extension of the volume, what exits by one side enters by
                 // the other
                 bool interp = true;
-                if (wrap) {
+                if (do_wrap) {
 
                     if (
                         xp < minxp - XMIPP_EQUAL_ACCURACY ||
                         xp > maxxp + XMIPP_EQUAL_ACCURACY
-                    ) { xp = realWRAP(xp, minxp - 0.5, maxxp + 0.5); }
+                    ) { xp = wrap(xp, minxp - 0.5, maxxp + 0.5); }
 
                     if (
                         yp < minyp - XMIPP_EQUAL_ACCURACY ||
                         yp > maxyp + XMIPP_EQUAL_ACCURACY
-                    ) { yp = realWRAP(yp, minyp - 0.5, maxyp + 0.5); }
+                    ) { yp = wrap(yp, minyp - 0.5, maxyp + 0.5); }
 
                     if (
                         zp < minzp - XMIPP_EQUAL_ACCURACY ||
                         zp > maxzp + XMIPP_EQUAL_ACCURACY
-                    ) { zp = realWRAP(zp, minzp - 0.5, maxzp + 0.5); }
+                    ) { zp = wrap(zp, minzp - 0.5, maxzp + 0.5); }
 
                 } else if (
                     xp < minxp - XMIPP_EQUAL_ACCURACY ||
@@ -638,11 +638,11 @@ template<typename T>
 void selfApplyGeometry(
     MultidimArray<T>& V1,
     const Matrix2D<RFLOAT> A, bool inv,
-    bool wrap, T outside = 0
+    bool do_wrap, T outside = 0
 ) {
     MultidimArray<T> aux = V1;
     V1.initZeros();
-    applyGeometry(aux, V1, A, inv, wrap, outside);
+    applyGeometry(aux, V1, A, inv, do_wrap, outside);
 }
 
 /** Rotate an array around a given system axis.
@@ -662,7 +662,7 @@ void rotate(
     const MultidimArray<T> &V1,
     MultidimArray<T> &V2,
     RFLOAT ang, char axis = 'Z',
-    bool wrap = DONT_WRAP, T outside = 0
+    bool do_wrap = DONT_WRAP, T outside = 0
 ) {
     Matrix2D<RFLOAT> tmp;
            if (V1.getDim() == 2) {
@@ -673,7 +673,7 @@ void rotate(
         REPORT_ERROR("rotate ERROR: rotate only valid for 2D or 3D arrays");
     }
 
-    applyGeometry(V1, V2, tmp, IS_NOT_INV, wrap, outside);
+    applyGeometry(V1, V2, tmp, IS_NOT_INV, do_wrap, outside);
 }
 
 /** Rotate an array around a given system axis.
@@ -685,10 +685,10 @@ template<typename T>
 void selfRotate(
     MultidimArray<T>& V1,
     RFLOAT ang, char axis = 'Z',
-    bool wrap = DONT_WRAP, T outside = 0
+    bool do_wrap = DONT_WRAP, T outside = 0
 ) {
     MultidimArray<T> aux = V1;
-    rotate(aux, V1, ang, axis, wrap, outside);
+    rotate(aux, V1, ang, axis, do_wrap, outside);
 }
 
 /** Translate a array.
@@ -707,7 +707,7 @@ void translate(
     const MultidimArray<T> &V1,
     MultidimArray<T> &V2,
     const Matrix1D<RFLOAT> &v,
-    bool wrap = WRAP, T outside = 0
+    bool do_wrap = WRAP, T outside = 0
 ) {
     Matrix2D<RFLOAT> tmp;
            if (V1.getDim() == 2) {
@@ -718,7 +718,7 @@ void translate(
         REPORT_ERROR("translate ERROR: translate only valid for 2D or 3D arrays");
     }
 
-    applyGeometry(V1, V2, tmp, IS_NOT_INV, wrap, outside);
+    applyGeometry(V1, V2, tmp, IS_NOT_INV, do_wrap, outside);
 }
 
 /** Translate an array.
@@ -730,10 +730,10 @@ template<typename T>
 void selfTranslate(
     MultidimArray<T>& V1,
     const Matrix1D< RFLOAT >& v,
-    bool wrap = WRAP, T outside = 0
+    bool do_wrap = WRAP, T outside = 0
 ) {
     MultidimArray<T> aux = V1;
-    translate(aux, V1, v, wrap, outside);
+    translate(aux, V1, v, do_wrap, outside);
 }
 
 /** Translate center of mass to center
@@ -746,7 +746,7 @@ template<typename T>
 void translateCenterOfMassToCenter(
     const MultidimArray<T> &V1,
     MultidimArray<T> &V2,
-    bool wrap = WRAP,
+    bool do_wrap = WRAP,
     bool verb = false
 ) {
     V2 = V1;
@@ -757,7 +757,7 @@ void translateCenterOfMassToCenter(
     	std::cout << " Center of mass: x= " << XX(center) << " y= " << YY(center) << " z= " << ZZ(center) << std::endl;
     }
     center *= -1;
-    translate(V1, V2, center, wrap, 0.0);
+    translate(V1, V2, center, do_wrap, 0.0);
 }
 
 /** Translate center of mass to center
@@ -768,10 +768,10 @@ void translateCenterOfMassToCenter(
 template<typename T>
 void selfTranslateCenterOfMassToCenter(
     MultidimArray<T> &V1,
-    bool wrap = WRAP, bool verb = false
+    bool do_wrap = WRAP, bool verb = false
 ) {
     MultidimArray<T> aux = V1;
-    translateCenterOfMassToCenter(aux, V1, wrap, verb);
+    translateCenterOfMassToCenter(aux, V1, do_wrap, verb);
 }
 
 /** Scales to a new size.
