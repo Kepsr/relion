@@ -127,7 +127,7 @@ void cb_viewmic(Fl_Widget* w, void* data) {
     }
 
     for (int i = 0; i < viewmic_buttons.size(); i++) {
-        auto color = first_pick_viewed <= i && i <= last_pick_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
+        Fl_Color color = first_pick_viewed <= i && i <= last_pick_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
         viewmic_buttons[i]->color(color, color);
         viewmic_buttons[i]->redraw();
     }
@@ -147,7 +147,7 @@ void cb_viewctf(Fl_Widget* w, void* data) {
 
     last_ctf_viewed = imic;
     for (int i = 0; i < viewctf_buttons.size(); i++) {
-        auto color = i == last_ctf_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
+        Fl_Color color = i == last_ctf_viewed ? GUI_BUTTON_DARK_COLOR : GUI_BUTTON_COLOR;
         viewctf_buttons[i]->color(color, color);
     }
 }
