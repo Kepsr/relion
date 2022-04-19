@@ -443,8 +443,6 @@ void basisViewerCanvas::fill(
 
     nrow = 0;
     long int ipos = 0;
-    int irow = 0;
-    int icol = 0;
     FileName fn_my_stack, fn_next_stack, fn_img, fn_tmp;
     long int my_number, my_next_number, my_stack_first_ipos = 0;
     std::vector<long int> numbers_in_stack;
@@ -556,17 +554,18 @@ void basisViewerCanvas::fill(
                     // Then set the original index in the sorted index, so that particles can be written out in the correct order
                     MDin.setValue(EMDL::SORTED_IDX, my_ipos, my_ipos);
                 }
-                icol = my_sorted_ipos % ncol;
-                irow = my_sorted_ipos / ncol;
+                div_t division = std::div((int) my_sorted_ipos, ncol);
+                int icol = division.rem;
+                int irow = division.quot;
                 nrow = std::max(nrow, irow + 1);
                 if (my_ipos == 0) {
-                    xsize_box = ceil(_scale * XSIZE(img())) + 2 * xoff; // 2 pixels on each side in between all images
-                    ysize_box = ceil(_scale * YSIZE(img())) + 2 * yoff;
+                    xsize_box = 2 * xoff + ceil(_scale * XSIZE(img()));  // 2 pixels on each side in between all images
+                    ysize_box = 2 * yoff + ceil(_scale * YSIZE(img()));
                 }
                 int ycoor = irow * ysize_box;
                 int xcoor = icol * xsize_box;
 
-                DisplayBox* my_box = new DisplayBox(xcoor, ycoor, xsize_box, ysize_box, "");
+                DisplayBox *my_box = new DisplayBox(xcoor, ycoor, xsize_box, ysize_box, "");
                 my_box->setData(img(), MDin.getObject(my_ipos), my_ipos, myminval, mymaxval, _scale, false);
                 if (MDin.containsLabel(text_label)) {
                     my_box->img_label = MDin.getValueToString(text_label, my_ipos);
