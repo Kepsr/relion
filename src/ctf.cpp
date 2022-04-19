@@ -584,11 +584,11 @@ void CTF::get1DProfile(
 ) {
 
     result.setXmippOrigin();
-    RFLOAT xs = (RFLOAT)XSIZE(result) * Tm; // assuming result is at the image size!
+    RFLOAT xs = (RFLOAT) XSIZE(result) * Tm; // assuming result is at the image size!
 
     FOR_ALL_ELEMENTS_IN_ARRAY1D(result) {
-        RFLOAT x = (COSD(angle) * (RFLOAT)i) / xs;
-        RFLOAT y = (SIND(angle) * (RFLOAT)i) / xs;
+        RFLOAT x = (RFLOAT) i * cos(radians(angle)) / xs;
+        RFLOAT y = (RFLOAT) i * sin(radians(angle)) / xs;
         A1D_ELEM(result, i) = getCTF(
             x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
@@ -597,7 +597,7 @@ void CTF::get1DProfile(
 }
 
 void CTF::applyWeightEwaldSphereCurvature(
-    MultidimArray<RFLOAT>& result, int orixdim, int oriydim,
+    MultidimArray<RFLOAT> &result, int orixdim, int oriydim,
     RFLOAT angpix, RFLOAT particle_diameter
 ) {
     RFLOAT xs = (RFLOAT) orixdim * angpix;

@@ -67,7 +67,7 @@ void getOrientations(
             double zz, phi;
             HealPixOver.pix2ang_z_phi(overpix, zz, phi);
             rot = degrees(phi);
-            tilt = ACOSD(zz);
+            tilt = degrees(acos(zz));
 
             // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]
             sampling.checkDirection(rot, tilt);

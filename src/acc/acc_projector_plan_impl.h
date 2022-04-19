@@ -53,10 +53,9 @@ void getOrientations(HealpixSampling &sampling, long int idir, long int ipsi, in
         // Set up oversampled grid for 3D sampling
         Healpix_Base HealPixOver(oversampling_order + sampling.healpix_order, NEST);
         int fact = HealPixOver.Nside() / sampling.healpix_base.Nside();
-        int x, y, face;
-        RFLOAT rot, tilt;
         // Get x, y and face for the original, coarse grid
         long int ipix = sampling.directions_ipix[my_idir];
+        int x, y, face;
         sampling.healpix_base.nest2xyf(ipix, x, y, face);
         // Loop over the oversampled Healpix pixels on the fine grid
         for (int j = fact * y; j < fact * y + fact; ++j) {
@@ -65,8 +64,8 @@ void getOrientations(HealpixSampling &sampling, long int idir, long int ipsi, in
                 // this one always has to be double (also for SINGLE_PRECISION CALCULATIONS) for call to external library
                 double zz, phi;
                 HealPixOver.pix2ang_z_phi(overpix, zz, phi);
-                rot = degrees(phi);
-                tilt = ACOSD(zz);
+                RFLOAT rot  = degrees(phi);
+                RFLOAT tilt = degrees(acos(zz));
 
                 // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]
                 sampling.checkDirection(rot, tilt);

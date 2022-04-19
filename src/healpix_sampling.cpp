@@ -580,12 +580,11 @@ void HealpixSampling::writeNonZeroPriorOrientationsToBild(
 
 RFLOAT HealpixSampling::calculateDeltaRot(Matrix1D<RFLOAT> my_direction, RFLOAT rot_prior) {
     // Rotate the x,y-components of the direction, according to rot-prior
-    Matrix1D< RFLOAT > my_rot_direction;
-    Matrix2D< RFLOAT > A;
+    Matrix2D<RFLOAT> A;
     rotation2DMatrix(rot_prior, A);
-    my_rot_direction = A.inv() * my_direction;
+    Matrix1D<RFLOAT> my_rot_direction = A.inv() * my_direction;
     // Get component along the new Y-axis
-    return fabs(ASIND(my_rot_direction(1)));
+    return fabs(degrees(asin(my_rot_direction(1))));
 }
 
 void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
@@ -648,7 +647,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                 }
 
                 // Now that we have the best direction, find the corresponding prior probability
-                RFLOAT diffang = ACOSD(dotProduct(best_direction, prior_direction));
+                RFLOAT diffang = degrees(acos(dotProduct(best_direction, prior_direction)));
                 if (diffang > 180.0) { diffang = abs(diffang - 360.0); }
                 if (do_bimodal_search_psi)
                 if (diffang >  90.0) { diffang = abs(diffang - 180.0); }  // KThurber
@@ -767,7 +766,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
                 }
 
                 // Now that we have the best direction, find the corresponding prior probability
-                RFLOAT diffang = abs(ACOSD(dotProduct(best_direction, prior90_direction)));
+                RFLOAT diffang = abs(degrees(acos(dotProduct(best_direction, prior90_direction))));
                 if (diffang > 180.0) { diffang = abs(diffang - 360.0); }
 
                 long int mypos = pointer_dir_nonzeroprior.size() - 1;
@@ -1313,12 +1312,12 @@ Direction HealpixSampling::getDirectionFromHealPix(long int ipix) {
     // this one always has to be double (also for SINGLE_PRECISION CALCULATIONS) for call to external library
     double zz, phi;
     healpix_base.pix2ang_z_phi(ipix, zz, phi);
-    RFLOAT rot = degrees(phi);
-    RFLOAT tilt = ACOSD(zz);
+    RFLOAT rot  = degrees(phi);
+    RFLOAT tilt = degrees(acos(zz));
 
     // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]
     checkDirection(rot, tilt);
-    return Direction { rot, tilt };
+    return { rot, tilt };
 }
 
 RFLOAT HealpixSampling::getTranslationalSampling(int adaptive_oversampling) {
@@ -1576,10 +1575,9 @@ void HealpixSampling::getOrientations(
         // Set up oversampled grid for 3D sampling
         Healpix_Base HealPixOver(oversampling_order + healpix_order, NEST);
         int fact = HealPixOver.Nside() / healpix_base.Nside();
-        int x, y, face;
-        RFLOAT rot, tilt;
         // Get x, y and face for the original, coarse grid
         long int ipix = directions_ipix[my_idir];
+        int x, y, face;
         healpix_base.nest2xyf(ipix, x, y, face);
         // Loop over the oversampled Healpix pixels on the fine grid
         for (int j = fact * y; j < fact * (y + 1); ++j)
@@ -1588,8 +1586,8 @@ void HealpixSampling::getOrientations(
             // this one always has to be double (also for SINGLE_PRECISION CALCULATIONS) for call to external library
             double zz, phi;
             HealPixOver.pix2ang_z_phi(overpix, zz, phi);
-            rot = degrees(phi);
-            tilt = ACOSD(zz);
+            RFLOAT rot  = degrees(phi);
+            RFLOAT tilt = degrees(acos(zz));
 
             // The geometrical considerations about the symmetry below require that rot = [-180,180] and tilt [0,180]
             checkDirection(rot, tilt);
@@ -1665,7 +1663,7 @@ RFLOAT HealpixSampling::calculateAngularDistance(
             for (int i = 0; i < 3; i++) {
                 E1.getRow(i, v1);
                 E2.getRow(i, v2);
-                axes_dist += ACOSD(clip(dotProduct(v1, v2), -1.0, 1.0));
+                axes_dist += degrees(acos(clip(dotProduct(v1, v2), -1.0, +1.0)));
             }
             axes_dist /= 3.0;
 

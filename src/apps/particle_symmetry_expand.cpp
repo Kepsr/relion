@@ -121,27 +121,27 @@ class particle_symmetry_expand_parameters {
         init_progress_bar(DFi.numberOfObjects());
         DFo.clear();
 
-        RFLOAT rot,  tilt,  psi,  x,  y;
-        RFLOAT rotp, tiltp, psip, xp, yp;
+        // Loop over input MetadataTable
         long int imgno = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(DFi) {
 
-            rot  = DFi.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-            tilt = DFi.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-            psi  = DFi.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-            x    = DFi.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-            y    = DFi.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+            RFLOAT rotp, tiltp, psip;
+
+            RFLOAT rot  = DFi.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            RFLOAT tilt = DFi.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            RFLOAT psi  = DFi.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+            RFLOAT x    = DFi.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            RFLOAT y    = DFi.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
 
             if (do_helix) {
                 for (RFLOAT z_pos = z_start; z_pos <= z_stop; z_pos += z_step) {
                     // TMP
-                    //if (fabs(z_pos) > 0.01)
-                    {
+                    /* if (fabs(z_pos) > 0.01) */ {
                         // Translation along the X-axis in the rotated image is along the helical axis in 3D.
                         // Tilted images shift less: sin(tilt)
-                        RFLOAT xxt = SIND(tilt) * z_pos * rise;
-                        xp = x + COSD(-psi) * xxt;
-                        yp = y + SIND(-psi) * xxt;
+                        RFLOAT xxt = z_pos * rise * sin(radians(tilt));
+                        RFLOAT xp = x + xxt * cos(radians(-psi));
+                        RFLOAT yp = y + xxt * sin(radians(-psi));
                         rotp = rot - z_pos * twist;
                         DFo.addObject();
                         DFo.setObject(DFi.getObject());
@@ -162,16 +162,16 @@ class particle_symmetry_expand_parameters {
                     Euler_apply_transf(L, R, rot, tilt, psi, rotp, tiltp, psip);
                     DFo.addObject();
                     DFo.setObject(DFi.getObject());
-                    DFo.setValue(EMDL::ORIENT_ROT, rotp);
+                    DFo.setValue(EMDL::ORIENT_ROT,  rotp);
                     DFo.setValue(EMDL::ORIENT_TILT, tiltp);
-                    DFo.setValue(EMDL::ORIENT_PSI, psip);
+                    DFo.setValue(EMDL::ORIENT_PSI,  psip);
                 }
             }
 
-            if (imgno%barstep==0) progress_bar(imgno);
+            if (imgno % barstep == 0) progress_bar(imgno);
             imgno++;
 
-        } // end loop over input MetadataTable
+        }
         progress_bar(DFi.numberOfObjects());
 
 
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
         prm.read(argc, argv);
         prm.run();
     } catch (RelionError XE) {
-        //prm.usage();
+        // prm.usage();
         std::cerr << XE;
         return RELION_EXIT_FAILURE;
     }

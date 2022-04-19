@@ -101,11 +101,12 @@ class tiltpair_plot_parameters {
 
     void add_to_postscript(RFLOAT tilt_angle, RFLOAT alpha, RFLOAT beta) {
 
-        RFLOAT rr, th, x, y, r, g, b;
 
-        rr = tilt_angle / plot_max_tilt * 250;
-        x = 300.0 + rr * COSD(alpha);
-        y = 400.0 + rr * SIND(alpha);
+        RFLOAT rr = tilt_angle / plot_max_tilt * 250;
+        // SINCOS?
+        RFLOAT x = 300.0 + rr * cos(radians(alpha));
+        RFLOAT y = 400.0 + rr * sin(radians(alpha));
+        RFLOAT r, g, b;
         value_to_redblue_scale(abs(90.0 - beta), 0.0, 90.0, r, g, b);
         fh_eps << x << " " << y << " " << plot_spot_radius << " 0 360 arc closepath " << r << " " << g << " " << b << " setrgbcolor fill stroke\n";
     }
@@ -181,8 +182,8 @@ class tiltpair_plot_parameters {
         RFLOAT aux = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
         if (abs(aux) - 1.0 > XMIPP_EQUAL_ACCURACY)
             REPORT_ERROR("BUG: aux > 1");
-        tilt_angle = ACOSD(aux);
-        RFLOAT sine_tilt_angle = 2.0 * SIND(tilt_angle);
+        tilt_angle = degrees(acos(aux));
+        RFLOAT sine_tilt_angle = 2.0 * sin(radians(tilt_angle));
 
         // Get the tilt axis direction in angles alpha and beta
         if (sine_tilt_angle > XMIPP_EQUAL_ACCURACY) {
@@ -248,10 +249,11 @@ class tiltpair_plot_parameters {
 
             // Calculate distance to user-defined point
             Matrix1D<RFLOAT> aux2(4);
-            RFLOAT xp = dist_from_tilt * COSD(dist_from_alpha);
-            RFLOAT yp = dist_from_tilt * SIND(dist_from_alpha);
-            RFLOAT x = tilt2p * COSD(rot2p);
-            RFLOAT y = tilt2p * SIND(rot2p);
+            // SINCOS?
+            RFLOAT xp = dist_from_tilt * cos(radians(dist_from_alpha));
+            RFLOAT yp = dist_from_tilt * sin(radians(dist_from_alpha));
+            RFLOAT x = tilt2p * cos(radians(rot2p));
+            RFLOAT y = tilt2p * sin(radians(rot2p));
             aux2(3) = sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y));
             aux2(0) = tilt2p;
             aux2(1) = rot2p;

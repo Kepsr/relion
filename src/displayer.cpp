@@ -504,22 +504,21 @@ void basisViewerCanvas::fill(
                 }
 
                 if (_do_apply_orient && have_optics_group) {
-                    RFLOAT psi, rot, tilt;
                     Matrix1D<RFLOAT> offset(3);
                     Matrix2D<RFLOAT> A;
-                    psi        = MDin.getValue<RFLOAT>(EMDL::ORIENT_PSI,               my_ipos);
+                    RFLOAT psi = MDin.getValue<RFLOAT>(EMDL::ORIENT_PSI,               my_ipos);
                     XX(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_ipos);
                     YY(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_ipos);
                     if (img().getDim() == 2) {
                         offset /= angpix;
                         rotation2DMatrix(psi, A);
-                        MAT_ELEM(A, 0, 2) = COSD(psi) * XX(offset) - SIND(psi) * YY(offset);
-                        MAT_ELEM(A, 1, 2) = COSD(psi) * YY(offset) + SIND(psi) * XX(offset);
+                        MAT_ELEM(A, 0, 2) = cos(radians(psi)) * XX(offset) - sin(radians(psi)) * YY(offset);
+                        MAT_ELEM(A, 1, 2) = cos(radians(psi)) * YY(offset) + sin(radians(psi)) * XX(offset);
                         selfApplyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
                     } else {
-                        rot        = MDin.getValue<RFLOAT>(EMDL::ORIENT_ROT,               my_ipos);
-                        tilt       = MDin.getValue<RFLOAT>(EMDL::ORIENT_TILT,              my_ipos);
-                        ZZ(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
+                        RFLOAT rot  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ROT,               my_ipos);
+                        RFLOAT tilt = MDin.getValue<RFLOAT>(EMDL::ORIENT_TILT,              my_ipos);
+                        ZZ(offset)  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
                         offset /= angpix;
                         Euler_rotation3DMatrix(rot, tilt, psi, A);
                         MAT_ELEM(A, 0, 3) = MAT_ELEM(A, 0, 0) * XX(offset) + MAT_ELEM(A, 0, 1) * YY(offset) + MAT_ELEM(A, 0, 2) * ZZ(offset);

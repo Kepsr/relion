@@ -162,11 +162,10 @@ class align_symmetry {
                 rot = rnd_unif() * 360.;
 
                 if (!only_rot) {
-                    bool ok_tilt = false;
-                    while (!ok_tilt) {
+                    while (true) {
                         tilt = rnd_unif() * 180.0;
-                        if (rnd_unif() < fabs(SIND(tilt)))
-                            ok_tilt = true;
+                        if (rnd_unif() < fabs(sin(radians(tilt))))
+                            break;
                     }
                     psi = rnd_unif() * 360.0;
                 }

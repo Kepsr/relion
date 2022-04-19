@@ -130,17 +130,19 @@ class project_parameters {
             MDang.clear();
             randomize_random_generator();
             for (long int i = 0; i < nr_uniform; i++) {
-                RFLOAT rot, tilt, psi, xoff, yoff;
-                rot = rnd_unif() * 360.0;
-                bool ok_tilt = false;
-                while (!ok_tilt) {
+                RFLOAT rot = rnd_unif() * 360.0;
+                // tilt will be a random angle in the interval [0.0, 180.0]
+                // sin(tilt) (which will thus be in the interval [0.0, 1.0]) 
+                // must be greater than a random number from that same interval [0.0, 1.0]
+                RFLOAT tilt;
+                while (true) {
                     tilt = rnd_unif() * 180.0;
-                    if (rnd_unif() < fabs(SIND(tilt)))
-                        ok_tilt = true;
+                    if (rnd_unif() < fabs(sin(radians(tilt))))
+                        break;
                 }
-                psi = rnd_unif() * 360.0;
-                xoff = rnd_gaus(0.0, sigma_offset);
-                yoff = rnd_gaus(0.0, sigma_offset);
+                RFLOAT psi = rnd_unif() * 360.0;
+                RFLOAT xoff = rnd_gaus(0.0, sigma_offset);
+                RFLOAT yoff = rnd_gaus(0.0, sigma_offset);
                 MDang.addObject();
                 MDang.setValue(EMDL::ORIENT_ROT, rot);
                 MDang.setValue(EMDL::ORIENT_TILT, tilt);
