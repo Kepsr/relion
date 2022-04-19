@@ -164,7 +164,7 @@ class align_symmetry {
                 if (!only_rot) {
                     do { 
                         tilt = rnd_unif() * 180.0; 
-                    } while (fabs(sin(radians(tilt))) <= rnd_unif());
+                    } while (sin(radians(tilt)) <= rnd_unif());
                     psi = rnd_unif() * 360.0;
                 }
 

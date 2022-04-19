@@ -137,7 +137,7 @@ class project_parameters {
                 RFLOAT tilt; 
                 do {
                     tilt = rnd_unif() * 180.0;
-                } while (fabs(sin(radians(tilt))) <= rnd_unif());
+                } while (sin(radians(tilt)) <= rnd_unif());
                 RFLOAT psi = rnd_unif() * 360.0;
                 RFLOAT xoff = rnd_gaus(0.0, sigma_offset);
                 RFLOAT yoff = rnd_gaus(0.0, sigma_offset);
