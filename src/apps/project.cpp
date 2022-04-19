@@ -134,12 +134,10 @@ class project_parameters {
                 // tilt will be a random angle in the interval [0.0, 180.0]
                 // sin(tilt) (which will thus be in the interval [0.0, 1.0]) 
                 // must be greater than a random number from that same interval [0.0, 1.0]
-                RFLOAT tilt;
-                while (true) {
+                RFLOAT tilt; 
+                do {
                     tilt = rnd_unif() * 180.0;
-                    if (rnd_unif() < fabs(sin(radians(tilt))))
-                        break;
-                }
+                } while (fabs(sin(radians(tilt))) <= rnd_unif());
                 RFLOAT psi = rnd_unif() * 360.0;
                 RFLOAT xoff = rnd_gaus(0.0, sigma_offset);
                 RFLOAT yoff = rnd_gaus(0.0, sigma_offset);
