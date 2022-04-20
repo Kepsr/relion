@@ -1801,15 +1801,15 @@ void BackProjector::applyHelicalSymmetry(
                     Complex d110 = DIRECT_A3D_ELEM(data, z1, y1, x0);
                     Complex d111 = DIRECT_A3D_ELEM(data, z1, y1, x1);
 
-                    Complex dx00 = LIN_INTERP((Complex) fx, d000, d001);
-                    Complex dx01 = LIN_INTERP((Complex) fx, d100, d101);
-                    Complex dx10 = LIN_INTERP((Complex) fx, d010, d011);
-                    Complex dx11 = LIN_INTERP((Complex) fx, d110, d111);
-                    Complex dxy0 = LIN_INTERP((Complex) fy, dx00, dx10);
-                    Complex dxy1 = LIN_INTERP((Complex) fy, dx01, dx11);
+                    Complex dx00 = LIN_INTERP(fx, d000, d001);
+                    Complex dx01 = LIN_INTERP(fx, d100, d101);
+                    Complex dx10 = LIN_INTERP(fx, d010, d011);
+                    Complex dx11 = LIN_INTERP(fx, d110, d111);
+                    Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
+                    Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
 
                     // Take complex conjugated for half with negative x
-                    Complex ddd = LIN_INTERP((Complex) fz, dxy0, dxy1);
+                    Complex ddd = LIN_INTERP(fz, dxy0, dxy1);
 
                     if (is_neg_x) { ddd = conj(ddd); }
 
@@ -1948,17 +1948,17 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     Complex d110 = DIRECT_A3D_ELEM(data, z1, y1, x0);
                     Complex d111 = DIRECT_A3D_ELEM(data, z1, y1, x1);
 
-                    Complex dx00 = LIN_INTERP((Complex) fx, d000, d001);
-                    Complex dx01 = LIN_INTERP((Complex) fx, d100, d101);
-                    Complex dx10 = LIN_INTERP((Complex) fx, d010, d011);
-                    Complex dx11 = LIN_INTERP((Complex) fx, d110, d111);
+                    Complex dx00 = LIN_INTERP(fx, d000, d001);
+                    Complex dx01 = LIN_INTERP(fx, d100, d101);
+                    Complex dx10 = LIN_INTERP(fx, d010, d011);
+                    Complex dx11 = LIN_INTERP(fx, d110, d111);
 
-                    Complex dxy0 = LIN_INTERP((Complex) fy, dx00, dx10);
-                    Complex dxy1 = LIN_INTERP((Complex) fy, dx01, dx11);
+                    Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
+                    Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
 
                     // Take complex conjugated for half with negative x
                     A3D_ELEM(sum_data, k, i, j) += is_neg_x ?
-                        conj(LIN_INTERP((Complex) fz, dxy0, dxy1)) : LIN_INTERP((Complex) fz, dxy0, dxy1);
+                        conj(LIN_INTERP(fz, dxy0, dxy1)) : LIN_INTERP(fz, dxy0, dxy1);
 
                     // Then interpolate (real) weight
                     RFLOAT dd000 = DIRECT_A3D_ELEM(weight, z0, y0, x0);
