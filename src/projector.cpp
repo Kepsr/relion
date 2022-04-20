@@ -618,14 +618,14 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 const Complex d111 = DIRECT_A3D_ELEM(data, z1, y1, x1);
 
                 // Set the interpolated value in the 2D output array
-                const Complex dx00 = LIN_INTERP(fx, d000, d001);
-                const Complex dx01 = LIN_INTERP(fx, d100, d101);
-                const Complex dx10 = LIN_INTERP(fx, d010, d011);
-                const Complex dx11 = LIN_INTERP(fx, d110, d111);
-                const Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
-                const Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
+                const Complex dx00 = LIN_INTERP((Complex) fx, d000, d001);
+                const Complex dx01 = LIN_INTERP((Complex) fx, d100, d101);
+                const Complex dx10 = LIN_INTERP((Complex) fx, d010, d011);
+                const Complex dx11 = LIN_INTERP((Complex) fx, d110, d111);
+                const Complex dxy0 = LIN_INTERP((Complex) fy, dx00, dx10);
+                const Complex dxy1 = LIN_INTERP((Complex) fy, dx01, dx11);
 
-                DIRECT_A2D_ELEM(f2d, i, x) = LIN_INTERP(fz, dxy0, dxy1);
+                DIRECT_A2D_ELEM(f2d, i, x) = LIN_INTERP((Complex) fz, dxy0, dxy1);
 
                 // Take complex conjugate for half with negative x
                 if (is_neg_x) DIRECT_A2D_ELEM(f2d, i, x) = conj(DIRECT_A2D_ELEM(f2d, i, x));
@@ -738,27 +738,27 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
             Complex v110 = DIRECT_A3D_ELEM(data, z1, y1, x0);
             Complex v111 = DIRECT_A3D_ELEM(data, z1, y1, x1);
 
-            Complex v00 = LIN_INTERP(fx, v000, v001);
-            Complex v10 = LIN_INTERP(fx, v100, v101);
-            Complex v01 = LIN_INTERP(fx, v010, v011);
-            Complex v11 = LIN_INTERP(fx, v110, v111);
+            Complex v00 = LIN_INTERP((Complex) fx, v000, v001);
+            Complex v10 = LIN_INTERP((Complex) fx, v100, v101);
+            Complex v01 = LIN_INTERP((Complex) fx, v010, v011);
+            Complex v11 = LIN_INTERP((Complex) fx, v110, v111);
 
-            Complex v0 = LIN_INTERP(fy, v00, v01);
-            Complex v1 = LIN_INTERP(fy, v10, v11);
+            Complex v0 = LIN_INTERP((Complex) fy, v00, v01);
+            Complex v1 = LIN_INTERP((Complex) fy, v10, v11);
 
-            // Complex v = LIN_INTERP(fz, v0, v1);
+            // Complex v = LIN_INTERP((Complex) fz, v0, v1);
 
             Complex v00_dx = v001 - v000;
             Complex v10_dx = v101 - v100;
             Complex v01_dx = v011 - v010;
             Complex v11_dx = v111 - v110;
-            Complex v0_dx = LIN_INTERP(fy, v00_dx, v01_dx);
-            Complex v1_dx = LIN_INTERP(fy, v10_dx, v11_dx);
-            Complex v_dx = LIN_INTERP(fz, v0_dx, v1_dx);
+            Complex v0_dx = LIN_INTERP((Complex) fy, v00_dx, v01_dx);
+            Complex v1_dx = LIN_INTERP((Complex) fy, v10_dx, v11_dx);
+            Complex v_dx  = LIN_INTERP((Complex) fz, v0_dx,  v1_dx);
 
             Complex v0_dy = v01 - v00;
             Complex v1_dy = v11 - v10;
-            Complex v_dy = LIN_INTERP(fz, v0_dy, v1_dy);
+            Complex v_dy = LIN_INTERP((Complex) fz, v0_dy, v1_dy);
 
             Complex v_dz = v1 - v0;
 
@@ -833,10 +833,10 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
             const Complex d11 = DIRECT_A2D_ELEM(data, y1, x1);
 
             // Set the interpolated value in the 2D output array
-            const Complex dx0 = LIN_INTERP(fx, d00, d01);
-            const Complex dx1 = LIN_INTERP(fx, d10, d11);
+            const Complex dx0 = LIN_INTERP((Complex) fx, d00, d01);
+            const Complex dx1 = LIN_INTERP((Complex) fx, d10, d11);
 
-            DIRECT_A1D_ELEM(f1d, x) = LIN_INTERP(fy, dx0, dx1);
+            DIRECT_A1D_ELEM(f1d, x) = LIN_INTERP((Complex) fy, dx0, dx1);
 
             // Take complex conjugate for half with negative x
             if (is_neg_x) DIRECT_A1D_ELEM(f1d, x) = conj(DIRECT_A1D_ELEM(f1d, x));
@@ -929,10 +929,10 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 const Complex d11 = DIRECT_A2D_ELEM(data, y1, x1);
 
                 // Set the interpolated value in the 2D output array
-                const Complex dx0 = LIN_INTERP(fx, d00, d01);
-                const Complex dx1 = LIN_INTERP(fx, d10, d11);
+                const Complex dx0 = LIN_INTERP((Complex) fx, d00, d01);
+                const Complex dx1 = LIN_INTERP((Complex) fx, d10, d11);
 
-                DIRECT_A2D_ELEM(f2d, i, x) = LIN_INTERP(fy, dx0, dx1);
+                DIRECT_A2D_ELEM(f2d, i, x) = LIN_INTERP((Complex) fy, dx0, dx1);
 
                 // Take complex conjugate for half with negative x
                 if (is_neg_x) DIRECT_A2D_ELEM(f2d, i, x) = conj(DIRECT_A2D_ELEM(f2d, i, x));
@@ -1045,15 +1045,15 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
 
                     // Set the interpolated value in the 2D output array
                     // interpolate in x
-                    const Complex dx00 = LIN_INTERP(fx, d000, d001);
-                    const Complex dx01 = LIN_INTERP(fx, d100, d101);
-                    const Complex dx10 = LIN_INTERP(fx, d010, d011);
-                    const Complex dx11 = LIN_INTERP(fx, d110, d111);
+                    const Complex dx00 = LIN_INTERP((Complex) fx, d000, d001);
+                    const Complex dx01 = LIN_INTERP((Complex) fx, d100, d101);
+                    const Complex dx10 = LIN_INTERP((Complex) fx, d010, d011);
+                    const Complex dx11 = LIN_INTERP((Complex) fx, d110, d111);
                     // interpolate in y
-                    const Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
-                    const Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
+                    const Complex dxy0 = LIN_INTERP((Complex) fy, dx00, dx10);
+                    const Complex dxy1 = LIN_INTERP((Complex) fy, dx01, dx11);
                     // interpolate in z
-                    DIRECT_A3D_ELEM(f3d, k, i, x) = LIN_INTERP(fz, dxy0, dxy1);
+                    DIRECT_A3D_ELEM(f3d, k, i, x) = LIN_INTERP((Complex) fz, dxy0, dxy1);
 
                     // Take complex conjugate for half with negative x
                     if (is_neg_x) DIRECT_A3D_ELEM(f3d, k, i, x) = conj(DIRECT_A3D_ELEM(f3d, k, i, x));

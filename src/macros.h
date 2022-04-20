@@ -304,8 +304,8 @@ inline int wrap(int x, int x0, int xF) {
  */
 inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
     RFLOAT range = xF - x0;
-    if (x < x0) return x - range * (int) ((x - x0) / range - 1);
-    if (x > xF) return x - range * (int) ((x - xF) / range + 1);
+    if (x < x0) return x + range * (int) (1 + (x0 - x) / range);
+    if (x > xF) return x - range * (int) (1 + (x - xF) / range);
     return x;
 }
 
@@ -359,7 +359,7 @@ inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
  *     std::cout << "This is in degrees!\n";
  * @endcode
  */
-#define ASIND(theta) asin(theta) * 180.0 / PI
+#define ASIND(theta) degrees(asin(theta))
 
 /** SINC function
  *
@@ -413,10 +413,15 @@ inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
 
 /** Linear interpolation
  *
- * From low (when a = 0) to high (when a = 1).
- * The following value is returned (equal to (a * h) + ((1 - a) * l)
+ * When x = 0 => x0
+ * When x = 1 => xF
+ * When x = 0.5 => 0.5 * (x0 + xF)
  */
-#define LIN_INTERP(a, l, h) ((l) + ((h) - (l)) * (a))
+template <typename T>
+inline T LIN_INTERP(T x, T x0, T xF) {
+    return x0 + x * (xF - x0);
+    // (x * xF) + (1 - x) * x0
+}
 
 /// @name Miscellaneous
 //@{

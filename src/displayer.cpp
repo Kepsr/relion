@@ -623,6 +623,7 @@ int multiViewerCanvas::handle(int ev) {
         int ypos = yc / ysize_box;
         int ipos = ypos * ncol + xpos;
         // Check there was no click in the area outside the boxes...
+        // ipos within valid region
         if (xpos < ncol && ypos < nrow && ipos < boxes.size()) {
             if (Fl::event_button() == FL_LEFT_MOUSE) {
                 // Shift-left-click will select a whole range
@@ -637,11 +638,10 @@ int multiViewerCanvas::handle(int ev) {
                         for (int my_ipos = ipos0; my_ipos <= iposF; my_ipos++) {
                             boxes[my_ipos]->select();
                         }
-                        has_shift = false;
                     } else {
                         preshift_ipos = ipos;
-                        has_shift = true;
                     }
+                    has_shift = !has_shift;
                 } else {
                     boxes[ipos]->toggleSelect(current_selection_type);
                 }
@@ -783,9 +783,9 @@ int multiViewerCanvas::handle(int ev) {
                         exit(0);
                     }
                 }
-                return 1;          // (tells caller we handled this event)
+                return 1;  // Report successful event handling to caller
             }
-        } // endif ipos within valid region
+        }
 
     }
     return 0;
@@ -824,15 +824,13 @@ void multiViewerCanvas::saveBackupSelection() {
 
 void multiViewerCanvas::loadBackupSelection(bool do_ask) {
 
-    FileName fn_sel, fn_dir;
-    if (fn_selected_imgs != "") {
-        fn_dir = fn_selected_imgs.beforeLastOf("/");
-    } else if (fn_selected_parts != "") {
-        fn_dir = fn_selected_parts.beforeLastOf("/");
-    } else {
-        fn_dir = ".";
-    }
-    fn_dir += "/";
+    FileName fn_dir = (
+        fn_selected_imgs  != "" ? fn_selected_imgs .beforeLastOf("/") :
+        fn_selected_parts != "" ? fn_selected_parts.beforeLastOf("/") :
+        "."
+    ) + "/";
+
+    FileName fn_sel;
     if (do_ask) {
         Fl_File_Chooser chooser(
             fn_dir.c_str(), "(backup_selection.star)",
@@ -845,13 +843,12 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
         }
 
         // User hit cancel?
-        if (chooser.value() == NULL)
-            return;
+        if (chooser.value() == NULL) return;
 
         FileName fnt(chooser.value());
         fn_sel = fnt;
     } else {
-        fn_sel = fn_dir+"backup_selection.star";
+        fn_sel = fn_dir + "backup_selection.star";
     }
 
     MDbackup.clear();
@@ -921,7 +918,7 @@ void multiViewerCanvas::printMetaData(int main_ipos) {
     stream << "Below is the metadata table for the last clicked class/particle.\n";
 
     boxes[main_ipos]->MDimg.write(stream);
-    FileName str =  stream.str();
+    FileName str = stream.str();
 
     // @ starts special symbol code in FLTK; we must escape it
     size_t pos = str.find('@', 0);
@@ -944,7 +941,7 @@ void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum) {
                 int ival = boxes[ipos]->img_data[n];
                 if (ival < 0) ival += 256;
-                DIRECT_MULTIDIM_ELEM(sum, n) += ival;
+                DIRECT_MULTIDIM_ELEM(sum,  n) += ival;
                 DIRECT_MULTIDIM_ELEM(sum2, n) += ival * ival;
             }
             nn++;
@@ -1084,23 +1081,22 @@ void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
         return;
     }
 
-    std::string cl = "relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale);
-    cl += " --show_fourier_phase_angles";
-    // send job in the background
-    cl += " &";
+    std::string cl = 
+        "relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale)
+        + " --show_fourier_phase_angles"
+        + " &";  // Send job to background
 
-    int res = system(cl.c_str());
+    system(cl.c_str());
 }
 
 void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
-    const char * default_pdf_viewer = getenv ("RELION_PDFVIEWER_EXECUTABLE");
+    const char *default_pdf_viewer = getenv("RELION_PDFVIEWER_EXECUTABLE");
     char hardcoded_pdf_viewer[] = DEFAULTPDFVIEWER;
     if (default_pdf_viewer == NULL) {
         default_pdf_viewer = hardcoded_pdf_viewer;
     }
 
     std::string mydefault = std::string(default_pdf_viewer);
-    std::string command;
 
     FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
     Image<RFLOAT> img;
@@ -1108,14 +1104,14 @@ void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
 
     FileName fn_out = "layerlineprofile.eps";
     if (exists(fn_out)) {
-        command = "rm -rf " + fn_out;
-        int res = system(command.c_str());
+        std::string command = "rm -rf " + fn_out;
+        system(command.c_str());
     }
 
     helicalLayerLineProfile(img(), fn_img, fn_out);
 
-    command = mydefault + " " + fn_out + " &";
-    int res = system(command.c_str());
+    std::string command = mydefault + " " + fn_out + " &";
+    system(command.c_str());
 }
 
 void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTable &MDpart) {
@@ -1170,7 +1166,7 @@ void multiViewerCanvas::saveSelectedParticles(int save_selected) {
     bool do_training = false;
     std::string ask = "Is this a selection of good classes, so it can be used for Sjors' training set for automated class selection?\n \
             More info here: /public/EM/RELION/training.txt\n";
-    do_training =  fl_choice("%s", "Don't use", "Use for training", NULL, ask.c_str());
+    do_training = fl_choice("%s", "Don't use", "Use for training", NULL, ask.c_str());
 
     if (do_training)
         saveTrainingSet();
@@ -1304,22 +1300,18 @@ void multiViewerCanvas::saveTrainingSet() {
     // Make the output job directory
     char my_dir[200];
     FileName fn_projdir = std::string(getcwd(my_dir, 200));
-    std::replace( fn_projdir.begin(), fn_projdir.end(), '/', '_');
+    std::replace(fn_projdir.begin(), fn_projdir.end(), '/', '_');
     fn_projdir += "/" + fn_selected_parts.afterFirstOf("/").beforeLastOf("/");
     FileName fn_odir = fn_rootdir + fn_projdir;
     std::string command = "mkdir -p " + fn_odir + " ; chmod 777 " + fn_odir;
-    int res = system(command.c_str());
+    system(command.c_str());
 
     // Now save the selected images in a MetaData file.
     MetaDataTable MDout;
     int nsel = 0;
     for (long int ipos = 0; ipos < boxes.size(); ipos++) {
         MDout.addObject(boxes[ipos]->MDimg.getObject());
-        if (boxes[ipos]->selected) {
-            MDout.setValue(EMDL::SELECTED, 1);
-        } else {
-            MDout.setValue(EMDL::SELECTED, 0);
-        }
+        MDout.setValue(EMDL::SELECTED, boxes[ipos]->selected);
     }
 
     // Maintain the original image ordering
@@ -1327,18 +1319,19 @@ void multiViewerCanvas::saveTrainingSet() {
         MDout.sort(EMDL::SORTED_IDX);
 
     // Copy all images
-    long int nr;
-    FileName fn_img, fn_new_img, fn_iroot, fn_old = "";
+    FileName fn_img, fn_old = "";
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
         fn_img = MDout.getValue<FileName>(display_label);
+        long int nr;
         fn_img.decompose(nr, fn_img);
+        FileName fn_new_img;
         fn_new_img.compose(nr, fn_img.afterLastOf("/"));
         MDout.setValue(display_label, fn_new_img);
         if (fn_img != fn_old) // prevent multiple copies of single stack from Class2D
             copy(fn_img, fn_odir + "/" + fn_img.afterLastOf("/"));
         fn_old = fn_img;
     }
-    fn_iroot = fn_img.beforeFirstOf("_class");
+    FileName fn_iroot = fn_img.beforeFirstOf("_class");
 
     // Copy rest of metadata
     fn_img = fn_iroot + "_model.star";
@@ -1415,18 +1408,16 @@ void multiViewerCanvas::saveSelected(int save_selected) {
 
         if (obsModel->opticsMdt.numberOfObjects() > 0 && !do_class) {
             if (
-                metadata_table_name == "micrographs" || (
-                    !MDout.containsLabel(EMDL::IMAGE_NAME) &&
-                    !MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME)
-                )
+                metadata_table_name == "micrographs" ||
+                !MDout.containsLabel(EMDL::IMAGE_NAME) &&
+                !MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME)
             ) {
                 obsModel->save(MDout, fn_selected_imgs, "micrographs");
                 std::cout << "Saved "<< fn_selected_imgs << " with " << nsel << " selected micrographs." << std::endl;
             } else if (
-                metadata_table_name == "movies" || (
-                    !MDout.containsLabel(EMDL::IMAGE_NAME) &&
-                    MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME)
-                )
+                metadata_table_name == "movies" ||
+                MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME) &&
+                !MDout.containsLabel(EMDL::IMAGE_NAME)
             ) {
                 obsModel->save(MDout, fn_selected_imgs, "movies");
                 std::cout << "Saved "<< fn_selected_imgs << " with " << nsel << " selected movies." << std::endl;
@@ -1460,7 +1451,7 @@ int popupSelectionTypeWindow::fill() {
 
     choice->callback(cb_set, this);
 
-    Fl_Button * closebutton = new Fl_Button(190, 10, 50, 30, "Close");
+    Fl_Button *closebutton = new Fl_Button(190, 10, 50, 30, "Close");
     closebutton->color(GUI_RUNBUTTON_COLOR);
     closebutton->callback(cb_close, this);
 
@@ -1471,27 +1462,22 @@ int popupSelectionTypeWindow::fill() {
 
 int singleViewerCanvas::handle(int ev) {
     if (ev == FL_PUSH && Fl::event_button() == FL_LEFT_MOUSE) {
-        int rx = (int)Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
-        int ry = (int)Fl::event_y() - scroll->y() + scroll->scrollbar.value();
+        int rx = Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
+        int ry = Fl::event_y() - scroll->y() + scroll->scrollbar.value();
         // Left mouse click writes value and coordinates to screen
 
         if (rx < boxes[0]->xsize_data && ry < boxes[0]->ysize_data && rx >= 0 && ry >=0) {
-            unsigned char ival;
             int n = ry * boxes[0]->xsize_data + rx;
-            if (colour_scheme == ColourScheme::greyscale) {
-                ival = boxes[0]->img_data[n];
-            } else {
-                ival = rgbToGrey(
-                    boxes[0]->img_data[3 * n], boxes[0]->img_data[3 * n + 1], boxes[0]->img_data[3 * n + 2]
-                );
-            }
+            unsigned char ival = 
+                colour_scheme == ColourScheme::greyscale ? boxes[0]->img_data[n] :
+                rgbToGrey(boxes[0]->img_data[3 * n], boxes[0]->img_data[3 * n + 1], boxes[0]->img_data[3 * n + 2]);
             RFLOAT step = (boxes[0]->maxval - boxes[0]->minval) / 255.0;
             RFLOAT dval = ival * step + boxes[0]->minval;
             int ysc = round(ry / boxes[0]->scale);
             int xsc = round(rx / boxes[0]->scale);
             int yscp = ysc - round(boxes[0]->ysize_data / (2.0 * boxes[0]->scale));
             int xscp = xsc - round(boxes[0]->xsize_data / (2.0 * boxes[0]->scale));
-            std::cout <<" Image value at (" << xsc << "," << ysc << ") or (" << xscp << "," << yscp << ")~= " << dval <<std::endl;
+            std::cout << " Image value at (" << xsc << "," << ysc << ") or (" << xscp << "," << yscp << ")~= " << dval << std::endl;
         }
         return 1;
     } else if (ev == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE) {
@@ -1518,8 +1504,8 @@ int singleViewerCanvas::handle(int ev) {
         // Middle-mouse dragging for measuring distances
         if (!has_dragged) {
             redraw();
-            predrag_xc = (int) Fl::event_x();
-            predrag_yc = (int) Fl::event_y();
+            predrag_xc = Fl::event_x();
+            predrag_yc = Fl::event_y();
             has_dragged = true;
             fl_color(FL_RED);
             fl_circle(predrag_xc, predrag_yc, 3);
@@ -1529,8 +1515,8 @@ int singleViewerCanvas::handle(int ev) {
         fl_color(FL_RED);
         fl_circle(predrag_xc, predrag_yc, 3);
     } else if (ev == FL_RELEASE  && Fl::event_button() == FL_MIDDLE_MOUSE) {
-        int postdrag_xc = (int) Fl::event_x();
-        int postdrag_yc = (int) Fl::event_y();
+        int postdrag_xc = Fl::event_x();
+        int postdrag_yc = Fl::event_y();
         if (has_dragged) {
             fl_color(FL_RED);
             fl_circle(predrag_xc, predrag_yc, 3);
@@ -1671,18 +1657,12 @@ int pickerViewerCanvas::handle(int ev) {
     const bool with_shift = Fl::event_shift() != 0;
     const bool with_control = Fl::event_ctrl() != 0;
     const int key = Fl::event_key();
-    if (
-        ev == FL_PUSH || (
-            ev == FL_DRAG && (
-                button == FL_MIDDLE_MOUSE || (
-                    button == FL_LEFT_MOUSE && with_shift
-                )
-            )
-        )
-    ) {
+    if (ev == FL_PUSH || ev == FL_DRAG && (
+        button == FL_MIDDLE_MOUSE || button == FL_LEFT_MOUSE && with_shift
+    )) {
         RFLOAT scale = boxes[0]->scale;
-        int xc = (int) Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
-        int yc = (int) Fl::event_y() - scroll->y() + scroll->scrollbar.value();
+        int xc = Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
+        int yc = Fl::event_y() - scroll->y() + scroll->scrollbar.value();
         RFLOAT xcoor = round(xc / (coord_scale * scale));
         RFLOAT ycoor = round(yc / (coord_scale * scale));
         RFLOAT rad2 = particle_radius * particle_radius / (coord_scale * coord_scale * scale * scale);
@@ -1734,8 +1714,7 @@ int pickerViewerCanvas::handle(int ev) {
             redraw();
             return 1;
         } else if (
-            button == FL_MIDDLE_MOUSE ||
-            button == FL_LEFT_MOUSE && with_shift
+            button == FL_MIDDLE_MOUSE || button == FL_LEFT_MOUSE && with_shift
         ) {
             boxes[0]->redraw();
             // Middle mouse for deleting
@@ -1751,8 +1730,7 @@ int pickerViewerCanvas::handle(int ev) {
             redraw();
             return 1;
         } else if (
-            button == FL_RIGHT_MOUSE ||
-            button == FL_LEFT_MOUSE && with_control
+            button == FL_RIGHT_MOUSE || button == FL_LEFT_MOUSE && with_control
         ) {
             redraw();
             Fl_Menu_Item rclick_menu[] = {
@@ -1819,10 +1797,8 @@ int pickerViewerCanvas::handle(int ev) {
 void pickerViewerCanvas::saveCoordinates(bool ask_filename) {
     FileName fn_out;
     if (ask_filename) {
-        char *newfile;
-        newfile = fl_file_chooser("Save File As?", "*.star", "");
-        if (newfile == NULL)
-            return;
+        char *newfile = fl_file_chooser("Save File As?", "*.star", "");
+        if (newfile == NULL) return;
         FileName fn_tmp(newfile);
         fn_out = fn_tmp;
     } else {
@@ -1849,10 +1825,8 @@ void pickerViewerCanvas::loadCoordinates(bool ask_filename) {
     clearCoordinates();
     FileName fn_coord_in;
     if (ask_filename) {
-        char *newfile;
-        newfile = fl_file_chooser("Load File?", "*.star", "");
-        if (newfile == NULL)
-            return;
+        char *newfile = fl_file_chooser("Load File?", "*.star", "");
+        if (newfile == NULL) return;
         FileName fn_tmp(newfile);
         fn_coord_in = fn_tmp;
     } else {
@@ -1866,7 +1840,7 @@ void pickerViewerCanvas::loadCoordinates(bool ask_filename) {
 }
 
 void pickerViewerCanvas::findColorColumnForCoordinates() {
-    MetaDataTable MDcolor, MDcolormic;
+    MetaDataTable MDcolor;
     MDcolor.read(fn_color);
 
     if (!MDcolor.containsLabel(color_label))
@@ -1911,7 +1885,7 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
                 MDcoords.setValue(
                     color_label,
                     EMDL::isInt(color_label) ?
-                        MDcolor.getValue<int>(color_label) :
+                        MDcolor.getValue<int>   (color_label) :
                         MDcolor.getValue<RFLOAT>(color_label),
                     iimg
                 );
@@ -2117,7 +2091,7 @@ void displayerGuiWindow::readLastSettings() {
     while (getline(in, line, '\n')) {
         int ispos = line.rfind("=");
         std::string label = line.substr(0, ispos - 1);
-        std::string value = line.substr(ispos+2,line.length());
+        std::string value = line.substr(ispos + 2, line.length());
         if (label == scale_input->label()) {
             scale_input->value(value.c_str());
         } else if (label == black_input->label()) {
@@ -2142,12 +2116,10 @@ void displayerGuiWindow::readLastSettings() {
             angpix_input->value(value.c_str());
         }
     }
-
-    in.close();
 }
 
 void displayerGuiWindow::writeLastSettings() {
-    std::ofstream  fh;
+    std::ofstream fh;
     FileName fn = ".relion_display_gui_settings";
     fh.open(fn.c_str(), std::ios::out);
     if (!fh) {
@@ -2169,8 +2141,6 @@ void displayerGuiWindow::writeLastSettings() {
         fh << highpass_input->label() << " = " << highpass_input->value() << std::endl;
         fh << angpix_input->label() << " = " << angpix_input->value() << std::endl;
     }
-
-    fh.close();
 }
 
 // Display button call-back functions
@@ -2210,11 +2180,11 @@ void displayerGuiWindow::cb_display_i() {
 
     if (is_star) {
 
-        const Fl_Menu_Item* m = display_choice->mvalue();
-        cl += " --display " + (std::string)m->label();
+        const Fl_Menu_Item *m = display_choice->mvalue();
+        cl += " --display " + (std::string) m->label();
 
         if (getValue(sort_button)) {
-            const Fl_Menu_Item* m2 = sort_choice->mvalue();
+            const Fl_Menu_Item *m2 = sort_choice->mvalue();
             if ((std::string) m2->label() == "RANDOMLY") {
                 cl += " --random_sort ";
             } else {
@@ -2277,8 +2247,8 @@ void displayerGuiWindow::cb_display_i() {
 
     // send job in the background
     cl += " &";
-    //std::cout << "Executing: " << cl << std::endl;
-    int res = system(cl.c_str());
+    // std::cout << "Executing: " << cl << std::endl;
+    system(cl.c_str());
 }
 
 void Displayer::read(int argc, char **argv) {
