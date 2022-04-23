@@ -57,15 +57,10 @@ void run_updatePowerSpectrum(RFLOAT *dcounter, int sz, RFLOAT *dpower_spectrum);
 extern void scale(RFLOAT *img, size_t sz, RFLOAT val, cudaStream_t stream = 0);
 #endif
 
-#define NEAREST_NEIGHBOUR 0
-#define TRILINEAR 1
-#define CONVOLUTE_BLOB 2
+enum Interpolators { NEAREST_NEIGHBOUR, TRILINEAR, CONVOLUTE_BLOB };
 
-#define FORWARD_PROJECTION 0
-#define BACKWARD_PROJECTION 1
-
-#define ACT_ON_DATA 0
-#define ACT_ON_WEIGHT 1
+// enum ProjectionDirection { FORWARD_PROJECTION, BACKWARD_PROJECTION };
+// enum ActOn { ACT_ON_DATA, ACT_ON_WEIGHT };
 
 class Projector {
 
