@@ -13,60 +13,61 @@
 #include <sstream>
 
 #ifdef TIMING_FILES
-#define	CTIC(timer,timing) (timer.cuda_cpu_tic(timing))
-#define	CTOC(timer,timing) (timer.cuda_cpu_toc(timing))
-#define	GTIC(timer,timing) (timer.cuda_gpu_tic(timing))
-#define	GTOC(timer,timing) (timer.cuda_gpu_toc(timing))
+#define	CTIC(timer, timing) (timer.cuda_cpu_tic(timing))
+#define	CTOC(timer, timing) (timer.cuda_cpu_toc(timing))
+#define	GTIC(timer, timing) (timer.cuda_gpu_tic(timing))
+#define	GTOC(timer, timing) (timer.cuda_gpu_toc(timing))
 #define	GATHERGPUTIMINGS(timer) (timer.cuda_gpu_printtictoc())
 #elif defined CUDA_PROFILING
-	#include <nvToolsExt.h>
-	#define	CTIC(timer,timing) (nvtxRangePush(timing))
-	#define	CTOC(timer,timing) (nvtxRangePop())
-	#define	GTIC(timer,timing)
-	#define	GTOC(timer,timing)
-	#define	GATHERGPUTIMINGS(timer)
+    #include <nvToolsExt.h>
+    #define	CTIC(timer, timing) (nvtxRangePush(timing))
+    #define	CTOC(timer, timing) (nvtxRangePop())
+    #define	GTIC(timer, timing)
+    #define	GTOC(timer, timing)
+    #define	GATHERGPUTIMINGS(timer)
 #else
-	#define	CTIC(timer,timing)
-	#define	CTOC(timer,timing)
-	#define	GTIC(timer,timing)
-	#define	GTOC(timer,timing)
-	#define	GATHERGPUTIMINGS(timer)
+    #define	CTIC(timer, timing)
+    #define	CTOC(timer, timing)
+    #define	GTIC(timer, timing)
+    #define	GTOC(timer, timing)
+    #define	GATHERGPUTIMINGS(timer)
 #endif
 
-class relion_timer
-{
+#define CTICTOC(timer, timing, block) CTIC(timer, timing); block; CTOC(timer, timing);
+#define GTICTOC(timer, timing, block) GTIC(timer, timing); block; GTOC(timer, timing);
 
-public:
+class relion_timer {
 
-std::vector<std::string> cuda_cpu_benchmark_identifiers;
-std::vector<clock_t>     cuda_cpu_benchmark_start_times;
-FILE *cuda_cpu_benchmark_fPtr;
+    public:
 
-std::vector<std::string> cuda_gpu_benchmark_identifiers;
-std::vector<cudaEvent_t> cuda_gpu_benchmark_start_times;
-std::vector<cudaEvent_t> cuda_gpu_benchmark_stop_times;
-FILE *cuda_gpu_benchmark_fPtr;
+    std::vector<std::string> cuda_cpu_benchmark_identifiers;
+    std::vector<clock_t>     cuda_cpu_benchmark_start_times;
+    FILE *cuda_cpu_benchmark_fPtr;
 
-relion_timer(std::string fnm)
-{
-	std::stringstream fnm_cpu, fnm_gpu;
-	fnm_cpu << "output/" << fnm << "_cpu.dat";
-	cuda_cpu_benchmark_fPtr = fopen(fnm_cpu.str().c_str(),"a");
-	fnm_gpu << "output/" << fnm << "_gpu.dat";
-	cuda_gpu_benchmark_fPtr = fopen(fnm_gpu.str().c_str(),"a");
-}
+    std::vector<std::string> cuda_gpu_benchmark_identifiers;
+    std::vector<cudaEvent_t> cuda_gpu_benchmark_start_times;
+    std::vector<cudaEvent_t> cuda_gpu_benchmark_stop_times;
+    FILE *cuda_gpu_benchmark_fPtr;
 
-int cuda_benchmark_find_id(std::string id, std::vector<std::string> v);
+    relion_timer(std::string fnm) {
+        std::stringstream fnm_cpu, fnm_gpu;
+        fnm_cpu << "output/" << fnm << "_cpu.dat";
+        cuda_cpu_benchmark_fPtr = fopen(fnm_cpu.str().c_str(),"a");
+        fnm_gpu << "output/" << fnm << "_gpu.dat";
+        cuda_gpu_benchmark_fPtr = fopen(fnm_gpu.str().c_str(),"a");
+    }
 
-void cuda_cpu_tic(std::string id);
+    int cuda_benchmark_find_id(std::string id, std::vector<std::string> v);
 
-void cuda_cpu_toc(std::string id);
+    void cuda_cpu_tic(std::string id);
 
-void cuda_gpu_tic(std::string id);
+    void cuda_cpu_toc(std::string id);
 
-void cuda_gpu_toc(std::string id);
+    void cuda_gpu_tic(std::string id);
 
-void cuda_gpu_printtictoc();
+    void cuda_gpu_toc(std::string id);
+
+    void cuda_gpu_printtictoc();
 
 };
 

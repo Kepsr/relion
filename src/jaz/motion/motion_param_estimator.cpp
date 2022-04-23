@@ -37,7 +37,7 @@ const double MotionParamEstimator::accScale = 1000.0;
 
 MotionParamEstimator::MotionParamEstimator(): paramsRead(false), ready(false) {}
 
-void MotionParamEstimator::read(IOParser& parser, int argc, char *argv[]) {
+void MotionParamEstimator::read(IOParser &parser, int argc, char *argv[]) {
     parser.addSection("Parameter estimation");
 
     estim2 = parser.checkOption("--params2", "Estimate 2 parameters instead of motion");
@@ -219,8 +219,8 @@ void MotionParamEstimator::init(
 void MotionParamEstimator::run() {
     #ifdef TIMING
     timeSetup = paramTimer.setNew(" time_Setup ");
-    timeOpt = paramTimer.setNew(" time_Opt ");
-    timeEval = paramTimer.setNew(" time_Eval ");
+    timeOpt   = paramTimer.setNew(" time_Opt ");
+    timeEval  = paramTimer.setNew(" time_Eval ");
     #endif
 
     if (!ready) {
@@ -229,24 +229,18 @@ void MotionParamEstimator::run() {
 
     if (!estim2 && !estim3) return;
 
-    RCTIC(paramTimer, timeSetup);
-
-    prepAlignment();
-
-    RCTOC(paramTimer, timeSetup);
+    RCTICTOC(paramTimer, timeSetup, ({ prepAlignment(); }))
 
     d4Vector opt;
 
     std::cout.setf(std::ios::fixed, std::ios::floatfield);
     std::cout.precision(5);
 
-    if (estim2) {
-        opt = estimateTwoParamsNM(sV, sD, sA, iniStep, conv, maxIters);
-    }
+    if (estim2)
+    opt = estimateTwoParamsNM(sV, sD, sA, iniStep, conv, maxIters);
 
-    if (estim3) {
-        opt = estimateThreeParamsNM(sV, sD, sA, iniStep, conv, maxIters);
-    }
+    if (estim3)
+    opt = estimateThreeParamsNM(sV, sD, sA, iniStep, conv, maxIters);
 
     std::cout.setf(std::ios::floatfield);
 
@@ -384,14 +378,15 @@ void MotionParamEstimator::evaluateParams(
                 std::cout << "        evaluating: " << sig_vals[i] << std::endl;
             }
 
-            RCTIC(paramTimer,timeOpt);
+            std::vector<std::vector<gravis::d2Vector>> tracks;
+            RCTICTOC(paramTimer, timeOpt, ({
 
-            std::vector<std::vector<gravis::d2Vector>> tracks =
-                motionEstimator->optimize(
-                    alignmentSet.CCs[g],
-                    alignmentSet.initialTracks[g],
-                    sig_v_vals_px[i], sig_a_vals_px[i], sig_d_vals_px[i],
-                    alignmentSet.positions[g], alignmentSet.globComp[g]);
+            tracks = motionEstimator->optimize(
+                alignmentSet.CCs[g],
+                alignmentSet.initialTracks[g],
+                sig_v_vals_px[i], sig_a_vals_px[i], sig_d_vals_px[i],
+                alignmentSet.positions[g], alignmentSet.globComp[g]
+            );
 
             if (debug) {
                 std::stringstream sts;
@@ -410,19 +405,19 @@ void MotionParamEstimator::evaluateParams(
                 debugStr.close();
             }
 
-            RCTOC(paramTimer,timeOpt);
+            }))
 
-            RCTIC(paramTimer,timeEval);
-
+            // Reusing timeEval
+            RCTICTOC(paramTimer, timeEval, ({
             tscsAs[i] += alignmentSet.updateTsc(tracks, g, nr_omp_threads);
+            }))
 
-            RCTOC(paramTimer,timeEval);
         }
     }
 
     if (debug) { std::cout << std::endl; }
 
-    RCTIC(paramTimer,timeEval);
+    RCTICTOC(paramTimer, timeEval, ({
 
     // compute final TSC
     for (int i = 0; i < paramCount; i++) {
@@ -433,13 +428,14 @@ void MotionParamEstimator::evaluateParams(
         }
     }
 
-    RCTOC(paramTimer,timeEval);
+    }))
+
 }
 
 void MotionParamEstimator::prepAlignment() {
     std::cout << " + preparing alignment data... " << std::endl;
 
-    const std::vector<Image<RFLOAT>>& dmgWgh = motionEstimator->computeDamageWeights(group);
+    const std::vector<Image<RFLOAT>> &dmgWgh = motionEstimator->computeDamageWeights(group);
     std::vector<Image<RFLOAT>> alignDmgWgh(fc);
 
     for (int f = 0; f < fc; f++) {
@@ -465,7 +461,7 @@ void MotionParamEstimator::prepAlignment() {
 
         pctot += pc;
 
-        std::cout << "        micrograph " << (g+1) << " / " << gc << ": "
+        std::cout << "        micrograph " << g + 1 << " / " << gc << ": "
             << pc << " particles [" << pctot << " total]" << std::endl;
 
         std::vector<std::vector<Image<Complex>>> movie;
@@ -481,7 +477,7 @@ void MotionParamEstimator::prepAlignment() {
                 alignmentSet.globComp[g]
             );
         } catch (RelionError XE) {
-            std::cerr << "warning: unable to load micrograph #" << (g+1) << std::endl;
+            std::cerr << "warning: unable to load micrograph #" << g + 1 << std::endl;
             continue;
         }
 
@@ -508,9 +504,9 @@ void MotionParamEstimator::prepAlignment() {
 
     // release all unneeded heap space back to the OS
     // (this can free tens of Gb)
-#if !defined(__APPLE__)
+    #if !defined(__APPLE__)
     malloc_trim(0);
-#endif
+    #endif
 
     std::cout << "   done\n";
 }

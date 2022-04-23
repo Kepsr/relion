@@ -31,6 +31,8 @@
     #define RCTOC(timer, label)
 #endif
 
+#define RCTICTOC(timer, label, block) RCTIC(timer, label); { block; } RCTOC(timer, label);
+
 #include <sys/time.h>
 #include <stdio.h>
 #include <time.h>
@@ -3732,7 +3734,7 @@ void MlOptimiser::maximization() {
     // First reconstruct the images for each class
     // multi-body refinement will never get here, as it is only 3D auto-refine and that requires MPI!
     for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++) {
-        RCTIC(timer, RCT_1);
+        RCTICTOC(timer, RCT_1, ({
         if (mymodel.pdf_class[iclass] > 0.0 || mymodel.nr_bodies > 1) {
 
             if (wsum_model.BPref[iclass].weight.sum() > XMIPP_EQUAL_ACCURACY) {
@@ -3823,21 +3825,22 @@ void MlOptimiser::maximization() {
                 mymodel.Iref    // When not doing SGD, initialise the reference to zero.
             )[iclass].initZeros();
         }
-        RCTOC(timer, RCT_1);
+        }))
         if (verb > 0)
             progress_bar(iclass);
     }
 
-    RCTIC(timer, RCT_3);
+    RCTICTOC(timer, RCT_3, ({
     // Then perform the update of all other model parameters
     maximizationOtherParameters();
-    RCTOC(timer, RCT_3);
-    RCTIC(timer, RCT_4);
+    }))
+
+    RCTICTOC(timer, RCT_4, ({
     // Keep track of changes in hidden variables
     updateOverallChangesInHiddenVariables();
-    RCTOC(timer, RCT_4);
-    if (verb > 0)
-        progress_bar(mymodel.nr_classes);
+    }))
+
+    if (verb > 0) progress_bar(mymodel.nr_classes);
 
 }
 
@@ -3847,31 +3850,32 @@ void MlOptimiser::maximizationOtherParameters() {
     std::cerr << "Entering maximizationOtherParameters" << std::endl;
     #endif
 
-    RCTIC(timer, RCT_5);
+    RFLOAT sum_weight;
+    RCTICTOC(timer, RCT_5, ({
     // Calculate total sum of weights, and average CTF for each class (for SSNR estimation)
-    RFLOAT sum_weight = 0.0;
+    sum_weight = 0.0;
     for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
         sum_weight += wsum_model.pdf_class[iclass];
 
     // For multi-body refinement: it is possible we haven't done any bodies anymore, so sum_weight is zero
     // in that case we need to leave all parameters as they were
-    if (sum_weight < XMIPP_EQUAL_ACCURACY)
-        return;
+    if (sum_weight < XMIPP_EQUAL_ACCURACY) return;
 
     // Annealing of multiple-references in SGD
     if (do_sgd && !do_sgd_skip_anneal && mymodel.nr_classes > 1 && iter < sgd_ini_iter + sgd_inbetween_iter) {
         MultidimArray<RFLOAT> Iavg;
         Iavg.initZeros(mymodel.Iref[0]);
-        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
+        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             Iavg += mymodel.Iref[iclass];
-        Iavg /= (RFLOAT)mymodel.nr_classes;
+        }
+        Iavg /= (RFLOAT) mymodel.nr_classes;
 
         int diffiter = iter - sgd_ini_iter;
         RFLOAT frac = RFLOAT(iter - sgd_ini_iter) / RFLOAT(sgd_inbetween_iter);
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iavg) {
                 DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) *= frac;
-                DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) += (1.-frac)*DIRECT_MULTIDIM_ELEM(Iavg, n);
+                DIRECT_MULTIDIM_ELEM(mymodel.Iref[iclass], n) += (1.0 - frac) * DIRECT_MULTIDIM_ELEM(Iavg, n);
             }
         }
     }
@@ -3929,8 +3933,9 @@ void MlOptimiser::maximizationOtherParameters() {
             #endif
         }
     }
-    RCTOC(timer, RCT_5);
-    RCTIC(timer, RCT_6);
+    }))
+
+    RCTICTOC(timer, RCT_6, ({
     // Update model.pdf_class vector (for each k)
     for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
 
@@ -3968,8 +3973,9 @@ void MlOptimiser::maximizationOtherParameters() {
     }
 
     // TODO: update estimates for sigma2_rot, sigma2_tilt and sigma2_psi!
-    RCTOC(timer, RCT_6);
-    RCTIC(timer, RCT_7);
+    }))
+
+    RCTICTOC(timer, RCT_7, ({
     // Also refrain from updating sigma_noise after the first iteration with first_iter_cc!
     if (!fix_sigma_noise && !(iter == 1 && do_firstiter_cc || do_always_cc)) {
         for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
@@ -3994,8 +4000,9 @@ void MlOptimiser::maximizationOtherParameters() {
             }
         }
     }
-    RCTOC(timer, RCT_7);
-    RCTIC(timer, RCT_8);
+    }))
+
+    RCTICTOC(timer, RCT_8, ({
     // After the first iteration the references are always CTF-corrected
     if (do_ctf_correction)
         refs_are_ctf_corrected = true;
@@ -4046,7 +4053,8 @@ void MlOptimiser::maximizationOtherParameters() {
             mymodel.pdf_class[0] /= mymodel.nr_classes;
         }
     }
-    RCTOC(timer, RCT_8);
+    }))
+
     #ifdef DEBUG
     std::cerr << "Leaving maximizationOtherParameters" << std::endl;
     #endif

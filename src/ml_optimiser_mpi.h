@@ -25,16 +25,17 @@
 
 // definition of MPITAG has been moved to header mpi.h
 
-class MlOptimiserMpi: public MlOptimiser
-{
-	std::vector<int> cudaDeviceShares;
+class MlOptimiserMpi: public MlOptimiser {
 
-public:
-	MpiNode *node;
+    std::vector<int> cudaDeviceShares;
 
-#ifdef TIMINGMPI
+    public:
+
+    MpiNode *node;
+
+    #ifdef TIMINGMPI
     int MPIR_PACK, MPIR_ALLREDUCE, MPIR_UNPACK, MPIR_EXP, MPIR_MAX, MPIR_BCAST;
-#endif
+    #endif
 
     // For debugging: keep temporary/debug weight and data mrc files
     bool do_keep_debug_reconstruct_files;
@@ -45,7 +46,7 @@ public:
     // Original verb
     int ori_verb;
 
-	/** Destructor, calls MPI_Finalize */
+    /** Destructor, calls MPI_Finalize */
     ~MlOptimiserMpi()
     {
         delete node;

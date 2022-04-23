@@ -894,7 +894,6 @@ class MultidimArray {
         xinit = m.xinit;
     }
 
-
     /** Shrink to fit
      *
      * This function resize the memory occupied by the array
@@ -910,7 +909,7 @@ class MultidimArray {
         if (data == NULL || mmapOn || nzyxdim() <= 0 || nzyxdimAlloc <= nzyxdim())
             return;
         T* old_array = data;
-        data = (T*)RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
+        data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
         memcpy(data, old_array, sizeof(T) * nzyxdim());
         RELION_ALIGNED_FREE(old_array);
         nzyxdimAlloc = nzyxdim();
@@ -962,6 +961,19 @@ class MultidimArray {
      */
     void reshape(long Xdim) {
         reshape(1, 1, 1, Xdim);
+    }
+
+    void dynamic_reshape(long dim, int dimensionality) {
+        // Dynamic dispatch
+               if (dimensionality == 1) {
+            reshape(dim);
+        } else if (dimensionality == 2) {
+            reshape(dim, dim);
+        } else if (dimensionality == 3) {
+            reshape(dim, dim, dim);
+        } else if (dimensionality == 4) {
+            reshape(dim, dim, dim, dim);
+        }
     }
 
     /** Adjust shape to match the target array

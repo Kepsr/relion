@@ -29,91 +29,96 @@
 #include <src/jaz/gravis/t4Vector.h>
 
 
-//#define TIMING 1
+// #define TIMING 1
 
 #ifdef TIMING
-    #define RCTIC(timer,label) (timer.tic(label))
-    #define RCTOC(timer,label) (timer.toc(label))
+#define RCTIC(timer, label) (timer.tic(label))
+#define RCTOC(timer, label) (timer.toc(label))
 #else
-    #define RCTIC(timer,label)
-    #define RCTOC(timer,label)
+#define RCTIC(timer, label)
+#define RCTOC(timer, label)
 #endif
+
+#define RCTICTOC(timer, label, block) RCTIC(timer, label); { block; } RCTOC(timer, label);
 
 class MotionEstimator;
 class ReferenceMap;
 class ObservationModel;
 class ParFourierTransformer;
 
-class MotionParamEstimator
-{
+class MotionParamEstimator {
+
     public:
 
-        MotionParamEstimator();
+    MotionParamEstimator();
 
 
-        void read(IOParser& parser, int argc, char *argv[]);
+    void read(IOParser& parser, int argc, char *argv[]);
 
-        void init(int verb, int nr_omp_threads, bool debug,
-                  std::string outPath, int fc,
-                  const std::vector<MetaDataTable>& allMdts,
-                  MotionEstimator* motionEstimator,
-                  ReferenceMap* reference,
-                  ObservationModel* obsModel);
+    void init(
+        int verb, int nr_omp_threads, bool debug,
+        std::string outPath, int fc,
+        const std::vector<MetaDataTable> &allMdts,
+        MotionEstimator *motionEstimator,
+        ReferenceMap *reference,
+        ObservationModel *obsModel
+    );
 
-        void run();
+    void run();
 
-        bool anythingToDo();
+    bool anythingToDo();
 
-        // to be used by instances of OptimizationProblem
-        void evaluateParams(const std::vector<gravis::d3Vector>& sig_vals,
-                            std::vector<double>& TSCs);
+    // to be used by instances of OptimizationProblem
+    void evaluateParams(
+        const std::vector<gravis::d3Vector> &sig_vals, std::vector<double> &TSCs
+    );
 
-        static const double velScale, divScale, accScale;
-
+    static const double velScale, divScale, accScale;
 
     protected:
 
-            bool paramsRead, ready;
+    bool paramsRead, ready;
 
-            AlignmentSet<float> alignmentSet;
+    AlignmentSet<float> alignmentSet;
 
-            // read from cmd. line:
-            bool estim2, estim3;
-            int minParticles, maxRange, maxIters, seed, group;
-            double sV, sD, sA;
-            double iniStep, conv;
-			double align_frac, eval_frac;
-            double k_cutoff, k_eval;
+    // read from cmd. line:
+    bool estim2, estim3;
+    int minParticles, maxRange, maxIters, seed, group;
+    double sV, sD, sA;
+    double iniStep, conv;
+    double align_frac, eval_frac;
+    double k_cutoff, k_eval;
 
-            // set at init:
-            std::vector<MetaDataTable> mdts;
+    // set at init:
+    std::vector<MetaDataTable> mdts;
 
-            MotionEstimator* motionEstimator;
-            ObservationModel* obsModel;
-            ReferenceMap* reference;
+    MotionEstimator* motionEstimator;
+    ObservationModel* obsModel;
+    ReferenceMap* reference;
 
-            int fc, k_out, verb, nr_omp_threads, s_ref, s, sh;
-			bool allGroups;
-			
-            bool debug;
-			std::string outPath;
+    int fc, k_out, verb, nr_omp_threads, s_ref, s, sh;
+    bool allGroups;
+    
+    bool debug;
+    std::string outPath;
 
-            #ifdef TIMING
-                Timer paramTimer;
-                int timeSetup, timeOpt, timeEval;
-            #endif
+    #ifdef TIMING
+    Timer paramTimer;
+    int timeSetup, timeOpt, timeEval;
+    #endif
 
+    gravis::d4Vector estimateTwoParamsNM(
+        double sig_v_0, double sig_d_0, double sig_acc,
+        double inStep, double conv, int maxIters
+    );
 
-        gravis::d4Vector estimateTwoParamsNM(
-                double sig_v_0, double sig_d_0, double sig_acc,
-                double inStep, double conv, int maxIters);
+    gravis::d4Vector estimateThreeParamsNM(
+        double sig_v_0, double sig_d_0, double sig_a_0,
+        double inStep, double conv, int maxIters
+    );
 
-        gravis::d4Vector estimateThreeParamsNM(
-                double sig_v_0, double sig_d_0, double sig_a_0,
-                double inStep, double conv, int maxIters);
+    void prepAlignment();
 
-
-        void prepAlignment();
 };
 
 #endif

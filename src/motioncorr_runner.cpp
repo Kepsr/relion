@@ -73,6 +73,9 @@
     #define RCTOC(label)
 #endif
 
+/// NOTE: This macro doen't work with #pragma directives
+#define RCTICTOC(label, block) RCTIC(label); block; RCTOC(label);
+
 void MotioncorrRunner::read(int argc, char **argv, int rank) {
     parser.setCommandLine(argc, argv);
     int gen_section = parser.addSection("General options");
@@ -965,7 +968,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
     logfile << std::endl;
 
     // Read gain reference
-    RCTIC(TIMING_READ_GAIN);
+    RCTICTOC(TIMING_READ_GAIN, ({
     if (fn_gain_reference != "") {
         if (isEER) {
             EERRenderer::loadEERGain(fn_gain_reference, Igain(), eer_upsampling);
@@ -978,7 +981,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             REPORT_ERROR("The size of the image and the size of the gain reference do not match. Make sure the gain reference has been rotated if necessary.");
         }
     }
-    RCTOC(TIMING_READ_GAIN);
+    }))
 
     // Read images
     RCTIC(TIMING_READ_MOVIE);
@@ -1185,8 +1188,9 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         RCTOC(TIMING_POWER_SPECTRUM_SUM);
 
         // 1. Make it square
-        RCTIC(TIMING_POWER_SPECTRUM_SQUARE);
-        int ps_size_square = std::min(nx, ny);
+        int ps_size_square;
+        RCTICTOC(TIMING_POWER_SPECTRUM_SQUARE, ({
+        ps_size_square = std::min(nx, ny);
         if (nx != ny) {
             F_ps_small.resize(ps_size_square, ps_size_square / 2 + 1);
             NewFFT::FourierTransform(PS_sum(), F_ps);
@@ -1199,18 +1203,20 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             PS_sum.write("ps_test_square.mrc");
             #endif
         }
-        RCTOC(TIMING_POWER_SPECTRUM_SQUARE);
+        }))
 
         // 2. Crop the center
-        RCTIC(TIMING_POWER_SPECTRUM_CROP);
-        RFLOAT ps_angpix = !early_binning ? angpix : angpix * bin_factor;
+        RFLOAT ps_angpix;
+        Image<float> PS_sum_cropped;
+        RCTICTOC(TIMING_POWER_SPECTRUM_CROP, ({
+        ps_angpix = early_binning ? angpix * bin_factor : angpix;
         int nx_needed = XSIZE(PS_sum());
         if (ps_angpix < target_pixel_size) {
             nx_needed = ceil(ps_size_square * ps_angpix / target_pixel_size);
             nx_needed += nx_needed % 2;
             ps_angpix = XSIZE(PS_sum()) * ps_angpix / nx_needed;
         }
-        Image<float> PS_sum_cropped(nx_needed, nx_needed);
+        PS_sum_cropped = Image<float>(nx_needed, nx_needed);
         PS_sum().setXmippOrigin();
         PS_sum_cropped().setXmippOrigin();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(PS_sum_cropped())
@@ -1222,16 +1228,16 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         std::cout << "ps_angpix after cropping = " << ps_angpix << std::endl;
         PS_sum_cropped.write("ps_test_cropped.mrc");
         #endif
-        RCTOC(TIMING_POWER_SPECTRUM_CROP);
+        }))
 
         // 3. Downsample
-        RCTIC(TIMING_POWER_SPECTRUM_RESIZE);
+        RCTICTOC(TIMING_POWER_SPECTRUM_RESIZE, ({
         F_ps_small.reshape(ps_size, ps_size / 2 + 1);
         F_ps_small.initZeros();
         NewFFT::FourierTransform(PS_sum_cropped(), F_ps);
         cropInFourierSpace(F_ps, F_ps_small);
         NewFFT::inverseFourierTransform(F_ps_small, PS_sum());
-        RCTOC(TIMING_POWER_SPECTRUM_RESIZE);
+        }))
 
         // 4. Write
         PS_sum.setSamplingRateInHeader(ps_angpix, ps_angpix);
@@ -1306,7 +1312,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
                 for (int igroup = 0; igroup < n_groups; igroup++) {
                     const int tid = omp_get_thread_num();
                     Ipatches[tid].reshape(y_end - y_start, x_end - x_start); // end is not included
-                    RCTIC(TIMING_CLIP_PATCH);
+                    RCTICTOC(TIMING_CLIP_PATCH, ({
                     for (int iframe = group_start[igroup]; iframe < group_start[igroup] + group_size[igroup]; iframe++) {
                         for (int ipy = y_start; ipy < y_end; ipy++) {
                             for (int ipx = x_start; ipx < x_end; ipx++) {
@@ -1314,22 +1320,24 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
                             }
                         }
                     }
-                    RCTOC(TIMING_CLIP_PATCH);
+                    }))
 
-                    RCTIC(TIMING_PATCH_FFT);
+                    RCTICTOC(TIMING_PATCH_FFT, ({
                     NewFFT::FourierTransform(Ipatches[tid], Fpatches[igroup]);
-                    RCTOC(TIMING_PATCH_FFT);
+                    }))
                 }
                 RCTOC(TIMING_PREP_PATCH);
 
-                RCTIC(TIMING_PATCH_ALIGN);
-                bool converged = alignPatch(
+                bool converged;
+                RCTICTOC(TIMING_PATCH_ALIGN, ({
+                converged = alignPatch(
                     Fpatches, 
                     x_end - x_start, y_end - y_start, 
                     bfactor / (prescaling * prescaling), 
                     local_xshifts, local_yshifts, logfile
                 );
-                RCTOC(TIMING_PATCH_ALIGN);
+                }))
+
                 if (!converged) continue;
 
                 std::vector<RFLOAT> interpolated_xshifts(n_frames), interpolated_yshifts(n_frames);
@@ -1368,7 +1376,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
         // Fit polynomial model
 
-        RCTIC(TIMING_FIT_POLYNOMIAL);
+        RCTICTOC(TIMING_FIT_POLYNOMIAL, ({
         const int n_obs = patch_frames.size();
         const int n_params = 18;
 
@@ -1472,7 +1480,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
                 mic.localFitY[i] = 0;
             }
         }
-        RCTOC(TIMING_FIT_POLYNOMIAL);
+        }))
     } else {
         mic.model = NULL;
     }
@@ -1488,11 +1496,11 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         RCTOC(TIMING_REAL_SPACE_INTERPOLATION);
 
         // Apply binning
-        RCTIC(TIMING_BINNING);
+        RCTICTOC(TIMING_BINNING, ({
         if (!early_binning && bin_factor != 1) {
             binNonSquareImage(Iref, bin_factor);
         }
-        RCTOC(TIMING_BINNING);
+        }))
 
         // Final output
         Iref.setSamplingRateInHeader(output_angpix, output_angpix);
@@ -1518,9 +1526,9 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             }
         }
 
-        RCTIC(TIMING_DW_WEIGHT);
+        RCTICTOC(TIMING_DW_WEIGHT, ({
         doseWeighting(Fframes, doses, angpix * prescaling);
-        RCTOC(TIMING_DW_WEIGHT);
+        }))
 
         // Update real space images
         RCTIC(TIMING_DW_IFFT);
@@ -1539,11 +1547,11 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         RCTOC(TIMING_REAL_SPACE_INTERPOLATION);
 
         // Apply binning
-        RCTIC(TIMING_BINNING);
+        RCTICTOC(TIMING_BINNING, ({
         if (!early_binning && bin_factor != 1) {
             binNonSquareImage(Iref, bin_factor);
         }
-        RCTOC(TIMING_BINNING);
+        }))
 
         // Final output
         Iref.setSamplingRateInHeader(output_angpix, output_angpix);
@@ -1863,7 +1871,7 @@ bool MotioncorrRunner::alignPatch(
         for (int iframe = 0; iframe < n_frames; iframe++) {
             const int tid = omp_get_thread_num();
 
-            RCTIC(TIMING_CCF_CALC);
+            RCTICTOC(TIMING_CCF_CALC, ({
             for (int y = 0; y < ccf_nfy; y++) {
                 const int ly = y > ccf_nfy_half ? y - ccf_nfy + nfy : y;
                 for (int x = 0; x < ccf_nfx; x++) {
@@ -1872,13 +1880,13 @@ bool MotioncorrRunner::alignPatch(
                     ) * DIRECT_A2D_ELEM(Fframes[iframe], ly, x).conj() * DIRECT_A2D_ELEM(weight, y, x);
                 }
             }
-            RCTOC(TIMING_CCF_CALC);
+            }))
 
-            RCTIC(TIMING_CCF_IFFT);
+            RCTICTOC(TIMING_CCF_IFFT, ({
             NewFFT::inverseFourierTransform(Fccs[tid], Iccs[tid]());
-            RCTOC(TIMING_CCF_IFFT);
+            }))
 
-            RCTIC(TIMING_CCF_FIND_MAX);
+            RCTICTOC(TIMING_CCF_FIND_MAX, ({
             RFLOAT maxval = -1E30;
             int posx = 0, posy = 0;
             for (int y = -search_range; y <= search_range; y++) {
@@ -1922,7 +1930,7 @@ bool MotioncorrRunner::alignPatch(
             #ifdef DEBUG_OWN
             std::cout << "tid " << tid << " Frame " << 1 + iframe << ": raw shift x = " << posx << " y = " << posy << " cc = " << maxval << " interpolated x = " << cur_xshifts[iframe] << " y = " << cur_yshifts[iframe] << std::endl;
             #endif
-            RCTOC(TIMING_CCF_FIND_MAX);
+            }))
         }
 
         // Set origin

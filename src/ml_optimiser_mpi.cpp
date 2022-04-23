@@ -23,8 +23,8 @@
 #include "src/acc/cuda/cuda_ml_optimiser.h"
 #endif
 #ifdef ALTCPU
-    #include <tbb/tbb.h>
-    #include "src/acc/cpu/cpu_ml_optimiser.h"
+#include <tbb/tbb.h>
+#include "src/acc/cpu/cpu_ml_optimiser.h"
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,31 +35,32 @@ static inline int modulo_alt(int x, int y) {
     return (x - 1) % y + 1;
 }
 
-//#define PRINT_GPU_MEM_INFO
-//#define DEBUG
-//#define DEBUG_MPIEXP2
+// #define PRINT_GPU_MEM_INFO
+// #define DEBUG
+// #define DEBUG_MPIEXP2
 
 #ifdef TIMING
-    int TIMING_MPIPACK, TIMING_MPIWAIT, TIMING_MPICOMBINEDISC, TIMING_MPICOMBINENETW, TIMING_MPISLAVEWORK;
-    int TIMING_MPISLAVEWAIT1, TIMING_MPISLAVEWAIT2, TIMING_MPISLAVEWAIT3;
-    #define RCTIC(timer,label) (timer.tic(label))
-    #define RCTOC(timer,label) (timer.toc(label))
+int TIMING_MPIPACK, TIMING_MPIWAIT, TIMING_MPICOMBINEDISC, TIMING_MPICOMBINENETW, TIMING_MPISLAVEWORK;
+int TIMING_MPISLAVEWAIT1, TIMING_MPISLAVEWAIT2, TIMING_MPISLAVEWAIT3;
+#define RCTIC(timer, label) (timer.tic(label))
+#define RCTOC(timer, label) (timer.toc(label))
 #else
-    #define RCTIC(timer,label)
-    #define RCTOC(timer,label)
+#define RCTIC(timer, label)
+#define RCTOC(timer, label)
 #endif
+
+#define RCTICTOC(timer, label, block) RCTIC(timer, label); { block; } RCTOC(timer, label);
 
 void MlOptimiserMpi::read(int argc, char **argv) {
 
     #ifdef DEBUG
-    std::cerr<<"MlOptimiserMpi::read Entering "<<std::endl;
+    std::cerr << "MlOptimiserMpi::read Entering " << std::endl;
     #endif
 
     // Define a new MpiNode
     node = new MpiNode(argc, argv);
 
-    if (node->isLeader())
-        PRINT_VERSION_INFO();
+    if (node->isLeader()) PRINT_VERSION_INFO();
 
     // First read in non-parallelisation-dependent variables
     MlOptimiser::read(argc, argv, node->rank);
@@ -69,10 +70,8 @@ void MlOptimiserMpi::read(int argc, char **argv) {
     do_keep_debug_reconstruct_files  = parser.checkOption("--keep_debug_reconstruct_files", "For debugging: keep temporary data and weight files for debug-reconstructions.");
 
     // Don't put any output to screen for mpi followers
-    /// BUG: verb is not declared
     ori_verb = verb;
-    if (verb != 0)
-        verb = node->isLeader() && ori_verb;
+    if (verb != 0) { verb = node->isLeader() && ori_verb; }
 
     // #define DEBUG_BODIES
     #ifdef DEBUG_BODIES
@@ -90,9 +89,7 @@ void MlOptimiserMpi::read(int argc, char **argv) {
 
 }
 
-
 void MlOptimiserMpi::finalise() { delete node; }
-
 
 void MlOptimiserMpi::initialise() {
 
@@ -1822,9 +1819,9 @@ void MlOptimiserMpi::maximization() {
             continue;
 
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
-            RCTIC(timer, RCT_1);
-            // either ibody or iclass can be larger than 0, never 2 at the same time!
-            int ith_recons = (mymodel.nr_bodies > 1) ? ibody : iclass;
+            RCTICTOC(timer, RCT_1, ({
+            // Either ibody or iclass can be larger than 0, never 2 at the same time!
+            int ith_recons = mymodel.nr_bodies > 1 ? ibody : iclass;
 
             if (wsum_model.pdf_class[iclass] > 0.0) {
                 // Parallelise: each MPI-node has a different reference
@@ -2152,7 +2149,7 @@ void MlOptimiserMpi::maximization() {
                     mymodel.Iref[ith_recons].initZeros();
                 }
             }
-            RCTOC(timer,RCT_1);
+            }))
             // #define DEBUG_RECONSTRUCT
             #ifdef DEBUG_RECONSTRUCT
             MPI_Barrier( MPI_COMM_WORLD);
@@ -2168,7 +2165,8 @@ void MlOptimiserMpi::maximization() {
     #ifdef DEBUG
     std::cerr << "All classes have been reconstructed" << std::endl;
     #endif
-    RCTIC(timer,RCT_2);
+
+    RCTICTOC(timer, RCT_2, ({
     // Once reconstructed, broadcast new models to all other nodes
     // This cannot be done in the reconstruction loop itself because then it will be executed sequentially
     for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
@@ -2280,22 +2278,18 @@ void MlOptimiserMpi::maximization() {
             }
         }
     }
-    RCTOC(timer,RCT_2);
+    }))
     #ifdef TIMING
     timer.toc(TIMING_RECONS);
     #endif
 
     if (node->isLeader()) {
-        RCTIC(timer, RCT_4);
         // The leader also updates the changes in hidden variables
-        updateOverallChangesInHiddenVariables();
-        RCTOC(timer,RCT_4);
+        RCTICTOC(timer, RCT_4, ({ updateOverallChangesInHiddenVariables(); }))
     } else {
         // Now do the maximisation of all other parameters (and calculate the tau2_class-spectra of the reconstructions
         // The lazy leader never does this: it only handles metadata and does not have the weighted sums
-        RCTIC(timer, RCT_3);
-        maximizationOtherParameters();
-        RCTOC(timer, RCT_3);
+        RCTICTOC(timer, RCT_3, ({ maximizationOtherParameters(); }))
     }
 
     // The leader broadcasts the changes in hidden variables to all other nodes
