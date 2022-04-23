@@ -17,18 +17,17 @@
 #include <stack>
 
 #ifdef CUDA_DOUBLE_PRECISION
-#define XFLOAT double
+typedef double XFLOAT;
 #else
-#define XFLOAT float
+typedef float XFLOAT;
 #endif
 
-class AutoPickerCuda
-{
-private:
+class AutoPickerCuda {
+    private:
 
     MpiNode *node;
 
-public:
+    public:
 
     AutoPicker *basePckr;
 
@@ -37,10 +36,10 @@ public:
     CudaFFT cudaTransformer1;
     CudaFFT cudaTransformer2;
 
-    std::vector< CudaProjector > cudaProjectors;
+    std::vector<CudaProjector> cudaProjectors;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
-    std::vector< cudaStream_t > classStreams;
+    std::vector<cudaStream_t> classStreams;
 
     int device_id;
 
@@ -48,9 +47,9 @@ public:
 
     //MlDeviceBundle *devBundle;
 
-#ifdef TIMING_FILES
+    #ifdef TIMING_FILES
     relion_timer timer;
-#endif
+    #endif
 
     AutoPickerCuda(AutoPicker    *basePicker, int dev_id, const char * timing_fnm);
     AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char * timing_fnm);
@@ -61,13 +60,16 @@ public:
 
     void autoPickOneMicrograph(FileName &fn_mic, long int imic);
 
-    void calculateStddevAndMeanUnderMask(CudaGlobalPtr< CUDACOMPLEX > &d_Fmic, CudaGlobalPtr< CUDACOMPLEX > &d_Fmic2, CudaGlobalPtr< CUDACOMPLEX > &d_Fmsk,
-            int nr_nonzero_pixels_mask, CudaGlobalPtr< XFLOAT > &d_Mstddev, CudaGlobalPtr< XFLOAT > &d_Mmean,
-            size_t x, size_t y, size_t mic_size, size_t workSize);
+    void calculateStddevAndMeanUnderMask(
+        CudaGlobalPtr<CUDACOMPLEX> &d_Fmic, CudaGlobalPtr<CUDACOMPLEX> &d_Fmic2, CudaGlobalPtr<CUDACOMPLEX> &d_Fmsk,
+        int nr_nonzero_pixels_mask, CudaGlobalPtr<XFLOAT> &d_Mstddev, CudaGlobalPtr<XFLOAT> &d_Mmean,
+        size_t x, size_t y, size_t mic_size, size_t workSize
+    );
 
     ~AutoPickerCuda() {
-        for (int i = 0; i < classStreams.size(); i++)
+        for (int i = 0; i < classStreams.size(); i++) {
             HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
+        }
     }
 
 //private:

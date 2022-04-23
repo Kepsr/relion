@@ -4,13 +4,13 @@
 #include "src/macros.h"
 
 #ifdef ACC_DOUBLE_PRECISION
-	#define XFLOAT double
+	typedef double XFLOAT;
 	#ifndef CUDA
 		typedef struct{ XFLOAT x; XFLOAT y;} double2;
 	#endif
 	#define ACCCOMPLEX double2
 #else
-	#define XFLOAT float
+	typedef float XFLOAT;
 	#ifndef CUDA
 		typedef struct{ XFLOAT x; XFLOAT y;} float2;
 	#endif

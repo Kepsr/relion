@@ -17,62 +17,64 @@
 #include <stack>
 
 #ifdef ACC_DOUBLE_PRECISION
-#define XFLOAT double
+typedef double XFLOAT;
 #else
-#define XFLOAT float
+typedef float XFLOAT;
 #endif
 
-class AutoPickerCuda
-{
-private:
+class AutoPickerCuda {
 
-	MpiNode *node;
+    private:
 
-public:
+    MpiNode *node;
 
-	AutoPicker *basePckr;
+    public:
 
-	CudaCustomAllocator *allocator;
-	CudaFFT micTransformer;
-	CudaFFT cudaTransformer1;
-	CudaFFT cudaTransformer2;
+    AutoPicker *basePckr;
 
-	std::vector< AccProjector > projectors;
+    CudaCustomAllocator *allocator;
+    CudaFFT micTransformer;
+    CudaFFT cudaTransformer1;
+    CudaFFT cudaTransformer2;
+
+    std::vector<AccProjector> projectors;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
-	std::vector< cudaStream_t > classStreams;
+    std::vector<cudaStream_t> classStreams;
 
-	int device_id;
+    int device_id;
 
-	bool have_warned_batching;
+    bool have_warned_batching;
 
-	//MlDeviceBundle *devBundle;
+    //MlDeviceBundle *devBundle;
 
-#ifdef TIMING_FILES
-	relion_timer timer;
-#endif
+    #ifdef TIMING_FILES
+    relion_timer timer;
+    #endif
 
-	AutoPickerCuda(AutoPicker    *basePicker, int dev_id, const char * timing_fnm);
-	AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char * timing_fnm);
+    AutoPickerCuda(AutoPicker    *basePicker, int dev_id, const char * timing_fnm);
+    AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char * timing_fnm);
 
-	void setupProjectors();
+    void setupProjectors();
 
-	void run();
+    void run();
 
-	void autoPickOneMicrograph(FileName &fn_mic, long int imic);
+    void autoPickOneMicrograph(FileName &fn_mic, long int imic);
 
-	void calculateStddevAndMeanUnderMask(AccPtr< ACCCOMPLEX > &d_Fmic, 
-			AccPtr< ACCCOMPLEX > &d_Fmic2, 
-			AccPtr< ACCCOMPLEX > &d_Fmsk,
-			int nr_nonzero_pixels_mask, AccPtr< XFLOAT > &d_Mstddev, 
-			AccPtr< XFLOAT > &d_Mmean,
-			size_t x, size_t y, size_t mic_size, size_t workSize);
+    void calculateStddevAndMeanUnderMask(
+        AccPtr<ACCCOMPLEX> &d_Fmic, 
+        AccPtr<ACCCOMPLEX> &d_Fmic2, 
+        AccPtr<ACCCOMPLEX> &d_Fmsk,
+        int nr_nonzero_pixels_mask, AccPtr< XFLOAT > &d_Mstddev, 
+        AccPtr<XFLOAT> &d_Mmean,
+        size_t x, size_t y, size_t mic_size, size_t workSize
+    );
 
-	~AutoPickerCuda()
-	{
-		for (int i = 0; i < classStreams.size(); i++)
-			HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
-	}
+    ~AutoPickerCuda() {
+        for (int i = 0; i < classStreams.size(); i++) {
+            HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
+        }
+    }
 
 //private:
 

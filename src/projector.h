@@ -38,7 +38,7 @@ void run_griddingCorrect(
 void run_padTranslatedMap(
     RFLOAT *d_in, RFLOAT *d_out,
     size_t isX, size_t ieX, size_t isY, size_t ieY, size_t isZ, size_t ieZ,  // Input dimensions
-    size_t osX, size_t oeX, size_t osY, size_t oeY, size_t osZ, size_t oeZ,  //Output dimensions
+    size_t osX, size_t oeX, size_t osY, size_t oeY, size_t osZ, size_t oeZ,  // Output dimensions
     cudaStream_t stream = 0
 );
 
@@ -124,7 +124,7 @@ class Projector {
         // Padding factor for the map
         if (_padding_factor_3d < 1.0)
             REPORT_ERROR("Padding factor cannot be less than 1.");
-        
+
         padding_factor = _padding_factor_3d;
 
         // Interpolation scheme

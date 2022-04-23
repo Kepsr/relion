@@ -10,17 +10,11 @@
 #define CUDA_BENCHMARK_OLD true
 
 #ifdef CUDA_DOUBLE_PRECISION
-	#define XFLOAT double
+	typedef double XFLOAT;
 	#define CUDACOMPLEX double2
 #else
-	#define XFLOAT float
+	typedef float XFLOAT;
 	#define CUDACOMPLEX float2
-#endif
-
-#ifdef RELION_SINGLE_PRECISION
-	#define RFLOAT float
-#else
-	#define RFLOAT double
 #endif
 
 // GENERAL -----------------------------

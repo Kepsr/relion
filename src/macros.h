@@ -69,12 +69,12 @@ extern const char *g_RELION_VERSION;
 #endif
 
 #ifdef RELION_SINGLE_PRECISION
-    #define RFLOAT float
+    typedef float RFLOAT;
     #define LARGE_NUMBER 99e36
     #define MY_MPI_DOUBLE  MPI_FLOAT
     #define MY_MPI_COMPLEX MPI_C_COMPLEX
 #else
-    #define RFLOAT double
+    typedef double RFLOAT;
     #define LARGE_NUMBER 99e99
     #define MY_MPI_DOUBLE  MPI_DOUBLE
     #define MY_MPI_COMPLEX MPI_C_DOUBLE_COMPLEX
