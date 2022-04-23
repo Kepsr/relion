@@ -26,23 +26,34 @@
 #include <src/jaz/gravis/t2Vector.h>
 #include <src/jaz/gravis/t4Matrix.h>
 
-#define INTERPOL_WRAP(i,n) ((i) >= 0 ? (i) % (n) : -(i) % (n) ? (n) - (-(i) % (n)) : 0)
-#define MINMAX(x, infimum, supremum) x = std::max((int) infimum, std::min((int) supremum, x))
+/**
+ * INTEROL_WRAP and MINMAX are two ways of bounding a value.
+ */
+
+inline int INTERPOL_WRAP(int i, long int n) {
+    int modulus = i % n;
+    if (modulus < 0) { modulus += n; }
+    return modulus;
+}
+
+inline int MINMAX(int x, int infimum, int supremum) {
+    return std::max(infimum, std::min(supremum, x));
+}
 
 class Interpolation {
 
     public:
 
-    static bool isInSlice(const Image<RFLOAT>& img, double x, double y);
-    static double getTaperWeight(const Image<RFLOAT>& img, double x, double y, double rx, double ry);
+    static bool isInSlice(const Image<RFLOAT> &img, double x, double y);
+    static double getTaperWeight(const Image<RFLOAT> &img, double x, double y, double rx, double ry);
 
-    static double linearXY(const Image<RFLOAT>& img, double x, double y, int n);
-    static Complex linear3D(const Image<Complex>& img, double x, double y, double z);
-    static Complex linearFFTW3D(const Image<Complex>& img, double x, double y, double z);
-    static Complex linearFFTW2D(const Image<Complex>& img, double x, double y);
+    static double linearXY(const Image<RFLOAT> &img, double x, double y, int n);
+    static Complex linear3D(const Image<Complex> &img, double x, double y, double z);
+    static Complex linearFFTW3D(const Image<Complex> &img, double x, double y, double z);
+    static Complex linearFFTW2D(const Image<Complex> &img, double x, double y);
 
     template<typename T>
-    static gravis::d2Vector quadraticMaxXY(const Image<T>& img, double eps = 1e-25) {
+    static gravis::d2Vector quadraticMaxXY(const Image<T> &img, double eps = 1e-25) {
         const int w = img.data.xdim;
         const int h = img.data.ydim;
 
@@ -85,7 +96,7 @@ class Interpolation {
 
     template<typename T>
     static gravis::d2Vector quadraticMaxWrapXY(
-        const Image<T>& img, double eps = 1e-25,
+        const Image<T> &img, double eps = 1e-25,
         int wMax = -1, int hMax = -1
     ) {
         const int w = img.data.xdim;
@@ -140,12 +151,12 @@ class Interpolation {
 
     template<typename T>
     static T cubicXY(
-        const Image<T>& img, 
+        const Image<T> &img, 
         double x, double y, int z = 0, int n = 0, 
         bool wrap = false
     ) {
-        int xi    = (int) std::floor(x);
-        int yi    = (int) std::floor(y);
+        int xi    = std::floor(x);
+        int yi    = std::floor(y);
         int xi_n1 = xi - 1;
         int yi_n1 = yi - 1;
         int xi_p1 = xi + 1;
@@ -166,14 +177,14 @@ class Interpolation {
             xi_p2 = INTERPOL_WRAP(xi_p2, img.data.xdim);
             yi_p2 = INTERPOL_WRAP(yi_p2, img.data.ydim);
         } else {
-            MINMAX(xi,    0, img.data.xdim - 1);
-            MINMAX(yi,    0, img.data.ydim - 1);
-            MINMAX(xi_n1, 0, img.data.xdim - 1);
-            MINMAX(yi_n1, 0, img.data.ydim - 1);
-            MINMAX(xi_p1, 0, img.data.xdim - 1);
-            MINMAX(yi_p1, 0, img.data.ydim - 1);
-            MINMAX(xi_p2, 0, img.data.xdim - 1);
-            MINMAX(yi_p2, 0, img.data.ydim - 1);
+            xi    = MINMAX(xi,    0, img.data.xdim - 1);
+            yi    = MINMAX(yi,    0, img.data.ydim - 1);
+            xi_n1 = MINMAX(xi_n1, 0, img.data.xdim - 1);
+            yi_n1 = MINMAX(yi_n1, 0, img.data.ydim - 1);
+            xi_p1 = MINMAX(xi_p1, 0, img.data.xdim - 1);
+            yi_p1 = MINMAX(yi_p1, 0, img.data.ydim - 1);
+            xi_p2 = MINMAX(xi_p2, 0, img.data.xdim - 1);
+            yi_p2 = MINMAX(yi_p2, 0, img.data.ydim - 1);
         }
 
         const T f00 = DIRECT_NZYX_ELEM(img.data, n, z, yi_n1,   xi_n1);
@@ -223,12 +234,12 @@ class Interpolation {
 
     template<typename T>
     static gravis::t2Vector<T> cubicXYgrad(
-        const Image<T>& img, 
+        const Image<T> &img, 
         double x, double y, int z = 0, int n = 0, 
         bool wrap = false
     ) {
-        int xi    = (int) std::floor(x);
-        int yi    = (int) std::floor(y);
+        int xi    = std::floor(x);
+        int yi    = std::floor(y);
         int xi_n1 = xi - 1;
         int yi_n1 = yi - 1;
         int xi_p1 = xi + 1;
@@ -249,14 +260,14 @@ class Interpolation {
             xi_p2 = INTERPOL_WRAP(xi_p2, img.data.xdim);
             yi_p2 = INTERPOL_WRAP(yi_p2, img.data.ydim);
         } else {
-            MINMAX(xi,    0, img.data.xdim - 1);
-            MINMAX(yi,    0, img.data.ydim - 1);
-            MINMAX(xi_n1, 0, img.data.xdim - 1);
-            MINMAX(yi_n1, 0, img.data.ydim - 1);
-            MINMAX(xi_p1, 0, img.data.xdim - 1);
-            MINMAX(yi_p1, 0, img.data.ydim - 1);
-            MINMAX(xi_p2, 0, img.data.xdim - 1);
-            MINMAX(yi_p2, 0, img.data.ydim - 1);
+            xi    = MINMAX(xi,    0, img.data.xdim - 1);
+            yi    = MINMAX(yi,    0, img.data.ydim - 1);
+            xi_n1 = MINMAX(xi_n1, 0, img.data.xdim - 1);
+            yi_n1 = MINMAX(yi_n1, 0, img.data.ydim - 1);
+            xi_p1 = MINMAX(xi_p1, 0, img.data.xdim - 1);
+            yi_p1 = MINMAX(yi_p1, 0, img.data.ydim - 1);
+            xi_p2 = MINMAX(xi_p2, 0, img.data.xdim - 1);
+            yi_p2 = MINMAX(yi_p2, 0, img.data.ydim - 1);
         }
 
         const T f00 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_n1,   xi_n1);
@@ -309,7 +320,5 @@ class Interpolation {
     static void test2D();
 
 };
-
-#undef MINMAX
 
 #endif
