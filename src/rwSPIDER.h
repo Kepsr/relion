@@ -28,7 +28,7 @@
 #ifndef RWSPIDER_H
 #define RWSPIDER_H
 
-// #include "src/image.h"
+#include "src/image.h"
 
 #define SPIDERSIZE 1024 // Minimum size of the SPIDER header (variable)
 ///@defgroup Spider Spider File format
@@ -121,8 +121,8 @@ struct SPIDERhead {
 /** Spider Reader
   * @ingroup Spider
 */
-
-int readSPIDER(long int img_select) {
+template <typename T>
+int Image<T>::readSPIDER(long int img_select) {
     #undef DEBUG
     //#define DEBUG
     #ifdef DEBUG
@@ -235,7 +235,8 @@ int readSPIDER(long int img_select) {
 /** Spider Writer
   * @ingroup Spider
 */
-int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE) {
+template <typename T>
+int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     // return(1);
     #undef DEBUG
     // #define DEBUG

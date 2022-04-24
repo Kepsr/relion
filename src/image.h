@@ -220,8 +220,7 @@ class fImageHandler {
     void openFile(const FileName &name, int mode = WRITE_READONLY) {
 
         // Close any file that was left open in this handler
-        if (fimg != NULL || fhed != NULL)
-            closeFile();
+        if (fimg != NULL || fhed != NULL) closeFile();
 
         FileName fileName, headName = "";
         // get the format, checking for possible format specifier before suffix
@@ -240,8 +239,7 @@ class fImageHandler {
         fileName = fileName.removeFileFormat();
 
         size_t found = fileName.find_first_of("%");
-        if (found != std::string::npos)
-            fileName = fileName.substr(0, found);
+        if (found != std::string::npos) { fileName = fileName.substr(0, found); }
 
         exist = exists(fileName);
 
@@ -288,7 +286,7 @@ class fImageHandler {
 
         // Open image file
         if (
-             isTiff && (ftiff = TIFFOpen(fileName.c_str(), "r"))            == NULL ||
+             isTiff && (ftiff = TIFFOpen(fileName.c_str(), "r"))           == NULL ||
             !isTiff && (fimg  = fopen   (fileName.c_str(), wmstr.c_str())) == NULL
         ) {
             REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + name);
@@ -308,8 +306,7 @@ class fImageHandler {
         exist = false;
 
         // Check whether the file was closed already
-        if (fimg == NULL && fhed == NULL && ftiff == NULL)
-            return;
+        if (fimg == NULL && fhed == NULL && ftiff == NULL) return;
 
         if (isTiff && ftiff != NULL) {
             TIFFClose(ftiff);
@@ -354,10 +351,7 @@ class Image {
     MultidimArray<T> data;      // Image data
     MetaDataTable MDMainHeader; // File metadata
 
-    struct Dimensions {
-        int x, y, z;
-        long int n;
-    };
+    struct Dimensions { int x, y, z; long int n; };
 
     private:
 
@@ -436,31 +430,32 @@ class Image {
 
     // Read/write functions for different file formats
 
-    #include "src/rwSPIDER.h"
-    #include "src/rwMRC.h"
-    #include "src/rwIMAGIC.h"
-    #include "src/rwTIFF.h"
+    int readSPIDER(long int img_select);
+
+    int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
+
+    // #include "src/rwSPIDER.h"
+    // #include "src/rwMRC.h"
+    // #include "src/rwIMAGIC.h"
+    // #include "src/rwTIFF.h"
 
     // At present, we have these ill-advised mid-class #include directives.
     // Ideally, they would be replaced by function declarations here in image.h,
     // with definitions in the relevant places (rwMRC.h/rwIMAGIC.h/rwSPIDER.h/rwTIFF.h).
 
-    // int readSPIDER(long int img_select);
 
-    // int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
+    int readMRC(long int img_select, bool isStack=false, const FileName &name="");
 
-    // int readMRC(long int img_select, bool isStack=false, const FileName &name="");
+    int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE);
 
-    // int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE);
+    int readIMAGIC(long int img_select);
 
-    // int readIMAGIC(long int img_select);
+    void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE);
 
-    // void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE);
-
-    // int readTIFF(
-    //     TIFF* ftiff, long int img_select, 
-    //     bool readdata=false, bool isStack=false, const FileName &name=""
-    // );
+    int readTIFF(
+        TIFF* ftiff, long int img_select, 
+        bool readdata=false, bool isStack=false, const FileName &name=""
+    );
 
     /** Is this file an image?
      *
@@ -469,7 +464,7 @@ class Image {
     bool isImage(const FileName &name) { return !read(name, false); }
 
     // Rename the image
-    void rename (const FileName &name) { filename = name; }
+    void rename(const FileName &name) { filename = name; }
 
     /** General read function
      * you can read a single image from a single image file
@@ -482,14 +477,7 @@ class Image {
     int read(
         const FileName &name, bool readdata=true, long int select_img=-1, 
         bool mapData = false, bool is_2D = false
-    ) {
-        if (name == "")
-            REPORT_ERROR("ERROR: trying to read image with empty file name!");
-        fImageHandler hFile;
-        hFile.openFile(name);
-        return _read(name, hFile, readdata, select_img, mapData, is_2D);
-        // fImageHandler's destructor will close the file
-    }
+    );
 
     /** Read from an open file
      */
@@ -652,54 +640,61 @@ class Image {
      */
     void castPage2Datatype(char *page, T *srcPtr, DataType datatype, size_t pageSize) {
         switch (datatype) {
+
             case Float:
-                if (typeid(T) == typeid(float)) {
-                    memcpy(page, srcPtr, pageSize * sizeof(T));
-                } else {
-                    float *ptr = (float *) page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (float) srcPtr[i];
-                }
-                break;
+            if (typeid(T) == typeid(float)) {
+                memcpy(page, srcPtr, pageSize * sizeof(T));
+            } else {
+                float *ptr = (float *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptr[i] = (float) srcPtr[i];
+            }
+            break;
+
             case Double:
-                if (typeid(T) == typeid(RFLOAT)) {
-                    memcpy(page, srcPtr, pageSize * sizeof(T));
-                } else {
-                    RFLOAT *ptr = (RFLOAT *) page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (RFLOAT) srcPtr[i];
-                }
-                break;
+            if (typeid(T) == typeid(RFLOAT)) {
+                memcpy(page, srcPtr, pageSize * sizeof(T));
+            } else {
+                RFLOAT *ptr = (RFLOAT *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptr[i] = (RFLOAT) srcPtr[i];
+            }
+            break;
+
             case Short: 
-                if (typeid(T) == typeid(short)) {
-                    memcpy(page, srcPtr, pageSize * sizeof(T));
-                } else {
-                    short *ptr = (short *) page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (short) srcPtr[i];
-                }
-                break;
+            if (typeid(T) == typeid(short)) {
+                memcpy(page, srcPtr, pageSize * sizeof(T));
+            } else {
+                short *ptr = (short *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptr[i] = (short) srcPtr[i];
+            }
+            break;
+
             case UShort:
-                if (typeid(T) == typeid(unsigned short)) {
-                    memcpy(page, srcPtr, pageSize * sizeof(T));
-                } else {
-                    unsigned short *ptr = (unsigned short *)page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (unsigned short) srcPtr[i];
-                }
-                break;
+            if (typeid(T) == typeid(unsigned short)) {
+                memcpy(page, srcPtr, pageSize * sizeof(T));
+            } else {
+                unsigned short *ptr = (unsigned short *)page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptr[i] = (unsigned short) srcPtr[i];
+            }
+            break;
+
             case UChar:
-                if (typeid(T) == typeid(unsigned char)) {
-                    memcpy(page, srcPtr, pageSize * sizeof(T));
-                } else {
-                    unsigned char *ptr = (unsigned char *) page;
-                    for (size_t i = 0; i < pageSize; i++)
-                        ptr[i] = (unsigned char) srcPtr[i];
-                }
-                break;
+            if (typeid(T) == typeid(unsigned char)) {
+                memcpy(page, srcPtr, pageSize * sizeof(T));
+            } else {
+                unsigned char *ptr = (unsigned char *) page;
+                for (size_t i = 0; i < pageSize; i++)
+                    ptr[i] = (unsigned char) srcPtr[i];
+            }
+            break;
+
             default:
-                std::cerr << "outputDatatype= " << datatype << std::endl;
-                REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
+            std::cerr << "outputDatatype= " << datatype << std::endl;
+            REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
+
             }
     }
 
@@ -708,28 +703,28 @@ class Image {
 
         switch (datatype) {
             case Unknown_Type:
-                REPORT_ERROR("ERROR: datatype is Unknown_Type");
+            REPORT_ERROR("ERROR: datatype is Unknown_Type");
             case UChar:
-                return typeid(T) == typeid(unsigned char);
+            return typeid(T) == typeid(unsigned char);
             case SChar:
-                return typeid(T) == typeid(signed char);
+            return typeid(T) == typeid(signed char);
             case UShort:
-                return typeid(T) == typeid(unsigned short);
+            return typeid(T) == typeid(unsigned short);
             case Short:
-                return typeid(T) == typeid(short);
+            return typeid(T) == typeid(short);
             case UInt:
-                return typeid(T) == typeid(unsigned int);
+            return typeid(T) == typeid(unsigned int);
             case Int:
-                return typeid(T) == typeid(int);
+            return typeid(T) == typeid(int);
             case Long:
-                return typeid(T) == typeid(long);
+            return typeid(T) == typeid(long);
             case Float:
-                return typeid(T) == typeid(float);
+            return typeid(T) == typeid(float);
             case Double:
-                return typeid(T) == typeid(RFLOAT);
+            return typeid(T) == typeid(RFLOAT);
             default:
-                std::cerr << "Datatype= " << datatype << std::endl;
-                REPORT_ERROR(" ERROR: cannot cast datatype to T");
+            std::cerr << "Datatype= " << datatype << std::endl;
+            REPORT_ERROR(" ERROR: cannot cast datatype to T");
         }
         //  int * iTemp = (int*) map;
         //  ptrDest = reinterpret_cast<T*> (iTemp);
@@ -751,7 +746,7 @@ class Image {
     /** Swap an entire page
       * input pointer char *
       */
-    void swapPage(char * page, size_t pageNrElements, DataType datatype) {
+    void swapPage(char *page, size_t pageNrElements, DataType datatype) {
         unsigned long datatypesize = gettypesize(datatype);
         #ifdef DEBUG
             std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
@@ -1135,226 +1130,19 @@ class Image {
     int readTiffInMemory(
         void* buf, size_t size, bool readdata = true, long int select_img = -1,
         bool mapData = false, bool is_2D = false
-    ) {
-        int err = 0;
-
-        TiffInMemory handle;
-        handle.buf = (unsigned char *) buf;
-        handle.size = size;
-        handle.pos = 0;
-        // Check whether to read the data or only the header
-        dataflag = readdata ? 1 : -1;
-
-        // Check whether to map the data or not
-        mmapOn = mapData;
-
-        //Just clear the header before reading
-        MDMainHeader.clear();
-        MDMainHeader.addObject();
-
-        TIFF* ftiff = TIFFClientOpen(
-            "in-memory-tiff", "r", (thandle_t) &handle,
-            TiffInMemoryReadProc,  TiffInMemoryWriteProc, TiffInMemorySeekProc,
-            TiffInMemoryCloseProc, TiffInMemorySizeProc,  TiffInMemoryMapFileProc,
-            TiffInMemoryUnmapFileProc
-        );
-        err = readTIFF(ftiff, select_img, readdata, true, "in-memory-tiff");
-        TIFFClose(ftiff);
-
-        return err;
-    }
+    );
 
     private:
 
     int _read(
         const FileName &name, fImageHandler &hFile, bool readdata = true, long int select_img = -1,
         bool mapData = false, bool is_2D = false
-    ) {
-        // Exit code
-        int err = 0;
-
-        // Check whether to read the data or only the header
-        dataflag = readdata ? 1 : -1;
-
-        // Check whether to map the data or not
-        mmapOn = mapData;
-
-        FileName ext_name = hFile.ext_name;
-        fimg = hFile.fimg;
-        fhed = hFile.fhed;
-
-        long int dump;
-        name.decompose(dump, filename);
-        // Subtract 1 to have numbering 0...N-1 instead of 1...N
-        if (dump > 0) { dump--; }
-        filename = name;
-
-        if (select_img == -1)
-            select_img = dump;
-
-        #undef DEBUG
-        // #define DEBUG
-        #ifdef DEBUG
-            std::cerr << "READ\n" <<
-            "name="<<name <<std::endl;
-            std::cerr << "ext= "<<ext_name <<std::endl;
-            std::cerr << " now reading: "<< filename <<" dataflag= "<<dataflag
-            << " select_img "  << select_img << std::endl;
-        #endif
-        #undef DEBUG
-
-        // Clear the header before reading
-        MDMainHeader.clear();
-        MDMainHeader.addObject();
-
-        if (
-            ext_name.contains("spi") || ext_name.contains("xmp") || 
-            ext_name.contains("stk") || ext_name.contains("vol")
-        ) {
-            // MRC stack MUST go BEFORE plain MRC
-            err = readSPIDER(select_img);
-        } else if (ext_name.contains("mrcs") || (is_2D && ext_name.contains("mrc"))) {
-            // MRC stack MUST go BEFORE plain MRC
-            err = readMRC(select_img, true, name);
-        } else if (ext_name.contains("tif")) {
-            err = readTIFF(hFile.ftiff, select_img, readdata, true, name);
-        } else if (select_img >= 0 && ext_name.contains("mrc")) {
-            REPORT_ERROR("Image::read ERROR: stacks of images in MRC-format should have extension .mrcs; .mrc extensions are reserved for 3D maps.");
-        } else if (ext_name.contains("mrc")) {
-            // MRC 3D map
-            err = readMRC(select_img, false, name);
-        } else if (ext_name.contains("img") || ext_name.contains("hed")) {
-            // IMAGIC is always a stack
-            err = readIMAGIC(select_img);
-        } else if (ext_name.contains("dm")) {
-            REPORT_ERROR("The Digital Micrograph format (DM3, DM4) is not supported. You can convert it to MRC by other programs, for example, dm2mrc in IMOD.");
-        } else if (ext_name.contains("eer") || ext_name.contains("ecc")) {
-            REPORT_ERROR("BUG: EER movies should be handled by EERRenderer, not by Image.");
-        } else {
-            err = readSPIDER(select_img);
-        }
-        // Negative errors are bad.
-        return err;
-    }
+    );
 
     void _write(
         const FileName &name, fImageHandler &hFile, long int select_img=-1, 
         bool isStack=false, int mode=WRITE_OVERWRITE
-    ) {
-        int err = 0;
-
-        FileName ext_name = hFile.ext_name;
-        fimg = hFile.fimg;
-        fhed = hFile.fhed;
-        _exists = hFile.exist;
-
-        filename = name;
-
-        long int aux;
-        FileName filNamePlusExt(name);
-        name.decompose(aux, filNamePlusExt);
-        // Subtract 1 to have numbering 0...N-1 instead of 1...N
-        if (aux > 0)
-            aux--;
-
-        if (select_img == -1)
-            select_img = aux;
-
-        size_t found = filNamePlusExt.find_first_of("%");
-
-        std::string imParam = "";
-
-        if (found != std::string::npos) {
-            imParam =  filNamePlusExt.substr(found+1).c_str();
-            filNamePlusExt = filNamePlusExt.substr(0, found) ;
-        }
-
-        found = filNamePlusExt.find_first_of(":");
-        if ( found!=std::string::npos)
-            filNamePlusExt	 = filNamePlusExt.substr(0, found);
-
-//#define DEBUG
-#ifdef DEBUG
-
-        std::cerr << "write" <<std::endl;
-        std::cerr<<"extension for write= "<<ext_name<<std::endl;
-        std::cerr<<"filename= "<<filename<<std::endl;
-        std::cerr<<"mode= "<<mode<<std::endl;
-        std::cerr<<"isStack= "<<isStack<<std::endl;
-        std::cerr<<"select_img= "<<select_img<<std::endl;
-#endif
-#undef DEBUG
-        // Check that image is not empty
-        if (getSize() < 1)
-            REPORT_ERROR("write Image ERROR: image is empty!");
-
-        // CHECK FOR INCONSISTENCIES BETWEEN data.xdim and x, etc???
-        Dimensions dimensions = this->getDimensions();
-        int Xdim = dimensions.x;
-        int Ydim = dimensions.y;
-        int Zdim = dimensions.z;
-        long int Ndim = dimensions.n;
-
-        Image<T> auxI;
-        replaceNsize = 0; // reset replaceNsize in case image is reused
-        if (select_img == -1 && mode == WRITE_REPLACE) {
-            REPORT_ERROR("write: Please specify object to be replaced");
-        } else if (!_exists && mode == WRITE_REPLACE) {
-            std:: stringstream replace_number;
-            replace_number << select_img;
-            REPORT_ERROR((std::string)
-                "Cannot replace object number: " + replace_number.str()
-                + " in file " + filename + ". It does not exist"
-            );
-        } else if (_exists && (mode == WRITE_REPLACE || mode == WRITE_APPEND)) {
-            auxI.dataflag = -2;
-            auxI.read(filNamePlusExt,false);
-            Dimensions dimensions = auxI.getDimensions();
-            int _Xdim = dimensions.x;
-            int _Ydim = dimensions.y;
-            int _Zdim = dimensions.z;
-            long int _Ndim = dimensions.n;
-            replaceNsize=_Ndim;
-            if (Xdim!=_Xdim ||
-               Ydim!=_Ydim ||
-               Zdim!=_Zdim
-              )
-                REPORT_ERROR("write: target and source objects have different size");
-            if (mode==WRITE_REPLACE && select_img>_Ndim)
-                REPORT_ERROR("write: cannot replace image stack is not large enough");
-            if (auxI.replaceNsize <1 &&
-               (mode==WRITE_REPLACE || mode==WRITE_APPEND))
-                REPORT_ERROR("write: output file is not an stack");
-        } else if (!_exists && mode == WRITE_APPEND) {} else if (mode == WRITE_READONLY) {
-            // If new file we are in the WRITE_OVERWRITE mode
-            REPORT_ERROR((std::string) "File " + name + " opened in read-only mode. Cannot write.");
-        }
-
-        // Select format
-        if (
-            ext_name.contains("spi") || ext_name.contains("xmp") || 
-            ext_name.contains("stk") || ext_name.contains("vol")
-        ) {
-            err = writeSPIDER(select_img, isStack, mode);
-        } else if (ext_name.contains("mrcs")) {
-            writeMRC(select_img, true, mode);
-        } else if (ext_name.contains("mrc")) {
-            writeMRC(select_img, false, mode);
-        } else if (ext_name.contains("img") || ext_name.contains("hed")) {
-            writeIMAGIC(select_img, mode);
-        } else {
-            err = writeSPIDER(select_img, isStack, mode);
-        }
-        if (err < 0) {
-            std::cerr << " Filename = " << filename << " Extension= " << ext_name << std::endl;
-            REPORT_ERROR((std::string)"Error writing file "+ filename + " Extension= " + ext_name);
-        }
-
-        /* If initially the file did not exist, once the first image is written, then the file exists
-         */
-        if (!_exists)
-            hFile.exist = _exists = true;
-    }
+    );
 
 
 };

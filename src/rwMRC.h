@@ -32,7 +32,7 @@
 #include "config.h"
 #endif
 
-// #include "src/image.h"
+#include "src/image.h"
 #define MRCSIZE 1024 // Minimum size of the MRC header (when nsymbt = 0)
 
 ///@defgroup MRC MRC File format
@@ -140,7 +140,8 @@ int systype() {
 /** MRC Reader
   * @ingroup MRC
 */
-int readMRC(long int img_select, bool isStack=false, const FileName &name="") {
+template <typename T>
+int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG
@@ -266,7 +267,8 @@ int readMRC(long int img_select, bool isStack=false, const FileName &name="") {
 /** MRC Writer
   * @ingroup MRC
 */
-int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE) {
+template <typename T>
+int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     MRChead *header = (MRChead *) askMemory(sizeof(MRChead));
 
     // Map the parameters

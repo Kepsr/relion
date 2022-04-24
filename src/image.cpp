@@ -18,11 +18,16 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/image.h"
+#include "src/rwSPIDER.h"
+#include "src/rwIMAGIC.h"
+#include "src/rwMRC.h"
+#include "src/rwTIFF.h"
 
-//#define DEBUG_REGULARISE_HELICAL_SEGMENTS
+
+// #define DEBUG_REGULARISE_HELICAL_SEGMENTS
 
 // Get size of datatype
-unsigned long  gettypesize(DataType type) {
+unsigned long gettypesize(DataType type) {
 
     switch (type) {
 
@@ -85,10 +90,7 @@ void normalise(
     if (is_helical_segment && 2 * (helical_mask_tube_outer_radius_pix + 1) > XSIZE(I()))
         REPORT_ERROR("normalise ERROR: Diameter of helical tube is larger than image size!");
 
-    if (is_helical_segment) {
-        if (I().getDim() == 2)
-            tilt_deg = 0.0;
-    }
+    if (is_helical_segment && I().getDim() == 2) { tilt_deg = 0.0; }
 
     if (white_dust_stddev > 0.0 || black_dust_stddev > 0.0) {
         // Calculate initial avg and stddev values
@@ -99,18 +101,20 @@ void normalise(
         );
 
         // Remove white and black noise
-        if (white_dust_stddev > 0.0)
-            removeDust(I, true, white_dust_stddev, avg, stddev);
+        if (white_dust_stddev > 0.0) 
+        removeDust(I, true, white_dust_stddev, avg, stddev);
         if (black_dust_stddev > 0.0)
-            removeDust(I, false, black_dust_stddev, avg, stddev);
+        removeDust(I, false, black_dust_stddev, avg, stddev);
+
     }
 
-    if (do_ramp)
+    if (do_ramp) {
         subtractBackgroundRamp(
             I, bg_radius,
             is_helical_segment, helical_mask_tube_outer_radius_pix, 
             tilt_deg, psi_deg
         );
+    }
 
     // Calculate avg and stddev (also redo if dust was removed!)
     calculateBackgroundAvgStddev(
@@ -137,7 +141,7 @@ void calculateBackgroundAvgStddev(
     RFLOAT tilt_deg, RFLOAT psi_deg
 ) {
     int bg_radius2 = bg_radius * bg_radius;
-    RFLOAT sum, sum2, n, val, d;
+    RFLOAT sum, sum2, n;
     sum = sum2 = n = 0.0;
     avg = stddev = 0.0;
 
@@ -145,17 +149,15 @@ void calculateBackgroundAvgStddev(
         int dim = I().getDim();
         if (dim != 2 && dim != 3)
             REPORT_ERROR("image.cpp::calculateBackgroundAvgStddev(): 2D or 3D image is required!");
-        if (dim == 2)
-            tilt_deg = 0.0;
+        if (dim == 2) { tilt_deg = 0.0; }
 
         Matrix1D<RFLOAT> coords;
-        Matrix2D<RFLOAT> A;
-
         // Init coords
         coords.clear();
         coords.resize(3);
         coords.initZeros();
 
+        Matrix2D<RFLOAT> A;
         // Init rotational matrix A
         A.clear();
         A.resize(3, 3);
@@ -167,13 +169,11 @@ void calculateBackgroundAvgStddev(
         // Refer to the code in calculateBackgroundAvgStddev() for 3D implementation
 
         #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
-        FileName fn_test;
-        Image<RFLOAT> img_test;
         int angle = round(fabs(psi_deg));
-        fn_test = integerToString(angle);
-        if (psi_deg < 0.)
-            fn_test = fn_test.addExtension("neg");
+        FileName fn_test = integerToString(angle);
+        if (psi_deg < 0.0) { fn_test = fn_test.addExtension("neg"); }
         fn_test = fn_test.addExtension("mrc");
+        Image<RFLOAT> img_test;
         img_test.clear();
         img_test().resize(I());
         img_test().initZeros();
@@ -190,10 +190,10 @@ void calculateBackgroundAvgStddev(
             coords = A * coords;
 
             // Distance from the point to helical axis (perpendicular to X axis)
-            d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
+            RFLOAT d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
 
             if (d > helical_mask_tube_outer_radius_pix) {
-                val = A3D_ELEM(I(), k, i, j);
+                RFLOAT val = A3D_ELEM(I(), k, i, j);
                 sum += val;
                 sum2 += val * val;
                 n += 1.0;
@@ -207,7 +207,7 @@ void calculateBackgroundAvgStddev(
             REPORT_ERROR("image.cpp::calculateBackgroundAvgStddev(): No pixels in background are found. Radius of helical mask is too large.");
         }
 
-        avg = sum / n;
+        avg    = sum / n;
         stddev = sqrt(sum2 / n - avg * avg);
 
         #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
@@ -217,8 +217,8 @@ void calculateBackgroundAvgStddev(
         // Calculate avg in the background pixels
         FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
             if (k * k + i * i + j * j > bg_radius2) {
-                val = A3D_ELEM(I(), k, i, j);
-                sum += val;
+                RFLOAT val = A3D_ELEM(I(), k, i, j);
+                sum  += val;
                 sum2 += val * val;
                 n += 1.0;
             }
@@ -234,7 +234,6 @@ void calculateBackgroundAvgStddev(
     return;
 }
 
-
 void subtractBackgroundRamp(
     Image<RFLOAT> &I,
     int bg_radius,
@@ -246,23 +245,22 @@ void subtractBackgroundRamp(
     int bg_radius2 = bg_radius * bg_radius;
     fit_point3D point;
     std::vector<fit_point3D> allpoints;
-    RFLOAT pA, pB, pC, avgbg, stddevbg, minbg, maxbg;
+    RFLOAT avgbg, stddevbg, minbg, maxbg;
 
     if (I().getDim() == 3)
         REPORT_ERROR("ERROR %% calculateBackgroundRamp is not implemented for 3D data!");
 
     if (is_helical_segment) {
         // not implemented for 3D data
-        Matrix1D<RFLOAT> coords;
-        Matrix2D<RFLOAT> A;
-        if (I().getDim() == 2)
-            tilt_deg = 0.0;
+        if (I().getDim() == 2) { tilt_deg = 0.0; }
 
+        Matrix1D<RFLOAT> coords;
         // Init coords
         coords.clear();
         coords.resize(3);
         coords.initZeros();
 
+        Matrix2D<RFLOAT> A;
         // Init rotational matrix A
         A.clear();
         A.resize(3, 3);
@@ -289,8 +287,9 @@ void subtractBackgroundRamp(
                 allpoints.push_back(point);
             }
         }
-        if (allpoints.size() < 5)
+        if (allpoints.size() < 5) {
             REPORT_ERROR("image.cpp::subtractBackgroundRamp(): Less than 5 pixels in background are found. Radius of helical mask is too large.");
+        }
     } else {
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
             if (i * i + j * j > bg_radius2) {
@@ -303,6 +302,7 @@ void subtractBackgroundRamp(
         }
     }
 
+    RFLOAT pA, pB, pC;
     fitLeastSquaresPlane(allpoints, pA, pB, pC);
 
     // Substract the plane from the image
@@ -312,16 +312,17 @@ void subtractBackgroundRamp(
 
 }
 
-
 void removeDust(
     Image<RFLOAT> &I, bool is_white, RFLOAT thresh, RFLOAT avg, RFLOAT stddev
 ) {
     FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
         RFLOAT aux =  A3D_ELEM(I(), k, i, j);
-        if (is_white && aux - avg > thresh * stddev)
+        if (
+             is_white && aux - avg >  thresh * stddev ||
+            !is_white && aux - avg < -thresh * stddev
+        ) {
             A3D_ELEM(I(), k, i, j) = rnd_gaus(avg, stddev);
-        else if (!is_white && aux - avg < -thresh * stddev)
-            A3D_ELEM(I(), k, i, j) = rnd_gaus(avg, stddev);
+        }
     }
 }
 
@@ -339,28 +340,30 @@ void rescale(Image<RFLOAT> &I, int mysize) {
     // Try to rescale entries in I.MDmainheader
     try {
         I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X) * (RFLOAT) olddim / (RFLOAT) mysize);
-    } catch (const char* errmsg) {}
+    } catch (const char *errmsg) {}
     try {
         I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y) * (RFLOAT) olddim / (RFLOAT) mysize);
-    } catch (const char* errmsg) {}
+    } catch (const char *errmsg) {}
     if (I().getDim() == 3)
     try {
         I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z) * (RFLOAT) olddim / (RFLOAT) mysize);
-    } catch (const char* errmsg) {}
+    } catch (const char *errmsg) {}
 }
 
-void rewindow(Image<RFLOAT> &I, int mysize) {
+void rewindow(Image<RFLOAT> &I, int size) {
     // Check 2D or 3D dimensionality
-    if (I().getDim() == 2) {
-        I().window(
-            Xmipp::init(mysize), Xmipp::init(mysize),
-            Xmipp::last(mysize), Xmipp::last(mysize)
-        );
-    } else if (I().getDim() == 3) {
-        I().window(
-            Xmipp::init(mysize), Xmipp::init(mysize), Xmipp::init(mysize),
-            Xmipp::last(mysize), Xmipp::last(mysize), Xmipp::last(mysize)
-        );
+    switch (I().getDim()) {
+
+        case 2: I().window(
+            Xmipp::init(size), Xmipp::init(size),
+            Xmipp::last(size), Xmipp::last(size)
+        ); break;
+
+        case 3: I().window(
+            Xmipp::init(size), Xmipp::init(size), Xmipp::init(size),
+            Xmipp::last(size), Xmipp::last(size), Xmipp::last(size)
+        ); break;
+
     }
 }
 
@@ -372,14 +375,12 @@ void getImageContrast(
 
     if (sigma_contrast > 0.0 || minval == maxval) {
         Stats<RFLOAT> stats = image.computeStats();
-        RFLOAT avg    = stats.avg;
-        RFLOAT stddev = stats.stddev;
-        minval        = stats.min;
-        maxval        = stats.max;
+        minval = stats.min;
+        maxval = stats.max;
 
         if (sigma_contrast > 0.0) {
-            minval = avg - sigma_contrast * stddev;
-            maxval = avg + sigma_contrast * stddev;
+            minval = stats.avg - sigma_contrast * stats.stddev;
+            maxval = stats.avg + sigma_contrast * stats.stddev;
             redo_minmax = true;
         }
     }
@@ -394,4 +395,242 @@ void getImageContrast(
             }
         }
     }
+}
+
+template <typename T>
+int Image<T>::read(
+    const FileName &name, bool readdata, long int select_img, 
+    bool mapData, bool is_2D
+) {
+    if (name == "")
+        REPORT_ERROR("ERROR: trying to read image with empty file name!");
+    fImageHandler hFile;
+    hFile.openFile(name);
+    return _read(name, hFile, readdata, select_img, mapData, is_2D);
+    // fImageHandler's destructor will close the file
+}
+
+template <typename T>
+int Image<T>::_read(
+    const FileName &name, fImageHandler &hFile, 
+    bool readdata, long int select_img, bool mapData, bool is_2D
+) {
+    // Exit code
+    int err = 0;
+
+    // Check whether to read the data or only the header
+    dataflag = readdata ? 1 : -1;
+
+    // Check whether to map the data or not
+    mmapOn = mapData;
+
+    FileName ext_name = hFile.ext_name;
+    fimg = hFile.fimg;
+    fhed = hFile.fhed;
+
+    long int dump;
+    name.decompose(dump, filename);
+    // Subtract 1 to have numbering 0...N-1 instead of 1...N
+    if (dump > 0) { dump--; }
+    filename = name;
+
+    if (select_img == -1)
+        select_img = dump;
+
+    #undef DEBUG
+    // #define DEBUG
+    #ifdef DEBUG
+        std::cerr << "READ\n" <<
+        "name="<<name <<std::endl;
+        std::cerr << "ext= "<<ext_name <<std::endl;
+        std::cerr << " now reading: "<< filename <<" dataflag= "<<dataflag
+        << " select_img "  << select_img << std::endl;
+    #endif
+    #undef DEBUG
+
+    // Clear the header before reading
+    MDMainHeader.clear();
+    MDMainHeader.addObject();
+
+    if (
+        ext_name.contains("spi") || ext_name.contains("xmp") || 
+        ext_name.contains("stk") || ext_name.contains("vol")
+    ) {
+        // MRC stack MUST go BEFORE plain MRC
+        err = readSPIDER(select_img);
+    } else if (ext_name.contains("mrcs") || (is_2D && ext_name.contains("mrc"))) {
+        // MRC stack MUST go BEFORE plain MRC
+        err = readMRC(select_img, true, name);
+    } else if (ext_name.contains("tif")) {
+        err = readTIFF(hFile.ftiff, select_img, readdata, true, name);
+    } else if (select_img >= 0 && ext_name.contains("mrc")) {
+        REPORT_ERROR("Image::read ERROR: stacks of images in MRC-format should have extension .mrcs; .mrc extensions are reserved for 3D maps.");
+    } else if (ext_name.contains("mrc")) {
+        // MRC 3D map
+        err = readMRC(select_img, false, name);
+    } else if (ext_name.contains("img") || ext_name.contains("hed")) {
+        // IMAGIC is always a stack
+        err = readIMAGIC(select_img);
+    } else if (ext_name.contains("dm")) {
+        REPORT_ERROR("The Digital Micrograph format (DM3, DM4) is not supported. You can convert it to MRC by other programs, for example, dm2mrc in IMOD.");
+    } else if (ext_name.contains("eer") || ext_name.contains("ecc")) {
+        REPORT_ERROR("BUG: EER movies should be handled by EERRenderer, not by Image.");
+    } else {
+        err = readSPIDER(select_img);
+    }
+    // Negative errors are bad.
+    return err;
+}
+
+template <typename T>
+void Image<T>::_write(
+    const FileName &name, fImageHandler &hFile, 
+    long int select_img, bool isStack, int mode
+) {
+    int err = 0;
+
+    FileName ext_name = hFile.ext_name;
+    fimg = hFile.fimg;
+    fhed = hFile.fhed;
+    _exists = hFile.exist;
+
+    filename = name;
+
+    long int aux;
+    FileName filNamePlusExt(name);
+    name.decompose(aux, filNamePlusExt);
+    // Subtract 1 to have numbering 0...N-1 instead of 1...N
+    if (aux > 0)
+        aux--;
+
+    if (select_img == -1)
+        select_img = aux;
+
+    size_t found = filNamePlusExt.find_first_of("%");
+
+    std::string imParam = "";
+
+    if (found != std::string::npos) {
+        imParam = filNamePlusExt.substr(found + 1).c_str();
+        filNamePlusExt = filNamePlusExt.substr(0, found) ;
+    }
+
+    found = filNamePlusExt.find_first_of(":");
+    if (found != std::string::npos)
+        filNamePlusExt = filNamePlusExt.substr(0, found);
+
+    // #define DEBUG
+    #ifdef DEBUG
+
+    std::cerr << "write" << std::endl;
+    std::cerr << "extension for write= " << ext_name << std::endl;
+    std::cerr << "filename= " << filename << std::endl;
+    std::cerr << "mode= " << mode << std::endl;
+    std::cerr << "isStack= " << isStack << std::endl;
+    std::cerr << "select_img= " << select_img << std::endl;
+    #endif
+    #undef DEBUG
+    // Check that image is not empty
+    if (getSize() < 1)
+        REPORT_ERROR("write Image ERROR: image is empty!");
+
+    // CHECK FOR INCONSISTENCIES BETWEEN data.xdim and x, etc???
+    Dimensions dimensions = this->getDimensions();
+    int Xdim = dimensions.x;
+    int Ydim = dimensions.y;
+    int Zdim = dimensions.z;
+    long int Ndim = dimensions.n;
+
+    Image<T> auxI;
+    replaceNsize = 0; // reset replaceNsize in case image is reused
+    if (select_img == -1 && mode == WRITE_REPLACE) {
+        REPORT_ERROR("write: Please specify object to be replaced");
+    } else if (!_exists && mode == WRITE_REPLACE) {
+        std:: stringstream replace_number;
+        replace_number << select_img;
+        REPORT_ERROR((std::string)
+            "Cannot replace object number: " + replace_number.str()
+            + " in file " + filename + ". It does not exist"
+        );
+    } else if (_exists && (mode == WRITE_REPLACE || mode == WRITE_APPEND)) {
+        auxI.dataflag = -2;
+        auxI.read(filNamePlusExt,false);
+        Dimensions dimensions = auxI.getDimensions();
+        int _Xdim = dimensions.x;
+        int _Ydim = dimensions.y;
+        int _Zdim = dimensions.z;
+        long int _Ndim = dimensions.n;
+        replaceNsize=_Ndim;
+        if (Xdim!=_Xdim ||
+            Ydim!=_Ydim ||
+            Zdim!=_Zdim
+            )
+            REPORT_ERROR("write: target and source objects have different size");
+        if (mode==WRITE_REPLACE && select_img>_Ndim)
+            REPORT_ERROR("write: cannot replace image stack is not large enough");
+        if (auxI.replaceNsize <1 &&
+            (mode==WRITE_REPLACE || mode==WRITE_APPEND))
+            REPORT_ERROR("write: output file is not an stack");
+    } else if (!_exists && mode == WRITE_APPEND) {} else if (mode == WRITE_READONLY) {
+        // If new file we are in the WRITE_OVERWRITE mode
+        REPORT_ERROR((std::string) "File " + name + " opened in read-only mode. Cannot write.");
+    }
+
+    // Select format
+    if (
+        ext_name.contains("spi") || ext_name.contains("xmp") || 
+        ext_name.contains("stk") || ext_name.contains("vol")
+    ) {
+        err = writeSPIDER(select_img, isStack, mode);
+    } else if (ext_name.contains("mrcs")) {
+        writeMRC(select_img, true, mode);
+    } else if (ext_name.contains("mrc")) {
+        writeMRC(select_img, false, mode);
+    } else if (ext_name.contains("img") || ext_name.contains("hed")) {
+        writeIMAGIC(select_img, mode);
+    } else {
+        err = writeSPIDER(select_img, isStack, mode);
+    }
+    if (err < 0) {
+        std::cerr << " Filename = " << filename << " Extension= " << ext_name << std::endl;
+        REPORT_ERROR((std::string)"Error writing file "+ filename + " Extension= " + ext_name);
+    }
+
+    /* If initially the file did not exist, once the first image is written, then the file exists
+        */
+    if (!_exists)
+        hFile.exist = _exists = true;
+}
+
+template <typename T>
+int Image<T>::readTiffInMemory(
+    void* buf, size_t size, bool readdata, long int select_img,
+    bool mapData, bool is_2D
+) {
+    int err = 0;
+
+    TiffInMemory handle;
+    handle.buf = (unsigned char *) buf;
+    handle.size = size;
+    handle.pos = 0;
+    // Check whether to read the data or only the header
+    dataflag = readdata ? 1 : -1;
+
+    // Check whether to map the data or not
+    mmapOn = mapData;
+
+    //Just clear the header before reading
+    MDMainHeader.clear();
+    MDMainHeader.addObject();
+
+    TIFF* ftiff = TIFFClientOpen(
+        "in-memory-tiff", "r", (thandle_t) &handle,
+        TiffInMemoryReadProc,  TiffInMemoryWriteProc, TiffInMemorySeekProc,
+        TiffInMemoryCloseProc, TiffInMemorySizeProc,  TiffInMemoryMapFileProc,
+        TiffInMemoryUnmapFileProc
+    );
+    err = readTIFF(ftiff, select_img, readdata, true, "in-memory-tiff");
+    TIFFClose(ftiff);
+
+    return err;
 }
