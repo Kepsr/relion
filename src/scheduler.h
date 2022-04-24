@@ -26,46 +26,46 @@
 #include "src/jaz/obs_model.h"
 #define SCHEDULE_HAS_CHANGED ".schedule_has_changed";
 
-class SchedulerFloatVariable
-{
-	public:
-	RFLOAT value, original_value;
+class SchedulerFloatVariable {
 
-	SchedulerFloatVariable() {};
+    public:
 
-	SchedulerFloatVariable(RFLOAT _value, RFLOAT _original_value)
-	{
-		value = _value;
-		original_value = _original_value;
-	}
+    RFLOAT value, original_value;
+
+    SchedulerFloatVariable() {};
+
+    SchedulerFloatVariable(RFLOAT _value, RFLOAT _original_value) {
+        value = _value;
+        original_value = _original_value;
+    }
 };
 
-class SchedulerBooleanVariable
-{
-	public:
-	bool value, original_value;
+class SchedulerBooleanVariable {
 
-	SchedulerBooleanVariable() {};
+    public:
+    bool value, original_value;
 
-	SchedulerBooleanVariable(bool _value, bool _original_value)
-	{
-		value = _value;
-		original_value = _original_value;
-	}
+    SchedulerBooleanVariable() {};
+
+    SchedulerBooleanVariable(bool _value, bool _original_value) {
+        value = _value;
+        original_value = _original_value;
+    }
+
 };
 
-class SchedulerStringVariable
-{
-	public:
-	FileName value, original_value;
+class SchedulerStringVariable {
 
-	SchedulerStringVariable() {};
+    public:
+    FileName value, original_value;
 
-	SchedulerStringVariable(FileName _value, FileName _original_value)
-	{
-		value = _value;
-		original_value = _original_value;
-	}
+    SchedulerStringVariable() {};
+
+    SchedulerStringVariable(FileName _value, FileName _original_value) {
+        value = _value;
+        original_value = _original_value;
+    }
+
 };
 
 bool isBooleanVariable(std::string name);
@@ -73,179 +73,190 @@ bool isFloatVariable(std::string name);
 bool isStringVariable(std::string name);
 bool isScheduleOperator(std::string name);
 
-#define SCHEDULE_BOOLEAN_OPERATOR_AND "bool=and"
-#define SCHEDULE_BOOLEAN_OPERATOR_OR  "bool=or"
-#define SCHEDULE_BOOLEAN_OPERATOR_NOT "bool=not"
-#define SCHEDULE_BOOLEAN_OPERATOR_GT "bool=gt"
-#define SCHEDULE_BOOLEAN_OPERATOR_LT "bool=lt"
-#define SCHEDULE_BOOLEAN_OPERATOR_GE "bool=ge"
-#define SCHEDULE_BOOLEAN_OPERATOR_LE "bool=le"
-#define SCHEDULE_BOOLEAN_OPERATOR_EQ "bool=eq"
-#define SCHEDULE_BOOLEAN_OPERATOR_FILE_EXISTS "bool=file_exists"
-#define SCHEDULE_BOOLEAN_OPERATOR_READ_STAR "bool=read_star"
-#define SCHEDULE_FLOAT_OPERATOR_SET "float=set"
-#define SCHEDULE_FLOAT_OPERATOR_PLUS "float=plus"
-#define SCHEDULE_FLOAT_OPERATOR_MINUS "float=minus"
-#define SCHEDULE_FLOAT_OPERATOR_MULT "float=mult"
-#define SCHEDULE_FLOAT_OPERATOR_DIVIDE "float=divide"
-#define SCHEDULE_FLOAT_OPERATOR_ROUND "float=round"
-#define SCHEDULE_FLOAT_OPERATOR_COUNT_IMAGES "float=count_images"
-#define SCHEDULE_FLOAT_OPERATOR_COUNT_WORDS "float=count_words"
-#define SCHEDULE_FLOAT_OPERATOR_READ_STAR "float=read_star"
-#define SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX "float=star_table_max"
-#define SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN "float=star_table_min"
-#define SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_AVG "float=star_table_avg"
-#define SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX_IDX "float=star_table_max_idx"
-#define SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN_IDX "float=star_table_min_idx"
-#define SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX "float=star_table_sort_idx"
-#define SCHEDULE_STRING_OPERATOR_JOIN "string=join"
-#define SCHEDULE_STRING_OPERATOR_BEFORE_FIRST "string=before_first"
-#define SCHEDULE_STRING_OPERATOR_AFTER_FIRST "string=after_first"
-#define SCHEDULE_STRING_OPERATOR_BEFORE_LAST "string=before_last"
-#define SCHEDULE_STRING_OPERATOR_AFTER_LAST "string=after_last"
-#define SCHEDULE_STRING_OPERATOR_READ_STAR "string=read_star"
-#define SCHEDULE_STRING_OPERATOR_GLOB "string=glob"
-#define SCHEDULE_STRING_OPERATOR_NTH_WORD "string=nth_word"
-#define SCHEDULE_OPERATOR_TOUCH_FILE "touch_file"
-#define SCHEDULE_OPERATOR_COPY_FILE "copy_file"
-#define SCHEDULE_OPERATOR_MOVE_FILE "move_file"
-#define SCHEDULE_OPERATOR_DELETE_FILE "delete_file"
-#define SCHEDULE_WAIT_OPERATOR_SINCE_LAST_TIME "wait"
-#define SCHEDULE_EMAIL_OPERATOR "email"
-#define SCHEDULE_EXIT_OPERATOR "exit"
+// A class that performs operations on variables
+class SchedulerOperator {
 
-// A class that performs operators on variables
-class SchedulerOperator
-{
-	public:
-	std::string type, input1, input2, output;
+    public:
 
-	public:
+    std::string type, input1, input2, output;
 
+    public:
 
-	SchedulerOperator() {};
+    SchedulerOperator() {};
 
-	SchedulerOperator(std::string _type, std::string _input1="undefined", std::string _input2="undefined", std::string _output="undefined");
+    SchedulerOperator(std::string _type, std::string _input1="undefined", std::string _input2="undefined", std::string _output="undefined");
 
-	std::string initialise(std::string _type, std::string _input1="undefined", std::string _input2="undefined", std::string _output="undefined");
+    std::string initialise(std::string _type, std::string _input1="undefined", std::string _input2="undefined", std::string _output="undefined");
 
-	// Generate a meaningful current_name for the operator
-	std::string getName();
+    // Generate a meaningful current_name for the operator
+    std::string getName();
 
-	// Read a specific value from a STAR file
-	void readFromStarFile() const;
+    // Read a specific value from a STAR file
+    void readFromStarFile() const;
 
-	bool performOperation() const;
+    bool performOperation() const;
 
 };
 
-#define SCHEDULE_NODE_JOB_MODE_NEW "new"
-#define SCHEDULE_NODE_JOB_MODE_CONTINUE "continue"
-#define SCHEDULE_NODE_JOB_MODE_OVERWRITE "overwrite"
+class SchedulerJob {
 
-class SchedulerJob
-{
-	public:
-	std::string current_name, mode;
-	bool job_has_started;
+    public:
 
-	public:
+    std::string current_name, mode;
 
-	SchedulerJob() {};
+    bool job_has_started;
 
-	SchedulerJob(std::string _name, std::string _mode, bool _has_started = false)
-	{
-		current_name = _name;
-		mode = _mode;
-		job_has_started = _has_started;
-	}
+    public:
 
-	// Perform operation and return TRUE if not a JOB; just return FALSE if a JOB
-	bool performOperation();
+    SchedulerJob() {};
 
+    SchedulerJob(std::string _name, std::string _mode, bool _has_started = false) {
+        current_name = _name;
+        mode = _mode;
+        job_has_started = _has_started;
+    }
+
+    // If not a JOB, perform operation and return true.
+    // Otherwise, just return false.
+    bool performOperation();
 
 };
 
 // Send an email
 void schedulerSendEmail(std::string message, std::string subject = "Scheduler");
 
-
 // A class that defines the edges between a graph that defines execution order, where the nodes are individual JOB instances
 // An edge can also be a fork, where the output is controlled through a boolean variable
-class SchedulerEdge
-{
-	public:
-	std::string inputNode, outputNode, outputNodeTrue;
-	std::string myBooleanVariable;
-	bool is_fork;
+class SchedulerEdge {
 
-	std::string getOutputNode() const;
+    public:
 
-	SchedulerEdge(std::string _input, std::string _output, bool _is_fork, std::string _mybool, std::string _output_if_true)
-	{
-		inputNode = _input;
-		outputNode= _output;
-		is_fork = _is_fork;
-		outputNodeTrue = _output_if_true;
-		myBooleanVariable = _mybool;
-	}
+    std::string inputNode, outputNode, outputNodeTrue;
+    std::string myBooleanVariable;
+    bool is_fork;
 
-	SchedulerEdge(std::string _input, std::string _output)
-	{
-		inputNode = _input;
-		outputNode= _output;
-		is_fork = false;
-		outputNodeTrue = "undefined";
-		myBooleanVariable = "undefined";
-	}
+    std::string getOutputNode() const;
+
+    SchedulerEdge(
+        std::string _input, std::string _output, bool _is_fork, 
+        std::string _mybool, std::string _output_if_true
+    ) {
+        inputNode = _input;
+        outputNode= _output;
+        is_fork = _is_fork;
+        outputNodeTrue = _output_if_true;
+        myBooleanVariable = _mybool;
+    }
+
+    SchedulerEdge(std::string _input, std::string _output) {
+        inputNode  = _input;
+        outputNode = _output;
+        is_fork = false;
+        outputNodeTrue    = "undefined";
+        myBooleanVariable = "undefined";
+    }
 
 };
 
-class Schedule
-{
+class Schedule {
 
-public:
+    public:
 
-	std::string name, current_node;
-	bool do_read_only;
-	int verb;
+    std::string name, current_node;
+    bool do_read_only;
+    int verb;
 
-	std::map<std::string, SchedulerJob> jobs;
-	std::vector<SchedulerEdge> edges;
+    std::map<std::string, SchedulerJob> jobs;
+    std::vector<SchedulerEdge> edges;
 
-	PipeLine schedule_pipeline;
+    PipeLine schedule_pipeline;
 
-public:
+    // Operators that return a bool
+    static constexpr const char *BOOLEAN_OPERATOR_AND         = "bool=and";
+    static constexpr const char *BOOLEAN_OPERATOR_OR          = "bool=or";
+    static constexpr const char *BOOLEAN_OPERATOR_NOT         = "bool=not";
+    static constexpr const char *BOOLEAN_OPERATOR_GT          = "bool=gt";
+    static constexpr const char *BOOLEAN_OPERATOR_LT          = "bool=lt";
+    static constexpr const char *BOOLEAN_OPERATOR_GE          = "bool=ge";
+    static constexpr const char *BOOLEAN_OPERATOR_LE          = "bool=le";
+    static constexpr const char *BOOLEAN_OPERATOR_EQ          = "bool=eq";
+    static constexpr const char *BOOLEAN_OPERATOR_FILE_EXISTS = "bool=file_exists";
+    static constexpr const char *BOOLEAN_OPERATOR_READ_STAR   = "bool=read_star";
 
-	Schedule()
-	{
-		clear();
-	}
+    // Operators that return a float
+    static constexpr const char *FLOAT_OPERATOR_SET                      = "float=set";
+    static constexpr const char *FLOAT_OPERATOR_PLUS                     = "float=plus";
+    static constexpr const char *FLOAT_OPERATOR_MINUS                    = "float=minus";
+    static constexpr const char *FLOAT_OPERATOR_MULT                     = "float=mult";
+    static constexpr const char *FLOAT_OPERATOR_DIVIDE                   = "float=divide";
+    static constexpr const char *FLOAT_OPERATOR_ROUND                    = "float=round";
+    static constexpr const char *FLOAT_OPERATOR_COUNT_IMAGES             = "float=count_images";
+    static constexpr const char *FLOAT_OPERATOR_COUNT_WORDS              = "float=count_words";
+    static constexpr const char *FLOAT_OPERATOR_READ_STAR                = "float=read_star";
+    static constexpr const char *FLOAT_OPERATOR_READ_STAR_TABLE_MAX      = "float=star_table_max";
+    static constexpr const char *FLOAT_OPERATOR_READ_STAR_TABLE_MIN      = "float=star_table_min";
+    static constexpr const char *FLOAT_OPERATOR_READ_STAR_TABLE_AVG      = "float=star_table_avg";
+    static constexpr const char *FLOAT_OPERATOR_READ_STAR_TABLE_MAX_IDX  = "float=star_table_max_idx";
+    static constexpr const char *FLOAT_OPERATOR_READ_STAR_TABLE_MIN_IDX  = "float=star_table_min_idx";
+    static constexpr const char *FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX = "float=star_table_sort_idx";
 
-	void clear();
+    // Operators that return a string
+    static constexpr const char *STRING_OPERATOR_JOIN         = "string=join";
+    static constexpr const char *STRING_OPERATOR_BEFORE_FIRST = "string=before_first";
+    static constexpr const char *STRING_OPERATOR_AFTER_FIRST  = "string=after_first";
+    static constexpr const char *STRING_OPERATOR_BEFORE_LAST  = "string=before_last";
+    static constexpr const char *STRING_OPERATOR_AFTER_LAST   = "string=after_last";
+    static constexpr const char *STRING_OPERATOR_READ_STAR    = "string=read_star";
+    static constexpr const char *STRING_OPERATOR_GLOB         = "string=glob";
+    static constexpr const char *STRING_OPERATOR_NTH_WORD     = "string=nth_word";
 
-	void setName(std::string _name)
-	{
-		name = _name;
-		schedule_pipeline.setName(_name + "schedule");
-	}
+    // I/O
+    static constexpr const char *OPERATOR_TOUCH_FILE           = "touch_file";
+    static constexpr const char *OPERATOR_COPY_FILE            = "copy_file";
+    static constexpr const char *OPERATOR_MOVE_FILE            = "move_file";
+    static constexpr const char *OPERATOR_DELETE_FILE          = "delete_file";
+    static constexpr const char *WAIT_OPERATOR_SINCE_LAST_TIME = "wait";
+    static constexpr const char *EMAIL_OPERATOR                = "email";
+    static constexpr const char *EXIT_OPERATOR                 = "exit";
 
+    class NodeJobMode {
 
-	void read(bool do_lock = false, FileName fn = "");
+        public:
 
-	bool isWriteLocked();
-	void write(bool do_lock = false, FileName fn = "");
+        static constexpr const char *NEW       = "new";
+        static constexpr const char *CONTINUE  = "continue";
+        static constexpr const char *OVERWRITE = "overwrite";
+
+    };
+
+    public:
+
+    Schedule() {
+        clear();
+    }
+
+    void clear();
+
+    void setName(std::string _name) {
+        name = _name;
+        schedule_pipeline.setName(_name + "schedule");
+    }
+
+    void read(bool do_lock = false, FileName fn = "");
+
+    bool isWriteLocked();
+    void write(bool do_lock = false, FileName fn = "");
 
     void reset();
 
     void setCurrentNode(std::string _name);
     void setOriginalStartNode(std::string _name);
 
-	bool isNode(std::string name);
-	bool isJob(std::string name);
-	bool isOperator(std::string name);
+    bool isNode(std::string name);
+    bool isJob(std::string name);
+    bool isOperator(std::string name);
 
-	std::string findJobByCurrentName(std::string name);
+    std::string findJobByCurrentName(std::string name);
 
     // Get/set Variables and Operators(scheduler_floats is only visible in this file!)
     float getFloatVariableValue(std::string name);
@@ -265,10 +276,9 @@ public:
 
     std::string getVariableValueAsString(std::string name);
 
-    std::string getOperatorName(std::string type, std::string input1, std::string input2, std::string output)
-    {
-    	SchedulerOperator op(type, input1, input2, output);
-    	return op.getName();
+    std::string getOperatorName(std::string type, std::string input1, std::string input2, std::string output) {
+        SchedulerOperator op(type, input1, input2, output);
+        return op.getName();
     }
     void setOperatorParameters(std::string name, std::string type, std::string input1, std::string input2, std::string output);
     void getOperatorParameters(std::string name, std::string &type, std::string &input1, std::string &input2, std::string &output);
@@ -284,13 +294,15 @@ public:
     // Add variables
     void setVariable(std::string name, FileName value); // (Add new one if exists, otherwise set value)
     void setOriginalVariable(std::string name, FileName value); // (Add new one if exists, otherwise set original_value)
-	void addFloatVariable(std::string name, RFLOAT value);
+    void addFloatVariable(std::string name, RFLOAT value);
     void addBooleanVariable(std::string name, bool value);
     void addStringVariable(std::string name, FileName value);
 
     // Add operators (of any kind), also adds its corresponding node
-    SchedulerOperator initialiseOperator(std::string type, std::string input_name, std::string input2_name,
-    		std::string output_name, std::string &error_message);
+    SchedulerOperator initialiseOperator(
+        std::string type, std::string input_name, std::string input2_name,
+        std::string output_name, std::string &error_message
+    );
     void addOperator(SchedulerOperator &op);
 
     // Add a new job, also adds its corresponding node
@@ -305,7 +317,6 @@ public:
     void removeOperatorsWithThisInputOrOutput(std::string name);
     void removeJob(std::string name);
     void removeEdge(int idx);
-
 
     // Rename this scheduler into a new directory
     void copy(FileName newname);
@@ -323,7 +334,6 @@ public:
     bool gotoNextNode();
     bool gotoNextJob();
 
-
     // Modify a job to set variables and input nodes from the Scheduler
     void setVariablesInJob(RelionJob &job, FileName original_job_name, bool &needs_a_restart);
 
@@ -337,6 +347,5 @@ public:
     void abort();
 
 };
-
 
 #endif /* SCHEDULER_H_ */

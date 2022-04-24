@@ -55,121 +55,121 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
 
     // Check output
     if (!isBooleanVariable(_output) && (
-        type == SCHEDULE_BOOLEAN_OPERATOR_GT ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_LT ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_EQ ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_GE ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_LE ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_AND ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_OR ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_FILE_EXISTS ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_READ_STAR
+        type == Schedule::BOOLEAN_OPERATOR_GT ||
+        type == Schedule::BOOLEAN_OPERATOR_LT ||
+        type == Schedule::BOOLEAN_OPERATOR_EQ ||
+        type == Schedule::BOOLEAN_OPERATOR_GE ||
+        type == Schedule::BOOLEAN_OPERATOR_LE ||
+        type == Schedule::BOOLEAN_OPERATOR_AND ||
+        type == Schedule::BOOLEAN_OPERATOR_OR ||
+        type == Schedule::BOOLEAN_OPERATOR_FILE_EXISTS ||
+        type == Schedule::BOOLEAN_OPERATOR_READ_STAR
     )) {
         return "ERROR: boolean operator does not have valid boolean output: " + _output;
     }
     if (!isFloatVariable(_output) && (
-        type == SCHEDULE_FLOAT_OPERATOR_SET ||
-        type == SCHEDULE_FLOAT_OPERATOR_PLUS ||
-        type == SCHEDULE_FLOAT_OPERATOR_MINUS ||
-        type == SCHEDULE_FLOAT_OPERATOR_MULT ||
-        type == SCHEDULE_FLOAT_OPERATOR_DIVIDE ||
-        type == SCHEDULE_FLOAT_OPERATOR_ROUND ||
-        type == SCHEDULE_FLOAT_OPERATOR_COUNT_IMAGES ||
-        type == SCHEDULE_FLOAT_OPERATOR_COUNT_WORDS ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
+        type == Schedule::FLOAT_OPERATOR_SET ||
+        type == Schedule::FLOAT_OPERATOR_PLUS ||
+        type == Schedule::FLOAT_OPERATOR_MINUS ||
+        type == Schedule::FLOAT_OPERATOR_MULT ||
+        type == Schedule::FLOAT_OPERATOR_DIVIDE ||
+        type == Schedule::FLOAT_OPERATOR_ROUND ||
+        type == Schedule::FLOAT_OPERATOR_COUNT_IMAGES ||
+        type == Schedule::FLOAT_OPERATOR_COUNT_WORDS ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
     )) {
         return "ERROR: float operator does not have valid float output: " + _output;
     }
     if (!isStringVariable(_output) && (
-        type == SCHEDULE_STRING_OPERATOR_READ_STAR ||
-        type == SCHEDULE_STRING_OPERATOR_JOIN ||
-        type == SCHEDULE_STRING_OPERATOR_BEFORE_FIRST ||
-        type == SCHEDULE_STRING_OPERATOR_AFTER_FIRST ||
-        type == SCHEDULE_STRING_OPERATOR_BEFORE_LAST ||
-        type == SCHEDULE_STRING_OPERATOR_AFTER_LAST ||
-        type == SCHEDULE_STRING_OPERATOR_GLOB ||
-        type == SCHEDULE_STRING_OPERATOR_NTH_WORD
+        type == Schedule::STRING_OPERATOR_READ_STAR ||
+        type == Schedule::STRING_OPERATOR_JOIN ||
+        type == Schedule::STRING_OPERATOR_BEFORE_FIRST ||
+        type == Schedule::STRING_OPERATOR_AFTER_FIRST ||
+        type == Schedule::STRING_OPERATOR_BEFORE_LAST ||
+        type == Schedule::STRING_OPERATOR_AFTER_LAST ||
+        type == Schedule::STRING_OPERATOR_GLOB ||
+        type == Schedule::STRING_OPERATOR_NTH_WORD
     )) {
         return "ERROR: string operator does not have valid string output: " + _output;
     }
 
     // Check input1
     if (!isBooleanVariable(_input1) && (
-        type == SCHEDULE_BOOLEAN_OPERATOR_AND ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_OR
+        type == Schedule::BOOLEAN_OPERATOR_AND ||
+        type == Schedule::BOOLEAN_OPERATOR_OR
     )) {
         return "ERROR: boolean operator does not have valid boolean input1: " + _input1;
     }
     if (!isFloatVariable(_input1) && (
-        type == SCHEDULE_FLOAT_OPERATOR_SET ||
-        type == SCHEDULE_FLOAT_OPERATOR_PLUS ||
-        type == SCHEDULE_FLOAT_OPERATOR_MINUS ||
-        type == SCHEDULE_FLOAT_OPERATOR_MULT ||
-        type == SCHEDULE_FLOAT_OPERATOR_DIVIDE ||
-        type == SCHEDULE_FLOAT_OPERATOR_ROUND
+        type == Schedule::FLOAT_OPERATOR_SET ||
+        type == Schedule::FLOAT_OPERATOR_PLUS ||
+        type == Schedule::FLOAT_OPERATOR_MINUS ||
+        type == Schedule::FLOAT_OPERATOR_MULT ||
+        type == Schedule::FLOAT_OPERATOR_DIVIDE ||
+        type == Schedule::FLOAT_OPERATOR_ROUND
     )) {
         return "ERROR: float operator does not have valid float input1: " + _input1;
     }
     if (!isStringVariable(_input1) && (
-        type == SCHEDULE_BOOLEAN_OPERATOR_READ_STAR ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_FILE_EXISTS ||
-        type == SCHEDULE_FLOAT_OPERATOR_COUNT_IMAGES ||
-        type == SCHEDULE_FLOAT_OPERATOR_COUNT_WORDS ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX ||
-        type == SCHEDULE_STRING_OPERATOR_READ_STAR ||
-        type == SCHEDULE_STRING_OPERATOR_JOIN ||
-        type == SCHEDULE_STRING_OPERATOR_BEFORE_FIRST ||
-        type == SCHEDULE_STRING_OPERATOR_AFTER_FIRST ||
-        type == SCHEDULE_STRING_OPERATOR_BEFORE_LAST ||
-        type == SCHEDULE_STRING_OPERATOR_AFTER_LAST ||
-        type == SCHEDULE_STRING_OPERATOR_GLOB ||
-        type == SCHEDULE_STRING_OPERATOR_NTH_WORD ||
-        type == SCHEDULE_OPERATOR_TOUCH_FILE ||
-        type == SCHEDULE_OPERATOR_COPY_FILE ||
-        type == SCHEDULE_OPERATOR_MOVE_FILE ||
-        type == SCHEDULE_OPERATOR_DELETE_FILE
+        type == Schedule::BOOLEAN_OPERATOR_READ_STAR ||
+        type == Schedule::BOOLEAN_OPERATOR_FILE_EXISTS ||
+        type == Schedule::FLOAT_OPERATOR_COUNT_IMAGES ||
+        type == Schedule::FLOAT_OPERATOR_COUNT_WORDS ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX ||
+        type == Schedule::STRING_OPERATOR_READ_STAR ||
+        type == Schedule::STRING_OPERATOR_JOIN ||
+        type == Schedule::STRING_OPERATOR_BEFORE_FIRST ||
+        type == Schedule::STRING_OPERATOR_AFTER_FIRST ||
+        type == Schedule::STRING_OPERATOR_BEFORE_LAST ||
+        type == Schedule::STRING_OPERATOR_AFTER_LAST ||
+        type == Schedule::STRING_OPERATOR_GLOB ||
+        type == Schedule::STRING_OPERATOR_NTH_WORD ||
+        type == Schedule::OPERATOR_TOUCH_FILE ||
+        type == Schedule::OPERATOR_COPY_FILE ||
+        type == Schedule::OPERATOR_MOVE_FILE ||
+        type == Schedule::OPERATOR_DELETE_FILE
     )) {
         return "ERROR: operator does not have valid string input1: " + _input1;
     }
 
     // Check input2
     if (!isBooleanVariable(_input2) && (
-        type == SCHEDULE_BOOLEAN_OPERATOR_AND ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_OR
+        type == Schedule::BOOLEAN_OPERATOR_AND ||
+        type == Schedule::BOOLEAN_OPERATOR_OR
     )) {
         return "ERROR: boolean operator does not have valid boolean input2: " + _input2;
     }
     if (!(isFloatVariable(_input2) || isNumber(_input2)) && (
-        type == SCHEDULE_BOOLEAN_OPERATOR_GT ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_LT ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_EQ ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_GE ||
-        type == SCHEDULE_BOOLEAN_OPERATOR_LE ||
-        type == SCHEDULE_FLOAT_OPERATOR_PLUS ||
-        type == SCHEDULE_FLOAT_OPERATOR_MINUS ||
-        type == SCHEDULE_FLOAT_OPERATOR_MULT ||
-        type == SCHEDULE_FLOAT_OPERATOR_DIVIDE ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX ||
-        type == SCHEDULE_STRING_OPERATOR_NTH_WORD
+        type == Schedule::BOOLEAN_OPERATOR_GT ||
+        type == Schedule::BOOLEAN_OPERATOR_LT ||
+        type == Schedule::BOOLEAN_OPERATOR_EQ ||
+        type == Schedule::BOOLEAN_OPERATOR_GE ||
+        type == Schedule::BOOLEAN_OPERATOR_LE ||
+        type == Schedule::FLOAT_OPERATOR_PLUS ||
+        type == Schedule::FLOAT_OPERATOR_MINUS ||
+        type == Schedule::FLOAT_OPERATOR_MULT ||
+        type == Schedule::FLOAT_OPERATOR_DIVIDE ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX ||
+        type == Schedule::STRING_OPERATOR_NTH_WORD
     )) {
         return "ERROR: operator does not have valid number (float variable or text) input2: " + _input2;
     }
     if (!isStringVariable(_input2) && (
-        type == SCHEDULE_OPERATOR_COPY_FILE ||
-        type == SCHEDULE_OPERATOR_MOVE_FILE ||
-        type == SCHEDULE_STRING_OPERATOR_BEFORE_FIRST ||
-        type == SCHEDULE_STRING_OPERATOR_AFTER_FIRST ||
-        type == SCHEDULE_STRING_OPERATOR_BEFORE_LAST ||
-        type == SCHEDULE_STRING_OPERATOR_AFTER_LAST ||
-        type == SCHEDULE_STRING_OPERATOR_JOIN
+        type == Schedule::OPERATOR_COPY_FILE ||
+        type == Schedule::OPERATOR_MOVE_FILE ||
+        type == Schedule::STRING_OPERATOR_BEFORE_FIRST ||
+        type == Schedule::STRING_OPERATOR_AFTER_FIRST ||
+        type == Schedule::STRING_OPERATOR_BEFORE_LAST ||
+        type == Schedule::STRING_OPERATOR_AFTER_LAST ||
+        type == Schedule::STRING_OPERATOR_JOIN
     )) {
         return "ERROR: operator does not have valid string input2: " + _input2;
     }
@@ -212,9 +212,9 @@ void  SchedulerOperator::readFromStarFile() const {
 
     long idx = isFloatVariable(input2) ? round(scheduler_global_floats[input2].value) : 0;
     if (
-        type == SCHEDULE_BOOLEAN_OPERATOR_READ_STAR ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR ||
-        type == SCHEDULE_STRING_OPERATOR_READ_STAR
+        type == Schedule::BOOLEAN_OPERATOR_READ_STAR ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR ||
+        type == Schedule::STRING_OPERATOR_READ_STAR
     ) {
         if (EMDL::isDouble(mylabel)) {
             scheduler_global_floats[output].value = MD.getValue<RFLOAT>(mylabel, idx);
@@ -226,10 +226,10 @@ void  SchedulerOperator::readFromStarFile() const {
             scheduler_global_bools[output].value = MD.getValue<bool>(mylabel, idx);
         }
     } else if (
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
     ) {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             if (EMDL::isDouble(mylabel)) {
@@ -257,13 +257,13 @@ void  SchedulerOperator::readFromStarFile() const {
 
         if (ii > 0) { mysum /= (RFLOAT) ii; }
 
-        if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX) {
+        if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MAX) {
             scheduler_global_floats[output].value = mymax;
-        } else if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN) {
+        } else if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MIN) {
             scheduler_global_floats[output].value = mymin;
-        } else if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_AVG) {
+        } else if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG) {
             scheduler_global_floats[output].value = mysum;
-        } else if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX) {
+        } else if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX) {
             if (idx == 0) {
                 REPORT_ERROR("Give a positive or a negative value for input2 in sorted_idx: 1 is largest, -1 is smallest value");
             }
@@ -282,53 +282,53 @@ void  SchedulerOperator::readFromStarFile() const {
 bool SchedulerOperator::performOperation() const {
     RFLOAT val2 = isFloatVariable(input2) ? scheduler_global_floats[input2].value : 0;
 
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_AND) {
+           if (type == Schedule::BOOLEAN_OPERATOR_AND) {
         scheduler_global_bools[output].value = scheduler_global_bools[input1].value && scheduler_global_bools[input2].value;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_OR) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_OR) {
         scheduler_global_bools[output].value = scheduler_global_bools[input1].value || scheduler_global_bools[input2].value;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_NOT) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_NOT) {
         scheduler_global_bools[output].value = !scheduler_global_bools[input1].value;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_GT) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_GT) {
         scheduler_global_bools[output].value = scheduler_global_floats[input1].value > val2;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_LT) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_LT) {
         scheduler_global_bools[output].value = scheduler_global_floats[input1].value < val2;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_EQ) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_EQ) {
         scheduler_global_bools[output].value = fabs(scheduler_global_floats[input1].value - val2) < 1E-8;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_GE) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_GE) {
         scheduler_global_bools[output].value = scheduler_global_floats[input1].value >= val2;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_LE) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_LE) {
         scheduler_global_bools[output].value = scheduler_global_floats[input1].value <= val2;
-    } else if (type == SCHEDULE_BOOLEAN_OPERATOR_FILE_EXISTS) {
+    } else if (type == Schedule::BOOLEAN_OPERATOR_FILE_EXISTS) {
         scheduler_global_bools[output].value = exists(scheduler_global_strings[input1].value);
     } else if (
-        type == SCHEDULE_BOOLEAN_OPERATOR_READ_STAR ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR ||
-        type == SCHEDULE_STRING_OPERATOR_READ_STAR ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
-        type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
+        type == Schedule::BOOLEAN_OPERATOR_READ_STAR         ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR           ||
+        type == Schedule::STRING_OPERATOR_READ_STAR          ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MAX ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
+        type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
     ) {
         readFromStarFile();
-    } else if (type == SCHEDULE_FLOAT_OPERATOR_SET) {
+    } else if (type == Schedule::FLOAT_OPERATOR_SET) {
         scheduler_global_floats[output].value = scheduler_global_floats[input1].value;
-    } else if (type == SCHEDULE_FLOAT_OPERATOR_PLUS) {
+    } else if (type == Schedule::FLOAT_OPERATOR_PLUS) {
         scheduler_global_floats[output].value = scheduler_global_floats[input1].value + val2;
-    } else if (type ==SCHEDULE_FLOAT_OPERATOR_MINUS) {
+    } else if (type ==Schedule::FLOAT_OPERATOR_MINUS) {
         scheduler_global_floats[output].value = scheduler_global_floats[input1].value - val2;
-    } else if (type == SCHEDULE_FLOAT_OPERATOR_MULT) {
+    } else if (type == Schedule::FLOAT_OPERATOR_MULT) {
         scheduler_global_floats[output].value = scheduler_global_floats[input1].value * val2;
-    } else if (type == SCHEDULE_FLOAT_OPERATOR_DIVIDE) {
+    } else if (type == Schedule::FLOAT_OPERATOR_DIVIDE) {
         scheduler_global_floats[output].value = scheduler_global_floats[input1].value / val2;
-    } else if (type == SCHEDULE_FLOAT_OPERATOR_ROUND) {
+    } else if (type == Schedule::FLOAT_OPERATOR_ROUND) {
         scheduler_global_floats[output].value = round(scheduler_global_floats[input1].value);
-    } else if (type == SCHEDULE_FLOAT_OPERATOR_COUNT_IMAGES) {
+    } else if (type == Schedule::FLOAT_OPERATOR_COUNT_IMAGES) {
         std::string mytablename = isStringVariable(input2) ? scheduler_global_strings[input2].value : "particles";
         ObservationModel obsmodel;
         MetaDataTable MDimg;
         ObservationModel::loadSafely(scheduler_global_strings[input1].value, obsmodel, MDimg, mytablename);
         scheduler_global_floats[output].value = MDimg.numberOfObjects();
-    } else if (type == SCHEDULE_FLOAT_OPERATOR_COUNT_WORDS) {
+    } else if (type == Schedule::FLOAT_OPERATOR_COUNT_WORDS) {
         // return zero for an undefined string
         if (scheduler_global_strings[input1].value == "undefined") {
             scheduler_global_floats[output].value = 0;
@@ -337,17 +337,17 @@ bool SchedulerOperator::performOperation() const {
             splitString(scheduler_global_strings[input1].value, ",", splits);
             scheduler_global_floats[output].value = splits.size();
         }
-    } else if (type == SCHEDULE_STRING_OPERATOR_JOIN) {
+    } else if (type == Schedule::STRING_OPERATOR_JOIN) {
         scheduler_global_strings[output].value = scheduler_global_strings[input1].value + scheduler_global_strings[input2].value;
-    } else if (type == SCHEDULE_STRING_OPERATOR_BEFORE_FIRST) {
+    } else if (type == Schedule::STRING_OPERATOR_BEFORE_FIRST) {
         scheduler_global_strings[output].value = scheduler_global_strings[input1].value.beforeFirstOf(scheduler_global_strings[input2].value);
-    } else if (type == SCHEDULE_STRING_OPERATOR_AFTER_FIRST) {
+    } else if (type == Schedule::STRING_OPERATOR_AFTER_FIRST) {
         scheduler_global_strings[output].value = scheduler_global_strings[input1].value.afterFirstOf(scheduler_global_strings[input2].value);
-    } else if (type == SCHEDULE_STRING_OPERATOR_BEFORE_LAST) {
+    } else if (type == Schedule::STRING_OPERATOR_BEFORE_LAST) {
         scheduler_global_strings[output].value = scheduler_global_strings[input1].value.beforeLastOf(scheduler_global_strings[input2].value);
-    } else if (type == SCHEDULE_STRING_OPERATOR_AFTER_LAST) {
+    } else if (type == Schedule::STRING_OPERATOR_AFTER_LAST) {
         scheduler_global_strings[output].value = scheduler_global_strings[input1].value.afterLastOf(scheduler_global_strings[input2].value);
-    } else if (type == SCHEDULE_STRING_OPERATOR_GLOB) {
+    } else if (type == Schedule::STRING_OPERATOR_GLOB) {
         FileName input = scheduler_global_strings[input1].value;
         std::vector<FileName> files;
         input.globFiles(files);
@@ -359,7 +359,7 @@ bool SchedulerOperator::performOperation() const {
                 scheduler_global_strings[output].value += "," + files[i];
             }
         }
-    } else if (type == SCHEDULE_STRING_OPERATOR_NTH_WORD) {
+    } else if (type == Schedule::STRING_OPERATOR_NTH_WORD) {
 
         std::vector<std::string> splits;
         splitString(scheduler_global_strings[input1].value, ",", splits);
@@ -371,12 +371,12 @@ bool SchedulerOperator::performOperation() const {
         scheduler_global_strings[output].value = mypos >= splits.size() || mypos < 0 ?
             "undefined" :
             splits[mypos];
-    } else if (type == SCHEDULE_OPERATOR_TOUCH_FILE) {
+    } else if (type == Schedule::OPERATOR_TOUCH_FILE) {
         std::cout << " + Touching: " << scheduler_global_strings[input1].value << std::endl;
         touch(scheduler_global_strings[input1].value);
-    } else if (type == SCHEDULE_OPERATOR_COPY_FILE || type == SCHEDULE_OPERATOR_MOVE_FILE) {
+    } else if (type == Schedule::OPERATOR_COPY_FILE || type == Schedule::OPERATOR_MOVE_FILE) {
         std::string mycommand;
-        if (type == SCHEDULE_OPERATOR_COPY_FILE) {
+        if (type == Schedule::OPERATOR_COPY_FILE) {
             std::cout << " + Copying: " << scheduler_global_strings[input1].value << " to " << scheduler_global_strings[input2].value << std::endl;
             mycommand = "cp ";
         } else {
@@ -392,11 +392,11 @@ bool SchedulerOperator::performOperation() const {
         // Execute the command
         mycommand += scheduler_global_strings[input1].value + " " + scheduler_global_strings[input2].value;
         int res = system(mycommand.c_str());
-    } else if (type == SCHEDULE_OPERATOR_DELETE_FILE) {
+    } else if (type == Schedule::OPERATOR_DELETE_FILE) {
         std::string mycommand = "rm -f " + scheduler_global_strings[input1].value;
         std::cout << " + Deleting: " << scheduler_global_strings[input1].value << std::endl;
         int res = system(mycommand.c_str());
-    } else if (type == SCHEDULE_WAIT_OPERATOR_SINCE_LAST_TIME) {
+    } else if (type == Schedule::WAIT_OPERATOR_SINCE_LAST_TIME) {
         if (has_annotated_time) {
             time_t current_time = time(NULL);
             RFLOAT elapsed = current_time - annotated_time;
@@ -413,7 +413,7 @@ bool SchedulerOperator::performOperation() const {
         }
         annotated_time = time(NULL);
         has_annotated_time = true;
-    } else if (type == SCHEDULE_EMAIL_OPERATOR) {
+    } else if (type == Schedule::EMAIL_OPERATOR) {
 
         time_t my_time = time(NULL);
         std::string mymessage = std::string(ctime(&my_time)) + "\n";
@@ -438,7 +438,7 @@ bool SchedulerOperator::performOperation() const {
         std::cout << " + Sending e-mail." << std::endl;
 
         schedulerSendEmail(mymessage);
-    } else if (type == SCHEDULE_EXIT_OPERATOR) {
+    } else if (type == Schedule::EXIT_OPERATOR) {
         std::cout << " + The schedule has reached an exit point ..." << std::endl;
         return false; // to exit the schedule
     } else {
@@ -449,44 +449,44 @@ bool SchedulerOperator::performOperation() const {
 }
 
 std::string SchedulerOperator::getName() {
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_GT) return output + "=" + input1 + "_GT_" + input2;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_LT) return output + "=" + input1 + "_LT_" + input2;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_EQ) return output + "=" + input1 + "_EQ_" + input2;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_GE) return output + "=" + input1 + "_GE_" + input2;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_LE) return output + "=" + input1 + "_LE_" + input2;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_AND) return output + "=" + input1 + "_AND_" + input2;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_OR) return output + "=" + input1 + "_OR_" + input2;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_NOT) return output + "=" + "NOT_" + input1;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_FILE_EXISTS) return output + "=" + "EXISTS_" + input1;
-    if (type == SCHEDULE_BOOLEAN_OPERATOR_READ_STAR) return output + "=" + "STAR_" + input1 + "_" + input2;
-    if (type == SCHEDULE_FLOAT_OPERATOR_SET) return output + "=" + "SET_" + input1;
-    if (type == SCHEDULE_FLOAT_OPERATOR_PLUS) return output + "=" + input1 + "_PLUS_" + input2;
-    if (type == SCHEDULE_FLOAT_OPERATOR_MINUS) return output + "=" + input1 + "_MINUS_" + input2;
-    if (type == SCHEDULE_FLOAT_OPERATOR_MULT) return output + "=" + input1 + "_MULT_" + input2;
-    if (type == SCHEDULE_FLOAT_OPERATOR_DIVIDE) return output + "=" + input1 + "_DIV_" + input2;
-    if (type == SCHEDULE_FLOAT_OPERATOR_ROUND) return output + "=" + "ROUND_" + input1;
-    if (type == SCHEDULE_FLOAT_OPERATOR_COUNT_IMAGES) return output + "=" + "COUNT_IMGS_" + input1 + "_" + input2;
-    if (type == SCHEDULE_FLOAT_OPERATOR_COUNT_WORDS) return output + "=" + "COUNT_WORDS_" + input1;
-    if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR) return output + "=" + "STAR_" + input1 + "_" + input2;
-    if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MAX) return output + "=" + "STAR_MAX_" + input1;
-    if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_MIN) return output + "=" + "STAR_MIN_" + input1;
-    if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_AVG) return output + "=" + "STAR_AVG_" + input1;
-    if (type == SCHEDULE_FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX) return output + "=" + "STAR_SORT_IDX_" + input1 + "_" + input2;
-    if (type == SCHEDULE_STRING_OPERATOR_JOIN) return output + "=" + "JOIN_" + input1 + "_" + input2;
-    if (type == SCHEDULE_STRING_OPERATOR_BEFORE_FIRST) return output + "=" + "BEF_FIRST_" + input1 + "_" + input2;
-    if (type == SCHEDULE_STRING_OPERATOR_AFTER_FIRST) return output + "=" + "AFT_FIRST_" + input1 + "_" + input2;
-    if (type == SCHEDULE_STRING_OPERATOR_BEFORE_LAST) return output + "=" + "BEF_LAST_" + input1 + "_" + input2;
-    if (type == SCHEDULE_STRING_OPERATOR_AFTER_LAST) return output + "=" + "AFT_LAST_" + input1 + "_" + input2;
-    if (type == SCHEDULE_STRING_OPERATOR_READ_STAR) return output + "=" + "STAR_" + input1 + "_" + input2;
-    if (type == SCHEDULE_STRING_OPERATOR_GLOB) return output + "=" + "GLOB_" + input1;
-    if (type == SCHEDULE_STRING_OPERATOR_NTH_WORD) return output + "=" + "NTH_WORD_" + input1 + "_" + input2;
-    if (type == SCHEDULE_OPERATOR_TOUCH_FILE) return "TOUCH_" + input1;
-    if (type == SCHEDULE_OPERATOR_COPY_FILE) return "COPY_" + input1 + "_TO_" + input2;
-    if (type == SCHEDULE_OPERATOR_MOVE_FILE) return "MOVE_" + input1 + "_TO_" + input2;
-    if (type == SCHEDULE_OPERATOR_DELETE_FILE) return "DELETE_" + input1;
-    if (type == SCHEDULE_WAIT_OPERATOR_SINCE_LAST_TIME) return "WAIT_" + input1;
-    if (type == SCHEDULE_EMAIL_OPERATOR) return "EMAIL_" + input1 + "_" + input2;
-    if (type == SCHEDULE_EXIT_OPERATOR) return "EXIT";
+    if (type == Schedule::BOOLEAN_OPERATOR_GT) return output + "=" + input1 + "_GT_" + input2;
+    if (type == Schedule::BOOLEAN_OPERATOR_LT) return output + "=" + input1 + "_LT_" + input2;
+    if (type == Schedule::BOOLEAN_OPERATOR_EQ) return output + "=" + input1 + "_EQ_" + input2;
+    if (type == Schedule::BOOLEAN_OPERATOR_GE) return output + "=" + input1 + "_GE_" + input2;
+    if (type == Schedule::BOOLEAN_OPERATOR_LE) return output + "=" + input1 + "_LE_" + input2;
+    if (type == Schedule::BOOLEAN_OPERATOR_AND) return output + "=" + input1 + "_AND_" + input2;
+    if (type == Schedule::BOOLEAN_OPERATOR_OR) return output + "=" + input1 + "_OR_" + input2;
+    if (type == Schedule::BOOLEAN_OPERATOR_NOT) return output + "=" + "NOT_" + input1;
+    if (type == Schedule::BOOLEAN_OPERATOR_FILE_EXISTS) return output + "=" + "EXISTS_" + input1;
+    if (type == Schedule::BOOLEAN_OPERATOR_READ_STAR) return output + "=" + "STAR_" + input1 + "_" + input2;
+    if (type == Schedule::FLOAT_OPERATOR_SET) return output + "=" + "SET_" + input1;
+    if (type == Schedule::FLOAT_OPERATOR_PLUS) return output + "=" + input1 + "_PLUS_" + input2;
+    if (type == Schedule::FLOAT_OPERATOR_MINUS) return output + "=" + input1 + "_MINUS_" + input2;
+    if (type == Schedule::FLOAT_OPERATOR_MULT) return output + "=" + input1 + "_MULT_" + input2;
+    if (type == Schedule::FLOAT_OPERATOR_DIVIDE) return output + "=" + input1 + "_DIV_" + input2;
+    if (type == Schedule::FLOAT_OPERATOR_ROUND) return output + "=" + "ROUND_" + input1;
+    if (type == Schedule::FLOAT_OPERATOR_COUNT_IMAGES) return output + "=" + "COUNT_IMGS_" + input1 + "_" + input2;
+    if (type == Schedule::FLOAT_OPERATOR_COUNT_WORDS) return output + "=" + "COUNT_WORDS_" + input1;
+    if (type == Schedule::FLOAT_OPERATOR_READ_STAR) return output + "=" + "STAR_" + input1 + "_" + input2;
+    if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MAX) return output + "=" + "STAR_MAX_" + input1;
+    if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MIN) return output + "=" + "STAR_MIN_" + input1;
+    if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG) return output + "=" + "STAR_AVG_" + input1;
+    if (type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX) return output + "=" + "STAR_SORT_IDX_" + input1 + "_" + input2;
+    if (type == Schedule::STRING_OPERATOR_JOIN) return output + "=" + "JOIN_" + input1 + "_" + input2;
+    if (type == Schedule::STRING_OPERATOR_BEFORE_FIRST) return output + "=" + "BEF_FIRST_" + input1 + "_" + input2;
+    if (type == Schedule::STRING_OPERATOR_AFTER_FIRST) return output + "=" + "AFT_FIRST_" + input1 + "_" + input2;
+    if (type == Schedule::STRING_OPERATOR_BEFORE_LAST) return output + "=" + "BEF_LAST_" + input1 + "_" + input2;
+    if (type == Schedule::STRING_OPERATOR_AFTER_LAST) return output + "=" + "AFT_LAST_" + input1 + "_" + input2;
+    if (type == Schedule::STRING_OPERATOR_READ_STAR) return output + "=" + "STAR_" + input1 + "_" + input2;
+    if (type == Schedule::STRING_OPERATOR_GLOB) return output + "=" + "GLOB_" + input1;
+    if (type == Schedule::STRING_OPERATOR_NTH_WORD) return output + "=" + "NTH_WORD_" + input1 + "_" + input2;
+    if (type == Schedule::OPERATOR_TOUCH_FILE) return "TOUCH_" + input1;
+    if (type == Schedule::OPERATOR_COPY_FILE) return "COPY_" + input1 + "_TO_" + input2;
+    if (type == Schedule::OPERATOR_MOVE_FILE) return "MOVE_" + input1 + "_TO_" + input2;
+    if (type == Schedule::OPERATOR_DELETE_FILE) return "DELETE_" + input1;
+    if (type == Schedule::WAIT_OPERATOR_SINCE_LAST_TIME) return "WAIT_" + input1;
+    if (type == Schedule::EMAIL_OPERATOR) return "EMAIL_" + input1 + "_" + input2;
+    if (type == Schedule::EXIT_OPERATOR) return "EXIT";
     REPORT_ERROR("ERROR: unrecognised Operator type:" + type);
 }
 
@@ -817,7 +817,7 @@ void Schedule::write(bool do_lock, FileName fn) {
     }
 
     // Touch a file to indicate to the GUI that the pipeline has just changed
-    FileName mychanged = name+SCHEDULE_HAS_CHANGED;
+    FileName mychanged = name + SCHEDULE_HAS_CHANGED;
     touch(mychanged);
 }
 
@@ -1459,7 +1459,6 @@ void Schedule::run(PipeLine &pipeline) {
 
     pipeline_control_delete_exit_files();
 
-
     if (current_node == "undefined") {
         if (edges.size() > 0) {
             current_node = edges[0].inputNode;
@@ -1499,7 +1498,7 @@ void Schedule::run(PipeLine &pipeline) {
         RelionJob myjob;
         bool is_continue, do_overwrite_current, dummy;
         int current_job;
-        if (!jobs[current_node].job_has_started || jobs[current_node].mode == SCHEDULE_NODE_JOB_MODE_NEW) {
+        if (!jobs[current_node].job_has_started || jobs[current_node].mode == Schedule::NodeJobMode::NEW) {
             // Read the job from inside the Schedule schedule_pipeline to a new job
             bool dummy;
             myjob.read(name + current_node + '/', dummy, true); // true means initialise the job
@@ -1516,9 +1515,9 @@ void Schedule::run(PipeLine &pipeline) {
             // Set the current_name of the current node now
             jobs[current_node].current_name = pipeline.processList[current_job].name;
                 if (verb > 0) std::cout << " + Creating new Job: " << jobs[current_node].current_name << " from Node: " << current_node << std::endl;
-        } else if (jobs[current_node].mode == SCHEDULE_NODE_JOB_MODE_CONTINUE || jobs[current_node].mode == SCHEDULE_NODE_JOB_MODE_OVERWRITE) {
-            is_continue = (jobs[current_node].mode == SCHEDULE_NODE_JOB_MODE_CONTINUE);
-            do_overwrite_current = (jobs[current_node].mode == SCHEDULE_NODE_JOB_MODE_OVERWRITE);
+        } else if (jobs[current_node].mode == Schedule::NodeJobMode::CONTINUE || jobs[current_node].mode == Schedule::NodeJobMode::OVERWRITE) {
+            is_continue = (jobs[current_node].mode == Schedule::NodeJobMode::CONTINUE);
+            do_overwrite_current = (jobs[current_node].mode == Schedule::NodeJobMode::OVERWRITE);
 
             current_job = pipeline.findProcessByName(jobs[current_node].current_name);
             if (current_job < 0)

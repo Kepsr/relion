@@ -28,79 +28,69 @@
 #endif
 
 
-int main(int argc, char *argv[])
-{
-	Fl::scheme("gtk+");
+int main(int argc, char *argv[]) {
+    Fl::scheme("gtk+");
 
-#define _MAX_PATH 200
+    #define _MAX_PATH 200
 
-	char my_dir[_MAX_PATH];
-	char short_dir[49];
-	char* res = getcwd(my_dir, _MAX_PATH);
+    char my_dir[_MAX_PATH];
+    char short_dir[49];
+    char* res = getcwd(my_dir, _MAX_PATH);
 
-	// Get last 45 characters of my_dir to fit in titlebar of window
-	if (strlen(my_dir) > 45)
-	{
-		short_dir[0]=short_dir[1]=short_dir[2]='.';
-		int j = 3;
-		for (int i = strlen(my_dir)-45; i < strlen(my_dir); i++, j++)
-		{
-			short_dir[j] = my_dir[i];
-		}
-		short_dir[j] = '\0';
-	}
-	else
-	{
-		int i;
-		for (i = 0; i < strlen(my_dir); i++)
-			short_dir[i] = my_dir[i];
-		short_dir[i] = '\0';
-	}
+    // Get last 45 characters of my_dir to fit in titlebar of window
+    if (strlen(my_dir) > 45) {
+        short_dir[0] = short_dir[1] = short_dir[2] = '.';
+        int j = 3;
+        for (int i = strlen(my_dir)-45; i < strlen(my_dir); i++, j++) {
+            short_dir[j] = my_dir[i];
+        }
+        short_dir[j] = '\0';
+    } else {
+        int i;
+        for (i = 0; i < strlen(my_dir); i++) {
+            short_dir[i] = my_dir[i];
+        }
+        short_dir[i] = '\0';
+    }
 
-	char titletext[256];
-	snprintf(titletext, 256, "RELION-%s", g_RELION_VERSION);
-#ifdef PACKAGE_VERSION
-	strcat(titletext,PACKAGE_VERSION);
-#endif
-	strcat(titletext,": ");
+    char titletext[256];
+    snprintf(titletext, 256, "RELION-%s", g_RELION_VERSION);
+    #ifdef PACKAGE_VERSION
+    strcat(titletext,PACKAGE_VERSION);
+    #endif
+    strcat(titletext,": ");
 
-	strcat (titletext, short_dir);
+    strcat (titletext, short_dir);
 
-	try
-	{
-		// Fill the window
-		if (checkParameter(argc, argv, "--help"))
-		{
-			std::cerr << " [--refresh 2]  : refresh rate in seconds" << std::endl;
-			std::cerr << " [--idle 3600]  : quit GUI after this many second" << std::endl;
-			std::cerr << " [--readonly]   : limited version of GUI that does not touch any files" << std::endl;
-			std::cerr << " [--version]    : show the version of this program" << std::endl;
-			exit(0);
-		}
-		else if (checkParameter(argc, argv, "--version"))
-		{
-			// Although our parser checks for --version, we do it here. Otherwise GuiMainWindow asks for a new project directory.
-			PRINT_VERSION_INFO();
-			exit(0);
-		}
-		FileName fn_pipe = getParameter(argc, argv, "--pipeline", "default");
-		FileName fn_sched = getParameter(argc, argv, "--schedule", "");
-		if (fn_sched != "") fn_sched = "Schedules/" + fn_sched;
-		int _update_every_sec = textToInteger(getParameter(argc, argv, "--refresh", "2"));
-		int _exit_after_sec = textToInteger(getParameter(argc, argv, "--idle", "3600"));
-		bool _do_read_only = checkParameter(argc, argv, "--readonly");
-		GuiMainWindow window(GUIWIDTH, GUIHEIGHT_EXT, titletext, fn_pipe, fn_sched, _update_every_sec, _exit_after_sec, _do_read_only);
+    try {
+        // Fill the window
+        if (checkParameter(argc, argv, "--help")) {
+            std::cerr << " [--refresh 2]  : refresh rate in seconds" << std::endl;
+            std::cerr << " [--idle 3600]  : quit GUI after this many second" << std::endl;
+            std::cerr << " [--readonly]   : limited version of GUI that does not touch any files" << std::endl;
+            std::cerr << " [--version]    : show the version of this program" << std::endl;
+            exit(0);
+        } else if (checkParameter(argc, argv, "--version")) {
+            // Although our parser checks for --version, we do it here. Otherwise GuiMainWindow asks for a new project directory.
+            PRINT_VERSION_INFO();
+            exit(0);
+        }
+        FileName fn_pipe = getParameter(argc, argv, "--pipeline", "default");
+        FileName fn_sched = getParameter(argc, argv, "--schedule", "");
+        if (fn_sched != "") fn_sched = "Schedules/" + fn_sched;
+        int _update_every_sec = textToInteger(getParameter(argc, argv, "--refresh", "2"));
+        int _exit_after_sec = textToInteger(getParameter(argc, argv, "--idle", "3600"));
+        bool _do_read_only = checkParameter(argc, argv, "--readonly");
+        GuiMainWindow window(GUIWIDTH, GUIHEIGHT_EXT, titletext, fn_pipe, fn_sched, _update_every_sec, _exit_after_sec, _do_read_only);
 
-		// Show and run the window
-		window.show();
-		Fl::run();
-	}
-	catch (RelionError XE)
-	{
-		std::cerr << XE;
-		return RELION_EXIT_FAILURE;
-	}
+        // Show and run the window
+        window.show();
+        Fl::run();
+    } catch (RelionError XE) {
+        std::cerr << XE;
+        return RELION_EXIT_FAILURE;
+    }
 
-	//return Fl::run();
-	return RELION_EXIT_SUCCESS;
+    // return Fl::run();
+    return RELION_EXIT_SUCCESS;
 }
