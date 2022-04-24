@@ -279,7 +279,7 @@ class image_handler_parameters {
                 }
 
                 if (optimise_bfactor_subtract > 0.0) {
-                    MultidimArray< Complex > FTop, FTop_bfac;
+                    MultidimArray<Complex> FTop, FTop_bfac;
                     FourierTransformer transformer;
                     MultidimArray<RFLOAT> Isharp(Iop());
                     transformer.FourierTransform(Iop(), FTop);
@@ -289,7 +289,6 @@ class image_handler_parameters {
                         FTop_bfac = FTop;
                         applyBFactorToMap(FTop_bfac, XSIZE(Iop()), bfac, angpix);
                         transformer.inverseFourierTransform(FTop_bfac, Isharp);
-                        RFLOAT scale, diff2;
 
                         RFLOAT sum_aa = 0.0, sum_xa = 0.0, sum_xx = 0.0;
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
@@ -300,9 +299,9 @@ class image_handler_parameters {
                             sum_xa += w * x * a;
                             sum_xx += w * x * x;
                         }
-                        scale = sum_xa / sum_aa;
 
-                        diff2 = 0.0;
+                        RFLOAT scale = sum_xa / sum_aa;
+                        RFLOAT diff2 = 0.0;
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
                             RFLOAT w = DIRECT_MULTIDIM_ELEM(Imask(), n);
                             RFLOAT x = DIRECT_MULTIDIM_ELEM(Iin(), n);
@@ -375,7 +374,7 @@ class image_handler_parameters {
             MultidimArray<RFLOAT> cosDPhi;
             MetaDataTable MDcos;
 
-            MultidimArray< Complex > FT1, FT2;
+            MultidimArray<Complex> FT1, FT2;
             FourierTransformer transformer;
             transformer.FourierTransform(Iout(), FT1);
             transformer.FourierTransform(Iop(), FT2);
@@ -432,10 +431,12 @@ class image_handler_parameters {
         }
 
         if (lowpass > 0.0) {
-            if (directional != "") {
-                directionalFilterMap(Iout(), lowpass, angpix, directional, filter_edge_width);
-            } else {
+            if (directional == "") {
                 lowPassFilterMap(Iout(), lowpass, angpix, filter_edge_width);
+            } else {
+                directionalFilterMap(
+                    Iout(), lowpass, angpix, directional, filter_edge_width
+                );
             }
         }
 
@@ -464,7 +465,7 @@ class image_handler_parameters {
             // For input:  0, 1, 2, 3, 4, 5 (XSIZE = 6)
             // This gives: 0, 5, 4, 3, 2, 1
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                long int dest_x = (j == 0) ? 0 : (XSIZE(Iin()) - j);
+                long int dest_x = j == 0 ? 0 : XSIZE(Iin()) - j;
                 DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, i, dest_x);
             }
         }
@@ -519,7 +520,7 @@ class image_handler_parameters {
                 Iout().setXmippOrigin();
                 Iout().window(
                     Xmipp::init(newysize), Xmipp::init(newxsize),
-                    Xmipp::last(newysize),  Xmipp::last(newxsize)
+                    Xmipp::last(newysize), Xmipp::last(newxsize)
                 );
             }
 
@@ -528,12 +529,12 @@ class image_handler_parameters {
         }
 
         // Re-window
-        if (new_box > 0 && XSIZE(Iout()) != new_box) {
+        if (new_box > 0 && new_box != XSIZE(Iout())) {
             Iout().setXmippOrigin();
             if (Iout().getDim() == 2) {
                 Iout().window(
                     Xmipp::init(new_box), Xmipp::init(new_box),
-                    Xmipp::last(new_box),  Xmipp::last(new_box)
+                    Xmipp::last(new_box), Xmipp::last(new_box)
                 );
             } else if (Iout().getDim() == 3) {
                 Iout().window(
@@ -596,12 +597,8 @@ class image_handler_parameters {
             if (n >= 0) {
                 // This is a stack.
                 // Assume the images in the stack are ordered.
-                if (n == 0) {
-                    Iout.write(fn_tmp, n, true, WRITE_OVERWRITE);
-                    // Make a new stack.
-                } else {
-                    Iout.write(fn_tmp, n, true, WRITE_APPEND);
-                }
+                Iout.write(fn_tmp, n, true, n == 0 ? WRITE_OVERWRITE : WRITE_APPEND);
+                // If n == 0, make a new stack.
             } else {
                 Iout.write(my_fn_out);
             }
@@ -614,8 +611,8 @@ class image_handler_parameters {
         long int slice_id;
         std::string fn_stem;
         fn_in.decompose(slice_id, fn_stem);
-        bool input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
-        bool input_is_star = (fn_in.getExtension() == "star");
+        bool input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && slice_id == -1;
+        bool input_is_star = fn_in.getExtension() == "star";
         // By default: write single output images
 
         // Get a MetaDataTable
