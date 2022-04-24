@@ -24,107 +24,108 @@
 #include "src/gui_entries.h"
 
 
-class JobWindow : public Fl_Box
-{
-protected:
+class JobWindow: public Fl_Box {
 
-	// Which process type is this?
-	bool is_continue;
+    protected:
 
-public:
+    // Which process type is this?
+    bool is_continue;
 
-	// Which job is this for?
-	RelionJob myjob;
+    public:
 
-	// All the GuiEntries of this job
-	std::map<std::string, GuiEntry> guientries;
+    // Which job is this for?
+    RelionJob myjob;
 
-	// oldstyle GUI
-	bool do_oldstyle;
+    // All the GuiEntries of this job
+    std::map<std::string, GuiEntry> guientries;
 
-	// Sizes
-	int x, y, w, h;
+    // oldstyle GUI
+    bool do_oldstyle;
 
-	// Position of current cursor to place new elements
-	int start_y, current_y;
+    // Sizes
+    int x, y, w, h;
 
-	// Tabs
-	Fl_Tabs *tabs;
-	Fl_Group *tab1, *tab2, *tab3, *tab4, *tab5, *tab6, *tab7, *runtab;
+    // Position of current cursor to place new elements
+    int start_y, current_y;
 
-	// Groups
-	Fl_Group *group1, *group2, *group3, *group4, *group5, *group6, *group7, *group8, *queue_group;
+    // Tabs
+    Fl_Tabs *tabs;
+    Fl_Group *tab1, *tab2, *tab3, *tab4, *tab5, *tab6, *tab7, *runtab;
 
-public:
-	// Constructor with x, y, w, h and a title
-	JobWindow(int _x = WCOL0, int _y = 2, int _w = GUIWIDTH - WCOL0 - 10, int _h = GUIHEIGHT_OLD-65, const char* title = "");
+    // Groups
+    Fl_Group *group1, *group2, *group3, *group4, *group5, *group6, *group7, *group8, *queue_group;
 
-	// Destructor
-	~JobWindow() { clear(); }
+    public:
 
-	// Clear everything
-	void clear();
+    // Constructor with x, y, w, h and a title
+    JobWindow(int _x = WCOL0, int _y = 2, int _w = GUIWIDTH - WCOL0 - 10, int _h = GUIHEIGHT_OLD-65, const char* title = "");
 
-	// set up the tabs
-	void setupTabs(int nr_tabs);
+    // Destructor
+    ~JobWindow() { clear(); }
 
-	void initialise(int my_job_type);
+    // Clear everything
+    void clear();
 
-	void resetHeight();
+    // set up the tabs
+    void setupTabs(int nr_tabs);
 
-	// Place a single entry
-	void place(std::string key, int deactivate_option = TOGGLE_LEAVE_ACTIVE, Fl_Group * deactivate_this_group = NULL, bool actually_activate=false);
-	// Place two entries on one line
-	void place2(std::string key1, std::string key2, std::string label, int deactivate_option = TOGGLE_LEAVE_ACTIVE);
-	// Place three entries on one line
-	void place3(std::string key1, std::string key2, std::string key3, std::string label, int deactivate_option = TOGGLE_LEAVE_ACTIVE);
+    void initialise(int my_job_type);
 
-	void setupRunTab();
+    void resetHeight();
 
-	// De/re-activate options upon toggling the continue button
-	void toggle_new_continue(bool is_continue);
+    // Place a single entry
+    void place(std::string key, int deactivate_option = TOGGLE_LEAVE_ACTIVE, Fl_Group * deactivate_this_group = NULL, bool actually_activate=false);
+    // Place two entries on one line
+    void place2(std::string key1, std::string key2, std::string label, int deactivate_option = TOGGLE_LEAVE_ACTIVE);
+    // Place three entries on one line
+    void place3(std::string key1, std::string key2, std::string key3, std::string label, int deactivate_option = TOGGLE_LEAVE_ACTIVE);
 
-	// Write the job submission script
-	void saveJobSubmissionScript(std::string newfilename, std::string outputname, std::vector<std::string> commands);
+    void setupRunTab();
 
-	// Initialise pipeiline stuff for each job, return outputname
-	void initialisePipeline(std::string &outputname, std::string defaultname, int job_counter);
+    // De/re-activate options upon toggling the continue button
+    void toggle_new_continue(bool is_continue);
 
-	// Prepare the final (job submission or combined (mpi) command of possibly multiple lines)
-	// Returns true to go ahead, and false to cancel
-	bool prepareFinalCommand(std::string &outputname, std::vector<std::string> &commands, std::string &final_command, bool do_makedir = true);
+    // Write the job submission script
+    void saveJobSubmissionScript(std::string newfilename, std::string outputname, std::vector<std::string> commands);
 
-	// Update all values in the Fl_Input entries into/from the corresponding job_options
-	void updateMyGui();
-	void updateMyJob();
+    // Initialise pipeiline stuff for each job, return outputname
+    void initialisePipeline(std::string &outputname, std::string defaultname, int job_counter);
 
-private:
+    // Prepare the final (job submission or combined (mpi) command of possibly multiple lines)
+    // Returns true to go ahead, and false to cancel
+    bool prepareFinalCommand(std::string &outputname, std::vector<std::string> &commands, std::string &final_command, bool do_makedir = true);
 
-	static void cb_menu_continue(Fl_Widget*, void*);
-	inline void cb_menu_continue_i();
+    // Update all values in the Fl_Input entries into/from the corresponding job_options
+    void updateMyGui();
+    void updateMyJob();
+
+    private:
+
+    static void cb_menu_continue(Fl_Widget*, void*);
+    inline void cb_menu_continue_i();
 
 
-	// initialise the window for each of the jobtypes
-	void initialiseImportWindow();
-	void initialiseMotioncorrWindow();
-	void initialiseCtffindWindow();
-	void initialiseManualpickWindow();
-	void initialiseAutopickWindow();
-	void initialiseExtractWindow();
-	void initialiseSelectWindow();
-	void initialiseClass2DWindow();
-	void initialiseInimodelWindow();
-	void initialiseClass3DWindow();
-	void initialiseAutorefineWindow();
-	void initialiseMultiBodyWindow();
-	void initialiseMaskcreateWindow();
-	void initialiseJoinstarWindow();
-	void initialiseSubtractWindow();
-	void initialisePostprocessWindow();
-	void initialiseLocresWindow();
-	void initialiseMotionrefineWindow();
-	void initialiseCtfrefineWindow();
-	void initialiseExternalWindow();
+    // initialise the window for each of the jobtypes
+    void initialiseImportWindow();
+    void initialiseMotioncorrWindow();
+    void initialiseCtffindWindow();
+    void initialiseManualpickWindow();
+    void initialiseAutopickWindow();
+    void initialiseExtractWindow();
+    void initialiseSelectWindow();
+    void initialiseClass2DWindow();
+    void initialiseInimodelWindow();
+    void initialiseClass3DWindow();
+    void initialiseAutorefineWindow();
+    void initialiseMultiBodyWindow();
+    void initialiseMaskcreateWindow();
+    void initialiseJoinstarWindow();
+    void initialiseSubtractWindow();
+    void initialisePostprocessWindow();
+    void initialiseLocresWindow();
+    void initialiseMotionrefineWindow();
+    void initialiseCtfrefineWindow();
+    void initialiseExternalWindow();
 
 };
 

@@ -21,6 +21,8 @@
 #ifndef SRC_GUI_ENTRIES_H_
 #define SRC_GUI_ENTRIES_H_
 
+// This #define / #undef pair protects against another Complex definition in fltk.
+#define Complex
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Text_Display.H>
@@ -46,6 +48,8 @@
 #include <FL/Fl_Text_Editor.H>
 #include <FL/Fl_Image.H>
 #include <FL/Fl_XPM_Image.H>
+#undef Complex
+
 #include "src/macros.h"
 #include "src/strings.h"
 #include "src/filename.h"

@@ -21,8 +21,8 @@
 #ifndef DISPLAYER_H_
 #define DISPLAYER_H_
 
-// this define, and the undef below the FL includes, protects against another Complex definition in fltk
-#define Complex tmpComplex
+// This #define / #undef pair protects against another Complex definition in fltk.
+#define Complex
 #include <FL/Fl.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Double_Window.H>
