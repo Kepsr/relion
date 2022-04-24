@@ -5,19 +5,18 @@
 #include "src/local_symmetry.h"
 #include "src/parallel.h"
 
-//#define DEBUG
+// #define DEBUG
 
-#define MPITAG_LOCALSYM_SAMPLINGS_PACK 1
+class local_symmetry_parameters_mpi: public local_symmetry_parameters {
 
-class local_symmetry_parameters_mpi: public local_symmetry_parameters
-{
-private:
-	MpiNode *node;
+    private:
 
-public:
-	/** Destructor, calls MPI_Finalize */
-    ~local_symmetry_parameters_mpi()
-    {
+    MpiNode *node;
+
+    public:
+
+    /** Destructor, calls MPI_Finalize */
+    ~local_symmetry_parameters_mpi() {
         delete node;
     }
 

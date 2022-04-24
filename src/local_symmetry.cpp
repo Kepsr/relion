@@ -27,14 +27,13 @@ static std::string str_new_mask = "NEW_MASK_AND_OPERATORS";
 static std::string str_mask_filename = "MASKFILENAME";
 
 void sum3DCubicMask(
-    const MultidimArray<RFLOAT> v, RFLOAT& val_sum, RFLOAT& val_ctr
+    const MultidimArray<RFLOAT> v, RFLOAT &val_sum, RFLOAT &val_ctr
 ) {
-    RFLOAT val = 0.0;
     val_sum = val_ctr = 0.0;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
-        val = DIRECT_A3D_ELEM(v, k, i, j);
-        if (val < -(XMIPP_EQUAL_ACCURACY) || val - 1.0 > (XMIPP_EQUAL_ACCURACY))
+        RFLOAT val = DIRECT_A3D_ELEM(v, k, i, j);
+        if (val < 0.0 - XMIPP_EQUAL_ACCURACY || val > 1.0 + XMIPP_EQUAL_ACCURACY)
             REPORT_ERROR("ERROR: mask - values are not in range [0,1]!");
         if (val > XMIPP_EQUAL_ACCURACY) {
             val_sum += val;
@@ -42,56 +41,47 @@ void sum3DCubicMask(
         }
     }
 
-    if (val_ctr < 0.9 || val_sum < 0.01)
-        REPORT_ERROR("ERROR: mask is empty!");
+    if (val_ctr < 0.9 || val_sum < 0.01) REPORT_ERROR("ERROR: mask is empty!");
 }
 
 bool similar3DCubicMasks(
     RFLOAT mask1_sum, RFLOAT mask1_ctr, RFLOAT mask2_sum, RFLOAT mask2_ctr
 ) {
-    RFLOAT q_sum = 1.0, q_ctr = 1.0;
 
     if (
         mask1_ctr < 0.9 || mask1_sum < 0.01 ||
         mask2_ctr < 0.9 || mask2_sum < 0.01
     ) REPORT_ERROR("ERROR: mask1 and/or mask2 are empty!");
 
-    q_sum = (mask1_sum > mask2_sum) ? (mask1_sum / mask2_sum) : (mask2_sum / mask1_sum);
-    q_ctr = (mask1_ctr > mask2_ctr) ? (mask1_ctr / mask2_ctr) : (mask2_ctr / mask1_ctr);
+    RFLOAT q_sum = mask1_sum > mask2_sum ? mask1_sum / mask2_sum : mask2_sum / mask1_sum;
+    RFLOAT q_ctr = mask1_ctr > mask2_ctr ? mask1_ctr / mask2_ctr : mask2_ctr / mask1_ctr;
 
-    if (q_sum > 1.1 || q_ctr > 1.1)
-        return false;
-    return true;
+    return q_sum <= 1.1 && q_ctr <= 1.1;
 }
 
 void truncateMultidimArray(
     MultidimArray<RFLOAT>& v, RFLOAT minval, RFLOAT maxval
 ) {
-    RFLOAT val = 0.0;
 
     if (minval > maxval)
         REPORT_ERROR("ERROR: minval should be smaller than maxval!");
-    /*
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v)
-    {
-        val = DIRECT_A3D_ELEM(v, k, i, j);
-        if (val < minval)
-            DIRECT_A3D_ELEM(v, k, i, j) = minval;
-        if (val > maxval)
-            DIRECT_A3D_ELEM(v, k, i, j) = maxval;
-    }
-    */
+
+    // FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
+    //     RFLOAT val = DIRECT_A3D_ELEM(v, k, i, j);
+    //     if (val < minval) { DIRECT_A3D_ELEM(v, k, i, j) = minval; }
+    //     if (val > maxval) { DIRECT_A3D_ELEM(v, k, i, j) = maxval; }
+    // }
+
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v) {
-        val = DIRECT_MULTIDIM_ELEM(v, n);
-        if (val < minval)
-            DIRECT_MULTIDIM_ELEM(v, n) = minval;
-        if (val > maxval)
-            DIRECT_MULTIDIM_ELEM(v, n) = maxval;
+        RFLOAT val = DIRECT_MULTIDIM_ELEM(v, n);
+        if (val < minval) { DIRECT_MULTIDIM_ELEM(v, n) = minval; }
+        if (val > maxval) { DIRECT_MULTIDIM_ELEM(v, n) = maxval; }
     }
+
 }
 
 void Localsym_outputOperator(
-    const Matrix1D<RFLOAT>& op, std::ostream* o_ptr, RFLOAT scale_angpix
+    const Matrix1D<RFLOAT> &op, std::ostream* o_ptr, RFLOAT scale_angpix
 ) {
     if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
@@ -113,7 +103,7 @@ void Localsym_outputOperator(
 }
 
 void Localsym_composeOperator(
-    Matrix1D<RFLOAT>& op,
+    Matrix1D<RFLOAT> &op,
     RFLOAT aa, RFLOAT bb, RFLOAT gg,
     RFLOAT dx, RFLOAT dy, RFLOAT dz,
     RFLOAT cc
@@ -126,7 +116,7 @@ void Localsym_composeOperator(
 }
 
 void Localsym_decomposeOperator(
-    const Matrix1D<RFLOAT>& op,
+    const Matrix1D<RFLOAT> &op,
     RFLOAT& aa, RFLOAT& bb, RFLOAT& gg,
     RFLOAT& dx, RFLOAT& dy, RFLOAT& dz,
     RFLOAT& cc
@@ -143,8 +133,7 @@ void Localsym_decomposeOperator(
 }
 
 void Localsym_scaleTranslations(
-    Matrix1D<RFLOAT>& op,
-    RFLOAT factor
+    Matrix1D<RFLOAT> &op, RFLOAT factor
 ) {
     if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
@@ -155,8 +144,8 @@ void Localsym_scaleTranslations(
 }
 
 void Localsym_shiftTranslations(
-    Matrix1D<RFLOAT>& op,
-    const Matrix1D<RFLOAT>& voffset
+    Matrix1D<RFLOAT> &op,
+    const Matrix1D<RFLOAT> &voffset
 ) {
     if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
@@ -170,8 +159,8 @@ void Localsym_shiftTranslations(
 }
 
 void Localsym_translations2vector(
-    const Matrix1D<RFLOAT>& vec,
-    Matrix1D<RFLOAT>& trans_vec,
+    const Matrix1D<RFLOAT> &vec,
+    Matrix1D<RFLOAT> &trans_vec,
     bool invert
 ) {
     trans_vec.clear();
@@ -192,8 +181,8 @@ void Localsym_translations2vector(
 }
 
 void Localsym_angles2matrix(
-    const Matrix1D<RFLOAT>& vec,
-    Matrix2D<RFLOAT>& mat,
+    const Matrix1D<RFLOAT> &vec,
+    Matrix2D<RFLOAT> &mat,
     bool invert
 ) {
     RFLOAT aa = 0.0, bb = 0.0, gg = 0.0;
@@ -214,8 +203,8 @@ void Localsym_angles2matrix(
 }
 
 void Localsym_operator2matrix(
-    const Matrix1D<RFLOAT>& vec,
-    Matrix2D<RFLOAT>& mat,
+    const Matrix1D<RFLOAT> &vec,
+    Matrix2D<RFLOAT> &mat,
     bool invert
 ) {
     RFLOAT aa = 0.0, bb = 0.0, gg = 0.0;
@@ -276,12 +265,12 @@ void standardiseEulerAngles(
 }
 
 bool sameLocalsymOperators(
-    const Matrix1D<RFLOAT>& lhs,
-    const Matrix1D<RFLOAT>& rhs
+    const Matrix1D<RFLOAT> &lhs,
+    const Matrix1D<RFLOAT> &rhs
 ) {
     RFLOAT aa1 = 0.0, bb1 = 0.0, gg1 = 0.0, dx1 = 0.0, dy1 = 0.0, dz1 = 0.0, cc1 = 0.0;
     RFLOAT aa2 = 0.0, bb2 = 0.0, gg2 = 0.0, dx2 = 0.0, dy2 = 0.0, dz2 = 0.0, cc2 = 0.0;
-    const RFLOAT eps = (XMIPP_EQUAL_ACCURACY);
+    const RFLOAT eps = XMIPP_EQUAL_ACCURACY;
 
     Localsym_decomposeOperator(lhs, aa1, bb1, gg1, dx1, dy1, dz1, cc1);
     Localsym_decomposeOperator(rhs, aa2, bb2, gg2, dx2, dy2, dz2, cc2);
@@ -297,8 +286,7 @@ bool sameLocalsymOperators(
 
 // Parsing only. Don't validate data here.
 void parseDMFormatMasksAndOperators(
-    FileName fn_in,
-    FileName fn_out
+    FileName fn_in, FileName fn_out
 ) {
     std::ifstream fin;
     std::ofstream fout;
@@ -318,19 +306,19 @@ void parseDMFormatMasksAndOperators(
         tokenize(line, words);
 
         // Empty line
-        if (words.size() < 1)
-            continue;
+        if (words.size() < 1) continue;
 
         // Commented line
-        if (words[0][0] == '#')
-            continue;
+        if (words[0][0] == '#') continue;
 
         // Line with mask filename
-        if (words[0] == str_mask_filename)
+        if (words[0] == str_mask_filename) {
             fout << str_new_mask << std::endl;
+        }
 
-        for (int i = 0; i < words.size(); i++)
+        for (int i = 0; i < words.size(); i++) {
             fout << words[i] << " " << std::flush;
+        }
         fout << std::endl;
     }
     fout.close();
@@ -339,24 +327,21 @@ void parseDMFormatMasksAndOperators(
 
 void readRelionFormatMasksAndOperators(
     FileName fn_info,
-    std::vector<FileName>& fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
+    std::vector<FileName> &fn_mask_list,
+    std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
     RFLOAT angpix,
     bool verb
 ) {
-    MetaDataTable MD;
-    std::vector<Matrix1D<RFLOAT>> dummy;
-    Matrix1D<RFLOAT> op, op_i;
-    bool is_maskname_found = false;
-    RFLOAT aa = 0.0, bb = 0.0, gg = 0.0, dx = 0.0, dy = 0.0, dz = 0.0;
 
     // Initialisation
     fn_mask_list.clear();
     ops.clear();
+    MetaDataTable MD;
     MD.clear();
+    std::vector<Matrix1D<RFLOAT>> dummy;
     dummy.clear();
-    op.clear();
-    op_i.clear();
+    Matrix1D<RFLOAT> op, op_i;
+    op.clear(); op_i.clear();
 
     if (angpix < 0.001)
         REPORT_ERROR("ERROR: Pixel size is invalid!");
@@ -380,7 +365,7 @@ void readRelionFormatMasksAndOperators(
 
     // Load mask names
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        is_maskname_found = false;
+        bool is_maskname_found = false;
         FileName fn_mask = MD.getValue<FileName>(EMDL::MASK_NAME);
 
         for (int id_mask = 0; id_mask < fn_mask_list.size(); id_mask++) {
@@ -414,12 +399,12 @@ void readRelionFormatMasksAndOperators(
                 continue;
 
             // Get this operator
-            aa = MD.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-            bb = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-            gg = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-            dx = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-            dy = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-            dz = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+            RFLOAT aa = MD.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            RFLOAT bb = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            RFLOAT gg = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+            RFLOAT dx = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+            RFLOAT dy = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+            RFLOAT dz = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
             // Re-calculate angles so that they follow the conventions in RELION!
             standardiseEulerAngles(aa, bb, gg, aa, bb, gg);
@@ -1266,7 +1251,7 @@ void applyLocalSymmetry(
 
 void getMinCropSize(
     MultidimArray<RFLOAT>& vol,
-    Matrix1D<RFLOAT>& center,
+    Matrix1D<RFLOAT> &center,
     long int& mindim,
     RFLOAT edge
 ) {
@@ -1310,13 +1295,13 @@ void getMinCropSize(
     mindim = 2 * (long int)(ceil(dist2_max)); // bestdim % 2 = 0
 }
 
-bool compareOperatorsByCC(const Matrix1D<RFLOAT>& lhs, const Matrix1D<RFLOAT>& rhs) {
+bool compareOperatorsByCC(const Matrix1D<RFLOAT> &lhs, const Matrix1D<RFLOAT> &rhs) {
     return VEC_ELEM(lhs, CC_POS) < VEC_ELEM(rhs, CC_POS);
 }
 
 void getLocalSearchOperatorSamplings(
-    const Matrix1D<RFLOAT>& op_old,
-    const Matrix1D<RFLOAT>& op_search_ranges,
+    const Matrix1D<RFLOAT> &op_old,
+    const Matrix1D<RFLOAT> &op_search_ranges,
     std::vector<Matrix1D<RFLOAT> >& op_samplings,
     RFLOAT ang_search_step, RFLOAT trans_search_step,
     bool use_healpix, bool verb
@@ -2023,11 +2008,6 @@ void local_symmetry_parameters::initBoolOptions() {
 void local_symmetry_parameters::clear() {
     parser.clear();
     initBoolOptions();
-}
-
-void local_symmetry_parameters::displayEmptyLine() {
-    // 73-char horizontal rule
-    std::cout << "=========================================================================" << std::endl;
 }
 
 void local_symmetry_parameters::usage() {

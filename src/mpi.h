@@ -52,60 +52,63 @@
 #include "src/error.h"
 #include "src/macros.h"
 
-#define MPITAG_JOB_REQUEST 0
-#define MPITAG_JOB_REPLY 1
-#define MPITAG_METADATA 2
-#define MPITAG_RANDOMSEED 3
-#define MPITAG_IMAGE 4
-#define MPITAG_IMAGE_SIZE 41
-#define MPITAG_PACK 5
-#define MPITAG_RFLOAT 6
-#define MPITAG_INT 7
-#define MPITAG_IDENTIFIER 8
-#define MPITAG_BCAST 9
+namespace MPITag { enum {
+    JOB_REQUEST,
+    JOB_REPLY,
+    METADATA,
+    RANDOMSEED,
+    IMAGE,
+    PACK,
+    RFLOAT,
+    INT,
+    IDENTIFIER,
+    BCAST,
+    LOCALSYM_SAMPLINGS_PACK,  // Changed from 1 to 10
+    IMAGE_SIZE = 41,
+}; };
 
-/** Class to wrapp some MPI common calls in an work node.
+/** Class to wrap some MPI common calls in a work node.
 *
 */
-class MpiNode
-{
+class MpiNode {
 
-public:
-	int rank, size;
+    public:
 
-	MPI_Group worldG, followerG; // groups of ranks (in practice only used to create communicators)
-	MPI_Comm worldC, followerC; // communicators
-	int followerRank; // index of follower within the follower-group (and communicator)
+    int rank, size;
 
-	MpiNode(int &argc, char ** argv);
+    MPI_Group worldG, followerG; // groups of ranks (in practice only used to create communicators)
+    MPI_Comm worldC, followerC; // communicators
+    int followerRank; // index of follower within the follower-group (and communicator)
 
-	~MpiNode();
+    MpiNode(int &argc, char **argv);
 
-	// Only true if rank == 0
-	bool isLeader() const;
+    ~MpiNode();
 
-	// Prints the random subset for this rank
-	int myRandomSubset() const;
+    bool isLeader() const;
 
-	// Returns the name of the host this rank is running on
-	std::string getHostName() const;
+    // Prints the random subset for this rank
+    int myRandomSubset() const;
 
-	/** Wait on a barrier for the other MPI nodes */
-	void barrierWait();
+    // Returns the name of the host this rank is running on
+    std::string getHostName() const;
 
-	/** Build in some better error handling and (hopefully better) robustness to communication failures in the MPI_Send/MPI_Recv pairs....
-	 */
-	int relion_MPI_Send(void *buf, std::ptrdiff_t count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
+    /** Wait on a barrier for the other MPI nodes */
+    void barrierWait();
 
-	int relion_MPI_Recv(void *buf, std::ptrdiff_t count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status &status);
+    /** Build in some better error handling and (hopefully better) robustness to communication failures in the MPI_Send/MPI_Recv pairs....
+     */
+    int relion_MPI_Send(void *buf, std::ptrdiff_t count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
 
-	int relion_MPI_Bcast(void *buffer, long int count, MPI_Datatype datatype, int root, MPI_Comm comm);
+    int relion_MPI_Recv(void *buf, std::ptrdiff_t count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status &status);
 
-	/* Better error handling of MPI error messages */
-	void report_MPI_ERROR(int error_code);
+    int relion_MPI_Bcast(void *buffer, long int count, MPI_Datatype datatype, int root, MPI_Comm comm);
+
+    /* Better error handling of MPI error messages */
+    void report_MPI_ERROR(int error_code);
 
 };
 
-// General function to print machinenames on all MPI nodes
+// General function to print machine names on all MPI nodes
 void printMpiNodesMachineNames(MpiNode &node, int nthreads = 1);
+
 #endif /* MPI_H_ */

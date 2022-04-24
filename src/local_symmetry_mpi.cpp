@@ -18,38 +18,25 @@ void local_symmetry_parameters_mpi::read(int argc, char **argv) {
 }
 
 void local_symmetry_parameters_mpi::run() {
-    int nr_masks = 0, nr_ops = 0, nr_total_samplings = 0;
-    long int newdim = 0, cropdim = 0, z0 = 0, y0 = 0, x0 = 0, zf = 0, yf = 0, xf = 0, first = 0, last = 0;
-    RFLOAT aa = 0, bb = 0, gg = 0., dx = 0., dy = 0., dz = 0., cc = 0., tmp_binning_factor = 1.0;
-    RFLOAT mask_sum = 0., mask_ctr = 0., mask2_sum = 0., mask2_ctr = 0.0;
+    RFLOAT aa = 0, bb = 0, gg = 0.0, tmp_binning_factor = 1.0;
+    RFLOAT dx = 0.0, dy = 0.0, dz = 0.0, cc = 0.0;
+    RFLOAT mask_sum = 0.0, mask_ctr = 0.0, mask2_sum = 0.0, mask2_ctr = 0.0;
 
     Image<RFLOAT> map, mask, mask2;
-    Matrix1D<RFLOAT> op_search_ranges, op, com0_int, com1_int, com1_float, com1_diff, vecR3;
-    std::vector<FileName> fn_mask_list;
-    std::vector<std::vector<Matrix1D<RFLOAT> > > op_list;
-    std::vector<std::vector<FileName> > op_mask_list;
-    std::vector<Matrix1D<RFLOAT> > op_samplings, op_samplings_batch;
-    MultidimArray<RFLOAT> op_samplings_batch_packed, src_cropped, dest_cropped, mask_cropped;
-    Matrix2D<RFLOAT> mat1;
-    FileName fn_parsed, fn_tmp, fn_searched_op_samplings;
-
     map.clear(); mask.clear(); mask2.clear();
+    Matrix1D<RFLOAT> op_search_ranges, op, com0_int, com1_int, com1_float, com1_diff, vecR3;
     op_search_ranges.clear(); op.clear(); com0_int.clear(); com1_int.clear(); com1_float.clear(); com1_diff.clear(); vecR3.clear();
-    fn_mask_list.clear();
+    std::vector<std::vector<Matrix1D<RFLOAT> > > op_list;
     op_list.clear();
-    op_mask_list.clear();
+    std::vector<Matrix1D<RFLOAT> > op_samplings, op_samplings_batch;
     op_samplings.clear(); op_samplings_batch.clear();
+    MultidimArray<RFLOAT> op_samplings_batch_packed, src_cropped, dest_cropped, mask_cropped;
     op_samplings_batch_packed.clear(); src_cropped.clear(); dest_cropped.clear(); mask_cropped.clear();
-    mat1.clear();
-    fn_parsed.clear(); fn_tmp.clear(); fn_searched_op_samplings.clear();
 
     // Check options
     if (
-        do_apply_local_symmetry || 
-        do_duplicate_local_symmetry || 
-        do_txt2rln || 
-        do_transform || 
-        do_debug || 
+        do_apply_local_symmetry || do_duplicate_local_symmetry || 
+        do_txt2rln || do_transform || do_debug || 
         !do_local_search_local_symmetry_ops
     ) REPORT_ERROR("ERROR: Please specify '--search' as the only option! For other options use non-parallel version (without '_mpi') instead!");
 
@@ -59,6 +46,8 @@ void local_symmetry_parameters_mpi::run() {
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
+    std::vector<FileName> fn_mask_list; fn_mask_list.clear();
+    std::vector<std::vector<FileName> > op_mask_list; op_mask_list.clear();
     if (node->isLeader()) {
         displayEmptyLine();
 
@@ -104,20 +93,27 @@ void local_symmetry_parameters_mpi::run() {
         // Local searches
         if (fn_op_mask_info_in == "None") {
             if (fn_info_in.getExtension() == "star") {
-                readRelionFormatMasksAndOperators(fn_info_in, fn_mask_list, op_list, angpix_image, true);
+                readRelionFormatMasksAndOperators(
+                    fn_info_in, fn_mask_list, op_list, angpix_image, true
+                );
             } else {
-                fn_parsed = fn_info_in + std::string(".") + fn_info_in_parsed_ext;
+                FileName fn_parsed = fn_info_in + std::string(".") + fn_info_in_parsed_ext;
                 parseDMFormatMasksAndOperators(fn_info_in, fn_parsed);
-                readDMFormatMasksAndOperators(fn_parsed, fn_mask_list, op_list, angpix_image, true);
+                readDMFormatMasksAndOperators(
+                    fn_parsed, fn_mask_list, op_list, angpix_image, true
+                );
             }
         } else {
             // Global searches
             std::cout << " Global searches: option --i_mask_info " << fn_info_in << " is ignored." << std::endl;
-            readRelionFormatMasksWithoutOperators(fn_op_mask_info_in, fn_mask_list, op_list, op_mask_list, (ang_range > 179.99), true);
+            readRelionFormatMasksWithoutOperators(
+                fn_op_mask_info_in, fn_mask_list, 
+                op_list, op_mask_list, ang_range > 179.99, true
+            );
         }
 
         // Leader set total number of masks
-        nr_masks = fn_mask_list.size();
+        int nr_masks = fn_mask_list.size();
 
         // Leader reads input map
         std::cout << std::endl << " Pixel size = " << angpix_image << " Angstrom(s)" << std::endl;
@@ -139,6 +135,7 @@ void local_symmetry_parameters_mpi::run() {
     for (int imask = 0; imask < nr_masks; imask++) {
         MPI_Barrier(MPI_COMM_WORLD);
 
+        long int newdim = 0, cropdim = 0;
         if (node->isLeader()) {
             displayEmptyLine();
 
@@ -162,12 +159,12 @@ void local_symmetry_parameters_mpi::run() {
             std::cout << " Mask #" << imask + 1 << " : center of mass XYZ = (" << XX(com0_int) << ", " << YY(com0_int) << ", " << ZZ(com0_int) << ") pixel(s)."<< std::endl;
 
             // Crop the mask and the corresponding region of the map
-            z0 = round(ZZ(com0_int)) + Xmipp::init(cropdim);
-            zf = round(ZZ(com0_int)) + Xmipp::last(cropdim);
-            y0 = round(YY(com0_int)) + Xmipp::init(cropdim);
-            yf = round(YY(com0_int)) + Xmipp::last(cropdim);
-            x0 = round(XX(com0_int)) + Xmipp::init(cropdim);
-            xf = round(XX(com0_int)) + Xmipp::last(cropdim);
+            long int z0 = round(ZZ(com0_int)) + Xmipp::init(cropdim);
+            long int zf = round(ZZ(com0_int)) + Xmipp::last(cropdim);
+            long int y0 = round(YY(com0_int)) + Xmipp::init(cropdim);
+            long int yf = round(YY(com0_int)) + Xmipp::last(cropdim);
+            long int x0 = round(XX(com0_int)) + Xmipp::init(cropdim);
+            long int xf = round(XX(com0_int)) + Xmipp::last(cropdim);
 
             std::cout << " Mask #" << imask + 1 << " : cropped box size = " << cropdim << " pixels." << std::endl;
             #ifdef DEBUG
@@ -175,21 +172,20 @@ void local_symmetry_parameters_mpi::run() {
             #endif
             mask().window(mask_cropped, z0, y0, x0, zf, yf, xf);
             mask_cropped.setXmippOrigin();
-            map().window(src_cropped, z0, y0, x0, zf, yf, xf);
+            map().window(src_cropped,   z0, y0, x0, zf, yf, xf);
             src_cropped.setXmippOrigin();
 
             // Rescale the map and the mask (if binning_factor > 1), set 'newdim'.
             tmp_binning_factor = 1.0;
             newdim = cropdim;
-            if ((binning_factor - 1.0) > XMIPP_EQUAL_ACCURACY) {
-                newdim = (long int)(ceil(RFLOAT(cropdim) / binning_factor));
+            if (binning_factor - 1.0 > XMIPP_EQUAL_ACCURACY) {
+                newdim = ceil(RFLOAT(cropdim) / binning_factor);
                 if (newdim < 2)
                     REPORT_ERROR("ERROR: Binning factor is too large / Mask is too small!");
-                if ((newdim + 1) < cropdim) {
+                if (newdim + 1 < cropdim) {
                     // Need rescaling
                     // Dimension should always be even
-                    if (newdim % 2)
-                        newdim++;
+                    newdim += newdim % 2;
                     resizeMap(mask_cropped, newdim);
                     mask_cropped.setXmippOrigin();
                     resizeMap(src_cropped, newdim);
@@ -198,7 +194,7 @@ void local_symmetry_parameters_mpi::run() {
                     std::cout << " + Rescale cropped box size from " << cropdim << " to " << newdim << " pixels. Binning factor = " << tmp_binning_factor << std::endl;
 
                     // Mask values might go out of range after rescaling. Fix it if it happens
-                    truncateMultidimArray(mask_cropped, 0., 1.0);
+                    truncateMultidimArray(mask_cropped, 0.0, 1.0);
                 } else {
                     newdim = cropdim;
                 }
@@ -247,6 +243,7 @@ void local_symmetry_parameters_mpi::run() {
         #endif
 
         // Leader reads total number of operators for this mask
+        int nr_ops = 0;
         if (node->isLeader()) {
             nr_ops = op_list[imask].size();
             #ifdef DEBUG
@@ -263,6 +260,7 @@ void local_symmetry_parameters_mpi::run() {
             MPI_Barrier(MPI_COMM_WORLD);
 
             // Leader gets sampling points
+            int nr_total_samplings = 0;
             if (node->isLeader()) {
                 std::cout << std::endl;
 
@@ -276,6 +274,7 @@ void local_symmetry_parameters_mpi::run() {
                     // Local searches
                     // Get com1_float. (floating point numbers)
                     // Com1f = R * Com0 + v
+                    Matrix2D<RFLOAT> mat1; mat1.clear();
                     Euler_angles2matrix(aa, bb, gg, mat1);
                     com1_float = mat1 * com0_int;
                     com1_float += vectorR3(dx, dy, dz);
@@ -308,12 +307,12 @@ void local_symmetry_parameters_mpi::run() {
                 ZZ(com1_diff) = ZZ(com1_float) - ZZ(com1_int);
 
                 // Crop this region
-                z0 = round(ZZ(com1_int)) + Xmipp::init(cropdim);
-                zf = round(ZZ(com1_int)) + Xmipp::last(cropdim);
-                y0 = round(YY(com1_int)) + Xmipp::init(cropdim);
-                yf = round(YY(com1_int)) + Xmipp::last(cropdim);
-                x0 = round(XX(com1_int)) + Xmipp::init(cropdim);
-                xf = round(XX(com1_int)) + Xmipp::last(cropdim);
+                long int z0 = round(ZZ(com1_int)) + Xmipp::init(cropdim);
+                long int zf = round(ZZ(com1_int)) + Xmipp::last(cropdim);
+                long int y0 = round(YY(com1_int)) + Xmipp::init(cropdim);
+                long int yf = round(YY(com1_int)) + Xmipp::last(cropdim);
+                long int x0 = round(XX(com1_int)) + Xmipp::init(cropdim);
+                long int xf = round(XX(com1_int)) + Xmipp::last(cropdim);
                 #ifdef DEBUG
                 std::cout << " Window: x0, y0, z0 = " << x0 << ", " << y0 << ", " << z0 << "; xf, yf, zf = " << xf << ", " << yf << ", " << zf << std::endl;
                 #endif
@@ -352,7 +351,7 @@ void local_symmetry_parameters_mpi::run() {
                     Localsym_scaleTranslations(op, tmp_binning_factor);
                 }
 
-                if (op_samplings.size() <= (node->size))
+                if (op_samplings.size() <= node->size)
                     REPORT_ERROR("ERROR: Too few sampling points! Use non-parallel version (without '_mpi') instead!");
 
                 nr_total_samplings = op_samplings.size();
@@ -374,7 +373,7 @@ void local_symmetry_parameters_mpi::run() {
             MPI_Barrier(MPI_COMM_WORLD);
 
             // Leader distributes sampling points to all followers
-            first = 0; last = 0;
+            long int first = 0, last = 0;
             if (node->isLeader()) {
                 for (int id_rank = (node->size) - 1; id_rank >= 0; id_rank--) {
                     divide_equally(nr_total_samplings, node->size, id_rank, first, last);
@@ -387,7 +386,7 @@ void local_symmetry_parameters_mpi::run() {
 
                     // Leader distributes sampling points to all followers
                     if (id_rank > 0)
-                        node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITAG_LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
+                        node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
                     // If id_rank == 0 (leader), just keep op_samplings_batch_packed to the leader itself
                 }
             } else {
@@ -395,13 +394,13 @@ void local_symmetry_parameters_mpi::run() {
                 // Followers receive sampling points from leader
                 // Important: Followers calculate first and last subscripts!
                 divide_equally(nr_total_samplings, node->size, node->rank, first, last);
-                node->relion_MPI_Recv(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITAG_LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
+                node->relion_MPI_Recv(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
             }
             MPI_Barrier(MPI_COMM_WORLD);
 
             // All nodes unpack sampling points
             op_samplings_batch.clear();
-            for (long int i=0; i<YSIZE(op_samplings_batch_packed); i++) {
+            for (long int i = 0; i < YSIZE(op_samplings_batch_packed); i++) {
                 op.initZeros(NR_LOCALSYM_PARAMETERS);
                 for (long int j = 0; j < XSIZE(op_samplings_batch_packed); j++) {
                     VEC_ELEM(op, j) = DIRECT_A2D_ELEM(op_samplings_batch_packed, i, j);
@@ -419,16 +418,16 @@ void local_symmetry_parameters_mpi::run() {
 
             // Followers send their results back to leader
             if (!node->isLeader()) {
-                node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITAG_LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
+                node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
             } else {
                 MPI_Status status;
 
-                for (int id_rank = 0; id_rank < (node->size); id_rank++) {
+                for (int id_rank = 0; id_rank < node->size; id_rank++) {
                     divide_equally(op_samplings.size(), node->size, id_rank, first, last);
 
                     // Leader receives op_samplings_batch_packed from followers
                     if (id_rank > 0)
-                        node->relion_MPI_Recv(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITAG_LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
+                        node->relion_MPI_Recv(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
 
                     // Leader does something for itself if id_rank == 0
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
@@ -457,6 +456,7 @@ void local_symmetry_parameters_mpi::run() {
 
                     // Update v = newCom1f + ( - newR * com0)
                     Localsym_decomposeOperator(op_samplings[isamp], aa, bb, gg, dx, dy, dz, cc);
+                    Matrix2D<RFLOAT> mat1; mat1.clear();
                     Euler_angles2matrix(aa, bb, gg, mat1);
                     vecR3 = vectorR3(dx, dy, dz) - mat1 * com0_int;
                     Localsym_composeOperator(op_samplings[isamp], aa, bb, gg, XX(vecR3), YY(vecR3), ZZ(vecR3), cc);
@@ -466,8 +466,10 @@ void local_symmetry_parameters_mpi::run() {
                 std::stable_sort(op_samplings.begin(), op_samplings.end(), compareOperatorsByCC);
 
                 // Leader outputs the local searches results
+                FileName fn_tmp; fn_tmp.clear();
                 fn_tmp.compose(fn_info_out.withoutExtension() + "_cc_mask", imask + 1, "tmp", 3);  // "*_cc_mask001.tmp"
                 fn_tmp = fn_tmp.withoutExtension(); // "*_cc_mask001"
+                FileName fn_searched_op_samplings; fn_searched_op_samplings.clear();
                 fn_searched_op_samplings.compose(fn_tmp + "_op", iop + 1, "star", 3); // "*_cc_mask001_op001.star"
                 writeRelionFormatLocalSearchOperatorResults(fn_searched_op_samplings, op_samplings, angpix_image);
                 std::cout << " + List of sampling points for this local symmetry operator: " << fn_searched_op_samplings << std::endl;
@@ -489,7 +491,7 @@ void local_symmetry_parameters_mpi::run() {
         if (fn_info_out.getExtension() == "star") {
             writeRelionFormatMasksAndOperators(fn_info_out, fn_mask_list, op_list, angpix_image);
         } else {
-            writeDMFormatMasksAndOperators(fn_info_out, fn_mask_list, op_list, angpix_image);
+            writeDMFormatMasksAndOperators    (fn_info_out, fn_mask_list, op_list, angpix_image);
         }
 
         displayEmptyLine();
