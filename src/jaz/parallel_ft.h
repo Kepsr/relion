@@ -46,9 +46,9 @@
 */
 
 
-class ParFourierTransformer
-{
-public:
+class ParFourierTransformer {
+
+    public:
     /** Real array, in fact a pointer to the user array is stored. */
     MultidimArray<RFLOAT> *fReal;
 
@@ -58,24 +58,25 @@ public:
     /** Fourier array  */
     MultidimArray< Complex > fFourier;
 
-#ifdef RELION_SINGLE_PRECISION
+    #ifdef RELION_SINGLE_PRECISION
     /* fftw Forward plan */
     fftwf_plan fPlanForward;
 
     /* fftw Backward plan */
     fftwf_plan fPlanBackward;
-#else
+    #else
     /* fftw Forward plan */
     fftw_plan fPlanForward;
 
     /* fftw Backward plan */
     fftw_plan fPlanBackward;
-#endif
+    #endif
 
     bool plans_are_set;
 
-// Public methods
-public:
+    // Public methods
+
+    public:
     /** Default constructor */
     ParFourierTransformer();
 
@@ -97,13 +98,15 @@ public:
         change the data.
         */
     template <typename T, typename T1>
-        void FourierTransform(T& v, T1& V, bool getCopy=true)
-        {
-            setReal(v);
-            Transform(FFTW_FORWARD);
-            if (getCopy) getFourierCopy(V);
-            else         getFourierAlias(V);
+    void FourierTransform(T& v, T1& V, bool getCopy=true) {
+        setReal(v);
+        Transform(FFTW_FORWARD);
+        if (getCopy) { 
+            getFourierCopy(V); 
+        } else { 
+            getFourierAlias(V); 
         }
+    }
 
     /** Compute the Fourier transform.
         The data is taken from the matrix with which the object was
@@ -127,74 +130,81 @@ public:
         matrix is already resized to the right size before entering
         in this function. */
     template <typename T, typename T1>
-        void inverseFourierTransform(const T& V, T1& v)
-        {
-            setReal(v);
-            setFourier(V);
-            Transform(FFTW_BACKWARD);
-        }
+    void inverseFourierTransform(const T& V, T1& v) {
+        setReal(v);
+        setFourier(V);
+        Transform(FFTW_BACKWARD);
+    }
 
     /** Get Fourier coefficients. */
     template <typename T>
-        void getFourierAlias(T& V) {V.alias(fFourier); return;}
+    void getFourierAlias(T& V) {V.alias(fFourier); return;}
 
     /** Get Fourier coefficients. */
-    MultidimArray< Complex>& getFourierReference() {return fFourier;}
+    MultidimArray<Complex> &getFourierReference() {return fFourier;}
 
     /** Get Fourier coefficients. */
     template <typename T>
-        void getFourierCopy(T& V) {
-            V.reshape(fFourier);
-            memcpy(MULTIDIM_ARRAY(V),MULTIDIM_ARRAY(fFourier),
-                MULTIDIM_SIZE(fFourier)*2*sizeof(RFLOAT));
-        }
+    void getFourierCopy(T& V) {
+        V.reshape(fFourier);
+        memcpy(
+            MULTIDIM_ARRAY(V), MULTIDIM_ARRAY(fFourier),
+            MULTIDIM_SIZE(fFourier) * 2 * sizeof(RFLOAT)
+        );
+    }
 
     /** Return a complete Fourier transform (two halves).
     */
     template <typename T>
         void getCompleteFourier(T& V) {
             V.reshape(*fReal);
-            int ndim=3;
-            if (ZSIZE(*fReal)==1)
-            {
-                ndim=2;
-                if (YSIZE(*fReal)==1)
-                    ndim=1;
+            int ndim = 3;
+            if (ZSIZE(*fReal) == 1) {
+                ndim = 2;
+                if (YSIZE(*fReal) == 1)
+                    ndim = 1;
             }
-            switch (ndim)
-            {
+            switch (ndim) {
+
                 case 1:
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V)
-                        if (i<XSIZE(fFourier))
-                            DIRECT_A1D_ELEM(V,i)=DIRECT_A1D_ELEM(fFourier,i);
-                        else
-                            DIRECT_A1D_ELEM(V,i)=
-                                conj(DIRECT_A1D_ELEM(fFourier,
-                                    XSIZE(*fReal)-i));
-                    break;
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
+                    if (i < XSIZE(fFourier)) {
+                        DIRECT_A1D_ELEM(V, i) = DIRECT_A1D_ELEM(fFourier, i);
+                    } else {
+                        DIRECT_A1D_ELEM(V, i) = conj(DIRECT_A1D_ELEM(fFourier, XSIZE(*fReal) - i));
+                    }
+                }
+                break;
+
                 case 2:
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V)
-                        if (j<XSIZE(fFourier))
-                            DIRECT_A2D_ELEM(V,i,j)=
-                                DIRECT_A2D_ELEM(fFourier,i,j);
-                        else
-                            DIRECT_A2D_ELEM(V,i,j)=
-                                conj(DIRECT_A2D_ELEM(fFourier,
-                                    (YSIZE(*fReal)-i)%YSIZE(*fReal),
-                                     XSIZE(*fReal)-j));
-                    break;
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
+                    if (j<XSIZE(fFourier)) {
+                        DIRECT_A2D_ELEM(V, i, j) = DIRECT_A2D_ELEM(fFourier, i, j);
+                    } else {
+                        DIRECT_A2D_ELEM(V, i, j) = conj(DIRECT_A2D_ELEM(
+                            fFourier, 
+                            (YSIZE(*fReal) - i) % YSIZE(*fReal), 
+                            XSIZE(*fReal) - j
+                        ));
+                    }
+                }
+                break;
+
                 case 3:
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V)
-                        if (j<XSIZE(fFourier))
-                            DIRECT_A3D_ELEM(V,k,i,j)=
-                                DIRECT_A3D_ELEM(fFourier,k,i,j);
-                        else
-                            DIRECT_A3D_ELEM(V,k,i,j)=
-                                conj(DIRECT_A3D_ELEM(fFourier,
-                                    (ZSIZE(*fReal)-k)%ZSIZE(*fReal),
-                                    (YSIZE(*fReal)-i)%YSIZE(*fReal),
-                                     XSIZE(*fReal)-j));
+                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
+                        if (j < XSIZE(fFourier)) {
+                            DIRECT_A3D_ELEM(V, k, i, j) = DIRECT_A3D_ELEM(fFourier, k, i, j);
+                        } else {
+                            DIRECT_A3D_ELEM(V, k, i, j) = conj(DIRECT_A3D_ELEM(
+                                fFourier, 
+                                (ZSIZE(*fReal) - k) % ZSIZE(*fReal), 
+                                (YSIZE(*fReal) - i) % YSIZE(*fReal), 
+                                XSIZE(*fReal) - j
+                            ));
+                        }
+                    }
                     break;
+
             }
         }
 
@@ -203,37 +213,42 @@ public:
     */
     template <typename T>
         void setFromCompleteFourier(T& V) {
-        int ndim=3;
-        if (ZSIZE(*fReal)==1)
-        {
-            ndim=2;
-            if (YSIZE(*fReal)==1)
-                ndim=1;
+        int ndim = 3;
+        if (ZSIZE(*fReal) == 1) {
+            ndim = 2;
+            if (YSIZE(*fReal) == 1)
+                ndim = 1;
         }
-        switch (ndim)
-        {
-        case 1:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fFourier)
-                DIRECT_A1D_ELEM(fFourier,i)=DIRECT_A1D_ELEM(V,i);
+        switch (ndim) {
+
+            case 1:
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fFourier) {
+                DIRECT_A1D_ELEM(fFourier, i) = DIRECT_A1D_ELEM(V, i);
+            }
             break;
-        case 2:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(fFourier)
-                DIRECT_A2D_ELEM(fFourier,i,j) = DIRECT_A2D_ELEM(V,i,j);
+
+            case 2:
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(fFourier) {
+                DIRECT_A2D_ELEM(fFourier, i, j) = DIRECT_A2D_ELEM(V, i, j);
+            }
             break;
-        case 3:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier)
-                DIRECT_A3D_ELEM(fFourier,k,i,j) = DIRECT_A3D_ELEM(V,k,i,j);
+
+            case 3:
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier) {
+                DIRECT_A3D_ELEM(fFourier, k, i, j) = DIRECT_A3D_ELEM(V, k, i, j);
+            }
             break;
+
         }
     }
 
-// Internal methods
-public:
+    // Internal methods
+    public:
     /* Pointer to the array of RFLOATs with which the plan was computed */
-    RFLOAT * dataPtr;
+    RFLOAT *dataPtr;
 
     /* Pointer to the array of complex<RFLOAT> with which the plan was computed */
-    Complex * complexDataPtr;
+    Complex *complexDataPtr;
 
     /* Initialise all pointers to NULL */
     void init();
@@ -258,7 +273,7 @@ public:
 
     /** Get the Multidimarray that is being used as input. */
     const MultidimArray<RFLOAT> &getReal() const;
-    const MultidimArray<Complex > &getComplex() const;
+    const MultidimArray<Complex> &getComplex() const;
 
     /** Set a Multidimarray for input.
         The data of img will be the one of fReal. In forward
@@ -272,7 +287,7 @@ public:
         transforms it is not modified, but in backward transforms,
         the result will be stored in img. This means that the size
         of img cannot change between calls. */
-    void setReal(MultidimArray<Complex > &img);
+    void setReal(MultidimArray<Complex> &img);
 
     /** Set a Multidimarray for the Fourier transform.
         The values of the input array are copied in the internal array.
@@ -280,6 +295,7 @@ public:
         the one for the Fourier array are already resized.
         No plan is updated. */
     void setFourier(const MultidimArray<Complex> &imgFourier);
+
 };
 
 #endif

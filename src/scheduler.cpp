@@ -23,7 +23,7 @@
 static time_t annotated_time;
 bool has_annotated_time = false;
 
-// Global variables, but only with reach within this file!
+// Global variables, but only within this file!
 std::map<std::string, SchedulerBooleanVariable> scheduler_global_bools;
 std::map<std::string, SchedulerFloatVariable> scheduler_global_floats;
 std::map<std::string, SchedulerStringVariable> scheduler_global_strings;
@@ -1580,7 +1580,6 @@ void Schedule::run(PipeLine &pipeline) {
         bool is_failure = false;
         bool is_aborted = false;
         pipeline.waitForJobToFinish(current_job, is_failure, is_aborted);
-
 
         std::string message = "";
         if (is_failure) message = " + Stopping schedule due to job " + jobs[current_node].current_name + " failing with an error ...";

@@ -18,7 +18,6 @@
  * author citations must be preserved.
  ***************************************************************************/
 
-
 #include "src/macros.h"
 #include "src/jaz/parallel_ft.h"
 #include "src/fftw.h"
@@ -31,7 +30,7 @@ static pthread_mutex_t fftw_plan_mutex_par = PTHREAD_MUTEX_INITIALIZER;
 // #define DEBUG_PLANS
 
 #ifdef RELION_SINGLE_PRECISION
-#define FFTW_COMPLEX         fftwf_complex
+typedef fftwf_complex FFTW_COMPLEX;
 #define FFTW_PLAN_DFT        fftwf_plan_dft
 #define FFTW_PLAN_DFT_R2C    fftwf_plan_dft_r2c
 #define FFTW_PLAN_DFT_C2R    fftwf_plan_dft_c2r
@@ -40,7 +39,7 @@ static pthread_mutex_t fftw_plan_mutex_par = PTHREAD_MUTEX_INITIALIZER;
 #define FFTW_CLEANUP         fftwf_cleanup
 #define FFTW_DESTROY_PLAN    fftwf_destroy_plan
 #else
-#define FFTW_COMPLEX         fftw_complex
+typedef fftw_complex FFTW_COMPLEX;
 #define FFTW_PLAN_DFT        fftw_plan_dft
 #define FFTW_PLAN_DFT_R2C    fftw_plan_dft_r2c
 #define FFTW_PLAN_DFT_C2R    fftw_plan_dft_c2r
@@ -51,6 +50,7 @@ static pthread_mutex_t fftw_plan_mutex_par = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 // Constructors and destructors --------------------------------------------
+
 ParFourierTransformer::ParFourierTransformer(): plans_are_set(false) {
     init();
     #ifdef DEBUG_PLANS
