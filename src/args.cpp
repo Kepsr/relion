@@ -45,6 +45,7 @@
 #include "src/args.h"
 #include "src/gcc_version.h"
 #include "src/matrix1d.h"
+#include "src/image.h"  // For ColourScheme
 #include <algorithm>
 
 
@@ -316,6 +317,31 @@ void IOParser::writeUsage(std::ostream &out) {
         writeUsageOneSection(i, out);
     }
     out << std::setw(35) << "--version" << " : Print RELION version and exit" << std::endl;
+}
+
+int IOParser::getColourScheme() {
+    return 
+    checkOption(
+        "--colour_fire",
+        "Show images in black-grey-white-red colour scheme (highlight high signal)?"
+    ) ? ColourScheme::black_grey_red :
+    checkOption(
+        "--colour_ice",
+        "Show images in blue-black-grey-white colour scheme (highlight low signal)?"
+    ) ? ColourScheme::blue_grey_white :
+    checkOption(
+        "--colour_fire-n-ice",
+        "Show images in blue-grey-red colour scheme (highlight high & low signal)?"
+    ) ? ColourScheme::blue_grey_red :
+    checkOption(
+        "--colour_rainbow",
+        "Show images in cyan-blue-black-red-yellow colour scheme?"
+    ) ? ColourScheme::rainbow :
+    checkOption(
+        "--colour_difference",
+        "Show images in cyan-blue-black-red-yellow colour scheme (for difference images)?"
+    ) ? ColourScheme::cyan_black_yellow :
+        ColourScheme::greyscale;
 }
 
 void untangleDeviceIDs(std::string &tangled, std::vector <std::vector<std::string>> &untangled) {

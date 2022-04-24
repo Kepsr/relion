@@ -1025,11 +1025,9 @@ void basisViewerCanvas::saveImage(int ipos) {
     );
     chooser.show();
     // Block until user picks something.
-    while (chooser.shown())
-        { Fl::wait(); }
+    while (chooser.shown()) { Fl::wait(); }
     // User hit cancel?
-    if (chooser.value() == NULL)
-        return;
+    if (chooser.value() == NULL) return;
 
     int xsize = boxes[ipos]->xsize_data;
     int ysize = boxes[ipos]->ysize_data;
@@ -1676,7 +1674,6 @@ int pickerViewerCanvas::handle(int ev) {
                 if (xcoor_p * xcoor_p + ycoor_p * ycoor_p < rad2)
                     return 0;
             }
-            RFLOAT aux = -999.0, zero = 0.0;
             int iaux = current_selection_type;
 
             // Else store new coordinate
@@ -1687,19 +1684,19 @@ int pickerViewerCanvas::handle(int ev) {
                 MDcoords.addObject(MDcoords.getObject(last_idx));
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-                    MDcoords.setValue(EMDL::ORIENT_ROT, aux);
+                    MDcoords.setValue(EMDL::ORIENT_ROT, -999.0);
                 } catch (const char *errmsg) {}
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-                    MDcoords.setValue(EMDL::ORIENT_TILT, aux);
+                    MDcoords.setValue(EMDL::ORIENT_TILT, -999.0);
                 } catch (const char *errmsg) {}
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, zero);
+                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0);
                 } catch (const char *errmsg) {}
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, zero);
+                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
                 } catch (const char *errmsg) {}
             } else {
                 MDcoords.addObject();
@@ -1708,8 +1705,8 @@ int pickerViewerCanvas::handle(int ev) {
             MDcoords.setValue(EMDL::IMAGE_COORD_Y, ycoor);
             // No autopicking, but still always fill in the parameters for autopicking with dummy values (to prevent problems in joining autopicked and manually picked coordinates)
             MDcoords.setValue(EMDL::PARTICLE_CLASS, iaux);
-            MDcoords.setValue(EMDL::ORIENT_PSI, aux);
-            MDcoords.setValue(EMDL::PARTICLE_AUTOPICK_FOM, aux);
+            MDcoords.setValue(EMDL::ORIENT_PSI,            -999.0);
+            MDcoords.setValue(EMDL::PARTICLE_AUTOPICK_FOM, -999.0);
 
             redraw();
             return 1;
@@ -1834,9 +1831,7 @@ void pickerViewerCanvas::loadCoordinates(bool ask_filename) {
     }
     MDcoords.read(fn_coord_in);
 
-    if (fn_color != "") {
-        findColorColumnForCoordinates();
-    }
+    if (fn_color != "") findColorColumnForCoordinates();
 }
 
 void pickerViewerCanvas::findColorColumnForCoordinates() {
@@ -1848,14 +1843,12 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
 
     // Pre-set all color_label column in the MDcoords to -999.
     if (EMDL::isInt(color_label)) {
-        int ival = -999;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
-            MDcoords.setValue(color_label, ival);
+            MDcoords.setValue<int>(color_label, -999);
         }
     } else {
-        RFLOAT val = -999.0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
-            MDcoords.setValue(color_label, val);
+            MDcoords.setValue<RFLOAT>(color_label, -999.0);
         }
     }
 
@@ -1911,8 +1904,7 @@ void singleViewerCanvas::printMetaData() {
 }
 
 /*
-void singleViewerCanvas::setContrast()
-{
+void singleViewerCanvas::setContrast() {
     popupSetContrastWindow win(400, 100, "Set contrast");
     win.fill();
 }
@@ -2090,8 +2082,9 @@ void displayerGuiWindow::readLastSettings() {
     std::string line;
     while (getline(in, line, '\n')) {
         int ispos = line.rfind("=");
-        std::string label = line.substr(0, ispos - 1);
-        std::string value = line.substr(ispos + 2, line.length());
+        std::string label = line.substr(0, ispos - 1);             // lhs
+        std::string value = line.substr(ispos + 2, line.length()); // rhs
+
         if (label == scale_input->label()) {
             scale_input->value(value.c_str());
         } else if (label == black_input->label()) {
@@ -2268,28 +2261,7 @@ void Displayer::read(int argc, char **argv) {
     show_fourier_amplitudes = parser.checkOption("--show_fourier_amplitudes", "Show amplitudes of 2D Fourier transform?");
     show_fourier_phase_angles = parser.checkOption("--show_fourier_phase_angles", "Show phase angles of 2D Fourier transforms?");
 
-    colour_scheme =
-    parser.checkOption(
-        "--colour_fire",
-        "Show images in black-grey-white-red colour scheme (highlight high signal)?"
-    ) ? ColourScheme::black_grey_red :
-    parser.checkOption(
-        "--colour_ice",
-        "Show images in blue-black-grey-white colour scheme (highlight low signal)?"
-    ) ? ColourScheme::blue_grey_white :
-    parser.checkOption(
-        "--colour_fire-n-ice",
-        "Show images in blue-grey-red colour scheme (highlight high & low signal)?"
-    ) ? ColourScheme::blue_grey_red :
-    parser.checkOption(
-        "--colour_rainbow",
-        "Show images in cyan-blue-black-red-yellow colour scheme?"
-    ) ? ColourScheme::rainbow :
-    parser.checkOption(
-        "--colour_difference",
-        "Show images in cyan-blue-black-red-yellow colour scheme (for difference images)?"
-    ) ? ColourScheme::cyan_black_yellow :
-        ColourScheme::greyscale;
+    colour_scheme = parser.getColourScheme();
 
     do_colourbar = parser.checkOption("--colour_bar", "Show colourbar image?");
     do_ignore_optics = parser.checkOption("--ignore_optics", "Ignore information about optics groups in input STAR file?");

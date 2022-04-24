@@ -208,6 +208,8 @@ class IOParser {
 
         // Write the usage for all options to outstream 
         void writeUsage(std::ostream &outstream);
+
+        int getColourScheme();
 };
 
 /*

@@ -367,13 +367,15 @@ public:
 };
 */
 
-class pickerViewerCanvas : public basisViewerCanvas
-{
-protected:
+class pickerViewerCanvas : public basisViewerCanvas {
+
+    protected:
+
     int handle(int ev);
     void draw();
 
-public:
+    public:
+
     // MetaDataTable with all picked coordinates
     MetaDataTable MDcoords;
 
@@ -414,19 +416,20 @@ public:
     // if a fn_zscore is given, then match the coordinates to the Zscores in the corresponding MDtable
     void findColorColumnForCoordinates();
 
-private:
+    private:
 
     // Functionalities for  popup menu
     void saveCoordinates(bool ask_filename = false);
     void clearCoordinates();
     void printHelp();
     void viewExtractedParticles();
+
 };
 
 // This class only puts scrollbars around the resizable canvas
-class displayerGuiWindow : public Fl_Window
-{
-public:
+class displayerGuiWindow: public Fl_Window {
+
+    public:
 
     FileName fn_in, fn_data;
 
@@ -477,20 +480,20 @@ public:
     Fl_Choice *display_choice, *sort_choice, *colour_scheme_choice;
 
     // Constructor with w x h size of the window and a title
-    displayerGuiWindow(int W, int H, const char* title=0): Fl_Window(W, H, title),	sort_button(NULL), reverse_sort_button(NULL), apply_orient_button(NULL), read_whole_stack_button(NULL) {}
+    displayerGuiWindow(int W, int H, const char *title=0): 
+    Fl_Window(W, H, title),	
+    sort_button(NULL), reverse_sort_button(NULL), 
+    apply_orient_button(NULL), read_whole_stack_button(NULL) {}
 
     // Fill all except for the browser
     int fill(FileName &fn_in);
 
     // NUll-check value-fetch
-    bool getValue(Fl_Check_Button * button)
-    {
-        if(button != NULL)
-            return(button->value());
-        else
-            return(false);
+    bool getValue(Fl_Check_Button *button) {
+        return button != NULL && button->value();
     }
-private:
+
+    private:
 
     static void cb_display(Fl_Widget*, void*);
     inline void cb_display_i();
@@ -499,9 +502,9 @@ private:
 
 };
 
-class Displayer
-{
-public:
+class Displayer {
+
+    public:
 
     // I/O Parser
     IOParser parser;

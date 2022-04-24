@@ -154,28 +154,7 @@ class image_handler_parameters {
         maxval = textToFloat(parser.getOption("--white", "Pixel value for white (default is auto-contrast)", "0"));
         sigma_contrast  = textToFloat(parser.getOption("--sigma_contrast", "Set white and black pixel values this many times the image stddev from the mean", "0"));
 
-        color_scheme =
-        parser.checkOption(
-            "--colour_fire",
-            "Show images in black-grey-white-red colour scheme (highlight high signal)?"
-        ) ? ColourScheme::black_grey_red :
-        parser.checkOption(
-            "--colour_ice",
-            "Show images in blue-black-grey-white colour scheme (highlight low signal)?"
-        ) ? ColourScheme::blue_grey_white :
-        parser.checkOption(
-            "--colour_fire-n-ice",
-            "Show images in blue-grey-red colour scheme (highlight high & low signal)?"
-        ) ? ColourScheme::blue_grey_red :
-        parser.checkOption(
-            "--colour_rainbow",
-            "Show images in cyan-blue-black-red-yellow colour scheme?"
-        ) ? ColourScheme::rainbow :
-        parser.checkOption(
-            "--colour_difference",
-            "Show images in cyan-blue-black-red-yellow colour scheme (for difference images)?"
-        ) ? ColourScheme::rainbow :
-            ColourScheme::greyscale;
+        color_scheme = parser.getColourScheme();
 
         // Hidden
         fn_cosDPhi = getParameter(argc, argv, "--cos_dphi", "");
@@ -183,7 +162,7 @@ class image_handler_parameters {
         if (parser.checkForErrors())
             REPORT_ERROR("Errors encountered on the command line (see above), exiting...");
 
-        verb = (do_stats || do_calc_com || fn_fsc !="" || fn_cosDPhi != "" | do_power) ? 0 : 1;
+        verb = !do_stats && !do_calc_com && fn_fsc == "" && fn_cosDPhi == "" && !do_power;
 
         if (fn_out == "" && verb == 1)
             REPORT_ERROR("Please specify the output file name with --o.");
