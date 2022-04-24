@@ -19,7 +19,7 @@
  ***************************************************************************/
 /***************************************************************************
  *
- * Authors:		 J.R. Bilbao-Castro (jrbcast@ace.ual.es)
+ * Authors:         J.R. Bilbao-Castro (jrbcast@ace.ual.es)
  *
  * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
  *
@@ -38,18 +38,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
  * 02111-1307  USA
  *
- *	All comments concerning this program package may be sent to the
- *	e-mail address 'xmipp@cnb.csic.es'
+ *    All comments concerning this program package may be sent to the
+ *    e-mail address 'xmipp@cnb.csic.es'
  ***************************************************************************/
 
 #include "src/metadata_table.h"
 #include "src/metadata_label.h"
 
 
-std::string errorMsg(std::string s) {
+inline std::string prependERROR(const std::string &s) {
     return "ERROR: " + s;
 }
-
 
 MetaDataTable::MetaDataTable():
     objects(0),
@@ -115,8 +114,7 @@ MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
 
         activeLabels = MD.activeLabels;
 
-        for (long int idx = 0; idx < MD.objects.size(); idx++)
-        {
+        for (long int idx = 0; idx < MD.objects.size(); idx++) {
             objects[idx] = new MetaDataContainer(this, MD.objects[idx]);
             objects[idx]->table = this;
         }
@@ -132,7 +130,7 @@ MetaDataTable::~MetaDataTable() {
 }
 
 bool MetaDataTable::isEmpty() const {
-    return (objects.size()==0);
+    return objects.size() == 0;
 }
 
 size_t MetaDataTable::numberOfObjects() const {
@@ -173,7 +171,7 @@ std::string MetaDataTable::getComment() const {
 }
 
 bool MetaDataTable::containsComment() const {
-    return (comment != std::string(""));
+    return comment != std::string("");
 }
 
 void MetaDataTable::setName(const std::string newName) {
@@ -205,11 +203,11 @@ std::string MetaDataTable::getUnknownLabelNameAt(int i) const {
 
 std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID, bool escape) const {
     // SHWS 18 Jul 2018: this function previously had a stringstream, but it greatly slowed down
-    // writing of large STAR files in some strange circumstances 
+    // writing of large STAR files in some strange circumstances
     // (with large data.star and model.star files in refinement)
     // Therefore replaced the strstream with faster snprintf
     //
-    // JZ 9aug2018: still using a stringstream for vector<double> fields
+    // JZ 9 Aug 2018: still using a stringstream for vector<double> fields
     // => Avoid vector-valued columns in particle star-files.
     char buffer[14];
 
@@ -224,17 +222,12 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID,
             double v = getValue<double>(label, objectID);
 
             if (abs(v) > 0.0 && abs(v) < 0.001 || abs(v) > 100000.0) {
-                if (v < 0.0) {
-                    snprintf(buffer, 13, "%12.5e", v);
-                } else {
-                    snprintf(buffer, 13, "%12.6e", v);
-                }
+                // If the magnitude of v is very small or very large, 
+                // use floating-point form (6.02e-23).
+                snprintf(buffer, 13, v < 0.0 ? "%12.5e" : "%12.6e", v);
             } else {
-                if (v < 0.0) {
-                    snprintf(buffer, 13, "%12.5f", v);
-                } else {
-                    snprintf(buffer, 13, "%12.6f", v);
-                }
+                // Otherwise, use fixed-point form (33.3333).
+                snprintf(buffer, 13, v < 0.0 ? "%12.5f" : "%12.6f", v);
             }
         } else if (EMDL::isInt(label)) {
             long v = getValue<long>(label, objectID);
@@ -276,9 +269,7 @@ bool MetaDataTable::setUnknownValue(int labelPosition, const std::string &value)
         objects[current_objectID]->unknowns[offset] = value;
         return true;
     }
-    else {
-        return false;
-    }
+    return false;
 }
 
 bool MetaDataTable::setValueFromString(
@@ -286,26 +277,22 @@ bool MetaDataTable::setValueFromString(
 ) {
     if (EMDL::isString(label)) {
         return setValue(label, value, objectID);
-    }
-    else {
+    } else {
         std::istringstream i(value);
 
         if (EMDL::isDouble(label)) {
             double v;
             i >> v;
             return setValue(label, v, objectID);
-        }
-        else if (EMDL::isInt(label)) {
+        } else if (EMDL::isInt(label)) {
             long v;
             i >> v;
             return setValue(label, v, objectID);
-        }
-        else if (EMDL::isBool(label)) {
+        } else if (EMDL::isBool(label)) {
             bool v;
             i >> v;
             return setValue(label, v, objectID);
-        }
-        else if (EMDL::isDoubleVector(label)) {
+        } else if (EMDL::isDoubleVector(label)) {
             std::vector<double> v;
             v.reserve(32);
 
@@ -333,10 +320,11 @@ bool MetaDataTable::setValueFromString(
     return false;
 }
 
-// comparators used for sorting
+// Comparators used for sorting
+namespace MD {
 
-struct MdDoubleComparator {
-    MdDoubleComparator(long index) : index(index) {}
+struct DoubleComparator {
+    DoubleComparator(long index) : index(index) {}
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
         return lh->doubles[index] < rh->doubles[index];
@@ -345,8 +333,9 @@ struct MdDoubleComparator {
     long index;
 };
 
-struct MdIntComparator {
-    MdIntComparator(long index) : index(index) {}
+struct IntComparator {
+
+    IntComparator(long index): index(index) {}
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
         return lh->ints[index] < rh->ints[index];
@@ -355,32 +344,41 @@ struct MdIntComparator {
     long index;
 };
 
-struct MdStringComparator {
-    MdStringComparator(long index) : index(index) {}
+struct StringComparator {
+
+    long index;
+
+    StringComparator(long index): index(index) {}
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
         return lh->strings[index] < rh->strings[index];
     }
 
-    long index;
 };
 
-struct MdStringAfterAtComparator {
-    MdStringAfterAtComparator(long index) : index(index) {}
+// Can we get this to inherit from StringComperator?
+struct StringAfterAtComparator {
+
+    long index;
+
+    StringAfterAtComparator(long index): index(index) {}
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
         std::string slh = lh->strings[index];
         std::string srh = rh->strings[index];
-        slh = slh.substr(slh.find("@")+1);
-        srh = srh.substr(srh.find("@")+1);
+        slh = slh.substr(slh.find("@") + 1);
+        srh = srh.substr(srh.find("@") + 1);
         return slh < srh;
     }
 
-    long index;
 };
 
-struct MdStringBeforeAtComparator {
-    MdStringBeforeAtComparator(long index): index(index) {}
+// Can we get this to inherit from StringComperator?
+struct StringBeforeAtComparator {
+
+    long index;
+
+    StringBeforeAtComparator(long index): index(index) {}
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
         std::string slh = lh->strings[index];
@@ -397,18 +395,17 @@ struct MdStringBeforeAtComparator {
         return ilh < irh;
     }
 
-    long index;
-
 };
 
+};
 
 void MetaDataTable::sort(
     EMDL::EMDLabel name, bool do_reverse, bool only_set_index, bool do_random
 ) {
     if (do_random) {
-        srand (time(NULL)); // initialise random seed
+        srand(time(NULL)); // initialise random seed
     } else if (!EMDL::isNumber(name)) {
-        REPORT_ERROR("MetadataTable::sort%% " + errorMsg("can only sorted numbers"));
+        REPORT_ERROR("MetadataTable::sort%% " + prependERROR("can only sorted numbers"));
     }
 
     std::vector<std::pair<double, long int>> vp;
@@ -454,32 +451,33 @@ void MetaDataTable::sort(
 }
 
 void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_reverse, bool do_sort_after_at, bool do_sort_before_at) {
+
     if (EMDL::isString(label)) {
         if (do_sort_after_at) {
             std::stable_sort(
                 objects.begin(), objects.end(),
-                MdStringAfterAtComparator(label2offset[label])
+                MD::StringAfterAtComparator(label2offset[label])
             );
         } else if (do_sort_before_at) {
             std::stable_sort(
                 objects.begin(), objects.end(),
-                MdStringBeforeAtComparator(label2offset[label])
+                MD::StringBeforeAtComparator(label2offset[label])
             );
         } else {
             std::stable_sort(
                 objects.begin(), objects.end(),
-                MdStringComparator(label2offset[label])
+                MD::StringComparator(label2offset[label])
             );
         }
     } else if (EMDL::isDouble(label)) {
         std::stable_sort(
             objects.begin(), objects.end(),
-            MdDoubleComparator(label2offset[label])
+            MD::DoubleComparator(label2offset[label])
         );
     } else if (EMDL::isInt(label)) {
         std::stable_sort(
             objects.begin(), objects.end(),
-            MdIntComparator(label2offset[label])
+            MD::IntComparator(label2offset[label])
         );
     } else {
         REPORT_ERROR("Cannot sort this label: " + EMDL::label2Str(label));
@@ -500,8 +498,7 @@ bool MetaDataTable::containsLabel(const EMDL::EMDLabel label, std::string unknow
         if (
             activeLabels[i] == label &&
             (label != EMDL::UNKNOWN_LABEL || getUnknownLabelNameAt(i) == unknownLabel)
-        )
-            return true;
+        ) return true;
     }
     return false;
 }
@@ -529,13 +526,12 @@ void MetaDataTable::addLabel(EMDL::EMDLabel label, std::string unknownLabel) {
     if (label >= EMDL::LAST_LABEL)
         REPORT_ERROR(std::string(
             "MetaDataTable::addLabel: unrecognised label: "
-        ) + EMDL::label2Str(label)
-        );
+        ) + EMDL::label2Str(label));
     if (label == EMDL::UNKNOWN_LABEL && unknownLabel == "")
         REPORT_ERROR("MetaDataTable::addLabel: unknownLabel is empty");
 
     if (label2offset[label] < 0 || label == EMDL::UNKNOWN_LABEL) {
-    // keep pushing the same unknown label...
+        // keep pushing the same unknown label...
         long id;
 
         if (EMDL::isDouble(label)) {
@@ -602,8 +598,9 @@ void MetaDataTable::addMissingLabels(const MetaDataTable* mdt) {
 
         if (l == EMDL::UNKNOWN_LABEL) {
             std::string unknownLabel = mdt->getUnknownLabelNameAt(i);
-            if (!containsLabel(l, unknownLabel))
+            if (!containsLabel(l, unknownLabel)) {
                 addLabel(l, unknownLabel);
+            }
         } else if (label2offset[l] < 0) {
             addLabel(l);
         }
@@ -733,20 +730,23 @@ void MetaDataTable::addObject(MetaDataContainer* data) {
         doubleVectorLabels, unknownLabels
     ));
 
-    setObject(data, objects.size()-1);
-    current_objectID = objects.size()-1;
+    setObject(data, objects.size() - 1);
+    current_objectID = objects.size() - 1;
 }
 
 void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
     objects.push_back(new MetaDataContainer(
-        this, doubleLabels, intLabels, boolLabels, stringLabels, doubleVectorLabels, unknownLabels));
+        this,
+        doubleLabels, intLabels, boolLabels,
+        stringLabels, doubleVectorLabels, unknownLabels
+    ));
 
     setValuesOfDefinedLabels(data, objects.size()-1);
     current_objectID = objects.size()-1;
 }
 
 void MetaDataTable::removeObject(long objectID) {
-    long i = (objectID < 0) ? current_objectID : objectID;
+    long i = objectID < 0 ? current_objectID : objectID;
 
     checkObjectID(i, "MetaDataTable::removeObject");
 
@@ -778,7 +778,7 @@ long int MetaDataTable::goToObject(long int objectID) {
     return current_objectID;
 }
 
-long int MetaDataTable::readStarLoop(std::ifstream& in, bool do_only_count) {
+long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
     isList = false;
 
     //Read column labels
@@ -862,7 +862,7 @@ long int MetaDataTable::readStarLoop(std::ifstream& in, bool do_only_count) {
     return nr_objects;
 }
 
-bool MetaDataTable::readStarList(std::ifstream& in) {
+bool MetaDataTable::readStarList(std::ifstream &in) {
     isList = true;
     addObject();
     long int objectID = objects.size() - 1;
@@ -896,19 +896,16 @@ bool MetaDataTable::readStarList(std::ifstream& in) {
                 setValueFromString(label, value, objectID);
             }
             labelPosition++;
-        }
-        // Check whether there is a comment or an empty line
-        else if (firstword[0] == '#' || firstword[0] == ';') {
+        } else if (firstword[0] == '#' || firstword[0] == ';') {
+            // Check whether there is a comment or an empty line
             // TODO: handle comments?
             continue;
-        }
-        // Check whether a loop structure comes after this list
-        else if (firstword.find("loop_") == 0) {
+        } else if (firstword.find("loop_") == 0) {
+            // Check whether a loop structure comes after this list
             also_has_loop = true;
             return also_has_loop;
-        }
-        // Check whether this data blocks ends (because a next one is there)
-        else if (firstword.find("data_") == 0) {
+        } else if (firstword.find("data_") == 0) {
+            // Check whether this data blocks ends (because a next one is there)
             // Should I reverse the pointer one line?
             return also_has_loop;
         }
@@ -918,7 +915,7 @@ bool MetaDataTable::readStarList(std::ifstream& in) {
 }
 
 long int MetaDataTable::readStar(
-    std::ifstream& in, const std::string &name, bool do_only_count
+    std::ifstream &in, const std::string &name, bool do_only_count
 ) {
     std::string line, token, value;
     clear();
@@ -958,7 +955,7 @@ long int MetaDataTable::readStar(
                         // go back one line in the ifstream
                         in.seekg(current_pos);
                         also_has_loop = readStarList(in);
-                        return also_has_loop ? 0 : 1;
+                        return !also_has_loop;
                     }
                 }
             }
@@ -1065,7 +1062,7 @@ void MetaDataTable::write(std::ostream& out) {
         // isList
         // Get first object. In this case (row format) there is a single object
         std::string entryComment = "";
-        int maxWidth=10;
+        int maxWidth = 10;
 
         for (long i = 0; i < activeLabels.size(); i++) {
             EMDL::EMDLabel l = activeLabels[i];
@@ -1107,12 +1104,12 @@ void MetaDataTable::write(std::ostream& out) {
 }
 
 void MetaDataTable::write(const FileName &fn_out) {
-    std::ofstream  fh;
+    std::ofstream fh;
     FileName fn_tmp = fn_out + ".tmp";
     fh.open((fn_tmp).c_str(), std::ios::out);
     if (!fh)
         REPORT_ERROR( (std::string)"MetaDataTable::write: cannot write to file: " + fn_out);
-    //	fh << "# RELION; version " << g_RELION_VERSION << std::endl;
+    //    fh << "# RELION; version " << g_RELION_VERSION << std::endl;
     write(fh);
     fh.close();
     // Rename to prevent errors with programs in pipeliner reading in incomplete STAR files
@@ -1127,7 +1124,7 @@ void MetaDataTable::columnHistogram(
     bool do_fractional_instead, bool do_cumulative_instead
 ) {
     if (!containsLabel(label))
-        REPORT_ERROR(errorMsg("The column specified is not present in the MetaDataTable."));
+        REPORT_ERROR(prependERROR("The column specified is not present in the MetaDataTable."));
 
     std::vector<RFLOAT> values;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(*this) {
@@ -1144,19 +1141,18 @@ void MetaDataTable::columnHistogram(
         values.push_back(val);
     }
 
-
     std::string title = EMDL::label2Str(label);
     histogram(values, histX, histY, verb, title, plot2D, nr_bin, hist_min, hist_max, do_fractional_instead, do_cumulative_instead);
 }
 
-void MetaDataTable::histogram(std::vector<RFLOAT> &values, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
-                              int verb, std::string title, CPlot2D *plot2D,
-                              long int nr_bin, RFLOAT hist_min, RFLOAT hist_max,
-                              bool do_fractional_instead, bool do_cumulative_instead)
-{
+void MetaDataTable::histogram(
+    std::vector<RFLOAT> &values, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
+    int verb, std::string title, CPlot2D *plot2D,
+    long int nr_bin, RFLOAT hist_min, RFLOAT hist_max,
+    bool do_fractional_instead, bool do_cumulative_instead
+) {
     double sum = 0, sumsq = 0;
-    for (size_t i = 0, ilim = values.size(); i < ilim; i++)
-    {
+    for (size_t i = 0, ilim = values.size(); i < ilim; i++) {
         RFLOAT value = values[i];
         sum += value;
         sumsq += value * value;
@@ -1166,8 +1162,7 @@ void MetaDataTable::histogram(std::vector<RFLOAT> &values, std::vector<RFLOAT> &
     std::sort(values.begin(), values.end());
     sum /= n_row; sumsq /= n_row;
 
-    if (verb > 0)
-    {
+    if (verb > 0) {
         std::cout << "Number of items: " << n_row << std::endl;
         std::cout << "Min: " << values[0] << " Q1: " << values[n_row / 4];
         std::cout << " Median: " << values[n_row / 2] << " Q3: " << values[n_row * 3 / 4] << " Max: " << values[n_row - 1] << std::endl;
@@ -1179,86 +1174,75 @@ void MetaDataTable::histogram(std::vector<RFLOAT> &values, std::vector<RFLOAT> &
     unsigned int bin_size = 1;
 
     // change bin parameters only when there are many values
-    if (iqr != 0)
-    {
-        if (nr_bin <= 0)
-        {
+    if (iqr != 0) {
+        if (nr_bin <= 0) {
             hist_min = values[0];
             hist_max = values[n_row - 1];
             bin_width = 2 * iqr / std::pow(n_row, 1.0 / 3); // Freedman-Diaconis rule
             bin_size = (unsigned int)(std::ceil((hist_max - hist_min) / bin_width));
             if (bin_size > 5000) bin_size = 5000; // FIXME: Ad hoc upper limit to avoid using too much memory
-        }
-        else
-        {
-            if (!std::isfinite(hist_min) || hist_min == -LARGE_NUMBER) hist_min = values[0];
-            if (!std::isfinite(hist_max) || hist_max == LARGE_NUMBER) hist_max = values[n_row - 1];
+        } else {
+            if (!std::isfinite(hist_min) || hist_min == -LARGE_NUMBER) { hist_min = values[0]; }
+            if (!std::isfinite(hist_max) || hist_max == +LARGE_NUMBER) { hist_max = values[n_row - 1]; }
             bin_size = nr_bin;
         }
         bin_width = (hist_max - hist_min) / bin_size;
-    }
-    else
-    {
-        if (!std::isfinite(hist_min) || hist_min == -LARGE_NUMBER) hist_min = values[0];
-        if (!std::isfinite(hist_max) || hist_max == LARGE_NUMBER) hist_max = values[n_row - 1];
+    } else {
+        if (!std::isfinite(hist_min) || hist_min == -LARGE_NUMBER) { hist_min = values[0]; }
+        if (!std::isfinite(hist_max) || hist_max == +LARGE_NUMBER) { hist_max = values[n_row - 1]; }
     }
 
     bin_size += 2; // for -inf and +inf
     if (verb > 0) std::cout << "Bin size: " << bin_size << " width: " << bin_width << std::endl;
 
     std::vector<long> hist(bin_size);
-    histY.resize(4*bin_size, 0.);
-    histX.resize(4*bin_size, 0.);
-    for (int i = 0; i < n_row; i++)
-    {
-        int ibin = (int)((values[i] - hist_min) / bin_width) + 1;
-        if (ibin < 0) ibin = 0;
-        if (ibin >= bin_size) ibin = bin_size - 1;
+    histY.resize(4 * bin_size, 0.0);
+    histX.resize(4 * bin_size, 0.0);
+    for (int i = 0; i < n_row; i++) {
+        int ibin = (values[i] - hist_min) / bin_width + 1;
+        if (ibin < 0) { ibin = 0; }
+        if (ibin >= bin_size) { ibin = bin_size - 1; }
         hist[ibin]++;
     }
 
     long cum = 0;
-    for (int i = 0; i < bin_size; i++)
-    {
-        if (i == 0)
-        {
+    for (int i = 0; i < bin_size; i++) {
+        if (i == 0) {
             if (verb > 0) std::cout << "[-INF, " << hist_min << "): ";
-            histX[4*i]	 = hist_min - bin_width;
-            histX[4*i+1] = hist_min - bin_width;
-            histX[4*i+2] = hist_min;
-            histX[4*i+3] = hist_min;
-        }
-        else if (i == bin_size - 1)
-        {
+            histX[4 * i]     = hist_min - bin_width;
+            histX[4 * i + 1] = hist_min - bin_width;
+            histX[4 * i + 2] = hist_min;
+            histX[4 * i + 3] = hist_min;
+        } else if (i == bin_size - 1) {
             if (verb > 0) std::cout << "[" << hist_max << ", +INF]: ";
-            histX[4*i]	 = hist_max;
-            histX[4*i+1] = hist_max;
-            histX[4*i+2] = hist_max + bin_width;
-            histX[4*i+3] = hist_max + bin_width;
-        }
-        else
-        {
+            histX[4 * i]     = hist_max;
+            histX[4 * i + 1] = hist_max;
+            histX[4 * i + 2] = hist_max + bin_width;
+            histX[4 * i + 3] = hist_max + bin_width;
+        } else {
             if (verb > 0) std::cout << "[" << (hist_min + bin_width * (i - 1)) << ", " << (hist_min + bin_width * i) << "): ";
-            histX[4*i]	 = hist_min + bin_width * (i - 1);
-            histX[4*i+1] = hist_min + bin_width * (i - 1);
-            histX[4*i+2] = hist_min + bin_width * i;
-            histX[4*i+3] = hist_min + bin_width * i;
+            histX[4 * i]     = hist_min + bin_width * (i - 1);
+            histX[4 * i + 1] = hist_min + bin_width * (i - 1);
+            histX[4 * i + 2] = hist_min + bin_width * i;
+            histX[4 * i + 3] = hist_min + bin_width * i;
         }
 
         cum += hist[i];
-        if (do_fractional_instead) hist[i] = (100. * hist[i] / (float)n_row);
-        else if (do_cumulative_instead) hist[i] = (100 * cum / (float)n_row);
+        if (do_fractional_instead) {
+            hist[i] = 100.0 * hist[i] / (float) n_row;
+        } else if (do_cumulative_instead) {
+            hist[i] = 100 * cum / (float) n_row;
+        }
 
-        if (verb > 0) std::cout  << hist[i] << std::endl;
+        if (verb > 0) { std::cout  << hist[i] << std::endl; }
 
-        histY[4*i+1] = histY[4*i+2] = hist[i];
-        histY[4*i] = histY[4*i+3] = 0.;
+        histY[4 * i + 1] = histY[4 * i + 2] = hist[i];
+        histY[4 * i] = histY[4 * i + 3] = 0.0;
 
     }
-    histX[histX.size()-1] = histX[histX.size()-2];
+    histX[histX.size() - 1] = histX[histX.size() - 2];
 
-    if (plot2D != NULL)
-    {
+    if (plot2D != NULL) {
         plot2D->SetTitle(" Histogram of " + title);
         plot2D->SetDrawLegend(false);
         plot2D->AddDataSet(histX, histY);
@@ -1321,8 +1305,9 @@ void MetaDataTable::addToCPlot2D(
 
     plot2D->AddDataSet(dataSet);
 
-    if (xaxis != EMDL::UNDEFINED)
+    if (xaxis != EMDL::UNDEFINED) {
         plot2D->SetXAxisTitle(EMDL::label2Str(xaxis));
+    }
     plot2D->SetYAxisTitle(EMDL::label2Str(yaxis));
 
 }
@@ -1420,8 +1405,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
                     MDboth.addObject(MD1.getObject());
                     break;
                 }
-            }
-            else if (EMDL::isInt(label1)) {
+            } else if (EMDL::isInt(label1)) {
                 myint2 = MD2.getValue<int>(label1);
                 if (abs(myint2 - myint1) <= round(eps)) {
                     have_in_2 = true;
@@ -1429,8 +1413,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
                     MDboth.addObject(MD1.getObject());
                     break;
                 }
-            }
-            else if (EMDL::isDouble(label1)) {
+            } else if (EMDL::isDouble(label1)) {
                 myd2 = MD2.getValue<double>(label1);
                 if (label2 != EMDL::UNDEFINED)
                 mydy2 = MD2.getValue<double>(label2);
@@ -1563,7 +1546,7 @@ bool MetaDataTable::compareLabels(
 MetaDataTable subsetMetaDataTable(
     MetaDataTable &MDin, EMDL::EMDLabel label, RFLOAT min_value, RFLOAT max_value
 ) {
-    if (!(EMDL::isInt(label) || EMDL::isDouble(label)) )
+    if (!EMDL::isInt(label) && !EMDL::isDouble(label))
         REPORT_ERROR("subsetMetadataTable ERROR: can only make a subset selection based on numbers");
 
     if (!MDin.containsLabel(label))
@@ -1637,20 +1620,19 @@ MetaDataTable removeDuplicatedParticles(
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
 
         std::string mic_name = MDin.getValue<std::string>(mic_label);
-        RFLOAT val1, val2;
 
-        val1 = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-        val2 = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-        xs[index] = -val1 * origin_scale + val2;
+        RFLOAT origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+        RFLOAT coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        xs[index] = coordinate - origin * origin_scale;
 
-        val1 = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-        val1 = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-        ys[index] = -val1 * origin_scale + val2;
+        origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+        coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        ys[index] = coordinate - origin * origin_scale;
 
         if (dataIs3D) {
-        val1 = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
-        val2 = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
-        zs[index] = -val1 * origin_scale + val2;
+        origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+        coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
+        zs[index] = coordinate - origin * origin_scale;
         }
 
         grouped[mic_name].push_back(index);

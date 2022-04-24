@@ -46,7 +46,7 @@
 #include "src/metadata_container.h"
 #include "src/metadata_label.h"
 
-#define CURRENT_MDT_VERSION 30001
+const int CURRENT_MDT_VERSION = 30001;
 
 /** For all objects.
     @code
@@ -97,6 +97,7 @@
  *        `MetaDataContainer->unknowns`. Otherwise, the value does not matter.
  */
 class MetaDataTable {
+
     // Effectively stores all metadata
     std::vector<MetaDataContainer*> objects;
 
@@ -200,10 +201,10 @@ class MetaDataTable {
     void addLabel(EMDL::EMDLabel label, std::string unknownLabel="");
 
     // Add missing labels that are present in 'app'.
-    void addMissingLabels(const MetaDataTable* app);
+    void addMissingLabels(const MetaDataTable *app);
 
     // Append all rows from 'app' to the end of the table and insert all missing labels.
-    void append(const MetaDataTable& app);
+    void append(const MetaDataTable &app);
 
     // Get metadatacontainer for objectID (current_objectID if objectID < 0)
     MetaDataContainer* getObject(long objectID = -1) const;
@@ -261,11 +262,11 @@ class MetaDataTable {
     long goToObject(long objectID);
 
     // Read a STAR loop structure
-    long int readStarLoop(std::ifstream& in, bool do_only_count = false);
+    long int readStarLoop(std::ifstream &in, bool do_only_count = false);
 
     /* Read a STAR list
      * The function returns true if the list is followed by a loop, false otherwise */
-    bool readStarList(std::ifstream& in);
+    bool readStarList(std::ifstream &in);
 
     /* Read a MetaDataTable from a STAR-format data block
      *
@@ -278,16 +279,16 @@ class MetaDataTable {
      *
      * If no data block is found the function will return 0 and the MetaDataTable remains empty
      */
-    long int readStar(std::ifstream& in, const std::string &name = "", bool do_only_count = false);
+    long int readStar(std::ifstream &in, const std::string &name = "", bool do_only_count = false);
 
     // Read a MetaDataTable (get file format from extension)
     long int read(const FileName &filename, const std::string &name = "", bool do_only_count = false);
 
     // Write a MetaDataTable in STAR format
-    void write(std::ostream& out = std::cout);
+    void write(std::ostream &out = std::cout);
 
     // Write to a single file
-    void write(const FileName & fn_out);
+    void write(const FileName &fn_out);
 
     // Make a histogram of a column
     void columnHistogram(
@@ -310,12 +311,12 @@ class MetaDataTable {
         std::string marker=""
     );
 
-    void printLabels(std::ostream& ost);
+    void printLabels(std::ostream &ost);
 
     // Randomise the order inside the STAR file
     void randomiseOrder();
 
-    // Feb14,2017 - Shaoda, Check whether the two MetaDataTables contain the same set of activeLabels
+    // 14 Feb 2017 - Shaoda, Check whether the two MetaDataTables contain the same set of activeLabels
     static bool compareLabels(const MetaDataTable &MD1, const MetaDataTable &MD2);
 
     // Join 2 metadata tables. Only include labels that are present in both of them.
@@ -332,7 +333,7 @@ class MetaDataTable {
     };
 
     template<class T>
-    bool isTypeCompatible(EMDL::EMDLabel label, T& value) const;
+    bool isTypeCompatible(EMDL::EMDLabel label, T &value) const;
 
     private:
 
@@ -342,7 +343,7 @@ class MetaDataTable {
 
     /* setObjectUnsafe(data)
      *  Same as setObject, but assumes that all labels are present. */
-    void setObjectUnsafe(MetaDataContainer* data, long objId);
+    void setObjectUnsafe(MetaDataContainer *data, long objId);
 
 };
 
@@ -391,18 +392,19 @@ bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label, T& value) const {
         "Compile error: wrong type given to MetaDataTable::getValur or setValue"
     );
 
-    if (std::is_same<bool, U>::value)
+    if (std::is_same<bool, U>::value) {
         return EMDL::isBool(label);
-    else if (std::is_same<FileName, U>::value || std::is_same<std::string, U>::value)
+    } else if (std::is_same<FileName, U>::value || std::is_same<std::string, U>::value) {
         return EMDL::isString(label);
-    else if (std::is_same<double, U>::value || std::is_same<float, U>::value)
+    } else if (std::is_same<double, U>::value || std::is_same<float, U>::value) {
         return EMDL::isDouble(label);
-    else if (std::is_same<int, U>::value || std::is_same<long, U>::value)
+    } else if (std::is_same<int, U>::value || std::is_same<long, U>::value) {
         return EMDL::isInt(label);
-    else if (std::is_same<std::vector<double>, U>::value || std::is_same<std::vector<float>, U>::value)
+    } else if (std::is_same<std::vector<double>, U>::value || std::is_same<std::vector<float>, U>::value) {
         return EMDL::isVector(label);
-    else
+    } else {
         return false;
+    }
 }
 #endif
 
