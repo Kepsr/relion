@@ -113,7 +113,7 @@ int Image<T>::readIMAGIC(long int img_select) {
     printf("DEBUG readIMAGIC: Reading Imagic file\n");
     #endif
 
-    IMAGIChead* header = new IMAGIChead;
+    IMAGIChead *header = new IMAGIChead;
 
     if (fread(header, IMAGICSIZE, 1, fhed) < 1)
         REPORT_ERROR((std::string) "readIMAGIC: header file of " + filename + " cannot be read");
@@ -121,31 +121,27 @@ int Image<T>::readIMAGIC(long int img_select) {
     // Determine byte order and swap bytes if from little-endian machine
     char *b = (char *) header;
     long int extent = IMAGICSIZE - 916;  // exclude char bytes from swapping
-    if ((abs(header->nyear) > SWAPTRIG) || (header->ixlp > SWAPTRIG)) {
+    if (abs(header->nyear) > SWAPTRIG || header->ixlp > SWAPTRIG) {
         for (int i = 0; i < extent; i += 4)
             if (i != 56)          // exclude type string
                 swapbytes(b + i, 4);
     }
-    long int _xDim,_yDim,_zDim;
-    long int _nDim;
-    _xDim = (long int) header->iylp;
-    _yDim = (long int) header->ixlp;
-    _zDim = (long int) 1;
-    _nDim = (long int) header->ifn + 1 ;
+
+    typename MultidimArray<T>::Dimensions dims { (long int) header->iylp, (long int) header->ixlp, 1, (long int) header->ifn + 1 };
 
     std::stringstream Num;
     std::stringstream Num2;
-    if (img_select > (long int) _nDim) {
+    if (img_select > (long int) dims.n) {
         Num  << img_select;
-        Num2 << _nDim;
+        Num2 << dims.n;
         REPORT_ERROR((std::string)"readImagic: Image number " + Num.str() + " exceeds stack size " + Num2.str());
     }
 
     if (img_select > -1)
-        _nDim = 1;
+        dims.n = 1;
     // setDimensions do not allocate data
-    data.setDimensions(_xDim, _yDim, _zDim, _nDim);
-    replaceNsize = _nDim;
+    data.setDimensions(dims.x, dims.y, dims.z, dims.n);
+    replaceNsize = dims.n;
 
     DataType datatype;
     if (strstr(header->type, "PACK")) {
@@ -211,30 +207,28 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
     //    if ( p->transform != NoTransform )
     //        img_convert_fourier(p, Centered);
 
-    IMAGIChead* header = new IMAGIChead;
-    long int Xdim = XSIZE(data);
-    long int Ydim = YSIZE(data);
-    long int Zdim = ZSIZE(data);
-    long int Ndim = NSIZE(data);
+    IMAGIChead *header = new IMAGIChead;
+
+    typename MultidimArray<T>::Dimensions dims = data.getDimensions();
 
     // Fill in the file header
-    header->nhfr = 1;
-    header->npix2 = Xdim * Ydim;
+    header->nhfr   = 1;
+    header->npix2  = dims.x * dims.y;
     header->npixel = header->npix2;
-    header->iylp = Xdim;
-    header->ixlp = Ydim;
-    header->ifn = Ndim - 1 ;
+    header->iylp   = dims.x;
+    header->ixlp   = dims.y;
+    header->ifn    = dims.n - 1;
 
     time_t timer;
     time (&timer);
-    tm* t = localtime(&timer);
+    tm *t = localtime(&timer);
 
-    header->ndate = t->tm_mday;
+    header->ndate  = t->tm_mday;
     header->nmonth = t->tm_mon + 1;
-    header->nyear = t->tm_year;
-    header->nhour = t->tm_hour;
+    header->nyear  = t->tm_year;
+    header->nhour  = t->tm_hour;
     header->nminut = t->tm_min;
-    header->nsec = t->tm_sec;
+    header->nsec   = t->tm_sec;
 
     // Convert T to datatype
     if (
@@ -252,9 +246,7 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         REPORT_ERROR("ERROR write IMAGIC image: invalid typeid(T)");
     }
 
-    size_t datasize, datasize_n;
-    datasize_n = Xdim * Ydim * Zdim;
-    datasize = datasize_n * gettypesize(Float);
+    size_t datasize = dims.x * dims.y * dims.z * gettypesize(Float);
 
     if (!MDMainHeader.isEmpty()) {
         try {

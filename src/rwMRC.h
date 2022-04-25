@@ -162,27 +162,21 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
         #endif
         swap = 1;
         int extent = MRCSIZE - 800; // exclude labels from swapping
-        for (i = 0; i < extent; i += 4)
-            swapbytes(b+i, 4);
+        for (i = 0; i < extent; i += 4) swapbytes(b + i, 4);
     }
 
-    long int _xDim,_yDim,_zDim;
-    long int _nDim;
-    _xDim = (int) header->nx;
-    _yDim = (int) header->ny;
-    _zDim = (int) header->nz;
-    _nDim = 1;
+    typename MultidimArray<T>::Dimensions dims { (int) header->nx, (int) header->ny, (int) header->nz, 1 };
 
     if (isStack) {
-        _nDim = (long int) _zDim;
-        _zDim = 1;
-        replaceNsize = _nDim;
+        dims.n = (long int) dims.z;
+        dims.z = 1;
+        replaceNsize = dims.n;
         std::stringstream Num;
         std::stringstream Num2;
-        if (img_select >= (int)_nDim) {
-            // img_select starts from 0, while _nDim from 1
-            Num << img_select + 1;
-            Num2 << _nDim;
+        if (img_select >= (int) dims.n) {
+            // img_select starts from 0, while dims.n from 1
+            Num  << img_select + 1;
+            Num2 << dims.n;
             REPORT_ERROR((std::string) "readMRC: Image number " + Num.str() + " exceeds stack size " + Num2.str() + " of image " + name);
         }
     } else {
@@ -190,15 +184,17 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
     }
 
     // Map the parameters
-    if (isStack && img_select == -1) {
-        _zDim = 1;
-    } else if (isStack && img_select != -1) {
-        _zDim = _nDim = 1;
+    if (isStack) {
+        if (img_select == -1) {
+            dims.z = 1;
+        } else {
+            dims.z = dims.n = 1;
+        }
     } else {
-        _nDim = 1;
+        dims.n = 1;
     }
 
-    data.setDimensions(_xDim, _yDim, _zDim, _nDim);
+    data.setDimensions(dims.x, dims.y, dims.z, dims.n);
 
     DataType datatype;
 
@@ -209,34 +205,39 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
         // This is SerialEM's non-standard extension.
         // https://bio3d.colorado.edu/imod/doc/mrc_format.txt
         // http://bio3d.colorado.edu/SerialEM/hlp/html/hidd_k2_save_options.htm
-        if (_xDim % 2 == 1 && _yDim % 2 == 1)
+        if (dims.x % 2 == 1 && dims.y % 2 == 1)
             REPORT_ERROR("Currently we support 4-bit MRC (mode 101) only when nx * ny is an even number.");
         datatype = UHalf;
     } else {
         switch (header->mode % 5) {
-        case 0:
-            datatype = SChar; // Changed to SIGNED in RELION 3.1 to be compatible with the official speficifation and SerialEM
+
+            case 0:
+            datatype = SChar; // Changed to SIGNED in RELION 3.1 to be compatible with the official specification and SerialEM
             break;
-        case 1:
+
+            case 1:
             datatype = Short;
             break;
-        case 2:
+
+            case 2:
             datatype = Float;
             break;
-        case 3:
+
+            case 3:
+            case 4:
             REPORT_ERROR("readMRC: only real-space images may be read into RELION.");
-        case 4:
-            REPORT_ERROR("readMRC: only real-space images may be read into RELION.");
-        default:
+
+            default:
             datatype = SChar;
             break;
+
         }
     }
     offset = MRCSIZE + header->nsymbt;
 
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, (RFLOAT) header->amin);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, (RFLOAT) header->amax);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, (RFLOAT) header->amean);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->amean);
     MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms);
     MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype);
 

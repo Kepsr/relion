@@ -37,7 +37,7 @@
 /** Spider Header
   * @ingroup Spider
 */
-struct SPIDERhead {                    
+struct SPIDERhead {
     // file header for SPIDER data
     float nslice;    //  0      slices in volume (image = 1)
     float nrow;      //  1      rows per slice
@@ -124,13 +124,13 @@ struct SPIDERhead {
 template <typename T>
 int Image<T>::readSPIDER(long int img_select) {
     #undef DEBUG
-    //#define DEBUG
+    // #define DEBUG
     #ifdef DEBUG
     printf("DEBUG readSPIDER: Reading Spider file\n");
     #endif
     #undef DEBUG
 
-    SPIDERhead* header = new SPIDERhead;
+    SPIDERhead *header = new SPIDERhead;
     if (fread(header, SPIDERSIZE, 1, fimg) < 1)
         REPORT_ERROR("rwSPIDER: cannot allocate memory for header");
 
@@ -141,39 +141,33 @@ int Image<T>::readSPIDER(long int img_select) {
     int      i;
     int      extent = SPIDERSIZE - 180;  // exclude char bytes from swapping
     if (
-        fabs(header->nrow)  > SWAPTRIG || 
+        fabs(header->nrow)  > SWAPTRIG ||
         fabs(header->iform) > SWAPTRIG ||
         fabs(header->nslice) < 1
     ) {
         swap = 1;
-        for (i = 0; i < extent; i+= 4) {
-            swapbytes(b + i, 4);
-        }
+        for (i = 0; i < extent; i+= 4) { swapbytes(b + i, 4); }
     }
 
     if (header->labbyt != header->labrec * header->lenbyt)
         REPORT_ERROR((std::string) "Invalid Spider file:  " + filename);
 
     offset = (int) header->labbyt;
-    DataType datatype  = Float;
+    DataType datatype = Float;
 
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,(RFLOAT)header->fmin);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,(RFLOAT)header->fmax);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,(RFLOAT)header->av);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV,(RFLOAT)header->sig);
-    setSamplingRateInHeader((RFLOAT)header->scale);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->fmin);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->fmax);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->av);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sig);
+    setSamplingRateInHeader((RFLOAT) header->scale);
 
     bool isStack = header->istack > 0;
-    long int _xDim,_yDim,_zDim;
-    long int _nDim, _nDimSet;
-    _xDim = (long int) header->nsam;
-    _yDim = (long int) header->nrow;
-    _zDim = (long int) header->nslice;
-    _nDim = 1;
+
+    typename MultidimArray<T>::Dimensions dims { (long int) header->nsam, (long int) header->nrow, (long int) header->nslice, 1 };
 
     if (isStack) {
-        _nDim = (long int) header->maxim;
-        replaceNsize = _nDim;
+        dims.n = header->maxim;
+        replaceNsize = dims.n;
     } else {
         replaceNsize = 0;
     }
@@ -183,11 +177,12 @@ int Image<T>::readSPIDER(long int img_select) {
      */
 
     // Map the parameters.
-    // Read the whole object (-1) or a slide.
-    // Only handle stacks of images, not of volumes.
-    _nDimSet = isStack && img_select == -1 ? _nDim : 1;
-
-    data.setDimensions(_xDim, _yDim, _zDim, _nDimSet);
+    data.setDimensions(
+        dims.x, dims.y, dims.z,
+        isStack && img_select == -1 ? dims.n : 1
+        // Read the whole object (-1) or a slide.
+        // Only handle stacks of images, not of volumes.
+    );
 
     if (isStack && dataflag < 0) {
         // Don't read the individual header and the data if not necessary
@@ -201,10 +196,10 @@ int Image<T>::readSPIDER(long int img_select) {
     std::stringstream Num2;
     // image is in stack? and set right initial and final image
     if (isStack) {
-        pad         = offset;
-        if (img_select > _nDim) {
+        pad = offset;
+        if (img_select > dims.n) {
             Num  << img_select;
-            Num2 << _nDim;
+            Num2 << dims.n;
             REPORT_ERROR((std::string) "readSpider: Image number " + Num.str() + " exceeds stack size " + Num2.str());
         }
         offset += offset;
@@ -216,7 +211,7 @@ int Image<T>::readSPIDER(long int img_select) {
     size_t header_size = offset;
     size_t image_size  = header_size + ZYXSIZE(data) * sizeof(float);
     std::cerr << "DEBUG readSPIDER: header_size = " << header_size << " image_size = " << image_size << std::endl;
-    std::cerr << "DEBUG readSPIDER: img_select= " << img_select << " n= " << Ndim << " pad = " << pad << std::endl;
+    std::cerr << "DEBUG readSPIDER: img_select= " << img_select << " n= " << dims.n << " pad = " << pad << std::endl;
     #endif
     // offset should point to the begin of the data
     return readData(fimg, img_select, datatype, pad);
@@ -250,42 +245,31 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     //in an existing stack
     //IsStack?
     //else
-    long int Xdim = XSIZE(data);
-    long int Ydim = YSIZE(data);
-    long int Zdim = ZSIZE(data);
-    long int Ndim = NSIZE(data);
+    typename MultidimArray<T>::Dimensions dims = data.getDimensions();
 
-    float lenbyt = sizeof(float) * Xdim;  // Record length (in bytes)
+    float lenbyt = sizeof(float) * dims.x;  // Record length (in bytes)
     float labrec = floor(SPIDERSIZE / lenbyt); // # header records
-    if (fmod(SPIDERSIZE,lenbyt) != 0)
-        labrec++;
+    if (fmod(SPIDERSIZE,lenbyt) != 0) { labrec++; }
     float labbyt = labrec * lenbyt;   // Size of header in bytes
     offset = (int) labbyt;
-    SPIDERhead* header = (SPIDERhead *) askMemory((int) labbyt * sizeof(char));
+    SPIDERhead *header = (SPIDERhead *) askMemory((int) labbyt * sizeof(char));
 
     // Map the parameters
     header->lenbyt = lenbyt;     // Record length (in bytes)
     header->labrec = labrec;     // # header records
     header->labbyt = labbyt;     // Size of header in bytes
 
-    header->irec   = labrec + floor((ZYXSIZE(data) * sizeof(float)) / lenbyt + 0.999999); // Total # records
-    header->nsam   = Xdim;
-    header->nrow   = Ydim;
-    header->nslice = Zdim;
+    header->irec   = labrec + floor(ZYXSIZE(data) * sizeof(float) / lenbyt + 0.999999); // Total # records
+    header->nsam   = dims.x;
+    header->nrow   = dims.y;
+    header->nslice = dims.z;
 
     #ifdef DEBUG
     printf("DEBUG writeSPIDER: Size: %g %g %g\n", header->nsam, header->nrow, header->nslice);
     #endif
 
-    if (Zdim < 2) {
-        header->iform = 1;
-        // 2D image
-    } else {
-        header->iform = 3;
-        // 3D volume
-    }
-    RFLOAT aux;
-    header->imami = 0; //never trust max/min
+    header->iform = dims.z < 2 ? 1 : 2;  // 2D image or 3D volume?
+    header->imami = 0; // never trust max/min
 
     if (!MDMainHeader.isEmpty()) {
         #ifdef DEBUG
@@ -305,12 +289,12 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
         } catch (const char *errmsg) {}
     }
     // For multi-image files
-    if (Ndim > 1 || mode == WRITE_APPEND || isStack) {
+    if (dims.n > 1 || mode == WRITE_APPEND || isStack) {
         header->istack = 2;
         header->inuse =  1;
-        header->maxim = Ndim;
+        header->maxim = dims.n;
         if (mode == WRITE_APPEND)
-            header->maxim = replaceNsize + 1;
+        header->maxim = replaceNsize + 1;
     } else {
         header->istack = 0;
         header->inuse = 0;
@@ -321,15 +305,13 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     // Set time and date
     time_t timer;
     time (&timer);
-    tm* t = localtime(&timer);
-    while (t->tm_year > 100) {
-        t->tm_year -= 100;
-    }
+    tm *t = localtime(&timer);
+    while (t->tm_year > 100) { t->tm_year -= 100; }
     sprintf(header->ctim, "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
     sprintf(header->cdat, "%02d-%02d-%02d", t->tm_mday, t->tm_mon, t->tm_year);
 
     size_t datasize, datasize_n;
-    datasize_n = Xdim * Ydim * Zdim;
+    datasize_n = dims.x * dims.y * dims.z;
     datasize = datasize_n * gettypesize(Float);
 
     #ifdef DEBUG

@@ -33,7 +33,7 @@
 */
 template <typename T>
 int Image<T>::readTIFF(
-    TIFF* ftiff, long int img_select,
+    TIFF *ftiff, long int img_select,
     bool readdata, bool isStack, const FileName &name
 ) {
     // #define DEBUG_TIFF
@@ -41,56 +41,48 @@ int Image<T>::readTIFF(
     printf("DEBUG readTIFF: Reading TIFF file. img_select %d\n", img_select);
     #endif
 
-    long int _xDim, _yDim, _zDim, _nDim;
+    // libtiff uses uint16 and uin32
 
-    // These are libtiff's types.
-    uint32 width, length; // apparent dimensions in the file
-    uint16 sampleFormat, bitsPerSample, resolutionUnit;
-    float xResolution;
-
+    uint32 width, length;  // Apparent file dimensions
     if (
         TIFFGetField(ftiff, TIFFTAG_IMAGEWIDTH,  &width)  != 1 ||
         TIFFGetField(ftiff, TIFFTAG_IMAGELENGTH, &length) != 1
     ) REPORT_ERROR("The input TIFF file does not have the width or height field.");
 
-    // true image dimensions
-    _xDim = width;
-    _yDim = length;
-    _zDim = 1;
-    _nDim = 1;
+    // True image dimensions
+    typename MultidimArray<T>::Dimensions dims { width, length, 1, 1 };
+
+    uint16 bitsPerSample, sampleFormat;
     TIFFGetFieldDefaulted(ftiff, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
     TIFFGetFieldDefaulted(ftiff, TIFFTAG_SAMPLEFORMAT,  &sampleFormat);
 
     // Find the number of frames
-    while (TIFFSetDirectory(ftiff, _nDim) != 0) { _nDim++; }
+    while (TIFFSetDirectory(ftiff, dims.n) != 0) { dims.n++; }
     // and go back to the start
     TIFFSetDirectory(ftiff, 0);
 
     #ifdef DEBUG_TIFF
     printf(
         "TIFF width %d, length %d, nDim %d, sample format %d, bits per sample %d\n",
-        width, length, _nDim, sampleFormat, bitsPerSample
+        width, length, dims.n, sampleFormat, bitsPerSample
     );
     #endif
 
     // Detect 4-bit packed TIFFs. This is IMOD's own extension.
     // It is not easy to detect this format. Here we check only the image size.
     // See IMOD's iiTIFFCheck() in libiimod/iitif.c and sizeCanBe4BitK2SuperRes() in libiimod/mrcfiles.c.
-    bool packed_4bit = false;
-    if (bitsPerSample == 8 && (
-        (width == 5760 && length == 8184)  || (width == 8184  && length == 5760) || // K3 SR: 11520 x 8184
-        (width == 4092 && length == 11520) || (width == 11520 && length == 4092) ||
-        (width == 3710 && length == 7676)  || (width == 7676  && length == 3710) || // K2 SR: 7676 x 7420
-        (width == 3838 && length == 7420)  || (width == 7420  && length == 3838)
-    )) {
-        packed_4bit = true;
-        _xDim *= 2;
-    }
+    bool packed_4bit = (bitsPerSample == 8 && (
+        width == 5760 && length == 8184  || width == 8184  && length == 5760 || // K3 SR: 11520 x 8184
+        width == 4092 && length == 11520 || width == 11520 && length == 4092 ||
+        width == 3710 && length == 7676  || width == 7676  && length == 3710 || // K2 SR: 7676 x 7420
+        width == 3838 && length == 7420  || width == 7420  && length == 3838
+    ));
 
     DataType datatype;
 
     if (packed_4bit) {
         datatype = UHalf;
+        dims.x *= 2;
     } else if (bitsPerSample == 8 && sampleFormat == SAMPLEFORMAT_UINT) {
         datatype = UChar;
     } else if (bitsPerSample == 8 && sampleFormat == SAMPLEFORMAT_INT) {
@@ -106,15 +98,17 @@ int Image<T>::readTIFF(
         REPORT_ERROR("Unsupported TIFF format.\n");
     }
 
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int)datatype);
+    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype);
 
+    uint16 resolutionUnit;
+    float xResolution;
     if (
         TIFFGetField(ftiff, TIFFTAG_RESOLUTIONUNIT, &resolutionUnit) == 1 &&
         TIFFGetField(ftiff, TIFFTAG_XRESOLUTION,    &xResolution)    == 1
     ) {
         // We don't support anistropic pixel size
         if (resolutionUnit == RESUNIT_INCH) {
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(2.54E8 / xResolution)); // 1 inch = 2.54 cm
+            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(2.54E8 / xResolution));  // 1 inch = 2.54 cm
             MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(2.54E8 / xResolution));
         } else if (resolutionUnit == RESUNIT_CENTIMETER) {
             MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(1.00E8 / xResolution));
@@ -128,13 +122,13 @@ int Image<T>::readTIFF(
 
     // TODO: TIFF is always a stack, isn't it?
     if (isStack) {
-        _zDim = 1;
-        replaceNsize = _nDim;
+        dims.z = 1;
+        replaceNsize = dims.n;
         std::stringstream Num;
         std::stringstream Num2;
-        if (img_select >= (int)_nDim) {
+        if (img_select >= (int)dims.n) {
             Num  << img_select + 1;
-            Num2 << _nDim;
+            Num2 << dims.n;
             REPORT_ERROR((std::string) "readTIFF: Image number " + Num.str() + " exceeds stack size " + Num2.str() + " of image " + name);
         }
     } else {
@@ -144,39 +138,39 @@ int Image<T>::readTIFF(
     // Map the parameters
     if (isStack) {
         if (img_select == -1) {
-            _zDim = 1;
+            dims.z = 1;
         } else {
-            _zDim = _nDim = 1;
+            dims.z = dims.n = 1;
         }
     }
-    data.setDimensions(_xDim, _yDim, _zDim, _nDim);
+    data.setDimensions(dims.x, dims.y, dims.z, dims.n);
     data.coreAllocateReuse();
 
     /*
-    if ( header->mx && header->a!=0)//ux
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X,(RFLOAT)header->a/header->mx);
-    if ( header->my && header->b!=0)//yx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y,(RFLOAT)header->b/header->my);
-    if ( header->mz && header->c!=0)//zx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z,(RFLOAT)header->c/header->mz);
+    if (header->mx && header->a != 0)  // ux
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT) header->a / header->mx);
+    if (header->my && header->b != 0)  // yx
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT) header->b / header->my);
+    if (header->mz && header->c != 0)  // zx
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT) header->c / header->mz);
     */
 
     if (readdata) {
-        if (img_select == -1) img_select = 0; // img_select starts from 0
+        if (img_select == -1) { img_select = 0; }  // img_select starts from 0
 
         size_t haveread_n = 0;
-        for (int i = 0; i < _nDim; i++) {
+        for (int i = 0; i < dims.n; i++) {
             TIFFSetDirectory(ftiff, img_select);
 
             // Make sure image property is consistent for all frames
-            uint32 cur_width, cur_length;
-            uint16 cur_sampleFormat, cur_bitsPerSample;
 
+            uint32 cur_width, cur_length;
             if (
                 TIFFGetField(ftiff, TIFFTAG_IMAGEWIDTH,  &cur_width)  != 1 ||
                 TIFFGetField(ftiff, TIFFTAG_IMAGELENGTH, &cur_length) != 1
             ) REPORT_ERROR(name + ": The input TIFF file does not have the width or height field.");
 
+            uint16 cur_bitsPerSample, cur_sampleFormat;
             TIFFGetFieldDefaulted(ftiff, TIFFTAG_BITSPERSAMPLE, &cur_bitsPerSample);
             TIFFGetFieldDefaulted(ftiff, TIFFTAG_SAMPLEFORMAT,  &cur_sampleFormat);
 
@@ -197,7 +191,7 @@ int Image<T>::readTIFF(
             for (tstrip_t strip = 0; strip < numberOfStrips; strip++) {
                 tsize_t actually_read = TIFFReadEncodedStrip(ftiff, strip, buf, stripSize);
                 if (actually_read == -1)
-                    REPORT_ERROR((std::string)"Failed to read an image data from " + name);
+                    REPORT_ERROR((std::string) "Failed to read an image data from " + name);
                 tsize_t actually_read_n = actually_read * 8 / bitsPerSample;
                 #ifdef DEBUG_TIFF
                 std::cout << "Reading strip: " << strip << "actually read byte:" << actually_read << std::endl;
@@ -229,14 +223,13 @@ int Image<T>::readTIFF(
            We follow this.
         */
 
-        T tmp;
-        const int ylim = _yDim / 2, z = 0;
-        for (int n = 0; n < _nDim; n++) {
+        const int ylim = dims.y / 2, z = 0;
+        for (int n = 0; n < dims.n; n++) {
             for (int y1 = 0; y1 < ylim; y1++) {
-                const int y2 = _yDim - 1 - y1;
-                for (int x = 0; x < _xDim; x++) {
+                const int y2 = dims.y - 1 - y1;
+                for (int x = 0; x < dims.x; x++) {
                     /// TODO: memcpy or pointer arithmetic is probably faster
-                    tmp = DIRECT_NZYX_ELEM(data, n, z, y1, x);
+                    T tmp = DIRECT_NZYX_ELEM(data, n, z, y1, x);
                     DIRECT_NZYX_ELEM(data, n, z, y1, x) = DIRECT_NZYX_ELEM(data, n, z, y2, x);
                     DIRECT_NZYX_ELEM(data, n, z, y2, x) = tmp;
                 }

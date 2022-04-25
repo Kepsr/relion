@@ -338,7 +338,7 @@ int datatypeString2Int(std::string s);
 /** Swapping trigger.
  * Threshold file z size above which bytes are swapped.
  */
-#define SWAPTRIG	 65535
+#define SWAPTRIG 65535
 
 /** Template class for images.
  * The image class is the general image handling class.
@@ -351,6 +351,7 @@ class Image {
     MultidimArray<T> data;      // Image data
     MetaDataTable MDMainHeader; // File metadata
 
+    // Why int x, y, z but long int n?
     struct Dimensions { int x, y, z; long int n; };
 
     private:
@@ -432,19 +433,19 @@ class Image {
 
     int readSPIDER(long int img_select);
 
-    int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
+    int writeSPIDER(long int select_img=-1, bool isStack = false, int mode = WRITE_OVERWRITE);
 
-    int readMRC(long int img_select, bool isStack=false, const FileName &name="");
+    int readMRC(long int img_select, bool isStack = false, const FileName &name = "");
 
-    int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE);
+    int writeMRC(long int img_select, bool isStack = false, int mode = WRITE_OVERWRITE);
 
     int readIMAGIC(long int img_select);
 
-    void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE);
+    void writeIMAGIC(long int img_select = -1, int mode = WRITE_OVERWRITE);
 
     int readTIFF(
         TIFF *ftiff, long int img_select, 
-        bool readdata=false, bool isStack=false, const FileName &name=""
+        bool readdata = false, bool isStack = false, const FileName &name = ""
     );
 
     /** Is this file an image?
@@ -465,7 +466,7 @@ class Image {
      * The number before @ in the filename is 1-indexed, while select_img is 0-indexed.
      */
     int read(
-        const FileName &name, bool readdata=true, long int select_img=-1, 
+        const FileName &name, bool readdata = true, long int select_img = -1, 
         bool mapData = false, bool is_2D = false
     );
 
@@ -491,8 +492,8 @@ class Image {
      *	select_img counts from 0, while the number before "@" in the name from 1!
      */
     void write(
-        FileName name="", long int select_img=-1, bool isStack=false,
-        int mode=WRITE_OVERWRITE
+        FileName name = "", long int select_img = -1, bool isStack = false,
+        int mode = WRITE_OVERWRITE
     );
 
     /** Cast a page of data from type dataType to type Tdest
@@ -520,7 +521,7 @@ class Image {
             } else {
                 signed char *ptr = (signed char *) page;
                 for (size_t i = 0; i < pageSize; i++) {
-                    ptrDest[i] = (T)ptr[i];
+                    ptrDest[i] = (T) ptr[i];
                 }
             }
             break;
@@ -531,7 +532,7 @@ class Image {
             } else {
                 unsigned short *ptr = (unsigned short *) page;
                 for (size_t i = 0; i < pageSize; i++) {
-                    ptrDest[i] = (T)ptr[i];
+                    ptrDest[i] = (T) ptr[i];
                 }
             }
             break;
@@ -1127,7 +1128,7 @@ class Image {
 
     void _write(
         const FileName &name, fImageHandler &hFile, long int select_img=-1, 
-        bool isStack=false, int mode=WRITE_OVERWRITE
+        bool isStack = false, int mode = WRITE_OVERWRITE
     );
 
 };
