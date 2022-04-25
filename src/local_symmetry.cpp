@@ -85,8 +85,8 @@ void Localsym_outputOperator(
 ) {
     if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
-    if (o_ptr == NULL)
-        REPORT_ERROR("ERROR: std::ostream* o_ptr == NULL !");
+    if (!o_ptr)
+        REPORT_ERROR("ERROR: std::ostream* o_ptr is NULL !");
     if (scale_angpix < 0.001)
         REPORT_ERROR("ERROR: Invalid scale of pixel size!");
 

@@ -888,26 +888,22 @@ void PipeLine::runScheduledJobs(
             }
 
             // break out of scheduled processes loop
-            if (is_failure || is_aborted)
-                break;
+            if (is_failure || is_aborted) break;
 
-            if (nr_repeat > 1 && !fn_check_exists)
-                break;
+            if (nr_repeat > 1 && !fn_check_exists) break;
 
         }
 
         // break out of repeat loop
-        if (nr_repeat > 1 && !fn_check_exists)
-            break;
+        if (nr_repeat > 1 && !fn_check_exists) break;
 
-        if (is_failure || is_aborted)
-            break;
+        if (is_failure || is_aborted) break;
 
         // Wait at least until 'minutes_wait' minutes have passed from the beginning of the repeat cycle
         gettimeofday(&time_end, NULL);
         long int passed_minutes = (time_end.tv_sec - time_start.tv_sec) / 60;
         long int still_wait = minutes_wait - passed_minutes;
-        if (still_wait > 0 && repeat+1 != nr_repeat) {
+        if (still_wait > 0 && repeat + 1 != nr_repeat) {
             fh << " + -- Waiting " << still_wait << " minutes until next repeat .."<< std::endl;
             sleep(still_wait * 60);
         }
@@ -1261,12 +1257,10 @@ bool PipeLine::makeFlowChart(
         return false;
     }
 
-    const char * default_pdf_viewer = getenv("RELION_PDFVIEWER_EXECUTABLE");
+    const char *pdf_viewer_exe = getenv("RELION_PDFVIEWER_EXECUTABLE");
     char mydefault[] = DEFAULTPDFVIEWER;
-    if (default_pdf_viewer == NULL) {
-        default_pdf_viewer = mydefault;
-    }
-    std::string myviewer(default_pdf_viewer);
+    if (!pdf_viewer_exe) { pdf_viewer_exe = mydefault; }
+    std::string myviewer(pdf_viewer_exe);
 
     PipeLineFlowChart flowchart;
     FileName fn_dir = processList[current_job].name;
@@ -1356,10 +1350,10 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
         FileName fn_curr_dir = is_first ? processList[this_job].name : processList[this_job].name + fns_subdir[idir];
         DIR *dir = opendir(fn_curr_dir.c_str());
         struct dirent *entry = readdir(dir);
-        while (entry != NULL) {
+        while (entry) {
             // Only want directories, and not '.' or '..'
             if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
-                FileName fnt = (is_first) ? entry->d_name : fns_subdir[idir] + entry->d_name;
+                FileName fnt = is_first ? entry->d_name : fns_subdir[idir] + entry->d_name;
                 fns_subdir.push_back(fnt + "/");
             }
             entry = readdir(dir);

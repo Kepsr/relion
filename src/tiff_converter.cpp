@@ -151,8 +151,7 @@ template <typename T>
 void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
     FileName fn_tmp = fn_tiff + ".tmp";
     TIFF *tif = TIFFOpen(fn_tmp.c_str(), "w");
-    if (tif == NULL)
-        REPORT_ERROR("Failed to open the output TIFF file: " + fn_tiff);
+    if (!tif) REPORT_ERROR("Failed to open the output TIFF file: " + fn_tiff);
 
     Image<float> frame;
     char msg[256];
@@ -237,8 +236,7 @@ template <typename T>
 void TIFFConverter::only_compress(FileName fn_movie, FileName fn_tiff) {
     FileName fn_tmp = fn_tiff + ".tmp";
     TIFF *tif = TIFFOpen(fn_tmp.c_str(), "w");
-    if (tif == NULL)
-        REPORT_ERROR("Failed to open the output TIFF file.");
+    if (!tif) REPORT_ERROR("Failed to open the output TIFF file.");
 
     if (!EERRenderer::isEER(fn_movie)) {
         Image<T> frame;

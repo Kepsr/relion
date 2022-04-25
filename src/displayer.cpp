@@ -843,7 +843,7 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
         }
 
         // User hit cancel?
-        if (chooser.value() == NULL) return;
+        if (!chooser.value()) return;
 
         FileName fnt(chooser.value());
         fn_sel = fnt;
@@ -1027,7 +1027,7 @@ void basisViewerCanvas::saveImage(int ipos) {
     // Block until user picks something.
     while (chooser.shown()) { Fl::wait(); }
     // User hit cancel?
-    if (chooser.value() == NULL) return;
+    if (!chooser.value()) return;
 
     int xsize = boxes[ipos]->xsize_data;
     int ysize = boxes[ipos]->ysize_data;
@@ -1090,9 +1090,7 @@ void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
 void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
     const char *default_pdf_viewer = getenv("RELION_PDFVIEWER_EXECUTABLE");
     char hardcoded_pdf_viewer[] = DEFAULTPDFVIEWER;
-    if (default_pdf_viewer == NULL) {
-        default_pdf_viewer = hardcoded_pdf_viewer;
-    }
+    if (!default_pdf_viewer) { default_pdf_viewer = hardcoded_pdf_viewer; }
 
     std::string mydefault = std::string(default_pdf_viewer);
 
@@ -1159,8 +1157,8 @@ void multiViewerCanvas::saveSelectedParticles(int save_selected) {
         return;
     }
 
-//#define RELION_DEVEL_ASKTRAINING
-#ifdef RELION_DEVEL_ASKTRAINING
+    // #define RELION_DEVEL_ASKTRAINING
+    #ifdef RELION_DEVEL_ASKTRAINING
     bool do_training = false;
     std::string ask = "Is this a selection of good classes, so it can be used for Sjors' training set for automated class selection?\n \
             More info here: /public/EM/RELION/training.txt\n";
@@ -1168,7 +1166,7 @@ void multiViewerCanvas::saveSelectedParticles(int save_selected) {
 
     if (do_training)
         saveTrainingSet();
-#endif
+    #endif
 
     MetaDataTable MDpart;
     makeStarFileSelectedParticles(save_selected, MDpart);
@@ -1795,7 +1793,7 @@ void pickerViewerCanvas::saveCoordinates(bool ask_filename) {
     FileName fn_out;
     if (ask_filename) {
         char *newfile = fl_file_chooser("Save File As?", "*.star", "");
-        if (newfile == NULL) return;
+        if (!newfile) return;
         FileName fn_tmp(newfile);
         fn_out = fn_tmp;
     } else {
@@ -1823,7 +1821,7 @@ void pickerViewerCanvas::loadCoordinates(bool ask_filename) {
     FileName fn_coord_in;
     if (ask_filename) {
         char *newfile = fl_file_chooser("Load File?", "*.star", "");
-        if (newfile == NULL) return;
+        if (!newfile) return;
         FileName fn_tmp(newfile);
         fn_coord_in = fn_tmp;
     } else {
@@ -2417,8 +2415,8 @@ int Displayer::runGui() {
         }
 
         // User hit cancel?
-        if (chooser.value() == NULL)
-            exit(0);
+        if (!chooser.value()) exit(0);
+
         FileName _fn_in(chooser.value());
         fn_in = _fn_in;
     }

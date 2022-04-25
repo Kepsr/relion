@@ -55,7 +55,7 @@ int SymList::read_sym_file(FileName fn_sym) {
     std::vector<std::string> fileContent;
     char line[80];
     int pgGroup = 0, pgOrder = 0;
-    if ((fpoii = fopen(fn_sym.c_str(), "r")) == NULL) {
+    if (!(fpoii = fopen(fn_sym.c_str(), "r"))) {
         // Check if reserved word and return group and order
         if (isSymmetryGroup(fn_sym.removeDirectories(), pgGroup, pgOrder)) {
             fill_symmetry_class(fn_sym, pgGroup, pgOrder, fileContent);
@@ -65,9 +65,8 @@ int SymList::read_sym_file(FileName fn_sym) {
             );
         }
     } else {
-        while (fgets(line, 79, fpoii) != NULL) {
-            if (line[0] == ';' || line[0] == '#' || line[0] == '\0')
-                continue;
+        while (fgets(line, 79, fpoii)) {
+            if (line[0] == ';' || line[0] == '#' || line[0] == '\0') continue;
             fileContent.push_back(line);
         }
         fclose(fpoii);
@@ -84,7 +83,7 @@ int SymList::read_sym_file(FileName fn_sym) {
     for (int n = 0; n < fileContent.size(); n++) {
         strcpy(line, fileContent[n].c_str());
         char *token = firstToken(line);
-        if (token == NULL) {
+        if (!token) {
             std::cout << line;
             std::cout << "Wrong line in symmetry file, the line is skipped\n";
             continue;

@@ -19,9 +19,9 @@
  ***************************************************************************/
 #include "src/gui_entries.h"
 
-float fltkTextToFloat(const char* str) {
+float fltkTextToFloat(const char *str) {
     float result = -999.0;
-    if (str == NULL) {
+    if (!str) {
         fl_message("ERROR: NULL entry for TextToFloat conversion. Check your inputs!");
     } else {
         if (std::string(str).substr(0, 2) == "$$") {
@@ -36,7 +36,7 @@ float fltkTextToFloat(const char* str) {
 // This allows CURRENT_ODIR browse buttons
 std::string current_browse_directory;
 
-ShowHelpText::ShowHelpText(const char* help) {
+ShowHelpText::ShowHelpText(const char *help) {
     int w = 640;
     int h = 480;
     Fl_Text_Display *disp = new Fl_Text_Display(20, 20, w - 40, h - 40, "relion additional text.");
@@ -54,39 +54,32 @@ ShowHelpText::~ShowHelpText(){};
 void GuiEntry::clear() {
     deactivate_option = -1;
     /*
-    //joboption.clear();
-    if (inp != NULL)
-    {
+    // joboption.clear();
+    if (inp) {
         delete inp;
         inp = NULL;
     }
-    if (help != NULL)
-    {
+    if (help) {
         delete help;
         help = NULL;
     }
-    if (browse != NULL)
-    {
+    if (browse) {
         delete browse;
         browse = NULL;
     }
-    if (choice != NULL)
-    {
+    if (choice) {
         delete choice;
         choice = NULL;
     }
-    if (menu != NULL)
-    {
+    if (menu) {
         delete menu;
         menu = NULL;
     }
-    if (my_deactivate_group != NULL)
-    {
+    if (my_deactivate_group) {
         delete my_deactivate_group;
         my_deactivate_group = NULL;
     }
-    if (slider != NULL)
-    {
+    if (slider) {
         delete slider;
         slider = NULL;
     }
@@ -102,8 +95,8 @@ void GuiEntry::initialise(
 ) {
 
     // The input field
-    int mywidth = (joboption.joboption_type == JOBOPTION_SLIDER && !create_scheduler_gui) ? 50 : wcol2;
-    inp = new Fl_Input(x, y, mywidth, height, joboption.label_gui.c_str());
+    int width = joboption.joboption_type == JOBOPTION_SLIDER && !create_scheduler_gui ? 50 : wcol2;
+    inp = new Fl_Input(x, y, width, height, joboption.label_gui.c_str());
     inp->color(GUI_INPUT_COLOR);
     inp->textsize(ENTRY_FONTSIZE);
     inp->labelsize(ENTRY_FONTSIZE);
@@ -119,77 +112,84 @@ void GuiEntry::initialise(
     }
 
     switch (joboption.joboption_type) {
+
         case JOBOPTION_FILENAME:
-            // Browse button
-            browse = new Fl_Button(XCOL4, y, WCOL4, height, "Browse");
-            browse->callback(cb_browse, this);
-            browse->color(GUI_BUTTON_COLOR);
-            browse->labelsize(ENTRY_FONTSIZE);
-            break;
+        // Browse button
+        browse = new Fl_Button(XCOL4, y, WCOL4, height, "Browse");
+        browse->callback(cb_browse, this);
+        browse->color(GUI_BUTTON_COLOR);
+        browse->labelsize(ENTRY_FONTSIZE);
+        break;
+
         case JOBOPTION_INPUTNODE:
-            // Browse button
-            browse = new Fl_Button(XCOL4, y, WCOL4, height, "Browse");
-            browse->callback(cb_browse_node, this);
-            browse->color(GUI_BUTTON_COLOR);
-            browse->labelsize(ENTRY_FONTSIZE);
+        // Browse button
+        browse = new Fl_Button(XCOL4, y, WCOL4, height, "Browse");
+        browse->callback(cb_browse_node, this);
+        browse->color(GUI_BUTTON_COLOR);
+        browse->labelsize(ENTRY_FONTSIZE);
+        break;
+
         case JOBOPTION_RADIO:
-            if (!create_scheduler_gui) {
-                choice = new Fl_Choice(XCOL2, y, WCOL2, height);
+        if (!create_scheduler_gui) {
+            choice = new Fl_Choice(XCOL2, y, WCOL2, height);
+            // Add all items to the menu
+            for (int i = 0; i < joboption.radio_options.size(); i++) {
                 // Add all items to the menu
-                for (int i = 0; i < joboption.radio_options.size(); i++) {
-                    // Add all items to the menu
-                    choice->add(joboption.radio_options[i].c_str());
-                    if (joboption.radio_options[i] == joboption.default_value)
-                        choice->picked(choice->mvalue());
-                }
-                choice->callback(cb_menu, this);
-                choice->textsize(ENTRY_FONTSIZE);
-
-                menu = choice;
-                //menu->color(GUI_BACKGROUND_COLOR);
-                menu->color(GUI_INPUT_COLOR);
-                menu->textsize(ENTRY_FONTSIZE);
+                choice->add(joboption.radio_options[i].c_str());
+                if (joboption.radio_options[i] == joboption.default_value)
+                    choice->picked(choice->mvalue());
             }
-            break;
+            choice->callback(cb_menu, this);
+            choice->textsize(ENTRY_FONTSIZE);
+
+            menu = choice;
+            //menu->color(GUI_BACKGROUND_COLOR);
+            menu->color(GUI_INPUT_COLOR);
+            menu->textsize(ENTRY_FONTSIZE);
+        }
+        break;
+
         case JOBOPTION_BOOLEAN:
-            if (!create_scheduler_gui) {
-                choice = new Fl_Choice(XCOL2, y, WCOL2, height);
-                if (deactivate_this_group != NULL) {
-                    my_deactivate_group = deactivate_this_group;
-                    actually_activate = _actually_activate;
-                }
-
-                choice->menu(bool_options);
-                choice->picked(&bool_options[joboption.default_value == "Yes" ? 0 : 1]);
-                choice->callback(cb_menu, this);
-                choice->textsize(ENTRY_FONTSIZE);
-
-                menu = choice;
-                //menu->color(GUI_BACKGROUND_COLOR);
-                menu->color(GUI_INPUT_COLOR);
-                menu->textsize(ENTRY_FONTSIZE);
+        if (!create_scheduler_gui) {
+            choice = new Fl_Choice(XCOL2, y, WCOL2, height);
+            if (deactivate_this_group) {
+                my_deactivate_group = deactivate_this_group;
+                actually_activate = _actually_activate;
             }
-            break;
+
+            choice->menu(bool_options);
+            choice->picked(&bool_options[joboption.default_value == "Yes" ? 0 : 1]);
+            choice->callback(cb_menu, this);
+            choice->textsize(ENTRY_FONTSIZE);
+
+            menu = choice;
+            //menu->color(GUI_BACKGROUND_COLOR);
+            menu->color(GUI_INPUT_COLOR);
+            menu->textsize(ENTRY_FONTSIZE);
+        }
+        break;
+
         case JOBOPTION_SLIDER:
-            if (!create_scheduler_gui) {
-                int floatwidth = 50;
-                // Slider is shorter than wcol2, so that underlying input field becomes visible
-                slider = new Fl_Slider(XCOL2 + floatwidth, y, wcol2 - floatwidth, height);
-                slider->type(1);
-                slider->callback(cb_slider, this);
-                slider->minimum(joboption.min_value);
-                slider->maximum(joboption.max_value);
-                slider->step(joboption.step_value);
-                slider->type(FL_HOR_NICE_SLIDER);
-                slider->color(GUI_BACKGROUND_COLOR);
-                inp->callback(cb_input, this);
-                inp->when(FL_WHEN_ENTER_KEY | FL_WHEN_NOT_CHANGED);
+        if (!create_scheduler_gui) {
+            int floatwidth = 50;
+            // Slider is shorter than wcol2, so that underlying input field becomes visible
+            slider = new Fl_Slider(XCOL2 + floatwidth, y, wcol2 - floatwidth, height);
+            slider->type(1);
+            slider->callback(cb_slider, this);
+            slider->minimum(joboption.min_value);
+            slider->maximum(joboption.max_value);
+            slider->step(joboption.step_value);
+            slider->type(FL_HOR_NICE_SLIDER);
+            slider->color(GUI_BACKGROUND_COLOR);
+            inp->callback(cb_input, this);
+            inp->when(FL_WHEN_ENTER_KEY | FL_WHEN_NOT_CHANGED);
 
-                // Set the default in the input and the slider:
-                inp->value(joboption.default_value.c_str());
-                slider->value(textToDouble(joboption.default_value));
-            }
-            break;
+            // Set the default in the input and the slider:
+            inp->value(joboption.default_value.c_str());
+            slider->value(textToDouble(joboption.default_value));
+        }
+        break;
+
     }
 }
 
@@ -220,7 +220,7 @@ void GuiEntry::setValue(std::string _value) {
     inp->value(_value.c_str());
 
     // Also update menu or slider if necessary
-    if (menu != NULL) {
+    if (menu) {
         if (_value.substr(0,2) == "$$") {
             menu->add(_value.c_str());
             const Fl_Menu_Item *p = menu->find_item(_value.c_str());
@@ -235,7 +235,7 @@ void GuiEntry::setValue(std::string _value) {
             }
         }
     }
-    if (slider != NULL) {
+    if (slider) {
         if (_value.substr(0, 2) != "$$")
             slider->value(fltkTextToFloat(inp->value()));
     }
@@ -244,34 +244,24 @@ void GuiEntry::setValue(std::string _value) {
 
 void GuiEntry::deactivate(bool do_deactivate) {
     if (do_deactivate) {
-        if (inp)
-            inp->deactivate();
-        if (help)
-            help->deactivate();
-        if (browse)
-            browse->deactivate();
-        if (menu)
-            menu->deactivate();
-        if (slider)
-            slider->deactivate();
+        if (inp)    inp->deactivate();
+        if (help)   help->deactivate();
+        if (browse) browse->deactivate();
+        if (menu)   menu->deactivate();
+        if (slider) slider->deactivate();
     } else {
-        if (inp)
-            inp->activate();
-        if (help)
-            help->activate();
-        if (browse)
-            browse->activate();
-        if (menu)
-            menu->activate();
-        if (slider)
-            slider->activate();
+        if (inp)    inp->activate();
+        if (help)   help->activate();
+        if (browse) browse->activate();
+        if (menu)   menu->activate();
+        if (slider) slider->activate();
     }
 
 }
 
 // Help button call-back functions
 void GuiEntry::cb_help(Fl_Widget* o, void* v) {
-    GuiEntry* T = (GuiEntry*)v;
+    GuiEntry* T = (GuiEntry*) v;
     T->cb_help_i();
 }
 
@@ -280,7 +270,7 @@ void GuiEntry::cb_help_i() {
 }
 
 void GuiEntry::cb_browse(Fl_Widget* o, void* v) {
-    GuiEntry* T = (GuiEntry*)v;
+    GuiEntry* T = (GuiEntry*) v;
     T->cb_browse_i();
 }
 
@@ -307,7 +297,7 @@ void GuiEntry::cb_browse_i() {
     }
 
     // Print the results
-    if (G_chooser->value() == NULL) {
+    if (!G_chooser->value()) {
         //fprintf(stderr, "(User hit 'Cancel')\n");
         return;
     }
@@ -324,7 +314,7 @@ void GuiEntry::cb_browse_i() {
 
 
 void GuiEntry::cb_browse_node(Fl_Widget* o, void* v) {
-    GuiEntry* T = (GuiEntry*)v;
+    GuiEntry* T = (GuiEntry*) v;
     T->cb_browse_node_i();
 }
 
@@ -343,12 +333,12 @@ void GuiEntry::cb_browse_node_i() {
     // Block until user picks something.
     //     (The other way to do this is to use a callback())
     //
-    while(G_chooser->shown()) {
+    while (G_chooser->shown()) {
         Fl::wait();
     }
 
     // Print the results
-    if ( G_chooser->value() == NULL ) {
+    if (!G_chooser->value()) {
         //fprintf(stderr, "(User hit 'Cancel')\n");
         return;
     }
@@ -370,7 +360,7 @@ void GuiEntry::cb_browse_node_i() {
 }
 
 void GuiEntry::cb_menu(Fl_Widget* o, void* v) {
-    GuiEntry* T = (GuiEntry*)v;
+    GuiEntry* T = (GuiEntry*) v;
     T->cb_menu_i();
 }
 
@@ -381,7 +371,7 @@ void GuiEntry::cb_menu_i() {
         // Set my own value
         inp->value(m->label());
         // In case this was a boolean that deactivates a group, do so:
-        if (my_deactivate_group != NULL) {
+        if (my_deactivate_group) {
             // If inp->value begins with "$$"
             if (std::string(inp->value()).substr(0, 2) == "$$") {
                 my_deactivate_group->activate();
@@ -398,15 +388,14 @@ void GuiEntry::cb_menu_i() {
 }
 
 void GuiEntry::cb_slider(Fl_Widget* o, void* v) {
-    GuiEntry* T = (GuiEntry*)v;
+    GuiEntry* T = (GuiEntry*) v;
     T->cb_slider_i();
 }
 
 
 void GuiEntry::cb_slider_i() {
     static int recurse = 0;
-    if (recurse)
-        return;
+    if (recurse) return;
     
     recurse = 1;
     inp->value(floatToString(slider->value()).c_str());
@@ -415,15 +404,14 @@ void GuiEntry::cb_slider_i() {
 }
 
 void GuiEntry::cb_input(Fl_Widget* o, void* v) {
-    GuiEntry* T = (GuiEntry*)v;
+    GuiEntry* T = (GuiEntry*) v;
     T->cb_input_i();
 }
 
 
 void GuiEntry::cb_input_i() {
     static int recurse = 0;
-    if (recurse)
-        return;
+    if (recurse) return;
 
     recurse = 1;
     if (!create_scheduler_gui) 

@@ -152,23 +152,17 @@ void BackProjector::backproject2Dto3D(
         int first_x = ceil(q - d);
         int last_x = floor(q + d);
 
-        if (first_x < first_allowed_x) first_x = first_allowed_x;
-        if (last_x > sh - 1) last_x = sh - 1;
+        if (first_x < first_allowed_x) { first_x = first_allowed_x; }
+        if (last_x > sh - 1) { last_x = sh - 1; }
 
         for (int x = first_x; x <= last_x; x++) {
             // Get the value from the input image
             Complex my_val = DIRECT_A2D_ELEM(f2d, i, x);
 
-            RFLOAT my_weight;
-
             // Get the weight
-            if (Mweight != NULL) {
-                my_weight = DIRECT_A2D_ELEM(*Mweight, i, x);
-            } else {
-                my_weight = 1.0;
-            }
+            RFLOAT my_weight = Mweight ? DIRECT_A2D_ELEM(*Mweight, i, x) : 1.0;
 
-            if (my_weight <= 0.) continue;
+            if (my_weight <= 0.0) continue;
 
             /*
             In our implementation, (x, y) are not scaled because:
@@ -333,15 +327,8 @@ void BackProjector::backproject1Dto2D(
     //const int r_min_NN_ref_2 = r_min_nn * r_min_nn * padding_factor * padding_factor;
 
     for (int x = 0; x <= r_max_src; x++) {
-        RFLOAT my_weight;
-
-        if (Mweight != NULL) {
-            my_weight = DIRECT_A1D_ELEM(*Mweight, x);
-
-            if (my_weight <= 0.0) continue;
-        } else {
-            my_weight = 1.0;
-        }
+        RFLOAT my_weight = Mweight ? DIRECT_A1D_ELEM(*Mweight, x) : 1.0;
+        if (my_weight <= 0.0) continue;
 
         Complex my_val = DIRECT_A1D_ELEM(f1d, x);
 
@@ -510,15 +497,9 @@ void BackProjector::backrotate2D(
         if (last_x > sh - 1) last_x = sh - 1;
 
         for (int x = first_x; x <= last_x; x++) {
-            RFLOAT my_weight;
 
-            if (Mweight != NULL) {
-                my_weight = DIRECT_A2D_ELEM(*Mweight, i, x);
-
-                if (my_weight <= 0.f) continue;
-            } else {
-                my_weight = 1.0;
-            }
+            RFLOAT my_weight = Mweight ? DIRECT_A2D_ELEM(*Mweight, i, x) : 1.0;
+            if (my_weight <= 0.0) continue;
 
             // Get the relevant value in the input image
             Complex my_val = DIRECT_A2D_ELEM(f2d, i, x);
@@ -664,16 +645,9 @@ void BackProjector::backrotate3D(
 
                 if (r_ref_2 > r_max_ref_2) continue;
 
-                RFLOAT my_weight;
-
                 // Get the weight
-                if (Mweight != NULL) {
-                    my_weight = DIRECT_A3D_ELEM(*Mweight, k, i, x);
-
-                    if (my_weight <= 0.0) continue;
-                } else {
-                    my_weight = 1.0;
-                }
+                RFLOAT my_weight = Mweight ? DIRECT_A3D_ELEM(*Mweight, k, i, x) : 1.0;
+                if (my_weight <= 0.0) continue;
 
                 Complex my_val = DIRECT_A3D_ELEM(f3d, k, i, x);
 
@@ -1170,10 +1144,8 @@ void BackProjector::externalReconstruct(
 
     // Make the system call: program name plus the STAR file for the external reconstruction program as its first argument
     char *my_exec = getenv ("RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE");
-    char default_exec[]=DEFAULT_EXTERNAL_RECONSTRUCT;
-    if (my_exec == NULL) {
-        my_exec = default_exec;
-    }
+    char default_exec[] = DEFAULT_EXTERNAL_RECONSTRUCT;
+    if (!my_exec) { my_exec = default_exec; }
     std::string command = std::string(my_exec) + " " + fn_star;
 
     if (verb > 0)

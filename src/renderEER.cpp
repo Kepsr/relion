@@ -44,13 +44,11 @@ void EERRenderer::TIFFWarningHandler(const char *module, const char *fmt, va_lis
     // Silence warnings for private tags
     if (strcmp("Unknown field with tag %d (0x%x) encountered", fmt) == 0) return;
 
-    if (prevTIFFWarningHandler != NULL) {
-        prevTIFFWarningHandler(module, fmt, ap);
-    }
+    if (prevTIFFWarningHandler) { prevTIFFWarningHandler(module, fmt, ap); }
 }
 
 void EERRenderer::silenceTIFFWarnings() {
-    if (prevTIFFWarningHandler == NULL) {
+    if (!prevTIFFWarningHandler) {
         // Thread safety issue:
         // Calling this simultaneously is safe but
         TIFFErrorHandler prev = TIFFSetWarningHandler(EERRenderer::TIFFWarningHandler);
@@ -70,8 +68,8 @@ void EERRenderer::render16K(
     int n_electrons
 ) {
     for (int i = 0; i < n_electrons; i++)  {
-        int x = ((positions[i] & 4095) << 2) | (symbols[i] & 3); // 4095 = 111111111111b, 3 = 00000011b
-        int y = ((positions[i] >> 12) << 2) | ((symbols[i] & 12) >> 2); //  4096 = 2^12, 12 = 00001100b
+        int x = ((positions[i] & 4095) << 2) |  (symbols[i] & 3); // 4095 = 111111111111b, 3 = 00000011b
+        int y = ((positions[i] >> 12 ) << 2) | ((symbols[i] & 12) >> 2); //  4096 = 2^12, 12 = 00001100b
             DIRECT_A2D_ELEM(image, y, x)++;
     }
 }
@@ -128,7 +126,7 @@ void EERRenderer::read(FileName _fn_movie, int eer_upsampling) {
 
     // First of all, check the file size
     FILE *fh = fopen(fn_movie.c_str(), "r");
-    if (fh == NULL) REPORT_ERROR("Failed to open " + fn_movie);
+    if (!fh) REPORT_ERROR("Failed to open " + fn_movie);
 
     fseek(fh, 0, SEEK_END);
     file_size = ftell(fh);
@@ -139,7 +137,7 @@ void EERRenderer::read(FileName _fn_movie, int eer_upsampling) {
     // Try reading as TIFF; this handle is kept open
     ftiff = TIFFOpen(fn_movie.c_str(), "r");
 
-    if (ftiff == NULL) {
+    if (!ftiff) {
         is_legacy = true;
         is_7bit = false;
         readLegacy(fh);
@@ -186,7 +184,7 @@ void EERRenderer::readLegacy(FILE *fh) {
     /* Load everything first */
     RCTICTOC(TIMING_READ_EER, ({
     buf = (unsigned char*) malloc(file_size);
-    if (buf == NULL) REPORT_ERROR("Failed to allocate the buffer.");
+    if (!buf) REPORT_ERROR("Failed to allocate the buffer.");
     fread(buf, sizeof(char), file_size, fh);
     }))
 
@@ -225,9 +223,7 @@ void EERRenderer::lazyReadFrames() {
             frame_starts.resize(nframes, 0);
             frame_sizes.resize(nframes, 0);
             buf = (unsigned char*) malloc(file_size); // This is big enough
-            if (buf == NULL) {
-                REPORT_ERROR("Failed to allocate the buffer for " + fn_movie);
-            }
+            if (!buf) REPORT_ERROR("Failed to allocate the buffer for " + fn_movie);
             long long pos = 0;
 
             // Read everything
@@ -263,9 +259,7 @@ void EERRenderer::lazyReadFrames() {
     }
 }
 
-EERRenderer::~EERRenderer() {
-    if (buf != NULL) free(buf);
-}
+EERRenderer::~EERRenderer() { if (buf) free(buf); }
 
 int EERRenderer::getNFrames() {
     if (!ready) REPORT_ERROR("EERRenderer::getNFrames called before ready.");

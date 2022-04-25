@@ -220,7 +220,7 @@ class fImageHandler {
     void openFile(const FileName &name, int mode = WRITE_READONLY) {
 
         // Close any file that was left open in this handler
-        if (fimg != NULL || fhed != NULL) closeFile();
+        if (fimg || fhed) closeFile();
 
         FileName fileName, headName = "";
         // get the format, checking for possible format specifier before suffix
@@ -286,14 +286,14 @@ class fImageHandler {
 
         // Open image file
         if (
-             isTiff && (ftiff = TIFFOpen(fileName.c_str(), "r"))           == NULL ||
-            !isTiff && (fimg  = fopen   (fileName.c_str(), wmstr.c_str())) == NULL
+             isTiff && !(ftiff = TIFFOpen(fileName.c_str(), "r")) ||
+            !isTiff && !(fimg  = fopen   (fileName.c_str(), wmstr.c_str()))
         ) {
             REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + name);
         }
 
         if (headName != "") {
-            if ((fhed = fopen(headName.c_str(), wmstr.c_str())) == NULL)
+            if (!(fhed = fopen(headName.c_str(), wmstr.c_str())))
                 REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + headName);
         } else {
             fhed = NULL;
@@ -306,9 +306,9 @@ class fImageHandler {
         exist = false;
 
         // Check whether the file was closed already
-        if (fimg == NULL && fhed == NULL && ftiff == NULL) return;
+        if (!fimg && !fhed && !ftiff) return;
 
-        if (isTiff && ftiff != NULL) {
+        if (isTiff && ftiff) {
             TIFFClose(ftiff);
             ftiff = NULL;
         }
@@ -319,7 +319,7 @@ class fImageHandler {
             fimg = NULL;
         }
 
-        if (fhed != NULL && fclose(fhed) != 0) {
+        if (fhed && fclose(fhed) != 0) {
             REPORT_ERROR((std::string)"Cannot close header file ");
         } else {
             fhed = NULL;
@@ -861,7 +861,7 @@ class Image {
                 }
             }
             // if (pad > 0) { freeMemory(padpage, pad * sizeof(char)); }
-            if (page != NULL) { freeMemory(page, pagesize * sizeof(char)); }
+            if (page) { freeMemory(page, pagesize * sizeof(char)); }
 
         #ifdef DEBUG
         printf("DEBUG img_read_data: Finished reading and converting data\n");

@@ -214,14 +214,12 @@ class Matrix2D {
             mdimy = _mdimy;
             mdim = _mdimx * _mdimy;
             mdata = new T [mdim];
-            if (mdata == NULL)
-                REPORT_ERROR("coreAllocate: No space left");
+            if (!mdata) REPORT_ERROR("coreAllocate: No space left");
         }
 
         void coreDeallocate() {
             // Free all mdata
-            if (mdata != NULL && destroyData)
-                delete[] mdata;
+            if (mdata && destroyData) delete[] mdata;
             mdata = NULL;
         }
         //@}
@@ -231,8 +229,7 @@ class Matrix2D {
         // Resize to a given size
         void resize(int Ydim, int Xdim) {
 
-            if (Xdim == mdimx && Ydim == mdimy)
-                return;
+            if (Xdim == mdimx && Ydim == mdimy) return;
 
             if (Xdim <= 0 || Ydim <= 0) {
                 clear();
@@ -629,7 +626,7 @@ class Matrix2D {
         * memory is needed to hold the new RFLOAT pointer array.
         */
         T** adaptForNumericalRecipes() const {
-            T** m = NULL;
+            T **m = NULL;
             ask_Tmatrix(m, 1, mdimy, 1, mdimx);
 
             for (int i = 0; i < mdimy; i++)
@@ -651,7 +648,7 @@ class Matrix2D {
         }
 
         // Load 2D array from numerical recipes result
-        void loadFromNumericalRecipes(T** m, int Ydim, int Xdim) {
+        void loadFromNumericalRecipes(T **m, int Ydim, int Xdim) {
             if (mdimx != Xdim || mdimy != Ydim)
                 resize(Ydim, Xdim);
 
@@ -661,12 +658,12 @@ class Matrix2D {
         }
 
         // Kill a 2D array produced for numerical recipes
-        void killAdaptationForNumericalRecipes(T** m) const {
+        void killAdaptationForNumericalRecipes(T **m) const {
             // Free the allocated memory
             free_Tmatrix(m, 1, mdimy, 1, mdimx);
         }
 
-        void killAdaptationForNumericalRecipes2(T** m) const {
+        void killAdaptationForNumericalRecipes2(T **m) const {
             // Do nothing
         }
 

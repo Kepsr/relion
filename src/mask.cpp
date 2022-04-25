@@ -51,7 +51,7 @@ void softMaskOutsideMap(
     RFLOAT radius_p = radius + cosine_width;
 
     RFLOAT sum_bg = 0.0, sum = 0.0;
-    if (Mnoise == NULL) {
+    if (!Mnoise) {
         // Calculate average background value
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
 
@@ -75,7 +75,7 @@ void softMaskOutsideMap(
         RFLOAT r = sqrt((RFLOAT) (k * k + i * i + j * j));
         if (r < radius) continue;
 
-        RFLOAT add = Mnoise == NULL ? sum_bg : A3D_ELEM(*Mnoise, k, i, j);
+        RFLOAT add = Mnoise ? A3D_ELEM(*Mnoise, k, i, j) : sum_bg;
         if (r > radius_p) {
             A3D_ELEM(vol, k, i, j) = add;
         } else {
@@ -106,7 +106,7 @@ void softMaskOutsideMapForHelix(
         return;
     }
     // Check the shape of Mnoise
-    if (Mnoise != NULL && !(*Mnoise).sameShape(vol)) {
+    if (Mnoise && !(*Mnoise).sameShape(vol)) {
         REPORT_ERROR("mask.cpp::softMaskOutsideMapForHelix(): Input particle and Mnoise should have same shape!");
         return;
     }
@@ -147,7 +147,7 @@ void softMaskOutsideMapForHelix(
 
     // Calculate noise weights for all voxels
     RFLOAT sum_bg = sum = 0.0;
-    if (Mnoise == NULL) {
+    if (!Mnoise) {
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
             // X, Y, Z coordinates
             ZZ(coords) = dim == 3 ? (RFLOAT) k : 0.0;
@@ -193,11 +193,9 @@ void softMaskOutsideMapForHelix(
         r = sqrt((RFLOAT) (dim == 3 ? i * i + j * j + k * k : i * i + j * j));
 
         // Info areas
-        if (r < R1 && d < D1)
-            continue;
+        if (r < R1 && d < D1) continue;
 
-        if (Mnoise != NULL)
-            noise_val = A3D_ELEM(*Mnoise, k, i, j);
+        if (Mnoise) { noise_val = A3D_ELEM(*Mnoise, k, i, j); }
 
         if (r > R2 || d > D2) {
             // Noise areas, fill in background values

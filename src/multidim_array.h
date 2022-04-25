@@ -259,8 +259,7 @@ extern std::string floatToString(float F, int _width, int _prec);
  * @code
  * T *ptr = NULL;
  * long int n;
- * FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v,n,ptr)
- * {
+ * FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) {
  *     std::cout << *ptr << " ";
  * }
  * @endcode
@@ -679,7 +678,7 @@ class MultidimArray {
             return;
         }
 
-        if (data != NULL)
+        if (data)
             REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
 
         ndim = _ndim;
@@ -699,7 +698,7 @@ class MultidimArray {
      */
     void coreAllocate() {
 
-        if (data != NULL)
+        if (data)
             REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
 
         if (nzyxdim() < 0)
@@ -721,9 +720,8 @@ class MultidimArray {
             if ((data = (T*) mmap(0, nzyxdim() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
                 REPORT_ERROR("MultidimArray::coreAllocate: mmap failed.");
         } else {
-            data = (T*)RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
-            if (data == NULL)
-                REPORT_ERROR("Allocate: No space left");
+            data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
+            if (!data) REPORT_ERROR("Allocate: No space left");
         }
         nzyxdimAlloc = nzyxdim();
     }
@@ -737,7 +735,7 @@ class MultidimArray {
      */
     void coreAllocateReuse() {
 
-        if (data != NULL && nzyxdim() <= nzyxdimAlloc) {
+        if (data && nzyxdim() <= nzyxdimAlloc) {
             return;
         } else if (nzyxdim() > nzyxdimAlloc) {
             coreDeallocate();
@@ -762,9 +760,8 @@ class MultidimArray {
             if ((data = (T*) mmap(0, nzyxdim() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
                 REPORT_ERROR("MultidimArray::coreAllocateReuse: mmap failed.");
         } else {
-            data = (T*)RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
-            if (data == NULL)
-                REPORT_ERROR("Allocate: No space left");
+            data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
+            if (!data) REPORT_ERROR("Allocate: No space left");
         }
         nzyxdimAlloc = nzyxdim();
     }
@@ -783,7 +780,7 @@ class MultidimArray {
      * Essential to avoid memory leaks.
      */
     void coreDeallocate() {
-        if (data != NULL && destroyData) {
+        if (data && destroyData) {
             if (mmapOn) {
                 munmap(data, nzyxdimAlloc * sizeof(T));
                 close(mFd);
@@ -906,7 +903,7 @@ class MultidimArray {
     void shrinkToFit() {
         if (!destroyData)
             REPORT_ERROR("Non-destroyable data!");
-        if (data == NULL || mmapOn || nzyxdim() <= 0 || nzyxdimAlloc <= nzyxdim())
+        if (!data || mmapOn || nzyxdim() <= 0 || nzyxdimAlloc <= nzyxdim())
             return;
         T* old_array = data;
         data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
@@ -926,7 +923,7 @@ class MultidimArray {
      *
      */
     void reshape(long Ndim, long Zdim, long Ydim, long Xdim) {
-        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data != NULL) {
+        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
             return;
         }
@@ -985,7 +982,7 @@ class MultidimArray {
         if (
             ndim != v.ndim || xdim != v.xdim ||
             ydim != v.ydim || zdim != v.zdim ||
-            data == NULL
+            !data
         ) { reshape(v.ndim, v.zdim, v.ydim, v.xdim); }
 
         xinit = v.xinit;
@@ -1006,7 +1003,7 @@ class MultidimArray {
      */
     void resizeNoCp(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
 
-        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data != NULL)
+        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data)
             return;
 
         if (Xdim <= 0 || Ydim <= 0 || Zdim <= 0 || Ndim <= 0) {
@@ -1017,7 +1014,7 @@ class MultidimArray {
         // data can be NULL while xdim etc are set to non-zero values
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
-        if (nzyxdim() > 0 && data == NULL) {
+        if (nzyxdim() > 0 && !data) {
             coreAllocate();
             return;
         }
@@ -1079,7 +1076,7 @@ class MultidimArray {
      * @endcode
      */
     void resize(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
-        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data != NULL) {
+        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data) {
             ndim = Ndim;
             xdim = Xdim;
             ydim = Ydim;
@@ -1096,7 +1093,7 @@ class MultidimArray {
         // data can be NULL while xdim etc are set to non-zero values
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
-        if (nzyxdim() > 0 && data == NULL) {
+        if (nzyxdim() > 0 && !data) {
             coreAllocate();
             return;
         }
@@ -1210,7 +1207,7 @@ class MultidimArray {
         if (
             ndim != v.ndim || xdim != v.xdim ||
             ydim != v.ydim || zdim != v.zdim ||
-            data == NULL
+            !data
         ) { resize(v.ndim, v.zdim, v.ydim, v.xdim); }
 
         xinit = v.xinit;
@@ -2603,24 +2600,26 @@ class MultidimArray {
     // As written this will only work for T=RFLOAT
     // nevertheless since this is used is better
     // to use T than RFLOAT or will create problem for int multidim arrays
-    void rangeAdjust(const MultidimArray<T> &target, const MultidimArray<int> *mask=NULL) {
+    void rangeAdjust(
+        const MultidimArray<T> &target, const MultidimArray<int> *mask = NULL
+    ) {
 
         if (nzyxdim() <= 0) return;
 
         T *targetptr = target.data;
-        int *maskptr = mask == NULL ? NULL : mask->data;
+        int *maskptr = mask ? mask->data : NULL;
         T *ptr;
         long int n;
         RFLOAT N = 0, sumx = 0, sumy = 0, sumxx = 0, sumxy = 0;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (mask == NULL || *maskptr != 0) {
+            if (!mask || *maskptr != 0) {
                 N++;
                 T x = *ptr; T y = *targetptr;
                 sumx += x; sumxx += x * x;
                 sumy += y; sumxy += x * y;
             }
             targetptr++;
-            if (mask != NULL) { maskptr++; }
+            if (mask) { maskptr++; }
         }
         RFLOAT slope = (N * sumxy - sumx * sumy) / (N * sumxx - sumx * sumx);
         RFLOAT intercept = sumy / N - slope * sumx / N;
@@ -2726,7 +2725,7 @@ class MultidimArray {
             arg2.printShape();
             REPORT_ERROR((std::string) "Array_by_array: different shapes (" + operation + ")");
         }
-        if (output.data == NULL || !output.sameShape(arg1)) { output.resize(arg1); }
+        if (!output.data || !output.sameShape(arg1)) { output.resize(arg1); }
         return coreArrayByArray(arg1, arg2, output, operation);
     }
 
@@ -2848,7 +2847,7 @@ class MultidimArray {
         MultidimArray<T> &output,
         const char operation  // A char standing in for a function. Ew.
     ) {
-        if (output.data == NULL || !output.sameShape(input)) { output.resize(input); }
+        if (!output.data || !output.sameShape(input)) { output.resize(input); }
         return coreArrayByScalar(input, scalar, output, operation);
     }
 
@@ -2971,7 +2970,7 @@ class MultidimArray {
         MultidimArray<T> &output,
         char operation
     ) {
-        if (output.data == NULL || !output.sameShape(input)) { output.resize(input); }
+        if (!output.data || !output.sameShape(input)) { output.resize(input); }
         return coreScalarByArray(scalar, input, output, operation);
     }
 
@@ -3034,7 +3033,7 @@ class MultidimArray {
      */
     template <typename T1>
     void initZeros(const MultidimArray<T1> &op) {
-        if (data == NULL || !sameShape(op)) { reshape(op); }
+        if (!data || !sameShape(op)) { reshape(op); }
         memset(data, 0, nzyxdim() * sizeof(T));
     }
 
@@ -3309,13 +3308,13 @@ class MultidimArray {
 
     /** Computes the center of mass of the nth array
      */
-    void centerOfMass(Matrix1D<RFLOAT>& center, void * mask=NULL, long int n = 0) {
+    void centerOfMass(Matrix1D<RFLOAT> &center, void *mask = NULL, long int n = 0) {
             center.initZeros(3);
             MultidimArray<int> *imask = (MultidimArray<int>*) mask;
 
             RFLOAT mass = 0;
             FOR_ALL_ELEMENTS_IN_ARRAY3D(*this) {
-                if ((imask == NULL || NZYX_ELEM(*imask, n, k, i, j)) && A3D_ELEM(*this, k, i, j) > 0) {
+                if ((!imask || NZYX_ELEM(*imask, n, k, i, j)) && A3D_ELEM(*this, k, i, j) > 0) {
                 XX(center) += j * NZYX_ELEM(*this, n, k, i, j);
                 YY(center) += i * NZYX_ELEM(*this, n, k, i, j);
                 ZZ(center) += k * NZYX_ELEM(*this, n, k, i, j);
@@ -3424,7 +3423,7 @@ class MultidimArray {
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             // Hopefully the compiler will hoist this loop-invariant switch block
-            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+            if (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
                 switch (mode) {
 
                     case 1: if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } break;
@@ -3463,7 +3462,7 @@ class MultidimArray {
         T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+            if (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
                 switch (mode) {
 
                     case 1: if (abs(*ptr) > a) { ret++; } break;
@@ -3494,9 +3493,12 @@ class MultidimArray {
     ) {
         T *ptr;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0)
-            if (abs(*ptr - oldv) <= accuracy) { *ptr = newv; }
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+            if (
+                (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0)
+                && abs(*ptr - oldv) <= accuracy
+            ) { *ptr = newv; }
+        }
     }
 
     /** Substitute a given value by a sample from a Gaussian distribution.
@@ -3511,9 +3513,12 @@ class MultidimArray {
     ) {
         T *ptr;
         long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask,n) > 0)
-            if (abs(*ptr - oldv) <= accuracy) { *ptr = rnd_gaus(avgv, sigv); }
+        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+            if (
+                (!mask || DIRECT_MULTIDIM_ELEM(*mask,n) > 0) 
+                && abs(*ptr - oldv) <= accuracy
+            ) { *ptr = rnd_gaus(avgv, sigv); }
+        }
     }
 
     /** Binarize.
@@ -3529,7 +3534,7 @@ class MultidimArray {
         T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (mask == NULL || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+            if (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
                 *ptr = *ptr > val + accuracy;
             }
         }
@@ -3956,8 +3961,7 @@ class MultidimArray {
      */
     MultidimArray<T>& operator = (const MultidimArray<T> &op1) {
         if (&op1 != this) {
-            if (data == NULL || !sameShape(op1))
-                resize(op1);
+            if (!data || !sameShape(op1)) resize(op1);
             memcpy(data, op1.data, MULTIDIM_SIZE(op1) * sizeof(T));
         }
         return *this;
@@ -4006,8 +4010,7 @@ class MultidimArray {
      */
     bool equal(const MultidimArray<T> &op, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY) const {
 
-        if (!sameShape(op) || data == NULL || op.data == NULL)
-            return false;
+        if (!sameShape(op) || !data || !op.data) return false;
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
             if (abs(DIRECT_MULTIDIM_ELEM(*this, n) - DIRECT_MULTIDIM_ELEM(op, n)) > accuracy)

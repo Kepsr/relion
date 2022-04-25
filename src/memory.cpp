@@ -27,23 +27,21 @@ char* askMemory(unsigned long memsize) {
         return NULL;
     }
 
-    if ((ptr = (char *) calloc(1, memsize * sizeof(char))) == NULL) {
+    if (!(ptr = (char *) calloc(1, memsize * sizeof(char)))) {
         std::cerr << "Memory allocation of %ld bytes failed, memsize= "<< memsize << std::endl;
         REPORT_ERROR("Error in askMemory");
         return NULL;
     }
 
-    //memset(ptr, 0, memsize);
+    // memset(ptr, 0, memsize);
 
     return ptr;
 }
 
 int freeMemory(void* ptr, unsigned long memsize) {
-    if (ptr == NULL)
-        return 0;
+    if (!ptr) return 0;
 
-    if (memsize < 1)
-        return -1;
+    if (memsize < 1) return -1;
 
     free(ptr);
     ptr = NULL;

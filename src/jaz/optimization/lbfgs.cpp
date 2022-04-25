@@ -33,7 +33,7 @@ std::vector<double> LBFGS::optimize(
     lbfgsfloatval_t fx;
     lbfgsfloatval_t* m_x = lbfgs_malloc(N);
 
-    if (m_x == NULL) {
+    if (!m_x) {
         REPORT_ERROR("LBFGS::optimize: Failed to allocate a memory block for variables.\n");
     }
 

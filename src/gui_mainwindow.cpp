@@ -191,7 +191,7 @@ NoteEditorWindow::NoteEditorWindow(int w, int h, const char* title, FileName _fn
     editor->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS,10);
     textbuff_note = new Fl_Text_Buffer;
     editor->buffer(textbuff_note);
-    textbuff_note->transcoding_warning_action=NULL;
+    textbuff_note->transcoding_warning_action = NULL;
     fn_note = _fn_note;
     if (exists(fn_note)) {
         int err = textbuff_note->loadfile(fn_note.c_str());
@@ -602,8 +602,8 @@ GuiMainWindow::GuiMainWindow(
     textbuff_stdout = new Fl_Text_Buffer();
     textbuff_stderr = new Fl_Text_Buffer();
     // Disable warning message about UTF-8 transcoding
-    textbuff_stdout->transcoding_warning_action=NULL;
-    textbuff_stderr->transcoding_warning_action=NULL;
+    textbuff_stdout->transcoding_warning_action = NULL;
+    textbuff_stderr->transcoding_warning_action = NULL;
     disp_stdout = new StdOutDisplay(XJOBCOL1, GUIHEIGHT_EXT_START2 + JOBHEIGHT + STDOUT_Y - 5, w - 20, 105);
     disp_stderr = new StdOutDisplay(XJOBCOL1, GUIHEIGHT_EXT_START2 + JOBHEIGHT + STDERR_Y - 5, w - 20, 50);
     disp_stdout->fn_file = "run.out";
@@ -955,7 +955,7 @@ static void Gui_Timer_CB(void *userdata) {
 }
 
 static void delete_menubar(Fl_Menu_Bar *menubar) {
-    if (menubar != NULL) {
+    if (menubar) {
         delete menubar;
         menubar = NULL;
     }
@@ -1422,7 +1422,7 @@ void GuiMainWindow::loadJobFromPipeline(int this_job) {
 }
 
 void GuiMainWindow::cb_select_browsegroup(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
 
     // When clicking the job browser on the left: reset current_job to -1 (i.e. a new job, not yet in the pipeline)
     current_job = -1;
@@ -1477,7 +1477,7 @@ void GuiMainWindow::cb_select_browsegroup_i(bool show_initial_screen) {
 }
 
 void GuiMainWindow::cb_select_finished_job(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_finished_job_i();
     run_button->activate();
 }
@@ -1493,7 +1493,7 @@ void GuiMainWindow::cb_select_finished_job_i() {
 }
 
 void GuiMainWindow::cb_select_running_job(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_running_job_i();
     run_button->activate();
 }
@@ -1511,7 +1511,7 @@ void GuiMainWindow::cb_select_running_job_i() {
 
 void GuiMainWindow::cb_select_scheduled_job(Fl_Widget* o, void* v) {
 //	std::cout << "v = " << v << std::endl;
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_scheduled_job_i();
     run_button->activate();
 }
@@ -1550,7 +1550,7 @@ void GuiMainWindow::cb_select_scheduled_job_i() {
 }
 
 void GuiMainWindow::cb_select_input_job(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_input_job_i();
     run_button->activate();
 }
@@ -1572,7 +1572,7 @@ void GuiMainWindow::cb_select_input_job_i() {
 }
 
 void GuiMainWindow::cb_select_output_job(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_output_job_i();
     run_button->activate();
 }
@@ -1595,7 +1595,7 @@ void GuiMainWindow::cb_select_output_job_i() {
 }
 
 void GuiMainWindow::cb_display_io_node(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_display_io_node_i();
     run_button->activate();
 }
@@ -1683,9 +1683,7 @@ void GuiMainWindow::cb_display_io_node_i() {
     } else if (pipeline.nodeList[mynode].type == NODE_PDF_LOGFILE) {
         const char * default_pdf_viewer = getenv ("RELION_PDFVIEWER_EXECUTABLE");
         char mydefault[] = DEFAULTPDFVIEWER;
-        if (default_pdf_viewer == NULL) {
-            default_pdf_viewer = mydefault;
-        }
+        if (!default_pdf_viewer) { default_pdf_viewer = mydefault; }
         std::string myviewer(default_pdf_viewer);
         command = myviewer + " " + pipeline.nodeList[mynode].name + "&";
     } else if (pipeline.nodeList[mynode].type == NODE_POLISH_PARAMS) {
@@ -1698,7 +1696,7 @@ void GuiMainWindow::cb_display_io_node_i() {
 }
 
 void GuiMainWindow::cb_add_scheduler_edge(Fl_Widget* o, void*v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_add_scheduler_edge_i();
 }
 
@@ -1751,7 +1749,7 @@ static bool user_wants_to(std::string action, std::string describe_action) {
 }
 
 void GuiMainWindow::cb_delete_scheduler_edge(Fl_Widget* o, void*v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_delete_scheduler_edge_i();
 }
 
@@ -1780,7 +1778,7 @@ void GuiMainWindow::cb_delete_scheduler_edge_i() {
 }
 
 void GuiMainWindow::cb_select_scheduler_edge(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_scheduler_edge_i();
 }
 
@@ -1810,7 +1808,7 @@ void GuiMainWindow::cb_select_scheduler_edge_i() {
 }
 
 void GuiMainWindow::cb_set_scheduler_variable(Fl_Widget* o, void*v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_set_scheduler_variable_i();
 }
 
@@ -1832,7 +1830,7 @@ void GuiMainWindow::cb_set_scheduler_variable_i() {
 }
 
 void GuiMainWindow::cb_delete_scheduler_variable(Fl_Widget* o, void*v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_delete_scheduler_variable_i();
 }
 
@@ -1856,7 +1854,7 @@ void GuiMainWindow::cb_delete_scheduler_variable_i() {
 }
 
 void GuiMainWindow::cb_add_scheduler_operator(Fl_Widget* o, void*v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_add_scheduler_operator_i();
 }
 
@@ -1897,7 +1895,7 @@ void GuiMainWindow::cb_add_scheduler_operator_i() {
 }
 
 void GuiMainWindow::cb_delete_scheduler_operator(Fl_Widget* o, void*v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_delete_scheduler_operator_i();
 }
 
@@ -1934,7 +1932,7 @@ void GuiMainWindow::cb_delete_scheduler_operator_i() {
 }
 
 void GuiMainWindow::cb_select_scheduler_variable(Fl_Widget* o, void*v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_scheduler_variable_i();
 }
 
@@ -1955,7 +1953,7 @@ void GuiMainWindow::cb_select_scheduler_variable_i() {
 }
 
 void GuiMainWindow::cb_select_scheduler_operator(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_select_scheduler_operator_i();
 }
 
@@ -1989,7 +1987,7 @@ void GuiMainWindow::cb_select_scheduler_operator_i() {
 }
 
 void GuiMainWindow::cb_scheduler_set_current(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_set_current_i();
 }
 
@@ -2035,45 +2033,38 @@ void GuiMainWindow::cb_scheduler_set_current_i() {
 }
 
 void GuiMainWindow::cb_scheduler_next(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_next_i();
 }
 
 void GuiMainWindow::cb_scheduler_next_i() {
-    std::string mycurrent, nextnode;
-    mycurrent = schedule.current_node;
+    std::string mycurrent = schedule.current_node;
     if (schedule.current_node == "undefined") {
         if (schedule.edges.size() > 0) {
             schedule.current_node = schedule.edges[0].inputNode;
             scheduler_current_node->value(scheduler_current_node->find_item(schedule.current_node.c_str()));
             cb_scheduler_set_current_i();
-            return;
-        } else {
-            return;
         }
+        return;
     }
     for (int i = 0; i < schedule.edges.size(); i++) {
         if (schedule.edges[i].inputNode == mycurrent) {
-            if (schedule.edges[i].is_fork)
-            {
-
-                std::string ask = "Fork on " + schedule.edges[i].myBooleanVariable + ". Do you want this to be True or False?";
-                int is_true =  fl_choice("%s", "False", "True", NULL, ask.c_str());
-                nextnode = (is_true) ? schedule.edges[i].outputNodeTrue : schedule.edges[i].outputNode;
-            }
-            else
-            {
+            std::string nextnode;
+            if (schedule.edges[i].is_fork) {
+                std::string question = "Fork on " + schedule.edges[i].myBooleanVariable + ". Do you want this to be True or False?";
+                nextnode = fl_choice(
+                    "%s", "False", "True", NULL, question.c_str()
+                ) ? schedule.edges[i].outputNodeTrue : 
+                    schedule.edges[i].outputNode;
+            } else {
                 nextnode = schedule.edges[i].outputNode;
             }
             const Fl_Menu_Item *myitem = scheduler_current_node->find_item(nextnode.c_str());
-            if (myitem == NULL)
-            {
+            if (!myitem) {
                 fl_message("ERROR: next node is undefined");
-            }
-            else
-            {
+            } else {
                 scheduler_current_node->value(myitem);
-            cb_scheduler_set_current_i();
+                cb_scheduler_set_current_i();
             }
             return;
         }
@@ -2081,7 +2072,7 @@ void GuiMainWindow::cb_scheduler_next_i() {
 }
 
 void GuiMainWindow::cb_scheduler_prev(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_prev_i();
 }
 
@@ -2101,7 +2092,7 @@ void GuiMainWindow::cb_scheduler_prev_i() {
 }
 
 void GuiMainWindow::cb_scheduler_reset(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_reset_i();
 }
 
@@ -2116,7 +2107,7 @@ void GuiMainWindow::cb_scheduler_reset_i() {
 }
 
 void GuiMainWindow::cb_scheduler_unlock(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_unlock_i();
 }
 
@@ -2128,7 +2119,7 @@ void GuiMainWindow::cb_scheduler_unlock_i() {
 }
 
 void GuiMainWindow::cb_scheduler_abort(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_abort_i();
 }
 
@@ -2138,7 +2129,7 @@ void GuiMainWindow::cb_scheduler_abort_i() {
 }
 
 void GuiMainWindow::cb_scheduler_run(Fl_Widget *o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_run_i();
 }
 
@@ -2155,7 +2146,7 @@ void GuiMainWindow::cb_scheduler_run_i() {
 }
 
 void GuiMainWindow::cb_display(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_display_i();
 }
 
@@ -2192,7 +2183,7 @@ void GuiMainWindow::cb_toggle_continue_i() {
 }
 
 void GuiMainWindow::cb_print_cl(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_print_cl_i();
 }
 
@@ -2221,7 +2212,7 @@ void GuiMainWindow::cb_print_cl_i() {
 
 // Run button callback functions
 void GuiMainWindow::cb_run(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     // Deactivate Run button to prevent the user from accidentally submitting many jobs
     run_button->deactivate();
     // Run the job
@@ -2230,7 +2221,7 @@ void GuiMainWindow::cb_run(Fl_Widget* o, void* v) {
 
 // Run button callback functions
 void GuiMainWindow::cb_schedule(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_run_i(true, false); // 1st true means only_schedule, do not run, 2nd false means dont open the note editor window
 }
 
@@ -2281,7 +2272,7 @@ void GuiMainWindow::cb_run_i(bool only_schedule, bool do_open_edit) {
 }
 
 void GuiMainWindow::cb_delete_scheduler_job(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_delete_scheduler_job_i();
 }
 
@@ -2318,7 +2309,7 @@ void GuiMainWindow::cb_delete_scheduler_job_i() {
 }
 
 void GuiMainWindow::cb_scheduler_add_job(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_scheduler_add_job_i();
 }
 
@@ -2366,7 +2357,7 @@ void GuiMainWindow::cb_scheduler_add_job_i() {
 
 // Run button callback functions
 void GuiMainWindow::cb_delete(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_delete_i();
 }
 
@@ -2406,13 +2397,13 @@ void GuiMainWindow::cb_delete_i(bool ask, bool recursively) {
 
 // Run button callback functions
 void GuiMainWindow::cb_gently_clean_all_jobs(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_clean_all_jobs_i(false);
 }
 
 // Run button callback functions
 void GuiMainWindow::cb_harshly_clean_all_jobs(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_clean_all_jobs_i(true);
 }
 
@@ -2450,12 +2441,12 @@ e.g. by using \"touch Polish/job045/NO_HARSH_CLEAN\". Below is a list of current
 
 // Run button callback functions
 void GuiMainWindow::cb_gentle_cleanup(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_cleanup_i(-1, true, false);
 }
 
 void GuiMainWindow::cb_harsh_cleanup(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_cleanup_i(-1, true, true);
 }
 
@@ -2479,7 +2470,7 @@ void GuiMainWindow::cb_cleanup_i(int jobindex, bool ask, bool harshly) {
 
 // Run button callback functions
 void GuiMainWindow::cb_set_alias(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_set_alias_i();
 }
 
@@ -2510,8 +2501,7 @@ void GuiMainWindow::cb_set_alias_i(std::string alias) {
         if (alias == "" || decomposePipelineFileName(alias, fn_dummy, fn_dummy, fn_dummy)) {
             // if an alias is provided, just check it is unique, otherwise ask
             const char* palias = fl_input("Rename to: ", default_ask.c_str());
-            if (palias == NULL)
-                return;
+            if (!palias) return;
             std::string al2(palias);  // Direct initialisation
             alias = al2;
         }
@@ -2527,7 +2517,7 @@ void GuiMainWindow::cb_set_alias_i(std::string alias) {
 
 // Run button callback functions
 void GuiMainWindow::cb_abort(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_abort_i();
 }
 
@@ -2549,13 +2539,13 @@ void GuiMainWindow::cb_abort_i(std::string alias) {
 
 // Run button callback functions
 void GuiMainWindow::cb_mark_as_finished(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_mark_as_finished_i();
 }
 
 // Run button callback functions
 void GuiMainWindow::cb_mark_as_failed(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_mark_as_finished_i(true);
 }
 
@@ -2577,7 +2567,7 @@ void GuiMainWindow::cb_mark_as_finished_i(bool is_failed) {
 
 // Run button callback functions
 void GuiMainWindow::cb_make_flowchart(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_make_flowchart_i();
 }
 
@@ -2598,12 +2588,12 @@ void GuiMainWindow::cb_make_flowchart_i() {
 }
 
 void GuiMainWindow::cb_edit_note(Fl_Widget*, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_edit_note_i();
 }
 
 void GuiMainWindow::cb_edit_project_note(Fl_Widget*, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_edit_note_i(true); // true means is_project_note
 }
 
@@ -2628,7 +2618,7 @@ void GuiMainWindow::cb_edit_note_i(bool is_project_note) {
 
 // Save button callback function
 void GuiMainWindow::cb_save(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_save_i();
 }
 
@@ -2647,7 +2637,7 @@ void GuiMainWindow::cb_save_i() {
 
 // Load button callback function
 void GuiMainWindow::cb_load(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_load_i();
 }
 
@@ -2663,7 +2653,7 @@ void GuiMainWindow::cb_load_i() {
 
 // Load button callback function
 void GuiMainWindow::cb_undelete_job(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_undelete_job_i();
 }
 
@@ -2673,22 +2663,20 @@ void GuiMainWindow::cb_undelete_job_i() {
     Fl_File_Chooser chooser(fn_dir.c_str(),  fn_filter.c_str(), Fl_File_Chooser::SINGLE, "Choose pipeline STAR file to import");
     chooser.show();
     // Block until user picks something.
-    while (chooser.shown())
-        Fl::wait();
+    while (chooser.shown()) Fl::wait();
 
     // User hit cancel?
-    if (chooser.value() == NULL)
-        return;
+    if (!chooser.value()) return;
 
     char relname[FL_PATH_MAX];
-    fl_filename_relative(relname,sizeof(relname),chooser.value());
+    fl_filename_relative(relname, sizeof(relname), chooser.value());
     FileName fn_pipe(relname);
 
     pipeline.undeleteJob(fn_pipe);
 }
 
 void GuiMainWindow::cb_export_jobs(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_export_jobs_i();
 }
 
@@ -2702,7 +2690,7 @@ void GuiMainWindow::cb_export_jobs_i() {
 }
 
 void GuiMainWindow::cb_import_jobs(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_import_jobs_i();
 }
 
@@ -2713,12 +2701,11 @@ void GuiMainWindow::cb_import_jobs_i() {
     Fl_File_Chooser chooser(fn_dir.c_str(),  fn_filter.c_str(), Fl_File_Chooser::SINGLE, "Choose pipeline STAR file to import");
     chooser.show();
     // Block until user picks something.
-    while (chooser.shown())
-        Fl::wait();
+    while (chooser.shown()) Fl::wait();
 
     // User hit cancel?
-    if (chooser.value() == NULL)
-        return;
+    if (!chooser.value()) return;
+
     FileName fn_export(chooser.value());
 
     pipeline.importJobs(fn_export);
@@ -2729,21 +2716,21 @@ void GuiMainWindow::cb_import_jobs_i() {
 
 // Re-order running and finished job lists
 void GuiMainWindow::cb_order_jobs_alphabetically(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     do_order_alphabetically = true;
     T->fillRunningJobLists();
 }
 
 // Re-order running and finished job lists
 void GuiMainWindow::cb_order_jobs_chronologically(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     do_order_alphabetically = false;
     T->fillRunningJobLists();
 }
 
 // Empty-trash button callback function
 void GuiMainWindow::cb_empty_trash(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_empty_trash_i();
 }
 
@@ -2756,7 +2743,7 @@ void GuiMainWindow::cb_empty_trash_i() {
 }
 
 void GuiMainWindow::cb_print_notes(Fl_Widget*, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_print_notes_i();
 }
 
@@ -2789,7 +2776,7 @@ void GuiMainWindow::cb_print_notes_i() {
 }
 
 void GuiMainWindow::cb_remake_nodesdir(Fl_Widget*, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_remake_nodesdir_i();
 }
 
@@ -2798,7 +2785,7 @@ void GuiMainWindow::cb_remake_nodesdir_i() {
 }
 
 void GuiMainWindow::cb_reread_pipeline(Fl_Widget*, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_reread_pipeline_i();
 }
 
@@ -2811,7 +2798,7 @@ void GuiMainWindow::cb_reread_pipeline_i() {
 
 
 void GuiMainWindow::cb_reactivate_runbutton(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_reactivate_runbutton_i();
 }
 
@@ -2820,7 +2807,7 @@ void GuiMainWindow::cb_reactivate_runbutton_i() {
 }
 
 void GuiMainWindow::cb_toggle_overwrite_continue(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_toggle_overwrite_continue_i();
 }
 
@@ -2830,7 +2817,7 @@ void GuiMainWindow::cb_toggle_overwrite_continue_i() {
 }
 
 void GuiMainWindow::cb_show_initial_screen(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_show_initial_screen_i();
 }
 
@@ -2840,7 +2827,7 @@ void GuiMainWindow::cb_show_initial_screen_i() {
 }
 
 void GuiMainWindow::cb_toggle_pipeliner_scheduler(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_toggle_pipeliner_scheduler_i();
 }
 
@@ -2863,7 +2850,7 @@ void GuiMainWindow::cb_toggle_pipeliner_scheduler_i() {
 }
 
 void GuiMainWindow::cb_create_schedule(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
 
     if (!show_scheduler)
         return;
@@ -2875,7 +2862,7 @@ void GuiMainWindow::cb_create_schedule(Fl_Widget* o, void* v) {
 }
 
 void GuiMainWindow::cb_copy_schedule(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
 
     if (!show_scheduler)
         return;
@@ -2892,17 +2879,17 @@ void GuiMainWindow::cb_copy_schedule(Fl_Widget* o, void* v) {
 }
 
 void v(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
 
 }
 
 void GuiMainWindow::cb_toggle_schedule(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_toggle_schedule_i(false);
 }
 
 void GuiMainWindow::cb_toggle_pipeline(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_toggle_schedule_i(true);
 }
 
@@ -2951,12 +2938,12 @@ void GuiMainWindow::cb_toggle_schedule_i(bool do_pipeline, FileName fn_new_sched
 }
 
 void GuiMainWindow::cb_start_pipeliner(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_start_pipeliner_i();
 }
 
 void GuiMainWindow::cb_start_pipeliner_i() {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     std::vector<FileName> job_names;
 
     for (long int i = 0; i < scheduled_processes.size(); i++) {
@@ -2968,7 +2955,7 @@ void GuiMainWindow::cb_start_pipeliner_i() {
 }
 
 void GuiMainWindow::cb_stop_pipeliner(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_stop_pipeliner_i();
 }
 
@@ -2980,12 +2967,10 @@ void GuiMainWindow::cb_stop_pipeliner_i() {
     );
     chooser.show();
     // Block until user picks something.
-    while (chooser.shown())
-        Fl::wait();
+    while (chooser.shown()) Fl::wait();
 
     // User hit cancel?
-    if (chooser.value() == NULL)
-        return;
+    if (!chooser.value()) return;
 
     FileName fn_del(chooser.value());
     std::cout << " Deleting file : " << fn_del << std::endl;
@@ -2993,7 +2978,7 @@ void GuiMainWindow::cb_stop_pipeliner_i() {
 }
 
 void GuiMainWindow::cb_toggle_expand_stdout(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_toggle_expand_stdout_i();
 }
 
@@ -3012,7 +2997,7 @@ void GuiMainWindow::cb_toggle_expand_stdout_i() {
 }
 
 void GuiMainWindow::cb_about(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_about_i();
 }
 
@@ -3029,7 +3014,7 @@ void GuiMainWindow::cb_about_i() {
 }
 
 void GuiMainWindow::cb_quit(Fl_Widget* o, void* v) {
-    GuiMainWindow* T = (GuiMainWindow*)v;
+    GuiMainWindow* T = (GuiMainWindow*) v;
     T->cb_quit_i();
 }
 

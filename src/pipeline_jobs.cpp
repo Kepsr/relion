@@ -208,7 +208,7 @@ float JobOption::getNumber(string &errmsg) {
     if (value.substr(0, 2) == "$$") {
         return 0;
     } else {
-        if (&value == NULL) {
+        if (!&value) {
             errmsg = "Error in textToFloat of " + value;
             return 0.0;
         }
@@ -621,8 +621,9 @@ bool RelionJob::prepareFinalCommand(
 
     // Add the --pipeline_control argument to all relion_ programs
     for (int icom = 0; icom < commands.size(); icom++) {
-        if ((commands[icom]).find("relion_") != string::npos)
+        if (commands[icom].find("relion_") != string::npos) { 
             commands[icom] += " --pipeline_control " + outputname;
+        }
     }
 
     // Prepare full mpi commands or save jobsubmission script to disc
@@ -640,19 +641,16 @@ bool RelionJob::prepareFinalCommand(
         final_command = "";
         for (size_t icom = 0; icom < commands.size(); icom++) {
             // Is this a relion mpi program?
-            nr_mpi = joboptions.find("nr_mpi") != joboptions.end() ? joboptions["nr_mpi"].getNumber(error_message) : 1;
-            if (error_message != "")
-                return false;
+            nr_mpi = joboptions.find("nr_mpi") == joboptions.end() ? 1 : joboptions["nr_mpi"].getNumber(error_message);
+            if (error_message != "") return false;
             if (
                 nr_mpi > 1 &&
                 commands[icom].find("_mpi`")   != string::npos &&
                 commands[icom].find("relion_") != string::npos
             ) {
-                const char *default_mpirun = getenv("RELION_MPIRUN");
-                if (default_mpirun == NULL) {
-                    default_mpirun = DEFAULTMPIRUN;
-                }
-                one_command = string(default_mpirun) + " -n " + floatToString(nr_mpi) + " " + commands[icom] ;
+                const char *mpirun = getenv("RELION_MPIRUN");
+                if (!mpirun) { mpirun = DEFAULTMPIRUN; }
+                one_command = string(mpirun) + " -n " + floatToString(nr_mpi) + " " + commands[icom] ;
             } else {
                 one_command = commands[icom];
             }
@@ -669,7 +667,7 @@ bool RelionJob::prepareFinalCommand(
     }
 
     char *warning = getenv("RELION_ERROR_LOCAL_MPI");
-    int nr_warn = warning == NULL ? DEFAULTWARNINGLOCALMPI : textToInteger(warning);
+    int nr_warn = warning ? textToInteger(warning) : DEFAULTWARNINGLOCALMPI;
 
     if (nr_mpi > nr_warn && !joboptions["do_queue"].getBoolean()) {
         error_message = "You're submitting a local job with " + floatToString(nr_mpi) + " parallel MPI processes. That's more than allowed by the RELION_ERROR_LOCAL_MPI environment variable.";
@@ -797,7 +795,7 @@ void RelionJob::initialise(int _job_type) {
 
     // Check for environment variable RELION_MPI_MAX and RELION_QSUB_NRMPI
     const char *mpi_max_input = getenv("RELION_MPI_MAX");
-    int mpi_max = mpi_max_input == NULL ? DEFAULTMPIMAX : textToInteger(mpi_max_input);
+    int mpi_max = mpi_max_input ? textToInteger(mpi_max_input) : DEFAULTMPIMAX;
     char *qsub_nrmpi_text = getenv("RELION_QSUB_NRMPI");
     const char qsub_nrmpi_val = qsub_nrmpi_text ? atoi(qsub_nrmpi_text) : DEFAULTNRMPI;
     if (has_mpi) {
@@ -805,7 +803,7 @@ void RelionJob::initialise(int _job_type) {
     }
 
     const char *thread_max_input = getenv("RELION_THREAD_MAX");
-    int thread_max = (thread_max_input == NULL) ? DEFAULTTHREADMAX : textToInteger(thread_max_input);
+    int thread_max = thread_max_input ? textToInteger(thread_max_input) : DEFAULTTHREADMAX;
     char *qsub_nrthr_text = getenv("RELION_QSUB_NRTHREADS");
     const char qsub_nrthreads_val = qsub_nrthr_text ? atoi(qsub_nrthr_text) : DEFAULTNRTHREADS;
     if (has_thread) {
@@ -814,63 +812,51 @@ When set to 1, no multi-threading will be used. The maximum can be set through t
     }
 
     const char *use_queue_input = getenv("RELION_QUEUE_USE");
-    bool use_queue = use_queue_input == NULL ? DEFAULTQUEUEUSE : textToBool(use_queue_input);
+    bool use_queue = use_queue_input ? textToBool(use_queue_input) : DEFAULTQUEUEUSE;
     joboptions["do_queue"] = JobOption("Submit to queue?", use_queue, "If set to Yes, the job will be submit to a queue, otherwise \
 the job will be executed locally. Note that only MPI jobs may be sent to a queue. The default can be set through the environment variable RELION_QUEUE_USE.");
 
     // Check for environment variable RELION_QUEUE_NAME
-    const char *default_queue = getenv("RELION_QUEUE_NAME");
-    if (default_queue == NULL) {
-        default_queue = DEFAULTQUEUENAME;
-    }
+    const char *queue_name = getenv("RELION_QUEUE_NAME");
+    if (!queue_name) { queue_name = DEFAULTQUEUENAME; }
 
     // Need the string(), as otherwise it will be overloaded and passed as a boolean....
-    joboptions["queuename"] = JobOption("Queue name: ", string(default_queue), "Name of the queue to which to submit the job. The default name can be set through the environment variable RELION_QUEUE_NAME.");
+    joboptions["queuename"] = JobOption("Queue name: ", string(queue_name), "Name of the queue to which to submit the job. The default name can be set through the environment variable RELION_QUEUE_NAME.");
 
     // Check for environment variable RELION_QSUB_COMMAND
-    const char *default_command = getenv("RELION_QSUB_COMMAND");
-    if (default_command == NULL) {
-        default_command = DEFAULTQSUBCOMMAND;
-    }
+    const char *qsub_command = getenv("RELION_QSUB_COMMAND");
+    if (!qsub_command) { qsub_command = DEFAULTQSUBCOMMAND; }
 
-    joboptions["qsub"] = JobOption("Queue submit command:", string(default_command), "Name of the command used to submit scripts to the queue, e.g. qsub or bsub.\n\n\
+    joboptions["qsub"] = JobOption("Queue submit command:", string(qsub_command), "Name of the command used to submit scripts to the queue, e.g. qsub or bsub.\n\n\
 Note that the person who installed RELION should have made a custom script for your cluster/queue setup. Check this is the case \
 (or create your own script following the RELION Wiki) if you have trouble submitting jobs. The default command can be set through the environment variable RELION_QSUB_COMMAND.");
 
     // additional options that may be set through environment variables RELION_QSUB_EXTRAi and RELION_QSUB_EXTRAi (for more flexibility)
     char *extra_count_text = getenv("RELION_QSUB_EXTRA_COUNT");
-    const char extra_count_val = (extra_count_text ? atoi(extra_count_text) : 2);
+    const char extra_count_val = extra_count_text ? atoi(extra_count_text) : 2;
     for (int i = 1; i <= extra_count_val; i++) {
         std::stringstream out;
         out << i;
         const string i_str = out.str();
         char *extra_text = getenv ((string("RELION_QSUB_EXTRA") + i_str).c_str());
-        if (extra_text != NULL) {
+        if (extra_text) {
             const string query_default = string("RELION_QSUB_EXTRA") + i_str + "_DEFAULT";
             char *extra_default = getenv(query_default.c_str());
             char emptychar[] = "";
-            if (extra_default == NULL) {
-                extra_default = emptychar;
-            }
+            if (!extra_default) { extra_default = emptychar; }
             const string query_help = string("RELION_QSUB_EXTRA") + i_str + "_HELP";
             char *extra_help = getenv(query_help.c_str());
-            string txt;
-            if (extra_help == NULL) {
-                txt = string("Extra option to pass to the qsub template script. Any occurrences of XXXextra") + i_str + "XXX will be changed by this value.";
-            } else {
-                txt = string(extra_help);
-            }
+            string txt = extra_help ? string(extra_help) : 
+                (string("Extra option to pass to the qsub template script. Any occurrences of XXXextra") + i_str + "XXX will be changed by this value.");
             joboptions[string("qsub_extra") + i_str] = JobOption(string(extra_text), string(extra_default), txt.c_str());
         }
     }
 
     // Check for environment variable RELION_QSUB_TEMPLATE
-    char *default_location = getenv("RELION_QSUB_TEMPLATE");
+    char *qsub_template = getenv("RELION_QSUB_TEMPLATE");
     char mydefault[] = DEFAULTQSUBLOCATION;
-    if (default_location == NULL) {
-        default_location = mydefault;
-    }
-    joboptions["qsubscript"] = JobOption("Standard submission script:", string(default_location), "Script Files (*.{csh,sh,bash,script})", ".",
+    if (!qsub_template) { qsub_template = mydefault; }
+    joboptions["qsubscript"] = JobOption("Standard submission script:", string(qsub_template), "Script Files (*.{csh,sh,bash,script})", ".",
 "The template for your standard queue job submission script. \
 Its default location may be changed by setting the environment variable RELION_QSUB_TEMPLATE. \
 In the template script a number of variables will be replaced: \n \
@@ -891,7 +877,7 @@ But note that (unlike all other entries in the GUI) the extra values are not rem
 
     // Check for environment variable RELION_QSUB_TEMPLATE
     char *my_minimum_dedicated = getenv("RELION_MINIMUM_DEDICATED");
-    int minimum_nr_dedicated = my_minimum_dedicated == NULL ? DEFAULTMININIMUMDEDICATED : textToInteger(my_minimum_dedicated);
+    int minimum_nr_dedicated = my_minimum_dedicated ? textToInteger(my_minimum_dedicated) : DEFAULTMININIMUMDEDICATED;
     joboptions["min_dedicated"] = JobOption("Minimum dedicated cores per node:", minimum_nr_dedicated, 1, 64, 1, "Minimum number of dedicated cores that need to be requested on each node. This is useful to force the queue to fill up entire nodes of a given size. The default can be set through the environment variable RELION_MINIMUM_DEDICATED.");
 
     // Need the string(), as otherwise it will be overloaded and passed as a boolean....
@@ -1241,11 +1227,9 @@ void RelionJob::initialiseMotioncorrJob() {
     // Motioncor2
 
     // Check for environment variable RELION_MOTIONCOR2_EXECUTABLE
-    char *default_location = getenv("RELION_MOTIONCOR2_EXECUTABLE");
+    char *motioncor2_exe = getenv("RELION_MOTIONCOR2_EXECUTABLE");
     char mydefault[] = DEFAULTMOTIONCOR2LOCATION;
-    if (default_location == NULL) {
-        default_location = mydefault;
-    }
+    if (!motioncor2_exe) { motioncor2_exe = mydefault; }
 
     // Common arguments RELION and UCSF implementation
     joboptions["bfactor"] = JobOption("Bfactor:", 150, 0, 1500, 50, "The B-factor that will be applied to the micrographs.");
@@ -1261,7 +1245,7 @@ void RelionJob::initialiseMotioncorrJob() {
     joboptions["do_own_motioncor"] = JobOption("Use RELION's own implementation?", true ,"If set to Yes, use RELION's own implementation of a MotionCor2-like algorithm by Takanori Nakane. Otherwise, wrap to the UCSF implementation. Note that Takanori's program only runs on CPUs but uses multiple threads, while the UCSF-implementation needs a GPU but uses only one CPU thread. Takanori's implementation is most efficient when the number of frames is divisible by the number of threads (e.g. 12 or 18 threads per MPI process for 36 frames). On some machines, setting the OMP_PROC_BIND environmental variable to TRUE accelerates the program.\n\
 When running on 4k x 4k movies and using 6 to 12 threads, the speeds should be similar. Note that Takanori's program uses the same model as the UCSF program and gives results that are almost identical.\n\
 Whichever program you use, 'Motion Refinement' is highly recommended to get the most of your dataset.");
-    joboptions["fn_motioncor2_exe"] = JobOption("MOTIONCOR2 executable:", string(default_location), "*.*", ".", "Location of the MOTIONCOR2 executable. You can control the default of this field by setting environment variable RELION_MOTIONCOR2_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
+    joboptions["fn_motioncor2_exe"] = JobOption("MOTIONCOR2 executable:", string(motioncor2_exe), "*.*", ".", "Location of the MOTIONCOR2 executable. You can control the default of this field by setting environment variable RELION_MOTIONCOR2_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
     joboptions["fn_defect"] = JobOption("Defect file:", "", "*", ".", "Location of a UCSF MotionCor2-style defect text file or a defect map that describe the defect pixels on the detector. Each line of a defect text file should contain four numbers specifying x, y, width and height of a defect region. A defect map is an image (MRC or TIFF), where 0 means good and 1 means bad pixels. The coordinate system is the same as the input movie before application of binning, rotation and/or flipping.\nNote that the format of the defect text is DIFFERENT from the defect text produced by SerialEM! One can convert a SerialEM-style defect file into a defect map using IMOD utilities e.g. \"clip defect -D defect.txt -f tif movie.mrc defect_map.tif\". See explanations in the SerialEM manual.\n\nLeave empty if you don't have any defects, or don't want to correct for defects on your detector.");
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string("0"), "Provide a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':'. For example, to place one rank on device 0 and one rank on device 1, provide '0:1'.\n\
 Note that multiple MotionCor2 processes should not share a GPU; otherwise, it can lead to crash or broken outputs (e.g. black images) .");
@@ -1338,8 +1322,7 @@ bool RelionJob::getCommandsMotioncorrJob(
 
     if (joboptions["group_frames"].getNumber(error_message) > 1.)
         command += " --group_frames " + joboptions["group_frames"].getString();
-    if (error_message != "")
-        return false;
+    if (error_message != "") return false;
 
     if ((joboptions["fn_gain_ref"].getString()).length() > 0) {
 
@@ -1380,11 +1363,9 @@ bool RelionJob::getCommandsMotioncorrJob(
         }
 
         float dose_for_ps = joboptions["group_for_ps"].getNumber(error_message);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
         float dose_rate = joboptions["dose_per_frame"].getNumber(error_message);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
         if (dose_rate <= 0) {
             error_message = "Please specify the dose rate to calculate the grouping for power spectra.";
             return false;
@@ -1395,8 +1376,7 @@ bool RelionJob::getCommandsMotioncorrJob(
         }
 
         int grouping_for_ps = round(dose_for_ps / dose_rate);
-        if (grouping_for_ps == 0)
-            grouping_for_ps = 1;
+        if (grouping_for_ps == 0) { grouping_for_ps = 1; }
 
         command += " --grouping_for_ps " + integerToString(grouping_for_ps) + " ";
     }
@@ -1415,8 +1395,6 @@ bool RelionJob::getCommandsMotioncorrJob(
 void RelionJob::initialiseCtffindJob() {
     hidden_name = ".gui_ctffind";
 
-    char *default_location;
-
     joboptions["input_star_mics"] = JobOption("Input micrographs STAR file:", NODE_MICS, "", "STAR files (*.star)", "A STAR file with all micrographs to run CTFFIND or Gctf on");
     joboptions["use_noDW"] = JobOption("Use micrograph without dose-weighting?", false, "If set to Yes, the CTF estimation will be done using the micrograph without dose-weighting as in rlnMicrographNameNoDW (_noDW.mrc from MotionCor2). If set to No, the normal rlnMicrographName will be used.");
 
@@ -1432,12 +1410,10 @@ void RelionJob::initialiseCtffindJob() {
     // Check for environment variable RELION_CTFFIND_EXECUTABLE
     joboptions["use_ctffind4"] = JobOption("Use CTFFIND-4.1?", false, "If set to Yes, the wrapper will use CTFFIND4 (version 4.1) for CTF estimation. This includes thread-support, calculation of Thon rings from movie frames and phase-shift estimation for phase-plate data.");
     joboptions["use_given_ps"] = JobOption("Use power spectra from MotionCorr job?", false, "If set to Yes, the CTF estimation will be done using power spectra calculated during motion correction.");
-    default_location = getenv("RELION_CTFFIND_EXECUTABLE");
+    char *ctffind_exe = getenv("RELION_CTFFIND_EXECUTABLE");
     char mydefault[] = DEFAULTCTFFINDLOCATION;
-    if (default_location == NULL) {
-        default_location = mydefault;
-    }
-    joboptions["fn_ctffind_exe"] = JobOption("CTFFIND-4.1 executable:", string(default_location), "*", ".", "Location of the CTFFIND (release 4.1 or later) executable. You can control the default of this field by setting environment variable RELION_CTFFIND_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
+    if (!ctffind_exe) { ctffind_exe = mydefault; }
+    joboptions["fn_ctffind_exe"] = JobOption("CTFFIND-4.1 executable:", string(ctffind_exe), "*", ".", "Location of the CTFFIND (release 4.1 or later) executable. You can control the default of this field by setting environment variable RELION_CTFFIND_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
     joboptions["slow_search"] = JobOption("Use exhaustive search?", false, "If set to Yes, CTFFIND4 will use slower but more exhaustive search. This option is recommended for CTFFIND version 4.1.8 and earlier, but probably not necessary for 4.1.10 and later. It is also worth trying this option when astigmatism and/or phase shifts are difficult to fit.");
 
     joboptions["box"] = JobOption("FFT box size (pix):", 512, 64, 1024, 8, "CTFFIND's Box parameter");
@@ -1451,12 +1427,10 @@ void RelionJob::initialiseCtffindJob() {
 
     joboptions["use_gctf"] = JobOption("Use Gctf instead?", false, "If set to Yes, Kai Zhang's Gctf program (which runs on NVIDIA GPUs) will be used instead of Niko Grigorieff's CTFFIND4.");
     // Check for environment variable RELION_CTFFIND_EXECUTABLE
-    default_location = getenv("RELION_GCTF_EXECUTABLE");
-    char mydefault2[]=DEFAULTGCTFLOCATION;
-    if (default_location == NULL) {
-        default_location=mydefault2;
-    }
-    joboptions["fn_gctf_exe"] = JobOption("Gctf executable:", string(default_location), "*", ".", "Location of the Gctf executable. You can control the default of this field by setting environment variable RELION_GCTF_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
+    char *gctf_exe = getenv("RELION_GCTF_EXECUTABLE");
+    char mydefault2[] = DEFAULTGCTFLOCATION;
+    if (!gctf_exe) { gctf_exe = mydefault2; }
+    joboptions["fn_gctf_exe"] = JobOption("Gctf executable:", string(gctf_exe), "*", ".", "Location of the Gctf executable. You can control the default of this field by setting environment variable RELION_GCTF_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
     joboptions["do_ignore_ctffind_params"] = JobOption("Ignore 'Searches' parameters?", true, "If set to Yes, all parameters EXCEPT for phase shift search and its ranges on the 'Searches' tab will be ignored, and Gctf's default parameters will be used (box.size=1024; min.resol=50; max.resol=4; min.defocus=500; max.defocus=90000; step.defocus=500; astigm=1000) \n \
 \nIf set to No, all parameters on the CTFFIND tab will be passed to Gctf.");
     joboptions["do_EPA"] = JobOption("Perform equi-phase averaging?", false, "If set to Yes, equi-phase averaging is used in the defocus refinement, otherwise basic rotational averaging will be performed.");
@@ -1470,7 +1444,6 @@ bool RelionJob::getCommandsCtffindJob(
 ) {
     commands.clear();
     initialisePipeline(outputname, PROC_CTFFIND_NAME, job_counter);
-    string command;
 
     FileName fn_outstar = outputname + "micrographs_ctf.star";
     Node node(fn_outstar, NODE_MICS);
@@ -1489,12 +1462,9 @@ bool RelionJob::getCommandsCtffindJob(
     Node node2(joboptions["input_star_mics"].getString(), joboptions["input_star_mics"].node_type);
     inputNodes.push_back(node2);
 
-    if (joboptions["nr_mpi"].getNumber(error_message) > 1)
-        command="`which relion_run_ctffind_mpi`";
-    else
-        command="`which relion_run_ctffind`";
-    if (error_message != "")
-        return false;
+    string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? "`which relion_run_ctffind_mpi`" : 
+                                                                         "`which relion_run_ctffind`";
+    if (error_message != "") return false;
 
     command += " --i " + joboptions["input_star_mics"].getString();
     command += " --o " + outputname;
@@ -1553,8 +1523,7 @@ bool RelionJob::getCommandsCtffindJob(
         return false;
     }
 
-    if (is_continue)
-        command += " --only_do_unfinished ";
+    if (is_continue) { command += " --only_do_unfinished "; }
 
     // Other arguments
     command += " " + joboptions["other_args"].getString();
@@ -1599,9 +1568,7 @@ bool RelionJob::getCommandsManualpickJob(
 ) {
     commands.clear();
     initialisePipeline(outputname, PROC_MANUALPICK_NAME, job_counter);
-    string command;
-
-    command = "`which relion_manualpick`";
+    string command = "`which relion_manualpick`";
 
     if (joboptions["fn_in"].getString() == "") {
         error_message = errorMsg("empty field for input STAR file...");
@@ -2553,11 +2520,9 @@ Otherwise, only the leader will read images and send them through the network to
     joboptions["do_preread_images"] = JobOption("Pre-read all particles into RAM?", false, "If set to Yes, all particle images will be read into computer memory, which will greatly speed up calculations on systems with slow disk access. However, one should of course be careful with the amount of RAM available. \
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 4 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
-    const char *default_scratch = getenv("RELION_SCRATCH_DIR");
-    if (default_scratch == NULL) {
-        default_scratch = DEFAULTSCRATCHDIR;
-    }
-    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(default_scratch), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
+    const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
+    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
 All MPI salves will then read in the combined results. This reduces heavy load on the network, but increases load on the disc I/O. \
@@ -2806,11 +2771,9 @@ This may improve performance on systems where disk access, and particularly meta
     joboptions["do_preread_images"] = JobOption("Pre-read all particles into RAM?", false, "If set to Yes, all particle images will be read into computer memory, which will greatly speed up calculations on systems with slow disk access. However, one should of course be careful with the amount of RAM available. \
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 4 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
-    const char *default_scratch = getenv("RELION_SCRATCH_DIR");
-    if (default_scratch == NULL) {
-        default_scratch = DEFAULTSCRATCHDIR;
-    }
-    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(default_scratch), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
+    const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
+    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
 All MPI salves will then read in the combined results. This reduces heavy load on the network, but increases load on the disc I/O. \
@@ -3146,11 +3109,9 @@ This may improve performance on systems where disk access, and particularly meta
     joboptions["do_preread_images"] = JobOption("Pre-read all particles into RAM?", false, "If set to Yes, all particle images will be read into computer memory, which will greatly speed up calculations on systems with slow disk access. However, one should of course be careful with the amount of RAM available. \
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 4 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
-    const char *default_scratch = getenv("RELION_SCRATCH_DIR");
-    if (default_scratch == NULL) {
-        default_scratch = DEFAULTSCRATCHDIR;
-    }
-    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(default_scratch), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
+    const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
+    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
 All MPI salves will then read in the combined results. This reduces heavy load on the network, but increases load on the disc I/O. \
@@ -3589,11 +3550,9 @@ This may improve performance on systems where disk access, and particularly meta
     joboptions["do_preread_images"] = JobOption("Pre-read all particles into RAM?", false, "If set to Yes, all particle images will be read into computer memory, which will greatly speed up calculations on systems with slow disk access. However, one should of course be careful with the amount of RAM available. \
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 8 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
-    const char *default_scratch = getenv("RELION_SCRATCH_DIR");
-    if (default_scratch == NULL) {
-        default_scratch = DEFAULTSCRATCHDIR;
-    }
-    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(default_scratch), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
+    const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
+    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
 All MPI salves will then read in the combined results. This reduces heavy load on the network, but increases load on the disc I/O. \
@@ -3915,11 +3874,9 @@ This may improve performance on systems where disk access, and particularly meta
     joboptions["do_preread_images"] = JobOption("Pre-read all particles into RAM?", false, "If set to Yes, all particle images will be read into computer memory, which will greatly speed up calculations on systems with slow disk access. However, one should of course be careful with the amount of RAM available. \
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 8 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
-    const char *default_scratch = getenv("RELION_SCRATCH_DIR");
-    if (default_scratch == NULL) {
-        default_scratch = DEFAULTSCRATCHDIR;
-    }
-    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(default_scratch), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
+    const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
+    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
 All MPI salves will then read in the combined results. This reduces heavy load on the network, but increases load on the disc I/O. \
@@ -4553,14 +4510,12 @@ void RelionJob::initialiseLocalresJob() {
     joboptions["angpix"] = JobOption("Calibrated pixel size (A)", 1, 0.3, 5, 0.1, "Provide the final, calibrated pixel size in Angstroms. This value may be different from the pixel-size used thus far, e.g. when you have recalibrated the pixel size using the fit to a PDB model. The X-axis of the output FSC plot will use this calibrated value.");
 
     // Check for environment variable RELION_RESMAP_TEMPLATE
-    char *default_location = getenv("RELION_RESMAP_EXECUTABLE");
+    char *resmap_exe = getenv("RELION_RESMAP_EXECUTABLE");
     char mydefault[] = DEFAULTRESMAPLOCATION;
-    if (default_location == NULL) {
-        default_location = mydefault;
-    }
+    if (!resmap_exe) { resmap_exe = mydefault; }
 
     joboptions["do_resmap_locres"] = JobOption("Use ResMap?", true, "If set to Yes, then ResMap will be used for local resolution estimation.");
-    joboptions["fn_resmap"] = JobOption("ResMap executable:", string(default_location), "ResMap*", ".", "Location of the ResMap executable. You can control the default of this field by setting environment variable RELION_RESMAP_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code. \n \n Note that the ResMap wrapper cannot use MPI.");
+    joboptions["fn_resmap"] = JobOption("ResMap executable:", string(resmap_exe), "ResMap*", ".", "Location of the ResMap executable. You can control the default of this field by setting environment variable RELION_RESMAP_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code. \n \n Note that the ResMap wrapper cannot use MPI.");
     joboptions["fn_mask"] = JobOption("User-provided solvent mask:", NODE_MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a mask with values between 0 and 1 around all domains of the complex. ResMap uses this mask for local resolution calculation. RELION does NOT use this mask for calculation, but makes a histogram of local resolution within this mask.");
     joboptions["pval"] = JobOption("P-value:", 0.05, 0.0, 1.0, 0.01, "This value is typically left at 0.05. If you change it, report the modified value in your paper!");
     joboptions["minres"] = JobOption("Highest resolution (A): ", 0.0, 0.0, 10.0, 0.1, "ResMaps minRes parameter. By default (0), the program will start at just above 2x the pixel size");

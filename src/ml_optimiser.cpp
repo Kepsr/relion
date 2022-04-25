@@ -3216,11 +3216,11 @@ void MlOptimiser::expectationSomeParticles(
         // Set the size of the TBB thread pool for these particles
         tbb::global_control gc(tbb::global_control::max_allowed_parallelism, nr_threads);
         // process all passed particles in parallel
-        //for (unsigned long i=my_first_part_id; i<=my_last_part_id; i++) {
-        tbb::parallel_for (my_first_part_id, my_last_part_id+1, [&](long int i) {
+        //for (unsigned long i = my_first_part_id; i <= my_last_part_id; i++) {
+        tbb::parallel_for (my_first_part_id, my_last_part_id + 1, [&](long int i) {
             CpuOptimiserType::reference ref = tbbCpuOptimiser.local();
-            MlOptimiserCpu *cpuOptimiser = (MlOptimiserCpu *)ref;
-            if (cpuOptimiser == NULL) {
+            MlOptimiserCpu *cpuOptimiser = (MlOptimiserCpu *) ref;
+            if (!cpuOptimiser) {
                 cpuOptimiser = new MlOptimiserCpu(this, (MlDataBundle*)accDataBundles[0], "cpu_optimiser");
                 cpuOptimiser->resetData();
                 ref = cpuOptimiser;
@@ -3233,8 +3233,7 @@ void MlOptimiser::expectationSomeParticles(
     }
     #endif
 
-    if (threadException != NULL)
-        throw *threadException;
+    if (threadException) throw *threadException;
 
     #ifdef TIMING
     timer.toc(TIMING_ESP);
@@ -3248,7 +3247,7 @@ void MlOptimiser::doThreadExpectationSomeParticles(int thread_id) {
     #ifdef TIMING
     // Only time one thread
     if (thread_id == 0)
-        timer.tic(TIMING_ESP_THR);
+    timer.tic(TIMING_ESP_THR);
     #endif
 
     size_t first_ipart = 0, last_ipart = 0;
@@ -3289,7 +3288,7 @@ void MlOptimiser::doThreadExpectationSomeParticles(int thread_id) {
     #ifdef TIMING
     // Only time one thread
     if (thread_id == 0)
-        timer.toc(TIMING_ESP_THR);
+    timer.toc(TIMING_ESP_THR);
     #endif
 
 }
@@ -3298,7 +3297,7 @@ void MlOptimiser::doThreadExpectationSomeParticles(int thread_id) {
 void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id) {
     #ifdef TIMING
     if (part_id_sorted == exp_my_first_part_id)
-        timer.tic(TIMING_ESP_INI);
+    timer.tic(TIMING_ESP_INI);
     #endif
 
     long int part_id = mydata.sorted_idx[part_id_sorted];

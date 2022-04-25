@@ -125,14 +125,10 @@ const MultidimArray<Complex > &ParFourierTransformer::getComplex() const {
 
 
 void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
-    bool recomputePlan = false;
-    if (fReal == NULL) {
-        recomputePlan = true;
-    /* } else if (dataPtr != MULTIDIM_ARRAY(input)) {
-        recomputePlan = true; */
-    } else {
-        recomputePlan = !fReal->sameShape(input);
-    }
+    bool recomputePlan = 
+        !fReal || 
+        // dataPtr != MULTIDIM_ARRAY(input) || 
+        !fReal->sameShape(input);
 
     fFourier.reshape(ZSIZE(input), YSIZE(input), XSIZE(input) / 2 + 1);
     fReal = &input;
@@ -181,7 +177,7 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
         );
         pthread_mutex_unlock(&fftw_plan_mutex_par);
 
-        if (fPlanForward == NULL || fPlanBackward == NULL)
+        if (!fPlanForward || !fPlanBackward)
             REPORT_ERROR("FFTW plans cannot be created");
 
         #ifdef DEBUG_PLANS
@@ -194,14 +190,10 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
 }
 
 void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
-    bool recomputePlan = false;
-    if (fComplex == NULL) {
-        recomputePlan = true;
-    /* } else if (complexDataPtr != MULTIDIM_ARRAY(input)) {
-        recomputePlan = true; */
-    } else {
-        recomputePlan = !fComplex->sameShape(input);
-    }
+    bool recomputePlan = 
+        !fComplex || 
+        // complexDataPtr != MULTIDIM_ARRAY(input) ||
+        !fComplex->sameShape(input);
 
     fFourier.resize(input);
     fComplex = &input;
@@ -250,7 +242,7 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
         );
         pthread_mutex_unlock(&fftw_plan_mutex_par);
 
-        if (fPlanForward == NULL || fPlanBackward == NULL)
+        if (!fPlanForward || !fPlanBackward)
             REPORT_ERROR("FFTW plans cannot be created");
 
         delete [] N;
@@ -274,9 +266,9 @@ void ParFourierTransformer::Transform(int sign) {
         );
         // Normalisation of the transform
         unsigned long int size = 0;
-        if (fReal != NULL) {
+        if (fReal) {
             size = MULTIDIM_SIZE(*fReal);
-        } else if (fComplex != NULL) {
+        } else if (fComplex) {
             size = MULTIDIM_SIZE(*fComplex);
         } else {
             REPORT_ERROR("No complex nor real data defined");

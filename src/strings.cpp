@@ -48,6 +48,13 @@
 #include "src/macros.h"
 #include "src/gcc_version.h"
 
+// For sscanf
+#ifdef RELION_SINGLE_PRECISION
+const char *double_pattern = "%f";
+#else
+const char *double_pattern = "%lf";
+#endif
+
 std::string removeChar(const std::string &str, char character) {
 
     std::string copy;
@@ -160,61 +167,51 @@ void trim(std::string &str) {
  * more than 6 significative digits */
 double textToDouble(const char *str, int _errno, std::string errmsg) {
 
-    if (str == NULL)
-        REPORT_ERROR(errmsg);
+    if (!str) REPORT_ERROR(errmsg);
 
     RFLOAT retval;
-    #ifdef RELION_SINGLE_PRECISION
-    int ok = sscanf(str, "%f", &retval);
-    #else
-    int ok = sscanf(str, "%lf", &retval);
-    #endif
+    if (!sscanf(str, double_pattern, &retval)) {
+        REPORT_ERROR(errmsg);
+        return 0;
+    }
 
-    if (ok)
-        return retval;
+    return retval;
 
-    REPORT_ERROR(errmsg);
-
-    return 0;
 }
 
 float textToFloat(const char *str, int _errno, std::string errmsg) {
+
+    if (!str) REPORT_ERROR(errmsg);
+
     float retval;
-    int ok;
-
-    if (str == NULL)
+    if (!sscanf(str, "%f", &retval)) {
         REPORT_ERROR(errmsg);
+        return 0;
+    }
 
-    ok = sscanf(str, "%f", &retval);
+    return retval;
 
-    if (ok)
-        return retval;
-
-    REPORT_ERROR(errmsg);
-
-    return 0;
 }
 
 int textToInteger(const char *str, int _errno, std::string errmsg) {
 
-    if (str == NULL)
-        REPORT_ERROR(errmsg);
+    if (!str) REPORT_ERROR(errmsg);
 
     int retval;
-    int ok = sscanf(str, "%d", &retval);
 
-    if (ok)
-        return retval;
+    if (!sscanf(str, "%d", &retval)) {
+        REPORT_ERROR(errmsg);
+    }
 
-    REPORT_ERROR(errmsg);
+    return retval;
+
 }
 
 bool textToBool(const char *str, int _errno, std::string errmsg) {
 
-    if (str == NULL) 
-        REPORT_ERROR(errmsg);
+    if (!str) REPORT_ERROR(errmsg);
 
-           if (strcasecmp(str, "true")  == 0 || strcasecmp(str, "yes") == 0) {
+    if (strcasecmp(str, "true")  == 0 || strcasecmp(str, "yes") == 0) {
         return true;
     } else if (strcasecmp(str, "false") == 0 || strcasecmp(str, "no")  == 0) {
         return false;
@@ -225,25 +222,22 @@ bool textToBool(const char *str, int _errno, std::string errmsg) {
 
 long long textToLongLong(const char *str, int _errno, std::string errmsg) {
 
-    if (str == NULL)
-        REPORT_ERROR(errmsg);
+    if (!str) REPORT_ERROR(errmsg);
 
     long long int retval;
-    int ok = sscanf(str, "%lld", &retval);
+    if (!sscanf(str, "%lld", &retval)) {
+        REPORT_ERROR(errmsg);
+        return 0;
+    }
 
-    if (ok)
-        return retval;
+    return retval;
 
-    REPORT_ERROR(errmsg);
-    return 0;
 }
 
 int bestPrecision(float F, int _width) {
-    // If it is 0
-    if (F == 0)
-        return 1;
 
-    // Otherwise
+    if (F == 0) return 1;
+
     int exp = floor(log10(abs(F)));
     int advised_prec;
 
@@ -258,8 +252,9 @@ int bestPrecision(float F, int _width) {
         if (advised_prec <= 0) { advised_prec = -1; }
     }
 
-    if (advised_prec < 0)
+    if (advised_prec < 0) { 
         advised_prec = -1; // Choose exponential format
+    }
 
     return advised_prec;
 }
@@ -304,10 +299,9 @@ std::string floatToString(float F, int _width, int _prec) {
 
     std::string retval = outs.str();
     int i = retval.find('\0');
-    if (i != -1)
-        return retval.substr(0, i);
+    if (i == -1) return retval;
+    return retval.substr(0, i);
 
-    return retval;
     #endif
 }
 
@@ -335,7 +329,7 @@ std::string integerToString(int I, int _width, char fill_with) {
     aux[width--] = '\0';
     Iaux = abs(I);
     do {
-        aux[width--] = '0' + (Iaux % 10);
+        aux[width--] = '0' + Iaux % 10;
         Iaux /= 10;
     } while (Iaux != 0);
 
@@ -343,31 +337,27 @@ std::string integerToString(int I, int _width, char fill_with) {
 }
 
 int textToInt(const char *str, int _errno, std::string errmsg) {
+
+    if (!str) REPORT_ERROR(errmsg);
+
     char readval;
-    int ok;
-
-    if (str == NULL)
+    if (!sscanf(str, "%c", &readval)) {
         REPORT_ERROR(errmsg);
+        return 0;
+    }
 
-    ok = sscanf(str, "%c", &readval);
+    return readval - 48;
 
-    if (ok)
-        return readval - 48;
-
-    REPORT_ERROR(errmsg);
-
-    return 0;
 }
 
 std::string stringToString(const std::string &str, int _width) {
-    if (_width == 0)
-        return str;
 
-    if (_width < str.length())
-        return str.substr(0, _width);
+    if (_width == 0) return str;
 
-    std::string aux = str;
-    return aux.append(_width - str.length(), ' ');
+    if (_width < str.length()) return str.substr(0, _width);
+
+    std::string copy = str;
+    return copy.append(_width - str.length(), ' ');
 }
 
 void checkAngle(const std::string &str) {
@@ -427,8 +417,7 @@ int splitString(
     int sizeS2 = static_cast<int>(delimiter.size());
     int isize = static_cast<int>(input.size());
 
-    if (isize == 0 || sizeS2 == 0)
-        return 0;
+    if (isize == 0 || sizeS2 == 0) return 0;
 
     std::vector<int> positions;
     newPos = input.find(delimiter, 0);
@@ -446,8 +435,7 @@ int splitString(
         newPos = input.find(delimiter, iPos + sizeS2);
     }
 
-    if (numFound == 0)
-        return 0;
+    if (numFound == 0) return 0;
 
     for (int i = 0; i <= static_cast<int>(positions.size()); i++) {
         std::string s("");
@@ -475,7 +463,7 @@ void toLower(char *_str) {
     int i = 0;
     while (_str[i] != '\0') {
         if (_str[i] >= 'A' && _str[i] <= 'Z')
-            _str[i] += 'a' -'A';
+            _str[i] += 'a' - 'A';
         i++;
     }
 }
@@ -581,9 +569,9 @@ bool nextTokenInSTAR(const std::string &str, int &i, std::string &retval) {
 // Get word ================================================================
 char *firstWord(char *str, int _errno, const std::string &errmsg) {
     // Get token
-    char *token = str != NULL ? firstToken(str) : nextToken();
+    char *token = str ? firstToken(str) : nextToken();
     // Check that there is something
-    if (token == NULL) REPORT_ERROR(errmsg);
+    if (!token) REPORT_ERROR(errmsg);
     return token;
 }
 
