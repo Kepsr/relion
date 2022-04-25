@@ -7504,7 +7504,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
 
     long int n_trials = 0;
     for (int part_id = my_first_part_id; part_id <= my_last_part_id; part_id++) {
-        n_trials +=  mydata.numberOfImagesInParticle(part_id);
+        n_trials += mydata.numberOfImagesInParticle(part_id);
 
         if (mydata.numberOfImagesInParticle(part_id) > 1) {
             REPORT_ERROR("ERROR: calculateExpectedAngularErrors will not work for multiple images per particle from 3.1...");
@@ -7521,30 +7521,28 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
     //	pvalue *= 2.0;
 
     std::cout << " Estimating accuracies in the orientational assignment ... " << std::endl;
-    int nr_particles = (my_last_part_id - my_first_part_id + 1);
-    init_progress_bar( nr_particles * mymodel.nr_classes * mymodel.nr_bodies);
+    int nr_particles = my_last_part_id - my_first_part_id + 1;
+    init_progress_bar(nr_particles * mymodel.nr_classes * mymodel.nr_bodies);
     for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++) {
 
         // Don't do this for (almost) empty classes, but always for multi-body refinement
-        if (mymodel.nr_bodies == 1 && mymodel.pdf_class[iclass] < 0.01)
-        {
-            mymodel.acc_rot[iclass]   = 999.0;
+        if (mymodel.nr_bodies == 1 && mymodel.pdf_class[iclass] < 0.01) {
+            mymodel.acc_rot  [iclass] = 999.0;
             mymodel.acc_trans[iclass] = 999.0;
             continue;
         }
 
         // Initialise the orientability arrays that will be written out in the model.star file
         // These are for the user's information only: nothing will be actually done with them
-#ifdef DEBUG_CHECKSIZES
-        if (iclass >= (mymodel.orientability_contrib).size())
-        {
-            std::cerr<< "iclass= "<<iclass<<" (mymodel.orientability_contrib).size()= "<< (mymodel.orientability_contrib).size() <<std::endl;
+        #ifdef DEBUG_CHECKSIZES
+        if (iclass >= (mymodel.orientability_contrib).size()) {
+            std::cerr << "iclass= " << iclass << " (mymodel.orientability_contrib).size()= " << (mymodel.orientability_contrib).size() << std::endl;
             REPORT_ERROR("iclass >= (mymodel.orientability_contrib).size()");
         }
-#endif
-        (mymodel.orientability_contrib)[iclass].initZeros(mymodel.ori_size/2 + 1);
+        #endif
+        (mymodel.orientability_contrib)[iclass].initZeros(mymodel.ori_size / 2 + 1);
 
-        RFLOAT acc_rot_class = 0.0;
+        RFLOAT acc_rot_class   = 0.0;
         RFLOAT acc_trans_class = 0.0;
         // Particles are already in random order, so just move from 0 to n_trials
         for (long int part_id_sorted = my_first_part_id, metadata_offset = 0; part_id_sorted <= my_last_part_id; part_id_sorted++) {

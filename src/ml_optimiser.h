@@ -475,7 +475,7 @@ class MlOptimiser {
     /// Always perform cross-correlation instead of marginalization
     bool do_always_cc;
 
-    bool do_cc() {
+    inline bool do_cc() {
         if (do_always_cc) return true;
         if (do_firstiter_cc) return iter == 1;  // First iteration has index 1
         return false;

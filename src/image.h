@@ -434,16 +434,6 @@ class Image {
 
     int writeSPIDER(long int select_img=-1, bool isStack=false, int mode=WRITE_OVERWRITE);
 
-    // #include "src/rwSPIDER.h"
-    // #include "src/rwMRC.h"
-    // #include "src/rwIMAGIC.h"
-    // #include "src/rwTIFF.h"
-
-    // At present, we have these ill-advised mid-class #include directives.
-    // Ideally, they would be replaced by function declarations here in image.h,
-    // with definitions in the relevant places (rwMRC.h/rwIMAGIC.h/rwSPIDER.h/rwTIFF.h).
-
-
     int readMRC(long int img_select, bool isStack=false, const FileName &name="");
 
     int writeMRC(long int img_select, bool isStack=false, int mode=WRITE_OVERWRITE);
@@ -453,7 +443,7 @@ class Image {
     void writeIMAGIC(long int img_select=-1, int mode=WRITE_OVERWRITE);
 
     int readTIFF(
-        TIFF* ftiff, long int img_select, 
+        TIFF *ftiff, long int img_select, 
         bool readdata=false, bool isStack=false, const FileName &name=""
     );
 
@@ -503,13 +493,7 @@ class Image {
     void write(
         FileName name="", long int select_img=-1, bool isStack=false,
         int mode=WRITE_OVERWRITE
-    ) {
-        const FileName &fname = name == "" ? filename : name;
-        fImageHandler hFile;
-        hFile.openFile(name, mode);
-        _write(fname, hFile, select_img, isStack, mode);
-        // fImageHandler's destructor will close the file
-    }
+    );
 
     /** Cast a page of data from type dataType to type Tdest
      *	  input pointer char *
@@ -623,7 +607,7 @@ class Image {
                 // The default fill-order in the TIFF specification is MSB2LSB
                 // but IMOD assumes LSB2MSB even for TIFF.
                 // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
-                ptrDest[i * 2 ] = (T) (page[i] & 15); // 1111 = 1+2+4+8 = 15
+                ptrDest[i * 2    ] = (T) ( page[i]       & 15); // 1111 = 1+2+4+8 = 15
                 ptrDest[i * 2 + 1] = (T) ((page[i] >> 4) & 15);
             }
             break;
@@ -817,7 +801,7 @@ class Image {
             if ((mFd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
                 REPORT_ERROR((std::string) "Image Class::" + __func__ + ": Error opening the image file.");
 
-            char* map;
+            char *map;
             mappedSize = pagesize + offset;
 
             if ((map = (char*) mmap(0,mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
@@ -827,7 +811,7 @@ class Image {
             // Reset select to get the correct offset
             if (select_img < 0) { select_img = 0; }
 
-            char* page = NULL;
+            char *page = NULL;
 
             // Allocate memory for image data (Assume xdim, ydim, zdim and ndim are already set
             // if memory already allocated use it (no resize allowed)
@@ -927,19 +911,21 @@ class Image {
         return data.data[(j - data.xinit) + data.xdim * (i - data.yinit)];
     }
 
+    // IMGPIXEL is undeclared.
+
     /** Set pixel
      * (direct access) needed by swig
      */
-    void setPixel(int i, int j, T v) {
-        IMGPIXEL(*this, i, j) = v;
-    }
+    // void setPixel(int i, int j, T v) {
+    //     IMGPIXEL(*this, i, j) = v;
+    // }
 
     /** Get pixel
      * (direct acces) needed by swig
      */
-    T getPixel(int i, int j) const {
-        return IMGPIXEL(*this, i, j);
-    }
+    // T getPixel(int i, int j) const {
+    //     return IMGPIXEL(*this, i, j);
+    // }
 
     /** Voxel access
      *
@@ -1007,7 +993,7 @@ class Image {
     RFLOAT samplingRateX(const long int n = 0) const {
         try {
             return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
-        } catch (const char* errmsg) {
+        } catch (const char *errmsg) {
             return 1.0;
         }
     }
@@ -1021,7 +1007,7 @@ class Image {
     RFLOAT samplingRateY(const long int n = 0) const {
         try {
             return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y);
-        } catch (const char* errmsg) {
+        } catch (const char *errmsg) {
             return 1.0;
         }
     }
@@ -1143,7 +1129,6 @@ class Image {
         const FileName &name, fImageHandler &hFile, long int select_img=-1, 
         bool isStack=false, int mode=WRITE_OVERWRITE
     );
-
 
 };
 

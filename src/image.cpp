@@ -23,7 +23,6 @@
 #include "src/rwMRC.h"
 #include "src/rwTIFF.h"
 
-
 // #define DEBUG_REGULARISE_HELICAL_SEGMENTS
 
 // Get size of datatype
@@ -31,30 +30,30 @@ unsigned long gettypesize(DataType type) {
 
     switch (type) {
 
-        case UChar: 
-        case SChar:  
-        return sizeof(char); 
+        case UChar:
+        case SChar:
+        return sizeof(char);
 
-        case UShort: 
-        case Short: 
-        return sizeof(short); 
+        case UShort:
+        case Short:
+        return sizeof(short);
 
-        case UInt: 
-        case Int:     
-        return sizeof(int); 
+        case UInt:
+        case Int:
+        return sizeof(int);
 
         case Float:
-        return sizeof(float); 
+        return sizeof(float);
 
         case Double:
-        return sizeof(RFLOAT); 
+        return sizeof(RFLOAT);
 
         case Boolean:
-        return sizeof(bool); 
+        return sizeof(bool);
 
-        case UHalf: 
+        case UHalf:
         unsigned long size;
-        REPORT_ERROR("Logic error: UHalf (4-bit) needs special consideration. Don't use this function."); 
+        REPORT_ERROR("Logic error: UHalf (4-bit) needs special consideration. Don't use this function.");
         return size;
 
         default:
@@ -96,12 +95,12 @@ void normalise(
         // Calculate initial avg and stddev values
         calculateBackgroundAvgStddev(
             I, avg, stddev, bg_radius,
-            is_helical_segment, helical_mask_tube_outer_radius_pix, 
+            is_helical_segment, helical_mask_tube_outer_radius_pix,
             tilt_deg, psi_deg
         );
 
         // Remove white and black noise
-        if (white_dust_stddev > 0.0) 
+        if (white_dust_stddev > 0.0)
         removeDust(I, true, white_dust_stddev, avg, stddev);
         if (black_dust_stddev > 0.0)
         removeDust(I, false, black_dust_stddev, avg, stddev);
@@ -111,7 +110,7 @@ void normalise(
     if (do_ramp) {
         subtractBackgroundRamp(
             I, bg_radius,
-            is_helical_segment, helical_mask_tube_outer_radius_pix, 
+            is_helical_segment, helical_mask_tube_outer_radius_pix,
             tilt_deg, psi_deg
         );
     }
@@ -119,7 +118,7 @@ void normalise(
     // Calculate avg and stddev (also redo if dust was removed!)
     calculateBackgroundAvgStddev(
         I, avg, stddev, bg_radius,
-        is_helical_segment, helical_mask_tube_outer_radius_pix, 
+        is_helical_segment, helical_mask_tube_outer_radius_pix,
         tilt_deg, psi_deg
     );
 
@@ -399,7 +398,7 @@ void getImageContrast(
 
 template <typename T>
 int Image<T>::read(
-    const FileName &name, bool readdata, long int select_img, 
+    const FileName &name, bool readdata, long int select_img,
     bool mapData, bool is_2D
 ) {
     if (name == "")
@@ -411,8 +410,20 @@ int Image<T>::read(
 }
 
 template <typename T>
+void Image<T>::write(
+    FileName name, long int select_img, bool isStack,
+    int mode
+) {
+    const FileName &fname = name == "" ? filename : name;
+    fImageHandler hFile;
+    hFile.openFile(name, mode);
+    _write(fname, hFile, select_img, isStack, mode);
+    // fImageHandler's destructor will close the file
+}
+
+template <typename T>
 int Image<T>::_read(
-    const FileName &name, fImageHandler &hFile, 
+    const FileName &name, fImageHandler &hFile,
     bool readdata, long int select_img, bool mapData, bool is_2D
 ) {
     // Exit code
@@ -453,7 +464,7 @@ int Image<T>::_read(
     MDMainHeader.addObject();
 
     if (
-        ext_name.contains("spi") || ext_name.contains("xmp") || 
+        ext_name.contains("spi") || ext_name.contains("xmp") ||
         ext_name.contains("stk") || ext_name.contains("vol")
     ) {
         // MRC stack MUST go BEFORE plain MRC
@@ -484,7 +495,7 @@ int Image<T>::_read(
 
 template <typename T>
 void Image<T>::_write(
-    const FileName &name, fImageHandler &hFile, 
+    const FileName &name, fImageHandler &hFile,
     long int select_img, bool isStack, int mode
 ) {
     int err = 0;
@@ -578,7 +589,7 @@ void Image<T>::_write(
 
     // Select format
     if (
-        ext_name.contains("spi") || ext_name.contains("xmp") || 
+        ext_name.contains("spi") || ext_name.contains("xmp") ||
         ext_name.contains("stk") || ext_name.contains("vol")
     ) {
         err = writeSPIDER(select_img, isStack, mode);
@@ -634,3 +645,14 @@ int Image<T>::readTiffInMemory(
 
     return err;
 }
+
+// Manually instantiate classes derivable from the Image class template.
+// Required to avoid linker errors.
+// https://www.cs.technion.ac.il/users/yechiel/c++-faq/separate-template-class-defn-from-decl.html
+template class Image<int>;
+template class Image<float>;
+template class Image<double>;
+template class Image<signed short>;
+template class Image<unsigned short>;
+template class Image<signed char>;
+template class Image<unsigned char>;

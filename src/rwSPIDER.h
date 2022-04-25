@@ -96,7 +96,7 @@ struct SPIDERhead {
     char cdat[12];   // 211-213   creation date
     char ctim[9];  // 214-215   creation time
     char ctit[160];  // 216-255   title
-} ;
+};
 
 /************************************************************************
 @Function: readSPIDER
