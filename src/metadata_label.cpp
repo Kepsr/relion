@@ -43,13 +43,13 @@
  ***************************************************************************/
 #include "src/metadata_label.h"
 
-//This is needed for static memory allocation
+// This is needed for static memory allocation
 std::map<EMDL::EMDLabel, EMDLabelData> EMDL::data;
 std::map<std::string, EMDL::EMDLabel> EMDL::names;
 std::map<std::string, std::string> EMDL::definitions;
-StaticInitialization EMDL::initialization; //Just for initialization
+StaticInitialization EMDL::initialization;  // Just for initialization
 
-void EMDL::addLabel(EMDLabel label, EMDLabelType type, std::string name, std::string definition) {
+void EMDL::addLabel(EMDLabel label, EMDL::LabelType type, std::string name, std::string definition) {
     data[label] = EMDLabelData(type, name);
     names[name] = label;
     definitions[name] = definition;
@@ -87,54 +87,52 @@ void EMDL::printDefinitions(std::ostream& out) {
 }
 
 EMDL::EMDLabel EMDL::str2Label(const std::string &labelName) {
-    if (names.find(labelName) == names.end())
-        return EMDL::UNDEFINED;
+    if (names.find(labelName) == names.end()) return EMDL::UNDEFINED;
     return names[labelName];
-} //close function str2Label
+}
 
 std::string EMDL::label2Str(const EMDLabel &label) {
     if (data.find(label) == data.end())
             return "";
     return data[label].str;
-} // close function label2Str
+}
 
 bool EMDL::isInt(const EMDLabel &label) {
-    return (data[label].type == EMDL_INT);
+    return data[label].type == EMDL::INT;
 }
 
 bool EMDL::isBool(const EMDLabel &label) {
-    return (data[label].type == EMDL_BOOL);
+    return data[label].type == EMDL::BOOL;
 }
 
 bool EMDL::isString(const EMDLabel &label) {
-    return (data[label].type == EMDL_STRING);
+    return data[label].type == EMDL::STRING;
 }
 bool EMDL::isDouble(const EMDLabel &label) {
-    return (data[label].type == EMDL_DOUBLE);
+    return data[label].type == EMDL::DOUBLE;
 }
 
 bool EMDL::isNumber(const EMDLabel &label) {
-    return (data[label].type == EMDL_DOUBLE || data[label].type == EMDL_INT);
+    return data[label].type == EMDL::DOUBLE || data[label].type == EMDL::INT;
 }
 
 bool EMDL::isDoubleVector(const EMDLabel &label) {
-    return (data[label].type == EMDL_DOUBLE_VECTOR);
+    return data[label].type == EMDL::DOUBLE_VECTOR;
 }
 
 bool EMDL::isVector(const EMDLabel &label) {
-    return (data[label].type == EMDL_DOUBLE_VECTOR);
+    return data[label].type == EMDL::DOUBLE_VECTOR;
 }
 
 bool EMDL::isUnknown(const EMDLabel &label) {
-    return (data[label].type == EMDL_UNKNOWN);
+    return data[label].type == EMDL::UNKNOWN;
 }
 
 bool EMDL::isValidLabel(const EMDLabel &label) {
-    return (label > EMDL::UNDEFINED && label < EMDL::LAST_LABEL);
+    return label > EMDL::UNDEFINED && label < EMDL::LAST_LABEL;
 }
 
 bool EMDL::isValidLabel(const std::string &labelName) {
     EMDL::EMDLabel label = EMDL::str2Label(labelName);
     return EMDL::isValidLabel(label);
 }
-
