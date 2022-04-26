@@ -353,140 +353,140 @@ GuiMainWindow::GuiMainWindow(
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Import");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_IMPORT);
+    gui_jobwindows[i]->initialise(PROC::IMPORT);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Motion correction");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_MOTIONCORR);
+    gui_jobwindows[i]->initialise(PROC::MOTIONCORR);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("CTF estimation");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_CTFFIND);
+    gui_jobwindows[i]->initialise(PROC::CTFFIND);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Manual picking");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_MANUALPICK);
+    gui_jobwindows[i]->initialise(PROC::MANUALPICK);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Auto-picking");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_AUTOPICK);
+    gui_jobwindows[i]->initialise(PROC::AUTOPICK);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Particle extraction");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_EXTRACT);
+    gui_jobwindows[i]->initialise(PROC::EXTRACT);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Subset selection");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_CLASSSELECT);
+    gui_jobwindows[i]->initialise(PROC::CLASSSELECT);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("2D classification");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_2DCLASS);
+    gui_jobwindows[i]->initialise(PROC::CLASS2D);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("3D initial model");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_INIMODEL);
+    gui_jobwindows[i]->initialise(PROC::INIMODEL);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("3D classification");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_3DCLASS);
+    gui_jobwindows[i]->initialise(PROC::CLASS3D);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("3D auto-refine");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_3DAUTO);
+    gui_jobwindows[i]->initialise(PROC::AUTO3D);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("3D multi-body");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_MULTIBODY);
+    gui_jobwindows[i]->initialise(PROC::MULTIBODY);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("CTF refinement");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_CTFREFINE);
+    gui_jobwindows[i]->initialise(PROC::CTFREFINE);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Bayesian polishing");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_MOTIONREFINE);
+    gui_jobwindows[i]->initialise(PROC::MOTIONREFINE);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Mask creation");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_MASKCREATE);
+    gui_jobwindows[i]->initialise(PROC::MASKCREATE);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Join star files");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_JOINSTAR);
+    gui_jobwindows[i]->initialise(PROC::JOINSTAR);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Particle subtraction");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_SUBTRACT);
+    gui_jobwindows[i]->initialise(PROC::SUBTRACT);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Post-processing");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_POST);
+    gui_jobwindows[i]->initialise(PROC::POST);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("Local resolution");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_RESMAP);
+    gui_jobwindows[i]->initialise(PROC::RESMAP);
     browse_grp[i]->end();
     i++;
 
     browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
     browser->add("External");
     gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(PROC_EXTERNAL);
+    gui_jobwindows[i]->initialise(PROC::EXTERNAL);
     browse_grp[i]->end();
 
     browser->callback(cb_select_browsegroup, this);
@@ -941,7 +941,7 @@ static void Gui_Timer_CB(void *userdata) {
         }
     } else {
         // Update the stdout and stderr windows if we're currently pointing at a running job
-        if (current_job >= 0 && pipeline.processList[current_job].status == PROC_RUNNING)
+        if (current_job >= 0 && pipeline.processList[current_job].status == PROC::RUNNING)
             o->fillStdOutAndErr();
 
         // Check for job completion if the pipeline has been changed
@@ -980,13 +980,13 @@ std::string GuiMainWindow::getJobNameForDisplay(Process &job) {
 
 std::string decorate_name_or_alias(std::string name_or_alias, int status) {
     switch (status) {
-        case PROC_FINISHED_ABORTED:
-            return "@C1@-@." + name_or_alias;
-        case PROC_FINISHED_FAILURE:
-            return "@C1@." + name_or_alias;
-        // case PROC_FINISHED_SUCCESS:
+        case PROC::FINISHED_ABORTED:
+        return "@C1@-@." + name_or_alias;
+        case PROC::FINISHED_FAILURE:
+        return "@C1@." + name_or_alias;
+        // case PROC::FINISHED_SUCCESS:
         default:
-            return name_or_alias;
+        return name_or_alias;
     }
 }
 
@@ -1025,9 +1025,9 @@ void GuiMainWindow::fillRunningJobLists() {
         for (long int ip = 0; ip < enumerate_jobs.size(); ip++) {
             long int i = enumerate_jobs[ip].second;
             if (
-                pipeline.processList[i].status == PROC_FINISHED_SUCCESS ||
-                pipeline.processList[i].status == PROC_FINISHED_FAILURE ||
-                pipeline.processList[i].status == PROC_FINISHED_ABORTED
+                pipeline.processList[i].status == PROC::FINISHED_SUCCESS ||
+                pipeline.processList[i].status == PROC::FINISHED_FAILURE ||
+                pipeline.processList[i].status == PROC::FINISHED_ABORTED
             ) {
                 finished_processes.push_back(i);
                 finished_job_browser->add(decorate_name_or_alias(enumerate_jobs[ip].first, pipeline.processList[i].status).c_str());
@@ -1036,9 +1036,10 @@ void GuiMainWindow::fillRunningJobLists() {
     } else {
         // For finished jobs, search backwards, so that last jobs are at the top
         for (long int i = pipeline.processList.size() - 1; i >= 0; i--) {
-            if (pipeline.processList[i].status == PROC_FINISHED_SUCCESS ||
-                pipeline.processList[i].status == PROC_FINISHED_FAILURE ||
-                pipeline.processList[i].status == PROC_FINISHED_ABORTED
+            if (
+                pipeline.processList[i].status == PROC::FINISHED_SUCCESS ||
+                pipeline.processList[i].status == PROC::FINISHED_FAILURE ||
+                pipeline.processList[i].status == PROC::FINISHED_ABORTED
             ) {
                 finished_processes.push_back(i);
                 finished_job_browser->add(decorate_name_or_alias(getJobNameForDisplay(pipeline.processList[i]), pipeline.processList[i].status).c_str());
@@ -1050,30 +1051,31 @@ void GuiMainWindow::fillRunningJobLists() {
     for (long int i = 0; i < pipeline.processList.size(); i++) {
         std::string jobname = getJobNameForDisplay(pipeline.processList[i]);
         switch (pipeline.processList[i].status) {
-            case PROC_RUNNING:
-                running_processes.push_back(i);
-                running_job_browser->add(jobname.c_str());
-                break;
-            case PROC_SCHEDULED:
-                scheduled_processes.push_back(i);
-                scheduled_job_browser->add(jobname.c_str());
-                break;
+
+            case PROC::RUNNING:
+            running_processes.push_back(i);
+            running_job_browser->add(jobname.c_str());
+            break;
+
+            case PROC::SCHEDULED:
+            scheduled_processes.push_back(i);
+            scheduled_job_browser->add(jobname.c_str());
+            break;
+
         }
     }
 
-    running_job_browser->position(mypos_running);
+    running_job_browser  ->position(mypos_running);
     scheduled_job_browser->position(mypos_scheduled);
-    finished_job_browser->position(mypos_finished);
-    running_job_browser->hposition(myhpos_running);
+    finished_job_browser ->position(mypos_finished);
+    running_job_browser  ->hposition(myhpos_running);
     scheduled_job_browser->hposition(myhpos_scheduled);
-    finished_job_browser->hposition(myhpos_finished);
+    finished_job_browser ->hposition(myhpos_finished);
 }
 
 static bool already_there(long int proc, std::vector<long int> procs) {
     for (long int i = 0; i < procs.size(); i++) {
-        if (proc == procs[i]) {
-            return true;
-        }
+        if (proc == procs[i]) { return true; }
     }
     return false;
 }
@@ -1094,7 +1096,7 @@ void GuiMainWindow::fillToAndFromJobLists() {
             long int mynode = pipeline.processList[current_job].inputNodeList[inode];
 
             // no display for movie rootname
-            if (pipeline.nodeList[mynode].type != NODE_MOVIES) {
+            if (pipeline.nodeList[mynode].type != NODE::MOVIES) {
                 FileName fnt = pipeline.nodeList[mynode].name;
                 if (exists(fnt)) {
                     fnt = "in: " + fnt.afterLastOf("/");
@@ -1258,7 +1260,7 @@ void GuiMainWindow::fillSchedulerNodesAndVariables() {
 
     // Also add jobnames to the input/output nodes of the edges
     for (long int i = 0; i < pipeline.processList.size(); i++) {
-        if (pipeline.processList[i].status == PROC_SCHEDULED) {
+        if (pipeline.processList[i].status == PROC::SCHEDULED) {
             std::string jobname = getJobNameForDisplay(pipeline.processList[i]);
             scheduler_edge_input->add(jobname.c_str());
             scheduler_edge_output->add(jobname.c_str());
@@ -1380,22 +1382,22 @@ void GuiMainWindow::loadJobFromPipeline(int this_job) {
     current_browse_directory = pipeline.processList[current_job].name;
 
     // What type of job is this?
-    for (int t=0; t<NR_BROWSE_TABS; t++) {
+    for (int t = 0; t < NR_BROWSE_TABS; t++) {
         if (gui_jobwindows[t]->myjob.type == itype)
-            browser->value(t+1);
+            browser->value(t + 1);
     }
 
     // change GUI to the corresponding jobwindow
     cb_select_browsegroup_i();
 
     // Re-read the settings for this job and update the values inside the GUI
-    int iwin = (browser->value() - 1);
+    int iwin = browser->value() - 1;
     gui_jobwindows[iwin]->myjob.read(pipeline.processList[current_job].name, is_main_continue);
     gui_jobwindows[iwin]->updateMyGui();
 
     // If a finished or running job was loaded from the pipeline: set this to be a continuation job
-    // If a scheduled job was loaded, only set is_main_continue to true when it is PROC_SCHEDULED
-    //if (pipeline.processList[current_job].status == PROC_SCHEDULED && !gui_jobwindows[iwin]->myjob.is_continue)
+    // If a scheduled job was loaded, only set is_main_continue to true when it is PROC::SCHEDULED
+    //if (pipeline.processList[current_job].status == PROC::SCHEDULED && !gui_jobwindows[iwin]->myjob.is_continue)
     //	is_main_continue = false;
     //else
     //	is_main_continue = true;
@@ -1443,7 +1445,7 @@ void GuiMainWindow::cb_select_browsegroup_i(bool show_initial_screen) {
     int iwin = (browser->value() - 1);
     if (iwin < 0 || iwin >= NR_BROWSE_TABS) return;
     // Show the 'selected' group. Hide the others.
-    for (int t=0; t<NR_BROWSE_TABS; t++) {
+    for (int t = 0; t < NR_BROWSE_TABS; t++) {
         // During the initial screen: show a nice picture with some explanations
         if (t == iwin && !show_initial_screen) // browser starts counting at 1...
         {
@@ -1606,7 +1608,7 @@ void GuiMainWindow::cb_display_io_node_i() {
     long int mynode = io_nodes[idx];
     std::string command;
 
-    if (pipeline.nodeList[mynode].type == NODE_MIC_COORDS) {
+    if (pipeline.nodeList[mynode].type == NODE::MIC_COORDS) {
         // A manualpicker jobwindow for display of micrographs....
         RelionJob manualpickjob;
         FileName fn_job = ".gui_manualpick";
@@ -1680,15 +1682,15 @@ void GuiMainWindow::cb_display_io_node_i() {
         } else {
             fl_message("Only coordinates in .star format, generated in the pipeline, can be displayed here.");
         }
-    } else if (pipeline.nodeList[mynode].type == NODE_PDF_LOGFILE) {
+    } else if (pipeline.nodeList[mynode].type == NODE::PDF_LOGFILE) {
         const char * default_pdf_viewer = getenv ("RELION_PDFVIEWER_EXECUTABLE");
         char mydefault[] = DEFAULTPDFVIEWER;
         if (!default_pdf_viewer) { default_pdf_viewer = mydefault; }
         std::string myviewer(default_pdf_viewer);
         command = myviewer + " " + pipeline.nodeList[mynode].name + "&";
-    } else if (pipeline.nodeList[mynode].type == NODE_POLISH_PARAMS) {
+    } else if (pipeline.nodeList[mynode].type == NODE::POLISH_PARAMS) {
         command = "cat " + pipeline.nodeList[mynode].name;
-    } else if (pipeline.nodeList[mynode].type != NODE_POST) {
+    } else if (pipeline.nodeList[mynode].type != NODE::POST) {
         command = "relion_display --gui --i " + pipeline.nodeList[mynode].name + " &";
     }
     //std::cerr << " command= " << command << std::endl;
@@ -2417,8 +2419,8 @@ although you could always recreate the data by continuing the job (possibly at c
 You can protect specific jobs from harsh cleaning by creating a file called \"NO_HARSH_CLEAN\" inside their directory,\n\
 e.g. by using \"touch Polish/job045/NO_HARSH_CLEAN\". Below is a list of currently protected jobs:\n \n";
         for (int i = 0; i < pipeline.processList.size(); i++) {
-            if (pipeline.processList[i].status == PROC_FINISHED_SUCCESS &&
-                (pipeline.processList[i].type == PROC_MOTIONCORR || pipeline.processList[i].type == PROC_EXTRACT || pipeline.processList[i].type == PROC_SUBTRACT)
+            if (pipeline.processList[i].status == PROC::FINISHED_SUCCESS &&
+                (pipeline.processList[i].type == PROC::MOTIONCORR || pipeline.processList[i].type == PROC::EXTRACT || pipeline.processList[i].type == PROC::SUBTRACT)
             ) {
                 if (exists(pipeline.processList[i].name + "NO_HARSH_CLEAN"))
                     describe_action += pipeline.processList[i].name + " \n";
@@ -2528,7 +2530,7 @@ void GuiMainWindow::cb_abort_i(std::string alias) {
         return;
     }
 
-    if (pipeline.processList[current_job].status != PROC_RUNNING) {
+    if (pipeline.processList[current_job].status != PROC::RUNNING) {
         fl_message("You can only abort running jobs ... ");
         return;
     }
@@ -2628,7 +2630,7 @@ void GuiMainWindow::cb_save_i() {
     gui_jobwindows[iwin]->updateMyJob();
 
     // For scheduled jobs, also allow saving the .job file in the output directory
-    if (current_job >= 0 && (pipeline.processList[current_job].status == PROC_SCHEDULED)) {
+    if (current_job >= 0 && (pipeline.processList[current_job].status == PROC::SCHEDULED)) {
         gui_jobwindows[iwin]->myjob.write(pipeline.processList[current_job].name);
     }
     // Write the hidden file

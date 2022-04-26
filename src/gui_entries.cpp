@@ -95,7 +95,7 @@ void GuiEntry::initialise(
 ) {
 
     // The input field
-    int width = joboption.joboption_type == JOBOPTION_SLIDER && !create_scheduler_gui ? 50 : wcol2;
+    int width = joboption.joboption_type == JOBOPTION::SLIDER && !create_scheduler_gui ? 50 : wcol2;
     inp = new Fl_Input(x, y, width, height, joboption.label_gui.c_str());
     inp->color(GUI_INPUT_COLOR);
     inp->textsize(ENTRY_FONTSIZE);
@@ -113,7 +113,7 @@ void GuiEntry::initialise(
 
     switch (joboption.joboption_type) {
 
-        case JOBOPTION_FILENAME:
+        case JOBOPTION::FILENAME:
         // Browse button
         browse = new Fl_Button(XCOL4, y, WCOL4, height, "Browse");
         browse->callback(cb_browse, this);
@@ -121,7 +121,7 @@ void GuiEntry::initialise(
         browse->labelsize(ENTRY_FONTSIZE);
         break;
 
-        case JOBOPTION_INPUTNODE:
+        case JOBOPTION::INPUTNODE:
         // Browse button
         browse = new Fl_Button(XCOL4, y, WCOL4, height, "Browse");
         browse->callback(cb_browse_node, this);
@@ -129,7 +129,7 @@ void GuiEntry::initialise(
         browse->labelsize(ENTRY_FONTSIZE);
         break;
 
-        case JOBOPTION_RADIO:
+        case JOBOPTION::RADIO:
         if (!create_scheduler_gui) {
             choice = new Fl_Choice(XCOL2, y, WCOL2, height);
             // Add all items to the menu
@@ -149,7 +149,7 @@ void GuiEntry::initialise(
         }
         break;
 
-        case JOBOPTION_BOOLEAN:
+        case JOBOPTION::BOOLEAN:
         if (!create_scheduler_gui) {
             choice = new Fl_Choice(XCOL2, y, WCOL2, height);
             if (deactivate_this_group) {
@@ -169,7 +169,7 @@ void GuiEntry::initialise(
         }
         break;
 
-        case JOBOPTION_SLIDER:
+        case JOBOPTION::SLIDER:
         if (!create_scheduler_gui) {
             int floatwidth = 50;
             // Slider is shorter than wcol2, so that underlying input field becomes visible

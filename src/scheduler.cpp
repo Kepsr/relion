@@ -1094,7 +1094,7 @@ void Schedule::addJob(RelionJob &myjob, std::string jobname, std::string mode) {
     if (!myjob.getCommands(output_name, commands, final_command, false, schedule_pipeline.job_counter, error_message))
         REPORT_ERROR("ERROR in getting commands for scheduled job: " + error_message);
 
-    int current_job = schedule_pipeline.addJob(myjob, PROC_SCHEDULED, false, false); // 1st false is do_overwrite, 2nd false is do_write_minipipeline
+    int current_job = schedule_pipeline.addJob(myjob, PROC::SCHEDULED, false, false); // 1st false is do_overwrite, 2nd false is do_write_minipipeline
 
     if (current_job < 0)
         REPORT_ERROR("ERROR: current job should not be negative now ...");
@@ -1419,19 +1419,19 @@ void Schedule::setVariablesInJob(RelionJob &job, FileName original_job_name, boo
             // Found an option that needs replacement! Now find which variable to insert
             std::string my_value;
             if (isBooleanVariable(mypat)) {
-                if (job.joboptions[it->first].joboption_type != JOBOPTION_BOOLEAN)
+                if (job.joboptions[it->first].joboption_type != JOBOPTION::BOOLEAN)
                     REPORT_ERROR(" ERROR: trying to set a BooleanVariable: " + mypat + " into a non-boolean option: " + it->first);
 
                 my_value = (scheduler_global_bools[mypat].value) ? "Yes" : "No";
             } else if (isFloatVariable(mypat)) {
-                if (job.joboptions[it->first].joboption_type == JOBOPTION_BOOLEAN)
+                if (job.joboptions[it->first].joboption_type == JOBOPTION::BOOLEAN)
                     REPORT_ERROR(" ERROR: trying to set FloatVariable: " + mypat + " into a boolean option: " + it->first);
 
                 my_value = floatToString(scheduler_global_floats[mypat].value);
             } else if (isStringVariable(splits[0])) {
-                if (job.joboptions[it->first].joboption_type == JOBOPTION_BOOLEAN)
+                if (job.joboptions[it->first].joboption_type == JOBOPTION::BOOLEAN)
                     REPORT_ERROR(" ERROR: trying to set StringVariable: " + mypat + " into a boolean option: " + it->first);
-                if (job.joboptions[it->first].joboption_type == JOBOPTION_SLIDER)
+                if (job.joboptions[it->first].joboption_type == JOBOPTION::SLIDER)
                     REPORT_ERROR(" ERROR: trying to set StringVariable: " + mypat + " into a slider option: " + it->first);
 
                 my_value = scheduler_global_strings[mypat].value;

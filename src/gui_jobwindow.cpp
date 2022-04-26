@@ -35,9 +35,9 @@ void JobWindow::clear() {
 void JobWindow::setupTabs(int nr_tabs) {
     current_y = y; // top of the GUI
 
-    char *my_allow_change_dedicated = getenv ("RELION_ALLOW_CHANGE_MINIMUM_DEDICATED");
+    char *my_allow_change_dedicated = getenv("RELION_ALLOW_CHANGE_MINIMUM_DEDICATED");
     if (!my_allow_change_dedicated) {
-        do_allow_change_minimum_dedicated = DEFAULTMININIMUMDEDICATED;
+        do_allow_change_minimum_dedicated = DEFAULT::MINIMUMDEDICATED;
     } else {
         int check_allow = textToInteger(my_allow_change_dedicated);
         do_allow_change_minimum_dedicated = check_allow != 0;
@@ -284,64 +284,64 @@ void JobWindow::updateMyJob() {
 }
 
 void JobWindow::initialise(int my_job_type) {
-    if (my_job_type == PROC_IMPORT) {
+    if (my_job_type == PROC::IMPORT) {
         myjob.initialise(my_job_type);
         initialiseImportWindow();
-    } else if (my_job_type == PROC_MOTIONCORR) {
+    } else if (my_job_type == PROC::MOTIONCORR) {
         myjob.initialise(my_job_type);
         initialiseMotioncorrWindow();
-    } else if (my_job_type == PROC_CTFFIND) {
+    } else if (my_job_type == PROC::CTFFIND) {
         myjob.initialise(my_job_type);
         initialiseCtffindWindow();
-    } else if (my_job_type == PROC_MANUALPICK) {
+    } else if (my_job_type == PROC::MANUALPICK) {
         myjob.initialise(my_job_type);
         initialiseManualpickWindow();
-    } else if (my_job_type == PROC_AUTOPICK) {
+    } else if (my_job_type == PROC::AUTOPICK) {
         myjob.initialise(my_job_type);
         initialiseAutopickWindow();
-    } else if (my_job_type == PROC_EXTRACT) {
+    } else if (my_job_type == PROC::EXTRACT) {
         myjob.initialise(my_job_type);
         initialiseExtractWindow();
-    } else if (my_job_type == PROC_CLASSSELECT) {
+    } else if (my_job_type == PROC::CLASSSELECT) {
         myjob.initialise(my_job_type);
         initialiseSelectWindow();
-    } else if (my_job_type == PROC_2DCLASS) {
+    } else if (my_job_type == PROC::CLASS2D) {
         myjob.initialise(my_job_type);
         initialiseClass2DWindow();
-    } else if (my_job_type == PROC_INIMODEL) {
+    } else if (my_job_type == PROC::INIMODEL) {
         myjob.initialise(my_job_type);
         initialiseInimodelWindow();
-    } else if (my_job_type == PROC_3DCLASS) {
+    } else if (my_job_type == PROC::CLASS3D) {
         myjob.initialise(my_job_type);
         initialiseClass3DWindow();
-    } else if (my_job_type == PROC_3DAUTO) {
+    } else if (my_job_type == PROC::AUTO3D) {
         myjob.initialise(my_job_type);
         initialiseAutorefineWindow();
-    } else if (my_job_type == PROC_MULTIBODY) {
+    } else if (my_job_type == PROC::MULTIBODY) {
         myjob.initialise(my_job_type);
         initialiseMultiBodyWindow();
-    } else if (my_job_type == PROC_MASKCREATE) {
+    } else if (my_job_type == PROC::MASKCREATE) {
         myjob.initialise(my_job_type);
         initialiseMaskcreateWindow();
-    } else if (my_job_type == PROC_JOINSTAR) {
+    } else if (my_job_type == PROC::JOINSTAR) {
         myjob.initialise(my_job_type);
         initialiseJoinstarWindow();
-    } else if (my_job_type == PROC_SUBTRACT) {
+    } else if (my_job_type == PROC::SUBTRACT) {
         myjob.initialise(my_job_type);
         initialiseSubtractWindow();
-    } else if (my_job_type == PROC_POST) {
+    } else if (my_job_type == PROC::POST) {
         myjob.initialise(my_job_type);
         initialisePostprocessWindow();
-    } else if (my_job_type == PROC_RESMAP) {
+    } else if (my_job_type == PROC::RESMAP) {
         myjob.initialise(my_job_type);
         initialiseLocresWindow();
-    } else if (my_job_type == PROC_MOTIONREFINE) {
+    } else if (my_job_type == PROC::MOTIONREFINE) {
         myjob.initialise(my_job_type);
         initialiseMotionrefineWindow();
-    } else if (my_job_type == PROC_CTFREFINE) {
+    } else if (my_job_type == PROC::CTFREFINE) {
         myjob.initialise(my_job_type);
         initialiseCtfrefineWindow();
-    } else if (my_job_type == PROC_EXTERNAL) {
+    } else if (my_job_type == PROC::EXTERNAL) {
         myjob.initialise(my_job_type);
         initialiseExternalWindow();
     } else {
@@ -1678,7 +1678,7 @@ void JobWindow::initialiseMaskcreateWindow() {
     tab1->label("I/O");
     resetHeight();
 
-    place("fn_in", TOGGLE_DEACTIVATE); //(current_y, "Input 3D map:", NODE_3DREF, "", "MRC map files (*.mrc)", "Provide an input MRC map from which to start binarizing the map.");
+    place("fn_in", TOGGLE_DEACTIVATE); //(current_y, "Input 3D map:", NODE::3DREF, "", "MRC map files (*.mrc)", "Provide an input MRC map from which to start binarizing the map.");
     tab1->end();
 
     tab2->begin();
@@ -1839,8 +1839,8 @@ void JobWindow::initialisePostprocessWindow() {
     tab1->begin();
     tab1->label("I/O");
     resetHeight();
-    place("fn_in", TOGGLE_DEACTIVATE); //(current_y, "One of the 2 unfiltered half-maps:", NODE_HALFMAP, "", "MRC map files (*half1_class001_unfil.mrc)",  "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
-    place("fn_mask", TOGGLE_DEACTIVATE); //(current_y, "Solvent mask:", NODE_MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a soft mask where the protein is white (1) and the solvent is black (0). Often, the softer the mask the higher resolution estimates you will get. A soft edge of 5-10 pixels is often a good edge width.");
+    place("fn_in", TOGGLE_DEACTIVATE); //(current_y, "One of the 2 unfiltered half-maps:", NODE::HALFMAP, "", "MRC map files (*half1_class001_unfil.mrc)",  "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
+    place("fn_mask", TOGGLE_DEACTIVATE); //(current_y, "Solvent mask:", NODE::MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a soft mask where the protein is white (1) and the solvent is black (0). Often, the softer the mask the higher resolution estimates you will get. A soft edge of 5-10 pixels is often a good edge width.");
 
     current_y += STEPY / 2;
 

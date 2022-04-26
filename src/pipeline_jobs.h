@@ -20,14 +20,6 @@
 #ifndef SRC_PIPELINE_JOBS_H_
 #define SRC_PIPELINE_JOBS_H_
 
-#define JOBOPTION_UNDEFINED 0
-#define JOBOPTION_ANY 1
-#define JOBOPTION_FILENAME 2
-#define JOBOPTION_INPUTNODE 3
-#define JOBOPTION_RADIO 4
-#define JOBOPTION_BOOLEAN 5
-#define JOBOPTION_SLIDER 6
-#define JOBOPTION_ONLYTEXT 7
 #include "src/macros.h"
 #include "src/metadata_table.h"
 #include "src/filename.h"
@@ -39,16 +31,27 @@ using std::vector;
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#define YSTEP 20
 
-#define TOGGLE_DEACTIVATE 0
-#define TOGGLE_REACTIVATE 1
-#define TOGGLE_ALWAYS_DEACTIVATE 2
-#define TOGGLE_LEAVE_ACTIVE 3
+namespace JOBOPTION { enum {
+    UNDEFINED,
+    ANY,
+    FILENAME,
+    INPUTNODE,
+    RADIO,
+    BOOLEAN,
+    SLIDER,
+    ONLYTEXT
+}; };
 
+enum {
+    TOGGLE_DEACTIVATE,
+    TOGGLE_REACTIVATE,
+    TOGGLE_ALWAYS_DEACTIVATE,
+    TOGGLE_LEAVE_ACTIVE
+};
 
-#define HAS_MPI true
-#define HAS_THREAD true
+const bool HAS_MPI = true;
+const bool HAS_THREAD = true;
 
 enum {
     RADIO_SAMPLING,
@@ -58,23 +61,25 @@ enum {
 };
 
 // Hard-coded LMB defaults
-const char* const DEFAULTQSUBLOCATION = "/public/EM/RELION/relion/bin/relion_qsub.csh";
-const char* const DEFAULTCTFFINDLOCATION = "/public/EM/ctffind/ctffind.exe";
-const char* const DEFAULTMOTIONCOR2LOCATION = "/public/EM/MOTIONCOR2/MotionCor2";
-const char* const DEFAULTGCTFLOCATION = "/public/EM/Gctf/bin/Gctf";
-const char* const DEFAULTRESMAPLOCATION = "/public/EM/ResMap/ResMap-1.1.4-linux64";
-const char* const DEFAULTQSUBCOMMAND = "qsub";
-const char* const DEFAULTQUEUENAME = "openmpi";
-#define DEFAULTMININIMUMDEDICATED 1
-#define DEFAULTWARNINGLOCALMPI 32
-#define DEFAULTALLOWCHANGEMINDEDICATED true
-#define DEFAULTQUEUEUSE false
-#define DEFAULTNRMPI 1
-#define DEFAULTMPIMAX 64
-#define DEFAULTNRTHREADS 1
-#define DEFAULTTHREADMAX 16
-#define DEFAULTMPIRUN "mpirun"
-#define DEFAULTSCRATCHDIR ""
+namespace DEFAULT {
+    const char *const QSUBLOCATION = "/public/EM/RELION/relion/bin/relion_qsub.csh";
+    const char *const CTFFINDLOCATION = "/public/EM/ctffind/ctffind.exe";
+    const char *const MOTIONCOR2LOCATION = "/public/EM/MOTIONCOR2/MotionCor2";
+    const char *const GCTFLOCATION = "/public/EM/Gctf/bin/Gctf";
+    const char *const RESMAPLOCATION = "/public/EM/ResMap/ResMap-1.1.4-linux64";
+    const char *const QSUBCOMMAND = "qsub";
+    const char *const QUEUENAME = "openmpi";
+    const int MINIMUMDEDICATED = 1;
+    const int WARNINGLOCALMPI = 32;
+    const bool ALLOWCHANGEMINDEDICATED = true;
+    const bool QUEUEUSE = false;
+    const int NRMPI = 1;
+    const int MPIMAX = 64;
+    const int NRTHREADS = 1;
+    const int THREADMAX = 16;
+    const char *const MPIRUN = "mpirun";
+    const char *const SCRATCHDIR = "";
+};
 
 static const vector<string> job_undefined_options {
     "undefined"
@@ -133,7 +138,7 @@ static const vector<string> job_ctffit_options {
 static bool do_allow_change_minimum_dedicated;
 
 // Optional output file for any jobtype that explicitly defines the output nodes
-#define RELION_OUTPUT_NODES "RELION_OUTPUT_NODES.star"
+const char *const RELION_OUTPUT_NODES = "RELION_OUTPUT_NODES.star";
 
 /*
  * The Node class represents data and metadata that are either input to or output from Processes
@@ -143,80 +148,89 @@ static bool do_allow_change_minimum_dedicated;
  *
  * Nodes could be of the following types:
  */
-#define NODE_MOVIES			0 // 2D micrograph movie(s), e.g. Falcon001_movie.mrcs or micrograph_movies.star
-#define NODE_MICS			1 // 2D micrograph(s), possibly with CTF information as well, e.g. Falcon001.mrc or micrographs.star
-#define NODE_MIC_COORDS		2 // Suffix for particle coordinates in micrographs (e.g. autopick.star or .box)
-#define NODE_PART_DATA		3 // A metadata (STAR) file with particles (e.g. particles.star or run1_data.star)
-//#define NODE_MOVIE_DATA		4 // A metadata (STAR) file with particle movie-frames (e.g. particles_movie.star or run1_ct27_data.star)
-#define NODE_2DREFS       	5 // A STAR file with one or multiple 2D references, e.g. autopick_references.star
-#define NODE_3DREF       	6 // A single 3D-reference, e.g. map.mrc
-#define NODE_MASK			7 // 3D mask, e.g. mask.mrc or masks.star
-#define NODE_MODEL		    8 // A model STAR-file for class selection
-#define NODE_OPTIMISER		9 // An optimiser STAR-file for job continuation
-#define NODE_HALFMAP		10// Unfiltered half-maps from 3D auto-refine, e.g. run1_half?_class001_unfil.mrc
-#define NODE_FINALMAP		11// Sharpened final map from post-processing (cannot be used as input)
-#define NODE_RESMAP			12// Resmap with local resolution (cannot be used as input)
-#define NODE_PDF_LOGFILE    13// PDF logfile
-#define NODE_POST           14// Postprocess STAR file (with FSC curve, unfil half-maps, masks etc in it: used by Jasenko's programs
-#define NODE_POLISH_PARAMS  15// Txt file with optimal parameters for Bayesian polishing
+namespace NODE { enum NodeTypes {
+    MOVIES, // 2D micrograph movie(s), e.g. Falcon001_movie.mrcs or micrograph_movies.star
+    MICS,  // 2D micrograph(s), possibly with CTF information as well, e.g. Falcon001.mrc or micrographs.star
+    MIC_COORDS,  // Suffix for particle coordinates in micrographs (e.g. autopick.star or .box)
+    PART_DATA,  // A metadata (STAR) file with particles (e.g. particles.star or run1_data.star)
+    // MOVIE_DATA,  // A metadata (STAR) file with particle movie-frames (e.g. particles_movie.star or run1_ct27_data.star)
+    REFS2D,  // A STAR file with one or multiple 2D references, e.g. autopick_references.star
+    REF3D,  // A single 3D-reference, e.g. map.mrc
+    MASK,  // 3D mask, e.g. mask.mrc or masks.star
+    MODEL,  // A model STAR-file for class selection
+    OPTIMISER,  // An optimiser STAR-file for job continuation
+    HALFMAP,  // Unfiltered half-maps from 3D auto-refine, e.g. run1_half?_class001_unfil.mrc
+    FINALMAP,  // Sharpened final map from post-processing (cannot be used as input)
+    RESMAP,  // Resmap with local resolution (cannot be used as input)
+    PDF_LOGFILE,  // PDF logfile
+    POST,  // Postprocess STAR file (with FSC curve, unfil half-maps, masks etc in it: used by Jasenko's programs
+    POLISH_PARAMS  // Txt file with optimal parameters for Bayesian polishing
+}; };
 
-// All the directory names of the different types of jobs defined inside the pipeline
-#define PROC_IMPORT_NAME        "Import"       // Import any file as a Node of a given type
-#define PROC_MOTIONCORR_NAME 	"MotionCorr"   // Import any file as a Node of a given type
-#define PROC_CTFFIND_NAME	    "CtfFind"  	   // Estimate CTF parameters from micrographs for either entire micrographs and/or particles
-#define PROC_MANUALPICK_NAME    "ManualPick"   // Manually pick particle coordinates from micrographs
-#define PROC_AUTOPICK_NAME		"AutoPick"     // Automatically pick particle coordinates from micrographs, their CTF and 2D references
-#define PROC_EXTRACT_NAME		"Extract"      // Window particles, normalize, downsize etc from micrographs (also combine CTF into metadata file)
-#define PROC_CLASSSELECT_NAME   "Select" 	   // Read in model.star file, and let user interactively select classes through the display (later: auto-selection as well)
-#define PROC_2DCLASS_NAME 		"Class2D"      // 2D classification (from input particles)
-#define PROC_3DCLASS_NAME		"Class3D"      // 3D classification (from input 2D/3D particles, an input 3D-reference, and possibly a 3D mask)
-#define PROC_3DAUTO_NAME        "Refine3D"     // 3D auto-refine (from input particles, an input 3Dreference, and possibly a 3D mask)
-//#define PROC_POLISH_NAME	    "Polish"       // Particle-polishing (from movie-particles)
-#define PROC_MASKCREATE_NAME    "MaskCreate"   // Process to create masks from input maps
-#define PROC_JOINSTAR_NAME      "JoinStar"     // Process to create masks from input maps
-#define PROC_SUBTRACT_NAME      "Subtract"     // Process to subtract projections of parts of the reference from experimental images
-#define PROC_POST_NAME			"PostProcess"  // Post-processing (from unfiltered half-maps and a possibly a 3D mask)
-#define PROC_RESMAP_NAME  	    "LocalRes"     // Local resolution estimation (from unfiltered half-maps and a 3D mask)
-//#define PROC_MOVIEREFINE_NAME   "MovieRefine"  // Movie-particle extraction and refinement combined
-#define PROC_INIMODEL_NAME		"InitialModel" // De-novo generation of 3D initial model (using SGD)
-#define PROC_MULTIBODY_NAME		"MultiBody"    // Multi-body refinement
-#define PROC_MOTIONREFINE_NAME  "Polish"       // Jasenko's motion fitting program for Bayesian polishing (to replace MovieRefine?)
-#define PROC_CTFREFINE_NAME     "CtfRefine"    // Jasenko's program for defocus and beamtilt optimisation
-#define PROC_EXTERNAL_NAME      "External"     // For running non-relion programs
+namespace PROC {
 
-#define PROC_IMPORT         0 // Import any file as a Node of a given type
-#define PROC_MOTIONCORR 	1 // Import any file as a Node of a given type
-#define PROC_CTFFIND	    2 // Estimate CTF parameters from micrographs for either entire micrographs and/or particles
-#define PROC_MANUALPICK 	3 // Manually pick particle coordinates from micrographs
-#define PROC_AUTOPICK		4 // Automatically pick particle coordinates from micrographs, their CTF and 2D references
-#define PROC_EXTRACT		5 // Window particles, normalize, downsize etc from micrographs (also combine CTF into metadata file)
-//#define PROC_SORT         6 // Sort particles based on their Z-scores
-#define PROC_CLASSSELECT    7 // Read in model.star file, and let user interactively select classes through the display (later: auto-selection as well)
-#define PROC_2DCLASS		8 // 2D classification (from input particles)
-#define PROC_3DCLASS		9 // 3D classification (from input 2D/3D particles, an input 3D-reference, and possibly a 3D mask)
-#define PROC_3DAUTO         10// 3D auto-refine (from input particles, an input 3Dreference, and possibly a 3D mask)
-//#define PROC_POLISH  		11// Particle-polishing (from movie-particles)
-#define PROC_MASKCREATE     12// Process to create masks from input maps
-#define PROC_JOINSTAR       13// Process to create masks from input maps
-#define PROC_SUBTRACT       14// Process to subtract projections of parts of the reference from experimental images
-#define PROC_POST			15// Post-processing (from unfiltered half-maps and a possibly a 3D mask)
-#define PROC_RESMAP 		16// Local resolution estimation (from unfiltered half-maps and a 3D mask)
-//#define PROC_MOVIEREFINE    17// Movie-particle extraction and refinement combined
-#define PROC_INIMODEL		18// De-novo generation of 3D initial model (using SGD)
-#define PROC_MULTIBODY      19// Multi-body refinement
-#define PROC_MOTIONREFINE   20// Jasenko's motion_refine
-#define PROC_CTFREFINE      21// Jasenko's ctf_refine
-#define PROC_EXTERNAL       99// External scripts
-#define NR_BROWSE_TABS      20
+    // All the directory names of the different types of jobs defined inside the pipeline
+    const char *const IMPORT_NAME       = "Import";       // Import any file as a Node of a given type
+    const char *const MOTIONCORR_NAME   = "MotionCorr";   // Import any file as a Node of a given type
+    const char *const CTFFIND_NAME      = "CtfFind";  	  // Estimate CTF parameters from micrographs for either entire micrographs and/or particles
+    const char *const MANUALPICK_NAME   = "ManualPick";   // Manually pick particle coordinates from micrographs
+    const char *const AUTOPICK_NAME     = "AutoPick";     // Automatically pick particle coordinates from micrographs, their CTF and 2D references
+    const char *const EXTRACT_NAME      = "Extract";      // Window particles, normalize, downsize etc from micrographs (also combine CTF into metadata file)
+    const char *const CLASSSELECT_NAME  = "Select"; 	   // Read in model.star file, and let user interactively select classes through the display (later: auto-selection as well)
+    const char *const CLASS2D_NAME      = "Class2D";      // 2D classification (from input particles)
+    const char *const CLASS3D_NAME      = "Class3D";      // 3D classification (from input 2D/3D particles, an input 3D-reference, and possibly a 3D mask)
+    const char *const AUTO3D_NAME       = "Refine3D";     // 3D auto-refine (from input particles, an input 3Dreference, and possibly a 3D mask)
+    // const char *const POLISH_NAME = "Polish";             // Particle-polishing (from movie-particles)
+    const char *const MASKCREATE_NAME   = "MaskCreate";   // Process to create masks from input maps
+    const char *const JOINSTAR_NAME     = "JoinStar";     // Process to create masks from input maps
+    const char *const SUBTRACT_NAME     = "Subtract";     // Process to subtract projections of parts of the reference from experimental images
+    const char *const POST_NAME         = "PostProcess";  // Post-processing (from unfiltered half-maps and a possibly a 3D mask)
+    const char *const RESMAP_NAME       = "LocalRes";     // Local resolution estimation (from unfiltered half-maps and a 3D mask)
+    // const char *const MOVIEREFINE_NAME = "MovieRefine";   // Movie-particle extraction and refinement combined
+    const char *const INIMODEL_NAME     = "InitialModel"; // De-novo generation of 3D initial model (using SGD)
+    const char *const MULTIBODY_NAME    = "MultiBody";    // Multi-body refinement
+    const char *const MOTIONREFINE_NAME = "Polish";       // Jasenko's motion fitting program for Bayesian polishing (to replace MovieRefine?)
+    const char *const CTFREFINE_NAME    = "CtfRefine";    // Jasenko's program for defocus and beamtilt optimisation
+    const char *const EXTERNAL_NAME     = "External";     // For running non-relion programs
 
-// Status a Process may have
-enum ProcessStatuses {
-    PROC_RUNNING,           // (hopefully) running
-    PROC_SCHEDULED,         // scheduled for future execution
-    PROC_FINISHED_SUCCESS,  // successfully finished
-    PROC_FINISHED_FAILURE,  // reported an error
-    PROC_FINISHED_ABORTED   // aborted by the user
+    enum ProcessTypes {
+        IMPORT, // Import any file as a Node of a given type
+        MOTIONCORR, // Import any file as a Node of a given type
+        CTFFIND, // Estimate CTF parameters from micrographs for either entire micrographs and/or particles
+        MANUALPICK, // Manually pick particle coordinates from micrographs
+        AUTOPICK, // Automatically pick particle coordinates from micrographs, their CTF and 2D references
+        EXTRACT, // Window particles, normalize, downsize etc from micrographs (also combine CTF into metadata file)
+        // SORT,  // Sort particles based on their Z-scores
+        CLASSSELECT, // Read in model.star file, and let user interactively select classes through the display (later: auto-selection as well)
+        CLASS2D,  // 2D classification (from input particles)
+        CLASS3D,  // 3D classification (from input 2D/3D particles, an input 3D-reference, and possibly a 3D mask)
+        AUTO3D,  // 3D auto-refine (from input particles, an input 3Dreference, and possibly a 3D mask)
+        // POLISH,  // Particle-polishing (from movie-particles)
+        MASKCREATE,  // Process to create masks from input maps
+        JOINSTAR,  // Process to create masks from input maps
+        SUBTRACT,  // Process to subtract projections of parts of the reference from experimental images
+        POST,  // Post-processing (from unfiltered half-maps and a possibly a 3D mask)
+        RESMAP,  // Local resolution estimation (from unfiltered half-maps and a 3D mask)
+        // MOVIEREFINE,  // Movie-particle extraction and refinement combined
+        INIMODEL,  // De-novo generation of 3D initial model (using SGD)
+        MULTIBODY,  // Multi-body refinement
+        MOTIONREFINE,  // Jasenko's motion_refine
+        CTFREFINE,  // Jasenko's ctf_refine
+        EXTERNAL  // External scripts
+    };
+
+    // Status a process may have
+    enum ProcessStatus {
+        RUNNING,           // (hopefully) running
+        SCHEDULED,         // scheduled for future execution
+        FINISHED_SUCCESS,  // successfully finished
+        FINISHED_FAILURE,  // reported an error
+        FINISHED_ABORTED   // aborted by the user
+    };
+
 };
+
+const int NR_BROWSE_TABS = 20;
 
 struct gui_layout {
     string tabname;
@@ -409,7 +423,7 @@ class RelionJob {
     // Set this option in the job
     void setOption(string setOptionLine);
 
-    // write/read settings to disc
+    // Read/write settings from/to disc
     // fn is a directory name (e.g. Refine3D/job123/) or a STAR file
     bool read(
         string fn,

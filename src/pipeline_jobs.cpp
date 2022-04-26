@@ -51,21 +51,21 @@ vector<Node> getOutputNodesRefine(
         for (int ibody = 0; ibody < nr_bodies; ibody++) {
             fn_tmp.compose(fn_out + "_half1_body", ibody + 1, "", 3);
             fn_tmp += "_unfil.mrc";
-            Node node4(fn_tmp, NODE_HALFMAP);
+            Node node4(fn_tmp, NODE::HALFMAP);
             result.push_back(node4);
         }
     } else {
         // normal refinements/classifications
-        Node node1(fn_out + "_data.star", NODE_PART_DATA);
+        Node node1(fn_out + "_data.star", NODE::PART_DATA);
         result.push_back(node1);
 
         if (iter > 0) {
             // For classifications: output node model.star to make selections
-            Node node2(fn_out + "_model.star", NODE_MODEL);
+            Node node2(fn_out + "_model.star", NODE::MODEL);
             result.push_back(node2);
         } else {
             // For auto-refine: also output the run_half1_class001_unfil.mrc map
-            Node node4(fn_out + "_half1_class001_unfil.mrc", NODE_HALFMAP);
+            Node node4(fn_out + "_half1_class001_unfil.mrc", NODE::HALFMAP);
             result.push_back(node4);
         }
 
@@ -74,7 +74,7 @@ vector<Node> getOutputNodesRefine(
             FileName fn_tmp;
             for (int iclass = 0; iclass < K; iclass++) {
                 fn_tmp.compose(fn_out + "_class", iclass + 1, "mrc", 3);
-                Node node3(fn_tmp, NODE_3DREF);
+                Node node3(fn_tmp, NODE::REF3D);
                 result.push_back(node3);
             }
         }
@@ -87,7 +87,7 @@ vector<Node> getOutputNodesRefine(
 JobOption::JobOption(string _label, string _default_value, string _helptext) {
     clear();
     initialise(_label, _default_value, _helptext);
-    joboption_type = JOBOPTION_ANY;
+    joboption_type = JOBOPTION::ANY;
 }
 
 // FileName constructor
@@ -97,7 +97,7 @@ JobOption::JobOption(
 ) {
     clear();
     initialise(_label, _default_value, _helptext);
-    joboption_type = JOBOPTION_FILENAME;
+    joboption_type = JOBOPTION::FILENAME;
     pattern = _pattern;
     directory = _directory;
 }
@@ -109,7 +109,7 @@ JobOption::JobOption(
 ) {
     clear();
     initialise(_label, _default_value, _helptext);
-    joboption_type = JOBOPTION_INPUTNODE;
+    joboption_type = JOBOPTION::INPUTNODE;
     pattern = _pattern;
     node_type = _nodetype;
 }
@@ -125,7 +125,7 @@ JobOption::JobOption(
     defaultval = radio_options[ioption];
 
     initialise(_label, defaultval, _helptext);
-    joboption_type = JOBOPTION_RADIO;
+    joboption_type = JOBOPTION::RADIO;
 }
 
 // Boolean constructor
@@ -133,7 +133,7 @@ JobOption::JobOption(string _label, bool _boolvalue, string _helptext) {
     clear();
     string _default_value = _boolvalue ? "Yes" : "No";
     initialise(_label, _default_value, _helptext);
-    joboption_type = JOBOPTION_BOOLEAN;
+    joboption_type = JOBOPTION::BOOLEAN;
 }
 
 // Slider constructor
@@ -143,7 +143,7 @@ JobOption::JobOption(
 ) {
     clear();
     initialise(_label, floatToString(_default_value), _helptext);
-    joboption_type = JOBOPTION_SLIDER;
+    joboption_type = JOBOPTION::SLIDER;
     min_value = _min_value;
     max_value = _max_value;
     step_value = _step_value;
@@ -161,7 +161,7 @@ void JobOption::writeToMetaDataTable(MetaDataTable& MD) const {
 
 void JobOption::clear() {
     label = value = default_value = helptext = label_gui = pattern = directory = "undefined";
-    joboption_type = JOBOPTION_UNDEFINED;
+    joboption_type = JOBOPTION::UNDEFINED;
     radio_options = job_undefined_options;
     node_type = min_value = max_value = step_value = 0.0;
 }
@@ -224,7 +224,7 @@ float JobOption::getNumber(string &errmsg) {
 }
 
 bool JobOption::getBoolean() {
-    if (joboption_type != JOBOPTION_BOOLEAN) {
+    if (joboption_type != JOBOPTION::BOOLEAN) {
         std::cerr << " joboption_type= " << joboption_type << " label= " << label << " value= " << value << std::endl;
         REPORT_ERROR(errorMsg("this JobOption does not return a boolean: " + label));
     } else {
@@ -388,26 +388,26 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
         // Just check that went OK
         // std::vector<int> types = ;
         if (!elem(type, {
-            PROC_IMPORT,
-            PROC_MOTIONCORR,
-            PROC_CTFFIND,
-            PROC_MANUALPICK,
-            PROC_AUTOPICK,
-            PROC_EXTRACT,
-            PROC_CLASSSELECT,
-            PROC_2DCLASS,
-            PROC_3DCLASS,
-            PROC_3DAUTO,
-            PROC_MULTIBODY,
-            PROC_MASKCREATE,
-            PROC_JOINSTAR,
-            PROC_SUBTRACT,
-            PROC_POST,
-            PROC_RESMAP,
-            PROC_INIMODEL,
-            PROC_MOTIONREFINE,
-            PROC_CTFREFINE,
-            PROC_EXTERNAL,
+            PROC::IMPORT,
+            PROC::MOTIONCORR,
+            PROC::CTFFIND,
+            PROC::MANUALPICK,
+            PROC::AUTOPICK,
+            PROC::EXTRACT,
+            PROC::CLASSSELECT,
+            PROC::CLASS2D,
+            PROC::CLASS3D,
+            PROC::AUTO3D,
+            PROC::MULTIBODY,
+            PROC::MASKCREATE,
+            PROC::JOINSTAR,
+            PROC::SUBTRACT,
+            PROC::POST,
+            PROC::RESMAP,
+            PROC::INIMODEL,
+            PROC::MOTIONREFINE,
+            PROC::CTFREFINE,
+            PROC::EXTERNAL,
         })) {
             // If type isn't recognised
             REPORT_ERROR(errorMsg("cannot find correct job type in " + myfilename + "run.job, with type= " + integerToString(type)));
@@ -496,17 +496,14 @@ bool RelionJob::saveJobSubmissionScript(
         return false;
     } else {
         int nmpi = (joboptions.find("nr_mpi") != joboptions.end()) ? joboptions["nr_mpi"].getNumber(error_message) : 1;
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         int nthr = (joboptions.find("nr_threads") != joboptions.end()) ? joboptions["nr_threads"].getNumber(error_message) : 1;
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         int ncores = nmpi * nthr;
         int ndedi = joboptions["min_dedicated"].getNumber(error_message);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         float fnodes = (float) ncores / (float) ndedi;
         int nnodes = ceil(fnodes);
@@ -649,7 +646,7 @@ bool RelionJob::prepareFinalCommand(
                 commands[icom].find("relion_") != string::npos
             ) {
                 const char *mpirun = getenv("RELION_MPIRUN");
-                if (!mpirun) { mpirun = DEFAULTMPIRUN; }
+                if (!mpirun) { mpirun = DEFAULT::MPIRUN; }
                 one_command = string(mpirun) + " -n " + floatToString(nr_mpi) + " " + commands[icom] ;
             } else {
                 one_command = commands[icom];
@@ -667,7 +664,7 @@ bool RelionJob::prepareFinalCommand(
     }
 
     char *warning = getenv("RELION_ERROR_LOCAL_MPI");
-    int nr_warn = warning ? textToInteger(warning) : DEFAULTWARNINGLOCALMPI;
+    int nr_warn = warning ? textToInteger(warning) : DEFAULT::WARNINGLOCALMPI;
 
     if (nr_mpi > nr_warn && !joboptions["do_queue"].getBoolean()) {
         error_message = "You're submitting a local job with " + floatToString(nr_mpi) + " parallel MPI processes. That's more than allowed by the RELION_ERROR_LOCAL_MPI environment variable.";
@@ -682,107 +679,107 @@ void RelionJob::initialise(int _job_type) {
     bool has_mpi, has_thread;
     switch (type) {
 
-        case PROC_IMPORT:
+        case PROC::IMPORT:
         has_mpi = has_thread = false;
         initialiseImportJob();
         break;
 
-        case PROC_MOTIONCORR:
+        case PROC::MOTIONCORR:
         has_mpi = has_thread = true;
         initialiseMotioncorrJob();
         break;
 
-        case PROC_CTFFIND:
+        case PROC::CTFFIND:
         has_mpi = true;
         has_thread = false;
         initialiseCtffindJob();
         break;
 
-        case PROC_MANUALPICK:
+        case PROC::MANUALPICK:
         has_mpi = has_thread = false;
         initialiseManualpickJob();
         break;
 
-        case PROC_AUTOPICK:
+        case PROC::AUTOPICK:
         has_mpi = true;
         has_thread = false;
         initialiseAutopickJob();
         break;
 
-        case PROC_EXTRACT:
+        case PROC::EXTRACT:
         has_mpi = true;
         has_thread = false;
         initialiseExtractJob();
         break;
 
-        case PROC_CLASSSELECT:
+        case PROC::CLASSSELECT:
         has_mpi = has_thread = false;
         initialiseSelectJob();
         break;
 
-        case PROC_2DCLASS:
+        case PROC::CLASS2D:
         has_mpi = has_thread = true;
         initialiseClass2DJob();
         break;
 
-        case PROC_INIMODEL:
+        case PROC::INIMODEL:
         has_mpi = has_thread = true;
         initialiseInimodelJob();
         break;
 
-        case PROC_3DCLASS:
+        case PROC::CLASS3D:
         has_mpi = has_thread = true;
         initialiseClass3DJob();
         break;
 
-        case PROC_3DAUTO:
+        case PROC::AUTO3D:
         has_mpi = has_thread = true;
         initialiseAutorefineJob();
         break;
 
-        case PROC_MULTIBODY:
+        case PROC::MULTIBODY:
         has_mpi = has_thread = true;
         initialiseMultiBodyJob();
         break;
 
-        case PROC_MASKCREATE:
+        case PROC::MASKCREATE:
         has_mpi = false;
         has_thread = true;
         initialiseMaskcreateJob();
         break;
 
-        case PROC_JOINSTAR:
+        case PROC::JOINSTAR:
         has_mpi = has_thread = false;
         initialiseJoinstarJob();
         break;
 
-        case PROC_SUBTRACT:
+        case PROC::SUBTRACT:
         has_mpi = true;
         has_thread = false;
         initialiseSubtractJob();
         break;
 
-        case PROC_POST:
+        case PROC::POST:
         has_mpi = has_thread = false;
         initialisePostprocessJob();
         break;
 
-        case PROC_RESMAP:
+        case PROC::RESMAP:
         has_mpi = has_thread = true;
         initialiseLocalresJob();
         break;
 
-        case PROC_MOTIONREFINE:
+        case PROC::MOTIONREFINE:
         has_mpi = has_thread = true;
         initialiseMotionrefineJob();
         break;
 
-        case PROC_CTFREFINE:
+        case PROC::CTFREFINE:
         has_mpi = has_thread = true;
         initialiseCtfrefineJob();
         break;
 
-        case PROC_EXTERNAL:
+        case PROC::EXTERNAL:
         has_mpi = false;
         has_thread = true;
         initialiseExternalJob();
@@ -795,37 +792,37 @@ void RelionJob::initialise(int _job_type) {
 
     // Check for environment variable RELION_MPI_MAX and RELION_QSUB_NRMPI
     const char *mpi_max_input = getenv("RELION_MPI_MAX");
-    int mpi_max = mpi_max_input ? textToInteger(mpi_max_input) : DEFAULTMPIMAX;
+    int mpi_max = mpi_max_input ? textToInteger(mpi_max_input) : DEFAULT::MPIMAX;
     char *qsub_nrmpi_text = getenv("RELION_QSUB_NRMPI");
-    const char qsub_nrmpi_val = qsub_nrmpi_text ? atoi(qsub_nrmpi_text) : DEFAULTNRMPI;
+    const char qsub_nrmpi_val = qsub_nrmpi_text ? atoi(qsub_nrmpi_text) : DEFAULT::NRMPI;
     if (has_mpi) {
         joboptions["nr_mpi"] = JobOption("Number of MPI procs:", qsub_nrmpi_val , 1, mpi_max, 1, "Number of MPI nodes to use in parallel. When set to 1, MPI will not be used. The maximum can be set through the environment variable RELION_MPI_MAX.");
     }
 
     const char *thread_max_input = getenv("RELION_THREAD_MAX");
-    int thread_max = thread_max_input ? textToInteger(thread_max_input) : DEFAULTTHREADMAX;
+    int thread_max = thread_max_input ? textToInteger(thread_max_input) : DEFAULT::THREADMAX;
     char *qsub_nrthr_text = getenv("RELION_QSUB_NRTHREADS");
-    const char qsub_nrthreads_val = qsub_nrthr_text ? atoi(qsub_nrthr_text) : DEFAULTNRTHREADS;
+    const char qsub_nrthreads_val = qsub_nrthr_text ? atoi(qsub_nrthr_text) : DEFAULT::NRTHREADS;
     if (has_thread) {
         joboptions["nr_threads"] = JobOption("Number of threads:", qsub_nrthreads_val, 1, thread_max, 1, "Number of shared-memory (POSIX) threads to use in parallel. \
 When set to 1, no multi-threading will be used. The maximum can be set through the environment variable RELION_THREAD_MAX.");
     }
 
     const char *use_queue_input = getenv("RELION_QUEUE_USE");
-    bool use_queue = use_queue_input ? textToBool(use_queue_input) : DEFAULTQUEUEUSE;
+    bool use_queue = use_queue_input ? textToBool(use_queue_input) : DEFAULT::QUEUEUSE;
     joboptions["do_queue"] = JobOption("Submit to queue?", use_queue, "If set to Yes, the job will be submit to a queue, otherwise \
 the job will be executed locally. Note that only MPI jobs may be sent to a queue. The default can be set through the environment variable RELION_QUEUE_USE.");
 
     // Check for environment variable RELION_QUEUE_NAME
     const char *queue_name = getenv("RELION_QUEUE_NAME");
-    if (!queue_name) { queue_name = DEFAULTQUEUENAME; }
+    if (!queue_name) { queue_name = DEFAULT::QUEUENAME; }
 
     // Need the string(), as otherwise it will be overloaded and passed as a boolean....
     joboptions["queuename"] = JobOption("Queue name: ", string(queue_name), "Name of the queue to which to submit the job. The default name can be set through the environment variable RELION_QUEUE_NAME.");
 
     // Check for environment variable RELION_QSUB_COMMAND
     const char *qsub_command = getenv("RELION_QSUB_COMMAND");
-    if (!qsub_command) { qsub_command = DEFAULTQSUBCOMMAND; }
+    if (!qsub_command) { qsub_command = DEFAULT::QSUBCOMMAND; }
 
     joboptions["qsub"] = JobOption("Queue submit command:", string(qsub_command), "Name of the command used to submit scripts to the queue, e.g. qsub or bsub.\n\n\
 Note that the person who installed RELION should have made a custom script for your cluster/queue setup. Check this is the case \
@@ -854,7 +851,7 @@ Note that the person who installed RELION should have made a custom script for y
 
     // Check for environment variable RELION_QSUB_TEMPLATE
     const char *qsub_template = getenv("RELION_QSUB_TEMPLATE");
-    if (!qsub_template) { qsub_template = DEFAULTQSUBLOCATION; }
+    if (!qsub_template) { qsub_template = DEFAULT::QSUBLOCATION; }
     joboptions["qsubscript"] = JobOption("Standard submission script:", string(qsub_template), "Script Files (*.{csh,sh,bash,script})", ".",
 "The template for your standard queue job submission script. \
 Its default location may be changed by setting the environment variable RELION_QSUB_TEMPLATE. \
@@ -874,9 +871,9 @@ Any variables XXXextra1XXX in the template script will be replaced by the corres
 Likewise, default values for the extra entries can be set through environment variables RELION_QSUB_EXTRA1_DEFAULT, RELION_QSUB_EXTRA2_DEFAULT, etc. \
 But note that (unlike all other entries in the GUI) the extra values are not remembered from one run to the other.");
 
-    // Check for environment variable RELION_QSUB_TEMPLATE
+    // Check for environment variable RELION_MINIMUM_DEDICATED
     char *my_minimum_dedicated = getenv("RELION_MINIMUM_DEDICATED");
-    int minimum_nr_dedicated = my_minimum_dedicated ? textToInteger(my_minimum_dedicated) : DEFAULTMININIMUMDEDICATED;
+    int minimum_nr_dedicated = my_minimum_dedicated ? textToInteger(my_minimum_dedicated) : DEFAULT::MINIMUMDEDICATED;
     joboptions["min_dedicated"] = JobOption("Minimum dedicated cores per node:", minimum_nr_dedicated, 1, 64, 1, "Minimum number of dedicated cores that need to be requested on each node. This is useful to force the queue to fill up entire nodes of a given size. The default can be set through the environment variable RELION_MINIMUM_DEDICATED.");
 
     // Need the string(), as otherwise it will be overloaded and passed as a boolean....
@@ -897,121 +894,121 @@ bool RelionJob::getCommands(
 ) {
     switch (type) {
 
-        case PROC_IMPORT:
+        case PROC::IMPORT:
         return getCommandsImportJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_MOTIONCORR:
+        case PROC::MOTIONCORR:
         return getCommandsMotioncorrJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_CTFFIND:
+        case PROC::CTFFIND:
         return getCommandsCtffindJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_MANUALPICK:
+        case PROC::MANUALPICK:
         return getCommandsManualpickJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_AUTOPICK:
+        case PROC::AUTOPICK:
         return getCommandsAutopickJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_EXTRACT:
+        case PROC::EXTRACT:
         return getCommandsExtractJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_CLASSSELECT:
+        case PROC::CLASSSELECT:
         return getCommandsSelectJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_2DCLASS:
+        case PROC::CLASS2D:
         return getCommandsClass2DJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_INIMODEL:
+        case PROC::INIMODEL:
         return getCommandsInimodelJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_3DCLASS:
+        case PROC::CLASS3D:
         return getCommandsClass3DJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_3DAUTO:
+        case PROC::AUTO3D:
         return getCommandsAutorefineJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_MULTIBODY:
+        case PROC::MULTIBODY:
         return getCommandsMultiBodyJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_MASKCREATE:
+        case PROC::MASKCREATE:
         return getCommandsMaskcreateJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_JOINSTAR:
+        case PROC::JOINSTAR:
         return getCommandsJoinstarJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_SUBTRACT:
+        case PROC::SUBTRACT:
         return getCommandsSubtractJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_POST:
+        case PROC::POST:
         return getCommandsPostprocessJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_RESMAP:
+        case PROC::RESMAP:
         return getCommandsLocalresJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_MOTIONREFINE:
+        case PROC::MOTIONREFINE:
         return getCommandsMotionrefineJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_CTFREFINE:
+        case PROC::CTFREFINE:
         return getCommandsCtfrefineJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC_EXTERNAL:
+        case PROC::EXTERNAL:
         return getCommandsExternalJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
@@ -1062,7 +1059,7 @@ bool RelionJob::getCommandsImportJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_IMPORT_NAME, job_counter);
+    initialisePipeline(outputname, PROC::IMPORT_NAME, job_counter);
 
     string command;
     FileName fn_out, fn_in;
@@ -1097,12 +1094,12 @@ bool RelionJob::getCommandsImportJob(
 
         if (joboptions["is_multiframe"].getBoolean()) {
             fn_out = "movies.star";
-            Node node(outputname + fn_out, NODE_MOVIES);
+            Node node(outputname + fn_out, NODE::MOVIES);
             outputNodes.push_back(node);
             command += " --do_movies ";
         } else {
             fn_out = "micrographs.star";
-            Node node(outputname + fn_out, NODE_MICS);
+            Node node(outputname + fn_out, NODE::MICS);
             outputNodes.push_back(node);
             command += " --do_micrographs ";
         }
@@ -1137,7 +1134,7 @@ bool RelionJob::getCommandsImportJob(
             // Make a suffix file, which contains the actual suffix as a suffix
             // Get the coordinate-file suffix
             fn_out = "coords_suffix" + fn_in.afterLastOf("*");
-            Node node(outputname + fn_out, NODE_MIC_COORDS);
+            Node node(outputname + fn_out, NODE::MIC_COORDS);
             outputNodes.push_back(node);
             command += " --do_coordinates ";
         } else {
@@ -1145,12 +1142,12 @@ bool RelionJob::getCommandsImportJob(
             fn_out = fn_out.afterLastOf("/");
 
             int node_type_i =
-                node_type == "Particles STAR file (.star)"     ? NODE_PART_DATA :
-                node_type == "2D references (.star or .mrcs)"  ? NODE_2DREFS :
-                node_type == "3D reference (.mrc)"             ? NODE_3DREF :
-                node_type == "3D mask (.mrc)"                  ? NODE_MASK :
-                node_type == "Micrographs STAR file (.star)"   ? NODE_MICS :
-                node_type == "Unfiltered half-map (unfil.mrc)" ? NODE_HALFMAP :
+                node_type == "Particles STAR file (.star)"     ? NODE::PART_DATA :
+                node_type == "2D references (.star or .mrcs)"  ? NODE::REFS2D :
+                node_type == "3D reference (.mrc)"             ? NODE::REF3D :
+                node_type == "3D mask (.mrc)"                  ? NODE::MASK :
+                node_type == "Micrographs STAR file (.star)"   ? NODE::MICS :
+                node_type == "Unfiltered half-map (unfil.mrc)" ? NODE::HALFMAP :
                 -1;
 
             if (node_type_i < 0) {
@@ -1164,7 +1161,7 @@ bool RelionJob::getCommandsImportJob(
             // Also get the other half-map
             switch (node_type_i) {
 
-                case NODE_HALFMAP: {
+                case NODE::HALFMAP: {
                 FileName fn_inb = "/" + fn_in;
                 size_t pos = fn_inb.find("half1");
                 if (pos != string::npos) {
@@ -1182,7 +1179,7 @@ bool RelionJob::getCommandsImportJob(
                 break;
                 }
 
-                case NODE_PART_DATA: {
+                case NODE::PART_DATA: {
 
                 command += " --do_particles";
                 FileName optics_group = joboptions["optics_group_particles"].getString();
@@ -1218,7 +1215,7 @@ bool RelionJob::getCommandsImportJob(
 void RelionJob::initialiseMotioncorrJob() {
     hidden_name = ".gui_motioncorr";
 
-    joboptions["input_star_mics"] = JobOption("Input movies STAR file:", NODE_MOVIES, "", "STAR files (*.star)", "A STAR file with all micrographs to run MOTIONCORR on");
+    joboptions["input_star_mics"] = JobOption("Input movies STAR file:", NODE::MOVIES, "", "STAR files (*.star)", "A STAR file with all micrographs to run MOTIONCORR on");
     joboptions["first_frame_sum"] = JobOption("First frame for corrected sum:", 1, 1, 32, 1, "First frame to use in corrected average (starts counting at 1). ");
     joboptions["last_frame_sum"] = JobOption("Last frame for corrected sum:", -1, 0, 32, 1, "Last frame to use in corrected average. Values equal to or smaller than 0 mean 'use all frames'.");
     joboptions["eer_grouping"] = JobOption("EER fractionation:", 32, 1, 100, 1, "The number of hardware frames to group into one fraction. This option is relevant only for Falcon4 movies in the EER format. Note that all 'frames' in the GUI (e.g. first and last frame for corrected sum, dose per frame) refer to fractions, not raw detector frames. See https://www3.mrc-lmb.cam.ac.uk/relion/index.php/Image_compression#Falcon4_EER for detailed guidance on EER processing.");
@@ -1227,7 +1224,7 @@ void RelionJob::initialiseMotioncorrJob() {
 
     // Check for environment variable RELION_MOTIONCOR2_EXECUTABLE
     const char *motioncor2_exe = getenv("RELION_MOTIONCOR2_EXECUTABLE");
-    if (!motioncor2_exe) { motioncor2_exe = DEFAULTMOTIONCOR2LOCATION; }
+    if (!motioncor2_exe) { motioncor2_exe = DEFAULT::MOTIONCOR2LOCATION; }
 
     // Common arguments RELION and UCSF implementation
     joboptions["bfactor"] = JobOption("Bfactor:", 150, 0, 1500, 50, "The B-factor that will be applied to the micrographs.");
@@ -1240,7 +1237,7 @@ void RelionJob::initialiseMotioncorrJob() {
     joboptions["gain_flip"] = JobOption("Gain flip:", job_gain_flip_options, 0, "Flip the gain reference after rotation. This is the same as -FlipGain in MotionCor2. 0 means do nothing, 1 means flip Y (upside down) and 2 means flip X (left to right).");
 
     // UCSF-wrapper
-    joboptions["do_own_motioncor"] = JobOption("Use RELION's own implementation?", true ,"If set to Yes, use RELION's own implementation of a MotionCor2-like algorithm by Takanori Nakane. Otherwise, wrap to the UCSF implementation. Note that Takanori's program only runs on CPUs but uses multiple threads, while the UCSF-implementation needs a GPU but uses only one CPU thread. Takanori's implementation is most efficient when the number of frames is divisible by the number of threads (e.g. 12 or 18 threads per MPI process for 36 frames). On some machines, setting the OMP_PROC_BIND environmental variable to TRUE accelerates the program.\n\
+    joboptions["do_own_motioncor"] = JobOption("Use RELION's own implementation?", true , "If set to Yes, use RELION's own implementation of a MotionCor2-like algorithm by Takanori Nakane. Otherwise, wrap to the UCSF implementation. Note that Takanori's program only runs on CPUs but uses multiple threads, while the UCSF-implementation needs a GPU but uses only one CPU thread. Takanori's implementation is most efficient when the number of frames is divisible by the number of threads (e.g. 12 or 18 threads per MPI process for 36 frames). On some machines, setting the OMP_PROC::BIND environmental variable to TRUE accelerates the program.\n\
 When running on 4k x 4k movies and using 6 to 12 threads, the speeds should be similar. Note that Takanori's program uses the same model as the UCSF program and gives results that are almost identical.\n\
 Whichever program you use, 'Motion Refinement' is highly recommended to get the most of your dataset.");
     joboptions["fn_motioncor2_exe"] = JobOption("MOTIONCOR2 executable:", string(motioncor2_exe), "*.*", ".", "Location of the MOTIONCOR2 executable. You can control the default of this field by setting environment variable RELION_MOTIONCOR2_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
@@ -1250,7 +1247,7 @@ Note that multiple MotionCor2 processes should not share a GPU; otherwise, it ca
     joboptions["other_motioncor2_args"] = JobOption("Other MOTIONCOR2 arguments", string(""), "Additional arguments that need to be passed to MOTIONCOR2.");
 
     // Dose-weight
-    joboptions["do_dose_weighting"] = JobOption("Do dose-weighting?", true ,"If set to Yes, the averaged micrographs will be dose-weighted.");
+    joboptions["do_dose_weighting"] = JobOption("Do dose-weighting?", true , "If set to Yes, the averaged micrographs will be dose-weighted.");
     joboptions["do_save_noDW"] = JobOption("Save non-dose weighted as well?", false, "Aligned but non-dose weighted images are sometimes useful in CTF estimation, although there is no difference in most cases. Whichever the choice, CTF refinement job is always done on dose-weighted particles.");
     joboptions["dose_per_frame"] = JobOption("Dose per frame (e/A2):", 1, 0, 5, 0.2, "Dose per movie frame (in electrons per square Angstrom).");
     joboptions["pre_exposure"] = JobOption("Pre-exposure (e/A2):", 0, 0, 5, 0.5, "Pre-exposure dose (in electrons per square Angstrom).");
@@ -1264,7 +1261,7 @@ bool RelionJob::getCommandsMotioncorrJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_MOTIONCORR_NAME, job_counter);
+    initialisePipeline(outputname, PROC::MOTIONCORR_NAME, job_counter);
 
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ?
         "`which relion_run_motioncorr_mpi`" :
@@ -1285,9 +1282,9 @@ bool RelionJob::getCommandsMotioncorrJob(
 
     command += " --o " + outputname;
     outputName = outputname;
-    Node node2(outputname + "corrected_micrographs.star", NODE_MICS);
+    Node node2(outputname + "corrected_micrographs.star", NODE::MICS);
     outputNodes.push_back(node2);
-    Node node4(outputname + "logfile.pdf", NODE_PDF_LOGFILE);
+    Node node4(outputname + "logfile.pdf", NODE::PDF_LOGFILE);
     outputNodes.push_back(node4);
 
     command += " --first_frame_sum " + joboptions["first_frame_sum"].getString();
@@ -1393,7 +1390,7 @@ bool RelionJob::getCommandsMotioncorrJob(
 void RelionJob::initialiseCtffindJob() {
     hidden_name = ".gui_ctffind";
 
-    joboptions["input_star_mics"] = JobOption("Input micrographs STAR file:", NODE_MICS, "", "STAR files (*.star)", "A STAR file with all micrographs to run CTFFIND or Gctf on");
+    joboptions["input_star_mics"] = JobOption("Input micrographs STAR file:", NODE::MICS, "", "STAR files (*.star)", "A STAR file with all micrographs to run CTFFIND or Gctf on");
     joboptions["use_noDW"] = JobOption("Use micrograph without dose-weighting?", false, "If set to Yes, the CTF estimation will be done using the micrograph without dose-weighting as in rlnMicrographNameNoDW (_noDW.mrc from MotionCor2). If set to No, the normal rlnMicrographName will be used.");
 
     joboptions["do_phaseshift"] = JobOption("Estimate phase shifts?", false, "If set to Yes, CTFFIND4 will estimate the phase shift, e.g. as introduced by a Volta phase-plate");
@@ -1401,15 +1398,15 @@ void RelionJob::initialiseCtffindJob() {
     joboptions["phase_max"] = JobOption("Phase shift (deg) - Max:", string("180"), "Minimum, maximum and step size (in degrees) for the search of the phase shift");
     joboptions["phase_step"] = JobOption("Phase shift (deg) - Step:", string("10"), "Minimum, maximum and step size (in degrees) for the search of the phase shift");
 
-    joboptions["dast"] = JobOption("Amount of astigmatism (A):", 100, 0, 2000, 100,"CTFFIND's dAst parameter, GCTFs -astm parameter");
+    joboptions["dast"] = JobOption("Amount of astigmatism (A):", 100, 0, 2000, 100, "CTFFIND's dAst parameter, GCTF's -astm parameter");
 
     // CTFFIND options
 
-    // Check for environment variable RELION_CTFFIND_EXECUTABLE
     joboptions["use_ctffind4"] = JobOption("Use CTFFIND-4.1?", false, "If set to Yes, the wrapper will use CTFFIND4 (version 4.1) for CTF estimation. This includes thread-support, calculation of Thon rings from movie frames and phase-shift estimation for phase-plate data.");
     joboptions["use_given_ps"] = JobOption("Use power spectra from MotionCorr job?", false, "If set to Yes, the CTF estimation will be done using power spectra calculated during motion correction.");
+    // Check for environment variable RELION_CTFFIND_EXECUTABLE
     const char *ctffind_exe = getenv("RELION_CTFFIND_EXECUTABLE");
-    if (!ctffind_exe) { ctffind_exe = DEFAULTCTFFINDLOCATION; }
+    if (!ctffind_exe) { ctffind_exe = DEFAULT::CTFFINDLOCATION; }
     joboptions["fn_ctffind_exe"] = JobOption("CTFFIND-4.1 executable:", string(ctffind_exe), "*", ".", "Location of the CTFFIND (release 4.1 or later) executable. You can control the default of this field by setting environment variable RELION_CTFFIND_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
     joboptions["slow_search"] = JobOption("Use exhaustive search?", false, "If set to Yes, CTFFIND4 will use slower but more exhaustive search. This option is recommended for CTFFIND version 4.1.8 and earlier, but probably not necessary for 4.1.10 and later. It is also worth trying this option when astigmatism and/or phase shifts are difficult to fit.");
 
@@ -1418,14 +1415,14 @@ void RelionJob::initialiseCtffindJob() {
     joboptions["resmax"] = JobOption("Maximum resolution (A):", 5, 1, 20, 1, "CTFFIND's ResMax parameter");
     joboptions["dfmin"] = JobOption("Minimum defocus value (A):", 5000, 0, 25000, 1000, "CTFFIND's dFMin parameter");
     joboptions["dfmax"] = JobOption("Maximum defocus value (A):", 50000, 20000, 100000, 1000, "CTFFIND's dFMax parameter");
-    joboptions["dfstep"] = JobOption("Defocus step size (A):", 500, 200, 2000, 100,"CTFFIND's FStep parameter");
+    joboptions["dfstep"] = JobOption("Defocus step size (A):", 500, 200, 2000, 100, "CTFFIND's FStep parameter");
 
     joboptions["ctf_win"] = JobOption("Estimate CTF on window size (pix) ", -1, -16, 4096, 16, "If a positive value is given, a squared window of this size at the center of the micrograph will be used to estimate the CTF. This may be useful to exclude parts of the micrograph that are unsuitable for CTF estimation, e.g. the labels at the edge of phtographic film. \n \n The original micrograph will be used (i.e. this option will be ignored) if a negative value is given.");
 
     joboptions["use_gctf"] = JobOption("Use Gctf instead?", false, "If set to Yes, Kai Zhang's Gctf program (which runs on NVIDIA GPUs) will be used instead of Niko Grigorieff's CTFFIND4.");
-    // Check for environment variable RELION_CTFFIND_EXECUTABLE
+    // Check for environment variable RELION_GCTF_EXECUTABLE
     const char *gctf_exe = getenv("RELION_GCTF_EXECUTABLE");
-    if (!gctf_exe) { gctf_exe = DEFAULTGCTFLOCATION; }
+    if (!gctf_exe) { gctf_exe = DEFAULT::GCTFLOCATION; }
     joboptions["fn_gctf_exe"] = JobOption("Gctf executable:", string(gctf_exe), "*", ".", "Location of the Gctf executable. You can control the default of this field by setting environment variable RELION_GCTF_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
     joboptions["do_ignore_ctffind_params"] = JobOption("Ignore 'Searches' parameters?", true, "If set to Yes, all parameters EXCEPT for phase shift search and its ranges on the 'Searches' tab will be ignored, and Gctf's default parameters will be used (box.size=1024; min.resol=50; max.resol=4; min.defocus=500; max.defocus=90000; step.defocus=500; astigm=1000) \n \
 \nIf set to No, all parameters on the CTFFIND tab will be passed to Gctf.");
@@ -1439,15 +1436,15 @@ bool RelionJob::getCommandsCtffindJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_CTFFIND_NAME, job_counter);
+    initialisePipeline(outputname, PROC::CTFFIND_NAME, job_counter);
 
     FileName fn_outstar = outputname + "micrographs_ctf.star";
-    Node node(fn_outstar, NODE_MICS);
+    Node node(fn_outstar, NODE::MICS);
     outputNodes.push_back(node);
     outputName = outputname;
 
     // PDF with histograms of the eigenvalues
-    Node node3(outputname + "logfile.pdf", NODE_PDF_LOGFILE);
+    Node node3(outputname + "logfile.pdf", NODE::PDF_LOGFILE);
     outputNodes.push_back(node3);
 
     if (joboptions["input_star_mics"].getString() == "") {
@@ -1531,7 +1528,7 @@ bool RelionJob::getCommandsCtffindJob(
 void RelionJob::initialiseManualpickJob() {
     hidden_name = ".gui_manualpick";
 
-    joboptions["fn_in"] = JobOption("Input micrographs:", NODE_MICS, "", "Input micrographs (*.{star,mrc})", "Input STAR file (with or without CTF information), OR a unix-type wildcard with all micrographs in MRC format (in this case no CTFs can be used).");
+    joboptions["fn_in"] = JobOption("Input micrographs:", NODE::MICS, "", "Input micrographs (*.{star,mrc})", "Input STAR file (with or without CTF information), OR a unix-type wildcard with all micrographs in MRC format (in this case no CTFs can be used).");
 
     joboptions["diameter"] = JobOption("Particle diameter (A):", 100, 0, 500, 50, "The diameter of the circle used around picked particles (in Angstroms). Only used for display." );
     joboptions["micscale"] = JobOption("Scale for micrographs:", 0.2, 0.1, 1, 0.05, "The micrographs will be displayed at this relative scale, i.e. a value of 0.5 means that only every second pixel will be displayed." );
@@ -1563,7 +1560,7 @@ bool RelionJob::getCommandsManualpickJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_MANUALPICK_NAME, job_counter);
+    initialisePipeline(outputname, PROC::MANUALPICK_NAME, job_counter);
     string command = "`which relion_manualpick`";
 
     if (joboptions["fn_in"].getString() == "") {
@@ -1579,12 +1576,12 @@ bool RelionJob::getCommandsManualpickJob(
     command += " --pickname manualpick";
 
     FileName fn_suffix = outputname + "coords_suffix_manualpick.star";
-    Node node2(fn_suffix, NODE_MIC_COORDS);
+    Node node2(fn_suffix, NODE::MIC_COORDS);
     outputNodes.push_back(node2);
 
     // Allow saving, and always save default selection file upon launching the program
     FileName fn_outstar = outputname + "micrographs_selected.star";
-    Node node3(fn_outstar, NODE_MICS);
+    Node node3(fn_outstar, NODE::MICS);
     outputNodes.push_back(node3);
     command += " --allow_save   --fast_save --selection " + fn_outstar;
 
@@ -1643,7 +1640,7 @@ void RelionJob::initialiseAutopickJob() {
     hidden_name = ".gui_autopick";
 
     joboptions["fn_input_autopick"] = JobOption(
-        "Input micrographs for autopick:", NODE_MICS, "", 
+        "Input micrographs for autopick:", NODE::MICS, "", 
         "Input micrographs (*.{star})", 
         "Input STAR file (preferably with CTF information) "
         "with all micrographs to pick from."
@@ -1702,13 +1699,13 @@ void RelionJob::initialiseAutopickJob() {
     );
 
     joboptions["fn_refs_autopick"] = JobOption(
-        "2D references:", NODE_2DREFS, "", "Input references (*.{star,mrcs})", 
+        "2D references:", NODE::REFS2D, "", "Input references (*.{star,mrcs})", 
         "Input STAR file or MRC stack with the 2D references to be used for picking. "
         "Note that the absolute greyscale needs to be correct, "
         "so only use images created by RELION itself, e.g. by 2D class averaging or projecting a RELION reconstruction."
     );
     joboptions["do_ref3d"]= JobOption("OR: provide a 3D reference?", false, "Set this option to Yes if you want to provide a 3D map, which will be projected into multiple directions to generate 2D references.");
-    joboptions["fn_ref3d_autopick"] = JobOption("3D reference:", NODE_3DREF, "", "Input reference (*.{mrc})", "Input MRC file with the 3D reference maps, from which 2D references will be made by projection. Note that the absolute greyscale needs to be correct, so only use maps created by RELION itself from this data set.");
+    joboptions["fn_ref3d_autopick"] = JobOption("3D reference:", NODE::REF3D, "", "Input reference (*.{mrc})", "Input MRC file with the 3D reference maps, from which 2D references will be made by projection. Note that the absolute greyscale needs to be correct, so only use maps created by RELION itself from this data set.");
     joboptions["ref3d_symmetry"] = JobOption("Symmetry:", string("C1"), "Symmetry point group of the 3D reference. Only projections in the asymmetric part of the sphere will be generated.");
     joboptions["ref3d_sampling"] = JobOption("3D angular sampling:", job_sampling_options, 0, "There are only a few discrete \
 angular samplings possible because we use the HealPix library to generate the sampling of the first two Euler angles on the sphere. \
@@ -1722,7 +1719,7 @@ The samplings are approximate numbers and vary slightly over the sphere.\n\n For
 
     joboptions["do_invert_refs"] = JobOption("References have inverted contrast?", true, "Set to Yes to indicate that the reference have inverted contrast with respect to the particles in the micrographs.");
     joboptions["do_ctf_autopick"] = JobOption("Are References CTF corrected?", true, "Set to Yes if the references were created with CTF-correction inside RELION. \n \n If set to Yes, the input micrographs can only be given as a STAR file, which should contain the CTF information for each micrograph.");
-    joboptions["do_ignore_first_ctfpeak_autopick"] = JobOption("Ignore CTFs until first peak?", false,"Set this to Yes, only if this option was also used to generate the references.");
+    joboptions["do_ignore_first_ctfpeak_autopick"] = JobOption("Ignore CTFs until first peak?", false, "Set this to Yes, only if this option was also used to generate the references.");
 
     joboptions["threshold_autopick"] = JobOption("Picking threshold:", 0.05, 0, 1.0, 0.01, "Use lower thresholds to pick more particles (and more junk probably).\
 \n\nThis option is ignored in the Laplacian-of-Gaussian picker. Please use 'Adjust default threshold' in the 'Laplacian' tab instead.");
@@ -1759,7 +1756,7 @@ bool RelionJob::getCommandsAutopickJob(
     string &outputname, vector<string> &commands,
     string &final_command, bool do_makedir, int job_counter, string &error_message) {
     commands.clear();
-    initialisePipeline(outputname, PROC_AUTOPICK_NAME, job_counter);
+    initialisePipeline(outputname, PROC::AUTOPICK_NAME, job_counter);
     string command;
     if (joboptions["nr_mpi"].getNumber(error_message) > 1)
         command="`which relion_autopick_mpi`";
@@ -1778,11 +1775,11 @@ bool RelionJob::getCommandsAutopickJob(
     inputNodes.push_back(node);
 
     // Output
-    Node node3(outputname + "coords_suffix_autopick.star", NODE_MIC_COORDS);
+    Node node3(outputname + "coords_suffix_autopick.star", NODE::MIC_COORDS);
     outputNodes.push_back(node3);
 
     // PDF with histograms of the eigenvalues
-    Node node3b(outputname + "logfile.pdf", NODE_PDF_LOGFILE);
+    Node node3b(outputname + "logfile.pdf", NODE::PDF_LOGFILE);
     outputNodes.push_back(node3b);
 
     command += " --odir " + outputname;
@@ -1801,8 +1798,7 @@ bool RelionJob::getCommandsAutopickJob(
         command += " --LoG_adjust_threshold " + joboptions["log_adjust_thr"].getString();
         if (joboptions["log_upper_thr"].getNumber(error_message) < 999.0)
             command += " --LoG_upper_threshold " + joboptions["log_upper_thr"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         if (joboptions["log_invert"].getBoolean())
             command += " --Log_invert ";
@@ -1815,7 +1811,7 @@ bool RelionJob::getCommandsAutopickJob(
             }
 
             command += " --ref " + joboptions["fn_ref3d_autopick"].getString();
-            Node node2(joboptions["fn_ref3d_autopick"].getString(), NODE_3DREF);
+            Node node2(joboptions["fn_ref3d_autopick"].getString(), NODE::REF3D);
             inputNodes.push_back(node2);
             command += " --sym " + joboptions["ref3d_symmetry"].getString();
 
@@ -1834,7 +1830,7 @@ bool RelionJob::getCommandsAutopickJob(
             }
 
             command += " --ref " + joboptions["fn_refs_autopick"].getString();
-            Node node2(joboptions["fn_refs_autopick"].getString(), NODE_2DREFS);
+            Node node2(joboptions["fn_refs_autopick"].getString(), NODE::REFS2D);
             inputNodes.push_back(node2);
         }
 
@@ -1851,28 +1847,23 @@ bool RelionJob::getCommandsAutopickJob(
         command += " --shrink " + joboptions["shrink"].getString();
         if (joboptions["lowpass"].getNumber(error_message) > 0.0)
             command += " --lowpass " + joboptions["lowpass"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         if (joboptions["highpass"].getNumber(error_message) > 0.0)
             command += " --highpass " + joboptions["highpass"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         if (joboptions["angpix"].getNumber(error_message) > 0.0)
             command += " --angpix " + joboptions["angpix"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         if (joboptions["angpix_ref"].getNumber(error_message) > 0.0)
             command += " --angpix_ref " + joboptions["angpix_ref"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         if (joboptions["particle_diameter"].getNumber(error_message) > 0.0)
             command += " --particle_diameter " + joboptions["particle_diameter"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         command += " --threshold " + joboptions["threshold_autopick"].getString();
         if (joboptions["do_pick_helical_segments"].getBoolean()) {
@@ -1880,14 +1871,12 @@ bool RelionJob::getCommandsAutopickJob(
         } else {
             command += " --min_distance " + joboptions["mindist_autopick"].getString();
         }
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         command += " --max_stddev_noise " + joboptions["maxstddevnoise_autopick"].getString();
         if (joboptions["minavgnoise_autopick"].getNumber(error_message) > -900.0)
             command += " --min_avg_noise " + joboptions["minavgnoise_autopick"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         // Helix
         if (joboptions["do_pick_helical_segments"].getBoolean()) {
@@ -1936,10 +1925,10 @@ bool RelionJob::getCommandsAutopickJob(
 void RelionJob::initialiseExtractJob() {
     hidden_name = ".gui_extract";
 
-    joboptions["star_mics"]= JobOption("micrograph STAR file:", NODE_MICS, "", "Input STAR file (*.{star})", "Filename of the STAR file that contains all micrographs from which to extract particles.");
-    joboptions["coords_suffix"] = JobOption("Input coordinates:", NODE_MIC_COORDS, "", "Input coords_suffix file ({coords_suffix}*)", "Filename of the coords_suffix file with the directory structure and the suffix of all coordinate files.");
+    joboptions["star_mics"]= JobOption("micrograph STAR file:", NODE::MICS, "", "Input STAR file (*.{star})", "Filename of the STAR file that contains all micrographs from which to extract particles.");
+    joboptions["coords_suffix"] = JobOption("Input coordinates:", NODE::MIC_COORDS, "", "Input coords_suffix file ({coords_suffix}*)", "Filename of the coords_suffix file with the directory structure and the suffix of all coordinate files.");
     joboptions["do_reextract"] = JobOption("OR re-extract refined particles? ", false, "If set to Yes, the input Coordinates above will be ignored. Instead, one uses a _data.star file from a previous 2D or 3D refinement to re-extract the particles in that refinement, possibly re-centered with their refined origin offsets. This is particularly useful when going from binned to unbinned particles.");
-    joboptions["fndata_reextract"] = JobOption("Refined particles STAR file: ", NODE_PART_DATA, "", "Input STAR file (*.{star})", "Filename of the STAR file with the refined particle coordinates, e.g. from a previous 2D or 3D classification or auto-refine run.");
+    joboptions["fndata_reextract"] = JobOption("Refined particles STAR file: ", NODE::PART_DATA, "", "Input STAR file (*.{star})", "Filename of the STAR file with the refined particle coordinates, e.g. from a previous 2D or 3D classification or auto-refine run.");
     joboptions["do_reset_offsets"] = JobOption("Reset the refined offsets to zero? ", false, "If set to Yes, the input origin offsets will be reset to zero. This may be useful after 2D classification of helical segments, where one does not want neighbouring segments to be translated on top of each other for a subsequent 3D refinement or classification.");
     joboptions["do_recenter"] = JobOption("OR: re-center refined coordinates? ", false, "If set to Yes, the input coordinates will be re-centered according to the refined origin offsets in the provided _data.star file. The unit is pixel, not angstrom. The origin is at the center of the box, not at the corner.");
     joboptions["recenter_x"] = JobOption("Re-center on X-coordinate (in pix): ", string("0"), "Re-extract particles centered on this X-coordinate (in pixels in the reference)");
@@ -1979,7 +1968,7 @@ bool RelionJob::getCommandsExtractJob(
     string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_EXTRACT_NAME, job_counter);
+    initialisePipeline(outputname, PROC::EXTRACT_NAME, job_counter);
     string command = "which relion_preprocess";
     if (joboptions["nr_mpi"].getNumber(error_message) > 1)
         command += "_mpi";
@@ -2032,7 +2021,7 @@ bool RelionJob::getCommandsExtractJob(
 
     // Output
     FileName fn_ostar = outputname + "particles.star";
-    Node node3(fn_ostar, NODE_PART_DATA);
+    Node node3(fn_ostar, NODE::PART_DATA);
     outputNodes.push_back(node3);
     command += " --part_star " + fn_ostar;
     command += " --part_dir " + outputname;
@@ -2049,12 +2038,10 @@ bool RelionJob::getCommandsExtractJob(
     if (joboptions["do_rescale"].getBoolean()) {
         command += " --scale " + joboptions["rescale"].getString();
         bg_radius *= joboptions["rescale"].getNumber(error_message);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         bg_radius /= joboptions["extract_size"].getNumber(error_message);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
     }
     if (joboptions["do_norm"].getBoolean()) {
         // Get an integer for bg_radius
@@ -2102,7 +2089,7 @@ bool RelionJob::getCommandsExtractJob(
         command = "echo " + joboptions["star_mics"].getString() + " > " +  outputname + "coords_suffix_extract.star";
         commands.push_back(command.c_str());
 
-        Node node(outputname + "coords_suffix_extract.star", NODE_MIC_COORDS);
+        Node node(outputname + "coords_suffix_extract.star", NODE::MIC_COORDS);
         outputNodes.push_back(node);
     }
 
@@ -2112,10 +2099,10 @@ bool RelionJob::getCommandsExtractJob(
 void RelionJob::initialiseSelectJob() {
     hidden_name = ".gui_select";
 
-    joboptions["fn_model"] = JobOption("Select classes from model.star:", NODE_MODEL, "", "STAR files (*.star)", "A _model.star file from a previous 2D or 3D classification run to select classes from.");
-    joboptions["fn_mic"] = JobOption("OR select from micrographs.star:", NODE_MICS, "", "STAR files (*.star)", "A micrographs.star file to select micrographs from.");
-    joboptions["fn_data"] = JobOption("OR select from particles.star:", NODE_PART_DATA, "", "STAR files (*.star)", "A particles.star file to select individual particles from.");
-    joboptions["fn_coords"] = JobOption("OR select from picked coords:", NODE_MIC_COORDS, "", "STAR files (coords_suffix*.star)", "A coordinate suffix .star file to select micrographs while inspecting coordinates (and/or CTFs).");
+    joboptions["fn_model"] = JobOption("Select classes from model.star:", NODE::MODEL, "", "STAR files (*.star)", "A _model.star file from a previous 2D or 3D classification run to select classes from.");
+    joboptions["fn_mic"] = JobOption("OR select from micrographs.star:", NODE::MICS, "", "STAR files (*.star)", "A micrographs.star file to select micrographs from.");
+    joboptions["fn_data"] = JobOption("OR select from particles.star:", NODE::PART_DATA, "", "STAR files (*.star)", "A particles.star file to select individual particles from.");
+    joboptions["fn_coords"] = JobOption("OR select from picked coords:", NODE::MIC_COORDS, "", "STAR files (coords_suffix*.star)", "A coordinate suffix .star file to select micrographs while inspecting coordinates (and/or CTFs).");
 
     joboptions["do_recenter"] = JobOption("Re-center the class averages?", true, "This option is only used when selecting particles from 2D classes. The selected class averages will all re-centered on their center-of-mass. This is useful when you plane to use these class averages as templates for auto-picking.");
     joboptions["do_regroup"] = JobOption("Regroup the particles?", false, "If set to Yes, then the program will regroup the selected particles in 'more-or-less' the number of groups indicated below. For re-grouping from individual particle _data.star files, a _model.star file with the same prefix should exist, i.e. the particle star file should be generated by relion_refine");
@@ -2145,7 +2132,7 @@ bool RelionJob::getCommandsSelectJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_CLASSSELECT_NAME, job_counter);
+    initialisePipeline(outputname, PROC::CLASSSELECT_NAME, job_counter);
     string command;
 
     if (
@@ -2190,15 +2177,14 @@ bool RelionJob::getCommandsSelectJob(
         command += " --i " + joboptions["fn_data"].getString();
 
         FileName fn_out = outputname+"particles.star";
-        Node node2(fn_out, NODE_PART_DATA);
+        Node node2(fn_out, NODE::PART_DATA);
         outputNodes.push_back(node2);
         command += " --o " + fn_out;
 
         command += " --remove_duplicates " + joboptions["duplicate_threshold"].getString();
         if (joboptions["image_angpix"].getNumber(error_message) > 0)
             command += " --image_angpix " + joboptions["image_angpix"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
     } else if (
         joboptions["do_select_values"].getBoolean() || 
@@ -2237,10 +2223,10 @@ bool RelionJob::getCommandsSelectJob(
         ) {
 
             if (joboptions["fn_mic"].getString() != "") {
-                Node node2(fn_out, NODE_MICS);
+                Node node2(fn_out, NODE::MICS);
                 outputNodes.push_back(node2);
             } else if (joboptions["fn_data"].getString() != "") {
-                Node node2(fn_out, NODE_PART_DATA);
+                Node node2(fn_out, NODE::PART_DATA);
                 outputNodes.push_back(node2);
             }
 
@@ -2272,14 +2258,12 @@ bool RelionJob::getCommandsSelectJob(
             }
 
             if (joboptions["nr_split"].getNumber(error_message) > 0 && !joboptions["nr_split"].isSchedulerVariable()) {
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
                 nr_split = joboptions["nr_split"].getNumber(error_message);
                 command += " --nr_split " + joboptions["nr_split"].getString();
             }
             if (joboptions["split_size"].getNumber(error_message) > 0 && !joboptions["split_size"].isSchedulerVariable()) {
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
                 command += " --size_split " + joboptions["split_size"].getString();
             }
 
@@ -2299,7 +2283,7 @@ bool RelionJob::getCommandsSelectJob(
 
             FileName fn_parts = outputname+"particles.star";
             command += " --allow_save --fn_parts " + fn_parts;
-            Node node2(fn_parts, NODE_PART_DATA);
+            Node node2(fn_parts, NODE::PART_DATA);
             outputNodes.push_back(node2);
 
             // Only save the 2D class averages for 2D jobs
@@ -2307,7 +2291,7 @@ bool RelionJob::getCommandsSelectJob(
             if (fnt.contains("Class2D/")) {
                 FileName fn_imgs = outputname+"class_averages.star";
                 command += " --fn_imgs " + fn_imgs;
-                Node node3(fn_imgs, NODE_2DREFS);
+                Node node3(fn_imgs, NODE::REFS2D);
                 outputNodes.push_back(node3);
 
                 if (joboptions["do_recenter"].getBoolean()) {
@@ -2321,7 +2305,7 @@ bool RelionJob::getCommandsSelectJob(
 
             FileName fn_mics = outputname+"micrographs.star";
             command += " --allow_save --fn_imgs " + fn_mics;
-            Node node2(fn_mics, NODE_MICS);
+            Node node2(fn_mics, NODE::MICS);
             outputNodes.push_back(node2);
         } else if (joboptions["fn_data"].getString() != "") {
             command += " --gui --i " + joboptions["fn_data"].getString();
@@ -2330,7 +2314,7 @@ bool RelionJob::getCommandsSelectJob(
 
             FileName fn_parts = outputname+"particles.star";
             command += " --allow_save --fn_imgs " + fn_parts;
-            Node node2(fn_parts, NODE_PART_DATA);
+            Node node2(fn_parts, NODE::PART_DATA);
             outputNodes.push_back(node2);
         } else if  (joboptions["fn_coords"].getString() != "") {
             RelionJob manualpickjob;
@@ -2368,7 +2352,7 @@ bool RelionJob::getCommandsSelectJob(
 
             // The output selection
             FileName fn_outstar = outputname + "micrographs_selected.star";
-            Node node3(fn_outstar, NODE_MICS);
+            Node node3(fn_outstar, NODE::MICS);
             outputNodes.push_back(node3);
             command += " --allow_save  --selection " + fn_outstar;
 
@@ -2380,18 +2364,15 @@ bool RelionJob::getCommandsSelectJob(
 
             if (manualpickjob.joboptions["lowpass"].getNumber(error_message) > 0.0)
                 command += " --lowpass " + manualpickjob.joboptions["lowpass"].getString();
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
             if (manualpickjob.joboptions["highpass"].getNumber(error_message) > 0.0)
                 command += " --highpass " + manualpickjob.joboptions["highpass"].getString();
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
             if (manualpickjob.joboptions["angpix"].getNumber(error_message) > 0.0)
                 command += " --angpix " + manualpickjob.joboptions["angpix"].getString();
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
 
             command += " --ctf_scale " + manualpickjob.joboptions["ctfscale"].getString();
@@ -2431,7 +2412,7 @@ bool RelionJob::getCommandsSelectJob(
 void RelionJob::initialiseClass2DJob() {
     hidden_name = ".gui_class2d";
 
-    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE_PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \n \n Alternatively, you may give a Spider/MRC stack of 2D images, but in that case NO metadata can be included and thus NO CTF correction can be performed, \
+    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE::PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \n \n Alternatively, you may give a Spider/MRC stack of 2D images, but in that case NO metadata can be included and thus NO CTF correction can be performed, \
 nor will it be possible to perform noise spectra estimation or intensity scale corrections in image groups. Therefore, running RELION with an input stack will in general provide sub-optimal results and is therefore not recommended!! Use the Preprocessing procedure to get the input STAR file in a semi-automated manner. Read the RELION wiki for more information.");
     joboptions["fn_cont"] = JobOption("Continue from here: ", string(""), "STAR Files (*_optimiser.star)", "CURRENT_ODIR",  "Select the *_optimiser.star file for the iteration \
 from which you want to continue a previous run. \
@@ -2517,7 +2498,7 @@ Otherwise, only the leader will read images and send them through the network to
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 4 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
     const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
-    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    if (!scratch_dir) { scratch_dir = DEFAULT::SCRATCHDIR; }
     joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
@@ -2533,7 +2514,7 @@ bool RelionJob::getCommandsClass2DJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_2DCLASS_NAME, job_counter);
+    initialisePipeline(outputname, PROC::CLASS2D_NAME, job_counter);
     string command;
 
     command = joboptions["nr_mpi"].getNumber(error_message) > 1 ?
@@ -2560,11 +2541,11 @@ bool RelionJob::getCommandsClass2DJob(
     }
 
     command += " --o " + outputname + fn_run;
-    int my_iter = (int)joboptions["nr_iter"].getNumber(error_message);
+    int my_iter = (int) joboptions["nr_iter"].getNumber(error_message);
     if (error_message != "")
         return false;
 
-    int my_classes = (int)joboptions["nr_classes"].getNumber(error_message);
+    int my_classes = (int) joboptions["nr_classes"].getNumber(error_message);
     if (error_message != "")
         return false;
 
@@ -2618,8 +2599,7 @@ bool RelionJob::getCommandsClass2DJob(
             command += " --zero_mask ";
         if (joboptions["highres_limit"].getNumber(error_message) > 0)
             command += " --strict_highres_exp " + joboptions["highres_limit"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
     }
 
@@ -2632,15 +2612,13 @@ bool RelionJob::getCommandsClass2DJob(
     } else {
         // The sampling given in the GUI will be the oversampled one!
         command += " --psi_step " + floatToString(joboptions["psi_sampling"].getNumber(error_message) * pow(2.0, iover));
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         // Offset range
         command += " --offset_range " + joboptions["offset_range"].getString();
         // The sampling given in the GUI will be the oversampled one!
         command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber(error_message) * pow(2.0, iover));
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         if (joboptions["allow_coarser"].getBoolean()) {
             command += " --allow_coarser_sampling";
@@ -2657,8 +2635,7 @@ bool RelionJob::getCommandsClass2DJob(
                 command += " --bimodal_psi";
 
             RFLOAT val = joboptions["range_psi"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
             if (val <  0.0) { val =  0.0; }
             if (val > 90.0) { val = 90.0; }
@@ -2694,7 +2671,7 @@ bool RelionJob::getCommandsClass2DJob(
 void RelionJob::initialiseInimodelJob() {
     hidden_name = ".gui_inimodel";
 
-    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE_PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \
+    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE::PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \
 In SGD, it is very important that there are particles from enough different orientations. One only needs a few thousand to 10k particles. When selecting good 2D classes in the Subset Selection jobtype, use the option to select a maximum number of particles from each class to generate more even angular distributions for SGD.\
 \n \n Alternatively, you may give a Spider/MRC stack of 2D images, but in that case NO metadata can be included and thus NO CTF correction can be performed, \
 nor will it be possible to perform noise spectra estimation or intensity scale corrections in image groups. Therefore, running RELION with an input stack will in general provide sub-optimal results and is therefore not recommended!! Use the Preprocessing procedure to get the input STAR file in a semi-automated manner. Read the RELION wiki for more information.");
@@ -2768,7 +2745,7 @@ This may improve performance on systems where disk access, and particularly meta
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 4 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
     const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
-    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    if (!scratch_dir) { scratch_dir = DEFAULT::SCRATCHDIR; }
     joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
@@ -2785,7 +2762,7 @@ bool RelionJob::getCommandsInimodelJob(
 ) {
     commands.clear();
 
-    initialisePipeline(outputname, PROC_INIMODEL_NAME, job_counter);
+    initialisePipeline(outputname, PROC::INIMODEL_NAME, job_counter);
 
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ?
         "`which relion_refine_mpi`" :
@@ -2920,16 +2897,16 @@ bool RelionJob::getCommandsInimodelJob(
 void RelionJob::initialiseClass3DJob() {
     hidden_name = ".gui_class3d";
 
-    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE_PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \n \n Alternatively, you may give a Spider/MRC stack of 2D images, but in that case NO metadata can be included and thus NO CTF correction can be performed, \
+    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE::PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \n \n Alternatively, you may give a Spider/MRC stack of 2D images, but in that case NO metadata can be included and thus NO CTF correction can be performed, \
 nor will it be possible to perform noise spectra estimation or intensity scale corrections in image groups. Therefore, running RELION with an input stack will in general provide sub-optimal results and is therefore not recommended!! Use the Preprocessing procedure to get the input STAR file in a semi-automated manner. Read the RELION wiki for more information.");
     joboptions["fn_cont"] = JobOption("Continue from here: ", string(""), "STAR Files (*_optimiser.star)", "CURRENT_ODIR", "Select the *_optimiser.star file for the iteration \
 from which you want to continue a previous run. \
 Note that the Output rootname of the continued run and the rootname of the previous run cannot be the same. \
 If they are the same, the program will automatically add a '_ctX' to the output rootname, \
 with X being the iteration from which one continues the previous run.");
-    joboptions["fn_ref"] = JobOption("Reference map:", NODE_3DREF, "", "Image Files (*.{spi,vol,mrc})", "A 3D map in MRC/Spider format. \
+    joboptions["fn_ref"] = JobOption("Reference map:", NODE::REF3D, "", "Image Files (*.{spi,vol,mrc})", "A 3D map in MRC/Spider format. \
     Make sure this map has the same dimensions and the same pixel size as your input images.");
-    joboptions["fn_mask"] = JobOption("Reference mask (optional):", NODE_MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "\
+    joboptions["fn_mask"] = JobOption("Reference mask (optional):", NODE::MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "\
 If no mask is provided, a soft spherical mask based on the particle diameter will be used.\n\
 \n\
 Otherwise, provide a Spider/mrc map containing a (soft) mask with the same \
@@ -3033,10 +3010,10 @@ in the previous iteration will get higher weights than those further away.");
     joboptions["relax_sym"] = JobOption("Relax symmetry:", string(""), "With this option, poses related to the standard local angular search range by the given point group will also be explored. For example, if you have a pseudo-symmetric dimer A-A', refinement or classification in C1 with symmetry relaxation by C2 might be able to improve distinction between A and A'. Note that the reference must be more-or-less aligned to the convention of (pseudo-)symmetry operators. For details, see Ilca et al 2019 and Abrishami et al 2020 cited in the About dialog.");
 
     joboptions["do_helix"] = JobOption("Do helical reconstruction?", false, "If set to Yes, then perform 3D helical reconstruction.");
-    joboptions["helical_tube_inner_diameter"] = JobOption("Tube diameter - inner (A):", string("-1"),"Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
+    joboptions["helical_tube_inner_diameter"] = JobOption("Tube diameter - inner (A):", string("-1"), "Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
 Set the inner diameter to negative value if the helix is not hollow in the center. The outer diameter should be slightly larger than the actual width of helical tubes because it also decides the shape of 2D \
 particle mask for each segment. If the psi priors of the extracted segments are not accurate enough due to high noise level or flexibility of the structure, then set the outer diameter to a large value.");
-    joboptions["helical_tube_outer_diameter"] = JobOption("Tube diameter - outer (A):", string("-1"),"Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
+    joboptions["helical_tube_outer_diameter"] = JobOption("Tube diameter - outer (A):", string("-1"), "Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
 Set the inner diameter to negative value if the helix is not hollow in the center. The outer diameter should be slightly larger than the actual width of helical tubes because it also decides the shape of 2D \
 particle mask for each segment. If the psi priors of the extracted segments are not accurate enough due to high noise level or flexibility of the structure, then set the outer diameter to a large value.");
     joboptions["range_rot"] = JobOption("Angular search range - rot (deg):", string("-1"), "Local angular searches will be performed \
@@ -3064,7 +3041,7 @@ A range of 15 degrees means sigma = 5 degrees.\n\nThese options will be invalid 
     joboptions["helical_nr_asu"] = JobOption("Number of unique asymmetrical units:", 1, 1, 100, 1, "Number of unique helical asymmetrical units in each segment box. If the inter-box distance (set in segment picking step) \
 is 100 Angstroms and the estimated helical rise is ~20 Angstroms, then set this value to 100 / 20 = 5 (nearest integer). This integer should not be less than 1. The correct value is essential in measuring the \
 signal to noise ratio in helical reconstruction.");
-    joboptions["helical_twist_initial"] =  JobOption("Initial helical twist (deg):", string("0"),"Initial helical symmetry. Set helical twist (in degrees) to positive value if it is a right-handed helix. \
+    joboptions["helical_twist_initial"] =  JobOption("Initial helical twist (deg):", string("0"), "Initial helical symmetry. Set helical twist (in degrees) to positive value if it is a right-handed helix. \
 Helical rise is a positive value in Angstroms. If local searches of helical symmetry are planned, initial values of helical twist and rise should be within their respective ranges.");
     joboptions["helical_rise_initial"] = JobOption("Initial helical rise (A):", string("0"), "Initial helical symmetry. Set helical twist (in degrees) to positive value if it is a right-handed helix. \
 Helical rise is a positive value in Angstroms. If local searches of helical symmetry are planned, initial values of helical twist and rise should be within their respective ranges.");
@@ -3106,7 +3083,7 @@ This may improve performance on systems where disk access, and particularly meta
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 4 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
     const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
-    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    if (!scratch_dir) { scratch_dir = DEFAULT::SCRATCHDIR; }
     joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
@@ -3122,7 +3099,7 @@ bool RelionJob::getCommandsClass3DJob(
     bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_3DCLASS_NAME, job_counter);
+    initialisePipeline(outputname, PROC::CLASS3D_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
         "`which relion_refine_mpi`" : 
         "`which relion_refine`";
@@ -3146,11 +3123,11 @@ bool RelionJob::getCommandsClass3DJob(
 
     command += " --o " + outputname + fn_run;
 
-    int my_iter = (int)joboptions["nr_iter"].getNumber(error_message);
+    int my_iter = (int) joboptions["nr_iter"].getNumber(error_message);
     if (error_message != "")
         return false;
 
-    int my_classes = (int)joboptions["nr_classes"].getNumber(error_message);
+    int my_classes = (int) joboptions["nr_classes"].getNumber(error_message);
     if (error_message != "")
         return false;
 
@@ -3181,8 +3158,7 @@ bool RelionJob::getCommandsClass3DJob(
 
         if (joboptions["ini_high"].getNumber(error_message) > 0.0)
             command += " --ini_high " + joboptions["ini_high"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
     }
 
@@ -3191,10 +3167,11 @@ bool RelionJob::getCommandsClass3DJob(
         command += " --dont_combine_weights_via_disc";
     if (!joboptions["do_parallel_discio"].getBoolean())
         command += " --no_parallel_disc_io";
-    if (joboptions["do_preread_images"].getBoolean())
+    if (joboptions["do_preread_images"].getBoolean()) {
         command += " --preread_images " ;
-    else if (joboptions["scratch_dir"].getString() != "")
+    } else if (joboptions["scratch_dir"].getString() != "") {
         command += " --scratch_dir " +  joboptions["scratch_dir"].getString();
+    }
     command += " --pool " + joboptions["nr_pool"].getString();
     command += joboptions["do_pad1"].getBoolean() ? " --pad 1 " : " --pad 2 ";
     if (joboptions["skip_gridding"].getBoolean())
@@ -3214,7 +3191,7 @@ bool RelionJob::getCommandsClass3DJob(
     // Optimisation
     command += " --iter " + joboptions["nr_iter"].getString();
     command += " --tau2_fudge " + joboptions["tau_fudge"].getString();
-        command += " --particle_diameter " + joboptions["particle_diameter"].getString();
+    command += " --particle_diameter " + joboptions["particle_diameter"].getString();
     if (!is_continue) {
         if (joboptions["do_fast_subsets"].getBoolean())
             command += " --fast_subsets ";
@@ -3226,8 +3203,7 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --zero_mask";
         if (joboptions["highres_limit"].getNumber(error_message) > 0)
             command += " --strict_highres_exp " + joboptions["highres_limit"].getString();
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
     }
     if (joboptions["fn_mask"].getString().length() > 0) {
@@ -3256,16 +3232,14 @@ bool RelionJob::getCommandsClass3DJob(
             if (joboptions["relax_sym"].getString().length() > 0)
                 command += " --relax_sym " + joboptions["relax_sym"].getString();
 
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
         }
 
         // Offset range
         command += " --offset_range " + joboptions["offset_range"].getString();
         // The sampling given in the GUI will be the oversampled one!
         command += " --offset_step " +  floatToString(joboptions["offset_step"].getNumber(error_message) * pow(2.0, iover));
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         if (joboptions["allow_coarser"].getBoolean()) {
             command += " --allow_coarser_sampling";
@@ -3283,8 +3257,7 @@ bool RelionJob::getCommandsClass3DJob(
         command += " --helix";
 
         float inner_diam = joboptions["helical_tube_inner_diameter"].getNumber(error_message);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
         if (inner_diam > 0.0)
             command += " --helical_inner_diameter " + joboptions["helical_tube_inner_diameter"].getString();
 
@@ -3295,8 +3268,7 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --helical_rise_initial " + joboptions["helical_rise_initial"].getString();
 
             float myz = joboptions["helical_z_percentage"].getNumber(error_message) / 100.0;
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
             command += " --helical_z_percentage " + floatToString(myz);
 
             if (joboptions["do_local_search_helical_symmetry"].getBoolean()) {
@@ -3305,8 +3277,7 @@ bool RelionJob::getCommandsClass3DJob(
                 command += " --helical_twist_max " + joboptions["helical_twist_max"].getString();
 
                 float twist_inistep = joboptions["helical_twist_inistep"].getNumber(error_message);
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
                 if (twist_inistep > 0.0)
                     command += " --helical_twist_inistep " + joboptions["helical_twist_inistep"].getString();
 
@@ -3314,8 +3285,7 @@ bool RelionJob::getCommandsClass3DJob(
                 command += " --helical_rise_max " + joboptions["helical_rise_max"].getString();
 
                 float rise_inistep = joboptions["helical_rise_inistep"].getNumber(error_message);
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
                 if (rise_inistep > 0.0)
                     command += " --helical_rise_inistep " + joboptions["helical_rise_inistep"].getString();
             }
@@ -3326,8 +3296,7 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --helical_keep_tilt_prior_fixed";
         if (joboptions["dont_skip_align"].getBoolean() && !joboptions["do_local_ang_searches"].getBoolean()) {
             float val = joboptions["range_tilt"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
             
             if (val <  0.0) { val =  0.0; }
             if (val > 90.0) { val = 90.0; }
@@ -3335,8 +3304,7 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --sigma_tilt " + floatToString(val / 3.0);
 
             val = joboptions["range_psi"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
             if (val <  0.0) { val =  0.0; }
             if (val > 90.0) { val = 90.0; }
@@ -3344,8 +3312,7 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --sigma_psi " + floatToString(val / 3.0);
 
             val = joboptions["range_rot"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
             if (val <  0.0) { val =  0.0; }
             if (val > 90.0) { val = 90.0; }
@@ -3353,8 +3320,7 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --sigma_rot " + floatToString(val / 3.0);
 
             val = joboptions["helical_range_distance"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
             if (val > 0.0)
                 command += " --helical_sigma_distance " + floatToString(val / 3.0);
         }
@@ -3381,20 +3347,20 @@ bool RelionJob::getCommandsClass3DJob(
 }
 
 void RelionJob::initialiseAutorefineJob() {
-    type = PROC_3DAUTO;
+    type = PROC::AUTO3D;
 
     hidden_name = ".gui_auto3d";
 
-    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE_PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \n \n Alternatively, you may give a Spider/MRC stack of 2D images, but in that case NO metadata can be included and thus NO CTF correction can be performed, \
+    joboptions["fn_img"] = JobOption("Input images STAR file:", NODE::PART_DATA, "", "STAR files (*.star) \t Image stacks (not recommended, read help!) (*.{spi,mrcs})", "A STAR file with all images (and their metadata). \n \n Alternatively, you may give a Spider/MRC stack of 2D images, but in that case NO metadata can be included and thus NO CTF correction can be performed, \
 nor will it be possible to perform noise spectra estimation or intensity scale corrections in image groups. Therefore, running RELION with an input stack will in general provide sub-optimal results and is therefore not recommended!! Use the Preprocessing procedure to get the input STAR file in a semi-automated manner. Read the RELION wiki for more information.");
     joboptions["fn_cont"] = JobOption("Continue from here: ", string(""), "STAR Files (*_optimiser.star)", "CURRENT_ODIR", "Select the *_optimiser.star file for the iteration \
 from which you want to continue a previous run. \
 Note that the Output rootname of the continued run and the rootname of the previous run cannot be the same. \
 If they are the same, the program will automatically add a '_ctX' to the output rootname, \
 with X being the iteration from which one continues the previous run.");
-    joboptions["fn_ref"] = JobOption("Reference map:", NODE_3DREF, "", "Image Files (*.{spi,vol,mrc})", "A 3D map in MRC/Spider format. \
+    joboptions["fn_ref"] = JobOption("Reference map:", NODE::REF3D, "", "Image Files (*.{spi,vol,mrc})", "A 3D map in MRC/Spider format. \
     Make sure this map has the same dimensions and the same pixel size as your input images.");
-    joboptions["fn_mask"] = JobOption("Reference mask (optional):", NODE_MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "\
+    joboptions["fn_mask"] = JobOption("Reference mask (optional):", NODE::MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "\
 If no mask is provided, a soft spherical mask based on the particle diameter will be used.\n\
 \n\
 Otherwise, provide a Spider/mrc map containing a (soft) mask with the same \
@@ -3474,10 +3440,10 @@ lower-symmetric particles a value of 1.8 degrees will be sufficient. Perhaps ico
 This option will make the computation faster, but hasn't been tested for many cases for potential loss in reconstruction quality upon convergence.");
 
     joboptions["do_helix"] = JobOption("Do helical reconstruction?", false, "If set to Yes, then perform 3D helical reconstruction.");
-    joboptions["helical_tube_inner_diameter"] = JobOption("Tube diameter - inner (A):", string("-1"),"Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
+    joboptions["helical_tube_inner_diameter"] = JobOption("Tube diameter - inner (A):", string("-1"), "Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
 Set the inner diameter to negative value if the helix is not hollow in the center. The outer diameter should be slightly larger than the actual width of helical tubes because it also decides the shape of 2D \
 particle mask for each segment. If the psi priors of the extracted segments are not accurate enough due to high noise level or flexibility of the structure, then set the outer diameter to a large value.");
-    joboptions["helical_tube_outer_diameter"] = JobOption("Tube diameter - outer (A):", string("-1"),"Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
+    joboptions["helical_tube_outer_diameter"] = JobOption("Tube diameter - outer (A):", string("-1"), "Inner and outer diameter (in Angstroms) of the reconstructed helix spanning across Z axis. \
 Set the inner diameter to negative value if the helix is not hollow in the center. The outer diameter should be slightly larger than the actual width of helical tubes because it also decides the shape of 2D \
 particle mask for each segment. If the psi priors of the extracted segments are not accurate enough due to high noise level or flexibility of the structure, then set the outer diameter to a large value.");
     joboptions["range_rot"] = JobOption("Angular search range - rot (deg):", string("-1"), "Local angular searches will be performed \
@@ -3505,7 +3471,7 @@ A range of 15 degrees means sigma = 5 degrees.\n\nThese options will be invalid 
     joboptions["helical_nr_asu"] = JobOption("Number of unique asymmetrical units:", 1, 1, 100, 1, "Number of unique helical asymmetrical units in each segment box. If the inter-box distance (set in segment picking step) \
 is 100 Angstroms and the estimated helical rise is ~20 Angstroms, then set this value to 100 / 20 = 5 (nearest integer). This integer should not be less than 1. The correct value is essential in measuring the \
 signal to noise ratio in helical reconstruction.");
-    joboptions["helical_twist_initial"] =  JobOption("Initial helical twist (deg):", string("0"),"Initial helical symmetry. Set helical twist (in degrees) to positive value if it is a right-handed helix. \
+    joboptions["helical_twist_initial"] =  JobOption("Initial helical twist (deg):", string("0"), "Initial helical symmetry. Set helical twist (in degrees) to positive value if it is a right-handed helix. \
 Helical rise is a positive value in Angstroms. If local searches of helical symmetry are planned, initial values of helical twist and rise should be within their respective ranges.");
     joboptions["helical_rise_initial"] = JobOption("Initial helical rise (A):", string("0"), "Initial helical symmetry. Set helical twist (in degrees) to positive value if it is a right-handed helix. \
 Helical rise is a positive value in Angstroms. If local searches of helical symmetry are planned, initial values of helical twist and rise should be within their respective ranges.");
@@ -3547,7 +3513,7 @@ This may improve performance on systems where disk access, and particularly meta
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 8 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
     const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
-    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    if (!scratch_dir) { scratch_dir = DEFAULT::SCRATCHDIR; }
     joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
@@ -3562,7 +3528,7 @@ bool RelionJob::getCommandsAutorefineJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_3DAUTO_NAME, job_counter);
+    initialisePipeline(outputname, PROC::AUTO3D_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
         "`which relion_refine_mpi`" : 
         "`which relion_refine`";
@@ -3609,8 +3575,7 @@ bool RelionJob::getCommandsAutorefineJob(
                 command += " --firstiter_cc";
         }
         if (joboptions["ini_high"].getNumber(error_message) > 0.0) {
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
             command += " --ini_high " + joboptions["ini_high"].getString();
         }
     }
@@ -3688,8 +3653,7 @@ bool RelionJob::getCommandsAutorefineJob(
         command += " --offset_range " + joboptions["offset_range"].getString();
         // The sampling given in the GUI will be the oversampled one!
         command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber(error_message) * pow(2.0, iover));
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         command += " --sym " + joboptions["sym_name"].getString();
         // Always join low-res data, as some D&I point group refinements may fall into different hands!
@@ -3701,8 +3665,7 @@ bool RelionJob::getCommandsAutorefineJob(
             command += " --helix";
 
             float inner_diam = joboptions["helical_tube_inner_diameter"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
             if (inner_diam > 0.0)
                 command += " --helical_inner_diameter " + joboptions["helical_tube_inner_diameter"].getString();
 
@@ -3713,8 +3676,7 @@ bool RelionJob::getCommandsAutorefineJob(
                 command += " --helical_rise_initial " + joboptions["helical_rise_initial"].getString();
 
                 float myz = joboptions["helical_z_percentage"].getNumber(error_message) / 100.0;
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
                 command += " --helical_z_percentage " + floatToString(myz);
 
                 if (joboptions["do_local_search_helical_symmetry"].getBoolean()) {
@@ -3744,8 +3706,7 @@ bool RelionJob::getCommandsAutorefineJob(
             float val;
             if (sampling != auto_local_sampling) {
                 val = joboptions["range_tilt"].getNumber(error_message);
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
                 
                 if (val <  0.0) { val =  0.0; }
                 if (val > 90.0) { val = 90.0; }
@@ -3753,8 +3714,7 @@ bool RelionJob::getCommandsAutorefineJob(
                 command += " --sigma_tilt " + floatToString(val / 3.0);
 
                 val = joboptions["range_psi"].getNumber(error_message);
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
 
                 if (val <  0.0) { val =  0.0; }
                 if (val > 90.0) { val = 90.0; }
@@ -3762,8 +3722,7 @@ bool RelionJob::getCommandsAutorefineJob(
                 command += " --sigma_psi " + floatToString(val / 3.0);
 
                 val = joboptions["range_rot"].getNumber(error_message);
-                if (error_message != "")
-                    return false;
+                if (error_message != "") return false;
 
                 if (val <  0.0) { val =  0.0; }
                 if (val > 90.0) { val = 90.0; }
@@ -3772,8 +3731,7 @@ bool RelionJob::getCommandsAutorefineJob(
             }
 
             val = joboptions["helical_range_distance"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
             if (val > 0.0)
                 command += " --helical_sigma_distance " + floatToString(val / 3.0);
 
@@ -3802,7 +3760,7 @@ bool RelionJob::getCommandsAutorefineJob(
 }
 
 void RelionJob::initialiseMultiBodyJob() {
-    type = PROC_MULTIBODY;
+    type = PROC::MULTIBODY;
 
     hidden_name = ".gui_multibody";
 
@@ -3871,7 +3829,7 @@ This may improve performance on systems where disk access, and particularly meta
 Because particles are read in float-precision, it will take ( N * box_size * box_size * 8 / (1024 * 1024 * 1024) ) Giga-bytes to read N particles into RAM. For 100 thousand 200x200 images, that becomes 15Gb, or 60 Gb for the same number of 400x400 particles. \
 Remember that running a single MPI follower on each node that runs as many threads as available cores will have access to all available RAM. \n \n If parallel disc I/O is set to No, then only the leader reads all particles into RAM and sends those particles through the network to the MPI followers during the refinement iterations.");
     const char *scratch_dir = getenv("RELION_SCRATCH_DIR");
-    if (!scratch_dir) { scratch_dir = DEFAULTSCRATCHDIR; }
+    if (!scratch_dir) { scratch_dir = DEFAULT::SCRATCHDIR; }
     joboptions["scratch_dir"] = JobOption("Copy particles to scratch directory:", string(scratch_dir), "If a directory is provided here, then the job will create a sub-directory in it called relion_volatile. If that relion_volatile directory already exists, it will be wiped. Then, the program will copy all input particles into a large stack inside the relion_volatile subdirectory. \
 Provided this directory is on a fast local drive (e.g. an SSD drive), processing in all the iterations will be faster. If the job finishes correctly, the relion_volatile directory will be wiped. If the job crashes, you may want to remove it yourself.");
     joboptions["do_combine_thru_disc"] = JobOption("Combine iterations through disc?", false, "If set to Yes, at the end of every iteration all MPI followers will write out a large file with their accumulated results. The MPI leader will read in all these files, combine them all, and write out a new file with the combined results. \
@@ -3886,7 +3844,7 @@ bool RelionJob::getCommandsMultiBodyJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_MULTIBODY_NAME, job_counter);
+    initialisePipeline(outputname, PROC::MULTIBODY_NAME, job_counter);
     string command;
 
     if (!exists(joboptions["fn_bodies"].getString())) {
@@ -3908,8 +3866,7 @@ bool RelionJob::getCommandsMultiBodyJob(
 
         command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
             "`which relion_refine_mpi`" : "`which relion_refine`";
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         MetaDataTable MD;
         MD.read(joboptions["fn_bodies"].getString());
@@ -3952,8 +3909,7 @@ bool RelionJob::getCommandsMultiBodyJob(
             command += " --offset_range " + joboptions["offset_range"].getString();
             // The sampling given in the GUI will be the oversampled one!
             command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber(error_message) * pow(2.0, iover));
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
         }
 
         if (joboptions["do_subtracted_bodies"].getBoolean())
@@ -4034,12 +3990,10 @@ bool RelionJob::getCommandsMultiBodyJob(
         // Selection
         if (joboptions["do_select"].getBoolean()) {
             float minval = joboptions["eigenval_min"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
             float maxval = joboptions["eigenval_max"].getNumber(error_message);
-            if (error_message != "")
-                return false;
+            if (error_message != "") return false;
 
             if (minval >= maxval) {
                 error_message = errorMsg("the maximum eigenvalue should be larger than the minimum one!");
@@ -4065,13 +4019,13 @@ bool RelionJob::getCommandsMultiBodyJob(
             if (max < 99998)
                 fnt += "_max" + integerToString(max);
             fnt += ".star";
-            Node node2(fnt, NODE_PART_DATA);
+            Node node2(fnt, NODE::PART_DATA);
             outputNodes.push_back(node2);
 
         }
 
         // PDF with histograms of the eigenvalues
-        Node node3(outputname + "analyse_logfile.pdf", NODE_PDF_LOGFILE);
+        Node node3(outputname + "analyse_logfile.pdf", NODE::PDF_LOGFILE);
         outputNodes.push_back(node3);
 
         commands.push_back(command);
@@ -4083,7 +4037,7 @@ bool RelionJob::getCommandsMultiBodyJob(
 void RelionJob::initialiseMaskcreateJob() {
     hidden_name = ".gui_maskcreate";
 
-    joboptions["fn_in"] = JobOption("Input 3D map:", NODE_3DREF, "", "MRC map files (*.mrc)", "Provide an input MRC map from which to start binarizing the map.");
+    joboptions["fn_in"] = JobOption("Input 3D map:", NODE::REF3D, "", "MRC map files (*.mrc)", "Provide an input MRC map from which to start binarizing the map.");
 
     joboptions["lowpass_filter"] = JobOption("Lowpass filter map (A)", 15, 10, 100, 5, "Lowpass filter that will be applied to the input map, prior to binarization. To calculate solvent masks, a lowpass filter of 15-20A may work well.");
     joboptions["angpix"] = JobOption("Pixel size (A)", -1, 0.3, 5, 0.1, "Provide the pixel size of the input map in Angstroms to calculate the low-pass filter. This value is also used in the output image header.");
@@ -4103,7 +4057,7 @@ bool RelionJob::getCommandsMaskcreateJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_MASKCREATE_NAME, job_counter);
+    initialisePipeline(outputname, PROC::MASKCREATE_NAME, job_counter);
     string command;
 
     command = "`which relion_mask_create`";
@@ -4118,7 +4072,7 @@ bool RelionJob::getCommandsMaskcreateJob(
     inputNodes.push_back(node);
 
     command += " --o " + outputname + "mask.mrc";
-    Node node2(outputname + "mask.mrc", NODE_MASK);
+    Node node2(outputname + "mask.mrc", NODE::MASK);
     outputNodes.push_back(node2);
 
     if (joboptions["lowpass_filter"].getNumber(error_message) > 0) {
@@ -4139,8 +4093,7 @@ bool RelionJob::getCommandsMaskcreateJob(
 
     if (joboptions["do_helix"].getBoolean()) {
         command += " --helix --z_percentage " + floatToString(joboptions["helical_z_percentage"].getNumber(error_message) / 100.0);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
     }
 
     // Running stuff
@@ -4158,22 +4111,22 @@ void RelionJob::initialiseJoinstarJob() {
     hidden_name = ".gui_joinstar";
 
     joboptions["do_part"] = JobOption("Combine particle STAR files?", false, "");
-    joboptions["fn_part1"] = JobOption("Particle STAR file 1: ", NODE_PART_DATA, "", "particle STAR file (*.star)", "The first of the particle STAR files to be combined.");
-    joboptions["fn_part2"] = JobOption("Particle STAR file 2: ", NODE_PART_DATA, "", "particle STAR file (*.star)", "The second of the particle STAR files to be combined.");
-    joboptions["fn_part3"] = JobOption("Particle STAR file 3: ", NODE_PART_DATA, "", "particle STAR file (*.star)", "The third of the particle STAR files to be combined. Leave empty if there are only two files to be combined.");
-    joboptions["fn_part4"] = JobOption("Particle STAR file 4: ", NODE_PART_DATA, "", "particle STAR file (*.star)", "The fourth of the particle STAR files to be combined. Leave empty if there are only two or three files to be combined.");
+    joboptions["fn_part1"] = JobOption("Particle STAR file 1: ", NODE::PART_DATA, "", "particle STAR file (*.star)", "The first of the particle STAR files to be combined.");
+    joboptions["fn_part2"] = JobOption("Particle STAR file 2: ", NODE::PART_DATA, "", "particle STAR file (*.star)", "The second of the particle STAR files to be combined.");
+    joboptions["fn_part3"] = JobOption("Particle STAR file 3: ", NODE::PART_DATA, "", "particle STAR file (*.star)", "The third of the particle STAR files to be combined. Leave empty if there are only two files to be combined.");
+    joboptions["fn_part4"] = JobOption("Particle STAR file 4: ", NODE::PART_DATA, "", "particle STAR file (*.star)", "The fourth of the particle STAR files to be combined. Leave empty if there are only two or three files to be combined.");
 
     joboptions["do_mic"] = JobOption("Combine micrograph STAR files?", false, "");
-    joboptions["fn_mic1"] = JobOption("Micrograph STAR file 1: ", NODE_MICS, "", "micrograph STAR file (*.star)", "The first of the micrograph STAR files to be combined.");
-    joboptions["fn_mic2"] = JobOption("Micrograph STAR file 2: ", NODE_MICS, "", "micrograph STAR file (*.star)", "The second of the micrograph STAR files to be combined.");
-    joboptions["fn_mic3"] = JobOption("Micrograph STAR file 3: ", NODE_MICS, "", "micrograph STAR file (*.star)", "The third of the micrograph STAR files to be combined. Leave empty if there are only two files to be combined.");
-    joboptions["fn_mic4"] = JobOption("Micrograph STAR file 4: ", NODE_MICS, "", "micrograph STAR file (*.star)", "The fourth of the micrograph STAR files to be combined. Leave empty if there are only two or three files to be combined.");
+    joboptions["fn_mic1"] = JobOption("Micrograph STAR file 1: ", NODE::MICS, "", "micrograph STAR file (*.star)", "The first of the micrograph STAR files to be combined.");
+    joboptions["fn_mic2"] = JobOption("Micrograph STAR file 2: ", NODE::MICS, "", "micrograph STAR file (*.star)", "The second of the micrograph STAR files to be combined.");
+    joboptions["fn_mic3"] = JobOption("Micrograph STAR file 3: ", NODE::MICS, "", "micrograph STAR file (*.star)", "The third of the micrograph STAR files to be combined. Leave empty if there are only two files to be combined.");
+    joboptions["fn_mic4"] = JobOption("Micrograph STAR file 4: ", NODE::MICS, "", "micrograph STAR file (*.star)", "The fourth of the micrograph STAR files to be combined. Leave empty if there are only two or three files to be combined.");
 
     joboptions["do_mov"] = JobOption("Combine movie STAR files?", false, "");
-    joboptions["fn_mov1"] = JobOption("Movie STAR file 1: ", NODE_MOVIES, "", "movie STAR file (*.star)", "The first of the micrograph movie STAR files to be combined.");
-    joboptions["fn_mov2"] = JobOption("Movie STAR file 2: ", NODE_MOVIES, "", "movie STAR file (*.star)", "The second of the micrograph movie STAR files to be combined.");
-    joboptions["fn_mov3"] = JobOption("Movie STAR file 3: ", NODE_MOVIES, "", "movie STAR file (*.star)", "The third of the micrograph movie STAR files to be combined. Leave empty if there are only two files to be combined.");
-    joboptions["fn_mov4"] = JobOption("Movie STAR file 4: ", NODE_MOVIES, "", "movie STAR file (*.star)", "The fourth of the micrograph movie STAR files to be combined. Leave empty if there are only two or three files to be combined.");
+    joboptions["fn_mov1"] = JobOption("Movie STAR file 1: ", NODE::MOVIES, "", "movie STAR file (*.star)", "The first of the micrograph movie STAR files to be combined.");
+    joboptions["fn_mov2"] = JobOption("Movie STAR file 2: ", NODE::MOVIES, "", "movie STAR file (*.star)", "The second of the micrograph movie STAR files to be combined.");
+    joboptions["fn_mov3"] = JobOption("Movie STAR file 3: ", NODE::MOVIES, "", "movie STAR file (*.star)", "The third of the micrograph movie STAR files to be combined. Leave empty if there are only two files to be combined.");
+    joboptions["fn_mov4"] = JobOption("Movie STAR file 4: ", NODE::MOVIES, "", "movie STAR file (*.star)", "The fourth of the micrograph movie STAR files to be combined. Leave empty if there are only two or three files to be combined.");
 }
 
 bool RelionJob::getCommandsJoinstarJob(
@@ -4181,7 +4134,7 @@ bool RelionJob::getCommandsJoinstarJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_JOINSTAR_NAME, job_counter);
+    initialisePipeline(outputname, PROC::JOINSTAR_NAME, job_counter);
     string command;
     command="`which relion_star_handler`";
 
@@ -4305,12 +4258,12 @@ void RelionJob::initialiseSubtractJob() {
 
     joboptions["fn_opt"] = JobOption("Input optimiser.star: ", string(""), "STAR Files (*_optimiser.star)", "./", "Select the *_optimiser.star file for the iteration of the 3D refinement/classification \
 which you want to use for subtraction. It will use the maps from this run for the subtraction, and of no particles input STAR file is given below, it will use all of the particles from this run.");
-    joboptions["fn_mask"] = JobOption("Mask of the signal to keep:", NODE_MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a soft mask where the protein density you wish to subtract from the experimental particles is black (0) and the density you wish to keep is white (1).");
+    joboptions["fn_mask"] = JobOption("Mask of the signal to keep:", NODE::MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a soft mask where the protein density you wish to subtract from the experimental particles is black (0) and the density you wish to keep is white (1).");
     joboptions["do_data"] = JobOption("Use different particles?", false, "If set to Yes, subtraction will be performed on the particles in the STAR file below, instead of on all the particles of the 3D refinement/classification from the optimiser.star file.");
-    joboptions["fn_data"] = JobOption("Input particle star file:", NODE_PART_DATA, "", "particle STAR file (*.star)", "The particle STAR files with particles that will be used in the subtraction. Leave this field empty if all particles from the input refinement/classification run are to be used.");
+    joboptions["fn_data"] = JobOption("Input particle star file:", NODE::PART_DATA, "", "particle STAR file (*.star)", "The particle STAR files with particles that will be used in the subtraction. Leave this field empty if all particles from the input refinement/classification run are to be used.");
 
     joboptions["do_fliplabel"] = JobOption("OR revert to original particles?", false, "If set to Yes, no signal subtraction is performed. Instead, the labels of rlnImageName and rlnImageOriginalName are flipped in the input STAR file given in the field below. This will make the STAR file point back to the original, non-subtracted images.");
-    joboptions["fn_fliplabel"] = JobOption("revert this particle star file:", NODE_PART_DATA, "", "particle STAR file (*.star)", "The particle STAR files with particles that will be used for label reversion.");
+    joboptions["fn_fliplabel"] = JobOption("revert this particle star file:", NODE::PART_DATA, "", "particle STAR file (*.star)", "The particle STAR files with particles that will be used for label reversion.");
 
     joboptions["do_center_mask"] = JobOption("Do center subtracted images on mask?", true, "If set to Yes, the subtracted particles will be centered on projections of the center-of-mass of the input mask.");
     joboptions["do_center_xyz"] = JobOption("Do center on my coordinates?", false, "If set to Yes, the subtracted particles will be centered on projections of the x,y,z coordinates below. The unit is pixel, not angstrom. The origin is at the center of the box, not at the corner.");
@@ -4326,7 +4279,7 @@ bool RelionJob::getCommandsSubtractJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_SUBTRACT_NAME, job_counter);
+    initialisePipeline(outputname, PROC::SUBTRACT_NAME, job_counter);
     string command;
 
     if (joboptions["do_fliplabel"].getBoolean()) {
@@ -4338,7 +4291,7 @@ bool RelionJob::getCommandsSubtractJob(
         Node node(joboptions["fn_fliplabel"].getString(), joboptions["fn_fliplabel"].node_type);
         inputNodes.push_back(node);
 
-        Node node2(outputname + "original.star", NODE_PART_DATA);
+        Node node2(outputname + "original.star", NODE::PART_DATA);
         outputNodes.push_back(node2);
 
         command = "`which relion_particle_subtract`";
@@ -4346,8 +4299,7 @@ bool RelionJob::getCommandsSubtractJob(
     } else {
         command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
             "`which relion_particle_subtract_mpi`" : "`which relion_particle_subtract`";
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         // I/O
         if (joboptions["fn_opt"].getString() == "") {
@@ -4355,7 +4307,7 @@ bool RelionJob::getCommandsSubtractJob(
             return false;
         }
         command += " --i " + joboptions["fn_opt"].getString();
-        Node node(joboptions["fn_opt"].getString(), NODE_OPTIMISER);
+        Node node(joboptions["fn_opt"].getString(), NODE::OPTIMISER);
         inputNodes.push_back(node);
 
         if (joboptions["fn_mask"].getString() != "") {
@@ -4374,7 +4326,7 @@ bool RelionJob::getCommandsSubtractJob(
         }
 
         command += " --o " + outputname;
-        Node node4(outputname + "particles_subtracted.star", NODE_PART_DATA);
+        Node node4(outputname + "particles_subtracted.star", NODE::PART_DATA);
         outputNodes.push_back(node4);
 
         if (joboptions["do_center_mask"].getBoolean()) {
@@ -4388,8 +4340,7 @@ bool RelionJob::getCommandsSubtractJob(
         if (joboptions["new_box"].getNumber(error_message) > 0) {
             command += " --new_box " + joboptions["new_box"].getString();
         }
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
     }
 
     // Other arguments
@@ -4403,8 +4354,8 @@ bool RelionJob::getCommandsSubtractJob(
 void RelionJob::initialisePostprocessJob() {
     hidden_name = ".gui_post";
 
-    joboptions["fn_in"] = JobOption("One of the 2 unfiltered half-maps:", NODE_HALFMAP, "", "MRC map files (*half1_*_unfil.mrc)",  "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
-    joboptions["fn_mask"] = JobOption("Solvent mask:", NODE_MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a soft mask where the protein is white (1) and the solvent is black (0). Often, the softer the mask the higher resolution estimates you will get. A soft edge of 5-10 pixels is often a good edge width.");
+    joboptions["fn_in"] = JobOption("One of the 2 unfiltered half-maps:", NODE::HALFMAP, "", "MRC map files (*half1_*_unfil.mrc)",  "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
+    joboptions["fn_mask"] = JobOption("Solvent mask:", NODE::MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a soft mask where the protein is white (1) and the solvent is black (0). Often, the softer the mask the higher resolution estimates you will get. A soft edge of 5-10 pixels is often a good edge width.");
     joboptions["angpix"] = JobOption("Calibrated pixel size (A)", -1, 0.3, 5, 0.1, "Provide the final, calibrated pixel size in Angstroms. This value may be different from the pixel-size used thus far, e.g. when you have recalibrated the pixel size using the fit to a PDB model. The X-axis of the output FSC plot will use this calibrated value.");
 
     joboptions["do_auto_bfac"] = JobOption("Estimate B-factor automatically?", true, "If set to Yes, then the program will use the automated procedure described by Rosenthal and Henderson (2003, JMB) to estimate an overall B-factor for your map, and sharpen it accordingly. \
@@ -4422,7 +4373,7 @@ Although that is probably slightly less accurate, the overall quality of your ma
     joboptions["do_skip_fsc_weighting"] = JobOption("Skip FSC-weighting?", false, "If set to No (the default), then the output map will be low-pass filtered according to the mask-corrected, gold-standard FSC-curve. \
 Sometimes, it is also useful to provide an ad-hoc low-pass filter (option below), as due to local resolution variations some parts of the map may be better and other parts may be worse than the overall resolution as measured by the FSC. \
 In such cases, set this option to Yes and provide an ad-hoc filter as described below.");
-    joboptions["low_pass"] = JobOption("Ad-hoc low-pass filter (A):",5,1,40,1,"This option allows one to low-pass filter the map at a user-provided frequency (in Angstroms). When using a resolution that is higher than the gold-standard FSC-reported resolution, take care not to interpret noise in the map for signal...");
+    joboptions["low_pass"] = JobOption("Ad-hoc low-pass filter (A):",5,1,40,1, "This option allows one to low-pass filter the map at a user-provided frequency (in Angstroms). When using a resolution that is higher than the gold-standard FSC-reported resolution, take care not to interpret noise in the map for signal...");
 }
 
 bool RelionJob::getCommandsPostprocessJob(
@@ -4430,7 +4381,7 @@ bool RelionJob::getCommandsPostprocessJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_POST_NAME, job_counter);
+    initialisePipeline(outputname, PROC::POST_NAME, job_counter);
     string command;
 
     command = "`which relion_postprocess`";
@@ -4462,15 +4413,15 @@ bool RelionJob::getCommandsPostprocessJob(
     // The output name contains a directory: use it for output
     command += " --o " + outputname + "postprocess";
     command += "  --angpix " + joboptions["angpix"].getString();
-    Node node1(outputname+"postprocess.mrc", NODE_FINALMAP);
+    Node node1(outputname+"postprocess.mrc", NODE::FINALMAP);
     outputNodes.push_back(node1);
-    Node node2(outputname+"postprocess_masked.mrc", NODE_FINALMAP);
+    Node node2(outputname+"postprocess_masked.mrc", NODE::FINALMAP);
     outputNodes.push_back(node2);
 
-    Node node2b(outputname+"logfile.pdf", NODE_PDF_LOGFILE);
+    Node node2b(outputname+"logfile.pdf", NODE::PDF_LOGFILE);
     outputNodes.push_back(node2b);
 
-    Node node2c(outputname+"postprocess.star", NODE_POST);
+    Node node2c(outputname+"postprocess.star", NODE::POST);
     outputNodes.push_back(node2c);
 
     // Sharpening
@@ -4502,16 +4453,16 @@ bool RelionJob::getCommandsPostprocessJob(
 void RelionJob::initialiseLocalresJob() {
     hidden_name = ".gui_localres";
 
-    joboptions["fn_in"] = JobOption("One of the 2 unfiltered half-maps:", NODE_HALFMAP, "", "MRC map files (*_unfil.mrc)",  "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
+    joboptions["fn_in"] = JobOption("One of the 2 unfiltered half-maps:", NODE::HALFMAP, "", "MRC map files (*_unfil.mrc)",  "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
     joboptions["angpix"] = JobOption("Calibrated pixel size (A)", 1, 0.3, 5, 0.1, "Provide the final, calibrated pixel size in Angstroms. This value may be different from the pixel-size used thus far, e.g. when you have recalibrated the pixel size using the fit to a PDB model. The X-axis of the output FSC plot will use this calibrated value.");
 
-    // Check for environment variable RELION_RESMAP_TEMPLATE
+    // Check for environment variable RELION_RESMAP_EXECUTABLE
     const char *resmap_exe = getenv("RELION_RESMAP_EXECUTABLE");
-    if (!resmap_exe) { resmap_exe = DEFAULTRESMAPLOCATION; }
+    if (!resmap_exe) { resmap_exe = DEFAULT::RESMAPLOCATION; }
 
     joboptions["do_resmap_locres"] = JobOption("Use ResMap?", true, "If set to Yes, then ResMap will be used for local resolution estimation.");
     joboptions["fn_resmap"] = JobOption("ResMap executable:", string(resmap_exe), "ResMap*", ".", "Location of the ResMap executable. You can control the default of this field by setting environment variable RELION_RESMAP_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code. \n \n Note that the ResMap wrapper cannot use MPI.");
-    joboptions["fn_mask"] = JobOption("User-provided solvent mask:", NODE_MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a mask with values between 0 and 1 around all domains of the complex. ResMap uses this mask for local resolution calculation. RELION does NOT use this mask for calculation, but makes a histogram of local resolution within this mask.");
+    joboptions["fn_mask"] = JobOption("User-provided solvent mask:", NODE::MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a mask with values between 0 and 1 around all domains of the complex. ResMap uses this mask for local resolution calculation. RELION does NOT use this mask for calculation, but makes a histogram of local resolution within this mask.");
     joboptions["pval"] = JobOption("P-value:", 0.05, 0.0, 1.0, 0.01, "This value is typically left at 0.05. If you change it, report the modified value in your paper!");
     joboptions["minres"] = JobOption("Highest resolution (A): ", 0.0, 0.0, 10.0, 0.1, "ResMaps minRes parameter. By default (0), the program will start at just above 2x the pixel size");
     joboptions["maxres"] = JobOption("Lowest resolution (A): ", 0.0, 0.0, 10.0, 0.1, "ResMaps maxRes parameter. By default (0), the program will stop at 4x the pixel size");
@@ -4532,7 +4483,7 @@ bool RelionJob::getCommandsLocalresJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_RESMAP_NAME, job_counter);
+    initialisePipeline(outputname, PROC::RESMAP_NAME, job_counter);
     string command;
 
     if (joboptions["do_resmap_locres"].getBoolean() == joboptions["do_relion_locres"].getBoolean()) {
@@ -4577,8 +4528,7 @@ bool RelionJob::getCommandsLocalresJob(
             error_message = "You cannot use more than 1 MPI processor for the ResMap wrapper...";
             return false;
         }
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         // Make symbolic links to the half-maps in the output directory
         commands.push_back("ln -s ../../" + fn_half1 + " " + outputname + "half1.mrc");
@@ -4587,7 +4537,7 @@ bool RelionJob::getCommandsLocalresJob(
         Node node2(joboptions["fn_mask"].getString(), joboptions["fn_mask"].node_type);
         inputNodes.push_back(node2);
 
-        Node node3(outputname + "half1_resmap.mrc", NODE_RESMAP);
+        Node node3(outputname + "half1_resmap.mrc", NODE::RESMAP);
         outputNodes.push_back(node3);
 
         command = joboptions["fn_resmap"].getString();
@@ -4604,8 +4554,7 @@ bool RelionJob::getCommandsLocalresJob(
 
         command = joboptions["nr_mpi"].getNumber(error_message) > 1 ?
             "`which relion_postprocess_mpi`" : "`which relion_postprocess`";
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
         command += " --locres --i " + joboptions["fn_in"].getString();
         command += " --o " + outputname + "relion";
@@ -4618,13 +4567,13 @@ bool RelionJob::getCommandsLocalresJob(
 
         if (joboptions["fn_mask"].getString() != "") {
             command += " --mask " + joboptions["fn_mask"].getString();
-            Node node0(outputname + "histogram.pdf", NODE_PDF_LOGFILE);
+            Node node0(outputname + "histogram.pdf", NODE::PDF_LOGFILE);
             outputNodes.push_back(node0);
         }
 
-        Node node1(outputname + "relion_locres_filtered.mrc", NODE_FINALMAP);
+        Node node1(outputname + "relion_locres_filtered.mrc", NODE::FINALMAP);
         outputNodes.push_back(node1);
-        Node node2(outputname + "relion_locres.mrc", NODE_RESMAP);
+        Node node2(outputname + "relion_locres.mrc", NODE::RESMAP);
         outputNodes.push_back(node2);
     }
 
@@ -4639,9 +4588,9 @@ void RelionJob::initialiseMotionrefineJob() {
     hidden_name = ".gui_bayespolish";
 
     // I/O
-    joboptions["fn_mic"] = JobOption("Micrographs (from MotionCorr):", NODE_MICS,  "", "STAR files (*.star)", "The input STAR file with the micrograph (and their movie metadata) from a MotionCorr job.");
-    joboptions["fn_data"] = JobOption("Particles (from Refine3D or CtfRefine):", NODE_PART_DATA,  "", "STAR files (*.star)", "The input STAR file with the metadata of all particles.");
-    joboptions["fn_post"] = JobOption("Postprocess STAR file:", NODE_POST,  "", "STAR files (postprocess.star)", "The STAR file generated by a PostProcess job. \
+    joboptions["fn_mic"] = JobOption("Micrographs (from MotionCorr):", NODE::MICS,  "", "STAR files (*.star)", "The input STAR file with the micrograph (and their movie metadata) from a MotionCorr job.");
+    joboptions["fn_data"] = JobOption("Particles (from Refine3D or CtfRefine):", NODE::PART_DATA,  "", "STAR files (*.star)", "The input STAR file with the metadata of all particles.");
+    joboptions["fn_post"] = JobOption("Postprocess STAR file:", NODE::POST,  "", "STAR files (postprocess.star)", "The STAR file generated by a PostProcess job. \
 The mask used for this postprocessing will be applied to the unfiltered half-maps and should encompass the entire complex. The resulting FSC curve will be used for weighting the different frequencies.");
 
     // Frame range
@@ -4658,7 +4607,7 @@ The mask used for this postprocessing will be applied to the unfiltered half-map
 
     // motion_fit
     joboptions["do_polish"] = JobOption("Perform particle polishing?", true, "If set to Yes, then relion_motion_refine will be run to estimate per-particle motion-tracks using the parameters below, and polished particles will be generated.");
-    joboptions["opt_params"] = JobOption("Optimised parameter file:", NODE_POLISH_PARAMS,  "", "TXT files (*.txt)", "The output TXT file from a previous Bayesian polishing job in which the optimal parameters were determined.");
+    joboptions["opt_params"] = JobOption("Optimised parameter file:", NODE::POLISH_PARAMS,  "", "TXT files (*.txt)", "The output TXT file from a previous Bayesian polishing job in which the optimal parameters were determined.");
     joboptions["do_own_params"] = JobOption("OR use your own parameters?", false, "If set to Yes, then the field for the optimised parameter file will be ignored and the parameters specified below will be used instead.");
     joboptions["sigma_vel"] = JobOption("Sigma for velocity (A/dose): ", 0.2, 1.0, 10.0, 0.1, "Standard deviation for the velocity regularisation. Smaller values requires the tracks to be shorter.");
     joboptions["sigma_div"] = JobOption("Sigma for divergence (A): ", 5000, 0, 10000, 10000, "Standard deviation for the divergence of tracks across the micrograph. Smaller values requires the tracks to be spatially more uniform in a micrograph.");
@@ -4674,7 +4623,7 @@ bool RelionJob::getCommandsMotionrefineJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_MOTIONREFINE_NAME, job_counter);
+    initialisePipeline(outputname, PROC::MOTIONREFINE_NAME, job_counter);
     string command;
 
     command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
@@ -4731,8 +4680,7 @@ bool RelionJob::getCommandsMotionrefineJob(
     if (joboptions["do_param_optim"].getBoolean()) {
         // Estimate meta-parameters
         RFLOAT align_frac = 1.0 - joboptions["eval_frac"].getNumber(error_message);
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
         command += " --min_p " + joboptions["optim_min_part"].getString();
         command += " --eval_frac " + joboptions["eval_frac"].getString();
         command += " --align_frac " + floatToString(align_frac);
@@ -4742,10 +4690,9 @@ bool RelionJob::getCommandsMotionrefineJob(
         } else {
             command += " --params3 ";
         }
-        if (error_message != "")
-            return false;
+        if (error_message != "") return false;
 
-        Node node5(outputname+"opt_params_all_groups.txt", NODE_POLISH_PARAMS);
+        Node node5(outputname+"opt_params_all_groups.txt", NODE::POLISH_PARAMS);
         outputNodes.push_back(node5);
     } else if (joboptions["do_polish"].getBoolean()) {
         if (joboptions["do_own_params"].getBoolean()) {
@@ -4795,10 +4742,10 @@ bool RelionJob::getCommandsMotionrefineJob(
             command += " --scale " + joboptions["rescale"].getString();
         }
 
-        Node node6(outputname+"logfile.pdf", NODE_PDF_LOGFILE);
+        Node node6(outputname+"logfile.pdf", NODE::PDF_LOGFILE);
         outputNodes.push_back(node6);
 
-        Node node7(outputname+"shiny.star", NODE_PART_DATA);
+        Node node7(outputname+"shiny.star", NODE::PART_DATA);
         outputNodes.push_back(node7);
     }
 
@@ -4820,8 +4767,8 @@ void RelionJob::initialiseCtfrefineJob() {
     hidden_name = ".gui_ctfrefine";
 
     // I/O
-    joboptions["fn_data"] = JobOption("Particles (from Refine3D):", NODE_PART_DATA,  "", "STAR files (*.star)", "The input STAR file with the metadata of all particles.");
-    joboptions["fn_post"] = JobOption("Postprocess STAR file:", NODE_POST,  "", "STAR files (postprocess.star)", "The STAR file generated by a PostProcess job. \
+    joboptions["fn_data"] = JobOption("Particles (from Refine3D):", NODE::PART_DATA,  "", "STAR files (*.star)", "The input STAR file with the metadata of all particles.");
+    joboptions["fn_post"] = JobOption("Postprocess STAR file:", NODE::POST,  "", "STAR files (postprocess.star)", "The STAR file generated by a PostProcess job. \
 The mask used for this postprocessing will be applied to the unfiltered half-maps and should encompass the entire complex. The resulting FSC curve will be used for weighting the different frequencies. \n \n Note that for helices it is common practice to use a mask only encompassing the central 30% or so of the box. \
 This gives higher resolution estimates, as it disregards ill-defined regions near the box edges. However, for ctf_refine it is better to use a mask encompassing (almost) the entire box, as otherwise there may not be enough signal.");
 
@@ -4849,7 +4796,7 @@ bool RelionJob::getCommandsCtfrefineJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_CTFREFINE_NAME, job_counter);
+    initialisePipeline(outputname, PROC::CTFREFINE_NAME, job_counter);
     string command;
 
     command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
@@ -4894,7 +4841,7 @@ bool RelionJob::getCommandsCtfrefineJob(
     Node node2(joboptions["fn_post"].getString(), joboptions["fn_post"].node_type);
     inputNodes.push_back(node);
 
-    Node node6(outputname + "logfile.pdf", NODE_PDF_LOGFILE);
+    Node node6(outputname + "logfile.pdf", NODE::PDF_LOGFILE);
     outputNodes.push_back(node6);
 
     command += " --i " + joboptions["fn_data"].getString();
@@ -4942,7 +4889,7 @@ bool RelionJob::getCommandsCtfrefineJob(
         command += " --only_do_unfinished ";
     }
 
-    Node node5(outputname+"particles_ctf_refine.star", NODE_PART_DATA);
+    Node node5(outputname+"particles_ctf_refine.star", NODE::PART_DATA);
     outputNodes.push_back(node5);
 
     // Running stuff
@@ -4962,12 +4909,12 @@ void RelionJob::initialiseExternalJob() {
     joboptions["fn_exe"] = JobOption("External executable:", "", "", ".", "Location of the script that will launch the external program. This script should write all its output in the directory specified with --o. Also, it should write in that same directory a file called RELION_JOB_EXIT_SUCCESS upon successful exit, and RELION_JOB_EXIT_FAILURE upon failure.");
 
     // Optional input nodes
-    joboptions["in_mov"] = JobOption("Input movies: ", NODE_MOVIES, "", "movie STAR file (*.star)", "Input movies. This will be passed with a --in_movies argument to the executable.");
-    joboptions["in_mic"] = JobOption("Input micrographs: ", NODE_MICS, "", "micrographs STAR file (*.star)", "Input micrographs. This will be passed with a --in_mics argument to the executable.");
-    joboptions["in_part"] = JobOption("Input particles: ", NODE_PART_DATA, "", "particles STAR file (*.star)", "Input particles. This will be passed with a --in_parts argument to the executable.");
-    joboptions["in_coords"] = JobOption("Input coordinates:", NODE_MIC_COORDS, "", "STAR files (coords_suffix*.star)", "Input coordinates. This will be passed with a --in_coords argument to the executable.");
-    joboptions["in_3dref"] = JobOption("Input 3D reference: ", NODE_3DREF, "", "MRC files (*.mrc)", "Input 3D reference map. This will be passed with a --in_3dref argument to the executable.");
-    joboptions["in_mask"] = JobOption("Input 3D mask: ", NODE_MASK, "", "MRC files (*.mrc)", "Input 3D mask. This will be passed with a --in_mask argument to the executable.");
+    joboptions["in_mov"] = JobOption("Input movies: ", NODE::MOVIES, "", "movie STAR file (*.star)", "Input movies. This will be passed with a --in_movies argument to the executable.");
+    joboptions["in_mic"] = JobOption("Input micrographs: ", NODE::MICS, "", "micrographs STAR file (*.star)", "Input micrographs. This will be passed with a --in_mics argument to the executable.");
+    joboptions["in_part"] = JobOption("Input particles: ", NODE::PART_DATA, "", "particles STAR file (*.star)", "Input particles. This will be passed with a --in_parts argument to the executable.");
+    joboptions["in_coords"] = JobOption("Input coordinates:", NODE::MIC_COORDS, "", "STAR files (coords_suffix*.star)", "Input coordinates. This will be passed with a --in_coords argument to the executable.");
+    joboptions["in_3dref"] = JobOption("Input 3D reference: ", NODE::REF3D, "", "MRC files (*.mrc)", "Input 3D reference map. This will be passed with a --in_3dref argument to the executable.");
+    joboptions["in_mask"] = JobOption("Input 3D mask: ", NODE::MASK, "", "MRC files (*.mrc)", "Input 3D mask. This will be passed with a --in_mask argument to the executable.");
 
     // Optional parameters
     for (int i = 1; i <= 10; i++) {
@@ -4990,7 +4937,7 @@ bool RelionJob::getCommandsExternalJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC_EXTERNAL_NAME, job_counter);
+    initialisePipeline(outputname, PROC::EXTERNAL_NAME, job_counter);
     string command;
 
     if (joboptions["fn_exe"].getString() == "") {

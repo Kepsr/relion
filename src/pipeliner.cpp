@@ -103,7 +103,7 @@ void PipeLine::addNewOutputEdge(long int myProcess, Node &_Node) {
 
     // 1. Check whether Node with that name already exists in the Node list
     // Touch .Nodes entries even if they don't exist for scheduled jobs
-    bool touch_if_not_exist = (processList[myProcess].status == PROC_SCHEDULED);
+    bool touch_if_not_exist = (processList[myProcess].status == PROC::SCHEDULED);
 
     // 2. Set the output_from_process of this Node
     _Node.outputFromProcess = myProcess;
@@ -208,7 +208,7 @@ void PipeLine::touchTemporaryNodeFiles(Process &process) {
 
     if (do_read_only) return;
 
-    bool touch_if_not_exist = (process.status == PROC_SCHEDULED);
+    bool touch_if_not_exist = (process.status == PROC::SCHEDULED);
 
     for (int j = 0; j < process.outputNodeList.size(); j++) {
         long int mynode = process.outputNodeList[j];
@@ -274,7 +274,7 @@ void PipeLine::remakeNodeDirectory() {
 
     for (long int i = 0; i < nodeList.size(); i++) {
         int myproc = nodeList[i].outputFromProcess;
-        bool touch_if_not_exist = myproc >= 0 && processList[myproc].status == PROC_SCHEDULED;
+        bool touch_if_not_exist = myproc >= 0 && processList[myproc].status == PROC::SCHEDULED;
         touchTemporaryNodeFile(nodeList[i], touch_if_not_exist);
     }
     command = "chmod 777 -R " + fn_dir;
@@ -292,7 +292,7 @@ bool PipeLine::checkProcessCompletion() {
 
     for (long int i=0; i < processList.size(); i++) {
         // Only check running processes for file existence
-        if (processList[i].status == PROC_RUNNING) {
+        if (processList[i].status == PROC::RUNNING) {
 
             if (exists(processList[i].name + RELION_JOB_EXIT_SUCCESS)) {
                 finished_success_processes.push_back(i);
@@ -337,7 +337,7 @@ bool PipeLine::checkProcessCompletion() {
         // Set the new status of all the finished processes
         for (int i = 0; i < finished_success_processes.size(); i++) {
             int myproc = finished_success_processes[i];
-            processList[myproc].status = PROC_FINISHED_SUCCESS;
+            processList[myproc].status = PROC::FINISHED_SUCCESS;
 
             // Also see whether there was an output nodes starfile
             getOutputNodesFromStarFile(myproc);
@@ -353,17 +353,16 @@ bool PipeLine::checkProcessCompletion() {
 
         }
         for (int i = 0; i < finished_failure_processes.size(); i++) {
-            processList[finished_failure_processes[i]].status = PROC_FINISHED_FAILURE;
+            processList[finished_failure_processes[i]].status = PROC::FINISHED_FAILURE;
         }
         for (int i = 0; i < finished_aborted_processes.size(); i++) {
-            processList[finished_aborted_processes[i]].status = PROC_FINISHED_ABORTED;
+            processList[finished_aborted_processes[i]].status = PROC::FINISHED_ABORTED;
         }
 
         // Always couple read/write with DO_LOCK
         // This is to make sure two different windows do not get out-of-sync
         write(DO_LOCK);
-        if (exists(PIPELINE_HAS_CHANGED))
-            std::remove(PIPELINE_HAS_CHANGED);
+        if (exists(PIPELINE_HAS_CHANGED)) std::remove(PIPELINE_HAS_CHANGED);
         return true;
     }
 
@@ -491,20 +490,20 @@ bool PipeLine::runJob(
     bool do_move_output_nodes_to_old = false;
     if (!only_schedule && is_main_continue)
     {
-        do_move_output_nodes_to_old = !(processList[current_job].type == PROC_2DCLASS ||
-                                        processList[current_job].type == PROC_3DCLASS ||
-                                        processList[current_job].type == PROC_INIMODEL ||
-                                        processList[current_job].type == PROC_3DAUTO ||
-                                        processList[current_job].type == PROC_MULTIBODY ||
-                                        processList[current_job].type == PROC_MANUALPICK ||
-                                        processList[current_job].type == PROC_CLASSSELECT);
+        do_move_output_nodes_to_old = !(processList[current_job].type == PROC::CLASS2D ||
+                                        processList[current_job].type == PROC::CLASS3D ||
+                                        processList[current_job].type == PROC::INIMODEL ||
+                                        processList[current_job].type == PROC::AUTO3D ||
+                                        processList[current_job].type == PROC::MULTIBODY ||
+                                        processList[current_job].type == PROC::MANUALPICK ||
+                                        processList[current_job].type == PROC::CLASSSELECT);
 
         // For continuation of relion_refine jobs, remove the original output nodes from the list
-        if (processList[current_job].type == PROC_2DCLASS ||
-            processList[current_job].type == PROC_3DCLASS ||
-            processList[current_job].type == PROC_3DAUTO ||
-            processList[current_job].type == PROC_MULTIBODY ||
-            processList[current_job].type == PROC_INIMODEL)
+        if (processList[current_job].type == PROC::CLASS2D ||
+            processList[current_job].type == PROC::CLASS3D ||
+            processList[current_job].type == PROC::AUTO3D ||
+            processList[current_job].type == PROC::MULTIBODY ||
+            processList[current_job].type == PROC::INIMODEL)
         {
 
             std::vector<bool> deleteNodes, deleteProcesses;
@@ -553,11 +552,11 @@ bool PipeLine::runJob(
     // For continuation of relion_refine jobs, remove the original output nodes from the list
     if (!only_schedule && is_main_continue) {
         if (
-            processList[current_job].type == PROC_2DCLASS ||
-            processList[current_job].type == PROC_3DCLASS ||
-            processList[current_job].type == PROC_3DAUTO ||
-            processList[current_job].type == PROC_MULTIBODY ||
-            processList[current_job].type == PROC_INIMODEL
+            processList[current_job].type == PROC::CLASS2D ||
+            processList[current_job].type == PROC::CLASS3D ||
+            processList[current_job].type == PROC::AUTO3D ||
+            processList[current_job].type == PROC::MULTIBODY ||
+            processList[current_job].type == PROC::INIMODEL
         ) {
 
             std::vector<bool> deleteNodes, deleteProcesses;
@@ -586,7 +585,7 @@ bool PipeLine::runJob(
     }
 
     // Now save the job (and its status) to the PipeLine
-    int mynewstatus = only_schedule ? PROC_SCHEDULED : PROC_RUNNING;
+    int mynewstatus = only_schedule ? PROC::SCHEDULED : PROC::RUNNING;
     bool allow_overwrite = is_main_continue || is_scheduled; // continuation and scheduled jobs always allow overwriting into the existing directory
 
     // Add the job to the pipeline, and set current_job to the new one
@@ -626,40 +625,40 @@ bool PipeLine::runJob(
 // Adds a scheduled job to the pipeline from the command line
 int PipeLine::addScheduledJob(std::string typestring, std::string fn_options) {
     int type;
-    if (typestring == PROC_IMPORT_NAME) {
-        type = PROC_IMPORT;
-    } else if (typestring == PROC_MOTIONCORR_NAME) {
-        type = PROC_MOTIONCORR;
-    } else if (typestring == PROC_CTFFIND_NAME) {
-        type = PROC_CTFFIND;
-    } else if (typestring == PROC_MANUALPICK_NAME) {
-        type = PROC_MANUALPICK;
-    } else if (typestring == PROC_AUTOPICK_NAME) {
-        type = PROC_AUTOPICK;
-    } else if (typestring == PROC_EXTRACT_NAME) {
-        type = PROC_EXTRACT;
-    } else if (typestring == PROC_CLASSSELECT_NAME) {
-        type = PROC_CLASSSELECT;
-    } else if (typestring == PROC_2DCLASS_NAME) {
-        type = PROC_2DCLASS;
-    } else if (typestring == PROC_3DCLASS_NAME) {
-        type = PROC_3DCLASS;
-    } else if (typestring == PROC_3DAUTO_NAME) {
-        type = PROC_3DAUTO;
-    } else if (typestring == PROC_MASKCREATE_NAME) {
-        typestring = PROC_MASKCREATE;
-    } else if (typestring == PROC_JOINSTAR_NAME) {
-        type = PROC_JOINSTAR;
-    } else if (typestring == PROC_SUBTRACT_NAME) {
-        type = PROC_SUBTRACT;
-    } else if (typestring == PROC_POST_NAME) {
-        type = PROC_POST;
-    } else if (typestring == PROC_RESMAP_NAME) {
-        type = PROC_RESMAP;
-    } else if (typestring == PROC_INIMODEL_NAME) {
-        type = PROC_INIMODEL;
-    } else if (typestring == PROC_EXTERNAL_NAME) {
-        type = PROC_EXTERNAL;
+    if (typestring == PROC::IMPORT_NAME) {
+        type = PROC::IMPORT;
+    } else if (typestring == PROC::MOTIONCORR_NAME) {
+        type = PROC::MOTIONCORR;
+    } else if (typestring == PROC::CTFFIND_NAME) {
+        type = PROC::CTFFIND;
+    } else if (typestring == PROC::MANUALPICK_NAME) {
+        type = PROC::MANUALPICK;
+    } else if (typestring == PROC::AUTOPICK_NAME) {
+        type = PROC::AUTOPICK;
+    } else if (typestring == PROC::EXTRACT_NAME) {
+        type = PROC::EXTRACT;
+    } else if (typestring == PROC::CLASSSELECT_NAME) {
+        type = PROC::CLASSSELECT;
+    } else if (typestring == PROC::CLASS2D_NAME) {
+        type = PROC::CLASS2D;
+    } else if (typestring == PROC::CLASS3D_NAME) {
+        type = PROC::CLASS3D;
+    } else if (typestring == PROC::AUTO3D_NAME) {
+        type = PROC::AUTO3D;
+    } else if (typestring == PROC::MASKCREATE_NAME) {
+        typestring = PROC::MASKCREATE;
+    } else if (typestring == PROC::JOINSTAR_NAME) {
+        type = PROC::JOINSTAR;
+    } else if (typestring == PROC::SUBTRACT_NAME) {
+        type = PROC::SUBTRACT;
+    } else if (typestring == PROC::POST_NAME) {
+        type = PROC::POST;
+    } else if (typestring == PROC::RESMAP_NAME) {
+        type = PROC::RESMAP;
+    } else if (typestring == PROC::INIMODEL_NAME) {
+        type = PROC::INIMODEL;
+    } else if (typestring == PROC::EXTERNAL_NAME) {
+        type = PROC::EXTERNAL;
     } else {
         REPORT_ERROR("ERROR: unrecognised string for job type: " + typestring);
     }
@@ -678,8 +677,8 @@ int PipeLine::addScheduledJob(int job_type, std::string fn_options) {
 
     // Always add Pre-processing jobs as continuation ones (for convenient on-the-fly processing)
     if (
-        job_type == PROC_MOTIONCORR || job_type == PROC_CTFFIND || 
-        job_type == PROC_AUTOPICK   || job_type == PROC_EXTRACT
+        job_type == PROC::MOTIONCORR || job_type == PROC::CTFFIND || 
+        job_type == PROC::AUTOPICK   || job_type == PROC::EXTRACT
     )
         job.is_continue = true;
 
@@ -717,9 +716,9 @@ void PipeLine::waitForJobToFinish(
         sleep(10);
         checkProcessCompletion();
         if (
-            processList[current_job].status == PROC_FINISHED_SUCCESS ||
-            processList[current_job].status == PROC_FINISHED_ABORTED ||
-            processList[current_job].status == PROC_FINISHED_FAILURE
+            processList[current_job].status == PROC::FINISHED_SUCCESS ||
+            processList[current_job].status == PROC::FINISHED_ABORTED ||
+            processList[current_job].status == PROC::FINISHED_FAILURE
         ) {
             // Prepare a string for a more informative .lock file
             std::string lock_message = " pipeliner noticed that " + processList[current_job].name + " finished and is trying to update the pipeline";
@@ -727,9 +726,9 @@ void PipeLine::waitForJobToFinish(
             // Read in existing pipeline, in case some other window had changed something else
             read(DO_LOCK, lock_message);
 
-                   if (processList[current_job].status == PROC_FINISHED_FAILURE) {
+                   if (processList[current_job].status == PROC::FINISHED_FAILURE) {
                 is_failure = true;
-            } else if (processList[current_job].status == PROC_FINISHED_ABORTED) {
+            } else if (processList[current_job].status == PROC::FINISHED_ABORTED) {
                 is_aborted = true;
             }
 
@@ -845,9 +844,9 @@ void PipeLine::runScheduledJobs(
                 sleep(seconds_wait_after);
                 checkProcessCompletion();
                 if (
-                    processList[current_job].status == PROC_FINISHED_SUCCESS ||
-                    processList[current_job].status == PROC_FINISHED_ABORTED ||
-                    processList[current_job].status == PROC_FINISHED_FAILURE
+                    processList[current_job].status == PROC::FINISHED_SUCCESS ||
+                    processList[current_job].status == PROC::FINISHED_ABORTED ||
+                    processList[current_job].status == PROC::FINISHED_FAILURE
                 ) {
                     // Prepare a string for a more informative .lock file
                     std::string lock_message = 
@@ -857,27 +856,27 @@ void PipeLine::runScheduledJobs(
                     // Read in existing pipeline, in case some other window had changed something else
                     read(DO_LOCK, lock_message);
 
-                    if (processList[current_job].status == PROC_FINISHED_SUCCESS) {
+                    if (processList[current_job].status == PROC::FINISHED_SUCCESS) {
                         // Will we go on to do another repeat?
                         if (repeat + 1 != nr_repeat) {
                             int mytype = processList[current_job].type;
                             // The following jobtypes have functionality to only do the unfinished part of the job
                             if (
-                                mytype == PROC_MOTIONCORR || mytype == PROC_CTFFIND || 
-                                mytype == PROC_AUTOPICK   || mytype == PROC_EXTRACT || 
-                                mytype == PROC_CLASSSELECT
+                                mytype == PROC::MOTIONCORR || mytype == PROC::CTFFIND || 
+                                mytype == PROC::AUTOPICK   || mytype == PROC::EXTRACT || 
+                                mytype == PROC::CLASSSELECT
                             ) {
                                 myjob.is_continue = true;
                                 // Write the job again, now with the updated is_continue status
                                 myjob.write(processList[current_job].name);
                             }
-                            processList[current_job].status = PROC_SCHEDULED;
+                            processList[current_job].status = PROC::SCHEDULED;
                         } else {
-                            processList[current_job].status = PROC_FINISHED_SUCCESS;
+                            processList[current_job].status = PROC::FINISHED_SUCCESS;
                         }
-                    } else if (processList[current_job].status == PROC_FINISHED_FAILURE) {
+                    } else if (processList[current_job].status == PROC::FINISHED_FAILURE) {
                         is_failure = true;
-                    } else if (processList[current_job].status == PROC_FINISHED_ABORTED) {
+                    } else if (processList[current_job].status == PROC::FINISHED_ABORTED) {
                         is_aborted = true;
                     }
 
@@ -927,7 +926,7 @@ void PipeLine::runScheduledJobs(
         // After breaking out of repeat, set status of the jobs to finished
         for (long int i = 0; i < my_scheduled_processes.size(); i++) {
             int current_job = findProcessByName(my_scheduled_processes[i]);
-            processList[current_job].status = PROC_FINISHED_SUCCESS;
+            processList[current_job].status = PROC::FINISHED_SUCCESS;
         }
 
         // Write the pipeline to an updated STAR file
@@ -1067,14 +1066,14 @@ bool PipeLine::markAsFinishedJob(
     std::string lock_message = "markAsFinishedJob";
     read(DO_LOCK, lock_message);
 
-    processList[this_job].status = is_failed ? PROC_FINISHED_FAILURE : PROC_FINISHED_SUCCESS;
+    processList[this_job].status = is_failed ? PROC::FINISHED_FAILURE : PROC::FINISHED_SUCCESS;
 
     // For relion_refine jobs, add last iteration optimiser.star, data.star, model.star and class???.mrc to the pipeline
     if (
-        processList[this_job].type == PROC_2DCLASS ||
-        processList[this_job].type == PROC_3DCLASS ||
-        processList[this_job].type == PROC_3DAUTO  ||
-        processList[this_job].type == PROC_INIMODEL
+        processList[this_job].type == PROC::CLASS2D ||
+        processList[this_job].type == PROC::CLASS3D ||
+        processList[this_job].type == PROC::AUTO3D  ||
+        processList[this_job].type == PROC::INIMODEL
     ) {
         // Get the last iteration optimiser file
         FileName fn_opt;
@@ -1095,29 +1094,29 @@ bool PipeLine::markAsFinishedJob(
 
             // Also get data.star
             FileName fn_data = fn_opt.without("_optimiser.star") + "_data.star";
-            Node node2(fn_data, NODE_PART_DATA);
+            Node node2(fn_data, NODE::PART_DATA);
             addNewOutputEdge(this_job, node2);
 
             FileName fn_root = fn_opt.without("_optimiser.star");
-            if (processList[this_job].type == PROC_3DAUTO)
+            if (processList[this_job].type == PROC::AUTO3D)
                 fn_root += "_half1";
 
             FileName fn_model = fn_root + "_model.star";
-            Node node3(fn_model, NODE_MODEL);
+            Node node3(fn_model, NODE::MODEL);
             addNewOutputEdge(this_job, node3);
 
             FileName fn_map = fn_root + "_class???.mrc";
             std::vector<FileName> fn_maps;
             fn_map.globFiles(fn_maps);
             for (int i = 0; i < fn_maps.size(); i++) {
-                Node node4(fn_maps[i], NODE_3DREF);
+                Node node4(fn_maps[i], NODE::REF3D);
                 addNewOutputEdge(this_job, node4);
             }
         } else {
             error_message = 
             "You are trying to mark a relion_refine job as finished that hasn't even started. \n"
             " This will be ignored. Perhaps you wanted to delete it instead?";
-            processList[this_job].status = PROC_RUNNING;
+            processList[this_job].status = PROC::RUNNING;
             write(DO_LOCK);
             return false;
         }
@@ -1279,7 +1278,7 @@ bool PipeLine::makeFlowChart(
     read(DO_LOCK, lock_message);
 
     // Add the PDF file as a logfile to the outputnodes of this job, so it can be visualised from the Display button
-    Node node(fn_dir + "flowchart.pdf", NODE_PDF_LOGFILE);
+    Node node(fn_dir + "flowchart.pdf", NODE::PDF_LOGFILE);
     addNewOutputEdge(current_job, node);
 
     write(DO_LOCK);
@@ -1325,19 +1324,19 @@ void PipeLine::undeleteJob(FileName fn_undel) {
 
 bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_message) {
     std::cout << "Cleaning up " << processList[this_job].name << std::endl;
-    if (this_job < 0 || processList[this_job].status != PROC_FINISHED_SUCCESS) {
+    if (this_job < 0 || processList[this_job].status != PROC::FINISHED_SUCCESS) {
         error_message =" You can only clean up finished jobs ... ";
         return false;
     }
 
     // These job types do not have cleanup:
     if (
-        processList[this_job].type == PROC_IMPORT ||
-        processList[this_job].type == PROC_MANUALPICK ||
-        processList[this_job].type == PROC_CLASSSELECT ||
-        processList[this_job].type == PROC_MASKCREATE ||
-        processList[this_job].type == PROC_JOINSTAR ||
-        processList[this_job].type == PROC_RESMAP
+        processList[this_job].type == PROC::IMPORT ||
+        processList[this_job].type == PROC::MANUALPICK ||
+        processList[this_job].type == PROC::CLASSSELECT ||
+        processList[this_job].type == PROC::MASKCREATE ||
+        processList[this_job].type == PROC::JOINSTAR ||
+        processList[this_job].type == PROC::RESMAP
     ) return true;
 
     // Find any subdirectories
@@ -1372,7 +1371,7 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
     //fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
 
     ////////// Now see which jobs needs cleaning up
-    if (processList[this_job].type == PROC_MOTIONCORR) {
+    if (processList[this_job].type == PROC::MOTIONCORR) {
         for (int idir = 0; idir < fns_subdir.size(); idir++) {
             if (do_harsh) {
                 //remove entire movies directory
@@ -1388,7 +1387,7 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
                 fn_pattern.globFiles(fns_del, false);
             }
         }
-    } else if (processList[this_job].type == PROC_CTFFIND) {
+    } else if (processList[this_job].type == PROC::CTFFIND) {
         fn_pattern = processList[this_job].name + "gctf*.out";
         fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
         fn_pattern = processList[this_job].name + "gctf*.err";
@@ -1398,13 +1397,13 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
             fns_del.push_back(processList[this_job].name + fns_subdir[idir]);
         }
 
-    } else if (processList[this_job].type == PROC_AUTOPICK) {
+    } else if (processList[this_job].type == PROC::AUTOPICK) {
         for (int idir = 0; idir < fns_subdir.size(); idir++) {
             // remove the Spider files with the FOM maps
             fn_pattern = processList[this_job].name + fns_subdir[idir] + "*.spi";
             fn_pattern.globFiles(fns_del, false);
         }
-    } else if (processList[this_job].type == PROC_EXTRACT) {
+    } else if (processList[this_job].type == PROC::EXTRACT) {
         for (int idir = 0; idir < fns_subdir.size(); idir++) {
             if (do_harsh) {
                 //remove entire directory (STAR files and particle stacks!
@@ -1416,11 +1415,11 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
             }
         }
     } else if (
-        processList[this_job].type == PROC_2DCLASS  ||
-        processList[this_job].type == PROC_3DCLASS  ||
-        processList[this_job].type == PROC_3DAUTO   ||
-        processList[this_job].type == PROC_INIMODEL ||
-        processList[this_job].type == PROC_MULTIBODY
+        processList[this_job].type == PROC::CLASS2D  ||
+        processList[this_job].type == PROC::CLASS3D  ||
+        processList[this_job].type == PROC::AUTO3D   ||
+        processList[this_job].type == PROC::INIMODEL ||
+        processList[this_job].type == PROC::MULTIBODY
     ) {
         // First find the _data.star from each iteration
         std::vector<FileName> fns_iter;
@@ -1452,12 +1451,12 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
             }
 
             // Also clean up maps for PCA movies when doing harsh cleaning
-            if (do_harsh && processList[this_job].type == PROC_MULTIBODY) {
+            if (do_harsh && processList[this_job].type == PROC::MULTIBODY) {
                 fn_pattern = processList[this_job].name + "analyse_component???_bin???.mrc";
                 fn_pattern.globFiles(fns_del, false);
             }
         }
-    } else if (processList[this_job].type == PROC_CTFREFINE) {
+    } else if (processList[this_job].type == PROC::CTFREFINE) {
         for (int idir = 0; idir < fns_subdir.size(); idir++) {
             // remove the temporary output files
             fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_wAcc_optics-group*.mrc";
@@ -1481,7 +1480,7 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
             fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_fit.eps";
             fn_pattern.globFiles(fns_del, false);
         }
-    } else if (processList[this_job].type == PROC_MOTIONREFINE) {
+    } else if (processList[this_job].type == PROC::MOTIONREFINE) {
         for (int idir = 0; idir < fns_subdir.size(); idir++) {
             // remove the temporary output files
             fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_FCC_cc.mrc";
@@ -1498,12 +1497,12 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
                 fn_pattern.globFiles(fns_del, false);
             }
         }
-    } else if (processList[this_job].type == PROC_SUBTRACT) {
+    } else if (processList[this_job].type == PROC::SUBTRACT) {
         if (do_harsh) {
             fn_pattern = processList[this_job].name + "subtracted.*";
             fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
         }
-    } else if (processList[this_job].type == PROC_POST) {
+    } else if (processList[this_job].type == PROC::POST) {
         fn_pattern = processList[this_job].name + "*masked.mrc";
         fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
     }
@@ -1530,7 +1529,7 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
 bool PipeLine::cleanupAllJobs(bool do_harsh, std::string &error_message) {
 
     for (int myjob = 0; myjob < processList.size(); myjob++) {
-        if (processList[myjob].status == PROC_FINISHED_SUCCESS) {
+        if (processList[myjob].status == PROC::FINISHED_SUCCESS) {
             if (do_harsh && exists(processList[myjob].name + "NO_HARSH_CLEAN"))
                 continue;
             if (!cleanupJob(myjob, do_harsh, error_message))
@@ -1588,7 +1587,7 @@ bool PipeLine::exportAllScheduledJobs(std::string mydir, std::string &error_mess
     int iexp = 0;
     std::vector<std::string> find_pattern, replace_pattern;
     for (long int i = 0; i < processList.size(); i++) {
-        if (processList[i].status == PROC_SCHEDULED) {
+        if (processList[i].status == PROC::SCHEDULED) {
             iexp++;
             if (processList[i].alias != "None") {
                 error_message = "ERROR: aliases are not allowed on Scheduled jobs that are to be exported! Make sure all scheduled jobs are made with unaliases names.";
@@ -2096,41 +2095,41 @@ std::string PipeLineFlowChart::getDownwardsArrowLabel(
 
     switch (pipeline.nodeList[mynode].type) {
 
-        case NODE_MOVIES:
+        case NODE::MOVIES:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " movies";
 
-        case NODE_MICS:
+        case NODE::MICS:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " micrographs";
 
-        case NODE_PART_DATA:
+        case NODE::PART_DATA:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " particles";
 
-        case NODE_2DREFS:
+        case NODE::REFS2D:
         return "2Drefs";
 
-        case NODE_3DREF:
+        case NODE::REF3D:
         return "3D ref";
 
-        case NODE_MASK:
+        case NODE::MASK:
         return "mask";
     
-        case NODE_MODEL:
+        case NODE::MODEL:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "model_classes", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " classes";
 
-        case NODE_OPTIMISER:
+        case NODE::OPTIMISER:
         return "continue";
 
-        case NODE_HALFMAP:
+        case NODE::HALFMAP:
         return "half-map";
 
-        case NODE_FINALMAP:
+        case NODE::FINALMAP:
         return "final map";
 
-        case NODE_RESMAP:
+        case NODE::RESMAP:
         return "local-res map";
 
         default:
@@ -2201,61 +2200,61 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
             long int inputnode = pipeline.processList[new_process].inputNodeList[inode];
             int mynodetype = pipeline.nodeList[inputnode].type;
 
-            if (pipeline.processList[new_process].type == PROC_AUTOPICK) {
-                is_right = mynodetype == NODE_2DREFS;
+            if (pipeline.processList[new_process].type == PROC::AUTOPICK) {
+                is_right = mynodetype == NODE::REFS2D;
                 right_label = "2D refs";
-            } else if (pipeline.processList[new_process].type == PROC_EXTRACT) {
+            } else if (pipeline.processList[new_process].type == PROC::EXTRACT) {
 
-                // If the coordinates come from NODE_MIC_COORDS, then straight up is the CTF info
-                // If the coordinates come from NODE_PART_DATA, then that should be straight up
-                // therefore first check whether this node has NODE_PART_DATA input
+                // If the coordinates come from NODE::MIC_COORDS, then straight up is the CTF info
+                // If the coordinates come from NODE::PART_DATA, then that should be straight up
+                // therefore first check whether this node has NODE::PART_DATA input
                 bool has_part_data = false;
                 for (int inode2 = 0; inode2 < pipeline.processList[new_process].inputNodeList.size(); inode2++) {
                     long int inputnode2 = pipeline.processList[new_process].inputNodeList[inode2];
-                    if (pipeline.nodeList[inputnode2].type == NODE_PART_DATA) {
+                    if (pipeline.nodeList[inputnode2].type == NODE::PART_DATA) {
                         has_part_data = true;
                         break;
                     }
                 }
                 if (has_part_data) {
-                    is_right = mynodetype == NODE_MICS;
+                    is_right = mynodetype == NODE::MICS;
                     right_label = "mics";
                 } else {
-                    is_right = mynodetype == NODE_MIC_COORDS;
+                    is_right = mynodetype == NODE::MIC_COORDS;
                     right_label = "coords";
                 }
-            } else if (pipeline.processList[new_process].type == PROC_3DCLASS) {
-                is_right = mynodetype == NODE_3DREF;
+            } else if (pipeline.processList[new_process].type == PROC::CLASS3D) {
+                is_right = mynodetype == NODE::REF3D;
                 right_label = "3D ref";
-                is_left = mynodetype == NODE_MASK;
+                is_left = mynodetype == NODE::MASK;
                 left_label = "mask";
-            } else if (pipeline.processList[new_process].type == PROC_3DAUTO) {
-                is_right = mynodetype == NODE_3DREF;
+            } else if (pipeline.processList[new_process].type == PROC::AUTO3D) {
+                is_right = mynodetype == NODE::REF3D;
                 right_label = "3D ref";
-                is_left = mynodetype == NODE_MASK;
+                is_left = mynodetype == NODE::MASK;
                 left_label = "mask";
-            } else if (pipeline.processList[new_process].type == PROC_JOINSTAR) {
+            } else if (pipeline.processList[new_process].type == PROC::JOINSTAR) {
                 // For joinstar: there will be no parent process that returns a postive value!
                 // Thereby, joinstar will always end in the 2-4 input processes, each of for which a new flowchart will be made on a new tikZpicture
-                if (mynodetype == NODE_MOVIES) {
+                if (mynodetype == NODE::MOVIES) {
                     right_label = left_label = "mics";
-                } else if (mynodetype == NODE_PART_DATA) {
+                } else if (mynodetype == NODE::PART_DATA) {
                     right_label = left_label = "parts";
                 }
                 is_right       = inode == 0;
                 is_left        = inode == 1;
                 is_upper_right = inode == 2;
                 is_upper_left  = inode == 3;
-            } else if (pipeline.processList[new_process].type == PROC_SUBTRACT) {
-                is_right = mynodetype == NODE_3DREF;
+            } else if (pipeline.processList[new_process].type == PROC::SUBTRACT) {
+                is_right = mynodetype == NODE::REF3D;
                 right_label = "3D ref";
-                is_left = mynodetype == NODE_MASK;
+                is_left = mynodetype == NODE::MASK;
                 left_label = "mask";
-            } else if (pipeline.processList[new_process].type == PROC_POST) {
-                is_left = mynodetype == NODE_MASK;
+            } else if (pipeline.processList[new_process].type == PROC::POST) {
+                is_left = mynodetype == NODE::MASK;
                 left_label = "mask";
-            } else if (pipeline.processList[new_process].type == PROC_RESMAP) {
-                is_left = mynodetype == NODE_MASK;
+            } else if (pipeline.processList[new_process].type == PROC::RESMAP) {
+                is_left = mynodetype == NODE::MASK;
                 left_label = "mask";
             }
 
@@ -2281,7 +2280,7 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
                         FileName longname2 = newprocname.afterFirstOf("/").beforeLastOf("/");
                         adaptNamesForTikZ(longname2);
                         hyperrefname = "sec:" + newprocname.beforeFirstOf("/") + "/" + longname2;
-                        if (pipeline.processList[parent_process].type == PROC_IMPORT) {
+                        if (pipeline.processList[parent_process].type == PROC::IMPORT) {
                             newprocname = newprocname.beforeFirstOf("/") + "\\\\" + longname2;
                         } else {
                             newprocname = " \\hyperlink{" + hyperrefname + "}{" + newprocname.beforeFirstOf("/") + "}\\\\" + longname2;
@@ -2362,7 +2361,7 @@ void PipeLineFlowChart::makeOneUpwardsFlowChart(
                         break;
                     }
                 }
-                if (!already_exists && pipeline.processList[mybranch].type != PROC_IMPORT) {
+                if (!already_exists && pipeline.processList[mybranch].type != PROC::IMPORT) {
                     all_branches.push_back(mybranch);
                 }
             }

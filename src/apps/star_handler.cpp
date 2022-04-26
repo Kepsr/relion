@@ -626,14 +626,14 @@ class star_handler_parameters {
             MDnodes.addObject();
             MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt);
             int type =
-                MD.getName() == "micrographs" ? NODE_MICS :
-                MD.getName() == "movies" ? NODE_MOVIES :
-                NODE_PART_DATA;  // Otherwise, just assume these are particles.
+                MD.getName() == "micrographs" ? NODE::MICS :
+                MD.getName() == "movies"      ? NODE::MOVIES :
+   /* Otherwise, assume these are particles. */ NODE::PART_DATA;
 
             MDnodes.setValue(EMDL::PIPELINE_NODE_TYPE, type);
         }
 
-        // write out the star file with the output nodes
+        // Write out the star file with the output nodes
         FileName mydir = fn_out.beforeLastOf("/");
         if (mydir == "") { mydir = "."; }
         MDnodes.write(mydir + "/" + RELION_OUTPUT_NODES);
