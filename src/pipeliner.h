@@ -29,7 +29,6 @@
 #include <dirent.h>
 #include "src/metadata_table.h"
 #include "src/pipeline_jobs.h"
-#define DEFAULTPDFVIEWER "evince"
 
 class Process {
 

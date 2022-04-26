@@ -51,19 +51,20 @@
 #define GUI_INPUT_COLOR (fl_rgb_color(255,255,230))
 #define GUI_RUNBUTTON_COLOR (fl_rgb_color(238,130,238))
 
-#define DISPLAYER_SELECTED 1
-#define DISPLAYER_NOT_SELECTED 0
-#define MULTIVIEW_WINDOW_WIDTH  720
-#define MULTIVIEW_WINDOW_HEIGHT 486
+enum {
+    DISPLAYER_NOT_SELECTED,
+    DISPLAYER_SELECTED,
+};
+
+const int MULTIVIEW_WINDOW_WIDTH =  720;
+const int MULTIVIEW_WINDOW_HEIGHT = 486;
 
 #define BOX_OFFSET 4
 
-#define MULTIVIEWER 0
-#define SINGLEVIEWER 1
-#define BLACK 0
-#define WHITE 1
+enum { MULTIVIEWER, SINGLEVIEWER };
+enum { BLACK, WHITE };
 
-#define DEFAULTPDFVIEWER "evince"
+const char* const DEFAULTPDFVIEWER = "evince";
 
 static bool has_dragged;
 static int predrag_xc;
@@ -74,13 +75,15 @@ static int preshift_ipos;
 static int current_selection_type;
 static int colour_scheme;
 
-class DisplayBox : public Fl_Box
-{
-protected:
+class DisplayBox: public Fl_Box {
+
+    protected:
+
     // Draw the actual box on the screen (this function is used by redraw())
     void draw();
 
-public:
+    public:
+
     int xsize_data;
     int ysize_data;
     int xoff;

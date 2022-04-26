@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "src/pipeliner.h"
+#include "src/displayer.h"  // For DEFAULTPDFVIEWER
 #include <unistd.h>
 
 //#define DEBUG
@@ -1257,8 +1258,7 @@ bool PipeLine::makeFlowChart(
     }
 
     const char *pdf_viewer_exe = getenv("RELION_PDFVIEWER_EXECUTABLE");
-    char mydefault[] = DEFAULTPDFVIEWER;
-    if (!pdf_viewer_exe) { pdf_viewer_exe = mydefault; }
+    if (!pdf_viewer_exe) { pdf_viewer_exe = DEFAULTPDFVIEWER; }
     std::string myviewer(pdf_viewer_exe);
 
     PipeLineFlowChart flowchart;

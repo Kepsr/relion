@@ -67,7 +67,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-// forward declaration current_browse_directory, which allows CURRENT_ODIR browse buttons
+// Forward-declare current_browse_directory, which allows CURRENT_ODIR browse buttons
 extern std::string current_browse_directory;
 
 // Create the scheduler GUI: without sliders or pull-down menus
