@@ -1071,9 +1071,9 @@ void Schedule::addOperator(SchedulerOperator &myop) {
 
 void Schedule::addJob(RelionJob &myjob, std::string jobname, std::string mode) {
 
-    //remove spaces from jobname
+    // Convert spaces in jobname into underscores
     for (int i = 0; i < jobname.length(); i++) {
-        if (jobname[i] == ' ') jobname[i] = '_';
+        if (jobname[i] == ' ') { jobname[i] = '_'; }
     }
 
     // Check whether the jobname is unique
@@ -1094,7 +1094,7 @@ void Schedule::addJob(RelionJob &myjob, std::string jobname, std::string mode) {
     if (!myjob.getCommands(output_name, commands, final_command, false, schedule_pipeline.job_counter, error_message))
         REPORT_ERROR("ERROR in getting commands for scheduled job: " + error_message);
 
-    int current_job = schedule_pipeline.addJob(myjob, PROC::SCHEDULED, false, false); // 1st false is do_overwrite, 2nd false is do_write_minipipeline
+    int current_job = schedule_pipeline.addJob(myjob, Process::SCHEDULED, false, false); // 1st false is do_overwrite, 2nd false is do_write_minipipeline
 
     if (current_job < 0)
         REPORT_ERROR("ERROR: current job should not be negative now ...");

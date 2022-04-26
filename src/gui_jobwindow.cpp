@@ -18,6 +18,8 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/gui_jobwindow.h"
+#include "src/pipeliner.h"
+
 JobWindow::JobWindow(int _x, int _y, int _w, int _h, const char* title ) : Fl_Box(x,y,w,h,title) {
     clear();
     x = _x; y = _y; w = _w; h = _h;
@@ -284,64 +286,64 @@ void JobWindow::updateMyJob() {
 }
 
 void JobWindow::initialise(int my_job_type) {
-    if (my_job_type == PROC::IMPORT) {
+    if (my_job_type == Process::IMPORT) {
         myjob.initialise(my_job_type);
         initialiseImportWindow();
-    } else if (my_job_type == PROC::MOTIONCORR) {
+    } else if (my_job_type == Process::MOTIONCORR) {
         myjob.initialise(my_job_type);
         initialiseMotioncorrWindow();
-    } else if (my_job_type == PROC::CTFFIND) {
+    } else if (my_job_type == Process::CTFFIND) {
         myjob.initialise(my_job_type);
         initialiseCtffindWindow();
-    } else if (my_job_type == PROC::MANUALPICK) {
+    } else if (my_job_type == Process::MANUALPICK) {
         myjob.initialise(my_job_type);
         initialiseManualpickWindow();
-    } else if (my_job_type == PROC::AUTOPICK) {
+    } else if (my_job_type == Process::AUTOPICK) {
         myjob.initialise(my_job_type);
         initialiseAutopickWindow();
-    } else if (my_job_type == PROC::EXTRACT) {
+    } else if (my_job_type == Process::EXTRACT) {
         myjob.initialise(my_job_type);
         initialiseExtractWindow();
-    } else if (my_job_type == PROC::CLASSSELECT) {
+    } else if (my_job_type == Process::CLASSSELECT) {
         myjob.initialise(my_job_type);
         initialiseSelectWindow();
-    } else if (my_job_type == PROC::CLASS2D) {
+    } else if (my_job_type == Process::CLASS2D) {
         myjob.initialise(my_job_type);
         initialiseClass2DWindow();
-    } else if (my_job_type == PROC::INIMODEL) {
+    } else if (my_job_type == Process::INIMODEL) {
         myjob.initialise(my_job_type);
         initialiseInimodelWindow();
-    } else if (my_job_type == PROC::CLASS3D) {
+    } else if (my_job_type == Process::CLASS3D) {
         myjob.initialise(my_job_type);
         initialiseClass3DWindow();
-    } else if (my_job_type == PROC::AUTO3D) {
+    } else if (my_job_type == Process::AUTO3D) {
         myjob.initialise(my_job_type);
         initialiseAutorefineWindow();
-    } else if (my_job_type == PROC::MULTIBODY) {
+    } else if (my_job_type == Process::MULTIBODY) {
         myjob.initialise(my_job_type);
         initialiseMultiBodyWindow();
-    } else if (my_job_type == PROC::MASKCREATE) {
+    } else if (my_job_type == Process::MASKCREATE) {
         myjob.initialise(my_job_type);
         initialiseMaskcreateWindow();
-    } else if (my_job_type == PROC::JOINSTAR) {
+    } else if (my_job_type == Process::JOINSTAR) {
         myjob.initialise(my_job_type);
         initialiseJoinstarWindow();
-    } else if (my_job_type == PROC::SUBTRACT) {
+    } else if (my_job_type == Process::SUBTRACT) {
         myjob.initialise(my_job_type);
         initialiseSubtractWindow();
-    } else if (my_job_type == PROC::POST) {
+    } else if (my_job_type == Process::POST) {
         myjob.initialise(my_job_type);
         initialisePostprocessWindow();
-    } else if (my_job_type == PROC::RESMAP) {
+    } else if (my_job_type == Process::RESMAP) {
         myjob.initialise(my_job_type);
         initialiseLocresWindow();
-    } else if (my_job_type == PROC::MOTIONREFINE) {
+    } else if (my_job_type == Process::MOTIONREFINE) {
         myjob.initialise(my_job_type);
         initialiseMotionrefineWindow();
-    } else if (my_job_type == PROC::CTFREFINE) {
+    } else if (my_job_type == Process::CTFREFINE) {
         myjob.initialise(my_job_type);
         initialiseCtfrefineWindow();
-    } else if (my_job_type == PROC::EXTERNAL) {
+    } else if (my_job_type == Process::EXTERNAL) {
         myjob.initialise(my_job_type);
         initialiseExternalWindow();
     } else {

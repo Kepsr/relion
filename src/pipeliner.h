@@ -56,6 +56,65 @@ class Process {
         outputNodeList.clear();
     }
 
+    // All the directory names of the different types of jobs defined inside the pipeline
+    static constexpr const char *const IMPORT_NAME       = "Import";       // Import any file as a Node of a given type
+    static constexpr const char *const MOTIONCORR_NAME   = "MotionCorr";   // Import any file as a Node of a given type
+    static constexpr const char *const CTFFIND_NAME      = "CtfFind";  	   // Estimate CTF parameters from micrographs for either entire micrographs and/or particles
+    static constexpr const char *const MANUALPICK_NAME   = "ManualPick";   // Manually pick particle coordinates from micrographs
+    static constexpr const char *const AUTOPICK_NAME     = "AutoPick";     // Automatically pick particle coordinates from micrographs, their CTF and 2D references
+    static constexpr const char *const EXTRACT_NAME      = "Extract";      // Window particles, normalize, downsize etc from micrographs (also combine CTF into metadata file)
+    static constexpr const char *const CLASSSELECT_NAME  = "Select"; 	   // Read in model.star file, and let user interactively select classes through the display (later: auto-selection as well)
+    static constexpr const char *const CLASS2D_NAME      = "Class2D";      // 2D classification (from input particles)
+    static constexpr const char *const CLASS3D_NAME      = "Class3D";      // 3D classification (from input 2D/3D particles, an input 3D-reference, and possibly a 3D mask)
+    static constexpr const char *const AUTO3D_NAME       = "Refine3D";     // 3D auto-refine (from input particles, an input 3Dreference, and possibly a 3D mask)
+    // static constexpr const char *const POLISH_NAME = "Polish";             // Particle-polishing (from movie-particles)
+    static constexpr const char *const MASKCREATE_NAME   = "MaskCreate";   // Process to create masks from input maps
+    static constexpr const char *const JOINSTAR_NAME     = "JoinStar";     // Process to create masks from input maps
+    static constexpr const char *const SUBTRACT_NAME     = "Subtract";     // Process to subtract projections of parts of the reference from experimental images
+    static constexpr const char *const POST_NAME         = "PostProcess";  // Post-processing (from unfiltered half-maps and a possibly a 3D mask)
+    static constexpr const char *const RESMAP_NAME       = "LocalRes";     // Local resolution estimation (from unfiltered half-maps and a 3D mask)
+    // static constexpr const char *const MOVIEREFINE_NAME = "MovieRefine";   // Movie-particle extraction and refinement combined
+    static constexpr const char *const INIMODEL_NAME     = "InitialModel"; // De-novo generation of 3D initial model (using SGD)
+    static constexpr const char *const MULTIBODY_NAME    = "MultiBody";    // Multi-body refinement
+    static constexpr const char *const MOTIONREFINE_NAME = "Polish";       // Jasenko's motion fitting program for Bayesian polishing (to replace MovieRefine?)
+    static constexpr const char *const CTFREFINE_NAME    = "CtfRefine";    // Jasenko's program for defocus and beamtilt optimisation
+    static constexpr const char *const EXTERNAL_NAME     = "External";     // For running non-relion programs
+
+    enum ProcessTypes {
+        IMPORT, // Import any file as a Node of a given type
+        MOTIONCORR, // Import any file as a Node of a given type
+        CTFFIND, // Estimate CTF parameters from micrographs for either entire micrographs and/or particles
+        MANUALPICK, // Manually pick particle coordinates from micrographs
+        AUTOPICK, // Automatically pick particle coordinates from micrographs, their CTF and 2D references
+        EXTRACT, // Window particles, normalize, downsize etc from micrographs (also combine CTF into metadata file)
+        // SORT,  // Sort particles based on their Z-scores
+        CLASSSELECT, // Read in model.star file, and let user interactively select classes through the display (later: auto-selection as well)
+        CLASS2D,  // 2D classification (from input particles)
+        CLASS3D,  // 3D classification (from input 2D/3D particles, an input 3D-reference, and possibly a 3D mask)
+        AUTO3D,  // 3D auto-refine (from input particles, an input 3Dreference, and possibly a 3D mask)
+        // POLISH,  // Particle-polishing (from movie-particles)
+        MASKCREATE,  // Process to create masks from input maps
+        JOINSTAR,  // Process to create masks from input maps
+        SUBTRACT,  // Process to subtract projections of parts of the reference from experimental images
+        POST,  // Post-processing (from unfiltered half-maps and a possibly a 3D mask)
+        RESMAP,  // Local resolution estimation (from unfiltered half-maps and a 3D mask)
+        // MOVIEREFINE,  // Movie-particle extraction and refinement combined
+        INIMODEL,  // De-novo generation of 3D initial model (using SGD)
+        MULTIBODY,  // Multi-body refinement
+        MOTIONREFINE,  // Jasenko's motion_refine
+        CTFREFINE,  // Jasenko's ctf_refine
+        EXTERNAL  // External scripts
+    };
+
+    // Status a process may have
+    enum ProcessStatus {
+        RUNNING,           // (hopefully) running
+        SCHEDULED,         // scheduled for future execution
+        FINISHED_SUCCESS,  // successfully finished
+        FINISHED_FAILURE,  // reported an error
+        FINISHED_ABORTED   // aborted by the user
+    };
+
 };
 
 enum { DONT_LOCK, DO_LOCK };

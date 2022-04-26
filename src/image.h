@@ -66,23 +66,25 @@
 /// @defgroup Images Images
 //@{
 
+// Values for types
+
 /** DataType
  * To indicate the type of the image data.
  */
 typedef enum {
-    Unknown_Type = 0, // Undefined data type
-    UChar = 1,        // Unsigned character or byte type
-    SChar = 2,        // Signed character (for CCP4)
-    UShort = 3,       // Unsigned integer (2-byte)
-    Short = 4,        // Signed integer (2-byte)
-    UInt = 5,         // Unsigned integer (4-byte)
-    Int = 6,          // Signed integer (4-byte)
-    Long = 7,         // Signed integer (4 or 8 byte, depending on system)
-    Float = 8,        // Floating point (4-byte)
-    Double = 9,       // Double precision floating point (8-byte)
-    Boolean = 10,     // Boolean (1-byte?)
-    UHalf = 11,       // Signed 4-bit integer (SerialEM extension)
-    LastEntry = 15    // This must be the last entry
+    Unknown_Type,   // Undefined data type
+    UChar,          // Unsigned character or byte type
+    SChar,          // Signed character (for CCP4)
+    UShort,         // Unsigned integer (2-byte)
+    Short,          // Signed integer (2-byte)
+    UInt,           // Unsigned integer (4-byte)
+    Int,            // Signed integer (4-byte)
+    Long,           // Signed integer (4 or 8 byte, depending on system)
+    Float,          // Floating point (4-byte)
+    Double,         // Double precision floating point (8-byte)
+    Boolean,        // Boolean (1-byte?)
+    UHalf,          // Signed 4-bit integer (SerialEM extension)
+    LastEntry = 15  // This must be the last entry
 } DataType;
 
 

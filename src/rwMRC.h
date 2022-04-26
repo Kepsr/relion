@@ -115,10 +115,13 @@ struct MRChead {
 };
 
 // For determination of machine stamp
-#define UNKNOWN_SYSTEM 0
-#define BIGIEEE 1
-#define LITTLEIEEE 2
-#define LITTLEVAX 3
+enum {
+    UNKNOWN_SYSTEM,
+    BIGIEEE,
+    LITTLEIEEE,
+    LITTLEVAX,
+};
+
 int systype() {
     char *test = (char*) askMemory(12);
     int *itest = (int*) test;

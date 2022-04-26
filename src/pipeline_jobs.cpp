@@ -17,7 +17,7 @@
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
  ***************************************************************************/
-#include "src/pipeline_jobs.h"
+#include "src/pipeliner.h"
 using std::string;
 
 static string errorMsg(string s) {
@@ -388,26 +388,26 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
         // Just check that went OK
         // std::vector<int> types = ;
         if (!elem(type, {
-            PROC::IMPORT,
-            PROC::MOTIONCORR,
-            PROC::CTFFIND,
-            PROC::MANUALPICK,
-            PROC::AUTOPICK,
-            PROC::EXTRACT,
-            PROC::CLASSSELECT,
-            PROC::CLASS2D,
-            PROC::CLASS3D,
-            PROC::AUTO3D,
-            PROC::MULTIBODY,
-            PROC::MASKCREATE,
-            PROC::JOINSTAR,
-            PROC::SUBTRACT,
-            PROC::POST,
-            PROC::RESMAP,
-            PROC::INIMODEL,
-            PROC::MOTIONREFINE,
-            PROC::CTFREFINE,
-            PROC::EXTERNAL,
+            Process::IMPORT,
+            Process::MOTIONCORR,
+            Process::CTFFIND,
+            Process::MANUALPICK,
+            Process::AUTOPICK,
+            Process::EXTRACT,
+            Process::CLASSSELECT,
+            Process::CLASS2D,
+            Process::CLASS3D,
+            Process::AUTO3D,
+            Process::MULTIBODY,
+            Process::MASKCREATE,
+            Process::JOINSTAR,
+            Process::SUBTRACT,
+            Process::POST,
+            Process::RESMAP,
+            Process::INIMODEL,
+            Process::MOTIONREFINE,
+            Process::CTFREFINE,
+            Process::EXTERNAL,
         })) {
             // If type isn't recognised
             REPORT_ERROR(errorMsg("cannot find correct job type in " + myfilename + "run.job, with type= " + integerToString(type)));
@@ -679,107 +679,107 @@ void RelionJob::initialise(int _job_type) {
     bool has_mpi, has_thread;
     switch (type) {
 
-        case PROC::IMPORT:
+        case Process::IMPORT:
         has_mpi = has_thread = false;
         initialiseImportJob();
         break;
 
-        case PROC::MOTIONCORR:
+        case Process::MOTIONCORR:
         has_mpi = has_thread = true;
         initialiseMotioncorrJob();
         break;
 
-        case PROC::CTFFIND:
+        case Process::CTFFIND:
         has_mpi = true;
         has_thread = false;
         initialiseCtffindJob();
         break;
 
-        case PROC::MANUALPICK:
+        case Process::MANUALPICK:
         has_mpi = has_thread = false;
         initialiseManualpickJob();
         break;
 
-        case PROC::AUTOPICK:
+        case Process::AUTOPICK:
         has_mpi = true;
         has_thread = false;
         initialiseAutopickJob();
         break;
 
-        case PROC::EXTRACT:
+        case Process::EXTRACT:
         has_mpi = true;
         has_thread = false;
         initialiseExtractJob();
         break;
 
-        case PROC::CLASSSELECT:
+        case Process::CLASSSELECT:
         has_mpi = has_thread = false;
         initialiseSelectJob();
         break;
 
-        case PROC::CLASS2D:
+        case Process::CLASS2D:
         has_mpi = has_thread = true;
         initialiseClass2DJob();
         break;
 
-        case PROC::INIMODEL:
+        case Process::INIMODEL:
         has_mpi = has_thread = true;
         initialiseInimodelJob();
         break;
 
-        case PROC::CLASS3D:
+        case Process::CLASS3D:
         has_mpi = has_thread = true;
         initialiseClass3DJob();
         break;
 
-        case PROC::AUTO3D:
+        case Process::AUTO3D:
         has_mpi = has_thread = true;
         initialiseAutorefineJob();
         break;
 
-        case PROC::MULTIBODY:
+        case Process::MULTIBODY:
         has_mpi = has_thread = true;
         initialiseMultiBodyJob();
         break;
 
-        case PROC::MASKCREATE:
+        case Process::MASKCREATE:
         has_mpi = false;
         has_thread = true;
         initialiseMaskcreateJob();
         break;
 
-        case PROC::JOINSTAR:
+        case Process::JOINSTAR:
         has_mpi = has_thread = false;
         initialiseJoinstarJob();
         break;
 
-        case PROC::SUBTRACT:
+        case Process::SUBTRACT:
         has_mpi = true;
         has_thread = false;
         initialiseSubtractJob();
         break;
 
-        case PROC::POST:
+        case Process::POST:
         has_mpi = has_thread = false;
         initialisePostprocessJob();
         break;
 
-        case PROC::RESMAP:
+        case Process::RESMAP:
         has_mpi = has_thread = true;
         initialiseLocalresJob();
         break;
 
-        case PROC::MOTIONREFINE:
+        case Process::MOTIONREFINE:
         has_mpi = has_thread = true;
         initialiseMotionrefineJob();
         break;
 
-        case PROC::CTFREFINE:
+        case Process::CTFREFINE:
         has_mpi = has_thread = true;
         initialiseCtfrefineJob();
         break;
 
-        case PROC::EXTERNAL:
+        case Process::EXTERNAL:
         has_mpi = false;
         has_thread = true;
         initialiseExternalJob();
@@ -894,121 +894,121 @@ bool RelionJob::getCommands(
 ) {
     switch (type) {
 
-        case PROC::IMPORT:
+        case Process::IMPORT:
         return getCommandsImportJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::MOTIONCORR:
+        case Process::MOTIONCORR:
         return getCommandsMotioncorrJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::CTFFIND:
+        case Process::CTFFIND:
         return getCommandsCtffindJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::MANUALPICK:
+        case Process::MANUALPICK:
         return getCommandsManualpickJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::AUTOPICK:
+        case Process::AUTOPICK:
         return getCommandsAutopickJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::EXTRACT:
+        case Process::EXTRACT:
         return getCommandsExtractJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::CLASSSELECT:
+        case Process::CLASSSELECT:
         return getCommandsSelectJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::CLASS2D:
+        case Process::CLASS2D:
         return getCommandsClass2DJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::INIMODEL:
+        case Process::INIMODEL:
         return getCommandsInimodelJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::CLASS3D:
+        case Process::CLASS3D:
         return getCommandsClass3DJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::AUTO3D:
+        case Process::AUTO3D:
         return getCommandsAutorefineJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::MULTIBODY:
+        case Process::MULTIBODY:
         return getCommandsMultiBodyJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::MASKCREATE:
+        case Process::MASKCREATE:
         return getCommandsMaskcreateJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::JOINSTAR:
+        case Process::JOINSTAR:
         return getCommandsJoinstarJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::SUBTRACT:
+        case Process::SUBTRACT:
         return getCommandsSubtractJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::POST:
+        case Process::POST:
         return getCommandsPostprocessJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::RESMAP:
+        case Process::RESMAP:
         return getCommandsLocalresJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::MOTIONREFINE:
+        case Process::MOTIONREFINE:
         return getCommandsMotionrefineJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::CTFREFINE:
+        case Process::CTFREFINE:
         return getCommandsCtfrefineJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
         );
 
-        case PROC::EXTERNAL:
+        case Process::EXTERNAL:
         return getCommandsExternalJob(
             outputname, commands, final_command, do_makedir, job_counter, 
             error_message
@@ -1059,7 +1059,7 @@ bool RelionJob::getCommandsImportJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::IMPORT_NAME, job_counter);
+    initialisePipeline(outputname, Process::IMPORT_NAME, job_counter);
 
     string command;
     FileName fn_out, fn_in;
@@ -1261,7 +1261,7 @@ bool RelionJob::getCommandsMotioncorrJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::MOTIONCORR_NAME, job_counter);
+    initialisePipeline(outputname, Process::MOTIONCORR_NAME, job_counter);
 
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ?
         "`which relion_run_motioncorr_mpi`" :
@@ -1436,7 +1436,7 @@ bool RelionJob::getCommandsCtffindJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::CTFFIND_NAME, job_counter);
+    initialisePipeline(outputname, Process::CTFFIND_NAME, job_counter);
 
     FileName fn_outstar = outputname + "micrographs_ctf.star";
     Node node(fn_outstar, Node::MICS);
@@ -1560,7 +1560,7 @@ bool RelionJob::getCommandsManualpickJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::MANUALPICK_NAME, job_counter);
+    initialisePipeline(outputname, Process::MANUALPICK_NAME, job_counter);
     string command = "`which relion_manualpick`";
 
     if (joboptions["fn_in"].getString() == "") {
@@ -1756,7 +1756,7 @@ bool RelionJob::getCommandsAutopickJob(
     string &outputname, vector<string> &commands,
     string &final_command, bool do_makedir, int job_counter, string &error_message) {
     commands.clear();
-    initialisePipeline(outputname, PROC::AUTOPICK_NAME, job_counter);
+    initialisePipeline(outputname, Process::AUTOPICK_NAME, job_counter);
     string command;
     if (joboptions["nr_mpi"].getNumber(error_message) > 1)
         command="`which relion_autopick_mpi`";
@@ -1968,7 +1968,7 @@ bool RelionJob::getCommandsExtractJob(
     string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::EXTRACT_NAME, job_counter);
+    initialisePipeline(outputname, Process::EXTRACT_NAME, job_counter);
     string command = "which relion_preprocess";
     if (joboptions["nr_mpi"].getNumber(error_message) > 1)
         command += "_mpi";
@@ -2132,7 +2132,7 @@ bool RelionJob::getCommandsSelectJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::CLASSSELECT_NAME, job_counter);
+    initialisePipeline(outputname, Process::CLASSSELECT_NAME, job_counter);
     string command;
 
     if (
@@ -2514,7 +2514,7 @@ bool RelionJob::getCommandsClass2DJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::CLASS2D_NAME, job_counter);
+    initialisePipeline(outputname, Process::CLASS2D_NAME, job_counter);
     string command;
 
     command = joboptions["nr_mpi"].getNumber(error_message) > 1 ?
@@ -2762,7 +2762,7 @@ bool RelionJob::getCommandsInimodelJob(
 ) {
     commands.clear();
 
-    initialisePipeline(outputname, PROC::INIMODEL_NAME, job_counter);
+    initialisePipeline(outputname, Process::INIMODEL_NAME, job_counter);
 
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ?
         "`which relion_refine_mpi`" :
@@ -3099,7 +3099,7 @@ bool RelionJob::getCommandsClass3DJob(
     bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::CLASS3D_NAME, job_counter);
+    initialisePipeline(outputname, Process::CLASS3D_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
         "`which relion_refine_mpi`" : 
         "`which relion_refine`";
@@ -3347,7 +3347,7 @@ bool RelionJob::getCommandsClass3DJob(
 }
 
 void RelionJob::initialiseAutorefineJob() {
-    type = PROC::AUTO3D;
+    type = Process::AUTO3D;
 
     hidden_name = ".gui_auto3d";
 
@@ -3528,7 +3528,7 @@ bool RelionJob::getCommandsAutorefineJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::AUTO3D_NAME, job_counter);
+    initialisePipeline(outputname, Process::AUTO3D_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
         "`which relion_refine_mpi`" : 
         "`which relion_refine`";
@@ -3760,7 +3760,7 @@ bool RelionJob::getCommandsAutorefineJob(
 }
 
 void RelionJob::initialiseMultiBodyJob() {
-    type = PROC::MULTIBODY;
+    type = Process::MULTIBODY;
 
     hidden_name = ".gui_multibody";
 
@@ -3844,7 +3844,7 @@ bool RelionJob::getCommandsMultiBodyJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::MULTIBODY_NAME, job_counter);
+    initialisePipeline(outputname, Process::MULTIBODY_NAME, job_counter);
     string command;
 
     if (!exists(joboptions["fn_bodies"].getString())) {
@@ -4057,7 +4057,7 @@ bool RelionJob::getCommandsMaskcreateJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::MASKCREATE_NAME, job_counter);
+    initialisePipeline(outputname, Process::MASKCREATE_NAME, job_counter);
     string command;
 
     command = "`which relion_mask_create`";
@@ -4134,7 +4134,7 @@ bool RelionJob::getCommandsJoinstarJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::JOINSTAR_NAME, job_counter);
+    initialisePipeline(outputname, Process::JOINSTAR_NAME, job_counter);
     string command;
     command="`which relion_star_handler`";
 
@@ -4279,7 +4279,7 @@ bool RelionJob::getCommandsSubtractJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::SUBTRACT_NAME, job_counter);
+    initialisePipeline(outputname, Process::SUBTRACT_NAME, job_counter);
     string command;
 
     if (joboptions["do_fliplabel"].getBoolean()) {
@@ -4381,7 +4381,7 @@ bool RelionJob::getCommandsPostprocessJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::POST_NAME, job_counter);
+    initialisePipeline(outputname, Process::POST_NAME, job_counter);
     string command;
 
     command = "`which relion_postprocess`";
@@ -4483,7 +4483,7 @@ bool RelionJob::getCommandsLocalresJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::RESMAP_NAME, job_counter);
+    initialisePipeline(outputname, Process::RESMAP_NAME, job_counter);
     string command;
 
     if (joboptions["do_resmap_locres"].getBoolean() == joboptions["do_relion_locres"].getBoolean()) {
@@ -4623,7 +4623,7 @@ bool RelionJob::getCommandsMotionrefineJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::MOTIONREFINE_NAME, job_counter);
+    initialisePipeline(outputname, Process::MOTIONREFINE_NAME, job_counter);
     string command;
 
     command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
@@ -4796,7 +4796,7 @@ bool RelionJob::getCommandsCtfrefineJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::CTFREFINE_NAME, job_counter);
+    initialisePipeline(outputname, Process::CTFREFINE_NAME, job_counter);
     string command;
 
     command = joboptions["nr_mpi"].getNumber(error_message) > 1 ? 
@@ -4937,7 +4937,7 @@ bool RelionJob::getCommandsExternalJob(
     string &final_command, bool do_makedir, int job_counter, string &error_message
 ) {
     commands.clear();
-    initialisePipeline(outputname, PROC::EXTERNAL_NAME, job_counter);
+    initialisePipeline(outputname, Process::EXTERNAL_NAME, job_counter);
     string command;
 
     if (joboptions["fn_exe"].getString() == "") {
