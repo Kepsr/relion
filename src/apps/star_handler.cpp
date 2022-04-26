@@ -619,16 +619,16 @@ class star_handler_parameters {
         MDnodes.setName("output_nodes");
         FileName fnt0 = integerToString(nr_split);
         for (int isplit = 0; isplit < nr_split; isplit ++) {
-            FileName fnt = fn_out.insertBeforeExtension("_split"+integerToString(isplit+1));
+            FileName fnt = fn_out.insertBeforeExtension("_split" + integerToString(isplit + 1));
             write_check_ignore_optics(MDouts[isplit], fnt, MD.getName());
             std::cout << " Written: " << fnt << " with " << MDouts[isplit].numberOfObjects() << " objects." << std::endl;
 
             MDnodes.addObject();
             MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt);
             int type =
-                MD.getName() == "micrographs" ? NODE::MICS :
-                MD.getName() == "movies"      ? NODE::MOVIES :
-   /* Otherwise, assume these are particles. */ NODE::PART_DATA;
+                MD.getName() == "micrographs" ? Node::MICS :
+                MD.getName() == "movies"      ? Node::MOVIES :
+   /* Otherwise, assume these are particles. */ Node::PART_DATA;
 
             MDnodes.setValue(EMDL::PIPELINE_NODE_TYPE, type);
         }

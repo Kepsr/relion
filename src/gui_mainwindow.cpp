@@ -1096,7 +1096,7 @@ void GuiMainWindow::fillToAndFromJobLists() {
             long int mynode = pipeline.processList[current_job].inputNodeList[inode];
 
             // no display for movie rootname
-            if (pipeline.nodeList[mynode].type != NODE::MOVIES) {
+            if (pipeline.nodeList[mynode].type != Node::MOVIES) {
                 FileName fnt = pipeline.nodeList[mynode].name;
                 if (exists(fnt)) {
                     fnt = "in: " + fnt.afterLastOf("/");
@@ -1608,7 +1608,7 @@ void GuiMainWindow::cb_display_io_node_i() {
     long int mynode = io_nodes[idx];
     std::string command;
 
-    if (pipeline.nodeList[mynode].type == NODE::MIC_COORDS) {
+    if (pipeline.nodeList[mynode].type == Node::MIC_COORDS) {
         // A manualpicker jobwindow for display of micrographs....
         RelionJob manualpickjob;
         FileName fn_job = ".gui_manualpick";
@@ -1682,15 +1682,15 @@ void GuiMainWindow::cb_display_io_node_i() {
         } else {
             fl_message("Only coordinates in .star format, generated in the pipeline, can be displayed here.");
         }
-    } else if (pipeline.nodeList[mynode].type == NODE::PDF_LOGFILE) {
+    } else if (pipeline.nodeList[mynode].type == Node::PDF_LOGFILE) {
         const char * default_pdf_viewer = getenv ("RELION_PDFVIEWER_EXECUTABLE");
         char mydefault[] = DEFAULTPDFVIEWER;
         if (!default_pdf_viewer) { default_pdf_viewer = mydefault; }
         std::string myviewer(default_pdf_viewer);
         command = myviewer + " " + pipeline.nodeList[mynode].name + "&";
-    } else if (pipeline.nodeList[mynode].type == NODE::POLISH_PARAMS) {
+    } else if (pipeline.nodeList[mynode].type == Node::POLISH_PARAMS) {
         command = "cat " + pipeline.nodeList[mynode].name;
-    } else if (pipeline.nodeList[mynode].type != NODE::POST) {
+    } else if (pipeline.nodeList[mynode].type != Node::POST) {
         command = "relion_display --gui --i " + pipeline.nodeList[mynode].name + " &";
     }
     //std::cerr << " command= " << command << std::endl;

@@ -140,32 +140,6 @@ static bool do_allow_change_minimum_dedicated;
 // Optional output file for any jobtype that explicitly defines the output nodes
 const char *const RELION_OUTPUT_NODES = "RELION_OUTPUT_NODES.star";
 
-/*
- * The Node class represents data and metadata that are either input to or output from Processes
- * Nodes are connected to each by Edges:
- * - the fromEdgeList are connections with Nodes earlier (higher up) in the pipeline
- * - the toEdgeList are connections with Nodes later (lower down) in the pipeline
- *
- * Nodes could be of the following types:
- */
-namespace NODE { enum NodeTypes {
-    MOVIES, // 2D micrograph movie(s), e.g. Falcon001_movie.mrcs or micrograph_movies.star
-    MICS,  // 2D micrograph(s), possibly with CTF information as well, e.g. Falcon001.mrc or micrographs.star
-    MIC_COORDS,  // Suffix for particle coordinates in micrographs (e.g. autopick.star or .box)
-    PART_DATA,  // A metadata (STAR) file with particles (e.g. particles.star or run1_data.star)
-    // MOVIE_DATA,  // A metadata (STAR) file with particle movie-frames (e.g. particles_movie.star or run1_ct27_data.star)
-    REFS2D,  // A STAR file with one or multiple 2D references, e.g. autopick_references.star
-    REF3D,  // A single 3D-reference, e.g. map.mrc
-    MASK,  // 3D mask, e.g. mask.mrc or masks.star
-    MODEL,  // A model STAR-file for class selection
-    OPTIMISER,  // An optimiser STAR-file for job continuation
-    HALFMAP,  // Unfiltered half-maps from 3D auto-refine, e.g. run1_half?_class001_unfil.mrc
-    FINALMAP,  // Sharpened final map from post-processing (cannot be used as input)
-    RESMAP,  // Resmap with local resolution (cannot be used as input)
-    PDF_LOGFILE,  // PDF logfile
-    POST,  // Postprocess STAR file (with FSC curve, unfil half-maps, masks etc in it: used by Jasenko's programs
-    POLISH_PARAMS  // Txt file with optimal parameters for Bayesian polishing
-}; };
 
 namespace PROC {
 
@@ -239,6 +213,12 @@ struct gui_layout {
 };
 
 
+/*
+ * The Node class represents data and metadata that are either input to or output from Processes
+ * Nodes are connected to each by Edges:
+ * - the fromEdgeList are connections with Nodes earlier (higher up) in the pipeline
+ * - the toEdgeList are connections with Nodes later (lower down) in the pipeline
+ */
 class Node {
 
     public:
@@ -262,6 +242,26 @@ class Node {
         // Do not delete the adjacent nodes here... They will be deleted by graph destructor
         inputForProcessList.clear();
     }
+
+    // Nodes can be of the following types:
+    enum Types {
+        MOVIES, // 2D micrograph movie(s), e.g. Falcon001_movie.mrcs or micrograph_movies.star
+        MICS,  // 2D micrograph(s), possibly with CTF information as well, e.g. Falcon001.mrc or micrographs.star
+        MIC_COORDS,  // Suffix for particle coordinates in micrographs (e.g. autopick.star or .box)
+        PART_DATA,  // A metadata (STAR) file with particles (e.g. particles.star or run1_data.star)
+        // MOVIE_DATA,  // A metadata (STAR) file with particle movie-frames (e.g. particles_movie.star or run1_ct27_data.star)
+        REFS2D,  // A STAR file with one or multiple 2D references, e.g. autopick_references.star
+        REF3D,  // A single 3D-reference, e.g. map.mrc
+        MASK,  // 3D mask, e.g. mask.mrc or masks.star
+        MODEL,  // A model STAR-file for class selection
+        OPTIMISER,  // An optimiser STAR-file for job continuation
+        HALFMAP,  // Unfiltered half-maps from 3D auto-refine, e.g. run1_half?_class001_unfil.mrc
+        FINALMAP,  // Sharpened final map from post-processing (cannot be used as input)
+        RESMAP,  // Resmap with local resolution (cannot be used as input)
+        PDF_LOGFILE,  // PDF logfile
+        POST,  // Postprocess STAR file (with FSC curve, unfil half-maps, masks etc in it: used by Jasenko's programs
+        POLISH_PARAMS  // Txt file with optimal parameters for Bayesian polishing
+    };
 
 };
 

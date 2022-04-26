@@ -1094,7 +1094,7 @@ bool PipeLine::markAsFinishedJob(
 
             // Also get data.star
             FileName fn_data = fn_opt.without("_optimiser.star") + "_data.star";
-            Node node2(fn_data, NODE::PART_DATA);
+            Node node2(fn_data, Node::PART_DATA);
             addNewOutputEdge(this_job, node2);
 
             FileName fn_root = fn_opt.without("_optimiser.star");
@@ -1102,14 +1102,14 @@ bool PipeLine::markAsFinishedJob(
                 fn_root += "_half1";
 
             FileName fn_model = fn_root + "_model.star";
-            Node node3(fn_model, NODE::MODEL);
+            Node node3(fn_model, Node::MODEL);
             addNewOutputEdge(this_job, node3);
 
             FileName fn_map = fn_root + "_class???.mrc";
             std::vector<FileName> fn_maps;
             fn_map.globFiles(fn_maps);
             for (int i = 0; i < fn_maps.size(); i++) {
-                Node node4(fn_maps[i], NODE::REF3D);
+                Node node4(fn_maps[i], Node::REF3D);
                 addNewOutputEdge(this_job, node4);
             }
         } else {
@@ -1278,7 +1278,7 @@ bool PipeLine::makeFlowChart(
     read(DO_LOCK, lock_message);
 
     // Add the PDF file as a logfile to the outputnodes of this job, so it can be visualised from the Display button
-    Node node(fn_dir + "flowchart.pdf", NODE::PDF_LOGFILE);
+    Node node(fn_dir + "flowchart.pdf", Node::PDF_LOGFILE);
     addNewOutputEdge(current_job, node);
 
     write(DO_LOCK);
@@ -2095,41 +2095,41 @@ std::string PipeLineFlowChart::getDownwardsArrowLabel(
 
     switch (pipeline.nodeList[mynode].type) {
 
-        case NODE::MOVIES:
+        case Node::MOVIES:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " movies";
 
-        case NODE::MICS:
+        case Node::MICS:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " micrographs";
 
-        case NODE::PART_DATA:
+        case Node::PART_DATA:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " particles";
 
-        case NODE::REFS2D:
+        case Node::REFS2D:
         return "2Drefs";
 
-        case NODE::REF3D:
+        case Node::REF3D:
         return "3D ref";
 
-        case NODE::MASK:
+        case Node::MASK:
         return "mask";
     
-        case NODE::MODEL:
+        case Node::MODEL:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "model_classes", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " classes";
 
-        case NODE::OPTIMISER:
+        case Node::OPTIMISER:
         return "continue";
 
-        case NODE::HALFMAP:
+        case Node::HALFMAP:
         return "half-map";
 
-        case NODE::FINALMAP:
+        case Node::FINALMAP:
         return "final map";
 
-        case NODE::RESMAP:
+        case Node::RESMAP:
         return "local-res map";
 
         default:
@@ -2201,44 +2201,44 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
             int mynodetype = pipeline.nodeList[inputnode].type;
 
             if (pipeline.processList[new_process].type == PROC::AUTOPICK) {
-                is_right = mynodetype == NODE::REFS2D;
+                is_right = mynodetype == Node::REFS2D;
                 right_label = "2D refs";
             } else if (pipeline.processList[new_process].type == PROC::EXTRACT) {
 
-                // If the coordinates come from NODE::MIC_COORDS, then straight up is the CTF info
-                // If the coordinates come from NODE::PART_DATA, then that should be straight up
-                // therefore first check whether this node has NODE::PART_DATA input
+                // If the coordinates come from Node::MIC_COORDS, then straight up is the CTF info
+                // If the coordinates come from Node::PART_DATA, then that should be straight up
+                // therefore first check whether this node has Node::PART_DATA input
                 bool has_part_data = false;
                 for (int inode2 = 0; inode2 < pipeline.processList[new_process].inputNodeList.size(); inode2++) {
                     long int inputnode2 = pipeline.processList[new_process].inputNodeList[inode2];
-                    if (pipeline.nodeList[inputnode2].type == NODE::PART_DATA) {
+                    if (pipeline.nodeList[inputnode2].type == Node::PART_DATA) {
                         has_part_data = true;
                         break;
                     }
                 }
                 if (has_part_data) {
-                    is_right = mynodetype == NODE::MICS;
+                    is_right = mynodetype == Node::MICS;
                     right_label = "mics";
                 } else {
-                    is_right = mynodetype == NODE::MIC_COORDS;
+                    is_right = mynodetype == Node::MIC_COORDS;
                     right_label = "coords";
                 }
             } else if (pipeline.processList[new_process].type == PROC::CLASS3D) {
-                is_right = mynodetype == NODE::REF3D;
+                is_right = mynodetype == Node::REF3D;
                 right_label = "3D ref";
-                is_left = mynodetype == NODE::MASK;
+                is_left = mynodetype == Node::MASK;
                 left_label = "mask";
             } else if (pipeline.processList[new_process].type == PROC::AUTO3D) {
-                is_right = mynodetype == NODE::REF3D;
+                is_right = mynodetype == Node::REF3D;
                 right_label = "3D ref";
-                is_left = mynodetype == NODE::MASK;
+                is_left = mynodetype == Node::MASK;
                 left_label = "mask";
             } else if (pipeline.processList[new_process].type == PROC::JOINSTAR) {
                 // For joinstar: there will be no parent process that returns a postive value!
                 // Thereby, joinstar will always end in the 2-4 input processes, each of for which a new flowchart will be made on a new tikZpicture
-                if (mynodetype == NODE::MOVIES) {
+                if (mynodetype == Node::MOVIES) {
                     right_label = left_label = "mics";
-                } else if (mynodetype == NODE::PART_DATA) {
+                } else if (mynodetype == Node::PART_DATA) {
                     right_label = left_label = "parts";
                 }
                 is_right       = inode == 0;
@@ -2246,15 +2246,15 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
                 is_upper_right = inode == 2;
                 is_upper_left  = inode == 3;
             } else if (pipeline.processList[new_process].type == PROC::SUBTRACT) {
-                is_right = mynodetype == NODE::REF3D;
+                is_right = mynodetype == Node::REF3D;
                 right_label = "3D ref";
-                is_left = mynodetype == NODE::MASK;
+                is_left = mynodetype == Node::MASK;
                 left_label = "mask";
             } else if (pipeline.processList[new_process].type == PROC::POST) {
-                is_left = mynodetype == NODE::MASK;
+                is_left = mynodetype == Node::MASK;
                 left_label = "mask";
             } else if (pipeline.processList[new_process].type == PROC::RESMAP) {
-                is_left = mynodetype == NODE::MASK;
+                is_left = mynodetype == Node::MASK;
                 left_label = "mask";
             }
 
