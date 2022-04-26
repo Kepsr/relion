@@ -62,6 +62,7 @@ enum {
 
 // Hard-coded LMB defaults
 namespace DEFAULT {
+    const char* const PDFVIEWER = "evince";
     const char *const QSUBLOCATION = "/public/EM/RELION/relion/bin/relion_qsub.csh";
     const char *const CTFFINDLOCATION = "/public/EM/ctffind/ctffind.exe";
     const char *const MOTIONCOR2LOCATION = "/public/EM/MOTIONCOR2/MotionCor2";

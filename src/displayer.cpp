@@ -19,8 +19,8 @@
  ***************************************************************************/
 
 #include "src/displayer.h"
-//#define DEBUG
-//
+#include "src/pipeline_jobs.h" // For DEFAULT::PDFVIEWER
+// #define DEBUG
 #ifdef HAVE_PNG
 #include <src/jaz/gravis/tImage.h>
 #endif
@@ -1089,7 +1089,7 @@ void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
 
 void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
     const char *default_pdf_viewer = getenv("RELION_PDFVIEWER_EXECUTABLE");
-    if (!default_pdf_viewer) { default_pdf_viewer = DEFAULTPDFVIEWER; }
+    if (!default_pdf_viewer) { default_pdf_viewer = DEFAULT::PDFVIEWER; }
 
     std::string mydefault = std::string(default_pdf_viewer);
 

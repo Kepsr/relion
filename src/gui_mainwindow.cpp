@@ -20,7 +20,6 @@
 
 #include "src/gui_mainwindow.h"
 #include "src/gui_background.xpm"
-#include "src/displayer.h"  // For DEFAULTPDFVIEWER
 
 bool show_scheduler;
 bool show_expand_stdout;
@@ -1682,7 +1681,7 @@ void GuiMainWindow::cb_display_io_node_i() {
         }
     } else if (pipeline.nodeList[mynode].type == Node::PDF_LOGFILE) {
         const char *default_pdf_viewer = getenv ("RELION_PDFVIEWER_EXECUTABLE");
-        if (!default_pdf_viewer) { default_pdf_viewer = DEFAULTPDFVIEWER; }
+        if (!default_pdf_viewer) { default_pdf_viewer = DEFAULT::PDFVIEWER; }
         std::string myviewer(default_pdf_viewer);
         command = myviewer + " " + pipeline.nodeList[mynode].name + "&";
     } else if (pipeline.nodeList[mynode].type == Node::POLISH_PARAMS) {

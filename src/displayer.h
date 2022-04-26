@@ -64,8 +64,6 @@ const int MULTIVIEW_WINDOW_HEIGHT = 486;
 enum { MULTIVIEWER, SINGLEVIEWER };
 enum { BLACK, WHITE };
 
-const char* const DEFAULTPDFVIEWER = "evince";
-
 static bool has_dragged;
 static int predrag_xc;
 static int predrag_yc;
