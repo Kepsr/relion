@@ -853,9 +853,8 @@ Note that the person who installed RELION should have made a custom script for y
     }
 
     // Check for environment variable RELION_QSUB_TEMPLATE
-    char *qsub_template = getenv("RELION_QSUB_TEMPLATE");
-    char mydefault[] = DEFAULTQSUBLOCATION;
-    if (!qsub_template) { qsub_template = mydefault; }
+    const char *qsub_template = getenv("RELION_QSUB_TEMPLATE");
+    if (!qsub_template) { qsub_template = DEFAULTQSUBLOCATION; }
     joboptions["qsubscript"] = JobOption("Standard submission script:", string(qsub_template), "Script Files (*.{csh,sh,bash,script})", ".",
 "The template for your standard queue job submission script. \
 Its default location may be changed by setting the environment variable RELION_QSUB_TEMPLATE. \
@@ -1227,9 +1226,8 @@ void RelionJob::initialiseMotioncorrJob() {
     // Motioncor2
 
     // Check for environment variable RELION_MOTIONCOR2_EXECUTABLE
-    char *motioncor2_exe = getenv("RELION_MOTIONCOR2_EXECUTABLE");
-    char mydefault[] = DEFAULTMOTIONCOR2LOCATION;
-    if (!motioncor2_exe) { motioncor2_exe = mydefault; }
+    const char *motioncor2_exe = getenv("RELION_MOTIONCOR2_EXECUTABLE");
+    if (!motioncor2_exe) { motioncor2_exe = DEFAULTMOTIONCOR2LOCATION; }
 
     // Common arguments RELION and UCSF implementation
     joboptions["bfactor"] = JobOption("Bfactor:", 150, 0, 1500, 50, "The B-factor that will be applied to the micrographs.");
@@ -1410,9 +1408,8 @@ void RelionJob::initialiseCtffindJob() {
     // Check for environment variable RELION_CTFFIND_EXECUTABLE
     joboptions["use_ctffind4"] = JobOption("Use CTFFIND-4.1?", false, "If set to Yes, the wrapper will use CTFFIND4 (version 4.1) for CTF estimation. This includes thread-support, calculation of Thon rings from movie frames and phase-shift estimation for phase-plate data.");
     joboptions["use_given_ps"] = JobOption("Use power spectra from MotionCorr job?", false, "If set to Yes, the CTF estimation will be done using power spectra calculated during motion correction.");
-    char *ctffind_exe = getenv("RELION_CTFFIND_EXECUTABLE");
-    char mydefault[] = DEFAULTCTFFINDLOCATION;
-    if (!ctffind_exe) { ctffind_exe = mydefault; }
+    const char *ctffind_exe = getenv("RELION_CTFFIND_EXECUTABLE");
+    if (!ctffind_exe) { ctffind_exe = DEFAULTCTFFINDLOCATION; }
     joboptions["fn_ctffind_exe"] = JobOption("CTFFIND-4.1 executable:", string(ctffind_exe), "*", ".", "Location of the CTFFIND (release 4.1 or later) executable. You can control the default of this field by setting environment variable RELION_CTFFIND_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
     joboptions["slow_search"] = JobOption("Use exhaustive search?", false, "If set to Yes, CTFFIND4 will use slower but more exhaustive search. This option is recommended for CTFFIND version 4.1.8 and earlier, but probably not necessary for 4.1.10 and later. It is also worth trying this option when astigmatism and/or phase shifts are difficult to fit.");
 
@@ -1427,9 +1424,8 @@ void RelionJob::initialiseCtffindJob() {
 
     joboptions["use_gctf"] = JobOption("Use Gctf instead?", false, "If set to Yes, Kai Zhang's Gctf program (which runs on NVIDIA GPUs) will be used instead of Niko Grigorieff's CTFFIND4.");
     // Check for environment variable RELION_CTFFIND_EXECUTABLE
-    char *gctf_exe = getenv("RELION_GCTF_EXECUTABLE");
-    char mydefault2[] = DEFAULTGCTFLOCATION;
-    if (!gctf_exe) { gctf_exe = mydefault2; }
+    const char *gctf_exe = getenv("RELION_GCTF_EXECUTABLE");
+    if (!gctf_exe) { gctf_exe = DEFAULTGCTFLOCATION; }
     joboptions["fn_gctf_exe"] = JobOption("Gctf executable:", string(gctf_exe), "*", ".", "Location of the Gctf executable. You can control the default of this field by setting environment variable RELION_GCTF_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code.");
     joboptions["do_ignore_ctffind_params"] = JobOption("Ignore 'Searches' parameters?", true, "If set to Yes, all parameters EXCEPT for phase shift search and its ranges on the 'Searches' tab will be ignored, and Gctf's default parameters will be used (box.size=1024; min.resol=50; max.resol=4; min.defocus=500; max.defocus=90000; step.defocus=500; astigm=1000) \n \
 \nIf set to No, all parameters on the CTFFIND tab will be passed to Gctf.");
@@ -4510,9 +4506,8 @@ void RelionJob::initialiseLocalresJob() {
     joboptions["angpix"] = JobOption("Calibrated pixel size (A)", 1, 0.3, 5, 0.1, "Provide the final, calibrated pixel size in Angstroms. This value may be different from the pixel-size used thus far, e.g. when you have recalibrated the pixel size using the fit to a PDB model. The X-axis of the output FSC plot will use this calibrated value.");
 
     // Check for environment variable RELION_RESMAP_TEMPLATE
-    char *resmap_exe = getenv("RELION_RESMAP_EXECUTABLE");
-    char mydefault[] = DEFAULTRESMAPLOCATION;
-    if (!resmap_exe) { resmap_exe = mydefault; }
+    const char *resmap_exe = getenv("RELION_RESMAP_EXECUTABLE");
+    if (!resmap_exe) { resmap_exe = DEFAULTRESMAPLOCATION; }
 
     joboptions["do_resmap_locres"] = JobOption("Use ResMap?", true, "If set to Yes, then ResMap will be used for local resolution estimation.");
     joboptions["fn_resmap"] = JobOption("ResMap executable:", string(resmap_exe), "ResMap*", ".", "Location of the ResMap executable. You can control the default of this field by setting environment variable RELION_RESMAP_EXECUTABLE, or by editing the first few lines in src/gui_jobwindow.h and recompile the code. \n \n Note that the ResMap wrapper cannot use MPI.");

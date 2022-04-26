@@ -50,19 +50,21 @@ using std::vector;
 #define HAS_MPI true
 #define HAS_THREAD true
 
-#define RADIO_SAMPLING 0
-#define RADIO_NODETYPE 1
-#define RADIO_GAIN_ROTATION 2
-#define RADIO_GAIN_FLIP 3
+enum {
+    RADIO_SAMPLING,
+    RADIO_NODETYPE,
+    RADIO_GAIN_ROTATION,
+    RADIO_GAIN_FLIP
+};
 
-// Our own defaults at LMB are the hard-coded ones
-#define DEFAULTQSUBLOCATION "/public/EM/RELION/relion/bin/relion_qsub.csh"
-#define DEFAULTCTFFINDLOCATION "/public/EM/ctffind/ctffind.exe"
-#define DEFAULTMOTIONCOR2LOCATION "/public/EM/MOTIONCOR2/MotionCor2"
-#define DEFAULTGCTFLOCATION "/public/EM/Gctf/bin/Gctf"
-#define DEFAULTRESMAPLOCATION "/public/EM/ResMap/ResMap-1.1.4-linux64"
-#define DEFAULTQSUBCOMMAND "qsub"
-#define DEFAULTQUEUENAME "openmpi"
+// Hard-coded LMB defaults
+const char* const DEFAULTQSUBLOCATION = "/public/EM/RELION/relion/bin/relion_qsub.csh";
+const char* const DEFAULTCTFFINDLOCATION = "/public/EM/ctffind/ctffind.exe";
+const char* const DEFAULTMOTIONCOR2LOCATION = "/public/EM/MOTIONCOR2/MotionCor2";
+const char* const DEFAULTGCTFLOCATION = "/public/EM/Gctf/bin/Gctf";
+const char* const DEFAULTRESMAPLOCATION = "/public/EM/ResMap/ResMap-1.1.4-linux64";
+const char* const DEFAULTQSUBCOMMAND = "qsub";
+const char* const DEFAULTQUEUENAME = "openmpi";
 #define DEFAULTMININIMUMDEDICATED 1
 #define DEFAULTWARNINGLOCALMPI 32
 #define DEFAULTALLOWCHANGEMINDEDICATED true
@@ -208,12 +210,13 @@ static bool do_allow_change_minimum_dedicated;
 #define NR_BROWSE_TABS      20
 
 // Status a Process may have
-#define PROC_RUNNING          0 // (hopefully) running
-#define PROC_SCHEDULED        1 // scheduled for future execution
-#define PROC_FINISHED_SUCCESS 2 // successfully finished
-#define PROC_FINISHED_FAILURE 3 // reported an error
-#define PROC_FINISHED_ABORTED 4 // aborted by the user
-
+enum ProcessStatuses {
+    PROC_RUNNING,           // (hopefully) running
+    PROC_SCHEDULED,         // scheduled for future execution
+    PROC_FINISHED_SUCCESS,  // successfully finished
+    PROC_FINISHED_FAILURE,  // reported an error
+    PROC_FINISHED_ABORTED   // aborted by the user
+};
 
 struct gui_layout {
     string tabname;
