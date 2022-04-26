@@ -44,52 +44,52 @@
 #include "src/gui_entries.h"
 #include "src/jaz/obs_model.h"
 
-#define MWCOL1 300
-#define MWCOL2 60
-#define MWCOL3 60
-#define MWCOL4 80
-#define MXCOL0 30
-#define MXCOL1 (MXCOL0 + MWCOL1 + 10)
-#define MXCOL2 (MXCOL1 + MWCOL2 + 10)
-#define MXCOL3 (MXCOL2 + MWCOL3 + 10)
-#define MXCOL4 (MXCOL3 + MWCOL4 + 10)
-#define TOTALWIDTH (MWCOL1 + MWCOL2 + MWCOL3 + MWCOL4 + MWCOL4 + 100)
-#define TOTALHEIGHT 500
+const int MWCOL1 = 300;
+const int MWCOL2 = 60;
+const int MWCOL3 = 60;
+const int MWCOL4 = 80;
+const int MXCOL0 = 30;
+const int MXCOL1 = MXCOL0 + MWCOL1 + 10;
+const int MXCOL2 = MXCOL1 + MWCOL2 + 10;
+const int MXCOL3 = MXCOL2 + MWCOL3 + 10;
+const int MXCOL4 = MXCOL3 + MWCOL4 + 10;
+const int TOTALWIDTH = MWCOL1 + MWCOL2 + MWCOL3 + MWCOL4 + MWCOL4 + 100;
+const int TOTALHEIGHT = 500;
 
 // The button for picking particles
-void cb_viewmic(Fl_Widget* w, void* data);
+void cb_viewmic(Fl_Widget *w, void *data);
 // The button for viewing the CTF
-void cb_viewctf(Fl_Widget* w, void* data);
+void cb_viewctf(Fl_Widget *w, void *data);
 // The selection button
-void cb_selectmic(Fl_Widget* w, void* data);
+void cb_selectmic(Fl_Widget *w, void *data);
 
 // This class only puts scrollbars around the resizable canvas
-class manualpickerGuiWindow : public Fl_Window
-{
-public:
+class manualpickerGuiWindow: public Fl_Window {
 
-	// Input, picking & output names
-	FileName fn_in, fn_sel;
+    public:
 
-	// Allow saving selected micrographs?
-	bool do_allow_save;
+    // Input, picking & output names
+    FileName fn_in, fn_sel;
 
-	// Save default selection immediately? (useful for always generating output files in pipeline)
-	bool do_fast_save;
+    // Allow saving selected micrographs?
+    bool do_allow_save;
 
-	// MetaDataTable of input micrographs
-	MetaDataTable MDin;
+    // Save default selection immediately? (useful for always generating output files in pipeline)
+    bool do_fast_save;
 
-	// Observation model of input micrographs
-	ObservationModel obsModel;
+    // MetaDataTable of input micrographs
+    MetaDataTable MDin;
 
-	// Constructor with w x h size of the window and a title
-	manualpickerGuiWindow(int W, int H, const char* title=0): Fl_Window(W, H, title){}
+    // Observation model of input micrographs
+    ObservationModel obsModel;
 
-	// Fill the window with all entries
-	int fill();
+    // Constructor with w x h size of the window and a title
+    manualpickerGuiWindow(int W, int H, const char *title = 0): Fl_Window(W, H, title){}
 
-private:
+    // Fill the window with all entries
+    int fill();
+
+    private:
 
     static void cb_menubar_save(Fl_Widget*, void*);
     inline void cb_menubar_save_i();
@@ -108,45 +108,45 @@ private:
 
 };
 
-class ManualPicker
-{
-public:
+class ManualPicker {
 
-	// I/O Parser
-	IOParser parser;
+    public:
 
-	// The input micrographs
-	MetaDataTable MDin;
+    // I/O Parser
+    IOParser parser;
 
-	// Observation model for the input mirographs
-	ObservationModel obsModel;
+    // The input micrographs
+    MetaDataTable MDin;
 
-	// Input, picking & output names
-	FileName fn_in, fn_sel;
+    // Observation model for the input mirographs
+    ObservationModel obsModel;
 
-	// Allow save selected micrographs?
-	bool do_allow_save;
+    // Input, picking & output names
+    FileName fn_in, fn_sel;
 
-	// Save an output selection file immediately (with all micrographs selected)
-	bool do_fast_save;
+    // Allow save selected micrographs?
+    bool do_allow_save;
 
+    // Save an output selection file immediately (with all micrographs selected)
+    bool do_fast_save;
 
-public:
-	// Read command line arguments
-	void read(int argc, char **argv);
+    public:
 
-	// Print usage instructions
-	void usage();
+    // Read command line arguments
+    void read(int argc, char **argv);
 
-	// Initialise some general stuff after reading
-	void initialise();
+    // Print usage instructions
+    void usage();
 
-	// General function to decide what to do
-	void run();
+    // Initialise some general stuff after reading
+    void initialise();
 
-private:
+    // General function to decide what to do
+    void run();
 
-	void writeOutput();
+    private:
+
+    void writeOutput();
 
 };
 

@@ -33,7 +33,7 @@
 #endif
 
 #include "src/image.h"
-#define MRCSIZE 1024 // Minimum size of the MRC header (when nsymbt = 0)
+const int MRCSIZE = 1024; // Minimum size of the MRC header (when nsymbt = 0)
 
 ///@defgroup MRC MRC File format
 ///@ingroup ImageFormats
@@ -399,8 +399,8 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     header->nsymbt = 0;
 
-    //Create label "Relion version    date time"
-    #define MRC_LABEL_LEN 80
+    // Create label "Relion version    date time"
+    const int MRC_LABEL_LEN = 80;
     header->nlabl = 1;
 
     char label[MRC_LABEL_LEN] = "Relion ";

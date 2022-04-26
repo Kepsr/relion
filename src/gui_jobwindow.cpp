@@ -131,7 +131,7 @@ void JobWindow::setupRunTab() {
     if (has_parallel) { current_y += STEPY / 4; }
 
     // Set up queue groups for running tab
-    queue_group = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    queue_group = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     queue_group->end();
 
     place("do_queue", TOGGLE_LEAVE_ACTIVE, queue_group);
@@ -233,9 +233,8 @@ void JobWindow::toggle_new_continue(bool _is_continue) {
     is_continue = _is_continue;
     myjob.is_continue = _is_continue;
 
-    for (std::map<std::string,GuiEntry>::iterator it=guientries.begin(); it!=guientries.end(); ++it) {
-        int my_option = (it->second).deactivate_option;
-        switch (my_option) {
+    for (std::map<std::string,GuiEntry>::iterator it = guientries.begin(); it != guientries.end(); ++it) {
+        switch (it->second.deactivate_option) {
 
             case TOGGLE_DEACTIVATE:
             it->second.deactivate(is_continue);
@@ -365,7 +364,7 @@ void JobWindow::initialiseImportWindow() {
     tab1->label("Movies/mics");
     resetHeight();
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     place("do_raw", TOGGLE_DEACTIVATE, group1, false);
@@ -397,7 +396,7 @@ void JobWindow::initialiseImportWindow() {
     tab2->label("Others");
     resetHeight();
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
     place("do_other", TOGGLE_DEACTIVATE, group2, false);
     group2->begin();
@@ -441,7 +440,7 @@ void JobWindow::initialiseMotioncorrWindow() {
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_dose_weighting", TOGGLE_DEACTIVATE, group1);
     group1->begin();
@@ -450,7 +449,7 @@ void JobWindow::initialiseMotioncorrWindow() {
 
     guientries["do_dose_weighting"].cb_menu_i(); // make default active
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
     place("do_save_ps", TOGGLE_DEACTIVATE, group2);
     group2->begin();
@@ -472,7 +471,7 @@ void JobWindow::initialiseMotioncorrWindow() {
     place("fn_defect", TOGGLE_DEACTIVATE);
 
     current_y += STEPY / 2;
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
     place("do_own_motioncor", TOGGLE_DEACTIVATE, group4, true);
     group4->begin();
@@ -500,7 +499,7 @@ void JobWindow::initialiseCtffindWindow() {
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     place("do_phaseshift", TOGGLE_DEACTIVATE, group1);
@@ -522,7 +521,7 @@ void JobWindow::initialiseCtffindWindow() {
     tab2->label("CTFFIND-4.1");
     resetHeight();
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
 
     place("use_ctffind4", TOGGLE_DEACTIVATE, group2);
@@ -553,7 +552,7 @@ void JobWindow::initialiseCtffindWindow() {
     tab3->label("Gctf");
     resetHeight();
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
 
     place("use_gctf", TOGGLE_DEACTIVATE, group4);
@@ -612,7 +611,7 @@ void JobWindow::initialiseManualpickWindow() {
     tab2->end();
     tab3->begin();
     tab3->label("Colors");
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     resetHeight();
@@ -648,7 +647,7 @@ void JobWindow::initialiseAutopickWindow() {
 
     place("fn_refs_autopick", TOGGLE_DEACTIVATE);
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_ref3d", TOGGLE_DEACTIVATE, group1);
     group1->begin();
@@ -681,7 +680,7 @@ void JobWindow::initialiseAutopickWindow() {
     resetHeight();
 
     //set up group
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
 
     place("lowpass", TOGGLE_DEACTIVATE);
@@ -728,7 +727,7 @@ void JobWindow::initialiseAutopickWindow() {
     // Set up queue groups for running tab
     place("shrink", TOGGLE_DEACTIVATE);
 
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
     place("use_gpu", TOGGLE_LEAVE_ACTIVE, group3);
 
@@ -743,7 +742,7 @@ void JobWindow::initialiseAutopickWindow() {
     tab5->label("Helix");
     resetHeight();
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
 
     place("do_pick_helical_segments", TOGGLE_DEACTIVATE, group4);
@@ -784,7 +783,7 @@ void JobWindow::initialiseExtractWindow() {
     place("coords_suffix", TOGGLE_DEACTIVATE);
     current_y += STEPY / 2;
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     place("do_reextract", TOGGLE_DEACTIVATE, group1);
@@ -793,7 +792,7 @@ void JobWindow::initialiseExtractWindow() {
 
     place("fndata_reextract", TOGGLE_DEACTIVATE);
     place("do_reset_offsets", TOGGLE_DEACTIVATE);
-    group7 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group7 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group7->end();
     place("do_recenter", TOGGLE_DEACTIVATE, group7);
 
@@ -817,7 +816,7 @@ void JobWindow::initialiseExtractWindow() {
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
     place("do_norm", TOGGLE_DEACTIVATE, group3);
 
@@ -837,7 +836,7 @@ Pixels values higher than this many times the image stddev will be replaced with
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
     place("do_rescale", TOGGLE_DEACTIVATE, group4);
     group4->begin();
@@ -850,7 +849,7 @@ Pixels values higher than this many times the image stddev will be replaced with
     tab3->label("Helix");
     resetHeight();
 
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
 
     place("do_extract_helix", TOGGLE_DEACTIVATE, group5);
@@ -863,7 +862,7 @@ Pixels values higher than this many times the image stddev will be replaced with
 
     place("helical_bimodal_angular_priors", TOGGLE_DEACTIVATE);
 
-    group6 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group6 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group6->end();
 
     current_y += STEPY / 2;
@@ -906,7 +905,7 @@ void JobWindow::initialiseSelectWindow() {
     resetHeight();
 
     place("do_recenter", TOGGLE_DEACTIVATE);
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_regroup", TOGGLE_DEACTIVATE, group1);
     group1->begin();
@@ -919,7 +918,7 @@ void JobWindow::initialiseSelectWindow() {
     tab3->label("Subsets");
     resetHeight();
 
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
 
     place("do_select_values", TOGGLE_DEACTIVATE, group3);
@@ -930,7 +929,7 @@ void JobWindow::initialiseSelectWindow() {
     group3->end();
     guientries["do_select_values"].cb_menu_i();
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
 
     // Add a little spacer
@@ -943,7 +942,7 @@ void JobWindow::initialiseSelectWindow() {
     group4->end();
     guientries["do_discard"].cb_menu_i();
 
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
 
     // Add a little spacer
@@ -963,7 +962,7 @@ void JobWindow::initialiseSelectWindow() {
     tab4->label("Duplicates");
     resetHeight();
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
     place("do_remove_duplicates", TOGGLE_DEACTIVATE, group2);
     group2->begin();
@@ -994,7 +993,7 @@ void JobWindow::initialiseClass2DWindow() {
     tab2->begin();
     tab2->label("CTF");
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     resetHeight();
@@ -1013,7 +1012,7 @@ void JobWindow::initialiseClass2DWindow() {
     resetHeight();
 
     //set up groups
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
 
     place("nr_classes", TOGGLE_DEACTIVATE);
@@ -1045,7 +1044,7 @@ void JobWindow::initialiseClass2DWindow() {
     tab4->label("Sampling");
 
     //set up groups
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
 
     resetHeight();
@@ -1069,7 +1068,7 @@ void JobWindow::initialiseClass2DWindow() {
     tab5->label("Helix");
     resetHeight();
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
 
     place("do_helix", TOGGLE_DEACTIVATE, group4);
@@ -1080,7 +1079,7 @@ void JobWindow::initialiseClass2DWindow() {
     place("do_bimodal_psi");
     place("range_psi");
 
-    group7 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group7 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group7->end();
     place("do_restrict_xoff", TOGGLE_LEAVE_ACTIVE, group7);
 
@@ -1101,7 +1100,7 @@ void JobWindow::initialiseClass2DWindow() {
 
     place("do_parallel_discio");
     place("nr_pool");
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
     place("do_preread_images", TOGGLE_LEAVE_ACTIVE, group5, true);
     group5->begin();
@@ -1113,7 +1112,7 @@ void JobWindow::initialiseClass2DWindow() {
     current_y += STEPY / 2;
 
     // Set up queue groups for running tab
-    group6 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group6 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group6->end();
 
     place("use_gpu", TOGGLE_LEAVE_ACTIVE, group6);
@@ -1142,7 +1141,7 @@ void JobWindow::initialiseInimodelWindow() {
     tab2->begin();
     tab2->label("CTF");
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     resetHeight();
@@ -1233,7 +1232,7 @@ void JobWindow::initialiseInimodelWindow() {
     place("nr_pool");
     place("do_pad1");
     place("skip_gridding");
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
     place("do_preread_images", TOGGLE_LEAVE_ACTIVE, group5, true);
     group5->begin();
@@ -1245,7 +1244,7 @@ void JobWindow::initialiseInimodelWindow() {
     current_y += STEPY / 2;
 
     // Set up queue groups for running tab
-    group6 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group6 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group6->end();
 
     place("use_gpu", TOGGLE_LEAVE_ACTIVE, group6);
@@ -1288,7 +1287,7 @@ void JobWindow::initialiseClass3DWindow() {
     tab3->begin();
     tab3->label("CTF");
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     resetHeight();
@@ -1308,7 +1307,7 @@ void JobWindow::initialiseClass3DWindow() {
     resetHeight();
 
     //set up groups
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
 
     place("nr_classes", TOGGLE_DEACTIVATE);
@@ -1338,7 +1337,7 @@ void JobWindow::initialiseClass3DWindow() {
     tab5->label("Sampling");
 
     //set up groups
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
 
     resetHeight();
@@ -1350,7 +1349,7 @@ void JobWindow::initialiseClass3DWindow() {
     place("offset_range");
     place("offset_step");
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
 
     place("do_local_ang_searches", TOGGLE_LEAVE_ACTIVE, group4);
@@ -1372,7 +1371,7 @@ void JobWindow::initialiseClass3DWindow() {
     tab6->begin();
     tab6->label("Helix");
     resetHeight();
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
 
     //helix_text", TOGGLE_DEACTIVATE); //(current_y, "Nov 21, 2015");
@@ -1387,7 +1386,7 @@ void JobWindow::initialiseClass3DWindow() {
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group8 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group8 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group8->end();
     place("do_apply_helical_symmetry", TOGGLE_DEACTIVATE, group8);
     group8->begin();
@@ -1400,7 +1399,7 @@ void JobWindow::initialiseClass3DWindow() {
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group6 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group6 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group6->end();
     place("do_local_search_helical_symmetry", TOGGLE_DEACTIVATE, group6);
     group6->begin();
@@ -1421,7 +1420,7 @@ void JobWindow::initialiseClass3DWindow() {
     place("nr_pool");
     place("do_pad1");
     place("skip_gridding");
-    group7 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group7 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group7->end();
     place("do_preread_images", TOGGLE_LEAVE_ACTIVE, group7, true);
     group7->begin();
@@ -1432,7 +1431,7 @@ void JobWindow::initialiseClass3DWindow() {
     current_y += STEPY / 2;
 
     // Set up queue groups for running tab
-    group8 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group8 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group8->end();
     place("use_gpu", TOGGLE_LEAVE_ACTIVE, group8);
     group8->begin();
@@ -1470,7 +1469,7 @@ void JobWindow::initialiseAutorefineWindow() {
     tab3->begin();
     tab3->label("CTF");
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     resetHeight();
@@ -1515,7 +1514,7 @@ void JobWindow::initialiseAutorefineWindow() {
     tab6->begin();
     tab6->label("Helix");
     resetHeight();
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
 
     place("do_helix", TOGGLE_DEACTIVATE, group2);
@@ -1528,7 +1527,7 @@ void JobWindow::initialiseAutorefineWindow() {
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
     place("do_apply_helical_symmetry", TOGGLE_DEACTIVATE, group5);
     group5->begin();
@@ -1541,7 +1540,7 @@ void JobWindow::initialiseAutorefineWindow() {
     // Add a little spacer
     current_y += STEPY / 2;
 
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
     place("do_local_search_helical_symmetry", TOGGLE_DEACTIVATE, group3);
     group3->begin();
@@ -1563,7 +1562,7 @@ void JobWindow::initialiseAutorefineWindow() {
     place("nr_pool");
     place("do_pad1");
     place("skip_gridding");
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
     place("do_preread_images", TOGGLE_LEAVE_ACTIVE, group4, true);
     group4->begin();
@@ -1575,7 +1574,7 @@ void JobWindow::initialiseAutorefineWindow() {
     current_y += STEPY / 2;
 
     // Set up queue groups for running tab
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
     place("use_gpu", TOGGLE_LEAVE_ACTIVE, group5);
     group5->begin();
@@ -1617,7 +1616,7 @@ void JobWindow::initialiseMultiBodyWindow() {
     tab3->label("Analyse");
     resetHeight();
 
-    group5 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group5 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group5->end();
 
     place("do_analyse", TOGGLE_LEAVE_ACTIVE, group5);
@@ -1625,7 +1624,7 @@ void JobWindow::initialiseMultiBodyWindow() {
 
     place("nr_movies");
 
-    group6 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group6 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group6->end();
 
     place("do_select", TOGGLE_LEAVE_ACTIVE, group6);
@@ -1650,7 +1649,7 @@ void JobWindow::initialiseMultiBodyWindow() {
     place("nr_pool");
     place("do_pad1");
     place("skip_gridding");
-    group7 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group7 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group7->end();
     place("do_preread_images", TOGGLE_LEAVE_ACTIVE, group7, true);
     group7->begin();
@@ -1662,7 +1661,7 @@ void JobWindow::initialiseMultiBodyWindow() {
     current_y += STEPY / 2;
 
     // Set up queue groups for running tab
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
     place("use_gpu", TOGGLE_LEAVE_ACTIVE, group4);
     group4->begin();
@@ -1703,7 +1702,7 @@ void JobWindow::initialiseMaskcreateWindow() {
     tab3->label("Helix");
     resetHeight();
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     place("do_helix", TOGGLE_LEAVE_ACTIVE, group1);
@@ -1725,7 +1724,7 @@ void JobWindow::initialiseJoinstarWindow() {
     tab1->label("particles");
     resetHeight();
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_part", TOGGLE_DEACTIVATE, group1);
     group1->begin();
@@ -1742,7 +1741,7 @@ void JobWindow::initialiseJoinstarWindow() {
     tab2->label("micrographs");
     resetHeight();
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
     place("do_mic", TOGGLE_DEACTIVATE, group2);
     group2->begin();
@@ -1759,7 +1758,7 @@ void JobWindow::initialiseJoinstarWindow() {
     tab3->label("movies");
     resetHeight();
 
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
     place("do_mov", TOGGLE_DEACTIVATE, group3); //(current_y, "Combine movie STAR files?", false, "", mov_group);
     group3->begin();
@@ -1783,7 +1782,7 @@ void JobWindow::initialiseSubtractWindow() {
     place("fn_opt", TOGGLE_DEACTIVATE);
     place("fn_mask", TOGGLE_DEACTIVATE);
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_data", TOGGLE_DEACTIVATE, group1);
 
@@ -1794,7 +1793,7 @@ void JobWindow::initialiseSubtractWindow() {
 
     current_y += STEPY / 2;
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
     place("do_fliplabel", TOGGLE_DEACTIVATE, group2);
 
@@ -1809,13 +1808,13 @@ void JobWindow::initialiseSubtractWindow() {
     tab2->label("Centering");
     resetHeight();
 
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
     place("do_center_mask", TOGGLE_DEACTIVATE, group3, true);
 
     group3->begin();
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
     place("do_center_xyz", TOGGLE_DEACTIVATE, group4);
 
@@ -1841,7 +1840,7 @@ void JobWindow::initialisePostprocessWindow() {
     tab1->begin();
     tab1->label("I/O");
     resetHeight();
-    place("fn_in", TOGGLE_DEACTIVATE); //(current_y, "One of the 2 unfiltered half-maps:", NODE::HALFMAP, "", "MRC map files (*half1_class001_unfil.mrc)",  "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
+    place("fn_in", TOGGLE_DEACTIVATE); //(current_y, "One of the 2 unfiltered half-maps:", NODE::HALFMAP, "", "MRC map files (*half1_class001_unfil.mrc)", "Provide one of the two unfiltered half-reconstructions that were output upon convergence of a 3D auto-refine run.");
     place("fn_mask", TOGGLE_DEACTIVATE); //(current_y, "Solvent mask:", NODE::MASK, "", "Image Files (*.{spi,vol,msk,mrc})", "Provide a soft mask where the protein is white (1) and the solvent is black (0). Often, the softer the mask the higher resolution estimates you will get. A soft edge of 5-10 pixels is often a good edge width.");
 
     current_y += STEPY / 2;
@@ -1854,7 +1853,7 @@ void JobWindow::initialisePostprocessWindow() {
     tab2->label("Sharpen");
     resetHeight();
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_auto_bfac", TOGGLE_LEAVE_ACTIVE, group1);
 
@@ -1863,7 +1862,7 @@ void JobWindow::initialisePostprocessWindow() {
     group1->end();
     guientries["do_auto_bfac"].cb_menu_i();
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
     place("do_adhoc_bfac", TOGGLE_LEAVE_ACTIVE, group2);
 
@@ -1881,7 +1880,7 @@ void JobWindow::initialisePostprocessWindow() {
     tab3->begin();
     tab3->label("Filter");
     resetHeight();
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
 
     place("do_skip_fsc_weighting", TOGGLE_LEAVE_ACTIVE, group3);
@@ -1915,7 +1914,7 @@ void JobWindow::initialiseLocresWindow() {
     tab2->label("ResMap");
     resetHeight();
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
 
     place("do_resmap_locres", TOGGLE_DEACTIVATE, group1);
@@ -1940,7 +1939,7 @@ void JobWindow::initialiseLocresWindow() {
     tab3->label("Relion");
     resetHeight();
 
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
 
     place("do_relion_locres", TOGGLE_DEACTIVATE, group2);
@@ -1989,7 +1988,7 @@ void JobWindow::initialiseMotionrefineWindow() {
     resetHeight();
 
     // Train for optimal parameters
-    group2 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group2->end();
     place("do_param_optim", TOGGLE_LEAVE_ACTIVE, group2);
 
@@ -2008,7 +2007,7 @@ void JobWindow::initialiseMotionrefineWindow() {
     resetHeight();
 
     // Polishing
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_polish", TOGGLE_DEACTIVATE, group1);
 
@@ -2018,7 +2017,7 @@ void JobWindow::initialiseMotionrefineWindow() {
 
     place("opt_params", TOGGLE_DEACTIVATE);
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
     place("do_own_params", TOGGLE_DEACTIVATE, group4);
 
@@ -2055,7 +2054,7 @@ void JobWindow::initialiseCtfrefineWindow() {
     tab2->label("Fit");
     resetHeight();
 
-    group3 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group3->end();
     place("do_aniso_mag", TOGGLE_LEAVE_ACTIVE, group3, true); //true means: activating aniso_mag will deactive higher-order aberrations
 
@@ -2063,7 +2062,7 @@ void JobWindow::initialiseCtfrefineWindow() {
 
     group3->begin();
 
-    group1 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group1->end();
     place("do_ctf", TOGGLE_LEAVE_ACTIVE, group1);
 
@@ -2079,7 +2078,7 @@ void JobWindow::initialiseCtfrefineWindow() {
 
     current_y += STEPY /2 ;
 
-    group4 = new Fl_Group(WCOL0,  MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
+    group4 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
     group4->end();
     place("do_tilt", TOGGLE_LEAVE_ACTIVE, group4);
 

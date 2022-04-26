@@ -66,7 +66,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#define GUI_MAX_RADIO_ELEMENTS 15
 
 // forward declaration current_browse_directory, which allows CURRENT_ODIR browse buttons
 extern std::string current_browse_directory;
@@ -74,39 +73,42 @@ extern std::string current_browse_directory;
 // Create the scheduler GUI: without sliders or pull-down menus
 extern bool create_scheduler_gui;
 
-
 // Gui layout
 //#define XCOL1 10
 //#define XCOL2 260
 //#define XCOL3 460
 //#define XCOL4 475
 //#define XCOL5 535
+
+const int GUI_MAX_RADIO_ELEMENTS = 15;
+
+// By these being constants, rather than #defines,
+// they are evaluated only once.
+// This may be important for GUIEXTRA, whose evaluation involves a call to getenv.
+const int STEPY = 20;
 //Additional space in tab if more than 4 XXXextraiXXX template variables are used defined by
 //environment variable RELION_QSUB_EXTRA_COUNT
-#define GUIEXTRA \
-	( (getenv ("RELION_QSUB_EXTRA_COUNT"))? \
-	(std::max(0,(atoi(getenv ("RELION_QSUB_EXTRA_COUNT"))-4))*STEPY) : 0 )
-#define MENUHEIGHT 30
-#define TABHEIGHT 25
-#define GUIWIDTH 800
-#define GUIHEIGHT_OLD 420+GUIEXTRA
-#define GUIHEIGHT_EXT_START 370+GUIEXTRA
-#define GUIHEIGHT_EXT_START2 (GUIHEIGHT_EXT_START+MENUHEIGHT+10)
-#define GUIHEIGHT_EXT 800+GUIEXTRA
-#define XCOL0 200
-#define WCOL0 200
-#define XCOL1 ( (XCOL0) + 10  )
-#define XCOL2 ( (XCOL0) + 280 )
-#define XCOL3 ( (XCOL0) + 480 )
-#define XCOL4 ( (XCOL0) + 495 )
-#define XCOL5 ( (XCOL0) + 555 )
-#define ENTRY_FONTSIZE 13
-#define STEPY 20
-#define COLUMN_SEPARATION 3
-#define WCOL1 ( (XCOL2) - (XCOL1) - (COLUMN_SEPARATION) )
-#define WCOL2 ( (XCOL3) - (XCOL2) - (COLUMN_SEPARATION) )
-#define WCOL3 ( (XCOL4) - (XCOL3) - (COLUMN_SEPARATION) )
-#define WCOL4 ( (XCOL5) - (XCOL4) - (COLUMN_SEPARATION) )
+const int GUIEXTRA = getenv("RELION_QSUB_EXTRA_COUNT") ? std::max(0, atoi(getenv("RELION_QSUB_EXTRA_COUNT")) - 4) * STEPY : 0;
+const int MENUHEIGHT = 30;
+const int TABHEIGHT = 25;
+const int GUIWIDTH = 800;
+const int GUIHEIGHT_OLD = 420 + GUIEXTRA;
+const int GUIHEIGHT_EXT_START = 370 + GUIEXTRA;
+const int GUIHEIGHT_EXT_START2 = GUIHEIGHT_EXT_START + MENUHEIGHT + 10;
+const int GUIHEIGHT_EXT = 800 + GUIEXTRA;
+const int XCOL0 = 200;
+const int WCOL0 = 200;
+const int XCOL1 = XCOL0 + 10;
+const int XCOL2 = XCOL0 + 280;
+const int XCOL3 = XCOL0 + 480;
+const int XCOL4 = XCOL0 + 495;
+const int XCOL5 = XCOL0 + 555;
+const int ENTRY_FONTSIZE = 13;
+const int COLUMN_SEPARATION = 3;
+const int WCOL1 = XCOL2 - XCOL1 - COLUMN_SEPARATION;
+const int WCOL2 = XCOL3 - XCOL2 - COLUMN_SEPARATION;
+const int WCOL3 = XCOL4 - XCOL3 - COLUMN_SEPARATION;
+const int WCOL4 = XCOL5 - XCOL4 - COLUMN_SEPARATION;
 //version-1.0 #define GUI_BUTTON_COLOR (fl_rgb_color(200,255,100))
 //version-1.0 #define GUI_RUNBUTTON_COLOR (fl_rgb_color(255,155,0))
 //version-1.1 #define GUI_BUTTON_COLOR (fl_rgb_color(50,150,250))
@@ -128,11 +130,11 @@ extern bool create_scheduler_gui;
 //version-3.0 #define GUI_BUTTON_DARK_COLOR (fl_rgb_color(250, 150, 124))
 //version-3.0 #define GUI_RUNBUTTON_COLOR (fl_rgb_color(235, 130, 0))
 //version-3.1
-#define GUI_BUTTON_COLOR (fl_rgb_color(238,130,238))
-#define GUI_BUTTON_DARK_COLOR (fl_rgb_color(200, 110, 200))
-#define GUI_RUNBUTTON_COLOR (fl_rgb_color(170, 0, 170))
-#define GUI_BACKGROUND_COLOR (fl_rgb_color(230,230,240)) // slightly blue because of blue buttons in 2.0!
-#define GUI_BACKGROUND_COLOR2 (fl_rgb_color(180,180,190)) // slightly blue because of blue buttons in 2.0!
+const auto GUI_BUTTON_COLOR      = fl_rgb_color(238, 130, 238);
+const auto GUI_BUTTON_DARK_COLOR = fl_rgb_color(200, 110, 200);
+const auto GUI_RUNBUTTON_COLOR   = fl_rgb_color(170,   0, 170);
+const auto GUI_BACKGROUND_COLOR  = fl_rgb_color(230, 230, 240); // slightly blue because of blue buttons in 2.0!
+const auto GUI_BACKGROUND_COLOR2 = fl_rgb_color(180, 180, 190); // slightly blue because of blue buttons in 2.0!
 // devel-version
 //#define GUI_BUTTON_COLOR (fl_rgb_color(255, 150, 150))
 //#define GUI_BUTTON_DARK_COLOR (fl_rgb_color(200, 120, 120))
@@ -144,24 +146,19 @@ extern bool create_scheduler_gui;
 //possible #define GUI_RUNBUTTON_COLOR (fl_rgb_color(205,0,155))
 #define GUI_INPUT_COLOR (fl_rgb_color(255,255,230))
 
-#define TOGGLE_DEACTIVATE 0
-#define TOGGLE_REACTIVATE 1
-#define TOGGLE_ALWAYS_DEACTIVATE 2
-#define TOGGLE_LEAVE_ACTIVE 3
-
 static Fl_Menu_Item bool_options[] = {{"Yes"}, {"No"}, {0}};
 
 // A text to Float converter that raises an error window.
-float fltkTextToFloat(const char* str);
+float fltkTextToFloat(const char *str);
 
-/** This class displays opens an additional window with (help) text
+/** This class opens and displays an additional window with (help) text
  *
  */
 class ShowHelpText{
 
 public:
     // Constructor that opens and displays the window
-	ShowHelpText(const char* help = NULL);
+	ShowHelpText(const char *help = NULL);
 	// Empty destructor
     ~ShowHelpText();
 };
@@ -169,39 +166,39 @@ public:
 
 class GuiEntry{
 
-public:
+    public:
 
 	// What to do upon toggle of continue button
 	int deactivate_option;
 
 	// Input value storage
-	Fl_Input* inp;
+	Fl_Input *inp;
 
 	// JobOption
 	JobOption joboption;
 
 	// Button to show additional help text
-	Fl_Button* help;
+	Fl_Button *help;
 
 	////////////// FileName entry
 
 	// Browse button
-    Fl_Button* browse;
+    Fl_Button *browse;
 
     ////////////// Radio entry
 
     // The choices
-    Fl_Choice * choice;
+    Fl_Choice *choice;
     // The menu
-    Fl_Menu_* menu;
+    Fl_Menu_ *menu;
     // Deactivate this group
-    Fl_Group * my_deactivate_group;
+    Fl_Group *my_deactivate_group;
 	bool actually_activate;
 
     ////////////// Slider entry
 
     // The slider
-    Fl_Slider * slider;
+    Fl_Slider *slider;
 
     /** Constructor with x,y-position from top left
 	 *  wcol1, wcol2 and wcol3 are the widths of the three columns described above
@@ -230,12 +227,19 @@ public:
 
 	/** Here really start the entry
 	 */
-	void initialise(int x, int y, Fl_Group * deactivate_this_group, bool actually_activate, int height, int wcol2, int wcol3);
+	void initialise(
+        int x, int y, 
+        Fl_Group *deactivate_this_group, bool actually_activate, 
+        int height, int wcol2, int wcol3
+    );
 
 	/** Place an entry on a window
 	 */
-	void place(JobOption &joboption, int &y, int _deactivate_option = TOGGLE_LEAVE_ACTIVE, Fl_Group * deactivate_this_group = NULL, bool actually_activate = false,
-	           int x = XCOL2, int h = STEPY, int wcol2 = WCOL2, int wcol3 = WCOL3 );
+	void place(
+        JobOption &joboption, int &y, int _deactivate_option = TOGGLE_LEAVE_ACTIVE, 
+        Fl_Group *deactivate_this_group = NULL, bool actually_activate = false,
+        int x = XCOL2, int h = STEPY, int wcol2 = WCOL2, int wcol3 = WCOL3
+    );
 
     // Set _value in the Fl_Input on the GUI, and also in the joboptions. Also update menu/slider if necessary
     void setValue(std::string _value);
@@ -270,8 +274,5 @@ public:
     void cb_input_i();
 
 };
-
-
-
 
 #endif /* SRC_NEWGUI_ENTRIES_H_ */

@@ -5866,17 +5866,17 @@ void MlOptimiser::getAllSquaredDifferences(
                                                 diff2 += (diff_real * diff_real + diff_imag * diff_imag) * 0.5 * (*(Minvsigma2 + n));
                                             }
                                         }
-#ifdef TIMING
+                                        #ifdef TIMING
                                         // Only time one thread, as I also only time one MPI process
                                         if (part_id == mydata.sorted_idx[exp_my_first_part_id])
                                             timer.toc(TIMING_DIFF_DIFF2);
-#endif
+                                        #endif
 
                                         // Store all diff2 in exp_Mweight
                                         long int ihidden_over = sampling.getPositionOversampledSamplingPoint(ihidden, exp_current_oversampling,
                                                                                                         iover_rot, iover_trans);
-//#define DEBUG_GETALLDIFF2
-#ifdef DEBUG_GETALLDIFF2
+                                        //#define DEBUG_GETALLDIFF2
+                                        #ifdef DEBUG_GETALLDIFF2
                                         pthread_mutex_lock(&global_mutex);
                                         if (itrans == exp_itrans_min && iover_trans == 0 && ipsi == exp_ipsi_min)
                                         //if (ibody==1 && part_id == 0 && exp_ipass==0 && ihidden_over == 40217)
@@ -5950,9 +5950,9 @@ void MlOptimiser::getAllSquaredDifferences(
                                         }
                                         pthread_mutex_unlock(&global_mutex);
 
-#endif
-//#define DEBUG_DIFF2_ISNAN
-#ifdef DEBUG_DIFF2_ISNAN
+                                        #endif
+                                        //#define DEBUG_DIFF2_ISNAN
+                                        #ifdef DEBUG_DIFF2_ISNAN
                                         if (std::isnan(diff2))
                                         {
                                             pthread_mutex_lock(&global_mutex);
@@ -6035,15 +6035,15 @@ void MlOptimiser::getAllSquaredDifferences(
                                             pthread_mutex_unlock(&global_mutex);
                                             exit(0);
                                         }
-#endif
-//#define DEBUG_VERBOSE
-#ifdef DEBUG_VERBOSE
+                                        #endif
+                                        //#define DEBUG_VERBOSE
+                                        #ifdef DEBUG_VERBOSE
                                         pthread_mutex_lock(&global_mutex);
                                         std::cout <<" name= "<< mydata.particles[part_id].images[img_id].name << " rot= " << oversampled_rot[iover_rot] << " tilt= "<< oversampled_tilt[iover_rot] << " psi= " << oversampled_psi[iover_rot] << std::endl;
                                         std::cout <<" name= "<< mydata.particles[part_id].images[img_id].name << " ihidden_over= " << ihidden_over << " diff2= " << diff2 << " exp_min_diff2= " << exp_min_diff2 << std::endl;
                                         pthread_mutex_unlock(&global_mutex);
-#endif
-#ifdef DEBUG_CHECKSIZES
+                                        #endif
+                                        #ifdef DEBUG_CHECKSIZES
                                         if (ihidden_over >= XSIZE(exp_Mweight) )
                                         {
                                             std::cerr<< " exp_nr_oversampled_trans="<<exp_nr_oversampled_trans<<std::endl;
