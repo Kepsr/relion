@@ -34,9 +34,17 @@
 
 using namespace gravis;
 
+template <typename T>
+inline bool allIdentical(std::vector<T> xs) {
+    for (int i = 1; i < xs.size(); i++) {
+        if (xs[i] != xs[0]) return false;
+    }
+    return true;
+}
+
 void ObservationModel::loadSafely(
     std::string filename, ObservationModel& obsModel,
-    MetaDataTable& particlesMdt, std::string tablename,
+    MetaDataTable &particlesMdt, std::string tablename,
     int verb, bool do_die_upon_error
 ) {
     MetaDataTable opticsMdt;
@@ -140,29 +148,22 @@ void ObservationModel::saveNew(
     std::rename(tmpfilename.c_str(), filename.c_str());
 }
 
-void ObservationModel::save(MetaDataTable &particlesMdt, std::string filename, std::string tablename) {
-    std::string tmpfilename = filename + ".tmp";
-    std::ofstream of(tmpfilename);
-
-    opticsMdt.setName("optics");
-    opticsMdt.write(of);
-
-    particlesMdt.setName(tablename);
-    particlesMdt.write(of);
-
-    std::rename(tmpfilename.c_str(), filename.c_str());
+void ObservationModel::save(
+    MetaDataTable &particlesMdt, std::string filename, std::string tablename
+) {
+    saveNew(particlesMdt, opticsMdt, filename, tablename);
 }
 
 ObservationModel::ObservationModel() {}
 
 ObservationModel::ObservationModel(const MetaDataTable &_opticsMdt, bool do_die_upon_error): 
-    opticsMdt(_opticsMdt), 
-    angpix(_opticsMdt.numberOfObjects()), 
-    lambda(_opticsMdt.numberOfObjects()),
-    Cs(_opticsMdt.numberOfObjects()),
-    boxSizes(_opticsMdt.numberOfObjects(), 0.0),
-    CtfPremultiplied(_opticsMdt.numberOfObjects(), false)
-{
+opticsMdt(_opticsMdt), 
+angpix(_opticsMdt.numberOfObjects()), 
+lambda(_opticsMdt.numberOfObjects()),
+Cs(_opticsMdt.numberOfObjects()),
+boxSizes(_opticsMdt.numberOfObjects(), 0.0),
+CtfPremultiplied(_opticsMdt.numberOfObjects(), false
+) {
 
     if (
         !opticsMdt.containsLabel(EMDL::CTF_VOLTAGE) || 
@@ -267,20 +268,14 @@ ObservationModel::ObservationModel(const MetaDataTable &_opticsMdt, bool do_die_
             TiltHelper::insertTilt(oddZernikeCoeffs[i], tx, ty, Cs[i], lambda[i]);
         }
 
-        // always keep a set of mag matrices
-        // if none are defined, keep a set of identity matrices
+        // Always keep a set of mag matrices
+        // If none are defined, keep a set of identity matrices
 
         magMatrices[i] = Matrix2D<RFLOAT>(2,2);
         magMatrices[i].initIdentity();
 
         // See if there is more than one MTF, for more rapid divideByMtf
-        hasMultipleMtfs = false;
-        for (int j = 1; j < fnMtfs.size(); j++) {
-            if (fnMtfs[j] != fnMtfs[0]) {
-                hasMultipleMtfs = true;
-                break;
-            }
-        }
+        hasMultipleMtfs = !allIdentical(fnMtfs);
 
         if (hasMagMatrices) {
             magMatrices[i](0, 0) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_00, i);
@@ -291,11 +286,12 @@ ObservationModel::ObservationModel(const MetaDataTable &_opticsMdt, bool do_die_
     }
 
     if (hasTilt) { hasOddZernike = true; }
+
 }
 
 void ObservationModel::predictObservation(
-    Projector& proj, const MetaDataTable& partMdt, long int particle,
-    MultidimArray<Complex>& dest, double angpix_ref,
+    Projector &proj, const MetaDataTable &partMdt, long int particle,
+    MultidimArray<Complex> &dest, double angpix_ref,
     bool applyCtf, bool shiftPhases, bool applyShift, bool applyMtf, bool applyCtfPadding
 ) {
 
@@ -342,7 +338,7 @@ void ObservationModel::predictObservation(
         CTF ctf;
         ctf.readByGroup(partMdt, this, particle);
 
-        Image<RFLOAT> ctfImg(sh_out,s_out);
+        Image<RFLOAT> ctfImg(sh_out, s_out);
         ctf.getFftwImage(
             ctfImg(), s_out, s_out, angpix[opticsGroup],
             false, false, false, true, applyCtfPadding
@@ -452,7 +448,7 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
 }
 
 void ObservationModel::divideByMtf(
-    const MetaDataTable& partMdt, long particle, MultidimArray<Complex>& obsImage,
+    const MetaDataTable &partMdt, long particle, MultidimArray<Complex> &obsImage,
     bool do_multiply_instead, bool do_correct_average_mtf
 ) {
     int opticsGroup = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1;
@@ -460,7 +456,7 @@ void ObservationModel::divideByMtf(
 }
 
 void ObservationModel::divideByMtf(
-    int opticsGroup, MultidimArray<Complex>& obsImage,
+    int opticsGroup, MultidimArray<Complex> &obsImage,
     bool do_multiply_instead, bool do_correct_average_mtf
 ) {
     const int s  = obsImage.ydim;
@@ -504,7 +500,7 @@ void ObservationModel::divideByMtf(
 }
 
 void ObservationModel::demodulatePhase(
-    const MetaDataTable& partMdt, long particle, MultidimArray<Complex>& obsImage,
+    const MetaDataTable &partMdt, long particle, MultidimArray<Complex> &obsImage,
     bool do_modulate_instead
 ) {
     int opticsGroup = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1;
@@ -512,7 +508,7 @@ void ObservationModel::demodulatePhase(
 }
 
 void ObservationModel::demodulatePhase(
-    int opticsGroup, MultidimArray<Complex>& obsImage,
+    int opticsGroup, MultidimArray<Complex> &obsImage,
     bool do_modulate_instead
 ) {
     const int s  = obsImage.ydim;
@@ -539,17 +535,11 @@ void ObservationModel::demodulatePhase(
 }
 
 bool ObservationModel::allPixelSizesIdentical() const {
-    for (int i = 1; i < angpix.size(); i++) {
-        if (angpix[i] != angpix[0]) return false;
-    }
-    return true;
+    return allIdentical(angpix);
 }
 
 bool ObservationModel::allBoxSizesIdentical() const {
-    for (int i = 1; i < boxSizes.size(); i++) {
-        if (boxSizes[i] != boxSizes[0]) return false;
-    }
-    return true;
+    return allIdentical(boxSizes);
 }
 
 double ObservationModel::angToPix(double a, int s, int opticsGroup) const {
@@ -749,7 +739,7 @@ std::vector<int> ObservationModel::findUndefinedOptGroups(const MetaDataTable &p
     return out;
 }
 
-void ObservationModel::sortOpticsGroups(MetaDataTable& partMdt) {
+void ObservationModel::sortOpticsGroups(MetaDataTable &partMdt) {
 
     std::map<int, int> old2new;
     for (int i = 0; i < opticsMdt.numberOfObjects(); i++) {
@@ -764,7 +754,7 @@ void ObservationModel::sortOpticsGroups(MetaDataTable& partMdt) {
     }
 }
 
-std::vector<int> ObservationModel::getOptGroupsPresent_oneBased(const MetaDataTable& partMdt) const {
+std::vector<int> ObservationModel::getOptGroupsPresent_oneBased(const MetaDataTable &partMdt) const {
     const int gc = opticsMdt.numberOfObjects();
     const long long int pc = partMdt.numberOfObjects();
 
@@ -787,7 +777,7 @@ std::vector<int> ObservationModel::getOptGroupsPresent_oneBased(const MetaDataTa
     return out;
 }
 
-std::vector<int> ObservationModel::getOptGroupsPresent_zeroBased(const MetaDataTable& partMdt) const {
+std::vector<int> ObservationModel::getOptGroupsPresent_zeroBased(const MetaDataTable &partMdt) const {
     const int gc = opticsMdt.numberOfObjects();
     const long long int pc = partMdt.numberOfObjects();
 
@@ -1035,7 +1025,7 @@ Matrix2D<RFLOAT> ObservationModel::applyScaleDifference(Matrix2D<RFLOAT> A3D, in
     return out;
 }
 
-bool ObservationModel::containsAllColumnsNeededForPrediction(const MetaDataTable& partMdt) {
+bool ObservationModel::containsAllColumnsNeededForPrediction(const MetaDataTable &partMdt) {
     return (
         partMdt.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) &&
         partMdt.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) &&
