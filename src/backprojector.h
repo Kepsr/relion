@@ -184,8 +184,8 @@ class BackProjector: public Projector {
         const Matrix2D<RFLOAT> &A,
         const MultidimArray<RFLOAT> *Mweight = NULL,
         RFLOAT r_ewald_sphere = -1.0,
-        bool is_positive_curvature = true,
-        Matrix2D<RFLOAT>* magMatrix = 0
+        RFLOAT curvature = +1.0,
+        Matrix2D<RFLOAT> *magMatrix = 0
     ) {
         // Back-rotation of a 3D Fourier Transform
         if (img_in.getDim() == 3) {
@@ -205,7 +205,7 @@ class BackProjector: public Projector {
                 break;
 
                 case 3:
-                backproject2Dto3D(img_in, A, Mweight, r_ewald_sphere, is_positive_curvature, magMatrix);
+                backproject2Dto3D(img_in, A, Mweight, r_ewald_sphere, curvature, magMatrix);
                 break;
 
                 default:
@@ -245,8 +245,8 @@ class BackProjector: public Projector {
         const Matrix2D<RFLOAT> &A,
         const MultidimArray<RFLOAT> *Mweight = NULL,
         RFLOAT r_ewald_sphere = -1.0,
-        bool is_positive_curvature = true,
-        Matrix2D<RFLOAT>* magMatrix = 0
+        RFLOAT curvature = +1.0,
+        Matrix2D<RFLOAT> *magMatrix = 0
     );
 
     /*

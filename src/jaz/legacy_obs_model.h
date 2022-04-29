@@ -9,8 +9,8 @@
 
 class BackProjector;
 
-class LegacyObservationModel
-{
+class LegacyObservationModel {
+
     public:
 
         LegacyObservationModel();
@@ -20,32 +20,35 @@ class LegacyObservationModel
             double beamtilt_xx, beamtilt_xy, beamtilt_yy;
             bool anisoTilt;
 
-		void predictObservation(
-				Projector &proj, const MetaDataTable &mdt, int particle,
-				MultidimArray<Complex>& dest,
-				bool applyCtf = true, bool applyTilt = true, bool applyShift = true) const;
+        void predictObservation(
+            Projector &proj, const MetaDataTable &mdt, int particle,
+            MultidimArray<Complex>& dest,
+            bool applyCtf = true, bool applyTilt = true, bool applyShift = true
+        ) const;
 
-		Image<Complex> predictObservation(
-				Projector &proj, const MetaDataTable &mdt, int particle,
-				bool applyCtf = true, bool applyTilt = true, bool applyShift = true) const;
+        Image<Complex> predictObservation(
+            Projector &proj, const MetaDataTable &mdt, int particle,
+            bool applyCtf = true, bool applyTilt = true, bool applyShift = true
+        ) const;
 
         std::vector<Image<Complex>> predictObservations(
-                Projector &proj, const MetaDataTable &mdt, int threads,
-                bool applyCtf = true, bool applyTilt = true, bool applyShift = true) const;
+            Projector &proj, const MetaDataTable &mdt, int threads,
+            bool applyCtf = true, bool applyTilt = true, bool applyShift = true
+        ) const;
 
         void insertObservation(
-                const Image<Complex>& img, BackProjector &bproj,
-                const MetaDataTable& mdt, int particle,
-                bool applyCtf, bool applyTilt,
-                double shift_x = 0.0, double shift_y = 0.0);
+            const Image<Complex>& img, BackProjector &bproj,
+            const MetaDataTable& mdt, int particle,
+            bool applyCtf, bool applyTilt,
+            double shift_x = 0.0, double shift_y = 0.0
+        );
 
         void setAnisoTilt(double xx, double xy, double yy);
 
         double angToPix(double a, int s);
         double pixToAng(double p, int s);
 
-
-		static bool containsAllNeededColumns(const MetaDataTable& mdt);
+        static bool containsAllNeededColumns(const MetaDataTable& mdt);
 
 };
 

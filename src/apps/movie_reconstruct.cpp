@@ -552,8 +552,8 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
                 magMat.initIdentity();
             }
 
-            backprojector[this_subset - 1].set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, true, &magMat);
-            backprojector[this_subset - 1].set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, false, &magMat);
+            backprojector[this_subset - 1].set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, +1.0, &magMat);
+            backprojector[this_subset - 1].set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, -1.0, &magMat);
         } else {
             backprojector[this_subset - 1].set2DFourierTransform(F2D, A3D, &Fctf);
         }

@@ -68,7 +68,7 @@ void BackProjector::backproject2Dto3D(
     const MultidimArray<Complex> &f2d,
     const Matrix2D<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight,
-    RFLOAT r_ewald_sphere, bool is_positive_curvature,
+    RFLOAT r_ewald_sphere, RFLOAT curvature,
     Matrix2D<RFLOAT> *magMatrix
 ) {
 
@@ -115,10 +115,8 @@ void BackProjector::backproject2Dto3D(
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
 
-    // Precalculate inverse of Ewald sphere diameter
-    RFLOAT inv_diam_ewald = r_ewald_sphere > 0.0 ? 1.0 / (2.0 * r_ewald_sphere) : 0.0;
-
-    if (!is_positive_curvature) { inv_diam_ewald *= -1.0; }
+    // Precalculate inverse of Ewald sphere diameter outside loop
+    RFLOAT inv_diam_ewald = r_ewald_sphere > 0.0 ? curvature / (2.0 * r_ewald_sphere) : 0.0;
 
     const int s  = YSIZE(f2d);
     const int sh = XSIZE(f2d);
@@ -202,9 +200,7 @@ void BackProjector::backproject2Dto3D(
             double r2_3D = xp * xp + yp * yp + zp * zp;
 
             // redundant:
-            if (r2_3D > max_r2) {
-                continue;
-            }
+            if (r2_3D > max_r2) continue;
 
             if (interpolator == TRILINEAR || r2_3D < min_r2_nn) {
                 bool is_neg_x = xp < 0;

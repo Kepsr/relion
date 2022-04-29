@@ -575,8 +575,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 magMat.initIdentity();
             }
 
-            backprojector.set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, true,  &magMat);
-            backprojector.set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, false, &magMat);
+            backprojector.set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, +1.0, &magMat);
+            backprojector.set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, -1.0, &magMat);
         } else {
             backprojector.set2DFourierTransform(F2D, A3D, &Fctf);
         }
