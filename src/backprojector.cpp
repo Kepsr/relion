@@ -65,7 +65,7 @@ inline void fillm(Matrix2D<RFLOAT> *magMatrix, RFLOAT &m00, RFLOAT &m10, RFLOAT 
 }
 
 void BackProjector::backproject2Dto3D(
-    const MultidimArray<Complex > &f2d,
+    const MultidimArray<Complex> &f2d,
     const Matrix2D<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight,
     RFLOAT r_ewald_sphere, bool is_positive_curvature,
@@ -76,8 +76,7 @@ void BackProjector::backproject2Dto3D(
     fillm(magMatrix, m00, m10, m01, m11);
 
     // Use the inverse matrix
-    Matrix2D<RFLOAT> Ainv;
-    Ainv = A.inv();
+    Matrix2D<RFLOAT> Ainv = A.inv();
 
     // Go from the 2D slice coordinates to the 3D coordinates
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
@@ -88,7 +87,8 @@ void BackProjector::backproject2Dto3D(
 
     // precalculated coefficients for ellipse determination (see further down)
 
-    // first, make sure A contains 2D distortion (lowercase 2D, uppercase 3D):
+    // Make sure A contains 2D distortion (lowercase 2D, uppercase 3D):
+    // Matrix-multiply Ainv(3×2) and m(2×2) to get Am
     const RFLOAT Am_Xx = Ainv(0, 0) * m00 + Ainv(0, 1) * m10;
     const RFLOAT Am_Xy = Ainv(0, 0) * m01 + Ainv(0, 1) * m11;
     const RFLOAT Am_Yx = Ainv(1, 0) * m00 + Ainv(1, 1) * m10;
@@ -96,31 +96,29 @@ void BackProjector::backproject2Dto3D(
     const RFLOAT Am_Zx = Ainv(2, 0) * m00 + Ainv(2, 1) * m10;
     const RFLOAT Am_Zy = Ainv(2, 0) * m01 + Ainv(2, 1) * m11;
 
-    // next, precompute (Am)^t Am into AtA:
+    // Precompute AmTAm into ATA:
     const RFLOAT AtA_xx = Am_Xx * Am_Xx + Am_Yx * Am_Yx + Am_Zx * Am_Zx;
     const RFLOAT AtA_xy = Am_Xx * Am_Xy + Am_Yx * Am_Yy + Am_Zx * Am_Zy;
     const RFLOAT AtA_yy = Am_Xy * Am_Xy + Am_Yy * Am_Yy + Am_Zy * Am_Zy;
     const RFLOAT AtA_xy2 = AtA_xy * AtA_xy;
 
-    //#define DEBUG_BACKP
+    // #define DEBUG_BACKP
     #ifdef DEBUG_BACKP
-    std::cerr << " XSIZE(f2d)= "<< XSIZE(f2d) << std::endl;
-    std::cerr << " YSIZE(f2d)= "<< YSIZE(f2d) << std::endl;
-    std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
-    std::cerr << " YSIZE(data)= "<< YSIZE(data) << std::endl;
-    std::cerr << " STARTINGX(data)= "<< STARTINGX(data) << std::endl;
-    std::cerr << " STARTINGY(data)= "<< STARTINGY(data) << std::endl;
-    std::cerr << " STARTINGZ(data)= "<< STARTINGZ(data) << std::endl;
+    std::cerr << " XSIZE(f2d)= " << XSIZE(f2d) << std::endl;
+    std::cerr << " YSIZE(f2d)= " << YSIZE(f2d) << std::endl;
+    std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
+    std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
+    std::cerr << " STARTINGX(data)= " << STARTINGX(data) << std::endl;
+    std::cerr << " STARTINGY(data)= " << STARTINGY(data) << std::endl;
+    std::cerr << " STARTINGZ(data)= " << STARTINGZ(data) << std::endl;
     std::cerr << " r_max= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
 
-    // precalculate inverse of Ewald sphere diameter
-    RFLOAT inv_diam_ewald = r_ewald_sphere > 0.0 ? 1.0 / 2.0 * r_ewald_sphere : 0.0;
+    // Precalculate inverse of Ewald sphere diameter
+    RFLOAT inv_diam_ewald = r_ewald_sphere > 0.0 ? 1.0 / (2.0 * r_ewald_sphere) : 0.0;
 
-    if (!is_positive_curvature) {
-        inv_diam_ewald *= -1.0;
-    }
+    if (!is_positive_curvature) { inv_diam_ewald *= -1.0; }
 
     const int s  = YSIZE(f2d);
     const int sh = XSIZE(f2d);
@@ -228,7 +226,7 @@ void BackProjector::backproject2Dto3D(
 
                 int y0 = floor(yp);
                 RFLOAT fy = yp - y0;
-                y0 -=  STARTINGY(data);
+                y0 -= STARTINGY(data);
                 int y1 = y0 + 1;
 
                 int z0 = floor(zp);
@@ -363,7 +361,7 @@ void BackProjector::backproject1Dto2D(
 
             int y0 = floor(yp);
             const RFLOAT fy = yp - y0;
-            y0 -=  STARTINGY(data);
+            y0 -= STARTINGY(data);
             const int y1 = y0 + 1;
 
             const RFLOAT mfx = 1.0 - fx;
@@ -408,7 +406,7 @@ void BackProjector::backproject1Dto2D(
 }
 
 void BackProjector::backrotate2D(
-    const MultidimArray<Complex > &f2d,
+    const MultidimArray<Complex> &f2d,
     const Matrix2D<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight,
     Matrix2D<RFLOAT> *magMatrix
@@ -426,19 +424,20 @@ void BackProjector::backrotate2D(
 
     // precalculated coefficients for ellipse determination (see further down)
 
-    // first, make sure A contains 2D distortion (lowercase 2D, uppercase 3D):
+    // Make sure A contains 2D distortion (lowercase 2D, uppercase 3D):
+    // Matrix-multiply Ainv(3×2) and m(2×2) to get Am
     const RFLOAT Am_Xx = Ainv(0, 0) * m00 + Ainv(0, 1) * m10;
     const RFLOAT Am_Xy = Ainv(0, 0) * m01 + Ainv(0, 1) * m11;
     const RFLOAT Am_Yx = Ainv(1, 0) * m00 + Ainv(1, 1) * m10;
     const RFLOAT Am_Yy = Ainv(1, 0) * m01 + Ainv(1, 1) * m11;
 
-    // next, precompute (Am)^t Am into AtA:
+    // Precompute AmTAm into ATA:
     const RFLOAT AtA_xx = Am_Xx * Am_Xx + Am_Yx * Am_Yx;
     const RFLOAT AtA_xy = Am_Xx * Am_Xy + Am_Yx * Am_Yy;
     const RFLOAT AtA_yy = Am_Xy * Am_Xy + Am_Yy * Am_Yy;
     const RFLOAT AtA_xy2 = AtA_xy * AtA_xy;
 
-    //#define DEBUG_BACKROTATE
+    // #define DEBUG_BACKROTATE
     #ifdef DEBUG_BACKROTATE
     std::cerr << " XSIZE(f2d)= "<< XSIZE(f2d) << std::endl;
     std::cerr << " YSIZE(f2d)= "<< YSIZE(f2d) << std::endl;
@@ -486,8 +485,8 @@ void BackProjector::backrotate2D(
         int first_x = ceil(q - d);
         int last_x = floor(q + d);
 
-        if (first_x < first_allowed_x) first_x = first_allowed_x;
-        if (last_x > sh - 1) last_x = sh - 1;
+        if (first_x < first_allowed_x) { first_x = first_allowed_x; }
+        if (last_x > sh - 1) { last_x = sh - 1; }
 
         for (int x = first_x; x <= last_x; x++) {
 
@@ -524,7 +523,7 @@ void BackProjector::backrotate2D(
 
                 int y0 = floor(yp);
                 const RFLOAT fy = yp - y0;
-                y0 -=  STARTINGY(data);
+                y0 -= STARTINGY(data);
                 const int y1 = y0 + 1;
 
                 const RFLOAT mfx = 1.0 - fx;
@@ -535,9 +534,7 @@ void BackProjector::backrotate2D(
                 const RFLOAT dd10 =  fy * mfx;
                 const RFLOAT dd11 =  fy *  fx;
 
-                if (is_neg_x) {
-                    my_val = conj(my_val);
-                }
+                if (is_neg_x) { my_val = conj(my_val); }
 
                 // Store slice in 3D weighted sum
                 DIRECT_A2D_ELEM(data, y0, x0) += dd00 * my_val;
@@ -588,7 +585,7 @@ void BackProjector::backrotate3D(
 
     const int r_min_NN_ref_2 = r_min_nn * r_min_nn * padding_factor * padding_factor;
 
-    //#define DEBUG_BACKROTATE
+    // #define DEBUG_BACKROTATE
     #ifdef DEBUG_BACKROTATE
     std::cerr << " XSIZE(f3d)= "<< XSIZE(f3d) << std::endl;
     std::cerr << " YSIZE(f3d)= "<< YSIZE(f3d) << std::endl;
@@ -664,12 +661,12 @@ void BackProjector::backrotate3D(
 
                     int y0 = floor(yp);
                     const RFLOAT fy = yp - y0;
-                    y0 -=  STARTINGY(data);
+                    y0 -= STARTINGY(data);
                     const int y1 = y0 + 1;
 
                     int z0 = floor(zp);
                     const RFLOAT fz = zp - z0;
-                    z0 -=  STARTINGZ(data);
+                    z0 -= STARTINGZ(data);
                     const int z1 = z0 + 1;
 
                     const RFLOAT mfx = 1.0 - fx;
@@ -843,7 +840,7 @@ void BackProjector::getDownsampledAverage(
         jp = round((RFLOAT) j / padding_factor);
 
         // TMP
-        //#define CHECK_SIZE
+        // #define CHECK_SIZE
         #ifdef CHECK_SIZE
         if (
             ip < STARTINGY(avg) || ip > FINISHINGY(avg) 
@@ -1489,7 +1486,7 @@ void BackProjector::reconstruct(
     // and then do the inverse transform and divide by the FT of the blob (i.e. do the gridding correction)
     // In practice, this gives all types of artefacts (perhaps I never found the right implementation?!)
     // Therefore, window the Fourier transform and then do the inverse transform
-    //#define RECONSTRUCT_CONVOLUTE_BLOB
+    // #define RECONSTRUCT_CONVOLUTE_BLOB
     #ifdef RECONSTRUCT_CONVOLUTE_BLOB
 
     // Apply the same blob-convolution as above to the data array
@@ -1738,7 +1735,7 @@ void BackProjector::applyHelicalSymmetry(
 
                     int y0 = floor(yp);
                     RFLOAT fy = yp - y0;
-                    y0 -=  STARTINGY(data);
+                    y0 -= STARTINGY(data);
                     int y1 = y0 + 1;
 
                     int z0 = floor(zp);
@@ -1882,7 +1879,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
 
                     int y0 = floor(yp);
                     RFLOAT fy = yp - y0;
-                    y0 -=  STARTINGY(data);
+                    y0 -= STARTINGY(data);
                     int y1 = y0 + 1;
 
                     int z0 = floor(zp);
