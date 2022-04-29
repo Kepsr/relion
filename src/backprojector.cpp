@@ -48,14 +48,7 @@ void BackProjector::initZeros(int current_size) {
     weight.initZeros();
 }
 
-void BackProjector::backproject2Dto3D(
-    const MultidimArray<Complex > &f2d,
-    const Matrix2D<RFLOAT> &A,
-    const MultidimArray<RFLOAT> *Mweight,
-    RFLOAT r_ewald_sphere, bool is_positive_curvature,
-    Matrix2D<RFLOAT> *magMatrix
-) {
-    RFLOAT m00, m10, m01, m11;
+inline void fillm(Matrix2D<RFLOAT> *magMatrix, RFLOAT &m00, RFLOAT &m10, RFLOAT &m01, RFLOAT &m11) {
 
     if (magMatrix != 0) {
         m00 = (*magMatrix)(0, 0);
@@ -68,6 +61,19 @@ void BackProjector::backproject2Dto3D(
         m01 = 0.0;
         m11 = 1.0;
     }
+
+}
+
+void BackProjector::backproject2Dto3D(
+    const MultidimArray<Complex > &f2d,
+    const Matrix2D<RFLOAT> &A,
+    const MultidimArray<RFLOAT> *Mweight,
+    RFLOAT r_ewald_sphere, bool is_positive_curvature,
+    Matrix2D<RFLOAT> *magMatrix
+) {
+
+    RFLOAT m00, m10, m01, m11;
+    fillm(magMatrix, m00, m10, m01, m11);
 
     // Use the inverse matrix
     Matrix2D<RFLOAT> Ainv;
@@ -405,24 +411,13 @@ void BackProjector::backrotate2D(
     const MultidimArray<Complex > &f2d,
     const Matrix2D<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight,
-    Matrix2D<RFLOAT>* magMatrix
+    Matrix2D<RFLOAT> *magMatrix
 ) {
     Matrix2D<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
     RFLOAT m00, m10, m01, m11;
-
-    if (magMatrix != 0) {
-        m00 = (*magMatrix)(0, 0);
-        m10 = (*magMatrix)(1, 0);
-        m01 = (*magMatrix)(0, 1);
-        m11 = (*magMatrix)(1, 1);
-    } else {
-        m00 = 1.0;
-        m10 = 0.0;
-        m01 = 0.0;
-        m11 = 1.0;
-    }
+    fillm(magMatrix, m00, m10, m01, m11);
 
     const int r_max_ref   = r_max * padding_factor;
     const int r_max_ref_2 = r_max_ref * r_max_ref;
