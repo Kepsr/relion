@@ -31,7 +31,7 @@
 #include "src/metadata_label.h"
 #include "src/image.h"
 
-#define IMAGICSIZE 1024 // Size of the IMAGIC header for each image
+const int IMAGICSIZE = 1024;  // Size of the IMAGIC header for each image
 
 ///@defgroup Imagic Imagic File format
 ///@ingroup ImageFormats

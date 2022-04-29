@@ -30,7 +30,7 @@
 
 #include "src/image.h"
 
-#define SPIDERSIZE 1024 // Minimum size of the SPIDER header (variable)
+const int SPIDERSIZE = 1024;  // Minimum size of the SPIDER header (variable)
 ///@defgroup Spider Spider File format
 ///@ingroup ImageFormats
 

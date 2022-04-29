@@ -239,45 +239,43 @@ void progress_bar(long act_time);
 /* Class to do some profiling
  *
  */
-class Timer
-{
-public:
-	///Start times for all individual timers
-	std::vector<timeval> start_times;
+class Timer {
 
-	// General end time
-	timeval end_time;
+    public:
+    ///Start times for all individual timers
+    std::vector<timeval> start_times;
 
-	// How many times has each tic/toc been called.
-	std::vector<int> counts;
+    // General end time
+    timeval end_time;
 
-	// Total number of microseconds
-	std::vector< long int> times;
+    // How many times has each tic/toc been called.
+    std::vector<int> counts;
 
-	// Labels
-	std::vector<std::string> tags;
+    // Total number of microseconds
+    std::vector<long int> times;
 
-	Timer()
-	{
-		clear();
-	}
+    // Labels
+    std::vector<std::string> tags;
 
-	~Timer()
-	{
-		clear();
-	}
+    Timer() {
+        clear();
+    }
 
-	void clear();
+    ~Timer() {
+        clear();
+    }
 
-	void initZero();
+    void clear();
 
-	int setNew(const std::string tag);
+    void initZero();
 
-	void tic(int timer);
+    int setNew(const std::string tag);
 
-	void toc(int timer);
+    void tic(int timer);
 
-	void printTimes(bool doClear);
+    void toc(int timer);
+
+    void printTimes(bool doClear);
 };
 
 

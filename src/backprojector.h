@@ -28,7 +28,7 @@
 #ifndef BACKPROJECTOR_H_
 #define BACKPROJECTOR_H_
 
-#define DEFAULT_EXTERNAL_RECONSTRUCT "relion_external_reconstruct"
+static const char *DEFAULT_EXTERNAL_RECONSTRUCT = "relion_external_reconstruct";
 
 #include "src/projector.h"
 #include "src/mask.h"
@@ -219,49 +219,65 @@ class BackProjector: public Projector {
     * Set an in-plane rotated version of the 2D map into the data array (mere interpolation)
     * If a exp_Mweight is given, rather than adding 1 to all relevant pixels in the weight array, we use exp_Mweight
     */
-    void backrotate2D(const MultidimArray<Complex > &img_in,
-                      const Matrix2D<RFLOAT> &A,
-                      const MultidimArray<RFLOAT> *Mweight = NULL,
-                      Matrix2D<RFLOAT>* magMatrix = 0);
+    void backrotate2D(
+        const MultidimArray<Complex> &img_in,
+        const Matrix2D<RFLOAT> &A,
+        const MultidimArray<RFLOAT> *Mweight = NULL,
+        Matrix2D<RFLOAT>* magMatrix = 0
+    );
 
     /*
     * Set a 3D-rotated version of the 3D map into the data array (mere interpolation)
     * If a exp_Mweight is given, rather than adding 1 to all relevant pixels in the weight array, we use exp_Mweight
     */
-    void backrotate3D(const MultidimArray<Complex > &img_in,
-                      const Matrix2D<RFLOAT> &A,
-                      const MultidimArray<RFLOAT> *Mweight = NULL);
+    void backrotate3D(
+        const MultidimArray<Complex> &img_in,
+        const Matrix2D<RFLOAT> &A,
+        const MultidimArray<RFLOAT> *Mweight = NULL
+    );
 
     /*
     * Set a 2D slice in the 3D map (backward projection)
     * If a exp_Mweight is given, rather than adding 1 to all relevant pixels in the weight array, we use exp_Mweight
     */
-    void backproject2Dto3D(const MultidimArray<Complex > &img_in,
-                           const Matrix2D<RFLOAT> &A,
-                           const MultidimArray<RFLOAT> *Mweight = NULL,
-                           RFLOAT r_ewald_sphere = -1.,
-                           bool is_positive_curvature = true,
-                           Matrix2D<RFLOAT>* magMatrix = 0);
+    void backproject2Dto3D(
+        const MultidimArray<Complex> &img_in,
+        const Matrix2D<RFLOAT> &A,
+        const MultidimArray<RFLOAT> *Mweight = NULL,
+        RFLOAT r_ewald_sphere = -1.0,
+        bool is_positive_curvature = true,
+        Matrix2D<RFLOAT>* magMatrix = 0
+    );
 
     /*
     * Set a 1D slice in the 2D map (backward projection)
     * If a exp_Mweight is given, rather than adding 1 to all relevant pixels in the weight array, we use exp_Mweight
     */
-    void backproject1Dto2D(const MultidimArray<Complex > &img_in,
-                           const Matrix2D<RFLOAT> &A,
-                           const MultidimArray<RFLOAT> *Mweight = NULL);
+    void backproject1Dto2D(
+        const MultidimArray<Complex> &img_in,
+        const Matrix2D<RFLOAT> &A,
+        const MultidimArray<RFLOAT> *Mweight = NULL
+    );
 
     /*
      * Get only the lowest resolution components from the data and weight array
      * (to be joined together for two independent halves in order to force convergence in the same orientation)
      */
-    void getLowResDataAndWeight(MultidimArray<Complex > &lowres_data, MultidimArray<RFLOAT> &lowres_weight,	int lowres_r_max);
+    void getLowResDataAndWeight(
+        MultidimArray<Complex> &lowres_data, 
+        MultidimArray<RFLOAT> &lowres_weight,
+        int lowres_r_max
+    );
 
     /*
      * Set only the lowest resolution components from the data and weight array
      * (to be joined together for two independent halves in order to force convergence in the same orientation)
      */
-    void setLowResDataAndWeight(MultidimArray<Complex > &lowres_data, MultidimArray<RFLOAT> &lowres_weight,	int lowres_r_max);
+    void setLowResDataAndWeight(
+        MultidimArray<Complex> &lowres_data, 
+        MultidimArray<RFLOAT> &lowres_weight,
+        int lowres_r_max
+    );
 
     /*
      *	Get complex array at the original size as the straightforward average
@@ -273,7 +289,11 @@ class BackProjector: public Projector {
     /*
      * From two of the straightforward downsampled averages, calculate an FSC curve
      */
-    void calculateDownSampledFourierShellCorrelation(const MultidimArray<Complex>& avg1, const MultidimArray<Complex>& avg2, MultidimArray<RFLOAT>& fsc) const;
+    void calculateDownSampledFourierShellCorrelation(
+        const MultidimArray<Complex> &avg1, 
+        const MultidimArray<Complex> &avg2, 
+        MultidimArray<RFLOAT>& fsc
+    ) const;
 
     void updateSSNRarrays(
         RFLOAT tau2_fudge,
@@ -318,7 +338,7 @@ class BackProjector: public Projector {
 
     /*	Enforce Hermitian symmetry, apply helical symmetry as well as point-group symmetry
      */
-    void symmetrise(int nr_helical_asu = 1, RFLOAT helical_twist = 0., RFLOAT helical_rise = 0., int threads = 1);
+    void symmetrise(int nr_helical_asu = 1, RFLOAT helical_twist = 0.0, RFLOAT helical_rise = 0.0, int threads = 1);
 
     /* Enforce hermitian symmetry on data and on weight (all points in the x==0 plane)
     * Because the interpolations are numerical, hermitian symmetry may be broken.
@@ -328,7 +348,7 @@ class BackProjector: public Projector {
 
     /* Applies helical symmetry. Note that helical_rise is in PIXELS here, as BackProjector doesn't know angpix
      */
-    void applyHelicalSymmetry(int nr_helical_asu = 1, RFLOAT helical_twist = 0., RFLOAT helical_rise = 0.);
+    void applyHelicalSymmetry(int nr_helical_asu = 1, RFLOAT helical_twist = 0.0, RFLOAT helical_rise = 0.);
 
     /* Applies the symmetry from the SymList object to the weight and the data array
      */
@@ -345,14 +365,15 @@ class BackProjector: public Projector {
      */
     void windowToOridimRealSpace(FourierTransformer &transformer, MultidimArray<RFLOAT> &Mout, bool printTimes = false);
 
+    // Faster than arr1.getDimensions() == arr2.getDimensions()
+    #define SAMEDIMENSIONS(arr1, arr2) ((arr1).xdim == (arr2).xdim && (arr1).ydim == (arr2).ydim || (arr1).zdim && (arr2).zdim)
+
     /*
      * The same, but without the spherical cropping and thus invertible
      */
     template <typename T1, typename T2>
-    static void decenterWhole(MultidimArray<T1> &Min, MultidimArray<T2> &Mout)
-    {
-        if (Mout.xdim != Min.xdim || Mout.ydim != Min.ydim || Mout.zdim != Min.zdim)
-        {
+    static void decenterWhole(MultidimArray<T1> &Min, MultidimArray<T2> &Mout) {
+        if (!SAMEDIMENSIONS(Mout, Min)) {
             Mout = MultidimArray<T2>(Min.zdim, Min.ydim, Min.xdim);
         }
 
@@ -364,14 +385,15 @@ class BackProjector: public Projector {
         for (long int y = 0; y < Min.ydim; y++)
         for (long int x = 0; x < Min.xdim; x++)
         {
-            long int zz = z < Min.xdim? z + s/2 : z - s/2 - 1;
-            long int yy = y < Min.xdim? y + s/2 : y - s/2 - 1;
+            long int zz = z < Min.xdim ? z + s / 2 : z - s / 2 - 1;
+            long int yy = y < Min.xdim ? y + s / 2 : y - s / 2 - 1;
             long int xx = x;
 
-            if (xx >= 0 && xx < Min.xdim
-                && yy >= 0 && yy < Min.ydim
-                && zz >= 0 && zz < Min.zdim)
-            {
+            if (
+                xx >= 0 && xx < Min.xdim && 
+                yy >= 0 && yy < Min.ydim && 
+                zz >= 0 && zz < Min.zdim
+            ) {
                 DIRECT_A3D_ELEM(Mout, z, y, x) = T2(DIRECT_A3D_ELEM(Min, zz, yy, xx));
             }
         }
@@ -381,10 +403,8 @@ class BackProjector: public Projector {
     * Inverse of the above
     */
     template <typename T1, typename T2>
-    static void recenterWhole(MultidimArray<T1> &Min, MultidimArray<T2> &Mout)
-    {
-        if (Mout.xdim != Min.xdim || Mout.ydim != Min.ydim || Mout.zdim != Min.zdim)
-        {
+    static void recenterWhole(MultidimArray<T1> &Min, MultidimArray<T2> &Mout) {
+        if (!SAMEDIMENSIONS(Mout, Min)) {
             Mout = MultidimArray<T2>(Min.zdim, Min.ydim, Min.xdim);
         }
 
@@ -400,30 +420,31 @@ class BackProjector: public Projector {
             long int yy = y < Min.xdim? y + s/2 : y - s/2 - 1;
             long int xx = x;
 
-            if (xx >= 0 && xx < Min.xdim
-                && yy >= 0 && yy < Min.ydim
-                && zz >= 0 && zz < Min.zdim)
+            if (
+                xx >= 0 && xx < Min.xdim && 
+                yy >= 0 && yy < Min.ydim && 
+                zz >= 0 && zz < Min.zdim
+            )
             {
                 DIRECT_A3D_ELEM(Mout, zz, yy, xx) = T2(DIRECT_A3D_ELEM(Min, z, y, x));
             }
         }
     }
 
-#ifdef RELION_SINGLE_PRECISION
+    #ifdef RELION_SINGLE_PRECISION
     // Fnewweight needs decentering, but has to be in double-precision for correct calculations!
     template <typename T>
-    void decenter(MultidimArray<T> &Min, MultidimArray<double> &Mout, int my_rmax2)
-    {
+    void decenter(MultidimArray<T> &Min, MultidimArray<double> &Mout, int my_rmax2) {
         // Mout should already have the right size
         // Initialize to zero
         Mout.initZeros();
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout)
-        {
-            if (kp*kp + ip*ip + jp*jp <= my_rmax2)
-                DIRECT_A3D_ELEM(Mout, k, i, j) = (double)A3D_ELEM(Min, kp, ip, jp);
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
+            if (kp * kp + ip * ip + jp * jp <= my_rmax2) {
+                DIRECT_A3D_ELEM(Mout, k, i, j) = (double) A3D_ELEM(Min, kp, ip, jp);
+            }
         }
     }
-#endif
+    #endif
 };
 
 #endif /* BACKPROJECTOR_H_ */
