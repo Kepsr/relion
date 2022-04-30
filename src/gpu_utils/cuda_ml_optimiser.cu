@@ -736,8 +736,7 @@ void getFourierTransformsAndCtfs(
                 }))
             } else {
                 CTICTOC(cudaMLO->timer, "CTFRead2D", ({
-                CTF ctf;
-                ctf.setValues(
+                CTF ctf = CTF(
                     DIRECT_A2D_ELEM(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_DEFOCUS_U),
                     DIRECT_A2D_ELEM(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_DEFOCUS_V),
                     DIRECT_A2D_ELEM(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_DEFOCUS_ANGLE),

@@ -15,7 +15,7 @@ anisoTilt(false)
 {}
 
 void LegacyObservationModel::predictObservation(
-    Projector& proj, const MetaDataTable& mdt, int particle,
+    Projector& proj, const MetaDataTable &mdt, int particle,
     MultidimArray<Complex>& dest,
     bool applyCtf, bool applyTilt, bool applyShift
 ) const {
@@ -45,8 +45,7 @@ void LegacyObservationModel::predictObservation(
 	}
 
     if (applyCtf) {
-        CTF ctf;
-        ctf.read(mdt, mdt, particle);
+        CTF ctf = CTF(mdt, mdt, particle);  // Repetition of mdt is redundant
 
         FilterHelper::modulate(dest, ctf, angpix);
     }
@@ -75,7 +74,7 @@ void LegacyObservationModel::predictObservation(
 
 
 Image<Complex> LegacyObservationModel::predictObservation(
-    Projector& proj, const MetaDataTable& mdt, int particle,
+    Projector& proj, const MetaDataTable &mdt, int particle,
     bool applyCtf, bool applyTilt, bool applyShift
 ) const {
     Image<Complex> pred;
@@ -100,8 +99,8 @@ std::vector<Image<Complex>> LegacyObservationModel::predictObservations(
 }
 
 void LegacyObservationModel::insertObservation(
-    const Image<Complex>& img, BackProjector &bproj,
-    const MetaDataTable& mdt, int particle,
+    const Image<Complex> &img, BackProjector &bproj,
+    const MetaDataTable &mdt, int particle,
     bool applyCtf, bool applyTilt, double shift_x, double shift_y
 ) {
     const int s = img.data.ydim;
@@ -128,13 +127,12 @@ void LegacyObservationModel::insertObservation(
     Fctf.initConstant(1.0);
 
     if (applyCtf) {
-        CTF ctf;
-        ctf.read(mdt, mdt, particle);
+        CTF ctf = CTF(mdt, mdt, particle); // Repetition of mdt is redundant
 
         ctf.getFftwImage(Fctf, s, s, angpix);
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-            DIRECT_MULTIDIM_ELEM(F2D, n)  *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+            DIRECT_MULTIDIM_ELEM(F2D,  n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
             DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
         }
     }
@@ -170,7 +168,7 @@ double LegacyObservationModel::pixToAng(double p, int s) {
 	return s * angpix / p;
 }
 
-bool LegacyObservationModel::containsAllNeededColumns(const MetaDataTable& mdt) {
+bool LegacyObservationModel::containsAllNeededColumns(const MetaDataTable &mdt) {
 	return (
         mdt.containsLabel(EMDL::ORIENT_ORIGIN_X) &&
         mdt.containsLabel(EMDL::ORIENT_ORIGIN_Y) &&

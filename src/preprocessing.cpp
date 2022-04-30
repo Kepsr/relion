@@ -665,7 +665,6 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     FileName fn_output_img_root, FileName fn_oristack, long int &my_current_nr_images, long int my_total_nr_images,
     RFLOAT &all_avg, RFLOAT &all_stddev, RFLOAT &all_minval, RFLOAT &all_maxval
 ) {
-    Image<RFLOAT> Ipart, Imic, Itmp;
 
     bool MDin_has_optics_group = MD.containsLabel(EMDL::IMAGE_OPTICS_GROUP); // i.e. re-extracting
     bool MDin_has_beamtilt     = MD.containsLabel(EMDL::IMAGE_BEAMTILT_X) || MD.containsLabel(EMDL::IMAGE_BEAMTILT_Y);
@@ -673,8 +672,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     bool MDin_has_tiltgroup    = MD.containsLabel(EMDL::PARTICLE_BEAM_TILT_CLASS);
     int my_extract_size        = do_phase_flip || do_premultiply_ctf ? premultiply_ctf_extract_size : extract_size;
 
-    RFLOAT my_angpix;
-    RFLOAT mic_avg;
+    Image<RFLOAT> Imic;
+    RFLOAT my_angpix, mic_avg;
     TICTOC(TIMING_READ_IMG, {
 
     Imic.read(fn_mic);
@@ -700,18 +699,19 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     FourierTransformer transformer;
     int ipos = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        RFLOAT dxpos, dypos, dzpos;
-        long int xpos, ypos, zpos;
-        long int x0, xF, y0, yF, z0, zF;
-        dxpos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-        dypos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-        xpos = (long int) dxpos;
-        ypos = (long int) dypos;
+        RFLOAT dxpos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        RFLOAT dypos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        long int xpos = (long int) dxpos;
+        long int ypos = (long int) dypos;
 
-        x0 = xpos + Xmipp::init(my_extract_size);
-        xF = xpos + Xmipp::last(my_extract_size);
-        y0 = ypos + Xmipp::init(my_extract_size);
-        yF = ypos + Xmipp::last(my_extract_size);
+        long int x0 = xpos + Xmipp::init(my_extract_size);
+        long int xF = xpos + Xmipp::last(my_extract_size);
+        long int y0 = ypos + Xmipp::init(my_extract_size);
+        long int yF = ypos + Xmipp::last(my_extract_size);
+
+        RFLOAT dzpos;
+        long int zpos;
+        long int z0, zF;
         if (dimensionality == 3) {
             dzpos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
             zpos = (long int) dzpos;
@@ -742,6 +742,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             my_angpix = obsModelPart.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, optics_group);
         }
 
+        Image<RFLOAT> Ipart;
         TICTOC(TIMING_WINDOW, {
         // extract one particle in Ipart
         if (dimensionality == 3) {

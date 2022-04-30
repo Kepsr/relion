@@ -89,8 +89,6 @@ class ctf_toolbox_parameters {
             if (do_ctf_pad) sim_box_large = 2 * sim_box;
             else sim_box_large = sim_box;
 
-            Image<RFLOAT> Ictf(sim_box_large, sim_box_large);
-            CTF ctf;
             std::cout << " + Input values: " << std::endl;
             std::cout << " +  kV= " << kV << std::endl;
             std::cout << " +  Cs= " << Cs << std::endl;
@@ -101,10 +99,11 @@ class ctf_toolbox_parameters {
             std::cout << " +  phase_shift = " << phase_shift << std::endl;
             std::cout << " +  angpix= " << sim_angpix<< std::endl;
             std::cout << " +  box= " << sim_box<< std::endl;
-            std::cout << " +  use CTF padding? " << ((do_ctf_pad) ? "true" : "false") << std::endl;
+            std::cout << " +  use CTF padding? " << (do_ctf_pad ? "true" : "false") << std::endl;
             std::cout << " + " << std::endl;
-            ctf.setValues(defU, defV, defAng, kV, Cs, Q0, 0., 1., phase_shift);
+            CTF ctf = CTF(defU, defV, defAng, kV, Cs, Q0, 0.0, 1.0, phase_shift);
 
+            Image<RFLOAT> Ictf(sim_box_large, sim_box_large);
             Ictf().setXmippOrigin();
             RFLOAT xs = (RFLOAT)sim_box_large * sim_angpix;
             RFLOAT ys = (RFLOAT)sim_box_large * sim_angpix;
@@ -123,7 +122,7 @@ class ctf_toolbox_parameters {
         } else {
 
             ObservationModel::loadSafely(fn_in, obsModel, MD);
-            bool do_mic_name = (obsModel.opticsMdt.getName() == "micrographs");
+            bool do_mic_name = obsModel.opticsMdt.getName() == "micrographs";
 
             long int i_img = 0;
             if (verb > 0)
@@ -131,8 +130,7 @@ class ctf_toolbox_parameters {
 
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
 
-                CTF ctf;
-                ctf.readByGroup(MD, &obsModel);
+                CTF ctf = CTF(MD, &obsModel);
                 int og = obsModel.getOpticsGroup(MD);
                 RFLOAT angpix = obsModel.getPixelSize(og);
 

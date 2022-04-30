@@ -122,8 +122,7 @@ void TiltEstimator::processMicrograph(
         for (long pp = 0; pp < pc; pp++) {
             const int p = partIndices[pp];
 
-            CTF ctf;
-            ctf.readByGroup(mdt, obsModel, p);
+            CTF ctf = CTF(mdt, obsModel, p);
 
             int threadnum = omp_get_thread_num();
 

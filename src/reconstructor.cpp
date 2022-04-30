@@ -450,12 +450,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
             }
         } else {
-            CTF ctf;
-            if (do_ignore_optics) {
-                ctf.read(DF, DF, p);
-            } else {
-                ctf.readByGroup(DF, &obsModel, p);
-            }
+            CTF ctf = do_ignore_optics ? CTF(DF, DF, p) :  // Repetition of DF is redundant
+                                         CTF(DF, &obsModel, p);
 
             ctf.getFftwImage(
                 Fctf, myBoxSize, myBoxSize, myPixelSize,
@@ -465,7 +461,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
             if (!do_ignore_optics) {
                 obsModel.demodulatePhase(DF, p, F2D);
-                obsModel.divideByMtf(DF, p, F2D);
+                obsModel.divideByMtf    (DF, p, F2D);
             }
 
             // Ewald-sphere curvature correction

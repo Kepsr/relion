@@ -225,7 +225,6 @@ class particle_reposition_parameters {
                         MultidimArray<RFLOAT> Fctf;
                         Fctf.resize(Fref);
 
-                        CTF ctf;
                         if (optimiser.mymodel.data_dim == 3) {
                             Image<RFLOAT> Ictf;
 
@@ -247,7 +246,7 @@ class particle_reposition_parameters {
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                             }
                         } else {
-                            ctf.readByGroup(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
+                            CTF ctf = CTF(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
                             ctf.getFftwImage(
                                 Fctf, my_image_size, my_image_size, my_pixel_size, 
                                 optimiser.ctf_phase_flipped, false, optimiser.intact_ctf_first_peak, true

@@ -267,7 +267,6 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     RFLOAT sum_ref_under_circ_mask, sum_ref2_under_circ_mask;
     int my_skip_side = basePckr->autopick_skip_side + basePckr->particle_size / 2;
-    CTF ctf;
 
     int Npsi = 360 / basePckr->psi_sampling;
 
@@ -386,7 +385,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(basePckr->MDmic) {
             FileName fn_tmp = basePckr->MDmic.getValue<FileName>(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
-                ctf.readByGroup(basePckr->MDmic, &basePckr->obsModel);
+                CTF ctf = CTF(basePckr->MDmic, &basePckr->obsModel);
                 Fctf.resize(basePckr->workSize,basePckr->workSize / 2 + 1);
                 ctf.getFftwImage(Fctf, basePckr->micrograph_size, basePckr->micrograph_size, basePckr->angpix, false, false, basePckr->intact_ctf_first_peak, true);
                 break;

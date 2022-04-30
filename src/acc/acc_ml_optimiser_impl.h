@@ -699,8 +699,7 @@ void getFourierTransformsAndCtfs(
 
             } else {
                 CTICTOC(accMLO->timer, "CTFRead2D", ({
-                CTF ctf;
-                ctf.setValuesByGroup(
+                CTF ctf = CTF(
                     &baseMLO->mydata.obsModel, optics_group,
                     DIRECT_A2D_ELEM(baseMLO->exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_U),
                     DIRECT_A2D_ELEM(baseMLO->exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_V),

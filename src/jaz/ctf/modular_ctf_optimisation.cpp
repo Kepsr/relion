@@ -29,8 +29,7 @@ frqWghByGroup(frqWghByGroup) {
     initialValues.resize(CtfParamCount * particle_count);
 
     for (int p = 0; p < particle_count; p++) {
-        CTF ctf;
-        ctf.readByGroup(mdt, obsModel, p);
+        CTF ctf = CTF(mdt, obsModel, p);
 
         std::vector<double> K = ctf.getK();
 
@@ -520,8 +519,7 @@ void ModularCtfOptimisation::writeToTable(const std::vector<double> &x) {
         const double bf = readParam(BFactor, x, p);
         const double kf = readParam(ScaleFactor, x, p);
 
-        CTF ctf;
-        ctf.readByGroup(mdt, obsModel, p);
+        CTF ctf = CTF(mdt, obsModel, p);
 
         std::vector<double> K = ctf.getK();
 

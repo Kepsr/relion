@@ -297,7 +297,6 @@ class project_parameters {
                 }
 
                 // Apply CTF if necessary
-                CTF ctf;
                 if (do_ctf || do_ctf2) {
                     if (do_3d_rot) {
                         Image<RFLOAT> Ictf;
@@ -323,7 +322,7 @@ class project_parameters {
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                         }
                     } else {
-                        ctf.readByGroup(MDang, &obsModel); // This MDimg only contains one particle!
+                        CTF ctf = CTF(MDang, &obsModel); // This MDimg only contains one particle!
                         Fctf.resize(F2D);
                         ctf.getFftwImage(Fctf, XSIZE(vol()), XSIZE(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                     }
@@ -331,13 +330,13 @@ class project_parameters {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
                         DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                         if (do_ctf2)
-                            DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                     }
                 }
 
                 // Apply Gaussian noise
                 if (do_add_noise) {
-                    if (fn_model !="") {
+                    if (fn_model != "") {
                         //// 23 May 2014: for preparation of 1.3 release: removed reading a exp_model, replaced by just reading MDang
                         // This does however mean that I no longer know mic_id of this image: replace by 0....
                         FileName fn_group;
@@ -453,7 +452,6 @@ class project_parameters {
                     }
 
                     // Apply CTF
-                    CTF ctf;
                     if (do_ctf || do_ctf2) {
                         if (do_3d_rot) {
                             Image<RFLOAT> Ictf;
@@ -476,7 +474,7 @@ class project_parameters {
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                             }
                         } else {
-                            ctf.read(MDang, MDang, imgno);
+                            CTF ctf = CTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
                             Fctf.resize(F2D);
                             ctf.getFftwImage(Fctf, XSIZE(vol()), XSIZE(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                         }
@@ -484,7 +482,7 @@ class project_parameters {
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
                             DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                             if (do_ctf2)
-                                DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                            DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                         }
                     }
 

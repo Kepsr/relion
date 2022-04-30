@@ -255,8 +255,7 @@ void DefocusEstimator::bruteForceFit(
         for (long p = 0; p < pc; p++) {
             const int og = obsModel->getOpticsGroup(mdt, p);
 
-            CTF ctf0;
-            ctf0.readByGroup(mdt, obsModel, p);
+            CTF ctf0 = CTF(mdt, obsModel, p);
 
             std::vector<d2Vector> cost = DefocusHelper::diagnoseDefocus(
                 pred[p], obs[p], freqWeights[og],
@@ -289,8 +288,7 @@ void DefocusEstimator::bruteForceFit(
         std::stringstream stsp;
         stsp << p;
 
-        CTF ctf0;
-        ctf0.readByGroup(mdt, obsModel, p);
+        CTF ctf0 = CTF(mdt, obsModel, p);
 
         if (fitAstigmatism) {
             double u, v, phi;

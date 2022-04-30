@@ -2588,7 +2588,6 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     FourierTransformer transformer;
     RFLOAT sum_ref_under_circ_mask, sum_ref2_under_circ_mask;
     int my_skip_side = autopick_skip_side + particle_size / 2;
-    CTF ctf;
 
     int min_distance_pix = round(min_particle_distance / angpix);
     float scale = (float) workSize / (float) micrograph_size;
@@ -2614,7 +2613,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     RFLOAT my_size, my_xsize, my_ysize;
     my_xsize = XSIZE(Imic());
     my_ysize = YSIZE(Imic());
-    my_size = (my_xsize != my_ysize) ? std::max(my_xsize, my_ysize) : my_xsize;
+    my_size = std::max(my_xsize, my_ysize);
     if (extra_padding > 0)
     my_size += 2 * extra_padding;
 
@@ -2673,7 +2672,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmic) {
             FileName fn_tmp = MDmic.getValue<FileName>(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
-                ctf.readByGroup(MDmic, &obsModel);
+                CTF ctf = CTF(MDmic, &obsModel);
                 Fctf.resize(downsize_mic, downsize_mic / 2 + 1);
                 ctf.getFftwImage(Fctf, micrograph_size, micrograph_size, angpix, false, false, intact_ctf_first_peak, true);
                 found = true;
@@ -2685,7 +2684,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         #ifdef DEBUG
         std::cerr << " Read CTF info from" << fn_mic.withoutExtension()<<"_ctf.star" << std::endl;
         Image<RFLOAT> Ictf;
-        Ictf()=Fctf;
+        Ictf() = Fctf;
         Ictf.write("Mmic_ctf.spi");
         #endif
     }

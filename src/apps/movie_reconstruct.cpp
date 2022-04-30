@@ -494,10 +494,8 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
     Fctf.initConstant(1.);
 
     // Apply CTF if necessary
-    if (do_ctf) {{  // Superfluous braces?
-        CTF ctf;
-
-        ctf.readByGroup(mdt, &obsModel, p);
+    if (do_ctf) {
+        CTF ctf = CTF(mdt, &obsModel, p);
 
         ctf.getFftwImage(
             Fctf, output_boxsize, output_boxsize, angpix,
@@ -519,7 +517,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
 
             // Also calculate the radius of the Ewald sphere (in pixels)
             r_ewald_sphere = output_boxsize * angpix / ctf.lambda;
-        }}
+        }
     }
 
     if (true) {

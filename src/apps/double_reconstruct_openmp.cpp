@@ -426,8 +426,7 @@ class reconstruct_parameters {
                         Fctf.resize(F2D);
                         Fctf.initConstant(1.0);
 
-                        CTF ctf;
-                        ctf.readByGroup(table, &obsModel, p);
+                        CTF ctf = CTF(table, &obsModel, p);
 
                         ctf.getFftwImage(
                             Fctf, sPad2D, sPad2D, pixelsize, 

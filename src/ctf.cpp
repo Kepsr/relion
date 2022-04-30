@@ -386,7 +386,7 @@ void CTF::getFftwImage(
         for (int i = 0 ; i < YSIZE(Fctf); i++) {
             // Don't take the middle row of the half-transform
             if (i != YSIZE(Fctf) / 2) {
-                int ip = (i < XSIZE(Fctf)) ? i : i - YSIZE(Fctf);
+                int ip = i < XSIZE(Fctf) ? i : i - YSIZE(Fctf);
                 // Don't take the last column from the half-transform
                 for (int j = 0; j < XSIZE(Fctf) - 1; j++) {
                     // Make just one lookup on Fctf.data

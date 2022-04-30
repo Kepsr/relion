@@ -89,8 +89,7 @@ int main(int argc, char *argv[]) {
 
         int th = omp_get_thread_num();
 
-        CTF ctf;
-        ctf.read(mdt, mdt, p);
+        CTF ctf = CTF(mdt, mdt, p);
 
         RFLOAT as = (RFLOAT) s * angpix;
 

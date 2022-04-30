@@ -335,8 +335,7 @@ void ObservationModel::predictObservation(
     }
 
     if (applyCtf) {
-        CTF ctf;
-        ctf.readByGroup(partMdt, this, particle);
+        CTF ctf = CTF(partMdt, this, particle);
 
         Image<RFLOAT> ctfImg(sh_out, s_out);
         ctf.getFftwImage(

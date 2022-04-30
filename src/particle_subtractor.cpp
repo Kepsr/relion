@@ -506,8 +506,7 @@ void ParticleSubtractor::subtractOneParticle(
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
             }
         } else {
-            CTF ctf;
-            ctf.readByGroup(opt.mydata.MDimg, &opt.mydata.obsModel, ori_img_id);
+            CTF ctf = CTF(opt.mydata.MDimg, &opt.mydata.obsModel, ori_img_id);
             ctf.getFftwImage(
                 Fctf, XSIZE(img()), YSIZE(img()), my_pixel_size,
                 opt.ctf_phase_flipped, false, opt.intact_ctf_first_peak, true

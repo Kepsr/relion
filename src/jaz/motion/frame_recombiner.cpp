@@ -346,8 +346,7 @@ void FrameRecombiner::process(
 
             // Premultiply by CTF
             if (do_ctf_multiply) {
-                CTF ctf;
-                ctf.readByGroup(mdtOut, obsModel, p);
+                CTF ctf = CTF(mdtOut, obsModel, p);
                 int og = obsModel->getOpticsGroup(mdtOut, p);
                 #pragma omp critical(FrameRecombiner_process)
                 {

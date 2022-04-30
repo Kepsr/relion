@@ -2147,8 +2147,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
 
                 // Apply CTF if necessary (skip this for subtomograms!)
                 if (do_ctf_correction && mymodel.data_dim != 3) {
-                    CTF ctf;
-                    ctf.readByGroup(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
+                    CTF ctf = CTF(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
                     ctf.getFftwImage(
                         Fctf, mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
                         ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
@@ -5009,8 +5008,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             } else {
 
                 // Get parameters that change per-particle from the exp_metadata
-                CTF ctf;
-                ctf.setValuesByGroup(
+                CTF ctf = CTF(
                     &mydata.obsModel, optics_group,
                     DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_U),
                     DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_V),
@@ -7595,8 +7593,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         Fctf.resize(current_image_size, current_image_size/ 2 + 1);
 
                         // Get parameters that change per-particle from the exp_metadata
-                        CTF ctf;
-                        ctf.setValuesByGroup(
+                        CTF ctf = CTF(
                             &mydata.obsModel, optics_group,
                             DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CTF_DEFOCUS_U),
                             DIRECT_A2D_ELEM(exp_metadata, metadata_offset, METADATA_CTF_DEFOCUS_V),

@@ -384,8 +384,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(basePckr->MDmic) {
             FileName fn_tmp = basePckr->MDmic.getValue(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
-                CTF ctf;
-                ctf.read(basePckr->MDmic, basePckr->MDmic);
+                CTF ctf = CTF(basePckr->MDmic, basePckr->MDmic);  // Repetition of basePckr->MDmic is redundant
                 Fctf.resize(basePckr->workSize,basePckr->workSize / 2 + 1);
                 ctf.getFftwImage(
                     Fctf, basePckr->micrograph_size, basePckr->micrograph_size,
