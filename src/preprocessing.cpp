@@ -779,7 +779,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             if (extract_size != premultiply_ctf_extract_size) {
                 Ipart().window(
                     Xmipp::init(extract_size), Xmipp::init(extract_size),
-                    Xmipp::last(extract_size),  Xmipp::last(extract_size)
+                    Xmipp::last(extract_size), Xmipp::last(extract_size)
                 );
             }
         }

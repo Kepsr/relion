@@ -350,7 +350,7 @@ void FrameRecombiner::process(
                 int og = obsModel->getOpticsGroup(mdtOut, p);
                 #pragma omp critical(FrameRecombiner_process)
                 {
-                     if (obsModel->getBoxSize(og) != s_out[og])
+                    if (obsModel->getBoxSize(og) != s_out[og])
                         obsModel->setBoxSize(og, s_out[og]);
                     if (obsModel->getPixelSize(og) != angpix_out[og])
                         obsModel->setPixelSize(og, angpix_out[og]);
@@ -426,11 +426,11 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
     for (long g = 0; g < allMdts.size(); g++) {
         FileName fn_root = MotionRefiner::getOutputFileNameRoot(outPath, allMdts[g]);
 
-        if (!(
-            exists(fn_root + "_FCC_cc.mrc") && 
-            exists(fn_root + "_FCC_w0.mrc") && 
-            exists(fn_root + "_FCC_w1.mrc")
-        )) continue;
+        if (
+            !exists(fn_root + "_FCC_cc.mrc") ||
+            !exists(fn_root + "_FCC_w0.mrc") || 
+            !exists(fn_root + "_FCC_w1.mrc")
+        ) continue;
 
         fccDataMg.read(fn_root + "_FCC_cc.mrc");
         fccWgh0Mg.read(fn_root + "_FCC_w0.mrc");
@@ -471,13 +471,13 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
 
     if (debug) std::cout << "done\n";
 
-    k0 = (int) reference->angToPix(k0a);
+    k0 = reference->angToPix(k0a);
 
     if (!outerFreqKnown()) {
         k1a = maxFreq;
     }
 
-    k1 = (int) reference->angToPix(k1a);
+    k1 = reference->angToPix(k1a);
 
     if (verb > 0) {
         std::cout << " + Fitting B/k-factors for " << og_name << " using FCCs from all particles between " << k0 << " and " << k1 << " pixels, or "
@@ -494,7 +494,7 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
         bkFacsRescaled = bkFacs.first;
     } else {
         for (int f = 0; f < fc; f++) {
-            bkFacsRescaled[f].x = (s * angpix) * bkFacs.first[f].x / (double) (s_ref * angpix_ref);
+            bkFacsRescaled[f].x = bkFacs.first[f].x * (s * angpix) / (double) (s_ref * angpix_ref);
             bkFacsRescaled[f].y = bkFacs.first[f].y;
         }
     }
@@ -512,10 +512,10 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
         Image<RFLOAT> bfacFit        = DamageHelper::renderBkFit(bkFacs, sh_ref, fc);
         Image<RFLOAT> bfacFitNoScale = DamageHelper::renderBkFit(bkFacs, sh_ref, fc, true);
 
-        ImageLog::write(bfacFit, outPath + "/bfacs/glob_Bk-fit");
+        ImageLog::write(bfacFit,        outPath + "/bfacs/glob_Bk-fit");
         ImageLog::write(bfacFitNoScale, outPath + "/bfacs/glob_Bk-fit_noScale");
-        ImageLog::write(fcc, outPath + "/bfacs/glob_Bk-data");
-        ImageLog::write(freqWeights, outPath + "/bfacs/freqWeights");
+        ImageLog::write(fcc,            outPath + "/bfacs/glob_Bk-data");
+        ImageLog::write(freqWeights,    outPath + "/bfacs/freqWeights");
 
         std::ofstream bfacsDat(outPath + "/bfacs/Bfac.dat");
         std::ofstream kfacsDat(outPath + "/bfacs/kfac.dat");
