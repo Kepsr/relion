@@ -232,7 +232,7 @@ class CTF {
     // Compute CTF at (U,V). Continuous frequencies
     inline RFLOAT getCTF(
         RFLOAT X, RFLOAT Y,
-        bool do_abs = false, bool do_only_flip_phases = false,
+        bool do_only_flip_phases = false,
         bool do_intact_until_first_peak = false, bool do_damping = true,
         double gammaOffset = 0.0, bool do_intact_after_first_peak = false
     ) const {
@@ -264,9 +264,7 @@ class CTF {
             retval *= E;
         }
 
-        if (do_abs) {
-            retval = abs(retval);
-        } else if (do_only_flip_phases) {
+        if (do_only_flip_phases) {
             retval = retval == 0.0 ? 1.0 : sgn(retval);
         }
 

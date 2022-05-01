@@ -111,7 +111,7 @@ class ctf_toolbox_parameters {
                 RFLOAT x = (RFLOAT) j / xs;
                 RFLOAT y = (RFLOAT) i / ys;
 
-                A2D_ELEM(Ictf(), i, j) = ctf.getCTF(x, y, false, false, do_intact_ctf_until_first_peak, true, 0.0, do_intact_ctf_after_first_peak);
+                A2D_ELEM(Ictf(), i, j) = ctf.getCTF(x, y, false, do_intact_ctf_until_first_peak, true, 0.0, do_intact_ctf_after_first_peak);
             }
 
             resizeMap(Ictf(), sim_box);

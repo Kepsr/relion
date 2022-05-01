@@ -303,10 +303,10 @@ void CTF::initialise() {
 }
 
 RFLOAT CTF::getGamma(RFLOAT X, RFLOAT Y) const {
-    if (obsModel != 0 && obsModel->hasMagMatrices) {
-        const Matrix2D<RFLOAT>& M = obsModel->getMagMatrix(opticsGroup);
-        RFLOAT XX = M(0,0) * X + M(0,1) * Y;
-        RFLOAT YY = M(1,0) * X + M(1,1) * Y;
+    if (obsModel && obsModel->hasMagMatrices) {
+        const Matrix2D<RFLOAT> &M = obsModel->getMagMatrix(opticsGroup);
+        RFLOAT XX = M(0, 0) * X + M(0, 1) * Y;
+        RFLOAT YY = M(1, 0) * X + M(1, 1) * Y;
 
         X = XX;
         Y = YY;
@@ -328,8 +328,8 @@ RFLOAT CTF::getCtfFreq(RFLOAT X, RFLOAT Y) {
 }
 
 t2Vector<RFLOAT> CTF::getGammaGrad(RFLOAT X, RFLOAT Y) const {
-    if (obsModel != 0 && obsModel->hasMagMatrices) {
-        const Matrix2D<RFLOAT>& M = obsModel->getMagMatrix(opticsGroup);
+    if (obsModel && obsModel->hasMagMatrices) {
+        const Matrix2D<RFLOAT> &M = obsModel->getMagMatrix(opticsGroup);
         RFLOAT XX = M(0, 0) * X + M(0, 1) * Y;
         RFLOAT YY = M(1, 0) * X + M(1, 1) * Y;
 
@@ -360,7 +360,7 @@ void CTF::getFftwImage(
     // and then rescale the large CTF to simulate the effect of the windowing operation
     if (do_ctf_padding) {
         bool ctf_premultiplied = false;
-        if (obsModel != 0) {
+        if (obsModel) {
             ctf_premultiplied = obsModel->getCtfPremultiplied(opticsGroup);
         }
 
@@ -433,7 +433,7 @@ void CTF::getFftwImage(
         RFLOAT xs = (RFLOAT)orixdim * angpix;
         RFLOAT ys = (RFLOAT)oriydim * angpix;
 
-        if (obsModel != 0 && obsModel->hasEvenZernike) {
+        if (obsModel && obsModel->hasEvenZernike) {
 
             ensure_square(orixdim, oriydim);
 
@@ -465,20 +465,22 @@ void CTF::getFftwImage(
                 const int x0 = j;
                 const int y0 = i <= result.ydim / 2 ? i : gammaOffset.data.ydim + i - result.ydim;
 
-                DIRECT_A2D_ELEM(result, i, j) = getCTF(
-                    x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
+                RFLOAT t = getCTF(
+                    x, y, do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, gammaOffset(y0, x0), do_intact_after_first_peak
                 );
+                DIRECT_A2D_ELEM(result, i, j) = do_abs ? abs(t) : t;
             }
         } else {
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
                 RFLOAT x = (RFLOAT) jp / xs;
                 RFLOAT y = (RFLOAT) ip / ys;
 
-                DIRECT_A2D_ELEM(result, i, j) = getCTF(
-                    x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
+                RFLOAT t = getCTF(
+                    x, y, do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, 0.0, do_intact_after_first_peak
                 );
+                DIRECT_A2D_ELEM(result, i, j) = do_abs ? abs(t) : t;
             }
         }
     }
@@ -503,7 +505,7 @@ void CTF::getCTFPImage(
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;
 
-    if (obsModel != 0 && obsModel->hasEvenZernike) {
+    if (obsModel && obsModel->hasEvenZernike) {
         
         ensure_square(orixdim, oriydim);
 
@@ -523,7 +525,7 @@ void CTF::getCTFPImage(
         for (int j = 0, jp = 0; j < XSIZE(result); j++, jp = j) {
             RFLOAT x = (RFLOAT) jp / xs;
             RFLOAT y = (RFLOAT) ip / ys;
-            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
+            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
             const int x0 = j;
             const int y0 = i <= YSIZE(result) / 2 ? ip : YSIZE(gammaOffset.data) + ip;
 
@@ -540,7 +542,7 @@ void CTF::getCTFPImage(
             // If i < XSIZE(result), ip = i. Else, ip = i - YSIZE(result).
             RFLOAT x = (RFLOAT) jp / xs;
             RFLOAT y = (RFLOAT) ip / ys;
-            RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
+            RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
 
             DIRECT_A2D_ELEM(result, i, j) = getCTFP(
                 x, y,
@@ -570,10 +572,11 @@ void CTF::getCenteredImage(
     FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
         RFLOAT x = (RFLOAT) j / xs;
         RFLOAT y = (RFLOAT) i / ys;
-        A2D_ELEM(result, i, j) = getCTF(
-            x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
+        RFLOAT t = getCTF(
+            x, y, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
+        A2D_ELEM(result, i, j) = do_abs ? abs(t) : t;
     }
 }
 
@@ -589,10 +592,11 @@ void CTF::get1DProfile(
     FOR_ALL_ELEMENTS_IN_ARRAY1D(result) {
         RFLOAT x = (RFLOAT) i * cos(radians(angle)) / xs;
         RFLOAT y = (RFLOAT) i * sin(radians(angle)) / xs;
-        A1D_ELEM(result, i) = getCTF(
-            x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
+        RFLOAT t = getCTF(
+            x, y, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
+        A1D_ELEM(result, i) = do_abs ? abs(t) : t;
     }
 }
 
@@ -605,7 +609,7 @@ void CTF::applyWeightEwaldSphereCurvature(
 
     Matrix2D<RFLOAT> M(2,2);
 
-    if (obsModel != 0 && obsModel->hasMagMatrices) {
+    if (obsModel && obsModel->hasMagMatrices) {
         M = obsModel->getMagMatrix(opticsGroup);
     } else {
         M.initIdentity();

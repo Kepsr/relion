@@ -759,12 +759,16 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
             MultidimArray<RFLOAT> Fctf;
             Fctf.resize(YSIZE(FT), XSIZE(FT));
-            // do_abs, phase_flip, intact_first_peak, damping, padding
             // 190802 TAKANORI: The original code using getCTF was do_damping=false, but for consistency with Polishing, I changed it.
             // The boxsize in ObsModel has been updated above.
             // In contrast to Polish, we premultiply particle BEFORE down-sampling, so PixelSize in ObsModel is OK.
             // But we are doing this after extraction, so there is not much merit...
-            ctf.getFftwImage(Fctf, my_extract_size, my_extract_size, my_angpix, false, do_phase_flip, do_ctf_intact_first_peak, true, false);
+            ctf.getFftwImage(
+                Fctf, 
+                my_extract_size, my_extract_size, my_angpix, 
+                false, do_phase_flip, do_ctf_intact_first_peak, true, false
+                // do_abs, phase_flip, intact_first_peak, damping, padding
+            );
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
                 DIRECT_MULTIDIM_ELEM(FT, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
