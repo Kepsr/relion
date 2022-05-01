@@ -462,6 +462,20 @@ void coreArrayByArray(
     const char operation
 );
 
+struct Origin {
+
+    long int x, y, z;
+
+    bool operator == (Origin other) {
+        return x == other.x && y == other.y && z == other.z;
+    }
+
+    bool operator != (Origin other) {
+        return !((*this) == other);
+    }
+
+};
+
 /** Template class for Xmipp arrays.
   * This class provides physical and logical access.
 */
@@ -515,22 +529,6 @@ class MultidimArray {
 
     // Number of elements in NZYX (could be considered the size of the array)
     inline long int nzyxdim() const { return ndim * zyxdim(); }
-
-    struct Origin {
-
-        long int x, y, z;
-
-        template <typename T2>
-        bool operator == (T2 other) {
-            return x == other.x && y == other.y && z == other.z;
-        }
-
-        template <typename T2>
-        bool operator != (T2 other) {
-            return !((*this) == other);
-        }
-
-    };
 
     // X/Y/Zinit
     long int xinit, yinit, zinit;
