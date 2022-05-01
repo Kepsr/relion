@@ -257,7 +257,7 @@ Image<RFLOAT> DamageHelper::damageWeight(
 RFLOAT DamageHelper::damage(
     double k, int kc, RFLOAT angpix, RFLOAT dose, RFLOAT a, RFLOAT b, RFLOAT c
 ) {
-    const double rho = 1.0 / (2.0 * (kc-1) * angpix);
+    const double rho = 1.0 / (2.0 * (kc - 1) * angpix);
     const double tau = a * pow(rho * k, b) + c;
 
     return exp(-dose / tau);
@@ -305,7 +305,7 @@ std::vector<double> DamageHelper::fitBFactors(
 
             for (int f = 0; f < fc; f++) {
                 double p = fcc(f, k);
-                double q = 1 / sqrt(exp(k * k / (sig[f] * sig[f])));
+                double q = exp(-0.5 * k * k / (sig[f] * sig[f]));
 
                 dividend += q * p;
                 divisor  += q * q;
@@ -320,7 +320,7 @@ std::vector<double> DamageHelper::fitBFactors(
 
     for (int k = 0; k < kc; k++)
     for (int f = 0; f < fc; f++) {
-        debug(f,k) = scale[k] / sqrt(exp(k * k / (sig[f] * sig[f])));
+        debug(f,k) = scale[k] * exp(-0.5 * k * k / (sig[f] * sig[f]));
     }
 
     ImageLog::write(debug, "bfacs/debug");
@@ -370,7 +370,7 @@ std::pair<std::vector<d2Vector>, std::vector<double>> DamageHelper::fitBkFactors
 
             for (int f = 0; f < fc; f++) {
                 double p = fcc(f,k);
-                double q = sig[f].y / sqrt(exp(k * k / (sig[f].x * sig[f].x)));
+                double q = sig[f].y * exp(-0.5 * k * k / (sig[f].x * sig[f].x));
 
                 dividend   += q * p;
                 divisor += q * q;
@@ -421,7 +421,7 @@ Image<RFLOAT> DamageHelper::renderBkFit(
         const double a = sigScale.first[f].y;
         const double scale = noScale ? 1.0 : sigScale.second[k];
 
-        out(f, k) = scale * a / sqrt(exp(k * k / (sigma * sigma)));
+        out(f, k) = scale * a * exp(-0.5 * k * k / (sigma * sigma));
     }
 
     return out;
@@ -435,7 +435,7 @@ Image<RFLOAT> DamageHelper::renderBkFit(std::vector<d2Vector> sig, int kc, int f
         const double sigma = sig[f].x;
         const double a = sig[f].y;
 
-        out(f, k) = a / sqrt(exp(k * k / (sigma * sigma)));
+        out(f, k) = a * exp(-0.5 * k * k / (sigma * sigma));
     }
 
     return out;
@@ -463,7 +463,7 @@ double DamageHelper::findSigmaRec(
         double sum = 0.0;
 
         for (int k = 0; k < kc; k++) {
-            const double d = fcc(f,k) - scale[k] / sqrt(exp(k * k / sig2));
+            const double d = fcc(f, k) - scale[k] * exp(-0.5 * k * k / sig2);
             sum += d * d;
         }
 
@@ -512,7 +512,7 @@ d2Vector DamageHelper::findSigmaKRec(
 
         for (int k = k0; k < k1; k++) {
             double p = fcc(f, k);
-            double q = envelope[k] / sqrt(exp(k * k / sig2));
+            double q = envelope[k] * exp(-0.5 * k * k / sig2);
 
             num += q * p;
             denom += q * q;
@@ -524,7 +524,7 @@ d2Vector DamageHelper::findSigmaKRec(
         double sum = 0.0;
 
         for (int k = k0; k < k1; k++) {
-            const double d = fcc(f, k) - envelope[k] * a / sqrt(exp(k * k / sig2));
+            const double d = fcc(f, k) - envelope[k] * a * exp(-0.5 * k * k / sig2);
             sum += weight[k] * d * d;
         }
 
@@ -580,7 +580,7 @@ std::vector<Image<RFLOAT>> DamageHelper::computeWeights(
             double yy = y < kc ? y : y - kc2;
             double r2 = x * x + yy * yy;
 
-            out[f](y, x) = 1 / sqrt(exp(r2 / (bFacs[f] * bFacs[f])));
+            out[f](y, x) = exp(-0.5 * r2 / (bFacs[f] * bFacs[f]));
         }
     }
 
@@ -605,7 +605,7 @@ std::vector<Image<RFLOAT>> DamageHelper::computeWeights(
             double yy = y < kc ? y : y - kc2;
             double r2 = x * x + yy * yy;
 
-            out[f](y, x) = bkFacs[f].y / sqrt(exp(r2 / (bkFacs[f].x * bkFacs[f].x)));
+            out[f](y, x) = bkFacs[f].y * exp(-0.5 * r2 / (bkFacs[f].x * bkFacs[f].x));
         }
     }
 
@@ -635,7 +635,7 @@ std::vector<Image<RFLOAT>> DamageHelper::computeWeights(
             double r2 = x * x + yy * yy;
 
             out[f](y, x) = bkFacs[f].y * damage(sqrt(r2), kc, angpix, dose, dmga, dmgb, dmgc)
-                / sqrt(exp(r2 / (bkFacs[f].x * bkFacs[f].x)));
+                * exp(-0.5 * r2 / (bkFacs[f].x * bkFacs[f].x));
         }
     }
 
@@ -777,7 +777,7 @@ double PerFrameBFactorFit::f(const std::vector<double> &x) const {
     double sum = 0.0;
     for (int f = 0; f < fc; f++)
     for (int k = k0; k <= k1; k++) {
-        double d = fcc(f, k) - scale[k - k0] / sqrt(exp(f * f / (bfac[f] * bfac[f])));
+        double d = fcc(f, k) - scale[k - k0] / exp(-0.5 * f * f / (bfac[f] * bfac[f]));
         sum += d * d;
     }
     return sum;
