@@ -472,8 +472,8 @@ void CTF::getFftwImage(
             }
         } else {
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-                RFLOAT x = (RFLOAT)jp / xs;
-                RFLOAT y = (RFLOAT)ip / ys;
+                RFLOAT x = (RFLOAT) jp / xs;
+                RFLOAT y = (RFLOAT) ip / ys;
 
                 DIRECT_A2D_ELEM(result, i, j) = getCTF(
                     x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
@@ -521,15 +521,15 @@ void CTF::getCTFPImage(
         // Why do we have i <= YSIZE(result) / 2 here, but i < XSIZE(result) below?
         for (int i = 0, ip = 0; i < YSIZE(result); i++, ip = i <= YSIZE(result) / 2 ? i : i - YSIZE(result))
         for (int j = 0, jp = 0; j < XSIZE(result); j++, jp = j) {
-            RFLOAT x = (RFLOAT)jp / xs;
-            RFLOAT y = (RFLOAT)ip / ys;
+            RFLOAT x = (RFLOAT) jp / xs;
+            RFLOAT y = (RFLOAT) ip / ys;
             RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
             const int x0 = j;
             const int y0 = i <= YSIZE(result) / 2 ? ip : YSIZE(gammaOffset.data) + ip;
 
             DIRECT_A2D_ELEM(result, i, j) = getCTFP(
                 x, y,
-                (myangle >= anglerad ? is_positive : !is_positive),
+                (myangle >= anglerad) == is_positive,
                 gammaOffset(y0, x0)
             );
         }
@@ -538,9 +538,9 @@ void CTF::getCTFPImage(
         for (long int i = 0, ip = 0; i < YSIZE(result); i++, ip = i < XSIZE(result) ? i : i - YSIZE(result)) \
         for (long int j = 0, jp = 0; j < XSIZE(result); j++, jp = j) {
             // If i < XSIZE(result), ip = i. Else, ip = i - YSIZE(result).
-            RFLOAT x = (RFLOAT)jp / xs;
-            RFLOAT y = (RFLOAT)ip / ys;
-            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
+            RFLOAT x = (RFLOAT) jp / xs;
+            RFLOAT y = (RFLOAT) ip / ys;
+            RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
 
             DIRECT_A2D_ELEM(result, i, j) = getCTFP(
                 x, y,
@@ -564,12 +564,12 @@ void CTF::getCenteredImage(
     bool do_damping, bool do_intact_after_first_peak
 ) {
     result.setXmippOrigin();
-    RFLOAT xs = (RFLOAT)XSIZE(result) * Tm;
-    RFLOAT ys = (RFLOAT)YSIZE(result) * Tm;
+    RFLOAT xs = (RFLOAT) XSIZE(result) * Tm;
+    RFLOAT ys = (RFLOAT) YSIZE(result) * Tm;
 
     FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
-        RFLOAT x = (RFLOAT)j / xs;
-        RFLOAT y = (RFLOAT)i / ys;
+        RFLOAT x = (RFLOAT) j / xs;
+        RFLOAT y = (RFLOAT) i / ys;
         A2D_ELEM(result, i, j) = getCTF(
             x, y, do_abs, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak

@@ -105,8 +105,8 @@ class ctf_toolbox_parameters {
 
             Image<RFLOAT> Ictf(sim_box_large, sim_box_large);
             Ictf().setXmippOrigin();
-            RFLOAT xs = (RFLOAT)sim_box_large * sim_angpix;
-            RFLOAT ys = (RFLOAT)sim_box_large * sim_angpix;
+            RFLOAT xs = (RFLOAT) sim_box_large * sim_angpix;
+            RFLOAT ys = (RFLOAT) sim_box_large * sim_angpix;
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Ictf()) {
                 RFLOAT x = (RFLOAT) j / xs;
                 RFLOAT y = (RFLOAT) i / ys;
@@ -125,8 +125,7 @@ class ctf_toolbox_parameters {
             bool do_mic_name = obsModel.opticsMdt.getName() == "micrographs";
 
             long int i_img = 0;
-            if (verb > 0)
-                init_progress_bar(MD.numberOfObjects());
+            if (verb > 0) init_progress_bar(MD.numberOfObjects());
 
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
 
@@ -170,11 +169,7 @@ class ctf_toolbox_parameters {
                 if (n >= 0) {
                     // This is a stack...
                     // The following assumes the images in the stack come ordered...
-                    if (n == 0) {
-                        img.write(fn_tmp, n, true, WRITE_OVERWRITE); // make a new stack
-                    } else {
-                        img.write(fn_tmp, n, true, WRITE_APPEND);
-                    }
+                    img.write(fn_tmp, n, true, n == 0 ? WRITE_OVERWRITE : WRITE_APPEND); // make a new stack
                 } else {
                     // individual image
                     img.write(my_fn_out);
@@ -184,15 +179,13 @@ class ctf_toolbox_parameters {
                 obsModel.setCtfPremultiplied(og, true);
 
                 i_img++;
-                if (verb > 0)
-                    progress_bar(i_img);
+                if (verb > 0) progress_bar(i_img);
             }
 
-            if (verb > 0)
-                progress_bar(MD.numberOfObjects());
+            if (verb > 0) progress_bar(MD.numberOfObjects());
 
-            obsModel.save(MD, fn_in.insertBeforeExtension("_"+fn_out));
-            std::cout << " + written out new particles STAR file in: " << fn_in.insertBeforeExtension("_"+fn_out) << std::endl;
+            obsModel.save(MD, fn_in.insertBeforeExtension("_" + fn_out));
+            std::cout << " + written out new particles STAR file in: " << fn_in.insertBeforeExtension("_" + fn_out) << std::endl;
         }
     }
 };
