@@ -446,19 +446,19 @@ class MultidimArray;
 
 template<typename T>
 void coreArrayByScalar(
-    const MultidimArray<T> &op1, const T& op2, MultidimArray<T>& result,
+    const MultidimArray<T> &op1, const T& op2, MultidimArray<T> &result,
     const char operation
 );
 
 template<typename T>
 void coreScalarByArray(
-    const T &op1, const MultidimArray<T> &op2, MultidimArray<T>& result,
+    const T &op1, const MultidimArray<T> &op2, MultidimArray<T> &result,
     const char operation
 );
 
 template<typename T>
 void coreArrayByArray(
-    const MultidimArray<T> &op1, const MultidimArray<T> &op2, MultidimArray<T>& result,
+    const MultidimArray<T> &op1, const MultidimArray<T> &op2, MultidimArray<T> &result,
     const char operation
 );
 
@@ -487,12 +487,12 @@ class MultidimArray {
     /* The array itself.
     The array is always a 3D array (Z,Y,X) (i.e. a 3rd-order tensor).
 
-    For vectors (1st-order tensors), the shape of the array is (1, 1, m) (so size = m).
-    For matrices (2nd-order tenors), the shape of the array is (1, n, m) (so size = m × n).
+    For vectors  (1st-order tensors), the shape of the array is (1, 1, m) (so size = m).
+    For matrices (2nd-order tensors), the shape of the array is (1, n, m) (so size = m × n).
 
     The pixel (i,j) (y,x) is at the position data[i * Xdim + j] or data[y * Xdim + x]
     */
-    T* data;
+    T *data;
 
     // Destroy data
     bool destroyData;
@@ -597,7 +597,7 @@ class MultidimArray {
      * MultidimArray<RFLOAT> V2(V1);
      * @endcode
      */
-    MultidimArray(const MultidimArray<T>& V, bool parent=false) {
+    MultidimArray(const MultidimArray<T> &V, bool parent=false) {
         if (parent) {
             coreInit();
             copyShape(V);
@@ -1732,7 +1732,7 @@ class MultidimArray {
      * V.getImage(0, m);
      * @endcode
      */
-    void getImage(long n, MultidimArray<T>& M) const {
+    void getImage(long n, MultidimArray<T> &M) const {
         if (xdim == 0) {
             M.clear();
             return;
@@ -1758,7 +1758,7 @@ class MultidimArray {
      * V.setImage(0, m);
      * @endcode
      */
-    void setImage(long n, MultidimArray<T>& M) const {
+    void setImage(long n, MultidimArray<T> &M) const {
         if (xdim == 0)
             return;
 
@@ -1785,7 +1785,7 @@ class MultidimArray {
      * V.slice(0, m);
      * @endcode
      */
-    void getSlice(long int k, MultidimArray<T>& M, char axis = 'Z', long n = 0) const {
+    void getSlice(long int k, MultidimArray<T> &M, char axis = 'Z', long n = 0) const {
         if (xdim == 0) {
             M.clear();
             return;
@@ -1848,7 +1848,7 @@ class MultidimArray {
      * V.setSlice(1, (V.slice(0)));
      * @endcode
      */
-    void setSlice(long int k, const MultidimArray<T>& v, long n = 0) {
+    void setSlice(long int k, const MultidimArray<T> &v, long n = 0) {
         if (xdim == 0)
             return;
 
@@ -1873,7 +1873,7 @@ class MultidimArray {
      * m.getCol(-1, v);
         * @endcode
         */
-    void getCol(long int j, MultidimArray<T>& v) const {
+    void getCol(long int j, MultidimArray<T> &v) const {
             if (xdim == 0 || ydim == 0) {
                 v.clear();
                 return;
@@ -1896,7 +1896,7 @@ class MultidimArray {
      * m.setCol(0, (m.row(1)).transpose()); // Copies row 1 in column 0
      * @endcode
      */
-    void setCol(long int j, const MultidimArray<T>& v) {
+    void setCol(long int j, const MultidimArray<T> &v) {
         if (xdim == 0 || ydim == 0)
             REPORT_ERROR("setCol: Target matrix is empty");
 
@@ -1920,7 +1920,7 @@ class MultidimArray {
      * m.getRow(-2, v);
     * @endcode
     */
-    void getRow(long int i, MultidimArray<T>& v) const {
+    void getRow(long int i, MultidimArray<T> &v) const {
         if (xdim == 0 || ydim == 0) {
             v.clear();
             return;
@@ -1942,7 +1942,7 @@ class MultidimArray {
      * m.setRow(-2, m.row(1)); // Copies row 1 in row -2
      * @endcode
      */
-    void setRow(long int i, const MultidimArray<T>& v) {
+    void setRow(long int i, const MultidimArray<T> &v) {
         if (xdim == 0 || ydim == 0)
             REPORT_ERROR("setRow: Target matrix is empty");
 
@@ -2628,7 +2628,7 @@ class MultidimArray {
      */
     inline friend MultidimArray<T> coreArrayByArray(
         const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
-        MultidimArray<T>& output,
+        MultidimArray<T> &output,
         const char operation
     ) {
         T *arg1ptr, *arg2ptr, *optr;
@@ -3544,8 +3544,8 @@ class MultidimArray {
      * not an exception is thrown
      */
     friend void MAX(
-        const MultidimArray<T>& v1, const MultidimArray<T>& v2,
-        MultidimArray<T>& result
+        const MultidimArray<T> &v1, const MultidimArray<T> &v2,
+        MultidimArray<T> &result
     ) {
         if (!v1.sameShape(v2))
             REPORT_ERROR("MAX: arrays of different shape");
@@ -3565,8 +3565,8 @@ class MultidimArray {
      * not an exception is thrown
      */
     friend void MIN(
-        const MultidimArray<T>& v1, const MultidimArray<T>& v2,
-        MultidimArray<T>& result
+        const MultidimArray<T> &v1, const MultidimArray<T> &v2,
+        MultidimArray<T> &result
     ) {
         if (!v1.sameShape(v2))
             REPORT_ERROR("MIN: arrays of different shape");
@@ -3906,7 +3906,7 @@ class MultidimArray {
      *
      * This function is ported to Python as assign.
      */
-    MultidimArray<T>& operator = (const MultidimArray<T> &op1) {
+    MultidimArray<T> &operator = (const MultidimArray<T> &op1) {
         if (&op1 != this) {
             if (!data || !sameShape(op1)) resize(op1);
             memcpy(data, op1.data, MULTIDIM_SIZE(op1) * sizeof(T));
@@ -3943,7 +3943,7 @@ class MultidimArray {
      *
      * This function is not ported to Python.
      */
-    friend std::istream& operator >> (std::istream& in, MultidimArray<T>& v) {
+    friend std::istream& operator >> (std::istream& in, MultidimArray<T> &v) {
         T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) { in >> *ptr; }
@@ -4058,7 +4058,7 @@ bool operator != (const MultidimArray<T> &op1, const MultidimArray<T> &op2) {
  * @endcode
  */
 template<typename T>
-void cutToCommonSize(MultidimArray<T>& V1, MultidimArray<T>& V2) {
+void cutToCommonSize(MultidimArray<T> &V1, MultidimArray<T> &V2) {
     long int z0 = std::max(V1.firstZ(), V2.firstZ());
     long int zF = std::min(V1.lastZ(),  V2.lastZ());
     long int y0 = std::max(V1.firstY(), V2.firstY());
@@ -4074,7 +4074,7 @@ void cutToCommonSize(MultidimArray<T>& V1, MultidimArray<T>& V2) {
  * This function is not ported to Python.
  */
 template <typename T>
-std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T>& v) {
+std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
 
     if (v.xdim == 0) {
         ostrm << "NULL Array\n";
