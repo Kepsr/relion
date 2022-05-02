@@ -22,8 +22,7 @@
 
 using namespace gravis;
 
-Image<RFLOAT> VtkHelper::allToZ(const Image<RFLOAT> &img)
-{
+Image<RFLOAT> VtkHelper::allToZ(const Image<RFLOAT> &img) {
     std::cout   << img.data.xdim << "x"
                 << img.data.ydim << "x"
                 << img.data.zdim << "x"
@@ -35,20 +34,20 @@ Image<RFLOAT> VtkHelper::allToZ(const Image<RFLOAT> &img)
 
     for (int n = 0; n < img.data.ndim; n++)
     for (int y = 0; y < img.data.ydim; y++)
-    for (int x = 0; x < img.data.xdim; x++)
-    {
+    for (int x = 0; x < img.data.xdim; x++) {
         DIRECT_NZYX_ELEM(out(), 0, n, y, x) = DIRECT_NZYX_ELEM(img(), n, 0, y, x);
     }
 
     return out;
 }
 
-void VtkHelper :: writeVTK(Image<double>& img, std::string fn,
-                           double originX, double originY, double originZ,
-                           double spacingX, double spacingY, double spacingZ,
-                           bool binary)
-{
-    const size_t size = (img.data.xdim * img.data.ydim * img.data.zdim);
+void VtkHelper::writeVTK(
+    Image<double>& img, std::string fn,
+    double originX, double originY, double originZ,
+    double spacingX, double spacingY, double spacingZ,
+    bool binary
+) {
+    const size_t size = img.data.xdim * img.data.ydim * img.data.zdim;
     std::ofstream os(fn.c_str(), std::ios::binary);
 
     std::string sizetype = "double";
@@ -56,12 +55,9 @@ void VtkHelper :: writeVTK(Image<double>& img, std::string fn,
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -73,25 +69,22 @@ void VtkHelper :: writeVTK(Image<double>& img, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(img.data.data), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data)
-        {
+    if (binary) {
+        os.write((char*) img.data.data, sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
             os << DIRECT_A3D_ELEM(img.data, k, i, j) << "\n";
         }
     }
 }
 
-void VtkHelper :: writeVTK(Image<float>& img, std::string fn,
-                           double originX, double originY, double originZ,
-                           double spacingX, double spacingY, double spacingZ,
-                           bool binary)
-{
-    const size_t size = (img.data.xdim * img.data.ydim * img.data.zdim);
+void VtkHelper::writeVTK(
+    Image<float>& img, std::string fn,
+    double originX, double originY, double originZ,
+    double spacingX, double spacingY, double spacingZ,
+    bool binary
+) {
+    const size_t size = img.data.xdim * img.data.ydim * img.data.zdim;
     std::ofstream os(fn.c_str(), std::ios::binary);
 
     std::string sizetype = "float";
@@ -99,12 +92,9 @@ void VtkHelper :: writeVTK(Image<float>& img, std::string fn,
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -116,39 +106,35 @@ void VtkHelper :: writeVTK(Image<float>& img, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(img.data.data), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data)
-        {
+    if (binary) {
+        os.write((char*) img.data.data, sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
             os << DIRECT_A3D_ELEM(img.data, k, i, j) << "\n";
         }
     }
 }
 
-void VtkHelper::writeVTK(Image<Complex> &img, std::string fn, double originX, double originY, double originZ, double spacingX, double spacingY, double spacingZ, bool binary)
-{
-    const size_t size = (img.data.xdim * img.data.ydim * img.data.zdim);
+void VtkHelper::writeVTK(
+    Image<Complex> &img, std::string fn, 
+    double originX, double originY, double originZ, 
+    double spacingX, double spacingY, double spacingZ, 
+    bool binary
+) {
+    const size_t size = img.data.xdim * img.data.ydim * img.data.zdim;
     std::ofstream os(fn.c_str(), std::ios::binary);
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
-    //std::cout << "size: " << size << "\n";
-    //std::cout << "sizetype: " << sizetype << "\n";
+    // std::cout << "size: " << size << "\n";
+    // std::cout << "sizetype: " << sizetype << "\n";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -160,43 +146,36 @@ void VtkHelper::writeVTK(Image<Complex> &img, std::string fn, double originX, do
     os << "SCALARS volume_scalars " << sizetype << " 2\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(img.data.data), 2*sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data)
-        {
+    if (binary) {
+        os.write((char*) (img.data.data), 2 * sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
             os << DIRECT_A3D_ELEM(img.data, k, i, j).real << "\n";
             os << DIRECT_A3D_ELEM(img.data, k, i, j).imag << "\n";
         }
     }
 }
 
-void VtkHelper :: writeVTK(MultidimArray<RFLOAT>& img, std::string fn,
-                           double originX, double originY, double originZ,
-                           double spacingX, double spacingY, double spacingZ,
-                           bool binary)
-{
-    const size_t size = (img.xdim * img.ydim * img.zdim);
+void VtkHelper::writeVTK(
+    MultidimArray<RFLOAT>& img, std::string fn,
+    double originX, double originY, double originZ,
+    double spacingX, double spacingY, double spacingZ,
+    bool binary
+) {
+    const size_t size = img.xdim * img.ydim * img.zdim;
     std::ofstream os(fn.c_str(), std::ios::binary);
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
-    //std::cout << "size: " << size << "\n";
-    //std::cout << "sizetype: " << sizetype << "\n";
+    // std::cout << "size: " << size << "\n";
+    // std::cout << "sizetype: " << sizetype << "\n";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -208,39 +187,30 @@ void VtkHelper :: writeVTK(MultidimArray<RFLOAT>& img, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(img.data), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img)
-        {
+    if (binary) {
+        os.write((char*) img.data, sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
             os << DIRECT_A3D_ELEM(img, k, i, j) << "\n";
         }
     }
 }
 
-void VtkHelper :: writeVTK_Complex(const MultidimArray<Complex>& img, std::string fn, bool binary)
-{
-    const size_t size = (img.xdim * img.ydim * img.zdim);
+void VtkHelper::writeVTK_Complex(const MultidimArray<Complex> &img, std::string fn, bool binary) {
+    const size_t size = img.xdim * img.ydim * img.zdim;
     std::ofstream os(fn.c_str(), std::ios::binary);
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
-    //std::cout << "size: " << size << "\n";
-    //std::cout << "sizetype: " << sizetype << "\n";
+    // std::cout << "size: " << size << "\n";
+    // std::cout << "sizetype: " << sizetype << "\n";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -252,40 +222,31 @@ void VtkHelper :: writeVTK_Complex(const MultidimArray<Complex>& img, std::strin
     os << "SCALARS volume_scalars " << sizetype << " 2\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(img.data), 2*sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img)
-        {
+    if (binary) {
+        os.write((char*) img.data, 2*sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
             os << DIRECT_A3D_ELEM(img, k, i, j).real << "\n";
             os << DIRECT_A3D_ELEM(img, k, i, j).imag << "\n";
         }
     }
 }
 
-void VtkHelper :: writeVTK_d3(MultidimArray<gravis::t3Vector<RFLOAT> >& img, std::string fn, bool binary)
-{
-    const size_t size = (img.xdim * img.ydim * img.zdim);
+void VtkHelper::writeVTK_d3(MultidimArray<gravis::t3Vector<RFLOAT> > &img, std::string fn, bool binary) {
+    const size_t size = img.xdim * img.ydim * img.zdim;
     std::ofstream os(fn.c_str(), std::ios::binary);
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
-    //std::cout << "size: " << size << "\n";
-    //std::cout << "sizetype: " << sizetype << "\n";
+    // std::cout << "size: " << size << "\n";
+    // std::cout << "sizetype: " << sizetype << "\n";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -297,14 +258,10 @@ void VtkHelper :: writeVTK_d3(MultidimArray<gravis::t3Vector<RFLOAT> >& img, std
     os << "SCALARS volume_scalars " << sizetype << " 3\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(img.data), 2*sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img)
-        {
+    if (binary) {
+        os.write((char*) img.data, 2*sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
             os << DIRECT_A3D_ELEM(img, k, i, j).x << "\n";
             os << DIRECT_A3D_ELEM(img, k, i, j).y << "\n";
             os << DIRECT_A3D_ELEM(img, k, i, j).z << "\n";
@@ -312,27 +269,24 @@ void VtkHelper :: writeVTK_d3(MultidimArray<gravis::t3Vector<RFLOAT> >& img, std
     }
 }
 
-void VtkHelper :: writeTomoVTK(Image<RFLOAT>& img, std::string fn, bool binary, 
-							   double pixelSize, d3Vector origin)
-{
+void VtkHelper::writeTomoVTK(
+    Image<RFLOAT> &img, std::string fn, bool binary, 
+    double pixelSize, d3Vector origin
+) {
     const size_t size = (img.data.xdim * img.data.ydim * img.data.ndim);
     std::ofstream os(fn.c_str(), std::ios::binary);
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
-    //std::cout << "size: " << size << "\n";
-    //std::cout << "sizetype: " << sizetype << "\n";
+    // std::cout << "size: " << size << "\n";
+    // std::cout << "sizetype: " << sizetype << "\n";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -344,39 +298,32 @@ void VtkHelper :: writeTomoVTK(Image<RFLOAT>& img, std::string fn, bool binary,
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(img.data.data), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data)
-        {
+    if (binary) {
+        os.write((char*) img.data.data, sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
             os << DIRECT_NZYX_ELEM(img.data, l, 0, i, j) << "\n";
         }
     }
 }
 
-void VtkHelper :: write(std::vector<Image<double> >& stack, std::string fn,
-                        double originX, double originY,
-                        double spacingX, double spacingY,
-                        bool binary)
-{
-    const size_t size = (stack[0].data.xdim * stack[0].data.ydim * stack.size());
+void VtkHelper::write(
+    std::vector<Image<double> >& stack, std::string fn,
+    double originX, double originY,
+    double spacingX, double spacingY,
+    bool binary
+) {
+    const size_t size = stack[0].data.xdim * stack[0].data.ydim * stack.size();
     std::ofstream os(fn.c_str(), std::ios::binary);
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -388,42 +335,34 @@ void VtkHelper :: write(std::vector<Image<double> >& stack, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(stack[0].data.data), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        for (int ind = 0; ind < stack.size(); ind++)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data)
-            {
+    if (binary) {
+        os.write((char*) stack[0].data.data, sizeof(RFLOAT) * size);
+    } else {
+        for (int ind = 0; ind < stack.size(); ind++) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data) {
                 os << DIRECT_A2D_ELEM(stack[ind].data, i, j) << "\n";
             }
         }
     }
 }
 
-void VtkHelper :: writeCentered(std::vector<Image<RFLOAT> >& stack, std::string fn,
-                        double originX, double originY,
-                        double spacingX, double spacingY,
-                        bool binary)
-{
-    const size_t size = (stack[0].data.xdim * stack[0].data.ydim * stack.size());
+void VtkHelper::writeCentered(
+    std::vector<Image<RFLOAT> >& stack, std::string fn,
+    double originX, double originY,
+    double spacingX, double spacingY,
+    bool binary
+) {
+    const size_t size = stack[0].data.xdim * stack[0].data.ydim * stack.size();
     std::ofstream os(fn.c_str(), std::ios::binary);
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -435,21 +374,16 @@ void VtkHelper :: writeCentered(std::vector<Image<RFLOAT> >& stack, std::string 
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(stack[0].data.data), sizeof(RFLOAT)*size);
-    }
-    else
-    {
+    if (binary) {
+        os.write((char*) stack[0].data.data, sizeof(RFLOAT) * size);
+    } else {
         const int w = stack[0].data.xdim;
         const int h = stack[0].data.ydim;
 
-        for (int ind = 0; ind < stack.size(); ind++)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data)
-            {
-                int ii = (h + i - h/2)%h;
-                int jj = (w + j - w/2)%w;
+        for (int ind = 0; ind < stack.size(); ind++) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data) {
+                int ii = (h + i - h / 2) % h;
+                int jj = (w + j - w / 2) % w;
 
                 os << DIRECT_A2D_ELEM(stack[ind].data, ii, jj) << "\n";
             }
@@ -457,12 +391,13 @@ void VtkHelper :: writeCentered(std::vector<Image<RFLOAT> >& stack, std::string 
     }
 }
 
-void VtkHelper :: write(std::vector<Image<float> >& stack, std::string fn,
-                        double originX, double originY,
-                        double spacingX, double spacingY,
-                        bool binary)
-{
-    const size_t size = (stack[0].data.xdim * stack[0].data.ydim * stack.size());
+void VtkHelper::write(
+    std::vector<Image<float> >& stack, std::string fn,
+    double originX, double originY,
+    double spacingX, double spacingY,
+    bool binary
+) {
+    const size_t size = stack[0].data.xdim * stack[0].data.ydim * stack.size();
     std::ofstream os(fn.c_str(), std::ios::binary);
 
     std::string sizetype = "float";
@@ -470,12 +405,9 @@ void VtkHelper :: write(std::vector<Image<float> >& stack, std::string fn,
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -487,42 +419,34 @@ void VtkHelper :: write(std::vector<Image<float> >& stack, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(stack[0].data.data), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        for (int ind = 0; ind < stack.size(); ind++)
-        {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data)
-            {
+    if (binary) {
+        os.write((char*) stack[0].data.data, sizeof(RFLOAT) * size);
+    } else {
+        for (int ind = 0; ind < stack.size(); ind++) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data) {
                 os << DIRECT_A2D_ELEM(stack[ind].data, i, j) << "\n";
             }
         }
     }
 }
 
-void VtkHelper :: writeVTK(Volume<RFLOAT>& vol, std::string fn,
-                           double originX, double originY, double originZ,
-                           double spacingX, double spacingY, double spacingZ,
-                           bool binary)
-{
-    const size_t size = (vol.dimx * vol.dimy * vol.dimz);
+void VtkHelper::writeVTK(
+    Volume<RFLOAT>& vol, std::string fn,
+    double originX, double originY, double originZ,
+    double spacingX, double spacingY, double spacingZ,
+    bool binary
+) {
+    const size_t size = vol.dimx * vol.dimy * vol.dimz;
     std::ofstream os(fn.c_str());
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -534,39 +458,32 @@ void VtkHelper :: writeVTK(Volume<RFLOAT>& vol, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 1\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(vol.data()), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_VOXELS(vol)
-        {
+    if (binary) {
+        os.write((char*) vol.data(), sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_VOXELS(vol) {
             os << vol(x,y,z) << "\n";
         }
     }
 }
 
-void VtkHelper :: writeVTK(Volume<t3Vector<RFLOAT> >& vol, std::string fn,
-                           double originX, double originY, double originZ,
-                           double spacingX, double spacingY, double spacingZ,
-                           bool binary)
-{
-    const size_t size = (vol.dimx * vol.dimy * vol.dimz);
+void VtkHelper::writeVTK(
+    Volume<t3Vector<RFLOAT> >& vol, std::string fn,
+    double originX, double originY, double originZ,
+    double spacingX, double spacingY, double spacingZ,
+    bool binary
+) {
+    const size_t size = vol.dimx * vol.dimy * vol.dimz;
     std::ofstream os(fn.c_str());
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -578,42 +495,34 @@ void VtkHelper :: writeVTK(Volume<t3Vector<RFLOAT> >& vol, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 3\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(vol.data()), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_VOXELS(vol)
-        {
+    if (binary) {
+        os.write((char*) vol.data(), sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_VOXELS(vol) {
             os << vol(x,y,z).x << " " << vol(x,y,z).y << " " << vol(x,y,z).z << "\n";
         }
     }
 }
 
-void VtkHelper :: readVTK(std::string fn, Volume<RFLOAT>& vol, d3Vector& origin, d3Vector& spacing)
-{
+void VtkHelper::readVTK(std::string fn, Volume<RFLOAT>& vol, d3Vector& origin, d3Vector& spacing) {
     std::ifstream file(fn.c_str());
 
     char text[4096];
 
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         REPORT_ERROR("failed to open " + fn + '\n');
     }
 
     file.getline(text, 4096);
 
-    if (std::string(text) != "# vtk DataFile Version 2.0")
-    {
+    if (std::string(text) != "# vtk DataFile Version 2.0") {
         REPORT_ERROR("Unsupported VTK format: " + std::string(text) + '\n');
     }
 
     file.getline(text, 4096);
     file.getline(text, 4096);
 
-    if (std::string(text) != "ASCII")
-    {
+    if (std::string(text) != "ASCII") {
         REPORT_ERROR("Only ASCII VTK files are supported.\n");
     }
     /*
@@ -632,44 +541,32 @@ void VtkHelper :: readVTK(std::string fn, Volume<RFLOAT>& vol, d3Vector& origin,
     int dimx, dimy, dimz, dims;
     size_t size;
 
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
         file.getline(text, 4096);
         std::stringstream linestream(text);
 
         linestream >> first;
 
-        if (first == "DIMENSIONS")
-        {
+        if (first == "DIMENSIONS") {
             linestream >> dimx;
             linestream >> dimy;
             linestream >> dimz;
-
-        }
-        else if (first == "SPACING")
-        {
+        } else if (first == "SPACING") {
             linestream >> spacing.x;
             linestream >> spacing.y;
             linestream >> spacing.z;
-        }
-        else if (first == "ORIGIN")
-        {
+        } else if (first == "ORIGIN") {
             linestream >> origin.x;
             linestream >> origin.y;
             linestream >> origin.z;
-        }
-        else if (first == "POINT_DATA")
-        {
+        } else if (first == "POINT_DATA") {
             linestream >> size;
-        }
-        else if (first == "SCALARS")
-        {
+        } else if (first == "SCALARS") {
             linestream >> dummy;
             linestream >> dummy;
             linestream >> dims;
 
-            if (dims != 1)
-            {
+            if (dims != 1) {
                 std::stringstream sts;
                 std::string st;
                 sts << fn << " is not a scalar volume (voxeldims = " << dims << ")\n";
@@ -677,15 +574,12 @@ void VtkHelper :: readVTK(std::string fn, Volume<RFLOAT>& vol, d3Vector& origin,
 
                 REPORT_ERROR(st);
             }
-        }
-        else if (first == "LOOKUP_TABLE")
-        {
+        } else if (first == "LOOKUP_TABLE") {
             linestream >> dummy;
         }
     }
 
-    if (size != ((size_t)dimx)*((size_t)dimy)*((size_t)dimz))
-    {
+    if (size != ((size_t)dimx)*((size_t)dimy)*((size_t)dimz)) {
         std::cout << "Bad size info in " << fn << ": " << size << " vs. " << (dimx*dimy*dimz) << "\n";
         std::exit(666);
 
@@ -699,32 +593,28 @@ void VtkHelper :: readVTK(std::string fn, Volume<RFLOAT>& vol, d3Vector& origin,
 
     vol.resize(dimx, dimy, dimz);
 
-    for (size_t i = 0; i < size; i++)
-    {
+    for (size_t i = 0; i < size; i++) {
         file >> vol.voxels[i];
     }
 }
 
-void VtkHelper :: writeVTK(Volume<Tensor3x3<RFLOAT> >& vol, std::string fn,
-                           double originX, double originY, double originZ,
-                           double spacingX, double spacingY, double spacingZ,
-                           bool binary)
-{
-    const size_t size = (vol.dimx * vol.dimy * vol.dimz);
+void VtkHelper::writeVTK(
+    Volume<Tensor3x3<RFLOAT> >& vol, std::string fn,
+    double originX, double originY, double originZ,
+    double spacingX, double spacingY, double spacingZ,
+    bool binary
+) {
+    const size_t size = vol.dimx * vol.dimy * vol.dimz;
     std::ofstream os(fn.c_str());
 
-    std::string sizetype = "float";
-    if (sizeof(RFLOAT) > 4) sizetype = "double";
+    std::string sizetype = sizeof(RFLOAT) > 4 ? "double" : "float";
 
     os << "# vtk DataFile Version 2.0\n";
     os << "Volume example\n";
 
-    if (binary)
-    {
+    if (binary) {
         os << "BINARY\n";
-    }
-    else
-    {
+    } else {
         os << "ASCII\n";
     }
 
@@ -736,16 +626,11 @@ void VtkHelper :: writeVTK(Volume<Tensor3x3<RFLOAT> >& vol, std::string fn,
     os << "SCALARS volume_scalars " << sizetype << " 6\n";
     os << "LOOKUP_TABLE default\n";
 
-    if (binary)
-    {
-        os.write((char*)(vol.data()), sizeof(RFLOAT)*size);
-    }
-    else
-    {
-        FOR_ALL_VOXELS(vol)
-        {
+    if (binary) {
+        os.write((char*)(vol.data()), sizeof(RFLOAT) * size);
+    } else {
+        FOR_ALL_VOXELS(vol) {
             os << vol(x,y,z).xx << " " << vol(x,y,z).yy << " " << vol(x,y,z).zz << " " << vol(x,y,z).xy << " " << vol(x,y,z).yz << " " << vol(x,y,z).xz << "\n";
         }
     }
 }
-

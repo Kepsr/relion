@@ -111,7 +111,7 @@ void MlOptimiserMpi::initialise() {
 
         std::vector<std::string> deviceIdentifiers;
         std::vector<std::string> uniqueDeviceIdentifiers;
-        std::vector<int> deviceCounts(node->size,0);
+        std::vector<int> deviceCounts(node->size, 0);
 
         std::vector<std::string> uniqueHosts;
         std::vector<int>  hostId(node->size);
@@ -951,19 +951,19 @@ void MlOptimiserMpi::expectation() {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (do_gpu && ! node->isLeader()) {
+    if (do_gpu && !node->isLeader()) {
         for (int i = 0; i < accDataBundles.size(); i ++)
-            ((MlDeviceBundle*)accDataBundles[i])->setupTunableSizedObjects(allocationSizes[i]);
+            ((MlDeviceBundle*) accDataBundles[i])->setupTunableSizedObjects(allocationSizes[i]);
     }
     #endif // CUDA
     #ifdef ALTCPU
     /************************************************************************/
-    //CPU memory setup
+    // CPU memory setup
     MPI_Barrier(MPI_COMM_WORLD);   // Is this really necessary?
     if (do_cpu  && ! node->isLeader()) {
         unsigned nr_classes = mymodel.PPref.size();
         // Allocate Array of complex arrays for this class
-        if (posix_memalign((void **)&mdlClassComplex, MEM_ALIGN, nr_classes * sizeof (std::complex<XFLOAT> *)))
+        if (posix_memalign((void **) &mdlClassComplex, MEM_ALIGN, nr_classes * sizeof (std::complex<XFLOAT> *)))
             CRITICAL(RAMERR);
 
         // Set up XFLOAT complex array shared by all threads for each class
