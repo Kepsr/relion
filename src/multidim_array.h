@@ -542,21 +542,21 @@ class MultidimArray {
     int mFd;  // Mapped file handler
     long int nzyxdimAlloc;  // Number of elements in NZYX in allocated memory
 
-    void attempt_mmap(T *data, FileName &mapFile, int mFd, off_t offset) {
+    void attempt_mmap(T *data, FileName &mapFile, int &mFd, off_t offset) {
         mapFile.initRandom(8);
         mapFile = mapFile.addExtension("tmp");
 
         if ((mFd = open(mapFile.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1)
-            REPORT_ERROR((std::string) "MultidimArray::" + __func__ + ": Error creating map file.");
+            REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": Error creating map file.");
 
         if (lseek(mFd, offset, SEEK_SET) == -1 || ::write(mFd, "", 1) == -1) {
             // Use global ::write (conflict with MultidimArray<T>::write)
             close(mFd);
-            REPORT_ERROR((std::string) "MultidimArray::" + __func__ + ": Error 'stretching' the map file.");
+            REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": Error 'stretching' the map file.");
         }
 
         if ((data = (T*) mmap(0, nzyxdim() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
-            REPORT_ERROR((std::string) "MultidimArray::" + __func__ + ": mmap failed.");
+            REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": mmap failed.");
 
     }
 
@@ -723,7 +723,7 @@ class MultidimArray {
         if (mmapOn) {
             attempt_mmap(data, mapFile, mFd, nzyxdim() * sizeof(T));
         } else {
-            data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
+            data = (T*) RELION_ALIGNED_MALLOC(nzyxdim() * sizeof(T));
             if (!data) REPORT_ERROR("Allocate: No space left");
         }
         nzyxdimAlloc = nzyxdim();
@@ -1009,7 +1009,7 @@ class MultidimArray {
         int new_mFd = 0;
         FileName newMapFile;
 
-        T* new_data;
+        T *new_data;
 
         try {
             if (mmapOn) {
@@ -1084,7 +1084,7 @@ class MultidimArray {
             if (mmapOn) {
                 attempt_mmap(new_data, newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
             } else {
-                new_data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * NZYXdim);
+                new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
             }
         } catch (std::bad_alloc &) {
             REPORT_ERROR("Allocate: No space left");

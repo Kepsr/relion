@@ -375,27 +375,18 @@ class Image {
     int mFd; // Mapped file handle
     size_t mappedSize; // Size of the mapped file
 
-    void attempt_mmap(MultidimArray<T> &data, FileName &mapFile, FILE *fimg, size_t pagesize) {
+    void attempt_mmap(T *data, FileName &mapFile, int &mFd, size_t pagesize) {
 
-        if (NSIZE(data) > 1) {
-            REPORT_ERROR(
-                (std::string) "Image<T>::" + __func__ + ": mmap with multiple \
-                images file not compatible. Try selecting a unique image."
-            );
-        }
+        // if ((mFd = open(mapFile.c_str(), O_RDWR, S_IREAD | S_IWRITE)) == -1)
+        if ((mFd = open(mapFile.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
+            REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": Error opening the image file.");
 
-        fclose(fimg);
-
-        // if ((mFd = open(filename.c_str(), O_RDWR, S_IREAD | S_IWRITE)) == -1)
-        if ((mFd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
-            REPORT_ERROR((std::string) "Image Class::" + __func__ + ": Error opening the image file.");
-
-        char *map;
         mappedSize = pagesize + offset;
 
+        char *map;
         if ((map = (char*) mmap(0, mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
-            REPORT_ERROR((std::string) "Image Class::" + __func__ + ": mmap of image file failed.");
-        data.data = reinterpret_cast<T*> (map + offset);
+            REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": mmap of image file failed.");
+        data = reinterpret_cast<T*> (map + offset);
 
     }
 
@@ -753,7 +744,7 @@ class Image {
         size_t datasize = datasize_n * gettypesize(datatype);
         char * fdata = (char *) askMemory(datasize);
         castPage2Datatype(fdata, MULTIDIM_ARRAY(data), datatype, datasize_n);
-        fwrite( fdata, datasize, 1, fimg );
+        fwrite(fdata, datasize, 1, fimg);
         freeMemory(fdata, datasize);
     }
 
@@ -813,7 +804,14 @@ class Image {
         }
 
         if (mmapOn) {
-            attempt_mmap(data, filename, fimg, pagesize);
+            if (NSIZE(data) > 1) {
+                REPORT_ERROR(
+                    (std::string) "Image<T>::" + __func__ + ": mmap with multiple \
+                    images file not compatible. Try selecting a unique image."
+                );
+            }
+            fclose(fimg);
+            attempt_mmap(data.data, filename, mFd, pagesize);
         } else {
             // Reset select to get the correct offset
             if (select_img < 0) { select_img = 0; }
