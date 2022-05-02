@@ -375,8 +375,6 @@ class Image {
     int mFd; // Mapped file handle
     size_t mappedSize; // Size of the mapped file
 
-    private:
-
     void attempt_mmap(MultidimArray<T> &data, FileName &mapFile, FILE *fimg, size_t pagesize) {
 
         if (NSIZE(data) > 1) {
@@ -805,7 +803,7 @@ class Image {
         size_t haveread_n = 0; // number of pixels (not necessarily bytes!) processed so far
 
         // data.mmapOn takes priority over this->mmapOn
-        if (data.mmapOn || datatype == UHalf) { mmapOn = false; }
+        if (data.getMmap() || datatype == UHalf) { mmapOn = false; }
 
         // Flag to know that data is not going to be mapped although mmapOn is true
         if (mmapOn && !checkMmapT(datatype)) {
