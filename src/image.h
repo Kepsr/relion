@@ -368,9 +368,38 @@ class Image {
     int swap; // Perform byte swapping upon reading
     long int replaceNsize; // Stack size in the replace case
     bool _exists;  // Does the target file exist? 0 if file does not exist or is not a stack.
-    bool mmapOn; // Mapping when loading from file
-    int mFd; // Handle the file in reading method and mmap
+
+    // Allocation-related member variables
+
+    bool mmapOn; // Whether to alloc memory or map to a file
+    int mFd; // Mapped file handle
     size_t mappedSize; // Size of the mapped file
+
+    private:
+
+    void attempt_mmap(MultidimArray<T> &data, FileName &mapFile, FILE *fimg, size_t pagesize) {
+
+        if (NSIZE(data) > 1) {
+            REPORT_ERROR(
+                (std::string) "Image<T>::" + __func__ + ": mmap with multiple \
+                images file not compatible. Try selecting a unique image."
+            );
+        }
+
+        fclose(fimg);
+
+        // if ((mFd = open(filename.c_str(), O_RDWR, S_IREAD | S_IWRITE)) == -1)
+        if ((mFd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
+            REPORT_ERROR((std::string) "Image Class::" + __func__ + ": Error opening the image file.");
+
+        char *map;
+        mappedSize = pagesize + offset;
+
+        if ((map = (char*) mmap(0, mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
+            REPORT_ERROR((std::string) "Image Class::" + __func__ + ": mmap of image file failed.");
+        data.data = reinterpret_cast<T*> (map + offset);
+
+    }
 
     public:
 
@@ -409,7 +438,7 @@ class Image {
      */
     void clear() {
         if (mmapOn) {
-            munmap(data.data - offset,mappedSize);
+            munmap(data.data - offset, mappedSize);
             close(mFd);
             data.data = NULL;
         } else {
@@ -713,7 +742,7 @@ class Image {
             std::cerr << "Datatype= " << datatype << std::endl;
             REPORT_ERROR(" ERROR: cannot cast datatype to T");
         }
-        //  int * iTemp = (int*) map;
+        //  int *iTemp = (int*) map;
         //  ptrDest = reinterpret_cast<T*> (iTemp);
     }
 
@@ -759,16 +788,15 @@ class Image {
         std::cerr << " " << __func__ << " flag= " << dataflag << std::endl;
         #endif
 
-        if (dataflag < 1)
-            return 0;
+        if (dataflag < 1) return 0;
 
-        size_t myoffset, readsize, readsize_n, pagemax = 1073741824; // 1 GB
         size_t datatypesize; // bytes
         size_t pagesize; // bytes
         if (datatype == UHalf) {
             if (YXSIZE(data) % 2 != 0) {
                 REPORT_ERROR("For UHalf, YXSIZE(data) must be even.");
             }
+            /// BUG: datatypesize not set
             pagesize = ZYXSIZE(data) / 2;
         } else {
             datatypesize = gettypesize(datatype);
@@ -776,12 +804,8 @@ class Image {
         }
         size_t haveread_n = 0; // number of pixels (not necessarily bytes!) processed so far
 
-        // Multidimarray mmapOn is priority over image mmapOn
-        if (data.mmapOn)
-            mmapOn = false;
-
-        if (datatype == UHalf) 
-            mmapOn = false;
+        // data.mmapOn takes priority over this->mmapOn
+        if (data.mmapOn || datatype == UHalf) { mmapOn = false; }
 
         // Flag to know that data is not going to be mapped although mmapOn is true
         if (mmapOn && !checkMmapT(datatype)) {
@@ -791,36 +815,16 @@ class Image {
         }
 
         if (mmapOn) {
-            if (NSIZE(data) > 1) {
-                REPORT_ERROR(
-                    (std::string) "Image Class::" + __func__ + ": mmap with multiple \
-                    images file not compatible. Try selecting a unique image."
-                );
-            }
-
-            fclose(fimg);
-
-            // if ((mFd = open(filename.c_str(), O_RDWR, S_IREAD | S_IWRITE)) == -1)
-            if ((mFd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
-                REPORT_ERROR((std::string) "Image Class::" + __func__ + ": Error opening the image file.");
-
-            char *map;
-            mappedSize = pagesize + offset;
-
-            if ((map = (char*) mmap(0,mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
-                REPORT_ERROR((std::string) "Image Class::" + __func__ + ": mmap of image file failed.");
-            data.data = reinterpret_cast<T*> (map + offset);
+            attempt_mmap(data, filename, fimg, pagesize);
         } else {
             // Reset select to get the correct offset
             if (select_img < 0) { select_img = 0; }
 
-            char *page = NULL;
-
             // Allocate memory for image data (Assume xdim, ydim, zdim and ndim are already set
             // if memory already allocated use it (no resize allowed)
             data.coreAllocateReuse();
-            myoffset = offset + select_img*(pagesize + pad);
-            //#define DEBUG
+            size_t myoffset = offset + select_img * (pagesize + pad);
+            // #define DEBUG
 
             #ifdef DEBUG
             data.printShape();
@@ -829,7 +833,8 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            page = (char *) askMemory(std::max(pagesize, pagemax) * sizeof(char));
+            const size_t pagemax = 1073741824; // 1 GB
+            char *page = askMemory(std::max(pagesize, pagemax) * sizeof(char));
 
             // Because we requested XYSIZE to be even for UHalf, this is always safe.
             if (fseek(fimg, myoffset, SEEK_SET) != 0) return -1;
@@ -838,10 +843,10 @@ class Image {
                 for (size_t j = 0; j < pagesize; j += pagemax) {
                     // pagesize size of object
                     // Read next page. Divide pages larger than pagemax
-                    readsize = pagesize - j;
+                    size_t readsize = pagesize - j;
                     if (readsize > pagemax) { readsize = pagemax; }
 
-                    readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
+                    size_t readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
 
                     #ifdef DEBUG
                     std::cout << "NX = " << XSIZE(data) << " NY = " << YSIZE(data) << " NZ = " << ZSIZE(data) << std::endl;
