@@ -2017,15 +2017,15 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             // Check that the average in the noise area is approximately zero and the stddev is one
             if (!dont_raise_norm_error && verb > 0) {
                 // NEW METHOD
-                RFLOAT sum, sum2, sphere_radius_pix, cyl_radius_pix;
+                RFLOAT sphere_radius_pix, cyl_radius_pix;
                 cyl_radius_pix = helical_tube_outer_diameter / (2.0 * my_pixel_size);
                 sphere_radius_pix = particle_diameter / (2.0 * my_pixel_size);
-                calculateBackgroundAvgStddev(img, sum, sum2, round(sphere_radius_pix), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
+                Stats<RFLOAT> bg_stats = calculateBackgroundAvgStddev(img, round(sphere_radius_pix), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
 
                 // Average should be close to 0, i.e. max +/-50% of stddev...
                 // Stddev should be close to 1, i.e. larger than 0.5 and smaller than 2)
-                if (abs(sum / sum2) > 0.5 || sum2 < 0.5 || sum2 > 2.0) {
-                    std::cerr << " fn_img= " << fn_img << " bg_avg= " << sum << " bg_stddev= " << sum2 << std::flush;
+                if (abs(bg_stats.avg / bg_stats.stddev) > 0.5 || bg_stats.stddev < 0.5 || bg_stats.stddev > 2.0) {
+                    std::cerr << " fn_img= " << fn_img << " bg_avg= " << bg_stats.avg << " bg_stddev= " << bg_stats.stddev << std::flush;
                     if (is_helical_segment) {
                         std::cerr << " tube_bg_radius= " << cyl_radius_pix << " psi_deg= " << psi_deg << " tilt_deg= " << tilt_deg << " (this is a particle from a helix)" << std::flush;
                     } else {

@@ -320,22 +320,21 @@ class particle_reposition_parameters {
                         }
 
                         RFLOAT psi_deg = 0.0, tilt_deg = 90.0;
-                        RFLOAT part_avg, part_stdev;
                         if (optimiser.do_helical_refine) {
                             tilt_deg = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR, ori_img_id);
                             psi_deg  = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR,  ori_img_id);
                         }
 
-                        calculateBackgroundAvgStddev(
-                            Ipart, part_avg, norm_factor, norm_radius, optimiser.do_helical_refine,
+                        norm_factor = calculateBackgroundAvgStddev(
+                            Ipart, norm_radius, optimiser.do_helical_refine,
                             optimiser.helical_tube_outer_diameter / (2.0 * mic_pixel_size), tilt_deg, psi_deg
-                        );
+                        ).stddev;  // Could do with just calculating stddev.
 
                         // Apply the per-particle norm_correction term
                         if (optimiser.do_norm_correction) {
-                            RFLOAT mynorm = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, ori_img_id);
                             // TODO: check whether this is the right way around!!!
-                            norm_factor *= mynorm / optimiser.mymodel.avg_norm_correction;
+                            norm_factor *= optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, ori_img_id)
+                                         / optimiser.mymodel.avg_norm_correction;
                         }
                     }
 

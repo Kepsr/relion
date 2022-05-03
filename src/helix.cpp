@@ -4393,7 +4393,7 @@ void normaliseHelicalSegments(
     RFLOAT helical_outer_diameter_A, RFLOAT pixel_size_A
 ) {
     bool is_3D_data = false, have_tilt_prior = false, have_psi_prior = false, read_angpix_from_star = false;
-    RFLOAT rot_deg = 0.0, tilt_deg = 0.0, psi_deg = 0.0, avg = 0.0, stddev = 0.0, val = 0.0, det_pixel_size = 0.0, mag = 0.0;
+    RFLOAT rot_deg = 0.0, tilt_deg = 0.0, psi_deg = 0.0, val = 0.0, det_pixel_size = 0.0, mag = 0.0;
     Image<RFLOAT> img0;
     MetaDataTable MD;
     FileName img_name, file_ext;
@@ -4445,22 +4445,22 @@ void normaliseHelicalSegments(
             rot_deg = tilt_deg = 0.0;
 
         // Calculate avg and stddev
-        calculateBackgroundAvgStddev(
-            img0, avg, stddev, 0, true,
+        Stats<RFLOAT> bg_stats = calculateBackgroundAvgStddev(
+            img0, 0, true,
             helical_outer_diameter_A * 0.5 / pixel_size_A,
             tilt_deg, psi_deg
         );
-        if (stddev < 0.0001) {
-            std::cout << " !!! WARNING: " << img_name << "  has bg_avg = " << avg << " and bg_stddev = " << stddev << " . bg_stddev is set to 0.0001. The image cannot be properly normalised!" << std::endl;
-            stddev = 0.0001;
+        if (bg_stats.stddev < 0.0001) {
+            std::cout << " !!! WARNING: " << img_name << "  has bg_avg = " << bg_stats.avg << " and bg_stddev = " << bg_stats.stddev << " . bg_stddev is set to 0.0001. The image cannot be properly normalised!" << std::endl;
+            bg_stats.stddev = 0.0001;
         } else {
-            std::cout << "  Normalising " << img_name << " with bg_avg = " << avg << " and bg_stddev = " << stddev << " . " << std::endl;
+            std::cout << "  Normalising " << img_name << " with bg_avg = " << bg_stats.avg << " and bg_stddev = " << bg_stats.stddev << " . " << std::endl;
         }
 
         // Normalise
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img0()) {
             val = DIRECT_MULTIDIM_ELEM(img0(), n);
-            DIRECT_MULTIDIM_ELEM(img0(), n) = (val - avg) / stddev;
+            DIRECT_MULTIDIM_ELEM(img0(), n) = (val - bg_stats.avg) / bg_stats.stddev;
         }
 
         // Rename

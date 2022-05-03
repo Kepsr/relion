@@ -1075,9 +1075,8 @@ void normalise(
     RFLOAT tilt_deg = 0.0, RFLOAT psi_deg = 0.0
 );
 
-void calculateBackgroundAvgStddev(
+Stats<RFLOAT> calculateBackgroundAvgStddev(
     Image<RFLOAT> &I,
-    RFLOAT &avg, RFLOAT &stddev,
     int bg_radius,
     bool is_helical_segment = false,
     RFLOAT helical_mask_tube_outer_radius_pix = -1.0,

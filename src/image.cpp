@@ -93,11 +93,13 @@ void normalise(
 
     if (white_dust_stddev > 0.0 || black_dust_stddev > 0.0) {
         // Calculate initial avg and stddev values
-        calculateBackgroundAvgStddev(
-            I, avg, stddev, bg_radius,
+        Stats<RFLOAT> stats = calculateBackgroundAvgStddev(
+            I, bg_radius,
             is_helical_segment, helical_mask_tube_outer_radius_pix,
             tilt_deg, psi_deg
         );
+        avg = stats.avg;
+        stddev = stats.stddev;
 
         // Remove white and black noise
         if (white_dust_stddev > 0.0)
@@ -116,11 +118,13 @@ void normalise(
     }
 
     // Calculate avg and stddev (also redo if dust was removed!)
-    calculateBackgroundAvgStddev(
-        I, avg, stddev, bg_radius,
+    Stats<RFLOAT> stats = calculateBackgroundAvgStddev(
+        I, bg_radius,
         is_helical_segment, helical_mask_tube_outer_radius_pix,
         tilt_deg, psi_deg
     );
+    avg = stats.avg;
+    stddev = stats.stddev;
 
     if (stddev < 1e-10) {
         std::cerr << " WARNING! Stddev of image " << I.name() << " is zero! Skipping normalisation..." << std::endl;
@@ -131,18 +135,16 @@ void normalise(
     }
 }
 
-void calculateBackgroundAvgStddev(
+Stats<RFLOAT> calculateBackgroundAvgStddev(
     Image<RFLOAT> &I,
-    RFLOAT &avg, RFLOAT &stddev,
     int bg_radius,
     bool is_helical_segment,
     RFLOAT helical_mask_tube_outer_radius_pix,
     RFLOAT tilt_deg, RFLOAT psi_deg
 ) {
     int bg_radius2 = bg_radius * bg_radius;
-    RFLOAT sum, sum2, n;
-    sum = sum2 = n = 0.0;
-    avg = stddev = 0.0;
+    RFLOAT sum = 0.0, sum_of_squares = 0.0, avg = 0.0, stddev = 0.0;
+    long int n = 0;
 
     if (is_helical_segment) {
         int dim = I().getDim();
@@ -192,22 +194,22 @@ void calculateBackgroundAvgStddev(
             RFLOAT d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
 
             if (d > helical_mask_tube_outer_radius_pix) {
-                RFLOAT val = A3D_ELEM(I(), k, i, j);
-                sum += val;
-                sum2 += val * val;
-                n += 1.0;
+                RFLOAT x = A3D_ELEM(I(), k, i, j);
+                sum += x;
+                sum_of_squares += x * x;
+                n += 1;
 
                 #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
                 A3D_ELEM(img_test(), k, i, j) = 1.0; // Mark bg pixels as 1, others as 0
                 #endif
             }
         }
-        if (n < 0.9) {
+        if (n < 1) {
             REPORT_ERROR("image.cpp::calculateBackgroundAvgStddev(): No pixels in background are found. Radius of helical mask is too large.");
         }
 
-        avg    = sum / n;
-        stddev = sqrt(sum2 / n - avg * avg);
+        avg    = sum / (RFLOAT) n;
+        stddev = sqrt(sum_of_squares / (RFLOAT) n - avg * avg);
 
         #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
         img_test.write(fn_test);
@@ -216,21 +218,21 @@ void calculateBackgroundAvgStddev(
         // Calculate avg in the background pixels
         FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
             if (k * k + i * i + j * j > bg_radius2) {
-                RFLOAT val = A3D_ELEM(I(), k, i, j);
-                sum  += val;
-                sum2 += val * val;
-                n += 1.0;
+                RFLOAT x = A3D_ELEM(I(), k, i, j);
+                sum += x;
+                sum_of_squares += x * x;
+                n += 1;
             }
         }
-        if (n < 0.9) {
+        if (n < 1) {
             REPORT_ERROR("image.cpp::calculateBackgroundAvgStddev(): No pixels in background are found. Radius of circular mask is too large.");
         }
 
-        avg = sum / n;
-        stddev = sqrt(sum2 / n - avg * avg);
+        avg = sum / (RFLOAT) n;
+        stddev = sqrt(sum_of_squares / (RFLOAT) n - avg * avg);
     }
 
-    return;
+    return { avg, stddev };
 }
 
 void subtractBackgroundRamp(
