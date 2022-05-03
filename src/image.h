@@ -71,7 +71,7 @@
 /** DataType
  * To indicate the type of the image data.
  */
-typedef enum {
+enum DataType {
     Unknown_Type,   // Undefined data type
     UChar,          // Unsigned character or byte type
     SChar,          // Signed character (for CCP4)
@@ -84,19 +84,21 @@ typedef enum {
     Double,         // Double precision floating point (8-byte)
     Boolean,        // Boolean (1-byte?)
     UHalf,          // Signed 4-bit integer (SerialEM extension)
-    LastEntry = 15  // This must be the last entry
-} DataType;
+};
 
+/** Returns memory size of datatype
+ */
+unsigned long gettypesize(DataType type);
 
 /** WriteMode
  * To indicate the writing behavior.
  */
-typedef enum {
+enum WriteMode {
     WRITE_OVERWRITE, // Forget about the old file and overwrite it
     WRITE_APPEND,	 // Append and object at the end of a stack, so far can not append stacks
     WRITE_REPLACE,	 // Replace a particular object with another
     WRITE_READONLY	 // Read-only
-} WriteMode;
+};
 
 
 extern "C" {
@@ -315,23 +317,19 @@ class fImageHandler {
         }
 
         if (!isTiff && fclose(fimg) != 0) {
-            REPORT_ERROR((std::string)"Cannot close image file ");
+            REPORT_ERROR((std::string) "Cannot close image file ");
         } else {
             fimg = NULL;
         }
 
         if (fhed && fclose(fhed) != 0) {
-            REPORT_ERROR((std::string)"Cannot close header file ");
+            REPORT_ERROR((std::string) "Cannot close header file ");
         } else {
             fhed = NULL;
         }
     }
 
 };
-
-/** Returns memory size of datatype
- */
-unsigned long gettypesize(DataType type);
 
 /** Convert datatype string to datatypr enun */
 int datatypeString2Int(std::string s);
