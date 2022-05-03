@@ -251,7 +251,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
     if (header->mz && header->c != 0)//zx
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT)header->c / header->mz);
 
-    if (isStack && dataflag < 0) {
+    if (isStack && !dataflag) {
         // Don't read the individual header and the data if not necessary
         freeMemory(header, sizeof(MRChead));
         return 0;

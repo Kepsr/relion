@@ -172,7 +172,7 @@ int Image<T>::readIMAGIC(long int img_select) {
 
     offset = 0;   // separate header file
 
-    if (dataflag < 0) {
+    if (!dataflag) {
         // Don't read the individual header and the data if not necessary
     	delete header;
     	return 0;

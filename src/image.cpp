@@ -430,7 +430,7 @@ int Image<T>::_read(
     int err = 0;
 
     // Check whether to read the data or only the header
-    dataflag = readdata ? 1 : -1;
+    dataflag = readdata;
 
     // Check whether to map the data or not
     mmapOn = mapData;
@@ -445,16 +445,15 @@ int Image<T>::_read(
     if (dump > 0) { dump--; }
     filename = name;
 
-    if (select_img == -1)
-        select_img = dump;
+    if (select_img == -1) { select_img = dump; }
 
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG
         std::cerr << "READ\n" <<
-        "name="<<name <<std::endl;
-        std::cerr << "ext= "<<ext_name <<std::endl;
-        std::cerr << " now reading: "<< filename <<" dataflag= "<<dataflag
+        "name=" << name << std::endl;
+        std::cerr << "ext= " << ext_name << std::endl;
+        std::cerr << " now reading: " << filename << " dataflag= " << dataflag
         << " select_img "  << select_img << std::endl;
     #endif
     #undef DEBUG
@@ -560,7 +559,6 @@ void Image<T>::_write(
         Dimensions dimensions = this->getDimensions();
 
         Image<T> auxI;
-        auxI.dataflag = -2;
         auxI.read(filNamePlusExt, false);
         Dimensions auxIdimensions = auxI.getDimensions();
         replaceNsize = auxIdimensions.n;
@@ -617,7 +615,7 @@ int Image<T>::readTiffInMemory(
     handle.size = size;
     handle.pos = 0;
     // Check whether to read the data or only the header
-    dataflag = readdata ? 1 : -1;
+    dataflag = readdata;
 
     // Check whether to map the data or not
     mmapOn = mapData;

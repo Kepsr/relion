@@ -354,7 +354,7 @@ class Image {
     FILE *fimg; // Image File handler
     FILE *fhed; // Image File header handler
     bool stayOpen; // To maintain the image file open after read/write
-    int dataflag; // Flag to force reading of the data
+    bool dataflag;  // Control reading of the data
     unsigned long i; // Current image number (may be > NSIZE)
     unsigned long offset; // Data offset
     int swap; // Perform byte swapping upon reading
@@ -426,7 +426,7 @@ class Image {
             data.clear();
         }
 
-        dataflag = -1;
+        dataflag = false;
         i = 0;
         filename = "";
         offset = 0;
@@ -769,7 +769,7 @@ class Image {
         std::cerr << " " << __func__ << " flag= " << dataflag << std::endl;
         #endif
 
-        if (dataflag < 1) return 0;
+        if (!dataflag) return 0;
 
         size_t datatypesize; // bytes
         size_t pagesize; // bytes

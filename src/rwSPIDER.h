@@ -184,7 +184,7 @@ int Image<T>::readSPIDER(long int img_select) {
         // Only handle stacks of images, not of volumes.
     );
 
-    if (isStack && dataflag < 0) {
+    if (isStack && !dataflag) {
         // Don't read the individual header and the data if not necessary
         delete header;
         return 0;
