@@ -545,42 +545,34 @@ void Image<T>::_write(
     if (getSize() < 1)
         REPORT_ERROR("write Image ERROR: image is empty!");
 
-    // CHECK FOR INCONSISTENCIES BETWEEN data.xdim and x, etc???
-    Dimensions dimensions = this->getDimensions();
-    int Xdim = dimensions.x;
-    int Ydim = dimensions.y;
-    int Zdim = dimensions.z;
-    long int Ndim = dimensions.n;
-
-    Image<T> auxI;
     replaceNsize = 0; // reset replaceNsize in case image is reused
     if (select_img == -1 && mode == WRITE_REPLACE) {
         REPORT_ERROR("write: Please specify object to be replaced");
     } else if (!_exists && mode == WRITE_REPLACE) {
-        std:: stringstream replace_number;
+        std::stringstream replace_number;
         replace_number << select_img;
         REPORT_ERROR((std::string)
             "Cannot replace object number: " + replace_number.str()
             + " in file " + filename + ". It does not exist"
         );
     } else if (_exists && (mode == WRITE_REPLACE || mode == WRITE_APPEND)) {
+        // CHECK FOR INCONSISTENCIES BETWEEN data.xdim and x, etc???
+        Dimensions dimensions = this->getDimensions();
+
+        Image<T> auxI;
         auxI.dataflag = -2;
-        auxI.read(filNamePlusExt,false);
-        Dimensions dimensions = auxI.getDimensions();
-        int _Xdim = dimensions.x;
-        int _Ydim = dimensions.y;
-        int _Zdim = dimensions.z;
-        long int _Ndim = dimensions.n;
-        replaceNsize=_Ndim;
-        if (Xdim!=_Xdim ||
-            Ydim!=_Ydim ||
-            Zdim!=_Zdim
-            )
+        auxI.read(filNamePlusExt, false);
+        Dimensions auxIdimensions = auxI.getDimensions();
+        replaceNsize = auxIdimensions.n;
+        if (
+            dimensions.x != auxIdimensions.x ||
+            dimensions.y != auxIdimensions.y ||
+            dimensions.z != auxIdimensions.z
+        )
             REPORT_ERROR("write: target and source objects have different size");
-        if (mode==WRITE_REPLACE && select_img>_Ndim)
+        if (mode == WRITE_REPLACE && select_img > auxIdimensions.n)
             REPORT_ERROR("write: cannot replace image stack is not large enough");
-        if (auxI.replaceNsize <1 &&
-            (mode==WRITE_REPLACE || mode==WRITE_APPEND))
+        if (auxI.replaceNsize < 1)
             REPORT_ERROR("write: output file is not an stack");
     } else if (!_exists && mode == WRITE_APPEND) {} else if (mode == WRITE_READONLY) {
         // If new file we are in the WRITE_OVERWRITE mode
@@ -615,7 +607,7 @@ void Image<T>::_write(
 
 template <typename T>
 int Image<T>::readTiffInMemory(
-    void* buf, size_t size, bool readdata, long int select_img,
+    void *buf, size_t size, bool readdata, long int select_img,
     bool mapData, bool is_2D
 ) {
     int err = 0;
