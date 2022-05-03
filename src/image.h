@@ -1066,32 +1066,37 @@ class Image {
 // Some image-specific operations
 
 // For image normalisation
-void normalise(Image<RFLOAT> &I,
-               int bg_radius,
-               RFLOAT white_dust_stddev,
-               RFLOAT black_dust_stddev,
-               bool do_ramp,
-               bool is_helical_segment = false,
-               RFLOAT helical_mask_tube_outer_radius_pix = -1.,
-               RFLOAT tilt_deg = 0.,
-               RFLOAT psi_deg = 0.);
-void calculateBackgroundAvgStddev(Image<RFLOAT> &I,
-                                  RFLOAT &avg,
-                                  RFLOAT &stddev,
-                                  int bg_radius,
-                                  bool is_helical_segment = false,
-                                  RFLOAT helical_mask_tube_outer_radius_pix = -1.,
-                                  RFLOAT tilt_deg = 0.,
-                                  RFLOAT psi_deg = 0.);
-void subtractBackgroundRamp(Image<RFLOAT> &I,
-                            int bg_radius,
-                            bool is_helical_segment = false,
-                            RFLOAT helical_mask_tube_outer_radius_pix = -1.,
-                            RFLOAT tilt_deg = 0.,
-                            RFLOAT psi_deg = 0.);
+void normalise(
+    Image<RFLOAT> &I,
+    int bg_radius,
+    RFLOAT white_dust_stddev, RFLOAT black_dust_stddev,
+    bool do_ramp, bool is_helical_segment = false,
+    RFLOAT helical_mask_tube_outer_radius_pix = -1.0,
+    RFLOAT tilt_deg = 0.0, RFLOAT psi_deg = 0.0
+);
+
+void calculateBackgroundAvgStddev(
+    Image<RFLOAT> &I,
+    RFLOAT &avg, RFLOAT &stddev,
+    int bg_radius,
+    bool is_helical_segment = false,
+    RFLOAT helical_mask_tube_outer_radius_pix = -1.0,
+    RFLOAT tilt_deg = 0.0, RFLOAT psi_deg = 0.0
+);
+
+void subtractBackgroundRamp(
+    Image<RFLOAT> &I,
+    int bg_radius,
+    bool is_helical_segment = false,
+    RFLOAT helical_mask_tube_outer_radius_pix = -1.0,
+    RFLOAT tilt_deg = 0.0, RFLOAT psi_deg = 0.0
+);
 
 // For dust removal
-void removeDust(Image<RFLOAT> &I, bool is_white, RFLOAT thresh, RFLOAT avg, RFLOAT stddev);
+void removeDust(
+    Image<RFLOAT> &I, bool is_white, RFLOAT thresh, 
+    RFLOAT avg, RFLOAT stddev
+);
 
 // for contrast inversion
 void invert_contrast(Image<RFLOAT> &I);
