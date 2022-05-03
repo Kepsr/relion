@@ -90,6 +90,9 @@ enum DataType {
  */
 unsigned long gettypesize(DataType type);
 
+/** Convert string to int corresponding to value in Datatype enum */
+int datatypeString2Int(std::string s);
+
 /** WriteMode
  * To indicate the writing behavior.
  */
@@ -100,6 +103,26 @@ enum WriteMode {
     WRITE_READONLY	 // Read-only
 };
 
+
+static std::string writemode2string(WriteMode mode, bool exist) {
+
+    switch (mode) {
+
+        case WRITE_READONLY:
+        return "r";
+
+        case WRITE_OVERWRITE:
+        return "w";
+
+        case WRITE_APPEND:
+        return exist ? "r+" : "w+";  // w+ will destroy file contents. We don't want that.
+
+        case WRITE_REPLACE:
+        return "r+";
+
+    }
+
+}
 
 extern "C" {
 
@@ -214,10 +237,7 @@ class fImageHandler {
         exist = false;
     }
 
-    // Destructor: closes file (if it still open)
-    ~fImageHandler() {
-        closeFile();
-    }
+    ~fImageHandler() { closeFile(); }
 
     void openFile(const FileName &name, int mode = WRITE_READONLY) {
 
@@ -245,33 +265,10 @@ class fImageHandler {
 
         exist = exists(fileName);
 
-        std::string wmstr; // Write mode string
+        if (mode == WRITE_READONLY and !exist)
+        REPORT_ERROR((std::string) "Can't read file " + fileName + ". It doesn't exist!");
 
-        switch (mode) {
-
-            case WRITE_READONLY:
-            if (!exist)
-                REPORT_ERROR((std::string) "Can't read file " + fileName + ". It doesn't exist!");
-            wmstr = "r";
-            break;
-
-            case WRITE_OVERWRITE:
-            wmstr = "w";
-            break;
-
-            case WRITE_APPEND:
-            if (exist) {
-                wmstr = "r+";
-            } else {
-                wmstr = "w+";
-            }
-            break;
-
-            case WRITE_REPLACE:
-            wmstr = "r+";
-            break;
-
-        }
+        std::string wmstr = writemode2string((WriteMode) mode, exist); // Write mode string
 
         if (ext_name.contains("img") || ext_name.contains("hed")) {
             fileName = fileName.withoutExtension();
@@ -303,6 +300,7 @@ class fImageHandler {
 
     }
 
+    // Close file (if open)
     void closeFile() {
         ext_name = "";
         exist = false;
@@ -330,9 +328,6 @@ class fImageHandler {
     }
 
 };
-
-/** Convert datatype string to datatypr enun */
-int datatypeString2Int(std::string s);
 
 /** Swapping trigger.
  * Threshold file z size above which bytes are swapped.
