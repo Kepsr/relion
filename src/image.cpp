@@ -61,16 +61,16 @@ unsigned long gettypesize(DataType type) {
     }
 }
 
-int datatypeString2Int(std::string s) {
-    toLower(s);
-    if (!strcmp(s.c_str(), "uchar"))  return UChar;
-    if (!strcmp(s.c_str(), "ushort")) return UShort;
-    if (!strcmp(s.c_str(), "short"))  return Short;
-    if (!strcmp(s.c_str(), "uint"))   return UInt;
-    if (!strcmp(s.c_str(), "int"))    return Int;
-    if (!strcmp(s.c_str(), "float"))  return Float;
-    REPORT_ERROR("datatypeString2int; unknown datatype");
-}
+// int DataType::String2Int(std::string s) {
+//     toLower(s);
+//     if (!strcmp(s.c_str(), "uchar"))  return UChar;
+//     if (!strcmp(s.c_str(), "ushort")) return UShort;
+//     if (!strcmp(s.c_str(), "short"))  return Short;
+//     if (!strcmp(s.c_str(), "uint"))   return UInt;
+//     if (!strcmp(s.c_str(), "int"))    return Int;
+//     if (!strcmp(s.c_str(), "float"))  return Float;
+//     REPORT_ERROR("DataType::String2int; unknown datatype");
+// }
 
 // Some image-specific operations
 void normalise(

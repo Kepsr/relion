@@ -66,11 +66,8 @@
 /// @defgroup Images Images
 //@{
 
-// Values for types
-
-/** DataType
- * To indicate the type of the image data.
- */
+// An ad-hoc representation of the type system
+// Allows for image data type inspection/manipulation at run time
 enum DataType {
     Unknown_Type,   // Undefined data type
     UChar,          // Unsigned character or byte type
@@ -86,12 +83,12 @@ enum DataType {
     UHalf,          // Signed 4-bit integer (SerialEM extension)
 };
 
+// Convert string to int corresponding to value in enum
+// int DataType::String2Int(std::string s);
+
 /** Returns memory size of datatype
  */
 unsigned long gettypesize(DataType type);
-
-/** Convert string to int corresponding to value in Datatype enum */
-int datatypeString2Int(std::string s);
 
 /** WriteMode
  * To indicate the writing behavior.
@@ -511,102 +508,46 @@ class Image {
     /** Cast a page of data from type dataType to type Tdest
      *	  input pointer char *
      */
-    void castPage2T(char *page, T *ptrDest, DataType datatype, size_t pageSize ) {
+    void castPage2T(char *page, T *ptrDest, DataType datatype, size_t pageSize) {
         switch (datatype) {
 
             case Unknown_Type:
             REPORT_ERROR("ERROR: datatype is Unknown_Type");
 
             case UChar:
-            if (typeid(T) == typeid(unsigned char)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                unsigned char *ptr = (unsigned char *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptrDest[i] = (T) ptr[i];
-            }
+            cast_page_from<unsigned char>(page, ptrDest, pageSize);
             break;
 
             case SChar:
-            if (typeid(T) == typeid(signed char)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                signed char *ptr = (signed char *) page;
-                for (size_t i = 0; i < pageSize; i++) {
-                    ptrDest[i] = (T) ptr[i];
-                }
-            }
+            cast_page_from<signed char>(page, ptrDest, pageSize);
             break;
 
             case UShort:
-            if (typeid(T) == typeid(unsigned short)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                unsigned short *ptr = (unsigned short *) page;
-                for (size_t i = 0; i < pageSize; i++) {
-                    ptrDest[i] = (T) ptr[i];
-                }
-            }
+            cast_page_from<unsigned short>(page, ptrDest, pageSize);
             break;
 
             case Short:
-            if (typeid(T) == typeid(short)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                short *ptr = (short *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptrDest[i] = (T) ptr[i];
-            }
+            cast_page_from<short>(page, ptrDest, pageSize);
             break;
 
             case UInt:
-            if (typeid(T) == typeid(unsigned int)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                unsigned int *ptr = (unsigned int *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptrDest[i] = (T) ptr[i];
-            }
+            cast_page_from<unsigned int>(page, ptrDest, pageSize);
             break;
 
             case Int:
-            if (typeid(T) == typeid(int)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                int *ptr = (int *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptrDest[i] = (T) ptr[i];
-            }
+            cast_page_from<int>(page, ptrDest, pageSize);
             break;
 
             case Long:
-            if (typeid(T) == typeid(long)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                long *ptr = (long *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptrDest[i] = (T) ptr[i];
-            }
+            cast_page_from<long>(page, ptrDest, pageSize);
             break;
 
             case Float:
-            if (typeid(T) == typeid(float)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                float *ptr = (float *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptrDest[i] = (T) ptr[i];
-            }
+            cast_page_from<float>(page, ptrDest, pageSize);
             break;
 
             case Double:
-            if (typeid(T) == typeid(RFLOAT)) {
-                memcpy(ptrDest, page, pageSize * sizeof(T));
-            } else {
-                RFLOAT *ptr = (RFLOAT *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptrDest[i] = (T) ptr[i];
-            }
+            cast_page_from<RFLOAT>(page, ptrDest, pageSize);
             break;
 
             case UHalf:
@@ -632,6 +573,18 @@ class Image {
         }
     }
 
+    template <typename T2>
+    void cast_page_from(char *page, T *dest, size_t pageSize) {
+        if (typeid(T) == typeid(T2)) {
+            memcpy(dest, page, pageSize * sizeof(T));
+        } else {
+            T2 *src = (T2 *) page;
+            for (size_t i = 0; i < pageSize; i++) {
+                dest[i] = (T) src[i];
+            }
+        }
+    }
+
     /** Cast page from T to datatype
      *  input pointer char *
      */
@@ -639,53 +592,23 @@ class Image {
         switch (datatype) {
 
             case Float:
-            if (typeid(T) == typeid(float)) {
-                memcpy(page, srcPtr, pageSize * sizeof(T));
-            } else {
-                float *ptr = (float *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptr[i] = (float) srcPtr[i];
-            }
+            cast_page_to<float>(page, srcPtr, pageSize);
             break;
 
             case Double:
-            if (typeid(T) == typeid(RFLOAT)) {
-                memcpy(page, srcPtr, pageSize * sizeof(T));
-            } else {
-                RFLOAT *ptr = (RFLOAT *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptr[i] = (RFLOAT) srcPtr[i];
-            }
+            cast_page_to<RFLOAT>(page, srcPtr, pageSize);
             break;
 
             case Short: 
-            if (typeid(T) == typeid(short)) {
-                memcpy(page, srcPtr, pageSize * sizeof(T));
-            } else {
-                short *ptr = (short *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptr[i] = (short) srcPtr[i];
-            }
+            cast_page_to<short>(page, srcPtr, pageSize);
             break;
 
             case UShort:
-            if (typeid(T) == typeid(unsigned short)) {
-                memcpy(page, srcPtr, pageSize * sizeof(T));
-            } else {
-                unsigned short *ptr = (unsigned short *)page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptr[i] = (unsigned short) srcPtr[i];
-            }
+            cast_page_to<unsigned short>(page, srcPtr, pageSize);
             break;
 
             case UChar:
-            if (typeid(T) == typeid(unsigned char)) {
-                memcpy(page, srcPtr, pageSize * sizeof(T));
-            } else {
-                unsigned char *ptr = (unsigned char *) page;
-                for (size_t i = 0; i < pageSize; i++)
-                    ptr[i] = (unsigned char) srcPtr[i];
-            }
+            cast_page_to<unsigned char>(page, srcPtr, pageSize);
             break;
 
             default:
@@ -693,6 +616,18 @@ class Image {
             REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
 
             }
+    }
+
+    template <typename T2>
+    void cast_page_to(char *page, T *src, size_t pageSize) {
+        if (typeid(T) == typeid(T2)) {
+            memcpy(page, src, pageSize * sizeof(T));
+        } else {
+            T2 *dest = (T2*) page;
+            for (size_t i = 0; i < pageSize; i++) {
+                dest[i] = (T2) src[i];
+            }
+        }
     }
 
     // Check file Datatype is same as T type to use mmap.
