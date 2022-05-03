@@ -202,7 +202,6 @@ class fImageHandler {
     TIFF     *ftiff;
     FileName  ext_name; // Filename extension
     bool	  exist;    // Does the file exist?
-    bool	  isTiff;   // Is the file a TIFF?
 
     // Empty constructor
     fImageHandler() {
@@ -211,7 +210,6 @@ class fImageHandler {
         ftiff = NULL;
         ext_name = "";
         exist = false;
-        isTiff = false;
     }
 
     // Destructor: closes file (if it still open)
@@ -282,7 +280,7 @@ class fImageHandler {
             fileName = fileName.addExtension(ext_name);
         }
 
-        isTiff = ext_name.contains("tif");
+        bool isTiff = ext_name.contains("tif");
         if (isTiff && mode != WRITE_READONLY)
             REPORT_ERROR((std::string) "TIFF is supported only for reading");
 
@@ -310,6 +308,7 @@ class fImageHandler {
         // Check whether the file was closed already
         if (!fimg && !fhed && !ftiff) return;
 
+        bool isTiff = ext_name.contains("tif");
         if (isTiff && ftiff) {
             TIFFClose(ftiff);
             ftiff = NULL;
