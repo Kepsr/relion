@@ -49,11 +49,11 @@
 #include "src/multidim_array.h"
 #include "src/euler.h"
 
+const bool IS_INV = true;
+const bool IS_NOT_INV = false;
+const bool DONT_WRAP = false;
+const bool WRAP = true;
 
-#define IS_INV true
-#define IS_NOT_INV false
-#define DONT_WRAP false
-#define WRAP true
 #ifndef DBL_EPSILON
 #define DBL_EPSILON 1e-50
 #endif
@@ -71,7 +71,7 @@
  *  rotation2DMatrix(60,m);
  * @endcode
  */
-void rotation2DMatrix(RFLOAT ang, Matrix2D< RFLOAT > &m, bool homogeneous=true);
+void rotation2DMatrix(RFLOAT ang, Matrix2D<RFLOAT> &m, bool homogeneous=true);
 
 /** Creates a translational matrix (3x3) for images
  * @ingroup GeometricalTransformations
@@ -84,7 +84,7 @@ void rotation2DMatrix(RFLOAT ang, Matrix2D< RFLOAT > &m, bool homogeneous=true);
  * m = translation2DMatrix(vectorR2(1, 0));
  * @endcode
  */
-void translation2DMatrix(const Matrix1D< RFLOAT > &v, Matrix2D< RFLOAT > &m);
+void translation2DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &m);
 
 /** Creates a rotational matrix (4x4) for volumes around system axis
  * @ingroup GeometricalTransformations
@@ -118,8 +118,7 @@ void translation2DMatrix(const Matrix1D< RFLOAT > &v, Matrix2D< RFLOAT > &m);
  * m = rotation3DMatrix(60, 'X');
  * @endcode
  */
-void rotation3DMatrix(RFLOAT ang, char axis, Matrix2D< RFLOAT > &m,
-		bool homogeneous=true);
+void rotation3DMatrix(RFLOAT ang, char axis, Matrix2D<RFLOAT> &m, bool homogeneous=true);
 
 /** Creates a rotational matrix (4x4) for volumes around any axis
  * @ingroup GeometricalTransformations
@@ -132,8 +131,7 @@ void rotation3DMatrix(RFLOAT ang, char axis, Matrix2D< RFLOAT > &m,
  * m = rotation3DMatrix(60, vectorR3(1, 1, 1));
  * @endcode
  */
-void rotation3DMatrix(RFLOAT ang, const Matrix1D< RFLOAT >& axis, Matrix2D< RFLOAT > &m,
-		bool homogeneous=true);
+void rotation3DMatrix(RFLOAT ang, const Matrix1D<RFLOAT> &axis, Matrix2D<RFLOAT> &m, bool homogeneous=true);
 
 /** Matrix which transforms the given axis into Z
  * @ingroup GeometricalTransformations
@@ -143,14 +141,14 @@ void rotation3DMatrix(RFLOAT ang, const Matrix1D< RFLOAT >& axis, Matrix2D< RFLO
  * order to produce rotational matrices, for instance, around any axis.
  *
  * @code
- * Matrix2D< RFLOAT > A = alignWithZ(axis);
+ * Matrix2D<RFLOAT> A = alignWithZ(axis);
  * return A.transpose() * rotation3DMatrix(ang, 'Z') * A;
  * @endcode
  *
  * The returned matrix is such that A*axis=Z, where Z and axis are column
  * vectors.
  */
-void alignWithZ(const Matrix1D< RFLOAT >& axis, Matrix2D< RFLOAT > &m, bool homogeneous=true);
+void alignWithZ(const Matrix1D<RFLOAT> &axis, Matrix2D<RFLOAT> &m, bool homogeneous=true);
 
 /** Creates a translational matrix (4x4) for volumes
  * @ingroup GeometricalTransformations
@@ -163,7 +161,7 @@ void alignWithZ(const Matrix1D< RFLOAT >& axis, Matrix2D< RFLOAT > &m, bool homo
  * m = translation3DMatrix(vectorR3(0, 0, 2));
  * @endcode
  */
-void translation3DMatrix(const Matrix1D< RFLOAT >& v, Matrix2D< RFLOAT > &m);
+void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &m);
 
 /** Creates a scaling matrix (4x4) for volumes
  * @ingroup GeometricalTransformations
@@ -171,14 +169,13 @@ void translation3DMatrix(const Matrix1D< RFLOAT >& v, Matrix2D< RFLOAT > &m);
  * The scaling factors for the different axis must be given as a vector. So
  * that, XX(sc)=scale for X axis, YY(sc)=...
  */
-void scale3DMatrix(const Matrix1D< RFLOAT >& sc, Matrix2D< RFLOAT > &m,
-		bool homogeneous=true);
+void scale3DMatrix(const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT> &m, bool homogeneous=true);
 
 /** Applies a geometrical transformation.
  * @ingroup GeometricalTransformations
  *
- * Any geometrical transformation defined by the matrix A (RFLOAT (4x4)!!
- * ie, in homogeneous R3 coordinates) is applied to the volume V1.
+ * Apply a geometrical transformation defined by the matrix A (RFLOAT (4x4)!!
+ * ie, in homogeneous R3 coordinates) to the volume V1.
  * The result is stored in V2 (it cannot be the same as the input volume).
  * An exception is thrown if the transformation matrix is not 4x4.
  *
@@ -242,15 +239,15 @@ void scale3DMatrix(const Matrix1D< RFLOAT >& sc, Matrix2D< RFLOAT > &m,
  * Although you can also use the constants IS_INV, or WRAP.
  *
  * @code
- * Matrix2D< RFLOAT > A(4,4);
+ * Matrix2D<RFLOAT> A(4,4);
  * A.initIdentity;
  * applyGeometry(V2, A, V1);
  * @endcode
  */
 template<typename T>
 void applyGeometry(
-    const MultidimArray<T>& V1,
-    MultidimArray<T>& V2,
+    const MultidimArray<T> &V1,
+    MultidimArray<T> &V2,
     const Matrix2D<RFLOAT> A,
     bool inv, bool do_wrap,
     T outside = 0
@@ -304,8 +301,8 @@ void applyGeometry(
         int Xdim = XSIZE(V1);
         int Ydim = YSIZE(V1);
 
-        // Now we go from the output image to the input image. 
-        // ie, for any pixel in the output image 
+        // Now we go from the output image to the input image.
+        // ie, for any pixel in the output image
         // we calculate which are the corresponding ones in
         // the original image, make an interpolation with them and put this value
         // at the output pixel
@@ -320,7 +317,7 @@ void applyGeometry(
 
         for (int i = 0; i < YSIZE(V2); i++) {
             // Calculate position of the beginning of the row in the output image
-            RFLOAT x = -cen_x;
+            RFLOAT x =   - cen_x;
             RFLOAT y = i - cen_y;
 
             // Calculate this position in the input image according to the
@@ -339,27 +336,23 @@ void applyGeometry(
                 << "   before wrapping (y',x')=(" << yp << "," << xp << ") "
                 << std::endl;
                 #endif
-                // If the point is outside the image, apply a periodic extension
-                // of the image, what exits by one side enters by the other
-                bool interp = true;
+                // If the point is outside the image, apply a periodic extension of the image
+                // What exits by one side enters by the other
+                bool interp = do_wrap ||
+                    !Xmipp::lt(xp, minxp) && !Xmipp::gt(xp, maxxp) &&
+                    !Xmipp::lt(yp, minyp) && !Xmipp::gt(yp, maxyp);
+
                 if (do_wrap) {
 
                     if (
-                        xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                        xp > maxxp + XMIPP_EQUAL_ACCURACY
+                        Xmipp::lt(xp, minxp) || Xmipp::gt(xp, maxxp)
                     ) { xp = wrap(xp, minxp - 0.5, maxxp + 0.5); }
 
                     if (
-                        yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                        yp > maxyp + XMIPP_EQUAL_ACCURACY
+                        Xmipp::lt(yp, minyp) || Xmipp::gt(yp, maxyp)
                     ) { yp = wrap(yp, minyp - 0.5, maxyp + 0.5); }
 
-                } else if (
-                    xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                    xp > maxxp + XMIPP_EQUAL_ACCURACY ||
-                    yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                    yp > maxyp + XMIPP_EQUAL_ACCURACY
-                ) { interp = false; }
+                }
 
                 #ifdef DEBUG_APPLYGEO
                 std::cout << "   after wrapping (y',x')=(" << yp << "," << xp << ") "
@@ -372,9 +365,9 @@ void applyGeometry(
                 if (interp) {
                     // Linear interpolation
 
-                    // Calculate the integer position in input image. 
+                    // Calculate the integer position in input image.
                     // Be careful that it is not the nearest but the one at the top left corner
-                    // of the interpolation square. 
+                    // of the interpolation square.
                     // ie, (0.7, 0.7) would give (0, 0).
                     // Also calculate weights for point (m1 + 1, n1 + 1).
                     RFLOAT wx = xp + cen_xp;
@@ -468,7 +461,7 @@ void applyGeometry(
         for (int i = 0; i < V2.ydim; i++) {
             // Calculate position of the beginning of the row in the output
             // MultidimArray
-            RFLOAT x = -cen_x;
+            RFLOAT x =   - cen_x;
             RFLOAT y = i - cen_y;
             RFLOAT z = k - cen_z;
 
@@ -497,40 +490,34 @@ void applyGeometry(
                 // If the point is outside the volume, apply a periodic
                 // extension of the volume, what exits by one side enters by
                 // the other
-                bool interp = true;
+                bool interp = do_wrap ||
+                    !Xmipp::lt(xp, minxp) && !Xmipp::gt(xp, maxxp) &&
+                    !Xmipp::lt(yp, minyp) && !Xmipp::gt(yp, maxyp) &&
+                    !Xmipp::lt(zp, minzp) && !Xmipp::gt(zp, maxzp);
+
                 if (do_wrap) {
 
                     if (
-                        xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                        xp > maxxp + XMIPP_EQUAL_ACCURACY
+                        Xmipp::lt(xp, minxp) || Xmipp::gt(xp, maxxp)
                     ) { xp = wrap(xp, minxp - 0.5, maxxp + 0.5); }
 
                     if (
-                        yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                        yp > maxyp + XMIPP_EQUAL_ACCURACY
+                        Xmipp::lt(yp, minyp) || Xmipp::gt(yp, maxyp)
                     ) { yp = wrap(yp, minyp - 0.5, maxyp + 0.5); }
 
                     if (
-                        zp < minzp - XMIPP_EQUAL_ACCURACY ||
-                        zp > maxzp + XMIPP_EQUAL_ACCURACY
+                        Xmipp::lt(zp, minzp) || Xmipp::gt(zp, maxzp)
                     ) { zp = wrap(zp, minzp - 0.5, maxzp + 0.5); }
 
-                } else if (
-                    xp < minxp - XMIPP_EQUAL_ACCURACY ||
-                    xp > maxxp + XMIPP_EQUAL_ACCURACY ||
-                    yp < minyp - XMIPP_EQUAL_ACCURACY ||
-                    yp > maxyp + XMIPP_EQUAL_ACCURACY ||
-                    zp < minzp - XMIPP_EQUAL_ACCURACY ||
-                    zp > maxzp + XMIPP_EQUAL_ACCURACY
-                ) { interp = false; }
+                }
 
                 if (interp) {
 
                     // Linear interpolation
 
-                    // Calculate the integer position in input volume, 
+                    // Calculate the integer position in input volume,
                     // be careful that it is not the nearest but the one at the
-                    // top left corner of the interpolation square. 
+                    // top left corner of the interpolation square.
                     // ie (0.7, 0.7) would give (0, 0)
                     // Also calculate weights for point (m1 + 1, n1 + 1)
                     RFLOAT wx = xp + cen_xp;
@@ -636,7 +623,7 @@ void applyGeometry(
  */
 template<typename T>
 void selfApplyGeometry(
-    MultidimArray<T>& V1,
+    MultidimArray<T> &V1,
     const Matrix2D<RFLOAT> A, bool inv,
     bool do_wrap, T outside = 0
 ) {
@@ -683,7 +670,7 @@ void rotate(
  */
 template<typename T>
 void selfRotate(
-    MultidimArray<T>& V1,
+    MultidimArray<T> &V1,
     RFLOAT ang, char axis = 'Z',
     bool do_wrap = DONT_WRAP, T outside = 0
 ) {
@@ -710,14 +697,11 @@ void translate(
     bool do_wrap = WRAP, T outside = 0
 ) {
     Matrix2D<RFLOAT> tmp;
-           if (V1.getDim() == 2) {
-        translation2DMatrix(v, tmp);
-    } else if (V1.getDim() == 3) {
-        translation3DMatrix(v, tmp);
-    } else {
-        REPORT_ERROR("translate ERROR: translate only valid for 2D or 3D arrays");
+    switch (V1.getDim()) {
+        case 2: translation2DMatrix(v, tmp); break;
+        case 3: translation3DMatrix(v, tmp); break;
+        default: REPORT_ERROR("translate ERROR: translate only valid for 2D or 3D arrays");
     }
-
     applyGeometry(V1, V2, tmp, IS_NOT_INV, do_wrap, outside);
 }
 
@@ -728,8 +712,8 @@ void translate(
  */
 template<typename T>
 void selfTranslate(
-    MultidimArray<T>& V1,
-    const Matrix1D< RFLOAT >& v,
+    MultidimArray<T> &V1,
+    const Matrix1D<RFLOAT> &v,
     bool do_wrap = WRAP, T outside = 0
 ) {
     MultidimArray<T> aux = V1;
@@ -751,7 +735,7 @@ void translateCenterOfMassToCenter(
 ) {
     V2 = V1;
     V2.setXmippOrigin();
-    Matrix1D< RFLOAT > center;
+    Matrix1D<RFLOAT> center;
     V2.centerOfMass(center);
     if (verb) {
     	std::cout << " Center of mass: x= " << XX(center) << " y= " << YY(center) << " z= " << ZZ(center) << std::endl;
@@ -793,19 +777,26 @@ void scaleToSize(
 ) {
 
     Matrix2D<RFLOAT> tmp;
-    if (V1.getDim() == 2) {
+    switch (V1.getDim()) {
+
+        case 2:
         tmp.initIdentity(3);
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) XSIZE(V1);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) YSIZE(V1);
         V2.resize(1, 1, Ydim, Xdim);
-    } else if (V1.getDim() == 3) {
+        break;
+
+        case 3:
         tmp.initIdentity(4);
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) XSIZE(V1);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) YSIZE(V1);
         tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) ZSIZE(V1);
         V2.resize(1, Zdim, Ydim, Xdim);
-    } else {
+        break;
+
+        default:
         REPORT_ERROR("scaleToSize ERROR: scaleToSize only valid for 2D or 3D arrays");
+
     }
 
     applyGeometry(V1, V2, tmp, IS_NOT_INV, WRAP, (T) 0);
@@ -823,6 +814,11 @@ void selfScaleToSize(
 ) {
     MultidimArray<T> aux = V1;
     scaleToSize(aux, V1, Xdim, Ydim, Zdim);
+}
+
+// Euclidean distance in 3 dimensions
+inline RFLOAT euclid(RFLOAT x, RFLOAT y, RFLOAT z) {
+    return sqrt(x * x + y * y + z * z);
 }
 
 /** Does a radial average of a 2D/3D image, around the voxel where is the origin.
@@ -851,44 +847,42 @@ void radialAverage(
     Matrix1D<int> &center_of_rot,
     MultidimArray<T> &radial_mean,
     MultidimArray<int> &radial_count,
-    const bool &rounding = false
+    bool rounding = false
 ) {
-    Matrix1D<RFLOAT> idx(3);
 
     // If center_of_rot was written for 2D image
-    if (center_of_rot.size() < 3)
-        center_of_rot.resize(3);
+    if (center_of_rot.size() < 3) { center_of_rot.resize(3); }
 
-    // First determine the maximum distance that one should expect, to set the
-    // dimension of the radial average vector
+    // First determine the maximum distance that one should expect,
+    // to set the dimension of the radial average vector.
     MultidimArray<int> distances(8);
 
     RFLOAT z = STARTINGZ(m) - ZZ(center_of_rot);
     RFLOAT y = STARTINGY(m) - YY(center_of_rot);
     RFLOAT x = STARTINGX(m) - XX(center_of_rot);
 
-    distances(0) = floor(sqrt(x * x + y * y + z * z));
+    distances(0) = floor(euclid(x, y, z));
     x = FINISHINGX(m) - XX(center_of_rot);
 
-    distances(1) = floor(sqrt(x * x + y * y + z * z));
+    distances(1) = floor(euclid(x, y, z));
     y = FINISHINGY(m) - YY(center_of_rot);
 
-    distances(2) = floor(sqrt(x * x + y * y + z * z));
+    distances(2) = floor(euclid(x, y, z));
     x = STARTINGX(m) - XX(center_of_rot);
 
-    distances(3) = floor(sqrt(x * x + y * y + z * z));
+    distances(3) = floor(euclid(x, y, z));
     z = FINISHINGZ(m) - ZZ(center_of_rot);
 
-    distances(4) = floor(sqrt(x * x + y * y + z * z));
+    distances(4) = floor(euclid(x, y, z));
     x = FINISHINGX(m) - XX(center_of_rot);
 
-    distances(5) = floor(sqrt(x * x + y * y + z * z));
+    distances(5) = floor(euclid(x, y, z));
     y = STARTINGY(m) - YY(center_of_rot);
 
-    distances(6) = floor(sqrt(x * x + y * y + z * z));
+    distances(6) = floor(euclid(x, y, z));
     x = STARTINGX(m) - XX(center_of_rot);
 
-    distances(7) = floor(sqrt(x * x + y * y + z * z));
+    distances(7) = floor(euclid(x, y, z));
 
     int dim = ceil(distances.max()) + 1;
     if (rounding) { dim++; }
@@ -899,8 +893,8 @@ void radialAverage(
     radial_count.resize(dim);
     radial_count.initZeros();
 
-    // Perform the radial sum and count pixels that contribute to every
-    // distance
+    Matrix1D<RFLOAT> idx(3);
+    // Perform the radial sum and count pixels that contribute to every distance
     FOR_ALL_ELEMENTS_IN_ARRAY3D(m) {
         ZZ(idx) = k - ZZ(center_of_rot);
         YY(idx) = i - YY(center_of_rot);
@@ -917,8 +911,9 @@ void radialAverage(
     }
 
     // Perform the mean
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(radial_mean)
-    radial_mean(i) /= (T) radial_count(i);
+    FOR_ALL_ELEMENTS_IN_ARRAY1D(radial_mean) {
+        radial_mean(i) /= (T) radial_count(i);
+    }
 }
 
 //@}

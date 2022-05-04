@@ -452,6 +452,18 @@ namespace Xmipp {
         return size + init(size) - 1;
     }
 
+    // Less than
+    template <typename T>
+    inline T lt(T x, T y) {
+        return x < y - XMIPP_EQUAL_ACCURACY;
+    }
+
+    // Greater than
+    template <typename T>
+    inline T gt(T x, T y) {
+        return x > y + XMIPP_EQUAL_ACCURACY;
+    }
+
 }
 
 

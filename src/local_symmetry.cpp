@@ -33,7 +33,7 @@ void sum3DCubicMask(
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
         RFLOAT val = DIRECT_A3D_ELEM(v, k, i, j);
-        if (val < 0.0 - XMIPP_EQUAL_ACCURACY || val > 1.0 + XMIPP_EQUAL_ACCURACY)
+        if (Xmipp::lt(val, 0.0) || Xmipp::gt(val, 1.0))
             REPORT_ERROR("ERROR: mask - values are not in range [0,1]!");
         if (val > XMIPP_EQUAL_ACCURACY) {
             val_sum += val;
@@ -60,7 +60,7 @@ bool similar3DCubicMasks(
 }
 
 void truncateMultidimArray(
-    MultidimArray<RFLOAT>& v, RFLOAT minval, RFLOAT maxval
+    MultidimArray<RFLOAT> &v, RFLOAT minval, RFLOAT maxval
 ) {
 
     if (minval > maxval)
@@ -982,8 +982,8 @@ void writeDMFormatMasksAndOperators(
 }
 
 void duplicateLocalSymmetry(
-    MultidimArray<RFLOAT>& out_map,
-    const MultidimArray<RFLOAT>& ori_map,
+    MultidimArray<RFLOAT> &out_map,
+    const MultidimArray<RFLOAT> &ori_map,
     const std::vector<FileName> fn_masks,
     const std::vector<std::vector<Matrix1D<RFLOAT> > > ops,
     bool duplicate_masks_only
@@ -1067,8 +1067,8 @@ void duplicateLocalSymmetry(
     }
 }
 
-void applyLocalSymmetry(MultidimArray<RFLOAT>& sym_map,
-    const MultidimArray<RFLOAT>& ori_map,
+void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
+    const MultidimArray<RFLOAT> &ori_map,
     const std::vector<FileName> fn_masks,
     const std::vector<std::vector<Matrix1D<RFLOAT> > > ops,
     RFLOAT radius,
@@ -1090,7 +1090,7 @@ void applyLocalSymmetry(MultidimArray<RFLOAT>& sym_map,
     // Support 3D maps which are not cubic
     // Support 3D maps and masks which do not share the same origins
 
-    if (radius > 0.0 && cosine_width_pix < (XMIPP_EQUAL_ACCURACY))
+    if (radius > 0.0 && cosine_width_pix < XMIPP_EQUAL_ACCURACY)
         REPORT_ERROR("ERROR: Cosine width should be larger than 0!");
 
     if (fn_masks.size() < 1 || ops.size() < 1)
@@ -1146,11 +1146,11 @@ void applyLocalSymmetry(MultidimArray<RFLOAT>& sym_map,
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol1) {
             // Get values of mask in every voxel
             mask_val = DIRECT_A3D_ELEM(mask(), k, i, j); // "weights from mask" - w
-            if (mask_val < -(XMIPP_EQUAL_ACCURACY) || mask_val - 1.0 > (XMIPP_EQUAL_ACCURACY))
+            if (Xmipp::lt(mask_val, 0.0) || Xmipp::gt(mask_val, 1.0))
                 REPORT_ERROR("ERROR: mask " + std::string(fn_masks[imask]) + " - values are not in range [0,1]!");
 
             // This voxel is inside the mask
-            if (mask_val > (XMIPP_EQUAL_ACCURACY)) {
+            if (mask_val > XMIPP_EQUAL_ACCURACY) {
                 DIRECT_A3D_ELEM(vol1, k, i, j) *= mask_val / (nr_ops + 1.0); // "mask-weighted sum" - wsum
             } else {
                 // This voxel is not inside the mask
@@ -1200,15 +1200,15 @@ void applyLocalSymmetry(MultidimArray<RFLOAT>& sym_map,
         // This voxel is inside one of the masks
         if (mask_val > XMIPP_EQUAL_ACCURACY) {
             // weight > 0
-            if (mask_val - 1.0 > XMIPP_EQUAL_ACCURACY) {
+            if (Xmipp::gt(mask_val, 1.0)) {
                 // weight > 1
                 // ncs = wsum / w
                 DIRECT_A3D_ELEM(sym_map, k, i, j) /= mask_val;
-            } else if (mask_val - 1.0 < -XMIPP_EQUAL_ACCURACY) {
+            } else if (Xmipp::lt(mask_val, 1.0)) {
                 // 0 < weight < 1
                 // ncs = w * (wsum / w) + (1 - w) * ori_val
                 sym_val = DIRECT_A3D_ELEM(sym_map, k, i, j);
-                DIRECT_A3D_ELEM(sym_map, k, i, j) = sym_val + (1. - mask_val) * DIRECT_A3D_ELEM(ori_map, k, i, j);
+                DIRECT_A3D_ELEM(sym_map, k, i, j) = sym_val + (1.0 - mask_val) * DIRECT_A3D_ELEM(ori_map, k, i, j);
             }
             // weight = 1, ncs = wsum / w, nothing to do...
         } else {
@@ -1229,7 +1229,7 @@ void applyLocalSymmetry(MultidimArray<RFLOAT>& sym_map,
             if (dist2 > radiusw2) {
                 DIRECT_A3D_ELEM(sym_map, k, i, j) = 0.0;
             } else if (dist2 > radius2) {
-                DIRECT_A3D_ELEM(sym_map, k, i, j) *= 0.5 + 0.5 * cos(PI * (radius + cosine_width_pix - sqrt(dist2)) / cosine_width_pix);
+                DIRECT_A3D_ELEM(sym_map, k, i, j) *= 0.5 * (1.0 + cos(PI * (radius + cosine_width_pix - sqrt(dist2)) / cosine_width_pix));
             }
         }
     }
@@ -1238,7 +1238,7 @@ void applyLocalSymmetry(MultidimArray<RFLOAT>& sym_map,
 }
 
 void applyLocalSymmetry(
-    MultidimArray<RFLOAT>& map,
+    MultidimArray<RFLOAT> &map,
     const std::vector<FileName> fn_masks,
     const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
     RFLOAT radius,
@@ -1250,7 +1250,7 @@ void applyLocalSymmetry(
 }
 
 void getMinCropSize(
-    MultidimArray<RFLOAT>& vol,
+    MultidimArray<RFLOAT> &vol,
     Matrix1D<RFLOAT> &center,
     long int& mindim,
     RFLOAT edge
@@ -1290,9 +1290,8 @@ void getMinCropSize(
         REPORT_ERROR("ERROR: size of the input map is too large (> 99999999)!");
 
     dist2_max = sqrt(dist2_max);
-    if (edge > 0.0)
-        dist2_max += edge;
-    mindim = 2 * (long int)(ceil(dist2_max)); // bestdim % 2 = 0
+    if (edge > 0.0) { dist2_max += edge; }
+    mindim = 2 * (long int) ceil(dist2_max); // bestdim % 2 = 0
 }
 
 bool compareOperatorsByCC(const Matrix1D<RFLOAT> &lhs, const Matrix1D<RFLOAT> &rhs) {
@@ -1302,7 +1301,7 @@ bool compareOperatorsByCC(const Matrix1D<RFLOAT> &lhs, const Matrix1D<RFLOAT> &r
 void getLocalSearchOperatorSamplings(
     const Matrix1D<RFLOAT> &op_old,
     const Matrix1D<RFLOAT> &op_search_ranges,
-    std::vector<Matrix1D<RFLOAT> >& op_samplings,
+    std::vector<Matrix1D<RFLOAT> > &op_samplings,
     RFLOAT ang_search_step, RFLOAT trans_search_step,
     bool use_healpix, bool verb
 ) {
@@ -1354,9 +1353,9 @@ void getLocalSearchOperatorSamplings(
         gg_range = gg_range >   0.0 ? gg_range : 0.0;
     }
     if (
-        (aa_range < ang_search_step && aa_range > XMIPP_EQUAL_ACCURACY) ||
-        (bb_range < ang_search_step && bb_range > XMIPP_EQUAL_ACCURACY) ||
-        (gg_range < ang_search_step && gg_range > XMIPP_EQUAL_ACCURACY)
+        aa_range < ang_search_step && aa_range > XMIPP_EQUAL_ACCURACY ||
+        bb_range < ang_search_step && bb_range > XMIPP_EQUAL_ACCURACY ||
+        gg_range < ang_search_step && gg_range > XMIPP_EQUAL_ACCURACY
     ) REPORT_ERROR("ERROR: Angular searching step should be smaller than its searching range!");
     if (!use_healpix) {
         // aa, bb, gg ranges >= 0, ang_search_step > 0.01
@@ -1370,9 +1369,9 @@ void getLocalSearchOperatorSamplings(
     dy_range = dy_range > 0.0 ? dy_range : 0.0;
     dz_range = dz_range > 0.0 ? dz_range : 0.0;
     if (
-        (dx_range < trans_search_step) && (dx_range > XMIPP_EQUAL_ACCURACY) ||
-        (dy_range < trans_search_step) && (dy_range > XMIPP_EQUAL_ACCURACY) ||
-        (dz_range < trans_search_step) && (dz_range > XMIPP_EQUAL_ACCURACY)
+        dx_range < trans_search_step && dx_range > XMIPP_EQUAL_ACCURACY ||
+        dy_range < trans_search_step && dy_range > XMIPP_EQUAL_ACCURACY ||
+        dz_range < trans_search_step && dz_range > XMIPP_EQUAL_ACCURACY
     ) REPORT_ERROR("ERROR: Translational searching step should be smaller than its searching range!");
     // dx, dy, dz ranges >= 0, ang_search_step > 0.01
     dx_residue = dx_range - trans_search_step * floor(dx_range / trans_search_step);
@@ -1462,9 +1461,9 @@ void getLocalSearchOperatorSamplings(
         if (bb_range > XMIPP_EQUAL_ACCURACY) {
             for (val = bb_init + bb_residue - bb_range; val < bb_init + bb_range + XMIPP_EQUAL_ACCURACY; val += ang_search_step)
                 bbs.push_back(val);
-        }
-        else
+        } else {
             bbs.push_back(bb_init);
+        }
         if (gg_range > XMIPP_EQUAL_ACCURACY) {
             for (val = gg_init + gg_residue - gg_range; val < gg_init + gg_range + XMIPP_EQUAL_ACCURACY; val += ang_search_step)
                 ggs.push_back(val);
@@ -1541,7 +1540,7 @@ void getLocalSearchOperatorSamplings(
             for (int idx = 0; idx < dxs.size(); idx++) {
                 dz = dzs[idz]; dy = dys[idy]; dx = dxs[idx];
                 r2 = (dz * dz) / (dz_range * dz_range) + (dy * dy) / (dy_range * dy_range) + (dx * dx) / (dx_range * dx_range);
-                if (r2 - XMIPP_EQUAL_ACCURACY > 1.0)
+                if (Xmipp::gt(r2, 1.0))
                     continue;
 
                 if (use_healpix) {
@@ -1591,7 +1590,7 @@ void getLocalSearchOperatorSamplings(
 }
 
 void calculateOperatorCC(
-    const MultidimArray<RFLOAT>& src, const MultidimArray<RFLOAT>& dest, const MultidimArray<RFLOAT>& mask,
+    const MultidimArray<RFLOAT> &src, const MultidimArray<RFLOAT> &dest, const MultidimArray<RFLOAT> &mask,
     std::vector<Matrix1D<RFLOAT>>& op_samplings,
     bool do_sort, bool verb
 ) {
@@ -1700,7 +1699,7 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     pos_val_ctr = 0;
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
         float_val = DIRECT_A3D_ELEM(img(), k, i, j);
-        //if (val < -(XMIPP_EQUAL_ACCURACY))
+        //if (val < -XMIPP_EQUAL_ACCURACY)
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");
         if (float_val > val_thres) {
             pos_val_ctr++;
@@ -1844,7 +1843,7 @@ void separateMasksKMeans(
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img())
     {
         val = DIRECT_A3D_ELEM(img(), k, i, j);
-        //if (val < -(XMIPP_EQUAL_ACCURACY))
+        //if (val < -XMIPP_EQUAL_ACCURACY)
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");
         if (val > XMIPP_EQUAL_ACCURACY)
             pos_val_ctr++;
@@ -2240,10 +2239,11 @@ void local_symmetry_parameters::run() {
                 ang_range = 180.0;
                 std::cout << " Initial searches: reset searching ranges of all 3 Euler angles to +/-180 degrees." << std::endl;
             } else {
-                if (ang_range > (XMIPP_EQUAL_ACCURACY) )
+                if (ang_range > XMIPP_EQUAL_ACCURACY) {
                     std::cout << " User-defined initial searches: searching ranges of all 3 Euler angles are set to +/-" << ang_range << " degree(s)." << std::endl;
-                else
+                } else {
                     std::cout << " User-defined initial searches: (rot, tilt, psi) ranges are +/- (" << ang_rot_range << ", " << ang_tilt_range << ", " << ang_psi_range << ") degree(s)." << std::endl;
+                }
             }
         }
         Localsym_composeOperator(
@@ -2325,8 +2325,8 @@ void local_symmetry_parameters::run() {
             // Rescale the map and the mask (if binning_factor > 1), set 'newdim'.
             tmp_binning_factor = 1.0;
             newdim = cropdim;
-            if ((binning_factor - 1.0) > XMIPP_EQUAL_ACCURACY) {
-                newdim = (long int)(ceil(RFLOAT(cropdim) / binning_factor));
+            if (Xmipp::gt(binning_factor, 1.0)) {
+                newdim = (long int) (ceil(RFLOAT(cropdim) / binning_factor));
                 if (newdim < 2)
                     REPORT_ERROR("ERROR: Binning factor is too large / Mask is too small!");
                 if (newdim + 1 < cropdim) {
