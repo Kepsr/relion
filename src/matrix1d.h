@@ -71,10 +71,6 @@ template <typename T> class Matrix2D;
  * saving time in the copy constructor and in the creation/destruction of temporary vectors.
  */
 //@{
-/** Array access.
- * This macro gives us access to the array (T)
- */
-#define MATRIX1D_ARRAY(v) ((v).vdata)
 
 /** For all elements in the array
  * This macro is used to generate loops for the vector in an easy manner. It
@@ -274,10 +270,7 @@ class Matrix1D {
     public:
 
     /// The array itself
-    T* vdata;
-
-    /// Destroy data
-    bool destroyData;
+    T *vdata;
 
     /// Number of elements
     int vdim;
@@ -315,11 +308,11 @@ class Matrix1D {
      * one.
      *
      * @code
-     * Matrix1D< RFLOAT > v1(6);
-     * Matrix1D< RFLOAT > v1(6, 'y');
+     * Matrix1D<RFLOAT> v1(6);
+     * Matrix1D<RFLOAT> v1(6, 'y');
      * // both are examples of column vectors of dimensions 6
      *
-     * Matrix1D< int > v1('n');
+     * Matrix1D<int> v1('n');
      * // empty row vector
      * @endcode
      */
@@ -335,7 +328,7 @@ class Matrix1D {
      * different memory assignment.
      *
      * @code
-     * Matrix1D< RFLOAT > v2(v1);
+     * Matrix1D<RFLOAT> v2(v1);
      * @endcode
      */
     Matrix1D(const Matrix1D<T> &v) {
@@ -357,7 +350,7 @@ class Matrix1D {
      * v1 = v2 = v3;
      * @endcode
      */
-    Matrix1D<T>& operator = (const Matrix1D<T>& op1) {
+    Matrix1D<T>& operator = (const Matrix1D<T> &op1) {
         if (&op1 != this) {
             resize(op1);
             for (int i = 0; i < vdim; i++) { 
@@ -385,7 +378,6 @@ class Matrix1D {
         vdim = 0;
         row = false;
         vdata = NULL;
-        destroyData = true;
     }
 
     /** Core allocate.
@@ -405,7 +397,7 @@ class Matrix1D {
      * Free all vdata.
      */
     inline void coreDeallocate() {
-        if (vdata && destroyData) { delete[] vdata; }
+        if (vdata) { delete[] vdata; }
         vdata = NULL;
     }
     //@}
@@ -631,7 +623,7 @@ class Matrix1D {
      * A += B;
      * @endcode
      */
-    void operator += (const Matrix1D<T>& op1) const {
+    void operator += (const Matrix1D<T> &op1) const {
         if (vdim != op1.vdim) 
             REPORT_ERROR("Not same sizes in vector summation");
 
@@ -652,7 +644,7 @@ class Matrix1D {
      * A -= B;
      * @endcode
      */
-    void operator -= (const Matrix1D<T>& op1) const {
+    void operator -= (const Matrix1D<T> &op1) const {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector subtraction");
 
@@ -677,7 +669,7 @@ class Matrix1D {
 
     /** v3 = v1 * v2.
      */
-    Matrix1D<T> operator * (const Matrix1D<T>& op1) const {
+    Matrix1D<T> operator * (const Matrix1D<T> &op1) const {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector multiplication");
 
@@ -688,7 +680,7 @@ class Matrix1D {
         return tmp;
     }
 
-    Matrix1D<T> operator / (const Matrix1D<T>& op1) const {
+    Matrix1D<T> operator / (const Matrix1D<T> &op1) const {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector division");
 
@@ -699,7 +691,7 @@ class Matrix1D {
         return tmp;
     }
 
-    Matrix1D<T> operator + (const Matrix1D<T>& op1) const {
+    Matrix1D<T> operator + (const Matrix1D<T> &op1) const {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector summation");
 
@@ -710,7 +702,7 @@ class Matrix1D {
         return tmp;
     }
 
-    Matrix1D<T> operator - (const Matrix1D<T>& op1) const {
+    Matrix1D<T> operator - (const Matrix1D<T> &op1) const {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector subtraction");
 
@@ -721,28 +713,28 @@ class Matrix1D {
         return tmp;
     }
 
-    void operator *= (const Matrix1D<T>& op1) {
+    void operator *= (const Matrix1D<T> &op1) {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector multiplication");
 
         for (int i = 0; i < vdim; i++) { vdata[i] *= op1.vdata[i]; }
     }
 
-    void operator /= (const Matrix1D<T>& op1) {
+    void operator /= (const Matrix1D<T> &op1) {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector division");
 
         for (int i = 0; i < vdim; i++) { vdata[i] /= op1.vdata[i]; }
     }
 
-    void operator += (const Matrix1D<T>& op1) {
+    void operator += (const Matrix1D<T> &op1) {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector summation");
 
         for (int i = 0; i < vdim; i++) { vdata[i] += op1.vdata[i]; }
     }
 
-    void operator -= (const Matrix1D<T>& op1) {
+    void operator -= (const Matrix1D<T> &op1) {
         if (vdim != op1.vdim)
             REPORT_ERROR("Not same sizes in vector subtraction");
 
@@ -761,7 +753,7 @@ class Matrix1D {
      */
     Matrix1D<T> operator - () const {
         Matrix1D<T> tmp(*this);
-        for (int i = 0; i < vdim; i++) { tmp.vdata[i] = - vdata[i]; }
+        for (int i = 0; i < vdim; i++) { tmp.vdata[i] = -vdata[i]; }
         return tmp;
     }
 
@@ -794,12 +786,12 @@ class Matrix1D {
      * This function must be used only as a preparation for routines which need
      * that the first physical index is 1 and not 0 as it usually is in C. In
      * fact the vector provided for Numerical recipes is exactly this same one
-     * but with the indexes changed.
+     * but with the indices changed.
      *
      * This function is not ported to Python.
      */
     T* adaptForNumericalRecipes() const {
-        return MATRIX1D_ARRAY(*this) - 1;
+        return this->vdata - 1;
     }
 
     /** Kill an array produced for Numerical Recipes.
@@ -903,9 +895,7 @@ class Matrix1D {
      */
     RFLOAT sum() const {
         RFLOAT sum = 0;
-        for (int j = 0; j < vdim; j++) {
-            sum += vdata[j];
-        }
+        for (int i = 0; i < vdim; i++) { sum += vdata[i]; }
         return sum;
     }
 
@@ -922,7 +912,7 @@ class Matrix1D {
      */
     RFLOAT sum2() const {
         RFLOAT sum = 0;
-        for (int j = 0; j < vdim; j++) { sum += vdata[j] * vdata[j]; }
+        for (int i = 0; i < vdim; i++) { sum += vdata[i] * vdata[i]; }
         return sum;
     }
 
@@ -935,9 +925,7 @@ class Matrix1D {
      * RFLOAT mod = v.module();
      * @endcode
      */
-    RFLOAT module() const {
-        return sqrt(sum2());
-    }
+    RFLOAT module() const { return sqrt(sum2()); }
 
     /** Angle of the vector
      *
@@ -1085,11 +1073,10 @@ Matrix1D< float > vectorR3(double xx, double yy, double zz);
      if (v1.isRow() != v2.isRow())
          REPORT_ERROR("Vector_product: vectors are of different shape");
 
-     Matrix1D< T > result(3);
-     XX(result) = YY(v1) * ZZ(v2) - ZZ(v1) * YY(v2);
-     YY(result) = ZZ(v1) * XX(v2) - XX(v1) * ZZ(v2);
-     ZZ(result) = XX(v1) * YY(v2) - YY(v1) * XX(v2);
-
+     Matrix1D<T> result(3);
+     result.vdata[0] = v1.vdata[1] * v2.vdata[2] - v1.vdata[2] * v2.vdata[1];
+     result.vdata[1] = v1.vdata[2] * v2.vdata[0] - v1.vdata[0] * v2.vdata[2];
+     result.vdata[2] = v1.vdata[0] * v2.vdata[1] - v1.vdata[1] * v2.vdata[0];
      return result;
  }
 
@@ -1164,4 +1151,5 @@ void typeCast(const Matrix1D<T1>& v1,  Matrix1D<T2>& v2) {
     }
  }
 //@}
+
 #endif /* MATRIX1D_H_ */
