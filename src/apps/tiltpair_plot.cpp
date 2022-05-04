@@ -101,7 +101,6 @@ class tiltpair_plot_parameters {
 
     void add_to_postscript(RFLOAT tilt_angle, RFLOAT alpha, RFLOAT beta) {
 
-
         RFLOAT rr = tilt_angle / plot_max_tilt * 250;
         // SINCOS?
         RFLOAT x = 300.0 + rr * cos(radians(alpha));
@@ -181,8 +180,9 @@ class tiltpair_plot_parameters {
         // Get the tilt angle (and its sine)
         RFLOAT ah = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
         if (Xmipp::gt(std::abs(ah), 1.0)) REPORT_ERROR("BUG: ah > 1");  // std::abs needed because abs comes from elsewhere
-        tilt_angle = degrees(acos(ah));
-        RFLOAT sine_tilt_angle = 2.0 * sin(radians(tilt_angle));
+        RFLOAT tilt_angle_radians = acos(ah);
+        tilt_angle = degrees(tilt_angle_radians);
+        RFLOAT sine_tilt_angle = 2.0 * sin(tilt_angle_radians);
 
         // Get the tilt axis direction in angles alpha and beta
         if (sine_tilt_angle > Xmipp::epsilon) {
