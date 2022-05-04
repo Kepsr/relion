@@ -1111,7 +1111,7 @@ void rewindow(Image<RFLOAT> &I, int mysize);
 // Functions belonging to this topic are commented in rw*.h
 //@}
 
-void getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT &minval, RFLOAT &maxval, RFLOAT &sigma_contrast);
+MultidimArray<RFLOAT>::MinMax getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
 
 namespace ColourScheme {
 

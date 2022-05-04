@@ -537,15 +537,10 @@ void basisViewerCanvas::fill(
                     selfTranslateCenterOfMassToCenter(img());
                 }
 
-                if (lowpass > 0.0 && have_optics_group)
-                    lowPassFilterMap(img(), lowpass, angpix);
-                if (highpass > 0.0 && have_optics_group)
-                    highPassFilterMap(img(), highpass, angpix);
+                if (lowpass  > 0.0 && have_optics_group) lowPassFilterMap (img(), lowpass,  angpix);
+                if (highpass > 0.0 && have_optics_group) highPassFilterMap(img(), highpass, angpix);
 
-                // Dont change the user-provided _minval and _maxval in the getImageContrast routine!
-                RFLOAT myminval = _minval;
-                RFLOAT mymaxval = _maxval;
-                getImageContrast(img(), myminval, mymaxval, _sigma_contrast);
+                MultidimArray<RFLOAT>::MinMax minmax = getImageContrast(img(), _minval, _maxval, _sigma_contrast);
 
                 long int my_sorted_ipos = my_ipos;
                 if (MDin.containsLabel(EMDL::SORTED_IDX)) {
@@ -566,7 +561,7 @@ void basisViewerCanvas::fill(
                 int xcoor = icol * xsize_box;
 
                 DisplayBox *my_box = new DisplayBox(xcoor, ycoor, xsize_box, ysize_box, "");
-                my_box->setData(img(), MDin.getObject(my_ipos), my_ipos, myminval, mymaxval, _scale, false);
+                my_box->setData(img(), MDin.getObject(my_ipos), my_ipos, minmax.min, minmax.max, _scale, false);
                 if (MDin.containsLabel(text_label)) {
                     my_box->img_label = MDin.getValueToString(text_label, my_ipos);
                 }
@@ -597,15 +592,15 @@ void basisViewerCanvas::fill(
 ) {
     xoff = yoff = 0;
     nrow = ncol = 1;
-    getImageContrast(image, _minval, _maxval, _sigma_contrast);
+    MultidimArray<RFLOAT>::MinMax minmax = getImageContrast(image, _minval, _maxval, _sigma_contrast);
     xsize_box = ceil(_scale * XSIZE(image));
     ysize_box = ceil(_scale * YSIZE(image));
-    DisplayBox* my_box = new DisplayBox(0, 0, xsize_box, ysize_box, "dummy");
+    DisplayBox *my_box = new DisplayBox(0, 0, xsize_box, ysize_box, "dummy");
     MetaDataTable MDtmp;
     MDtmp.addObject();
-    //FileName fn_tmp = "dummy";
-    //MDtmp.setValue(EMDL::IMAGE_NAME, fn_tmp);
-    my_box->setData(image, MDtmp.getObject(), 0, _minval, _maxval, _scale, true);
+    // FileName fn_tmp = "dummy";
+    // MDtmp.setValue(EMDL::IMAGE_NAME, fn_tmp);
+    my_box->setData(image, MDtmp.getObject(), 0, minmax.min, minmax.max, _scale, true);
     my_box->redraw();
     boxes.push_back(my_box);
 }

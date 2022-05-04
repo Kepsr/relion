@@ -575,23 +575,22 @@ class image_handler_parameters {
         n--;
         if (isPNG) {
             #ifdef HAVE_PNG
-                RFLOAT this_minval = minval, this_maxval = maxval; // User setting
-                getImageContrast(Iout(), this_minval, this_maxval, sigma_contrast); // Update if neecssary
-                const RFLOAT range = this_maxval - this_minval;
-                const RFLOAT step = range / 255;
+            MultidimArray<RFLOAT>::MinMax minmax = getImageContrast(Iout(), minval, maxval, sigma_contrast); // Update if necessary
+            const RFLOAT range = minmax.max - minmax.min;
+            const RFLOAT step = range / 255;
 
-                gravis::tImage<gravis::bRGB> pngOut(XSIZE(Iout()), YSIZE(Iout()));
-                pngOut.fill(gravis::bRGB(0));
+            gravis::tImage<gravis::bRGB> pngOut(XSIZE(Iout()), YSIZE(Iout()));
+            pngOut.fill(gravis::bRGB(0));
 
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iout()) {
-                    const unsigned char val = floor((DIRECT_MULTIDIM_ELEM(Iout(), n) - this_minval) / step);
-                    unsigned char r, g, b;
-                    greyToRGB(color_scheme, val, r, g, b);
-                    pngOut[n] = gravis::bRGB(r, g, b);
-                }
-                pngOut.writePNG(my_fn_out);
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iout()) {
+                const unsigned char val = floor((DIRECT_MULTIDIM_ELEM(Iout(), n) - minmax.min) / step);
+                unsigned char r, g, b;
+                greyToRGB(color_scheme, val, r, g, b);
+                pngOut[n] = gravis::bRGB(r, g, b);
+            }
+            pngOut.writePNG(my_fn_out);
             #else
-                REPORT_ERROR("You cannot write PNG images because libPNG was not linked during compilation.");
+            REPORT_ERROR("You cannot write PNG images because libPNG was not linked during compilation.");
             #endif
         } else {
             if (n >= 0) {
