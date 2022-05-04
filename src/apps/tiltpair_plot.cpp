@@ -179,17 +179,16 @@ class tiltpair_plot_parameters {
         E2 = E2 * E1.inv();
 
         // Get the tilt angle (and its sine)
-        RFLOAT aux = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
-        if (abs(aux) - 1.0 > XMIPP_EQUAL_ACCURACY)
-            REPORT_ERROR("BUG: aux > 1");
-        tilt_angle = degrees(acos(aux));
+        RFLOAT ah = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
+        if (Xmipp::gt(std::abs(ah), 1.0)) REPORT_ERROR("BUG: ah > 1");  // std::abs needed because abs comes from elsewhere
+        tilt_angle = degrees(acos(ah));
         RFLOAT sine_tilt_angle = 2.0 * sin(radians(tilt_angle));
 
         // Get the tilt axis direction in angles alpha and beta
-        if (sine_tilt_angle > XMIPP_EQUAL_ACCURACY) {
-            axis(0) = ( E2(2, 1) - E2(1, 2) ) / sine_tilt_angle;
-            axis(1) = ( E2(0, 2) - E2(2, 0) ) / sine_tilt_angle;
-            axis(2) = ( E2(1, 0) - E2(0, 1) ) / sine_tilt_angle;
+        if (sine_tilt_angle > Xmipp::epsilon) {
+            axis(0) = (E2(2, 1) - E2(1, 2)) / sine_tilt_angle;
+            axis(1) = (E2(0, 2) - E2(2, 0)) / sine_tilt_angle;
+            axis(2) = (E2(1, 0) - E2(0, 1)) / sine_tilt_angle;
         } else {
             axis(0) = axis(1) = 0.0;
             axis(2) = 1.0;

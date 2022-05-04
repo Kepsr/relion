@@ -804,32 +804,27 @@ void HelixAligner::expectationOneParticleNoFFT(long int ipart) {
     #pragma omp critical
     {
         for (int j_smear = -max_smear; j_smear <= max_smear; j_smear++) {
-            double smearw = (max_smear < XMIPP_EQUAL_ACCURACY) ? 1 : gaussian1D((double)j_smear, (double)max_smear / 3);
+            double smearw = max_smear < Xmipp::epsilon ? 1 : gaussian1D((double) j_smear, (double) max_smear / 3);
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Xrects[ipart][best_k_rot]) {
 
                 int jp = j + best_j_offset + j_smear;
-                while (jp < STARTINGX(model.Aref[best_class]))
-                    jp += xrect;
-                while (jp > FINISHINGX(model.Aref[best_class]))
-                    jp -= xrect;
+                while (jp < STARTINGX (model.Aref[best_class])) { jp += xrect; }
+                while (jp > FINISHINGX(model.Aref[best_class])) { jp -= xrect; }
 
                 int ip = i + best_i_offset;
-                while (ip < STARTINGY(model.Aref[best_class]))
-                    ip += yrect;
-                while (ip > FINISHINGY(model.Aref[best_class]))
-                    ip -= yrect;
+                while (ip < STARTINGY (model.Aref[best_class])) { ip += yrect; }
+                while (ip > FINISHINGY(model.Aref[best_class])) { ip -= yrect; }
 
                 // this places the original image in the offset-translated center of the rectangle
-                A2D_ELEM(model.Asum[best_class], ip, jp) += smearw * A2D_ELEM(Xrects[ipart][best_k_rot], i, j);
+                A2D_ELEM(model.Asum [best_class], ip, jp) += smearw * A2D_ELEM(Xrects[ipart][best_k_rot], i, j);
                 A2D_ELEM(model.Asumw[best_class], ip, jp) += smearw;
 
                 // This places the Y-flipped image at half a cross-over distance from the first one
                 int ipp = -ip;
                 if (ipp >= STARTINGY(Xrects[ipart][best_k_rot]) && ipp <= FINISHINGY(Xrects[ipart][best_k_rot])) {
                     int jpp = jp + xrect / 2;
-                    while (jpp > FINISHINGX(model.Aref[best_class]))
-                        jpp -= xrect;
-                    A2D_ELEM(model.Asum[best_class], ipp, jpp) += smearw * A2D_ELEM(Xrects[ipart][best_k_rot], i, j);
+                    while (jpp > FINISHINGX(model.Aref[best_class])) { jpp -= xrect; }
+                    A2D_ELEM(model.Asum [best_class], ipp, jpp) += smearw * A2D_ELEM(Xrects[ipart][best_k_rot], i, j);
                     A2D_ELEM(model.Asumw[best_class], ipp, jpp) += smearw;
                 }
             }
@@ -886,8 +881,9 @@ void HelixAligner::maximisation() {
 
         reconstruct2D(iclass);
     }
-    for (int iclass = 0; iclass < nr_classes; iclass++)
+    for (int iclass = 0; iclass < nr_classes; iclass++) {
         model.pdf[iclass] /= allsum;
+    }
 
 }
 
@@ -922,7 +918,7 @@ void HelixAligner::reconstruct2D(int iclass) {
 
     for (int j = 0; j < myFlines.size(); j++) {
         Matrix2D<RFLOAT> A2D;
-        RFLOAT rot = (RFLOAT)j*360./(XSIZE(model.Aref[iclass]));
+        RFLOAT rot = (RFLOAT) j * 360.0 / XSIZE(model.Aref[iclass]);
         rotation2DMatrix(rot, A2D);
         BP.set2DFourierTransform(myFlines[j], A2D);
     }

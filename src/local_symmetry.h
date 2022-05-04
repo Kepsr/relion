@@ -242,7 +242,7 @@ void calculateOperatorCC(
 void separateMasksBFS(
     const FileName &fn_in,
     const int K = 2,
-    RFLOAT val_thres = XMIPP_EQUAL_ACCURACY
+    RFLOAT val_thres = Xmipp::epsilon
 );
 
 /*

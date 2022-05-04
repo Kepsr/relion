@@ -571,7 +571,7 @@ class Matrix2D {
         * as the argument and the same values (to within machine epsilon).
         */
         bool equal(
-            const Matrix2D<T>& op, RFLOAT accuracy = XMIPP_EQUAL_ACCURACY
+            const Matrix2D<T>& op, RFLOAT accuracy = Xmipp::epsilon
         ) const {
             if (!sameShape(op)) 
                 return false;
@@ -588,7 +588,7 @@ class Matrix2D {
         /// @name Utilities for Matrix2D
         //@{
         // Set very small values (abs(val) < accuracy) equal to zero
-        void setSmallValuesToZero(RFLOAT accuracy = XMIPP_EQUAL_ACCURACY) {
+        void setSmallValuesToZero(RFLOAT accuracy = Xmipp::epsilon) {
             for (int i = 0; i < mdimy; i++)
             for (int j = 0; j < mdimx; j++)
             if (abs((*this)(i, j)) < accuracy) { (*this)(i, j) = 0.0; }
@@ -907,7 +907,7 @@ class Matrix2D {
             for (int i = 0; i < mdimy; i++) {
                 bool all_zeros = true;
                 for (int j = 0; j < mdimx; j++) {
-                    if (abs(MAT_ELEM((*this), i, j)) > XMIPP_EQUAL_ACCURACY) {
+                    if (abs(MAT_ELEM((*this), i, j)) > Xmipp::epsilon) {
                         all_zeros = false;
                         break;
                     }
@@ -1047,7 +1047,7 @@ class Matrix2D {
             for (int i = 0; i < mdimy; i++)
             for (int j = 0; j < mdimx; j++) {
                 T elem = MAT_ELEM(*this, i, j);
-                if ((i == j ? abs(elem - 1.0) : abs(elem)) > XMIPP_EQUAL_ACCURACY)
+                if ((i == j ? abs(elem - 1.0) : abs(elem)) > Xmipp::epsilon)
                     return false;
             }
             return true;

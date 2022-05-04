@@ -3735,7 +3735,7 @@ void MlOptimiser::maximization() {
         RCTICTOC(timer, RCT_1, ({
         if (mymodel.pdf_class[iclass] > 0.0 || mymodel.nr_bodies > 1) {
 
-            if (wsum_model.BPref[iclass].weight.sum() > XMIPP_EQUAL_ACCURACY) {
+            if (wsum_model.BPref[iclass].weight.sum() > Xmipp::epsilon) {
                 MultidimArray<RFLOAT> Iref_old;
                 if (do_sgd) { Iref_old = mymodel.Iref[iclass]; }
 
@@ -3857,7 +3857,7 @@ void MlOptimiser::maximizationOtherParameters() {
 
     // For multi-body refinement: it is possible we haven't done any bodies anymore, so sum_weight is zero
     // in that case we need to leave all parameters as they were
-    if (sum_weight < XMIPP_EQUAL_ACCURACY) return;
+    if (sum_weight < Xmipp::epsilon) return;
 
     // Annealing of multiple-references in SGD
     if (do_sgd && !do_sgd_skip_anneal && mymodel.nr_classes > 1 && iter < sgd_ini_iter + sgd_inbetween_iter) {

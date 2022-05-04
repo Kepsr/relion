@@ -102,17 +102,6 @@ extern const char *g_RELION_VERSION;
 const double PI = 3.14159265358979323846;
 #endif
 
-/** Equal accuracy
- *
- * An epsilon for determining whether two values should be considered equal.
- * Value depends on whether RELION is operating in single or in double precision.
- * Required to correctly find symmetry subgroups.
- */
-#ifdef RELION_SINGLE_PRECISION
-#define XMIPP_EQUAL_ACCURACY 1e-4
-#else
-#define XMIPP_EQUAL_ACCURACY 1e-6
-#endif
 //@}
 
 /// @name Numerical functions
@@ -409,7 +398,7 @@ inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
  * next_power = NEXT_POWER_OF_2(1000); // next_power = 1024
  * @endcode
  */
-#define NEXT_POWER_OF_2(x) (1 << ceil(log((RFLOAT) x) / log(2.0) - XMIPP_EQUAL_ACCURACY))
+#define NEXT_POWER_OF_2(x) (1 << ceil(log((RFLOAT) x) / log(2.0) - Xmipp::epsilon))
 
 /** Linear interpolation
  *
@@ -442,6 +431,18 @@ inline T LIN_INTERP(RFLOAT x, T x0, T xF) {
 
 namespace Xmipp {
 
+    /** (XMIPP_EQUAL_ACCURACY)
+     *
+     * An epsilon for determining whether two values should be considered equal.
+     * Value depends on whether RELION is operating in single or in double precision.
+     * Required to correctly find symmetry subgroups.
+     */
+    #ifdef RELION_SINGLE_PRECISION
+    const RFLOAT epsilon = 1e-4;
+    #else
+    const RFLOAT epsilon = 1e-6;
+    #endif
+
     // The first index of an Xmipp volume/image/array of size 'size'.
     inline long int init(int size) {
         return -(long int) ((float) size / 2.0);
@@ -452,16 +453,27 @@ namespace Xmipp {
         return size + init(size) - 1;
     }
 
+    // lt and gt are more stringent than ordinary > and <.
+    // lt(x, y) can be false even if x < y is true
+    // and gt(x, y) can be false even if x > y is true
+    // This is to ignore insignificant differences caused by machine error.
+
     // Less than
     template <typename T>
     inline T lt(T x, T y) {
-        return x < y - XMIPP_EQUAL_ACCURACY;
+        return x < y - epsilon;
     }
 
     // Greater than
     template <typename T>
     inline T gt(T x, T y) {
-        return x > y + XMIPP_EQUAL_ACCURACY;
+        return x > y + epsilon;
+    }
+
+    // Equality
+    template <typename T>
+    inline bool eq(T x, T y) {
+        return abs(x - y) < epsilon;
     }
 
 }

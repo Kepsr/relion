@@ -1833,7 +1833,7 @@ void MlOptimiserMpi::maximization() {
                 }
                 if (node->rank == reconstruct_rank1) {
 
-                    if (wsum_model.BPref[ith_recons].weight.sum() > XMIPP_EQUAL_ACCURACY) {
+                    if (wsum_model.BPref[ith_recons].weight.sum() > Xmipp::epsilon) {
 
                         MultidimArray<RFLOAT> Iref_old;
 

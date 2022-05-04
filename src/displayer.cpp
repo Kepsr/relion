@@ -1605,7 +1605,7 @@ void pickerViewerCanvas::draw() {
                 colval = MDcoords.getValue<RFLOAT>(color_label);
 
                 // Assume undefined values are set to -999....
-                if (colval + 999.0 < XMIPP_EQUAL_ACCURACY) {
+                if (colval + 999.0 < Xmipp::epsilon) {
                     fl_color(FL_GREEN);
                 } else {
                     // Bound colval
@@ -1861,7 +1861,7 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
             RFLOAT x = MDcolor.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
             RFLOAT y = MDcolor.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
 
-            if (abs(x - my_xpos) + abs(y - my_ypos) > XMIPP_EQUAL_ACCURACY) {
+            if (abs(x - my_xpos) + abs(y - my_ypos) > Xmipp::epsilon) {
                 std::cerr << " _fn_img= " << _fn_img << " iimg= " << iimg << " _fn_mic= " << _fn_mic << std::endl;
                 std::cerr << " x= " << x << " my_xpos= " << my_xpos << std::endl;
                 std::cerr << " y= " << y << " my_ypos= " << my_ypos << std::endl;

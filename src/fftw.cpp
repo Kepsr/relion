@@ -729,7 +729,7 @@ void shiftImageInFourierTransformWithTabSincos(
     if (in.getDim() == 2) {
         xshift /= -oridim;
         yshift /= -oridim;
-        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) {
             windowFourierTransform(in, out, newdim);
             return;
         }
@@ -750,7 +750,7 @@ void shiftImageInFourierTransformWithTabSincos(
         xshift /= -oridim;
         yshift /= -oridim;
         zshift /= -oridim;
-        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY && abs(zshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon && abs(zshift) < Xmipp::epsilon) {
             windowFourierTransform(in, out, newdim);
             return;
         }
@@ -782,7 +782,7 @@ void shiftImageInFourierTransform(
 
         case 1:
         xshift /= -oridim;
-        if (abs(xshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < Xmipp::epsilon) {
             out = in;
             return;
         }
@@ -806,7 +806,7 @@ void shiftImageInFourierTransform(
         case 2:
         xshift /= -oridim;
         yshift /= -oridim;
-        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) {
             out = in;
             return;
         }
@@ -851,7 +851,7 @@ void shiftImageInFourierTransform(
         xshift /= -oridim;
         yshift /= -oridim;
         zshift /= -oridim;
-        if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY && abs(zshift) < XMIPP_EQUAL_ACCURACY) {
+        if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon && abs(zshift) < Xmipp::epsilon) {
             out = in;
             return;
         }

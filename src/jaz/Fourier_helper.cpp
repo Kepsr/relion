@@ -27,36 +27,35 @@ void FourierHelper::FourierShift2D(MultidimArray<Complex> &img, RFLOAT xshift, R
     xshift /= h;
     yshift /= h;
 
-    if (abs(xshift) < XMIPP_EQUAL_ACCURACY && abs(yshift) < XMIPP_EQUAL_ACCURACY) {
+    if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) {
         return;
     }
 
     for (long int yy = 0; yy < h; yy++)
     for (long int xx = 0; xx < w; xx++) {
         RFLOAT x = xx;
-        RFLOAT y = yy < w? yy : yy - h;
+        RFLOAT y = yy < w ? yy : yy - h;
 
+        Complex c1;
         RFLOAT dotp = -2.0 * PI * (x * xshift + y * yshift);
-
-        RFLOAT a, b;
         #ifdef RELION_SINGLE_PRECISION
-        SINCOSF(dotp, &b, &a);
+        SINCOSF(dotp, &c1.imag, &c1.real);
         #else
-        SINCOS(dotp, &b, &a);
+        SINCOS(dotp, &c1.imag, &c1.real);
         #endif
 
-        RFLOAT c = DIRECT_A2D_ELEM(img, yy, xx).real;
-        RFLOAT d = DIRECT_A2D_ELEM(img, yy, xx).imag;
-        RFLOAT ac = a * c;
-        RFLOAT bd = b * d;
-        RFLOAT ab_cd = (a + b) * (c + d);
+        Complex c2 = DIRECT_A2D_ELEM(img, yy, xx);
 
-        DIRECT_A2D_ELEM(img, yy, xx) = Complex(ac - bd, ab_cd - ac - bd);
+        DIRECT_A2D_ELEM(img, yy, xx) = Complex(
+            c1.real * c2.real - c1.imag * c2.imag,  // c1 dot conj c2
+            c1.real * c2.imag + c1.imag * c2.real   // c1 dot (i conj c2)
+        );
     }
 }
 
-void FourierHelper::FourierShift2D(MultidimArray<RFLOAT> &img, RFLOAT xshift, RFLOAT yshift)
-{
+void FourierHelper::FourierShift2D(
+    MultidimArray<RFLOAT> &img, RFLOAT xshift, RFLOAT yshift
+) {
     FourierTransformer ft;
     MultidimArray<Complex> imgC;
 

@@ -147,7 +147,7 @@ void alignWithZ(
 
     // Compute length of the projection on YZ plane
     RFLOAT proj_mod = sqrt(YY(Axis) * YY(Axis) + ZZ(Axis) * ZZ(Axis));
-    if (proj_mod > XMIPP_EQUAL_ACCURACY) {   
+    if (proj_mod > Xmipp::epsilon) {   
         // proj_mod != 0
         // Build Matrix result, which makes the turning axis coincident with Z
         MAT_ELEM(result, 0, 0) = proj_mod;

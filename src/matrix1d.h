@@ -964,7 +964,7 @@ class Matrix1D {
          */
         void selfNormalize() {
             RFLOAT m = module();
-            if (abs(m) > XMIPP_EQUAL_ACCURACY) {
+            if (abs(m) > Xmipp::epsilon) {
                 *this *= (T) (1.0 / m);
             } else {
                 initZeros();

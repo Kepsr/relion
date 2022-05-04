@@ -316,7 +316,7 @@ class CTF {
 
     // Compute Deltaf at a given direction (no longer used by getCTF)
     inline RFLOAT getDeltaF(RFLOAT X, RFLOAT Y) const {
-        if (abs(X) < XMIPP_EQUAL_ACCURACY && abs(Y) < XMIPP_EQUAL_ACCURACY)
+        if (abs(X) < Xmipp::epsilon && abs(Y) < Xmipp::epsilon)
             return 0;
 
         RFLOAT ellipsoid_ang = atan2(Y, X) - rad_azimuth;

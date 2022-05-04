@@ -251,7 +251,7 @@ void MovieReconstructor::backproject(int rank, int size) {
     int frame_no = frame; // 1-indexed
     // Loop over movies
     for (int imov = 0; imov < nr_movies; imov++) {
-        fn_mic = mdts[imov].getValue(EMDL::MICROGRAPH_NAME, 0);
+        fn_mic = mdts[imov].getValue<FileName>(EMDL::MICROGRAPH_NAME, 0);
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
 		// std::cout << "fn_post = " << fn_post << std::endl;
@@ -330,7 +330,7 @@ void MovieReconstructor::backproject(int rank, int size) {
                 #endif
 
                 int this_subset = 0;
-                this_subset = mdts[imov].getValue(EMDL::PARTICLE_RANDOM_SUBSET, ipart);
+                this_subset = mdts[imov].getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, ipart);
 
                 if (subset >= 1 && subset <= 2 && this_subset != subset) continue;
                 n_processed++;
@@ -625,14 +625,14 @@ void MovieReconstructor::applyCTFPandCTFQ(
             }
 
             // First time round: resize the output arrays
-            if (ipass == 0 && fabs(angle) < XMIPP_EQUAL_ACCURACY) {
+            if (ipass == 0 && fabs(angle) < Xmipp::epsilon) {
                 outP.resize(Fapp);
                 outQ.resize(Fapp);
             }
 
             // Now set back the right parts into outP (first pass) or outQ (second pass)
-            float anglemin = angle + 90. - (0.5*angle_step);
-            float anglemax = angle + 90. + (0.5*angle_step);
+            float anglemin = angle + 90.0 - 0.5 * angle_step;
+            float anglemax = angle + 90.0 + 0.5 * angle_step;
 
             // angles larger than 180
             bool is_reverse = false;
@@ -643,11 +643,11 @@ void MovieReconstructor::applyCTFPandCTFQ(
             }
             MultidimArray<Complex> *myCTFPorQ, *myCTFPorQb;
             if (is_reverse) {
-                myCTFPorQ  = (ipass == 0) ? &outQ : &outP;
-                myCTFPorQb = (ipass == 0) ? &outP : &outQ;
+                myCTFPorQ  = ipass == 0 ? &outQ : &outP;
+                myCTFPorQb = ipass == 0 ? &outP : &outQ;
             } else {
-                myCTFPorQ  = (ipass == 0) ? &outP : &outQ;
-                myCTFPorQb = (ipass == 0) ? &outQ : &outP;
+                myCTFPorQ  = ipass == 0 ? &outP : &outQ;
+                myCTFPorQb = ipass == 0 ? &outQ : &outP;
             }
 
             // Deal with sectors with the Y-axis in the middle of the sector...

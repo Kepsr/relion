@@ -180,14 +180,14 @@ class reconstruct_parameters {
                     transformer.FourierTransform(Iapp, Fapp, false); // false means: leave Fapp in the transformer
 
                     // First time round: resize the output arrays
-                    if (ipass == 0 && fabs(angle) < XMIPP_EQUAL_ACCURACY) {
+                    if (ipass == 0 && fabs(angle) < Xmipp::epsilon) {
                         outP.resize(Fapp);
                         outQ.resize(Fapp);
                     }
 
                     // Now set back the right parts into outP (first pass) or outQ (second pass)
-                    float anglemin = angle + 90.0 - (0.5 * angle_step);
-                    float anglemax = angle + 90.0 + (0.5 * angle_step);
+                    float anglemin = angle + 90.0 - 0.5 * angle_step;
+                    float anglemax = angle + 90.0 + 0.5 * angle_step;
 
                     // angles larger than 180
                     bool is_reverse = false;
@@ -198,11 +198,11 @@ class reconstruct_parameters {
                     }
                     MultidimArray<Complex> *myCTFPorQ, *myCTFPorQb;
                     if (is_reverse) {
-                        myCTFPorQ  = (ipass == 0) ? &outQ : &outP;
-                        myCTFPorQb = (ipass == 0) ? &outP : &outQ;
+                        myCTFPorQ  = ipass == 0 ? &outQ : &outP;
+                        myCTFPorQb = ipass == 0 ? &outP : &outQ;
                     } else {
-                        myCTFPorQ  = (ipass == 0) ? &outP : &outQ;
-                        myCTFPorQb = (ipass == 0) ? &outQ : &outP;
+                        myCTFPorQ  = ipass == 0 ? &outP : &outQ;
+                        myCTFPorQb = ipass == 0 ? &outQ : &outP;
                     }
 
                     // Deal with sectors with the Y-axis in the middle of the sector...
@@ -237,7 +237,7 @@ class reconstruct_parameters {
         }
 
         void reconstruct() {
-            int data_dim = (do_3d_rot) ? 3 : 2;
+            int data_dim = do_3d_rot ? 3 : 2;
 
             MultidimArray<RFLOAT> dummy;
             Image<RFLOAT> vol, sub;
@@ -272,8 +272,7 @@ class reconstruct_parameters {
 
             // Get dimension of the images
 
-            fn_img = mdt0.getValue(EMDL::IMAGE_NAME, 0);
-
+            fn_img = mdt0.getValue<FileName>(EMDL::IMAGE_NAME, 0);
 
             Projector subProjector(sub.data.xdim, interpolator, padding_factor, r_min_nn);
 
@@ -337,19 +336,18 @@ class reconstruct_parameters {
                     const long pc = obsR.size();
 
                     for (int p = 0; p < pc; p++) {
-                        int randSubset = table.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
-                        randSubset--;
+                        int randSubset = table.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
                         // Rotations
                         if (ref_dim == 2) {
                             rot = tilt = 0.0;
                         } else {
-                            rot  = table.getValue(EMDL::ORIENT_ROT,  p);
-                            tilt = table.getValue(EMDL::ORIENT_TILT, p);
+                            rot  = table.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
+                            tilt = table.getValue<RFLOAT>(EMDL::ORIENT_TILT, p);
                         }
 
                         psi = 0.0;
-                        psi = table.getValue(EMDL::ORIENT_PSI, p);
+                        psi = table.getValue<RFLOAT>(EMDL::ORIENT_PSI, p);
 
                         if (angular_error > 0.0) {
                             rot  += rnd_gaus(0.0, angular_error);
@@ -375,8 +373,8 @@ class reconstruct_parameters {
 
                         // Translations (either through phase-shifts or in real space
                         trans.initZeros();
-                        XX(trans) = table.getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
-                        YY(trans) = table.getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
+                        XX(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
+                        YY(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
 
                         XX(trans) /= pixelsize;
                         YY(trans) /= pixelsize;
@@ -388,7 +386,7 @@ class reconstruct_parameters {
 
                         if (do_3d_rot) {
                             trans.resize(3);
-                            ZZ(trans) = table.getValue(EMDL::ORIENT_ORIGIN_Z, p);
+                            ZZ(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z, p);
 
                             if (shift_error > 0.0) {
                                 ZZ(trans) += rnd_gaus(0.0, shift_error);
@@ -396,7 +394,7 @@ class reconstruct_parameters {
                         }
 
                         if (do_fom_weighting) {
-                            fom = table.getValue(EMDL::PARTICLE_FOM, p);
+                            fom = table.getValue<RFLOAT>(EMDL::PARTICLE_FOM, p);
                         }
 
                         MultidimArray<Complex> Fsub, F2D, F2DP, F2DQ;
