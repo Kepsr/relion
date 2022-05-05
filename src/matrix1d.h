@@ -398,7 +398,7 @@ class Matrix1D {
      * Free all vdata.
      */
     inline void coreDeallocate() {
-        if (vdata) { delete[] vdata; }
+        delete[] vdata;
         vdata = NULL;
     }
     //@}
@@ -418,7 +418,7 @@ class Matrix1D {
      */
     inline void resize(int Xdim) {
 
-        if (Xdim == vdim) return;
+        if (Xdim == size()) return;
 
         if (Xdim <= 0) {
             clear();
@@ -434,7 +434,7 @@ class Matrix1D {
 
         // Copy vdata into new_vdata
         for (int j = 0; j < Xdim; j++) {
-            new_vdata[j] = j >= vdim ? 0 : vdata[j];
+            new_vdata[j] = j >= size() ? 0 : vdata[j];
             // Fill with 0 if out of bounds
         }
 
@@ -459,9 +459,7 @@ class Matrix1D {
      * @endcode
      */
     template<typename T1>
-    void resize(const Matrix1D<T1> &v) {
-        if (size() != v.size()) resize(v.size());
-    }
+    inline void resize(const Matrix1D<T1> &other) { resize(other.size()); }
 
     /** Same shape.
      *
@@ -469,8 +467,8 @@ class Matrix1D {
      * as the argument
      */
     template <typename T1>
-    bool sameShape(const Matrix1D<T1>& op) const {
-        return size() == op.size();
+    inline bool sameShape(const Matrix1D<T1> &other) const {
+        return size() == other.size();
     }
 
     /** Returns the size of this vector
@@ -546,7 +544,7 @@ class Matrix1D {
     /** Initialize to zeros with a given size.
      */
     void initZeros(int Xdim) {
-        if (size() != Xdim) resize(Xdim);
+        resize(Xdim);
         memset(vdata, 0, size() * sizeof(T));
     }
 
@@ -561,7 +559,7 @@ class Matrix1D {
      */
     template <typename T1>
     void initZeros(const Matrix1D<T1> &op) {
-        if (size() != op.size()) resize(op);
+        resize(op);
         memset(vdata, 0, size() * sizeof(T));
     }
     //@}
