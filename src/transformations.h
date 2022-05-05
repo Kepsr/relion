@@ -901,7 +901,7 @@ void radialAverage(
         XX(idx) = j - XX(center_of_rot);
 
         // Determine distance to the center
-        int distance = rounding ? round(idx.module()) : floor(idx.module());
+        int distance = rounding ? round(idx.modulus()) : floor(idx.modulus());
 
         // Sum te value to the pixels with the same distance
         radial_mean(distance) += A3D_ELEM(m, k, i, j);

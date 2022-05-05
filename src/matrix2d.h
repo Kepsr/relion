@@ -100,14 +100,14 @@ template<typename T>
 class Matrix2D;
 
 template<typename T>
-void ludcmp(const Matrix2D<T>& A, Matrix2D<T>& LU, Matrix1D<int>& indx, T& d);
+void ludcmp(const Matrix2D<T> &A, Matrix2D<T> &LU, Matrix1D<int>& indx, T& d);
 
 template<typename T>
-void lubksb(const Matrix2D<T>& LU, Matrix1D<int>& indx, Matrix1D<T>& b);
+void lubksb(const Matrix2D<T> &LU, Matrix1D<int>& indx, Matrix1D<T>& b);
 
 template<typename T>
 void svdcmp(
-    const Matrix2D<T>& a,
+    const Matrix2D<T> &a,
     Matrix2D<RFLOAT>& u, Matrix1D<RFLOAT>& w, Matrix2D<RFLOAT>& v
 );
 
@@ -121,7 +121,7 @@ void svbksb(
 
 template<typename T>
 void solve(
-    const Matrix2D<T>& A,
+    const Matrix2D<T> &A,
     const Matrix1D<T>& b,
     Matrix1D<RFLOAT>& result,
     RFLOAT tolerance
@@ -160,7 +160,7 @@ class Matrix2D {
         }
 
         // Copy constructor
-        Matrix2D(const Matrix2D<T>& v) {
+        Matrix2D(const Matrix2D<T> &v) {
             coreInit();
             *this = v;
         }
@@ -179,7 +179,7 @@ class Matrix2D {
         * v1 = v2 = v3;
         * @endcode
         */
-        Matrix2D<T>& operator=(const Matrix2D<T>& op1) {
+        Matrix2D<T>& operator=(const Matrix2D<T> &op1) {
             if (&op1 != this) {
                 if (MAT_XSIZE(*this) != MAT_XSIZE(op1) || MAT_YSIZE(*this) != MAT_YSIZE(op1))
                     resize(op1);
@@ -388,7 +388,7 @@ class Matrix2D {
         void initIdentity(int dim) {
             initZeros(dim, dim);
             for (int i = 0; i < dim; i++)
-                MAT_ELEM(*this,i,i) = 1;
+                MAT_ELEM(*this, i,i) = 1;
         }
         //@}
 
@@ -432,7 +432,7 @@ class Matrix2D {
         }
 
         // v3 = k * v2
-        friend Matrix2D<T> operator*(T op1, const Matrix2D<T>& op2) {
+        friend Matrix2D<T> operator*(T op1, const Matrix2D<T> &op2) {
             Matrix2D<T> tmp(op2);
             for (int i=0; i < op2.mdim; i++)
                 tmp.mdata[i] = op1 * op2.mdata[i];
@@ -457,7 +457,7 @@ class Matrix2D {
         * v2 = A*v1;
         * @endcode
         */
-        Matrix1D<T> operator*(const Matrix1D<T>& op1) const {
+        Matrix1D<T> operator*(const Matrix1D<T> &op1) const {
             Matrix1D<T> result;
 
             if (mdimx != op1.size()) {
@@ -484,7 +484,7 @@ class Matrix2D {
         * C = A*B;
         * @endcode
         */
-        Matrix2D<T> operator*(const Matrix2D<T>& op1) const {
+        Matrix2D<T> operator*(const Matrix2D<T> &op1) const {
             Matrix2D<T> result;
             if (mdimx != op1.mdimy)
                 REPORT_ERROR("Not compatible sizes in matrix multiplication");
@@ -503,7 +503,7 @@ class Matrix2D {
         * C = A + B;
         * @endcode
         */
-        Matrix2D<T> operator+(const Matrix2D<T>& op1) const {
+        Matrix2D<T> operator+(const Matrix2D<T> &op1) const {
             Matrix2D<T> result;
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
                 REPORT_ERROR("operator+: Not same sizes in matrix addition");
@@ -522,13 +522,13 @@ class Matrix2D {
         * A += B;
         * @endcode
         */
-        void operator+=(const Matrix2D<T>& op1) const {
+        void operator+=(const Matrix2D<T> &op1) const {
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
                 REPORT_ERROR("operator+=: Not same sizes in matrix addition");
 
             for (int i = 0; i < mdimy; i++)
                 for (int j = 0; j < mdimx; j++)
-                    MAT_ELEM(*this,i, j) += MAT_ELEM(op1, i, j);
+                    MAT_ELEM(*this, i, j) += MAT_ELEM(op1, i, j);
         }
 
         /** Matrix subtraction
@@ -537,7 +537,7 @@ class Matrix2D {
         * C = A - B;
         * @endcode
         */
-        Matrix2D<T> operator-(const Matrix2D<T>& op1) const {
+        Matrix2D<T> operator-(const Matrix2D<T> &op1) const {
             Matrix2D<T> result;
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
                 REPORT_ERROR("operator-: Not same sizes in matrix subtraction");
@@ -556,13 +556,13 @@ class Matrix2D {
         * A -= B;
         * @endcode
         */
-        void operator-=(const Matrix2D<T>& op1) const {
+        void operator-=(const Matrix2D<T> &op1) const {
             if (mdimx != op1.mdimx || mdimy != op1.mdimy)
                 REPORT_ERROR("operator-=: Not same sizes in matrix subtraction");
 
             for (int i = 0; i < mdimy; i++)
                 for (int j = 0; j < mdimx; j++)
-                    MAT_ELEM(*this,i, j) -= MAT_ELEM(op1, i, j);
+                    MAT_ELEM(*this, i, j) -= MAT_ELEM(op1, i, j);
         }
 
         /** Equality
@@ -571,7 +571,7 @@ class Matrix2D {
         * as the argument and the same values (to within machine epsilon).
         */
         bool equal(
-            const Matrix2D<T>& op, RFLOAT accuracy = Xmipp::epsilon
+            const Matrix2D<T> &op, RFLOAT accuracy = Xmipp::epsilon
         ) const {
             if (!sameShape(op)) 
                 return false;
@@ -678,7 +678,7 @@ class Matrix2D {
         }
 
         // Show matrix
-        friend std::ostream& operator<<(std::ostream& ostrm, const Matrix2D<T>& v) {
+        friend std::ostream& operator<<(std::ostream& ostrm, const Matrix2D<T> &v) {
             if (v.Xdim() == 0 || v.Ydim() == 0) {
                 ostrm << "NULL matrix\n";
             } else {
@@ -705,7 +705,7 @@ class Matrix2D {
         * Matrix2D<RFLOAT> m = fromVector(v);
         * @endcode
         */
-        void fromVector(const Matrix1D<T>& op1) {
+        void fromVector(const Matrix1D<T> &op1) {
             // Null vector => Null matrix
             if (op1.size() == 0) {
                 clear();
@@ -714,15 +714,15 @@ class Matrix2D {
 
             // Look at shape and copy values
             if (op1.isRow()) {
-                if (mdimy != 1 || mdimx != VEC_XSIZE(op1))
-                    resize(1, VEC_XSIZE(op1));
-                for (int j = 0; j < VEC_XSIZE(op1); j++)
-                    MAT_ELEM(*this,0, j) = VEC_ELEM(op1,j);
+                if (mdimy != 1 || mdimx != op1.size())
+                    resize(1, op1.size());
+                for (int j = 0; j < op1.size(); j++)
+                    MAT_ELEM(*this, 0, j) = op1(j);
             } else {
-                if (mdimy != 1 || mdimx != VEC_XSIZE(op1))
-                    resize(VEC_XSIZE(op1), 1);
-                for (int i = 0; i < VEC_XSIZE(op1); i++)
-                    MAT_ELEM(*this,i, 0) = VEC_ELEM(op1,i);
+                if (mdimy != 1 || mdimx != op1.size())
+                    resize(op1.size(), 1);
+                for (int i = 0; i < op1.size(); i++)
+                    MAT_ELEM(*this, i, 0) = op1(i);
             }
         }
 
@@ -737,7 +737,7 @@ class Matrix2D {
         * m.toVector(v);
         * @endcode
         */
-        void toVector(Matrix1D<T>& op1) const {
+        void toVector(Matrix1D<T> &op1) const {
             // Null matrix => Null vector
             if (mdimx == 0 || mdimy == 0) {
                 op1.clear();
@@ -745,26 +745,26 @@ class Matrix2D {
             }
 
             // If matrix is not a vector, produce an error
-            if (!(mdimx == 1 || mdimy == 1))
+            if (mdimx != 1 && mdimy != 1)
                 REPORT_ERROR("toVector: Matrix cannot be converted to vector");
 
             // Look at shape and copy values
             if (mdimy == 1) {
                 // Row vector
-                if (VEC_XSIZE(op1) != mdimx)
+                if (op1.size() != mdimx)
                     op1.resize(mdimx);
 
                 for (int j = 0; j < mdimx; j++)
-                    VEC_ELEM(op1,j) = MAT_ELEM(*this,0, j);
+                    op1(j) = MAT_ELEM(*this, 0, j);
 
                 op1.setRow();
             } else {
                 // Column vector
-                if (VEC_XSIZE(op1) != mdimy)
+                if (op1.size() != mdimy)
                     op1.resize(mdimy);
 
                 for (int i = 0; i < mdimy; i++)
-                    VEC_ELEM(op1,i) = MAT_ELEM(*this,i, 0);
+                    op1(i) = MAT_ELEM(*this, i, 0);
 
                 op1.setCol();
             }
@@ -772,14 +772,14 @@ class Matrix2D {
 
         // Copy matrix to stl::vector
         void copyToVector(std::vector<T> &v) {
-            v.assign(mdata, mdata+mdim);
+            v.assign(mdata, mdata + mdim);
         }
 
         // Copy stl::vector to matrix
         void copyFromVector(std::vector<T> &v,int Xdim, int Ydim) {
             if (mdimx!=Xdim || mdimy!=Ydim)
                 resize(Ydim, Xdim);
-            copy( v.begin(), v.begin()+v.size(), mdata);
+            copy(v.begin(), v.begin() + v.size(), mdata);
         }
 
         /** Get row
@@ -793,7 +793,7 @@ class Matrix2D {
         * m.getRow(-2, v);
         * @endcode
         */
-        void getRow(int i, Matrix1D<T>& v) const {
+        void getRow(int i, Matrix1D<T> &v) const {
             if (mdimx == 0 || mdimy == 0) {
                 v.clear();
                 return;
@@ -802,10 +802,10 @@ class Matrix2D {
             if (i < 0 || i >= mdimy)
                 REPORT_ERROR("getRow: Matrix subscript (i) greater than matrix dimension");
 
-            if (VEC_XSIZE(v)!=mdimx)
+            if (v.size() != mdimx)
                 v.resize(mdimx);
             for (int j = 0; j < mdimx; j++)
-                VEC_ELEM(v,j) = MAT_ELEM(*this,i, j);
+                v(j) = MAT_ELEM(*this, i, j);
 
             v.setRow();
         }
@@ -820,7 +820,7 @@ class Matrix2D {
         * m.getCol(-1, v);
         * @endcode
         */
-        void getCol(int j, Matrix1D<T>& v) const {
+        void getCol(int j, Matrix1D<T> &v) const {
             if (mdimx == 0 || mdimy == 0) {
                 v.clear();
                 return;
@@ -829,10 +829,10 @@ class Matrix2D {
             if (j < 0 || j >= mdimx)
                 REPORT_ERROR("getCol: Matrix subscript (j) greater than matrix dimension");
 
-            if (VEC_XSIZE(v) != mdimy)
+            if (v.size()  != mdimy)
                 v.resize(mdimy);
             for (int i = 0; i < mdimy; i++)
-                VEC_ELEM(v,i) = MAT_ELEM(*this,i, j);
+                v(i) = MAT_ELEM(*this, i, j);
 
             v.setCol();
         }
@@ -845,21 +845,21 @@ class Matrix2D {
         * m.setRow(-2, m.row(1)); // Copies row 1 in row -2
         * @endcode
         */
-        void setRow(int i, const Matrix1D<T>& v) {
+        void setRow(int i, const Matrix1D<T> &v) {
             if (mdimx == 0 || mdimy == 0)
                 REPORT_ERROR("setRow: Target matrix is empty");
 
             if (i < 0 || i >= mdimy)
                 REPORT_ERROR("setRow: Matrix subscript (i) out of range");
 
-            if (VEC_XSIZE(v) != mdimx)
+            if (v.size()  != mdimx)
                 REPORT_ERROR("setRow: Vector dimension different from matrix one");
 
             if (!v.isRow())
                 REPORT_ERROR("setRow: Not a row vector in assignment");
 
             for (int j = 0; j < mdimx; j++)
-                MAT_ELEM(*this,i, j) = VEC_ELEM(v,j);
+                MAT_ELEM(*this, i, j) = v(j);
         }
 
         /** Set Column
@@ -871,21 +871,21 @@ class Matrix2D {
         * m.setCol(0, (m.row(1)).transpose()); // Copies row 1 in column 0
         * @endcode
         */
-        void setCol(int j, const Matrix1D<T>& v) {
+        void setCol(int j, const Matrix1D<T> &v) {
             if (mdimx == 0 || mdimy == 0)
                 REPORT_ERROR("setCol: Target matrix is empty");
 
             if (j < 0 || j>= mdimx)
                 REPORT_ERROR("setCol: Matrix subscript (j) out of range");
 
-            if (VEC_XSIZE(v) != mdimy)
+            if (v.size()  != mdimy)
                 REPORT_ERROR("setCol: Vector dimension different from matrix one");
 
             if (!v.isCol())
                 REPORT_ERROR("setCol: Not a column vector in assignment");
 
             for (int i = 0; i < mdimy; i++)
-                MAT_ELEM(*this,i, j) = VEC_ELEM(v,i);
+                MAT_ELEM(*this, i, j) = v(i);
         }
 
         /** Matrix determinant
@@ -959,7 +959,7 @@ class Matrix2D {
         * m1.inv(m1_inv);
         * @endcode
         */
-        void inv(Matrix2D<T>& result) const {
+        void inv(Matrix2D<T> &result) const {
 
             if (mdimx == 0 || mdimy == 0)
                 REPORT_ERROR("Inverse: Matrix is empty");
@@ -1006,11 +1006,11 @@ class Matrix2D {
                 // Compute W^-1
                 bool invertible = false;
                 FOR_ALL_ELEMENTS_IN_MATRIX1D(w) {
-                    if (abs(VEC_ELEM(w, i)) > tol) {
-                        VEC_ELEM(w, i) = 1.0 / VEC_ELEM(w, i);
+                    if (abs(w(i)) > tol) {
+                        w(i) = 1.0 / w(i);
                         invertible = true;
                     } else {
-                        VEC_ELEM(w, i) = 0.0;
+                        w(i) = 0.0;
                     }
                 }
 
@@ -1019,7 +1019,7 @@ class Matrix2D {
 
                 // Compute V*W^-1
                 FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
-                    MAT_ELEM(v, i, j) *= VEC_ELEM(w, j);
+                    MAT_ELEM(v, i, j) *= w(j);
 
                 // Compute inverse
                 for (int i = 0; i < mdimx; i++)
@@ -1058,10 +1058,10 @@ class Matrix2D {
 // vector * matrix
 // Documented in matrix1D.h
 template<typename T>
-Matrix1D<T> Matrix1D<T>::operator*(const Matrix2D<T>& M) {
+Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
     Matrix1D<T> result;
 
-    if (VEC_XSIZE(*this) != MAT_YSIZE(M))
+    if (this->size() != MAT_YSIZE(M))
         REPORT_ERROR("Not compatible sizes in matrix by vector");
 
     if (!isRow())
@@ -1069,8 +1069,8 @@ Matrix1D<T> Matrix1D<T>::operator*(const Matrix2D<T>& M) {
 
     result.initZeros(MAT_XSIZE(M));
     for (int j = 0; j < MAT_XSIZE(M); j++)
-        for (int i = 0; i < MAT_YSIZE(M); i++)
-            VEC_ELEM(result,j) += VEC_ELEM(*this,i) * MAT_ELEM(M,i, j);
+    for (int i = 0; i < MAT_YSIZE(M); i++)
+    result(j) += (*this)(i) * MAT_ELEM(M, i, j);
 
     result.setRow();
     return result;
@@ -1082,10 +1082,9 @@ Matrix1D<T> Matrix1D<T>::operator*(const Matrix2D<T>& M) {
 //@{
 // LU Decomposition
 template<typename T>
-void ludcmp(const Matrix2D<T>& A, Matrix2D<T>& LU, Matrix1D<int>& indx, T& d) {
+void ludcmp(const Matrix2D<T> &A, Matrix2D<T> &LU, Matrix1D<int> &indx, T &d) {
     LU = A;
-    if (VEC_XSIZE(indx) != A.mdimx)
-        indx.resize(A.mdimx);
+    if (indx.size() != A.mdimx) indx.resize(A.mdimx);
     ludcmp(
         LU.adaptForNumericalRecipes2(), A.mdimx,
         indx.adaptForNumericalRecipes(), &d
@@ -1094,7 +1093,7 @@ void ludcmp(const Matrix2D<T>& A, Matrix2D<T>& LU, Matrix1D<int>& indx, T& d) {
 
 // LU Backsubstitution
 template<typename T>
-void lubksb(const Matrix2D<T>& LU, Matrix1D<int>& indx, Matrix1D<T>& b) {
+void lubksb(const Matrix2D<T> &LU, Matrix1D<int>& indx, Matrix1D<T>& b) {
     lubksb(
         LU.adaptForNumericalRecipes2(), indx.size(),
         indx.adaptForNumericalRecipes(), b.adaptForNumericalRecipes()
@@ -1110,7 +1109,7 @@ void svbksb(
 // Singular Value Decomposition (from numerical_recipes)
 template<typename T>
 void svdcmp(
-    const Matrix2D<T>& a,
+    const Matrix2D<T> &a,
     Matrix2D<RFLOAT>& u, Matrix1D<RFLOAT>& w, Matrix2D<RFLOAT>& v
 ) {
     // svdcmp only works with RFLOAT
@@ -1127,7 +1126,7 @@ void svdcmp(
 // Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
 void solve(
-    const Matrix2D<T>& A, const Matrix1D<T>& b,
+    const Matrix2D<T> &A, const Matrix1D<T>& b,
     Matrix1D<RFLOAT>& result, RFLOAT tolerance
 ) {
     if (A.mdimx == 0)
@@ -1167,7 +1166,7 @@ void solve(
 // Solve a system of linear equations (Ax=b), where x and b are matrices,
 // by SVD Decomposition (through Gauss-Jordan numerical recipes)
 template<typename T>
-void solve(const Matrix2D<T>& A, const Matrix2D<T>& b, Matrix2D<T>& result) {
+void solve(const Matrix2D<T> &A, const Matrix2D<T> &b, Matrix2D<T> &result) {
     if (A.mdimx == 0)
         REPORT_ERROR("Solve: Matrix is empty");
 

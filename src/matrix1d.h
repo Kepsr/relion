@@ -88,6 +88,7 @@ template <typename T> class Matrix2D;
  */
 #define VEC_XSIZE(m) ((m).vdim)
 
+// Convention: { 0, 1, 2 } <-> { X, Y, Z }
 
 /** Access to X component
  * @code
@@ -353,8 +354,8 @@ class Matrix1D {
     Matrix1D<T>& operator = (const Matrix1D<T> &op1) {
         if (&op1 != this) {
             resize(op1);
-            for (int i = 0; i < vdim; i++) { 
-                vdata[i] = op1.vdata[i]; 
+            for (int i = 0; i < size(); i++) { 
+                (*this)[i] = op1[i];
             }
             row = op1.row;
         }
@@ -431,7 +432,7 @@ class Matrix1D {
             REPORT_ERROR("Allocate: No space left");
         }
 
-        // Copy needed elements
+        // Copy vdata into new_vdata
         for (int j = 0; j < Xdim; j++) {
             new_vdata[j] = j >= vdim ? 0 : vdata[j];
             // Fill with 0 if out of bounds
@@ -459,7 +460,7 @@ class Matrix1D {
      */
     template<typename T1>
     void resize(const Matrix1D<T1> &v) {
-        if (vdim != v.vdim) resize(v.vdim);
+        if (size() != v.size()) resize(v.size());
     }
 
     /** Same shape.
@@ -469,7 +470,7 @@ class Matrix1D {
      */
     template <typename T1>
     bool sameShape(const Matrix1D<T1>& op) const {
-        return vdim == op.vdim;
+        return size() == op.size();
     }
 
     /** Returns the size of this vector
@@ -527,10 +528,8 @@ class Matrix1D {
      * v.initConstant(3.14);
      * @endcode
      */
-    void initConstant(T val) {
-        for (int j = 0; j < vdim; j++) {
-            vdata[j] = val;
-        }
+    void initConstant(T x) {
+        for (int i = 0; i < size(); i++) { (*this)[i] = x; }
     }
 
     /** Initialize to zeros with current size.
@@ -542,13 +541,13 @@ class Matrix1D {
      * v.initZeros();
      * @endcode
      */
-    void initZeros() { memset(vdata, 0, vdim * sizeof(T)); }
+    void initZeros() { memset(vdata, 0, size() * sizeof(T)); }
 
     /** Initialize to zeros with a given size.
      */
     void initZeros(int Xdim) {
-        if (vdim != Xdim) resize(Xdim);
-        memset(vdata, 0, vdim * sizeof(T));
+        if (size() != Xdim) resize(Xdim);
+        memset(vdata, 0, size() * sizeof(T));
     }
 
     /** Initialize to zeros following a pattern.
@@ -561,59 +560,53 @@ class Matrix1D {
      * @endcode
      */
     template <typename T1>
-    void initZeros(const Matrix1D<T1>& op) {
-        if (vdim != op.vdim) resize(op);
-        memset(vdata, 0, vdim * sizeof(T));
+    void initZeros(const Matrix1D<T1> &op) {
+        if (size() != op.size()) resize(op);
+        memset(vdata, 0, size() * sizeof(T));
     }
     //@}
 
     /// @name Matrix1D operators
     //@{
-    Matrix1D<T> operator * (T op1) const {
+    Matrix1D<T> operator * (T x) const {
         Matrix1D<T> tmp(*this);
-        for (int i = 0; i < vdim; i++) { tmp.vdata[i] = vdata[i] * op1; }
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] * x; }
         return tmp;
     }
 
-    Matrix1D<T> operator / (T op1) const {
+    Matrix1D<T> operator / (T x) const {
         Matrix1D<T> tmp(*this);
-        for (int i = 0; i < vdim; i++) { tmp.vdata[i] = vdata[i] / op1; }
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] / x; }
         return tmp;
     }
 
-    Matrix1D<T> operator + (T op1) const {
+    Matrix1D<T> operator + (T x) const {
         Matrix1D<T> tmp(*this);
-        for (int i = 0; i < vdim; i++) { tmp.vdata[i] = vdata[i] + op1; }
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] + x; }
         return tmp;
     }
 
-    Matrix1D<T> operator - (T op1) const {
+    Matrix1D<T> operator - (T x) const {
         Matrix1D<T> tmp(*this);
-        for (int i = 0; i < vdim; i++) { tmp.vdata[i] = vdata[i] - op1; }
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] - x; }
         return tmp;
     }
 
-    friend Matrix1D<T> operator * (T op1, const Matrix1D<T>& op2) {
-        Matrix1D<T> tmp(op2);
-        for (int i = 0; i < op2.vdim; i++) {
-            tmp.vdata[i] = op1 * op2.vdata[i];
-        }
+    friend Matrix1D<T> operator * (T x, const Matrix1D<T> &m) {
+        Matrix1D<T> tmp(m);
+        for (int i = 0; i < m.size(); i++) { tmp[i] = x * m[i]; }
         return tmp;
     }
 
-    friend Matrix1D<T> operator / (T op1, const Matrix1D<T>& op2) {
-        Matrix1D<T> tmp(op2);
-        for (int i = 0; i < op2.vdim; i++) {
-            tmp.vdata[i] = op1 / op2.vdata[i];
-        }
+    friend Matrix1D<T> operator / (T x, const Matrix1D<T> &m) {
+        Matrix1D<T> tmp(m);
+        for (int i = 0; i < m.size(); i++) { tmp[i] = x / m[i]; }
         return tmp;
     }
 
-    friend Matrix1D<T> operator + (T op1, const Matrix1D<T>& op2) {
-        Matrix1D<T> tmp(op2);
-        for (int i = 0; i < op2.vdim; i++) {
-            tmp.vdata[i] = op1 + op2.vdata[i];
-        }
+    friend Matrix1D<T> operator + (T x, const Matrix1D<T> &m) {
+        Matrix1D<T> tmp(m);
+        for (int i = 0; i < m.size(); i++) { tmp[i] = x + m[i]; }
         return tmp;
     }
 
@@ -624,17 +617,15 @@ class Matrix1D {
      * @endcode
      */
     void operator += (const Matrix1D<T> &op1) const {
-        if (vdim != op1.vdim) 
+        if (size() != op1.size()) 
             REPORT_ERROR("Not same sizes in vector summation");
 
-        for (int i = 0; i < vdim; i++) { vdata[i] += op1.vdata[i]; }
+        for (int i = 0; i < size(); i++) { (*this)[i] += op1[i]; }
     }
 
-    friend Matrix1D<T> operator - (T op1, const Matrix1D<T>& op2) {
+    friend Matrix1D<T> operator - (T op1, const Matrix1D<T> &op2) {
         Matrix1D<T> tmp(op2);
-        for (int i = 0; i < op2.vdim; i++) {
-            tmp.vdata[i] = op1 - op2.vdata[i];
-        }
+        for (int i = 0; i < op2.size(); i++) { tmp[i] = op1 - op2[i]; }
         return tmp;
     }
 
@@ -645,100 +636,84 @@ class Matrix1D {
      * @endcode
      */
     void operator -= (const Matrix1D<T> &op1) const {
-        if (vdim != op1.vdim)
+        if (size() != op1.size())
             REPORT_ERROR("Not same sizes in vector subtraction");
 
-        for (int i = 0; i < vdim; i++) { vdata[i] -= op1.vdata[i]; }
+        for (int i = 0; i < size(); i++) { (*this)[i] -= op1[i]; }
     }
 
-    void operator *= (T op1) {
-        for (int i = 0; i < vdim; i++) { vdata[i] *= op1; }
-    }
+    void operator *= (T x) { for (int i = 0; i < size(); i++) { (*this)[i] *= x; } }
 
-    void operator /= (T op1) {
-        for (int i = 0; i < vdim; i++) { vdata[i] /= op1; }
-    }
+    void operator /= (T x) { for (int i = 0; i < size(); i++) { (*this)[i] /= x; } }
 
-    void operator += (T op1) {
-        for (int i = 0; i < vdim; i++) { vdata[i] += op1; }
-    }
+    void operator += (T x) { for (int i = 0; i < size(); i++) { (*this)[i] += x; } }
 
-    void operator -= (T op1) {
-        for (int i = 0; i < vdim; i++) { vdata[i] -= op1; }
-    }
+    void operator -= (T x) { for (int i = 0; i < size(); i++) { (*this)[i] -= x; } }
 
     /** v3 = v1 * v2.
      */
-    Matrix1D<T> operator * (const Matrix1D<T> &op1) const {
-        if (vdim != op1.vdim)
+    Matrix1D<T> operator * (const Matrix1D<T> &other) const {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector multiplication");
 
-        Matrix1D<T> tmp(op1);
-        for (int i = 0; i < vdim; i++) {
-            tmp.vdata[i] = vdata[i] * op1.vdata[i];
-        }
+        Matrix1D<T> tmp(other);
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] * other[i]; }
         return tmp;
     }
 
-    Matrix1D<T> operator / (const Matrix1D<T> &op1) const {
-        if (vdim != op1.vdim)
+    Matrix1D<T> operator / (const Matrix1D<T> &other) const {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector division");
 
-        Matrix1D<T> tmp(op1);
-        for (int i = 0; i < vdim; i++) {
-            tmp.vdata[i] = vdata[i] / op1.vdata[i];
-        }
+        Matrix1D<T> tmp(other);
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] / other[i]; }
         return tmp;
     }
 
-    Matrix1D<T> operator + (const Matrix1D<T> &op1) const {
-        if (vdim != op1.vdim)
+    Matrix1D<T> operator + (const Matrix1D<T> &other) const {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector summation");
 
-        Matrix1D<T> tmp(op1);
-        for (int i = 0; i < vdim; i++) {
-            tmp.vdata[i] = vdata[i] + op1.vdata[i];
-        }
+        Matrix1D<T> tmp(other);
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] + other[i]; }
         return tmp;
     }
 
-    Matrix1D<T> operator - (const Matrix1D<T> &op1) const {
-        if (vdim != op1.vdim)
+    Matrix1D<T> operator - (const Matrix1D<T> &other) const {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector subtraction");
 
-        Matrix1D<T> tmp(op1);
-        for (int i = 0; i < vdim; i++) {
-            tmp.vdata[i] = vdata[i] - op1.vdata[i];
-        }
+        Matrix1D<T> tmp(other);
+        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] - other[i]; }
         return tmp;
     }
 
-    void operator *= (const Matrix1D<T> &op1) {
-        if (vdim != op1.vdim)
+    void operator *= (const Matrix1D<T> &other) {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector multiplication");
 
-        for (int i = 0; i < vdim; i++) { vdata[i] *= op1.vdata[i]; }
+        for (int i = 0; i < size(); i++) { (*this)[i] *= other[i]; }
     }
 
-    void operator /= (const Matrix1D<T> &op1) {
-        if (vdim != op1.vdim)
+    void operator /= (const Matrix1D<T> &other) {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector division");
 
-        for (int i = 0; i < vdim; i++) { vdata[i] /= op1.vdata[i]; }
+        for (int i = 0; i < size(); i++) { (*this)[i] /= other[i]; }
     }
 
-    void operator += (const Matrix1D<T> &op1) {
-        if (vdim != op1.vdim)
+    void operator += (const Matrix1D<T> &other) {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector summation");
 
-        for (int i = 0; i < vdim; i++) { vdata[i] += op1.vdata[i]; }
+        for (int i = 0; i < size(); i++) { (*this)[i] += other[i]; }
     }
 
-    void operator -= (const Matrix1D<T> &op1) {
-        if (vdim != op1.vdim)
+    void operator -= (const Matrix1D<T> &other) {
+        if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector subtraction");
 
-        for (int i = 0; i < vdim; i++) { vdata[i] -= op1.vdata[i]; }
+        for (int i = 0; i < size(); i++) { (*this)[i] -= other[i]; }
     }
 
     /** Negation
@@ -753,7 +728,7 @@ class Matrix1D {
      */
     Matrix1D<T> operator - () const {
         Matrix1D<T> tmp(*this);
-        for (int i = 0; i < vdim; i++) { tmp.vdata[i] = -vdata[i]; }
+        for (int i = 0; i < size(); i++) { tmp[i] = -(*this)[i]; }
         return tmp;
     }
 
@@ -762,7 +737,7 @@ class Matrix1D {
      * Algebraic vector by matrix multiplication.
      * This function is actually implemented in xmippMatrices2D.
      */
-    Matrix1D<T> operator * (const Matrix2D<T>& M);
+    Matrix1D<T> operator * (const Matrix2D<T> &M);
 
     /** Vector element access
      *
@@ -776,6 +751,8 @@ class Matrix1D {
      * @endcode
      */
     T& operator () (int i) const { return vdata[i]; }
+
+    T& operator [] (int i) const { return vdata[i]; }
     //@}
 
     /// @name Utilities for Matrix1D
@@ -790,9 +767,7 @@ class Matrix1D {
      *
      * This function is not ported to Python.
      */
-    T* adaptForNumericalRecipes() const {
-        return this->vdata - 1;
-    }
+    T* adaptForNumericalRecipes() const { return vdata - 1; }
 
     /** Kill an array produced for Numerical Recipes.
      *
@@ -809,7 +784,7 @@ class Matrix1D {
      * Round each array element up.
      */
     void selfCEIL() {
-        for (int i = 0; i < vdim; i++) { vdata[i] = ceil(vdata[i]); }
+        for (int i = 0; i < size(); i++) { (*this)[i] = ceil((*this)[i]); }
     }
 
     /** FLOOR
@@ -817,7 +792,7 @@ class Matrix1D {
      * Round each array element down.
      */
     void selfFLOOR() {
-        for (int i = 0; i < vdim; i++) { vdata[i] = floor(vdata[i]); }
+        for (int i = 0; i < size(); i++) { (*this)[i] = floor((*this)[i]); }
     }
 
     /** ROUND
@@ -825,7 +800,7 @@ class Matrix1D {
      * Round each array element.
      */
     void selfROUND() {
-        for (int i = 0; i < vdim; i++) { vdata[i] = round(vdata[i]); }
+        for (int i = 0; i < size(); i++) { (*this)[i] = round((*this)[i]); }
     }
 
     /** Index for the maximum element.
@@ -833,17 +808,15 @@ class Matrix1D {
      * This function returns the index of the maximum element of an matrix1d.
      * Returns -1 if the array is empty
      */
-    void maxIndex(int &jmax) const {
-        if (vdim == 0) {
-            jmax = -1;
-            return;
-        }
+    int maxIndex() const {
+        if (size() == 0) return -1;
 
-        jmax = 0;
-        T maxval = (*this)(0);
-        for (int j = 0; j < vdim; j++) {
-            if ((*this)(j) > maxval) { jmax = j; }
+        int imax = 0;
+        T maxval = (*this)[0];
+        for (int i = 0; i < size(); i++) {
+            if ((*this)[i] > maxval) { imax = i; }
         }
+        return imax;
     }
 
     /** Index for the minimum element.
@@ -851,17 +824,15 @@ class Matrix1D {
      * Returns the index of the minimum element of an matrix1d.
      * Returns -1 if the array is empty
      */
-    void minIndex(int &jmin) const {
-        if (vdim == 0) {
-            jmin = -1;
-            return;
-        }
+    int minIndex() const {
+        if (size() == 0) return -1;
 
-        jmin = 0;
-        T minval = (*this)(0);
-        for (int j = 0; j < vdim; j++) {
-            if ((*this)(j) < minval) { jmin = j; }
+        int imin = 0;
+        T minval = (*this)[0];
+        for (int i = 0; i < size(); i++) {
+            if ((*this)[i] < minval) { imin = i; }
         }
+        return imin;
     }
 
     /** Algebraic transpose of vector
@@ -874,9 +845,9 @@ class Matrix1D {
      * @endcode
      */
     Matrix1D<T> transpose() const {
-        Matrix1D<T> temp(*this);
-        temp.selfTranspose();
-        return temp;
+        Matrix1D<T> tmp(*this);
+        tmp.selfTranspose();
+        return tmp;
     }
 
     /** Algebraic transpose of vector
@@ -895,11 +866,11 @@ class Matrix1D {
      */
     RFLOAT sum() const {
         RFLOAT sum = 0;
-        for (int i = 0; i < vdim; i++) { sum += vdata[i]; }
+        for (int i = 0; i < size(); i++) { sum += (*this)[i]; }
         return sum;
     }
 
-    inline RFLOAT mean() const { return sum() / (RFLOAT) vdim; }
+    inline RFLOAT mean() const { return sum() / (RFLOAT) size(); }
 
     /** Sum of squared vector values.
      *
@@ -912,20 +883,20 @@ class Matrix1D {
      */
     RFLOAT sum2() const {
         RFLOAT sum = 0;
-        for (int i = 0; i < vdim; i++) { sum += vdata[i] * vdata[i]; }
+        for (int i = 0; i < size(); i++) { sum += (*this)[i] * (*this)[i]; }
         return sum;
     }
 
-    /** Module of the vector
+    /** Modulus (magnitude) of the vector
      *
-     * This module is defined as the square root of the sum of the squared
+     * This modulus is defined as the square root of the sum of the squared
      * components. Euclidean norm of the vector.
      *
      * @code
-     * RFLOAT mod = v.module();
+     * RFLOAT mod = v.modulus();
      * @endcode
      */
-    RFLOAT module() const { return sqrt(sum2()); }
+    RFLOAT modulus() const { return sqrt(sum2()); }
 
     /** Angle of the vector
      *
@@ -933,13 +904,13 @@ class Matrix1D {
      * vector with X axis, ie, atan2(YY(v), XX(v))
      */
     RFLOAT angle() {
-        return atan2((RFLOAT) YY(*this), (RFLOAT) XX(*this));
+        return atan2((RFLOAT) (*this)[1], (RFLOAT) (*this)[0]);
     }
 
     RFLOAT max() const {
-        RFLOAT x = abs(vdata[0]);  // Why abs?
-        for (int i = 0; i < vdim; i++) {
-            x = std::max(x, vdata[i]);
+        RFLOAT x = abs((*this)[0]);  // Why abs?
+        for (int i = 0; i < size(); i++) {
+            x = std::max(x, (*this)[i]);
         }
         return x;
     }
@@ -947,7 +918,7 @@ class Matrix1D {
     /** Normalize this vector, store the result here
      */
     void selfNormalize() {
-        RFLOAT m = module();
+        RFLOAT m = modulus();
         if (abs(m) > Xmipp::epsilon) {
             *this *= (T) (1.0 / m);
         } else {
@@ -958,8 +929,8 @@ class Matrix1D {
     /** Reverse vector values, keep in this object.
      */
     void selfReverse() {
-        for (int j = 0; j <= (int) (vdim - 1) / 2; j++) {
-            SWAP(vdata[j], vdata[vdim - 1 - j]);
+        for (int i = 0; i <= (int) (size() - 1) / 2; i++) {
+            SWAP((*this)[i], (*this)[size() - 1 - i]);
         }
     }
 
@@ -974,19 +945,21 @@ class Matrix1D {
         const RFLOAT i12 = 1.0 / 12.0;
         result.initZeros(*this);
         for (int i = STARTINGX(*this) + 2; i <= FINISHINGX(*this) - 2; i++)
-            result(i) = i12 * (-(*this)(i + 2) + 8 * (*this)(i + 1)
-                    -8 * (*this)(i - 1) + (*this)(i + 2));
+            result(i) = i12 * (
+                - (*this)[i + 2] + 8 * (*this)[i + 1] 
+                + (*this)[i + 2] - 8 * (*this)[i - 1]  // BUG? Should [i + 2] be [i - 2]?
+            );
     }
 
     /** Output to output stream.*/
     friend std::ostream& operator << (std::ostream &ostrm, const Matrix1D<T> &v) {
-        if (v.vdim == 0) { ostrm << "NULL Array"; }
+        if (v.size() == 0) { ostrm << "NULL Array"; }
         ostrm << std::endl;
 
         int prec = bestPrecision(v.max(), 10);
 
-        for (int j = 0; j < v.vdim; j++) {
-            ostrm << floatToString((RFLOAT) v.vdata[j], 10, prec) << std::endl;
+        for (int i = 0; i < v.size(); i++) {
+            ostrm << floatToString((RFLOAT) v[i], 10, prec) << std::endl;
         }
         return ostrm;
     }
@@ -994,105 +967,105 @@ class Matrix1D {
     //@}
 };
 
- /**@name Vector Related functions
-  * These functions are not methods of Matrix1D
-  */
+/**@name Vector Related functions
+ * These functions are not methods of Matrix1D
+ */
 
- /** Creates vector in R2.
-  * After this function the vector is (x,y) in R2.
-  *
-  * @code
-  * Matrix1D< RFLOAT > v = vectorR2(1, 2);
-  * @endcode
-  */
- Matrix1D<RFLOAT> vectorR2(RFLOAT x, RFLOAT y);
+/** Creates vector in R2.
+ * After this function the vector is (x,y) in R2.
+ *
+ * @code
+ * Matrix1D< RFLOAT > v = vectorR2(1, 2);
+ * @endcode
+ */
+Matrix1D<RFLOAT> vectorR2(RFLOAT x, RFLOAT y);
 
- /** Creates vector in R3.
-  * After this function the vector is (x,y,z) in R3.
-  *
-  * @code
-  * Matrix1D< RFLOAT > v = vectorR2(1, 2, 1);
-  * @endcode
-  */
- Matrix1D<RFLOAT> vectorR3(RFLOAT x, RFLOAT y, RFLOAT z);
+/** Creates vector in R3.
+ * After this function the vector is (x,y,z) in R3.
+ *
+ * @code
+ * Matrix1D< RFLOAT > v = vectorR2(1, 2, 1);
+ * @endcode
+ */
+Matrix1D<RFLOAT> vectorR3(RFLOAT x, RFLOAT y, RFLOAT z);
 
- // This function is only needed for single-precision compilation
+// This function is only needed for single-precision compilation
 #ifdef RELION_SINGLE_PRECISION
-Matrix1D< float > vectorR3(double xx, double yy, double zz);
+Matrix1D<float> vectorR3(double xx, double yy, double zz);
 #endif
 
- /** Creates an integer vector in Z3.
-  */
- Matrix1D<int> vectorR3(int x, int y, int z);
+/** Creates an integer vector in Z3.
+ */
+Matrix1D<int> vectorR3(int x, int y, int z);
 
- /** Dot product.
-  * Given any two vectors in Rn (n-dimensional vector), this function returns the
-  * dot product of both. If the vectors are not of the same size or shape then an
-  * exception is thrown. The dot product is defined as the sum of the component
-  * by component multiplication.
-  *
-  * For the R3 vectors (V1x,V1y,V1z), (V2x, V2y, V2z) the result is V1x*V2x +
-  * V1y*V2y + V1z*V2z.
-  *
-  * @code
-  * Matrix1D< RFLOAT > v1(1000);
-  * v1.init_random(0, 10, "gaussian");
-  * std::cout << "The power_class of this vector should be 100 and is " <<
-  *     dotProduct(v1, v1) << std::endl;
-  * @endcode
-  */
- template<typename T>
- T dotProduct(const Matrix1D< T >& v1, const Matrix1D< T >& v2) {
-     if (!v1.sameShape(v2))
-         REPORT_ERROR("Dot product: vectors of different size or shape");
+/** Dot product.
+ * Given any two vectors in Rn (n-dimensional vector), this function returns the
+ * dot product of both. If the vectors are not of the same size or shape then an
+ * exception is thrown. The dot product is defined as the sum of the component
+ * by component multiplication.
+ *
+ * For the R3 vectors (V1x,V1y,V1z), (V2x, V2y, V2z) the result is V1x*V2x +
+ * V1y*V2y + V1z*V2z.
+ *
+ * @code
+ * Matrix1D< RFLOAT > v1(1000);
+ * v1.init_random(0, 10, "gaussian");
+ * std::cout << "The power_class of this vector should be 100 and is " <<
+ *     dotProduct(v1, v1) << std::endl;
+ * @endcode
+ */
+template<typename T>
+T dotProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
+    if (!v1.sameShape(v2))
+        REPORT_ERROR("Dot product: vectors of different size or shape");
 
-     T accumulate = 0;
-     for (int j = 0; j < v1.vdim; j++) {
-         accumulate += v1.vdata[j] * v2.vdata[j];
-    }
-     return accumulate;
- }
+    T accumulate = 0;
+    for (int i = 0; i < v1.size(); i++) {
+        accumulate += v1[i] * v2[i];
+}
+    return accumulate;
+}
 
- /** Vector product in R3.
-  * This function takes two R3 vectors and compute their vectorial product. For
-  * two vectors (V1x,V1y,V1z), (V2x, V2y, V2z) the result is (V1y*V2z-V1z*v2y,
-  * V1z*V2x-V1x*V2z, V1x*V2y-V1y*V2x). Pay attention that this operator is not
-  * conmutative. An exception is thrown if the vectors are not of the same shape
-  * or they don't belong to R3.
-  *
-  * @code
-  * Matrix1D< T > X = vectorR3(1, 0, 0), Y = vector_R3(0, 1, 0);
-  * std::cout << "X*Y=Z=" << vectorProduct(X,Y).transpose() << std::endl;
-  * @endcode
-  */
- template<typename T>
- Matrix1D<T> vectorProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
-     if (v1.vdim != 3 || v2.vdim != 3)
-         REPORT_ERROR("Vector_product: vectors are not in R3");
+/** Vector product in R3.
+ * This function takes two R3 vectors and compute their vectorial product. For
+ * two vectors (V1x,V1y,V1z), (V2x, V2y, V2z) the result is (V1y*V2z-V1z*v2y,
+ * V1z*V2x-V1x*V2z, V1x*V2y-V1y*V2x). Pay attention that this operator is not
+ * conmutative. An exception is thrown if the vectors are not of the same shape
+ * or they don't belong to R3.
+ *
+ * @code
+ * Matrix1D< T > X = vectorR3(1, 0, 0), Y = vector_R3(0, 1, 0);
+ * std::cout << "X*Y=Z=" << vectorProduct(X,Y).transpose() << std::endl;
+ * @endcode
+ */
+template<typename T>
+Matrix1D<T> vectorProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
+    if (v1.size() != 3 || v2.size() != 3)
+        REPORT_ERROR("Vector_product: vectors are not in R3");
 
-     if (v1.isRow() != v2.isRow())
-         REPORT_ERROR("Vector_product: vectors are of different shape");
+    if (v1.isRow() != v2.isRow())
+        REPORT_ERROR("Vector_product: vectors are of different shape");
 
-     Matrix1D<T> result(3);
-     result.vdata[0] = v1.vdata[1] * v2.vdata[2] - v1.vdata[2] * v2.vdata[1];
-     result.vdata[1] = v1.vdata[2] * v2.vdata[0] - v1.vdata[0] * v2.vdata[2];
-     result.vdata[2] = v1.vdata[0] * v2.vdata[1] - v1.vdata[1] * v2.vdata[0];
-     return result;
- }
+    Matrix1D<T> result(3);
+    result(0) = v1(1) * v2(2) - v1(2) * v2(1);
+    result(1) = v1(2) * v2(0) - v1(0) * v2(2);
+    result(2) = v1(0) * v2(1) - v1(1) * v2(0);
+    return result;
+}
 
- /** Vector product in R3.
-  * This function computes the vector product of two R3 vectors.
-  * No check is performed, it is assumed that the output vector
-  * is already resized
-  *
-  */
+/** Vector product in R3.
+ * This function computes the vector product of two R3 vectors.
+ * No check is performed, it is assumed that the output vector
+ * is already resized
+ *
+ */
 template<typename T>
 void vectorProduct(
     const Matrix1D<T> &v1, const Matrix1D<T> &v2, Matrix1D<T> &result
 ) {
-     XX(result) = YY(v1) * ZZ(v2) - ZZ(v1) * YY(v2);
-     YY(result) = ZZ(v1) * XX(v2) - XX(v1) * ZZ(v2);
-     ZZ(result) = XX(v1) * YY(v2) - YY(v1) * XX(v2);
+    result(0) = v1(1) * v2(2) - v1(2) * v2(1);
+    result(1) = v1(2) * v2(0) - v1(0) * v2(2);
+    result(2) = v1(0) * v2(1) - v1(1) * v2(0);
  }
 
 template <typename T>
@@ -1126,10 +1099,10 @@ void sortTwoVectors(Matrix1D<T> &v1, Matrix1D<T> &v2) {
     if (!v1.sameShape(v2))
         REPORT_ERROR("sortTwoVectors: vectors are not of the same shape");
 
-    for (int j = 0; j < v1.vdim; j++) {
-        LesserGreater<T> lg (v1.vdata[j], v2.vdata[j]);
-        v1.vdata[j] = lg.lesser;
-        v2.vdata[j] = lg.greater;
+    for (int i = 0; i < v1.size(); i++) {
+        LesserGreater<T> lg (v1[i], v2[i]);
+        v1[i] = lg.lesser;
+        v2[i] = lg.greater;
     }
  }
 
@@ -1139,17 +1112,15 @@ void sortTwoVectors(Matrix1D<T> &v1, Matrix1D<T> &v2) {
   * If n >= 0, only the nth volumes will be converted, otherwise all NSIZE volumes
   */
 template<typename T1, typename T2>
-void typeCast(const Matrix1D<T1>& v1,  Matrix1D<T2>& v2) {
-     if (v1.vdim == 0) {
-         v2.clear();
-         return;
-     }
-
-     v2.resize(v1.vdim);
-     for (int j = 0; j < v1.vdim; j++) {
-         v2.vdata[j] = static_cast<T2>(v1.vdata[j]);
+void typeCast(const Matrix1D<T1> &v1, Matrix1D<T2> &v2) {
+    if (v1.size() == 0) {
+        v2.clear();
+        return;
     }
- }
+
+    v2.resize(v1.size());
+    for (int i = 0; i < v1.size(); i++) { v2[i] = static_cast<T2>(v1[i]); }
+}
 //@}
 
 #endif /* MATRIX1D_H_ */
