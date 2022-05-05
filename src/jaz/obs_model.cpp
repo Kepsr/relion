@@ -323,7 +323,7 @@ void ObservationModel::predictObservation(
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 
     if (dest.xdim != sh_out || dest.ydim != s_out) {
-        dest.resize(s_out,sh_out);
+        dest.resize(s_out, sh_out);
     }
 
     dest.initZeros();

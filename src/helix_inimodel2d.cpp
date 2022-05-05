@@ -34,7 +34,7 @@ void HelixAlignerModel::initialise(int nr_classes, int ydim, int xdim) {
         Asumw.push_back(tmp);
         pdf.push_back(0);
     }
-    tmp.initZeros(ydim,ydim);
+    tmp.initZeros(ydim, ydim);
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         Arec.push_back(tmp);
     }
@@ -305,11 +305,11 @@ void HelixAligner::readImages() {
         // Calculate all rotated versions
         if (ipart == 0) psis.clear();
 
-        for (int iflip =0; iflip < 2; iflip++) {
+        for (int iflip = 0; iflip < 2; iflip++) {
             for (RFLOAT ang = 0; ang <= max_rotate; ang += step_rotate) {
                 Matrix2D<RFLOAT> Arot;
                 MultidimArray<RFLOAT> Irot;
-                RFLOAT myang = (iflip == 1) ? ang + 180. : ang;
+                RFLOAT myang = iflip == 1 ? ang + 180.0 : ang;
                 Irot.initZeros(img());
                 rotation2DMatrix(myang, Arot);
                 applyGeometry(img(), Irot, Arot, true, false);

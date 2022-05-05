@@ -248,9 +248,11 @@ void Reconstructor::backproject(int rank, int size) {
         projector.computeFourierTransformMap(sub(), dummy, 2 * r_max);
     }
 
-    backprojector = BackProjector(output_boxsize, ref_dim, fn_sym, interpolator,
-                    padding_factor, r_min_nn, blob_order,
-                    blob_radius, blob_alpha, data_dim, skip_gridding);
+    backprojector = BackProjector(
+        output_boxsize, ref_dim, fn_sym, interpolator,
+        padding_factor, r_min_nn, blob_order,
+        blob_radius, blob_alpha, data_dim, skip_gridding
+    );
     backprojector.initZeros(2 * r_max);
 
     long int nr_parts = DF.numberOfObjects();
@@ -275,9 +277,6 @@ void Reconstructor::backproject(int rank, int size) {
 
 void Reconstructor::backprojectOneParticle(long int p) {
     RFLOAT rot, tilt, psi, fom, r_ewald_sphere;
-    Matrix2D<RFLOAT> A3D;
-    MultidimArray<RFLOAT> Fctf;
-    Matrix1D<RFLOAT> trans(2);
     FourierTransformer transformer;
 
     int randSubset = 0, classid = 0;
@@ -308,6 +307,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         // std::cout << rnd_gaus(0., angular_error) << std::endl;
     }
 
+    Matrix2D<RFLOAT> A3D;
     Euler_angles2matrix(rot, tilt, psi, A3D);
 
     // If we are considering Ewald sphere curvature, the mag. matrix
@@ -318,9 +318,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
     RFLOAT myPixelSize = angpix; // Without optics groups, the pixel size is always the same as the one from the input images
     bool ctf_premultiplied = false;
     if (!do_ignore_optics) {
-        opticsGroup = obsModel.getOpticsGroup(DF, p);
-        myBoxSize = obsModel.getBoxSize(opticsGroup);
-        myPixelSize = obsModel.getPixelSize(opticsGroup);
+        opticsGroup       = obsModel.getOpticsGroup(DF, p);
+        myBoxSize         = obsModel.getBoxSize(opticsGroup);
+        myPixelSize       = obsModel.getPixelSize(opticsGroup);
         ctf_premultiplied = obsModel.getCtfPremultiplied(opticsGroup);
         if (do_ewald && ctf_premultiplied)
             REPORT_ERROR("We cannot perform Ewald sphere correction on CTF premultiplied particles.");
@@ -332,22 +332,14 @@ void Reconstructor::backprojectOneParticle(long int p) {
     }
 
     // Translations (either through phase-shifts or in real space
-    trans.initZeros();
-    XX(trans) = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
-    YY(trans) = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
+    Matrix1D<RFLOAT> trans = Matrix1D<RFLOAT>::zeros(data_dim);
+    trans[0] = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
+    trans[1] = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
+    if (data_dim == 3)
+    trans[2] = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, p);
 
     if (shift_error > 0.0) {
-        XX(trans) += rnd_gaus(0.0, shift_error);
-        YY(trans) += rnd_gaus(0.0, shift_error);
-    }
-
-    if (data_dim == 3) {
-        trans.resize(3);
-        ZZ(trans) = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, p);
-
-        if (shift_error > 0.0) {
-            ZZ(trans) += rnd_gaus(0.0, shift_error);
-        }
+        for (int i = 0; i <= data_dim; i++) { trans[i] += rnd_gaus(0.0, shift_error); }
     }
 
     // As of v3.1, shifts are in Angstroms in the STAR files, convert back to pixels here
@@ -359,7 +351,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     // Use either selfTranslate OR shiftImageInFourierTransform!!
     //selfTranslate(img(), trans, WRAP);
 
-    MultidimArray<Complex> Fsub, F2D, F2DP, F2DQ;
+    MultidimArray<Complex> F2D;
     FileName fn_img;
     Image<RFLOAT> img;
 
@@ -370,9 +362,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
         transformer.FourierTransform(img(), F2D);
         CenterFFTbySign(F2D);
 
-        if (abs(XX(trans)) > 0.0 || abs(YY(trans)) > 0.0 || abs(ZZ(trans)) > 0.0) {
-            // ZZ(trans) is 0 in case data_dim=2
-            shiftImageInFourierTransform(F2D, F2D, XSIZE(img()), XX(trans), YY(trans), ZZ(trans));
+        if (abs(trans[0]) > 0.0 || abs(trans[1]) > 0.0 || abs(trans[2]) > 0.0) {
+            // trans[2] is 0 in case data_dim=2
+            shiftImageInFourierTransform(F2D, F2D, XSIZE(img()), trans[0], trans[1], trans[2]);
         }
     } else {
         if (data_dim == 3) {
@@ -393,15 +385,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
             REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --i file...");
         }
 
-        int my_mic_id = -1;
-        for (int mic_id = 0; mic_id < model.group_names.size(); mic_id++) {
-            if (fn_group == model.group_names[mic_id]) {
-                my_mic_id = mic_id;
-                break;
-            }
-        }
-
-        if (my_mic_id < 0) REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
+        std::vector<FileName>::iterator it = std::find(model.group_names.begin(), model.group_names.end(), fn_group);
+        if (it == model.group_names.end()) REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
+        int imic = it - model.group_names.begin();
 
         RFLOAT normcorr = 1.0;
         if (DF.containsLabel(EMDL::IMAGE_NORM_CORRECTION))
@@ -412,14 +398,16 @@ void Reconstructor::backprojectOneParticle(long int p) {
             int ires = std::min((int) round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), myBoxSize / 2);
             // at freqs higher than Nyquist: use last sigma2 value
 
-            RFLOAT sigma = sqrt(DIRECT_A1D_ELEM(model.sigma2_noise[my_mic_id], ires));
+            RFLOAT sigma = sqrt(DIRECT_A1D_ELEM(model.sigma2_noise[imic], ires));
             DIRECT_A3D_ELEM(F2D, k, i, j).real += rnd_gaus(0.0, sigma);
             DIRECT_A3D_ELEM(F2D, k, i, j).imag += rnd_gaus(0.0, sigma);
         }
     }
 
+    MultidimArray<RFLOAT> Fctf;
     Fctf.resize(F2D);
     Fctf.initConstant(1.0);
+    MultidimArray<Complex> F2DP, F2DQ;
 
     // Apply CTF if necessary
     if (do_ctf || do_reconstruct_ctf) {
@@ -450,7 +438,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
             }
         } else {
-            CTF ctf = do_ignore_optics ? CTF(DF, DF, p) :  // Repetition of DF is redundant
+            CTF ctf = do_ignore_optics ? CTF(DF, DF,        p) :  // Repetition of DF is redundant
                                          CTF(DF, &obsModel, p);
 
             ctf.getFftwImage(
@@ -480,6 +468,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     }
 
     // Subtract reference projection
+    MultidimArray<Complex> Fsub;
     if (fn_sub != "") {
         Fsub.resize(F2D);
         projector.get2DFourierTransform(Fsub, A3D);
@@ -582,8 +571,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 void Reconstructor::reconstruct() {
     bool do_map = false;
     bool do_use_fsc = false;
-    MultidimArray<RFLOAT> fsc, dummy;
-    Image<RFLOAT> vol;
+    MultidimArray<RFLOAT> fsc;
     fsc.resize(output_boxsize / 2 + 1);
 
     if (fn_fsc != "") {
@@ -603,6 +591,7 @@ void Reconstructor::reconstruct() {
 
     backprojector.symmetrise(nr_helical_asu, helical_twist, helical_rise/angpix);
 
+    Image<RFLOAT> vol;
     if (do_reconstruct_ctf) {
 
         vol().initZeros(ctf_dim, ctf_dim, ctf_dim);
@@ -650,32 +639,34 @@ void Reconstructor::reconstruct() {
             It.write(fn_tmp+"_weight.mrc");
         }
 
-        MultidimArray<RFLOAT> tau2;
-        if (do_use_fsc) backprojector.updateSSNRarrays(1.0, tau2, dummy, dummy, dummy, fsc, do_use_fsc, true);
+        MultidimArray<RFLOAT> tau2, tmp;
+        if (do_use_fsc) 
+        backprojector.updateSSNRarrays(
+            1.0, tau2, tmp, tmp, tmp, fsc, do_use_fsc, true
+        );
 
         if (do_external_reconstruct) {
             FileName fn_root = fn_out.withoutExtension();
             backprojector.externalReconstruct(
                 vol(), fn_root,
-                tau2, dummy, dummy, dummy, false, 1.0, 1
+                tau2, tmp, tmp, tmp, false, 1.0, 1
             );
         } else {
             backprojector.reconstruct(vol(), iter, do_map, tau2);
         }
     }
 
-
     vol.setSamplingRateInHeader(angpix);
     vol.write(fn_out);
     if (verb > 0)
-        std::cout << " + Done! Written output map in: "<<fn_out<<std::endl;
+        std::cout << " + Done! Written output map in: " << fn_out << std::endl;
 }
 
 void Reconstructor::applyCTFPandCTFQ(
     MultidimArray<Complex> &Fin, CTF &ctf, FourierTransformer &transformer,
     MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask
 ) {
-    //FourierTransformer transformer;
+    // FourierTransformer transformer;
     outP.resize(Fin);
     outQ.resize(Fin);
     float angle_step = 180.0 / nr_sectors;
@@ -719,15 +710,14 @@ void Reconstructor::applyCTFPandCTFQ(
             }
 
             // Now set back the right parts into outP (first pass) or outQ (second pass)
-            float anglemin = angle + 90.0 - (0.5 * angle_step);
-            float anglemax = angle + 90.0 + (0.5 * angle_step);
+            float anglemin = angle + 90.0 - 0.5 * angle_step;
+            float anglemax = angle + 90.0 + 0.5 * angle_step;
 
-            // angles larger than 180
-            bool is_angle_reverse = false;
-            if (anglemin >= 180.0) {
+            // Angles larger than 180
+            bool is_angle_reverse = anglemin >= 180.0;
+            if (is_angle_reverse) {
                 anglemin -= 180.0;
                 anglemax -= 180.0;
-                is_angle_reverse = true;
             }
             MultidimArray<Complex> *myCTFPorQ, *myCTFPorQb;
             if (is_angle_reverse) {
@@ -739,11 +729,8 @@ void Reconstructor::applyCTFPandCTFQ(
             }
 
             // Deal with sectors with the Y-axis in the middle of the sector...
-            bool do_wrap_max = false;
-            if (anglemin < 180.0 && anglemax > 180.0) {
-                anglemax -= 180.0;
-                do_wrap_max = true;
-            }
+            bool do_wrap_max = anglemin < 180.0 && anglemax > 180.0;
+            if (do_wrap_max) { anglemax -= 180.0; }
 
             // Convert to radians
             anglemin = radians(anglemin);

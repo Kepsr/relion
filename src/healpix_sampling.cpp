@@ -2024,13 +2024,13 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_3_fold_axis_2(3);
         _3_fold_axis_1_by_3_fold_axis_2 = vectorR3(-0.942809, 0.0, 0.0);
-        _3_fold_axis_1_by_3_fold_axis_2.selfNormalize();
+        _3_fold_axis_1_by_3_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_2_by_3_fold_axis_3(3);
         _3_fold_axis_2_by_3_fold_axis_3 = vectorR3(0.471405, 0.272165, 0.7698);
-        _3_fold_axis_2_by_3_fold_axis_3.selfNormalize();
+        _3_fold_axis_2_by_3_fold_axis_3.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_3_by_3_fold_axis_1(3);
         _3_fold_axis_3_by_3_fold_axis_1 = vectorR3(0.471404, 0.816497, 0.0);
-        _3_fold_axis_3_by_3_fold_axis_1.selfNormalize();
+        _3_fold_axis_3_by_3_fold_axis_1.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if ((
                 rot_angles[i] >= 90.0 &&
@@ -2041,23 +2041,23 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
                 dotProduct(directions_vector[i], _3_fold_axis_2_by_3_fold_axis_3) >= 0 &&
                 dotProduct(directions_vector[i], _3_fold_axis_3_by_3_fold_axis_1) >= 0
             )) {
-                no_redundant_rot_angles.push_back(rot_angles[i]);
-                no_redundant_tilt_angles.push_back(tilt_angles[i]);
+                no_redundant_rot_angles       .push_back(rot_angles[i]);
+                no_redundant_tilt_angles      .push_back(tilt_angles[i]);
                 no_redundant_directions_vector.push_back(directions_vector[i]);
-                no_redundant_directions_ipix.push_back(directions_ipix[i]);
+                no_redundant_directions_ipix  .push_back(directions_ipix[i]);
             }
         }
     } else if (symmetry  == pg::TD) {
         Matrix1D<RFLOAT> _2_fold_axis_1_by_3_fold_axis_2(3);
         _2_fold_axis_1_by_3_fold_axis_2 = vectorR3(-0.942809, 0.0, 0.0);
-        _2_fold_axis_1_by_3_fold_axis_2.selfNormalize();
+        _2_fold_axis_1_by_3_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_2_by_3_fold_axis_5(3);
         _3_fold_axis_2_by_3_fold_axis_5 = vectorR3(0.471405, 0.272165, 0.7698);
         // sqrt(2) / 3
-        _3_fold_axis_2_by_3_fold_axis_5.selfNormalize();
+        _3_fold_axis_2_by_3_fold_axis_5.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_5_by_2_fold_axis_1(3);
         _3_fold_axis_5_by_2_fold_axis_1 = vectorR3(0.0, 0.471405, -0.666667);
-        _3_fold_axis_5_by_2_fold_axis_1.selfNormalize();
+        _3_fold_axis_5_by_2_fold_axis_1.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             // if (
             //     rot_angles[i] >= 120.0 && rot_angles[i] <= 150.0 ||
@@ -2078,13 +2078,13 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_2_fold_axis_1(3);
         _3_fold_axis_1_by_2_fold_axis_1 = vectorR3(-0.816496, 0.0, 0.0);
-        _3_fold_axis_1_by_2_fold_axis_1.selfNormalize();
+        _3_fold_axis_1_by_2_fold_axis_1.normalise();
         Matrix1D<RFLOAT> _2_fold_axis_1_by_2_fold_axis_2(3);
         _2_fold_axis_1_by_2_fold_axis_2 = vectorR3(0.707107, 0.408248, -0.57735);
-        _2_fold_axis_1_by_2_fold_axis_2.selfNormalize();
+        _2_fold_axis_1_by_2_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _2_fold_axis_2_by_3_fold_axis_1(3);
         _2_fold_axis_2_by_3_fold_axis_1 = vectorR3(-0.408248, -0.707107, 0.0);
-        _2_fold_axis_2_by_3_fold_axis_1.selfNormalize();
+        _2_fold_axis_2_by_3_fold_axis_1.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
         //   if ( rot_angles[i]>=    120. &&
         //         rot_angles[i]<=  150. ||
@@ -2105,13 +2105,13 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_3_fold_axis_2(3);
         _3_fold_axis_1_by_3_fold_axis_2 = vectorR3(0., -1.0, 1.0);
-        _3_fold_axis_1_by_3_fold_axis_2.selfNormalize();
+        _3_fold_axis_1_by_3_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_2_by_4_fold_axis(3);
         _3_fold_axis_2_by_4_fold_axis = vectorR3(1.0, 1.0, 0.0);
-        _3_fold_axis_2_by_4_fold_axis.selfNormalize();
+        _3_fold_axis_2_by_4_fold_axis.normalise();
         Matrix1D<RFLOAT> _4_fold_axis_by_3_fold_axis_1(3);
         _4_fold_axis_by_3_fold_axis_1 = vectorR3(-1.0, 1.0, 0.0);
-        _4_fold_axis_by_3_fold_axis_1.selfNormalize();
+        _4_fold_axis_by_3_fold_axis_1.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if ((
                 rot_angles [i] == 0.0 ||
@@ -2133,13 +2133,13 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         Matrix1D<RFLOAT> _3_fold_axis_1_by_3_fold_axis_2(3);
         _3_fold_axis_1_by_3_fold_axis_2 = vectorR3(0., -1.0, 1.0);
-        _3_fold_axis_1_by_3_fold_axis_2.selfNormalize();
+        _3_fold_axis_1_by_3_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_2_by_4_fold_axis(3);
         _3_fold_axis_2_by_4_fold_axis = vectorR3(1.0, 1.0, 0.0);
-        _3_fold_axis_2_by_4_fold_axis.selfNormalize();
+        _3_fold_axis_2_by_4_fold_axis.normalise();
         Matrix1D<RFLOAT> _4_fold_axis_by_3_fold_axis_1(3);
         _4_fold_axis_by_3_fold_axis_1 = vectorR3(-1.0, 1.0, 0.0);
-        _4_fold_axis_by_3_fold_axis_1.selfNormalize();
+        _4_fold_axis_by_3_fold_axis_1.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if ((
                 rot_angles [i] >= 90.0 &&
@@ -2160,17 +2160,17 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = vectorR3(0.0, 1.0, 0.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = vectorR3(
             -0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = vectorR3(
             0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
@@ -2189,17 +2189,17 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         Euler_angles2matrix(0, 90, 0, A);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 1.0, 0.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = A * vectorR3(
             -0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = A * vectorR3(
             0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
 
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
@@ -2219,17 +2219,17 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         Euler_angles2matrix(0, 31.7174745559, 0, A);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 1.0, 0.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = A * vectorR3(
             -0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = A * vectorR3(
             0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
 
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
@@ -2249,17 +2249,17 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         Euler_angles2matrix(0, -31.7174745559, 0, A);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 0.0, 1.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = A * vectorR3(
             0.187592467856686, -0.303530987314591, -0.491123477863004
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = A * vectorR3(
             0.187592467856686, 0.303530987314591, -0.491123477863004
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
 
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
@@ -2281,20 +2281,20 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         // OK
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = vectorR3(0.0, 1.0, 0.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = vectorR3(
             -0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = vectorR3(
             0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_2_fold_axis(3);
         _3_fold_axis_by_2_fold_axis = vectorR3(1.0, 0.0, 0.0);
-        _3_fold_axis_by_2_fold_axis.selfNormalize();
+        _3_fold_axis_by_2_fold_axis.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
@@ -2313,20 +2313,20 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         Euler_angles2matrix(0, 90, 0, A);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 1.0, 0.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = A * vectorR3(
             -0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = A * vectorR3(
             0.4999999839058737, -0.8090170074556163, 0.3090169861701543
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_2_fold_axis(3);
         _3_fold_axis_by_2_fold_axis = A * vectorR3(1.0, 0.0, 0.0);
-        _3_fold_axis_by_2_fold_axis.selfNormalize();
+        _3_fold_axis_by_2_fold_axis.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_1_by_5_fold_axis_2) >= 0 &&
@@ -2345,20 +2345,20 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         Euler_angles2matrix(0, 31.7174745559, 0, A);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0., 0., 1.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = A * vectorR3(
             0.187592467856686, -0.303530987314591, -0.491123477863004
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = A * vectorR3(
             0.187592467856686, 0.303530987314591, -0.491123477863004
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_2_fold_axis(3);
         _3_fold_axis_by_2_fold_axis = vectorR3(0.0, 1.0, 0.0);
-        _3_fold_axis_by_2_fold_axis.selfNormalize();
+        _3_fold_axis_by_2_fold_axis.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis)   >= 0 &&
@@ -2378,20 +2378,20 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         Euler_angles2matrix(0, -31.7174745559, 0, A);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 0.0, 1.0);
-        _5_fold_axis_1_by_5_fold_axis_2.selfNormalize();
+        _5_fold_axis_1_by_5_fold_axis_2.normalise();
         Matrix1D<RFLOAT> _5_fold_axis_2_by_3_fold_axis(3);
         _5_fold_axis_2_by_3_fold_axis = A * vectorR3(
             0.187592467856686, -0.303530987314591, -0.491123477863004
         );
-        _5_fold_axis_2_by_3_fold_axis.selfNormalize();
+        _5_fold_axis_2_by_3_fold_axis.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_5_fold_axis_1(3);
         _3_fold_axis_by_5_fold_axis_1 = A * vectorR3(
             0.187592467856686, 0.303530987314591, -0.491123477863004
         );
-        _3_fold_axis_by_5_fold_axis_1.selfNormalize();
+        _3_fold_axis_by_5_fold_axis_1.normalise();
         Matrix1D<RFLOAT> _3_fold_axis_by_2_fold_axis(3);
         _3_fold_axis_by_2_fold_axis = vectorR3(0.0, 1.0, 0.0);
-        _3_fold_axis_by_2_fold_axis.selfNormalize();
+        _3_fold_axis_by_2_fold_axis.normalise();
         for (long int i = 0; i < rot_angles.size(); i++) {
             if (
                 dotProduct(directions_vector[i], _5_fold_axis_2_by_3_fold_axis)   <= 0 &&

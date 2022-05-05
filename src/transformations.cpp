@@ -143,7 +143,7 @@ void alignWithZ(
         result.initZeros(3, 3);
     }
     Matrix1D<RFLOAT> Axis(axis);
-    Axis.selfNormalize();
+    Axis.normalise();
 
     // Compute length of the projection on YZ plane
     RFLOAT proj_mod = sqrt(YY(Axis) * YY(Axis) + ZZ(Axis) * ZZ(Axis));

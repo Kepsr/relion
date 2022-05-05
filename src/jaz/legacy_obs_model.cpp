@@ -33,7 +33,7 @@ void LegacyObservationModel::predictObservation(
     Euler_angles2matrix(rot, tilt, psi, A3D);
 
 	if (dest.xdim != sh || dest.ydim != s) {
-		dest.resize(s,sh);
+		dest.resize(s, sh);
 	}
 
 	dest.initZeros();

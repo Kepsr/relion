@@ -25,11 +25,8 @@
 OriginalBasis AberrationFit::fitBasic(
     Image<RFLOAT> phase, Image<RFLOAT> weight, double angpix
 ) {
-    Matrix2D<RFLOAT> A(5,5);
-    Matrix1D<RFLOAT> b(5);
-
-    A.initZeros();
-    b.initZeros();
+    Matrix2D<RFLOAT> A(5, 5); A.initZeros();
+    Matrix1D<RFLOAT> b = Matrix1D<RFLOAT>::zeros(5);
 
     const int sh = phase.data.xdim;
     const int s  = phase.data.ydim;

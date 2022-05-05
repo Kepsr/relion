@@ -229,7 +229,7 @@ void MlModel::read(FileName fn_in) {
             REPORT_ERROR("MlModel::readStar: incorrect helical parameters");
         }
         if (nr_bodies > 1) {
-            keep_fixed_bodies[iclass] = MDclass.containsLabel(EMDL::BODY_KEEP_FIXED) ? 
+            keep_fixed_bodies[iclass] = MDclass.containsLabel(EMDL::BODY_KEEP_FIXED) ?
                 MDclass.getValue<int>(EMDL::BODY_KEEP_FIXED) : 0;
         }
 
@@ -885,13 +885,12 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
             rotate_direction_bodies.push_back(one_direction);
         }
 
-        RFLOAT val;
         if (MD.containsLabel(EMDL::BODY_SIGMA_ANG)) {
-            val = MD.getValue<RFLOAT>(EMDL::BODY_SIGMA_ANG);
+            RFLOAT val = MD.getValue<RFLOAT>(EMDL::BODY_SIGMA_ANG);
             sigma_tilt_bodies[nr_bodies] = val;
             sigma_psi_bodies [nr_bodies] = val;
         } else {
-            if (!(MD.containsLabel(EMDL::BODY_SIGMA_TILT) && MD.containsLabel(EMDL::BODY_SIGMA_PSI)) )
+            if (!MD.containsLabel(EMDL::BODY_SIGMA_TILT) || !MD.containsLabel(EMDL::BODY_SIGMA_PSI))  // Logic error?
                 REPORT_ERROR("ERROR: either provide rlnBodySigmaAngles OR provide rlnBodySigmaTilt and rlnBodySigmaPsi in the body STAR file.");
             sigma_tilt_bodies[nr_bodies] = MD.getValue<RFLOAT>(EMDL::BODY_SIGMA_TILT);
             sigma_psi_bodies [nr_bodies] = MD.getValue<RFLOAT>(EMDL::BODY_SIGMA_PSI);
@@ -930,7 +929,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
             rotate_direction_bodies[ibody] -= com_bodies[ibody];
         }
 
-        rotate_direction_bodies[ibody].selfNormalize();
+        rotate_direction_bodies[ibody].normalise();
         alignWithZ(-rotate_direction_bodies[ibody], orient_bodies[ibody], false);
     }
 
@@ -951,17 +950,16 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
             estimated_resolution.push_back(estimated_resolution[0]);
             total_fourier_coverage.push_back(total_fourier_coverage[0]);
             if (ref_dim == 2)
-                prior_offset_class.push_back(prior_offset_class[0]);
+            prior_offset_class.push_back(prior_offset_class[0]);
             orientability_contrib.push_back(orientability_contrib[0]);
             PPref.push_back(PPref[0]);
             pdf_direction.push_back(pdf_direction[0]);
 
             // If all sigmas are zero, ignore this body in the refinement
-            keep_fixed_bodies[ibody] = (
+            keep_fixed_bodies[ibody] =
                 sigma_tilt_bodies  [ibody] < 0.001 &&
                 sigma_psi_bodies   [ibody] < 0.001 &&
-                sigma_offset_bodies[ibody] < 0.001
-            ) ? 1 : 0;
+                sigma_offset_bodies[ibody] < 0.001;
         }
 
         // If provided a specific reference, re-set the corresponding Iref entry

@@ -351,13 +351,11 @@ class Matrix1D {
      * v1 = v2 = v3;
      * @endcode
      */
-    Matrix1D<T>& operator = (const Matrix1D<T> &op1) {
-        if (&op1 != this) {
-            resize(op1);
-            for (int i = 0; i < size(); i++) { 
-                (*this)[i] = op1[i];
-            }
-            row = op1.row;
+    Matrix1D<T>& operator = (const Matrix1D<T> &other) {
+        if (this != &other) {
+            resize(other);
+            for (int i = 0; i < size(); i++) { (*this)[i] = other[i]; }
+            row = other.row;
         }
         return *this;
     }
@@ -532,14 +530,14 @@ class Matrix1D {
 
     /** Initialize to zeros with current size.
      *
-     * All values are set to 0. The current size and origin are kept. It is not
-     * an error if the array is empty, then nothing is done.
+     * All values are set to 0. The current size and origin are kept. 
+     * If the array is empty, nothing is done.
      *
      * @code
      * v.initZeros();
      * @endcode
      */
-    void initZeros() { memset(vdata, 0, size() * sizeof(T)); }
+    inline void initZeros() { memset(vdata, 0, size() * sizeof(T)); }
 
     /** Initialize to zeros with a given size.
      */
@@ -561,6 +559,13 @@ class Matrix1D {
     void initZeros(const Matrix1D<T1> &op) {
         resize(op);
         memset(vdata, 0, size() * sizeof(T));
+    }
+
+    // Constructor
+    static Matrix1D<T> zeros(int n) {
+        Matrix1D<T> v(n);
+        v.initZeros();
+        return v;
     }
     //@}
 
@@ -913,20 +918,18 @@ class Matrix1D {
         return x;
     }
 
-    /** Normalize this vector, store the result here
-     */
-    void selfNormalize() {
+    // Normalise vector
+    void normalise() {
         RFLOAT m = modulus();
         if (abs(m) > Xmipp::epsilon) {
             *this *= (T) (1.0 / m);
         } else {
-            initZeros();
+            initZeros();  // Why?
         }
     }
 
-    /** Reverse vector values, keep in this object.
-     */
-    void selfReverse() {
+    // Reverse data
+    void reverse() {
         for (int i = 0; i <= (int) (size() - 1) / 2; i++) {
             SWAP((*this)[i], (*this)[size() - 1 - i]);
         }
@@ -939,25 +942,26 @@ class Matrix1D {
      * because the numerical method is not able to correctly estimate the
      * derivative there.
      */
-    void numericalDerivative(Matrix1D<RFLOAT> &result) {
-        const RFLOAT i12 = 1.0 / 12.0;
-        result.initZeros(*this);
-        for (int i = STARTINGX(*this) + 2; i <= FINISHINGX(*this) - 2; i++)
-            result(i) = i12 * (
+    Matrix1D<RFLOAT> numericalDerivative() {
+        Matrix1D<RFLOAT> result = zeros(size());
+        const RFLOAT one_twelfth = 1.0 / 12.0;
+        for (int i = (this->xinit) + 2; i <= (this->xinit + this->xdim - 1) - 2; i++)  // Wrong type
+            result[i] = one_twelfth * (
                 - (*this)[i + 2] + 8 * (*this)[i + 1] 
                 + (*this)[i + 2] - 8 * (*this)[i - 1]  // BUG? Should [i + 2] be [i - 2]?
             );
+        return result;
     }
 
     /** Output to output stream.*/
     friend std::ostream& operator << (std::ostream &ostrm, const Matrix1D<T> &v) {
         if (v.size() == 0) { ostrm << "NULL Array"; }
-        ostrm << std::endl;
+        ostrm << '\n';
 
         int prec = bestPrecision(v.max(), 10);
 
         for (int i = 0; i < v.size(); i++) {
-            ostrm << floatToString((RFLOAT) v[i], 10, prec) << std::endl;
+            ostrm << floatToString((RFLOAT) v[i], 10, prec) << '\n';
         }
         return ostrm;
     }
