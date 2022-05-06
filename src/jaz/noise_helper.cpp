@@ -52,8 +52,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         if (goodAngles % 10 == 0) std::cout << goodAngles << "/" << nangles << "\n";
 
-        Matrix1D<RFLOAT> dm(3);
-        VECTOR_R3(dm, dx, dy, dz);
+        Matrix1D<RFLOAT> dm = VECTOR_R3(dx, dy, dz);
 
         RFLOAT rot, tilt;
         Euler_direction2angles(dm, rot, tilt);

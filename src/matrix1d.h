@@ -121,29 +121,30 @@ template <typename T>
 inline T& ZZ(const Matrix1D<T> &v) { return v[2]; }
 
 /** Creates vector in R2
- * The vector must be created beforehand to the correct size. After this macro
- * the vector is (x, y) in R2.
- *
  * @code
- * MultidimArray< RFLOAT > v(2);
- * VECTOR_R2(v, 1, 2);
+ * v = VECTOR_R2(1.0, 2.0);
  * @endcode
  */
-#define VECTOR_R2(v, x, y) { \
-    XX(v) = x; YY(v) = y; \
+template <typename T>
+Matrix1D<T> VECTOR_R2(T x, T y) {
+    Matrix1D<T> v(2);
+    XX(v) = x; 
+    YY(v) = y;
+    return v;
 }
 
 /** Creates vector in R3
- * The vector must be created beforehand to the correct size. After this macro
- * the vector is (x, y, z) in R3.
- *
  * @code
- * MultidimArray< RFLOAT > v(3);
- * VECTOR_R2(v, 1, 2, 1);
+ * v = VECTOR_R2(1.0, 2.0, 1.0);
  * @endcode
  */
-#define VECTOR_R3(v, x, y, z) { \
-    XX(v) = x; YY(v) = y; ZZ(v) = z; \
+template <typename T>
+Matrix1D<T> VECTOR_R3(T x, T y, T z) {
+    Matrix1D<T> v(3);
+    XX(v) = x; 
+    YY(v) = y; 
+    ZZ(v) = z;
+    return v;
 }
 
 /** Adding two R2 vectors (a=b+c)
