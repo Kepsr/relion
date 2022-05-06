@@ -119,48 +119,46 @@ class EERRenderer {
             }
         } 
 
-        if (eer_upsampling == 2 && nx_in == EER_IMAGE_WIDTH && ny_in == EER_IMAGE_HEIGHT) {
+        if (
+            eer_upsampling == 2 && nx_in == EER_IMAGE_WIDTH && ny_in == EER_IMAGE_HEIGHT
             // gain = 4K and grid = 8K
+        ) {
             gain.initZeros(size_out, size_out);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(gain)
                 DIRECT_A2D_ELEM(gain, i, j) = DIRECT_A2D_ELEM(original(), i / 2, j / 2);
-        } else if ((eer_upsampling == 1 && nx_in == EER_IMAGE_WIDTH && ny_in == EER_IMAGE_HEIGHT) || // gain = 4K and grid = 4K
-                 (eer_upsampling == 2 && nx_in == EER_IMAGE_WIDTH * 2 && ny_in == EER_IMAGE_HEIGHT * 2)) // gain = 8K and grid = 8K
-        {
+        } else if (
+            (eer_upsampling == 1 && nx_in == EER_IMAGE_WIDTH && ny_in == EER_IMAGE_HEIGHT) || // gain = 4K and grid = 4K
+            (eer_upsampling == 2 && nx_in == EER_IMAGE_WIDTH * 2 && ny_in == EER_IMAGE_HEIGHT * 2)  // gain = 8K and grid = 8K
+        ) {
             gain = original();
-        }
-        else if (eer_upsampling == 1 && nx_in == EER_IMAGE_WIDTH * 2 && ny_in == EER_IMAGE_HEIGHT * 2) // gain = 8K and grid = 4K
-        {
+        } else if (
+            eer_upsampling == 1 && nx_in == EER_IMAGE_WIDTH * 2 && ny_in == EER_IMAGE_HEIGHT * 2
+            // gain = 8K and grid = 4K
+        ) {
             gain.initZeros(size_out, size_out);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(original())
                 DIRECT_A2D_ELEM(gain, i / 2, j / 2) += DIRECT_A2D_ELEM(original(), i, j);
-        }
-        else
-        {
+        } else {
             std::cerr << "Size of input gain: X = " << nx_in << " Y = " << ny_in << " Expected: X = " << size_out << " Y = " << size_out << std::endl;
             REPORT_ERROR("Invalid gain size in EERRenderer::upsampleEERGain()");
         }
         
-        if (!is_multiplicative)
-        {
+        if (!is_multiplicative) {
             double sum = 0;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain)
                 sum += DIRECT_MULTIDIM_ELEM(gain, n);
             sum /= size_out * size_out;
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain)
-            {
-                if (DIRECT_MULTIDIM_ELEM(gain, n) != 0)
-                {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain) {
+                if (DIRECT_MULTIDIM_ELEM(gain, n) != 0) {
                     DIRECT_MULTIDIM_ELEM(gain, n) = sum / DIRECT_MULTIDIM_ELEM(gain, n);
                 }
             }
         }
     }
 
-    static bool isEER(FileName fn_movie)
-    {
+    static bool isEER(FileName fn_movie) {
         FileName ext = fn_movie.getExtension();
-        return (ext == "eer"  || ext == "ecc");
+        return ext == "eer" || ext == "ecc";
     }
 };
