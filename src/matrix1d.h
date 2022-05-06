@@ -90,13 +90,17 @@ template <typename T> class Matrix2D;
 
 // Convention: { 0, 1, 2 } <-> { X, Y, Z }
 
+template <typename T>
+class Matrix1D;
+
 /** Access to X component
  * @code
  * XX(v) = 1;
  * val = XX(v);
  * @endcode
  */
-#define XX(v) (v).vdata[0]
+template <typename T>
+inline T& XX(const Matrix1D<T> &v) { return v[0]; }
 
 /** Access to Y component
  * @code
@@ -104,7 +108,8 @@ template <typename T> class Matrix2D;
  * val = YY(v);
  * @endcode
  */
-#define YY(v) (v).vdata[1]
+template <typename T>
+inline T& YY(const Matrix1D<T> &v) { return v[1]; }
 
 /** Access to Z component
  * @code
@@ -112,7 +117,8 @@ template <typename T> class Matrix2D;
  * val = ZZ(v);
  * @endcode
  */
-#define ZZ(v) (v).vdata[2]
+template <typename T>
+inline T& ZZ(const Matrix1D<T> &v) { return v[2]; }
 
 /** Creates vector in R2
  * The vector must be created beforehand to the correct size. After this macro
