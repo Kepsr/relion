@@ -58,8 +58,7 @@ void Euler_angles2matrix(
         A.initZeros(4, 4);
         MAT_ELEM(A, 3, 3) = 1;
     } else {
-        if (MAT_XSIZE(A) != 3 || MAT_YSIZE(A) != 3)
-            A.resize(3, 3);
+        A.resize(3, 3);
     }
 
     alpha = radians(alpha);
@@ -82,10 +81,10 @@ void Euler_angles2matrix(
     A(0, 2) = -cg * sb;
     A(1, 0) = -sg * cc - cg * sa;
     A(1, 1) = -sg * cs + cg * ca;
-    A(1, 2) = sg * sb;
+    A(1, 2) =  sg * sb;
     A(2, 0) =  sc;
     A(2, 1) =  ss;
-    A(2, 2) = cb;
+    A(2, 2) =  cb;
 }
 
 /* Euler direction --------------------------------------------------------- */

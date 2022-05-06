@@ -216,8 +216,7 @@ std::vector<Image<RFLOAT>> MotionHelper::addCCs(
     std::vector<Image<RFLOAT>> e_sum(fc);
 
     for (int f = 0; f < fc; f++) {
-        e_sum[f] = Image<RFLOAT>(s, s);
-        e_sum[f].data.initZeros();
+        e_sum[f] = Image<RFLOAT>::zeros(s, s);
 
         for (int p = 0; p < pc; p++)
         for (int y = 0; y < s;  y++)
@@ -276,8 +275,7 @@ std::vector<d2Vector> MotionHelper::getGlobalOffsets(
 
     #pragma omp parallel for num_threads(threads)
     for (int p = 0; p < pc; p++) {
-        Image<RFLOAT> pSum(s, s);
-        pSum.data.initZeros();
+        Image<RFLOAT> pSum = Image<RFLOAT>::zeros(s, s);
 
         for (int f = 0; f < fc; f++) {
             const d2Vector g = initialTracks[p][f];

@@ -1444,14 +1444,12 @@ void makeBlot(
 */
 
 void makeSimpleHelixFromPDBParticle(
-    const Assembly& ori, Assembly& helix,
+    const Assembly &ori, Assembly &helix,
     RFLOAT radius_A, RFLOAT twist_deg, RFLOAT rise_A,
     int nr_copy, bool do_center
 ) {
     int nr_ori_atoms;
-    Matrix1D<RFLOAT> mass_centre, shift;
     Matrix2D<RFLOAT> rotational_matrix;
-    Assembly aux0, aux1;
 
     if (nr_copy < 3)
         REPORT_ERROR("helix.cpp::makeHelixFromPDBParticle(): More than 3 copies of original assemblies are required to form a helix!");
@@ -1463,8 +1461,7 @@ void makeSimpleHelixFromPDBParticle(
         REPORT_ERROR("helix.cpp::makeHelixFromPDBParticle(): Original assembly contains no atoms!");
 
     // Calculate centre of mass of the original assembly
-    mass_centre.resize(3);
-    mass_centre.initZeros();
+    Matrix1D<RFLOAT> mass_centre = Matrix1D<RFLOAT>::zeros(3);
     for (int imol = 0; imol < ori.molecules.size(); imol++) {
         for (int ires = 0; ires < ori.molecules[imol].residues.size(); ires++) {
             for (int iatom = 0; iatom < ori.molecules[imol].residues[ires].atoms.size(); iatom++) {
@@ -1476,6 +1473,7 @@ void makeSimpleHelixFromPDBParticle(
     }
     mass_centre /= (RFLOAT) nr_ori_atoms ;
 
+    Assembly aux0;
     aux0.clear();
     aux0 = ori;
     // Set the original particle on (r, 0, 0), if r > 0
@@ -1496,17 +1494,17 @@ void makeSimpleHelixFromPDBParticle(
 
     // Construct the helix
     rotational_matrix.clear();
-    shift.resize(3);
-    shift.initZeros();
+    Matrix1D<RFLOAT> shift = Matrix1D<RFLOAT>::zeros(3);
     helix.clear();
     helix.join(aux0);
     for (int ii = ((nr_copy + 1) % 2) - nr_copy / 2 ; ii <= nr_copy / 2; ii++) {
         if (ii == 0)
             continue;
 
-        rotation2DMatrix(((RFLOAT)(ii)) * twist_deg, rotational_matrix, true);
-        ZZ(shift) = (RFLOAT)(ii) * rise_A;
+        rotation2DMatrix((RFLOAT) ii * twist_deg, rotational_matrix, true);
+        ZZ(shift) = (RFLOAT) ii * rise_A;
 
+        Assembly aux1;
         aux1.clear();
         aux1 = aux0;
         aux1.applyTransformation(rotational_matrix, shift);
@@ -2815,7 +2813,7 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
 */
 
 void makeHelicalReference2D(
-    MultidimArray<RFLOAT>& out,
+    MultidimArray<RFLOAT> &out,
     int box_size,
     RFLOAT particle_diameter_A, RFLOAT tube_diameter_A, RFLOAT pixel_size_A,
     bool is_tube_white
@@ -2971,7 +2969,7 @@ void makeHelicalReference3D(
 */
 
 void makeHelicalReference3DWithPolarity(
-    MultidimArray<RFLOAT>& out,
+    MultidimArray<RFLOAT> &out,
     int box_size,
     RFLOAT pixel_size_A, RFLOAT twist_deg, RFLOAT rise_A,
     RFLOAT tube_diameter_A, RFLOAT particle_diameter_A,
@@ -3831,18 +3829,16 @@ void updatePriorsForOneHelicalTube(
         for (int id = sid; id <= eid; id++) {
             RFLOAT this_rot, this_psi, this_tilt, center_pos, this_pos, sum_w, this_w, offset2;
             RFLOAT length_rot_vec, center_x_helix, this_x_helix;  // KThurber
-            Matrix1D<RFLOAT> this_ang_vec, sum_ang_vec, this_trans_vec, center_trans_vec, sum_trans_vec;
-            Matrix1D<RFLOAT> this_rot_vec, sum_rot_vec;  // KThurber
 
             // Init
             this_rot = this_psi = this_tilt = center_pos = this_pos = sum_w = this_w = offset2 = 0.0;
-            this_ang_vec.initZeros(3);
-            this_rot_vec.initZeros(2);	// KThurber
-            sum_ang_vec.initZeros(3);
-            sum_rot_vec.initZeros(2);	// KThurber
-            this_trans_vec.initZeros(data_dim);
-            center_trans_vec.initZeros(data_dim);
-            sum_trans_vec.initZeros(data_dim);
+            Matrix1D<RFLOAT> this_ang_vec     = Matrix1D<RFLOAT>::zeros(3);
+            Matrix1D<RFLOAT> this_rot_vec     = Matrix1D<RFLOAT>::zeros(2);	// KThurber
+            Matrix1D<RFLOAT> sum_ang_vec      = Matrix1D<RFLOAT>::zeros(3);
+            Matrix1D<RFLOAT> sum_rot_vec      = Matrix1D<RFLOAT>::zeros(2);	// KThurber
+            Matrix1D<RFLOAT> this_trans_vec   = Matrix1D<RFLOAT>::zeros(data_dim);
+            Matrix1D<RFLOAT> center_trans_vec = Matrix1D<RFLOAT>::zeros(data_dim);
+            Matrix1D<RFLOAT> sum_trans_vec    = Matrix1D<RFLOAT>::zeros(data_dim);
 
             // Check position
             center_pos = this_pos = list[id].track_pos_A;
@@ -4533,7 +4529,6 @@ void HermiteInterpolateOne3DHelicalFilament(
     RFLOAT half_box_size_pix = box_size_pix / 2.0;
     int nr_partitions, nr_segments;
     std::vector<RFLOAT> xlist, ylist, zlist;
-    Matrix1D<RFLOAT> dr;
 
     // DEBUG: Do not exclude particles on the edges
     // Xdim = Ydim = Zdim = 999999.0;
@@ -4587,8 +4582,8 @@ void HermiteInterpolateOne3DHelicalFilament(
     accu_len_pix = 0.0;
     present_len_pix = -1.0;
     nr_segments = 0;
-    dr.initZeros(3);
-    for (int id = 0; id < (xlist.size() - 1); id++) {
+    Matrix1D<RFLOAT> dr = Matrix1D<RFLOAT>::zeros(3);
+    for (int id = 0; id < xlist.size() - 1; id++) {
         // Step size for interpolation is smaller than 1% of the inter-box distance
         // sqrt(0.57735 * 0.57735 * 0.57735 * 3) = 1.0, step size is larger than 1 pixel
         // TODO: 1% ? Too expensive computationally? Try 10% ?

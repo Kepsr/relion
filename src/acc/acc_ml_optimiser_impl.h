@@ -27,7 +27,6 @@ void getFourierTransformsAndCtfs(
         int icol_rot, icol_tilt, icol_psi, icol_xoff, icol_yoff, icol_zoff;
         Matrix1D<RFLOAT> my_old_offset, my_prior, my_old_offset_ori;
         Image<RFLOAT> img, rec_img;
-        MultidimArray<Complex> Fimg;
         MultidimArray<Complex> Faux;
         MultidimArray<RFLOAT> Fctf;
         Matrix2D<RFLOAT> Aori;
@@ -301,8 +300,8 @@ void getFourierTransformsAndCtfs(
         size_t current_size_x = baseMLO->image_current_size[optics_group] / 2 + 1;
         size_t current_size_y = baseMLO->image_current_size[optics_group];
         size_t current_size_z = accMLO->dataIs3D ? baseMLO->image_current_size[optics_group] : 1;
-        accMLO->transformer1.setSize(img().xdim,img().ydim,img().zdim);
-        Fimg.initZeros(current_size_z, current_size_y, current_size_x);
+        accMLO->transformer1.setSize(img().xdim, img().ydim, img().zdim);
+        MultidimArray<Complex> Fimg = MultidimArray<Complex>::zeros(current_size_z, current_size_y, current_size_x);
 
         // ------------------------------------------------------------------------------------------
 
@@ -324,8 +323,7 @@ void getFourierTransformsAndCtfs(
 
 
                 // Remap mymodel.sigma2_noise[group_id] onto remapped_sigma2_noise for this images's size and angpix
-                MultidimArray<RFLOAT> remapped_sigma2_noise;
-                remapped_sigma2_noise.initZeros(XSIZE(img()) / 2 + 1);
+                MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(XSIZE(img()) / 2 + 1);
                 RFLOAT remap_image_sizes = (baseMLO->image_full_size[optics_group] * my_pixel_size) / (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size);
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(baseMLO->mymodel.sigma2_noise[group_id]) {
                     int i_remap = round(remap_image_sizes * i);
@@ -730,8 +728,7 @@ void getFourierTransformsAndCtfs(
 
         // If we're doing multibody refinement, now subtract projections of the other bodies from both the masked and the unmasked particle
         if (baseMLO->mymodel.nr_bodies > 1) {
-            MultidimArray<Complex> Fsum_obody;
-            Fsum_obody.initZeros(Fimg);
+            MultidimArray<Complex> Fsum_obody = MultidimArray<Complex>::zeros(Fimg);
 
             for (int obody = 0; obody < baseMLO->mymodel.nr_bodies; obody++) {
                 if (obody != ibody) {  // Only subtract if other body is not this body.
@@ -760,8 +757,7 @@ void getFourierTransformsAndCtfs(
                     Abody = baseMLO->mydata.obsModel.applyScaleDifference(Abody, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
 
                     // Get the FT of the projection in the right direction
-                    MultidimArray<Complex> FTo;
-                    FTo.initZeros(Fimg);
+                    MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
                     // The following line gets the correct pointer to account for overlap in the bodies
                     int oobody = DIRECT_A2D_ELEM(baseMLO->mymodel.pointer_body_overlap, ibody, obody);
                     baseMLO->mymodel.PPref[oobody].get2DFourierTransform(FTo, Abody);
@@ -2085,10 +2081,11 @@ void storeWeightedSums(
         }
     }
 
-    MultidimArray<RFLOAT> thr_metadata, zeroArray;
     // wsum_pdf_direction is a 1D-array (of length sampling.NrDirections()) for each class
-    zeroArray.initZeros(baseMLO->sampling.NrDirections());
-    thr_wsum_pdf_direction.resize(baseMLO->mymodel.nr_classes * baseMLO->mymodel.nr_bodies, zeroArray);
+    thr_wsum_pdf_direction.resize(
+        baseMLO->mymodel.nr_classes * baseMLO->mymodel.nr_bodies, 
+        MultidimArray<RFLOAT>::zeros(baseMLO->sampling.NrDirections())
+    );
     // sumw_group is a RFLOAT for each group
     thr_sumw_group.resize(sp.nr_images, 0.0);
     // wsum_pdf_class is a RFLOAT for each class

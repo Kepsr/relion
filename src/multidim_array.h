@@ -618,21 +618,26 @@ class MultidimArray {
      * @endcode
      */
     MultidimArray(const MultidimArray<T> &V, bool parent=false) {
+        coreInit();
         if (parent) {
-            coreInit();
             copyShape(V);
             coreAllocate();
         } else {
-            coreInit();
             *this = V;
         }
+    }
+
+    template <typename T2>
+    MultidimArray<T>(const MultidimArray<T2> &other) {
+        coreInit();
+        *this = other;
     }
 
     /** Copy constructor from a Matrix1D.
      * The Size constructor creates an array with memory associated,
      * and fills it with zeros.
      */
-    MultidimArray(const Matrix1D<T>& V) {
+    MultidimArray(const Matrix1D<T> &V) {
         coreInit();
         resize(1, 1, 1, V.size());
         for (long int i = 0; i < V.size(); i++)
@@ -2999,6 +3004,13 @@ class MultidimArray {
         memset(data, 0, nzyxdim() * sizeof(T));
     }
 
+    template <typename T2>
+    static MultidimArray<T> zeros(const MultidimArray<T2> &arr1) {
+        MultidimArray<T> arr2(arr1);
+        arr2.initZeros();
+        return arr2;
+    }
+
     /** Initialize to zeros with current size.
      *
      * All values are set to 0. The current size and origin are kept. It is not
@@ -3018,10 +3030,22 @@ class MultidimArray {
         initZeros(1, 1, 1, Xdim);
     }
 
+    static MultidimArray<T> zeros(long int Xdim) {
+        MultidimArray<T> arr(Xdim);
+        arr.initZeros();
+        return arr;
+    }
+
     /** Initialize to zeros with a given size.
      */
     void initZeros(long int Ydim, long int Xdim) {
         initZeros(1, 1, Ydim, Xdim);
+    }
+
+    static MultidimArray<T> zeros(long int Ydim, long int Xdim) {
+        MultidimArray<T> arr(Ydim, Xdim);
+        arr.initZeros();
+        return arr;
     }
 
     /** Initialize to zeros with a given size.
@@ -3030,12 +3054,24 @@ class MultidimArray {
         initZeros(1, Zdim, Ydim, Xdim);
     }
 
+    static MultidimArray<T> zeros(long int Zdim, long int Ydim, long int Xdim) {
+        MultidimArray<T> arr(Zdim, Ydim, Xdim);
+        arr.initZeros();
+        return arr;
+    }
+
     /** Initialize to zeros with a given size.
      */
     inline void initZeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
         if (xdim != Xdim || ydim != Ydim || zdim != Zdim || ndim != Ndim)
-            reshape(Ndim, Zdim,Ydim,Xdim);
+            reshape(Ndim, Zdim, Ydim, Xdim);
         memset(data, 0, nzyxdim() * sizeof(T));
+    }
+
+    static MultidimArray<T> zeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
+        MultidimArray<T> arr(Ndim, Zdim, Ydim, Xdim);
+        arr.initZeros();
+        return arr;
     }
 
     /** Linear initialization (only for 1D)

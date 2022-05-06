@@ -47,17 +47,11 @@ void FscHelper::computeFscTable(
     const int pc = frames.size();
     const int fc = frames[0].size();
 
-    table = Image<RFLOAT>(w, fc);
-    weight = Image<RFLOAT>(w, fc);
+    table  = Image<RFLOAT>::zeros(w, fc);
+    weight = Image<RFLOAT>::zeros(w, fc);
 
-    table.data.initZeros();
-    weight.data.initZeros();
-
-    Image<RFLOAT> weight1 = Image<RFLOAT>(w, fc);
-    Image<RFLOAT> weight2 = Image<RFLOAT>(w, fc);
-
-    weight1.data.initZeros();
-    weight2.data.initZeros();
+    Image<RFLOAT> weight1 = Image<RFLOAT>::zeros(w, fc);
+    Image<RFLOAT> weight2 = Image<RFLOAT>::zeros(w, fc);
 
     for (int p = 0; p < pc; p++)
     for (int f = 0; f < fc; f++) {
@@ -125,13 +119,9 @@ void FscHelper::initFscTable(
     int kc, int tc, Image<RFLOAT> &table, 
     Image<RFLOAT> &weight0, Image<RFLOAT> &weight1
 ) {
-    table   = Image<RFLOAT>(kc, tc);
-    weight0 = Image<RFLOAT>(kc, tc);
-    weight1 = Image<RFLOAT>(kc, tc);
-
-    table.data.initZeros();
-    weight0.data.initZeros();
-    weight1.data.initZeros();
+    table   = Image<RFLOAT>::zeros(kc, tc);
+    weight0 = Image<RFLOAT>::zeros(kc, tc);
+    weight1 = Image<RFLOAT>::zeros(kc, tc);
 }
 
 void FscHelper::updateFscTable(
@@ -253,13 +243,9 @@ void FscHelper::mergeFscTables(
     const int fc = tables[0].data.ydim;
     const int mgc = tables.size();
 
-    Image<RFLOAT> tableSum   = Image<RFLOAT>(w, fc);
-    Image<RFLOAT> weightSum0 = Image<RFLOAT>(w, fc);
-    Image<RFLOAT> weightSum1 = Image<RFLOAT>(w, fc);
-
-    tableSum.data.initZeros();
-    weightSum0.data.initZeros();
-    weightSum1.data.initZeros();
+    Image<RFLOAT> tableSum   = Image<RFLOAT>::zeros(w, fc);
+    Image<RFLOAT> weightSum0 = Image<RFLOAT>::zeros(w, fc);
+    Image<RFLOAT> weightSum1 = Image<RFLOAT>::zeros(w, fc);
 
     table  = Image<RFLOAT>(w, fc);
     weight = Image<RFLOAT>(w, fc);
@@ -316,10 +302,8 @@ void FscHelper::computeNoiseSq(
     const int pc = frames.size();
     const int fc = frames[0].size();
 
-    sigma2 = Image<RFLOAT>(w,fc);
-    Image<RFLOAT> count(w,fc);
-    sigma2.data.initZeros();
-    count.data.initZeros();
+    sigma2              = Image<RFLOAT>::zeros(w, fc);
+    Image<RFLOAT> count = Image<RFLOAT>::zeros(w, fc);
 
     for (int p = 0; p < pc; p++)
     for (int f = 0; f < fc; f++) {

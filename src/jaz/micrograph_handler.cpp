@@ -463,8 +463,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                     REPORT_ERROR("Invalid dfefect mask size for " + mgFn0);
                 }
 
-                MultidimArray<float> Isum;
-                Isum.initZeros(Iframes[0]);
+                MultidimArray<float> Isum = MultidimArray<float>::zeros(Iframes[0]);
                 for (int iframe = 0; iframe < n_frames; iframe++) {
                     #pragma omp parallel for num_threads(nr_omp_threads)
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {

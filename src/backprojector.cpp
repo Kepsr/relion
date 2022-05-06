@@ -801,9 +801,8 @@ void BackProjector::setLowResDataAndWeight(
 }
 
 void BackProjector::getDownsampledAverage(
-    MultidimArray<Complex>& avg, bool divide
+    MultidimArray<Complex> &avg, bool divide
 ) const {
-    MultidimArray<RFLOAT> down_weight;
 
     // Pre-set down_data and down_weight sizes
     const int down_size = 2 * (r_max + 1) + 1;
@@ -824,16 +823,15 @@ void BackProjector::getDownsampledAverage(
     }
     // Set origin in the y.z-center, but on the left side for x.
     avg.setXmippOrigin();
-    avg.xinit=0;
-    // Resize down_weight the same as down_data
-    down_weight.initZeros(avg);
+    avg.xinit = 0;
+    MultidimArray<RFLOAT> down_weight = MultidimArray<RFLOAT>::zeros(avg);
+    // down_weight same size as down_data
 
     // Now calculate the down-sized sum
-    int kp, ip, jp;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(data) {
-        kp = round((RFLOAT) k / padding_factor);
-        ip = round((RFLOAT) i / padding_factor);
-        jp = round((RFLOAT) j / padding_factor);
+        int kp = round((RFLOAT) k / padding_factor);
+        int ip = round((RFLOAT) i / padding_factor);
+        int jp = round((RFLOAT) j / padding_factor);
 
         // TMP
         // #define CHECK_SIZE
@@ -865,15 +863,14 @@ void BackProjector::getDownsampledAverage(
 void BackProjector::calculateDownSampledFourierShellCorrelation(
     const MultidimArray<Complex>& avg1,
     const MultidimArray<Complex>& avg2,
-    MultidimArray<RFLOAT>& fsc
+    MultidimArray<RFLOAT> &fsc
 ) const {
     if (!avg1.sameShape(avg2))
         REPORT_ERROR("ERROR BackProjector::calculateDownSampledFourierShellCorrelation: two arrays have different sizes");
 
-    MultidimArray<RFLOAT> num, den1, den2;
-    num.initZeros(ori_size / 2 + 1);
-    den1.initZeros(num);
-    den2.initZeros(num);
+    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> den1 = MultidimArray<RFLOAT>::zeros(num);
+    MultidimArray<RFLOAT> den2 = MultidimArray<RFLOAT>::zeros(num);
     fsc.initZeros(num);
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(avg1) {
@@ -886,12 +883,9 @@ void BackProjector::calculateDownSampledFourierShellCorrelation(
         Complex z1 = A3D_ELEM(avg1, k, i, j);
         Complex z2 = A3D_ELEM(avg2, k, i, j);
 
-        RFLOAT nrmz1 = z1.norm();
-        RFLOAT nrmz2 = z2.norm();
-
         num(idx) += z1.real * z2.real + z1.imag * z2.imag;
-        den1(idx) += nrmz1;
-        den2(idx) += nrmz2;
+        den1(idx) += z1.norm();
+        den2(idx) += z2.norm();
     }
 
     FOR_ALL_ELEMENTS_IN_ARRAY1D(fsc) {
@@ -918,9 +912,7 @@ void BackProjector::updateSSNRarrays(
 ) {
     // never rely on references (handed to you from the outside) for computation:
     // they could be the same (i.e. reconstruct(..., dummy, dummy, dummy, dummy, ...); )
-    MultidimArray<RFLOAT> sigma2, data_vs_prior, fourier_coverage;
     MultidimArray<RFLOAT> tau2 = tau2_io;
-    MultidimArray<RFLOAT> counter;
     const int max_r2 = round(r_max * padding_factor) * round(r_max * padding_factor);
     RFLOAT oversampling_correction = ref_dim == 3 ? padding_factor * padding_factor * padding_factor : padding_factor * padding_factor;
 
@@ -928,8 +920,8 @@ void BackProjector::updateSSNRarrays(
     // This is the left-hand side term in the nominator of the Wiener-filter-like update formula
     // and it is stored inside the weight vector
     // Then, if (do_map) add the inverse of tau2-spectrum values to the weight
-    sigma2.initZeros(ori_size / 2 + 1);
-    counter.initZeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> sigma2  = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> counter = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
         const int r2 = k * k + i * i + j * j;
         if (r2 < max_r2) {
@@ -954,8 +946,8 @@ void BackProjector::updateSSNRarrays(
     }
 
     tau2.reshape(ori_size / 2 + 1);
-    data_vs_prior.initZeros(ori_size / 2 + 1);
-    fourier_coverage.initZeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> data_vs_prior    = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> fourier_coverage = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     counter.initZeros(ori_size / 2 + 1);
     if (update_tau2_with_fsc) {
         // Then calculate new tau2 values, based on the FSC
@@ -1600,8 +1592,7 @@ void BackProjector::reconstruct(
     if (weight_out != 0) {
         weight_out->data = MultidimArray<RFLOAT>(1, ori_size, ori_size, ori_size / 2 + 1);
 
-        Image<RFLOAT> count(ori_size / 2 + 1, ori_size, ori_size);
-        count.data.initZeros();
+        Image<RFLOAT> count = Image<RFLOAT>::zeros(ori_size / 2 + 1, ori_size, ori_size);
 
         // downsample while considering padding:
 

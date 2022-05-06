@@ -2085,10 +2085,9 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             Mavg += img();
 
             // Calculate the power spectrum of this particle
-            MultidimArray<RFLOAT> ind_spectrum, count;
             int spectral_size = mymodel.ori_size / 2 + 1;
-            ind_spectrum.initZeros(spectral_size);
-            count.initZeros(spectral_size);
+            MultidimArray<RFLOAT> ind_spectrum = MultidimArray<RFLOAT>::zeros(spectral_size);
+            MultidimArray<RFLOAT> count        = MultidimArray<RFLOAT>::zeros(spectral_size);
             // recycle the same transformer for all images
             transformer.FourierTransform(img(), Faux, false);
 
@@ -3857,8 +3856,7 @@ void MlOptimiser::maximizationOtherParameters() {
 
     // Annealing of multiple-references in SGD
     if (do_sgd && !do_sgd_skip_anneal && mymodel.nr_classes > 1 && iter < sgd_ini_iter + sgd_inbetween_iter) {
-        MultidimArray<RFLOAT> Iavg;
-        Iavg.initZeros(mymodel.Iref[0]);
+        MultidimArray<RFLOAT> Iavg = MultidimArray<RFLOAT>::zeros(mymodel.Iref[0]);
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             Iavg += mymodel.Iref[iclass];
         }
@@ -4863,8 +4861,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             transformer.getFourierAlias(Fnoise);
 
             // Remap mymodel.sigma2_noise[group_id] onto remapped_sigma2_noise for this images's size and angpix
-            MultidimArray<RFLOAT> remapped_sigma2_noise;
-            remapped_sigma2_noise.initZeros(XSIZE(Mnoise) / 2 + 1);
+            MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(XSIZE(Mnoise) / 2 + 1);
             RFLOAT remap_image_sizes = (my_image_size * my_pixel_size) / (mymodel.ori_size * mymodel.pixel_size);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(mymodel.sigma2_noise[group_id]) {
                 int i_remap = round(remap_image_sizes * i);
@@ -4919,8 +4916,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
         // Store the power_class spectrum of the whole image (to fill sigma2_noise between current_size and ori_size
         if (image_current_size[optics_group] < image_full_size[optics_group]) {
-            MultidimArray<RFLOAT> spectrum;
-            spectrum.initZeros(image_full_size[optics_group] / 2 + 1);
+            MultidimArray<RFLOAT> spectrum = MultidimArray<RFLOAT>::zeros(image_full_size[optics_group] / 2 + 1);
             RFLOAT highres_Xi2 = 0.0;
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
                 int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
@@ -5045,8 +5041,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
         // If we're doing multibody refinement, now subtract projections of the other bodies from both the masked and the unmasked particle
         if (mymodel.nr_bodies > 1) {
-            MultidimArray<Complex> Fsum_obody;
-            Fsum_obody.initZeros(Fimg);
+            MultidimArray<Complex> Fsum_obody = MultidimArray<Complex>::zeros(Fimg);
 
             for (int obody = 0; obody < mymodel.nr_bodies; obody++) {
                 if (obody != ibody) {
@@ -5075,8 +5070,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
 
                     // Get the FT of the projection in the right direction
-                    MultidimArray<Complex> FTo;
-                    FTo.initZeros(Fimg);
+                    MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
                     // The following line gets the correct pointer to account for overlap in the bodies
                     int oobody = DIRECT_A2D_ELEM(mymodel.pointer_body_overlap, ibody, obody);
                     mymodel.PPref[oobody].get2DFourierTransform(FTo, Abody);
@@ -5356,10 +5350,11 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
             windowFourierTransform(exp_Fctf[img_id], exp_local_Fctf[img_id], exp_current_image_size);
 
             // Also prepare Minvsigma2
-            if (mymodel.data_dim == 3)
+            if (mymodel.data_dim == 3) {
                 exp_local_Minvsigma2[img_id].initZeros(ZSIZE(Fimg), YSIZE(Fimg), XSIZE(Fimg));
-            else
+            } else {
                 exp_local_Minvsigma2[img_id].initZeros(YSIZE(Fimg), XSIZE(Fimg));
+            }
 
             // Map from model_size sigma2_noise array to my_image_size
             RFLOAT remap_image_sizes = (mymodel.ori_size * mymodel.pixel_size) / (my_image_size * my_pixel_size);
@@ -5387,16 +5382,9 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
             #endif
         } else if (!do_gpu && !do_cpu) {
             #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
-            Image<RFLOAT> img_save_ori, img_save_mask, img_save_nomask;
-            img_save_ori.clear();
-            img_save_ori().resize((mymodel.data_dim == 3) ? (mymodel.ori_size) : (1), mymodel.ori_size, mymodel.ori_size);
-            img_save_ori().initZeros();
-            img_save_mask.clear();
-            img_save_mask().resize((mymodel.data_dim == 3) ? (mymodel.ori_size) : (1), mymodel.ori_size, mymodel.ori_size);
-            img_save_mask().initZeros();
-            img_save_nomask.clear();
-            img_save_nomask().resize((mymodel.data_dim == 3) ? (mymodel.ori_size) : (1), mymodel.ori_size, mymodel.ori_size);
-            img_save_nomask().initZeros();
+            Image<RFLOAT> img_save_ori    = Image<RFLOAT>::zeros(mymodel.data_dim == 3 ? mymodel.ori_size : 1, mymodel.ori_size, mymodel.ori_size);
+            Image<RFLOAT> img_save_mask   = Image<RFLOAT>::zeros(mymodel.data_dim == 3 ? mymodel.ori_size : 1, mymodel.ori_size, mymodel.ori_size);
+            Image<RFLOAT> img_save_nomask = Image<RFLOAT>::zeros(mymodel.data_dim == 3 ? mymodel.ori_size : 1, mymodel.ori_size, mymodel.ori_size);
             #endif
             // Store all translated variants of Fimg
             int my_trans_image = 0;
@@ -6659,10 +6647,9 @@ void MlOptimiser::storeWeightedSums(
     std::vector<MultidimArray<RFLOAT> > thr_wsum_pdf_direction;
     std::vector<RFLOAT> thr_sumw_group, thr_wsum_pdf_class, thr_wsum_prior_offsetx_class, thr_wsum_prior_offsety_class;
     RFLOAT thr_wsum_sigma2_offset;
-    MultidimArray<RFLOAT> thr_metadata, zeroArray;
     // wsum_pdf_direction is a 1D-array (of length sampling.NrDirections()) for each class
-    zeroArray.initZeros(sampling.NrDirections());
-    thr_wsum_pdf_direction.resize(mymodel.nr_classes * mymodel.nr_bodies, zeroArray);
+    MultidimArray<RFLOAT> zeros = MultidimArray<RFLOAT>::zeros(sampling.NrDirections());
+    thr_wsum_pdf_direction.resize(mymodel.nr_classes * mymodel.nr_bodies, zeros);
     // sumw_group is a RFLOAT for each group
     thr_sumw_group.resize(exp_nr_images, 0.0);
     // wsum_pdf_class is a RFLOAT for each class
@@ -7527,7 +7514,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
             REPORT_ERROR("iclass >= (mymodel.orientability_contrib).size()");
         }
         #endif
-        (mymodel.orientability_contrib)[iclass].initZeros(mymodel.ori_size / 2 + 1);
+        mymodel.orientability_contrib[iclass].initZeros(mymodel.ori_size / 2 + 1);
 
         RFLOAT acc_rot_class   = 0.0;
         RFLOAT acc_trans_class = 0.0;

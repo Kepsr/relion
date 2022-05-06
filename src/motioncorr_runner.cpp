@@ -1007,8 +1007,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
     }
     RCTOC(TIMING_APPLY_GAIN);
 
-    MultidimArray<float> Isum(ny, nx);
-    Isum.initZeros();
+    MultidimArray<float> Isum = MultidimArray<float>::zeros(ny, nx);
     // First sum unaligned frames
     RCTIC(TIMING_INITIAL_SUM);
     for (int iframe = 0; iframe < n_frames; iframe++) {
@@ -1037,8 +1036,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         const RFLOAT threshold = mean + hotpixel_sigma * std;
         logfile << "In unaligned sum, Mean = " << mean << " Std = " << std << " Hotpixel threshold = " << threshold << std::endl;
 
-        MultidimArray<bool> bBad(ny, nx);
-        bBad.initZeros();
+        MultidimArray<bool> bBad = MultidimArray<bool>::zeros(ny, nx);
         if (fn_defect != "") {
             fillDefectMask(bBad, fn_defect, n_threads);
             #ifdef DEBUG_HOTPIXELS
@@ -1157,11 +1155,9 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
         // NOTE: Image(X, Y) has MultidimArray(Y, X)!! X is the fast axis.
         RCTIC(TIMING_POWER_SPECTRUM_SUM);
-        Image<float> PS_sum(nx, ny);
-        MultidimArray<fComplex> F_ps, F_ps_small;
+        Image<float> PS_sum = Image<float>::zeros(nx, ny);
 
         // 0. Group and sum
-        PS_sum().initZeros();
         PS_sum().setXmippOrigin();
         for (int iframe = 0; iframe < n_frames; iframe += grouping_for_ps) {
             MultidimArray<fComplex> F_sum(Fframes[iframe]);
@@ -1186,6 +1182,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         std::cout << "size of PS_sum: NX = " << XSIZE(PS_sum()) << " NY = " << YSIZE(PS_sum()) << std::endl;
         #endif
         RCTOC(TIMING_POWER_SPECTRUM_SUM);
+
+        MultidimArray<fComplex> F_ps, F_ps_small;
 
         // 1. Make it square
         int ps_size_square;

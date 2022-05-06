@@ -706,9 +706,8 @@ class image_handler_parameters {
                     Iop.read(fn_correct_ampl);
 
                     // Calculate by the radial average in the Fourier domain
-                    MultidimArray<RFLOAT> spectrum, count;
-                    spectrum.initZeros(YSIZE(Iop()));
-                    count.initZeros(YSIZE(Iop()));
+                    MultidimArray<RFLOAT> spectrum = MultidimArray<RFLOAT>::zeros(YSIZE(Iop()));
+                    MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(YSIZE(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
                         long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
                         spectrum(idx) += dAkij(Iop(), k, i, j);

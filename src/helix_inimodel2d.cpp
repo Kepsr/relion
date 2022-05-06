@@ -25,8 +25,7 @@
 
 void HelixAlignerModel::initialise(int nr_classes, int ydim, int xdim) {
 
-    MultidimArray<RFLOAT> tmp;
-    tmp.initZeros(ydim, xdim);
+    MultidimArray<RFLOAT> tmp = MultidimArray<RFLOAT>::zeros(ydim, xdim);
     tmp.setXmippOrigin();
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         Aref.push_back(tmp);
@@ -194,11 +193,11 @@ void HelixAligner::initialise() {
             Matrix2D<RFLOAT> Arot;
             rotation2DMatrix(ang, Arot);
 
-            MultidimArray<RFLOAT> Mrot;
-            Mrot.initZeros(img());
+            MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(img());
             applyGeometry(img(), Mrot, Arot, true, false);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot)
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot) {
                 DIRECT_A3D_ELEM(vol(), k, i, j) = DIRECT_A2D_ELEM(Mrot, i, j);
+            }
         }
         vol.setSamplingRateInHeader(angpix);
         vol.write(fn_out + ".mrc");
@@ -307,10 +306,9 @@ void HelixAligner::readImages() {
 
         for (int iflip = 0; iflip < 2; iflip++) {
             for (RFLOAT ang = 0; ang <= max_rotate; ang += step_rotate) {
-                Matrix2D<RFLOAT> Arot;
-                MultidimArray<RFLOAT> Irot;
+                MultidimArray<RFLOAT> Irot = MultidimArray<RFLOAT>::zeros(img());
                 RFLOAT myang = iflip == 1 ? ang + 180.0 : ang;
-                Irot.initZeros(img());
+                Matrix2D<RFLOAT> Arot;
                 rotation2DMatrix(myang, Arot);
                 applyGeometry(img(), Irot, Arot, true, false);
                 resizeMap(Irot, down_size);
@@ -938,8 +936,7 @@ void HelixAligner::reconstruct2D(int iclass) {
             RFLOAT ang = i * 360.0 / (RFLOAT) symmetry;
             Matrix2D<RFLOAT> A2D;
             rotation2DMatrix(ang, A2D);
-            MultidimArray<RFLOAT> Arot;
-            Arot.initZeros(model.Arec[iclass]);
+            MultidimArray<RFLOAT> Arot = MultidimArray<RFLOAT>::zeros(model.Arec[iclass]);
             applyGeometry(model.Arec[iclass], Arot, A2D, false, false);
             Asum += Arot;
         }
@@ -1067,11 +1064,11 @@ void HelixAligner::reconstruct3D() {
             Matrix2D<RFLOAT> Arot;
             rotation2DMatrix(ang, Arot);
 
-            MultidimArray<RFLOAT> Mrot;
-            Mrot.initZeros(Mori);
+            MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(Mori);
             applyGeometry(Mori, Mrot, Arot, true, false);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot)
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot) {
                 DIRECT_A3D_ELEM(Ic(), k, i, j) = DIRECT_A2D_ELEM(Mrot, i, j);
+            }
         }
         fn_class = fn_out + "_class" + integerToString(iclass + 1, 3) + "_rec3d.mrc";
         Ic.setSamplingRateInHeader(angpix);

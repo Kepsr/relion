@@ -199,7 +199,7 @@ void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
 
 /* Scale 3D ---------------------------------------------------------------- */
 void scale3DMatrix(
-    const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT>& result, bool homogeneous
+    const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT> &result, bool homogeneous
 ) {
     if (VEC_XSIZE(sc) != 3)
         REPORT_ERROR("Scale3D_matrix: vector is not in R3");

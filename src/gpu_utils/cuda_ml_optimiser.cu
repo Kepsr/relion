@@ -1865,8 +1865,7 @@ void storeWeightedSums(
 
     // For scale_correction
     if (baseMLO->do_scale_correction) {
-        MultidimArray<RFLOAT> aux;
-        aux.initZeros(baseMLO->mymodel.ori_size / 2 + 1);
+        MultidimArray<RFLOAT> aux = MultidimArray<RFLOAT>::(baseMLO->mymodel.ori_size / 2 + 1);
         exp_wsum_scale_correction_XA.resize(sp.nr_particles, aux);
         exp_wsum_scale_correction_AA.resize(sp.nr_particles, aux);
         thr_wsum_signal_product_spectra.resize(baseMLO->mymodel.nr_groups, aux);
@@ -1879,15 +1878,17 @@ void storeWeightedSums(
     // Make local copies of weighted sums (except BPrefs, which are too big)
     // so that there are not too many mutex locks below
     std::vector<MultidimArray<RFLOAT> > thr_wsum_sigma2_noise, thr_wsum_pdf_direction;
-    std::vector<RFLOAT> thr_wsum_norm_correction, thr_sumw_group, thr_wsum_pdf_class, thr_wsum_prior_offsetx_class, thr_wsum_prior_offsety_class;
-    RFLOAT thr_wsum_sigma2_offset;
-    MultidimArray<RFLOAT> thr_metadata, zeroArray;
     // Wsum_sigma_noise2 is a 1D-spectrum for each group
-    zeroArray.initZeros(baseMLO->mymodel.ori_size / 2 + 1);
-    thr_wsum_sigma2_noise.resize(baseMLO->mymodel.nr_groups, zeroArray);
+    thr_wsum_sigma2_noise.resize(
+        baseMLO->mymodel.nr_groups, 
+        MultidimArray<RFLOAT>::zeros(baseMLO->mymodel.ori_size / 2 + 1)
+    );
     // wsum_pdf_direction is a 1D-array (of length sampling.NrDirections()) for each class
-    zeroArray.initZeros(baseMLO->sampling.NrDirections());
-    thr_wsum_pdf_direction.resize(baseMLO->mymodel.nr_classes, zeroArray);
+    thr_wsum_pdf_direction.resize(
+        baseMLO->mymodel.nr_classes, 
+        MultidimArray<RFLOAT>::zeros(baseMLO->sampling.NrDirections())
+    );
+    std::vector<RFLOAT> thr_sumw_group, thr_wsum_pdf_class, thr_wsum_prior_offsetx_class, thr_wsum_prior_offsety_class;
     // sumw_group is a RFLOAT for each group
     thr_sumw_group.resize(baseMLO->mymodel.nr_groups, 0.0);
     // wsum_pdf_class is a RFLOAT for each class
@@ -1897,7 +1898,7 @@ void storeWeightedSums(
         thr_wsum_prior_offsety_class.resize(baseMLO->mymodel.nr_classes, 0.0);
     }
     // wsum_sigma2_offset is just a RFLOAT
-    thr_wsum_sigma2_offset = 0.0;
+    RFLOAT thr_wsum_sigma2_offset = 0.0;
     unsigned image_size = op.Fimgs[0].nzyxdim();
 
     }))
@@ -1908,7 +1909,7 @@ void storeWeightedSums(
 
     CTICTOC(cudaMLO->timer, "collect_data_2", ({
     int nr_transes = sp.nr_trans * sp.nr_oversampled_trans;
-    int nr_fake_classes = (sp.iclass_max - sp.iclass_min + 1);
+    int nr_fake_classes = sp.iclass_max - sp.iclass_min + 1;
     int oversamples = sp.nr_oversampled_trans * sp.nr_oversampled_rot;
     std::vector<long int> block_nums(sp.nr_particles * nr_fake_classes);
 

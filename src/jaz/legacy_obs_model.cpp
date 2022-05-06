@@ -16,11 +16,14 @@ anisoTilt(false)
 
 void LegacyObservationModel::predictObservation(
     Projector& proj, const MetaDataTable &mdt, int particle,
-    MultidimArray<Complex>& dest,
+    MultidimArray<Complex> &dest,
     bool applyCtf, bool applyTilt, bool applyShift
 ) const {
+
     const int s = proj.ori_size;
     const int sh = s / 2 + 1;
+    if (dest.xdim != sh || dest.ydim != s) { dest.resize(s, sh); }
+    dest.initZeros();
 
     double xoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X, particle);
     double yoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y, particle);
@@ -32,17 +35,11 @@ void LegacyObservationModel::predictObservation(
 
     Euler_angles2matrix(rot, tilt, psi, A3D);
 
-	if (dest.xdim != sh || dest.ydim != s) {
-		dest.resize(s, sh);
-	}
-
-	dest.initZeros();
-
     proj.get2DFourierTransform(dest, A3D);
 
-	if (applyShift) {
-		shiftImageInFourierTransform(dest, dest, s, s / 2 - xoff, s / 2 - yoff);
-	}
+    if (applyShift) {
+        shiftImageInFourierTransform(dest, dest, s, s / 2 - xoff, s / 2 - yoff);
+    }
 
     if (applyCtf) {
         CTF ctf = CTF(mdt, mdt, particle);  // Repetition of mdt is redundant
@@ -58,7 +55,7 @@ void LegacyObservationModel::predictObservation(
         if (tx != 0.0 && ty != 0.0) {
             if (anisoTilt) {
                 selfApplyBeamTilt(
-					dest, -tx, -ty, 
+                    dest, -tx, -ty, 
                     beamtilt_xx, beamtilt_xy, beamtilt_yy, 
                     lambda, Cs, angpix, s
                 );
@@ -79,7 +76,7 @@ Image<Complex> LegacyObservationModel::predictObservation(
 ) const {
     Image<Complex> pred;
 
-	predictObservation(proj, mdt, particle, pred.data, applyCtf, applyTilt, applyShift);
+    predictObservation(proj, mdt, particle, pred.data, applyCtf, applyTilt, applyShift);
     return pred;
 }
 
@@ -165,11 +162,11 @@ double LegacyObservationModel::angToPix(double a, int s) {
 }
 
 double LegacyObservationModel::pixToAng(double p, int s) {
-	return s * angpix / p;
+    return s * angpix / p;
 }
 
 bool LegacyObservationModel::containsAllNeededColumns(const MetaDataTable &mdt) {
-	return (
+    return (
         mdt.containsLabel(EMDL::ORIENT_ORIGIN_X) &&
         mdt.containsLabel(EMDL::ORIENT_ORIGIN_Y) &&
         mdt.containsLabel(EMDL::ORIENT_ROT) &&

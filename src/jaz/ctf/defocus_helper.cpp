@@ -249,41 +249,36 @@ AstigmatismOptimizationAcc::AstigmatismOptimizationAcc(const Image<Complex>& pre
     }
 }
 
+// Complex dot product
+inline RFLOAT dot(Complex a, Complex b) {
+    return a.real * b.real + a.imag * b.imag;
+}
+
 AstigmatismOptimizationAcc::AstigmatismOptimizationAcc(
-        const std::vector<Image<Complex>>& prediction,
-        const std::vector<Image<Complex>>& observation,
-        const Image<RFLOAT>& weight,
-        const CTF& ctf0,
-        bool phaseShift,
-        bool spherAberr,
-        RFLOAT angpix,
-        RFLOAT phiScale,
-        RFLOAT csScale)
-:   ctf0(ctf0),
-    phaseShift(phaseShift),
-    spherAberr(spherAberr),
-    angpix(angpix),
-    phiScale(phiScale),
-    csScale(csScale)
-{
+    const std::vector<Image<Complex>>& prediction,
+    const std::vector<Image<Complex>>& observation,
+    const Image<RFLOAT>& weight,
+    const CTF& ctf0,
+    bool phaseShift, bool spherAberr,
+    RFLOAT angpix, RFLOAT phiScale, RFLOAT csScale
+): 
+ctf0(ctf0), phaseShift(phaseShift), spherAberr(spherAberr), 
+angpix(angpix), phiScale(phiScale), csScale(csScale) {
     const long w = prediction[0].data.xdim;
     const long h = prediction[0].data.ydim;
 
-    data = Image<Complex>(w,h);
-    data.data.initZeros();
+    data = Image<Complex>::zeros(w, h);
 
-    for (int i = 0; i < prediction.size(); i++)
-    {
+    for (int i = 0; i < prediction.size(); i++) {
         for (long y = 0; y < h; y++)
-        for (long x = 0; x < w; x++)
-        {
-            Complex vx = DIRECT_A2D_ELEM(prediction[i].data, y, x);
+        for (long x = 0; x < w; x++) {
+                  Complex vx = DIRECT_A2D_ELEM(prediction[i].data, y, x);
             const Complex vy = DIRECT_A2D_ELEM(observation[i].data, y, x);
             const RFLOAT vw = DIRECT_A2D_ELEM(weight.data, y, x);
 
-            const RFLOAT x2 = vx.real*vx.real + vx.imag*vx.imag;
+            const RFLOAT x2 = vx.real * vx.real + vx.imag * vx.imag;
 
-            const RFLOAT yxb = x2 > 0.0? (vy.real*vx.real + vy.imag*vx.imag)/x2 : 0.0;
+            const RFLOAT yxb = x2 > 0.0 ? dot(vx, vy) / x2 : 0.0;
             const RFLOAT wp = vw * x2;
 
             DIRECT_A2D_ELEM(data.data, y, x) += Complex(yxb, wp);
@@ -291,16 +286,15 @@ AstigmatismOptimizationAcc::AstigmatismOptimizationAcc(
     }
 }
 
-double AstigmatismOptimizationAcc::f(const std::vector<double> &x, void* tempStorage) const
-{
+double AstigmatismOptimizationAcc::f(const std::vector<double> &x, void* tempStorage) const {
     CTF ctf(ctf0);
 
     ctf.DeltafU = x[0];
     ctf.DeltafV = x[1];
-    ctf.azimuthal_angle = x[2]/phiScale;
+    ctf.azimuthal_angle = x[2] / phiScale;
 
-    if (phaseShift) ctf.phase_shift = x[3]/phiScale;
-    if (spherAberr) ctf.Cs = x[phaseShift?4:3]/csScale;
+    if (phaseShift) ctf.phase_shift = x[3] / phiScale;
+    if (spherAberr) ctf.Cs = x[phaseShift ? 4 : 3] / csScale;
 
     ctf.initialise();
 
@@ -309,15 +303,14 @@ double AstigmatismOptimizationAcc::f(const std::vector<double> &x, void* tempSto
 
     double out = 0.0;
 
-	Image<RFLOAT> ctfImg(w,h);
+	Image<RFLOAT> ctfImg(w, h);
 	ctf.getFftwImage(ctfImg(), h, h, angpix);
 
     for (long y = 0; y < h; y++)
-    for (long x = 0; x < w; x++)
-    {
+    for (long x = 0; x < w; x++) {
         Complex vd = DIRECT_A2D_ELEM(data.data, y, x);
 
-        RFLOAT vm = ctfImg(y,x);
+        RFLOAT vm = ctfImg(y, x);
         RFLOAT dx = vd.real - vm;
         out += vd.imag * dx * dx;
     }
@@ -325,36 +318,30 @@ double AstigmatismOptimizationAcc::f(const std::vector<double> &x, void* tempSto
     return out;
 }
 
-double AstigmatismOptimizationAcc::getU(const std::vector<double> &x)
-{
+double AstigmatismOptimizationAcc::getU(const std::vector<double> &x) {
     return x[0];
 }
 
-double AstigmatismOptimizationAcc::getV(const std::vector<double> &x)
-{
+double AstigmatismOptimizationAcc::getV(const std::vector<double> &x) {
     return x[1];
 }
 
-double AstigmatismOptimizationAcc::getPhi(const std::vector<double> &x)
-{
+double AstigmatismOptimizationAcc::getPhi(const std::vector<double> &x) {
     return x[2] / phiScale;
 }
 
-double AstigmatismOptimizationAcc::getPhase(const std::vector<double> &x)
-{
+double AstigmatismOptimizationAcc::getPhase(const std::vector<double> &x) {
     return x[3] / phiScale;
 }
 
-double AstigmatismOptimizationAcc::getCs(const std::vector<double> &x)
-{
-    return x[phaseShift?4:3] / csScale;
+double AstigmatismOptimizationAcc::getCs(const std::vector<double> &x) {
+    return x[phaseShift ? 4 : 3] / csScale;
 }
 
-std::vector<double> AstigmatismOptimizationAcc::getInitialParams()
-{
+std::vector<double> AstigmatismOptimizationAcc::getInitialParams() {
     int num = 3;
-    if (phaseShift) num++;
-    if (spherAberr) num++;
+    if (phaseShift) { num++; }
+    if (spherAberr) { num++; }
 
     std::vector<double> initial(num);
 
@@ -363,7 +350,7 @@ std::vector<double> AstigmatismOptimizationAcc::getInitialParams()
     initial[2] = phiScale * ctf0.azimuthal_angle;
 
     if (phaseShift) initial[3] = phiScale * ctf0.phase_shift;
-    if (spherAberr) initial[phaseShift?4:3] = csScale * ctf0.Cs;
+    if (spherAberr) initial[phaseShift ? 4 : 3] = csScale * ctf0.Cs;
 
     return initial;
 }

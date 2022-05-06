@@ -93,7 +93,6 @@ void softMaskOutsideMapForHelix(
     RFLOAT cosine_width,
     MultidimArray<RFLOAT> *Mnoise
 ) {
-    Matrix1D<RFLOAT> coords;
     Matrix2D<RFLOAT> A;
     RFLOAT sum, R1, R2, D1, D2, r, d;
     int dim = vol.getDim();
@@ -131,10 +130,7 @@ void softMaskOutsideMapForHelix(
     D1 = mask_cyl_radius_pix;
     D2 = D1 + cosine_width;
 
-    // Init coords
-    coords.clear();
-    coords.resize(3);
-    coords.initZeros();
+    Matrix1D<RFLOAT> coords = Matrix1D<RFLOAT>::zeros(3);
 
     // Init rotational matrix A
     A.clear();

@@ -22,16 +22,14 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
 
         case 2:
         Mpad.initZeros(padoridim, padoridim);
-        normfft = (RFLOAT)(P->padding_factor * P->padding_factor);
+        normfft = P->padding_factor * P->padding_factor;
         break;
 
         case 3:
         Mpad.initZeros(padoridim, padoridim, padoridim);
-        normfft = (RFLOAT) (
-            P->data_dim == 3 ?
-            (P->padding_factor * P->padding_factor * P->padding_factor) :
-            (P->padding_factor * P->padding_factor * P->padding_factor * P->ori_size)
-        );
+        normfft = P->data_dim == 3 ?
+            P->padding_factor * P->padding_factor * P->padding_factor :
+            P->padding_factor * P->padding_factor * P->padding_factor * P->ori_size;
         break;
 
         default:
@@ -68,8 +66,7 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
     // (other points will be zero because of initZeros() call above
     // Also calculate radial power spectrum
     power_spectrum.initZeros(P->ori_size / 2 + 1);
-    MultidimArray<RFLOAT> counter(power_spectrum);
-    counter.initZeros();
+    MultidimArray<RFLOAT> counter = MultidimArray<RFLOAT>::zeros(power_spectrum);
 
     int max_r2 = P->r_max * P->r_max * P->padding_factor * P->padding_factor;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {

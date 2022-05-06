@@ -32,7 +32,7 @@
 using namespace gravis;
 
 Image<RFLOAT> MotionRefinement::recompose(
-    const std::vector<Image<RFLOAT> > &obs, const std::vector<double> &pos
+    const std::vector<Image<RFLOAT>> &obs, const std::vector<double> &pos
 ) {
     const int w = obs[0].data.xdim;
     const int h = obs[0].data.ydim;
@@ -40,8 +40,7 @@ Image<RFLOAT> MotionRefinement::recompose(
 
     Image<RFLOAT> out(w,h);
 
-    Image<Complex> outC(w / 2 + 1, h);
-    outC.data.initZeros();
+    Image<Complex> outC = Image<Complex>::zeros(w / 2 + 1, h);
 
     FourierTransformer ft;
     Image<Complex> imgC;
@@ -63,7 +62,7 @@ Image<RFLOAT> MotionRefinement::recompose(
 }
 
 Image<RFLOAT> MotionRefinement::recompose(
-    const std::vector<Image<Complex> > &obs, const std::vector<double> &pos
+    const std::vector<Image<Complex>> &obs, const std::vector<double> &pos
 ) {
     const int w = 2 * obs[0].data.xdim - 1;
     const int h = obs[0].data.ydim;
@@ -71,8 +70,7 @@ Image<RFLOAT> MotionRefinement::recompose(
 
     Image<RFLOAT> out(w, h);
 
-    Image<Complex> outC(obs[0].data.xdim, obs[0].data.ydim);
-    outC.data.initZeros();
+    Image<Complex> outC = Image<Complex>::zeros(obs[0].data.xdim, obs[0].data.ydim);
 
     FourierTransformer ft;
     Image<Complex> imgC;
@@ -97,8 +95,7 @@ Image<RFLOAT> MotionRefinement::recompose(
 Image<RFLOAT> MotionRefinement::averageStack(
     const std::vector<Image<RFLOAT>> &obs
 ) {
-    Image<RFLOAT> out(obs[0].data.xdim, obs[0].data.ydim);
-    out.data.initZeros();
+    Image<RFLOAT> out = Image<RFLOAT>::zeros(obs[0].data.xdim, obs[0].data.ydim);
 
     const int ic = obs.size();
 
@@ -112,8 +109,7 @@ Image<RFLOAT> MotionRefinement::averageStack(
 Image<RFLOAT> MotionRefinement::averageStack(
     const std::vector<Image<Complex>> &obs
 ) {
-    Image<Complex> outC(obs[0].data.xdim, obs[0].data.ydim);
-    outC.data.initZeros();
+    Image<Complex> outC = Image<Complex>::zeros(obs[0].data.xdim, obs[0].data.ydim);
 
     const int ic = obs.size();
 
@@ -136,7 +132,7 @@ std::vector<std::vector<Image<RFLOAT>>> MotionRefinement::movieCC(
     MetaDataTable &viewParams,
     const std::vector<std::vector<Image<Complex>>> &movie,
     const std::vector<double> &sigma2,
-    const std::vector<Image<RFLOAT> > &damageWeights,
+    const std::vector<Image<RFLOAT>> &damageWeights,
     std::vector<ParFourierTransformer>& fts, int threads
 ) {
     const int pc = movie.size();
@@ -213,8 +209,7 @@ std::vector<d2Vector> MotionRefinement::getGlobalTrack(
     std::vector<Image<RFLOAT>> e_sum(fc);
 
     for (int f = 0; f < fc; f++) {
-        e_sum[f] = Image<RFLOAT>(s, s);
-        e_sum[f].data.initZeros();
+        e_sum[f] = Image<RFLOAT>::zeros(s, s);
 
         for (int p = 0; p < pc; p++) {
             for (int y = 0; y < s; y++)
@@ -234,7 +229,7 @@ std::vector<d2Vector> MotionRefinement::getGlobalTrack(
     return out;
 }
 
-std::vector<Image<RFLOAT> > MotionRefinement::addCCs(
+std::vector<Image<RFLOAT>> MotionRefinement::addCCs(
     const std::vector<std::vector<Image<RFLOAT>>> &movieCC
 ) {
     const int pc = movieCC.size();
@@ -245,8 +240,7 @@ std::vector<Image<RFLOAT> > MotionRefinement::addCCs(
     std::vector<Image<RFLOAT>> e_sum(fc);
 
     for (int f = 0; f < fc; f++) {
-        e_sum[f] = Image<RFLOAT>(s, s);
-        e_sum[f].data.initZeros();
+        e_sum[f] = Image<RFLOAT>::zeros(s, s);
 
         for (int p = 0; p < pc; p++) {
             for (int y = 0; y < s; y++)
@@ -305,8 +299,7 @@ std::vector<d2Vector> MotionRefinement::getGlobalOffsets(
 
     #pragma omp parallel for num_threads(threads)
     for (int p = 0; p < pc; p++) {
-        Image<RFLOAT> pSum(s,s);
-        pSum.data.initZeros();
+        Image<RFLOAT> pSum = Image<RFLOAT>::zeros(s, s);
 
         for (int f = 0; f < fc; f++) {
             const d2Vector g = globTrack[f];
@@ -843,8 +836,7 @@ void MotionRefinement::testCC(
 
     std::cout << "var real: " << var << " = " << PI * w * h / 4.0 << "?\n";
 
-    Image<RFLOAT> corrR(w, h);
-    corrR.data.initZeros();
+    Image<RFLOAT> corrR = Image<RFLOAT>::zeros(w, h);
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
@@ -907,8 +899,7 @@ Image<RFLOAT> MotionRefinement::zeroPad(
     const long tx = (long) (taper * (RFLOAT)w);
     const long ty = (long) (taper * (RFLOAT)h);
 
-    Image<RFLOAT> out(ww, hh);
-    out.data.initZeros();
+    Image<RFLOAT> out = Image<RFLOAT>::zeros(ww, hh);
 
     const long x0 = (ww - w) / 2;
     const long y0 = (hh - h) / 2;
@@ -946,7 +937,7 @@ Image<RFLOAT> MotionRefinement::zeroPad(
     return out;
 }
 
-std::vector<Image<float> > MotionRefinement::collectiveMotion(
+std::vector<Image<float>> MotionRefinement::collectiveMotion(
     const std::vector<std::vector<Image<float>>>& correlation
 ) {
     const int pc = correlation.size();
@@ -955,14 +946,13 @@ std::vector<Image<float> > MotionRefinement::collectiveMotion(
 
     const int fc = correlation[0].size();
 
-    std::vector<Image<float> > corrSum(fc);
+    std::vector<Image<float>> corrSum(fc);
 
     const int w = correlation[0][0].data.xdim;
     const int h = correlation[0][0].data.ydim;
 
     for (int f = 0; f < fc; f++) {
-        corrSum[f] = Image<float>(w, h);
-        corrSum[f].data.initZeros();
+        corrSum[f] = Image<float>::zeros(w, h);
     }
 
     for (int p = 0; p < pc; p++) {
@@ -995,8 +985,7 @@ std::vector<std::vector<Image<float>>> MotionRefinement::blockMotion(
         corrSum[q] = std::vector<Image<float>>(fc);
 
         for (int f = 0; f < fc; f++) {
-            corrSum[q][f] = Image<float>(w, h);
-            corrSum[q][f].data.initZeros();
+            corrSum[q][f] = Image<float>::zeros(w, h);
         }
     }
 
@@ -1044,7 +1033,7 @@ std::vector<std::vector<gravis::d2Vector>> MotionRefinement::computeInitialPosit
 ) {
     const int pc = correlation.size();
 
-    if (pc == 0) return std::vector<std::vector<gravis::d2Vector> >(0);
+    if (pc == 0) return std::vector<std::vector<gravis::d2Vector>>(0);
 
     std::vector<Image<float>> corrSum = collectiveMotion(correlation);
     std::vector<gravis::d2Vector> maxima = findMaxima(corrSum);
@@ -1054,7 +1043,7 @@ std::vector<std::vector<gravis::d2Vector>> MotionRefinement::computeInitialPosit
     return out;
 }
 
-std::vector<std::vector<gravis::d2Vector> > MotionRefinement::optimize(
+std::vector<std::vector<gravis::d2Vector>> MotionRefinement::optimize(
     const std::vector<std::vector<Image<float>>>& correlation,
     const std::vector<gravis::d2Vector>& positions,
     const std::vector<std::vector<gravis::d2Vector>>& initial,
@@ -1099,7 +1088,7 @@ std::vector<std::vector<gravis::d2Vector> > MotionRefinement::optimize(
     return unpack(final, pc, fc);
 }
 
-std::vector<std::vector<Image<RFLOAT> > > MotionRefinement::visualize(
+std::vector<std::vector<Image<RFLOAT>> > MotionRefinement::visualize(
     const std::vector<std::vector<gravis::d2Vector>>& positions, 
     int pc, int fc, int w, int h
 ) {
@@ -1109,8 +1098,7 @@ std::vector<std::vector<Image<RFLOAT> > > MotionRefinement::visualize(
         out[p].resize(fc);
 
         for (int f = 0; f < fc; f++) {
-            out[p][f] = Image<RFLOAT>(w, h);
-            out[p][f].data.initZeros();
+            out[p][f] = Image<RFLOAT>::zeros(w, h);
 
             gravis::d2Vector pos(positions[p][f].x + w / 2, positions[p][f].y + h / 2);
 
@@ -1137,7 +1125,7 @@ std::vector<std::vector<Image<RFLOAT> > > MotionRefinement::visualize(
     return out;
 }
 
-std::vector<Image<RFLOAT> > MotionRefinement::collapsePaths(
+std::vector<Image<RFLOAT>> MotionRefinement::collapsePaths(
     const std::vector<std::vector<Image<RFLOAT>>>& paths
 ) {
     const int pc = paths.size();
@@ -1146,14 +1134,13 @@ std::vector<Image<RFLOAT> > MotionRefinement::collapsePaths(
 
     const int fc = paths[0].size();
 
-    std::vector<Image<RFLOAT> > pathSum(pc);
+    std::vector<Image<RFLOAT>> pathSum(pc);
 
     const int w = paths[0][0].data.xdim;
     const int h = paths[0][0].data.ydim;
 
     for (int p = 0; p < pc; p++) {
-        pathSum[p] = Image<RFLOAT>(w, h);
-        pathSum[p].data.initZeros();
+        pathSum[p] = Image<RFLOAT>::zeros(w, h);
     }
 
     for (int p = 0; p < pc; p++) {
@@ -1165,7 +1152,7 @@ std::vector<Image<RFLOAT> > MotionRefinement::collapsePaths(
     return pathSum;
 }
 
-std::vector<std::vector<gravis::d2Vector> > MotionRefinement::unpack(
+std::vector<std::vector<gravis::d2Vector>> MotionRefinement::unpack(
     const std::vector<double> &pos, int pc, int fc
 ) {
     std::vector<std::vector<gravis::d2Vector>> out(pc);
@@ -1495,7 +1482,7 @@ std::vector<std::vector<d2Vector>> MotionRefinement::readCollectivePaths(
 }
 
 void MotionRefinement::writeCollectivePaths(
-    const std::vector<std::vector<d2Vector> > &data, std::string filename
+    const std::vector<std::vector<d2Vector>> &data, std::string filename
 ) {
     const int pc = data.size();
     const int fc = data[0].size();

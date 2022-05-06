@@ -1012,8 +1012,7 @@ void FilterHelper::sumUp(
     const int m = src[0].data.ndim;
     const int ic = src.size();
 
-    dest = Image<RFLOAT>(w, h, d,m);
-    dest.data.initZeros();
+    dest = Image<RFLOAT>::zeros(w, h, d, m);
 
     for (long int i = 0; i < ic; i++) {
 

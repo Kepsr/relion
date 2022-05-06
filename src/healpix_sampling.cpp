@@ -1729,12 +1729,7 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
             }
 
             Matrix1D<RFLOAT> offsetp(3);
-            if (Acom != NULL) {
-                offsetp = *Acom;
-            } else {
-                offsetp.initZeros();
-            }
-
+            offsetp = Acom ? *Acom : Matrix1D<RFLOAT>::zeros(3);
 
             // Don't include cylinders with zero length, as chimera will complain about that....
             if (

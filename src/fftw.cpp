@@ -444,11 +444,10 @@ void getFSC(
     if (!FT1.sameShape(FT2))
         REPORT_ERROR("fourierShellCorrelation ERROR: MultidimArrays have different shapes!");
 
-    MultidimArray<RFLOAT> num(XSIZE(FT1)), den1(XSIZE(FT1)), den2(XSIZE(FT1));
-    Matrix1D<RFLOAT> f(3);
-    num.initZeros();
-    den1.initZeros();
-    den2.initZeros();
+    // Matrix1D<RFLOAT> f(3);
+    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(XSIZE(FT1));
+    MultidimArray<RFLOAT> den1 = MultidimArray<RFLOAT>::zeros(XSIZE(FT1));
+    MultidimArray<RFLOAT> den2 = MultidimArray<RFLOAT>::zeros(XSIZE(FT1));
     fsc.initZeros(num);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
@@ -486,15 +485,14 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
 ) {
 
     MultidimArray<int> radial_count(XSIZE(FT1));
-    MultidimArray<RFLOAT> num, mu1, mu2, sig1, sig2;
     Matrix1D<RFLOAT> f(3);
-    mu1.initZeros(radial_count);
-    mu2.initZeros(radial_count);
-    sig1.initZeros(radial_count);
-    sig2.initZeros(radial_count);
+    MultidimArray<RFLOAT> mu1  = MultidimArray<RFLOAT>::zeros(radial_count);
+    MultidimArray<RFLOAT> mu2  = MultidimArray<RFLOAT>::zeros(radial_count);
+    MultidimArray<RFLOAT> sig1 = MultidimArray<RFLOAT>::zeros(radial_count);
+    MultidimArray<RFLOAT> sig2 = MultidimArray<RFLOAT>::zeros(radial_count);
+    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(radial_count);
     acorr.initZeros(radial_count);
     dpr.initZeros(radial_count);
-    num.initZeros(radial_count);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         // Amplitudes
         int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
@@ -893,11 +891,10 @@ void getSpectrum(
     int xsize = XSIZE(Min);
     // Takanori: The above line should be XSIZE(Min) / 2 + 1 but for compatibility reasons, I keep this as it is.
     Matrix1D<RFLOAT> f(3);
-    MultidimArray<RFLOAT> count(xsize);
     FourierTransformer transformer;
 
     spectrum.initZeros(xsize);
-    count.initZeros();
+    MultidimArray<RFLOAT> count = MultidimArray<RFLOAT>::zeros(xsize);
     transformer.FourierTransform(Min, Faux, false);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
         long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
@@ -1002,12 +999,11 @@ RFLOAT getKullbackLeiblerDivergence(
         REPORT_ERROR("getKullbackLeiblerDivergence ERROR: highshell is smaller than lowshell.");
 
     // Initialize the histogram
-    MultidimArray<int> histogram;
     int histogram_size = 101;
     int histogram_origin = histogram_size / 2;
     RFLOAT sigma_max = 10.0;
     RFLOAT histogram_factor = histogram_origin / sigma_max;
-    histogram.initZeros(histogram_size);
+    MultidimArray<int> histogram = MultidimArray<int>::zeros(histogram_size);
 
     // This way this will work in both 2D and 3D
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fimg) {

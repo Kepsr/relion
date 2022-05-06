@@ -173,8 +173,7 @@ Image<RFLOAT> RefinementHelper::correlation(
     const long h = predictions[0].data.ydim;
     const long c = predictions.size();
 
-    Image<RFLOAT> out(w,h);
-    out.data.initZeros();
+    Image<RFLOAT> out = Image<RFLOAT>::zeros(w, h);
 
     for (long i = 0; i < c; i++) {
         for (long y = 0; y < h; y++)

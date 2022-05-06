@@ -111,11 +111,8 @@ void TiltEstimator::processMicrograph(
         std::vector<Image<RFLOAT>> wAcc(nr_omp_threads);
 
         for (int i = 0; i < nr_omp_threads; i++) {
-            xyAcc[i] = Image<Complex>(sh[og],s[og]);
-            xyAcc[i].data.initZeros();
-
-            wAcc[i] = Image<RFLOAT>(sh[og],s[og]);
-            wAcc[i].data.initZeros();
+            xyAcc[i] = Image<Complex>::zeros(sh[og], s[og]);
+            wAcc[i] = Image<RFLOAT>::zeros(sh[og], s[og]);
         }
 
         #pragma omp parallel for num_threads(nr_omp_threads)
@@ -178,14 +175,11 @@ void TiltEstimator::parametricFit(
         double lambda = obsModel->getWavelength(og);
 
         std::stringstream sts;
-        sts << (og + 1);
+        sts << og + 1;
         std::string ogstr = sts.str();
 
-        Image<Complex> xyAccSum(sh[og], s[og]);
-        Image<RFLOAT> wAccSum(sh[og], s[og]);
-
-        xyAccSum.data.initZeros();
-        wAccSum.data.initZeros();
+        Image<Complex> xyAccSum = Image<Complex>::zeros(sh[og], s[og]);
+        Image<RFLOAT> wAccSum = Image<RFLOAT>::zeros(sh[og], s[og]);
 
         for (long g = 0; g < gc; g++) {
             std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdts[g], outPath);

@@ -782,9 +782,7 @@ class helix_bilder_parameters {
 
             img().setXmippOrigin();
 
-            MultidimArray<RFLOAT> Msum;
-            Msum.clear();
-            Msum.initZeros(img());
+            MultidimArray<RFLOAT> Msum = MultidimArray<RFLOAT>::zeros(img());
             Msum.setXmippOrigin();
             int h_min = -nr_asu / 2;
             int h_max = -h_min + nr_asu % 2;

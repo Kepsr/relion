@@ -411,6 +411,11 @@ class Image {
         MDMainHeader.addObject();
     }
 
+    inline static Image<T> zeros(long int Xdim, long int Ydim, long int Zdim = 1, long int Ndim = 1) {
+        Image<T> img(Xdim, Ydim, Zdim, Ndim);
+        img.data.initZeros();
+    }
+
     /** Clear.
      * Zero-initialize.
      */
@@ -842,21 +847,21 @@ class Image {
         return data.data[(j - data.xinit) + data.xdim * (i - data.yinit)];
     }
 
-    // IMGPIXEL is undeclared.
-
+    #ifdef IMGPIXEL
     /** Set pixel
      * (direct access) needed by swig
      */
-    // void setPixel(int i, int j, T v) {
-    //     IMGPIXEL(*this, i, j) = v;
-    // }
+    void setPixel(int i, int j, T v) {
+        IMGPIXEL(*this, i, j) = v;
+    }
 
     /** Get pixel
      * (direct acces) needed by swig
      */
-    // T getPixel(int i, int j) const {
-    //     return IMGPIXEL(*this, i, j);
-    // }
+    T getPixel(int i, int j) const {
+        return IMGPIXEL(*this, i, j);
+    }
+    #endif
 
     /** Voxel access
      *

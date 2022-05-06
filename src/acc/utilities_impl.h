@@ -320,7 +320,7 @@ static void TranslateAndNormCorrect(
     if (temp.getAccPtr()==img_out.getAccPtr())
         CRITICAL(ERRUNSAFEOBJECTREUSE);
     #ifdef CUDA
-    int BSZ = ( (int) ceilf(( float)temp.getSize() /(float)BLOCK_SIZE));
+    int BSZ = ((int) ceilf((float)temp.getSize() /(float)BLOCK_SIZE));
     if (DATA3D)
         CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
     else
@@ -343,39 +343,40 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
 {
             img_in.cpOnAcc(accMLO->transformer1.reals);
             runCenterFFT(
-                    accMLO->transformer1.reals,
-                    (int)accMLO->transformer1.xSize,
-                    (int)accMLO->transformer1.ySize,
-                    (int)accMLO->transformer1.zSize,
-                    false
-                    );
+                accMLO->transformer1.reals,
+                (int) accMLO->transformer1.xSize,
+                (int) accMLO->transformer1.ySize,
+                (int) accMLO->transformer1.zSize,
+                false
+            );
             accMLO->transformer1.reals.streamSync();
             accMLO->transformer1.forward();
             accMLO->transformer1.fouriers.streamSync();
 
-            size_t FMultiBsize = ( (int) ceilf(( float)accMLO->transformer1.fouriers.getSize()*2/(float)BLOCK_SIZE));
-            AccUtilities::multiply<XFLOAT>(FMultiBsize, BLOCK_SIZE, accMLO->transformer1.fouriers.getStream(),
-                            (XFLOAT*)~accMLO->transformer1.fouriers,
-                            (XFLOAT)1/((XFLOAT)(accMLO->transformer1.reals.getSize())),
-                            accMLO->transformer1.fouriers.getSize()*2);
+            size_t FMultiBsize = ((int) ceilf((float) accMLO->transformer1.fouriers.getSize() * 2 / (float) BLOCK_SIZE));
+            AccUtilities::multiply<XFLOAT>(
+                FMultiBsize, BLOCK_SIZE, accMLO->transformer1.fouriers.getStream(),
+                (XFLOAT*) ~accMLO->transformer1.fouriers,
+                (XFLOAT) 1 / (XFLOAT) accMLO->transformer1.reals.getSize(),
+                accMLO->transformer1.fouriers.getSize() * 2
+            );
             //LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
 
             AccPtr<ACCCOMPLEX> d_Fimg = img_in.make<ACCCOMPLEX>(xSize * ySize * zSize);
             d_Fimg.allAlloc();
             accMLO->transformer1.fouriers.streamSync();
             windowFourierTransform2(
-                    accMLO->transformer1.fouriers,
-                    d_Fimg,
-                    accMLO->transformer1.xFSize,accMLO->transformer1.yFSize, accMLO->transformer1.zFSize, //Input dimensions
-                    xSize, ySize, zSize  //Output dimensions
-                    );
+                accMLO->transformer1.fouriers,
+                d_Fimg,
+                accMLO->transformer1.xFSize,accMLO->transformer1.yFSize, accMLO->transformer1.zFSize, //Input dimensions
+                xSize, ySize, zSize  //Output dimensions
+            );
             accMLO->transformer1.fouriers.streamSync();
 
             d_Fimg.cpToHost();
             d_Fimg.streamSync();
             img_out.initZeros(zSize, ySize, xSize);
-            for (unsigned long i = 0; i < img_out.nzyxdim(); i ++)
-            {
+            for (unsigned long i = 0; i < img_out.nzyxdim(); i++) {
                 img_out.data[i].real = (RFLOAT) d_Fimg[i].x;
                 img_out.data[i].imag = (RFLOAT) d_Fimg[i].y;
             }
@@ -384,11 +385,8 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
 
 static void softMaskBackgroundValue(
     AccDataTypes::Image<XFLOAT> &vol,
-    XFLOAT   radius,
-    XFLOAT   radius_p,
-    XFLOAT   cosine_width,
-    AccPtr<XFLOAT> &g_sum,
-    AccPtr<XFLOAT> &g_sum_bg
+    XFLOAT radius, XFLOAT radius_p, XFLOAT cosine_width,
+    AccPtr<XFLOAT> &g_sum, AccPtr<XFLOAT> &g_sum_bg
 ) {
     int block_dim = 128; // TODO: set balanced (hardware-dep?)
     #ifdef CUDA

@@ -241,8 +241,7 @@ void GaussianPyramid<T>::interpolationTest(const Image<T> &img)
 }
 
 template <typename T>
-void GaussianPyramid<T>::timeTest(const Image<T>& img0)
-{
+void GaussianPyramid<T>::timeTest(const Image<T> &img0) {
     int lev = 10;
     int pc = 20;
     double sig = 5.0;
@@ -251,15 +250,13 @@ void GaussianPyramid<T>::timeTest(const Image<T>& img0)
     const int sh = img0.data.xdim/2 + 1;
 
     Image<RFLOAT> img = img0;
-    Image<RFLOAT> sum(s,s);
-    sum.data.initZeros();
+    Image<RFLOAT> sum = Image<RFLOAT>::zeros(s, s);
 
     double t0 = omp_get_wtime();
 
     GaussianPyramid<T> gp(img, 1.0, 2.5, lev);
 
-    for (int p = 0; p < pc-1; p++)
-    {
+    for (int p = 0; p < pc-1; p++) {
         gp = GaussianPyramid<T>(img, 1.0, 2.5, lev);
     }
 
@@ -269,9 +266,8 @@ void GaussianPyramid<T>::timeTest(const Image<T>& img0)
 
     Image<T> bl;
 
-    for (int p = 0; p < pc; p++)
-    for (int q = 0; q < pc-1; q++)
-    {
+    for (int p = 0; p < pc;     p++)
+    for (int q = 0; q < pc - 1; q++) {
         bl = gp.getInterpolated(5.0);
         ImageOp::linearCombination(sum, bl, 1, 1, sum);
     }
@@ -280,30 +276,27 @@ void GaussianPyramid<T>::timeTest(const Image<T>& img0)
 
     double t2 = omp_get_wtime();
 
-    std::cout << "reading " << pc*(pc-1) << " images: " << (t2 - t1) << "s\n";
-    std::cout << "both: " << (t2 - t0) << "s\n";
-
+    std::cout << "reading " << pc * (pc - 1) << " images: " << (t2 - t1) << "s\n";
+    std::cout << "both: " << t2 - t0 << "s\n";
 
     FourierTransformer ft;
-    Image<Complex> fs(sh,s);
-    Image<RFLOAT> rs(s,s);
+    Image<Complex> fs(sh, s);
+    Image<RFLOAT>  rs(s,  s);
 
-    double sig_hat = s/(2.0 * PI * sig);
+    double sig_hat = s / (2.0 * PI * sig);
     double sh2 = sig_hat * sig_hat;
     sum.data.initZeros();
 
-    for (int p = 0; p < pc; p++)
-    for (int q = 0; q < pc-1; q++)
-    {
+    for (int p = 0; p < pc;     p++)
+    for (int q = 0; q < pc - 1; q++) {
         ft.FourierTransform(img(), fs());
 
-        for (int y = 0; y < s; y++)
-        for (int x = 0; x < sh; x++)
-        {
-            double yy = y < sh? y : y - s;
+        for (int y = 0; y < s;  y++)
+        for (int x = 0; x < sh; x++) {
+            double yy = y < sh ? y : y - s;
             double xx = x;
 
-            fs(y,x) *= exp(-0.5*(xx*xx + yy*yy)/sh2);
+            fs(y, x) *= exp(-0.5 * (xx * xx + yy * yy) / sh2);
         }
 
         ft.inverseFourierTransform(fs(), rs());
@@ -315,7 +308,7 @@ void GaussianPyramid<T>::timeTest(const Image<T>& img0)
 
     double t3 = omp_get_wtime();
 
-    std::cout << "performing " << pc*(pc-1) << " Fourier convolutions: " << (t3 - t2) << "s\n";
+    std::cout << "performing " << pc * (pc - 1) << " Fourier convolutions: " << t3 - t2 << "s\n";
 
 }
 

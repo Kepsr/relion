@@ -263,8 +263,7 @@ void FrameRecombiner::process(
 
         for (int p = 0; do_recenter && p < pc; p++) {
             // FIXME: code duplication from preprocess.cpp
-            Matrix1D<RFLOAT> my_projected_center(3);
-            my_projected_center.initZeros();
+            Matrix1D<RFLOAT> my_projected_center = Matrix1D<RFLOAT>::zeros(3);
 
             RFLOAT xoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p); // in A
             RFLOAT yoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
@@ -325,8 +324,7 @@ void FrameRecombiner::process(
         for (int p = 0; p < pc; p++) {
             int threadnum = omp_get_thread_num();
 
-            Image<Complex> sum(sh_out[ogmg], s_out[ogmg]);
-            sum.data.initZeros();
+            Image<Complex> sum = Image<Complex>::zeros(sh_out[ogmg], s_out[ogmg]);
 
             Image<Complex> obs(sh_out[ogmg], s_out[ogmg]);
 
@@ -442,13 +440,9 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
 
             fc = fccDataMg.data.ydim;
 
-            fccData = Image<RFLOAT>(sh_ref,fc);
-            fccWgh0 = Image<RFLOAT>(sh_ref,fc);
-            fccWgh1 = Image<RFLOAT>(sh_ref,fc);
-
-            fccData.data.initZeros();
-            fccWgh0.data.initZeros();
-            fccWgh1.data.initZeros();
+            fccData = Image<RFLOAT>::zeros(sh_ref,fc);
+            fccWgh0 = Image<RFLOAT>::zeros(sh_ref,fc);
+            fccWgh1 = Image<RFLOAT>::zeros(sh_ref,fc);
 
             first = false;
         }

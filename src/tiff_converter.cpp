@@ -256,14 +256,13 @@ void TIFFConverter::only_compress(FileName fn_movie, FileName fn_tiff) {
         const int nframes = renderer.getNFrames();
         std::cout << " Found " << nframes << " raw frames" << std::endl;
 
-        MultidimArray<T> buf;
         for (int frame = 1; frame < nframes; frame += eer_grouping) {
             const int frame_end = frame + eer_grouping - 1;
             if (frame_end > nframes)
                 break;
 
             std::cout << " Rendering EER (hardware) frame " << frame << " to " << frame_end << std::endl;
-            buf.initZeros(renderer.getHeight(), renderer.getWidth());
+            MultidimArray<T> buf = MultidimArray<T>::zeros(renderer.getHeight(), renderer.getWidth());
             renderer.renderFrames(frame, frame_end, buf);
             write_tiff_one_page(tif, buf, -1, decide_filter(renderer.getWidth(), true), deflate_level, line_by_line);
         }

@@ -549,9 +549,8 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
             }
 
             Image<RFLOAT> img;
-            MultidimArray<RFLOAT> sumw;
             img().initZeros(model.Iref[0]);
-            sumw.initZeros(model.Iref[0]);
+            MultidimArray<RFLOAT> sumw = MultidimArray<RFLOAT>::zeros(model.Iref[0]);
             for (int ibody = 0; ibody < model.nr_bodies; ibody++) {
 
                 MultidimArray<RFLOAT> Mbody, Mmask;

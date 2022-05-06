@@ -319,7 +319,7 @@ void MotionEstimator::process(
         writeOutput(tracks, angpix[ogmg], tables, weights0, weights1, positions, fn_root, 30.0);
 
         for (int i = 0; i < nr_omp_threads; i++) {
-            tables[i].data.initZeros();
+            tables  [i].data.initZeros();
             weights0[i].data.initZeros();
             weights1[i].data.initZeros();
         }
@@ -577,10 +577,9 @@ void MotionEstimator::writeOutput(
 
     MotionHelper::writeTracks(tracks, fn_root + "_tracks.star", angpix_mg);
 
-    Image<RFLOAT> fccDataSum(sh_ref,fc), fccWeight0Sum(sh_ref,fc), fccWeight1Sum(sh_ref,fc);
-    fccDataSum.data.initZeros();
-    fccWeight0Sum.data.initZeros();
-    fccWeight1Sum.data.initZeros();
+    Image<RFLOAT> fccDataSum    = Image<RFLOAT>::zeros(sh_ref, fc);
+    Image<RFLOAT> fccWeight0Sum = Image<RFLOAT>::zeros(sh_ref, fc);
+    Image<RFLOAT> fccWeight1Sum = Image<RFLOAT>::zeros(sh_ref, fc);
 
     for (int i = 0; i < fccData.size(); i++) {
         for (int y = 0; y < fc; y++)

@@ -116,12 +116,11 @@ class particle_reposition_parameters {
             FourierTransformer transformer;
             MetaDataTable MDcoord;
             Image<RFLOAT> Imic_in, Imic_out;
-            MultidimArray<RFLOAT> Imic_sum;
             // Read in the first micrograph
             Imic_in.read(fn_mic);
             Imic_in().setXmippOrigin();
             Imic_out().initZeros(Imic_in());
-            Imic_sum.initZeros(Imic_in());
+            MultidimArray<RFLOAT> Imic_sum = MultidimArray<RFLOAT>::zeros(Imic_in());
             Imic_sum.setXmippOrigin();
             // Get mean and stddev of the input micrograph
             // The min and max are not used

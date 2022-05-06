@@ -516,8 +516,7 @@ void ParticleSubtractor::subtractOneParticle(
         Fctf.initConstant(1.0);
     }
 
-    MultidimArray<Complex> Fsubtrahend;
-    Fsubtrahend.initZeros(Fimg);
+    MultidimArray<Complex> Fsubtrahend = MultidimArray<Complex>::zeros(Fimg);
 
     if (opt.fn_body_masks != "None") {
         // For multi-body refinement
@@ -548,8 +547,7 @@ void ParticleSubtractor::subtractOneParticle(
             Abody = opt.mydata.obsModel.applyScaleDifference(Abody, optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
 
             // Get the FT of the projection in the right direction
-            MultidimArray<Complex> FTo;
-            FTo.initZeros(Fimg);
+            MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
             // The following line gets the correct pointer to account for overlap in the bodies
             int oobody = DIRECT_A2D_ELEM(opt.mymodel.pointer_body_overlap, subtract_body, obody);
             opt.mymodel.PPref[oobody].get2DFourierTransform(FTo, Abody);

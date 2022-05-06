@@ -336,10 +336,9 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
 
     // First calculate radial average, to normalize the power spectrum
     int myradius = XSIZE(FT);
-    MultidimArray< int > radial_count(myradius);
-    MultidimArray<RFLOAT> num, ravg;
-    num.initZeros(myradius);
-    ravg.initZeros(myradius);
+    MultidimArray<int> radial_count(myradius);
+    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(myradius);
+    MultidimArray<RFLOAT> ravg = MultidimArray<RFLOAT>::zeros(myradius);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
         if (idx >= myradius)
@@ -833,7 +832,7 @@ void Postprocessing::run_locres(int rank, int size) {
     // Also read the user-provided mask
     //getMask();
 
-    MultidimArray<RFLOAT> I1m, I2m, I1p, I2p, Isum, locmask, Ilocres, Ifil, Isumw;
+    MultidimArray<RFLOAT> I1m, I2m, I1p, I2p, Isum, locmask;
 
     // Get sum of two half-maps and sharpen according to estimated or ad-hoc B-factor
     Isum.resize(I1());
@@ -843,9 +842,9 @@ void Postprocessing::run_locres(int rank, int size) {
     I2p.resize(I1());
     locmask.resize(I1());
     // Initialise local-resolution maps, weights etc
-    Ifil.initZeros(I1());
-    Ilocres.initZeros(I1());
-    Isumw.initZeros(I1());
+    MultidimArray<RFLOAT> Ifil    = MultidimArray<RFLOAT>::zeros(I1());
+    MultidimArray<RFLOAT> Ilocres = MultidimArray<RFLOAT>::zeros(I1());
+    MultidimArray<RFLOAT> Isumw   = MultidimArray<RFLOAT>::zeros(I1());
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1()) {
         DIRECT_MULTIDIM_ELEM(Isum, n) = DIRECT_MULTIDIM_ELEM(I1(), n) + DIRECT_MULTIDIM_ELEM(I2(), n);
         DIRECT_MULTIDIM_ELEM(I1p,  n) = DIRECT_MULTIDIM_ELEM(I1(), n);

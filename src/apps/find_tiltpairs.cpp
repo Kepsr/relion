@@ -289,9 +289,8 @@ class angular_error_parameters {
 
     void optimiseTransformationMatrixContinuous() {
         // Get coordinates of all pairs:
-        Matrix2D<RFLOAT> Au, Bt;
-        Au.initZeros(3, 3);
-        Bt.initZeros(3, 3);
+        Matrix2D<RFLOAT> Au = Matrix2D<RFLOAT>::zeros(3, 3);
+        Matrix2D<RFLOAT> Bt = Matrix2D<RFLOAT>::zeros(3, 3);
         Pass.initZeros(4,4);
 
         // Add all pairs to dependent matrices (adapted from add_point in Xmipps micrograph_mark main_widget_mark.cpp)

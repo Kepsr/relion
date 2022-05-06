@@ -33,8 +33,7 @@
 void MlModel::initialise(bool _do_sgd) {
 
     // Auxiliary vector with relevant size in Fourier space
-    MultidimArray<RFLOAT > aux;
-    aux.initZeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> aux = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
 
     // Now resize all relevant vectors
     Iref.resize(nr_classes * nr_bodies);
@@ -789,8 +788,7 @@ void MlModel::initialiseFromImages(
 
     // Set some group stuff
     nr_groups = _mydata.groups.size();
-    MultidimArray<RFLOAT> aux;
-    aux.initZeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> aux = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     sigma2_noise.resize(nr_groups, aux);
 
     initialise(_do_sgd);
@@ -1158,9 +1156,8 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
     }
 
     // Calculate average sigma2_noise over all image groups
-    MultidimArray<RFLOAT> avg_sigma2_noise, sum_parts;
-    avg_sigma2_noise.initZeros(ori_size / 2 + 1);
-    sum_parts.initZeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> avg_sigma2_noise = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> sum_parts        = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     for (int igroup = 0; igroup < nr_particles_per_group.size(); igroup++) {
         avg_sigma2_noise += (RFLOAT)(nr_particles_per_group[igroup]) * sigma2_noise[igroup];
     }

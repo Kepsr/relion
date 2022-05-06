@@ -408,7 +408,7 @@ void AutoPicker::initialise() {
             HealpixSampling sampling;
             sampling.healpix_order = healpix_order;
             sampling.fn_sym = symmetry;
-            sampling.perturbation_factor = 0.;
+            sampling.perturbation_factor = 0.0;
             sampling.offset_step = 1;
             sampling.limit_tilt = -91.0;
             sampling.is_3D = true;
@@ -677,7 +677,7 @@ void AutoPicker::initialise() {
                 long int outer_radius = round(max_local_avg_diameter / (2.0 * angpix));
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
                     if (i * i + j * j > outer_radius * outer_radius) {
-                        A2D_ELEM(Mcirc_mask, i, j) = 0.;
+                        A2D_ELEM(Mcirc_mask, i, j) = 0.0;
                         nr_pixels_avg_mask--;
                     }
                 }
@@ -1096,18 +1096,18 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
         return result;
     } else {
         /*
-        RFLOAT prevpsi = (best_inew1 > 0) ? new1coords[best_inew1-1].psi : -99999.;
-        RFLOAT nextpsi = (new1coords.size() - best_inew1 > 1) ? new1coords[best_inew1+1].psi : -99999.;
+        RFLOAT prevpsi = (best_inew1 > 0) ? new1coords[best_inew1-1].psi : -99999.0;
+        RFLOAT nextpsi = (new1coords.size() - best_inew1 > 1) ? new1coords[best_inew1+1].psi : -99999.0;
 
-        RFLOAT nextpsidiff = -9999., prevpsidiff=-9999.;
+        RFLOAT nextpsidiff = -9999., prevpsidiff=-9999.0;
         if (prevpsi > -999.)
         {
             RFLOAT psidiff = fabs(mycoord.psi - prevpsi);
             psidiff = wrap(psidiff, 0., 360.);
             if (psidiff > 180.)
-                    psidiff -= 180.;
+                    psidiff -= 180.0;
             if (psidiff > 90.)
-                    psidiff -= 180.;
+                    psidiff -= 180.0;
             prevpsidiff = psidiff;
         }
         if (nextpsi > -999.)
@@ -1115,9 +1115,9 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
             RFLOAT psidiff = fabs(mycoord.psi - nextpsi);
             psidiff = wrap(psidiff, 0., 360.);
             if (psidiff > 180.)
-                    psidiff -= 180.;
+                    psidiff -= 180.0;
             if (psidiff > 90.)
-                    psidiff -= 180.;
+                    psidiff -= 180.0;
             nextpsidiff = psidiff;
         }
 
@@ -1679,7 +1679,7 @@ void AutoPicker::extractHelicalTubes(
 
         // Gather all neighboring peaks around
         selected_peaks.clear(); // don't push itself in? No do not push itself!!!
-        rmax2 = particle_diameter_pix * particle_diameter_pix / 4.;
+        rmax2 = particle_diameter_pix * particle_diameter_pix / 4.0;
         for (int peak_id1 = 0; peak_id1 < peak_list.size(); peak_id1++) {
             if (peak_id0 == peak_id1)
                 continue;
@@ -2035,7 +2035,7 @@ void AutoPicker::extractHelicalTubes(
             helical_segments.push_back(newSegment);
 
             // Get segments along the track
-            dist_left = 0.;
+            dist_left = 0.0;
             for (int inext = 1; inext < helical_track.size(); inext++) {
 
                 RFLOAT x0 = helical_track[inext - 1].x;
@@ -2163,7 +2163,7 @@ void AutoPicker::exportHelicalTubes(
     }
 
     // Detect crossovers
-    RFLOAT dist2_min = particle_diameter_pix * particle_diameter_pix / 4.;
+    RFLOAT dist2_min = particle_diameter_pix * particle_diameter_pix / 4.0;
     for (int itube1 = 0; itube1 + 1 < tube_coord_list.size(); itube1++)
     for (int icoord1 = 0; icoord1 < tube_coord_list[itube1].size(); icoord1++) {
         // Coord1 selected
@@ -2199,7 +2199,7 @@ void AutoPicker::exportHelicalTubes(
         y_start = tube_track_list[itube][0].y;
         x_end = tube_track_list[itube][last_id].x;
         y_end = tube_track_list[itube][last_id].y;
-        particle_radius_pix2 = particle_diameter_pix * particle_diameter_pix / 4.;
+        particle_radius_pix2 = particle_diameter_pix * particle_diameter_pix / 4.0;
 
         for (int icoord = 0; icoord < tube_coord_list[itube].size(); icoord++)
         {

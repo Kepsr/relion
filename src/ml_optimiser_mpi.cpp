@@ -655,8 +655,7 @@ void MlOptimiserMpi::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFL
     }
     // After introducing SGD code in Dec 2016: no longer calculate Mavg for the 2 halves separately...
     // Just calculate Mavg from AllReduce, and divide by 2 * the accumulated wsum_group
-    MultidimArray<RFLOAT> Msum;
-    Msum.initZeros(Mavg);
+    MultidimArray<RFLOAT> Msum = MultidimArray<RFLOAT>::zeros(Mavg);
     MPI_Allreduce(MULTIDIM_ARRAY(Mavg), MULTIDIM_ARRAY(Msum), MULTIDIM_SIZE(Msum), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     Mavg = Msum;
     // When doing random halves, the wsum_model.sumw_group[igroup], which will be used to divide Mavg by is only calculated over half the particles!
