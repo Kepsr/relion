@@ -282,10 +282,10 @@ void FrameRecombiner::process(
 
                 // Project the center-coordinates
                 Matrix1D<RFLOAT> my_center(3);
-                Matrix2D<RFLOAT> A3D;
                 XX(my_center) = recenter_x; // in reference pixels
                 YY(my_center) = recenter_y;
                 ZZ(my_center) = recenter_z;
+                Matrix2D<RFLOAT> A3D;
                 Euler_angles2matrix(rot, tilt, psi, A3D, false);
                 my_projected_center = A3D * my_center;
             }

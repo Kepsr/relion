@@ -850,18 +850,21 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         Matrix1D<RFLOAT> com(mydim);
         Imask().centerOfMass(com);
         com_bodies[nr_bodies].resize(3);
-        XX(com_bodies[nr_bodies]) = round(XX(com)); // Round to avoid interpolation artifacts in selfTranslate(Iref)
-        YY(com_bodies[nr_bodies]) = round(YY(com));
-        ZZ(com_bodies[nr_bodies]) = mydim == 3 ? round(ZZ(com)) : 0.0;
+        for (int i = 0; i < 3; i++) {
+            com_bodies[nr_bodies][i] = i >= mydim ? 0.0 : round(com[i]); 
+            // Round to avoid interpolation artifacts in selfTranslate(Iref)
+        }
         // Find maximum radius for mask around com
         int max_d2 = 0.0;
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Imask()) {
             if (A3D_ELEM(Imask(), k, i, j) > 0.05) {
-                int d2 = (k - ZZ(com)) * (k - ZZ(com)) + (i - YY(com)) * (i - YY(com)) + (j - XX(com)) * (j - XX(com));
+                int d2 = (k - ZZ(com)) * (k - ZZ(com)) 
+                       + (i - YY(com)) * (i - YY(com)) 
+                       + (j - XX(com)) * (j - XX(com));
                 if (d2 > max_d2) { max_d2 = d2; }
             }
         }
-        max_radius_mask_bodies[nr_bodies] = ceil(pixel_size * sqrt((RFLOAT)max_d2));
+        max_radius_mask_bodies[nr_bodies] = ceil(pixel_size * sqrt((RFLOAT) max_d2));
 
         // Get which body to rotate relative to
         int relative_to = -1;
@@ -1080,13 +1083,10 @@ void MlModel::writeBildFileBodies(FileName fn_bild) {
         fh_bild << ".color " << r << " " << g << " " << b << std::endl;
 
         // Place a sphere at the centre-of-mass
-        RFLOAT x = XX(com_bodies[ibody]) * pixel_size;
-        RFLOAT y = YY(com_bodies[ibody]) * pixel_size;
-        RFLOAT z = ZZ(com_bodies[ibody]) * pixel_size;
+        RFLOAT x = XX(com_bodies[ibody]) * pixel_size + pixel_size + xcen;
+        RFLOAT y = YY(com_bodies[ibody]) * pixel_size + pixel_size + ycen;
+        RFLOAT z = ZZ(com_bodies[ibody]) * pixel_size + pixel_size + zcen;
         // Add the center of the box to the coordinates
-        x += pixel_size + xcen;
-        y += pixel_size + ycen;
-        z += pixel_size + zcen;
         fh_bild << ".sphere " << x << " " << y << " " << z << " 3 "  << std::endl;
         // Add a label
         fh_bild << ".cmov " << x + 5 << " " << y + 5 << " " << z + 5 << std::endl;
@@ -1110,17 +1110,16 @@ void MlModel::setFourierTransformMaps(
     const MultidimArray<RFLOAT> *fourier_mask
 ) {
 
-    bool do_heavy = true;
-
     int min_ires = -1;
     if (strict_lowres_exp > 0) {
         min_ires = round(pixel_size * ori_size / strict_lowres_exp);
-//		std::cout << "MlModel::setFourierTransformMaps: strict_lowres_exp = " << strict_lowres_exp
-//		          << " pixel_size = " << pixel_size << " ori_size = " << ori_size << " min_ires = " << min_ires << std::endl;;
+        // std::cout << "MlModel::setFourierTransformMaps: strict_lowres_exp = " << strict_lowres_exp
+        //           << " pixel_size = " << pixel_size << " ori_size = " << ori_size << " min_ires = " << min_ires << std::endl;;
     }
 
     // Note that PPref.size() can be bigger than nr_bodies in multi-body refinement, due to extra PPrefs needed for overlapping bodies
     // These only exist in PPref form, they are not needed for reconstructions, only for subtractions in getFourierTransformsAndCtfs
+    bool do_heavy = true;
     for (int iclass = 0; iclass < PPref.size(); iclass++) {
 
         MultidimArray<RFLOAT> Irefp;
@@ -1622,13 +1621,16 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
 
     for (int iclass = 0; iclass < nr_classes; iclass++) {
 
-        if (ori_idx >= idx_start && ori_idx < idx_stop) DIRECT_MULTIDIM_ELEM(packed, idx++) = pdf_class[iclass];
+        if (ori_idx >= idx_start && ori_idx < idx_stop) 
+            DIRECT_MULTIDIM_ELEM(packed, idx++) = pdf_class[iclass];
         ori_idx++;
 
         if (ref_dim == 2) {
-            if (ori_idx >= idx_start && ori_idx < idx_stop) DIRECT_MULTIDIM_ELEM(packed, idx++) = XX(prior_offset_class[iclass]);
+            if (ori_idx >= idx_start && ori_idx < idx_stop) 
+                DIRECT_MULTIDIM_ELEM(packed, idx++) = XX(prior_offset_class[iclass]);
             ori_idx++;
-            if (ori_idx >= idx_start && ori_idx < idx_stop) DIRECT_MULTIDIM_ELEM(packed, idx++) = YY(prior_offset_class[iclass]);
+            if (ori_idx >= idx_start && ori_idx < idx_stop) 
+                DIRECT_MULTIDIM_ELEM(packed, idx++) = YY(prior_offset_class[iclass]);
             ori_idx++;
         }
     }

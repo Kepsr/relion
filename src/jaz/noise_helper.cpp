@@ -27,7 +27,7 @@
 
 Image<RFLOAT> NoiseHelper::predictCCNoise(
     Projector &prj, double sigma2,
-    double nsamples_ppp, int max_nsamples, int nangles, Image<RFLOAT>& dmgWeight,
+    double nsamples_ppp, int max_nsamples, int nangles, Image<RFLOAT> &dmgWeight,
     CTF ctf0, double defocusMu, double defocusSigma, double angpix, int thread_num
 ) {
     const int s = prj.ori_size;

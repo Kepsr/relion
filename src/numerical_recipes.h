@@ -211,8 +211,8 @@ void gaussj(T *a, int n, T *b, int m) {
                 }
         ++(ipiv[icol]);
         if (irow != icol) {
-            for (l = 1; l <= n; l++) SWAP(a[irow * n + l], a[icol * n + l])
-            for (l = 1; l <= m; l++) SWAP(b[irow * n + l], b[icol * n + l])
+            for (l = 1; l <= n; l++) std::swap(a[irow * n + l], a[icol * n + l]);
+            for (l = 1; l <= m; l++) std::swap(b[irow * n + l], b[icol * n + l]);
         }
         indxr[i] = irow;
         indxc[i] = icol;
@@ -237,7 +237,7 @@ void gaussj(T *a, int n, T *b, int m) {
     for (l = n; l >= 1; l--) {
         if (indxr[l] != indxc[l])
             for (k = 1; k <= n; k++)
-                SWAP(a[k * n + indxr[l]], a[k * n + indxc[l]]);
+                std::swap(a[k * n + indxr[l]], a[k * n + indxc[l]]);
     }
     free_Tvector(ipiv,  1, n);
     free_Tvector(indxr, 1, n);

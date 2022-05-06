@@ -3721,7 +3721,7 @@ class MultidimArray {
         for (long int k = 0; k < zsize; k++)
         for (long int i = 0; i < ysize; i++)
         for (long int j = start_x; j <=  halfSizeX; j++) {
-            SWAP(
+            std::swap(
                 DIRECT_NZYX_ELEM(*this, l, k, i, j),
                 DIRECT_NZYX_ELEM(*this, l, k, i, xsize - j)
             );
@@ -3764,7 +3764,7 @@ class MultidimArray {
         for (long int k = 0; k < zsize; k++)
         for (long int i = start_y; i <= halfSizeY; i++)
         for (long int j = 0; j < xsize; j++) {
-            SWAP(
+            std::swap(
                 DIRECT_NZYX_ELEM(*this, l, k, i, j),
                 DIRECT_NZYX_ELEM(*this, l, k, ysize - i, j)
             );
@@ -3806,7 +3806,7 @@ class MultidimArray {
         for (int k = start_z; k <= halfSizeZ; k++)
         for (int i = 0; i < ysize; i++)
         for (int j = 0; j < xsize; j++) {
-            SWAP(
+            std::swap(
                 DIRECT_NZYX_ELEM(*this, l,         k, i, j),
                 DIRECT_NZYX_ELEM(*this, l, zsize - k, i, j)
             );

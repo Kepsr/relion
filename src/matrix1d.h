@@ -937,8 +937,8 @@ class Matrix1D {
 
     // Reverse data
     void reverse() {
-        for (int i = 0; i <= (int) (size() - 1) / 2; i++) {
-            SWAP((*this)[i], (*this)[size() - 1 - i]);
+        for (int i = 0; 2 * i <= size() - 1; i++) {
+            std::swap((*this)[i], (*this)[size() - 1 - i]);
         }
     }
 

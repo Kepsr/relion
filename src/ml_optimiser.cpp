@@ -579,9 +579,9 @@ void MlOptimiser::parseInitial(int argc, char **argv) {
     mymodel.initialiseHelicalParametersLists(helical_twist_initial, helical_rise_initial);
     mymodel.is_helix = do_helical_refine;
     if (mymodel.helical_rise_min > mymodel.helical_rise_max)
-        SWAP(mymodel.helical_rise_min, mymodel.helical_rise_max);
+        std::swap(mymodel.helical_rise_min, mymodel.helical_rise_max);
     if (mymodel.helical_twist_min > mymodel.helical_twist_max)
-        SWAP(mymodel.helical_twist_min, mymodel.helical_twist_max);
+        std::swap(mymodel.helical_twist_min, mymodel.helical_twist_max);
     helical_fourier_mask_resols = parser.getOption("--helical_exclude_resols", "Resolutions (in A) along helical axis to exclude from refinement (comma-separated pairs, e.g. 50-5)", "");
     fn_fourier_mask = parser.getOption("--fourier_mask", "Originally-sized, FFTW-centred image with Fourier mask for Projector", "None");
 

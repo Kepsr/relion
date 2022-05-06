@@ -415,20 +415,6 @@ inline T LIN_INTERP(RFLOAT x, T x0, T xF) {
 /// @name Miscellaneous
 //@{
 
-/** Swap two values a and b (of the same size in memory).
- *
- * A new scope is entered, where a temporary variable is declared.
- * The data is exchanged and the scope is exited.
- */
-#define SWAP(x, y) { \
-    size_t stmp = sizeof(x); \
-    unsigned char tmp[stmp == sizeof(y) ? (signed) stmp : -1]; \
-    memcpy(tmp,  &(y), stmp); \
-    memcpy(&(y), &(x), stmp); \
-    memcpy(&(x),  tmp, stmp); \
-}
-
-
 namespace Xmipp {
 
     /** (XMIPP_EQUAL_ACCURACY)

@@ -4815,8 +4815,8 @@ void Interpolate3DCurves(
             // Name of model ends
             #define ADJUST_FOR_LITTLE_ENDIANNESS \
             if (is_little_endian) { \
-                SWAP(buf_word[0], buf_word[3]); \
-                SWAP(buf_word[1], buf_word[2]); \
+                std::swap(buf_word[0], buf_word[3]); \
+                std::swap(buf_word[1], buf_word[2]); \
             }
             fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word)); // Xdim
             ADJUST_FOR_LITTLE_ENDIANNESS
@@ -4865,16 +4865,16 @@ void Interpolate3DCurves(
             for (int id = 0; id < nr_points; id++) {
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(buf_word[0], buf_word[3]);
-                    SWAP(buf_word[1], buf_word[2]);
+                    std::swap(buf_word[0], buf_word[3]);
+                    std::swap(buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 xlist.push_back(val);
 
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(buf_word[0], buf_word[3]);
-                    SWAP(buf_word[1], buf_word[2]);
+                    std::swap(buf_word[0], buf_word[3]);
+                    std::swap(buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 if (flip_YZ) {
@@ -4885,8 +4885,8 @@ void Interpolate3DCurves(
 
                 fin.read(reinterpret_cast<char*>(buf_word), sizeof(buf_word));
                 if (is_little_endian) {
-                    SWAP(buf_word[0], buf_word[3]);
-                    SWAP(buf_word[1], buf_word[2]);
+                    std::swap(buf_word[0], buf_word[3]);
+                    std::swap(buf_word[1], buf_word[2]);
                 }
                 val = ((RFLOAT)(binning_factor)) * (*(reinterpret_cast<float*>(buf_word)));
                 if (flip_YZ) {
