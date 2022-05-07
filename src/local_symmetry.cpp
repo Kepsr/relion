@@ -316,8 +316,8 @@ void parseDMFormatMasksAndOperators(
             fout << str_new_mask << std::endl;
         }
 
-        for (int i = 0; i < words.size(); i++) {
-            fout << words[i] << " " << std::flush;
+        for (auto &word : words) {
+            fout << word << " " << std::flush;
         }
         fout << std::endl;
     }
@@ -365,11 +365,10 @@ void readRelionFormatMasksAndOperators(
 
     // Load mask names
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        bool is_maskname_found = false;
         FileName fn_mask = MD.getValue<FileName>(EMDL::MASK_NAME);
-
-        for (int id_mask = 0; id_mask < fn_mask_list.size(); id_mask++) {
-            if (fn_mask_list[id_mask] == fn_mask) {
+        bool is_maskname_found = false;
+        for (auto &fn_mask2 : fn_mask_list) {
+            if (fn_mask == fn_mask2) {
                 is_maskname_found = true;
                 break;
             }
@@ -574,13 +573,13 @@ void readRelionFormatMasksWithoutOperators(
         op_empty.initZeros(NR_LOCALSYM_PARAMETERS);
 
         for (int imask = 0; imask < fn_mask_list.size(); imask++) {
-            std::cout << " * Mask #" << (imask + 1) << " = " << fn_mask_list[imask] << std::endl;
-            std::cout << "   --> Operator #" << int(0) << " = " << std::flush;
+            std::cout << " * Mask #" << imask + 1 << " = " << fn_mask_list[imask] << std::endl;
+            std::cout << "   --> Operator #" << 0 << " = " << std::flush;
             Localsym_outputOperator(op_empty, &std::cout);
             std::cout << " (the original)" << std::endl;
 
             for (int iop = 0; iop < ops[imask].size(); iop++) {
-                std::cout << "   --> Operator #" << (iop + 1) << " = " << std::flush;
+                std::cout << "   --> Operator #" << iop + 1 << " = " << std::flush;
                 Localsym_outputOperator(ops[imask][iop], &std::cout);
                 std::cout << " (undefined) - from mask " << op_masks[imask][iop] << std::endl;
             }
@@ -1535,43 +1534,40 @@ void getLocalSearchOperatorSamplings(
     if (dx_range < Xmipp::epsilon) dx_range = 1e+10;
     if (dy_range < Xmipp::epsilon) dy_range = 1e+10;
     if (dz_range < Xmipp::epsilon) dz_range = 1e+10;
-    for (int idz = 0; idz < dzs.size(); idz++) {
-        for (int idy = 0; idy < dys.size(); idy++) {
-            for (int idx = 0; idx < dxs.size(); idx++) {
-                dz = dzs[idz]; dy = dys[idy]; dx = dxs[idx];
-                r2 = (dz * dz) / (dz_range * dz_range) + (dy * dy) / (dy_range * dy_range) + (dx * dx) / (dx_range * dx_range);
-                if (Xmipp::gt(r2, 1.0))
-                    continue;
+    for (auto &dz : dzs) for (auto &dy : dys) for (auto &dx : dxs) {
+        r2 = (dz * dz) / (dz_range * dz_range) + (dy * dy) / (dy_range * dy_range) + (dx * dx) / (dx_range * dx_range);
+        if (Xmipp::gt(r2, 1.0))
+            continue;
 
-                if (use_healpix) {
-                    for (int idir = 0; idir < pointer_dir_nonzeroprior.size(); idir++) {
-                        aa = sampling.rot_angles [pointer_dir_nonzeroprior[idir]];
-                        bb = sampling.tilt_angles[pointer_dir_nonzeroprior[idir]];
-                        for (int ipsi = 0; ipsi < pointer_psi_nonzeroprior.size(); ipsi++) {
-                            gg = sampling.psi_angles[pointer_psi_nonzeroprior[ipsi]];
+        if (use_healpix) {
+            for (int idir = 0; idir < pointer_dir_nonzeroprior.size(); idir++) {
+                aa = sampling.rot_angles [pointer_dir_nonzeroprior[idir]];
+                bb = sampling.tilt_angles[pointer_dir_nonzeroprior[idir]];
+                for (int ipsi = 0; ipsi < pointer_psi_nonzeroprior.size(); ipsi++) {
+                    gg = sampling.psi_angles[pointer_psi_nonzeroprior[ipsi]];
 
-                            // Re-calculate op_old so that they follow the conventions in RELION!
-                            standardiseEulerAngles(aa, bb, gg, aa, bb, gg);
+                    // Re-calculate op_old so that they follow the conventions in RELION!
+                    standardiseEulerAngles(aa, bb, gg, aa, bb, gg);
 
-                            Localsym_composeOperator(op_tmp, aa, bb, gg, dx + dx_init, dy + dy_init, dz + dz_init, 1e10);
+                    Localsym_composeOperator(op_tmp, aa, bb, gg, dx + dx_init, dy + dy_init, dz + dz_init, 1e10);
 
-                            op_samplings.push_back(op_tmp);
-                            nr_all_samplings++;
-                        }
-                    }
-                } else {
-                    for (int iaa = 0; iaa < aas.size(); iaa++)
-                    for (int ibb = 0; ibb < bbs.size(); ibb++)
-                    for (int igg = 0; igg < ggs.size(); igg++) {
-                        // Re-calculate op_old so that they follow the conventions in RELION!
-                        standardiseEulerAngles(aas[iaa], bbs[ibb], ggs[igg], aa, bb, gg);
-
-                        Localsym_composeOperator(op_tmp, aa, bb, gg, dx + dx_init, dy + dy_init, dz + dz_init, (1e10));
-
-                        op_samplings.push_back(op_tmp);
-                        nr_all_samplings++;
-                    }
+                    op_samplings.push_back(op_tmp);
+                    nr_all_samplings++;
                 }
+            }
+        } else {
+            for (auto &aa2 : aas) for (auto &bb2 : bbs) for (auto &gg2 : ggs) {
+                // Re-calculate op_old so that they follow the conventions in RELION!
+                standardiseEulerAngles(aa2, bb2, gg2, aa, bb, gg);
+
+                Localsym_composeOperator(
+                    op_tmp, 
+                    aa, bb, gg, dx + dx_init, dy + dy_init, dz + dz_init, 
+                    1e10
+                );
+
+                op_samplings.push_back(op_tmp);
+                nr_all_samplings++;
             }
         }
     }
@@ -1623,8 +1619,8 @@ void calculateOperatorCC(
         barstep = op_samplings.size() / 100;
         updatebar = totalbar = 0;
     }
-    for (int iop = 0; iop < op_samplings.size(); iop++) {
-        Localsym_operator2matrix(op_samplings[iop], op_mat, LOCALSYM_OP_DO_INVERT);
+    for (auto &op : op_samplings) {
+        Localsym_operator2matrix(op, op_mat, LOCALSYM_OP_DO_INVERT);
         applyGeometry(dest, vol, op_mat, IS_NOT_INV, DONT_WRAP);
 
         cc = 0.0;
@@ -1637,7 +1633,7 @@ void calculateOperatorCC(
             //cc += val * val;
             cc += mask_val * val * val; // weighted by mask value ?
         }
-        VEC_ELEM(op_samplings[iop], CC_POS) = sqrt(cc / mask_val_sum);
+        VEC_ELEM(op, CC_POS) = sqrt(cc / mask_val_sum);
 
         if (verb) {
             if (updatebar > barstep) {
@@ -1762,7 +1758,7 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     // Write output maps and STAR file
     MD.clear();
     MD.addLabel(EMDL::MASK_NAME);
-    for (int icen = 0; (icen < K) && (icen < id); icen++) {
+    for (int icen = 0; icen < K && icen < id; icen++) {
         fn_out = fn_in.withoutExtension() + "_sub" + integerToString(icen + 1, 3, '0') + ".mrc";
         img_out().initZeros(img());
         //img_out().setXmippOrigin();
@@ -2332,8 +2328,7 @@ void local_symmetry_parameters::run() {
                 if (newdim + 1 < cropdim) {
                     // Need rescaling
                     // Dimension should always be even
-                    if (newdim % 2)
-                        newdim++;
+                    if (newdim % 2) { newdim++; }
                     resizeMap(mask_cropped, newdim);
                     mask_cropped.setXmippOrigin();
                     resizeMap(src_cropped, newdim);
@@ -2450,23 +2445,23 @@ void local_symmetry_parameters::run() {
 
                 // TODO: For rescaled maps
                 if (newdim != cropdim) {
-                    for (int isamp = 0; isamp < op_samplings.size(); isamp++)
-                        Localsym_scaleTranslations(op_samplings[isamp], tmp_binning_factor);
+                    for (auto &samp : op_samplings)
+                        Localsym_scaleTranslations(samp, tmp_binning_factor);
                 }
                 // Now translations are all unscaled.
 
                 // TODO: add vectors together!!!
                 // Update com1_float
-                for (int isamp = 0; isamp < op_samplings.size(); isamp++) {
+                for (auto &samp : op_samplings) {
                     // Get new_com1
                     // newCom1f = Com1f + best_trans_samp - diff
-                    Localsym_shiftTranslations(op_samplings[isamp], com1_float - com1_diff); // equivalently, com1_int
+                    Localsym_shiftTranslations(samp, com1_float - com1_diff); // equivalently, com1_int
 
                     // Update v = newCom1f + ( - newR * com0)
-                    Localsym_decomposeOperator(op_samplings[isamp], aa, bb, gg, dx, dy, dz, cc);
+                    Localsym_decomposeOperator(samp, aa, bb, gg, dx, dy, dz, cc);
                     Euler_angles2matrix(aa, bb, gg, mat1);
                     vecR3 = vectorR3(dx, dy, dz) - mat1 * com0_int;
-                    Localsym_composeOperator(op_samplings[isamp], aa, bb, gg, XX(vecR3), YY(vecR3), ZZ(vecR3), cc);
+                    Localsym_composeOperator(samp, aa, bb, gg, XX(vecR3), YY(vecR3), ZZ(vecR3), cc);
                 }
 
                 // Master sorts the results
