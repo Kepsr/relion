@@ -747,7 +747,11 @@ class Matrix1D {
      * Algebraic vector by matrix multiplication.
      * This function is actually implemented in xmippMatrices2D.
      */
-    Matrix1D<T> operator * (const Matrix2D<T> &M);
+    Matrix1D<T> operator * (const Matrix2D<T> &M);  // Defined in matrix2D.h
+
+    void operator *= (const Matrix2D<T> &M) {
+        *this = *this * M;
+    }
 
     /** Vector element access
      *

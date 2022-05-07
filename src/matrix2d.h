@@ -492,7 +492,7 @@ class Matrix2D {
     * C = A*B;
     * @endcode
     */
-    Matrix2D<T> operator*(const Matrix2D<T> &op1) const {
+    Matrix2D<T> operator * (const Matrix2D<T> &op1) const {
         Matrix2D<T> result;
         if (mdimx != op1.mdimy)
             REPORT_ERROR("Not compatible sizes in matrix multiplication");
@@ -1065,7 +1065,7 @@ class Matrix2D {
 };
 
 // vector * matrix
-// Documented in matrix1D.h
+// Declared in matrix1D.h
 template<typename T>
 Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
 
