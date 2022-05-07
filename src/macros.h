@@ -409,6 +409,7 @@ inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
 template <typename T>
 inline T LIN_INTERP(RFLOAT x, T x0, T xF) {
     return x0 + x * (xF - x0);
+    // lerp(x0, xF, x);  // C++20
     // (x * xF) + (1 - x) * x0
 }
 

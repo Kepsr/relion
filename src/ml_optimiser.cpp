@@ -7844,10 +7844,10 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
                 has_fine_enough_angular_sampling = false;
 
                 int new_hp_order = sampling.healpix_order + 1;
-                RFLOAT new_rottilt_step = 360.0 / (6 * iPowerof2(new_hp_order + adaptive_oversampling));
+                RFLOAT new_rottilt_step = 60.0 / exp2(new_hp_order + adaptive_oversampling);
 
                 // Set the new sampling in the sampling-object
-                sampling.setOrientations(new_hp_order, new_rottilt_step * iPowerof2(adaptive_oversampling));
+                sampling.setOrientations(new_hp_order, new_rottilt_step * exp2(adaptive_oversampling));
 
                 // Resize the pdf_direction arrays to the correct size and fill with an even distribution
                 mymodel.initialisePdfDirection(sampling.NrDirections());
@@ -7903,7 +7903,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
             }
         } else {
             // 2D classification
-            RFLOAT new_psi_step = 0.8 * acc_rot * iPowerof2(adaptive_oversampling);
+            RFLOAT new_psi_step = 0.8 * acc_rot * exp2(adaptive_oversampling);
             new_psi_step = std::max(new_psi_step, sampling.psi_step_ori);
             if (fabs(new_psi_step - sampling.psi_step) > 0.001 ) {
                 sampling.setOrientations(-1, new_psi_step);
@@ -7912,7 +7912,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
 
         // B. Coarser translational sampling
         // Stay a bit on the safe side: 80% of estimated accuracy
-        RFLOAT new_offset_step = 0.8 * acc_trans * iPowerof2(adaptive_oversampling);
+        RFLOAT new_offset_step = 0.8 * acc_trans * exp2(adaptive_oversampling);
         // Don't go coarser than the 95% of the offset_range (so at least 5 samplings are done)
         new_offset_step = std::min(new_offset_step, 0.95 * sampling.offset_range);
         // Don't go finer than the original offset_step!
@@ -7988,7 +7988,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
 
                 // Prevent very coarse translational samplings: max 1.5
                 // Also stay a bit on the safe side with the translational sampling: 75% of estimated accuracy
-                RFLOAT new_step = std::min(1.5, 0.75 * acc_trans) * iPowerof2(adaptive_oversampling);
+                RFLOAT new_step = std::min(1.5, 0.75 * acc_trans) * exp2(adaptive_oversampling);
 
                 // For subtomogram averaging: use at least half times previous step size
                 if (mymodel.data_dim == 3) // TODO: check: this might just as well work for 2D data...
@@ -7996,7 +7996,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
 
                 // Search ranges are five times the last observed changes in offsets
                 // Only 3x for subtomogram averaging....
-                RFLOAT new_range = (mymodel.data_dim == 2) ? 5. * current_changes_optimal_offsets : 3 * current_changes_optimal_offsets;
+                RFLOAT new_range = mymodel.data_dim == 2 ? 5.0 * current_changes_optimal_offsets : 3 * current_changes_optimal_offsets;
 
                 // New range can only become 30% bigger than the previous range (to prevent very slow iterations in the beginning)
                 new_range = std::min(1.3 * sampling.offset_range, new_range);
@@ -8027,10 +8027,10 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
                 RFLOAT new_rottilt_step, new_psi_step;
                 if (mymodel.ref_dim == 3) {
                     new_hp_order = sampling.healpix_order + 1;
-                    new_rottilt_step = new_psi_step = 360.0 / (6 * iPowerof2(new_hp_order + adaptive_oversampling));
+                    new_rottilt_step = new_psi_step = 60.0 / exp2(new_hp_order + adaptive_oversampling);
 
                     // Set the new sampling in the sampling-object
-                    sampling.setOrientations(new_hp_order, new_psi_step * iPowerof2(adaptive_oversampling));
+                    sampling.setOrientations(new_hp_order, new_psi_step * exp2(adaptive_oversampling));
 
                     // Resize the pdf_direction arrays to the correct size and fill with an even distribution
                     mymodel.initialisePdfDirection(sampling.NrDirections());

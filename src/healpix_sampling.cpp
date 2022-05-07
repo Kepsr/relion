@@ -64,7 +64,7 @@ void HealpixSampling::initialise(
 
     // By default psi_step is approximate sampling of rot, tilt in 3D; and 10 degrees in 2D
     if (psi_step < 0) {
-        psi_step = is_3D ? 360.0 / (6 * iPowerof2(healpix_order)) : 10.0;
+        psi_step = is_3D ? 60.0 / exp2(healpix_order) : 10.0;
     }
 
     if (perturbation_factor < 0.0 || perturbation_factor > 1.0)
@@ -908,7 +908,7 @@ void HealpixSampling::findSymmetryMate(long int idir_, RFLOAT prior_,
     std::vector<RFLOAT> &directions_prior, std::vector<bool> &idir_flag
 ) {
 
-    RFLOAT angular_sampling = radians(360.0 / (6 * iPowerof2(healpix_order))) * 2; // Calculate the search radius
+    RFLOAT angular_sampling = 2 * radians(60.0 / exp2(healpix_order)); // Calculate the search radius
     // Direction for the best-matched Healpix index
     Matrix1D<RFLOAT> my_direction;
     Euler_angles2direction(rot_angles[idir_], tilt_angles[idir_], my_direction);
@@ -1321,19 +1321,19 @@ Direction HealpixSampling::getDirectionFromHealPix(long int ipix) {
 }
 
 RFLOAT HealpixSampling::getTranslationalSampling(int adaptive_oversampling) {
-    return offset_step / iPowerof2(adaptive_oversampling);
+    return offset_step / exp2(adaptive_oversampling);
 }
 
 RFLOAT HealpixSampling::getHelicalTranslationalSampling(int adaptive_oversampling) {
-    return helical_offset_step / iPowerof2(adaptive_oversampling);
+    return helical_offset_step / exp2(adaptive_oversampling);
 }
 
 RFLOAT HealpixSampling::getAngularSampling(int adaptive_oversampling) {
     if (is_3D) {
         int order = healpix_order + adaptive_oversampling;
-        return 360.0 / (6 * iPowerof2(order));
+        return 60.0 / exp2(order);
     } else {
-        return psi_step / iPowerof2(adaptive_oversampling);
+        return psi_step / exp2(adaptive_oversampling);
     }
 }
 
@@ -1344,7 +1344,7 @@ long int HealpixSampling::NrDirections(
     long int mysize = pointer_dir_nonzeroprior != NULL && (*pointer_dir_nonzeroprior).size() > 0 ?
         (*pointer_dir_nonzeroprior).size() : rot_angles.size();
     if (oversampling_order == 0) return mysize;  // 1 << 0 is 1
-    return iPowerof2(oversampling_order * 2) * mysize;
+    return exp2(oversampling_order * 2) * mysize;
 }
 
 long int HealpixSampling::NrPsiSamplings(
@@ -1353,12 +1353,12 @@ long int HealpixSampling::NrPsiSamplings(
     long int mysize = pointer_psi_nonzeroprior != NULL && (*pointer_psi_nonzeroprior).size() > 0 ?
         (*pointer_psi_nonzeroprior).size() : psi_angles.size();
     if (oversampling_order == 0) return mysize;  // 1 << 0 is 1
-    return iPowerof2(oversampling_order) * mysize;
+    return exp2(oversampling_order) * mysize;
 }
 
 long int HealpixSampling::NrTranslationalSamplings(int oversampling_order) {
     if (oversampling_order == 0) return translations_x.size();  // 1 << 0 is 1
-    return iPowerof2(oversampling_order * (is_3d_trans ? 3 : 2)) * translations_x.size();
+    return exp2(oversampling_order * (is_3d_trans ? 3 : 2)) * translations_x.size();
 }
 
 long int HealpixSampling::NrSamplingPoints(
@@ -1373,12 +1373,12 @@ long int HealpixSampling::NrSamplingPoints(
 
 /* How often is each orientation oversampled? */
 int HealpixSampling::oversamplingFactorOrientations(int oversampling_order) {
-    return iPowerof2(is_3D ? oversampling_order * 3 : oversampling_order);
+    return exp2(is_3D ? oversampling_order * 3 : oversampling_order);
 }
 
 /* How often is each translation oversampled? */
 int HealpixSampling::oversamplingFactorTranslations(int oversampling_order) {
-    return iPowerof2(oversampling_order * (is_3d_trans ? 3 : 2));
+    return exp2(oversampling_order * (is_3d_trans ? 3 : 2));
 }
 
 void HealpixSampling::getDirection(long int idir, RFLOAT &rot, RFLOAT &tilt) {
@@ -1461,7 +1461,7 @@ void HealpixSampling::getTranslationsInPixel(
         if (is_3d_trans)
         my_translations_z.push_back(translations_z[itrans] / my_pixel_size);
     } else {
-        int nr_oversamples = iPowerof2(oversampling_order);
+        int nr_oversamples = exp2(oversampling_order);
         // DEBUG
         if (nr_oversamples < 1) {
             std::cerr << "oversampling_order= " << oversampling_order << " nr_oversamples= " << nr_oversamples << std::endl;
@@ -1624,7 +1624,7 @@ void HealpixSampling::pushbackOversampledPsiAngles(
         oversampled_tilt.push_back(tilt);
         oversampled_psi .push_back(psi_angles[ipsi]);
     } else {
-        int nr_ipsi_over = iPowerof2(oversampling_order);
+        int nr_ipsi_over = exp2(oversampling_order);
         for (int ipsi_over = 0; ipsi_over < nr_ipsi_over; ipsi_over++) {
             RFLOAT overpsi = psi_angles[ipsi] - 0.5 * psi_step + (0.5 + ipsi_over) * psi_step / nr_ipsi_over;
             oversampled_rot .push_back(rot);

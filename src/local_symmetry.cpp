@@ -1401,7 +1401,7 @@ void getLocalSearchOperatorSamplings(
         // Get healpix order and mode
         int healpix_order = 0, prior_mode = 0;
         for (healpix_order = 0; healpix_order <= 100; healpix_order++) {
-            if (ang_search_step > (360.0 / (6.0 * iPowerof2(healpix_order))))
+            if (ang_search_step > 60.0 / exp2(healpix_order))
                 break;
         }
         if (healpix_order >= 100)
@@ -1415,7 +1415,7 @@ void getLocalSearchOperatorSamplings(
         sampling.healpix_order = healpix_order;
         sampling.is_3D = sampling.is_3d_trans = true;
         sampling.limit_tilt = -91.0; // Don't limit tilts
-        sampling.psi_step = 360.0 / (6.0 * iPowerof2(healpix_order));
+        sampling.psi_step = 60.0 / exp2(healpix_order);
         sampling.offset_range = sampling.offset_step = 1.0; // I don't use Healpix translational samplings
         sampling.random_perturbation = sampling.perturbation_factor = 0.0;
 

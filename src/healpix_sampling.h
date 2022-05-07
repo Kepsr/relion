@@ -34,7 +34,7 @@
 #define NOPRIOR 0
 #define PRIOR_ROTTILT_PSI 1
 
-inline int iPowerof2(int n) { return 1 << (n); }  // Bitshifts are fast
+inline int exp2(int n) { return 1 << (n); }  // Bitshifts are fast
 
 struct Direction {
     RFLOAT rot, tilt;
