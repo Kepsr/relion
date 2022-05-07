@@ -3854,8 +3854,8 @@ void updatePriorsForOneHelicalTube(
 
             // rotation angle all new KThurber
             this_rot = list[id].rot_deg;  // KThurber
-            this_rot_vec(0) = cos(radians(this_rot));
-            this_rot_vec(1) = sin(radians(this_rot));
+            this_rot_vec[0] = cos(radians(this_rot));
+            this_rot_vec[1] = sin(radians(this_rot));
             sum_rot_vec = this_rot_vec * this_w;
             // for adjusting rot angle by shift along helix
             center_x_helix = list[id].dx_A * cos(radians(this_psi)) - list[id].dy_A * sin(radians(this_psi));
@@ -3912,8 +3912,8 @@ void updatePriorsForOneHelicalTube(
                         this_rot = list[idd].rot_deg;
                     }
 
-                    this_rot_vec(0) = cos(radians(this_rot));
-                    this_rot_vec(1) = sin(radians(this_rot));
+                    this_rot_vec[0] = cos(radians(this_rot));
+                    this_rot_vec[1] = sin(radians(this_rot));
                     sum_rot_vec += this_rot_vec * this_w;
 
                     this_psi  = list[idd].psi_deg;
@@ -3946,12 +3946,12 @@ void updatePriorsForOneHelicalTube(
 
                 // KThurber added
                 sum_rot_vec /= sum_w;
-                length_rot_vec = sqrt(pow(sum_rot_vec(0), 2) + pow(sum_rot_vec(1), 2));
+                length_rot_vec = sqrt(pow(sum_rot_vec[0], 2) + pow(sum_rot_vec[1], 2));
                 if (length_rot_vec != 0) {
-                    sum_rot_vec(0) = sum_rot_vec(0) / length_rot_vec;
-                    sum_rot_vec(1) = sum_rot_vec(1) / length_rot_vec;
-                    this_rot = degrees(acos(sum_rot_vec(0)));
-                    if (sum_rot_vec(1) < 0.0)
+                    sum_rot_vec[0] = sum_rot_vec[0] / length_rot_vec;
+                    sum_rot_vec[1] = sum_rot_vec[1] / length_rot_vec;
+                    this_rot = degrees(acos(sum_rot_vec[0]));
+                    if (sum_rot_vec[1] < 0.0)
                         this_rot = -1.0 * this_rot;	// if sign negative, angle is negative
                 } else {
                     this_rot = list[id].rot_deg;  // don't change prior if average fails

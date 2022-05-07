@@ -1427,7 +1427,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         #ifdef DEBUG_OWN
         std::cout << "Polynomial fitting coefficients for X and Y:" << std::endl;
         for (int i = 0; i < n_params; i++) {
-            std::cout << i << " " << coeffX(i) << " " << coeffY(i) << std::endl;
+            std::cout << i << " " << coeffX[i] << " " << coeffY[i] << std::endl;
         }
         #endif
 
@@ -1697,18 +1697,18 @@ void MotioncorrRunner::realSpaceInterpolation_ThirdOrderPolynomial(
         const RFLOAT z = iframe, z2 = iframe * iframe;
         const RFLOAT z3 = z * z2;
         // Common terms
-        const RFLOAT x_C0 = coeffX(0)  * z + coeffX(1)  * z2 + coeffX(2)  * z3;
-        const RFLOAT x_C1 = coeffX(3)  * z + coeffX(4)  * z2 + coeffX(5)  * z3;
-        const RFLOAT x_C2 = coeffX(6)  * z + coeffX(7)  * z2 + coeffX(8)  * z3;
-        const RFLOAT x_C3 = coeffX(9)  * z + coeffX(10) * z2 + coeffX(11) * z3;
-        const RFLOAT x_C4 = coeffX(12) * z + coeffX(13) * z2 + coeffX(14) * z3;
-        const RFLOAT x_C5 = coeffX(15) * z + coeffX(16) * z2 + coeffX(17) * z3;
-        const RFLOAT y_C0 = coeffY(0)  * z + coeffY(1)  * z2 + coeffY(2)  * z3;
-        const RFLOAT y_C1 = coeffY(3)  * z + coeffY(4)  * z2 + coeffY(5)  * z3;
-        const RFLOAT y_C2 = coeffY(6)  * z + coeffY(7)  * z2 + coeffY(8)  * z3;
-        const RFLOAT y_C3 = coeffY(9)  * z + coeffY(10) * z2 + coeffY(11) * z3;
-        const RFLOAT y_C4 = coeffY(12) * z + coeffY(13) * z2 + coeffY(14) * z3;
-        const RFLOAT y_C5 = coeffY(15) * z + coeffY(16) * z2 + coeffY(17) * z3;
+        const RFLOAT x_C0 = coeffX[0]  * z + coeffX[1]  * z2 + coeffX[2]  * z3;
+        const RFLOAT x_C1 = coeffX[3]  * z + coeffX[4]  * z2 + coeffX[5]  * z3;
+        const RFLOAT x_C2 = coeffX[6]  * z + coeffX[7]  * z2 + coeffX[8]  * z3;
+        const RFLOAT x_C3 = coeffX[9]  * z + coeffX[10] * z2 + coeffX[11] * z3;
+        const RFLOAT x_C4 = coeffX[12] * z + coeffX[13] * z2 + coeffX[14] * z3;
+        const RFLOAT x_C5 = coeffX[15] * z + coeffX[16] * z2 + coeffX[17] * z3;
+        const RFLOAT y_C0 = coeffY[0]  * z + coeffY[1]  * z2 + coeffY[2]  * z3;
+        const RFLOAT y_C1 = coeffY[3]  * z + coeffY[4]  * z2 + coeffY[5]  * z3;
+        const RFLOAT y_C2 = coeffY[6]  * z + coeffY[7]  * z2 + coeffY[8]  * z3;
+        const RFLOAT y_C3 = coeffY[9]  * z + coeffY[10] * z2 + coeffY[11] * z3;
+        const RFLOAT y_C4 = coeffY[12] * z + coeffY[13] * z2 + coeffY[14] * z3;
+        const RFLOAT y_C5 = coeffY[15] * z + coeffY[16] * z2 + coeffY[17] * z3;
 
         #pragma omp parallel for num_threads(n_threads)
         for (int iy = 0; iy < ny; iy++) {

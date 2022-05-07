@@ -47,10 +47,10 @@ OriginalBasis AberrationFit::fitBasic(
         const double w = weight(yi, xi);
 
         for (int r = 0; r < 5; r++) {
-            b(r) += w * w * vals[r] * v;
+            b[r] += w * w * vals[r] * v;
 
             for (int c = 0; c < 5; c++) {
-                A(r,c) += w * w * vals[r] * vals[c];
+                A(r, c) += w * w * vals[r] * vals[c];
             }
         }
     }
@@ -60,7 +60,7 @@ OriginalBasis AberrationFit::fitBasic(
     solve(A, b, sol, tol);
 
     for (int i = 0; i < 5; i++) {
-        basis.coefficients[i] = sol(i);
+        basis.coefficients[i] = sol[i];
     }
 
     return basis;

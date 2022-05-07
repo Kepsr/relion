@@ -141,7 +141,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
 
     if (verb > 0 && (do_center || opt.fn_body_masks != "None")) {
         std::cout << " + The subtracted particles will be re-centred on projections of 3D-coordinate: ("
-                  << new_center(0) << " , " << new_center(1) << " , " << new_center(2) << ")" << std::endl;
+                  << XX(new_center) << " , " << YY(new_center) << " , " << ZZ(new_center) << ")" << std::endl;
     }
 
     if (opt.fn_body_masks != "None") {

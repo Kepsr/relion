@@ -245,8 +245,8 @@ void MagnificationEstimator::parametricFit(
         Matrix2D<RFLOAT> u, vh;
         Matrix1D<RFLOAT> eig;
         svdcmp(mat1, u, eig, vh);
-        const RFLOAT mean_mag = (eig(0) + eig(1)) / 2;
-        const RFLOAT aniso_mag = fabs(eig(0) - eig(1));// / mean_mag;
+        const RFLOAT mean_mag = (eig[0] + eig[1]) / 2;
+        const RFLOAT aniso_mag = fabs(eig[0] - eig[1]);// / mean_mag;
 
         #pragma omp critical
         {

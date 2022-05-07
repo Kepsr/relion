@@ -480,7 +480,7 @@ class Matrix2D {
 
         for (int i = 0; i < mdimy; i++)
             for (int j = 0; j < op1.size(); j++)
-                result(i) += (*this)(i, j) * op1(j);
+                result[i] += (*this)(i, j) * op1[j];
 
         result.setCol();
         return result;
@@ -813,7 +813,7 @@ class Matrix2D {
         if (v.size() != mdimx)
             v.resize(mdimx);
         for (int j = 0; j < mdimx; j++)
-            v(j) = MAT_ELEM(*this, i, j);
+            v[j] = MAT_ELEM(*this, i, j);
 
         v.setRow();
     }
@@ -1014,11 +1014,11 @@ class Matrix2D {
             // Compute W^-1
             bool invertible = false;
             FOR_ALL_ELEMENTS_IN_MATRIX1D(w) {
-                if (abs(w(i)) > tol) {
-                    w(i) = 1.0 / w(i);
+                if (abs(w[i]) > tol) {
+                    w[i] = 1.0 / w[i];
                     invertible = true;
                 } else {
-                    w(i) = 0.0;
+                    w[i] = 0.0;
                 }
             }
 
@@ -1027,7 +1027,7 @@ class Matrix2D {
 
             // Compute V*W^-1
             FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
-                MAT_ELEM(v, i, j) *= w(j);
+                MAT_ELEM(v, i, j) *= w[j];
 
             // Compute inverse
             for (int i = 0; i < mdimx; i++)
@@ -1078,7 +1078,7 @@ Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
     Matrix1D<T> result = Matrix1D<T>::zeros(MAT_XSIZE(M));
     for (int j = 0; j < MAT_XSIZE(M); j++)
     for (int i = 0; i < MAT_YSIZE(M); i++)
-    result(j) += (*this)(i) * MAT_ELEM(M, i, j);
+    result[j] += (*this)[i] * MAT_ELEM(M, i, j);
 
     result.setRow();
     return result;
@@ -1159,8 +1159,7 @@ void solve(
     // If a value is lower than the tolerance, it is made zero,
     // to improve the routine's precision.
     FOR_ALL_ELEMENTS_IN_MATRIX1D(w)
-        if (w(i) < tolerance)
-            w(i) = 0;
+        if (w[i] < tolerance) { w[i] = 0; }
 
     // Set size of matrices
     result.resize(b.vdim);

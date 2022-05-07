@@ -104,9 +104,9 @@ void Euler_angles2direction(
     RFLOAT sc = sb * ca;
     RFLOAT ss = sb * sa;
 
-    v(0) = sc;
-    v(1) = ss;
-    v(2) = cb;
+    v[0] = sc;
+    v[1] = ss;
+    v[2] = cb;
 }
 
 /* Euler direction2angles ------------------------------- */
@@ -127,8 +127,8 @@ void Euler_direction2angles(
     v.normalise();
 
     // Tilt (b) should be [0, +180] degrees. Rot (a) should be [-180, +180] degrees
-    alpha = degrees(atan2(v(1), v(0))); // 'atan2' returns an angle within [-pi, +pi] radians for rot
-    beta  = degrees(acos(v(2))); // 'acos' returns an angle within [0, +pi] radians for tilt
+    alpha = degrees(atan2(v[1], v[0])); // 'atan2' returns an angle within [-pi, +pi] radians for rot
+    beta  = degrees(acos(v[2])); // 'acos' returns an angle within [0, +pi] radians for tilt
 
     // The following is done to keep in line with the results from old codes
     // If tilt (b) = 0 or 180 degrees, sin(b) = 0, rot (a) cannot be calculated from the direction

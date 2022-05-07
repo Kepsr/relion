@@ -204,7 +204,7 @@ void SymList::add_matrices(
     }
 
     set_matrices(true_symNo, L, R);
-    __chain_length(__chain_length.size() - 1) = chain_length;
+    __chain_length[__chain_length.size() - 1] = chain_length;
     true_symNo++;
 }
 
@@ -248,7 +248,7 @@ void SymList::compute_subgroup() {
         get_matrices(j, L2, R2);
         newL = L1 * L2;
         newR = R1 * R2;
-        new_chain_length = __chain_length(i) + __chain_length(j);
+        new_chain_length = __chain_length[i] + __chain_length[j];
         Matrix2D<RFLOAT> newR3 = newR;
         newR3.resize(3, 3);
         if (newL.isIdentity() && newR3.isIdentity()) continue;

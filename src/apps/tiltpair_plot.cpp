@@ -186,12 +186,12 @@ class tiltpair_plot_parameters {
 
         // Get the tilt axis direction in angles alpha and beta
         if (sine_tilt_angle > Xmipp::epsilon) {
-            axis(0) = (E2(2, 1) - E2(1, 2)) / sine_tilt_angle;
-            axis(1) = (E2(0, 2) - E2(2, 0)) / sine_tilt_angle;
-            axis(2) = (E2(1, 0) - E2(0, 1)) / sine_tilt_angle;
+            XX(axis) = (E2(2, 1) - E2(1, 2)) / sine_tilt_angle;
+            YY(axis) = (E2(0, 2) - E2(2, 0)) / sine_tilt_angle;
+            ZZ(axis) = (E2(1, 0) - E2(0, 1)) / sine_tilt_angle;
         } else {
-            axis(0) = axis(1) = 0.0;
-            axis(2) = 1.0;
+            XX(axis) = YY(axis) = 0.0;
+            ZZ(axis) = 1.0;
         }
 
         // Apply E1.inv() to the axis to get everyone in the same coordinate system again
@@ -253,10 +253,10 @@ class tiltpair_plot_parameters {
             RFLOAT yp = dist_from_tilt * sin(radians(dist_from_alpha));
             RFLOAT x = tilt2p * cos(radians(rot2p));
             RFLOAT y = tilt2p * sin(radians(rot2p));
-            aux2(3) = sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y));
-            aux2(0) = tilt2p;
-            aux2(1) = rot2p;
-            aux2(2) = psi2p;
+            XX(aux2) = tilt2p;
+            YY(aux2) = rot2p;
+            ZZ(aux2) = psi2p;
+            aux2[3] = sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y));
             add_to_postscript(tilt2p, rot2p, psi2p);
         }
 

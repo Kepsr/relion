@@ -31,26 +31,27 @@ const int ThirdOrderPolynomialModel::NUM_COEFFS_PER_DIM = 18;
 
 int ThirdOrderPolynomialModel::getShiftAt(RFLOAT z, RFLOAT x, RFLOAT y, RFLOAT &shiftx, RFLOAT &shifty) const {
     const RFLOAT x2 = x * x, y2 = y * y, xy = x * y, z2 = z * z;
-    const RFLOAT z3 = z2 * z;
+    const RFLOAT z3 = z * z2;
 
-    shiftx = (coeffX(0)  * z + coeffX(1)  * z2 + coeffX(2)  * z3)
-           + (coeffX(3)  * z + coeffX(4)  * z2 + coeffX(5)  * z3) * x
-           + (coeffX(6)  * z + coeffX(7)  * z2 + coeffX(8)  * z3) * x2
-           + (coeffX(9)  * z + coeffX(10) * z2 + coeffX(11) * z3) * y
-           + (coeffX(12) * z + coeffX(13) * z2 + coeffX(14) * z3) * y2
-           + (coeffX(15) * z + coeffX(16) * z2 + coeffX(17) * z3) * xy;
-    shifty = (coeffY(0)  * z + coeffY(1)  * z2 + coeffY(2)  * z3)
-           + (coeffY(3)  * z + coeffY(4)  * z2 + coeffY(5)  * z3) * x
-           + (coeffY(6)  * z + coeffY(7)  * z2 + coeffY(8)  * z3) * x2
-           + (coeffY(9)  * z + coeffY(10) * z2 + coeffY(11) * z3) * y
-           + (coeffY(12) * z + coeffY(13) * z2 + coeffY(14) * z3) * y2
-           + (coeffY(15) * z + coeffY(16) * z2 + coeffY(17) * z3) * xy;
+    shiftx = (coeffX[0]  * z + coeffX[1]  * z2 + coeffX[2]  * z3)
+           + (coeffX[3]  * z + coeffX[4]  * z2 + coeffX[5]  * z3) * x
+           + (coeffX[6]  * z + coeffX[7]  * z2 + coeffX[8]  * z3) * x2
+           + (coeffX[9]  * z + coeffX[10] * z2 + coeffX[11] * z3) * y
+           + (coeffX[12] * z + coeffX[13] * z2 + coeffX[14] * z3) * y2
+           + (coeffX[15] * z + coeffX[16] * z2 + coeffX[17] * z3) * xy;
+
+    shifty = (coeffY[0]  * z + coeffY[1]  * z2 + coeffY[2]  * z3)
+           + (coeffY[3]  * z + coeffY[4]  * z2 + coeffY[5]  * z3) * x
+           + (coeffY[6]  * z + coeffY[7]  * z2 + coeffY[8]  * z3) * x2
+           + (coeffY[9]  * z + coeffY[10] * z2 + coeffY[11] * z3) * y
+           + (coeffY[12] * z + coeffY[13] * z2 + coeffY[14] * z3) * y2
+           + (coeffY[15] * z + coeffY[16] * z2 + coeffY[17] * z3) * xy;
 
     return 0;
 }
 
 MotionModel* ThirdOrderPolynomialModel::clone() const {
-    return (MotionModel*) new ThirdOrderPolynomialModel(*this);
+    return new ThirdOrderPolynomialModel(*this);
 }
 
 void ThirdOrderPolynomialModel::write(std::ostream &fh, std::string block_name) {
@@ -63,7 +64,7 @@ void ThirdOrderPolynomialModel::write(std::ostream &fh, std::string block_name) 
     for (int i = 0; i < NUM_COEFFS_PER_DIM; i++) {
         MD.addObject();
         MD.setValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, coeff_idx);
-        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF, coeffX(i));
+        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF, coeffX[i]);
         coeff_idx++;
     }
 
@@ -71,7 +72,7 @@ void ThirdOrderPolynomialModel::write(std::ostream &fh, std::string block_name) 
     for (int i = 0; i < NUM_COEFFS_PER_DIM; i++) {
         MD.addObject();
         MD.setValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, coeff_idx);
-        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF, coeffY(i));
+        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF, coeffY[i]);
         coeff_idx++;
     }
 
@@ -90,19 +91,19 @@ void ThirdOrderPolynomialModel::read(std::ifstream &fh, std::string block_name) 
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
 
-        int idx;
+        int i;
         RFLOAT val;
         try {
-            idx = MD.getValue<int>(EMDL::MICROGRAPH_MOTION_COEFFS_IDX);
+            i = MD.getValue<int>(EMDL::MICROGRAPH_MOTION_COEFFS_IDX);
             val = MD.getValue<RFLOAT>(EMDL::MICROGRAPH_MOTION_COEFF);
         } catch (const char *errmsg) {
             REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: missing index or coefficients");
         }
 
-        if (idx >= 0 && idx < NUM_COEFFS_PER_DIM) {
-            coeffX(idx) = val;
-        } else if (idx >= NUM_COEFFS_PER_DIM && idx < NUM_COEFFS) {
-            coeffY(idx - NUM_COEFFS_PER_DIM) = val;
+        if (i >= 0 && i < NUM_COEFFS_PER_DIM) {
+            coeffX[i] = val;
+        } else if (i >= NUM_COEFFS_PER_DIM && i < NUM_COEFFS) {
+            coeffY[i - NUM_COEFFS_PER_DIM] = val;
         } else {
             REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: wrong index");
         }

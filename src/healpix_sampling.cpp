@@ -584,7 +584,7 @@ RFLOAT HealpixSampling::calculateDeltaRot(Matrix1D<RFLOAT> my_direction, RFLOAT 
     rotation2DMatrix(rot_prior, A);
     Matrix1D<RFLOAT> my_rot_direction = A.inv() * my_direction;
     // Get component along the new Y-axis
-    return fabs(degrees(asin(my_rot_direction(1))));
+    return fabs(degrees(asin(my_rot_direction[1])));
 }
 
 void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
