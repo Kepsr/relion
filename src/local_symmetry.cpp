@@ -83,7 +83,7 @@ void truncateMultidimArray(
 void Localsym_outputOperator(
     const Matrix1D<RFLOAT> &op, std::ostream* o_ptr, RFLOAT scale_angpix
 ) {
-    if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
+    if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
     if (!o_ptr)
         REPORT_ERROR("ERROR: std::ostream* o_ptr is NULL !");
@@ -117,14 +117,14 @@ void Localsym_composeOperator(
 
 void Localsym_decomposeOperator(
     const Matrix1D<RFLOAT> &op,
-    RFLOAT& aa, RFLOAT& bb, RFLOAT& gg,
-    RFLOAT& dx, RFLOAT& dy, RFLOAT& dz,
-    RFLOAT& cc
+    RFLOAT &aa, RFLOAT &bb, RFLOAT &gg,
+    RFLOAT &dx, RFLOAT &dy, RFLOAT &dz,
+    RFLOAT &cc
 ) {
     aa = bb = gg = dx = dy = dz = 0.0;
     cc = 1e10;
 
-    if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
+    if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
 
     aa = VEC_ELEM(op, AA_POS); bb = VEC_ELEM(op, BB_POS); gg = VEC_ELEM(op, GG_POS);
@@ -135,7 +135,7 @@ void Localsym_decomposeOperator(
 void Localsym_scaleTranslations(
     Matrix1D<RFLOAT> &op, RFLOAT factor
 ) {
-    if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
+    if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
 
     VEC_ELEM(op, DX_POS) *= factor;
@@ -147,10 +147,10 @@ void Localsym_shiftTranslations(
     Matrix1D<RFLOAT> &op,
     const Matrix1D<RFLOAT> &voffset
 ) {
-    if (VEC_XSIZE(op) != NR_LOCALSYM_PARAMETERS)
+    if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
 
-    if (VEC_XSIZE(voffset) != 3)
+    if (voffset.size() != 3)
         REPORT_ERROR("ERROR: voffset is not a vectorR3!");
 
     VEC_ELEM(op, DX_POS) += XX(voffset);
@@ -246,7 +246,7 @@ void Localsym_operator2matrix(
 
 void standardiseEulerAngles(
     RFLOAT aa_old, RFLOAT bb_old, RFLOAT gg_old,
-    RFLOAT& aa_new, RFLOAT& bb_new, RFLOAT& gg_new
+    RFLOAT &aa_new, RFLOAT &bb_new, RFLOAT &gg_new
 ) {
     Matrix2D<RFLOAT> rot_mat;
     rot_mat.clear();
@@ -658,7 +658,7 @@ void writeRelionFormatLocalSearchOperatorResults(
     MD.addLabel(EMDL::IMAGE_WEIGHT);
 
     for (int iop = 0; iop < op_samplings.size(); iop++) {
-        if (VEC_XSIZE(op_samplings[iop]) != NR_LOCALSYM_PARAMETERS)
+        if (op_samplings[iop].size() != NR_LOCALSYM_PARAMETERS)
             REPORT_ERROR("ERROR: syntax errors in results!");
 
         MD.addObject();
@@ -1327,8 +1327,8 @@ void getLocalSearchOperatorSamplings(
     pointer_dir_nonzeroprior.clear(); pointer_psi_nonzeroprior.clear();
 
     if (
-        VEC_XSIZE(op_old)           != NR_LOCALSYM_PARAMETERS ||
-        VEC_XSIZE(op_search_ranges) != NR_LOCALSYM_PARAMETERS
+        op_old.size()           != NR_LOCALSYM_PARAMETERS ||
+        op_search_ranges.size() != NR_LOCALSYM_PARAMETERS
     ) REPORT_ERROR("ERROR: Input operator contains syntax error!");
 
     if (ang_search_step < 0.0001 || ang_search_step > 30.0)

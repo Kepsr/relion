@@ -84,10 +84,6 @@ template <typename T> class Matrix2D;
  */
 #define FOR_ALL_ELEMENTS_IN_MATRIX1D(v) for (int i = 0; i < v.vdim; i++)
 
-/** X dimension of the matrix
- */
-#define VEC_XSIZE(m) ((m).vdim)
-
 // Convention: { 0, 1, 2 } <-> { X, Y, Z }
 
 template <typename T>

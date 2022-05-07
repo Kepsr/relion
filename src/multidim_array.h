@@ -1635,8 +1635,8 @@ class MultidimArray {
      * val = V(vectorR3(1, -2, 0));
      * @endcode
      */
-    T& operator()(const Matrix1D<RFLOAT>& v) const {
-        switch (VEC_XSIZE(v)) {
+    T& operator()(const Matrix1D<RFLOAT> &v) const {
+        switch (v.size()) {
             case 1:
             return A1D_ELEM((*this), round(XX(v)));
             case 2:
@@ -1649,8 +1649,8 @@ class MultidimArray {
     }
 
     /** Volume element access by integer vector. */
-    T& operator()(const Matrix1D<long int>& v) const {
-        switch (VEC_XSIZE(v)) {
+    T& operator()(const Matrix1D<long int> &v) const {
+        switch (v.size()) {
             case 1:
             return A1D_ELEM((*this), XX(v));
             case 2:

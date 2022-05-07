@@ -757,8 +757,8 @@ class image_handler_parameters {
                 Iin().setXmippOrigin();
                 Iin().centerOfMass(com);
                 std::cout << fn_img << " : center of mass (relative to XmippOrigin) x " << XX(com);
-                if (VEC_XSIZE(com) > 1) std::cout << " y " << YY(com);
-                if (VEC_XSIZE(com) > 2) std::cout << " z " << ZZ(com);
+                if (com.size() > 1) std::cout << " y " << YY(com);
+                if (com.size() > 2) std::cout << " z " << ZZ(com);
                 std::cout << std::endl;
             } else if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali) {
                 Iin.read(fn_img);

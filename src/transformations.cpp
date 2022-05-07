@@ -75,7 +75,7 @@ void rotation2DMatrix(RFLOAT ang, Matrix2D<RFLOAT> &result, bool homogeneous) {
 
 /* Translation 2D ---------------------------------------------------------- */
 void translation2DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
-    // if (VEC_XSIZE(v) != 2)
+    // if (v.size() != 2)
     //    REPORT_ERROR("Translation2D_matrix: vector is not in R2");
 
     result.initIdentity(3);
@@ -188,7 +188,7 @@ void rotation3DMatrix(
 
 /* Translation 3D ---------------------------------------------------------- */
 void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
-    if (VEC_XSIZE(v) != 3)
+    if (v.size() != 3)
         REPORT_ERROR("Translation3D_matrix: vector is not in R3");
 
     result.initIdentity(4);
@@ -201,7 +201,7 @@ void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
 void scale3DMatrix(
     const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT> &result, bool homogeneous
 ) {
-    if (VEC_XSIZE(sc) != 3)
+    if (sc.size() != 3)
         REPORT_ERROR("Scale3D_matrix: vector is not in R3");
 
     if (homogeneous) {
