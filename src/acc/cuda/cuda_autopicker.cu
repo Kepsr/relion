@@ -329,17 +329,14 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         std::cerr              << "*------------------------------------------------------------------------------------*"<< std::endl;
     }
 
-    // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations....
-    RFLOAT avg0, stddev0, minval0, maxval0;
+    // Set mean to zero and stddev to 1 
+    // to prevent numerical problems with single-pass stddev calculations.
     #ifdef TIMING
     basePckr->timer.tic(basePckr->TIMING_A7);
     #endif
+    Stats<RFLOAT> stats;
     CTICTOC("computeStats", ({
-    Stats<RFLOAT> stats = Imic().computeStats();
-    avg0    = stats.avg;
-    stddev0 = stats.stddev;
-    minval0 = stats.min;
-    maxval0 = stats.max;
+    stats = Imic().computeStats();
     }));
     #ifdef TIMING
     basePckr->timer.toc(basePckr->TIMING_A7);
@@ -347,10 +344,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     CTICTOC("middlePassFilter", ({
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
         // Remove pixel values that are too far away from the mean
-        if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0 > basePckr->outlier_removal_zscore)
-            DIRECT_MULTIDIM_ELEM(Imic(), n) = avg0;
+        if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev > basePckr->outlier_removal_zscore)
+            DIRECT_MULTIDIM_ELEM(Imic(), n) = stats.avg;
 
-        DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - avg0) / stddev0;
+        DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev;
     }
     }));
 
