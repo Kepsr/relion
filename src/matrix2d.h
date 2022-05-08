@@ -57,12 +57,6 @@
 /** @name Matrices speed up macros */
 //@{
 
-/** Array access.
- *
- * This macro gives you access to the array (T)
- */
-#define MATRIX2D_ARRAY(m) ((m).mdata)
-
 /** For all elements in the array
  *
  * This macro simplifies looping over a matrix's values.
@@ -77,16 +71,6 @@
 #define FOR_ALL_ELEMENTS_IN_MATRIX2D(m) \
     for (int i = 0; i < (m).mdimy; i++) \
         for (int j = 0; j < (m).mdimx; j++)
-
-/** Access a matrix element
- * v is the array, i and j define the element v_ij.
- *
-  * @code
- * MAT_ELEM(m, 0, 0) = 1;
- * val = MAT_ELEM(m, 0, 0);
- * @endcode
- */
-#define MAT_ELEM(m, i, j) ((m).mdata[(i) * (m).mdimx + (j)])
 
 // X dimension of the matrix
 #define MAT_XSIZE(m) ((m).mdimx)
@@ -248,7 +232,7 @@ class Matrix2D {
         Matrix2D<T> result(iF - i0 + 1, jF - j0 + 1);
 
         FOR_ALL_ELEMENTS_IN_MATRIX2D(result)
-        MAT_ELEM(result, i, j) = MAT_ELEM(*this, i + i0, j + j0);
+        result.at(i, j) = at(i + i0, j + j0);
 
         *this = result;
     }
@@ -351,32 +335,25 @@ class Matrix2D {
     */
     void initIdentity(int dim) {
         initZeros(dim, dim);
-        for (int i = 0; i < dim; i++) { MAT_ELEM(*this, i, i) = 1; }
+        for (int i = 0; i < dim; i++) { at(i, i) = 1; }
     }
     //@}
 
     /// @name Operators for Matrix2D
     //@{
 
-    // Matrix element access
-    T& operator()(int i, int j) {
-        return MAT_ELEM(*this, i, j);
-    }
+    /** Matrix element access
+     *
+     * @code
+     * m.at(0, 0) = 1;
+     * std::cout << m.at(0, 0) << std::endl;
+     * @endcode
+     */
+    T& at(int i, int j) const { return mdata[i * mdimx + j]; }
 
-    // for constant matrices (the compiler will pick the right version)
-    const T& operator()(int i, int j) const {
-        return MAT_ELEM(*this, i, j);
-    }
+    T& operator()(int i, int j) { return at(i, j); }
 
-    // Parenthesis operator for phyton
-    void setVal(T val, int y, int x) {
-        MAT_ELEM(*this, y, x) = val;
-    }
-
-    // Parenthesis operator for phyton
-    T getVal(int y, int x) const {
-        return MAT_ELEM(*this, y, x);
-    }
+    const T& operator()(int i, int j) const { return at(i, j); }
 
     // v3 = v1 * k
     Matrix2D<T> operator*(T op1) const {
@@ -486,7 +463,7 @@ class Matrix2D {
 
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
-        MAT_ELEM(*this, i, j) += MAT_ELEM(op1, i, j);
+        at(i, j) += op1.at(i, j);
     }
 
     /** Matrix subtraction
@@ -520,7 +497,7 @@ class Matrix2D {
 
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
-        MAT_ELEM(*this, i, j) -= MAT_ELEM(op1, i, j);
+        at(i, j) -= op1.at(i, j);
     }
 
     /** Equality
@@ -672,12 +649,12 @@ class Matrix2D {
             if (mdimy != 1 || mdimx != op1.size())
                 resize(1, op1.size());
             for (int j = 0; j < op1.size(); j++)
-                MAT_ELEM(*this, 0, j) = op1[j];
+                at(0, j) = op1[j];
         } else {
             if (mdimy != 1 || mdimx != op1.size())
                 resize(op1.size(), 1);
             for (int i = 0; i < op1.size(); i++)
-                MAT_ELEM(*this, i, 0) = op1[i];
+                at(i, 0) = op1[i];
         }
     }
 
@@ -710,7 +687,7 @@ class Matrix2D {
                 op1.resize(mdimx);
 
             for (int j = 0; j < mdimx; j++)
-                op1[j] = MAT_ELEM(*this, 0, j);
+                op1[j] = at(0, j);
 
             op1.setRow();
         } else {
@@ -719,7 +696,7 @@ class Matrix2D {
                 op1.resize(mdimy);
 
             for (int i = 0; i < mdimy; i++)
-                op1[i] = MAT_ELEM(*this, i, 0);
+                op1[i] = at(i, 0);
 
             op1.setCol();
         }
@@ -760,7 +737,7 @@ class Matrix2D {
         if (v.size() != mdimx)
             v.resize(mdimx);
         for (int j = 0; j < mdimx; j++)
-            v[j] = MAT_ELEM(*this, i, j);
+            v[j] = at(i, j);
 
         v.setRow();
     }
@@ -787,7 +764,7 @@ class Matrix2D {
         if (v.size()  != mdimy)
             v.resize(mdimy);
         for (int i = 0; i < mdimy; i++)
-            v(i) = MAT_ELEM(*this, i, j);
+            v(i) = at(i, j);
 
         v.setCol();
     }
@@ -814,7 +791,7 @@ class Matrix2D {
             REPORT_ERROR("setRow: Not a row vector in assignment");
 
         for (int j = 0; j < mdimx; j++)
-            MAT_ELEM(*this, i, j) = v(j);
+            at(i, j) = v(j);
     }
 
     /** Set Column
@@ -840,7 +817,7 @@ class Matrix2D {
             REPORT_ERROR("setCol: Not a column vector in assignment");
 
         for (int i = 0; i < mdimy; i++)
-            MAT_ELEM(*this, i, j) = v[i];
+            at(i, j) = v[i];
     }
 
     /** Matrix determinant
@@ -862,7 +839,7 @@ class Matrix2D {
         for (int i = 0; i < mdimy; i++) {
             bool all_zeros = true;
             for (int j = 0; j < mdimx; j++) {
-                if (abs(MAT_ELEM(*this, i, j)) > Xmipp::epsilon) {
+                if (abs(at(i, j)) > Xmipp::epsilon) {
                     all_zeros = false;
                     break;
                 }
@@ -880,7 +857,7 @@ class Matrix2D {
 
         // Calculate determinant
         for (int i = 0; i < mdimx; i++)
-        d *= (T) MAT_ELEM(LU, i, i);
+        d *= (T) LU.at(i, i);
 
         return d;
     }
@@ -897,7 +874,7 @@ class Matrix2D {
     Matrix2D<T> transpose() const {
         Matrix2D<T> result(mdimx, mdimy);
         FOR_ALL_ELEMENTS_IN_MATRIX2D(result)
-            MAT_ELEM(result, i, j) = MAT_ELEM(*this, j, i);
+            result.at(i, j) = at(j, i);
         return result;
     }
 
@@ -933,7 +910,7 @@ class Matrix2D {
     bool isIdentity() const {
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++) {
-            T elem = MAT_ELEM(*this, i, j);
+            T elem = at(i, j);
             if (abs(i == j ? elem - 1.0 : elem) > Xmipp::epsilon)
                 return false;
         }
@@ -957,7 +934,7 @@ Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
     Matrix1D<T> result = Matrix1D<T>::zeros(MAT_XSIZE(M));
     for (int j = 0; j < MAT_XSIZE(M); j++)
     for (int i = 0; i < MAT_YSIZE(M); i++)
-    result[j] += (*this)[i] * MAT_ELEM(M, i, j);
+    result[j] += (*this)[i] * M.at(i, j);
 
     result.setRow();
     return result;

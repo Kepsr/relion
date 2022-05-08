@@ -56,21 +56,21 @@ void rotation2DMatrix(RFLOAT ang, Matrix2D<RFLOAT> &result, bool homogeneous) {
     if (homogeneous) {
         if (MAT_XSIZE(result) != 3 || MAT_YSIZE(result) != 3)
             result.resize(3, 3);
-        MAT_ELEM(result, 0, 2) = 0;
-        MAT_ELEM(result, 1, 2) = 0;
-        MAT_ELEM(result, 2, 0) = 0;
-        MAT_ELEM(result, 2, 1) = 0;
-        MAT_ELEM(result, 2, 2) = 1;
+        result.at(0, 2) = 0;
+        result.at(1, 2) = 0;
+        result.at(2, 0) = 0;
+        result.at(2, 1) = 0;
+        result.at(2, 2) = 1;
     } else {
         if (MAT_XSIZE(result) != 2 || MAT_YSIZE(result) != 2)
             result.resize(2, 2);
     }
 
-    MAT_ELEM(result, 0, 0) = cosine;
-    MAT_ELEM(result, 0, 1) = -sine;
+    result.at(0, 0) = cosine;
+    result.at(0, 1) = -sine;
 
-    MAT_ELEM(result, 1, 0) = sine;
-    MAT_ELEM(result, 1, 1) = cosine;
+    result.at(1, 0) = sine;
+    result.at(1, 1) = cosine;
 }
 
 /* Translation 2D ---------------------------------------------------------- */
@@ -79,8 +79,8 @@ void translation2DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
     //    REPORT_ERROR("Translation2D_matrix: vector is not in R2");
 
     result.initIdentity(3);
-    MAT_ELEM(result,0, 2) = XX(v);
-    MAT_ELEM(result,1, 2) = YY(v);
+    result.at(0, 2) = XX(v);
+    result.at(1, 2) = YY(v);
 }
 
 /* Rotation 3D around the system axes -------------------------------------- */
@@ -89,7 +89,7 @@ void rotation3DMatrix(
 ) {
     if (homogeneous) {
         result.initZeros(4,4);
-        MAT_ELEM(result, 3, 3) = 1;
+        result.at(3, 3) = 1;
     } else {
         result.initZeros(3, 3);
     }
@@ -101,27 +101,27 @@ void rotation3DMatrix(
     switch (axis) {
 
         case 'Z':
-        MAT_ELEM(result, 0, 0) = cosine;
-        MAT_ELEM(result, 0, 1) = -sine;
-        MAT_ELEM(result, 1, 0) = sine;
-        MAT_ELEM(result, 1, 1) = cosine;
-        MAT_ELEM(result, 2, 2) = 1;
+        result.at(0, 0) = cosine;
+        result.at(0, 1) = -sine;
+        result.at(1, 0) = sine;
+        result.at(1, 1) = cosine;
+        result.at(2, 2) = 1;
         break;
 
         case 'Y':
-        MAT_ELEM(result, 0, 0) = cosine;
-        MAT_ELEM(result, 0, 2) = -sine;
-        MAT_ELEM(result, 2, 0) = sine;
-        MAT_ELEM(result, 2, 2) = cosine;
-        MAT_ELEM(result, 1, 1) = 1;
+        result.at(0, 0) = cosine;
+        result.at(0, 2) = -sine;
+        result.at(2, 0) = sine;
+        result.at(2, 2) = cosine;
+        result.at(1, 1) = 1;
         break;
 
         case 'X':
-        MAT_ELEM(result, 1, 1) = cosine;
-        MAT_ELEM(result, 1, 2) = -sine;
-        MAT_ELEM(result, 2, 1) = sine;
-        MAT_ELEM(result, 2, 2) = cosine;
-        MAT_ELEM(result, 0, 0) = 1;
+        result.at(1, 1) = cosine;
+        result.at(1, 2) = -sine;
+        result.at(2, 1) = sine;
+        result.at(2, 2) = cosine;
+        result.at(0, 0) = 1;
         break;
 
         default:
@@ -138,7 +138,7 @@ void alignWithZ(
         REPORT_ERROR("alignWithZ: Axis is not in R3");
     if (homogeneous) {
         result.initZeros(4, 4);
-        MAT_ELEM(result, 3, 3) = 1;
+        result.at(3, 3) = 1;
     } else {
         result.initZeros(3, 3);
     }
@@ -150,26 +150,26 @@ void alignWithZ(
     if (proj_mod > Xmipp::epsilon) {   
         // proj_mod != 0
         // Build Matrix result, which makes the turning axis coincident with Z
-        MAT_ELEM(result, 0, 0) = proj_mod;
-        MAT_ELEM(result, 0, 1) = -XX(Axis) * YY(Axis) / proj_mod;
-        MAT_ELEM(result, 0, 2) = -XX(Axis) * ZZ(Axis) / proj_mod;
-        MAT_ELEM(result, 1, 0) = 0;
-        MAT_ELEM(result, 1, 1) = ZZ(Axis) / proj_mod;
-        MAT_ELEM(result, 1, 2) = -YY(Axis) / proj_mod;
-        MAT_ELEM(result, 2, 0) = XX(Axis);
-        MAT_ELEM(result, 2, 1) = YY(Axis);
-        MAT_ELEM(result, 2, 2) = ZZ(Axis);
+        result.at(0, 0) = proj_mod;
+        result.at(0, 1) = -XX(Axis) * YY(Axis) / proj_mod;
+        result.at(0, 2) = -XX(Axis) * ZZ(Axis) / proj_mod;
+        result.at(1, 0) = 0;
+        result.at(1, 1) = ZZ(Axis) / proj_mod;
+        result.at(1, 2) = -YY(Axis) / proj_mod;
+        result.at(2, 0) = XX(Axis);
+        result.at(2, 1) = YY(Axis);
+        result.at(2, 2) = ZZ(Axis);
     } else {
         // I know that the Axis is the X axis, EITHER POSITIVE OR NEGATIVE!!
-        MAT_ELEM(result, 0, 0) = 0;
-        MAT_ELEM(result, 0, 1) = 0;
-        MAT_ELEM(result, 0, 2) = -sgn_nozero(XX(Axis));
-        MAT_ELEM(result, 1, 0) = 0;
-        MAT_ELEM(result, 1, 1) = 1;
-        MAT_ELEM(result, 1, 2) = 0;
-        MAT_ELEM(result, 2, 0) = sgn_nozero(XX(Axis));
-        MAT_ELEM(result, 2, 1) = 0;
-        MAT_ELEM(result, 2, 2) = 0;
+        result.at(0, 0) = 0;
+        result.at(0, 1) = 0;
+        result.at(0, 2) = -sgn_nozero(XX(Axis));
+        result.at(1, 0) = 0;
+        result.at(1, 1) = 1;
+        result.at(1, 2) = 0;
+        result.at(2, 0) = sgn_nozero(XX(Axis));
+        result.at(2, 1) = 0;
+        result.at(2, 2) = 0;
     }
 }
 
@@ -192,9 +192,9 @@ void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
         REPORT_ERROR("Translation3D_matrix: vector is not in R3");
 
     result.initIdentity(4);
-    MAT_ELEM(result, 0, 3) = XX(v);
-    MAT_ELEM(result, 1, 3) = YY(v);
-    MAT_ELEM(result, 2, 3) = ZZ(v);
+    result.at(0, 3) = XX(v);
+    result.at(1, 3) = YY(v);
+    result.at(2, 3) = ZZ(v);
 }
 
 /* Scale 3D ---------------------------------------------------------------- */
@@ -206,11 +206,11 @@ void scale3DMatrix(
 
     if (homogeneous) {
         result.initZeros(4, 4);
-        MAT_ELEM(result, 3, 3) = 1;
+        result.at(3, 3) = 1;
     } else {
         result.initZeros(3, 3);
     }
-    MAT_ELEM(result, 0, 0) = XX(sc);
-    MAT_ELEM(result, 1, 1) = YY(sc);
-    MAT_ELEM(result, 2, 2) = ZZ(sc);
+    result.at(0, 0) = XX(sc);
+    result.at(1, 1) = YY(sc);
+    result.at(2, 2) = ZZ(sc);
 }

@@ -1395,29 +1395,29 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             const RFLOAT x2 = x * x, y2 = y * y, xy = x * y, z2 = z * z;
             const RFLOAT z3 = z2 * z;
 
-            MAT_ELEM(matA, i, 0)  =      z;
-            MAT_ELEM(matA, i, 1)  =      z2;
-            MAT_ELEM(matA, i, 2)  =      z3;
+            matA.at(i, 0)  =      z;
+            matA.at(i, 1)  =      z2;
+            matA.at(i, 2)  =      z3;
 
-            MAT_ELEM(matA, i, 3)  = x  * z;
-            MAT_ELEM(matA, i, 4)  = x  * z2;
-            MAT_ELEM(matA, i, 5)  = x  * z3;
+            matA.at(i, 3)  = x  * z;
+            matA.at(i, 4)  = x  * z2;
+            matA.at(i, 5)  = x  * z3;
 
-            MAT_ELEM(matA, i, 6)  = x2 * z;
-            MAT_ELEM(matA, i, 7)  = x2 * z2;
-            MAT_ELEM(matA, i, 8)  = x2 * z3;
+            matA.at(i, 6)  = x2 * z;
+            matA.at(i, 7)  = x2 * z2;
+            matA.at(i, 8)  = x2 * z3;
 
-            MAT_ELEM(matA, i, 9)  = y  * z;
-            MAT_ELEM(matA, i, 10) = y  * z2;
-            MAT_ELEM(matA, i, 11) = y  * z3;
+            matA.at(i, 9)  = y  * z;
+            matA.at(i, 10) = y  * z2;
+            matA.at(i, 11) = y  * z3;
 
-            MAT_ELEM(matA, i, 12) = y2 * z;
-            MAT_ELEM(matA, i, 13) = y2 * z2;
-            MAT_ELEM(matA, i, 14) = y2 * z3;
+            matA.at(i, 12) = y2 * z;
+            matA.at(i, 13) = y2 * z2;
+            matA.at(i, 14) = y2 * z3;
 
-            MAT_ELEM(matA, i, 15) = xy * z;
-            MAT_ELEM(matA, i, 16) = xy * z2;
-            MAT_ELEM(matA, i, 17) = xy * z3;
+            matA.at(i, 15) = xy * z;
+            matA.at(i, 16) = xy * z2;
+            matA.at(i, 17) = xy * z3;
         }
 
         const RFLOAT EPS = 1e-10;

@@ -56,7 +56,7 @@ void Euler_angles2matrix(
 
     if (homogeneous) {
         A.initZeros(4, 4);
-        MAT_ELEM(A, 3, 3) = 1;
+        A.at(3, 3) = 1;
     } else {
         A.resize(3, 3);
     }

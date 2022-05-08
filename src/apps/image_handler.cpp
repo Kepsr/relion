@@ -773,8 +773,8 @@ class image_handler_parameters {
                     // Apply the actual transformation
                     Matrix2D<RFLOAT> A;
                     rotation2DMatrix(psi, A);
-                    MAT_ELEM(A, 0, 2) = xoff;
-                    MAT_ELEM(A, 1, 2) = yoff;
+                    A.at(0, 2) = xoff;
+                    A.at(1, 2) = yoff;
                     selfApplyGeometry(Iin(), A, IS_NOT_INV, DONT_WRAP);
                 }
 

@@ -126,7 +126,7 @@ void FlexAnalyser::initialise() {
             Euler_angles2matrix(1.0, 90.0, 0.0, Aresi);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
-            MAT_ELEM(Abody, 3, 3) = 1.0;
+            Abody.at(3, 3) = 1.0;
             applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
             Mbody -= Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
@@ -135,7 +135,7 @@ void FlexAnalyser::initialise() {
             Euler_angles2matrix(0.0, 91.0, 0.0, Aresi);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
-            MAT_ELEM(Abody, 3, 3) = 1.0;
+            Abody.at(3, 3) = 1.0;
             applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
             Mbody -= Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
@@ -144,7 +144,7 @@ void FlexAnalyser::initialise() {
             Euler_angles2matrix(0.0, 90.0, 1.0, Aresi);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
-            MAT_ELEM(Abody, 3, 3) = 1.0;
+            Abody.at(3, 3) = 1.0;
             applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
             Mbody -= Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
@@ -153,8 +153,8 @@ void FlexAnalyser::initialise() {
             Euler_angles2matrix(0.0, 90.0, 0.0, Aresi);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
-            MAT_ELEM(Abody, 0, 3) = 1.0;
-            MAT_ELEM(Abody, 3, 3) = 1.0;
+            Abody.at(0, 3) = 1.0;
+            Abody.at(3, 3) = 1.0;
             applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
             Mbody -= Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
@@ -374,10 +374,10 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
             body_offset_3d += rescale_3dmodels * model.com_bodies[ibody];
             Abody.resize(4, 4);
 
-            MAT_ELEM(Abody, 0, 3) = XX(body_offset_3d);
-            MAT_ELEM(Abody, 1, 3) = YY(body_offset_3d);
-            MAT_ELEM(Abody, 2, 3) = ZZ(body_offset_3d);
-            MAT_ELEM(Abody, 3, 3) = 1.0;
+            Abody.at(0, 3) = XX(body_offset_3d);
+            Abody.at(1, 3) = YY(body_offset_3d);
+            Abody.at(2, 3) = ZZ(body_offset_3d);
+            Abody.at(3, 3) = 1.0;
 
             Mbody.resize(model.Iref[ibody]);
             Mmask.resize(model.masks_bodies[ibody]);
@@ -574,10 +574,10 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
 
                 // Also put back at the centre-of-mass of this body
                 Abody.resize(4,4);
-                MAT_ELEM(Abody, 0, 3) = XX(body_offset_3d);
-                MAT_ELEM(Abody, 1, 3) = YY(body_offset_3d);
-                MAT_ELEM(Abody, 2, 3) = ZZ(body_offset_3d);
-                MAT_ELEM(Abody, 3, 3) = 1.0;
+                Abody.at(0, 3) = XX(body_offset_3d);
+                Abody.at(1, 3) = YY(body_offset_3d);
+                Abody.at(2, 3) = ZZ(body_offset_3d);
+                Abody.at(3, 3) = 1.0;
 
                 Mbody.resize(model.Iref[ibody]);
                 Mmask.resize(model.masks_bodies[ibody]);

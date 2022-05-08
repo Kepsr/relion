@@ -213,11 +213,11 @@ class angular_error_parameters {
     void mapOntoTilt() {
         p_map.resize(p_unt.size());
         for (int u = 0; u < p_map.size() / 2; u++) {
-            RFLOAT xu = (RFLOAT) p_unt[2 * u];
-            RFLOAT yu = (RFLOAT) p_unt[2 * u + 1];
+            RFLOAT xu = p_unt[2 * u];
+            RFLOAT yu = p_unt[2 * u + 1];
 
-            p_map[2 * u]     = round(MAT_ELEM(Pass, 0, 0) * xu + MAT_ELEM(Pass, 0, 1) * yu + MAT_ELEM(Pass, 0, 2));
-            p_map[2 * u + 1] = round(MAT_ELEM(Pass, 1, 0) * xu + MAT_ELEM(Pass, 1, 1) * yu + MAT_ELEM(Pass, 1, 2));
+            p_map[2 * u    ] = round(Pass.at(0, 0) * xu + Pass.at(0, 1) * yu + Pass.at(0, 2));
+            p_map[2 * u + 1] = round(Pass.at(1, 0) * xu + Pass.at(1, 1) * yu + Pass.at(1, 2));
 
         }
     }
@@ -241,7 +241,7 @@ class angular_error_parameters {
             Euler_angles2matrix(rot, tilt, psi, Pass);
             //std::cerr << " Pass= " << Pass << std::endl;
             // Zero-translations for now (these are added in the x-y loops below)
-            MAT_ELEM(Pass, 0, 2) = MAT_ELEM(Pass, 1, 2) = 0.0;
+            Pass.at(0, 2) = Pass.at(1, 2) = 0.0;
             mapOntoTilt();
             for (int x = x0; x <= xF; x += xStep)
             for (int y = y0; y <= yF; y += yStep, n++) {
@@ -282,7 +282,7 @@ class angular_error_parameters {
         // Update the Passing matrix and the mapping
         Euler_angles2matrix(best_rot, best_tilt, -best_rot, Pass);
         // Zero-translations for now (these are added in the x-y loops below)
-        MAT_ELEM(Pass, 0, 2) = MAT_ELEM(Pass, 1, 2) = 0.0;
+        Pass.at(0, 2) = Pass.at(1, 2) = 0.0;
         mapOntoTilt();
         return best_score;
     }

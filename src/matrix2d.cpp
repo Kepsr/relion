@@ -53,14 +53,13 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
                 b = (i - 1) % 3;
                 c = (j + 1) % 3;
                 d = (i + 1) % 3;
-                MAT_ELEM(result, i, j) = MAT_ELEM((*this), a, b) * MAT_ELEM((*this), c, d) -
-                                            MAT_ELEM((*this), a, d) * MAT_ELEM((*this), c, b);
+                result.at(i, j) = at(a, b) * at(c, d) - at(a, d) * at(c, b);
             }
         }
         // Multiply first column of `this` with first row of `result`
-        RFLOAT divisor = MAT_ELEM((*this), 0, 0) * MAT_ELEM(result, 0, 0) 
-                       + MAT_ELEM((*this), 1, 0) * MAT_ELEM(result, 0, 1) 
-                       + MAT_ELEM((*this), 2, 0) * MAT_ELEM(result, 0, 2);
+        RFLOAT divisor = at(0, 0) * result.at(0, 0) 
+                       + at(1, 0) * result.at(0, 1) 
+                       + at(2, 0) * result.at(0, 2);
         result /= divisor;
     } else if (mdimx == 2 && mdimy == 2) {
         int sign, a, b;
@@ -69,11 +68,11 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
                 sign = (i + j) % 2 == 0 ? 1 : -1;
                 a = (j + 1) % 2;  // logical negation
                 b = (i + 1) % 2;
-                MAT_ELEM(result, i, j) = sign * MAT_ELEM((*this), a, b);
+                result.at(i, j) = sign * at(a, b);
             }
         }
-        RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM((*this), 1, 1) - MAT_ELEM((*this), 0, 1) * MAT_ELEM((*this), 1, 0);
-        result /= tmp;
+        RFLOAT divisor = at(0, 0) * at(1, 1) - at(0, 1) * at(1, 0);
+        result /= divisor;
     } else {
         // Perform SVD
         Matrix2D<RFLOAT> u, v;
@@ -97,13 +96,13 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
 
         // Compute V*W^-1
         FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
-            MAT_ELEM(v, i, j) *= w[j];
+            v.at(i, j) *= w[j];
 
         // Compute inverse
         for (int i = 0; i < mdimx; i++)
         for (int j = 0; j < mdimy; j++)
         for (int k = 0; k < mdimx; k++)
-        MAT_ELEM(result, i, j) += (T) MAT_ELEM(v, i, k) * MAT_ELEM(u, j, k);
+        result.at(i, j) += (T) v.at(i, k) * u.at(j, k);
     }
 }
 

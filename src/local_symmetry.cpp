@@ -197,7 +197,7 @@ void Localsym_angles2matrix(
     Euler_angles2matrix(aa, bb, gg, mat);
     if (invert == LOCALSYM_OP_DO_INVERT) { mat = mat.transpose(); }
     mat.resize(4, 4);
-    MAT_ELEM(mat, 3, 3) = 1.0;
+    mat.at(3, 3) = 1.0;
 }
 
 void Localsym_operator2matrix(
@@ -229,17 +229,17 @@ void Localsym_operator2matrix(
         trans_vec = mat * trans_vec;
 
         mat.resize(4, 4);
-        MAT_ELEM(mat, 0, 3) = XX(trans_vec);
-        MAT_ELEM(mat, 1, 3) = YY(trans_vec);
-        MAT_ELEM(mat, 2, 3) = ZZ(trans_vec);
+        mat.at(0, 3) = XX(trans_vec);
+        mat.at(1, 3) = YY(trans_vec);
+        mat.at(2, 3) = ZZ(trans_vec);
     } else {
         mat.resize(4, 4);
-        MAT_ELEM(mat, 0, 3) = vec[DX_POS];
-        MAT_ELEM(mat, 1, 3) = vec[DY_POS];
-        MAT_ELEM(mat, 2, 3) = vec[DZ_POS];
+        mat.at(0, 3) = vec[DX_POS];
+        mat.at(1, 3) = vec[DY_POS];
+        mat.at(2, 3) = vec[DZ_POS];
     }
 
-    MAT_ELEM(mat, 3, 3) = 1.0;
+    mat.at(3, 3) = 1.0;
 }
 
 void standardiseEulerAngles(
@@ -845,9 +845,9 @@ void readDMFormatMasksAndOperators(FileName fn_info,
                     Matrix2D<RFLOAT> A;
                     A.resize(3, 3);
 
-                    MAT_ELEM(A, 0, 0) = a11; MAT_ELEM(A, 0, 1) = a12; MAT_ELEM(A, 0, 2) = a13;
-                    MAT_ELEM(A, 1, 0) = a21; MAT_ELEM(A, 1, 1) = a22; MAT_ELEM(A, 1, 2) = a23;
-                    MAT_ELEM(A, 2, 0) = a31; MAT_ELEM(A, 2, 1) = a32; MAT_ELEM(A, 2, 2) = a33;
+                    A.at(0, 0) = a11; A.at(0, 1) = a12; A.at(0, 2) = a13;
+                    A.at(1, 0) = a21; A.at(1, 1) = a22; A.at(1, 2) = a23;
+                    A.at(2, 0) = a31; A.at(2, 1) = a32; A.at(2, 2) = a33;
 
                     Euler_matrix2angles(A.transpose(), aa, bb, gg); // TODO: do we need transpose here?
                 }

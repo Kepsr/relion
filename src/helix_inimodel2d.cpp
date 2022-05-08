@@ -272,8 +272,6 @@ void HelixAligner::readImages() {
         init_progress_bar(MD.numberOfObjects());
     }
 
-    std::vector<MultidimArray<RFLOAT>> dummy;
-
     long int ipart = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
 
@@ -296,9 +294,10 @@ void HelixAligner::readImages() {
         // Apply the actual transformation
         Matrix2D<RFLOAT> A;
         rotation2DMatrix(psi, A);
-        MAT_ELEM(A,1, 2) = -yoff / angpix;
+        A.at(1, 2) = -yoff / angpix;
         selfApplyGeometry(img(), A, IS_INV, DONT_WRAP);
 
+        std::vector<MultidimArray<RFLOAT>> dummy;
         Xrects.push_back(dummy);
 
         // Calculate all rotated versions
@@ -406,7 +405,7 @@ void HelixAligner::getHelicesFromMics() {
             // Now extract the images: make all helices stand upright... Y becomes helical axis, X becomes helix width
             // For that we need to do interpolations...
             for (int ipair = 0; ipair < x1_coord_list.size(); ipair++) {
-                std::vector<MultidimArray<RFLOAT> > dummy;
+                std::vector<MultidimArray<RFLOAT>> dummy;
                 Xrects.push_back(dummy);
 
                 // Calculate all rotated versions
