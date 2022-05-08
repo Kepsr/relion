@@ -116,26 +116,14 @@ class Matrix2D {
     }
 
     // Destructor
-    ~Matrix2D() {
-        coreDeallocate();
-    }
+    ~Matrix2D() { coreDeallocate(); }
 
-    /** Assignment
-    *
-    * Arbitrarily complex assignment expressions can be built.
-    *
-    * @code
-    * v1 = v2 + v3;
-    * v1 = v2 = v3;
-    * @endcode
-    */
-    Matrix2D<T>& operator=(const Matrix2D<T> &op1) {
+    Matrix2D<T>& operator = (const Matrix2D<T> &op1) {
         if (&op1 != this) {
-            if (MAT_XSIZE(*this) != MAT_XSIZE(op1) || MAT_YSIZE(*this) != MAT_YSIZE(op1))
-                resize(op1);
-            memcpy(mdata,op1.mdata,op1.mdim*sizeof(T));
+            resize(op1);
+            memcpy(mdata, op1.mdata, op1.mdim * sizeof(T));
         }
-        return *this;  // Propagating `*this` permits multiple assignment
+        return *this;
     }
     //@}
 
@@ -193,9 +181,10 @@ class Matrix2D {
         }
 
         for (int i = 0; i < Ydim; i++)
-            for (int j = 0; j < Xdim; j++)
-                // Copy needed elements, fill with 0 if necessary
-                new_mdata[i * Xdim + j] = i >= mdimy || j >= mdimx ? 0 : mdata[i * mdimx + j];
+        for (int j = 0; j < Xdim; j++)
+        // Copy needed elements
+        // Fill with 0 if necessary
+        new_mdata[i * Xdim + j] = i >= mdimy || j >= mdimx ? 0 : mdata[i * mdimx + j];
 
         // Deallocate old vector
         coreDeallocate();
@@ -220,10 +209,7 @@ class Matrix2D {
     * @endcode
     */
     template<typename T1>
-    void resize(const Matrix2D<T1> &v) {
-        if (mdimx != v.mdimx || mdimy != v.mdimy)
-            resize(v.mdimy, v.mdimx);
-    }
+    void resize(const Matrix2D<T1> &v) { resize(v.mdimy, v.mdimx); }
 
     // Extract submatrix and assign to this object
     void submatrix(int i0, int j0, int iF, int jF) {
@@ -285,8 +271,7 @@ class Matrix2D {
 
     // Initialise to zeros with a given size
     void initZeros(int Ydim, int Xdim) {
-        if (mdimx != Xdim || mdimy != Ydim)
-            resize(Ydim, Xdim);
+        resize(Ydim, Xdim);
         memset(mdata, 0, mdimx * mdimy * sizeof(T));
     }
 
@@ -306,9 +291,8 @@ class Matrix2D {
     * @endcode
     */
     template <typename T1>
-    void initZeros(const Matrix2D<T1>& op) {
-        if (mdimx != op.mdimx || mdimy != op.mdimy)
-            resize(op);
+    void initZeros(const Matrix2D<T1> &op) {
+        resize(op);
         memset(mdata, 0, mdimx * mdimy * sizeof(T));
     }
 
@@ -349,40 +333,40 @@ class Matrix2D {
      * std::cout << m.at(0, 0) << std::endl;
      * @endcode
      */
-    T& at(int i, int j) const { return mdata[i * mdimx + j]; }
+    inline T& at(int i, int j) const { return mdata[i * mdimx + j]; }
 
-    T& operator()(int i, int j) { return at(i, j); }
+    inline T& operator () (int i, int j) { return at(i, j); }
 
-    const T& operator()(int i, int j) const { return at(i, j); }
+    inline const T& operator () (int i, int j) const { return at(i, j); }
 
     // v3 = v1 * k
-    Matrix2D<T> operator*(T op1) const {
+    Matrix2D<T> operator * (T op1) const {
         Matrix2D<T> tmp(*this);
         for (int i = 0; i < mdim; i++) { tmp.mdata[i] = mdata[i] * op1; }
         return tmp;
     }
 
     // v3 = v1 / k
-    Matrix2D<T> operator/(T op1) const {
+    Matrix2D<T> operator / (T op1) const {
         Matrix2D<T> tmp(*this);
         for (int i = 0; i < mdim; i++) { tmp.mdata[i] = mdata[i] / op1; }
         return tmp;
     }
 
     // v3 = k * v2
-    friend Matrix2D<T> operator*(T op1, const Matrix2D<T> &op2) {
+    friend Matrix2D<T> operator * (T op1, const Matrix2D<T> &op2) {
         Matrix2D<T> tmp(op2);
         for (int i = 0; i < op2.mdim; i++) { tmp.mdata[i] = op1 * op2.mdata[i]; }
         return tmp;
     }
 
     // v3 *= k
-    void operator*=(T op1) {
+    void operator *= (T op1) {
         for (int i = 0; i < mdim; i++) { mdata[i] *= op1; }
     }
 
     // v3 /= k
-    void operator/=(T op1) {
+    void operator /=  (T op1) {
         for (int i = 0; i < mdim; i++) { mdata[i] /= op1; }
     }
 
@@ -392,7 +376,7 @@ class Matrix2D {
     * v2 = A*v1;
     * @endcode
     */
-    Matrix1D<T> operator*(const Matrix1D<T> &op1) const {
+    Matrix1D<T> operator * (const Matrix1D<T> &op1) const {
         Matrix1D<T> result;
 
         if (mdimx != op1.size()) {
@@ -420,11 +404,10 @@ class Matrix2D {
     * @endcode
     */
     Matrix2D<T> operator * (const Matrix2D<T> &op1) const {
-        Matrix2D<T> result;
         if (mdimx != op1.mdimy)
             REPORT_ERROR("Not compatible sizes in matrix multiplication");
 
-        result.initZeros(mdimy, op1.mdimx);
+        Matrix2D<T> result = Matrix2D<T>::zeros(mdimy, op1.mdimx);
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < op1.mdimx; j++)
         for (int k = 0; k < mdimx; k++)
@@ -438,7 +421,7 @@ class Matrix2D {
     * C = A + B;
     * @endcode
     */
-    Matrix2D<T> operator+(const Matrix2D<T> &op1) const {
+    Matrix2D<T> operator + (const Matrix2D<T> &op1) const {
         Matrix2D<T> result;
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator+: Not same sizes in matrix addition");
@@ -457,7 +440,7 @@ class Matrix2D {
     * A += B;
     * @endcode
     */
-    void operator+=(const Matrix2D<T> &op1) const {
+    void operator += (const Matrix2D<T> &op1) const {
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator+=: Not same sizes in matrix addition");
 
@@ -472,7 +455,7 @@ class Matrix2D {
     * C = A - B;
     * @endcode
     */
-    Matrix2D<T> operator-(const Matrix2D<T> &op1) const {
+    Matrix2D<T> operator - (const Matrix2D<T> &op1) const {
         Matrix2D<T> result;
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator-: Not same sizes in matrix subtraction");
@@ -491,7 +474,7 @@ class Matrix2D {
     * A -= B;
     * @endcode
     */
-    void operator-=(const Matrix2D<T> &op1) const {
+    void operator -= (const Matrix2D<T> &op1) const {
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator-=: Not same sizes in matrix subtraction");
 
@@ -583,8 +566,7 @@ class Matrix2D {
 
     // Load 2D array from numerical recipes result
     void loadFromNumericalRecipes(T **m, int Ydim, int Xdim) {
-        if (mdimx != Xdim || mdimy != Ydim)
-            resize(Ydim, Xdim);
+        resize(Ydim, Xdim);
 
         for (int i = 1; i <= Ydim; i++)
         for (int j = 1; j <= Xdim; j++)
@@ -646,13 +628,11 @@ class Matrix2D {
 
         // Look at shape and copy values
         if (op1.isRow()) {
-            if (mdimy != 1 || mdimx != op1.size())
-                resize(1, op1.size());
+            resize(1, op1.size());
             for (int j = 0; j < op1.size(); j++)
                 at(0, j) = op1[j];
         } else {
-            if (mdimy != 1 || mdimx != op1.size())
-                resize(op1.size(), 1);
+            resize(op1.size(), 1);
             for (int i = 0; i < op1.size(); i++)
                 at(i, 0) = op1[i];
         }
@@ -683,20 +663,16 @@ class Matrix2D {
         // Look at shape and copy values
         if (mdimy == 1) {
             // Row vector
-            if (op1.size() != mdimx)
-                op1.resize(mdimx);
+            op1.resize(mdimx);
 
-            for (int j = 0; j < mdimx; j++)
-                op1[j] = at(0, j);
+            for (int j = 0; j < mdimx; j++) { op1[j] = at(0, j); }
 
             op1.setRow();
         } else {
             // Column vector
-            if (op1.size() != mdimy)
-                op1.resize(mdimy);
+            op1.resize(mdimy);
 
-            for (int i = 0; i < mdimy; i++)
-                op1[i] = at(i, 0);
+            for (int i = 0; i < mdimy; i++) { op1[i] = at(i, 0); }
 
             op1.setCol();
         }
@@ -708,9 +684,8 @@ class Matrix2D {
     }
 
     // Copy stl::vector to matrix
-    void copyFromVector(std::vector<T> &v,int Xdim, int Ydim) {
-        if (mdimx != Xdim || mdimy != Ydim)
-            resize(Ydim, Xdim);
+    void copyFromVector(std::vector<T> &v, int Xdim, int Ydim) {
+        resize(Ydim, Xdim);
         copy(v.begin(), v.begin() + v.size(), mdata);
     }
 
@@ -732,12 +707,10 @@ class Matrix2D {
         }
 
         if (i < 0 || i >= mdimy)
-            REPORT_ERROR("getRow: Matrix subscript (i) greater than matrix dimension");
+            REPORT_ERROR("getRow: index out of matrix bounds");
+            // std::out_of_range ?
 
-        if (v.size() != mdimx)
-            v.resize(mdimx);
-        for (int j = 0; j < mdimx; j++)
-            v[j] = at(i, j);
+        for (int j = 0; j < mdimx; j++) { v[j] = at(i, j); }
 
         v.setRow();
     }
@@ -759,12 +732,10 @@ class Matrix2D {
         }
 
         if (j < 0 || j >= mdimx)
-            REPORT_ERROR("getCol: Matrix subscript (j) greater than matrix dimension");
+            REPORT_ERROR("getCol: index outside matrix bounds");
+            // std::out_of_range() ?
 
-        if (v.size()  != mdimy)
-            v.resize(mdimy);
-        for (int i = 0; i < mdimy; i++)
-            v(i) = at(i, j);
+        for (int i = 0; i < mdimy; i++) { v(i) = at(i, j); }
 
         v.setCol();
     }
@@ -948,7 +919,7 @@ Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
 template<typename T>
 void ludcmp(const Matrix2D<T> &A, Matrix2D<T> &LU, Matrix1D<int> &indx, T &d) {
     LU = A;
-    if (indx.size() != A.mdimx) indx.resize(A.mdimx);
+    indx.resize(A.mdimx);
     ludcmp(
         LU.adaptForNumericalRecipes2(), A.mdimx,
         indx.adaptForNumericalRecipes(), &d
@@ -1087,16 +1058,15 @@ RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::
  * If n >= 0, only the nth volumes will be converted, otherwise all NSIZE volumes.
  */
 template<typename T1, typename T2>
-void typeCast(const Matrix2D<T1>& v1,  Matrix2D<T2>& v2) {
+void typeCast(const Matrix2D<T1> &v1,  Matrix2D<T2> &v2) {
     if (v1.mdim == 0) {
         v2.clear();
         return;
     }
 
-    if (v1.mdimx != v2.mdimx || v1.mdimy != v2.mdimy)
-        v2.resize(v1);
+    v2.resize(v1);
     for (unsigned long int n = 0; n < v1.mdim; n++)
-        v2.mdata[n] = static_cast< T2 > (v1.mdata[n]);
+        v2.mdata[n] = static_cast<T2>(v1.mdata[n]);
 }
 //@}
 //@}
