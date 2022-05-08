@@ -57,21 +57,6 @@
 /** @name Matrices speed up macros */
 //@{
 
-/** For all elements in the array
- *
- * This macro simplifies looping over a matrix's values.
- * It ranges over the matrix's indices and binds them to 'i' and 'j'.
- *
- * @code
- * FOR_ALL_ELEMENTS_IN_MATRIX2D(m) {
- *     std::cout << m(i, j) << " ";
- * }
- * @endcode
- */
-#define FOR_ALL_ELEMENTS_IN_MATRIX2D(m) \
-    for (int i = 0; i < (m).mdimy; i++) \
-        for (int j = 0; j < (m).mdimx; j++)
-
 // Matrix2D class
 template<typename T>
 class Matrix2D {
@@ -211,7 +196,8 @@ class Matrix2D {
             REPORT_ERROR("Submatrix indices out of bounds");
         Matrix2D<T> result(iF - i0 + 1, jF - j0 + 1);
 
-        FOR_ALL_ELEMENTS_IN_MATRIX2D(result)
+        for (int i = 0; i < result.mdimy; i++) 
+        for (int j = 0; j < result.mdimx; j++)
         result.at(i, j) = at(i + i0, j + j0);
 
         *this = result;
@@ -838,8 +824,9 @@ class Matrix2D {
     */
     Matrix2D<T> transpose() const {
         Matrix2D<T> result(mdimx, mdimy);
-        FOR_ALL_ELEMENTS_IN_MATRIX2D(result)
-            result.at(i, j) = at(j, i);
+        for (int i = 0; i < result.mdimy; i++)
+        for (int j = 0; j < result.mdimx; j++)
+        result.at(i, j) = at(j, i);
         return result;
     }
 

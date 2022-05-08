@@ -95,8 +95,9 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
         if (!invertible) return;
 
         // Compute V*W^-1
-        FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
-            v.at(i, j) *= w[j];
+        for (int i = 0; i < v.mdimy; i++)
+        for (int j = 0; j < v.mdimx; j++)
+        v.at(i, j) *= w[j];
 
         // Compute inverse
         for (int i = 0; i < mdimx; i++)
