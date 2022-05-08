@@ -954,8 +954,6 @@ class Matrix2D {
         return result;
     }
 
-    // XXX Why doesn't Matrix2D.inv just return a matrix, rather than modify a pre-existing one?
-
     /** Matrix pseudoinverse
     * https://en.wikipedia.org/wiki/Moore–Penrose_inverse
     *
@@ -967,75 +965,9 @@ class Matrix2D {
     * m1.inv(m1_inv);
     * @endcode
     */
-    void inv(Matrix2D<T> &result) const {
-
-        if (mdimx == 0 || mdimy == 0)
-            REPORT_ERROR("Inverse: Matrix is empty");
-        // Initialise output
-        result.initZeros(mdimx, mdimy);
-
-        if (mdimx == 3 && mdimy == 3) {
-            int a, b, c, d;
-            for (int i = 0; i <= 2; i++) {
-                for (int j = 0; j <= 2; j++) {
-                    a = (j - 1) % 3;
-                    b = (i - 1) % 3;
-                    c = (j + 1) % 3;
-                    d = (i + 1) % 3;
-                    MAT_ELEM(result, i, j) = MAT_ELEM((*this), a, b) * MAT_ELEM((*this), c, d) -
-                                                MAT_ELEM((*this), a, d) * MAT_ELEM((*this), c, b);
-                }
-            }
-            // Multiply first column of `this` with first row of `result`
-            RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM(result, 0, 0) +
-                            MAT_ELEM((*this), 1, 0) * MAT_ELEM(result, 0, 1) +
-                            MAT_ELEM((*this), 2, 0) * MAT_ELEM(result, 0, 2);
-            result /= tmp;
-        } else if (mdimx == 2 && mdimy == 2) {
-            int sign, a, b;
-            for (int i = 0; i <= 1; i++) {
-                for (int j = 0; j <= 1; j++) {
-                    sign = (i + j) % 2 == 0 ? 1 : -1;
-                    a = (j + 1) % 2;  // logical negation
-                    b = (i + 1) % 2;
-                    MAT_ELEM(result, i, j) = sign * MAT_ELEM((*this), a, b);
-                }
-            }
-            RFLOAT tmp = MAT_ELEM((*this), 0, 0) * MAT_ELEM((*this), 1, 1) - MAT_ELEM((*this), 0, 1) * MAT_ELEM((*this), 1, 0);
-            result /= tmp;
-        } else {
-            // Perform SVD
-            Matrix2D<RFLOAT> u, v;
-            Matrix1D<RFLOAT> w;
-            svdcmp(*this, u, w, v); // *this = U * W * V^t
-
-            RFLOAT tol = max() * std::max(mdimx, mdimy) * 1e-14;
-
-            // Compute W^-1
-            bool invertible = false;
-            for (int i = 0; i < w.size(); i++) {
-                if (abs(w[i]) > tol) {
-                    w[i] = 1.0 / w[i];
-                    invertible = true;
-                } else {
-                    w[i] = 0.0;
-                }
-            }
-
-            if (!invertible)
-                return;
-
-            // Compute V*W^-1
-            FOR_ALL_ELEMENTS_IN_MATRIX2D(v)
-                MAT_ELEM(v, i, j) *= w[j];
-
-            // Compute inverse
-            for (int i = 0; i < mdimx; i++)
-            for (int j = 0; j < mdimy; j++)
-            for (int k = 0; k < mdimx; k++)
-            MAT_ELEM(result, i, j) += (T) MAT_ELEM(v, i, k) * MAT_ELEM(u, j, k);
-        }
-    }
+    void inv(Matrix2D<T> &result) const;
+    // Why modify a pre-existing matrix?
+    // Why not just return a new one?
 
     // Matrix inverse
     Matrix2D<T> inv() const {
@@ -1134,41 +1066,9 @@ void svdcmp(
 // Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
 void solve(
-    const Matrix2D<T> &A, const Matrix1D<T>& b,
-    Matrix1D<RFLOAT>& result, RFLOAT tolerance
-) {
-    if (A.mdimx == 0)
-        REPORT_ERROR("Solve: Matrix is empty");
-
-    /*if (A.mdimx != A.mdimy)
-        REPORT_ERROR("Solve: Matrix is not square");*/
-
-    if (A.mdimy != b.vdim)
-        REPORT_ERROR("Solve: Differently sized Matrix and Vector");
-
-    /*if (b.isRow())
-        REPORT_ERROR("Solve: Incorrect vector shape");*/
-
-    // First perform SVD
-    // Xmipp interface that calls to svdcmp of numerical recipes
-    Matrix2D<RFLOAT> u, v;
-    Matrix1D<RFLOAT> w;
-    svdcmp(A, u, w, v);
-
-    // Check if eigenvalues of the SVD are acceptable.
-    // If a value is lower than the tolerance, it is made zero,
-    // to improve the routine's precision.
-    FOR_ALL_ELEMENTS_IN_MATRIX1D(w)
-        if (w[i] < tolerance) { w[i] = 0; }
-
-    // Set size of matrices
-    result.resize(b.vdim);
-
-    // Xmipp interface that calls to svdksb of numerical recipes
-    Matrix1D<RFLOAT> bd;
-    typeCast(b, bd);
-    svbksb(u, w, v, bd, result);
-}
+    const Matrix2D<T> &A, const Matrix1D<T> &b,
+    Matrix1D<RFLOAT> &result, RFLOAT tolerance
+);
 
 // Solve a system of linear equations (Ax=b), where x and b are matrices,
 // by SVD Decomposition (through Gauss-Jordan numerical recipes)

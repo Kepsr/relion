@@ -72,18 +72,6 @@ template <typename T> class Matrix2D;
  */
 //@{
 
-/** For all elements in the array
- * This macro is used to generate loops for the vector in an easy manner. It
- * defines an internal index 'i' which ranges the vector using its mathematical
- * definition (ie, logical access).
- *
- * @code
- * FOR_ALL_ELEMENTS_IN_MATRIX1D(v)
- *     std::cout << v(i) << " ";
- * @endcode
- */
-#define FOR_ALL_ELEMENTS_IN_MATRIX1D(v) for (int i = 0; i < v.vdim; i++)
-
 // Convention: { 0, 1, 2 } <-> { X, Y, Z }
 
 template <typename T>
@@ -743,6 +731,41 @@ class Matrix1D {
      */
     void selfTranspose() { row = !row; }
 
+    struct position {
+
+        /**
+         * This struct allows us to concisely loop over vectors 
+         * with a range-based for.
+         * @code
+         * for (auto &x : v) {
+         *     // do something with or to x
+         * }
+         * @endcode
+         * The struct is meant to mimic a forward iterator.
+         * It is essentially a wrapper around a pointer, 
+         * which can be made to traverse the heap-allocated memory
+         * belonging to our Matrix1D<>.
+         */
+
+        T *ptr;
+
+        position(T *ptr): ptr(ptr) {}
+
+        position& operator ++ () { ptr++; return *this; }
+
+        position operator ++ (int) { position ret = *this; ++(*this); return ret; }
+
+        bool operator == (position other) const { return ptr == other.ptr; }
+
+        bool operator != (position other) const { return ptr != other.ptr; }
+
+        T& operator * () { return *ptr; }
+
+    };
+
+    position begin() { return position(&(*this)[0]); }
+    position end() { return position(&(*this)[size()]); }
+
     /** Sum of vector values.
      *
      * This function returns the sum of all internal values.
@@ -949,9 +972,9 @@ template<typename T>
 void vectorProduct(
     const Matrix1D<T> &v1, const Matrix1D<T> &v2, Matrix1D<T> &result
 ) {
-    result(0) = v1(1) * v2(2) - v1(2) * v2(1);
-    result(1) = v1(2) * v2(0) - v1(0) * v2(2);
-    result(2) = v1(0) * v2(1) - v1(1) * v2(0);
+    result[0] = v1[1] * v2[2] - v1[2] * v2[1];
+    result[1] = v1[2] * v2[0] - v1[0] * v2[2];
+    result[2] = v1[0] * v2[1] - v1[1] * v2[0];
  }
 
 template <typename T>
