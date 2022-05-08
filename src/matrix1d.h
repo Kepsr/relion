@@ -46,7 +46,6 @@
 #define MATRIX1D_H_
 
 #include "src/funcs.h"
-#include "src/filename.h"
 
 extern int bestPrecision(float F, int _width);
 extern std::string floatToString(float F, int _width, int _prec);
