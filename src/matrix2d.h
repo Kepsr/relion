@@ -1013,7 +1013,7 @@ class Matrix2D {
 
             // Compute W^-1
             bool invertible = false;
-            FOR_ALL_ELEMENTS_IN_MATRIX1D(w) {
+            for (int i = 0; i < w.size(); i++) {
                 if (abs(w[i]) > tol) {
                     w[i] = 1.0 / w[i];
                     invertible = true;

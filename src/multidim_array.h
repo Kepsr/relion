@@ -466,6 +466,8 @@ struct Origin {
 
     long int x, y, z;
 
+    Origin(long int x, long int y, long int z): x(x), y(y), z(z) {}
+
     bool operator == (Origin other) {
         return x == other.x && y == other.y && z == other.z;
     }
@@ -503,6 +505,9 @@ class MultidimArray {
         // (x, 1, 1) or (x, y, 1).
 
         long int x, y, z, n;
+
+        Dimensions(long int x, long int y, long int z, long int n):
+        x(x), y(y), z(z), n(n) {}
 
         template <typename T2>
         bool operator == (T2 other) {
@@ -542,7 +547,7 @@ class MultidimArray {
     int mFd;  // Mapped file handler
     long int nzyxdimAlloc;  // Number of elements in NZYX in allocated memory
 
-    void attempt_mmap(T *data, FileName &mapFile, int &mFd, off_t offset) {
+    void attempt_mmap(T **data, FileName &mapFile, int &mFd, off_t offset) {
         mapFile.initRandom(8);
         mapFile = mapFile.addExtension("tmp");
 
@@ -555,7 +560,7 @@ class MultidimArray {
             REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": Error 'stretching' the map file.");
         }
 
-        if ((data = (T*) mmap(0, nzyxdim() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
+        if ((*data = (T*) mmap(0, nzyxdim() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
             REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": mmap failed.");
 
     }
@@ -726,7 +731,7 @@ class MultidimArray {
             REPORT_ERROR("coreAllocate: Cannot allocate a negative number of bytes");
 
         if (mmapOn) {
-            attempt_mmap(data, mapFile, mFd, nzyxdim() * sizeof(T));
+            attempt_mmap(&data, mapFile, mFd, nzyxdim() * sizeof(T));
         } else {
             data = (T*) RELION_ALIGNED_MALLOC(nzyxdim() * sizeof(T));
             if (!data) REPORT_ERROR("Allocate: No space left");
@@ -753,7 +758,7 @@ class MultidimArray {
             REPORT_ERROR("coreAllocateReuse: Cannot allocate a negative number of bytes");
 
         if (mmapOn) {
-            attempt_mmap(data, mapFile, mFd, nzyxdim() * sizeof(T));
+            attempt_mmap(&data, mapFile, mFd, nzyxdim() * sizeof(T));
         } else {
             data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
             if (!data) REPORT_ERROR("Allocate: No space left");
@@ -1018,7 +1023,7 @@ class MultidimArray {
 
         try {
             if (mmapOn) {
-                attempt_mmap(new_data, newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
+                attempt_mmap(&new_data, newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
             } else {
                 new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
             }
@@ -1087,7 +1092,7 @@ class MultidimArray {
 
         try {
             if (mmapOn) {
-                attempt_mmap(new_data, newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
+                attempt_mmap(&new_data, newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
             } else {
                 new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
             }
@@ -1191,11 +1196,11 @@ class MultidimArray {
      * @endcode
      */
     Dimensions getDimensions() const {
-        return { xdim, ydim, zdim, ndim };
+        return Dimensions(xdim, ydim, zdim, ndim);
     }
 
     Origin getOrigin() const {
-        return { xinit, yinit, zinit };
+        return Origin(xinit, yinit, zinit);
     }
 
     long int getSize() const {
@@ -2273,7 +2278,10 @@ class MultidimArray {
         return maxIndex(dum, dum, dum, jmax);
     }
 
-    struct MinMax { RFLOAT min, max; };
+    struct MinMax { 
+        RFLOAT min, max; 
+        MinMax(RFLOAT min, RFLOAT max): min(min), max(max) {}
+    };
 
     /** Minimum and maximum of the values in the array.
      *
@@ -2283,7 +2291,7 @@ class MultidimArray {
 
         RFLOAT min, max;
 
-        if (nzyxdim() <= 0) return { min, max }; // Uninitialised RFLOATs
+        if (nzyxdim() <= 0) return MinMax(min, max); // Uninitialised RFLOATs
 
         T *ptr;
         long int n;
@@ -2293,7 +2301,7 @@ class MultidimArray {
             else if (val < min) { min = static_cast<RFLOAT>(val); }
             else if (val > max) { max = static_cast<RFLOAT>(val); }
         }
-        return { min, max };
+        return MinMax(min, max);
     }
 
     /** Average of the values in the array.
@@ -2553,7 +2561,7 @@ class MultidimArray {
             }
             maskptr++;
         }
-        return { min, max };
+        return MinMax(min, max);
     }
 
     /** Adjust the range of the array to the range of another array in
@@ -3452,8 +3460,8 @@ class MultidimArray {
             type == "above"     ? 3 :
             type == "below"     ? 4 :
             type == "range"     ? 5 :
-                                    0;
-        REPORT_ERROR( static_cast<std::string>("CountThreshold: mode not supported (" + type + ")"));
+                                  0;
+        if (!mode) REPORT_ERROR(static_cast<std::string>("CountThreshold: mode not supported (" + type + ")"));
 
         long int ret = 0;
 

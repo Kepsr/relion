@@ -117,6 +117,9 @@ static std::string writemode2string(WriteMode mode, bool exist) {
         case WRITE_REPLACE:
         return "r+";
 
+        default:
+        throw "Invalid write mode!";
+
     }
 
 }

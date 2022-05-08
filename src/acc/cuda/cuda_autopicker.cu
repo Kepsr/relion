@@ -34,6 +34,7 @@
 
 #include "src/acc/cuda/cuda_autopicker.h"
 
+#undef CTICTOC
 #define CTICTOC(s, block) CTIC(timer, s); block; CTOC(timer, s);
 
 

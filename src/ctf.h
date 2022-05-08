@@ -311,7 +311,7 @@ class CTF {
             SINCOS(gamma, &sinx, &cosx);
         #endif
 
-        return { cosx, is_positive ? sinx : -sinx };
+        return Complex(cosx, is_positive ? sinx : -sinx);
     }
 
     // Compute Deltaf at a given direction (no longer used by getCTF)
