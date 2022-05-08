@@ -1387,7 +1387,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         Matrix2D <RFLOAT> matA(n_obs, n_params);
         Matrix1D <RFLOAT> vecX(n_obs), vecY(n_obs), coeffX(n_params), coeffY(n_params);
         for (int i = 0; i < n_obs; i++) {
-            VEC_ELEM(vecX, i) = patch_xshifts[i]; VEC_ELEM(vecY, i) = patch_yshifts[i];
+            vecX[i] = patch_xshifts[i]; vecY[i] = patch_yshifts[i];
 
             const RFLOAT x = patch_xs[i] / nx - 0.5;
             const RFLOAT y = patch_ys[i] / ny - 0.5;

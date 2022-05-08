@@ -92,13 +92,13 @@ void Localsym_outputOperator(
 
     // Enable bold fonts in Unix OS
     #ifdef __unix__
-    (*o_ptr) << "Angles (rot, tilt, psi) = (" << "\e[1m" << VEC_ELEM(op, AA_POS) << ", " << VEC_ELEM(op, BB_POS) << ", " << VEC_ELEM(op, GG_POS)
-            << "\e[0m" << ") degree(s). Translations (dx, dy, dz) = (" << "\e[1m" << scale_angpix * VEC_ELEM(op, DX_POS) << ", "
-            << scale_angpix * VEC_ELEM(op, DY_POS) << ", " << scale_angpix * VEC_ELEM(op, DZ_POS) << "\e[0m" << ") Angstrom(s)." << std::flush;
+    (*o_ptr) << "Angles (rot, tilt, psi) = (" << "\e[1m" << op[AA_POS] << ", " << op[BB_POS] << ", " << op[GG_POS]
+            << "\e[0m" << ") degree(s). Translations (dx, dy, dz) = (" << "\e[1m" << scale_angpix * op[DX_POS] << ", "
+            << scale_angpix * op[DY_POS] << ", " << scale_angpix * op[DZ_POS] << "\e[0m" << ") Angstrom(s)." << std::flush;
     #else
-    (*o_ptr) << "Angles (rot, tilt, psi) = (" << VEC_ELEM(op, AA_POS) << ", " << VEC_ELEM(op, BB_POS) << ", " << VEC_ELEM(op, GG_POS)
-            << ") degree(s). Translations (dx, dy, dz) = (" << scale_angpix * VEC_ELEM(op, DX_POS) << ", "
-            << scale_angpix * VEC_ELEM(op, DY_POS) << ", " << scale_angpix * VEC_ELEM(op, DZ_POS) << ") Angstrom(s)." << std::flush;
+    (*o_ptr) << "Angles (rot, tilt, psi) = (" << op[AA_POS] << ", " << op[BB_POS] << ", " << op[GG_POS]
+            << ") degree(s). Translations (dx, dy, dz) = (" << scale_angpix * op[DX_POS] << ", "
+            << scale_angpix * op[DY_POS] << ", " << scale_angpix * op[DZ_POS] << ") Angstrom(s)." << std::flush;
     #endif
 }
 
@@ -110,9 +110,9 @@ void Localsym_composeOperator(
 ) {
     op.initZeros(NR_LOCALSYM_PARAMETERS);
 
-    VEC_ELEM(op, AA_POS) = aa; VEC_ELEM(op, BB_POS) = bb; VEC_ELEM(op, GG_POS) = gg;
-    VEC_ELEM(op, DX_POS) = dx; VEC_ELEM(op, DY_POS) = dy; VEC_ELEM(op, DZ_POS) = dz;
-    VEC_ELEM(op, CC_POS) = cc;
+    op[AA_POS] = aa; op[BB_POS] = bb; op[GG_POS] = gg;
+    op[DX_POS] = dx; op[DY_POS] = dy; op[DZ_POS] = dz;
+    op[CC_POS] = cc;
 }
 
 void Localsym_decomposeOperator(
@@ -127,9 +127,9 @@ void Localsym_decomposeOperator(
     if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
 
-    aa = VEC_ELEM(op, AA_POS); bb = VEC_ELEM(op, BB_POS); gg = VEC_ELEM(op, GG_POS);
-    dx = VEC_ELEM(op, DX_POS); dy = VEC_ELEM(op, DY_POS); dz = VEC_ELEM(op, DZ_POS);
-    cc = VEC_ELEM(op, CC_POS);
+    aa = op[AA_POS]; bb = op[BB_POS]; gg = op[GG_POS];
+    dx = op[DX_POS]; dy = op[DY_POS]; dz = op[DZ_POS];
+    cc = op[CC_POS];
 }
 
 void Localsym_scaleTranslations(
@@ -138,9 +138,9 @@ void Localsym_scaleTranslations(
     if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
 
-    VEC_ELEM(op, DX_POS) *= factor;
-    VEC_ELEM(op, DY_POS) *= factor;
-    VEC_ELEM(op, DZ_POS) *= factor;
+    op[DX_POS] *= factor;
+    op[DY_POS] *= factor;
+    op[DZ_POS] *= factor;
 }
 
 void Localsym_shiftTranslations(
@@ -153,9 +153,9 @@ void Localsym_shiftTranslations(
     if (voffset.size() != 3)
         REPORT_ERROR("ERROR: voffset is not a vectorR3!");
 
-    VEC_ELEM(op, DX_POS) += XX(voffset);
-    VEC_ELEM(op, DY_POS) += YY(voffset);
-    VEC_ELEM(op, DZ_POS) += ZZ(voffset);
+    op[DX_POS] += XX(voffset);
+    op[DY_POS] += YY(voffset);
+    op[DZ_POS] += ZZ(voffset);
 }
 
 void Localsym_translations2vector(
@@ -169,9 +169,9 @@ void Localsym_translations2vector(
         REPORT_ERROR("ERROR: Syntax error in input vector!");
 
     trans_vec.initZeros(3);
-    XX(trans_vec) = VEC_ELEM(vec, DX_POS);
-    YY(trans_vec) = VEC_ELEM(vec, DY_POS);
-    ZZ(trans_vec) = VEC_ELEM(vec, DZ_POS);
+    XX(trans_vec) = vec[DX_POS];
+    YY(trans_vec) = vec[DY_POS];
+    ZZ(trans_vec) = vec[DZ_POS];
 
     if (invert == LOCALSYM_OP_DO_INVERT) {
         XX(trans_vec) *= -1.0;
@@ -185,19 +185,17 @@ void Localsym_angles2matrix(
     Matrix2D<RFLOAT> &mat,
     bool invert
 ) {
-    RFLOAT aa = 0.0, bb = 0.0, gg = 0.0;
-
-    mat.clear();
 
     if (vec.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: Syntax error in input vector!");
 
-    aa = VEC_ELEM(vec, AA_POS);
-    bb = VEC_ELEM(vec, BB_POS);
-    gg = VEC_ELEM(vec, GG_POS);
+    RFLOAT aa = 0.0, bb = 0.0, gg = 0.0;
+    aa = vec[AA_POS];
+    bb = vec[BB_POS];
+    gg = vec[GG_POS];
+    mat.clear();
     Euler_angles2matrix(aa, bb, gg, mat);
-    if (invert == LOCALSYM_OP_DO_INVERT)
-        mat = mat.transpose();
+    if (invert == LOCALSYM_OP_DO_INVERT) { mat = mat.transpose(); }
     mat.resize(4, 4);
     MAT_ELEM(mat, 3, 3) = 1.0;
 }
@@ -215,18 +213,18 @@ void Localsym_operator2matrix(
     if (vec.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: Syntax error in input vector!");
 
-    aa = VEC_ELEM(vec, AA_POS);
-    bb = VEC_ELEM(vec, BB_POS);
-    gg = VEC_ELEM(vec, GG_POS);
+    aa = vec[AA_POS];
+    bb = vec[BB_POS];
+    gg = vec[GG_POS];
     Euler_angles2matrix(aa, bb, gg, mat);
 
     if (invert == LOCALSYM_OP_DO_INVERT) {
         mat = mat.transpose();
 
         trans_vec.initZeros(3);
-        XX(trans_vec)= -1.0 * VEC_ELEM(vec, DX_POS);
-        YY(trans_vec)= -1.0 * VEC_ELEM(vec, DY_POS);
-        ZZ(trans_vec)= -1.0 * VEC_ELEM(vec, DZ_POS);
+        XX(trans_vec)= -1.0 * vec[DX_POS];
+        YY(trans_vec)= -1.0 * vec[DY_POS];
+        ZZ(trans_vec)= -1.0 * vec[DZ_POS];
 
         trans_vec = mat * trans_vec;
 
@@ -236,9 +234,9 @@ void Localsym_operator2matrix(
         MAT_ELEM(mat, 2, 3) = ZZ(trans_vec);
     } else {
         mat.resize(4, 4);
-        MAT_ELEM(mat, 0, 3) = VEC_ELEM(vec, DX_POS);
-        MAT_ELEM(mat, 1, 3) = VEC_ELEM(vec, DY_POS);
-        MAT_ELEM(mat, 2, 3) = VEC_ELEM(vec, DZ_POS);
+        MAT_ELEM(mat, 0, 3) = vec[DX_POS];
+        MAT_ELEM(mat, 1, 3) = vec[DY_POS];
+        MAT_ELEM(mat, 2, 3) = vec[DZ_POS];
     }
 
     MAT_ELEM(mat, 3, 3) = 1.0;
@@ -619,15 +617,15 @@ void writeRelionFormatMasksAndOperators(
     for (int imask = 0; imask < fn_mask_list.size(); imask++) {
         if (ops[imask].size() < 1)
             REPORT_ERROR("ERROR: no operators for mask: " + fn_mask_list[imask]);
-        for (int iop = 0; iop < ops[imask].size(); iop++) {
+        for (auto &op : ops[imask]) {
             MD.addObject();
             MD.setValue(EMDL::MASK_NAME, fn_mask_list[imask]);
-            MD.setValue(EMDL::ORIENT_ROT, VEC_ELEM(ops[imask][iop], AA_POS));
-            MD.setValue(EMDL::ORIENT_TILT, VEC_ELEM(ops[imask][iop], BB_POS));
-            MD.setValue(EMDL::ORIENT_PSI, VEC_ELEM(ops[imask][iop], GG_POS));
-            MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * VEC_ELEM(ops[imask][iop], DX_POS));
-            MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * VEC_ELEM(ops[imask][iop], DY_POS));
-            MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * VEC_ELEM(ops[imask][iop], DZ_POS));
+            MD.setValue(EMDL::ORIENT_ROT,                        op[AA_POS]);
+            MD.setValue(EMDL::ORIENT_TILT,                       op[BB_POS]);
+            MD.setValue(EMDL::ORIENT_PSI,                        op[GG_POS]);
+            MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * op[DX_POS]);
+            MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * op[DY_POS]);
+            MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * op[DZ_POS]);
         }
     }
     MD.write(fn_info);
@@ -656,18 +654,18 @@ void writeRelionFormatLocalSearchOperatorResults(
     MD.addLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
     MD.addLabel(EMDL::IMAGE_WEIGHT);
 
-    for (int iop = 0; iop < op_samplings.size(); iop++) {
-        if (op_samplings[iop].size() != NR_LOCALSYM_PARAMETERS)
+    for (auto &op : op_samplings) {
+        if (op.size() != NR_LOCALSYM_PARAMETERS)
             REPORT_ERROR("ERROR: syntax errors in results!");
 
         MD.addObject();
-        MD.setValue(EMDL::ORIENT_ROT, VEC_ELEM(op_samplings[iop], AA_POS));
-        MD.setValue(EMDL::ORIENT_TILT, VEC_ELEM(op_samplings[iop], BB_POS));
-        MD.setValue(EMDL::ORIENT_PSI, VEC_ELEM(op_samplings[iop], GG_POS));
-        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * VEC_ELEM(op_samplings[iop], DX_POS));
-        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * VEC_ELEM(op_samplings[iop], DY_POS));
-        MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * VEC_ELEM(op_samplings[iop], DZ_POS));
-        MD.setValue(EMDL::IMAGE_WEIGHT, VEC_ELEM(op_samplings[iop], CC_POS));
+        MD.setValue(EMDL::ORIENT_ROT,                        op[AA_POS]);
+        MD.setValue(EMDL::ORIENT_TILT,                       op[BB_POS]);
+        MD.setValue(EMDL::ORIENT_PSI,                        op[GG_POS]);
+        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * op[DX_POS]);
+        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * op[DY_POS]);
+        MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * op[DZ_POS]);
+        MD.setValue(EMDL::IMAGE_WEIGHT,                      op[CC_POS]);
     }
     MD.write(fn_out);
 }
@@ -925,11 +923,11 @@ void readDMFormatMasksAndOperators(FileName fn_info,
 
     #ifdef DEBUG
     for (int imask = 0; imask < fn_mask_list.size(); imask++) {
-        std::cout << " * Mask #" << (imask + 1) << " = " << fn_mask_list[imask] << std::endl;
+        std::cout << " * Mask #" << imask + 1 << " = " << fn_mask_list[imask] << std::endl;
         for (int iop = 0; iop < op_list[imask].size(); iop++) {
-            std::cout << "   --> Operator #" << (iop + 1) << " = "
-            << VEC_ELEM(op_list[imask][iop], AA_POS) << ", " << VEC_ELEM(op_list[imask][iop], BB_POS) << ", " << VEC_ELEM(op_list[imask][iop], GG_POS) << "; "
-            << VEC_ELEM(op_list[imask][iop], DX_POS) << ", " << VEC_ELEM(op_list[imask][iop], DY_POS) << ", " << VEC_ELEM(op_list[imask][iop], DZ_POS) << std::endl;
+            std::cout << "   --> Operator #" << iop + 1 << " = "
+            << op_list[imask][iop][AA_POS] << ", " << op_list[imask][iop][BB_POS] << ", " << op_list[imask][iop][GG_POS] << "; "
+            << op_list[imask][iop][DX_POS] << ", " << op_list[imask][iop][DY_POS] << ", " << op_list[imask][iop][DZ_POS] << std::endl;
         }
     }
     #endif
@@ -937,8 +935,8 @@ void readDMFormatMasksAndOperators(FileName fn_info,
 
 void writeDMFormatMasksAndOperators(
     FileName fn_info,
-    const std::vector<FileName>& fn_mask_list,
-    const std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
+    const std::vector<FileName> &fn_mask_list,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
     RFLOAT angpix
 ) {
     if (fn_info.getExtension() == "star")
@@ -958,33 +956,31 @@ void writeDMFormatMasksAndOperators(
     }
 
     int str_w = 15;
-    std::ofstream fout;
-    fout.open(fn_info.c_str(), std::ios::out);
+    std::ofstream fout(fn_info.c_str(), std::ios::out);
     if (!fout)
         REPORT_ERROR("ERROR: Cannot write to file: " + fn_info);
     for (int imask = 0; imask < fn_mask_list.size(); imask++) {
         fout << std::endl << str_mask_filename << " " << fn_mask_list[imask] << std::endl;
         for (int iop = 0; iop < ops[imask].size(); iop++) {
             fout << " ROTA EULER " << std::setiosflags(std::ios::fixed)
-                 << std::setw(str_w) << VEC_ELEM(ops[imask][iop], AA_POS) << " "
-                 << std::setw(str_w) << VEC_ELEM(ops[imask][iop], BB_POS) << " "
-                 << std::setw(str_w) << VEC_ELEM(ops[imask][iop], GG_POS)
+                 << std::setw(str_w) << ops[imask][iop][AA_POS] << " "
+                 << std::setw(str_w) << ops[imask][iop][BB_POS] << " "
+                 << std::setw(str_w) << ops[imask][iop][GG_POS]
                  << std::resetiosflags(std::ios::fixed) << std::endl;
             fout << "       TRAN " << std::setiosflags(std::ios::fixed)
-                 << std::setw(str_w) << angpix * VEC_ELEM(ops[imask][iop], DX_POS) << " "
-                 << std::setw(str_w) << angpix * VEC_ELEM(ops[imask][iop], DY_POS) << " "
-                 << std::setw(str_w) << angpix * VEC_ELEM(ops[imask][iop], DZ_POS)
+                 << std::setw(str_w) << angpix * ops[imask][iop][DX_POS] << " "
+                 << std::setw(str_w) << angpix * ops[imask][iop][DY_POS] << " "
+                 << std::setw(str_w) << angpix * ops[imask][iop][DZ_POS]
                  << std::resetiosflags(std::ios::fixed) << std::endl;
         }
     }
-    fout.close();
 }
 
 void duplicateLocalSymmetry(
     MultidimArray<RFLOAT> &out_map,
     const MultidimArray<RFLOAT> &ori_map,
     const std::vector<FileName> fn_masks,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > > ops,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
     bool duplicate_masks_only
 ) {
     Image<RFLOAT> mask;
@@ -1294,7 +1290,7 @@ void getMinCropSize(
 }
 
 bool compareOperatorsByCC(const Matrix1D<RFLOAT> &lhs, const Matrix1D<RFLOAT> &rhs) {
-    return VEC_ELEM(lhs, CC_POS) < VEC_ELEM(rhs, CC_POS);
+    return lhs[CC_POS] < rhs[CC_POS];
 }
 
 void getLocalSearchOperatorSamplings(
@@ -1633,7 +1629,7 @@ void calculateOperatorCC(
             //cc += val * val;
             cc += mask_val * val * val; // weighted by mask value ?
         }
-        VEC_ELEM(op, CC_POS) = sqrt(cc / mask_val_sum);
+        op[CC_POS] = sqrt(cc / mask_val_sum);
 
         if (verb) {
             if (updatebar > barstep) {
@@ -1865,11 +1861,11 @@ void separateMasksKMeans(
         cen_ptr = (long int)(rnd_unif(RFLOAT(ii), RFLOAT(vec_len_max)));
         cen_ptr = (cen_ptr < ii) ? (ii) : (cen_ptr);
         cen_ptr = (cen_ptr > vec_len_max) ? (vec_len_max) : (cen_ptr);
-        if (VEC_ELEM(vec, cen_ptr) != 0)
-            vec_rec.push_back(q * VEC_ELEM(vec, cen_ptr));
+        if (vec[cen_ptr] != 0)
+            vec_rec.push_back(q * vec[cen_ptr]);
         else
             vec_rec.push_back(q * cen_ptr);
-        VEC_ELEM(vec, cen_ptr) = ii;
+        vec[cen_ptr] = ii;
     }
 #ifdef DEBUG
     std::cout << " " << vec_rec.size() << " voxel IDs in total: " << std::flush;

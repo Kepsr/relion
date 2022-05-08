@@ -143,130 +143,6 @@ Matrix1D<T> VECTOR_R3(T x, T y, T z) {
     return v;
 }
 
-/** Adding two R2 vectors (a=b+c)
- * @code
- * MultidimArray< RFLOAT > a(2), b(2), c(2);
- * ...;
- * V2_PLUS_V2(a, b, c);
- * @endcode
- */
-#define V2_PLUS_V2(a, b, c) { \
-    XX(a) = XX(b) + XX(c); \
-    YY(a) = YY(b) + YY(c); \
-}
-
-/** Substracting two R2 vectors (a=b-c)
- * @code
- * MultidimArray< RFLOAT > a(2), b(2), c(2);
- * ...;
- * V2_MINUS_V2(a, b, c);
- * @endcode
- */
-#define V2_MINUS_V2(a, b, c) { \
-        XX(a) = XX(b) - XX(c); \
-        YY(a) = YY(b) - YY(c); }
-
-/** Adding/substracting a constant to a R2 vector (a=b-k).
- * @code
- * MultidimArray< RFLOAT > a(2), b(2);
- * RFLOAT k;
- * ...;
- * V2_PLUS_CT(a, b, k);
- *
- * MultidimArray< RFLOAT > a(2), b(2);
- * RFLOAT k;
- * ...;
- * V2_PLUS_CT(a, b, -k);
- * @endcode
- */
-#define V2_PLUS_CT(a, b, k) { \
-        XX(a) = XX(b) + (k); \
-        YY(a) = YY(b) + (k); }
-
-/** Multiplying/dividing by a constant a R2 vector (a=b*k)
- * @code
- * MultidimArray< RFLOAT > a(2), b(2);
- * RFLOAT k;
- * ...;
- * V2_BY_CT(a, b, k);
- *
- * MultidimArray< RFLOAT > a(2), b(2);
- * RFLOAT k;
- * ...;
- * V2_BY_CT(a, b, 1/k);
- * @endcode
- */
-#define V2_BY_CT(a, b, k) { \
-        XX(a) = XX(b) * (k); \
-        YY(a) = YY(b) * (k); }
-
-/** Adding two R3 vectors (a = b + c)
- * @code
- * MultidimArray<RFLOAT> a(3), b(3), c(3);
- * ...;
- * V3_PLUS_V3(a, b, c);
- * @endcode
- */
-#define V3_PLUS_V3(a, b, c) { \
-    XX(a) = XX(b) + XX(c); \
-    YY(a) = YY(b) + YY(c); \
-    ZZ(a) = ZZ(b) + ZZ(c); \
-}
-
-/** Substracting two R3 vectors (a=b-c)
- * @code
- * MultidimArray< RFLOAT > a(3), b(3), c(3);
- * ...;
- * V3_MINUS_V3(a, b, c);
- * @endcode
- */
-#define V3_MINUS_V3(a, b, c) { \
-    XX(a) = XX(b) - XX(c); \
-    YY(a) = YY(b) - YY(c); \
-    ZZ(a) = ZZ(b) - ZZ(c); \
-}
-
-/** Adding/substracting a constant to a R3 vector (a=b-k)
- * @code
- * MultidimArray< RFLOAT > a(3), b(3);
- * RFLOAT k;
- * ...;
- * V3_PLUS_CT(a, b, k);
- *
- * MultidimArray< RFLOAT > a(3), b(3);
- * RFLOAT k;
- * ...;
- * V3_PLUS_CT(a, b, -k);
- * @endcode
- */
-#define V3_PLUS_CT(a, b, c) { \
-        XX(a) = XX(b) + (c); \
-        YY(a) = YY(b) + (c); \
-        ZZ(a) = ZZ(b) + (c); }
-
-/** Multiplying/dividing by a constant a R3 vector (a=b*k)
- * @code
- * MultidimArray< RFLOAT > a(3), b(3);
- * RFLOAT k;
- * ...;
- * V3_BY_CT(a, b, k);
- *
- * MultidimArray< RFLOAT > a(3), b(3);
- * RFLOAT k;
- * ...;
- * V3_BY_CT(a, b, 1/k);
- * @endcode
- */
-#define V3_BY_CT(a, b, c) { \
-        XX(a) = XX(b) * (c); \
-        YY(a) = YY(b) * (c); \
-        ZZ(a) = ZZ(b) * (c); }
-
-/** Direct access to vector element
- */
-#define VEC_ELEM(v,i) ((v).vdata[(i)])
-//@}
-
 /** Matrix1D class.*/
 template<typename T>
 class Matrix1D {
@@ -279,7 +155,8 @@ class Matrix1D {
     /// Number of elements
     int vdim;
 
-    /// <0=column vector (default), 1=row vector
+    /// false: column vector (default)
+    /// true: row vector
     bool row;
 
     /// @name Constructors
