@@ -47,30 +47,26 @@
 
 /* Rotation 2D ------------------------------------------------------------- */
 void rotation2DMatrix(RFLOAT ang, Matrix2D<RFLOAT> &result, bool homogeneous) {
-    RFLOAT cosine, sine;
-
-    ang = radians(ang);
-    cosine = cos(ang);
-    sine = sin(ang);
 
     if (homogeneous) {
-        if (MAT_XSIZE(result) != 3 || MAT_YSIZE(result) != 3)
-            result.resize(3, 3);
+        result.resize(3, 3);
         result.at(0, 2) = 0;
         result.at(1, 2) = 0;
         result.at(2, 0) = 0;
         result.at(2, 1) = 0;
         result.at(2, 2) = 1;
     } else {
-        if (MAT_XSIZE(result) != 2 || MAT_YSIZE(result) != 2)
-            result.resize(2, 2);
+        result.resize(2, 2);
     }
 
-    result.at(0, 0) = cosine;
-    result.at(0, 1) = -sine;
+    ang = radians(ang);  // Why don't we just get passed angles in radians?
+    RFLOAT cosang = cos(ang);
+    RFLOAT sinang = sin(ang);
 
-    result.at(1, 0) = sine;
-    result.at(1, 1) = cosine;
+    result.at(0, 0) =  cosang;
+    result.at(0, 1) = -sinang;
+    result.at(1, 0) = sinang;
+    result.at(1, 1) = cosang;
 }
 
 /* Translation 2D ---------------------------------------------------------- */

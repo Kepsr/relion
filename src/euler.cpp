@@ -146,8 +146,8 @@ void Euler_matrix2angles(
     RFLOAT &alpha, RFLOAT &beta, RFLOAT &gamma
 ) {
 
-    if (MAT_XSIZE(A) != 3 || MAT_YSIZE(A) != 3)
-        REPORT_ERROR( "Euler_matrix2angles: The Euler matrix is not 3x3");
+    if (A.mdimx != 3 || A.mdimy != 3)
+        REPORT_ERROR("Euler_matrix2angles: The Euler matrix is not 3×3");
 
     RFLOAT abs_sb = sqrt(A(0, 2) * A(0, 2) + A(1, 2) * A(1, 2));
     RFLOAT sign_sb;

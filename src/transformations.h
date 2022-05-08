@@ -256,11 +256,11 @@ void applyGeometry(
     if (&V1 == &V2)
         REPORT_ERROR("ApplyGeometry: Input array cannot be the same as output array");
 
-    if (V1.getDim() == 2 && (MAT_XSIZE(A) != 3 || MAT_YSIZE(A) != 3))
-        REPORT_ERROR("ApplyGeometry: 2D transformation matrix is not 3x3");
+    if (V1.getDim() == 2 && (A.mdimx != 3 || A.mdimy != 3))
+        REPORT_ERROR("ApplyGeometry: 2D transformation matrix is not 3×3");
 
-    if (V1.getDim() == 3 && (MAT_XSIZE(A) != 4 || MAT_YSIZE(A) != 4))
-        REPORT_ERROR("ApplyGeometry: 3D transformation matrix is not 4x4");
+    if (V1.getDim() == 3 && (A.mdimx != 4 || A.mdimy != 4))
+        REPORT_ERROR("ApplyGeometry: 3D transformation matrix is not 4×4");
 
     if (A.isIdentity()) {
         V2 = V1;

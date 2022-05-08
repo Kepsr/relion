@@ -255,7 +255,7 @@ class SymList {
            }
         @endcode */
     int SymsNo() const {
-        return MAT_YSIZE(__L) / 4;
+        return __L.mdimy / 4;
     }
 
     /** Number of symmetry matrices which generated the structure.

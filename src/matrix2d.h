@@ -72,12 +72,6 @@
     for (int i = 0; i < (m).mdimy; i++) \
         for (int j = 0; j < (m).mdimx; j++)
 
-// X dimension of the matrix
-#define MAT_XSIZE(m) ((m).mdimx)
-
-// Y dimension of the matrix
-#define MAT_YSIZE(m) ((m).mdimy)
-
 // Matrix2D class
 template<typename T>
 class Matrix2D {
@@ -213,7 +207,7 @@ class Matrix2D {
 
     // Extract submatrix and assign to this object
     void submatrix(int i0, int j0, int iF, int jF) {
-        if (i0 < 0 || j0 < 0 || iF >= MAT_YSIZE(*this) || jF >= MAT_XSIZE(*this))
+        if (i0 < 0 || j0 < 0 || iF >= mdimy || jF >= mdimx)
             REPORT_ERROR("Submatrix indices out of bounds");
         Matrix2D<T> result(iF - i0 + 1, jF - j0 + 1);
 
@@ -306,7 +300,7 @@ class Matrix2D {
     * @endcode
     */
     void initIdentity() {
-        initIdentity(MAT_XSIZE(*this));
+        initIdentity(mdimx);
     }
 
     /** 2D Identity matrix of a given size
@@ -896,15 +890,15 @@ class Matrix2D {
 template<typename T>
 Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
 
-    if (this->size() != MAT_YSIZE(M))
+    if (size() != M.mdimy)
         REPORT_ERROR("Not compatible sizes in matrix by vector");
 
     if (!isRow())
         REPORT_ERROR("Vector is not a row");
 
-    Matrix1D<T> result = Matrix1D<T>::zeros(MAT_XSIZE(M));
-    for (int j = 0; j < MAT_XSIZE(M); j++)
-    for (int i = 0; i < MAT_YSIZE(M); i++)
+    Matrix1D<T> result = Matrix1D<T>::zeros(M.mdimx);
+    for (int j = 0; j < M.mdimx; j++)
+    for (int i = 0; i < M.mdimy; i++)
     result[j] += (*this)[i] * M.at(i, j);
 
     result.setRow();

@@ -193,13 +193,13 @@ void SymList::add_matrices(
 ) {
 
     if (
-        MAT_XSIZE(L) != 4 || MAT_YSIZE(L) != 4 || 
-        MAT_XSIZE(R) != 4 || MAT_YSIZE(R) != 4
-    ) REPORT_ERROR( "SymList::add_matrix: Transformation matrix is not 4x4");
+        L.mdimx != 4 || L.mdimy != 4 || 
+        R.mdimx != 4 || R.mdimy != 4
+    ) REPORT_ERROR( "SymList::add_matrix: Transformation matrix is not 4×4");
 
     if (TrueSymsNo() == SymsNo()) {
-        __L.resize(MAT_YSIZE(__L) + 4, 4);
-        __R.resize(MAT_YSIZE(__R) + 4, 4);
+        __L.resize(__L.mdimy + 4, 4);
+        __R.resize(__R.mdimy + 4, 4);
         __chain_length.resize(__chain_length.size() + 1);
     }
 
@@ -214,7 +214,7 @@ bool found_not_tried(
 ) {
     i = j = 0;
     int n = 0;
-    while (n != MAT_YSIZE(tried)) {
+    while (n != tried.mdimy) {
         if (tried(i, j) == 0 && !(i >= true_symNo && j >= true_symNo))
             return true;
         if (i != n) {
@@ -275,7 +275,7 @@ void SymList::compute_subgroup() {
             newR.setSmallValuesToZero();
             newL.setSmallValuesToZero();
             add_matrices(newL, newR, new_chain_length);
-            tried.resize(MAT_YSIZE(tried) + 1, MAT_XSIZE(tried) + 1);
+            tried.resize(tried.mdimy + 1, tried.mdimx + 1);
         }
     }
 }
