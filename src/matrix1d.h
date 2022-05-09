@@ -958,22 +958,7 @@ void vectorProduct(
     result[0] = v1[1] * v2[2] - v1[2] * v2[1];
     result[1] = v1[2] * v2[0] - v1[0] * v2[2];
     result[2] = v1[0] * v2[1] - v1[1] * v2[0];
- }
-
-template <typename T>
-struct LesserGreater {
-
-    T lesser, greater;
-
-    LesserGreater(T x, T y) {
-        if (x > y) {
-            greater = x; lesser = y;
-        } else {
-            greater = y; lesser = x;
-        }
-    }
-
-};
+}
 
 /** Sort two vectors.
   * v1 and v2 must be of the same shape, if not an exception is thrown. After
@@ -991,12 +976,13 @@ void sortTwoVectors(Matrix1D<T> &v1, Matrix1D<T> &v2) {
     if (!v1.sameShape(v2))
         REPORT_ERROR("sortTwoVectors: vectors are not of the same shape");
 
+    // For two vectors v1 and v2, both of size N,
+    // for all i in the interval [0, N),
+    // v1[i] <= v2[i]
     for (int i = 0; i < v1.size(); i++) {
-        LesserGreater<T> lg (v1[i], v2[i]);
-        v1[i] = lg.lesser;
-        v2[i] = lg.greater;
+        if (v1[i] > v2[i]) { std::swap(v1[i], v2[i]); }
     }
- }
+}
 
 /** Conversion from one type to another.
   * If we have an integer array and we need a RFLOAT one, we can use this
