@@ -4775,7 +4775,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             #endif
         }
 
-        my_old_offset.selfROUND();
+        for (auto &x : my_old_offset) { x = round(x); }
         selfTranslate(img(), my_old_offset, DONT_WRAP);
         if (has_converged && do_use_reconstruct_images) {
             selfTranslate(rec_img(), my_old_offset, DONT_WRAP);
@@ -5113,7 +5113,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     // This will have made other_projected_com of size 3 again! resize to mymodel.data_dim
                     other_projected_com.resize(mymodel.data_dim);
 
-                    // Do the exact same as was done for the ibody, but DONT selfROUND here, as later phaseShift applied to ibody below!!!
+                    // Do the exact same as was done for the ibody, but DONT round here, as later phaseShift applied to ibody below!!!
                     other_projected_com -= my_old_offset_ori;
 
                     #ifdef DEBUG_BODIES

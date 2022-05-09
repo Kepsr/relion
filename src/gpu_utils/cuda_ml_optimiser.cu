@@ -243,7 +243,7 @@ void getFourierTransformsAndCtfs(
          */
 
         // Apply (rounded) old offsets first
-        my_old_offset.selfROUND();
+        for (auto &x : my_old_offset) { x = round(x); }
 
         int img_size = img.data.nzyxdim();
         CudaGlobalPtr<XFLOAT> d_img(img_size,0,cudaMLO->devBundle->allocator);
@@ -302,7 +302,7 @@ void getFourierTransformsAndCtfs(
             transformCartesianAndHelicalCoords(my_old_offset_helix_coords, my_old_offset, rot_deg, tilt_deg, psi_deg, HELICAL_TO_CART_COORDS);
         }
 
-        my_old_offset.selfROUND();
+        for (auto &x : my_old_offset) { x = round(x); }  // NVCC will probably fail to parse this
         CTICTOC(cudaMLO->timer, "kernel_translate", ({
         if (cudaMLO->dataIs3D) {
             cuda_kernel_translate3D<<<STBsize, BLOCK_SIZE>>>(

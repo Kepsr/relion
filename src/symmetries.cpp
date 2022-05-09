@@ -117,12 +117,10 @@ int SymList::read_sym_file(FileName fn_sym) {
         if (strcmp(token, "rot_axis") == 0) {
             token = nextToken();
             int fold = textToInteger(token);
-            token = nextToken();
-            XX(axis) = textToDouble(token);
-            token = nextToken();
-            YY(axis) = textToDouble(token);
-            token = nextToken();
-            ZZ(axis) = textToDouble(token);
+            for (int i = 0; i < 3; i++) {
+                token = nextToken();
+                axis[i] = textToDouble(token);
+            }
             RFLOAT ang_incr = 360.0 / fold;
             RFLOAT rot_ang;
             L.initIdentity();

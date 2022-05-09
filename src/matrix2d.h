@@ -209,8 +209,8 @@ class Matrix2D {
     * than the argument
     */
     template <typename T1>
-    bool sameShape(const Matrix2D<T1> &op) const {
-        return mdimx == op.mdimx && mdimy == op.mdimy;
+    bool sameShape(const Matrix2D<T1> &other) const {
+        return mdimx == other.mdimx && mdimy == other.mdimy;
     }
 
     // X dimension
@@ -224,6 +224,7 @@ class Matrix2D {
     //@{
     /** Same value in all components.
     *
+    * @warning Dead code
     * The constant must be of a type compatible with the array type, ie,
     * you cannot  assign a RFLOAT to an integer array without a casting.
     * It is not an error if the array is empty, then nothing is done.
@@ -252,7 +253,7 @@ class Matrix2D {
     // Initialise to zeros with a given size
     void initZeros(int Ydim, int Xdim) {
         resize(Ydim, Xdim);
-        memset(mdata, 0, mdimx * mdimy * sizeof(T));
+        initZeros();
     }
 
     static Matrix2D<T> zeros(int Ydim, int Xdim) {
@@ -273,7 +274,7 @@ class Matrix2D {
     template <typename T1>
     void initZeros(const Matrix2D<T1> &op) {
         resize(op);
-        memset(mdata, 0, mdimx * mdimy * sizeof(T));
+        initZeros();
     }
 
     /** 2D Identity matrix of current size
@@ -357,7 +358,6 @@ class Matrix2D {
     * @endcode
     */
     Matrix1D<T> operator * (const Matrix1D<T> &op1) const {
-        Matrix1D<T> result;
 
         if (mdimx != op1.size()) {
             std::cerr << " mdimx= " << mdimx << " opp1.size()= " << op1.size() << std::endl;
@@ -367,7 +367,7 @@ class Matrix2D {
         if (!op1.isCol())
             REPORT_ERROR("Vector is not a column");
 
-        result.initZeros(mdimy);
+        Matrix1D<T> result = Matrix1D<T>::zeros(mdimy);
 
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < op1.size(); j++)
@@ -402,11 +402,10 @@ class Matrix2D {
     * @endcode
     */
     Matrix2D<T> operator + (const Matrix2D<T> &op1) const {
-        Matrix2D<T> result;
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator+: Not same sizes in matrix addition");
 
-        result.initZeros(mdimy, mdimx);
+        Matrix2D<T> result = Matrix2D<T>::zeros(mdimy, mdimx);
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
         result(i, j) = (*this)(i, j) + op1(i, j);
@@ -436,11 +435,10 @@ class Matrix2D {
     * @endcode
     */
     Matrix2D<T> operator - (const Matrix2D<T> &op1) const {
-        Matrix2D<T> result;
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator-: Not same sizes in matrix subtraction");
 
-        result.initZeros(mdimy, mdimx);
+        Matrix2D<T> result = Matrix2D<T>::zeros(mdimy, mdimx);
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
         result(i, j) = (*this)(i, j) - op1(i, j);
@@ -485,36 +483,20 @@ class Matrix2D {
     /// @name Utilities for Matrix2D
     //@{
     // Set very small values (abs(val) < accuracy) equal to zero
-    void setSmallValuesToZero(RFLOAT accuracy = Xmipp::epsilon) {
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++)
-        if (abs((*this)(i, j)) < accuracy) { (*this)(i, j) = 0.0; }
-    }
+    void setSmallValuesToZero(RFLOAT accuracy = Xmipp::epsilon);
+
+    inline T* begin() const { return &mdata[0]; }
+
+    inline T* end() const { return &mdata[mdim]; }
 
     /// @name Utilities for Matrix2D
     //@{
 
     // Greatest value in an array
-    T max() const {
-        if (mdim <= 0) return static_cast<T>(0);
-
-        T maxval = mdata[0];
-        for (int n = 0; n < mdim; n++)
-        if (mdata[n] > maxval) { maxval = mdata[n]; }
-
-        return maxval;
-    }
+    T max() const;
 
     // Least value in an array
-    T min() const {
-        if (mdim <= 0) return static_cast<T>(0);
-
-        T minval = mdata[0];
-        for (int n = 0; n < mdim; n++)
-        if (mdata[n] < minval) { minval = mdata[n]; }
-
-        return minval;
-    }
+    T min() const;
 
     /** Produce a 2D array suitable for working with Numerical Recipes
     *

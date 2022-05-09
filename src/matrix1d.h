@@ -382,6 +382,7 @@ class Matrix1D {
     /// @name Initialization of Matrix1D values
     //@{
     /** Same value in all components.
+     * @warning Used only once in symmetries.cpp
      *
      * The constant must be of a type compatible with the array type, ie,
      * you cannot assign a RFLOAT to an integer array without a casting.
@@ -653,30 +654,6 @@ class Matrix1D {
         // Do nothing
     }
 
-    /** CEILING
-     *
-     * Round each array element up.
-     */
-    void selfCEIL() {
-        for (int i = 0; i < size(); i++) { (*this)[i] = ceil((*this)[i]); }
-    }
-
-    /** FLOOR
-     *
-     * Round each array element down.
-     */
-    void selfFLOOR() {
-        for (int i = 0; i < size(); i++) { (*this)[i] = floor((*this)[i]); }
-    }
-
-    /** ROUND
-     *
-     * Round each array element.
-     */
-    void selfROUND() {
-        for (int i = 0; i < size(); i++) { (*this)[i] = round((*this)[i]); }
-    }
-
     /** Index for the maximum element.
      *
      * This function returns the index of the maximum element of an matrix1d.
@@ -764,6 +741,13 @@ class Matrix1D {
 
     position begin() { return position(&(*this)[0]); }
     position end() { return position(&(*this)[size()]); }
+
+    /**
+     * @code
+     * for (auto &x : *this) { x = ceil(x); }
+     * @endcode
+     * 
+     */
 
     /** Sum of vector values.
      *

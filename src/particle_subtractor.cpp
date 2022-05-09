@@ -471,7 +471,7 @@ void ParticleSubtractor::subtractOneParticle(
         my_old_offset -= my_projected_com;
         my_residual_offset = my_old_offset;
         // Apply the old_offset (rounded to avoid interpolation errors)
-        my_old_offset.selfROUND();
+        for (auto &x : my_old_offset) { x = round(x); }
         selfTranslate(img(), my_old_offset, WRAP);
         // keep track of the differences between the rounded and the original offsets
         my_residual_offset -= my_old_offset;
@@ -674,7 +674,7 @@ void ParticleSubtractor::subtractOneParticle(
         if (do_center || opt.fn_body_masks != "None") {
             // Recenter the particles
             centering_offset = my_residual_offset;
-            centering_offset.selfROUND();
+            for (auto &x : centering_offset) { x = round(x); }
             my_residual_offset -= centering_offset;
             selfTranslate(img(), centering_offset, WRAP);
 

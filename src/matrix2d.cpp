@@ -37,6 +37,30 @@ void svbksb(
     );
 }
 
+template <typename T>
+void Matrix2D<T>::setSmallValuesToZero(RFLOAT accuracy) {
+    for (auto &x : *this)
+    if (abs(x) < accuracy) { x = 0.0; }
+}
+
+template <typename T>
+T Matrix2D<T>::max() const {
+    if (mdim <= 0) return static_cast<T>(0);
+
+    T maxval = mdata[0];
+    for (auto &x : *this) if (x > maxval) { maxval = x; }
+    return maxval;
+}
+
+template <typename T>
+T Matrix2D<T>::min() const {
+    if (mdim <= 0) return static_cast<T>(0);
+
+    T minval = mdata[0];
+    for (auto &x : *this) if (x < minval) { minval = x; }
+    return minval;
+}
+
 template<typename T>
 void Matrix2D<T>::inv(Matrix2D<T> &result) const {
 
@@ -47,14 +71,13 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
 
     if (mdimx == 3 && mdimy == 3) {
         int a, b, c, d;
-        for (int i = 0; i <= 2; i++) {
-            for (int j = 0; j <= 2; j++) {
+        for (int i = 0; i <= 2; i++)
+        for (int j = 0; j <= 2; j++) {
                 a = (j - 1) % 3;
                 b = (i - 1) % 3;
                 c = (j + 1) % 3;
                 d = (i + 1) % 3;
                 result.at(i, j) = at(a, b) * at(c, d) - at(a, d) * at(c, b);
-            }
         }
         // Multiply first column of `this` with first row of `result`
         RFLOAT divisor = at(0, 0) * result.at(0, 0) 
@@ -63,13 +86,12 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
         result /= divisor;
     } else if (mdimx == 2 && mdimy == 2) {
         int sign, a, b;
-        for (int i = 0; i <= 1; i++) {
-            for (int j = 0; j <= 1; j++) {
-                sign = (i + j) % 2 == 0 ? 1 : -1;
-                a = (j + 1) % 2;  // logical negation
-                b = (i + 1) % 2;
-                result.at(i, j) = sign * at(a, b);
-            }
+        for (int i = 0; i <= 1; i++)
+        for (int j = 0; j <= 1; j++) {
+            sign = (i + j) % 2 == 0 ? 1 : -1;
+            a = (j + 1) % 2;  // logical negation
+            b = (i + 1) % 2;
+            result.at(i, j) = sign * at(a, b);
         }
         RFLOAT divisor = at(0, 0) * at(1, 1) - at(0, 1) * at(1, 0);
         result /= divisor;

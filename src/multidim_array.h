@@ -3546,55 +3546,10 @@ class MultidimArray {
         }
     }
 
-    /** ROUND
-     *
-     * Round each array element.
-     */
-    void selfROUND() {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            *ptr = round(*ptr);
-        }
-    }
-
-    /** CEILING
-     *
-     * Round each array element up.
-     */
-    void selfCEIL() {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        *ptr = ceil(*ptr);
-    }
-
-    /** FLOOR
-     *
-     * Round each array element down.
-     */
-    void selfFLOOR() {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        *ptr = floor(*ptr);
-    }
-
-    /** ABS
-     *
-     * Applies an ABS (absolute value) to each array element.
-     */
-    void selfABS() {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-        *ptr = abs(*ptr);
-    }
-
-#if defined(__APPLE__)
-#undef MIN
-#undef MAX
-#endif
+    #if defined(__APPLE__)
+    #undef MIN
+    #undef MAX
+    #endif
 
     /** MAX
      *
