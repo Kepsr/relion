@@ -412,8 +412,8 @@ class image_handler_parameters {
                 int ipp = round(jp * A(1, 0) + ip * A(1, 1));
                 int kpp = kp;
                 RFLOAT fil = (
-                    jpp >= STARTINGX(Iop()) && jpp <= FINISHINGX(Iop()) &&
-                    ipp >= STARTINGY(Iop()) && ipp <= FINISHINGY(Iop())
+                    jpp >= Xinit(Iop()) && jpp <= Xlast(Iop()) &&
+                    ipp >= Yinit(Iop()) && ipp <= Ylast(Iop())
                 ) ? A3D_ELEM(Iop(), kpp, ipp, jpp) : 0.0;
                 DIRECT_A3D_ELEM(FT, k, i, j) *=  fil;
             }

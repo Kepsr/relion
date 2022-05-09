@@ -117,32 +117,32 @@ bool calcCCofHelicalSymmetry(
     //std::vector<RFLOAT> sin_rec, cos_rec, dev_voxel, dev_chunk;
     std::vector<RFLOAT> sin_rec, cos_rec;
 
-    if ((STARTINGZ(v) != Xmipp::init(ZSIZE(v))) || (STARTINGY(v) != Xmipp::init(YSIZE(v))) || (STARTINGX(v) != Xmipp::init(XSIZE(v))))
+    if ((Zinit(v) != Xmipp::init(ZSIZE(v))) || (Yinit(v) != Xmipp::init(YSIZE(v))) || (Xinit(v) != Xmipp::init(XSIZE(v))))
         REPORT_ERROR("helix.cpp::calcCCofHelicalSymmetry(): The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
 
     // Check r_max
-    r_max_XY = (XSIZE(v) < YSIZE(v)) ? XSIZE(v) : YSIZE(v);
-    r_max_XY = (r_max_XY + 1) / 2 - 1;
-    if (r_max_pix > (((RFLOAT)(r_max_XY)) - 0.01))  // 0.01 - avoid segmentation fault
-        r_max_pix = (((RFLOAT)(r_max_XY)) - 0.01);
+    r_max_XY = std::max(XSIZE(v), YSIZE(v));
+    r_max_XY = (r_max_XY + 1) / 2 - 1;  // Make indivisibile by 2
+    if (r_max_pix > (RFLOAT) r_max_XY - 0.01) { r_max_pix = (RFLOAT) r_max_XY - 0.01; }
+    // 0.01 - avoid segmentation fault
 
     // Set startZ and finishZ
-    startZ = floor((RFLOAT) ZSIZE(v) * z_percentage * -0.5);
-    finishZ = ceil((RFLOAT) ZSIZE(v) * z_percentage * +0.5);
-    startZ = (startZ <= (STARTINGZ(v))) ? (STARTINGZ(v) + 1) : (startZ);
-    finishZ = (finishZ >= (FINISHINGZ(v))) ? (FINISHINGZ(v) - 1) : (finishZ);
+    startZ  = floor((RFLOAT) ZSIZE(v) * z_percentage * -0.5);
+    finishZ = ceil ((RFLOAT) ZSIZE(v) * z_percentage * +0.5);
+    startZ  = startZ  <= Zinit(v) ? Zinit(v) + 1 : startZ;
+    finishZ = finishZ >= Zlast(v) ? Zlast(v) - 1 : finishZ;
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + (ceil((RFLOAT(ZSIZE(v)) + 2.0) / rise_pix));
+    rec_len = 2 + ceil((RFLOAT(ZSIZE(v)) + 2.0) / rise_pix);
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
     cos_rec.resize(rec_len);
     for (int id = 0; id < rec_len; id++) {
         #ifdef RELION_SINGLE_PRECISION
-        SINCOSF(radians(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOSF(radians((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
         #else
-        SINCOS(radians(((RFLOAT)(id)) * twist_deg), &sin_rec[id], &cos_rec[id]);
+        SINCOS(radians((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
         #endif
     }
 
@@ -158,7 +158,7 @@ bool calcCCofHelicalSymmetry(
         if (k < startZ || k > startZ + floor(rise_pix) || k > finishZ)
             continue;
 
-        dist_r_pix = sqrt(i * i + j * j);
+        dist_r_pix = hypot(i, j);
         if (dist_r_pix < r_min_pix || dist_r_pix > r_max_pix)
             continue;
 
@@ -170,12 +170,12 @@ bool calcCCofHelicalSymmetry(
         RFLOAT zp = k;
         int rot_id = 0;
         sum_pw1 = A3D_ELEM(v, k, i, j);
-        sum_pw2 = A3D_ELEM(v, k, i, j)*A3D_ELEM(v, k, i, j);
+        sum_pw2 = A3D_ELEM(v, k, i, j) * A3D_ELEM(v, k, i, j);
         sum_n = 1.0;
         while (true) {
             // Rise
             zp += rise_pix;
-            if (zp > finishZ) // avoid segmentation fault - finishZ is always strictly smaller than FINISHINGZ(v)!
+            if (zp > finishZ) // avoid segmentation fault - finishZ is always strictly smaller than Zlast(v)!
                 break;
 
             // Twist
@@ -184,11 +184,11 @@ bool calcCCofHelicalSymmetry(
             RFLOAT yp = (RFLOAT) j * sin_rec[rot_id] + (RFLOAT) i * cos_rec[rot_id];
 
             // Trilinear interpolation (with physical coords)
-            // Subtract STARTINGX,Y,Z to accelerate access to data
+            // Subtract Xinit,Y,Z to accelerate access to data
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-            int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= STARTINGX(v); int x1 = x0 + 1;
-            int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= STARTINGY(v); int y1 = y0 + 1;
-            int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= STARTINGZ(v); int z1 = z0 + 1;
+            int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= Xinit(v); int x1 = x0 + 1;
+            int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= Yinit(v); int y1 = y0 + 1;
+            int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= Zinit(v); int z1 = z0 + 1;
             // DEBUG
             if (x0 < 0 || y0 < 0 || z0 < 0 || x1 >= XSIZE(v) || y1 >= YSIZE(v) || z1 >= ZSIZE(v)) {
                 std::cout << " idzidyidx= " << k << ", " << i << ", " << j << ", x0x1y0y1z0z1= " << x0 << ", " << x1 << ", " << y0 << ", " << y1 << ", " << z0 << ", " << z1 << std::endl;
@@ -842,9 +842,9 @@ void imposeHelicalSymmetryInRealSpace(
     // Crop the central slices
     v.setXmippOrigin();
     z_max = (RFLOAT) dimensions.z * z_percentage / 2.0;
-    if (z_max > (RFLOAT) FINISHINGZ(v) - 1.0) { z_max = (RFLOAT) FINISHINGZ(v) - 1.0; }
+    if (z_max > (RFLOAT) Zlast(v) - 1.0) { z_max = (RFLOAT) Zlast(v) - 1.0; }
     z_min = -z_max;
-    if (z_min < (RFLOAT) STARTINGZ(v)  + 1.0) { z_min = (RFLOAT) STARTINGZ(v)  + 1.0; }
+    if (z_min < (RFLOAT) Zinit(v)  + 1.0) { z_min = (RFLOAT) Zinit(v)  + 1.0; }
 
     // Init volumes
     v.setXmippOrigin();
@@ -905,11 +905,11 @@ void imposeHelicalSymmetryInRealSpace(
             RFLOAT xp = xi * cos_val - yi * sin_val;
 
             // Trilinear interpolation (with physical coords)
-            // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
+            // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
-            int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= STARTINGX(v); int x1 = x0 + 1;
-            int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= STARTINGY(v); int y1 = y0 + 1;
-            int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= STARTINGZ(v); int z1 = z0 + 1;
+            int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= Xinit(v); int x1 = x0 + 1;
+            int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= Yinit(v); int y1 = y0 + 1;
+            int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= Zinit(v); int z1 = z0 + 1;
 
             RFLOAT d000 = DIRECT_A3D_ELEM(v, z0, y0, x0);
             RFLOAT d001 = DIRECT_A3D_ELEM(v, z0, y0, x1);
@@ -1034,7 +1034,7 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     if ( (YSIZE(v) < 10) || (XSIZE(v) < 10) )
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): Input 2D MultidimArray should be larger than 10*10 pixels!");
 
-    if ( (STARTINGY(v) != Xmipp::init(YSIZE(v))) || (STARTINGX(v) != Xmipp::init(XSIZE(v))) )
+    if ( (Yinit(v) != Xmipp::init(YSIZE(v))) || (Xinit(v) != Xmipp::init(XSIZE(v))) )
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): The origin of input 2D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
 
     box_len = (XSIZE(v) < YSIZE(v)) ? XSIZE(v) : YSIZE(v);
@@ -1047,8 +1047,8 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): Radii of spherical and/or cylindrical masks are invalid!");
 
     sphere_radius2_pix = sphere_radius_pix * sphere_radius_pix;
-    x0 = STARTINGX(v);
-    y0 = STARTINGY(v);
+    x0 = Xinit(v);
+    y0 = Yinit(v);
     vec_len = (int)((2. * cyl_radius_pix)) + 2;
     sum_list.clear();
     sum_list.resize(vec_len);
@@ -1324,10 +1324,10 @@ void createCylindricalReferenceWithPolarity(
     r_min = r_max = -1.0;
     if (inner_diameter_pix > 0.0)
         r_min = inner_diameter_pix / 2.0;
-    for (long int k = STARTINGZ(v); k <= FINISHINGZ(v); k++) {
-        r_max = top_radius_pix - (top_radius_pix - bottom_radius_pix) * ((RFLOAT)(k - STARTINGZ(v))) / ((RFLOAT)(box_size));
-        for (long int i = STARTINGY(v); i <= FINISHINGY(v); i++) {
-            for (long int j = STARTINGX(v); j <= FINISHINGX(v); j++) {
+    for (long int k = Zinit(v); k <= Zlast(v); k++) {
+        r_max = top_radius_pix - (top_radius_pix - bottom_radius_pix) * ((RFLOAT)(k - Zinit(v))) / ((RFLOAT)(box_size));
+        for (long int i = Yinit(v); i <= Ylast(v); i++) {
+            for (long int j = Xinit(v); j <= Xlast(v); j++) {
                 r = sqrt(i * i + j * j);
                 if (r > r_min && r < r_max) {
                     A3D_ELEM(v, k, i, j) = 1.0;

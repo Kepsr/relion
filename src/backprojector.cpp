@@ -108,9 +108,9 @@ void BackProjector::backproject2Dto3D(
     std::cerr << " YSIZE(f2d)= " << YSIZE(f2d) << std::endl;
     std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
     std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
-    std::cerr << " STARTINGX(data)= " << STARTINGX(data) << std::endl;
-    std::cerr << " STARTINGY(data)= " << STARTINGY(data) << std::endl;
-    std::cerr << " STARTINGZ(data)= " << STARTINGZ(data) << std::endl;
+    std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
+    std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
+    std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
     std::cerr << " r_max= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
@@ -214,7 +214,7 @@ void BackProjector::backproject2Dto3D(
                 }
 
                 // Trilinear interpolation (with physical coords)
-                // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
+                // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
                 // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
                 int x0 = floor(xp);
                 RFLOAT fx = xp - x0;
@@ -222,12 +222,12 @@ void BackProjector::backproject2Dto3D(
 
                 int y0 = floor(yp);
                 RFLOAT fy = yp - y0;
-                y0 -= STARTINGY(data);
+                y0 -= Yinit(data);
                 int y1 = y0 + 1;
 
                 int z0 = floor(zp);
                 RFLOAT fz = zp - z0;
-                z0 -= STARTINGZ(data);
+                z0 -= Zinit(data);
                 int z1 = z0 + 1;
 
                 if (
@@ -284,9 +284,9 @@ void BackProjector::backproject2Dto3D(
                     z0 = -z0;
                 }
 
-                const int xr = x0 - STARTINGX(data);
-                const int yr = y0 - STARTINGY(data);
-                const int zr = z0 - STARTINGZ(data);
+                const int xr = x0 - Xinit(data);
+                const int yr = y0 - Yinit(data);
+                const int zr = z0 - Zinit(data);
 
                 if (
                     xr < 0 || xr >= data.xdim ||
@@ -349,7 +349,7 @@ void BackProjector::backproject1Dto2D(
             }
 
             // Trilinear interpolation (with physical coords)
-            // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
+            // Subtract Yinit to accelerate access to data (Xinit=0)
             // In that way use DIRECT_A2D_ELEM, rather than A2D_ELEM
             const int x0 = floor(xp);
             const RFLOAT fx = xp - x0;
@@ -357,7 +357,7 @@ void BackProjector::backproject1Dto2D(
 
             int y0 = floor(yp);
             const RFLOAT fy = yp - y0;
-            y0 -= STARTINGY(data);
+            y0 -= Yinit(data);
             const int y1 = y0 + 1;
 
             const RFLOAT mfx = 1.0 - fx;
@@ -439,9 +439,9 @@ void BackProjector::backrotate2D(
     std::cerr << " YSIZE(f2d)= "<< YSIZE(f2d) << std::endl;
     std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
     std::cerr << " YSIZE(data)= "<< YSIZE(data) << std::endl;
-    std::cerr << " STARTINGX(data)= "<< STARTINGX(data) << std::endl;
-    std::cerr << " STARTINGY(data)= "<< STARTINGY(data) << std::endl;
-    std::cerr << " STARTINGZ(data)= "<< STARTINGZ(data) << std::endl;
+    std::cerr << " Xinit(data)= "<< Xinit(data) << std::endl;
+    std::cerr << " Yinit(data)= "<< Yinit(data) << std::endl;
+    std::cerr << " Zinit(data)= "<< Zinit(data) << std::endl;
     std::cerr << " max_r= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
@@ -511,7 +511,7 @@ void BackProjector::backrotate2D(
                 }
 
                 // Trilinear interpolation (with physical coords)
-                // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
+                // Subtract Yinit to accelerate access to data (Xinit=0)
                 // In that way use DIRECT_A2D_ELEM, rather than A2D_ELEM
                 const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
@@ -519,7 +519,7 @@ void BackProjector::backrotate2D(
 
                 int y0 = floor(yp);
                 const RFLOAT fy = yp - y0;
-                y0 -= STARTINGY(data);
+                y0 -= Yinit(data);
                 const int y1 = y0 + 1;
 
                 const RFLOAT mfx = 1.0 - fx;
@@ -587,9 +587,9 @@ void BackProjector::backrotate3D(
     std::cerr << " YSIZE(f3d)= "<< YSIZE(f3d) << std::endl;
     std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
     std::cerr << " YSIZE(data)= "<< YSIZE(data) << std::endl;
-    std::cerr << " STARTINGX(data)= "<< STARTINGX(data) << std::endl;
-    std::cerr << " STARTINGY(data)= "<< STARTINGY(data) << std::endl;
-    std::cerr << " STARTINGZ(data)= "<< STARTINGZ(data) << std::endl;
+    std::cerr << " Xinit(data)= "<< Xinit(data) << std::endl;
+    std::cerr << " Yinit(data)= "<< Yinit(data) << std::endl;
+    std::cerr << " Zinit(data)= "<< Zinit(data) << std::endl;
     std::cerr << " max_r= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
@@ -649,7 +649,7 @@ void BackProjector::backrotate3D(
                     }
 
                     // Trilinear interpolation (with physical coords)
-                    // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
+                    // Subtract Yinit to accelerate access to data (Xinit=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
                     const int x0 = floor(xp);
                     const RFLOAT fx = xp - x0;
@@ -657,12 +657,12 @@ void BackProjector::backrotate3D(
 
                     int y0 = floor(yp);
                     const RFLOAT fy = yp - y0;
-                    y0 -= STARTINGY(data);
+                    y0 -= Yinit(data);
                     const int y1 = y0 + 1;
 
                     int z0 = floor(zp);
                     const RFLOAT fz = zp - z0;
-                    z0 -= STARTINGZ(data);
+                    z0 -= Zinit(data);
                     const int z1 = z0 + 1;
 
                     const RFLOAT mfx = 1.0 - fx;
@@ -837,9 +837,9 @@ void BackProjector::getDownsampledAverage(
         // #define CHECK_SIZE
         #ifdef CHECK_SIZE
         if (
-            ip < STARTINGY(avg) || ip > FINISHINGY(avg) 
-            jp < STARTINGX(avg) || jp > FINISHINGX(avg) || 
-            kp < STARTINGZ(avg) || kp > FINISHINGZ(avg) || 
+            ip < Yinit(avg) || ip > Ylast(avg) 
+            jp < Xinit(avg) || jp > Xlast(avg) || 
+            kp < Zinit(avg) || kp > Zlast(avg) || 
         ) {
             std::cerr << " kp= " << kp << " ip= " << ip << " jp= " << jp << std::endl;
             avg.printShape();
@@ -1653,17 +1653,16 @@ void BackProjector::symmetrise(
 }
 
 void BackProjector::enforceHermitianSymmetry() {
-    for (int iz = STARTINGZ(data); iz <=FINISHINGZ(data); iz++) {
-        // Make sure all points are only included once.
-        for (int iy = iz >= 0; iy <= FINISHINGY(data); iy++) {
-            // I just need to sum the two points, not divide by 2!
-            Complex fsum = A3D_ELEM(data, iz, iy, 0) + conj(A3D_ELEM(data, -iz, -iy, 0));
-            A3D_ELEM(data,  iz,  iy, 0) = fsum;
-            A3D_ELEM(data, -iz, -iy, 0) = conj(fsum);
-            RFLOAT sum = A3D_ELEM(weight, iz, iy, 0) + A3D_ELEM(weight, -iz, -iy, 0);
-            A3D_ELEM(weight,  iz,  iy, 0) = sum;
-            A3D_ELEM(weight, -iz, -iy, 0) = sum;
-        }
+    // Make sure all points are only included once.
+    for (int iz = Zinit(data); iz <= Zlast(data); iz++)
+    for (int iy = iz >= 0;     iy <= Ylast(data); iy++) {
+        // I just need to sum the two points, not divide by 2!
+        Complex fsum = A3D_ELEM(data, iz, iy, 0) + conj(A3D_ELEM(data, -iz, -iy, 0));
+        A3D_ELEM(data,  iz,  iy, 0) = fsum;
+        A3D_ELEM(data, -iz, -iy, 0) = conj(fsum);
+        RFLOAT sum = A3D_ELEM(weight, iz, iy, 0) + A3D_ELEM(weight, -iz, -iy, 0);
+        A3D_ELEM(weight,  iz,  iy, 0) = sum;
+        A3D_ELEM(weight, -iz, -iy, 0) = sum;
     }
 }
 
@@ -1694,7 +1693,7 @@ void BackProjector::applyHelicalSymmetry(
 
             // Loop over all points in the output (i.e. rotated, or summed) array
             FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight) {
-                RFLOAT x = j;  // STARTINGX(sum_weight) is zero!
+                RFLOAT x = j;  // Xinit(sum_weight) is zero!
                 RFLOAT y = i;
                 RFLOAT z = k;
                 RFLOAT r2 = x * x + y * y + z * z;
@@ -1714,7 +1713,7 @@ void BackProjector::applyHelicalSymmetry(
                     }
 
                     // Trilinear interpolation (with physical coords)
-                    // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
+                    // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
                     int x0 = floor(xp);
                     RFLOAT fx = xp - x0;
@@ -1722,12 +1721,12 @@ void BackProjector::applyHelicalSymmetry(
 
                     int y0 = floor(yp);
                     RFLOAT fy = yp - y0;
-                    y0 -= STARTINGY(data);
+                    y0 -= Yinit(data);
                     int y1 = y0 + 1;
 
                     int z0 = floor(zp);
                     RFLOAT fz = zp - z0;
-                    z0 -= STARTINGZ(data);
+                    z0 -= Zinit(data);
                     int z1 = z0 + 1;
 
                     #ifdef CHECK_SIZE
@@ -1833,10 +1832,10 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
             // Loop over all points in the output (i.e. rotated, or summed) array
 
             #pragma omp parallel for num_threads(threads)
-            for (long int k = STARTINGZ(sum_weight); k <= FINISHINGZ(sum_weight); k++)
-            for (long int i = STARTINGY(sum_weight); i <= FINISHINGY(sum_weight); i++)
-            for (long int j = STARTINGX(sum_weight); j <= FINISHINGX(sum_weight); j++) {
-                RFLOAT x = j;  // STARTINGX(sum_weight) is zero!
+            for (long int k = Zinit(sum_weight); k <= Zlast(sum_weight); k++)
+            for (long int i = Yinit(sum_weight); i <= Ylast(sum_weight); i++)
+            for (long int j = Xinit(sum_weight); j <= Xlast(sum_weight); j++) {
+                RFLOAT x = j;  // Xinit(sum_weight) is zero!
                 RFLOAT y = i;
                 RFLOAT z = k;
                 RFLOAT r2 = x * x + y * y + z * z;
@@ -1858,7 +1857,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     }
 
                     // Trilinear interpolation (with physical coords)
-                    // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
+                    // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
                     int x0 = floor(xp);
                     RFLOAT fx = xp - x0;
@@ -1866,12 +1865,12 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
 
                     int y0 = floor(yp);
                     RFLOAT fy = yp - y0;
-                    y0 -= STARTINGY(data);
+                    y0 -= Yinit(data);
                     int y1 = y0 + 1;
 
                     int z0 = floor(zp);
                     RFLOAT fz = zp - z0;
-                    z0 -= STARTINGZ(data);
+                    z0 -= Zinit(data);
                     int z1 = z0 + 1;
 
                     #ifdef CHECK_SIZE

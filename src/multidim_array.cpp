@@ -55,11 +55,11 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
     }
 
     for (int l = 0; l < NSIZE(v); l++) {
-        if (NSIZE(v)>1) ostrm << "Image No. " << l << std::endl;
-        for (int k = STARTINGZ(v); k <= FINISHINGZ(v); k++) {
-            if (ZSIZE(v)>1) ostrm << "Slice No. " << k << std::endl;
-            for (int i = STARTINGY(v); i <= FINISHINGY(v); i++) {
-                for (int j = STARTINGX(v); j <= FINISHINGX(v); j++)
+        if (NSIZE(v) > 1) ostrm << "Image No. " << l << std::endl;
+        for (int k = Zinit(v); k <= Zlast(v); k++) {
+            if (ZSIZE(v) > 1) { ostrm << "Slice No. " << k << std::endl; }
+            for (int i = Yinit(v); i <= Ylast(v); i++) {
+                for (int j = Xinit(v); j <= Xlast(v); j++)
                     ostrm << "(" << A3D_ELEM(v, k, i, j).real << "," << A3D_ELEM(v, k, i, j).imag <<")" << ' ';
                 ostrm << std::endl;
             }

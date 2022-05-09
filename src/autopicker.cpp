@@ -487,8 +487,8 @@ void AutoPicker::initialise() {
                 // Look on the central X-axis, which first and last values are NOT equal to the corner value
                 bool has_set_first = false;
                 bool has_set_last = false;
-                int last_corner = FINISHINGX(Mrefs[iref]), first_corner = STARTINGX(Mrefs[iref]);
-                for (long int j = STARTINGX(Mrefs[iref]); j <= FINISHINGX(Mrefs[iref]); j++) {
+                int first_corner = Xinit(Mrefs[iref]), last_corner = Xlast(Mrefs[iref]);
+                for (long int j = Xinit(Mrefs[iref]); j <= Xlast(Mrefs[iref]); j++) {
                     if (!has_set_first) {
                         if (fabs(A3D_ELEM(Mrefs[iref], 0, 0, j) - cornerval) > 1e-6) {
                             first_corner = j;
@@ -1357,7 +1357,7 @@ void AutoPicker::pickCCFPeaks(
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: Invalid dimensions for Mccf!");
     // if (micrograph_core_size < 100 * scale)
     // 	REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The micrograph is too small relative to the particle box!");
-    if (STARTINGY(Mccf) != Xmipp::init(YSIZE(Mccf)) || STARTINGX(Mccf) != Xmipp::init(XSIZE(Mccf)))
+    if (Yinit(Mccf) != Xmipp::init(YSIZE(Mccf)) || Xinit(Mccf) != Xmipp::init(XSIZE(Mccf)))
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
     if (Mccf.sameShape(Mclass) == false)
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: Mccf and Mclass should have the same shape!");
@@ -2115,8 +2115,8 @@ void AutoPicker::exportHelicalTubes(
         REPORT_ERROR("autopicker.cpp::exportHelicalTubes: BUG tube_coord_list.size() != tube_track_list.size() != tube_len_list.size()");
     }
     if (
-        STARTINGY(Mccf) != Xmipp::init(YSIZE(Mccf)) ||
-        STARTINGX(Mccf) != Xmipp::init(XSIZE(Mccf))
+        Yinit(Mccf) != Xmipp::init(YSIZE(Mccf)) ||
+        Xinit(Mccf) != Xmipp::init(XSIZE(Mccf))
     ) {
         REPORT_ERROR("autopicker.cpp::exportHelicalTubes: The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
     }
@@ -2565,8 +2565,8 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         for (long int jj = jmax - myrad; jj <= jmax + myrad; jj++) {
             long int r2 = (imax - ii) * (imax - ii) + (jmax - jj) * (jmax - jj);
             if (
-                ii >= STARTINGY(Mbest_fom) && ii <= FINISHINGY(Mbest_fom) &&
-                jj >= STARTINGX(Mbest_fom) && jj <= FINISHINGX(Mbest_fom) &&
+                ii >= Yinit(Mbest_fom) && ii <= Ylast(Mbest_fom) &&
+                jj >= Xinit(Mbest_fom) && jj <= Xlast(Mbest_fom) &&
                 r2 < myrad2
             ) {
                 A2D_ELEM(Mbest_fom, ii, jj) = 0.0;

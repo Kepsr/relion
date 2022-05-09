@@ -610,9 +610,9 @@ void Reconstructor::reconstruct() {
             }
 
             if (
-                jp >= STARTINGX(backprojector.data) && jp <= FINISHINGX(backprojector.data) &&
-                ip >= STARTINGY(backprojector.data) && ip <= FINISHINGY(backprojector.data) &&
-                kp >= STARTINGZ(backprojector.data) && kp <= FINISHINGZ(backprojector.data)
+                jp >= Xinit(backprojector.data) && jp <= Xlast(backprojector.data) &&
+                ip >= Yinit(backprojector.data) && ip <= Ylast(backprojector.data) &&
+                kp >= Zinit(backprojector.data) && kp <= Zlast(backprojector.data)
             ) {
                 if (A3D_ELEM(backprojector.weight, kp, ip, jp) > 0.0) {
                     A3D_ELEM(vol(), k, i, j) = A3D_ELEM(backprojector.data, kp, ip, jp) / A3D_ELEM(backprojector.weight, kp, ip, jp);

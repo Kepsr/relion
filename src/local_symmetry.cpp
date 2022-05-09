@@ -1901,9 +1901,9 @@ void separateMasksKMeans(
     //Euler_angles2matrix(a, b, g, mat);
     //for (int ii = 0; ii < K; ii++)
     //{
-    //    z = RFLOAT(ii) * RFLOAT(ZSIZE(img())) / RFLOAT(K) + RFLOAT(STARTINGZ(img()));
-    //    y = rnd_unif(0., YSIZE(img())) + RFLOAT(STARTINGY(img()));
-    //    x = rnd_unif(0., XSIZE(img())) + RFLOAT(STARTINGX(img()));
+    //    z = RFLOAT(ii) * RFLOAT(ZSIZE(img())) / RFLOAT(K) + RFLOAT(Zinit(img()));
+    //    y = rnd_unif(0., YSIZE(img())) + RFLOAT(Yinit(img()));
+    //    x = rnd_unif(0., XSIZE(img())) + RFLOAT(Xinit(img()));
     //    z /= sqrt(3.); y /= sqrt(3.); x /= sqrt(3.);
 
     //    ocen[ii] = mat * vectorR3(x, y, z);

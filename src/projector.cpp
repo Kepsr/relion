@@ -276,8 +276,8 @@ void Projector::computeFourierTransformMap(
             dMpad.accAlloc();
             run_padTranslatedMap(
                 ~dvol, ~dMpad,
-                STARTINGX(vol_in), FINISHINGX(vol_in), STARTINGY(vol_in), FINISHINGY(vol_in), STARTINGZ(vol_in), FINISHINGZ(vol_in),   //Input dimensions
-                STARTINGX(Mpad),   FINISHINGX(Mpad),   STARTINGY(Mpad),   FINISHINGY(Mpad),   STARTINGZ(Mpad),   FINISHINGZ(Mpad)      //Output dimensions
+                Xinit(vol_in), Xlast(vol_in), Yinit(vol_in), Ylast(vol_in), Zinit(vol_in), Zlast(vol_in),   // Input  dimensions
+                Xinit(Mpad),   Xlast(Mpad),   Yinit(Mpad),   Ylast(Mpad),   Zinit(Mpad),   Zlast(Mpad)      // Output dimensions
             );
             dvol.freeDevice();
         }
@@ -547,9 +547,9 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     std::cerr << " YSIZE(f2d)= " << YSIZE(f2d) << std::endl;
     std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
     std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
-    std::cerr << " STARTINGX(data)= " << STARTINGX(data) << std::endl;
-    std::cerr << " STARTINGY(data)= " << STARTINGY(data) << std::endl;
-    std::cerr << " STARTINGZ(data)= " << STARTINGZ(data) << std::endl;
+    std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
+    std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
+    std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
     std::cerr << " max_r= " << r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
@@ -584,7 +584,7 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 }
 
                 // Trilinear interpolation (with physical coords)
-                // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX=0)
+                // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
                 // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
                 const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
@@ -592,12 +592,12 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
 
                 int y0 = floor(yp);
                 const RFLOAT fy = yp - y0;
-                y0 -= STARTINGY(data);
+                y0 -= Yinit(data);
                 const int y1 = y0 + 1;
 
                 int z0 = floor(zp);
                 const RFLOAT fz = zp - z0;
-                z0 -= STARTINGZ(data);
+                z0 -= Zinit(data);
                 const int z1 = z0 + 1;
 
                 // Avoid reading outside the box
@@ -645,9 +645,9 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                     z0 = -z0;
                 }
 
-                const int xr = x0 - STARTINGX(data);
-                const int yr = y0 - STARTINGY(data);
-                const int zr = z0 - STARTINGZ(data);
+                const int xr = x0 - Xinit(data);
+                const int yr = y0 - Yinit(data);
+                const int zr = z0 - Zinit(data);
 
                 if (
                     xr < 0 || xr >= data.xdim ||
@@ -703,7 +703,7 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
             }
 
             // Trilinear interpolation (with physical coords)
-            // Subtract STARTINGY and STARTINGZ to accelerate access to data (STARTINGX = 0)
+            // Subtract Yinit and Zinit to accelerate access to data (Xinit = 0)
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
 
             int x0 = floor(xp);
@@ -712,12 +712,12 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
 
             int y0 = floor(yp);
             double fy = yp - y0;
-            y0 -= STARTINGY(data);
+            y0 -= Yinit(data);
             int y1 = y0 + 1;
 
             int z0 = floor(zp);
             double fz = zp - z0;
-            z0 -= STARTINGZ(data);
+            z0 -= Zinit(data);
             int z1 = z0 + 1;
 
             if (
@@ -815,7 +815,7 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
             }
 
             // Trilinear interpolation (with physical coords)
-            // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
+            // Subtract Yinit to accelerate access to data (Xinit=0)
             // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
             const int x0 = floor(xp);
             const RFLOAT fx = xp - x0;
@@ -823,7 +823,7 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
 
             int y0 = floor(yp);
             const RFLOAT fy = yp - y0;
-            y0 -= STARTINGY(data);
+            y0 -= Yinit(data);
             const int y1 = y0 + 1;
 
             // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
@@ -878,9 +878,9 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     std::cerr << " YSIZE(f2d)= " << YSIZE(f2d) << std::endl;
     std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
     std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
-    std::cerr << " STARTINGX(data)= " << STARTINGX(data) << std::endl;
-    std::cerr << " STARTINGY(data)= " << STARTINGY(data) << std::endl;
-    std::cerr << " STARTINGZ(data)= " << STARTINGZ(data) << std::endl;
+    std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
+    std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
+    std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
     std::cerr << " max_r= " << r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
@@ -911,7 +911,7 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 }
 
                 // Trilinear interpolation (with physical coords)
-                // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
+                // Subtract Yinit to accelerate access to data (Xinit=0)
                 // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
                 const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
@@ -919,7 +919,7 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
 
                 int y0 = floor(yp);
                 const RFLOAT fy = yp - y0;
-                y0 -= STARTINGY(data);
+                y0 -= Yinit(data);
                 const int y1 = y0 + 1;
 
                 // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
@@ -975,9 +975,9 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
     std::cerr << " YSIZE(f3d)= " << YSIZE(f3d) << std::endl;
     std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
     std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
-    std::cerr << " STARTINGX(data)= " << STARTINGX(data) << std::endl;
-    std::cerr << " STARTINGY(data)= " << STARTINGY(data) << std::endl;
-    std::cerr << " STARTINGZ(data)= " << STARTINGZ(data) << std::endl;
+    std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
+    std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
+    std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
     std::cerr << " max_r= " << r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
@@ -1017,7 +1017,7 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
                     }
 
                     // Trilinear interpolation (with physical coords)
-                    // Subtract STARTINGY to accelerate access to data (STARTINGX=0)
+                    // Subtract Yinit to accelerate access to data (Xinit=0)
                     // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
                     const int x0 = floor(xp);
                     const RFLOAT fx = xp - x0;
@@ -1025,12 +1025,12 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
 
                     int y0 = floor(yp);
                     const RFLOAT fy = yp - y0;
-                    y0 -= STARTINGY(data);
+                    y0 -= Yinit(data);
                     const int y1 = y0 + 1;
 
                     int z0 = floor(zp);
                     const RFLOAT fz = zp - z0;
-                    z0 -= STARTINGZ(data);
+                    z0 -= Zinit(data);
                     const int z1 = z0 + 1;
 
                     // Matrix access can be accelerated through pre-calculation of z0*xydim etc.

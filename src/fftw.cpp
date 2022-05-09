@@ -1505,8 +1505,8 @@ void amplitudeOrPhaseMap(
     long int maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux) {
         if (
-            ip > STARTINGY(out) && ip < FINISHINGY(out) &&
-            jp > STARTINGX(out) && jp < FINISHINGX(out) &&
+            ip > Yinit(out) && ip < Ylast(out) &&
+            jp > Xinit(out) && jp < Xlast(out) &&
             ip * ip + jp * jp < maxr2
         ) {
             RFLOAT val;

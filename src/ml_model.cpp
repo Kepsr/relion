@@ -1070,9 +1070,9 @@ void MlModel::writeBildFileBodies(FileName fn_bild) {
     if (!fh_bild)
         REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution: cannot open " + fn_bild);
 
-    RFLOAT xcen = -STARTINGX(Iref[0]) * pixel_size;
-    RFLOAT ycen = -STARTINGY(Iref[0]) * pixel_size;
-    RFLOAT zcen = -STARTINGZ(Iref[0]) * pixel_size;
+    RFLOAT xcen = -Xinit(Iref[0]) * pixel_size;
+    RFLOAT ycen = -Yinit(Iref[0]) * pixel_size;
+    RFLOAT zcen = -Zinit(Iref[0]) * pixel_size;
     // Place a black sphere in the centre of the box
     fh_bild << ".color 0 0 0 " << std::endl;
     fh_bild << ".sphere " << xcen << " " << ycen << " " << zcen << " 3 "  << std::endl;

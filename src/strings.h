@@ -80,22 +80,20 @@ void escapeStringForSTAR(std::string &value);
  *
  * @code
  * template<typename T>
- * std::ostream& operator<<(std::ostream& out, const T& val)
- * {
+ * std::ostream& operator<<(std::ostream& out, const T& val) {
  *     int i,j;
  *
- *     if (val.xdim == 0)
+ *     if (val.xdim == 0) {
  *         out << "NULL matrix" << std::endl;
- *     else
+ *     } else {
  *         out << std::endl;
+ *     }
  *
  *     T aux = ABSnD(val);
  *     int prec = bestPrecision(aux.max(), 10);
  *
- *     for (i=STARTINGY(val); i<=FINISHINGY(val); i++)
- *     {
- *         for (j=STARTINGX(val); j<=FINISHINGX(val); j++)
- *         {
+ *     for (i = Yinit(val); i <= Ylast(val); i++) {
+ *         for (j = Xinit(val); j <= Xlast(val); j++) {
  *             out << floatToString((float) val(i,j), 10, prec) << ' ';
  *         }
  *         out << std::endl;

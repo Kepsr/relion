@@ -857,35 +857,34 @@ void radialAverage(
     // to set the dimension of the radial average vector.
     MultidimArray<int> distances(8);
 
-    RFLOAT z = STARTINGZ(m) - ZZ(center_of_rot);
-    RFLOAT y = STARTINGY(m) - YY(center_of_rot);
-    RFLOAT x = STARTINGX(m) - XX(center_of_rot);
+    RFLOAT z = Zinit(m) - ZZ(center_of_rot);
+    RFLOAT y = Yinit(m) - YY(center_of_rot);
+    RFLOAT x = Xinit(m) - XX(center_of_rot);
 
     distances(0) = floor(euclid(x, y, z));
-    x = FINISHINGX(m) - XX(center_of_rot);
+    x = Xlast(m) - XX(center_of_rot);
 
     distances(1) = floor(euclid(x, y, z));
-    y = FINISHINGY(m) - YY(center_of_rot);
+    y = Ylast(m) - YY(center_of_rot);
 
     distances(2) = floor(euclid(x, y, z));
-    x = STARTINGX(m) - XX(center_of_rot);
+    x = Xinit(m) - XX(center_of_rot);
 
     distances(3) = floor(euclid(x, y, z));
-    z = FINISHINGZ(m) - ZZ(center_of_rot);
+    z = Zlast(m) - ZZ(center_of_rot);
 
     distances(4) = floor(euclid(x, y, z));
-    x = FINISHINGX(m) - XX(center_of_rot);
+    x = Xlast(m) - XX(center_of_rot);
 
     distances(5) = floor(euclid(x, y, z));
-    y = STARTINGY(m) - YY(center_of_rot);
+    y = Yinit(m) - YY(center_of_rot);
 
     distances(6) = floor(euclid(x, y, z));
-    x = STARTINGX(m) - XX(center_of_rot);
+    x = Xinit(m) - XX(center_of_rot);
 
     distances(7) = floor(euclid(x, y, z));
 
-    int dim = ceil(distances.max()) + 1;
-    if (rounding) { dim++; }
+    int dim = ceil(distances.max()) + 1 + rounding;
 
     // Define the vectors
     radial_mean.resize(dim);

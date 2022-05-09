@@ -306,9 +306,9 @@ class particle_reposition_parameters {
                         Imic_in().zinit = -round(zcoord);
                         FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
                             // check the particles do not go off the side
-                            int kp = k - STARTINGZ(Imic_in());
-                            int ip = i - STARTINGY(Imic_in());
-                            int jp = j - STARTINGX(Imic_in());
+                            int kp = k - Zinit(Imic_in());
+                            int ip = i - Yinit(Imic_in());
+                            int jp = j - Xinit(Imic_in());
                             if (
                                 kp >= 0 && kp < ZSIZE(Imic_in()) && 
                                 ip >= 0 && ip < YSIZE(Imic_in()) && 
@@ -349,9 +349,9 @@ class particle_reposition_parameters {
                         long int idx = round(sqrt(k * k + i * i + j * j));
                         if (idx < radius) {
                             // check the particles do not go off the side
-                            int kp = k - STARTINGZ(Imic_sum);
-                            int ip = i - STARTINGY(Imic_sum);
-                            int jp = j - STARTINGX(Imic_sum);
+                            int kp = k - Zinit(Imic_sum);
+                            int ip = i - Yinit(Imic_sum);
+                            int jp = j - Xinit(Imic_sum);
                             if (
                                 kp >= 0 && kp < ZSIZE(Imic_sum) && 
                                 ip >= 0 && ip < YSIZE(Imic_sum) && 

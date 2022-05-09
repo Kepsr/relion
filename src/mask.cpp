@@ -289,9 +289,9 @@ void autoMask(
                     for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                     for (long int jp = j - extend_size; jp <= j + extend_size; jp++) {
                         if (
-                            kp >= STARTINGZ(msk_cp) && kp <= FINISHINGZ(msk_cp) &&
-                            ip >= STARTINGY(msk_cp) && ip <= FINISHINGY(msk_cp) &&
-                            jp >= STARTINGX(msk_cp) && jp <= FINISHINGX(msk_cp)
+                            kp >= Zinit(msk_cp) && kp <= Zlast(msk_cp) &&
+                            ip >= Yinit(msk_cp) && ip <= Ylast(msk_cp) &&
+                            jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
                         ) {
                             // only check distance if neighbouring Im() is one
                             if (A3D_ELEM(msk_cp, kp, ip, jp) > 0.999) {
@@ -326,9 +326,9 @@ void autoMask(
                     for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                     for (long int jp = j - extend_size; jp <= j + extend_size; jp++) {
                         if (
-                            kp >= STARTINGZ(msk_cp) && kp <= FINISHINGZ(msk_cp) &&
-                            ip >= STARTINGY(msk_cp) && ip <= FINISHINGY(msk_cp) &&
-                            jp >= STARTINGX(msk_cp) && jp <= FINISHINGX(msk_cp)
+                            kp >= Zinit(msk_cp) && kp <= Zlast(msk_cp) &&
+                            ip >= Yinit(msk_cp) && ip <= Ylast(msk_cp) &&
+                            jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
                         ) {
                             // only check distance if neighbouring Im() is one
                             if (A3D_ELEM(msk_cp, kp, ip, jp) < 0.001) {
@@ -380,9 +380,9 @@ void autoMask(
                 for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                 for (long int jp = j - extend_size; jp <= j + extend_size; jp++) {
                     if (
-                        kp >= STARTINGZ(msk_cp) && kp <= FINISHINGZ(msk_cp) &&
-                        ip >= STARTINGY(msk_cp) && ip <= FINISHINGY(msk_cp) &&
-                        jp >= STARTINGX(msk_cp) && jp <= FINISHINGX(msk_cp)
+                        kp >= Zinit(msk_cp) && kp <= Zlast(msk_cp) &&
+                        ip >= Yinit(msk_cp) && ip <= Ylast(msk_cp) &&
+                        jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
                     ) {
                         // only update distance to a neighbouring msk_cp is one
                         if (A3D_ELEM(msk_cp, kp, ip, jp) > 0.999) {

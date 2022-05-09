@@ -113,29 +113,39 @@ extern std::string floatToString(float F, int _width, int _prec);
  * the copy constructor and in the creation/destruction of temporary vectors.
  */
 //@{
+
 /** Return the first X valid logical index
  */
-#define STARTINGX(v) ((v).xinit)
+template <typename T>
+class MultidimArray;
+
+template <typename T>
+inline long int Xinit(const MultidimArray<T> &v) { return v.xinit; }
 
 /** Return the last X valid logical index
  */
-#define FINISHINGX(v) ((v).xinit + (v).xdim - 1)
+template <typename T>
+inline long int Xlast(const MultidimArray<T> &v) { return v.xinit + v.xdim - 1; }
 
 /** Return the first Y valid logical index
  */
-#define STARTINGY(v) ((v).yinit)
+template <typename T>
+inline long int Yinit(const MultidimArray<T> &v) { return v.yinit; }
 
 /** Return the last Y valid logical index
  */
-#define FINISHINGY(v) ((v).yinit + (v).ydim - 1)
+template <typename T>
+inline long int Ylast(const MultidimArray<T> &v) { return v.yinit + v.ydim - 1; }
 
 /** Return the first Z valid logical index
  */
-#define STARTINGZ(v) ((v).zinit)
+template <typename T>
+inline long int Zinit(const MultidimArray<T> &v) { return v.zinit; }
 
 /** Return the last Z valid logical index
  */
-#define FINISHINGZ(v) ((v).zinit + (v).zdim - 1)
+template <typename T>
+inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; }
 
 /** Access to X dimension (size)
  */
@@ -186,7 +196,7 @@ extern std::string floatToString(float F, int _width, int _prec);
 /** Multidim element: Logical access.
  */
 #define NZYX_ELEM(v, l, k, i, j)  \
-    DIRECT_NZYX_ELEM((v), (l), (k) - STARTINGZ(v), (i) - STARTINGY(v), (j) - STARTINGX(v))
+    DIRECT_NZYX_ELEM((v), (l), (k) - Zinit(v), (i) - Yinit(v), (j) - Xinit(v))
 
 /** Access to a direct element.
  * v is the array, k is the slice and n is the number of the pixel (combined i and j)
@@ -245,9 +255,9 @@ extern std::string floatToString(float F, int _width, int _prec);
  */
 #define FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V) \
     for (long int l = 0; l < NSIZE(V); l++) \
-    for (long int k = STARTINGZ(V); k <= FINISHINGZ(V); k++) \
-    for (long int i = STARTINGY(V); i <= FINISHINGY(V); i++) \
-    for (long int j = STARTINGX(V); j <= FINISHINGX(V); j++)
+    for (long int k = Zinit(V); k <= Zlast(V); k++) \
+    for (long int i = Yinit(V); i <= Ylast(V); i++) \
+    for (long int j = Xinit(V); j <= Xlast(V); j++)
 
 /** For all direct elements in the array, pointer version
  *
@@ -285,7 +295,7 @@ extern std::string floatToString(float F, int _width, int _prec);
  * @endcode
  */
 #define A3D_ELEM(V, k, i, j) \
-    DIRECT_A3D_ELEM((V),(k) - STARTINGZ(V), (i) - STARTINGY(V), (j) - STARTINGX(V))
+    DIRECT_A3D_ELEM((V),(k) - Zinit(V), (i) - Yinit(V), (j) - Xinit(V))
 
 /** For all elements in the array.
  *
@@ -301,9 +311,9 @@ extern std::string floatToString(float F, int _width, int _prec);
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_ARRAY3D(V) \
-    for (long int k=STARTINGZ(V); k<=FINISHINGZ(V); k++) \
-        for (long int i=STARTINGY(V); i<=FINISHINGY(V); i++) \
-            for (long int j=STARTINGX(V); j<=FINISHINGX(V); j++)
+    for (long int k=Zinit(V); k<=Zlast(V); k++) \
+        for (long int i=Yinit(V); i<=Ylast(V); i++) \
+            for (long int j=Xinit(V); j<=Xlast(V); j++)
 
 /** For all direct elements in the array.
  *
@@ -348,7 +358,7 @@ extern std::string floatToString(float F, int _width, int _prec);
  * @endcode
  */
 #define A2D_ELEM(v, i, j) \
-    DIRECT_A2D_ELEM(v, (i) - STARTINGY(v), (j) - STARTINGX(v))
+    DIRECT_A2D_ELEM(v, (i) - Yinit(v), (j) - Xinit(v))
 
 /** For all elements in the array
  *
@@ -362,8 +372,8 @@ extern std::string floatToString(float F, int _width, int _prec);
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_ARRAY2D(m) \
-    for (long int i=STARTINGY(m); i<=FINISHINGY(m); i++) \
-        for (long int j=STARTINGX(m); j<=FINISHINGX(m); j++)
+    for (long int i=Yinit(m); i<=Ylast(m); i++) \
+        for (long int j=Xinit(m); j<=Xlast(m); j++)
 
 /** For all elements in the array, accessed physically
  *
@@ -422,7 +432,7 @@ extern std::string floatToString(float F, int _width, int _prec);
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_ARRAY1D(v) \
-    for (long int i=STARTINGX(v); i<=FINISHINGX(v); i++)
+    for (long int i=Xinit(v); i<=Xlast(v); i++)
 
 /** For all elements in the array, accessed physically
  *
