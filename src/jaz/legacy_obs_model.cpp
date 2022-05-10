@@ -129,8 +129,8 @@ void LegacyObservationModel::insertObservation(
         ctf.getFftwImage(Fctf, s, s, angpix);
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-            DIRECT_MULTIDIM_ELEM(F2D,  n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
-            DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+            F2D[n]  *= Fctf[n];
+            Fctf[n] *= Fctf[n];
         }
     }
 

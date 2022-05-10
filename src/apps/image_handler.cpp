@@ -292,9 +292,9 @@ class image_handler_parameters {
 
                         RFLOAT sum_aa = 0.0, sum_xa = 0.0, sum_xx = 0.0;
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
-                            RFLOAT w = DIRECT_MULTIDIM_ELEM(Imask(), n) * DIRECT_MULTIDIM_ELEM(Imask(), n);
-                            RFLOAT x = DIRECT_MULTIDIM_ELEM(Iin(), n);
-                            RFLOAT a = DIRECT_MULTIDIM_ELEM(Isharp, n);
+                            RFLOAT w = Imask()[n] * Imask()[n];
+                            RFLOAT x = Iin()[n];
+                            RFLOAT a = Isharp[n];
                             sum_aa += w * a * a;
                             sum_xa += w * x * a;
                             sum_xx += w * x * x;
@@ -303,9 +303,9 @@ class image_handler_parameters {
                         RFLOAT scale = sum_xa / sum_aa;
                         RFLOAT diff2 = 0.0;
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
-                            RFLOAT w = DIRECT_MULTIDIM_ELEM(Imask(), n);
-                            RFLOAT x = DIRECT_MULTIDIM_ELEM(Iin(), n);
-                            RFLOAT a = DIRECT_MULTIDIM_ELEM(Isharp, n);
+                            RFLOAT w = Imask()[n];
+                            RFLOAT x = Iin()[n];
+                            RFLOAT a = Isharp[n];
                             diff2 += w * w * (x - scale * a) * (x - scale * a);
                         }
                         if (diff2 < smallest_diff2) {
@@ -321,9 +321,9 @@ class image_handler_parameters {
                 } else {
                     RFLOAT sum_aa = 0.0, sum_xa = 0.0;
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
-                        RFLOAT w = DIRECT_MULTIDIM_ELEM(Imask(), n);
-                        RFLOAT x = DIRECT_MULTIDIM_ELEM(Iin(), n);
-                        RFLOAT a = DIRECT_MULTIDIM_ELEM(Iop(), n);
+                        RFLOAT w = Imask()[n];
+                        RFLOAT x = Iin()[n];
+                        RFLOAT a = Iop()[n];
                         sum_aa += w * w * a * a;
                         sum_xa += w * w * x * a;
                     }
@@ -394,7 +394,7 @@ class image_handler_parameters {
             MultidimArray<Complex> FT;
             transformer.FourierTransform(Iin(), FT, false);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
-                DIRECT_MULTIDIM_ELEM(FT, n) /=  DIRECT_MULTIDIM_ELEM(avg_ampl, n);
+                FT[n] /= avg_ampl[n];
             }
             transformer.inverseFourierTransform();
             Iout = Iin;
@@ -583,7 +583,7 @@ class image_handler_parameters {
             pngOut.fill(gravis::bRGB(0));
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iout()) {
-                const unsigned char val = floor((DIRECT_MULTIDIM_ELEM(Iout(), n) - minmax.min) / step);
+                const unsigned char val = floor((Iout()[n] - minmax.min) / step);
                 unsigned char r, g, b;
                 greyToRGB(color_scheme, val, r, g, b);
                 pngOut[n] = gravis::bRGB(r, g, b);
@@ -783,17 +783,17 @@ class image_handler_parameters {
 
                 if (do_avg_ampl) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
-                        DIRECT_MULTIDIM_ELEM(avg_ampl, n) +=  abs(DIRECT_MULTIDIM_ELEM(FT, n));
+                        avg_ampl[n] += abs(FT[n]);
                     }
                 } else if (do_avg_ampl2 || do_avg_ampl2_ali) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
-                        DIRECT_MULTIDIM_ELEM(avg_ampl, n) +=  norm(DIRECT_MULTIDIM_ELEM(FT, n));
+                        avg_ampl[n] += norm(FT[n]);
                     }
                 }
             } else if (do_average) {
                 Iin.read(fn_img);
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
-                    DIRECT_MULTIDIM_ELEM(avg_ampl, n) +=  DIRECT_MULTIDIM_ELEM(Iin(), n);
+                    avg_ampl[n] += Iin()[n];
                 }
             } else if (do_average_all_frames) {
                 Iin.read(fn_img);
@@ -829,7 +829,7 @@ class image_handler_parameters {
                     } else if (avg_first >= 0 && avg_last >= 0 && nn + 1 >= avg_first && nn + 1 <= avg_last) {
                         //                                           ^ Start counting at 1
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
-                            DIRECT_MULTIDIM_ELEM(Iavg(), n) += DIRECT_MULTIDIM_ELEM(Iin(), n); // just store sum
+                            Iavg()[n] += Iin()[n]; // just store sum
                         }
                     }
                 }

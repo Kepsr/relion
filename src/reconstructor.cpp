@@ -476,44 +476,44 @@ void Reconstructor::backprojectOneParticle(long int p) {
         // Apply CTF if necessary
         if (do_ctf) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
-                DIRECT_MULTIDIM_ELEM(Fsub, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                Fsub[n] *= Fctf[n];
             }
         }
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
-            DIRECT_MULTIDIM_ELEM(F2D, n) -= DIRECT_MULTIDIM_ELEM(Fsub, n);
+            F2D[n] -= Fsub[n];
         }
         // Back-project difference image
         backprojector.set2DFourierTransform(F2D, A3D);
     } else {
         if (do_reconstruct_ctf) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                DIRECT_MULTIDIM_ELEM(F2D, n) = DIRECT_MULTIDIM_ELEM(Fctf, n);
+                F2D[n] = Fctf[n];
                 if (do_reconstruct_ctf2)
-                    DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
-                DIRECT_MULTIDIM_ELEM(Fctf, n) = 1.0;
+                    F2D[n] *= Fctf[n];
+                Fctf[n] = 1.0;
             }
         } else if (do_ewald) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                Fctf[n] *= Fctf[n];
             }
         } else if (do_ctf) {
             // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
             if (!ctf_premultiplied) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                    DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                    F2D[n] *= Fctf[n];
                 }
             }
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fctf) {
-                DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                Fctf[n] *= Fctf[n];
             }
         }
 
         // Do the following after squaring the CTFs!
         if (do_fom_weighting) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                DIRECT_MULTIDIM_ELEM(F2D, n)  *= fom;
-                DIRECT_MULTIDIM_ELEM(Fctf, n) *= fom;
+                F2D[n]  *= fom;
+                Fctf[n] *= fom;
             }
         }
 
@@ -628,11 +628,11 @@ void Reconstructor::reconstruct() {
             FileName fn_tmp = fn_out.withoutExtension();
             It().resize(backprojector.data);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
-                DIRECT_MULTIDIM_ELEM(It(), n) = (DIRECT_MULTIDIM_ELEM(backprojector.data, n)).real;
+                It()[n] = backprojector.data[n].real;
             }
             It.write(fn_tmp+"_data_real.mrc");
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
-                DIRECT_MULTIDIM_ELEM(It(), n) = (DIRECT_MULTIDIM_ELEM(backprojector.data, n)).imag;
+                It()[n] = backprojector.data[n].imag;
             }
             It.write(fn_tmp+"_data_imag.mrc");
             It() = backprojector.weight;

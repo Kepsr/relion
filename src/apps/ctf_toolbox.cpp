@@ -149,10 +149,10 @@ class ctf_toolbox_parameters {
                 ctf.getFftwImage(Fctf, Xsize(img()), Ysize(img()), angpix, false, false, do_intact_ctf_until_first_peak, false, do_ctf_pad, do_intact_ctf_after_first_peak);
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
                     if (!do_intact_ctf_after_first_peak) {
-                        DIRECT_MULTIDIM_ELEM(Fimg, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        Fimg[n] *= Fctf[n];
                     } else {
                         // this is safe because getCTF does not return RELION_EXIT_SUCCESS.
-                        DIRECT_MULTIDIM_ELEM(Fimg, n) /= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        Fimg[n] /= Fctf[n];
                     }
                 }
 

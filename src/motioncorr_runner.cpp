@@ -1001,7 +1001,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         #pragma omp parallel for num_threads(n_threads)
         for (int iframe = 0; iframe < n_frames; iframe++) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Igain()) {
-                DIRECT_MULTIDIM_ELEM(Iframes[iframe](), n) *= DIRECT_MULTIDIM_ELEM(Igain(), n);
+                Iframes[iframe]()[n] *= Igain()[n];
             }
         }
     }
@@ -1013,7 +1013,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
     for (int iframe = 0; iframe < n_frames; iframe++) {
         #pragma omp parallel for num_threads(n_threads)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-            DIRECT_MULTIDIM_ELEM(Isum, n) += DIRECT_MULTIDIM_ELEM(Iframes[iframe](), n);
+            Isum[n] += Iframes[iframe]()[n];
         }
     }
     RCTOC(TIMING_INITIAL_SUM);
@@ -1024,12 +1024,12 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         RFLOAT mean = 0, std = 0;
         #pragma omp parallel for reduction(+:mean) num_threads(n_threads)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-            mean += DIRECT_MULTIDIM_ELEM(Isum, n);
+            mean += Isum[n];
         }
         mean /= Xsize(Isum) * Ysize(Isum);
         #pragma omp parallel for reduction(+:std) num_threads(n_threads)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-            RFLOAT d = DIRECT_MULTIDIM_ELEM(Isum, n) - mean;
+            RFLOAT d = Isum[n] - mean;
             std += d * d;
         }
         std = std::sqrt(std / (Xsize(Isum) * Ysize(Isum)));
@@ -1042,7 +1042,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             #ifdef DEBUG_HOTPIXELS
             Image<RFLOAT> tmp(nx, ny);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tmp())
-                DIRECT_MULTIDIM_ELEM(tmp(), n) = DIRECT_MULTIDIM_ELEM(bBad, n);
+                tmp()[n] = bBad[n)];
             tmp.write("defect.mrc");
             #endif
         }
@@ -1051,9 +1051,9 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         if (fn_gain_reference != "") {
             int n_bad_eer = 0;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Igain()) {
-                if (DIRECT_MULTIDIM_ELEM(Igain(), n) == 0) {
+                if (Igain()[n] == 0) {
 					// n_bad_eer++;
-                    DIRECT_MULTIDIM_ELEM(bBad, n) = true;
+                    bBad[n] = true;
                 }
             }
 			// std::cout << "n_bad_eer = " << n_bad_eer << std::endl;
@@ -1061,8 +1061,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
         int n_bad = 0;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-            if (DIRECT_MULTIDIM_ELEM(Isum, n) > threshold && !DIRECT_MULTIDIM_ELEM(bBad, n)) {
-                DIRECT_MULTIDIM_ELEM(bBad, n) = true;
+            if (Isum[n] > threshold && !bBad[n]) {
+                bBad[n] = true;
                 n_bad++;
                 mic.hotpixelX.push_back(n % nx);
                 mic.hotpixelY.push_back(n / nx);
@@ -1164,7 +1164,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             for (int j = 1; j < grouping_for_ps && j + iframe < n_frames; j++) {
                 #pragma omp parallel for num_threads(n_threads)
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F_sum)
-                    DIRECT_MULTIDIM_ELEM(F_sum, n) += DIRECT_MULTIDIM_ELEM(Fframes[j + iframe], n);
+                    F_sum[n] += Fframes[j + iframe][n];
             }
 
             #pragma omp parallel for num_threads(n_threads)
@@ -1619,7 +1619,7 @@ void MotioncorrRunner::realSpaceInterpolation(
 
             #pragma omp parallel for num_threads(n_threads)
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum()) {
-                DIRECT_MULTIDIM_ELEM(Isum(), n) += DIRECT_MULTIDIM_ELEM(Iframes[iframe](), n);
+                Isum()[n] += Iframes[iframe]()[n];
             }
         }
     } else if (model_version == MOTION_MODEL_THIRD_ORDER_POLYNOMIAL) { // Optimised code
@@ -2187,8 +2187,7 @@ void MotioncorrRunner::fillDefectMask(
 
         #pragma omp parallel for num_threads(n_threads)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(bBad) {
-            if (DIRECT_MULTIDIM_ELEM(Idefect(), n) != 0)
-                DIRECT_MULTIDIM_ELEM(bBad, n) = true;
+            if (Idefect()[n] != 0) { bBad[n] = true; }
         }
     }
 }

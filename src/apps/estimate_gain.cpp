@@ -143,7 +143,7 @@ class estimate_gain {
                     Iframe.read(fn_img, true, iframe, false, true); // mmap false, is_2D true
                     const int tid = omp_get_thread_num();
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iframe()) {
-                        DIRECT_MULTIDIM_ELEM(Isums[tid](), n) += DIRECT_MULTIDIM_ELEM(Iframe(), n);
+                        Isums[tid]()[n] += Iframe()[n];
                     }
                 }
             } else {
@@ -169,7 +169,7 @@ class estimate_gain {
                     // unfortunately this function clears the buffer
                     renderer.renderFrames(frame, frame_end, buf);
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(buf) {
-                        DIRECT_MULTIDIM_ELEM(Isums[tid](), n) += DIRECT_MULTIDIM_ELEM(buf, n);
+                        Isums[tid]()[n] += buf[n];
                     }
                 }
             }
@@ -195,7 +195,7 @@ class estimate_gain {
         for (int i = 1; i < n_threads; i++) {
             #pragma omp parallel for num_threads(n_threads)
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isums[0]()) {
-                DIRECT_MULTIDIM_ELEM(Isums[0](), n) += DIRECT_MULTIDIM_ELEM(Isums[i](), n);
+                Isums[0]()[n] += Isums[i]()[n];
             }
         }
 
@@ -207,16 +207,16 @@ class estimate_gain {
             double total_count = 0;
             #pragma omp parallel for num_threads(n_threads) reduction(+: total_count)
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isums[0]())
-                total_count += DIRECT_MULTIDIM_ELEM(Isums[0](), n);
+                total_count += Isums[0]()[n];
             const double avg_count = total_count / ((double)nx * ny * n_frames_used);
             std::cout << "Average count per pixel per frame: " << avg_count << std::endl;
 
             #pragma omp parallel for num_threads(n_threads)
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isums[0]()) {
-                if (DIRECT_MULTIDIM_ELEM(Isums[0](), n) == 0) {
-                    DIRECT_MULTIDIM_ELEM(Isums[0](), n) = 1.0;
+                if (Isums[0]()[n] == 0) {
+                    Isums[0]()[n] = 1.0;
                 } else {
-                    DIRECT_MULTIDIM_ELEM(Isums[0](), n) = n_frames_used / DIRECT_MULTIDIM_ELEM(Isums[0](), n) * avg_count;
+                    Isums[0]()[n] = n_frames_used / Isums[0]()[n] * avg_count;
                 }
             }
         }

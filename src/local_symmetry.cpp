@@ -73,9 +73,9 @@ void truncateMultidimArray(
     // }
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v) {
-        RFLOAT val = DIRECT_MULTIDIM_ELEM(v, n);
-        if (val < minval) { DIRECT_MULTIDIM_ELEM(v, n) = minval; }
-        if (val > maxval) { DIRECT_MULTIDIM_ELEM(v, n) = maxval; }
+        RFLOAT &val = v[n];
+        if (val < minval) { val = minval; }
+        if (val > maxval) { val = maxval; }
     }
 
 }

@@ -4455,8 +4455,8 @@ void normaliseHelicalSegments(
 
         // Normalise
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img0()) {
-            val = DIRECT_MULTIDIM_ELEM(img0(), n);
-            DIRECT_MULTIDIM_ELEM(img0(), n) = (val - bg_stats.avg) / bg_stats.stddev;
+            val = img0()[n];
+            img0()[n] = (val - bg_stats.avg) / bg_stats.stddev;
         }
 
         // Rename
@@ -5272,7 +5272,7 @@ void averageAsymmetricUnits2D(
 
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
-            DIRECT_MULTIDIM_ELEM(Fimg, n) = DIRECT_MULTIDIM_ELEM(Fsum, n) / (RFLOAT)nr_asu;
+            Fimg[n] = Fsum[n] / (RFLOAT) nr_asu;
         }
         transformer.inverseFourierTransform();
 

@@ -341,7 +341,7 @@ void FourierTransformer::Transform(int sign) {
 
         RCTICTOC(TIMING_FFTW_NORMALISE, ({
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(fFourier) {
-            DIRECT_MULTIDIM_ELEM(fFourier,n) /= size;
+            fFourier[n] /= size;
         }
         }))
     } else if (sign == FFTW_BACKWARD) {

@@ -240,7 +240,7 @@ void  SchedulerOperator::readFromStarFile() const {
                 REPORT_ERROR("ERROR: metadata label " + EMDL::label2Str(mylabel) + " is not of a number type!");
             }
 
-            DIRECT_MULTIDIM_ELEM(for_sorting, ii) = myval;
+            for_sorting[ii] = myval;
 
             if (myval < mymin) {
                 mymin = myval;
@@ -274,7 +274,7 @@ void  SchedulerOperator::readFromStarFile() const {
             }
             MultidimArray<long> sorted_idx;
             for_sorting.sorted_index(sorted_idx);
-            scheduler_global_floats[output].value = DIRECT_MULTIDIM_ELEM(sorted_idx, idx);
+            scheduler_global_floats[output].value = sorted_idx[idx];
         }
     }
 }

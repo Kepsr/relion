@@ -131,7 +131,7 @@ void normalise(
     } else {
         // Subtract avg and divide by stddev for all pixels
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I())
-            DIRECT_MULTIDIM_ELEM(I(), n) = (DIRECT_MULTIDIM_ELEM(I(), n) - avg) / stddev;
+            I()[n] = (I()[n] - avg) / stddev;
     }
 }
 
@@ -329,7 +329,7 @@ void removeDust(
 
 void invert_contrast(Image<RFLOAT> &I) {
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I()) {
-        DIRECT_MULTIDIM_ELEM(I(), n) *= -1;
+        I()[n] *= -1;
     }
 }
 
@@ -389,12 +389,9 @@ MultidimArray<RFLOAT>::MinMax getImageContrast(
     if (redo_minmax) {
         // Bound image data to the interval [minval, maxval]
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(image) {
-            RFLOAT val = DIRECT_MULTIDIM_ELEM(image, n);
-                   if (val > maxval) {
-                DIRECT_MULTIDIM_ELEM(image, n) = maxval;
-            } else if (val < minval) {
-                DIRECT_MULTIDIM_ELEM(image, n) = minval;
-            }
+            RFLOAT &val = image[n];
+                 if (val > maxval) { val = maxval; } 
+            else if (val < minval) { val = minval; }
         }
     }
 

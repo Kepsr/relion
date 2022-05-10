@@ -447,7 +447,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
 
                 if (mgHasGain) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(lastGainRef()) {
-                        DIRECT_MULTIDIM_ELEM(Iframes[iframe], n) *= DIRECT_MULTIDIM_ELEM(lastGainRef(), n);
+                        Iframes[iframe][n] *= lastGainRef()[n];
                     }
                 }
             }
@@ -467,7 +467,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 for (int iframe = 0; iframe < n_frames; iframe++) {
                     #pragma omp parallel for num_threads(nr_omp_threads)
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-                        DIRECT_MULTIDIM_ELEM(Isum, n) += DIRECT_MULTIDIM_ELEM(Iframes[iframe], n);
+                        Isum[n] += Iframes[iframe][n];
                     }
                 }
                 #ifdef DEBUG
@@ -479,12 +479,12 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 RFLOAT mean = 0, std = 0;
                 #pragma omp parallel for reduction(+:mean) num_threads(nr_omp_threads)
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-                    mean += DIRECT_MULTIDIM_ELEM(Isum, n);
+                    mean += Isum[n];
                 }
                 mean /= Xsize(Isum) * Ysize(Isum);
                 #pragma omp parallel for reduction(+:std) num_threads(nr_omp_threads)
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-                    RFLOAT d = (DIRECT_MULTIDIM_ELEM(Isum, n) - mean);
+                    RFLOAT d = Isum[n] - mean;
                     std += d * d;
                 }
                 std = std::sqrt(std / (Xsize(Isum) * Ysize(Isum)));
@@ -531,7 +531,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 for (int iframe = 0; iframe < n_frames; iframe++) {
                     #pragma omp parallel for num_threads(nr_omp_threads)
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-                        DIRECT_MULTIDIM_ELEM(Isum, n) += DIRECT_MULTIDIM_ELEM(Iframes[iframe], n);
+                        Isum[n] += Iframes[iframe][n];
                     }
                 }
 

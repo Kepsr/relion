@@ -393,8 +393,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
     if (do_3dmodels) {
         // Divide the img by sumw to deal with overlapping bodies: just take average
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img()) {
-            if (DIRECT_MULTIDIM_ELEM(sumw, n) > 1.0)
-                DIRECT_MULTIDIM_ELEM(img(), n) /= DIRECT_MULTIDIM_ELEM(sumw, n);
+            if (sumw[n] > 1.0) { img()[n] /= sumw[n]; }
         }
         // Write the image to disk
         FileName fn_img;
@@ -590,8 +589,7 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
 
             // Divide the img by sumw to deal with overlapping bodies: just take average
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img()) {
-                if (DIRECT_MULTIDIM_ELEM(sumw, n) > 1.0)
-                    DIRECT_MULTIDIM_ELEM(img(), n) /= DIRECT_MULTIDIM_ELEM(sumw, n);
+                if (sumw[n] > 1.0) { img()[n] /= sumw[n]; }
             }
 
             // Write the image to disk

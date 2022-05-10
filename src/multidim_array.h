@@ -183,12 +183,6 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 #define NZYX_ELEM(v, l, k, i, j)  \
     DIRECT_NZYX_ELEM((v), (l), (k) - Zinit(v), (i) - Yinit(v), (j) - Xinit(v))
 
-/** Access to a direct element.
- * v is the array, k is the slice and n is the number of the pixel (combined i and j)
- * within the slice.
- */
-#define DIRECT_MULTIDIM_ELEM(v, n) ((v).data[(n)])
-
 /** For all direct elements in the array
  *
  * This macro is used to generate loops for the array in an easy manner. It
@@ -197,7 +191,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  *
  * @code
  * FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v) {
- *     std::cout << DIRECT_MULTIDIM_ELEM(v, n) << " ";
+ *     std::cout << v[n] << " ";
  * }
  * @endcode
  */
@@ -1592,6 +1586,8 @@ class MultidimArray {
     ///@name Access to the pixel values
     //@{
 
+    T& operator [] (long int n) const { return data[n]; }
+
     /** Volume element access by RFLOAT vector.
      *
      * Returns the value of a matrix logical position, but this time the
@@ -2422,13 +2418,13 @@ class MultidimArray {
             return 0;
 
         if (xdim == 1)
-            return DIRECT_MULTIDIM_ELEM(*this, 0);
+            return (*this)[0];
 
         // Copy *this
         long int N = nzyxdim();
         MultidimArray<RFLOAT> temp(N);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-            DIRECT_MULTIDIM_ELEM(temp, n) = DIRECT_MULTIDIM_ELEM(*this, n);
+            temp[n] = (*this)[n];
         }
 
         // Sort indices
@@ -2436,12 +2432,9 @@ class MultidimArray {
 
         // Get median
         if (N % 2 == 0) {
-            return (
-                DIRECT_MULTIDIM_ELEM(temp, N / 2 - 1) +
-                DIRECT_MULTIDIM_ELEM(temp, N / 2)
-            ) * 0.5;
+            return (temp[N / 2 - 1] + temp[N / 2]) * 0.5;
         } else {
-            return DIRECT_MULTIDIM_ELEM(temp, N / 2);
+            return temp[N / 2];
         }
     }
 
@@ -3324,14 +3317,14 @@ class MultidimArray {
         std::vector<std::pair<T, long int> > vp;
         vp.reserve(xdim);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-            vp.push_back(std::make_pair(DIRECT_MULTIDIM_ELEM(*this, n), n));
+            vp.push_back(std::make_pair((*this)[n], n));
         }
         // Sort on the first elements of the pairs
         std::sort(vp.begin(), vp.end());
         idx.resize(xdim);
         // Fill the output array with the second elements of the sorted vp
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(idx) {
-            DIRECT_MULTIDIM_ELEM(idx, n) = vp[n].second;
+            idx[n] = vp[n].second;
         }
     }
 
@@ -3388,7 +3381,7 @@ class MultidimArray {
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             // Hopefully the compiler will hoist this loop-invariant switch block
-            if (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+            if (!mask || (*mask)[n] > 0) {
                 switch (mode) {
 
                     case 1: if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } break;
@@ -3427,7 +3420,7 @@ class MultidimArray {
         T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+            if (!mask || (*mask)[n] > 0) {
                 switch (mode) {
 
                     case 1: if (abs(*ptr) > a) { ret++; } break;
@@ -3460,7 +3453,7 @@ class MultidimArray {
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             if (
-                (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0)
+                (!mask || (*mask)[n] > 0)
                 && abs(*ptr - oldv) <= accuracy
             ) { *ptr = newv; }
         }
@@ -3480,7 +3473,7 @@ class MultidimArray {
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
             if (
-                (!mask || DIRECT_MULTIDIM_ELEM(*mask,n) > 0) 
+                (!mask || (*mask)[n] > 0) 
                 && abs(*ptr - oldv) <= accuracy
             ) { *ptr = rnd_gaus(avgv, sigv); }
         }
@@ -3499,7 +3492,7 @@ class MultidimArray {
         T *ptr;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (!mask || DIRECT_MULTIDIM_ELEM(*mask, n) > 0) {
+            if (!mask || (*mask)[n] > 0) {
                 *ptr = *ptr > val + accuracy;
             }
         }
@@ -3525,10 +3518,7 @@ class MultidimArray {
 
         result.resize(v1);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(result)
-        DIRECT_MULTIDIM_ELEM(result, n) = std::max(
-            DIRECT_MULTIDIM_ELEM(v1, n),
-            DIRECT_MULTIDIM_ELEM(v2, n)
-        );
+            result[n] = std::max(v1[n], v2[n]);
     }
 
     /** MIN
@@ -3546,10 +3536,7 @@ class MultidimArray {
 
         result.resize(v1);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(result)
-        DIRECT_MULTIDIM_ELEM(result, n) = std::min(
-            DIRECT_MULTIDIM_ELEM(v1, n),
-            DIRECT_MULTIDIM_ELEM(v2, n)
-        );
+            result[n] = std::min(v1[n], v2[n]);
     }
 
     /** Sqrt.
@@ -3932,7 +3919,7 @@ class MultidimArray {
         if (!sameShape(op) || !data || !op.data) return false;
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-            if (abs(DIRECT_MULTIDIM_ELEM(*this, n) - DIRECT_MULTIDIM_ELEM(op, n)) > accuracy)
+            if (abs((*this)[n] - op[n]) > accuracy)
                 return false;
         }
 
@@ -3963,7 +3950,7 @@ void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) 
         T1 *ptr1;
         long int n;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v1, n, ptr1) {
-            DIRECT_MULTIDIM_ELEM(v2, n) = static_cast<T2>(*ptr1);
+            v2[n] = static_cast<T2>(*ptr1);
         }
     } else {
         v2.resize(v1.zdim, v1.ydim, v1.xdim);

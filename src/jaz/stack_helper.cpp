@@ -362,16 +362,16 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
             #pragma omp parallel for reduction(+:frame_mean, n_valid) num_threads(threads_p)
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(muGraph.data) {
-                if (!DIRECT_MULTIDIM_ELEM(*defectMask, n)) continue;
-                frame_mean += DIRECT_MULTIDIM_ELEM(muGraph.data, n);
+                if (!(*defectMask)[n]) continue;
+                frame_mean += muGraph.data[n];
                 n_valid ++;
             }
             frame_mean /=  n_valid;
 
             #pragma omp parallel for reduction(+:frame_std) num_threads(threads_p)
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(muGraph.data) {
-                if (!DIRECT_MULTIDIM_ELEM(*defectMask, n)) continue;
-                RFLOAT d = (DIRECT_MULTIDIM_ELEM(muGraph.data, n) - frame_mean);
+                if (!(*defectMask)[n]) continue;
+                RFLOAT d = muGraph.data[n] - frame_mean;
                 frame_std += d * d;
             }
             frame_std = std::sqrt(frame_std / n_valid);

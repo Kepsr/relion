@@ -80,8 +80,8 @@ void TIFFConverter::estimate(FileName fn_movie) {
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error, changed, negative)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(frame()) {
-            const float val = DIRECT_MULTIDIM_ELEM(frame(), n);
-            const float gain_here = DIRECT_MULTIDIM_ELEM(gain(), n);
+            const float val = frame()[n];
+            const float gain_here = gain()[n];
 
             if (val == 0) {
                 continue;
@@ -92,11 +92,11 @@ void TIFFConverter::estimate(FileName fn_movie) {
                        fn_movie.c_str(), iframe, n / Xsize(gain()), n % Xsize(gain()), (double)val, (double)gain_here);
                 #endif
                 negative++;
-                DIRECT_MULTIDIM_ELEM(defects(), n) = -1;
+                defects()[n] = -1;
             } else if (gain_here > val) {
-                DIRECT_MULTIDIM_ELEM(gain(), n) = val;
+                gain()[n] = val;
                 changed++;
-                DIRECT_MULTIDIM_ELEM(defects(), n) = 0;
+                defects()[n] = 0;
             } else {
                 const int ival = (int)round(val / gain_here);
                 const float expected = gain_here * ival;
@@ -107,16 +107,16 @@ void TIFFConverter::estimate(FileName fn_movie) {
                            (double)expected, (double)gain_here);
                     #endif
                     error++;
-                    DIRECT_MULTIDIM_ELEM(defects(), n) = -1;
-                } else if (DIRECT_MULTIDIM_ELEM(defects(), n) >= 0) {
-                    DIRECT_MULTIDIM_ELEM(defects(), n)++;
+                    defects()[n] = -1;
+                } else if (defects()[n] >= 0) {
+                    defects()[n]++;
                 }
             }
         }
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:stable)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(defects()) {
-            short val = DIRECT_MULTIDIM_ELEM(defects(), n);
+            short val = defects()[n];
             if (val >= thresh_reliable)
                 stable++;
         }
@@ -171,13 +171,13 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(frame()) {
-            const float val       = DIRECT_MULTIDIM_ELEM(frame(), n);
-            const float gain_here = DIRECT_MULTIDIM_ELEM(gain(),  n);
-            bool is_bad = DIRECT_MULTIDIM_ELEM(defects(), n) < thresh_reliable;
+            const float val       = frame()[n];
+            const float gain_here = gain()[n];
+            bool is_bad = defects()[n] < thresh_reliable;
 
             if (is_bad) {
                 // TODO: implement other strategy
-                DIRECT_MULTIDIM_ELEM(buf, n) = val;
+                buf[n] = val;
                 continue;
             }
 
@@ -186,7 +186,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
             if (fabs(expected - val) > 0.0001) {
                 snprintf(
                     msg, 255, " mismatch: %s frame %2d pos %4ld %4ld obs % 8.4f status %d expected % 8.4f gain %.4f\n",
-                    fn_movie.c_str(), iframe, n / Xsize(gain()), n % Xsize(gain()), (double) val, DIRECT_MULTIDIM_ELEM(defects(), n),
+                    fn_movie.c_str(), iframe, n / Xsize(gain()), n % Xsize(gain()), (double) val, defects()[n],
                     (double) expected, (double) gain_here
                 );
                 std::cerr << msg << std::endl;
@@ -220,7 +220,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
                 }
             }
 
-            DIRECT_MULTIDIM_ELEM(buf, n) = ival;
+            buf[n] = ival;
         }
 
         write_tiff_one_page(tif, buf, angpix, decide_filter(Xsize(buf)), deflate_level, line_by_line);
@@ -385,10 +385,10 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         } else if (mrc_mode == 2) {
             gain().reshape(ny, nx);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain())
-                DIRECT_MULTIDIM_ELEM(gain(), n) = 999.9;
+                gain()[n] = 999.9;
             defects().reshape(ny, nx);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(defects())
-                DIRECT_MULTIDIM_ELEM(defects(), n) = -1;
+                defects()[n] = -1;
 
             if (!do_estimate)
                 std::cerr << "WARNING: To effectively compress mode 2 MRC files, you should first estimate the gain with --estimate_gain." << std::endl;
@@ -397,8 +397,8 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         if (!do_estimate && mrc_mode == 2) {
             /// TODO: other strategy
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain())
-                if (DIRECT_MULTIDIM_ELEM(defects(), n) < thresh_reliable)
-                    DIRECT_MULTIDIM_ELEM(gain(), n) = 1.0;
+                if (defects()[n] < thresh_reliable)
+                    gain()[n] = 1.0;
 
             if (rank == 0 && fn_gain != "") {
                 gain.write(fn_out + "gain-reference.mrc");

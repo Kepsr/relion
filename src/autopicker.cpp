@@ -483,7 +483,7 @@ void AutoPicker::initialise() {
         if (particle_diameter < 0.0) {
             RFLOAT sumr = 0.0;
             for (int iref = 0; iref < Mrefs.size(); iref++) {
-                RFLOAT cornerval = DIRECT_MULTIDIM_ELEM(Mrefs[iref], 0);
+                RFLOAT cornerval = Mrefs[iref][0];
                 // Look on the central X-axis, which first and last values are NOT equal to the corner value
                 bool has_set_first = false;
                 bool has_set_last = false;
@@ -738,7 +738,7 @@ void AutoPicker::initialise() {
 
             // (Re-)apply the mask to the references
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mrefs[iref]) {
-                DIRECT_MULTIDIM_ELEM(Mrefs[iref], n) *= DIRECT_MULTIDIM_ELEM(Mcirc_mask, n);
+                Mrefs[iref][n] *= Mcirc_mask[n];
             }
 
             // Set reference in the large box of the micrograph
@@ -2340,10 +2340,10 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
             // Values that are too far from the mean are set to the mean (0)
-            if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev > outlier_removal_zscore)
-                DIRECT_MULTIDIM_ELEM(Imic(), n) = stats.avg;
+            if (abs(Imic()[n] - stats.avg) / stats.stddev > outlier_removal_zscore)
+                Imic()[n] = stats.avg;
 
-            DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev;
+            Imic()[n] = (Imic()[n] - stats.avg) / stats.stddev;
         }
 
         // Have positive LoG maps
@@ -2395,7 +2395,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
             ctf.getFftwImage(Fctf, micrograph_size, micrograph_size, angpix, false, false, false, false, false, true);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fmic) {
                 // this is safe because getCTF does not return 0.
-                DIRECT_MULTIDIM_ELEM(Fmic, n) /= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                Fmic[n] /= Fctf[n];
             }
         }
 
@@ -2420,9 +2420,9 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
             }
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux()) {
-                if (DIRECT_MULTIDIM_ELEM(Maux(), n) > DIRECT_MULTIDIM_ELEM(Mbest_fom, n)) {
-                    DIRECT_MULTIDIM_ELEM(Mbest_fom, n) = DIRECT_MULTIDIM_ELEM(Maux(), n);
-                    DIRECT_MULTIDIM_ELEM(Mbest_size, n) = myd;
+                if (Maux()[n] > Mbest_fom[n]) {
+                    Mbest_fom[n] = Maux()[n];
+                    Mbest_size[n] = myd;
                 }
             }
 
@@ -2439,9 +2439,9 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
             Maux.read(fn_tmp);
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux()) {
-                if (DIRECT_MULTIDIM_ELEM(Maux(), n) > DIRECT_MULTIDIM_ELEM(Mbest_fom, n)) {
-                    DIRECT_MULTIDIM_ELEM(Mbest_fom, n) = DIRECT_MULTIDIM_ELEM(Maux(), n);
-                    DIRECT_MULTIDIM_ELEM(Mbest_size, n) = myd;
+                if (Maux()[n] > Mbest_fom[n]) {
+                    Mbest_fom[n] = Maux()[n];
+                    Mbest_size[n] = myd;
                 }
             }
         }
@@ -2482,19 +2482,19 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
     RFLOAT count_high = 0.0;
     RFLOAT count_ok = 0.0;
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mbest_size) {
-        if (DIRECT_MULTIDIM_ELEM(Mbest_size, n) > LoG_max_diameter) {
-            sum_fom_high += DIRECT_MULTIDIM_ELEM(Mbest_fom, n);
-            sum2_fom_high += DIRECT_MULTIDIM_ELEM(Mbest_fom, n) * DIRECT_MULTIDIM_ELEM(Mbest_fom, n);
+        if (Mbest_size[n] > LoG_max_diameter) {
+            sum_fom_high += Mbest_fom[n];
+            sum2_fom_high += Mbest_fom[n] * Mbest_fom[n];
             count_high += 1.0;
-            DIRECT_MULTIDIM_ELEM(Mbest_fom, n) = 0.0;
-        } else if (DIRECT_MULTIDIM_ELEM(Mbest_size, n) < LoG_min_diameter) {
-            sum_fom_low += DIRECT_MULTIDIM_ELEM(Mbest_fom, n);
-            sum2_fom_low += DIRECT_MULTIDIM_ELEM(Mbest_fom, n) * DIRECT_MULTIDIM_ELEM(Mbest_fom, n);
+            Mbest_fom[n] = 0.0;
+        } else if (Mbest_size[n] < LoG_min_diameter) {
+            sum_fom_low += Mbest_fom[n];
+            sum2_fom_low += Mbest_fom[n] * Mbest_fom[n];
             count_low += 1.0;
-            DIRECT_MULTIDIM_ELEM(Mbest_fom, n) = 0.0;
+            Mbest_fom[n] = 0.0;
         } else {
-            sum_fom_ok += DIRECT_MULTIDIM_ELEM(Mbest_fom, n);
-            sum2_fom_ok += DIRECT_MULTIDIM_ELEM(Mbest_fom, n) * DIRECT_MULTIDIM_ELEM(Mbest_fom, n);
+            sum_fom_ok += Mbest_fom[n];
+            sum2_fom_ok += Mbest_fom[n] * Mbest_fom[n];
             count_ok += 1.0;
         }
     }
@@ -2529,8 +2529,8 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
 
     // Threshold the best_fom map
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mbest_fom) {
-        if (DIRECT_MULTIDIM_ELEM(Mbest_fom, n) < my_threshold) {
-            DIRECT_MULTIDIM_ELEM(Mbest_fom, n) = 0.0;
+        if (Mbest_fom[n] < my_threshold) {
+            Mbest_fom[n] = 0.0;
         }
     }
 
@@ -2634,10 +2634,10 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
         // Remove pixel values that are too far away from the mean
-        if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev > outlier_removal_zscore)
-            DIRECT_MULTIDIM_ELEM(Imic(), n) = stats.avg;
+        if (abs(Imic()[n] - stats.avg) / stats.stddev > outlier_removal_zscore)
+            Imic()[n] = stats.avg;
 
-        DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev;
+        Imic()[n] = (Imic()[n] - stats.avg) / stats.stddev;
     }
 
     if (
@@ -2754,7 +2754,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         // Also calculate the FFT of the squared micrograph
         Maux.resize(micrograph_size,micrograph_size);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux) {
-            DIRECT_MULTIDIM_ELEM(Maux, n) = DIRECT_MULTIDIM_ELEM(Imic(), n) * DIRECT_MULTIDIM_ELEM(Imic(), n);
+            Maux[n] = Imic()[n] * Imic()[n];
         }
         MultidimArray<Complex> Fmic2;
         transformer.FourierTransform(Maux, Fmic2);
@@ -2890,7 +2890,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 // Apply the CTF on-the-fly (so same PPref can be used for many different micrographs)
                 if (do_ctf) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
-                        DIRECT_MULTIDIM_ELEM(Faux, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        Faux[n] *= Fctf[n];
                     }
                 #ifdef TIMING
                 timer.toc(TIMING_B4);
@@ -2973,7 +2973,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 #endif
                 // Now multiply template and micrograph to calculate the cross-correlation
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
-                    DIRECT_MULTIDIM_ELEM(Faux, n) = conj(DIRECT_MULTIDIM_ELEM(Faux, n)) * DIRECT_MULTIDIM_ELEM(Fmic, n);
+                    Faux[n] = conj(Faux[n]) * Fmic[n];
                 }
 
                 // If we're not doing shrink, then Faux is bigger than Faux2!
@@ -2991,21 +2991,21 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 // So now we already had precalculated: Mdiff2 = 1/sig*Sum(X^2) - 2/sig*Sum(X) + mu^2/sig*Sum(1)
                 // Still to do (per reference): - 2/sig*Sum(AX) + 2*mu/sig*Sum(A) + Sum(A^2)
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux) {
-                    RFLOAT diff2 = -2.0 * normfft * DIRECT_MULTIDIM_ELEM(Maux, n);
-                    diff2 += 2.0 * DIRECT_MULTIDIM_ELEM(Mmean, n) * sum_ref_under_circ_mask;
-                    if (DIRECT_MULTIDIM_ELEM(Mstddev, n) > 1E-10)
-                        diff2 /= DIRECT_MULTIDIM_ELEM(Mstddev, n);
+                    RFLOAT diff2 = -2.0 * normfft * Maux[n];
+                    diff2 += 2.0 * Mmean[n] * sum_ref_under_circ_mask;
+                    if (Mstddev[n] > 1E-10)
+                        diff2 /= Mstddev[n];
                     diff2 += sum_ref2_under_circ_mask;
                     diff2 = exp(-diff2 / 2.0); // exponentiate to reflect the Gaussian error model. sigma=1 after normalization, 0.4=1/sqrt(2pi)
 
                     // Store fraction of (1 - probability-ratio) wrt  (1 - expected Pratio)
                     diff2 = (diff2 - 1.0) / (expected_Pratio - 1.0);
                     #ifdef DEBUG
-                    DIRECT_MULTIDIM_ELEM(Maux, n) = diff2;
+                    Maux[n] = diff2;
                     #endif
-                    if (diff2 > DIRECT_MULTIDIM_ELEM(Mccf_best, n)) {
-                        DIRECT_MULTIDIM_ELEM(Mccf_best, n) = diff2;
-                        DIRECT_MULTIDIM_ELEM(Mpsi_best, n) = psi;
+                    if (diff2 > Mccf_best[n]) {
+                        Mccf_best[n] = diff2;
+                        Mpsi_best[n] = psi;
                     }
                 }
                 #ifdef DEBUG
@@ -3040,9 +3040,8 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 fn_tmp.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
                 It.write(fn_tmp);
 
-//				for (long int n=0; n<((Mccf_best).nzyxdim()/10); n+=1)
-//				{
-//					std::cerr << DIRECT_MULTIDIM_ELEM(Mccf_best, n) << std::endl;
+//				for (long int n=0; n<((Mccf_best).nzyxdim() / 10); n+=1) {
+//					std::cerr << Mccf_best[n] << std::endl;
 //				}
 //				exit(0);
             } // end if do_write_fom_maps
@@ -3057,14 +3056,14 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             if (!do_read_fom_maps) {
                 // Combine Mccf_best and Mpsi_best from all refs
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mccf_best) {
-                    RFLOAT new_ccf = DIRECT_MULTIDIM_ELEM(Mccf_best, n);
-                    RFLOAT old_ccf = DIRECT_MULTIDIM_ELEM(Mccf_best_combined, n);
+                    RFLOAT new_ccf = Mccf_best[n];
+                    RFLOAT old_ccf = Mccf_best_combined[n];
                     if (new_ccf > old_ccf) {
-                        DIRECT_MULTIDIM_ELEM(Mccf_best_combined, n) = new_ccf;
+                        Mccf_best_combined[n] = new_ccf;
                         if (do_amyloid) {
-                            DIRECT_MULTIDIM_ELEM(Mpsi_best_combined, n) = DIRECT_MULTIDIM_ELEM(Mpsi_best, n);
+                            Mpsi_best_combined[n] = Mpsi_best[n];
                         } else {
-                            DIRECT_MULTIDIM_ELEM(Mclass_best_combined, n) = iref;
+                            Mclass_best_combined[n] = iref;
                         }
                     }
                 }
@@ -3208,7 +3207,7 @@ void AutoPicker::calculateStddevAndMeanUnderMask(
     #endif
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
-        DIRECT_MULTIDIM_ELEM(Faux, n) = DIRECT_MULTIDIM_ELEM(_Fmic, n) * conj(DIRECT_MULTIDIM_ELEM(_Fmsk, n));
+        Faux[n] = _Fmic[n] * conj(_Fmsk[n]);
     }
     windowFourierTransform(Faux, Faux2, workSize);
     CenterFFTbySign(Faux2);
@@ -3223,12 +3222,12 @@ void AutoPicker::calculateStddevAndMeanUnderMask(
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(_Mstddev) {
         // store minus average-squared already in _Mstddev
-        DIRECT_MULTIDIM_ELEM(_Mstddev, n) = -DIRECT_MULTIDIM_ELEM(Maux, n) * DIRECT_MULTIDIM_ELEM(Maux, n);
+        _Mstddev[n] = -Maux[n] * Maux[n];
     }
 
     // Calculate convolution of micrograph-squared and mask
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
-        DIRECT_MULTIDIM_ELEM(Faux, n) = DIRECT_MULTIDIM_ELEM(_Fmic2, n) * conj(DIRECT_MULTIDIM_ELEM(_Fmsk, n));
+        Faux[n] = _Fmic2[n] * conj(_Fmsk[n]);
     }
     windowFourierTransform(Faux, Faux2, workSize);
     CenterFFTbySign(Faux2);
@@ -3236,11 +3235,11 @@ void AutoPicker::calculateStddevAndMeanUnderMask(
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(_Mstddev) {
         // we already stored minus average-squared in _Mstddev
-        DIRECT_MULTIDIM_ELEM(_Mstddev, n) += normfft * DIRECT_MULTIDIM_ELEM(Maux, n);
-        if (DIRECT_MULTIDIM_ELEM(_Mstddev, n) > (RFLOAT) 1E-10) {
-            DIRECT_MULTIDIM_ELEM(_Mstddev, n) = sqrt(DIRECT_MULTIDIM_ELEM(_Mstddev, n) );
+        _Mstddev[n] += normfft * Maux[n];
+        if (_Mstddev[n] > (RFLOAT) 1E-10) {
+            _Mstddev[n] = sqrt(_Mstddev[n] );
         } else {
-            DIRECT_MULTIDIM_ELEM(_Mstddev, n) = 1.0;
+            _Mstddev[n] = 1.0;
         }
     }
 

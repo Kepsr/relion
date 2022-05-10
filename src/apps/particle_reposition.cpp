@@ -254,11 +254,11 @@ class particle_reposition_parameters {
 
                         if (optimiser.mydata.obsModel.getCtfPremultiplied(optics_group)) {
                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
-                                DIRECT_MULTIDIM_ELEM(Fref, n) *= (DIRECT_MULTIDIM_ELEM(Fctf, n) * DIRECT_MULTIDIM_ELEM(Fctf, n));
+                                Fref[n] *= (Fctf[n] * Fctf[n]);
                             }
                         } else {
                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
-                                DIRECT_MULTIDIM_ELEM(Fref, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                                Fref[n] *= Fctf[n];
                             }
                         }
 
@@ -272,7 +272,7 @@ class particle_reposition_parameters {
                         int group_id = optimiser.mydata.getGroupId(part_id, 0);
                         RFLOAT myscale = optimiser.mymodel.scale_correction[group_id];
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
-                            DIRECT_MULTIDIM_ELEM(Fref, n) *= myscale;
+                            Fref[n] *= myscale;
                         }
                     }
 
@@ -367,19 +367,19 @@ class particle_reposition_parameters {
 
             if (found_one) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic_out()) {
-                    if (DIRECT_MULTIDIM_ELEM(Imic_sum, n) > 0.0)
-                        DIRECT_MULTIDIM_ELEM(Imic_out(), n) /= DIRECT_MULTIDIM_ELEM(Imic_sum, n);
+                    if (Imic_sum[n] > 0.0)
+                        Imic_out()[n] /= Imic_sum[n];
                     if (do_invert)
-                        DIRECT_MULTIDIM_ELEM(Imic_out(), n) *= -1.0;
+                        Imic_out()[n] *= -1.0;
                     if (do_subtract) {
-                        DIRECT_MULTIDIM_ELEM(Imic_out(), n) = DIRECT_MULTIDIM_ELEM(Imic_in(), n) - DIRECT_MULTIDIM_ELEM(Imic_out(), n);
+                        Imic_out()[n] = Imic_in()[n] - Imic_out()[n];
                     } else if (micrograph_background > 0.0) {
                         // normalize Imic_in on the fly
-                        DIRECT_MULTIDIM_ELEM(Imic_in(), n) -= mean_mic;
-                        DIRECT_MULTIDIM_ELEM(Imic_in(), n) /= stddev_mic;
+                        Imic_in()[n] -= mean_mic;
+                        Imic_in()[n] /= stddev_mic;
                         // And add a precentage to Imic_out
-                        DIRECT_MULTIDIM_ELEM(Imic_out(), n) *= (1. - micrograph_background);
-                        DIRECT_MULTIDIM_ELEM(Imic_out(), n) += micrograph_background * DIRECT_MULTIDIM_ELEM(Imic_in(), n);
+                        Imic_out()[n] *= 1.0 - micrograph_background;
+                        Imic_out()[n] += micrograph_background * Imic_in()[n];
                     }
                 }
 

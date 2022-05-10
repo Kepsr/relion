@@ -158,7 +158,7 @@ void AccProjectorPlan::setup(
             if (do_skip_align || do_skip_rotate) {
                 pdf_orientation = pdf_class[iclass];
             } else if (orientational_prior_mode == NOPRIOR) {
-                pdf_orientation = DIRECT_MULTIDIM_ELEM(pdf_direction[iclass], idir);
+                pdf_orientation = pdf_direction[iclass][idir];
             } else {
                 pdf_orientation = directions_prior[idir] * psi_prior[ipsi];
             }

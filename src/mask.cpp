@@ -258,7 +258,7 @@ void autoMask(
 
     // A. Calculate initial binary mask based on density threshold
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img_in) {
-        DIRECT_MULTIDIM_ELEM(msk_out, n) = DIRECT_MULTIDIM_ELEM(img_in, n) >= ini_mask_density_threshold;
+        msk_out[n] = img_in[n] >= ini_mask_density_threshold;
     }
 
     MultidimArray<RFLOAT> msk_cp;

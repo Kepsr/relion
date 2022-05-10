@@ -102,8 +102,8 @@ class align_symmetry {
             // non-weighted real-space squared difference
             double diff2 = 0;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(rotated) {
-                diff2 += (DIRECT_MULTIDIM_ELEM(rotated, n) - DIRECT_MULTIDIM_ELEM(symmetrised, n)) *
-                         (DIRECT_MULTIDIM_ELEM(rotated, n) - DIRECT_MULTIDIM_ELEM(symmetrised, n));
+                diff2 += (rotated[n] - symmetrised[n]) *
+                         (rotated[n] - symmetrised[n]);
             }
 
             if (best_diff2 > diff2) {

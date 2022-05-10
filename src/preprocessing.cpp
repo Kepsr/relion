@@ -771,7 +771,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             );
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
-                DIRECT_MULTIDIM_ELEM(FT, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                FT[n] *= Fctf[n];
             }
 
             transformer.inverseFourierTransform(FT, Ipart());

@@ -152,7 +152,7 @@ void buildCorrImage(MlOptimiser *baseMLO, OptimisationParamters &op, CudaGlobalP
     // to the CPU method)
     if (baseMLO->do_ctf_correction && baseMLO->refs_are_ctf_corrected)
         for(int i = 0; i < corr_img.getSize(); i++)
-            corr_img[i] *= DIRECT_MULTIDIM_ELEM(op.local_Fctfs[ipart], i)*DIRECT_MULTIDIM_ELEM(op.local_Fctfs[ipart], i);
+            corr_img[i] *= op.local_Fctfs[ipart][i] * op.local_Fctfs[ipart][i];
     // scale-correction or not ( NOTE this is not were the difference metric is scale-corrected, but
     // rather where we apply the additional correction to make the GPU-specific arithmetic equal
     // to the CPU method)

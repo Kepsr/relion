@@ -472,7 +472,7 @@ class reconstruct_parameters {
                                 subProjector, table, p, Fsub, true, true, true);
 
                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
-                                DIRECT_MULTIDIM_ELEM(F2D, n) -= DIRECT_MULTIDIM_ELEM(Fsub, n);
+                                F2D[n] -= Fsub[n];
                             }
 
                             // Back-project difference image
@@ -480,21 +480,21 @@ class reconstruct_parameters {
                         } else {
                             if (do_ewald) {
                                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                                    DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                                    Fctf[n] *= Fctf[n];
                                 }
                             } else {
                                 // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
                                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                                    DIRECT_MULTIDIM_ELEM(F2D,  n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
-                                    DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                                    F2D[n] *= Fctf[n];
+                                    Fctf[n] *= Fctf[n];
                                 }
                             }
 
                             // Do the following after squaring the CTFs!
                             if (do_fom_weighting) {
                                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                                    DIRECT_MULTIDIM_ELEM(F2D,  n) *= fom;
-                                    DIRECT_MULTIDIM_ELEM(Fctf, n) *= fom;
+                                    F2D[n] *= fom;
+                                    Fctf[n] *= fom;
                                 }
                             }
 
@@ -539,15 +539,13 @@ class reconstruct_parameters {
 
                 for (int bpi = 1; bpi < nr_omp_threads; bpi++) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(backprojector[j]->data) {
-                        DIRECT_MULTIDIM_ELEM(backprojector[j]->data, n)
-                            += DIRECT_MULTIDIM_ELEM(backprojectors[j][bpi].data, n);
+                        backprojector[j]->data[n] += backprojectors[j][bpi].data[n];
                     }
 
                     backprojectors[j][bpi].data.clear();
 
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(backprojector[j]->weight) {
-                        DIRECT_MULTIDIM_ELEM(backprojector[j]->weight, n)
-                            += DIRECT_MULTIDIM_ELEM(backprojectors[j][bpi].weight, n);
+                        backprojector[j]->weight[n] += backprojectors[j][bpi].weight[n];
                     }
 
                     backprojectors[j][bpi].weight.clear();

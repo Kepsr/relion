@@ -360,7 +360,7 @@ void FrameRecombiner::process(
                     false, false, false, true, false
                 );
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum()) {
-                    DIRECT_MULTIDIM_ELEM(sum(), n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                    sum()[n] *= Fctf[n];
                 }
             }
 

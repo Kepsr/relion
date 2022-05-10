@@ -122,7 +122,7 @@ class project_parameters {
             if (!msk().sameShape(vol()))
                 REPORT_ERROR("project ERROR: mask and map have different sizes!");
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(vol())
-            DIRECT_MULTIDIM_ELEM(vol(), n) *= DIRECT_MULTIDIM_ELEM(msk(), n);
+            vol()[n] *= msk()[n];
         }
 
         if (nr_uniform > 0) {
@@ -328,9 +328,9 @@ class project_parameters {
                     }
 
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                        DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        F2D[n] *= Fctf[n];
                         if (do_ctf2)
-                        DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        F2D[n] *= Fctf[n];
                     }
                 }
 
@@ -480,9 +480,9 @@ class project_parameters {
                         }
 
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                            DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                            F2D[n] *= Fctf[n];
                             if (do_ctf2)
-                            DIRECT_MULTIDIM_ELEM(F2D, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                            F2D[n] *= Fctf[n];
                         }
                     }
 

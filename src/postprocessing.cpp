@@ -201,7 +201,7 @@ bool Postprocessing::getMask() {
 
         long summask = 0;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Im()) {
-            if (DIRECT_MULTIDIM_ELEM(Im(), n) > 0.5) { summask++; }
+            if (Im()[n] > 0.5) { summask++; }
         }
         avg = (RFLOAT)summask / (RFLOAT) Im().nzyxdim();
         frac_solvent_mask = 0.476 /avg;
@@ -379,8 +379,8 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
 
     // Average
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum3d) {
-        if (DIRECT_MULTIDIM_ELEM(count3d, n) > 0) {
-            DIRECT_MULTIDIM_ELEM(sum3d, n) /= DIRECT_MULTIDIM_ELEM(count3d, n);
+        if (count3d[n] > 0) {
+            sum3d[n] /= count3d[n];
         }
     }
 
@@ -846,9 +846,9 @@ void Postprocessing::run_locres(int rank, int size) {
     MultidimArray<RFLOAT> Ilocres = MultidimArray<RFLOAT>::zeros(I1());
     MultidimArray<RFLOAT> Isumw   = MultidimArray<RFLOAT>::zeros(I1());
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1()) {
-        DIRECT_MULTIDIM_ELEM(Isum, n) = DIRECT_MULTIDIM_ELEM(I1(), n) + DIRECT_MULTIDIM_ELEM(I2(), n);
-        DIRECT_MULTIDIM_ELEM(I1p,  n) = DIRECT_MULTIDIM_ELEM(I1(), n);
-        DIRECT_MULTIDIM_ELEM(I2p,  n) = DIRECT_MULTIDIM_ELEM(I2(), n);
+        Isum[n] = I1()[n] + I2()[n];
+        I1p[n] = I1()[n];
+        I2p[n] = I2()[n];
     }
 
     // Pre-sharpen the sum of the two half-maps with the provided MTF curve and adhoc B-factor
@@ -967,9 +967,9 @@ void Postprocessing::run_locres(int rank, int size) {
 
                 // Store weighted sum of local resolution and filtered map
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1m) {
-                    DIRECT_MULTIDIM_ELEM(Ifil,    n) +=  DIRECT_MULTIDIM_ELEM(locmask, n) * DIRECT_MULTIDIM_ELEM(I1m, n);
-                    DIRECT_MULTIDIM_ELEM(Ilocres, n) +=  DIRECT_MULTIDIM_ELEM(locmask, n) / local_resol;
-                    DIRECT_MULTIDIM_ELEM(Isumw,   n) +=  DIRECT_MULTIDIM_ELEM(locmask, n);
+                    Ifil[n]    +=  locmask[n] * I1m[n];
+                    Ilocres[n] +=  locmask[n] / local_resol;
+                    Isumw[n]   +=  locmask[n];
                 }
             }
 
@@ -999,12 +999,12 @@ void Postprocessing::run_locres(int rank, int size) {
     if (rank == 0) {
         // Now write out the local-resolution map and
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1m) {
-            if (DIRECT_MULTIDIM_ELEM(Isumw, n ) > 0.0) {
-                DIRECT_MULTIDIM_ELEM(I1(), n) = 1.0 / (DIRECT_MULTIDIM_ELEM(Ilocres, n) / DIRECT_MULTIDIM_ELEM(Isumw, n));
-                DIRECT_MULTIDIM_ELEM(I2(), n) = DIRECT_MULTIDIM_ELEM(Ifil, n) / DIRECT_MULTIDIM_ELEM(Isumw, n);
+            if (Isumw[n] > 0.0) {
+                I1()[n] = 1.0 / (Ilocres[n] / Isumw[n]);
+                I2()[n] = Ifil[n] / Isumw[n];
             } else {
-                DIRECT_MULTIDIM_ELEM(I1(), n) = 0.0;
-                DIRECT_MULTIDIM_ELEM(I2(), n) = 0.0;
+                I1()[n] = 0.0;
+                I2()[n] = 0.0;
             }
         }
 
@@ -1032,8 +1032,7 @@ void Postprocessing::run_locres(int rank, int size) {
 
             std::vector<RFLOAT> values;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
-                if (DIRECT_MULTIDIM_ELEM(Imask(), n) > 0.5)
-                    values.push_back(DIRECT_MULTIDIM_ELEM(I1(), n));
+                if (Imask()[n] > 0.5) values.push_back(I1()[n]);
 
             std::vector <RFLOAT> histX, histY;
             CPlot2D *plot2D = new CPlot2D("");
@@ -1172,7 +1171,7 @@ void Postprocessing::run() {
     // Add the two half-maps together for subsequent sharpening
     I1() += I2();
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1()) {
-        DIRECT_MULTIDIM_ELEM(I1(), n) *= 0.5;
+        I1()[n] *= 0.5;
     }
 
     // Divide by MTF and perform FSC-weighted B-factor sharpening, as in Rosenthal and Henderson, 2003

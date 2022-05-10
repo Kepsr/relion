@@ -167,10 +167,10 @@ void buildCorrImage(
     if (baseMLO->do_ctf_correction) {
         if (baseMLO->refs_are_ctf_corrected)
             for (size_t i = 0; i < corr_img.getSize(); i++)
-                corr_img[i] *= DIRECT_MULTIDIM_ELEM(op.local_Fctf[img_id], i)*DIRECT_MULTIDIM_ELEM(op.local_Fctf[img_id], i);
+                corr_img[i] *= op.local_Fctf[img_id][i] * op.local_Fctf[img_id][i];
         if (ctf_premultiplied)
             for (size_t i = 0; i < corr_img.getSize(); i++)
-                corr_img[i] *= DIRECT_MULTIDIM_ELEM(op.local_Fctf[img_id], i)*DIRECT_MULTIDIM_ELEM(op.local_Fctf[img_id], i);
+                corr_img[i] *= op.local_Fctf[img_id][i] * op.local_Fctf[img_id][i];
     }
 
     // scale-correction or not ( NOTE this is not were the difference metric is scale-corrected, but

@@ -936,8 +936,8 @@ void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum) {
                 int ival = boxes[ipos]->img_data[n];
                 if (ival < 0) ival += 256;
-                DIRECT_MULTIDIM_ELEM(sum,  n) += ival;
-                DIRECT_MULTIDIM_ELEM(sum2, n) += ival * ival;
+                sum[n]  += ival;
+                sum2[n] += ival * ival;
             }
             nn++;
         }
@@ -946,7 +946,7 @@ void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
     sum2 /= nn;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum) {
-        DIRECT_MULTIDIM_ELEM(sum2, n) -=  DIRECT_MULTIDIM_ELEM(sum, n) * DIRECT_MULTIDIM_ELEM(sum, n);
+        sum2[n] -= sum[n] * sum[n];
     }
     sum2 *= nn / (nn - 1);
 

@@ -167,7 +167,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
 
             RFLOAT overlap = 0.0;
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
-                overlap += DIRECT_MULTIDIM_ELEM(opt.mymodel.masks_bodies[ibody], n) * DIRECT_MULTIDIM_ELEM(Imask(), n);
+                overlap += opt.mymodel.masks_bodies[ibody][n] * Imask()[n];
 
             if (overlap > best_overlap) {
                 best_overlap = overlap;
@@ -181,7 +181,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         for (int obody = 0; obody < opt.mymodel.nr_bodies; obody++) {
             int ii = DIRECT_A2D_ELEM(opt.mymodel.pointer_body_overlap, subtract_body, obody);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask()) {
-                DIRECT_MULTIDIM_ELEM(opt.mymodel.masks_bodies[ii], n) *= 1.0 - DIRECT_MULTIDIM_ELEM(Imask(), n);
+                opt.mymodel.masks_bodies[ii][n] *= 1.0 - Imask()[n];
             }
         }
     } else {
@@ -194,7 +194,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
             }
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask()) {
-                DIRECT_MULTIDIM_ELEM(opt.mymodel.Iref[iclass], n) *= 1.0 - DIRECT_MULTIDIM_ELEM(Imask(), n);
+                opt.mymodel.Iref[iclass][n] *= 1.0 - Imask()[n];
             }
         }
     }
@@ -643,7 +643,7 @@ void ParticleSubtractor::subtractOneParticle(
         int group_id = opt.mydata.getGroupId(part_id, 0);
         RFLOAT myscale = opt.mymodel.scale_correction[group_id];
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsubtrahend) {
-            DIRECT_MULTIDIM_ELEM(Fsubtrahend, n) *= myscale;
+            Fsubtrahend[n] *= myscale;
         }
     }
 

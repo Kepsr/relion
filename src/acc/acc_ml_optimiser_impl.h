@@ -227,7 +227,7 @@ void getFourierTransformsAndCtfs(
                 img().reshape(baseMLO->mydata.particles[part_id].images[img_id].img);
                 CTICTOC(accMLO->timer, "ParaReadPrereadImages", ({
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->mydata.particles[part_id].images[img_id].img) {
-                    DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT) DIRECT_MULTIDIM_ELEM(baseMLO->mydata.particles[part_id].images[img_id].img, n);
+                    img()[n] = (RFLOAT) baseMLO->mydata.particles[part_id].images[img_id].img[n];
                 }
                 }))
             } else {
@@ -808,11 +808,11 @@ void getFourierTransformsAndCtfs(
             if (baseMLO->do_ctf_correction) {
                 if (baseMLO->mydata.obsModel.getCtfPremultiplied(optics_group)) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsum_obody) {
-                        DIRECT_MULTIDIM_ELEM(Fsum_obody, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n) * DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        Fsum_obody[n] *= Fctf[n] * Fctf[n];
                     }
                 } else {
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsum_obody) {
-                        DIRECT_MULTIDIM_ELEM(Fsum_obody, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                        Fsum_obody[n] *= Fctf[n];
                     }
                 }
 
@@ -1553,7 +1553,7 @@ void convertAllSquaredDifferencesToWeights(
     for (unsigned long ipsi = sp.ipsi_min; ipsi <= sp.ipsi_max; ipsi++, iorientclass++) {
         RFLOAT pdf =
             baseMLO->do_skip_align || baseMLO->do_skip_rotate ? baseMLO->mymodel.pdf_class[exp_iclass] :
-            baseMLO->mymodel.orientational_prior_mode == NOPRIOR ? DIRECT_MULTIDIM_ELEM(baseMLO->mymodel.pdf_direction[exp_iclass], idir) :
+            baseMLO->mymodel.orientational_prior_mode == NOPRIOR ? baseMLO->mymodel.pdf_direction[exp_iclass][idir] :
             op.directions_prior[idir] * op.psi_prior[ipsi];
 
         pdfs[iorientclass] = pdf;
@@ -2056,7 +2056,7 @@ void storeWeightedSums(
     // Set those back here
     for (int img_id = 0; img_id < sp.nr_images; img_id++) {
         int group_id = baseMLO->mydata.getGroupId(op.part_id, img_id);
-        DIRECT_MULTIDIM_ELEM(op.local_Minvsigma2[img_id], 0) = 1.0 / (baseMLO->sigma2_fudge * DIRECT_A1D_ELEM(baseMLO->mymodel.sigma2_noise[group_id], 0));
+        op.local_Minvsigma2[img_id][0] = 1.0 / (baseMLO->sigma2_fudge * DIRECT_A1D_ELEM(baseMLO->mymodel.sigma2_noise[group_id], 0));
     }
 
     exp_wsum_norm_correction.resize(sp.nr_images, 0.0);
@@ -2297,7 +2297,7 @@ void storeWeightedSums(
 
                 // store partials according to indices of the relevant dimension
                 unsigned ithr_wsum_pdf_direction = baseMLO->mymodel.nr_bodies > 1 ? ibody : iclass;
-                DIRECT_MULTIDIM_ELEM(thr_wsum_pdf_direction[ithr_wsum_pdf_direction], mydir) += p_weights[n];
+                thr_wsum_pdf_direction[ithr_wsum_pdf_direction][mydir] += p_weights[n];
                 thr_sumw_group[img_id]                                                       += p_weights[n];
                 thr_wsum_pdf_class[iclass]                                                   += p_weights[n];
 
@@ -2806,7 +2806,7 @@ void storeWeightedSums(
                 ProjectionData[img_id].class_entries[exp_iclass] == 0
             ) continue;
             for (long int j = 0; j < image_size; j++) {
-                int ires = DIRECT_MULTIDIM_ELEM(baseMLO->Mresol_fine[optics_group], j);
+                int ires = baseMLO->Mresol_fine[optics_group][j];
                 if (
                     ires > -1 && baseMLO->do_scale_correction &&
                     DIRECT_A1D_ELEM(baseMLO->mymodel.data_vs_prior_class[exp_iclass], ires) > 3.0
@@ -2819,7 +2819,7 @@ void storeWeightedSums(
         }
 
         for (unsigned long j = 0; j < image_size; j++) {
-            int ires = DIRECT_MULTIDIM_ELEM(baseMLO->Mresol_fine[optics_group], j);
+            int ires = baseMLO->Mresol_fine[optics_group][j];
             if (ires > -1) {
                 thr_wsum_sigma2_noise[img_id].data[ires] += (RFLOAT) wdiff2s[sum_offset + j];
                 exp_wsum_norm_correction[img_id]         += (RFLOAT) wdiff2s[sum_offset + j]; //TODO could be gpu-reduced
@@ -2887,7 +2887,7 @@ void storeWeightedSums(
         RFLOAT logsigma2 = 0.0;
         RFLOAT remap_image_sizes = (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size) / (my_image_size * my_pixel_size);
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->Mresol_fine[optics_group]) {
-            int ires = DIRECT_MULTIDIM_ELEM(baseMLO->Mresol_fine[optics_group], n);
+            int ires = baseMLO->Mresol_fine[optics_group][n];
             int ires_remapped = round(remap_image_sizes * ires);
             // Note there is no sqrt in the normalisation term because of the 2-dimensionality of the complex-plane
             // Also exclude origin from logsigma2, as this will not be considered in the P-calculations

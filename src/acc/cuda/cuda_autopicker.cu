@@ -344,10 +344,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     CTICTOC("middlePassFilter", ({
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
         // Remove pixel values that are too far away from the mean
-        if (abs(DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev > basePckr->outlier_removal_zscore)
-            DIRECT_MULTIDIM_ELEM(Imic(), n) = stats.avg;
+        if (abs(Imic()[n] - stats.avg) / stats.stddev > basePckr->outlier_removal_zscore)
+            Imic()[n] = stats.avg;
 
-        DIRECT_MULTIDIM_ELEM(Imic(), n) = (DIRECT_MULTIDIM_ELEM(Imic(), n) - stats.avg) / stats.stddev;
+        Imic()[n] = (Imic()[n] - stats.avg) / stats.stddev;
     }
     }));
 
@@ -937,14 +937,14 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             if (!basePckr->do_read_fom_maps) {
                 // Combine Mccf_best and Mpsi_best from all refs
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mccf_best) {
-                    RFLOAT new_ccf = DIRECT_MULTIDIM_ELEM(Mccf_best, n);
-                    RFLOAT old_ccf = DIRECT_MULTIDIM_ELEM(Mccf_best_combined, n);
+                    RFLOAT new_ccf = Mccf_best[n];
+                    RFLOAT old_ccf = Mccf_best_combined[n];
                     if (new_ccf > old_ccf) {
-                        DIRECT_MULTIDIM_ELEM(Mccf_best_combined, n) = new_ccf;
+                        Mccf_best_combined[n] = new_ccf;
                         if (basePckr->do_amyloid) {
-                            DIRECT_MULTIDIM_ELEM(Mpsi_best_combined, n) = DIRECT_MULTIDIM_ELEM(Mpsi_best, n);
+                            Mpsi_best_combined[n] = Mpsi_best[n];
                         } else {
-                            DIRECT_MULTIDIM_ELEM(Mclass_best_combined, n) = iref;
+                            Mclass_best_combined[n] = iref;
                         }
                     }
                 }

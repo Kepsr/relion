@@ -275,7 +275,7 @@ void ParFourierTransformer::Transform(int sign) {
         }
 
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(fFourier) {
-            DIRECT_MULTIDIM_ELEM(fFourier,n) /= size;
+            fFourier[n] /= size;
         }
     } else if (sign == FFTW_BACKWARD) {
         FFTW_EXECUTE_DFT_C2R(

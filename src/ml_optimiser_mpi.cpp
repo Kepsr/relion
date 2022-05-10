@@ -1894,7 +1894,7 @@ void MlOptimiserMpi::maximization() {
                             if (do_avoid_sgd) {
                                 if (iter < sgd_ini_iter) {
                                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[ith_recons]) {
-                                        DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n) = std::max(0.0, DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n));
+                                        mymodel.Iref[ith_recons][n] = std::max(0.0, mymodel.Iref[ith_recons][n]);
                                     }
                                 }
                                 mymodel.Iref[ith_recons] = mymodel.Iref[ith_recons] - Iref_old;
@@ -1903,8 +1903,8 @@ void MlOptimiserMpi::maximization() {
                             // Now update formula: dV_kl^(n) = (mu) * dV_kl^(n-1) + (1-mu)*step_size*G_kl^(n)
                             // where G_kl^(n) is now in mymodel.Iref[iclass]!!!
                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Igrad[ith_recons]) {
-                                DIRECT_MULTIDIM_ELEM(mymodel.Igrad[ith_recons], n) = mu * DIRECT_MULTIDIM_ELEM(mymodel.Igrad[ith_recons], n)
-                                    + (1.0 - mu) * sgd_stepsize * DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n);
+                                mymodel.Igrad[ith_recons][n] = mu * mymodel.Igrad[ith_recons][n]
+                                    + (1.0 - mu) * sgd_stepsize * mymodel.Iref[ith_recons][n];
                             }
 
                             // update formula: V_kl^(n+1) = V_kl^(n) + dV_kl^(n)
@@ -2057,7 +2057,7 @@ void MlOptimiserMpi::maximization() {
                                 if (do_avoid_sgd) {
                                     if (iter < sgd_ini_iter) {
                                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[ith_recons]) {
-                                            DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n) = std::max(0.0, DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n));
+                                            mymodel.Iref[ith_recons][n] = std::max(0.0, mymodel.Iref[ith_recons][n]);
                                         }
                                     }
                                     mymodel.Iref[ith_recons] = mymodel.Iref[ith_recons] - Iref_old;
@@ -2066,8 +2066,8 @@ void MlOptimiserMpi::maximization() {
                                 // Now update formula: dV_kl^(n) = (mu) * dV_kl^(n-1) + (1-mu)*step_size*G_kl^(n)
                                 // where G_kl^(n) is now in mymodel.Iref[iclass]!!!
                                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Igrad[ith_recons]) {
-                                    DIRECT_MULTIDIM_ELEM(mymodel.Igrad[ith_recons], n) = mu * DIRECT_MULTIDIM_ELEM(mymodel.Igrad[ith_recons], n) +
-                                        (1.0 - mu) * sgd_stepsize * DIRECT_MULTIDIM_ELEM(mymodel.Iref[ith_recons], n);
+                                    mymodel.Igrad[ith_recons][n] = mu * mymodel.Igrad[ith_recons][n] +
+                                        (1.0 - mu) * sgd_stepsize * mymodel.Iref[ith_recons][n];
                                 }
 
                                 // update formula: V_kl^(n+1) = V_kl^(n) + dV_kl^(n)
@@ -2424,10 +2424,10 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
                 std::cerr << "BBBrank=1 lowresdata_half2: "; lowres_data_half2.printShape();
                 #endif
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(lowres_data) {
-                    DIRECT_MULTIDIM_ELEM(lowres_data,   n) += DIRECT_MULTIDIM_ELEM(lowres_data_half2,   n);
-                    DIRECT_MULTIDIM_ELEM(lowres_data,   n) /= 2.0;
-                    DIRECT_MULTIDIM_ELEM(lowres_weight, n) += DIRECT_MULTIDIM_ELEM(lowres_weight_half2, n);
-                    DIRECT_MULTIDIM_ELEM(lowres_weight, n) /= 2.0;
+                    lowres_data[n] += lowres_data_half2[n];
+                    lowres_data[n] /= 2.0;
+                    lowres_weight[n] += lowres_weight_half2[n];
+                    lowres_weight[n] /= 2.0;
                 }
 
                 // The first follower sends the average lowres_data and lowres_weight also back to the second follower
@@ -2645,11 +2645,11 @@ void MlOptimiserMpi::writeTemporaryDataAndWeightArrays() {
                 if (mymodel.pdf_class[iclass] > 0.0) {
                     It().resize(wsum_model.BPref[ith_recons].data);
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
-                        DIRECT_MULTIDIM_ELEM(It(), n) = DIRECT_MULTIDIM_ELEM(wsum_model.BPref[ith_recons].data, n).real;
+                        It()[n] = wsum_model.BPref[ith_recons].data[n].real;
                     }
                     It.write(fn_tmp + "_data_real.mrc");
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
-                        DIRECT_MULTIDIM_ELEM(It(), n) = DIRECT_MULTIDIM_ELEM(wsum_model.BPref[ith_recons].data, n).imag;
+                        It()[n] = wsum_model.BPref[ith_recons].data[n].imag;
                     }
                     It.write(fn_tmp + "_data_imag.mrc");
                     It() = wsum_model.BPref[ith_recons].weight;

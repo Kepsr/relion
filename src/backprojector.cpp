@@ -852,10 +852,10 @@ void BackProjector::getDownsampledAverage(
 
     // Calculate the straightforward average in the downsampled arrays
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(avg) {
-        if (DIRECT_MULTIDIM_ELEM(down_weight, n) > 0.0) {
-            DIRECT_MULTIDIM_ELEM(avg, n) /= DIRECT_MULTIDIM_ELEM(down_weight, n);
+        if (down_weight[n] > 0.0) {
+            avg[n] /= down_weight[n];
         } else {
-            DIRECT_MULTIDIM_ELEM(avg, n) = 0.0;
+            avg[n] = 0.0;
         }
     }
 }
@@ -1365,10 +1365,10 @@ void BackProjector::reconstruct(
         std::cerr << " normalise= " << normalise << std::endl;
         #endif
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fweight) {
-            DIRECT_MULTIDIM_ELEM(Fweight, n) /= normalise;
+            Fweight[n] /= normalise;
         }
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(data) {
-            DIRECT_MULTIDIM_ELEM(data, n) /= normalise;
+            data[n] /= normalise;
         }
         }))
 
@@ -1396,7 +1396,7 @@ void BackProjector::reconstruct(
             // That is why Fnewweight is multiplied by Fweight prior to the convolution
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv) {
-                DIRECT_MULTIDIM_ELEM(Fconv, n) = DIRECT_MULTIDIM_ELEM(Fnewweight, n) * DIRECT_MULTIDIM_ELEM(Fweight, n);
+                Fconv[n] = Fnewweight[n] * Fweight[n];
             }
 
             // convolute through Fourier-transform (as both grids are rectangular)
@@ -1438,7 +1438,7 @@ void BackProjector::reconstruct(
         tttt()=Fnewweight;
         tttt.write("reconstruct_gridding_weight.spi");
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv) {
-            DIRECT_MULTIDIM_ELEM(ttt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fconv, n));
+            ttt()[n] = abs(Fconv[n]);
         }
         ttt.write("reconstruct_gridding_correction_term.spi");
         #endif
@@ -1456,12 +1456,12 @@ void BackProjector::reconstruct(
             #ifdef RELION_SINGLE_PRECISION
             // Prevent numerical instabilities in single-precision reconstruction with very unevenly sampled orientations
             #define BIGNUM 1e20
-            if (DIRECT_MULTIDIM_ELEM(Fnewweight, n) > BIGNUM) { 
-                DIRECT_MULTIDIM_ELEM(Fnewweight, n) = BIGNUM; 
+            if (Fnewweight[n] > BIGNUM) { 
+                Fnewweight[n] = BIGNUM; 
             }
             #undef BIGNUM
             #endif
-            DIRECT_MULTIDIM_ELEM(Fconv, n) *= DIRECT_MULTIDIM_ELEM(Fnewweight, n);
+            Fconv[n] *= Fnewweight[n];
         }
 
         // Clear memory
@@ -1939,8 +1939,8 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
         /*
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(data)
         {
-            DIRECT_MULTIDIM_ELEM(data, n) = DIRECT_MULTIDIM_ELEM(sum_data, n) / (RFLOAT)(SL.SymsNo() + 1);
-            DIRECT_MULTIDIM_ELEM(weight, n) = DIRECT_MULTIDIM_ELEM(sum_weight, n) / (RFLOAT)(SL.SymsNo() + 1);
+            data[n] = sum_data[n] / (RFLOAT)(SL.SymsNo() + 1);
+            weight[n] = sum_weight[n] / (RFLOAT)(SL.SymsNo() + 1);
         }
         */
     }
@@ -2030,7 +2030,7 @@ void BackProjector::windowToOridimRealSpace(
     Image<RFLOAT> tt;
     tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
-        DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
+        tt()[n] abs(Fin[n]);
     }
     tt.write("windoworidim_Fin.spi");
     #endif
@@ -2062,7 +2062,7 @@ void BackProjector::windowToOridimRealSpace(
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
     tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
-        DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
+        tt()[n] = abs(Fin[n]);
     }
     tt.write("windoworidim_Fresized.spi");
     #endif
@@ -2127,7 +2127,7 @@ void BackProjector::windowToOridimRealSpace(
     ttf.FourierTransform(Mout, Fin);
     tt().resize(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
-        DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
+        tt()[n] = abs(Fin[n]);
     }
     tt.write("windoworidim_Fnew.spi");
     #endif

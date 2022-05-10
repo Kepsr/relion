@@ -165,7 +165,7 @@ void getFourierTransformsAndCtfs(
                 img().reshape(baseMLO->mydata.particles[part_id].img);
                 CTICTOC(cudaMLO->timer, "ParaReadPrereadImages", ({
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->mydata.particles[part_id].img) {
-                    DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT) DIRECT_MULTIDIM_ELEM(baseMLO->mydata.particles[part_id].img, n);
+                    img()[n] = (RFLOAT) baseMLO->mydata.particles[part_id].img[n];
                 }
                 }))
             } else {
@@ -246,8 +246,8 @@ void getFourierTransformsAndCtfs(
         for (auto &x : my_old_offset) { x = round(x); }
 
         int img_size = img.data.nzyxdim();
-        CudaGlobalPtr<XFLOAT> d_img(img_size,0,cudaMLO->devBundle->allocator);
-        CudaGlobalPtr<XFLOAT> temp(img_size,0,cudaMLO->devBundle->allocator);
+        CudaGlobalPtr<XFLOAT> d_img(img_size, 0, cudaMLO->devBundle->allocator);
+        CudaGlobalPtr<XFLOAT> temp(img_size, 0, cudaMLO->devBundle->allocator);
         d_img.device_alloc();
         temp.device_alloc();
         d_img.device_init(0);
@@ -1356,7 +1356,7 @@ void convertAllSquaredDifferencesToWeights(
     for (long int ipsi = sp.ipsi_min; ipsi <= sp.ipsi_max; ipsi++, iorientclass++) {
         RFLOAT pdf = 
         baseMLO->do_skip_align || baseMLO->do_skip_rotate    ? baseMLO->mymodel.pdf_class[exp_iclass] :
-        baseMLO->mymodel.orientational_prior_mode == NOPRIOR ? DIRECT_MULTIDIM_ELEM(baseMLO->mymodel.pdf_direction[exp_iclass], idir) :
+        baseMLO->mymodel.orientational_prior_mode == NOPRIOR ? baseMLO->mymodel.pdf_direction[exp_iclass][idir] :
                                                                 op.directions_prior[idir] * op.psi_prior[ipsi];
 
         pdf_orientation[iorientclass] = pdf;
@@ -1854,7 +1854,7 @@ void storeWeightedSums(
     for (long int ipart = 0; ipart < sp.nr_particles; ipart++) {
         long int part_id = baseMLO->mydata.ori_particles[op.my_ori_particle].particles_id[ipart];
         int group_id = baseMLO->mydata.getGroupId(part_id);
-        DIRECT_MULTIDIM_ELEM(op.local_Minvsigma2s[ipart], 0) = 1.0 / (baseMLO->sigma2_fudge * DIRECT_A1D_ELEM(baseMLO->mymodel.sigma2_noise[group_id], 0));
+        op.local_Minvsigma2s[ipart][0] = 1.0 / (baseMLO->sigma2_fudge * DIRECT_A1D_ELEM(baseMLO->mymodel.sigma2_noise[group_id], 0));
     }
 
     // For norm_correction and scale_correction of all particles of this ori_particle
@@ -2129,7 +2129,7 @@ void storeWeightedSums(
                 long int mydir = baseMLO->mymodel.orientational_prior_mode == NOPRIOR ? idir : op.pointer_dir_nonzeroprior[idir];
 
                 // store partials according to indices of the relevant dimension
-                DIRECT_MULTIDIM_ELEM(thr_wsum_pdf_direction[exp_iclass], mydir) += p_weights[n];
+                thr_wsum_pdf_direction[exp_iclass][mydir] += p_weights[n];
                 thr_sumw_group[group_id]                 						+= p_weights[n];
                 thr_wsum_pdf_class[exp_iclass]           						+= p_weights[n];
                 thr_wsum_sigma2_offset                   						+= p_thr_wsum_sigma2_offset[n];
@@ -2599,7 +2599,7 @@ void storeWeightedSums(
                 ProjectionData[ipart].class_entries[exp_iclass] == 0
             ) continue;
             for (long int j = 0; j < image_size; j++) {
-                int ires = DIRECT_MULTIDIM_ELEM(baseMLO->Mresol_fine, j);
+                int ires = baseMLO->Mresol_fine[j];
                 if (
                     ires > -1 && baseMLO->do_scale_correction && 
                     DIRECT_A1D_ELEM(baseMLO->mymodel.data_vs_prior_class[exp_iclass], ires) > 3.0
@@ -2612,7 +2612,7 @@ void storeWeightedSums(
         }
 
         for (long int j = 0; j < image_size; j++) {
-            int ires = DIRECT_MULTIDIM_ELEM(baseMLO->Mresol_fine, j);
+            int ires = baseMLO->Mresol_fine[j];
             if (ires > -1) {
                 thr_wsum_sigma2_noise[group_id].data[ires] += (RFLOAT) wdiff2s_sum[j];
                 exp_wsum_norm_correction[ipart]            += (RFLOAT) wdiff2s_sum[j]; // TODO could be gpu-reduced
@@ -2676,7 +2676,7 @@ void storeWeightedSums(
         // Calculate DLL for each particle
         RFLOAT logsigma2 = 0.0;
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->Mresol_fine) {
-            int ires = DIRECT_MULTIDIM_ELEM(baseMLO->Mresol_fine, n);
+            int ires = baseMLO->Mresol_fine[n];
             // Note there is no sqrt in the normalisation term because of the 2-dimensionality of the complex-plane
             // Also exclude origin from logsigma2, as this will not be considered in the P-calculations
             if (ires > 0) { 

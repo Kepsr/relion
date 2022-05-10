@@ -145,14 +145,13 @@ class EERRenderer {
         
         if (!is_multiplicative) {
             double sum = 0;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain)
-                sum += DIRECT_MULTIDIM_ELEM(gain, n);
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain) { 
+                sum += gain[n]; 
+            }
             sum /= size_out * size_out;
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain) {
-                if (DIRECT_MULTIDIM_ELEM(gain, n) != 0) {
-                    DIRECT_MULTIDIM_ELEM(gain, n) = sum / DIRECT_MULTIDIM_ELEM(gain, n);
-                }
+                if (gain[n] != 0) { gain[n] = sum / gain[n]; }
             }
         }
     }

@@ -306,10 +306,10 @@ void MovieReconstructor::backproject(int rank, int size) {
         // Probably we can ignore defect correction, because we are not re-aligning.
         if (fn_gain == "") {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iframe())
-                DIRECT_MULTIDIM_ELEM(Iframe(), n) *= -1;
+                Iframe()[n] *= -1;
         } else {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iframe())
-                DIRECT_MULTIDIM_ELEM(Iframe(), n) *= -DIRECT_MULTIDIM_ELEM(Igain(), n);
+                Iframe()[n] *= -Igain()[n];
         }
 
         // Loop over subsets
@@ -524,17 +524,17 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
         // not subtract
         if (do_ewald) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                Fctf[n] *= Fctf[n];
             }
         } else if (do_ctf) {
             // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
             if (!ctf_premultiplied) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                    DIRECT_MULTIDIM_ELEM(F2D, n)  *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                    F2D[n]  *= Fctf[n];
                 }
             }
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fctf) {
-                DIRECT_MULTIDIM_ELEM(Fctf, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                Fctf[n] *= Fctf[n];
             }
         }
 
