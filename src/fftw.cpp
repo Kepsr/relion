@@ -160,10 +160,10 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
 
     bool recomputePlan = 
         !fReal || 
-        dataPtr != MULTIDIM_ARRAY(input) || 
+        dataPtr != input.data || 
         !fReal->sameShape(input) || 
         Xsize(fFourier) != Xsize(input) / 2 + 1 || 
-        complexDataPtr != MULTIDIM_ARRAY(fFourier);
+        complexDataPtr != fFourier.data;
 
     if (recomputePlan || force_new_plans) {
         fFourier.reshape(Zsize(input),Ysize(input),Xsize(input) / 2 + 1);
@@ -200,17 +200,27 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
         RCTICTOC(TIMING_FFTW_PLAN, ({
         pthread_mutex_lock(&fftw_plan_mutex);
         #ifdef RELION_SINGLE_PRECISION
-        fPlanForward = fftwf_plan_dft_r2c(ndim, N, MULTIDIM_ARRAY(*fReal),
-                                          (fftwf_complex*) MULTIDIM_ARRAY(fFourier), FFTW_ESTIMATE);
-        fPlanBackward = fftwf_plan_dft_c2r(ndim, N,
-                                           (fftwf_complex*) MULTIDIM_ARRAY(fFourier), MULTIDIM_ARRAY(*fReal),
-                                           FFTW_ESTIMATE);
+        fPlanForward = fftwf_plan_dft_r2c(
+            ndim, N, 
+            fReal->data, (fftwf_complex*) fFourier.data, 
+            FFTW_ESTIMATE
+        );
+        fPlanBackward = fftwf_plan_dft_c2r(
+            ndim, N,
+            (fftwf_complex*) fFourier.data, fReal->data,
+            FFTW_ESTIMATE
+        );
         #else
-        fPlanForward = fftw_plan_dft_r2c(ndim, N, MULTIDIM_ARRAY(*fReal),
-                                         (fftw_complex*) MULTIDIM_ARRAY(fFourier), FFTW_ESTIMATE);
-        fPlanBackward = fftw_plan_dft_c2r(ndim, N,
-                                          (fftw_complex*) MULTIDIM_ARRAY(fFourier), MULTIDIM_ARRAY(*fReal),
-                                          FFTW_ESTIMATE);
+        fPlanForward = fftw_plan_dft_r2c(
+            ndim, N, 
+            fReal->data, (fftw_complex*) fFourier.data, 
+            FFTW_ESTIMATE
+        );
+        fPlanBackward = fftw_plan_dft_c2r(
+            ndim, N,
+            (fftw_complex*) fFourier.data, fReal->data,
+            FFTW_ESTIMATE
+        );
         #endif
         pthread_mutex_unlock(&fftw_plan_mutex);
         }))
@@ -222,9 +232,9 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
         std::cerr << " SETREAL fPlanForward= " << fPlanForward << " fPlanBackward= " << fPlanBackward  <<" this= "<<this<< std::endl;
         #endif
 
-        delete [] N;
-        dataPtr=MULTIDIM_ARRAY(*fReal);
-        complexDataPtr = MULTIDIM_ARRAY(fFourier);
+        delete[] N;
+        dataPtr = fReal->data;
+        complexDataPtr = fFourier.data;
 
     }
 }
@@ -232,7 +242,7 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
 void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_plans) {
     bool recomputePlan = 
         !fComplex ||
-        complexDataPtr != MULTIDIM_ARRAY(input) ||
+        complexDataPtr != input.data ||
         !fComplex->sameShape(input);
 
     fFourier.resize(input);
@@ -269,15 +279,15 @@ void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_p
         RCTICTOC(TIMING_FFTW_PLAN, ({
         pthread_mutex_lock(&fftw_plan_mutex);
         #ifdef RELION_SINGLE_PRECISION
-        fPlanForward = fftwf_plan_dft(ndim, N, (fftwf_complex*) MULTIDIM_ARRAY(*fComplex),
-                                      (fftwf_complex*) MULTIDIM_ARRAY(fFourier), FFTW_FORWARD, FFTW_ESTIMATE);
-        fPlanBackward = fftwf_plan_dft(ndim, N, (fftwf_complex*) MULTIDIM_ARRAY(fFourier),
-                                       (fftwf_complex*) MULTIDIM_ARRAY(*fComplex), FFTW_BACKWARD, FFTW_ESTIMATE);
+        fPlanForward = fftwf_plan_dft(ndim, N, (fftwf_complex*) fComplex->data,
+                                      (fftwf_complex*) fFourier.data, FFTW_FORWARD, FFTW_ESTIMATE);
+        fPlanBackward = fftwf_plan_dft(ndim, N, (fftwf_complex*) fFourier.data,
+                                       (fftwf_complex*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE);
         #else
-        fPlanForward = fftw_plan_dft(ndim, N, (fftw_complex*) MULTIDIM_ARRAY(*fComplex),
-                                     (fftw_complex*) MULTIDIM_ARRAY(fFourier), FFTW_FORWARD, FFTW_ESTIMATE);
-        fPlanBackward = fftw_plan_dft(ndim, N, (fftw_complex*) MULTIDIM_ARRAY(fFourier),
-                                      (fftw_complex*) MULTIDIM_ARRAY(*fComplex), FFTW_BACKWARD, FFTW_ESTIMATE);
+        fPlanForward = fftw_plan_dft(ndim, N, (fftw_complex*) fComplex->data,
+                                     (fftw_complex*) fFourier.data, FFTW_FORWARD, FFTW_ESTIMATE);
+        fPlanBackward = fftw_plan_dft(ndim, N, (fftw_complex*) fFourier.data,
+                                      (fftw_complex*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE);
         #endif
         pthread_mutex_unlock(&fftw_plan_mutex);
         }))
@@ -286,7 +296,7 @@ void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_p
             REPORT_ERROR("FFTW plans cannot be created");
 
         delete [] N;
-        complexDataPtr=MULTIDIM_ARRAY(*fComplex);
+        complexDataPtr=fComplex->data;
     }
 }
 
@@ -299,8 +309,8 @@ void FourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) 
         REPORT_ERROR("BUG: incompatible shaped in setFourier part of FFTW transformer");
     }
     memcpy(
-        MULTIDIM_ARRAY(fFourier),
-        MULTIDIM_ARRAY(inputFourier),
+        fFourier.data,
+        inputFourier.data,
         inputFourier.size() * 2 * sizeof(RFLOAT)
     );
     }))
@@ -311,11 +321,11 @@ void FourierTransformer::Transform(int sign) {
     if (sign == FFTW_FORWARD) {
         RCTICTOC(TIMING_FFTW_EXECUTE, ({
         #ifdef RELION_SINGLE_PRECISION
-        fftwf_execute_dft_r2c(fPlanForward,MULTIDIM_ARRAY(*fReal),
-                (fftwf_complex*) MULTIDIM_ARRAY(fFourier));
+        fftwf_execute_dft_r2c(fPlanForward,fReal->data,
+                (fftwf_complex*) fFourier.data);
         #else
-        fftw_execute_dft_r2c(fPlanForward,MULTIDIM_ARRAY(*fReal),
-                (fftw_complex*) MULTIDIM_ARRAY(fFourier));
+        fftw_execute_dft_r2c(fPlanForward,fReal->data,
+                (fftw_complex*) fFourier.data);
         #endif
         }))
 
@@ -338,10 +348,10 @@ void FourierTransformer::Transform(int sign) {
         RCTICTOC(TIMING_FFTW_EXECUTE, ({
         #ifdef RELION_SINGLE_PRECISION
         fftwf_execute_dft_c2r(fPlanBackward,
-                (fftwf_complex*) MULTIDIM_ARRAY(fFourier), MULTIDIM_ARRAY(*fReal));
+                (fftwf_complex*) fFourier.data, fReal->data);
         #else
         fftw_execute_dft_c2r(fPlanBackward,
-                (fftw_complex*) MULTIDIM_ARRAY(fFourier), MULTIDIM_ARRAY(*fReal));
+                (fftw_complex*) fFourier.data, fReal->data);
         #endif
         }))
     }

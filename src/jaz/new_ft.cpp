@@ -210,7 +210,7 @@ void NewFFT::_FourierTransform(
     const NewFFT::DoublePlan &plan,
     Normalization normalization
 ) {
-    fftw_execute_dft_r2c(plan.getForward(), MULTIDIM_ARRAY(src), (fftw_complex*) MULTIDIM_ARRAY(dest));
+    fftw_execute_dft_r2c(plan.getForward(), src.data, (fftw_complex*) dest.data);
 
     if (normalization == FwdOnly) {
         const double scale = src.size();
@@ -233,9 +233,9 @@ void NewFFT::_inverseFourierTransform(
     const NewFFT::DoublePlan &plan,
     Normalization normalization
 ) {
-    fftw_complex* in = (fftw_complex*) MULTIDIM_ARRAY(src);
+    fftw_complex* in = (fftw_complex*) src.data;
 
-    fftw_execute_dft_c2r(plan.getBackward(), in, MULTIDIM_ARRAY(dest));
+    fftw_execute_dft_c2r(plan.getBackward(), in, dest.data);
 
     if (normalization == Both) {
         const double scale = sqrt(dest.size());
@@ -252,7 +252,7 @@ void NewFFT::_FourierTransform(
     const NewFFT::FloatPlan &plan,
     Normalization normalization
 ) {
-    fftwf_execute_dft_r2c(plan.getForward(), MULTIDIM_ARRAY(src), (fftwf_complex*) MULTIDIM_ARRAY(dest));
+    fftwf_execute_dft_r2c(plan.getForward(), src.data, (fftwf_complex*) dest.data);
 
     if (normalization == FwdOnly) {
         const float scale = src.size();
@@ -275,9 +275,9 @@ void NewFFT::_inverseFourierTransform(
     const NewFFT::FloatPlan &plan,
     Normalization normalization
 ) {
-    fftwf_complex* in = (fftwf_complex*) MULTIDIM_ARRAY(src);
+    fftwf_complex* in = (fftwf_complex*) src.data;
 
-    fftwf_execute_dft_c2r(plan.getBackward(), in, MULTIDIM_ARRAY(dest));
+    fftwf_execute_dft_c2r(plan.getBackward(), in, dest.data);
 
     if (normalization == Both) {
         const float scale = sqrt(dest.size());
@@ -309,15 +309,15 @@ complexPtr(0)
 
     fftw_plan planForward = fftw_plan_dft_r2c(
         ndim, &N[0],
-        MULTIDIM_ARRAY(realDummy),
-        (fftw_complex*) MULTIDIM_ARRAY(complexDummy),
+        realDummy.data,
+        (fftw_complex*) complexDummy.data,
         FFTW_UNALIGNED | flags
     );
 
     fftw_plan planBackward = fftw_plan_dft_c2r(
         ndim, &N[0],
-        (fftw_complex*) MULTIDIM_ARRAY(complexDummy),
-        MULTIDIM_ARRAY(realDummy),
+        (fftw_complex*) complexDummy.data,
+        realDummy.data,
         FFTW_UNALIGNED | flags
     );
 
@@ -337,8 +337,8 @@ NewFFT::DoublePlan::DoublePlan(
 ):
 reusable(flags & FFTW_UNALIGNED),
 w(real.xdim), h(real.ydim), d(real.zdim),
-realPtr(MULTIDIM_ARRAY(real)),
-complexPtr((double*)MULTIDIM_ARRAY(complex))
+realPtr(real.data),
+complexPtr((double*)complex.data)
 {
     std::vector<int> N(0);
     if (d > 1) N.push_back(d);
@@ -351,15 +351,15 @@ complexPtr((double*)MULTIDIM_ARRAY(complex))
 
     fftw_plan planForward = fftw_plan_dft_r2c(
         ndim, &N[0],
-        MULTIDIM_ARRAY(real),
-        (fftw_complex*) MULTIDIM_ARRAY(complex),
+        real.data,
+        (fftw_complex*) complex.data,
         flags
     );
 
     fftw_plan planBackward = fftw_plan_dft_c2r(
         ndim, &N[0],
-        (fftw_complex*) MULTIDIM_ARRAY(complex),
-        MULTIDIM_ARRAY(real),
+        (fftw_complex*) complex.data,
+        real.data,
         flags
     );
 
@@ -392,15 +392,15 @@ complexPtr(0)
 
     fftwf_plan planForward = fftwf_plan_dft_r2c(
         ndim, &N[0],
-        MULTIDIM_ARRAY(realDummy),
-        (fftwf_complex*) MULTIDIM_ARRAY(complexDummy),
+        realDummy.data,
+        (fftwf_complex*) complexDummy.data,
         FFTW_UNALIGNED | flags
     );
 
     fftwf_plan planBackward = fftwf_plan_dft_c2r(
         ndim, &N[0],
-        (fftwf_complex*) MULTIDIM_ARRAY(complexDummy),
-        MULTIDIM_ARRAY(realDummy),
+        (fftwf_complex*) complexDummy.data,
+        realDummy.data,
         FFTW_UNALIGNED | flags
     );
 
@@ -420,8 +420,8 @@ NewFFT::FloatPlan::FloatPlan(
 ):
 reusable(flags & FFTW_UNALIGNED),
 w(real.xdim), h(real.ydim), d(real.zdim),
-realPtr(MULTIDIM_ARRAY(real)),
-complexPtr((float*) MULTIDIM_ARRAY(complex))
+realPtr(real.data),
+complexPtr((float*) complex.data)
 {
     std::vector<int> N(0);
     if (d > 1) N.push_back(d);
@@ -434,15 +434,15 @@ complexPtr((float*) MULTIDIM_ARRAY(complex))
 
     fftwf_plan planForward = fftwf_plan_dft_r2c(
         ndim, &N[0],
-        MULTIDIM_ARRAY(real),
-        (fftwf_complex*) MULTIDIM_ARRAY(complex),
+        real.data,
+        (fftwf_complex*) complex.data,
         flags
     );
 
     fftwf_plan planBackward = fftwf_plan_dft_c2r(
         ndim, &N[0],
-        (fftwf_complex*) MULTIDIM_ARRAY(complex),
-        MULTIDIM_ARRAY(real),
+        (fftwf_complex*) complex.data,
+        real.data,
         flags
     );
 

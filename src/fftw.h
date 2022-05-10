@@ -194,12 +194,15 @@ public:
         change the data.
     */
     template <typename T, typename T1>
-        void FourierTransform(T& v, T1& V, bool getCopy=true, bool force_new_plans = false) {
-            setReal(v, force_new_plans);
-            Transform(FFTW_FORWARD);
-            if (getCopy) getFourierCopy(V);
-            else getFourierAlias(V);
+    void FourierTransform(T& v, T1& V, bool getCopy=true, bool force_new_plans = false) {
+        setReal(v, force_new_plans);
+        Transform(FFTW_FORWARD);
+        if (getCopy) {
+            getFourierCopy(V);
+        } else {
+            getFourierAlias(V);
         }
+    }
 
     /** Compute the Fourier transform.
         The data is taken from the matrix with which the object was
@@ -223,28 +226,28 @@ public:
         matrix is already resized to the right size before entering
         in this function. */
     template <typename T, typename T1>
-        void inverseFourierTransform(const T& V, T1& v) {
-            setReal(v);
-            setFourier(V);
-            Transform(FFTW_BACKWARD);
-        }
+    void inverseFourierTransform(const T& V, T1& v) {
+        setReal(v);
+        setFourier(V);
+        Transform(FFTW_BACKWARD);
+    }
 
     /** Get Fourier coefficients. */
     template <typename T>
-        void getFourierAlias(T& V) {V.alias(fFourier); return;}
+    void getFourierAlias(T& V) { V.alias(fFourier); }
 
     /** Get Fourier coefficients. */
-    MultidimArray<Complex>& getFourierReference() {return fFourier;}
+    MultidimArray<Complex>& getFourierReference() { return fFourier; }
 
     /** Get Fourier coefficients. */
     template <typename T>
-        void getFourierCopy(T& V) {
-            V.reshape(fFourier);
-            memcpy(
-                MULTIDIM_ARRAY(V),MULTIDIM_ARRAY(fFourier),
-                fFourier.size() * 2 * sizeof(RFLOAT)
-            );
-        }
+    void getFourierCopy(T& V) {
+        V.reshape(fFourier);
+        memcpy(
+            V.data, fFourier.data,
+            fFourier.size() * 2 * sizeof(RFLOAT)
+        );
+    }
 
     /** Return a complete Fourier transform (two halves).
     */
@@ -635,7 +638,7 @@ void CenterFFT(MultidimArray< T >& v, bool forward) {
             if (pixel_end > isize2)
                 pixel_end = isize2;
 
-            CpuKernels::centerFFT_2D<T>(batchSize, pixel_start, pixel_end, MULTIDIM_ARRAY(v),
+            CpuKernels::centerFFT_2D<T>(batchSize, pixel_start, pixel_end, v.data,
                                         (size_t)xSize*ySize, xSize, ySize, xshift, yshift);
         }
         );
@@ -668,7 +671,7 @@ void CenterFFT(MultidimArray< T >& v, bool forward) {
                 if (pixel_end > isize2)
                     pixel_end = isize2;
 
-                CpuKernels::centerFFT_3D<T>(batchSize, pixel_start, pixel_end, MULTIDIM_ARRAY(v),
+                CpuKernels::centerFFT_3D<T>(batchSize, pixel_start, pixel_end, v.data,
                                             (size_t)xSize*ySize*zSize, xSize, ySize, zSize, xshift, yshift, zshift);
             }
             );
@@ -694,7 +697,7 @@ void CenterFFT(MultidimArray< T >& v, bool forward) {
                 if (pixel_end > isize2)
                     pixel_end = isize2;
 
-                CpuKernels::centerFFT_2D<T>(batchSize, pixel_start, pixel_end, MULTIDIM_ARRAY(v),
+                CpuKernels::centerFFT_2D<T>(batchSize, pixel_start, pixel_end, v.data,
                                             (size_t)xSize*ySize, xSize, ySize, xshift, yshift);
             }
             );

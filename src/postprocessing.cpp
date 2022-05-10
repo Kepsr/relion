@@ -986,13 +986,13 @@ void Postprocessing::run_locres(int rank, int size) {
 
     if (size > 1) {
         I1m.initZeros();
-        MPI_Allreduce(MULTIDIM_ARRAY(Ifil), MULTIDIM_ARRAY(I1m), Ifil.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(Ifil.data, I1m.data, Ifil.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Ifil = I1m;
         I1m.initZeros();
-        MPI_Allreduce(MULTIDIM_ARRAY(Ilocres), MULTIDIM_ARRAY(I1m), Ilocres.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(Ilocres.data, I1m.data, Ilocres.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Ilocres = I1m;
         I1m.initZeros();
-        MPI_Allreduce(MULTIDIM_ARRAY(Isumw), MULTIDIM_ARRAY(I1m), Isumw.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(Isumw.data, I1m.data, Isumw.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Isumw = I1m;
     }
 

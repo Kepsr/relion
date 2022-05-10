@@ -46,15 +46,21 @@ int main(int argc, char *argv[]) {
 
         if (prm.do_ssnr) {
             MultidimArray<RFLOAT> Maux(prm.sum_S2);
-            MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_S2), MULTIDIM_ARRAY(Maux),
-                    prm.sum_S2.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(
+                prm.sum_S2.data, Maux.data,
+                prm.sum_S2.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD
+            );
             prm.sum_S2 = Maux;
-            MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_N2), MULTIDIM_ARRAY(Maux),
-                    prm.sum_N2.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(
+                prm.sum_N2.data, Maux.data,
+                prm.sum_N2.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD
+            );
             prm.sum_N2 = Maux;
-            MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_count), MULTIDIM_ARRAY(Maux),
-                    prm.sum_count.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            prm.sum_count=Maux;
+            MPI_Allreduce(
+                prm.sum_count.data, Maux.data,
+                prm.sum_count.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD
+            );
+            prm.sum_count = Maux;
         }
 
         prm.saveStarFile(rank);

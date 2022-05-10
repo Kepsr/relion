@@ -235,8 +235,8 @@ void local_symmetry_parameters_mpi::run() {
         if (node->isLeader())
             std::cout << " Leader is broadcasting cropped masked region #" << (imask + 1) << " ..." << std::endl;
         #endif
-        node->relion_MPI_Bcast(MULTIDIM_ARRAY(mask_cropped), mask_cropped.size(), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        node->relion_MPI_Bcast(MULTIDIM_ARRAY(src_cropped),  src_cropped.size(),  MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        node->relion_MPI_Bcast(mask_cropped.data, mask_cropped.size(), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        node->relion_MPI_Bcast(src_cropped.data,  src_cropped.size(),  MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
         #ifdef DEBUG
         if (node->isLeader())
             std::cout << " Leader has completed broadcasting cropped masked region #" << (imask + 1) << "." << std::endl;
@@ -359,7 +359,7 @@ void local_symmetry_parameters_mpi::run() {
             MPI_Barrier(MPI_COMM_WORLD);
 
             // Leader sends this 'dest' cropped region to all followers
-            node->relion_MPI_Bcast(MULTIDIM_ARRAY(dest_cropped), dest_cropped.size(), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            node->relion_MPI_Bcast(dest_cropped.data, dest_cropped.size(), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
             // Leader sends the number of total samplings to all followers
             node->relion_MPI_Bcast(&nr_total_samplings, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -386,7 +386,7 @@ void local_symmetry_parameters_mpi::run() {
 
                     // Leader distributes sampling points to all followers
                     if (id_rank > 0)
-                        node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
+                        node->relion_MPI_Send(op_samplings_batch_packed.data, (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
                     // If id_rank == 0 (leader), just keep op_samplings_batch_packed to the leader itself
                 }
             } else {
@@ -394,7 +394,7 @@ void local_symmetry_parameters_mpi::run() {
                 // Followers receive sampling points from leader
                 // Important: Followers calculate first and last subscripts!
                 divide_equally(nr_total_samplings, node->size, node->rank, first, last);
-                node->relion_MPI_Recv(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
+                node->relion_MPI_Recv(op_samplings_batch_packed.data, (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
             }
             MPI_Barrier(MPI_COMM_WORLD);
 
@@ -418,7 +418,7 @@ void local_symmetry_parameters_mpi::run() {
 
             // Followers send their results back to leader
             if (!node->isLeader()) {
-                node->relion_MPI_Send(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
+                node->relion_MPI_Send(op_samplings_batch_packed.data, (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, 0, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD);
             } else {
                 MPI_Status status;
 
@@ -427,7 +427,7 @@ void local_symmetry_parameters_mpi::run() {
 
                     // Leader receives op_samplings_batch_packed from followers
                     if (id_rank > 0)
-                        node->relion_MPI_Recv(MULTIDIM_ARRAY(op_samplings_batch_packed), (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
+                        node->relion_MPI_Recv(op_samplings_batch_packed.data, (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
 
                     // Leader does something for itself if id_rank == 0
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {

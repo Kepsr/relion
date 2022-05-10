@@ -127,7 +127,7 @@ const MultidimArray<Complex > &ParFourierTransformer::getComplex() const {
 void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
     bool recomputePlan = 
         !fReal || 
-        // dataPtr != MULTIDIM_ARRAY(input) || 
+        // dataPtr != input.data || 
         !fReal->sameShape(input);
 
     fFourier.reshape(Zsize(input), Ysize(input), Xsize(input) / 2 + 1);
@@ -168,12 +168,12 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
 
         pthread_mutex_lock(&fftw_plan_mutex_par);
         fPlanForward = FFTW_PLAN_DFT_R2C(
-            ndim, N, MULTIDIM_ARRAY(*fReal),
-            (FFTW_COMPLEX*) MULTIDIM_ARRAY(fFourier), FFTW_ESTIMATE
+            ndim, N, fReal->data,
+            (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE
         );
         fPlanBackward = FFTW_PLAN_DFT_C2R(
-            ndim, N, (FFTW_COMPLEX*) MULTIDIM_ARRAY(fFourier),
-            MULTIDIM_ARRAY(*fReal), FFTW_ESTIMATE
+            ndim, N, (FFTW_COMPLEX*) fFourier.data,
+            fReal->data, FFTW_ESTIMATE
         );
         pthread_mutex_unlock(&fftw_plan_mutex_par);
 
@@ -185,14 +185,14 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
         #endif
 
         delete [] N;
-        dataPtr = MULTIDIM_ARRAY(*fReal);
+        dataPtr = fReal->data;
     }
 }
 
 void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
     bool recomputePlan = 
         !fComplex || 
-        // complexDataPtr != MULTIDIM_ARRAY(input) ||
+        // complexDataPtr != input.data ||
         !fComplex->sameShape(input);
 
     fFourier.resize(input);
@@ -233,12 +233,12 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
 
         pthread_mutex_lock(&fftw_plan_mutex_par);
         fPlanForward = FFTW_PLAN_DFT(
-            ndim, N, (FFTW_COMPLEX*) MULTIDIM_ARRAY(*fComplex),
-            (FFTW_COMPLEX*) MULTIDIM_ARRAY(fFourier), FFTW_FORWARD, FFTW_ESTIMATE
+            ndim, N, (FFTW_COMPLEX*) fComplex->data,
+            (FFTW_COMPLEX*) fFourier.data, FFTW_FORWARD, FFTW_ESTIMATE
         );
         fPlanBackward = FFTW_PLAN_DFT(
-            ndim, N, (FFTW_COMPLEX*) MULTIDIM_ARRAY(fFourier),
-            (FFTW_COMPLEX*) MULTIDIM_ARRAY(*fComplex), FFTW_BACKWARD, FFTW_ESTIMATE
+            ndim, N, (FFTW_COMPLEX*) fFourier.data,
+            (FFTW_COMPLEX*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE
         );
         pthread_mutex_unlock(&fftw_plan_mutex_par);
 
@@ -246,13 +246,13 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
             REPORT_ERROR("FFTW plans cannot be created");
 
         delete [] N;
-        complexDataPtr = MULTIDIM_ARRAY(*fComplex);
+        complexDataPtr = fComplex->data;
     }
 }
 
 void ParFourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) {
     memcpy(
-        MULTIDIM_ARRAY(fFourier), MULTIDIM_ARRAY(inputFourier),
+        fFourier.data, inputFourier.data,
         inputFourier.size() * 2 * sizeof(RFLOAT)
     );
 }
@@ -261,8 +261,8 @@ void ParFourierTransformer::setFourier(const MultidimArray<Complex> &inputFourie
 void ParFourierTransformer::Transform(int sign) {
     if (sign == FFTW_FORWARD) {
         FFTW_EXECUTE_DFT_R2C(
-            fPlanForward, MULTIDIM_ARRAY(*fReal),
-            (FFTW_COMPLEX*) MULTIDIM_ARRAY(fFourier)
+            fPlanForward, fReal->data,
+            (FFTW_COMPLEX*) fFourier.data
         );
         // Normalisation of the transform
         unsigned long int size = 0;
@@ -280,7 +280,7 @@ void ParFourierTransformer::Transform(int sign) {
     } else if (sign == FFTW_BACKWARD) {
         FFTW_EXECUTE_DFT_C2R(
             fPlanBackward, (FFTW_COMPLEX*) 
-            MULTIDIM_ARRAY(fFourier), MULTIDIM_ARRAY(*fReal)
+            fFourier.data, fReal->data
         );
     }
 }

@@ -1373,8 +1373,8 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed) {
     // for all class-related stuff
     // data is complex: multiply by two!
     packed_size += nr_classes * nr_bodies * 2 * (unsigned long long) BPref[0].getSize();
-    packed_size += nr_classes * nr_bodies * (unsigned long long) BPref[0].getSize();
-    packed_size += nr_classes * nr_bodies * (unsigned long long) nr_directions;
+    packed_size += nr_classes * nr_bodies *     (unsigned long long) BPref[0].getSize();
+    packed_size += nr_classes * nr_bodies *     (unsigned long long) nr_directions;
     // for pdf_class
     packed_size += nr_classes;
     // for priors for each class
@@ -1522,8 +1522,8 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
     // for all class-related stuff
     // data is complex: multiply by two!
     packed_size += nr_classes_bodies * 2 * (unsigned long long) BPref[0].getSize(); // BPref.data
-    packed_size += nr_classes_bodies * (unsigned long long) BPref[0].getSize(); // BPref.weight
-    packed_size += nr_classes_bodies * (unsigned long long) nr_directions; // pdf_directions
+    packed_size += nr_classes_bodies *     (unsigned long long) BPref[0].getSize(); // BPref.weight
+    packed_size += nr_classes_bodies *     (unsigned long long) nr_directions; // pdf_directions
     // for pdf_class
     packed_size += nr_classes;
     // for priors for each class

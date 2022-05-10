@@ -678,7 +678,7 @@ class Image {
     void writePageAsDatatype(FILE *fimg, DataType datatype, size_t datasize_n ) {
         size_t datasize = datasize_n * gettypesize(datatype);
         char * fdata = (char *) askMemory(datasize);
-        castPage2Datatype(fdata, MULTIDIM_ARRAY(data), datatype, datasize_n);
+        castPage2Datatype(fdata, data.data, datatype, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
         freeMemory(fdata, datasize);
     }
@@ -790,7 +790,7 @@ class Image {
                     // swap per page
                     if (swap) swapPage(page, readsize, datatype);
                     // cast to T per page
-                    castPage2T(page, MULTIDIM_ARRAY(data) + haveread_n, datatype, readsize_n);
+                    castPage2T(page, data.data + haveread_n, datatype, readsize_n);
                     haveread_n += readsize_n;
                 }
                 if (pad > 0) {

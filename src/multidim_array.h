@@ -167,14 +167,6 @@ inline long int Zsize(const MultidimArray<T> &v) { return v.zdim; }
 template <typename T>
 inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
-/** Array access.
- *
- * This macro gives you access to the array (T **)
- */
-#ifndef MULTIDIM_ARRAY
-    #define MULTIDIM_ARRAY(v) ((v).data)
-#endif
-
 /** Access to a direct element.
  * v is the array, l is the image, k is the slice, i is the Y index and j is the X index.
  * i and j) within the slice.
@@ -840,32 +832,16 @@ class MultidimArray {
         xdim = Xdim;
     }
 
-    /** Sets new N dimension.
-     *
-     *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
-     *
+    /** NOTE: When setXdim/setYdim/setZdim/setNdim are used, the array is not resized. 
+     * This should be done separately with coreAllocate()
      */
+
     void setNdim(long int Ndim) { ndim = Ndim; }
 
-    /** Sets new Z dimension.
-     *
-     *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
-     *
-     */
     void setZdim(long int Zdim) { zdim = Zdim; }
 
-    /** Sets new Y dimension.
-     *
-     *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
-     *
-     */
     void setYdim(long int Ydim) { ydim = Ydim; }
 
-    /** Sets new X dimension.
-     *
-     *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
-     *
-     */
     void setXdim(long int Xdim) { xdim = Xdim; }
 
     /** Copy the shape parameters
@@ -1170,16 +1146,16 @@ class MultidimArray {
      * @endcode
      */
     template<typename T1>
-    void resize(const MultidimArray<T1> &v) {
+    void resize(const MultidimArray<T1> &other) {
         if (
-            ndim != v.ndim || xdim != v.xdim ||
-            ydim != v.ydim || zdim != v.zdim ||
+            ndim != other.ndim || xdim != other.xdim ||
+            ydim != other.ydim || zdim != other.zdim ||
             !data
-        ) { resize(v.ndim, v.zdim, v.ydim, v.xdim); }
+        ) { resize(other.ndim, other.zdim, other.ydim, other.xdim); }
 
-        xinit = v.xinit;
-        yinit = v.yinit;
-        zinit = v.zinit;
+        xinit = other.xinit;
+        yinit = other.yinit;
+        zinit = other.zinit;
     }
 
     /** Return a struct of the array's X/Y/Z/N dimensions.
@@ -1197,8 +1173,6 @@ class MultidimArray {
     Origin getOrigin() const {
         return Origin(xinit, yinit, zinit);
     }
-
-    long int getSize() const { return nzyxdim(); }
 
     /** The dimension of an array.
      *
@@ -1243,13 +1217,13 @@ class MultidimArray {
     ) {
         if (ndim > 1)
             REPORT_ERROR("stack windowing not implemented");
-        if (this->zdim > 1) {
+        if (zdim > 1) {
             //call 3Dwindow
             window(z0, y0, x0, zF, yF, xF, init_value, n);
-        } else if (this->ydim > 1) {
+        } else if (ydim > 1) {
             //call 2Dwindow
             window(y0, x0, yF, xF, init_value, n);
-        } else if (this->xdim > 1) {
+        } else if (xdim > 1) {
             //call 1Dwindow
             window(x0, xF, init_value=0, n);
         }
@@ -2419,7 +2393,7 @@ class MultidimArray {
             else if (val < stats.min) { stats.min = val; }
         }
 
-        long int N = this->nzyxdim();
+        long int N = nzyxdim();
 
         stats.avg = sumx / N;
         if (N > 1) {
@@ -3252,9 +3226,7 @@ class MultidimArray {
      * work with 2D arrays as a single pointer. The first element of the array
      * is pointed by result[1*Xdim+1], and in general result[i*Xdim+j]
      */
-    T* adaptForNumericalRecipes22D() const {
-        return MULTIDIM_ARRAY(*this) - 1 - xdim;
-    }
+    T* adaptForNumericalRecipes22D() const { return data - 1 - xdim; }
 
     /** Load 2D array from numerical recipes result.
      */
@@ -3289,9 +3261,7 @@ class MultidimArray {
      *
      * This function is not ported to Python.
      */
-    T* adaptForNumericalRecipes1D() const {
-        return MULTIDIM_ARRAY(*this) - 1;
-    }
+    T* adaptForNumericalRecipes1D() const { return data - 1; }
 
     /** Kill a 1D array produced for Numerical Recipes.
      *
@@ -3337,7 +3307,7 @@ class MultidimArray {
      */
     void sort() {
         checkDimension(1);
-        std::sort(MULTIDIM_ARRAY(*this), MULTIDIM_ARRAY(*this) + xdim);
+        std::sort(data, data + xdim);
     }
 
     /** Get the indices that sort the 1D vector elements (original array intact)

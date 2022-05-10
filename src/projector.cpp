@@ -235,7 +235,7 @@ void Projector::computeFourierTransformMap(
     dFaux = ptrFactory.make<Complex>(Faux_sz);
     dvol  = ptrFactory.make<RFLOAT>(vol_in.size());
     if (do_heavy && do_gpu) {
-        dvol.setHostPtr(MULTIDIM_ARRAY(vol_in));
+        dvol.setHostPtr(vol_in.data);
         dvol.accAlloc();
         dvol.cpToDevice();
     }
@@ -374,7 +374,7 @@ void Projector::computeFourierTransformMap(
         dfourier_mask.accAlloc();
         fmXsz = fmYsz = fmZsz = 0;
         if (do_fourier_mask) {
-            dfourier_mask.setHostPtr(MULTIDIM_ARRAY(*fourier_mask));
+            dfourier_mask.setHostPtr(fourier_mask->data);
             dfourier_mask.cpToDevice();
             fmXsz = Xsize(*fourier_mask);
             fmYsz = Ysize(*fourier_mask);
@@ -400,7 +400,7 @@ void Projector::computeFourierTransformMap(
                 max_r2, min_r2, cudanormfft, padding_factor, weight,
                 ~dfourier_mask, fmXsz, fmYsz, fmZsz, do_fourier_mask, ref_dim == 3
             );
-            ddata.setHostPtr(MULTIDIM_ARRAY(data));
+            ddata.setHostPtr(data.data);
             ddata.cpToHost();
             dfourier_mask.freeIfSet();
         } else
@@ -456,7 +456,7 @@ void Projector::computeFourierTransformMap(
         #ifdef CUDA
         if (do_gpu) {
             run_updatePowerSpectrum(~dcounter, dcounter.getSize(), ~dpower_spectrum);
-            dpower_spectrum.setHostPtr(MULTIDIM_ARRAY(power_spectrum));
+            dpower_spectrum.setHostPtr(power_spectrum.data);
             dpower_spectrum.cpToHost();
         } else
         #endif

@@ -138,17 +138,17 @@ class ParFourierTransformer {
 
     /** Get Fourier coefficients. */
     template <typename T>
-    void getFourierAlias(T& V) {V.alias(fFourier); return;}
+    void getFourierAlias(T& V) { V.alias(fFourier); }
 
     /** Get Fourier coefficients. */
-    MultidimArray<Complex> &getFourierReference() {return fFourier;}
+    MultidimArray<Complex> &getFourierReference() { return fFourier; }
 
     /** Get Fourier coefficients. */
     template <typename T>
     void getFourierCopy(T& V) {
         V.reshape(fFourier);
         memcpy(
-            MULTIDIM_ARRAY(V), MULTIDIM_ARRAY(fFourier),
+            V.data, fFourier.data,
             fFourier.size() * 2 * sizeof(RFLOAT)
         );
     }
@@ -156,33 +156,48 @@ class ParFourierTransformer {
     /** Return a complete Fourier transform (two halves).
     */
     template <typename T>
-        void getCompleteFourier(T& V) {
-            V.reshape(*fReal);
-            int ndim = 3;
-            if (Zsize(*fReal) == 1) {
-                ndim = 2;
-                if (Ysize(*fReal) == 1)
-                    ndim = 1;
-            }
-            switch (ndim) {
+    void getCompleteFourier(T& V) {
+        V.reshape(*fReal);
+        int ndim = 3;
+        if (Zsize(*fReal) == 1) {
+            ndim = 2;
+            if (Ysize(*fReal) == 1)
+                ndim = 1;
+        }
+        switch (ndim) {
 
-                case 1:
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
-                    if (i < Xsize(fFourier)) {
-                        DIRECT_A1D_ELEM(V, i) = DIRECT_A1D_ELEM(fFourier, i);
-                    } else {
-                        DIRECT_A1D_ELEM(V, i) = conj(DIRECT_A1D_ELEM(fFourier, Xsize(*fReal) - i));
-                    }
+            case 1:
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
+                if (i < Xsize(fFourier)) {
+                    DIRECT_A1D_ELEM(V, i) = DIRECT_A1D_ELEM(fFourier, i);
+                } else {
+                    DIRECT_A1D_ELEM(V, i) = conj(DIRECT_A1D_ELEM(fFourier, Xsize(*fReal) - i));
                 }
-                break;
+            }
+            break;
 
-                case 2:
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
-                    if (j<Xsize(fFourier)) {
-                        DIRECT_A2D_ELEM(V, i, j) = DIRECT_A2D_ELEM(fFourier, i, j);
+            case 2:
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
+                if (j<Xsize(fFourier)) {
+                    DIRECT_A2D_ELEM(V, i, j) = DIRECT_A2D_ELEM(fFourier, i, j);
+                } else {
+                    DIRECT_A2D_ELEM(V, i, j) = conj(DIRECT_A2D_ELEM(
+                        fFourier, 
+                        (Ysize(*fReal) - i) % Ysize(*fReal), 
+                        Xsize(*fReal) - j
+                    ));
+                }
+            }
+            break;
+
+            case 3:
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
+                    if (j < Xsize(fFourier)) {
+                        DIRECT_A3D_ELEM(V, k, i, j) = DIRECT_A3D_ELEM(fFourier, k, i, j);
                     } else {
-                        DIRECT_A2D_ELEM(V, i, j) = conj(DIRECT_A2D_ELEM(
+                        DIRECT_A3D_ELEM(V, k, i, j) = conj(DIRECT_A3D_ELEM(
                             fFourier, 
+                            (Zsize(*fReal) - k) % Zsize(*fReal), 
                             (Ysize(*fReal) - i) % Ysize(*fReal), 
                             Xsize(*fReal) - j
                         ));
@@ -190,29 +205,14 @@ class ParFourierTransformer {
                 }
                 break;
 
-                case 3:
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
-                        if (j < Xsize(fFourier)) {
-                            DIRECT_A3D_ELEM(V, k, i, j) = DIRECT_A3D_ELEM(fFourier, k, i, j);
-                        } else {
-                            DIRECT_A3D_ELEM(V, k, i, j) = conj(DIRECT_A3D_ELEM(
-                                fFourier, 
-                                (Zsize(*fReal) - k) % Zsize(*fReal), 
-                                (Ysize(*fReal) - i) % Ysize(*fReal), 
-                                Xsize(*fReal) - j
-                            ));
-                        }
-                    }
-                    break;
-
-            }
         }
+    }
 
     /** Set one half of the FT in fFourier from the input complete Fourier transform (two halves).
         The fReal and fFourier already should have the right sizes
     */
     template <typename T>
-        void setFromCompleteFourier(T& V) {
+    void setFromCompleteFourier(T& V) {
         int ndim = 3;
         if (Zsize(*fReal) == 1) {
             ndim = 2;
