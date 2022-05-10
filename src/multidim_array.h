@@ -546,7 +546,7 @@ class MultidimArray {
     int mFd;  // Mapped file handler
     long int nzyxdimAlloc;  // Number of elements in NZYX in allocated memory
 
-    void attempt_mmap(T **data, FileName &mapFile, int &mFd, off_t offset) {
+    T* attempt_mmap(FileName &mapFile, int &mFd, off_t offset) {
         mapFile.initRandom(8);
         mapFile = mapFile.addExtension("tmp");
 
@@ -559,8 +559,10 @@ class MultidimArray {
             REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": Error 'stretching' the map file.");
         }
 
-        if ((*data = (T*) mmap(0, nzyxdim() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
+        T *ptr;
+        if ((ptr = (T*) mmap(0, nzyxdim() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
             REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": mmap failed.");
+        return ptr;
 
     }
 
@@ -730,7 +732,7 @@ class MultidimArray {
             REPORT_ERROR("coreAllocate: Cannot allocate a negative number of bytes");
 
         if (mmapOn) {
-            attempt_mmap(&data, mapFile, mFd, nzyxdim() * sizeof(T));
+            data = attempt_mmap(mapFile, mFd, nzyxdim() * sizeof(T));
         } else {
             data = (T*) RELION_ALIGNED_MALLOC(nzyxdim() * sizeof(T));
             if (!data) REPORT_ERROR("Allocate: No space left");
@@ -757,7 +759,7 @@ class MultidimArray {
             REPORT_ERROR("coreAllocateReuse: Cannot allocate a negative number of bytes");
 
         if (mmapOn) {
-            attempt_mmap(&data, mapFile, mFd, nzyxdim() * sizeof(T));
+            data = attempt_mmap(mapFile, mFd, nzyxdim() * sizeof(T));
         } else {
             data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * nzyxdim());
             if (!data) REPORT_ERROR("Allocate: No space left");
@@ -787,6 +789,8 @@ class MultidimArray {
         nzyxdimAlloc = 0;
     }
 
+    // A job for shared_ptr?
+
     /** Alias a multidimarray.
      *
      * Treat the multidimarray as if it were a volume. The data is not copied
@@ -794,11 +798,11 @@ class MultidimArray {
      * You should not make any operation on this volume so the
      * memory locations are changed
      */
-    void alias(const MultidimArray<T> &m) {
-        coreDeallocate(); // Otherwise there may be a memory leak!
-        copyShape(m);
-        this->data = m.data;
-        this->destroyData = false;
+    void alias(const MultidimArray<T> &other) {
+        coreDeallocate();  // Otherwise there may be a memory leak!
+        copyShape(other);
+        data = other.data;
+        destroyData = false;
     }
 
     /** Move from a multidimarray.
@@ -809,14 +813,14 @@ class MultidimArray {
      * After the operation, the operand m will become an alias of this array.
      * Same operation as alias, but reverse the relation between the two arrays
      */
-    void moveFrom(MultidimArray<T> &m) {
+    void moveFrom(MultidimArray<T> &other) {
         coreDeallocate(); // Otherwise there may be a memory leak!
-        copyShape(m);
-        this->data = m.data;
-        this->destroyData = true;
-        this->nzyxdimAlloc = m.nzyxdimAlloc;
-        m.destroyData = false;
-        m.nzyxdimAlloc = 0;
+        copyShape(other);
+        data = other.data;
+        destroyData = true;
+        nzyxdimAlloc = other.nzyxdimAlloc;
+        other.destroyData = false;
+        other.nzyxdimAlloc = 0;
     }
 
     //@}
@@ -841,36 +845,28 @@ class MultidimArray {
      *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
      *
      */
-    void setNdim(long int Ndim) {
-        ndim = Ndim;
-    }
+    void setNdim(long int Ndim) { ndim = Ndim; }
 
     /** Sets new Z dimension.
      *
      *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
      *
      */
-    void setZdim(long int Zdim) {
-        zdim = Zdim;
-    }
+    void setZdim(long int Zdim) { zdim = Zdim; }
 
     /** Sets new Y dimension.
      *
      *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
      *
      */
-    void setYdim(long int Ydim) {
-        ydim = Ydim;
-    }
+    void setYdim(long int Ydim) { ydim = Ydim; }
 
     /** Sets new X dimension.
      *
      *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
      *
      */
-    void setXdim(long int Xdim) {
-        xdim = Xdim;
-    }
+    void setXdim(long int Xdim) { xdim = Xdim; }
 
     /** Copy the shape parameters
      *
@@ -1022,7 +1018,7 @@ class MultidimArray {
 
         try {
             if (mmapOn) {
-                attempt_mmap(&new_data, newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
+                new_data = attempt_mmap(newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
             } else {
                 new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
             }
@@ -1091,7 +1087,7 @@ class MultidimArray {
 
         try {
             if (mmapOn) {
-                attempt_mmap(&new_data, newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
+                new_data = attempt_mmap(newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
             } else {
                 new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
             }
