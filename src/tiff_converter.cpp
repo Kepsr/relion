@@ -68,10 +68,10 @@ void TIFFConverter::read(int argc, char **argv) {
 void TIFFConverter::estimate(FileName fn_movie) {
     Image<float> frame;
     frame.read(fn_movie, false, -1, false, true); // select_img -1, mmap false, is_2D true
-    if (XSIZE(frame()) != XSIZE(gain()) || YSIZE(frame()) != YSIZE(gain()))
+    if (Xsize(frame()) != Xsize(gain()) || Ysize(frame()) != Ysize(gain()))
         REPORT_ERROR("The movie " + fn_movie + " has a different size from others.");
 
-    const int nframes = NSIZE(frame());
+    const int nframes = Nsize(frame());
 
     for (int iframe = 0; iframe < nframes; iframe++) {
         int error = 0, changed = 0, stable = 0, negative = 0;
@@ -89,7 +89,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
                 // #define DEBUG
                 #ifdef DEBUG
                 printf(" negative: %s frame %2d pos %4d %4d obs % 8.4f gain %.4f\n",
-                       fn_movie.c_str(), iframe, n / XSIZE(gain()), n % XSIZE(gain()), (double)val, (double)gain_here);
+                       fn_movie.c_str(), iframe, n / Xsize(gain()), n % Xsize(gain()), (double)val, (double)gain_here);
                 #endif
                 negative++;
                 DIRECT_MULTIDIM_ELEM(defects(), n) = -1;
@@ -103,7 +103,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
                 if (fabs(expected - val) > 0.0001) {
                     #ifdef DEBUG
                     printf(" mismatch: %s frame %2d pos %4d %4d obs % 8.4f expected % 8.4f gain %.4f\n",
-                           fn_movie.c_str(), iframe, n / XSIZE(gain()), n % XSIZE(gain()), (double)val,
+                           fn_movie.c_str(), iframe, n / Xsize(gain()), n % Xsize(gain()), (double)val,
                            (double)expected, (double)gain_here);
                     #endif
                     error++;
@@ -157,12 +157,12 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
     char msg[256];
 
     frame.read(fn_movie, false, -1, false, true); // select_img -1, mmap false, is_2D true
-    if (XSIZE(frame()) != XSIZE(gain()) || YSIZE(frame()) != YSIZE(gain()))
+    if (Xsize(frame()) != Xsize(gain()) || Ysize(frame()) != Ysize(gain()))
         REPORT_ERROR("The movie " + fn_movie + " has a different size from others.");
 
-    const int nframes = NSIZE(frame());
+    const int nframes = Nsize(frame());
     const float angpix = frame.samplingRateX();
-    MultidimArray<T> buf(YSIZE(frame()), XSIZE(frame()));
+    MultidimArray<T> buf(Ysize(frame()), Xsize(frame()));
 
     for (int iframe = 0; iframe < nframes; iframe++) {
         int error = 0;
@@ -186,7 +186,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
             if (fabs(expected - val) > 0.0001) {
                 snprintf(
                     msg, 255, " mismatch: %s frame %2d pos %4ld %4ld obs % 8.4f status %d expected % 8.4f gain %.4f\n",
-                    fn_movie.c_str(), iframe, n / XSIZE(gain()), n % XSIZE(gain()), (double) val, DIRECT_MULTIDIM_ELEM(defects(), n),
+                    fn_movie.c_str(), iframe, n / Xsize(gain()), n % Xsize(gain()), (double) val, DIRECT_MULTIDIM_ELEM(defects(), n),
                     (double) expected, (double) gain_here
                 );
                 std::cerr << msg << std::endl;
@@ -205,7 +205,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
 
                     printf(
                         " underflow: %s frame %2d pos %4ld %4ld obs % 8.4f expected % 8.4f gain %.4f\n",
-                        fn_movie.c_str(), iframe, n / XSIZE(gain()), n % XSIZE(gain()), (double) val,
+                        fn_movie.c_str(), iframe, n / Xsize(gain()), n % Xsize(gain()), (double) val,
                         (double) expected, (double) gain_here
                     );
                 } else if (ival > overflow) {
@@ -214,7 +214,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
 
                     printf(
                         " overflow: %s frame %2d pos %4ld %4ld obs % 8.4f expected % 8.4f gain %.4f\n",
-                        fn_movie.c_str(), iframe, n / XSIZE(buf), n % XSIZE(buf), (double) val,
+                        fn_movie.c_str(), iframe, n / Xsize(buf), n % Xsize(buf), (double) val,
                         (double) expected, (double) gain_here
                     );
                 }
@@ -223,7 +223,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
             DIRECT_MULTIDIM_ELEM(buf, n) = ival;
         }
 
-        write_tiff_one_page(tif, buf, angpix, decide_filter(XSIZE(buf)), deflate_level, line_by_line);
+        write_tiff_one_page(tif, buf, angpix, decide_filter(Xsize(buf)), deflate_level, line_by_line);
 
         printf(" %s Frame %3d / %3d #Error %10d\n", fn_movie.c_str(), iframe + 1, nframes, error);
     }
@@ -241,12 +241,12 @@ void TIFFConverter::only_compress(FileName fn_movie, FileName fn_tiff) {
     if (!EERRenderer::isEER(fn_movie)) {
         Image<T> frame;
         frame.read(fn_movie, false, -1, false, true); // select_img -1, mmap false, is_2D true
-        const int nframes = NSIZE(frame());
+        const int nframes = Nsize(frame());
         const float angpix = frame.samplingRateX();
 
         for (int iframe = 0; iframe < nframes; iframe++) {
             frame.read(fn_movie, true, iframe, false, true);
-            write_tiff_one_page(tif, frame(), angpix, decide_filter(XSIZE(frame())), deflate_level, line_by_line);
+            write_tiff_one_page(tif, frame(), angpix, decide_filter(Xsize(frame())), deflate_level, line_by_line);
             printf(" %s Frame %3d / %3d\n", fn_movie.c_str(), iframe + 1, nframes);
         }
     } else {
@@ -339,7 +339,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         if (rank == 0) {
             if (fn_gain != "" && rank == 0) {
                 EERRenderer::loadEERGain(fn_gain, gain(), eer_upsampling);
-                std::cout << "Read an EER gain file " << fn_gain << " NX = " << XSIZE(gain()) << " NY = " << YSIZE(gain()) << std::endl;
+                std::cout << "Read an EER gain file " << fn_gain << " NX = " << Xsize(gain()) << " NY = " << Ysize(gain()) << std::endl;
                 std::cout << "Taking inverse and re-scaling (when necessary)." << std::endl;
                 gain.write(fn_out + "gain-reference.mrc");
                 std::cout << "Written " + fn_out + "gain-reference.mrc. Please use this file as a gain reference when processing the converted movies.\n" << std::endl;
@@ -358,7 +358,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         Image<RFLOAT> Ihead;
         Ihead.read(fn_first, false, -1, false, true); // select_img -1, mmap false, is_2D true
         mrc_mode = checkMRCtype(fn_first);
-        const int nx = XSIZE(Ihead()), ny = YSIZE(Ihead()), nn = NSIZE(Ihead());
+        const int nx = Xsize(Ihead()), ny = Ysize(Ihead()), nn = Nsize(Ihead());
         if (rank == 0)
             printf("Input (NX, NY, NN) = (%d, %d, %d), MODE = %d\n\n", nx, ny, nn, mrc_mode);
 
@@ -372,14 +372,14 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
                 gain.read(fn_gain + ":mrc");
                 if (rank == 0)
                     std::cout << "Read " << fn_gain << std::endl;
-                if (XSIZE(gain()) != nx || YSIZE(gain()) != ny)
+                if (Xsize(gain()) != nx || Ysize(gain()) != ny)
                     REPORT_ERROR("The input gain has a wrong size.");
 
                 FileName fn_defects = fn_gain.withoutExtension() + "_reliablity." + fn_gain.getExtension();
                 defects.read(fn_defects + ":mrc");
                 if (rank == 0)
                     std::cout << "Read " << fn_defects << "\n" << std::endl;
-                if (XSIZE(defects()) != nx || YSIZE(defects()) != ny)
+                if (Xsize(defects()) != nx || Ysize(defects()) != ny)
                     REPORT_ERROR("The input reliability map has a wrong size.");
             }
         } else if (mrc_mode == 2) {

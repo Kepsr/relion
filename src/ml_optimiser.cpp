@@ -1221,14 +1221,14 @@ void MlOptimiser::initialise() {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
             idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
             RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
-            if (idx < XSIZE(mymodel.sigma2_noise[0]))
+            if (idx < Xsize(mymodel.sigma2_noise[0]))
                 mymodel.sigma2_noise[0](idx) = val;
         }
-        if (idx < XSIZE(mymodel.sigma2_noise[0]) - 1) {
+        if (idx < Xsize(mymodel.sigma2_noise[0]) - 1) {
             if (verb > 0)
                 std::cout
                 << " WARNING: provided sigma2_noise-spectrum has fewer entries ("
-                << idx + 1 << ") than needed (" << XSIZE(mymodel.sigma2_noise[0])
+                << idx + 1 << ") than needed (" << Xsize(mymodel.sigma2_noise[0])
                 << "). Set rest to zero..." << std::endl;
         }
 
@@ -1286,7 +1286,7 @@ void MlOptimiser::initialise() {
 }
 
 void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
-    int ref_box_size = XSIZE(mymodel.Iref[0]);
+    int ref_box_size = Xsize(mymodel.Iref[0]);
 
     Image<RFLOAT> Isolvent;
     Isolvent.read(_fn_mask);
@@ -1305,18 +1305,18 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
 
         if (rank == 0) {
             // Only the leader writes out the new mask
-            int rescale_size = round(XSIZE(Isolvent()) * mask_pixel_size / mymodel.pixel_size);
+            int rescale_size = round(Xsize(Isolvent()) * mask_pixel_size / mymodel.pixel_size);
             rescale_size += rescale_size % 2;  // Ensure divisibility by 2
             resizeMap(Isolvent(), rescale_size);
             Isolvent.setSamplingRateInHeader(mymodel.pixel_size);
         }
     }
 
-    if (XSIZE(Isolvent()) != ref_box_size) {
+    if (Xsize(Isolvent()) != ref_box_size) {
         need_new_mask = true;
 
         if (verb > 0) {
-            std::cerr << " + WARNING: solvent mask box size: " << XSIZE(Isolvent())
+            std::cerr << " + WARNING: solvent mask box size: " << Xsize(Isolvent())
             << " is not the same as the reference box size: " << ref_box_size << std::endl;
             std::cerr << " + WARNING: re-windowing the mask... " << std::endl;
         }
@@ -1604,7 +1604,7 @@ void MlOptimiser::initialiseGeneral(int rank) {
             }
 
             MultidimArray<RFLOAT> tmpmsk;
-            tmpmsk.resize(ZSIZE(mymodel.Iref[0]), YSIZE(mymodel.Iref[0]), XSIZE(mymodel.Iref[0])/2+1);
+            tmpmsk.resize(Zsize(mymodel.Iref[0]), Ysize(mymodel.Iref[0]), Xsize(mymodel.Iref[0]) / 2 + 1);
             generateBinaryHelicalFourierMask(tmpmsk, resols_start, resols_end, mymodel.pixel_size);
             // make a 2-pixel soft edge of fourier mask
             autoMask(tmpmsk, helical_fourier_mask, 0.5, 0.0, 2.0, false, nr_threads);
@@ -2059,14 +2059,14 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             // Rescale img() onto Mavg, as optics_groups may have different box sizes and pixel sizes...
             // a) rescale to same pixel size
             if (fabs(my_pixel_size - mymodel.pixel_size) > 0.0001) {
-                int rescalesize = round(XSIZE(img()) * my_pixel_size / mymodel.pixel_size);
+                int rescalesize = round(Xsize(img()) * my_pixel_size / mymodel.pixel_size);
                 // Enforce divisibility by 2
                 rescalesize += rescalesize % 2;
                 resizeMap(img(), rescalesize);
             }
             // b) window to same box size
             img().setXmippOrigin();
-            if (fabs(XSIZE(img()) - mymodel.ori_size) > 0) {
+            if (fabs(Xsize(img()) - mymodel.ori_size) > 0) {
                 switch (mymodel.data_dim) {
                     case 2:
                     img().window(
@@ -2232,7 +2232,7 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
                         } else {
                             // Try to find the next positive value
                             for (int nn = n + 1; true; nn++) {
-                                if (nn > XSIZE(mymodel.sigma2_noise[igroup])) {
+                                if (nn > Xsize(mymodel.sigma2_noise[igroup])) {
                                     std::cerr << " igroup= " << igroup << " n= " << n << " mymodel.sigma2_noise[igroup]= " << mymodel.sigma2_noise[igroup] << std::endl;
                                     REPORT_ERROR("BUG! cannot find positive values in sigma2_noise spectrum");
                                 }
@@ -2847,7 +2847,7 @@ void MlOptimiser::expectationSetup() {
     sampling.resetRandomlyPerturbedSampling();
 
     // Initialise Projectors and fill vector with power_spectra for all classes
-    MultidimArray<RFLOAT> *my_fourier_mask = XSIZE(helical_fourier_mask) > 0 ? &helical_fourier_mask : NULL;
+    MultidimArray<RFLOAT> *my_fourier_mask = Xsize(helical_fourier_mask) > 0 ? &helical_fourier_mask : NULL;
     mymodel.setFourierTransformMaps(!fix_tau, nr_threads, strict_lowres_exp, my_fourier_mask);
 
     // Initialise all weighted sums to zero
@@ -3508,19 +3508,19 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         CenterFFT(tt(), false);
         std::string fnm = mode + std::string("_out_shifted_image.mrc");
         tt.write(fnm);
-        tt().resize(YSIZE(Mresol_coarse[optics_group]),XSIZE(Mresol_coarse[optics_group]));
+        tt().resize(Ysize(Mresol_coarse[optics_group]),Xsize(Mresol_coarse[optics_group]));
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tt()) {
             DIRECT_MULTIDIM_ELEM(tt(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(Mresol_coarse[optics_group], n);
         }
         fnm = mode + std::string("_out_mresol_coarse.mrc");
         tt.write(fnm);
-        tt().resize(YSIZE(Mresol_fine),XSIZE(Mresol_fine[optics_group]));
+        tt().resize(Ysize(Mresol_fine),Xsize(Mresol_fine[optics_group]));
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tt()) {
             DIRECT_MULTIDIM_ELEM(tt(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(Mresol_fine[optics_group], n);
         }
         fnm = mode + std::string("_out_mresol_fine.mrc");
         tt.write(fnm);
-        tt().resize(YSIZE(exp_local_Fctfs[0]),XSIZE(exp_local_Fctfs[0]));
+        tt().resize(Ysize(exp_local_Fctfs[0]),Xsize(exp_local_Fctfs[0]));
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Fctfs[0]) {
             DIRECT_MULTIDIM_ELEM(tt(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(exp_local_Fctfs[0], n);
         }
@@ -3915,7 +3915,7 @@ void MlOptimiser::maximizationOtherParameters() {
             #ifdef DEBUG_UPDATE_SCALE
             if (verb > 0) {
                 std::cerr << "Group " << igroup + 1 << ": scale_correction= " << mymodel.scale_correction[igroup] << std::endl;
-                for (int i = 0; i < XSIZE(wsum_model.wsum_reference_power[igroup]); i++)
+                for (int i = 0; i < Xsize(wsum_model.wsum_reference_power[igroup]); i++)
                     if (wsum_model.wsum_reference_power[igroup](i) > 0.0)
                         std::cerr << " i= " << i << " XA= " << wsum_model.wsum_signal_product[igroup](i)
                                             << " A2= " << wsum_model.wsum_reference_power[igroup](i)
@@ -4016,7 +4016,7 @@ void MlOptimiser::maximizationOtherParameters() {
             RFLOAT radius_p = radius + WIDTH_FMASK_EDGE;
 
             for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
-                for (int rr = 0; rr < XSIZE(mymodel.tau2_class[iclass]); rr++) {
+                for (int rr = 0; rr < Xsize(mymodel.tau2_class[iclass]); rr++) {
                     RFLOAT r = (RFLOAT)rr;
                     if (r < radius) {
                         continue;
@@ -4083,7 +4083,7 @@ void MlOptimiser::solventFlatten() {
             if (ignore_helical_symmetry) {
                 createCylindricalReference(
                     Isolvent(),
-                    XSIZE(mymodel.Iref[0]),
+                    Xsize(mymodel.Iref[0]),
                     helical_tube_inner_diameter / mymodel.pixel_size,
                     helical_tube_outer_diameter / mymodel.pixel_size,
                     width_mask_edge
@@ -4292,7 +4292,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(aux) {
         int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
         // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
-        // Exclude points beyond XSIZE(Npix_per_shell), and exclude half of the x=0 column that is stored twice in FFTW
+        // Exclude points beyond Xsize(Npix_per_shell), and exclude half of the x=0 column that is stored twice in FFTW
         if (ires < mymodel.ori_size / 2 + 1 && !(jp == 0 && ip < 0))
             Npix_per_shell(ires) += 1;
     }
@@ -4387,12 +4387,12 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
         // #define DEBUG_MRESOL
         #ifdef DEBUG_MRESOL
         Image<RFLOAT> img;
-        img().resize(YSIZE(Mresol_fine[optics_group]),XSIZE(Mresol_fine[optics_group]));
+        img().resize(Ysize(Mresol_fine[optics_group]),Xsize(Mresol_fine[optics_group]));
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img()) {
             DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT) DIRECT_MULTIDIM_ELEM(Mresol_fine[optics_group], n);
         }
         img.write("Mresol_fine.mrc");
-        img().resize(YSIZE(Mresol_coarse[optics_group]), XSIZE(Mresol_coarse[optics_group]));
+        img().resize(Ysize(Mresol_coarse[optics_group]), Xsize(Mresol_coarse[optics_group]));
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img()) {
             DIRECT_MULTIDIM_ELEM(img(), n) = (RFLOAT)DIRECT_MULTIDIM_ELEM(Mresol_coarse[optics_group], n);
         }
@@ -4861,18 +4861,18 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             transformer.getFourierAlias(Fnoise);
 
             // Remap mymodel.sigma2_noise[group_id] onto remapped_sigma2_noise for this images's size and angpix
-            MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(XSIZE(Mnoise) / 2 + 1);
+            MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(Xsize(Mnoise) / 2 + 1);
             RFLOAT remap_image_sizes = (my_image_size * my_pixel_size) / (mymodel.ori_size * mymodel.pixel_size);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(mymodel.sigma2_noise[group_id]) {
                 int i_remap = round(remap_image_sizes * i);
-                if (i_remap < XSIZE(remapped_sigma2_noise))
+                if (i_remap < Xsize(remapped_sigma2_noise))
                     DIRECT_A1D_ELEM(remapped_sigma2_noise, i_remap) = DIRECT_A1D_ELEM(mymodel.sigma2_noise[group_id], i);
             }
 
             // Fill Fnoise with random numbers, use power spectrum of the noise for its variance
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fnoise) {
                 int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
-                if (ires >= 0 && ires < XSIZE(remapped_sigma2_noise)) {
+                if (ires >= 0 && ires < Xsize(remapped_sigma2_noise)) {
                     RFLOAT sigma = sqrt(sigma2_fudge * DIRECT_A1D_ELEM(remapped_sigma2_noise, ires));
                     DIRECT_A3D_ELEM(Fnoise, k, i, j).real = rnd_gaus(0., sigma);
                     DIRECT_A3D_ELEM(Fnoise, k, i, j).imag = rnd_gaus(0., sigma);
@@ -4976,16 +4976,16 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 }
 
                 // If there is a redundant half, get rid of it
-                if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+                if (Xsize(Ictf()) == Ysize(Ictf())) {
                     // Set the CTF-image in Fctf
                     Ictf().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                         // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                         DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                     }
-                } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+                } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution
-                    windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                    windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
                 } else {
                     // if dimensions are neither cubical nor FFTW, stop
                     REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -5078,7 +5078,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     #ifdef DEBUG_BODIES
                     if (part_id == round(debug1)) {
                         /*
-                        for (int j = 0; j < XSIZE(exp_metadata); j++)
+                        for (int j = 0; j < Xsize(exp_metadata); j++)
                             std::cerr << " j= " << j << " DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, j)= " << DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, j) << std::endl;
                         Matrix2D<RFLOAT> B;
                         B = (mymodel.orient_bodies[obody]).transpose() * Aresi * mymodel.orient_bodies[obody];
@@ -5314,7 +5314,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
         {
             exp_current_image_size = image_current_size[optics_group];
         }
-        bool do_ctf_invsig = (exp_local_Fctf.size() > 0) ? YSIZE(exp_local_Fctf[0])  != exp_current_image_size : true; // size has changed
+        bool do_ctf_invsig = exp_local_Fctf.size() > 0 ? Ysize(exp_local_Fctf[0])  != exp_current_image_size : true; // size has changed
         bool do_masked_shifts = (do_ctf_invsig || nr_shifts != exp_local_Fimgs_shifted[img_id].size()); // size or nr_shifts has changed
 
         if (do_masked_shifts)
@@ -5351,21 +5351,21 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
 
             // Also prepare Minvsigma2
             if (mymodel.data_dim == 3) {
-                exp_local_Minvsigma2[img_id].initZeros(ZSIZE(Fimg), YSIZE(Fimg), XSIZE(Fimg));
+                exp_local_Minvsigma2[img_id].initZeros(Zsize(Fimg), Ysize(Fimg), Xsize(Fimg));
             } else {
-                exp_local_Minvsigma2[img_id].initZeros(YSIZE(Fimg), XSIZE(Fimg));
+                exp_local_Minvsigma2[img_id].initZeros(Ysize(Fimg), Xsize(Fimg));
             }
 
             // Map from model_size sigma2_noise array to my_image_size
             RFLOAT remap_image_sizes = (mymodel.ori_size * mymodel.pixel_size) / (my_image_size * my_pixel_size);
-            int *myMresol = (YSIZE(Fimg) == image_coarse_size[optics_group]) ? Mresol_coarse[optics_group].data : Mresol_fine[optics_group].data;
+            int *myMresol = (Ysize(Fimg) == image_coarse_size[optics_group]) ? Mresol_coarse[optics_group].data : Mresol_fine[optics_group].data;
             // With group_id and relevant size of Fimg, calculate inverse of sigma^2 for relevant parts of Mresol
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(exp_local_Minvsigma2[img_id]) {
                 int ires = *(myMresol + n);
                 int ires_remapped = round(remap_image_sizes * ires);
                 // Exclude origin (ires==0) from the Probability-calculation
                 // This way we are invariant to additive factors
-                if (ires > 0 && ires_remapped < XSIZE(mymodel.sigma2_noise[group_id]))
+                if (ires > 0 && ires_remapped < Xsize(mymodel.sigma2_noise[group_id]))
                     DIRECT_MULTIDIM_ELEM(exp_local_Minvsigma2[img_id], n) = 1.0 / (sigma2_fudge * DIRECT_A1D_ELEM(mymodel.sigma2_noise[group_id], ires_remapped));
             }
         }
@@ -5433,9 +5433,9 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                         if (do_helical_refine && !ignore_helical_symmetry) {
                             // Shall we let 2D classification do this as well?
                             std::cerr << " Size of Fourier map (Z, Y, X) = "
-                                    << ZSIZE(exp_local_Fimgs_shifted[img_id][my_trans_image]) << ", "
-                                    << YSIZE(exp_local_Fimgs_shifted[img_id][my_trans_image]) << ", "
-                                    << XSIZE(exp_local_Fimgs_shifted[img_id][my_trans_image]) << std::endl;
+                                    << Zsize(exp_local_Fimgs_shifted[img_id][my_trans_image]) << ", "
+                                    << Ysize(exp_local_Fimgs_shifted[img_id][my_trans_image]) << ", "
+                                    << Xsize(exp_local_Fimgs_shifted[img_id][my_trans_image]) << std::endl;
                             std::cerr << " mymodel.ori_size = " << mymodel.ori_size << std::endl;
                             MultidimArray<Complex> Faux, Fo;
                             Image<RFLOAT> tt;
@@ -5462,9 +5462,9 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                         #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
                         if (do_helical_refine && !ignore_helical_symmetry) {
                             std::cerr << " Size of Fourier map (Z, Y, X) = "
-                                    << ZSIZE(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << ", "
-                                    << YSIZE(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << ", "
-                                    << XSIZE(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << std::endl;
+                                    << Zsize(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << ", "
+                                    << Ysize(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << ", "
+                                    << Xsize(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << std::endl;
                             std::cerr << " mymodel.ori_size = " << mymodel.ori_size << std::endl;
                             copMultidimArray<Complex> Faux, Fo;
                             Image<RFLOAT> tt;
@@ -5502,14 +5502,14 @@ bool MlOptimiser::isSignificantAnyImageAnyTranslation(
 ) {
 
     long int exp_nr_trans = exp_itrans_max - exp_itrans_min + 1;
-    for (long int ipart = 0; ipart < YSIZE(exp_Mcoarse_significant); ipart++) {
+    for (long int ipart = 0; ipart < Ysize(exp_Mcoarse_significant); ipart++) {
         long int ihidden = iorient * exp_nr_trans;
         for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++) {
             #ifdef DEBUG_CHECKSIZES
-            if (ihidden >= XSIZE(exp_Mcoarse_significant)) {
-                std::cerr << " ihidden= " << ihidden << " XSIZE(exp_Mcoarse_significant)= " << XSIZE(exp_Mcoarse_significant) << std::endl;
+            if (ihidden >= Xsize(exp_Mcoarse_significant)) {
+                std::cerr << " ihidden= " << ihidden << " Xsize(exp_Mcoarse_significant)= " << Xsize(exp_Mcoarse_significant) << std::endl;
                 std::cerr << " iorient= " << iorient << " itrans= " << itrans << " exp_nr_trans= " << exp_nr_trans << std::endl;
-                REPORT_ERROR("ihidden > XSIZE: ");
+                REPORT_ERROR("ihidden > Xsize: ");
             }
             #endif
             if (DIRECT_A2D_ELEM(exp_Mcoarse_significant, ipart, ihidden)) return true;
@@ -5618,8 +5618,8 @@ void MlOptimiser::getAllSquaredDifferences(
                     pdf_orientation = mymodel.pdf_class[exp_iclass];
                 } else if (mymodel.orientational_prior_mode == NOPRIOR) {
                     #ifdef DEBUG_CHECKSIZES
-                    if (idir >= XSIZE(mymodel.pdf_direction[exp_iclass])) {
-                        std::cerr<< "idir= "<<idir<<" XSIZE(mymodel.pdf_direction[exp_iclass])= "<< XSIZE(mymodel.pdf_direction[exp_iclass]) <<std::endl;
+                    if (idir >= Xsize(mymodel.pdf_direction[exp_iclass])) {
+                        std::cerr<< "idir= "<<idir<<" Xsize(mymodel.pdf_direction[exp_iclass])= "<< Xsize(mymodel.pdf_direction[exp_iclass]) <<std::endl;
                         REPORT_ERROR("idir >= mymodel.pdf_direction[exp_iclass].size()");
                     }
                     #endif
@@ -5708,9 +5708,9 @@ void MlOptimiser::getAllSquaredDifferences(
                             long int ihidden = iorientclass * exp_nr_trans;
                             for (long int itrans = exp_itrans_min; itrans <= exp_itrans_max; itrans++, ihidden++) {
                                 #ifdef DEBUG_CHECKSIZES
-                                if (exp_ipass > 0 && ihidden >= XSIZE(exp_Mcoarse_significant)) {
-                                    std::cerr << "ihidden= " << ihidden << " XSIZE(exp_Mcoarse_significant)= " << XSIZE(exp_Mcoarse_significant) << std::endl;
-                                    REPORT_ERROR("ihidden >= XSIZE(exp_Mcoarse_significant)");
+                                if (exp_ipass > 0 && ihidden >= Xsize(exp_Mcoarse_significant)) {
+                                    std::cerr << "ihidden= " << ihidden << " Xsize(exp_Mcoarse_significant)= " << Xsize(exp_Mcoarse_significant) << std::endl;
+                                    REPORT_ERROR("ihidden >= Xsize(exp_Mcoarse_significant)");
                                 }
                                 #endif
                                 // In the first pass, always proceed
@@ -5770,7 +5770,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                                 );
 
                                                 use_coarse_size =
-                                                    exp_current_oversampling == 0 && YSIZE(Frefctf) == image_coarse_size[optics_group] ||
+                                                    exp_current_oversampling == 0 && Ysize(Frefctf) == image_coarse_size[optics_group] ||
                                                     exp_current_oversampling >  0 && strict_highres_exp > 0.0;
                                                 shiftImageInFourierTransformWithTabSincos(
                                                     exp_local_Fimgs_shifted[img_id][0],
@@ -5783,7 +5783,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             } else {
                                                 Complex *myAB;
                                                 if (exp_current_oversampling == 0) {
-                                                    myAB = (YSIZE(Frefctf) == image_coarse_size[optics_group] ?
+                                                    myAB = (Ysize(Frefctf) == image_coarse_size[optics_group] ?
                                                         global_fftshifts_ab_coarse : global_fftshifts_ab_current
                                                     )[optics_group][itrans].data;
                                                 } else {
@@ -5939,7 +5939,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             std::cerr<< " exp_nr_oversampled_rot="<<exp_nr_oversampled_rot<<std::endl;
                                             std::cerr << " iover_rot= " << iover_rot << " iover_trans= " << iover_trans << " ihidden= " << ihidden << std::endl;
                                             std::cerr << " exp_current_oversampling= " << exp_current_oversampling << std::endl;
-                                            std::cerr << " ihidden_over= " << ihidden_over << " XSIZE(Mweight)= " << XSIZE(exp_Mweight) << std::endl;
+                                            std::cerr << " ihidden_over= " << ihidden_over << " Xsize(Mweight)= " << Xsize(exp_Mweight) << std::endl;
                                             std::cerr << " (mymodel.PPref[exp_iclass]).ori_size= " << (mymodel.PPref[exp_iclass]).ori_size << " (mymodel.PPref[exp_iclass]).r_max= " << (mymodel.PPref[exp_iclass]).r_max << std::endl;
                                             int group_id = mydata.getGroupId(part_id, img_id);
                                             std::cerr << " mymodel.scale_correction[group_id]= " << mymodel.scale_correction[group_id] << std::endl;
@@ -6000,7 +6000,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             tt.write("Fref2.spi");
                                             std::cerr << "written Fref2.spi" << std::endl;
                                             Image<RFLOAT> Itt;
-                                            Itt().resize(ZSIZE(mymodel.PPref[exp_iclass].data), YSIZE(mymodel.PPref[exp_iclass].data), XSIZE(mymodel.PPref[exp_iclass].data));
+                                            Itt().resize(Zsize(mymodel.PPref[exp_iclass].data), Ysize(mymodel.PPref[exp_iclass].data), Xsize(mymodel.PPref[exp_iclass].data));
                                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Itt())
                                             {
                                                 DIRECT_MULTIDIM_ELEM(Itt(), n) = abs(DIRECT_MULTIDIM_ELEM(mymodel.PPref[exp_iclass].data, n));
@@ -6019,7 +6019,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                         pthread_mutex_unlock(&global_mutex);
                                         #endif
                                         #ifdef DEBUG_CHECKSIZES
-                                        if (ihidden_over >= XSIZE(exp_Mweight) )
+                                        if (ihidden_over >= Xsize(exp_Mweight) )
                                         {
                                             std::cerr<< " exp_nr_oversampled_trans="<<exp_nr_oversampled_trans<<std::endl;
                                             std::cerr<< " exp_nr_oversampled_rot="<<exp_nr_oversampled_rot<<std::endl;
@@ -6031,8 +6031,8 @@ void MlOptimiser::getAllSquaredDifferences(
                                             std::cerr << " exp_nr_psi= " << exp_nr_psi << " exp_ipsi_min= " << exp_ipsi_min << " exp_ipsi_max= " << exp_ipsi_max << std::endl;
                                             std::cerr << " exp_iclass= " << exp_iclass << std::endl;
                                             std::cerr << " iorient= " << iorient << std::endl;
-                                            std::cerr << " ihidden_over= " << ihidden_over << " XSIZE(Mweight)= " << XSIZE(exp_Mweight) << std::endl;
-                                            REPORT_ERROR("ihidden_over >= XSIZE(Mweight)");
+                                            std::cerr << " ihidden_over= " << ihidden_over << " Xsize(Mweight)= " << Xsize(exp_Mweight) << std::endl;
+                                            REPORT_ERROR("ihidden_over >= Xsize(Mweight)");
                                         }
 #endif
                                         DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden_over) = diff2;
@@ -6046,7 +6046,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                                 std::cerr << " part_id= " << part_id << " ihidden_over= " << ihidden_over << " diff2= " << diff2
                                                 << " x= " << oversampled_translations_x[iover_trans] << " y=" <<oversampled_translations_y[iover_trans]
                                                 << " iover_trans= "<<iover_trans << "Xi2= " << exp_highres_Xi2_img[img_id] << " Minv_sigma2= " << DIRECT_MULTIDIM_ELEM(exp_local_Minvsigma2[img_id], 10)
-                                                << " xsize= " << XSIZE(Frefctf)
+                                                << " xsize= " << Xsize(Frefctf)
                                                 << " Frefctf= " << (DIRECT_MULTIDIM_ELEM(Frefctf, 10)).real
                                                 << " Fimgshift= " << (*(Fimg_shift + 10)).real
                                                 << std::endl;
@@ -6139,7 +6139,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             RFLOAT mymindiff2 = 99.e10;
             long int myminidx = -1;
             // Find the smallest element in this row of exp_Mweight
-            for (long int i = 0; i < XSIZE(exp_Mweight); i++) {
+            for (long int i = 0; i < Xsize(exp_Mweight); i++) {
 
                 RFLOAT cc = DIRECT_A2D_ELEM(exp_Mweight, img_id, i);
                 // ignore non-determined cc
@@ -6153,7 +6153,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
                 }
             }
             // Set all except for the best hidden variable to zero and the smallest element to 1
-            for (long int i = 0; i < XSIZE(exp_Mweight); i++)
+            for (long int i = 0; i < Xsize(exp_Mweight); i++)
                 DIRECT_A2D_ELEM(exp_Mweight, img_id, i) = 0.0;
 
             DIRECT_A2D_ELEM(exp_Mweight, img_id, myminidx) = 1.0;
@@ -6412,7 +6412,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
 
     // Initialise exp_Mcoarse_significant
     if (exp_ipass == 0)
-        exp_Mcoarse_significant.resize(exp_nr_images, XSIZE(exp_Mweight));
+        exp_Mcoarse_significant.resize(exp_nr_images, Xsize(exp_Mweight));
 
     // Now, for each image,  find the exp_significant_weight that encompasses adaptive_fraction of exp_sum_weight
     exp_significant_weight.clear();
@@ -6449,7 +6449,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
         RFLOAT frac_weight = 0.0;
         RFLOAT my_significant_weight;
         long int my_nr_significant_coarse_samples = 0;
-        for (long int i = XSIZE(sorted_weight) - 1; i >= 0; i--) {
+        for (long int i = Xsize(sorted_weight) - 1; i >= 0; i--) {
             if (maximum_significants > 0 ) {
                 if (my_nr_significant_coarse_samples < maximum_significants) {
                     if (exp_ipass == 0) { my_nr_significant_coarse_samples++; }
@@ -6484,7 +6484,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             std::cerr << " part_id= " << part_id << " img_id= " << img_id << " adaptive_fraction= " << adaptive_fraction << std::endl;
             std::cerr << " frac-weight= " << frac_weight << std::endl;
             std::cerr << " exp_sum_weight[img_id]= " << exp_sum_weight[img_id] << std::endl;
-            std::cerr << " XSIZE(exp_Mweight)= " << XSIZE(exp_Mweight) << std::endl;
+            std::cerr << " Xsize(exp_Mweight)= " << Xsize(exp_Mweight) << std::endl;
             Image<RFLOAT> It;
             It() = exp_Mweight;
             It() *= 10000;
@@ -6493,8 +6493,8 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             std::cerr << " np= " << np << std::endl;
             It() = sorted_weight;
             It() *= 10000;
-            std::cerr << " XSIZE(sorted_weight)= " << XSIZE(sorted_weight) << std::endl;
-            if (XSIZE(sorted_weight) > 0) {
+            std::cerr << " Xsize(sorted_weight)= " << Xsize(sorted_weight) << std::endl;
+            if (Xsize(sorted_weight) > 0) {
                 It.write("sorted_weight.spi");
                 std::cerr << "written sorted_weight.spi" << std::endl;
             }
@@ -6509,7 +6509,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
                 DIRECT_A2D_ELEM(exp_metadata, my_metadata_offset, METADATA_NR_SIGN) = (RFLOAT) my_nr_significant_coarse_samples;
 
             // Keep track of which coarse samplings were significant were significant for this particle
-            for (int ihidden = 0; ihidden < XSIZE(exp_Mcoarse_significant); ihidden++) {
+            for (int ihidden = 0; ihidden < Xsize(exp_Mcoarse_significant); ihidden++) {
                 DIRECT_A2D_ELEM(exp_Mcoarse_significant, img_id, ihidden) = DIRECT_A2D_ELEM(exp_Mweight, img_id, ihidden) >= my_significant_weight;
             }
 
@@ -7261,7 +7261,7 @@ void MlOptimiser::storeWeightedSums(
             int ires_remapped = round(remap_image_sizes * ires);
             // Note there is no sqrt in the normalisation term because of the 2-dimensionality of the complex-plane
             // Also exclude origin from logsigma2, as this will not be considered in the P-calculations
-            if (ires > 0 && ires_remapped < XSIZE(mymodel.sigma2_noise[group_id]))
+            if (ires > 0 && ires_remapped < Xsize(mymodel.sigma2_noise[group_id]))
                 logsigma2 += log(2.0 * PI * DIRECT_A1D_ELEM(mymodel.sigma2_noise[group_id], ires_remapped));
         }
         if (exp_sum_weight[img_id] == 0) {
@@ -7301,7 +7301,7 @@ void MlOptimiser::storeWeightedSums(
             RFLOAT remap_image_sizes = (mymodel.ori_size * mymodel.pixel_size) / (my_image_size * my_pixel_size);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(thr_wsum_sigma2_noise[img_id]) {
                 int i_resam = round(i * remap_image_sizes);
-                if (i_resam < XSIZE(wsum_model.sigma2_noise[igroup])) {
+                if (i_resam < Xsize(wsum_model.sigma2_noise[igroup])) {
                     DIRECT_A1D_ELEM(wsum_model.sigma2_noise[igroup], i_resam) += DIRECT_A1D_ELEM(thr_wsum_sigma2_noise[img_id], i);
                 }
             }
@@ -7318,9 +7318,9 @@ void MlOptimiser::storeWeightedSums(
                 wsum_model.prior_offset_class[n][1] += thr_wsum_prior_offsety_class[n];
             }
             #ifdef CHECKSIZES
-            if (XSIZE(wsum_model.pdf_direction[n]) != XSIZE(thr_wsum_pdf_direction[n])) {
-                std::cerr << " XSIZE(wsum_model.pdf_direction[n])= " << XSIZE(wsum_model.pdf_direction[n]) << " XSIZE(thr_wsum_pdf_direction[n])= " << XSIZE(thr_wsum_pdf_direction[n]) << std::endl;
-                REPORT_ERROR("XSIZE(wsum_model.pdf_direction[n]) != XSIZE(thr_wsum_pdf_direction[n])");
+            if (Xsize(wsum_model.pdf_direction[n]) != Xsize(thr_wsum_pdf_direction[n])) {
+                std::cerr << " Xsize(wsum_model.pdf_direction[n])= " << Xsize(wsum_model.pdf_direction[n]) << " Xsize(thr_wsum_pdf_direction[n])= " << Xsize(thr_wsum_pdf_direction[n]) << std::endl;
+                REPORT_ERROR("Xsize(wsum_model.pdf_direction[n]) != Xsize(thr_wsum_pdf_direction[n])");
             }
             #endif
         }
@@ -7552,16 +7552,16 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         Fctf.resize(current_image_size, current_image_size, current_image_size / 2 + 1);
 
                         // If there is a redundant half, get rid of it
-                        if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+                        if (Xsize(Ictf()) == Ysize(Ictf())) {
                             // Set the CTF-image in Fctf
                             Ictf().setXmippOrigin();
                             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                 // Use negative kp, ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                                 DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                             }
-                        } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+                        } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                             // otherwise, just window the CTF to the current resolution
-                            windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                            windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
                         } else {
                             // if dimensions are neither cubical nor FFTW, stop
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -7763,13 +7763,13 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         RFLOAT remap_image_sizes = 
                             (mymodel.ori_size * mymodel.pixel_size) / 
                             (image_full_size[optics_group] * my_pixel_size);
-                        MultidimArray<int> *myMresol = YSIZE(F1) == image_coarse_size[optics_group] ? 
+                        MultidimArray<int> *myMresol = Ysize(F1) == image_coarse_size[optics_group] ? 
                             &Mresol_coarse[optics_group] : &Mresol_fine[optics_group];
                         my_snr = 0.0;
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F1) {
                             int ires = DIRECT_MULTIDIM_ELEM(*myMresol, n);
                             int ires_remapped = round(remap_image_sizes * ires);
-                            if (ires > 0 && ires_remapped < XSIZE(mymodel.sigma2_noise[group_id])) {
+                            if (ires > 0 && ires_remapped < Xsize(mymodel.sigma2_noise[group_id])) {
                                 my_snr += norm(DIRECT_MULTIDIM_ELEM(F1, n) - DIRECT_MULTIDIM_ELEM(F2, n)) / (2 * sigma2_fudge * mymodel.sigma2_noise[group_id](ires_remapped));
                             }
                         }
@@ -7779,7 +7779,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F1) {
                                 int ires = DIRECT_MULTIDIM_ELEM(*myMresol, n);
                                 int ires_remapped = round(remap_image_sizes * ires);
-                                if (ires > 0 && ires_remapped < XSIZE(mymodel.sigma2_noise[group_id]))
+                                if (ires > 0 && ires_remapped < Xsize(mymodel.sigma2_noise[group_id]))
                                     mymodel.orientability_contrib[iclass](ires_remapped) +=
                                         norm(DIRECT_MULTIDIM_ELEM(F1, n) - DIRECT_MULTIDIM_ELEM(F2, n)) /
                                         (2 * sigma2_fudge * mymodel.sigma2_noise[group_id](ires_remapped));
@@ -8327,15 +8327,15 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
                     img.readFromOpenFile(fn_img, hFile, -1, false);
                     img().setXmippOrigin();
                 }
-                if (XSIZE(img()) != XSIZE(exp_imagedata) || YSIZE(img()) != YSIZE(exp_imagedata)) {
-                    std::cerr << " fn_img= " << fn_img << " XSIZE(img())= " << XSIZE(img()) << " YSIZE(img())= " << YSIZE(img()) << std::endl;
-                    std::cerr << " while XSIZE(exp_imagedata)= " << XSIZE(exp_imagedata) << " and YSIZE(exp_imagedata)= " << YSIZE(exp_imagedata) << std::endl;
+                if (Xsize(img()) != Xsize(exp_imagedata) || Ysize(img()) != Ysize(exp_imagedata)) {
+                    std::cerr << " fn_img= " << fn_img << " Xsize(img())= " << Xsize(img()) << " Ysize(img())= " << Ysize(img()) << std::endl;
+                    std::cerr << " while Xsize(exp_imagedata)= " << Xsize(exp_imagedata) << " and Ysize(exp_imagedata)= " << Ysize(exp_imagedata) << std::endl;
                     REPORT_ERROR("MlOptimiser::getMetaAndImageDataSubset ERROR: incorrect image size");
                 }
                 if (has_converged && do_use_reconstruct_images) {
                     rec_img.read(fn_rec_img);
-                    if (XSIZE(rec_img()) != XSIZE(exp_imagedata) || YSIZE(rec_img()) != YSIZE(exp_imagedata)) {
-                        std::cerr << " fn_rec_img= " << fn_rec_img << " XSIZE(rec_img())= " << XSIZE(rec_img()) << " YSIZE(rec_img())= " << YSIZE(rec_img()) << std::endl;
+                    if (Xsize(rec_img()) != Xsize(exp_imagedata) || Ysize(rec_img()) != Ysize(exp_imagedata)) {
+                        std::cerr << " fn_rec_img= " << fn_rec_img << " Xsize(rec_img())= " << Xsize(rec_img()) << " Ysize(rec_img())= " << Ysize(rec_img()) << std::endl;
                         REPORT_ERROR("MlOptimiser::getMetaAndImageDataSubset ERROR: incorrect reconstruct_image size");
                     }
                 }

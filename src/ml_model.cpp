@@ -347,7 +347,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     int nr_classes_bodies = nr_bodies > 1 ? nr_bodies : nr_classes;
     // A. Write images
     if (ref_dim == 2) {
-        Image<RFLOAT> img(XSIZE(Iref[0]), YSIZE(Iref[0]), 1, nr_classes_bodies);
+        Image<RFLOAT> img(Xsize(Iref[0]), Ysize(Iref[0]), 1, nr_classes_bodies);
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iref[iclass]) {
                 DIRECT_NZYX_ELEM(img(), iclass, 0, i, j) = DIRECT_A2D_ELEM(Iref[iclass], i, j);
@@ -534,7 +534,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         } else {
             MDsigma.setName("model_class_" + integerToString(iclass + 1));
         }
-        for (int ii = 0; ii < XSIZE(tau2_class[iclass]); ii++) {
+        for (int ii = 0; ii < Xsize(tau2_class[iclass]); ii++) {
             MDsigma.addObject();
             MDsigma.setValue(EMDL::SPECTRAL_IDX, ii);
             MDsigma.setValue(EMDL::RESOLUTION, getResolution(ii));
@@ -545,7 +545,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
             MDsigma.setValue(EMDL::MLMODEL_SIGMA2_REF, sigma2_class[iclass](ii));
             MDsigma.setValue(EMDL::MLMODEL_TAU2_REF, tau2_class[iclass](ii));
             // Only write orientabilities if they have been determined
-            if (XSIZE(orientability_contrib[iclass]) == XSIZE(tau2_class[iclass]))
+            if (Xsize(orientability_contrib[iclass]) == Xsize(tau2_class[iclass]))
                 MDsigma.setValue(EMDL::MLMODEL_ORIENTABILITY_CONTRIBUTION, orientability_contrib[iclass](ii));
         }
         MDsigma.write(fh);
@@ -568,7 +568,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         if (nr_particles_per_group[igroup] > 0) {
             MDsigma.clear();
             MDsigma.setName("model_group_" + integerToString(igroup + 1));
-            for (int ii = 0; ii < XSIZE(sigma2_noise[igroup]); ii++) {
+            for (int ii = 0; ii < Xsize(sigma2_noise[igroup]); ii++) {
                 MDsigma.addObject();
                 // Some points in sigma2_noise arrays are never used...
                 aux = sigma2_noise[igroup](ii);
@@ -591,7 +591,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
             } else {
                 MDclass.setName("model_pdf_orient_class_" + integerToString(iclass + 1));
             }
-            for (int ii = 0; ii < XSIZE(pdf_direction[iclass]); ii++) {
+            for (int ii = 0; ii < Xsize(pdf_direction[iclass]); ii++) {
                 MDclass.addObject();
                 MDclass.setValue(EMDL::MLMODEL_PDF_ORIENT, pdf_direction[iclass](ii));
             }
@@ -608,11 +608,11 @@ void  MlModel::readTauSpectrum(FileName fn_tau, int verb) {
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtau) {
         idx = MDtau.getValue<int>(EMDL::SPECTRAL_IDX);
         val = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
-        if (idx < XSIZE(tau2_class[0]))
+        if (idx < Xsize(tau2_class[0]))
             tau2_class[0](idx) = tau2_fudge_factor * val;
     }
-    if (idx < XSIZE(tau2_class[0]) - 1) {
-        if (verb > 0) std::cerr << " Warning: provided tau2-spectrum has fewer entries ("<< idx + 1 << ") than needed (" << XSIZE(tau2_class[0]) << "). Set rest to zero..." << std::endl;
+    if (idx < Xsize(tau2_class[0]) - 1) {
+        if (verb > 0) std::cerr << " Warning: provided tau2-spectrum has fewer entries ("<< idx + 1 << ") than needed (" << Xsize(tau2_class[0]) << "). Set rest to zero..." << std::endl;
     }
     // Use the same spectrum for all classes
     for (int iclass = 0; iclass < nr_classes; iclass++)
@@ -680,7 +680,7 @@ void MlModel::initialiseFromImages(
                     }
                 }
 
-                ori_size = XSIZE(img());
+                ori_size = Xsize(img());
                 ref_dim = img().getDim();
                 Iref.push_back(img());
                 if (_do_sgd) {
@@ -703,10 +703,10 @@ void MlModel::initialiseFromImages(
                 }
                 pixel_size = header_pixel_size;
             }
-            ori_size = XSIZE(img());
+            ori_size = Xsize(img());
             ref_dim = img().getDim();
-            if (ori_size != XSIZE(img()) || ori_size != YSIZE(img())) {
-                std::cerr << " ori_size= " << ori_size << " XSIZE(img())= " << XSIZE(img()) << std::endl;
+            if (ori_size != Xsize(img()) || ori_size != Ysize(img())) {
+                std::cerr << " ori_size= " << ori_size << " Xsize(img())= " << Xsize(img()) << std::endl;
                 REPORT_ERROR("MlOptimiser::read: size of reference image is not the same as the experimental images!");
             }
             Iref.clear();
@@ -1222,7 +1222,7 @@ void MlModel::initialiseHelicalParametersLists(RFLOAT _helical_twist, RFLOAT _he
 void MlModel::calculateTotalFourierCoverage() {
     for (int iclass = 0; iclass < nr_classes * nr_bodies; iclass++) {
         int maxres = 0;
-        for (int ires = 0; ires < XSIZE(data_vs_prior_class[iclass]); ires++) {
+        for (int ires = 0; ires < Xsize(data_vs_prior_class[iclass]); ires++) {
             if (DIRECT_A1D_ELEM(data_vs_prior_class[iclass], ires) < 1.0)
                 break;
             maxres = ires;

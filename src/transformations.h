@@ -267,7 +267,7 @@ void applyGeometry(
         return;
     }
 
-    if (XSIZE(V1) == 0) {
+    if (Xsize(V1) == 0) {
         V2.clear();
         return;
     }
@@ -283,23 +283,23 @@ void applyGeometry(
     // For scalings the output matrix is resized outside to the final
     // size instead of being resized inside the routine with the
     // same size as the input matrix
-    if (XSIZE(V2) == 0)
+    if (Xsize(V2) == 0)
         V2.resize(V1);
 
     if (V1.getDim() == 2) {
         // 2D transformation
 
         // Find center and limits of image
-        int cen_y  = YSIZE(V2) / 2;
-        int cen_x  = XSIZE(V2) / 2;
-        int cen_yp = YSIZE(V1) / 2;
-        int cen_xp = XSIZE(V1) / 2;
+        int cen_y  = Ysize(V2) / 2;
+        int cen_x  = Xsize(V2) / 2;
+        int cen_yp = Ysize(V1) / 2;
+        int cen_xp = Xsize(V1) / 2;
         RFLOAT minxp = -cen_xp;
         RFLOAT minyp = -cen_yp;
-        RFLOAT maxxp = XSIZE(V1) - cen_xp - 1;
-        RFLOAT maxyp = YSIZE(V1) - cen_yp - 1;
-        int Xdim = XSIZE(V1);
-        int Ydim = YSIZE(V1);
+        RFLOAT maxxp = Xsize(V1) - cen_xp - 1;
+        RFLOAT maxyp = Ysize(V1) - cen_yp - 1;
+        int Xdim = Xsize(V1);
+        int Ydim = Ysize(V1);
 
         // Now we go from the output image to the input image.
         // ie, for any pixel in the output image
@@ -315,7 +315,7 @@ void applyGeometry(
         << "(max_xp,max_yp)=(" << maxxp  << "," << maxyp  << ")\n";
         #endif
 
-        for (int i = 0; i < YSIZE(V2); i++) {
+        for (int i = 0; i < Ysize(V2); i++) {
             // Calculate position of the beginning of the row in the output image
             RFLOAT x =   - cen_x;
             RFLOAT y = i - cen_y;
@@ -327,7 +327,7 @@ void applyGeometry(
             RFLOAT xp = x * Aref(0, 0) + y * Aref(0, 1) + Aref(0, 2);
             RFLOAT yp = x * Aref(1, 0) + y * Aref(1, 1) + Aref(1, 2);
 
-            for (int j = 0; j < XSIZE(V2); j++) {
+            for (int j = 0; j < Xsize(V2); j++) {
 
                 #ifdef DEBUG_APPLYGEO
 
@@ -781,16 +781,16 @@ void scaleToSize(
 
         case 2:
         tmp.initIdentity(3);
-        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) XSIZE(V1);
-        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) YSIZE(V1);
+        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V1);
+        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V1);
         V2.resize(1, 1, Ydim, Xdim);
         break;
 
         case 3:
         tmp.initIdentity(4);
-        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) XSIZE(V1);
-        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) YSIZE(V1);
-        tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) ZSIZE(V1);
+        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V1);
+        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V1);
+        tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) Zsize(V1);
         V2.resize(1, Zdim, Ydim, Xdim);
         break;
 

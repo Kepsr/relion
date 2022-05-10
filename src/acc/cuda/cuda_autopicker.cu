@@ -290,8 +290,8 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     // Let's just check the square size again....
     RFLOAT my_size, my_xsize, my_ysize;
-    my_xsize = XSIZE(Imic());
-    my_ysize = YSIZE(Imic());
+    my_xsize = Xsize(Imic());
+    my_ysize = Ysize(Imic());
     my_size = std::max(my_xsize, my_ysize);
     if (basePckr->extra_padding > 0)
         my_size += 2 * basePckr->extra_padding;
@@ -483,7 +483,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             lowPassFilterMapGPU(
                 micTransformer.fouriers, (size_t) 1,
                 micTransformer.yFSize, micTransformer.xFSize,
-                XSIZE(Imic()),
+                Xsize(Imic()),
                 basePckr->lowpass, basePckr->highpass, basePckr->angpix, 2, true
             ); //false = lowpass, true=highpass
             micTransformer.fouriers.streamSync();

@@ -104,10 +104,10 @@ void BackProjector::backproject2Dto3D(
 
     // #define DEBUG_BACKP
     #ifdef DEBUG_BACKP
-    std::cerr << " XSIZE(f2d)= " << XSIZE(f2d) << std::endl;
-    std::cerr << " YSIZE(f2d)= " << YSIZE(f2d) << std::endl;
-    std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
-    std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
+    std::cerr << " Xsize(f2d)= " << Xsize(f2d) << std::endl;
+    std::cerr << " Ysize(f2d)= " << Ysize(f2d) << std::endl;
+    std::cerr << " Xsize(data)= " << Xsize(data) << std::endl;
+    std::cerr << " Ysize(data)= " << Ysize(data) << std::endl;
     std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
     std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
     std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
@@ -118,8 +118,8 @@ void BackProjector::backproject2Dto3D(
     // Precalculate inverse of Ewald sphere diameter outside loop
     RFLOAT inv_diam_ewald = r_ewald_sphere > 0.0 ? curvature / (2.0 * r_ewald_sphere) : 0.0;
 
-    const int s  = YSIZE(f2d);
-    const int sh = XSIZE(f2d);
+    const int s  = Ysize(f2d);
+    const int sh = Xsize(f2d);
 
     for (int i = 0; i < s; i++) {
         int y, first_allowed_x;
@@ -316,7 +316,7 @@ void BackProjector::backproject1Dto2D(
     Matrix2D<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
-    const int r_max_src = XSIZE(f1d) - 1;
+    const int r_max_src = Xsize(f1d) - 1;
 
     const int r_max_ref   = r_max * padding_factor;
     const int r_max_ref_2 = r_max_ref * r_max_ref;
@@ -435,18 +435,18 @@ void BackProjector::backrotate2D(
 
     // #define DEBUG_BACKROTATE
     #ifdef DEBUG_BACKROTATE
-    std::cerr << " XSIZE(f2d)= "<< XSIZE(f2d) << std::endl;
-    std::cerr << " YSIZE(f2d)= "<< YSIZE(f2d) << std::endl;
-    std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
-    std::cerr << " YSIZE(data)= "<< YSIZE(data) << std::endl;
+    std::cerr << " Xsize(f2d)= "<< Xsize(f2d) << std::endl;
+    std::cerr << " Ysize(f2d)= "<< Ysize(f2d) << std::endl;
+    std::cerr << " Xsize(data)= "<< Xsize(data) << std::endl;
+    std::cerr << " Ysize(data)= "<< Ysize(data) << std::endl;
     std::cerr << " Xinit(data)= "<< Xinit(data) << std::endl;
     std::cerr << " Yinit(data)= "<< Yinit(data) << std::endl;
     std::cerr << " Zinit(data)= "<< Zinit(data) << std::endl;
     std::cerr << " max_r= "<< r_max << std::endl;
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
-    const int s  = YSIZE(f2d);
-    const int sh = XSIZE(f2d);
+    const int s  = Ysize(f2d);
+    const int sh = Xsize(f2d);
 
     for (int i = 0; i < s; i++) {
         int y, first_allowed_x;
@@ -573,7 +573,7 @@ void BackProjector::backrotate3D(
     Matrix2D<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT)padding_factor;  // take scaling into account directly
 
-    const int r_max_src = XSIZE(f3d) - 1;
+    const int r_max_src = Xsize(f3d) - 1;
     const int r_max_src_2 = r_max_src * r_max_src;
 
     const int r_max_ref = r_max * padding_factor;
@@ -583,10 +583,10 @@ void BackProjector::backrotate3D(
 
     // #define DEBUG_BACKROTATE
     #ifdef DEBUG_BACKROTATE
-    std::cerr << " XSIZE(f3d)= "<< XSIZE(f3d) << std::endl;
-    std::cerr << " YSIZE(f3d)= "<< YSIZE(f3d) << std::endl;
-    std::cerr << " XSIZE(data)= "<< XSIZE(data) << std::endl;
-    std::cerr << " YSIZE(data)= "<< YSIZE(data) << std::endl;
+    std::cerr << " Xsize(f3d)= "<< Xsize(f3d) << std::endl;
+    std::cerr << " Ysize(f3d)= "<< Ysize(f3d) << std::endl;
+    std::cerr << " Xsize(data)= "<< Xsize(data) << std::endl;
+    std::cerr << " Ysize(data)= "<< Ysize(data) << std::endl;
     std::cerr << " Xinit(data)= "<< Xinit(data) << std::endl;
     std::cerr << " Yinit(data)= "<< Yinit(data) << std::endl;
     std::cerr << " Zinit(data)= "<< Zinit(data) << std::endl;
@@ -594,7 +594,7 @@ void BackProjector::backrotate3D(
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
 
-    for (int k = 0; k < ZSIZE(f3d); k++) {
+    for (int k = 0; k < Zsize(f3d); k++) {
         int z, x_min;
 
         // Don't search beyond square with side max_r
@@ -602,7 +602,7 @@ void BackProjector::backrotate3D(
             z = k;
             x_min = 0;
         } else {
-            z = k - ZSIZE(f3d);
+            z = k - Zsize(f3d);
             /// TODO: still check this better in the 3D case!!!
             // x==0 (y,z)-plane is stored twice in the FFTW format. Don't set it twice in BACKPROJECTION!
             x_min = 1;
@@ -610,8 +610,8 @@ void BackProjector::backrotate3D(
 
         int z2 = z * z;
 
-        for (int i = 0; i < YSIZE(f3d); i++) {
-            int y = i <= r_max_src ? i : i - YSIZE(f3d);
+        for (int i = 0; i < Ysize(f3d); i++) {
+            int y = i <= r_max_src ? i : i - Ysize(f3d);
             int y2 = y * y;
 
             const RFLOAT yz2 = y2 + z2;
@@ -773,15 +773,15 @@ void BackProjector::setLowResDataAndWeight(
 
     // Check sizes of lowres_data and lowres_weight
     if (
-        YSIZE(lowres_data) != lowres_pad_size || 
-        XSIZE(lowres_data) != lowres_pad_size / 2 + 1 ||
-        ZSIZE(lowres_data) != lowres_pad_size && ref_dim == 3
+        Ysize(lowres_data) != lowres_pad_size || 
+        Xsize(lowres_data) != lowres_pad_size / 2 + 1 ||
+        Zsize(lowres_data) != lowres_pad_size && ref_dim == 3
     )
         REPORT_ERROR("BackProjector::setLowResDataAndWeight%%ERROR: lowres_data is not of expected size...");
     if (
-        YSIZE(lowres_weight) != lowres_pad_size || 
-        XSIZE(lowres_weight) != lowres_pad_size / 2 + 1 ||
-        ZSIZE(lowres_weight) != lowres_pad_size && ref_dim == 3
+        Ysize(lowres_weight) != lowres_pad_size || 
+        Xsize(lowres_weight) != lowres_pad_size / 2 + 1 ||
+        Zsize(lowres_weight) != lowres_pad_size && ref_dim == 3
     )
         REPORT_ERROR("BackProjector::setLowResDataAndWeight%%ERROR: lowres_weight is not of expected size...");
 
@@ -1104,7 +1104,7 @@ void BackProjector::externalReconstruct(
     MDlist.setValue(EMDL::MLMODEL_CURRENT_SIZE, 2 * r_max);
 
     MDtau.setName("external_reconstruct_tau2");
-    for (int ii = 0; ii < XSIZE(tau2); ii++) {
+    for (int ii = 0; ii < Xsize(tau2); ii++) {
         MDtau.addObject();
         MDtau.setValue(EMDL::SPECTRAL_IDX, ii);
         MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2(ii));
@@ -1151,7 +1151,7 @@ void BackProjector::externalReconstruct(
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnewtau) {
             int idx = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX);
 
-            if (idx >= XSIZE(tau2_io)) continue;
+            if (idx >= Xsize(tau2_io)) continue;
 
             if (MDnewtau.containsLabel(EMDL::MLMODEL_TAU2_REF)) {
                 tau2_io(idx)       = MDnewtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
@@ -1313,10 +1313,10 @@ void BackProjector::reconstruct(
             // e.g. k = 0, i = 7, j = 28, max_r2 = 841, r_max = 16, padding_factor = 18.
             if (r2 < round_max_r2) {
                 const int ires = floor(sqrt((RFLOAT)r2) / padding_factor);
-                if (ires >= XSIZE(radavg_weight)) {
+                if (ires >= Xsize(radavg_weight)) {
                     std::cerr << " k= " << k << " i= " << i << " j= " << j << std::endl;
-                    std::cerr << " ires= " << ires << " XSIZE(radavg_weight)= " << XSIZE(radavg_weight) << std::endl;
-                    REPORT_ERROR("BUG: ires >=XSIZE(radavg_weight) ");
+                    std::cerr << " ires= " << ires << " Xsize(radavg_weight)= " << Xsize(radavg_weight) << std::endl;
+                    REPORT_ERROR("BUG: ires >=Xsize(radavg_weight) ");
                 }
                 DIRECT_A1D_ELEM(radavg_weight, ires) += DIRECT_A3D_ELEM(Fweight, k, i, j);
                 DIRECT_A1D_ELEM(counter, ires) += 1.0;
@@ -1733,8 +1733,8 @@ void BackProjector::applyHelicalSymmetry(
                     if (
                         x0 < 0 || y0 < 0 || z0 < 0 ||
                         x1 < 0 || y1 < 0 || z1 < 0 ||
-                        x0 >= XSIZE(data) || y0 >= YSIZE(data) || z0 >= ZSIZE(data) ||
-                        x1 >= XSIZE(data) || y1 >= YSIZE(data) || z1 >= ZSIZE(data)
+                        x0 >= Xsize(data) || y0 >= Ysize(data) || z0 >= Zsize(data) ||
+                        x1 >= Xsize(data) || y1 >= Ysize(data) || z1 >= Zsize(data)
                     ) {
                         std::cerr << " x0= " << x0 << " y0= " << y0 << " z0= " << z0 << std::endl;
                         std::cerr << " x1= " << x1 << " y1= " << y1 << " z1= " << z1 << std::endl;
@@ -1877,8 +1877,8 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     if (
                         x0 < 0 || y0 < 0 || z0 < 0 ||
                         x1 < 0 || y1 < 0 || z1 < 0 ||
-                        x0 >= XSIZE(data) || y0  >= YSIZE(data) || z0 >= ZSIZE(data) ||
-                        x1 >= XSIZE(data) || y1  >= YSIZE(data) || z1 >= ZSIZE(data)
+                        x0 >= Xsize(data) || y0  >= Ysize(data) || z0 >= Zsize(data) ||
+                        x1 >= Xsize(data) || y1  >= Ysize(data) || z1 >= Zsize(data)
                     ) {
                         std::cerr << " x0= " << x0 << " y0= " << y0 << " z0= " << z0 << std::endl;
                         std::cerr << " x1= " << x1 << " y1= " << y1 << " z1= " << z1 << std::endl;
@@ -2028,7 +2028,7 @@ void BackProjector::windowToOridimRealSpace(
     // #define DEBUG_WINDOWORIDIMREALSPACE
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
     Image<RFLOAT> tt;
-    tt().reshape(ZSIZE(Fin), YSIZE(Fin), XSIZE(Fin));
+    tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
         DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
     }
@@ -2060,7 +2060,7 @@ void BackProjector::windowToOridimRealSpace(
     }))
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-    tt().reshape(ZSIZE(Fin), YSIZE(Fin), XSIZE(Fin));
+    tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
         DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
     }
@@ -2125,7 +2125,7 @@ void BackProjector::windowToOridimRealSpace(
     tt.write("windoworidim_Mwindowed_masked.spi");
     FourierTransformer ttf;
     ttf.FourierTransform(Mout, Fin);
-    tt().resize(ZSIZE(Fin), YSIZE(Fin), XSIZE(Fin));
+    tt().resize(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
         DIRECT_MULTIDIM_ELEM(tt(), n) = abs(DIRECT_MULTIDIM_ELEM(Fin, n));
     }

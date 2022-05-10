@@ -231,15 +231,15 @@ class particle_reposition_parameters {
                             Ictf.read(fn_ctf);
 
                             // If there is a redundant half, get rid of it
-                            if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+                            if (Xsize(Ictf()) == Ysize(Ictf())) {
                                 Ictf().setXmippOrigin();
                                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                                     DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                                 }
-                            } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+                            } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                                 // otherwise, just window the CTF to the current resolution
-                                windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                                windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
                             } else {
                                 // if dimensions are neither cubical nor FFTW, stop
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -310,9 +310,9 @@ class particle_reposition_parameters {
                             int ip = i - Yinit(Imic_in());
                             int jp = j - Xinit(Imic_in());
                             if (
-                                kp >= 0 && kp < ZSIZE(Imic_in()) && 
-                                ip >= 0 && ip < YSIZE(Imic_in()) && 
-                                jp >= 0 && jp < XSIZE(Imic_in())
+                                kp >= 0 && kp < Zsize(Imic_in()) && 
+                                ip >= 0 && ip < Ysize(Imic_in()) && 
+                                jp >= 0 && jp < Xsize(Imic_in())
                             ) {
                                 A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Imic_in(), k, i, j);
                             }
@@ -353,9 +353,9 @@ class particle_reposition_parameters {
                             int ip = i - Yinit(Imic_sum);
                             int jp = j - Xinit(Imic_sum);
                             if (
-                                kp >= 0 && kp < ZSIZE(Imic_sum) && 
-                                ip >= 0 && ip < YSIZE(Imic_sum) && 
-                                jp >= 0 && jp < XSIZE(Imic_sum)
+                                kp >= 0 && kp < Zsize(Imic_sum) && 
+                                ip >= 0 && ip < Ysize(Imic_sum) && 
+                                jp >= 0 && jp < Xsize(Imic_sum)
                             ) {
                                 A3D_ELEM(Imic_out(), k, i, j) += norm_factor * A3D_ELEM(Mpart_mic, k, i, j);
                                 A3D_ELEM(Imic_sum, k, i, j) += 1.;

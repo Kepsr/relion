@@ -378,7 +378,7 @@ void local_symmetry_parameters_mpi::run() {
                 for (int id_rank = (node->size) - 1; id_rank >= 0; id_rank--) {
                     divide_equally(nr_total_samplings, node->size, id_rank, first, last);
 
-                    // Beware: YSIZE(op_samplings_batch_packed) is larger than (last - first + 1)
+                    // Beware: Ysize(op_samplings_batch_packed) is larger than (last - first + 1)
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
                         if (i >= 0 && i <= last - first)
                             DIRECT_A2D_ELEM(op_samplings_batch_packed, i, j) = op_samplings[i + first][j];
@@ -400,9 +400,9 @@ void local_symmetry_parameters_mpi::run() {
 
             // All nodes unpack sampling points
             op_samplings_batch.clear();
-            for (long int i = 0; i < YSIZE(op_samplings_batch_packed); i++) {
+            for (long int i = 0; i < Ysize(op_samplings_batch_packed); i++) {
                 op.initZeros(NR_LOCALSYM_PARAMETERS);
-                for (long int j = 0; j < XSIZE(op_samplings_batch_packed); j++) {
+                for (long int j = 0; j < Xsize(op_samplings_batch_packed); j++) {
                     op[j] = DIRECT_A2D_ELEM(op_samplings_batch_packed, i, j);
                 }
                 op_samplings_batch.push_back(op);
@@ -431,7 +431,7 @@ void local_symmetry_parameters_mpi::run() {
 
                     // Leader does something for itself if id_rank == 0
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
-                        // Beware: YSIZE(op_samplings_batch_packed) is larger than (last - first + 1)
+                        // Beware: Ysize(op_samplings_batch_packed) is larger than (last - first + 1)
                         if (i >= 0 && i <= last - first)
                             op_samplings[i + first][CC_POS] = DIRECT_A2D_ELEM(op_samplings_batch_packed, i, CC_POS);
                     }

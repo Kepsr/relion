@@ -140,15 +140,13 @@ class ctf_toolbox_parameters {
                 fn_img = MD.getValue<FileName>(EMDL::IMAGE_NAME);
 
                 Image<RFLOAT> img;
-                MultidimArray<Complex> Fimg;
-                MultidimArray<RFLOAT> Fctf;
-
                 img.read(fn_img);
 
+                MultidimArray<Complex> Fimg;
                 transformer.FourierTransform(img(), Fimg, false);
 
-                Fctf.resize(YSIZE(Fimg), XSIZE(Fimg));
-                ctf.getFftwImage(Fctf, XSIZE(img()), YSIZE(img()), angpix, false, false, do_intact_ctf_until_first_peak, false, do_ctf_pad, do_intact_ctf_after_first_peak);
+                MultidimArray<RFLOAT> Fctf(Ysize(Fimg), Xsize(Fimg));
+                ctf.getFftwImage(Fctf, Xsize(img()), Ysize(img()), angpix, false, false, do_intact_ctf_until_first_peak, false, do_ctf_pad, do_intact_ctf_after_first_peak);
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
                     if (!do_intact_ctf_after_first_peak) {
                         DIRECT_MULTIDIM_ELEM(Fimg, n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);

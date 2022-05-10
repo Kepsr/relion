@@ -354,14 +354,13 @@ void FrameRecombiner::process(
                         obsModel->setPixelSize(og, angpix_out[og]);
                 }
 
-                MultidimArray<RFLOAT> Fctf;
-                Fctf.resize(YSIZE(sum()), XSIZE(sum()));
+                MultidimArray<RFLOAT> Fctf(Ysize(sum()), Xsize(sum()));
                 ctf.getFftwImage(
                     Fctf, s_out[og], s_out[og], angpix_out[og], 
                     false, false, false, true, false
                 );
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum()) {
-                     DIRECT_MULTIDIM_ELEM(sum(), n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
+                    DIRECT_MULTIDIM_ELEM(sum(), n) *= DIRECT_MULTIDIM_ELEM(Fctf, n);
                 }
             }
 

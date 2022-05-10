@@ -117,23 +117,23 @@ bool calcCCofHelicalSymmetry(
     //std::vector<RFLOAT> sin_rec, cos_rec, dev_voxel, dev_chunk;
     std::vector<RFLOAT> sin_rec, cos_rec;
 
-    if ((Zinit(v) != Xmipp::init(ZSIZE(v))) || (Yinit(v) != Xmipp::init(YSIZE(v))) || (Xinit(v) != Xmipp::init(XSIZE(v))))
+    if ((Zinit(v) != Xmipp::init(Zsize(v))) || (Yinit(v) != Xmipp::init(Ysize(v))) || (Xinit(v) != Xmipp::init(Xsize(v))))
         REPORT_ERROR("helix.cpp::calcCCofHelicalSymmetry(): The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
 
     // Check r_max
-    r_max_XY = std::max(XSIZE(v), YSIZE(v));
+    r_max_XY = std::max(Xsize(v), Ysize(v));
     r_max_XY = (r_max_XY + 1) / 2 - 1;  // Make indivisibile by 2
     if (r_max_pix > (RFLOAT) r_max_XY - 0.01) { r_max_pix = (RFLOAT) r_max_XY - 0.01; }
     // 0.01 - avoid segmentation fault
 
     // Set startZ and finishZ
-    startZ  = floor((RFLOAT) ZSIZE(v) * z_percentage * -0.5);
-    finishZ = ceil ((RFLOAT) ZSIZE(v) * z_percentage * +0.5);
+    startZ  = floor((RFLOAT) Zsize(v) * z_percentage * -0.5);
+    finishZ = ceil ((RFLOAT) Zsize(v) * z_percentage * +0.5);
     startZ  = startZ  <= Zinit(v) ? Zinit(v) + 1 : startZ;
     finishZ = finishZ >= Zlast(v) ? Zlast(v) - 1 : finishZ;
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + ceil((RFLOAT(ZSIZE(v)) + 2.0) / rise_pix);
+    rec_len = 2 + ceil((RFLOAT(Zsize(v)) + 2.0) / rise_pix);
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
@@ -190,7 +190,7 @@ bool calcCCofHelicalSymmetry(
             int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= Yinit(v); int y1 = y0 + 1;
             int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= Zinit(v); int z1 = z0 + 1;
             // DEBUG
-            if (x0 < 0 || y0 < 0 || z0 < 0 || x1 >= XSIZE(v) || y1 >= YSIZE(v) || z1 >= ZSIZE(v)) {
+            if (x0 < 0 || y0 < 0 || z0 < 0 || x1 >= Xsize(v) || y1 >= Ysize(v) || z1 >= Zsize(v)) {
                 std::cout << " idzidyidx= " << k << ", " << i << ", " << j << ", x0x1y0y1z0z1= " << x0 << ", " << x1 << ", " << y0 << ", " << y1 << ", " << z0 << ", " << z1 << std::endl;
             }
 
@@ -283,8 +283,8 @@ bool localSearchHelicalSymmetry(
     }
 
     // Set the length of the box
-    box_len = XSIZE(v) < YSIZE(v) ? XSIZE(v) : YSIZE(v);
-    box_len = box_len < ZSIZE(v) ? box_len : ZSIZE(v);
+    box_len = Xsize(v) < Ysize(v) ? Xsize(v) : Ysize(v);
+    box_len = box_len < Zsize(v) ? box_len : Zsize(v);
 
     // Initialise refined helical parameters
     // Check helical parameters
@@ -311,7 +311,7 @@ bool localSearchHelicalSymmetry(
     twist_local_max_deg = twist_max_deg;
     if (o_ptr != NULL) {
         (*o_ptr) << " ### RELION helix toolbox - local searches of helical symmetry" << std::endl;
-        (*o_ptr) << " --> Box size = " << ((long int)(XSIZE(v))) << ", Z(%) = " << (z_percentage * 100.0)
+        (*o_ptr) << " --> Box size = " << ((long int)(Xsize(v))) << ", Z(%) = " << (z_percentage * 100.0)
                 << "%, pixel size = " << pixel_size_A << " Angstroms, inner diameter = " << (cyl_inner_radius_A * 2.0)
                 << " Angstroms, outer diameter = " << (cyl_outer_radius_A * 2.0) << " Angstroms." << std::endl;
         (*o_ptr) << " --> Searching twist from " << twist_min_deg << " to " << twist_max_deg << " degrees, rise from "
@@ -982,7 +982,7 @@ void searchCnZSymmetry(
     RFLOAT cc;
     bool ok_flag;
 
-    Xdim = XSIZE(v); Ydim = YSIZE(v); Zdim = ZSIZE(v); Ndim = NSIZE(v);
+    Xdim = Xsize(v); Ydim = Ysize(v); Zdim = Zsize(v); Ndim = Nsize(v);
 
     if ( (Ndim != 1) || (Zdim < 5) || (Ydim < 5) || (Xdim < 5) )
         REPORT_ERROR("helix.cpp::searchCnZSymmetry(): Input 3D MultidimArray has Wrong dimensions! (Ndim = " + integerToString(Ndim) + ", Zdim = " + integerToString(Zdim) + ", Ydim = " + integerToString(Ydim) + ", Xdim = " + integerToString(Xdim) + ")");
@@ -1031,13 +1031,13 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     if (v.getDim() != 2)
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): Input MultidimArray should be 2D!");
 
-    if ( (YSIZE(v) < 10) || (XSIZE(v) < 10) )
+    if ( (Ysize(v) < 10) || (Xsize(v) < 10) )
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): Input 2D MultidimArray should be larger than 10*10 pixels!");
 
-    if ( (Yinit(v) != Xmipp::init(YSIZE(v))) || (Xinit(v) != Xmipp::init(XSIZE(v))) )
+    if ( (Yinit(v) != Xmipp::init(Ysize(v))) || (Xinit(v) != Xmipp::init(Xsize(v))) )
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): The origin of input 2D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
 
-    box_len = (XSIZE(v) < YSIZE(v)) ? XSIZE(v) : YSIZE(v);
+    box_len = (Xsize(v) < Ysize(v)) ? Xsize(v) : Ysize(v);
     half_box_len = box_len / 2 - ((box_len + 1) % 2);
     sphere_radius_pix = sphere_radius_A / pixel_size_A;
     cyl_radius_pix = cyl_outer_radius_A / pixel_size_A;
@@ -1165,7 +1165,7 @@ void calcRadialAverage(
     radial_avg_val_list.clear();
 
     // Check dimensions
-    Xdim = XSIZE(v); Ydim = YSIZE(v); Zdim = ZSIZE(v); Ndim = NSIZE(v);
+    Xdim = Xsize(v); Ydim = Ysize(v); Zdim = Zsize(v); Ndim = Nsize(v);
 
     if (Ndim != 1 || Zdim < 5 || Ydim < 5 || Xdim < 5)
         REPORT_ERROR("helix.cpp::calcRadialAverage(): Input 3D MultidimArray has wrong dimensions! (Ndim = " + integerToString(Ndim) + ", Zdim = " + integerToString(Zdim) + ", Ydim = " + integerToString(Ydim) + ", Xdim = " + integerToString(Xdim) + ")");
@@ -1206,7 +1206,7 @@ void cutZCentralPartOfSoftMask(
     MultidimArray<RFLOAT>& mask, RFLOAT z_percentage, RFLOAT cosine_width
 ) {
     int dim = mask.getDim();
-    int Zdim = ZSIZE(mask);
+    int Zdim = Zsize(mask);
     RFLOAT idz_s, idz_s_w, idz_e, idz_e_w, idz, val;
     if (dim != 3)
         REPORT_ERROR("helix.cpp::cutZCentralPartOfSoftMask(): Input mask should have a dimension of 3!");
@@ -1427,7 +1427,7 @@ void makeBlot(
     RFLOAT y, RFLOAT x, RFLOAT r
 ) {
     MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
-    if (dimensions.n != 1 || dimensions.z != 1 || YXSIZE(v) <= 2)
+    if (dimensions.n != 1 || dimensions.z != 1 || YXsize(v) <= 2)
         return;
 
     RFLOAT min = DIRECT_A2D_ELEM(v, 0, 0);
@@ -1566,8 +1566,8 @@ void applySoftSphericalMask(
         REPORT_ERROR("helix.cpp::applySoftSphericalMask(): Cosine width should be a positive value!");
 
     v.setXmippOrigin();
-    r_max = (XSIZE(v) < YSIZE(v)) ? (XSIZE(v)) : (YSIZE(v));
-    r_max = (r_max < ZSIZE(v)) ? (r_max) : (ZSIZE(v));
+    r_max = (Xsize(v) < Ysize(v)) ? (Xsize(v)) : (Ysize(v));
+    r_max = (r_max < Zsize(v)) ? (r_max) : (Zsize(v));
     // Nov11,2016 - Commented the following lines for r > 90% masks
     //if (cosine_width > 0.05 * r_max)
     //	r_max -= 2. * cosine_width;
@@ -3322,11 +3322,11 @@ void simulateHelicalSegments(
     img.read(fn_vol_in, false); // Read the header only!
     if (
         img().getDim() != 3 ||
-        XSIZE(img()) != YSIZE(img()) ||
-        YSIZE(img()) != ZSIZE(img()) ||
-        XSIZE(img()) < 10
+        Xsize(img()) != Ysize(img()) ||
+        Ysize(img()) != Zsize(img()) ||
+        Xsize(img()) < 10
     ) REPORT_ERROR("helix.cpp::simulateHelicalSegments: Input volume should be a 3D cube (>10*10*10)!");
-    if (new_box_size > XSIZE(img()) || new_box_size < 10 || new_box_size % 2)
+    if (new_box_size > Xsize(img()) || new_box_size < 10 || new_box_size % 2)
         REPORT_ERROR("helix.cpp::simulateHelicalSegments: Cropped box size (an even number) should be at least 10, and smaller than the box size of the input 3D volume!");
     if (angpix < 0.001)
         REPORT_ERROR("helix.cpp::simulateHelicalSegments: Pixel size should be larger than 0.001 Angstroms!");
@@ -3377,7 +3377,7 @@ void simulateHelicalSegments(
     MD.addLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
     MD.addLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
     if (is_3d_tomo)
-        MD.addLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+    MD.addLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
     MD.addLabel(EMDL::ORIENT_ROT_PRIOR);
     MD.addLabel(EMDL::ORIENT_TILT_PRIOR);
     MD.addLabel(EMDL::ORIENT_PSI_PRIOR);
@@ -3670,20 +3670,20 @@ void cutOutPartOfHelix(
     vout.initZeros(new_boxdim, new_boxdim, new_boxdim);
 
     // Fill in values
-    long int old_ymax = YSIZE(vin) + Xmipp::init(YSIZE(vin));
-    long int old_xmax = XSIZE(vin) + Xmipp::init(XSIZE(vin));
-    long int old_x0 = Xmipp::init(XSIZE(vin));
-    long int old_y0 = Xmipp::init(YSIZE(vin));
-    long int old_z0 = Xmipp::init(ZSIZE(vin));
-    long int new_z0 = Xmipp::init(ZSIZE(vout));
-    for (long int zi = 0; zi < ZSIZE(vout); zi++) {
+    long int old_ymax = Ysize(vin) + Xmipp::init(Ysize(vin));
+    long int old_xmax = Xsize(vin) + Xmipp::init(Xsize(vin));
+    long int old_x0 = Xmipp::init(Xsize(vin));
+    long int old_y0 = Xmipp::init(Ysize(vin));
+    long int old_z0 = Xmipp::init(Zsize(vin));
+    long int new_z0 = Xmipp::init(Zsize(vout));
+    for (long int zi = 0; zi < Zsize(vout); zi++) {
         // Z subscript is out of range
-        if ((RFLOAT) abs(zi + new_z0) / (RFLOAT) ZSIZE(vin) > z_percentage / 2.0)
+        if ((RFLOAT) abs(zi + new_z0) / (RFLOAT) Zsize(vin) > z_percentage / 2.0)
             continue;
 
         // Loop over X and Y
-        for (long int yi = 0; yi < YSIZE(vout); yi++)
-        for (long int xi = 0; xi < XSIZE(vout); xi++) {
+        for (long int yi = 0; yi < Ysize(vout); yi++)
+        for (long int xi = 0; xi < Xsize(vout); xi++) {
             RFLOAT deg = 180.0 * atan2((double) (yi), (double) (xi)) / PI;
 
             // X or Y subscripts is out of range
@@ -4319,13 +4319,13 @@ void calculateRadialAvg(MultidimArray<RFLOAT> &v, RFLOAT angpix) {
     std::vector<RFLOAT> rval, rcount;
     long int size, rint;
 
-    if (XSIZE(v) < 5 || YSIZE(v) < 5 || ZSIZE(v) < 5 || NSIZE(v) != 1)
+    if (Xsize(v) < 5 || Ysize(v) < 5 || Zsize(v) < 5 || Nsize(v) != 1)
         REPORT_ERROR("helix.cpp::calculateRadialAvg(): Input image should be a 3D box larger than 5*5*5 !");
     if (angpix <= 0.0)
         REPORT_ERROR("helix.cpp::calculateRadialAvg(): Pixel size should be larger than 0 !");
 
     v.setXmippOrigin();
-    size = (XSIZE(v) < YSIZE(v)) ? XSIZE(v) : YSIZE(v);
+    size = (Xsize(v) < Ysize(v)) ? Xsize(v) : Ysize(v);
     size = size / 2 + 2;
 
     rval.resize(size);
@@ -4432,10 +4432,10 @@ void normaliseHelicalSegments(
         // Read image
         img0.clear();
         img0.read(img_name);
-        is_3D_data = ZSIZE(img0()) > 1 || NSIZE(img0()) > 1;
+        is_3D_data = Zsize(img0()) > 1 || Nsize(img0()) > 1;
         if (
-            XSIZE(img0()) < helical_outer_diameter_A / pixel_size_A || 
-            YSIZE(img0()) < helical_outer_diameter_A / pixel_size_A
+            Xsize(img0()) < helical_outer_diameter_A / pixel_size_A || 
+            Ysize(img0()) < helical_outer_diameter_A / pixel_size_A
         ) REPORT_ERROR("helix.cpp::normaliseHelicalSegments(): Diameter of the tubular mask is larger than the box XY dimensions!");
         if (!is_3D_data)
             rot_deg = tilt_deg = 0.0;
@@ -5251,7 +5251,7 @@ void averageAsymmetricUnits2D(
         transformer.FourierTransform(img(), Fimg, false);
         Fsum = Fimg; // original image
 
-        // std::cerr << " imgno= " << imgno << " fn_img= " << fn_img << " psi= " << psi << " rise= " << rise  << " angpix= " << angpix << " nr_asu= " << nr_asu << " xsize= " << XSIZE(img()) << std::endl;
+        // std::cerr << " imgno= " << imgno << " fn_img= " << fn_img << " psi= " << psi << " rise= " << rise  << " angpix= " << angpix << " nr_asu= " << nr_asu << " xsize= " << Xsize(img()) << std::endl;
 
         Matrix1D<RFLOAT> in(2), out(2);
         for (int i = 2; i <= nr_asu; i++) {
@@ -5266,7 +5266,7 @@ void averageAsymmetricUnits2D(
 
             transformCartesianAndHelicalCoords(in, out, 0.0, 0.0, psi, HELICAL_TO_CART_COORDS);
             //std::cerr << " i= " << i << " XX(in)= " << XX(in) << " YY(in)= " << YY(in) << " XX(out)= " << XX(out) << " YY(out)= " << YY(out)   << std::endl;
-            shiftImageInFourierTransform(Fimg, Faux, XSIZE(img()), XX(out), YY(out));
+            shiftImageInFourierTransform(Fimg, Faux, Xsize(img()), XX(out), YY(out));
             Fsum += Faux;
         }
 

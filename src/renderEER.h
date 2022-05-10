@@ -102,8 +102,8 @@ class EERRenderer {
 
         Image<T> original;
         original.read(fn_gain, true, 0, false, true); // explicitly use the first page
-        const int nx_in = XSIZE(original());
-        const int ny_in = YSIZE(original());
+        const int nx_in = Xsize(original());
+        const int ny_in = Ysize(original());
         const long long size_out = EER_IMAGE_WIDTH * eer_upsampling;
 
         // Revert Y flip in TIFF reader

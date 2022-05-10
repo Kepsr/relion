@@ -155,15 +155,15 @@ void DisplayBox::setData(
     MDimg.addObject(MDCin);
 
     // For volumes only show the central slice
-    if (ZSIZE(img) > 1) {
+    if (Zsize(img) > 1) {
         MultidimArray<RFLOAT> slice;
-        img.getSlice(ZSIZE(img) / 2, slice);
+        img.getSlice(Zsize(img) / 2, slice);
         img = slice;
     }
 
     // create array for the scaled image data
-    xsize_data = ceil(XSIZE(img) * scale);
-    ysize_data = ceil(YSIZE(img) * scale);
+    xsize_data = ceil(Xsize(img) * scale);
+    ysize_data = ceil(Ysize(img) * scale);
     xoff = xsize_data < w() ? (w() - xsize_data) / 2 : 0;
     yoff = ysize_data < h() ? (h() - ysize_data) / 2 : 0;
     if (colour_scheme == ColourScheme::greyscale) {
@@ -184,11 +184,11 @@ void DisplayBox::setData(
     // Use the same nearest-neighbor algorithm as in the copy function of Fl_Image...
     if (abs(scale - 1.0) > 0.01 && !do_relion_scale) {
         /// TODO: Use divmod
-        int xmod   = XSIZE(img) % xsize_data;
-        int xstep  = XSIZE(img) / xsize_data;
-        int ymod   = YSIZE(img) % ysize_data;
-        int ystep  = YSIZE(img) / ysize_data;
-        int line_d = XSIZE(img);
+        int xmod   = Xsize(img) % xsize_data;
+        int xstep  = Xsize(img) / xsize_data;
+        int ymod   = Ysize(img) % ysize_data;
+        int ystep  = Ysize(img) / ysize_data;
+        int line_d = Xsize(img);
         int dx, dy, sy, xerr, yerr;
 
         if (colour_scheme == ColourScheme::greyscale) {
@@ -298,9 +298,9 @@ int basisViewerWindow::fillCanvas(
     img.read(fn_img, false);
     int nimgs = MDin.numberOfObjects();
     if (viewer_type == MULTIVIEWER) {
-        int xsize_canvas = _ncol * (ceil(XSIZE(img()) * _scale) + BOX_OFFSET);
+        int xsize_canvas = _ncol * (ceil(Xsize(img()) * _scale) + BOX_OFFSET);
         int nrow = ceil((RFLOAT) nimgs / _ncol);
-        int ysize_canvas = nrow * (ceil(YSIZE(img()) * _scale) + BOX_OFFSET);
+        int ysize_canvas = nrow * (ceil(Ysize(img()) * _scale) + BOX_OFFSET);
         multiViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
         canvas.multi_max_nr_images = max_nr_images;
         canvas.SetScroll(&scroll);
@@ -353,8 +353,8 @@ int basisViewerWindow::fillCanvas(
     } else if (viewer_type == SINGLEVIEWER) {
         if (nimgs > 1)
             REPORT_ERROR("ERROR: trying to launch a singleViewerCanvas with multiple images...");
-        int xsize_canvas = ceil(XSIZE(img()) * _scale);
-        int ysize_canvas = ceil(YSIZE(img()) * _scale);
+        int xsize_canvas = ceil(Xsize(img()) * _scale);
+        int ysize_canvas = ceil(Ysize(img()) * _scale);
         singleViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
         canvas.SetScroll(&scroll);
         canvas.fill(MDin, obsModel, display_label, text_label, _do_apply_orient, _minval, _maxval, _sigma_contrast, _scale, 1);
@@ -377,8 +377,8 @@ int basisViewerWindow::fillPickerViewerCanvas(
 
     // Scroll bars
     Fl_Scroll scroll(0, 0, w(), h());
-    int xsize_canvas = ceil(XSIZE(image) * _scale);
-    int ysize_canvas = ceil(YSIZE(image) * _scale);
+    int xsize_canvas = ceil(Xsize(image) * _scale);
+    int ysize_canvas = ceil(Ysize(image) * _scale);
     pickerViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
     canvas.particle_radius = _particle_radius;
     canvas.do_startend = _do_startend;
@@ -409,8 +409,8 @@ int basisViewerWindow::fillSingleViewerCanvas(
     Fl_Scroll scroll(0, 0, w(), h());
 
     // Pre-set the canvas to the correct size
-    int xsize_canvas = ceil(XSIZE(image) * _scale);
-    int ysize_canvas = ceil(YSIZE(image) * _scale);
+    int xsize_canvas = ceil(Xsize(image) * _scale);
+    int ysize_canvas = ceil(Ysize(image) * _scale);
     singleViewerCanvas canvas(0, 0, xsize_canvas, ysize_canvas);
     canvas.SetScroll(&scroll);
     canvas.fill(image, _minval, _maxval, _sigma_contrast, _scale);
@@ -554,8 +554,8 @@ void basisViewerCanvas::fill(
                 int irow = division.quot;
                 nrow = std::max(nrow, irow + 1);
                 if (my_ipos == 0) {
-                    xsize_box = 2 * xoff + ceil(_scale * XSIZE(img()));  // 2 pixels on each side in between all images
-                    ysize_box = 2 * yoff + ceil(_scale * YSIZE(img()));
+                    xsize_box = 2 * xoff + ceil(_scale * Xsize(img()));  // 2 pixels on each side in between all images
+                    ysize_box = 2 * yoff + ceil(_scale * Ysize(img()));
                 }
                 int ycoor = irow * ysize_box;
                 int xcoor = icol * xsize_box;
@@ -593,8 +593,8 @@ void basisViewerCanvas::fill(
     xoff = yoff = 0;
     nrow = ncol = 1;
     MultidimArray<RFLOAT>::MinMax minmax = getImageContrast(image, _minval, _maxval, _sigma_contrast);
-    xsize_box = ceil(_scale * XSIZE(image));
-    ysize_box = ceil(_scale * YSIZE(image));
+    xsize_box = ceil(_scale * Xsize(image));
+    ysize_box = ceil(_scale * Ysize(image));
     DisplayBox *my_box = new DisplayBox(0, 0, xsize_box, ysize_box, "dummy");
     MetaDataTable MDtmp;
     MDtmp.addObject();
@@ -995,7 +995,7 @@ void multiViewerCanvas::showOriginalImage(int ipos) {
     FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img);
-    basisViewerWindow win(ceil(ori_scale*XSIZE(img())), ceil(ori_scale*YSIZE(img())), fn_img.c_str());
+    basisViewerWindow win(ceil(ori_scale*Xsize(img())), ceil(ori_scale*Ysize(img())), fn_img.c_str());
     if (sigma_contrast > 0.0) {
         win.fillSingleViewerCanvas(img(), 0.0, 0.0, sigma_contrast, ori_scale);
     } else {
@@ -1049,7 +1049,7 @@ void multiViewerCanvas::showFourierAmplitudes(int ipos) {
     FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img, false);
-    if (ZSIZE(img()) > 1 || NSIZE(img()) > 1) {
+    if (Zsize(img()) > 1 || Nsize(img()) > 1) {
         fl_message("Cannot display Fourier transform of STAR files, 3D images or stacks. Please select a 2D image as input.");
         return;
     }
@@ -1069,7 +1069,7 @@ void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
     FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img, false);
-    if (ZSIZE(img()) > 1 || NSIZE(img()) > 1) {
+    if (Zsize(img()) > 1 || Nsize(img()) > 1) {
         fl_message("Cannot display Fourier transform of STAR files, 3D images or stacks. Please select a 2D image as input.");
         return;
     }
@@ -2383,7 +2383,7 @@ void Displayer::initialise() {
             REPORT_ERROR("Displayer::initialise ERROR: use single 2D image files as input!");
         Image<RFLOAT> img;
         img.read(fn_in, false); // dont read data yet: only header to get size
-        if (ZSIZE(img()) > 1 || NSIZE(img()) > 1)
+        if (Zsize(img()) > 1 || Nsize(img()) > 1)
             REPORT_ERROR("Displayer::initialise ERROR: cannot display Fourier maps for 3D images or stacks!");
     }
 
@@ -2483,7 +2483,7 @@ int Displayer::runGui() {
         // Try reading as an image/stack header
         Image<RFLOAT> img;
         img.read(fn_in, false);
-        win.is_multi = (ZSIZE(img()) * NSIZE(img()) > 1);
+        win.is_multi = (Zsize(img()) * Nsize(img()) > 1);
     }
 
     return win.fill(fn_in);
@@ -2496,10 +2496,10 @@ void Displayer::run() {
     } else if (do_colourbar) {
         Image<RFLOAT> img(256, 10);
         FOR_ALL_ELEMENTS_IN_ARRAY2D(img()) {
-            A2D_ELEM(img(), i, j) = (RFLOAT)j;
+            A2D_ELEM(img(), i, j) = (RFLOAT) j;
         }
         FileName fnt = "colour scheme";
-        basisViewerWindow win(ceil(scale * XSIZE(img())), ceil(scale * YSIZE(img())), fnt.c_str());
+        basisViewerWindow win(ceil(scale * Xsize(img())), ceil(scale * Ysize(img())), fnt.c_str());
         win.fillSingleViewerCanvas(img(), 0.0, 255.0, 0.0, scale);
     } else if (do_pick || do_pick_startend) {
         Image<RFLOAT> img;
@@ -2509,7 +2509,7 @@ void Displayer::run() {
             lowPassFilterMap(img(), lowpass, angpix);
         if (highpass > 0.0)
             highPassFilterMap(img(), highpass, angpix, 25); // use a rather soft high-pass edge of 25 pixels wide
-        basisViewerWindow win(ceil(scale * XSIZE(img())), ceil(scale * YSIZE(img())), fn_in.c_str());
+        basisViewerWindow win(ceil(scale * Xsize(img())), ceil(scale * Ysize(img())), fn_in.c_str());
         if (fn_coords == "")
             fn_coords = fn_in.withoutExtension() + "_coords.star";
         win.fillPickerViewerCanvas(img(), minval, maxval, sigma_contrast, scale, coord_scale, round(scale * particle_radius), do_pick_startend, fn_coords,
@@ -2567,8 +2567,8 @@ void Displayer::run() {
 
         MDin.clear();
         // display stacks
-        if (NSIZE(img()) > 1) {
-            for (int n = 0; n < NSIZE(img()); n++) {
+        if (Nsize(img()) > 1) {
+            for (int n = 0; n < Nsize(img()); n++) {
                 FileName fn_tmp;
                 fn_tmp.compose(n+1,fn_in);
                 MDin.addObject();
@@ -2582,7 +2582,7 @@ void Displayer::run() {
                 sigma_contrast, scale, ori_scale, ncol,
                 max_nr_images, lowpass, highpass
             );
-        } else if (ZSIZE(img()) > 1) {
+        } else if (Zsize(img()) > 1) {
 
             // Read volume slices from .mrc as if it were a .mrcs stack and then use normal slice viewer
             // This will not work for Spider volumes...
@@ -2599,7 +2599,7 @@ void Displayer::run() {
             }
 
             // Trick MD with :mrcs extension....
-            for (int n = 0; n < ZSIZE(img()); n++) {
+            for (int n = 0; n < Zsize(img()); n++) {
                 FileName fn_tmp;
                 fn_tmp.compose(n + 1, fn_in);
                 fn_tmp += ":mrcs";
@@ -2630,7 +2630,7 @@ void Displayer::run() {
             if (show_fourier_amplitudes || show_fourier_phase_angles) { 
                 new_scale *= 2.0; 
             }
-            basisViewerWindow win(ceil(new_scale * XSIZE(img())), ceil(new_scale * YSIZE(img())), fn_in.c_str());
+            basisViewerWindow win(ceil(new_scale * Xsize(img())), ceil(new_scale * Ysize(img())), fn_in.c_str());
             if (show_fourier_amplitudes) {
                 amplitudeOrPhaseMap(img(), img(), AMPLITUDE_MAP);
                 win.fillSingleViewerCanvas(img(), minval, maxval, sigma_contrast, scale);

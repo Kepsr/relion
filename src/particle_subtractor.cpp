@@ -247,10 +247,10 @@ void ParticleSubtractor::revert() {
             REPORT_ERROR("Failed to read " + fn_img + " to determine the box size.");
         Image<RFLOAT> Ihead;
         Ihead.read(img_name, false, -1, false, true);
-        if (XSIZE(Ihead()) != YSIZE(Ihead()))
+        if (Xsize(Ihead()) != Ysize(Ihead()))
             REPORT_ERROR("Particle " + img_name + " is not square.");
-        obsModel.setBoxSize(og, XSIZE(Ihead()));
-        obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, XSIZE(Ihead()), og);
+        obsModel.setBoxSize(og, Xsize(Ihead()));
+        obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, Xsize(Ihead()), og);
 
         fixed_box_size[og] = true;
     }
@@ -306,7 +306,7 @@ void ParticleSubtractor::saveStarFile(int myrank) {
         // Only leader writes out the STAR file
         if (myrank == 0) {
             MetaDataTable MD;
-            for (int ires = 0; ires < XSIZE(sum_S2); ires++) {
+            for (int ires = 0; ires < Xsize(sum_S2); ires++) {
                 MD.addObject();
                 MD.setValue(EMDL::SPECTRAL_IDX, ires);
                 MD.setValue(EMDL::RESOLUTION, opt.mymodel.getResolution(ires));
@@ -427,7 +427,7 @@ void ParticleSubtractor::subtractOneParticle(
 
     // Get the consensus class, orientational parameters and norm (if present)
     RFLOAT my_pixel_size = opt.mydata.getImagePixelSize(part_id, 0);
-    RFLOAT remap_image_sizes = (opt.mymodel.ori_size * opt.mymodel.pixel_size) / (XSIZE(img()) * my_pixel_size);
+    RFLOAT remap_image_sizes = (opt.mymodel.ori_size * opt.mymodel.pixel_size) / (Xsize(img()) * my_pixel_size);
     Matrix1D<RFLOAT> my_old_offset(3), my_residual_offset(3), centering_offset(3);
     Matrix2D<RFLOAT> Aori;
     RFLOAT rot, tilt, psi, xoff, yoff, zoff, mynorm, scale;
@@ -491,16 +491,16 @@ void ParticleSubtractor::subtractOneParticle(
             Image<RFLOAT> Ictf;
             Ictf.read(fn_ctf);
 
-            if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+            if (Xsize(Ictf()) == Ysize(Ictf())) {
                 // If there is a redundant half, get rid of it
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                     DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                 }
-            } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+            } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // Otherwise, just window the CTF to the current resolution
-                windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
             } else {
                 // if dimensions are neither cubical nor FFTW, stop
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -508,7 +508,7 @@ void ParticleSubtractor::subtractOneParticle(
         } else {
             CTF ctf = CTF(opt.mydata.MDimg, &opt.mydata.obsModel, ori_img_id);
             ctf.getFftwImage(
-                Fctf, XSIZE(img()), YSIZE(img()), my_pixel_size,
+                Fctf, Xsize(img()), Ysize(img()), my_pixel_size,
                 opt.ctf_phase_flipped, false, opt.intact_ctf_first_peak, true
             );
         }
@@ -565,7 +565,7 @@ void ParticleSubtractor::subtractOneParticle(
             other_projected_com -= my_projected_com;
 
             shiftImageInFourierTransform(
-                FTo, Faux, (RFLOAT)XSIZE(img()),
+                FTo, Faux, (RFLOAT)Xsize(img()),
                 XX(other_projected_com), YY(other_projected_com), ZZ(other_projected_com)
             );
 
@@ -608,7 +608,7 @@ void ParticleSubtractor::subtractOneParticle(
 
         // Shift in opposite direction as offsets in the STAR file
         shiftImageInFourierTransform(
-            Fsubtrahend, Fsubtrahend, (RFLOAT) XSIZE(img()),
+            Fsubtrahend, Fsubtrahend, (RFLOAT) Xsize(img()),
             -XX(my_old_offset), -YY(my_old_offset), -ZZ(my_old_offset)
         );
 
@@ -711,7 +711,7 @@ void ParticleSubtractor::subtractOneParticle(
         MDimg_out.addObject();
         MDimg_out.setObject(opt.mydata.MDimg.getObject(ori_img_id));
 
-        //printf("Writing: fn_orig = %s counter = %ld rank = %d optics_group = %d fn_img = %s SIZE = %d nr_particles_in_optics_group[optics_group] = %d\n", fn_orig.c_str(), counter, rank, optics_group+1, fn_img.c_str(), XSIZE(img()), nr_particles_in_optics_group[optics_group]);
+        //printf("Writing: fn_orig = %s counter = %ld rank = %d optics_group = %d fn_img = %s SIZE = %d nr_particles_in_optics_group[optics_group] = %d\n", fn_orig.c_str(), counter, rank, optics_group+1, fn_img.c_str(), Xsize(img()), nr_particles_in_optics_group[optics_group]);
         img.setSamplingRateInHeader(my_pixel_size);
         if (opt.mymodel.data_dim == 3) {
             img.write(fn_img);

@@ -445,13 +445,13 @@ void MlOptimiserMpi::initialise() {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
             RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
             idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
-            if (idx < XSIZE(mymodel.sigma2_noise[0])) { 
+            if (idx < Xsize(mymodel.sigma2_noise[0])) { 
                 mymodel.sigma2_noise[0](idx) = val; 
             }
         }
-        if (idx < XSIZE(mymodel.sigma2_noise[0]) - 1 && verb > 0) {
+        if (idx < Xsize(mymodel.sigma2_noise[0]) - 1 && verb > 0) {
             std::cout << " WARNING: provided sigma2_noise-spectrum has fewer entries (" << idx + 1 << ") than needed ("
-            << XSIZE(mymodel.sigma2_noise[0]) << "). Set rest to zero..." << std::endl;
+            << Xsize(mymodel.sigma2_noise[0]) << "). Set rest to zero..." << std::endl;
         }
 
         mydata.getNumberOfImagesPerGroup(mymodel.nr_particles_per_group);
@@ -765,7 +765,7 @@ void MlOptimiserMpi::expectation() {
         if (node->isLeader()) {
             // Leader sends metadata (but not imagedata) for first 100 particles to first_follower (for calculateExpectedAngularErrors)
             MlOptimiser::getMetaAndImageDataSubset(0, n_trials_acc - 1, false);
-            my_nr_images = YSIZE(exp_metadata);
+            my_nr_images = Ysize(exp_metadata);
             node->relion_MPI_Send(&my_nr_images, 1, MPI_INT, first_follower, MPITag::JOB_REQUEST, MPI_COMM_WORLD);
             node->relion_MPI_Send(MULTIDIM_ARRAY(exp_metadata), MULTIDIM_SIZE(exp_metadata), MY_MPI_DOUBLE, first_follower, MPITag::METADATA, MPI_COMM_WORLD);
             // Also send exp_fn_ctfs if necessary
@@ -1111,7 +1111,7 @@ void MlOptimiserMpi::expectation() {
                 // Now send out a new job
                 if (my_nr_particles_done < nr_particles_todo) {
                     MlOptimiser::getMetaAndImageDataSubset(JOB_FIRST, JOB_LAST, !do_parallel_disc_io);
-                    JOB_NIMG = YSIZE(exp_metadata);
+                    JOB_NIMG = Ysize(exp_metadata);
                     JOB_LEN_FN_IMG = exp_fn_img.length() + 1; // +1 to include \0 at the end of the string
                     JOB_LEN_FN_CTF = exp_fn_ctf.length() + 1;
                     JOB_LEN_FN_RECIMG = exp_fn_recimg.length() + 1;
@@ -2571,7 +2571,7 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
                 if (verb > 0) {
                     std::cout.width(35); 
                     std::cout << std::left << "  + randomize phases beyond: ";
-                    std::cout << XSIZE(Iunreg1()) * mymodel.pixel_size / randomize_at << " Angstroms" << std::endl;
+                    std::cout << Xsize(Iunreg1()) * mymodel.pixel_size / randomize_at << " Angstroms" << std::endl;
                 }
                 randomizePhasesBeyond(Iunreg1(), randomize_at);
                 randomizePhasesBeyond(Iunreg2(), randomize_at);

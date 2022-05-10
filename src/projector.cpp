@@ -255,7 +255,7 @@ void Projector::computeFourierTransformMap(
                 vol_in.setXmippOrigin();
                 run_griddingCorrect(
                     ~dvol, interpolator, (RFLOAT) (ori_size * padding_factor), r_min_nn,
-                    XSIZE(vol_in), YSIZE(vol_in), ZSIZE(vol_in)
+                    Xsize(vol_in), Ysize(vol_in), Zsize(vol_in)
                 );
             } else
             #endif
@@ -337,7 +337,7 @@ void Projector::computeFourierTransformMap(
     if (do_heavy)
         #ifdef CUDA
         if (do_gpu)
-        run_CenterFFTbySign(~dFaux, XSIZE(Faux), YSIZE(Faux), ZSIZE(Faux));
+        run_CenterFFTbySign(~dFaux, Xsize(Faux), Ysize(Faux), Zsize(Faux));
         else
         #endif
         CenterFFTbySign(Faux);
@@ -376,9 +376,9 @@ void Projector::computeFourierTransformMap(
         if (do_fourier_mask) {
             dfourier_mask.setHostPtr(MULTIDIM_ARRAY(*fourier_mask));
             dfourier_mask.cpToDevice();
-            fmXsz = XSIZE(*fourier_mask);
-            fmYsz = YSIZE(*fourier_mask);
-            fmZsz = ZSIZE(*fourier_mask);
+            fmXsz = Xsize(*fourier_mask);
+            fmYsz = Ysize(*fourier_mask);
+            fmZsz = Zsize(*fourier_mask);
         }
     }
     #endif
@@ -396,7 +396,7 @@ void Projector::computeFourierTransformMap(
         #ifdef CUDA
         if (do_gpu) {
             run_calcPowerSpectrum(
-                ~dFaux, padoridim, ~ddata, YSIZE(data), ~dpower_spectrum, ~dcounter,
+                ~dFaux, padoridim, ~ddata, Ysize(data), ~dpower_spectrum, ~dcounter,
                 max_r2, min_r2, cudanormfft, padding_factor, weight,
                 ~dfourier_mask, fmXsz, fmYsz, fmZsz, do_fourier_mask, ref_dim == 3
             );
@@ -533,7 +533,7 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     Ainv *= (RFLOAT)padding_factor;  // take scaling into account directly
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
-    const int r_max_out = XSIZE(f2d) - 1;
+    const int r_max_out = Xsize(f2d) - 1;
     const int r_max_out_2 = r_max_out * r_max_out;
 
     const int r_max_ref = r_max * padding_factor;
@@ -543,10 +543,10 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
 
     // #define DEBUG
     #ifdef DEBUG
-    std::cerr << " XSIZE(f2d)= " << XSIZE(f2d) << std::endl;
-    std::cerr << " YSIZE(f2d)= " << YSIZE(f2d) << std::endl;
-    std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
-    std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
+    std::cerr << " Xsize(f2d)= " << Xsize(f2d) << std::endl;
+    std::cerr << " Ysize(f2d)= " << Ysize(f2d) << std::endl;
+    std::cerr << " Xsize(data)= " << Xsize(data) << std::endl;
+    std::cerr << " Ysize(data)= " << Ysize(data) << std::endl;
     std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
     std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
     std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
@@ -554,8 +554,8 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
 
-    for (int i = 0; i < YSIZE(f2d); i++) {
-        const int y = (i <= r_max_out)? i : i - YSIZE(f2d);
+    for (int i = 0; i < Ysize(f2d); i++) {
+        const int y = (i <= r_max_out)? i : i - Ysize(f2d);
 
         const int x_max = floor(sqrt(r_max_out_2 - y * y));
 
@@ -787,7 +787,7 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
-    const int r_max_out = XSIZE(f1d) - 1;
+    const int r_max_out = Xsize(f1d) - 1;
 
     const int r_max_ref = r_max * padding_factor;
     const int r_max_ref_2 = r_max_ref * r_max_ref;
@@ -865,7 +865,7 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
-    const int r_max_out = XSIZE(f2d) - 1;
+    const int r_max_out = Xsize(f2d) - 1;
     const int r_max_out_2 = r_max_out * r_max_out;
 
     const int r_max_ref = r_max * padding_factor;
@@ -874,10 +874,10 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     const int r_min_NN_ref_2 = r_min_nn * r_min_nn * padding_factor * padding_factor;
 
     #ifdef DEBUG
-    std::cerr << " XSIZE(f2d)= " << XSIZE(f2d) << std::endl;
-    std::cerr << " YSIZE(f2d)= " << YSIZE(f2d) << std::endl;
-    std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
-    std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
+    std::cerr << " Xsize(f2d)= " << Xsize(f2d) << std::endl;
+    std::cerr << " Ysize(f2d)= " << Ysize(f2d) << std::endl;
+    std::cerr << " Xsize(data)= " << Xsize(data) << std::endl;
+    std::cerr << " Ysize(data)= " << Ysize(data) << std::endl;
     std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
     std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
     std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
@@ -885,8 +885,8 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
 
-    for (int i = 0; i < YSIZE(f2d); i++) {
-        const int y = (i <= r_max_out)? i : i - YSIZE(f2d);
+    for (int i = 0; i < Ysize(f2d); i++) {
+        const int y = (i <= r_max_out)? i : i - Ysize(f2d);
 
         const int x_max = floor(sqrt(r_max_out_2 - y * y));
 
@@ -962,7 +962,7 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
     Matrix2D<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
-    const int r_max_out = XSIZE(f3d) - 1;
+    const int r_max_out = Xsize(f3d) - 1;
     const int r_max_out_2 = r_max_out * r_max_out;
 
     const int r_max_ref = r_max * padding_factor;
@@ -971,10 +971,10 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
     const int r_min_NN_ref_2 = r_min_nn * r_min_nn * padding_factor * padding_factor;
 
     #ifdef DEBUG
-    std::cerr << " XSIZE(f3d)= " << XSIZE(f3d) << std::endl;
-    std::cerr << " YSIZE(f3d)= " << YSIZE(f3d) << std::endl;
-    std::cerr << " XSIZE(data)= " << XSIZE(data) << std::endl;
-    std::cerr << " YSIZE(data)= " << YSIZE(data) << std::endl;
+    std::cerr << " Xsize(f3d)= " << Xsize(f3d) << std::endl;
+    std::cerr << " Ysize(f3d)= " << Ysize(f3d) << std::endl;
+    std::cerr << " Xsize(data)= " << Xsize(data) << std::endl;
+    std::cerr << " Ysize(data)= " << Ysize(data) << std::endl;
     std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
     std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
     std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
@@ -982,11 +982,11 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
     std::cerr << " Ainv= " << Ainv << std::endl;
     #endif
 
-    for (int k = 0; k < ZSIZE(f3d); k++) {
-        const int z = (k <= r_max_out)? k : k - ZSIZE(f3d);
+    for (int k = 0; k < Zsize(f3d); k++) {
+        const int z = (k <= r_max_out)? k : k - Zsize(f3d);
 
-        for (int i = 0; i < YSIZE(f3d); i++) {
-            const int y = i <= r_max_out ? i : i - YSIZE(f3d);
+        for (int i = 0; i < Ysize(f3d); i++) {
+            const int y = i <= r_max_out ? i : i - Ysize(f3d);
 
             const RFLOAT yz2 = y * y + z * z;
 

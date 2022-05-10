@@ -396,7 +396,7 @@ void AutoPicker::initialise() {
             }
         }
 
-        if (ZSIZE(Istk()) > 1) {
+        if (Zsize(Istk()) > 1) {
             if (autopick_helical_segments) {
                 REPORT_ERROR("Filament picker (--helix) does not support 3D references. Please use 2D class averages instead.");
             }
@@ -420,7 +420,7 @@ void AutoPicker::initialise() {
                           << std::endl;
             }
 
-            int my_ori_size = XSIZE(Istk());
+            int my_ori_size = Xsize(Istk());
             Projector projector(my_ori_size, TRILINEAR, padding);
             MultidimArray<RFLOAT> dummy;
                int lowpass_size = 2 * ceil(my_ori_size * angpix_ref / lowpass);
@@ -460,7 +460,7 @@ void AutoPicker::initialise() {
             }
         } else {
             // Stack of 2D references
-            for (int n = 0; n < NSIZE(Istk()); n++) {
+            for (int n = 0; n < Nsize(Istk()); n++) {
                 Istk().getImage(n, Iref());
                 Iref().setXmippOrigin();
                 Mrefs.push_back(Iref());
@@ -514,7 +514,7 @@ void AutoPicker::initialise() {
 
         // Now bring Mrefs from angpix_ref to angpix!
         if (fabs(angpix_ref - angpix) > 1e-3) {
-            int halfoldsize = XSIZE(Mrefs[0]) / 2;
+            int halfoldsize = Xsize(Mrefs[0]) / 2;
             int newsize = round(halfoldsize * (angpix_ref/angpix));
             newsize *= 2;
             RFLOAT rescale_greyvalue = 1.0;
@@ -522,8 +522,8 @@ void AutoPicker::initialise() {
             // (the stddev is N times smaller after downscaling N times)
             // This needs to be corrected again
             RFLOAT rescale_factor = 1.0;
-            if (newsize > XSIZE(Mrefs[0]))
-                rescale_factor *= (RFLOAT) XSIZE(Mrefs[0]) / (RFLOAT) newsize;
+            if (newsize > Xsize(Mrefs[0]))
+                rescale_factor *= (RFLOAT) Xsize(Mrefs[0]) / (RFLOAT) newsize;
             for (int iref = 0; iref < Mrefs.size(); iref++) {
                 resizeMap(Mrefs[iref], newsize);
                 Mrefs[iref] *= rescale_factor;
@@ -532,7 +532,7 @@ void AutoPicker::initialise() {
         }
 
         // Get particle boxsize from the input reference images
-        particle_size = XSIZE(Mrefs[0]);
+        particle_size = Xsize(Mrefs[0]);
 
         if (particle_diameter > particle_size * angpix) {
             std::cerr << " mask_diameter (A): " << particle_diameter << " box_size (pix): " << particle_size << " pixel size (A): " << angpix << std::endl;
@@ -580,8 +580,8 @@ void AutoPicker::initialise() {
     // Get micrograph_size
     Image<RFLOAT> Imic;
     Imic.read(fn_micrographs[0], false);
-    micrograph_xsize = XSIZE(Imic());
-    micrograph_ysize = YSIZE(Imic());
+    micrograph_xsize = Xsize(Imic());
+    micrograph_ysize = Ysize(Imic());
     micrograph_size = (micrograph_xsize != micrograph_ysize) ? std::max(micrograph_xsize, micrograph_ysize) : micrograph_xsize;
     if (extra_padding > 0)
         micrograph_size += 2 * extra_padding;
@@ -1021,10 +1021,10 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
             // std::cerr << " Xmipp::init(new_micrograph_xsize)= " << Xmipp::init(new_micrograph_xsize) + skip_side_pix + 1<< " Xmipp::last(new_micrograph_xsize)= " << Xmipp::last(new_micrograph_xsize)- skip_side_pix - 1 << std::endl;
             // std::cerr << " Xmipp::init(new_micrograph_ysize)= " << Xmipp::init(new_micrograph_ysize) + skip_side_pix + 1<< " Xmipp::last(new_micrograph_ysize)= " << Xmipp::last(new_micrograph_ysize)- skip_side_pix - 1 << std::endl;
             if (
-                jp >= Xmipp::init(XSIZE(Mccf)) &&
-                jp <= Xmipp::last(XSIZE(Mccf)) &&
-                ip >= Xmipp::init(YSIZE(Mccf)) &&
-                ip <= Xmipp::last(YSIZE(Mccf))
+                jp >= Xmipp::init(Xsize(Mccf)) &&
+                jp <= Xmipp::last(Xsize(Mccf)) &&
+                ip >= Xmipp::init(Ysize(Mccf)) &&
+                ip <= Xmipp::last(Ysize(Mccf))
             ) {
                 A2D_ELEM(Mccf, ip, jp) = -999.0;
             }
@@ -1351,13 +1351,13 @@ void AutoPicker::pickCCFPeaks(
     particle_diameter_pix *= scale;
     // int micrograph_core_size = std::min(micrograph_xsize, micrograph_ysize) - skip_side * 2 - 2;
 
-    if (NSIZE(Mccf) != 1 || ZSIZE(Mccf) != 1 || YSIZE(Mccf) != XSIZE(Mccf))
+    if (Nsize(Mccf) != 1 || Zsize(Mccf) != 1 || Ysize(Mccf) != Xsize(Mccf))
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The micrograph should be a 2D square!");
-    if (XSIZE(Mccf) < new_micrograph_xsize || YSIZE(Mccf) < new_micrograph_ysize)
+    if (Xsize(Mccf) < new_micrograph_xsize || Ysize(Mccf) < new_micrograph_ysize)
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: Invalid dimensions for Mccf!");
     // if (micrograph_core_size < 100 * scale)
     // 	REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The micrograph is too small relative to the particle box!");
-    if (Yinit(Mccf) != Xmipp::init(YSIZE(Mccf)) || Xinit(Mccf) != Xmipp::init(XSIZE(Mccf)))
+    if (Yinit(Mccf) != Xmipp::init(Ysize(Mccf)) || Xinit(Mccf) != Xmipp::init(Xsize(Mccf)))
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
     if (Mccf.sameShape(Mclass) == false)
         REPORT_ERROR("autopicker.cpp::pickCCFPeaks: Mccf and Mclass should have the same shape!");
@@ -2115,8 +2115,8 @@ void AutoPicker::exportHelicalTubes(
         REPORT_ERROR("autopicker.cpp::exportHelicalTubes: BUG tube_coord_list.size() != tube_track_list.size() != tube_len_list.size()");
     }
     if (
-        Yinit(Mccf) != Xmipp::init(YSIZE(Mccf)) ||
-        Xinit(Mccf) != Xmipp::init(XSIZE(Mccf))
+        Yinit(Mccf) != Xmipp::init(Ysize(Mccf)) ||
+        Xinit(Mccf) != Xmipp::init(Xsize(Mccf))
     ) {
         REPORT_ERROR("autopicker.cpp::exportHelicalTubes: The origin of input 3D MultidimArray is not at the center (use v.setXmippOrigin() before calling this function)!");
     }
@@ -2321,8 +2321,8 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         Imic().setXmippOrigin();
 
         // Let's just check the square size again...
-        RFLOAT my_xsize = XSIZE(Imic());
-        RFLOAT my_ysize = YSIZE(Imic());
+        RFLOAT my_xsize = Xsize(Imic());
+        RFLOAT my_ysize = Ysize(Imic());
         RFLOAT my_size = std::max(my_xsize, my_ysize);
 
         if (
@@ -2377,7 +2377,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         windowFourierTransform(Faux, Fmic, workSize);
 
         if (LoG_use_ctf) {
-            MultidimArray<RFLOAT> Fctf(YSIZE(Fmic), XSIZE(Fmic));
+            MultidimArray<RFLOAT> Fctf(Ysize(Fmic), Xsize(Fmic));
             CTF ctf;
 
             // Search for this micrograph in the metadata table
@@ -2611,8 +2611,8 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #endif
     // Let's just check the square size again...
     RFLOAT my_size, my_xsize, my_ysize;
-    my_xsize = XSIZE(Imic());
-    my_ysize = YSIZE(Imic());
+    my_xsize = Xsize(Imic());
+    my_ysize = Ysize(Imic());
     my_size = std::max(my_xsize, my_ysize);
     if (extra_padding > 0)
     my_size += 2 * extra_padding;

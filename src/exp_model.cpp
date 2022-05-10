@@ -433,7 +433,7 @@ void Experiment::setScratchDirectory(FileName _fn_scratch, bool do_reuse_scratch
                 if (exists(fn_tmp)) {
                     Image<RFLOAT> Itmp;
                     Itmp.read(fn_tmp, false);
-                    nr_parts_on_scratch[optics_group] = NSIZE(Itmp());
+                    nr_parts_on_scratch[optics_group] = Nsize(Itmp());
                 }
                 #ifdef DEBUG_SCRATCH
                 if (verb > 0)
@@ -554,7 +554,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
             Image<RFLOAT> tmp;
             tmp.read(fn_img, false); // false means: only read the header!
             one_part_space = ZYXSIZE(tmp()) * sizeof(float); // MRC images are stored in floats!
-            if (is_3D != ZSIZE(tmp()) > 1) REPORT_ERROR("BUG: inconsistent is_3D values!");
+            if (is_3D != (Zsize(tmp()) > 1)) REPORT_ERROR("BUG: inconsistent is_3D values!");
             // add MRC header size for subtomograms, which are stored as 1 MRC file each
             if (is_3D) {
                 one_part_space += 1024;
@@ -661,13 +661,13 @@ void Experiment::read(
     #ifdef DEBUG_READ
     std::cerr << "Entering Experiment::read" << std::endl;
     Timer timer;
-    int tall = timer.setNew("ALL");
-    int tread = timer.setNew("read");
-    int tsort = timer.setNew("sort");
-    int tfill = timer.setNew("fill");
+    int tall   = timer.setNew("ALL");
+    int tread  = timer.setNew("read");
+    int tsort  = timer.setNew("sort");
+    int tfill  = timer.setNew("fill");
     int tgroup = timer.setNew("find group");
-    int tdef = timer.setNew("set defaults");
-    int tend = timer.setNew("ending");
+    int tdef   = timer.setNew("set defaults");
+    int tend   = timer.setNew("ending");
     char c;
     timer.tic(tall);
     timer.tic(tread);
@@ -693,15 +693,15 @@ void Experiment::read(
         if (fn_exp.contains(".mrc") && !fn_exp.contains(".mrcs"))
             REPORT_ERROR("Experiment::read: ERROR: MRC stacks of 2D images should be have extension .mrcs, not .mrc!");
 
-        // Read in header-only information to get the NSIZE of the stack
+        // Read in header-only information to get the Nsize of the stack
         Image<RFLOAT> img;
         img.read(fn_exp, false); // false means skip data, only read header
 
         // allocate 1 block of memory
-        particles.reserve(NSIZE(img()));
+        particles.reserve(Nsize(img()));
         nr_images_per_optics_group.resize(1, 0);
 
-        for (long int n = 0; n <  NSIZE(img()); n++) {
+        for (long int n = 0; n <  Nsize(img()); n++) {
             FileName fn_img;
             fn_img.compose(n+1, fn_exp); // fn_img = integerToString(n) + "@" + fn_exp;
             // Add the particle to my_area = 0

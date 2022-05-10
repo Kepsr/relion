@@ -187,8 +187,8 @@ void FlexAnalyser::setup3DModels() {
         // And do the same for the masks
         selfTranslate(model.masks_bodies[ibody], -model.com_bodies[ibody], DONT_WRAP);
 
-        if (size_3dmodels < XSIZE(model.Iref[ibody])) {
-            rescale_3dmodels = (RFLOAT)(size_3dmodels)/(RFLOAT)(XSIZE(model.Iref[ibody]));
+        if (size_3dmodels < Xsize(model.Iref[ibody])) {
+            rescale_3dmodels = (RFLOAT) size_3dmodels / (RFLOAT) Xsize(model.Iref[ibody]);
             std::cerr << " rescale_3dmodels= " << rescale_3dmodels << std::endl;
             selfScaleToSize(model.Iref[ibody], size_3dmodels, size_3dmodels, size_3dmodels);
             selfScaleToSize(model.masks_bodies[ibody], size_3dmodels, size_3dmodels, size_3dmodels);

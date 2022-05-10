@@ -175,7 +175,7 @@ void AccProjectorPlan::setup(
                 do_proceed = true;
             } else if (pdf_orientation > 0.0) {
                 long int nr_trans = itrans_max - itrans_min + 1;
-                for (long int ipart = 0; ipart < YSIZE(*Mcoarse_significant); ipart++) {
+                for (long int ipart = 0; ipart < Ysize(*Mcoarse_significant); ipart++) {
                     long int ihidden = iorient * nr_trans;
                     for (long int itrans = itrans_min; itrans <= itrans_max; itrans++, ihidden++) {
                         if (DIRECT_A2D_ELEM(*Mcoarse_significant, ipart, ihidden)) {

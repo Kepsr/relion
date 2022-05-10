@@ -130,32 +130,32 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
         // dataPtr != MULTIDIM_ARRAY(input) || 
         !fReal->sameShape(input);
 
-    fFourier.reshape(ZSIZE(input), YSIZE(input), XSIZE(input) / 2 + 1);
+    fFourier.reshape(Zsize(input), Ysize(input), Xsize(input) / 2 + 1);
     fReal = &input;
 
     if (recomputePlan) {
         int ndim = 3;
-        if (ZSIZE(input) == 1) {
+        if (Zsize(input) == 1) {
             ndim = 2;
-            if (YSIZE(input) == 1)
+            if (Ysize(input) == 1)
                 ndim = 1;
         }
         int *N = new int[ndim];
         switch (ndim) {
 
             case 1:
-            N[0] = XSIZE(input);
+            N[0] = Xsize(input);
             break;
 
             case 2:
-            N[0] = YSIZE(input);
-            N[1] = XSIZE(input);
+            N[0] = Ysize(input);
+            N[1] = Xsize(input);
             break;
 
             case 3:
-            N[0] = ZSIZE(input);
-            N[1] = YSIZE(input);
-            N[2] = XSIZE(input);
+            N[0] = Zsize(input);
+            N[1] = Ysize(input);
+            N[2] = Xsize(input);
             break;
 
         }
@@ -200,9 +200,9 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
 
     if (recomputePlan) {
         int ndim = 3;
-        if (ZSIZE(input) == 1) {
+        if (Zsize(input) == 1) {
             ndim = 2;
-            if (YSIZE(input) == 1)
+            if (Ysize(input) == 1)
                 ndim = 1;
         }
         int *N = new int[ndim];
@@ -210,18 +210,18 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
         switch (ndim) {
 
             case 1:
-            N[0] = XSIZE(input);
+            N[0] = Xsize(input);
             break;
 
             case 2:
-            N[0] = YSIZE(input);
-            N[1] = XSIZE(input);
+            N[0] = Ysize(input);
+            N[1] = Xsize(input);
             break;
 
             case 3:
-            N[0] = ZSIZE(input);
-            N[1] = YSIZE(input);
-            N[2] = XSIZE(input);
+            N[0] = Zsize(input);
+            N[1] = Ysize(input);
+            N[2] = Xsize(input);
             break;
 
         }
@@ -296,21 +296,21 @@ void ParFourierTransformer::inverseFourierTransform() {
 // Enforce Hermitian symmetry ---------------------------------------------
 void ParFourierTransformer::enforceHermitianSymmetry() {
     int ndim = 3;
-    if (ZSIZE(*fReal) == 1) {
+    if (Zsize(*fReal) == 1) {
         ndim = 2;
-        if (YSIZE(*fReal) == 1)
+        if (Ysize(*fReal) == 1)
             ndim = 1;
     }
-    long int yHalf = YSIZE(*fReal) / 2;
-    if (YSIZE(*fReal) % 2 == 0) { yHalf--; }
-    long int zHalf = ZSIZE(*fReal) / 2;
-    if (ZSIZE(*fReal) % 2 == 0) { zHalf--; }
+    long int yHalf = Ysize(*fReal) / 2;
+    if (Ysize(*fReal) % 2 == 0) { yHalf--; }
+    long int zHalf = Zsize(*fReal) / 2;
+    if (Zsize(*fReal) % 2 == 0) { zHalf--; }
 
     switch (ndim) {
 
         case 2:
         for (long int i = 1; i <= yHalf; i++) {
-            long int isym = wrap(-i, 0, YSIZE(*fReal) - 1);
+            long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
             Complex mean = 0.5 * (DIRECT_A2D_ELEM(fFourier, i, 0) + conj(DIRECT_A2D_ELEM(fFourier, isym, 0)));
             DIRECT_A2D_ELEM(fFourier, i,    0) = mean;
             DIRECT_A2D_ELEM(fFourier, isym, 0) = conj(mean);
@@ -318,17 +318,17 @@ void ParFourierTransformer::enforceHermitianSymmetry() {
         break;
 
         case 3:
-        for (long int k = 0; k < ZSIZE(*fReal); k++) {
-            long int ksym = wrap(-k, 0, ZSIZE(*fReal) - 1);
+        for (long int k = 0; k < Zsize(*fReal); k++) {
+            long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
             for (long int i = 1; i <= yHalf; i++) {
-                long int isym = wrap(-i, 0, YSIZE(*fReal) - 1);
+                long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
                 Complex mean = 0.5 * (DIRECT_A3D_ELEM(fFourier,k,i,0) + conj(DIRECT_A3D_ELEM(fFourier, ksym, isym, 0)));
                 DIRECT_A3D_ELEM(fFourier, k,    i,    0) = mean;
                 DIRECT_A3D_ELEM(fFourier, ksym, isym, 0) = conj(mean);
             }
         }
         for (long int k = 1; k <= zHalf; k++) {
-            long int ksym = wrap(-k, 0, ZSIZE(*fReal) - 1);
+            long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
             Complex mean = 0.5 * (DIRECT_A3D_ELEM(fFourier, k, 0, 0) + conj(DIRECT_A3D_ELEM(fFourier, ksym, 0, 0)));
             DIRECT_A3D_ELEM(fFourier, k,    0, 0) = mean;
             DIRECT_A3D_ELEM(fFourier, ksym, 0, 0) = conj(mean);

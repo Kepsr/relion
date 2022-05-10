@@ -54,10 +54,10 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
         ostrm << std::endl;
     }
 
-    for (int l = 0; l < NSIZE(v); l++) {
-        if (NSIZE(v) > 1) ostrm << "Image No. " << l << std::endl;
+    for (int l = 0; l < Nsize(v); l++) {
+        if (Nsize(v) > 1) ostrm << "Image No. " << l << std::endl;
         for (int k = Zinit(v); k <= Zlast(v); k++) {
-            if (ZSIZE(v) > 1) { ostrm << "Slice No. " << k << std::endl; }
+            if (Zsize(v) > 1) { ostrm << "Slice No. " << k << std::endl; }
             for (int i = Yinit(v); i <= Ylast(v); i++) {
                 for (int j = Xinit(v); j <= Xlast(v); j++)
                     ostrm << "(" << A3D_ELEM(v, k, i, j).real << "," << A3D_ELEM(v, k, i, j).imag <<")" << ' ';

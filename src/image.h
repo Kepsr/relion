@@ -355,7 +355,7 @@ class Image {
     FILE *fhed; // Image File header handler
     bool stayOpen; // To maintain the image file open after read/write
     bool dataflag;  // Control reading of the data
-    unsigned long i; // Current image number (may be > NSIZE)
+    unsigned long i; // Current image number (may be > Nsize)
     unsigned long offset; // Data offset
     int swap; // Perform byte swapping upon reading
     long int replaceNsize; // Stack size in the replace case
@@ -739,7 +739,7 @@ class Image {
         }
 
         if (mmapOn) {
-            if (NSIZE(data) > 1) {
+            if (Nsize(data) > 1) {
                 REPORT_ERROR(
                     (std::string) "Image<T>::" + __func__ + ": mmap with multiple \
                     images file not compatible. Try selecting a unique image."
@@ -767,10 +767,10 @@ class Image {
             const size_t pagemax = 1073741824; // 1 GB
             char *page = askMemory(std::max(pagesize, pagemax) * sizeof(char));
 
-            // Because we requested XYSIZE to be even for UHalf, this is always safe.
+            // Because we requested XYsize to be even for UHalf, this is always safe.
             if (fseek(fimg, myoffset, SEEK_SET) != 0) return -1;
 
-            for (size_t n = 0; n < NSIZE(data); n++) {
+            for (size_t n = 0; n < Nsize(data); n++) {
                 for (size_t j = 0; j < pagesize; j += pagemax) {
                     // pagesize size of object
                     // Read next page. Divide pages larger than pagemax
@@ -780,7 +780,7 @@ class Image {
                     size_t readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
 
                     #ifdef DEBUG
-                    std::cout << "NX = " << XSIZE(data) << " NY = " << YSIZE(data) << " NZ = " << ZSIZE(data) << std::endl;
+                    std::cout << "NX = " << Xsize(data) << " NY = " << Ysize(data) << " NZ = " << Zsize(data) << std::endl;
                     std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " readsize_n = " << readsize_n << std::endl;
                     #endif
 
@@ -897,10 +897,10 @@ class Image {
      */
     Dimensions getDimensions() const {
         Dimensions dimensions;
-        dimensions.x = XSIZE(data);
-        dimensions.y = YSIZE(data);
-        dimensions.z = ZSIZE(data);
-        dimensions.n = NSIZE(data);
+        dimensions.x = Xsize(data);
+        dimensions.y = Ysize(data);
+        dimensions.z = Zsize(data);
+        dimensions.n = Nsize(data);
         return dimensions;
     }
 
@@ -969,7 +969,7 @@ class Image {
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x);
         if (rate_y < 0.0) rate_y = rate_x;
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y);
-        if (ZSIZE(data) > 1) {
+        if (Zsize(data) > 1) {
             if (rate_z < 0.0) rate_z = rate_x;
             MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate_z);
         }
@@ -1039,7 +1039,7 @@ class Image {
         }
         o << std::endl;
 
-        o << "dimensions   : " << NSIZE(I()) << " x " << ZSIZE(I()) << " x " << YSIZE(I()) << " x " << XSIZE(I());
+        o << "dimensions   : " << Nsize(I()) << " x " << Zsize(I()) << " x " << Ysize(I()) << " x " << Xsize(I());
         o << "	(noObjects x slices x rows x columns)" << std::endl;
         return o;
     }

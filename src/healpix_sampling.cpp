@@ -1687,9 +1687,9 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
     if (!is_3D)
         return;
 
-    if (XSIZE(pdf_direction) != rot_angles.size()) {
-        std::cerr << " XSIZE(pdf_direction)= " << XSIZE(pdf_direction) << " rot_angles.size()= " << rot_angles.size() << std::endl;
-        REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution XSIZE(pdf_direction) != rot_angles.size()!");
+    if (Xsize(pdf_direction) != rot_angles.size()) {
+        std::cerr << " Xsize(pdf_direction)= " << Xsize(pdf_direction) << " rot_angles.size()= " << rot_angles.size() << std::endl;
+        REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution Xsize(pdf_direction) != rot_angles.size()!");
     }
 
     Stats<RFLOAT> stats = pdf_direction.computeStats();

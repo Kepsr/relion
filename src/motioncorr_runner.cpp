@@ -493,7 +493,7 @@ bool MotioncorrRunner::executeMotioncor2(Micrograph &mic, int rank) {
         // Read in header of the movie, to see how many frames it has
         Image<RFLOAT> Ihead;
         Ihead.read(fn_mic, false, -1, false, true); // select_img -1, mmap false, is_2D true
-        int n_frames = NSIZE(Ihead());
+        int n_frames = Nsize(Ihead());
 
         int trunc = n_frames - last_frame_sum;
         if (trunc < 0)
@@ -903,9 +903,9 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
     // Check image size
     if (!isEER) {
         Ihead.read(fn_mic, false, -1, false, true); // select_img -1, mmap false, is_2D true
-        nx = XSIZE(Ihead()); 
-        ny = YSIZE(Ihead()); 
-        nn = NSIZE(Ihead());
+        nx = Xsize(Ihead()); 
+        ny = Ysize(Ihead()); 
+        nn = Nsize(Ihead());
     } else {
         renderer.read(fn_mic, eer_upsampling);
         nx = renderer.getWidth(); 
@@ -976,8 +976,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             Igain.read(fn_gain_reference);
         }
 
-        if (XSIZE(Igain()) != nx || YSIZE(Igain()) != ny) {
-            std::cerr << "fn_mic: " << fn_mic << " nx = " << nx << " ny = " << ny << " gain nx = " << XSIZE(Igain()) << " gain ny = " << YSIZE(Igain()) <<  std::endl;
+        if (Xsize(Igain()) != nx || Ysize(Igain()) != ny) {
+            std::cerr << "fn_mic: " << fn_mic << " nx = " << nx << " ny = " << ny << " gain nx = " << Xsize(Igain()) << " gain ny = " << Ysize(Igain()) <<  std::endl;
             REPORT_ERROR("The size of the image and the size of the gain reference do not match. Make sure the gain reference has been rotated if necessary.");
         }
     }
@@ -1029,7 +1029,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         mean /=  YXSIZE(Isum);
         #pragma omp parallel for reduction(+:std) num_threads(n_threads)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
-            RFLOAT d = (DIRECT_MULTIDIM_ELEM(Isum, n) - mean);
+            RFLOAT d = DIRECT_MULTIDIM_ELEM(Isum, n) - mean;
             std += d * d;
         }
         std = std::sqrt(std / YXSIZE(Isum));
@@ -1178,8 +1178,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         }
         //#define DEBUG_PS
         #ifdef DEBUG_PS
-        std::cout << "size of Fframes: NX = " << XSIZE(Fframes[0]) << " NY = " << YSIZE(Fframes[0]) << std::endl;
-        std::cout << "size of PS_sum: NX = " << XSIZE(PS_sum()) << " NY = " << YSIZE(PS_sum()) << std::endl;
+        std::cout << "size of Fframes: NX = " << Xsize(Fframes[0]) << " NY = " << Ysize(Fframes[0]) << std::endl;
+        std::cout << "size of PS_sum: NX = " << Xsize(PS_sum()) << " NY = " << Ysize(PS_sum()) << std::endl;
         #endif
         RCTOC(TIMING_POWER_SPECTRUM_SUM);
 
@@ -1195,9 +1195,9 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             cropInFourierSpace(F_ps, F_ps_small);
             NewFFT::inverseFourierTransform(F_ps_small, PS_sum());
             #ifdef DEBUG_PS
-            std::cout << "size of F_ps: NX = " << XSIZE(F_ps) << " NY = " << YSIZE(F_ps) << std::endl;
-            std::cout << "size of F_ps_small: NX = " << XSIZE(F_ps_small) << " NY = " << YSIZE(F_ps_small) << std::endl;
-            std::cout << "size of PS_sum in square: NX = " << XSIZE(PS_sum()) << " NY = " << YSIZE(PS_sum()) << std::endl;
+            std::cout << "size of F_ps: NX = " << Xsize(F_ps) << " NY = " << Ysize(F_ps) << std::endl;
+            std::cout << "size of F_ps_small: NX = " << Xsize(F_ps_small) << " NY = " << Ysize(F_ps_small) << std::endl;
+            std::cout << "size of PS_sum in square: NX = " << Xsize(PS_sum()) << " NY = " << Ysize(PS_sum()) << std::endl;
             PS_sum.write("ps_test_square.mrc");
             #endif
         }
@@ -1208,11 +1208,11 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         Image<float> PS_sum_cropped;
         RCTICTOC(TIMING_POWER_SPECTRUM_CROP, ({
         ps_angpix = early_binning ? angpix * bin_factor : angpix;
-        int nx_needed = XSIZE(PS_sum());
+        int nx_needed = Xsize(PS_sum());
         if (ps_angpix < target_pixel_size) {
             nx_needed = ceil(ps_size_square * ps_angpix / target_pixel_size);
             nx_needed += nx_needed % 2;
-            ps_angpix = XSIZE(PS_sum()) * ps_angpix / nx_needed;
+            ps_angpix = Xsize(PS_sum()) * ps_angpix / nx_needed;
         }
         PS_sum_cropped = Image<float>(nx_needed, nx_needed);
         PS_sum().setXmippOrigin();
@@ -1221,7 +1221,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             A2D_ELEM(PS_sum_cropped(), i, j) = A2D_ELEM(PS_sum(), i, j);
 
         #ifdef DEBUG_PS
-        std::cout << "size of PS_sum_cropped: NX = " << XSIZE(PS_sum_cropped()) << " NY = " << YSIZE(PS_sum_cropped()) << std::endl;
+        std::cout << "size of PS_sum_cropped: NX = " << Xsize(PS_sum_cropped()) << " NY = " << Ysize(PS_sum_cropped()) << std::endl;
         std::cout << "nx_needed = " << nx_needed << std::endl;
         std::cout << "ps_angpix after cropping = " << ps_angpix << std::endl;
         PS_sum_cropped.write("ps_test_cropped.mrc");
@@ -1626,7 +1626,7 @@ void MotioncorrRunner::realSpaceInterpolation(
         ThirdOrderPolynomialModel *polynomial_model = (ThirdOrderPolynomialModel*) model;
         realSpaceInterpolation_ThirdOrderPolynomial(Isum, Iframes, *polynomial_model, logfile);
     } else {
-        const int nx = XSIZE(Iframes[0]()), ny = YSIZE(Iframes[0]());
+        const int nx = Xsize(Iframes[0]()), ny = Ysize(Iframes[0]());
         for (int iframe = 0; iframe < n_frames; iframe++) {
             logfile << "." << std::flush;
             const RFLOAT z = iframe;
@@ -1688,7 +1688,7 @@ void MotioncorrRunner::realSpaceInterpolation_ThirdOrderPolynomial(
     ThirdOrderPolynomialModel &model, std::ostream &logfile
 ) {
     const int n_frames = Iframes.size();
-    const int nx = XSIZE(Iframes[0]()), ny = YSIZE(Iframes[0]());
+    const int nx = Xsize(Iframes[0]()), ny = Ysize(Iframes[0]());
     const Matrix1D<RFLOAT> coeffX = model.coeffX, coeffY = model.coeffY;
 
     for (int iframe = 0; iframe < n_frames; iframe++) {
@@ -1817,7 +1817,7 @@ bool MotioncorrRunner::alignPatch(
     if (search_range * 2 + 1 > ccf_nx) { search_range = ccf_nx / 2 - 1; }
     if (search_range * 2 + 1 > ccf_ny) { search_range = ccf_ny / 2 - 1; }
 
-    const int nfx = XSIZE(Fframes[0]), nfy = YSIZE(Fframes[0]);
+    const int nfx = Xsize(Fframes[0]), nfy = Ysize(Fframes[0]);
     const int nfy_half = nfy / 2;
 
     Fref.reshape(ccf_nfy, ccf_nfx);
@@ -2007,7 +2007,7 @@ int MotioncorrRunner::findGoodSize(int request) {
 void MotioncorrRunner::doseWeighting(
     std::vector<MultidimArray<fComplex> > &Fframes, std::vector<RFLOAT> doses, RFLOAT apix
 ) {
-    const int nfx = XSIZE(Fframes[0]), nfy = YSIZE(Fframes[0]);
+    const int nfx = Xsize(Fframes[0]), nfy = Ysize(Fframes[0]);
     const int nfy_half = nfy / 2;
     const RFLOAT nfy2 = (RFLOAT) nfy * nfy;
     const RFLOAT nfx2 = (RFLOAT) (nfx - 1) * (nfx - 1) * 4; // assuming nx is even
@@ -2051,7 +2051,7 @@ void MotioncorrRunner::doseWeighting(
 void MotioncorrRunner::shiftNonSquareImageInFourierTransform(
     MultidimArray<fComplex> &frame, RFLOAT shiftx, RFLOAT shifty
 ) {
-    const int nfx = XSIZE(frame), nfy = YSIZE(frame);
+    const int nfx = Xsize(frame), nfy = Ysize(frame);
     const int nfy_half = nfy / 2;
     const RFLOAT twoPI = 2 * PI;
 
@@ -2110,7 +2110,7 @@ void MotioncorrRunner::shiftNonSquareImageInFourierTransform(
 
 // Iwork is overwritten
 void MotioncorrRunner::binNonSquareImage(Image<float> &Iwork, RFLOAT bin_factor) {
-    const int nx = XSIZE(Iwork()), ny = YSIZE(Iwork());
+    const int nx = Xsize(Iwork()), ny = Ysize(Iwork());
     int new_nx = nx / bin_factor, new_ny = ny / bin_factor;
     if (new_nx % 2 != 0 || new_ny % 2 != 0) {
         // Do not adjust the size because it might lead to non-square pixels
@@ -2155,7 +2155,7 @@ bool MotioncorrRunner::detectSerialEMDefectText(FileName fn_defect) {
 void MotioncorrRunner::fillDefectMask(
     MultidimArray<bool> &bBad, FileName fn_defect, int n_threads
 ) {
-    const int ny = YSIZE(bBad), nx = XSIZE(bBad);
+    const int ny = Ysize(bBad), nx = Xsize(bBad);
 
     FileName ext = fn_defect.getExtension();
     if (ext == "txt") {
@@ -2182,7 +2182,7 @@ void MotioncorrRunner::fillDefectMask(
         // Defect map
         Image<float> Idefect;
         Idefect.read(fn_defect);
-        if (ny != YSIZE(Idefect()) || nx != XSIZE(Idefect()))
+        if (ny != Ysize(Idefect()) || nx != Xsize(Idefect()))
             REPORT_ERROR("The size of the defect map is not the same as that of the movie.");
 
         #pragma omp parallel for num_threads(n_threads)

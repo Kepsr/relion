@@ -383,12 +383,12 @@ void CTF::getFftwImage(
         // From half to whole
         MultidimArray<RFLOAT> Mctf(oriydim_pad, orixdim_pad);
         Mctf.setXmippOrigin();
-        for (int i = 0 ; i < YSIZE(Fctf); i++) {
+        for (int i = 0 ; i < Ysize(Fctf); i++) {
             // Don't take the middle row of the half-transform
-            if (i != YSIZE(Fctf) / 2) {
-                int ip = i < XSIZE(Fctf) ? i : i - YSIZE(Fctf);
+            if (i != Ysize(Fctf) / 2) {
+                int ip = i < Xsize(Fctf) ? i : i - Ysize(Fctf);
                 // Don't take the last column from the half-transform
-                for (int j = 0; j < XSIZE(Fctf) - 1; j++) {
+                for (int j = 0; j < Xsize(Fctf) - 1; j++) {
                     // Make just one lookup on Fctf.data
                     RFLOAT fctfij = DIRECT_A2D_ELEM(Fctf, i, j);
                     if (ctf_premultiplied) {
@@ -406,12 +406,12 @@ void CTF::getFftwImage(
 
         Mctf.setXmippOrigin();
         // From whole to half
-        for (int i = 0 ; i < YSIZE(result); i++) {
+        for (int i = 0 ; i < Ysize(result); i++) {
             // Don't take the middle row of the half-transform
-            if (i != YSIZE(result) / 2) {
-                int ip = (i < XSIZE(result)) ? i : i - YSIZE(result);
+            if (i != Ysize(result) / 2) {
+                int ip = (i < Xsize(result)) ? i : i - Ysize(result);
                 // Don't take the last column from the half-transform
-                for (int j = 0; j < XSIZE(result) - 1; j++) {
+                for (int j = 0; j < Xsize(result) - 1; j++) {
                     // Make just one lookup on Mctf.data
                     RFLOAT mctfipj = A2D_ELEM(Mctf, ip, j);
                     if (ctf_premultiplied) {
@@ -520,14 +520,14 @@ void CTF::getCTFPImage(
             );
         }
 
-        // Why do we have i <= YSIZE(result) / 2 here, but i < XSIZE(result) below?
-        for (int i = 0, ip = 0; i < YSIZE(result); i++, ip = i <= YSIZE(result) / 2 ? i : i - YSIZE(result))
-        for (int j = 0, jp = 0; j < XSIZE(result); j++, jp = j) {
+        // Why do we have i <= Ysize(result) / 2 here, but i < Xsize(result) below?
+        for (int i = 0, ip = 0; i < Ysize(result); i++, ip = i <= Ysize(result) / 2 ? i : i - Ysize(result))
+        for (int j = 0, jp = 0; j < Xsize(result); j++, jp = j) {
             RFLOAT x = (RFLOAT) jp / xs;
             RFLOAT y = (RFLOAT) ip / ys;
             RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
             const int x0 = j;
-            const int y0 = i <= YSIZE(result) / 2 ? ip : YSIZE(gammaOffset.data) + ip;
+            const int y0 = i <= Ysize(result) / 2 ? ip : Ysize(gammaOffset.data) + ip;
 
             DIRECT_A2D_ELEM(result, i, j) = getCTFP(
                 x, y,
@@ -537,9 +537,9 @@ void CTF::getCTFPImage(
         }
     } else {
         // FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-        for (long int i = 0, ip = 0; i < YSIZE(result); i++, ip = i < XSIZE(result) ? i : i - YSIZE(result)) \
-        for (long int j = 0, jp = 0; j < XSIZE(result); j++, jp = j) {
-            // If i < XSIZE(result), ip = i. Else, ip = i - YSIZE(result).
+        for (long int i = 0, ip = 0; i < Ysize(result); i++, ip = i < Xsize(result) ? i : i - Ysize(result)) \
+        for (long int j = 0, jp = 0; j < Xsize(result); j++, jp = j) {
+            // If i < Xsize(result), ip = i. Else, ip = i - Ysize(result).
             RFLOAT x = (RFLOAT) jp / xs;
             RFLOAT y = (RFLOAT) ip / ys;
             RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
@@ -552,7 +552,7 @@ void CTF::getCTFPImage(
     }
     // Special line along the vertical (Y-)axis, where FFTW stores both Friedel mates and Friedel symmetry needs to remain
     if (angle == 0.0) {
-        int dim = YSIZE(result);
+        int dim = Ysize(result);
 
         for (int i = dim / 2 + 1; i < dim; i++) {
             DIRECT_A2D_ELEM(result, i, 0) = conj(DIRECT_A2D_ELEM(result, dim - i, 0));
@@ -566,8 +566,8 @@ void CTF::getCenteredImage(
     bool do_damping, bool do_intact_after_first_peak
 ) {
     result.setXmippOrigin();
-    RFLOAT xs = (RFLOAT) XSIZE(result) * Tm;
-    RFLOAT ys = (RFLOAT) YSIZE(result) * Tm;
+    RFLOAT xs = (RFLOAT) Xsize(result) * Tm;
+    RFLOAT ys = (RFLOAT) Ysize(result) * Tm;
 
     FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
         RFLOAT x = (RFLOAT) j / xs;
@@ -587,7 +587,7 @@ void CTF::get1DProfile(
 ) {
 
     result.setXmippOrigin();
-    RFLOAT xs = (RFLOAT) XSIZE(result) * Tm; // assuming result is at the image size!
+    RFLOAT xs = (RFLOAT) Xsize(result) * Tm; // assuming result is at the image size!
 
     FOR_ALL_ELEMENTS_IN_ARRAY1D(result) {
         RFLOAT x = (RFLOAT) i * cos(radians(angle)) / xs;

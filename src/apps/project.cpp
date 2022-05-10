@@ -160,7 +160,7 @@ class project_parameters {
             MDopt.setValue(EMDL::CTF_CS, 2.7);
             angpix = vol.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
             MDopt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix);
-            MDopt.setValue(EMDL::IMAGE_SIZE, XSIZE(vol()));
+            MDopt.setValue(EMDL::IMAGE_SIZE, Xsize(vol()));
             int mydim = do_3d_rot ? 3 : 2;
             MDopt.setValue(EMDL::IMAGE_DIMENSIONALITY, mydim);
 
@@ -193,20 +193,20 @@ class project_parameters {
         }
 
         // Now that we have the size of the volume, check r_max
-        r_max = maxres < 0.0 ? XSIZE(vol()) : ceil(XSIZE(vol()) * angpix / maxres);
+        r_max = maxres < 0.0 ? Xsize(vol()) : ceil(Xsize(vol()) * angpix / maxres);
 
         // Set right size of F2D and initialize to zero
         if (do_3d_rot) {
-            img().resize(ZSIZE(vol()), YSIZE(vol()), XSIZE(vol()));
+            img().resize(Zsize(vol()), Ysize(vol()), Xsize(vol()));
         } else {
-            img().resize(YSIZE(vol()), XSIZE(vol()));
+            img().resize(Ysize(vol()), Xsize(vol()));
         }
         transformer.setReal(img());
         transformer.getFourierAlias(F2D);
 
         // Set up the projector
         int data_dim = (do_3d_rot) ? 3 : 2;
-        Projector projector((int) XSIZE(vol()), interpolator, padding_factor, r_min_nn, data_dim);
+        Projector projector((int) Xsize(vol()), interpolator, padding_factor, r_min_nn, data_dim);
         projector.computeFourierTransformMap(vol(), dummy, 2* r_max);
 
         if (do_only_one) {
@@ -220,9 +220,9 @@ class project_parameters {
                 if (do_3d_rot) {
                     shift.resize(3);
                     ZZ(shift) = -zoff;
-                    shiftImageInFourierTransform(F2D, F2D, XSIZE(vol()), XX(shift), YY(shift), ZZ(shift));
+                    shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift));
                 } else {
-                    shiftImageInFourierTransform(F2D, F2D, XSIZE(vol()), XX(shift), YY(shift));
+                    shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift));
                 }
             }
 
@@ -232,7 +232,7 @@ class project_parameters {
                     REPORT_ERROR("ERROR: Only add --white_noise to a single image!");
                 // fftw normalization and factor sqrt(2) for two-dimensionality of complex plane
                 // TODO: sqrt(2) ??? Why ???
-                stddev_white_noise /= data_dim == 3 ? XSIZE(vol()) * XSIZE(vol()) : XSIZE(vol()) * sqrt(2);
+                stddev_white_noise /= data_dim == 3 ? Xsize(vol()) * Xsize(vol()) : Xsize(vol()) * sqrt(2);
                 // Add white noise
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
                     DIRECT_A3D_ELEM(F2D, k, i, j).real += rnd_gaus(0.0, stddev_white_noise);
@@ -257,7 +257,7 @@ class project_parameters {
                 if (fn_model != "") {
                     model.read(fn_model);
                 } else if (stddev_white_noise > 0.) {
-                    stddev_white_noise /= XSIZE(vol()) * sqrt(2); // fftw normalization and factor sqrt(2) for two-dimensionality of complex plane
+                    stddev_white_noise /= Xsize(vol()) * sqrt(2); // fftw normalization and factor sqrt(2) for two-dimensionality of complex plane
                 } else {
                     REPORT_ERROR("ERROR: When adding noise provide either --model_noise or --white_noise");
                 }
@@ -290,9 +290,9 @@ class project_parameters {
                     if (do_3d_rot) {
                         shift.resize(3);
                         ZZ(shift) = -zoff;
-                        shiftImageInFourierTransform(F2D, F2D, XSIZE(vol()), XX(shift), YY(shift), ZZ(shift) );
+                        shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift) );
                     } else {
-                        shiftImageInFourierTransform(F2D, F2D, XSIZE(vol()), XX(shift), YY(shift));
+                        shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift));
                     }
                 }
 
@@ -307,16 +307,16 @@ class project_parameters {
                         Fctf.resize(F2D);
 
                         // If there is a redundant half, get rid of it
-                        if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+                        if (Xsize(Ictf()) == Ysize(Ictf())) {
                             Ictf().setXmippOrigin();
                             // Set the CTF-image in Fctf
                             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                 // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                                 DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                             }
-                        } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+                        } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                             // otherwise, just window the CTF to the current resolution
-                            windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                            windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
                         } else {
                             // if dimensions are neither cubical nor FFTW, stop
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -324,7 +324,7 @@ class project_parameters {
                     } else {
                         CTF ctf = CTF(MDang, &obsModel); // This MDimg only contains one particle!
                         Fctf.resize(F2D);
-                        ctf.getFftwImage(Fctf, XSIZE(vol()), XSIZE(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
+                        ctf.getFftwImage(Fctf, Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                     }
 
                     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
@@ -445,9 +445,9 @@ class project_parameters {
                         if (do_3d_rot) {
                             shift.resize(3);
                             ZZ(shift) = -zoff;
-                            shiftImageInFourierTransform(F2D, F2D, XSIZE(vol()), XX(shift), YY(shift), ZZ(shift) );
+                            shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift) );
                         } else {
-                            shiftImageInFourierTransform(F2D, F2D, XSIZE(vol()), XX(shift), YY(shift));
+                            shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift));
                         }
                     }
 
@@ -460,15 +460,15 @@ class project_parameters {
                             Ictf().setXmippOrigin();
 
                             // If there is a redundant half, get rid of it
-                            if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+                            if (Xsize(Ictf()) == Ysize(Ictf())) {
                                 Ictf().setXmippOrigin();
                                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                                     DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                                 }
-                            } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+                            } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                                 // otherwise, just window the CTF to the current resolution
-                                windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                                windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
                             } else {
                                 // if dimensions are neither cubical nor FFTW, stop
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -476,7 +476,7 @@ class project_parameters {
                         } else {
                             CTF ctf = CTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
                             Fctf.resize(F2D);
-                            ctf.getFftwImage(Fctf, XSIZE(vol()), XSIZE(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
+                            ctf.getFftwImage(Fctf, Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                         }
 
                         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {

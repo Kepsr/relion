@@ -1001,8 +1001,8 @@ void duplicateLocalSymmetry(
             REPORT_ERROR("ERROR: mask " + std::string(fn_masks[0]) + " does not exist!");
         mask.read(fn_masks[0], false);
         if (
-            NSIZE(mask()) != 1 || ZSIZE(mask()) <= 1 ||
-            YSIZE(mask()) <= 1 || XSIZE(mask()) <= 1
+            Nsize(mask()) != 1 || Zsize(mask()) <= 1 ||
+            Ysize(mask()) <= 1 || Xsize(mask()) <= 1
         ) REPORT_ERROR("ERROR: input mask is not 3D!");
 
         out_map.initZeros(mask());
@@ -1020,8 +1020,8 @@ void duplicateLocalSymmetry(
         mask.clear();
         mask.read(fn_masks[imask]);
         if (
-            NSIZE(out_map) != NSIZE(mask()) || ZSIZE(out_map) != ZSIZE(mask()) ||
-            YSIZE(out_map) != YSIZE(mask()) || XSIZE(out_map) != XSIZE(mask())
+            Nsize(out_map) != Nsize(mask()) || Zsize(out_map) != Zsize(mask()) ||
+            Ysize(out_map) != Ysize(mask()) || Xsize(out_map) != Xsize(mask())
         ) REPORT_ERROR("ERROR: All masks (and input map) should have the same sizes!");
         // Masks and the original map may not have the same origin!
         mask().copyShape(out_map); // VERY IMPORTANT!
@@ -1079,8 +1079,8 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
     sym_map.clear();
 
     if (
-        NSIZE(ori_map) != 1 || ZSIZE(ori_map) <= 1 ||
-        YSIZE(ori_map) <= 1 || XSIZE(ori_map) <= 1
+        Nsize(ori_map) != 1 || Zsize(ori_map) <= 1 ||
+        Ysize(ori_map) <= 1 || Xsize(ori_map) <= 1
     ) REPORT_ERROR("ERROR: input unsymmetrised map is not 3D!");
     // Support 3D maps which are not cubic
     // Support 3D maps and masks which do not share the same origins
@@ -1131,8 +1131,8 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
         mask.clear();
         mask.read(fn_masks[imask]);
         if (
-            NSIZE(ori_map) != NSIZE(mask()) || ZSIZE(ori_map) != ZSIZE(mask()) ||
-            YSIZE(ori_map) != YSIZE(mask()) || XSIZE(ori_map) != XSIZE(mask())
+            Nsize(ori_map) != Nsize(mask()) || Zsize(ori_map) != Zsize(mask()) ||
+            Ysize(ori_map) != Ysize(mask()) || Xsize(ori_map) != Xsize(mask())
         ) REPORT_ERROR("ERROR: sizes of input and masks do not match!");
         // Masks and the original map may not have the same origin!
         mask().copyShape(ori_map); // VERY IMPORTANT!
@@ -1215,9 +1215,9 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
     if (radius > 0.0) {
         radius2 = radius * radius;
         radiusw2 = (radius + cosine_width_pix) * (radius + cosine_width_pix);
-        xinit = Xmipp::init(XSIZE(sym_map));
-        yinit = Xmipp::init(YSIZE(sym_map));
-        zinit = Xmipp::init(ZSIZE(sym_map));
+        xinit = Xmipp::init(Xsize(sym_map));
+        yinit = Xmipp::init(Ysize(sym_map));
+        zinit = Xmipp::init(Zsize(sym_map));
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(sym_map) {
             dist2 = (k + zinit) * (k + zinit) + (i + yinit) * (i + yinit) + (j + xinit) * (j + xinit);
@@ -1258,7 +1258,7 @@ void getMinCropSize(
     center.initZeros(3);
     new_center.initZeros(3);
 
-    if (NSIZE(vol) != 1 || ZSIZE(vol) <= 1 || YSIZE(vol) <= 1 || XSIZE(vol) <= 1)
+    if (Nsize(vol) != 1 || Zsize(vol) <= 1 || Ysize(vol) <= 1 || Xsize(vol) <= 1)
         REPORT_ERROR("ERROR: input mask is not 3D!");
 
     vol.setXmippOrigin();
@@ -1673,11 +1673,11 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     img.read(fn_in);
     //img().setXmippOrigin();
     if (
-        ZSIZE(img()) <= 10 || YSIZE(img()) <= 10 || XSIZE(img()) <= 10 ||
-        NSIZE(img()) != 1
+        Zsize(img()) <= 10 || Ysize(img()) <= 10 || Xsize(img()) <= 10 ||
+        Nsize(img()) != 1
     ) REPORT_ERROR("ERROR: Image file " + fn_in + " is an invalid 3D map! (< 10 X 10 X 10 pixels)");
 
-    if (XSIZE(img()) != YSIZE(img()) || XSIZE(img()) != ZSIZE(img()))
+    if (Xsize(img()) != Ysize(img()) || Xsize(img()) != Zsize(img()))
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
     x_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
     y_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y);
@@ -1730,9 +1730,9 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
                 zz = ZZ(vec1) + dz; yy = YY(vec1) + dy; xx = XX(vec1) + dx;
 
                 if (
-                    zz < 0 || zz >= ZSIZE(vol_rec) ||
-                    yy < 0 || yy >= YSIZE(vol_rec) ||
-                    xx < 0 || xx >= XSIZE(vol_rec)
+                    zz < 0 || zz >= Zsize(vol_rec) ||
+                    yy < 0 || yy >= Ysize(vol_rec) ||
+                    xx < 0 || xx >= Xsize(vol_rec)
                 ) continue;
 
                 if (DIRECT_A3D_ELEM(vol_rec, zz, yy, xx) == 0) {
@@ -1822,9 +1822,9 @@ void separateMasksKMeans(
     // Read the header of input map
     img.read(fn_in);
     img().setXmippOrigin();
-    if ((NSIZE(img()) != 1) || (ZSIZE(img()) <= 10) || (YSIZE(img()) <= 10) || (XSIZE(img()) <= 10))
+    if ((Nsize(img()) != 1) || (Zsize(img()) <= 10) || (Ysize(img()) <= 10) || (Xsize(img()) <= 10))
         REPORT_ERROR("ERROR: Image file " + fn_in + " is an invalid 3D map! (< 10 X 10 X 10 pixels)");
-    if ( (XSIZE(img()) != YSIZE(img())) || (XSIZE(img()) != ZSIZE(img())) )
+    if ( (Xsize(img()) != Ysize(img())) || (Xsize(img()) != Zsize(img())) )
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
     x_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
     y_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
@@ -1901,9 +1901,9 @@ void separateMasksKMeans(
     //Euler_angles2matrix(a, b, g, mat);
     //for (int ii = 0; ii < K; ii++)
     //{
-    //    z = RFLOAT(ii) * RFLOAT(ZSIZE(img())) / RFLOAT(K) + RFLOAT(Zinit(img()));
-    //    y = rnd_unif(0., YSIZE(img())) + RFLOAT(Yinit(img()));
-    //    x = rnd_unif(0., XSIZE(img())) + RFLOAT(Xinit(img()));
+    //    z = RFLOAT(ii) * RFLOAT(Zsize(img())) / RFLOAT(K) + RFLOAT(Zinit(img()));
+    //    y = rnd_unif(0., Ysize(img())) + RFLOAT(Yinit(img()));
+    //    x = rnd_unif(0., Xsize(img())) + RFLOAT(Xinit(img()));
     //    z /= sqrt(3.); y /= sqrt(3.); x /= sqrt(3.);
 
     //    ocen[ii] = mat * vectorR3(x, y, z);
@@ -2111,7 +2111,7 @@ void local_symmetry_parameters::run() {
         unsym_map.read(fn_unsym);
         // sym_map.clear();
 
-        int box_size = std::min({XSIZE(unsym_map()), YSIZE(unsym_map()), ZSIZE(unsym_map())});  // copy-list-initialisation (C++11)
+        int box_size = std::min({Xsize(unsym_map()), Ysize(unsym_map()), Zsize(unsym_map())});  // copy-list-initialisation (C++11)
 
         applyLocalSymmetry(sym_map(), unsym_map(), fn_mask_list, op_list, (RFLOAT(box_size) * sphere_percentage) / 2.0, width_edge_pix);
         sym_map().setXmippOrigin();

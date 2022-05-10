@@ -298,10 +298,10 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     /// FIXME: TO BE DONE WITH rwCCP4!!
     // set_CCP4_machine_stamp(header->machst);
-    long int Xdim = XSIZE(data);
-    long int Ydim = YSIZE(data);
-    long int Zdim = ZSIZE(data);
-    long int Ndim = NSIZE(data);
+    long int Xdim = Xsize(data);
+    long int Ydim = Ysize(data);
+    long int Zdim = Zsize(data);
+    long int Ndim = Nsize(data);
     long int imgStart = 0;
     long int imgEnd = Ndim;
     if (img_select != -1) {
@@ -457,7 +457,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     char* fdata = (char*)askMemory(datasize);
     //think about writing in several chunks
 
-    if (NSIZE(data) == 1 && mode == WRITE_OVERWRITE) {
+    if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
         castPage2Datatype(fdata, MULTIDIM_ARRAY(data), output_type, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
     } else {

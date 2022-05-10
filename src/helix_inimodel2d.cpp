@@ -188,7 +188,7 @@ void HelixAligner::initialise() {
         float deg_per_pixel = 180.0 * angpix / crossover_distance;
         Image<RFLOAT> vol;
         vol().resize(ori_size, ori_size, ori_size);
-        for (int k = 0; k < ZSIZE(vol()); k++) {
+        for (int k = 0; k < Zsize(vol()); k++) {
             float ang = deg_per_pixel * k;
             Matrix2D<RFLOAT> Arot;
             rotation2DMatrix(ang, Arot);
@@ -444,18 +444,18 @@ void HelixAligner::getHelicesFromMics() {
                         RFLOAT wx, wy;
 
                         // Find center and limits of image
-                        int cen_y  = (int) (YSIZE(Ihelix) / 2);
-                        int cen_x  = (int) (XSIZE(Ihelix) / 2);
-                        int cen_yp = (int) (YSIZE(Imic()) / 2);
-                        int cen_xp = (int) (XSIZE(Imic()) / 2);
+                        int cen_y  = (int) (Ysize(Ihelix) / 2);
+                        int cen_x  = (int) (Xsize(Ihelix) / 2);
+                        int cen_yp = (int) (Ysize(Imic()) / 2);
+                        int cen_xp = (int) (Xsize(Imic()) / 2);
                         RFLOAT minxp  = 0;
                         RFLOAT minyp  = 0;
-                        RFLOAT maxxp  = XSIZE(Imic()) - 1;
-                        RFLOAT maxyp  = YSIZE(Imic()) - 1;
-                        int Xdim   = XSIZE(Imic());
-                        int Ydim   = YSIZE(Imic());
+                        RFLOAT maxxp  = Xsize(Imic()) - 1;
+                        RFLOAT maxyp  = Ysize(Imic()) - 1;
+                        int Xdim   = Xsize(Imic());
+                        int Ydim   = Ysize(Imic());
 
-                        for (int i = 0; i < YSIZE(Ihelix); i++) {
+                        for (int i = 0; i < Ysize(Ihelix); i++) {
                             // Calculate position of the beginning of the row in the output image
                             x = -cen_x;
                             y = i - cen_y;
@@ -467,7 +467,7 @@ void HelixAligner::getHelicesFromMics() {
                             xp = x * Arot(0, 0) + y * Arot(0, 1) + Arot(0, 2);
                             yp = x * Arot(1, 0) + y * Arot(1, 1) + Arot(1, 2);
 
-                            for (int j = 0; j < XSIZE(Ihelix); j++) {
+                            for (int j = 0; j < Xsize(Ihelix); j++) {
                                 bool interp;
                                 RFLOAT tmp;
 
@@ -540,8 +540,8 @@ void HelixAligner::getHelicesFromMics() {
                         if (down_angpix > angpix) {
                             RFLOAT avg = Idown.average();
 
-                            int oldxsize = XSIZE(Idown);
-                            int oldysize = YSIZE(Idown);
+                            int oldxsize = Xsize(Idown);
+                            int oldysize = Ysize(Idown);
                             int oldsize = oldxsize;
 
                             if (oldxsize != oldysize) {
@@ -620,31 +620,31 @@ void HelixAligner::initialiseClasses() {
 
         Image<RFLOAT> Iref;
         Iref.read(fn_inimodel);
-        resizeMap(Iref(), YSIZE(model.Aref[0]));
+        resizeMap(Iref(), Ysize(model.Aref[0]));
         Iref().setXmippOrigin();
         std::cerr << " model.Arec.size()= " << model.Arec.size() << std::endl;
         model.Arec[0] = Iref();
         // Now project the reconstruction back out into the model.Aref[iclass]
-        Projector PP(YSIZE(model.Aref[0]), TRILINEAR, 2, 1, 1);
+        Projector PP(Ysize(model.Aref[0]), TRILINEAR, 2, 1, 1);
         // Set the FT of img inside the Projector
         MultidimArray<RFLOAT> dummy;
-        PP.computeFourierTransformMap(Iref(), dummy, YSIZE(model.Aref[0]), 1);
+        PP.computeFourierTransformMap(Iref(), dummy, Ysize(model.Aref[0]), 1);
 
         // Calculate all projected lines
-        for (int j = 0; j < XSIZE(model.Aref[0]); j++) {
+        for (int j = 0; j < Xsize(model.Aref[0]); j++) {
             Matrix2D<RFLOAT> A2D;
-            MultidimArray<RFLOAT> myline(YSIZE(model.Aref[0]));
-            MultidimArray<Complex> myFline(YSIZE(model.Aref[0])/2 + 1);
+            MultidimArray<RFLOAT> myline(Ysize(model.Aref[0]));
+            MultidimArray<Complex> myFline(Ysize(model.Aref[0])/2 + 1);
             FourierTransformer transformer;
 
-            RFLOAT rot = (RFLOAT)j * 360.0 / (XSIZE(model.Aref[0]));
+            RFLOAT rot = (RFLOAT)j * 360.0 / (Xsize(model.Aref[0]));
             rotation2DMatrix(rot, A2D);
             PP.get2DFourierTransform(myFline, A2D);
             transformer.inverseFourierTransform(myFline,myline);
             // Shift the image back to the center...
             myline.setXmippOrigin();
             CenterFFT(myline, false);
-            for (int i = 0; i < YSIZE(model.Aref[0]); i++)
+            for (int i = 0; i < Ysize(model.Aref[0]); i++)
                 DIRECT_A2D_ELEM(model.Aref[0], i, j) = DIRECT_A1D_ELEM(myline, i);
         }
 
@@ -888,12 +888,12 @@ void HelixAligner::reconstruct2D(int iclass) {
 
     // Loop over the length of the helix to get the transforms of all 1D images
     std::vector<MultidimArray<Complex> > myFlines;
-    for (int j = 0; j < XSIZE(model.Aref[iclass]); j++) {
-        MultidimArray<RFLOAT> myline(YSIZE(model.Aref[iclass]));
+    for (int j = 0; j < Xsize(model.Aref[iclass]); j++) {
+        MultidimArray<RFLOAT> myline(Ysize(model.Aref[iclass]));
         MultidimArray<Complex> myFline;
         FourierTransformer transformer;
 
-        for (int i = 0; i < YSIZE(model.Aref[iclass]); i++)
+        for (int i = 0; i < Ysize(model.Aref[iclass]); i++)
             DIRECT_A1D_ELEM(myline, i) = DIRECT_A2D_ELEM(model.Aref[iclass], i, j);
 
         CenterFFT(myline, true);
@@ -902,12 +902,12 @@ void HelixAligner::reconstruct2D(int iclass) {
     }
 
     // Then reconstruct
-    BackProjector BP(YSIZE(model.Aref[iclass]), 2, "C1", TRILINEAR, 2, 1, 0, 1.9, 15, 1, false);
-    BP.initialiseDataAndWeight(YSIZE(model.Aref[iclass]));
+    BackProjector BP(Ysize(model.Aref[iclass]), 2, "C1", TRILINEAR, 2, 1, 0, 1.9, 15, 1, false);
+    BP.initialiseDataAndWeight(Ysize(model.Aref[iclass]));
 
     for (int j = 0; j < myFlines.size(); j++) {
         Matrix2D<RFLOAT> A2D;
-        RFLOAT rot = (RFLOAT) j * 360.0 / XSIZE(model.Aref[iclass]);
+        RFLOAT rot = (RFLOAT) j * 360.0 / Xsize(model.Aref[iclass]);
         rotation2DMatrix(rot, A2D);
         BP.set2DFourierTransform(myFlines[j], A2D);
     }
@@ -947,17 +947,17 @@ void HelixAligner::reconstruct2D(int iclass) {
     #endif
 
     // Now project the reconstruction back out into the model.Aref[iclass]
-    Projector PP(YSIZE(model.Aref[iclass]), TRILINEAR, 2, 1, 1);
+    Projector PP(Ysize(model.Aref[iclass]), TRILINEAR, 2, 1, 1);
     // Set the FT of img inside the Projector
-    PP.computeFourierTransformMap(model.Arec[iclass], dummy, YSIZE(model.Aref[iclass]), 1);
+    PP.computeFourierTransformMap(model.Arec[iclass], dummy, Ysize(model.Aref[iclass]), 1);
 
     // Calculate all projected lines
     for (int j = 0; j < myFlines.size(); j++) {
         Matrix2D<RFLOAT> A2D;
-        MultidimArray<RFLOAT> myline(YSIZE(model.Aref[iclass]));
+        MultidimArray<RFLOAT> myline(Ysize(model.Aref[iclass]));
         FourierTransformer transformer;
 
-        RFLOAT rot = (RFLOAT) j * 360.0 / XSIZE(model.Aref[iclass]);
+        RFLOAT rot = (RFLOAT) j * 360.0 / Xsize(model.Aref[iclass]);
         rotation2DMatrix(rot, A2D);
         myFlines[j].initZeros();
         PP.get2DFourierTransform(myFlines[j], A2D);
@@ -965,7 +965,7 @@ void HelixAligner::reconstruct2D(int iclass) {
         // Shift the image back to the center...
         CenterFFT(myline, false);
 
-        for (int i = 0; i < YSIZE(model.Aref[iclass]); i++)
+        for (int i = 0; i < Ysize(model.Aref[iclass]); i++)
              DIRECT_A2D_ELEM(model.Aref[iclass], i, j) = DIRECT_A1D_ELEM(myline, i);
 
     }
@@ -1050,7 +1050,7 @@ void HelixAligner::reconstruct3D() {
         // The 3D reconstruction
         float deg_per_pixel = 180.0 * angpix / crossover_distance;
         Ic().resize(ori_size, ori_size, ori_size);
-        for (int k = 0; k < ZSIZE(Ic()); k++) {
+        for (int k = 0; k < Zsize(Ic()); k++) {
             float ang = deg_per_pixel * k;
             Matrix2D<RFLOAT> Arot;
             rotation2DMatrix(ang, Arot);

@@ -345,7 +345,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     //think about writing in several chucks
 
     //write only once, ignore select_img
-    if (NSIZE(data) == 1 && mode == WRITE_OVERWRITE) {
+    if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
         castPage2Datatype(fdata, MULTIDIM_ARRAY(data), Float, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
     } else {

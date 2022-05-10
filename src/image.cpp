@@ -83,10 +83,10 @@ void normalise(
 ) {
     RFLOAT avg, stddev;
 
-    if (2 * bg_radius > XSIZE(I()))
+    if (2 * bg_radius > Xsize(I()))
         REPORT_ERROR("normalise ERROR: 2*bg_radius is larger than image size!");
 
-    if (is_helical_segment && 2 * (helical_mask_tube_outer_radius_pix + 1) > XSIZE(I()))
+    if (is_helical_segment && 2 * (helical_mask_tube_outer_radius_pix + 1) > Xsize(I()))
         REPORT_ERROR("normalise ERROR: Diameter of helical tube is larger than image size!");
 
     if (is_helical_segment && I().getDim() == 2) { tilt_deg = 0.0; }
@@ -334,7 +334,7 @@ void invert_contrast(Image<RFLOAT> &I) {
 }
 
 void rescale(Image<RFLOAT> &I, int mysize) {
-    int olddim = XSIZE(I());
+    int olddim = Xsize(I());
 
     resizeMap(I(), mysize);
 

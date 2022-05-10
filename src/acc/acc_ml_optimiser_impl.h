@@ -326,11 +326,11 @@ void getFourierTransformsAndCtfs(
 
 
                 // Remap mymodel.sigma2_noise[group_id] onto remapped_sigma2_noise for this images's size and angpix
-                MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(XSIZE(img()) / 2 + 1);
+                MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(Xsize(img()) / 2 + 1);
                 RFLOAT remap_image_sizes = (baseMLO->image_full_size[optics_group] * my_pixel_size) / (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size);
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(baseMLO->mymodel.sigma2_noise[group_id]) {
                     int i_remap = round(remap_image_sizes * i);
-                    if (i_remap < XSIZE(remapped_sigma2_noise)) {
+                    if (i_remap < Xsize(remapped_sigma2_noise)) {
                         DIRECT_A1D_ELEM(remapped_sigma2_noise, i_remap) = DIRECT_A1D_ELEM(baseMLO->mymodel.sigma2_noise[group_id], i);
                     }
                 }
@@ -683,15 +683,15 @@ void getFourierTransformsAndCtfs(
                 CTICTOC(accMLO->timer, "CTFSet3D_array", ({
 
                 // If there is a redundant half, get rid of it
-                if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+                if (Xsize(Ictf()) == Ysize(Ictf())) {
                     Ictf().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                         // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                         DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                     }
-                } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+                } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution
-                    windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                    windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
                 } else {
                     // if dimensions are neither cubical nor FFTW, stop
                     REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -1571,7 +1571,7 @@ void convertAllSquaredDifferencesToWeights(
     }
 
     if (exp_ipass == 0) {
-        op.Mcoarse_significant.resizeNoCp(1, 1, sp.nr_images, XSIZE(op.Mweight));
+        op.Mcoarse_significant.resizeNoCp(1, 1, sp.nr_images, Xsize(op.Mweight));
     }
 
     XFLOAT my_significant_weight;
@@ -1624,7 +1624,7 @@ void convertAllSquaredDifferencesToWeights(
             my_significant_weight = 0.999;
             DIRECT_A2D_ELEM(baseMLO->exp_metadata, my_metadata_offset, METADATA_NR_SIGN) = 1.0;
             if (exp_ipass == 0) { // TODO better memset, 0 => false , 1 => true
-                for (int ihidden = 0; ihidden < XSIZE(op.Mcoarse_significant); ihidden++)
+                for (int ihidden = 0; ihidden < Xsize(op.Mcoarse_significant); ihidden++)
                     DIRECT_A2D_ELEM(op.Mcoarse_significant, img_id, ihidden) = DIRECT_A2D_ELEM(op.Mweight, img_id, ihidden) >= my_significant_weight;
             } else {
                 std::pair<size_t, XFLOAT> max_pair = AccUtilities::getArgMaxOnDevice<XFLOAT>(PassWeights[img_id].weights);
@@ -2891,7 +2891,7 @@ void storeWeightedSums(
             int ires_remapped = round(remap_image_sizes * ires);
             // Note there is no sqrt in the normalisation term because of the 2-dimensionality of the complex-plane
             // Also exclude origin from logsigma2, as this will not be considered in the P-calculations
-            if (ires > 0 && ires_remapped < XSIZE(baseMLO->mymodel.sigma2_noise[group_id])) {
+            if (ires > 0 && ires_remapped < Xsize(baseMLO->mymodel.sigma2_noise[group_id])) {
                 logsigma2 += log(2.0 * PI * DIRECT_A1D_ELEM(baseMLO->mymodel.sigma2_noise[group_id], ires_remapped));
             }
         }
@@ -2919,7 +2919,7 @@ void storeWeightedSums(
             RFLOAT remap_image_sizes = (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size) / (my_image_size * my_pixel_size);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(thr_wsum_sigma2_noise[img_id]) {
                 int i_resam = round(i * remap_image_sizes);
-                if (i_resam < XSIZE(baseMLO->wsum_model.sigma2_noise[igroup])) {
+                if (i_resam < Xsize(baseMLO->wsum_model.sigma2_noise[igroup])) {
                     DIRECT_A1D_ELEM(baseMLO->wsum_model.sigma2_noise[igroup], i_resam) += DIRECT_A1D_ELEM(thr_wsum_sigma2_noise[img_id], i);
                 }
             }

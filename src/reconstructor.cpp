@@ -143,7 +143,7 @@ void Reconstructor::initialise() {
 
         Image<RFLOAT> img0;
         img0.read(fn_img, false);
-        output_boxsize = (int) XSIZE(img0());
+        output_boxsize = (int) Xsize(img0());
         // When doing Ewald-curvature correction or when having optics groups: allow reconstructing smaller box than the input images (which should have large boxes!!)
         if ((do_ewald || !do_ignore_optics) && newbox > 0) {
             output_boxsize = newbox;
@@ -364,7 +364,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
         if (abs(trans[0]) > 0.0 || abs(trans[1]) > 0.0 || abs(trans[2]) > 0.0) {
             // trans[2] is 0 in case data_dim=2
-            shiftImageInFourierTransform(F2D, F2D, XSIZE(img()), trans[0], trans[1], trans[2]);
+            shiftImageInFourierTransform(F2D, F2D, Xsize(img()), trans[0], trans[1], trans[2]);
         }
     } else {
         if (data_dim == 3) {
@@ -424,15 +424,15 @@ void Reconstructor::backprojectOneParticle(long int p) {
             Ictf.read(fn_ctf);
 
             // If there is a redundant half, get rid of it
-            if (XSIZE(Ictf()) == YSIZE(Ictf())) {
+            if (Xsize(Ictf()) == Ysize(Ictf())) {
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                     DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                 }
-            } else if (XSIZE(Ictf()) == YSIZE(Ictf()) / 2 + 1) {
+            } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // otherwise, just window the CTF to the current resolution
-                windowFourierTransform(Ictf(), Fctf, YSIZE(Fctf));
+                windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
             } else {
                 // if dimensions are neither cubical nor FFTW, stop
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -672,13 +672,13 @@ void Reconstructor::applyCTFPandCTFQ(
     float angle_step = 180.0 / nr_sectors;
     for (float angle = 0.0; angle < 180.0; angle += angle_step) {
         MultidimArray<Complex> CTFP(Fin), Fapp(Fin);
-        MultidimArray<RFLOAT> Iapp(YSIZE(Fin), YSIZE(Fin));
+        MultidimArray<RFLOAT> Iapp(Ysize(Fin), Ysize(Fin));
         // Two passes: one for CTFP, one for CTFQ
         for (int ipass = 0; ipass < 2; ipass++) {
             bool is_my_positive = (ipass == 1) == is_reverse;
 
             // Get CTFP and multiply the Fapp with it
-            ctf.getCTFPImage(CTFP, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
+            ctf.getCTFPImage(CTFP, Ysize(Fin), Ysize(Fin), angpix, is_my_positive, angle);
 
             Fapp = Fin * CTFP; // element-wise complex multiplication!
 
@@ -690,7 +690,7 @@ void Reconstructor::applyCTFPandCTFQ(
                 softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 
                 // Re-box to a smaller size if necessary....
-                if (newbox > 0 && newbox < YSIZE(Fin)) {
+                if (newbox > 0 && newbox < Ysize(Fin)) {
                     Iapp.setXmippOrigin();
                     Iapp.window(
                         Xmipp::init(newbox), Xmipp::init(newbox),

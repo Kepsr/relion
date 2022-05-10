@@ -57,9 +57,9 @@
 template <typename T>
 bool isMultidimArray3DCubic(const MultidimArray<T> &v) {
     return !(
-        NSIZE(v) != 1 || ZSIZE(v) <= 1 || YSIZE(v) <= 1 || XSIZE(v) <= 1 || 
-        ZSIZE(v) != YSIZE(v) || ZSIZE(v) != XSIZE(v) || 
-        ZSIZE(v) % 2
+        Nsize(v) != 1 || Zsize(v) <= 1 || Ysize(v) <= 1 || Xsize(v) <= 1 ||
+        Zsize(v) != Ysize(v) || Zsize(v) != Xsize(v) ||
+        Zsize(v) % 2
     );
 }
 

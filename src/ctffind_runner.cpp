@@ -485,9 +485,9 @@ void CtffindRunner::executeGctf(
     Image<double> Itmp;
     FileName outputfile = getOutputFileWithNewUniqueDate(fn_micrographs_ctf[imic], fn_out);
     Itmp.read(outputfile, false); // false means only read header!
-    if (XSIZE(Itmp()) != xdim || YSIZE(Itmp()) != ydim)
+    if (Zsize(Itmp()) != xdim || Ysize(Itmp()) != ydim)
         REPORT_ERROR("CtffindRunner::executeGctf ERROR: Micrographs do not all have the same size! " + fn_micrographs_ctf[imic] + " is different from the first micrograph!");
-    if (ZSIZE(Itmp()) > 1 || NSIZE(Itmp()) > 1)
+    if (Zsize(Itmp()) > 1 || Nsize(Itmp()) > 1)
         REPORT_ERROR("CtffindRunner::executeGctf ERROR: No movies or volumes allowed for " + fn_micrographs_ctf[imic]);
 
     allmicnames.push_back(outputfile);
@@ -678,7 +678,7 @@ void CtffindRunner::executeCtffind4(long int imic) {
     if (use_given_ps) {
         Image<RFLOAT> Ihead;
         Ihead.read(fn_mic_win, false);
-        ctf_boxsize = XSIZE(Ihead());
+        ctf_boxsize = Xsize(Ihead());
         ctf_angpix = Ihead.samplingRateX();
     }
     //std::string ctffind4_options = " --omp-num-threads " + integerToString(nr_threads);

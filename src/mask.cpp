@@ -47,7 +47,7 @@ void softMaskOutsideMap(
 ) {
 
     vol.setXmippOrigin();
-    if (radius < 0) { radius = (RFLOAT) XSIZE(vol) / 2.0; }
+    if (radius < 0) { radius = (RFLOAT) Xsize(vol) / 2.0; }
     RFLOAT radius_p = radius + cosine_width;
 
     RFLOAT sum_bg = 0.0, sum = 0.0;
@@ -110,7 +110,7 @@ void softMaskOutsideMapForHelix(
         return;
     }
     // Box size is the smallest dimension
-    int boxsize = dim == 3 ? std::min({XSIZE(vol), YSIZE(vol), ZSIZE(vol)}) : std::min({XSIZE(vol), YSIZE(vol)});
+    int boxsize = dim == 3 ? std::min({Xsize(vol), Ysize(vol), Zsize(vol)}) : std::min({Xsize(vol), Ysize(vol)});
     boxsize = boxsize / 2 - ((boxsize + 1) % 2);
     // If it is a 2D particle, tilt angle does not apply
     if (dim == 2) { tilt_deg = 0.0; }

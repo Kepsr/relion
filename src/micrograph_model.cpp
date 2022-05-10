@@ -485,16 +485,16 @@ void Micrograph::setMovie(FileName fnMovie, FileName fnGain, RFLOAT binning) {
     if (EERRenderer::isEER(fnMovie)) {
         EERRenderer renderer;
         renderer.read(fnMovie, eer_upsampling);
-        width = renderer.getWidth();
-        height = renderer.getHeight();
+        width    = renderer.getWidth();
+        height   = renderer.getHeight();
         n_frames = renderer.getNFrames() / eer_grouping;
     } else {
         Image<RFLOAT> Ihead;
         Ihead.read(fnMovie, false, -1, false, true); // select_img -1, mmap false, is_2D true
 
-        width = XSIZE(Ihead());
-        height = YSIZE(Ihead());
-        n_frames = NSIZE(Ihead());
+        width    = Xsize(Ihead());
+        height   = Ysize(Ihead());
+        n_frames = Nsize(Ihead());
     }
 
     this->binning = binning;

@@ -173,7 +173,7 @@ class image_handler_parameters {
         Iout().resize(Iin());
 
         bool isPNG = FileName(my_fn_out.getExtension()).toLowercase() == "png";
-        if (isPNG && (ZSIZE(Iout()) > 1 || NSIZE(Iout()) > 1))
+        if (isPNG && (Zsize(Iout()) > 1 || Nsize(Iout()) > 1))
             REPORT_ERROR("You can only write a 2D image to a PNG file.");
 
         if (angpix < 0 && (
@@ -213,7 +213,7 @@ class image_handler_parameters {
         } else if (do_flipmXY) {
             // Flip mX/Y
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
-                DIRECT_A2D_ELEM(Iout(), i, j) = DIRECT_A2D_ELEM(Iin(), XSIZE(Iin()) - 1 - j, YSIZE(Iin()) - 1 - i);
+                DIRECT_A2D_ELEM(Iout(), i, j) = DIRECT_A2D_ELEM(Iin(), Xsize(Iin()) - 1 - j, Ysize(Iin()) - 1 - i);
             }
         } else {
             Iout = Iin;
@@ -229,7 +229,7 @@ class image_handler_parameters {
         }
 
         if (randomize_at > 0.0) {
-            int iran = XSIZE(Iin()) * angpix / randomize_at;
+            int iran = Xsize(Iin()) * angpix / randomize_at;
             Iout = Iin;
             randomizePhasesBeyond(Iout(), iran);
         }
@@ -287,7 +287,7 @@ class image_handler_parameters {
                     RFLOAT my_bfac, smallest_diff2 = 99.0e99;
                     for (RFLOAT bfac = -optimise_bfactor_subtract; bfac <= optimise_bfactor_subtract; bfac += 10.0) {
                         FTop_bfac = FTop;
-                        applyBFactorToMap(FTop_bfac, XSIZE(Iop()), bfac, angpix);
+                        applyBFactorToMap(FTop_bfac, Xsize(Iop()), bfac, angpix);
                         transformer.inverseFourierTransform(FTop_bfac, Isharp);
 
                         RFLOAT sum_aa = 0.0, sum_xa = 0.0, sum_xx = 0.0;
@@ -315,7 +315,7 @@ class image_handler_parameters {
                         }
                     }
                     std::cout << " Optimised bfactor = " << my_bfac << "; optimised scale = " << my_scale << std::endl;
-                    applyBFactorToMap(FTop, XSIZE(Iop()), my_bfac, angpix);
+                    applyBFactorToMap(FTop, Xsize(Iop()), my_bfac, angpix);
                     transformer.inverseFourierTransform(FTop, Iop());
 
                 } else {
@@ -343,7 +343,7 @@ class image_handler_parameters {
             MDfsc.setName("fsc");
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc) {
                 MDfsc.addObject();
-                RFLOAT res = i > 0 ? XSIZE(Iout()) * angpix / (RFLOAT) i : 999.0;
+                RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
                 MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
@@ -356,10 +356,10 @@ class image_handler_parameters {
             MetaDataTable MDpower;
             MDpower.setName("power");
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(spectrum) {
-                if (i > XSIZE(Iout()) / 2 + 1) break; // getSpectrum returns beyond Nyquist!!
+                if (i > Xsize(Iout()) / 2 + 1) break; // getSpectrum returns beyond Nyquist!!
 
                 MDpower.addObject();
-                RFLOAT res = i > 0 ? XSIZE(Iout()) * angpix / (RFLOAT) i : 999.0;
+                RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDpower.setValue(EMDL::SPECTRAL_IDX, (int) i);
                 MDpower.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDpower.setValue(EMDL::RESOLUTION_ANGSTROM, res);
@@ -383,7 +383,7 @@ class image_handler_parameters {
             MDcos.setName("cos");
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(cosDPhi) {
                 MDcos.addObject();
-                RFLOAT res = i > 0 ? XSIZE(Iout()) * angpix / (RFLOAT) i : 999.0;
+                RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDcos.setValue(EMDL::SPECTRAL_IDX, (int) i);
                 MDcos.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDcos.setValue(EMDL::RESOLUTION_ANGSTROM, res);
@@ -445,27 +445,27 @@ class image_handler_parameters {
         }
 
         if (do_flipX) {
-            // For input:  0, 1, 2, 3, 4, 5 (XSIZE = 6)
+            // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 5, 4, 3, 2, 1, 0
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, i, XSIZE(Iin()) - 1 - j);
+                DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, i, Xsize(Iin()) - 1 - j);
             }
         } else if (do_flipY) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, YSIZE(Iin()) - 1 - i, j);
+                DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, Ysize(Iin()) - 1 - i, j);
             }
         } else if (do_flipZ) {
-            if (ZSIZE(Iout()) < 2)
+            if (Zsize(Iout()) < 2)
                 REPORT_ERROR("ERROR: this is not a 3D map, so cannot be flipped in Z");
 
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), ZSIZE(Iin()) - 1 - k, i, j);
+                DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), Zsize(Iin()) - 1 - k, i, j);
             }
         } else if (do_invert_hand) {
-            // For input:  0, 1, 2, 3, 4, 5 (XSIZE = 6)
+            // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 0, 5, 4, 3, 2, 1
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                long int dest_x = j == 0 ? 0 : XSIZE(Iin()) - j;
+                long int dest_x = j == 0 ? 0 : Xsize(Iin()) - j;
                 DIRECT_A3D_ELEM(Iout(), k, i, j) = A3D_ELEM(Iin(), k, i, dest_x);
             }
         }
@@ -490,8 +490,8 @@ class image_handler_parameters {
 
         // Re-scale
         if (requested_angpix > 0.0) {
-            int oldxsize = XSIZE(Iout());
-            int oldysize = YSIZE(Iout());
+            int oldxsize = Xsize(Iout());
+            int oldysize = Ysize(Iout());
             int oldsize = oldxsize;
             if (oldxsize != oldysize && Iout().getDim() == 2) {
                 oldsize = std::max(oldxsize, oldysize);
@@ -529,7 +529,7 @@ class image_handler_parameters {
         }
 
         // Re-window
-        if (new_box > 0 && new_box != XSIZE(Iout())) {
+        if (new_box > 0 && new_box != Xsize(Iout())) {
             Iout().setXmippOrigin();
             if (Iout().getDim() == 2) {
                 Iout().window(
@@ -579,7 +579,7 @@ class image_handler_parameters {
             const RFLOAT range = minmax.max - minmax.min;
             const RFLOAT step = range / 255;
 
-            gravis::tImage<gravis::bRGB> pngOut(XSIZE(Iout()), YSIZE(Iout()));
+            gravis::tImage<gravis::bRGB> pngOut(Xsize(Iout()), Ysize(Iout()));
             pngOut.fill(gravis::bRGB(0));
 
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iout()) {
@@ -637,7 +637,7 @@ class image_handler_parameters {
                 Image<RFLOAT> tmp;
                 FileName fn_tmp;
                 tmp.read(fn_in, false); // false means do not read image now, only header
-                for (int i = 1; i <= NSIZE(tmp()); i++) {
+                for (int i = 1; i <= Nsize(tmp()); i++) {
                     MD.addObject();
                     fn_tmp.compose(i, fn_in);
                     MD.setValue(EMDL::IMAGE_NAME, fn_tmp);
@@ -706,8 +706,8 @@ class image_handler_parameters {
                     Iop.read(fn_correct_ampl);
 
                     // Calculate by the radial average in the Fourier domain
-                    MultidimArray<RFLOAT> spectrum = MultidimArray<RFLOAT>::zeros(YSIZE(Iop()));
-                    MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(YSIZE(Iop()));
+                    MultidimArray<RFLOAT> spectrum = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
+                    MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
                         long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
                         spectrum(idx) += dAkij(Iop(), k, i, j);
@@ -731,7 +731,7 @@ class image_handler_parameters {
                 }
 
                 if (fn_mult != "" || fn_div != "" || fn_add != "" || fn_subtract != "" || fn_fsc != "" || fn_adjust_power != "" || fn_fourfilter != "")
-                    if (XSIZE(Iop()) != xdim || YSIZE(Iop()) != ydim || ZSIZE(Iop()) != zdim)
+                    if (Xsize(Iop()) != xdim || Ysize(Iop()) != ydim || Zsize(Iop()) != zdim)
                         REPORT_ERROR("Error: operate-image is not of the correct size");
 
                 if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali) {
@@ -750,7 +750,7 @@ class image_handler_parameters {
                 RFLOAT minval = stats.min;
                 RFLOAT maxval = stats.max;
                 RFLOAT header_angpix = Iin.samplingRateX();
-                std::cout << fn_img << " : (x, y, z, n) = " << XSIZE(Iin()) << " × "<< YSIZE(Iin()) << " × " << ZSIZE(Iin()) << " × " << NSIZE(Iin()) << " ; avg = " << avg << " stddev = " << stddev << " minval = " <<minval << " maxval = " << maxval << "; angpix = " << header_angpix << std::endl;
+                std::cout << fn_img << " : (x, y, z, n) = " << Xsize(Iin()) << " × "<< Ysize(Iin()) << " × " << Zsize(Iin()) << " × " << Nsize(Iin()) << " ; avg = " << avg << " stddev = " << stddev << " minval = " <<minval << " maxval = " << maxval << "; angpix = " << header_angpix << std::endl;
             } else if (do_calc_com) {
                 Matrix1D <RFLOAT> com(3);
                 Iin.read(fn_img);
@@ -814,7 +814,7 @@ class image_handler_parameters {
                     REPORT_ERROR("ERROR: you are trying to perform movie-averaging options on a single image/volume");
 
                 FileName fn_ext = fn_out.getExtension();
-                if (NSIZE(Iavg()) > 1 && ( fn_ext.contains("mrc") && !fn_ext.contains("mrcs") ) )
+                if (Nsize(Iavg()) > 1 && ( fn_ext.contains("mrc") && !fn_ext.contains("mrcs") ) )
                     REPORT_ERROR("ERROR: trying to write a stack into an MRC image. Use .mrcs extensions for stacks!");
 
                 for (long int nn = 0; nn < ndim; nn++) {

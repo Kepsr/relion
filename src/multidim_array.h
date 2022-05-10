@@ -149,19 +149,23 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
 
 /** Access to X dimension (size)
  */
-#define XSIZE(v) ((v).xdim)
+template <typename T>
+inline long int Xsize(const MultidimArray<T> &v) { return v.xdim; }
 
 /** Access to Y dimension (size)
  */
-#define YSIZE(v) ((v).ydim)
+template <typename T>
+inline long int Ysize(const MultidimArray<T> &v) { return v.ydim; }
 
 /** Access to Z dimension (size)
  */
-#define ZSIZE(v) ((v).zdim)
+template <typename T>
+inline long int Zsize(const MultidimArray<T> &v) { return v.zdim; }
 
 /** Access to N dimension (size)
  */
-#define NSIZE(v) ((v).ndim)
+template <typename T>
+inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
 /** Access to XY dimension (Ysize*Xsize)
  */
@@ -191,7 +195,7 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
  * v is the array, l is the image, k is the slice, i is the Y index and j is the X index.
  * i and j) within the slice.
  */
-#define DIRECT_NZYX_ELEM(v, l, k, i, j) ((v).data[(l)*ZYXSIZE(v)+(k)*YXSIZE(v)+((i)*XSIZE(v))+(j)])
+#define DIRECT_NZYX_ELEM(v, l, k, i, j) ((v).data[(l)*ZYXSIZE(v)+(k)*YXSIZE(v)+((i) * Xsize(v))+(j)])
 
 /** Multidim element: Logical access.
  */
@@ -236,10 +240,10 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
  * @endcode
  */
 #define FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V) \
-    for (long int l = 0; l < NSIZE(V); l++) \
-    for (long int k = 0; k < ZSIZE(V); k++) \
-    for (long int i = 0; i < YSIZE(V); i++) \
-    for (long int j = 0; j < XSIZE(V); j++)
+    for (long int l = 0; l < Nsize(V); l++) \
+    for (long int k = 0; k < Zsize(V); k++) \
+    for (long int i = 0; i < Ysize(V); i++) \
+    for (long int j = 0; j < Xsize(V); j++)
 
 /** For all elements in the array
  *
@@ -254,7 +258,7 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
  * @endcode
  */
 #define FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V) \
-    for (long int l = 0; l < NSIZE(V); l++) \
+    for (long int l = 0; l < Nsize(V); l++) \
     for (long int k = Zinit(V); k <= Zlast(V); k++) \
     for (long int i = Yinit(V); i <= Ylast(V); i++) \
     for (long int j = Xinit(V); j <= Xlast(V); j++)
@@ -280,7 +284,7 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
 /** Access to a direct element.
  * v is the array, k is the slice (Z), i is the Y index and j is the X index.
  */
-#define DIRECT_A3D_ELEM(v,k,i,j) ((v).data[(k)*YXSIZE(v)+((i)*XSIZE(v))+(j)])
+#define DIRECT_A3D_ELEM(v,k,i,j) ((v).data[(k)*YXSIZE(v)+((i) * Xsize(v))+(j)])
 
 /** A short alias for the previous function.
  *
@@ -311,9 +315,9 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_ARRAY3D(V) \
-    for (long int k=Zinit(V); k<=Zlast(V); k++) \
-        for (long int i=Yinit(V); i<=Ylast(V); i++) \
-            for (long int j=Xinit(V); j<=Xlast(V); j++)
+    for (long int k = Zinit(V); k <= Zlast(V); k++) \
+    for (long int i = Yinit(V); i <= Ylast(V); i++) \
+    for (long int j = Xinit(V); j <= Xlast(V); j++)
 
 /** For all direct elements in the array.
  *
@@ -329,9 +333,9 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
  * @endcode
  */
 #define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) \
-    for (long int k=0; k<ZSIZE(V); k++) \
-        for (long int i=0; i<YSIZE(V); i++) \
-            for (long int j=0; j<XSIZE(V); j++)
+    for (long int k = 0; k < Zsize(V); k++) \
+    for (long int i = 0; i < Ysize(V); i++) \
+    for (long int j = 0; j < Xsize(V); j++)
 
 
 /** Physical access to a direct element of a matrix.
@@ -372,8 +376,8 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_ARRAY2D(m) \
-    for (long int i=Yinit(m); i<=Ylast(m); i++) \
-        for (long int j=Xinit(m); j<=Xlast(m); j++)
+    for (long int i = Yinit(m); i <= Ylast(m); i++) \
+    for (long int j = Xinit(m); j <= Xlast(m); j++)
 
 /** For all elements in the array, accessed physically
  *
@@ -387,8 +391,8 @@ inline long int Zlast(const MultidimArray<T> &v) { return v.zinit + v.zdim - 1; 
  * @endcode
  */
 #define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(m) \
-    for (long int i = 0; i < YSIZE(m); i++) \
-    for (long int j = 0; j < XSIZE(m); j++)
+    for (long int i = 0; i < Ysize(m); i++) \
+    for (long int j = 0; j < Xsize(m); j++)
 
 /** Vector element: Physical access
  *

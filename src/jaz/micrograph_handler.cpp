@@ -281,8 +281,8 @@ void MicrographHandler::loadInitial(
 
         Image<RFLOAT> dum;
         dum.read(fn_post, false);
-        micrograph_size.x = XSIZE(dum());
-        micrograph_size.y = YSIZE(dum());
+        micrograph_size.x = Xsize(dum());
+        micrograph_size.y = Ysize(dum());
 
         const int fc0 = dum().zdim > 1 ? dum().zdim : dum().ndim;
 
@@ -455,11 +455,11 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
             if (hasDefect) {
                 /// TODO: TAKANORI: Refactor!! Code duplication from RelionCor
                 if (
-                    XSIZE(defectMask) != XSIZE(Iframes[0]) || 
-                    YSIZE(defectMask) != YSIZE(Iframes[0])
+                    Xsize(defectMask) != Xsize(Iframes[0]) || 
+                    Ysize(defectMask) != Ysize(Iframes[0])
                 ) {
-                    std::cerr << "X/YSIZE of defectMask = " << XSIZE(defectMask) << " x " << YSIZE(defectMask) << std::endl;
-                    std::cerr << "X/YSIZE of Iframe[0] = " << XSIZE(Iframes[0]) << " x " << YSIZE(Iframes[0]) << std::endl;
+                    std::cerr << "X/Ysize of defectMask = " << Xsize(defectMask) << " x " << Ysize(defectMask) << std::endl;
+                    std::cerr << "X/Ysize of Iframe[0] = " << Xsize(Iframes[0]) << " x " << Ysize(Iframes[0]) << std::endl;
                     REPORT_ERROR("Invalid dfefect mask size for " + mgFn0);
                 }
 
@@ -497,7 +497,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
 
                 const int NUM_MIN_OK = 6;
                 const int D_MAX = isEER ? 4: 2;
-                const int PBUF_SIZE = 100;
+                const int PBUF_size = 100;
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(defectMask) {
                     if (!DIRECT_A2D_ELEM(defectMask, i, j) && (
                         !mgHasGain || DIRECT_A2D_ELEM(lastGainRef(), i, j) != 0
@@ -506,13 +506,13 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                     #pragma omp parallel for num_threads(nr_omp_threads)
                     for (int iframe = 0; iframe < n_frames; iframe++) {
                          int n_ok = 0;
-                        RFLOAT pbuf[PBUF_SIZE];
+                        RFLOAT pbuf[PBUF_size];
                         for (int dy= -D_MAX; dy <= D_MAX; dy++) {
                             int y = i + dy;
-                            if (y < 0 || y >= YSIZE(defectMask)) continue;
+                            if (y < 0 || y >= Ysize(defectMask)) continue;
                             for (int dx = -D_MAX; dx <= D_MAX; dx++) {
                                 int x = j + dx;
-                                if (x < 0 || x >= XSIZE(defectMask)) continue;
+                                if (x < 0 || x >= Xsize(defectMask)) continue;
                                 if (DIRECT_A2D_ELEM(defectMask, y, x)) continue;
                                 if (mgHasGain && DIRECT_A2D_ELEM(lastGainRef(), y, x) == 0) continue;
 

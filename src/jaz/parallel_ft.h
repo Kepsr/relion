@@ -159,32 +159,32 @@ class ParFourierTransformer {
         void getCompleteFourier(T& V) {
             V.reshape(*fReal);
             int ndim = 3;
-            if (ZSIZE(*fReal) == 1) {
+            if (Zsize(*fReal) == 1) {
                 ndim = 2;
-                if (YSIZE(*fReal) == 1)
+                if (Ysize(*fReal) == 1)
                     ndim = 1;
             }
             switch (ndim) {
 
                 case 1:
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
-                    if (i < XSIZE(fFourier)) {
+                    if (i < Xsize(fFourier)) {
                         DIRECT_A1D_ELEM(V, i) = DIRECT_A1D_ELEM(fFourier, i);
                     } else {
-                        DIRECT_A1D_ELEM(V, i) = conj(DIRECT_A1D_ELEM(fFourier, XSIZE(*fReal) - i));
+                        DIRECT_A1D_ELEM(V, i) = conj(DIRECT_A1D_ELEM(fFourier, Xsize(*fReal) - i));
                     }
                 }
                 break;
 
                 case 2:
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
-                    if (j<XSIZE(fFourier)) {
+                    if (j<Xsize(fFourier)) {
                         DIRECT_A2D_ELEM(V, i, j) = DIRECT_A2D_ELEM(fFourier, i, j);
                     } else {
                         DIRECT_A2D_ELEM(V, i, j) = conj(DIRECT_A2D_ELEM(
                             fFourier, 
-                            (YSIZE(*fReal) - i) % YSIZE(*fReal), 
-                            XSIZE(*fReal) - j
+                            (Ysize(*fReal) - i) % Ysize(*fReal), 
+                            Xsize(*fReal) - j
                         ));
                     }
                 }
@@ -192,14 +192,14 @@ class ParFourierTransformer {
 
                 case 3:
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
-                        if (j < XSIZE(fFourier)) {
+                        if (j < Xsize(fFourier)) {
                             DIRECT_A3D_ELEM(V, k, i, j) = DIRECT_A3D_ELEM(fFourier, k, i, j);
                         } else {
                             DIRECT_A3D_ELEM(V, k, i, j) = conj(DIRECT_A3D_ELEM(
                                 fFourier, 
-                                (ZSIZE(*fReal) - k) % ZSIZE(*fReal), 
-                                (YSIZE(*fReal) - i) % YSIZE(*fReal), 
-                                XSIZE(*fReal) - j
+                                (Zsize(*fReal) - k) % Zsize(*fReal), 
+                                (Ysize(*fReal) - i) % Ysize(*fReal), 
+                                Xsize(*fReal) - j
                             ));
                         }
                     }
@@ -214,9 +214,9 @@ class ParFourierTransformer {
     template <typename T>
         void setFromCompleteFourier(T& V) {
         int ndim = 3;
-        if (ZSIZE(*fReal) == 1) {
+        if (Zsize(*fReal) == 1) {
             ndim = 2;
-            if (YSIZE(*fReal) == 1)
+            if (Ysize(*fReal) == 1)
                 ndim = 1;
         }
         switch (ndim) {

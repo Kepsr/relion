@@ -141,7 +141,7 @@ void Postprocessing::initialise() {
     // Protein density is 1.35 g/cm^3, Nav=6.022 E+23, so protein volume = (MW /0.81 Da) A^3
     // 47.6% is volume of sphere relative to box
     if (molweight > 0.0) {
-        frac_molweight = 0.476 * std::pow(XSIZE(I1()) * angpix, 3) * 0.81 / ( molweight * 1000) ;
+        frac_molweight = 0.476 * std::pow(Xsize(I1()) * angpix, 3) * 0.81 / ( molweight * 1000) ;
         if (verb > 0) {
             std::cout.width(35);
             std::cout << std::left   << "  + ordered molecular weight (kDa): ";
@@ -203,9 +203,9 @@ bool Postprocessing::getMask() {
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Im()) {
             if (DIRECT_MULTIDIM_ELEM(Im(), n) > 0.5) { summask++; }
         }
-        avg = (RFLOAT)summask / (RFLOAT)NZYXSIZE(Im());
+        avg = (RFLOAT)summask / (RFLOAT) NZYXSIZE(Im());
         frac_solvent_mask = 0.476 /avg;
-        molweight_frommask = avg * std::pow(XSIZE(Im()) * angpix, 3) * 0.81;
+        molweight_frommask = avg * std::pow(Xsize(Im()) * angpix, 3) * 0.81;
 
         if (verb > 0) {
             std::cout.width(35); std::cout << std::left << "  + fraction f (solvent mask based): ";      std::cout  << frac_solvent_mask << std::endl;
@@ -266,7 +266,7 @@ void Postprocessing::divideByMtf(MultidimArray<Complex > &FT) {
         RFLOAT res_per_elem = (DIRECT_A1D_ELEM(mtf_resol, i-1) - DIRECT_A1D_ELEM(mtf_resol, 0)) / (RFLOAT) i;
         if (res_per_elem < 1e-10) REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
 
-        RFLOAT xsize_ang = angpix * XSIZE(I1());
+        RFLOAT xsize_ang = angpix * Xsize(I1());
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
             int r2 = kp * kp + ip * ip + jp * jp;
             RFLOAT res = sqrt((RFLOAT) r2) / xsize_ang; // get resolution in 1/Ang
@@ -335,7 +335,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
     transformer.FourierTransform(I, FT, false);
 
     // First calculate radial average, to normalize the power spectrum
-    int myradius = XSIZE(FT);
+    int myradius = Xsize(FT);
     MultidimArray<int> radial_count(myradius);
     MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(myradius);
     MultidimArray<RFLOAT> ravg = MultidimArray<RFLOAT>::zeros(myradius);
@@ -353,7 +353,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
     }
 
     // Apply correction only beyond low-res fitting of B-factors
-    int minr = floor(XSIZE(FT) * angpix / fit_minres);
+    int minr = floor(Xsize(FT) * angpix / fit_minres);
     int myradius_count = minr;
     MultidimArray<RFLOAT> sum3d;
     MultidimArray<int> count3d;
@@ -453,7 +453,7 @@ RFLOAT Postprocessing::sharpenMap() {
         if (verb > 0) {
             std::cout.width(35); std::cout << std::left  <<"  + apply b-factor of: "; std::cout << global_bfactor << std::endl;
         }
-        applyBFactorToMap(FT, XSIZE(I1()), global_bfactor, angpix);
+        applyBFactorToMap(FT, Xsize(I1()), global_bfactor, angpix);
     }
 
     makeGuinierPlot(FT, guiniersharpen);
@@ -468,7 +468,7 @@ RFLOAT Postprocessing::sharpenMap() {
             std::cout.width(35); std::cout << std::left  <<"  + filter frequency: "; std::cout << applied_filter << std::endl;
         }
 
-        lowPassFilterMap(FT, XSIZE(I1()), applied_filter, angpix, filter_edge_width);
+        lowPassFilterMap(FT, Xsize(I1()), applied_filter, angpix, filter_edge_width);
     }
 
     transformer.inverseFourierTransform(FT, I1());
@@ -548,20 +548,20 @@ void Postprocessing::applyFscWeighting(MultidimArray<Complex > &FT, MultidimArra
 }
 
 void Postprocessing::makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fit_point2D> &guinier) {
-    MultidimArray<int> radial_count(XSIZE(FT));
-    MultidimArray<RFLOAT> lnF(XSIZE(FT));
+    MultidimArray<int> radial_count(Xsize(FT));
+    MultidimArray<RFLOAT> lnF(Xsize(FT));
     fit_point2D      onepoint;
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         int r2 = kp * kp + ip * ip + jp * jp;
         int ires = round(sqrt((RFLOAT)r2));
-        if (ires < XSIZE(radial_count)) {
+        if (ires < Xsize(radial_count)) {
             lnF(ires) += abs(DIRECT_A3D_ELEM(FT, k, i, j));
             radial_count(ires)++;
         }
     }
 
-    RFLOAT xsize = XSIZE(I1());
+    RFLOAT xsize = Xsize(I1());
     guinier.clear();
     FOR_ALL_ELEMENTS_IN_ARRAY1D(radial_count) {
 
@@ -622,7 +622,7 @@ void Postprocessing::writeOutput() {
     }
     if (do_mask) {
         MDlist.setValue(EMDL::POSTPROCESS_FRACTION_SOLVENT_MASK, frac_solvent_mask);
-        RFLOAT randomize_at_Ang = XSIZE(I1()) * angpix / randomize_at;
+        RFLOAT randomize_at_Ang = Xsize(I1()) * angpix / randomize_at;
         MDlist.setValue(EMDL::MASK_NAME, fn_mask);
         MDlist.setValue(EMDL::POSTPROCESS_RANDOMISE_FROM, randomize_at_Ang);
     }
@@ -636,7 +636,7 @@ void Postprocessing::writeOutput() {
     MDfsc.setName("fsc");
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
         MDfsc.addObject();
-        RFLOAT res = i > 0 ? (XSIZE(I1()) * angpix / (RFLOAT) i) : 999.0;
+        RFLOAT res = i > 0 ? (Xsize(I1()) * angpix / (RFLOAT) i) : 999.0;
         MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
         MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
         MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
@@ -857,7 +857,7 @@ void Postprocessing::run_locres(int rank, int size) {
     FourierTransformer transformer;
     transformer.FourierTransform(Isum, FTsum, true);
     divideByMtf(FTsum);
-    applyBFactorToMap(FTsum, XSIZE(Isum), adhoc_bfac, angpix);
+    applyBFactorToMap(FTsum, Xsize(Isum), adhoc_bfac, angpix);
 
     // Step size of locres-sampling in pixels
     int step_size     = round(locres_sampling / angpix);
@@ -868,9 +868,9 @@ void Postprocessing::run_locres(int rank, int size) {
     getFSC(I1(), I2(), fsc_unmasked);
 
     // Randomize phases of unmasked maps from user-provided resolution
-    int randomize_at = XSIZE(I1()) * angpix / locres_randomize_fsc;
+    int randomize_at = Xsize(I1()) * angpix / locres_randomize_fsc;
     if (verb > 0) {
-        std::cout.width(35); std::cout << std::left << "  + randomize phases beyond: "; std::cout << XSIZE(I1())* angpix / randomize_at << " Angstroms" << std::endl;
+        std::cout.width(35); std::cout << std::left << "  + randomize phases beyond: "; std::cout << Xsize(I1())* angpix / randomize_at << " Angstroms" << std::endl;
     }
     // Randomize phases
     randomizePhasesBeyond(I1p, randomize_at);
@@ -891,7 +891,7 @@ void Postprocessing::run_locres(int rank, int size) {
 
     // Sample the entire volume (within the provided mask)
 
-    int myrad = XSIZE(I1()) / 2 - maskrad_pix;
+    int myrad = Xsize(I1()) / 2 - maskrad_pix;
     float myradf = (float) myrad / (float) step_size;
     long int nr_samplings = round(4.0 / 3.0 * PI * myradf * myradf * myradf);
     if (verb > 0) {
@@ -934,7 +934,7 @@ void Postprocessing::run_locres(int rank, int size) {
                     MDfsc.setName(fn_name);
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
                         MDfsc.addObject();
-                        RFLOAT res = i > 0 ? XSIZE(I1()) * angpix / (RFLOAT) i : 999.0;
+                        RFLOAT res = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
                         MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
                         MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
                         MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
@@ -951,7 +951,7 @@ void Postprocessing::run_locres(int rank, int size) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
                     if (DIRECT_A1D_ELEM(fsc_true, i) < 0.143)
                         break;
-                    local_resol = i > 0 ? XSIZE(I1()) * angpix / (RFLOAT) i : 999.0;
+                    local_resol = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
                 }
                 local_resol = std::min((float) locres_minres, local_resol);
                 if (rank == 0)
@@ -960,7 +960,7 @@ void Postprocessing::run_locres(int rank, int size) {
                 // Now low-pass filter Isum to the estimated resolution
                 MultidimArray<Complex > FT = FTsum;
                 applyFscWeighting(FT, fsc_true);
-                lowPassFilterMap(FT, XSIZE(I1()), local_resol, angpix, filter_edge_width);
+                lowPassFilterMap(FT, Xsize(I1()), local_resol, angpix, filter_edge_width);
 
                 // Re-use I1m to save some memory
                 transformer.inverseFourierTransform(FT, I1m);
@@ -1093,7 +1093,7 @@ void Postprocessing::run() {
         randomize_at = -1;
 
         if (randomize_at_A > 0.) {
-            randomize_at = (int) (angpix * XSIZE(I1()) / randomize_at_A );
+            randomize_at = (int) (angpix * Xsize(I1()) / randomize_at_A );
         } else {
             // Check when FSC drops below randomize_fsc_at
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
@@ -1104,7 +1104,7 @@ void Postprocessing::run() {
             }
         }
         if (verb > 0) {
-            std::cout.width(35); std::cout << std::left << "  + randomize phases beyond: "; std::cout << XSIZE(I1()) * angpix / randomize_at << " Angstroms" << std::endl;
+            std::cout.width(35); std::cout << std::left << "  + randomize phases beyond: "; std::cout << Xsize(I1()) * angpix / randomize_at << " Angstroms" << std::endl;
         }
         if (randomize_at > 0) {
             randomizePhasesBeyond(I1(), randomize_at);
@@ -1141,7 +1141,7 @@ void Postprocessing::run() {
     int global_resol_i = 0;
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
         if (DIRECT_A1D_ELEM(fsc_true, i) < 0.143) break;
-        global_resol = XSIZE(I1()) * angpix / (RFLOAT) i;
+        global_resol = Xsize(I1()) * angpix / (RFLOAT) i;
         global_resol_i = i;
     }
 
@@ -1160,7 +1160,7 @@ void Postprocessing::run() {
                 std::cerr << " WARNING: the unmasked FSC extends beyond the solvent-corrected FSC. Skip masking for now, but you may want to adjust you mask!" << std::endl;
                 std::cerr << "          You can force the mask by the '--force_mask' option." << std::endl;
                 fsc_true = fsc_unmasked;
-                global_resol = XSIZE(I1()) * angpix / (RFLOAT) unmasked_resol_i;
+                global_resol = Xsize(I1()) * angpix / (RFLOAT) unmasked_resol_i;
             }
         } else if (DIRECT_A1D_ELEM(fsc_random_masked, global_resol_i) > 0.1) {
             // Check whether the phase-randomised FSC is less than 5% at the resolution estimate, otherwise warn the user

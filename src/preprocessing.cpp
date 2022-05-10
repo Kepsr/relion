@@ -721,16 +721,16 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
         // Discard particles that are completely outside the micrograph and print a warning
         if (
-                                     xF < 0 || x0 >= XSIZE(Imic()) ||
-                                     yF < 0 || y0 >= YSIZE(Imic()) || 
-            (dimensionality == 3 && (zF < 0 || z0 >= ZSIZE(Imic())))
+                                     xF < 0 || x0 >= Xsize(Imic()) ||
+                                     yF < 0 || y0 >= Ysize(Imic()) || 
+            (dimensionality == 3 && (zF < 0 || z0 >= Zsize(Imic())))
         ) {
-            std::cerr << " micrograph x,y,z,n-size= " << XSIZE(Imic()) << " , " << YSIZE(Imic()) << " , " << ZSIZE(Imic()) << " , " << NSIZE(Imic()) << std::endl;
+            std::cerr << " micrograph x,y,z,n-size= " << Xsize(Imic()) << " , " << Ysize(Imic()) << " , " << Zsize(Imic()) << " , " << Nsize(Imic()) << std::endl;
             std::cerr << " particle position= " << xpos << " , " << ypos;
             if (dimensionality == 3)
                 std::cerr << " , " << zpos;
             std::cerr << std::endl;
-            REPORT_ERROR("Preprocessing::extractParticlesFromOneFrame ERROR: particle" + integerToString(ipos+1) + " lies completely outside micrograph " + fn_mic);
+            REPORT_ERROR("Preprocessing::extractParticlesFromOneFrame ERROR: particle" + integerToString(ipos + 1) + " lies completely outside micrograph " + fn_mic);
         }
 
         // Read per-particle CTF
@@ -758,7 +758,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             transformer.FourierTransform(Ipart(), FT, false);
 
             MultidimArray<RFLOAT> Fctf;
-            Fctf.resize(YSIZE(FT), XSIZE(FT));
+            Fctf.resize(Ysize(FT), Xsize(FT));
             // 190802 TAKANORI: The original code using getCTF was do_damping=false, but for consistency with Polishing, I changed it.
             // The boxsize in ObsModel has been updated above.
             // In contrast to Polish, we premultiply particle BEFORE down-sampling, so PixelSize in ObsModel is OK.
@@ -790,35 +790,35 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         Ipart().setXmippOrigin();
 
         // X-boundaries
-        if (x0 < 0 || xF >= XSIZE(Imic())) {
+        if (x0 < 0 || xF >= Xsize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 if (j + xpos < 0) {
                     A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, i, -xpos);
-                } else if (j + xpos >= XSIZE(Imic())) {
-                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, i, XSIZE(Imic()) - xpos - 1);
+                } else if (j + xpos >= Xsize(Imic())) {
+                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, i, Xsize(Imic()) - xpos - 1);
                 }
             }
         }
 
         // Y-boundaries
-        if (y0 < 0 || yF >= YSIZE(Imic())) {
+        if (y0 < 0 || yF >= Ysize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 if (i + ypos < 0) {
                     A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, -ypos, j);
-                } else if (i + ypos >= YSIZE(Imic())) {
-                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, YSIZE(Imic()) - ypos - 1, j);
+                } else if (i + ypos >= Ysize(Imic())) {
+                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, Ysize(Imic()) - ypos - 1, j);
                 }
             }
         }
 
         if (dimensionality == 3) {
             // Z-boundaries
-            if (z0 < 0 || zF >= ZSIZE(Imic())) {
+            if (z0 < 0 || zF >= Zsize(Imic())) {
                 FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                     if (k + zpos < 0) {
                         A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), -zpos, i, j);
-                    } else if (k + zpos >= ZSIZE(Imic())) {
-                        A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), ZSIZE(Imic()) - zpos - 1, i, j);
+                    } else if (k + zpos >= Zsize(Imic())) {
+                        A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), Zsize(Imic()) - zpos - 1, i, j);
                     }
                 }
             }
@@ -827,7 +827,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         // 2D projection of 3D sub-tomograms
         if (dimensionality == 3 && do_project_3d) {
             // Project the 3D sub-tomogram into a 2D particle again
-            Image<RFLOAT> Iproj(YSIZE(Ipart()), XSIZE(Ipart()));
+            Image<RFLOAT> Iproj(Ysize(Ipart()), Xsize(Ipart()));
             Iproj().setXmippOrigin();
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 DIRECT_A2D_ELEM(Iproj(), i, j) += DIRECT_A3D_ELEM(Ipart(), k, i, j);
@@ -925,7 +925,7 @@ void Preprocessing::runOperateOnInputFile() {
     } else {
         // Read the header of the stack to see how many images there
         Iout.read(fn_operate_in, false);
-        Nimg = NSIZE(Iout());
+        Nimg = Nsize(Iout());
     }
 
     RFLOAT all_avg = 0;

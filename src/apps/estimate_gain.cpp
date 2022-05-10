@@ -104,8 +104,8 @@ class estimate_gain {
                 REPORT_ERROR("The input movie is EER. For EER, the gain reference is expected to be the average of counts, not the inverse as in K2/K3. Thus, you need the --dont_invert flag.");
         } else {
             Ihead.read(fn_img, false, -1, false, true); // select_img -1, mmap false, is_2D true
-            ny = YSIZE(Ihead());
-            nx = XSIZE(Ihead());
+            ny = Ysize(Ihead());
+            nx = Xsize(Ihead());
         }
 
         std::cout << "The size of the input: NY = " << ny << " NX = " << nx << std::endl;
@@ -130,9 +130,9 @@ class estimate_gain {
             int n_frames;
             if (!EERRenderer::isEER(fn_img)) {
                 Ihead.read(fn_img, false, -1, false, true);
-                n_frames = NSIZE(Ihead());
+                n_frames = Nsize(Ihead());
 
-                if (ny != YSIZE(Ihead()) || nx != XSIZE(Ihead())) {
+                if (ny != Ysize(Ihead()) || nx != Xsize(Ihead())) {
                     std::cerr << "The size of the movie " + fn_img + " does not much the size of the others. Skipped." << std::endl;
                     continue;
                 }

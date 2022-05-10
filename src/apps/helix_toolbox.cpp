@@ -465,8 +465,7 @@ class helix_bilder_parameters {
             Image<RFLOAT> img;
             img.read(fn_in);
             img().setXmippOrigin();
-            box_size = ((XSIZE(img())) < (YSIZE(img()))) ? (XSIZE(img())) : (YSIZE(img()));
-            box_size = (box_size < (ZSIZE(img()))) ? box_size : (ZSIZE(img()));
+            box_size = std::min({Xsize(img()), Ysize(img()), Zsize(img())});
             applySoftSphericalMask(
                 img(), RFLOAT(box_size) * sphere_percentage, width_edge_pix
             );
@@ -608,8 +607,8 @@ class helix_bilder_parameters {
             Image<RFLOAT> img;
             img.read(fn_in);
 
-            box_size = ((XSIZE(img())) < (YSIZE(img()))) ? (XSIZE(img())) : (YSIZE(img()));
-            box_size = (box_size < (ZSIZE(img()))) ? (box_size) : (ZSIZE(img()));
+            box_size = ((Xsize(img())) < (Ysize(img()))) ? (Xsize(img())) : (Ysize(img()));
+            box_size = (box_size < (Zsize(img()))) ? (box_size) : (Zsize(img()));
             sphere_diameter_A = pixel_size_A * sphere_percentage * RFLOAT(box_size);
 
             img().setXmippOrigin();
@@ -638,8 +637,8 @@ class helix_bilder_parameters {
             Image<RFLOAT> img;
             img.read(fn_in);
 
-            box_size = XSIZE(img()) < YSIZE(img()) ? XSIZE(img()) : YSIZE(img());
-            box_size = box_size < ZSIZE(img()) ? box_size : ZSIZE(img());
+            box_size = Xsize(img()) < Ysize(img()) ? Xsize(img()) : Ysize(img());
+            box_size = box_size < Zsize(img()) ? box_size : Zsize(img());
             sphere_diameter_A = pixel_size_A * sphere_percentage * RFLOAT(box_size);
 
             img().setXmippOrigin();

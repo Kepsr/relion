@@ -36,7 +36,7 @@ void TabSine::fillTable(const int _nr_elem) {
 // Value access
 RFLOAT TabSine::operator()(RFLOAT val) const {
     int idx =  abs(val) / sampling;
-    return DIRECT_A1D_ELEM(tabulatedValues, idx % XSIZE(tabulatedValues)) * sgn_nozero(val);
+    return DIRECT_A1D_ELEM(tabulatedValues, idx % Xsize(tabulatedValues)) * sgn_nozero(val);
 }
 
 void TabCosine::initialise(const int _nr_elem) {
@@ -56,7 +56,7 @@ void TabCosine::fillTable(const int _nr_elem) {
 // Value access
 RFLOAT TabCosine::operator()(RFLOAT val) const {
     int idx = abs(val) / sampling;
-    return DIRECT_A1D_ELEM(tabulatedValues, idx % XSIZE(tabulatedValues));
+    return DIRECT_A1D_ELEM(tabulatedValues, idx % Xsize(tabulatedValues));
 }
 
 void TabBlob::initialise(RFLOAT _radius, RFLOAT _alpha, int _order, const int _nr_elem) {
@@ -78,7 +78,7 @@ void TabBlob::fillTable(const int _nr_elem) {
 // Value access
 RFLOAT TabBlob::operator()(RFLOAT val) const {
     int idx = abs(val) / sampling;
-    if (idx >= XSIZE(tabulatedValues)) return 0.0;
+    if (idx >= Xsize(tabulatedValues)) return 0.0;
     return DIRECT_A1D_ELEM(tabulatedValues, idx);
 }
 
@@ -104,6 +104,6 @@ void TabFtBlob::fillTable(const int _nr_elem) {
 // Value access
 RFLOAT TabFtBlob::operator()(RFLOAT val) const {
     int idx = abs(val) / sampling;
-    if (idx >= XSIZE(tabulatedValues)) return 0.0;
+    if (idx >= Xsize(tabulatedValues)) return 0.0;
     return DIRECT_A1D_ELEM(tabulatedValues, idx);
 }

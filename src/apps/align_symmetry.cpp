@@ -130,7 +130,7 @@ class align_symmetry {
 
         std::cout << " Reading map: " << fn_in << std::endl;
         vol_in.read(fn_in);
-        orig_size = XSIZE(vol_in());
+        orig_size = Xsize(vol_in());
         std:: cout << " The input box size: " << orig_size << std::endl;
         if (orig_size % 2 != 0)
             REPORT_ERROR("The input box size must be an even number.");
