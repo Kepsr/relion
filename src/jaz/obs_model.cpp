@@ -879,8 +879,8 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
                 if (i_0 <= 0) {
                     // Check array boundaries
                     mtf = DIRECT_A1D_ELEM(mtf_value, 0);
-                } else if (i_0 >= MULTIDIM_SIZE(mtf_value) - 1) {
-                    mtf = DIRECT_A1D_ELEM(mtf_value,  MULTIDIM_SIZE(mtf_value) - 1);
+                } else if (i_0 >= mtf_value.size() - 1) {
+                    mtf = DIRECT_A1D_ELEM(mtf_value,  mtf_value.size() - 1);
                 } else {
                     // Linear interpolation
                     RFLOAT x_0 = DIRECT_A1D_ELEM(mtf_resol, i_0);

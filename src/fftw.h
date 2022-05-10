@@ -240,8 +240,10 @@ public:
     template <typename T>
         void getFourierCopy(T& V) {
             V.reshape(fFourier);
-            memcpy(MULTIDIM_ARRAY(V),MULTIDIM_ARRAY(fFourier),
-                MULTIDIM_SIZE(fFourier)*2*sizeof(RFLOAT));
+            memcpy(
+                MULTIDIM_ARRAY(V),MULTIDIM_ARRAY(fFourier),
+                fFourier.size() * 2 * sizeof(RFLOAT)
+            );
         }
 
     /** Return a complete Fourier transform (two halves).

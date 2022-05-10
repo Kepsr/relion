@@ -2943,7 +2943,7 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb) {
         RFLOAT Gb = sizeof(RFLOAT) / (1024.0 * 1024.0 * 1024.0);
         // A. Calculate approximate size of the reference maps
         // Forward projector has complex data, backprojector has complex data and real weight
-        RFLOAT mem_references = Gb * mymodel.nr_classes * (2 * MULTIDIM_SIZE((mymodel.PPref[0]).data) + 3 * MULTIDIM_SIZE((wsum_model.BPref[0]).data));
+        RFLOAT mem_references = Gb * mymodel.nr_classes * (2 * mymodel.PPref[0].data.size() + 3 * wsum_model.BPref[0].data.size());
         // B. Weight vectors
         RFLOAT mem_pool = Gb * mymodel.nr_classes * sampling.NrSamplingPoints(adaptive_oversampling,
                 &pointer_dir_nonzeroprior, &pointer_psi_nonzeroprior);
@@ -2966,7 +2966,7 @@ void MlOptimiser::expectationSetupCheckMemory(int myverb) {
         // Each reconstruction has to store 1 extra complex array (Fconv) and 4 extra RFLOAT arrays (Fweight, Fnewweight. vol_out and Mconv in convoluteBlobRealSpace),
         // in adddition to the RFLOAT weight-array and the complex data-array of the BPref
         // That makes a total of 2*2 + 5 = 9 * a RFLOAT array of size BPref
-        RFLOAT total_mem_Gb_max = Gb * 9 * MULTIDIM_SIZE((wsum_model.BPref[0]).data);
+        RFLOAT total_mem_Gb_max = Gb * 9 * wsum_model.BPref[0].data.size();
 
         std::cout << " Estimated memory for expectation  step > " << total_mem_Gb_exp << " Gb."<<std::endl;
         std::cout << " Estimated memory for maximization step > " << total_mem_Gb_max << " Gb."<<std::endl;
@@ -6370,7 +6370,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             // It() = DEBUGGING_COPY_exp_Mweight;
             // It.write("Mweight_copy.spi");
             It().resize(exp_Mcoarse_significant);
-            if (MULTIDIM_SIZE(It()) > 0) {
+            if (It().size() > 0) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
                     DIRECT_MULTIDIM_ELEM(It(), n) = DIRECT_MULTIDIM_ELEM(exp_Mcoarse_significant, n) ? 1.0 : 0.0;
                 }

@@ -213,13 +213,13 @@ void NewFFT::_FourierTransform(
     fftw_execute_dft_r2c(plan.getForward(), MULTIDIM_ARRAY(src), (fftw_complex*) MULTIDIM_ARRAY(dest));
 
     if (normalization == FwdOnly) {
-        const double scale = MULTIDIM_SIZE(src);
+        const double scale = src.size();
 
         for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     } else if (normalization == Both) {
-        const double scale = sqrt(MULTIDIM_SIZE(src));
+        const double scale = sqrt(src.size());
 
         for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
@@ -238,7 +238,7 @@ void NewFFT::_inverseFourierTransform(
     fftw_execute_dft_c2r(plan.getBackward(), in, MULTIDIM_ARRAY(dest));
 
     if (normalization == Both) {
-        const double scale = sqrt(MULTIDIM_SIZE(dest));
+        const double scale = sqrt(dest.size());
 
         for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
@@ -255,13 +255,13 @@ void NewFFT::_FourierTransform(
     fftwf_execute_dft_r2c(plan.getForward(), MULTIDIM_ARRAY(src), (fftwf_complex*) MULTIDIM_ARRAY(dest));
 
     if (normalization == FwdOnly) {
-        const float scale = MULTIDIM_SIZE(src);
+        const float scale = src.size();
 
         for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     } else if (normalization == Both) {
-        const float scale = sqrt(MULTIDIM_SIZE(src));
+        const float scale = sqrt(src.size());
 
         for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
@@ -280,7 +280,7 @@ void NewFFT::_inverseFourierTransform(
     fftwf_execute_dft_c2r(plan.getBackward(), in, MULTIDIM_ARRAY(dest));
 
     if (normalization == Both) {
-        const float scale = sqrt(MULTIDIM_SIZE(dest));
+        const float scale = sqrt(dest.size());
 
         for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;

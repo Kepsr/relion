@@ -149,7 +149,7 @@ class ParFourierTransformer {
         V.reshape(fFourier);
         memcpy(
             MULTIDIM_ARRAY(V), MULTIDIM_ARRAY(fFourier),
-            MULTIDIM_SIZE(fFourier) * 2 * sizeof(RFLOAT)
+            fFourier.size() * 2 * sizeof(RFLOAT)
         );
     }
 

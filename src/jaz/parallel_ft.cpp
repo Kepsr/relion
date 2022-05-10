@@ -253,7 +253,7 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
 void ParFourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) {
     memcpy(
         MULTIDIM_ARRAY(fFourier), MULTIDIM_ARRAY(inputFourier),
-        MULTIDIM_SIZE(inputFourier) * 2 * sizeof(RFLOAT)
+        inputFourier.size() * 2 * sizeof(RFLOAT)
     );
 }
 
@@ -267,9 +267,9 @@ void ParFourierTransformer::Transform(int sign) {
         // Normalisation of the transform
         unsigned long int size = 0;
         if (fReal) {
-            size = MULTIDIM_SIZE(*fReal);
+            size = fReal->size();
         } else if (fComplex) {
-            size = MULTIDIM_SIZE(*fComplex);
+            size = fComplex->size();
         } else {
             REPORT_ERROR("No complex nor real data defined");
         }

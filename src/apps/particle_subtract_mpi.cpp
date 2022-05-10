@@ -22,61 +22,56 @@
 #include "../particle_subtractor.h"
 #include "../mpi.h"
 
-int main(int argc, char *argv[])
-{
-	ParticleSubtractor prm;
+int main(int argc, char *argv[]) {
+    ParticleSubtractor prm;
 
-	int rank, size;
+    int rank, size;
 
-	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	// Handle errors
-	MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
-	MPI_Status status;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    // Handle errors
+    MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+    MPI_Status status;
 
-	try
-	{
-		prm.read(argc, argv);
+    try {
+        prm.read(argc, argv);
 
-		prm.initialise(rank, size);
+        prm.initialise(rank, size);
 
-		if (prm.fn_revert != "")
-			REPORT_ERROR("You cannot use MPI for reverting subtraction.");
+        if (prm.fn_revert != "")
+            REPORT_ERROR("You cannot use MPI for reverting subtraction.");
 
-		prm.run();
+        prm.run();
 
-		if (prm.do_ssnr)
-		{
-			MultidimArray<RFLOAT> Maux(prm.sum_S2);
-			MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_S2), MULTIDIM_ARRAY(Maux),
-					MULTIDIM_SIZE(prm.sum_S2), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-			prm.sum_S2 = Maux;
-			MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_N2), MULTIDIM_ARRAY(Maux),
-					MULTIDIM_SIZE(prm.sum_N2), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-			prm.sum_N2 = Maux;
-			MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_count), MULTIDIM_ARRAY(Maux),
-					MULTIDIM_SIZE(prm.sum_count), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-			prm.sum_count=Maux;
-		}
+        if (prm.do_ssnr) {
+            MultidimArray<RFLOAT> Maux(prm.sum_S2);
+            MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_S2), MULTIDIM_ARRAY(Maux),
+                    prm.sum_S2.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            prm.sum_S2 = Maux;
+            MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_N2), MULTIDIM_ARRAY(Maux),
+                    prm.sum_N2.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            prm.sum_N2 = Maux;
+            MPI_Allreduce(MULTIDIM_ARRAY(prm.sum_count), MULTIDIM_ARRAY(Maux),
+                    prm.sum_count.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            prm.sum_count=Maux;
+        }
 
-		prm.saveStarFile(rank);
-
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		if (rank == 0) prm.combineStarFile(rank);
-
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-	catch (RelionError XE)
-	{
-		std::cerr << XE;
-		return RELION_EXIT_FAILURE;
-	}
+        prm.saveStarFile(rank);
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-	MPI_Finalize();
+        if (rank == 0) prm.combineStarFile(rank);
 
-	return RELION_EXIT_SUCCESS;
+        MPI_Barrier(MPI_COMM_WORLD);
+    } catch (RelionError XE) {
+        std::cerr << XE;
+        return RELION_EXIT_FAILURE;
+    }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+
+    MPI_Finalize();
+
+    return RELION_EXIT_SUCCESS;
 }

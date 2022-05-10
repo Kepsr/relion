@@ -167,10 +167,6 @@ inline long int Zsize(const MultidimArray<T> &v) { return v.zdim; }
 template <typename T>
 inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
-/** Access to XYZN dimension (Nsize*Zsize*Ysize*Xsize)
- */
-#define MULTIDIM_SIZE(v) ((v).nzyxdim())
-
 /** Array access.
  *
  * This macro gives you access to the array (T **)
@@ -535,6 +531,8 @@ class MultidimArray {
 
     // Number of elements in NZYX (could be considered the size of the array)
     inline long int nzyxdim() const { return ndim * xdim * ydim * zdim; }
+
+    inline long int size() const { return nzyxdim(); }
 
     // X/Y/Zinit
     long int xinit, yinit, zinit;
@@ -3814,7 +3812,6 @@ class MultidimArray {
         fh_gplot << "plot \"PPP" + fn_tmp + ".txt\" title \"" + title +
         "\" w l\n";
         fh_gplot << "pause 300 \"\"\n";
-        fh_gplot.close();
         system((static_cast<std::string>("(gnuplot PPP") + fn_tmp + ".gpl; rm PPP" + fn_tmp + ".txt PPP" + fn_tmp + ".gpl) &").c_str());
     }
 
@@ -3918,7 +3915,7 @@ class MultidimArray {
     MultidimArray<T> &operator = (const MultidimArray<T> &op1) {
         if (&op1 != this) {
             if (!data || !sameShape(op1)) resize(op1);
-            memcpy(data, op1.data, MULTIDIM_SIZE(op1) * sizeof(T));
+            memcpy(data, op1.data, op1.size() * sizeof(T));
         }
         return *this;
     }

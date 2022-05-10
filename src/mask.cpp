@@ -270,8 +270,8 @@ void autoMask(
             std::cout << (extend_ini_mask > 0.0 ? 
             "== Extending initial binary mask ..." : 
             "== Shrinking initial binary mask ...") << std::endl;
-            init_progress_bar(MULTIDIM_SIZE(img_in) / n_threads);
-            barstep = MULTIDIM_SIZE(img_in) / 120 / n_threads;
+            init_progress_bar(img_in.size() / n_threads);
+            barstep = img_in.size() / 120 / n_threads;
             update_bar = 0;
             totalbar = 0;
         }
@@ -354,14 +354,14 @@ void autoMask(
                 }
             }
         }
-        if (verb) progress_bar(MULTIDIM_SIZE(msk_out) / n_threads);
+        if (verb) progress_bar(msk_out.size() / n_threads);
     }
 
     if (width_soft_mask_edge > 0.0) {
         if (verb) {
             std::cout << "== Making a soft edge on the extended mask ..." << std::endl;
-            init_progress_bar(MULTIDIM_SIZE(msk_out) / n_threads);
-            barstep = MULTIDIM_SIZE(msk_out) / 120 / n_threads;
+            init_progress_bar(msk_out.size() / n_threads);
+            barstep = msk_out.size() / 120 / n_threads;
             update_bar = 0;
             totalbar = 0;
         }
@@ -405,7 +405,7 @@ void autoMask(
                 totalbar++;
             }
         }
-        if (verb) progress_bar(MULTIDIM_SIZE(msk_cp) / n_threads);
+        if (verb) progress_bar(msk_cp.size() / n_threads);
     }
 
 }

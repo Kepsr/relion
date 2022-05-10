@@ -202,9 +202,9 @@ void Projector::computeFourierTransformMap(
     if (do_heavy && do_gpu) {
         cufftEstimateMany(ref_dim, n, NULL, 0, 0, NULL, 0, 0, cufft_type, 1, &ws_sz);
 
-        mem_req = (size_t) sizeof(RFLOAT) * MULTIDIM_SIZE(vol_in)  // dvol
+        mem_req = (size_t) sizeof(RFLOAT) * vol_in.size()  // dvol
                 + (size_t) sizeof(Complex) * Faux_sz               // dFaux
-                + (size_t) sizeof(RFLOAT) * MULTIDIM_SIZE(Mpad)    // dMpad
+                + (size_t) sizeof(RFLOAT) * Mpad.size()    // dMpad
                 + ws_sz + 4096;                                    // workspace for cuFFT + extra space for alingment
     }
 
@@ -231,9 +231,9 @@ void Projector::computeFourierTransformMap(
         }
     }
     ptrFactory = allocator;
-    dMpad = ptrFactory.make<RFLOAT>(MULTIDIM_SIZE(Mpad));
+    dMpad = ptrFactory.make<RFLOAT>(Mpad.size());
     dFaux = ptrFactory.make<Complex>(Faux_sz);
-    dvol  = ptrFactory.make<RFLOAT>(MULTIDIM_SIZE(vol_in));
+    dvol  = ptrFactory.make<RFLOAT>(vol_in.size());
     if (do_heavy && do_gpu) {
         dvol.setHostPtr(MULTIDIM_ARRAY(vol_in));
         dvol.accAlloc();
@@ -358,8 +358,8 @@ void Projector::computeFourierTransformMap(
     // (other points will be zero because of initZeros() call above
     // Also calculate radial power spectrum
     #ifdef CUDA
-    int fourier_mask_sz = do_fourier_mask ? MULTIDIM_SIZE(*fourier_mask) : 16;
-    ddata = ptrFactory.make<Complex>(MULTIDIM_SIZE(data));
+    int fourier_mask_sz = do_fourier_mask ? fourier_mask->size() : 16;
+    ddata = ptrFactory.make<Complex>(data.size());
     dfourier_mask = ptrFactory.make<RFLOAT>(fourier_mask_sz);
     dpower_spectrum = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
     dcounter = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);

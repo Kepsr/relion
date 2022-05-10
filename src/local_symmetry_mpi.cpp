@@ -235,8 +235,8 @@ void local_symmetry_parameters_mpi::run() {
         if (node->isLeader())
             std::cout << " Leader is broadcasting cropped masked region #" << (imask + 1) << " ..." << std::endl;
         #endif
-        node->relion_MPI_Bcast(MULTIDIM_ARRAY(mask_cropped), MULTIDIM_SIZE(mask_cropped), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        node->relion_MPI_Bcast(MULTIDIM_ARRAY(src_cropped),  MULTIDIM_SIZE(src_cropped),  MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        node->relion_MPI_Bcast(MULTIDIM_ARRAY(mask_cropped), mask_cropped.size(), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        node->relion_MPI_Bcast(MULTIDIM_ARRAY(src_cropped),  src_cropped.size(),  MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
         #ifdef DEBUG
         if (node->isLeader())
             std::cout << " Leader has completed broadcasting cropped masked region #" << (imask + 1) << "." << std::endl;
@@ -359,7 +359,7 @@ void local_symmetry_parameters_mpi::run() {
             MPI_Barrier(MPI_COMM_WORLD);
 
             // Leader sends this 'dest' cropped region to all followers
-            node->relion_MPI_Bcast(MULTIDIM_ARRAY(dest_cropped), MULTIDIM_SIZE(dest_cropped), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            node->relion_MPI_Bcast(MULTIDIM_ARRAY(dest_cropped), dest_cropped.size(), MY_MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
             // Leader sends the number of total samplings to all followers
             node->relion_MPI_Bcast(&nr_total_samplings, 1, MPI_INT, 0, MPI_COMM_WORLD);

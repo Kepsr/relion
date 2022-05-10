@@ -804,7 +804,7 @@ void MlModel::initialisePdfDirection(long long int newsize) {
     // If the pdf_direction were already filled (size!=0), and newsize=oldsize then leave them as they were
     // If they were still empty, or if the size changes, then initialise them with an even distribution
     for (int iclass = 0; iclass < nr_classes * nr_bodies; iclass++) {
-        long long int oldsize = MULTIDIM_SIZE(pdf_direction[iclass]);
+        long long int oldsize = pdf_direction[iclass].size();
         if (oldsize == 0 || oldsize != newsize) {
             pdf_direction[iclass].resize(newsize);
             pdf_direction[iclass].initConstant(1.0 / ((RFLOAT) nr_classes * newsize));
@@ -1490,7 +1490,7 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed) {
         }
     }
 
-    unsigned long long packed_size = MULTIDIM_SIZE(packed);
+    unsigned long long packed_size = packed.size();
     packed.clear();
 
     // Just to check whether we went outside our memory...
@@ -1550,9 +1550,9 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
     #ifdef DEBUG_PACK
     std::cerr << " PACK: idx_start= " << idx_start << " idx_stop= " << idx_stop << " piece= " << piece << " nr_pieces= " << nr_pieces <<" packed_size= "<<packed_size<< std::endl;
     std::cerr << " nr_classes= " << nr_classes << " nr_groups= " << nr_groups << " packed_size= " << packed_size << std::endl;
-    std::cerr << " MULTIDIM_SIZE(sigma2_noise[0])= " << MULTIDIM_SIZE(sigma2_noise[0]) /*<< " MULTIDIM_SIZE(wsum_signal_product_spectra[0])= " << MULTIDIM_SIZE(wsum_signal_product[0]) << " MULTIDIM_SIZE(wsum_reference_power_spectra[0])= " << MULTIDIM_SIZE(wsum_reference_power[0]) */<< std::endl;
+    std::cerr << " sigma2_noise[0].size()= " << sigma2_noise[0].size() /*<< " wsum_signal_product_spectra[0].size()= " << wsum_signal_product[0].size() << " wsum_reference_power_spectra[0].size()= " << wsum_reference_power[0].size() */<< std::endl;
     std::cerr << " sigma2_noise.size()= " << sigma2_noise.size() << " wsum_signal_product_spectra.size()= " << wsum_signal_product.size() << " wsum_signal_product_spectra.size()= " << wsum_signal_product.size() << std::endl;
-    std::cerr << " MULTIDIM_SIZE(pdf_direction[0])= " << MULTIDIM_SIZE(pdf_direction[0]) << " pdf_direction.size()= " << pdf_direction.size()<<std::endl;
+    std::cerr << " pdf_direction[0].size()= " << pdf_direction[0].size() << " pdf_direction.size()= " << pdf_direction.size()<<std::endl;
     #endif
 
     // Get memory for the packed array
@@ -1660,10 +1660,10 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed, int piece, bool do_clear
     if (piece < 0) {
         // Special case: prevent making multiple pieces if input piece is negative
         idx_start = 0;
-        idx_stop  = MULTIDIM_SIZE(packed);
+        idx_stop  = packed.size();
     } else {
         idx_start = (unsigned long long)piece * MAX_PACK_SIZE;
-        idx_stop  = idx_start + (unsigned long long)MULTIDIM_SIZE(packed);
+        idx_stop  = idx_start + (unsigned long long)packed.size();
     }
     unsigned long long ori_idx = 0;
     unsigned long long idx = 0;
@@ -1751,8 +1751,7 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed, int piece, bool do_clear
         }
     }
 
-
-    unsigned long long packed_size = MULTIDIM_SIZE(packed);
+    unsigned long long packed_size = packed.size();
     // Free memory
     if (do_clear)
         packed.clear();

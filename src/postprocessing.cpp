@@ -274,8 +274,8 @@ void Postprocessing::divideByMtf(MultidimArray<Complex > &FT) {
                 int i_0 = floor(res / res_per_elem);
                 RFLOAT mtf;
                 // check boundaries of the array
-                if (i_0 >= MULTIDIM_SIZE(mtf_value) - 1) {
-                    mtf = DIRECT_A1D_ELEM(mtf_value,  MULTIDIM_SIZE(mtf_value) - 1);
+                if (i_0 >= mtf_value.size() - 1) {
+                    mtf = DIRECT_A1D_ELEM(mtf_value, mtf_value.size() - 1);
                 } else if (i_0 <= 0) {
                     mtf = DIRECT_A1D_ELEM(mtf_value, 0);
                 } else {
@@ -986,13 +986,13 @@ void Postprocessing::run_locres(int rank, int size) {
 
     if (size > 1) {
         I1m.initZeros();
-        MPI_Allreduce(MULTIDIM_ARRAY(Ifil), MULTIDIM_ARRAY(I1m), MULTIDIM_SIZE(Ifil), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(MULTIDIM_ARRAY(Ifil), MULTIDIM_ARRAY(I1m), Ifil.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Ifil = I1m;
         I1m.initZeros();
-        MPI_Allreduce(MULTIDIM_ARRAY(Ilocres), MULTIDIM_ARRAY(I1m), MULTIDIM_SIZE(Ilocres), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(MULTIDIM_ARRAY(Ilocres), MULTIDIM_ARRAY(I1m), Ilocres.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Ilocres = I1m;
         I1m.initZeros();
-        MPI_Allreduce(MULTIDIM_ARRAY(Isumw), MULTIDIM_ARRAY(I1m), MULTIDIM_SIZE(Isumw), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(MULTIDIM_ARRAY(Isumw), MULTIDIM_ARRAY(I1m), Isumw.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Isumw = I1m;
     }
 

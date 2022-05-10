@@ -19,54 +19,48 @@
  ***************************************************************************/
 #include "src/reconstructor_mpi.h"
 
-void ReconstructorMpi::read(int argc, char **argv)
-{
-	// Define a new MpiNode
-	node = new MpiNode(argc, argv);
+void ReconstructorMpi::read(int argc, char **argv) {
+    // Define a new MpiNode
+    node = new MpiNode(argc, argv);
 
-	// First read in non-parallelisation-dependent variables
-	Reconstructor::read(argc, argv);
+    // First read in non-parallelisation-dependent variables
+    Reconstructor::read(argc, argv);
 
-	// Don't put any output to screen for mpi followers
-	verb = (node->isLeader()) ? verb : 0;
+    // Don't put any output to screen for mpi followers
+    verb = (node->isLeader()) ? verb : 0;
 
-	// Possibly also read parallelisation-dependent variables here
+    // Possibly also read parallelisation-dependent variables here
 
-	if (node->size < 2)
-		REPORT_ERROR("ReconstductMpi::read ERROR: this program needs to be run with at least two MPI processes!");
+    if (node->size < 2)
+        REPORT_ERROR("ReconstductMpi::read ERROR: this program needs to be run with at least two MPI processes!");
 
-	// Print out MPI info
-	printMpiNodesMachineNames(*node);
+    // Print out MPI info
+    printMpiNodesMachineNames(*node);
 
 }
 
-void ReconstructorMpi::run()
-{
+void ReconstructorMpi::run() {
 
 
-	if (fn_debug != "")
-	{
-		Reconstructor::readDebugArrays();
-	}
-	else
-	{
-		Reconstructor::initialise();
-		Reconstructor::backproject(node->rank, node->size);
+    if (fn_debug != "") {
+        Reconstructor::readDebugArrays();
+    } else {
+        Reconstructor::initialise();
+        Reconstructor::backproject(node->rank, node->size);
 
-		MultidimArray<Complex> sumd(backprojector.data);
-		MultidimArray<RFLOAT> sumw(backprojector.weight);
-		MPI_Allreduce(MULTIDIM_ARRAY(backprojector.data), MULTIDIM_ARRAY(sumd), 2*MULTIDIM_SIZE(backprojector.data), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-		MPI_Allreduce(MULTIDIM_ARRAY(backprojector.weight), MULTIDIM_ARRAY(sumw), MULTIDIM_SIZE(backprojector.weight), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MultidimArray<Complex> sumd(backprojector.data);
+        MultidimArray<RFLOAT> sumw(backprojector.weight);
+        MPI_Allreduce(MULTIDIM_ARRAY(backprojector.data),   MULTIDIM_ARRAY(sumd), 2 * backprojector.data.size(),   MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(MULTIDIM_ARRAY(backprojector.weight), MULTIDIM_ARRAY(sumw),     backprojector.weight.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-		if (node->isLeader())
-		{
-			backprojector.data = sumd;
-			backprojector.weight = sumw;
-		}
+        if (node->isLeader()) {
+            backprojector.data = sumd;
+            backprojector.weight = sumw;
+        }
 
-	}
+    }
 
-	if (node->isLeader())
-		reconstruct();
+    if (node->isLeader())
+        reconstruct();
 
 }
