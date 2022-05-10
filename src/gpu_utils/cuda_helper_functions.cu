@@ -6,41 +6,38 @@
 #include "src/error.h"
 
 long int makeJobsForDiff2Fine(
-        OptimisationParamters &op,  SamplingParameters &sp,
-        long int orientation_num, long int translation_num,
-        ProjectionParams &FineProjectionData,
-        std::vector< long unsigned > &iover_transes,
-        std::vector< long unsigned > &ihiddens,
-        long int nr_over_orient, long int nr_over_trans, int ipart,
-        IndexedDataArray &FPW, // FPW=FinePassWeights
-        IndexedDataArrayMask &dataMask,
-        int chunk)
-{
+    OptimisationParamters &op,  SamplingParameters &sp,
+    long int orientation_num, long int translation_num,
+    ProjectionParams &FineProjectionData,
+    std::vector< long unsigned > &iover_transes,
+    std::vector< long unsigned > &ihiddens,
+    long int nr_over_orient, long int nr_over_trans, int ipart,
+    IndexedDataArray &FPW, // FPW=FinePassWeights
+    IndexedDataArrayMask &dataMask,
+    int chunk
+) {
     long int w_base = dataMask.firstPos, w(0), k(0);
     // be on the safe side with the jobArrays: make them as large as they could possibly be
     // (this will be reduced at exit of this function)
-    dataMask.setNumberOfJobs(orientation_num*translation_num);
-    dataMask.setNumberOfWeights(orientation_num*translation_num);
+    dataMask.setNumberOfJobs(orientation_num * translation_num);
+    dataMask.setNumberOfWeights(orientation_num * translation_num);
     dataMask.jobOrigin.host_alloc();
     dataMask.jobExtent.host_alloc();
 
-    dataMask.jobOrigin[k]=0;
-    for (long unsigned i = 0; i < orientation_num; i++)
-    {
-        dataMask.jobExtent[k]=0;
-        int tk=0;
+    dataMask.jobOrigin[k] = 0;
+    for (long unsigned i = 0; i < orientation_num; i++) {
+        dataMask.jobExtent[k] = 0;
+        int tk = 0;
         long int iover_rot = FineProjectionData.iover_rots[i];
-        for (long unsigned j = 0; j < translation_num; j++)
-        {
+        for (long unsigned j = 0; j < translation_num; j++) {
             long int iover_trans = iover_transes[j];
             long int ihidden = FineProjectionData.iorientclasses[i] * sp.nr_trans + ihiddens[j];
 
-            if (DIRECT_A2D_ELEM(op.Mcoarse_significant, ipart, ihidden)==1)
-            {
-                FPW.rot_id[w_base+w] = FineProjectionData.iorientclasses[i] % (sp.nr_dir*sp.nr_psi);     // where to look for priors etc
-                FPW.rot_idx[w_base+w] = i;                    // which rot for this significant task
-                FPW.trans_idx[w_base+w] = j;                    // which trans       - || -
-                FPW.ihidden_overs[w_base+w]= (ihidden * nr_over_orient + iover_rot) * nr_over_trans + iover_trans;
+            if (DIRECT_A2D_ELEM(op.Mcoarse_significant, ipart, ihidden) == 1) {
+                FPW.rot_id[w_base + w] = FineProjectionData.iorientclasses[i] % (sp.nr_dir * sp.nr_psi);     // where to look for priors etc
+                FPW.rot_idx[w_base + w] = i;                    // which rot for this significant task
+                FPW.trans_idx[w_base + w] = j;                    // which trans       - || -
+                FPW.ihidden_overs[w_base + w]= (ihidden * nr_over_orient + iover_rot) * nr_over_trans + iover_trans;
 
                 if (tk>=chunk)
                 {
@@ -1151,20 +1148,19 @@ void selfApplyBeamTilt2(
     RFLOAT boxsize = angpix * ori_size;
     RFLOAT factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize);
 
-    for (unsigned n = 0 ; n < Fimg.yxdim(); n++) {
-        // divmod?
-        unsigned i = n / Fimg.xdim;
-        unsigned j = n % Fimg.xdim;
+    for (unsigned n = 0 ; n < Fimg.xdim * Fimg.ydim; n++) {
+        div_t division = std::div(n, Fimg.xdim);
+        unsigned i = division.quot;
+        unsigned j = division.rem;
         unsigned jp = j;
         int ip = i < Fimg.xdim ? i : i - Fimg.ydim;
 
         RFLOAT delta_phase = factor * (ip * ip + jp * jp) * (ip * beamtilt_y + jp * beamtilt_x);
-        RFLOAT realval = Fimg.data[i * Fimg.xdim + j].real;
-        RFLOAT imagval = Fimg.data[i * Fimg.xdim + j].imag;
-        RFLOAT mag = sqrt(realval * realval + imagval * imagval);
-        RFLOAT phas = atan2(imagval, realval) + radians(delta_phase);  // apply phase shift!
-        realval = mag * cos(phas);
-        imagval = mag * sin(phas);
-        Fimg.data[i * Fimg.xdim + j] = Complex(realval, imagval);
+        Complex Z = Fimg.data[i * Fimg.xdim + j];
+        RFLOAT mag = sqrt(Z.real * Z.real + Z.imag * Z.imag);
+        RFLOAT phas = atan2(Z.imag, Z.real) + radians(delta_phase);  // apply phase shift!
+        Z.real = mag * cos(phas);
+        Z.imag = mag * sin(phas);
+        Fimg.data[i * Fimg.xdim + j] = Z;
     }
 }

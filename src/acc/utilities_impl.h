@@ -322,15 +322,15 @@ static void TranslateAndNormCorrect(
     #ifdef CUDA
     int BSZ = ((int) ceilf((float)temp.getSize() /(float)BLOCK_SIZE));
     if (DATA3D)
-        CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
+        CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
     else
-        CudaKernels::cuda_kernel_translate2D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,xOff,yOff);
+        CudaKernels::cuda_kernel_translate2D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,xOff,yOff); // BUG? should be no zdim?
     //LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
     #else
     if (DATA3D)
-        CpuKernels::cpu_translate3D<XFLOAT>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
+        CpuKernels::cpu_translate3D<XFLOAT>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
     else
-        CpuKernels::cpu_translate2D<XFLOAT>(temp(),img_out(),img_in.zyxdim(),img_in.xdim,img_in.ydim,xOff,yOff);
+        CpuKernels::cpu_translate2D<XFLOAT>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,xOff,yOff);
 #endif
 }
 template<typename MlClass>

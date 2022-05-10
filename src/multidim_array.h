@@ -533,14 +533,8 @@ class MultidimArray {
 
     /// TODO: Manage access to xdim, ydim, zdim, ndim.
 
-    // Number of elements in YX
-    inline long int yxdim() const { return ydim * xdim; }
-
-    // Number of elements in ZYX
-    inline long int zyxdim() const { return zdim * yxdim(); }
-
     // Number of elements in NZYX (could be considered the size of the array)
-    inline long int nzyxdim() const { return ndim * zyxdim(); }
+    inline long int nzyxdim() const { return ndim * xdim * ydim * zdim; }
 
     // X/Y/Zinit
     long int xinit, yinit, zinit;
@@ -1210,9 +1204,7 @@ class MultidimArray {
         return Origin(xinit, yinit, zinit);
     }
 
-    long int getSize() const {
-        return nzyxdim();
-    }
+    long int getSize() const { return nzyxdim(); }
 
     /** The dimension of an array.
      *
@@ -2670,7 +2662,7 @@ class MultidimArray {
         long int n;
         for (
             n = 0, optr = output.data, arg1ptr = arg1.data, arg2ptr = arg2.data;
-            n < arg1.zyxdim();
+            n < arg1.xdim * arg1.ydim * arg1.zdim;
             ++n, ++arg1ptr, ++arg2ptr, ++optr
         ) {
             switch (operation) {
@@ -2787,15 +2779,11 @@ class MultidimArray {
         MultidimArray<T> &output,
         const char operation
     ) {
-        T *iptr, *optr;
+        T *iptr = input.data, *optr = output.data;
         // These two pointers will move through (respectively) input and output.
-        // The value stored at iptr will be used to assign the value stored at optr.
-        long int n;
-        for (
-            n = 0, optr = output.data, iptr = input.data;
-            n < input.zyxdim();
-            ++n, ++optr, ++iptr
-        ) {
+        // *iptr will be used to assign *optr.
+        long int n = 0;
+        for (; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr) {
             // This switch will be evaluated for EVERY SINGLE LOOP ITERATION.
             // Even though operation never changes.
             // There must be a better way!
@@ -2919,9 +2907,9 @@ class MultidimArray {
         MultidimArray<T> &output,
         const char operation
     ) {
-        T *iptr, *optr;
-        long int n;
-        for (n = 0, optr = output.data, iptr = input.data; n < input.zyxdim(); ++n, ++optr, ++iptr)
+        T *iptr = output.data, *optr = input.data;
+        long int n = 0;
+        for (; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr)
             switch (operation) {
 
                 case '+': *optr = scalar + *iptr; break;
