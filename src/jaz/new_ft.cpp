@@ -215,13 +215,13 @@ void NewFFT::_FourierTransform(
     if (normalization == FwdOnly) {
         const double scale = MULTIDIM_SIZE(src);
 
-        for (long int i = 0; i < NZYXSIZE(dest); i++) {
+        for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     } else if (normalization == Both) {
         const double scale = sqrt(MULTIDIM_SIZE(src));
 
-        for (long int i = 0; i < NZYXSIZE(dest); i++) {
+        for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     }
@@ -240,7 +240,7 @@ void NewFFT::_inverseFourierTransform(
     if (normalization == Both) {
         const double scale = sqrt(MULTIDIM_SIZE(dest));
 
-        for (long int i = 0; i < NZYXSIZE(dest); i++) {
+        for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     }
@@ -257,13 +257,13 @@ void NewFFT::_FourierTransform(
     if (normalization == FwdOnly) {
         const float scale = MULTIDIM_SIZE(src);
 
-        for (long int i = 0; i < NZYXSIZE(dest); i++) {
+        for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     } else if (normalization == Both) {
         const float scale = sqrt(MULTIDIM_SIZE(src));
 
-        for (long int i = 0; i < NZYXSIZE(dest); i++) {
+        for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     }
@@ -282,7 +282,7 @@ void NewFFT::_inverseFourierTransform(
     if (normalization == Both) {
         const float scale = sqrt(MULTIDIM_SIZE(dest));
 
-        for (long int i = 0; i < NZYXSIZE(dest); i++) {
+        for (long int i = 0; i < dest.nzyxdim(); i++) {
             dest.data[i] /= scale;
         }
     }

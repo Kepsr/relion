@@ -203,7 +203,7 @@ bool Postprocessing::getMask() {
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Im()) {
             if (DIRECT_MULTIDIM_ELEM(Im(), n) > 0.5) { summask++; }
         }
-        avg = (RFLOAT)summask / (RFLOAT) NZYXSIZE(Im());
+        avg = (RFLOAT)summask / (RFLOAT) Im().nzyxdim();
         frac_solvent_mask = 0.476 /avg;
         molweight_frommask = avg * std::pow(Xsize(Im()) * angpix, 3) * 0.81;
 

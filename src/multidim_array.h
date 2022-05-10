@@ -167,21 +167,9 @@ inline long int Zsize(const MultidimArray<T> &v) { return v.zdim; }
 template <typename T>
 inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
-/** Access to XY dimension (Ysize*Xsize)
- */
-#define YXSIZE(v) ((v).yxdim())
-
-/** Access to XYZ dimension (Zsize*Ysize*Xsize)
- */
-#define ZYXSIZE(v) ((v).zyxdim())
-
 /** Access to XYZN dimension (Nsize*Zsize*Ysize*Xsize)
  */
 #define MULTIDIM_SIZE(v) ((v).nzyxdim())
-
-/** Access to XYZN dimension (Nsize*Zsize*Ysize*Xsize)
- */
-#define NZYXSIZE(v) ((v).nzyxdim())
 
 /** Array access.
  *
@@ -195,7 +183,12 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  * v is the array, l is the image, k is the slice, i is the Y index and j is the X index.
  * i and j) within the slice.
  */
-#define DIRECT_NZYX_ELEM(v, l, k, i, j) ((v).data[(l)*ZYXSIZE(v)+(k)*YXSIZE(v)+((i) * Xsize(v))+(j)])
+#define DIRECT_NZYX_ELEM(v, l, k, i, j) ((v).data[ \
+          (l) * Xsize(v) * Ysize(v) * Zsize(v) \
+        + (k) * Xsize(v) * Ysize(v) \
+        + (i) * Xsize(v) \
+        + (j) \
+    ])
 
 /** Multidim element: Logical access.
  */
@@ -284,7 +277,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 /** Access to a direct element.
  * v is the array, k is the slice (Z), i is the Y index and j is the X index.
  */
-#define DIRECT_A3D_ELEM(v,k,i,j) ((v).data[(k)*YXSIZE(v)+((i) * Xsize(v))+(j)])
+#define DIRECT_A3D_ELEM(v,k,i,j) ((v).data[(k) * Xsize(v) * Ysize(v) + ((i) * Xsize(v))+(j)])
 
 /** A short alias for the previous function.
  *

@@ -717,14 +717,14 @@ class Image {
         size_t datatypesize; // bytes
         size_t pagesize; // bytes
         if (datatype == UHalf) {
-            if (YXSIZE(data) % 2 != 0) {
-                REPORT_ERROR("For UHalf, YXSIZE(data) must be even.");
+            if (Xsize(data) * Ysize(data) % 2 != 0) {
+                REPORT_ERROR("For UHalf, Xsize(data) * Ysize(data) must be even.");
             }
             /// BUG: datatypesize not set
-            pagesize = ZYXSIZE(data) / 2;
+            pagesize = Xsize(data) * Ysize(data) * Zsize(data) / 2;
         } else {
             datatypesize = gettypesize(datatype);
-            pagesize = ZYXSIZE(data) * datatypesize;
+            pagesize = Xsize(data) * Ysize(data) * Zsize(data) * datatypesize;
         }
         size_t haveread_n = 0; // number of pixels (not necessarily bytes!) processed so far
 

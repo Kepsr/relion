@@ -481,16 +481,16 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
                     mean += DIRECT_MULTIDIM_ELEM(Isum, n);
                 }
-                mean /= YXSIZE(Isum);
+                mean /= Xsize(Isum) * Ysize(Isum);
                 #pragma omp parallel for reduction(+:std) num_threads(nr_omp_threads)
                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
                     RFLOAT d = (DIRECT_MULTIDIM_ELEM(Isum, n) - mean);
                     std += d * d;
                 }
-                std = std::sqrt(std / YXSIZE(Isum));
+                std = std::sqrt(std / (Xsize(Isum) * Ysize(Isum)));
 
                 mean /= n_frames;
-                std /= n_frames;
+                std  /= n_frames;
                 Isum.clear();
 
                 // std::cout << "DEBUG: defect correction: mean = " << mean << " std = " << std << std::endl;

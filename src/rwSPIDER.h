@@ -209,7 +209,7 @@ int Image<T>::readSPIDER(long int img_select) {
 
     #ifdef DEBUG
     size_t header_size = offset;
-    size_t image_size  = header_size + ZYXSIZE(data) * sizeof(float);
+    size_t image_size  = header_size + Xsize(data) * Ysize(data) * Zsize(data) * sizeof(float);
     std::cerr << "DEBUG readSPIDER: header_size = " << header_size << " image_size = " << image_size << std::endl;
     std::cerr << "DEBUG readSPIDER: img_select= " << img_select << " n= " << dims.n << " pad = " << pad << std::endl;
     #endif
@@ -259,7 +259,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     header->labrec = labrec;     // # header records
     header->labbyt = labbyt;     // Size of header in bytes
 
-    header->irec   = labrec + floor(ZYXSIZE(data) * sizeof(float) / lenbyt + 0.999999); // Total # records
+    header->irec   = labrec + floor(Xsize(data) * Ysize(data) * Zsize(data) * sizeof(float) / lenbyt + 0.999999); // Total # records
     header->nsam   = dims.x;
     header->nrow   = dims.y;
     header->nslice = dims.z;

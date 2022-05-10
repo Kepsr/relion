@@ -1026,13 +1026,13 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
             mean += DIRECT_MULTIDIM_ELEM(Isum, n);
         }
-        mean /=  YXSIZE(Isum);
+        mean /= Xsize(Isum) * Ysize(Isum);
         #pragma omp parallel for reduction(+:std) num_threads(n_threads)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
             RFLOAT d = DIRECT_MULTIDIM_ELEM(Isum, n) - mean;
             std += d * d;
         }
-        std = std::sqrt(std / YXSIZE(Isum));
+        std = std::sqrt(std / (Xsize(Isum) * Ysize(Isum)));
         const RFLOAT threshold = mean + hotpixel_sigma * std;
         logfile << "In unaligned sum, Mean = " << mean << " Std = " << std << " Hotpixel threshold = " << threshold << std::endl;
 

@@ -553,7 +553,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
         if (nr_parts_on_scratch[optics_group] == 0) {
             Image<RFLOAT> tmp;
             tmp.read(fn_img, false); // false means: only read the header!
-            one_part_space = ZYXSIZE(tmp()) * sizeof(float); // MRC images are stored in floats!
+            one_part_space = Xsize(tmp()) * Ysize(tmp()) * Zsize(tmp()) * sizeof(float); // MRC images are stored in floats!
             if (is_3D != (Zsize(tmp()) > 1)) REPORT_ERROR("BUG: inconsistent is_3D values!");
             // add MRC header size for subtomograms, which are stored as 1 MRC file each
             if (is_3D) {
