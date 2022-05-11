@@ -117,8 +117,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
         #pragma omp parallel for num_threads(nr_threads) reduction(+:stable)
         FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(defects()) {
             short val = defects()[n];
-            if (val >= thresh_reliable)
-                stable++;
+            if (val >= thresh_reliable) { stable++; }
         }
 
         printf(
@@ -384,11 +383,9 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
             }
         } else if (mrc_mode == 2) {
             gain().reshape(ny, nx);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain())
-                gain()[n] = 999.9;
+            for (auto &x : gain()) { x = 999.9; }
             defects().reshape(ny, nx);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(defects())
-                defects()[n] = -1;
+            for (auto &x : defects()) { x = -1; }
 
             if (!do_estimate)
                 std::cerr << "WARNING: To effectively compress mode 2 MRC files, you should first estimate the gain with --estimate_gain." << std::endl;
@@ -397,8 +394,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         if (!do_estimate && mrc_mode == 2) {
             /// TODO: other strategy
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain())
-                if (defects()[n] < thresh_reliable)
-                    gain()[n] = 1.0;
+                if (defects()[n] < thresh_reliable) { gain()[n] = 1.0; }
 
             if (rank == 0 && fn_gain != "") {
                 gain.write(fn_out + "gain-reference.mrc");

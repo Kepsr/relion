@@ -641,10 +641,8 @@ void ParticleSubtractor::subtractOneParticle(
 
     if (opt.do_scale_correction) {
         int group_id = opt.mydata.getGroupId(part_id, 0);
-        RFLOAT myscale = opt.mymodel.scale_correction[group_id];
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsubtrahend) {
-            Fsubtrahend[n] *= myscale;
-        }
+        RFLOAT scale = opt.mymodel.scale_correction[group_id];
+        for (auto &x : Fsubtrahend) { x *= scale; }
     }
 
     // Do the actual subtraction

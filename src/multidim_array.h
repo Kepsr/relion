@@ -1467,14 +1467,10 @@ class MultidimArray {
     }
 
     /** Return Y dimension. */
-    inline long int rowNumber() const {
-        return ydim;
-    }
+    inline long int rowNumber() const { return ydim; }
 
     /** Return X dimension. */
-    inline long int colNumber() const {
-        return xdim;
-    }
+    inline long int colNumber() const { return xdim; }
 
     // Wouldn't it be nice to have this in the Xmipp namespace? As in:
     // Xmipp::setOrigin(arr);
@@ -1587,6 +1583,9 @@ class MultidimArray {
     //@{
 
     T& operator [] (long int n) const { return data[n]; }
+
+    T* begin() const { return data; }
+    T* end() const { return &data[size()]; }
 
     /** Volume element access by RFLOAT vector.
      *

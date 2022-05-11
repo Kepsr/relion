@@ -297,9 +297,7 @@ void MlModel::read(FileName fn_in) {
                 REPORT_ERROR("MlModel::readStar: incorrect table model_group_" + integerToString(igroup + 1));
             }
         } else {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigma2_noise[igroup]) {
-                sigma2_noise[igroup][n] = 0.0;
-            }
+            for (auto &x : sigma2_noise[igroup]) { x = 0.0; }
         }
     }
 
@@ -1397,9 +1395,7 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed) {
     packed[idx++] = sigma2_psi;
 
     for (int igroup = 0; igroup < nr_groups; igroup++) {
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigma2_noise[igroup]) {
-            packed[idx++] = sigma2_noise[igroup][n];
-        }
+        for (auto &x : sigma2_noise[igroup]) { packed[idx++] = x; }
         sigma2_noise[igroup].clear();
 
         packed[idx++] = wsum_signal_product[igroup];
@@ -1409,18 +1405,18 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed) {
     }
     for (int iclass = 0; iclass < nr_classes * nr_bodies; iclass++) {
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].data) {
-            packed[idx++] = BPref[iclass].data[n].real;
-            packed[idx++] = BPref[iclass].data[n].imag;
+        for (auto &x : BPref[iclass].data) {
+            packed[idx++] = x.real;
+            packed[idx++] = x.imag;
         }
         BPref[iclass].data.clear();
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].weight) {
-            packed[idx++] = BPref[iclass].weight[n];
+        for (auto &x : BPref[iclass].weight) {
+            packed[idx++] = x;
         }
         BPref[iclass].weight.clear();
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(pdf_direction[iclass]) {
-            packed[idx++] = pdf_direction[iclass][n];
+        for (auto &x : pdf_direction[iclass]) {
+            packed[idx++] = x;
         }
     }
     for (int iclass = 0; iclass < nr_classes; iclass++) {
@@ -1459,8 +1455,8 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed) {
 
     for (int igroup = 0; igroup < nr_groups; igroup++) {
         sigma2_noise[igroup].resize(spectral_size);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigma2_noise[igroup]) {
-            sigma2_noise[igroup][n] = packed[idx++];
+        for (auto &x : sigma2_noise[igroup]) {
+            x = packed[idx++];
         }
         wsum_signal_product[igroup] = packed[idx++];
         wsum_reference_power[igroup] = packed[idx++];
@@ -1469,16 +1465,16 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed) {
 
     for (int iclass = 0; iclass < nr_classes * nr_bodies; iclass++) {
         BPref[iclass].initialiseDataAndWeight(current_size);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].data) {
-            BPref[iclass].data[n].real = packed[idx++];
-            BPref[iclass].data[n].imag = packed[idx++];
+        for (auto &x : BPref[iclass].data) {
+            x.real = packed[idx++];
+            x.imag = packed[idx++];
         }
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].weight) {
-            BPref[iclass].weight[n] = packed[idx++];
+        for (auto &x : BPref[iclass].weight) {
+            x = packed[idx++];
         }
         pdf_direction[iclass].resize(nr_directions);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(pdf_direction[iclass]) {
-            pdf_direction[iclass][n] = packed[idx++];
+        for (auto &x : pdf_direction[iclass]) {
+            x = packed[idx++];
         }
     }
     for (int iclass = 0; iclass < nr_classes; iclass++) {
@@ -1577,8 +1573,8 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
     ori_idx++;
 
     for (int igroup = 0; igroup < nr_groups; igroup++) {
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigma2_noise[igroup]) {
-            if (ori_idx >= idx_start && ori_idx < idx_stop) packed[idx++] = sigma2_noise[igroup][n];
+        for (auto &x : sigma2_noise[igroup]) {
+            if (ori_idx >= idx_start && ori_idx < idx_stop) { packed[idx++] = x; }
             ori_idx++;
         }
         if (idx == ori_idx && do_clear)
@@ -1594,25 +1590,25 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
 
     }
     for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].data) {
-            if (ori_idx >= idx_start && ori_idx < idx_stop) packed[idx++] = BPref[iclass].data[n].real;
+        for (auto &x : BPref[iclass].data) {
+            if (ori_idx >= idx_start && ori_idx < idx_stop) { packed[idx++] = x.real; }
             ori_idx++;
-            if (ori_idx >= idx_start && ori_idx < idx_stop) packed[idx++] = BPref[iclass].data[n].imag;
+            if (ori_idx >= idx_start && ori_idx < idx_stop) { packed[idx++] = x.imag; }
             ori_idx++;
         }
         // Only clear after the whole array has been packed... i.e. not when we reached the pack_size halfway through
         if (idx == ori_idx && do_clear)
             BPref[iclass].data.clear();
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].weight) {
-            if (ori_idx >= idx_start && ori_idx < idx_stop) packed[idx++] = BPref[iclass].weight[n];
+        for (auto &x : BPref[iclass].weight) {
+            if (ori_idx >= idx_start && ori_idx < idx_stop) { packed[idx++] = x; }
             ori_idx++;
         }
         if (idx == ori_idx && do_clear)
             BPref[iclass].weight.clear();
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(pdf_direction[iclass]) {
-            if (ori_idx >= idx_start && ori_idx < idx_stop) packed[idx++] = pdf_direction[iclass][n];
+        for (auto &x : pdf_direction[iclass]) {
+            if (ori_idx >= idx_start && ori_idx < idx_stop) { packed[idx++] = x; }
             ori_idx++;
         }
         if (idx == ori_idx && do_clear)
@@ -1650,7 +1646,6 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
 
 void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed, int piece, bool do_clear) {
 
-
     int nr_groups = sigma2_noise.size();
     int nr_classes_bodies = BPref.size();
     int nr_classes = pdf_class.size();
@@ -1662,8 +1657,8 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed, int piece, bool do_clear
         idx_start = 0;
         idx_stop  = packed.size();
     } else {
-        idx_start = (unsigned long long)piece * MAX_PACK_SIZE;
-        idx_stop  = idx_start + (unsigned long long)packed.size();
+        idx_start = (unsigned long long) piece * MAX_PACK_SIZE;
+        idx_stop  = idx_start + (unsigned long long) packed.size();
     }
     unsigned long long ori_idx = 0;
     unsigned long long idx = 0;
@@ -1689,9 +1684,8 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed, int piece, bool do_clear
     for (int igroup = 0; igroup < nr_groups; igroup++) {
         if (idx == ori_idx)
             sigma2_noise[igroup].resize(spectral_size);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigma2_noise[igroup]) {
-            if (ori_idx >= idx_start && ori_idx < idx_stop)
-                sigma2_noise[igroup][n] = packed[idx++];
+        for (auto &x : sigma2_noise[igroup]) {
+            if (ori_idx >= idx_start && ori_idx < idx_stop) { x = packed[idx++]; }
             ori_idx++;
         }
 
@@ -1709,28 +1703,28 @@ void MlWsumModel::unpack(MultidimArray<RFLOAT> &packed, int piece, bool do_clear
     for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
         if (idx == ori_idx)
             BPref[iclass].initialiseDataAndWeight(current_size);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].data) {
+        for (auto &x : BPref[iclass].data) {
             if (ori_idx >= idx_start && ori_idx < idx_stop)
-                BPref[iclass].data[n].real = packed[idx++];
+                x.real = packed[idx++];
             ori_idx++;
 
             if (ori_idx >= idx_start && ori_idx < idx_stop)
-                BPref[iclass].data[n].imag = packed[idx++];
+                x.imag = packed[idx++];
             ori_idx++;
-            //BPref[iclass].data[n] = Complex(re, im);
+            // x = Complex(re, im);
         }
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(BPref[iclass].weight) {
+        for (auto &x : BPref[iclass].weight) {
             if (ori_idx >= idx_start && ori_idx < idx_stop)
-                BPref[iclass].weight[n] = packed[idx++];
+                x = packed[idx++];
             ori_idx++;
         }
 
         if (idx == ori_idx)
             pdf_direction[iclass].resize(nr_directions);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(pdf_direction[iclass]) {
+        for (auto &x : pdf_direction[iclass]) {
             if (ori_idx >= idx_start && ori_idx < idx_stop)
-                pdf_direction[iclass][n] = packed[idx++];
+                x = packed[idx++];
             ori_idx++;
         }
 

@@ -305,8 +305,7 @@ void MovieReconstructor::backproject(int rank, int size) {
         // Apply gain correction
         // Probably we can ignore defect correction, because we are not re-aligning.
         if (fn_gain == "") {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iframe())
-                Iframe()[n] *= -1;
+            for (auto &x : Iframe()) { x *= -1; }
         } else {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iframe())
                 Iframe()[n] *= -Igain()[n];
@@ -533,9 +532,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
                     F2D[n]  *= Fctf[n];
                 }
             }
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fctf) {
-                Fctf[n] *= Fctf[n];
-            }
+            for (auto &x : Fctf) { x *= x; }
         }
 
         DIRECT_A2D_ELEM(F2D, 0, 0) = 0.0;

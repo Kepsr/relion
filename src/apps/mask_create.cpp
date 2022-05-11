@@ -97,15 +97,12 @@ class mask_create_parameters
                 std::cerr << "WARNING: The pixel size was not specified. 1.00 is set to the output mask." << std::endl;
                 angpix = 1.0;
             }
-        } else
-        {
+        } else {
             makeMaskFromFile(Iout);
         }
 
         if (do_invert) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iout()) {
-                Iout()[n] = 1.0 - Iout()[n];
-            }
+            for (auto &x : Iout()) { x = 1.0 - x; }
         }
 
         // Set header and write outmap map

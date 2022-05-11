@@ -494,7 +494,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 Fctf[n] = 1.0;
             }
         } else if (do_ewald) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {  
+                // Why use F2D when we are iterating over Fctf?
                 Fctf[n] *= Fctf[n];
             }
         } else if (do_ctf) {
@@ -504,9 +505,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
                     F2D[n] *= Fctf[n];
                 }
             }
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fctf) {
-                Fctf[n] *= Fctf[n];
-            }
+            for (auto &x : Fctf) { x *= x; }
         }
 
         // Do the following after squaring the CTFs!

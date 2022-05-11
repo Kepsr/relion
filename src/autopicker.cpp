@@ -2134,7 +2134,7 @@ void AutoPicker::exportHelicalTubes(
             RFLOAT y1 = tube_track_list[itrack][icoord].y;
             RFLOAT dx = x1 - x0;
             RFLOAT dy = y1 - y0;
-            RFLOAT psi_rad = 
+            RFLOAT psi_rad =
                 fabs(dx) < 0.1 && fabs(dy) < 0.1 ? 0.0 :
                 atan2(dy, dx);
 
@@ -2338,12 +2338,12 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
         Stats<RFLOAT> stats = Imic().computeStats();
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
+        for (auto &x : Imic()) {
             // Values that are too far from the mean are set to the mean (0)
-            if (abs(Imic()[n] - stats.avg) / stats.stddev > outlier_removal_zscore)
-                Imic()[n] = stats.avg;
+            auto z = (x - stats.avg) / stats.stddev;
+            if (abs(z) > outlier_removal_zscore) { x = stats.avg; }
 
-            Imic()[n] = (Imic()[n] - stats.avg) / stats.stddev;
+            x = (x - stats.avg) / stats.stddev;
         }
 
         // Have positive LoG maps
@@ -2528,11 +2528,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
     #endif
 
     // Threshold the best_fom map
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mbest_fom) {
-        if (Mbest_fom[n] < my_threshold) {
-            Mbest_fom[n] = 0.0;
-        }
-    }
+    for (auto &x : Mbest_fom) { if (x < my_threshold) { x = 0.0; } }
 
     if (do_write_fom_maps) {
         Maux2() = Mbest_fom;
@@ -2632,12 +2628,12 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
     Stats<RFLOAT> stats = Imic().computeStats();
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
+    for (auto &x : Imic()) {
         // Remove pixel values that are too far away from the mean
-        if (abs(Imic()[n] - stats.avg) / stats.stddev > outlier_removal_zscore)
-            Imic()[n] = stats.avg;
+        auto z = (x - stats.avg) / stats.stddev;
+        if (abs(z) > outlier_removal_zscore) { x = stats.avg; }
 
-        Imic()[n] = (Imic()[n] - stats.avg) / stats.stddev;
+        x = (x - stats.avg) / stats.stddev;
     }
 
     if (

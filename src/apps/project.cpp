@@ -121,8 +121,7 @@ class project_parameters {
             msk.read(fn_mask);
             if (!msk().sameShape(vol()))
                 REPORT_ERROR("project ERROR: mask and map have different sizes!");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(vol())
-            vol()[n] *= msk()[n];
+            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(vol()) { vol()[n] *= msk()[n]; }
         }
 
         if (nr_uniform > 0) {

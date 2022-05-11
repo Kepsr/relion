@@ -1893,8 +1893,8 @@ void MlOptimiserMpi::maximization() {
                             // Use stochastic expectation maximisation instead of SGD.
                             if (do_avoid_sgd) {
                                 if (iter < sgd_ini_iter) {
-                                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[ith_recons]) {
-                                        mymodel.Iref[ith_recons][n] = std::max(0.0, mymodel.Iref[ith_recons][n]);
+                                    for (auto &x : mymodel.Iref[ith_recons]) {
+                                        x = std::max(0.0, x);
                                     }
                                 }
                                 mymodel.Iref[ith_recons] = mymodel.Iref[ith_recons] - Iref_old;
@@ -2056,8 +2056,8 @@ void MlOptimiserMpi::maximization() {
                                 // Use stochastic expectation maximisation, instead of SGD.
                                 if (do_avoid_sgd) {
                                     if (iter < sgd_ini_iter) {
-                                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Iref[ith_recons]) {
-                                            mymodel.Iref[ith_recons][n] = std::max(0.0, mymodel.Iref[ith_recons][n]);
+                                        for (auto &x : mymodel.Iref[ith_recons]) {
+                                            x = std::max(0.0, x);
                                         }
                                     }
                                     mymodel.Iref[ith_recons] = mymodel.Iref[ith_recons] - Iref_old;

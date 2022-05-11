@@ -493,7 +493,7 @@ class reconstruct_parameters {
                             // Do the following after squaring the CTFs!
                             if (do_fom_weighting) {
                                 FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                                    F2D[n] *= fom;
+                                    F2D[n]  *= fom;
                                     Fctf[n] *= fom;
                                 }
                             }

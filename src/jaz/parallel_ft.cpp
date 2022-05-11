@@ -274,9 +274,7 @@ void ParFourierTransformer::Transform(int sign) {
             REPORT_ERROR("No complex nor real data defined");
         }
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(fFourier) {
-            fFourier[n] /= size;
-        }
+        for (auto &x : fFourier) { x /= size; }
     } else if (sign == FFTW_BACKWARD) {
         FFTW_EXECUTE_DFT_C2R(
             fPlanBackward, (FFTW_COMPLEX*) 

@@ -200,9 +200,7 @@ bool Postprocessing::getMask() {
         RFLOAT maxval = stats.max;
 
         long summask = 0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Im()) {
-            if (Im()[n] > 0.5) { summask++; }
-        }
+        for (auto &x : Im()) { if (x > 0.5) { summask++; } }
         avg = (RFLOAT)summask / (RFLOAT) Im().nzyxdim();
         frac_solvent_mask = 0.476 /avg;
         molweight_frommask = avg * std::pow(Xsize(Im()) * angpix, 3) * 0.81;
@@ -1170,9 +1168,7 @@ void Postprocessing::run() {
 
     // Add the two half-maps together for subsequent sharpening
     I1() += I2();
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1()) {
-        I1()[n] *= 0.5;
-    }
+    for (auto &x : I1()) { x *= 0.5; }
 
     // Divide by MTF and perform FSC-weighted B-factor sharpening, as in Rosenthal and Henderson, 2003
     // also low-pass filters...

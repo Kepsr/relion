@@ -316,6 +316,12 @@ void FourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) 
     }))
 }
 
+static unsigned long int getsize(const FourierTransformer &t) {
+    if (t.fReal)    return t.fReal->size();
+    if (t.fComplex) return t.fComplex->size();
+    REPORT_ERROR("No complex nor real data defined");
+}
+
 // Transform ---------------------------------------------------------------
 void FourierTransformer::Transform(int sign) {
     if (sign == FFTW_FORWARD) {
@@ -329,29 +335,21 @@ void FourierTransformer::Transform(int sign) {
         #endif
         }))
 
-        // Normalisation of the transform
-        unsigned long int size = 0;
-        if (fReal) {
-            size = fReal->size();
-        } else if (fComplex) {
-            size = fComplex->size();
-        } else {
-            REPORT_ERROR("No complex nor real data defined");
-        }
-
+        // Normalise the transform
         RCTICTOC(TIMING_FFTW_NORMALISE, ({
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(fFourier) {
-            fFourier[n] /= size;
-        }
+        unsigned long int size = getsize(*this);
+        for (auto &x : fFourier) { x /= size; }
         }))
     } else if (sign == FFTW_BACKWARD) {
         RCTICTOC(TIMING_FFTW_EXECUTE, ({
         #ifdef RELION_SINGLE_PRECISION
-        fftwf_execute_dft_c2r(fPlanBackward,
-                (fftwf_complex*) fFourier.data, fReal->data);
+        fftwf_execute_dft_c2r(
+            fPlanBackward, (fftwf_complex*) fFourier.data, fReal->data
+        );
         #else
-        fftw_execute_dft_c2r(fPlanBackward,
-                (fftw_complex*) fFourier.data, fReal->data);
+        fftw_execute_dft_c2r(
+            fPlanBackward, (fftw_complex*) fFourier.data, fReal->data
+        );
         #endif
         }))
     }
@@ -1054,7 +1052,7 @@ RFLOAT getKullbackLeiblerDivergence(
     }
 
     // Normalise the histogram and the discretised analytical Gaussian
-    RFLOAT norm = (RFLOAT)histogram.sum();
+    RFLOAT norm = (RFLOAT) histogram.sum();
     RFLOAT gaussnorm = 0.0;
     for (int i = 0; i < histogram_size; i++) {
         RFLOAT x = (RFLOAT)i / histogram_factor;

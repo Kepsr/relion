@@ -254,7 +254,7 @@ class particle_reposition_parameters {
 
                         if (optimiser.mydata.obsModel.getCtfPremultiplied(optics_group)) {
                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
-                                Fref[n] *= (Fctf[n] * Fctf[n]);
+                                Fref[n] *= Fctf[n] * Fctf[n];
                             }
                         } else {
                             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
@@ -271,9 +271,7 @@ class particle_reposition_parameters {
                     if (optimiser.do_scale_correction) {
                         int group_id = optimiser.mydata.getGroupId(part_id, 0);
                         RFLOAT myscale = optimiser.mymodel.scale_correction[group_id];
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
-                            Fref[n] *= myscale;
-                        }
+                        for (auto &x : Fref) { x *= myscale; }
                     }
 
                     // Take inverse transform
