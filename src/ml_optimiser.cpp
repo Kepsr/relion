@@ -2095,7 +2095,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
                 long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
                 if (idx < spectral_size) {
-                    ind_spectrum(idx) += norm(dAkij(Faux, k, i, j));
+                    ind_spectrum(idx) += norm(DIRECT_A3D_ELEM(Faux, k, i, j));
                     count(idx) += 1.0;
                 }
             }
@@ -6284,8 +6284,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
                             // This is the probability of the offset, given the model offset and variance.
                             RFLOAT pdf_offset = my_sigma2_offset < 0.0001 ? (tdiff2 > 0.0 ? 0.0 : 1.0) : exp(tdiff2 / (-2.0 * my_sigma2_offset)) / (2.0 * PI * my_sigma2_offset);
 
-                            if (pdf_offset_mean > 0.0)
-                                pdf_offset /= pdf_offset_mean;
+                            if (pdf_offset_mean > 0.0) { pdf_offset /= pdf_offset_mean; }
 
                             #ifdef TIMING
                             // Only time one thread, as I also only time one MPI process

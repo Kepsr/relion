@@ -602,9 +602,9 @@ void applyGeometry(
                         "tmp= " << tmp << std::endl;
                     #endif
 
-                    dAkij(V2 , k, i, j) = tmp;
+                    DIRECT_A3D_ELEM(V2 , k, i, j) = tmp;
                 } else {
-                    dAkij(V2, k, i, j) = outside;
+                    DIRECT_A3D_ELEM(V2, k, i, j) = outside;
                 }
 
                 // Compute new point inside input image

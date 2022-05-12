@@ -259,12 +259,11 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 /** Access to a direct element.
  * v is the array, k is the slice (Z), i is the Y index and j is the X index.
  */
-#define DIRECT_A3D_ELEM(v,k,i,j) ((v).data[(k) * Xsize(v) * Ysize(v) + ((i) * Xsize(v))+(j)])
-
-/** A short alias for the previous function.
- *
- */
-#define dAkij(V, k, i, j) DIRECT_A3D_ELEM(V, k, i, j)
+#define DIRECT_A3D_ELEM(v, k, i, j) ((v).data[ \
+      (k) * Xsize(v) * Ysize(v) \
+    + (i) * Xsize(v) \
+    + (j) \
+    ])
 
 /** Volume element: Logical access.
  *
@@ -283,8 +282,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  * mathematical definition (ie, logical access).
  *
  * @code
- * FOR_ALL_ELEMENTS_IN_ARRAY3D(V)
- * {
+ * FOR_ALL_ELEMENTS_IN_ARRAY3D(V) {
  *     std::cout << V(k, i, j) << " ";
  * }
  * @endcode
@@ -301,8 +299,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  * physical definition.
  *
  * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V)
- * {
+ * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
  *     std::cout << DIRECT_A3D_ELEM(m, k, i, j) << " ";
  * }
  * @endcode
@@ -382,11 +379,8 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  * val = DIRECT_A1D_ELEM(v, 0);
  * @endcode
  */
-#define DIRECT_A1D_ELEM(v, i) ((v).data[(i)])
-
-/** A short alias to previous function
- */
-#define dAi(v, i) DIRECT_A1D_ELEM(v, i)
+template <typename T> 
+inline T& DIRECT_A1D_ELEM(MultidimArray<T> v, long int i) { return v.data[i]; }
 
 /** Vector element: Logical access
  *

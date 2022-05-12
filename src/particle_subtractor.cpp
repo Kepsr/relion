@@ -655,8 +655,8 @@ void ParticleSubtractor::subtractOneParticle(
             long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
             int idx_remapped = round(remap_image_sizes * idx);
             if (idx_remapped < opt.mymodel.ori_size / 2 + 1) {
-                RFLOAT S2 = norm( dAkij(Fsubtrahend, k, i, j) );
-                RFLOAT N2 = norm( dAkij(Fimg, k, i, j) );
+                RFLOAT S2 = norm(DIRECT_A3D_ELEM(Fsubtrahend, k, i, j));
+                RFLOAT N2 = norm(DIRECT_A3D_ELEM(Fimg,        k, i, j));
                 // division by two keeps the numbers similar to tau2 and sigma2_noise,
                 // which are per real/imaginary component
                 sum_S2(idx_remapped) += S2 / 2.0;

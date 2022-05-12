@@ -710,7 +710,7 @@ class image_handler_parameters {
                     MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
                         long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
-                        spectrum(idx) += dAkij(Iop(), k, i, j);
+                        spectrum(idx) += DIRECT_A3D_ELEM(Iop(), k, i, j);
                         count(idx) += 1.0;
                     }
                     FOR_ALL_ELEMENTS_IN_ARRAY1D(spectrum) {
@@ -721,9 +721,9 @@ class image_handler_parameters {
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
                             long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
                             if (idx > minr_ampl_corr) {
-                                dAkij(Iop(), k, i, j) /= spectrum(idx);
+                                DIRECT_A3D_ELEM(Iop(), k, i, j) /= spectrum(idx);
                             } else {
-                                dAkij(Iop(), k, i, j) = 1.0;
+                                DIRECT_A3D_ELEM(Iop(), k, i, j) = 1.0;
                             }
                     }
                     avg_ampl = Iop();
