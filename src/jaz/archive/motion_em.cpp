@@ -173,9 +173,9 @@ void MotionEM::updateVelocities() {
 
             for (int y = 0; y < s_pos;  y++)
             for (int x = 0; x < sh_pos; x++) {
-                DIRECT_A2D_ELEM(velProbLargeFs(), y, x) = 
-                    DIRECT_A2D_ELEM(posProbFs[f + 1](), y, x)
-                  * DIRECT_A2D_ELEM(posProbFs[f    ](), y, x).conj();
+                direct::elem(velProbLargeFs(), y, x) = 
+                    direct::elem(posProbFs[f + 1](), y, x)
+                  * direct::elem(posProbFs[f    ](), y, x).conj();
             }
 
             Image<RFLOAT> velProbLarge(s_pos,s_pos);

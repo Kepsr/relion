@@ -196,7 +196,7 @@ void HelixAligner::initialise() {
             MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(img());
             applyGeometry(img(), Mrot, Arot, true, false);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot) {
-                DIRECT_A3D_ELEM(vol(), k, i, j) = DIRECT_A2D_ELEM(Mrot, i, j);
+                direct::elem(vol(), k, i, j) = direct::elem(Mrot, i, j);
             }
         }
         vol.setSamplingRateInHeader(angpix);
@@ -502,23 +502,23 @@ void HelixAligner::getHelicesFromMics() {
                                     // if wx == 0 means that the rightest point is useless for this
                                     // interpolation, and even it might not be defined if m1=xdim-1
                                     // The same can be said for wy.
-                                    tmp = (RFLOAT)((1 - wy) * (1 - wx) * DIRECT_A2D_ELEM(Imic(), n1, m1));
+                                    tmp = (RFLOAT)((1 - wy) * (1 - wx) * direct::elem(Imic(), n1, m1));
 
                                     if (m2 < Xdim)
-                                        tmp += (RFLOAT)((1 - wy) * wx * DIRECT_A2D_ELEM(Imic(), n1, m2));
+                                        tmp += (RFLOAT)((1 - wy) * wx * direct::elem(Imic(), n1, m2));
 
                                     if (n2 < Ydim) {
-                                        tmp += (RFLOAT)(wy * (1 - wx) * DIRECT_A2D_ELEM(Imic(), n2, m1));
+                                        tmp += (RFLOAT)(wy * (1 - wx) * direct::elem(Imic(), n2, m1));
 
                                         if (m2 < Xdim) {
-                                            tmp += (RFLOAT)(wy * wx * DIRECT_A2D_ELEM(Imic(), n2, m2));
+                                            tmp += (RFLOAT)(wy * wx * direct::elem(Imic(), n2, m2));
                                         }
                                     }
 
-                                    DIRECT_A2D_ELEM(Ihelix, i, j) = tmp;
+                                    direct::elem(Ihelix, i, j) = tmp;
 
                                 } else {
-                                    DIRECT_A2D_ELEM(Ihelix, i, j) = avg;
+                                    direct::elem(Ihelix, i, j) = avg;
                                 }
 
                                 // Compute new point inside input image
@@ -645,7 +645,7 @@ void HelixAligner::initialiseClasses() {
             myline.setXmippOrigin();
             CenterFFT(myline, false);
             for (int i = 0; i < Ysize(model.Aref[0]); i++)
-                DIRECT_A2D_ELEM(model.Aref[0], i, j) = DIRECT_A1D_ELEM(myline, i);
+                direct::elem(model.Aref[0], i, j) = direct::elem(myline, i);
         }
 
     #define DEBUGREC2D
@@ -856,14 +856,14 @@ void HelixAligner::maximisation() {
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         for (int i = 0; i < yrect; i++) {
             for (int j = 0; j < xrect; j++) {
-                if (DIRECT_A2D_ELEM(model.Asumw[iclass], i, j) > 0.0) {
-                    DIRECT_A2D_ELEM(model.Aref[iclass], i, j) =  DIRECT_A2D_ELEM(model.Asum[iclass], i, j) / DIRECT_A2D_ELEM(model.Asumw[iclass], i, j);
+                if (direct::elem(model.Asumw[iclass], i, j) > 0.0) {
+                    direct::elem(model.Aref[iclass], i, j) =  direct::elem(model.Asum[iclass], i, j) / direct::elem(model.Asumw[iclass], i, j);
                 } else {
-                    DIRECT_A2D_ELEM(model.Aref[iclass], i, j) = 0.0;
+                    direct::elem(model.Aref[iclass], i, j) = 0.0;
                 }
 
                 // Also store  sum of classes in Asum for writeOut
-                DIRECT_A2D_ELEM(model.Asum[iclass], i, j)  = DIRECT_A2D_ELEM(model.Aref[iclass], i, j);
+                direct::elem(model.Asum[iclass], i, j)  = direct::elem(model.Aref[iclass], i, j);
             }
         }
         allsum += model.pdf[iclass];
@@ -894,7 +894,7 @@ void HelixAligner::reconstruct2D(int iclass) {
         FourierTransformer transformer;
 
         for (int i = 0; i < Ysize(model.Aref[iclass]); i++)
-            DIRECT_A1D_ELEM(myline, i) = DIRECT_A2D_ELEM(model.Aref[iclass], i, j);
+            direct::elem(myline, i) = direct::elem(model.Aref[iclass], i, j);
 
         CenterFFT(myline, true);
         transformer.FourierTransform(myline, myFline, false);
@@ -966,7 +966,7 @@ void HelixAligner::reconstruct2D(int iclass) {
         CenterFFT(myline, false);
 
         for (int i = 0; i < Ysize(model.Aref[iclass]); i++)
-             DIRECT_A2D_ELEM(model.Aref[iclass], i, j) = DIRECT_A1D_ELEM(myline, i);
+             direct::elem(model.Aref[iclass], i, j) = direct::elem(myline, i);
 
     }
     #ifdef DEBUGREC2D
@@ -1001,14 +1001,14 @@ void HelixAligner::writeOut(int iter) {
 
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Aref[iclass]) {
-            DIRECT_NZYX_ELEM(Aimg(), iclass, 0, i, j) = DIRECT_A2D_ELEM(model.Aref[iclass], i, j);
+            DIRECT_NZYX_ELEM(Aimg(), iclass, 0, i, j) = direct::elem(model.Aref[iclass], i, j);
         }
     }
     Aimg.write(fn_iter + "_reprojections.mrcs");
 
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Asum[iclass]) {
-            DIRECT_NZYX_ELEM(Aimg(), iclass, 0, i, j) = DIRECT_A2D_ELEM(model.Asum[iclass], i, j);
+            DIRECT_NZYX_ELEM(Aimg(), iclass, 0, i, j) = direct::elem(model.Asum[iclass], i, j);
         }
     }
     Aimg.write(fn_iter + "_summed_classes.mrcs");
@@ -1016,7 +1016,7 @@ void HelixAligner::writeOut(int iter) {
     Image<RFLOAT> Aimg2(yrect, yrect, 1, nr_classes);
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Arec[iclass]) {
-            DIRECT_NZYX_ELEM(Aimg2(), iclass, 0, i, j) = DIRECT_A2D_ELEM(model.Arec[iclass], i, j);
+            DIRECT_NZYX_ELEM(Aimg2(), iclass, 0, i, j) = direct::elem(model.Arec[iclass], i, j);
         }
     }
     Aimg2.write(fn_iter + "_reconstructed.mrcs");
@@ -1058,7 +1058,7 @@ void HelixAligner::reconstruct3D() {
             MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(Mori);
             applyGeometry(Mori, Mrot, Arot, true, false);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot) {
-                DIRECT_A3D_ELEM(Ic(), k, i, j) = DIRECT_A2D_ELEM(Mrot, i, j);
+                direct::elem(Ic(), k, i, j) = direct::elem(Mrot, i, j);
             }
         }
         fn_class = fn_out + "_class" + integerToString(iclass + 1, 3) + "_rec3d.mrc";

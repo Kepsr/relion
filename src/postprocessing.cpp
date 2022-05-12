@@ -251,17 +251,17 @@ void Postprocessing::divideByMtf(MultidimArray<Complex > &FT) {
 
         int i = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmtf) {
-            DIRECT_A1D_ELEM(mtf_resol, i) = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL) / mtf_angpix; // resolution needs to be given in 1/Ang
-            DIRECT_A1D_ELEM(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
-            if (DIRECT_A1D_ELEM(mtf_value, i) < 1e-10) {
-                std::cerr << " i= " << i <<  " mtf_value[i]= " << DIRECT_A1D_ELEM(mtf_value, i) << std::endl;
+            direct::elem(mtf_resol, i) = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL) / mtf_angpix; // resolution needs to be given in 1/Ang
+            direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
+            if (direct::elem(mtf_value, i) < 1e-10) {
+                std::cerr << " i= " << i <<  " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
                 REPORT_ERROR("Postprocessing::sharpenMap ERROR: zero or negative values encountered in MTF curve!");
             }
             i++;
         }
 
         // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
-        RFLOAT res_per_elem = (DIRECT_A1D_ELEM(mtf_resol, i-1) - DIRECT_A1D_ELEM(mtf_resol, 0)) / (RFLOAT) i;
+        RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
         if (res_per_elem < 1e-10) REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
 
         RFLOAT xsize_ang = angpix * Xsize(I1());
@@ -273,20 +273,20 @@ void Postprocessing::divideByMtf(MultidimArray<Complex > &FT) {
                 RFLOAT mtf;
                 // check boundaries of the array
                 if (i_0 >= mtf_value.size() - 1) {
-                    mtf = DIRECT_A1D_ELEM(mtf_value, mtf_value.size() - 1);
+                    mtf = direct::elem(mtf_value, mtf_value.size() - 1);
                 } else if (i_0 <= 0) {
-                    mtf = DIRECT_A1D_ELEM(mtf_value, 0);
+                    mtf = direct::elem(mtf_value, 0);
                 } else {
                     // linear interpolation:
-                    RFLOAT x_0 = DIRECT_A1D_ELEM(mtf_resol, i_0);
-                    RFLOAT y_0 = DIRECT_A1D_ELEM(mtf_value, i_0);
-                    RFLOAT x_1 = DIRECT_A1D_ELEM(mtf_resol, i_0 + 1);
-                    RFLOAT y_1 = DIRECT_A1D_ELEM(mtf_value, i_0 + 1);
+                    RFLOAT x_0 = direct::elem(mtf_resol, i_0);
+                    RFLOAT y_0 = direct::elem(mtf_value, i_0);
+                    RFLOAT x_1 = direct::elem(mtf_resol, i_0 + 1);
+                    RFLOAT y_1 = direct::elem(mtf_value, i_0 + 1);
                     mtf = y_0 + (y_1 - y_0) * (res - x_0) / (x_1 - x_0);
                 }
 
                 // Divide Fourier component by the MTF
-                DIRECT_A3D_ELEM(FT, k, i, j) /= mtf;
+                direct::elem(FT, k, i, j) /= mtf;
             }
         }
     }
@@ -341,7 +341,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
         int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
         if (idx >= myradius)
                 continue;
-        ravg(idx) += norm(DIRECT_A3D_ELEM(FT, k, i, j));
+        ravg(idx) += norm(direct::elem(FT, k, i, j));
         radial_count(idx)++;
     }
     FOR_ALL_ELEMENTS_IN_ARRAY1D(ravg) {
@@ -370,7 +370,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
         }
 
         // Apply correction on the spectrum-corrected values!
-        RFLOAT aux = norm(DIRECT_A3D_ELEM(FT, k, i, j)) / ravg(idx);
+        RFLOAT aux = norm(direct::elem(FT, k, i, j)) / ravg(idx);
         A3D_ELEM(sum3d,   best_kpp, best_ipp, best_jpp) += aux;
         A3D_ELEM(count3d, best_kpp, best_ipp, best_jpp) += 1;
     }
@@ -396,7 +396,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
 
         // Apply correction on the spectrum-corrected values!
         RFLOAT aux = sqrt(A3D_ELEM(sum3d, best_kpp, best_ipp, best_jpp));
-        DIRECT_A3D_ELEM(FT, k, i, j) /= aux;
+        direct::elem(FT, k, i, j) /= aux;
     }
 
     transformer.inverseFourierTransform(FT, I);
@@ -483,21 +483,21 @@ void Postprocessing::calculateFSCtrue(
     // FSC_true = FSC_t - FSC_n / ( )
 
     // Sometimes FSc at origin becomes -1!
-    if (DIRECT_A1D_ELEM(fsc_masked, 0) <= 0.0)
-        DIRECT_A1D_ELEM(fsc_masked, 0) = 1.0;
-    if (DIRECT_A1D_ELEM(fsc_random_masked, 0) <= 0.0)
-        DIRECT_A1D_ELEM(fsc_random_masked, 0) = 1.0;
+    if (direct::elem(fsc_masked, 0) <= 0.0)
+        direct::elem(fsc_masked, 0) = 1.0;
+    if (direct::elem(fsc_random_masked, 0) <= 0.0)
+        direct::elem(fsc_random_masked, 0) = 1.0;
 
 
     fsc_true.resize(fsc_masked);
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
         // 29jan2015: let's move this 2 shells upwards, because of small artefacts near the resolution of randomisation!
         if (i < randomize_at + 2) {
-            DIRECT_A1D_ELEM(fsc_true, i) = DIRECT_A1D_ELEM(fsc_masked, i);
+            direct::elem(fsc_true, i) = direct::elem(fsc_masked, i);
         } else {
-            RFLOAT fsct = DIRECT_A1D_ELEM(fsc_masked, i);
-            RFLOAT fscn = DIRECT_A1D_ELEM(fsc_random_masked, i);
-            DIRECT_A1D_ELEM(fsc_true, i) = (fsct - fscn) / (1.0 - fscn);
+            RFLOAT fsct = direct::elem(fsc_masked, i);
+            RFLOAT fscn = direct::elem(fsc_random_masked, i);
+            direct::elem(fsc_true, i) = (fsct - fscn) / (1.0 - fscn);
         }
     }
 }
@@ -507,14 +507,14 @@ void Postprocessing::calculateFSCpart(const MultidimArray<RFLOAT> fsc_unmasked, 
     // FSC_true = FSC_t - FSC_n / ( )
 
     // Sometimes FSc at origin becomes -1!
-    if (DIRECT_A1D_ELEM(fsc_masked, 0) <= 0.0)
-        DIRECT_A1D_ELEM(fsc_masked, 0) = 1.0;
-    if (DIRECT_A1D_ELEM(fsc_random_masked, 0) <= 0.0)
-        DIRECT_A1D_ELEM(fsc_random_masked, 0) = 1.0;
+    if (direct::elem(fsc_masked, 0) <= 0.0)
+        direct::elem(fsc_masked, 0) = 1.0;
+    if (direct::elem(fsc_random_masked, 0) <= 0.0)
+        direct::elem(fsc_random_masked, 0) = 1.0;
 
     fsc_part.resize(fsc_unmasked);
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_part) {
-        DIRECT_A1D_ELEM(fsc_part, i) = fraction * DIRECT_A1D_ELEM(fsc_unmasked, i) / (1.0 + (fraction - 1) * DIRECT_A1D_ELEM(fsc_unmasked, i));
+        direct::elem(fsc_part, i) = fraction * direct::elem(fsc_unmasked, i) / (1.0 + (fraction - 1) * direct::elem(fsc_unmasked, i));
     }
 
 }
@@ -525,7 +525,7 @@ void Postprocessing::applyFscWeighting(MultidimArray<Complex > &FT, MultidimArra
     int ires_max = 0;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(my_fsc) {
-        if (DIRECT_A1D_ELEM(my_fsc, i) < 0.0001)
+        if (direct::elem(my_fsc, i) < 0.0001)
             break;
         ires_max = i;
     }
@@ -533,14 +533,14 @@ void Postprocessing::applyFscWeighting(MultidimArray<Complex > &FT, MultidimArra
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         int ires = round(sqrt((RFLOAT)kp * kp + ip * ip + jp * jp));
         if (ires <= ires_max) {
-            RFLOAT fsc = DIRECT_A1D_ELEM(my_fsc, ires);
+            RFLOAT fsc = direct::elem(my_fsc, ires);
             if (fsc > 0.0) {
-                DIRECT_A3D_ELEM(FT, k, i, j) *= sqrt((2 * fsc) / (1 + fsc));
+                direct::elem(FT, k, i, j) *= sqrt((2 * fsc) / (1 + fsc));
             } else {
-                DIRECT_A3D_ELEM(FT, k, i, j) *= 0.0;
+                direct::elem(FT, k, i, j) *= 0.0;
             }
         } else {
-            DIRECT_A3D_ELEM(FT, k, i, j) = 0.0;
+            direct::elem(FT, k, i, j) = 0.0;
         }
     }
 }
@@ -554,7 +554,7 @@ void Postprocessing::makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fi
         int r2 = kp * kp + ip * ip + jp * jp;
         int ires = round(sqrt((RFLOAT)r2));
         if (ires < Xsize(radial_count)) {
-            lnF(ires) += abs(DIRECT_A3D_ELEM(FT, k, i, j));
+            lnF(ires) += abs(direct::elem(FT, k, i, j));
             radial_count(ires)++;
         }
     }
@@ -567,8 +567,8 @@ void Postprocessing::makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fi
         if (res >= angpix * 2.0) {
             // Apply B-factor sharpening until Nyquist, then low-pass filter later on (with a soft edge)
             onepoint.x = 1. / (res * res);
-            if (DIRECT_A1D_ELEM(lnF, i) > 0.0) {
-                onepoint.y = log(DIRECT_A1D_ELEM(lnF, i) / DIRECT_A1D_ELEM(radial_count, i));
+            if (direct::elem(lnF, i) > 0.0) {
+                onepoint.y = log(direct::elem(lnF, i) / direct::elem(radial_count, i));
                 onepoint.w = res <= fit_minres && res >= fit_maxres ? 1.0 : 0.0;
             } else {
                 onepoint.y = -99.0;
@@ -639,26 +639,26 @@ void Postprocessing::writeOutput() {
         MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
         MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
         if (do_mask) {
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          DIRECT_A1D_ELEM(fsc_true,          i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_FRACMASK, DIRECT_A1D_ELEM(fsc_part_fracmask, i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          direct::elem(fsc_true,          i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_FRACMASK, direct::elem(fsc_part_fracmask, i));
             if (molweight > 0.0)
-                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, DIRECT_A1D_ELEM(fsc_part_molweight, i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      DIRECT_A1D_ELEM(fsc_unmasked,      i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        DIRECT_A1D_ELEM(fsc_masked,        i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, DIRECT_A1D_ELEM(fsc_random_masked, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, direct::elem(fsc_part_molweight, i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      direct::elem(fsc_unmasked,      i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        direct::elem(fsc_masked,        i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, direct::elem(fsc_random_masked, i));
             if (do_ampl_corr) {
-                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, DIRECT_A1D_ELEM(acorr_unmasked, i));
-                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_MASKED,   DIRECT_A1D_ELEM(acorr_masked,   i));
-                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      DIRECT_A1D_ELEM(dpr_unmasked,   i));
-                MDfsc.setValue(EMDL::POSTPROCESS_DPR_MASKED,        DIRECT_A1D_ELEM(dpr_masked,     i));
+                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, direct::elem(acorr_unmasked, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_MASKED,   direct::elem(acorr_masked,   i));
+                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      direct::elem(dpr_unmasked,   i));
+                MDfsc.setValue(EMDL::POSTPROCESS_DPR_MASKED,        direct::elem(dpr_masked,     i));
             }
         } else {
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED, DIRECT_A1D_ELEM(fsc_true, i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED, direct::elem(fsc_true, i));
             if (molweight > 0.0)
-                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, DIRECT_A1D_ELEM(fsc_part_molweight, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, direct::elem(fsc_part_molweight, i));
             if (do_ampl_corr) {
-                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, DIRECT_A1D_ELEM(acorr_unmasked, i));
-                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      DIRECT_A1D_ELEM(dpr_unmasked, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, direct::elem(acorr_unmasked, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      direct::elem(dpr_unmasked, i));
             }
         }
     }
@@ -936,10 +936,10 @@ void Postprocessing::run_locres(int rank, int size) {
                         MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
                         MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
                         MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          DIRECT_A1D_ELEM(fsc_true,          i));
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      DIRECT_A1D_ELEM(fsc_unmasked,      i));
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        DIRECT_A1D_ELEM(fsc_masked,        i));
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, DIRECT_A1D_ELEM(fsc_random_masked, i));
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          direct::elem(fsc_true,          i));
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      direct::elem(fsc_unmasked,      i));
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        direct::elem(fsc_masked,        i));
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, direct::elem(fsc_random_masked, i));
                     }
                     MDfsc.write(fh);
                 }
@@ -947,7 +947,7 @@ void Postprocessing::run_locres(int rank, int size) {
                 float local_resol = 999.0;
                 // See where corrected FSC drops below 0.143
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
-                    if (DIRECT_A1D_ELEM(fsc_true, i) < 0.143)
+                    if (direct::elem(fsc_true, i) < 0.143)
                         break;
                     local_resol = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
                 }
@@ -1094,7 +1094,7 @@ void Postprocessing::run() {
         } else {
             // Check when FSC drops below randomize_fsc_at
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
-                if (i > 0 && DIRECT_A1D_ELEM(fsc_unmasked, i) < randomize_fsc_at) {
+                if (i > 0 && direct::elem(fsc_unmasked, i) < randomize_fsc_at) {
                     randomize_at = i;
                     break;
                 }
@@ -1137,7 +1137,7 @@ void Postprocessing::run() {
     // See where corrected FSC drops below 0.143
     int global_resol_i = 0;
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
-        if (DIRECT_A1D_ELEM(fsc_true, i) < 0.143) break;
+        if (direct::elem(fsc_true, i) < 0.143) break;
         global_resol = Xsize(I1()) * angpix / (RFLOAT) i;
         global_resol_i = i;
     }
@@ -1146,7 +1146,7 @@ void Postprocessing::run() {
     if (do_mask) {
         int unmasked_resol_i = 0;
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
-            if (DIRECT_A1D_ELEM(fsc_unmasked, i) < 0.143) break;
+            if (direct::elem(fsc_unmasked, i) < 0.143) break;
             unmasked_resol_i = i;
         }
         // Check whether global_resol is worse than the unmasked one
@@ -1159,7 +1159,7 @@ void Postprocessing::run() {
                 fsc_true = fsc_unmasked;
                 global_resol = Xsize(I1()) * angpix / (RFLOAT) unmasked_resol_i;
             }
-        } else if (DIRECT_A1D_ELEM(fsc_random_masked, global_resol_i) > 0.1) {
+        } else if (direct::elem(fsc_random_masked, global_resol_i) > 0.1) {
             // Check whether the phase-randomised FSC is less than 5% at the resolution estimate, otherwise warn the user
             std::cerr << " WARNING: The phase-randomised FSC is larger than 0.10 at the estimated resolution!" << std::endl;
             std::cerr << " WARNING: This may result in an incorrect resolution estimation. Provide a softer mask with less features to get lower phase-randomised FSCs." << std::endl;

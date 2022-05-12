@@ -2562,7 +2562,7 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
             // Check at which resolution shell the FSC drops below 0.8
             int randomize_at = -1;
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
-                if (i > 0 && DIRECT_A1D_ELEM(fsc_unmasked, i) < 0.8) {
+                if (i > 0 && direct::elem(fsc_unmasked, i) < 0.8) {
                     randomize_at = i;
                     break;
                 }
@@ -2586,14 +2586,14 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
                     // 29jan2015: let's move this 2 shells upwards, because of small artefacts near the resolution of randomisation!
                     if (i < randomize_at + 2) {
-                        DIRECT_A1D_ELEM(fsc_true, i) = DIRECT_A1D_ELEM(fsc_masked, i);
+                        direct::elem(fsc_true, i) = direct::elem(fsc_masked, i);
                     } else {
-                        RFLOAT fsct = DIRECT_A1D_ELEM(fsc_masked, i);
-                        RFLOAT fscn = DIRECT_A1D_ELEM(fsc_random_masked, i);
+                        RFLOAT fsct = direct::elem(fsc_masked, i);
+                        RFLOAT fscn = direct::elem(fsc_random_masked, i);
                         if (fscn > fsct) {
-                            DIRECT_A1D_ELEM(fsc_true, i) = 0.0;
+                            direct::elem(fsc_true, i) = 0.0;
                         } else {
-                            DIRECT_A1D_ELEM(fsc_true, i) = (fsct - fscn) / (1.0 - fscn);
+                            direct::elem(fsc_true, i) = (fsct - fscn) / (1.0 - fscn);
                         }
                     }
                 }
@@ -2607,7 +2607,7 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
 
             // Set fsc_halves_class explicitly to zero beyond the current_size
             for (int idx = mymodel.current_size / 2 + 1; idx < mymodel.fsc_halves_class[ibody].size(); idx++) {
-                DIRECT_A1D_ELEM(mymodel.fsc_halves_class[ibody], idx) = 0.0;
+                direct::elem(mymodel.fsc_halves_class[ibody], idx) = 0.0;
             }
         }
 
@@ -2956,16 +2956,16 @@ void MlOptimiserMpi::iterate() {
                     int fsc05   = -1;
                     int fsc0143 = -1;
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(mymodel.fsc_halves_class[ibody]) {
-                        if (DIRECT_A1D_ELEM(mymodel.fsc_halves_class[ibody], i) < 0.5 && fsc05 < 0)
+                        if (direct::elem(mymodel.fsc_halves_class[ibody], i) < 0.5 && fsc05 < 0)
                         { fsc05 = i; }
-                        if (DIRECT_A1D_ELEM(mymodel.fsc_halves_class[ibody], i) < 0.143 && fsc0143 < 0)
+                        if (direct::elem(mymodel.fsc_halves_class[ibody], i) < 0.143 && fsc0143 < 0)
                         { fsc0143 = i; }
                     }
 
                     // At least fsc05 - fsc0143 + 5 shells as incr_size
                     incr_size = std::max(incr_size, fsc0143 - fsc05 + 5);
                     if (!has_high_fsc_at_limit)
-                        has_high_fsc_at_limit = (DIRECT_A1D_ELEM(mymodel.fsc_halves_class[ibody], mymodel.current_size/2 - 1) > 0.2);
+                        has_high_fsc_at_limit = (direct::elem(mymodel.fsc_halves_class[ibody], mymodel.current_size/2 - 1) > 0.2);
                 }
             }
 

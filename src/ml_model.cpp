@@ -315,7 +315,7 @@ void MlModel::read(FileName fn_in) {
             }
             pdf_direction[iclass].resize(vaux.size());
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(pdf_direction[iclass]) {
-                DIRECT_A1D_ELEM(pdf_direction[iclass], i) = vaux[i];
+                direct::elem(pdf_direction[iclass], i) = vaux[i];
             }
             nr_directions = vaux.size();
         }
@@ -324,7 +324,7 @@ void MlModel::read(FileName fn_in) {
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
             pdf_direction[iclass].clear();
             pdf_direction[iclass].resize(1);
-            DIRECT_A1D_ELEM(pdf_direction[iclass], 0) = 1.0;
+            direct::elem(pdf_direction[iclass], 0) = 1.0;
         }
         nr_directions = 1;
     }
@@ -348,7 +348,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         Image<RFLOAT> img(Xsize(Iref[0]), Ysize(Iref[0]), 1, nr_classes_bodies);
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iref[iclass]) {
-                DIRECT_NZYX_ELEM(img(), iclass, 0, i, j) = DIRECT_A2D_ELEM(Iref[iclass], i, j);
+                DIRECT_NZYX_ELEM(img(), iclass, 0, i, j) = direct::elem(Iref[iclass], i, j);
             }
         }
         img.setSamplingRateInHeader(pixel_size);
@@ -361,7 +361,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         if (do_sgd) {
             for (int iclass = 0; iclass < nr_classes; iclass++) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Igrad[iclass]) {
-                    DIRECT_NZYX_ELEM(img(), iclass, 0, i, j) = DIRECT_A2D_ELEM(Igrad[iclass], i, j);
+                    DIRECT_NZYX_ELEM(img(), iclass, 0, i, j) = direct::elem(Igrad[iclass], i, j);
                 }
             }
             img.write(fn_out + "_gradients.mrcs");
@@ -988,13 +988,13 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
             sum_mask += masks_bodies[ibody];
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(sum_mask)
-            if (DIRECT_A1D_ELEM(sum_mask, i) > 1.0)
+            if (direct::elem(sum_mask, i) > 1.0)
                 for (int ibody = 0; ibody < nr_bodies; ibody++)
-                    DIRECT_A1D_ELEM(masks_bodies[ibody], i) /= DIRECT_A1D_ELEM(sum_mask, i);
+                    direct::elem(masks_bodies[ibody], i) /= direct::elem(sum_mask, i);
 
         for (int ibody = 0; ibody < nr_bodies; ibody++) {
             for (int obody = 0; obody < nr_bodies; obody++)
-                DIRECT_A2D_ELEM(pointer_body_overlap, ibody, obody) = obody;
+                direct::elem(pointer_body_overlap, ibody, obody) = obody;
             pointer_body_overlap_inv[ibody] = ibody;
         }
 
@@ -1018,14 +1018,14 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
             #endif
             for (int obody = 0; obody < nr_bodies; obody++) {
                 if (ibody == obody) {
-                    DIRECT_A2D_ELEM(pointer_body_overlap, ibody, obody) = obody;
+                    direct::elem(pointer_body_overlap, ibody, obody) = obody;
                     pointer_body_overlap_inv[obody] = obody;
                 } else {
                     // Sum all the previously done obody masks to see whether there is also overlap with any of them
                     MultidimArray<RFLOAT> overlap_mask = masks_bodies[ibody];
                     for (int oldobody = 0; oldobody < obody; oldobody++) {
                         if (oldobody != ibody) {
-                            int ii = DIRECT_A2D_ELEM(pointer_body_overlap, ibody, oldobody);
+                            int ii = direct::elem(pointer_body_overlap, ibody, oldobody);
                             overlap_mask += masks_bodies[ii];
                         }
                     }
@@ -1036,7 +1036,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
                         // Calculate the mask that has the overlap subtracted from the obody mask
                         overlap_mask = masks_bodies[obody] - overlap_mask;
                         // set the right pointer in the 2D matrix
-                        DIRECT_A2D_ELEM(pointer_body_overlap, ibody, obody) = PPref.size();
+                        direct::elem(pointer_body_overlap, ibody, obody) = PPref.size();
                         //std::cerr << " ibody= " << ibody << " obody= " << obody << " overlap= " << overlap_mask.sum() << " icc= " << PPref.size() << std::endl;
                         // Extend the two vectors here!
                         PPref.push_back(PPref[obody]);
@@ -1052,7 +1052,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
                         #endif
                     } else {
                         // if there is no overlap: just point to the original obody
-                        DIRECT_A2D_ELEM(pointer_body_overlap, ibody, obody) = obody;
+                        direct::elem(pointer_body_overlap, ibody, obody) = obody;
                     }
                 }
             }
@@ -1181,7 +1181,7 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
         // This is only for writing out in the it000000_model.star file
         if (!fix_tau) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(tau2_class[iclass]) {
-                DIRECT_A1D_ELEM(tau2_class[iclass], i) = tau2_fudge_factor * DIRECT_A1D_ELEM(spectrum, i);
+                direct::elem(tau2_class[iclass], i) = tau2_fudge_factor * direct::elem(spectrum, i);
             }
         }
 
@@ -1192,15 +1192,15 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
         }
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(tau2_class[iclass]) {
-            RFLOAT evidence = nr_particles * pdf_class[iclass] / DIRECT_A1D_ELEM(avg_sigma2_noise, i);
+            RFLOAT evidence = nr_particles * pdf_class[iclass] / direct::elem(avg_sigma2_noise, i);
             // empirical accounting for ratio of pixels in 3D shells compared to 2D shells
             if (ref_dim == 3 && i > 0)
                 evidence /= 2.0 * (RFLOAT) i;
-            RFLOAT prior = 1.0 /  DIRECT_A1D_ELEM(tau2_class[iclass], i);
+            RFLOAT prior = 1.0 /  direct::elem(tau2_class[iclass], i);
             RFLOAT myssnr = evidence / prior;
-            DIRECT_A1D_ELEM(data_vs_prior_class[iclass], i) = myssnr;
+            direct::elem(data_vs_prior_class[iclass], i) = myssnr;
             // Also initialise FSC-halves here (...)
-            //DIRECT_A1D_ELEM(fsc_halves_class[iclass], i ) = myssnr / (myssnr + 1);
+            //direct::elem(fsc_halves_class[iclass], i ) = myssnr / (myssnr + 1);
         }
     }
 
@@ -1221,7 +1221,7 @@ void MlModel::calculateTotalFourierCoverage() {
     for (int iclass = 0; iclass < nr_classes * nr_bodies; iclass++) {
         int maxres = 0;
         for (int ires = 0; ires < Xsize(data_vs_prior_class[iclass]); ires++) {
-            if (DIRECT_A1D_ELEM(data_vs_prior_class[iclass], ires) < 1.0)
+            if (direct::elem(data_vs_prior_class[iclass], ires) < 1.0)
                 break;
             maxres = ires;
         }
@@ -1235,7 +1235,7 @@ void MlModel::calculateTotalFourierCoverage() {
         for (long int j = Xmipp::init(coverwindow); j <= Xmipp::last(coverwindow); j++) {
             int r = sqrt(RFLOAT(k * k + i * i + j * j));
             if (r <= maxres) {
-                total_fourier_coverage[iclass] += DIRECT_A1D_ELEM(fourier_coverage_class[iclass], r);
+                total_fourier_coverage[iclass] += direct::elem(fourier_coverage_class[iclass], r);
                 count += 1.0;
             }
         }

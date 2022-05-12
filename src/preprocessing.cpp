@@ -830,7 +830,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             Image<RFLOAT> Iproj(Ysize(Ipart()), Xsize(Ipart()));
             Iproj().setXmippOrigin();
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ipart()) {
-                DIRECT_A2D_ELEM(Iproj(), i, j) += DIRECT_A3D_ELEM(Ipart(), k, i, j);
+                direct::elem(Iproj(), i, j) += direct::elem(Ipart(), k, i, j);
             }
             Ipart = Iproj;
         }

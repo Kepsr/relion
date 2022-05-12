@@ -185,7 +185,7 @@ bool calcCCofHelicalSymmetry(
 
             // Trilinear interpolation (with physical coords)
             // Subtract Xinit,Y,Z to accelerate access to data
-            // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
+            // In that way use direct::elem, rather than A3D_ELEM
             int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= Xinit(v); int x1 = x0 + 1;
             int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= Yinit(v); int y1 = y0 + 1;
             int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= Zinit(v); int z1 = z0 + 1;
@@ -194,14 +194,14 @@ bool calcCCofHelicalSymmetry(
                 std::cout << " idzidyidx= " << k << ", " << i << ", " << j << ", x0x1y0y1z0z1= " << x0 << ", " << x1 << ", " << y0 << ", " << y1 << ", " << z0 << ", " << z1 << std::endl;
             }
 
-            RFLOAT d000 = DIRECT_A3D_ELEM(v, z0, y0, x0);
-            RFLOAT d001 = DIRECT_A3D_ELEM(v, z0, y0, x1);
-            RFLOAT d010 = DIRECT_A3D_ELEM(v, z0, y1, x0);
-            RFLOAT d011 = DIRECT_A3D_ELEM(v, z0, y1, x1);
-            RFLOAT d100 = DIRECT_A3D_ELEM(v, z1, y0, x0);
-            RFLOAT d101 = DIRECT_A3D_ELEM(v, z1, y0, x1);
-            RFLOAT d110 = DIRECT_A3D_ELEM(v, z1, y1, x0);
-            RFLOAT d111 = DIRECT_A3D_ELEM(v, z1, y1, x1);
+            RFLOAT d000 = direct::elem(v, z0, y0, x0);
+            RFLOAT d001 = direct::elem(v, z0, y0, x1);
+            RFLOAT d010 = direct::elem(v, z0, y1, x0);
+            RFLOAT d011 = direct::elem(v, z0, y1, x1);
+            RFLOAT d100 = direct::elem(v, z1, y0, x0);
+            RFLOAT d101 = direct::elem(v, z1, y0, x1);
+            RFLOAT d110 = direct::elem(v, z1, y1, x0);
+            RFLOAT d111 = direct::elem(v, z1, y1, x1);
 
             RFLOAT dx00 = LIN_INTERP(fx, d000, d001);
             RFLOAT dx01 = LIN_INTERP(fx, d100, d101);
@@ -906,19 +906,19 @@ void imposeHelicalSymmetryInRealSpace(
 
             // Trilinear interpolation (with physical coords)
             // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
-            // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
+            // In that way use direct::elem, rather than A3D_ELEM
             int x0 = floor(xp); RFLOAT fx = xp - x0; x0 -= Xinit(v); int x1 = x0 + 1;
             int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= Yinit(v); int y1 = y0 + 1;
             int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= Zinit(v); int z1 = z0 + 1;
 
-            RFLOAT d000 = DIRECT_A3D_ELEM(v, z0, y0, x0);
-            RFLOAT d001 = DIRECT_A3D_ELEM(v, z0, y0, x1);
-            RFLOAT d010 = DIRECT_A3D_ELEM(v, z0, y1, x0);
-            RFLOAT d011 = DIRECT_A3D_ELEM(v, z0, y1, x1);
-            RFLOAT d100 = DIRECT_A3D_ELEM(v, z1, y0, x0);
-            RFLOAT d101 = DIRECT_A3D_ELEM(v, z1, y0, x1);
-            RFLOAT d110 = DIRECT_A3D_ELEM(v, z1, y1, x0);
-            RFLOAT d111 = DIRECT_A3D_ELEM(v, z1, y1, x1);
+            RFLOAT d000 = direct::elem(v, z0, y0, x0);
+            RFLOAT d001 = direct::elem(v, z0, y0, x1);
+            RFLOAT d010 = direct::elem(v, z0, y1, x0);
+            RFLOAT d011 = direct::elem(v, z0, y1, x1);
+            RFLOAT d100 = direct::elem(v, z1, y0, x0);
+            RFLOAT d101 = direct::elem(v, z1, y0, x1);
+            RFLOAT d110 = direct::elem(v, z1, y1, x0);
+            RFLOAT d111 = direct::elem(v, z1, y1, x1);
 
             RFLOAT dx00 = LIN_INTERP(fx, d000, d001);
             RFLOAT dx01 = LIN_INTERP(fx, d100, d101);
@@ -1430,9 +1430,9 @@ void makeBlot(
     if (dimensions.n != 1 || dimensions.z != 1 || YXsize(v) <= 2)
         return;
 
-    RFLOAT min = DIRECT_A2D_ELEM(v, 0, 0);
+    RFLOAT min = direct::elem(v, 0, 0);
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v)
-        min = (DIRECT_A2D_ELEM(v, i, j) < min) ? DIRECT_A2D_ELEM(v, i, j) : min;
+        min = (direct::elem(v, i, j) < min) ? direct::elem(v, i, j) : min;
 
     v.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY2D(v) {
@@ -3695,7 +3695,7 @@ void cutOutPartOfHelix(
                 continue;
 
             // Fill in voxels
-            DIRECT_A3D_ELEM(vout, zi, yi, xi) = DIRECT_A3D_ELEM(vin, zi + new_z0 - old_z0, yi - old_y0, xi - old_x0);
+            direct::elem(vout, zi, yi, xi) = direct::elem(vin, zi + new_z0 - old_z0, yi - old_y0, xi - old_x0);
         }
     }
     vout.setXmippOrigin();

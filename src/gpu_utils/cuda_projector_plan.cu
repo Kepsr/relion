@@ -291,7 +291,7 @@ void CudaProjectorPlan::setup(
                 for (long int ipart = 0; ipart < YSIZE(*Mcoarse_significant); ipart++) {
                     long int ihidden = iorient * nr_trans;
                     for (long int itrans = itrans_min; itrans <= itrans_max; itrans++, ihidden++) {
-                        if (DIRECT_A2D_ELEM(*Mcoarse_significant, ipart, ihidden)) {
+                        if (direct::elem(*Mcoarse_significant, ipart, ihidden)) {
                             do_proceed = true;
                             break;
                         }

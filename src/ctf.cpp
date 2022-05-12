@@ -389,8 +389,7 @@ void CTF::getFftwImage(
                 int ip = i < Xsize(Fctf) ? i : i - Ysize(Fctf);
                 // Don't take the last column from the half-transform
                 for (int j = 0; j < Xsize(Fctf) - 1; j++) {
-                    // Make just one lookup on Fctf.data
-                    RFLOAT fctfij = DIRECT_A2D_ELEM(Fctf, i, j);
+                    RFLOAT fctfij = direct::elem(Fctf, i, j);
                     if (ctf_premultiplied) {
                         A2D_ELEM(Mctf,  ip,  j) = fctfij * fctfij;
                         A2D_ELEM(Mctf, -ip, -j) = fctfij * fctfij;
@@ -417,14 +416,14 @@ void CTF::getFftwImage(
                     if (ctf_premultiplied) {
                         // Constrain result[i, j] to the interval [0.0, 1.0]
                         if (mctfipj < 0.0) {
-                            DIRECT_A2D_ELEM(result, i, j) = 0.0;
+                            direct::elem(result, i, j) = 0.0;
                         } else if (mctfipj > 1.0) {
-                            DIRECT_A2D_ELEM(result, i, j) = 1.0;
+                            direct::elem(result, i, j) = 1.0;
                         } else {
-                            DIRECT_A2D_ELEM(result, i, j) = sqrt(mctfipj);
+                            direct::elem(result, i, j) = sqrt(mctfipj);
                         }
                     } else {
-                        DIRECT_A2D_ELEM(result, i, j) = mctfipj;
+                        direct::elem(result, i, j) = mctfipj;
                     }
                 }
             }
@@ -469,7 +468,7 @@ void CTF::getFftwImage(
                     x, y, do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, gammaOffset(y0, x0), do_intact_after_first_peak
                 );
-                DIRECT_A2D_ELEM(result, i, j) = do_abs ? abs(t) : t;
+                direct::elem(result, i, j) = do_abs ? abs(t) : t;
             }
         } else {
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
@@ -480,7 +479,7 @@ void CTF::getFftwImage(
                     x, y, do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, 0.0, do_intact_after_first_peak
                 );
-                DIRECT_A2D_ELEM(result, i, j) = do_abs ? abs(t) : t;
+                direct::elem(result, i, j) = do_abs ? abs(t) : t;
             }
         }
     }
@@ -529,7 +528,7 @@ void CTF::getCTFPImage(
             const int x0 = j;
             const int y0 = i <= Ysize(result) / 2 ? ip : Ysize(gammaOffset.data) + ip;
 
-            DIRECT_A2D_ELEM(result, i, j) = getCTFP(
+            direct::elem(result, i, j) = getCTFP(
                 x, y,
                 (myangle >= anglerad) == is_positive,
                 gammaOffset(y0, x0)
@@ -544,7 +543,7 @@ void CTF::getCTFPImage(
             RFLOAT y = (RFLOAT) ip / ys;
             RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
 
-            DIRECT_A2D_ELEM(result, i, j) = getCTFP(
+            direct::elem(result, i, j) = getCTFP(
                 x, y,
                 (myangle >= anglerad ? is_positive : !is_positive)
             );
@@ -555,7 +554,7 @@ void CTF::getCTFPImage(
         int dim = Ysize(result);
 
         for (int i = dim / 2 + 1; i < dim; i++) {
-            DIRECT_A2D_ELEM(result, i, 0) = conj(DIRECT_A2D_ELEM(result, dim - i, 0));
+            direct::elem(result, i, 0) = conj(direct::elem(result, dim - i, 0));
         }
     }
 }
@@ -633,7 +632,7 @@ void CTF::applyWeightEwaldSphereCurvature(
         RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
         // sin(acos(x)) is almost 50% slower than sqrt(1 - x * x)
 
-        DIRECT_A2D_ELEM(result, i, j) = 0.5 * (A * (2.0 * fabs(sin(gamma)) - 1.0) + 1.0);
+        direct::elem(result, i, j) = 0.5 * (A * (2.0 * fabs(sin(gamma)) - 1.0) + 1.0);
         // Within RELION, sin(chi) is used rather than 2 * sin(chi).
         // Hence the 0.5 above to keep everything on the same scale.
     }
@@ -671,7 +670,7 @@ void CTF::applyWeightEwaldSphereCurvature_new(
         // abs. value of CTFR (no damping):
         const double ctf_val = getCTF(x, y, true, false, false, false, 0.0);
 
-        DIRECT_A2D_ELEM(result, yi, xi) = 0.5 * (A * (2.0 * ctf_val - 1.0) + 1.0);
+        direct::elem(result, yi, xi) = 0.5 * (A * (2.0 * ctf_val - 1.0) + 1.0);
         // Within RELION, sin(chi) is used rather than 2 * sin(chi).
         // Hence the 0.5 above to keep everything on the same scale.
     }
@@ -690,7 +689,7 @@ void CTF::applyWeightEwaldSphereCurvature_noAniso(
         RFLOAT inv_d = Pythag(x, y);
         RFLOAT aux = 2.0 * deltaf * lambda * inv_d / particle_diameter;
         RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
-        DIRECT_A2D_ELEM(result, i, j) = 0.5 * (A * (2.0 * fabs(getCTF(x, y)) - 1.0) + 1.0);
+        direct::elem(result, i, j) = 0.5 * (A * (2.0 * fabs(getCTF(x, y)) - 1.0) + 1.0);
         // Within RELION, sin(chi) is used rather than 2 * sin(chi).
         // Hence the 0.5 above to keep everything on the same scale.
     }

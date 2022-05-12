@@ -79,11 +79,10 @@
  * It also works for 1D or 2D FFTW transforms
  *
  * @code
- * FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(V)
- * {
+ * FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(V) {
  *	int r2 = jp*jp + ip*ip + kp*kp;
  *
- *	std::cout << "element at physical coords: "<< i<<" "<<j<<" "<<k<<" has value: "<<DIRECT_A3D_ELEM(m, k, i, j) << std::endl;
+ *	std::cout << "element at physical coords: "<< i<<" "<<j<<" "<<k<<" has value: "<<direct::elem(m, k, i, j) << std::endl;
  *	std::cout << "its logical coords are: "<< ip<<" "<<jp<<" "<<kp<<std::endl;
  *	std::cout << "its distance from the origin = "<<sqrt(r2)<<std::endl;
  *
@@ -112,7 +111,7 @@
  * @endcode
  */
 #define FFTW_ELEM(V, kp, ip, jp) \
-    (DIRECT_A3D_ELEM((V),((kp < 0) ? (kp + Zsize(V)) : (kp)), ((ip < 0) ? (ip + Ysize(V)) : (ip)), (jp)))
+    (direct::elem((V),((kp < 0) ? (kp + Zsize(V)) : (kp)), ((ip < 0) ? (ip + Ysize(V)) : (ip)), (jp)))
 
 /** FFTW 2D image element: Logical access.
  *
@@ -123,7 +122,7 @@
  * @endcode
  */
 #define FFTW2D_ELEM(V, ip, jp) \
-    (DIRECT_A2D_ELEM((V), ((ip < 0) ? (ip + Ysize(V)) : (ip)), (jp)))
+    (direct::elem((V), ((ip < 0) ? (ip + Ysize(V)) : (ip)), (jp)))
 
 /** Fourier Transformer class.
  * @ingroup FourierW
@@ -252,81 +251,69 @@ public:
     /** Return a complete Fourier transform (two halves).
     */
     template <typename T>
-        void getCompleteFourier(T& V) {
-            V.reshape(*fReal);
-            int ndim=3;
-            if (Zsize(*fReal)==1)
-            {
-                ndim=2;
-                if (Ysize(*fReal)==1)
-                    ndim=1;
-            }
-            switch (ndim)
-            {
-                case 1:
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V)
-                        if (i<Xsize(fFourier))
-                            DIRECT_A1D_ELEM(V,i)=DIRECT_A1D_ELEM(fFourier,i);
-                        else
-                            DIRECT_A1D_ELEM(V,i)=conj(DIRECT_A1D_ELEM(fFourier,
-                                                                      Xsize(*fReal)-i));
-                    break;
-                case 2:
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V)
-                        if (j<Xsize(fFourier))
-                            DIRECT_A2D_ELEM(V,i,j)=DIRECT_A2D_ELEM(fFourier,i,j);
-                        else
-                            DIRECT_A2D_ELEM(V,i,j)=	conj(DIRECT_A2D_ELEM(fFourier,
-                                                                         (Ysize(*fReal)-i)%Ysize(*fReal),
-                                                                         Xsize(*fReal)-j));
-                    break;
-                case 3:
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V)
-                        if (j<Xsize(fFourier))
-                            DIRECT_A3D_ELEM(V,k,i,j)=DIRECT_A3D_ELEM(fFourier,k,i,j);
-                        else
-                            DIRECT_A3D_ELEM(V,k,i,j)=conj(DIRECT_A3D_ELEM(fFourier,
-                                                                          (Zsize(*fReal)-k)%Zsize(*fReal),
-                                                                          (Ysize(*fReal)-i)%Ysize(*fReal),
-                                                                          Xsize(*fReal)-j));
-                    break;
-            }
+    void getCompleteFourier(T& V) {
+        V.reshape(*fReal);
+        int ndim = 3;
+        if (Zsize(*fReal) == 1) {
+            ndim = 2;
+            if (Ysize(*fReal) == 1)
+                ndim = 1;
         }
+        switch (ndim) {
+            case 1:
+            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
+                direct::elem(V, i) = i < Xsize(fFourier) ? direct::elem(fFourier, i) :
+                                                        conj(direct::elem(fFourier, Xsize(*fReal) - i));
+            } break;
+            case 2:
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
+                    direct::elem(V, i, j) = j < Xsize(fFourier) ? direct::elem(fFourier, i, j) :
+                                                                conj(direct::elem(fFourier, (Ysize(*fReal) - i) % Ysize(*fReal), Xsize(*fReal) - j));
+                } break;
+            case 3:
+                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
+                    direct::elem(V, k, i, j) = j < Xsize(fFourier) ? direct::elem(fFourier, k, i, j) : 
+                                                                conj(direct::elem(fFourier, (Zsize(*fReal) - k) % Zsize(*fReal), (Ysize(*fReal) - i) % Ysize(*fReal), Xsize(*fReal) - j));
+                } break;
+        }
+    }
 
     /** Set one half of the FT in fFourier from the input complete Fourier transform (two halves).
         The fReal and fFourier already should have the right sizes
     */
     template <typename T>
-        void setFromCompleteFourier(T& V) {
-        int ndim=3;
-        if (Zsize(*fReal)==1) {
-            ndim=2;
-            if (Ysize(*fReal)==1)
-                ndim=1;
+    void setFromCompleteFourier(T& V) {
+        int ndim = 3;
+        if (Zsize(*fReal) == 1) {
+            ndim = 2;
+            if (Ysize(*fReal) == 1)
+                ndim = 1;
         }
         switch (ndim) {
-        case 1:
+            case 1:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fFourier)
-                DIRECT_A1D_ELEM(fFourier,i)=DIRECT_A1D_ELEM(V,i);
+                direct::elem(fFourier, i) = direct::elem(V, i);
             break;
-        case 2:
+            case 2:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(fFourier)
-                DIRECT_A2D_ELEM(fFourier,i,j) = DIRECT_A2D_ELEM(V,i,j);
+                direct::elem(fFourier, i, j) = direct::elem(V, i, j);
             break;
-        case 3:
+            case 3:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier)
-                DIRECT_A3D_ELEM(fFourier,k,i,j) = DIRECT_A3D_ELEM(V,k,i,j);
+                direct::elem(fFourier, k, i, j) = direct::elem(V, k, i, j);
             break;
         }
     }
 
-// Internal methods
-public:
+    // Internal methods
+
+    public:
+
     /* Pointer to the array of RFLOATs with which the plan was computed */
-    RFLOAT * dataPtr;
+    RFLOAT *dataPtr;
 
     /* Pointer to the array of complex<RFLOAT> with which the plan was computed */
-    Complex * complexDataPtr;
+    Complex *complexDataPtr;
 
     /* Initialise all pointers to NULL */
     void init();
@@ -391,7 +378,7 @@ void CenterFFTbySign(MultidimArray <T> &v) {
     // NOTE: != has higher precedence than & in C as pointed out in GitHub issue #637.
     // So (k ^ i ^ j) & 1 != 0 is not good (fortunately in this case the behaviour happened to be the same)
         if (((k ^ i ^ j) & 1) != 0) // if ODD
-            DIRECT_A3D_ELEM(v, k, i, j) *= -1;
+            direct::elem(v, k, i, j) *= -1;
     }
 }
 
@@ -400,315 +387,276 @@ void CenterFFTbySign(MultidimArray <T> &v) {
  *
  */
 template <typename T>
-void CenterFFT(MultidimArray< T >& v, bool forward) {
-#ifndef FAST_CENTERFFT
+void CenterFFT(MultidimArray<T>& v, bool forward) {
+    #ifndef FAST_CENTERFFT
     if (v.getDim() == 1 ) {
         // 1D
-        MultidimArray< T > aux;
+        MultidimArray<T> aux;
         int l, shift;
 
         l = Xsize(v);
         aux.reshape(l);
-        shift = (int)(l / 2);
+        shift = l / 2;
 
-        if (!forward)
-            shift = -shift;
+        if (!forward) { shift = -shift; }
 
         // Shift the input in an auxiliar vector
         for (int i = 0; i < l; i++) {
             int ip = i + shift;
 
-            if (ip < 0)
-                ip += l;
-            else if (ip >= l)
-                ip -= l;
+                 if (ip <  0) { ip += l; } 
+            else if (ip >= l) { ip -= l; }
 
-            aux(ip) = DIRECT_A1D_ELEM(v, i);
+            aux(ip) = direct::elem(v, i);
         }
 
         // Copy the vector
         for (int i = 0; i < l; i++)
-            DIRECT_A1D_ELEM(v, i) = DIRECT_A1D_ELEM(aux, i);
-    }
-    else if (v.getDim() == 2 ) {
+            direct::elem(v, i) = direct::elem(aux, i);
+    } else if (v.getDim() == 2) {
         // 2D
-        MultidimArray< T > aux;
-        int l, shift;
 
         // Shift in the X direction
-        l = Xsize(v);
+        int l = Xsize(v);
+        MultidimArray<T> aux;
         aux.reshape(l);
-        shift = (int)(l / 2);
+        int shift = l / 2;
 
-        if (!forward)
-            shift = -shift;
+        if (!forward) { shift = -shift; }
 
         for (int i = 0; i < Ysize(v); i++) {
             // Shift the input in an auxiliar vector
-            for (int j = 0; j < l; j++)
-            {
+            for (int j = 0; j < l; j++) {
                 int jp = j + shift;
 
-                if (jp < 0)
-                    jp += l;
-                else if (jp >= l)
-                    jp -= l;
+                     if (jp <  0) { jp += l; } 
+                else if (jp >= l) { jp -= l; }
 
-                aux(jp) = DIRECT_A2D_ELEM(v, i, j);
+                aux(jp) = direct::elem(v, i, j);
             }
 
             // Copy the vector
             for (int j = 0; j < l; j++)
-                DIRECT_A2D_ELEM(v, i, j) = DIRECT_A1D_ELEM(aux, j);
+                direct::elem(v, i, j) = direct::elem(aux, j);
         }
 
         // Shift in the Y direction
         l = Ysize(v);
         aux.reshape(l);
-        shift = (int)(l / 2);
+        shift = l / 2;
 
-        if (!forward)
-            shift = -shift;
+        if (!forward) { shift = -shift; }
 
         for (int j = 0; j < Xsize(v); j++) {
             // Shift the input in an auxiliar vector
-            for (int i = 0; i < l; i++)
-            {
+            for (int i = 0; i < l; i++) {
                 int ip = i + shift;
 
-                if (ip < 0)
-                    ip += l;
-                else if (ip >= l)
-                    ip -= l;
+                     if (ip <  0) { ip += l; }
+                else if (ip >= l) { ip -= l; }
 
-                aux(ip) = DIRECT_A2D_ELEM(v, i, j);
+                aux(ip) = direct::elem(v, i, j);
             }
 
             // Copy the vector
             for (int i = 0; i < l; i++)
-                DIRECT_A2D_ELEM(v, i, j) = DIRECT_A1D_ELEM(aux, i);
+                direct::elem(v, i, j) = direct::elem(aux, i);
         }
-    }
-    else if (v.getDim() == 3 ) {
+    } else if (v.getDim() == 3 ) {
         // 3D
-        MultidimArray< T > aux;
+        MultidimArray<T> aux;
         int l, shift;
 
         // Shift in the X direction
         l = Xsize(v);
         aux.reshape(l);
-        shift = (int)(l / 2);
+        shift = l / 2;
 
-        if (!forward)
-            shift = -shift;
+        if (!forward) { shift = -shift; }
 
         for (int k = 0; k < Zsize(v); k++)
-            for (int i = 0; i < Ysize(v); i++)
-            {
+            for (int i = 0; i < Ysize(v); i++) {
                 // Shift the input in an auxiliar vector
-                for (int j = 0; j < l; j++)
-                {
+                for (int j = 0; j < l; j++) {
                     int jp = j + shift;
 
-                    if (jp < 0)
-                        jp += l;
-                    else if (jp >= l)
-                        jp -= l;
+                         if (jp <  0) { jp += l; }
+                    else if (jp >= l) { jp -= l; }
 
-                    aux(jp) = DIRECT_A3D_ELEM(v, k, i, j);
+                    aux(jp) = direct::elem(v, k, i, j);
                 }
 
                 // Copy the vector
                 for (int j = 0; j < l; j++)
-                    DIRECT_A3D_ELEM(v, k, i, j) = DIRECT_A1D_ELEM(aux, j);
+                    direct::elem(v, k, i, j) = direct::elem(aux, j);
             }
 
         // Shift in the Y direction
         l = Ysize(v);
         aux.reshape(l);
-        shift = (int)(l / 2);
+        shift = l / 2;
 
-        if (!forward)
-            shift = -shift;
+        if (!forward) { shift = -shift; }
 
         for (int k = 0; k < Zsize(v); k++)
-            for (int j = 0; j < Xsize(v); j++)
-            {
+            for (int j = 0; j < Xsize(v); j++) {
                 // Shift the input in an auxiliar vector
-                for (int i = 0; i < l; i++)
-                {
+                for (int i = 0; i < l; i++) {
                     int ip = i + shift;
 
-                    if (ip < 0)
-                        ip += l;
-                    else if (ip >= l)
-                        ip -= l;
+                         if (ip <  0) { ip += l; }
+                    else if (ip >= l) { ip -= l; }
 
-                    aux(ip) = DIRECT_A3D_ELEM(v, k, i, j);
+                    aux(ip) = direct::elem(v, k, i, j);
                 }
 
                 // Copy the vector
                 for (int i = 0; i < l; i++)
-                    DIRECT_A3D_ELEM(v, k, i, j) = DIRECT_A1D_ELEM(aux, i);
+                    direct::elem(v, k, i, j) = direct::elem(aux, i);
             }
 
         // Shift in the Z direction
         l = Zsize(v);
         aux.reshape(l);
-        shift = (int)(l / 2);
+        shift = l / 2;
 
-        if (!forward)
-            shift = -shift;
+        if (!forward) { shift = -shift; }
 
         for (int i = 0; i < Ysize(v); i++)
-            for (int j = 0; j < Xsize(v); j++)
-            {
+            for (int j = 0; j < Xsize(v); j++) {
                 // Shift the input in an auxiliar vector
-                for (int k = 0; k < l; k++)
-                {
+                for (int k = 0; k < l; k++) {
                     int kp = k + shift;
-                    if (kp < 0)
-                        kp += l;
-                    else if (kp >= l)
-                        kp -= l;
 
-                    aux(kp) = DIRECT_A3D_ELEM(v, k, i, j);
+                         if (kp <  0) { kp += l; }
+                    else if (kp >= l) { kp -= l; }
+
+                    aux(kp) = direct::elem(v, k, i, j);
                 }
 
                 // Copy the vector
                 for (int k = 0; k < l; k++)
-                    DIRECT_A3D_ELEM(v, k, i, j) = DIRECT_A1D_ELEM(aux, k);
+                    direct::elem(v, k, i, j) = direct::elem(aux, k);
             }
-    }
-    else
-    {
+    } else {
         v.printShape();
         REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
     }
-#else // FAST_CENTERFFT
+    #else // FAST_CENTERFFT
     if (v.getDim() == 1 ) {
         // 1D
-        MultidimArray< T > aux;
-        int l, shift;
 
-        l = Xsize(v);
+        int l = Xsize(v);
+        MultidimArray<T> aux;
         aux.reshape(l);
-        shift = (int)(l / 2);
+        int shift = l / 2;
 
-        if (!forward)
-            shift = -shift;
+        if (!forward) { shift = -shift; }
 
         // Shift the input in an auxiliary vector
         for (int i = 0; i < l; i++) {
             int ip = i + shift;
 
-            if (ip < 0)
-                ip += l;
-            else if (ip >= l)
-                ip -= l;
+                 if (ip <  0) { ip += l; }
+            else if (ip >= l) { ip -= l; }
 
-            aux(ip) = DIRECT_A1D_ELEM(v, i);
+            aux(ip) = direct::elem(v, i);
         }
 
         // Copy the vector
         for (int i = 0; i < l; i++)
-            DIRECT_A1D_ELEM(v, i) = DIRECT_A1D_ELEM(aux, i);
-    }
-    else if (v.getDim() == 2 ) {
+            direct::elem(v, i) = direct::elem(aux, i);
+    } else if (v.getDim() == 2 ) {
         int  batchSize = 1;
         int xSize = Xsize(v);
         int ySize = Ysize(v);
 
-        int xshift = (xSize / 2);
-        int yshift = (ySize / 2);
+        int xshift = xSize / 2;
+        int yshift = ySize / 2;
 
         if (!forward) {
             xshift = -xshift;
             yshift = -yshift;
         }
 
-        size_t image_size = xSize*ySize;
-        size_t isize2 = image_size/2;
-        int blocks = ceilf((float)(image_size/(float)(2*CFTT_BLOCK_SIZE)));
+        size_t image_size = xSize * ySize;
+        size_t isize2 = image_size / 2;
+        int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
 
 //		for(int i=0; i<blocks; i++) {
         tbb::parallel_for(0, blocks, [&](int i) {
-            size_t pixel_start = i*(CFTT_BLOCK_SIZE);
-            size_t pixel_end = (i+1)*(CFTT_BLOCK_SIZE);
-            if (pixel_end > isize2)
-                pixel_end = isize2;
+            size_t pixel_start = i * CFTT_BLOCK_SIZE;
+            size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
+            if (pixel_end > isize2) { pixel_end = isize2; }
 
-            CpuKernels::centerFFT_2D<T>(batchSize, pixel_start, pixel_end, v.data,
-                                        (size_t)xSize*ySize, xSize, ySize, xshift, yshift);
+            CpuKernels::centerFFT_2D<T>(
+                batchSize, pixel_start, pixel_end, v.data,
+                (size_t) xSize * ySize, xSize, ySize, xshift, yshift
+            );
         }
         );
-    }
-    else if (v.getDim() == 3 ) {
+    } else if (v.getDim() == 3) {
         int  batchSize = 1;
         int xSize = Xsize(v);
         int ySize = Ysize(v);
         int zSize = Zsize(v);
 
-        if(zSize>1) {
-            int xshift = (xSize / 2);
-            int yshift = (ySize / 2);
-            int zshift = (zSize / 2);
+        if(zSize > 1) {
+            int xshift = xSize / 2;
+            int yshift = ySize / 2;
+            int zshift = zSize / 2;
 
-            if (!forward)
-            {
+            if (!forward) {
                 xshift = -xshift;
                 yshift = -yshift;
                 zshift = -zshift;
             }
 
-            size_t image_size = xSize*ySize*zSize;
-            size_t isize2 = image_size/2;
-            int block =ceilf((float)(image_size/(float)(2*CFTT_BLOCK_SIZE)));
+            size_t image_size = xSize * ySize * zSize;
+            size_t isize2 = image_size / 2;
+            int block =ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
 //			for(int i=0; i<block; i++){
             tbb::parallel_for(0, block, [&](int i) {
-                size_t pixel_start = i*(CFTT_BLOCK_SIZE);
-                size_t pixel_end = (i+1)*(CFTT_BLOCK_SIZE);
-                if (pixel_end > isize2)
-                    pixel_end = isize2;
+                size_t pixel_start = i * CFTT_BLOCK_SIZE;
+                size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
+                if (pixel_end > isize2) { pixel_end = isize2; }
 
-                CpuKernels::centerFFT_3D<T>(batchSize, pixel_start, pixel_end, v.data,
-                                            (size_t)xSize*ySize*zSize, xSize, ySize, zSize, xshift, yshift, zshift);
+                CpuKernels::centerFFT_3D<T>(
+                    batchSize, pixel_start, pixel_end, v.data,
+                    (size_t) xSize * ySize * zSize, xSize, ySize, zSize, xshift, yshift, zshift
+                );
             }
             );
-        }
-        else
-        {
-            int xshift = (xSize / 2);
-            int yshift = (ySize / 2);
+        } else {
+            int xshift = xSize / 2;
+            int yshift = ySize / 2;
 
-            if (!forward)
-            {
+            if (!forward) {
                 xshift = -xshift;
                 yshift = -yshift;
             }
 
-            size_t image_size = xSize*ySize;
-            size_t isize2 = image_size/2;
-            int blocks = ceilf((float)(image_size/(float)(2*CFTT_BLOCK_SIZE)));
+            size_t image_size = xSize * ySize;
+            size_t isize2 = image_size / 2;
+            int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
 //			for(int i=0; i<blocks; i++) {
             tbb::parallel_for(0, blocks, [&](int i) {
-                size_t pixel_start = i*(CFTT_BLOCK_SIZE);
-                size_t pixel_end = (i+1)*(CFTT_BLOCK_SIZE);
-                if (pixel_end > isize2)
-                    pixel_end = isize2;
+                size_t pixel_start = i * CFTT_BLOCK_SIZE;
+                size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
+                if (pixel_end > isize2) { pixel_end = isize2; }
 
-                CpuKernels::centerFFT_2D<T>(batchSize, pixel_start, pixel_end, v.data,
-                                            (size_t)xSize*ySize, xSize, ySize, xshift, yshift);
+                CpuKernels::centerFFT_2D<T>(
+                    batchSize, pixel_start, pixel_end, v.data,
+                    (size_t) xSize * ySize, xSize, ySize, xshift, yshift
+                );
             }
             );
         }
-    }
-    else
-    {
+    } else {
         v.printShape();
         REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
     }
-#endif	// FAST_CENTERFFT
+    #endif	// FAST_CENTERFFT
 }
 
 
@@ -1009,12 +957,12 @@ void cropInFourierSpace(MultidimArray<T> &Fref, MultidimArray<T> &Fbinned) {
 
     for (int y = 0; y < half_new_nfy; y++) {
         for (int x = 0; x < new_nfx; x++) {
-            DIRECT_A2D_ELEM(Fbinned, y, x) =  DIRECT_A2D_ELEM(Fref, y, x);
+            direct::elem(Fbinned, y, x) =  direct::elem(Fref, y, x);
         }
     }
     for (int y = half_new_nfy; y < new_nfy; y++) {
         for (int x = 0; x < new_nfx; x++) {
-            DIRECT_A2D_ELEM(Fbinned, y, x) =  DIRECT_A2D_ELEM(Fref, nfy - new_nfy + y, x);
+            direct::elem(Fbinned, y, x) =  direct::elem(Fref, nfy - new_nfy + y, x);
         }
     }
 }

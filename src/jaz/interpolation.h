@@ -62,7 +62,7 @@ class Interpolation {
 
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            T v = DIRECT_A2D_ELEM(img.data, y, x);
+            T v = direct::elem(img.data, y, x);
 
             if (xmax < 0 || v > vmax) {
                 vmax = v;
@@ -74,8 +74,8 @@ class Interpolation {
         gravis::d2Vector p(xmax, ymax);
 
         if (xmax > 0 && xmax < w - 1) {
-            const T vp = DIRECT_A2D_ELEM(img.data, ymax, xmax + 1);
-            const T vn = DIRECT_A2D_ELEM(img.data, ymax, xmax - 1);
+            const T vp = direct::elem(img.data, ymax, xmax + 1);
+            const T vn = direct::elem(img.data, ymax, xmax - 1);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.x -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);
@@ -83,8 +83,8 @@ class Interpolation {
         }
 
         if (xmax > 0 && xmax < w - 1) {
-            const T vp = DIRECT_A2D_ELEM(img.data, ymax + 1, xmax);
-            const T vn = DIRECT_A2D_ELEM(img.data, ymax - 1, xmax);
+            const T vp = direct::elem(img.data, ymax + 1, xmax);
+            const T vn = direct::elem(img.data, ymax - 1, xmax);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.y -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);
@@ -115,7 +115,7 @@ class Interpolation {
                 y > hMax && h - x > hMax
             ) continue;
                 
-            T v = DIRECT_A2D_ELEM(img.data, y, x);
+            T v = direct::elem(img.data, y, x);
 
             if (xmax < 0 || v > vmax) {
                 vmax = v;
@@ -127,8 +127,8 @@ class Interpolation {
         gravis::d2Vector p(xmax, ymax);
 
         {
-            const T vp = DIRECT_A2D_ELEM(img.data, ymax, (xmax + 1)     % w);
-            const T vn = DIRECT_A2D_ELEM(img.data, ymax, (xmax - 1 + w) % w);
+            const T vp = direct::elem(img.data, ymax, (xmax + 1)     % w);
+            const T vn = direct::elem(img.data, ymax, (xmax - 1 + w) % w);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.x -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);
@@ -136,8 +136,8 @@ class Interpolation {
         }
 
         {
-            const T vp = DIRECT_A2D_ELEM(img.data, (ymax + 1)     % w, xmax);
-            const T vn = DIRECT_A2D_ELEM(img.data, (ymax - 1 + w) % w, xmax);
+            const T vp = direct::elem(img.data, (ymax + 1)     % w, xmax);
+            const T vn = direct::elem(img.data, (ymax - 1 + w) % w, xmax);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.y -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);

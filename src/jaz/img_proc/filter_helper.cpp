@@ -194,7 +194,7 @@ void FilterHelper::drawTestPattern(Image<RFLOAT> &img, int squareSize) {
         int zi = z / squareSize % 2;
         int v = (xi + yi + zi) % 2;
 
-        DIRECT_A3D_ELEM(img.data, z, y, x) = v;
+        direct::elem(img.data, z, y, x) = v;
     }
 }
 
@@ -251,9 +251,9 @@ Image<RFLOAT> FilterHelper::padCorner2D(Image<RFLOAT> &img, double factor) {
             int x0 = x1 < 0 ? x1 + w0 : x1;
             int y0 = y1 < 0 ? y1 + h0 : y1;
 
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y0, x0);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y0, x0);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -278,9 +278,9 @@ Image<Complex> FilterHelper::padCorner2D(Image<Complex> &img, double factor) {
             int x0 = x1;
             int y0 = y1 < 0 ? y1 + h0 : y1;
 
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y0, x0);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y0, x0);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -302,9 +302,9 @@ Image<RFLOAT> FilterHelper::padCorner2D(const Image<RFLOAT> &img, int w, int h) 
             int x0 = x1 < 0 ? x1 + w0 : x1;
             int y0 = y1 < 0 ? y1 + h0 : y1;
 
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y0, x0);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y0, x0);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -328,7 +328,7 @@ Image<RFLOAT> FilterHelper::cropCorner2D(const Image<RFLOAT> &img, int w, int h)
             int x0 = x1 < 0 ? x1 + w : x1;
             int y0 = y1 < 0 ? y1 + h : y1;
 
-            DIRECT_A2D_ELEM(out.data, y0, x0) = DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y0, x0) = direct::elem(img.data, y, x);
         }
     }
 
@@ -350,7 +350,7 @@ Image<Complex> FilterHelper::cropCorner2D(const Image<Complex> &img, int w, int 
             int x0 = x1;
             int y0 = y1 < 0 ? y1 + h : y1;
 
-            DIRECT_A2D_ELEM(out.data, y0, x0) = DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y0, x0) = direct::elem(img.data, y, x);
         }
     }
 
@@ -373,9 +373,9 @@ Image<RFLOAT> FilterHelper::zeroOutsideCorner2D(Image<RFLOAT> &img, double radiu
         int r2 = xx * xx + yy * yy;
 
         if (r2 <= rad2) {
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y, x);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -395,7 +395,7 @@ void FilterHelper::GaussianEnvelopeCorner2D(Image<RFLOAT> &img, double sigma) {
 
         double r2 = xx * xx + yy * yy;
 
-        DIRECT_A2D_ELEM(img.data, y, x) *= exp(-0.5 * r2 / s2);
+        direct::elem(img.data, y, x) *= exp(-0.5 * r2 / s2);
     }
 }
 
@@ -413,14 +413,14 @@ Image<RFLOAT> FilterHelper::raisedCosEnvCorner2D(Image<RFLOAT> &img, double radI
         double r = sqrt(xx * xx + yy * yy);
 
         if (r < radIn) {
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y, x);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
             double a = 0.5 * (1.0 + cos(PI * t));
 
-            DIRECT_A2D_ELEM(out.data, y, x) = a * DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = a * direct::elem(img.data, y, x);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -441,14 +441,14 @@ Image<Complex> FilterHelper::raisedCosEnvCorner2DFull(Image<Complex> &img, doubl
         double r = sqrt(xx * xx + yy * yy);
 
         if (r < radIn) {
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y, x);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
             double a = 0.5 * (1.0 + cos(PI * t));
 
-            DIRECT_A2D_ELEM(out.data, y, x) = a * DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = a * direct::elem(img.data, y, x);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -472,14 +472,14 @@ Image<RFLOAT> FilterHelper::raisedCosEnvCorner3D(Image<RFLOAT> &img, double radI
         double r = sqrt(xx * xx + yy * yy + zz * zz);
 
         if (r < radIn) {
-            DIRECT_A3D_ELEM(out.data, z, y, x) = DIRECT_A3D_ELEM(img.data, z, y, x);
+            direct::elem(out.data, z, y, x) = direct::elem(img.data, z, y, x);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
             double a = 0.5 * (1.0 + cos(PI * t));
 
-            DIRECT_A3D_ELEM(out.data, z, y, x) = a * DIRECT_A3D_ELEM(img.data, z, y, x);
+            direct::elem(out.data, z, y, x) = a * direct::elem(img.data, z, y, x);
         } else {
-            DIRECT_A3D_ELEM(out.data, z, y, x) = 0.0;
+            direct::elem(out.data, z, y, x) = 0.0;
         }
     }
 
@@ -501,14 +501,14 @@ Image<RFLOAT> FilterHelper::raisedCosEnvFreq2D(const Image<RFLOAT> &img, double 
         double r = sqrt(xx * xx + yy * yy);
 
         if (r < radIn) {
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y, x);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
             double a = 0.5 * (1.0 + cos(PI * t));
 
-            DIRECT_A2D_ELEM(out.data, y, x) = a * DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = a * direct::elem(img.data, y, x);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -536,14 +536,14 @@ Image<RFLOAT> FilterHelper::raisedCosEnvRingFreq2D(
         double re = 2.0 * std::min(r0, r1) / stepWidth;
         
         if (re > 1.0) {
-            DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = direct::elem(img.data, y, x);
         } else if (re > -1.0) {
             double t = (re + 1.0) / 2.0;
             double a = 0.5 * (1.0 - cos(PI * t));
 
-            DIRECT_A2D_ELEM(out.data, y, x) = a * DIRECT_A2D_ELEM(img.data, y, x);
+            direct::elem(out.data, y, x) = a * direct::elem(img.data, y, x);
         } else {
-            DIRECT_A2D_ELEM(out.data, y, x) = 0.0;
+            direct::elem(out.data, y, x) = 0.0;
         }
     }
 
@@ -579,11 +579,11 @@ void FilterHelper::lowPassFilterSpectrum(
         double r = sqrt(xi * xi + yi * yi + zi * zi);
 
         if (r > maxFreq1) {
-            DIRECT_A3D_ELEM(spectrum, k, i, j) = Complex(0.0, 0.0);
+            direct::elem(spectrum, k, i, j) = Complex(0.0, 0.0);
         } else if (r > maxFreq0) {
             const double t = (r - maxFreq0) / (maxFreq1 - maxFreq0);
             const double q = 0.5 * (1.0 + cos(PI * t));
-            DIRECT_A3D_ELEM(spectrum, k, i, j) *= q;
+            direct::elem(spectrum, k, i, j) *= q;
         }
     }
 }
@@ -626,7 +626,7 @@ void FilterHelper::phaseFlip(
         RFLOAT c = ctf(x / xs, y / ys);
 
         if (c < 0) {
-            DIRECT_A2D_ELEM(imgFreq, i, j) *= -1;
+            direct::elem(imgFreq, i, j) *= -1;
         }
     }
 
@@ -668,7 +668,7 @@ void FilterHelper::modulate(Image<Complex> &imgFreq, CTF &ctf, RFLOAT angpix, Im
     ctf.getFftwImage(ctfImg(), h, h, angpix);
     
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq()) {
-        DIRECT_A2D_ELEM(imgFreq(), i, j) *= DIRECT_A2D_ELEM(ctfImg(), i, j);
+        direct::elem(imgFreq(), i, j) *= direct::elem(ctfImg(), i, j);
     }
 
     if (dest.data.xdim != 2 * (imgFreq.data.xdim - 1) || dest.data.ydim != imgFreq.data.ydim) {
@@ -687,7 +687,7 @@ void FilterHelper::modulate(MultidimArray<Complex> &imgFreq, CTF &ctf, RFLOAT an
     ctf.getFftwImage(ctfImg(), h, h, angpix);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
-        DIRECT_A2D_ELEM(imgFreq, i, j) *= DIRECT_A2D_ELEM(ctfImg(), i, j);
+        direct::elem(imgFreq, i, j) *= direct::elem(ctfImg(), i, j);
     }
 }
 
@@ -699,7 +699,7 @@ void FilterHelper::drawCtf(CTF &ctf, RFLOAT angpix, Image<Complex> &dest) {
     ctf.getFftwImage(ctfImg(), h, h, angpix);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(dest()) {
-        DIRECT_A2D_ELEM(dest(), i, j) = DIRECT_A2D_ELEM(ctfImg(), i, j);
+        direct::elem(dest(), i, j) = direct::elem(ctfImg(), i, j);
     }
 }
 
@@ -718,7 +718,7 @@ void FilterHelper::wienerFilter(Image<RFLOAT> &img, CTF &ctf, RFLOAT angpix, RFL
         RFLOAT c = ctf(x / xs, y / ys);
         if (Bfac > 0.0) { c *= exp(-Bfac * (x * x + y * y) / 4.0); }
 
-        DIRECT_A2D_ELEM(imgFreq, i, j) = c * DIRECT_A2D_ELEM(imgFreq, i, j) / (c * c + eps);
+        direct::elem(imgFreq, i, j) = c * direct::elem(imgFreq, i, j) / (c * c + eps);
     }
 
     if (dest.data.xdim != img.data.xdim || dest.data.ydim != img.data.ydim) {
@@ -739,14 +739,14 @@ void FilterHelper::richardsonLucy(Image<RFLOAT> &img, CTF &ctf, RFLOAT angpix, R
     double Bfac = (double) w / 4.0;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img.data) {
-        double v0 = DIRECT_A2D_ELEM(img.data, i, j);
+        double v0 = direct::elem(img.data, i, j);
         if (v0 < vmin) { vmin = v0; }
     }
 
     vmin -= 10;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img.data) {
-        DIRECT_A2D_ELEM(img0.data, i, j) = DIRECT_A2D_ELEM(img.data, i, j) + vmin;
+        direct::elem(img0.data, i, j) = direct::elem(img.data, i, j) + vmin;
     }
 
     wienerFilter(img0, ctf, angpix, eps, Bfac, img1);
@@ -784,7 +784,7 @@ void FilterHelper::rampFilter(Image<RFLOAT> &img, RFLOAT s0, RFLOAT t1, double u
         RFLOAT t = std::abs(x * ux + y * uy);
         RFLOAT s = t < t1 ? s0 + (1 - s0) * t / t1 : 1.0;
 
-        DIRECT_A2D_ELEM(imgFreq, i, j) *= s;
+        direct::elem(imgFreq, i, j) *= s;
     }
 
     if (dest.data.xdim != img.data.xdim || dest.data.ydim != img.data.ydim) {
@@ -809,7 +809,7 @@ void FilterHelper::rampFilter3D(Image<Complex> &img, RFLOAT s0, RFLOAT t1, doubl
 
         RFLOAT s = t < t1 ? s0 + (1 - s0) * t / t1 : 1.0;
 
-        DIRECT_A3D_ELEM(img.data, k, i, j) *= s;
+        direct::elem(img.data, k, i, j) *= s;
     }
 }
 
@@ -828,7 +828,7 @@ void FilterHelper::doubleRampFilter3D(Image<Complex> &img, RFLOAT s0, RFLOAT t1,
         RFLOAT s = t < t1 ? s0 + (1 - s0) * t / t1 : 1.0 + t1 - t;
         if (s < 0) { s = 0; }
 
-        DIRECT_A3D_ELEM(img.data, k, i, j) = s * DIRECT_A3D_ELEM(img.data, k, i, j);
+        direct::elem(img.data, k, i, j) = s * direct::elem(img.data, k, i, j);
     }
 }
 
@@ -898,7 +898,7 @@ void FilterHelper::powerSpectrum2D(Image<RFLOAT> &img, Volume<RFLOAT>& spectrum)
     spectrum.resize(imgFreq.xdim, imgFreq.ydim, 1);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
-        Complex z = DIRECT_A2D_ELEM(imgFreq, i, j);
+        Complex z = direct::elem(imgFreq, i, j);
 
         spectrum(j, i, 0) = z.abs();
     }
@@ -1298,43 +1298,43 @@ void FilterHelper::signedDist(const Image<RFLOAT> &src, Image<RFLOAT> &dest) {
 
     for (long int z = 0; z < dest.data.zdim; z++)
     for (long int y = 0; y < dest.data.ydim; y++) {
-        DIRECT_A3D_ELEM(ggp.data, z, y, 0) = rmax2;
-        DIRECT_A3D_ELEM(ggn.data, z, y, 0) = rmax2;
+        direct::elem(ggp.data, z, y, 0) = rmax2;
+        direct::elem(ggn.data, z, y, 0) = rmax2;
 
         for (long int x = 1; x < dest.data.xdim; x++) {
-            if (DIRECT_A3D_ELEM(src.data, z, y, x) < 0.0) {
-                DIRECT_A3D_ELEM(ggp.data, z, y, x) = 0;
+            if (direct::elem(src.data, z, y, x) < 0.0) {
+                direct::elem(ggp.data, z, y, x) = 0;
 
-                double d = sqrt(DIRECT_A3D_ELEM(ggn.data, z, y, x - 1)) + 1.0;
-                DIRECT_A3D_ELEM(ggn.data, z, y, x) = d * d;
+                double d = sqrt(direct::elem(ggn.data, z, y, x - 1)) + 1.0;
+                direct::elem(ggn.data, z, y, x) = d * d;
             } else {
-                DIRECT_A3D_ELEM(ggn.data, z, y, x) = 0;
+                direct::elem(ggn.data, z, y, x) = 0;
 
-                double d = sqrt(DIRECT_A3D_ELEM(ggp.data, z, y, x - 1)) + 1.0;
-                DIRECT_A3D_ELEM(ggp.data, z, y, x) = d * d;
+                double d = sqrt(direct::elem(ggp.data, z, y, x - 1)) + 1.0;
+                direct::elem(ggp.data, z, y, x) = d * d;
             }
         }
 
-        DIRECT_A3D_ELEM(gp.data, z, y, dest.data.xdim - 1) = DIRECT_A3D_ELEM(ggp.data, z, y, dest.data.xdim - 1);
-        DIRECT_A3D_ELEM(gn.data, z, y, dest.data.xdim - 1) = DIRECT_A3D_ELEM(ggn.data, z, y, dest.data.xdim - 1);
+        direct::elem(gp.data, z, y, dest.data.xdim - 1) = direct::elem(ggp.data, z, y, dest.data.xdim - 1);
+        direct::elem(gn.data, z, y, dest.data.xdim - 1) = direct::elem(ggn.data, z, y, dest.data.xdim - 1);
 
         for (long int x = dest.data.xdim - 2; x >= 0; x--) {
-            double dp = sqrt(DIRECT_A3D_ELEM(gp.data, z, y, x + 1)) + 1.0;
+            double dp = sqrt(direct::elem(gp.data, z, y, x + 1)) + 1.0;
             double ddp = dp * dp;
 
-            double dn = sqrt(DIRECT_A3D_ELEM(gn.data, z, y, x + 1)) + 1.0;
+            double dn = sqrt(direct::elem(gn.data, z, y, x + 1)) + 1.0;
             double ddn = dn * dn;
 
-            if (ddp < DIRECT_A3D_ELEM(ggp.data, z, y, x)) {
-                DIRECT_A3D_ELEM(gp.data, z, y, x) = ddp;
+            if (ddp < direct::elem(ggp.data, z, y, x)) {
+                direct::elem(gp.data, z, y, x) = ddp;
             } else {
-                DIRECT_A3D_ELEM(gp.data, z, y, x) = DIRECT_A3D_ELEM(ggp.data, z, y, x);
+                direct::elem(gp.data, z, y, x) = direct::elem(ggp.data, z, y, x);
             }
 
-            if (ddn < DIRECT_A3D_ELEM(ggn.data, z, y, x)) {
-                DIRECT_A3D_ELEM(gn.data, z, y, x) = ddn;
+            if (ddn < direct::elem(ggn.data, z, y, x)) {
+                direct::elem(gn.data, z, y, x) = ddn;
             } else {
-                DIRECT_A3D_ELEM(gn.data, z, y, x) = DIRECT_A3D_ELEM(ggn.data, z, y, x);
+                direct::elem(gn.data, z, y, x) = direct::elem(ggn.data, z, y, x);
             }
         }
     }
@@ -1342,8 +1342,8 @@ void FilterHelper::signedDist(const Image<RFLOAT> &src, Image<RFLOAT> &dest) {
     for (long int z = 0; z < dest.data.zdim; z++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        long int rp = (long int) sqrt(DIRECT_A3D_ELEM(gp.data, z, y, x));
-        long int rn = (long int) sqrt(DIRECT_A3D_ELEM(gn.data, z, y, x));
+        long int rp = (long int) sqrt(direct::elem(gp.data, z, y, x));
+        long int rn = (long int) sqrt(direct::elem(gn.data, z, y, x));
 
         double minValP = rmax2;
         double minValN = rmax2;
@@ -1352,7 +1352,7 @@ void FilterHelper::signedDist(const Image<RFLOAT> &src, Image<RFLOAT> &dest) {
             if (yy < 0 || yy >= dest.data.ydim) continue;
 
             double dy = yy - y;
-            double vgp = DIRECT_A3D_ELEM(gp.data, z, yy, x) + dy * dy;
+            double vgp = direct::elem(gp.data, z, yy, x) + dy * dy;
 
             if (vgp < minValP) { minValP = vgp; }
         }
@@ -1361,22 +1361,22 @@ void FilterHelper::signedDist(const Image<RFLOAT> &src, Image<RFLOAT> &dest) {
             if (yy < 0 || yy >= dest.data.ydim) continue;
 
             double dy = yy - y;
-            double vgn = DIRECT_A3D_ELEM(gn.data, z, yy, x) + dy * dy;
+            double vgn = direct::elem(gn.data, z, yy, x) + dy * dy;
 
             if (vgn < minValN) { minValN = vgn; }
         }
 
-        DIRECT_A3D_ELEM(hp.data, z, y, x) = minValP;
-        DIRECT_A3D_ELEM(hn.data, z, y, x) = minValN;
+        direct::elem(hp.data, z, y, x) = minValP;
+        direct::elem(hn.data, z, y, x) = minValN;
     }
 
     for (long int z = 0; z < dest.data.zdim; z++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        if (DIRECT_A3D_ELEM(src.data, z, y, x) < 0.0) {
-            DIRECT_A3D_ELEM(dest.data, z, y, x) = -sqrt(DIRECT_A3D_ELEM(hn.data, z, y, x));
+        if (direct::elem(src.data, z, y, x) < 0.0) {
+            direct::elem(dest.data, z, y, x) = -sqrt(direct::elem(hn.data, z, y, x));
         } else {
-            DIRECT_A3D_ELEM(dest.data, z, y, x) =  sqrt(DIRECT_A3D_ELEM(hp.data, z, y, x));
+            direct::elem(dest.data, z, y, x) =  sqrt(direct::elem(hp.data, z, y, x));
         }
     }
 }
@@ -1394,13 +1394,13 @@ void FilterHelper::erode3x3(Image<RFLOAT> &src, Image<RFLOAT> &dest) {
                 xx >= 0 && xx < src.data.xdim && 
                 zz >= 0 && zz < src.data.zdim && 
                 yy >= 0 && yy < src.data.ydim && 
-                DIRECT_A3D_ELEM(src.data, zz, yy, xx) < v
+                direct::elem(src.data, zz, yy, xx) < v
             ) {
-                v = DIRECT_A3D_ELEM(src.data, zz, yy, xx);
+                v = direct::elem(src.data, zz, yy, xx);
             }
         }
 
-        DIRECT_A3D_ELEM(dest.data, z, y, x) = v;
+        direct::elem(dest.data, z, y, x) = v;
     }
 }
 
@@ -1410,8 +1410,8 @@ void FilterHelper::localMinima(Image<RFLOAT> &src, Image<RFLOAT> &dest, RFLOAT t
     for (long int z = 0; z < src.data.zdim; z++)
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        if (DIRECT_A3D_ELEM(src.data, z, y, x) > thresh) {
-            DIRECT_A3D_ELEM(dest.data, z, y, x) = 0.f;
+        if (direct::elem(src.data, z, y, x) > thresh) {
+            direct::elem(dest.data, z, y, x) = 0.f;
             continue;
         }
 
@@ -1424,13 +1424,13 @@ void FilterHelper::localMinima(Image<RFLOAT> &src, Image<RFLOAT> &dest, RFLOAT t
                 xx >= 0 && xx < src.data.xdim && 
                 yy >= 0 && yy < src.data.ydim && 
                 zz >= 0 && zz < src.data.zdim && 
-                DIRECT_A3D_ELEM(src.data, zz, yy, xx) < v
+                direct::elem(src.data, zz, yy, xx) < v
             ) {
-                v = DIRECT_A3D_ELEM(src.data, zz, yy, xx);
+                v = direct::elem(src.data, zz, yy, xx);
             }
         }
 
-        DIRECT_A3D_ELEM(dest.data, z, y, x) = (float) (DIRECT_A3D_ELEM(src.data, z, y, x) == v);
+        direct::elem(dest.data, z, y, x) = (float) (direct::elem(src.data, z, y, x) == v);
     }
 }
 
@@ -1443,7 +1443,7 @@ std::vector<gravis::d3Vector> FilterHelper::localMinima(
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
 
-        if (DIRECT_A3D_ELEM(src.data, z, y, x) > thresh) continue;
+        if (direct::elem(src.data, z, y, x) > thresh) continue;
 
         double v = std::numeric_limits<double>::max();
 
@@ -1454,13 +1454,13 @@ std::vector<gravis::d3Vector> FilterHelper::localMinima(
                 xx >= 0 && xx < src.data.xdim && 
                 yy >= 0 && yy < src.data.ydim && 
                 zz >= 0 && zz < src.data.zdim && 
-                DIRECT_A3D_ELEM(src.data, zz, yy, xx) < v
+                direct::elem(src.data, zz, yy, xx) < v
             ) {
-                v = DIRECT_A3D_ELEM(src.data, zz, yy, xx);
+                v = direct::elem(src.data, zz, yy, xx);
             }
         }
 
-        if (v == DIRECT_A3D_ELEM(src.data, z, y, x)) {
+        if (v == direct::elem(src.data, z, y, x)) {
             out.push_back(d3Vector(x, y, z));
         }
     }
@@ -2551,9 +2551,9 @@ double FilterHelper::totalVariation(const Image<RFLOAT> &src) {
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(src.data) {
         if (i == src.data.ydim - 1 || j == src.data.xdim - 1) continue;
 
-        double v0 = DIRECT_A2D_ELEM(src.data, i, j);
-        double vx = DIRECT_A2D_ELEM(src.data, i, j + 1);
-        double vy = DIRECT_A2D_ELEM(src.data, i + 1, j);
+        double v0 = direct::elem(src.data, i, j);
+        double vx = direct::elem(src.data, i, j + 1);
+        double vy = direct::elem(src.data, i + 1, j);
 
         double dx = vx - v0;
         double dy = vy - v0;
@@ -2572,9 +2572,9 @@ double FilterHelper::totalLogVariation(const Image<RFLOAT> &src, double delta) {
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(src.data) {
         if (i == src.data.ydim - 1 || j == src.data.xdim - 1) continue;
 
-        double v0 = DIRECT_A2D_ELEM(src.data, i, j);
-        double vx = DIRECT_A2D_ELEM(src.data, i, j + 1);
-        double vy = DIRECT_A2D_ELEM(src.data, i + 1, j);
+        double v0 = direct::elem(src.data, i, j);
+        double vx = direct::elem(src.data, i, j + 1);
+        double vy = direct::elem(src.data, i + 1, j);
 
         double dx = vx - v0;
         double dy = vy - v0;
@@ -2611,11 +2611,11 @@ void FilterHelper::separableGaussianXYZ(const Image<RFLOAT> &src, Image<RFLOAT> 
             const long int xx = x + i;
             if (xx < 0 || xx >= src.data.xdim) continue;
 
-            v += kernel[i + k] * DIRECT_A3D_ELEM(src.data, z, y, xx);
+            v += kernel[i + k] * direct::elem(src.data, z, y, xx);
             m += kernel[i + k];
         }
 
-        DIRECT_A3D_ELEM(dest.data, z, y, x) = v / m;
+        direct::elem(dest.data, z, y, x) = v / m;
     }
 
     for (size_t z = 0; z < src.data.zdim; z++)
@@ -2628,11 +2628,11 @@ void FilterHelper::separableGaussianXYZ(const Image<RFLOAT> &src, Image<RFLOAT> 
             const long int yy = y + i;
             if (yy < 0 || yy >= src.data.ydim) continue;
 
-            v += kernel[i + k] * DIRECT_A3D_ELEM(dest.data, z, yy, x);
+            v += kernel[i + k] * direct::elem(dest.data, z, yy, x);
             m += kernel[i + k];
         }
 
-        DIRECT_A3D_ELEM(temp.data, z, y, x) = v / m;
+        direct::elem(temp.data, z, y, x) = v / m;
     }
 
     for (size_t z = 0; z < src.data.zdim; z++)
@@ -2645,11 +2645,11 @@ void FilterHelper::separableGaussianXYZ(const Image<RFLOAT> &src, Image<RFLOAT> 
             const long int zz = z + i;
             if (zz < 0 || zz >= src.data.zdim) continue;
 
-            v += kernel[i + k] * DIRECT_A3D_ELEM(temp.data, zz, y, x);
+            v += kernel[i + k] * direct::elem(temp.data, zz, y, x);
             m += kernel[i + k];
         }
 
-        DIRECT_A3D_ELEM(dest.data, z, y, x) = v / m;
+        direct::elem(dest.data, z, y, x) = v / m;
     }
 }
 
@@ -2666,7 +2666,7 @@ void FilterHelper::separableGaussianXY(
         for (size_t z = 0; z < src.data.zdim; z++)
         for (size_t y = 0; y < src.data.ydim; y++)
         for (size_t x = 0; x < src.data.xdim; x++) {
-            DIRECT_A3D_ELEM(dest.data, z, y, x) = DIRECT_A3D_ELEM(src.data, z, y, x);
+            direct::elem(dest.data, z, y, x) = direct::elem(src.data, z, y, x);
         }
 
         return;
@@ -2698,11 +2698,11 @@ void FilterHelper::separableGaussianXY(
                 continue;
             }
 
-            v += kernel[i + k] * DIRECT_A3D_ELEM(src.data, z, y, xx);
+            v += kernel[i + k] * direct::elem(src.data, z, y, xx);
             m += kernel[i + k];
         }
 
-        DIRECT_A3D_ELEM(temp.data, z, y, x) = v / m;
+        direct::elem(temp.data, z, y, x) = v / m;
     }
 
     for (size_t z = 0; z < src.data.zdim; z++)
@@ -2720,11 +2720,11 @@ void FilterHelper::separableGaussianXY(
                 continue;
             }
 
-            v += kernel[i + k] * DIRECT_A3D_ELEM(temp.data, z, yy, x);
+            v += kernel[i + k] * direct::elem(temp.data, z, yy, x);
             m += kernel[i + k];
         }
 
-        DIRECT_A3D_ELEM(dest.data, z, y, x) = v / m;
+        direct::elem(dest.data, z, y, x) = v / m;
     }
 }
 
@@ -2752,12 +2752,12 @@ void FilterHelper::separableGaussianX_wrap(
             long int xx = (x + i + src.data.xdim) % src.data.xdim;
             if (xx < 0 || xx >= src.data.xdim) continue;
 
-            v += kernel[i + k] * DIRECT_A3D_ELEM(mask.data, z, y, xx) * DIRECT_A3D_ELEM(src.data, z, y, xx);
-            m += kernel[i + k] * DIRECT_A3D_ELEM(mask.data, z, y, xx);
+            v += kernel[i + k] * direct::elem(mask.data, z, y, xx) * direct::elem(src.data, z, y, xx);
+            m += kernel[i + k] * direct::elem(mask.data, z, y, xx);
         }
 
         if (m > 0.0) {
-            DIRECT_A3D_ELEM(dest.data, z, y, x) = v / m;
+            direct::elem(dest.data, z, y, x) = v / m;
         }
     }
 }
@@ -2786,12 +2786,12 @@ void FilterHelper::separableGaussianX_wrap(
             long int xx = (x + i + src.data.xdim) % src.data.xdim;
             if (xx < 0 || xx >= src.data.xdim) continue;
 
-            v += kernel[i + k] * DIRECT_A3D_ELEM(src.data, z, y, xx);
+            v += kernel[i + k] * direct::elem(src.data, z, y, xx);
             m += kernel[i + k];
         }
 
         if (m > 0.0) {
-            DIRECT_A3D_ELEM(dest.data, z, y, x) = v / m;
+            direct::elem(dest.data, z, y, x) = v / m;
         }
     }
 }
@@ -2807,14 +2807,14 @@ void FilterHelper::averageX(
         RFLOAT m = 0;
 
         for (size_t x = 0; x < src.data.xdim; x++) {
-            v += DIRECT_A3D_ELEM(mask.data, z, y, x) * DIRECT_A3D_ELEM(src.data, z, y, x);
-            m += DIRECT_A3D_ELEM(mask.data, z, y, x);
+            v += direct::elem(mask.data, z, y, x) * direct::elem(src.data, z, y, x);
+            m += direct::elem(mask.data, z, y, x);
         }
 
         if (m > 0.0) { v /= m; }
 
         for (size_t x = 0; x < src.data.xdim; x++) {
-            DIRECT_A3D_ELEM(dest.data, z, y, x) = v;
+            direct::elem(dest.data, z, y, x) = v;
         }
     }
 }

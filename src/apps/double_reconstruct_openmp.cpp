@@ -222,13 +222,13 @@ class reconstruct_parameters {
                         // Only take the relevant sector now...
                         if (do_wrap_max) {
                             if (myangle >= anglemin) {
-                                DIRECT_A2D_ELEM(*myCTFPorQ, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
+                                direct::elem(*myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
                             } else if (myangle < anglemax) {
-                                DIRECT_A2D_ELEM(*myCTFPorQb, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
+                                direct::elem(*myCTFPorQb, i, j) = direct::elem(Fapp, i, j);
                             }
                         } else {
                             if (myangle >= anglemin && myangle < anglemax) {
-                                DIRECT_A2D_ELEM(*myCTFPorQ, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
+                                direct::elem(*myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
                             }
                         }
                     }
@@ -498,7 +498,7 @@ class reconstruct_parameters {
                                 }
                             }
 
-                            DIRECT_A2D_ELEM(F2D, 0, 0) = 0.0;
+                            direct::elem(F2D, 0, 0) = 0.0;
 
                             if (do_ewald) {
                                 Matrix2D<RFLOAT> magMat;

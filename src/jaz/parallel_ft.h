@@ -168,20 +168,17 @@ class ParFourierTransformer {
 
             case 1:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
-                if (i < Xsize(fFourier)) {
-                    DIRECT_A1D_ELEM(V, i) = DIRECT_A1D_ELEM(fFourier, i);
-                } else {
-                    DIRECT_A1D_ELEM(V, i) = conj(DIRECT_A1D_ELEM(fFourier, Xsize(*fReal) - i));
-                }
+                direct::elem(V, i) = i < Xsize(fFourier) ? direct::elem(fFourier, i) :
+                                                      conj(direct::elem(fFourier, Xsize(*fReal) - i));
             }
             break;
 
             case 2:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
-                if (j<Xsize(fFourier)) {
-                    DIRECT_A2D_ELEM(V, i, j) = DIRECT_A2D_ELEM(fFourier, i, j);
+                if (j < Xsize(fFourier)) {
+                    direct::elem(V, i, j) = direct::elem(fFourier, i, j);
                 } else {
-                    DIRECT_A2D_ELEM(V, i, j) = conj(DIRECT_A2D_ELEM(
+                    direct::elem(V, i, j) = conj(direct::elem(
                         fFourier, 
                         (Ysize(*fReal) - i) % Ysize(*fReal), 
                         Xsize(*fReal) - j
@@ -193,9 +190,9 @@ class ParFourierTransformer {
             case 3:
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
                     if (j < Xsize(fFourier)) {
-                        DIRECT_A3D_ELEM(V, k, i, j) = DIRECT_A3D_ELEM(fFourier, k, i, j);
+                        direct::elem(V, k, i, j) = direct::elem(fFourier, k, i, j);
                     } else {
-                        DIRECT_A3D_ELEM(V, k, i, j) = conj(DIRECT_A3D_ELEM(
+                        direct::elem(V, k, i, j) = conj(direct::elem(
                             fFourier, 
                             (Zsize(*fReal) - k) % Zsize(*fReal), 
                             (Ysize(*fReal) - i) % Ysize(*fReal), 
@@ -223,19 +220,19 @@ class ParFourierTransformer {
 
             case 1:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fFourier) {
-                DIRECT_A1D_ELEM(fFourier, i) = DIRECT_A1D_ELEM(V, i);
+                direct::elem(fFourier, i) = direct::elem(V, i);
             }
             break;
 
             case 2:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(fFourier) {
-                DIRECT_A2D_ELEM(fFourier, i, j) = DIRECT_A2D_ELEM(V, i, j);
+                direct::elem(fFourier, i, j) = direct::elem(V, i, j);
             }
             break;
 
             case 3:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier) {
-                DIRECT_A3D_ELEM(fFourier, k, i, j) = DIRECT_A3D_ELEM(V, k, i, j);
+                direct::elem(fFourier, k, i, j) = direct::elem(V, k, i, j);
             }
             break;
 

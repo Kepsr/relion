@@ -44,9 +44,9 @@ void FourierHelper::FourierShift2D(MultidimArray<Complex> &img, RFLOAT xshift, R
         SINCOS(dotp, &c1.imag, &c1.real);
         #endif
 
-        Complex c2 = DIRECT_A2D_ELEM(img, yy, xx);
+        Complex c2 = direct::elem(img, yy, xx);
 
-        DIRECT_A2D_ELEM(img, yy, xx) = Complex(
+        direct::elem(img, yy, xx) = Complex(
             c1.real * c2.real - c1.imag * c2.imag,  // c1 dot conj c2
             c1.real * c2.imag + c1.imag * c2.real   // c1 dot (i conj c2)
         );

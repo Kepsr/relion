@@ -381,7 +381,7 @@ void local_symmetry_parameters_mpi::run() {
                     // Beware: Ysize(op_samplings_batch_packed) is larger than (last - first + 1)
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
                         if (i >= 0 && i <= last - first)
-                            DIRECT_A2D_ELEM(op_samplings_batch_packed, i, j) = op_samplings[i + first][j];
+                            direct::elem(op_samplings_batch_packed, i, j) = op_samplings[i + first][j];
                     }
 
                     // Leader distributes sampling points to all followers
@@ -403,7 +403,7 @@ void local_symmetry_parameters_mpi::run() {
             for (long int i = 0; i < Ysize(op_samplings_batch_packed); i++) {
                 op.initZeros(NR_LOCALSYM_PARAMETERS);
                 for (long int j = 0; j < Xsize(op_samplings_batch_packed); j++) {
-                    op[j] = DIRECT_A2D_ELEM(op_samplings_batch_packed, i, j);
+                    op[j] = direct::elem(op_samplings_batch_packed, i, j);
                 }
                 op_samplings_batch.push_back(op);
             }
@@ -412,7 +412,7 @@ void local_symmetry_parameters_mpi::run() {
             // All nodes calculate CC, with leader profiling (DONT SORT!)
             calculateOperatorCC(src_cropped, dest_cropped, mask_cropped, op_samplings_batch, false, node->isLeader());
             for (int op_id = 0; op_id < op_samplings_batch.size(); op_id++) {
-                DIRECT_A2D_ELEM(op_samplings_batch_packed, op_id, CC_POS) = op_samplings_batch[op_id][CC_POS];
+                direct::elem(op_samplings_batch_packed, op_id, CC_POS) = op_samplings_batch[op_id][CC_POS];
             }
             MPI_Barrier(MPI_COMM_WORLD);
 
@@ -433,7 +433,7 @@ void local_symmetry_parameters_mpi::run() {
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
                         // Beware: Ysize(op_samplings_batch_packed) is larger than (last - first + 1)
                         if (i >= 0 && i <= last - first)
-                            op_samplings[i + first][CC_POS] = DIRECT_A2D_ELEM(op_samplings_batch_packed, i, CC_POS);
+                            op_samplings[i + first][CC_POS] = direct::elem(op_samplings_batch_packed, i, CC_POS);
                     }
                 }
             }

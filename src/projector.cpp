@@ -420,13 +420,13 @@ void Projector::computeFourierTransformMap(
                     );
                 }
                 // Set data array
-                A3D_ELEM(data, kp, ip, jp) = weight * DIRECT_A3D_ELEM(Faux, k, i, j) * normfft;
+                A3D_ELEM(data, kp, ip, jp) = weight * direct::elem(Faux, k, i, j) * normfft;
 
                 // Calculate power spectrum
                 int ires = round(sqrt((RFLOAT) r2) / padding_factor);
                 // Factor two because of two-dimensionality of the complex plane
-                DIRECT_A1D_ELEM(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.0;
-                DIRECT_A1D_ELEM(counter, ires) += weight;
+                direct::elem(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.0;
+                direct::elem(counter, ires) += weight;
 
                 // Apply high pass filter of the reference only after calculating the power spectrum
                 if (r2 <= min_r2) { A3D_ELEM(data, kp, ip, jp) = 0; }
@@ -461,10 +461,10 @@ void Projector::computeFourierTransformMap(
         } else
         #endif
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(power_spectrum) {
-            if (DIRECT_A1D_ELEM(counter, i) < 1.0) {
-                DIRECT_A1D_ELEM(power_spectrum, i) = 0.0;
+            if (direct::elem(counter, i) < 1.0) {
+                direct::elem(power_spectrum, i) = 0.0;
             } else {
-                DIRECT_A1D_ELEM(power_spectrum, i) /= DIRECT_A1D_ELEM(counter, i);
+                direct::elem(power_spectrum, i) /= direct::elem(counter, i);
             }
         }
     }
@@ -585,7 +585,7 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
 
                 // Trilinear interpolation (with physical coords)
                 // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
-                // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
+                // In that way use direct::elem, rather than A3D_ELEM
                 const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
                 const int x1 = x0 + 1;
@@ -608,14 +608,14 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 ) continue;
 
                 // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-                const Complex d000 = DIRECT_A3D_ELEM(data, z0, y0, x0);
-                const Complex d001 = DIRECT_A3D_ELEM(data, z0, y0, x1);
-                const Complex d010 = DIRECT_A3D_ELEM(data, z0, y1, x0);
-                const Complex d011 = DIRECT_A3D_ELEM(data, z0, y1, x1);
-                const Complex d100 = DIRECT_A3D_ELEM(data, z1, y0, x0);
-                const Complex d101 = DIRECT_A3D_ELEM(data, z1, y0, x1);
-                const Complex d110 = DIRECT_A3D_ELEM(data, z1, y1, x0);
-                const Complex d111 = DIRECT_A3D_ELEM(data, z1, y1, x1);
+                const Complex d000 = direct::elem(data, z0, y0, x0);
+                const Complex d001 = direct::elem(data, z0, y0, x1);
+                const Complex d010 = direct::elem(data, z0, y1, x0);
+                const Complex d011 = direct::elem(data, z0, y1, x1);
+                const Complex d100 = direct::elem(data, z1, y0, x0);
+                const Complex d101 = direct::elem(data, z1, y0, x1);
+                const Complex d110 = direct::elem(data, z1, y1, x0);
+                const Complex d111 = direct::elem(data, z1, y1, x1);
 
                 // Set the interpolated value in the 2D output array
                 const Complex dx00 = LIN_INTERP(fx, d000, d001);
@@ -625,10 +625,10 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 const Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
                 const Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
 
-                DIRECT_A2D_ELEM(f2d, i, x) = LIN_INTERP(fz, dxy0, dxy1);
+                direct::elem(f2d, i, x) = LIN_INTERP(fz, dxy0, dxy1);
 
                 // Take complex conjugate for half with negative x
-                if (is_neg_x) DIRECT_A2D_ELEM(f2d, i, x) = conj(DIRECT_A2D_ELEM(f2d, i, x));
+                if (is_neg_x) direct::elem(f2d, i, x) = conj(direct::elem(f2d, i, x));
 
             } else if (interpolator == NEAREST_NEIGHBOUR) {
                 /// NOTE: Unused
@@ -655,8 +655,8 @@ void Projector::project(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                     zr < 0 || zr >= data.zdim
                 ) continue;
 
-                DIRECT_A2D_ELEM(f2d, i, x) = is_neg_x ?
-                    conj(DIRECT_A3D_ELEM(data, zr, yr, xr)) : A3D_ELEM(data, zr, yr, xr);
+                direct::elem(f2d, i, x) = is_neg_x ?
+                    conj(direct::elem(data, zr, yr, xr)) : A3D_ELEM(data, zr, yr, xr);
             } else {
                 REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);
             }
@@ -704,7 +704,7 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
 
             // Trilinear interpolation (with physical coords)
             // Subtract Yinit and Zinit to accelerate access to data (Xinit = 0)
-            // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
+            // In that way use direct::elem, rather than A3D_ELEM
 
             int x0 = floor(xp);
             double fx = xp - x0;
@@ -729,14 +729,14 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
                 continue;
             }
 
-            Complex v000 = DIRECT_A3D_ELEM(data, z0, y0, x0);
-            Complex v001 = DIRECT_A3D_ELEM(data, z0, y0, x1);
-            Complex v010 = DIRECT_A3D_ELEM(data, z0, y1, x0);
-            Complex v011 = DIRECT_A3D_ELEM(data, z0, y1, x1);
-            Complex v100 = DIRECT_A3D_ELEM(data, z1, y0, x0);
-            Complex v101 = DIRECT_A3D_ELEM(data, z1, y0, x1);
-            Complex v110 = DIRECT_A3D_ELEM(data, z1, y1, x0);
-            Complex v111 = DIRECT_A3D_ELEM(data, z1, y1, x1);
+            Complex v000 = direct::elem(data, z0, y0, x0);
+            Complex v001 = direct::elem(data, z0, y0, x1);
+            Complex v010 = direct::elem(data, z0, y1, x0);
+            Complex v011 = direct::elem(data, z0, y1, x1);
+            Complex v100 = direct::elem(data, z1, y0, x0);
+            Complex v101 = direct::elem(data, z1, y0, x1);
+            Complex v110 = direct::elem(data, z1, y1, x0);
+            Complex v111 = direct::elem(data, z1, y1, x1);
 
             Complex v00 = LIN_INTERP(fx, v000, v001);
             Complex v10 = LIN_INTERP(fx, v100, v101);
@@ -816,7 +816,7 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
 
             // Trilinear interpolation (with physical coords)
             // Subtract Yinit to accelerate access to data (Xinit=0)
-            // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
+            // In that way use direct::elem, rather than A3D_ELEM
             const int x0 = floor(xp);
             const RFLOAT fx = xp - x0;
             const int x1 = x0 + 1;
@@ -827,25 +827,25 @@ void Projector::project2Dto1D(MultidimArray<Complex > &f1d, Matrix2D<RFLOAT> &A)
             const int y1 = y0 + 1;
 
             // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-            const Complex d00 = DIRECT_A2D_ELEM(data, y0, x0);
-            const Complex d01 = DIRECT_A2D_ELEM(data, y0, x1);
-            const Complex d10 = DIRECT_A2D_ELEM(data, y1, x0);
-            const Complex d11 = DIRECT_A2D_ELEM(data, y1, x1);
+            const Complex d00 = direct::elem(data, y0, x0);
+            const Complex d01 = direct::elem(data, y0, x1);
+            const Complex d10 = direct::elem(data, y1, x0);
+            const Complex d11 = direct::elem(data, y1, x1);
 
             // Set the interpolated value in the 2D output array
             const Complex dx0 = LIN_INTERP(fx, d00, d01);
             const Complex dx1 = LIN_INTERP(fx, d10, d11);
 
-            DIRECT_A1D_ELEM(f1d, x) = LIN_INTERP(fy, dx0, dx1);
+            direct::elem(f1d, x) = LIN_INTERP(fy, dx0, dx1);
 
             // Take complex conjugate for half with negative x
-            if (is_neg_x) DIRECT_A1D_ELEM(f1d, x) = conj(DIRECT_A1D_ELEM(f1d, x));
+            if (is_neg_x) direct::elem(f1d, x) = conj(direct::elem(f1d, x));
 
         } else if (interpolator == NEAREST_NEIGHBOUR ) {
             const int x0 = round(xp);
             const int y0 = round(yp);
 
-            DIRECT_A1D_ELEM(f1d, x) = x0 < 0 ?
+            direct::elem(f1d, x) = x0 < 0 ?
                 conj(A2D_ELEM(data, -y0, -x0)) : A2D_ELEM(data, y0, x0);
 
         } else {
@@ -912,7 +912,7 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
 
                 // Trilinear interpolation (with physical coords)
                 // Subtract Yinit to accelerate access to data (Xinit=0)
-                // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
+                // In that way use direct::elem, rather than A3D_ELEM
                 const int x0 = floor(xp);
                 const RFLOAT fx = xp - x0;
                 const int x1 = x0 + 1;
@@ -923,26 +923,26 @@ void Projector::rotate2D(MultidimArray<Complex > &f2d, Matrix2D<RFLOAT> &A) {
                 const int y1 = y0 + 1;
 
                 // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-                const Complex d00 = DIRECT_A2D_ELEM(data, y0, x0);
-                const Complex d01 = DIRECT_A2D_ELEM(data, y0, x1);
-                const Complex d10 = DIRECT_A2D_ELEM(data, y1, x0);
-                const Complex d11 = DIRECT_A2D_ELEM(data, y1, x1);
+                const Complex d00 = direct::elem(data, y0, x0);
+                const Complex d01 = direct::elem(data, y0, x1);
+                const Complex d10 = direct::elem(data, y1, x0);
+                const Complex d11 = direct::elem(data, y1, x1);
 
                 // Set the interpolated value in the 2D output array
                 const Complex dx0 = LIN_INTERP(fx, d00, d01);
                 const Complex dx1 = LIN_INTERP(fx, d10, d11);
 
-                DIRECT_A2D_ELEM(f2d, i, x) = LIN_INTERP(fy, dx0, dx1);
+                direct::elem(f2d, i, x) = LIN_INTERP(fy, dx0, dx1);
 
                 // Take complex conjugate for half with negative x
-                if (is_neg_x) DIRECT_A2D_ELEM(f2d, i, x) = conj(DIRECT_A2D_ELEM(f2d, i, x));
+                if (is_neg_x) direct::elem(f2d, i, x) = conj(direct::elem(f2d, i, x));
 
             } else if (interpolator == NEAREST_NEIGHBOUR) {
                 /// NOTE: Unused
                 const int x0 = round(xp);
                 const int y0 = round(yp);
 
-                DIRECT_A2D_ELEM(f2d, i, x) = x0 < 0 ?
+                direct::elem(f2d, i, x) = x0 < 0 ?
                     conj(A2D_ELEM(data, -y0, -x0)) : A2D_ELEM(data, y0, x0);
 
             } else {
@@ -1018,7 +1018,7 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
 
                     // Trilinear interpolation (with physical coords)
                     // Subtract Yinit to accelerate access to data (Xinit=0)
-                    // In that way use DIRECT_A3D_ELEM, rather than A3D_ELEM
+                    // In that way use direct::elem, rather than A3D_ELEM
                     const int x0 = floor(xp);
                     const RFLOAT fx = xp - x0;
                     const int x1 = x0 + 1;
@@ -1034,14 +1034,14 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
                     const int z1 = z0 + 1;
 
                     // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-                    const Complex d000 = DIRECT_A3D_ELEM(data, z0, y0, x0);
-                    const Complex d001 = DIRECT_A3D_ELEM(data, z0, y0, x1);
-                    const Complex d010 = DIRECT_A3D_ELEM(data, z0, y1, x0);
-                    const Complex d011 = DIRECT_A3D_ELEM(data, z0, y1, x1);
-                    const Complex d100 = DIRECT_A3D_ELEM(data, z1, y0, x0);
-                    const Complex d101 = DIRECT_A3D_ELEM(data, z1, y0, x1);
-                    const Complex d110 = DIRECT_A3D_ELEM(data, z1, y1, x0);
-                    const Complex d111 = DIRECT_A3D_ELEM(data, z1, y1, x1);
+                    const Complex d000 = direct::elem(data, z0, y0, x0);
+                    const Complex d001 = direct::elem(data, z0, y0, x1);
+                    const Complex d010 = direct::elem(data, z0, y1, x0);
+                    const Complex d011 = direct::elem(data, z0, y1, x1);
+                    const Complex d100 = direct::elem(data, z1, y0, x0);
+                    const Complex d101 = direct::elem(data, z1, y0, x1);
+                    const Complex d110 = direct::elem(data, z1, y1, x0);
+                    const Complex d111 = direct::elem(data, z1, y1, x1);
 
                     // Set the interpolated value in the 2D output array
                     // interpolate in x
@@ -1053,17 +1053,17 @@ void Projector::rotate3D(MultidimArray<Complex > &f3d, Matrix2D<RFLOAT> &A) {
                     const Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
                     const Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
                     // interpolate in z
-                    DIRECT_A3D_ELEM(f3d, k, i, x) = LIN_INTERP(fz, dxy0, dxy1);
+                    direct::elem(f3d, k, i, x) = LIN_INTERP(fz, dxy0, dxy1);
 
                     // Take complex conjugate for half with negative x
-                    if (is_neg_x) DIRECT_A3D_ELEM(f3d, k, i, x) = conj(DIRECT_A3D_ELEM(f3d, k, i, x));
+                    if (is_neg_x) direct::elem(f3d, k, i, x) = conj(direct::elem(f3d, k, i, x));
 
                 } else if (interpolator == NEAREST_NEIGHBOUR) {
                     const int x0 = round(xp);
                     const int y0 = round(yp);
                     const int z0 = round(zp);
 
-                    DIRECT_A3D_ELEM(f3d, k, i, x) = x0 < 0 ?
+                    direct::elem(f3d, k, i, x) = x0 < 0 ?
                         conj(A3D_ELEM(data, -z0, -y0, -x0)) : A3D_ELEM(data, z0, y0, x0);
 
                 } else {

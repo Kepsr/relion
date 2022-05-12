@@ -448,12 +448,12 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                 ip -= l;
             }
 
-            aux(ip) = DIRECT_A1D_ELEM(v, i);
+            aux(ip) = direct::elem(v, i);
         }
 
         // Copy the vector
         for (int i = 0; i < l; i++)
-            DIRECT_A1D_ELEM(v, i) = DIRECT_A1D_ELEM(aux, i);
+            direct::elem(v, i) = direct::elem(aux, i);
     } else if (v.getDim() == 2) {
         // 2D
         //std::cerr << "CenterFFT on gpu with dim=2!" <<std::endl;
@@ -508,12 +508,12 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                     jp -= l;
                 }
 
-                aux(jp) = DIRECT_A3D_ELEM(v, k, i, j);
+                aux(jp) = direct::elem(v, k, i, j);
             }
 
             // Copy the vector
             for (int j = 0; j < l; j++)
-                DIRECT_A3D_ELEM(v, k, i, j) = DIRECT_A1D_ELEM(aux, j);
+                direct::elem(v, k, i, j) = direct::elem(aux, j);
         }
 
         // Shift in the Y direction
@@ -535,12 +535,12 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                     ip -= l;
                 }
 
-                aux(ip) = DIRECT_A3D_ELEM(v, k, i, j);
+                aux(ip) = direct::elem(v, k, i, j);
             }
 
             // Copy the vector
             for (int i = 0; i < l; i++)
-                DIRECT_A3D_ELEM(v, k, i, j) = DIRECT_A1D_ELEM(aux, i);
+                direct::elem(v, k, i, j) = direct::elem(aux, i);
         }
 
         // Shift in the Z direction
@@ -561,12 +561,12 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                     kp -= l;
                 }
 
-                aux(kp) = DIRECT_A3D_ELEM(v, k, i, j);
+                aux(kp) = direct::elem(v, k, i, j);
             }
 
             // Copy the vector
             for (int k = 0; k < l; k++)
-                DIRECT_A3D_ELEM(v, k, i, j) = DIRECT_A1D_ELEM(aux, k);
+                direct::elem(v, k, i, j) = direct::elem(aux, k);
         }
     } else {
         v.printShape();

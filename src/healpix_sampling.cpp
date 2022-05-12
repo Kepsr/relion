@@ -1708,7 +1708,7 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
     Matrix1D<RFLOAT> v(3);
 
     for (long int iang = 0; iang < rot_angles.size(); iang++) {
-        RFLOAT pdf = DIRECT_A1D_ELEM(pdf_direction, iang);
+        RFLOAT pdf = direct::elem(pdf_direction, iang);
 
         // Don't make a cylinder for pdf==0
         if (pdf > 0.0) {

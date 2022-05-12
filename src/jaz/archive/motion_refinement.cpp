@@ -351,9 +351,9 @@ Image<float> MotionRefinement::crossCorrelation2D(
         const int r = (int) sqrt(xx * xx + yy * yy);
 
         if (r >= wf) {
-            DIRECT_A2D_ELEM(prod2.data, y, x) = 0.0;
+            direct::elem(prod2.data, y, x) = 0.0;
         } else {
-            DIRECT_A2D_ELEM(prod2.data, y, x) /= sigma2[r];
+            direct::elem(prod2.data, y, x) /= sigma2[r];
         }
     }
 
@@ -364,7 +364,7 @@ Image<float> MotionRefinement::crossCorrelation2D(
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        DIRECT_A2D_ELEM(out.data, y, x) = (float) DIRECT_A2D_ELEM(corr.data, (y + h / 2 - 1) % h, (x + w / 2 - 1) % w);
+        direct::elem(out.data, y, x) = (float) direct::elem(corr.data, (y + h / 2 - 1) % h, (x + w / 2 - 1) % w);
     }
 
     return out;
@@ -386,8 +386,8 @@ Image<float> MotionRefinement::crossCorrelation2D(
         {
             if (x == 0 && y == 0)
             {
-                DIRECT_A2D_ELEM(obs.data, y, x) = 0.0;
-                DIRECT_A2D_ELEM(predConj.data, y, x) = 0.0;
+                direct::elem(obs.data, y, x) = 0.0;
+                direct::elem(predConj.data, y, x) = 0.0;
                 continue;
             }
 
@@ -398,21 +398,21 @@ Image<float> MotionRefinement::crossCorrelation2D(
 
             if (r >= wf)
             {
-                DIRECT_A2D_ELEM(obs.data, y, x) = 0.0;
-                DIRECT_A2D_ELEM(predConj.data, y, x) = 0.0;
+                direct::elem(obs.data, y, x) = 0.0;
+                direct::elem(predConj.data, y, x) = 0.0;
             }
             else
             {
-                DIRECT_A2D_ELEM(obs.data, y, x) /= sqrt(0.25*PI*w*h*sigma2[r]);
-                DIRECT_A2D_ELEM(predConj.data, y, x) /= sqrt(0.25*PI*w*h*sigma2[r]);
+                direct::elem(obs.data, y, x) /= sqrt(0.25*PI*w*h*sigma2[r]);
+                direct::elem(predConj.data, y, x) /= sqrt(0.25*PI*w*h*sigma2[r]);
             }
         }
 
         for (int y = 0; y < h; y++)
         for (int x = 0; x < wf; x++)
         {
-            DIRECT_A2D_ELEM(obsM.data, y, x) = DIRECT_A2D_ELEM(obs.data, y, x);
-            DIRECT_A2D_ELEM(predM.data, y, x) = DIRECT_A2D_ELEM(predConj.data, y, x).conj();
+            direct::elem(obsM.data, y, x) = direct::elem(obs.data, y, x);
+            direct::elem(predM.data, y, x) = direct::elem(predConj.data, y, x).conj();
         }
 
         Image<RFLOAT> obsR(w,h), predR(w,h);
@@ -429,10 +429,10 @@ Image<float> MotionRefinement::crossCorrelation2D(
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
         {
-            muObs += DIRECT_A2D_ELEM(obsR.data, y, x);
-            muPred += DIRECT_A2D_ELEM(predR.data, y, x);
-            varObs += DIRECT_A2D_ELEM(obsR.data, y, x) * DIRECT_A2D_ELEM(obsR.data, y, x);
-            varPred += DIRECT_A2D_ELEM(predR.data, y, x) * DIRECT_A2D_ELEM(predR.data, y, x);
+            muObs += direct::elem(obsR.data, y, x);
+            muPred += direct::elem(predR.data, y, x);
+            varObs += direct::elem(obsR.data, y, x) * direct::elem(obsR.data, y, x);
+            varPred += direct::elem(predR.data, y, x) * direct::elem(predR.data, y, x);
         }
 
         muObs /= w*h;
@@ -451,8 +451,8 @@ Image<float> MotionRefinement::crossCorrelation2D(
         for (int y = 0; y < h; y++)
         for (int x = 0; x < wf; x++)
         {
-            DIRECT_A2D_ELEM(corrF.data, y, x) = DIRECT_A2D_ELEM(obsM.data, y, x)
-                    * DIRECT_A2D_ELEM(predM.data, y, x).conj();
+            direct::elem(corrF.data, y, x) = direct::elem(obsM.data, y, x)
+                    * direct::elem(predM.data, y, x).conj();
         }
 
         Image<RFLOAT> corrR(w,h);
@@ -470,13 +470,13 @@ Image<float> MotionRefinement::crossCorrelation2D(
             for (int yy = 0; yy < h; yy++)
             for (int xx = 0; xx < w; xx++)
             {
-                double vo = DIRECT_A2D_ELEM(obsR.data, yy, xx);
-                double vp = DIRECT_A2D_ELEM(predR.data, (yy+y)%h, (xx+x)%w);
+                double vo = direct::elem(obsR.data, yy, xx);
+                double vp = direct::elem(predR.data, (yy+y)%h, (xx+x)%w);
 
                 cc += vo * vp;
             }
 
-            DIRECT_A2D_ELEM(corrR2.data, y, x) = cc;
+            direct::elem(corrR2.data, y, x) = cc;
         }
 
         VtkHelper::writeVTK(corrR2, "corrDebug/corrR_RS.vtk");
@@ -501,16 +501,16 @@ Image<float> MotionRefinement::crossCorrelation2D(
             const int r = (int) sqrt(xx * xx + yy * yy);
 
             if (r >= wf) {
-                DIRECT_A2D_ELEM(prod.data, y, x) = 0.0;
+                direct::elem(prod.data, y, x) = 0.0;
             } else {
-                DIRECT_A2D_ELEM(prod.data, y, x) /= sigma2[r]*area;
+                direct::elem(prod.data, y, x) /= sigma2[r]*area;
             }
         }
     }
 
     Image<RFLOAT> corr(w, h);
 
-    DIRECT_A2D_ELEM(prod.data, 0, 0) = 0.0;
+    direct::elem(prod.data, 0, 0) = 0.0;
 
     FourierTransformer ft;
     ft.inverseFourierTransform(prod(), corr());
@@ -523,23 +523,23 @@ Image<float> MotionRefinement::crossCorrelation2D(
 
             for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++) {
-                sum += exp(w * h * DIRECT_A2D_ELEM(corr.data, (y + h / 2) % h, (x + w / 2) % w));
+                sum += exp(w * h * direct::elem(corr.data, (y + h / 2) % h, (x + w / 2) % w));
             }
 
             for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++) {
-                DIRECT_A2D_ELEM(out.data, y, x) = exp(w * h * DIRECT_A2D_ELEM(corr.data, (y + h / 2) % h, (x + w / 2) % w)) / sum;
+                direct::elem(out.data, y, x) = exp(w * h * direct::elem(corr.data, (y + h / 2) % h, (x + w / 2) % w)) / sum;
             }
         } else {
             for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++) {
-                DIRECT_A2D_ELEM(out.data, y, x) = (float) exp(w * h * DIRECT_A2D_ELEM(corr.data, (y + h / 2) % h, (x + w / 2) % w));
+                direct::elem(out.data, y, x) = (float) exp(w * h * direct::elem(corr.data, (y + h / 2) % h, (x + w / 2) % w));
             }
         }
     } else {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            DIRECT_A2D_ELEM(out.data, y, x) = (float) (w * h * DIRECT_A2D_ELEM(corr.data, (y + h / 2) % h, (x + w / 2) % w));
+            direct::elem(out.data, y, x) = (float) (w * h * direct::elem(corr.data, (y + h / 2) % h, (x + w / 2) % w));
         }
     }
 
@@ -574,7 +574,7 @@ void MotionRefinement::noiseNormalize(
 
         const int r = (int) sqrt(xx * xx + yy * yy);
 
-        dest(y, x) = r >= wf ? Complex(0.0) : DIRECT_A2D_ELEM(img.data, y, x) / sqrt(sigma2[r] * area);
+        dest(y, x) = r >= wf ? Complex(0.0) : direct::elem(img.data, y, x) / sqrt(sigma2[r] * area);
     }
 }
 
@@ -700,8 +700,8 @@ d3Vector MotionRefinement::measureValueScaleReal(
     int h = data().ydim;
 
     Image<Complex> dataC = data, refC = ref;
-    DIRECT_A2D_ELEM(dataC.data, 0, 0) = Complex(0.0);
-    DIRECT_A2D_ELEM(refC .data, 0, 0) = Complex(0.0);
+    direct::elem(dataC.data, 0, 0) = Complex(0.0);
+    direct::elem(refC .data, 0, 0) = Complex(0.0);
 
     Image<RFLOAT> dataR(w, h), refR(w, h);
 
@@ -714,8 +714,8 @@ d3Vector MotionRefinement::measureValueScaleReal(
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        RFLOAT d = DIRECT_A2D_ELEM(dataR.data, y, x);
-        RFLOAT r = DIRECT_A2D_ELEM(refR.data, y, x);
+        RFLOAT d = direct::elem(dataR.data, y, x);
+        RFLOAT r = direct::elem(refR.data, y, x);
 
         num   += d * r;
         denom += r * r;
@@ -728,7 +728,7 @@ d3Vector MotionRefinement::measureValueScaleReal(
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
         {
-            DIRECT_A2D_ELEM(refR.data, y, x) *= (denom/num);
+            direct::elem(refR.data, y, x) *= (denom/num);
         }
 
         VtkHelper::writeVTK(refR, "debug/refR2.vtk");
@@ -750,8 +750,8 @@ d3Vector MotionRefinement::measureValueScale(
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        double d = DIRECT_A2D_ELEM(data.data, y, x).abs();
-        double r = DIRECT_A2D_ELEM(ref .data, y, x).abs();
+        double d = direct::elem(data.data, y, x).abs();
+        double r = direct::elem(ref .data, y, x).abs();
 
         num   += d * r;
         denom += d * d;
@@ -778,11 +778,11 @@ void MotionRefinement::testCC(
         const int r = (int) sqrt(xx * xx + yy * yy);
 
         if (r == 0 || r >= wf) {
-            DIRECT_A2D_ELEM(obsW .data, y, x) = 0.0;
-            DIRECT_A2D_ELEM(predW.data, y, x) = 0.0;
+            direct::elem(obsW .data, y, x) = 0.0;
+            direct::elem(predW.data, y, x) = 0.0;
         } else {
-            DIRECT_A2D_ELEM(obsW .data, y, x) = DIRECT_A2D_ELEM(obs     .data, y, x)        / sqrt(sigma2[r]);
-            DIRECT_A2D_ELEM(predW.data, y, x) = DIRECT_A2D_ELEM(predConj.data, y, x).conj() / sqrt(sigma2[r]);
+            direct::elem(obsW .data, y, x) = direct::elem(obs     .data, y, x)        / sqrt(sigma2[r]);
+            direct::elem(predW.data, y, x) = direct::elem(predConj.data, y, x).conj() / sqrt(sigma2[r]);
         }
     }
 
@@ -790,7 +790,7 @@ void MotionRefinement::testCC(
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < wf; x++) {
-        const Complex z = DIRECT_A2D_ELEM(obsW.data, y, x);
+        const Complex z = direct::elem(obsW.data, y, x);
 
         const double yy = y < w ? y : y - h;
         const double xx = x;
@@ -828,7 +828,7 @@ void MotionRefinement::testCC(
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        double v = DIRECT_A2D_ELEM(obsWR.data, y, x);
+        double v = direct::elem(obsWR.data, y, x);
         var += v * v;
     }
 
@@ -844,13 +844,13 @@ void MotionRefinement::testCC(
 
         for (int yy = 0; yy < h; yy++)
         for (int xx = 0; xx < w; xx++) {
-            RFLOAT v0 = DIRECT_A2D_ELEM(predWR.data, yy, xx);
-            RFLOAT v1 = DIRECT_A2D_ELEM(obsWR.data, (yy + y) % h, (xx + x) % w);
+            RFLOAT v0 = direct::elem(predWR.data, yy, xx);
+            RFLOAT v1 = direct::elem(obsWR.data, (yy + y) % h, (xx + x) % w);
 
             cc += v0 * v1;
         }
 
-        DIRECT_A2D_ELEM(corrR.data, y, x) = cc;
+        direct::elem(corrR.data, y, x) = cc;
     }
 
     ImageLog::write(corrR, "debug/Wcc_rs");
@@ -871,9 +871,9 @@ void MotionRefinement::testCC(
         const int r = (int) sqrt(xx * xx + yy * yy);
 
         if (r >= wf) {
-            DIRECT_A2D_ELEM(prod.data, y, x) = 0.0;
+            direct::elem(prod.data, y, x) = 0.0;
         } else {
-            DIRECT_A2D_ELEM(prod.data, y, x) /= sigma2[r];
+            direct::elem(prod.data, y, x) /= sigma2[r];
         }
     }
 
@@ -881,7 +881,7 @@ void MotionRefinement::testCC(
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        DIRECT_A2D_ELEM(corr.data, y, x) *= w * h;
+        direct::elem(corr.data, y, x) *= w * h;
     }
 
     ImageLog::write(corr, "debug/Wcc_fs");
@@ -908,7 +908,7 @@ Image<RFLOAT> MotionRefinement::zeroPad(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        avg += DIRECT_A2D_ELEM(img.data, y, x);
+        avg += direct::elem(img.data, y, x);
     }
 
     avg /= (w * h);
@@ -931,7 +931,7 @@ Image<RFLOAT> MotionRefinement::zeroPad(
             tw = ex0 * ex1 * ey0 * ey1;
         }
 
-        DIRECT_A2D_ELEM(out.data, y + y0, x + x0) += tw * (DIRECT_A2D_ELEM(img.data, y, x) - avg);
+        direct::elem(out.data, y + y0, x + x0) += tw * (direct::elem(img.data, y, x) - avg);
     }
 
     return out;
@@ -1108,16 +1108,16 @@ std::vector<std::vector<Image<RFLOAT>> > MotionRefinement::visualize(
             double yf = pos.y - yi;
 
             if (xi >= 0 && xi < w && yi >= 0 && yi < h) {
-                DIRECT_A2D_ELEM(out[p][f].data, yi, xi) = (1.0 - xf) * (1.0 - yf);
+                direct::elem(out[p][f].data, yi, xi) = (1.0 - xf) * (1.0 - yf);
             }
             if (xi + 1 >= 0 && xi + 1 < w && yi >= 0 && yi < h) {
-                DIRECT_A2D_ELEM(out[p][f].data, yi, xi + 1) = xf * (1.0 - yf);
+                direct::elem(out[p][f].data, yi, xi + 1) = xf * (1.0 - yf);
             }
             if (xi >= 0 && xi < w && yi + 1 >= 0 && yi + 1 < h) {
-                DIRECT_A2D_ELEM(out[p][f].data, yi + 1, xi) = (1.0 - xf) * yf;
+                direct::elem(out[p][f].data, yi + 1, xi) = (1.0 - xf) * yf;
             }
             if (xi + 1 >= 0 && xi + 1 < w && yi + 1 >= 0 && yi + 1 < h) {
-                DIRECT_A2D_ELEM(out[p][f].data, yi + 1, xi + 1) = xf * yf;
+                direct::elem(out[p][f].data, yi + 1, xi + 1) = xf * yf;
             }
         }
     }

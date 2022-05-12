@@ -242,7 +242,7 @@ class Projector {
         Mout.initZeros();
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
             if (kp * kp + ip * ip + jp * jp <= my_rmax2)
-                DIRECT_A3D_ELEM(Mout, k, i, j) = A3D_ELEM(Min, kp, ip, jp);
+                direct::elem(Mout, k, i, j) = A3D_ELEM(Min, kp, ip, jp);
         }
     }
 

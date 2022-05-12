@@ -842,25 +842,25 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
                 REPORT_ERROR("For MTF correction, the rlnMicrographOriginalPixelSize column is necessary in the optics table.");
 
             MetaDataTable MDmtf;
-            MultidimArray<RFLOAT> mtf_resol, mtf_value;
             MDmtf.read(fnMtfs[optGroup]);
+            MultidimArray<RFLOAT> mtf_resol, mtf_value;
             mtf_resol.resize(MDmtf.numberOfObjects());
             mtf_value.resize(mtf_resol);
 
             int i = 0;
+            RFLOAT resol_inv_pixel = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL);
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmtf) {
-                RFLOAT resol_inv_pixel = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL);
-                DIRECT_A1D_ELEM(mtf_resol, i) = resol_inv_pixel / originalAngpix[optGroup]; // resolution needs to be given in 1/Ang
-                DIRECT_A1D_ELEM(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
-                if (DIRECT_A1D_ELEM(mtf_value, i) < 1e-10) {
-                    std::cerr << " i= " << i <<  " mtf_value[i]= " << DIRECT_A1D_ELEM(mtf_value, i) << std::endl;
+                direct::elem(mtf_resol, i) = resol_inv_pixel / originalAngpix[optGroup]; // resolution needs to be given in 1/Ang
+                direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
+                if (direct::elem(mtf_value, i) < 1e-10) {
+                    std::cerr << " i= " << i <<  " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
                     REPORT_ERROR("ERROR: zero or negative values encountered in MTF curve: " + fnMtfs[optGroup]);
                 }
                 i++;
             }
 
             // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
-            RFLOAT res_per_elem = (DIRECT_A1D_ELEM(mtf_resol, i - 1) - DIRECT_A1D_ELEM(mtf_resol, 0)) / (RFLOAT) i;
+            RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
             if (res_per_elem < 1e-10) REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
 
             const int sh = s / 2 + 1;
@@ -878,15 +878,15 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
                 RFLOAT mtf;
                 if (i_0 <= 0) {
                     // Check array boundaries
-                    mtf = DIRECT_A1D_ELEM(mtf_value, 0);
+                    mtf = direct::elem(mtf_value, 0);
                 } else if (i_0 >= mtf_value.size() - 1) {
-                    mtf = DIRECT_A1D_ELEM(mtf_value,  mtf_value.size() - 1);
+                    mtf = direct::elem(mtf_value,  mtf_value.size() - 1);
                 } else {
                     // Linear interpolation
-                    RFLOAT x_0 = DIRECT_A1D_ELEM(mtf_resol, i_0);
-                    RFLOAT y_0 = DIRECT_A1D_ELEM(mtf_value, i_0);
-                    RFLOAT x_1 = DIRECT_A1D_ELEM(mtf_resol, i_0 + 1);
-                    RFLOAT y_1 = DIRECT_A1D_ELEM(mtf_value, i_0 + 1);
+                    RFLOAT x_0 = direct::elem(mtf_resol, i_0);
+                    RFLOAT y_0 = direct::elem(mtf_value, i_0);
+                    RFLOAT x_1 = direct::elem(mtf_resol, i_0 + 1);
+                    RFLOAT y_1 = direct::elem(mtf_value, i_0 + 1);
                     mtf = y_0 + (y_1 - y_0) * (res - x_0) / (x_1 - x_0);
                 }
                 img(y, x) = mtf;

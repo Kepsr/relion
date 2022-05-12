@@ -256,15 +256,6 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 #define FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) \
     for ((n) = 0, (ptr) = (v).data; (n) < (v).nzyxdim(); ++(n), ++(ptr))
 
-/** Access to a direct element.
- * v is the array, k is the slice (Z), i is the Y index and j is the X index.
- */
-#define DIRECT_A3D_ELEM(v, k, i, j) ((v).data[ \
-      (k) * Xsize(v) * Ysize(v) \
-    + (i) * Xsize(v) \
-    + (j) \
-    ])
-
 /** Volume element: Logical access.
  *
  * @code
@@ -273,7 +264,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  * @endcode
  */
 #define A3D_ELEM(V, k, i, j) \
-    DIRECT_A3D_ELEM((V),(k) - Zinit(V), (i) - Yinit(V), (j) - Xinit(V))
+    direct::elem((V),(k) - Zinit(V), (i) - Yinit(V), (j) - Xinit(V))
 
 /** For all elements in the array.
  *
@@ -300,7 +291,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  *
  * @code
  * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
- *     std::cout << DIRECT_A3D_ELEM(m, k, i, j) << " ";
+ *     std::cout << direct::elem(m, k, i, j) << " ";
  * }
  * @endcode
  */
@@ -308,23 +299,6 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int k = 0; k < Zsize(V); k++) \
     for (long int i = 0; i < Ysize(V); i++) \
     for (long int j = 0; j < Xsize(V); j++)
-
-
-/** Physical access to a direct element of a matrix.
- * v is the array, i and j define the element v_ij.
- *
- * Usually matrices follow the C convention of starting index = 0 (X and Y).
- * Be careful.
- * This function should not be used as it goes against the vector library philosophy
- * unless you explicitly want to directly access any value in the matrix
- * without taking into account its logical position.
- *
- * @code
- * DIRECT_A2D_ELEM(m, 0, 0) = 1;
- * val = DIRECT_A2D_ELEM(m, 0, 0);
- * @endcode
- */
-#define DIRECT_A2D_ELEM(v, i, j) ((v).data[(i) * (v).xdim + (j)])
 
 /** Matrix element: Logical access
  *
@@ -334,7 +308,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  * @endcode
  */
 #define A2D_ELEM(v, i, j) \
-    DIRECT_A2D_ELEM(v, (i) - Yinit(v), (j) - Xinit(v))
+    direct::elem(v, (i) - Yinit(v), (j) - Xinit(v))
 
 /** For all elements in the array
  *
@@ -358,7 +332,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  *
  * @code
  * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(m) {
- *     std::cout << DIRECT_A2D_ELEM(m, i, j) << " ";
+ *     std::cout << direct::elem(m, i, j) << " ";
  * }
  * @endcode
  */
@@ -366,21 +340,55 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int i = 0; i < Ysize(m); i++) \
     for (long int j = 0; j < Xsize(m); j++)
 
-/** Vector element: Physical access
- *
- * Be careful because this is physical access, usually vectors follow the C
- * convention of starting index==0. This function should not be used as it goes
- * against the vector library philosophy unless you explicitly want to access
- * directly to any value in the vector without taking into account its logical
- * position.
- *
- * @code
- * DIRECT_A1D_ELEM(v, 0) = 1;
- * val = DIRECT_A1D_ELEM(v, 0);
- * @endcode
- */
-template <typename T> 
-inline T& DIRECT_A1D_ELEM(MultidimArray<T> v, long int i) { return v.data[i]; }
+namespace direct {
+
+    /** Vector element: Physical access
+     *
+     * Be careful because this is physical access, usually vectors follow the C
+     * convention of starting index==0. This function should not be used as it goes
+     * against the vector library philosophy unless you explicitly want to access
+     * directly to any value in the vector without taking into account its logical
+     * position.
+     *
+     * @code
+     * direct::elem(v, 0) = 1;
+     * val = direct::elem(v, 0);
+     * @endcode
+     */
+    template <typename T> 
+    inline T& elem(const MultidimArray<T> &v, long int i) { 
+        return v.data[i]; 
+    }
+
+
+    /** Physical access to a direct element of a matrix.
+     * v is the array, i and j define the element v_ij.
+     *
+     * Usually matrices follow the C convention of starting index = 0 (X and Y).
+     * Be careful.
+     * This function should not be used as it goes against the vector library philosophy
+     * unless you explicitly want to directly access any value in the matrix
+     * without taking into account its logical position.
+     *
+     * @code
+     * direct::elem(m, 0, 0) = 1;
+     * val = direct::elem(m, 0, 0);
+     * @endcode
+     */
+    template <typename T>
+    inline T& elem(const MultidimArray<T> &v, long int i, long int j) { 
+        return v.data[i * v.xdim + j]; 
+    }
+
+    /** Access to a direct element.
+     * v is the array, k is the slice (Z), i is the Y index and j is the X index.
+     */
+    template <typename T>
+    inline T& elem(const MultidimArray<T> &v, long int k, long int i, long int j) {
+        return v.data[k * v.xdim * v.ydim + i * v.xdim + j];
+    }
+
+};
 
 /** Vector element: Logical access
  *
@@ -389,7 +397,7 @@ inline T& DIRECT_A1D_ELEM(MultidimArray<T> v, long int i) { return v.data[i]; }
  * val = A1D_ELEM(v, -2);
  * @endcode
  */
-#define A1D_ELEM(v, i) DIRECT_A1D_ELEM(v, (i) - ((v).xinit))
+#define A1D_ELEM(v, i) direct::elem(v, (i) - ((v).xinit))
 
 /** For all elements in the array
  *
@@ -414,9 +422,8 @@ inline T& DIRECT_A1D_ELEM(MultidimArray<T> v, long int i) { return v.data[i]; }
  * using its physical definition.
  *
  * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v)
- * {
- *     std::cout << DIRECT_A1D_ELEM(v, i) << " ";
+ * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) {
+ *     std::cout << direct::elem(v, i) << " ";
  * }
  * @endcode
  */
@@ -1067,7 +1074,7 @@ class MultidimArray {
             // 0 if out of bounds
             new_data[l * ZYXdim + k * YXdim + i * Xdim + j] = (
                 k >= zdim || i >= ydim || j >= xdim
-            ) ? (T) 0 : DIRECT_A3D_ELEM(*this, k, i, j);
+            ) ? (T) 0.0 : direct::elem(*this, k, i, j);
         }
 
         // deallocate old vector
@@ -1724,7 +1731,7 @@ class MultidimArray {
 
         M.resize(1, zdim, ydim, xdim);
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M) {
-            DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
+            direct::elem(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
         }
 
         M.xinit = firstX();
@@ -1750,7 +1757,7 @@ class MultidimArray {
             REPORT_ERROR("setImage: MultidimArray dimensions different from the input image ones");
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M)
-            DIRECT_NZYX_ELEM(*this, n, k, i, j) = DIRECT_A3D_ELEM(M, k, i, j);
+            DIRECT_NZYX_ELEM(*this, n, k, i, j) = direct::elem(M, k, i, j);
 
     }
 
@@ -1781,7 +1788,7 @@ class MultidimArray {
             k -= firstZ();
             M.resize(1, 1, ydim, xdim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
-                DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
+                direct::elem(M, i, j) = DIRECT_NZYX_ELEM(*this, n, k, i, j);
             }
             M.xinit = firstX();
             M.yinit = firstY();
@@ -1794,7 +1801,7 @@ class MultidimArray {
             k -= firstY();
             M.resize(zdim, xdim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
-                DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, k, j);
+                direct::elem(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, k, j);
             }
             M.xinit = firstX();
             M.yinit = firstZ();
@@ -1807,7 +1814,7 @@ class MultidimArray {
             k -= firstX();
             M.resize(zdim, ydim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
-                DIRECT_A2D_ELEM(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, j, k);
+                direct::elem(M, i, j) = DIRECT_NZYX_ELEM(*this, n, i, j, k);
             }
             M.xinit = firstY();
             M.yinit = firstZ();
@@ -1842,7 +1849,7 @@ class MultidimArray {
         k -= firstZ();
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v)
-        DIRECT_NZYX_ELEM(*this, n, k, i, j) = DIRECT_A2D_ELEM(v, i, j);
+        DIRECT_NZYX_ELEM(*this, n, k, i, j) = direct::elem(v, i, j);
     }
 
     /** Get Column
@@ -3948,7 +3955,7 @@ void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) 
     } else {
         v2.resize(v1.zdim, v1.ydim, v1.xdim);
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v2) {
-            DIRECT_A3D_ELEM(v2, k, i, j) = static_cast<T2>DIRECT_NZYX_ELEM(v1, n, k, i, j);
+            direct::elem(v2, k, i, j) = static_cast<T2>DIRECT_NZYX_ELEM(v1, n, k, i, j);
         }
     }
 }
@@ -4014,7 +4021,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
         ostrm << std::endl;
     }
 
-    RFLOAT max_val = abs(DIRECT_A3D_ELEM(v , 0, 0, 0));
+    RFLOAT max_val = abs(direct::elem(v , 0, 0, 0));
     T *ptr;
     long int n;
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) {

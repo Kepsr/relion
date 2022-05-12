@@ -309,9 +309,9 @@ void ParFourierTransformer::enforceHermitianSymmetry() {
         case 2:
         for (long int i = 1; i <= yHalf; i++) {
             long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
-            Complex mean = 0.5 * (DIRECT_A2D_ELEM(fFourier, i, 0) + conj(DIRECT_A2D_ELEM(fFourier, isym, 0)));
-            DIRECT_A2D_ELEM(fFourier, i,    0) = mean;
-            DIRECT_A2D_ELEM(fFourier, isym, 0) = conj(mean);
+            Complex mean = 0.5 * (direct::elem(fFourier, i, 0) + conj(direct::elem(fFourier, isym, 0)));
+            direct::elem(fFourier, i,    0) = mean;
+            direct::elem(fFourier, isym, 0) = conj(mean);
         }
         break;
 
@@ -320,16 +320,16 @@ void ParFourierTransformer::enforceHermitianSymmetry() {
             long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
             for (long int i = 1; i <= yHalf; i++) {
                 long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
-                Complex mean = 0.5 * (DIRECT_A3D_ELEM(fFourier,k,i,0) + conj(DIRECT_A3D_ELEM(fFourier, ksym, isym, 0)));
-                DIRECT_A3D_ELEM(fFourier, k,    i,    0) = mean;
-                DIRECT_A3D_ELEM(fFourier, ksym, isym, 0) = conj(mean);
+                Complex mean = 0.5 * (direct::elem(fFourier,k,i,0) + conj(direct::elem(fFourier, ksym, isym, 0)));
+                direct::elem(fFourier, k,    i,    0) = mean;
+                direct::elem(fFourier, ksym, isym, 0) = conj(mean);
             }
         }
         for (long int k = 1; k <= zHalf; k++) {
             long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            Complex mean = 0.5 * (DIRECT_A3D_ELEM(fFourier, k, 0, 0) + conj(DIRECT_A3D_ELEM(fFourier, ksym, 0, 0)));
-            DIRECT_A3D_ELEM(fFourier, k,    0, 0) = mean;
-            DIRECT_A3D_ELEM(fFourier, ksym, 0, 0) = conj(mean);
+            Complex mean = 0.5 * (direct::elem(fFourier, k, 0, 0) + conj(direct::elem(fFourier, ksym, 0, 0)));
+            direct::elem(fFourier, k,    0, 0) = mean;
+            direct::elem(fFourier, ksym, 0, 0) = conj(mean);
         }
         break;
 

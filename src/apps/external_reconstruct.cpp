@@ -98,8 +98,8 @@ class ext_recons_parameters {
         const int r_max2 = round(r_max * padding_factor) * round(r_max * padding_factor);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Idata()) {
             if (kp * kp + ip * ip + jp * jp < r_max2) {
-                A3D_ELEM(BP.data, kp, ip, jp) = DIRECT_A3D_ELEM(Idata(), k, i, j);
-                A3D_ELEM(BP.weight, kp, ip, jp) = DIRECT_A3D_ELEM(Iweight(), k, i, j);
+                A3D_ELEM(BP.data,   kp, ip, jp) = direct::elem(Idata(),   k, i, j);
+                A3D_ELEM(BP.weight, kp, ip, jp) = direct::elem(Iweight(), k, i, j);
             }
         }
 

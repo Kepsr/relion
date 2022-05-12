@@ -988,15 +988,15 @@ __global__ void cuda_kernel_calcPowerSpectrum(
             T val = dFaux[idz * XSIZE * padoridim + idy * XSIZE + idx];
             val.x *= normfft; val.y *= normfft;
             val.x *= weight;  val.y *= weight;
-            //A3D_ELEM(data, kp, ip, jp) = weight*DIRECT_A3D_ELEM(Faux, k, i, j) * normfft;
+            //A3D_ELEM(data, kp, ip, jp) = weight*direct::elem(Faux, k, i, j) * normfft;
             ddata[(kp + data_sz / 2) * dxy + (ip + data_sz / 2) * dx + jp] = val; 
 
             // Calculate power spectrum
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
             // Factor two because of two-dimensionality of the complex plane
             RFLOAT norm = (val.x * val.x + val.y * val.y) / 2.0;
-            atomicAdd(dpower_spectrum + ires, norm);    // DIRECT_A1D_ELEM(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.;
-            atomicAdd(dcounter        + ires, weight);  // DIRECT_A1D_ELEM(counter, ires) += weight;
+            atomicAdd(dpower_spectrum + ires, norm);    // direct::elem(power_spectrum, ires) += norm(A3D_ELEM(data, kp, ip, jp)) / 2.;
+            atomicAdd(dcounter        + ires, weight);  // direct::elem(counter, ires) += weight;
             // Apply high pass filter of the reference only after calculating the power spectrum
             val.x = val.y = 0.;
             if (r2 <= min_r2)

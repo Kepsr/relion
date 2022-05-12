@@ -382,7 +382,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             const int PBUF_SIZE = 100;
             #pragma omp parallel for num_threads(threads_p)
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(muGraph.data) {
-                if (!DIRECT_A2D_ELEM(*defectMask, i, j)) continue;
+                if (!direct::elem(*defectMask, i, j)) continue;
 
                 int n_ok = 0;
                 RFLOAT pbuf[PBUF_SIZE];
@@ -392,13 +392,13 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                     for (int dx = -D_MAX; dx <= D_MAX; dx++) {
                         int x = j + dx;
                         if (x < 0 || x >= w0) continue;
-                        if (DIRECT_A2D_ELEM(*defectMask, y, x)) continue;
+                        if (direct::elem(*defectMask, y, x)) continue;
 
-                        pbuf[n_ok] = DIRECT_A2D_ELEM(muGraph.data, y, x);
+                        pbuf[n_ok] = direct::elem(muGraph.data, y, x);
                         n_ok++;
                     }
                 }
-                DIRECT_A2D_ELEM(muGraph.data, i, j) = n_ok > NUM_MIN_OK ?
+                direct::elem(muGraph.data, i, j) = n_ok > NUM_MIN_OK ?
                     pbuf[rand() % n_ok] : rnd_gaus(frame_mean, frame_std);
             }
         }
@@ -561,7 +561,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 if (yy < 0) { yy = 0; } else if (yy >= h0) { yy = h0 - 1; }
 
                 // Note the MINUS here!!!
-                DIRECT_NZYX_ELEM(aux0[t].data, 0, 0, y, x) = -DIRECT_A2D_ELEM(Iframes[f], yy, xx);
+                DIRECT_NZYX_ELEM(aux0[t].data, 0, 0, y, x) = -direct::elem(Iframes[f], yy, xx);
             }
 
             if (outPs == moviePs) {
@@ -690,7 +690,7 @@ std::vector<double> StackHelper::powerSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = DIRECT_A2D_ELEM(stack[i][f].data, y, x);
+            const Complex z = direct::elem(stack[i][f].data, y, x);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
@@ -728,7 +728,7 @@ std::vector<double> StackHelper::varSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = DIRECT_A2D_ELEM(stack[i][f].data, y, x);
+            const Complex z = direct::elem(stack[i][f].data, y, x);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
@@ -752,7 +752,7 @@ std::vector<double> StackHelper::varSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = DIRECT_A2D_ELEM(stack[i][f].data, y, x);
+            const Complex z = direct::elem(stack[i][f].data, y, x);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
@@ -789,7 +789,7 @@ std::vector<double> StackHelper::powerSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = DIRECT_A2D_ELEM(obs[i][f].data, y, x) - DIRECT_A2D_ELEM(signal[i].data, y, x);
+            const Complex z = direct::elem(obs[i][f].data, y, x) - direct::elem(signal[i].data, y, x);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;

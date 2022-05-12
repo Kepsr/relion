@@ -75,22 +75,22 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
         // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
         if (r2 <= max_r2) {
             // Set data array
-            A3D_ELEM(P->data, kp, ip, jp) = DIRECT_A3D_ELEM(Faux, k, i, j) * normfft;
+            A3D_ELEM(P->data, kp, ip, jp) = direct::elem(Faux, k, i, j) * normfft;
 
             // Calculate power spectrum
             int ires = round(sqrt((RFLOAT) r2) / P->padding_factor);
             // Factor two because of two-dimensionality of the complex plane
-            DIRECT_A1D_ELEM(power_spectrum, ires) += norm(A3D_ELEM(P->data, kp, ip, jp)) / 2.0;
-            DIRECT_A1D_ELEM(counter, ires) += 1.0;
+            direct::elem(power_spectrum, ires) += norm(A3D_ELEM(P->data, kp, ip, jp)) / 2.0;
+            direct::elem(counter, ires) += 1.0;
         }
     }
 
     // Calculate radial average of power spectrum
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(power_spectrum) {
-        if (DIRECT_A1D_ELEM(counter, i) < 1.0) {
-            DIRECT_A1D_ELEM(power_spectrum, i) = 0.0;
+        if (direct::elem(counter, i) < 1.0) {
+            direct::elem(power_spectrum, i) = 0.0;
         } else {
-            DIRECT_A1D_ELEM(power_spectrum, i) /= DIRECT_A1D_ELEM(counter, i);
+            direct::elem(power_spectrum, i) /= direct::elem(counter, i);
         }
     }
 }

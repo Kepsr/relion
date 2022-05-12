@@ -62,23 +62,23 @@ void FscHelper::computeFscTable(
                 continue;
             }
 
-            Complex z1 = DIRECT_A3D_ELEM(frames[p][f](),   k, i, j);
-            Complex z2 = DIRECT_A3D_ELEM(predictions[p](), k, i, j);
+            Complex z1 = direct::elem(frames[p][f](),   k, i, j);
+            Complex z2 = direct::elem(predictions[p](), k, i, j);
 
-            DIRECT_A2D_ELEM(table.data,   f, idx) += z1.real * z2.real + z1.imag * z2.imag;
-            DIRECT_A2D_ELEM(weight1.data, f, idx) += z1.norm();
-            DIRECT_A2D_ELEM(weight2.data, f, idx) += z2.norm();
+            direct::elem(table.data,   f, idx) += z1.real * z2.real + z1.imag * z2.imag;
+            direct::elem(weight1.data, f, idx) += z1.norm();
+            direct::elem(weight2.data, f, idx) += z2.norm();
         }
     }
 
     for (int f = 0; f < fc; f++)
     for (int x = 0; x < w;  x++) {
-        RFLOAT w1 = DIRECT_A2D_ELEM(weight1.data, f, x);
-        RFLOAT w2 = DIRECT_A2D_ELEM(weight2.data, f, x);
+        RFLOAT w1 = direct::elem(weight1.data, f, x);
+        RFLOAT w2 = direct::elem(weight2.data, f, x);
         RFLOAT ww = sqrt(w1 * w2);
 
-        DIRECT_A2D_ELEM(weight.data, f, x)  = ww;
-        DIRECT_A2D_ELEM(table.data,  f, x) /= ww;
+        direct::elem(weight.data, f, x)  = ww;
+        direct::elem(table.data,  f, x) /= ww;
     }
 }
 
@@ -97,8 +97,8 @@ void FscHelper::computeFscRow(
             continue;
         }
 
-        Complex z1 = DIRECT_A3D_ELEM(data0, k, i, j);
-        Complex z2 = DIRECT_A3D_ELEM(data1, k, i, j);
+        Complex z1 = direct::elem(data0, k, i, j);
+        Complex z2 = direct::elem(data1, k, i, j);
 
         data[idx] += z1.real * z2.real + z1.imag * z2.imag;
         weight1[idx] += z1.norm();
@@ -110,8 +110,8 @@ void FscHelper::computeFscRow(
 
         RFLOAT ww = sqrt(weight1[x] * weight2[x]);
 
-        DIRECT_A2D_ELEM(table.data, row, x) = safedivide(data[x], ww);
-        DIRECT_A2D_ELEM(weight.data, row, x) = ww;
+        direct::elem(table.data, row, x) = safedivide(data[x], ww);
+        direct::elem(weight.data, row, x) = ww;
     }
 }
 
@@ -153,12 +153,12 @@ void FscHelper::updateFscTable(
             continue;
         }
 
-        Complex z1 = DIRECT_A3D_ELEM(frame(),      k, i, j);
-        Complex z2 = DIRECT_A3D_ELEM(prediction(), k, i, j);
+        Complex z1 = direct::elem(frame(),      k, i, j);
+        Complex z2 = direct::elem(prediction(), k, i, j);
 
-        DIRECT_A2D_ELEM(table.data,   f, idx) += z1.real * z2.real + z1.imag * z2.imag;
-        DIRECT_A2D_ELEM(weight0.data, f, idx) += z1.norm();
-        DIRECT_A2D_ELEM(weight1.data, f, idx) += z2.norm();
+        direct::elem(table.data,   f, idx) += z1.real * z2.real + z1.imag * z2.imag;
+        direct::elem(weight0.data, f, idx) += z1.norm();
+        direct::elem(weight1.data, f, idx) += z2.norm();
     }
 }
 
@@ -185,12 +185,12 @@ void FscHelper::updateFscTableVelWgh(
             double wgh = kv < 1e-20 ? 1.0 : sin(PI * kv) / PI * kv;
             // double wgh = exp(-0.5*kv*kv/0.5);
 
-            Complex z1 = DIRECT_A3D_ELEM(frames[f](), k, i, j);
-            Complex z2 = wgh * DIRECT_A3D_ELEM(prediction(), k, i, j);
+            Complex z1 = direct::elem(frames[f](), k, i, j);
+            Complex z2 = wgh * direct::elem(prediction(), k, i, j);
 
-            DIRECT_A2D_ELEM(table.data,   f, idx) += z1.real * z2.real + z1.imag * z2.imag;
-            DIRECT_A2D_ELEM(weight0.data, f, idx) += z1.norm();
-            DIRECT_A2D_ELEM(weight1.data, f, idx) += z2.norm();
+            direct::elem(table.data,   f, idx) += z1.real * z2.real + z1.imag * z2.imag;
+            direct::elem(weight0.data, f, idx) += z1.norm();
+            direct::elem(weight1.data, f, idx) += z2.norm();
         }
     }
 }
@@ -223,12 +223,12 @@ void FscHelper::updateVelFscTable(
             if (kvidx < 0) { kvidx = -kvidx; }
             if (kvidx >= table().xdim) continue;
 
-            Complex z1 = DIRECT_A3D_ELEM(frames[f](),  k, i, j);
-            Complex z2 = DIRECT_A3D_ELEM(prediction(), k, i, j);
+            Complex z1 = direct::elem(frames[f](),  k, i, j);
+            Complex z2 = direct::elem(prediction(), k, i, j);
 
-            DIRECT_A2D_ELEM(table.data,   f, kvidx) += z1.real * z2.real + z1.imag * z2.imag;
-            DIRECT_A2D_ELEM(weight0.data, f, kvidx) += z1.norm();
-            DIRECT_A2D_ELEM(weight1.data, f, kvidx) += z2.norm();
+            direct::elem(table.data,   f, kvidx) += z1.real * z2.real + z1.imag * z2.imag;
+            direct::elem(weight0.data, f, kvidx) += z1.norm();
+            direct::elem(weight1.data, f, kvidx) += z2.norm();
         }
     }
 }
@@ -253,19 +253,19 @@ void FscHelper::mergeFscTables(
     for (int m = 0; m < mgc; m++)
     for (int f = 0; f < fc;  f++)
     for (int x = 0; x < w;   x++) {
-        DIRECT_A2D_ELEM(tableSum.data,   f, x) += DIRECT_A2D_ELEM(tables[m].data,   f, x);
-        DIRECT_A2D_ELEM(weightSum0.data, f, x) += DIRECT_A2D_ELEM(weights0[m].data, f, x);
-        DIRECT_A2D_ELEM(weightSum1.data, f, x) += DIRECT_A2D_ELEM(weights1[m].data, f, x);
+        direct::elem(tableSum.data,   f, x) += direct::elem(tables[m].data,   f, x);
+        direct::elem(weightSum0.data, f, x) += direct::elem(weights0[m].data, f, x);
+        direct::elem(weightSum1.data, f, x) += direct::elem(weights1[m].data, f, x);
     }
 
     for (int f = 0; f < fc; f++)
     for (int x = 0; x < w; x++) {
-        RFLOAT w1 = DIRECT_A2D_ELEM(weightSum0.data, f, x);
-        RFLOAT w2 = DIRECT_A2D_ELEM(weightSum1.data, f, x);
+        RFLOAT w1 = direct::elem(weightSum0.data, f, x);
+        RFLOAT w2 = direct::elem(weightSum1.data, f, x);
         RFLOAT ww = sqrt(w1 * w2);
 
-        DIRECT_A2D_ELEM(weight.data, f, x) = ww;
-        DIRECT_A2D_ELEM(table.data, f, x) = safedivide(DIRECT_A2D_ELEM(tableSum.data, f, x), ww);
+        direct::elem(weight.data, f, x) = ww;
+        direct::elem(table.data, f, x) = safedivide(direct::elem(tableSum.data, f, x), ww);
     }
 }
 
@@ -312,18 +312,18 @@ void FscHelper::computeNoiseSq(
 
             if (idx >= w) continue;
 
-            Complex z1 = DIRECT_A3D_ELEM(frames[p][f](), k, i, j);
-            Complex z2 = DIRECT_A3D_ELEM(predictions[p](), k, i, j);
+            Complex z1 = direct::elem(frames[p][f](), k, i, j);
+            Complex z2 = direct::elem(predictions[p](), k, i, j);
 
-            DIRECT_A2D_ELEM(sigma2.data, f, idx) += (z2 - z1).norm();
-            DIRECT_A2D_ELEM(count.data,  f, idx) += 1.0;
+            direct::elem(sigma2.data, f, idx) += (z2 - z1).norm();
+            direct::elem(count.data,  f, idx) += 1.0;
         }
     }
 
     for (int f = 0; f < fc; f++)
     for (int x = 0; x < w; x++) {
-        if (DIRECT_A2D_ELEM(count.data, f, x) > 0.0) {
-            DIRECT_A2D_ELEM(sigma2.data, f, x) /= DIRECT_A2D_ELEM(count.data, f, x);
+        if (direct::elem(count.data, f, x) > 0.0) {
+            direct::elem(sigma2.data, f, x) /= direct::elem(count.data, f, x);
         }
     }
 }
@@ -340,15 +340,15 @@ Image<RFLOAT> FscHelper::computeSignalSq(
 
     for (int f = 0; f < fc; f++)
     for (int k = 0; k < kc; k++) {
-        RFLOAT c  = DIRECT_A2D_ELEM(frc.data,    f, k);
-        RFLOAT s2 = DIRECT_A2D_ELEM(sigma2.data, f, k);
+        RFLOAT c  = direct::elem(frc.data,    f, k);
+        RFLOAT s2 = direct::elem(sigma2.data, f, k);
 
         if (c < eps) {
-            DIRECT_A2D_ELEM(out.data, f, k) = 0.0;
+            direct::elem(out.data, f, k) = 0.0;
         } else {
             if (c > 1.0 - eps) { c = 1.0 - eps; }
             RFLOAT snr2 = c / (1.0 - c);
-            DIRECT_A2D_ELEM(out.data, f, k) = snr2 * s2;
+            direct::elem(out.data, f, k) = snr2 * s2;
         }
     }
 
@@ -372,7 +372,7 @@ std::vector<d2Vector> FscHelper::fitBfactorsNM(
         double ts = 0.0;
 
         for (int f = 0; f < ic; f++) {
-            double t2 = DIRECT_A2D_ELEM(tau2.data, f, k);
+            double t2 = direct::elem(tau2.data, f, k);
 
             if (t2 >= 0.0) {
                 ta += t2;
@@ -385,8 +385,8 @@ std::vector<d2Vector> FscHelper::fitBfactorsNM(
         }
 
         for (int f = 0; f < ic; f++) {
-            double t2 = DIRECT_A2D_ELEM(tau2.data, f, k);
-            DIRECT_A2D_ELEM(tauRel.data, f, k) = t2 >= 0.0 ? sqrt(t2) / tauAvg[k] : 0.0;
+            double t2 = direct::elem(tau2.data, f, k);
+            direct::elem(tauRel.data, f, k) = t2 >= 0.0 ? sqrt(t2) / tauAvg[k] : 0.0;
         }
     }
 
@@ -424,9 +424,9 @@ std::vector<d2Vector> FscHelper::fitBfactors(
         RFLOAT wsum = 0.0;
 
         for (int i = 0; i < ic; i++) {
-            if (DIRECT_A2D_ELEM(table.data, i, k) < 0.0) continue;
-            avgFsc[k] += DIRECT_A2D_ELEM(weight.data, i, k) * DIRECT_A2D_ELEM(table.data, i, k);
-            wsum += DIRECT_A2D_ELEM(weight.data, i, k);
+            if (direct::elem(table.data, i, k) < 0.0) continue;
+            avgFsc[k] += direct::elem(weight.data, i, k) * direct::elem(table.data, i, k);
+            wsum += direct::elem(weight.data, i, k);
         }
 
         avgFsc[k] /= wsum;
@@ -439,7 +439,7 @@ std::vector<d2Vector> FscHelper::fitBfactors(
         d2Vector b(0.0, 0.0);
 
         for (int k = 1; k < kc; k++) {
-            RFLOAT fsc = DIRECT_A2D_ELEM(table.data, i, k);
+            RFLOAT fsc = direct::elem(table.data, i, k);
             RFLOAT fscA = avgFsc[k];
 
             if (fsc < eps || fscA < eps) continue;
@@ -448,7 +448,7 @@ std::vector<d2Vector> FscHelper::fitBfactors(
 
             if (t < eps) continue;
 
-            RFLOAT w = t * t * DIRECT_A2D_ELEM(weight.data, i, k);
+            RFLOAT w = t * t * direct::elem(weight.data, i, k);
             RFLOAT x = k * k;
 
             A(0, 0) += w * x * x;
@@ -483,10 +483,10 @@ Image<RFLOAT> FscHelper::tauRatio(
         RFLOAT wsum = 0.0;
 
         for (int i = 0; i < ic; i++) {
-            if (DIRECT_A2D_ELEM(table.data, i, k) < 0.0) continue;
+            if (direct::elem(table.data, i, k) < 0.0) continue;
 
-            avgFsc[k] += DIRECT_A2D_ELEM(weight.data, i, k) * DIRECT_A2D_ELEM(table.data, i, k);
-            wsum += DIRECT_A2D_ELEM(weight.data, i, k);
+            avgFsc[k] += direct::elem(weight.data, i, k) * direct::elem(table.data, i, k);
+            wsum += direct::elem(weight.data, i, k);
         }
 
         avgFsc[k] /= wsum;
@@ -496,12 +496,12 @@ Image<RFLOAT> FscHelper::tauRatio(
 
     for (int i = 0; i < ic; i++) {
         for (int k = 0; k < kc; k++) {
-            RFLOAT fsc = DIRECT_A2D_ELEM(table.data, i, k);
+            RFLOAT fsc = direct::elem(table.data, i, k);
             RFLOAT fscA = avgFsc[k];
 
             if (fsc < eps || fscA < eps) continue;
 
-            DIRECT_A2D_ELEM(out.data, i, k) = (fsc - fsc * fscA) / (fscA - fsc * fscA);
+            direct::elem(out.data, i, k) = (fsc - fsc * fscA) / (fscA - fsc * fscA);
         }
     }
 
@@ -519,7 +519,7 @@ void FscHelper::computeBfactors(
         const double Bf = bfacs[i][0];
         const double Cf = bfacs[i][1];
 
-        DIRECT_A2D_ELEM(table.data, i, k) = exp(Bf * k * k / 4.0 + Cf);
+        direct::elem(table.data, i, k) = exp(Bf * k * k / 4.0 + Cf);
     }
 }
 
@@ -568,8 +568,8 @@ double BFactorFit::f(const std::vector<double> &x, void *tempStorage) const {
     const int kc = tau2.data.xdim;
 
     for (int k = cutoff; k < kc; k++) {
-        double w = DIRECT_A2D_ELEM(weight.data, frame, k);
-        RFLOAT t2 = DIRECT_A2D_ELEM(tau2.data, frame, k);
+        double w = direct::elem(weight.data, frame, k);
+        RFLOAT t2 = direct::elem(tau2.data, frame, k);
         double pv = exp(Bf * k * k / 4.0 + Cf);
 
         double e = pv - t2;

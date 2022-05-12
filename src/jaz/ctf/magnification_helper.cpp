@@ -110,8 +110,8 @@ void MagnificationHelper::updateScaleFreq(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction .data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
+        Complex vx = direct::elem(prediction .data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
 
         double c = ctfImg(y,x);
 
@@ -147,13 +147,13 @@ void MagnificationHelper::updateScaleReal(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction.data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
-        Complex sn = DIRECT_A2D_ELEM(snr.data, y, x);
+        Complex vx = direct::elem(prediction.data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
+        Complex sn = direct::elem(snr.data, y, x);
         double c = ctfImg(y,x);
 
-        DIRECT_A2D_ELEM(pred2.data, y, x) = sn * c * vx;
-        DIRECT_A2D_ELEM(obs2 .data, y, x) = sn * vy;
+        direct::elem(pred2.data, y, x) = sn * c * vx;
+        direct::elem(obs2 .data, y, x) = sn * vy;
     }
 
     FourierTransformer ft0, ft1;
@@ -165,8 +165,8 @@ void MagnificationHelper::updateScaleReal(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < ww; x++) {
-        double vx = DIRECT_A2D_ELEM(realPred.data, y, x);
-        double vy = DIRECT_A2D_ELEM(realObs .data, y, x);
+        double vx = direct::elem(realPred.data, y, x);
+        double vy = direct::elem(realObs .data, y, x);
 
         gravis::d2Vector g = grad(x, y, 0);
 
@@ -203,16 +203,16 @@ void MagnificationHelper::solvePerPixel(
         double det = A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
 
         if (det == 0.0) {
-            DIRECT_A2D_ELEM(vx.data, y, x) = 0.0;
-            DIRECT_A2D_ELEM(vy.data, y, x) = 0.0;
+            direct::elem(vx.data, y, x) = 0.0;
+            direct::elem(vy.data, y, x) = 0.0;
         } else {
             gravis::d2Matrix Ai = A;
             Ai.invert();
 
             gravis::d2Vector xx = Ai * b;
 
-            DIRECT_A2D_ELEM(vx.data, y, x) = xx.x;
-            DIRECT_A2D_ELEM(vy.data, y, x) = xx.y;
+            direct::elem(vx.data, y, x) = xx.x;
+            direct::elem(vy.data, y, x) = xx.y;
         }
     }
 }
@@ -242,7 +242,7 @@ Matrix2D<RFLOAT> MagnificationHelper::solveLinearlyFreq(
     for (long yi = 1; yi < h - 1; yi++)
     for (long xi = 1; xi < w - 1; xi++) {
         Equation2x2 eq = eqs(xi, yi, 0);
-        double wgh = DIRECT_A2D_ELEM(snr.data, yi, xi);
+        double wgh = direct::elem(snr.data, yi, xi);
 
         const double x = xi;
         const double y = yi < w ? yi : yi - h;
@@ -291,8 +291,8 @@ Matrix2D<RFLOAT> MagnificationHelper::solveLinearlyFreq(
         const double x = xi;
         const double y = yi < w ? yi : yi - h;
 
-        DIRECT_A2D_ELEM(vx.data, yi, xi) = opt[0] * x + opt[1] * y;
-        DIRECT_A2D_ELEM(vy.data, yi, xi) = opt[2] * x + opt[3] * y;
+        direct::elem(vx.data, yi, xi) = opt[0] * x + opt[1] * y;
+        direct::elem(vy.data, yi, xi) = opt[2] * x + opt[3] * y;
     }
 
     return mat;
@@ -314,12 +314,12 @@ void MagnificationHelper::readEQs(std::string path, Volume<Equation2x2> &eqs) {
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        eqs(x, y, 0).Axx = DIRECT_A2D_ELEM(Axx.data, y, x);
-        eqs(x, y, 0).Axy = DIRECT_A2D_ELEM(Axy.data, y, x);
-        eqs(x, y, 0).Ayy = DIRECT_A2D_ELEM(Ayy.data, y, x);
+        eqs(x, y, 0).Axx = direct::elem(Axx.data, y, x);
+        eqs(x, y, 0).Axy = direct::elem(Axy.data, y, x);
+        eqs(x, y, 0).Ayy = direct::elem(Ayy.data, y, x);
 
-        eqs(x, y, 0).bx = DIRECT_A2D_ELEM(bx.data, y, x);
-        eqs(x, y, 0).by = DIRECT_A2D_ELEM(by.data, y, x);
+        eqs(x, y, 0).bx = direct::elem(bx.data, y, x);
+        eqs(x, y, 0).by = direct::elem(by.data, y, x);
     }
 }
 
@@ -339,12 +339,12 @@ void MagnificationHelper::writeEQs(
     for (long x = 0; x < w; x++) {
         Equation2x2 eq = eqs(x, y, 0);
 
-        DIRECT_A2D_ELEM(Axx.data, y, x) = eq.Axx;
-        DIRECT_A2D_ELEM(Axy.data, y, x) = eq.Axy;
-        DIRECT_A2D_ELEM(Ayy.data, y, x) = eq.Ayy;
+        direct::elem(Axx.data, y, x) = eq.Axx;
+        direct::elem(Axy.data, y, x) = eq.Axy;
+        direct::elem(Ayy.data, y, x) = eq.Ayy;
 
-        DIRECT_A2D_ELEM(bx.data, y, x) = eq.bx;
-        DIRECT_A2D_ELEM(by.data, y, x) = eq.by;
+        direct::elem(bx.data, y, x) = eq.bx;
+        direct::elem(by.data, y, x) = eq.by;
     }
 
     Axx.write(path + "_Axx.mrc");
@@ -373,12 +373,12 @@ void MagnificationHelper::updatePowSpec(
         const double xf = x;
         const double yf = y < w ? y : y - h;
 
-        Complex vx = DIRECT_A2D_ELEM(prediction.data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
+        Complex vx = direct::elem(prediction.data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
         double c = ctfImg(y,x);
 
-        DIRECT_A2D_ELEM(powSpecPred.data, y, x) += (c * vx).abs();
-        DIRECT_A2D_ELEM(powSpecObs .data, y, x) += vy.abs();
+        direct::elem(powSpecPred.data, y, x) += (c * vx).abs();
+        direct::elem(powSpecObs .data, y, x) += vy.abs();
     }
 }
 

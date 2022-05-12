@@ -317,7 +317,7 @@ void Micrograph::fillDefectAndHotpixels(MultidimArray<bool> &mask) const {
     }
 
     for (int i = 0, ilim = hotpixelX.size(); i < ilim; i++) {
-        DIRECT_A2D_ELEM(mask, hotpixelY[i], hotpixelX[i]) = true;
+        direct::elem(mask, hotpixelY[i], hotpixelX[i]) = true;
     }
 }
 

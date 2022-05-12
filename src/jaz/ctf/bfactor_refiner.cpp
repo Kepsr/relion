@@ -575,9 +575,9 @@ d2Vector BFactorRefiner::findBKRec2D(
 
             if (r >= sh) continue;
 
-            Complex vx = DIRECT_A2D_ELEM(pred.data, y, x);
-            const Complex vy = DIRECT_A2D_ELEM(obs.data, y, x);
-            const double vw = DIRECT_A2D_ELEM(weight.data, y, x);
+            Complex vx = direct::elem(pred.data, y, x);
+            const Complex vy = direct::elem(obs.data, y, x);
+            const double vw = direct::elem(weight.data, y, x);
             const double vb = sigVals[r];
 
             num   += vw * vb * (vx.real * vy.real + vx.imag * vy.imag);
@@ -599,9 +599,9 @@ d2Vector BFactorRefiner::findBKRec2D(
 
             if (r >= sh) continue;
 
-            Complex vx = DIRECT_A2D_ELEM(pred.data, y, x);
-            const Complex vy = DIRECT_A2D_ELEM(obs.data, y, x);
-            const double vw = DIRECT_A2D_ELEM(weight.data, y, x);
+            Complex vx = direct::elem(pred.data, y, x);
+            const Complex vy = direct::elem(obs.data, y, x);
+            const double vw = direct::elem(weight.data, y, x);
             const double vb = sigVals[r];
 
             sum += vw * (vy - a * vb * vx).norm();

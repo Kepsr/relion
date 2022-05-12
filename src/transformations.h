@@ -396,25 +396,25 @@ void applyGeometry(
                     // if wx == 0 means that the rightest point is useless for this
                     // interpolation, and even it might not be defined if m1=xdim-1
                     // The same can be said for wy.
-                    T tmp = ((1 - wy) * (1 - wx) * DIRECT_A2D_ELEM(V1, n1, m1));
+                    T tmp = ((1 - wy) * (1 - wx) * direct::elem(V1, n1, m1));
 
                     if (m2 < V1.xdim)
-                        tmp += (T) ((1 - wy) * wx * DIRECT_A2D_ELEM(V1, n1, m2));
+                        tmp += (T) ((1 - wy) * wx * direct::elem(V1, n1, m2));
 
                     if (n2 < V1.ydim) {
-                        tmp += (T) (wy * (1 - wx) * DIRECT_A2D_ELEM(V1, n2, m1));
+                        tmp += (T) (wy * (1 - wx) * direct::elem(V1, n2, m1));
 
                         if (m2 < V1.xdim)
-                            tmp += (T) (wy * wx * DIRECT_A2D_ELEM(V1, n2, m2));
+                            tmp += (T) (wy * wx * direct::elem(V1, n2, m2));
                     }
 
-                    DIRECT_A2D_ELEM(V2, i, j) = tmp;
+                    direct::elem(V2, i, j) = tmp;
                     #ifdef DEBUG_APPYGEO
-                    std::cout << "   val= " << DIRECT_A2D_ELEM(V2, i, j) << std::endl;
+                    std::cout << "   val= " << direct::elem(V2, i, j) << std::endl;
                     #endif
 
                 } else {
-                	DIRECT_A2D_ELEM(V2, i, j) = outside;
+                	direct::elem(V2, i, j) = outside;
                 }
 
                 // Compute new point inside input image
@@ -553,58 +553,58 @@ void applyGeometry(
                     // this interpolation, and even it might not be defined if
                     // m1=xdim-1
                     // The same can be said for wy.
-                    T tmp = ((1 - wz) * (1 - wy) * (1 - wx) * DIRECT_A3D_ELEM(V1, o1, n1, m1));
+                    T tmp = ((1 - wz) * (1 - wy) * (1 - wx) * direct::elem(V1, o1, n1, m1));
 
                     if (m2 < V1.xdim)
-                        tmp += (T) ((1 - wz) * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o1, n1, m2));
+                        tmp += (T) ((1 - wz) * (1 - wy) * wx * direct::elem(V1, o1, n1, m2));
 
                     if (n2 < V1.ydim) {
-                        tmp += (T) ((1 - wz) * wy * (1 - wx) * DIRECT_A3D_ELEM(V1, o1, n2, m1));
+                        tmp += (T) ((1 - wz) * wy * (1 - wx) * direct::elem(V1, o1, n2, m1));
                         if (m2 < V1.xdim)
-                            tmp += (T) ((1 - wz) * wy * wx * DIRECT_A3D_ELEM(V1, o1, n2, m2));
+                            tmp += (T) ((1 - wz) * wy * wx * direct::elem(V1, o1, n2, m2));
                     }
 
                     if (o2 < V1.zdim) {
-                        tmp += (T) (wz * (1 - wy) * (1 - wx) * DIRECT_A3D_ELEM(V1, o2, n1, m1));
+                        tmp += (T) (wz * (1 - wy) * (1 - wx) * direct::elem(V1, o2, n1, m1));
                         if (m2 < V1.xdim)
-                            tmp += (T) (wz * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o2, n1, m2));
+                            tmp += (T) (wz * (1 - wy) * wx * direct::elem(V1, o2, n1, m2));
                         if (n2 < V1.ydim) {
-                            tmp += (T) (wz * wy * (1 - wx) * DIRECT_A3D_ELEM(V1, o2, n2, m1));
+                            tmp += (T) (wz * wy * (1 - wx) * direct::elem(V1, o2, n2, m1));
                             if (m2 < V1.xdim)
-                                tmp += (T) (wz * wy * wx * DIRECT_A3D_ELEM(V1, o2, n2, m2));
+                                tmp += (T) (wz * wy * wx * direct::elem(V1, o2, n2, m2));
                         }
                     }
 
                     #ifdef DEBUG
                     if (show_debug)
                         std::cout <<
-                        "tmp1=" << DIRECT_A3D_ELEM(V1, o1, n1, m1) << " "
-                        << (T) ((1 - wz) *(1 - wy) *(1 - wx) * DIRECT_A3D_ELEM(V1, o1, n1, m1))
+                        "tmp1=" << direct::elem(V1, o1, n1, m1) << " "
+                        << (T) ((1 - wz) *(1 - wy) *(1 - wx) * direct::elem(V1, o1, n1, m1))
                         << std::endl <<
-                        "tmp2=" << DIRECT_A3D_ELEM(V1, o1, n1, m2) << " "
-                        << (T) ((1 - wz) *(1 - wy) * wx * DIRECT_A3D_ELEM(V1, o1, n1, m2))
+                        "tmp2=" << direct::elem(V1, o1, n1, m2) << " "
+                        << (T) ((1 - wz) *(1 - wy) * wx * direct::elem(V1, o1, n1, m2))
                         << std::endl <<
-                        "tmp3=" << DIRECT_A3D_ELEM(V1, o1, n2, m1) << " "
-                        << (T) ((1 - wz) * wy *(1 - wx) * DIRECT_A3D_ELEM(V1, o1, n2, m1))
+                        "tmp3=" << direct::elem(V1, o1, n2, m1) << " "
+                        << (T) ((1 - wz) * wy *(1 - wx) * direct::elem(V1, o1, n2, m1))
                         << std::endl <<
-                        "tmp4=" << DIRECT_A3D_ELEM(V1, o1, n2, m2) << " "
-                        << (T) ((1 - wz) * wy * wx * DIRECT_A3D_ELEM(V1, o2, n1, m1))
+                        "tmp4=" << direct::elem(V1, o1, n2, m2) << " "
+                        << (T) ((1 - wz) * wy * wx * direct::elem(V1, o2, n1, m1))
                         << std::endl <<
-                        "tmp6=" << DIRECT_A3D_ELEM(V1, o2, n1, m2) << " "
-                        << (T) (wz * (1 - wy) * wx * DIRECT_A3D_ELEM(V1, o2, n1, m2))
+                        "tmp6=" << direct::elem(V1, o2, n1, m2) << " "
+                        << (T) (wz * (1 - wy) * wx * direct::elem(V1, o2, n1, m2))
                         << std::endl <<
-                        "tmp7=" << DIRECT_A3D_ELEM(V1, o2, n2, m1) << " "
-                        << (T) (wz * wy *(1 - wx) * DIRECT_A3D_ELEM(V1, o2, n2, m1))
+                        "tmp7=" << direct::elem(V1, o2, n2, m1) << " "
+                        << (T) (wz * wy *(1 - wx) * direct::elem(V1, o2, n2, m1))
                         << std::endl <<
-                        "tmp8=" << DIRECT_A3D_ELEM(V1, o2, n2, m2) << " "
-                        << (T) (wz * wy * wx * DIRECT_A3D_ELEM(V1, o2, n2, m2))
+                        "tmp8=" << direct::elem(V1, o2, n2, m2) << " "
+                        << (T) (wz * wy * wx * direct::elem(V1, o2, n2, m2))
                         << std::endl <<
                         "tmp= " << tmp << std::endl;
                     #endif
 
-                    DIRECT_A3D_ELEM(V2 , k, i, j) = tmp;
+                    direct::elem(V2 , k, i, j) = tmp;
                 } else {
-                    DIRECT_A3D_ELEM(V2, k, i, j) = outside;
+                    direct::elem(V2, k, i, j) = outside;
                 }
 
                 // Compute new point inside input image

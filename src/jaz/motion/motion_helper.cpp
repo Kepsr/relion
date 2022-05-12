@@ -332,7 +332,7 @@ void MotionHelper::noiseNormalize(
 
         dest(y, x) = r >= wf || sigma2[r] == 0.0 ? 
             Complex(0.0) :
-            DIRECT_A2D_ELEM(img.data, y, x) / sqrt(sigma2[r] * area);
+            direct::elem(img.data, y, x) / sqrt(sigma2[r] * area);
     }
 }
 

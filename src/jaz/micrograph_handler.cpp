@@ -499,8 +499,8 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 const int D_MAX = isEER ? 4: 2;
                 const int PBUF_size = 100;
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(defectMask) {
-                    if (!DIRECT_A2D_ELEM(defectMask, i, j) && (
-                        !mgHasGain || DIRECT_A2D_ELEM(lastGainRef(), i, j) != 0
+                    if (!direct::elem(defectMask, i, j) && (
+                        !mgHasGain || direct::elem(lastGainRef(), i, j) != 0
                     )) continue;
 
                     #pragma omp parallel for num_threads(nr_omp_threads)
@@ -513,15 +513,15 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                             for (int dx = -D_MAX; dx <= D_MAX; dx++) {
                                 int x = j + dx;
                                 if (x < 0 || x >= Xsize(defectMask)) continue;
-                                if (DIRECT_A2D_ELEM(defectMask, y, x)) continue;
-                                if (mgHasGain && DIRECT_A2D_ELEM(lastGainRef(), y, x) == 0) continue;
+                                if (direct::elem(defectMask, y, x)) continue;
+                                if (mgHasGain && direct::elem(lastGainRef(), y, x) == 0) continue;
 
-                                pbuf[n_ok] = DIRECT_A2D_ELEM(Iframes[iframe], y, x);
+                                pbuf[n_ok] = direct::elem(Iframes[iframe], y, x);
                                 n_ok++;
                             }
                         }
                         // std::cout << "n_ok = " << n_ok << std::endl;
-                        DIRECT_A2D_ELEM(Iframes[iframe], i, j) = n_ok > NUM_MIN_OK ? 
+                        direct::elem(Iframes[iframe], i, j) = n_ok > NUM_MIN_OK ? 
                             pbuf[rand() % n_ok] : rnd_gaus(mean, std);
                     }
                 }

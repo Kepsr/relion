@@ -69,7 +69,7 @@ void RefinementHelper::drawFSC(
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        DIRECT_A2D_ELEM(dest.data, y, x) = dest1D[ri];
+        direct::elem(dest.data, y, x) = dest1D[ri];
     }
 }
 
@@ -101,7 +101,7 @@ void RefinementHelper::computeSNR(const MetaDataTable *mdt, Image<RFLOAT> &dest,
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        DIRECT_A2D_ELEM(dest.data, y, x) = snr[ri];
+        direct::elem(dest.data, y, x) = snr[ri];
     }
 }
 
@@ -140,7 +140,7 @@ void RefinementHelper::computeSigInvSq(
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        DIRECT_A2D_ELEM(dest.data, y, x) = sigInvSq[ri];
+        direct::elem(dest.data, y, x) = sigInvSq[ri];
     }
 }
 
@@ -154,11 +154,11 @@ Image<RFLOAT> RefinementHelper::correlation(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction .data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
+        Complex vx = direct::elem(prediction .data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
 
         // Dot product
-        DIRECT_A2D_ELEM(out.data, y, x) = vy.real * vx.real + vy.imag * vx.imag;
+        direct::elem(out.data, y, x) = vy.real * vx.real + vy.imag * vx.imag;
     }
 
     return out;
@@ -178,11 +178,11 @@ Image<RFLOAT> RefinementHelper::correlation(
     for (long i = 0; i < c; i++) {
         for (long y = 0; y < h; y++)
         for (long x = 0; x < w; x++) {
-            Complex vx = DIRECT_A2D_ELEM(predictions [i].data, y, x);
-            Complex vy = DIRECT_A2D_ELEM(observations[i].data, y, x);
+            Complex vx = direct::elem(predictions [i].data, y, x);
+            Complex vy = direct::elem(observations[i].data, y, x);
 
             // Dot product
-            DIRECT_A2D_ELEM(out.data, y, x) += vy.real * vx.real + vy.imag * vx.imag;
+            direct::elem(out.data, y, x) += vy.real * vx.real + vy.imag * vx.imag;
         }
     }
 
@@ -199,11 +199,11 @@ void RefinementHelper::addToQR(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction .data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
+        Complex vx = direct::elem(prediction .data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
 
-        DIRECT_A2D_ELEM(q.data, y, x) += vy.conj() * vx;
-        DIRECT_A2D_ELEM(r.data, y, x) += vx.norm();
+        direct::elem(q.data, y, x) += vy.conj() * vx;
+        direct::elem(r.data, y, x) += vx.norm();
     }
 }
 
@@ -217,12 +217,12 @@ void RefinementHelper::addToPQR(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction.data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
+        Complex vx = direct::elem(prediction.data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
 
-        DIRECT_A2D_ELEM(p.data, y, x) += vx.norm();
-        DIRECT_A2D_ELEM(q.data, y, x) += vy.conj() * vx;
-        DIRECT_A2D_ELEM(r.data, y, x) += vx.norm();
+        direct::elem(p.data, y, x) += vx.norm();
+        direct::elem(q.data, y, x) += vy.conj() * vx;
+        direct::elem(r.data, y, x) += vx.norm();
     }
 }
 
@@ -240,9 +240,9 @@ double RefinementHelper::squaredDiff(
     double out = 0.0;
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction.data, y, x);
-        const Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
-        const RFLOAT  vw = DIRECT_A2D_ELEM(weight     .data, y, x);
+        Complex vx = direct::elem(prediction.data, y, x);
+        const Complex vy = direct::elem(observation.data, y, x);
+        const RFLOAT  vw = direct::elem(weight     .data, y, x);
 
         RFLOAT vm = ctfImg(y,x);
         out += vw * (vy - vm * vx).norm();

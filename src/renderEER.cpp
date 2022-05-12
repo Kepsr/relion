@@ -70,7 +70,7 @@ void EERRenderer::render16K(
     for (int i = 0; i < n_electrons; i++)  {
         int x = ((positions[i] & 4095) << 2) |  (symbols[i] & 3); // 4095 = 111111111111b, 3 = 00000011b
         int y = ((positions[i] >> 12 ) << 2) | ((symbols[i] & 12) >> 2); //  4096 = 2^12, 12 = 00001100b
-            DIRECT_A2D_ELEM(image, y, x)++;
+            direct::elem(image, y, x)++;
     }
 }
 
@@ -84,7 +84,7 @@ void EERRenderer::render8K(
     for (int i = 0; i < n_electrons; i++)  {
         int x = ((positions[i] & 4095) << 1) | ((symbols[i] & 2) >> 1); // 4095 = 111111111111b, 2 = 00000010b
         int y = ((positions[i] >> 12)  << 1) | ((symbols[i] & 8) >> 3); //  4096 = 2^12, 8 = 00001000b
-            DIRECT_A2D_ELEM(image, y, x)++;
+            direct::elem(image, y, x)++;
     }
 }
 
@@ -97,7 +97,7 @@ void EERRenderer::render4K(
     for (int i = 0; i < n_electrons; i++) {
         int x = positions[i] & 4095; // 4095 = 111111111111b
         int y = positions[i] >> 12; //  4096 = 2^12
-            DIRECT_A2D_ELEM(image, y, x)++;
+            direct::elem(image, y, x)++;
     }
 }
 

@@ -409,7 +409,7 @@ void BackprojectionHelper::backprojectDots(
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data)
     {
-        Complex z = DIRECT_A3D_ELEM(spectrum.data, k, i, j);
+        Complex z = direct::elem(spectrum.data, k, i, j);
 
         dest(j,i,k) = z.abs();
     }
@@ -565,7 +565,7 @@ void BackprojectionHelper::backprojectDotsSeparately(
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data)
         {
-            Complex z = DIRECT_A3D_ELEM(spectrum.data, k, i, j);
+            Complex z = direct::elem(spectrum.data, k, i, j);
 
             dest(j,i,k) += z.abs();
         }

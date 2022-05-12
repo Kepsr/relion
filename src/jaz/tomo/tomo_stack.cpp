@@ -216,9 +216,9 @@ void TomoStack :: safeLog(RFLOAT eps, int f0, int fc)
     {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(images[im].data)
         {
-            const double v = DIRECT_A2D_ELEM(images[im].data, i, j);
+            const double v = direct::elem(images[im].data, i, j);
 
-            DIRECT_A2D_ELEM(images[im].data, i, j) = v > eps ? log(v) : log(eps);
+            direct::elem(images[im].data, i, j) = v > eps ? log(v) : log(eps);
         }
     }
 }
@@ -231,7 +231,7 @@ void TomoStack :: scaledExp(RFLOAT scale, int f0, int fc)
     {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(images[im].data)
         {
-            DIRECT_A2D_ELEM(images[im].data, i, j) = exp(scale * DIRECT_A2D_ELEM(images[im].data, i, j));
+            direct::elem(images[im].data, i, j) = exp(scale * direct::elem(images[im].data, i, j));
         }
     }
 }

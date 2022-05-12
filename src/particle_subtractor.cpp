@@ -179,7 +179,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
 
         // Apply the inverse of the keepmask to all the mask_bodies
         for (int obody = 0; obody < opt.mymodel.nr_bodies; obody++) {
-            int ii = DIRECT_A2D_ELEM(opt.mymodel.pointer_body_overlap, subtract_body, obody);
+            int ii = direct::elem(opt.mymodel.pointer_body_overlap, subtract_body, obody);
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask()) {
                 opt.mymodel.masks_bodies[ii][n] *= 1.0 - Imask()[n];
             }
@@ -496,7 +496,7 @@ void ParticleSubtractor::subtractOneParticle(
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                    DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
+                    direct::elem(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                 }
             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // Otherwise, just window the CTF to the current resolution
@@ -549,7 +549,7 @@ void ParticleSubtractor::subtractOneParticle(
             // Get the FT of the projection in the right direction
             MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
             // The following line gets the correct pointer to account for overlap in the bodies
-            int oobody = DIRECT_A2D_ELEM(opt.mymodel.pointer_body_overlap, subtract_body, obody);
+            int oobody = direct::elem(opt.mymodel.pointer_body_overlap, subtract_body, obody);
             opt.mymodel.PPref[oobody].get2DFourierTransform(FTo, Abody);
 
             // Body is centered at its own COM: move it back to its place in the original particle image
@@ -655,8 +655,8 @@ void ParticleSubtractor::subtractOneParticle(
             long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
             int idx_remapped = round(remap_image_sizes * idx);
             if (idx_remapped < opt.mymodel.ori_size / 2 + 1) {
-                RFLOAT S2 = norm(DIRECT_A3D_ELEM(Fsubtrahend, k, i, j));
-                RFLOAT N2 = norm(DIRECT_A3D_ELEM(Fimg,        k, i, j));
+                RFLOAT S2 = norm(direct::elem(Fsubtrahend, k, i, j));
+                RFLOAT N2 = norm(direct::elem(Fimg,        k, i, j));
                 // division by two keeps the numbers similar to tau2 and sigma2_noise,
                 // which are per real/imaginary component
                 sum_S2(idx_remapped) += S2 / 2.0;

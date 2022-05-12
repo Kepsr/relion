@@ -48,14 +48,14 @@ void DamageHelper::fitDamage(
         double fSum = 0.0;
 
         for (int t = 0; t < tc; t++) {
-            double frc = DIRECT_A2D_ELEM(frcData.data, t, k);
+            double frc = direct::elem(frcData.data, t, k);
             if (frc > 1.0 - eps) { frc = 1.0 - eps; }
             if (frc < 0.0) { frc = 0.0; }
 
             double a = frc / (1.0 - frc);
             snrData[t] = root ? sqrt(a) : 2.0 * a;
 
-            snrWeight[t] = DIRECT_A2D_ELEM(frcWeight.data, t, k);
+            snrWeight[t] = direct::elem(frcWeight.data, t, k);
 
             wSum += snrWeight[t];
             fSum += snrData[t];
@@ -92,7 +92,7 @@ Image<RFLOAT> DamageHelper::plotDamage(
     for (int t = 0; t < tc; t++)
     for (int k = 0; k < kc; k++) {
         const double pred = amp[k] * exp(-t / dec[k]);
-        DIRECT_A2D_ELEM(out.data, t, k) = pred;
+        direct::elem(out.data, t, k) = pred;
     }
 
     return out;
@@ -114,7 +114,7 @@ Image<RFLOAT> DamageHelper::plotDamageFrc(
     for (int t = 0; t < tc; t++)
     for (int k = 0; k < kc; k++) {
         const double pred = amp[k] * exp(-t / dec[k]);
-        DIRECT_A2D_ELEM(out.data, t, k) = pred / (pred + 2.0);
+        direct::elem(out.data, t, k) = pred / (pred + 2.0);
     }
 
     return out;
@@ -145,12 +145,12 @@ void DamageHelper::fitGlobalDamage(
 
     for (int k = 1; k < kc; k++)
     for (int t = 0; t < tc; t++) {
-        double frc = DIRECT_A2D_ELEM(frcData.data, t, k);
+        double frc = direct::elem(frcData.data, t, k);
         if (frc > 1.0 - eps) { frc = 1.0 - eps; }
         if (frc < 0.0) { frc = 0.0; }
 
-        DIRECT_A2D_ELEM(snrData.data, t, k) = 2.0 * frc / (1.0 - frc);
-        //DIRECT_A2D_ELEM(snrData.data, t, k) = frc;
+        direct::elem(snrData.data, t, k) = 2.0 * frc / (1.0 - frc);
+        //direct::elem(snrData.data, t, k) = frc;
     }
 
     GlobalDamageFit gdf(snrData, frcWeight, k0, k1, t0, L1);
@@ -200,7 +200,7 @@ Image<RFLOAT> DamageHelper::plotGlobalDamage(
         if (tau < eps) { tau = eps; }
 
         const double pred = amp[k] * exp(-t * dosePerFrame / tau);
-        DIRECT_A2D_ELEM(out.data, t, k) = frc ? pred / (pred + 2.0) : pred;
+        direct::elem(out.data, t, k) = frc ? pred / (pred + 2.0) : pred;
     }
 
     return out;
@@ -248,7 +248,7 @@ Image<RFLOAT> DamageHelper::damageWeight(
 
         double tau = a * pow(rho * k, b) + c;
 
-        DIRECT_A2D_ELEM(out.data, y, x) = exp(-dose / tau);
+        direct::elem(out.data, y, x) = exp(-dose / tau);
     }
 
     return out;
@@ -732,9 +732,9 @@ double GlobalDamageFit::f(const std::vector<double> &x, void* tempStorage) const
 
         for (int t = t0; t < tc; t++) {
             const double d = exp(-t / tau);
-            const double e = DIRECT_A2D_ELEM(snrData.data, t, k) - n * d;
+            const double e = direct::elem(snrData.data, t, k) - n * d;
 
-            sum += DIRECT_A2D_ELEM(snrWeight.data, t, k) * (L1 ? std::abs(e) : e * e);
+            sum += direct::elem(snrWeight.data, t, k) * (L1 ? std::abs(e) : e * e);
         }
     }
 
@@ -749,8 +749,8 @@ double GlobalDamageFit::getScale(int k, double tau) const {
 
     for (int t = t0; t < tc; t++) {
         const double d = exp(-t / tau);
-        const double y = DIRECT_A2D_ELEM(snrData  .data, t, k);
-        const double w = DIRECT_A2D_ELEM(snrWeight.data, t, k);
+        const double y = direct::elem(snrData  .data, t, k);
+        const double w = direct::elem(snrWeight.data, t, k);
 
         nn += w * y * d;
         nd += w * d * d;

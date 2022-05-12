@@ -44,13 +44,13 @@ void TiltHelper::updateTiltShift(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction.data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
+        Complex vx = direct::elem(prediction.data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
 
         RFLOAT c = ctfImg(y, x);
 
-        DIRECT_A2D_ELEM(xyDest.data, y, x) += c * vx.conj() * vy;
-        DIRECT_A2D_ELEM(wDest.data,  y, x) += c * c * vx.norm();
+        direct::elem(xyDest.data, y, x) += c * vx.conj() * vy;
+        direct::elem(wDest.data,  y, x) += c * c * vx.norm();
     }
 }
 
@@ -71,13 +71,13 @@ void TiltHelper::updateTiltShiftPar(
     #pragma omp parallel for
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = DIRECT_A2D_ELEM(prediction.data, y, x);
-        Complex vy = DIRECT_A2D_ELEM(observation.data, y, x);
+        Complex vx = direct::elem(prediction.data, y, x);
+        Complex vy = direct::elem(observation.data, y, x);
 
         RFLOAT c = ctfImg(y, x);
 
-        DIRECT_A2D_ELEM(xyDest.data, y, x) += c * vx.conj() * vy;
-        DIRECT_A2D_ELEM(wDest.data, y, x) += c * c * vx.norm();
+        direct::elem(xyDest.data, y, x) += c * vx.conj() * vy;
+        direct::elem(wDest.data, y, x) += c * c * vx.norm();
     }
 }
 
@@ -112,8 +112,8 @@ void TiltHelper::fitTiltShift(
 
         double q = x*x + y*y;
 
-        double v = DIRECT_A2D_ELEM(phase.data, yi, xi);
-        double g = DIRECT_A2D_ELEM(weight.data, yi, xi);
+        double v = direct::elem(phase.data, yi, xi);
+        double g = direct::elem(weight.data, yi, xi);
 
         axx += g     * x * x;
         axy += g     * x * y;
@@ -698,12 +698,12 @@ void TiltHelper::drawPhaseShift(
         const double x0 = xi;
         const double y0 = yi < w? yi : yi-h;
 
-        const double x = (mag(0,0) * x0 + mag(0,1) * y0) / as;
-        const double y = (mag(1,0) * x0 + mag(1,1) * y0) / as;
+        const double x = (mag(0, 0) * x0 + mag(0, 1) * y0) / as;
+        const double y = (mag(1, 0) * x0 + mag(1, 1) * y0) / as;
 
-        const double q = x*x + y*y;
+        const double q = x * x + y * y;
 
-        DIRECT_A2D_ELEM(tgt->data, yi, xi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
+        direct::elem(tgt->data, yi, xi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
     }
 }
 
@@ -725,7 +725,7 @@ void TiltHelper::drawPhaseShift(
 
         const double q = tilt_xx * x * x + 2.0 * tilt_xy * x * y + tilt_yy * y * y;
 
-        DIRECT_A2D_ELEM(tgt->data, yi, xi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
+        direct::elem(tgt->data, yi, xi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
     }
 }
 
@@ -733,16 +733,8 @@ TiltOptimization::TiltOptimization(
     const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
     double angpix, const Matrix2D<RFLOAT> &mag,
-    bool L1, bool anisotropic)
-:
-    xy(xy),
-    weight(weight),
-    angpix(angpix),
-    mag(mag),
-    L1(L1),
-    anisotropic(anisotropic)
-{
-}
+    bool L1, bool anisotropic
+): xy(xy), weight(weight), angpix(angpix), mag(mag), L1(L1), anisotropic(anisotropic) {}
 
 double TiltOptimization::f(const std::vector<double> &x, void* tempStorage) const {
     double out = 0.0;
@@ -750,7 +742,7 @@ double TiltOptimization::f(const std::vector<double> &x, void* tempStorage) cons
     const int w = xy.data.xdim;
     const int h = xy.data.ydim;
 
-    const double as = (double)h * angpix;
+    const double as = (double) h * angpix;
 
     for (long yi = 0; yi < h; yi++)
     for (long xi = 0; xi < w; xi++) {
@@ -758,14 +750,12 @@ double TiltOptimization::f(const std::vector<double> &x, void* tempStorage) cons
         const double yd0 = yi < w? yi/as : (yi-h)/as;
         double rr;
 
-        const double xd = mag(0,0) * xd0 + mag(0,1) * yd0;
-        const double yd = mag(1,0) * xd0 + mag(1,1) * yd0;
+        const double xd = mag(0, 0) * xd0 + mag(0, 1) * yd0;
+        const double yd = mag(1, 0) * xd0 + mag(1, 1) * yd0;
 
         if (anisotropic) {
             rr = xd*xd + 2.0*x[4]*xd*yd + x[5]*yd*yd;
-        }
-        else
-        {
+        } else {
             rr = xd*xd + yd*yd;
         }
 
@@ -774,9 +764,7 @@ double TiltOptimization::f(const std::vector<double> &x, void* tempStorage) cons
 
         if (L1) {
             out += weight(yi,xi) * sqrt(e);
-        }
-        else
-        {
+        } else {
             out += weight(yi,xi) * e;
         }
 
@@ -789,19 +777,13 @@ double TiltOptimization::f(const std::vector<double> &x, void* tempStorage) cons
 
 
 BasisOptimisation::BasisOptimisation(
-        const Image<Complex> &xy,
-        const Image<RFLOAT> &weight,
-        const std::vector<Image<RFLOAT> > &basis,
-        bool L1)
-:	w(xy.data.xdim),
-    h(xy.data.ydim),
-    cc(basis.size()),
-    xy(xy),
-    weight(weight),
-    basis(basis),
-    L1(L1)
-{
-}
+    const Image<Complex> &xy,
+    const Image<RFLOAT> &weight,
+    const std::vector<Image<RFLOAT> > &basis,
+    bool L1
+): 
+w(xy.data.xdim), h(xy.data.ydim), 
+cc(basis.size()), xy(xy), weight(weight), basis(basis), L1(L1) {}
 
 double BasisOptimisation::f(const std::vector<double> &x, void *tempStorage) const {
     Image<RFLOAT> &recomb = *((Image<RFLOAT>*) tempStorage);

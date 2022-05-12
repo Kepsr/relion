@@ -398,9 +398,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
             int ires = std::min((int) round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), myBoxSize / 2);
             // at freqs higher than Nyquist: use last sigma2 value
 
-            RFLOAT sigma = sqrt(DIRECT_A1D_ELEM(model.sigma2_noise[imic], ires));
-            DIRECT_A3D_ELEM(F2D, k, i, j).real += rnd_gaus(0.0, sigma);
-            DIRECT_A3D_ELEM(F2D, k, i, j).imag += rnd_gaus(0.0, sigma);
+            RFLOAT sigma = sqrt(direct::elem(model.sigma2_noise[imic], ires));
+            direct::elem(F2D, k, i, j) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
         }
     }
 
@@ -428,7 +427,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                    DIRECT_A3D_ELEM(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
+                    direct::elem(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
                 }
             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // otherwise, just window the CTF to the current resolution
@@ -547,7 +546,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
             }
         }
 
-        DIRECT_A2D_ELEM(F2D, 0, 0) = 0.0;
+        direct::elem(F2D, 0, 0) = 0.0;
 
         if (do_ewald) {
             Matrix2D<RFLOAT> magMat;
@@ -741,13 +740,13 @@ void Reconstructor::applyCTFPandCTFQ(
                 // Only take the relevant sector now...
                 if (do_wrap_max) {
                     if (myangle >= anglemin) {
-                        DIRECT_A2D_ELEM(*myCTFPorQ, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
+                        direct::elem(*myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
                     } else if (myangle < anglemax) {
-                        DIRECT_A2D_ELEM(*myCTFPorQb, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
+                        direct::elem(*myCTFPorQb, i, j) = direct::elem(Fapp, i, j);
                     }
                 } else {
                     if (myangle >= anglemin && myangle < anglemax) {
-                        DIRECT_A2D_ELEM(*myCTFPorQ, i, j) = DIRECT_A2D_ELEM(Fapp, i, j);
+                        direct::elem(*myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
                     }
                 }
             }

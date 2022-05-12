@@ -44,19 +44,16 @@ void VolumeIntegration :: integrateAlongZ(const Volume<RFLOAT>& vol, gravis::d4M
     #pragma omp parallel for
     #endif
     for (int yi = 0; yi < ysi; yi++)
-    for (int xi = 0; xi < xsi; xi++)
-    {
-        DIRECT_A2D_ELEM(dest.data, yi, xi) = 0.0;
+    for (int xi = 0; xi < xsi; xi++) {
+        direct::elem(dest.data, yi, xi) = 0.0;
     }
 
-    for (int zv = 0; zv < zsv; zv++)
-    {
+    for (int zv = 0; zv < zsv; zv++) {
         #if JAZ_USE_OPENMP
         #pragma omp parallel for
         #endif
         for (int yi = 0; yi < ysi; yi++)
-        for (int xi = 0; xi < xsi; xi++)
-        {
+        for (int xi = 0; xi < xsi; xi++) {
             d2Vector b(xi - zv*vol2img(0,2) - vol2img(0,3), yi - zv*vol2img(1,2) - vol2img(1,3));
             d2Vector v = A2 * b;
 
@@ -78,7 +75,7 @@ void VolumeIntegration :: integrateAlongZ(const Volume<RFLOAT>& vol, gravis::d4M
 
             RFLOAT vv = xvf * vv1 + (1.0 - xvf) * vv0;
 
-            DIRECT_A2D_ELEM(dest.data, yi, xi) += vv;
+            direct::elem(dest.data, yi, xi) += vv;
         }
     }
 }

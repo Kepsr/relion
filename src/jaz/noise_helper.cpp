@@ -75,8 +75,8 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         Image<Complex> ccspec(sh, s);
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < sh; xx++) {
-            DIRECT_A2D_ELEM(  spec.data, yy, xx) *= sqrt(DIRECT_A2D_ELEM(dmgWeight.data, yy, xx));
-            DIRECT_A2D_ELEM(ccspec.data, yy, xx) = DIRECT_A2D_ELEM(spec.data, yy, xx).norm();
+            direct::elem(  spec.data, yy, xx) *= sqrt(direct::elem(dmgWeight.data, yy, xx));
+            direct::elem(ccspec.data, yy, xx) = direct::elem(spec.data, yy, xx).norm();
         }
 
         Image<RFLOAT> mu0(s,s), img(s,s);
@@ -91,7 +91,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < s; xx++) {
-            double m = DIRECT_A2D_ELEM(img.data, yy, xx) / (s * s);
+            double m = direct::elem(img.data, yy, xx) / (s * s);
             varScale += m * m;
         }
 
@@ -103,7 +103,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         for (long int y = 0; y < s; y++)
         for (long int x = 0; x < s; x++) {
-            double v = DIRECT_A2D_ELEM(mu.data, y, x);
+            double v = direct::elem(mu.data, y, x);
             if (v > vMax) { vMax = v; }
             if (v < vMin) { vMin = v; }
         }
@@ -116,7 +116,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         for (long int y = 0; y < sh; y++)
         for (long int x = 0; x < s;  x++) {
-            double m = DIRECT_A2D_ELEM(mu.data, y, x);
+            double m = direct::elem(mu.data, y, x);
             double dm = vMax - m;
 
             if (dm <= 6.0 * sigmaCC) {
@@ -129,7 +129,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         if (npp == 1) {
             std::pair<int, int> origin = plausiblePixels[0];
-            DIRECT_A2D_ELEM(confusion.data, origin.second, origin.first) += 1.0;
+            direct::elem(confusion.data, origin.second, origin.first) += 1.0;
 
             continue;
         }
@@ -144,7 +144,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         if (binValues) {
             for (long int y = 0; y < sh; y++)
             for (long int x = 0; x < s;  x++) {
-                double m = DIRECT_A2D_ELEM(mu.data, y, x);
+                double m = direct::elem(mu.data, y, x);
                 double dm = vMax - m;
 
                 if (dm <= 6.0 * sigmaCC) {
@@ -200,7 +200,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                         int y = plausiblePixels[jmax].second;
 
                         #pragma omp atomic
-                        DIRECT_A2D_ELEM(confusion.data, y, x) += 1.0;
+                        direct::elem(confusion.data, y, x) += 1.0;
                     }
                 }
             }
@@ -232,7 +232,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                     int x = plausiblePixels[jmax].first;
                     int y = plausiblePixels[jmax].second;
 
-                    DIRECT_A2D_ELEM(confusion.data, y, x) += 1.0;
+                    direct::elem(confusion.data, y, x) += 1.0;
                 }
             }
         }
@@ -240,14 +240,14 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         if (binValues) {
             for (long int y = 0; y < sh; y++)
             for (long int x = 0; x < s;  x++) {
-                const double m = DIRECT_A2D_ELEM(mu.data, y, x);
+                const double m = direct::elem(mu.data, y, x);
 
                 if (m < floorBin) continue;
 
                 const int b = (vbins - 1) * (m - floorBin) / binRange;
 
                 if (b >= 0 && hitsPerBin[b] > 0) {
-                    DIRECT_A2D_ELEM(confusion.data, y, x) += hitsPerBin[b] / (double) ppixelsPerBin[b];
+                    direct::elem(confusion.data, y, x) += hitsPerBin[b] / (double) ppixelsPerBin[b];
                 }
             }
         }
@@ -276,12 +276,12 @@ std::vector<double> NoiseHelper::radialAverage(Image<RFLOAT> &map, bool half) {
         double a = rd - r0;
 
         if (r0 < b) {
-            out[r0] += (1.0 - a) * DIRECT_A2D_ELEM(map.data, yy, xx);
+            out[r0] += (1.0 - a) * direct::elem(map.data, yy, xx);
             wgh[r0] += 1.0 - a;
         }
 
         if (r0 < b - 1) {
-            out[r0 + 1] += a * DIRECT_A2D_ELEM(map.data, yy, xx);
+            out[r0 + 1] += a * direct::elem(map.data, yy, xx);
             wgh[r0 + 1] += a;
         }
     }
@@ -315,9 +315,9 @@ Image<RFLOAT> NoiseHelper::radialMap(std::vector<double> &radAvg, bool centered)
         double a = rd - r0;
 
         if (r0 < b - 1) {
-            DIRECT_A2D_ELEM(out.data, yy, xx) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
+            direct::elem(out.data, yy, xx) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
         } else {
-            DIRECT_A2D_ELEM(out.data, yy, xx) = radAvg[b - 1];
+            direct::elem(out.data, yy, xx) = radAvg[b - 1];
         }
     }
 
@@ -344,12 +344,12 @@ std::vector<Complex> NoiseHelper::radialAverage(Image<Complex> &map, bool skipAx
         double a = rd - r0;
 
         if (r0 < b) {
-            out[r0] += (1.0 - a) * DIRECT_A2D_ELEM(map.data, yy, xx);
+            out[r0] += (1.0 - a) * direct::elem(map.data, yy, xx);
             wgh[r0] += 1.0 - a;
         }
 
         if (r0 < b-1) {
-            out[r0 + 1] += a * DIRECT_A2D_ELEM(map.data, yy, xx);
+            out[r0 + 1] += a * direct::elem(map.data, yy, xx);
             wgh[r0 + 1] += a;
         }
     }
@@ -375,9 +375,9 @@ Image<Complex> NoiseHelper::radialMap(std::vector<Complex> &radAvg) {
         double a = rd - r0;
 
         if (r0 < b - 1) {
-            DIRECT_A2D_ELEM(out.data, yy, xx) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
+            direct::elem(out.data, yy, xx) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
         } else {
-            DIRECT_A2D_ELEM(out.data, yy, xx) = radAvg[b - 1];
+            direct::elem(out.data, yy, xx) = radAvg[b - 1];
         }
     }
 
@@ -402,7 +402,7 @@ std::vector<std::pair<double,double>> NoiseHelper::radialAverageAndStdDevFFTW(Im
         int r = rd + 0.5;
 
         if (r < b) {
-            avg[r] += DIRECT_A2D_ELEM(map.data, yy, xx);
+            avg[r] += direct::elem(map.data, yy, xx);
             wgh[r] += 1.0;
         }
     }
@@ -418,7 +418,7 @@ std::vector<std::pair<double,double>> NoiseHelper::radialAverageAndStdDevFFTW(Im
 		int r = rd + 0.5;
 
 		double mu = avg[r];
-		double v = DIRECT_A2D_ELEM(map.data, yy, xx) - mu;
+		double v = direct::elem(map.data, yy, xx) - mu;
 
         if (r < b) { var[r] += v * v; }
     }
@@ -493,7 +493,7 @@ Image<RFLOAT> NoiseHelper::normalize(const Image<RFLOAT> &confusion) {
     double sum = 0.0;
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        sum += DIRECT_A2D_ELEM(confusion.data, y, x);
+        sum += direct::elem(confusion.data, y, x);
     }
 
     if (sum <= 0.0) return Image<RFLOAT>::zeros(w, h);
@@ -502,7 +502,7 @@ Image<RFLOAT> NoiseHelper::normalize(const Image<RFLOAT> &confusion) {
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        DIRECT_A2D_ELEM(out.data, y, x) = DIRECT_A2D_ELEM(confusion.data, y, x) / sum;
+        direct::elem(out.data, y, x) = direct::elem(confusion.data, y, x) / sum;
     }
 
     return out;
@@ -520,7 +520,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     Image<Complex> ccspec(sh, s);
     for (long int yy = 0; yy < s;  yy++)
     for (long int xx = 0; xx < sh; xx++) {
-        DIRECT_A2D_ELEM(ccspec.data, yy, xx) = DIRECT_A2D_ELEM(spec.data, yy, xx).norm();
+        direct::elem(ccspec.data, yy, xx) = direct::elem(spec.data, yy, xx).norm();
     }
 
     Image<RFLOAT> mu(s,s);
@@ -530,7 +530,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
 
     for (long int yy = 0; yy < s; yy++)
     for (long int xx = 0; xx < s; xx++) {
-        double m = DIRECT_A2D_ELEM(img.data, yy, xx) / (s * s);
+        double m = direct::elem(img.data, yy, xx) / (s * s);
         varScale += m * m;
     }
 
@@ -550,28 +550,28 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
 
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < s; xx++) {
-            double v = DIRECT_A2D_ELEM(img.data, yy, xx);
-            DIRECT_A2D_ELEM(imgD.data, yy, xx) = DistributionHelper::sampleGauss(v, sig);
+            double v = direct::elem(img.data, yy, xx);
+            direct::elem(imgD.data, yy, xx) = DistributionHelper::sampleGauss(v, sig);
         }
 
         ft.FourierTransform(imgD(), imgDs());
 
         for (long int yy = 0; yy < s;  yy++)
         for (long int xx = 0; xx < sh; xx++) {
-            DIRECT_A2D_ELEM(ccDs.data, yy, xx) = 
-                DIRECT_A2D_ELEM(spec.data,  yy, xx)
-              * DIRECT_A2D_ELEM(imgDs.data, yy, xx).conj();
+            direct::elem(ccDs.data, yy, xx) = 
+                direct::elem(spec.data,  yy, xx)
+              * direct::elem(imgDs.data, yy, xx).conj();
         }
 
         ft.inverseFourierTransform(ccDs.data, ccD.data);
 
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < s; xx++) {
-            double m0 = DIRECT_A2D_ELEM(mu.data,  yy, xx);
-            double md = DIRECT_A2D_ELEM(ccD.data, yy, xx);
+            double m0 = direct::elem(mu.data,  yy, xx);
+            double md = direct::elem(ccD.data, yy, xx);
             double d = md - m0;
 
-            DIRECT_A2D_ELEM(varImg.data, yy, xx) += d * d / N;
+            direct::elem(varImg.data, yy, xx) += d * d / N;
         }
 
     }
@@ -580,7 +580,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
 
     for (long int yy = 0; yy < s; yy++)
     for (long int xx = 0; xx < s; xx++) {
-        varSum += DIRECT_A2D_ELEM(varImg.data, yy, xx);
+        varSum += direct::elem(varImg.data, yy, xx);
     }
 
     varSum /= s * s;
@@ -608,7 +608,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
 
         const int r = sqrt(xx * xx + yy * yy);
 
-        if (r >= sh) DIRECT_A2D_ELEM(spec.data, y, x) = Complex(0.0, 0.0);
+        if (r >= sh) direct::elem(spec.data, y, x) = Complex(0.0, 0.0);
     }
 
 
@@ -624,7 +624,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
         const int r = sqrt(xx * xx + yy * yy);
 
         if (r < sh && r > 0) {
-            double a = DIRECT_A2D_ELEM(spec.data, y, x).norm() / sig2[r];
+            double a = direct::elem(spec.data, y, x).norm() / sig2[r];
             varPred += x == 0 ? a : 2.0 * a;
         }
     }
@@ -659,24 +659,24 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
             const int r = sqrt(xx * xx + yy * yy);
 
             if (r < sh && r > 0) {
-                Complex z0 = DIRECT_A2D_ELEM(spec.data, y, x);
+                Complex z0 = direct::elem(spec.data, y, x);
 
                 double r0 = DistributionHelper::sampleGauss(0, sqrtH);
                 double r1 = DistributionHelper::sampleGauss(0, sqrtH);
                 Complex z1 = Complex(r0, r1) * z0 / sig[r];
 
-                DIRECT_A2D_ELEM(ccDs.data, y, x) = z1;
+                direct::elem(ccDs.data, y, x) = z1;
 
                 if (x == 0 && y >= sh) {
-                    DIRECT_A2D_ELEM(ccDs.data, y, x) = DIRECT_A2D_ELEM(ccDs.data, s - y, x).conj();
+                    direct::elem(ccDs.data, y, x) = direct::elem(ccDs.data, s - y, x).conj();
                 }
 
-                varTest += x == 0 ? DIRECT_A2D_ELEM(ccDs.data, y, x).norm() :
-                              2.0 * DIRECT_A2D_ELEM(ccDs.data, y, x).norm();
+                varTest += x == 0 ? direct::elem(ccDs.data, y, x).norm() :
+                              2.0 * direct::elem(ccDs.data, y, x).norm();
             }
             else
             {
-                DIRECT_A2D_ELEM(ccDs.data, y, x) = 0.0;
+                direct::elem(ccDs.data, y, x) = 0.0;
             }
         }
 
@@ -684,9 +684,9 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
 
         for (long int y = 0; y < s; y++)
         for (long int x = 0; x < s; x++) {
-            double d = DIRECT_A2D_ELEM(ccD.data, y, x);
+            double d = direct::elem(ccD.data, y, x);
 
-            DIRECT_A2D_ELEM(varImg.data, y, x) += d * d / (N * varPred);
+            direct::elem(varImg.data, y, x) += d * d / (N * varPred);
         }
     }
 
@@ -698,7 +698,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
 
     for (long int yy = 0; yy < s; yy++)
     for (long int xx = 0; xx < s; xx++) {
-        varSum += DIRECT_A2D_ELEM(varImg.data, yy, xx);
+        varSum += direct::elem(varImg.data, yy, xx);
     }
 
     varSum /= s * s;
@@ -719,9 +719,9 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s; y++)
         for (int x = 0; x < s; x++) {
-            DIRECT_A2D_ELEM(real.data, y, x) = DistributionHelper::sampleGauss(0, 2);
+            direct::elem(real.data, y, x) = DistributionHelper::sampleGauss(0, 2);
 
-            double v = DIRECT_A2D_ELEM(real.data, y, x);
+            double v = direct::elem(real.data, y, x);
 
             varr += v * v;
         }
@@ -735,7 +735,7 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {
-            const Complex z = DIRECT_A2D_ELEM(freq.data, y, x);
+            const Complex z = direct::elem(freq.data, y, x);
             var += x == 0 ? z.norm() : 2 * z.norm();
         }
 
@@ -752,15 +752,15 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {
-            DIRECT_A2D_ELEM(freq.data, y, x).real = DistributionHelper::sampleGauss(0, sqrt(2.0));
+            direct::elem(freq.data, y, x).real = DistributionHelper::sampleGauss(0, sqrt(2.0));
             if (x > 0 && x < sh - 1) {
-                DIRECT_A2D_ELEM(freq.data, y, x).imag = DistributionHelper::sampleGauss(0, sqrt(2.0));
+                direct::elem(freq.data, y, x).imag = DistributionHelper::sampleGauss(0, sqrt(2.0));
             } else {
-                DIRECT_A2D_ELEM(freq.data, y, x).imag = 0.0;
+                direct::elem(freq.data, y, x).imag = 0.0;
             }
 
-            varf += x == 0 ? DIRECT_A2D_ELEM(freq.data, y, x).norm() :
-                             DIRECT_A2D_ELEM(freq.data, y, x).norm();
+            varf += x == 0 ? direct::elem(freq.data, y, x).norm() :
+                             direct::elem(freq.data, y, x).norm();
         }
 
         varf /= s * s;
@@ -772,7 +772,7 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s; y++)
         for (int x = 0; x < s; x++) {
-            double v = DIRECT_A2D_ELEM(real.data, y, x);
+            double v = direct::elem(real.data, y, x);
             var += v * v;
         }
 

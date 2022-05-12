@@ -112,9 +112,9 @@ class EERRenderer {
             for (int y1 = 0; y1 < ylim; y1++) {
                 const int y2 = ny_in - 1 - y1;
                 for (int x = 0; x < nx_in; x++) {
-                    const T tmp = DIRECT_A2D_ELEM(original(), y1, x);
-                    DIRECT_A2D_ELEM(original(), y1, x) = DIRECT_A2D_ELEM(original(), y2, x);
-                    DIRECT_A2D_ELEM(original(), y2, x) = tmp;
+                    const T tmp = direct::elem(original(), y1, x);
+                    direct::elem(original(), y1, x) = direct::elem(original(), y2, x);
+                    direct::elem(original(), y2, x) = tmp;
                 }
             }
         } 
@@ -125,7 +125,7 @@ class EERRenderer {
         ) {
             gain.initZeros(size_out, size_out);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(gain)
-                DIRECT_A2D_ELEM(gain, i, j) = DIRECT_A2D_ELEM(original(), i / 2, j / 2);
+                direct::elem(gain, i, j) = direct::elem(original(), i / 2, j / 2);
         } else if (
             (eer_upsampling == 1 && nx_in == EER_IMAGE_WIDTH && ny_in == EER_IMAGE_HEIGHT) || // gain = 4K and grid = 4K
             (eer_upsampling == 2 && nx_in == EER_IMAGE_WIDTH * 2 && ny_in == EER_IMAGE_HEIGHT * 2)  // gain = 8K and grid = 8K
@@ -137,7 +137,7 @@ class EERRenderer {
         ) {
             gain.initZeros(size_out, size_out);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(original())
-                DIRECT_A2D_ELEM(gain, i / 2, j / 2) += DIRECT_A2D_ELEM(original(), i, j);
+                direct::elem(gain, i / 2, j / 2) += direct::elem(original(), i, j);
         } else {
             std::cerr << "Size of input gain: X = " << nx_in << " Y = " << ny_in << " Expected: X = " << size_out << " Y = " << size_out << std::endl;
             REPORT_ERROR("Invalid gain size in EERRenderer::upsampleEERGain()");
