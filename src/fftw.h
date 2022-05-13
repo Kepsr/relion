@@ -90,16 +90,16 @@
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(V) \
-    for (long int k = 0, kp = 0; k<Zsize(V); k++, kp = (k < Xsize(V)) ? k : k - Zsize(V)) \
-        for (long int i = 0, ip = 0 ; i<Ysize(V); i++, ip = (i < Xsize(V)) ? i : i - Ysize(V)) \
-            for (long int j = 0, jp = 0; j<Xsize(V); j++, jp = j)
+    for (long int k = 0, kp = 0; k < Zsize(V); k++, kp = k < Xsize(V) ? k : k - Zsize(V)) \
+    for (long int i = 0, ip = 0; i < Ysize(V); i++, ip = i < Xsize(V) ? i : i - Ysize(V)) \
+    for (long int j = 0, jp = 0; j < Xsize(V); j++, jp = j)
 
 /** For all direct elements in the complex array in FFTW format.
  * The same as above, but now only for 2D images (this saves some time as k is not sampled
  */
 // FOR_i_j_ip_jp_IN_FFTW_TRANSFORM2D
 #define FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(V) \
-    for (long int i = 0, ip = 0; i < Ysize(V); i++, ip = (i < Xsize(V)) ? i : i - Ysize(V)) \
+    for (long int i = 0, ip = 0; i < Ysize(V); i++, ip = i < Xsize(V) ? i : i - Ysize(V)) \
     for (long int j = 0, jp = 0; j < Xsize(V); j++, jp = j)
 
 /** FFTW volume element: Logical access.
@@ -142,9 +142,10 @@
  *	Vmag(k,i,j)=20*log10(abs(Vfft(k,i,j)));
  * @endcode
  */
-class FourierTransformer
-{
-public:
+class FourierTransformer {
+
+    public:
+
     /** Real array, in fact a pointer to the user array is stored. */
     MultidimArray<RFLOAT> *fReal;
 
@@ -154,24 +155,24 @@ public:
     /** Fourier array  */
     MultidimArray<Complex> fFourier;
 
-#ifdef RELION_SINGLE_PRECISION
+    #ifdef RELION_SINGLE_PRECISION
     /* fftw Forward plan */
     fftwf_plan fPlanForward;
 
     /* fftw Backward plan */
     fftwf_plan fPlanBackward;
-#else
+    #else
     /* fftw Forward plan */
     fftw_plan fPlanForward;
 
     /* fftw Backward plan */
     fftw_plan fPlanBackward;
-#endif
+    #endif
 
     bool plans_are_set;
 
-// Public methods
-public:
+    public:
+
     /** Default constructor */
     FourierTransformer();
 
@@ -305,8 +306,6 @@ public:
         }
     }
 
-    // Internal methods
-
     public:
 
     /* Pointer to the array of RFLOATs with which the plan was computed */
@@ -389,7 +388,7 @@ void CenterFFTbySign(MultidimArray <T> &v) {
 template <typename T>
 void CenterFFT(MultidimArray<T>& v, bool forward) {
     #ifndef FAST_CENTERFFT
-    if (v.getDim() == 1 ) {
+    if (v.getDim() == 1) {
         // 1D
         MultidimArray<T> aux;
         int l, shift;
@@ -462,7 +461,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
             for (int i = 0; i < l; i++)
                 direct::elem(v, i, j) = direct::elem(aux, i);
         }
-    } else if (v.getDim() == 3 ) {
+    } else if (v.getDim() == 3) {
         // 3D
         MultidimArray<T> aux;
         int l, shift;
@@ -829,9 +828,7 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(MultidimArray<Complex> 
 void getAmplitudeCorrelationAndDifferentialPhaseResidual(MultidimArray<RFLOAT> &m1, MultidimArray<RFLOAT> &m2,
                                                          MultidimArray<RFLOAT> &acorr, MultidimArray<RFLOAT> &dpr);
 
-void getCosDeltaPhase(MultidimArray<Complex> &FT1,
- MultidimArray<Complex> &FT2,
- MultidimArray<RFLOAT> &cosPhi);
+MultidimArray<RFLOAT> cosDeltaPhase(MultidimArray<Complex> &FT1, MultidimArray<Complex> &FT2);
 
 // Get precalculated AB-matrices for on-the-fly shift calculations (without tabulated sine and cosine)
 void getAbMatricesForShiftImageInFourierTransform(MultidimArray<Complex> &in, MultidimArray<Complex> &out,
