@@ -194,11 +194,11 @@ MultidimArray<T> MultidimArray<T>::operator /= (const T scalar) {
  * to be a hidden function not useable by normal programmers.
  *
  */
-template <typename T>
+template <typename T, typename Op>
 inline MultidimArray<T> arrayByArray(
     const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
     MultidimArray<T> &output,
-    T (*operation)(T, T)
+    Op operation
 ) {
     if (!arg1.sameShape(arg2)) {
         arg1.printShape();
