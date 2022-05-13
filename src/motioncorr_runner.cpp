@@ -2053,7 +2053,6 @@ void MotioncorrRunner::shiftNonSquareImageInFourierTransform(
 ) {
     const int nfx = Xsize(frame), nfy = Ysize(frame);
     const int nfy_half = nfy / 2;
-    const RFLOAT twoPI = 2 * PI;
 
     // Reduce calls to SINCOS from nfx * nfy to nfx + nfy
     #define USE_TABLE
@@ -2063,7 +2062,7 @@ void MotioncorrRunner::shiftNonSquareImageInFourierTransform(
         int ly = y;
         if (y > nfy_half) ly = y - nfy;
 
-        const RFLOAT phase_y = twoPI * ly * shifty;
+        const RFLOAT phase_y = 2.0 * PI * ly * shifty;
         #ifdef RELION_SINGLE_PRECISION
         SINCOSF(phase_y, &siny[y], &cosy[y]);
         #else
@@ -2071,7 +2070,7 @@ void MotioncorrRunner::shiftNonSquareImageInFourierTransform(
         #endif
     }
     for (int x = 0; x < nfx; x++) {
-        const RFLOAT phase_x = twoPI * x * shiftx;
+        const RFLOAT phase_x = 2.0 * PI * x * shiftx;
         #ifdef RELION_SINGLE_PRECISION
         SINCOSF(phase_x, &sinx[x], &cosx[x]);
         #else
@@ -2082,28 +2081,23 @@ void MotioncorrRunner::shiftNonSquareImageInFourierTransform(
 
     for (int y = 0; y < nfy; y++) {
         #ifndef USE_TABLE
-        int ly = y;
-        if (y > nfy_half) ly = y - nfy;
+        int ly = y > nfy_half ? y - nfy : y;
         #endif
         for (int x = 0; x < nfx; x++) {
-            RFLOAT a, b, c, d, ac, bd, ab_cd;
             #ifdef USE_TABLE
-            b = sinx[x] * cosy[y] + cosx[x] * siny[y];
-            a = cosx[x] * cosy[y] - sinx[x] * siny[y];
+            fComplex c1 = fComplex(
+                cosx[x] * cosy[y] - sinx[x] * siny[y],
+                sinx[x] * cosy[y] + cosx[x] * siny[y]
+            );
             #else
-            RFLOAT phase_shift = twoPI * (x * shiftx + ly * shifty);
-            #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(phase_shift, &b, &a);
-            #else
-            SINCOS(phase_shift, &b, &a);
+            RFLOAT phase_shift = 2.0 * PI * (x * shiftx + ly * shifty);
+            fComplex c1 = fComplex::unit(phase_shift);
             #endif
-            #endif
-            c = direct::elem(frame, y, x).real;
-            d = direct::elem(frame, y, x).imag;
-            ac = a * c;
-            bd = b * d;
-            ab_cd = (a + b) * (c + d); // (ab_cd-ac-bd = ad+bc : but needs 4 multiplications)
-            direct::elem(frame, y, x) = fComplex(ac - bd, ab_cd - ac - bd);
+            fComplex c2 = direct::elem(frame, y, x);
+            direct::elem(frame, y, x) = fComplex(
+                c1.real * c2.real - c1.imag * c2.imag, 
+                c1.real * c2.imag + c1.imag * c2.real
+            );
         }
     }
 }

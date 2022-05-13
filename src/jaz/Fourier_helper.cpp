@@ -36,14 +36,7 @@ void FourierHelper::FourierShift2D(MultidimArray<Complex> &img, RFLOAT xshift, R
         RFLOAT x = xx;
         RFLOAT y = yy < w ? yy : yy - h;
 
-        Complex c1;
-        RFLOAT dotp = -2.0 * PI * (x * xshift + y * yshift);
-        #ifdef RELION_SINGLE_PRECISION
-        SINCOSF(dotp, &c1.imag, &c1.real);
-        #else
-        SINCOS(dotp, &c1.imag, &c1.real);
-        #endif
-
+        Complex c1 = Complex::unit(-2.0 * PI * (x * xshift + y * yshift));
         Complex c2 = direct::elem(img, yy, xx);
 
         direct::elem(img, yy, xx) = Complex(

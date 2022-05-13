@@ -55,6 +55,18 @@ class tComplex {
 
     tComplex(T real, T imag = 0): real(real), imag(imag) {}
 
+    static tComplex unit(float theta) {
+        tComplex x;
+        SINCOSF(theta, &x.imag, &x.real);
+        return x;
+    }
+
+    static tComplex unit(double theta) {
+        tComplex x;
+        SINCOS(theta, &x.imag, &x.real);
+        return x;
+    }
+
     tComplex& operator += (const tComplex &arg) {
         real += arg.real;
         imag += arg.imag;

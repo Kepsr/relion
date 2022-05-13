@@ -304,14 +304,9 @@ class CTF {
 
         RFLOAT gamma = K1 * (Axx * X * X + 2.0 * Axy * X * Y + Ayy * Y * Y) + K2 * u4 - K5 - K3 + gammaOffset + PI / 2.0;
 
-        RFLOAT sinx, cosx;
-        #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(gamma, &sinx, &cosx);
-        #else
-            SINCOS(gamma, &sinx, &cosx);
-        #endif
-
-        return Complex(cosx, is_positive ? sinx : -sinx);
+        Complex c = Complex::unit(gamma);
+        if (!is_positive) { c.imag = -c.imag; }  // Complex conjugate
+        return c;
     }
 
     // Compute Deltaf at a given direction (no longer used by getCTF)

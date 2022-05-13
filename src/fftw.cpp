@@ -631,20 +631,14 @@ void getAbMatricesForShiftImageInFourierTransform(
     RFLOAT oridim, RFLOAT xshift, RFLOAT yshift, RFLOAT zshift
 ) {
     out.resize(in);
-    RFLOAT dotp, a, b, x, y, z;
+    RFLOAT x, y, z;
     switch (in.getDim()) {
 
         case 1:
         xshift /= -oridim;
         for (long int j = 0; j < Xsize(in); j++) {
             x = j;
-            dotp = 2 * PI * (x * xshift);
-            #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(dotp, &b, &a);
-            #else
-            SINCOS(dotp, &b, &a);
-            #endif
-            direct::elem(out, j) = Complex(a, b);
+            direct::elem(out, j) = Complex::unit(2 * PI * (x * xshift));
         }
         break;
 
@@ -655,25 +649,13 @@ void getAbMatricesForShiftImageInFourierTransform(
         for (long int j = 0; j < Xsize(in); j++) {
             x = j;
             y = i;
-            dotp = 2 * PI * (x * xshift + y * yshift);
-            #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(dotp, &b, &a);
-            #else
-            SINCOS(dotp, &b, &a);
-            #endif
-            direct::elem(out, i, j) = Complex(a, b);
+            direct::elem(out, i, j) = Complex::unit(2 * PI * (x * xshift + y * yshift));
         }
         for (long int i = Ysize(in) - 1; i >= Xsize(in); i--) {
             y = i - Ysize(in);
             for (long int j = 0; j < Xsize(in); j++) {
                 x = j;
-                dotp = 2 * PI * (x * xshift + y * yshift);
-                #ifdef RELION_SINGLE_PRECISION
-                SINCOSF(dotp, &b, &a);
-                #else
-                SINCOS(dotp, &b, &a);
-                #endif
-                direct::elem(out, i, j) = Complex(a, b);
+                direct::elem(out, i, j) = Complex::unit(2 * PI * (x * xshift + y * yshift));
             }
         }
         break;
@@ -688,13 +670,7 @@ void getAbMatricesForShiftImageInFourierTransform(
                 y = i < Xsize(in) ? i : i - Ysize(in);
                 for (long int j = 0; j < Xsize(in); j++) {
                     x = j;
-                    dotp = 2 * PI * (x * xshift + y * yshift + z * zshift);
-                    #ifdef RELION_SINGLE_PRECISION
-                    SINCOSF(dotp, &b, &a);
-                    #else
-                    SINCOS(dotp, &b, &a);
-                    #endif
-                    direct::elem(out, k, i, j) = Complex(a, b);
+                    direct::elem(out, k, i, j) = Complex::unit(2 * PI * (x * xshift + y * yshift + z * zshift));
                 }
             }
         }
@@ -713,7 +689,7 @@ void shiftImageInFourierTransformWithTabSincos(
     TabSine &tabsin, TabCosine &tabcos,
     RFLOAT xshift, RFLOAT yshift, RFLOAT zshift
 ) {
-    RFLOAT a = 0.0, b = 0.0, c = 0.0, d = 0.0, ac = 0.0, bd = 0.0, ab_cd = 0.0, dotp = 0.0, x = 0.0, y = 0.0, z = 0.0;
+    RFLOAT a = 0.0, b = 0.0, c = 0.0, d = 0.0, ac = 0.0, bd = 0.0, ab_cd = 0.0, x = 0.0, y = 0.0, z = 0.0;
 
     if (&in == &out)
         REPORT_ERROR("shiftImageInFourierTransformWithTabSincos ERROR: Input and output images should be different!");
@@ -742,7 +718,7 @@ void shiftImageInFourierTransformWithTabSincos(
         }
 
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(out) {
-            dotp = 2.0 * PI * (jp * xshift + ip * yshift);
+            RFLOAT dotp = 2.0 * PI * (jp * xshift + ip * yshift);
 
             a = tabcos(dotp);
             b = tabsin(dotp);
@@ -763,7 +739,7 @@ void shiftImageInFourierTransformWithTabSincos(
         }
 
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(out) {
-            dotp = 2.0 * PI * (jp * xshift + ip * yshift + kp * zshift);
+            RFLOAT dotp = 2.0 * PI * (jp * xshift + ip * yshift + kp * zshift);
 
             a = tabcos(dotp);
             b = tabsin(dotp);
@@ -784,7 +760,7 @@ void shiftImageInFourierTransform(
     RFLOAT oridim, RFLOAT xshift, RFLOAT yshift, RFLOAT zshift
 ) {
     out.resize(in);
-    RFLOAT dotp, a, b, c, d, ac, bd, ab_cd, x, y, z;
+    RFLOAT x, y, z;
     switch (in.getDim()) {
 
         case 1:
@@ -795,14 +771,8 @@ void shiftImageInFourierTransform(
         }
         for (long int j = 0; j < Xsize(in); j++) {
             x = j;
-            dotp = 2 * PI * (x * xshift);
-            #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(dotp, &b, &a);
-            #else
-            SINCOS(dotp, &b, &a);
-            #endif
             Complex X = direct::elem(in, j);
-            Complex Y = Complex(a, b);
+            Complex Y = Complex::unit(2 * PI * (x * xshift));
             direct::elem(out, j) = Complex(
                 X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
                 X.imag * Y.real + X.real * Y.imag   // (i conj X) dot Y
@@ -821,14 +791,8 @@ void shiftImageInFourierTransform(
         for (long int j = 0; j < Xsize(in); j++) {
             x = j;
             y = i;
-            dotp = 2 * PI * (x * xshift + y * yshift);
-            #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(dotp, &b, &a);
-            #else
-            SINCOS(dotp, &b, &a);
-            #endif
             Complex X = direct::elem(in, i, j);
-            Complex Y = Complex(a, b);
+            Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
             direct::elem(out, i, j) = Complex(
                 X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
                 X.imag * Y.real + X.real * Y.imag   // (i conj X) dot Y
@@ -838,14 +802,8 @@ void shiftImageInFourierTransform(
         y = i - Ysize(in);
         for (long int j = 0; j < Xsize(in); j++) {
         x = j;
-        dotp = 2 * PI * (x * xshift + y * yshift);
-        #ifdef RELION_SINGLE_PRECISION
-        SINCOSF(dotp, &b, &a);
-        #else
-        SINCOS(dotp, &b, &a);
-        #endif
         Complex X = direct::elem(in, i, j);
-        Complex Y = Complex(a, b);
+        Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
         direct::elem(out, i, j) = Complex(
             X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
             X.real * Y.imag + X.imag * Y.real   // X dot (i conj Y)
@@ -868,14 +826,8 @@ void shiftImageInFourierTransform(
         y = i < Xsize(in) ? i : i - Ysize(in);
         for (long int j = 0; j < Xsize(in); j++) {
             x = j;
-            dotp = 2 * PI * (x * xshift + y * yshift + z * zshift);
-            #ifdef RELION_SINGLE_PRECISION
-            SINCOSF(dotp, &b, &a);
-            #else
-            SINCOS(dotp, &b, &a);
-            #endif
             Complex X = direct::elem(in, k, i, j);
-            Complex Y = Complex(a, b);
+            Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift + z * zshift));
             direct::elem(out, k, i, j) = Complex(
                 X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
                 X.real * Y.imag + X.imag * Y.real   // X dot (i conj Y)
