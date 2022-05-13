@@ -187,25 +187,25 @@ class Interpolation {
             yi_p2 = MINMAX(yi_p2, 0, img.data.ydim - 1);
         }
 
-        const T f00 = DIRECT_NZYX_ELEM(img.data, n, z, yi_n1,   xi_n1);
-        const T f01 = DIRECT_NZYX_ELEM(img.data, n, z, yi_n1,   xi);
-        const T f02 = DIRECT_NZYX_ELEM(img.data, n, z, yi_n1,   xi_p1);
-        const T f03 = DIRECT_NZYX_ELEM(img.data, n, z, yi_n1,   xi_p2);
+        const T f00 = direct::elem(img.data, n, z, yi_n1,   xi_n1);
+        const T f01 = direct::elem(img.data, n, z, yi_n1,   xi);
+        const T f02 = direct::elem(img.data, n, z, yi_n1,   xi_p1);
+        const T f03 = direct::elem(img.data, n, z, yi_n1,   xi_p2);
 
-        const T f10 = DIRECT_NZYX_ELEM(img.data, n, z, yi,     xi_n1);
-        const T f11 = DIRECT_NZYX_ELEM(img.data, n, z, yi,     xi);
-        const T f12 = DIRECT_NZYX_ELEM(img.data, n, z, yi,     xi_p1);
-        const T f13 = DIRECT_NZYX_ELEM(img.data, n, z, yi,     xi_p2);
+        const T f10 = direct::elem(img.data, n, z, yi,     xi_n1);
+        const T f11 = direct::elem(img.data, n, z, yi,     xi);
+        const T f12 = direct::elem(img.data, n, z, yi,     xi_p1);
+        const T f13 = direct::elem(img.data, n, z, yi,     xi_p2);
 
-        const T f20 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p1,   xi_n1);
-        const T f21 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p1,   xi);
-        const T f22 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p1,   xi_p1);
-        const T f23 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p1,   xi_p2);
+        const T f20 = direct::elem(img.data, n, z, yi_p1,   xi_n1);
+        const T f21 = direct::elem(img.data, n, z, yi_p1,   xi);
+        const T f22 = direct::elem(img.data, n, z, yi_p1,   xi_p1);
+        const T f23 = direct::elem(img.data, n, z, yi_p1,   xi_p2);
 
-        const T f30 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p2,   xi_n1);
-        const T f31 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p2,   xi);
-        const T f32 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p2,   xi_p1);
-        const T f33 = DIRECT_NZYX_ELEM(img.data, n, z, yi_p2,   xi_p2);
+        const T f30 = direct::elem(img.data, n, z, yi_p2,   xi_n1);
+        const T f31 = direct::elem(img.data, n, z, yi_p2,   xi);
+        const T f32 = direct::elem(img.data, n, z, yi_p2,   xi_p1);
+        const T f33 = direct::elem(img.data, n, z, yi_p2,   xi_p2);
 
         const gravis::d4Matrix A(
             -1.0 / 2.0,  3.0 / 2.0, -3.0 / 2.0,  1.0 / 2.0,
@@ -270,25 +270,25 @@ class Interpolation {
             yi_p2 = MINMAX(yi_p2, 0, img.data.ydim - 1);
         }
 
-        const T f00 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_n1,   xi_n1);
-        const T f01 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_n1,   xi);
-        const T f02 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_n1,   xi_p1);
-        const T f03 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_n1,   xi_p2);
+        const T f00 = direct::elem(img.data, n, 0, yi_n1,   xi_n1);
+        const T f01 = direct::elem(img.data, n, 0, yi_n1,   xi);
+        const T f02 = direct::elem(img.data, n, 0, yi_n1,   xi_p1);
+        const T f03 = direct::elem(img.data, n, 0, yi_n1,   xi_p2);
 
-        const T f10 = DIRECT_NZYX_ELEM(img.data, n, 0, yi,      xi_n1);
-        const T f11 = DIRECT_NZYX_ELEM(img.data, n, 0, yi,      xi);
-        const T f12 = DIRECT_NZYX_ELEM(img.data, n, 0, yi,      xi_p1);
-        const T f13 = DIRECT_NZYX_ELEM(img.data, n, 0, yi,      xi_p2);
+        const T f10 = direct::elem(img.data, n, 0, yi,      xi_n1);
+        const T f11 = direct::elem(img.data, n, 0, yi,      xi);
+        const T f12 = direct::elem(img.data, n, 0, yi,      xi_p1);
+        const T f13 = direct::elem(img.data, n, 0, yi,      xi_p2);
 
-        const T f20 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p1,   xi_n1);
-        const T f21 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p1,   xi);
-        const T f22 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p1,   xi_p1);
-        const T f23 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p1,   xi_p2);
+        const T f20 = direct::elem(img.data, n, 0, yi_p1,   xi_n1);
+        const T f21 = direct::elem(img.data, n, 0, yi_p1,   xi);
+        const T f22 = direct::elem(img.data, n, 0, yi_p1,   xi_p1);
+        const T f23 = direct::elem(img.data, n, 0, yi_p1,   xi_p2);
 
-        const T f30 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p2,   xi_n1);
-        const T f31 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p2,   xi);
-        const T f32 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p2,   xi_p1);
-        const T f33 = DIRECT_NZYX_ELEM(img.data, n, 0, yi_p2,   xi_p2);
+        const T f30 = direct::elem(img.data, n, 0, yi_p2,   xi_n1);
+        const T f31 = direct::elem(img.data, n, 0, yi_p2,   xi);
+        const T f32 = direct::elem(img.data, n, 0, yi_p2,   xi_p1);
+        const T f33 = direct::elem(img.data, n, 0, yi_p2,   xi_p2);
 
         const gravis::d4Matrix A(
             -1.0 / 2.0,  3.0 / 2.0, -3.0 / 2.0,  1.0 / 2.0,

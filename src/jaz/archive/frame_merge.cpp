@@ -34,7 +34,7 @@ void FrameMerge :: mergeAvg(Image<RFLOAT>& stack, Image<RFLOAT>& tgt)
         for (int xb = 0; xb < bs; xb++)
         for (int n = 0; n < fc; n++)
         {
-            sum += DIRECT_NZYX_ELEM(stack.data, 0, n, y*bs + yb, x*bs + xb);
+            sum += direct::elem(stack.data, 0, n, y*bs + yb, x*bs + xb);
         }
 
         direct::elem(tgt.data, y, x) = sum / (double)(bs*bs*fc);
@@ -55,7 +55,7 @@ void FrameMerge :: valueHistogram(Image<RFLOAT>& stack, Image<RFLOAT>& tgt)
     for (int y = 0; y < tgt.data.ydim; y++)
     for (int x = 0; x < tgt.data.xdim; x++)
     {
-        double v = DIRECT_NZYX_ELEM(stack.data, 0, z, y, x);
+        double v = direct::elem(stack.data, 0, z, y, x);
 
         int vb = (int)v;
 

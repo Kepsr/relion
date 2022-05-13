@@ -348,7 +348,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         Image<RFLOAT> img(Xsize(Iref[0]), Ysize(Iref[0]), 1, nr_classes_bodies);
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iref[iclass]) {
-                DIRECT_NZYX_ELEM(img(), iclass, 0, i, j) = direct::elem(Iref[iclass], i, j);
+                direct::elem(img(), iclass, 0, i, j) = direct::elem(Iref[iclass], i, j);
             }
         }
         img.setSamplingRateInHeader(pixel_size);
@@ -361,7 +361,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         if (do_sgd) {
             for (int iclass = 0; iclass < nr_classes; iclass++) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Igrad[iclass]) {
-                    DIRECT_NZYX_ELEM(img(), iclass, 0, i, j) = direct::elem(Igrad[iclass], i, j);
+                    direct::elem(img(), iclass, 0, i, j) = direct::elem(Igrad[iclass], i, j);
                 }
             }
             img.write(fn_out + "_gradients.mrcs");

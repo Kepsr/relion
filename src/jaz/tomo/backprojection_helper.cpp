@@ -34,8 +34,8 @@
 using namespace gravis;
 
 void BackprojectionHelper::backprojectRaw(
-        const Image<RFLOAT>& stack, std::string tiltAngles, Volume<RFLOAT>& dest, Volume<unsigned char>& maskDest,
-        d3Vector origin, double spacing, int frames)
+    const Image<RFLOAT>& stack, std::string tiltAngles, Volume<RFLOAT>& dest, Volume<unsigned char>& maskDest,
+    d3Vector origin, double spacing, int frames)
 {
     const double cix = stack.data.xdim / 2.0;
     const double ciy = stack.data.ydim / 2.0;
@@ -44,8 +44,7 @@ void BackprojectionHelper::backprojectRaw(
 
     std::ifstream anglesFile(tiltAngles.c_str());
 
-    if (!anglesFile.is_open())
-    {
+    if (!anglesFile.is_open()) {
         REPORT_ERROR("BackprojectionHelper::backproject: failed to open "+tiltAngles+".");
     }
 
@@ -66,8 +65,7 @@ void BackprojectionHelper::backprojectRaw(
 
     const double deg2rad = PI/180.0;
 
-    while (anglesFile.good())
-    {
+    while (anglesFile.good()) {
         double a;
         anglesFile >> a;
         a *= deg2rad;
@@ -87,18 +85,15 @@ void BackprojectionHelper::backprojectRaw(
 
     const int ic = frames > 0? frames : stack.data.ndim;
 
-    if (vol2img.size() < ic)
-    {
+    if (vol2img.size() < ic) {
         REPORT_ERROR("BackprojectionHelper::backproject: not enough angles in "+tiltAngles+".");
     }
 
-    #if JAZ_USE_OPENMP
+#if JAZ_USE_OPENMP
     #pragma omp parallel for
-    #endif
-    FOR_ALL_VOXELS(dest)
-    {
-        if (x == 0 && y == 0)
-        {
+#endif
+    FOR_ALL_VOXELS(dest) {
+        if (x == 0 && y == 0) {
             std::cout << z << "/" << dest.dimz << "\n";
         }
         double sum = 0.0;
@@ -106,19 +101,16 @@ void BackprojectionHelper::backprojectRaw(
 
         d4Vector pw(x,y,z,1.0);
 
-        for (int im = 0; im < ic; im++)
-        {
+        for (int im = 0; im < ic; im++) {
             d4Vector pi = vol2img[im] * pw;
 
-            if (Interpolation::isInSlice(stack, pi.x, pi.y))
-            {
+            if (Interpolation::isInSlice(stack, pi.x, pi.y)) {
                 sum += Interpolation::linearXY(stack, pi.x, pi.y, im);
                 wgh += 1.0;
             }
         }
 
-        if (wgh > 0.0)
-        {
+        if (wgh > 0.0) {
             sum /= wgh;
         }
 
@@ -128,11 +120,11 @@ void BackprojectionHelper::backprojectRaw(
 }
 
 void BackprojectionHelper::backprojectRaw(
-		const TomoStack& stack,
-        Volume<RFLOAT>& dest, Volume<RFLOAT>& maskDest,
-        gravis::d3Vector origin, double spacing, 
-		InterpolationType interpolation, double taperX, double taperY, 
-		double wMin, int frame0, int frames)
+    const TomoStack& stack,
+    Volume<RFLOAT>& dest, Volume<RFLOAT>& maskDest,
+    gravis::d3Vector origin, double spacing,
+    InterpolationType interpolation, double taperX, double taperY,
+    double wMin, int frame0, int frames)
 {
     d4Matrix vol2world;
 
@@ -142,11 +134,11 @@ void BackprojectionHelper::backprojectRaw(
     vol2world(0,3) = origin.x;
     vol2world(1,3) = origin.y;
     vol2world(2,3) = origin.z;
-	
-	/*std::cout << "vol2world: \n" << vol2world << "\n";
-	std::cout << "stack.worldToImage[0]: \n" << stack.worldToImage[0] << "\n";
-	std::cout << "vol2img[0]: \n" << (stack.worldToImage[0] * vol2world) << "\n";*/
-	
+
+    /*std::cout << "vol2world: \n" << vol2world << "\n";
+    std::cout << "stack.worldToImage[0]: \n" << stack.worldToImage[0] << "\n";
+    std::cout << "vol2img[0]: \n" << (stack.worldToImage[0] * vol2world) << "\n";*/
+
 
     const int ic = frames > 0? frames + frame0 : stack.images.size();
 
@@ -154,86 +146,74 @@ void BackprojectionHelper::backprojectRaw(
 
     std::vector<d4Matrix> vol2img(ic);
 
-    for (int im = 0; im < ic; im++)
-    {
+    for (int im = 0; im < ic; im++) {
         vol2img[im] = stack.worldToImage[im] * vol2world;
     }
 
     /*#if JAZ_USE_OPENMP
     #pragma omp parallel for
     #endif*/
-	
-	/*std::vector<Image<RFLOAT>> debugImgs(ic);
-	for (int im = frame0; im < ic; im++)
-	{
-		debugImgs[im] = stack.images[im];
-	}*/
-	
-    FOR_ALL_VOXELS(dest)
+
+    /*std::vector<Image<RFLOAT>> debugImgs(ic);
+    for (int im = frame0; im < ic; im++)
     {
+    	debugImgs[im] = stack.images[im];
+    }*/
+
+    FOR_ALL_VOXELS(dest) {
         double sum = 0.0;
         double wgh = 0.0;
 
         d4Vector pw(x,y,z,1.0);
 
-        for (int im = frame0; im < ic; im++)
-        {
+        for (int im = frame0; im < ic; im++) {
             d4Vector pi = vol2img[im] * pw;
 
-            if (Interpolation::isInSlice(stack.images[im], pi.x, pi.y))
-            {
+            if (Interpolation::isInSlice(stack.images[im], pi.x, pi.y)) {
                 double wghi = Interpolation::getTaperWeight(stack.images[im], pi.x, pi.y, taperX, taperY);
 
-                if (interpolation == Linear)
-                {
+                if (interpolation == Linear) {
                     sum += wghi * Interpolation::linearXY(stack.images[im], pi.x, pi.y, 0);
-                }
-                else
-                {
+                } else {
                     sum += wghi * Interpolation::cubicXY(stack.images[im], pi.x, pi.y, 0);
                 }
-				
-				//debugImgs[im]((int)(pi.y+0.5), (int)(pi.x+0.5)) += 1000.0;
+
+                //debugImgs[im]((int)(pi.y+0.5), (int)(pi.x+0.5)) += 1000.0;
 
                 wgh += wghi;
             }
         }
 
-        if (wgh > 0.0)
-        {
+        if (wgh > 0.0) {
             sum /= wgh;
         }
 
         dest(x,y,z) = sum;
         maskDest(x,y,z) = wgh;
     }
-	
-	/*JazConfig::writeMrc = false;
-	JazConfig::writeVtk = true;
-	ImageLog::write(debugImgs, "debug_imgs");*/
+
+    /*JazConfig::writeMrc = false;
+    JazConfig::writeVtk = true;
+    ImageLog::write(debugImgs, "debug_imgs");*/
 
     double mean = 0.0, sum = 0.0;
 
-    FOR_ALL_VOXELS(dest)
-    {
+    FOR_ALL_VOXELS(dest) {
         mean += maskDest(x,y,z)*dest(x,y,z);
         sum += maskDest(x,y,z);
     }
 
-	if (sum > 0.0)
-	{
-		mean /= sum;
-	}
+    if (sum > 0.0) {
+        mean /= sum;
+    }
 
-    #if JAZ_USE_OPENMP
+#if JAZ_USE_OPENMP
     #pragma omp parallel for
-    #endif
-    FOR_ALL_VOXELS(dest)
-    {
+#endif
+    FOR_ALL_VOXELS(dest) {
         double t = maskDest(x,y,z) / wMin;
 
-        if (t < 1.0)
-        {
+        if (t < 1.0) {
             dest(x,y,z) = t * dest(x,y,z) + (1.0 - t) * mean;
         }
     }
@@ -241,9 +221,9 @@ void BackprojectionHelper::backprojectRaw(
 
 
 void BackprojectionHelper::backprojectExactWeights(
-        const TomoStack& stack, Volume<RFLOAT>& dest,
-        d3Vector origin, double spacing, double taperX, double taperY, double taperZ, double wMin,
-        int frame0, int frames)
+    const TomoStack& stack, Volume<RFLOAT>& dest,
+    d3Vector origin, double spacing, double taperX, double taperY, double taperZ, double wMin,
+    int frame0, int frames)
 {
     const int wv = dest.dimx;
     const int hv = dest.dimy;
@@ -283,10 +263,10 @@ void BackprojectionHelper::backprojectExactWeights(
 
 
 void BackprojectionHelper::backprojectExactWeightsFreq(
-        const TomoStack& stack,
-        Image<Complex>& dest, Volume<RFLOAT>& weight,
-        d3Vector origin, double spacing, double taperX, double taperY, double taperZ, double wMin,
-        int frame0, int frames)
+    const TomoStack& stack,
+    Image<Complex>& dest, Volume<RFLOAT>& weight,
+    d3Vector origin, double spacing, double taperX, double taperY, double taperZ, double wMin,
+    int frame0, int frames)
 {
     const int wv = 2 * (dest.data.xdim - 1);
     const int hv = dest.data.ydim;
@@ -319,17 +299,13 @@ void BackprojectionHelper::backprojectExactWeightsFreq(
 
     for (long int z = 0; z < dv; z++)
     for (long int y = 0; y < hv; y++)
-    for (long int x = 0; x < wv/2 + 1; x++)
-    {
+    for (long int x = 0; x < wv/2 + 1; x++) {
         const double t = weight(x,y,z)/theta;
 
-        if (t > 1)
-        {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) / t;
-        }
-        else
-        {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(dest.data, 0, z, y, x);
+        if (t > 1) {
+            direct::elem(dest.data, 0, z, y, x) = direct::elem(dest.data, 0, z, y, x) / t;
+        } else {
+            direct::elem(dest.data, 0, z, y, x) = direct::elem(dest.data, 0, z, y, x);
         }
 
         weight(x,y,z) = t;
@@ -366,8 +342,7 @@ void BackprojectionHelper::backprojectDots(
     std::vector<d4Matrix> vol2img(ic);
     std::vector<d4Vector> volOrigImg(ic);
 
-    for (int im = 0; im < ic; im++)
-    {
+    for (int im = 0; im < ic; im++) {
         //std::cout << "   " << im << "/" << (ic-1) << "\n";
 
         vol2img[im] = stack.worldToImage[im] * vol2world;
@@ -377,23 +352,27 @@ void BackprojectionHelper::backprojectDots(
     dest.fill(0.0);
     streakVol.fill(0.0);
 
-    #if JAZ_USE_OPENMP
+#if JAZ_USE_OPENMP
     #pragma omp parallel for
-    #endif
-    FOR_ALL_VOXELS(streakVol)
-    {
-        for (int im = 0; im < ic; im++)
-        {
+#endif
+    FOR_ALL_VOXELS(streakVol) {
+        for (int im = 0; im < ic; im++) {
             d4Vector pw(x,y,z,1.0);
             d4Vector pi = vol2img[im] * pw;
             d4Vector d = pi - volOrigImg[im];
 
             double dx, dy;
 
-            if (d.x < -1 || d.x > 1) dx = 0.0;
-            else dx = 1.0 - std::abs(d.x);
-            if (d.y < -1 || d.y > 1) dy = 0.0;
-            else dy = 1.0 - std::abs(d.y);
+            if (d.x < -1 || d.x > 1) {
+                dx = 0.0;
+            } else {
+                dx = 1.0 - std::abs(d.x);
+            }
+            if (d.y < -1 || d.y > 1) {
+                dy = 0.0;
+            } else {
+                dy = 1.0 - std::abs(d.y);
+            }
 
             streakVol(x,y,z) += dx*dy;
         }
@@ -407,8 +386,7 @@ void BackprojectionHelper::backprojectDots(
     FourierTransformer ft;
     ft.FourierTransform(volRL(), spectrum.data, false);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data)
-    {
+    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data) {
         Complex z = direct::elem(spectrum.data, k, i, j);
 
         dest(j,i,k) = z.abs();
@@ -445,8 +423,7 @@ void BackprojectionHelper::backprojectDotsFS(
     std::vector<d4Matrix> vol2img(ic);
     std::vector<d4Vector> volOrigImg(ic);
 
-    for (int im = 0; im < ic; im++)
-    {
+    for (int im = 0; im < ic; im++) {
         std::cout << "   " << im << "/" << (ic-1) << "\n";
 
         vol2img[im] = stack.worldToImage[im] * vol2world;
@@ -455,23 +432,27 @@ void BackprojectionHelper::backprojectDotsFS(
 
     streakVol.fill(0.0);
 
-    #if JAZ_USE_OPENMP
+#if JAZ_USE_OPENMP
     #pragma omp parallel for
-    #endif
-    FOR_ALL_VOXELS(streakVol)
-    {
-        for (int im = 0; im < ic; im++)
-        {
+#endif
+    FOR_ALL_VOXELS(streakVol) {
+        for (int im = 0; im < ic; im++) {
             d4Vector pw(x,y,z,1.0);
             d4Vector pi = vol2img[im] * pw;
             d4Vector d = pi - volOrigImg[im];
 
             double dx, dy;
 
-            if (d.x < -1 || d.x > 1) dx = 0.0;
-            else dx = 1.0 - std::abs(d.x);
-            if (d.y < -1 || d.y > 1) dy = 0.0;
-            else dy = 1.0 - std::abs(d.y);
+            if (d.x < -1 || d.x > 1) {
+                dx = 0.0;
+            } else {
+                dx = 1.0 - std::abs(d.x);
+            }
+            if (d.y < -1 || d.y > 1) {
+                dy = 0.0;
+            } else {
+                dy = 1.0 - std::abs(d.y);
+            }
 
             streakVol(x,y,z) += dx*dy;
         }
@@ -514,18 +495,16 @@ void BackprojectionHelper::backprojectDotsSeparately(
 
     dest.fill(0.0);
 
-    for (int im = 0; im < ic; im++)
-    {
+    for (int im = 0; im < ic; im++) {
         std::cout << "   " << im << "/" << (ic-1) << "\n";
 
         d4Matrix vol2img = stack.worldToImage[im] * vol2world;
         d4Vector volOrigImg = vol2img * originVol;
 
-        #if JAZ_USE_OPENMP
+#if JAZ_USE_OPENMP
         #pragma omp parallel for
-        #endif
-        FOR_ALL_VOXELS(streakVol)
-        {
+#endif
+        FOR_ALL_VOXELS(streakVol) {
             double sum = 0.0;
 
             d4Vector pw(x,y,z,1.0);
@@ -536,10 +515,16 @@ void BackprojectionHelper::backprojectDotsSeparately(
 
             double dx, dy;
 
-            if (d.x < -1 || d.x > 1) dx = 0.0;
-            else dx = 1.0 - std::abs(d.x);
-            if (d.y < -1 || d.y > 1) dy = 0.0;
-            else dy = 1.0 - std::abs(d.y);
+            if (d.x < -1 || d.x > 1) {
+                dx = 0.0;
+            } else {
+                dx = 1.0 - std::abs(d.x);
+            }
+            if (d.y < -1 || d.y > 1) {
+                dy = 0.0;
+            } else {
+                dy = 1.0 - std::abs(d.y);
+            }
 
             sum += dx*dy;
 
@@ -552,8 +537,7 @@ void BackprojectionHelper::backprojectDotsSeparately(
         FourierTransformer ft;
         ft.FourierTransform(volRL(), spectrum.data, false);
 
-        if (im % 10 == 1)
-        {
+        if (im % 10 == 1) {
             std::stringstream sts;
             sts << im;
             std::string fn;
@@ -563,8 +547,7 @@ void BackprojectionHelper::backprojectDotsSeparately(
             //VtkHelper::writeVTK_Complex(spectrum.data, "streakVol_"+fn+"_FS.vtk");
         }
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data)
-        {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data) {
             Complex z = direct::elem(spectrum.data, k, i, j);
 
             dest(j,i,k) += z.abs();
@@ -575,10 +558,10 @@ void BackprojectionHelper::backprojectDotsSeparately(
 
 
 void BackprojectionHelper::backprojectOriginDot(
-        const TomoStack& stack,
-        Volume<RFLOAT>& dest, double sigma,
-        gravis::d3Vector origin, double spacing,
-        int frame0, int frames)
+    const TomoStack& stack,
+    Volume<RFLOAT>& dest, double sigma,
+    gravis::d3Vector origin, double spacing,
+    int frame0, int frames)
 {
     d4Matrix vol2world;
 
@@ -597,8 +580,7 @@ void BackprojectionHelper::backprojectOriginDot(
 
     std::vector<d4Vector> originVol(8);
 
-    for (int c = 0; c < 8; c++)
-    {
+    for (int c = 0; c < 8; c++) {
         int sx = c%2;
         int sy = (c/2)%2;
         int sz = (c/4)%2;
@@ -611,41 +593,42 @@ void BackprojectionHelper::backprojectOriginDot(
     std::vector<d4Matrix> vol2img(ic);
     std::vector<d4Vector> volOrigImg(8*ic);
 
-    for (int im = 0; im < ic; im++)
-    {
+    for (int im = 0; im < ic; im++) {
         vol2img[im] = stack.worldToImage[im] * vol2world;
 
-        for (int c = 0; c < 8; c++)
-        {
+        for (int c = 0; c < 8; c++) {
             volOrigImg[8*im + c] = vol2img[im] * originVol[c];
         }
     }
 
     const double s2 = sigma*sigma;
 
-    #if JAZ_USE_OPENMP
+#if JAZ_USE_OPENMP
     #pragma omp parallel for
-    #endif
-    FOR_ALL_VOXELS(dest)
-    {
+#endif
+    FOR_ALL_VOXELS(dest) {
         double sum = 0.0;
 
         d4Vector pw(x,y,z,1.0);
 
-        for (int im = frame0; im < ic; im++)
-        {
+        for (int im = frame0; im < ic; im++) {
             d4Vector pi = vol2img[im] * pw;
 
-            for (int c = 0; c < 8; c++)
-            {
+            for (int c = 0; c < 8; c++) {
                 d4Vector d = pi - volOrigImg[8*im + c];
 
                 double dx, dy;
 
-                if (d.x < -1 || d.x > 1) dx = 0.0;
-                else dx = 1.0 - std::abs(d.x);
-                if (d.y < -1 || d.y > 1) dy = 0.0;
-                else dy = 1.0 - std::abs(d.y);
+                if (d.x < -1 || d.x > 1) {
+                    dx = 0.0;
+                } else {
+                    dx = 1.0 - std::abs(d.x);
+                }
+                if (d.y < -1 || d.y > 1) {
+                    dy = 0.0;
+                } else {
+                    dy = 1.0 - std::abs(d.y);
+                }
 
                 sum += dx*dy;
             }
@@ -659,28 +642,38 @@ void BackprojectionHelper::taperEdges(Volume<RFLOAT>& vol, double rx, double ry,
 {
     double mean = 0.0;
 
-    FOR_ALL_VOXELS(vol)
-    {
+    FOR_ALL_VOXELS(vol) {
         mean += vol(x,y,z);
     }
 
     mean /= ((double)vol.dimx * (double)vol.dimy * (double)vol.dimz);
 
-    #if JAZ_USE_OPENMP
+#if JAZ_USE_OPENMP
     #pragma omp parallel for
-    #endif
-    FOR_ALL_VOXELS(vol)
-    {
+#endif
+    FOR_ALL_VOXELS(vol) {
         double wx(1.0), wy(1.0), wz(1.0);
 
-        if (x < rx) wx *= (1.0 - cos(PI * (x+1) / rx))/2.0;
-        if (x >= vol.dimx - rx) wx *= (1.0 - cos(PI * (vol.dimx - x) / rx))/2.0;
+        if (x < rx) {
+            wx *= (1.0 - cos(PI * (x+1) / rx))/2.0;
+        }
+        if (x >= vol.dimx - rx) {
+            wx *= (1.0 - cos(PI * (vol.dimx - x) / rx))/2.0;
+        }
 
-        if (y < ry) wy *= (1.0 - cos(PI * (y+1) / ry))/2.0;
-        if (y >= vol.dimy - ry) wy *= (1.0 - cos(PI * (vol.dimy - y) / ry))/2.0;
+        if (y < ry) {
+            wy *= (1.0 - cos(PI * (y+1) / ry))/2.0;
+        }
+        if (y >= vol.dimy - ry) {
+            wy *= (1.0 - cos(PI * (vol.dimy - y) / ry))/2.0;
+        }
 
-        if (z < rz) wz *= (1.0 - cos(PI * (z+1) / rz))/2.0;
-        if (z >= vol.dimz - rz) wz *= (1.0 - cos(PI * (vol.dimz - z) / rz))/2.0;
+        if (z < rz) {
+            wz *= (1.0 - cos(PI * (z+1) / rz))/2.0;
+        }
+        if (z >= vol.dimz - rz) {
+            wz *= (1.0 - cos(PI * (vol.dimz - z) / rz))/2.0;
+        }
 
         const double ww = wx*wy*wz;
         vol(x,y,z) = ww * vol(x,y,z) + (1.0 - ww) * mean;

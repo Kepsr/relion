@@ -23,13 +23,11 @@
 
 using namespace gravis;
 
-bool Interpolation::isInSlice(const Image<RFLOAT>& img, double x, double y)
-{
+bool Interpolation::isInSlice(const Image<RFLOAT>& img, double x, double y) {
     return x >= 0.0 && x < img.data.xdim-1 && y >= 0.0 && y < img.data.ydim-1;
 }
 
-double Interpolation::getTaperWeight(const Image<RFLOAT>& img, double x, double y, double rx, double ry)
-{
+double Interpolation::getTaperWeight(const Image<RFLOAT>& img, double x, double y, double rx, double ry) {
     double wx(1.0), wy(1.0);
 
     if (x < rx) wx *= (1.0 - cos(PI * (x+1) / rx))/2.0;
@@ -41,8 +39,7 @@ double Interpolation::getTaperWeight(const Image<RFLOAT>& img, double x, double 
     return wx * wy;
 }
 
-double Interpolation::linearXY(const Image<RFLOAT>& img, double x, double y, int n)
-{
+double Interpolation::linearXY(const Image<RFLOAT>& img, double x, double y, int n) {
     if (!(x >= 0.0 && x < img.data.xdim-1 && y >= 0.0 && y < img.data.ydim-1))
     {
         return 0.0;
@@ -54,10 +51,10 @@ double Interpolation::linearXY(const Image<RFLOAT>& img, double x, double y, int
     const double xf = x - xi;
     const double yf = y - yi;
 
-    const double f00 = DIRECT_NZYX_ELEM(img.data, n, 0, yi,   xi);
-    const double f01 = DIRECT_NZYX_ELEM(img.data, n, 0, yi,   xi+1);
-    const double f10 = DIRECT_NZYX_ELEM(img.data, n, 0, yi+1, xi);
-    const double f11 = DIRECT_NZYX_ELEM(img.data, n, 0, yi+1, xi+1);
+    const double f00 = direct::elem(img.data, n, 0, yi,     xi);
+    const double f01 = direct::elem(img.data, n, 0, yi,     xi + 1);
+    const double f10 = direct::elem(img.data, n, 0, yi + 1, xi);
+    const double f11 = direct::elem(img.data, n, 0, yi + 1, xi + 1);
 
     const double f0 = xf * f01 + (1.0 - xf) * f00;
     const double f1 = xf * f11 + (1.0 - xf) * f10;
@@ -67,8 +64,7 @@ double Interpolation::linearXY(const Image<RFLOAT>& img, double x, double y, int
     return f;
 }
 
-double Interpolation::cubic1D(double y0, double y1, double y2, double y3, double t)
-{
+double Interpolation::cubic1D(double y0, double y1, double y2, double y3, double t) {
     const d4Matrix A(  -1.0/2.0,  3.0/2.0, -3.0/2.0,  1.0/2.0,
                         1.0,     -5.0/2.0,  2.0,     -1.0/2.0,
                        -1.0/2.0,  0.0,      1.0/2.0,  0.0,
@@ -82,8 +78,7 @@ double Interpolation::cubic1D(double y0, double y1, double y2, double y3, double
     return x.dot(c);
 }
 
-Complex Interpolation::linear3D(const Image<Complex>& img, double x, double y, double z)
-{
+Complex Interpolation::linear3D(const Image<Complex>& img, double x, double y, double z) {
     if (!(x >= 0.0 && x < img.data.xdim-1 && y >= 0.0 && y < img.data.ydim-1 && z >= 0.0 && z < img.data.zdim-1))
     {
         return 0.0;
@@ -97,17 +92,17 @@ Complex Interpolation::linear3D(const Image<Complex>& img, double x, double y, d
     const double yf = y - yi;
     const double zf = z - zi;
 
-    const Complex f000 = DIRECT_NZYX_ELEM(img.data, 0, zi, yi,   xi);
-    const Complex f001 = DIRECT_NZYX_ELEM(img.data, 0, zi, yi,   xi+1);
+    const Complex f000 = direct::elem(img.data, 0, zi, yi,   xi);
+    const Complex f001 = direct::elem(img.data, 0, zi, yi,   xi + 1);
 
-    const Complex f010 = DIRECT_NZYX_ELEM(img.data, 0, zi, yi+1, xi);
-    const Complex f011 = DIRECT_NZYX_ELEM(img.data, 0, zi, yi+1, xi+1);
+    const Complex f010 = direct::elem(img.data, 0, zi, yi + 1, xi);
+    const Complex f011 = direct::elem(img.data, 0, zi, yi + 1, xi + 1);
 
-    const Complex f100 = DIRECT_NZYX_ELEM(img.data, 0, zi+1, yi, xi);
-    const Complex f101 = DIRECT_NZYX_ELEM(img.data, 0, zi+1, yi, xi+1);
+    const Complex f100 = direct::elem(img.data, 0, zi + 1, yi, xi);
+    const Complex f101 = direct::elem(img.data, 0, zi + 1, yi, xi + 1);
 
-    const Complex f110 = DIRECT_NZYX_ELEM(img.data, 0, zi+1, yi+1, xi);
-    const Complex f111 = DIRECT_NZYX_ELEM(img.data, 0, zi+1, yi+1, xi+1);
+    const Complex f110 = direct::elem(img.data, 0, zi + 1, yi + 1, xi);
+    const Complex f111 = direct::elem(img.data, 0, zi + 1, yi + 1, xi + 1);
 
     const Complex f00 = xf * f001 + (1.0 - xf) * f000;
     const Complex f01 = xf * f011 + (1.0 - xf) * f010;
@@ -123,8 +118,7 @@ Complex Interpolation::linear3D(const Image<Complex>& img, double x, double y, d
 
 }
 
-Complex Interpolation::linearFFTW3D(const Image<Complex>& img, double x, double y, double z)
-{
+Complex Interpolation::linearFFTW3D(const Image<Complex>& img, double x, double y, double z) {
     if (x > img.data.xdim-1)
     {
         return 0.0;
@@ -135,24 +129,24 @@ Complex Interpolation::linearFFTW3D(const Image<Complex>& img, double x, double 
     const int zi = (int)z;
 
     const int xp = xi + 1;
-    const int yp = (yi+1)%((int)img.data.ydim);
-    const int zp = (zi+1)%((int)img.data.zdim);
+    const int yp = (yi + 1)%((int)img.data.ydim);
+    const int zp = (zi + 1)%((int)img.data.zdim);
 
     const double xf = x - xi;
     const double yf = y - yi;
     const double zf = z - zi;
 
-    const Complex f000 = DIRECT_NZYX_ELEM(img.data, 0, zi, yi, xi);
-    const Complex f001 = DIRECT_NZYX_ELEM(img.data, 0, zi, yi, xp);
+    const Complex f000 = direct::elem(img.data, 0, zi, yi, xi);
+    const Complex f001 = direct::elem(img.data, 0, zi, yi, xp);
 
-    const Complex f010 = DIRECT_NZYX_ELEM(img.data, 0, zi, yp, xi);
-    const Complex f011 = DIRECT_NZYX_ELEM(img.data, 0, zi, yp, xp);
+    const Complex f010 = direct::elem(img.data, 0, zi, yp, xi);
+    const Complex f011 = direct::elem(img.data, 0, zi, yp, xp);
 
-    const Complex f100 = DIRECT_NZYX_ELEM(img.data, 0, zp, yi, xi);
-    const Complex f101 = DIRECT_NZYX_ELEM(img.data, 0, zp, yi, xp);
+    const Complex f100 = direct::elem(img.data, 0, zp, yi, xi);
+    const Complex f101 = direct::elem(img.data, 0, zp, yi, xp);
 
-    const Complex f110 = DIRECT_NZYX_ELEM(img.data, 0, zp, yp, xi);
-    const Complex f111 = DIRECT_NZYX_ELEM(img.data, 0, zp, yp, xp);
+    const Complex f110 = direct::elem(img.data, 0, zp, yp, xi);
+    const Complex f111 = direct::elem(img.data, 0, zp, yp, xp);
 
     const Complex f00 = xf * f001 + (1.0 - xf) * f000;
     const Complex f01 = xf * f011 + (1.0 - xf) * f010;
@@ -167,8 +161,7 @@ Complex Interpolation::linearFFTW3D(const Image<Complex>& img, double x, double 
     return f;
 }
 
-Complex Interpolation::linearFFTW2D(const Image<Complex>& img, double x, double y)
-{
+Complex Interpolation::linearFFTW2D(const Image<Complex>& img, double x, double y) {
     if (x > img.data.xdim-1)
     {
         return 0.0;
@@ -178,16 +171,16 @@ Complex Interpolation::linearFFTW2D(const Image<Complex>& img, double x, double 
     const int yi = (int)y;
 
     const int xp = xi + 1;
-    const int yp = (yi+1)%((int)img.data.ydim);
+    const int yp = (yi + 1)%((int)img.data.ydim);
 
     const double xf = x - xi;
     const double yf = y - yi;
 
-    const Complex f00 = DIRECT_NZYX_ELEM(img.data, 0, 0, yi, xi);
-    const Complex f01 = DIRECT_NZYX_ELEM(img.data, 0, 0, yi, xp);
+    const Complex f00 = direct::elem(img.data, 0, 0, yi, xi);
+    const Complex f01 = direct::elem(img.data, 0, 0, yi, xp);
 
-    const Complex f10 = DIRECT_NZYX_ELEM(img.data, 0, 0, yp, xi);
-    const Complex f11 = DIRECT_NZYX_ELEM(img.data, 0, 0, yp, xp);
+    const Complex f10 = direct::elem(img.data, 0, 0, yp, xi);
+    const Complex f11 = direct::elem(img.data, 0, 0, yp, xp);
 
     const Complex f0 = xf * f01 + (1.0 - xf) * f00;
     const Complex f1 = xf * f11 + (1.0 - xf) * f10;
@@ -197,8 +190,7 @@ Complex Interpolation::linearFFTW2D(const Image<Complex>& img, double x, double 
     return f;
 }
 
-void Interpolation::test2D()
-{
+void Interpolation::test2D() {
     int w0 = 5, w1 = 1000;
     Image<RFLOAT> 
 		img0(w0,w0), img(w1,w1), img1(w1,w1), 
@@ -209,9 +201,8 @@ void Interpolation::test2D()
     Image<RFLOAT> gradnx(w1,w1), gradny(w1,w1);
 
     for (int y = 0; y < w0; y++)
-    for (int x = 0; x < w0; x++)
-    {
-        DIRECT_NZYX_ELEM(img0.data, 0, 0, y, x) = (x + w0*y)*(1 - 2*((x%2)^(y%2)));
+    for (int x = 0; x < w0; x++) {
+        direct::elem(img0.data, 0, 0, y, x) = (x + w0*y)*(1 - 2*((x%2)^(y%2)));
     }
 
     double eps = 0.001;
@@ -219,36 +210,36 @@ void Interpolation::test2D()
     for (int y = 0; y < w1; y++)
     for (int x = 0; x < w1; x++)
     {
-        DIRECT_NZYX_ELEM(img.data, 0, 0, y, x)  = DIRECT_NZYX_ELEM(img0.data, 0, 0, w0*y/w1, w0*x/w1);
+        direct::elem(img.data, 0, 0, y, x)  = direct::elem(img0.data, 0, 0, w0*y/w1, w0*x/w1);
 		
-		DIRECT_NZYX_ELEM(img1.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img1.data, 0, 0, y, x) = cubicXY(
 					img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5, 0);
 		
-		DIRECT_NZYX_ELEM(img2a.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img2a.data, 0, 0, y, x) = cubicXY(
 					img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5, 0, 0, true);
 		
-		DIRECT_NZYX_ELEM(img2b.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img2b.data, 0, 0, y, x) = cubicXY(
 					img0, w0*x/(double)w1 - 0.5 - w0/2, w0*y/(double)w1 - 0.5 - w0/2, 0, 0, true);
 		
-		DIRECT_NZYX_ELEM(img3a.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img3a.data, 0, 0, y, x) = cubicXY(
 					img0, 1e-2*(x-w1/2), 1e-2*(y-w1/2), 0, 0, true);
 		
-		DIRECT_NZYX_ELEM(img3b.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img3b.data, 0, 0, y, x) = cubicXY(
 					img0, 1e-7*(x-w1/2), 1e-7*(y-w1/2), 0, 0, true);
 		
-		DIRECT_NZYX_ELEM(img3c.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img3c.data, 0, 0, y, x) = cubicXY(
 					img0, 1e-16*(x-w1/2), 1e-16*(y-w1/2), 0, 0, true);
         
         t2Vector<RFLOAT> g = cubicXYgrad(img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5, 0);
 
-        DIRECT_NZYX_ELEM(gradx.data, 0, 0, y, x) = g.x;
-        DIRECT_NZYX_ELEM(grady.data, 0, 0, y, x) = g.y;
+        direct::elem(gradx.data, 0, 0, y, x) = g.x;
+        direct::elem(grady.data, 0, 0, y, x) = g.y;
 
-        DIRECT_NZYX_ELEM(gradnx.data, 0, 0, y, x) =
+        direct::elem(gradnx.data, 0, 0, y, x) =
                (  cubicXY(img0, w0*x/(double)w1 - 0.5 + eps, w0*y/(double)w1 - 0.5, 0)
                 - cubicXY(img0, w0*x/(double)w1 - 0.5 - eps, w0*y/(double)w1 - 0.5, 0))/(2.0*eps);
 
-        DIRECT_NZYX_ELEM(gradny.data, 0, 0, y, x) =
+        direct::elem(gradny.data, 0, 0, y, x) =
                (  cubicXY(img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5 + eps, 0)
                 - cubicXY(img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5 - eps, 0))/(2.0*eps);
     }

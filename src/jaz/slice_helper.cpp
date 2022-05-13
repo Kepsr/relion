@@ -24,7 +24,7 @@
 
 using namespace gravis;
 
-void SliceHelper::affineTransform(const Image<RFLOAT> &img, d4Matrix A, Image<RFLOAT>& dest) {
+void SliceHelper::affineTransform(const Image<RFLOAT> &img, d4Matrix A, Image<RFLOAT> &dest) {
     d4Matrix Ai = A;
     Ai.invert();
 
@@ -39,7 +39,7 @@ void SliceHelper::affineTransform(const Image<RFLOAT> &img, d4Matrix A, Image<RF
     }
 }
 
-void SliceHelper::downsample(Image<RFLOAT> &img, Image<RFLOAT>& dest) {
+void SliceHelper::downsample(Image<RFLOAT> &img, Image<RFLOAT> &dest) {
     double q = dest.data.xdim / (double) img.data.xdim;
 
     Image<RFLOAT> slice0(img.data.xdim, img.data.ydim, 1);
@@ -48,7 +48,7 @@ void SliceHelper::downsample(Image<RFLOAT> &img, Image<RFLOAT>& dest) {
     subsample(slice0, dest);
 }
 
-void SliceHelper::downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT>& dest) {
+void SliceHelper::downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
     double q = dest.data.xdim / (double) img.data.xdim;
 
     Image<RFLOAT> slice0(img.data.xdim, img.data.ydim, 1);
@@ -64,7 +64,7 @@ void SliceHelper::downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT>& dest
     }
 }
 
-void SliceHelper::downsampleSlicesReal(const Image<RFLOAT> &img, Image<RFLOAT>& dest) {
+void SliceHelper::downsampleSlicesReal(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
     double q = dest.data.xdim / (double) img.data.xdim;
 
     Image<RFLOAT> slice0(img.data.xdim, img.data.ydim, 1);
@@ -97,7 +97,7 @@ void SliceHelper::lowPassFilterSlice(Image<RFLOAT> &img, long int n, double maxF
     insertStackSlice(slice0, img, n);
 }
 
-void SliceHelper::subsample(const Image<RFLOAT> &img, Image<RFLOAT>& dest) {
+void SliceHelper::subsample(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
     double q = img.data.xdim / (double) dest.data.xdim;
 
     for (long int y = 0; y < dest.data.ydim; y++)
@@ -106,10 +106,10 @@ void SliceHelper::subsample(const Image<RFLOAT> &img, Image<RFLOAT>& dest) {
     }
 }
 
-void SliceHelper::avgPad(const Volume<RFLOAT>& src, Volume<RFLOAT>& dest, double ratio) {
-    int padX = (int)(ratio * src.dimx);
-    int padY = (int)(ratio * src.dimy);
-    int padZ = (int)(ratio * src.dimz);
+void SliceHelper::avgPad(const Volume<RFLOAT> &src, Volume<RFLOAT> &dest, double ratio) {
+    int padX = ratio * src.dimx;
+    int padY = ratio * src.dimy;
+    int padZ = ratio * src.dimz;
 
     double avg = 0.0;
 
@@ -131,7 +131,7 @@ void SliceHelper::avgPad(const Volume<RFLOAT>& src, Volume<RFLOAT>& dest, double
     }
 }
 
-void SliceHelper::avgPad2D(const Image<RFLOAT>& src, Image<RFLOAT>& dest, double ratio) {
+void SliceHelper::avgPad2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio) {
     int padX = (int)(ratio * src.data.xdim);
     int padY = (int)(ratio * src.data.ydim);
 
@@ -157,7 +157,7 @@ void SliceHelper::avgPad2D(const Image<RFLOAT>& src, Image<RFLOAT>& dest, double
     }
 }
 
-void SliceHelper::halveSpectrum2D(Image<Complex>& src, Image<Complex>& dest) {
+void SliceHelper::halveSpectrum2D(Image<Complex> &src, Image<Complex> &dest) {
     dest = Image<Complex>(src.data.xdim/2 + 1, src.data.ydim);
 
     const int xo = src.data.xdim/2 + 1;
@@ -189,7 +189,7 @@ void SliceHelper::halveSpectrum2D(Image<Complex>& src, Image<Complex>& dest) {
     }
 }
 
-void SliceHelper::extractSpectralSlice(Image<Complex>& src, Image<RFLOAT>& dest, d3Matrix proj,
+void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest, d3Matrix proj,
                                        d2Vector volCentImg, double oversample) {
     const int wi = (double)dest.data.xdim;
     const int hi = (double)dest.data.ydim;
@@ -292,10 +292,10 @@ void SliceHelper::extractSpectralSlice(Image<Complex>& src, Image<RFLOAT>& dest,
 }
 
 void SliceHelper::insertSpectralSlices(
-        std::vector<Image<RFLOAT> >& src,
+        std::vector<Image<RFLOAT> > &src,
         std::vector<gravis::d3Matrix> proj,
         std::vector<gravis::d2Vector> volCentImg,
-        Image<Complex>& dest, double thickness, double thicknessSlope, double imgPad) {
+        Image<Complex> &dest, double thickness, double thicknessSlope, double imgPad) {
     const double wv = dest.data.xdim;
     const double hv = dest.data.ydim;
     const double dv = dest.data.zdim;
@@ -336,7 +336,7 @@ void SliceHelper::insertSpectralSlices(
 
         if (pv.norm2() >= 1.0)
         {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = Complex(0,0);
+            direct::elem(dest.data, 0, z, y, x) = Complex(0,0);
             continue;
         }
 
@@ -392,17 +392,17 @@ void SliceHelper::insertSpectralSlices(
 
         if (wgh > 1.0) zs /= wgh;
 
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = zs;
+        direct::elem(dest.data, 0, z, y, x) = zs;
     }
 }
 
 
 void SliceHelper::insertWeightedSpectralSlices(
-        std::vector<Image<RFLOAT> >& src,
+        std::vector<Image<RFLOAT> > &src,
         std::vector<gravis::d3Matrix> proj,
         std::vector<gravis::d2Vector> volCentImg,
         std::vector<double> imgWeights,
-        Image<Complex>& dest, double thickness, double imgPad) {
+        Image<Complex> &dest, double thickness, double imgPad) {
     const double wv = dest.data.xdim;
     const double hv = dest.data.ydim;
     const double dv = dest.data.zdim;
@@ -443,7 +443,7 @@ void SliceHelper::insertWeightedSpectralSlices(
 
         if (pv.norm2() >= 1.0)
         {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = Complex(0,0);
+            direct::elem(dest.data, 0, z, y, x) = Complex(0,0);
             continue;
         }
 
@@ -496,22 +496,22 @@ void SliceHelper::insertWeightedSpectralSlices(
 
         if (wgh > 1.0) zs /= wgh;
 
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = zs;
+        direct::elem(dest.data, 0, z, y, x) = zs;
     }
 }
 
-void SliceHelper::extractStackSlice(const Image<RFLOAT>& src, Image<RFLOAT>& dest, long int s) {
+void SliceHelper::extractStackSlice(const Image<RFLOAT> &src, Image<RFLOAT> &dest, long int s) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = DIRECT_NZYX_ELEM(src.data, s, 0, y, x);
+        direct::elem(dest.data, 0, 0, y, x) = direct::elem(src.data, s, 0, y, x);
     }
 }
 
-void SliceHelper::extractStackSlices(const Image<double>& src, Image<RFLOAT>& dest, long int s) {
+void SliceHelper::extractStackSlices(const Image<double> &src, Image<RFLOAT> &dest, long int s) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
@@ -519,11 +519,11 @@ void SliceHelper::extractStackSlices(const Image<double>& src, Image<RFLOAT>& de
     for (long int n = 0; n < dest.data.ndim; n++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, 0, y, x) = DIRECT_NZYX_ELEM(src.data, n+s, 0, y, x);
+        direct::elem(dest.data, n, 0, y, x) = direct::elem(src.data, n+s, 0, y, x);
     }
 }
 
-void SliceHelper::extractStackSlices(const Image<float>& src, Image<RFLOAT>& dest, long int s) {
+void SliceHelper::extractStackSlices(const Image<float> &src, Image<RFLOAT> &dest, long int s) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
@@ -531,7 +531,7 @@ void SliceHelper::extractStackSlices(const Image<float>& src, Image<RFLOAT>& des
     for (long int n = 0; n < dest.data.ndim; n++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, 0, y, x) = (RFLOAT) DIRECT_NZYX_ELEM(src.data, n+s, 0, y, x);
+        direct::elem(dest.data, n, 0, y, x) = (RFLOAT) direct::elem(src.data, n+s, 0, y, x);
     }
 }
 
@@ -543,57 +543,57 @@ Image<RFLOAT> SliceHelper::getStackSlice(const Image<RFLOAT> &src, long n) {
 
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        DIRECT_NZYX_ELEM(out.data, 0, 0, y, x) = DIRECT_NZYX_ELEM(src.data, n, 0, y, x);
+        direct::elem(out.data, 0, 0, y, x) = direct::elem(src.data, n, 0, y, x);
     }
 
     return out;
 }
 
-void SliceHelper::insertStackSlice(const Image<double>& src, Image<double>& dest, long int s) {
+void SliceHelper::insertStackSlice(const Image<double> &src, Image<double> &dest, long int s) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, s, 0, y, x) = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
+        direct::elem(dest.data, s, 0, y, x) = direct::elem(src.data, 0, 0, y, x);
     }
 }
 
-void SliceHelper::insertStackSlice(const Image<float>& src, Image<float>& dest, long int s) {
+void SliceHelper::insertStackSlice(const Image<float> &src, Image<float> &dest, long int s) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, s, 0, y, x) = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
+        direct::elem(dest.data, s, 0, y, x) = direct::elem(src.data, 0, 0, y, x);
     }
 }
 
-void SliceHelper::insertZSlice(const Image<double>& src, Image<double>& dest, long int s) {
+void SliceHelper::insertZSlice(const Image<double> &src, Image<double> &dest, long int s) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, s, y, x) = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
+        direct::elem(dest.data, 0, s, y, x) = direct::elem(src.data, 0, 0, y, x);
     }
 }
 
-void SliceHelper::insertZSlice(const Image<float>& src, Image<float>& dest, long int s) {
+void SliceHelper::insertZSlice(const Image<float> &src, Image<float> &dest, long int s) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, s, y, x) = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
+        direct::elem(dest.data, 0, s, y, x) = direct::elem(src.data, 0, 0, y, x);
     }
 }
 
-Image<double> SliceHelper::consolidate(const std::vector<Image<double> >& src, bool toN) {
+Image<double> SliceHelper::consolidate(const std::vector<Image<double> > &src, bool toN) {
     const int w = src[0].data.xdim;
     const int h = src[0].data.ydim;
     const int ic = src.size();
@@ -616,7 +616,7 @@ Image<double> SliceHelper::consolidate(const std::vector<Image<double> >& src, b
     return out;
 }
 
-Image<float> SliceHelper::consolidate(const std::vector<Image<float> >& src, bool toN) {
+Image<float> SliceHelper::consolidate(const std::vector<Image<float> > &src, bool toN) {
     const int w = src[0].data.xdim;
     const int h = src[0].data.ydim;
     const int ic = src.size();

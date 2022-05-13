@@ -349,11 +349,11 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         for (long int y = 0; y < h0; y++)
         for (long int x = 0; x < w0; x++) {
 
-            RFLOAT gain = useGain ? DIRECT_NZYX_ELEM(gainRef->data, 0, 0, y, x) : 1.0;
-            RFLOAT val = DIRECT_NZYX_ELEM(muGraph.data, 0, 0, y, x);
+            RFLOAT gain = useGain ? direct::elem(gainRef->data, 0, 0, y, x) : 1.0;
+            RFLOAT val = direct::elem(muGraph.data, 0, 0, y, x);
             if (0.0 < hot && hot < val) { val = hot; }
 
-            DIRECT_NZYX_ELEM(muGraph.data, 0, 0, y, x) = -gain * val;
+            direct::elem(muGraph.data, 0, 0, y, x) = -gain * val;
         }
 
         if (fixDefect) {
@@ -447,7 +447,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 int yy = y0 + y;
                 if (yy < 0) { yy = 0; } else if (yy >= h0) { yy = h0 - 1; }
 
-                DIRECT_NZYX_ELEM(aux0[t].data, 0, 0, y, x) = DIRECT_NZYX_ELEM(muGraph.data, 0, 0, yy, xx);
+                direct::elem(aux0[t].data, 0, 0, y, x) = direct::elem(muGraph.data, 0, 0, yy, xx);
             }
 
             if (outPs == moviePs) {
@@ -561,7 +561,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 if (yy < 0) { yy = 0; } else if (yy >= h0) { yy = h0 - 1; }
 
                 // Note the MINUS here!!!
-                DIRECT_NZYX_ELEM(aux0[t].data, 0, 0, y, x) = -direct::elem(Iframes[f], yy, xx);
+                direct::elem(aux0[t].data, 0, 0, y, x) = -direct::elem(Iframes[f], yy, xx);
             }
 
             if (outPs == moviePs) {
@@ -624,7 +624,7 @@ Image<RFLOAT> StackHelper::toSingleImage(const std::vector<Image<RFLOAT>> stack)
     for (int n = 0; n < s; n++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            DIRECT_NZYX_ELEM(out(), n, 0, y, x) = stack[n](y, x);
+            direct::elem(out(), n, 0, y, x) = stack[n](y, x);
         }
     }
 

@@ -224,15 +224,15 @@ int Image<T>::readTIFF(
         */
 
         const int ylim = dims.y / 2, z = 0;
-        for (int n = 0; n < dims.n; n++) {
-            for (int y1 = 0; y1 < ylim; y1++) {
-                const int y2 = dims.y - 1 - y1;
-                for (int x = 0; x < dims.x; x++) {
-                    /// TODO: memcpy or pointer arithmetic is probably faster
-                    T tmp = DIRECT_NZYX_ELEM(data, n, z, y1, x);
-                    DIRECT_NZYX_ELEM(data, n, z, y1, x) = DIRECT_NZYX_ELEM(data, n, z, y2, x);
-                    DIRECT_NZYX_ELEM(data, n, z, y2, x) = tmp;
-                }
+        for (int n = 0; n < dims.n; n++)
+        for (int y1 = 0; y1 < ylim; y1++) {
+            const int y2 = dims.y - 1 - y1;
+            for (int x = 0; x < dims.x; x++) {
+                /// TODO: memcpy or pointer arithmetic is probably faster
+                std::swap(
+                    direct::elem(data, n, z, y1, x), 
+                    direct::elem(data, n, z, y2, x)
+                );
             }
         }
     }

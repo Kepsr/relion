@@ -90,7 +90,7 @@ void ResamplingHelper::downsampleBox2D(const Image<T>& src, double n, Image<T>& 
 
             if (xin < w0 && yin < h0)
             {
-                val += DIRECT_NZYX_ELEM(src(), 0, 0, yin, xin);
+                val += direct::elem(src(), 0, 0, yin, xin);
                 wgh += 1.0;
             }
         }
@@ -100,7 +100,7 @@ void ResamplingHelper::downsampleBox2D(const Image<T>& src, double n, Image<T>& 
             val /= wgh;
         }
 
-        DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = val;
+        direct::elem(dest.data, 0, 0, y, x) = val;
     }
 }
 
@@ -116,8 +116,8 @@ void ResamplingHelper::subsample2D(const Image<T>& src, double n, Image<T>& dest
     for (int y = 0; y < dest.data.ydim; y++)
     for (int x = 0; x < dest.data.xdim; x++)
     {
-        DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x)
-                = DIRECT_NZYX_ELEM(src.data, 0, 0, (int)(n*y), (int)(n*x));
+        direct::elem(dest.data, 0, 0, y, x)
+                = direct::elem(src.data, 0, 0, (int)(n*y), (int)(n*x));
     }
 }
 
@@ -133,7 +133,7 @@ void ResamplingHelper::subsample2D_cubic(const Image<T>& src, double n, Image<T>
         double xx = x * (double)n;
         double yy = y * (double)n;
 
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = Interpolation::cubicXY(src, xx, yy, z, 0, wrap);
+        direct::elem(dest.data, 0, z, y, x) = Interpolation::cubicXY(src, xx, yy, z, 0, wrap);
     }
 }
 
@@ -146,7 +146,7 @@ void ResamplingHelper::subsample3D(const Image<T>& src, int n, Image<T>& dest)
     for (size_t y = 0; y < dest.data.ydim; y++)
     for (size_t x = 0; x < dest.data.xdim; x++)
     {
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(src.data, 0, n*z, n*y, n*x);
+        direct::elem(dest.data, 0, z, y, x) = direct::elem(src.data, 0, n*z, n*y, n*x);
     }
 }
 
@@ -178,12 +178,12 @@ void ResamplingHelper::upsample2D_linear(const Image<T>& src, int n, Image<T>& d
             if (y1 >= src.data.ydim) y1 = src.data.ydim - 1;
         }
 
-        T v00 = DIRECT_NZYX_ELEM(src.data, 0, z, y0, x0);
-        T v01 = DIRECT_NZYX_ELEM(src.data, 0, z, y0, x1);
-        T v10 = DIRECT_NZYX_ELEM(src.data, 0, z, y1, x0);
-        T v11 = DIRECT_NZYX_ELEM(src.data, 0, z, y1, x1);
+        T v00 = direct::elem(src.data, 0, z, y0, x0);
+        T v01 = direct::elem(src.data, 0, z, y0, x1);
+        T v10 = direct::elem(src.data, 0, z, y1, x0);
+        T v11 = direct::elem(src.data, 0, z, y1, x1);
 
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) =
+        direct::elem(dest.data, 0, z, y, x) =
                 xf*(yf*v11 + (1-yf)*v01) + (1-xf)*(yf*v10 + (1-yf)*v00);
     }
 }
@@ -203,7 +203,7 @@ void ResamplingHelper::upsample2D_cubic(const Image<T>& src, int n, Image<T>& de
         double xx = x / (double)n;
         double yy = y / (double)n;
 
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = Interpolation::cubicXY(src, xx, yy, z, 0, wrap);
+        direct::elem(dest.data, 0, z, y, x) = Interpolation::cubicXY(src, xx, yy, z, 0, wrap);
     }
 }
 

@@ -218,11 +218,11 @@ void FilterHelper::binomial3x3_2D(const Image<T>& src, Image<T>& dest, bool wrap
             if (wrap) xx = (xx + w) % w;
             else if (xx < 0 || xx >= w) continue;
 
-            v += kernel[i+1] * DIRECT_NZYX_ELEM(src(), 0, z, y, xx);
+            v += kernel[i+1] * direct::elem(src(), 0, z, y, xx);
             m += kernel[i+1];
         }
 
-        DIRECT_NZYX_ELEM(temp(), 0, z, y, x) = v/m;
+        direct::elem(temp(), 0, z, y, x) = v/m;
     }
 
     for (size_t z = 0; z < d; z++)
@@ -238,11 +238,11 @@ void FilterHelper::binomial3x3_2D(const Image<T>& src, Image<T>& dest, bool wrap
             if (wrap) yy = (yy + h) % h;
             else if (yy < 0 || yy >= h) continue;
 
-            v += kernel[i+1] * DIRECT_NZYX_ELEM(temp(), 0, z, yy, x);
+            v += kernel[i+1] * direct::elem(temp(), 0, z, yy, x);
             m += kernel[i+1];
         }
 
-        DIRECT_NZYX_ELEM(dest(), 0, z, y, x) = v/m;
+        direct::elem(dest(), 0, z, y, x) = v/m;
     }
 }
 
@@ -356,11 +356,11 @@ void FilterHelper::separableGaussian(const MultidimArray<T>& src, MultidimArray<
             const long int xx = x + i;
             if (xx < 0 || xx >= src.xdim) continue;
 
-            v += kernel[i+k] * DIRECT_NZYX_ELEM(src, 0, z, y, xx);
+            v += kernel[i+k] * direct::elem(src, 0, z, y, xx);
             m += kernel[i+k];
         }
 
-        DIRECT_NZYX_ELEM(dest, 0, z, y, x) = v/m;
+        direct::elem(dest, 0, z, y, x) = v/m;
     }
 
     for (size_t z = 0; z < src.zdim; z++)
@@ -375,11 +375,11 @@ void FilterHelper::separableGaussian(const MultidimArray<T>& src, MultidimArray<
             const long int yy = y + i;
             if (yy < 0 || yy >= src.ydim) continue;
 
-            v += kernel[i+k] * DIRECT_NZYX_ELEM(dest, 0, z, yy, x);
+            v += kernel[i+k] * direct::elem(dest, 0, z, yy, x);
             m += kernel[i+k];
         }
 
-        DIRECT_NZYX_ELEM(temp, 0, z, y, x) = v/m;
+        direct::elem(temp, 0, z, y, x) = v/m;
     }
 
     for (size_t z = 0; z < src.zdim; z++)
@@ -394,11 +394,11 @@ void FilterHelper::separableGaussian(const MultidimArray<T>& src, MultidimArray<
             const long int zz = z + i;
             if (zz < 0 || zz >= src.zdim) continue;
 
-            v += kernel[i+k] * DIRECT_NZYX_ELEM(temp, 0, zz, y, x);
+            v += kernel[i+k] * direct::elem(temp, 0, zz, y, x);
             m += kernel[i+k];
         }
 
-        DIRECT_NZYX_ELEM(dest, 0, z, y, x) = v/m;
+        direct::elem(dest, 0, z, y, x) = v/m;
     }
 }
 
@@ -433,11 +433,11 @@ void FilterHelper::separableGaussianWrap(const MultidimArray<T>& src, MultidimAr
         {
             const long int xx = (src.xdim + x + i) % src.xdim;
 
-            v += kernel[i+k] * DIRECT_NZYX_ELEM(src, 0, z, y, xx);
+            v += kernel[i+k] * direct::elem(src, 0, z, y, xx);
             m += kernel[i+k];
         }
 
-        DIRECT_NZYX_ELEM(dest, 0, z, y, x) = v/m;
+        direct::elem(dest, 0, z, y, x) = v/m;
     }
 
     for (size_t z = 0; z < src.zdim; z++)
@@ -451,11 +451,11 @@ void FilterHelper::separableGaussianWrap(const MultidimArray<T>& src, MultidimAr
         {
             const long int yy = (src.ydim + y + i) % src.ydim;
 
-            v += kernel[i+k] * DIRECT_NZYX_ELEM(dest, 0, z, yy, x);
+            v += kernel[i+k] * direct::elem(dest, 0, z, yy, x);
             m += kernel[i+k];
         }
 
-        DIRECT_NZYX_ELEM(temp, 0, z, y, x) = v/m;
+        direct::elem(temp, 0, z, y, x) = v/m;
     }
 
     for (size_t z = 0; z < src.zdim; z++)
@@ -469,11 +469,11 @@ void FilterHelper::separableGaussianWrap(const MultidimArray<T>& src, MultidimAr
         {
             const long int zz = (src.zdim + z + i) % src.zdim;
 
-            v += kernel[i+k] * DIRECT_NZYX_ELEM(temp, 0, zz, y, x);
+            v += kernel[i+k] * direct::elem(temp, 0, zz, y, x);
             m += kernel[i+k];
         }
 
-        DIRECT_NZYX_ELEM(dest, 0, z, y, x) = v/m;
+        direct::elem(dest, 0, z, y, x) = v/m;
     }
 }
 

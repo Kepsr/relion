@@ -799,7 +799,7 @@ class image_handler_parameters {
                 Iin.read(fn_img);
                 for (int n = 0; n < ndim; n++) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(avg_ampl) {
-                        direct::elem(avg_ampl, k, i, j) +=  DIRECT_NZYX_ELEM(Iin(), n, k, i, j);
+                        direct::elem(avg_ampl, k, i, j) +=  direct::elem(Iin(), n, k, i, j);
                     }
                 }
             } else if (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)) {
@@ -823,7 +823,7 @@ class image_handler_parameters {
                         int myframe = nn / bin_avg;
                         if (myframe < avgndim) {
                             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
-                                DIRECT_NZYX_ELEM(Iavg(),myframe,0,i,j) += direct::elem(Iin(), i, j); // just store sum
+                                direct::elem(Iavg(),myframe,0,i,j) += direct::elem(Iin(), i, j); // just store sum
                             }
                         }
                     } else if (avg_first >= 0 && avg_last >= 0 && nn + 1 >= avg_first && nn + 1 <= avg_last) {

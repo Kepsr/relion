@@ -74,12 +74,12 @@ void FilterHelper::separableGaussianFreq(
             long yy = conj ? src.ydim - y % src.ydim : y;
             long zz = conj ? src.zdim - z % src.zdim : z;
 
-            v += kernel[i + k] * DIRECT_NZYX_ELEM(src, 0, zz, yy, xx);
+            v += kernel[i + k] * direct::elem(src, 0, zz, yy, xx);
             m += kernel[i + k];
 
         }
 
-        DIRECT_NZYX_ELEM(dest, 0, z, y, x) = v / m;
+        direct::elem(dest, 0, z, y, x) = v / m;
     }
 
     for (size_t z = 0; z < src.zdim; z++)
@@ -91,11 +91,11 @@ void FilterHelper::separableGaussianFreq(
         for (long int i = -k; i <= k; i++) {
             const long int yy = (src.ydim + y + i) % src.ydim;
 
-            v += kernel[i + k] * DIRECT_NZYX_ELEM(dest, 0, z, yy, x);
+            v += kernel[i + k] * direct::elem(dest, 0, z, yy, x);
             m += kernel[i + k];
         }
 
-        DIRECT_NZYX_ELEM(temp, 0, z, y, x) = v / m;
+        direct::elem(temp, 0, z, y, x) = v / m;
     }
 
     for (size_t z = 0; z < src.zdim; z++)
@@ -107,11 +107,11 @@ void FilterHelper::separableGaussianFreq(
         for (long int i = -k; i <= k; i++) {
             const long int zz = (src.zdim + z + i) % src.zdim;
 
-            v += kernel[i + k] * DIRECT_NZYX_ELEM(temp, 0, zz, y, x);
+            v += kernel[i + k] * direct::elem(temp, 0, zz, y, x);
             m += kernel[i + k];
         }
 
-        DIRECT_NZYX_ELEM(dest, 0, z, y, x) = v / m;
+        direct::elem(dest, 0, z, y, x) = v / m;
     }
 }
 
@@ -156,7 +156,7 @@ void FilterHelper::separableGaussianFreqXY(
             long yy = conj ? src.ydim - y % src.ydim : y;
             long zz = conj ? src.zdim - z % src.zdim : z;
 
-            Complex vv = DIRECT_NZYX_ELEM(src, 0, zz, yy, xx);
+            Complex vv = direct::elem(src, 0, zz, yy, xx);
 
             if (conj) vv = vv.conj();
 
@@ -165,7 +165,7 @@ void FilterHelper::separableGaussianFreqXY(
 
         }
 
-        DIRECT_NZYX_ELEM(temp, 0, z, y, x) = v / m;
+        direct::elem(temp, 0, z, y, x) = v / m;
     }
 
     for (size_t z = 0; z < src.zdim; z++)
@@ -177,11 +177,11 @@ void FilterHelper::separableGaussianFreqXY(
         for (long int i = -k; i <= k; i++) {
             const long int yy = (src.ydim + y + i) % src.ydim;
 
-            v += kernel[i + k] * DIRECT_NZYX_ELEM(temp, 0, z, yy, x);
+            v += kernel[i + k] * direct::elem(temp, 0, z, yy, x);
             m += kernel[i + k];
         }
 
-        DIRECT_NZYX_ELEM(dest, 0, z, y, x) = v / m;
+        direct::elem(dest, 0, z, y, x) = v / m;
     }
 }
 
@@ -215,7 +215,7 @@ Image<RFLOAT> FilterHelper::expImg(Image<RFLOAT> &img, double scale) {
     Image<RFLOAT> out = img;
 
     FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-        DIRECT_NZYX_ELEM(out.data, l, k, i, j) = exp(scale * DIRECT_NZYX_ELEM(img.data, l, k, i, j));
+        direct::elem(out.data, l, k, i, j) = exp(scale * direct::elem(img.data, l, k, i, j));
     }
 
     return out;
@@ -225,9 +225,9 @@ Image<RFLOAT> FilterHelper::logImg(Image<RFLOAT> &img, double thresh, double sca
     Image<RFLOAT> out = img;
 
     FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-        double v = DIRECT_NZYX_ELEM(img.data, l, k, i, j);
+        double v = direct::elem(img.data, l, k, i, j);
         if (v < thresh) { v = thresh; }
-        DIRECT_NZYX_ELEM(out.data, l, k, i, j) = log(scale * v);
+        direct::elem(out.data, l, k, i, j) = log(scale * v);
     }
 
     return out;
@@ -592,7 +592,7 @@ RFLOAT FilterHelper::averageValue(Image<RFLOAT> &img) {
     RFLOAT sum;
 
     FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-        sum += DIRECT_NZYX_ELEM(img.data, l, k, i, j);
+        sum += direct::elem(img.data, l, k, i, j);
     }
 
     return sum / (double) (img.data.xdim * img.data.ydim * img.data.zdim * img.data.ndim);
@@ -602,7 +602,7 @@ RFLOAT FilterHelper::maxValue(Image<RFLOAT> &img) {
     RFLOAT vMax = -std::numeric_limits<double>::max();
 
     FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-        RFLOAT v = DIRECT_NZYX_ELEM(img.data, l, k, i, j);
+        RFLOAT v = direct::elem(img.data, l, k, i, j);
         if (v > vMax) { vMax = v; }
     }
 
@@ -842,8 +842,8 @@ void FilterHelper::getPhase(const Image<Complex> &img, Image<RFLOAT> &dest) {
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(img.data, 0, z, y, x).norm() > 0 ?
-            DIRECT_NZYX_ELEM(img.data, 0, z, y, x).arg() :
+        direct::elem(dest.data, 0, z, y, x) = direct::elem(img.data, 0, z, y, x).norm() > 0 ?
+            direct::elem(img.data, 0, z, y, x).arg() :
             0;
     }
 }
@@ -858,7 +858,7 @@ void FilterHelper::getAbs(const Image<Complex> &img, Image<RFLOAT> &dest) {
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(img.data, 0, z, y, x).abs();
+        direct::elem(dest.data, 0, z, y, x) = direct::elem(img.data, 0, z, y, x).abs();
     }
 }
 
@@ -872,7 +872,7 @@ void FilterHelper::getReal(const Image<Complex> &img, Image<RFLOAT> &dest) {
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(img.data, 0, z, y, x).real;
+        direct::elem(dest.data, 0, z, y, x) = direct::elem(img.data, 0, z, y, x).real;
     }
 }
 
@@ -886,7 +886,7 @@ void FilterHelper::getImag(const Image<Complex> &img, Image<RFLOAT> &dest) {
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(img.data, 0, z, y, x).imag;
+        direct::elem(dest.data, 0, z, y, x) = direct::elem(img.data, 0, z, y, x).imag;
     }
 }
 
@@ -962,7 +962,7 @@ void FilterHelper::threshold(Image<RFLOAT> &src, RFLOAT t, Image<RFLOAT> &dest) 
     for (long int z = 0; z < src.data.zdim; z++)
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = (RFLOAT) (DIRECT_NZYX_ELEM(src.data, n, z, y, x) > t);
+        direct::elem(dest.data, n, z, y, x) = (RFLOAT) (direct::elem(src.data, n, z, y, x) > t);
     }
 }
 
@@ -971,7 +971,7 @@ void FilterHelper::fill(Image<RFLOAT> &dest, RFLOAT v) {
     for (long int z = 0; z < dest.data.zdim; z++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = v;
+        direct::elem(dest.data, n, z, y, x) = v;
     }
 }
 
@@ -982,7 +982,7 @@ void FilterHelper::linearTransform(
     for (long int z = 0; z < src.data.zdim; z++)
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = m * DIRECT_NZYX_ELEM(src.data, n, z, y, x) + q;
+        direct::elem(dest.data, n, z, y, x) = m * direct::elem(src.data, n, z, y, x) + q;
     }
 }
 
@@ -991,7 +991,7 @@ void FilterHelper::linearCombination(Image<RFLOAT> &src0, Image<RFLOAT> &src1, R
     for (long int z = 0; z < src0.data.zdim; z++)
     for (long int y = 0; y < src0.data.ydim; y++)
     for (long int x = 0; x < src0.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = a0 * DIRECT_NZYX_ELEM(src0.data, n, z, y, x) + a1 * DIRECT_NZYX_ELEM(src1.data, n, z, y, x);
+        direct::elem(dest.data, n, z, y, x) = a0 * direct::elem(src0.data, n, z, y, x) + a1 * direct::elem(src1.data, n, z, y, x);
     }
 }
 
@@ -1025,7 +1025,7 @@ void FilterHelper::sumUp(
         for (long int z = 0; z < d; z++)
         for (long int y = 0; y < h; y++)
         for (long int x = 0; x < w; x++) {
-            DIRECT_NZYX_ELEM(dest.data, n, z, y, x) += DIRECT_NZYX_ELEM(src[i].data, n, z, y, x);
+            direct::elem(dest.data, n, z, y, x) += direct::elem(src[i].data, n, z, y, x);
         }
     }
 }
@@ -1043,8 +1043,8 @@ double FilterHelper::L1distance(
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
     for (long int x = x0; x < x0 + w; x++) {
-        RFLOAT v0 = DIRECT_NZYX_ELEM(i0.data, n, z, y, x);
-        RFLOAT v1 = DIRECT_NZYX_ELEM(i1.data, n, z, y, x);
+        RFLOAT v0 = direct::elem(i0.data, n, z, y, x);
+        RFLOAT v1 = direct::elem(i1.data, n, z, y, x);
 
         double di = v1 - v0;
         d += std::abs(di);
@@ -1065,8 +1065,8 @@ double FilterHelper::L2distance(
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
     for (long int x = x0; x < x0 + w; x++) {
-        RFLOAT v0 = DIRECT_NZYX_ELEM(i0.data, n, z, y, x);
-        RFLOAT v1 = DIRECT_NZYX_ELEM(i1.data, n, z, y, x);
+        RFLOAT v0 = direct::elem(i0.data, n, z, y, x);
+        RFLOAT v1 = direct::elem(i1.data, n, z, y, x);
 
         double di = v1 - v0;
         d += di * di;
@@ -1090,8 +1090,8 @@ double FilterHelper::NCC(
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
     for (long int x = x0; x < x0 + w; x++) {
-        RFLOAT v0 = DIRECT_NZYX_ELEM(i0.data, n, z, y, x);
-        RFLOAT v1 = DIRECT_NZYX_ELEM(i1.data, n, z, y, x);
+        RFLOAT v0 = direct::elem(i0.data, n, z, y, x);
+        RFLOAT v1 = direct::elem(i1.data, n, z, y, x);
 
         mu0 += v0;
         mu1 += v1;
@@ -1107,8 +1107,8 @@ double FilterHelper::NCC(
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
     for (long int x = x0; x < x0 + w; x++) {
-        RFLOAT v0 = DIRECT_NZYX_ELEM(i0.data, n, z, y, x) - mu0;
-        RFLOAT v1 = DIRECT_NZYX_ELEM(i1.data, n, z, y, x) - mu1;
+        RFLOAT v0 = direct::elem(i0.data, n, z, y, x) - mu0;
+        RFLOAT v1 = direct::elem(i1.data, n, z, y, x) - mu1;
 
         sig0 += v0 * v0;
         sig1 += v1 * v1;
@@ -1123,8 +1123,8 @@ double FilterHelper::NCC(
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
     for (long int x = x0; x < x0 + w; x++) {
-        RFLOAT v0 = (DIRECT_NZYX_ELEM(i0.data, n, z, y, x) - mu0);
-        RFLOAT v1 = (DIRECT_NZYX_ELEM(i1.data, n, z, y, x) - mu1);
+        RFLOAT v0 = (direct::elem(i0.data, n, z, y, x) - mu0);
+        RFLOAT v1 = (direct::elem(i1.data, n, z, y, x) - mu1);
 
         ncc += v0 * v1;
     }
@@ -1141,7 +1141,7 @@ void FilterHelper::multiply(
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = 0; y < i0.data.ydim; y++)
     for (long int x = 0; x < i0.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = DIRECT_NZYX_ELEM(i0.data, n, z, y, x) * DIRECT_NZYX_ELEM(i1.data, n, z, y, x);
+        direct::elem(dest.data, n, z, y, x) = direct::elem(i0.data, n, z, y, x) * direct::elem(i1.data, n, z, y, x);
     }
 }
 
@@ -1154,7 +1154,7 @@ void FilterHelper::multiply(
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = 0; y < i0.data.ydim; y++)
     for (long int x = 0; x < i0.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = DIRECT_NZYX_ELEM(i0.data, n, z, y, x) * DIRECT_NZYX_ELEM(i1.data, n, z, y, x);
+        direct::elem(dest.data, n, z, y, x) = direct::elem(i0.data, n, z, y, x) * direct::elem(i1.data, n, z, y, x);
     }
 }
 
@@ -1163,8 +1163,8 @@ void FilterHelper::wienerDivide(Image<RFLOAT> &num, Image<RFLOAT> &denom, RFLOAT
     for (long int z = 0; z < num.data.zdim; z++)
     for (long int y = 0; y < num.data.ydim; y++)
     for (long int x = 0; x < num.data.xdim; x++) {
-        RFLOAT d = DIRECT_NZYX_ELEM(denom.data, n, z, y, x);
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = d * DIRECT_NZYX_ELEM(num.data, n, z, y, x) / (d * d + eps);
+        RFLOAT d = direct::elem(denom.data, n, z, y, x);
+        direct::elem(dest.data, n, z, y, x) = d * direct::elem(num.data, n, z, y, x) / (d * d + eps);
     }
 }
 
@@ -1175,7 +1175,7 @@ void FilterHelper::divide(
     for (long int z = 0; z < num.data.zdim; z++)
     for (long int y = 0; y < num.data.ydim; y++)
     for (long int x = 0; x < num.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = DIRECT_NZYX_ELEM(num.data, n, z, y, x) / (denom(x, y, z) + eps);
+        direct::elem(dest.data, n, z, y, x) = direct::elem(num.data, n, z, y, x) / (denom(x, y, z) + eps);
     }
 }
 
@@ -1184,8 +1184,8 @@ void FilterHelper::divide(
     Image<Complex> &dest
 ) {
     FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(dividend.data) {
-        DIRECT_NZYX_ELEM(dest.data, l, k, i, j) = DIRECT_NZYX_ELEM(dividend.data, l, k, i, j)
-                                                / (DIRECT_NZYX_ELEM(divisor.data, l, k, i, j) + epsilon);  // epsilon saves us from division by zero
+        direct::elem(dest.data, l, k, i, j) = direct::elem(dividend.data, l, k, i, j)
+                                                / (direct::elem(divisor.data, l, k, i, j) + epsilon);  // epsilon saves us from division by zero
     }
 }
 
@@ -1199,9 +1199,9 @@ void FilterHelper::divideExcessive(
     for (long int x = 0; x < dividend.data.xdim; x++) {
         RFLOAT t = divisor(x, y, z) / theta;
 
-        DIRECT_NZYX_ELEM(dest.data, n, z, y, x) = t > 1 ?
-            DIRECT_NZYX_ELEM(dividend.data, n, z, y, x) / t :
-            DIRECT_NZYX_ELEM(dividend.data, n, z, y, x);
+        direct::elem(dest.data, n, z, y, x) = t > 1 ?
+            direct::elem(dividend.data, n, z, y, x) / t :
+            direct::elem(dividend.data, n, z, y, x);
     }
 }
 
@@ -1212,24 +1212,24 @@ void FilterHelper::wienerDeconvolve(
     for (long int z = 0; z < dividend.data.zdim; z++)
     for (long int y = 0; y < dividend.data.ydim; y++)
     for (long int x = 0; x < dividend.data.xdim; x++) {
-        Complex zz = DIRECT_NZYX_ELEM(divisor.data,  0, z, y, x);
-        Complex z0 = DIRECT_NZYX_ELEM(dividend.data, 0, z, y, x);
+        Complex zz = direct::elem(divisor.data,  0, z, y, x);
+        Complex z0 = direct::elem(dividend.data, 0, z, y, x);
 
         /*std::cout << "z0 = " << z0.real << " + " << z0.imag << " * i\n";
         std::cout << "zz = " << zz.real << " + " << zz.imag << " * i\n";
         std::cout << "zzB * z0 = " << (zz.conj() * z0).real << " + " << (zz.conj() * z0).imag << " * i\n";
         std::cout << "((zz.conj() * zz).real + theta) = " << ((zz.conj() * zz).real + theta) << " * i\n";*/
 
-        //DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = (zz.conj() * z0) / ((zz.conj() * zz).real + theta);
+        //direct::elem(dest.data, 0, z, y, x) = (zz.conj() * z0) / ((zz.conj() * zz).real + theta);
 
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = (zz.real * z0) / (zz.real * zz.real + theta);
+        direct::elem(dest.data, 0, z, y, x) = (zz.real * z0) / (zz.real * zz.real + theta);
 
         /*RFLOAT t = zz.abs()/theta;
 
         if (t > 1) {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(dividend.data, 0, z, y, x) / t;
+            direct::elem(dest.data, 0, z, y, x) = direct::elem(dividend.data, 0, z, y, x) / t;
         } else {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(dividend.data, 0, z, y, x);
+            direct::elem(dest.data, 0, z, y, x) = direct::elem(dividend.data, 0, z, y, x);
         }*/
     }
 }
@@ -1250,9 +1250,9 @@ void FilterHelper::extract2D(
             xx >= 0 && xx < src.data.xdim && 
             yy >= 0 && yy < src.data.ydim
         ) {
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = DIRECT_NZYX_ELEM(src.data, 0, 0, yy, xx);
+            direct::elem(dest.data, 0, 0, y, x) = direct::elem(src.data, 0, 0, yy, xx);
         } else {
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = 0;
+            direct::elem(dest.data, 0, 0, y, x) = 0;
         }
     }
 }
@@ -1567,11 +1567,11 @@ MultidimArray<Complex> FilterHelper::FriedelExpand(const MultidimArray<Complex> 
         const int yy = (h - y) % h;
         
         for (int x = 0; x < wh; x++) {
-            DIRECT_NZYX_ELEM(out, n, z, y, x) = DIRECT_NZYX_ELEM(half, n, z, y, x);
+            direct::elem(out, n, z, y, x) = direct::elem(half, n, z, y, x);
         }
         
         for (int x = wh; x < w; x++) {
-            DIRECT_NZYX_ELEM(out, n, z, y, x) = DIRECT_NZYX_ELEM(half, n, zz, yy, w - x).conj();
+            direct::elem(out, n, z, y, x) = direct::elem(half, n, zz, yy, w - x).conj();
         }
     }	
     
@@ -1591,7 +1591,7 @@ Image<RFLOAT> FilterHelper::normaliseToUnitInterval(const Image<RFLOAT> &img) {
     for (int z = 0; z < d; z++)
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        RFLOAT v = DIRECT_NZYX_ELEM(img.data, n, z, y, x);
+        RFLOAT v = direct::elem(img.data, n, z, y, x);
         
         if (v > maxVal) { maxVal = v; }
         if (v < minVal) { minVal = v; }
@@ -1603,8 +1603,8 @@ Image<RFLOAT> FilterHelper::normaliseToUnitInterval(const Image<RFLOAT> &img) {
     for (int z = 0; z < d; z++)
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        RFLOAT v = DIRECT_NZYX_ELEM(img.data, n, z, y, x);
-        DIRECT_NZYX_ELEM(out.data, n, z, y, x) = (v - minVal) / (maxVal - minVal);
+        RFLOAT v = direct::elem(img.data, n, z, y, x);
+        direct::elem(out.data, n, z, y, x) = (v - minVal) / (maxVal - minVal);
     }
     
     return out;
@@ -1622,7 +1622,7 @@ Image<RFLOAT> FilterHelper::normaliseToUnitIntervalSigned(const Image<RFLOAT> &i
     for (int z = 0; z < d; z++)
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        RFLOAT v = std::abs(DIRECT_NZYX_ELEM(img.data, n, z, y, x));
+        RFLOAT v = std::abs(direct::elem(img.data, n, z, y, x));
         
         if (v > maxAbs) { maxAbs = v; }
     }
@@ -1633,8 +1633,8 @@ Image<RFLOAT> FilterHelper::normaliseToUnitIntervalSigned(const Image<RFLOAT> &i
     for (int z = 0; z < d; z++)
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        RFLOAT v = DIRECT_NZYX_ELEM(img.data, n, z, y, x);
-        DIRECT_NZYX_ELEM(out.data, n, z, y, x) = v / maxAbs;
+        RFLOAT v = direct::elem(img.data, n, z, y, x);
+        direct::elem(out.data, n, z, y, x) = v / maxAbs;
     }
     
     return out;
@@ -1664,11 +1664,11 @@ void FilterHelper::uniqueInfluenceMask(std::vector<gravis::d3Vector> pts, Image<
         }
 
         if (closer == 1) {
-            DIRECT_NZYX_ELEM(dest.data,      0, 0, y, x) = 1.0;
-            DIRECT_NZYX_ELEM(indexDest.data, 0, 0, y, x) = lastIndex;
+            direct::elem(dest.data,      0, 0, y, x) = 1.0;
+            direct::elem(indexDest.data, 0, 0, y, x) = lastIndex;
         } else {
-            DIRECT_NZYX_ELEM(dest.data,      0, 0, y, x) = 0.0;
-            DIRECT_NZYX_ELEM(indexDest.data, 0, 0, y, x) = -1.0;
+            direct::elem(dest.data,      0, 0, y, x) = 0.0;
+            direct::elem(indexDest.data, 0, 0, y, x) = -1.0;
         }
     }
 }
@@ -1697,13 +1697,13 @@ void FilterHelper::polarRemap(
         if (
             ppnnx > 0 && ppnnx < w - 1 && 
             ppnny > 0 && ppnny < h - 1 && 
-            DIRECT_NZYX_ELEM(mask.data, 0, 0, ppnny, ppnnx) > 0.5
+            direct::elem(mask.data, 0, 0, ppnny, ppnnx) > 0.5
         ) {
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, ri, p) = Interpolation::linearXY(src, pp.x, pp.y, 0);
-            DIRECT_NZYX_ELEM(maskDest.data, 0, 0, ri, p) = 1.0;
+            direct::elem(dest.data, 0, 0, ri, p) = Interpolation::linearXY(src, pp.x, pp.y, 0);
+            direct::elem(maskDest.data, 0, 0, ri, p) = 1.0;
         } else {
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, ri, p) = 0.0;
-            DIRECT_NZYX_ELEM(maskDest.data, 0, 0, ri, p) = 0.0;
+            direct::elem(dest.data, 0, 0, ri, p) = 0.0;
+            direct::elem(maskDest.data, 0, 0, ri, p) = 0.0;
         }
     }
 }
@@ -1720,8 +1720,8 @@ void FilterHelper::polarRemap(
 
     for (long int r = 0; r < rRes; r++)
     for (long int p = 0; p < phiRes; p++) {
-        DIRECT_NZYX_ELEM(dest.data,     0, 0, r, p) = 0.0;
-        DIRECT_NZYX_ELEM(maskDest.data, 0, 0, r, p) = 0.0;
+        direct::elem(dest.data,     0, 0, r, p) = 0.0;
+        direct::elem(maskDest.data, 0, 0, r, p) = 0.0;
     }
 
     const int x0 = pos.x - rMax + 0.5;
@@ -1747,35 +1747,35 @@ void FilterHelper::polarRemap(
         const int phi1 = ((int) phiD + 1) % phiRes;
         const double phiF = phiD - (double) phi0;
 
-        const double rD = rRes * DIRECT_NZYX_ELEM(distTransf.data, 0, 0, y, x) / rMax;
+        const double rD = rRes * direct::elem(distTransf.data, 0, 0, y, x) / rMax;
         const int r0 = rD;
         const int r1 = rD + 1;
         const double rF = rD - r0;
 
-        const double v = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
+        const double v = direct::elem(src.data, 0, 0, y, x);
 
         if (r0 >= 0 && r0 < rRes) {
-            DIRECT_NZYX_ELEM(dest.data,     0, 0, r0, phi0) += (1.0 - rF) * (1.0 - phiF) * v;
-            DIRECT_NZYX_ELEM(maskDest.data, 0, 0, r0, phi0) += (1.0 - rF) * (1.0 - phiF);
+            direct::elem(dest.data,     0, 0, r0, phi0) += (1.0 - rF) * (1.0 - phiF) * v;
+            direct::elem(maskDest.data, 0, 0, r0, phi0) += (1.0 - rF) * (1.0 - phiF);
 
-            DIRECT_NZYX_ELEM(dest.data,     0, 0, r0, phi1) += (1.0 - rF) * phiF * v;
-            DIRECT_NZYX_ELEM(maskDest.data, 0, 0, r0, phi1) += (1.0 - rF) * phiF;
+            direct::elem(dest.data,     0, 0, r0, phi1) += (1.0 - rF) * phiF * v;
+            direct::elem(maskDest.data, 0, 0, r0, phi1) += (1.0 - rF) * phiF;
         }
 
         if (r1 >= 0 && r1 < rRes) {
-            DIRECT_NZYX_ELEM(dest.data,     0, 0, r1, phi0) += rF * (1.0 - phiF) * v;
-            DIRECT_NZYX_ELEM(maskDest.data, 0, 0, r1, phi0) += rF * (1.0 - phiF);
+            direct::elem(dest.data,     0, 0, r1, phi0) += rF * (1.0 - phiF) * v;
+            direct::elem(maskDest.data, 0, 0, r1, phi0) += rF * (1.0 - phiF);
 
-            DIRECT_NZYX_ELEM(dest.data,     0, 0, r1, phi1) += rF * phiF * v;
-            DIRECT_NZYX_ELEM(maskDest.data, 0, 0, r1, phi1) += rF * phiF;
+            direct::elem(dest.data,     0, 0, r1, phi1) += rF * phiF * v;
+            direct::elem(maskDest.data, 0, 0, r1, phi1) += rF * phiF;
         }
 
     }
 
     for (long int r = 0; r < rRes; r++)
     for (long int p = 0; p < phiRes; p++) {
-        if (DIRECT_NZYX_ELEM(maskDest.data, 0, 0, r, p) > 0.0) {
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, r, p) /= DIRECT_NZYX_ELEM(maskDest.data, 0, 0, r, p);
+        if (direct::elem(maskDest.data, 0, 0, r, p) > 0.0) {
+            direct::elem(dest.data, 0, 0, r, p) /= direct::elem(maskDest.data, 0, 0, r, p);
         }
     }
 }
@@ -1889,7 +1889,7 @@ void FilterHelper::diffuseAlongIsocontours2D(
 
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
+        direct::elem(dest.data, 0, 0, y, x) = direct::elem(src.data, 0, 0, y, x);
     }
 
     Volume<d2Vector> flux(w, h, 1);
@@ -1905,27 +1905,27 @@ void FilterHelper::diffuseAlongIsocontours2D(
         d2Vector g;
 
         if (sobel) {
-            double gxp =   0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y - 1, x + 1)
-                         + 0.5  * DIRECT_NZYX_ELEM(guide.data, 0, 0, y,     x + 1)
-                         + 0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y + 1, x + 1);
+            double gxp =   0.25 * direct::elem(guide.data, 0, 0, y - 1, x + 1)
+                         + 0.5  * direct::elem(guide.data, 0, 0, y,     x + 1)
+                         + 0.25 * direct::elem(guide.data, 0, 0, y + 1, x + 1);
 
-            double gxn =   0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y - 1, x - 1)
-                         + 0.5  * DIRECT_NZYX_ELEM(guide.data, 0, 0, y,     x - 1)
-                         + 0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y + 1, x - 1);
+            double gxn =   0.25 * direct::elem(guide.data, 0, 0, y - 1, x - 1)
+                         + 0.5  * direct::elem(guide.data, 0, 0, y,     x - 1)
+                         + 0.25 * direct::elem(guide.data, 0, 0, y + 1, x - 1);
 
-            double gyp =   0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y + 1, x - 1)
-                         + 0.5  * DIRECT_NZYX_ELEM(guide.data, 0, 0, y + 1, x)
-                         + 0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y + 1, x + 1);
+            double gyp =   0.25 * direct::elem(guide.data, 0, 0, y + 1, x - 1)
+                         + 0.5  * direct::elem(guide.data, 0, 0, y + 1, x)
+                         + 0.25 * direct::elem(guide.data, 0, 0, y + 1, x + 1);
 
-            double gyn =   0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y - 1, x - 1)
-                         + 0.5  * DIRECT_NZYX_ELEM(guide.data, 0, 0, y - 1, x)
-                         + 0.25 * DIRECT_NZYX_ELEM(guide.data, 0, 0, y - 1, x + 1);
+            double gyn =   0.25 * direct::elem(guide.data, 0, 0, y - 1, x - 1)
+                         + 0.5  * direct::elem(guide.data, 0, 0, y - 1, x)
+                         + 0.25 * direct::elem(guide.data, 0, 0, y - 1, x + 1);
 
             g.x = 0.5 * (gxp - gxn);
             g.y = 0.5 * (gyp - gyn);
         } else {
-            g.x = 0.5 * (DIRECT_NZYX_ELEM(guide.data, 0, 0, y, x + 1) - DIRECT_NZYX_ELEM(guide.data, 0, 0, y, x - 1));
-            g.y = 0.5 * (DIRECT_NZYX_ELEM(guide.data, 0, 0, y + 1, x) - DIRECT_NZYX_ELEM(guide.data, 0, 0, y - 1, x));
+            g.x = 0.5 * (direct::elem(guide.data, 0, 0, y, x + 1) - direct::elem(guide.data, 0, 0, y, x - 1));
+            g.y = 0.5 * (direct::elem(guide.data, 0, 0, y + 1, x) - direct::elem(guide.data, 0, 0, y - 1, x));
         }
 
         D0(x, y, 0) = Tensor2x2<RFLOAT>::autoDyadicProduct(t2Vector<RFLOAT>(g.x, g.y));
@@ -1966,27 +1966,27 @@ void FilterHelper::diffuseAlongIsocontours2D(
             d2Vector g;
 
             if (sobel) {
-                double gxp =   0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y - 1, x + 1)
-                             + 0.5  * DIRECT_NZYX_ELEM(dest.data, 0, 0, y,     x + 1)
-                             + 0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y + 1, x + 1);
+                double gxp =   0.25 * direct::elem(dest.data, 0, 0, y - 1, x + 1)
+                             + 0.5  * direct::elem(dest.data, 0, 0, y,     x + 1)
+                             + 0.25 * direct::elem(dest.data, 0, 0, y + 1, x + 1);
 
-                double gxn =   0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y - 1, x - 1)
-                             + 0.5  * DIRECT_NZYX_ELEM(dest.data, 0, 0, y,     x - 1)
-                             + 0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y + 1, x - 1);
+                double gxn =   0.25 * direct::elem(dest.data, 0, 0, y - 1, x - 1)
+                             + 0.5  * direct::elem(dest.data, 0, 0, y,     x - 1)
+                             + 0.25 * direct::elem(dest.data, 0, 0, y + 1, x - 1);
 
-                double gyp =   0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y + 1, x - 1)
-                             + 0.5  * DIRECT_NZYX_ELEM(dest.data, 0, 0, y + 1, x)
-                             + 0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y + 1, x + 1);
+                double gyp =   0.25 * direct::elem(dest.data, 0, 0, y + 1, x - 1)
+                             + 0.5  * direct::elem(dest.data, 0, 0, y + 1, x)
+                             + 0.25 * direct::elem(dest.data, 0, 0, y + 1, x + 1);
 
-                double gyn =   0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y - 1, x - 1)
-                             + 0.5  * DIRECT_NZYX_ELEM(dest.data, 0, 0, y - 1, x)
-                             + 0.25 * DIRECT_NZYX_ELEM(dest.data, 0, 0, y - 1, x + 1);
+                double gyn =   0.25 * direct::elem(dest.data, 0, 0, y - 1, x - 1)
+                             + 0.5  * direct::elem(dest.data, 0, 0, y - 1, x)
+                             + 0.25 * direct::elem(dest.data, 0, 0, y - 1, x + 1);
 
                 g.x = 0.5 * (gxp - gxn);
                 g.y = 0.5 * (gyp - gyn);
             } else {
-                g.x = 0.5 * (DIRECT_NZYX_ELEM(guide.data, 0, 0, y, x + 1) - DIRECT_NZYX_ELEM(guide.data, 0, 0, y, x - 1));
-                g.y = 0.5 * (DIRECT_NZYX_ELEM(guide.data, 0, 0, y + 1, x) - DIRECT_NZYX_ELEM(guide.data, 0, 0, y - 1, x));
+                g.x = 0.5 * (direct::elem(guide.data, 0, 0, y, x + 1) - direct::elem(guide.data, 0, 0, y, x - 1));
+                g.y = 0.5 * (direct::elem(guide.data, 0, 0, y + 1, x) - direct::elem(guide.data, 0, 0, y - 1, x));
             }
 
             t2Vector<RFLOAT> fR = J(x, y, 0).toMatrix() * t2Vector<RFLOAT>(g.x, g.y);
@@ -2003,7 +2003,7 @@ void FilterHelper::diffuseAlongIsocontours2D(
             div += flux(x + 1, y, 0).x - flux(x - 1, y, 0).x;
             div += flux(x, y + 1, 0).y - flux(x, y - 1, 0).y;
 
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) +=  delta * div;
+            direct::elem(dest.data, 0, 0, y, x) +=  delta * div;
         }
     }
 }
@@ -2014,7 +2014,7 @@ void FilterHelper::EED_2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, int ite
 
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
+        direct::elem(dest.data, 0, 0, y, x) = direct::elem(src.data, 0, 0, y, x);
     }
 
     Image<RFLOAT> smooth;
@@ -2034,10 +2034,10 @@ void FilterHelper::EED_2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, int ite
         for (long int x = 1; x < w - 1; x++) {
             d2Vector g, gs;
 
-            g.x  = DIRECT_NZYX_ELEM(dest.data,   0, 0, y, x + 1) - DIRECT_NZYX_ELEM(dest.data,   0, 0, y, x);
-            g.y  = DIRECT_NZYX_ELEM(dest.data,   0, 0, y + 1, x) - DIRECT_NZYX_ELEM(dest.data,   0, 0, y, x);
-            gs.x = DIRECT_NZYX_ELEM(smooth.data, 0, 0, y, x + 1) - DIRECT_NZYX_ELEM(smooth.data, 0, 0, y, x);
-            gs.y = DIRECT_NZYX_ELEM(smooth.data, 0, 0, y + 1, x) - DIRECT_NZYX_ELEM(smooth.data, 0, 0, y, x);
+            g.x  = direct::elem(dest.data,   0, 0, y, x + 1) - direct::elem(dest.data,   0, 0, y, x);
+            g.y  = direct::elem(dest.data,   0, 0, y + 1, x) - direct::elem(dest.data,   0, 0, y, x);
+            gs.x = direct::elem(smooth.data, 0, 0, y, x + 1) - direct::elem(smooth.data, 0, 0, y, x);
+            gs.y = direct::elem(smooth.data, 0, 0, y + 1, x) - direct::elem(smooth.data, 0, 0, y, x);
 
             double iso = exp(-0.5 * gs.norm2() / tt);
 
@@ -2061,7 +2061,7 @@ void FilterHelper::EED_2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, int ite
             div += flux(x, y, 0).x - flux(x - 1, y, 0).x;
             div += flux(x, y, 0).y - flux(x, y - 1, 0).y;
 
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) += delta * div;
+            direct::elem(dest.data, 0, 0, y, x) += delta * div;
         }
     }
 }
@@ -2076,17 +2076,17 @@ void FilterHelper::descendTV(const Image<RFLOAT> &src, Image<RFLOAT> &dest, doub
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        const double v0 = DIRECT_NZYX_ELEM(src.data, 0, z, y, x);
+        const double v0 = direct::elem(src.data, 0, z, y, x);
 
         vals.clear();
         vals.reserve(6);
 
-        if (x > 0)     vals.push_back(DIRECT_NZYX_ELEM(src.data, 0, z, y, x - 1));
-        if (x < w - 1) vals.push_back(DIRECT_NZYX_ELEM(src.data, 0, z, y, x + 1));
-        if (y > 0)     vals.push_back(DIRECT_NZYX_ELEM(src.data, 0, z, y - 1, x));
-        if (y < h - 1) vals.push_back(DIRECT_NZYX_ELEM(src.data, 0, z, y + 1, x));
-        if (z > 0)     vals.push_back(DIRECT_NZYX_ELEM(src.data, 0, z - 1, y, x));
-        if (z < d - 1) vals.push_back(DIRECT_NZYX_ELEM(src.data, 0, z + 1, y, x));
+        if (x > 0)     vals.push_back(direct::elem(src.data, 0, z, y, x - 1));
+        if (x < w - 1) vals.push_back(direct::elem(src.data, 0, z, y, x + 1));
+        if (y > 0)     vals.push_back(direct::elem(src.data, 0, z, y - 1, x));
+        if (y < h - 1) vals.push_back(direct::elem(src.data, 0, z, y + 1, x));
+        if (z > 0)     vals.push_back(direct::elem(src.data, 0, z - 1, y, x));
+        if (z < d - 1) vals.push_back(direct::elem(src.data, 0, z + 1, y, x));
 
         std::vector<int> order = IndexSort<RFLOAT>::sortIndices(vals);
         const int c = vals.size();
@@ -2100,11 +2100,11 @@ void FilterHelper::descendTV(const Image<RFLOAT> &src, Image<RFLOAT> &dest, doub
         }
 
         if (std::abs(v0 - vm) < delta) {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = vm;
+            direct::elem(dest.data, 0, z, y, x) = vm;
         } else if (v0 < vm) {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = v0 + delta;
+            direct::elem(dest.data, 0, z, y, x) = v0 + delta;
         } else {
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = v0 - delta;
+            direct::elem(dest.data, 0, z, y, x) = v0 - delta;
         }
     }
 }
@@ -2123,8 +2123,8 @@ void FilterHelper::descendTV2(
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        uBar(x, y, z) = DIRECT_NZYX_ELEM(src.data, 0, z, y, x);
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = DIRECT_NZYX_ELEM(src.data, 0, z, y, x);
+        uBar(x, y, z) = direct::elem(src.data, 0, z, y, x);
+        direct::elem(dest.data, 0, z, y, x) = direct::elem(src.data, 0, z, y, x);
     }
 
     for (int it = 0; it < iters; it++) {
@@ -2183,8 +2183,8 @@ void FilterHelper::descendTV2(
 
             double du = tau * divXi;
 
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) += du;
-            uBar(x, y, z) = DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) + 0.5 * du;
+            direct::elem(dest.data, 0, z, y, x) += du;
+            uBar(x, y, z) = direct::elem(dest.data, 0, z, y, x) + 0.5 * du;
         }
     }
 }
@@ -2204,8 +2204,8 @@ void FilterHelper::segmentTV(
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        uBar(x, y, z) = DIRECT_NZYX_ELEM(src.data, 0, z, y, x);
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = 0.0;
+        uBar(x, y, z) = direct::elem(src.data, 0, z, y, x);
+        direct::elem(dest.data, 0, z, y, x) = 0.0;
     }
 
     for (int it = 0; it < iters; it++) {
@@ -2268,8 +2268,8 @@ void FilterHelper::segmentTV(
                 divXi += xi(x, y, z).z - xi(x, y, z - 1).z;
             }
 
-            double u = DIRECT_NZYX_ELEM(dest.data, 0, z, y, x);
-            double du = tau * (nu * divXi + DIRECT_NZYX_ELEM(src.data, 0, z, y, x));
+            double u = direct::elem(dest.data, 0, z, y, x);
+            double du = tau * (nu * divXi + direct::elem(src.data, 0, z, y, x));
 
             double nextU = u + du;
 
@@ -2277,7 +2277,7 @@ void FilterHelper::segmentTV(
             else
             if (nextU < 0.0) { nextU = 0.0; }
 
-            DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = nextU;
+            direct::elem(dest.data, 0, z, y, x) = nextU;
             uBar(x, y, z) = 2.0 * nextU - u;
         }
     }
@@ -2308,8 +2308,8 @@ void FilterHelper::segmentTVAniso2D(
 
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        uBar(x, y, 0) = DIRECT_NZYX_ELEM(src.data, 0, 0, y, x);
-        DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = 0.0;
+        uBar(x, y, 0) = direct::elem(src.data, 0, 0, y, x);
+        direct::elem(dest.data, 0, 0, y, x) = 0.0;
 
         d2Vector gs = smoothGrad(x, y, 0);
         double iso = exp(-0.5 * gs.norm2() / tt);
@@ -2376,8 +2376,8 @@ void FilterHelper::segmentTVAniso2D(
                 divXi += xi(x, y, 0).y - xi(x, y - 1, 0).y;
             }
 
-            double u = DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x);
-            double du = tau * (divXi + DIRECT_NZYX_ELEM(src.data, 0, 0, y, x));
+            double u = direct::elem(dest.data, 0, 0, y, x);
+            double du = tau * (divXi + direct::elem(src.data, 0, 0, y, x));
 
             double nextU = u + du;
 
@@ -2386,7 +2386,7 @@ void FilterHelper::segmentTVAniso2D(
             if (nextU < 0.0) { nextU = 0.0; }
 
 
-            DIRECT_NZYX_ELEM(dest.data, 0, 0, y, x) = nextU;
+            direct::elem(dest.data, 0, 0, y, x) = nextU;
             uBar(x, y, 0) = 2.0 * nextU - u;
         }
     }
@@ -2404,25 +2404,25 @@ void FilterHelper::fwdGrad(const Image<RFLOAT> &u, Volume<gravis::d3Vector> &des
         if (w == 1) {
             dest(x, y, z).x = 0;
         } else if (x < w - 1) {
-            dest(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x);
+            dest(x, y, z).x = direct::elem(u.data, 0, z, y, x + 1) - direct::elem(u.data, 0, z, y, x);
         } else {
-            dest(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1);
+            dest(x, y, z).x = direct::elem(u.data, 0, z, y, x) - direct::elem(u.data, 0, z, y, x - 1);
         }
 
         if (h == 1) {
             dest(x, y, z).y = 0;
         } else if (y < h - 1) {
-            dest(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x);
+            dest(x, y, z).y = direct::elem(u.data, 0, z, y + 1, x) - direct::elem(u.data, 0, z, y, x);
         } else {
-            dest(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x);
+            dest(x, y, z).y = direct::elem(u.data, 0, z, y, x) - direct::elem(u.data, 0, z, y - 1, x);
         }
 
         if (d == 1) {
             dest(x, y, z).z = 0;
         } else if (z < d - 1) {
-            dest(x, y, z).z = DIRECT_NZYX_ELEM(u.data, 0, z+1, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x);
+            dest(x, y, z).z = direct::elem(u.data, 0, z+1, y, x) - direct::elem(u.data, 0, z, y, x);
         } else {
-            dest(x, y, z).z = DIRECT_NZYX_ELEM(u.data, 0, z, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z-1, y, x);
+            dest(x, y, z).z = direct::elem(u.data, 0, z, y, x) - direct::elem(u.data, 0, z-1, y, x);
         }
     }
 }
@@ -2439,17 +2439,17 @@ void FilterHelper::fwdGrad2D(const Image<RFLOAT> &u, Volume<d2Vector> &dest) {
         if (w == 1) {
             dest(x, y, z).x = 0;
         } else if (x < w - 1) {
-            dest(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x);
+            dest(x, y, z).x = direct::elem(u.data, 0, z, y, x + 1) - direct::elem(u.data, 0, z, y, x);
         } else {
-            dest(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1);
+            dest(x, y, z).x = direct::elem(u.data, 0, z, y, x) - direct::elem(u.data, 0, z, y, x - 1);
         }
 
         if (h == 1) {
             dest(x, y, z).y = 0;
         } else if (y < h - 1) {
-            dest(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x);
+            dest(x, y, z).y = direct::elem(u.data, 0, z, y + 1, x) - direct::elem(u.data, 0, z, y, x);
         } else {
-            dest(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x);
+            dest(x, y, z).y = direct::elem(u.data, 0, z, y, x) - direct::elem(u.data, 0, z, y - 1, x);
         }
     }
 }
@@ -2465,21 +2465,21 @@ void FilterHelper::centralGrad2D(const Image<RFLOAT> &u, Volume<d2Vector> &dest)
         if (w == 1) {
             dest(x, y, z).x = 0;
         } else if (x < w - 1 && x > 0) {
-            dest(x, y, z).x = (DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1)) / 2.0;
+            dest(x, y, z).x = (direct::elem(u.data, 0, z, y, x + 1) - direct::elem(u.data, 0, z, y, x - 1)) / 2.0;
         } else if (x == 0) {
-            dest(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x);
+            dest(x, y, z).x = direct::elem(u.data, 0, z, y, x + 1) - direct::elem(u.data, 0, z, y, x);
         } else if (x == w - 1) {
-            dest(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1);
+            dest(x, y, z).x = direct::elem(u.data, 0, z, y, x) - direct::elem(u.data, 0, z, y, x - 1);
         }
 
         if (h == 1) {
             dest(x, y, z).y = 0;
         } else if (y < h - 1 && y > 0) {
-            dest(x, y, z).y = (DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x)) / 2;
+            dest(x, y, z).y = (direct::elem(u.data, 0, z, y + 1, x) - direct::elem(u.data, 0, z, y - 1, x)) / 2;
         } else if (y == 0) {
-            dest(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y, x);
+            dest(x, y, z).y = direct::elem(u.data, 0, z, y + 1, x) - direct::elem(u.data, 0, z, y, x);
         } else if (y == h - 1) {
-            dest(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y, x) - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x);
+            dest(x, y, z).y = direct::elem(u.data, 0, z, y, x) - direct::elem(u.data, 0, z, y - 1, x);
         }
     }
 
@@ -2499,28 +2499,28 @@ void FilterHelper::centralGrad2D(
             destRe(x, y, z).x = 0;
             destIm(x, y, z).x = 0;
         } else if (x < w - 1 && x > 0) {
-            destRe(x, y, z).x = (DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1).real - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1).real) / 2.0;
-            destIm(x, y, z).x = (DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1).imag - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1).imag) / 2.0;
+            destRe(x, y, z).x = (direct::elem(u.data, 0, z, y, x + 1).real - direct::elem(u.data, 0, z, y, x - 1).real) / 2.0;
+            destIm(x, y, z).x = (direct::elem(u.data, 0, z, y, x + 1).imag - direct::elem(u.data, 0, z, y, x - 1).imag) / 2.0;
         } else if (x == 0) {
-            destRe(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1).real - DIRECT_NZYX_ELEM(u.data, 0, z, y, x).real;
-            destIm(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x + 1).imag - DIRECT_NZYX_ELEM(u.data, 0, z, y, x).imag;
+            destRe(x, y, z).x = direct::elem(u.data, 0, z, y, x + 1).real - direct::elem(u.data, 0, z, y, x).real;
+            destIm(x, y, z).x = direct::elem(u.data, 0, z, y, x + 1).imag - direct::elem(u.data, 0, z, y, x).imag;
         } else if (x == w - 1) {
-            destRe(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x).real - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1).real;
-            destIm(x, y, z).x = DIRECT_NZYX_ELEM(u.data, 0, z, y, x).imag - DIRECT_NZYX_ELEM(u.data, 0, z, y, x - 1).imag;
+            destRe(x, y, z).x = direct::elem(u.data, 0, z, y, x).real - direct::elem(u.data, 0, z, y, x - 1).real;
+            destIm(x, y, z).x = direct::elem(u.data, 0, z, y, x).imag - direct::elem(u.data, 0, z, y, x - 1).imag;
         }
 
         if (h == 1) {
             destRe(x, y, z).y = 0;
             destIm(x, y, z).y = 0;
         } else if (y < h - 1 && y > 0) {
-            destRe(x, y, z).y = (DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x).real - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x).real) / 2;
-            destIm(x, y, z).y = (DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x).imag - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x).imag) / 2;
+            destRe(x, y, z).y = (direct::elem(u.data, 0, z, y + 1, x).real - direct::elem(u.data, 0, z, y - 1, x).real) / 2;
+            destIm(x, y, z).y = (direct::elem(u.data, 0, z, y + 1, x).imag - direct::elem(u.data, 0, z, y - 1, x).imag) / 2;
         } else if (y == 0) {
-            destRe(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x).real - DIRECT_NZYX_ELEM(u.data, 0, z, y, x).real;
-            destIm(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y + 1, x).imag - DIRECT_NZYX_ELEM(u.data, 0, z, y, x).imag;
+            destRe(x, y, z).y = direct::elem(u.data, 0, z, y + 1, x).real - direct::elem(u.data, 0, z, y, x).real;
+            destIm(x, y, z).y = direct::elem(u.data, 0, z, y + 1, x).imag - direct::elem(u.data, 0, z, y, x).imag;
         } else if (y == h - 1) {
-            destRe(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y, x).real - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x).real;
-            destIm(x, y, z).y = DIRECT_NZYX_ELEM(u.data, 0, z, y, x).imag - DIRECT_NZYX_ELEM(u.data, 0, z, y - 1, x).imag;
+            destRe(x, y, z).y = direct::elem(u.data, 0, z, y, x).real - direct::elem(u.data, 0, z, y - 1, x).real;
+            destIm(x, y, z).y = direct::elem(u.data, 0, z, y, x).imag - direct::elem(u.data, 0, z, y - 1, x).imag;
         }
     }
 
@@ -2537,11 +2537,11 @@ void FilterHelper::blendSoft(
     for (long int z = 0; z < d; z++)
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        const Complex v0 = DIRECT_NZYX_ELEM(src0.data, 0, z, y, x);
-        const Complex v1 = DIRECT_NZYX_ELEM(src1.data, 0, z, y, x);
+        const Complex v0 = direct::elem(src0.data, 0, z, y, x);
+        const Complex v1 = direct::elem(src1.data, 0, z, y, x);
         const RFLOAT m = mask(x, y, z);
 
-        DIRECT_NZYX_ELEM(dest.data, 0, z, y, x) = (v0 + bias1 * m * v1) / (1.0 + bias1 * m);
+        direct::elem(dest.data, 0, z, y, x) = (v0 + bias1 * m * v1) / (1.0 + bias1 * m);
     }
 }
 

@@ -419,7 +419,7 @@ void MovieReconstructor::backproject(int rank, int size) {
                         if (xx < 0 || xx >= w0 || yy < 0 || yy >= h0) continue;
                     }
 
-                    DIRECT_NZYX_ELEM(Iparticle(), 0, 0, y, x) = DIRECT_NZYX_ELEM(Iframe(), 0, 0, yy, xx);
+                    direct::elem(Iparticle(), 0, 0, y, x) = direct::elem(Iframe(), 0, 0, yy, xx);
                 }
 
                 // Residual shifts in Angstrom. They don't contain OriginX/Y. Note the NEGATIVE sign.

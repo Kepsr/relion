@@ -35,7 +35,7 @@ Image<RFLOAT> VtkHelper::allToZ(const Image<RFLOAT> &img) {
     for (int n = 0; n < img.data.ndim; n++)
     for (int y = 0; y < img.data.ydim; y++)
     for (int x = 0; x < img.data.xdim; x++) {
-        DIRECT_NZYX_ELEM(out(), 0, n, y, x) = DIRECT_NZYX_ELEM(img(), n, 0, y, x);
+        direct::elem(out(), 0, n, y, x) = direct::elem(img(), n, 0, y, x);
     }
 
     return out;
@@ -302,7 +302,7 @@ void VtkHelper::writeTomoVTK(
         os.write((char*) img.data.data, sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-            os << DIRECT_NZYX_ELEM(img.data, l, 0, i, j) << "\n";
+            os << direct::elem(img.data, l, 0, i, j) << "\n";
         }
     }
 }

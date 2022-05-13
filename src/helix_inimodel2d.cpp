@@ -1001,14 +1001,14 @@ void HelixAligner::writeOut(int iter) {
 
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Aref[iclass]) {
-            DIRECT_NZYX_ELEM(Aimg(), iclass, 0, i, j) = direct::elem(model.Aref[iclass], i, j);
+            direct::elem(Aimg(), iclass, 0, i, j) = direct::elem(model.Aref[iclass], i, j);
         }
     }
     Aimg.write(fn_iter + "_reprojections.mrcs");
 
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Asum[iclass]) {
-            DIRECT_NZYX_ELEM(Aimg(), iclass, 0, i, j) = direct::elem(model.Asum[iclass], i, j);
+            direct::elem(Aimg(), iclass, 0, i, j) = direct::elem(model.Asum[iclass], i, j);
         }
     }
     Aimg.write(fn_iter + "_summed_classes.mrcs");
@@ -1016,7 +1016,7 @@ void HelixAligner::writeOut(int iter) {
     Image<RFLOAT> Aimg2(yrect, yrect, 1, nr_classes);
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Arec[iclass]) {
-            DIRECT_NZYX_ELEM(Aimg2(), iclass, 0, i, j) = direct::elem(model.Arec[iclass], i, j);
+            direct::elem(Aimg2(), iclass, 0, i, j) = direct::elem(model.Arec[iclass], i, j);
         }
     }
     Aimg2.write(fn_iter + "_reconstructed.mrcs");

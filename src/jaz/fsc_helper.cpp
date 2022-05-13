@@ -540,7 +540,7 @@ std::vector<double> FscHelper::powerSpectrum3D(const Image<Complex> &img) {
         const int ri = round(r);
 
         if (ri < sh) {
-            sum[ri] += DIRECT_NZYX_ELEM(img.data, 0, z, y, x).norm();
+            sum[ri] += direct::elem(img.data, 0, z, y, x).norm();
             wgh[ri] += 1.0;
         }
     }

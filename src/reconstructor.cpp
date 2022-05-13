@@ -542,7 +542,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
             for (long int z = 0; z < Fctf.zdim; z++)
             for (long int y = 0; y < Fctf.ydim; y++)
             for (long int x = 0; x < Fctf.xdim; x++) {
-                DIRECT_NZYX_ELEM(Fctf, n, z, y, x) *= DIRECT_NZYX_ELEM(wgh(), n, z, y, x);
+                direct::elem(Fctf, n, z, y, x) *= direct::elem(wgh(), n, z, y, x);
             }
         }
 

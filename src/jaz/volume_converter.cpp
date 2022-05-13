@@ -32,7 +32,7 @@ void VolumeConverter::convertStack(const Image<RFLOAT> &src, Volume<RFLOAT> &des
     dest.resize(src.data.xdim, src.data.ydim, src.data.ndim);
 
     FOR_ALL_VOXELS(dest) {
-        dest(x, y, z) = DIRECT_NZYX_ELEM(src.data, z, 1, y, x);
+        dest(x, y, z) = direct::elem(src.data, z, 1, y, x);
     }
 }
 
@@ -40,7 +40,7 @@ void VolumeConverter::convert(const Volume<RFLOAT> &src, Image<RFLOAT> &dest) {
     dest.data.resize(src.dimz, src.dimy, src.dimx);
 
     FOR_ALL_VOXELS(src) {
-        direct::elem(dest.data, z, y, x) = src(x,y,z);
+        direct::elem(dest.data, z, y, x) = src(x, y, z);
     }
 }
 
