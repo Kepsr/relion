@@ -344,7 +344,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
         ravg(idx) += norm(direct::elem(FT, k, i, j));
         radial_count(idx)++;
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(ravg) {
+    for (int i = Xinit(ravg); i <= Xlast(ravg); i++) {
         if (radial_count(i) > 0) {
             ravg(i) /= radial_count(i);
         }
@@ -561,12 +561,12 @@ void Postprocessing::makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fi
 
     RFLOAT xsize = Xsize(I1());
     guinier.clear();
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(radial_count) {
+    for (int i = Xinit(radial_count); i <= Xlast(radial_count); i++) {
 
         RFLOAT res = (xsize * angpix) / (RFLOAT) i; // resolution in Angstrom
         if (res >= angpix * 2.0) {
             // Apply B-factor sharpening until Nyquist, then low-pass filter later on (with a soft edge)
-            onepoint.x = 1. / (res * res);
+            onepoint.x = 1.0 / (res * res);
             if (direct::elem(lnF, i) > 0.0) {
                 onepoint.y = log(direct::elem(lnF, i) / direct::elem(radial_count, i));
                 onepoint.w = res <= fit_minres && res >= fit_maxres ? 1.0 : 0.0;

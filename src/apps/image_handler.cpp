@@ -713,7 +713,7 @@ class image_handler_parameters {
                         spectrum(idx) += direct::elem(Iop(), k, i, j);
                         count(idx) += 1.0;
                     }
-                    FOR_ALL_ELEMENTS_IN_ARRAY1D(spectrum) {
+                    for (int i = Xinit(spectrum); i <= Xlast(spectrum); i++) {
                         if (A1D_ELEM(count, i) > 0.0)
                             A1D_ELEM(spectrum, i) /= A1D_ELEM(count, i);
                     }

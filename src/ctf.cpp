@@ -588,7 +588,7 @@ void CTF::get1DProfile(
     result.setXmippOrigin();
     RFLOAT xs = (RFLOAT) Xsize(result) * Tm; // assuming result is at the image size!
 
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(result) {
+    for (int i = Xinit(result); i <= Xlast(result); i++) {
         RFLOAT x = (RFLOAT) i * cos(radians(angle)) / xs;
         RFLOAT y = (RFLOAT) i * sin(radians(angle)) / xs;
         RFLOAT t = getCTF(

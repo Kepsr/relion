@@ -245,16 +245,6 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 #define FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) \
     for ((n) = 0, (ptr) = (v).data; (n) < (v).nzyxdim(); ++(n), ++(ptr))
 
-/** Volume element: Logical access.
- *
- * @code
- * A3D_ELEM(V, -1, -2, 1) = 1;
- * val = A3D_ELEM(V, -1, -2, 1);
- * @endcode
- */
-#define A3D_ELEM(V, k, i, j) \
-    direct::elem((V),(k) - Zinit(V), (i) - Yinit(V), (j) - Xinit(V))
-
 /** For all elements in the array.
  *
  * This macro is used to generate loops for the volume in an easy way. It
@@ -289,16 +279,6 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int i = 0; i < Ysize(V); i++) \
     for (long int j = 0; j < Xsize(V); j++)
 
-/** Matrix element: Logical access
- *
- * @code
- * A2D_ELEM(m, -2, 1) = 1;
- * val = A2D_ELEM(m, -2, 1);
- * @endcode
- */
-#define A2D_ELEM(v, i, j) \
-    direct::elem(v, (i) - Yinit(v), (j) - Xinit(v))
-
 /** For all elements in the array
  *
  * This macro is used to easily loop through a matrix.
@@ -329,8 +309,8 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int i = 0; i < Ysize(m); i++) \
     for (long int j = 0; j < Xsize(m); j++)
 
-/** Vector element: Physical access
- * 
+/** Direct access
+ *
  * Be careful. 
  * These functions give physical/direct access to an array element
  * without taking its logical position into account.
@@ -373,23 +353,34 @@ namespace direct {
  * val = A1D_ELEM(v, -2);
  * @endcode
  */
-#define A1D_ELEM(v, i) direct::elem(v, (i) - ((v).xinit))
+template <typename T>
+inline T& A1D_ELEM(const MultidimArray<T> &v, long int i) {
+    return direct::elem(v, i - v.xinit);
+}
 
-/** For all elements in the array
- *
- * This macro is used to generate loops for the vector in an easy manner. It
- * defines an internal index 'i' which ranges the vector using its mathematical
- * definition (ie, logical access).
+/** Matrix element: Logical access
  *
  * @code
- * FOR_ALL_ELEMENTS_IN_ARRAY1D(v)
- * {
- *     std::cout << v(i) << " ";
- * }
+ * A2D_ELEM(m, -2, 1) = 1;
+ * val = A2D_ELEM(m, -2, 1);
  * @endcode
  */
-#define FOR_ALL_ELEMENTS_IN_ARRAY1D(v) \
-    for (long int i=Xinit(v); i<=Xlast(v); i++)
+template <typename T>
+inline T& A2D_ELEM(const MultidimArray<T> &v, long int i, long int j) {
+    return direct::elem(v, i - Yinit(v), j - Xinit(v));
+}
+
+/** Volume element: Logical access.
+ *
+ * @code
+ * A3D_ELEM(V, -1, -2, 1) = 1;
+ * val = A3D_ELEM(V, -1, -2, 1);
+ * @endcode
+ */
+template <typename T>
+inline T& A3D_ELEM(const MultidimArray<T> &v, long int k, long int i, long int j) {
+    return direct::elem(v, k - Zinit(v), i - Yinit(v), j - Xinit(v));
+}
 
 /** For all elements in the array, accessed physically
  *
@@ -2587,6 +2578,19 @@ class MultidimArray {
     MultidimArray<T> operator *= (const MultidimArray<T> &arg);
 
     MultidimArray<T> operator /= (const MultidimArray<T> &arg);
+    //@}
+
+    /** @name Array "by" scalar operations
+     *
+     * Operations are between an array and a scalar (of the same type as the array).
+     * The result must have been defined to be of the same type as the operands.
+     *
+     * In this kind of operation each element of array 1 is operated with the given constant.
+     * The result has also got the same shape as the input array and its former content is lost
+     *
+     * Now would be a good time for ad-hoc polymorphism.
+     */
+    //@{
 
     MultidimArray<T> operator + (const T scalar) const;
 
