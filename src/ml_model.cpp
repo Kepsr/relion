@@ -1156,7 +1156,7 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
     MultidimArray<RFLOAT> avg_sigma2_noise = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     MultidimArray<RFLOAT> sum_parts        = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     for (int igroup = 0; igroup < nr_particles_per_group.size(); igroup++) {
-        avg_sigma2_noise += (RFLOAT)(nr_particles_per_group[igroup]) * sigma2_noise[igroup];
+        avg_sigma2_noise += (RFLOAT) nr_particles_per_group[igroup] * sigma2_noise[igroup];
     }
     avg_sigma2_noise /= nr_particles;
 

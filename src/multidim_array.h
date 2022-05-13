@@ -410,24 +410,6 @@ namespace direct {
 template<typename T>
 class MultidimArray;
 
-template<typename T, typename Op>
-void coreArrayByScalar(
-    const MultidimArray<T> &op1, const T& op2, MultidimArray<T> &result,
-    Op operation
-);
-
-template<typename T>
-void coreScalarByArray(
-    const T &op1, const MultidimArray<T> &op2, MultidimArray<T> &result,
-    const char operation
-);
-
-template<typename T>
-void coreArrayByArray(
-    const MultidimArray<T> &op1, const MultidimArray<T> &op2, MultidimArray<T> &result,
-    const char operation
-);
-
 struct Origin {
 
     long int x, y, z;
@@ -2590,145 +2572,21 @@ class MultidimArray {
      */
     //@{
 
-    /** Core array by array operation.
-     *
-     * It assumes that the result is already resized.
-     */
-    inline friend MultidimArray<T> coreArrayByArray(
-        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
-        MultidimArray<T> &output,
-        const char operation
-    ) {
-        T *arg1ptr, *arg2ptr, *optr;
-        long int n;
-        for (
-            n = 0, optr = output.data, arg1ptr = arg1.data, arg2ptr = arg2.data;
-            n < arg1.xdim * arg1.ydim * arg1.zdim;
-            ++n, ++arg1ptr, ++arg2ptr, ++optr
-        ) {
-            switch (operation) {
+    MultidimArray<T> operator + (const MultidimArray<T> &arg) const;
 
-                case '+': *optr = *arg1ptr + *arg2ptr; break;
+    MultidimArray<T> operator - (const MultidimArray<T> &arg) const;
 
-                case '-': *optr = *arg1ptr - *arg2ptr; break;
+    MultidimArray<T> operator * (const MultidimArray<T> &arg) const;
 
-                case '*': *optr = *arg1ptr * *arg2ptr; break;
+    MultidimArray<T> operator / (const MultidimArray<T> &arg) const;
 
-                case '/': *optr = *arg1ptr / *arg2ptr; break;
+    MultidimArray<T> operator += (const MultidimArray<T> &arg);
 
-            }
-        }
-        return output;
-    }
+    MultidimArray<T> operator -= (const MultidimArray<T> &arg);
 
-    /** Array by array
-     *
-     * This function must take two vectors of the same size, and operate element
-     * by element according to the operation required. This is the function
-     * which really implements the operations. Simple calls to it perform much
-     * faster than calls to the corresponding operators. Although it is supposed
-     * to be a hidden function not useable by normal programmers.
-     *
-     */
-    inline friend MultidimArray<T> arrayByArray(
-        const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
-        MultidimArray<T> &output,
-        char operation
-    ) {
-        if (!arg1.sameShape(arg2)) {
-            arg1.printShape();
-            arg2.printShape();
-            REPORT_ERROR((std::string) "Array_by_array: different shapes (" + operation + ")");
-        }
-        if (!output.data || !output.sameShape(arg1)) { output.resize(arg1); }
-        return coreArrayByArray(arg1, arg2, output, operation);
-    }
+    MultidimArray<T> operator *= (const MultidimArray<T> &arg);
 
-    /** v3 = v1 + v2.
-     */
-    MultidimArray<T> operator + (const MultidimArray<T> &arg) const {
-        MultidimArray<T> output;
-        return arrayByArray(*this, arg, output, '+');
-    }
-
-    /** v3 = v1 - v2.
-     */
-    MultidimArray<T> operator - (const MultidimArray<T> &arg) const {
-        MultidimArray<T> output;
-        return arrayByArray(*this, arg, output, '-');
-    }
-
-    /** v3 = v1 * v2.
-     */
-    MultidimArray<T> operator * (const MultidimArray<T> &arg) const {
-        MultidimArray<T> output;
-        return arrayByArray(*this, arg, output, '*');
-    }
-
-    /** v3 = v1 / v2.
-     */
-    MultidimArray<T> operator / (const MultidimArray<T> &arg) const {
-        MultidimArray<T> output;
-        return arrayByArray(*this, arg, output, '/');
-    }
-
-    /** v3 += v2.
-     */
-    MultidimArray<T> operator += (const MultidimArray<T> &arg) {
-        return arrayByArray(*this, arg, *this, '+');
-    }
-
-    /** v3 -= v2.
-     */
-    MultidimArray<T> operator -= (const MultidimArray<T> &arg) {
-        return arrayByArray(*this, arg, *this, '-');
-    }
-
-    /** v3 *= v2.
-     */
-    MultidimArray<T> operator *= (const MultidimArray<T> &arg) {
-        return arrayByArray(*this, arg, *this, '*');
-    }
-
-    /** v3 /= v2.
-     */
-    MultidimArray<T> operator /= (const MultidimArray<T> &arg) {
-        return arrayByArray(*this, arg, *this, '/');
-    }
-    //@}
-
-    /** @name Array "by" scalar operations
-     *
-     * Operations are between an array and a scalar (of the same type as the array).
-     * The result must have been defined to be of the same type as the operands.
-     *
-     * In this kind of operation each element of array 1 is operated with the given constant.
-     * The result has also got the same shape as the input array and its former content is lost
-     *
-     * Now would be a good time for ad-hoc polymorphism.
-     */
-    //@{
-
-    /** Core array (vector) by scalar operation.
-     *
-     * It assumes that the result is already resized.
-     *
-     * This function is not ported to Python.
-     */
-    template <typename Op>
-    inline friend MultidimArray<T> coreArrayByScalar(
-        const MultidimArray<T> &input, const T &scalar,
-        MultidimArray<T> &output,
-        Op operation
-    ) {
-        T *iptr = input.data, *optr = output.data;
-        // These two pointers will move through (respectively) input and output.
-        // *iptr will be used to assign *optr.
-        for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr) {
-            *optr = operation(*iptr, scalar);
-        }
-        return output;
-    }
+    MultidimArray<T> operator /= (const MultidimArray<T> &arg);
 
     MultidimArray<T> operator + (const T scalar) const;
 
@@ -2760,82 +2618,17 @@ class MultidimArray {
      */
     //@{
 
-    /** Core array by scalar operation.
-     *
-     * It assumes that the result is already resized.
-     *
-     * This function is not ported to Python.
-     */
-    inline friend MultidimArray<T> coreScalarByArray(
-        const T &scalar,
-        const MultidimArray<T> &input,
-        MultidimArray<T> &output,
-        const char operation
-    ) {
-        T *iptr = output.data, *optr = input.data;
-        long int n = 0;
-        for (; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr)
-            switch (operation) {
+    template <typename A>
+    friend MultidimArray<A> operator + (const A scalar, const MultidimArray<A> &input);
 
-                case '+': *optr = scalar + *iptr; break;
+    template <typename A>
+    friend MultidimArray<A> operator - (const A scalar, const MultidimArray<A> &input);
 
-                case '-': *optr = scalar - *iptr; break;
+    template <typename A>
+    friend MultidimArray<A> operator * (const A scalar, const MultidimArray<A> &input);
 
-                case '*': *optr = scalar * *iptr; break;
-
-                case '/': *optr = scalar / *iptr; break;
-
-            }
-            return output;
-    }
-
-    /** Scalar by array.
-     *
-     * This function must take one scalar and a vector, and operate element by
-     * element according to the operation required. This is the function which
-     * really implements the operations. Simple calls to it perform much faster
-     * than calls to the corresponding operators. Although it is supposed to
-     * be a hidden function not useable by normal programmers.
-     *
-     * This function is not ported to Python.
-     */
-    inline friend MultidimArray<T> scalarByArray(
-        T scalar,
-        const MultidimArray<T> &input,
-        MultidimArray<T> &output,
-        char operation
-    ) {
-        if (!output.data || !output.sameShape(input)) { output.resize(input); }
-        return coreScalarByArray(scalar, input, output, operation);
-    }
-
-    /** v3 = k + v2.
-     */
-    friend MultidimArray<T> operator + (T scalar, const MultidimArray<T> &input) {
-        MultidimArray<T> output;
-        return scalarByArray(scalar, input, output, '+');
-    }
-
-    /** v3 = k - v2.
-     */
-    friend MultidimArray<T> operator - (T scalar, const MultidimArray<T> &input) {
-        MultidimArray<T> output;
-        return scalarByArray(scalar, input, output, '-');
-    }
-
-    /** v3 = k * v2.
-     */
-    friend MultidimArray<T> operator * (T scalar, const MultidimArray<T> &input) {
-        MultidimArray<T> output;
-        return scalarByArray(scalar, input, output, '*');
-    }
-
-    /** v3 = k / v2
-     */
-    friend MultidimArray<T> operator / (T scalar, const MultidimArray<T> &input) {
-        MultidimArray<T> output;
-        return scalarByArray(scalar, input, output, '/');
-    }
+    template <typename A>
+    friend MultidimArray<A> operator / (const A scalar, const MultidimArray<A> &input);
     //@}
 
     /// @name Initialization
@@ -3925,11 +3718,11 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
         ostrm << std::endl;
     }
 
-    RFLOAT max_val = abs(direct::elem(v , 0, 0, 0));
+    T max_val = abs(direct::elem(v , 0, 0, 0));
     T *ptr;
     long int n;
     FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) {
-        max_val = std::max(max_val, std::abs(*ptr));
+        max_val = std::max(max_val, (T) std::abs(*ptr));
     }
 
     int prec = bestPrecision(max_val, 10);

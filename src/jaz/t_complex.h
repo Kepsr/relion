@@ -192,6 +192,12 @@ std::ostream& operator << (std::ostream& os, const tComplex<T>& z) {
   return os;
 }
 
+template <class T> inline
+std::istream& operator >> (std::istream& is, const tComplex<T>& z) {
+  /// TODO: Implement
+  return is;
+}
+
 typedef tComplex<float> fComplex;
 typedef tComplex<double> dComplex;
 
