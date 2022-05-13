@@ -167,11 +167,6 @@ inline long int Zsize(const MultidimArray<T> &v) { return v.zdim; }
 template <typename T>
 inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
-/** Multidim element: Logical access.
- */
-#define NZYX_ELEM(v, l, k, i, j)  \
-    direct::elem((v), (l), (k) - Zinit(v), (i) - Yinit(v), (j) - Xinit(v))
-
 /** For all direct elements in the array
  *
  * This macro is used to generate loops for the array in an easy manner. It
@@ -380,6 +375,13 @@ inline T& A2D_ELEM(const MultidimArray<T> &v, long int i, long int j) {
 template <typename T>
 inline T& A3D_ELEM(const MultidimArray<T> &v, long int k, long int i, long int j) {
     return direct::elem(v, k - Zinit(v), i - Yinit(v), j - Xinit(v));
+}
+
+/** Multidim element: Logical access.
+ */
+template <typename T>
+inline T& NZYX_ELEM(const MultidimArray<T> &v, long int l, long int k, long int i, long int j) {
+    return direct::elem(v, l, k - Zinit(v), i - Yinit(v), j - Xinit(v));
 }
 
 /** For all elements in the array, accessed physically
