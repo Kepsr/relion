@@ -67,3 +67,70 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
     }
     return ostrm;
 }
+
+
+/** Array (vector) by scalar.
+ *
+ * Take a vector and a constant,
+ * and apply the appropriate operation element-wise.
+ * This is the function which really implements the operations.
+ * Simple calls to it perform much faster than calls to the corresponding operators.
+ * It is supposed to be hidden from users.
+ *
+ * This function is not ported to Python.
+ */
+template <typename T, typename Op>
+inline MultidimArray<T> arrayByScalar(
+    const MultidimArray<T> &input, T scalar, MultidimArray<T> &output,
+    Op operation
+) {
+    if (!output.data || !output.sameShape(input)) { output.resize(input); }
+    return coreArrayByScalar(input, scalar, output, operation);
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator + (const T scalar) const {
+    MultidimArray<T> output;
+    return arrayByScalar(*this, scalar, output, [] (const T x, T y) { return x + y; });
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator - (const T scalar) const {
+    MultidimArray<T> output;
+    return arrayByScalar(*this, scalar, output, [] (const T x, T y) { return x - y; });
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator * (const T scalar) const {
+    MultidimArray<T> output;
+    return arrayByScalar(*this, scalar, output, [] (const T x, T y) { return x * y; });
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator / (const T scalar) const {
+    MultidimArray<T> output;
+    return arrayByScalar(*this, scalar, output, [] (const T x, T y) { return x / y; });
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator += (const T scalar) {
+    return arrayByScalar(*this, scalar, *this, [] (const T x, T y) { return x + y; });
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator -= (const T scalar) {
+    return arrayByScalar(*this, scalar, *this, [] (const T x, T y) { return x - y; });
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator *= (const T scalar) {
+    return arrayByScalar(*this, scalar, *this, [] (const T x, T y) { return x * y; });
+}
+
+template <typename T>
+MultidimArray<T> MultidimArray<T>::operator /= (const T scalar) {
+    return arrayByScalar(*this, scalar, *this, [] (const T x, T y) { return x / y; });
+}
+
+template class MultidimArray<RFLOAT>;
+template class MultidimArray<short>;

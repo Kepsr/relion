@@ -410,10 +410,10 @@ namespace direct {
 template<typename T>
 class MultidimArray;
 
-template<typename T>
+template<typename T, typename Op>
 void coreArrayByScalar(
     const MultidimArray<T> &op1, const T& op2, MultidimArray<T> &result,
-    const char operation
+    Op operation
 );
 
 template<typename T>
@@ -2495,8 +2495,8 @@ class MultidimArray {
                 if (n == 0) {
                     min = max = (RFLOAT) val;
                 } else {
-                    min = std::min(min, val);
-                    max = std::max(max, val);
+                    min = std::min(min, (RFLOAT) val);
+                    max = std::max(max, (RFLOAT) val);
                 }
             }
             maskptr++;
@@ -2715,112 +2715,36 @@ class MultidimArray {
      *
      * This function is not ported to Python.
      */
+    template <typename Op>
     inline friend MultidimArray<T> coreArrayByScalar(
         const MultidimArray<T> &input, const T &scalar,
         MultidimArray<T> &output,
-        const char operation
+        Op operation
     ) {
         T *iptr = input.data, *optr = output.data;
         // These two pointers will move through (respectively) input and output.
         // *iptr will be used to assign *optr.
-        long int n = 0;
-        for (; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr) {
-            // This switch will be evaluated for EVERY SINGLE LOOP ITERATION.
-            // Even though operation never changes.
-            // There must be a better way!
-            switch (operation) {
-
-                case '+': *optr = *iptr + scalar; break;
-
-                case '-': *optr = *iptr - scalar; break;
-
-                case '*': *optr = *iptr * scalar; break;
-
-                case '/': *optr = *iptr / scalar; break;
-
-            }
+        for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr) {
+            *optr = operation(*iptr, scalar);
         }
         return output;
     }
 
-    /** Array (vector) by scalar.
-     *
-     * Take a vector and a constant,
-     * and apply the appropriate operation element-wise.
-     * This is the function which really implements the operations.
-     * Simple calls to it perform much faster than calls to the corresponding operators.
-     * It is supposed to be hidden from users.
-     *
-     * This function is not ported to Python.
-     */
-    inline friend MultidimArray<T> arrayByScalar(
-        const MultidimArray<T> &input, T scalar,
-        MultidimArray<T> &output,
-        const char operation  // A char standing in for a function. Ew.
-    ) {
-        if (!output.data || !output.sameShape(input)) { output.resize(input); }
-        return coreArrayByScalar(input, scalar, output, operation);
-    }
+    MultidimArray<T> operator + (const T scalar) const;
 
-    /** v3 = v1 + k.
-     */
-    MultidimArray<T> operator + (T scalar) const {
-        MultidimArray<T> output;
-        return arrayByScalar(*this, scalar, output, '+');
-    }
+    MultidimArray<T> operator - (const T scalar) const;
 
-    /** v3 = v1 - k.
-     */
-    MultidimArray<T> operator - (T scalar) const {
-        MultidimArray<T> output;
-        return arrayByScalar(*this, scalar, output, '-');
-    }
+    MultidimArray<T> operator * (const T scalar) const;
 
-    /** v3 = v1 * k.
-     */
-    MultidimArray<T> operator * (T scalar) const {
-        MultidimArray<T> output;
-        return arrayByScalar(*this, scalar, output, '*');
-    }
+    MultidimArray<T> operator / (const T scalar) const;
 
-    /** v3 = v1 / k.
-     */
-    MultidimArray<T> operator / (T scalar) const {
-        MultidimArray<T> output;
-        return arrayByScalar(*this, scalar, output, '/');
-    }
+    MultidimArray<T> operator += (const T scalar);
 
-    /** v3 += k.
-     *
-     * This function is not ported to Python.
-     */
-    MultidimArray<T> operator += (const T &scalar) {
-        return arrayByScalar(*this, scalar, *this, '+');
-    }
+    MultidimArray<T> operator -= (const T scalar);
 
-    /** v3 -= k.
-     *
-     * This function is not ported to Python.
-     */
-    MultidimArray<T> operator -= (const T &scalar) {
-        return arrayByScalar(*this, scalar, *this, '-');
-    }
+    MultidimArray<T> operator *= (const T scalar);
 
-    /** v3 *= k.
-     *
-     * This function is not ported to Python.
-     */
-    MultidimArray<T> operator *= (const T &scalar) {
-        return arrayByScalar(*this, scalar, *this, '*');
-    }
-
-    /** v3 /= k.
-     *
-     * This function is not ported to Python.
-     */
-    MultidimArray<T> operator /= (const T &scalar) {
-        return arrayByScalar(*this, scalar, *this, '/');
-    }
+    MultidimArray<T> operator /= (const T scalar);
     //@}
 
     /** @name Scalar "by" array operations
@@ -3654,12 +3578,12 @@ class MultidimArray {
         for (long int i = start_y; i <= halfSizeY; i++)
         for (long int j = 0; j < xsize; j++) {
             std::swap(
-                direct::elem(*this, l, k, i, j),
+                direct::elem(*this, l, k, i,         j),
                 direct::elem(*this, l, k, ysize - i, j)
             );
         }
 
-        firstY() = -lastY();
+        yinit = -lastY();
     }
 
     /** Reverse matrix values over Z axis, keep in this object.
@@ -3701,7 +3625,7 @@ class MultidimArray {
             );
         }
 
-        firstZ() = -lastZ();
+        zinit = -lastZ();
     }
 
     /** Extracts the 1D profile between two points in a 2D array
@@ -3821,12 +3745,12 @@ class MultidimArray {
 
     /** Read from an ASCII file.
      */
-    void read(const FileName &fn) const {
-        std::ofstream ofs(fn.c_str(), std::ios::in);
-        if (!ofs)
+    void read(const FileName &fn) {
+        std::ifstream ifs(fn.c_str(), std::ios::in);
+        if (!ifs)
             REPORT_ERROR(static_cast<std::string>("MultidimArray::read: Cannot read File " + fn));
 
-        ofs >> *this;
+        ifs >> *this;
     }
     //@}
 
