@@ -910,7 +910,7 @@ void radialAverage(
     }
 
     // Perform the mean
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(radial_mean) {
+    for (int i = Xinit(radial_mean); i <= Xlast(radial_mean); i++) {
         radial_mean(i) /= (T) radial_count(i);
     }
 }

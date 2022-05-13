@@ -472,7 +472,7 @@ void getFSC(
         den2(idx) += absz2 * absz2;
     }
 
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(fsc) {
+    for (int i = Xinit(fsc); i <= Xlast(fsc); i++) {
         fsc(i) = num(i) / sqrt(den1(i) * den2(i));
     }
 
@@ -523,7 +523,7 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
     }
 
     // Get average amplitudes in each shell for both maps
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(mu1) {
+    for (int i = Xinit(mu1); i <= Xlast(mu1); i++) {
         if (radial_count(i) > 0) {
             mu1(i) /= radial_count(i);
             mu2(i) /= radial_count(i);
@@ -542,7 +542,7 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
         sig2(idx)  += z2 * z2;
     }
 
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(acorr) {
+    for (int i = Xinit(acorr); i <= Xlast(acorr); i++) {
         RFLOAT aux = sqrt(sig1(i)) * sqrt(sig2(i));
         if (aux > 0.0) {
             acorr(i) /= aux;
@@ -571,7 +571,7 @@ void getCosDeltaPhase(
         radial_count(idx)++;
     }
 
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(cosPhi) {
+    for (int i = Xinit(cosPhi); i <= Xlast(cosPhi); i++) {
         if (radial_count(i) > 0) { cosPhi(i) /= radial_count(i); }
     }
 }

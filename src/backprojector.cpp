@@ -888,7 +888,7 @@ void BackProjector::calculateDownSampledFourierShellCorrelation(
         den2(idx) += z2.norm();
     }
 
-    FOR_ALL_ELEMENTS_IN_ARRAY1D(fsc) {
+    for (int i = Xinit(fsc); i <= Xlast(fsc); i++) {
         if (den1(i) * den2(i) > 0.0) {
             fsc(i) = num(i) / sqrt(den1(i) * den2(i));
         }

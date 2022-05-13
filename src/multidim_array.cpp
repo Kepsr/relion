@@ -214,19 +214,6 @@ template <typename T>
 MultidimArray<T> MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
     return arrayByArray(*this, arg, *this, [] (T x, T y) { return x / y; });
 }
-//@}
-
-/** @name Array "by" scalar operations
- *
- * Operations are between an array and a scalar (of the same type as the array).
- * The result must have been defined to be of the same type as the operands.
- *
- * In this kind of operation each element of array 1 is operated with the given constant.
- * The result has also got the same shape as the input array and its former content is lost
- *
- * Now would be a good time for ad-hoc polymorphism.
- */
-//@{
 
 /** Scalar by array.
  *
