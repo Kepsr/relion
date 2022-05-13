@@ -208,10 +208,10 @@ class Interpolation {
         const T f33 = direct::elem(img.data, n, z, yi_p2,   xi_p2);
 
         const gravis::d4Matrix A(
-            -1.0 / 2.0,  3.0 / 2.0, -3.0 / 2.0,  1.0 / 2.0,
-                1.0,       -5.0 / 2.0,  2.0,       -1.0 / 2.0,
-            -1.0 / 2.0,  0.0,        1.0 / 2.0,  0.0,
-                0.0,        1.0,        0.0,        0.0
+            -0.5,  1.5, -1.5,  0.5,
+             1.0, -2.5,  2.0, -0.5,
+            -0.5,  0.0,  0.5,  0.0,
+             0.0,  1.0,  0.0,  0.0
         );
 
         const gravis::d4Matrix V(
@@ -229,7 +229,7 @@ class Interpolation {
         const gravis::d4Vector xx(xf * xf * xf, xf * xf, xf, 1.0);
         const gravis::d4Vector yy(yf * yf * yf, yf * yf, yf, 1.0);
 
-        return (T) (xx.dot(AVA * yy));
+        return (T) xx.dot(AVA * yy);
     }
 
     template<typename T>
@@ -291,10 +291,10 @@ class Interpolation {
         const T f33 = direct::elem(img.data, n, 0, yi_p2,   xi_p2);
 
         const gravis::d4Matrix A(
-            -1.0 / 2.0,  3.0 / 2.0, -3.0 / 2.0,  1.0 / 2.0,
-                1.0,       -5.0 / 2.0,  2.0,       -1.0 / 2.0,
-            -1.0 / 2.0,  0.0,        1.0 / 2.0,  0.0,
-                0.0,        1.0,        0.0,        0.0
+            -0.5,  1.5, -1.5,  0.5,
+             1.0, -2.5,  2.0, -0.5,
+            -0.5,  0.0,  0.5,  0.0,
+             0.0,  1.0,  0.0,  0.0
         );
 
         const gravis::d4Matrix V(
