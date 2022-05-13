@@ -85,7 +85,13 @@ inline MultidimArray<T> arrayByScalar(
     Op operation
 ) {
     if (!output.data || !output.sameShape(input)) { output.resize(input); }
-    return coreArrayByScalar(input, scalar, output, operation);
+    T *iptr = input.data, *optr = output.data;
+    // These two pointers will move through (respectively) input and output.
+    // *iptr will be used to assign *optr.
+    for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr) {
+        *optr = operation(*iptr, scalar);
+    }
+    return output;
 }
 
 template <typename T>
@@ -132,39 +138,6 @@ MultidimArray<T> MultidimArray<T>::operator /= (const T scalar) {
     return arrayByScalar(*this, scalar, *this, [] (const T x, T y) { return x / y; });
 }
 
-
-/** Core array by array operation.
- *
- * It assumes that the result is already resized.
- */
-template <typename T>
-inline MultidimArray<T> coreArrayByArray(
-    const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
-    MultidimArray<T> &output,
-    const char operation
-) {
-    T *arg1ptr, *arg2ptr, *optr;
-    long int n;
-    for (
-        n = 0, optr = output.data, arg1ptr = arg1.data, arg2ptr = arg2.data;
-        n < arg1.xdim * arg1.ydim * arg1.zdim;
-        ++n, ++arg1ptr, ++arg2ptr, ++optr
-    ) {
-        switch (operation) {
-
-            case '+': *optr = *arg1ptr + *arg2ptr; break;
-
-            case '-': *optr = *arg1ptr - *arg2ptr; break;
-
-            case '*': *optr = *arg1ptr * *arg2ptr; break;
-
-            case '/': *optr = *arg1ptr / *arg2ptr; break;
-
-        }
-    }
-    return output;
-}
-
 /** Array by array
  *
  * This function must take two vectors of the same size, and operate element
@@ -174,63 +147,72 @@ inline MultidimArray<T> coreArrayByArray(
  * to be a hidden function not useable by normal programmers.
  *
  */
-template <typename T>
+template <typename T, typename Op>
 inline MultidimArray<T> arrayByArray(
     const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
     MultidimArray<T> &output,
-    char operation
+    Op operation
 ) {
     if (!arg1.sameShape(arg2)) {
         arg1.printShape();
         arg2.printShape();
-        REPORT_ERROR((std::string) "Array_by_array: different shapes (" + operation + ")");
+        REPORT_ERROR((std::string) "Array_by_array: different shapes");
     }
     if (!output.data || !output.sameShape(arg1)) { output.resize(arg1); }
-    return coreArrayByArray(arg1, arg2, output, operation);
+    T *arg1ptr, *arg2ptr, *optr;
+    long int n;
+    for (
+        n = 0, optr = output.data, arg1ptr = arg1.data, arg2ptr = arg2.data;
+        n < arg1.xdim * arg1.ydim * arg1.zdim;
+        ++n, ++arg1ptr, ++arg2ptr, ++optr
+    ) {
+        *optr = operation(*arg1ptr, *arg2ptr);
+    }
+    return output;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator + (const MultidimArray<T> &arg) const {
     MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, '+');
+    return arrayByArray(*this, arg, output, [] (T x, T y) { return x + y; });
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator - (const MultidimArray<T> &arg) const {
     MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, '-');
+    return arrayByArray(*this, arg, output, [] (T x, T y) { return x - y; });
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator * (const MultidimArray<T> &arg) const {
     MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, '*');
+    return arrayByArray(*this, arg, output, [] (T x, T y) { return x * y; });
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator / (const MultidimArray<T> &arg) const {
     MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, '/');
+    return arrayByArray(*this, arg, output, [] (T x, T y) { return x / y; });
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator += (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, '+');
+    return arrayByArray(*this, arg, *this, [] (T x, T y) { return x + y; });
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator -= (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, '-');
+    return arrayByArray(*this, arg, *this, [] (T x, T y) { return x - y; });
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator *= (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, '*');
+    return arrayByArray(*this, arg, *this, [] (T x, T y) { return x * y; });
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, '/');
+    return arrayByArray(*this, arg, *this, [] (T x, T y) { return x / y; });
 }
 //@}
 
@@ -246,46 +228,6 @@ MultidimArray<T> MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
  */
 //@{
 
-/** Core array (vector) by scalar operation.
- *
- * It assumes that the result is already resized.
- *
- * This function is not ported to Python.
- */
-template <typename T, typename Op>
-inline MultidimArray<T> coreArrayByScalar(
-    const MultidimArray<T> &input, const T &scalar,
-    MultidimArray<T> &output,
-    Op operation
-) {
-    T *iptr = input.data, *optr = output.data;
-    // These two pointers will move through (respectively) input and output.
-    // *iptr will be used to assign *optr.
-    for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr) {
-        *optr = operation(*iptr, scalar);
-    }
-    return output;
-}
-
-/** Core array by scalar operation.
- *
- * It assumes that the result is already resized.
- *
- * This function is not ported to Python.
- */
-template <typename T, typename Op>
-inline MultidimArray<T> coreScalarByArray(
-    const T &scalar,
-    const MultidimArray<T> &input,
-    MultidimArray<T> &output,
-    Op operation
-) {
-    T *iptr = output.data, *optr = input.data;
-    for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr)
-        *optr = operation(scalar, *iptr);
-    return output;
-}
-
 /** Scalar by array.
  *
  * This function must take one scalar and a vector, and operate element by
@@ -298,13 +240,16 @@ inline MultidimArray<T> coreScalarByArray(
  */
 template <typename T, typename Op>
 inline MultidimArray<T> scalarByArray(
-    T scalar,
+    const T scalar,
     const MultidimArray<T> &input,
     MultidimArray<T> &output,
     Op operation
 ) {
     if (!output.data || !output.sameShape(input)) { output.resize(input); }
-    return coreScalarByArray(scalar, input, output, operation);
+    T *iptr = output.data, *optr = input.data;
+    for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr)
+        *optr = operation(scalar, *iptr);
+    return output;
 }
 
 template <typename T>
