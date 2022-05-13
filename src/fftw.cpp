@@ -553,27 +553,28 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
 
 }
 
-void getCosDeltaPhase(
+MultidimArray<RFLOAT> cosDeltaPhase(
     MultidimArray<Complex> &FT1,
-    MultidimArray<Complex> &FT2,
-    MultidimArray<RFLOAT> &cosPhi
+    MultidimArray<Complex> &FT2
 ) {
     MultidimArray<int> radial_count(Xsize(FT1));
-    cosPhi.initZeros(Xsize(FT1));
+    MultidimArray<RFLOAT> cosPhi = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         int idx = round(euclid(kp, ip, jp));
         if (idx >= Xsize(FT1)) continue;
 
-        RFLOAT phas1 = degrees(atan2((direct::elem(FT1, k, i, j)).imag, (direct::elem(FT1, k, i, j)).real));
-        RFLOAT phas2 = degrees(atan2((direct::elem(FT2, k, i, j)).imag, (direct::elem(FT2, k, i, j)).real));
-        cosPhi(idx) += cos(phas1 - phas2);
+        RFLOAT delta_phase = direct::elem(FT1, k, i, j).arg() 
+                           - direct::elem(FT2, k, i, j).arg();
+        cosPhi(idx) += cos(delta_phase);
         radial_count(idx)++;
     }
 
     for (int i = Xinit(cosPhi); i <= Xlast(cosPhi); i++) {
-        if (radial_count(i) > 0) { cosPhi(i) /= radial_count(i); }
+        if (radial_count(i) > 0) { cosPhi(i) /= (RFLOAT) radial_count(i); }
     }
+
+    return cosPhi;
 }
 
 void getAmplitudeCorrelationAndDifferentialPhaseResidual(
@@ -713,7 +714,6 @@ void shiftImageInFourierTransformWithTabSincos(
     RFLOAT xshift, RFLOAT yshift, RFLOAT zshift
 ) {
     RFLOAT a = 0.0, b = 0.0, c = 0.0, d = 0.0, ac = 0.0, bd = 0.0, ab_cd = 0.0, dotp = 0.0, x = 0.0, y = 0.0, z = 0.0;
-    const RFLOAT twopi = 2.0 * PI;
 
     if (&in == &out)
         REPORT_ERROR("shiftImageInFourierTransformWithTabSincos ERROR: Input and output images should be different!");
@@ -742,7 +742,7 @@ void shiftImageInFourierTransformWithTabSincos(
         }
 
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(out) {
-            dotp = twopi * (jp * xshift + ip * yshift);
+            dotp = 2.0 * PI * (jp * xshift + ip * yshift);
 
             a = tabcos(dotp);
             b = tabsin(dotp);
@@ -763,7 +763,7 @@ void shiftImageInFourierTransformWithTabSincos(
         }
 
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(out) {
-            dotp = twopi * (jp * xshift + ip * yshift + kp * zshift);
+            dotp = 2.0 * PI * (jp * xshift + ip * yshift + kp * zshift);
 
             a = tabcos(dotp);
             b = tabsin(dotp);

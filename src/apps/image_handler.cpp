@@ -371,7 +371,6 @@ class image_handler_parameters {
             getSpectrum(Iop(), spectrum, AMPLITUDE_SPECTRUM);
             adaptSpectrum(Iin(), Iout(), spectrum, AMPLITUDE_SPECTRUM);
         } else if (fn_cosDPhi != "") {
-            MultidimArray<RFLOAT> cosDPhi;
             MetaDataTable MDcos;
 
             MultidimArray<Complex> FT1, FT2;
@@ -379,7 +378,7 @@ class image_handler_parameters {
             transformer.FourierTransform(Iout(), FT1);
             transformer.FourierTransform(Iop(), FT2);
 
-            getCosDeltaPhase(FT1, FT2, cosDPhi);
+            MultidimArray<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
             MDcos.setName("cos");
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(cosDPhi) {
                 MDcos.addObject();
