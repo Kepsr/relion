@@ -137,10 +137,9 @@ int Image<T>::readTIFF(
 
     // Map the parameters
     if (isStack) {
-        if (img_select == -1) {
-            dims.z = 1;
-        } else {
-            dims.z = dims.n = 1;
+        dims.z = 1;
+        if (img_select != -1) {
+            dims.n = 1;
         }
     }
     data.setDimensions(dims.x, dims.y, dims.z, dims.n);
