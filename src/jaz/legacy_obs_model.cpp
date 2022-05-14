@@ -128,7 +128,7 @@ void LegacyObservationModel::insertObservation(
 
         ctf.getFftwImage(Fctf, s, s, angpix);
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+        for (long int n = 0; n < F2D.size(); n++) {
             F2D[n]  *= Fctf[n];
             Fctf[n] *= Fctf[n];
         }

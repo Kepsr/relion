@@ -775,7 +775,7 @@ void resizeFourierTransform(MultidimArray<T > &in, MultidimArray<T > &out, long 
 
     // This is to handle RFLOAT-valued input arrays
     Fin.reshape(Zsize(in), Ysize(in), Xsize(in));
-    for (long int i = 0, end = in.nzyxdim(); i < end; i++) {
+    for (long int i = 0, end = in.size(); i < end; i++) {
         Fin.data[i] = in.data[i];
     }
     transformer.inverseFourierTransform(Fin, Min);

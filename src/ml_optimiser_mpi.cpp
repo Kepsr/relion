@@ -744,11 +744,9 @@ void MlOptimiserMpi::expectation() {
         for (int i = 0; i < mymodel.PPref.size(); i++) {
             FileName fn_tmp;
             fn_tmp.compose("PPref_", i, "dat");
-            std::ofstream f;
-            f.open(fn_tmp.c_str());
-            for (unsigned long j = 0; j < mymodel.PPref[i].data.nzyxdim(); j++)
-                f << mymodel.PPref[i].data.data[j].real << std::endl;
-            f.close();
+            std::ofstream ofs(fn_tmp.c_str());
+            for (auto &x : mymodel.PPref[i].data)
+                ofs << x.real << std::endl;
         }
     }
     #endif
@@ -1315,7 +1313,7 @@ void MlOptimiserMpi::expectation() {
                     b->syncAllBackprojects();
 
                     for (int j = 0; j < b->backprojectors.size(); j++) {
-                        unsigned long s = wsum_model.BPref[j].data.nzyxdim();
+                        unsigned long s = wsum_model.BPref[j].data.size();
                         XFLOAT *reals = new XFLOAT[s];
                         XFLOAT *imags = new XFLOAT[s];
                         XFLOAT *weights = new XFLOAT[s];
@@ -1384,7 +1382,7 @@ void MlOptimiserMpi::expectation() {
                 #endif
 
                 for (int j = 0; j < b->backprojectors.size(); j++) {
-                    unsigned long s = wsum_model.BPref[j].data.nzyxdim();
+                    unsigned long s = wsum_model.BPref[j].data.size();
                     XFLOAT *reals = NULL;
                     XFLOAT *imags = NULL;
                     XFLOAT *weights = NULL;
@@ -1418,7 +1416,7 @@ void MlOptimiserMpi::expectation() {
             }
             #endif  // ALTCPU
         } catch (RelionError XE) {
-            std::cerr << "follower "<< node->rank << " encountered error: " << XE;
+            std::cerr << "follower " << node->rank << " encountered error: " << XE;
             MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_FAILURE);
         }
         #ifdef TIMING
@@ -1902,7 +1900,7 @@ void MlOptimiserMpi::maximization() {
 
                             // Now update formula: dV_kl^(n) = (mu) * dV_kl^(n-1) + (1-mu)*step_size*G_kl^(n)
                             // where G_kl^(n) is now in mymodel.Iref[iclass]!!!
-                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Igrad[ith_recons]) {
+                            for (long int n = 0; n < mymodel.Igrad[ith_recons].size(); n++) {
                                 mymodel.Igrad[ith_recons][n] = mu * mymodel.Igrad[ith_recons][n]
                                     + (1.0 - mu) * sgd_stepsize * mymodel.Iref[ith_recons][n];
                             }
@@ -2065,7 +2063,7 @@ void MlOptimiserMpi::maximization() {
 
                                 // Now update formula: dV_kl^(n) = (mu) * dV_kl^(n-1) + (1-mu)*step_size*G_kl^(n)
                                 // where G_kl^(n) is now in mymodel.Iref[iclass]!!!
-                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(mymodel.Igrad[ith_recons]) {
+                                for (long int n = 0; n < mymodel.Igrad[ith_recons].size(); n++) {
                                     mymodel.Igrad[ith_recons][n] = mu * mymodel.Igrad[ith_recons][n] +
                                         (1.0 - mu) * sgd_stepsize * mymodel.Iref[ith_recons][n];
                                 }
@@ -2420,10 +2418,10 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
 
                 // The first follower calculates the average of the two lowres_data and lowres_weight arrays
                 #ifdef DEBUG
-                std::cerr << "BBBrank=1 lowresdata: "; lowres_data.printShape();
+                std::cerr << "BBBrank=1 lowresdata: ";       lowres_data.printShape();
                 std::cerr << "BBBrank=1 lowresdata_half2: "; lowres_data_half2.printShape();
                 #endif
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(lowres_data) {
+                for (long int n = 0; n < lowres_data.size(); n++) {
                     lowres_data[n] += lowres_data_half2[n];
                     lowres_data[n] /= 2.0;
                     lowres_weight[n] += lowres_weight_half2[n];
@@ -2644,11 +2642,11 @@ void MlOptimiserMpi::writeTemporaryDataAndWeightArrays() {
                 }
                 if (mymodel.pdf_class[iclass] > 0.0) {
                     It().resize(wsum_model.BPref[ith_recons].data);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
+                    for (long int n = 0; n < It().size(); n++) {
                         It()[n] = wsum_model.BPref[ith_recons].data[n].real;
                     }
                     It.write(fn_tmp + "_data_real.mrc");
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
+                    for (long int n = 0; n < It().size(); n++) {
                         It()[n] = wsum_model.BPref[ith_recons].data[n].imag;
                     }
                     It.write(fn_tmp + "_data_imag.mrc");

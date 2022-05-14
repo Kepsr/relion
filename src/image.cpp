@@ -25,6 +25,11 @@
 
 // #define DEBUG_REGULARISE_HELICAL_SEGMENTS
 
+// Z-score of x given mean mu and standard deviation sigma
+inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
+    return (x - mu) / sigma;
+}
+
 // Get size of datatype
 unsigned long gettypesize(DataType type) {
 
@@ -81,7 +86,6 @@ void normalise(
     RFLOAT helical_mask_tube_outer_radius_pix,
     RFLOAT tilt_deg, RFLOAT psi_deg
 ) {
-    RFLOAT avg, stddev;
 
     if (2 * bg_radius > Xsize(I()))
         REPORT_ERROR("normalise ERROR: 2*bg_radius is larger than image size!");
@@ -98,14 +102,12 @@ void normalise(
             is_helical_segment, helical_mask_tube_outer_radius_pix,
             tilt_deg, psi_deg
         );
-        avg = stats.avg;
-        stddev = stats.stddev;
 
         // Remove white and black noise
         if (white_dust_stddev > 0.0)
-        removeDust(I, true, white_dust_stddev, avg, stddev);
+        removeDust(I, true, white_dust_stddev, stats.avg, stats.stddev);
         if (black_dust_stddev > 0.0)
-        removeDust(I, false, black_dust_stddev, avg, stddev);
+        removeDust(I, false, black_dust_stddev, stats.avg, stats.stddev);
 
     }
 
@@ -123,15 +125,12 @@ void normalise(
         is_helical_segment, helical_mask_tube_outer_radius_pix,
         tilt_deg, psi_deg
     );
-    avg = stats.avg;
-    stddev = stats.stddev;
 
-    if (stddev < 1e-10) {
+    if (stats.stddev < 1e-10) {
         std::cerr << " WARNING! Stddev of image " << I.name() << " is zero! Skipping normalisation..." << std::endl;
     } else {
-        // Subtract avg and divide by stddev for all pixels
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I())
-            I()[n] = (I()[n] - avg) / stddev;
+        // Normalise
+        for (auto &x : I()) { x = Z(x, stats.avg, stats.stddev); }
     }
 }
 
@@ -328,9 +327,7 @@ void removeDust(
 }
 
 void invert_contrast(Image<RFLOAT> &I) {
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I()) {
-        I()[n] *= -1;
-    }
+    for (auto &x : I()) { x *= -1.0; }
 }
 
 void rescale(Image<RFLOAT> &I, int mysize) {
@@ -378,8 +375,8 @@ MultidimArray<RFLOAT>::MinMax getImageContrast(
     if (sigma_contrast > 0.0 || minval == maxval) {
         Stats<RFLOAT> stats = image.computeStats();
         if (sigma_contrast > 0.0) {
-            minval = stats.avg - sigma_contrast * stats.stddev;
-            maxval = stats.avg + sigma_contrast * stats.stddev;
+            minval = stats.avg - stats.stddev * sigma_contrast;
+            maxval = stats.avg + stats.stddev * sigma_contrast;
         } else {
             minval = stats.min;
             maxval = stats.max;
@@ -387,11 +384,10 @@ MultidimArray<RFLOAT>::MinMax getImageContrast(
     }
 
     if (redo_minmax) {
-        // Bound image data to the interval [minval, maxval]
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(image) {
-            RFLOAT &val = image[n];
-                 if (val > maxval) { val = maxval; } 
-            else if (val < minval) { val = minval; }
+        // Constrain image data to the interval [minval, maxval]
+        for (auto &x : image) {
+                 if (x > maxval) { x = maxval; } 
+            else if (x < minval) { x = minval; }
         }
     }
 

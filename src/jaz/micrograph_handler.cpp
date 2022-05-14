@@ -445,11 +445,8 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 // std::cout << "EER: iframe = " << iframe << " start = " << ((firstFrame + iframe) * eer_grouping + 1) << " end = " << ((firstFrame + iframe + 1) * eer_grouping) << std::endl;
                 renderer.renderFrames((firstFrame + iframe) * eer_grouping + 1, (firstFrame + iframe + 1) * eer_grouping, Iframes[iframe]);
 
-                if (mgHasGain) {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(lastGainRef()) {
-                        Iframes[iframe][n] *= lastGainRef()[n];
-                    }
-                }
+                if (mgHasGain)
+                Iframes[iframe] *= lastGainRef();
             }
 
             if (hasDefect) {
@@ -458,15 +455,15 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                     Xsize(defectMask) != Xsize(Iframes[0]) || 
                     Ysize(defectMask) != Ysize(Iframes[0])
                 ) {
-                    std::cerr << "X/Ysize of defectMask = " << Xsize(defectMask) << " x " << Ysize(defectMask) << std::endl;
-                    std::cerr << "X/Ysize of Iframe[0] = " << Xsize(Iframes[0]) << " x " << Ysize(Iframes[0]) << std::endl;
+                    std::cerr << "X/Ysize of defectMask = " << Xsize(defectMask) << " × " << Ysize(defectMask) << std::endl;
+                    std::cerr << "X/Ysize of Iframe[0] = " << Xsize(Iframes[0]) << " × " << Ysize(Iframes[0]) << std::endl;
                     REPORT_ERROR("Invalid dfefect mask size for " + mgFn0);
                 }
 
                 MultidimArray<float> Isum = MultidimArray<float>::zeros(Iframes[0]);
                 for (int iframe = 0; iframe < n_frames; iframe++) {
                     #pragma omp parallel for num_threads(nr_omp_threads)
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+                    for (long int n = 0; n < Isum.size(); n++) {
                         Isum[n] += Iframes[iframe][n];
                     }
                 }
@@ -478,12 +475,12 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
 
                 RFLOAT mean = 0, std = 0;
                 #pragma omp parallel for reduction(+:mean) num_threads(nr_omp_threads)
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+                for (long int n = 0; n < Isum.size(); n++) {
                     mean += Isum[n];
                 }
                 mean /= Xsize(Isum) * Ysize(Isum);
                 #pragma omp parallel for reduction(+:std) num_threads(nr_omp_threads)
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+                for (long int n = 0; n < Isum.size(); n++) {
                     RFLOAT d = Isum[n] - mean;
                     std += d * d;
                 }
@@ -530,7 +527,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 Isum.initZeros(Iframes[0]);
                 for (int iframe = 0; iframe < n_frames; iframe++) {
                     #pragma omp parallel for num_threads(nr_omp_threads)
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+                    for (long int n = 0; n < Isum.size(); n++) {
                         Isum[n] += Iframes[iframe][n];
                     }
                 }

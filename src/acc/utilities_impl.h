@@ -219,11 +219,11 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
 
     // Make a holder for the spectral profile and copy to the GPU
     // AccDataTypes::Image<XFLOAT> NoiseSpectra(sigmaNoiseSpectra, ptrFactory);
-    AccPtr<XFLOAT> NoiseSpectra = RandomImage.make<XFLOAT>(sigmaNoiseSpectra.nzyxdim());
+    AccPtr<XFLOAT> NoiseSpectra = RandomImage.make<XFLOAT>(sigmaNoiseSpectra.size());
     NoiseSpectra.allAlloc();
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sigmaNoiseSpectra)
-        NoiseSpectra[n] = (XFLOAT) sqrt(sigmaFudgeFactor * sigmaNoiseSpectra.data[n]);
+    for (int n = 0; n < sigmaNoiseSpectra.size(); n++)
+    NoiseSpectra[n] = (XFLOAT) sqrt(sigmaFudgeFactor * sigmaNoiseSpectra.data[n]);
 
     #ifdef CUDA
     // Set up states to seeda and run randomization on the GPU
@@ -242,17 +242,14 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
     LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
 
     // Create noise image with the correct spectral profile
-    if (is3D)
-    {
+    if (is3D) {
         cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
                                     ~accMLO->transformer1.fouriers,
                                     ~RandomStates,
                                     accMLO->transformer1.xFSize,
                                     accMLO->transformer1.yFSize,
                                     ~NoiseSpectra);
-    }
-    else
-    {
+    } else {
         cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
                                             ~accMLO->transformer1.fouriers,
                                             ~RandomStates,
@@ -296,11 +293,11 @@ static void TranslateAndNormCorrect(
     RFLOAT xOff, RFLOAT yOff, RFLOAT zOff,
     bool DATA3D
 ) {
-    //Temporary array because translate is out-of-place
-    AccPtr<XFLOAT> temp = img_out.make<XFLOAT>(img_in.nzyxdim());
+    // Temporary array because translate is out-of-place
+    AccPtr<XFLOAT> temp = img_out.make<XFLOAT>(img_in.size());
     temp.allAlloc();
 
-    for (unsigned long i = 0; i < img_in.nzyxdim(); i++)
+    for (unsigned long i = 0; i < img_in.size(); i++)
         temp[i] = (XFLOAT) img_in.data[i];
 
     temp.cpToDevice();
@@ -376,7 +373,7 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
             d_Fimg.cpToHost();
             d_Fimg.streamSync();
             img_out.initZeros(zSize, ySize, xSize);
-            for (unsigned long i = 0; i < img_out.nzyxdim(); i++) {
+            for (unsigned long i = 0; i < img_out.size(); i++) {
                 img_out.data[i].real = (RFLOAT) d_Fimg[i].x;
                 img_out.data[i].imag = (RFLOAT) d_Fimg[i].y;
             }

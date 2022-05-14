@@ -34,6 +34,10 @@
 #include "src/gpu_utils/cuda_utils_cub.cuh"
 #endif
 
+// Z-score of x given mean mu and standard deviation sigma
+inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
+    return (x - mu) / sigma;
+}
 
 AutoPickerCuda::AutoPickerCuda(AutoPicker *basePicker, int dev_id, const char * timing_fnm):
     node(NULL), basePckr(basePicker),
@@ -346,12 +350,12 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #endif
 
     CTICTOC(timer, "middlePassFilter", ({
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
+    for (long int n = 0; n < Imic().size(); n++) {
         // Remove pixel values that are too far away from the mean
-        if (abs(Imic()[n] - avg0) / stddev0 > basePckr->outlier_removal_zscore)
+        if (abs(Z(Imic()[n], avg0, stddev0)) > basePckr->outlier_removal_zscore)
             Imic()[n] = avg0;
 
-        Imic()[n] = (Imic()[n] - avg0) / stddev0;
+        Imic()[n] = Z(Imic()[n], avg0, stddev0);
     }
     }))
 
@@ -450,7 +454,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
          */
 
         CTICTOC(timer, "Imic_insert", ({
-        for (int i = 0; i < Imic().nzyxdim(); i++)
+        for (int i = 0; i < Imic().size(); i++)
             micTransformer.reals[i] = (XFLOAT) Imic().data[i];
         micTransformer.reals.cp_to_device();
         }))
@@ -524,7 +528,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
 
         /// TODO: Do this only once further up in scope
-        CudaGlobalPtr<CUDACOMPLEX> d_Fmsk(basePckr->Finvmsk.nzyxdim(), allocator);
+        CudaGlobalPtr<CUDACOMPLEX> d_Fmsk(basePckr->Finvmsk.size(), allocator);
         for (int i = 0; i< d_Fmsk.size ; i++) {
             d_Fmsk[i].x = basePckr->Finvmsk.data[i].real;
             d_Fmsk[i].y = basePckr->Finvmsk.data[i].imag;
@@ -616,7 +620,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }
     }
 
-    CudaGlobalPtr<XFLOAT> d_ctf(Fctf.nzyxdim(), allocator);
+    CudaGlobalPtr<XFLOAT> d_ctf(Fctf.size(), allocator);
     if (basePckr->do_ctf) {
         for (int i = 0; i < d_ctf.size; i++)
             d_ctf[i] = Fctf.data[i];
@@ -845,7 +849,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             d_Mccf_best.cp_to_host();
             d_Mpsi_best.cp_to_host();
             d_Mccf_best.streamSync();
-            for (int i = 0; i < Mccf_best.nzyxdim(); i++) {
+            for (int i = 0; i < Mccf_best.size(); i++) {
                 Mccf_best.data[i] = d_Mccf_best[i];
                 Mpsi_best.data[i] = d_Mpsi_best[i];
             }
@@ -881,7 +885,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         if (basePckr->autopick_helical_segments) {
             if (!basePckr->do_read_fom_maps) {
                 // Combine Mccf_best and Mpsi_best from all refs
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mccf_best) {
+                for (long int n = 0; n < Mccf_best.size(); n++) {
                     RFLOAT new_ccf = Mccf_best[n];
                     RFLOAT old_ccf = Mccf_best_combined[n];
                     if (new_ccf > old_ccf) {

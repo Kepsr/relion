@@ -121,7 +121,7 @@ class project_parameters {
             msk.read(fn_mask);
             if (!msk().sameShape(vol()))
                 REPORT_ERROR("project ERROR: mask and map have different sizes!");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(vol()) { vol()[n] *= msk()[n]; }
+            vol() *= msk();
         }
 
         if (nr_uniform > 0) {
@@ -326,7 +326,7 @@ class project_parameters {
                         ctf.getFftwImage(Fctf, Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                     }
 
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+                    for (long int n = 0; n < F2D.size(); n++) {
                         F2D[n] *= Fctf[n];
                         if (do_ctf2)
                         F2D[n] *= Fctf[n];
@@ -476,7 +476,7 @@ class project_parameters {
                             ctf.getFftwImage(Fctf, Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                         }
 
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+                        for (long int n = 0; n < F2D.size(); n++) {
                             F2D[n] *= Fctf[n];
                             if (do_ctf2)
                             F2D[n] *= Fctf[n];

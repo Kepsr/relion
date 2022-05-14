@@ -291,7 +291,7 @@ class image_handler_parameters {
                         transformer.inverseFourierTransform(FTop_bfac, Isharp);
 
                         RFLOAT sum_aa = 0.0, sum_xa = 0.0, sum_xx = 0.0;
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
+                        for (long int n = 0; n < Iin().size(); n++) {
                             RFLOAT w = Imask()[n] * Imask()[n];
                             RFLOAT x = Iin()[n];
                             RFLOAT a = Isharp[n];
@@ -302,7 +302,7 @@ class image_handler_parameters {
 
                         RFLOAT scale = sum_xa / sum_aa;
                         RFLOAT diff2 = 0.0;
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
+                        for (long int n = 0; n < Iin().size(); n++) {
                             RFLOAT w = Imask()[n];
                             RFLOAT x = Iin()[n];
                             RFLOAT a = Isharp[n];
@@ -320,7 +320,7 @@ class image_handler_parameters {
 
                 } else {
                     RFLOAT sum_aa = 0.0, sum_xa = 0.0;
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
+                    for (long int n = 0; n < Iin().size(); n++) {
                         RFLOAT w = Imask()[n];
                         RFLOAT x = Iin()[n];
                         RFLOAT a = Iop()[n];
@@ -392,9 +392,7 @@ class image_handler_parameters {
         } else if (fn_correct_ampl != "") {
             MultidimArray<Complex> FT;
             transformer.FourierTransform(Iin(), FT, false);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
-                FT[n] /= avg_ampl[n];
-            }
+            FT /= avg_ampl;
             transformer.inverseFourierTransform();
             Iout = Iin;
         } else if (fn_fourfilter != "") {
@@ -581,7 +579,7 @@ class image_handler_parameters {
             gravis::tImage<gravis::bRGB> pngOut(Xsize(Iout()), Ysize(Iout()));
             pngOut.fill(gravis::bRGB(0));
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iout()) {
+            for (long int n = 0; n < Iout().size(); n++) {
                 const unsigned char val = floor((Iout()[n] - minmax.min) / step);
                 unsigned char r, g, b;
                 greyToRGB(color_scheme, val, r, g, b);
@@ -781,17 +779,17 @@ class image_handler_parameters {
                 transformer.FourierTransform(Iin(), FT);
 
                 if (do_avg_ampl) {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
+                    for (long int n = 0; n < FT.size(); n++) {
                         avg_ampl[n] += abs(FT[n]);
                     }
                 } else if (do_avg_ampl2 || do_avg_ampl2_ali) {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT) {
+                    for (long int n = 0; n < FT.size(); n++) {
                         avg_ampl[n] += norm(FT[n]);
                     }
                 }
             } else if (do_average) {
                 Iin.read(fn_img);
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
+                for (long int n = 0; n < Iin().size(); n++) {
                     avg_ampl[n] += Iin()[n];
                 }
             } else if (do_average_all_frames) {
@@ -813,7 +811,7 @@ class image_handler_parameters {
                     REPORT_ERROR("ERROR: you are trying to perform movie-averaging options on a single image/volume");
 
                 FileName fn_ext = fn_out.getExtension();
-                if (Nsize(Iavg()) > 1 && ( fn_ext.contains("mrc") && !fn_ext.contains("mrcs") ) )
+                if (Nsize(Iavg()) > 1 && (fn_ext.contains("mrc") && !fn_ext.contains("mrcs")))
                     REPORT_ERROR("ERROR: trying to write a stack into an MRC image. Use .mrcs extensions for stacks!");
 
                 for (long int nn = 0; nn < ndim; nn++) {
@@ -827,9 +825,7 @@ class image_handler_parameters {
                         }
                     } else if (avg_first >= 0 && avg_last >= 0 && nn + 1 >= avg_first && nn + 1 <= avg_last) {
                         //                                           ^ Start counting at 1
-                        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iin()) {
-                            Iavg()[n] += Iin()[n]; // just store sum
-                        }
+                        Iavg() += Iin(); // just store sum
                     }
                 }
                 Iavg.write(fn_out);

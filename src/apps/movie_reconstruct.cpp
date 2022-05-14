@@ -283,7 +283,7 @@ void MovieReconstructor::backproject(int rank, int size) {
         }
 
         // Read trajectories. Both particle ID and frame ID are 0-indexed in this array.
-        std::vector<std::vector<gravis::d2Vector>> trajectories = MotionHelper::readTracksInPix(fn_traj, movie_angpix);
+        std::vector<std::vector<gravis::d2Vector> > trajectories = MotionHelper::readTracksInPix(fn_traj, movie_angpix);
 
         // TODO: loop over relevant frames with per-frame shifts with per-frame shifts with per-frame shifts with per-frame shifts
         if (isEER) {
@@ -299,16 +299,15 @@ void MovieReconstructor::backproject(int rank, int size) {
             fn_frame.compose(frame_no, fn_movie);
             Iframe.read(fn_frame);
         }
-        const int w0 = XSIZE(Iframe());
-        const int h0 = YSIZE(Iframe());
+        const int w0 = Xsize(Iframe());
+        const int h0 = Ysize(Iframe());
 
         // Apply gain correction
         // Probably we can ignore defect correction, because we are not re-aligning.
         if (fn_gain == "") {
-            for (auto &x : Iframe()) { x *= -1; }
+            Iframe() *= -1.0;
         } else {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iframe())
-                Iframe()[n] *= -Igain()[n];
+            Iframe() *= -Igain();
         }
 
         // Loop over subsets
@@ -336,7 +335,7 @@ void MovieReconstructor::backproject(int rank, int size) {
 
                 const int opticsGroup = obsModel.getOpticsGroup(mdts[imov], ipart); // 0-indexed
                 const RFLOAT data_angpix = data_angpixes[opticsGroup];
-                fn_img = mdts[imov].getValue(EMDL::IMAGE_NAME, ipart);
+                fn_img = mdts[imov].getValue<FileName>(EMDL::IMAGE_NAME, ipart);
                 fn_img.decompose(stack_id, fn_stack);
                 #ifdef DEBUG
                 std::cout << "\tstack_id = " << stack_id << " fn_stack = " << fn_stack << std::endl;
@@ -345,10 +344,10 @@ void MovieReconstructor::backproject(int rank, int size) {
                     REPORT_ERROR("Missing trajectory!");
 
                 // RFLOAT traj_x, traj_y;
-                RFLOAT coord_x  = mdts[imov].getValue(EMDL::IMAGE_COORD_X, ipart); // in micrograph pixel
-                RFLOAT coord_y  = mdts[imov].getValue(EMDL::IMAGE_COORD_Y, ipart);
-                RFLOAT origin_x = mdts[imov].getValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ipart); // in Angstrom
-                RFLOAT origin_y = mdts[imov].getValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ipart);
+                RFLOAT coord_x  = mdts[imov].getValue<RFLOAT>(EMDL::IMAGE_COORD_X, ipart); // in micrograph pixel
+                RFLOAT coord_y  = mdts[imov].getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, ipart);
+                RFLOAT origin_x = mdts[imov].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ipart); // in Angstrom
+                RFLOAT origin_y = mdts[imov].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ipart);
                 #ifdef DEBUG
                 std::cout << "\t\tcoord_mic_px = (" << coord_x << ", " << coord_y << ")";
                 std::cout << " origin_angst = (" << origin_x << ", " << origin_y << ")";
@@ -449,14 +448,13 @@ void MovieReconstructor::backproject(int rank, int size) {
 void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, MultidimArray<Complex> &F2D, int this_subset) {
     RFLOAT fom, r_ewald_sphere;
     Matrix2D<RFLOAT> A3D;
-    MultidimArray<RFLOAT> Fctf;
     Matrix1D<RFLOAT> trans(2);
     FourierTransformer transformer;
 
     // Rotations
-    RFLOAT rot  = mdt.getValue(EMDL::ORIENT_ROT,  p);
-    RFLOAT tilt = mdt.getValue(EMDL::ORIENT_TILT, p);
-    RFLOAT psi  = mdt.getValue(EMDL::ORIENT_PSI,  p);
+    RFLOAT rot  = mdt.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
+    RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, p);
+    RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI,  p);
     Euler_angles2matrix(rot, tilt, psi, A3D);
 
     // If we are considering Ewald sphere curvature, the mag. matrix
@@ -489,8 +487,9 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
     MultidimArray<Complex> F2DP, F2DQ;
     FileName fn_img;
 
+    MultidimArray<RFLOAT> Fctf;
     Fctf.resize(F2D);
-    Fctf.initConstant(1.);
+    Fctf.initConstant(1.0);
 
     // Apply CTF if necessary
     if (do_ctf) {
@@ -522,17 +521,11 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
     if (true) {
         // not subtract
         if (do_ewald) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                Fctf[n] *= Fctf[n];
-            }
+            Fctf *= Fctf;
         } else if (do_ctf) {
             // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
-            if (!ctf_premultiplied) {
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                    F2D[n]  *= Fctf[n];
-                }
-            }
-            for (auto &x : Fctf) { x *= x; }
+            if (!ctf_premultiplied) { F2D *= Fctf; }
+            Fctf *= Fctf;
         }
 
         direct::elem(F2D, 0, 0) = 0.0;
@@ -587,8 +580,8 @@ void MovieReconstructor::applyCTFPandCTFQ(
     // FourierTransformer transformer;
     outP.resize(Fin);
     outQ.resize(Fin);
-    float angle_step = 180./nr_sectors;
-    for (float angle = 0.; angle < 180.;  angle +=angle_step) {
+    float angle_step = 180.0 / nr_sectors;
+    for (float angle = 0.0; angle < 180.0;  angle += angle_step) {
         MultidimArray<Complex> CTFP(Fin), Fapp(Fin);
         MultidimArray<RFLOAT> Iapp(YSIZE(Fin), YSIZE(Fin));
         // Two passes: one for CTFP, one for CTFQ

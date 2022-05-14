@@ -201,7 +201,7 @@ bool Postprocessing::getMask() {
 
         long summask = 0;
         for (auto &x : Im()) { if (x > 0.5) { summask++; } }
-        avg = (RFLOAT)summask / (RFLOAT) Im().nzyxdim();
+        avg = (RFLOAT) summask / (RFLOAT) Im().size();
         frac_solvent_mask = 0.476 /avg;
         molweight_frommask = avg * std::pow(Xsize(Im()) * angpix, 3) * 0.81;
 
@@ -376,7 +376,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
     }
 
     // Average
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum3d) {
+    for (long int n = 0; n < sum3d.size(); n++) {
         if (count3d[n] > 0) {
             sum3d[n] /= count3d[n];
         }
@@ -843,7 +843,7 @@ void Postprocessing::run_locres(int rank, int size) {
     MultidimArray<RFLOAT> Ifil    = MultidimArray<RFLOAT>::zeros(I1());
     MultidimArray<RFLOAT> Ilocres = MultidimArray<RFLOAT>::zeros(I1());
     MultidimArray<RFLOAT> Isumw   = MultidimArray<RFLOAT>::zeros(I1());
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1()) {
+    for (long int n = 0; n < I1().size(); n++) {
         Isum[n] = I1()[n] + I2()[n];
         I1p[n] = I1()[n];
         I2p[n] = I2()[n];
@@ -964,7 +964,7 @@ void Postprocessing::run_locres(int rank, int size) {
                 transformer.inverseFourierTransform(FT, I1m);
 
                 // Store weighted sum of local resolution and filtered map
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1m) {
+                for (long int n = 0; n < I1m.size(); n++) {
                     Ifil[n]    +=  locmask[n] * I1m[n];
                     Ilocres[n] +=  locmask[n] / local_resol;
                     Isumw[n]   +=  locmask[n];
@@ -996,7 +996,7 @@ void Postprocessing::run_locres(int rank, int size) {
 
     if (rank == 0) {
         // Now write out the local-resolution map and
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(I1m) {
+        for (long int n = 0; n < I1m.size(); n++) {
             if (Isumw[n] > 0.0) {
                 I1()[n] = 1.0 / (Ilocres[n] / Isumw[n]);
                 I2()[n] = Ifil[n] / Isumw[n];
@@ -1029,7 +1029,7 @@ void Postprocessing::run_locres(int rank, int size) {
                 REPORT_ERROR("The sizes of the input half maps and the mask are not the same.");
 
             std::vector<RFLOAT> values;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
+            for (long int n = 0; n < Imask().size(); n++)
                 if (Imask()[n] > 0.5) values.push_back(I1()[n]);
 
             std::vector <RFLOAT> histX, histY;

@@ -144,14 +144,10 @@ class EERRenderer {
         }
         
         if (!is_multiplicative) {
-            double sum = 0;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain) { 
-                sum += gain[n]; 
-            }
-            sum /= size_out * size_out;
+            double avg = gain.sum() / (size_out * size_out);
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain) {
-                if (gain[n] != 0) { gain[n] = sum / gain[n]; }
+            for (auto &x : gain) {
+                if (x != 0) { x = avg / x; }
             }
         }
     }

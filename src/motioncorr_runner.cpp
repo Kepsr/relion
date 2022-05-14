@@ -1000,7 +1000,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
     if (fn_gain_reference != "") {
         #pragma omp parallel for num_threads(n_threads)
         for (int iframe = 0; iframe < n_frames; iframe++) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Igain()) {
+            for (long int n = 0; n < Igain().size(); n++) {
                 Iframes[iframe]()[n] *= Igain()[n];
             }
         }
@@ -1012,7 +1012,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
     RCTIC(TIMING_INITIAL_SUM);
     for (int iframe = 0; iframe < n_frames; iframe++) {
         #pragma omp parallel for num_threads(n_threads)
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+        for (long int n = 0; n < Isum.size(); n++) {
             Isum[n] += Iframes[iframe]()[n];
         }
     }
@@ -1023,12 +1023,12 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         RCTIC(TIMING_DETECT_HOT);
         RFLOAT mean = 0, std = 0;
         #pragma omp parallel for reduction(+:mean) num_threads(n_threads)
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+        for (long int n = 0; n < Isum.size(); n++) {
             mean += Isum[n];
         }
         mean /= Xsize(Isum) * Ysize(Isum);
         #pragma omp parallel for reduction(+:std) num_threads(n_threads)
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+        for (long int n = 0; n < Isum.size(); n++) {
             RFLOAT d = Isum[n] - mean;
             std += d * d;
         }
@@ -1041,7 +1041,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             fillDefectMask(bBad, fn_defect, n_threads);
             #ifdef DEBUG_HOTPIXELS
             Image<RFLOAT> tmp(nx, ny);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(tmp())
+            for (long int n = 0; n < tmp.size(); n++())
                 tmp()[n] = bBad[n)];
             tmp.write("defect.mrc");
             #endif
@@ -1050,7 +1050,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         /// TODO: This should be done earlier and merged with badmap
         if (fn_gain_reference != "") {
             int n_bad_eer = 0;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Igain()) {
+            for (long int n = 0; n < Igain().size(); n++) {
                 if (Igain()[n] == 0) {
 					// n_bad_eer++;
                     bBad[n] = true;
@@ -1060,7 +1060,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         }
 
         int n_bad = 0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum) {
+        for (long int n = 0; n < Isum.size(); n++) {
             if (Isum[n] > threshold && !bBad[n]) {
                 bBad[n] = true;
                 n_bad++;
@@ -1163,7 +1163,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             MultidimArray<fComplex> F_sum(Fframes[iframe]);
             for (int j = 1; j < grouping_for_ps && j + iframe < n_frames; j++) {
                 #pragma omp parallel for num_threads(n_threads)
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F_sum)
+                for (long int n = 0; n < F_sum.size(); n++)
                     F_sum[n] += Fframes[j + iframe][n];
             }
 
@@ -1618,7 +1618,7 @@ void MotioncorrRunner::realSpaceInterpolation(
             logfile << "." << std::flush;
 
             #pragma omp parallel for num_threads(n_threads)
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isum()) {
+            for (long int n = 0; n < Isum().size(); n++) {
                 Isum()[n] += Iframes[iframe]()[n];
             }
         }
@@ -2180,7 +2180,7 @@ void MotioncorrRunner::fillDefectMask(
             REPORT_ERROR("The size of the defect map is not the same as that of the movie.");
 
         #pragma omp parallel for num_threads(n_threads)
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(bBad) {
+        for (long int n = 0; n < bBad.size(); n++) {
             if (Idefect()[n] != 0) { bBad[n] = true; }
         }
     }

@@ -152,11 +152,11 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         // This creates a rotation matrix for (rot,tilt,psi) = (0,90,0)
         // It will be used to make all Abody orientation matrices relative to (0,90,0) instead of the more logical (0,0,0)
         // This is useful, as psi-priors are ill-defined around tilt=0, as rot becomes the same as -psi!!
-        rotation3DMatrix(-90., 'Y', A_rot90, false);
+        rotation3DMatrix(-90.0, 'Y', A_rot90, false);
         A_rot90T = A_rot90.transpose();
 
         // Find out which body has the biggest overlap with the keepmask, use these orientations
-        RFLOAT best_overlap = 0.;
+        RFLOAT best_overlap = 0.0;
         subtract_body = -1;
         for (int ibody = 0; ibody < opt.mymodel.nr_bodies; ibody++) {
             if (!Imask().sameShape(opt.mymodel.masks_bodies[ibody])) {
@@ -166,7 +166,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
             }
 
             RFLOAT overlap = 0.0;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask())
+            for (long int n = 0; n < Imask().size(); n++)
                 overlap += opt.mymodel.masks_bodies[ibody][n] * Imask()[n];
 
             if (overlap > best_overlap) {
@@ -180,7 +180,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         // Apply the inverse of the keepmask to all the mask_bodies
         for (int obody = 0; obody < opt.mymodel.nr_bodies; obody++) {
             int ii = direct::elem(opt.mymodel.pointer_body_overlap, subtract_body, obody);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask()) {
+            for (long int n = 0; n < Imask().size(); n++) {
                 opt.mymodel.masks_bodies[ii][n] *= 1.0 - Imask()[n];
             }
         }
@@ -193,7 +193,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
                 REPORT_ERROR("ERROR: input mask is not of same shape as reference inside the optimiser.");
             }
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imask()) {
+            for (long int n = 0; n < Imask().size(); n++) {
                 opt.mymodel.Iref[iclass][n] *= 1.0 - Imask()[n];
             }
         }
@@ -207,8 +207,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
     opt.mymodel.setFourierTransformMaps(false); // false means ignore tau2_class
 
     // ensure even boxsize of subtracted images
-    if (boxsize > 0)
-        boxsize -= boxsize % 2;
+    if (boxsize > 0) { boxsize -= boxsize % 2; }
 }
 
 void ParticleSubtractor::revert() {
@@ -622,11 +621,11 @@ void ParticleSubtractor::subtractOneParticle(
     // Apply the CTF to the subtrahend projection
     if (opt.do_ctf_correction) {
         if (opt.mydata.obsModel.getCtfPremultiplied(optics_group)) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsubtrahend) {
+            for (long int n = 0; n < Fsubtrahend.size(); n++) {
                 Fsubtrahend.data[n] *= Fctf.data[n] * Fctf.data[n];
             }
         } else {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsubtrahend) {
+            for (long int n = 0; n < Fsubtrahend.size(); n++) {
                 Fsubtrahend.data[n] *= Fctf.data[n];
             }
         }

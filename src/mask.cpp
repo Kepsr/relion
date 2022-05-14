@@ -257,7 +257,7 @@ void autoMask(
     msk_out.resize(img_in);
 
     // A. Calculate initial binary mask based on density threshold
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img_in) {
+    for (long int n = 0; n < img_in.size(); n++) {
         msk_out[n] = img_in[n] >= ini_mask_density_threshold;
     }
 

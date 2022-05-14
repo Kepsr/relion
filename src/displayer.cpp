@@ -927,15 +927,15 @@ void multiViewerCanvas::printMetaData(int main_ipos) {
 void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
     int xsize = boxes[0]->xsize_data;
     int ysize = boxes[0]->ysize_data;
-    MultidimArray<RFLOAT> sum(ysize, xsize);
+    MultidimArray<RFLOAT> sum (ysize, xsize);
     MultidimArray<RFLOAT> sum2(ysize, xsize);
 
     int nn = 0;
     for (long int ipos = 0; ipos < boxes.size(); ipos++) {
         if (boxes[ipos]->selected == selected) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum) {
+            for (long int n = 0; n < sum.size(); n++) {
                 int ival = boxes[ipos]->img_data[n];
-                if (ival < 0) ival += 256;
+                if (ival < 0) { ival += 256; }
                 sum[n]  += ival;
                 sum2[n] += ival * ival;
             }
@@ -945,9 +945,7 @@ void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
     sum  /= nn;
     sum2 /= nn;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum) {
-        sum2[n] -= sum[n] * sum[n];
-    }
+    sum2 -= sum * sum;
     sum2 *= nn / (nn - 1);
 
     // Show the average

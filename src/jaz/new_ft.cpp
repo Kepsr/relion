@@ -214,16 +214,10 @@ void NewFFT::_FourierTransform(
 
     if (normalization == FwdOnly) {
         const double scale = src.size();
-
-        for (long int i = 0; i < dest.nzyxdim(); i++) {
-            dest.data[i] /= scale;
-        }
+        for (auto &x : dest) { x /= scale; }
     } else if (normalization == Both) {
         const double scale = sqrt(src.size());
-
-        for (long int i = 0; i < dest.nzyxdim(); i++) {
-            dest.data[i] /= scale;
-        }
+        for (auto &x : dest) { x /= scale; }
     }
 }
 
@@ -233,16 +227,13 @@ void NewFFT::_inverseFourierTransform(
     const NewFFT::DoublePlan &plan,
     Normalization normalization
 ) {
-    fftw_complex* in = (fftw_complex*) src.data;
+    fftw_complex *in = (fftw_complex*) src.data;
 
     fftw_execute_dft_c2r(plan.getBackward(), in, dest.data);
 
     if (normalization == Both) {
         const double scale = sqrt(dest.size());
-
-        for (long int i = 0; i < dest.nzyxdim(); i++) {
-            dest.data[i] /= scale;
-        }
+        for (auto &x : dest) { x /= scale; }
     }
 }
 
@@ -256,16 +247,10 @@ void NewFFT::_FourierTransform(
 
     if (normalization == FwdOnly) {
         const float scale = src.size();
-
-        for (long int i = 0; i < dest.nzyxdim(); i++) {
-            dest.data[i] /= scale;
-        }
+        for (auto &x : dest) { x /= scale; }
     } else if (normalization == Both) {
         const float scale = sqrt(src.size());
-
-        for (long int i = 0; i < dest.nzyxdim(); i++) {
-            dest.data[i] /= scale;
-        }
+        for (auto &x : dest) { x /= scale; }
     }
 }
 
@@ -275,16 +260,13 @@ void NewFFT::_inverseFourierTransform(
     const NewFFT::FloatPlan &plan,
     Normalization normalization
 ) {
-    fftwf_complex* in = (fftwf_complex*) src.data;
+    fftwf_complex *in = (fftwf_complex*) src.data;
 
     fftwf_execute_dft_c2r(plan.getBackward(), in, dest.data);
 
     if (normalization == Both) {
         const float scale = sqrt(dest.size());
-
-        for (long int i = 0; i < dest.nzyxdim(); i++) {
-            dest.data[i] /= scale;
-        }
+        for (auto &x : dest) { x /= scale; }
     }
 }
 

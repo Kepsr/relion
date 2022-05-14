@@ -359,9 +359,7 @@ void FrameRecombiner::process(
                     Fctf, s_out[og], s_out[og], angpix_out[og], 
                     false, false, false, true, false
                 );
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(sum()) {
-                    sum()[n] *= Fctf[n];
-                }
+                sum() *= Fctf;
             }
 
             fts[threadnum].inverseFourierTransform(sum(), real());

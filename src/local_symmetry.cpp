@@ -72,10 +72,9 @@ void truncateMultidimArray(
     //     if (val > maxval) { direct::elem(v, k, i, j) = maxval; }
     // }
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(v) {
-        RFLOAT &val = v[n];
-        if (val < minval) { val = minval; }
-        if (val > maxval) { val = maxval; }
+    for (auto &x : v) {
+        if (x < minval) { x = minval; }
+        if (x > maxval) { x = maxval; }
     }
 
 }
