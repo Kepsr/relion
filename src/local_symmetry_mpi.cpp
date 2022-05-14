@@ -123,7 +123,7 @@ void local_symmetry_parameters_mpi::run() {
         if (!isMultidimArray3DCubic(map()))
             REPORT_ERROR("ERROR: Input map " + fn_unsym + " is not 3D cube!");
         #ifdef DEBUG
-        std::cout << " I am leader. The nxyzdim of map() is " << map().nzyxdim() << std::endl;
+        std::cout << " I am leader. The nxyzdim of map() is " << map().size() << std::endl;
         #endif
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -222,9 +222,9 @@ void local_symmetry_parameters_mpi::run() {
             dest_cropped.setXmippOrigin();
             #ifdef DEBUG
             if (node->rank == 1) {
-                std::cout << " I am node rank 1. The nxyzdim of mask_cropped is " << mask_cropped.nzyxdim() << std::endl;
-                std::cout << " I am node rank 1. The nxyzdim of  src_cropped is " <<  src_cropped.nzyxdim() << std::endl;
-                std::cout << " I am node rank 1. The nxyzdim of dest_cropped is " << dest_cropped.nzyxdim() << std::endl;
+                std::cout << " I am node rank 1. The nxyzdim of mask_cropped is " << mask_cropped.size() << std::endl;
+                std::cout << " I am node rank 1. The nxyzdim of  src_cropped is " <<  src_cropped.size() << std::endl;
+                std::cout << " I am node rank 1. The nxyzdim of dest_cropped is " << dest_cropped.size() << std::endl;
             }
             #endif
         }

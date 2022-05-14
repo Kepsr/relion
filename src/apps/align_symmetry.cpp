@@ -100,11 +100,7 @@ class align_symmetry {
             symmetriseMap(symmetrised, fn_sym);
 
             // non-weighted real-space squared difference
-            double diff2 = 0;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(rotated) {
-                diff2 += (rotated[n] - symmetrised[n]) *
-                         (rotated[n] - symmetrised[n]);
-            }
+            double diff2 = (rotated - symmetrised).sum2();  // Probably more efficient to do the sum in a loop
 
             if (best_diff2 > diff2) {
                 best_diff2 = diff2;

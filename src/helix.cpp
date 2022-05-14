@@ -27,6 +27,11 @@
 // Exclude segments close to the edges of the 2D micrographs / 3D tomograms. Please switch it on.
 #define EXCLUDE_SEGMENTS_ON_THE_EDGES
 
+// Z-score of x given mean mu and standard deviation sigma
+inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
+    return (x - mu) / sigma;
+}
+
 void makeHelicalSymmetryList(
     std::vector<HelicalSymmetryItem>& list,
     RFLOAT rise_min_pix,
@@ -4389,7 +4394,7 @@ void normaliseHelicalSegments(
     RFLOAT helical_outer_diameter_A, RFLOAT pixel_size_A
 ) {
     bool is_3D_data = false, have_tilt_prior = false, have_psi_prior = false, read_angpix_from_star = false;
-    RFLOAT rot_deg = 0.0, tilt_deg = 0.0, psi_deg = 0.0, val = 0.0, det_pixel_size = 0.0, mag = 0.0;
+    RFLOAT rot_deg = 0.0, tilt_deg = 0.0, psi_deg = 0.0, det_pixel_size = 0.0, mag = 0.0;
     Image<RFLOAT> img0;
     MetaDataTable MD;
     FileName img_name, file_ext;
@@ -4454,9 +4459,8 @@ void normaliseHelicalSegments(
         }
 
         // Normalise
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img0()) {
-            val = img0()[n];
-            img0()[n] = (val - bg_stats.avg) / bg_stats.stddev;
+        for (auto &x : img0()) {
+            x = Z(x, bg_stats.avg, bg_stats.stddev);
         }
 
         // Rename
@@ -5271,7 +5275,7 @@ void averageAsymmetricUnits2D(
         }
 
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
+        for (long int n = 0; n < Fimg.size(); n++) {
             Fimg[n] = Fsum[n] / (RFLOAT) nr_asu;
         }
         transformer.inverseFourierTransform();

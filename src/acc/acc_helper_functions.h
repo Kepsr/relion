@@ -258,10 +258,10 @@ void selfApplyBeamTilt2(
 
 template <typename T>
 void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allocator) {
-    AccPtr<XFLOAT> img_in (v.nzyxdim(), allocator);   // with original data pointer
-	// AccPtr<XFLOAT >  img_aux (v.nzyxdim(), allocator);   // temporary holder
+    AccPtr<XFLOAT> img_in (v.size(), allocator);   // with original data pointer
+	// AccPtr<XFLOAT >  img_aux (v.size(), allocator);   // temporary holder
 
-    for (unsigned long i = 0; i < v.nzyxdim(); i ++)
+    for (unsigned long i = 0; i < v.size(); i ++)
         img_in[i] = (XFLOAT) v.data[i];
 
     img_in.putOnDevice();
@@ -308,7 +308,7 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         }
 
 
-        int dim = ceilf((float) (v.nzyxdim() / (float) (2 * CFTT_BLOCK_SIZE)));
+        int dim = ceilf((float) (v.size() / (float) (2 * CFTT_BLOCK_SIZE)));
         AccUtilities::centerFFT_2D(
             dim, 0, CFTT_BLOCK_SIZE,
             #ifdef CUDA
@@ -316,7 +316,7 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
             #else
                 &img_in[0],
             #endif
-            v.nzyxdim(),
+            v.size(),
             XSIZE(v), YSIZE(v),
             xshift, yshift
         );
@@ -324,7 +324,7 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
 
         img_in.cpToHost();
 
-        for (unsigned long i = 0; i < v.nzyxdim(); i ++)
+        for (unsigned long i = 0; i < v.size(); i ++)
             v.data[i] = (T) img_in[i];
 
     } else if (v.getDim() == 3) {

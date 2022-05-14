@@ -37,6 +37,10 @@
 #undef CTICTOC
 #define CTICTOC(s, block) CTIC(timer, s); block; CTOC(timer, s);
 
+// Z-score of x given mean mu and standard deviation sigma
+inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
+    return (x - mu) / sigma;
+}
 
 AutoPickerCuda::AutoPickerCuda(
     AutoPicker *basePicker, int dev_id, const char * timing_fnm
@@ -126,7 +130,7 @@ void AutoPickerCuda::run() {
                 basePckr->PPref[iref].data.yinit, basePckr->PPref[iref].data.zinit,
                 basePckr->PPref[iref].r_max, basePckr->PPref[iref].padding_factor
             );
-            projectors[iref].initMdl(&(basePckr->PPref[iref].data.data[0]));
+            projectors[iref].initMdl(&basePckr->PPref[iref].data.data[0]);
         }
         });
     }
@@ -229,7 +233,7 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
 
     CTICTOC("PRE-window_1", ({
     windowFourierTransform2(
-        d_Fcov, cudaTransformer2.fouriers, x, y, 1, workSize/2+1, workSize, 1
+        d_Fcov, cudaTransformer2.fouriers, x, y, 1, workSize / 2 + 1, workSize, 1
     );
     }));
 
@@ -308,7 +312,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     if (!basePckr->do_read_fom_maps) {
         CTICTOC("setSize_micTr", {
-        micTransformer.setSize(basePckr->micrograph_size, basePckr->micrograph_size, 1,1);
+        micTransformer.setSize(basePckr->micrograph_size, basePckr->micrograph_size, 1, 1);
         });
 
         CTICTOC("setSize_cudaTr", {
@@ -342,12 +346,12 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     basePckr->timer.toc(basePckr->TIMING_A7);
     #endif
     CTICTOC("middlePassFilter", ({
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic()) {
+    for (long int n = 0; n < Imic().size(); n++) {
         // Remove pixel values that are too far away from the mean
-        if (abs(Imic()[n] - stats.avg) / stats.stddev > basePckr->outlier_removal_zscore)
+        if (abs(Z(Imic()[n], stats.avg, stats.stddev)) > basePckr->outlier_removal_zscore)
             Imic()[n] = stats.avg;
 
-        Imic()[n] = (Imic()[n] - stats.avg) / stats.stddev;
+        Imic()[n] = Z(Imic()[n], stats.avg, stats.stddev);
     }
     }));
 
@@ -414,24 +418,16 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #ifdef TIMING
     basePckr->timer.tic(basePckr->TIMING_B1);
     #endif
-    RFLOAT normfft = (RFLOAT)(basePckr->micrograph_size*basePckr->micrograph_size) / (RFLOAT)basePckr->nr_pixels_circular_mask;;
+    RFLOAT normfft = (RFLOAT) (basePckr->micrograph_size * basePckr->micrograph_size) / (RFLOAT) basePckr->nr_pixels_circular_mask;
     if (basePckr->do_read_fom_maps) {
         CTICTOC("readFromFomMaps_0", {
-        FileName fn_tmp=basePckr->getOutputRootName(fn_mic)+"_"+basePckr->fn_out+"_stddevNoise.spi";
+        FileName fn_tmp = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_stddevNoise.spi";
         Image<RFLOAT> It;
         It.read(fn_tmp);
-        if (basePckr->autopick_helical_segments) {
-            Mstddev2 = It();
-        } else {
-            Mstddev = It();
-        }
-        fn_tmp=basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_avgNoise.spi";
+        (basePckr->autopick_helical_segments ? Mstddev2 : Mstddev) = It();
+        fn_tmp = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_avgNoise.spi";
         It.read(fn_tmp);
-        if (basePckr->autopick_helical_segments) {
-            Mavg = It();
-        } else {
-            Mmean = It();
-        }
+        (basePckr->autopick_helical_segments ? Mavg : Mmean) = It();
         });
     } else {
         /*
@@ -455,7 +451,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
          */
 
         CTICTOC("Imic_insert", ({
-        for (int i = 0; i< Imic().nzyxdim(); i++) {
+        for (int i = 0; i < Imic().size(); i++) {
             micTransformer.reals[i] = (XFLOAT) Imic().data[i];
         }
         micTransformer.reals.cpToDevice();
@@ -526,7 +522,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
         if (basePckr->autopick_helical_segments) {
 
-            AccPtr<ACCCOMPLEX> d_Fmsk2(basePckr->Favgmsk.nzyxdim(), allocator);
+            AccPtr<ACCCOMPLEX> d_Fmsk2(basePckr->Favgmsk.size(), allocator);
             AccPtr<XFLOAT> d_Mavg(allocator);
             AccPtr<XFLOAT> d_Mstddev2(allocator);
 
@@ -569,7 +565,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }
 
         /// TODO: Do this only once further up in scope
-        AccPtr<ACCCOMPLEX> d_Fmsk(basePckr->Finvmsk.nzyxdim(), allocator);
+        AccPtr<ACCCOMPLEX> d_Fmsk(basePckr->Finvmsk.size(), allocator);
         d_Fmsk.deviceAlloc();
         for (int i = 0; i < d_Fmsk.getSize() ; i++) {
             d_Fmsk[i].x = basePckr->Finvmsk.data[i].real;
@@ -678,7 +674,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }
     }
 
-    AccPtr<XFLOAT>  d_ctf(Fctf.nzyxdim(), allocator);
+    AccPtr<XFLOAT>  d_ctf(Fctf.size(), allocator);
     d_ctf.deviceAlloc();
     if (basePckr->do_ctf) {
         // Copy from Fctf.data to d_ctf
@@ -902,7 +898,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             d_Mccf_best.streamSync();
             // Copy d_Mccf_best to Mccf_best
             // Copy d_Mpsi_best to Mpsi_best
-            for (int i = 0; i < Mccf_best.nzyxdim(); i++) {
+            for (int i = 0; i < Mccf_best.size(); i++) {
                 Mccf_best.data[i] = d_Mccf_best[i];
                 Mpsi_best.data[i] = d_Mpsi_best[i];
             }
@@ -936,7 +932,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         if (basePckr->autopick_helical_segments) {
             if (!basePckr->do_read_fom_maps) {
                 // Combine Mccf_best and Mpsi_best from all refs
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mccf_best) {
+                for (long int n = 0; n < Mccf_best.size(); n++) {
                     RFLOAT new_ccf = Mccf_best[n];
                     RFLOAT old_ccf = Mccf_best_combined[n];
                     if (new_ccf > old_ccf) {

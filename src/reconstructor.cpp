@@ -473,43 +473,30 @@ void Reconstructor::backprojectOneParticle(long int p) {
         projector.get2DFourierTransform(Fsub, A3D);
 
         // Apply CTF if necessary
-        if (do_ctf) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
-                Fsub[n] *= Fctf[n];
-            }
-        }
+        if (do_ctf) { Fsub *= Fctf; }
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
-            F2D[n] -= Fsub[n];
-        }
+        F2D -= Fsub;
+
         // Back-project difference image
         backprojector.set2DFourierTransform(F2D, A3D);
     } else {
         if (do_reconstruct_ctf) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+            for (long int n = 0; n < F2D.size(); n++) {
                 F2D[n] = Fctf[n];
-                if (do_reconstruct_ctf2)
-                    F2D[n] *= Fctf[n];
+                if (do_reconstruct_ctf2) { F2D[n] *= Fctf[n]; }
                 Fctf[n] = 1.0;
             }
         } else if (do_ewald) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {  
-                // Why use F2D when we are iterating over Fctf?
-                Fctf[n] *= Fctf[n];
-            }
+            Fctf *= Fctf;
         } else if (do_ctf) {
             // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
-            if (!ctf_premultiplied) {
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                    F2D[n] *= Fctf[n];
-                }
-            }
-            for (auto &x : Fctf) { x *= x; }
+            if (!ctf_premultiplied) { F2D *= Fctf; }
+            Fctf *= Fctf;
         }
 
         // Do the following after squaring the CTFs!
         if (do_fom_weighting) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+            for (long int n = 0; n < F2D.size(); n++) {
                 F2D[n]  *= fom;
                 Fctf[n] *= fom;
             }
@@ -625,16 +612,16 @@ void Reconstructor::reconstruct() {
             Image<RFLOAT> It;
             FileName fn_tmp = fn_out.withoutExtension();
             It().resize(backprojector.data);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
+            for (long int n = 0; n < It().size(); n++) {
                 It()[n] = backprojector.data[n].real;
             }
-            It.write(fn_tmp+"_data_real.mrc");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(It()) {
+            It.write(fn_tmp + "_data_real.mrc");
+            for (long int n = 0; n < It().size(); n++) {
                 It()[n] = backprojector.data[n].imag;
             }
-            It.write(fn_tmp+"_data_imag.mrc");
+            It.write(fn_tmp + "_data_imag.mrc");
             It() = backprojector.weight;
-            It.write(fn_tmp+"_weight.mrc");
+            It.write(fn_tmp + "_weight.mrc");
         }
 
         MultidimArray<RFLOAT> tau2, tmp;

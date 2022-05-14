@@ -253,13 +253,9 @@ class particle_reposition_parameters {
                         }
 
                         if (optimiser.mydata.obsModel.getCtfPremultiplied(optics_group)) {
-                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
-                                Fref[n] *= Fctf[n] * Fctf[n];
-                            }
+                            Fref *= Fctf * Fctf;
                         } else {
-                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fref) {
-                                Fref[n] *= Fctf[n];
-                            }
+                            Fref *= Fctf;
                         }
 
                         // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
@@ -364,7 +360,7 @@ class particle_reposition_parameters {
             }
 
             if (found_one) {
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Imic_out()) {
+                for (long int n = 0; n < Imic_out().size(); n++) {
                     if (Imic_sum[n] > 0.0)
                         Imic_out()[n] /= Imic_sum[n];
                     if (do_invert)

@@ -905,7 +905,7 @@ class Image {
     }
 
     long unsigned int getSize() const {
-        return data.nzyxdim();
+        return data.size();
     }
 
     /* Is there label in the main header */

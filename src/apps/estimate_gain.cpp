@@ -142,9 +142,7 @@ class estimate_gain {
                     Image<RFLOAT> Iframe;
                     Iframe.read(fn_img, true, iframe, false, true); // mmap false, is_2D true
                     const int tid = omp_get_thread_num();
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Iframe()) {
-                        Isums[tid]()[n] += Iframe()[n];
-                    }
+                    Isums[tid]() += Iframe();
                 }
             } else {
                 EERRenderer renderer;
@@ -168,9 +166,7 @@ class estimate_gain {
                     MultidimArray<unsigned short> buf;
                     // unfortunately this function clears the buffer
                     renderer.renderFrames(frame, frame_end, buf);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(buf) {
-                        Isums[tid]()[n] += buf[n];
-                    }
+                    Isums[tid]() += buf;
                 }
             }
 
@@ -194,7 +190,7 @@ class estimate_gain {
 
         for (int i = 1; i < n_threads; i++) {
             #pragma omp parallel for num_threads(n_threads)
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isums[0]()) {
+            for (long int n = 0; n < Isums[0]().size(); n++) {
                 Isums[0]()[n] += Isums[i]()[n];
             }
         }
@@ -206,13 +202,13 @@ class estimate_gain {
         } else {
             double total_count = 0;
             #pragma omp parallel for num_threads(n_threads) reduction(+: total_count)
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isums[0]())
+            for (long int n = 0; n < Isums[0]().size(); n++)
                 total_count += Isums[0]()[n];
             const double avg_count = total_count / ((double)nx * ny * n_frames_used);
             std::cout << "Average count per pixel per frame: " << avg_count << std::endl;
 
             #pragma omp parallel for num_threads(n_threads)
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Isums[0]()) {
+            for (long int n = 0; n < Isums[0]().size(); n++) {
                 if (Isums[0]()[n] == 0) {
                     Isums[0]()[n] = 1.0;
                 } else {

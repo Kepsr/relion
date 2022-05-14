@@ -142,44 +142,48 @@ class mask_create_parameters
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --and maps are different shapes!");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Ip()) {
-                if (Ip()[n] > ini_threshold && Iin()[n] > ini_threshold)
+            for (long int n = 0; n < Ip().size(); n++) {
+                if (Ip()[n] > ini_threshold && Iin()[n] > ini_threshold) {
                     Iin()[n] = ini_threshold + 1.0;
-                else
+                } else {
                     Iin()[n] = ini_threshold - 1.0;
+                }
             }
-        } else if  (fn_or != "") {
+        } else if (fn_or != "") {
             Ip.read(fn_or);
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --or maps are different shapes!");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Ip()) {
-                if (Ip()[n] > ini_threshold || Iin()[n] > ini_threshold)
+            for (long int n = 0; n < Ip().size(); n++) {
+                if (Ip()[n] > ini_threshold || Iin()[n] > ini_threshold) {
                     Iin()[n] = ini_threshold + 1.0;
-                else
+                } else {
                     Iin()[n] = ini_threshold - 1.0;
+                }
             }
-        } else if  (fn_andnot != "") {
+        } else if (fn_andnot != "") {
             Ip.read(fn_andnot);
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --not maps are different shapes!");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Ip()) {
-                if (Iin()[n] > ini_threshold && Ip()[n] < ini_threshold)
+            for (long int n = 0; n < Ip().size(); n++) {
+                if (Iin()[n] > ini_threshold && Ip()[n] < ini_threshold) {
                     Iin()[n] = ini_threshold + 1.0;
-                else
+                } else {
                     Iin()[n] = ini_threshold - 1.0;
+                }
             }
-        } else if  (fn_ornot != "") {
+        } else if (fn_ornot != "") {
             Ip.read(fn_ornot);
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --not maps are different shapes!");
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Ip()) {
-                if (Iin()[n] > ini_threshold || Ip()[n] < ini_threshold)
+            for (long int n = 0; n < Ip().size(); n++) {
+                if (Iin()[n] > ini_threshold || Ip()[n] < ini_threshold) {
                     Iin()[n] = ini_threshold + 1.0;
-                else
+                } else {
                     Iin()[n] = ini_threshold - 1.0;
+                }
             }
         }
 

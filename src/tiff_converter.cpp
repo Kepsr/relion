@@ -79,7 +79,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
         frame.read(fn_movie, true, iframe, false, true);
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error, changed, negative)
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(frame()) {
+        for (long int n = 0; n < frame().size(); n++) {
             const float val = frame()[n];
             const float gain_here = gain()[n];
 
@@ -115,7 +115,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
         }
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:stable)
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(defects()) {
+        for (long int n = 0; n < defects().size(); n++) {
             short val = defects()[n];
             if (val >= thresh_reliable) { stable++; }
         }
@@ -169,7 +169,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
         frame.read(fn_movie, true, iframe, false, true);
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error)
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(frame()) {
+        for (long int n = 0; n < frame().size(); n++) {
             const float val       = frame()[n];
             const float gain_here = gain()[n];
             bool is_bad = defects()[n] < thresh_reliable;
@@ -393,7 +393,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
 
         if (!do_estimate && mrc_mode == 2) {
             /// TODO: other strategy
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(gain())
+            for (long int n = 0; n < gain().size(); n++)
                 if (defects()[n] < thresh_reliable) { gain()[n] = 1.0; }
 
             if (rank == 0 && fn_gain != "") {

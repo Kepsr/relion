@@ -226,7 +226,7 @@ void getFourierTransformsAndCtfs(
 
                 img().reshape(baseMLO->mydata.particles[part_id].images[img_id].img);
                 CTICTOC(accMLO->timer, "ParaReadPrereadImages", ({
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->mydata.particles[part_id].images[img_id].img) {
+                for (int n = 0; n < baseMLO->mydata.particles[part_id].images[img_id].img.size(); n++) {
                     img()[n] = (RFLOAT) baseMLO->mydata.particles[part_id].images[img_id].img[n];
                 }
                 }))
@@ -807,13 +807,9 @@ void getFourierTransformsAndCtfs(
             // Apply the CTF to this reference projection
             if (baseMLO->do_ctf_correction) {
                 if (baseMLO->mydata.obsModel.getCtfPremultiplied(optics_group)) {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsum_obody) {
-                        Fsum_obody[n] *= Fctf[n] * Fctf[n];
-                    }
+                    Fsum_obody *= Fctf * Fctf;
                 } else {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsum_obody) {
-                        Fsum_obody[n] *= Fctf[n];
-                    }
+                    Fsum_obody *= Fctf;
                 }
 
                 // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
@@ -981,7 +977,7 @@ void getAllSquaredDifferencesCoarse(
         long int group_id = baseMLO->mydata.getGroupId(op.part_id, img_id);
         RFLOAT my_pixel_size = baseMLO->mydata.getImagePixelSize(op.part_id, img_id);
         int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, img_id);
-        unsigned long image_size = op.local_Minvsigma2[img_id].nzyxdim();
+        unsigned long image_size = op.local_Minvsigma2[img_id].size();
         bool ctf_premultiplied = baseMLO->mydata.obsModel.getCtfPremultiplied(optics_group);
 
         /*====================================
@@ -1196,7 +1192,7 @@ void getAllSquaredDifferencesFine(
         long int group_id = baseMLO->mydata.getGroupId(op.part_id, img_id);
         RFLOAT my_pixel_size = baseMLO->mydata.getImagePixelSize(op.part_id, img_id);
         int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, img_id);
-        unsigned long image_size = op.local_Minvsigma2[img_id].nzyxdim();
+        unsigned long image_size = op.local_Minvsigma2[img_id].size();
         bool ctf_premultiplied = baseMLO->mydata.obsModel.getCtfPremultiplied(optics_group);
 
         MultidimArray<Complex > Fref;
@@ -2488,7 +2484,7 @@ void storeWeightedSums(
         MultidimArray<Complex> Fimg, Fimg_nonmask;
         windowFourierTransform(op.Fimg[img_id], Fimg, baseMLO->image_current_size[optics_group]); // TODO PO isn't this already done in getFourierTransformsAndCtfs?
         windowFourierTransform(op.Fimg_nomask[img_id], Fimg_nonmask, baseMLO->image_current_size[optics_group]);
-        image_size = Fimg.nzyxdim();
+        image_size = Fimg.size();
 
         re_offset        = 0 * (size_t) image_size;
         im_offset        = 1 * (size_t) image_size;
@@ -2886,7 +2882,7 @@ void storeWeightedSums(
         // Calculate DLL for each particle
         RFLOAT logsigma2 = 0.0;
         RFLOAT remap_image_sizes = (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size) / (my_image_size * my_pixel_size);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->Mresol_fine[optics_group]) {
+        for (int n = 0; n < baseMLO->Mresol_fine[optics_group].size(); n++) {
             int ires = baseMLO->Mresol_fine[optics_group][n];
             int ires_remapped = round(remap_image_sizes * ires);
             // Note there is no sqrt in the normalisation term because of the 2-dimensionality of the complex-plane

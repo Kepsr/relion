@@ -1,4 +1,4 @@
-/** WARNING: 
+/** WARNING:
  * This file is not currently part of any build target.
  */
 #include <sys/time.h>
@@ -101,7 +101,7 @@ void getFourierTransformsAndCtfs(
 
         CTICTOC(cudaMLO->timer, "nonZeroProb", ({
         if (
-            baseMLO->mymodel.orientational_prior_mode != NOPRIOR && 
+            baseMLO->mymodel.orientational_prior_mode != NOPRIOR &&
             !baseMLO->do_skip_align && !baseMLO->do_skip_rotate
         ) {
             // First try if there are some fixed prior angles
@@ -164,7 +164,7 @@ void getFourierTransformsAndCtfs(
 
                 img().reshape(baseMLO->mydata.particles[part_id].img);
                 CTICTOC(cudaMLO->timer, "ParaReadPrereadImages", ({
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->mydata.particles[part_id].img) {
+                for (long int n = 0; n < baseMLO->mydata.particles[part_id].img.size(); n++) {
                     img()[n] = (RFLOAT) baseMLO->mydata.particles[part_id].img[n];
                 }
                 }))
@@ -245,7 +245,7 @@ void getFourierTransformsAndCtfs(
         // Apply (rounded) old offsets first
         for (auto &x : my_old_offset) { x = round(x); }
 
-        int img_size = img.data.nzyxdim();
+        int img_size = img.data.size();
         CudaGlobalPtr<XFLOAT> d_img(img_size, 0, cudaMLO->devBundle->allocator);
         CudaGlobalPtr<XFLOAT> temp(img_size, 0, cudaMLO->devBundle->allocator);
         d_img.device_alloc();
@@ -417,7 +417,7 @@ void getFourierTransformsAndCtfs(
         d_Fimg.streamSync();
 
         Fimg.initZeros(current_size_z, current_size_y, current_size_x);
-        for (int i = 0; i < Fimg.nzyxdim(); i++) {
+        for (int i = 0; i < Fimg.size(); i++) {
             Fimg.data[i].real = (RFLOAT) d_Fimg[i].x;
             Fimg.data[i].imag = (RFLOAT) d_Fimg[i].y;
         }
@@ -457,8 +457,8 @@ void getFourierTransformsAndCtfs(
             // If we're doing running averages, then the sigma2_noise was already adjusted for the running averages.
             // Undo this adjustment here in order to get the right noise in the individual frames
             MultidimArray<RFLOAT> power_noise = baseMLO->sigma2_fudge * baseMLO->mymodel.sigma2_noise[group_id];
-            if (baseMLO->do_realign_movies) { 
-                power_noise *= 2.0 * baseMLO->movie_frame_running_avg_side + 1.0; 
+            if (baseMLO->do_realign_movies) {
+                power_noise *= 2.0 * baseMLO->movie_frame_running_avg_side + 1.0;
             }
 
             // Create noisy image for outside the mask
@@ -495,13 +495,13 @@ void getFourierTransformsAndCtfs(
                 softMaskOutsideMapForHelix(
                     img(), psi_deg, tilt_deg,
                     baseMLO->particle_diameter           / (2.0 * baseMLO->mymodel.pixel_size),
-                    baseMLO->helical_tube_outer_diameter / (2.0 * baseMLO->mymodel.pixel_size), 
+                    baseMLO->helical_tube_outer_diameter / (2.0 * baseMLO->mymodel.pixel_size),
                     baseMLO->width_mask_edge, &Mnoise
                 );
             } else {
                 softMaskOutsideMap(
-                    img(), 
-                    baseMLO->particle_diameter / (2.0 * baseMLO->mymodel.pixel_size), 
+                    img(),
+                    baseMLO->particle_diameter / (2.0 * baseMLO->mymodel.pixel_size),
                     (RFLOAT) baseMLO->width_mask_edge, &Mnoise
                 );
             }
@@ -516,9 +516,9 @@ void getFourierTransformsAndCtfs(
             for (int i = 0; i < img_size; i++) { img.data.data[i] = d_img[i]; }
 
             softMaskOutsideMapForHelix(
-                img(), psi_deg, tilt_deg, 
+                img(), psi_deg, tilt_deg,
                 baseMLO->particle_diameter           / (2.0 * baseMLO->mymodel.pixel_size),
-                baseMLO->helical_tube_outer_diameter / (2.0 * baseMLO->mymodel.pixel_size), 
+                baseMLO->helical_tube_outer_diameter / (2.0 * baseMLO->mymodel.pixel_size),
                 baseMLO->width_mask_edge
             );
 
@@ -536,7 +536,7 @@ void getFourierTransformsAndCtfs(
             // dim3 block_dim = 1; //TODO
             // cuda_kernel_softMaskOutsideMap<<<block_dim, SOFTMASK_BLOCK_SIZE>>>(
             //     ~d_img,
-            //     img().nzyxdim(),
+            //     img().size(),
             //     img.data.xdim, img.data.ydim, img.data.zdim,
             //     img.data.xdim / 2, img.data.ydim / 2, img.data.zdim / 2, // zdim unused
             //     true, radius, radius_p, cosine_width
@@ -553,7 +553,7 @@ void getFourierTransformsAndCtfs(
             softMaskSum_bg.device_init(0.0f);
             cuda_kernel_softMaskBackgroundValue<<<block_dim, SOFTMASK_BLOCK_SIZE>>>(
                 ~d_img,
-                img().nzyxdim(),
+                img().size(),
                 img.data.xdim, img.data.ydim, img.data.zdim,
                 img.data.xdim / 2, img.data.ydim / 2, img.data.zdim / 2, // zdim unused
                 true, radius, radius_p, cosine_width,
@@ -567,7 +567,7 @@ void getFourierTransformsAndCtfs(
 
             cuda_kernel_cosineFilter<<<block_dim,SOFTMASK_BLOCK_SIZE>>>(
                 ~d_img,
-                img().nzyxdim(),
+                img().size(),
                 img.data.xdim, img.data.ydim, img.data.zdim,
                 img.data.xdim / 2, img.data.ydim / 2, img.data.zdim / 2, // zdim unused
                 true, radius, radius_p, cosine_width, sum_bg
@@ -578,7 +578,7 @@ void getFourierTransformsAndCtfs(
             // d_img.cp_to_host();
             DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
 
-            // FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img()) {
+            // for (long int n = 0; n < img().size(); n++) {
             //     img.data.data[n] = (RFLOAT) d_img[n];
             // }
 
@@ -638,8 +638,8 @@ void getFourierTransformsAndCtfs(
                     ~spectrumAndXi2,
                     cudaMLO->transformer1.fouriers.getSize(),
                     spectrumAndXi2.getSize() - 1,
-                    cudaMLO->transformer1.xFSize, 
-                    cudaMLO->transformer1.yFSize, 
+                    cudaMLO->transformer1.xFSize,
+                    cudaMLO->transformer1.yFSize,
                     cudaMLO->transformer1.zFSize,
                     baseMLO->mymodel.current_size / 2 + 1,  // note: NOT baseMLO->mymodel.ori_size / 2 + 1
                     &spectrumAndXi2.d_ptr[spectrumAndXi2.getSize() - 1]  // last element is the hihgres_Xi2
@@ -694,7 +694,7 @@ void getFourierTransformsAndCtfs(
         d_Fimg.streamSync();
         d_Fimg.cp_to_host();
         d_Fimg.streamSync();
-        for (int i = 0; i < Fimg.nzyxdim(); i ++) {
+        for (int i = 0; i < Fimg.size(); i ++) {
             Fimg.data[i].real = (RFLOAT) d_Fimg[i].x;
             Fimg.data[i].imag = (RFLOAT) d_Fimg[i].y;
         }
@@ -798,7 +798,7 @@ void getAllSquaredDifferencesCoarse(
         op.local_Fctfs, op.local_sqrtXi2, op.local_Minvsigma2s
     );
 
-    unsigned image_size = op.local_Minvsigma2s[0].nzyxdim();
+    unsigned image_size = op.local_Minvsigma2s[0].size();
 
     }))
 
@@ -873,8 +873,8 @@ void getAllSquaredDifferencesCoarse(
             baseMLO->sampling.getTranslations(
                 itrans, 0, oversampled_translations_x,
                 oversampled_translations_y, oversampled_translations_z,
-                baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry, 
-                baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size, 
+                baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry,
+                baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size,
                 baseMLO->helical_twist_initial
             );
 
@@ -890,10 +890,10 @@ void getAllSquaredDifferencesCoarse(
                 RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT);
                 RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
                 transformCartesianAndHelicalCoords(
-                    xshift, yshift, zshift, 
-                    xshift, yshift, zshift, 
+                    xshift, yshift, zshift,
+                    xshift, yshift, zshift,
                     rot_deg, tilt_deg, psi_deg,
-                    cudaMLO->dataIs3D ? 3 : 2, 
+                    cudaMLO->dataIs3D ? 3 : 2,
                     HELICAL_TO_CART_COORDS
                 );
             }
@@ -1037,7 +1037,7 @@ void getAllSquaredDifferencesFine(
     MultidimArray<Complex> Fref;
     Fref.resize(op.local_Minvsigma2s[0]);
 
-    unsigned image_size = op.local_Minvsigma2s[0].nzyxdim();
+    unsigned image_size = op.local_Minvsigma2s[0].size();
 
     }))
 
@@ -1074,8 +1074,8 @@ void getAllSquaredDifferencesFine(
             baseMLO->sampling.getTranslations(
                 itrans, baseMLO->adaptive_oversampling,
                 oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
-                baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry, 
-                baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size, 
+                baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry,
+                baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size,
                 baseMLO->helical_twist_initial
             );
 
@@ -1092,9 +1092,9 @@ void getAllSquaredDifferencesFine(
                     RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT);
                     RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
                     transformCartesianAndHelicalCoords(
-                        xshift, yshift, zshift, 
-                        xshift, yshift, zshift, 
-                        rot_deg, tilt_deg, psi_deg, 
+                        xshift, yshift, zshift,
+                        xshift, yshift, zshift,
+                        rot_deg, tilt_deg, psi_deg,
                         cudaMLO->dataIs3D ? 3 : 2, HELICAL_TO_CART_COORDS
                     );
                 }
@@ -1155,7 +1155,7 @@ void getAllSquaredDifferencesFine(
 
             if (baseMLO->mymodel.pdf_class[exp_iclass] > 0.0 && FineProjectionData[ipart].class_entries[exp_iclass] > 0) {
                 // use "slice" constructor with class-specific parameters to retrieve a temporary ProjectionParams with data for this class
-                ProjectionParams thisClassProjectionData(	
+                ProjectionParams thisClassProjectionData(
                     FineProjectionData[ipart],
                     FineProjectionData[ipart].class_idx[exp_iclass],
                     FineProjectionData[ipart].class_idx[exp_iclass] + FineProjectionData[ipart].class_entries[exp_iclass]
@@ -1202,7 +1202,7 @@ void getAllSquaredDifferencesFine(
                     FinePassWeights[ipart],
                     FPCMasks[ipart][exp_iclass], // Output into index arrays mask
                     chunkSize  // based on a given maximum chunk size
-                );                    
+                );
 
                 // extend size by number of significants found this class
                 newDataSize += significant_num;
@@ -1354,7 +1354,7 @@ void convertAllSquaredDifferencesToWeights(
     for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
     for (long int idir = sp.idir_min, iorientclass = (exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi; idir <= sp.idir_max; idir++)
     for (long int ipsi = sp.ipsi_min; ipsi <= sp.ipsi_max; ipsi++, iorientclass++) {
-        RFLOAT pdf = 
+        RFLOAT pdf =
         baseMLO->do_skip_align || baseMLO->do_skip_rotate    ? baseMLO->mymodel.pdf_class[exp_iclass] :
         baseMLO->mymodel.orientational_prior_mode == NOPRIOR ? baseMLO->mymodel.pdf_direction[exp_iclass][idir] :
                                                                 op.directions_prior[idir] * op.psi_prior[ipsi];
@@ -1473,10 +1473,10 @@ void convertAllSquaredDifferencesToWeights(
                         RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT);
                         RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
                         transformCartesianAndHelicalCoords(
-                            myprior_x, myprior_y, myprior_z, 
-                            myprior_x, myprior_y, myprior_z, 
+                            myprior_x, myprior_y, myprior_z,
+                            myprior_x, myprior_y, myprior_z,
                             rot_deg, tilt_deg, psi_deg,
-                            cudaMLO->dataIs3D ? 3 : 2, 
+                            cudaMLO->dataIs3D ? 3 : 2,
                             CART_TO_HELICAL_COORDS
                         );
                     }
@@ -1499,7 +1499,7 @@ void convertAllSquaredDifferencesToWeights(
 
                     // P(offset|sigma2_offset)
                     // This is the probability of the offset, given the model offset and variance.
-                    double pdf = baseMLO->mymodel.sigma2_offset < 0.0001 ? tdiff2 <= 0.0 : 
+                    double pdf = baseMLO->mymodel.sigma2_offset < 0.0001 ? tdiff2 <= 0.0 :
                         exp(tdiff2 / (-2.0 * baseMLO->mymodel.sigma2_offset)) / (2.0 * PI * baseMLO->mymodel.sigma2_offset);
 
                     pdf_offset_t[(exp_iclass - sp.iclass_min) * sp.nr_trans + itrans] = pdf;
@@ -1513,8 +1513,8 @@ void convertAllSquaredDifferencesToWeights(
             // If mean is non-zero bring all values closer to 1 to improve numerical accuracy
             // This factor is over all classes and is thus removed in the final normalization
             if (pdf_offset_mean != 0.0) {
-                for (int i = 0; i < pdf_offset.getSize(); i ++) { 
-                    pdf_offset[i] = pdf_offset_t[i] /  pdf_offset_mean; 
+                for (int i = 0; i < pdf_offset.getSize(); i ++) {
+                    pdf_offset[i] = pdf_offset_t[i] /  pdf_offset_mean;
                 }
             }
 
@@ -1728,12 +1728,12 @@ void convertAllSquaredDifferencesToWeights(
                         IndexedDataArray thisClassPassWeights(PassWeights[ipart],FPCMasks[ipart][exp_iclass], cudaMLO->devBundle->allocator);
                         CudaGlobalPtr<XFLOAT> pdf_orientation_class(
                             &(pdf_orientation[(exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi]),
-                            &(pdf_orientation((exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi)), 
+                            &(pdf_orientation((exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi)),
                             sp.nr_dir * sp.nr_psi
                         );
                         CudaGlobalPtr<XFLOAT> pdf_offset_class(
-                            &(pdf_offset[(exp_iclass - sp.iclass_min) * sp.nr_trans]),          
-                            &(pdf_offset((exp_iclass - sp.iclass_min) * sp.nr_trans)), 
+                            &(pdf_offset[(exp_iclass - sp.iclass_min) * sp.nr_trans]),
+                            &(pdf_offset((exp_iclass - sp.iclass_min) * sp.nr_trans)),
                             sp.nr_trans
                         );
 
@@ -1880,12 +1880,12 @@ void storeWeightedSums(
     std::vector<MultidimArray<RFLOAT> > thr_wsum_sigma2_noise, thr_wsum_pdf_direction;
     // Wsum_sigma_noise2 is a 1D-spectrum for each group
     thr_wsum_sigma2_noise.resize(
-        baseMLO->mymodel.nr_groups, 
+        baseMLO->mymodel.nr_groups,
         MultidimArray<RFLOAT>::zeros(baseMLO->mymodel.ori_size / 2 + 1)
     );
     // wsum_pdf_direction is a 1D-array (of length sampling.NrDirections()) for each class
     thr_wsum_pdf_direction.resize(
-        baseMLO->mymodel.nr_classes, 
+        baseMLO->mymodel.nr_classes,
         MultidimArray<RFLOAT>::zeros(baseMLO->sampling.NrDirections())
     );
     std::vector<RFLOAT> thr_sumw_group, thr_wsum_pdf_class, thr_wsum_prior_offsetx_class, thr_wsum_prior_offsety_class;
@@ -1899,7 +1899,7 @@ void storeWeightedSums(
     }
     // wsum_sigma2_offset is just a RFLOAT
     RFLOAT thr_wsum_sigma2_offset = 0.0;
-    unsigned image_size = op.Fimgs[0].nzyxdim();
+    unsigned image_size = op.Fimgs[0].size();
 
     }))
 
@@ -1929,7 +1929,7 @@ void storeWeightedSums(
         for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++) {
             int fake_class = exp_iclass - sp.iclass_min; // if we only have the third class to do, the third class will be the "first" we do, i.e. the "fake" first.
             if (
-                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 || 
+                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 ||
                 ProjectionData[ipart].class_entries[exp_iclass] == 0
             ) continue;
 
@@ -1938,8 +1938,8 @@ void storeWeightedSums(
 
             // Re-define the job-partition of the indexedArray of weights so that the collect-kernel can work with it.
             block_nums[nr_fake_classes * ipart + fake_class] = makeJobsForCollect(
-                thisClassFinePassWeights, 
-                FPCMasks[ipart][exp_iclass], 
+                thisClassFinePassWeights,
+                FPCMasks[ipart][exp_iclass],
                 ProjectionData[ipart].orientation_num[exp_iclass]
             );
 
@@ -1974,8 +1974,8 @@ void storeWeightedSums(
                 baseMLO->sampling.getTranslations(
                     itrans, baseMLO->adaptive_oversampling,
                     oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
-                    baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry, 
-                    baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size, 
+                    baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry,
+                    baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size,
                     baseMLO->helical_twist_initial
                 );
                 for (long int iover_trans = 0; iover_trans < sp.nr_oversampled_trans; iover_trans++, iitrans++) {
@@ -1995,10 +1995,10 @@ void storeWeightedSums(
                         RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT);
                         RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
                         transformCartesianAndHelicalCoords(
-                            myprior_x, myprior_y, myprior_z, 
-                            myprior_x, myprior_y, myprior_z, 
-                            rot_deg, tilt_deg, psi_deg, 
-                            cudaMLO->dataIs3D ? 3 : 2, 
+                            myprior_x, myprior_y, myprior_z,
+                            myprior_x, myprior_y, myprior_z,
+                            rot_deg, tilt_deg, psi_deg,
+                            cudaMLO->dataIs3D ? 3 : 2,
                             CART_TO_HELICAL_COORDS
                         );
                     }
@@ -2062,7 +2062,7 @@ void storeWeightedSums(
         for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++) {
             int fake_class = exp_iclass - sp.iclass_min; // if we only have the third class to do, the third class will be the "first" we do, i.e. the "fake" first.
             if (
-                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 || 
+                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 ||
                 ProjectionData[ipart].class_entries[exp_iclass] == 0
             ) continue;
 
@@ -2117,7 +2117,7 @@ void storeWeightedSums(
         for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++) {
             int fake_class = exp_iclass - sp.iclass_min; // if we only have the third class to do, the third class will be the "first" we do, i.e. the "fake" first.
             if (
-                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 || 
+                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 ||
                 ProjectionData[ipart].class_entries[exp_iclass] == 0
             ) continue;
             int block_num = block_nums[nr_fake_classes*ipart + fake_class];
@@ -2171,7 +2171,7 @@ void storeWeightedSums(
         baseMLO->sampling.getTranslations(
             op.max_index[ipart].itrans, baseMLO->adaptive_oversampling,
             oversampled_translations_x, oversampled_translations_y, oversampled_translations_z,
-            baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry, 
+            baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry,
             baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size, baseMLO->helical_twist_initial
         );
 
@@ -2224,7 +2224,7 @@ void storeWeightedSums(
         }
         if (cudaMLO->dataIs3D) {
             shifts.resize(3);
-            ZZ(shifts) = baseMLO->mymodel.nr_bodies == 1 ? 
+            ZZ(shifts) = baseMLO->mymodel.nr_bodies == 1 ?
                 ZZ(op.old_offset[ipart]) + oversampled_translations_z[op.max_index[ipart].iovertrans] :
                                            oversampled_translations_z[op.max_index[ipart].iovertrans];
         }
@@ -2275,7 +2275,7 @@ void storeWeightedSums(
                 itrans, baseMLO->adaptive_oversampling, oversampled_translations_x,
                 oversampled_translations_y, oversampled_translations_z,
                 baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry,
-                baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size, 
+                baseMLO->helical_rise_initial / baseMLO->mymodel.pixel_size,
                 baseMLO->helical_twist_initial
             ); // TODO Called multiple time to generate same list, reuse the same list
 
@@ -2292,10 +2292,10 @@ void storeWeightedSums(
                     RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT);
                     RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
                     transformCartesianAndHelicalCoords(
-                        xshift, yshift, zshift, 
-                        xshift, yshift, zshift, 
-                        rot_deg, tilt_deg, psi_deg, 
-                        cudaMLO->dataIs3D ? 3 : 2, 
+                        xshift, yshift, zshift,
+                        xshift, yshift, zshift,
+                        rot_deg, tilt_deg, psi_deg,
+                        cudaMLO->dataIs3D ? 3 : 2,
                         HELICAL_TO_CART_COORDS
                     );
                 }
@@ -2480,8 +2480,8 @@ void storeWeightedSums(
 
             for (long unsigned i = 0; i < thisClassFinePassWeights.weights.getSize(); i++)
                 sorted_weights[
-                    classPos 
-                    + thisClassFinePassWeights.rot_idx[i] * translation_num 
+                    classPos
+                    + thisClassFinePassWeights.rot_idx[i] * translation_num
                     + thisClassFinePassWeights.trans_idx[i]
                 ] = thisClassFinePassWeights.weights[i];
 
@@ -2595,13 +2595,13 @@ void storeWeightedSums(
 
         for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++) {
             if (
-                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 || 
+                baseMLO->mymodel.pdf_class[exp_iclass] == 0.0 ||
                 ProjectionData[ipart].class_entries[exp_iclass] == 0
             ) continue;
             for (long int j = 0; j < image_size; j++) {
                 int ires = baseMLO->Mresol_fine[j];
                 if (
-                    ires > -1 && baseMLO->do_scale_correction && 
+                    ires > -1 && baseMLO->do_scale_correction &&
                     direct::elem(baseMLO->mymodel.data_vs_prior_class[exp_iclass], ires) > 3.0
                 ) {
                     direct::elem(exp_wsum_scale_correction_AA[ipart], ires) += wdiff2s_AA[AAXA_pos + j];
@@ -2675,12 +2675,12 @@ void storeWeightedSums(
 
         // Calculate DLL for each particle
         RFLOAT logsigma2 = 0.0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(baseMLO->Mresol_fine) {
+        for (long int n = 0; n < baseMLO->Mresol_fine.size(); n++) {
             int ires = baseMLO->Mresol_fine[n];
             // Note there is no sqrt in the normalisation term because of the 2-dimensionality of the complex-plane
             // Also exclude origin from logsigma2, as this will not be considered in the P-calculations
-            if (ires > 0) { 
-                logsigma2 += log(2.0 * PI * direct::elem(baseMLO->mymodel.sigma2_noise[group_id], ires)); 
+            if (ires > 0) {
+                logsigma2 += log(2.0 * PI * direct::elem(baseMLO->mymodel.sigma2_noise[group_id], ires));
             }
         }
 
@@ -3025,7 +3025,7 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id) {
                 if (thread_id == 0)  // Only time one thread
                 baseMLO->timer.tic(baseMLO->TIMING_ESP_DIFF2_B);
                 #endif
-                sp.current_image_size = 
+                sp.current_image_size =
                     baseMLO->strict_highres_exp > 0.0 ? baseMLO->coarse_size :
                     // Use smaller images in both passes and keep a maximum on coarse_size, just like in FREALIGN
                     baseMLO->adaptive_oversampling > 0 ? (ipass == 0 ? baseMLO->coarse_size : baseMLO->mymodel.current_size) :

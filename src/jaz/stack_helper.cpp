@@ -343,7 +343,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         Image<float> muGraph;
         muGraph.read(movieFn, true, f + firstFrame, false, true);
 
-        if (verbose) { std::cout << (f + 1) << "/" << fc << "\n"; }
+        if (verbose) { std::cout << f + 1 << "/" << fc << "\n"; }
 
         #pragma omp parallel for num_threads(threads_p)
         for (long int y = 0; y < h0; y++)
@@ -361,7 +361,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             long long n_valid = 0;
 
             #pragma omp parallel for reduction(+:frame_mean, n_valid) num_threads(threads_p)
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(muGraph.data) {
+            for (long int n = 0; n < muGraph.data.size(); n++) {
                 if (!(*defectMask)[n]) continue;
                 frame_mean += muGraph.data[n];
                 n_valid ++;
@@ -369,7 +369,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             frame_mean /=  n_valid;
 
             #pragma omp parallel for reduction(+:frame_std) num_threads(threads_p)
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(muGraph.data) {
+            for (long int n = 0; n < muGraph.data.size(); n++) {
                 if (!(*defectMask)[n]) continue;
                 RFLOAT d = muGraph.data[n] - frame_mean;
                 frame_std += d * d;

@@ -773,13 +773,13 @@ void BackProjector::setLowResDataAndWeight(
 
     // Check sizes of lowres_data and lowres_weight
     if (
-        Ysize(lowres_data) != lowres_pad_size || 
+        Ysize(lowres_data) != lowres_pad_size ||
         Xsize(lowres_data) != lowres_pad_size / 2 + 1 ||
         Zsize(lowres_data) != lowres_pad_size && ref_dim == 3
     )
         REPORT_ERROR("BackProjector::setLowResDataAndWeight%%ERROR: lowres_data is not of expected size...");
     if (
-        Ysize(lowres_weight) != lowres_pad_size || 
+        Ysize(lowres_weight) != lowres_pad_size ||
         Xsize(lowres_weight) != lowres_pad_size / 2 + 1 ||
         Zsize(lowres_weight) != lowres_pad_size && ref_dim == 3
     )
@@ -837,9 +837,9 @@ void BackProjector::getDownsampledAverage(
         // #define CHECK_SIZE
         #ifdef CHECK_SIZE
         if (
-            ip < Yinit(avg) || ip > Ylast(avg) 
-            jp < Xinit(avg) || jp > Xlast(avg) || 
-            kp < Zinit(avg) || kp > Zlast(avg) || 
+            ip < Yinit(avg) || ip > Ylast(avg)
+            jp < Xinit(avg) || jp > Xlast(avg) ||
+            kp < Zinit(avg) || kp > Zlast(avg) ||
         ) {
             std::cerr << " kp= " << kp << " ip= " << ip << " jp= " << jp << std::endl;
             avg.printShape();
@@ -851,7 +851,7 @@ void BackProjector::getDownsampledAverage(
     }
 
     // Calculate the straightforward average in the downsampled arrays
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(avg) {
+    for (long int n = 0; n < avg.size(); n++) {
         if (down_weight[n] > 0.0) {
             avg[n] /= down_weight[n];
         } else {
@@ -1227,7 +1227,7 @@ void BackProjector::reconstruct(
     /// TODO: Turn this block into an init function.
     RCTICTOC(ReconTimer, ReconS[0], ({
     oversampling_correction = ref_dim == 3 ?
-        padding_factor * padding_factor * padding_factor : 
+        padding_factor * padding_factor * padding_factor :
         padding_factor * padding_factor;
 
     // #define DEBUG_RECONSTRUCT
@@ -1326,7 +1326,7 @@ void BackProjector::reconstruct(
         // Calculate 1/1000th of radial averaged weight
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(radavg_weight) {
             if (
-                direct::elem(counter,       i) > 0.0 || 
+                direct::elem(counter,       i) > 0.0 ||
                 direct::elem(radavg_weight, i) > 0.0
             ) {
                 direct::elem(radavg_weight, i) /= 1000.0 * direct::elem(counter, i);
@@ -1343,7 +1343,7 @@ void BackProjector::reconstruct(
             const int r2 = kp * kp + ip * ip + jp * jp;
             const int ires = floor(sqrt((RFLOAT) r2) / padding_factor);
             const RFLOAT weight =  std::max(
-                direct::elem(Fweight, k, i, j), 
+                direct::elem(Fweight, k, i, j),
                 direct::elem(radavg_weight, ires < r_max ? ires : r_max - 1)
             );
             if (weight == 0) {
@@ -1364,12 +1364,12 @@ void BackProjector::reconstruct(
         #ifdef DEBUG_RECONSTRUCT
         std::cerr << " normalise= " << normalise << std::endl;
         #endif
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fweight) {
-            Fweight[n] /= normalise;
-        }
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(data) {
+        Fweight /= normalise;
+
+        for (long int n = 0; n < data.size(); n++) {
             data[n] /= normalise;
         }
+
         }))
 
         MultidimArray<double> Fnewweight;
@@ -1395,7 +1395,7 @@ void BackProjector::reconstruct(
             // but each "sampling point" counts "Fweight" times!
             // That is why Fnewweight is multiplied by Fweight prior to the convolution
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv) {
+            for (long int n = 0; n < Fconv.size(); n++) {
                 Fconv[n] = Fnewweight[n] * Fweight[n];
             }
 
@@ -1437,7 +1437,7 @@ void BackProjector::reconstruct(
         Image<double> tttt;
         tttt()=Fnewweight;
         tttt.write("reconstruct_gridding_weight.spi");
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv) {
+        for (long int n = 0; n < Fconv.size(); n++) {
             ttt()[n] = abs(Fconv[n]);
         }
         ttt.write("reconstruct_gridding_correction_term.spi");
@@ -1452,12 +1452,12 @@ void BackProjector::reconstruct(
         // Apply the iteratively determined weight
         Fconv.initZeros();  // Clear the input volume
         Projector::decenter(data, Fconv, max_r2);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fconv) {
+        for (long int n = 0; n < Fconv.size(); n++) {
             #ifdef RELION_SINGLE_PRECISION
             // Prevent numerical instabilities in single-precision reconstruction with very unevenly sampled orientations
             #define BIGNUM 1e20
-            if (Fnewweight[n] > BIGNUM) { 
-                Fnewweight[n] = BIGNUM; 
+            if (Fnewweight[n] > BIGNUM) {
+                Fnewweight[n] = BIGNUM;
             }
             #undef BIGNUM
             #endif
@@ -1771,7 +1771,7 @@ void BackProjector::applyHelicalSymmetry(
                         Complex X = Complex(cos(dotp), sin(dotp));  // cis(dotp)
                         Complex Z = Complex(X.real * ddd.real, X.imag * ddd.imag);  // X dot ddd
                         ddd = Complex(
-                            Z.real - Z.imag, 
+                            Z.real - Z.imag,
                             (X.real + X.imag) * (ddd.real + ddd.imag) - Z.real - Z.imag
                         );
                     }
@@ -1798,7 +1798,7 @@ void BackProjector::applyHelicalSymmetry(
                     A3D_ELEM(sum_weight, k, i, j) +=  LIN_INTERP(fz, ddxy0, ddxy1);
 
                 }
-            }       
+            }
         }
     }
 
@@ -1937,8 +1937,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
         // Average
         // The division should only be done if we would search all (C1) directions, not if we restrict the angular search!
         /*
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(data)
-        {
+        for (long int n = 0; n < data.size(); n++) {
             data[n] = sum_data[n] / (RFLOAT)(SL.SymsNo() + 1);
             weight[n] = sum_weight[n] / (RFLOAT)(SL.SymsNo() + 1);
         }
@@ -2029,8 +2028,8 @@ void BackProjector::windowToOridimRealSpace(
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
     Image<RFLOAT> tt;
     tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
-        tt()[n] abs(Fin[n]);
+    for (long int n = 0; n < Fin.size(); n++) {
+        tt()[n] = abs(Fin[n]);
     }
     tt.write("windoworidim_Fin.spi");
     #endif
@@ -2044,8 +2043,8 @@ void BackProjector::windowToOridimRealSpace(
     if (ref_dim == 2) {
         Mout.reshape(padoridim, padoridim);
         normfft = (
-            data_dim == 2 ? 
-            padding_factor * padding_factor : 
+            data_dim == 2 ?
+            padding_factor * padding_factor :
             padding_factor * padding_factor * ori_size
         );
     } else {
@@ -2061,7 +2060,7 @@ void BackProjector::windowToOridimRealSpace(
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
     tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
+    for (long int n = 0; n < Fin.size(); n++) {
         tt()[n] = abs(Fin[n]);
     }
     tt.write("windoworidim_Fresized.spi");
@@ -2126,7 +2125,7 @@ void BackProjector::windowToOridimRealSpace(
     FourierTransformer ttf;
     ttf.FourierTransform(Mout, Fin);
     tt().resize(Zsize(Fin), Ysize(Fin), Xsize(Fin));
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fin) {
+    for (long int n = 0; n < Fin.size(); n++) {
         tt()[n] = abs(Fin[n]);
     }
     tt.write("windoworidim_Fnew.spi");

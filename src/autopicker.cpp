@@ -663,7 +663,7 @@ void AutoPicker::initialise() {
         if (autopick_helical_segments) {
 
             Mcirc_mask.initConstant(1.0);
-            nr_pixels_avg_mask = Mcirc_mask.nzyxdim();
+            nr_pixels_avg_mask = Mcirc_mask.size();
 
             long int inner_radius = round(helical_tube_diameter / (2.0 * angpix));
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
@@ -737,9 +737,7 @@ void AutoPicker::initialise() {
         for (int iref = 0; iref < Mrefs.size(); iref++) {
 
             // (Re-)apply the mask to the references
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mrefs[iref]) {
-                Mrefs[iref][n] *= Mcirc_mask[n];
-            }
+            Mrefs[iref] *= Mcirc_mask;
 
             // Set reference in the large box of the micrograph
             Maux.initZeros();
@@ -2393,10 +2391,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
             if (!found) REPORT_ERROR("Logic error: failed to find CTF information for " + fn_mic);
 
             ctf.getFftwImage(Fctf, micrograph_size, micrograph_size, angpix, false, false, false, false, false, true);
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fmic) {
-                // this is safe because getCTF does not return 0.
-                Fmic[n] /= Fctf[n];
-            }
+            Fmic /= Fctf;  // this is safe because getCTF does not return 0.
         }
 
         Image<RFLOAT> Maux(workSize, workSize);
@@ -2419,7 +2414,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
                 Maux.write(fn_tmp);
             }
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux()) {
+            for (long int n = 0; n < Maux().size(); n++) {
                 if (Maux()[n] > Mbest_fom[n]) {
                     Mbest_fom[n] = Maux()[n];
                     Mbest_size[n] = myd;
@@ -2435,10 +2430,10 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         for (int i = 0; i < diams_LoG.size(); i++) {
             RFLOAT myd = diams_LoG[i];
 
-            FileName fn_tmp=getOutputRootName(fn_mic)+"_"+fn_out+"_LoG"+integerToString(round(myd))+".spi";
+            FileName fn_tmp = getOutputRootName(fn_mic) + "_" + fn_out + "_LoG" + integerToString(round(myd)) + ".spi";
             Maux.read(fn_tmp);
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux()) {
+            for (long int n = 0; n < Maux().size(); n++) {
                 if (Maux()[n] > Mbest_fom[n]) {
                     Mbest_fom[n] = Maux()[n];
                     Mbest_size[n] = myd;
@@ -2481,7 +2476,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
     RFLOAT count_low = 0.0;
     RFLOAT count_high = 0.0;
     RFLOAT count_ok = 0.0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mbest_size) {
+    for (long int n = 0; n < Mbest_size.size(); n++) {
         if (Mbest_size[n] > LoG_max_diameter) {
             sum_fom_high += Mbest_fom[n];
             sum2_fom_high += Mbest_fom[n] * Mbest_fom[n];
@@ -2748,10 +2743,8 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         CenterFFTbySign(Fmic);
 
         // Also calculate the FFT of the squared micrograph
-        Maux.resize(micrograph_size,micrograph_size);
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux) {
-            Maux[n] = Imic()[n] * Imic()[n];
-        }
+        Maux.resize(micrograph_size, micrograph_size);
+        Maux = Imic() * Imic();
         MultidimArray<Complex> Fmic2;
         transformer.FourierTransform(Maux, Fmic2);
         CenterFFTbySign(Fmic2);
@@ -2844,7 +2837,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 Mccf_best = It();
                 expected_Pratio = It.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the header of the image
 
-                fn_tmp.compose(getOutputRootName(fn_mic)+"_"+fn_out+"_ref", iref,"_bestPSI.spi");
+                fn_tmp.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
                 It.read(fn_tmp);
                 Mpsi_best = It();
             }
@@ -2857,7 +2850,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             #endif
             Mccf_best.initConstant(-LARGE_NUMBER);
             bool is_first_psi = true;
-            for (RFLOAT psi = 0.0 ; psi < 360.0; psi += psi_sampling) {
+            for (RFLOAT psi = 0.0; psi < 360.0; psi += psi_sampling) {
                 // Get the Euler matrix
                 Matrix2D<RFLOAT> A(3,3);
                 Euler_angles2matrix(0.0, 0.0, psi, A);
@@ -2884,26 +2877,24 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 timer.tic(TIMING_B4);
                 #endif
                 // Apply the CTF on-the-fly (so same PPref can be used for many different micrographs)
-                if (do_ctf) {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
-                        Faux[n] *= Fctf[n];
+                if (do_ctf) { 
+                    Faux *= Fctf;
+                    #ifdef TIMING
+                    timer.toc(TIMING_B4);
+                    #endif
+                    #ifdef DEBUG
+                    MultidimArray<RFLOAT> ttt(micrograph_size, micrograph_size);
+                    windowFourierTransform(Faux, Faux2, micrograph_size);
+                    CenterFFTbySign(Faux2);
+                    transformer.inverseFourierTransform(Faux2, ttt);
+                    ttt.setXmippOrigin();
+                    tt().resize(particle_size, particle_size);
+                    tt().setXmippOrigin();
+                    FOR_ALL_ELEMENTS_IN_ARRAY2D(tt()) {
+                        A2D_ELEM(tt(), i, j) = A2D_ELEM(ttt, i, j);
                     }
-                #ifdef TIMING
-                timer.toc(TIMING_B4);
-                #endif
-                #ifdef DEBUG
-                MultidimArray<RFLOAT> ttt(micrograph_size, micrograph_size);
-                windowFourierTransform(Faux, Faux2, micrograph_size);
-                CenterFFTbySign(Faux2);
-                transformer.inverseFourierTransform(Faux2, ttt);
-                ttt.setXmippOrigin();
-                tt().resize(particle_size, particle_size);
-                tt().setXmippOrigin();
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(tt()) {
-                    A2D_ELEM(tt(), i, j) = A2D_ELEM(ttt, i, j);
-                }
-                tt.write("Mref_rot_ctf.spi");
-                #endif
+                    tt.write("Mref_rot_ctf.spi");
+                    #endif
                 }
 
                 if (is_first_psi) {
@@ -2968,7 +2959,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 timer.tic(TIMING_B6);
                 #endif
                 // Now multiply template and micrograph to calculate the cross-correlation
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
+                for (long int n = 0; n < Faux.size(); n++) {
                     Faux[n] = conj(Faux[n]) * Fmic[n];
                 }
 
@@ -2986,11 +2977,10 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
                 // So now we already had precalculated: Mdiff2 = 1/sig*Sum(X^2) - 2/sig*Sum(X) + mu^2/sig*Sum(1)
                 // Still to do (per reference): - 2/sig*Sum(AX) + 2*mu/sig*Sum(A) + Sum(A^2)
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Maux) {
+                for (long int n = 0; n < Maux.size(); n++) {
                     RFLOAT diff2 = -2.0 * normfft * Maux[n];
                     diff2 += 2.0 * Mmean[n] * sum_ref_under_circ_mask;
-                    if (Mstddev[n] > 1E-10)
-                        diff2 /= Mstddev[n];
+                    if (Mstddev[n] > 1E-10) { diff2 /= Mstddev[n]; }
                     diff2 += sum_ref2_under_circ_mask;
                     diff2 = exp(-diff2 / 2.0); // exponentiate to reflect the Gaussian error model. sigma=1 after normalization, 0.4=1/sqrt(2pi)
 
@@ -3036,7 +3026,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 fn_tmp.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
                 It.write(fn_tmp);
 
-//				for (long int n=0; n<((Mccf_best).nzyxdim() / 10); n+=1) {
+//				for (long int n=0; n<((Mccf_best).size() / 10); n+=1) {
 //					std::cerr << Mccf_best[n] << std::endl;
 //				}
 //				exit(0);
@@ -3051,7 +3041,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         if (autopick_helical_segments) {
             if (!do_read_fom_maps) {
                 // Combine Mccf_best and Mpsi_best from all refs
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Mccf_best) {
+                for (long int n = 0; n < Mccf_best.size(); n++) {
                     RFLOAT new_ccf = Mccf_best[n];
                     RFLOAT old_ccf = Mccf_best_combined[n];
                     if (new_ccf > old_ccf) {
@@ -3202,7 +3192,7 @@ void AutoPicker::calculateStddevAndMeanUnderMask(
     Image<RFLOAT> tt;
     #endif
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
+    for (long int n = 0; n < Faux.size(); n++) {
         Faux[n] = _Fmic[n] * conj(_Fmsk[n]);
     }
     windowFourierTransform(Faux, Faux2, workSize);
@@ -3216,20 +3206,18 @@ void AutoPicker::calculateStddevAndMeanUnderMask(
     tt.write("Mavg_mic.spi");
     #endif
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(_Mstddev) {
-        // store minus average-squared already in _Mstddev
-        _Mstddev[n] = -Maux[n] * Maux[n];
-    }
+    // store minus average-squared already in _Mstddev
+    _Mstddev = -Maux * Maux;
 
     // Calculate convolution of micrograph-squared and mask
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Faux) {
+    for (long int n = 0; n < Faux.size(); n++) {
         Faux[n] = _Fmic2[n] * conj(_Fmsk[n]);
     }
     windowFourierTransform(Faux, Faux2, workSize);
     CenterFFTbySign(Faux2);
     transformer.inverseFourierTransform(Faux2, Maux);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(_Mstddev) {
+    for (long int n = 0; n < _Mstddev.size(); n++) {
         // we already stored minus average-squared in _Mstddev
         _Mstddev[n] += normfft * Maux[n];
         if (_Mstddev[n] > (RFLOAT) 1E-10) {

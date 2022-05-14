@@ -147,13 +147,10 @@ class ctf_toolbox_parameters {
 
                 MultidimArray<RFLOAT> Fctf(Ysize(Fimg), Xsize(Fimg));
                 ctf.getFftwImage(Fctf, Xsize(img()), Ysize(img()), angpix, false, false, do_intact_ctf_until_first_peak, false, do_ctf_pad, do_intact_ctf_after_first_peak);
-                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fimg) {
-                    if (!do_intact_ctf_after_first_peak) {
-                        Fimg[n] *= Fctf[n];
-                    } else {
-                        // this is safe because getCTF does not return RELION_EXIT_SUCCESS.
-                        Fimg[n] /= Fctf[n];
-                    }
+                if (!do_intact_ctf_after_first_peak) {
+                    Fimg *= Fctf;
+                } else {
+                    Fimg /= Fctf;  // this is safe because getCTF does not return RELION_EXIT_SUCCESS.
                 }
 
                 transformer.inverseFourierTransform(Fimg, img());

@@ -469,30 +469,27 @@ class reconstruct_parameters {
                         // Subtract reference projection
                         if (fn_sub != "") {
                             obsModel.predictObservation(
-                                subProjector, table, p, Fsub, true, true, true);
+                                subProjector, table, p, Fsub, true, true, true
+                            );
 
-                            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(Fsub) {
-                                F2D[n] -= Fsub[n];
-                            }
+                            F2D -= Fsub;
 
                             // Back-project difference image
                             backproj.set2DFourierTransform(F2D, A3D);
                         } else {
                             if (do_ewald) {
-                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                                    Fctf[n] *= Fctf[n];
-                                }
+                                Fctf *= Fctf;
                             } else {
                                 // "Normal" reconstruction, multiply X by CTF, and W by CTF^2
-                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
-                                    F2D[n] *= Fctf[n];
+                                for (long int n = 0; n < F2D.size(); n++) {
+                                    F2D[n]  *= Fctf[n];
                                     Fctf[n] *= Fctf[n];
                                 }
                             }
 
                             // Do the following after squaring the CTFs!
                             if (do_fom_weighting) {
-                                FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(F2D) {
+                                for (long int n = 0; n < F2D.size(); n++) {
                                     F2D[n]  *= fom;
                                     Fctf[n] *= fom;
                                 }
@@ -538,16 +535,10 @@ class reconstruct_parameters {
                 backprojector[j] = &backprojectors[j][0];
 
                 for (int bpi = 1; bpi < nr_omp_threads; bpi++) {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(backprojector[j]->data) {
-                        backprojector[j]->data[n] += backprojectors[j][bpi].data[n];
-                    }
-
+                    backprojector[j]->data += backprojectors[j][bpi].data;
                     backprojectors[j][bpi].data.clear();
 
-                    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(backprojector[j]->weight) {
-                        backprojector[j]->weight[n] += backprojectors[j][bpi].weight[n];
-                    }
-
+                    backprojector[j]->weight += backprojectors[j][bpi].weight;
                     backprojectors[j][bpi].weight.clear();
                 }
 
