@@ -428,7 +428,7 @@ class MultidimArray {
     T *data;
 
     // Destroy data
-    bool destroyData;
+    bool destructible;
 
     struct Dimensions {
         // Essentially a 4D vector.
@@ -477,7 +477,7 @@ class MultidimArray {
     bool mmapOn;  // Whether to allocate memory or map to a file
     FileName mapFile;  // Mapped file name
     int mFd;  // Mapped file handler
-    long int nzyxdimAlloc;  // Number of elements in NZYX in allocated memory
+    long int allocated_size;  // Number of elements in NZYX in allocated memory
 
     T* attempt_mmap(FileName &mapFile, int &mFd, off_t offset) {
         mapFile.initRandom(8);
@@ -624,8 +624,8 @@ class MultidimArray {
         yinit = 0;
         xinit = 0;
         data = NULL;
-        nzyxdimAlloc = 0;
-        destroyData = true;
+        allocated_size = 0;
+        destructible = true;
         mmapOn = false;
         mFd = 0;
     }
@@ -640,6 +640,7 @@ class MultidimArray {
 
         if (data)
             REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
+        // Why? coreAllocate() will do this check too.
 
         ndim = _ndim;
         zdim = _zdim;
@@ -651,53 +652,41 @@ class MultidimArray {
 
     /** Core allocate without dimensions.
      *
-     * It is assumed that the dimensions have already been set
-     * either with setXdim(x), setYdim(y), setZdim(z), setNdim(n),
-     * or with setDimensions(Xdim, Ydim, Zdim, Ndim).
-     *
+     * The dimensions should be set beforehand.
      */
     void coreAllocate() {
 
         if (data)
             REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
 
-        if (size() < 0)
-            REPORT_ERROR("coreAllocate: Cannot allocate a negative number of bytes");
+        _allocate_memory();
+    }
 
+    void _allocate_memory() {
+        if (size() < 0)
+            REPORT_ERROR("coreAllocateReuse: Cannot allocate a negative number of bytes");
         if (mmapOn) {
             data = attempt_mmap(mapFile, mFd, size() * sizeof(T));
         } else {
             data = (T*) RELION_ALIGNED_MALLOC(size() * sizeof(T));
             if (!data) REPORT_ERROR("Allocate: No space left");
         }
-        nzyxdimAlloc = size();
+        allocated_size = size();
     }
 
     /** Core allocate without dimensions.
      *
-     * It is assumed that the dimensions have already been set
-     * either with setXdim(x), setYdim(y), setZdim(z), setNdim(n),
-     * or with setDimensions(Xdim, Ydim, Zdim, Ndim).
-     *
+     * The dimensions should be set beforehand.
      */
     void coreAllocateReuse() {
 
-        if (data && size() <= nzyxdimAlloc) {
-            return;
-        } else if (size() > nzyxdimAlloc) {
+        if (data && size() <= allocated_size) {
+            return;  // Memory already allocated
+        } else if (size() > allocated_size) {
             coreDeallocate();
         }
 
-        if (size() < 0)
-            REPORT_ERROR("coreAllocateReuse: Cannot allocate a negative number of bytes");
-
-        if (mmapOn) {
-            data = attempt_mmap(mapFile, mFd, size() * sizeof(T));
-        } else {
-            data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * size());
-            if (!data) REPORT_ERROR("Allocate: No space left");
-        }
-        nzyxdimAlloc = size();
+        _allocate_memory();
     }
 
     void setMmap(bool mmap) { mmapOn = mmap; }
@@ -709,9 +698,9 @@ class MultidimArray {
      * Essential to avoid memory leaks.
      */
     void coreDeallocate() {
-        if (data && destroyData) {
+        if (data && destructible) {
             if (mmapOn) {
-                munmap(data, nzyxdimAlloc * sizeof(T));
+                munmap(data, allocated_size * sizeof(T));
                 close(mFd);
                 remove(mapFile.c_str());
             } else {
@@ -719,7 +708,7 @@ class MultidimArray {
             }
         }
         data = NULL;
-        nzyxdimAlloc = 0;
+        allocated_size = 0;
     }
 
     // A job for shared_ptr?
@@ -735,7 +724,7 @@ class MultidimArray {
         coreDeallocate();  // Otherwise there may be a memory leak!
         copyShape(other);
         data = other.data;
-        destroyData = false;
+        destructible = false;
     }
 
     /** Move from a multidimarray.
@@ -750,10 +739,10 @@ class MultidimArray {
         coreDeallocate(); // Otherwise there may be a memory leak!
         copyShape(other);
         data = other.data;
-        destroyData = true;
-        nzyxdimAlloc = other.nzyxdimAlloc;
-        other.destroyData = false;
-        other.nzyxdimAlloc = 0;
+        destructible = true;
+        allocated_size = other.allocated_size;
+        other.destructible = false;
+        other.allocated_size = 0;
     }
 
     //@}
@@ -808,15 +797,15 @@ class MultidimArray {
      * limits.
      */
     void shrinkToFit() {
-        if (!destroyData)
-            REPORT_ERROR("Non-destroyable data!");
-        if (!data || mmapOn || size() <= 0 || nzyxdimAlloc <= size())
+        if (!destructible)
+            REPORT_ERROR("Array marked as indestructible!");
+        if (!data || mmapOn || size() <= 0 || allocated_size <= size())
             return;
-        T* old_array = data;
+        T* old_data = data;
         data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * size());
-        memcpy(data, old_array, sizeof(T) * size());
-        RELION_ALIGNED_FREE(old_array);
-        nzyxdimAlloc = size();
+        memcpy(data, old_data, sizeof(T) * size());
+        RELION_ALIGNED_FREE(old_data);
+        allocated_size = size();
     }
 
     /** Adjust array to a given shape
@@ -830,7 +819,7 @@ class MultidimArray {
      *
      */
     void reshape(long Ndim, long Zdim, long Ydim, long Xdim) {
-        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data) {
+        if (Ndim * Zdim * Ydim * Xdim == allocated_size && data) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
             return;
         }
@@ -910,7 +899,7 @@ class MultidimArray {
      */
     void resizeNoCp(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
 
-        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data)
+        if (Ndim * Zdim * Ydim * Xdim == allocated_size && data)
             return;
 
         if (Xdim <= 0 || Ydim <= 0 || Zdim <= 0 || Ndim <= 0) {
@@ -918,7 +907,7 @@ class MultidimArray {
             return;
         }
 
-        // data can be NULL while xdim etc are set to non-zero values
+        // data can be NULL even when xdim etc are not zero
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
         if (size() > 0 && !data) {
@@ -929,13 +918,13 @@ class MultidimArray {
         // Ask for memory
         size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
         int new_mFd = 0;
-        FileName newMapFile;
+        FileName new_mapFile;
 
         T *new_data;
 
         try {
             if (mmapOn) {
-                new_data = attempt_mmap(newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
+                new_data = attempt_mmap(new_mapFile, new_mFd, NZYXdim * sizeof(T) - 1);
             } else {
                 new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
             }
@@ -947,14 +936,11 @@ class MultidimArray {
         coreDeallocate();
 
         // assign *this vector to the newly created
+        setDimensions(Xdim, Ydim, Zdim, Ndim);
         data = new_data;
-        ndim = Ndim;
-        xdim = Xdim;
-        ydim = Ydim;
-        zdim = Zdim;
         mFd = new_mFd;
-        mapFile = newMapFile;
-        nzyxdimAlloc = size();
+        mapFile = new_mapFile;
+        allocated_size = size();
     }
 
     /** Resize to a given size
@@ -971,12 +957,10 @@ class MultidimArray {
      * @endcode
      */
     void resize(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
-        if (Ndim * Zdim * Ydim * Xdim == nzyxdimAlloc && data) {
-            ndim = Ndim;
-            xdim = Xdim;
-            ydim = Ydim;
-            zdim = Zdim;
-            nzyxdimAlloc = size();
+        size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
+        if (allocated_size == NZYXdim && data) {
+            setDimensions(Xdim, Ydim, Zdim, Ndim);
+            allocated_size = size();
             return;
         }
 
@@ -985,7 +969,7 @@ class MultidimArray {
             return;
         }
 
-        // data can be NULL while xdim etc are set to non-zero values
+        // data can be NULL even when xdim etc are not zero
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
         if (size() > 0 && !data) {
@@ -994,17 +978,13 @@ class MultidimArray {
         }
 
         // Ask for memory
-        size_t YXdim   = Ydim *   Xdim;
-        size_t ZYXdim  = Zdim *  YXdim;
-        size_t NZYXdim = Ndim * ZYXdim;
-        int new_mFd = 0;
-        FileName newMapFile;
-
         T *new_data;
+        int new_mFd = 0;
+        FileName new_mapFile;
 
         try {
             if (mmapOn) {
-                new_data = attempt_mmap(newMapFile, new_mFd, NZYXdim * sizeof(T) - 1);
+                new_data = attempt_mmap(new_mapFile, new_mFd, NZYXdim * sizeof(T) - 1);
             } else {
                 new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
             }
@@ -1018,7 +998,7 @@ class MultidimArray {
         for (long int i = 0; i < Ydim; i++)
         for (long int j = 0; j < Xdim; j++) {
             // 0 if out of bounds
-            new_data[l * ZYXdim + k * YXdim + i * Xdim + j] = (
+            new_data[l * Xdim * Ydim * Zdim + k * Xdim * Ydim + i * Xdim + j] = (
                 k >= zdim || i >= ydim || j >= xdim
             ) ? (T) 0.0 : direct::elem(*this, k, i, j);
         }
@@ -1028,13 +1008,10 @@ class MultidimArray {
 
         // assign *this vector to the newly created
         data = new_data;
-        ndim = Ndim;
-        xdim = Xdim;
-        ydim = Ydim;
-        zdim = Zdim;
+        setDimensions(Xdim, Ydim, Zdim, Ndim);
         mFd = new_mFd;
-        mapFile = newMapFile;
-        nzyxdimAlloc = size();
+        mapFile = new_mapFile;
+        allocated_size = size();
     }
 
     /** Resize a single 3D image
@@ -3710,10 +3687,9 @@ template <typename T>
 std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
 
     if (v.xdim == 0) {
-        ostrm << "NULL Array\n";
-    } else {
-        ostrm << std::endl;
+        ostrm << "Empty array";
     }
+    ostrm << '\n';
 
     T max_val = abs(direct::elem(v , 0, 0, 0));
     T *ptr;
