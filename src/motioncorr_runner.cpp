@@ -1141,7 +1141,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         } else {
             MultidimArray<fComplex> Fframe;
             NewFFT::FourierTransform(Iframes[iframe](), Fframe);
-            Fframes[iframe].reshape(ny, nx / 2 + 1);
+            Fframes[iframe].reshape(nx / 2 + 1, ny);
             cropInFourierSpace(Fframe, Fframes[iframe]);
         }
         Iframes[iframe].clear(); // save some memory (global alignment use the most memory)
@@ -1230,7 +1230,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
         // 3. Downsample
         RCTICTOC(TIMING_POWER_SPECTRUM_RESIZE, ({
-        F_ps_small.reshape(ps_size, ps_size / 2 + 1);
+        F_ps_small.reshape(ps_size / 2 + 1, ps_size);
         F_ps_small.initZeros();
         NewFFT::FourierTransform(PS_sum_cropped(), F_ps);
         cropInFourierSpace(F_ps, F_ps_small);
@@ -1256,12 +1256,12 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         mic.setGlobalShift(frames[i] + 1, xshifts[i] * prescaling, yshifts[i] * prescaling); // 1-indexed
         }
 
-    Iref().reshape(ny, nx);
+    Iref().reshape(nx, ny);
     Iref().initZeros();
     RCTIC(TIMING_GLOBAL_IFFT);
     #pragma omp parallel for num_threads(n_threads)
     for (int iframe = 0; iframe < n_frames; iframe++) {
-        Iframes[iframe]().reshape(ny, nx);
+        Iframes[iframe]().reshape(nx, ny);
         NewFFT::inverseFourierTransform(Fframes[iframe], Iframes[iframe]());
         // Unfortunately, we cannot deallocate Fframes here because of dose-weighting
     }
@@ -1309,7 +1309,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
                 #pragma omp parallel for num_threads(n_threads)
                 for (int igroup = 0; igroup < n_groups; igroup++) {
                     const int tid = omp_get_thread_num();
-                    Ipatches[tid].reshape(y_end - y_start, x_end - x_start); // end is not included
+                    Ipatches[tid].reshape(x_end - x_start, y_end - y_start); // Exclude end
                     RCTICTOC(TIMING_CLIP_PATCH, ({
                     for (int iframe = group_start[igroup]; iframe < group_start[igroup] + group_size[igroup]; iframe++) {
                         for (int ipy = y_start; ipy < y_end; ipy++) {
@@ -1820,9 +1820,9 @@ bool MotioncorrRunner::alignPatch(
     const int nfx = Xsize(Fframes[0]), nfy = Ysize(Fframes[0]);
     const int nfy_half = nfy / 2;
 
-    Fref.reshape(ccf_nfy, ccf_nfx);
+    Fref.reshape(ccf_nfx, ccf_nfy);
     for (int i = 0; i < n_threads; i++) {
-        Iccs[i]().reshape(ccf_ny, ccf_nx);
+        Iccs[i]().reshape(ccf_nx, ccf_ny);
         Fccs[i].reshape(Fref);
     }
 
@@ -2118,7 +2118,7 @@ void MotioncorrRunner::binNonSquareImage(Image<float> &Iwork, RFLOAT bin_factor)
 
     cropInFourierSpace(Fref, Fbinned);
 
-    Iwork().reshape(new_ny, new_nx);
+    Iwork().reshape(new_nx, new_ny);
     NewFFT::inverseFourierTransform(Fbinned, Iwork());
 }
 

@@ -382,9 +382,9 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
                     REPORT_ERROR("The input reliability map has a wrong size.");
             }
         } else if (mrc_mode == 2) {
-            gain().reshape(ny, nx);
+            gain().reshape(nx, ny);
             for (auto &x : gain()) { x = 999.9; }
-            defects().reshape(ny, nx);
+            defects().reshape(nx, ny);
             for (auto &x : defects()) { x = -1; }
 
             if (!do_estimate)

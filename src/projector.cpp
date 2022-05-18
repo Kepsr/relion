@@ -474,8 +474,8 @@ void Projector::computeFourierTransformMap(
             cudanormfft = (size_t) padoridim * (size_t) padoridim;
             if (ref_dim == 3) cudanormfft *= (size_t) padoridim;
 
-            if (ref_dim == 2) Faux.reshape(           padoridim, padoridim / 2 + 1);
-            if (ref_dim == 3) Faux.reshape(padoridim, padoridim, padoridim / 2 + 1);
+            if (ref_dim == 2) Faux.reshape(padoridim / 2 + 1, padoridim);
+            if (ref_dim == 3) Faux.reshape(padoridim / 2 + 1, padoridim, padoridim);
 
             scale((RFLOAT*) ~dFaux, 2 * dFaux.getSize(), 1.0 / (RFLOAT) cudanormfft);
         } else

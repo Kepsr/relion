@@ -2027,7 +2027,7 @@ void BackProjector::windowToOridimRealSpace(
     // #define DEBUG_WINDOWORIDIMREALSPACE
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
     Image<RFLOAT> tt;
-    tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
+    tt().reshape(Xsize(Fin), Ysize(Fin), Zsize(Fin));
     for (long int n = 0; n < Fin.size(); n++) {
         tt()[n] = abs(Fin[n]);
     }
@@ -2059,7 +2059,7 @@ void BackProjector::windowToOridimRealSpace(
     }))
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-    tt().reshape(Zsize(Fin), Ysize(Fin), Xsize(Fin));
+    tt().reshape(Xsize(Fin), Ysize(Fin), Zsize(Fin));
     for (long int n = 0; n < Fin.size(); n++) {
         tt()[n] = abs(Fin[n]);
     }
