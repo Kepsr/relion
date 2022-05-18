@@ -1656,7 +1656,7 @@ void selfApplyBeamTilt2(
     RFLOAT factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize);
 
     for (unsigned n = 0; n < Fimg.xdim * Fimg.ydim; n++) {
-        ldiv_t division = std::div(n, Fimg.xdim);
+        ldiv_t division = std::div(n, (long int) Fimg.xdim);  // Narrowing conversion!
         unsigned i = division.quot;
         unsigned j = division.rem;
         unsigned jp = j;
