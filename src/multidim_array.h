@@ -454,15 +454,15 @@ class MultidimArray {
 
     /** Number of elements in X/Y/Z/N
      * Conventions:
-     * - The N dimension splits our array into images
      * - The Z dimension splits our array into slices
+     * - The N dimension splits our array into images
      */
-    long int xdim, ydim, zdim, ndim;
+    unsigned long int xdim, ydim, zdim, ndim;
 
     /// TODO: Manage access to xdim, ydim, zdim, ndim.
 
-    // The size of the array (number of elements in NZYX)
-    inline long int size() const { return ndim * xdim * ydim * zdim; }
+    // Array size (number of elements)
+    inline unsigned long int size() const { return xdim * ydim * zdim * ndim; }
 
     // X/Y/Zinit
     long int xinit, yinit, zinit;
@@ -663,8 +663,6 @@ class MultidimArray {
     }
 
     void _allocate_memory() {
-        if (size() < 0)
-            REPORT_ERROR("coreAllocateReuse: Cannot allocate a negative number of bytes");
         if (mmapOn) {
             data = attempt_mmap(mapFile, mFd, size() * sizeof(T));
         } else {
