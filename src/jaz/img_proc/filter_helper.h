@@ -200,7 +200,7 @@ void FilterHelper::binomial3x3_2D(const Image<T>& src, Image<T>& dest, bool wrap
     const size_t h = src.data.ydim;
     const size_t d = src.data.zdim;
 
-    dest.data.reshape(d,h,w);
+    dest.data.reshape(w, h, d);
 
     Image<T> temp(w,h);
     std::vector<double> kernel = {0.25, 0.5, 0.25};

@@ -130,7 +130,7 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
         // dataPtr != input.data || 
         !fReal->sameShape(input);
 
-    fFourier.reshape(Zsize(input), Ysize(input), Xsize(input) / 2 + 1);
+    fFourier.reshape(Xsize(input) / 2 + 1, Ysize(input), Zsize(input));
     fReal = &input;
 
     if (recomputePlan) {

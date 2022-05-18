@@ -26,7 +26,7 @@ void FftwHelper::decenterUnflip2D(
     const long int w = src.xdim;
     const long int h = src.ydim;
 
-    dest.reshape(h, 2 * (w - 1));
+    dest.reshape(2 * w - 2, h);
 
     const long int yc = dest.ydim / 2;
 
@@ -50,7 +50,7 @@ void FftwHelper::decenterDouble2D(
     const long int w = src.xdim;
     const long int h = src.ydim;
 
-    dest.reshape(h, 2 * (w - 1));
+    dest.reshape(2 * w - 2, h);
 
     const long int yc = dest.ydim / 2;
 

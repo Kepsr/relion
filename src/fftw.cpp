@@ -172,7 +172,7 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
         complexDataPtr != fFourier.data;
 
     if (recomputePlan || force_new_plans) {
-        fFourier.reshape(Zsize(input),Ysize(input),Xsize(input) / 2 + 1);
+        fFourier.reshape(Xsize(input) / 2 + 1, Ysize(input), Zsize(input));
         fReal = &input;
 
         int ndim = 3;

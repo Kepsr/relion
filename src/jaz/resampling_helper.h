@@ -124,14 +124,13 @@ void ResamplingHelper::subsample2D(const Image<T>& src, double n, Image<T>& dest
 template <typename T>
 void ResamplingHelper::subsample2D_cubic(const Image<T>& src, double n, Image<T>& dest, bool wrap)
 {
-    dest.data.reshape(src.data.zdim, src.data.ydim/n, src.data.xdim/n);
+    dest.data.reshape(src.data.xdim / n, src.data.ydim / n, src.data.zdim);
 
     for (size_t z = 0; z < dest.data.zdim; z++)
     for (size_t y = 0; y < dest.data.ydim; y++)
-    for (size_t x = 0; x < dest.data.xdim; x++)
-    {
-        double xx = x * (double)n;
-        double yy = y * (double)n;
+    for (size_t x = 0; x < dest.data.xdim; x++) {
+        double xx = x * (double) n;
+        double yy = y * (double) n;
 
         direct::elem(dest.data, 0, z, y, x) = Interpolation::cubicXY(src, xx, yy, z, 0, wrap);
     }
@@ -140,12 +139,11 @@ void ResamplingHelper::subsample2D_cubic(const Image<T>& src, double n, Image<T>
 template <typename T>
 void ResamplingHelper::subsample3D(const Image<T>& src, int n, Image<T>& dest)
 {
-    dest.data.reshape(src.data.zdim/n, src.data.ydim/n, src.data.xdim/n);
+    dest.data.reshape(src.data.xdim / n, src.data.ydim / n, src.data.zdim / n);
 
     for (size_t z = 0; z < dest.data.zdim; z++)
     for (size_t y = 0; y < dest.data.ydim; y++)
-    for (size_t x = 0; x < dest.data.xdim; x++)
-    {
+    for (size_t x = 0; x < dest.data.xdim; x++) {
         direct::elem(dest.data, 0, z, y, x) = direct::elem(src.data, 0, n*z, n*y, n*x);
     }
 }
@@ -153,7 +151,7 @@ void ResamplingHelper::subsample3D(const Image<T>& src, int n, Image<T>& dest)
 template <typename T>
 void ResamplingHelper::upsample2D_linear(const Image<T>& src, int n, Image<T>& dest, bool wrap)
 {
-    dest.data.reshape(src.data.zdim, src.data.ydim*n, src.data.xdim*n);
+    dest.data.reshape(src.data.xdim * n, src.data.ydim * n, src.data.zdim);
 
     for (size_t z = 0; z < dest.data.zdim; z++)
     for (size_t y = 0; y < dest.data.ydim; y++)
@@ -189,19 +187,19 @@ void ResamplingHelper::upsample2D_linear(const Image<T>& src, int n, Image<T>& d
 }
 
 template <typename T>
-void ResamplingHelper::upsample2D_cubic(const Image<T>& src, int n, Image<T>& dest, bool wrap, int w, int h)
-{
-    if (w < 0) w = src.data.xdim*n;
-    if (h < 0) h = src.data.ydim*n;
+void ResamplingHelper::upsample2D_cubic(
+    const Image<T> &src, int n, Image<T> &dest, bool wrap, int w, int h
+) {
+    if (w < 0) { w = src.data.xdim * n; }
+    if (h < 0) { h = src.data.ydim * n; }
 
-    dest.data.reshape(src.data.zdim, h, w);
+    dest.data.reshape(w, h, src.data.zdim);
 
     for (size_t z = 0; z < dest.data.zdim; z++)
     for (size_t y = 0; y < h; y++)
-    for (size_t x = 0; x < w; x++)
-    {
-        double xx = x / (double)n;
-        double yy = y / (double)n;
+    for (size_t x = 0; x < w; x++) {
+        double xx = x / (double) n;
+        double yy = y / (double) n;
 
         direct::elem(dest.data, 0, z, y, x) = Interpolation::cubicXY(src, xx, yy, z, 0, wrap);
     }

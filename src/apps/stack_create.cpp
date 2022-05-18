@@ -138,8 +138,7 @@ class stack_create_parameters {
                 RFLOAT Gb = (RFLOAT) ndim * zdim * ydim * xdim * sizeof(RFLOAT) / (1024.0 * 1024.0 * 1024.0);
                 std::cout << "This will require " << Gb << "Gb of memory...." << std::endl;
                 std::cout << "If this runs out of memory, please try --one_by_one." << std::endl;
-                out().reshape(ndim, zdim, ydim, xdim);
-                /// NOTE: MultidimArray::reshape takes NZYX, while Image constructor takes XYZN !!
+                out().reshape(xdim, ydim, zdim, ndim);
             }
 
             FileName fn_out;

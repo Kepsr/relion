@@ -808,21 +808,24 @@ class MultidimArray {
         allocated_size = size();
     }
 
+    /**
+     * The functions reshape, moveFrom and shrinkToFit were added
+     * on suggestion by Yunxiao Zhang (5 April 2016)
+     */
+
     /** Adjust array to a given shape
      *
-     * This function will resize the actual array to the given size.
+     * This function will resize the array to the given size.
      * No data will be copied/moved to the new space.
      * If shape is unchanged, then so is the data.
      * Otherwise, data is almost always destroyed.
-     *
-     * The reshape, moveFrom and shrinkToFit functions were added upon suggestion by Yunxiao Zhang (5 April 2016)
-     *
      */
-    void reshape(long Ndim, long Zdim, long Ydim, long Xdim) {
-        if (Ndim * Zdim * Ydim * Xdim == allocated_size && data) {
+    void reshape(long Xdim = 1, long Ydim = 1, long Zdim = 1, long Ndim = 1) {
+        if (data && allocated_size == Xdim * Ydim * Zdim * Ndim) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
             return;
         }
+
         if (Xdim <= 0 || Ydim <= 0 || Zdim <= 0 || Ndim <= 0) {
             clear();
             return;
@@ -830,30 +833,6 @@ class MultidimArray {
 
         coreDeallocate();
         coreAllocate(Ndim, Zdim, Ydim, Xdim);
-    }
-
-    /** Adjust shape in a 3D array
-     *
-     * No guarantee about the data stored
-     */
-    void reshape(long Zdim, long Ydim, long Xdim) {
-        reshape(1, Zdim, Ydim, Xdim);
-    }
-
-    /** Adjust shape in a 2D array
-     *
-     * No guarantee about the data stored
-     */
-    void reshape(long Ydim, long Xdim) {
-        reshape(1, 1, Ydim, Xdim);
-    }
-
-    /** Adjust shape in a 1D array
-     *
-     * No guarantee about the data stored
-     */
-    void reshape(long Xdim) {
-        reshape(1, 1, 1, Xdim);
     }
 
     void dynamic_reshape(long dim, int dimensionality) {
@@ -879,7 +858,7 @@ class MultidimArray {
             ndim != v.ndim || xdim != v.xdim ||
             ydim != v.ydim || zdim != v.zdim ||
             !data
-        ) { reshape(v.ndim, v.zdim, v.ydim, v.xdim); }
+        ) { reshape(v.xdim, v.ydim, v.zdim, v.ndim); }
 
         xinit = v.xinit;
         yinit = v.yinit;
@@ -2699,12 +2678,12 @@ class MultidimArray {
      */
     inline void initZeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
         if (xdim != Xdim || ydim != Ydim || zdim != Zdim || ndim != Ndim)
-            reshape(Ndim, Zdim, Ydim, Xdim);
+            reshape(Xdim, Ydim, Zdim, Ndim);
         memset(data, 0, size() * sizeof(T));
     }
 
     static MultidimArray<T> zeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
-        MultidimArray<T> arr(Ndim, Zdim, Ydim, Xdim);
+        MultidimArray<T> arr(Xdim, Ydim, Zdim, Ndim);
         arr.initZeros();
         return arr;
     }

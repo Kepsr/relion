@@ -171,7 +171,7 @@ void ImageOp::flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
 // In relion_display, this looks clock-wise.
 template<typename T1>
 void ImageOp::rotate90(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
-    dest.reshape(src0.ndim, src0.zdim, src0.xdim, src0.ydim);
+    dest.reshape(src0.ydim, src0.xdim, src0.zdim, src0.ndim);
 
     for (long int n = 0; n < src0.ndim; n++)
     for (long int z = 0; z < src0.zdim; z++)
@@ -197,7 +197,7 @@ void ImageOp::rotate180(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) 
 // MotionCor2's RotGain 3
 template<typename T1>
 void ImageOp::rotate270(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
-    dest.reshape(src0.ndim, src0.zdim, src0.xdim, src0.ydim);
+    dest.reshape(src0.ydim, src0.xdim, src0.zdim, src0.ndim);
 
     for (long int n = 0; n < src0.ndim; n++)
     for (long int z = 0; z < src0.zdim; z++)
