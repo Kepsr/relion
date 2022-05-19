@@ -391,11 +391,11 @@ void CTF::getFftwImage(
                 for (int j = 0; j < Xsize(Fctf) - 1; j++) {
                     RFLOAT fctfij = direct::elem(Fctf, i, j);
                     if (ctf_premultiplied) {
-                        A2D_ELEM(Mctf,  ip,  j) = fctfij * fctfij;
-                        A2D_ELEM(Mctf, -ip, -j) = fctfij * fctfij;
+                        Mctf.elem( ip,  j) = fctfij * fctfij;
+                        Mctf.elem(-ip, -j) = fctfij * fctfij;
                     } else {
-                        A2D_ELEM(Mctf,  ip,  j) = fctfij;
-                        A2D_ELEM(Mctf, -ip, -j) = fctfij;
+                        Mctf.elem( ip,  j) = fctfij;
+                        Mctf.elem(-ip, -j) = fctfij;
                     }
                 }
             }
@@ -412,16 +412,13 @@ void CTF::getFftwImage(
                 // Don't take the last column from the half-transform
                 for (int j = 0; j < Xsize(result) - 1; j++) {
                     // Make just one lookup on Mctf.data
-                    RFLOAT mctfipj = A2D_ELEM(Mctf, ip, j);
+                    RFLOAT mctfipj = Mctf.elem(ip, j);
                     if (ctf_premultiplied) {
                         // Constrain result[i, j] to the interval [0.0, 1.0]
-                        if (mctfipj < 0.0) {
-                            direct::elem(result, i, j) = 0.0;
-                        } else if (mctfipj > 1.0) {
-                            direct::elem(result, i, j) = 1.0;
-                        } else {
-                            direct::elem(result, i, j) = sqrt(mctfipj);
-                        }
+                        direct::elem(result, i, j) = 
+                            mctfipj < 0.0 ? 0.0 : 
+                            mctfipj > 1.0 ? 1.0 :
+                            sqrt(mctfipj);
                     } else {
                         direct::elem(result, i, j) = mctfipj;
                     }
@@ -429,8 +426,8 @@ void CTF::getFftwImage(
             }
         }
     } else {
-        RFLOAT xs = (RFLOAT)orixdim * angpix;
-        RFLOAT ys = (RFLOAT)oriydim * angpix;
+        RFLOAT xs = (RFLOAT) orixdim * angpix;
+        RFLOAT ys = (RFLOAT) oriydim * angpix;
 
         if (obsModel && obsModel->hasEvenZernike) {
 
@@ -575,7 +572,7 @@ void CTF::getCenteredImage(
             x, y, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
-        A2D_ELEM(result, i, j) = do_abs ? abs(t) : t;
+        result.elem( i, j) = do_abs ? abs(t) : t;
     }
 }
 
@@ -595,7 +592,7 @@ void CTF::get1DProfile(
             x, y, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
-        A1D_ELEM(result, i) = do_abs ? abs(t) : t;
+        result.elem(i) = do_abs ? abs(t) : t;
     }
 }
 

@@ -222,19 +222,19 @@ void Reconstructor::readDebugArrays() {
         It().printShape();
     }
     FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
-        A3D_ELEM(backprojector.data, k, i, j).real = A3D_ELEM(It(), k, i, j);
+        backprojector.data.elem(k, i, j).real = It().elem(k, i, j);
     }
     It.read(fn_debug + "_data_imag.mrc");
     It().setXmippOrigin();
     It().xinit = 0;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
-        A3D_ELEM(backprojector.data, k, i, j).imag = A3D_ELEM(It(), k, i, j);
+        backprojector.data.elem(k, i, j).imag = It().elem(k, i, j);
     }
     It.read(fn_debug+"_weight.mrc");
     It().setXmippOrigin();
     It().xinit = 0;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
-        A3D_ELEM(backprojector.weight, k, i, j) = A3D_ELEM(It(), k, i, j);
+        backprojector.weight.elem(k, i, j) = It().elem(k, i, j);
     }
     output_boxsize = debug_ori_size;
 }
@@ -427,7 +427,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                    direct::elem(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
+                    direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
                 }
             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // otherwise, just window the CTF to the current resolution
@@ -599,10 +599,10 @@ void Reconstructor::reconstruct() {
                 ip >= Yinit(backprojector.data) && ip <= Ylast(backprojector.data) &&
                 kp >= Zinit(backprojector.data) && kp <= Zlast(backprojector.data)
             ) {
-                if (A3D_ELEM(backprojector.weight, kp, ip, jp) > 0.0) {
-                    A3D_ELEM(vol(), k, i, j) = A3D_ELEM(backprojector.data, kp, ip, jp) / A3D_ELEM(backprojector.weight, kp, ip, jp);
+                if (backprojector.weight.elem(kp, ip, jp) > 0.0) {
+                    vol().elem(k, i, j) = backprojector.data.elem(kp, ip, jp) / backprojector.weight.elem(kp, ip, jp);
                     if (do_reconstruct_ctf2)
-                        A3D_ELEM(vol(), k, i, j) = sqrt(A3D_ELEM(vol(), k, i, j));
+                        vol().elem(k, i, j) = sqrt(vol().elem(k, i, j));
                 }
             }
         }

@@ -331,7 +331,7 @@ void AutoPicker::initialise() {
         RFLOAT normgauss = gaussian1D(0.0, particle_size / 6.0, 0.0);
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Iref()) {
             double r = sqrt((RFLOAT) (i * i + j * j));
-            A2D_ELEM(Iref(), i, j) = gauss_max_value * gaussian1D(r, particle_size / 6.0, 0.0) / normgauss;
+            Iref().elem(i, j) = gauss_max_value * gaussian1D(r, particle_size / 6.0, 0.0) / normgauss;
         }
         Mrefs.push_back(Iref());
 
@@ -490,12 +490,12 @@ void AutoPicker::initialise() {
                 int first_corner = Xinit(Mrefs[iref]), last_corner = Xlast(Mrefs[iref]);
                 for (long int j = Xinit(Mrefs[iref]); j <= Xlast(Mrefs[iref]); j++) {
                     if (!has_set_first) {
-                        if (fabs(A3D_ELEM(Mrefs[iref], 0, 0, j) - cornerval) > 1e-6) {
+                        if (fabs(Mrefs[iref].elem(0, 0, j) - cornerval) > 1e-6) {
                             first_corner = j;
                             has_set_first = true;
                         }
                     } else if (!has_set_last) {
-                        if (fabs(A3D_ELEM(Mrefs[iref], 0, 0, j) - cornerval) < 1e-6) {
+                        if (fabs(Mrefs[iref].elem(0, 0, j) - cornerval) < 1e-6) {
                             last_corner = j - 1;
                             has_set_last = true;
                         }
@@ -668,7 +668,7 @@ void AutoPicker::initialise() {
             long int inner_radius = round(helical_tube_diameter / (2.0 * angpix));
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
                 if (i * i + j * j < inner_radius * inner_radius) {
-                    A2D_ELEM(Mcirc_mask, i, j) = 0.0;
+                    Mcirc_mask.elem(i, j) = 0.0;
                     nr_pixels_avg_mask--;
                 }
             }
@@ -677,7 +677,7 @@ void AutoPicker::initialise() {
                 long int outer_radius = round(max_local_avg_diameter / (2.0 * angpix));
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
                     if (i * i + j * j > outer_radius * outer_radius) {
-                        A2D_ELEM(Mcirc_mask, i, j) = 0.0;
+                        Mcirc_mask.elem(i, j) = 0.0;
                         nr_pixels_avg_mask--;
                     }
                 }
@@ -686,7 +686,7 @@ void AutoPicker::initialise() {
             // Now set the mask in the large square and store its FFT
             Maux.initZeros();
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-                A2D_ELEM(Maux, i, j ) = A2D_ELEM(Mcirc_mask, i, j);
+                Maux.elem(i, j ) = Mcirc_mask.elem(i, j);
             }
             transformer.FourierTransform(Maux, Favgmsk);
             CenterFFTbySign(Favgmsk);
@@ -699,7 +699,7 @@ void AutoPicker::initialise() {
         Mcirc_mask.initZeros();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
             if (i * i + j * j >= particle_radius2) {
-                A2D_ELEM(Mcirc_mask, i, j) = 1.0;
+                Mcirc_mask.elem(i, j) = 1.0;
                 nr_pixels_circular_invmask++;
             }
         }
@@ -707,7 +707,7 @@ void AutoPicker::initialise() {
         // Now set the mask in the large square and store its FFT
         Maux.initZeros();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-            A2D_ELEM(Maux, i, j ) = A2D_ELEM(Mcirc_mask, i, j);
+            Maux.elem(i, j ) = Mcirc_mask.elem(i, j);
         }
         transformer.FourierTransform(Maux, Finvmsk);
         CenterFFTbySign(Finvmsk);
@@ -717,7 +717,7 @@ void AutoPicker::initialise() {
         Mcirc_mask.initZeros();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
             if (i * i + j * j < particle_radius2) {
-                A2D_ELEM(Mcirc_mask, i, j) = 1.0;
+                Mcirc_mask.elem(i, j) = 1.0;
                 nr_pixels_circular_mask++;
             }
         }
@@ -743,7 +743,7 @@ void AutoPicker::initialise() {
             Maux.initZeros();
             Maux.setXmippOrigin();
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mrefs[iref]) {
-                A2D_ELEM(Maux, i, j) = A2D_ELEM(Mrefs[iref], i, j);
+                Maux.elem(i, j) = Mrefs[iref].elem(i, j);
             }
 
             // And compute its Fourier Transform inside the Projector
@@ -963,8 +963,8 @@ std::vector<AmyloidCoord> AutoPicker::findNextCandidateCoordinates(
             ii >= (Xmipp::init(new_micrograph_ysize) + skip_side_pix + 1) &&
             ii <  (Xmipp::last(new_micrograph_ysize) - skip_side_pix - 1)
         ) {
-            RFLOAT myccf = A2D_ELEM(Mccf, ii, jj);
-            RFLOAT mypsi = A2D_ELEM(Mpsi, ii, jj);
+            RFLOAT myccf = Mccf.elem(ii, jj);
+            RFLOAT mypsi = Mpsi.elem(ii, jj);
 
             // Small difference in psi-angle with mycoord
             RFLOAT psidiff = fabs(mycoord.psi - mypsi);
@@ -976,7 +976,7 @@ std::vector<AmyloidCoord> AutoPicker::findNextCandidateCoordinates(
                 AmyloidCoord newcoord;
                 newcoord.x = mycoord.x + XX(vec_p);
                 newcoord.y = mycoord.y + YY(vec_p);
-                newcoord.psi = A2D_ELEM(Mpsi, ii, jj);
+                newcoord.psi = Mpsi.elem(ii, jj);
                 newcoord.fom = myccf;
                 // std::cerr << " myccf= " << myccf << " psi= " << newcoord.psi << std::endl;
                 result.push_back(newcoord);
@@ -1002,7 +1002,7 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
     AmyloidCoord result;
     result.x = result.y = result.psi = 0.0;
     result.fom = -999.0;
-    if (A2D_ELEM(Mccf, (int) round(mycoord.y), (int) round(mycoord.x)) < threshold_value)
+    if (Mccf.elem((int) round(mycoord.y), (int) round(mycoord.x)) < threshold_value)
         return result;
 
     // Set FOM to small value in circle around mycoord
@@ -1024,7 +1024,7 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
                 ip >= Xmipp::init(Ysize(Mccf)) &&
                 ip <= Xmipp::last(Ysize(Mccf))
             ) {
-                A2D_ELEM(Mccf, ip, jp) = -999.0;
+                Mccf.elem(ip, jp) = -999.0;
             }
         }
     }
@@ -1202,13 +1202,13 @@ void AutoPicker::pickAmyloids(
                     helical_tube_diameter / angpix, round(skip_side), scale, Mccf, Mpsi
                 );
                 //std::cerr << " START newcoord.x= " << newcoord.x << " newcoord.y= " << newcoord.y << " newcoord.fom= " << newcoord.fom
-                //		<< " stddev = " << A2D_ELEM(Mstddev, round(newcoord.y), round(newcoord.x))
-                //		<< " avg= " <<	A2D_ELEM(Mavg, round(newcoord.y), round(newcoord.x))	<< std::endl;
+                //		<< " stddev = " << Mstddev.elem(round(newcoord.y), round(newcoord.x))
+                //		<< " avg= " <<	Mavg.elem(round(newcoord.y), round(newcoord.x))	<< std::endl;
                 // Also check for Mstddev value
                 if (
                     newcoord.fom > threshold_value &&
-                    (max_stddev_noise <=    0.0 || A2D_ELEM(Mstddev, (int) round(newcoord.y), (int) round(newcoord.x)) <= max_stddev_noise) &&
-                    (min_avg_noise    <= -900.0 || A2D_ELEM(Mavg,    (int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
+                    (max_stddev_noise <=    0.0 || Mstddev.elem((int) round(newcoord.y), (int) round(newcoord.x)) <= max_stddev_noise) &&
+                    (min_avg_noise    <= -900.0 || Mavg.elem(   (int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
                 ) {
                     helix.insert(helix.begin(), newcoord);
                 } else {
@@ -1223,8 +1223,8 @@ void AutoPicker::pickAmyloids(
                 //std::cerr << " END newcoord.x= " << newcoord.x << " newcoord.y= " << newcoord.y << " newcoord.fom= " << newcoord.fom << std::endl;
                 if (
                     newcoord.fom > threshold_value &&
-                    (max_stddev_noise <=    0.0 || A2D_ELEM(Mstddev, (int) round(newcoord.y), (int) round(newcoord.x)) <= max_stddev_noise) &&
-                    (min_avg_noise    <= -900.0 || A2D_ELEM(Mavg,    (int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
+                    (max_stddev_noise <=    0.0 || Mstddev.elem((int) round(newcoord.y), (int) round(newcoord.x)) <= max_stddev_noise) &&
+                    (min_avg_noise    <= -900.0 || Mavg.elem(   (int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
                 ) {
                     helix.push_back(newcoord);
                 } else {
@@ -1382,16 +1382,16 @@ void AutoPicker::pickCCFPeaks(
     for (int ii = Xmipp::init(new_micrograph_ysize) + skip_side; ii <= Xmipp::last(new_micrograph_ysize) - skip_side; ii++)
     for (int jj = Xmipp::init(new_micrograph_xsize) + skip_side; jj <= Xmipp::last(new_micrograph_xsize) - skip_side; jj++) {
         // Only check stddev in the noise areas if max_stddev_noise is positive!
-        if (max_stddev_noise > 0.0 && A2D_ELEM(Mstddev, ii, jj) > max_stddev_noise)
+        if (max_stddev_noise > 0.0 && Mstddev.elem(ii, jj) > max_stddev_noise)
             continue;
 
-        if (min_avg_noise > -900.0 && A2D_ELEM(Mavg, ii, jj) < min_avg_noise)
+        if (min_avg_noise > -900.0 && Mavg.elem(ii, jj) < min_avg_noise)
             continue;
 
-        RFLOAT fom = A2D_ELEM(Mccf, ii, jj);
+        RFLOAT fom = Mccf.elem(ii, jj);
         nr_pixels++;
         if (fom > threshold_value) {
-            A2D_ELEM(Mrec, ii, jj) = 1;
+            Mrec.elem(ii, jj) = 1;
             ccf_pixel_list.push_back(ccfPixel(jj, ii, fom));
         }
     }
@@ -1436,11 +1436,11 @@ void AutoPicker::pickCCFPeaks(
         // Check if this ccf pixel is covered by another peak
         x_old = x_new = round(ccf_pixel_list[id].x);
         y_old = y_new = round(ccf_pixel_list[id].y);
-        if (A2D_ELEM(Mrec, y_new, x_new) == 0)
+        if (Mrec.elem(y_new, x_new) == 0)
             continue;
 
-        iref = A2D_ELEM(Mclass, y_new, x_new);
-        fom_max = A2D_ELEM(Mccf, y_new, x_new);
+        iref = Mclass.elem(y_new, x_new);
+        fom_max = Mccf.elem(y_new, x_new);
 
         // Pick a peak starting from this ccf pixel
         ccf_peak_small.clear();
@@ -1482,8 +1482,8 @@ void AutoPicker::pickCCFPeaks(
                     ) continue;
 
                     // Push back all ccf pixels within this rmax
-                    RFLOAT ccf = A2D_ELEM(Mccf, y_new, x_new);
-                    if (A2D_ELEM(Mrec, y_new, x_new) == 0)
+                    RFLOAT ccf = Mccf.elem(y_new, x_new);
+                    if (Mrec.elem(y_new, x_new) == 0)
                         ccf = stats.min;
                     ccf_peak_big.ccf_pixel_list.push_back(ccfPixel(x_new, y_new, ccf));
                 }
@@ -1528,7 +1528,7 @@ void AutoPicker::pickCCFPeaks(
             for (int ii = 0; ii < ccf_peak_small.ccf_pixel_list.size(); ii++) {
                 x_new = round(ccf_peak_small.ccf_pixel_list[ii].x);
                 y_new = round(ccf_peak_small.ccf_pixel_list[ii].y);
-                A2D_ELEM(Mrec, y_new, x_new) = 0;
+                Mrec.elem(y_new, x_new) = 0;
             }
             // TODO: if r > ...? do not include this peak?
             ccf_peak_small.ref = iref;
@@ -1574,10 +1574,10 @@ void AutoPicker::pickCCFPeaks(
                 y > (Xmipp::last(new_micrograph_ysize) - skip_side - 1)
             ) continue;
 
-            int old_id = A2D_ELEM(Mrec, y, x);
+            int old_id = Mrec.elem(y, x);
             if (old_id >= 0)
                 ccf_peak_list[old_id].r = -1.0;
-            A2D_ELEM(Mrec, y, x) = new_id;
+            Mrec.elem(y, x) = new_id;
         }
     }
 
@@ -1606,7 +1606,7 @@ void AutoPicker::pickCCFPeaks(
 
         x = round(ccf_peak_list[ii].ccf_pixel_list[jj].x);
         y = round(ccf_peak_list[ii].ccf_pixel_list[jj].y);
-        A2D_ELEM(Mccfplot, y, x) = 1.0;
+        Mccfplot.elem(y, x) = 1.0;
     }
 
     return;
@@ -2155,7 +2155,7 @@ void AutoPicker::exportHelicalTubes(
                     y_int > Xmipp::last(micrograph_ysize) - 1
                 ) continue;
 
-                A2D_ELEM(Mccfplot, y_int, x_int) = 1.0;
+                Mccfplot.elem(y_int, x_int) = 1.0;
             }
         }
     }
@@ -2271,8 +2271,8 @@ void AutoPicker::exportHelicalTubes(
                 y_int > Xmipp::last(micrograph_ysize) - skip_side - 1
             ) continue;
 
-            int iref = A2D_ELEM(Mclass, y_int, x_int);
-            RFLOAT fom  = A2D_ELEM(Mccf,   y_int, x_int);
+            int iref = Mclass.elem(y_int, x_int);
+            RFLOAT fom  = Mccf.elem(  y_int, x_int);
 
             MDout.addObject();
             RFLOAT xval = tube_coord_list[itube][icoord].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize);
@@ -2363,7 +2363,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
                     j < Xmipp::init(micrograph_xsize) ||
                     j > Xmipp::last(micrograph_xsize)
                 ) {
-                    A2D_ELEM(Imic(), i, j) = rnd_gaus(0.0, 1.0);
+                    Imic().elem(i, j) = rnd_gaus(0.0, 1.0);
                 }
             }
         }
@@ -2460,7 +2460,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         Mbest_fom_new.initZeros();
         for (int i = Xmipp::init((int) ((float) micrograph_ysize * scale)) + my_skip_side; i <= Xmipp::last((int) ((float) micrograph_ysize * scale)) - my_skip_side; i++)
         for (int j = Xmipp::init((int) ((float) micrograph_xsize * scale)) + my_skip_side; j <= Xmipp::last((int) ((float) micrograph_xsize * scale)) - my_skip_side; j++) {
-            A2D_ELEM(Mbest_fom_new, i, j) = A2D_ELEM(Mbest_fom, i, j);
+            Mbest_fom_new.elem(i, j) = Mbest_fom.elem(i, j);
         }
         Mbest_fom = Mbest_fom_new;
     }
@@ -2535,23 +2535,23 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
     MetaDataTable MDout;
     long int imax, jmax;
     while (Mbest_fom.maxIndex(imax, jmax) > 0.0) {
-        RFLOAT fom_here = A2D_ELEM(Mbest_fom, imax, jmax);
+        RFLOAT fom_here = Mbest_fom.elem(imax, jmax);
         if (fom_here < my_upper_limit) {
             MDout.addObject();
             long int xx = jmax - Xmipp::init((int) ((float) micrograph_xsize * scale));
             long int yy = imax - Xmipp::init((int) ((float) micrograph_ysize * scale));
             MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xx / scale);
             MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) yy / scale);
-            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, A2D_ELEM(Mbest_fom, imax, jmax));
+            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, Mbest_fom.elem(imax, jmax));
             MDout.setValue(EMDL::PARTICLE_CLASS, 0); // Dummy values to avoid problems in JoinStar
             MDout.setValue(EMDL::ORIENT_PSI, 0.0);
         }
 
         // Now set all pixels of Mbest_fom within a distance of 0.5* the corresponding Mbest_size to zero
         // Exclude a bit more radius, such that no very close neighbours are allowed
-        long int myrad = round(scale * (A2D_ELEM(Mbest_size, imax, jmax) + LoG_min_diameter) * LoG_neighbour_fudge / 2 / angpix);
+        long int myrad = round(scale * (Mbest_size.elem(imax, jmax) + LoG_min_diameter) * LoG_neighbour_fudge / 2 / angpix);
         long int myrad2 = myrad * myrad;
-//		std::cout << "scale = " << scale << " Mbest_size = " << A2D_ELEM(Mbest_size, imax, jmax) << " myrad " << myrad << std::endl;
+//		std::cout << "scale = " << scale << " Mbest_size = " << Mbest_size.elem(imax, jmax) << " myrad " << myrad << std::endl;
         for (long int ii = imax - myrad; ii <= imax + myrad; ii++)
         for (long int jj = jmax - myrad; jj <= jmax + myrad; jj++) {
             long int r2 = (imax - ii) * (imax - ii) + (jmax - jj) * (jmax - jj);
@@ -2560,7 +2560,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
                 jj >= Xinit(Mbest_fom) && jj <= Xlast(Mbest_fom) &&
                 r2 < myrad2
             ) {
-                A2D_ELEM(Mbest_fom, ii, jj) = 0.0;
+                Mbest_fom.elem(ii, jj) = 0.0;
             }
         }
     }
@@ -2646,7 +2646,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 j < Xmipp::init(micrograph_xsize) ||
                 j > Xmipp::last(micrograph_xsize)
             ) {
-                A2D_ELEM(Imic(), i, j) = rnd_gaus(0.0, 1.0);
+                Imic().elem(i, j) = rnd_gaus(0.0, 1.0);
             }
         }
     }
@@ -2891,7 +2891,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                     tt().resize(particle_size, particle_size);
                     tt().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_ARRAY2D(tt()) {
-                        A2D_ELEM(tt(), i, j) = A2D_ELEM(ttt, i, j);
+                        tt.elem(, i, j) = ttt.elem(i, j);
                     }
                     tt.write("Mref_rot_ctf.spi");
                     #endif
@@ -2924,14 +2924,14 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                     FOR_ALL_ELEMENTS_IN_ARRAY2D(Mctfref) {
                         // only loop over smaller Mctfref, but take values from large Maux!
                         if (i * i + j * j < particle_radius2) {
-                            suma2 += A2D_ELEM(Maux, i, j) * A2D_ELEM(Maux, i, j);
-                            suma2 += 2.0 * A2D_ELEM(Maux, i, j) * rnd_gaus(0.0, 1.0);
-                            sum_ref_under_circ_mask += A2D_ELEM(Maux, i, j);
-                            sum_ref2_under_circ_mask += A2D_ELEM(Maux, i, j) * A2D_ELEM(Maux, i, j);
+                            suma2 += Maux.elem(i, j) * Maux.elem(i, j);
+                            suma2 += 2.0 * Maux.elem(i, j) * rnd_gaus(0.0, 1.0);
+                            sum_ref_under_circ_mask += Maux.elem(i, j);
+                            sum_ref2_under_circ_mask += Maux.elem(i, j) * Maux.elem(i, j);
                             sumn += 1.0;
                         }
                         #ifdef DEBUG
-                        A2D_ELEM(Mctfref, i, j) = A2D_ELEM(Maux, i, j);
+                        Mctfref.elem(i, j) = Maux.elem(i, j);
                         #endif
                     }
                     sum_ref_under_circ_mask /= sumn;
@@ -3259,41 +3259,41 @@ void AutoPicker::peakSearch(
             j++
     ) {
 
-            RFLOAT myval = A2D_ELEM(Mfom, i, j);
+            RFLOAT myval = Mfom.elem(i, j);
             // check if this element is above the threshold
             if (myval >= min_fraction_expected_Pratio) {
 
                 // Only check stddev in the noise areas if max_stddev_noise is positive!
-                if (max_stddev_noise > 0.0 && A2D_ELEM(Mstddev, i, j) > max_stddev_noise)
+                if (max_stddev_noise > 0.0 && Mstddev.elem(i, j) > max_stddev_noise)
                     continue;
-                if (min_avg_noise > -900.0 && A2D_ELEM(Mmean, i, j) < min_avg_noise)
+                if (min_avg_noise > -900.0 && Mmean.elem(i, j) < min_avg_noise)
                     continue;
 
                 if (scale < 1.0) {
                     // When we use shrink, then often peaks aren't 5 pixels big anymore...
-                    if (A2D_ELEM(Mfom, i - 1, j) > myval)
+                    if (Mfom.elem(i - 1, j) > myval)
                         continue;
-                    if (A2D_ELEM(Mfom, i + 1, j) > myval)
+                    if (Mfom.elem(i + 1, j) > myval)
                         continue;
-                    if (A2D_ELEM(Mfom, i, j - 1) > myval)
+                    if (Mfom.elem(i, j - 1) > myval)
                         continue;
-                    if (A2D_ELEM(Mfom, i, j + 1) > myval)
+                    if (Mfom.elem(i, j + 1) > myval)
                         continue;
                 } else {
                     // This is a peak if all four neighbours are also above the threshold, AND have lower values than myval
-                    if (A2D_ELEM(Mfom, i - 1, j) < min_fraction_expected_Pratio || A2D_ELEM(Mfom, i - 1, j) > myval)
+                    if (Mfom.elem(i - 1, j) < min_fraction_expected_Pratio || Mfom.elem(i - 1, j) > myval)
                         continue;
-                    if (A2D_ELEM(Mfom, i + 1, j) < min_fraction_expected_Pratio || A2D_ELEM(Mfom, i + 1, j) > myval)
+                    if (Mfom.elem(i + 1, j) < min_fraction_expected_Pratio || Mfom.elem(i + 1, j) > myval)
                         continue;
-                    if (A2D_ELEM(Mfom, i, j - 1) < min_fraction_expected_Pratio || A2D_ELEM(Mfom, i, j - 1) > myval)
+                    if (Mfom.elem(i, j - 1) < min_fraction_expected_Pratio || Mfom.elem(i, j - 1) > myval)
                         continue;
-                    if (A2D_ELEM(Mfom, i, j + 1) < min_fraction_expected_Pratio || A2D_ELEM(Mfom, i, j + 1) > myval)
+                    if (Mfom.elem(i, j + 1) < min_fraction_expected_Pratio || Mfom.elem(i, j + 1) > myval)
                         continue;
                 }
                 peak.x = j - Xmipp::init((int) ((float) micrograph_xsize * scale));
                 peak.y = i - Xmipp::init((int) ((float) micrograph_ysize * scale));
-                peak.psi = A2D_ELEM(Mpsi, i, j);
-                peak.fom = A2D_ELEM(Mfom, i, j);
+                peak.psi = Mpsi.elem(i, j);
+                peak.fom = Mfom.elem(i, j);
                 peak.relative_fom = myval;
                 peaks.push_back(peak);
             }

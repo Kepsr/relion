@@ -1172,7 +1172,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
                 // logical 2D access, i = logical_y, j = logical_x
                 // F(i, j) = conj(F(-i, -j))
                 // accessor is (Y, X)
-                A2D_ELEM(PS_sum(), i, j) += abs(j > 0 ? FFTW2D_ELEM(F_sum, i, j) : FFTW2D_ELEM(F_sum, -i, -j));
+                PS_sum().elem(i, j) += abs(j > 0 ? FFTW2D_ELEM(F_sum, i, j) : FFTW2D_ELEM(F_sum, -i, -j));
                 // Maybe use signum?
             }
         }
@@ -1218,7 +1218,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         PS_sum().setXmippOrigin();
         PS_sum_cropped().setXmippOrigin();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(PS_sum_cropped())
-            A2D_ELEM(PS_sum_cropped(), i, j) = A2D_ELEM(PS_sum(), i, j);
+            PS_sum_cropped().elem(i, j) = PS_sum().elem(i, j);
 
         #ifdef DEBUG_PS
         std::cout << "size of PS_sum_cropped: NX = " << Xsize(PS_sum_cropped()) << " NY = " << Ysize(PS_sum_cropped()) << std::endl;

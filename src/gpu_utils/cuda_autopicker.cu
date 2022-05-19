@@ -372,7 +372,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 j < Xmipp::init(basePckr->micrograph_xsize) ||
                 j > Xmipp::last(basePckr->micrograph_xsize)
             ) {
-                A2D_ELEM(Imic(), i, j) = rnd_gaus(0.0, 1.0);
+                Imic().elem(i, j) = rnd_gaus(0.0, 1.0);
             }
         }
         }))
@@ -747,10 +747,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mctfref) {
                 // only loop over smaller Mctfref, but take values from large Maux!
                 if (i * i + j * j < basePckr->particle_radius2) {
-                    suma2 += A2D_ELEM(Maux, i, j) * A2D_ELEM(Maux, i, j);
-                    suma2 += 2.0 * A2D_ELEM(Maux, i, j) * rnd_gaus(0.0, 1.0);
-                    sum_ref_under_circ_mask += A2D_ELEM(Maux, i, j);
-                    sum_ref2_under_circ_mask += A2D_ELEM(Maux, i, j) * A2D_ELEM(Maux, i, j);
+                    suma2 += Maux.elem(i, j) * Maux.elem(i, j);
+                    suma2 += 2.0 * Maux.elem(i, j) * rnd_gaus(0.0, 1.0);
+                    sum_ref_under_circ_mask += Maux.elem(i, j);
+                    sum_ref2_under_circ_mask += Maux.elem(i, j) * Maux.elem(i, j);
                     sumn += 1.0;
                 }
             }

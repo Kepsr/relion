@@ -849,15 +849,15 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         Imask().centerOfMass(com);
         com_bodies[nr_bodies].resize(3);
         for (int i = 0; i < 3; i++) {
-            com_bodies[nr_bodies][i] = i >= mydim ? 0.0 : round(com[i]); 
+            com_bodies[nr_bodies][i] = i >= mydim ? 0.0 : round(com[i]);
             // Round to avoid interpolation artifacts in selfTranslate(Iref)
         }
         // Find maximum radius for mask around com
         int max_d2 = 0.0;
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Imask()) {
-            if (A3D_ELEM(Imask(), k, i, j) > 0.05) {
-                int d2 = (k - ZZ(com)) * (k - ZZ(com)) 
-                       + (i - YY(com)) * (i - YY(com)) 
+            if (Imask().elem(k, i, j) > 0.05) {
+                int d2 = (k - ZZ(com)) * (k - ZZ(com))
+                       + (i - YY(com)) * (i - YY(com))
                        + (j - XX(com)) * (j - XX(com));
                 if (d2 > max_d2) { max_d2 = d2; }
             }
@@ -1617,15 +1617,15 @@ void MlWsumModel::pack(MultidimArray<RFLOAT> &packed, int &piece, int &nr_pieces
 
     for (int iclass = 0; iclass < nr_classes; iclass++) {
 
-        if (ori_idx >= idx_start && ori_idx < idx_stop) 
+        if (ori_idx >= idx_start && ori_idx < idx_stop)
             packed[idx++] = pdf_class[iclass];
         ori_idx++;
 
         if (ref_dim == 2) {
-            if (ori_idx >= idx_start && ori_idx < idx_stop) 
+            if (ori_idx >= idx_start && ori_idx < idx_stop)
                 packed[idx++] = XX(prior_offset_class[iclass]);
             ori_idx++;
-            if (ori_idx >= idx_start && ori_idx < idx_stop) 
+            if (ori_idx >= idx_start && ori_idx < idx_stop)
                 packed[idx++] = YY(prior_offset_class[iclass]);
             ori_idx++;
         }

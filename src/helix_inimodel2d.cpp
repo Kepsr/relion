@@ -675,8 +675,8 @@ void HelixAligner::initialiseClasses() {
                     while (jp > Xlast(model.Aref[myclass])) { jp -= xrect; }
 
                     // this places the original image in the offset-translated center of the rectangle
-                    A2D_ELEM(model.Asum [myclass], i, jp) += smearw * A2D_ELEM(Xrects[ipart][0], i, j);
-                    A2D_ELEM(model.Asumw[myclass], i, jp) += smearw;
+                    model.Asum [myclass].elem(i, jp) += smearw * Xrects[ipart][0].elem(i, j);
+                    model.Asumw[myclass].elem(i, jp) += smearw;
 
                     // This places the Y-flipped image at half a cross-over distance from the first one
                     int ip = -i;
@@ -684,8 +684,8 @@ void HelixAligner::initialiseClasses() {
                         int jjp = jp + xrect / 2;
                         while (jjp < Xinit(model.Aref[myclass])) { jjp += xrect; }
                         while (jjp > Xlast(model.Aref[myclass])) { jjp -= xrect; }
-                        A2D_ELEM(model.Asum [myclass], ip, jjp) += smearw * A2D_ELEM(Xrects[ipart][0], i, j);
-                        A2D_ELEM(model.Asumw[myclass], ip, jjp) += smearw;
+                        model.Asum [myclass].elem(ip, jjp) += smearw * Xrects[ipart][0].elem(i, j);
+                        model.Asumw[myclass].elem(ip, jjp) += smearw;
 
                     }
                 }
@@ -750,13 +750,13 @@ void HelixAligner::expectationOneParticleNoFFT(long int ipart) {
                                 while (jpp > Xlast(model.Aref[iclass])) { jpp -= xrect; }
 
                                 // this places the original image in the offset-translated center of the rectangle
-                                ccf_xa += A2D_ELEM(model.Aref[iclass], ip, jp) * A2D_ELEM(Xrects[ipart][k_rot], i, j);
-                                ccf_a2 += A2D_ELEM(model.Aref[iclass], ip, jp) * A2D_ELEM(model.Aref[iclass], ip, jp);
+                                ccf_xa += model.Aref[iclass].elem(ip, jp) * Xrects[ipart][k_rot].elem(i, j);
+                                ccf_a2 += model.Aref[iclass].elem(ip, jp) * model.Aref[iclass].elem(ip, jp);
 
-                                ccf_xa += A2D_ELEM(model.Aref[iclass], ipp, jpp) * A2D_ELEM(Xrects[ipart][k_rot], i, j);
-                                ccf_a2 += A2D_ELEM(model.Aref[iclass], ipp, jpp) * A2D_ELEM(model.Aref[iclass], ipp, jpp);
+                                ccf_xa += model.Aref[iclass].elem(ipp, jpp) * Xrects[ipart][k_rot].elem(i, j);
+                                ccf_a2 += model.Aref[iclass].elem(ipp, jpp) * model.Aref[iclass].elem(ipp, jpp);
 
-                                ccf_x2 += 2.0 * A2D_ELEM(Xrects[ipart][k_rot], i, j) * A2D_ELEM(Xrects[ipart][k_rot], i, j);
+                                ccf_x2 += 2.0 * Xrects[ipart][k_rot].elem(i, j) * Xrects[ipart][k_rot].elem(i, j);
 
                             }
                         }
@@ -797,24 +797,24 @@ void HelixAligner::expectationOneParticleNoFFT(long int ipart) {
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Xrects[ipart][best_k_rot]) {
 
                 int jp = j + best_j_offset + j_smear;
-                while (jp < Xinit (model.Aref[best_class])) { jp += xrect; }
+                while (jp < Xinit(model.Aref[best_class])) { jp += xrect; }
                 while (jp > Xlast(model.Aref[best_class])) { jp -= xrect; }
 
                 int ip = i + best_i_offset;
-                while (ip < Yinit (model.Aref[best_class])) { ip += yrect; }
+                while (ip < Yinit(model.Aref[best_class])) { ip += yrect; }
                 while (ip > Ylast(model.Aref[best_class])) { ip -= yrect; }
 
                 // this places the original image in the offset-translated center of the rectangle
-                A2D_ELEM(model.Asum [best_class], ip, jp) += smearw * A2D_ELEM(Xrects[ipart][best_k_rot], i, j);
-                A2D_ELEM(model.Asumw[best_class], ip, jp) += smearw;
+                model.Asum [best_class].elem(ip, jp) += smearw * Xrects[ipart][best_k_rot].elem(i, j);
+                model.Asumw[best_class].elem(ip, jp) += smearw;
 
                 // This places the Y-flipped image at half a cross-over distance from the first one
                 int ipp = -ip;
                 if (ipp >= Yinit(Xrects[ipart][best_k_rot]) && ipp <= Ylast(Xrects[ipart][best_k_rot])) {
                     int jpp = jp + xrect / 2;
                     while (jpp > Xlast(model.Aref[best_class])) { jpp -= xrect; }
-                    A2D_ELEM(model.Asum [best_class], ipp, jpp) += smearw * A2D_ELEM(Xrects[ipart][best_k_rot], i, j);
-                    A2D_ELEM(model.Asumw[best_class], ipp, jpp) += smearw;
+                    model.Asum [best_class].elem(ipp, jpp) += smearw * Xrects[ipart][best_k_rot].elem(i, j);
+                    model.Asumw[best_class].elem(ipp, jpp) += smearw;
                 }
             }
         }

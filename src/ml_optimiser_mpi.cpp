@@ -2684,7 +2684,7 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
         REPORT_ERROR("Incompatible size of "+fn_root+"_data_real.mrc");
     }
     FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        A3D_ELEM(wsum_model.BPref[iclass].data, k, i, j).real = A3D_ELEM(Itmp(), k, i, j);
+        wsum_model.BPref[iclass].data.elem(k, i, j).real = Itmp().elem(k, i, j);
     }
 
     Itmp.read(fn_root + "_data_imag.mrc");
@@ -2696,7 +2696,7 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
         REPORT_ERROR("Incompatible size of "+fn_root+"_data_imag.mrc");
     }
     FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        A3D_ELEM(wsum_model.BPref[iclass].data, k, i, j).imag = A3D_ELEM(Itmp(), k, i, j);
+        wsum_model.BPref[iclass].data.elem(k, i, j).imag = Itmp().elem(k, i, j);
     }
 
     Itmp.read(fn_root + "_weight.mrc");
@@ -2708,7 +2708,7 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
         REPORT_ERROR("Incompatible size of "+fn_root+"_weight.mrc");
     }
     FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        A3D_ELEM(wsum_model.BPref[iclass].weight, k, i, j) = A3D_ELEM(Itmp(), k, i, j);
+        wsum_model.BPref[iclass].weight.elem(k, i, j) = Itmp().elem(k, i, j);
     }
 
     // Now perform the unregularized reconstruction

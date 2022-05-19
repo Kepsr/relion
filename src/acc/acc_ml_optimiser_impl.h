@@ -687,7 +687,7 @@ void getFourierTransformsAndCtfs(
                     Ictf().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                         // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                        direct::elem(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
+                        direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
                     }
                 } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution

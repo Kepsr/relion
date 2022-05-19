@@ -1266,7 +1266,7 @@ void getMinCropSize(
 
     dist2_max = -999.0;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
-        val = A3D_ELEM(vol, k, i, j);
+        val = vol.elem(k, i, j);
 
         if (val < -Xmipp::epsilon)
             REPORT_ERROR("ERROR: all voxels in the input map should have positive values!");
@@ -1877,7 +1877,7 @@ void separateMasksKMeans(
     {
         if (best_cen >= K)
             break;
-        if (A3D_ELEM(img(), k, i, j) > Xmipp::epsilon)
+        if (img().elem(k, i, j) > Xmipp::epsilon)
         {
             pos_val_ctr++;
             if (vec_rec[best_cen] == pos_val_ctr)
@@ -1920,7 +1920,7 @@ void separateMasksKMeans(
         FOR_ALL_ELEMENTS_IN_ARRAY3D(img())
         {
             // For voxels with positive values
-            val = A3D_ELEM(img(), k, i, j);
+            val = img().elem(k, i, j);
             if (val < Xmipp::epsilon)
                 continue;
 
@@ -1945,7 +1945,7 @@ void separateMasksKMeans(
             XX(ncen[best_cen]) += j * val;
             wcen[best_cen] += val;
 
-            A3D_ELEM(vol_rec, k, i, j) = best_cen + 1;
+            vol_rec.elem(k, i, j) = best_cen + 1;
         }
 
         // Update centroids
@@ -1972,8 +1972,8 @@ void separateMasksKMeans(
 
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_rec)
         {
-            if (A3D_ELEM(vol_rec, k, i, j) == (icen + 1) )
-                A3D_ELEM(img_out(), k, i, j) = A3D_ELEM(img(), k, i, j);
+            if (vol_rec.elem(k, i, j) == (icen + 1) )
+                img_out().elem(k, i, j) = img().elem(k, i, j);
         }
 
         img_out.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, x_angpix);

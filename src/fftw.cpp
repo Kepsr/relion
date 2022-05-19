@@ -1101,12 +1101,12 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             }
         } else {
@@ -1189,12 +1189,12 @@ void lowPassFilterMap(
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             }
         } else {
@@ -1310,12 +1310,12 @@ void directionalFilterMap(
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
-                        A2D_ELEM(img, i, j) = rnd_gaus(stats.avg, stats.stddev);
+                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             }
         } else {
@@ -1432,7 +1432,7 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {
-        A2D_ELEM(out, i + Xmipp::init(Ysize(v)), j + Xmipp::init(Xsize(v))) = direct::elem(v, i, j) - bg_val;
+        out.elem(i + Xmipp::init(Ysize(v)), j + Xmipp::init(Xsize(v))) = direct::elem(v, i, j) - bg_val;
     }
 }
 
@@ -1475,10 +1475,10 @@ void amplitudeOrPhaseMap(
                 REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR Unknown type of output map.");
             }
 
-            A2D_ELEM(out, -ip, -jp) = A2D_ELEM(out, ip, jp) = val;
+            out.elem(-ip, -jp) = out.elem(ip, jp) = val;
         }
     }
-    A2D_ELEM(out, 0, 0) = 0.0;
+    out.elem(0, 0) = 0.0;
     amp.clear();
     amp = out;
 }

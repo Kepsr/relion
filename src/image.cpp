@@ -193,13 +193,13 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
             RFLOAT d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
 
             if (d > helical_mask_tube_outer_radius_pix) {
-                RFLOAT x = A3D_ELEM(I(), k, i, j);
+                RFLOAT x = I().elem(k, i, j);
                 sum += x;
                 sum_of_squares += x * x;
                 n += 1;
 
                 #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
-                A3D_ELEM(img_test(), k, i, j) = 1.0; // Mark bg pixels as 1, others as 0
+                img_test().elem(k, i, j) = 1.0;  // Mark bg pixels as 1, others as 0
                 #endif
             }
         }
@@ -217,7 +217,7 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
         // Calculate avg in the background pixels
         FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
             if (k * k + i * i + j * j > bg_radius2) {
-                RFLOAT x = A3D_ELEM(I(), k, i, j);
+                RFLOAT x = I().elem(k, i, j);
                 sum += x;
                 sum_of_squares += x * x;
                 n += 1;
@@ -282,7 +282,7 @@ void subtractBackgroundRamp(
                 // Not implemented for 3D data
                 point.x = j;
                 point.y = i;
-                point.z = A2D_ELEM(I(), i, j);
+                point.z = I().elem(i, j);
                 point.w = 1.0;
                 allpoints.push_back(point);
             }
@@ -295,7 +295,7 @@ void subtractBackgroundRamp(
             if (i * i + j * j > bg_radius2) {
                 point.x = j;
                 point.y = i;
-                point.z = A2D_ELEM(I(), i, j);
+                point.z = I().elem(i, j);
                 point.w = 1.0;
                 allpoints.push_back(point);
             }
@@ -307,7 +307,7 @@ void subtractBackgroundRamp(
 
     // Substract the plane from the image
     FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
-        A2D_ELEM(I(), i, j) -= pA * j + pB * i + pC;
+        I().elem(i, j) -= pA * j + pB * i + pC;
     }
 
 }
@@ -316,12 +316,12 @@ void removeDust(
     Image<RFLOAT> &I, bool is_white, RFLOAT thresh, RFLOAT avg, RFLOAT stddev
 ) {
     FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
-        RFLOAT aux =  A3D_ELEM(I(), k, i, j);
+        RFLOAT aux = I().elem(k, i, j);
         if (
              is_white && aux - avg >  thresh * stddev ||
             !is_white && aux - avg < -thresh * stddev
         ) {
-            A3D_ELEM(I(), k, i, j) = rnd_gaus(avg, stddev);
+            I().elem(k, i, j) = rnd_gaus(avg, stddev);
         }
     }
 }
