@@ -791,9 +791,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         if (x0 < 0 || xF >= Xsize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 if (j + xpos < 0) {
-                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, i, -xpos);
+                    Ipart().elem(k, i, j) = Ipart().elem(k, i, -xpos);
                 } else if (j + xpos >= Xsize(Imic())) {
-                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, i, Xsize(Imic()) - xpos - 1);
+                    Ipart().elem(k, i, j) = Ipart().elem(k, i, Xsize(Imic()) - xpos - 1);
                 }
             }
         }
@@ -802,9 +802,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         if (y0 < 0 || yF >= Ysize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 if (i + ypos < 0) {
-                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, -ypos, j);
+                    Ipart().elem(k, i, j) = Ipart().elem(k, -ypos, j);
                 } else if (i + ypos >= Ysize(Imic())) {
-                    A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), k, Ysize(Imic()) - ypos - 1, j);
+                    Ipart().elem(k, i, j) = Ipart().elem(k, Ysize(Imic()) - ypos - 1, j);
                 }
             }
         }
@@ -814,9 +814,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             if (z0 < 0 || zF >= Zsize(Imic())) {
                 FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                     if (k + zpos < 0) {
-                        A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), -zpos, i, j);
+                        Ipart().elem(k, i, j) = Ipart().elem(-zpos, i, j);
                     } else if (k + zpos >= Zsize(Imic())) {
-                        A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Ipart(), Zsize(Imic()) - zpos - 1, i, j);
+                        Ipart().elem(k, i, j) = Ipart().elem(Zsize(Imic()) - zpos - 1, i, j);
                     }
                 }
             }

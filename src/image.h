@@ -847,7 +847,7 @@ class Image {
     * @endcode
     */
     T& operator () (int i, int j) const {
-        // return A2D_ELEM(data, i, j);
+        // return data.elem(i, j);
         return data.data[(j - data.xinit) + data.xdim * (i - data.yinit)];
     }
 
@@ -880,8 +880,8 @@ class Image {
      * I(-3, -3, 1) = I(-3, -2, 0);
      * @endcode
      */
-    T& operator () (int k, int i, int j) const {
-        return A3D_ELEM(data, k, i, j);
+    inline T& operator () (int k, int i, int j) const {
+        return data.elem(k, i, j);
     }
 
     /** const reference to filename

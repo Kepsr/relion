@@ -792,7 +792,7 @@ void resizeFourierTransform(MultidimArray<T > &in, MultidimArray<T > &out, long 
     if (newdim > olddim) {
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Min) {
             if (k * k + i * i + j * j > olddim * olddim / 4) {
-                A3D_ELEM(Min, k, i, j) = 0.0;
+                Min.elem(k, i, j) = 0.0;
             }
         }
     }

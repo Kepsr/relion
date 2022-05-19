@@ -202,7 +202,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  *
  * @code
  * FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v) {
- *     std::cout << NZYX_ELEM(v, l, k, i, j) << " ";
+ *     std::cout << v.elem(l, k, i, j) << " ";
  * }
  * @endcode
  */
@@ -331,49 +331,6 @@ namespace direct {
 
 };
 
-/** Vector element: Logical access
- *
- * @code
- * A1D_ELEM(v, -2) = 1;
- * val = A1D_ELEM(v, -2);
- * @endcode
- */
-template <typename T>
-inline T& A1D_ELEM(const MultidimArray<T> &v, long int i) {
-    return direct::elem(v, i - v.xinit);
-}
-
-/** Matrix element: Logical access
- *
- * @code
- * A2D_ELEM(m, -2, 1) = 1;
- * val = A2D_ELEM(m, -2, 1);
- * @endcode
- */
-template <typename T>
-inline T& A2D_ELEM(const MultidimArray<T> &v, long int i, long int j) {
-    return direct::elem(v, i - Yinit(v), j - Xinit(v));
-}
-
-/** Volume element: Logical access.
- *
- * @code
- * A3D_ELEM(V, -1, -2, 1) = 1;
- * val = A3D_ELEM(V, -1, -2, 1);
- * @endcode
- */
-template <typename T>
-inline T& A3D_ELEM(const MultidimArray<T> &v, long int k, long int i, long int j) {
-    return direct::elem(v, k - Zinit(v), i - Yinit(v), j - Xinit(v));
-}
-
-/** Multidim element: Logical access.
- */
-template <typename T>
-inline T& NZYX_ELEM(const MultidimArray<T> &v, long int l, long int k, long int i, long int j) {
-    return direct::elem(v, l, k - Zinit(v), i - Yinit(v), j - Xinit(v));
-}
-
 /** For all elements in the array, accessed physically
  *
  * This macro is used to generate loops for the vector in an easy way using
@@ -470,6 +427,28 @@ class MultidimArray {
     T* begin() { return data; }
     T* end() { return &data[size()]; }
 
+    // Logical array access
+
+    // Vector element
+    inline T& elem(long int i) const {
+        return direct::elem(*this, i - xinit);
+    }
+
+    // Matrix element
+    inline T& elem(long int i, long int j) const {
+        return direct::elem(*this, i - yinit, j - xinit);
+    }
+
+    // Volume element
+    inline T& elem(long int k, long int i, long int j) const {
+        return direct::elem(*this, k - zinit, i - yinit, j - xinit);
+    }
+
+    // Multidim element
+    inline T& elem(long int l, long int k, long int i, long int j) const {
+        return direct::elem(*this, l, k - zinit, i - yinit, j - xinit);
+    }
+
     private:
 
     // Allocation-related member variables
@@ -477,7 +456,7 @@ class MultidimArray {
     bool mmapOn;  // Whether to allocate memory or map to a file
     FileName mapFile;  // Mapped file name
     int mFd;  // Mapped file handler
-    long int allocated_size;  // Number of elements in NZYX in allocated memory
+    long int allocated_size;  // Number of elements in allocated memory
 
     T* attempt_mmap(FileName &mapFile, int &mFd, off_t offset) {
         mapFile.initRandom(8);
@@ -1164,8 +1143,8 @@ class MultidimArray {
         for (long int k = z0; k <= zF; k++)
         for (long int i = y0; i <= yF; i++)
         for (long int j = x0; j <= xF; j++) {
-            A3D_ELEM(result, k, i, j) = inside(k, i, j) ?
-                NZYX_ELEM(*this, n, k, i, j) : init_value;
+            result.elem(k, i, j) = inside(k, i, j) ?
+                this->elem(n, k, i, j) : init_value;
         }
     }
 
@@ -1210,8 +1189,8 @@ class MultidimArray {
         result.xinit = x0;
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
-            A2D_ELEM(result, i, j) = inside(i, j) ?
-                NZYX_ELEM(*this, n, 0, i, j) : init_value;
+            result.elem(i, j) = inside(i, j) ?
+                this->elem(n, 0, i, j) : init_value;
         }
     }
 
@@ -1251,8 +1230,8 @@ class MultidimArray {
         result.xinit = x0;
 
         for (long int j = x0; j <= xF; j++) {
-            A1D_ELEM(result, j) = inside(j) ?
-                NZYX_ELEM(*this, n, 0, 0, j) : init_value;
+            result.elem(j) = inside(j) ?
+                this->elem(n, 0, 0, j) : init_value;
             }
     }
 
@@ -1506,11 +1485,11 @@ class MultidimArray {
     T& operator()(const Matrix1D<RFLOAT> &v) const {
         switch (v.size()) {
             case 1:
-            return A1D_ELEM((*this), round(XX(v)));
+            return this->elem(round(XX(v)));
             case 2:
-            return A2D_ELEM((*this), round(YY(v)), round(XX(v)));
+            return this->elem(round(YY(v)), round(XX(v)));
             case 3:
-            return A3D_ELEM((*this), round(ZZ(v)), round(YY(v)), round(XX(v)));
+            return this->elem(round(ZZ(v)), round(YY(v)), round(XX(v)));
             default:
             REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
         }
@@ -1520,11 +1499,11 @@ class MultidimArray {
     T& operator()(const Matrix1D<long int> &v) const {
         switch (v.size()) {
             case 1:
-            return A1D_ELEM((*this), XX(v));
+            return this->elem(XX(v));
             case 2:
-            return A2D_ELEM((*this), YY(v), XX(v));
+            return this->elem(YY(v), XX(v));
             case 3:
-            return A3D_ELEM((*this), ZZ(v), YY(v), XX(v));
+            return this->elem(ZZ(v), YY(v), XX(v));
             default:
             REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
         }
@@ -1543,7 +1522,7 @@ class MultidimArray {
     * @endcode
     */
     inline T& operator()(long n, long int k, long int i, long int j) const {
-        return NZYX_ELEM(*this, n, k, i, j);
+        return this->elem(n, k, i, j);
     }
 
     /** 3D element access by index.
@@ -1559,7 +1538,7 @@ class MultidimArray {
     * @endcode
     */
     inline T& operator()(long int k, long int i, long int j) const {
-        return A3D_ELEM(*this, k, i, j);
+        return this->elem(k, i, j);
     }
 
     /** 3D element access by index (getVoxel).
@@ -1568,7 +1547,7 @@ class MultidimArray {
     *
     */
     inline T getVoxel(long int k, long int i, long int j) const {
-        return A3D_ELEM(*this, k, i, j);
+        return this->elem(k, i, j);
     }
 
     /** 3D element access by index (setVoxel).
@@ -1577,7 +1556,7 @@ class MultidimArray {
     *
     */
     inline void setVoxel(long int k, long int i, long int j, T newval) {
-        A3D_ELEM(*this, k, i, j)=newval;
+        this->elem(k, i, j) = newval;
     }
 
     /** Matrix element access by index
@@ -1594,7 +1573,7 @@ class MultidimArray {
      * @endcode
      */
     inline T& operator()(long int i, long int j) const {
-        return A2D_ELEM(*this, i, j);
+        return this->elem(i, j);
     }
 
     /** Vector element access
@@ -1610,7 +1589,7 @@ class MultidimArray {
      * @endcode
      */
     inline T& operator()(long int i) const {
-        return A1D_ELEM(*this, i);
+        return this->elem(i);
     }
 
     /** Get a single 1,2 or 3D image from a multi-image array
@@ -1951,14 +1930,14 @@ class MultidimArray {
         RFLOAT fz = z - z0;
         long int z1 = z0 + 1;
 
-        T d000 = (outside(z0, y0, x0)) ? outside_value : NZYX_ELEM(*this, n, z0, y0, x0);
-        T d001 = (outside(z0, y0, x1)) ? outside_value : NZYX_ELEM(*this, n, z0, y0, x1);
-        T d010 = (outside(z0, y1, x0)) ? outside_value : NZYX_ELEM(*this, n, z0, y1, x0);
-        T d011 = (outside(z0, y1, x1)) ? outside_value : NZYX_ELEM(*this, n, z0, y1, x1);
-        T d100 = (outside(z1, y0, x0)) ? outside_value : NZYX_ELEM(*this, n, z1, y0, x0);
-        T d101 = (outside(z1, y0, x1)) ? outside_value : NZYX_ELEM(*this, n, z1, y0, x1);
-        T d110 = (outside(z1, y1, x0)) ? outside_value : NZYX_ELEM(*this, n, z1, y1, x0);
-        T d111 = (outside(z1, y1, x1)) ? outside_value : NZYX_ELEM(*this, n, z1, y1, x1);
+        T d000 = outside(z0, y0, x0) ? outside_value : this->elem(n, z0, y0, x0);
+        T d001 = outside(z0, y0, x1) ? outside_value : this->elem(n, z0, y0, x1);
+        T d010 = outside(z0, y1, x0) ? outside_value : this->elem(n, z0, y1, x0);
+        T d011 = outside(z0, y1, x1) ? outside_value : this->elem(n, z0, y1, x1);
+        T d100 = outside(z1, y0, x0) ? outside_value : this->elem(n, z1, y0, x0);
+        T d101 = outside(z1, y0, x1) ? outside_value : this->elem(n, z1, y0, x1);
+        T d110 = outside(z1, y1, x0) ? outside_value : this->elem(n, z1, y1, x0);
+        T d111 = outside(z1, y1, x1) ? outside_value : this->elem(n, z1, y1, x1);
 
         RFLOAT dx00 = LIN_INTERP(fx, (RFLOAT) d000, (RFLOAT) d001);
         RFLOAT dx01 = LIN_INTERP(fx, (RFLOAT) d100, (RFLOAT) d101);
@@ -1982,10 +1961,10 @@ class MultidimArray {
         RFLOAT fy = y - y0;
         long int y1 = y0 + 1;
 
-        T d00 = outside(y0, x0) ? outside_value : NZYX_ELEM(*this, n, 0, y0, x0);
-        T d10 = outside(y1, x0) ? outside_value : NZYX_ELEM(*this, n, 0, y1, x0);
-        T d11 = outside(y1, x1) ? outside_value : NZYX_ELEM(*this, n, 0, y1, x1);
-        T d01 = outside(y0, x1) ? outside_value : NZYX_ELEM(*this, n, 0, y0, x1);
+        T d00 = outside(y0, x0) ? outside_value : this->elem(n, 0, y0, x0);
+        T d10 = outside(y1, x0) ? outside_value : this->elem(n, 0, y1, x0);
+        T d11 = outside(y1, x1) ? outside_value : this->elem(n, 0, y1, x1);
+        T d01 = outside(y0, x1) ? outside_value : this->elem(n, 0, y0, x1);
 
         RFLOAT d0 = (T) LIN_INTERP(fx, (RFLOAT) d00, (RFLOAT) d01);
         RFLOAT d1 = (T) LIN_INTERP(fx, (RFLOAT) d10, (RFLOAT) d11);
@@ -2041,12 +2020,12 @@ class MultidimArray {
         imin = firstY();
         jmin = firstX();
         lmin = 0;
-        T minval = NZYX_ELEM(*this, lmin, kmin, imin, jmin);
+        T minval = this->elem(lmin, kmin, imin, jmin);
 
 
         FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-            if (NZYX_ELEM(*this, l, k, i, j) > minval) {
-                minval = NZYX_ELEM(*this, l, k, i, j);
+            if (this->elem(l, k, i, j) > minval) {
+                minval = this->elem(l, k, i, j);
                 lmin = l;
                 kmin = k;
                 imin = i;
@@ -2099,11 +2078,11 @@ class MultidimArray {
         imax = firstY();
         jmax = firstX();
         lmax = 0;
-        T maxval = NZYX_ELEM(*this, lmax, kmax, imax, jmax);
+        T maxval = this->elem(lmax, kmax, imax, jmax);
 
         FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-            if (NZYX_ELEM(*this, l, k, i, j) > maxval) {
-                maxval = NZYX_ELEM(*this, l, k, i, j);
+            if (this->elem(l, k, i, j) > maxval) {
+                maxval = this->elem(l, k, i, j);
                 lmax = l;
                 kmax = k;
                 imax = i;
@@ -2728,7 +2707,7 @@ class MultidimArray {
         } else {
             reshape(steps);
             for (int i = 0; i < steps; i++) {
-                A1D_ELEM(*this, i) = (T) ((RFLOAT) minF + slope * i);
+                this->elem(i) = (T) ((RFLOAT) minF + slope * i);
             }
         }
     }
@@ -2920,12 +2899,12 @@ class MultidimArray {
 
             RFLOAT mass = 0;
             FOR_ALL_ELEMENTS_IN_ARRAY3D(*this) {
-                if ((!imask || NZYX_ELEM(*imask, n, k, i, j)) && A3D_ELEM(*this, k, i, j) > 0) {
-                XX(center) += j * NZYX_ELEM(*this, n, k, i, j);
-                YY(center) += i * NZYX_ELEM(*this, n, k, i, j);
-                ZZ(center) += k * NZYX_ELEM(*this, n, k, i, j);
+                if ((!imask || imask->elem(n, k, i, j)) && this->elem(k, i, j) > 0) {
+                XX(center) += j * this->elem(n, k, i, j);
+                YY(center) += i * this->elem(n, k, i, j);
+                ZZ(center) += k * this->elem(n, k, i, j);
 
-                mass += NZYX_ELEM(*this, n, k, i, j);
+                mass += this->elem(n, k, i, j);
             }
         }
 
@@ -3679,7 +3658,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
 
     if (v.ydim == 1 && v.zdim == 1) {
         for (long int j = v.firstX(); j <= v.lastX(); j++) {
-            ostrm << floatToString((RFLOAT) A3D_ELEM(v, 0, 0, j), 10, prec)
+            ostrm << floatToString((RFLOAT) v.elem(0, 0, j), 10, prec)
             << std::endl;
         }
     } else {
@@ -3691,7 +3670,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
                     ostrm << "Slice No. " << k << std::endl;
                 for (long int i = v.firstY(); i <= v.lastY(); i++) {
                     for (long int j = v.firstX(); j <= v.lastX(); j++) {
-                        ostrm << floatToString((RFLOAT) A3D_ELEM(v, k, i, j), 10, prec) << ' ';
+                        ostrm << floatToString((RFLOAT) v.elem(k, i, j), 10, prec) << ' ';
                     }
                     ostrm << std::endl;
                 }

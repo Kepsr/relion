@@ -60,7 +60,7 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
             if (Zsize(v) > 1) { ostrm << "Slice No. " << k << std::endl; }
             for (int i = Yinit(v); i <= Ylast(v); i++) {
                 for (int j = Xinit(v); j <= Xlast(v); j++)
-                    ostrm << "(" << A3D_ELEM(v, k, i, j).real << "," << A3D_ELEM(v, k, i, j).imag <<")" << ' ';
+                    ostrm << "(" << v.elem(k, i, j).real << "," << v.elem(k, i, j).imag << ")" << ' ';
                 ostrm << std::endl;
             }
         }

@@ -235,7 +235,7 @@ class particle_reposition_parameters {
                                 Ictf().setXmippOrigin();
                                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                                    direct::elem(Fctf, k, i, j) = A3D_ELEM(Ictf(), -kp, -ip, -jp);
+                                    direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
                                 }
                             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                                 // otherwise, just window the CTF to the current resolution
@@ -308,7 +308,7 @@ class particle_reposition_parameters {
                                 ip >= 0 && ip < Ysize(Imic_in()) && 
                                 jp >= 0 && jp < Xsize(Imic_in())
                             ) {
-                                A3D_ELEM(Ipart(), k, i, j) = A3D_ELEM(Imic_in(), k, i, j);
+                                Ipart().elem(k, i, j) = Imic_in().elem(k, i, j);
                             }
                         }
 
@@ -351,8 +351,8 @@ class particle_reposition_parameters {
                                 ip >= 0 && ip < Ysize(Imic_sum) && 
                                 jp >= 0 && jp < Xsize(Imic_sum)
                             ) {
-                                A3D_ELEM(Imic_out(), k, i, j) += norm_factor * A3D_ELEM(Mpart_mic, k, i, j);
-                                A3D_ELEM(Imic_sum, k, i, j) += 1.;
+                                Imic_out().elem(k, i, j) += norm_factor * Mpart_mic.elem(k, i, j);
+                                Imic_sum.elem(k, i, j) += 1.0;
                             }
                         }
                     }

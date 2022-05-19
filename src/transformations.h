@@ -903,7 +903,7 @@ void radialAverage(
         int distance = rounding ? round(idx.modulus()) : floor(idx.modulus());
 
         // Sum te value to the pixels with the same distance
-        radial_mean(distance) += A3D_ELEM(m, k, i, j);
+        radial_mean(distance) += m.elem(k, i, j);
 
         // Count the pixel
         radial_count(distance)++;
