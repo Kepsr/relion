@@ -1143,7 +1143,7 @@ class MultidimArray {
         for (long int k = z0; k <= zF; k++)
         for (long int i = y0; i <= yF; i++)
         for (long int j = x0; j <= xF; j++) {
-            result.elem(i, j, k) = inside(k, i, j) ?
+            result.elem(i, j, k) = inside(i, j, k) ?
                 elem(i, j, k, n) : init_value;
         }
     }
@@ -1298,14 +1298,14 @@ class MultidimArray {
     }
 
     /** inside for 3D matrices */
-    bool inside(long int k, long int i, long int j) const {
-        // Why j, i, k and not i, j, k?
+    bool inside(long int i, long int j, long int k) const {
+        // Why j <-> X and i <-> Y?
         return inXbounds(j, *this) && inYbounds(i, *this) && inZbounds(k, *this);
     }
 
     /** inside for 2D matrices */
     bool inside(long int i, long int j) const {
-        // Why j, i and not i, j?
+        // Why j <-> X and i <-> Y?
         return inXbounds(j, *this) && inYbounds(i, *this);
     }
 
@@ -1315,8 +1315,8 @@ class MultidimArray {
     }
 
     /** outside for 3D matrices */
-    bool outside(long int k, long int i, long int j) const {
-        return !inside(k, i, j);
+    bool outside(long int i, long int j, long int k) const {
+        return !inside(i, j, k);
     }
 
     /** outside for 2D matrices */
@@ -1340,7 +1340,7 @@ class MultidimArray {
             case 2:
             return outside(YY(r), XX(r));
             case 3:
-            return outside(ZZ(r), YY(r), XX(r));
+            return outside(YY(r), XX(r), ZZ(r));
             default:
             REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
         }
@@ -1930,14 +1930,14 @@ class MultidimArray {
         RFLOAT fz = z - z0;
         long int z1 = z0 + 1;
 
-        T d000 = outside(z0, y0, x0) ? outside_value : elem(x0, y0, z0, n);
-        T d001 = outside(z0, y0, x1) ? outside_value : elem(x1, y0, z0, n);
-        T d010 = outside(z0, y1, x0) ? outside_value : elem(x0, y1, z0, n);
-        T d011 = outside(z0, y1, x1) ? outside_value : elem(x1, y1, z0, n);
-        T d100 = outside(z1, y0, x0) ? outside_value : elem(x0, y0, z1, n);
-        T d101 = outside(z1, y0, x1) ? outside_value : elem(x1, y0, z1, n);
-        T d110 = outside(z1, y1, x0) ? outside_value : elem(x0, y1, z1, n);
-        T d111 = outside(z1, y1, x1) ? outside_value : elem(x1, y1, z1, n);
+        T d000 = outside(y0, x0, z0) ? outside_value : elem(x0, y0, z0, n);
+        T d001 = outside(y0, x1, z0) ? outside_value : elem(x1, y0, z0, n);
+        T d010 = outside(y1, x0, z0) ? outside_value : elem(x0, y1, z0, n);
+        T d011 = outside(y1, x1, z0) ? outside_value : elem(x1, y1, z0, n);
+        T d100 = outside(y0, x0, z1) ? outside_value : elem(x0, y0, z1, n);
+        T d101 = outside(y0, x1, z1) ? outside_value : elem(x1, y0, z1, n);
+        T d110 = outside(y1, x0, z1) ? outside_value : elem(x0, y1, z1, n);
+        T d111 = outside(y1, x1, z1) ? outside_value : elem(x1, y1, z1, n);
 
         RFLOAT dx00 = LIN_INTERP(fx, (RFLOAT) d000, (RFLOAT) d001);
         RFLOAT dx01 = LIN_INTERP(fx, (RFLOAT) d100, (RFLOAT) d101);
