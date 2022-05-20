@@ -4090,7 +4090,7 @@ void MlOptimiser::solventFlatten() {
                 );
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent()) {
-                    Isolvent().elem(k, i, j) = 1.0;
+                    Isolvent().elem(i, j, k) = 1.0;
                 }
             }
         } else {
@@ -4098,7 +4098,7 @@ void MlOptimiser::solventFlatten() {
             RFLOAT radius_p = radius + width_mask_edge;
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent()) {
                 RFLOAT r = sqrt((RFLOAT)(k * k + i * i + j * j));
-                Isolvent().elem(k, i, j) =
+                Isolvent().elem(i, j, k) =
                 r < radius   ? 1.0 :
                 r > radius_p ? 0.0 :
                 0.5 * (1 - cos(PI * (radius_p - r) / width_mask_edge));
@@ -4981,7 +4981,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     Ictf().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                         // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                        direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
+                        direct::elem(Fctf, k, i, j) = Ictf().elem(-ip, -jp, -kp);
                     }
                 } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution
@@ -7535,7 +7535,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             Ictf().setXmippOrigin();
                             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                 // Use negative kp, ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                                direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
+                                direct::elem(Fctf, k, i, j) = Ictf().elem(-ip, -jp, -kp);
                             }
                         } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                             // otherwise, just window the CTF to the current resolution

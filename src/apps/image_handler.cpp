@@ -411,7 +411,7 @@ class image_handler_parameters {
                 RFLOAT fil = (
                     jpp >= Xinit(Iop()) && jpp <= Xlast(Iop()) &&
                     ipp >= Yinit(Iop()) && ipp <= Ylast(Iop())
-                ) ? Iop().elem(kpp, ipp, jpp) : 0.0;
+                ) ? Iop().elem(ipp, jpp, kpp) : 0.0;
                 direct::elem(FT, k, i, j) *=  fil;
             }
             transformer.inverseFourierTransform();
@@ -445,25 +445,25 @@ class image_handler_parameters {
             // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 5, 4, 3, 2, 1, 0
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) = Iin().elem(k, i, Xsize(Iin()) - 1 - j);
+                direct::elem(Iout(), k, i, j) = Iin().elem(i, Xsize(Iin()) - 1 - j, k);
             }
         } else if (do_flipY) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) = Iin().elem(k, Ysize(Iin()) - 1 - i, j);
+                direct::elem(Iout(), k, i, j) = Iin().elem(Ysize(Iin()) - 1 - i, j, k);
             }
         } else if (do_flipZ) {
             if (Zsize(Iout()) < 2)
                 REPORT_ERROR("ERROR: this is not a 3D map, so cannot be flipped in Z");
 
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) = Iin().elem(Zsize(Iin()) - 1 - k, i, j);
+                direct::elem(Iout(), k, i, j) = Iin().elem(i, j, Zsize(Iin()) - 1 - k);
             }
         } else if (do_invert_hand) {
             // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 0, 5, 4, 3, 2, 1
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 long int dest_x = j == 0 ? 0 : Xsize(Iin()) - j;
-                direct::elem(Iout(), k, i, j) = Iin().elem(k, i, dest_x);
+                direct::elem(Iout(), k, i, j) = Iin().elem(i, dest_x, k);
             }
         }
 

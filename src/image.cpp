@@ -193,13 +193,13 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
             RFLOAT d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
 
             if (d > helical_mask_tube_outer_radius_pix) {
-                RFLOAT x = I().elem(k, i, j);
+                RFLOAT x = I().elem(i, j, k);
                 sum += x;
                 sum_of_squares += x * x;
                 n += 1;
 
                 #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
-                img_test().elem(k, i, j) = 1.0;  // Mark bg pixels as 1, others as 0
+                img_test().elem(i, j, k) = 1.0;  // Mark bg pixels as 1, others as 0
                 #endif
             }
         }
@@ -217,7 +217,7 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
         // Calculate avg in the background pixels
         FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
             if (k * k + i * i + j * j > bg_radius2) {
-                RFLOAT x = I().elem(k, i, j);
+                RFLOAT x = I().elem(i, j, k);
                 sum += x;
                 sum_of_squares += x * x;
                 n += 1;
@@ -316,12 +316,12 @@ void removeDust(
     Image<RFLOAT> &I, bool is_white, RFLOAT thresh, RFLOAT avg, RFLOAT stddev
 ) {
     FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
-        RFLOAT aux = I().elem(k, i, j);
+        RFLOAT aux = I().elem(i, j, k);
         if (
              is_white && aux - avg >  thresh * stddev ||
             !is_white && aux - avg < -thresh * stddev
         ) {
-            I().elem(k, i, j) = rnd_gaus(avg, stddev);
+            I().elem(i, j, k) = rnd_gaus(avg, stddev);
         }
     }
 }

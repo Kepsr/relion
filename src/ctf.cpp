@@ -572,7 +572,7 @@ void CTF::getCenteredImage(
             x, y, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
-        result.elem( i, j) = do_abs ? abs(t) : t;
+        result.elem(i, j) = do_abs ? abs(t) : t;
     }
 }
 

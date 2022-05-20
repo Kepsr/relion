@@ -48,7 +48,7 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
     vol_in.setXmippOrigin();
     Mpad.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) // This will also work for 2D
-        Mpad.elem(k, i, j) = vol_in.elem(k, i, j);
+        Mpad.elem(i, j, k) = vol_in.elem(i, j, k);
 
     // Translate padded map to put origin of FT in the center
     CenterFFT(Mpad, true);
@@ -75,12 +75,12 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
         // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
         if (r2 <= max_r2) {
             // Set data array
-            P->data.elem(kp, ip, jp) = direct::elem(Faux, k, i, j) * normfft;
+            P->data.elem(ip, jp, kp) = direct::elem(Faux, k, i, j) * normfft;
 
             // Calculate power spectrum
             int ires = round(sqrt((RFLOAT) r2) / P->padding_factor);
             // Factor two because of two-dimensionality of the complex plane
-            direct::elem(power_spectrum, ires) += norm(P->data.elem(kp, ip, jp)) / 2.0;
+            direct::elem(power_spectrum, ires) += norm(P->data.elem(ip, jp, kp)) / 2.0;
             direct::elem(counter, ires) += 1.0;
         }
     }

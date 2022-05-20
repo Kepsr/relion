@@ -389,11 +389,11 @@ void BackProjector::backproject1Dto2D(
             const int y0 = round(yp);
 
             if (x0 < 0) {
-                data.elem(   -y0, -x0) += conj(my_val);
-                weight.elem( -y0, -x0) += my_weight;
+                data.elem(-y0, -x0) += conj(my_val);
+                weight.elem(-y0, -x0) += my_weight;
             } else {
-                data.elem(   y0, x0) += my_val;
-                weight.elem( y0, x0) += my_weight;
+                data.elem(y0, x0) += my_val;
+                weight.elem(y0, x0) += my_weight;
             }
         } else {
             REPORT_ERROR("FourierInterpolator::backproject1Dto2D%%ERROR: unrecognized interpolator ");
@@ -708,11 +708,11 @@ void BackProjector::backrotate3D(
                     const int z0 = round(zp);
 
                     if (x0 < 0) {
-                        data.elem(  -z0, -y0, -x0) += conj(my_val);
-                        weight.elem(-z0, -y0, -x0) += my_weight;
+                        data.elem(-y0, -x0, -z0) += conj(my_val);
+                        weight.elem(-y0, -x0, -z0) += my_weight;
                     } else {
-                        data.elem(  z0, y0, x0) += my_val;
-                        weight.elem(z0, y0, x0) += my_weight;
+                        data.elem(y0, x0, z0) += my_val;
+                        weight.elem(y0, x0, z0) += my_weight;
                     }
                 } else {
                     REPORT_ERROR("BackProjector::backrotate3D%%ERROR: unrecognized interpolator ");
@@ -753,8 +753,8 @@ void BackProjector::getLowResDataAndWeight(
     // fill lowres arrays with relevant values
     FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
         if (k * k + i * i + j * j <= lowres_r2_max) {
-            lowres_data.elem(  k, i, j) = data.elem(  k , i, j);
-            lowres_weight.elem(k, i, j) = weight.elem(k , i, j);
+            lowres_data.elem(i, j, k) = data.elem(i, j, k);
+            lowres_weight.elem(i, j, k) = weight.elem(i, j, k);
         }
     }
 }
@@ -794,8 +794,8 @@ void BackProjector::setLowResDataAndWeight(
     // Overwrite data and weight with the lowres arrays
     FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
         if (k * k + i * i + j * j <= lowres_r2_max) {
-            data.elem(  k, i, j) = lowres_data.elem(  k , i, j);
-            weight.elem(k, i, j) = lowres_weight.elem(k , i, j);
+            data.elem(i, j, k) = lowres_data.elem(i, j, k);
+            weight.elem(i, j, k) = lowres_weight.elem(i, j, k);
         }
     }
 }
@@ -846,8 +846,8 @@ void BackProjector::getDownsampledAverage(
             REPORT_ERROR("BackProjector::getDownsampledAverage: indices out of range");
         }
         #endif
-        avg.elem(kp, ip, jp) += data.elem(k , i, j);
-        down_weight.elem(kp, ip, jp) += divide ? weight.elem(k, i, j) : 1.0;
+        avg.elem(ip, jp, kp) += data.elem(i, j, k);
+        down_weight.elem(ip, jp, kp) += divide ? weight.elem(i, j, k) : 1.0;
     }
 
     // Calculate the straightforward average in the downsampled arrays
@@ -880,8 +880,8 @@ void BackProjector::calculateDownSampledFourierShellCorrelation(
 
         int idx = round(R);
 
-        Complex z1 = avg1.elem(k, i, j);
-        Complex z2 = avg2.elem(k, i, j);
+        Complex z1 = avg1.elem(i, j, k);
+        Complex z2 = avg2.elem(i, j, k);
 
         num(idx) += z1.real * z2.real + z1.imag * z2.imag;
         den1(idx) += z1.norm();
@@ -926,7 +926,7 @@ void BackProjector::updateSSNRarrays(
         const int r2 = k * k + i * i + j * j;
         if (r2 < max_r2) {
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
-            RFLOAT invw = oversampling_correction * weight.elem(k, i, j);
+            RFLOAT invw = oversampling_correction * weight.elem(i, j, k);
             direct::elem(sigma2, ires) += invw;
             direct::elem(counter, ires) += 1.0;
         }
@@ -982,7 +982,7 @@ void BackProjector::updateSSNRarrays(
         int r2 = k * k + i * i + j * j;
         if (r2 < max_r2) {
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
-            RFLOAT invw = weight.elem(k, i, j);
+            RFLOAT invw = weight.elem(i, j, k);
 
             RFLOAT invtau2;
             if (direct::elem(tau2, ires) > 0.0) {
@@ -1376,7 +1376,7 @@ void BackProjector::reconstruct(
         RCTICTOC(ReconTimer, ReconS[5], ({
         // Initialise Fnewweight with 1's and 0's. (also see comments below)
         FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
-            weight.elem(k, i, j) = k * k + i * i + j * j < max_r2;
+            weight.elem(i, j, k) = k * k + i * i + j * j < max_r2;
         }
         // Fnewweight can become too large for a float: always keep this one in double-precision
         Fnewweight.reshape(Fconv);
@@ -1538,7 +1538,7 @@ void BackProjector::reconstruct(
 
         RFLOAT r = sqrt((RFLOAT) (k * k + i * i + j * j));
         RFLOAT rval = r / (ori_size * padding_factor);
-        vol_out.elem(k, i, j) /= tab_ftblob(rval) / normftblob;
+        vol_out.elem(i, j, k) /= tab_ftblob(rval) / normftblob;
         // if (k == 0 && i == 0)
         // 	std::cerr << " j= " << j << " rval= " << rval << " tab_ftblob(rval) / normftblob= " << tab_ftblob(rval) / normftblob << std::endl;
     }
@@ -1657,12 +1657,12 @@ void BackProjector::enforceHermitianSymmetry() {
     for (int iz = Zinit(data); iz <= Zlast(data); iz++)
     for (int iy = iz >= 0;     iy <= Ylast(data); iy++) {
         // I just need to sum the two points, not divide by 2!
-        Complex fsum = data.elem(iz, iy, 0) + conj(data.elem(-iz, -iy, 0));
-        data.elem( iz,  iy, 0) = fsum;
-        data.elem(-iz, -iy, 0) = conj(fsum);
-        RFLOAT sum = weight.elem(iz, iy, 0) + weight.elem(-iz, -iy, 0);
-        weight.elem( iz,  iy, 0) = sum;
-        weight.elem(-iz, -iy, 0) = sum;
+        Complex fsum = data.elem(iy, 0, iz) + conj(data.elem(-iy, 0, -iz));
+        data.elem( iy, 0,  iz) = fsum;
+        data.elem(-iy, 0, -iz) = conj(fsum);
+        RFLOAT sum = weight.elem(iy, 0, iz) + weight.elem(-iy, 0, -iz);
+        weight.elem(iy, 0, iz) = sum;
+        weight.elem(-iy, 0, -iz) = sum;
     }
 }
 
@@ -1776,7 +1776,7 @@ void BackProjector::applyHelicalSymmetry(
                         );
                     }
                     // Accumulated sum of the data term
-                    sum_data.elem(k, i, j) += ddd;
+                    sum_data.elem(i, j, k) += ddd;
 
                     // Then interpolate (real) weight
                     RFLOAT dd000 = direct::elem(weight, z0, y0, x0);
@@ -1795,7 +1795,7 @@ void BackProjector::applyHelicalSymmetry(
                     RFLOAT ddxy0 = LIN_INTERP(fy, ddx00, ddx10);
                     RFLOAT ddxy1 = LIN_INTERP(fy, ddx01, ddx11);
 
-                    sum_weight.elem(k, i, j) +=  LIN_INTERP(fz, ddxy0, ddxy1);
+                    sum_weight.elem(i, j, k) +=  LIN_INTERP(fz, ddxy0, ddxy1);
 
                 }
             }
@@ -1905,7 +1905,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
 
                     // Take complex conjugated for half with negative x
-                    sum_data.elem(k, i, j) += is_neg_x ?
+                    sum_data.elem(i, j, k) += is_neg_x ?
                         conj(LIN_INTERP(fz, dxy0, dxy1)) : LIN_INTERP(fz, dxy0, dxy1);
 
                     // Then interpolate (real) weight
@@ -1926,7 +1926,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     RFLOAT ddxy0 = LIN_INTERP(fy, ddx00, ddx10);
                     RFLOAT ddxy1 = LIN_INTERP(fy, ddx01, ddx11);
 
-                    sum_weight.elem(k, i, j) += LIN_INTERP(fz, ddxy0, ddxy1);
+                    sum_weight.elem(i, j, k) += LIN_INTERP(fz, ddxy0, ddxy1);
 
                 }
             }

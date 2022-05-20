@@ -189,7 +189,7 @@ void nearest_neighbour(
     ) return;
 
     direct::elem(f2d, i, x) = is_neg_x ?
-        conj(direct::elem(data, zr, yr, xr)) : data.elem(zr, yr, xr);
+        conj(direct::elem(data, zr, yr, xr)) : data.elem(yr, xr, zr);
         /// XXX: Should we be mixing direct::elem and A3D_ELEM?
 }
 
@@ -435,7 +435,7 @@ void Projector::computeFourierTransformMap(
         else
         #endif
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) // This will also work for 2D
-            Mpad.elem(k, i, j) = vol_in.elem(k, i, j);
+            Mpad.elem(i, j, k) = vol_in.elem(i, j, k);
     }
     }));
 
@@ -571,16 +571,16 @@ void Projector::computeFourierTransformMap(
                     );
                 }
                 // Set data array
-                data.elem(kp, ip, jp) = weight * direct::elem(Faux, k, i, j) * normfft;
+                data.elem(ip, jp, kp) = weight * direct::elem(Faux, k, i, j) * normfft;
 
                 // Calculate power spectrum
                 int ires = round(sqrt((RFLOAT) r2) / padding_factor);
                 // Factor two because of two-dimensionality of the complex plane
-                direct::elem(power_spectrum, ires) += norm(data.elem(kp, ip, jp)) / 2.0;
+                direct::elem(power_spectrum, ires) += norm(data.elem(ip, jp, kp)) / 2.0;
                 direct::elem(counter, ires) += weight;
 
                 // Apply high pass filter of the reference only after calculating the power spectrum
-                if (r2 <= min_r2) { data.elem(kp, ip, jp) = 0; }
+                if (r2 <= min_r2) { data.elem(ip, jp, kp) = 0; }
             }
         }
     }
@@ -656,10 +656,10 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
             // Interpolation (goes with "interpolator") to go from arbitrary to fine grid
             if (interpolator == NEAREST_NEIGHBOUR && r_min_nn == 0) {
                 // NN interpolation is convolution with a rectangular pulse, which FT is a sinc function
-                vol_in.elem(k, i, j) /= sinc;
+                vol_in.elem(i, j, k) /= sinc;
             } else if (interpolator == TRILINEAR || interpolator == NEAREST_NEIGHBOUR && r_min_nn > 0) {
                 // trilinear interpolation is convolution with a triangular pulse, which FT is a sinc^2 function
-                vol_in.elem(k, i, j) /= sinc * sinc;
+                vol_in.elem(i, j, k) /= sinc * sinc;
             } else {
                 REPORT_ERROR((std::string) "BUG Projector::" + __func__ + ": unrecognised interpolator scheme.");
             }
@@ -1095,7 +1095,7 @@ void Projector::rotate3D(MultidimArray<Complex> &f3d, Matrix2D<RFLOAT> &A) {
                     const int z0 = round(zp);
 
                     direct::elem(f3d, k, i, x) = x0 < 0 ?
-                        conj(data.elem(-z0, -y0, -x0)) : data.elem(z0, y0, x0);
+                        conj(data.elem(-y0, -x0, -z0)) : data.elem(y0, x0, z0);
 
                 } else {
                     REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);

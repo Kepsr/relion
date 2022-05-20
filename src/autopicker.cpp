@@ -490,12 +490,12 @@ void AutoPicker::initialise() {
                 int first_corner = Xinit(Mrefs[iref]), last_corner = Xlast(Mrefs[iref]);
                 for (long int j = Xinit(Mrefs[iref]); j <= Xlast(Mrefs[iref]); j++) {
                     if (!has_set_first) {
-                        if (fabs(Mrefs[iref].elem(0, 0, j) - cornerval) > 1e-6) {
+                        if (fabs(Mrefs[iref].elem(0, j, 0) - cornerval) > 1e-6) {
                             first_corner = j;
                             has_set_first = true;
                         }
                     } else if (!has_set_last) {
-                        if (fabs(Mrefs[iref].elem(0, 0, j) - cornerval) < 1e-6) {
+                        if (fabs(Mrefs[iref].elem(0, j, 0) - cornerval) < 1e-6) {
                             last_corner = j - 1;
                             has_set_last = true;
                         }
@@ -686,7 +686,7 @@ void AutoPicker::initialise() {
             // Now set the mask in the large square and store its FFT
             Maux.initZeros();
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-                Maux.elem(i, j ) = Mcirc_mask.elem(i, j);
+                Maux.elem(i, j) = Mcirc_mask.elem(i, j);
             }
             transformer.FourierTransform(Maux, Favgmsk);
             CenterFFTbySign(Favgmsk);
@@ -707,7 +707,7 @@ void AutoPicker::initialise() {
         // Now set the mask in the large square and store its FFT
         Maux.initZeros();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-            Maux.elem(i, j ) = Mcirc_mask.elem(i, j);
+            Maux.elem(i, j) = Mcirc_mask.elem(i, j);
         }
         transformer.FourierTransform(Maux, Finvmsk);
         CenterFFTbySign(Finvmsk);
@@ -1002,6 +1002,7 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
     AmyloidCoord result;
     result.x = result.y = result.psi = 0.0;
     result.fom = -999.0;
+    // Why yx and not xy?
     if (Mccf.elem((int) round(mycoord.y), (int) round(mycoord.x)) < threshold_value)
         return result;
 
@@ -1208,7 +1209,7 @@ void AutoPicker::pickAmyloids(
                 if (
                     newcoord.fom > threshold_value &&
                     (max_stddev_noise <=    0.0 || Mstddev.elem((int) round(newcoord.y), (int) round(newcoord.x)) <= max_stddev_noise) &&
-                    (min_avg_noise    <= -900.0 || Mavg.elem(   (int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
+                    (min_avg_noise    <= -900.0 || Mavg   .elem((int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
                 ) {
                     helix.insert(helix.begin(), newcoord);
                 } else {
@@ -2272,7 +2273,7 @@ void AutoPicker::exportHelicalTubes(
             ) continue;
 
             int iref = Mclass.elem(y_int, x_int);
-            RFLOAT fom  = Mccf.elem(  y_int, x_int);
+            RFLOAT fom = Mccf.elem(y_int, x_int);
 
             MDout.addObject();
             RFLOAT xval = tube_coord_list[itube][icoord].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize);
@@ -2891,7 +2892,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                     tt().resize(particle_size, particle_size);
                     tt().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_ARRAY2D(tt()) {
-                        tt.elem(, i, j) = ttt.elem(i, j);
+                        tt.elem(, i, j) = ttt.elem(i, j); // ???
                     }
                     tt.write("Mref_rot_ctf.spi");
                     #endif

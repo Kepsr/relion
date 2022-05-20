@@ -265,13 +265,6 @@ void JobOption::writeValue(std::ostream& out) {
     out << label << " == " << value << std::endl;
 }
 
-
-template<typename T>
-static bool elem(T item, std::vector<T> items) {
-    return std::find(std::begin(items), std::end(items), item) != std::end(items);
-}
-
-
 bool RelionJob::containsLabel(string _label, string &option) {
     for (
         std::map<string, JobOption>::iterator it = joboptions.begin();
@@ -386,8 +379,7 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
 
     if (have_read) {
         // Just check that went OK
-        // std::vector<int> types = ;
-        if (!elem(type, {
+        std::vector<int> types {
             Process::IMPORT,
             Process::MOTIONCORR,
             Process::CTFFIND,
@@ -408,7 +400,9 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
             Process::MOTIONREFINE,
             Process::CTFREFINE,
             Process::EXTERNAL,
-        })) {
+        };
+        
+        if (std::find(std::begin(types), std::end(types), type) == std::end(types)); {
             // If type isn't recognised
             REPORT_ERROR(errorMsg("cannot find correct job type in " + myfilename + "run.job, with type= " + integerToString(type)));
         }
