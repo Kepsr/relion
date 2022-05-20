@@ -881,7 +881,7 @@ class Image {
      * @endcode
      */
     inline T& operator () (int k, int i, int j) const {
-        return data.elem(k, i, j);
+        return data.elem(i, j, k);
     }
 
     /** const reference to filename

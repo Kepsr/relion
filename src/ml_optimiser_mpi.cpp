@@ -2681,10 +2681,10 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
     if (!Itmp().sameShape(wsum_model.BPref[iclass].data)) {
         wsum_model.BPref[iclass].data.printShape(std::cerr);
         Itmp().printShape(std::cerr);
-        REPORT_ERROR("Incompatible size of "+fn_root+"_data_real.mrc");
+        REPORT_ERROR("Incompatible size of " + fn_root + "_data_real.mrc");
     }
     FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        wsum_model.BPref[iclass].data.elem(k, i, j).real = Itmp().elem(k, i, j);
+        wsum_model.BPref[iclass].data.elem(i, j, k).real = Itmp().elem(i, j, k);
     }
 
     Itmp.read(fn_root + "_data_imag.mrc");
@@ -2693,10 +2693,10 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
     if (!Itmp().sameShape(wsum_model.BPref[iclass].data)) {
         wsum_model.BPref[iclass].data.printShape(std::cerr);
         Itmp().printShape(std::cerr);
-        REPORT_ERROR("Incompatible size of "+fn_root+"_data_imag.mrc");
+        REPORT_ERROR("Incompatible size of " + fn_root + "_data_imag.mrc");
     }
     FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        wsum_model.BPref[iclass].data.elem(k, i, j).imag = Itmp().elem(k, i, j);
+        wsum_model.BPref[iclass].data.elem(i, j, k).imag = Itmp().elem(i, j, k);
     }
 
     Itmp.read(fn_root + "_weight.mrc");
@@ -2705,10 +2705,10 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
     if (!Itmp().sameShape(wsum_model.BPref[iclass].weight)) {
         wsum_model.BPref[iclass].weight.printShape(std::cerr);
         Itmp().printShape(std::cerr);
-        REPORT_ERROR("Incompatible size of "+fn_root+"_weight.mrc");
+        REPORT_ERROR("Incompatible size of " + fn_root + "_weight.mrc");
     }
     FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        wsum_model.BPref[iclass].weight.elem(k, i, j) = Itmp().elem(k, i, j);
+        wsum_model.BPref[iclass].weight.elem(i, j, k) = Itmp().elem(i, j, k);
     }
 
     // Now perform the unregularized reconstruction

@@ -371,8 +371,8 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
 
         // Apply correction on the spectrum-corrected values!
         RFLOAT aux = norm(direct::elem(FT, k, i, j)) / ravg(idx);
-          sum3d.elem(best_kpp, best_ipp, best_jpp) += aux;
-        count3d.elem(best_kpp, best_ipp, best_jpp) += 1;
+          sum3d.elem(best_ipp, best_jpp, best_kpp) += aux;
+        count3d.elem(best_ipp, best_jpp, best_kpp) += 1;
     }
 
     // Average
@@ -395,7 +395,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &
         }
 
         // Apply correction on the spectrum-corrected values!
-        RFLOAT aux = sqrt(sum3d.elem(best_kpp, best_ipp, best_jpp));
+        RFLOAT aux = sqrt(sum3d.elem(best_ipp, best_jpp, best_kpp));
         direct::elem(FT, k, i, j) /= aux;
     }
 

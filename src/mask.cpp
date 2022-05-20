@@ -60,11 +60,11 @@ void softMaskOutsideMap(
 
             if (r > radius_p) {
                 sum    += 1.0;
-                sum_bg += vol.elem(k, i, j);
+                sum_bg += vol.elem(i, j, k);
             } else {
                 RFLOAT raisedcos = 0.5 * (1.0 + cos(PI * (radius_p - r) / cosine_width));
                 sum    += raisedcos;
-                sum_bg += raisedcos * vol.elem(k, i, j);
+                sum_bg += raisedcos * vol.elem(i, j, k);
             }
         }
         sum_bg /= sum;
@@ -77,10 +77,10 @@ void softMaskOutsideMap(
 
         RFLOAT add = Mnoise ? Mnoise->elem(k, i, j) : sum_bg;
         if (r > radius_p) {
-            vol.elem(k, i, j) = add;
+            vol.elem(i, j, k) = add;
         } else {
             RFLOAT raisedcos = 0.5 * (1.0 * cos(PI * (radius_p - r) / cosine_width));
-            vol.elem(k, i, j) = (1 - raisedcos) * vol.elem(k, i, j) + raisedcos * add;
+            vol.elem(i, j, k) = (1 - raisedcos) * vol.elem(i, j, k) + raisedcos * add;
         }
     }
 }
@@ -156,12 +156,12 @@ void softMaskOutsideMapForHelix(
             d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
             if (d > D2) {
                 // Noise areas (get values for noise estimations)
-                sum_bg += vol.elem(k, i, j);
+                sum_bg += vol.elem(i, j, k);
                 sum += 1.0;
             } else if (d > D1) {
                 // Edges of noise areas (get values and weights for noise estimations)
                 RFLOAT noise_w = 0.5 * (1.0 + cos(PI * (D2 - d) / cosine_width));
-                sum_bg += noise_w * vol.elem(k, i, j);
+                sum_bg += noise_w * vol.elem(i, j, k);
                 sum += noise_w;
             }
         }
@@ -195,13 +195,13 @@ void softMaskOutsideMapForHelix(
 
         if (r > R2 || d > D2) {
             // Noise areas, fill in background values
-            vol.elem(k, i, j) = noise_val;
+            vol.elem(i, j, k) = noise_val;
         } else {
             // Edges of info areas
             RFLOAT noise_w1 = r > R1 ? 0.5 * (1.0 + cos(PI * (R2 - r) / cosine_width)) : 0.0;
             RFLOAT noise_w2 = d > D1 ? 0.5 * (1.0 + cos(PI * (D2 - d) / cosine_width)) : 0.0;
             RFLOAT noise_w = std::max(noise_w1, noise_w2);
-            vol.elem(k, i, j) = (1.0 - noise_w) * vol.elem(k, i, j) + noise_w * noise_val;
+            vol.elem(i, j, k) = (1.0 - noise_w) * vol.elem(i, j, k) + noise_w * noise_val;
         }
     }
     return;
@@ -283,7 +283,7 @@ void autoMask(
             #pragma omp parallel for num_threads(n_threads)
             FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp) {
                 // only extend zero values to 1.
-                if (msk_cp.elem(k, i, j) < 0.001) {
+                if (msk_cp.elem(i, j, k) < 0.001) {
                     bool already_done = false;
                     for (long int kp = k - extend_size; kp <= k + extend_size; kp++) {
                     for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
@@ -294,11 +294,11 @@ void autoMask(
                             jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
                         ) {
                             // only check distance if neighbouring Im() is one
-                            if (msk_cp.elem(kp, ip, jp) > 0.999) {
+                            if (msk_cp.elem(ip, jp, kp) > 0.999) {
                                 RFLOAT r2 = (RFLOAT) ((kp - k) * (kp - k) + (ip - i) * (ip - i) + (jp - j) * (jp - j));
                                 // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                                 if (r2 < extend_ini_mask2) {
-                                    msk_out.elem(k, i, j) = 1.0;
+                                    msk_out.elem(i, j, k) = 1.0;
                                     already_done = true;
                                 }
                             }
@@ -320,7 +320,7 @@ void autoMask(
             #pragma omp parallel for num_threads(n_threads)
             FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp) {
                 // only extend one values to zero.
-                if (msk_cp.elem(k, i, j) > 0.999) {
+                if (msk_cp.elem(i, j, k) > 0.999) {
                     bool already_done = false;
                     for (long int kp = k - extend_size; kp <= k + extend_size; kp++) {
                     for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
@@ -331,11 +331,11 @@ void autoMask(
                             jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
                         ) {
                             // only check distance if neighbouring Im() is one
-                            if (msk_cp.elem(kp, ip, jp) < 0.001) {
+                            if (msk_cp.elem(ip, jp, kp) < 0.001) {
                                 RFLOAT r2 = (RFLOAT) ((kp - k) * (kp - k) + (ip - i) * (ip - i) + (jp - j) * (jp - j));
                                 // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                                 if (r2 < extend_ini_mask2) {
-                                    msk_out.elem(k, i, j) = 0.0;
+                                    msk_out.elem(i, j, k) = 0.0;
                                     already_done = true;
                                 }
                             }
@@ -374,7 +374,7 @@ void autoMask(
         #pragma omp parallel for num_threads(n_threads)
         FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp) {
             // only extend zero values to values between 0 and 1.
-            if (msk_cp.elem(k, i, j) < 0.001) {
+            if (msk_cp.elem(i, j, k) < 0.001) {
                 RFLOAT min_r2 = 9999.0;
                 for (long int kp = k - extend_size; kp <= k + extend_size; kp++) {
                 for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
@@ -385,7 +385,7 @@ void autoMask(
                         jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
                     ) {
                         // only update distance to a neighbouring msk_cp is one
-                        if (msk_cp.elem(kp, ip, jp) > 0.999) {
+                        if (msk_cp.elem(ip, jp, kp) > 0.999) {
                             RFLOAT r2 = (RFLOAT) ((kp - k) * (kp - k) + (ip - i) * (ip - i) + (jp - j) * (jp - j));
                             // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                             if (r2 < min_r2) { min_r2 = r2; }
@@ -393,7 +393,7 @@ void autoMask(
                     }
                 }}}
                 if (min_r2 < width_soft_mask_edge2) {
-                    msk_out.elem(k, i, j) = 0.5 + 0.5 * cos(PI * sqrt(min_r2) / width_soft_mask_edge);
+                    msk_out.elem(i, j, k) = 0.5 + 0.5 * cos(PI * sqrt(min_r2) / width_soft_mask_edge);
                 }
             }
             if (verb && omp_get_thread_num() == 0) {
@@ -419,7 +419,7 @@ void raisedCosineMask(
     FOR_ALL_ELEMENTS_IN_ARRAY3D(mask) {
         // calculate distance from the origin
         RFLOAT d = sqrt((RFLOAT) ((z - k) * (z - k) + (y - i) * (y - i) + (x - j) * (x - j)));
-        mask.elem(k, i, j) = 
+        mask.elem(i, j, k) = 
             d > radius_p ? 0.0 :
             d < radius   ? 1.0 :
             0.5 - 0.5 * cos(PI * (radius_p - d) / (radius_p - radius));
@@ -437,7 +437,7 @@ void raisedCrownMask(
     mask.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY3D(mask) {
         RFLOAT d = sqrt((RFLOAT) ((z - k) * (z - k) + (y - i) * (y - i) + (x - j) * (x - j)));
-        mask.elem(k, i, j) =
+        mask.elem(i, j, k) =
             d < inner_border ? 0.0 :
             d < inner_radius ? 0.5  - 0.5 * cos(PI * (d - inner_border) / width) :
             d < outer_radius ? 1.0 :

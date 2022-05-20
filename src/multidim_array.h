@@ -202,7 +202,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  *
  * @code
  * FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v) {
- *     std::cout << v.elem(l, k, i, j) << " ";
+ *     std::cout << v.elem(i, j, k, l) << " ";
  * }
  * @endcode
  */
@@ -440,12 +440,12 @@ class MultidimArray {
     }
 
     // Volume element
-    inline T& elem(long int k, long int i, long int j) const {
+    inline T& elem(long int i, long int j, long int k) const {
         return direct::elem(*this, k - zinit, i - yinit, j - xinit);
     }
 
     // Multidim element
-    inline T& elem(long int l, long int k, long int i, long int j) const {
+    inline T& elem(long int i, long int j, long int k, long int l) const {
         return direct::elem(*this, l, k - zinit, i - yinit, j - xinit);
     }
 
@@ -1143,8 +1143,8 @@ class MultidimArray {
         for (long int k = z0; k <= zF; k++)
         for (long int i = y0; i <= yF; i++)
         for (long int j = x0; j <= xF; j++) {
-            result.elem(k, i, j) = inside(k, i, j) ?
-                this->elem(n, k, i, j) : init_value;
+            result.elem(i, j, k) = inside(k, i, j) ?
+                elem(i, j, k, n) : init_value;
         }
     }
 
@@ -1190,7 +1190,7 @@ class MultidimArray {
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
             result.elem(i, j) = inside(i, j) ?
-                this->elem(n, 0, i, j) : init_value;
+                elem(i, j, 0, n) : init_value;
         }
     }
 
@@ -1231,7 +1231,7 @@ class MultidimArray {
 
         for (long int j = x0; j <= xF; j++) {
             result.elem(j) = inside(j) ?
-                this->elem(n, 0, 0, j) : init_value;
+                elem(0, j, 0, n) : init_value;
             }
     }
 
@@ -1485,11 +1485,11 @@ class MultidimArray {
     T& operator()(const Matrix1D<RFLOAT> &v) const {
         switch (v.size()) {
             case 1:
-            return this->elem(round(XX(v)));
+            return elem(round(XX(v)));
             case 2:
-            return this->elem(round(YY(v)), round(XX(v)));
+            return elem(round(XX(v)), round(YY(v)));
             case 3:
-            return this->elem(round(ZZ(v)), round(YY(v)), round(XX(v)));
+            return elem(round(XX(v)), round(YY(v)), round(ZZ(v)));
             default:
             REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
         }
@@ -1499,11 +1499,11 @@ class MultidimArray {
     T& operator()(const Matrix1D<long int> &v) const {
         switch (v.size()) {
             case 1:
-            return this->elem(XX(v));
+            return elem(XX(v));
             case 2:
-            return this->elem(YY(v), XX(v));
+            return elem(XX(v), YY(v));
             case 3:
-            return this->elem(ZZ(v), YY(v), XX(v));
+            return elem(XX(v), YY(v), ZZ(v));
             default:
             REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
         }
@@ -1522,7 +1522,7 @@ class MultidimArray {
     * @endcode
     */
     inline T& operator()(long n, long int k, long int i, long int j) const {
-        return this->elem(n, k, i, j);
+        return elem(i, j, k, n);
     }
 
     /** 3D element access by index.
@@ -1538,7 +1538,7 @@ class MultidimArray {
     * @endcode
     */
     inline T& operator()(long int k, long int i, long int j) const {
-        return this->elem(k, i, j);
+        return elem(i, j, k);
     }
 
     /** 3D element access by index (getVoxel).
@@ -1547,7 +1547,7 @@ class MultidimArray {
     *
     */
     inline T getVoxel(long int k, long int i, long int j) const {
-        return this->elem(k, i, j);
+        return elem(i, j, k);
     }
 
     /** 3D element access by index (setVoxel).
@@ -1556,7 +1556,7 @@ class MultidimArray {
     *
     */
     inline void setVoxel(long int k, long int i, long int j, T newval) {
-        this->elem(k, i, j) = newval;
+        elem(i, j, k) = newval;
     }
 
     /** Matrix element access by index
@@ -1573,7 +1573,7 @@ class MultidimArray {
      * @endcode
      */
     inline T& operator()(long int i, long int j) const {
-        return this->elem(i, j);
+        return elem(i, j);
     }
 
     /** Vector element access
@@ -1589,7 +1589,7 @@ class MultidimArray {
      * @endcode
      */
     inline T& operator()(long int i) const {
-        return this->elem(i);
+        return elem(i);
     }
 
     /** Get a single 1,2 or 3D image from a multi-image array
@@ -1930,14 +1930,14 @@ class MultidimArray {
         RFLOAT fz = z - z0;
         long int z1 = z0 + 1;
 
-        T d000 = outside(z0, y0, x0) ? outside_value : this->elem(n, z0, y0, x0);
-        T d001 = outside(z0, y0, x1) ? outside_value : this->elem(n, z0, y0, x1);
-        T d010 = outside(z0, y1, x0) ? outside_value : this->elem(n, z0, y1, x0);
-        T d011 = outside(z0, y1, x1) ? outside_value : this->elem(n, z0, y1, x1);
-        T d100 = outside(z1, y0, x0) ? outside_value : this->elem(n, z1, y0, x0);
-        T d101 = outside(z1, y0, x1) ? outside_value : this->elem(n, z1, y0, x1);
-        T d110 = outside(z1, y1, x0) ? outside_value : this->elem(n, z1, y1, x0);
-        T d111 = outside(z1, y1, x1) ? outside_value : this->elem(n, z1, y1, x1);
+        T d000 = outside(z0, y0, x0) ? outside_value : elem(x0, y0, z0, n);
+        T d001 = outside(z0, y0, x1) ? outside_value : elem(x1, y0, z0, n);
+        T d010 = outside(z0, y1, x0) ? outside_value : elem(x0, y1, z0, n);
+        T d011 = outside(z0, y1, x1) ? outside_value : elem(x1, y1, z0, n);
+        T d100 = outside(z1, y0, x0) ? outside_value : elem(x0, y0, z1, n);
+        T d101 = outside(z1, y0, x1) ? outside_value : elem(x1, y0, z1, n);
+        T d110 = outside(z1, y1, x0) ? outside_value : elem(x0, y1, z1, n);
+        T d111 = outside(z1, y1, x1) ? outside_value : elem(x1, y1, z1, n);
 
         RFLOAT dx00 = LIN_INTERP(fx, (RFLOAT) d000, (RFLOAT) d001);
         RFLOAT dx01 = LIN_INTERP(fx, (RFLOAT) d100, (RFLOAT) d101);
@@ -1961,10 +1961,10 @@ class MultidimArray {
         RFLOAT fy = y - y0;
         long int y1 = y0 + 1;
 
-        T d00 = outside(y0, x0) ? outside_value : this->elem(n, 0, y0, x0);
-        T d10 = outside(y1, x0) ? outside_value : this->elem(n, 0, y1, x0);
-        T d11 = outside(y1, x1) ? outside_value : this->elem(n, 0, y1, x1);
-        T d01 = outside(y0, x1) ? outside_value : this->elem(n, 0, y0, x1);
+        T d00 = outside(y0, x0) ? outside_value : elem(x0, y0, 0, n);
+        T d10 = outside(y1, x0) ? outside_value : elem(x0, y1, 0, n);
+        T d11 = outside(y1, x1) ? outside_value : elem(x1, y1, 0, n);
+        T d01 = outside(y0, x1) ? outside_value : elem(x1, y0, 0, n);
 
         RFLOAT d0 = (T) LIN_INTERP(fx, (RFLOAT) d00, (RFLOAT) d01);
         RFLOAT d1 = (T) LIN_INTERP(fx, (RFLOAT) d10, (RFLOAT) d11);
@@ -2020,12 +2020,12 @@ class MultidimArray {
         imin = firstY();
         jmin = firstX();
         lmin = 0;
-        T minval = this->elem(lmin, kmin, imin, jmin);
+        T minval = elem(imin, jmin, kmin, lmin);
 
 
         FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-            if (this->elem(l, k, i, j) > minval) {
-                minval = this->elem(l, k, i, j);
+            if (elem(i, j, k, l) > minval) {
+                minval = elem(i, j, k, l);
                 lmin = l;
                 kmin = k;
                 imin = i;
@@ -2078,11 +2078,11 @@ class MultidimArray {
         imax = firstY();
         jmax = firstX();
         lmax = 0;
-        T maxval = this->elem(lmax, kmax, imax, jmax);
+        T maxval = elem(imax, jmax, kmax, lmax);
 
         FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(*this) {
-            if (this->elem(l, k, i, j) > maxval) {
-                maxval = this->elem(l, k, i, j);
+            if (elem(i, j, k, l) > maxval) {
+                maxval = elem(i, j, k, l);
                 lmax = l;
                 kmax = k;
                 imax = i;
@@ -2707,7 +2707,7 @@ class MultidimArray {
         } else {
             reshape(steps);
             for (int i = 0; i < steps; i++) {
-                this->elem(i) = (T) ((RFLOAT) minF + slope * i);
+                elem(i) = (T) ((RFLOAT) minF + slope * i);
             }
         }
     }
@@ -2899,12 +2899,12 @@ class MultidimArray {
 
             RFLOAT mass = 0;
             FOR_ALL_ELEMENTS_IN_ARRAY3D(*this) {
-                if ((!imask || imask->elem(n, k, i, j)) && this->elem(k, i, j) > 0) {
-                XX(center) += j * this->elem(n, k, i, j);
-                YY(center) += i * this->elem(n, k, i, j);
-                ZZ(center) += k * this->elem(n, k, i, j);
+                if ((!imask || imask->elem(i, j, k, n)) && elem(i, j, k) > 0) {
+                XX(center) += j * elem(i, j, k, n);
+                YY(center) += i * elem(i, j, k, n);
+                ZZ(center) += k * elem(i, j, k, n);
 
-                mass += this->elem(n, k, i, j);
+                mass += elem(i, j, k, n);
             }
         }
 
@@ -3658,7 +3658,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
 
     if (v.ydim == 1 && v.zdim == 1) {
         for (long int j = v.firstX(); j <= v.lastX(); j++) {
-            ostrm << floatToString((RFLOAT) v.elem(0, 0, j), 10, prec)
+            ostrm << floatToString((RFLOAT) v.elem(0, j, 0), 10, prec)
             << std::endl;
         }
     } else {
@@ -3670,7 +3670,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
                     ostrm << "Slice No. " << k << std::endl;
                 for (long int i = v.firstY(); i <= v.lastY(); i++) {
                     for (long int j = v.firstX(); j <= v.lastX(); j++) {
-                        ostrm << floatToString((RFLOAT) v.elem(k, i, j), 10, prec) << ' ';
+                        ostrm << floatToString((RFLOAT) v.elem(i, j, k), 10, prec) << ' ';
                     }
                     ostrm << std::endl;
                 }

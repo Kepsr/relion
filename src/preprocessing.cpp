@@ -791,9 +791,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         if (x0 < 0 || xF >= Xsize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 if (j + xpos < 0) {
-                    Ipart().elem(k, i, j) = Ipart().elem(k, i, -xpos);
+                    Ipart().elem(i, j, k) = Ipart().elem(i, -xpos, k);
                 } else if (j + xpos >= Xsize(Imic())) {
-                    Ipart().elem(k, i, j) = Ipart().elem(k, i, Xsize(Imic()) - xpos - 1);
+                    Ipart().elem(i, j, k) = Ipart().elem(i, Xsize(Imic()) - xpos - 1, k);
                 }
             }
         }
@@ -802,9 +802,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         if (y0 < 0 || yF >= Ysize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                 if (i + ypos < 0) {
-                    Ipart().elem(k, i, j) = Ipart().elem(k, -ypos, j);
+                    Ipart().elem(i, j, k) = Ipart().elem(-ypos, j, k);
                 } else if (i + ypos >= Ysize(Imic())) {
-                    Ipart().elem(k, i, j) = Ipart().elem(k, Ysize(Imic()) - ypos - 1, j);
+                    Ipart().elem(i, j, k) = Ipart().elem(Ysize(Imic()) - ypos - 1, j, k);
                 }
             }
         }
@@ -814,9 +814,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             if (z0 < 0 || zF >= Zsize(Imic())) {
                 FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
                     if (k + zpos < 0) {
-                        Ipart().elem(k, i, j) = Ipart().elem(-zpos, i, j);
+                        Ipart().elem(i, j, k) = Ipart().elem(i, j, -zpos);
                     } else if (k + zpos >= Zsize(Imic())) {
-                        Ipart().elem(k, i, j) = Ipart().elem(Zsize(Imic()) - zpos - 1, i, j);
+                        Ipart().elem(i, j, k) = Ipart().elem(i, j, Zsize(Imic()) - zpos - 1);
                     }
                 }
             }
