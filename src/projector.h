@@ -242,7 +242,7 @@ class Projector {
         Mout.initZeros();
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
             if (kp * kp + ip * ip + jp * jp <= my_rmax2)
-                direct::elem(Mout, k, i, j) = Min.elem(kp, ip, jp);
+                direct::elem(Mout, i, j, k) = Min.elem(ip, jp, kp);
         }
     }
 

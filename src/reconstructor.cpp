@@ -399,7 +399,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
             // at freqs higher than Nyquist: use last sigma2 value
 
             RFLOAT sigma = sqrt(direct::elem(model.sigma2_noise[imic], ires));
-            direct::elem(F2D, k, i, j) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
+            direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
         }
     }
 
@@ -427,7 +427,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                    direct::elem(Fctf, k, i, j) = Ictf().elem(-ip, -jp, -kp);
+                    direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                 }
             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // otherwise, just window the CTF to the current resolution
@@ -529,7 +529,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
             for (long int z = 0; z < Fctf.zdim; z++)
             for (long int y = 0; y < Fctf.ydim; y++)
             for (long int x = 0; x < Fctf.xdim; x++) {
-                direct::elem(Fctf, n, z, y, x) *= direct::elem(wgh(), n, z, y, x);
+                direct::elem(Fctf, x, y, z, n) *= direct::elem(wgh(), x, y, z, n);
             }
         }
 

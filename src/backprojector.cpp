@@ -252,23 +252,23 @@ void BackProjector::backproject2Dto3D(
                 if (is_neg_x) { my_val = conj(my_val); }
 
                 // Store slice in 3D weighted sum
-                direct::elem(data, z0, y0, x0) += dd000 * my_val;
-                direct::elem(data, z0, y0, x1) += dd001 * my_val;
-                direct::elem(data, z0, y1, x0) += dd010 * my_val;
-                direct::elem(data, z0, y1, x1) += dd011 * my_val;
-                direct::elem(data, z1, y0, x0) += dd100 * my_val;
-                direct::elem(data, z1, y0, x1) += dd101 * my_val;
-                direct::elem(data, z1, y1, x0) += dd110 * my_val;
-                direct::elem(data, z1, y1, x1) += dd111 * my_val;
+                direct::elem(data, x0, y0, z0) += dd000 * my_val;
+                direct::elem(data, x1, y0, z0) += dd001 * my_val;
+                direct::elem(data, x0, y1, z0) += dd010 * my_val;
+                direct::elem(data, x1, y1, z0) += dd011 * my_val;
+                direct::elem(data, x0, y0, z1) += dd100 * my_val;
+                direct::elem(data, x1, y0, z1) += dd101 * my_val;
+                direct::elem(data, x0, y1, z1) += dd110 * my_val;
+                direct::elem(data, x1, y1, z1) += dd111 * my_val;
                 // Store corresponding weights
-                direct::elem(weight, z0, y0, x0) += dd000 * my_weight;
-                direct::elem(weight, z0, y0, x1) += dd001 * my_weight;
-                direct::elem(weight, z0, y1, x0) += dd010 * my_weight;
-                direct::elem(weight, z0, y1, x1) += dd011 * my_weight;
-                direct::elem(weight, z1, y0, x0) += dd100 * my_weight;
-                direct::elem(weight, z1, y0, x1) += dd101 * my_weight;
-                direct::elem(weight, z1, y1, x0) += dd110 * my_weight;
-                direct::elem(weight, z1, y1, x1) += dd111 * my_weight;
+                direct::elem(weight, x0, y0, z0) += dd000 * my_weight;
+                direct::elem(weight, x1, y0, z0) += dd001 * my_weight;
+                direct::elem(weight, x0, y1, z0) += dd010 * my_weight;
+                direct::elem(weight, x1, y1, z0) += dd011 * my_weight;
+                direct::elem(weight, x0, y0, z1) += dd100 * my_weight;
+                direct::elem(weight, x1, y0, z1) += dd101 * my_weight;
+                direct::elem(weight, x0, y1, z1) += dd110 * my_weight;
+                direct::elem(weight, x1, y1, z1) += dd111 * my_weight;
 
             } else if (interpolator == NEAREST_NEIGHBOUR) {
                 int x0 = round(xp);
@@ -295,11 +295,11 @@ void BackProjector::backproject2Dto3D(
                 ) continue;
 
                 if (is_neg_x) {
-                    direct::elem(data,   zr, yr, xr) += conj(my_val);
-                    direct::elem(weight, zr, yr, xr) += my_weight;
+                    direct::elem(data,   xr, yr, zr) += conj(my_val);
+                    direct::elem(weight, xr, yr, zr) += my_weight;
                 } else {
-                    direct::elem(data,   zr, yr, xr) += my_val;
-                    direct::elem(weight, zr, yr, xr) += my_weight;
+                    direct::elem(data,   xr, yr, zr) += my_val;
+                    direct::elem(weight, xr, yr, zr) += my_weight;
                 }
             } else {
                 REPORT_ERROR("FourierInterpolator::backproject%%ERROR: unrecognized interpolator ");
@@ -373,27 +373,27 @@ void BackProjector::backproject1Dto2D(
             }
 
             // Store slice in 3D weighted sum
-            direct::elem(data, y0, x0) += dd00 * my_val;
-            direct::elem(data, y0, x1) += dd01 * my_val;
-            direct::elem(data, y1, x0) += dd10 * my_val;
-            direct::elem(data, y1, x1) += dd11 * my_val;
+            direct::elem(data, x0, y0) += dd00 * my_val;
+            direct::elem(data, x1, y0) += dd01 * my_val;
+            direct::elem(data, x0, y1) += dd10 * my_val;
+            direct::elem(data, x1, y1) += dd11 * my_val;
 
             // Store corresponding weights
-            direct::elem(weight, y0, x0) += dd00 * my_weight;
-            direct::elem(weight, y0, x1) += dd01 * my_weight;
-            direct::elem(weight, y1, x0) += dd10 * my_weight;
-            direct::elem(weight, y1, x1) += dd11 * my_weight;
+            direct::elem(weight, x0, y0) += dd00 * my_weight;
+            direct::elem(weight, x1, y0) += dd01 * my_weight;
+            direct::elem(weight, x0, y1) += dd10 * my_weight;
+            direct::elem(weight, x1, y1) += dd11 * my_weight;
 
         } else if (interpolator == NEAREST_NEIGHBOUR ) {
             const int x0 = round(xp);
             const int y0 = round(yp);
 
             if (x0 < 0) {
-                data.elem(-y0, -x0) += conj(my_val);
-                weight.elem(-y0, -x0) += my_weight;
+                data.elem(-x0, -y0) += conj(my_val);
+                weight.elem(-x0, -y0) += my_weight;
             } else {
-                data.elem(y0, x0) += my_val;
-                weight.elem(y0, x0) += my_weight;
+                data.elem(x0, y0) += my_val;
+                weight.elem(x0, y0) += my_weight;
             }
         } else {
             REPORT_ERROR("FourierInterpolator::backproject1Dto2D%%ERROR: unrecognized interpolator ");
@@ -486,11 +486,11 @@ void BackProjector::backrotate2D(
 
         for (int x = first_x; x <= last_x; x++) {
 
-            RFLOAT my_weight = Mweight ? direct::elem(*Mweight, i, x) : 1.0;
+            RFLOAT my_weight = Mweight ? direct::elem(*Mweight, x, i) : 1.0;
             if (my_weight <= 0.0) continue;
 
             // Get the relevant value in the input image
-            Complex my_val = direct::elem(f2d, i, x);
+            Complex my_val = direct::elem(f2d, x, i);
 
             // Get logical coordinates in the 3D map
             RFLOAT xu = m00 * x + m01 * y;
@@ -533,27 +533,27 @@ void BackProjector::backrotate2D(
                 if (is_neg_x) { my_val = conj(my_val); }
 
                 // Store slice in 3D weighted sum
-                direct::elem(data, y0, x0) += dd00 * my_val;
-                direct::elem(data, y0, x1) += dd01 * my_val;
-                direct::elem(data, y1, x0) += dd10 * my_val;
-                direct::elem(data, y1, x1) += dd11 * my_val;
+                direct::elem(data, x0, y0) += dd00 * my_val;
+                direct::elem(data, x1, y0) += dd01 * my_val;
+                direct::elem(data, x0, y1) += dd10 * my_val;
+                direct::elem(data, x1, y1) += dd11 * my_val;
 
                 // Store corresponding weights
-                direct::elem(weight, y0, x0) += dd00 * my_weight;
-                direct::elem(weight, y0, x1) += dd01 * my_weight;
-                direct::elem(weight, y1, x0) += dd10 * my_weight;
-                direct::elem(weight, y1, x1) += dd11 * my_weight;
+                direct::elem(weight, x0, y0) += dd00 * my_weight;
+                direct::elem(weight, x1, y0) += dd01 * my_weight;
+                direct::elem(weight, x0, y1) += dd10 * my_weight;
+                direct::elem(weight, x1, y1) += dd11 * my_weight;
 
             } else if (interpolator == NEAREST_NEIGHBOUR) {
                 const int x0 = round(xp);
                 const int y0 = round(yp);
 
                 if (x0 < 0) {
-                      data.elem(-y0, -x0) += conj(my_val);
-                    weight.elem(-y0, -x0) += my_weight;
+                      data.elem(-x0, -y0) += conj(my_val);
+                    weight.elem(-x0, -y0) += my_weight;
                 } else {
-                      data.elem(y0, x0) += my_val;
-                    weight.elem(y0, x0) += my_weight;
+                      data.elem(x0, y0) += my_val;
+                    weight.elem(x0, y0) += my_weight;
                 }
             } else {
                 REPORT_ERROR("FourierInterpolator::backrotate2D%%ERROR: unrecognized interpolator ");
@@ -632,10 +632,10 @@ void BackProjector::backrotate3D(
                 if (r_ref_2 > r_max_ref_2) continue;
 
                 // Get the weight
-                RFLOAT my_weight = Mweight ? direct::elem(*Mweight, k, i, x) : 1.0;
+                RFLOAT my_weight = Mweight ? direct::elem(*Mweight, x, i, k) : 1.0;
                 if (my_weight <= 0.0) continue;
 
-                Complex my_val = direct::elem(f3d, k, i, x);
+                Complex my_val = direct::elem(f3d, x, i, k);
 
                 if (interpolator == TRILINEAR || r_ref_2 < r_min_NN_ref_2) {
                     // Only asymmetric half is stored
@@ -683,24 +683,24 @@ void BackProjector::backrotate3D(
                     }
 
                     // Store slice in 3D weighted sum
-                    direct::elem(data, z0, y0, x0) += dd000 * my_val;
-                    direct::elem(data, z0, y0, x1) += dd001 * my_val;
-                    direct::elem(data, z0, y1, x0) += dd010 * my_val;
-                    direct::elem(data, z0, y1, x1) += dd011 * my_val;
-                    direct::elem(data, z1, y0, x0) += dd100 * my_val;
-                    direct::elem(data, z1, y0, x1) += dd101 * my_val;
-                    direct::elem(data, z1, y1, x0) += dd110 * my_val;
-                    direct::elem(data, z1, y1, x1) += dd111 * my_val;
+                    direct::elem(data, x0, y0, z0) += dd000 * my_val;
+                    direct::elem(data, x1, y0, z0) += dd001 * my_val;
+                    direct::elem(data, x0, y1, z0) += dd010 * my_val;
+                    direct::elem(data, x1, y1, z0) += dd011 * my_val;
+                    direct::elem(data, x0, y0, z1) += dd100 * my_val;
+                    direct::elem(data, x1, y0, z1) += dd101 * my_val;
+                    direct::elem(data, x0, y1, z1) += dd110 * my_val;
+                    direct::elem(data, x1, y1, z1) += dd111 * my_val;
 
                     // Store corresponding weights
-                    direct::elem(weight, z0, y0, x0) += dd000 * my_weight;
-                    direct::elem(weight, z0, y0, x1) += dd001 * my_weight;
-                    direct::elem(weight, z0, y1, x0) += dd010 * my_weight;
-                    direct::elem(weight, z0, y1, x1) += dd011 * my_weight;
-                    direct::elem(weight, z1, y0, x0) += dd100 * my_weight;
-                    direct::elem(weight, z1, y0, x1) += dd101 * my_weight;
-                    direct::elem(weight, z1, y1, x0) += dd110 * my_weight;
-                    direct::elem(weight, z1, y1, x1) += dd111 * my_weight;
+                    direct::elem(weight, x0, y0, z0) += dd000 * my_weight;
+                    direct::elem(weight, x1, y0, z0) += dd001 * my_weight;
+                    direct::elem(weight, x0, y1, z0) += dd010 * my_weight;
+                    direct::elem(weight, x1, y1, z0) += dd011 * my_weight;
+                    direct::elem(weight, x0, y0, z1) += dd100 * my_weight;
+                    direct::elem(weight, x1, y0, z1) += dd101 * my_weight;
+                    direct::elem(weight, x0, y1, z1) += dd110 * my_weight;
+                    direct::elem(weight, x1, y1, z1) += dd111 * my_weight;
 
                 } else if (interpolator == NEAREST_NEIGHBOUR) {
                     const int x0 = round(xp);
@@ -708,11 +708,11 @@ void BackProjector::backrotate3D(
                     const int z0 = round(zp);
 
                     if (x0 < 0) {
-                        data.elem(-y0, -x0, -z0) += conj(my_val);
-                        weight.elem(-y0, -x0, -z0) += my_weight;
+                        data.elem(-x0, -y0, -z0) += conj(my_val);
+                        weight.elem(-x0, -y0, -z0) += my_weight;
                     } else {
-                        data.elem(y0, x0, z0) += my_val;
-                        weight.elem(y0, x0, z0) += my_weight;
+                        data.elem(x0, y0, z0) += my_val;
+                        weight.elem(x0, y0, z0) += my_weight;
                     }
                 } else {
                     REPORT_ERROR("BackProjector::backrotate3D%%ERROR: unrecognized interpolator ");
@@ -1271,7 +1271,7 @@ void BackProjector::reconstruct(
             int r2 = kp * kp + ip * ip + jp * jp;
             if (r2 < max_r2) {
                 int ires = round(sqrt((RFLOAT) r2) / padding_factor);
-                RFLOAT invw = direct::elem(Fweight, k, i, j);
+                RFLOAT invw = direct::elem(Fweight, i, j, k);
 
                 RFLOAT invtau2;
                 if (direct::elem(tau2, ires) > 0.0) {
@@ -1290,7 +1290,7 @@ void BackProjector::reconstruct(
                     // Now add the inverse-of-tau2_class term
                     invw += invtau2;
                     // Store the new weight again in Fweight
-                    direct::elem(Fweight, k, i, j) = invw;
+                    direct::elem(Fweight, i, j, k) = invw;
                 }
             }
         }
@@ -1318,7 +1318,7 @@ void BackProjector::reconstruct(
                     std::cerr << " ires= " << ires << " Xsize(radavg_weight)= " << Xsize(radavg_weight) << std::endl;
                     REPORT_ERROR("BUG: ires >=Xsize(radavg_weight) ");
                 }
-                direct::elem(radavg_weight, ires) += direct::elem(Fweight, k, i, j);
+                direct::elem(radavg_weight, ires) += direct::elem(Fweight, i, j, k);
                 direct::elem(counter, ires) += 1.0;
             }
         }
@@ -1343,7 +1343,7 @@ void BackProjector::reconstruct(
             const int r2 = kp * kp + ip * ip + jp * jp;
             const int ires = floor(sqrt((RFLOAT) r2) / padding_factor);
             const RFLOAT weight =  std::max(
-                direct::elem(Fweight, k, i, j),
+                direct::elem(Fweight, i, j, k),
                 direct::elem(radavg_weight, ires < r_max ? ires : r_max - 1)
             );
             if (weight == 0) {
@@ -1354,7 +1354,7 @@ void BackProjector::reconstruct(
                     have_warned = true;
                 }
             } else {
-                direct::elem(Fconv, k, i, j) /= weight;
+                direct::elem(Fconv, i, j, k) /= weight;
             }
         }
     } else {
@@ -1409,14 +1409,14 @@ void BackProjector::reconstruct(
                 if (kp * kp + ip * ip + jp * jp < max_r2) {
 
                     // Make sure no division by zero can occur....
-                    w = std::max(1e-6, abs(direct::elem(Fconv, k, i, j)));
+                    w = std::max(1e-6, abs(direct::elem(Fconv, i, j, k)));
                     // Monitor min, max and avg conv_weight
                     corr_min = std::min(corr_min, w);
                     corr_max = std::max(corr_max, w);
                     corr_avg += w;
                     corr_nn += 1.0;
                     // Apply division of Eq. [14] in Pipe & Menon (1999)
-                    direct::elem(Fnewweight, k, i, j) /= w;
+                    direct::elem(Fnewweight, i, j, k) /= w;
                 }
             }
 
@@ -1503,9 +1503,9 @@ void BackProjector::reconstruct(
     RCTICTOC(ReconTimer, ReconS[11], ({
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Ftmp) {
         if (kp * kp + ip * ip + jp * jp < r_max * r_max) {
-            direct::elem(Ftmp, k, i, j) = FFTW_ELEM(Fconv, kp * padding_factor, ip * padding_factor, jp * padding_factor);
+            direct::elem(Ftmp, i, j, k) = FFTW_ELEM(Fconv, kp * padding_factor, ip * padding_factor, jp * padding_factor);
         } else {
-            direct::elem(Ftmp, k, i, j) = 0.0;
+            direct::elem(Ftmp, i, j, k) = 0.0;
         }
     }
     }))
@@ -1620,8 +1620,8 @@ void BackProjector::reconstruct(
                 && yy >= 0 && yy < ori_size
                 && zz >= 0 && zz < ori_size
             ) {
-                direct::elem(weight_out->data, zz, yy, xx) += direct::elem(Fweight, z, y, x);
-                direct::elem(count.data, zz, yy, xx) += 1.0;
+                direct::elem(weight_out->data, xx, yy, zz) += direct::elem(Fweight, x, y, z);
+                direct::elem(count.data, xx, xx, zz) += 1.0;
             }
         }
 
@@ -1630,10 +1630,10 @@ void BackProjector::reconstruct(
         for (long int z = 0; z < ori_size; z++)
         for (long int y = 0; y < ori_size; y++)
         for (long int x = 0; x < ori_size / 2 + 1; x++) {
-            const RFLOAT c = direct::elem(count.data, z, y, x);
+            const RFLOAT c = direct::elem(count.data, x, y, z);
 
             if (c > 0.0) {
-                direct::elem(weight_out->data, z, y, x) *= pad3 / c;
+                direct::elem(weight_out->data, x, y, z) *= pad3 / c;
             }
         }
     }
@@ -1657,12 +1657,12 @@ void BackProjector::enforceHermitianSymmetry() {
     for (int iz = Zinit(data); iz <= Zlast(data); iz++)
     for (int iy = iz >= 0;     iy <= Ylast(data); iy++) {
         // I just need to sum the two points, not divide by 2!
-        Complex fsum = data.elem(iy, 0, iz) + conj(data.elem(-iy, 0, -iz));
-        data.elem( iy, 0,  iz) = fsum;
-        data.elem(-iy, 0, -iz) = conj(fsum);
-        RFLOAT sum = weight.elem(iy, 0, iz) + weight.elem(-iy, 0, -iz);
-        weight.elem(iy, 0, iz) = sum;
-        weight.elem(-iy, 0, -iz) = sum;
+        Complex fsum = data.elem(0, iy, iz) + conj(data.elem(0, -iy, -iz));
+        data.elem(0, +iy, +iz) = fsum;
+        data.elem(0, -iy, -iz) = conj(fsum);
+        RFLOAT sum = weight.elem(0, iy, iz) + weight.elem(0, -iy, -iz);
+        weight.elem(0, +iy, +iz) = sum;
+        weight.elem(0, -iy, -iz) = sum;
     }
 }
 
@@ -1743,14 +1743,14 @@ void BackProjector::applyHelicalSymmetry(
                     }
                     #endif
                     // First interpolate (complex) data
-                    Complex d000 = direct::elem(data, z0, y0, x0);
-                    Complex d001 = direct::elem(data, z0, y0, x1);
-                    Complex d010 = direct::elem(data, z0, y1, x0);
-                    Complex d011 = direct::elem(data, z0, y1, x1);
-                    Complex d100 = direct::elem(data, z1, y0, x0);
-                    Complex d101 = direct::elem(data, z1, y0, x1);
-                    Complex d110 = direct::elem(data, z1, y1, x0);
-                    Complex d111 = direct::elem(data, z1, y1, x1);
+                    Complex d000 = direct::elem(data, x0, y0, z0);
+                    Complex d001 = direct::elem(data, x1, y0, z0);
+                    Complex d010 = direct::elem(data, x0, y1, z0);
+                    Complex d011 = direct::elem(data, x1, y1, z0);
+                    Complex d100 = direct::elem(data, x0, y0, z1);
+                    Complex d101 = direct::elem(data, x1, y0, z1);
+                    Complex d110 = direct::elem(data, x0, y1, z1);
+                    Complex d111 = direct::elem(data, x1, y1, z1);
 
                     Complex dx00 = LIN_INTERP(fx, d000, d001);
                     Complex dx01 = LIN_INTERP(fx, d100, d101);
@@ -1779,14 +1779,14 @@ void BackProjector::applyHelicalSymmetry(
                     sum_data.elem(i, j, k) += ddd;
 
                     // Then interpolate (real) weight
-                    RFLOAT dd000 = direct::elem(weight, z0, y0, x0);
-                    RFLOAT dd001 = direct::elem(weight, z0, y0, x1);
-                    RFLOAT dd010 = direct::elem(weight, z0, y1, x0);
-                    RFLOAT dd011 = direct::elem(weight, z0, y1, x1);
-                    RFLOAT dd100 = direct::elem(weight, z1, y0, x0);
-                    RFLOAT dd101 = direct::elem(weight, z1, y0, x1);
-                    RFLOAT dd110 = direct::elem(weight, z1, y1, x0);
-                    RFLOAT dd111 = direct::elem(weight, z1, y1, x1);
+                    RFLOAT dd000 = direct::elem(weight, x0, y0, z0);
+                    RFLOAT dd001 = direct::elem(weight, x1, y0, z0);
+                    RFLOAT dd010 = direct::elem(weight, x0, y1, z0);
+                    RFLOAT dd011 = direct::elem(weight, x1, y1, z0);
+                    RFLOAT dd100 = direct::elem(weight, x0, y0, z1);
+                    RFLOAT dd101 = direct::elem(weight, x1, y0, z1);
+                    RFLOAT dd110 = direct::elem(weight, x0, y1, z1);
+                    RFLOAT dd111 = direct::elem(weight, x1, y1, z1);
 
                     RFLOAT ddx00 = LIN_INTERP(fx, dd000, dd001);
                     RFLOAT ddx01 = LIN_INTERP(fx, dd100, dd101);
@@ -1795,7 +1795,7 @@ void BackProjector::applyHelicalSymmetry(
                     RFLOAT ddxy0 = LIN_INTERP(fy, ddx00, ddx10);
                     RFLOAT ddxy1 = LIN_INTERP(fy, ddx01, ddx11);
 
-                    sum_weight.elem(i, j, k) +=  LIN_INTERP(fz, ddxy0, ddxy1);
+                    sum_weight.elem(i, j, k) += LIN_INTERP(fz, ddxy0, ddxy1);
 
                 }
             }
@@ -1887,14 +1887,14 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     }
                     #endif
                     // First interpolate (complex) data
-                    Complex d000 = direct::elem(data, z0, y0, x0);
-                    Complex d001 = direct::elem(data, z0, y0, x1);
-                    Complex d010 = direct::elem(data, z0, y1, x0);
-                    Complex d011 = direct::elem(data, z0, y1, x1);
-                    Complex d100 = direct::elem(data, z1, y0, x0);
-                    Complex d101 = direct::elem(data, z1, y0, x1);
-                    Complex d110 = direct::elem(data, z1, y1, x0);
-                    Complex d111 = direct::elem(data, z1, y1, x1);
+                    Complex d000 = direct::elem(data, x0, y0, z0);
+                    Complex d001 = direct::elem(data, x1, y0, z0);
+                    Complex d010 = direct::elem(data, x0, y1, z0);
+                    Complex d011 = direct::elem(data, x1, y1, z0);
+                    Complex d100 = direct::elem(data, x0, y0, z1);
+                    Complex d101 = direct::elem(data, x1, y0, z1);
+                    Complex d110 = direct::elem(data, x0, y1, z1);
+                    Complex d111 = direct::elem(data, x1, y1, z1);
 
                     Complex dx00 = LIN_INTERP(fx, d000, d001);
                     Complex dx01 = LIN_INTERP(fx, d100, d101);
@@ -1909,14 +1909,14 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                         conj(LIN_INTERP(fz, dxy0, dxy1)) : LIN_INTERP(fz, dxy0, dxy1);
 
                     // Then interpolate (real) weight
-                    RFLOAT dd000 = direct::elem(weight, z0, y0, x0);
-                    RFLOAT dd001 = direct::elem(weight, z0, y0, x1);
-                    RFLOAT dd010 = direct::elem(weight, z0, y1, x0);
-                    RFLOAT dd011 = direct::elem(weight, z0, y1, x1);
-                    RFLOAT dd100 = direct::elem(weight, z1, y0, x0);
-                    RFLOAT dd101 = direct::elem(weight, z1, y0, x1);
-                    RFLOAT dd110 = direct::elem(weight, z1, y1, x0);
-                    RFLOAT dd111 = direct::elem(weight, z1, y1, x1);
+                    RFLOAT dd000 = direct::elem(weight, x0, y0, z0);
+                    RFLOAT dd001 = direct::elem(weight, x1, y0, z0);
+                    RFLOAT dd010 = direct::elem(weight, x0, y1, z0);
+                    RFLOAT dd011 = direct::elem(weight, x1, y1, z0);
+                    RFLOAT dd100 = direct::elem(weight, x0, y0, z1);
+                    RFLOAT dd101 = direct::elem(weight, x1, y0, z1);
+                    RFLOAT dd110 = direct::elem(weight, x0, y1, z1);
+                    RFLOAT dd111 = direct::elem(weight, x1, y1, z1);
 
                     RFLOAT ddx00 = LIN_INTERP(fx, dd000, dd001);
                     RFLOAT ddx01 = LIN_INTERP(fx, dd100, dd101);
@@ -1983,9 +1983,9 @@ void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool
         // In the final reconstruction: mask the real-space map beyond its original size to prevent aliasing ghosts
         // Note that rval goes until 1/2 in the oversampled map
         if (do_mask && rval > 1.0 / (2.0 * padding_factor)) {
-            direct::elem(Mconv, k, i, j) = 0.0;
+            direct::elem(Mconv, i, j, k) = 0.0;
         } else {
-            direct::elem(Mconv, k, i, j) *= tab_ftblob(rval) / normftblob;
+            direct::elem(Mconv, i, j, k) *= tab_ftblob(rval) / normftblob;
         }
     }
 

@@ -400,10 +400,10 @@ void local_symmetry_parameters_mpi::run() {
 
             // All nodes unpack sampling points
             op_samplings_batch.clear();
-            for (long int i = 0; i < Ysize(op_samplings_batch_packed); i++) {
+            for (long int j = 0; j < Ysize(op_samplings_batch_packed); j++) {
                 op.initZeros(NR_LOCALSYM_PARAMETERS);
-                for (long int j = 0; j < Xsize(op_samplings_batch_packed); j++) {
-                    op[j] = direct::elem(op_samplings_batch_packed, i, j);
+                for (long int i = 0; i < Xsize(op_samplings_batch_packed); i++) {
+                    op[i] = direct::elem(op_samplings_batch_packed, i, j);
                 }
                 op_samplings_batch.push_back(op);
             }

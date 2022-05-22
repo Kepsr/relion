@@ -235,7 +235,7 @@ class particle_reposition_parameters {
                                 Ictf().setXmippOrigin();
                                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                                    direct::elem(Fctf, k, i, j) = Ictf().elem(-ip, -jp, -kp);
+                                    direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                                 }
                             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                                 // otherwise, just window the CTF to the current resolution
@@ -247,7 +247,7 @@ class particle_reposition_parameters {
                         } else {
                             CTF ctf = CTF(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
                             ctf.getFftwImage(
-                                Fctf, my_image_size, my_image_size, my_pixel_size, 
+                                Fctf, my_image_size, my_image_size, my_pixel_size,
                                 optimiser.ctf_phase_flipped, false, optimiser.intact_ctf_first_peak, true
                             );
                         }
@@ -300,13 +300,13 @@ class particle_reposition_parameters {
                         Imic_in().zinit = -round(zcoord);
                         FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
                             // check the particles do not go off the side
+                            int ip = i - Xinit(Imic_in());
+                            int jp = j - Yinit(Imic_in());
                             int kp = k - Zinit(Imic_in());
-                            int ip = i - Yinit(Imic_in());
-                            int jp = j - Xinit(Imic_in());
                             if (
-                                kp >= 0 && kp < Zsize(Imic_in()) && 
-                                ip >= 0 && ip < Ysize(Imic_in()) && 
-                                jp >= 0 && jp < Xsize(Imic_in())
+                                ip >= 0 && ip < Xsize(Imic_in()) &&
+                                jp >= 0 && jp < Ysize(Imic_in()) &&
+                                kp >= 0 && kp < Zsize(Imic_in())
                             ) {
                                 Ipart().elem(i, j, k) = Imic_in().elem(i, j, k);
                             }
@@ -340,16 +340,16 @@ class particle_reposition_parameters {
                     Imic_sum.zinit = -round(zcoord);
                     radius = optimiser.particle_diameter / (2.0 * mic_pixel_size);
                     FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
-                        long int idx = round(sqrt(k * k + i * i + j * j));
+                        long int idx = round(sqrt(i * i + j * j + k * k));
                         if (idx < radius) {
                             // check the particles do not go off the side
+                            int ip = i - Xinit(Imic_sum);
+                            int jp = j - Yinit(Imic_sum);
                             int kp = k - Zinit(Imic_sum);
-                            int ip = i - Yinit(Imic_sum);
-                            int jp = j - Xinit(Imic_sum);
                             if (
-                                kp >= 0 && kp < Zsize(Imic_sum) && 
-                                ip >= 0 && ip < Ysize(Imic_sum) && 
-                                jp >= 0 && jp < Xsize(Imic_sum)
+                                ip >= 0 && ip < Xsize(Imic_sum) &&
+                                jp >= 0 && jp < Ysize(Imic_sum) &&
+                                kp >= 0 && kp < Zsize(Imic_sum)
                             ) {
                                 Imic_out().elem(i, j, k) += norm_factor * Mpart_mic.elem(i, j, k);
                                 Imic_sum.elem(i, j, k) += 1.0;

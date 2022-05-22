@@ -36,10 +36,10 @@ void FftwHelper::decenterUnflip2D(
 
         if (xs < 0) {
             long int ys = (y + yc - 1) % dest.ydim;
-            direct::elem(dest, y, x) = -direct::elem(src, h - ys - 1, -xs - 1);
+            direct::elem(dest, x, y) = -direct::elem(src, -xs - 1, h - ys - 1);
         } else {
             long int ys = (y + yc) % dest.ydim;
-            direct::elem(dest, y, x) =  direct::elem(src, ys, xs);
+            direct::elem(dest, x, y) =  direct::elem(src, xs, ys);
         }
     }
 }
@@ -60,10 +60,10 @@ void FftwHelper::decenterDouble2D(
 
         if (xs < 0) {
             long int ys = (y + yc - 1) % dest.ydim;
-            direct::elem(dest, y, x) = direct::elem(src, h - ys - 1, -xs - 1);
+            direct::elem(dest, x, y) = direct::elem(src, -xs - 1, h - ys - 1);
         } else {
             long int ys = (y + yc) % dest.ydim;
-            direct::elem(dest, y, x) =  direct::elem(src, ys, xs + 1);
+            direct::elem(dest, x, y) =  direct::elem(src, xs + 1, ys);
         }
     }
 }

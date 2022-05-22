@@ -986,9 +986,9 @@ __global__ void cuda_kernel_calcPowerSpectrum(
             }
             // Set data array
             T val = dFaux[idz * XSIZE * padoridim + idy * XSIZE + idx];
-            val.x *= normfft; val.y *= normfft;
-            val.x *= weight;  val.y *= weight;
-            // data.elem(ip, jp, kp) = weight * direct::elem(Faux, k, i, j) * normfft;
+            val.x *= normfft * weight; 
+            val.y *= normfft * weight;
+            // data.elem(ip, jp, kp) = weight * direct::elem(Faux, i, j, k) * normfft;
             ddata[(kp + data_sz / 2) * dxy + (ip + data_sz / 2) * dx + jp] = val; 
 
             // Calculate power spectrum

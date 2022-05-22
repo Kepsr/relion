@@ -70,7 +70,7 @@ void ImageOp::linearCombination(const Image<T1> &src0, const Image<T1> &src1, T2
     for (long int z = 0; z < src0.data.zdim; z++)
     for (long int y = 0; y < src0.data.ydim; y++)
     for (long int x = 0; x < src0.data.xdim; x++) {
-        direct::elem(dest.data, n, z, y, x) = a0 * direct::elem(src0.data, n, z, y, x) + a1 * direct::elem(src1.data, n, z, y, x);
+        direct::elem(dest.data, y, x, z, n) = a0 * direct::elem(src0.data, y, x, z, n) + a1 * direct::elem(src1.data, y, x, z, n);
     }
 }
 
@@ -82,7 +82,7 @@ void ImageOp::multiply(const Image<T1> &i0, const Image<T2>& i1, Image<T3>& dest
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = 0; y < i0.data.ydim; y++)
     for (long int x = 0; x < i0.data.xdim; x++) {
-        direct::elem(dest.data, n, z, y, x) = direct::elem(i0.data, n, z, y, x) * direct::elem(i1.data, n, z, y, x);
+        direct::elem(dest.data, y, x, z, n) = direct::elem(i0.data, y, x, z, n) * direct::elem(i1.data, y, x, z, n);
     }
 }
 
@@ -92,7 +92,7 @@ void ImageOp::multiplyBy(Image<T1> &dest, const Image<T2>& i1) {
     for (long int z = 0; z < dest.data.zdim; z++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, n, z, y, x) *= direct::elem(i1.data, n, z, y, x);
+        direct::elem(dest.data, y, x, z, n) *= direct::elem(i1.data, y, x, z, n);
     }
 }
 
@@ -102,7 +102,7 @@ void ImageOp::linearCombination(const Image<T1> &src0, T1 src1, T2 a0, T2 a1, Im
     for (long int z = 0; z < src0.data.zdim; z++)
     for (long int y = 0; y < src0.data.ydim; y++)
     for (long int x = 0; x < src0.data.xdim; x++) {
-        direct::elem(dest.data, n, z, y, x) = a0 * direct::elem(src0.data, n, z, y, x) + a1 * src1;
+        direct::elem(dest.data, y, x, z, n) = a0 * direct::elem(src0.data, y, x, z, n) + a1 * src1;
     }
 }
 
@@ -113,7 +113,7 @@ void ImageOp::linearCombination(const MultidimArray<T1> &src0, const MultidimArr
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, n, z, y, x) = a0 * direct::elem(src0, n, z, y, x) + a1 * direct::elem(src1, n, z, y, x);
+        direct::elem(dest, y, x, z, n) = a0 * direct::elem(src0, y, x, z, n) + a1 * direct::elem(src1, y, x, z, n);
     }
 }
 
@@ -125,7 +125,7 @@ void ImageOp::multiply(const MultidimArray<T1> &i0, const MultidimArray<T2>& i1,
     for (long int z = 0; z < i0.zdim; z++)
     for (long int y = 0; y < i0.ydim; y++)
     for (long int x = 0; x < i0.xdim; x++) {
-        direct::elem(dest, n, z, y, x) = direct::elem(i0, n, z, y, x) * direct::elem(i1, n, z, y, x);
+        direct::elem(dest, y, x, z, n) = direct::elem(i0, y, x, z, n) * direct::elem(i1, y, x, z, n);
     }
 }
 
@@ -135,7 +135,7 @@ void ImageOp::linearCombination(const MultidimArray<T1> &src0, T1 src1, T2 a0, T
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, n, z, y, x) = a0 * direct::elem(src0, n, z, y, x) + a1 * src1;
+        direct::elem(dest, y, x, z, n) = a0 * direct::elem(src0, y, x, z, n) + a1 * src1;
     }
 }
 
@@ -149,7 +149,7 @@ void ImageOp::flipX(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, n, z, y, x) = direct::elem(src0, n, z, y, src0.xdim - 1 - x);
+        direct::elem(dest, y, x, z, n) = direct::elem(src0,y, src0.xdim - 1 - x, z, n);
     }
 }
 
@@ -163,7 +163,7 @@ void ImageOp::flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, n, z, y, x) = direct::elem(src0, n, z, src0.ydim - 1 - y, x);
+        direct::elem(dest, y, x, z, n) = direct::elem(src0, src0.ydim - 1 - y, x, z, n);
     }
 }
 
@@ -177,7 +177,7 @@ void ImageOp::rotate90(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, n, z, x, src0.ydim - 1 - y) = direct::elem(src0, n, z, y, x);
+        direct::elem(dest, x, src0.ydim - 1 - y, z, n) = direct::elem(src0, y, x, z, n);
     }
 }
 
@@ -190,7 +190,7 @@ void ImageOp::rotate180(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) 
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, n, z, src0.ydim - 1 - y, src0.xdim - 1 - x) = direct::elem(src0, n, z, y, x);
+        direct::elem(dest, src0.ydim - 1 - y, src0.xdim - 1 - x, z, n) = direct::elem(src0, y, x, z, n);
     }
 }
 
@@ -203,7 +203,7 @@ void ImageOp::rotate270(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) 
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, n, z, src0.xdim - 1 - x, y) = direct::elem(src0, n, z, y, x);
+        direct::elem(dest, src0.xdim - 1 - x, y, z, n) = direct::elem(src0, y, x, z, n);
     }
 }
 

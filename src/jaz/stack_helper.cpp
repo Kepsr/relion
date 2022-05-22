@@ -349,11 +349,11 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         for (long int y = 0; y < h0; y++)
         for (long int x = 0; x < w0; x++) {
 
-            RFLOAT gain = useGain ? direct::elem(gainRef->data, 0, 0, y, x) : 1.0;
-            RFLOAT val = direct::elem(muGraph.data, 0, 0, y, x);
+            RFLOAT gain = useGain ? direct::elem(gainRef->data, x, y) : 1.0;
+            RFLOAT val = direct::elem(muGraph.data, x, y);
             if (0.0 < hot && hot < val) { val = hot; }
 
-            direct::elem(muGraph.data, 0, 0, y, x) = -gain * val;
+            direct::elem(muGraph.data, x, y) = -gain * val;
         }
 
         if (fixDefect) {
@@ -386,15 +386,15 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
                 int n_ok = 0;
                 RFLOAT pbuf[PBUF_SIZE];
-                for (int dy= -D_MAX; dy <= D_MAX; dy++) {
-                    int y = i + dy;
+                for (int dy = -D_MAX; dy <= D_MAX; dy++) {
+                    int y = j + dy;
                     if (y < 0 || y >= h0) continue;
                     for (int dx = -D_MAX; dx <= D_MAX; dx++) {
-                        int x = j + dx;
+                        int x = i + dx;
                         if (x < 0 || x >= w0) continue;
-                        if (direct::elem(*defectMask, y, x)) continue;
+                        if (direct::elem(*defectMask, x, y)) continue;
 
-                        pbuf[n_ok] = direct::elem(muGraph.data, y, x);
+                        pbuf[n_ok] = direct::elem(muGraph.data, x, y);
                         n_ok++;
                     }
                 }
@@ -447,7 +447,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 int yy = y0 + y;
                 if (yy < 0) { yy = 0; } else if (yy >= h0) { yy = h0 - 1; }
 
-                direct::elem(aux0[t].data, 0, 0, y, x) = direct::elem(muGraph.data, 0, 0, yy, xx);
+                direct::elem(aux0[t].data, x, y) = direct::elem(muGraph.data, xx, yy);
             }
 
             if (outPs == moviePs) {
@@ -561,7 +561,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 if (yy < 0) { yy = 0; } else if (yy >= h0) { yy = h0 - 1; }
 
                 // Note the MINUS here!!!
-                direct::elem(aux0[t].data, 0, 0, y, x) = -direct::elem(Iframes[f], yy, xx);
+                direct::elem(aux0[t].data, x, y) = -direct::elem(Iframes[f], xx, yy);
             }
 
             if (outPs == moviePs) {
@@ -624,7 +624,7 @@ Image<RFLOAT> StackHelper::toSingleImage(const std::vector<Image<RFLOAT>> stack)
     for (int n = 0; n < s; n++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            direct::elem(out(), n, 0, y, x) = stack[n](y, x);
+            direct::elem(out(), x, y, 0, n) = stack[n](y, x);
         }
     }
 
@@ -690,7 +690,7 @@ std::vector<double> StackHelper::powerSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(stack[i][f].data, y, x);
+            const Complex z = direct::elem(stack[i][f].data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
@@ -728,7 +728,7 @@ std::vector<double> StackHelper::varSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(stack[i][f].data, y, x);
+            const Complex z = direct::elem(stack[i][f].data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
@@ -752,12 +752,12 @@ std::vector<double> StackHelper::varSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(stack[i][f].data, y, x);
+            const Complex z = direct::elem(stack[i][f].data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = (int) sqrt(xx * xx + yy * yy);
+            const int r = sqrt(xx * xx + yy * yy);
 
             if (r >= w) continue;
 
@@ -789,12 +789,12 @@ std::vector<double> StackHelper::powerSpectrum(
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(obs[i][f].data, y, x) - direct::elem(signal[i].data, y, x);
+            const Complex z = direct::elem(obs[i][f].data, x, y) - direct::elem(signal[i].data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = (int) sqrt(xx * xx + yy * yy);
+            const int r = sqrt(xx * xx + yy * yy);
 
             if (r >= w) continue;
 

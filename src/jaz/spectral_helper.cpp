@@ -24,8 +24,8 @@ void SpectralHelper::computePhase(const Image<Complex> &src, Image<RFLOAT> &dest
     dest = Image<RFLOAT>(src.data.xdim, src.data.ydim, src.data.zdim, src.data.ndim);
 
     FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(src.data) {
-        Complex z = direct::elem(src.data, l, k, i, j);
-        direct::elem(dest.data, l, k, i, j) = atan2(z.imag, z.real);
+        Complex z = direct::elem(src.data, i, j, k, l);
+        direct::elem(dest.data, i, j, k, l) = z.arg();
     }
 }
 
@@ -33,7 +33,7 @@ void SpectralHelper::computeAbs(const Image<Complex> &src, Image<RFLOAT> &dest) 
     dest = Image<RFLOAT>(src.data.xdim, src.data.ydim, src.data.zdim, src.data.ndim);
 
     FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(src.data) {
-        Complex z = direct::elem(src.data, l, k, i, j);
-        direct::elem(dest.data, l, k, i, j) = z.abs();
+        Complex z = direct::elem(src.data, i, j, k, l);
+        direct::elem(dest.data, i, j, k, l) = z.abs();
     }
 }

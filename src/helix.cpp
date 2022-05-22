@@ -199,14 +199,14 @@ bool calcCCofHelicalSymmetry(
                 std::cout << " idzidyidx= " << k << ", " << i << ", " << j << ", x0x1y0y1z0z1= " << x0 << ", " << x1 << ", " << y0 << ", " << y1 << ", " << z0 << ", " << z1 << std::endl;
             }
 
-            RFLOAT d000 = direct::elem(v, z0, y0, x0);
-            RFLOAT d001 = direct::elem(v, z0, y0, x1);
-            RFLOAT d010 = direct::elem(v, z0, y1, x0);
-            RFLOAT d011 = direct::elem(v, z0, y1, x1);
-            RFLOAT d100 = direct::elem(v, z1, y0, x0);
-            RFLOAT d101 = direct::elem(v, z1, y0, x1);
-            RFLOAT d110 = direct::elem(v, z1, y1, x0);
-            RFLOAT d111 = direct::elem(v, z1, y1, x1);
+            RFLOAT d000 = direct::elem(v, x0, y0, z0);
+            RFLOAT d001 = direct::elem(v, x1, y0, z0);
+            RFLOAT d010 = direct::elem(v, x0, y1, z0);
+            RFLOAT d011 = direct::elem(v, x1, y1, z0);
+            RFLOAT d100 = direct::elem(v, x0, y0, z1);
+            RFLOAT d101 = direct::elem(v, x1, y0, z1);
+            RFLOAT d110 = direct::elem(v, x0, y1, z1);
+            RFLOAT d111 = direct::elem(v, x1, y1, z1);
 
             RFLOAT dx00 = LIN_INTERP(fx, d000, d001);
             RFLOAT dx01 = LIN_INTERP(fx, d100, d101);
@@ -916,14 +916,14 @@ void imposeHelicalSymmetryInRealSpace(
             int y0 = floor(yp); RFLOAT fy = yp - y0; y0 -= Yinit(v); int y1 = y0 + 1;
             int z0 = floor(zp); RFLOAT fz = zp - z0; z0 -= Zinit(v); int z1 = z0 + 1;
 
-            RFLOAT d000 = direct::elem(v, z0, y0, x0);
-            RFLOAT d001 = direct::elem(v, z0, y0, x1);
-            RFLOAT d010 = direct::elem(v, z0, y1, x0);
-            RFLOAT d011 = direct::elem(v, z0, y1, x1);
-            RFLOAT d100 = direct::elem(v, z1, y0, x0);
-            RFLOAT d101 = direct::elem(v, z1, y0, x1);
-            RFLOAT d110 = direct::elem(v, z1, y1, x0);
-            RFLOAT d111 = direct::elem(v, z1, y1, x1);
+            RFLOAT d000 = direct::elem(v, x0, y0, z0);
+            RFLOAT d001 = direct::elem(v, x1, y0, z0);
+            RFLOAT d010 = direct::elem(v, x0, y1, z0);
+            RFLOAT d011 = direct::elem(v, x1, y1, z0);
+            RFLOAT d100 = direct::elem(v, x0, y0, z1);
+            RFLOAT d101 = direct::elem(v, x1, y0, z1);
+            RFLOAT d110 = direct::elem(v, x0, y1, z1);
+            RFLOAT d111 = direct::elem(v, x1, y1, z1);
 
             RFLOAT dx00 = LIN_INTERP(fx, d000, d001);
             RFLOAT dx01 = LIN_INTERP(fx, d100, d101);
@@ -1330,9 +1330,9 @@ void createCylindricalReferenceWithPolarity(
     if (inner_diameter_pix > 0.0)
         r_min = inner_diameter_pix / 2.0;
     for (long int k = Zinit(v); k <= Zlast(v); k++) {
-        r_max = top_radius_pix - (top_radius_pix - bottom_radius_pix) * ((RFLOAT)(k - Zinit(v))) / ((RFLOAT)(box_size));
-        for (long int i = Yinit(v); i <= Ylast(v); i++) {
-            for (long int j = Xinit(v); j <= Xlast(v); j++) {
+        r_max = top_radius_pix - (top_radius_pix - bottom_radius_pix) * ((RFLOAT) (k - Zinit(v))) / (RFLOAT) box_size;
+        for (long int j = Yinit(v); j <= Ylast(v); j++) {
+            for (long int i = Xinit(v); i <= Xlast(v); i++) {
                 r = sqrt(i * i + j * j);
                 if (r > r_min && r < r_max) {
                     v.elem(i, j, k) = 1.0;
@@ -2960,10 +2960,10 @@ void makeHelicalReference3D(
                         if (dist > particle_radius_pix)
                             continue;
 
-                        val_old = out.elem(y3, x3, z3);
+                        val_old = out.elem(x3, y3, z3);
                         val_new = 0.5 + 0.5 * cos(PI * dist / particle_radius_pix);
                         if (val_new > val_old)
-                            out.elem(y3, x3, z3) = val_new;
+                            out.elem(x3, y3, z3) = val_new;
                     }
                 }
             }
@@ -3062,50 +3062,49 @@ void makeHelicalReference3DWithPolarity(
             z2 = z1;
 
             for (int dz = -particle_radius_max_pix; dz <= particle_radius_max_pix; dz++) {
-                RFLOAT thres_xy = (top_radius_pix - bottom_radius_pix) * 0.5 * dz / particle_radius_pix + (top_radius_pix + bottom_radius_pix) / 2.0;
-                for (int dy = -particle_radius_max_pix; dy <= particle_radius_max_pix; dy++) {
-                    for (int dx = -particle_radius_max_pix; dx <= particle_radius_max_pix; dx++) {
-                        RFLOAT _x, _y, _z, dist, val_old, val_new;
+            RFLOAT thres_xy = (top_radius_pix - bottom_radius_pix) * 0.5 * dz / particle_radius_pix + (top_radius_pix + bottom_radius_pix) / 2.0;
+            for (int dy = -particle_radius_max_pix; dy <= particle_radius_max_pix; dy++) {
+            for (int dx = -particle_radius_max_pix; dx <= particle_radius_max_pix; dx++) {
 
-                        int x3 = round(x2) + dx;
-                        int y3 = round(y2) + dy;
-                        int z3 = round(z2) + dz;
+                int x3 = round(x2) + dx;
+                int y3 = round(y2) + dy;
+                int z3 = round(z2) + dz;
 
-                        if (
-                            x3 < Xmipp::init(box_size) || x3 > Xmipp::last(box_size) ||
-                            y3 < Xmipp::init(box_size) || y3 > Xmipp::last(box_size) ||
-                            z3 < Xmipp::init(box_size) || z3 > Xmipp::last(box_size)
-                        ) continue;
+                if (
+                    x3 < Xmipp::init(box_size) || x3 > Xmipp::last(box_size) ||
+                    y3 < Xmipp::init(box_size) || y3 > Xmipp::last(box_size) ||
+                    z3 < Xmipp::init(box_size) || z3 > Xmipp::last(box_size)
+                ) continue;
 
-                        _x = (RFLOAT) x3 - x2;
-                        _y = (RFLOAT) y3 - y2;
-                        _z = (RFLOAT) z3 - z2;
+                RFLOAT _x = (RFLOAT) x3 - x2;
+                RFLOAT _y = (RFLOAT) y3 - y2;
+                RFLOAT _z = (RFLOAT) z3 - z2;
 
-                        dist = sqrt(_x * _x + _y * _y + _z * _z);
-                        if (dist > particle_radius_pix)
-                            continue;
+                RFLOAT dist = sqrt(_x * _x + _y * _y + _z * _z);
+                if (dist > particle_radius_pix)
+                    continue;
 
-                        val_old = out.elem(y3, x3, z3);
-                        val_new = 0.0;
+                RFLOAT val_old = out.elem(x3, y3, z3);
+                RFLOAT val_new = 0.0;
 
-                        // Draw the shape you want!
-                        if (topbottom_ratio > 0.9999) {
-                            // Without polarity. Thus spheres.
-                            val_new = 0.5 + 0.5 * cos(PI * dist / particle_radius_pix);
-                            if (val_new > val_old)
-                                out.elem(y3, x3, z3) = val_new;
-                        } else {
-                            // With polarity
-                            dist = sqrt(_x * _x + _y * _y);
-                            if (dist < thres_xy) {
-                                val_new  = 0.5 + 0.5 * cos(PI * dist / thres_xy);
-                                val_new *= 0.5 + 0.5 * cos(PI * 0.5 * _z / particle_radius_pix);  // something arbitrary
-                                if (val_new > val_old)
-                                    out.elem(y3, x3, z3) = val_new;
-                            }
-                        }
+                // Draw the shape you want!
+                if (topbottom_ratio > 0.9999) {
+                    // Without polarity. Thus spheres.
+                    val_new = 0.5 + 0.5 * cos(PI * dist / particle_radius_pix);
+                    if (val_new > val_old)
+                        out.elem(x3, y3, z3) = val_new;
+                } else {
+                    // With polarity
+                    dist = sqrt(_x * _x + _y * _y);
+                    if (dist < thres_xy) {
+                        val_new  = 0.5 * (1.0 + cos(PI * dist / thres_xy));
+                        val_new *= 0.5 * (1.0 + cos(PI * 0.5 * _z / particle_radius_pix));  // something arbitrary
+                        if (val_new > val_old)
+                            out.elem(y3, x3, z3) = val_new;
                     }
                 }
+            }
+            }
             }
         }
 
@@ -3142,10 +3141,10 @@ void makeHelicalReference3DWithPolarity(
                     if (dist > particle_radius_pix / 2.0)
                         continue;
 
-                    val_old = out.elem(y2, x2, z2);
+                    val_old = out.elem(x2, y2, z2);
                     val_new = 0.5 + 0.5 * cos(2.0 * PI * dist / particle_radius_pix);
                     if (val_new > val_old)
-                        out.elem(y2, x2, z2) = val_new;
+                        out.elem(x2, y2, z2) = val_new;
                 }
             }
         }
@@ -3700,7 +3699,7 @@ void cutOutPartOfHelix(
                 continue;
 
             // Fill in voxels
-            direct::elem(vout, zi, yi, xi) = direct::elem(vin, zi + new_z0 - old_z0, yi - old_y0, xi - old_x0);
+            direct::elem(vout, xi, yi, zi) = direct::elem(vin, xi - old_x0, yi - old_y0, zi + new_z0 - old_z0);
         }
     }
     vout.setXmippOrigin();
@@ -4339,7 +4338,7 @@ void calculateRadialAvg(MultidimArray<RFLOAT> &v, RFLOAT angpix) {
         rval[ii] = rcount[ii] = 0.0;
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
-        rint = round(sqrt((RFLOAT)(i * i + j * j)));
+        rint = round(sqrt((RFLOAT) (i * i + j * j)));
         if (rint >= size)
             continue;
 

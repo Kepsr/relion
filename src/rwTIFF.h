@@ -229,8 +229,8 @@ int Image<T>::readTIFF(
             for (int x = 0; x < dims.x; x++) {
                 /// TODO: memcpy or pointer arithmetic is probably faster
                 std::swap(
-                    direct::elem(data, n, z, y1, x), 
-                    direct::elem(data, n, z, y2, x)
+                    direct::elem(data, x, y1, z, n),
+                    direct::elem(data, x, y2, z, n)
                 );
             }
         }

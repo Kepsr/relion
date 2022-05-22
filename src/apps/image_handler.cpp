@@ -188,18 +188,18 @@ class image_handler_parameters {
         if (do_add_edge) {
             // Treat X-boundaries
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
-                if (j < edge_x0) {
-                    direct::elem(Iin(), i, j) = direct::elem(Iin(), i, edge_x0);
-                } else if (j > edge_xF) {
-                    direct::elem(Iin(), i, j) = direct::elem(Iin(), i, edge_xF);
+                if (i < edge_x0) {
+                    direct::elem(Iin(), i, j) = direct::elem(Iin(), edge_x0, j);
+                } else if (i > edge_xF) {
+                    direct::elem(Iin(), i, j) = direct::elem(Iin(), edge_xF, j);
                 }
             }
             // Treat Y-boundaries
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
-                if (i < edge_y0) {
-                    direct::elem(Iin(), i, j) = direct::elem(Iin(), edge_y0, j);
-                } else if (i > edge_yF) {
-                    direct::elem(Iin(), i, j) = direct::elem(Iin(), edge_yF, j);
+                if (j < edge_y0) {
+                    direct::elem(Iin(), i, j) = direct::elem(Iin(), i, edge_y0);
+                } else if (j > edge_yF) {
+                    direct::elem(Iin(), i, j) = direct::elem(Iin(), i, edge_yF);
                 }
             }
         }
@@ -223,8 +223,8 @@ class image_handler_parameters {
         if (do_remove_nan) {
             Iout().setXmippOrigin();
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout()) {
-                if (std::isnan(direct::elem(Iout(), k, i, j)) || std::isinf(direct::elem(Iout(), k, i, j)))
-                    direct::elem(Iout(), k, i, j) = replace_nan;
+                if (std::isnan(direct::elem(Iout(), i, j, k)) || std::isinf(direct::elem(Iout(), i, j, k)))
+                    direct::elem(Iout(), i, j, k) = replace_nan;
             }
         }
 
@@ -235,40 +235,40 @@ class image_handler_parameters {
         }
         if (fabs(multiply_constant - 1.0) > 0.0) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) *= multiply_constant;
+                direct::elem(Iout(), i, j, k) *= multiply_constant;
             }
         } else if (fabs(divide_constant - 1.0) > 0.0) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) /= divide_constant;
+                direct::elem(Iout(), i, j, k) /= divide_constant;
             }
         } else if (fabs(add_constant) > 0.0) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) += add_constant;
+                direct::elem(Iout(), i, j, k) += add_constant;
             }
         } else if (fabs(subtract_constant) > 0.0) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) -= subtract_constant;
+                direct::elem(Iout(), i, j, k) -= subtract_constant;
             }
         } else if (fn_mult != "") {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) *= direct::elem(Iop(), k, i, j);
+                direct::elem(Iout(), i, j, k) *= direct::elem(Iop(), i, j, k);
             }
         } else if (fn_div != "") {
             bool is_first = true;
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                if (abs(direct::elem(Iop(), k, i, j)) < 1e-10) {
+                if (abs(direct::elem(Iop(), i, j, k)) < 1e-10) {
                     if (is_first) {
                         std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
                         is_first = false;
                     }
-                    direct::elem(Iout(), k, i, j) = 0.0;
+                    direct::elem(Iout(), i, j, k) = 0.0;
                 } else {
-                    direct::elem(Iout(), k, i, j) /= direct::elem(Iop(), k, i, j);
+                    direct::elem(Iout(), i, j, k) /= direct::elem(Iop(), i, j, k);
                 }
             }
         } else if (fn_add != "") {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) += direct::elem(Iop(), k, i, j);
+                direct::elem(Iout(), i, j, k) += direct::elem(Iop(), i, j, k);
             }
         } else if (fn_subtract != "") {
             RFLOAT my_scale = 1.0, best_diff2 ;
@@ -334,7 +334,7 @@ class image_handler_parameters {
             }
 
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) -= my_scale * direct::elem(Iop(), k, i, j);
+                direct::elem(Iout(), i, j, k) -= my_scale * direct::elem(Iop(), i, j, k);
             }
         } else if (fn_fsc != "") {
             MultidimArray<RFLOAT> fsc;
@@ -405,14 +405,14 @@ class image_handler_parameters {
 
             Iop().setXmippOrigin();
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-                int jpp = round(jp * A(0, 0) + ip * A(0, 1));
-                int ipp = round(jp * A(1, 0) + ip * A(1, 1));
+                int ipp = round(jp * A(0, 0) + ip * A(0, 1));
+                int jpp = round(jp * A(1, 0) + ip * A(1, 1));
                 int kpp = kp;
                 RFLOAT fil = (
                     jpp >= Xinit(Iop()) && jpp <= Xlast(Iop()) &&
                     ipp >= Yinit(Iop()) && ipp <= Ylast(Iop())
                 ) ? Iop().elem(ipp, jpp, kpp) : 0.0;
-                direct::elem(FT, k, i, j) *=  fil;
+                direct::elem(FT, i, j, k) *= fil;
             }
             transformer.inverseFourierTransform();
             Iout = Iin;
@@ -445,25 +445,25 @@ class image_handler_parameters {
             // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 5, 4, 3, 2, 1, 0
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) = Iin().elem(i, Xsize(Iin()) - 1 - j, k);
+                direct::elem(Iout(), i, j, k) = Iin().elem(Xsize(Iin()) - 1 - i, j, k);
             }
         } else if (do_flipY) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) = Iin().elem(Ysize(Iin()) - 1 - i, j, k);
+                direct::elem(Iout(), i, j, k) = Iin().elem(i, Ysize(Iin()) - 1 - j, k);
             }
         } else if (do_flipZ) {
             if (Zsize(Iout()) < 2)
                 REPORT_ERROR("ERROR: this is not a 3D map, so cannot be flipped in Z");
 
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                direct::elem(Iout(), k, i, j) = Iin().elem(i, j, Zsize(Iin()) - 1 - k);
+                direct::elem(Iout(), i, j, k) = Iin().elem(i, j, Zsize(Iin()) - 1 - k);
             }
         } else if (do_invert_hand) {
             // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 0, 5, 4, 3, 2, 1
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
-                long int dest_x = j == 0 ? 0 : Xsize(Iin()) - j;
-                direct::elem(Iout(), k, i, j) = Iin().elem(i, dest_x, k);
+                long int dest_x = (Xsize(Iin()) - j) % Xsize(Iin());
+                direct::elem(Iout(), i, j, k) = Iin().elem(i, dest_x, k);
             }
         }
 
@@ -548,14 +548,14 @@ class image_handler_parameters {
         // Thresholding (can be done after any other operation)
         if (fabs(threshold_above - 999.0) > 0.0) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout()) {
-                if (direct::elem(Iout(), k, i, j) > threshold_above)
-                    direct::elem(Iout(), k, i, j) = threshold_above;
+                if (direct::elem(Iout(), i, j, k) > threshold_above)
+                    direct::elem(Iout(), i, j, k) = threshold_above;
             }
         }
         if (fabs(threshold_below + 999.0) > 0.0) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout()) {
-                if (direct::elem(Iout(), k, i, j) < threshold_below)
-                    direct::elem(Iout(), k, i, j) = threshold_below;
+                if (direct::elem(Iout(), i, j, k) < threshold_below)
+                    direct::elem(Iout(), i, j, k) = threshold_below;
             }
         }
 
@@ -706,8 +706,8 @@ class image_handler_parameters {
                     MultidimArray<RFLOAT> spectrum = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                        long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
-                        spectrum(idx) += direct::elem(Iop(), k, i, j);
+                        long int idx = round(sqrt(ip * ip + jp * jp + kp * kp));
+                        spectrum(idx) += direct::elem(Iop(), i, j, k);
                         count(idx) += 1.0;
                     }
                     for (int i = Xinit(spectrum); i <= Xlast(spectrum); i++) {
@@ -716,12 +716,12 @@ class image_handler_parameters {
                     }
 
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                            long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
-                            if (idx > minr_ampl_corr) {
-                                direct::elem(Iop(), k, i, j) /= spectrum(idx);
-                            } else {
-                                direct::elem(Iop(), k, i, j) = 1.0;
-                            }
+                        long int idx = round(sqrt(ip * ip + jp * jp + kp * kp));
+                        if (idx > minr_ampl_corr) {
+                            direct::elem(Iop(), i, j, k) /= spectrum(idx);
+                        } else {
+                            direct::elem(Iop(), i, j, k) = 1.0;
+                        }
                     }
                     avg_ampl = Iop();
                     Iop.write("test.mrc");
@@ -796,7 +796,7 @@ class image_handler_parameters {
                 Iin.read(fn_img);
                 for (int n = 0; n < ndim; n++) {
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(avg_ampl) {
-                        direct::elem(avg_ampl, k, i, j) +=  direct::elem(Iin(), n, k, i, j);
+                        direct::elem(avg_ampl, i, j, k) +=  direct::elem(Iin(), i, j, k, n);
                     }
                 }
             } else if (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)) {
@@ -820,7 +820,7 @@ class image_handler_parameters {
                         int myframe = nn / bin_avg;
                         if (myframe < avgndim) {
                             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
-                                direct::elem(Iavg(),myframe,0,i,j) += direct::elem(Iin(), i, j); // just store sum
+                                direct::elem(Iavg(), i, j, 0, myframe) += direct::elem(Iin(), i, j); // just store sum
                             }
                         }
                     } else if (avg_first >= 0 && avg_last >= 0 && nn + 1 >= avg_first && nn + 1 <= avg_last) {

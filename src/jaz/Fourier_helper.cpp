@@ -37,9 +37,9 @@ void FourierHelper::FourierShift2D(MultidimArray<Complex> &img, RFLOAT xshift, R
         RFLOAT y = yy < w ? yy : yy - h;
 
         Complex c1 = Complex::unit(-2.0 * PI * (x * xshift + y * yshift));
-        Complex c2 = direct::elem(img, yy, xx);
+        Complex c2 = direct::elem(img, xx, yy);
 
-        direct::elem(img, yy, xx) = Complex(
+        direct::elem(img, xx, yy) = Complex(
             c1.real * c2.real - c1.imag * c2.imag,  // c1 dot conj c2
             c1.real * c2.imag + c1.imag * c2.real   // c1 dot (i conj c2)
         );

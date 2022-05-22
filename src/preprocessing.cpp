@@ -790,10 +790,10 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         // X-boundaries
         if (x0 < 0 || xF >= Xsize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
-                if (j + xpos < 0) {
-                    Ipart().elem(i, j, k) = Ipart().elem(i, -xpos, k);
-                } else if (j + xpos >= Xsize(Imic())) {
-                    Ipart().elem(i, j, k) = Ipart().elem(i, Xsize(Imic()) - xpos - 1, k);
+                if (i + xpos < 0) {
+                    Ipart().elem(i, j, k) = Ipart().elem(-xpos, j, k);
+                } else if (i + xpos >= Xsize(Imic())) {
+                    Ipart().elem(i, j, k) = Ipart().elem(Xsize(Imic()) - xpos - 1, j, k);
                 }
             }
         }
@@ -801,10 +801,10 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         // Y-boundaries
         if (y0 < 0 || yF >= Ysize(Imic())) {
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Ipart()) {
-                if (i + ypos < 0) {
-                    Ipart().elem(i, j, k) = Ipart().elem(-ypos, j, k);
-                } else if (i + ypos >= Ysize(Imic())) {
-                    Ipart().elem(i, j, k) = Ipart().elem(Ysize(Imic()) - ypos - 1, j, k);
+                if (j + ypos < 0) {
+                    Ipart().elem(i, j, k) = Ipart().elem(i, -ypos, k);
+                } else if (j + ypos >= Ysize(Imic())) {
+                    Ipart().elem(i, j, k) = Ipart().elem(i, Ysize(Imic()) - ypos - 1, k);
                 }
             }
         }
@@ -828,7 +828,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             Image<RFLOAT> Iproj(Ysize(Ipart()), Xsize(Ipart()));
             Iproj().setXmippOrigin();
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ipart()) {
-                direct::elem(Iproj(), i, j) += direct::elem(Ipart(), k, i, j);
+                direct::elem(Iproj(), i, j) += direct::elem(Ipart(), i, j, k);
             }
             Ipart = Iproj;
         }

@@ -273,13 +273,13 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         MultidimArray<T> aux;
         int l, shift;
 
-        l = XSIZE(v);
+        l = Xsize(v);
         aux.resize(l);
         shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
-        // Shift the input in an auxiliar vector
+        // Shift the input in an auxiliary vector
         for (int i = 0; i < l; i++) {
             int ip = i + shift;
 
@@ -297,16 +297,15 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
             direct::elem(v, i) = direct::elem(aux, i);
     } else if (v.getDim() == 2) {
         // 2D
-        //std::cerr << "CenterFFT on gpu with dim=2!" <<std::endl;
+        // std::cerr << "CenterFFT on gpu with dim=2!" <<std::endl;
 
-        long int xshift = XSIZE(v) / 2;
-        long int yshift = YSIZE(v) / 2;
+        long int xshift = Xsize(v) / 2;
+        long int yshift = Ysize(v) / 2;
 
         if (!forward) {
             xshift = -xshift;
             yshift = -yshift;
         }
-
 
         int dim = ceilf((float) (v.size() / (float) (2 * CFTT_BLOCK_SIZE)));
         AccUtilities::centerFFT_2D(
@@ -317,7 +316,7 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                 &img_in[0],
             #endif
             v.size(),
-            XSIZE(v), YSIZE(v),
+            Xsize(v), Ysize(v),
             xshift, yshift
         );
         LAUNCH_HANDLE_ERROR(cudaGetLastError());
@@ -336,84 +335,84 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         int l, shift;
 
         // Shift in the X direction
-        l = XSIZE(v);
+        l = Xsize(v);
         aux.resize(l);
         shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
-        for (int k = 0; k < ZSIZE(v); k++)
-            for (int i = 0; i < YSIZE(v); i++) {
-                // Shift the input in an auxiliary vector
-                for (int j = 0; j < l; j++) {
-                    int jp = j + shift;
+        for (int k = 0; k < Zsize(v); k++)
+        for (int j = 0; j < Ysize(v); j++) {
+            // Shift the input in an auxiliary vector
+            for (int i = 0; i < l; i++) {
+                int ip = i + shift;
 
-                    if (jp < 0) {
-                        jp += l;
-                    } else if (jp >= l) {
-                        jp -= l;
-                    }
-
-                    aux(jp) = direct::elem(v, k, i, j);
+                if (ip < 0) {
+                    ip += l;
+                } else if (ip >= l) {
+                    ip -= l;
                 }
 
-                // Copy the vector
-                for (int j = 0; j < l; j++)
-                    direct::elem(v, k, i, j) = direct::elem(aux, j);
+                aux(ip) = direct::elem(v, i, j, k);
             }
+
+            // Copy the vector
+            for (int i = 0; i < l; i++)
+                direct::elem(v, i, j, k) = direct::elem(aux, i);
+        }
 
         // Shift in the Y direction
-        l = YSIZE(v);
+        l = Ysize(v);
         aux.resize(l);
         shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
-        for (int k = 0; k < ZSIZE(v); k++)
-            for (int j = 0; j < XSIZE(v); j++) {
-                // Shift the input in an auxiliary vector
-                for (int i = 0; i < l; i++) {
-                    int ip = i + shift;
+        for (int k = 0; k < Zsize(v); k++)
+        for (int i = 0; i < Xsize(v); i++) {
+            // Shift the input in an auxiliary vector
+            for (int j = 0; j < l; j++) {
+                int jp = j + shift;
 
-                    if (ip < 0) {
-                        ip += l;
-                    } else if (ip >= l) {
-                        ip -= l;
-                    }
-
-                    aux(ip) = direct::elem(v, k, i, j);
+                if (jp < 0) {
+                    jp += l;
+                } else if (jp >= l) {
+                    jp -= l;
                 }
 
-                // Copy the vector
-                for (int i = 0; i < l; i++)
-                    direct::elem(v, k, i, j) = direct::elem(aux, i);
+                aux(jp) = direct::elem(v, i, j, k);
             }
+
+            // Copy the vector
+            for (int j = 0; j < l; j++)
+                direct::elem(v, i, j, k) = direct::elem(aux, j);
+        }
 
         // Shift in the Z direction
-        l = ZSIZE(v);
+        l = Zsize(v);
         aux.resize(l);
         shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
-        for (int i = 0; i < YSIZE(v); i++)
-            for (int j = 0; j < XSIZE(v); j++) {
-                // Shift the input in an auxiliary vector
-                for (int k = 0; k < l; k++) {
-                    int kp = k + shift;
-                    if (kp < 0) {
-                        kp += l;
-                    } else if (kp >= l) {
-                        kp -= l;
-                    }
-
-                    aux(kp) = direct::elem(v, k, i, j);
+        for (int j = 0; j < Ysize(v); j++)
+        for (int i = 0; i < Xsize(v); i++) {
+            // Shift the input in an auxiliary vector
+            for (int k = 0; k < l; k++) {
+                int kp = k + shift;
+                if (kp < 0) {
+                    kp += l;
+                } else if (kp >= l) {
+                    kp -= l;
                 }
 
-                // Copy the vector
-                for (int k = 0; k < l; k++)
-                    direct::elem(v, k, i, j) = direct::elem(aux, k);
+                aux(kp) = direct::elem(v, i, j, k);
             }
+
+            // Copy the vector
+            for (int k = 0; k < l; k++)
+                direct::elem(v, i, j, k) = direct::elem(aux, k);
+        }
     } else {
         v.printShape();
         REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");

@@ -216,8 +216,8 @@ class reconstruct_parameters {
                     anglemin = radians(anglemin);
                     anglemax = radians(anglemax);
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
-                        RFLOAT x = jp;
-                        RFLOAT y = ip;
+                        RFLOAT x = ip;
+                        RFLOAT y = jp;
                         RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
                         // Only take the relevant sector now...
                         if (do_wrap_max) {

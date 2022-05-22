@@ -51,10 +51,10 @@ double Interpolation::linearXY(const Image<RFLOAT>& img, double x, double y, int
     const double xf = x - xi;
     const double yf = y - yi;
 
-    const double f00 = direct::elem(img.data, n, 0, yi,     xi);
-    const double f01 = direct::elem(img.data, n, 0, yi,     xi + 1);
-    const double f10 = direct::elem(img.data, n, 0, yi + 1, xi);
-    const double f11 = direct::elem(img.data, n, 0, yi + 1, xi + 1);
+    const double f00 = direct::elem(img.data, xi,     yi,     0, n);
+    const double f01 = direct::elem(img.data, xi + 1, yi,     0, n);
+    const double f10 = direct::elem(img.data, xi,     yi + 1, 0, n);
+    const double f11 = direct::elem(img.data, xi + 1, yi + 1, 0, n);
 
     const double f0 = xf * f01 + (1.0 - xf) * f00;
     const double f1 = xf * f11 + (1.0 - xf) * f10;
@@ -92,17 +92,17 @@ Complex Interpolation::linear3D(const Image<Complex>& img, double x, double y, d
     const double yf = y - yi;
     const double zf = z - zi;
 
-    const Complex f000 = direct::elem(img.data, 0, zi, yi,   xi);
-    const Complex f001 = direct::elem(img.data, 0, zi, yi,   xi + 1);
+    const Complex f000 = direct::elem(img.data, xi,     yi, zi, 0);
+    const Complex f001 = direct::elem(img.data, xi + 1, yi, zi, 0);
 
-    const Complex f010 = direct::elem(img.data, 0, zi, yi + 1, xi);
-    const Complex f011 = direct::elem(img.data, 0, zi, yi + 1, xi + 1);
+    const Complex f010 = direct::elem(img.data, xi,     yi + 1, zi, 0);
+    const Complex f011 = direct::elem(img.data, xi + 1, yi + 1, zi, 0);
 
-    const Complex f100 = direct::elem(img.data, 0, zi + 1, yi, xi);
-    const Complex f101 = direct::elem(img.data, 0, zi + 1, yi, xi + 1);
+    const Complex f100 = direct::elem(img.data, xi,     yi, zi + 1, 0);
+    const Complex f101 = direct::elem(img.data, xi + 1, yi, zi + 1, 0);
 
-    const Complex f110 = direct::elem(img.data, 0, zi + 1, yi + 1, xi);
-    const Complex f111 = direct::elem(img.data, 0, zi + 1, yi + 1, xi + 1);
+    const Complex f110 = direct::elem(img.data, xi,     yi + 1, zi + 1, 0);
+    const Complex f111 = direct::elem(img.data, xi + 1, yi + 1, zi + 1, 0);
 
     const Complex f00 = xf * f001 + (1.0 - xf) * f000;
     const Complex f01 = xf * f011 + (1.0 - xf) * f010;
@@ -136,17 +136,17 @@ Complex Interpolation::linearFFTW3D(const Image<Complex>& img, double x, double 
     const double yf = y - yi;
     const double zf = z - zi;
 
-    const Complex f000 = direct::elem(img.data, 0, zi, yi, xi);
-    const Complex f001 = direct::elem(img.data, 0, zi, yi, xp);
+    const Complex f000 = direct::elem(img.data, xi, yi, zi, 0);
+    const Complex f001 = direct::elem(img.data, xp, yi, zi, 0);
 
-    const Complex f010 = direct::elem(img.data, 0, zi, yp, xi);
-    const Complex f011 = direct::elem(img.data, 0, zi, yp, xp);
+    const Complex f010 = direct::elem(img.data, xi, yp, zi, 0);
+    const Complex f011 = direct::elem(img.data, xp, yp, zi, 0);
 
-    const Complex f100 = direct::elem(img.data, 0, zp, yi, xi);
-    const Complex f101 = direct::elem(img.data, 0, zp, yi, xp);
+    const Complex f100 = direct::elem(img.data, xi, yi, zp, 0);
+    const Complex f101 = direct::elem(img.data, xp, yi, zp, 0);
 
-    const Complex f110 = direct::elem(img.data, 0, zp, yp, xi);
-    const Complex f111 = direct::elem(img.data, 0, zp, yp, xp);
+    const Complex f110 = direct::elem(img.data, xi, yp, zp, 0);
+    const Complex f111 = direct::elem(img.data, xp, yp, zp, 0);
 
     const Complex f00 = xf * f001 + (1.0 - xf) * f000;
     const Complex f01 = xf * f011 + (1.0 - xf) * f010;
@@ -171,16 +171,16 @@ Complex Interpolation::linearFFTW2D(const Image<Complex>& img, double x, double 
     const int yi = (int)y;
 
     const int xp = xi + 1;
-    const int yp = (yi + 1)%((int)img.data.ydim);
+    const int yp = (yi + 1) % (int) img.data.ydim;
 
     const double xf = x - xi;
     const double yf = y - yi;
 
-    const Complex f00 = direct::elem(img.data, 0, 0, yi, xi);
-    const Complex f01 = direct::elem(img.data, 0, 0, yi, xp);
+    const Complex f00 = direct::elem(img.data, xi, yi);
+    const Complex f01 = direct::elem(img.data, xp, yi);
 
-    const Complex f10 = direct::elem(img.data, 0, 0, yp, xi);
-    const Complex f11 = direct::elem(img.data, 0, 0, yp, xp);
+    const Complex f10 = direct::elem(img.data, xi, yp);
+    const Complex f11 = direct::elem(img.data, xp, yp);
 
     const Complex f0 = xf * f01 + (1.0 - xf) * f00;
     const Complex f1 = xf * f11 + (1.0 - xf) * f10;
@@ -202,44 +202,43 @@ void Interpolation::test2D() {
 
     for (int y = 0; y < w0; y++)
     for (int x = 0; x < w0; x++) {
-        direct::elem(img0.data, 0, 0, y, x) = (x + w0*y)*(1 - 2*((x%2)^(y%2)));
+        direct::elem(img0.data, x, y) = (x + w0 * y) * (1 - 2 * ((x % 2) ^ (y % 2)));
     }
 
     double eps = 0.001;
 
     for (int y = 0; y < w1; y++)
-    for (int x = 0; x < w1; x++)
-    {
-        direct::elem(img.data, 0, 0, y, x)  = direct::elem(img0.data, 0, 0, w0*y/w1, w0*x/w1);
+    for (int x = 0; x < w1; x++) {
+        direct::elem(img.data, x, y)  = direct::elem(img0.data, w0*x/w1, w0*y/w1);
 		
-		direct::elem(img1.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img1.data, x, y) = cubicXY(
 					img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5, 0);
 		
-		direct::elem(img2a.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img2a.data, x, y) = cubicXY(
 					img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5, 0, 0, true);
 		
-		direct::elem(img2b.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img2b.data, x, y) = cubicXY(
 					img0, w0*x/(double)w1 - 0.5 - w0/2, w0*y/(double)w1 - 0.5 - w0/2, 0, 0, true);
 		
-		direct::elem(img3a.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img3a.data, x, y) = cubicXY(
 					img0, 1e-2*(x-w1/2), 1e-2*(y-w1/2), 0, 0, true);
 		
-		direct::elem(img3b.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img3b.data, x, y) = cubicXY(
 					img0, 1e-7*(x-w1/2), 1e-7*(y-w1/2), 0, 0, true);
 		
-		direct::elem(img3c.data, 0, 0, y, x) = cubicXY(
+		direct::elem(img3c.data, x, y) = cubicXY(
 					img0, 1e-16*(x-w1/2), 1e-16*(y-w1/2), 0, 0, true);
         
         t2Vector<RFLOAT> g = cubicXYgrad(img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5, 0);
 
-        direct::elem(gradx.data, 0, 0, y, x) = g.x;
-        direct::elem(grady.data, 0, 0, y, x) = g.y;
+        direct::elem(gradx.data, x, y) = g.x;
+        direct::elem(grady.data, x, y) = g.y;
 
-        direct::elem(gradnx.data, 0, 0, y, x) =
+        direct::elem(gradnx.data, x, y) =
                (  cubicXY(img0, w0*x/(double)w1 - 0.5 + eps, w0*y/(double)w1 - 0.5, 0)
                 - cubicXY(img0, w0*x/(double)w1 - 0.5 - eps, w0*y/(double)w1 - 0.5, 0))/(2.0*eps);
 
-        direct::elem(gradny.data, 0, 0, y, x) =
+        direct::elem(gradny.data, x, y) =
                (  cubicXY(img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5 + eps, 0)
                 - cubicXY(img0, w0*x/(double)w1 - 0.5, w0*y/(double)w1 - 0.5 - eps, 0))/(2.0*eps);
     }

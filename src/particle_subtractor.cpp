@@ -495,7 +495,7 @@ void ParticleSubtractor::subtractOneParticle(
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                    direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
+                    direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                 }
             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // Otherwise, just window the CTF to the current resolution
@@ -654,8 +654,8 @@ void ParticleSubtractor::subtractOneParticle(
             long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
             int idx_remapped = round(remap_image_sizes * idx);
             if (idx_remapped < opt.mymodel.ori_size / 2 + 1) {
-                RFLOAT S2 = norm(direct::elem(Fsubtrahend, k, i, j));
-                RFLOAT N2 = norm(direct::elem(Fimg,        k, i, j));
+                RFLOAT S2 = norm(direct::elem(Fsubtrahend, i, j, k));
+                RFLOAT N2 = norm(direct::elem(Fimg,        i, j, k));
                 // division by two keeps the numbers similar to tau2 and sigma2_noise,
                 // which are per real/imaginary component
                 sum_S2(idx_remapped) += S2 / 2.0;

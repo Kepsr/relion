@@ -214,8 +214,7 @@ void TomoStack :: safeLog(RFLOAT eps, int f0, int fc)
 
     for (int im = f0; im < ic; im++)
     {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(images[im].data)
-        {
+        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(images[im].data) {
             const double v = direct::elem(images[im].data, i, j);
 
             direct::elem(images[im].data, i, j) = v > eps ? log(v) : log(eps);

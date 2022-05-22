@@ -69,7 +69,7 @@ void RefinementHelper::drawFSC(
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        direct::elem(dest.data, y, x) = dest1D[ri];
+        direct::elem(dest.data, x, y) = dest1D[ri];
     }
 }
 
@@ -101,7 +101,7 @@ void RefinementHelper::computeSNR(const MetaDataTable *mdt, Image<RFLOAT> &dest,
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        direct::elem(dest.data, y, x) = snr[ri];
+        direct::elem(dest.data, x, y) = snr[ri];
     }
 }
 
@@ -140,7 +140,7 @@ void RefinementHelper::computeSigInvSq(
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        direct::elem(dest.data, y, x) = sigInvSq[ri];
+        direct::elem(dest.data, x, y) = sigInvSq[ri];
     }
 }
 
@@ -154,11 +154,11 @@ Image<RFLOAT> RefinementHelper::correlation(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = direct::elem(prediction .data, y, x);
-        Complex vy = direct::elem(observation.data, y, x);
+        Complex vx = direct::elem(prediction .data, x, y);
+        Complex vy = direct::elem(observation.data, x, y);
 
         // Dot product
-        direct::elem(out.data, y, x) = vy.real * vx.real + vy.imag * vx.imag;
+        direct::elem(out.data, x, y) = vy.real * vx.real + vy.imag * vx.imag;
     }
 
     return out;
@@ -166,8 +166,8 @@ Image<RFLOAT> RefinementHelper::correlation(
 
 // Basically, map correlation
 Image<RFLOAT> RefinementHelper::correlation(
-    const std::vector<Image<Complex>>& predictions,
-    const std::vector<Image<Complex>>& observations
+    const std::vector<Image<Complex>> &predictions,
+    const std::vector<Image<Complex>> &observations
 ) {
     const long w = predictions[0].data.xdim;
     const long h = predictions[0].data.ydim;
@@ -178,8 +178,8 @@ Image<RFLOAT> RefinementHelper::correlation(
     for (long i = 0; i < c; i++) {
         for (long y = 0; y < h; y++)
         for (long x = 0; x < w; x++) {
-            Complex vx = direct::elem(predictions [i].data, y, x);
-            Complex vy = direct::elem(observations[i].data, y, x);
+            Complex vx = direct::elem(predictions [i].data, x, y);
+            Complex vy = direct::elem(observations[i].data, x, y);
 
             // Dot product
             direct::elem(out.data, y, x) += vy.real * vx.real + vy.imag * vx.imag;
@@ -199,11 +199,11 @@ void RefinementHelper::addToQR(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = direct::elem(prediction .data, y, x);
-        Complex vy = direct::elem(observation.data, y, x);
+        Complex vx = direct::elem(prediction .data, x, y);
+        Complex vy = direct::elem(observation.data, x, y);
 
-        direct::elem(q.data, y, x) += vy.conj() * vx;
-        direct::elem(r.data, y, x) += vx.norm();
+        direct::elem(q.data, x, y) += vy.conj() * vx;
+        direct::elem(r.data, x, y) += vx.norm();
     }
 }
 
@@ -217,12 +217,12 @@ void RefinementHelper::addToPQR(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = direct::elem(prediction.data, y, x);
-        Complex vy = direct::elem(observation.data, y, x);
+        Complex vx = direct::elem(prediction.data,  x, y);
+        Complex vy = direct::elem(observation.data, x, y);
 
-        direct::elem(p.data, y, x) += vx.norm();
-        direct::elem(q.data, y, x) += vy.conj() * vx;
-        direct::elem(r.data, y, x) += vx.norm();
+        direct::elem(p.data, x, y) += vx.norm();
+        direct::elem(q.data, x, y) += vy.conj() * vx;
+        direct::elem(r.data, x, y) += vx.norm();
     }
 }
 
@@ -240,11 +240,11 @@ double RefinementHelper::squaredDiff(
     double out = 0.0;
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = direct::elem(prediction.data, y, x);
-        const Complex vy = direct::elem(observation.data, y, x);
-        const RFLOAT  vw = direct::elem(weight     .data, y, x);
+        Complex vx = direct::elem(prediction.data, x, y);
+        const Complex vy = direct::elem(observation.data, x, y);
+        const RFLOAT  vw = direct::elem(weight     .data, x, y);
 
-        RFLOAT vm = ctfImg(y,x);
+        RFLOAT vm = ctfImg(y, x);
         out += vw * (vy - vm * vx).norm();
     }
     return out;

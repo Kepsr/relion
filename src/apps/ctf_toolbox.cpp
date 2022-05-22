@@ -108,8 +108,8 @@ class ctf_toolbox_parameters {
             RFLOAT xs = (RFLOAT) sim_box_large * sim_angpix;
             RFLOAT ys = (RFLOAT) sim_box_large * sim_angpix;
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Ictf()) {
-                RFLOAT x = (RFLOAT) j / xs;
-                RFLOAT y = (RFLOAT) i / ys;
+                RFLOAT x = (RFLOAT) i / xs;
+                RFLOAT y = (RFLOAT) j / ys;
 
                 Ictf().elem(i, j) = ctf.getCTF(x, y, false, do_intact_ctf_until_first_peak, true, 0.0, do_intact_ctf_after_first_peak);
             }

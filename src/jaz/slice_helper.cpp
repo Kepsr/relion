@@ -35,7 +35,7 @@ void SliceHelper::affineTransform(const Image<RFLOAT> &img, d4Matrix A, Image<RF
         d4Vector s0(x,y,0,1);
         d4Vector s1 = Ai * s0;
 
-        direct::elem(dest.data, y, x) = Interpolation::linearXY(img, s1.x, s1.y, 0);
+        direct::elem(dest.data, x, y) = Interpolation::linearXY(img, s1.x, s1.y, 0);
     }
 }
 
@@ -102,7 +102,7 @@ void SliceHelper::subsample(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
 
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, y, x) = direct::elem(img.data, (long int)(q*y + 0.5), (long int)(q*x + 0.5));
+        direct::elem(dest.data, x, y) = direct::elem(img.data, (long int)(q*x + 0.5), (long int)(q*y + 0.5));
     }
 }
 
@@ -132,14 +132,14 @@ void SliceHelper::avgPad(const Volume<RFLOAT> &src, Volume<RFLOAT> &dest, double
 }
 
 void SliceHelper::avgPad2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio) {
-    int padX = (int)(ratio * src.data.xdim);
-    int padY = (int)(ratio * src.data.ydim);
+    int padX = ratio * src.data.xdim;
+    int padY = ratio * src.data.ydim;
 
     double avg = 0.0;
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        avg += direct::elem(src.data, y, x);
+        avg += direct::elem(src.data, x, y);
     }
 
     avg /= src.data.xdim * src.data.ydim;
@@ -148,44 +148,39 @@ void SliceHelper::avgPad2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double
 
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, y, x) = avg;
+        direct::elem(dest.data, x, y) = avg;
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, y+padY, x+padX) = direct::elem(src.data, y, x);
+        direct::elem(dest.data, x + padX, y + padY) = direct::elem(src.data, x, y);
     }
 }
 
 void SliceHelper::halveSpectrum2D(Image<Complex> &src, Image<Complex> &dest) {
-    dest = Image<Complex>(src.data.xdim/2 + 1, src.data.ydim);
+    dest = Image<Complex>(src.data.xdim / 2 + 1, src.data.ydim);
 
-    const int xo = src.data.xdim/2 + 1;
-    const int yo = src.data.ydim/2 + 1;
+    const int xo = src.data.xdim / 2 + 1;
+    const int yo = src.data.ydim / 2 + 1;
 
     const int wd = dest.data.xdim;
     const int hd = dest.data.ydim;
 
     for (long int y = 0; y < hd; y++)
     for (long int x = 0; x < wd; x++) {
-        /*if (x == 0)
-        {
-            direct::elem(dest.data, y, 0) = direct::elem(src.data, y, xo);
-        }
-        else if (xo + x < src.data.xdim)
-        {
-            direct::elem(dest.data, y, x) = 0.5 * (direct::elem(src.data, y, xo + x)
-                                                      + direct::elem(src.data, yo - (y - yo), xo - x));
-        }
-        else
-        {
-            direct::elem(dest.data, y, x) = direct::elem(src.data, yo - (y - yo), xo - x);
+        /*if (x == 0) {
+            direct::elem(dest.data, 0, y) = direct::elem(src.data, xo, y);
+        } else if (xo + x < src.data.xdim) {
+            direct::elem(dest.data, x, y) = 0.5 * (direct::elem(src.data, xo + x, y)
+                                                      + direct::elem(src.data, xo - x, yo - (y - yo)));
+        } else {
+            direct::elem(dest.data, x, y) = direct::elem(src.data, xo - x, yo - (y - yo));
         }*/
 
-        const int yr = (int)y;
-        const int yw = (yr+yo)%hd;
+        const int yr = y;
+        const int yw = (yr + yo) % hd;
 
-        direct::elem(dest.data, y, x) = direct::elem(src.data, yw, xo+x);
+        direct::elem(dest.data, x, y) = direct::elem(src.data, xo + x, yw);
     }
 }
 
@@ -216,11 +211,10 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
     for (long int x = 0; x < dest2.data.xdim; x++) {
         d3Vector pi((double)x/(double)(wiosI-1), 2.0*(double)y/(double)hiosI, 0.0);
 
-        if (pi.y >= 1.0) pi.y = pi.y - 2.0;
+        if (pi.y >= 1.0) { pi.y -= 2.0; }
 
-        if (pi.norm2() > 1.0)
-        {
-            direct::elem(dest2.data, y, x) = Complex(0,0);
+        if (pi.norm2() > 1.0) {
+            direct::elem(dest2.data, x, y) = Complex(0, 0);
             continue;
         }
 
@@ -228,15 +222,13 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
 
         bool conj = false;
 
-        if (pv.x < 0.0)
-        {
+        if (pv.x < 0.0) {
             pv = -pv;
             conj = true;
         }
 
-        if (pv.norm2() > 1.0)
-        {
-            direct::elem(dest2.data, y, x) = Complex(0,0);
+        if (pv.norm2() > 1.0) {
+            direct::elem(dest2.data, x, y) = Complex(0,0);
             continue;
         }
 
@@ -251,26 +243,19 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
         double phi = - PI * (pi.x * shift.x + pi.y * shift.y);
         Complex z0(cos(phi), sin(phi));
 
-        if (ax < 1.0 && ay < 1.0 && az < 1.0)
-        {
-            direct::elem(weight.data, y, x) = z0 * Complex((1.0 - ax) * (1.0 - ay) * (1.0 - az), 0.0);
-        }
-        else
-        {
-            direct::elem(weight.data, y, x) = Complex(0.0, 0.0);
+        if (ax < 1.0 && ay < 1.0 && az < 1.0) {
+            direct::elem(weight.data, x, y) = z0 * Complex((1.0 - ax) * (1.0 - ay) * (1.0 - az), 0.0);
+        } else {
+            direct::elem(weight.data, x, y) = Complex(0.0, 0.0);
         }
 
         if (yyd < 0.0) yyd += hv;
         if (zzd < 0.0) zzd += dv;
 
-        if (conj)
-        {
-            direct::elem(dest2.data, y, x) = z0 * Interpolation::linearFFTW3D(src, xxd, yyd, zzd).conj();
-        }
-        else
-        {
-            direct::elem(dest2.data, y, x) = z0 * Interpolation::linearFFTW3D(src, xxd, yyd, zzd);
-        }
+        direct::elem(dest2.data, x, y) = z0 * (
+            conj ? Interpolation::linearFFTW3D(src, xxd, yyd, zzd).conj() :
+                   Interpolation::linearFFTW3D(src, xxd, yyd, zzd)
+        );
      }
 
     Image<RFLOAT> dest2r = Image<RFLOAT>(2 * (dest2.data.xdim - 1), dest2.data.ydim);
@@ -286,8 +271,8 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
 
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, y, x) = direct::elem(dest2r.data, y, x)
-                                         / direct::elem(weightr.data, y, x);
+        direct::elem(dest.data, x, y) = direct::elem(dest2r.data, x, y)
+                                         / direct::elem(weightr.data, x, y);
     }
 }
 
@@ -334,9 +319,8 @@ void SliceHelper::insertSpectralSlices(
         if (pv.y > 1.0) pv.y = pv.y - 2.0;
         if (pv.z > 1.0) pv.z = pv.z - 2.0;
 
-        if (pv.norm2() >= 1.0)
-        {
-            direct::elem(dest.data, 0, z, y, x) = Complex(0,0);
+        if (pv.norm2() >= 1.0) {
+            direct::elem(dest.data, x, y, z) = Complex(0, 0);
             continue;
         }
 
@@ -390,9 +374,9 @@ void SliceHelper::insertSpectralSlices(
             wgh += wgi;
         }
 
-        if (wgh > 1.0) zs /= wgh;
+        if (wgh > 1.0) { zs /= wgh; }
 
-        direct::elem(dest.data, 0, z, y, x) = zs;
+        direct::elem(dest.data, x, y, z) = zs;
     }
 }
 
@@ -441,21 +425,18 @@ void SliceHelper::insertWeightedSpectralSlices(
         if (pv.y > 1.0) pv.y = pv.y - 2.0;
         if (pv.z > 1.0) pv.z = pv.z - 2.0;
 
-        if (pv.norm2() >= 1.0)
-        {
-            direct::elem(dest.data, 0, z, y, x) = Complex(0,0);
+        if (pv.norm2() >= 1.0) {
+            direct::elem(dest.data, x, y, z) = Complex(0, 0);
             continue;
         }
 
         Complex zs(0.0, 0.0);
         double wgh = 0.0;
 
-        for (int i = 0; i < ic; i++)
-        {
+        for (int i = 0; i < ic; i++) {
             d3Vector pi3 = proj[i] * pv;
 
-            if (pi3.x*pi3.x + pi3.y*pi3.y >= 1.0)
-            {
+            if (pi3.x*pi3.x + pi3.y*pi3.y >= 1.0) {
                 continue;
             }
 
@@ -494,9 +475,9 @@ void SliceHelper::insertWeightedSpectralSlices(
             wgh += wgi;
         }
 
-        if (wgh > 1.0) zs /= wgh;
+        if (wgh > 1.0) { zs /= wgh; }
 
-        direct::elem(dest.data, 0, z, y, x) = zs;
+        direct::elem(dest.data, x, y, z) = zs;
     }
 }
 
@@ -507,7 +488,7 @@ void SliceHelper::extractStackSlice(const Image<RFLOAT> &src, Image<RFLOAT> &des
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, 0, 0, y, x) = direct::elem(src.data, s, 0, y, x);
+        direct::elem(dest.data, x, y) = direct::elem(src.data, x, y, 0, s);
     }
 }
 
@@ -519,7 +500,7 @@ void SliceHelper::extractStackSlices(const Image<double> &src, Image<RFLOAT> &de
     for (long int n = 0; n < dest.data.ndim; n++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, n, 0, y, x) = direct::elem(src.data, n+s, 0, y, x);
+        direct::elem(dest.data, x, y, 0, n) = direct::elem(src.data, x, y, 0, n + s);
     }
 }
 
@@ -531,7 +512,7 @@ void SliceHelper::extractStackSlices(const Image<float> &src, Image<RFLOAT> &des
     for (long int n = 0; n < dest.data.ndim; n++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, n, 0, y, x) = (RFLOAT) direct::elem(src.data, n+s, 0, y, x);
+        direct::elem(dest.data, x, y, 0, n) = (RFLOAT) direct::elem(src.data, x, y, 0, n + s);
     }
 }
 
@@ -543,7 +524,7 @@ Image<RFLOAT> SliceHelper::getStackSlice(const Image<RFLOAT> &src, long n) {
 
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
-        direct::elem(out.data, 0, 0, y, x) = direct::elem(src.data, n, 0, y, x);
+        direct::elem(out.data, x, y) = direct::elem(src.data, x, y, 0, n);
     }
 
     return out;
@@ -556,7 +537,7 @@ void SliceHelper::insertStackSlice(const Image<double> &src, Image<double> &dest
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, s, 0, y, x) = direct::elem(src.data, 0, 0, y, x);
+        direct::elem(dest.data, x, y, 0, s) = direct::elem(src.data, x, y);
     }
 }
 
@@ -567,7 +548,7 @@ void SliceHelper::insertStackSlice(const Image<float> &src, Image<float> &dest, 
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, s, 0, y, x) = direct::elem(src.data, 0, 0, y, x);
+        direct::elem(dest.data, x, y, 0, s) = direct::elem(src.data, x, y, 0, 0);
     }
 }
 
@@ -578,7 +559,7 @@ void SliceHelper::insertZSlice(const Image<double> &src, Image<double> &dest, lo
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, 0, s, y, x) = direct::elem(src.data, 0, 0, y, x);
+        direct::elem(dest.data, x, y, s, 0) = direct::elem(src.data, x, y);
     }
 }
 
@@ -589,7 +570,7 @@ void SliceHelper::insertZSlice(const Image<float> &src, Image<float> &dest, long
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, 0, s, y, x) = direct::elem(src.data, 0, 0, y, x);
+        direct::elem(dest.data, x, y, s, 0) = direct::elem(src.data, x, y);
     }
 }
 

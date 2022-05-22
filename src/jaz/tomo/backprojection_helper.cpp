@@ -303,9 +303,9 @@ void BackprojectionHelper::backprojectExactWeightsFreq(
         const double t = weight(x,y,z)/theta;
 
         if (t > 1) {
-            direct::elem(dest.data, 0, z, y, x) = direct::elem(dest.data, 0, z, y, x) / t;
+            direct::elem(dest.data, x, y, z) = direct::elem(dest.data, x, y, z) / t;
         } else {
-            direct::elem(dest.data, 0, z, y, x) = direct::elem(dest.data, 0, z, y, x);
+            direct::elem(dest.data, x, y, z) = direct::elem(dest.data, x, y, z);
         }
 
         weight(x,y,z) = t;
@@ -387,9 +387,9 @@ void BackprojectionHelper::backprojectDots(
     ft.FourierTransform(volRL(), spectrum.data, false);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data) {
-        Complex z = direct::elem(spectrum.data, k, i, j);
+        Complex z = direct::elem(spectrum.data, i, j, k);
 
-        dest(j,i,k) = z.abs();
+        dest(j, i, k) = z.abs();
     }
 }
 
@@ -548,7 +548,7 @@ void BackprojectionHelper::backprojectDotsSeparately(
         }
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data) {
-            Complex z = direct::elem(spectrum.data, k, i, j);
+            Complex z = direct::elem(spectrum.data, i, j, k);
 
             dest(j,i,k) += z.abs();
         }

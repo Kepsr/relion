@@ -2963,7 +2963,7 @@ void MlOptimiserMpi::iterate() {
                     // At least fsc05 - fsc0143 + 5 shells as incr_size
                     incr_size = std::max(incr_size, fsc0143 - fsc05 + 5);
                     if (!has_high_fsc_at_limit)
-                        has_high_fsc_at_limit = (direct::elem(mymodel.fsc_halves_class[ibody], mymodel.current_size/2 - 1) > 0.2);
+                        has_high_fsc_at_limit = (direct::elem(mymodel.fsc_halves_class[ibody], mymodel.current_size / 2 - 1) > 0.2);
                 }
             }
 

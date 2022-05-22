@@ -248,7 +248,7 @@ Image<RFLOAT> DamageHelper::damageWeight(
 
         double tau = a * pow(rho * k, b) + c;
 
-        direct::elem(out.data, y, x) = exp(-dose / tau);
+        direct::elem(out.data, x, y) = exp(-dose / tau);
     }
 
     return out;

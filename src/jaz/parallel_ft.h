@@ -180,8 +180,8 @@ class ParFourierTransformer {
                 } else {
                     direct::elem(V, i, j) = conj(direct::elem(
                         fFourier, 
-                        (Ysize(*fReal) - i) % Ysize(*fReal), 
-                        Xsize(*fReal) - j
+                        Xsize(*fReal) - j,
+                        (Ysize(*fReal) - i) % Ysize(*fReal)
                     ));
                 }
             }
@@ -190,13 +190,13 @@ class ParFourierTransformer {
             case 3:
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
                     if (j < Xsize(fFourier)) {
-                        direct::elem(V, k, i, j) = direct::elem(fFourier, k, i, j);
+                        direct::elem(V, i, j, k) = direct::elem(fFourier, i, j, k);
                     } else {
-                        direct::elem(V, k, i, j) = conj(direct::elem(
+                        direct::elem(V, i, j, k) = conj(direct::elem(
                             fFourier, 
-                            (Zsize(*fReal) - k) % Zsize(*fReal), 
+                            Xsize(*fReal) - j,
                             (Ysize(*fReal) - i) % Ysize(*fReal), 
-                            Xsize(*fReal) - j
+                            (Zsize(*fReal) - k) % Zsize(*fReal)
                         ));
                     }
                 }
@@ -232,7 +232,7 @@ class ParFourierTransformer {
 
             case 3:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier) {
-                direct::elem(fFourier, k, i, j) = direct::elem(V, k, i, j);
+                direct::elem(fFourier, i, j, k) = direct::elem(V, i, j, k);
             }
             break;
 
