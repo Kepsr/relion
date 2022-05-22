@@ -1093,10 +1093,10 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
                     for (int dx = -D_MAX; dx <= D_MAX; dx++) {
                         int x = j + dx;
                         if (x < 0 || x >= nx) continue;
-						// std::cout << " " << direct::elem(Iframes[iframe](), y, x);
-                        if (direct::elem(bBad, y, x)) continue;
+						// std::cout << " " << direct::elem(Iframes[iframe](), x, y);
+                        if (direct::elem(bBad, x, y)) continue;
 						// std::cout << "o";
-                        pbuf[n_ok] = direct::elem(Iframes[iframe](), y, x);
+                        pbuf[n_ok] = direct::elem(Iframes[iframe](), x, y);
                         n_ok++;
                     }
 					// std::cout << std::endl;
@@ -1653,7 +1653,7 @@ void MotioncorrRunner::realSpaceInterpolation(
                     if (x1 >= nx || x0 >= nx - 1) { x0 = nx - 1; valid = false; }
                     if (y1 >= ny || y1 >= ny - 1) { y0 = ny - 1; valid = false; }
                     if (!valid) {
-                        direct::elem(Isum(), iy, ix) += direct::elem(Iframes[iframe](), y0, x0);
+                        direct::elem(Isum(), ix, iy) += direct::elem(Iframes[iframe](), x0, y0);
                         if (std::isnan(direct::elem(Isum(), iy, ix))) {
                             std::cerr << "ix = " << ix << " xfit = " << x_fitted << " iy = " << iy << " ifit = " << y_fitted << std::endl;
                         }
@@ -1663,10 +1663,10 @@ void MotioncorrRunner::realSpaceInterpolation(
                     const RFLOAT fx = x_fitted - x0;
                     const RFLOAT fy = y_fitted - y0;
 
-                    const RFLOAT d00 = direct::elem(Iframes[iframe](), y0, x0);
-                    const RFLOAT d01 = direct::elem(Iframes[iframe](), y0, x1);
-                    const RFLOAT d10 = direct::elem(Iframes[iframe](), y1, x0);
-                    const RFLOAT d11 = direct::elem(Iframes[iframe](), y1, x1);
+                    const RFLOAT d00 = direct::elem(Iframes[iframe](), x0, y0);
+                    const RFLOAT d01 = direct::elem(Iframes[iframe](), x1, y0);
+                    const RFLOAT d10 = direct::elem(Iframes[iframe](), x0, y1);
+                    const RFLOAT d11 = direct::elem(Iframes[iframe](), x1, y1);
 
                     const RFLOAT dx0 = LIN_INTERP(fx, d00, d01);
                     const RFLOAT dx1 = LIN_INTERP(fx, d10, d11);
@@ -1676,7 +1676,7 @@ void MotioncorrRunner::realSpaceInterpolation(
                         std::cerr << "ix = " << ix << " xfit = " << x_fitted << " iy = " << iy << " ifit = " << y_fitted << " d00 " << d00 << " d01 " << d01 << " d10 " << d10 << " d11 " << d11 << " dx0 " << dx0 << " dx1 " << dx1 << std::endl;
                     }
                     #endif
-                    direct::elem(Isum(), iy, ix) += val;
+                    direct::elem(Isum(), ix, iy) += val;
                 }
             }
         }
@@ -1740,7 +1740,7 @@ void MotioncorrRunner::realSpaceInterpolation_ThirdOrderPolynomial(
                 if (x1 >= nx || x0 >= nx - 1) { x0 = nx - 1; valid = false; }
                 if (y1 >= ny || y0 >= ny - 1) { y0 = ny - 1; valid = false; }
                 if (!valid) {
-                    direct::elem(Isum(), iy, ix) += direct::elem(Iframes[iframe](), y0, x0);
+                    direct::elem(Isum(), ix, iy) += direct::elem(Iframes[iframe](), x0, y0);
                     #ifdef DEBUG_OWN
                     if (std::isnan(direct::elem(Isum(), iy, ix))) {
                         std::cerr << "ix = " << ix << " xfit = " << x_fitted << " iy = " << iy << " ifit = " << y_fitted << std::endl;
@@ -1753,10 +1753,10 @@ void MotioncorrRunner::realSpaceInterpolation_ThirdOrderPolynomial(
                 const RFLOAT fy = y_fitted - y0;
 
 				// std::cout << "ix = " << ix << " xfit = " << x_fitted << " iy = " << iy << " ifit = " << y_fitted << std::endl;
-                const RFLOAT d00 = direct::elem(Iframes[iframe](), y0, x0);
-                const RFLOAT d01 = direct::elem(Iframes[iframe](), y0, x1);
-                const RFLOAT d10 = direct::elem(Iframes[iframe](), y1, x0);
-                const RFLOAT d11 = direct::elem(Iframes[iframe](), y1, x1);
+                const RFLOAT d00 = direct::elem(Iframes[iframe](), x0, y0);
+                const RFLOAT d01 = direct::elem(Iframes[iframe](), x1, y0);
+                const RFLOAT d10 = direct::elem(Iframes[iframe](), x0, y1);
+                const RFLOAT d11 = direct::elem(Iframes[iframe](), x1, y1);
 
                 const RFLOAT dx0 = LIN_INTERP(fx, d00, d01);
                 const RFLOAT dx1 = LIN_INTERP(fx, d10, d11);
@@ -1766,7 +1766,7 @@ void MotioncorrRunner::realSpaceInterpolation_ThirdOrderPolynomial(
                     std::cerr << "ix = " << ix << " xfit = " << x_fitted << " iy = " << iy << " ifit = " << y_fitted << " d00 " << d00 << " d01 " << d01 << " d10 " << d10 << " d11 " << d11 << " dx0 " << dx0 << " dx1 " << dx1 << std::endl;
                 }
                 #endif
-                direct::elem(Isum(), iy, ix) += val;
+                direct::elem(Isum(), ix, iy) += val;
             }
         }
     }
@@ -1845,7 +1845,7 @@ bool MotioncorrRunner::alignPatch(
 
         for (int x = 0; x < ccf_nfx; x++) {
             RFLOAT dist2 = ly2 + x * (RFLOAT) x / (nfx * (RFLOAT) nfx);
-            direct::elem(weight, y, x) = exp(- 2 * dist2 * scaled_B); // 2 for Fref and Fframe
+            direct::elem(weight, x, y) = exp(- 2 * dist2 * scaled_B); // 2 for Fref and Fframe
         }
     }
     RCTOC(TIMING_PREP_WEIGHT);
@@ -1859,7 +1859,7 @@ bool MotioncorrRunner::alignPatch(
             const int ly = y > ccf_nfy_half ? y - ccf_nfy + nfy : y;
             for (int x = 0; x < ccf_nfx; x++) {
                 for (int iframe = 0; iframe < n_frames; iframe++) {
-                    direct::elem(Fref, y, x) += direct::elem(Fframes[iframe], ly, x);
+                    direct::elem(Fref, x, y) += direct::elem(Fframes[iframe], x, ly);
                 }
             }
         }
@@ -1873,9 +1873,9 @@ bool MotioncorrRunner::alignPatch(
             for (int y = 0; y < ccf_nfy; y++) {
                 const int ly = y > ccf_nfy_half ? y - ccf_nfy + nfy : y;
                 for (int x = 0; x < ccf_nfx; x++) {
-                    direct::elem(Fccs[tid], y, x) = (
-                        direct::elem(Fref, y, x) - direct::elem(Fframes[iframe], ly, x)
-                    ) * direct::elem(Fframes[iframe], ly, x).conj() * direct::elem(weight, y, x);
+                    direct::elem(Fccs[tid], x, y) = (
+                        direct::elem(Fref, x, y) - direct::elem(Fframes[iframe], x, ly)
+                    ) * direct::elem(Fframes[iframe], x, ly).conj() * direct::elem(weight, x, y);
                 }
             }
             }))
@@ -1892,7 +1892,7 @@ bool MotioncorrRunner::alignPatch(
 
                 for (int x = -search_range; x <= search_range; x++) {
                     const int ix = (x < 0) ? ccf_nx + x : x;
-                    RFLOAT val = direct::elem(Iccs[tid](), iy, ix);
+                    RFLOAT val = direct::elem(Iccs[tid](), ix, iy);
 					// std::cout << "(x, y) = " << x << ", " << y << ", (ix, iy) = " << ix << " , " << iy << " val = " << val << std::endl;
                     if (val > maxval) {
                         posx = x; posy = y;
@@ -1912,13 +1912,13 @@ bool MotioncorrRunner::alignPatch(
             // Quadratic interpolation by Jasenko
             RFLOAT vp, vn;
 
-            vp = direct::elem(Iccs[tid](), ipy, ipx_p);
-            vn = direct::elem(Iccs[tid](), ipy, ipx_n);
+            vp = direct::elem(Iccs[tid](), ipx_p, ipy);
+            vn = direct::elem(Iccs[tid](), ipx_n, ipy);
             cur_xshifts[iframe] = std::abs(vp + vn - 2.0 * maxval) > EPS ? 
                 posx - 0.5 * (vp - vn) / (vp + vn - 2.0 * maxval) : posx;
 
-            vp = direct::elem(Iccs[tid](), ipy_p, ipx);
-            vn = direct::elem(Iccs[tid](), ipy_n, ipx);
+            vp = direct::elem(Iccs[tid](), ipx, ipy_p);
+            vn = direct::elem(Iccs[tid](), ipx, ipy_n);
             cur_yshifts[iframe] = std::abs(vp + vn - 2.0 * maxval) > EPS ? 
                 posy - 0.5 * (vp - vn) / (vp + vn - 2.0 * maxval) : posy;
 
@@ -2032,7 +2032,7 @@ void MotioncorrRunner::doseWeighting(
                     std::cerr << "dose = " <<  doses[iframe] << " Ne = " << Ne << " frm = " << iframe << " lx = " << x << " ly = " << ly << " reso = " << 1 / dinv << " weight = " << weight << std::endl;
                 }
                 sum_weight_sq += weight * weight;
-                direct::elem(Fframes[iframe], y, x) *= weight;
+                direct::elem(Fframes[iframe], x, y) *= weight;
             }
 
             sum_weight_sq = std::sqrt(sum_weight_sq);
@@ -2041,7 +2041,7 @@ void MotioncorrRunner::doseWeighting(
                 REPORT_ERROR("Shouldn't happen.");
             }
             for (int iframe = 0; iframe < n_frames; iframe++) {
-                direct::elem(Fframes[iframe], y, x) /= sum_weight_sq; // Eq. 9
+                direct::elem(Fframes[iframe], x, y) /= sum_weight_sq; // Eq. 9
             }
         }
     }
@@ -2093,8 +2093,8 @@ void MotioncorrRunner::shiftNonSquareImageInFourierTransform(
             RFLOAT phase_shift = 2.0 * PI * (x * shiftx + ly * shifty);
             fComplex c1 = fComplex::unit(phase_shift);
             #endif
-            fComplex c2 = direct::elem(frame, y, x);
-            direct::elem(frame, y, x) = fComplex(
+            fComplex c2 = direct::elem(frame, x, y);
+            direct::elem(frame, x, y) = fComplex(
                 c1.real * c2.real - c1.imag * c2.imag, 
                 c1.real * c2.imag + c1.imag * c2.real
             );
@@ -2166,7 +2166,7 @@ void MotioncorrRunner::fillDefectMask(
                 if (iy < 0 || iy >= ny) continue;
                 for (int ix = x, xlim = x + w; ix < xlim; ix++) {
                     if (ix < 0 || ix >= nx) continue;
-                    direct::elem(bBad, iy, ix) = true;
+                    direct::elem(bBad, ix, iy) = true;
                 }
             }
         }

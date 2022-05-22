@@ -2095,7 +2095,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
                 long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
                 if (idx < spectral_size) {
-                    ind_spectrum(idx) += norm(direct::elem(Faux, k, i, j));
+                    ind_spectrum(idx) += norm(direct::elem(Faux, i, j, k));
                     count(idx) += 1.0;
                 }
             }
@@ -2274,9 +2274,9 @@ void MlOptimiser::initialLowPassFilterReferences() {
                 if (r < radius) {
                     continue;
                 } else if (r > radius_p) {
-                    direct::elem(Faux, k, i, j) = 0.0;
+                    direct::elem(Faux, i, j, k) = 0.0;
                 } else {
-                    direct::elem(Faux, k, i, j) *= 0.5 - 0.5 * cos(PI * (radius_p - r) / WIDTH_FMASK_EDGE);
+                    direct::elem(Faux, i, j, k) *= 0.5 - 0.5 * cos(PI * (radius_p - r) / WIDTH_FMASK_EDGE);
                 }
             }
             transformer.inverseFourierTransform(Faux, mymodel.Iref[iclass]);
@@ -3116,10 +3116,9 @@ void MlOptimiser::expectationSomeParticles(
         bool do_clear = (part_id_sorted == my_first_part_id);
         if (do_skip_align || do_skip_rotate) {
             // Also set the rotations
-            RFLOAT old_rot, old_tilt, old_psi;
-            old_rot = direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
-            old_tilt = direct::elem(exp_metadata, metadata_offset, METADATA_TILT);
-            old_psi = direct::elem(exp_metadata, metadata_offset, METADATA_PSI);
+            RFLOAT old_rot  = direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
+            RFLOAT old_tilt = direct::elem(exp_metadata, metadata_offset, METADATA_TILT);
+            RFLOAT old_psi  = direct::elem(exp_metadata, metadata_offset, METADATA_PSI);
             sampling.addOneOrientation(old_rot, old_tilt, old_psi, do_clear);
         } else if (do_only_sample_tilt) {
             if (do_clear) // only clear psi_angles for the first particle, as one psi-angle is stored for each particle!
@@ -3142,9 +3141,9 @@ void MlOptimiser::expectationSomeParticles(
                 rounded_offset_z = my_old_offset_z - round(my_old_offset_z);
             }
             if (do_helical_refine) {
-                rot_deg = direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
+                rot_deg  = direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
                 tilt_deg = direct::elem(exp_metadata, metadata_offset, METADATA_TILT);
-                psi_deg = direct::elem(exp_metadata, metadata_offset, METADATA_PSI);
+                psi_deg  = direct::elem(exp_metadata, metadata_offset, METADATA_PSI);
             }
 
             // TODO: this will not work if pixel size is different for different images in one particle....
@@ -4357,7 +4356,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
             // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
             // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
             if (ires < image_current_size[optics_group] / 2 + 1  && !(jp == 0 && ip < 0)) {
-                direct::elem(Mresol_fine[optics_group], k, i, j) = ires;
+                direct::elem(Mresol_fine[optics_group], i, j, k) = ires;
             }
         }
 
@@ -4380,7 +4379,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
             // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
             // exclude lowest-resolution points
             if (ires < image_coarse_size[optics_group] / 2 + 1 && !(jp == 0 && ip < 0)) {
-                direct::elem(Mresol_coarse[optics_group], k, i, j) = ires;
+                direct::elem(Mresol_coarse[optics_group], i, j, k) = ires;
             }
         }
 
@@ -4666,7 +4665,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 // Only allow a single image per call of this function!!! nr_pool needs to be set to 1!!!!
                 // This will save memory, as we'll need to store all translated images in memory....
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
-                    direct::elem(img(), k, i, j) = direct::elem(exp_imagedata, k, i, j);
+                    direct::elem(img(), i, j, k) = direct::elem(exp_imagedata, i, j, k);
                 }
                 img().setXmippOrigin();
 
@@ -4674,14 +4673,14 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     rec_img().resize(image_full_size[optics_group], image_full_size[optics_group], image_full_size[optics_group]);
                     int offset = do_ctf_correction ? 2 * image_full_size[optics_group] : image_full_size[optics_group];
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(rec_img()) {
-                        direct::elem(rec_img(), k, i, j) = direct::elem(exp_imagedata, offset + k, i, j);
+                        direct::elem(rec_img(), i, j, k) = direct::elem(exp_imagedata, i, j, offset + k);
                     }
                     rec_img().setXmippOrigin();
                 }
             } else {
                 img().resize(image_full_size[optics_group], image_full_size[optics_group]);
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img()) {
-                    direct::elem(img(), i, j) = direct::elem(exp_imagedata, my_metadata_offset, i, j);
+                    direct::elem(img(), i, j) = direct::elem(exp_imagedata, i, j, my_metadata_offset);
                 }
                 img().setXmippOrigin();
                 if (has_converged && do_use_reconstruct_images) {
@@ -4691,7 +4690,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     ////////////// TODO: think this through for no-threads here.....
                     rec_img().resize(image_full_size[optics_group], image_full_size[optics_group]);
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
-                        direct::elem(rec_img(), i, j) = direct::elem(exp_imagedata, my_nr_particles + my_metadata_offset, i, j);
+                        direct::elem(rec_img(), i, j) = direct::elem(exp_imagedata, i, j, my_nr_particles + my_metadata_offset);
                     }
                     rec_img().setXmippOrigin();
                 }
@@ -4718,9 +4717,9 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         // Helical reconstruction: calculate old_offset in the system of coordinates of the helix, i.e. parallel & perpendicular, depending on psi-angle!
         // For helices do NOT apply old_offset along the direction of the helix!!
         Matrix1D<RFLOAT> my_old_offset_helix_coords;
-        RFLOAT rot_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
+        RFLOAT rot_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
         RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
-        RFLOAT psi_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
+        RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
         //std::cerr << " rot_deg= " << rot_deg << " tilt_deg= " << tilt_deg << " psi_deg= " << psi_deg << std::endl;
         if (do_helical_refine && !ignore_helical_symmetry) {
             // Calculate my_old_offset_helix_coords from my_old_offset and psi angle
@@ -4874,10 +4873,10 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
                 if (ires >= 0 && ires < Xsize(remapped_sigma2_noise)) {
                     RFLOAT sigma = sqrt(sigma2_fudge * direct::elem(remapped_sigma2_noise, ires));
-                    direct::elem(Fnoise, k, i, j).real = rnd_gaus(0., sigma);
-                    direct::elem(Fnoise, k, i, j).imag = rnd_gaus(0., sigma);
+                    direct::elem(Fnoise, i, j, k).real = rnd_gaus(0., sigma);
+                    direct::elem(Fnoise, i, j, k).imag = rnd_gaus(0., sigma);
                 } else {
-                    direct::elem(Fnoise, k, i, j) = 0.0;
+                    direct::elem(Fnoise, i, j, k) = 0.0;
                 }
             }
             // Back to real space Mnoise
@@ -4923,7 +4922,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 // Skip Hermitian pairs in the x==0 column
 
                 if (ires > 0 && ires < image_full_size[optics_group] / 2 + 1 && jp != 0 || ip >= 0) {
-                    RFLOAT normFaux = norm(direct::elem(Faux, k, i, j));
+                    RFLOAT normFaux = norm(direct::elem(Faux, i, j, k));
                     direct::elem(spectrum, ires) += normFaux;
                     // Store sumXi2 from current_size until ori_size
                     if (ires >= image_current_size[optics_group] / 2 + 1)
@@ -4971,7 +4970,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     // Unpack the CTF-image from the exp_imagedata array
                     Ictf().resize(image_full_size[optics_group], image_full_size[optics_group], image_full_size[optics_group]);
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ictf()) {
-                        direct::elem(Ictf(), k, i, j) = direct::elem(exp_imagedata, image_full_size[optics_group] + k, i, j);
+                        direct::elem(Ictf(), i, j, k) = direct::elem(exp_imagedata, i, j, image_full_size[optics_group] + k);
                     }
                 }
 
@@ -4981,7 +4980,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     Ictf().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                         // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                        direct::elem(Fctf, k, i, j) = Ictf().elem(-ip, -jp, -kp);
+                        direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                     }
                 } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution
@@ -6137,9 +6136,9 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             }
             // Set all except for the best hidden variable to zero and the smallest element to 1
             for (long int i = 0; i < Xsize(exp_Mweight); i++)
-                direct::elem(exp_Mweight, img_id, i) = 0.0;
+                direct::elem(exp_Mweight, i, img_id) = 0.0;
 
-            direct::elem(exp_Mweight, img_id, myminidx) = 1.0;
+            direct::elem(exp_Mweight, myminidx, img_id) = 1.0;
             exp_thisimage_sumweight += 1.0;
 
         } else {
@@ -6241,9 +6240,9 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
                                 mypriors_len2 += myprior_z * myprior_z;
                             // If it is doing helical refinement AND Cartesian vector myprior has a length > 0, transform the vector to its helical coordinates
                             if (do_helical_refine && !ignore_helical_symmetry && mypriors_len2 > 0.00001) {
-                                RFLOAT rot_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
+                                RFLOAT rot_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
                                 RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
-                                RFLOAT psi_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
+                                RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
                                 transformCartesianAndHelicalCoords(myprior_x, myprior_y, myprior_z, myprior_x, myprior_y, myprior_z, rot_deg, tilt_deg, psi_deg, mymodel.data_dim, CART_TO_HELICAL_COORDS);
                             }
                             // (For helical refinement) Now offset, old_offset, sampling.translations and myprior are all in helical coordinates
@@ -7193,7 +7192,7 @@ void MlOptimiser::storeWeightedSums(
         int my_image_size = mydata.getOpticsImageSize(optics_group);
 
         // If the current images were smaller than the original size, fill the rest of wsum_model.sigma2_noise with the power_class spectrum of the images
-        for (int ires = image_current_size[optics_group]/2 + 1; ires < image_full_size[optics_group]/2 + 1; ires++) {
+        for (int ires = image_current_size[optics_group]/2 + 1; ires < image_full_size[optics_group] / 2 + 1; ires++) {
             direct::elem(thr_wsum_sigma2_noise[img_id], ires) += direct::elem(exp_power_img[img_id], ires);
             // Also extend the weighted sum of the norm_correction
             exp_wsum_norm_correction[img_id] += direct::elem(exp_power_img[img_id], ires);
@@ -7535,7 +7534,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             Ictf().setXmippOrigin();
                             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                 // Use negative kp, ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                                direct::elem(Fctf, k, i, j) = Ictf().elem(-ip, -jp, -kp);
+                                direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                             }
                         } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                             // otherwise, just window the CTF to the current resolution
@@ -8320,31 +8319,31 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
                 if (mymodel.data_dim == 3) {
 
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
-                        direct::elem(exp_imagedata, k, i, j) = direct::elem(img(), k, i, j);
+                        direct::elem(exp_imagedata, i, j, k) = direct::elem(img(), i, j, k);
                     }
 
                     if (do_ctf_correction) {
                         img.read(fn_ctf);
                         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
-                            direct::elem(exp_imagedata, my_image_size + k, i, j) = direct::elem(img(), k, i, j);
+                            direct::elem(exp_imagedata, i, j, my_image_size + k) = direct::elem(img(), i, j, k);
                         }
                     }
 
                     if (has_converged && do_use_reconstruct_images) {
                         int offset = do_ctf_correction ? 2 * my_image_size : my_image_size;
                         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
-                            direct::elem(exp_imagedata, offset + k, i, j) = direct::elem(rec_img(), k, i, j);
+                            direct::elem(exp_imagedata, i, j, offset + k) = direct::elem(rec_img(), i, j, k);
                         }
                     }
 
                 } else {
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img()) {
-                        direct::elem(exp_imagedata, metadata_offset, i, j) = direct::elem(img(), i, j);
+                        direct::elem(exp_imagedata, i, j, metadata_offset) = direct::elem(img(), i, j);
                     }
 
                     if (has_converged && do_use_reconstruct_images) {
                         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
-                            direct::elem(exp_imagedata, metadata_offset, i, j) = direct::elem(rec_img(), i, j);
+                            direct::elem(exp_imagedata, i, j, metadata_offset) = direct::elem(rec_img(), i, j);
                         }
                     }
                 }

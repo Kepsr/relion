@@ -75,8 +75,8 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         Image<Complex> ccspec(sh, s);
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < sh; xx++) {
-            direct::elem(  spec.data, yy, xx) *= sqrt(direct::elem(dmgWeight.data, yy, xx));
-            direct::elem(ccspec.data, yy, xx) = direct::elem(spec.data, yy, xx).norm();
+            direct::elem(  spec.data, xx, yy) *= sqrt(direct::elem(dmgWeight.data, xx, yy));
+            direct::elem(ccspec.data, xx, yy) = direct::elem(spec.data, xx, yy).norm();
         }
 
         Image<RFLOAT> mu0(s,s), img(s,s);
@@ -91,7 +91,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < s; xx++) {
-            double m = direct::elem(img.data, yy, xx) / (s * s);
+            double m = direct::elem(img.data, xx, yy) / (s * s);
             varScale += m * m;
         }
 
@@ -103,7 +103,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         for (long int y = 0; y < s; y++)
         for (long int x = 0; x < s; x++) {
-            double v = direct::elem(mu.data, y, x);
+            double v = direct::elem(mu.data, x, y);
             if (v > vMax) { vMax = v; }
             if (v < vMin) { vMin = v; }
         }
@@ -116,7 +116,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         for (long int y = 0; y < sh; y++)
         for (long int x = 0; x < s;  x++) {
-            double m = direct::elem(mu.data, y, x);
+            double m = direct::elem(mu.data, x, y);
             double dm = vMax - m;
 
             if (dm <= 6.0 * sigmaCC) {
@@ -144,7 +144,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         if (binValues) {
             for (long int y = 0; y < sh; y++)
             for (long int x = 0; x < s;  x++) {
-                double m = direct::elem(mu.data, y, x);
+                double m = direct::elem(mu.data, x, y);
                 double dm = vMax - m;
 
                 if (dm <= 6.0 * sigmaCC) {
@@ -200,7 +200,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                         int y = plausiblePixels[jmax].second;
 
                         #pragma omp atomic
-                        direct::elem(confusion.data, y, x) += 1.0;
+                        direct::elem(confusion.data, x, y) += 1.0;
                     }
                 }
             }
@@ -232,7 +232,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                     int x = plausiblePixels[jmax].first;
                     int y = plausiblePixels[jmax].second;
 
-                    direct::elem(confusion.data, y, x) += 1.0;
+                    direct::elem(confusion.data, x, y) += 1.0;
                 }
             }
         }
@@ -240,14 +240,14 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         if (binValues) {
             for (long int y = 0; y < sh; y++)
             for (long int x = 0; x < s;  x++) {
-                const double m = direct::elem(mu.data, y, x);
+                const double m = direct::elem(mu.data, x, y);
 
                 if (m < floorBin) continue;
 
                 const int b = (vbins - 1) * (m - floorBin) / binRange;
 
                 if (b >= 0 && hitsPerBin[b] > 0) {
-                    direct::elem(confusion.data, y, x) += hitsPerBin[b] / (double) ppixelsPerBin[b];
+                    direct::elem(confusion.data, x, y) += hitsPerBin[b] / (double) ppixelsPerBin[b];
                 }
             }
         }
@@ -276,12 +276,12 @@ std::vector<double> NoiseHelper::radialAverage(Image<RFLOAT> &map, bool half) {
         double a = rd - r0;
 
         if (r0 < b) {
-            out[r0] += (1.0 - a) * direct::elem(map.data, yy, xx);
+            out[r0] += (1.0 - a) * direct::elem(map.data, xx, yy);
             wgh[r0] += 1.0 - a;
         }
 
         if (r0 < b - 1) {
-            out[r0 + 1] += a * direct::elem(map.data, yy, xx);
+            out[r0 + 1] += a * direct::elem(map.data, xx, yy);
             wgh[r0 + 1] += a;
         }
     }
@@ -315,9 +315,9 @@ Image<RFLOAT> NoiseHelper::radialMap(std::vector<double> &radAvg, bool centered)
         double a = rd - r0;
 
         if (r0 < b - 1) {
-            direct::elem(out.data, yy, xx) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
+            direct::elem(out.data, xx, yy) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
         } else {
-            direct::elem(out.data, yy, xx) = radAvg[b - 1];
+            direct::elem(out.data, xx, yy) = radAvg[b - 1];
         }
     }
 
@@ -344,12 +344,12 @@ std::vector<Complex> NoiseHelper::radialAverage(Image<Complex> &map, bool skipAx
         double a = rd - r0;
 
         if (r0 < b) {
-            out[r0] += (1.0 - a) * direct::elem(map.data, yy, xx);
+            out[r0] += (1.0 - a) * direct::elem(map.data, xx, yy);
             wgh[r0] += 1.0 - a;
         }
 
         if (r0 < b-1) {
-            out[r0 + 1] += a * direct::elem(map.data, yy, xx);
+            out[r0 + 1] += a * direct::elem(map.data, xx, yy);
             wgh[r0 + 1] += a;
         }
     }
@@ -375,9 +375,9 @@ Image<Complex> NoiseHelper::radialMap(std::vector<Complex> &radAvg) {
         double a = rd - r0;
 
         if (r0 < b - 1) {
-            direct::elem(out.data, yy, xx) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
+            direct::elem(out.data, xx, yy) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
         } else {
-            direct::elem(out.data, yy, xx) = radAvg[b - 1];
+            direct::elem(out.data, xx, yy) = radAvg[b - 1];
         }
     }
 
@@ -402,7 +402,7 @@ std::vector<std::pair<double,double>> NoiseHelper::radialAverageAndStdDevFFTW(Im
         int r = rd + 0.5;
 
         if (r < b) {
-            avg[r] += direct::elem(map.data, yy, xx);
+            avg[r] += direct::elem(map.data, xx, yy);
             wgh[r] += 1.0;
         }
     }
@@ -418,7 +418,7 @@ std::vector<std::pair<double,double>> NoiseHelper::radialAverageAndStdDevFFTW(Im
 		int r = rd + 0.5;
 
 		double mu = avg[r];
-		double v = direct::elem(map.data, yy, xx) - mu;
+		double v = direct::elem(map.data, xx, yy) - mu;
 
         if (r < b) { var[r] += v * v; }
     }
@@ -493,7 +493,7 @@ Image<RFLOAT> NoiseHelper::normalize(const Image<RFLOAT> &confusion) {
     double sum = 0.0;
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        sum += direct::elem(confusion.data, y, x);
+        sum += direct::elem(confusion.data, x, y);
     }
 
     if (sum <= 0.0) return Image<RFLOAT>::zeros(w, h);
@@ -502,7 +502,7 @@ Image<RFLOAT> NoiseHelper::normalize(const Image<RFLOAT> &confusion) {
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-        direct::elem(out.data, y, x) = direct::elem(confusion.data, y, x) / sum;
+        direct::elem(out.data, x, y) = direct::elem(confusion.data, x, y) / sum;
     }
 
     return out;
@@ -520,7 +520,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     Image<Complex> ccspec(sh, s);
     for (long int yy = 0; yy < s;  yy++)
     for (long int xx = 0; xx < sh; xx++) {
-        direct::elem(ccspec.data, yy, xx) = direct::elem(spec.data, yy, xx).norm();
+        direct::elem(ccspec.data, xx, yy) = direct::elem(spec.data, xx, yy).norm();
     }
 
     Image<RFLOAT> mu(s,s);
@@ -530,7 +530,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
 
     for (long int yy = 0; yy < s; yy++)
     for (long int xx = 0; xx < s; xx++) {
-        double m = direct::elem(img.data, yy, xx) / (s * s);
+        double m = direct::elem(img.data, xx, yy) / (s * s);
         varScale += m * m;
     }
 
@@ -550,28 +550,28 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
 
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < s; xx++) {
-            double v = direct::elem(img.data, yy, xx);
-            direct::elem(imgD.data, yy, xx) = DistributionHelper::sampleGauss(v, sig);
+            double v = direct::elem(img.data, xx, yy);
+            direct::elem(imgD.data, xx, yy) = DistributionHelper::sampleGauss(v, sig);
         }
 
         ft.FourierTransform(imgD(), imgDs());
 
         for (long int yy = 0; yy < s;  yy++)
         for (long int xx = 0; xx < sh; xx++) {
-            direct::elem(ccDs.data, yy, xx) = 
-                direct::elem(spec.data,  yy, xx)
-              * direct::elem(imgDs.data, yy, xx).conj();
+            direct::elem(ccDs.data, xx, yy) = 
+                direct::elem(spec.data, xx, yy)
+              * direct::elem(imgDs.data, xx, yy).conj();
         }
 
         ft.inverseFourierTransform(ccDs.data, ccD.data);
 
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < s; xx++) {
-            double m0 = direct::elem(mu.data,  yy, xx);
-            double md = direct::elem(ccD.data, yy, xx);
+            double m0 = direct::elem(mu.data, xx, yy);
+            double md = direct::elem(ccD.data, xx, yy);
             double d = md - m0;
 
-            direct::elem(varImg.data, yy, xx) += d * d / N;
+            direct::elem(varImg.data, xx, yy) += d * d / N;
         }
 
     }
@@ -580,7 +580,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
 
     for (long int yy = 0; yy < s; yy++)
     for (long int xx = 0; xx < s; xx++) {
-        varSum += direct::elem(varImg.data, yy, xx);
+        varSum += direct::elem(varImg.data, xx, yy);
     }
 
     varSum /= s * s;
@@ -608,7 +608,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
 
         const int r = sqrt(xx * xx + yy * yy);
 
-        if (r >= sh) direct::elem(spec.data, y, x) = Complex(0.0, 0.0);
+        if (r >= sh) direct::elem(spec.data, x, y) = Complex(0.0, 0.0);
     }
 
 
@@ -624,7 +624,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
         const int r = sqrt(xx * xx + yy * yy);
 
         if (r < sh && r > 0) {
-            double a = direct::elem(spec.data, y, x).norm() / sig2[r];
+            double a = direct::elem(spec.data, x, y).norm() / sig2[r];
             varPred += x == 0 ? a : 2.0 * a;
         }
     }
@@ -659,24 +659,22 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
             const int r = sqrt(xx * xx + yy * yy);
 
             if (r < sh && r > 0) {
-                Complex z0 = direct::elem(spec.data, y, x);
+                Complex z0 = direct::elem(spec.data, x, y);
 
                 double r0 = DistributionHelper::sampleGauss(0, sqrtH);
                 double r1 = DistributionHelper::sampleGauss(0, sqrtH);
                 Complex z1 = Complex(r0, r1) * z0 / sig[r];
 
-                direct::elem(ccDs.data, y, x) = z1;
+                direct::elem(ccDs.data, x, y) = z1;
 
                 if (x == 0 && y >= sh) {
-                    direct::elem(ccDs.data, y, x) = direct::elem(ccDs.data, s - y, x).conj();
+                    direct::elem(ccDs.data, x, y) = direct::elem(ccDs.data, x, s - y).conj();
                 }
 
-                varTest += x == 0 ? direct::elem(ccDs.data, y, x).norm() :
-                              2.0 * direct::elem(ccDs.data, y, x).norm();
-            }
-            else
-            {
-                direct::elem(ccDs.data, y, x) = 0.0;
+                varTest += x == 0 ? direct::elem(ccDs.data, x, y).norm() :
+                              2.0 * direct::elem(ccDs.data, x, y).norm();
+            } else {
+                direct::elem(ccDs.data, x, y) = 0.0;
             }
         }
 
@@ -684,9 +682,9 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
 
         for (long int y = 0; y < s; y++)
         for (long int x = 0; x < s; x++) {
-            double d = direct::elem(ccD.data, y, x);
+            double d = direct::elem(ccD.data, x, y);
 
-            direct::elem(varImg.data, y, x) += d * d / (N * varPred);
+            direct::elem(varImg.data, x, y) += d * d / (N * varPred);
         }
     }
 
@@ -698,7 +696,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
 
     for (long int yy = 0; yy < s; yy++)
     for (long int xx = 0; xx < s; xx++) {
-        varSum += direct::elem(varImg.data, yy, xx);
+        varSum += direct::elem(varImg.data, xx, yy);
     }
 
     varSum /= s * s;
@@ -719,9 +717,9 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s; y++)
         for (int x = 0; x < s; x++) {
-            direct::elem(real.data, y, x) = DistributionHelper::sampleGauss(0, 2);
+            direct::elem(real.data, x, y) = DistributionHelper::sampleGauss(0, 2);
 
-            double v = direct::elem(real.data, y, x);
+            double v = direct::elem(real.data, x, y);
 
             varr += v * v;
         }
@@ -735,7 +733,7 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {
-            const Complex z = direct::elem(freq.data, y, x);
+            const Complex z = direct::elem(freq.data, x, y);
             var += x == 0 ? z.norm() : 2 * z.norm();
         }
 
@@ -752,15 +750,15 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {
-            direct::elem(freq.data, y, x).real = DistributionHelper::sampleGauss(0, sqrt(2.0));
+            direct::elem(freq.data, x, y).real = DistributionHelper::sampleGauss(0, sqrt(2.0));
             if (x > 0 && x < sh - 1) {
-                direct::elem(freq.data, y, x).imag = DistributionHelper::sampleGauss(0, sqrt(2.0));
+                direct::elem(freq.data, x, y).imag = DistributionHelper::sampleGauss(0, sqrt(2.0));
             } else {
-                direct::elem(freq.data, y, x).imag = 0.0;
+                direct::elem(freq.data, x, y).imag = 0.0;
             }
 
-            varf += x == 0 ? direct::elem(freq.data, y, x).norm() :
-                             direct::elem(freq.data, y, x).norm();
+            varf += x == 0 ? direct::elem(freq.data, x, y).norm() :
+                             direct::elem(freq.data, x, y).norm();
         }
 
         varf /= s * s;
@@ -772,7 +770,7 @@ void NoiseHelper::testParseval() {
 
         for (int y = 0; y < s; y++)
         for (int x = 0; x < s; x++) {
-            double v = direct::elem(real.data, y, x);
+            double v = direct::elem(real.data, x, y);
             var += v * v;
         }
 

@@ -27,16 +27,21 @@
 template class std::basic_string<char>;
 #endif
 
+template <typename T>
+inline T euclidsq(T a, T b, T c) {
+    return a * a + b * b + c * c;
+}
+
 // Workaround for compiler versions before 2018 update 2
 #ifdef __INTEL_COMPILER
-# if (__INTEL_COMPILER<1800)
-#  pragma optimize ("", off)
-# endif
-# if (__INTEL_COMPILER==1800)
-#  if (__INTEL_COMPILER_UPDATE<2)
-#   pragma optimize ("", off)
-#  endif
-# endif
+    #if (__INTEL_COMPILER < 1800)
+        #pragma optimize ("", off)
+    #endif
+    #if (__INTEL_COMPILER == 1800)
+        #if (__INTEL_COMPILER_UPDATE < 2)
+            #pragma optimize ("", off)
+        #endif
+    #endif
 #endif
 // Mask out corners outside sphere (replace by average value)
 // Apply a soft mask (raised cosine with cosine_width pixels width)
@@ -55,7 +60,7 @@ void softMaskOutsideMap(
         // Calculate average background value
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
 
-            RFLOAT r = sqrt((RFLOAT) (k * k + i * i + j * j));
+            RFLOAT r = sqrt(euclidsq(i, j, k));
             if (r < radius) continue;
 
             if (r > radius_p) {
@@ -75,7 +80,7 @@ void softMaskOutsideMap(
         RFLOAT r = sqrt((RFLOAT) (k * k + i * i + j * j));
         if (r < radius) continue;
 
-        RFLOAT add = Mnoise ? Mnoise->elem(k, i, j) : sum_bg;
+        RFLOAT add = Mnoise ? Mnoise->elem(i, j, k) : sum_bg;
         if (r > radius_p) {
             vol.elem(i, j, k) = add;
         } else {
@@ -146,9 +151,9 @@ void softMaskOutsideMapForHelix(
     if (!Mnoise) {
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
             // X, Y, Z coordinates
+            XX(coords) =            (RFLOAT) i;
+            YY(coords) =            (RFLOAT) j;
             ZZ(coords) = dim == 3 ? (RFLOAT) k : 0.0;
-            YY(coords) =            (RFLOAT) i;
-            XX(coords) =            (RFLOAT) j;
             // Rotate
             coords = A * coords;
 
@@ -175,9 +180,9 @@ void softMaskOutsideMapForHelix(
     RFLOAT noise_val = sum_bg;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
         // X, Y, Z coordinates
+        XX(coords) =            (RFLOAT) i;
+        YY(coords) =            (RFLOAT) j;
         ZZ(coords) = dim == 3 ? (RFLOAT) k : 0.0;
-        YY(coords) =            (RFLOAT) i;
-        XX(coords) =            (RFLOAT) j;
 
         // Rotate
         coords = A * coords;
@@ -191,7 +196,7 @@ void softMaskOutsideMapForHelix(
         // Info areas
         if (r < R1 && d < D1) continue;
 
-        if (Mnoise) { noise_val = Mnoise->elem(k, i, j); }
+        if (Mnoise) { noise_val = Mnoise->elem(i, j, k); }
 
         if (r > R2 || d > D2) {
             // Noise areas, fill in background values
@@ -231,15 +236,15 @@ void softMaskOutsideMap(MultidimArray<RFLOAT> &vol, MultidimArray<RFLOAT> &msk, 
     // Replace solvent by the average value in the solvent region
     RFLOAT sum = 0.0, sum_bg = 0.0;
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(msk) {
-        RFLOAT solv = invert_mask ? direct::elem(msk, k, i, j) : 1.0 - direct::elem(msk, k, i, j);
+        RFLOAT solv = invert_mask ? direct::elem(msk, i, j, k) : 1.0 - direct::elem(msk, i, j, k);
         sum    += solv;
-        sum_bg += solv * direct::elem(vol, k, i, j);
+        sum_bg += solv * direct::elem(vol, i, j, k);
     }
     sum_bg /= sum;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(msk) {
-        RFLOAT solv = invert_mask ? direct::elem(msk, k, i, j) : 1.0 - direct::elem(msk, k, i, j);
-        direct::elem(vol, k, i, j) = (1.0 - solv) * direct::elem(vol, k, i, j) + solv * sum_bg;
+        RFLOAT solv = invert_mask ? direct::elem(msk, i, j, k) : 1.0 - direct::elem(msk, i, j, k);
+        direct::elem(vol, i, j, k) = (1.0 - solv) * direct::elem(vol, i, j, k) + solv * sum_bg;
     }
 
 
@@ -286,16 +291,16 @@ void autoMask(
                 if (msk_cp.elem(i, j, k) < 0.001) {
                     bool already_done = false;
                     for (long int kp = k - extend_size; kp <= k + extend_size; kp++) {
-                    for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                     for (long int jp = j - extend_size; jp <= j + extend_size; jp++) {
+                    for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                         if (
-                            kp >= Zinit(msk_cp) && kp <= Zlast(msk_cp) &&
-                            ip >= Yinit(msk_cp) && ip <= Ylast(msk_cp) &&
-                            jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
+                            ip >= Xinit(msk_cp) && ip <= Xlast(msk_cp) &&
+                            jp >= Yinit(msk_cp) && jp <= Ylast(msk_cp) &&
+                            kp >= Zinit(msk_cp) && kp <= Zlast(msk_cp)
                         ) {
                             // only check distance if neighbouring Im() is one
                             if (msk_cp.elem(ip, jp, kp) > 0.999) {
-                                RFLOAT r2 = (RFLOAT) ((kp - k) * (kp - k) + (ip - i) * (ip - i) + (jp - j) * (jp - j));
+                                RFLOAT r2 = euclidsq(ip - i, jp - j, kp - k);
                                 // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                                 if (r2 < extend_ini_mask2) {
                                     msk_out.elem(i, j, k) = 1.0;
@@ -323,16 +328,16 @@ void autoMask(
                 if (msk_cp.elem(i, j, k) > 0.999) {
                     bool already_done = false;
                     for (long int kp = k - extend_size; kp <= k + extend_size; kp++) {
-                    for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                     for (long int jp = j - extend_size; jp <= j + extend_size; jp++) {
+                    for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                         if (
                             kp >= Zinit(msk_cp) && kp <= Zlast(msk_cp) &&
-                            ip >= Yinit(msk_cp) && ip <= Ylast(msk_cp) &&
-                            jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
+                            jp >= Yinit(msk_cp) && jp <= Ylast(msk_cp) &&
+                            ip >= Xinit(msk_cp) && ip <= Xlast(msk_cp)
                         ) {
                             // only check distance if neighbouring Im() is one
                             if (msk_cp.elem(ip, jp, kp) < 0.001) {
-                                RFLOAT r2 = (RFLOAT) ((kp - k) * (kp - k) + (ip - i) * (ip - i) + (jp - j) * (jp - j));
+                                RFLOAT r2 = (RFLOAT) euclidsq(ip - i, jp - j, kp - k);
                                 // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                                 if (r2 < extend_ini_mask2) {
                                     msk_out.elem(i, j, k) = 0.0;
@@ -377,16 +382,16 @@ void autoMask(
             if (msk_cp.elem(i, j, k) < 0.001) {
                 RFLOAT min_r2 = 9999.0;
                 for (long int kp = k - extend_size; kp <= k + extend_size; kp++) {
-                for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                 for (long int jp = j - extend_size; jp <= j + extend_size; jp++) {
+                for (long int ip = i - extend_size; ip <= i + extend_size; ip++) {
                     if (
                         kp >= Zinit(msk_cp) && kp <= Zlast(msk_cp) &&
-                        ip >= Yinit(msk_cp) && ip <= Ylast(msk_cp) &&
-                        jp >= Xinit(msk_cp) && jp <= Xlast(msk_cp)
+                        jp >= Yinit(msk_cp) && jp <= Ylast(msk_cp) &&
+                        ip >= Xinit(msk_cp) && ip <= Xlast(msk_cp)
                     ) {
                         // only update distance to a neighbouring msk_cp is one
                         if (msk_cp.elem(ip, jp, kp) > 0.999) {
-                            RFLOAT r2 = (RFLOAT) ((kp - k) * (kp - k) + (ip - i) * (ip - i) + (jp - j) * (jp - j));
+                            RFLOAT r2 = euclidsq(ip - i, jp - j, kp - k);
                             // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                             if (r2 < min_r2) { min_r2 = r2; }
                         }

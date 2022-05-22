@@ -45,7 +45,7 @@ void VolumeIntegration :: integrateAlongZ(const Volume<RFLOAT>& vol, gravis::d4M
     #endif
     for (int yi = 0; yi < ysi; yi++)
     for (int xi = 0; xi < xsi; xi++) {
-        direct::elem(dest.data, yi, xi) = 0.0;
+        direct::elem(dest.data, xi, yi) = 0.0;
     }
 
     for (int zv = 0; zv < zsv; zv++) {
@@ -75,7 +75,7 @@ void VolumeIntegration :: integrateAlongZ(const Volume<RFLOAT>& vol, gravis::d4M
 
             RFLOAT vv = xvf * vv1 + (1.0 - xvf) * vv0;
 
-            direct::elem(dest.data, yi, xi) += vv;
+            direct::elem(dest.data, xi, yi) += vv;
         }
     }
 }

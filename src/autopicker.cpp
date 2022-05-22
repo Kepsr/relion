@@ -488,15 +488,15 @@ void AutoPicker::initialise() {
                 bool has_set_first = false;
                 bool has_set_last = false;
                 int first_corner = Xinit(Mrefs[iref]), last_corner = Xlast(Mrefs[iref]);
-                for (long int j = Xinit(Mrefs[iref]); j <= Xlast(Mrefs[iref]); j++) {
+                for (long int i = Xinit(Mrefs[iref]); i <= Xlast(Mrefs[iref]); i++) {
                     if (!has_set_first) {
-                        if (fabs(Mrefs[iref].elem(0, j, 0) - cornerval) > 1e-6) {
-                            first_corner = j;
+                        if (fabs(Mrefs[iref].elem(i) - cornerval) > 1e-6) {
+                            first_corner = i;
                             has_set_first = true;
                         }
                     } else if (!has_set_last) {
-                        if (fabs(Mrefs[iref].elem(0, j, 0) - cornerval) < 1e-6) {
-                            last_corner = j - 1;
+                        if (fabs(Mrefs[iref].elem(i) - cornerval) < 1e-6) {
+                            last_corner = i - 1;
                             has_set_last = true;
                         }
                     }
@@ -1003,7 +1003,7 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
     result.x = result.y = result.psi = 0.0;
     result.fom = -999.0;
     // Why yx and not xy?
-    if (Mccf.elem((int) round(mycoord.y), (int) round(mycoord.x)) < threshold_value)
+    if (Mccf.elem((int) round(mycoord.x), (int) round(mycoord.y)) < threshold_value)
         return result;
 
     // Set FOM to small value in circle around mycoord
@@ -1020,10 +1020,10 @@ AmyloidCoord AutoPicker::findNextAmyloidCoordinate(
             // std::cerr << " Xmipp::init(new_micrograph_xsize)= " << Xmipp::init(new_micrograph_xsize) + skip_side_pix + 1<< " Xmipp::last(new_micrograph_xsize)= " << Xmipp::last(new_micrograph_xsize)- skip_side_pix - 1 << std::endl;
             // std::cerr << " Xmipp::init(new_micrograph_ysize)= " << Xmipp::init(new_micrograph_ysize) + skip_side_pix + 1<< " Xmipp::last(new_micrograph_ysize)= " << Xmipp::last(new_micrograph_ysize)- skip_side_pix - 1 << std::endl;
             if (
-                jp >= Xmipp::init(Xsize(Mccf)) &&
-                jp <= Xmipp::last(Xsize(Mccf)) &&
-                ip >= Xmipp::init(Ysize(Mccf)) &&
-                ip <= Xmipp::last(Ysize(Mccf))
+                ip >= Xmipp::init(Xsize(Mccf)) &&
+                ip <= Xmipp::last(Xsize(Mccf)) &&
+                jp >= Xmipp::init(Ysize(Mccf)) &&
+                jp <= Xmipp::last(Ysize(Mccf))
             ) {
                 Mccf.elem(ip, jp) = -999.0;
             }
@@ -1203,13 +1203,13 @@ void AutoPicker::pickAmyloids(
                     helical_tube_diameter / angpix, round(skip_side), scale, Mccf, Mpsi
                 );
                 //std::cerr << " START newcoord.x= " << newcoord.x << " newcoord.y= " << newcoord.y << " newcoord.fom= " << newcoord.fom
-                //		<< " stddev = " << Mstddev.elem(round(newcoord.y), round(newcoord.x))
-                //		<< " avg= " <<	Mavg.elem(round(newcoord.y), round(newcoord.x))	<< std::endl;
+                //		<< " stddev = " << Mstddev.elem(round(newcoord.x), round(newcoord.y))
+                //		<< " avg= " <<	Mavg.elem(round(newcoord.x), round(newcoord.y))	<< std::endl;
                 // Also check for Mstddev value
                 if (
                     newcoord.fom > threshold_value &&
-                    (max_stddev_noise <=    0.0 || Mstddev.elem((int) round(newcoord.y), (int) round(newcoord.x)) <= max_stddev_noise) &&
-                    (min_avg_noise    <= -900.0 || Mavg   .elem((int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
+                    (max_stddev_noise <=    0.0 || Mstddev.elem((int) round(newcoord.x), (int) round(newcoord.y)) <= max_stddev_noise) &&
+                    (min_avg_noise    <= -900.0 || Mavg   .elem((int) round(newcoord.x), (int) round(newcoord.y)) >= min_avg_noise)
                 ) {
                     helix.insert(helix.begin(), newcoord);
                 } else {
@@ -1224,8 +1224,8 @@ void AutoPicker::pickAmyloids(
                 //std::cerr << " END newcoord.x= " << newcoord.x << " newcoord.y= " << newcoord.y << " newcoord.fom= " << newcoord.fom << std::endl;
                 if (
                     newcoord.fom > threshold_value &&
-                    (max_stddev_noise <=    0.0 || Mstddev.elem((int) round(newcoord.y), (int) round(newcoord.x)) <= max_stddev_noise) &&
-                    (min_avg_noise    <= -900.0 || Mavg.elem(   (int) round(newcoord.y), (int) round(newcoord.x)) >= min_avg_noise)
+                    (max_stddev_noise <=    0.0 || Mstddev.elem((int) round(newcoord.x), (int) round(newcoord.y)) <= max_stddev_noise) &&
+                    (min_avg_noise    <= -900.0 || Mavg.elem(   (int) round(newcoord.x), (int) round(newcoord.y)) >= min_avg_noise)
                 ) {
                     helix.push_back(newcoord);
                 } else {
@@ -1380,8 +1380,8 @@ void AutoPicker::pickCCFPeaks(
     Mrec.initConstant(0);
     Mrec.setXmippOrigin();
     nr_pixels = 0;
-    for (int ii = Xmipp::init(new_micrograph_ysize) + skip_side; ii <= Xmipp::last(new_micrograph_ysize) - skip_side; ii++)
-    for (int jj = Xmipp::init(new_micrograph_xsize) + skip_side; jj <= Xmipp::last(new_micrograph_xsize) - skip_side; jj++) {
+    for (int jj = Xmipp::init(new_micrograph_ysize) + skip_side; jj <= Xmipp::last(new_micrograph_ysize) - skip_side; jj++)
+    for (int ii = Xmipp::init(new_micrograph_xsize) + skip_side; ii <= Xmipp::last(new_micrograph_xsize) - skip_side; ii++) {
         // Only check stddev in the noise areas if max_stddev_noise is positive!
         if (max_stddev_noise > 0.0 && Mstddev.elem(ii, jj) > max_stddev_noise)
             continue;
@@ -1393,7 +1393,7 @@ void AutoPicker::pickCCFPeaks(
         nr_pixels++;
         if (fom > threshold_value) {
             Mrec.elem(ii, jj) = 1;
-            ccf_pixel_list.push_back(ccfPixel(jj, ii, fom));
+            ccf_pixel_list.push_back(ccfPixel(ii, jj, fom));
         }
     }
     std::sort(ccf_pixel_list.begin(), ccf_pixel_list.end());
@@ -1437,11 +1437,11 @@ void AutoPicker::pickCCFPeaks(
         // Check if this ccf pixel is covered by another peak
         x_old = x_new = round(ccf_pixel_list[id].x);
         y_old = y_new = round(ccf_pixel_list[id].y);
-        if (Mrec.elem(y_new, x_new) == 0)
+        if (Mrec.elem(x_new, y_new) == 0)
             continue;
 
-        iref = Mclass.elem(y_new, x_new);
-        fom_max = Mccf.elem(y_new, x_new);
+        iref = Mclass.elem(x_new, y_new);
+        fom_max = Mccf.elem(x_new, y_new);
 
         // Pick a peak starting from this ccf pixel
         ccf_peak_small.clear();
@@ -1483,8 +1483,8 @@ void AutoPicker::pickCCFPeaks(
                     ) continue;
 
                     // Push back all ccf pixels within this rmax
-                    RFLOAT ccf = Mccf.elem(y_new, x_new);
-                    if (Mrec.elem(y_new, x_new) == 0)
+                    RFLOAT ccf = Mccf.elem(x_new, y_new);
+                    if (Mrec.elem(x_new, y_new) == 0)
                         ccf = stats.min;
                     ccf_peak_big.ccf_pixel_list.push_back(ccfPixel(x_new, y_new, ccf));
                 }
@@ -1529,7 +1529,7 @@ void AutoPicker::pickCCFPeaks(
             for (int ii = 0; ii < ccf_peak_small.ccf_pixel_list.size(); ii++) {
                 x_new = round(ccf_peak_small.ccf_pixel_list[ii].x);
                 y_new = round(ccf_peak_small.ccf_pixel_list[ii].y);
-                Mrec.elem(y_new, x_new) = 0;
+                Mrec.elem(x_new, y_new) = 0;
             }
             // TODO: if r > ...? do not include this peak?
             ccf_peak_small.ref = iref;
@@ -1575,10 +1575,10 @@ void AutoPicker::pickCCFPeaks(
                 y > (Xmipp::last(new_micrograph_ysize) - skip_side - 1)
             ) continue;
 
-            int old_id = Mrec.elem(y, x);
+            int old_id = Mrec.elem(x, y);
             if (old_id >= 0)
                 ccf_peak_list[old_id].r = -1.0;
-            Mrec.elem(y, x) = new_id;
+            Mrec.elem(x, y) = new_id;
         }
     }
 
@@ -1607,7 +1607,7 @@ void AutoPicker::pickCCFPeaks(
 
         x = round(ccf_peak_list[ii].ccf_pixel_list[jj].x);
         y = round(ccf_peak_list[ii].ccf_pixel_list[jj].y);
-        Mccfplot.elem(y, x) = 1.0;
+        Mccfplot.elem(x, y) = 1.0;
     }
 
     return;
@@ -2156,7 +2156,7 @@ void AutoPicker::exportHelicalTubes(
                     y_int > Xmipp::last(micrograph_ysize) - 1
                 ) continue;
 
-                Mccfplot.elem(y_int, x_int) = 1.0;
+                Mccfplot.elem(x_int, y_int) = 1.0;
             }
         }
     }
@@ -2272,8 +2272,8 @@ void AutoPicker::exportHelicalTubes(
                 y_int > Xmipp::last(micrograph_ysize) - skip_side - 1
             ) continue;
 
-            int iref = Mclass.elem(y_int, x_int);
-            RFLOAT fom = Mccf.elem(y_int, x_int);
+            int iref = Mclass.elem(x_int, y_int);
+            RFLOAT fom = Mccf.elem(x_int, y_int);
 
             MDout.addObject();
             RFLOAT xval = tube_coord_list[itube][icoord].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize);
@@ -2359,10 +2359,10 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
             // Fill region outside the original window with white Gaussian noise to prevent all-zeros in Mstddev
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic()) {
                 if (
-                    i < Xmipp::init(micrograph_ysize) ||
-                    i > Xmipp::last(micrograph_ysize) ||
-                    j < Xmipp::init(micrograph_xsize) ||
-                    j > Xmipp::last(micrograph_xsize)
+                    j < Xmipp::init(micrograph_ysize) ||
+                    j > Xmipp::last(micrograph_ysize) ||
+                    i < Xmipp::init(micrograph_xsize) ||
+                    i > Xmipp::last(micrograph_xsize)
                 ) {
                     Imic().elem(i, j) = rnd_gaus(0.0, 1.0);
                 }
@@ -2455,7 +2455,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
     }
 
     // Skip the sides if necessary
-    int my_skip_side = (int) ((float) autopick_skip_side * scale);
+    int my_skip_side = (float) autopick_skip_side * scale;
     if (my_skip_side > 0) {
         MultidimArray<float> Mbest_fom_new(Mbest_fom);
         Mbest_fom_new.initZeros();
@@ -2539,8 +2539,8 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         RFLOAT fom_here = Mbest_fom.elem(imax, jmax);
         if (fom_here < my_upper_limit) {
             MDout.addObject();
-            long int xx = jmax - Xmipp::init((int) ((float) micrograph_xsize * scale));
-            long int yy = imax - Xmipp::init((int) ((float) micrograph_ysize * scale));
+            long int xx = imax - Xmipp::init((float) micrograph_xsize * scale);
+            long int yy = jmax - Xmipp::init((float) micrograph_ysize * scale);
             MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xx / scale);
             MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) yy / scale);
             MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, Mbest_fom.elem(imax, jmax));
@@ -2552,13 +2552,13 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
         // Exclude a bit more radius, such that no very close neighbours are allowed
         long int myrad = round(scale * (Mbest_size.elem(imax, jmax) + LoG_min_diameter) * LoG_neighbour_fudge / 2 / angpix);
         long int myrad2 = myrad * myrad;
-//		std::cout << "scale = " << scale << " Mbest_size = " << Mbest_size.elem(imax, jmax) << " myrad " << myrad << std::endl;
+		// std::cout << "scale = " << scale << " Mbest_size = " << Mbest_size.elem(imax, jmax) << " myrad " << myrad << std::endl;
         for (long int ii = imax - myrad; ii <= imax + myrad; ii++)
         for (long int jj = jmax - myrad; jj <= jmax + myrad; jj++) {
             long int r2 = (imax - ii) * (imax - ii) + (jmax - jj) * (jmax - jj);
             if (
-                ii >= Yinit(Mbest_fom) && ii <= Ylast(Mbest_fom) &&
-                jj >= Xinit(Mbest_fom) && jj <= Xlast(Mbest_fom) &&
+                ii >= Xinit(Mbest_fom) && ii <= Xlast(Mbest_fom) &&
+                jj >= Yinit(Mbest_fom) && jj <= Ylast(Mbest_fom) &&
                 r2 < myrad2
             ) {
                 Mbest_fom.elem(ii, jj) = 0.0;
@@ -2642,10 +2642,10 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         // Fill region outside the original window with white Gaussian noise to prevent all-zeros in Mstddev
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic()) {
             if (
-                i < Xmipp::init(micrograph_ysize) ||
-                i > Xmipp::last(micrograph_ysize) ||
-                j < Xmipp::init(micrograph_xsize) ||
-                j > Xmipp::last(micrograph_xsize)
+                j < Xmipp::init(micrograph_ysize) ||
+                j > Xmipp::last(micrograph_ysize) ||
+                i < Xmipp::init(micrograph_xsize) ||
+                i > Xmipp::last(micrograph_xsize)
             ) {
                 Imic().elem(i, j) = rnd_gaus(0.0, 1.0);
             }
@@ -2892,7 +2892,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                     tt().resize(particle_size, particle_size);
                     tt().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_ARRAY2D(tt()) {
-                        tt.elem(, i, j) = ttt.elem(i, j); // ???
+                        tt.elem(i, j) = ttt.elem(i, j);
                     }
                     tt.write("Mref_rot_ctf.spi");
                     #endif
@@ -3250,14 +3250,14 @@ void AutoPicker::peakSearch(
     // At least 1, so dont have to check for the borders!
     skip_side = std::max(1, skip_side);
     for (
-        int i  = Xmipp::init((int) ((float) micrograph_ysize * scale)) + skip_side;
-            i <= Xmipp::last((int) ((float) micrograph_ysize * scale)) - skip_side;
-            i++
+        int j  = Xmipp::init((int) ((float) micrograph_ysize * scale)) + skip_side;
+            j <= Xmipp::last((int) ((float) micrograph_ysize * scale)) - skip_side;
+            j++
     ) {
     for (
-        int j  = Xmipp::init((int) ((float) micrograph_xsize * scale)) + skip_side;
-            j <= Xmipp::last((int) ((float) micrograph_xsize * scale)) - skip_side;
-            j++
+        int i  = Xmipp::init((int) ((float) micrograph_xsize * scale)) + skip_side;
+            i <= Xmipp::last((int) ((float) micrograph_xsize * scale)) - skip_side;
+            i++
     ) {
 
             RFLOAT myval = Mfom.elem(i, j);
@@ -3272,27 +3272,19 @@ void AutoPicker::peakSearch(
 
                 if (scale < 1.0) {
                     // When we use shrink, then often peaks aren't 5 pixels big anymore...
-                    if (Mfom.elem(i - 1, j) > myval)
-                        continue;
-                    if (Mfom.elem(i + 1, j) > myval)
-                        continue;
-                    if (Mfom.elem(i, j - 1) > myval)
-                        continue;
-                    if (Mfom.elem(i, j + 1) > myval)
-                        continue;
+                    if (Mfom.elem(i - 1, j) > myval) continue;
+                    if (Mfom.elem(i + 1, j) > myval) continue;
+                    if (Mfom.elem(i, j - 1) > myval) continue;
+                    if (Mfom.elem(i, j + 1) > myval) continue;
                 } else {
                     // This is a peak if all four neighbours are also above the threshold, AND have lower values than myval
-                    if (Mfom.elem(i - 1, j) < min_fraction_expected_Pratio || Mfom.elem(i - 1, j) > myval)
-                        continue;
-                    if (Mfom.elem(i + 1, j) < min_fraction_expected_Pratio || Mfom.elem(i + 1, j) > myval)
-                        continue;
-                    if (Mfom.elem(i, j - 1) < min_fraction_expected_Pratio || Mfom.elem(i, j - 1) > myval)
-                        continue;
-                    if (Mfom.elem(i, j + 1) < min_fraction_expected_Pratio || Mfom.elem(i, j + 1) > myval)
-                        continue;
+                    if (Mfom.elem(i - 1, j) < min_fraction_expected_Pratio || Mfom.elem(i - 1, j) > myval) continue;
+                    if (Mfom.elem(i + 1, j) < min_fraction_expected_Pratio || Mfom.elem(i + 1, j) > myval) continue;
+                    if (Mfom.elem(i, j - 1) < min_fraction_expected_Pratio || Mfom.elem(i, j - 1) > myval) continue;
+                    if (Mfom.elem(i, j + 1) < min_fraction_expected_Pratio || Mfom.elem(i, j + 1) > myval) continue;
                 }
-                peak.x = j - Xmipp::init((int) ((float) micrograph_xsize * scale));
-                peak.y = i - Xmipp::init((int) ((float) micrograph_ysize * scale));
+                peak.x = i - Xmipp::init((float) micrograph_xsize * scale);
+                peak.y = j - Xmipp::init((float) micrograph_ysize * scale);
                 peak.psi = Mpsi.elem(i, j);
                 peak.fom = Mfom.elem(i, j);
                 peak.relative_fom = myval;

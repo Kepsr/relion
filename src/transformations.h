@@ -315,10 +315,10 @@ void applyGeometry(
         << "(max_xp,max_yp)=(" << maxxp  << "," << maxyp  << ")\n";
         #endif
 
-        for (int i = 0; i < Ysize(V2); i++) {
+        for (int j = 0; j < Ysize(V2); j++) {
             // Calculate position of the beginning of the row in the output image
             RFLOAT x =   - cen_x;
-            RFLOAT y = i - cen_y;
+            RFLOAT y = j - cen_y;
 
             // Calculate this position in the input image according to the
             // geometrical transformation
@@ -327,7 +327,7 @@ void applyGeometry(
             RFLOAT xp = x * Aref(0, 0) + y * Aref(0, 1) + Aref(0, 2);
             RFLOAT yp = x * Aref(1, 0) + y * Aref(1, 1) + Aref(1, 2);
 
-            for (int j = 0; j < Xsize(V2); j++) {
+            for (int i = 0; i < Xsize(V2); i++) {
 
                 #ifdef DEBUG_APPLYGEO
 
@@ -387,8 +387,8 @@ void applyGeometry(
                     }
 
                     #ifdef DEBUG_APPLYGEO
-                    std::cout << "   From (" << n1 << "," << m1 << ") and ("
-                    << n2 << "," << m2 << ")\n";
+                    std::cout << "   From (" << m1 << "," << n1 << ") and ("
+                    << m2 << "," << n2 << ")\n";
                     std::cout << "   wx= " << wx << " wy= " << wy << std::endl;
                     #endif
 
@@ -396,16 +396,16 @@ void applyGeometry(
                     // if wx == 0 means that the rightest point is useless for this
                     // interpolation, and even it might not be defined if m1=xdim-1
                     // The same can be said for wy.
-                    T tmp = ((1 - wy) * (1 - wx) * direct::elem(V1, n1, m1));
+                    T tmp = ((1 - wy) * (1 - wx) * direct::elem(V1, m1, n1));
 
                     if (m2 < V1.xdim)
-                        tmp += (T) ((1 - wy) * wx * direct::elem(V1, n1, m2));
+                        tmp += (T) ((1 - wy) * wx * direct::elem(V1, m2, n1));
 
                     if (n2 < V1.ydim) {
-                        tmp += (T) (wy * (1 - wx) * direct::elem(V1, n2, m1));
+                        tmp += (T) (wy * (1 - wx) * direct::elem(V1, m1, n2));
 
                         if (m2 < V1.xdim)
-                            tmp += (T) (wy * wx * direct::elem(V1, n2, m2));
+                            tmp += (T) (wy * wx * direct::elem(V1, m2, n2));
                     }
 
                     direct::elem(V2, i, j) = tmp;
@@ -458,11 +458,10 @@ void applyGeometry(
 
         // V2 is not initialised to 0 because all its pixels are rewritten
         for (int k = 0; k < V2.zdim; k++)
-        for (int i = 0; i < V2.ydim; i++) {
-            // Calculate position of the beginning of the row in the output
-            // MultidimArray
+        for (int j = 0; j < V2.ydim; j++) {
+            // Calculate position of the beginning of the row in the output MultidimArray
             RFLOAT x =   - cen_x;
-            RFLOAT y = i - cen_y;
+            RFLOAT y = j - cen_y;
             RFLOAT z = k - cen_z;
 
             // Calculate this position in the input image according to the
@@ -472,13 +471,13 @@ void applyGeometry(
             RFLOAT yp = x * Aref(1, 0) + y * Aref(1, 1) + z * Aref(1, 2) + Aref(1, 3);
             RFLOAT zp = x * Aref(2, 0) + y * Aref(2, 1) + z * Aref(2, 2) + Aref(2, 3);
 
-            for (int j = 0; j < V2.xdim; j++) {
+            for (int i = 0; i < V2.xdim; i++) {
 
                 #ifdef DEBUG
 
                 bool show_debug = (
                     i == 0 && j == 0 && k == 0 ||
-                    i == V2.ydim - 1 && j == V2.xdim - 1 && k == V2.zdim - 1
+                    i == V2.xdim - 1 && j == V2.ydim - 1 && k == V2.zdim - 1
                 );
 
                 if (show_debug)
@@ -553,58 +552,58 @@ void applyGeometry(
                     // this interpolation, and even it might not be defined if
                     // m1=xdim-1
                     // The same can be said for wy.
-                    T tmp = ((1 - wz) * (1 - wy) * (1 - wx) * direct::elem(V1, o1, n1, m1));
+                    T tmp = ((1 - wz) * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o1));
 
                     if (m2 < V1.xdim)
-                        tmp += (T) ((1 - wz) * (1 - wy) * wx * direct::elem(V1, o1, n1, m2));
+                        tmp += (T) ((1 - wz) * (1 - wy) * wx * direct::elem(V1, m2, n1, o1));
 
                     if (n2 < V1.ydim) {
-                        tmp += (T) ((1 - wz) * wy * (1 - wx) * direct::elem(V1, o1, n2, m1));
+                        tmp += (T) ((1 - wz) * wy * (1 - wx) * direct::elem(V1, m1, n2, o1));
                         if (m2 < V1.xdim)
-                            tmp += (T) ((1 - wz) * wy * wx * direct::elem(V1, o1, n2, m2));
+                            tmp += (T) ((1 - wz) * wy * wx * direct::elem(V1, m2, n2, o1));
                     }
 
                     if (o2 < V1.zdim) {
-                        tmp += (T) (wz * (1 - wy) * (1 - wx) * direct::elem(V1, o2, n1, m1));
+                        tmp += (T) (wz * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o2));
                         if (m2 < V1.xdim)
-                            tmp += (T) (wz * (1 - wy) * wx * direct::elem(V1, o2, n1, m2));
+                            tmp += (T) (wz * (1 - wy) * wx * direct::elem(V1, m2, n1, o2));
                         if (n2 < V1.ydim) {
-                            tmp += (T) (wz * wy * (1 - wx) * direct::elem(V1, o2, n2, m1));
+                            tmp += (T) (wz * wy * (1 - wx) * direct::elem(V1, m1, n2, o2));
                             if (m2 < V1.xdim)
-                                tmp += (T) (wz * wy * wx * direct::elem(V1, o2, n2, m2));
+                                tmp += (T) (wz * wy * wx * direct::elem(V1, m2, n2, o2));
                         }
                     }
 
                     #ifdef DEBUG
                     if (show_debug)
                         std::cout <<
-                        "tmp1=" << direct::elem(V1, o1, n1, m1) << " "
-                        << (T) ((1 - wz) *(1 - wy) *(1 - wx) * direct::elem(V1, o1, n1, m1))
+                        "tmp1=" << direct::elem(V1, m1, n1, o1) << " "
+                        << (T) ((1 - wz) *(1 - wy) *(1 - wx) * direct::elem(V1, m1, n1, o1))
                         << std::endl <<
-                        "tmp2=" << direct::elem(V1, o1, n1, m2) << " "
-                        << (T) ((1 - wz) *(1 - wy) * wx * direct::elem(V1, o1, n1, m2))
+                        "tmp2=" << direct::elem(V1, m2, n1, o1) << " "
+                        << (T) ((1 - wz) *(1 - wy) * wx * direct::elem(V1, m2, n1, o1))
                         << std::endl <<
-                        "tmp3=" << direct::elem(V1, o1, n2, m1) << " "
-                        << (T) ((1 - wz) * wy *(1 - wx) * direct::elem(V1, o1, n2, m1))
+                        "tmp3=" << direct::elem(V1, m1, n2, o1) << " "
+                        << (T) ((1 - wz) * wy *(1 - wx) * direct::elem(V1, m1, n2, o1))
                         << std::endl <<
-                        "tmp4=" << direct::elem(V1, o1, n2, m2) << " "
-                        << (T) ((1 - wz) * wy * wx * direct::elem(V1, o2, n1, m1))
+                        "tmp4=" << direct::elem(V1, m2, n2, o1) << " "
+                        << (T) ((1 - wz) * wy * wx * direct::elem(V1, m1, n1, o2))
                         << std::endl <<
-                        "tmp6=" << direct::elem(V1, o2, n1, m2) << " "
-                        << (T) (wz * (1 - wy) * wx * direct::elem(V1, o2, n1, m2))
+                        "tmp6=" << direct::elem(V1, m2, n1, o2) << " "
+                        << (T) (wz * (1 - wy) * wx * direct::elem(V1, m2, n1, o2))
                         << std::endl <<
-                        "tmp7=" << direct::elem(V1, o2, n2, m1) << " "
-                        << (T) (wz * wy *(1 - wx) * direct::elem(V1, o2, n2, m1))
+                        "tmp7=" << direct::elem(V1, m1, n2, o2) << " "
+                        << (T) (wz * wy *(1 - wx) * direct::elem(V1, m1, n2, o2))
                         << std::endl <<
-                        "tmp8=" << direct::elem(V1, o2, n2, m2) << " "
-                        << (T) (wz * wy * wx * direct::elem(V1, o2, n2, m2))
+                        "tmp8=" << direct::elem(V1, m2, n2, o2) << " "
+                        << (T) (wz * wy * wx * direct::elem(V1, m2, n2, o2))
                         << std::endl <<
                         "tmp= " << tmp << std::endl;
                     #endif
 
-                    direct::elem(V2 , k, i, j) = tmp;
+                    direct::elem(V2, i, j, k) = tmp;
                 } else {
-                    direct::elem(V2, k, i, j) = outside;
+                    direct::elem(V2, i, j, k) = outside;
                 }
 
                 // Compute new point inside input image
@@ -895,9 +894,9 @@ void radialAverage(
     Matrix1D<RFLOAT> idx(3);
     // Perform the radial sum and count pixels that contribute to every distance
     FOR_ALL_ELEMENTS_IN_ARRAY3D(m) {
+        XX(idx) = i - XX(center_of_rot);
+        YY(idx) = j - YY(center_of_rot);
         ZZ(idx) = k - ZZ(center_of_rot);
-        YY(idx) = i - YY(center_of_rot);
-        XX(idx) = j - XX(center_of_rot);
 
         // Determine distance to the center
         int distance = rounding ? round(idx.modulus()) : floor(idx.modulus());

@@ -367,10 +367,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         CTICTOC(timer, "gaussNoiseOutside", ({
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic()) {
             if (
-                i < Xmipp::init(basePckr->micrograph_ysize) ||
-                i > Xmipp::last(basePckr->micrograph_ysize) ||
-                j < Xmipp::init(basePckr->micrograph_xsize) ||
-                j > Xmipp::last(basePckr->micrograph_xsize)
+                j < Xmipp::init(basePckr->micrograph_ysize) ||
+                j > Xmipp::last(basePckr->micrograph_ysize) ||
+                i < Xmipp::init(basePckr->micrograph_xsize) ||
+                i > Xmipp::last(basePckr->micrograph_xsize)
             ) {
                 Imic().elem(i, j) = rnd_gaus(0.0, 1.0);
             }

@@ -383,19 +383,19 @@ void CTF::getFftwImage(
         // From half to whole
         MultidimArray<RFLOAT> Mctf(oriydim_pad, orixdim_pad);
         Mctf.setXmippOrigin();
-        for (int i = 0 ; i < Ysize(Fctf); i++) {
+        for (int j = 0 ; j < Ysize(Fctf); j++) {
             // Don't take the middle row of the half-transform
-            if (i != Ysize(Fctf) / 2) {
-                int ip = i < Xsize(Fctf) ? i : i - Ysize(Fctf);
+            if (j != Ysize(Fctf) / 2) {
+                int jp = j < Xsize(Fctf) ? j : j - Ysize(Fctf);
                 // Don't take the last column from the half-transform
-                for (int j = 0; j < Xsize(Fctf) - 1; j++) {
+                for (int i = 0; i < Xsize(Fctf) - 1; i++) {
                     RFLOAT fctfij = direct::elem(Fctf, i, j);
                     if (ctf_premultiplied) {
-                        Mctf.elem( ip,  j) = fctfij * fctfij;
-                        Mctf.elem(-ip, -j) = fctfij * fctfij;
+                        Mctf.elem(+i, +jp) = fctfij * fctfij;
+                        Mctf.elem(-i, -jp) = fctfij * fctfij;
                     } else {
-                        Mctf.elem( ip,  j) = fctfij;
-                        Mctf.elem(-ip, -j) = fctfij;
+                        Mctf.elem(+i, +jp) = fctfij;
+                        Mctf.elem(-i, -jp) = fctfij;
                     }
                 }
             }
@@ -405,14 +405,14 @@ void CTF::getFftwImage(
 
         Mctf.setXmippOrigin();
         // From whole to half
-        for (int i = 0 ; i < Ysize(result); i++) {
+        for (int j = 0 ; j < Ysize(result); j++) {
             // Don't take the middle row of the half-transform
-            if (i != Ysize(result) / 2) {
-                int ip = (i < Xsize(result)) ? i : i - Ysize(result);
+            if (j != Ysize(result) / 2) {
+                int jp = j < Xsize(result) ? j : j - Ysize(result);
                 // Don't take the last column from the half-transform
-                for (int j = 0; j < Xsize(result) - 1; j++) {
+                for (int i = 0; i < Xsize(result) - 1; i++) {
                     // Make just one lookup on Mctf.data
-                    RFLOAT mctfipj = Mctf.elem(ip, j);
+                    RFLOAT mctfipj = Mctf.elem(i, jp);
                     if (ctf_premultiplied) {
                         // Constrain result[i, j] to the interval [0.0, 1.0]
                         direct::elem(result, i, j) = 
@@ -453,13 +453,13 @@ void CTF::getFftwImage(
 
             const Image<RFLOAT>& gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
 
-            for (int i = 0; i < result.ydim; i++)
-            for (int j = 0; j < result.xdim; j++) {
-                RFLOAT x = j / xs;
-                RFLOAT y = i <= result.ydim / 2 ? i / ys : (i - result.ydim) / ys;
+            for (int j = 0; j < result.ydim; j++)
+            for (int i = 0; i < result.xdim; i++) {
+                RFLOAT x = i / xs;
+                RFLOAT y = (j <= result.ydim / 2 ? j : j - result.ydim) / ys;
 
-                const int x0 = j;
-                const int y0 = i <= result.ydim / 2 ? i : gammaOffset.data.ydim + i - result.ydim;
+                const int x0 = i;
+                const int y0 = j <= result.ydim / 2 ? j : gammaOffset.data.ydim + j - result.ydim;
 
                 RFLOAT t = getCTF(
                     x, y, do_only_flip_phases, do_intact_until_first_peak,
@@ -469,8 +469,8 @@ void CTF::getFftwImage(
             }
         } else {
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-                RFLOAT x = (RFLOAT) jp / xs;
-                RFLOAT y = (RFLOAT) ip / ys;
+                RFLOAT x = (RFLOAT) ip / xs;
+                RFLOAT y = (RFLOAT) jp / ys;
 
                 RFLOAT t = getCTF(
                     x, y, do_only_flip_phases, do_intact_until_first_peak,
@@ -505,7 +505,7 @@ void CTF::getCTFPImage(
         
         ensure_square(orixdim, oriydim);
 
-        const Image<RFLOAT>& gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
+        const Image<RFLOAT> &gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
 
         if (gammaOffset.data.xdim < result.xdim || gammaOffset.data.ydim < result.ydim) {
             REPORT_ERROR_STR(
@@ -517,13 +517,13 @@ void CTF::getCTFPImage(
         }
 
         // Why do we have i <= Ysize(result) / 2 here, but i < Xsize(result) below?
-        for (int i = 0, ip = 0; i < Ysize(result); i++, ip = i <= Ysize(result) / 2 ? i : i - Ysize(result))
-        for (int j = 0, jp = 0; j < Xsize(result); j++, jp = j) {
-            RFLOAT x = (RFLOAT) jp / xs;
-            RFLOAT y = (RFLOAT) ip / ys;
-            RFLOAT myangle = (x * x + y * y > 0) ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
-            const int x0 = j;
-            const int y0 = i <= Ysize(result) / 2 ? ip : Ysize(gammaOffset.data) + ip;
+        for (int j = 0, jp = 0; j < Ysize(result); j++, jp = j <= Ysize(result) / 2 ? j : j - Ysize(result))
+        for (int i = 0, ip = 0; i < Xsize(result); i++, ip = i) {
+            RFLOAT x = (RFLOAT) ip / xs;
+            RFLOAT y = (RFLOAT) jp / ys;
+            RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
+            const int x0 = i;
+            const int y0 = j <= Ysize(result) / 2 ? jp : Ysize(gammaOffset.data) + jp;
 
             direct::elem(result, i, j) = getCTFP(
                 x, y,
@@ -533,25 +533,23 @@ void CTF::getCTFPImage(
         }
     } else {
         // FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-        for (long int i = 0, ip = 0; i < Ysize(result); i++, ip = i < Xsize(result) ? i : i - Ysize(result)) \
-        for (long int j = 0, jp = 0; j < Xsize(result); j++, jp = j) {
+        for (long int j = 0, jp = 0; j < Ysize(result); j++, jp = j < Xsize(result) ? j : j - Ysize(result)) \
+        for (long int i = 0, ip = 0; i < Xsize(result); i++, ip = i) {
             // If i < Xsize(result), ip = i. Else, ip = i - Ysize(result).
-            RFLOAT x = (RFLOAT) jp / xs;
-            RFLOAT y = (RFLOAT) ip / ys;
+            RFLOAT x = (RFLOAT) ip / xs;
+            RFLOAT y = (RFLOAT) jp / ys;
             RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
 
             direct::elem(result, i, j) = getCTFP(
                 x, y,
-                (myangle >= anglerad ? is_positive : !is_positive)
+                (myangle >= anglerad) == is_positive
             );
         }
     }
     // Special line along the vertical (Y-)axis, where FFTW stores both Friedel mates and Friedel symmetry needs to remain
     if (angle == 0.0) {
-        int dim = Ysize(result);
-
-        for (int i = dim / 2 + 1; i < dim; i++) {
-            direct::elem(result, i, 0) = conj(direct::elem(result, dim - i, 0));
+        for (int j = result.ydim / 2 + 1; j < result.ydim; j++) {
+            direct::elem(result, 0, j) = conj(direct::elem(result, 0, result.ydim - j));
         }
     }
 }
@@ -566,8 +564,8 @@ void CTF::getCenteredImage(
     RFLOAT ys = (RFLOAT) Ysize(result) * Tm;
 
     FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
-        RFLOAT x = (RFLOAT) j / xs;
-        RFLOAT y = (RFLOAT) i / ys;
+        RFLOAT x = (RFLOAT) i / xs;
+        RFLOAT y = (RFLOAT) j / ys;
         RFLOAT t = getCTF(
             x, y, do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
@@ -612,8 +610,8 @@ void CTF::applyWeightEwaldSphereCurvature(
     }
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-        RFLOAT xu = (RFLOAT) jp / xs;
-        RFLOAT yu = (RFLOAT) ip / ys;
+        RFLOAT xu = (RFLOAT) ip / xs;
+        RFLOAT yu = (RFLOAT) jp / ys;
 
         RFLOAT x = M(0, 0) * xu + M(0, 1) * yu;
         RFLOAT y = M(1, 0) * xu + M(1, 1) * yu;
@@ -667,7 +665,7 @@ void CTF::applyWeightEwaldSphereCurvature_new(
         // abs. value of CTFR (no damping):
         const double ctf_val = getCTF(x, y, true, false, false, false, 0.0);
 
-        direct::elem(result, yi, xi) = 0.5 * (A * (2.0 * ctf_val - 1.0) + 1.0);
+        direct::elem(result, xi, yi) = 0.5 * (A * (2.0 * ctf_val - 1.0) + 1.0);
         // Within RELION, sin(chi) is used rather than 2 * sin(chi).
         // Hence the 0.5 above to keep everything on the same scale.
     }
@@ -680,8 +678,8 @@ void CTF::applyWeightEwaldSphereCurvature_noAniso(
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-        RFLOAT x = (RFLOAT) jp / xs;
-        RFLOAT y = (RFLOAT) ip / ys;
+        RFLOAT x = (RFLOAT) ip / xs;
+        RFLOAT y = (RFLOAT) jp / ys;
         RFLOAT deltaf = fabs(getDeltaF(x, y));
         RFLOAT inv_d = Pythag(x, y);
         RFLOAT aux = 2.0 * deltaf * lambda * inv_d / particle_diameter;

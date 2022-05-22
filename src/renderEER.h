@@ -112,9 +112,10 @@ class EERRenderer {
             for (int y1 = 0; y1 < ylim; y1++) {
                 const int y2 = ny_in - 1 - y1;
                 for (int x = 0; x < nx_in; x++) {
-                    const T tmp = direct::elem(original(), y1, x);
-                    direct::elem(original(), y1, x) = direct::elem(original(), y2, x);
-                    direct::elem(original(), y2, x) = tmp;
+                    std::swap(
+                        direct::elem(original(), x, y1), 
+                        direct::elem(original(), x, y2)
+                    );
                 }
             }
         } 

@@ -35,7 +35,7 @@ Image<RFLOAT> VtkHelper::allToZ(const Image<RFLOAT> &img) {
     for (int n = 0; n < img.data.ndim; n++)
     for (int y = 0; y < img.data.ydim; y++)
     for (int x = 0; x < img.data.xdim; x++) {
-        direct::elem(out(), 0, n, y, x) = direct::elem(img(), n, 0, y, x);
+        direct::elem(out(), x, y, 0, n) = direct::elem(img(), x, y, 0, n);
     }
 
     return out;
@@ -73,7 +73,7 @@ void VtkHelper::writeVTK(
         os.write((char*) img.data.data, sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
-            os << direct::elem(img.data, k, i, j) << "\n";
+            os << direct::elem(img.data, i, j, k) << "\n";
         }
     }
 }
@@ -110,7 +110,7 @@ void VtkHelper::writeVTK(
         os.write((char*) img.data.data, sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
-            os << direct::elem(img.data, k, i, j) << "\n";
+            os << direct::elem(img.data, i, j, k) << "\n";
         }
     }
 }
@@ -150,8 +150,8 @@ void VtkHelper::writeVTK(
         os.write((char*) (img.data.data), 2 * sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
-            os << direct::elem(img.data, k, i, j).real << "\n";
-            os << direct::elem(img.data, k, i, j).imag << "\n";
+            os << direct::elem(img.data, i, j, k).real << "\n";
+            os << direct::elem(img.data, i, j, k).imag << "\n";
         }
     }
 }
@@ -191,7 +191,7 @@ void VtkHelper::writeVTK(
         os.write((char*) img.data, sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
-            os << direct::elem(img, k, i, j) << "\n";
+            os << direct::elem(img, i, j, k) << "\n";
         }
     }
 }
@@ -226,8 +226,8 @@ void VtkHelper::writeVTK_Complex(const MultidimArray<Complex> &img, std::string 
         os.write((char*) img.data, 2*sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
-            os << direct::elem(img, k, i, j).real << "\n";
-            os << direct::elem(img, k, i, j).imag << "\n";
+            os << direct::elem(img, i, j, k).real << "\n";
+            os << direct::elem(img, i, j, k).imag << "\n";
         }
     }
 }
@@ -262,9 +262,9 @@ void VtkHelper::writeVTK_d3(MultidimArray<gravis::t3Vector<RFLOAT> > &img, std::
         os.write((char*) img.data, 2*sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
-            os << direct::elem(img, k, i, j).x << "\n";
-            os << direct::elem(img, k, i, j).y << "\n";
-            os << direct::elem(img, k, i, j).z << "\n";
+            os << direct::elem(img, i, j, k).x << "\n";
+            os << direct::elem(img, i, j, k).y << "\n";
+            os << direct::elem(img, i, j, k).z << "\n";
         }
     }
 }
@@ -302,7 +302,7 @@ void VtkHelper::writeTomoVTK(
         os.write((char*) img.data.data, sizeof(RFLOAT) * size);
     } else {
         FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-            os << direct::elem(img.data, l, 0, i, j) << "\n";
+            os << direct::elem(img.data, i, j, 0, l) << "\n";
         }
     }
 }

@@ -108,7 +108,7 @@ void getFourierTransformsAndCtfs(
             RFLOAT prior_rot  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_ROT_PRIOR);
             RFLOAT prior_tilt = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT_PRIOR);
             RFLOAT prior_psi  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI_PRIOR);
-            RFLOAT prior_psi_flip_ratio =  (baseMLO->mymodel.nr_bodies > 1 ) ? 0. : direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI_PRIOR_FLIP_RATIO);
+            RFLOAT prior_psi_flip_ratio =  (baseMLO->mymodel.nr_bodies > 1 ) ? 0.0 : direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI_PRIOR_FLIP_RATIO);
 
             bool do_auto_refine_local_searches = baseMLO->do_auto_refine && baseMLO->sampling.healpix_order >= baseMLO->autosampling_hporder_local_searches;
             bool do_classification_local_searches = !baseMLO->do_auto_refine && baseMLO->mymodel.orientational_prior_mode == PRIOR_ROTTILT_PSI
@@ -198,7 +198,7 @@ void getFourierTransformsAndCtfs(
                 // Only allow a single image per call of this function!!! nr_pool needs to be set to 1!!!!
                 // This will save memory, as we'll need to store all translated images in memory....
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
-                    direct::elem(img(), k, i, j) = direct::elem(baseMLO->exp_imagedata, k, i, j);
+                    direct::elem(img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, k);
                 }
                 img().setXmippOrigin();
 
@@ -206,7 +206,7 @@ void getFourierTransformsAndCtfs(
                     rec_img().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size,baseMLO-> mymodel.ori_size);
                     int offset = baseMLO->do_ctf_correction ? 2 * baseMLO->mymodel.ori_size : baseMLO->mymodel.ori_size;
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(rec_img()) {
-                        direct::elem(rec_img(), k, i, j) = direct::elem(baseMLO->exp_imagedata, offset + k, i, j);
+                        direct::elem(rec_img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, offset + k);
                     }
                     rec_img().setXmippOrigin();
 
@@ -217,7 +217,7 @@ void getFourierTransformsAndCtfs(
                 CTICTOC(cudaMLO->timer, "Read2DImages", ({
                 img().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size);
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img()) {
-                    direct::elem(img(), i, j) = direct::elem(baseMLO->exp_imagedata, op.metadata_offset + ipart, i, j);
+                    direct::elem(img(), i, j) = direct::elem(baseMLO->exp_imagedata, i, j, op.metadata_offset + ipart);
                 }
                 img().setXmippOrigin();
                 if (baseMLO->has_converged && baseMLO->do_use_reconstruct_images) {
@@ -225,7 +225,7 @@ void getFourierTransformsAndCtfs(
                     ////////////// TODO: think this through for no-threads here.....
                     rec_img().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size);
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
-                        direct::elem(rec_img(), i, j) = direct::elem(baseMLO->exp_imagedata, baseMLO->exp_nr_images + op.metadata_offset + ipart, i, j);
+                        direct::elem(rec_img(), i, j) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->exp_nr_images + op.metadata_offset + ipart);
                     }
                     rec_img().setXmippOrigin();
                 }
@@ -275,9 +275,9 @@ void getFourierTransformsAndCtfs(
         // Helical reconstruction: calculate old_offset in the system of coordinates of the helix, i.e. parallel & perpendicular, depending on psi-angle!
         // For helices do NOT apply old_offset along the direction of the helix!!
         Matrix1D<RFLOAT> my_old_offset_helix_coords;
-        RFLOAT rot_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_ROT);
+        RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_ROT);
         RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT);
-        RFLOAT psi_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
+        RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
         if (baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry) {
             // Calculate my_old_offset_helix_coords from my_old_offset and psi angle
             transformCartesianAndHelicalCoords(my_old_offset, my_old_offset_helix_coords, rot_deg, tilt_deg, psi_deg, CART_TO_HELICAL_COORDS);
@@ -430,7 +430,7 @@ void getFourierTransformsAndCtfs(
         //
         RFLOAT beamtilt_x = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_BEAMTILT_X);
         RFLOAT beamtilt_y = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_BEAMTILT_Y);
-        RFLOAT Cs = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_CS);
+        RFLOAT Cs         = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_CS);
         RFLOAT V = 1000.0 * direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_VOLTAGE);
         RFLOAT lambda = 12.2643247 / sqrt(V * (1.0 + V * 0.978466e-6));
         if (abs(beamtilt_x) > 0.0 || abs(beamtilt_y) > 0.0) {
@@ -471,10 +471,10 @@ void getFourierTransformsAndCtfs(
                 int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
                 if (ires >= 0 && ires < XSIZE(Fnoise)) {
                     RFLOAT sigma = sqrt(direct::elem(power_noise, ires));
-                    direct::elem(Fnoise, k, i, j).real = rnd_gaus(0.0, sigma);
-                    direct::elem(Fnoise, k, i, j).imag = rnd_gaus(0.0, sigma);
+                    direct::elem(Fnoise, i, j, k).real = rnd_gaus(0.0, sigma);
+                    direct::elem(Fnoise, i, j, k).imag = rnd_gaus(0.0, sigma);
                 } else {
-                    direct::elem(Fnoise, k, i, j) = 0.0;
+                    direct::elem(Fnoise, i, j, k) = 0.0;
                 }
             }
             // Back to real space Mnoise
@@ -722,7 +722,7 @@ void getFourierTransformsAndCtfs(
                     // Unpack the CTF-image from the exp_imagedata array
                     Ictf().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size);
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ictf()) {
-                        direct::elem(Ictf(), k, i, j) = direct::elem(baseMLO->exp_imagedata, baseMLO->mymodel.ori_size + k, i, j);
+                        direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->mymodel.ori_size + k);
                     }
                     }))
                 }
@@ -731,7 +731,7 @@ void getFourierTransformsAndCtfs(
                 Ictf().setXmippOrigin();
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                    direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
+                    direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                 }
                 }))
             } else {

@@ -348,7 +348,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         Image<RFLOAT> img(Xsize(Iref[0]), Ysize(Iref[0]), 1, nr_classes_bodies);
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iref[iclass]) {
-                direct::elem(img(), iclass, 0, i, j) = direct::elem(Iref[iclass], i, j);
+                direct::elem(img(), i, j, 0, iclass) = direct::elem(Iref[iclass], i, j);
             }
         }
         img.setSamplingRateInHeader(pixel_size);
@@ -361,7 +361,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         if (do_sgd) {
             for (int iclass = 0; iclass < nr_classes; iclass++) {
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Igrad[iclass]) {
-                    direct::elem(img(), iclass, 0, i, j) = direct::elem(Igrad[iclass], i, j);
+                    direct::elem(img(), i, j, 0, iclass) = direct::elem(Igrad[iclass], i, j);
                 }
             }
             img.write(fn_out + "_gradients.mrcs");
@@ -855,10 +855,10 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         // Find maximum radius for mask around com
         int max_d2 = 0.0;
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Imask()) {
-            if (Imask().elem(k, i, j) > 0.05) {
+            if (Imask().elem(i, j, k) > 0.05) {
                 int d2 = (k - ZZ(com)) * (k - ZZ(com))
-                       + (i - YY(com)) * (i - YY(com))
-                       + (j - XX(com)) * (j - XX(com));
+                       + (j - YY(com)) * (j - YY(com))
+                       + (i - XX(com)) * (i - XX(com));
                 if (d2 > max_d2) { max_d2 = d2; }
             }
         }
@@ -1030,7 +1030,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
                         }
                     }
                     // Calculate the overlap between the sum of ibody and all the old obodies until now
-                    overlap_mask *= masks_bodies[obody]; // element-wise multiplication
+                    overlap_mask *= masks_bodies[obody];  // element-wise multiplication
                     // If there is overlap, generate another PPref
                     if (overlap_mask.sum() > 0.0) {
                         // Calculate the mask that has the overlap subtracted from the obody mask
@@ -1200,7 +1200,7 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
             RFLOAT myssnr = evidence / prior;
             direct::elem(data_vs_prior_class[iclass], i) = myssnr;
             // Also initialise FSC-halves here (...)
-            //direct::elem(fsc_halves_class[iclass], i ) = myssnr / (myssnr + 1);
+            //direct::elem(fsc_halves_class[iclass], i) = myssnr / (myssnr + 1);
         }
     }
 

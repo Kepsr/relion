@@ -34,13 +34,13 @@ class ComplexIO {
         Image<RFLOAT> temp(img.xdim, img.ydim, img.zdim, img.ndim);
 
         FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img) {
-            direct::elem(temp.data, l, k, i, j) = direct::elem(img, l, k, i, j).real;
+            direct::elem(temp.data, i, j, k, l) = direct::elem(img, i, j, k, l).real;
         }
 
         temp.write(fnBase + "_real" + fnSuffix);
 
         FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img) {
-            direct::elem(temp.data, l, k, i, j) = direct::elem(img, l, k, i, j).imag;
+            direct::elem(temp.data, i, j, k, l) = direct::elem(img, i, j, k, l).imag;
         }
 
         temp.write(fnBase + "_imag" + fnSuffix);
@@ -55,13 +55,13 @@ class ComplexIO {
         img = Image<Complex>(temp.data.xdim, temp.data.ydim, temp.data.zdim, temp.data.ndim);
 
         FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-            direct::elem(img.data, l, k, i, j).real = direct::elem(temp.data, l, k, i, j);
+            direct::elem(img.data, i, j, k, l).real = direct::elem(temp.data, i, j, k, l);
         }
 
         temp.read(fnBase + "_imag" + fnSuffix);
 
         FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-            direct::elem(img.data, l, k, i, j).imag = direct::elem(temp.data, l, k, i, j);
+            direct::elem(img.data, i, j, k, l).imag = direct::elem(temp.data, i, j, k, l);
         }
     }
 };

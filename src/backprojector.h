@@ -394,7 +394,7 @@ class BackProjector: public Projector {
                 yy >= 0 && yy < Min.ydim && 
                 zz >= 0 && zz < Min.zdim
             ) {
-                direct::elem(Mout, z, y, x) = T2(direct::elem(Min, zz, yy, xx));
+                direct::elem(Mout, x, y, z) = T2(direct::elem(Min, xx, yy, zz));
             }
         }
     }
@@ -424,9 +424,8 @@ class BackProjector: public Projector {
                 xx >= 0 && xx < Min.xdim && 
                 yy >= 0 && yy < Min.ydim && 
                 zz >= 0 && zz < Min.zdim
-            )
-            {
-                direct::elem(Mout, zz, yy, xx) = T2(direct::elem(Min, z, y, x));
+            ) {
+                direct::elem(Mout, xx, yy, zz) = T2(direct::elem(Min, x, y, z));
             }
         }
     }
@@ -440,7 +439,7 @@ class BackProjector: public Projector {
         Mout.initZeros();
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
             if (kp * kp + ip * ip + jp * jp <= my_rmax2) {
-                direct::elem(Mout, k, i, j) = (double) Min.elem(kp, ip, jp);
+                direct::elem(Mout, i, j, k) = (double) Min.elem(ip, jp, kp);
             }
         }
     }

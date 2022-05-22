@@ -62,7 +62,7 @@ class Interpolation {
 
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            T v = direct::elem(img.data, y, x);
+            T v = direct::elem(img.data, x, y);
 
             if (xmax < 0 || v > vmax) {
                 vmax = v;
@@ -74,8 +74,8 @@ class Interpolation {
         gravis::d2Vector p(xmax, ymax);
 
         if (xmax > 0 && xmax < w - 1) {
-            const T vp = direct::elem(img.data, ymax, xmax + 1);
-            const T vn = direct::elem(img.data, ymax, xmax - 1);
+            const T vp = direct::elem(img.data, xmax + 1, ymax);
+            const T vn = direct::elem(img.data, xmax - 1, ymax);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.x -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);
@@ -83,8 +83,8 @@ class Interpolation {
         }
 
         if (xmax > 0 && xmax < w - 1) {
-            const T vp = direct::elem(img.data, ymax + 1, xmax);
-            const T vn = direct::elem(img.data, ymax - 1, xmax);
+            const T vp = direct::elem(img.data, xmax, ymax + 1);
+            const T vn = direct::elem(img.data, xmax, ymax - 1);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.y -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);
@@ -115,7 +115,7 @@ class Interpolation {
                 y > hMax && h - x > hMax
             ) continue;
                 
-            T v = direct::elem(img.data, y, x);
+            T v = direct::elem(img.data, x, y);
 
             if (xmax < 0 || v > vmax) {
                 vmax = v;
@@ -127,8 +127,8 @@ class Interpolation {
         gravis::d2Vector p(xmax, ymax);
 
         {
-            const T vp = direct::elem(img.data, ymax, (xmax + 1)     % w);
-            const T vn = direct::elem(img.data, ymax, (xmax - 1 + w) % w);
+            const T vp = direct::elem(img.data, (xmax + 1)     % w, ymax);
+            const T vn = direct::elem(img.data, (xmax - 1 + w) % w, ymax);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.x -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);
@@ -136,8 +136,8 @@ class Interpolation {
         }
 
         {
-            const T vp = direct::elem(img.data, (ymax + 1)     % w, xmax);
-            const T vn = direct::elem(img.data, (ymax - 1 + w) % w, xmax);
+            const T vp = direct::elem(img.data, xmax, (ymax + 1)     % w);
+            const T vn = direct::elem(img.data, xmax, (ymax - 1 + w) % w);
 
             if (std::abs(vp + vn - 2.0 * vmax) > eps) {
                 p.y -= 0.5 * (vp - vn) / (vp + vn - 2.0 * vmax);
@@ -187,25 +187,25 @@ class Interpolation {
             yi_p2 = MINMAX(yi_p2, 0, img.data.ydim - 1);
         }
 
-        const T f00 = direct::elem(img.data, n, z, yi_n1,   xi_n1);
-        const T f01 = direct::elem(img.data, n, z, yi_n1,   xi);
-        const T f02 = direct::elem(img.data, n, z, yi_n1,   xi_p1);
-        const T f03 = direct::elem(img.data, n, z, yi_n1,   xi_p2);
+        const T f00 = direct::elem(img.data, xi_n1, yi_n1, z, n);
+        const T f01 = direct::elem(img.data, xi,    yi_n1, z, n);
+        const T f02 = direct::elem(img.data, xi_p1, yi_n1, z, n);
+        const T f03 = direct::elem(img.data, xi_p2, yi_n1, z, n);
 
-        const T f10 = direct::elem(img.data, n, z, yi,     xi_n1);
-        const T f11 = direct::elem(img.data, n, z, yi,     xi);
-        const T f12 = direct::elem(img.data, n, z, yi,     xi_p1);
-        const T f13 = direct::elem(img.data, n, z, yi,     xi_p2);
+        const T f10 = direct::elem(img.data, xi_n1, yi, z, n);
+        const T f11 = direct::elem(img.data, xi,    yi, z, n);
+        const T f12 = direct::elem(img.data, xi_p1, yi, z, n);
+        const T f13 = direct::elem(img.data, xi_p2, yi, z, n);
 
-        const T f20 = direct::elem(img.data, n, z, yi_p1,   xi_n1);
-        const T f21 = direct::elem(img.data, n, z, yi_p1,   xi);
-        const T f22 = direct::elem(img.data, n, z, yi_p1,   xi_p1);
-        const T f23 = direct::elem(img.data, n, z, yi_p1,   xi_p2);
+        const T f20 = direct::elem(img.data, xi_n1, yi_p1, z, n);
+        const T f21 = direct::elem(img.data, xi,    yi_p1, z, n);
+        const T f22 = direct::elem(img.data, xi_p1, yi_p1, z, n);
+        const T f23 = direct::elem(img.data, xi_p2, yi_p1, z, n);
 
-        const T f30 = direct::elem(img.data, n, z, yi_p2,   xi_n1);
-        const T f31 = direct::elem(img.data, n, z, yi_p2,   xi);
-        const T f32 = direct::elem(img.data, n, z, yi_p2,   xi_p1);
-        const T f33 = direct::elem(img.data, n, z, yi_p2,   xi_p2);
+        const T f30 = direct::elem(img.data, xi_n1, yi_p2, z, n);
+        const T f31 = direct::elem(img.data, xi,    yi_p2, z, n);
+        const T f32 = direct::elem(img.data, xi_p1, yi_p2, z, n);
+        const T f33 = direct::elem(img.data, xi_p2, yi_p2, z, n);
 
         const gravis::d4Matrix A(
             -0.5,  1.5, -1.5,  0.5,
@@ -270,25 +270,25 @@ class Interpolation {
             yi_p2 = MINMAX(yi_p2, 0, img.data.ydim - 1);
         }
 
-        const T f00 = direct::elem(img.data, n, 0, yi_n1,   xi_n1);
-        const T f01 = direct::elem(img.data, n, 0, yi_n1,   xi);
-        const T f02 = direct::elem(img.data, n, 0, yi_n1,   xi_p1);
-        const T f03 = direct::elem(img.data, n, 0, yi_n1,   xi_p2);
+        const T f00 = direct::elem(img.data, xi_n1, yi_n1, 0, n);
+        const T f01 = direct::elem(img.data, xi,    yi_n1, 0, n);
+        const T f02 = direct::elem(img.data, xi_p1, yi_n1, 0, n);
+        const T f03 = direct::elem(img.data, xi_p2, yi_n1, 0, n);
 
-        const T f10 = direct::elem(img.data, n, 0, yi,      xi_n1);
-        const T f11 = direct::elem(img.data, n, 0, yi,      xi);
-        const T f12 = direct::elem(img.data, n, 0, yi,      xi_p1);
-        const T f13 = direct::elem(img.data, n, 0, yi,      xi_p2);
+        const T f10 = direct::elem(img.data, xi_n1, yi, 0, n);
+        const T f11 = direct::elem(img.data, xi,    yi, 0, n);
+        const T f12 = direct::elem(img.data, xi_p1, yi, 0, n);
+        const T f13 = direct::elem(img.data, xi_p2, yi, 0, n);
 
-        const T f20 = direct::elem(img.data, n, 0, yi_p1,   xi_n1);
-        const T f21 = direct::elem(img.data, n, 0, yi_p1,   xi);
-        const T f22 = direct::elem(img.data, n, 0, yi_p1,   xi_p1);
-        const T f23 = direct::elem(img.data, n, 0, yi_p1,   xi_p2);
+        const T f20 = direct::elem(img.data, xi_n1, yi_p1, 0, n);
+        const T f21 = direct::elem(img.data, xi,    yi_p1, 0, n);
+        const T f22 = direct::elem(img.data, xi_p1, yi_p1, 0, n);
+        const T f23 = direct::elem(img.data, xi_p2, yi_p1, 0, n);
 
-        const T f30 = direct::elem(img.data, n, 0, yi_p2,   xi_n1);
-        const T f31 = direct::elem(img.data, n, 0, yi_p2,   xi);
-        const T f32 = direct::elem(img.data, n, 0, yi_p2,   xi_p1);
-        const T f33 = direct::elem(img.data, n, 0, yi_p2,   xi_p2);
+        const T f30 = direct::elem(img.data, xi_n1, yi_p2, 0, n);
+        const T f31 = direct::elem(img.data, xi,    yi_p2, 0, n);
+        const T f32 = direct::elem(img.data, xi_p1, yi_p2, 0, n);
+        const T f33 = direct::elem(img.data, xi_p2, yi_p2, 0, n);
 
         const gravis::d4Matrix A(
             -0.5,  1.5, -1.5,  0.5,

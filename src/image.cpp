@@ -216,7 +216,7 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
     } else {
         // Calculate avg in the background pixels
         FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
-            if (k * k + i * i + j * j > bg_radius2) {
+            if (i * i + j * j + k * k > bg_radius2) {
                 RFLOAT x = I().elem(i, j, k);
                 sum += x;
                 sum_of_squares += x * x;
@@ -273,15 +273,15 @@ void subtractBackgroundRamp(
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
             // not implemented for 3D data
+            XX(coords) = (RFLOAT) i;
+            YY(coords) = (RFLOAT) j;
             ZZ(coords) = 0.0;
-            YY(coords) = (RFLOAT) i;
-            XX(coords) = (RFLOAT) j;
             // Rotate
             coords = A * coords;
             if (abs(YY(coords)) > helical_mask_tube_outer_radius_pix) {
                 // Not implemented for 3D data
-                point.x = j;
-                point.y = i;
+                point.x = i;
+                point.y = j;
                 point.z = I().elem(i, j);
                 point.w = 1.0;
                 allpoints.push_back(point);
@@ -293,8 +293,8 @@ void subtractBackgroundRamp(
     } else {
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
             if (i * i + j * j > bg_radius2) {
-                point.x = j;
-                point.y = i;
+                point.x = i;
+                point.y = j;
                 point.z = I().elem(i, j);
                 point.w = 1.0;
                 allpoints.push_back(point);
@@ -307,7 +307,7 @@ void subtractBackgroundRamp(
 
     // Substract the plane from the image
     FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
-        I().elem(i, j) -= pA * j + pB * i + pC;
+        I().elem(i, j) -= pA * i + pB * j + pC;
     }
 
 }

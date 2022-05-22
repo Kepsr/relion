@@ -396,8 +396,8 @@ void MovieReconstructor::backproject(int rank, int size) {
                     dyM = trajectories[stack_id - 1][frame_no - 1].y;
                 }
 
-                int dxI = (int)round(dxM);
-                int dyI = (int)round(dyM);
+                int dxI = round(dxM);
+                int dyI = round(dyM);
 
                 x0 += dxI;
                 y0 += dyI;
@@ -418,12 +418,12 @@ void MovieReconstructor::backproject(int rank, int size) {
                         if (xx < 0 || xx >= w0 || yy < 0 || yy >= h0) continue;
                     }
 
-                    direct::elem(Iparticle(), 0, 0, y, x) = direct::elem(Iframe(), 0, 0, yy, xx);
+                    direct::elem(Iparticle(), x, y) = direct::elem(Iframe(), xx, yy);
                 }
 
-                // Residual shifts in Angstrom. They don't contain OriginX/Y. Note the NEGATIVE sign.
-                double dxR = - (dxM - dxI) * movie_angpix;
-                double dyR = - (dyM - dyI) * movie_angpix;
+                // Residual shifts in Angstrom. They don't contain OriginX/Y. Note the order of subtraction.
+                double dxR = (dxI - dxM) * movie_angpix;
+                double dyR = (dyI - dyM) * movie_angpix;
 
                 // Further shifts by OriginX/Y. Note that OriginX/Y are applied as they are
                 // (defined as "how much shift" we have to move particles).
@@ -651,9 +651,9 @@ void MovieReconstructor::applyCTFPandCTFQ(
             anglemin = radians(anglemin);
             anglemax = radians(anglemax);
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
-                RFLOAT x = (RFLOAT)jp;
-                RFLOAT y = (RFLOAT)ip;
-                RFLOAT myangle = (x * x + y * y > 0) ? acos(y / sqrt(x * x + y * y)) : 0; // dot-product with Y-axis: (0,1)
+                RFLOAT x = (RFLOAT) ip;
+                RFLOAT y = (RFLOAT) jp;
+                RFLOAT myangle = x * x + y * y > 0 ? acos(y / sqrt(x * x + y * y)) : 0; // dot-product with Y-axis: (0,1)
                 // Only take the relevant sector now...
                 if (do_wrap_max) {
                     if (myangle >= anglemin) {

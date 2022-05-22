@@ -261,7 +261,7 @@ void getFourierTransformsAndCtfs(
                 // Only allow a single image per call of this function!!! nr_pool needs to be set to 1!!!!
                 // This will save memory, as we'll need to store all translated images in memory....
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
-                    direct::elem(img(), k, i, j) = direct::elem(baseMLO->exp_imagedata, k, i, j);
+                    direct::elem(img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, k);
                 }
                 img().setXmippOrigin();
 
@@ -269,7 +269,7 @@ void getFourierTransformsAndCtfs(
                     rec_img().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
                     int offset = (baseMLO->do_ctf_correction) ? 2 * baseMLO->image_full_size[optics_group] : baseMLO->image_full_size[optics_group];
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(rec_img()) {
-                        direct::elem(rec_img(), k, i, j) = direct::elem(baseMLO->exp_imagedata, offset + k, i, j);
+                        direct::elem(rec_img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, offset + k);
                     }
                     rec_img().setXmippOrigin();
 
@@ -289,7 +289,7 @@ void getFourierTransformsAndCtfs(
                     int my_nr_particles = baseMLO->exp_my_last_part_id - baseMLO->exp_my_first_part_id + 1;
                     rec_img().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
-                        direct::elem(rec_img(), i, j) = direct::elem(baseMLO->exp_imagedata, my_nr_particles + my_metadata_offset, i, j);
+                        direct::elem(rec_img(), i, j) = direct::elem(baseMLO->exp_imagedata, i, j, my_nr_particles + my_metadata_offset);
                     }
                     rec_img().setXmippOrigin();
                 }
@@ -674,7 +674,7 @@ void getFourierTransformsAndCtfs(
                     // Unpack the CTF-image from the exp_imagedata array
                     Ictf().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
                     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ictf()) {
-                        direct::elem(Ictf(), k, i, j) = direct::elem(baseMLO->exp_imagedata, baseMLO->image_full_size[optics_group] + k, i, j);
+                        direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->image_full_size[optics_group] + k);
                     }
                     }))
                 }
@@ -687,7 +687,7 @@ void getFourierTransformsAndCtfs(
                     Ictf().setXmippOrigin();
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                         // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                        direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
+                        direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                     }
                 } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution
@@ -913,9 +913,9 @@ void getAllSquaredDifferencesCoarse(
 
                 if (baseMLO->mymodel.nr_bodies > 1) {
                     // img_id=0 because in multi-body refinement we do not do movie frames!
-                    RFLOAT rot_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
+                    RFLOAT rot_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
                     RFLOAT tilt_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_TILT);
-                    RFLOAT psi_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
+                    RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
                     Euler_angles2matrix(rot_ori, tilt_ori, psi_ori, Aori, false);
 
                     MBL = Aori * (baseMLO->mymodel.orient_bodies[ibody]).transpose() * baseMLO->A_rot90;
@@ -1021,9 +1021,9 @@ void getAllSquaredDifferencesCoarse(
                 zshift = oversampled_translations_z[0];
 
             if (baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry) {
-                RFLOAT rot_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT);
+                RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT);
                 RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT);
-                RFLOAT psi_deg = direct::elem(baseMLO->exp_metadata,my_metadata_offset, METADATA_PSI);
+                RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI);
                 transformCartesianAndHelicalCoords(xshift, yshift, zshift, xshift, yshift, zshift, rot_deg, tilt_deg, psi_deg, (accMLO->dataIs3D) ? (3) : (2), HELICAL_TO_CART_COORDS);
             }
 
@@ -1561,9 +1561,9 @@ void convertAllSquaredDifferencesToWeights(
 
     if (exp_ipass == 0 || baseMLO->adaptive_oversampling != 0) {
         op.sum_weight.clear();
-        op.sum_weight.resize(sp.nr_images, (RFLOAT)(sp.nr_images));
+        op.sum_weight.resize(sp.nr_images, (RFLOAT) sp.nr_images);
         op.max_weight.clear();
-        op.max_weight.resize(sp.nr_images, (RFLOAT)-1);
+        op.max_weight.resize(sp.nr_images, (RFLOAT) -1);
     }
 
     if (exp_ipass == 0) {
@@ -2391,7 +2391,7 @@ void storeWeightedSums(
         direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_zoff) = ZZ(shifts);
 
         if (ibody == 0) {
-            direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_CLASS) = (RFLOAT)op.max_index[img_id].iclass + 1;
+            direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_CLASS) = (RFLOAT) op.max_index[img_id].iclass + 1;
             RFLOAT pmax = op.max_weight[img_id]/op.sum_weight[img_id];
             if (pmax > 1) //maximum normalised probability weight is (unreasonably) larger than unity
                 CRITICAL("Relion is finding a normalised probability greater than 1");

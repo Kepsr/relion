@@ -41,7 +41,7 @@ Image<RFLOAT> ConvolutionHelper::convolve2D(
 
     for (int y = 0; y < h;  y++)
     for (int x = 0; x < wf; x++) {
-        direct::elem(P.data, y, x) = sc * direct::elem(I0.data, y, x) * direct::elem(I1.data, y, x).conj();
+        direct::elem(P.data, x, y) = sc * direct::elem(I0.data, x, y) * direct::elem(I1.data, x, y).conj();
     }
 
     Image<RFLOAT> out(w, h);

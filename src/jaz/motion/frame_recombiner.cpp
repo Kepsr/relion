@@ -368,7 +368,7 @@ void FrameRecombiner::process(
             const int half_out = out_size / 2;
             for (int y = 0; y < out_size; y++)
             for (int x = 0; x < out_size; x++) {
-                direct::elem(stack(), p, 0, y, x) = real(y - half_out, x - half_out); // Image() is logical access
+                direct::elem(stack(), x, y, 0, p) = real(y - half_out, x - half_out); // Image() is logical access
             }
         }
 

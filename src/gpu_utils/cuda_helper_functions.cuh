@@ -432,7 +432,7 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         MultidimArray< T > aux;
         int l, shift;
 
-        l = XSIZE(v);
+        l = Xsize(v);
         aux.resize(l);
         shift = (int)(l / 2);
 
@@ -458,8 +458,8 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         // 2D
         //std::cerr << "CenterFFT on gpu with dim=2!" <<std::endl;
 
-        long int xshift = (int) (XSIZE(v) / 2);
-        long int yshift = (int) (YSIZE(v) / 2);
+        long int xshift = (int) (Xsize(v) / 2);
+        long int yshift = (int) (Ysize(v) / 2);
 
         if (!forward) {
             xshift = -xshift;
@@ -471,7 +471,7 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         cuda_kernel_centerFFT_2D<<<dim, CFTT_BLOCK_SIZE>>>(
             img_in.d_ptr,
             v.size(),
-            XSIZE(v), YSIZE(v),
+            Xsize(v), Ysize(v),
             xshift, yshift
         );
         LAUNCH_HANDLE_ERROR(cudaGetLastError());
@@ -490,41 +490,14 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         int l, shift;
 
         // Shift in the X direction
-        l = XSIZE(v);
+        l = Xsize(v);
         aux.resize(l);
         shift = (int) (l / 2);
 
         if (!forward) { shift = -shift; }
 
-        for (int k = 0; k < ZSIZE(v); k++)
-        for (int i = 0; i < YSIZE(v); i++) {
-            // Shift the input in an auxiliar vector
-            for (int j = 0; j < l; j++) {
-                int jp = j + shift;
-
-                if (jp < 0) {
-                    jp += l;
-                } else if (jp >= l) {
-                    jp -= l;
-                }
-
-                aux(jp) = direct::elem(v, k, i, j);
-            }
-
-            // Copy the vector
-            for (int j = 0; j < l; j++)
-                direct::elem(v, k, i, j) = direct::elem(aux, j);
-        }
-
-        // Shift in the Y direction
-        l = YSIZE(v);
-        aux.resize(l);
-        shift = (int) (l / 2);
-
-        if (!forward) { shift = -shift; }
-
-        for (int k = 0; k < ZSIZE(v); k++)
-        for (int j = 0; j < XSIZE(v); j++) {
+        for (int k = 0; k < Zsize(v); k++)
+        for (int j = 0; j < Ysize(v); j++) {
             // Shift the input in an auxiliar vector
             for (int i = 0; i < l; i++) {
                 int ip = i + shift;
@@ -535,23 +508,50 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                     ip -= l;
                 }
 
-                aux(ip) = direct::elem(v, k, i, j);
+                aux(ip) = direct::elem(v, i, j, k);
             }
 
             // Copy the vector
             for (int i = 0; i < l; i++)
-                direct::elem(v, k, i, j) = direct::elem(aux, i);
+                direct::elem(v, i, j, k) = direct::elem(aux, j);
         }
 
-        // Shift in the Z direction
-        l = ZSIZE(v);
+        // Shift in the Y direction
+        l = Ysize(v);
         aux.resize(l);
         shift = (int) (l / 2);
 
         if (!forward) { shift = -shift; }
 
-        for (int i = 0; i < YSIZE(v); i++)
-        for (int j = 0; j < XSIZE(v); j++) {
+        for (int k = 0; k < Zsize(v); k++)
+        for (int i = 0; i < Xsize(v); i++) {
+            // Shift the input in an auxiliar vector
+            for (int j = 0; j < l; j++) {
+                int jp = j + shift;
+
+                if (jp < 0) {
+                    jp += l;
+                } else if (jp >= l) {
+                    jp -= l;
+                }
+
+                aux(jp) = direct::elem(v, i, j, k);
+            }
+
+            // Copy the vector
+            for (int j = 0; j < l; j++)
+                direct::elem(v, i, j, k) = direct::elem(aux, i);
+        }
+
+        // Shift in the Z direction
+        l = Zsize(v);
+        aux.resize(l);
+        shift = (int) (l / 2);
+
+        if (!forward) { shift = -shift; }
+
+        for (int j = 0; j < Ysize(v); j++)
+        for (int i = 0; i < Xsize(v); i++) {
             // Shift the input in an auxiliar vector
             for (int k = 0; k < l; k++) {
                 int kp = k + shift;
@@ -561,12 +561,12 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                     kp -= l;
                 }
 
-                aux(kp) = direct::elem(v, k, i, j);
+                aux(kp) = direct::elem(v, i, j, k);
             }
 
             // Copy the vector
             for (int k = 0; k < l; k++)
-                direct::elem(v, k, i, j) = direct::elem(aux, k);
+                direct::elem(v, i, j, k) = direct::elem(aux, k);
         }
     } else {
         v.printShape();

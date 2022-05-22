@@ -75,7 +75,7 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
         // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
         if (r2 <= max_r2) {
             // Set data array
-            P->data.elem(ip, jp, kp) = direct::elem(Faux, k, i, j) * normfft;
+            P->data.elem(ip, jp, kp) = direct::elem(Faux, i, j, k) * normfft;
 
             // Calculate power spectrum
             int ires = round(sqrt((RFLOAT) r2) / P->padding_factor);

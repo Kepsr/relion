@@ -307,29 +307,29 @@ void ParFourierTransformer::enforceHermitianSymmetry() {
     switch (ndim) {
 
         case 2:
-        for (long int i = 1; i <= yHalf; i++) {
-            long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
-            Complex mean = 0.5 * (direct::elem(fFourier, i, 0) + conj(direct::elem(fFourier, isym, 0)));
-            direct::elem(fFourier, i,    0) = mean;
-            direct::elem(fFourier, isym, 0) = conj(mean);
+        for (long int j = 1; j <= yHalf; j++) {
+            long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
+            Complex mean = 0.5 * (direct::elem(fFourier, 0, j) + conj(direct::elem(fFourier, 0, jsym)));
+            direct::elem(fFourier, 0, j) = mean;
+            direct::elem(fFourier, 0, jsym) = conj(mean);
         }
         break;
 
         case 3:
         for (long int k = 0; k < Zsize(*fReal); k++) {
             long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            for (long int i = 1; i <= yHalf; i++) {
-                long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
-                Complex mean = 0.5 * (direct::elem(fFourier,k,i,0) + conj(direct::elem(fFourier, ksym, isym, 0)));
-                direct::elem(fFourier, k,    i,    0) = mean;
-                direct::elem(fFourier, ksym, isym, 0) = conj(mean);
+            for (long int j = 1; j <= yHalf; j++) {
+                long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
+                Complex mean = 0.5 * (direct::elem(fFourier, 0, j, k) + conj(direct::elem(fFourier, 0, jsym, ksym)));
+                direct::elem(fFourier, 0, j,    k) = mean;
+                direct::elem(fFourier, 0, jsym, ksym) = conj(mean);
             }
         }
         for (long int k = 1; k <= zHalf; k++) {
             long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            Complex mean = 0.5 * (direct::elem(fFourier, k, 0, 0) + conj(direct::elem(fFourier, ksym, 0, 0)));
-            direct::elem(fFourier, k,    0, 0) = mean;
-            direct::elem(fFourier, ksym, 0, 0) = conj(mean);
+            Complex mean = 0.5 * (direct::elem(fFourier, 0, 0, k) + conj(direct::elem(fFourier, 0, 0, ksym)));
+            direct::elem(fFourier, 0, 0, k) = mean;
+            direct::elem(fFourier, 0, 0, ksym) = conj(mean);
         }
         break;
 

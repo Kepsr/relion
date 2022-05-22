@@ -26,13 +26,18 @@
 static std::string str_new_mask = "NEW_MASK_AND_OPERATORS";
 static std::string str_mask_filename = "MASKFILENAME";
 
+template <typename T>
+inline T euclidsq(T a, T b, T c) {
+    return a * a + b * b + c * c;
+}
+
 void sum3DCubicMask(
     const MultidimArray<RFLOAT> v, RFLOAT &val_sum, RFLOAT &val_ctr
 ) {
     val_sum = val_ctr = 0.0;
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
-        RFLOAT val = direct::elem(v, k, i, j);
+        RFLOAT val = direct::elem(v, i, j, k);
         if (Xmipp::lt(val, 0.0) || Xmipp::gt(val, 1.0))
             REPORT_ERROR("ERROR: mask - values are not in range [0,1]!");
         if (val > Xmipp::epsilon) {
@@ -67,9 +72,9 @@ void truncateMultidimArray(
         REPORT_ERROR("ERROR: minval should be smaller than maxval!");
 
     // FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
-    //     RFLOAT val = direct::elem(v, k, i, j);
-    //     if (val < minval) { direct::elem(v, k, i, j) = minval; }
-    //     if (val > maxval) { direct::elem(v, k, i, j) = maxval; }
+    //     RFLOAT val = direct::elem(v, i, j, k);
+    //     if (val < minval) { direct::elem(v, i, j, k) = minval; }
+    //     if (val > maxval) { direct::elem(v, i, j, k) = maxval; }
     // }
 
     for (auto &x : v) {
@@ -1139,16 +1144,16 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
         // 'Vol1' contains one symmetrised subunit, make it into perfect "mask-weighted sum"
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol1) {
             // Get values of mask in every voxel
-            mask_val = direct::elem(mask(), k, i, j); // "weights from mask" - w
+            mask_val = direct::elem(mask(), i, j, k); // "weights from mask" - w
             if (Xmipp::lt(mask_val, 0.0) || Xmipp::gt(mask_val, 1.0))
                 REPORT_ERROR("ERROR: mask " + std::string(fn_masks[imask]) + " - values are not in range [0,1]!");
 
             // This voxel is inside the mask
             if (mask_val > Xmipp::epsilon) {
-                direct::elem(vol1, k, i, j) *= mask_val / (nr_ops + 1.0); // "mask-weighted sum" - wsum
+                direct::elem(vol1, i, j, k) *= mask_val / (nr_ops + 1.0); // "mask-weighted sum" - wsum
             } else {
                 // This voxel is not inside the mask
-                direct::elem(vol1, k, i, j) = 0.0;
+                direct::elem(vol1, i, j, k) = 0.0;
             }
         }
 
@@ -1187,7 +1192,7 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
 
     // sym_map and w contain all symmetised subunits (wsum) and mask coefficients (w) needed
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(sym_map) {
-        mask_val = direct::elem(w, k, i, j); // get weights
+        mask_val = direct::elem(w, i, j, k); // get weights
 
         // TODO: check radius2 here!
 
@@ -1197,17 +1202,17 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
             if (Xmipp::gt(mask_val, 1.0)) {
                 // weight > 1
                 // ncs = wsum / w
-                direct::elem(sym_map, k, i, j) /= mask_val;
+                direct::elem(sym_map, i, j, k) /= mask_val;
             } else if (Xmipp::lt(mask_val, 1.0)) {
                 // 0 < weight < 1
                 // ncs = w * (wsum / w) + (1 - w) * ori_val
-                sym_val = direct::elem(sym_map, k, i, j);
-                direct::elem(sym_map, k, i, j) = sym_val + (1.0 - mask_val) * direct::elem(ori_map, k, i, j);
+                sym_val = direct::elem(sym_map, i, j, k);
+                direct::elem(sym_map, i, j, k) = sym_val + (1.0 - mask_val) * direct::elem(ori_map, i, j, k);
             }
             // weight = 1, ncs = wsum / w, nothing to do...
         } else {
             // weight <= 0, ncs = ori_val
-            direct::elem(sym_map, k, i, j) = direct::elem(ori_map, k, i, j);
+            direct::elem(sym_map, i, j, k) = direct::elem(ori_map, i, j, k);
         }
     }
 
@@ -1219,11 +1224,11 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
         zinit = Xmipp::init(Zsize(sym_map));
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(sym_map) {
-            dist2 = (k + zinit) * (k + zinit) + (i + yinit) * (i + yinit) + (j + xinit) * (j + xinit);
+            dist2 = euclidsq(i + xinit, j + yinit, k + zinit);
             if (dist2 > radiusw2) {
-                direct::elem(sym_map, k, i, j) = 0.0;
+                direct::elem(sym_map, i, j, k) = 0.0;
             } else if (dist2 > radius2) {
-                direct::elem(sym_map, k, i, j) *= 0.5 * (1.0 + cos(PI * (radius + cosine_width_pix - sqrt(dist2)) / cosine_width_pix));
+                direct::elem(sym_map, i, j, k) *= 0.5 * (1.0 + cos(PI * (radius + cosine_width_pix - sqrt(dist2)) / cosine_width_pix));
             }
         }
     }
@@ -1272,7 +1277,7 @@ void getMinCropSize(
             REPORT_ERROR("ERROR: all voxels in the input map should have positive values!");
 
         if (val > Xmipp::epsilon) {
-            dist2 = (RFLOAT(k) - zori) * (RFLOAT(k) - zori) + (RFLOAT(i) - yori) * (RFLOAT(i) - yori) + (RFLOAT(j) - xori) * (RFLOAT(j) - xori);
+            dist2 = euclidsq(RFLOAT(i) - xori, RFLOAT(j) - yori, RFLOAT(k) - zori);
             if (dist2 > dist2_max)
                 dist2_max = dist2;
         }
@@ -1620,11 +1625,11 @@ void calculateOperatorCC(
 
         cc = 0.0;
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol) {
-            mask_val = direct::elem(mask, k, i, j);
+            mask_val = direct::elem(mask, i, j, k);
             if (mask_val < Xmipp::epsilon)
                 continue;
 
-            val = direct::elem(vol, k, i, j) - direct::elem(src, k, i, j);
+            val = direct::elem(vol, i, j, k) - direct::elem(src, i, j, k);
             //cc += val * val;
             cc += mask_val * val * val; // weighted by mask value ?
         }
@@ -1689,13 +1694,13 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     // Count voxels with positive values
     pos_val_ctr = 0;
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
-        float_val = direct::elem(img(), k, i, j);
+        float_val = direct::elem(img(), i, j, k);
         //if (val < -Xmipp::epsilon)
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");
         if (float_val > val_thres) {
             pos_val_ctr++;
         } else {
-            direct::elem(vol_rec, k, i, j) = -1; // Mark as invalid!
+            direct::elem(vol_rec, i, j, k) = -1; // Mark as invalid!
         }
     }
     if (pos_val_ctr <= K)
@@ -1706,20 +1711,20 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
 
     id = 0;
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol_rec) {
-        int_val = direct::elem(vol_rec, k, i, j);
+        int_val = direct::elem(vol_rec, i, j, k);
         if (int_val != 0)
             continue;
 
         id++;
         #ifdef DEBUG
-        std::cout << " id= " << id << ", kij= " << k << ", " << i << ", " << j << ", " << std::endl;
+        std::cout << " id= " << id << ", ijk= " << i << ", " << j << ", " << k << ", " << std::endl;
         #endif
-        q.push(vectorR3(int(j), int(i), int(k)));
-        direct::elem(vol_rec, k, i, j) = id;
+        q.push(vectorR3(int(i), int(j), int(k)));
+        direct::elem(vol_rec, i, j, k) = id;
         while (!q.empty()) {
             vec1 = q.front();
             q.pop();
-            direct::elem(vol_rec, ZZ(vec1), YY(vec1), XX(vec1)) = id;
+            direct::elem(vol_rec, XX(vec1), YY(vec1), ZZ(vec1)) = id;
             for (int dz = -1; dz <= 1; dz++)
             for (int dy = -1; dy <= 1; dy++)
             for (int dx = -1; dx <= 1; dx++) {
@@ -1734,9 +1739,9 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
                     xx < 0 || xx >= Xsize(vol_rec)
                 ) continue;
 
-                if (direct::elem(vol_rec, zz, yy, xx) == 0) {
+                if (direct::elem(vol_rec, xx, yy, zz) == 0) {
                     q.push(vectorR3(int(xx), int(yy), int(zz)));
-                    direct::elem(vol_rec, zz, yy, xx) = id;
+                    direct::elem(vol_rec, xx, yy, zz) = id;
                 }
             }
         }
@@ -1759,8 +1764,8 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
         //img_out().setXmippOrigin();
 
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol_rec) {
-            if (direct::elem(vol_rec, k, i, j) == icen + 1)
-                direct::elem(img_out(), k, i, j) = 1.0;
+            if (direct::elem(vol_rec, i, j, k) == icen + 1)
+                direct::elem(img_out(), i, j, k) = 1.0;
         }
 
         img_out.setStatisticsInHeader();
@@ -1831,9 +1836,8 @@ void separateMasksKMeans(
 
     // Count voxels with positive values
     pos_val_ctr = 0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img())
-    {
-        val = direct::elem(img(), k, i, j);
+    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
+        val = direct::elem(img(), i, j, k);
         //if (val < -Xmipp::epsilon)
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");
         if (val > Xmipp::epsilon)

@@ -234,18 +234,17 @@ AstigmatismOptimizationAcc::AstigmatismOptimizationAcc(const Image<Complex>& pre
     data = Image<Complex>(w,h);
 
     for (long y = 0; y < h; y++)
-    for (long x = 0; x < w; x++)
-    {
-        Complex vx = direct::elem(prediction.data, y, x);
-        const Complex vy = direct::elem(observation.data, y, x);
-        const RFLOAT vw = direct::elem(weight.data, y, x);
+    for (long x = 0; x < w; x++) {
+        Complex vx = direct::elem(prediction.data, x, y);
+        const Complex vy = direct::elem(observation.data, x, y);
+        const RFLOAT vw = direct::elem(weight.data, x, y);
 
         const RFLOAT x2 = vx.real*vx.real + vx.imag*vx.imag;
 
         const RFLOAT yxb = x2 > 0.0? (vy.real*vx.real + vy.imag*vx.imag)/x2 : 0.0;
         const RFLOAT wp = vw * x2;
 
-        direct::elem(data.data, y, x) = Complex(yxb, wp);
+        direct::elem(data.data, x, y) = Complex(yxb, wp);
     }
 }
 
@@ -272,16 +271,16 @@ angpix(angpix), phiScale(phiScale), csScale(csScale) {
     for (int i = 0; i < prediction.size(); i++) {
         for (long y = 0; y < h; y++)
         for (long x = 0; x < w; x++) {
-                  Complex vx = direct::elem(prediction[i].data, y, x);
-            const Complex vy = direct::elem(observation[i].data, y, x);
-            const RFLOAT vw = direct::elem(weight.data, y, x);
+                  Complex vx = direct::elem(prediction[i].data, x, y);
+            const Complex vy = direct::elem(observation[i].data, x, y);
+            const RFLOAT vw = direct::elem(weight.data, x, y);
 
             const RFLOAT x2 = vx.real * vx.real + vx.imag * vx.imag;
 
             const RFLOAT yxb = x2 > 0.0 ? dot(vx, vy) / x2 : 0.0;
             const RFLOAT wp = vw * x2;
 
-            direct::elem(data.data, y, x) += Complex(yxb, wp);
+            direct::elem(data.data, x, y) += Complex(yxb, wp);
         }
     }
 }
@@ -308,7 +307,7 @@ double AstigmatismOptimizationAcc::f(const std::vector<double> &x, void* tempSto
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vd = direct::elem(data.data, y, x);
+        Complex vd = direct::elem(data.data, x, y);
 
         RFLOAT vm = ctfImg(y, x);
         RFLOAT dx = vd.real - vm;

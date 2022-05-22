@@ -30,7 +30,7 @@ class RadialAvg
 		
 				if (r < b)
 				{
-					avg[r] += direct::elem(map.data, yy, xx);
+					avg[r] += direct::elem(map.data, xx, yy);
 					wgh[r] += 1.0;
 				}
 			}
@@ -53,7 +53,7 @@ class RadialAvg
 				int r = (int)(rd+0.5);
 				
 				T mu = avg[r];
-				T v = direct::elem(map.data, yy, xx) - mu;
+				T v = direct::elem(map.data, xx, yy) - mu;
 		
 				if (r < b)
 				{
@@ -100,7 +100,7 @@ class RadialAvg
 		
 				if (r < b)
 				{
-					avg[r] += direct::elem(map.data, yy, xx);
+					avg[r] += direct::elem(map.data, xx, yy);
 					wgh[r] += 1.0;
 				}
 			}
@@ -136,7 +136,7 @@ class RadialAvg
 		
 				if (r < b)
 				{
-					sum[r] += direct::elem(map.data, yy, xx);
+					sum[r] += direct::elem(map.data, xx, yy);
 				}
 			}
 			

@@ -510,10 +510,10 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                             for (int dx = -D_MAX; dx <= D_MAX; dx++) {
                                 int x = j + dx;
                                 if (x < 0 || x >= Xsize(defectMask)) continue;
-                                if (direct::elem(defectMask, y, x)) continue;
-                                if (mgHasGain && direct::elem(lastGainRef(), y, x) == 0) continue;
+                                if (direct::elem(defectMask, x, y)) continue;
+                                if (mgHasGain && direct::elem(lastGainRef(), x, y) == 0) continue;
 
-                                pbuf[n_ok] = direct::elem(Iframes[iframe], y, x);
+                                pbuf[n_ok] = direct::elem(Iframes[iframe], x, y);
                                 n_ok++;
                             }
                         }

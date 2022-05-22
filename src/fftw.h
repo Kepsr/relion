@@ -82,7 +82,7 @@
  * FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(V) {
  *	int r2 = jp*jp + ip*ip + kp*kp;
  *
- *	std::cout << "element at physical coords: "<< i<<" "<<j<<" "<<k<<" has value: "<<direct::elem(m, k, i, j) << std::endl;
+ *	std::cout << "element at physical coords: "<< i<<" "<<j<<" "<<k<<" has value: " << direct::elem(m, i, j, k) << std::endl;
  *	std::cout << "its logical coords are: "<< ip<<" "<<jp<<" "<<kp<<std::endl;
  *	std::cout << "its distance from the origin = "<<sqrt(r2)<<std::endl;
  *
@@ -91,16 +91,16 @@
  */
 #define FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(V) \
     for (long int k = 0, kp = 0; k < Zsize(V); k++, kp = k < Xsize(V) ? k : k - Zsize(V)) \
-    for (long int i = 0, ip = 0; i < Ysize(V); i++, ip = i < Xsize(V) ? i : i - Ysize(V)) \
-    for (long int j = 0, jp = 0; j < Xsize(V); j++, jp = j)
+    for (long int j = 0, jp = 0; j < Ysize(V); j++, jp = j < Xsize(V) ? j : j - Ysize(V)) \
+    for (long int i = 0, ip = 0; i < Xsize(V); i++, ip = i)
 
 /** For all direct elements in the complex array in FFTW format.
  * The same as above, but now only for 2D images (this saves some time as k is not sampled
  */
 // FOR_i_j_ip_jp_IN_FFTW_TRANSFORM2D
 #define FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(V) \
-    for (long int i = 0, ip = 0; i < Ysize(V); i++, ip = i < Xsize(V) ? i : i - Ysize(V)) \
-    for (long int j = 0, jp = 0; j < Xsize(V); j++, jp = j)
+    for (long int j = 0, jp = 0; j < Ysize(V); j++, jp = j < Xsize(V) ? j : j - Ysize(V)) \
+    for (long int i = 0, ip = 0; i < Xsize(V); i++, ip = i)
 
 /** FFTW volume element: Logical access.
  *
@@ -110,8 +110,8 @@
  * val = FFTW_ELEM(V, -1, -2, 1);
  * @endcode
  */
-#define FFTW_ELEM(V, kp, ip, jp) \
-    (direct::elem((V),((kp < 0) ? (kp + Zsize(V)) : (kp)), ((ip < 0) ? (ip + Ysize(V)) : (ip)), (jp)))
+#define FFTW_ELEM(V, ip, jp, kp) \
+    (direct::elem((V), (ip), ((jp < 0) ? (jp + Ysize(V)) : (jp)), ((kp < 0) ? (kp + Zsize(V)) : (kp))))
 
 /** FFTW 2D image element: Logical access.
  *
@@ -122,7 +122,7 @@
  * @endcode
  */
 #define FFTW2D_ELEM(V, ip, jp) \
-    (direct::elem((V), ((ip < 0) ? (ip + Ysize(V)) : (ip)), (jp)))
+    (direct::elem((V), (ip), ((jp < 0) ? (jp + Ysize(V)) : (jp))))
 
 /** Fourier Transformer class.
  * @ingroup FourierW
@@ -264,17 +264,17 @@ class FourierTransformer {
             case 1:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
                 direct::elem(V, i) = i < Xsize(fFourier) ? direct::elem(fFourier, i) :
-                                                        conj(direct::elem(fFourier, Xsize(*fReal) - i));
+                    conj(direct::elem(fFourier, Xsize(*fReal) - i));
             } break;
             case 2:
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
                     direct::elem(V, i, j) = j < Xsize(fFourier) ? direct::elem(fFourier, i, j) :
-                                                                conj(direct::elem(fFourier, (Ysize(*fReal) - i) % Ysize(*fReal), Xsize(*fReal) - j));
+                        conj(direct::elem(fFourier, Xsize(*fReal) - j, (Ysize(*fReal) - i) % Ysize(*fReal)));
                 } break;
             case 3:
                 FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
-                    direct::elem(V, k, i, j) = j < Xsize(fFourier) ? direct::elem(fFourier, k, i, j) : 
-                                                                conj(direct::elem(fFourier, (Zsize(*fReal) - k) % Zsize(*fReal), (Ysize(*fReal) - i) % Ysize(*fReal), Xsize(*fReal) - j));
+                    direct::elem(V, i, j, k) = j < Xsize(fFourier) ? direct::elem(fFourier, i, j, k) :
+                        conj(direct::elem(fFourier, Xsize(*fReal) - j, (Ysize(*fReal) - i) % Ysize(*fReal), (Zsize(*fReal) - k) % Zsize(*fReal)));
                 } break;
         }
     }
@@ -301,7 +301,7 @@ class FourierTransformer {
             break;
             case 3:
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier)
-                direct::elem(fFourier, k, i, j) = direct::elem(V, k, i, j);
+                direct::elem(fFourier, i, j, k) = direct::elem(V, i, j, k);
             break;
         }
     }
@@ -376,8 +376,8 @@ void CenterFFTbySign(MultidimArray <T> &v) {
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
     // NOTE: != has higher precedence than & in C as pointed out in GitHub issue #637.
     // So (k ^ i ^ j) & 1 != 0 is not good (fortunately in this case the behaviour happened to be the same)
-        if (((k ^ i ^ j) & 1) != 0) // if ODD
-            direct::elem(v, k, i, j) *= -1;
+        if (((i ^ j ^ k) & 1) != 0) // if ODD
+            direct::elem(v, i, j, k) *= -1;
     }
 }
 
@@ -399,7 +399,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
         if (!forward) { shift = -shift; }
 
-        // Shift the input in an auxiliar vector
+        // Shift the input in an auxiliary vector
         for (int i = 0; i < l; i++) {
             int ip = i + shift;
 
@@ -423,20 +423,20 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
         if (!forward) { shift = -shift; }
 
-        for (int i = 0; i < Ysize(v); i++) {
+        for (int j = 0; j < Ysize(v); j++) {
             // Shift the input in an auxiliar vector
-            for (int j = 0; j < l; j++) {
-                int jp = j + shift;
+            for (int i = 0; i < l; i++) {
+                int ip = i + shift;
 
-                     if (jp <  0) { jp += l; } 
-                else if (jp >= l) { jp -= l; }
+                     if (ip <  0) { ip += l; } 
+                else if (ip >= l) { ip -= l; }
 
-                aux(jp) = direct::elem(v, i, j);
+                aux(ip) = direct::elem(v, i, j);
             }
 
             // Copy the vector
-            for (int j = 0; j < l; j++)
-                direct::elem(v, i, j) = direct::elem(aux, j);
+            for (int i = 0; i < l; i++)
+                direct::elem(v, i, j) = direct::elem(aux, i);
         }
 
         // Shift in the Y direction
@@ -446,20 +446,20 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
         if (!forward) { shift = -shift; }
 
-        for (int j = 0; j < Xsize(v); j++) {
+        for (int i = 0; i < Xsize(v); i++) {
             // Shift the input in an auxiliar vector
-            for (int i = 0; i < l; i++) {
-                int ip = i + shift;
+            for (int j = 0; j < j; i++) {
+                int jp = j + shift;
 
-                     if (ip <  0) { ip += l; }
-                else if (ip >= l) { ip -= l; }
+                     if (jp <  0) { jp += l; }
+                else if (jp >= l) { jp -= l; }
 
-                aux(ip) = direct::elem(v, i, j);
+                aux(jp) = direct::elem(v, i, j);
             }
 
             // Copy the vector
-            for (int i = 0; i < l; i++)
-                direct::elem(v, i, j) = direct::elem(aux, i);
+            for (int j = 0; j < l; j++)
+                direct::elem(v, i, j) = direct::elem(aux, j);
         }
     } else if (v.getDim() == 3) {
         // 3D
@@ -474,21 +474,21 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         if (!forward) { shift = -shift; }
 
         for (int k = 0; k < Zsize(v); k++)
-            for (int i = 0; i < Ysize(v); i++) {
-                // Shift the input in an auxiliar vector
-                for (int j = 0; j < l; j++) {
-                    int jp = j + shift;
+        for (int j = 0; j < Ysize(v); j++) {
+            // Shift the input in an auxiliar vector
+            for (int i = 0; i < l; i++) {
+                int ip = i + shift;
 
-                         if (jp <  0) { jp += l; }
-                    else if (jp >= l) { jp -= l; }
+                        if (ip <  0) { ip += l; }
+                else if (ip >= l) { ip -= l; }
 
-                    aux(jp) = direct::elem(v, k, i, j);
-                }
-
-                // Copy the vector
-                for (int j = 0; j < l; j++)
-                    direct::elem(v, k, i, j) = direct::elem(aux, j);
+                aux(ip) = direct::elem(v, i, j, k);
             }
+
+            // Copy the vector
+            for (int i = 0; i < l; i++)
+                direct::elem(v, i, j, k) = direct::elem(aux, i);
+        }
 
         // Shift in the Y direction
         l = Ysize(v);
@@ -498,21 +498,21 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         if (!forward) { shift = -shift; }
 
         for (int k = 0; k < Zsize(v); k++)
-            for (int j = 0; j < Xsize(v); j++) {
-                // Shift the input in an auxiliar vector
-                for (int i = 0; i < l; i++) {
-                    int ip = i + shift;
+        for (int i = 0; i < Xsize(v); i++) {
+            // Shift the input in an auxiliar vector
+            for (int j = 0; j < l; j++) {
+                int jp = j + shift;
 
-                         if (ip <  0) { ip += l; }
-                    else if (ip >= l) { ip -= l; }
+                        if (jp <  0) { jp += l; }
+                else if (jp >= l) { jp -= l; }
 
-                    aux(ip) = direct::elem(v, k, i, j);
-                }
-
-                // Copy the vector
-                for (int i = 0; i < l; i++)
-                    direct::elem(v, k, i, j) = direct::elem(aux, i);
+                aux(jp) = direct::elem(v, i, j, k);
             }
+
+            // Copy the vector
+            for (int j = 0; j < l; j++)
+                direct::elem(v, i, j, k) = direct::elem(aux, j);
+        }
 
         // Shift in the Z direction
         l = Zsize(v);
@@ -521,22 +521,22 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
         if (!forward) { shift = -shift; }
 
-        for (int i = 0; i < Ysize(v); i++)
-            for (int j = 0; j < Xsize(v); j++) {
-                // Shift the input in an auxiliar vector
-                for (int k = 0; k < l; k++) {
-                    int kp = k + shift;
+        for (int j = 0; j < Ysize(v); j++)
+        for (int i = 0; i < Xsize(v); i++) {
+            // Shift the input in an auxiliar vector
+            for (int k = 0; k < l; k++) {
+                int kp = k + shift;
 
-                         if (kp <  0) { kp += l; }
-                    else if (kp >= l) { kp -= l; }
+                        if (kp <  0) { kp += l; }
+                else if (kp >= l) { kp -= l; }
 
-                    aux(kp) = direct::elem(v, k, i, j);
-                }
-
-                // Copy the vector
-                for (int k = 0; k < l; k++)
-                    direct::elem(v, k, i, j) = direct::elem(aux, k);
+                aux(kp) = direct::elem(v, i, j, k);
             }
+
+            // Copy the vector
+            for (int k = 0; k < l; k++)
+                direct::elem(v, i, j, k) = direct::elem(aux, k);
+        }
     } else {
         v.printShape();
         REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
@@ -566,7 +566,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         for (int i = 0; i < l; i++)
             direct::elem(v, i) = direct::elem(aux, i);
     } else if (v.getDim() == 2 ) {
-        int  batchSize = 1;
+        int batchSize = 1;
         int xSize = Xsize(v);
         int ySize = Ysize(v);
 
@@ -582,7 +582,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         size_t isize2 = image_size / 2;
         int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
 
-//		for(int i=0; i<blocks; i++) {
+		// for (int i = 0; i < blocks; i++) {
         tbb::parallel_for(0, blocks, [&](int i) {
             size_t pixel_start = i * CFTT_BLOCK_SIZE;
             size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
@@ -614,7 +614,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
             size_t image_size = xSize * ySize * zSize;
             size_t isize2 = image_size / 2;
             int block =ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
-//			for(int i=0; i<block; i++){
+			// for (int i = 0; i < block; i++){
             tbb::parallel_for(0, block, [&](int i) {
                 size_t pixel_start = i * CFTT_BLOCK_SIZE;
                 size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
@@ -638,7 +638,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
             size_t image_size = xSize * ySize;
             size_t isize2 = image_size / 2;
             int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
-//			for(int i=0; i<blocks; i++) {
+			// for (int i = 0; i < blocks; i++) {
             tbb::parallel_for(0, blocks, [&](int i) {
                 size_t pixel_start = i * CFTT_BLOCK_SIZE;
                 size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
@@ -701,11 +701,11 @@ void windowFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(in) {
             // Make sure windowed FT has nothing in the corners, otherwise we end up with an asymmetric FT!
             if (kp * kp + ip * ip + jp * jp <= max_r2)
-                FFTW_ELEM(out, kp, ip, jp) = FFTW_ELEM(in, kp, ip, jp);
+                FFTW_ELEM(out, ip, jp, kp) = FFTW_ELEM(in, ip, jp, kp);
         }
     } else {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(out) {
-            FFTW_ELEM(out, kp, ip, jp) = FFTW_ELEM(in, kp, ip, jp);
+            FFTW_ELEM(out, ip, jp, kp) = FFTW_ELEM(in, ip, jp, kp);
         }
     }
 }
@@ -954,12 +954,12 @@ void cropInFourierSpace(MultidimArray<T> &Fref, MultidimArray<T> &Fbinned) {
 
     for (int y = 0; y < half_new_nfy; y++) {
         for (int x = 0; x < new_nfx; x++) {
-            direct::elem(Fbinned, y, x) =  direct::elem(Fref, y, x);
+            direct::elem(Fbinned, x, y) =  direct::elem(Fref, x, y);
         }
     }
     for (int y = half_new_nfy; y < new_nfy; y++) {
         for (int x = 0; x < new_nfx; x++) {
-            direct::elem(Fbinned, y, x) =  direct::elem(Fref, nfy - new_nfy + y, x);
+            direct::elem(Fbinned, x, y) =  direct::elem(Fref, x, nfy - new_nfy + y);
         }
     }
 }

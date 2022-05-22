@@ -95,14 +95,14 @@ void trilinear(
     ) return;
 
     // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-    const Complex d000 = direct::elem(data, z0, y0, x0);
-    const Complex d001 = direct::elem(data, z0, y0, x1);
-    const Complex d010 = direct::elem(data, z0, y1, x0);
-    const Complex d011 = direct::elem(data, z0, y1, x1);
-    const Complex d100 = direct::elem(data, z1, y0, x0);
-    const Complex d101 = direct::elem(data, z1, y0, x1);
-    const Complex d110 = direct::elem(data, z1, y1, x0);
-    const Complex d111 = direct::elem(data, z1, y1, x1);
+    const Complex d000 = direct::elem(data, x0, y0, z0);
+    const Complex d001 = direct::elem(data, x1, y0, z0);
+    const Complex d010 = direct::elem(data, x0, y1, z0);
+    const Complex d011 = direct::elem(data, x1, y1, z0);
+    const Complex d100 = direct::elem(data, x0, y0, z1);
+    const Complex d101 = direct::elem(data, x1, y0, z1);
+    const Complex d110 = direct::elem(data, x0, y1, z1);
+    const Complex d111 = direct::elem(data, x1, y1, z1);
 
     // Set the interpolated value in the 2D output array
     const Complex dx00 = LIN_INTERP(fx, d000, d001);
@@ -145,10 +145,10 @@ void trilinear(
     const int y1 = y0 + 1;
 
     // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-    const Complex d00 = direct::elem(data, y0, x0);
-    const Complex d01 = direct::elem(data, y0, x1);
-    const Complex d10 = direct::elem(data, y1, x0);
-    const Complex d11 = direct::elem(data, y1, x1);
+    const Complex d00 = direct::elem(data, x0, y0);
+    const Complex d01 = direct::elem(data, x1, y0);
+    const Complex d10 = direct::elem(data, x0, y1);
+    const Complex d11 = direct::elem(data, x1, y1);
 
     // Set the interpolated value in the 2D output array
     const Complex dx0 = LIN_INTERP(fx, d00, d01);
@@ -189,7 +189,7 @@ void nearest_neighbour(
     ) return;
 
     direct::elem(f2d, i, x) = is_neg_x ?
-        conj(direct::elem(data, zr, yr, xr)) : data.elem(yr, xr, zr);
+        conj(direct::elem(data, xr, yr, zr)) : data.elem(xr, yr, zr);
         /// XXX: Should we be mixing direct::elem and A3D_ELEM?
 }
 
@@ -201,7 +201,7 @@ void nearest_neighbour(
     const int y0 = round(yp);
 
     direct::elem(f1d, x) = x0 < 0 ?
-        conj(data.elem(-y0, -x0)) : data.elem(y0, x0);
+        conj(data.elem(-x0, -y0)) : data.elem(x0, y0);
 }
 
 
@@ -571,7 +571,7 @@ void Projector::computeFourierTransformMap(
                     );
                 }
                 // Set data array
-                data.elem(ip, jp, kp) = weight * direct::elem(Faux, k, i, j) * normfft;
+                data.elem(ip, jp, kp) = weight * direct::elem(Faux, i, j, k) * normfft;
 
                 // Calculate power spectrum
                 int ires = round(sqrt((RFLOAT) r2) / padding_factor);
@@ -800,14 +800,14 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
                 continue;
             }
 
-            Complex v000 = direct::elem(data, z0, y0, x0);
-            Complex v001 = direct::elem(data, z0, y0, x1);
-            Complex v010 = direct::elem(data, z0, y1, x0);
-            Complex v011 = direct::elem(data, z0, y1, x1);
-            Complex v100 = direct::elem(data, z1, y0, x0);
-            Complex v101 = direct::elem(data, z1, y0, x1);
-            Complex v110 = direct::elem(data, z1, y1, x0);
-            Complex v111 = direct::elem(data, z1, y1, x1);
+            Complex v000 = direct::elem(data, x0, y0, z0);
+            Complex v001 = direct::elem(data, x1, y0, z0);
+            Complex v010 = direct::elem(data, x0, y1, z0);
+            Complex v011 = direct::elem(data, x1, y1, z0);
+            Complex v100 = direct::elem(data, x0, y0, z1);
+            Complex v101 = direct::elem(data, x1, y0, z1);
+            Complex v110 = direct::elem(data, x0, y1, z1);
+            Complex v111 = direct::elem(data, x1, y1, z1);
 
             Complex v00 = LIN_INTERP(fx, v000, v001);
             Complex v10 = LIN_INTERP(fx, v100, v101);
@@ -954,27 +954,27 @@ void Projector::rotate2D(MultidimArray<Complex> &f2d, Matrix2D<RFLOAT> &A) {
                 const int y1 = y0 + 1;
 
                 // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-                const Complex d00 = direct::elem(data, y0, x0);
-                const Complex d01 = direct::elem(data, y0, x1);
-                const Complex d10 = direct::elem(data, y1, x0);
-                const Complex d11 = direct::elem(data, y1, x1);
+                const Complex d00 = direct::elem(data, x0, y0);
+                const Complex d01 = direct::elem(data, x1, y0);
+                const Complex d10 = direct::elem(data, x0, y1);
+                const Complex d11 = direct::elem(data, x1, y1);
 
                 // Set the interpolated value in the 2D output array
                 const Complex dx0 = LIN_INTERP(fx, d00, d01);
                 const Complex dx1 = LIN_INTERP(fx, d10, d11);
 
-                direct::elem(f2d, i, x) = LIN_INTERP(fy, dx0, dx1);
+                direct::elem(f2d, x, i) = LIN_INTERP(fy, dx0, dx1);
 
                 // Take complex conjugate for half with negative x
-                if (is_neg_x) direct::elem(f2d, i, x) = conj(direct::elem(f2d, i, x));
+                if (is_neg_x) direct::elem(f2d, x, i) = conj(direct::elem(f2d, x, i));
 
             } else if (interpolator == NEAREST_NEIGHBOUR) {
                 /// NOTE: Unused
                 const int x0 = round(xp);
                 const int y0 = round(yp);
 
-                direct::elem(f2d, i, x) = x0 < 0 ?
-                    conj(data.elem(-y0, -x0)) : data.elem(y0, x0);
+                direct::elem(f2d, x, i) = x0 < 0 ?
+                    conj(data.elem(-x0, -y0)) : data.elem(x0, y0);
 
             } else {
                 REPORT_ERROR("Unrecognized interpolator in Projector::project");
@@ -1065,14 +1065,14 @@ void Projector::rotate3D(MultidimArray<Complex> &f3d, Matrix2D<RFLOAT> &A) {
                     const int z1 = z0 + 1;
 
                     // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-                    const Complex d000 = direct::elem(data, z0, y0, x0);
-                    const Complex d001 = direct::elem(data, z0, y0, x1);
-                    const Complex d010 = direct::elem(data, z0, y1, x0);
-                    const Complex d011 = direct::elem(data, z0, y1, x1);
-                    const Complex d100 = direct::elem(data, z1, y0, x0);
-                    const Complex d101 = direct::elem(data, z1, y0, x1);
-                    const Complex d110 = direct::elem(data, z1, y1, x0);
-                    const Complex d111 = direct::elem(data, z1, y1, x1);
+                    const Complex d000 = direct::elem(data, x0, y0, z0);
+                    const Complex d001 = direct::elem(data, x1, y0, z0);
+                    const Complex d010 = direct::elem(data, x0, y1, z0);
+                    const Complex d011 = direct::elem(data, x1, y1, z0);
+                    const Complex d100 = direct::elem(data, x0, y0, z1);
+                    const Complex d101 = direct::elem(data, x1, y0, z1);
+                    const Complex d110 = direct::elem(data, x0, y1, z1);
+                    const Complex d111 = direct::elem(data, x1, y1, z1);
 
                     // Set the interpolated value in the 2D output array
                     // interpolate in x
@@ -1084,18 +1084,18 @@ void Projector::rotate3D(MultidimArray<Complex> &f3d, Matrix2D<RFLOAT> &A) {
                     const Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
                     const Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
                     // interpolate in z
-                    direct::elem(f3d, k, i, x) = LIN_INTERP(fz, dxy0, dxy1);
+                    direct::elem(f3d, x, i, k) = LIN_INTERP(fz, dxy0, dxy1);
 
                     // Take complex conjugate for half with negative x
-                    if (is_neg_x) direct::elem(f3d, k, i, x) = conj(direct::elem(f3d, k, i, x));
+                    if (is_neg_x) direct::elem(f3d, x, i, k) = conj(direct::elem(f3d, x, i, k));
 
                 } else if (interpolator == NEAREST_NEIGHBOUR) {
                     const int x0 = round(xp);
                     const int y0 = round(yp);
                     const int z0 = round(zp);
 
-                    direct::elem(f3d, k, i, x) = x0 < 0 ?
-                        conj(data.elem(-y0, -x0, -z0)) : data.elem(y0, x0, z0);
+                    direct::elem(f3d, x, i, k) = x0 < 0 ?
+                        conj(data.elem(-x0, -y0, -z0)) : data.elem(x0, y0, z0);
 
                 } else {
                     REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);

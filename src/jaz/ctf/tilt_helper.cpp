@@ -44,13 +44,13 @@ void TiltHelper::updateTiltShift(
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = direct::elem(prediction.data, y, x);
-        Complex vy = direct::elem(observation.data, y, x);
+        Complex vx = direct::elem(prediction.data,  x, y);
+        Complex vy = direct::elem(observation.data, x, y);
 
         RFLOAT c = ctfImg(y, x);
 
-        direct::elem(xyDest.data, y, x) += c * vx.conj() * vy;
-        direct::elem(wDest.data,  y, x) += c * c * vx.norm();
+        direct::elem(xyDest.data, x, y) += c * vx.conj() * vy;
+        direct::elem(wDest.data,  x, y) += c * c * vx.norm();
     }
 }
 
@@ -71,13 +71,13 @@ void TiltHelper::updateTiltShiftPar(
     #pragma omp parallel for
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = direct::elem(prediction.data, y, x);
-        Complex vy = direct::elem(observation.data, y, x);
+        Complex vx = direct::elem(prediction.data,  x, y);
+        Complex vy = direct::elem(observation.data, x, y);
 
         RFLOAT c = ctfImg(y, x);
 
-        direct::elem(xyDest.data, y, x) += c * vx.conj() * vy;
-        direct::elem(wDest.data, y, x) += c * c * vx.norm();
+        direct::elem(xyDest.data, x, y) += c * vx.conj() * vy;
+        direct::elem(wDest.data,  x, y) += c * c * vx.norm();
     }
 }
 
@@ -112,8 +112,8 @@ void TiltHelper::fitTiltShift(
 
         double q = x*x + y*y;
 
-        double v = direct::elem(phase.data, yi, xi);
-        double g = direct::elem(weight.data, yi, xi);
+        double v = direct::elem(phase.data,  xi, yi);
+        double g = direct::elem(weight.data, xi, yi);
 
         axx += g     * x * x;
         axy += g     * x * y;
@@ -703,7 +703,7 @@ void TiltHelper::drawPhaseShift(
 
         const double q = x * x + y * y;
 
-        direct::elem(tgt->data, yi, xi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
+        direct::elem(tgt->data, xi, yi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
     }
 }
 
@@ -725,7 +725,7 @@ void TiltHelper::drawPhaseShift(
 
         const double q = tilt_xx * x * x + 2.0 * tilt_xy * x * y + tilt_yy * y * y;
 
-        direct::elem(tgt->data, yi, xi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
+        direct::elem(tgt->data, xi, yi) = x * shift_x + y * shift_y + q * x * tilt_x + q * y * tilt_y;
     }
 }
 

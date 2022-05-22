@@ -55,7 +55,7 @@ void FftwHelper::decenterHalf(const MultidimArray<T> &src, MultidimArray<T> &des
         long int zp = z < dest.xdim? z : z - dest.zdim;
         long int yp = y < dest.xdim? y : y - dest.ydim;
 
-        direct::elem(dest, z, y, x) = direct::elem(src, zp, yp, x);
+        direct::elem(dest, x, y, z) = direct::elem(src, x, yp, zp);
     }
 }
 
@@ -74,7 +74,7 @@ void FftwHelper::recenterHalf(const MultidimArray<T> &src, MultidimArray<T> &des
         long int zs = (z + zc) % dest.zdim;
         long int ys = (y + yc) % dest.ydim;
 
-        direct::elem(dest, z, y, x) = direct::elem(src, zs, ys, x);
+        direct::elem(dest, x, y, z) = direct::elem(src, x, ys, zs);
     }
 }
 
@@ -95,7 +95,7 @@ void FftwHelper::decenterFull(const MultidimArray<T> &src, MultidimArray<T> &des
         long int ys = (y + yc) % dest.ydim;
         long int xs = (x + xc) % dest.xdim;
 
-        direct::elem(dest, z, y, x) = direct::elem(src, zs, ys, xs);
+        direct::elem(dest, x, y, z) = direct::elem(src, xs, ys, zs);
     }
 }
 
@@ -116,7 +116,7 @@ void FftwHelper::recenterFull(const MultidimArray<T> &src, MultidimArray<T> &des
         long int ys = (y + yc) % dest.ydim;
         long int xs = (x + xc) % dest.xdim;
 
-        direct::elem(dest, z, y, x) = direct::elem(src, zs, ys, xs);
+        direct::elem(dest, x, y, z) = direct::elem(src, xs, ys, zs);
     }
 }
 

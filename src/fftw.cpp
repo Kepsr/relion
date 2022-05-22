@@ -377,35 +377,32 @@ void FourierTransformer::enforceHermitianSymmetry() {
         if (Ysize(*fReal) == 1)
             ndim = 1;
     }
-    long int yHalf = Ysize(*fReal) / 2;
-    if (Ysize(*fReal) % 2 == 0) { yHalf--; }
-    long int zHalf = Zsize(*fReal) / 2;
-    if (Zsize(*fReal) % 2 == 0)
-        zHalf--;
+    long int yHalf = Ysize(*fReal) / 2 - (Ysize(*fReal) % 2 == 0);
+    long int zHalf = Zsize(*fReal) / 2 - (Zsize(*fReal) % 2 == 0);
     switch (ndim) {
         case 2:
-        for (long int i = 1; i <= yHalf; i++) {
-            long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
-            Complex mean = 0.5 * (direct::elem(fFourier, i, 0) + conj(direct::elem(fFourier, isym, 0)));
-            direct::elem(fFourier, i,    0) = mean;
-            direct::elem(fFourier, isym, 0) = conj(mean);
+        for (long int j = 1; j <= yHalf; j++) {
+            long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
+            Complex mean = 0.5 * (direct::elem(fFourier, 0, j) + conj(direct::elem(fFourier, 0, jsym)));
+            direct::elem(fFourier, 0, j) = mean;
+            direct::elem(fFourier, 0, jsym) = conj(mean);
         }
         break;
         case 3:
         for (long int k = 0; k < Zsize(*fReal); k++) {
             long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            for (long int i = 1; i <= yHalf; i++) {
-                long int isym = wrap(-i, 0, Ysize(*fReal) - 1);
-                Complex mean = 0.5 * (direct::elem(fFourier, k, i, 0) + conj(direct::elem(fFourier, ksym, isym, 0)));
-                direct::elem(fFourier, k,    i,    0) = mean;
-                direct::elem(fFourier, ksym, isym, 0) = conj(mean);
+            for (long int j = 1; j <= yHalf; j++) {
+                long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
+                Complex mean = 0.5 * (direct::elem(fFourier, 0, j, k) + conj(direct::elem(fFourier, 0, jsym, ksym)));
+                direct::elem(fFourier, 0, j,    k) = mean;
+                direct::elem(fFourier, 0, jsym, ksym) = conj(mean);
             }
         }
         for (long int k = 1; k <= zHalf; k++) {
             long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            Complex mean = 0.5 * (direct::elem(fFourier, k, 0, 0) + conj(direct::elem(fFourier, ksym, 0, 0)));
-            direct::elem(fFourier, k,    0, 0) = mean;
-            direct::elem(fFourier, ksym, 0, 0) = conj(mean);
+            Complex mean = 0.5 * (direct::elem(fFourier, 0, 0, k) + conj(direct::elem(fFourier, 0, 0, ksym)));
+            direct::elem(fFourier, 0, 0, k) = mean;
+            direct::elem(fFourier, 0, 0, ksym) = conj(mean);
         }
         break;
     }
@@ -420,10 +417,10 @@ void randomizePhasesBeyond(MultidimArray<RFLOAT> &v, int index) {
 
     int index2 = index * index;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        if (euclidsq(kp, ip, jp) >= index2) {
-            RFLOAT mag = abs(direct::elem(FT, k, i, j));
+        if (euclidsq(ip, jp, kp) >= index2) {
+            RFLOAT mag = abs(direct::elem(FT, i, j, k));
             RFLOAT phas = rnd_unif(0.0, 2.0 * PI);
-            direct::elem(FT, k, i, j) = Complex(mag * cos(phas), mag * sin(phas));
+            direct::elem(FT, i, j, k) = Complex(mag * cos(phas), mag * sin(phas));
         }
     }
 
@@ -436,12 +433,12 @@ void randomizePhasesBeyond(MultidimArray<RFLOAT> &v, int index) {
 void randomizePhasesBeyond(MultidimArray<Complex> &v, int index) {
     int index2 = index*index;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(v) {
-       if (euclidsq(kp, ip, jp) >= index2) {
-               RFLOAT mag = abs(direct::elem(v, k, i, j));
+       if (euclidsq(ip, jp, kp) >= index2) {
+               RFLOAT mag = abs(direct::elem(v, i, j, k));
                RFLOAT phas = rnd_unif(0.0, 2.0 * PI);
                RFLOAT realval = mag * cos(phas);
                RFLOAT imagval = mag * sin(phas);
-               direct::elem(v, k, i, j) = Complex(realval, imagval);
+               direct::elem(v, i, j, k) = Complex(realval, imagval);
        }
     }
 }
@@ -461,10 +458,10 @@ void getFSC(
     MultidimArray<RFLOAT> den2 = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
     fsc.initZeros(num);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
-        int idx = round(euclid(kp, ip, jp));
+        int idx = round(euclid(ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
-        Complex z1 = direct::elem(FT1, k, i, j);
-        Complex z2 = direct::elem(FT2, k, i, j);
+        Complex z1 = direct::elem(FT1, i, j, k);
+        Complex z2 = direct::elem(FT2, i, j, k);
         RFLOAT absz1 = abs(z1);
         RFLOAT absz2 = abs(z2);
         num(idx) += (conj(z1) * z2).real;
@@ -504,17 +501,17 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
     dpr.initZeros(radial_count);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         // Amplitudes
-        int idx = round(euclid(kp, ip, jp));
+        int idx = round(euclid(ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
-        RFLOAT abs1 = abs(direct::elem(FT1, k, i, j));
-        RFLOAT abs2 = abs(direct::elem(FT2, k, i, j));
+        RFLOAT abs1 = abs(direct::elem(FT1, i, j, k));
+        RFLOAT abs2 = abs(direct::elem(FT2, i, j, k));
         mu1(idx) += abs1;
         mu2(idx) += abs2;
         radial_count(idx)++;
 
         // Phases
-        RFLOAT phas1 = degrees(atan2((direct::elem(FT1, k, i, j)).imag, (direct::elem(FT1, k, i, j)).real));
-        RFLOAT phas2 = degrees(atan2((direct::elem(FT2, k, i, j)).imag, (direct::elem(FT2, k, i, j)).real));
+        RFLOAT phas1 = degrees(direct::elem(FT1, i, j, k).arg());
+        RFLOAT phas2 = degrees(direct::elem(FT2, i, j, k).arg());
         RFLOAT delta_phas = phas1 - phas2;
         if (delta_phas > +180.0) { delta_phas -= 360.0; }
         if (delta_phas < -180.0) { delta_phas += 360.0; }
@@ -533,10 +530,10 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
 
     // Now calculate Pearson's correlation coefficient
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
-        int idx = round(euclid(kp, ip, jp));
+        int idx = round(euclid(ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
-        RFLOAT z1 = abs(direct::elem(FT1, k, i, j)) - mu1(idx);
-        RFLOAT z2 = abs(direct::elem(FT2, k, i, j)) - mu2(idx);
+        RFLOAT z1 = abs(direct::elem(FT1, i, j, k)) - mu1(idx);
+        RFLOAT z2 = abs(direct::elem(FT2, i, j, k)) - mu2(idx);
         acorr(idx) += z1 * z2;
         sig1(idx)  += z1 * z1;
         sig2(idx)  += z2 * z2;
@@ -561,11 +558,11 @@ MultidimArray<RFLOAT> cosDeltaPhase(
     MultidimArray<RFLOAT> cosPhi = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
-        int idx = round(euclid(kp, ip, jp));
+        int idx = round(euclid(ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
 
-        RFLOAT delta_phase = direct::elem(FT1, k, i, j).arg() 
-                           - direct::elem(FT2, k, i, j).arg();
+        RFLOAT delta_phase = direct::elem(FT1, i, j, k).arg() 
+                           - direct::elem(FT2, i, j, k).arg();
         cosPhi(idx) += cos(delta_phase);
         radial_count(idx)++;
     }
@@ -636,27 +633,27 @@ void getAbMatricesForShiftImageInFourierTransform(
 
         case 1:
         xshift /= -oridim;
-        for (long int j = 0; j < Xsize(in); j++) {
-            x = j;
-            direct::elem(out, j) = Complex::unit(2 * PI * (x * xshift));
+        for (long int i = 0; i < Xsize(in); i++) {
+            x = i;
+            direct::elem(out, i) = Complex::unit(2 * PI * (x * xshift));
         }
         break;
 
         case 2:
         xshift /= -oridim;
         yshift /= -oridim;
-        for (long int i = 0; i < Xsize(in); i++)
-        for (long int j = 0; j < Xsize(in); j++) {
-            x = j;
-            y = i;
+        for (long int j = 0; j < Xsize(in); j++)
+        for (long int i = 0; i < Xsize(in); i++) {
+            x = i;
+            y = j;
             direct::elem(out, i, j) = Complex::unit(2 * PI * (x * xshift + y * yshift));
         }
-        for (long int i = Ysize(in) - 1; i >= Xsize(in); i--) {
-            y = i - Ysize(in);
-            for (long int j = 0; j < Xsize(in); j++) {
-                x = j;
-                direct::elem(out, i, j) = Complex::unit(2 * PI * (x * xshift + y * yshift));
-            }
+        for (long int j = Ysize(in) - 1; j >= Xsize(in); j--) {
+        y = j - Ysize(in);
+        for (long int i = 0; i < Xsize(in); i++) {
+        x = i;
+        direct::elem(out, i, j) = Complex::unit(2 * PI * (x * xshift + y * yshift));
+        }
         }
         break;
 
@@ -665,14 +662,14 @@ void getAbMatricesForShiftImageInFourierTransform(
         yshift /= -oridim;
         zshift /= -oridim;
         for (long int k = 0; k < Zsize(in); k++) {
-            z = k < Xsize(in) ? k : k - Zsize(in);
-            for (long int i = 0; i < Ysize(in); i++) {
-                y = i < Xsize(in) ? i : i - Ysize(in);
-                for (long int j = 0; j < Xsize(in); j++) {
-                    x = j;
-                    direct::elem(out, k, i, j) = Complex::unit(2 * PI * (x * xshift + y * yshift + z * zshift));
-                }
-            }
+        z = k < Xsize(in) ? k : k - Zsize(in);
+        for (long int j = 0; j < Ysize(in); j++) {
+        y = j < Xsize(in) ? j : j - Ysize(in);
+        for (long int i = 0; i < Xsize(in); i++) {
+        x = i;
+        direct::elem(out, i, j, k) = Complex::unit(2 * PI * (x * xshift + y * yshift + z * zshift));
+        }
+        }
         }
         break;
 
@@ -689,7 +686,6 @@ void shiftImageInFourierTransformWithTabSincos(
     TabSine &tabsin, TabCosine &tabcos,
     RFLOAT xshift, RFLOAT yshift, RFLOAT zshift
 ) {
-    RFLOAT a = 0.0, b = 0.0, c = 0.0, d = 0.0, ac = 0.0, bd = 0.0, ab_cd = 0.0, x = 0.0, y = 0.0, z = 0.0;
 
     if (&in == &out)
         REPORT_ERROR("shiftImageInFourierTransformWithTabSincos ERROR: Input and output images should be different!");
@@ -718,16 +714,16 @@ void shiftImageInFourierTransformWithTabSincos(
         }
 
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(out) {
-            RFLOAT dotp = 2.0 * PI * (jp * xshift + ip * yshift);
+            RFLOAT dotp = 2.0 * PI * (ip * xshift + jp * yshift);
 
-            a = tabcos(dotp);
-            b = tabsin(dotp);
-            c = direct::elem(in, i, j).real;
-            d = direct::elem(in, i, j).imag;
-            ac = a * c;
-            bd = b * d;
-            ab_cd = (a + b) * (c + d);
-            direct::elem(out, i, j) = Complex(ac - bd, ab_cd - ac - bd);
+            Complex X = direct::elem(in, i, j);
+            RFLOAT a = tabcos(dotp);
+            RFLOAT b = tabsin(dotp);
+            Complex Y = Complex(a, b);
+            direct::elem(out, i, j) = Complex(
+                Y.real * X.real - Y.imag * X.imag, 
+                Y.real * X.imag + Y.imag * X.real
+            );
         }
     } else if (in.getDim() == 3) {
         xshift /= -oridim;
@@ -739,16 +735,16 @@ void shiftImageInFourierTransformWithTabSincos(
         }
 
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(out) {
-            RFLOAT dotp = 2.0 * PI * (jp * xshift + ip * yshift + kp * zshift);
+            RFLOAT dotp = 2.0 * PI * (ip * xshift + jp * yshift + kp * zshift);
 
-            a = tabcos(dotp);
-            b = tabsin(dotp);
-            c = direct::elem(in, k, i, j).real;
-            d = direct::elem(in, k, i, j).imag;
-            ac = a * c;
-            bd = b * d;
-            ab_cd = (a + b) * (c + d);
-            direct::elem(out, k, i, j) = Complex(ac - bd, ab_cd - ac - bd);
+            Complex X = direct::elem(in, i, j, k);
+            RFLOAT a = tabcos(dotp);
+            RFLOAT b = tabsin(dotp);
+            Complex Y = Complex(a, b);
+            direct::elem(out, i, j, k) = Complex(
+                Y.real * X.real - Y.imag * X.imag, 
+                Y.real * X.imag + Y.imag * X.real
+            );
         }
     }
 }
@@ -769,11 +765,11 @@ void shiftImageInFourierTransform(
             out = in;
             return;
         }
-        for (long int j = 0; j < Xsize(in); j++) {
-            x = j;
-            Complex X = direct::elem(in, j);
+        for (long int i = 0; i < Xsize(in); i++) {
+            x = i;
+            Complex X = direct::elem(in, i);
             Complex Y = Complex::unit(2 * PI * (x * xshift));
-            direct::elem(out, j) = Complex(
+            direct::elem(out, i) = Complex(
                 X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
                 X.imag * Y.real + X.real * Y.imag   // (i conj X) dot Y
             );
@@ -787,10 +783,10 @@ void shiftImageInFourierTransform(
             out = in;
             return;
         }
-        for (long int i = 0; i < Xsize(in); i++)
-        for (long int j = 0; j < Xsize(in); j++) {
-            x = j;
-            y = i;
+        for (long int j = 0; j < Xsize(in); j++)
+        for (long int i = 0; i < Xsize(in); i++) {
+            x = i;
+            y = j;
             Complex X = direct::elem(in, i, j);
             Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
             direct::elem(out, i, j) = Complex(
@@ -798,10 +794,10 @@ void shiftImageInFourierTransform(
                 X.imag * Y.real + X.real * Y.imag   // (i conj X) dot Y
             );
         }
-        for (long int i = Ysize(in) - 1; i >= Xsize(in); i--) {
-        y = i - Ysize(in);
-        for (long int j = 0; j < Xsize(in); j++) {
-        x = j;
+        for (long int j = Ysize(in) - 1; j >= Xsize(in); j--) {
+        y = j - Ysize(in);
+        for (long int i = 0; i < Xsize(in); i++) {
+        x = i;
         Complex X = direct::elem(in, i, j);
         Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
         direct::elem(out, i, j) = Complex(
@@ -822,13 +818,13 @@ void shiftImageInFourierTransform(
         }
         for (long int k = 0; k < Zsize(in); k++) {
         z = k < Xsize(in) ? k : k - Zsize(in);
-        for (long int i = 0; i < Ysize(in); i++) {
-        y = i < Xsize(in) ? i : i - Ysize(in);
-        for (long int j = 0; j < Xsize(in); j++) {
-            x = j;
-            Complex X = direct::elem(in, k, i, j);
+        for (long int j = 0; j < Ysize(in); j++) {
+        y = j < Xsize(in) ? j : j - Ysize(in);
+        for (long int i = 0; i < Xsize(in); i++) {
+            x = i;
+            Complex X = direct::elem(in, i, j, k);
             Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift + z * zshift));
-            direct::elem(out, k, i, j) = Complex(
+            direct::elem(out, i, j, k) = Complex(
                 X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
                 X.real * Y.imag + X.imag * Y.real   // X dot (i conj Y)
             );
@@ -859,8 +855,8 @@ void getSpectrum(
     auto f = spectrum_type == AMPLITUDE_SPECTRUM ? [] (Complex x) { return abs(x); } :
                                                    [] (Complex x) { return norm(x); };
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
-        long int idx = round(euclid(kp, ip, jp));
-        spectrum(idx) += f(direct::elem(Faux, k, i, j));
+        long int idx = round(euclid(ip, jp, kp));
+        spectrum(idx) += f(direct::elem(Faux, i, j, k));
         count(idx)++;
     }
 
@@ -901,8 +897,8 @@ void multiplyBySpectrum(
     MultidimArray<RFLOAT> lspectrum = spectrum;
     if (leave_origin_intact) { lspectrum(0) = 1.0; }
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
-        long int idx = round(euclid(kp, ip, jp));
-        direct::elem(Faux, k, i, j) *= lspectrum(idx);  // * dim3;
+        long int idx = round(euclid(ip, jp, kp));
+        direct::elem(Faux, i, j, k) *= lspectrum(idx);  // * dim3;
     }
     transformer.inverseFourierTransform();
 
@@ -967,10 +963,10 @@ RFLOAT getKullbackLeiblerDivergence(
 
     // This way this will work in both 2D and 3D
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fimg) {
-        int ires = round(euclid(kp, ip, jp));
+        int ires = round(euclid(ip, jp, kp));
         if (ires >= lowshell && ires <= highshell) {
             // Use FT of masked image for noise estimation!
-            Complex diff = direct::elem(Fref, k, i, j) - direct::elem(Fimg, k, i, j);
+            Complex diff = direct::elem(Fref, i, j, k) - direct::elem(Fimg, i, j, k);
             RFLOAT sigma = sqrt(direct::elem(sigma2, ires));
 
             // Divide by standard deviation to normalise all the difference
@@ -1044,13 +1040,13 @@ void applyBFactorToMap(
     MultidimArray<Complex> &FT, int ori_size, RFLOAT bfactor, RFLOAT angpix
 ) {
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int r2 = euclidsq(kp, ip, jp);
+        int r2 = euclidsq(ip, jp, kp);
         RFLOAT res = sqrt((RFLOAT) r2) / (ori_size * angpix); // get resolution in 1/Angstrom
         if (res <= 1.0 / (angpix * 2.0)) {
             // Apply B-factor sharpening until Nyquist, then low-pass filter later on (with a soft edge)
-            direct::elem(FT, k, i, j) *= exp(-(bfactor / 4.0) * res * res);
+            direct::elem(FT, i, j, k) *= exp(-(bfactor / 4.0) * res * res);
         } else {
-            direct::elem(FT, k, i, j) = 0.0;
+            direct::elem(FT, i, j, k) = 0.0;
         }
     }
 }
@@ -1059,7 +1055,7 @@ void applyBFactorToMap(
     MultidimArray<RFLOAT> &img, RFLOAT bfactor, RFLOAT angpix
 ) {
     FourierTransformer transformer;
-    MultidimArray<Complex > FT;
+    MultidimArray<Complex> FT;
     transformer.FourierTransform(img, FT, false);
     applyBFactorToMap(FT, Xsize(img), bfactor, angpix);
     transformer.inverseFourierTransform();
@@ -1077,8 +1073,8 @@ void LoGFilterMap(MultidimArray<Complex> &FT, int ori_size, RFLOAT sigma, RFLOAT
     // and its Fourier Transform is: r^2 * exp(-0.5*r2/isigma2);
     // Then to normalise for different scales: divide by isigma2;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        RFLOAT r2 = (RFLOAT) kp * (RFLOAT) kp + (RFLOAT) ip * (RFLOAT) ip + (RFLOAT) jp * (RFLOAT) jp;
-        direct::elem(FT, k, i, j) *= r2 * exp(-0.5 * r2 / isigma2) / isigma2;
+        RFLOAT r2 = (RFLOAT) ip * (RFLOAT) ip + (RFLOAT) jp * (RFLOAT) jp + (RFLOAT) kp * (RFLOAT) kp;
+        direct::elem(FT, i, j, k) *= exp(-0.5 * r2 / isigma2) * r2 / isigma2;
     }
 
 }
@@ -1147,24 +1143,24 @@ void lowPassFilterMap(
 
     // Put a raised cosine from edge_low to edge_high
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        RFLOAT r2 = euclidsq(kp, ip, jp);
+        RFLOAT r2 = euclidsq(ip, jp, kp);
         RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
 
         if (do_highpass_instead) {
             if (res < edge_low) {
-                direct::elem(FT, k, i, j) = 0.0;
+                direct::elem(FT, i, j, k) = 0.0;
             } else if (res > edge_high) {
                 continue;
             } else {
-                direct::elem(FT, k, i, j) *= 0.5 * (1.0 - cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= 0.5 * (1.0 - cos(PI * (res - edge_low) / edge_width));
             }
         } else {
             if (res < edge_low) {
                 continue;
             } else if (res > edge_high) {
-                direct::elem(FT, k, i, j) = 0.0;
+                direct::elem(FT, i, j, k) = 0.0;
             } else {
-                direct::elem(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
             }
         }
     }
@@ -1188,12 +1184,12 @@ void lowPassFilterMap(
             );
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
-                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
+                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
-                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
+                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             }
@@ -1246,30 +1242,30 @@ void directionalFilterMap(
     if (axis == "x" || axis == "X") {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
 
-            RFLOAT r2 = jp * jp;
+            RFLOAT r2 = ip * ip;
             /// BUG: sqrt(r2 / ori_size) or sqrt(r2) / ori_size ?
             RFLOAT res = sqrt(r2 / (RFLOAT) ori_size); // get resolution in 1/pixel
 
             if (res < edge_low) {
                 continue;
             } else if (res > edge_high) {
-                direct::elem(FT, k, i, j) = 0.0;
+                direct::elem(FT, i, j, k) = 0.0;
             } else {
-                direct::elem(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
             }
         }
     } else if (axis == "y" || axis == "Y") {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
 
-            RFLOAT r2 = ip * ip;
+            RFLOAT r2 = jp * jp;
             RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
 
             if (res < edge_low) {
                 continue;
             } else if (res > edge_high) {
-                direct::elem(FT, k, i, j) = 0.;
+                direct::elem(FT, i, j, k) = 0.0;
             } else {
-                direct::elem(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
             }
         }
     } else if  (axis == "z" || axis == "Z") {
@@ -1281,9 +1277,9 @@ void directionalFilterMap(
             if (res < edge_low) {
                 continue;
             } else if (res > edge_high) {
-                direct::elem(FT, k, i, j) = 0.;
+                direct::elem(FT, i, j, k) = 0.;
             } else {
-                direct::elem(FT, k, i, j) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
             }
         }
     }
@@ -1309,12 +1305,12 @@ void directionalFilterMap(
             );
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
-                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
+                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
-                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
+                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             }
@@ -1359,7 +1355,7 @@ void selfApplyBeamTilt(
     RFLOAT boxsize = angpix * ori_size;
     RFLOAT factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Fimg) {
-        RFLOAT delta_phase = factor * (ip * ip + jp * jp) * (ip * beamtilt_y + jp * beamtilt_x);
+        RFLOAT delta_phase = factor * (ip * ip + jp * jp) * (ip * beamtilt_x + jp * beamtilt_y);
         Complex A = direct::elem(Fimg, i, j);
         RFLOAT mag = sqrt(A.real * A.real + A.imag * A.imag);
         RFLOAT phas = atan2(A.imag, A.real) + radians(delta_phase); // apply phase shift!
@@ -1380,16 +1376,14 @@ void selfApplyBeamTilt(
     RFLOAT factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Fimg) {
-        RFLOAT q = beamtilt_xx * jp * jp + 2.0 * beamtilt_xy * ip * jp + beamtilt_yy * ip * ip;
+        // (ip beamtilt_x + jp beamtilt_y) ** 2
+        RFLOAT q = beamtilt_xx * ip * ip + 2.0 * beamtilt_xy * ip * jp + beamtilt_yy * jp * jp;
 
-        RFLOAT delta_phase = factor * q * (ip * beamtilt_y + jp * beamtilt_x);
-        RFLOAT realval = direct::elem(Fimg, i, j).real;
-        RFLOAT imagval = direct::elem(Fimg, i, j).imag;
-        RFLOAT mag = sqrt(realval * realval + imagval * imagval);
-        RFLOAT phas = atan2(imagval, realval) + radians(delta_phase); // apply phase shift!
-        realval = mag * cos(phas);
-        imagval = mag * sin(phas);
-        direct::elem(Fimg, i, j) = Complex(realval, imagval);
+        RFLOAT delta_phase = factor * q * (ip * beamtilt_x + jp * beamtilt_y);
+        Complex X = direct::elem(Fimg, i, j);
+        RFLOAT mag = X.abs();
+        RFLOAT phas = X.arg() + radians(delta_phase); // apply phase shift!
+        direct::elem(Fimg, i, j) = Complex(mag * cos(phas), mag * sin(phas));
     }
 }
 
@@ -1412,7 +1406,7 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {
         bg_val += direct::elem(v, i, j);
         bg_pix += 1.0;
-        if (i == 0 || j == 0 || i == Ysize(v) - 1 || j == Xsize(v) - 1) {
+        if (i == 0 || j == 0 || i == Xsize(v) - 1 || j == Ysize(v) - 1) {
             bd_val += direct::elem(v, i, j);
             bd_pix += 1.0;
         }
@@ -1432,7 +1426,7 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {
-        out.elem(i + Xmipp::init(Ysize(v)), j + Xmipp::init(Xsize(v))) = direct::elem(v, i, j) - bg_val;
+        out.elem(i + Xmipp::init(Xsize(v)), j + Xmipp::init(Ysize(v))) = direct::elem(v, i, j) - bg_val;
     }
 }
 
@@ -1462,15 +1456,15 @@ void amplitudeOrPhaseMap(
     long int maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux) {
         if (
-            ip > Yinit(out) && ip < Ylast(out) &&
-            jp > Xinit(out) && jp < Xlast(out) &&
+            ip > Xinit(out) && ip < Xlast(out) &&
+            jp > Yinit(out) && jp < Ylast(out) &&
             ip * ip + jp * jp < maxr2
         ) {
             RFLOAT val;
             if (output_map_type == AMPLITUDE_MAP) {
                 val = FFTW2D_ELEM(Faux, ip, jp).abs();
             } else if (output_map_type == PHASE_MAP) {
-                val = 180.0 * FFTW2D_ELEM(Faux, ip, jp).arg() / PI;
+                val = degrees(FFTW2D_ELEM(Faux, ip, jp).arg());
             } else {
                 REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR Unknown type of output map.");
             }
@@ -1571,7 +1565,7 @@ void generateBinaryHelicalFourierMask(
 
         for (int ishell = 0; ishell < exclude_begin.size(); ishell++) {
             if (res <= exclude_begin[ishell] && res >= exclude_end[ishell]) {
-                direct::elem(mask, k, i, j) = 0.0;
+                direct::elem(mask, i, j, k) = 0.0;
             }
         }
     }

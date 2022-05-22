@@ -234,8 +234,10 @@ class project_parameters {
                 stddev_white_noise /= data_dim == 3 ? Xsize(vol()) * Xsize(vol()) : Xsize(vol()) * sqrt(2);
                 // Add white noise
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-                    direct::elem(F2D, k, i, j).real += rnd_gaus(0.0, stddev_white_noise);
-                    direct::elem(F2D, k, i, j).imag += rnd_gaus(0.0, stddev_white_noise);
+                    direct::elem(F2D, i, j, k) += Complex(
+                        rnd_gaus(0.0, stddev_white_noise), 
+                        rnd_gaus(0.0, stddev_white_noise)
+                    );
                 }
             }
 
@@ -311,7 +313,7 @@ class project_parameters {
                             // Set the CTF-image in Fctf
                             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                 // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                                direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
+                                direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                             }
                         } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                             // otherwise, just window the CTF to the current resolution
@@ -373,12 +375,12 @@ class project_parameters {
                             int ires = std::min((int) round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), Nyquist);   // at freqs higher than Nyquist: use last sigma2 value
 
                             RFLOAT sigma = sqrt(direct::elem(model.sigma2_noise[my_mic_id], ires));
-                            direct::elem(F2D, k, i, j) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
+                            direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
                         }
                     } else {
                         // Add white noise
                         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-                            direct::elem(F2D, k, i, j) += Complex(rnd_gaus(0.0, stddev_white_noise), rnd_gaus(0.0, stddev_white_noise));
+                            direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, stddev_white_noise), rnd_gaus(0.0, stddev_white_noise));
                         }
                     }
                 }
@@ -461,7 +463,7 @@ class project_parameters {
                                 Ictf().setXmippOrigin();
                                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
                                     // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
-                                    direct::elem(Fctf, k, i, j) = Ictf().elem(-kp, -ip, -jp);
+                                    direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                                 }
                             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                                 // otherwise, just window the CTF to the current resolution

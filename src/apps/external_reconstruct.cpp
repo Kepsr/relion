@@ -97,9 +97,9 @@ class ext_recons_parameters {
         const int r_max = current_size / 2;
         const int r_max2 = round(r_max * padding_factor) * round(r_max * padding_factor);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Idata()) {
-            if (kp * kp + ip * ip + jp * jp < r_max2) {
-                BP.data  .elem(kp, ip, jp) = direct::elem(Idata(),   k, i, j);
-                BP.weight.elem(kp, ip, jp) = direct::elem(Iweight(), k, i, j);
+            if (ip * ip + jp * jp + kp * kp < r_max2) {
+                BP.data  .elem(ip, jp, kp) = direct::elem(Idata(),   i, j, k);
+                BP.weight.elem(ip, jp, kp) = direct::elem(Iweight(), i, j, k);
             }
         }
 
