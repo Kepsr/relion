@@ -469,7 +469,7 @@ void getFourierTransformsAndCtfs(
             // Fill Fnoise with random numbers, use power spectrum of the noise for its variance
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fnoise) {
                 int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
-                if (ires >= 0 && ires < XSIZE(Fnoise)) {
+                if (ires >= 0 && ires < Xsize(Fnoise)) {
                     RFLOAT sigma = sqrt(direct::elem(power_noise, ires));
                     direct::elem(Fnoise, i, j, k).real = rnd_gaus(0.0, sigma);
                     direct::elem(Fnoise, i, j, k).imag = rnd_gaus(0.0, sigma);
@@ -1383,7 +1383,7 @@ void convertAllSquaredDifferencesToWeights(
     }
 
     if (exp_ipass == 0)
-        op.Mcoarse_significant.resizeNoCp(1, 1, sp.nr_particles, XSIZE(op.Mweight));
+        op.Mcoarse_significant.resizeNoCp(sp.nr_particles, Xsize(op.Mweight));
 
     XFLOAT my_significant_weight;
     op.significant_weight.clear();
@@ -1425,7 +1425,7 @@ void convertAllSquaredDifferencesToWeights(
             direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_NR_SIGN) = (RFLOAT) 1.0;
             if (exp_ipass == 0) {
                 // TODO better memset, 0 => false , 1 => true
-                for (int ihidden = 0; ihidden < XSIZE(op.Mcoarse_significant); ihidden++)
+                for (int ihidden = 0; ihidden < Xsize(op.Mcoarse_significant); ihidden++)
                     direct::elem(op.Mcoarse_significant, ipart, ihidden) = direct::elem(op.Mweight, ipart, ihidden) >= my_significant_weight;
             } else {
                 std::pair<int, XFLOAT> max_pair = getArgMaxOnDevice(PassWeights[ipart].weights);
@@ -3054,7 +3054,7 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id) {
                         baseMLO->mymodel.nr_classes * sp.nr_dir * sp.nr_psi * sp.nr_trans * sp.nr_oversampled_rot * sp.nr_oversampled_trans
                     );
 
-                    op.Mweight.resizeNoCp(1, 1, sp.nr_particles, weightsPerPart);
+                    op.Mweight.resizeNoCp(sp.nr_particles, weightsPerPart);
 
                     CudaGlobalPtr<XFLOAT> Mweight(devBundle->allocator);
                     Mweight.setSize(sp.nr_particles * weightsPerPart);

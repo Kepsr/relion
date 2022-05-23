@@ -192,7 +192,7 @@ void MlOptimiserMpi::initialise() {
 
             /*if (allThreadIDs.size()==1) // if devices are specified for exactly one rank, use it for all ranks
             {
-                allThreadIDs.resize(node->size-1);
+                allThreadIDs.resize(node->size - 1);
                 for (int rank = 1; rank<(node->size-1); rank++)
                     allThreadIDs[rank] = allThreadIDs[0];
             }*/

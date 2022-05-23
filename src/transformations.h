@@ -782,7 +782,7 @@ void scaleToSize(
         tmp.initIdentity(3);
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V1);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V1);
-        V2.resize(1, 1, Ydim, Xdim);
+        V2.resize(Xdim, Ydim);
         break;
 
         case 3:
@@ -790,7 +790,7 @@ void scaleToSize(
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V1);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V1);
         tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) Zsize(V1);
-        V2.resize(1, Zdim, Ydim, Xdim);
+        V2.resize(Xdim, Ydim, Zdim);
         break;
 
         default:

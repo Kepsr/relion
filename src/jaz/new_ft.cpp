@@ -41,7 +41,7 @@ void NewFFT::FourierTransform(
 
     if (!plan.isCompatible(dest)) {
         if (plan.isReusable()) {
-            dest.resizeNoCp(src.ndim, src.zdim, src.ydim, src.xdim / 2 + 1);
+            dest.resizeNoCp(src.xdim / 2 + 1, src.ydim, src.zdim, src.ndim);
         } else {
             REPORT_ERROR("NewFFT::FourierTransform: plan incompatible with output array\n");
         }
@@ -67,7 +67,7 @@ void NewFFT::inverseFourierTransform(
 
     if (!plan.isCompatible(dest)) {
         if (plan.isReusable()) {
-            dest.resizeNoCp(src.ndim, src.zdim, src.ydim, 2 * (src.xdim - 1));
+            dest.resizeNoCp(2 * (src.xdim - 1), src.ydim, src.zdim, src.ndim);
         } else {
             REPORT_ERROR("NewFFT::inverseFourierTransform: plan incompatible with output array\n");
         }
@@ -95,7 +95,7 @@ void NewFFT::FourierTransform(
 
     if (!plan.isCompatible(dest)) {
         if (plan.isReusable()) {
-            dest.resizeNoCp(src.ndim, src.zdim, src.ydim, src.xdim / 2 + 1);
+            dest.resizeNoCp(src.xdim / 2 + 1, src.ydim, src.zdim, src.ndim);
         } else {
             REPORT_ERROR("NewFFT::FourierTransform: plan incompatible with output array\n");
         }
@@ -121,7 +121,7 @@ void NewFFT::inverseFourierTransform(
 
     if (!plan.isCompatible(dest)) {
         if (plan.isReusable()) {
-            dest.resizeNoCp(src.ndim, src.zdim, src.ydim, 2 * (src.xdim - 1));
+            dest.resizeNoCp(2 * (src.xdim - 1), src.ydim, src.zdim, src.ndim);
         } else {
             REPORT_ERROR("NewFFT::inverseFourierTransform: plan incompatible with output array\n");
         }

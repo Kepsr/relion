@@ -599,7 +599,7 @@ void selfScaleToSizeFourier(long int Ydim, long int Xdim, MultidimArray<RFLOAT>&
     transformerM.FourierTransform(Mpmem, MmemFourier, true);
 
     // Create space for the downsampled image and its Fourier transform
-    Mpmem.resize(Ydim, Xdim);
+    Mpmem.resize(Xdim, Ydim);
     MultidimArray<Complex > MpmemFourier;
     FourierTransformer transformerMp;
     transformerMp.setReal(Mpmem);

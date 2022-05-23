@@ -758,7 +758,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             transformer.FourierTransform(Ipart(), FT, false);
 
             MultidimArray<RFLOAT> Fctf;
-            Fctf.resize(Ysize(FT), Xsize(FT));
+            Fctf.resize(Xsize(FT), Ysize(FT));
             // 190802 TAKANORI: The original code using getCTF was do_damping=false, but for consistency with Polishing, I changed it.
             // The boxsize in ObsModel has been updated above.
             // In contrast to Polish, we premultiply particle BEFORE down-sampling, so PixelSize in ObsModel is OK.

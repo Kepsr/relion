@@ -550,7 +550,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         d_Mstddev.cp_to_host();
         d_Mstddev.streamSync();
 
-        Mstddev.resizeNoCp(1, basePckr->workSize, basePckr->workSize);
+        Mstddev.resizeNoCp(basePckr->workSize, basePckr->workSize);
 
         /// TODO: put this in a kernel
         for (int i = 0; i < d_Mstddev.size ; i ++) {
@@ -723,7 +723,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
             micTransformer.reals.cp_to_host();
 
-            Maux.resizeNoCp(1,basePckr->micrograph_size, basePckr->micrograph_size);
+            Maux.resizeNoCp(basePckr->micrograph_size, basePckr->micrograph_size);
 
             micTransformer.reals.streamSync();
             for (int i = 0; i < micTransformer.reals.size ; i ++)

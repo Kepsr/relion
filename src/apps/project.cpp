@@ -196,9 +196,9 @@ class project_parameters {
 
         // Set right size of F2D and initialize to zero
         if (do_3d_rot) {
-            img().resize(Zsize(vol()), Ysize(vol()), Xsize(vol()));
+            img().resize(Xsize(vol()), Ysize(vol()), Zsize(vol()));
         } else {
-            img().resize(Ysize(vol()), Xsize(vol()));
+            img().resize(Xsize(vol()), Ysize(vol()));
         }
         transformer.setReal(img());
         transformer.getFourierAlias(F2D);
