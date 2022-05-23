@@ -5835,25 +5835,23 @@ void MlOptimiser::getAllSquaredDifferences(
                                         //#define DEBUG_GETALLDIFF2
                                         #ifdef DEBUG_GETALLDIFF2
                                         pthread_mutex_lock(&global_mutex);
-                                        if (itrans == exp_itrans_min && iover_trans == 0 && ipsi == exp_ipsi_min)
+                                        if (itrans == exp_itrans_min && iover_trans == 0 && ipsi == exp_ipsi_min) {
                                         //if (ibody==1 && part_id == 0 && exp_ipass==0 && ihidden_over == 40217)
-                                        {
                                             //std::cerr << " iover_rot= "<<iover_rot << "exp_nr_oversampled_rot= " << exp_nr_oversampled_rot << " oversampled_rot[iover_rot]= " << oversampled_rot[iover_rot]
                                             //		  << " oversampled_tilt[iover_rot]= " << oversampled_tilt[iover_rot]
                                             //	      << " oversampled_psi[iover_rot]= " <<  oversampled_psi[iover_rot];
-                                            RFLOAT rrot,ttilt,ppsi;
-                                            Euler::matrix2angles(A, rrot,ttilt,ppsi);
+                                            angles_t angles = Euler::matrix2angles(A);
                                             std::cerr << " ihidden_over= " << ihidden_over << " diff2= " << diff2
-                                                    << " rot= " << rrot
-                                                    << " tilt= " << ttilt
-                                                    << " psi= " << ppsi
+                                                    << " rot= " << angles.rot
+                                                    << " tilt= " << angles.tilt
+                                                    << " psi= " << angles.psi
                                                     // non-oversampling correct only!!
                                                     << " x= " << oversampled_translations_x[0] << " y=" << oversampled_translations_y[0];
-                                            //std::cerr << " A= " << A << std::endl;
-                                            //Euler::matrix2angles(Abody, rrot,ttilt,ppsi);
-                                            //std::cerr << " Brot= " << rrot
-                                            //		<< " Btilt= " << ttilt
-                                            //		<< " Bpsi= " << ppsi << std::endl;
+                                            // std::cerr << " A= " << A << std::endl;
+                                            // angles_t angles = Euler::matrix2angles(Abody);
+                                            // std::cerr << " Brot= " << angles.rot
+                                            // 		<< " Btilt= " << angles.tilt
+                                            // 		<< " Bpsi= " << angles.psi << std::endl;
 
                                             FourierTransformer transformer;
                                             MultidimArray<Complex> Fish;
@@ -7034,8 +7032,8 @@ void MlOptimiser::storeWeightedSums(
                                     // Store optimal image parameters
                                     exp_max_weight[img_id] = weight;
 
-                                    //This is not necessary as rot, tilt and psi remain unchanged!
-                                    //Euler::matrix2angles(A, rot, tilt, psi);
+                                    // This is not necessary as rot, tilt and psi remain unchanged!
+                                    // angles_t angles = Euler::matrix2angles(A);
 
                                     int icol_rot  = mymodel.nr_bodies == 1 ? METADATA_ROT  : 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
                                     int icol_tilt = mymodel.nr_bodies == 1 ? METADATA_TILT : 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;

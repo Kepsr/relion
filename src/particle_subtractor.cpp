@@ -574,9 +574,12 @@ void ParticleSubtractor::subtractOneParticle(
         // Set orientations back into the original RELION system of coordinates
         Matrix2D<RFLOAT> Abody;
 
-        // Write out the rot,tilt,psi as the combination of Aori and Aresi!! So get rid of the rotations around the tilt=90 axes,
+        // Write out the rot, tilt, psi as the combination of Aori and Aresi!! So get rid of the rotations around the tilt=90 axes,
         Abody = Aori * (opt.mymodel.orient_bodies[subtract_body]).transpose() * A_rot90 * Aresi_subtract * opt.mymodel.orient_bodies[subtract_body];
-        Euler::matrix2angles(Abody, rot, tilt, psi);
+        angles_t angles = Euler::matrix2angles(Abody);
+        rot = angles.rot;
+        tilt = angles.tilt;
+        psi = angles.psi;
 
         // Store the optimal orientations in the MDimg table
         opt.mydata.MDimg.setValue(EMDL::ORIENT_ROT, rot, ori_img_id);

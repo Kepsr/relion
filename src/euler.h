@@ -52,6 +52,14 @@
 #define FLT_EPSILON 1.19209e-07
 #endif
 
+/** Euler angles type
+ * Under various conventions, these angles are called 
+ * either alpha, beta, and gamma or phi, theta, and psi.
+ * RELION uses its own convention, calling them rot, tilt, and psi.
+ * Here, they should be represented in degrees.
+ */
+struct angles_t { RFLOAT rot, tilt, psi; };
+
 /// @name Euler operations
 /// @{
 namespace Euler {
@@ -81,9 +89,7 @@ Matrix1D<RFLOAT> angles2direction(RFLOAT alpha, RFLOAT beta);
  * This function returns the 2 Euler angles (rot&tilt) associated to the direction given by
  * the vector v.
  */
-void direction2angles(Matrix1D< RFLOAT >& v,
-                            RFLOAT& alpha,
-                            RFLOAT& beta);
+void direction2angles(Matrix1D<RFLOAT> &v, RFLOAT &alpha, RFLOAT &beta);
 
 /** "Euler" matrix --> angles
  *
@@ -99,10 +105,7 @@ void direction2angles(Matrix1D< RFLOAT >& v,
  * matrix2angles(Euler, alpha, beta, gamma);
  * @endcode
  */
-void matrix2angles(const Matrix2D< RFLOAT >& A,
-                         RFLOAT& alpha,
-                         RFLOAT& beta,
-                         RFLOAT& gamma);
+angles_t matrix2angles(const Matrix2D<RFLOAT> &A);
 
 /** Up-Down projection equivalence
  *
@@ -112,25 +115,9 @@ void matrix2angles(const Matrix2D< RFLOAT >& A,
  * from which the view is exactly the same but in the other part of the sphere
  * (if the projection is taken from the bottom then the new projection from the
  * top, and viceversa). The defined projections are exactly the same except for
- * a flip over X axis, ie, an up-down inversion. Exactly the correction
- * performed is:
- *
- * @code
- * newrot = rot;
- * newtilt = tilt + 180;
- * newpsi = -(180 + psi);
- * @endcode
- *
- * @code
- * up_down(rot, tilt, psi, newrot, newtilt, newpsi);
- * @endcode
+ * a flip over X axis, ie, an up-down inversion.
  */
-void up_down(RFLOAT rot,
-                   RFLOAT tilt,
-                   RFLOAT psi,
-                   RFLOAT& newrot,
-                   RFLOAT& newtilt,
-                   RFLOAT& newpsi);
+angles_t up_down(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
 /** The same view but differently expressed
  *
@@ -138,22 +125,8 @@ void up_down(RFLOAT rot,
  * sets of Euler angles. This function gives you another expression of the Euler
  * angles for this point of view. Exactly the operation performed is:
  *
- * @code
- * newrot = rot + 180;
- * newtilt = -tilt;
- * newpsi = -180 + psi;
- * @endcode
- *
- * @code
- * another_set(rot, tilt, psi, newrot, newtilt, newpsi);
- * @endcode
  */
-void another_set(RFLOAT rot,
-                       RFLOAT tilt,
-                       RFLOAT psi,
-                       RFLOAT& newrot,
-                       RFLOAT& newtilt,
-                       RFLOAT& newpsi);
+angles_t another_set(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
 /** Mirror over Y axis
  *
@@ -168,25 +141,8 @@ void another_set(RFLOAT rot,
  *  v                              v
  *  Y                             Y
  * @endcode
- *
- * The operation performed is
- *
- * @code
- * newrot = rot;
- * newtilt = tilt + 180;
- * newpsi = -psi;
- * @endcode
- *
- * @code
- * mirrorY(rot, tilt, psi, newrot, newtilt, newpsi);
- * @endcode
  */
-void mirrorY(RFLOAT rot,
-                   RFLOAT tilt,
-                   RFLOAT psi,
-                   RFLOAT& newrot,
-                   RFLOAT& newtilt,
-                   RFLOAT& newpsi);
+angles_t mirrorY(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
 /** Mirror over X axis
  *
@@ -201,25 +157,8 @@ void mirrorY(RFLOAT rot,
  *  v                       |
  *  Y                        -----> X
  * @endcode
- *
- * The operation performed is
- *
- * @code
- * newrot = rot;
- * newtilt = tilt + 180;
- * newpsi = 180 - psi;
- * @endcode
- *
- * @code
- * mirrorX(rot, tilt, psi, newrot, newtilt, newpsi);
- * @endcode
  */
-void mirrorX(RFLOAT rot,
-                   RFLOAT tilt,
-                   RFLOAT psi,
-                   RFLOAT& newrot,
-                   RFLOAT& newtilt,
-                   RFLOAT& newpsi);
+angles_t mirrorX(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
 /** Mirror over X and Y axes
  *
@@ -235,25 +174,8 @@ void mirrorX(RFLOAT rot,
  *  v                               |
  *  Y                        X<-----
  * @endcode
- *
- * The operation performed is
- *
- * @code
- * newrot = rot;
- * newtilt = tilt;
- * newpsi = 180 + psi;
- * @endcode
- *
- * @code
- * mirrorX(rot, tilt, psi, newrot, newtilt, newpsi);
- * @endcode
  */
-void mirrorXY(RFLOAT rot,
-                    RFLOAT tilt,
-                    RFLOAT psi,
-                    RFLOAT& newrot,
-                    RFLOAT& newtilt,
-                    RFLOAT& newpsi);
+angles_t mirrorXY(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
 /** Apply a geometrical transformation
  *
@@ -277,19 +199,16 @@ void mirrorXY(RFLOAT rot,
  * @code
  * Matrix2D< RFLOAT > R60 = rotation3DMatrix(60, 'Z');
  * R60.resize(3, 3); // Get rid of homogeneous part
- * Matrix2D< RFLOAT > I(3, 3);
+ * Matrix2D<RFLOAT> I(3, 3);
  * I.initIdentity();
- * apply_transf(I, R60, rot, tilt, psi, newrot, newtilt, newpsi);
+ * angles_t new_angles = apply_transf(I, R60, rot, tilt, psi);
  * @endcode
  */
-void apply_transf(const Matrix2D< RFLOAT >& L,
-                        const Matrix2D< RFLOAT >& R,
-                        RFLOAT rot,
-                        RFLOAT tilt,
-                        RFLOAT psi,
-                        RFLOAT& newrot,
-                        RFLOAT& newtilt,
-                        RFLOAT& newpsi);
+angles_t apply_transf(
+    const Matrix2D<RFLOAT> &L,
+    const Matrix2D<RFLOAT> &R,
+    RFLOAT rot, RFLOAT tilt, RFLOAT psi
+);
 
 /** 3D Rotation matrix after 3 Euler angles
  *
