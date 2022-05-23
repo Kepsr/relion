@@ -479,7 +479,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
             for (int i = 0; i < l; i++) {
                 int ip = i + shift;
 
-                        if (ip <  0) { ip += l; }
+                     if (ip <  0) { ip += l; }
                 else if (ip >= l) { ip -= l; }
 
                 aux(ip) = direct::elem(v, i, j, k);
@@ -542,7 +542,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
     }
     #else // FAST_CENTERFFT
-    if (v.getDim() == 1 ) {
+    if (v.getDim() == 1) {
         // 1D
 
         int l = Xsize(v);

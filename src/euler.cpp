@@ -289,9 +289,8 @@ void Euler_apply_transf(
 }
 
 /* Rotate (3D) MultidimArray with 3 Euler angles ------------------------------------- */
-void Euler_rotation3DMatrix(
-    RFLOAT rot, RFLOAT tilt, RFLOAT psi, 
-    Matrix2D<RFLOAT> &result
-) {
+Matrix2D<RFLOAT> Euler_rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi) {
+    Matrix2D<RFLOAT> result;
     Euler_angles2matrix(rot, tilt, psi, result, true);
+    return result;
 }

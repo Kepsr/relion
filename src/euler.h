@@ -298,11 +298,10 @@ void Euler_apply_transf(const Matrix2D< RFLOAT >& L,
  * IS_NOT_INV in applyGeometry.
  *
  * @code
- * Matrix2D< float > euler = Euler_rotation3DMatrix(60, 30, 60);
+ * Matrix2D<float> euler = Euler_rotation3DMatrix(60, 30, 60);
  * @endcode
  */
-void Euler_rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi,
-                            Matrix2D<RFLOAT> &result);
+Matrix2D<RFLOAT> Euler_rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
 //@}
 
