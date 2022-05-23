@@ -90,7 +90,7 @@ class align_symmetry {
             tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
             psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
 
-            Euler_rotation3DMatrix(rot, tilt, psi, A3D);
+            A3D = Euler_rotation3DMatrix(rot, tilt, psi);
             F2D.initZeros();
             projector.get2DFourierTransform(F2D, A3D);
 
@@ -224,7 +224,7 @@ class align_symmetry {
         FourierTransformer final_transformer;
 
         full_projector.computeFourierTransformMap(vol_in(), dummy, 2 * orig_size);
-        Euler_rotation3DMatrix(rot, tilt, psi, A3D);
+        A3D = Euler_rotation3DMatrix(rot, tilt, psi);
         F2D.initZeros(orig_size, orig_size, orig_size / 2 + 1);
         vol_out().reshape(vol_in());
         full_projector.get2DFourierTransform(F2D, A3D);

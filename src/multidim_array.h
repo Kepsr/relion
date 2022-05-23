@@ -1062,7 +1062,7 @@ class MultidimArray {
             window(y0, x0, yF, xF, init_value, n);
         } else if (xdim > 1) {
             //call 1Dwindow
-            window(x0, xF, init_value=0, n);
+            window(x0, xF, init_value, n);
         }
     }
 
