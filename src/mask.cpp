@@ -93,7 +93,6 @@ void softMaskOutsideMapForHelix(
     RFLOAT cosine_width,
     MultidimArray<RFLOAT> *Mnoise
 ) {
-    Matrix2D<RFLOAT> A;
     RFLOAT sum, R1, R2, D1, D2, r, d;
     int dim = vol.getDim();
 
@@ -133,13 +132,9 @@ void softMaskOutsideMapForHelix(
     Matrix1D<RFLOAT> coords = Matrix1D<RFLOAT>::zeros(3);
 
     // Init rotational matrix A
-    A.clear();
-    A.resize(3, 3);
-
     // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
-    Euler_angles2matrix(0.0, tilt_deg, psi_deg, A, false);
+    Matrix2D<RFLOAT> A = Euler_angles2matrix(0.0, tilt_deg, psi_deg).transpose();
     // Don't put negative signs before tilt and psi values, use 'transpose' instead
-    A = A.transpose();
 
     // Calculate noise weights for all voxels
     RFLOAT sum_bg = sum = 0.0;

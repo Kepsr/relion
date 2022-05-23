@@ -1362,7 +1362,7 @@ void transformCartesianAndHelicalCoords(
     int dim;
     RFLOAT x0, y0, z0;
     Matrix1D<RFLOAT> aux;
-    Matrix2D<RFLOAT> A, B;
+    Matrix2D<RFLOAT> B;
 
     dim = in.size();
     if (dim != 2 && dim != 3)
@@ -1377,11 +1377,9 @@ void transformCartesianAndHelicalCoords(
     if (dim == 2)
         rot_deg = tilt_deg = 0.0;
 
-    A.clear();
-    A.resize(3, 3);
     /// TODO: check whether rot_deg should be always set to 0 !
     /// TODO: fix the --random_seed and use --perturb 0 option for testing !
-    Euler_angles2matrix(rot_deg, tilt_deg, psi_deg, A, false);
+    Matrix2D<RFLOAT> A = Euler_angles2matrix(rot_deg, tilt_deg, psi_deg);
     if (direction == CART_TO_HELICAL_COORDS) // Don't put minus signs before angles, use 'transpose' instead
         A = A.transpose();
     aux = A * aux;

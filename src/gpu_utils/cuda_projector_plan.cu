@@ -247,13 +247,12 @@ void CudaProjectorPlan::setup(
 
     orientation_num = 0;
 
-    Matrix2D<RFLOAT> R(3, 3);
     RFLOAT myperturb = 0.0;
 
     if (abs(sampling.random_perturbation) > 0.0) {
         myperturb = sampling.random_perturbation * sampling.getAngularSampling();
         if (sampling.is_3D) {
-            Euler_angles2matrix(myperturb, myperturb, myperturb, R);
+            Matrix2D<RFLOAT> R = Euler_angles2matrix(myperturb, myperturb, myperturb);
             for (int i = 0; i < 9; i ++)
                 perturb[i] = (XFLOAT) R.mdata[i];
             perturb.put_on_device();

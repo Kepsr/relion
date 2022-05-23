@@ -312,13 +312,11 @@ void ObservationModel::predictObservation(
     xoff /= angpix[opticsGroup];
     yoff /= angpix[opticsGroup];
 
-    Matrix2D<RFLOAT> A3D;
     double rot  = partMdt.getValue<double>(EMDL::ORIENT_ROT,  particle);
     double tilt = partMdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Euler_angles2matrix(rot, tilt, psi, A3D);
-
+    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
     A3D = applyAnisoMag(A3D, opticsGroup);
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 
@@ -408,13 +406,11 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
     xoff /= angpix[opticsGroup];
     yoff /= angpix[opticsGroup];
 
-    Matrix2D<RFLOAT> A3D;
     double rot  = partMdt.getValue<double>(EMDL::ORIENT_ROT,  particle);
     double tilt = partMdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Euler_angles2matrix(rot, tilt, psi, A3D);
-
+    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
     A3D = applyAnisoMag(A3D, opticsGroup);
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 

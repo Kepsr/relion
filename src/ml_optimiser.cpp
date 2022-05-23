@@ -2128,8 +2128,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                     std::cerr << "         iclass = " << iclass << " nr_classes = " << mymodel.nr_classes << " sizeof(RFLOAT) = " << sizeof(RFLOAT) << std::endl;
                     iclass = mymodel.nr_classes - 1;
                 }
-                Matrix2D<RFLOAT> A;
-                Euler_angles2matrix(rot, tilt, psi, A, true);
+                Matrix2D<RFLOAT> A = Euler_angles2matrix(rot, tilt, psi);
 
                 // At this point anisotropic magnification shouldn't matter
                 // Also: dont applyScaleDifference, as img() was rescaled to mymodel.ori_size and mymodel.pixel_size
@@ -4468,11 +4467,10 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
             // 17 May 2017: Shift image to the projected COM for this body!
             // Aori is the original transformation matrix of the consensus refinement
-            Euler_angles2matrix(
+            Aori = Euler_angles2matrix(
                 direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT),
                 direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT),
-                direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI),
-                Aori, false
+                direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI)
             );
             my_projected_com = Aori * mymodel.com_bodies[ibody];
             // This will have made my_projected_com of size 3 again! resize to mymodel.data_dim
@@ -5053,15 +5051,14 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     int ocol_zoff = 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + obody * METADATA_NR_BODY_PARAMS;
                     int ocol_norm = 6 + METADATA_LINE_LENGTH_BEFORE_BODIES + obody * METADATA_NR_BODY_PARAMS;
 
-                    Matrix2D<RFLOAT> Aresi,  Abody;
                     // Aresi is the residual orientation for this obody
-                    Euler_angles2matrix(
+                    Matrix2D<RFLOAT> Aresi = Euler_angles2matrix(
                         direct::elem(exp_metadata, my_metadata_offset, ocol_rot),
                         direct::elem(exp_metadata, my_metadata_offset, ocol_tilt),
-                        direct::elem(exp_metadata, my_metadata_offset, ocol_psi), Aresi, false
+                        direct::elem(exp_metadata, my_metadata_offset, ocol_psi)
                     );
                     // The real orientation to be applied is the obody transformation applied and the original one
-                    Abody = Aori * (mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * mymodel.orient_bodies[obody];
+                    Matrix2D<RFLOAT> Abody = Aori * (mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * mymodel.orient_bodies[obody];
 
                     // Apply anisotropic mag and scaling
                     Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
@@ -5578,7 +5575,7 @@ void MlOptimiser::getAllSquaredDifferences(
                 RFLOAT rot_ori =  direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
                 RFLOAT tilt_ori = direct::elem(exp_metadata, metadata_offset, METADATA_TILT);
                 RFLOAT psi_ori =  direct::elem(exp_metadata, metadata_offset, METADATA_PSI);
-                Euler_angles2matrix(rot_ori, tilt_ori, psi_ori, Aori, false);
+                Aori = Euler_angles2matrix(rot_ori, tilt_ori, psi_ori);
             }
 
             Fref.resize(exp_local_Minvsigma2[0]);
@@ -5633,9 +5630,11 @@ void MlOptimiser::getAllSquaredDifferences(
                             bool ctf_premultiplied = mydata.obsModel.getCtfPremultiplied(optics_group);
 
                             // Get the Euler matrix
-                            Euler_angles2matrix(oversampled_rot[iover_rot],
-                                    oversampled_tilt[iover_rot],
-                                    oversampled_psi[iover_rot], A, false);
+                            A = Euler_angles2matrix(
+                                oversampled_rot[iover_rot],
+                                oversampled_tilt[iover_rot],
+                                oversampled_psi[iover_rot]
+                            );
 
                             // Project the reference map (into Fref)
                             #ifdef TIMING
@@ -6618,7 +6617,7 @@ void MlOptimiser::storeWeightedSums(
         RFLOAT rot_ori  = direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
         RFLOAT tilt_ori = direct::elem(exp_metadata, metadata_offset, METADATA_TILT);
         RFLOAT psi_ori  = direct::elem(exp_metadata, metadata_offset, METADATA_PSI);
-        Euler_angles2matrix(rot_ori, tilt_ori, psi_ori, Aori, false);
+        Aori = Euler_angles2matrix(rot_ori, tilt_ori, psi_ori);
     }
 
     // Make local copies of weighted sums (except BPrefs, which are too big)
@@ -6670,7 +6669,7 @@ void MlOptimiser::storeWeightedSums(
                     tilt = oversampled_tilt[iover_rot];
                     psi  = oversampled_psi [iover_rot];
                     // Get the Euler matrix
-                    Euler_angles2matrix(rot, tilt, psi, A, false);
+                    A = Euler_angles2matrix(rot, tilt, psi);
 
 
                     // For multi-body refinements, A are only 'residual' orientations, Abody is the complete Euler matrix
@@ -7639,7 +7638,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         }
 
                         // Get the FT of the first image
-                        Euler_angles2matrix(rot1, tilt1, psi1, A1, false);
+                        A1 = Euler_angles2matrix(rot1, tilt1, psi1);
                         A1 = mydata.obsModel.applyAnisoMag(A1, optics_group);
                         A1 = mydata.obsModel.applyScaleDifference(A1, optics_group, mymodel.ori_size, mymodel.pixel_size);
                         mymodel.PPref[iclass].get2DFourierTransform(F1, A1);
@@ -7702,7 +7701,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
 
                         if (imode == 0) {
                             // Get new rotated version of reference
-                            Euler_angles2matrix(rot2, tilt2, psi2, A2, false);
+                            A2 = Euler_angles2matrix(rot2, tilt2, psi2);
                             A2 = mydata.obsModel.applyAnisoMag(A2, optics_group);
                             A2 = mydata.obsModel.applyScaleDifference(A2, optics_group, mymodel.ori_size, mymodel.pixel_size);
                             mymodel.PPref[iclass].get2DFourierTransform(F2, A2);

@@ -193,7 +193,7 @@ void Localsym_angles2matrix(
     bb = vec[BB_POS];
     gg = vec[GG_POS];
     mat.clear();
-    Euler_angles2matrix(aa, bb, gg, mat);
+    mat = Euler_angles2matrix(aa, bb, gg);
     if (invert == LOCALSYM_OP_DO_INVERT) { mat = mat.transpose(); }
     mat.resize(4, 4);
     mat.at(3, 3) = 1.0;
@@ -215,7 +215,7 @@ void Localsym_operator2matrix(
     aa = vec[AA_POS];
     bb = vec[BB_POS];
     gg = vec[GG_POS];
-    Euler_angles2matrix(aa, bb, gg, mat);
+    mat = Euler_angles2matrix(aa, bb, gg);
 
     if (invert == LOCALSYM_OP_DO_INVERT) {
         mat = mat.transpose();
@@ -245,8 +245,6 @@ void standardiseEulerAngles(
     RFLOAT aa_old, RFLOAT bb_old, RFLOAT gg_old,
     RFLOAT &aa_new, RFLOAT &bb_new, RFLOAT &gg_new
 ) {
-    Matrix2D<RFLOAT> rot_mat;
-    rot_mat.clear();
 
     // Re-calculate angles so that they follow the conventions in RELION!
     if (
@@ -254,7 +252,7 @@ void standardiseEulerAngles(
         abs(gg_old) > 179.0 ||
             bb_old  > 179.0 || bb_old < 1.0
     ) {
-        Euler_angles2matrix(aa_old, bb_old, gg_old, rot_mat);
+        Matrix2D<RFLOAT> rot_mat = Euler_angles2matrix(aa_old, bb_old, gg_old);
         Euler_matrix2angles(rot_mat, aa_new, bb_new, gg_new);
         return;
     }
@@ -1896,7 +1894,7 @@ void separateMasksKMeans(
     //a = rnd_unif(-179., 179.);
     //b = rnd_unif(1., 179.);
     //g = rnd_unif(-179., 179.);
-    //Euler_angles2matrix(a, b, g, mat);
+    //mat = Euler_angles2matrix(a, b, g);
     //for (int ii = 0; ii < K; ii++)
     //{
     //    z = RFLOAT(ii) * RFLOAT(Zsize(img())) / RFLOAT(K) + RFLOAT(Zinit(img()));
@@ -2355,7 +2353,7 @@ void local_symmetry_parameters::run() {
                     // Local searches
                     // Get com1_float. (floating point numbers)
                     // Com1f = R * Com0 + v
-                    Euler_angles2matrix(aa, bb, gg, mat1);
+                    mat1 = Euler_angles2matrix(aa, bb, gg);
                     com1_float = mat1 * com0_int;
                     com1_float += vectorR3(dx, dy, dz);
                 } else {
@@ -2453,7 +2451,7 @@ void local_symmetry_parameters::run() {
 
                     // Update v = newCom1f + ( - newR * com0)
                     Localsym_decomposeOperator(samp, aa, bb, gg, dx, dy, dz, cc);
-                    Euler_angles2matrix(aa, bb, gg, mat1);
+                    mat1 = Euler_angles2matrix(aa, bb, gg);
                     vecR3 = vectorR3(dx, dy, dz) - mat1 * com0_int;
                     Localsym_composeOperator(samp, aa, bb, gg, XX(vecR3), YY(vecR3), ZZ(vecR3), cc);
                 }

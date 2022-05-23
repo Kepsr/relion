@@ -463,7 +463,7 @@ void ParticleSubtractor::subtractOneParticle(
     if (opt.fn_body_masks != "None") {
         // 17May2017: Shift image to the projected COM for this body!
         // Aori is the original transformation matrix of the consensus refinement
-        Euler_angles2matrix(rot, tilt, psi, Aori, false);
+        Aori = Euler_angles2matrix(rot, tilt, psi);
         my_projected_com = Aori * opt.mymodel.com_bodies[subtract_body];
 
         // Subtract the projected COM offset, to position this body in the center
@@ -535,12 +535,11 @@ void ParticleSubtractor::subtractOneParticle(
             // As of v3.1, offsets are in Angstrom: convert back to pixels!
             body_offset /= my_pixel_size;
 
-            Matrix2D<RFLOAT> Aresi,  Abody;
             // Aresi is the residual orientation for this obody
-            Euler_angles2matrix(body_rot, body_tilt, body_psi, Aresi, false);
-            if (obody == subtract_body) Aresi_subtract = Aresi;
+            Matrix2D<RFLOAT> Aresi = Euler_angles2matrix(body_rot, body_tilt, body_psi);
+            if (obody == subtract_body) { Aresi_subtract = Aresi; }
             // The real orientation to be applied is the obody transformation applied and the original one
-            Abody = Aori * (opt.mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * opt.mymodel.orient_bodies[obody];
+            Matrix2D<RFLOAT> Abody = Aori * (opt.mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * opt.mymodel.orient_bodies[obody];
             // Apply anisotropic mag and scaling
             Abody = opt.mydata.obsModel.applyAnisoMag(Abody, optics_group);
             Abody = opt.mydata.obsModel.applyScaleDifference(Abody, optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
@@ -597,11 +596,10 @@ void ParticleSubtractor::subtractOneParticle(
         my_residual_offset += Abody * (opt.mymodel.com_bodies[subtract_body] - new_center * opt.mymodel.pixel_size / my_pixel_size);
     } else {
         // Normal 3D classification/refinement: get the projection in rot,tilt,psi for the corresponding class
-        Matrix2D<RFLOAT> A3D_pure_rot, A3D;
-        Euler_angles2matrix(rot, tilt, psi, A3D_pure_rot);
+        Matrix2D<RFLOAT> A3D_pure_rot = Euler_angles2matrix(rot, tilt, psi);
 
         // Apply anisotropic mag and scaling
-        A3D = opt.mydata.obsModel.applyAnisoMag(A3D_pure_rot, optics_group);
+        Matrix2D<RFLOAT> A3D = opt.mydata.obsModel.applyAnisoMag(A3D_pure_rot, optics_group);
         A3D = opt.mydata.obsModel.applyScaleDifference(A3D, optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
         opt.mymodel.PPref[myclass].get2DFourierTransform(Fsubtrahend, A3D);
 

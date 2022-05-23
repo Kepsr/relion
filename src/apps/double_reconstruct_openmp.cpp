@@ -315,7 +315,6 @@ class reconstruct_parameters {
                 backprojectors[1][threadnum].initZeros(2 * r_max);
 
                 RFLOAT rot, tilt, psi, fom, r_ewald_sphere;
-                Matrix2D<RFLOAT> A3D;
                 MultidimArray<RFLOAT> Fctf;
                 Matrix1D<RFLOAT> trans(2);
                 FourierTransformer transformer;
@@ -356,7 +355,7 @@ class reconstruct_parameters {
                             //std::cout << rnd_gaus(0.0, angular_error) << std::endl;
                         }
 
-                        Euler_angles2matrix(rot, tilt, psi, A3D);
+                        Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
 
                         int opticsGroup = obsModel.getOpticsGroup(table, p);
                         double pixelsize = angpix[opticsGroup];

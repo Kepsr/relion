@@ -436,9 +436,7 @@ void AutoPicker::initialise() {
             for (long int idir = 0; idir < sampling.NrDirections(); idir++) {
                 RFLOAT rot  = sampling.rot_angles [idir];
                 RFLOAT tilt = sampling.tilt_angles[idir];
-                Matrix2D<RFLOAT> A;
-
-                Euler_angles2matrix(rot, tilt, 0.0, A, false);
+                Matrix2D<RFLOAT> A = Euler_angles2matrix(rot, tilt, 0.0);
                 Fref.initZeros();
                 projector.get2DFourierTransform(Fref, A);
                 // Shift the image back to the center...
@@ -2853,8 +2851,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             bool is_first_psi = true;
             for (RFLOAT psi = 0.0; psi < 360.0; psi += psi_sampling) {
                 // Get the Euler matrix
-                Matrix2D<RFLOAT> A(3,3);
-                Euler_angles2matrix(0.0, 0.0, psi, A);
+                Matrix2D<RFLOAT> A = Euler_angles2matrix(0.0, 0.0, psi);
 
                 // Now get the FT of the rotated (non-ctf-corrected) template
                 Faux.initZeros(downsize_mic, downsize_mic / 2 + 1);

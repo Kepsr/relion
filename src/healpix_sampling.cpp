@@ -1601,9 +1601,8 @@ void HealpixSampling::getOrientations(
         RFLOAT myperturb = random_perturbation * getAngularSampling();
         for (int iover = 0; iover < my_rot.size(); iover++) {
             if (is_3D) {
-                Matrix2D<RFLOAT> A(3, 3), R(3, 3);
-                Euler_angles2matrix(my_rot[iover], my_tilt[iover], my_psi[iover], A);
-                Euler_angles2matrix(myperturb, myperturb, myperturb, R);
+                Matrix2D<RFLOAT> A = Euler_angles2matrix(my_rot[iover], my_tilt[iover], my_psi[iover]);
+                Matrix2D<RFLOAT> R = Euler_angles2matrix(myperturb, myperturb, myperturb);
                 A = A * R;
                 Euler_matrix2angles(A, my_rot[iover], my_tilt[iover], my_psi[iover]);
             } else {
@@ -1657,8 +1656,8 @@ RFLOAT HealpixSampling::calculateAngularDistance(
             Euler_apply_transf(L_repository[j], R_repository[j], rot2, tilt2, psi2, rot2p, tilt2p, psi2p);
 
             // Distance based on Euler axes
-            Euler_angles2matrix(rot1, tilt1, psi1, E1);
-            Euler_angles2matrix(rot2p, tilt2p, psi2p, E2);
+            E1 = Euler_angles2matrix(rot1, tilt1, psi1);
+            E2 = Euler_angles2matrix(rot2p, tilt2p, psi2p);
             RFLOAT axes_dist = 0;
             for (int i = 0; i < 3; i++) {
                 E1.getRow(i, v1);
@@ -2180,8 +2179,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         }
     } else if (symmetry  == pg::I1) {
         // OK
-        Matrix2D<RFLOAT> A(3, 3);
-        Euler_angles2matrix(0, 90, 0, A);
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0, 90, 0);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 1.0, 0.0);
         _5_fold_axis_1_by_5_fold_axis_2.normalise();
@@ -2210,8 +2208,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         }
     } else if (symmetry  == pg::I3) {
         // OK
-        Matrix2D<RFLOAT> A(3, 3);
-        Euler_angles2matrix(0, 31.7174745559, 0, A);
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0, 31.7174745559, 0);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 1.0, 0.0);
         _5_fold_axis_1_by_5_fold_axis_2.normalise();
@@ -2240,8 +2237,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         }
     } else if (symmetry  == pg::I4) {
         // OK
-        Matrix2D<RFLOAT> A(3, 3);
-        Euler_angles2matrix(0, -31.7174745559, 0, A);
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0, -31.7174745559, 0);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 0.0, 1.0);
         _5_fold_axis_1_by_5_fold_axis_2.normalise();
@@ -2304,8 +2300,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         }
     } else if (symmetry  == pg::I1H) {
         // OK
-        Matrix2D<RFLOAT> A(3, 3);
-        Euler_angles2matrix(0, 90, 0, A);
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0, 90, 0);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 1.0, 0.0);
         _5_fold_axis_1_by_5_fold_axis_2.normalise();
@@ -2336,8 +2331,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         }
     } else if (symmetry  == pg::I3H) {
         // OK
-        Matrix2D<RFLOAT> A(3, 3);
-        Euler_angles2matrix(0, 31.7174745559, 0, A);
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0, 31.7174745559, 0);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0., 0., 1.0);
         _5_fold_axis_1_by_5_fold_axis_2.normalise();
@@ -2369,8 +2363,7 @@ void HealpixSampling::removeSymmetryEquivalentPointsGeometric(
         }
     } else if (symmetry  == pg::I4H) {
         // OK
-        Matrix2D<RFLOAT> A(3, 3);
-        Euler_angles2matrix(0, -31.7174745559, 0, A);
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0, -31.7174745559, 0);
         Matrix1D<RFLOAT> _5_fold_axis_1_by_5_fold_axis_2(3);
         _5_fold_axis_1_by_5_fold_axis_2 = A * vectorR3(0.0, 0.0, 1.0);
         _5_fold_axis_1_by_5_fold_axis_2.normalise();
