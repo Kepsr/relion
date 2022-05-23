@@ -150,7 +150,7 @@ Image<RFLOAT> RefinementHelper::correlation(
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
-    Image<RFLOAT> out(w,h);
+    Image<RFLOAT> out(w, h);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -234,8 +234,8 @@ double RefinementHelper::squaredDiff(
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
-    Image<RFLOAT> ctfImg(w,h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix);
+    Image<RFLOAT> ctfImg(w, h);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix);
 
     double out = 0.0;
     for (long y = 0; y < h; y++)

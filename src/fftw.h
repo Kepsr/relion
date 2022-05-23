@@ -712,7 +712,7 @@ void windowFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
 
 // Same as above, acts on the input array directly
 template<class T>
-void windowFourierTransform(MultidimArray<T > &V, long int newdim) {
+void windowFourierTransform(MultidimArray<T> &V, long int newdim) {
     // Check size of the input array
     if (Ysize(V) > 1 && Ysize(V)/2 + 1 != Xsize(V))
         REPORT_ERROR("windowFourierTransform ERROR: the Fourier transform should be of an image with equal sizes in all dimensions!");
@@ -730,7 +730,7 @@ void windowFourierTransform(MultidimArray<T > &V, long int newdim) {
 // A resize operation in Fourier-space (i.e. changing the sampling of the Fourier Transform) by windowing in real-space
 // If recenter=true, the real-space array will be recentered to have its origin at the origin of the FT
 template<class T>
-void resizeFourierTransform(MultidimArray<T > &in, MultidimArray<T > &out, long int newdim, bool do_recenter=true) {
+void resizeFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long int newdim, bool do_recenter=true) {
     // Check size of the input array
     if (Ysize(in) > 1 && Ysize(in) / 2 + 1 != Xsize(in))
         REPORT_ERROR("windowFourierTransform ERROR: the Fourier transform should be of an image with equal sizes in all dimensions!");

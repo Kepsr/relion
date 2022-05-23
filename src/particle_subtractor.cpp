@@ -506,8 +506,8 @@ void ParticleSubtractor::subtractOneParticle(
             }
         } else {
             CTF ctf = CTF(opt.mydata.MDimg, &opt.mydata.obsModel, ori_img_id);
-            ctf.getFftwImage(
-                Fctf, Xsize(img()), Ysize(img()), my_pixel_size,
+            Fctf = ctf.getFftwImage(
+                Xsize(Fctf), Ysize(Fctf), Xsize(img()), Ysize(img()), my_pixel_size,
                 opt.ctf_phase_flipped, false, opt.intact_ctf_first_peak, true
             );
         }

@@ -303,7 +303,7 @@ double AstigmatismOptimizationAcc::f(const std::vector<double> &x, void* tempSto
     double out = 0.0;
 
 	Image<RFLOAT> ctfImg(w, h);
-	ctf.getFftwImage(ctfImg(), h, h, angpix);
+	ctfImg() = ctf.getFftwImage(w, h, h, h, angpix);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {

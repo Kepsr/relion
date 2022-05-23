@@ -2391,7 +2391,7 @@ void AutoPicker::autoPickLoGOneMicrograph(FileName &fn_mic, long int imic) {
             }
             if (!found) REPORT_ERROR("Logic error: failed to find CTF information for " + fn_mic);
 
-            ctf.getFftwImage(Fctf, micrograph_size, micrograph_size, angpix, false, false, false, false, false, true);
+            Fctf = ctf.getFftwImage(Xsize(Fmic), Ysize(Fmic), micrograph_size, micrograph_size, angpix, false, false, false, false, false, true);
             Fmic /= Fctf;  // this is safe because getCTF does not return 0.
         }
 
@@ -2666,7 +2666,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             if (fn_tmp == fn_mic) {
                 CTF ctf = CTF(MDmic, &obsModel);
                 Fctf.resize(downsize_mic, downsize_mic / 2 + 1);
-                ctf.getFftwImage(Fctf, micrograph_size, micrograph_size, angpix, false, false, intact_ctf_first_peak, true);
+                Fctf = ctf.getFftwImage(Xsize(Fctf), Ysize(Fctf), micrograph_size, micrograph_size, angpix, false, false, intact_ctf_first_peak, true);
                 found = true;
                 break;
             }

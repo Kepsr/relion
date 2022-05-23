@@ -665,7 +665,7 @@ void FilterHelper::modulate(Image<Complex> &imgFreq, CTF &ctf, RFLOAT angpix, Im
     const int h = imgFreq.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix);
     
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq()) {
         direct::elem(imgFreq(), i, j) *= direct::elem(ctfImg(), i, j);
@@ -684,7 +684,7 @@ void FilterHelper::modulate(MultidimArray<Complex> &imgFreq, CTF &ctf, RFLOAT an
     const int h = imgFreq.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
         direct::elem(imgFreq, i, j) *= direct::elem(ctfImg(), i, j);
@@ -696,7 +696,7 @@ void FilterHelper::drawCtf(CTF &ctf, RFLOAT angpix, Image<Complex> &dest) {
     const int h = dest.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(dest()) {
         direct::elem(dest(), i, j) = direct::elem(ctfImg(), i, j);

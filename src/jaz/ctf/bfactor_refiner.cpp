@@ -141,8 +141,8 @@ void BFactorRefiner::processMicrograph(
             const int t = omp_get_thread_num();
 
             CTF ctf = CTF(mdt, obsModel, p);
-            Image<RFLOAT> ctfImg(sh[og],s[og]);
-            ctf.getFftwImage(ctfImg(), s[og], s[og], angpix[og], false, false, false, false, do_ctf_padding);
+            Image<RFLOAT> ctfImg(sh[og], s[og]);
+            ctfImg() = ctf.getFftwImage(sh[og], s[og], s[og], s[og], angpix[og], false, false, false, false, do_ctf_padding);
 
             for (int y = 0; y < s[og];  y++)
             for (int x = 0; x < sh[og]; x++) {
@@ -186,9 +186,9 @@ void BFactorRefiner::processMicrograph(
             const int og = obsModel->getOpticsGroup(mdt, p);
 
             CTF ctf = CTF(mdt, obsModel, p);
-            Image<RFLOAT> ctfImg(sh[og],s[og]);
-            ctf.getFftwImage(
-                ctfImg(), s[og], s[og], angpix[og], 
+            Image<RFLOAT> ctfImg(sh[og], s[og]);
+            ctfImg() = ctf.getFftwImage(
+                sh[og], s[og], s[og], s[og], angpix[og], 
                 false, false, false, false, do_ctf_padding
             );
 

@@ -440,8 +440,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
             CTF ctf = do_ignore_optics ? CTF(DF, DF,        p) :  // Repetition of DF is redundant
                                          CTF(DF, &obsModel, p);
 
-            ctf.getFftwImage(
-                Fctf, myBoxSize, myBoxSize, myPixelSize,
+            Fctf = ctf.getFftwImage(
+                Xsize(Fctf), Ysize(Fctf), myBoxSize, myBoxSize, myPixelSize,
                 ctf_phase_flipped, only_flip_phases,
                 intact_ctf_first_peak, true
             );
@@ -663,7 +663,7 @@ void Reconstructor::applyCTFPandCTFQ(
             bool is_my_positive = (ipass == 1) == is_reverse;
 
             // Get CTFP and multiply the Fapp with it
-            ctf.getCTFPImage(CTFP, Ysize(Fin), Ysize(Fin), angpix, is_my_positive, angle);
+            CTFP = ctf.getCTFPImage(Fin.xdim, Fin.ydim, Ysize(Fin), Ysize(Fin), angpix, is_my_positive, angle);
 
             Fapp = Fin * CTFP; // element-wise complex multiplication!
 

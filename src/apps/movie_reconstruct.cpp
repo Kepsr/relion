@@ -495,8 +495,8 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
     if (do_ctf) {
         CTF ctf = CTF(mdt, &obsModel, p);
 
-        ctf.getFftwImage(
-            Fctf, output_boxsize, output_boxsize, angpix,
+        Fctf = ctf.getFftwImage(
+            Xsize(Fctf), Ysize(Fctf), output_boxsize, output_boxsize, angpix,
             ctf_phase_flipped, only_flip_phases,
             intact_ctf_first_peak, true
         );
@@ -589,7 +589,7 @@ void MovieReconstructor::applyCTFPandCTFQ(
             bool is_my_positive = (ipass == 1) == is_reverse;
 
             // Get CTFP and multiply the Fapp with it
-            ctf.getCTFPImage(CTFP, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
+            CTFP = ctf.getCTFPImage(Fin.xdim, Fin.ydim, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
 
             Fapp = Fin * CTFP; // element-wise complex multiplication!
 

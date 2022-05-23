@@ -40,7 +40,7 @@ void TiltHelper::updateTiltShift(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix, false, false, false, true, do_ctf_padding);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -66,7 +66,7 @@ void TiltHelper::updateTiltShiftPar(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix, false, false, false, true, do_ctf_padding);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
 
     #pragma omp parallel for
     for (long y = 0; y < h; y++)

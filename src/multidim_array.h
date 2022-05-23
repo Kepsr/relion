@@ -1192,9 +1192,9 @@ class MultidimArray {
         result.resize(xF - x0 + 1);
         result.xinit = x0;
 
-        for (long int j = x0; j <= xF; j++) {
-            result.elem(j) = inside(j) ?
-                elem(0, j, 0, n) : init_value;
+        for (long int i = x0; i <= xF; i++) {
+            result.elem(i) = inside(i) ?
+                elem(i, 0, 0, n) : init_value;
             }
     }
 

@@ -101,12 +101,12 @@ void MagnificationHelper::updateScaleFreq(
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
-    /*Volume<gravis::d2Vector> gradReal(w,h,1), gradImg(w,h,1);
+    /*Volume<gravis::d2Vector> gradReal(w, h,1), gradImg(w, h,1);
 
     FilterHelper::centralGrad2D(prediction, gradReal, gradImg);*/
 
-    Image<RFLOAT> ctfImg(w,h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix, false, false, false, true, do_ctf_padding);
+    Image<RFLOAT> ctfImg(w, h);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -139,18 +139,18 @@ void MagnificationHelper::updateScaleReal(
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
-    Image<Complex> pred2(w,h), obs2(w,h);
+    Image<Complex> pred2(w, h), obs2(w, h);
     Image<RFLOAT> realPred(ww, h), realObs(ww, h);
 
-    Image<RFLOAT> ctfImg(w,h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix, false, false, false, true, do_ctf_padding);
+    Image<RFLOAT> ctfImg(w, h);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
         Complex vx = direct::elem(prediction.data, x, y);
         Complex vy = direct::elem(observation.data, x, y);
         Complex sn = direct::elem(snr.data, x, y);
-        double c = ctfImg(y,x);
+        double c = ctfImg(y, x);
 
         direct::elem(pred2.data, x, y) = sn * c * vx;
         direct::elem(obs2 .data, x, y) = sn * vy;
@@ -227,8 +227,8 @@ Matrix2D<RFLOAT> MagnificationHelper::solveLinearlyFreq(
     const long w = eqs.dimx;
     const long h = eqs.dimy;
 
-    vx = Image<RFLOAT>(w,h);
-    vy = Image<RFLOAT>(w,h);
+    vx = Image<RFLOAT>(w, h);
+    vy = Image<RFLOAT>(w, h);
 
     d4Vector b(0.0, 0.0, 0.0, 0.0);
 
@@ -310,7 +310,7 @@ void MagnificationHelper::readEQs(std::string path, Volume<Equation2x2> &eqs) {
     const long w = Axx.data.xdim;
     const long h = Axx.data.ydim;
 
-    eqs.resize(w,h,1);
+    eqs.resize(w, h,1);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -329,11 +329,11 @@ void MagnificationHelper::writeEQs(
     const long w = eqs.dimx;
     const long h = eqs.dimy;
 
-    Image<RFLOAT> Axx(w,h);
-    Image<RFLOAT> Axy(w,h);
-    Image<RFLOAT> Ayy(w,h);
-    Image<RFLOAT> bx(w,h);
-    Image<RFLOAT> by(w,h);
+    Image<RFLOAT> Axx(w, h);
+    Image<RFLOAT> Axy(w, h);
+    Image<RFLOAT> Ayy(w, h);
+    Image<RFLOAT> bx(w, h);
+    Image<RFLOAT> by(w, h);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -365,8 +365,8 @@ void MagnificationHelper::updatePowSpec(
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
-    Image<RFLOAT> ctfImg(w,h);
-    ctf.getFftwImage(ctfImg(), h, h, angpix, false, false, false, true, do_ctf_padding);
+    Image<RFLOAT> ctfImg(w, h);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
