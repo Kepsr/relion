@@ -133,7 +133,7 @@ void softMaskOutsideMapForHelix(
 
     // Init rotational matrix A
     // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
-    Matrix2D<RFLOAT> A = Euler_angles2matrix(0.0, tilt_deg, psi_deg).transpose();
+    Matrix2D<RFLOAT> A = Euler::angles2matrix(0.0, tilt_deg, psi_deg).transpose();
     // Don't put negative signs before tilt and psi values, use 'transpose' instead
 
     // Calculate noise weights for all voxels

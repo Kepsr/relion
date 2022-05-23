@@ -463,7 +463,7 @@ void ParticleSubtractor::subtractOneParticle(
     if (opt.fn_body_masks != "None") {
         // 17May2017: Shift image to the projected COM for this body!
         // Aori is the original transformation matrix of the consensus refinement
-        Aori = Euler_angles2matrix(rot, tilt, psi);
+        Aori = Euler::angles2matrix(rot, tilt, psi);
         my_projected_com = Aori * opt.mymodel.com_bodies[subtract_body];
 
         // Subtract the projected COM offset, to position this body in the center
@@ -536,7 +536,7 @@ void ParticleSubtractor::subtractOneParticle(
             body_offset /= my_pixel_size;
 
             // Aresi is the residual orientation for this obody
-            Matrix2D<RFLOAT> Aresi = Euler_angles2matrix(body_rot, body_tilt, body_psi);
+            Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
             if (obody == subtract_body) { Aresi_subtract = Aresi; }
             // The real orientation to be applied is the obody transformation applied and the original one
             Matrix2D<RFLOAT> Abody = Aori * (opt.mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * opt.mymodel.orient_bodies[obody];
@@ -576,7 +576,7 @@ void ParticleSubtractor::subtractOneParticle(
 
         // Write out the rot,tilt,psi as the combination of Aori and Aresi!! So get rid of the rotations around the tilt=90 axes,
         Abody = Aori * (opt.mymodel.orient_bodies[subtract_body]).transpose() * A_rot90 * Aresi_subtract * opt.mymodel.orient_bodies[subtract_body];
-        Euler_matrix2angles(Abody, rot, tilt, psi);
+        Euler::matrix2angles(Abody, rot, tilt, psi);
 
         // Store the optimal orientations in the MDimg table
         opt.mydata.MDimg.setValue(EMDL::ORIENT_ROT, rot, ori_img_id);
@@ -596,7 +596,7 @@ void ParticleSubtractor::subtractOneParticle(
         my_residual_offset += Abody * (opt.mymodel.com_bodies[subtract_body] - new_center * opt.mymodel.pixel_size / my_pixel_size);
     } else {
         // Normal 3D classification/refinement: get the projection in rot,tilt,psi for the corresponding class
-        Matrix2D<RFLOAT> A3D_pure_rot = Euler_angles2matrix(rot, tilt, psi);
+        Matrix2D<RFLOAT> A3D_pure_rot = Euler::angles2matrix(rot, tilt, psi);
 
         // Apply anisotropic mag and scaling
         Matrix2D<RFLOAT> A3D = opt.mydata.obsModel.applyAnisoMag(A3D_pure_rot, optics_group);

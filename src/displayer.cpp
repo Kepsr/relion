@@ -518,14 +518,14 @@ void basisViewerCanvas::fill(
                         RFLOAT tilt = MDin.getValue<RFLOAT>(EMDL::ORIENT_TILT,              my_ipos);
                         ZZ(offset)  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
                         offset /= angpix;
-                        A = Euler_rotation3DMatrix(rot, tilt, psi);
+                        A = Euler::rotation3DMatrix(rot, tilt, psi);
                         A.at(0, 3) = A.at(0, 0) * XX(offset) + A.at(0, 1) * YY(offset) + A.at(0, 2) * ZZ(offset);
                         A.at(1, 3) = A.at(1, 0) * XX(offset) + A.at(1, 1) * YY(offset) + A.at(1, 2) * ZZ(offset);
                         A.at(2, 3) = A.at(2, 0) * XX(offset) + A.at(2, 1) * YY(offset) + A.at(2, 2) * ZZ(offset);
                         selfApplyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
                     }
                 } else if (_do_apply_orient && MDin.containsLabel(EMDL::MLMODEL_IS_HELIX) && img().getDim() == 3) {
-                    Matrix2D<RFLOAT> A = Euler_rotation3DMatrix(0, 90, 0);
+                    Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(0, 90, 0);
                     A.at(0, 3) = A.at(0, 0) + A.at(0, 1) + A.at(0, 2);
                     A.at(1, 3) = A.at(1, 0) + A.at(1, 1) + A.at(1, 2);
                     A.at(2, 3) = A.at(2, 0) + A.at(2, 1) + A.at(2, 2);

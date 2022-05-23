@@ -98,7 +98,7 @@ void getFourierTransformsAndCtfs(
 
             // 17May2017: Shift image to the projected COM for this body!
             // Aori is the original transformation matrix of the consensus refinement
-            Aori = Euler_angles2matrix(
+            Aori = Euler::angles2matrix(
                 direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT),
                 direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT),
                 direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI)
@@ -744,7 +744,7 @@ void getFourierTransformsAndCtfs(
                     // int ocol_norm = 6 + METADATA_LINE_LENGTH_BEFORE_BODIES + obody * METADATA_NR_BODY_PARAMS;
 
                     // Aresi is the residual orientation for this obody
-                    Matrix2D<RFLOAT> Aresi = Euler_angles2matrix(
+                    Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(
                         direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_rot),
                         direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_tilt),
                         direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_psi)
@@ -913,7 +913,7 @@ void getAllSquaredDifferencesCoarse(
                     RFLOAT rot_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
                     RFLOAT tilt_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_TILT);
                     RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
-                    Matrix2D<RFLOAT> Aori = Euler_angles2matrix(rot_ori, tilt_ori, psi_ori);
+                    Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
                     MBL = Aori * (baseMLO->mymodel.orient_bodies[ibody]).transpose() * baseMLO->A_rot90;
                     MBR = baseMLO->mymodel.orient_bodies[ibody];
@@ -1373,7 +1373,7 @@ void getAllSquaredDifferencesFine(
                     RFLOAT rot_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
                     RFLOAT tilt_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_TILT);
                     RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
-                    Matrix2D<RFLOAT> Aori = Euler_angles2matrix(rot_ori, tilt_ori, psi_ori);
+                    Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
                     MBL = Aori * baseMLO->mymodel.orient_bodies[ibody].transpose() * baseMLO->A_rot90;
                     MBR = baseMLO->mymodel.orient_bodies[ibody];
@@ -2625,7 +2625,7 @@ void storeWeightedSums(
                 RFLOAT rot_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
                 RFLOAT tilt_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_TILT);
                 RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
-                Matrix2D<RFLOAT> Aori = Euler_angles2matrix(rot_ori, tilt_ori, psi_ori);
+                Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
                 MBL = Aori * (baseMLO->mymodel.orient_bodies[ibody]).transpose() * baseMLO->A_rot90;
                 MBR = baseMLO->mymodel.orient_bodies[ibody];

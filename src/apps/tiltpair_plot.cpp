@@ -142,7 +142,7 @@ class tiltpair_plot_parameters {
                 SL.get_matrices(i - 1, L, R);
                 L.resize(3, 3); // Erase last row and column
                 R.resize(3, 3); // as only the relative orientation is useful and not the translation
-                Euler_apply_transf(L, R, rot2, tilt2, psi2, rot2p, tilt2p, psi2p);
+                Euler::apply_transf(L, R, rot2, tilt2, psi2, rot2p, tilt2p, psi2p);
             }
 
             RFLOAT ang_dist = check_tilt_pairs(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);
@@ -172,8 +172,8 @@ class tiltpair_plot_parameters {
         RFLOAT rot2 = alpha, tilt2 = tilt_angle, psi2 = beta;
 
         // Calculate the transformation from one setting to the second one.
-        Matrix2D<RFLOAT> E1 = Euler_angles2matrix(psi1, tilt1, rot1);
-        Matrix2D<RFLOAT> E2 = Euler_angles2matrix(psi2, tilt2, rot2) * E1.inv();
+        Matrix2D<RFLOAT> E1 = Euler::angles2matrix(psi1, tilt1, rot1);
+        Matrix2D<RFLOAT> E2 = Euler::angles2matrix(psi2, tilt2, rot2) * E1.inv();
 
         // Get the tilt angle (and its sine)
         RFLOAT ah = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
@@ -196,7 +196,7 @@ class tiltpair_plot_parameters {
         axis = E1.inv() * axis;
 
         // Convert to alpha and beta angle
-        Euler_direction2angles(axis, alpha, beta);
+        Euler::direction2angles(axis, alpha, beta);
 
         // Enforce positive beta: choose the other Euler angle combination to express the same direction
         if (beta < 0.0) {

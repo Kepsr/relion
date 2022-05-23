@@ -755,7 +755,7 @@ class star_handler_parameters {
             yoff /= angpix;
 
             // Project the center-coordinates
-            Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+            Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
             my_projected_center = A3D * my_center;
 
             xoff -= XX(my_projected_center);

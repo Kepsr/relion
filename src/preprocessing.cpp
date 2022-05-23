@@ -1111,7 +1111,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     ZZ(my_center) = recenter_z;
                     if (ref_angpix > 0)
                         my_center = my_center * (ref_angpix / particle_angpix);
-                    A3D = Euler_angles2matrix(rot, tilt, psi);
+                    A3D = Euler::angles2matrix(rot, tilt, psi);
                     my_projected_center = A3D * my_center;
                 }
 

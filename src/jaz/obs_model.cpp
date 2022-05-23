@@ -285,7 +285,7 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
         }
     }
 
-    if (hasTilt) { hasOddZernike = true; }
+    hasOddZernike |= hasTilt;
 
 }
 
@@ -306,17 +306,14 @@ void ObservationModel::predictObservation(
     const int s_out = boxSizes[opticsGroup];
     const int sh_out = s_out / 2 + 1;
 
-    double xoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, particle);
-    double yoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, particle);
-
-    xoff /= angpix[opticsGroup];
-    yoff /= angpix[opticsGroup];
+    double xoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, particle) / angpix[opticsGroup];
+    double yoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, particle) / angpix[opticsGroup];
 
     double rot  = partMdt.getValue<double>(EMDL::ORIENT_ROT,  particle);
     double tilt = partMdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
     A3D = applyAnisoMag(A3D, opticsGroup);
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 
@@ -369,7 +366,7 @@ void ObservationModel::predictObservation(
     }
 
     if (applyMtf && fnMtfs.size() > opticsGroup) {
-        const Image<RFLOAT>& mtf = getMtfImage(opticsGroup, s_out);
+        const Image<RFLOAT> &mtf = getMtfImage(opticsGroup, s_out);
 
         for (int y = 0; y < s_out;  y++)
         for (int x = 0; x < sh_out; x++) {
@@ -400,17 +397,14 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
 
     Volume<t2Vector<Complex>> out(sh_out, s_out, 1);
 
-    double xoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, particle);
-    double yoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, particle);
-
-    xoff /= angpix[opticsGroup];
-    yoff /= angpix[opticsGroup];
+    double xoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, particle) / angpix[opticsGroup];
+    double yoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, particle) / angpix[opticsGroup];
 
     double rot  = partMdt.getValue<double>(EMDL::ORIENT_ROT,  particle);
     double tilt = partMdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
     A3D = applyAnisoMag(A3D, opticsGroup);
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 

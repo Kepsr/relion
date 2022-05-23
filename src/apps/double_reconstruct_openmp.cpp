@@ -355,7 +355,7 @@ class reconstruct_parameters {
                             //std::cout << rnd_gaus(0.0, angular_error) << std::endl;
                         }
 
-                        Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+                        Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
                         int opticsGroup = obsModel.getOpticsGroup(table, p);
                         double pixelsize = angpix[opticsGroup];

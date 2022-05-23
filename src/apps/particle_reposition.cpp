@@ -204,7 +204,7 @@ class particle_reposition_parameters {
 
                     iclass = optimiser.mydata.MDimg.getValue<int>(EMDL::PARTICLE_CLASS, ori_img_id) - 1;
 
-                    A = Euler_angles2matrix(rot, tilt, psi);
+                    A = Euler::angles2matrix(rot, tilt, psi);
                     if (do_ctf) {
                         A = optimiser.mydata.obsModel.applyAnisoMag(A, optics_group);
                         A = optimiser.mydata.obsModel.applyScaleDifference(A, optics_group, optimiser.mymodel.ori_size, optimiser.mymodel.pixel_size);

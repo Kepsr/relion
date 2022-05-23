@@ -1379,7 +1379,7 @@ void transformCartesianAndHelicalCoords(
 
     /// TODO: check whether rot_deg should be always set to 0 !
     /// TODO: fix the --random_seed and use --perturb 0 option for testing !
-    Matrix2D<RFLOAT> A = Euler_angles2matrix(rot_deg, tilt_deg, psi_deg);
+    Matrix2D<RFLOAT> A = Euler::angles2matrix(rot_deg, tilt_deg, psi_deg);
     if (direction == CART_TO_HELICAL_COORDS) // Don't put minus signs before angles, use 'transpose' instead
         A = A.transpose();
     aux = A * aux;
@@ -3851,7 +3851,7 @@ void updatePriorsForOneHelicalTube(
             // Analyze orientations
             this_psi  = list[id].psi_deg;  // REFRESH PSI  PRIOR
             this_tilt = list[id].tilt_deg; // REFRESH TILT PRIOR
-            Euler_angles2direction(this_psi, this_tilt, this_ang_vec);
+            this_ang_vec = Euler::angles2direction(this_psi, this_tilt);
             sum_ang_vec = this_ang_vec * this_w;
 
             // rotation angle all new KThurber
@@ -3920,7 +3920,7 @@ void updatePriorsForOneHelicalTube(
 
                     this_psi  = list[idd].psi_deg;
                     this_tilt = list[idd].tilt_deg;
-                    Euler_angles2direction(this_psi, this_tilt, this_ang_vec);
+                    this_ang_vec = Euler::angles2direction(this_psi, this_tilt);
                     sum_ang_vec += this_ang_vec * this_w;
 
                     // Analyze translations
@@ -3944,7 +3944,7 @@ void updatePriorsForOneHelicalTube(
                 }
 
                 sum_ang_vec /= sum_w;
-                Euler_direction2angles(sum_ang_vec, this_psi, this_tilt);
+                Euler::direction2angles(sum_ang_vec, this_psi, this_tilt);
 
                 // KThurber added
                 sum_rot_vec /= sum_w;
@@ -5033,12 +5033,12 @@ void Interpolate3DCurves(
 void estimateTiltPsiPriors(
     Matrix1D<RFLOAT>& dr, RFLOAT& tilt_deg, RFLOAT& psi_deg
 ) {
-    // euler.cpp: Euler_direction2angles: input angles = (a, b, g) then 3x3 matrix =
+    // euler.cpp: Euler::direction2angles: input angles = (a, b, g) then 3x3 matrix =
     //  cosg*cosb*cosa - sing*sina,  cosg*cosb*sina + sing*cosa, -cosg*sinb,
     // -sing*cosb*cosa - cosg*sina, -sing*cosb*sina + cosg*cosa,  sing*sinb,
     //       sinb*cosa,                               sinb*sina,       cosb.
 
-    // euler.cpp: Euler_direction2angles: input angles = (0, b, g) then 3x3 matrix =
+    // euler.cpp: Euler::direction2angles: input angles = (0, b, g) then 3x3 matrix =
     //  cosg*cosb, sing, -cosg*sinb,
     // -sing*cosb, cosg,  sing*sinb,
     //       sinb,    0,       cosb.

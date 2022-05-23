@@ -158,7 +158,7 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
         coords.initZeros();
 
         // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
-        Matrix2D<RFLOAT> A = Euler_angles2matrix(0.0, tilt_deg, psi_deg).transpose();
+        Matrix2D<RFLOAT> A = Euler::angles2matrix(0.0, tilt_deg, psi_deg).transpose();
 
         // Refer to the code in calculateBackgroundAvgStddev() for 3D implementation
 
@@ -256,7 +256,7 @@ void subtractBackgroundRamp(
 
         // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
         // Since Z = 0, tilt_deg does not matter
-        Matrix2D<RFLOAT> A = Euler_angles2matrix(0.0, tilt_deg, psi_deg).transpose();
+        Matrix2D<RFLOAT> A = Euler::angles2matrix(0.0, tilt_deg, psi_deg).transpose();
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
             // not implemented for 3D data

@@ -32,7 +32,7 @@ void LegacyObservationModel::predictObservation(
     double tilt = mdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = mdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     proj.get2DFourierTransform(dest, A3D);
 
@@ -107,7 +107,7 @@ void LegacyObservationModel::insertObservation(
     RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, particle);
     RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI, particle);
 
-    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     double tx = 0.0, ty = 0.0;
     tx = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X, particle) + shift_x;
