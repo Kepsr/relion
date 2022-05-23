@@ -672,7 +672,7 @@ void FilterHelper::modulate(Image<Complex> &imgFreq, CTF &ctf, RFLOAT angpix, Im
     }
 
     if (dest.data.xdim != 2 * (imgFreq.data.xdim - 1) || dest.data.ydim != imgFreq.data.ydim) {
-        dest.data.resize(imgFreq.data.ydim, 2 * (imgFreq.data.xdim - 1));
+        dest.data.resize(imgFreq.data.xdim, 2 * (imgFreq.data.ydim - 1));
     }
 
     FourierTransformer ft2;

@@ -294,6 +294,20 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int j = 0; j < Ysize(m); j++) \
     for (long int i = 0; i < Xsize(m); i++)
 
+/** For all elements in the array, accessed physically
+ *
+ * This macro is used to generate loops for the vector in an easy way using
+ * physical indices. It defines internal the index 'i' which ranges the vector
+ * using its physical definition.
+ *
+ * @code
+ * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) {
+ *     std::cout << direct::elem(v, i) << " ";
+ * }
+ * @endcode
+ */
+#define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) for (long int i = 0; i < v.xdim; i++)
+
 /** Direct access
  *
  * Be careful. 
@@ -330,20 +344,6 @@ namespace direct {
     }
 
 };
-
-/** For all elements in the array, accessed physically
- *
- * This macro is used to generate loops for the vector in an easy way using
- * physical indices. It defines internal the index 'i' which ranges the vector
- * using its physical definition.
- *
- * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) {
- *     std::cout << direct::elem(v, i) << " ";
- * }
- * @endcode
- */
-#define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) for (long int i = 0; i < v.xdim; i++)
 //@}
 
 // Forward declarations ====================================================
@@ -496,7 +496,7 @@ class MultidimArray {
      */
     MultidimArray(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
         coreInit();
-        resize(Ndim, Zdim, Ydim, Xdim);
+        resize(Xdim, Ydim, Zdim, Ndim);
     }
 
     /** Size constructor with 3D size.
@@ -505,7 +505,7 @@ class MultidimArray {
      */
     MultidimArray(long int Zdim, long int Ydim, long int Xdim) {
         coreInit();
-        resize(1, Zdim, Ydim, Xdim);
+        resize(Xdim, Ydim, Zdim);
     }
 
     /** Size constructor with 2D size.
@@ -514,7 +514,7 @@ class MultidimArray {
      */
     MultidimArray(long int Ydim, long int Xdim) {
         coreInit();
-        resize(1, 1, Ydim, Xdim);
+        resize(Xdim, Ydim);
     }
 
     /** Size constructor with 1D size.
@@ -523,7 +523,7 @@ class MultidimArray {
      */
     MultidimArray(long int Xdim) {
         coreInit();
-        resize(1, 1, 1, Xdim);
+        resize(Xdim);
     }
 
     /** Copy constructor
@@ -557,7 +557,7 @@ class MultidimArray {
      */
     MultidimArray(const Matrix1D<T> &v) {
         coreInit();
-        resize(1, 1, 1, v.size());
+        resize(v.size());
         for (long int i = 0; i < v.size(); i++)
             (*this)[i] = v[i];
     }
@@ -569,7 +569,7 @@ class MultidimArray {
      */
     MultidimArray(const std::vector<T> &v) {
         coreInit();
-        resize(1, 1, 1, v.size());
+        resize(v.size());
         for (long int i = 0; i < v.size(); i++)
             (*this)[i] = v[i];
     }
@@ -611,8 +611,8 @@ class MultidimArray {
 
     /** Core allocate with dimensions.
      */
-    void coreAllocate(long int _ndim, long int _zdim, long int _ydim, long int _xdim) {
-        if (_ndim <= 0 || _zdim <= 0 || _ydim <= 0 || _xdim <= 0) {
+    void coreAllocate(unsigned long int _xdim, unsigned long int _ydim, unsigned long int _zdim, unsigned long int _ndim) {
+        if (_xdim == 0 || _ydim == 0 || _zdim == 0 || _ndim == 0) {
             clear();
             return;
         }
@@ -809,7 +809,7 @@ class MultidimArray {
         }
 
         coreDeallocate();
-        coreAllocate(Ndim, Zdim, Ydim, Xdim);
+        coreAllocate(Xdim, Ydim, Zdim, Ndim);
     }
 
     void dynamic_reshape(long dim, int dimensionality) {
@@ -853,12 +853,13 @@ class MultidimArray {
      * V1.resize(3, 3, 2);
      * @endcode
      */
-    void resizeNoCp(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
+    void resizeNoCp(unsigned long int Xdim = 1, unsigned long int Ydim = 1, unsigned long int Zdim = 1, unsigned long int Ndim = 1) {
 
-        if (Ndim * Zdim * Ydim * Xdim == allocated_size && data)
+        size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
+        if (NZYXdim == allocated_size && data)
             return;
 
-        if (Xdim <= 0 || Ydim <= 0 || Zdim <= 0 || Ndim <= 0) {
+        if (NZYXdim == 0) {
             clear();
             return;
         }
@@ -872,7 +873,6 @@ class MultidimArray {
         }
 
         // Ask for memory
-        size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
         int new_mFd = 0;
         FileName new_mapFile;
 
@@ -912,7 +912,7 @@ class MultidimArray {
      * V1.resize(3, 3, 2);
      * @endcode
      */
-    void resize(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
+    void resize(unsigned long int Xdim = 1, unsigned long int Ydim = 1, unsigned long int Zdim = 1, unsigned long int Ndim = 1) {
         size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
         if (allocated_size == NZYXdim && data) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
@@ -920,7 +920,7 @@ class MultidimArray {
             return;
         }
 
-        if (Xdim <= 0 || Ydim <= 0 || Zdim <= 0 || Ndim <= 0) {
+        if (NZYXdim == 0) {
             clear();
             return;
         }
@@ -970,43 +970,6 @@ class MultidimArray {
         allocated_size = size();
     }
 
-    /** Resize a single 3D image
-     *
-     * This function assumes n is 1
-     * @code
-     * V1.resize(3, 3, 2);
-     * @endcode
-     */
-    void resize(long int Zdim, long int Ydim, long int Xdim) {
-        resize(1, Zdim, Ydim, Xdim);
-    }
-
-    void resizeNoCp(long int Zdim, long int Ydim, long int Xdim) {
-        resizeNoCp(1, Zdim, Ydim, Xdim);
-    }
-
-    /** Resize a single 2D image
-     *
-     * This function assumes n and z are 1
-     * @code
-     * V1.resize(3, 2);
-     * @endcode
-     */
-    void resize(long int Ydim, long int Xdim) {
-        resize(1, 1, Ydim, Xdim);
-    }
-
-    /** Resize a single 1D image
-     *
-     * This function assumes n and z and y are 1
-     * @code
-     * V1.resize(2);
-     * @endcode
-     */
-    void resize(long int Xdim) {
-        resize(1, 1, 1, Xdim);
-    }
-
     /** Resize according to a pattern.
      *
      * This function resize the actual array to the same size and origin
@@ -1025,7 +988,7 @@ class MultidimArray {
             ndim != other.ndim || xdim != other.xdim ||
             ydim != other.ydim || zdim != other.zdim ||
             !data
-        ) { resize(other.ndim, other.zdim, other.ydim, other.xdim); }
+        ) { resize(other.xdim, other.ydim, other.zdim, other.ndim); }
 
         xinit = other.xinit;
         yinit = other.yinit;
@@ -1135,14 +1098,14 @@ class MultidimArray {
         long int zF, long int yF, long int xF,
         T init_value = 0, long n = 0
     ) const {
-        result.resize(zF - z0 + 1, yF - y0 + 1, xF - x0 + 1);
-        result.zinit = z0;
-        result.yinit = y0;
+        result.resize(xF - x0 + 1, yF - y0 + 1, zF - z0 + 1);
         result.xinit = x0;
+        result.yinit = y0;
+        result.zinit = z0;
 
         for (long int k = z0; k <= zF; k++)
-        for (long int i = y0; i <= yF; i++)
-        for (long int j = x0; j <= xF; j++) {
+        for (long int j = y0; j <= yF; j++)
+        for (long int i = x0; i <= xF; i++) {
             result.elem(i, j, k) = inside(i, j, k) ?
                 elem(i, j, k, n) : init_value;
         }
@@ -1184,9 +1147,9 @@ class MultidimArray {
         long int yF, long int xF,
         T init_value = 0, long n = 0
     ) const {
-        result.resize(yF - y0 + 1, xF - x0 + 1);
-        result.yinit = y0;
+        result.resize(xF - x0 + 1, yF - y0 + 1);
         result.xinit = x0;
+        result.yinit = y0;
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
             result.elem(i, j) = inside(i, j) ?
@@ -1608,7 +1571,7 @@ class MultidimArray {
         if (n > ndim)
             REPORT_ERROR(" Multidimarray getImage: n larger than ndim (out of bounds)");
 
-        M.resize(1, zdim, ydim, xdim);
+        M.resize(xdim, ydim, zdim);
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M) {
             direct::elem(M, i, j) = direct::elem(*this, i, j, k, n);
         }
@@ -1665,7 +1628,7 @@ class MultidimArray {
                 REPORT_ERROR(std::string(__func__) + ": Multidim subscript (k) out of range");
 
             k -= firstZ();
-            M.resize(1, 1, ydim, xdim);
+            M.resize(xdim, ydim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
                 direct::elem(M, i, j) = direct::elem(*this, j, i, k, n);
             }
@@ -1678,7 +1641,7 @@ class MultidimArray {
                 REPORT_ERROR(std::string(__func__) + ": Multidim subscript (i) out of range");
 
             k -= firstY();
-            M.resize(zdim, xdim);
+            M.resize(xdim, zdim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
                 direct::elem(M, i, j) = direct::elem(*this, k, j, i, n);
             }
@@ -1691,7 +1654,7 @@ class MultidimArray {
                 REPORT_ERROR(std::string(__func__) + ": Multidim subscript (j) out of range");
 
             k -= firstX();
-            M.resize(zdim, ydim);
+            M.resize(ydim, zdim);
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
                 direct::elem(M, i, j) = direct::elem(*this, j, k, i, n);
             }
@@ -2851,7 +2814,7 @@ class MultidimArray {
     /** Load 2D array from numerical recipes result.
      */
     void loadFromNumericalRecipes2D(T **m, long int Ydim, long int Xdim) {
-        resize(Ydim, Xdim);
+        resize(Xdim, Ydim);
 
         for (long int i = 1; i <= Ydim; i++)
         for (long int j = 1; j <= Xdim; j++)
@@ -3580,7 +3543,7 @@ void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) 
             v2[n] = static_cast<T2>(*ptr1);
         }
     } else {
-        v2.resize(v1.zdim, v1.ydim, v1.xdim);
+        v2.resize(v1.xdim, v1.ydim, v1.zdim);
         FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v2) {
             direct::elem(v2, i, j, k) = static_cast<T2>(direct::elem(v1, i, j, k, n));
         }

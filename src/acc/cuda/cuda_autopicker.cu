@@ -549,7 +549,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             d_Mstddev2.hostAlloc();
             d_Mstddev2.cpToHost();
             d_Mstddev2.streamSync();
-            Mstddev2.resizeNoCp(1, basePckr->workSize, basePckr->workSize);
+            Mstddev2.resizeNoCp(basePckr->workSize, basePckr->workSize);
             for (int i = 0; i < d_Mstddev2.getSize(); i++) {
                 Mstddev2.data[i] = d_Mstddev2[i];
             }
@@ -558,7 +558,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             d_Mavg.hostAlloc();
             d_Mavg.cpToHost();
             d_Mavg.streamSync();
-            Mavg.resizeNoCp(1, basePckr->workSize, basePckr->workSize);
+            Mavg.resizeNoCp(basePckr->workSize, basePckr->workSize);
             for (int i = 0; i < d_Mavg.getSize() ; i++) {
                 Mavg.data[i] = d_Mavg[i];
             }
@@ -587,7 +587,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         d_Mstddev.cpToHost();
         d_Mstddev.streamSync();
 
-        Mstddev.resizeNoCp(1, basePckr->workSize, basePckr->workSize);
+        Mstddev.resizeNoCp(basePckr->workSize, basePckr->workSize);
 
         /// TODO: put this in a kernel
         for (int i = 0; i < d_Mstddev.getSize(); i++) {
@@ -601,7 +601,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         d_Mmean.hostAlloc();
         d_Mmean.cpToHost();
         d_Mmean.streamSync();
-        Mmean.resizeNoCp(1, basePckr->workSize, basePckr->workSize);
+        Mmean.resizeNoCp(basePckr->workSize, basePckr->workSize);
         for (int i = 0; i < d_Mmean.getSize(); i++) {
             Mmean.data[i] = d_Mmean[i];
         }
@@ -778,7 +778,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
             micTransformer.reals.cpToHost();
 
-            Maux.resizeNoCp(1, basePckr->micrograph_size, basePckr->micrograph_size);
+            Maux.resizeNoCp(basePckr->micrograph_size, basePckr->micrograph_size);
 
             micTransformer.reals.streamSync();
             for (int i = 0; i < micTransformer.reals.getSize(); i++) {

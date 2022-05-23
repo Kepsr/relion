@@ -111,7 +111,7 @@ class estimate_gain {
         std::cout << "The size of the input: NY = " << ny << " NX = " << nx << std::endl;
 
         for (int i = 0; i < n_threads; i++) {
-            Isums[i]().resize(ny, nx);
+            Isums[i]().resize(nx, ny);
             Isums[i]().initZeros(ny, nx);
         }
 

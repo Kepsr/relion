@@ -1605,7 +1605,7 @@ void MlOptimiser::initialiseGeneral(int rank) {
             }
 
             MultidimArray<RFLOAT> tmpmsk;
-            tmpmsk.resize(Zsize(mymodel.Iref[0]), Ysize(mymodel.Iref[0]), Xsize(mymodel.Iref[0]) / 2 + 1);
+            tmpmsk.resize(Xsize(mymodel.Iref[0]), Ysize(mymodel.Iref[0]), Zsize(mymodel.Iref[0]) / 2 + 1);
             generateBinaryHelicalFourierMask(tmpmsk, resols_start, resols_end, mymodel.pixel_size);
             // make a 2-pixel soft edge of fourier mask
             autoMask(tmpmsk, helical_fourier_mask, 0.5, 0.0, 2.0, false, nr_threads);
@@ -3507,19 +3507,19 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         CenterFFT(tt(), false);
         std::string fnm = mode + std::string("_out_shifted_image.mrc");
         tt.write(fnm);
-        tt().resize(Ysize(Mresol_coarse[optics_group]),Xsize(Mresol_coarse[optics_group]));
+        tt().resize(Xsize(Mresol_coarse[optics_group]), Ysize(Mresol_coarse[optics_group]));
         for (long int n = 0; n < (tt()).size(); n++) {
             tt()[n] = (RFLOAT) Mresol_coarse[optics_group][n];
         }
         fnm = mode + std::string("_out_mresol_coarse.mrc");
         tt.write(fnm);
-        tt().resize(Ysize(Mresol_fine),Xsize(Mresol_fine[optics_group]));
+        tt().resize(Xsize(Mresol_fine), Ysize(Mresol_fine[optics_group]));
         for (long int n = 0; n < (tt()).size(); n++) {
             tt()[n] = (RFLOAT) Mresol_fine[optics_group][n];
         }
         fnm = mode + std::string("_out_mresol_fine.mrc");
         tt.write(fnm);
-        tt().resize(Ysize(exp_local_Fctfs[0]),Xsize(exp_local_Fctfs[0]));
+        tt().resize(Xsize(exp_local_Fctfs[0]), Ysize(exp_local_Fctfs[0]));
         for (long int n = 0; n < (exp_local_Fctfs[0]).size(); n++) {
             tt()[n] = (RFLOAT) exp_local_Fctfs[0][n];
         }
@@ -4386,12 +4386,12 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
         // #define DEBUG_MRESOL
         #ifdef DEBUG_MRESOL
         Image<RFLOAT> img;
-        img().resize(Ysize(Mresol_fine[optics_group]),Xsize(Mresol_fine[optics_group]));
+        img().resize(Xsize(Mresol_fine[optics_group]), Ysize(Mresol_fine[optics_group]));
         for (long int n = 0; n < (img()).size(); n++) {
             img()[n] = (RFLOAT) Mresol_fine[optics_group][n];
         }
         img.write("Mresol_fine.mrc");
-        img().resize(Ysize(Mresol_coarse[optics_group]), Xsize(Mresol_coarse[optics_group]));
+        img().resize(Xsize(Mresol_coarse[optics_group]), Ysize(Mresol_coarse[optics_group]));
         for (long int n = 0; n < (img()).size(); n++) {
             img()[n] = (RFLOAT) Mresol_coarse[optics_group][n];
         }
@@ -5936,8 +5936,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             std::cerr << "Frefctf shape= "; Frefctf.printShape(std::cerr);
                                             MultidimArray<Complex> Fish;
                                             Fish.resize(exp_local_Minvsigma2[img_id]);
-                                            for (long int n = 0; n < (Fis.size(); n++)h)
-                                            {
+                                            for (long int n = 0; n < Fish.size(); n++) {
                                                 Fish[n] = *(Fimg_shift + n);
                                             }
                                             std::cerr << "Fimg_shift shape= "; (Fish).printShape(std::cerr);
@@ -5983,7 +5982,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             tt.write("Fref2.spi");
                                             std::cerr << "written Fref2.spi" << std::endl;
                                             Image<RFLOAT> Itt;
-                                            Itt().resize(Zsize(mymodel.PPref[exp_iclass].data), Ysize(mymodel.PPref[exp_iclass].data), Xsize(mymodel.PPref[exp_iclass].data));
+                                            Itt().resize(Xsize(mymodel.PPref[exp_iclass].data), Ysize(mymodel.PPref[exp_iclass].data), Zsize(mymodel.PPref[exp_iclass].data));
                                             for (long int n = 0; n < (Itt()).size(); n++) {
                                                 Itt()[n] = abs(mymodel.PPref[exp_iclass].data[n]);
                                             }

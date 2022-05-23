@@ -85,7 +85,7 @@ class Matrix2D {
     // Dimension constructor
     Matrix2D(int Ydim, int Xdim) {
         coreInit();
-        resize(Ydim, Xdim);
+        resize(Xdim, Ydim);
     }
 
     // Copy constructor
@@ -142,7 +142,7 @@ class Matrix2D {
     /// @name Size and shape of Matrix2D
     //@{
     // Resize to a given size
-    void resize(int Ydim, int Xdim) {
+    void resize(int Xdim, int Ydim) {
 
         if (Xdim == mdimx && Ydim == mdimy) return;
 
@@ -188,7 +188,7 @@ class Matrix2D {
     * @endcode
     */
     template<typename T1>
-    void resize(const Matrix2D<T1> &v) { resize(v.mdimy, v.mdimx); }
+    void resize(const Matrix2D<T1> &v) { resize(v.mdimx, v.mdimy); }
 
     // Extract submatrix and assign to this object
     void submatrix(int i0, int j0, int iF, int jF) {
@@ -252,7 +252,7 @@ class Matrix2D {
 
     // Initialise to zeros with a given size
     void initZeros(int Ydim, int Xdim) {
-        resize(Ydim, Xdim);
+        resize(Xdim, Ydim);
         initZeros();
     }
 
@@ -528,7 +528,7 @@ class Matrix2D {
 
     // Load 2D array from numerical recipes result
     void loadFromNumericalRecipes(T **m, int Ydim, int Xdim) {
-        resize(Ydim, Xdim);
+        resize(Xdim, Ydim);
 
         for (int i = 1; i <= Ydim; i++)
         for (int j = 1; j <= Xdim; j++)
@@ -590,11 +590,11 @@ class Matrix2D {
 
         // Look at shape and copy values
         if (op1.isRow()) {
-            resize(1, op1.size());
+            resize(op1.size(), 1);
             for (int j = 0; j < op1.size(); j++)
                 at(0, j) = op1[j];
         } else {
-            resize(op1.size(), 1);
+            resize(1, op1.size());
             for (int i = 0; i < op1.size(); i++)
                 at(i, 0) = op1[i];
         }
@@ -647,7 +647,7 @@ class Matrix2D {
 
     // Copy stl::vector to matrix
     void copyFromVector(std::vector<T> &v, int Xdim, int Ydim) {
-        resize(Ydim, Xdim);
+        resize(Xdim, Ydim);
         copy(v.begin(), v.begin() + v.size(), mdata);
     }
 

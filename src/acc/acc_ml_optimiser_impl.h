@@ -1567,7 +1567,7 @@ void convertAllSquaredDifferencesToWeights(
     }
 
     if (exp_ipass == 0) {
-        op.Mcoarse_significant.resizeNoCp(1, 1, sp.nr_images, Xsize(op.Mweight));
+        op.Mcoarse_significant.resizeNoCp(sp.nr_images, Xsize(op.Mweight));
     }
 
     XFLOAT my_significant_weight;
@@ -3100,7 +3100,7 @@ void accDoExpectationOneParticle(MlClass *myInstance, unsigned long part_id_sort
             if (ipass == 0) {
                 unsigned long weightsPerPart(baseMLO->mymodel.nr_classes * sp.nr_dir * sp.nr_psi * sp.nr_trans * sp.nr_oversampled_rot * sp.nr_oversampled_trans);
 
-                op.Mweight.resizeNoCp(1, 1, sp.nr_images, weightsPerPart);
+                op.Mweight.resizeNoCp(sp.nr_images, weightsPerPart);
 
                 AccPtr<XFLOAT> Mweight = ptrFactory.make<XFLOAT>();
 

@@ -129,7 +129,7 @@ class Image: public AccPtr<T> {
 
         if (img.size() != AccPtr<T>::getSize()) {
             if (img.size() == 0) {
-                img.resize(z, y, x);
+                img.resize(x, y, z);
             } else {
                 CRITICAL("Trying to fill host-array with data from an array with different size!")
             }
