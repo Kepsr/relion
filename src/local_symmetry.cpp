@@ -26,11 +26,6 @@
 static std::string str_new_mask = "NEW_MASK_AND_OPERATORS";
 static std::string str_mask_filename = "MASKFILENAME";
 
-template <typename T>
-inline T euclidsq(T a, T b, T c) {
-    return a * a + b * b + c * c;
-}
-
 void sum3DCubicMask(
     const MultidimArray<RFLOAT> v, RFLOAT &val_sum, RFLOAT &val_ctr
 ) {

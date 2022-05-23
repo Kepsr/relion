@@ -289,11 +289,6 @@ void Postprocessing::divideByMtf(MultidimArray<Complex> &FT) {
     }
 }
 
-template <typename T>
-inline T euclidsq(T a, T b, T c) {
-    return a * a + b * b + c * c;
-}
-
 bool Postprocessing::findSurfacePixel(
     int idx, int kp, int ip, int jp,
     int &best_kpp, int &best_ipp, int &best_jpp,

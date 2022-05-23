@@ -815,11 +815,6 @@ void selfScaleToSize(
     scaleToSize(aux, V1, Xdim, Ydim, Zdim);
 }
 
-// Euclidean distance in 3 dimensions
-inline RFLOAT euclid(RFLOAT x, RFLOAT y, RFLOAT z) {
-    return sqrt(x * x + y * y + z * z);
-}
-
 /** Does a radial average of a 2D/3D image, around the voxel where is the origin.
  * @ingroup GeometricalTransformations
  *

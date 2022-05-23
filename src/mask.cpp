@@ -27,11 +27,6 @@
 template class std::basic_string<char>;
 #endif
 
-template <typename T>
-inline T euclidsq(T a, T b, T c) {
-    return a * a + b * b + c * c;
-}
-
 // Workaround for compiler versions before 2018 update 2
 #ifdef __INTEL_COMPILER
     #if (__INTEL_COMPILER < 1800)

@@ -144,6 +144,14 @@ inline int sgn_nozero(T val) {
     return val >= T(0) ? +1 : -1;
 }
 
+// Euclidean distance in 3D
+template <typename T>
+inline T euclid(T a, T b, T c) { return sqrt(a * a + b * b + c * c); }
+
+// Squared Euclidean distance in 3D
+template <typename T>
+inline T euclidsq(T a, T b, T c) { return a * a + b * b + c * c; }
+
 #ifndef XMIPP_MIN
 /** Minimum
  * @code
