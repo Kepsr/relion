@@ -82,13 +82,12 @@ class align_symmetry {
         init_progress_bar(MDang.numberOfObjects());
         long int best_at = 0;
         double best_diff2 = 1E99;
-        RFLOAT rot, tilt, psi;
 
         /// TODO: parallelise?
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDang) {
-            rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-            tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-            psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+            RFLOAT rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+            RFLOAT tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            RFLOAT psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
 
             A3D = Euler::rotation3DMatrix(rot, tilt, psi);
             F2D.initZeros();

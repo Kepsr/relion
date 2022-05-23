@@ -142,7 +142,8 @@ class tiltpair_plot_parameters {
                 SL.get_matrices(i - 1, L, R);
                 L.resize(3, 3); // Erase last row and column
                 R.resize(3, 3); // as only the relative orientation is useful and not the translation
-                Euler::apply_transf(L, R, rot2, tilt2, psi2, rot2p, tilt2p, psi2p);
+                angles_t angles = Euler::apply_transf(L, R, rot2, tilt2, psi2);
+                rot2p = angles.rot; tilt2p = angles.tilt; psi2p = angles.psi;
             }
 
             RFLOAT ang_dist = check_tilt_pairs(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);

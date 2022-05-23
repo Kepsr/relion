@@ -1587,10 +1587,14 @@ void HealpixSampling::getOrientations(
         RFLOAT myperturb = random_perturbation * getAngularSampling();
         for (int iover = 0; iover < my_rot.size(); iover++) {
             if (is_3D) {
-                Matrix2D<RFLOAT> A = Euler::angles2matrix(my_rot[iover], my_tilt[iover], my_psi[iover]);
+                RFLOAT &rot = my_rot[iover], &tilt = my_tilt[iover], &psi = my_psi[iover];
+                Matrix2D<RFLOAT> A = Euler::angles2matrix(rot, tilt, psi);
                 Matrix2D<RFLOAT> R = Euler::angles2matrix(myperturb, myperturb, myperturb);
                 A = A * R;
-                Euler::matrix2angles(A, my_rot[iover], my_tilt[iover], my_psi[iover]);
+                angles_t angles = Euler::matrix2angles(A);
+                rot  = angles.rot;
+                tilt = angles.tilt;
+                psi  = angles.psi;
             } else {
                 my_psi[iover] += myperturb;
             }
@@ -1632,17 +1636,16 @@ RFLOAT HealpixSampling::calculateAngularDistance(
 
         // Find the symmetry operation where the Distance based on Euler axes is minimal
         RFLOAT min_axes_dist = 3600.0;
-        RFLOAT rot2p, tilt2p, psi2p;
         Matrix2D<RFLOAT> E1, E2;
         Matrix1D<RFLOAT> v1, v2;
         // For all symmetry operations j
         for (int j = 0; j < R_repository.size(); j++) {
 
-            Euler::apply_transf(L_repository[j], R_repository[j], rot2, tilt2, psi2, rot2p, tilt2p, psi2p);
+            angles_t angles2p = Euler::apply_transf(L_repository[j], R_repository[j], rot2, tilt2, psi2);
 
             // Distance based on Euler axes
             E1 = Euler::angles2matrix(rot1, tilt1, psi1);
-            E2 = Euler::angles2matrix(rot2p, tilt2p, psi2p);
+            E2 = Euler::angles2matrix(angles2p.rot, angles2p.tilt, angles2p.psi);
             RFLOAT axes_dist = 0;
             for (int i = 0; i < 3; i++) {
                 E1.getRow(i, v1);

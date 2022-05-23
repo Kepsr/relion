@@ -159,12 +159,12 @@ class particle_symmetry_expand_parameters {
                     SL.get_matrices(isym, L, R);
                     L.resize(3, 3); // Erase last row and column
                     R.resize(3, 3); // as only the relative orientation is useful and not the translation
-                    Euler::apply_transf(L, R, rot, tilt, psi, rotp, tiltp, psip);
+                    angles_t angles = Euler::apply_transf(L, R, rot, tilt, psi);
                     DFo.addObject();
                     DFo.setObject(DFi.getObject());
-                    DFo.setValue(EMDL::ORIENT_ROT,  rotp);
-                    DFo.setValue(EMDL::ORIENT_TILT, tiltp);
-                    DFo.setValue(EMDL::ORIENT_PSI,  psip);
+                    DFo.setValue(EMDL::ORIENT_ROT,  angles.rot);
+                    DFo.setValue(EMDL::ORIENT_TILT, angles.tilt);
+                    DFo.setValue(EMDL::ORIENT_PSI,  angles.psi);
                 }
             }
 

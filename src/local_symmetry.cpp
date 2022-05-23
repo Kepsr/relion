@@ -253,7 +253,10 @@ void standardiseEulerAngles(
             bb_old  > 179.0 || bb_old < 1.0
     ) {
         Matrix2D<RFLOAT> rot_mat = Euler::angles2matrix(aa_old, bb_old, gg_old);
-        Euler::matrix2angles(rot_mat, aa_new, bb_new, gg_new);
+        angles_t angles = Euler::matrix2angles(rot_mat);
+        aa_new = angles.rot;
+        bb_new = angles.tilt;
+        gg_new = angles.psi;
         return;
     }
     aa_new = aa_old; bb_new = bb_old; gg_new = gg_old;
@@ -846,7 +849,10 @@ void readDMFormatMasksAndOperators(FileName fn_info,
                     A.at(1, 0) = a21; A.at(1, 1) = a22; A.at(1, 2) = a23;
                     A.at(2, 0) = a31; A.at(2, 1) = a32; A.at(2, 2) = a33;
 
-                    Euler::matrix2angles(A.transpose(), aa, bb, gg); // TODO: do we need transpose here?
+                    angles_t angles = Euler::matrix2angles(A.transpose()); // TODO: do we need transpose here?
+                    aa = angles.rot;
+                    bb = angles.tilt;
+                    gg = angles.psi;
                 }
 
                 // Read TRANS
