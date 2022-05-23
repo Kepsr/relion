@@ -672,9 +672,6 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
     }
 }
 
-template <typename T>
-T euclid2(T a, T b, T c) { return a * a + b * b + c * c; }
-
 void Projector::project(MultidimArray<Complex> &f2d, Matrix2D<RFLOAT> &A) {
     // f2d should already be in the right size (ori_size,orihalfdim)
     // AND the points outside r_max should already be zero...
@@ -720,7 +717,7 @@ void Projector::project(MultidimArray<Complex> &f2d, Matrix2D<RFLOAT> &A) {
             RFLOAT yp = Ainv(1, 0) * x + Ainv(1, 1) * y;
             RFLOAT zp = Ainv(2, 0) * x + Ainv(2, 1) * y;
 
-            const RFLOAT r_ref_2 = euclid2(xp, yp, zp);
+            const RFLOAT r_ref_2 = euclidsq(xp, yp, zp);
 
             if (r_ref_2 > r_max_ref_2) continue;
 

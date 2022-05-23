@@ -49,12 +49,6 @@
 #include <string.h>
 #include <math.h>
 
-template <typename T>
-inline T euclid(T a, T b, T c) { return sqrt(a * a + b * b + c * c); }
-
-template <typename T>
-inline T euclidsq(T a, T b, T c) { return a * a + b * b + c * c; }
-
 static pthread_mutex_t fftw_plan_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 //#define TIMING_FFTW
