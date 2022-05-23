@@ -145,8 +145,12 @@ class ctf_toolbox_parameters {
                 MultidimArray<Complex> Fimg;
                 transformer.FourierTransform(img(), Fimg, false);
 
-                MultidimArray<RFLOAT> Fctf(Ysize(Fimg), Xsize(Fimg));
-                ctf.getFftwImage(Fctf, Xsize(img()), Ysize(img()), angpix, false, false, do_intact_ctf_until_first_peak, false, do_ctf_pad, do_intact_ctf_after_first_peak);
+                MultidimArray<RFLOAT> Fctf = ctf.getFftwImage(
+                    Xsize(Fimg), Ysize(Fimg), 
+                    Xsize(img()), Ysize(img()), 
+                    angpix, false, false, do_intact_ctf_until_first_peak, 
+                    false, do_ctf_pad, do_intact_ctf_after_first_peak
+                );
                 if (!do_intact_ctf_after_first_peak) {
                     Fimg *= Fctf;
                 } else {

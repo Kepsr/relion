@@ -476,8 +476,8 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
 
                     // Ignore lines that do not have at least two integer numbers on it (at this point I do not know dimensionality yet....)
                     if (
-                        words.size() > 1 && 
-                        sscanf(words[0].c_str(), "%d", &num1) && 
+                        words.size() > 1 &&
+                        sscanf(words[0].c_str(), "%d", &num1) &&
                         sscanf(words[1].c_str(), "%d", &num2)
                     ) {
                         MD.addObject();
@@ -639,7 +639,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
 
         extractParticlesFromOneMicrograph(
             MDin, fn_mic, imic, fn_output_img_root, fn_oristack,
-            my_current_nr_images, npos, 
+            my_current_nr_images, npos,
             all_avg, all_stddev, all_minval, all_maxval
         );
 
@@ -722,7 +722,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         // Discard particles that are completely outside the micrograph and print a warning
         if (
                                      xF < 0 || x0 >= Xsize(Imic()) ||
-                                     yF < 0 || y0 >= Ysize(Imic()) || 
+                                     yF < 0 || y0 >= Ysize(Imic()) ||
             (dimensionality == 3 && (zF < 0 || z0 >= Zsize(Imic())))
         ) {
             std::cerr << " micrograph x,y,z,n-size= " << Xsize(Imic()) << " , " << Ysize(Imic()) << " , " << Zsize(Imic()) << " , " << Nsize(Imic()) << std::endl;
@@ -757,15 +757,13 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         if (do_phase_flip || do_premultiply_ctf) {
             transformer.FourierTransform(Ipart(), FT, false);
 
-            MultidimArray<RFLOAT> Fctf;
-            Fctf.resize(Xsize(FT), Ysize(FT));
             // 190802 TAKANORI: The original code using getCTF was do_damping=false, but for consistency with Polishing, I changed it.
             // The boxsize in ObsModel has been updated above.
             // In contrast to Polish, we premultiply particle BEFORE down-sampling, so PixelSize in ObsModel is OK.
             // But we are doing this after extraction, so there is not much merit...
-            ctf.getFftwImage(
-                Fctf, 
-                my_extract_size, my_extract_size, my_angpix, 
+            MultidimArray<RFLOAT> Fctf = ctf.getFftwImage(
+                Xsize(FT), Ysize(FT),
+                my_extract_size, my_extract_size, my_angpix,
                 false, do_phase_flip, do_ctf_intact_first_peak, true, false
                 // do_abs, phase_flip, intact_first_peak, damping, padding
             );
@@ -846,8 +844,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
         TICTOC(TIMING_PRE_IMG_OPS, {
         performPerImageOperations(
-            Ipart, fn_output_img_root, 
-            my_current_nr_images + ipos, my_total_nr_images, 
+            Ipart, fn_output_img_root,
+            my_current_nr_images + ipos, my_total_nr_images,
             tilt_deg, psi_deg,
             all_avg, all_stddev, all_minval, all_maxval
         );
@@ -1097,8 +1095,8 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                 yoff /= particle_angpix;
 
                 if (do_recenter && (
-                    fabs(recenter_x) > 0.0 || 
-                    fabs(recenter_y) > 0.0 || 
+                    fabs(recenter_x) > 0.0 ||
+                    fabs(recenter_y) > 0.0 ||
                     fabs(recenter_z) > 0.0
                 )) {
                     rot  = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ROT);

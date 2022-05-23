@@ -325,7 +325,7 @@ class project_parameters {
                     } else {
                         CTF ctf = CTF(MDang, &obsModel); // This MDimg only contains one particle!
                         Fctf.resize(F2D);
-                        ctf.getFftwImage(Fctf, Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
+                        Fctf = ctf.getFftwImage(Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                     }
 
                     for (long int n = 0; n < F2D.size(); n++) {
@@ -475,7 +475,7 @@ class project_parameters {
                         } else {
                             CTF ctf = CTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
                             Fctf.resize(F2D);
-                            ctf.getFftwImage(Fctf, Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
+                            Fctf = ctf.getFftwImage(Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
                         }
 
                         for (long int n = 0; n < F2D.size(); n++) {

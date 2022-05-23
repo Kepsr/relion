@@ -2144,8 +2144,8 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 // Apply CTF if necessary (skip this for subtomograms!)
                 if (do_ctf_correction && mymodel.data_dim != 3) {
                     CTF ctf = CTF(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
-                    ctf.getFftwImage(
-                        Fctf, mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
+                    Fctf = ctf.getFftwImage(
+                        Xsize(Fctf), Ysize(Fctf), mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
                         ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                     );
 
@@ -5002,8 +5002,8 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     direct::elem(exp_metadata, my_metadata_offset, METADATA_CTF_PHASE_SHIFT)
                 );
 
-                ctf.getFftwImage(
-                    Fctf, image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
+                Fctf = ctf.getFftwImage(
+                    Xsize(Fctf), Ysize(Fctf), image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
                     ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                 );
 
@@ -5024,8 +5024,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             Image<RFLOAT> tmp;
             tmp() = Fctf;
             tmp.write("Fctf.spi");
-            tmp().resize(mymodel.ori_size, mymodel.ori_size);
-            ctf.getCenteredImage(tmp(), mymodel.pixel_size, ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true);
+            tmp() = ctf.getCenteredImage(mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size, ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true);
             tmp.write("Fctf_cen.spi");
             std::cerr << "Written Fctf.spi, Fctf_cen.spi. Press any key to continue..." << std::endl;
             char c;
@@ -7556,8 +7555,9 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             direct::elem(exp_metadata, metadata_offset, METADATA_CTF_PHASE_SHIFT)
                         );
 
-                        ctf.getFftwImage(
-                            Fctf, image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
+                        Fctf = ctf.getFftwImage(
+                            Xsize(Fctf), Ysize(Fctf),
+                            image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
                             ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                         );
                     }

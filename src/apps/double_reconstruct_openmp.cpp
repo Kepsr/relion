@@ -155,7 +155,7 @@ class reconstruct_parameters {
                     bool is_my_positive = (ipass == 1) ? is_positive : !is_positive;
 
                     // Get CTFP and multiply the Fapp with it
-                    ctf.getCTFPImage(CTFP, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
+                    CTFP = ctf.getCTFPImage(Fin.xdim, Fin.ydim, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
 
                     Fapp = Fin * CTFP; // Element-wise complex multiplication
 
@@ -426,8 +426,8 @@ class reconstruct_parameters {
 
                         CTF ctf = CTF(table, &obsModel, p);
 
-                        ctf.getFftwImage(
-                            Fctf, sPad2D, sPad2D, pixelsize, 
+                        Fctf = ctf.getFftwImage(
+                            Xsize(Fctf), Ysize(Fctf), sPad2D, sPad2D, pixelsize,
                             ctf_phase_flipped, only_flip_phases,
                             intact_ctf_first_peak, true
                         );
@@ -573,7 +573,7 @@ class reconstruct_parameters {
             // Two halves
             for (int j = 0; j < 2; j++) {
                 if (mask_diameter_filt > 0.0) {
-                    std::cout << " + Applying spherical mask of diameter " 
+                    std::cout << " + Applying spherical mask of diameter "
                     << mask_diameter_filt << " ..." << std::endl;
 
                     const double r0 = mask_diameter_filt/2.0;
@@ -600,11 +600,11 @@ class reconstruct_parameters {
                 std::cout << " + Starting the reconstruction ..." << std::endl;
 
                 MultidimArray<RFLOAT> tau2;
-                if (do_use_fsc) 
+                if (do_use_fsc)
                     backprojector[j]->updateSSNRarrays(1., tau2, dummy, dummy, dummy, fsc, do_use_fsc, true);
 
                 backprojector[j]->reconstruct(
-                    vol(), grid_iters, do_map, tau2, 
+                    vol(), grid_iters, do_map, tau2,
                     1.0, 1.0, -1, false, writeWeights ? &weightOut : 0
                 );
 

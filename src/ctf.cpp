@@ -350,11 +350,12 @@ t2Vector<RFLOAT> CTF::getGammaGrad(RFLOAT X, RFLOAT Y) const {
 }
 
 // Generate a complete CTF Image ----------------------------------------------
-void CTF::getFftwImage(
-    MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
+MultidimArray<RFLOAT> CTF::getFftwImage(
+    long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_ctf_padding, bool do_intact_after_first_peak
 ) const {
+    MultidimArray<RFLOAT> result(Xdim, Ydim);
     // Boxing the particle in a small box from the whole micrograph leads to loss of delocalised information (or aliaising in the CTF)
     // Here, calculate the CTF in a 2x larger box to support finer oscillations,
     // and then rescale the large CTF to simulate the effect of the windowing operation
@@ -373,10 +374,8 @@ void CTF::getFftwImage(
             oriydim_pad *= 2;
         }
 
-        MultidimArray<RFLOAT> Fctf(oriydim_pad, orixdim_pad / 2 + 1);
-
-        getFftwImage(
-            Fctf, orixdim_pad, oriydim_pad, angpix, do_abs,
+        MultidimArray<RFLOAT> Fctf = getFftwImage(
+            oriydim_pad / 2 + 1, oriydim_pad, orixdim_pad, oriydim_pad, angpix, do_abs,
             do_only_flip_phases, do_intact_until_first_peak, do_damping, false, do_intact_after_first_peak
         );
 
@@ -480,15 +479,18 @@ void CTF::getFftwImage(
             }
         }
     }
+    return result;
 }
 
 // Generate a complete CTFP (complex) image (with sector along angle) ---------
-void CTF::getCTFPImage(
-    MultidimArray<Complex> &result, int orixdim, int oriydim, RFLOAT angpix,
+MultidimArray<Complex> CTF::getCTFPImage(
+    long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
     bool is_positive, float angle
 ) {
     if (angle < 0.0 || angle >= 360.0)
         REPORT_ERROR("CTF::getCTFPImage: angle should be in the interval [0,360)");
+
+    MultidimArray<Complex> result(Xdim, Ydim);
 
     // Flip angles greater than 180 degrees
     if (angle >= 180.0) {
@@ -552,13 +554,16 @@ void CTF::getCTFPImage(
             direct::elem(result, 0, j) = conj(direct::elem(result, 0, result.ydim - j));
         }
     }
+    return result;
 }
 
-void CTF::getCenteredImage(
-    MultidimArray<RFLOAT> &result, RFLOAT Tm,
+MultidimArray<RFLOAT> CTF::getCenteredImage(
+    long int Xdim, long int Ydim,
+    RFLOAT Tm,
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_intact_after_first_peak
 ) {
+    MultidimArray<RFLOAT> result(Xdim, Ydim);
     result.setXmippOrigin();
     RFLOAT xs = (RFLOAT) Xsize(result) * Tm;
     RFLOAT ys = (RFLOAT) Ysize(result) * Tm;
@@ -572,6 +577,7 @@ void CTF::getCenteredImage(
         );
         result.elem(i, j) = do_abs ? abs(t) : t;
     }
+    return result;
 }
 
 void CTF::get1DProfile(

@@ -56,13 +56,13 @@ int main(int argc, char *argv[]) {
 
     const int sh = s / 2 + 1;
 
-    Image<RFLOAT> ctfImg(sh,s), one(sh,s);
+    Image<RFLOAT> ctfImg(sh, s), one(sh, s);
     one.data.initConstant(1.0);
 
     const double angpix = obsModel.getPixelSize(opticsGroup);
 
     CTF ctf = CTF(allMdts[mg], &obsModel, 0);
-    ctf.getFftwImage(ctfImg(), s, s, angpix);
+    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix);
 
     const int tc = sh / step + 1;
 

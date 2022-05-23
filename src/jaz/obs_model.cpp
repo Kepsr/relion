@@ -338,8 +338,8 @@ void ObservationModel::predictObservation(
         CTF ctf = CTF(partMdt, this, particle);
 
         Image<RFLOAT> ctfImg(sh_out, s_out);
-        ctf.getFftwImage(
-            ctfImg(), s_out, s_out, angpix[opticsGroup],
+        ctfImg() = ctf.getFftwImage(
+            sh_out, s_out, s_out, s_out, angpix[opticsGroup],
             false, false, false, true, applyCtfPadding
         );
 

@@ -388,8 +388,8 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             FileName fn_tmp = basePckr->MDmic.getValue<FileName>(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
                 CTF ctf = CTF(basePckr->MDmic, &basePckr->obsModel);
-                Fctf.resize(basePckr->workSize,basePckr->workSize / 2 + 1);
-                ctf.getFftwImage(Fctf, basePckr->micrograph_size, basePckr->micrograph_size, basePckr->angpix, false, false, basePckr->intact_ctf_first_peak, true);
+                Fctf.resize(basePckr->workSize, basePckr->workSize / 2 + 1);
+                Fctf = ctf.getFftwImage(basePckr->workSize / 2 + 1, basePckr->workSize, basePckr->micrograph_size, basePckr->micrograph_size, basePckr->angpix, false, false, basePckr->intact_ctf_first_peak, true);
                 break;
             }
         }

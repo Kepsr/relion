@@ -748,8 +748,8 @@ void getFourierTransformsAndCtfs(
                     direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_PHASE_SHIFT)
                 );
 
-                ctf.getFftwImage(
-                    Fctf, baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size,
+                Fctf = ctf.getFftwImage(
+                    Xsize(Fctf), Ysize(Fctf), baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size,
                     baseMLO->ctf_phase_flipped, baseMLO->only_flip_phases, baseMLO->intact_ctf_first_peak, true
                 );
                 }))

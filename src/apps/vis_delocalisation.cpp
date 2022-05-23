@@ -151,7 +151,7 @@ Image<RFLOAT> visualiseBand(
     Image<RFLOAT> mask = FilterHelper::raisedCosEnvRingFreq2D(one, r0, r1, flank);
 
     Image<RFLOAT> ctfImg(sh, s), ctfImgFull(s, s);
-    ctf.getFftwImage(ctfImg(), s, s, angpix);
+    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix);
 
     if (delocSupp) {
         DelocalisationHelper::maskOutsideBox(ctf, mask_rad, angpix, s, ctfImg(), 0.0, 0.0);

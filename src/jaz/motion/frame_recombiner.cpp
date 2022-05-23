@@ -355,8 +355,8 @@ void FrameRecombiner::process(
                 }
 
                 MultidimArray<RFLOAT> Fctf(Ysize(sum()), Xsize(sum()));
-                ctf.getFftwImage(
-                    Fctf, s_out[og], s_out[og], angpix_out[og], 
+                Fctf = ctf.getFftwImage(
+                    Xsize(sum()), Ysize(sum()), s_out[og], s_out[og], angpix_out[og], 
                     false, false, false, true, false
                 );
                 sum() *= Fctf;
