@@ -307,7 +307,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         // std::cout << rnd_gaus(0., angular_error) << std::endl;
     }
 
-    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     // If we are considering Ewald sphere curvature, the mag. matrix
     // has to be provided to the backprojector explicitly

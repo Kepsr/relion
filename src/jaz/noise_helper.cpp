@@ -55,9 +55,9 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         Matrix1D<RFLOAT> dm = VECTOR_R3(dx, dy, dz);
 
         RFLOAT rot, tilt;
-        Euler_direction2angles(dm, rot, tilt);
+        Euler::direction2angles(dm, rot, tilt);
 
-        Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, 0.0);
+        Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, 0.0);
 
         Image<Complex> spec = Image<Complex>::zeros(sh, s);
 

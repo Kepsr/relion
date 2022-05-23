@@ -54,6 +54,7 @@
 
 /// @name Euler operations
 /// @{
+namespace Euler {
 
 /** Euler angles --> "Euler" matrix
  *
@@ -66,28 +67,28 @@
  * See http://xmipp.cnb.csic.es/twiki/bin/view/Xmipp/EulerAngles for a
  * description of the Euler angles.
  */
-Matrix2D<RFLOAT> Euler_angles2matrix(RFLOAT a, RFLOAT b, RFLOAT g, bool homogeneous=false);
+Matrix2D<RFLOAT> angles2matrix(RFLOAT a, RFLOAT b, RFLOAT g, bool homogeneous=false);
 
 /** Euler angles2direction
  *
  * This function returns  a vector parallel to the  projection direction.
  * Resizes v if needed
  */
-void Euler_angles2direction(RFLOAT alpha, RFLOAT beta, Matrix1D< RFLOAT >& v);
+Matrix1D<RFLOAT> angles2direction(RFLOAT alpha, RFLOAT beta);
 
 /** Euler direction2angles
  *
  * This function returns the 2 Euler angles (rot&tilt) associated to the direction given by
  * the vector v.
  */
-void Euler_direction2angles(Matrix1D< RFLOAT >& v,
+void direction2angles(Matrix1D< RFLOAT >& v,
                             RFLOAT& alpha,
                             RFLOAT& beta);
 
 /** "Euler" matrix --> angles
  *
  * This function compute a set of Euler angles which result in an "Euler" matrix
- * as the one given. See \ref Euler_angles2matrix to know more about how this
+ * as the one given. See \ref angles2matrix to know more about how this
  * matrix is computed and what each row means. The result angles are in degrees.
  * Alpha, beta and gamma are respectively the first, second and third rotation
  * angles. If the input matrix is not 3x3 then an exception is thrown, the
@@ -95,10 +96,10 @@ void Euler_direction2angles(Matrix1D< RFLOAT >& v,
  * coordinate system.
  *
  * @code
- * Euler_matrix2angles(Euler, alpha, beta, gamma);
+ * matrix2angles(Euler, alpha, beta, gamma);
  * @endcode
  */
-void Euler_matrix2angles(const Matrix2D< RFLOAT >& A,
+void matrix2angles(const Matrix2D< RFLOAT >& A,
                          RFLOAT& alpha,
                          RFLOAT& beta,
                          RFLOAT& gamma);
@@ -121,10 +122,10 @@ void Euler_matrix2angles(const Matrix2D< RFLOAT >& A,
  * @endcode
  *
  * @code
- * Euler_up_down(rot, tilt, psi, newrot, newtilt, newpsi);
+ * up_down(rot, tilt, psi, newrot, newtilt, newpsi);
  * @endcode
  */
-void Euler_up_down(RFLOAT rot,
+void up_down(RFLOAT rot,
                    RFLOAT tilt,
                    RFLOAT psi,
                    RFLOAT& newrot,
@@ -144,10 +145,10 @@ void Euler_up_down(RFLOAT rot,
  * @endcode
  *
  * @code
- * Euler_another_set(rot, tilt, psi, newrot, newtilt, newpsi);
+ * another_set(rot, tilt, psi, newrot, newtilt, newpsi);
  * @endcode
  */
-void Euler_another_set(RFLOAT rot,
+void another_set(RFLOAT rot,
                        RFLOAT tilt,
                        RFLOAT psi,
                        RFLOAT& newrot,
@@ -177,10 +178,10 @@ void Euler_another_set(RFLOAT rot,
  * @endcode
  *
  * @code
- * Euler_mirrorY(rot, tilt, psi, newrot, newtilt, newpsi);
+ * mirrorY(rot, tilt, psi, newrot, newtilt, newpsi);
  * @endcode
  */
-void Euler_mirrorY(RFLOAT rot,
+void mirrorY(RFLOAT rot,
                    RFLOAT tilt,
                    RFLOAT psi,
                    RFLOAT& newrot,
@@ -210,10 +211,10 @@ void Euler_mirrorY(RFLOAT rot,
  * @endcode
  *
  * @code
- * Euler_mirrorX(rot, tilt, psi, newrot, newtilt, newpsi);
+ * mirrorX(rot, tilt, psi, newrot, newtilt, newpsi);
  * @endcode
  */
-void Euler_mirrorX(RFLOAT rot,
+void mirrorX(RFLOAT rot,
                    RFLOAT tilt,
                    RFLOAT psi,
                    RFLOAT& newrot,
@@ -244,10 +245,10 @@ void Euler_mirrorX(RFLOAT rot,
  * @endcode
  *
  * @code
- * Euler_mirrorX(rot, tilt, psi, newrot, newtilt, newpsi);
+ * mirrorX(rot, tilt, psi, newrot, newtilt, newpsi);
  * @endcode
  */
-void Euler_mirrorXY(RFLOAT rot,
+void mirrorXY(RFLOAT rot,
                     RFLOAT tilt,
                     RFLOAT psi,
                     RFLOAT& newrot,
@@ -270,7 +271,7 @@ void Euler_mirrorXY(RFLOAT rot,
  * @endcode
  *
  * where you know that the Euler matrix rows represent the different system
- * axes. See Euler_angles2matrix for more information about the Euler coordinate
+ * axes. See angles2matrix for more information about the Euler coordinate
  * system.
  *
  * @code
@@ -278,10 +279,10 @@ void Euler_mirrorXY(RFLOAT rot,
  * R60.resize(3, 3); // Get rid of homogeneous part
  * Matrix2D< RFLOAT > I(3, 3);
  * I.initIdentity();
- * Euler_apply_transf(I, R60, rot, tilt, psi, newrot, newtilt, newpsi);
+ * apply_transf(I, R60, rot, tilt, psi, newrot, newtilt, newpsi);
  * @endcode
  */
-void Euler_apply_transf(const Matrix2D< RFLOAT >& L,
+void apply_transf(const Matrix2D< RFLOAT >& L,
                         const Matrix2D< RFLOAT >& R,
                         RFLOAT rot,
                         RFLOAT tilt,
@@ -297,11 +298,12 @@ void Euler_apply_transf(const Matrix2D< RFLOAT >& L,
  * IS_NOT_INV in applyGeometry.
  *
  * @code
- * Matrix2D<float> euler = Euler_rotation3DMatrix(60, 30, 60);
+ * Matrix2D<float> euler = rotation3DMatrix(60, 30, 60);
  * @endcode
  */
-Matrix2D<RFLOAT> Euler_rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
+Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
+};
 //@}
 
 #endif

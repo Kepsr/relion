@@ -123,7 +123,7 @@ void FlexAnalyser::initialise() {
             Matrix2D<RFLOAT> Aresi, Abody;
             f_weights << ibody + 1;
             // rot
-            Aresi = Euler_angles2matrix(1.0, 90.0, 0.0);
+            Aresi = Euler::angles2matrix(1.0, 90.0, 0.0);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
@@ -132,7 +132,7 @@ void FlexAnalyser::initialise() {
             norm_pca.push_back(sqrt(Mbody.sum2()));
             f_weights << " " << sqrt(Mbody.sum2());
             // tilt
-            Aresi = Euler_angles2matrix(0.0, 91.0, 0.0);
+            Aresi = Euler::angles2matrix(0.0, 91.0, 0.0);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
@@ -141,7 +141,7 @@ void FlexAnalyser::initialise() {
             norm_pca.push_back(sqrt(Mbody.sum2()));
             f_weights << " " << sqrt(Mbody.sum2());
             // psi
-            Aresi = Euler_angles2matrix(0.0, 90.0, 1.0);
+            Aresi = Euler::angles2matrix(0.0, 90.0, 1.0);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
@@ -150,7 +150,7 @@ void FlexAnalyser::initialise() {
             norm_pca.push_back(sqrt(Mbody.sum2()));
             f_weights << " " << sqrt(Mbody.sum2());
             // translation x & y (considered the same)
-            Aresi = Euler_angles2matrix(0.0, 90.0, 0.0);
+            Aresi = Euler::angles2matrix(0.0, 90.0, 0.0);
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
             Abody.at(0, 3) = 1.0;
@@ -317,7 +317,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
     RFLOAT rot  = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,  part_id);
     RFLOAT tilt = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT, part_id);
     RFLOAT psi  = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,  part_id);
-    Matrix2D<RFLOAT> Aori = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot, tilt, psi);
 
     RFLOAT my_pixel_size = data.getImagePixelSize(part_id, 0);
 
@@ -347,7 +347,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
         body_offset *= rescale_3dmodels;
 
         // Aresi is the residual orientation for this ibody
-        Matrix2D<RFLOAT> Aresi = Euler_angles2matrix(body_rot, body_tilt, body_psi);
+        Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
         // Only apply the residual orientation now!!!
         Matrix2D<RFLOAT> Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
 
@@ -564,7 +564,7 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
                 //std::cerr << " XX(body_offset_3d)= " << XX(body_offset_3d) << " YY(body_offset_3d)= " << YY(body_offset_3d) << " ZZ(body_offset_3d)= " << ZZ(body_offset_3d) << std::endl;
 
                 // Aresi is the residual orientation for this ibody
-                Matrix2D<RFLOAT> Aresi = Euler_angles2matrix(body_rot, body_tilt, body_psi);
+                Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
                 // Only apply the residual orientation now!!!
                 Matrix2D<RFLOAT> Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
 

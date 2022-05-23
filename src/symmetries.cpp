@@ -647,7 +647,7 @@ void SymList::writeDefinition(std::ostream &outstream, FileName fn_sym) {
             outstream << " L(" << isym + 2 << ")= " << L;
         outstream << " R(" << isym + 2 << ")= " << R;
         RFLOAT alpha, beta, gamma;
-        Euler_matrix2angles(R, alpha, beta, gamma);
+        Euler::matrix2angles(R, alpha, beta, gamma);
         outstream << "     Euler angles: " << alpha << " " << beta << " " << gamma << std::endl;
     }
 

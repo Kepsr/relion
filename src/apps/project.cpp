@@ -208,7 +208,7 @@ class project_parameters {
         projector.computeFourierTransformMap(vol(), dummy, 2* r_max);
 
         if (do_only_one) {
-            Matrix2D<RFLOAT> A3D = Euler_rotation3DMatrix(rot, tilt, psi);
+            Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
             F2D.initZeros();
             projector.get2DFourierTransform(F2D, A3D);
             if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
@@ -278,7 +278,7 @@ class project_parameters {
                 yoff /= angpix;
                 zoff /= angpix;
 
-                Matrix2D<RFLOAT> A3D = Euler_rotation3DMatrix(rot, tilt, psi);
+                Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
                 F2D.initZeros();
                 projector.get2DFourierTransform(F2D, A3D);
 
@@ -431,7 +431,7 @@ class project_parameters {
                         zoff /= angpix;
                     }
 
-                    Matrix2D<RFLOAT> A3D = Euler_rotation3DMatrix(rot, tilt, psi);
+                    Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
                     F2D.initZeros();
                     projector.get2DFourierTransform(F2D, A3D);
 

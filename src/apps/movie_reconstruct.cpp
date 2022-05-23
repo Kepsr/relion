@@ -454,7 +454,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
     RFLOAT rot  = mdt.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
     RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, p);
     RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI,  p);
-    Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     // If we are considering Ewald sphere curvature, the mag. matrix
     // has to be provided to the backprojector explicitly
