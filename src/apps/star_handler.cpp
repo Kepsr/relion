@@ -736,7 +736,6 @@ class star_handler_parameters {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             int optics_group;
             Matrix1D<RFLOAT> my_projected_center(3);
-            Matrix2D<RFLOAT> A3D;
             RFLOAT xoff, yoff, zoff, rot, tilt, psi, angpix;
 
             if (do_ignore_optics) {
@@ -756,7 +755,7 @@ class star_handler_parameters {
             yoff /= angpix;
 
             // Project the center-coordinates
-            Euler_angles2matrix(rot, tilt, psi, A3D, false);
+            Matrix2D<RFLOAT> A3D = Euler_angles2matrix(rot, tilt, psi);
             my_projected_center = A3D * my_center;
 
             xoff -= XX(my_projected_center);

@@ -66,8 +66,7 @@
  * See http://xmipp.cnb.csic.es/twiki/bin/view/Xmipp/EulerAngles for a
  * description of the Euler angles.
  */
-void Euler_angles2matrix(RFLOAT a, RFLOAT b, RFLOAT g, Matrix2D< RFLOAT >& A,
-                         bool homogeneous=false);
+Matrix2D<RFLOAT> Euler_angles2matrix(RFLOAT a, RFLOAT b, RFLOAT g, bool homogeneous=false);
 
 /** Euler angles2direction
  *

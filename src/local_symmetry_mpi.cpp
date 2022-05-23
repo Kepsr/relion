@@ -274,8 +274,7 @@ void local_symmetry_parameters_mpi::run() {
                     // Local searches
                     // Get com1_float. (floating point numbers)
                     // Com1f = R * Com0 + v
-                    Matrix2D<RFLOAT> mat1; mat1.clear();
-                    Euler_angles2matrix(aa, bb, gg, mat1);
+                    Matrix2D<RFLOAT> mat1 = Euler_angles2matrix(aa, bb, gg);
                     com1_float = mat1 * com0_int;
                     com1_float += vectorR3(dx, dy, dz);
                 } else {
@@ -456,8 +455,7 @@ void local_symmetry_parameters_mpi::run() {
 
                     // Update v = newCom1f + ( - newR * com0)
                     Localsym_decomposeOperator(op_samplings[isamp], aa, bb, gg, dx, dy, dz, cc);
-                    Matrix2D<RFLOAT> mat1; mat1.clear();
-                    Euler_angles2matrix(aa, bb, gg, mat1);
+                    Matrix2D<RFLOAT> mat1 = Euler_angles2matrix(aa, bb, gg);
                     vecR3 = vectorR3(dx, dy, dz) - mat1 * com0_int;
                     Localsym_composeOperator(op_samplings[isamp], aa, bb, gg, XX(vecR3), YY(vecR3), ZZ(vecR3), cc);
                 }

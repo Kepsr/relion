@@ -157,15 +157,9 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
         coords.resize(3);
         coords.initZeros();
 
-        Matrix2D<RFLOAT> A;
-        // Init rotational matrix A
-        A.clear();
-        A.resize(3, 3);
-
         // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
-        Euler_angles2matrix(0.0, tilt_deg, psi_deg, A, false);
-        // Don't put negative signs before tilt and psi values, use 'transpose' instead
-        A = A.transpose();
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0.0, tilt_deg, psi_deg).transpose();
+
         // Refer to the code in calculateBackgroundAvgStddev() for 3D implementation
 
         #ifdef DEBUG_REGULARISE_HELICAL_SEGMENTS
@@ -260,16 +254,9 @@ void subtractBackgroundRamp(
         coords.resize(3);
         coords.initZeros();
 
-        Matrix2D<RFLOAT> A;
-        // Init rotational matrix A
-        A.clear();
-        A.resize(3, 3);
-
         // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
         // Since Z = 0, tilt_deg does not matter
-        Euler_angles2matrix(0.0, tilt_deg, psi_deg, A, false);
-        // Don't put negative signs before tilt and psi values, use 'transpose' instead
-        A = A.transpose();
+        Matrix2D<RFLOAT> A = Euler_angles2matrix(0.0, tilt_deg, psi_deg).transpose();
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
             // not implemented for 3D data

@@ -238,7 +238,7 @@ class angular_error_parameters {
             // Assume tilt-axis lies in-plane...
             RFLOAT psi = -rot;
             // Rotate all points correspondingly
-            Euler_angles2matrix(rot, tilt, psi, Pass);
+            Pass = Euler_angles2matrix(rot, tilt, psi);
             //std::cerr << " Pass= " << Pass << std::endl;
             // Zero-translations for now (these are added in the x-y loops below)
             Pass.at(0, 2) = Pass.at(1, 2) = 0.0;
@@ -280,7 +280,7 @@ class angular_error_parameters {
             pairs_t2u = best_pairs_t2u;
 
         // Update the Passing matrix and the mapping
-        Euler_angles2matrix(best_rot, best_tilt, -best_rot, Pass);
+        Pass = Euler_angles2matrix(best_rot, best_tilt, -best_rot);
         // Zero-translations for now (these are added in the x-y loops below)
         Pass.at(0, 2) = Pass.at(1, 2) = 0.0;
         mapOntoTilt();

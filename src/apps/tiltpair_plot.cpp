@@ -169,13 +169,11 @@ class tiltpair_plot_parameters {
         // Transformation matrices
         Matrix1D<RFLOAT> axis(3);
         axis.resize(3);
-        Matrix2D<RFLOAT> E1, E2;
         RFLOAT rot2 = alpha, tilt2 = tilt_angle, psi2 = beta;
 
         // Calculate the transformation from one setting to the second one.
-        Euler_angles2matrix(psi1, tilt1, rot1, E1);
-        Euler_angles2matrix(psi2, tilt2, rot2, E2);
-        E2 = E2 * E1.inv();
+        Matrix2D<RFLOAT> E1 = Euler_angles2matrix(psi1, tilt1, rot1);
+        Matrix2D<RFLOAT> E2 = Euler_angles2matrix(psi2, tilt2, rot2) * E1.inv();
 
         // Get the tilt angle (and its sine)
         RFLOAT ah = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;

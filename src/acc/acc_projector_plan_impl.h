@@ -136,7 +136,7 @@ void AccProjectorPlan::setup(
     if (abs(sampling.random_perturbation) > 0.0) {
         myperturb = sampling.random_perturbation * sampling.getAngularSampling();
         if (sampling.is_3D) {
-            Euler_angles2matrix(myperturb, myperturb, myperturb, R);
+            R = Euler_angles2matrix(myperturb, myperturb, myperturb);
         }
         doR = true;
     }

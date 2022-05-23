@@ -49,10 +49,12 @@
 #include "src/funcs.h"
 
 /* Euler angles --> matrix ------------------------------------------------- */
-void Euler_angles2matrix(
+Matrix2D<RFLOAT> Euler_angles2matrix(
     RFLOAT alpha, RFLOAT beta, RFLOAT gamma,
-    Matrix2D<RFLOAT> &A, bool homogeneous
+    bool homogeneous
 ) {
+
+    Matrix2D<RFLOAT> A;
 
     if (homogeneous) {
         A.initZeros(4, 4);
@@ -85,6 +87,7 @@ void Euler_angles2matrix(
     A(2, 0) =  sc;
     A(2, 1) =  ss;
     A(2, 2) =  cb;
+    return A;
 }
 
 /* Euler direction --------------------------------------------------------- */
@@ -282,15 +285,12 @@ void Euler_apply_transf(
     RFLOAT rot, RFLOAT tilt, RFLOAT psi,
     RFLOAT &newrot, RFLOAT &newtilt, RFLOAT &newpsi
 ) {
-    Matrix2D<RFLOAT> euler(3, 3), temp;
-    Euler_angles2matrix(rot, tilt, psi, euler);
-    temp = L * euler * R;
+    Matrix2D<RFLOAT> euler = Euler_angles2matrix(rot, tilt, psi);
+    Matrix2D<RFLOAT> temp = L * euler * R;
     Euler_matrix2angles(temp, newrot, newtilt, newpsi);
 }
 
 /* Rotate (3D) MultidimArray with 3 Euler angles ------------------------------------- */
 Matrix2D<RFLOAT> Euler_rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi) {
-    Matrix2D<RFLOAT> result;
-    Euler_angles2matrix(rot, tilt, psi, result, true);
-    return result;
+    return Euler_angles2matrix(rot, tilt, psi, true);
 }
