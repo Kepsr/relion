@@ -1021,7 +1021,11 @@ void getAllSquaredDifferencesCoarse(
                 RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT);
                 RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT);
                 RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI);
-                transformCartesianAndHelicalCoords(xshift, yshift, zshift, xshift, yshift, zshift, rot_deg, tilt_deg, psi_deg, (accMLO->dataIs3D) ? (3) : (2), HELICAL_TO_CART_COORDS);
+                transformCartesianAndHelicalCoords(
+                    xshift, yshift, zshift,
+                    rot_deg, tilt_deg, psi_deg,
+                    accMLO->dataIs3D ? 3 : 2, HELICAL_TO_CART_COORDS
+                );
             }
 
             trans_xyz[trans_x_offset + itrans] = -2 * PI * xshift / (double) baseMLO->image_full_size[optics_group];
@@ -1241,7 +1245,11 @@ void getAllSquaredDifferencesFine(
                     RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT);
                     RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT);
                     RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI);
-                    transformCartesianAndHelicalCoords(xshift, yshift, zshift, xshift, yshift, zshift, rot_deg, tilt_deg, psi_deg, (accMLO->dataIs3D) ? (3) : (2), HELICAL_TO_CART_COORDS);
+                    transformCartesianAndHelicalCoords(
+                        xshift, yshift, zshift, 
+                        rot_deg, tilt_deg, psi_deg,
+                        accMLO->dataIs3D ? 3 : 2, HELICAL_TO_CART_COORDS
+                    );
                 }
 
                 trans_xyz[trans_x_offset + j] = -2 * PI * xshift / (double) baseMLO->image_full_size[optics_group];
@@ -1661,7 +1669,11 @@ void convertAllSquaredDifferencesToWeights(
                             RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT);
                             RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT);
                             RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI);
-                            transformCartesianAndHelicalCoords(myprior_x, myprior_y, myprior_z, myprior_x, myprior_y, myprior_z, rot_deg, tilt_deg, psi_deg, (accMLO->dataIs3D) ? (3) : (2), CART_TO_HELICAL_COORDS);
+                            transformCartesianAndHelicalCoords(
+                                myprior_x, myprior_y, myprior_z,
+                                rot_deg, tilt_deg, psi_deg,
+                                accMLO->dataIs3D ? 3 : 2, CART_TO_HELICAL_COORDS
+                            );
                         }
                     }
                     // (For helical refinement) Now offset, old_offset, sampling.translations and myprior are all in helical coordinates
@@ -2187,7 +2199,11 @@ void storeWeightedSums(
                         RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT);
                         RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT);
                         RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI);
-                        transformCartesianAndHelicalCoords(myprior_x, myprior_y, myprior_z, myprior_x, myprior_y, myprior_z, rot_deg, tilt_deg, psi_deg, accMLO->dataIs3D ? 3 : 2, CART_TO_HELICAL_COORDS);
+                        transformCartesianAndHelicalCoords(
+                            myprior_x, myprior_y, myprior_z, 
+                            rot_deg, tilt_deg, psi_deg, 
+                            accMLO->dataIs3D ? 3 : 2, CART_TO_HELICAL_COORDS
+                        );
                     }
 
                     if (!baseMLO->do_helical_refine || baseMLO->ignore_helical_symmetry) {
@@ -2446,7 +2462,6 @@ void storeWeightedSums(
                     RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT);
                     RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI);
                     transformCartesianAndHelicalCoords(
-                        xshift, yshift, zshift,
                         xshift, yshift, zshift,
                         rot_deg, tilt_deg, psi_deg,
                         accMLO->dataIs3D ? 3 : 2, HELICAL_TO_CART_COORDS

@@ -1355,24 +1355,16 @@ void createCylindricalReferenceWithPolarity(
 }
 
 void transformCartesianAndHelicalCoords(
-    Matrix1D<RFLOAT>& in, Matrix1D<RFLOAT>& out,
+    Matrix1D<RFLOAT> &in, Matrix1D<RFLOAT> &out,
     RFLOAT rot_deg, RFLOAT tilt_deg, RFLOAT psi_deg,
     bool direction
 ) {
-    int dim;
-    RFLOAT x0, y0, z0;
-    Matrix1D<RFLOAT> aux;
-    Matrix2D<RFLOAT> B;
 
-    dim = in.size();
+    int dim = in.size();
     if (dim != 2 && dim != 3)
         REPORT_ERROR("helix.cpp::transformCartesianAndHelicalCoords(): Vector of input coordinates should have 2 or 3 values!");
 
-    aux.clear();
-    aux.resize(3);
-    XX(aux) = XX(in);
-    YY(aux) = YY(in);
-    ZZ(aux) = dim == 3 ? ZZ(in) : 0.0;
+    Matrix1D<RFLOAT> aux = VECTOR_R3(XX(in), YY(in), dim == 3 ? ZZ(in) : 0.0);
 
     if (dim == 2)
         rot_deg = tilt_deg = 0.0;
@@ -1385,22 +1377,17 @@ void transformCartesianAndHelicalCoords(
     aux = A * aux;
 
     out.clear();
-    out.resize(2);
-    XX(out) = XX(aux);
-    YY(out) = YY(aux);
-    if (dim == 3) {
-        out.resize(3);
-        ZZ(out) = ZZ(aux);
+    out.resize(dim);
+    for (int i = 0; i < dim; i++) {
+        out[i] = aux[i];
     }
     aux.clear();
-    A.clear();
 
     return;
 }
 
 void transformCartesianAndHelicalCoords(
-    RFLOAT  xin,  RFLOAT  yin,  RFLOAT  zin,
-    RFLOAT &xout, RFLOAT &yout, RFLOAT &zout,
+    RFLOAT &x, RFLOAT &y, RFLOAT &z,
     RFLOAT rot_deg, RFLOAT tilt_deg, RFLOAT psi_deg,
     int dim,
     bool direction
@@ -1408,20 +1395,14 @@ void transformCartesianAndHelicalCoords(
     if (dim != 2 && dim != 3)
         REPORT_ERROR("helix.cpp::transformCartesianAndHelicalCoords(): Vector of input coordinates should have 2 or 3 values!");
 
-    Matrix1D<RFLOAT> in, out;
-    in.clear();
-    out.clear();
-    in.resize(dim);
-    XX(in) = xin;
-    YY(in) = yin;
-    if (dim == 3)
-    ZZ(in) = zin;
+    Matrix1D<RFLOAT> in = VECTOR_R3(x, y, z);
+    Matrix1D<RFLOAT> out(dim);
     transformCartesianAndHelicalCoords(in, out, rot_deg, tilt_deg, psi_deg, direction);
-    xout = XX(out);
-    yout = YY(out);
+
+    x = XX(out);
+    y = YY(out);
     if (dim == 3)
-    zout = ZZ(out);
-    return;
+    z = ZZ(out);
 }
 
 /*
@@ -3308,7 +3289,7 @@ void simulateHelicalSegments(
 ) {
     Image<RFLOAT> img;
     int nr_segments, tube_id;
-    RFLOAT rot, psi, tilt, new_psi, new_tilt, xoff, yoff, zoff, new_xoff, new_yoff, new_zoff, step_pix, psi_flip_ratio, len_pix;
+    RFLOAT rot, psi, tilt, new_psi, new_tilt, step_pix, psi_flip_ratio, len_pix;
     MetaDataTable MD;
     FileName fn_mic, fn_star_out_full, fn_star_out_priors, fn_star_out_wopriors, fn_ext;
     std::ofstream fout;
@@ -3430,13 +3411,12 @@ void simulateHelicalSegments(
         new_psi = new_psi < -180.0 ? new_psi + 360.0 : new_psi;
         new_psi = new_psi > 180.0 ? new_psi - 360.0 : new_psi;
 
-        xoff = yoff = zoff = new_xoff = new_yoff = new_zoff = 0.0;
+        RFLOAT xoff = 0.0, yoff = 0.0, zoff = 0.0;
         if (sigma_offset > 0.0001) {
-            new_xoff = is_3d_tomo ? rnd_gaus(0.0, sigma_offset) : rnd_unif(-0.5 * rise_A, 0.5 * rise_A);
-            new_yoff = rnd_gaus(0.0, sigma_offset);
-            new_zoff = is_3d_tomo ? rnd_unif(-0.5 * rise_A, 0.5 * rise_A) : 0.0;
+            xoff = is_3d_tomo ? rnd_gaus(0.0, sigma_offset) : rnd_unif(-0.5 * rise_A, 0.5 * rise_A);
+            yoff = rnd_gaus(0.0, sigma_offset);
+            zoff = is_3d_tomo ? rnd_unif(-0.5 * rise_A, 0.5 * rise_A) : 0.0;
             transformCartesianAndHelicalCoords(
-                new_xoff, new_yoff, new_zoff,
                 xoff, yoff, zoff,
                 rot, new_tilt, new_psi,
                 is_3d_tomo ? 3 : 2,
@@ -4371,7 +4351,6 @@ void transformCartesianToHelicalCoordsForStarFiles(MetaDataTable& MD_in, MetaDat
         zoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
         transformCartesianAndHelicalCoords(
-            xoff, yoff, zoff,
             xoff, yoff, zoff,
             rot, tilt, psi,
             is_3d_trans ? 3 : 2,

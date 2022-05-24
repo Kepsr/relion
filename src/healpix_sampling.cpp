@@ -410,7 +410,6 @@ void HealpixSampling::addOneTranslation(
     if (do_helical_refine)
         transformCartesianAndHelicalCoords(
             offset_x, offset_y, offset_z,
-            offset_x, offset_y, offset_z,
             rot_deg, tilt_deg, psi_deg,
             is_3d_trans ? 3 : 2, CART_TO_HELICAL_COORDS
         );

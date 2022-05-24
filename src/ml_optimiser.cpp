@@ -5399,7 +5399,11 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                         #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
                         std::cerr << "Helical xyz shift = (" << xshift << ", " << yshift << ", " << zshift << ")" << std::endl;
                         #endif
-                        transformCartesianAndHelicalCoords(xshift, yshift, zshift, xshift, yshift, zshift, rot_deg, tilt_deg, psi_deg, mymodel.data_dim, HELICAL_TO_CART_COORDS);
+                        transformCartesianAndHelicalCoords(
+                            xshift, yshift, zshift, 
+                            rot_deg, tilt_deg, psi_deg, 
+                            mymodel.data_dim, HELICAL_TO_CART_COORDS
+                        );
                         #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
                         std::cerr << "Cartesian xyz shift = (" << xshift << ", " << yshift << ", " << zshift << ")" << std::endl;
                         #endif
@@ -5745,7 +5749,6 @@ void MlOptimiser::getAllSquaredDifferences(
                                                 RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
                                                 RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
                                                 transformCartesianAndHelicalCoords(
-                                                    xshift, yshift, zshift,
                                                     xshift, yshift, zshift,
                                                     rot_deg, tilt_deg, psi_deg,
                                                     mymodel.data_dim,
@@ -6238,7 +6241,11 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
                                 RFLOAT rot_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
                                 RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
                                 RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
-                                transformCartesianAndHelicalCoords(myprior_x, myprior_y, myprior_z, myprior_x, myprior_y, myprior_z, rot_deg, tilt_deg, psi_deg, mymodel.data_dim, CART_TO_HELICAL_COORDS);
+                                transformCartesianAndHelicalCoords(
+                                    myprior_x, myprior_y, myprior_z,
+                                    rot_deg, tilt_deg, psi_deg, 
+                                    mymodel.data_dim, CART_TO_HELICAL_COORDS
+                                );
                             }
                             // (For helical refinement) Now offset, old_offset, sampling.translations and myprior are all in helical coordinates
 
@@ -6813,7 +6820,6 @@ void MlOptimiser::storeWeightedSums(
                                             RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
                                             transformCartesianAndHelicalCoords(
                                                 xshift, yshift, zshift,
-                                                xshift, yshift, zshift,
                                                 rot_deg, tilt_deg, psi_deg,
                                                 mymodel.data_dim,
                                                 HELICAL_TO_CART_COORDS
@@ -6822,7 +6828,7 @@ void MlOptimiser::storeWeightedSums(
                                             shiftImageInFourierTransformWithTabSincos(
                                                 exp_local_Fimgs_shifted[img_id][0],
                                                 Fimg_otfshift,
-                                                (RFLOAT)image_full_size[optics_group],
+                                                (RFLOAT) image_full_size[optics_group],
                                                 image_current_size[optics_group],
                                                 tab_sin, tab_cos,
                                                 xshift, yshift, zshift
@@ -6920,7 +6926,6 @@ void MlOptimiser::storeWeightedSums(
                                         RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
                                         RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
                                         transformCartesianAndHelicalCoords(
-                                            myprior_x, myprior_y, myprior_z,
                                             myprior_x, myprior_y, myprior_z,
                                             rot_deg, tilt_deg, psi_deg,
                                             mymodel.data_dim, CART_TO_HELICAL_COORDS

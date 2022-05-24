@@ -171,12 +171,9 @@ void transformCartesianAndHelicalCoords(
 		bool direction);
 
 void transformCartesianAndHelicalCoords(
-		RFLOAT xin,
-		RFLOAT yin,
-		RFLOAT zin,
-		RFLOAT& xout,
-		RFLOAT& yout,
-		RFLOAT& zout,
+		RFLOAT &x,
+		RFLOAT &y,
+		RFLOAT &z,
 		RFLOAT rot_deg,
 		RFLOAT tilt_deg,
 		RFLOAT psi_deg,
