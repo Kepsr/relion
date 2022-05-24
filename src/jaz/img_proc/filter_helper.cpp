@@ -416,7 +416,7 @@ Image<RFLOAT> FilterHelper::raisedCosEnvCorner2D(Image<RFLOAT> &img, double radI
             direct::elem(out.data, x, y) = direct::elem(img.data, x, y);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
-            double a = 0.5 * (1.0 + cos(PI * t));
+            double a = raised_cos(PI * t);
 
             direct::elem(out.data, x, y) = a * direct::elem(img.data, x, y);
         } else {
@@ -444,7 +444,7 @@ Image<Complex> FilterHelper::raisedCosEnvCorner2DFull(Image<Complex> &img, doubl
             direct::elem(out.data, x, y) = direct::elem(img.data, x, y);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
-            double a = 0.5 * (1.0 + cos(PI * t));
+            double a = raised_cos(PI * t);
 
             direct::elem(out.data, x, y) = a * direct::elem(img.data, x, y);
         } else {
@@ -475,7 +475,7 @@ Image<RFLOAT> FilterHelper::raisedCosEnvCorner3D(Image<RFLOAT> &img, double radI
             direct::elem(out.data, x, y, z) = direct::elem(img.data, x, y, z);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
-            double a = 0.5 * (1.0 + cos(PI * t));
+            double a = raised_cos(PI * t);
 
             direct::elem(out.data, x, y, z) = a * direct::elem(img.data, x, y, z);
         } else {
@@ -504,7 +504,7 @@ Image<RFLOAT> FilterHelper::raisedCosEnvFreq2D(const Image<RFLOAT> &img, double 
             direct::elem(out.data, x, y) = direct::elem(img.data, x, y);
         } else if (r < radOut) {
             double t = (r - radIn) / (radOut - radIn);
-            double a = 0.5 * (1.0 + cos(PI * t));
+            double a = raised_cos(PI * t);
 
             direct::elem(out.data, x, y) = a * direct::elem(img.data, x, y);
         } else {
@@ -539,7 +539,7 @@ Image<RFLOAT> FilterHelper::raisedCosEnvRingFreq2D(
             direct::elem(out.data, x, y) = direct::elem(img.data, x, y);
         } else if (re > -1.0) {
             double t = (re + 1.0) / 2.0;
-            double a = 0.5 * (1.0 - cos(PI * t));
+            double a = raised_cos(PI * t);
 
             direct::elem(out.data, x, y) = a * direct::elem(img.data, x, y);
         } else {
@@ -582,7 +582,7 @@ void FilterHelper::lowPassFilterSpectrum(
             direct::elem(spectrum, i, j, k) = Complex(0.0, 0.0);
         } else if (r > maxFreq0) {
             const double t = (r - maxFreq0) / (maxFreq1 - maxFreq0);
-            const double q = 0.5 * (1.0 + cos(PI * t));
+            const double q = raised_cos(PI * t);
             direct::elem(spectrum, i, j, k) *= q;
         }
     }

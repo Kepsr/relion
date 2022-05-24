@@ -1245,7 +1245,7 @@ void directionalFilterMap(
             } else if (res > edge_high) {
                 direct::elem(FT, i, j, k) = 0.0;
             } else {
-                direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= raised_cos(PI * (res - edge_low) / edge_width);
             }
         }
     } else if (axis == "y" || axis == "Y") {
@@ -1259,7 +1259,7 @@ void directionalFilterMap(
             } else if (res > edge_high) {
                 direct::elem(FT, i, j, k) = 0.0;
             } else {
-                direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= raised_cos(PI * (res - edge_low) / edge_width);
             }
         }
     } else if  (axis == "z" || axis == "Z") {
@@ -1273,7 +1273,7 @@ void directionalFilterMap(
             } else if (res > edge_high) {
                 direct::elem(FT, i, j, k) = 0.;
             } else {
-                direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+                direct::elem(FT, i, j, k) *= raised_cos(PI * (res - edge_low) / edge_width);
             }
         }
     }

@@ -62,7 +62,7 @@ void softMaskOutsideMap(
                 sum    += 1.0;
                 sum_bg += vol.elem(i, j, k);
             } else {
-                RFLOAT raisedcos = 0.5 * (1.0 + cos(PI * (radius_p - r) / cosine_width));
+                RFLOAT raisedcos = raised_cos((radius_p - r) * PI / cosine_width);
                 sum    += raisedcos;
                 sum_bg += raisedcos * vol.elem(i, j, k);
             }
@@ -72,14 +72,14 @@ void softMaskOutsideMap(
 
     // Apply noisy or average background value
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
-        RFLOAT r = sqrt((RFLOAT) (k * k + i * i + j * j));
+        RFLOAT r = sqrt((RFLOAT) euclid(i, j, k));
         if (r < radius) continue;
 
         RFLOAT add = Mnoise ? Mnoise->elem(i, j, k) : sum_bg;
         if (r > radius_p) {
             vol.elem(i, j, k) = add;
         } else {
-            RFLOAT raisedcos = 0.5 * (1.0 * cos(PI * (radius_p - r) / cosine_width));
+            RFLOAT raisedcos = raised_cos((radius_p - r) * PI / cosine_width);
             vol.elem(i, j, k) = (1 - raisedcos) * vol.elem(i, j, k) + raisedcos * add;
         }
     }
@@ -155,7 +155,7 @@ void softMaskOutsideMapForHelix(
                 sum += 1.0;
             } else if (d > D1) {
                 // Edges of noise areas (get values and weights for noise estimations)
-                RFLOAT noise_w = 0.5 * (1.0 + cos(PI * (D2 - d) / cosine_width));
+                RFLOAT noise_w = raised_cos((D2 - d) * PI / cosine_width);
                 sum_bg += noise_w * vol.elem(i, j, k);
                 sum += noise_w;
             }
@@ -193,8 +193,8 @@ void softMaskOutsideMapForHelix(
             vol.elem(i, j, k) = noise_val;
         } else {
             // Edges of info areas
-            RFLOAT noise_w1 = r > R1 ? 0.5 * (1.0 + cos(PI * (R2 - r) / cosine_width)) : 0.0;
-            RFLOAT noise_w2 = d > D1 ? 0.5 * (1.0 + cos(PI * (D2 - d) / cosine_width)) : 0.0;
+            RFLOAT noise_w1 = r > R1 ? raised_cos((R2 - r) * PI / cosine_width) : 0.0;
+            RFLOAT noise_w2 = d > D1 ? raised_cos((D2 - d) * PI / cosine_width) : 0.0;
             RFLOAT noise_w = std::max(noise_w1, noise_w2);
             vol.elem(i, j, k) = (1.0 - noise_w) * vol.elem(i, j, k) + noise_w * noise_val;
         }
@@ -388,7 +388,7 @@ void autoMask(
                     }
                 }}}
                 if (min_r2 < width_soft_mask_edge2) {
-                    msk_out.elem(i, j, k) = 0.5 + 0.5 * cos(PI * sqrt(min_r2) / width_soft_mask_edge);
+                    msk_out.elem(i, j, k) = raised_cos(sqrt(min_r2) * PI / width_soft_mask_edge);
                 }
             }
             if (verb && omp_get_thread_num() == 0) {
@@ -417,7 +417,7 @@ void raisedCosineMask(
         mask.elem(i, j, k) = 
             d > radius_p ? 0.0 :
             d < radius   ? 1.0 :
-            0.5 - 0.5 * cos(PI * (radius_p - d) / (radius_p - radius));
+            0.5 * (1.0 - cos(PI * (radius_p - d) / (radius_p - radius)));
     }
 }
 
@@ -434,7 +434,7 @@ void raisedCrownMask(
         RFLOAT d = sqrt((RFLOAT) ((z - k) * (z - k) + (y - i) * (y - i) + (x - j) * (x - j)));
         mask.elem(i, j, k) =
             d < inner_border ? 0.0 :
-            d < inner_radius ? 0.5  - 0.5 * cos(PI * (d - inner_border) / width) :
+            d < inner_radius ? 0.5 - 0.5 * cos(PI * (d - inner_border) / width) :
             d < outer_radius ? 1.0 :
             d < outer_border ? 0.5 - 0.5 * cos(PI * (outer_border - d) / width) :
                                0.0;

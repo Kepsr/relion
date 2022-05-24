@@ -615,7 +615,7 @@ bool checkParametersFor3DHelicalReconstruction(
     int half_box_len = box_len / 2 - ((box_len + 1) % 2);
 
     // Calculate radii in pixels
-    RFLOAT particle_radius_pix = particle_diameter_A * 0.5 / pixel_size_A;
+    RFLOAT particle_radius_pix   = particle_diameter_A   * 0.5 / pixel_size_A;
     RFLOAT tube_inner_radius_pix = tube_inner_diameter_A * 0.5 / pixel_size_A;
     RFLOAT tube_outer_radius_pix = tube_outer_diameter_A * 0.5 / pixel_size_A;
 
@@ -945,14 +945,14 @@ void imposeHelicalSymmetryInRealSpace(
                 pix_weight = 1.0;
                 if (d < d_max) {
                     // d_min < d < d_max : w = (0~1)
-                    pix_weight = 0.5 + (0.5 * cos(PI * ((d_max - d) / cosine_width_pix)));
+                    pix_weight = raised_cos((d_max - d) * PI / cosine_width_pix);
                 } else if (d > D_min) {
                     // D_min < d < D_max : w = (1~0)
-                    pix_weight = 0.5 + (0.5 * cos(PI * ((d - D_min) / cosine_width_pix)));
+                    pix_weight = raised_cos((d - D_min) * PI / cosine_width_pix);
                 }
                 if (r > r_min) {
                     // r_min < r < r_max
-                    pix_sum = 0.5 + (0.5 * cos(PI * ((r - r_min) / cosine_width_pix)));
+                    pix_sum = raised_cos((r - r_min) * PI / cosine_width_pix);
                     pix_weight = (pix_sum < pix_weight) ? (pix_sum) : (pix_weight);
                 }
                 vout.elem(i, j, k) *= pix_weight;
@@ -1231,15 +1231,16 @@ void cutZCentralPartOfSoftMask(
     //std::cout << "idz_s_w, idz_s, idz_e, idz_e_w = " << idz_s_w << ", " << idz_s << ", " << idz_e << ", " << idz_e_w << std::endl;
     mask.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY3D(mask) {
-        idz = ((RFLOAT)(k));
+        idz = k;
         if (idz > idz_s && idz < idz_e) {} else if (idz < idz_s_w || idz > idz_e_w) {
             mask.elem(i, j, k) = 0.0;
         } else {
-            val = 1.0;
             if (idz < idz_s) {
-                val = 0.5 + 0.5 * cos(PI * (idz_s - idz) / cosine_width);
+                val = raised_cos((idz_s - idz) * PI / cosine_width);
             } else if (idz > idz_e) {
-                val = 0.5 + 0.5 * cos(PI * (idz - idz_e) / cosine_width);
+                val = raised_cos((idz - idz_e) * PI / cosine_width);
+            } else {
+                val = 1.0;
             }
             mask.elem(i, j, k) *= val;
         }
@@ -1285,7 +1286,7 @@ void createCylindricalReference(
             dist = inner_radius_pix - r;
         }
         if (dist > 0.0) {
-            v.elem(i, j, k) = 0.5 + 0.5 * cos(PI * dist / cosine_width);
+            v.elem(i, j, k) = raised_cos(dist * PI / cosine_width);
             continue;
         }
         v.elem(i, j, k) = 0.0;
@@ -1332,23 +1333,23 @@ void createCylindricalReferenceWithPolarity(
     for (long int k = Zinit(v); k <= Zlast(v); k++) {
         r_max = top_radius_pix - (top_radius_pix - bottom_radius_pix) * ((RFLOAT) (k - Zinit(v))) / (RFLOAT) box_size;
         for (long int j = Yinit(v); j <= Ylast(v); j++) {
-            for (long int i = Xinit(v); i <= Xlast(v); i++) {
-                r = sqrt(i * i + j * j);
-                if (r > r_min && r < r_max) {
-                    v.elem(i, j, k) = 1.0;
-                    continue;
-                }
-                dist = -9999.0;
-                if (r > r_max && r < r_max + cosine_width)
-                    dist = r - r_max;
-                if (r < r_min && r > r_min - cosine_width)
-                    dist = r_min - r;
-                if (dist > 0.0) {
-                    v.elem(i, j, k) = 0.5 + 0.5 * cos(PI * dist / cosine_width);
-                    continue;
-                }
-                v.elem(i, j, k) = 0.0;
+        for (long int i = Xinit(v); i <= Xlast(v); i++) {
+            r = sqrt(i * i + j * j);
+            if (r > r_min && r < r_max) {
+                v.elem(i, j, k) = 1.0;
+                continue;
             }
+            dist = -9999.0;
+            if (r > r_max && r < r_max + cosine_width)
+                dist = r - r_max;
+            if (r < r_min && r > r_min - cosine_width)
+                dist = r_min - r;
+            if (dist > 0.0) {
+                v.elem(i, j, k) = raised_cos(dist * PI / cosine_width);
+                continue;
+            }
+            v.elem(i, j, k) = 0.0;
+        }
         }
     }
     return;
@@ -1561,10 +1562,10 @@ void applySoftSphericalMask(
     r_max_edge = r_max + cosine_width;
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
-        r = sqrt(k * k + i * i + j * j);
+        r = euclid(i, j, k);
         if (r > r_max) {
             if (r < r_max_edge) {
-                v.elem(i, j, k) *= 0.5 + 0.5 * cos(PI * (r - r_max) / cosine_width);
+                v.elem(i, j, k) *= raised_cos((r - r_max) * PI / cosine_width);
             } else {
                 v.elem(i, j, k) = 0.0;
             }
@@ -2940,7 +2941,7 @@ void makeHelicalReference3D(
                             continue;
 
                         val_old = out.elem(x3, y3, z3);
-                        val_new = 0.5 + 0.5 * cos(PI * dist / particle_radius_pix);
+                        val_new = raised_cos(dist * PI / particle_radius_pix);
                         if (val_new > val_old)
                             out.elem(x3, y3, z3) = val_new;
                     }
@@ -3069,17 +3070,17 @@ void makeHelicalReference3DWithPolarity(
                 // Draw the shape you want!
                 if (topbottom_ratio > 0.9999) {
                     // Without polarity. Thus spheres.
-                    val_new = 0.5 + 0.5 * cos(PI * dist / particle_radius_pix);
+                    val_new = raised_cos(dist * PI / particle_radius_pix);
                     if (val_new > val_old)
                         out.elem(x3, y3, z3) = val_new;
                 } else {
                     // With polarity
                     dist = sqrt(_x * _x + _y * _y);
                     if (dist < thres_xy) {
-                        val_new  = 0.5 * (1.0 + cos(PI * dist / thres_xy));
-                        val_new *= 0.5 * (1.0 + cos(PI * 0.5 * _z / particle_radius_pix));  // something arbitrary
+                        val_new  = raised_cos(dist * PI / thres_xy);
+                        val_new *= raised_cos(0.5 * _z * PI / particle_radius_pix);  // something arbitrary
                         if (val_new > val_old)
-                            out.elem(y3, x3, z3) = val_new;
+                            out.elem(x3, y3, z3) = val_new;
                     }
                 }
             }
@@ -3121,7 +3122,7 @@ void makeHelicalReference3DWithPolarity(
                         continue;
 
                     val_old = out.elem(x2, y2, z2);
-                    val_new = 0.5 + 0.5 * cos(2.0 * PI * dist / particle_radius_pix);
+                    val_new = raised_cos(2.0 * dist * PI / particle_radius_pix);
                     if (val_new > val_old)
                         out.elem(x2, y2, z2) = val_new;
                 }
