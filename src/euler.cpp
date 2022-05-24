@@ -91,7 +91,6 @@ Matrix2D<RFLOAT> Euler::angles2matrix(
 
 /* Euler direction --------------------------------------------------------- */
 Matrix1D<RFLOAT> Euler::angles2direction(RFLOAT alpha, RFLOAT beta) {
-    Matrix1D<RFLOAT> v(3);
 
     alpha = radians(alpha);
     beta  = radians(beta);
@@ -101,10 +100,7 @@ Matrix1D<RFLOAT> Euler::angles2direction(RFLOAT alpha, RFLOAT beta) {
     RFLOAT sina = sin(alpha);
     RFLOAT sinb = sin(beta);
 
-    v[0] = cosa * sinb;
-    v[1] = sina * sinb;
-    v[2] = cosb;
-    return v;
+    return VECTOR_R3(cosa * sinb, sina * sinb, cosb);
 }
 
 /* Euler direction2angles ------------------------------- */
