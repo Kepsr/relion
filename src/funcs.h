@@ -60,6 +60,14 @@
 #include "src/macros.h"
 #include "src/error.h"
 
+/** Raised cosine function
+ *
+ * raised_cos(x * PI) will start at 1.0 for x = 0.0 and will fall smoothly to 0.0 for x = 1.0
+ */
+inline RFLOAT raised_cos(RFLOAT theta) {
+    return 0.5 * (1.0 + cos(theta));
+}
+
 /** Structure of the points to do least-squares straight-line fitting
  */
 struct fit_point2D

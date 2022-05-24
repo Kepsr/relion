@@ -17,6 +17,12 @@
 
 #include "src/acc/cpu/cpu_kernels/cpu_utils.h"
 
+#if defined(ACC_DOUBLE_PRECISION)
+inline double raised_cos(double theta) { return 0.5 * (1.0 + cos(theta)); }
+#else
+inline float raised_cos(float theta) { return 0.5 * (1.0 + cos(theta)); }
+#endif
+
 namespace CpuKernels
 {
 
@@ -168,11 +174,7 @@ void softMaskBackgroundValue(	int      block_dim,
 					}
 					else
 					{
-	#if defined(ACC_DOUBLE_PRECISION)
-						raisedcos = 0.5 + 0.5  * cos ( (radius_p - r) / cosine_width * M_PI);
-	#else
-						raisedcos = 0.5 + 0.5  * cosf( (radius_p - r) / cosine_width * M_PI);
-	#endif
+						raisedcos = raised_cos((radius_p - r) / cosine_width * M_PI)
 						g_sum[tid] += raisedcos;
 						g_sum_bg[tid] += raisedcos * img_pixels;
 					}
@@ -238,11 +240,7 @@ void cosineFilter(	int      block_dim,
 						img_pixels=defVal;
 					else
 					{
-		#if defined(ACC_DOUBLE_PRECISION)
-						raisedcos = 0.5 + 0.5  * cos ( (radius_p - r) / cosine_width * M_PI);
-		#else
-						raisedcos = 0.5 + 0.5  * cosf( (radius_p - r) / cosine_width * M_PI);
-		#endif
+						raisedcos raised_cos((radius_p - r) / cosine_width * M_PI);
 						img_pixels= img_pixels*(1-raisedcos) + defVal*raisedcos;
 
 					}

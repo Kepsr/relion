@@ -553,7 +553,7 @@ __global__ void cuda_kernel_frequencyPass(
             }
             else if (res < edge_high) //highpass => medium lows are almost dead
             {
-                XFLOAT mul = 0.5 - 0.5 * cos( PI * (res-edge_low)/edge_width);
+                XFLOAT mul = 0.5 * (1.0 - cos((res - edge_low) * PI / edge_width));
                 A[texel].x *= mul;
                 A[texel].y *= mul;
             }
@@ -567,7 +567,7 @@ __global__ void cuda_kernel_frequencyPass(
             }
             else if (res > edge_low) //lowpass => medium highs are almost dead
             {
-                XFLOAT mul = 0.5 + 0.5 * cos( PI * (res-edge_low)/edge_width);
+                XFLOAT mul = 0.5 + (1.0 + cos((res - edge_low) * PI / edge_width));
                 A[texel].x *= mul;
                 A[texel].y *= mul;
             }

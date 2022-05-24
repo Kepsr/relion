@@ -1227,7 +1227,7 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
             if (dist2 > radiusw2) {
                 direct::elem(sym_map, i, j, k) = 0.0;
             } else if (dist2 > radius2) {
-                direct::elem(sym_map, i, j, k) *= 0.5 * (1.0 + cos(PI * (radius + cosine_width_pix - sqrt(dist2)) / cosine_width_pix));
+                direct::elem(sym_map, i, j, k) *= raised_cos(PI * (radius + cosine_width_pix - sqrt(dist2)) / cosine_width_pix);
             }
         }
     }
