@@ -67,26 +67,25 @@ Matrix2D<RFLOAT> Euler::angles2matrix(
     beta  = radians(beta);
     gamma = radians(gamma);
 
-    RFLOAT ca = cos(alpha);
-    RFLOAT cb = cos(beta);
-    RFLOAT cg = cos(gamma);
-    RFLOAT sa = sin(alpha);
-    RFLOAT sb = sin(beta);
-    RFLOAT sg = sin(gamma);
-    RFLOAT cc = cb * ca;
-    RFLOAT cs = cb * sa;
-    RFLOAT sc = sb * ca;
-    RFLOAT ss = sb * sa;
+    RFLOAT cosa = cos(alpha);
+    RFLOAT cosb = cos(beta);
+    RFLOAT cosg = cos(gamma);
+    RFLOAT sina = sin(alpha);
+    RFLOAT sinb = sin(beta);
+    RFLOAT sing = sin(gamma);
 
-    A(0, 0) =  cg * cc - sg * sa;
-    A(0, 1) =  cg * cs + sg * ca;
-    A(0, 2) = -cg * sb;
-    A(1, 0) = -sg * cc - cg * sa;
-    A(1, 1) = -sg * cs + cg * ca;
-    A(1, 2) =  sg * sb;
-    A(2, 0) =  sc;
-    A(2, 1) =  ss;
-    A(2, 2) =  cb;
+    // https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+    // ZYZ
+
+    A(0, 0) =  cosa * cosb * cosg - sina * sing;
+    A(0, 1) =  sina * cosb * cosg + cosa * sing;
+    A(0, 2) = -sinb * cosg;
+    A(1, 0) = -cosa * cosb * sing - sina * cosg;
+    A(1, 1) = -sina * cosb * sing + cosa * cosg;
+    A(1, 2) =  sinb * sing;
+    A(2, 0) =  cosa * sinb;
+    A(2, 1) =  sina * sinb;
+    A(2, 2) =  cosb;
     return A;
 }
 
@@ -97,16 +96,14 @@ Matrix1D<RFLOAT> Euler::angles2direction(RFLOAT alpha, RFLOAT beta) {
     alpha = radians(alpha);
     beta  = radians(beta);
 
-    RFLOAT ca = cos(alpha);
-    RFLOAT cb = cos(beta);
-    RFLOAT sa = sin(alpha);
-    RFLOAT sb = sin(beta);
-    RFLOAT sc = sb * ca;
-    RFLOAT ss = sb * sa;
+    RFLOAT cosa = cos(alpha);
+    RFLOAT cosb = cos(beta);
+    RFLOAT sina = sin(alpha);
+    RFLOAT sinb = sin(beta);
 
-    v[0] = sc;
-    v[1] = ss;
-    v[2] = cb;
+    v[0] = cosa * sinb;
+    v[1] = sina * sinb;
+    v[2] = cosb;
     return v;
 }
 
