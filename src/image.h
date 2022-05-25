@@ -398,6 +398,12 @@ class Image {
         MDMainHeader.addObject();
     }
 
+    static Image<RFLOAT> from_filename(const FileName &fn) {
+        Image<RFLOAT> img;
+        img.read(fn);
+        return img;
+    }
+
     /** Constructor with size
      *
      * A blank image (0.0 filled) is created with the given size. Pay attention

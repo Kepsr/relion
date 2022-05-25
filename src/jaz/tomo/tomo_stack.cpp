@@ -140,13 +140,10 @@ void TomoStack :: downsample(int factor, int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
-    Image<RFLOAT> temp(images[0].data.xdim/factor, images[0].data.ydim/factor);
-
     for (int i = f0; i < ic; i++)
     {
-        SliceHelper::downsample(images[i], temp);
-        images[i] = temp;
-		
+        images[i] = SliceHelper::downsample(images[i], factor);
+
 		worldToImage[i] /= factor;
 		worldToImage[i](3,3) = 1.0;
     }

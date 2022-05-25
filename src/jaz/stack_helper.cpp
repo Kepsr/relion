@@ -227,8 +227,7 @@ std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
 
     std::cout << "loading real: " << finName << "\n";
 
-    Image<RFLOAT> in;
-    in.read(finName);
+    Image<RFLOAT> in = Image<RFLOAT>::from_filename(finName);
 
     std::cout << "size = " << in.data.xdim << "x" << in.data.ydim << "x" << in.data.zdim << "x" << in.data.ndim << "\n";
     std::cout << "pc = " << pc << "\n";
@@ -242,8 +241,7 @@ std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
         out[p] = std::vector<Image<RFLOAT>>(fc);
 
         for (long f = 0; f < fc; f++) {
-            out[p][f] = Image<RFLOAT>(w, h);
-            SliceHelper::extractStackSlice(in, out[p][f], f * pc + p);
+            out[p][f] = SliceHelper::extractStackSlice(in, f * pc + p);
         }
     }
 

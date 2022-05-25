@@ -207,11 +207,9 @@ void MlOptimiserMpi::initialise() {
             }
 
             // Sequential initialisation of GPUs on all ranks
-            bool fullAutomaticMapping(true);
-            bool semiAutomaticMapping(true);
             for (int rank = 1; rank < node->size; rank++) {
-                fullAutomaticMapping = true;
-                semiAutomaticMapping = true; // possible to set fully manual for specific ranks
+                bool fullAutomaticMapping = true;
+                bool semiAutomaticMapping = true; // possible to set fully manual for specific ranks
 
                 if (
                     allThreadIDs.size() < rank || 
@@ -303,13 +301,13 @@ void MlOptimiserMpi::initialise() {
 	        	// std::cout << "Received: " << bundle->rank_shared_count << std::endl;
             }
         } else {
-            int devCount;
             std::vector<std::string> deviceIdentifiers;
             std::vector<std::string> uniqueDeviceIdentifiers;
             std::vector<int> uniqueDeviceIdentifierCounts;
             std::vector<int> deviceCounts(node->size - 1,0);
 
-                for (int follower = 1; follower < node->size; follower++) {
+            for (int follower = 1; follower < node->size; follower++) {
+                int devCount;
                 node->relion_MPI_Recv(&devCount, 1, MPI_INT, follower, MPITag::INT, MPI_COMM_WORLD, status);
 
                 deviceCounts[follower - 1] = devCount;
@@ -350,7 +348,7 @@ void MlOptimiserMpi::initialise() {
             int global_did = 0;
 
             for (int follower = 1; follower < node->size; follower++) {
-                devCount = deviceCounts[follower - 1];
+                int devCount = deviceCounts[follower - 1];
 
                 for (int i = 0; i < devCount; i++) {
                     int idi = -1;
@@ -2674,41 +2672,40 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
     }
 
     // Read temporary arrays back in
-    Image<RFLOAT> Itmp;
-    Itmp.read(fn_root + "_data_real.mrc");
-    Itmp().setXmippOrigin();
-    Itmp().xinit = 0;
-    if (!Itmp().sameShape(wsum_model.BPref[iclass].data)) {
+    Image<RFLOAT> Ireal = Image<RFLOAT>::from_filename(fn_root + "_data_real.mrc");
+    Ireal().setXmippOrigin();
+    Ireal().xinit = 0;
+    if (!Ireal().sameShape(wsum_model.BPref[iclass].data)) {
         wsum_model.BPref[iclass].data.printShape(std::cerr);
-        Itmp().printShape(std::cerr);
+        Ireal().printShape(std::cerr);
         REPORT_ERROR("Incompatible size of " + fn_root + "_data_real.mrc");
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        wsum_model.BPref[iclass].data.elem(i, j, k).real = Itmp().elem(i, j, k);
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(Ireal()) {
+        wsum_model.BPref[iclass].data.elem(i, j, k).real = Ireal().elem(i, j, k);
     }
 
-    Itmp.read(fn_root + "_data_imag.mrc");
-    Itmp().setXmippOrigin();
-    Itmp().xinit = 0;
-    if (!Itmp().sameShape(wsum_model.BPref[iclass].data)) {
+    Image<RFLOAT> Iimag = Image<RFLOAT>::from_filename(fn_root + "_data_imag.mrc");
+    Iimag().setXmippOrigin();
+    Iimag().xinit = 0;
+    if (!Iimag().sameShape(wsum_model.BPref[iclass].data)) {
         wsum_model.BPref[iclass].data.printShape(std::cerr);
-        Itmp().printShape(std::cerr);
+        Iimag().printShape(std::cerr);
         REPORT_ERROR("Incompatible size of " + fn_root + "_data_imag.mrc");
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        wsum_model.BPref[iclass].data.elem(i, j, k).imag = Itmp().elem(i, j, k);
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(Iimag()) {
+        wsum_model.BPref[iclass].data.elem(i, j, k).imag = Iimag().elem(i, j, k);
     }
 
-    Itmp.read(fn_root + "_weight.mrc");
-    Itmp().setXmippOrigin();
-    Itmp().xinit = 0;
-    if (!Itmp().sameShape(wsum_model.BPref[iclass].weight)) {
+    Image<RFLOAT> Iweight = Image<RFLOAT>::from_filename(fn_root + "_weight.mrc");
+    Iweight().setXmippOrigin();
+    Iweight().xinit = 0;
+    if (!Iweight().sameShape(wsum_model.BPref[iclass].weight)) {
         wsum_model.BPref[iclass].weight.printShape(std::cerr);
-        Itmp().printShape(std::cerr);
+        Iweight().printShape(std::cerr);
         REPORT_ERROR("Incompatible size of " + fn_root + "_weight.mrc");
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(Itmp()) {
-        wsum_model.BPref[iclass].weight.elem(i, j, k) = Itmp().elem(i, j, k);
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(Iweight()) {
+        wsum_model.BPref[iclass].weight.elem(i, j, k) = Iweight().elem(i, j, k);
     }
 
     // Now perform the unregularized reconstruction

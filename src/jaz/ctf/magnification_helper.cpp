@@ -283,8 +283,8 @@ Matrix2D<RFLOAT> MagnificationHelper::solveLinearlyFreq(
     mat(1, 0) = opt[2];
     mat(1, 1) = opt[3] + 1.0;
 
-//	std::cout << opt[0] << ", " << opt[1] << "\n"
-//	          << opt[2] << ", " << opt[3] << "\n";
+	// std::cout << opt[0] << ", " << opt[1] << "\n"
+    //           << opt[2] << ", " << opt[3] << "\n";
 
     for (long yi = 0; yi < h; yi++)
     for (long xi = 0; xi < w; xi++) {
@@ -299,18 +299,18 @@ Matrix2D<RFLOAT> MagnificationHelper::solveLinearlyFreq(
 }
 
 void MagnificationHelper::readEQs(std::string path, Volume<Equation2x2> &eqs) {
-    Image<RFLOAT> Axx, Axy, Ayy, bx, by;
 
-    Axx.read(path + "_Axx.mrc");
-    Axy.read(path + "_Axy.mrc");
-    Ayy.read(path + "_Ayy.mrc");
-    bx.read(path + "_bx.mrc");
-    by.read(path + "_by.mrc");
+    Image<RFLOAT> Axx = Image<RFLOAT>::from_filename(path + "_Axx.mrc");
+    Image<RFLOAT> Axy = Image<RFLOAT>::from_filename(path + "_Axy.mrc");
+    Image<RFLOAT> Ayy = Image<RFLOAT>::from_filename(path + "_Ayy.mrc");
+
+    Image<RFLOAT> bx  = Image<RFLOAT>::from_filename(path + "_bx.mrc");
+    Image<RFLOAT> by  = Image<RFLOAT>::from_filename(path + "_by.mrc");
 
     const long w = Axx.data.xdim;
     const long h = Axx.data.ydim;
 
-    eqs.resize(w, h,1);
+    eqs.resize(w, h, 1);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
