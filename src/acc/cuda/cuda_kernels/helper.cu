@@ -6,6 +6,13 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
+// Macros, because we can't call __host__ functions from __global__ functions.
+#if defined(ACC_DOUBLE_PRECISION)
+#define RAISED_COSPI(x) (0.5  + 0.5  * cospi(x))
+#else
+#define RAISED_COSPI(x) (0.5f + 0.5f * cospif(x))
+#endif
+
 /// Needed explicit template instantiations
 template __global__ void cuda_kernel_make_eulers_2D<true>(XFLOAT *,
 	XFLOAT *, unsigned);
@@ -288,11 +295,7 @@ __global__ void cuda_kernel_softMaskOutsideMap(	XFLOAT *vol,
 					}
 					else
 					{
-#if defined(ACC_DOUBLE_PRECISION)
-						raisedcos = 0.5 + 0.5  * cospi( (radius_p - r) / cosine_width );
-#else
-						raisedcos = 0.5f + 0.5f * cospif((radius_p - r) / cosine_width );
-#endif
+						raisedcos = RAISED_COSPI( (radius_p - r) / cosine_width );
 						partial_sum[tid] += raisedcos;
 						partial_sum_bg[tid] += raisedcos * img_pixels[tid];
 					}
@@ -338,12 +341,8 @@ __global__ void cuda_kernel_softMaskOutsideMap(	XFLOAT *vol,
 					img_pixels[tid]=sum_bg_total;
 				else
 				{
-#if defined(ACC_DOUBLE_PRECISION)
-					raisedcos = 0.5  + 0.5  * cospi( (radius_p - r) / cosine_width );
-#else
-					raisedcos = 0.5f + 0.5f * cospif((radius_p - r) / cosine_width );
-#endif
-					img_pixels[tid]= img_pixels[tid]*(1-raisedcos) + sum_bg_total*raisedcos;
+					raisedcos = RAISED_COSPI((radius_p - r) / cosine_width);
+					img_pixels[tid]= img_pixels[tid]*(1-raisedcos) + sum_bg_total * raisedcos;
 
 				}
 				vol[texel]=img_pixels[tid];
@@ -408,11 +407,7 @@ __global__ void cuda_kernel_softMaskBackgroundValue(	XFLOAT *vol,
 				}
 				else
 				{
-#if defined(ACC_DOUBLE_PRECISION)
-					raisedcos = 0.5 + 0.5  * cospi( (radius_p - r) / cosine_width );
-#else
-					raisedcos = 0.5f + 0.5f * cospif((radius_p - r) / cosine_width );
-#endif
+					raisedcos = RAISED_COSPI((radius_p - r) / cosine_width);
 					partial_sum[tid] += raisedcos;
 					partial_sum_bg[tid] += raisedcos * img_pixels[tid];
 				}
@@ -477,11 +472,7 @@ __global__ void cuda_kernel_cosineFilter(	XFLOAT *vol,
 				img_pixels[tid]=defVal;
 			else
 			{
-#if defined(ACC_DOUBLE_PRECISION)
-				raisedcos = 0.5  + 0.5  * cospi( (radius_p - r) / cosine_width );
-#else
-				raisedcos = 0.5f + 0.5f * cospif((radius_p - r) / cosine_width );
-#endif
+				raisedcos = RAISED_COSPI((radius_p - r) / cosine_width);
 				img_pixels[tid]= img_pixels[tid]*(1-raisedcos) + defVal*raisedcos;
 
 			}
@@ -855,7 +846,7 @@ __global__ void cuda_kernel_make_eulers_3D(
 	sincos(g, &sg, &cg);
 #else
 	sincosf(a, &sa, &ca);
-	sincosf(b,  &sb, &cb);
+	sincosf(b, &sb, &cb);
 	sincosf(g, &sg, &cg);
 #endif
 

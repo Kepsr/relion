@@ -417,6 +417,7 @@ class Image {
     inline static Image<T> zeros(long int Xdim, long int Ydim, long int Zdim = 1, long int Ndim = 1) {
         Image<T> img(Xdim, Ydim, Zdim, Ndim);
         img.data.initZeros();
+        return img;
     }
 
     /** Clear.

@@ -110,7 +110,7 @@ void makeHelicalSymmetryList(
 };
 
 bool calcCCofHelicalSymmetry(
-    const MultidimArray<RFLOAT>& v,
+    const MultidimArray<RFLOAT> &v,
     RFLOAT r_min_pix, RFLOAT r_max_pix, RFLOAT z_percentage,
     RFLOAT rise_pix, RFLOAT twist_deg,
     RFLOAT& cc,
@@ -1159,7 +1159,7 @@ RFLOAT searchPsiFor2DHelicalSegment(
 */
 
 void calcRadialAverage(
-    const MultidimArray<RFLOAT>& v, std::vector<RFLOAT>& radial_avg_val_list
+    const MultidimArray<RFLOAT> &v, std::vector<RFLOAT> &radial_avg_val_list
 ) {
     int ii, Xdim, Ydim, Zdim, Ndim, list_size, dist;
     MultidimArray<RFLOAT> vol;
@@ -3628,13 +3628,11 @@ void excludeLowCTFCCMicrographs(
     return;
 }
 
-void cutOutPartOfHelix(
-    const MultidimArray<RFLOAT> &vin, MultidimArray<RFLOAT> &vout,
+MultidimArray<RFLOAT> cutOutPartOfHelix(
+    const MultidimArray<RFLOAT> &vin,
     long int new_boxdim,
     RFLOAT ang_deg, RFLOAT z_percentage
 ) {
-
-    vout.clear();
 
     if (vin.getDim() != 3)
         REPORT_ERROR("helix.cpp::cutOutPartOfHelix(): Input image is not 3D!");
@@ -3650,7 +3648,8 @@ void cutOutPartOfHelix(
     if (new_boxdim <= 0 || new_boxdim > old_boxdim / 2)
         new_boxdim = old_boxdim / 2;
 
-    vout.initZeros(new_boxdim, new_boxdim, new_boxdim);
+    MultidimArray<RFLOAT> vout = MultidimArray<RFLOAT>::zeros(new_boxdim, new_boxdim, new_boxdim);
+    vout.setXmippOrigin();
 
     // Fill in values
     long int old_ymax = Ysize(vin) + Xmipp::init(Ysize(vin));
@@ -3667,7 +3666,7 @@ void cutOutPartOfHelix(
         // Loop over X and Y
         for (long int yi = 0; yi < Ysize(vout); yi++)
         for (long int xi = 0; xi < Xsize(vout); xi++) {
-            RFLOAT deg = 180.0 * atan2((double) (yi), (double) (xi)) / PI;
+            RFLOAT deg = degrees(atan2((double) (yi), (double) (xi)));
 
             // X or Y subscripts is out of range
             if (ang_deg < 90.0 && (
@@ -3678,10 +3677,10 @@ void cutOutPartOfHelix(
                 continue;
 
             // Fill in voxels
-            direct::elem(vout, xi, yi, zi) = direct::elem(vin, xi - old_x0, yi - old_y0, zi + new_z0 - old_z0);
+            direct::elem(vout, xi, yi, zi) = direct::elem(vin, xi - old_x0, yi - old_y0, new_z0 + zi - old_z0);
         }
     }
-    vout.setXmippOrigin();
+    return vout;
 }
 
 void HelicalSegmentPriorInfoEntry::clear() {

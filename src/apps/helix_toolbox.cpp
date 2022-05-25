@@ -738,10 +738,8 @@ class helix_bilder_parameters {
             }
 
             Image<RFLOAT> img1, img2;
-            img1.clear();
-            img2.clear();
             img1.read(fn_in);
-            cutOutPartOfHelix(img1(), img2(), boxdim, ang, z_percentage);
+            img2() = cutOutPartOfHelix(img1(), boxdim, ang, z_percentage);
             img2.write(fn_out);
         } else if (do_set_xmipp_origin) {
             if (show_usage_for_an_option) {

@@ -394,12 +394,12 @@ void excludeLowCTFCCMicrographs(
 		RFLOAT df_min = -999999.,
 		RFLOAT df_max = 999999.);
 
-void cutOutPartOfHelix(
-		const MultidimArray<RFLOAT>& vin,
-		MultidimArray<RFLOAT>& vout,
-		long int new_boxdim,
-		RFLOAT ang_deg,
-		RFLOAT z_percentage);
+MultidimArray<RFLOAT> cutOutPartOfHelix(
+	const MultidimArray<RFLOAT> &vin,
+	long int new_boxdim,
+	RFLOAT ang_deg,
+	RFLOAT z_percentage
+);
 
 // TESTING...
 class HelicalSegmentPriorInfoEntry
