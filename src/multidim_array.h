@@ -1333,65 +1333,34 @@ class MultidimArray {
         xinit = Xmipp::init(xdim);
     }
 
-    /** Move origin to these 3D coordinates.
-     *
-     * Adjust logical indices
-     * so that the Xmipp origin of the array moves to the specified position.
-     * For instance, an array whose x indices go from -1 to 1,
-     * if we move the origin to 4, then the x indices go from 3 to 5.
-     * This is very useful for convolution operations
-     * where only the logical starting of the array needs moving.
-     *
-     */
-    void moveOriginTo(long int k, long int i, long int j) {
-        zinit = k + Xmipp::init(zdim);
-        yinit = i + Xmipp::init(ydim);
-        xinit = j + Xmipp::init(xdim);
-    }
-
-    /** Move origin to these 2D coordinates.
-     *
-     * Adjust logical indices
-     * so the Xmipp origin of the array moves to the specified position.
-     * For instance, an array whose x indices go from -1 to 1,
-     * if we move the origin to 4, then the x indices go from 3 to 5.
-     * This is very useful for convolution operations
-     * where only the logical start of the array needs moving.
-     *
-     */
-    void moveOriginTo(long int i, long int j) {
-        yinit = i + Xmipp::init(ydim);
-        xinit = j + Xmipp::init(xdim);
-    }
-
     /** The first logical Z index. */
     inline long int firstZ() const {
-        return zinit;
+        return Xmipp::init(zdim);
     }
 
     /** The last logical Z index. */
     inline long int lastZ() const {
-        return zinit + zdim - 1;
+        return Xmipp::last(zdim);
     }
 
     /** The first logical Y index. */
     inline long int firstY() const {
-        return yinit;
+        return Xmipp::init(ydim);
     }
 
     /** The last logical Y index. */
     inline long int lastY() const {
-        return yinit + ydim - 1;
+        return Xmipp::last(ydim);
     }
 
     /** The first logical X index. */
     inline long int firstX() const {
-        return xinit;
+        return Xmipp::init(xdim);
     }
 
     /** The last logical X index. */
     inline long int lastX() const {
-        return xinit + xdim - 1;
+        return Xmipp::last(xdim);
     }
 
     /** IsCorner (in 2D or 3D matrix)
