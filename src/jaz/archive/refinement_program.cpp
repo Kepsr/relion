@@ -201,8 +201,6 @@ int RefinementProgram::init(int argc, char *argv[]) {
                 return 4;
             }
 
-            mask.read(maskFn);
-
             ImageOp::multiply(mask, maps[0], maskedRef);
             maps[0] = maskedRef;
 

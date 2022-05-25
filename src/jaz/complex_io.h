@@ -25,45 +25,36 @@
 #include <src/complex.h>
 #include <string>
 
-class ComplexIO {
-
-    public:
+namespace ComplexIO {
 
     template <typename T>
-    static void write(const MultidimArray<tComplex<T> > &img, std::string fnBase, std::string fnSuffix) {
-        Image<RFLOAT> temp(img.xdim, img.ydim, img.zdim, img.ndim);
+    void write(const MultidimArray<tComplex<T> > &img, std::string fnBase, std::string fnSuffix) {
+        Image<RFLOAT> realimg(img.xdim, img.ydim, img.zdim, img.ndim);
+        Image<RFLOAT> imagimg(img.xdim, img.ydim, img.zdim, img.ndim);
 
         FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img) {
-            direct::elem(temp.data, i, j, k, l) = direct::elem(img, i, j, k, l).real;
+            direct::elem(realimg.data, i, j, k, l) = direct::elem(img, i, j, k, l).real;
+            direct::elem(imagimg.data, i, j, k, l) = direct::elem(img, i, j, k, l).imag;
         }
 
-        temp.write(fnBase + "_real" + fnSuffix);
-
-        FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img) {
-            direct::elem(temp.data, i, j, k, l) = direct::elem(img, i, j, k, l).imag;
-        }
-
-        temp.write(fnBase + "_imag" + fnSuffix);
+        realimg.write(fnBase + "_real" + fnSuffix);
+        imagimg.write(fnBase + "_imag" + fnSuffix);
     }
 
     template <typename T>
-    static void read(Image<tComplex<T> > &img, std::string fnBase, std::string fnSuffix) {
-        Image<RFLOAT> temp;
+    void read(Image<tComplex<T> > &img, std::string fnBase, std::string fnSuffix) {
+        Image<RFLOAT> realimg = Image<RFLOAT>::from_filename(fnBase + "_real" + fnSuffix);
+        Image<RFLOAT> imagimg = Image<RFLOAT>::from_filename(fnBase + "_imag" + fnSuffix);
 
-        temp.read(fnBase + "_real" + fnSuffix);
-
-        img = Image<Complex>(temp.data.xdim, temp.data.ydim, temp.data.zdim, temp.data.ndim);
-
+        img = Image<Complex>(realimg.data.xdim, realimg.data.ydim, realimg.data.zdim, realimg.data.ndim);
         FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-            direct::elem(img.data, i, j, k, l).real = direct::elem(temp.data, i, j, k, l);
-        }
-
-        temp.read(fnBase + "_imag" + fnSuffix);
-
-        FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
-            direct::elem(img.data, i, j, k, l).imag = direct::elem(temp.data, i, j, k, l);
+            direct::elem(img.data, i, j, k, l) = Complex(
+                direct::elem(realimg.data, i, j, k, l),
+                direct::elem(imagimg.data, i, j, k, l)
+            );
         }
     }
+
 };
 
 #endif

@@ -23,11 +23,10 @@ int main(int argc, char *argv[])
 	Image<RFLOAT> img0;
 	img0.read(inPath+inName+".st:mrcs", true);
 
-	Image<RFLOAT> img1(img0.data.xdim, img0.data.ydim, 1, 1);
 
 	for (int i = 0; i < img0.data.ndim; i++)
 	{
-		SliceHelper::extractStackSlice(img0, img1, i);
+		Image<RFLOAT> img1 = SliceHelper::extractStackSlice(img0, i);
 
 		std::stringstream sts;
 		sts << i;

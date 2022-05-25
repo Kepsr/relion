@@ -29,55 +29,54 @@
 #include <src/jaz/gravis/t2Vector.h>
 
 
-class SliceHelper
-{
-    public:
+namespace SliceHelper {
 
+        void affineTransform(const Image<RFLOAT> &img, gravis::d4Matrix A, Image<RFLOAT> &dest);
 
-        static void affineTransform(const Image<RFLOAT>& img, gravis::d4Matrix A, Image<RFLOAT>& dest);
+        Image<RFLOAT> downsample(Image<RFLOAT> &img, int factor);
+        void downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT> &dest);
+        void downsampleSlicesReal(const Image<RFLOAT> &img, Image<RFLOAT> &dest);
 
-        static void downsample(Image<RFLOAT>& img, Image<RFLOAT>& dest);
-        static void downsampleSlices(const Image<RFLOAT>& img, Image<RFLOAT>& dest);
-        static void downsampleSlicesReal(const Image<RFLOAT>& img, Image<RFLOAT>& dest);
+        void lowPassFilterSlicewise(Image<RFLOAT> &img, double maxFreq0, double maxFreq1);
+        void lowPassFilterSlice(Image<RFLOAT> &img, long int n, double maxFreq0, double maxFreq1);
 
-        static void lowPassFilterSlicewise(Image<RFLOAT>& img, double maxFreq0, double maxFreq1);
-        static void lowPassFilterSlice(Image<RFLOAT>& img, long int n, double maxFreq0, double maxFreq1);
+        void subsample(const Image<RFLOAT> &img, Image<RFLOAT> &dest);
 
-        static void subsample(const Image<RFLOAT>& img, Image<RFLOAT>& dest);
+        void avgPad(const Volume<RFLOAT>& src, Volume<RFLOAT> &dest, double ratio);
+        void avgPad2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio);
 
-        static void avgPad(const Volume<RFLOAT>& src, Volume<RFLOAT>& dest, double ratio);
-        static void avgPad2D(const Image<RFLOAT>& src, Image<RFLOAT>& dest, double ratio);
+        void halveSpectrum2D(Image<Complex> &src, Image<Complex> &dest);
 
-        static void halveSpectrum2D(Image<Complex>& src, Image<Complex>& dest);
-
-        static void extractSpectralSlice(Image<Complex>& src, Image<RFLOAT>& dest,
+        void extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
                                          gravis::d3Matrix proj, gravis::d2Vector volCentImg, double oversample = 4.0);
 
-        static void insertSpectralSlices(std::vector<Image<RFLOAT> >& src,
+        void insertSpectralSlices(std::vector<Image<RFLOAT> > &src,
                                          std::vector<gravis::d3Matrix> proj,
                                          std::vector<gravis::d2Vector> volCentImg,
-                                         Image<Complex>& dest, double thickness = 1.0, double thicknessSlope = 0.0, double imgPad = 0.5);
+                                         Image<Complex> &dest, double thickness = 1.0, double thicknessSlope = 0.0, double imgPad = 0.5);
 
-        static void insertWeightedSpectralSlices(std::vector<Image<RFLOAT> >& src,
+        void insertWeightedSpectralSlices(std::vector<Image<RFLOAT> > &src,
                                          std::vector<gravis::d3Matrix> proj,
                                          std::vector<gravis::d2Vector> volCentImg,
                                          std::vector<double> imgWeights,
-                                         Image<Complex>& dest, double thickness = 1.0, double imgPad = 0.5);
+                                         Image<Complex> &dest, double thickness = 1.0, double imgPad = 0.5);
 
-        static void extractStackSlice(const Image<RFLOAT>& src, Image<RFLOAT>& dest, long int s);
-        static void extractStackSlices(const Image<double>& src, Image<RFLOAT>& dest, long int s);
-        static void extractStackSlices(const Image<float>& src, Image<RFLOAT>& dest, long int s);
-        static Image<RFLOAT> getStackSlice(const Image<RFLOAT>& src, long int n);
+        Image<RFLOAT> extractStackSlice(const Image<RFLOAT> &src, long int s);
+        void extractStackSlices(const Image<double> &src, Image<RFLOAT> &dest, long int s);
+        void extractStackSlices(const Image<float> &src, Image<RFLOAT> &dest, long int s);
+        Image<RFLOAT> getStackSlice(const Image<RFLOAT> &src, long int n);
 
-        static void insertStackSlice(const Image<double>& src, Image<double>& dest, long int s);
-        static void insertStackSlice(const Image<float>& src, Image<float>& dest, long int s);
-        static void insertZSlice(const Image<double>& src, Image<double>& dest, long int s);
-        static void insertZSlice(const Image<float>& src, Image<float>& dest, long int s);
+        template <typename T>
+        void insertStackSlice(const Image<T> &src, Image<T> &dest, long int n);
 
-        static Image<double> consolidate(const std::vector<Image<double> >& src, bool toN = false);
-        static Image<float> consolidate(const std::vector<Image<float> >& src, bool toN = false);
+        template <typename T>
+        void insertZSlice(const Image<T> &src, Image<T> &dest, long int z);
 
-        static void stat(const Image<RFLOAT>& img);
+        template <typename T>
+        Image<T> consolidate(const std::vector<Image<T> > &src, bool toN = false);
+
+        void stat(const Image<RFLOAT> &img);
+
 };
 
 #endif

@@ -462,8 +462,7 @@ class helix_bilder_parameters {
             int box_size;
             if (sphere_percentage < 0.009 || sphere_percentage > 0.991)
                 REPORT_ERROR("Diameter of spherical mask divided by the box size should be within range 0.01~0.99!");
-            Image<RFLOAT> img;
-            img.read(fn_in);
+            Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
             img().setXmippOrigin();
             box_size = std::min({Xsize(img()), Ysize(img()), Zsize(img())});
             applySoftSphericalMask(
@@ -479,8 +478,7 @@ class helix_bilder_parameters {
                 return;
             }
 
-            Image<RFLOAT> img;
-            img.read(fn_in);
+            Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
             cutZCentralPartOfSoftMask(
                 img(), z_percentage, width_edge_pix
             );
@@ -604,11 +602,9 @@ class helix_bilder_parameters {
             int box_size;
             RFLOAT sphere_diameter_A;
 
-            Image<RFLOAT> img;
-            img.read(fn_in);
+            Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
 
-            box_size = ((Xsize(img())) < (Ysize(img()))) ? (Xsize(img())) : (Ysize(img()));
-            box_size = (box_size < (Zsize(img()))) ? (box_size) : (Zsize(img()));
+            box_size = std::min({Xsize(img()), Ysize(img()), Zsize(img())});
             sphere_diameter_A = pixel_size_A * sphere_percentage * RFLOAT(box_size);
 
             img().setXmippOrigin();
@@ -634,8 +630,7 @@ class helix_bilder_parameters {
             int box_size;
             RFLOAT sphere_diameter_A, rise_refined_A, twist_refined_deg;
 
-            Image<RFLOAT> img;
-            img.read(fn_in);
+            Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
 
             box_size = Xsize(img()) < Ysize(img()) ? Xsize(img()) : Ysize(img());
             box_size = box_size < Zsize(img()) ? box_size : Zsize(img());
@@ -737,8 +732,8 @@ class helix_bilder_parameters {
                 return;
             }
 
-            Image<RFLOAT> img1, img2;
-            img1.read(fn_in);
+            Image<RFLOAT> img1 = Image<RFLOAT>::from_filename(fn_in);
+            Image<RFLOAT> img2;
             img2() = cutOutPartOfHelix(img1(), boxdim, ang, z_percentage);
             img2.write(fn_out);
         } else if (do_set_xmipp_origin) {
@@ -749,9 +744,7 @@ class helix_bilder_parameters {
                 displayEmptyLine();
                 return;
             }
-            Image<RFLOAT> img;
-            img.clear();
-            img.read(fn_in);
+            Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
             img().setXmippOrigin();
             img.write(fn_out);
         } else if (do_impose_helical_symmetry_fourier_space) {
@@ -769,8 +762,7 @@ class helix_bilder_parameters {
             }
 
             Matrix1D<RFLOAT> transZ(3);
-            Image<RFLOAT> img;
-            img.read(fn_in);
+            Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
 
             Image<RFLOAT>::Dimensions dimensions = img.getDimensions();
 
@@ -884,16 +876,15 @@ class helix_bilder_parameters {
                 displayEmptyLine();
                 return;
             }
-            //MetaDataTable MD;
-            //MD.read(fn_in);
-            //setPsiFlipRatioInStarFile(MD);
-            //MD.write(fn_out);
+            // MetaDataTable MD;
+            // MD.read(fn_in);
+            // setPsiFlipRatioInStarFile(MD);
+            // MD.write(fn_out);
             grabParticleCoordinates_Multiple(fn_in, fn_out); // RECOVER THIS !
-            //readFileHeader(fn_in, fn_out, 9493);
+            // readFileHeader(fn_in, fn_out, 9493);
 
-            //Image<RFLOAT> img;
-            //img.read(fn_in);
-            //calculateRadialAvg(img(), pixel_size_A);
+            // Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
+            // calculateRadialAvg(img(), pixel_size_A);
         } else {
             REPORT_ERROR("Please specify an option!");
         }

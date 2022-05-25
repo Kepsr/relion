@@ -39,13 +39,15 @@ void SliceHelper::affineTransform(const Image<RFLOAT> &img, d4Matrix A, Image<RF
     }
 }
 
-void SliceHelper::downsample(Image<RFLOAT> &img, Image<RFLOAT> &dest) {
+Image<RFLOAT> SliceHelper::downsample(Image<RFLOAT> &img, int factor) {
+    Image<RFLOAT> dest(img.data.xdim / factor, img.data.ydim / factor);
     double q = dest.data.xdim / (double) img.data.xdim;
 
     Image<RFLOAT> slice0(img.data.xdim, img.data.ydim, 1);
 
     FilterHelper::lowPassFilter(img, 0.9*q, q, slice0);
     subsample(slice0, dest);
+    return dest;
 }
 
 void SliceHelper::downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
@@ -57,7 +59,7 @@ void SliceHelper::downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT> &dest
     for (long int n = 0; n < img.data.ndim; n++) {
         std::cout << n << "/" << img.data.ndim << "\n";
 
-        extractStackSlice(img, slice0, n);
+        Image<RFLOAT> slice0 = extractStackSlice(img, n);
         FilterHelper::lowPassFilter(slice0, 0.9*q, q, slice0);
         subsample(slice0, slice1);
         insertStackSlice(slice1, dest, n);
@@ -67,12 +69,11 @@ void SliceHelper::downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT> &dest
 void SliceHelper::downsampleSlicesReal(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
     double q = dest.data.xdim / (double) img.data.xdim;
 
-    Image<RFLOAT> slice0(img.data.xdim, img.data.ydim, 1);
     Image<RFLOAT> sliceT(img.data.xdim, img.data.ydim, 1);
     Image<RFLOAT> slice1(dest.data.xdim, dest.data.ydim, 1);
 
     for (long int n = 0; n < img.data.ndim; n++) {
-        extractStackSlice(img, slice0, n);
+        Image<RFLOAT> slice0 = extractStackSlice(img, n);
         FilterHelper::separableGaussianXYZ(slice0, sliceT, 1.5/q);
         subsample(sliceT, slice1);
         insertStackSlice(slice1, dest, n);
@@ -80,19 +81,14 @@ void SliceHelper::downsampleSlicesReal(const Image<RFLOAT> &img, Image<RFLOAT> &
 }
 
 void SliceHelper::lowPassFilterSlicewise(Image<RFLOAT> &img, double maxFreq0, double maxFreq1) {
-    Image<RFLOAT> slice0(img.data.xdim, img.data.ydim, 1);
 
     for (long int n = 0; n < img.data.ndim; n++) {
-        extractStackSlice(img, slice0, n);
-        FilterHelper::lowPassFilter(slice0, maxFreq0, maxFreq1, slice0);
-        insertStackSlice(slice0, img, n);
+        lowPassFilterSlice(img, n, maxFreq0, maxFreq1);
     }
 }
 
 void SliceHelper::lowPassFilterSlice(Image<RFLOAT> &img, long int n, double maxFreq0, double maxFreq1) {
-    Image<RFLOAT> slice0(img.data.xdim, img.data.ydim, 1);
-
-    extractStackSlice(img, slice0, n);
+    Image<RFLOAT> slice0 = extractStackSlice(img, n);
     FilterHelper::lowPassFilter(slice0, maxFreq0, maxFreq1, slice0);
     insertStackSlice(slice0, img, n);
 }
@@ -481,15 +477,14 @@ void SliceHelper::insertWeightedSpectralSlices(
     }
 }
 
-void SliceHelper::extractStackSlice(const Image<RFLOAT> &src, Image<RFLOAT> &dest, long int s) {
-    if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
-        REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
-    }
+Image<RFLOAT> SliceHelper::extractStackSlice(const Image<RFLOAT> &src, long int s) {
+    Image<RFLOAT> dest(src.data.xdim, src.data.ydim, 1);
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
         direct::elem(dest.data, x, y) = direct::elem(src.data, x, y, 0, s);
     }
+    return dest;
 }
 
 void SliceHelper::extractStackSlices(const Image<double> &src, Image<RFLOAT> &dest, long int s) {
@@ -530,51 +525,32 @@ Image<RFLOAT> SliceHelper::getStackSlice(const Image<RFLOAT> &src, long n) {
     return out;
 }
 
-void SliceHelper::insertStackSlice(const Image<double> &src, Image<double> &dest, long int s) {
+template <typename T>
+void SliceHelper::insertStackSlice(const Image<T> &src, Image<T> &dest, long int n) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, x, y, 0, s) = direct::elem(src.data, x, y);
+        direct::elem(dest.data, x, y, 0, n) = direct::elem(src.data, x, y);
     }
 }
 
-void SliceHelper::insertStackSlice(const Image<float> &src, Image<float> &dest, long int s) {
+template <typename T>
+void SliceHelper::insertZSlice(const Image<T> &src, Image<T> &dest, long int z) {
     if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
         REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
     }
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, x, y, 0, s) = direct::elem(src.data, x, y, 0, 0);
+        direct::elem(dest.data, x, y, z, 0) = direct::elem(src.data, x, y);
     }
 }
 
-void SliceHelper::insertZSlice(const Image<double> &src, Image<double> &dest, long int s) {
-    if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
-        REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
-    }
-
-    for (long int y = 0; y < src.data.ydim; y++)
-    for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, x, y, s, 0) = direct::elem(src.data, x, y);
-    }
-}
-
-void SliceHelper::insertZSlice(const Image<float> &src, Image<float> &dest, long int s) {
-    if (src.data.xdim != dest.data.xdim || src.data.ydim != dest.data.ydim) {
-        REPORT_ERROR("SliceHelper::extractSlice: image size mismatch.\n");
-    }
-
-    for (long int y = 0; y < src.data.ydim; y++)
-    for (long int x = 0; x < src.data.xdim; x++) {
-        direct::elem(dest.data, x, y, s, 0) = direct::elem(src.data, x, y);
-    }
-}
-
-Image<double> SliceHelper::consolidate(const std::vector<Image<double> > &src, bool toN) {
+template <typename T>
+Image<T> SliceHelper::consolidate(const std::vector<Image<T> > &src, bool toN) {
     const int w = src[0].data.xdim;
     const int h = src[0].data.ydim;
     const int ic = src.size();
@@ -583,26 +559,6 @@ Image<double> SliceHelper::consolidate(const std::vector<Image<double> > &src, b
     const int nc = toN? ic : 1;
 
     Image<double> out(w,h,zc,nc);
-
-    for (int i = 0; i < ic; i++) {
-        if (src[i].data.xdim != w || src[i].data.ydim != h)
-        {
-            REPORT_ERROR("SliceHelper::consolidate(): images are of unequal size.\n");
-        }
-
-        if (toN) insertStackSlice(src[i], out, i);
-        else insertZSlice(src[i], out, i);
-    }
-
-    return out;
-}
-
-Image<float> SliceHelper::consolidate(const std::vector<Image<float> > &src, bool toN) {
-    const int w = src[0].data.xdim;
-    const int h = src[0].data.ydim;
-    const int ic = src.size();
-
-    Image<float> out(w,h,1,ic);
 
     for (int i = 0; i < ic; i++) {
         if (src[i].data.xdim != w || src[i].data.ydim != h)
