@@ -211,6 +211,8 @@ void MlOptimiserMpi::initialise() {
                 bool fullAutomaticMapping = true;
                 bool semiAutomaticMapping = true; // possible to set fully manual for specific ranks
 
+                auto &thread_ids = allThreadIDs[rank - 1];
+
                 if (
                     allThreadIDs.size() < rank || 
                     allThreadIDs[0].size() == 0 || 
@@ -220,16 +222,16 @@ void MlOptimiserMpi::initialise() {
                     << "Threads will be mapped to available devices automatically." << std::endl;
                 } else {
                     fullAutomaticMapping = false;
-                    if (allThreadIDs[rank-1].size() != nr_threads) {
+                    if (thread_ids.size() != nr_threads) {
                         std::cout << " Follower " << rank << " will distribute threads over devices ";
-                        for (int j = 0; j < allThreadIDs[rank-1].size(); j++)
-                            std::cout << " "  << allThreadIDs[rank-1][j];
+                        for (int j = 0; j < thread_ids.size(); j++)
+                            std::cout << " "  << thread_ids[j];
                             std::cout << std::endl;
                     } else {
                         semiAutomaticMapping = false;
                         std::cout << " Using explicit indexing on follower " << rank << " to assign devices ";
-                        for (int j = 0; j < allThreadIDs[rank-1].size(); j++)
-                            std::cout << " "  << allThreadIDs[rank-1][j];
+                        for (int j = 0; j < thread_ids.size(); j++)
+                            std::cout << " "  << thread_ids[j];
                         std::cout  << std::endl;
                     }
                 }
@@ -244,10 +246,10 @@ void MlOptimiserMpi::initialise() {
                                 deviceCounts[rank] * i / nr_threads;
                             // std::cout << deviceCounts[rank] << "," << (rank - 1) << "," << ranksOnThisHost << "," << nr_threads << "," << i << "," << dev_id << std::endl;
                         } else {
-                            dev_id = textToInteger(allThreadIDs[rank - 1][i % allThreadIDs[rank - 1].size()].c_str());
+                            dev_id = textToInteger(thread_ids[i % thread_ids.size()].c_str());
                         }
                     } else {
-                        dev_id = textToInteger(allThreadIDs[rank - 1][i].c_str());
+                        dev_id = textToInteger(thread_ids[i].c_str());
                     }
 
                     std::cout << " Thread " << i << " on follower " << rank << " mapped to device " << dev_id << std::endl;
@@ -258,16 +260,16 @@ void MlOptimiserMpi::initialise() {
             for (int i = 0; i < nr_threads; i ++) {
                 node->relion_MPI_Recv(&deviceAffinity, 1, MPI_INT, 0, MPITag::INT, MPI_COMM_WORLD, status);
 
-                // Only make a new bundle of not existing on device
-                int bundleId = -1;
+                auto it = std::find(cudaDevices.begin(), cudaDevices.end(), deviceAffinity);
 
-                for (int j = 0; j < cudaDevices.size(); j++)
-                    if (cudaDevices[j] == deviceAffinity) { bundleId = j; }
-
-                if (bundleId == -1) {
-                    bundleId = cudaDevices.size();
+                int bundleId;
+                if (it == cudaDevices.end()) {
+                    // If bundle doesn't exist on device, make a new bundle
                     cudaDevices.push_back(deviceAffinity);
                     cudaDeviceShares.push_back(1);
+                    bundleId = cudaDevices.size();
+                } else {
+                    bundleId = it - cudaDevices.begin();
                 }
                 HANDLE_ERROR(cudaSetDevice(deviceAffinity));
                 cudaOptimiserDeviceMap.push_back(bundleId);
@@ -319,19 +321,13 @@ void MlOptimiserMpi::initialise() {
 
                     deviceIdentifiers.push_back(deviceIdentifier);
 
-                    int idi = -1;
+                    auto it = std::find(uniqueDeviceIdentifiers.begin(), uniqueDeviceIdentifiers.end(), deviceIdentifier);
 
-                    for (int j = 0; j < uniqueDeviceIdentifiers.size(); j++) {
-                        if (uniqueDeviceIdentifiers[j] == deviceIdentifier) { 
-                            idi = j; 
-                        }
-                    }
-
-                    if (idi >= 0) {
-                        uniqueDeviceIdentifierCounts[idi]++;
-                    } else {
+                    if (it == uniqueDeviceIdentifiers.end()) {
                         uniqueDeviceIdentifiers.push_back(deviceIdentifier);
                         uniqueDeviceIdentifierCounts.push_back(1);
+                    } else {
+                        uniqueDeviceIdentifierCounts[it - uniqueDeviceIdentifiers.begin()]++;
                     }
 
 					// std::cout << "RECEIVING: " << deviceIdentifier << std::endl;
@@ -351,13 +347,14 @@ void MlOptimiserMpi::initialise() {
                 int devCount = deviceCounts[follower - 1];
 
                 for (int i = 0; i < devCount; i++) {
-                    int idi = -1;
 
-                    for (int j = 0; j < uniqueDeviceIdentifiers.size(); j++) {
-                        if (uniqueDeviceIdentifiers[j] == deviceIdentifiers[global_did]) {
-                            idi = j; 
-                        }
-                    }
+                    auto it = std::find(
+                        uniqueDeviceIdentifiers.begin(), 
+                        uniqueDeviceIdentifiers.end(), 
+                        deviceIdentifiers[global_did]
+                    );
+
+                    int idi = it - uniqueDeviceIdentifiers.begin();
 
                     node->relion_MPI_Send(&uniqueDeviceIdentifierCounts[idi], 1, MPI_INT, follower, MPITag::INT, MPI_COMM_WORLD);
 
@@ -406,9 +403,9 @@ void MlOptimiserMpi::initialise() {
                         "will still yield good performance and possibly a more stable execution. \n" << std::endl;
                     }
                     #ifdef ACC_DOUBLE_PRECISION
-                    int sLowBoxLim = (int) ((float) LowBoxLim * pow(2, 1.0 / 3.0));
+                    int sLowBoxLim = (float) LowBoxLim * pow(2.0, 1.0 / 3.0);
                     std::cerr << "You are also using double precison on the GPU. If you were using single precision\n"
-                    "(which in all tested cases is perfectly fine), then you could use an box-size of ~"  << sLowBoxLim << "." << std::endl;
+                    "(which in all tested cases is perfectly fine), then you could use a box size of ~"  << sLowBoxLim << "." << std::endl;
                     #endif
                     std::cerr << std::endl << std::endl;
                 }
@@ -490,7 +487,7 @@ void MlOptimiserMpi::initialise() {
         MlOptimiser::write(DO_WRITE_SAMPLING, DONT_WRITE_DATA, DO_WRITE_OPTIMISER, DO_WRITE_MODEL, node->rank);
 
         bool do_warn = false;
-        for (int igroup = 0; igroup< mymodel.nr_groups; igroup++) {
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
             long int nr_particles = mymodel.nr_particles_per_group[igroup];
             if (nr_particles < 5 && node->rank == 1) {
                 std:: cout << "WARNING: There are only " << nr_particles << " particles in group " << igroup + 1;
@@ -527,8 +524,8 @@ void MlOptimiserMpi::initialiseWorkLoad() {
     if (random_seed == -1) {
         if (node->isLeader()) {
             random_seed = time(NULL);
-                for (int follower = 1; follower < node->size; follower++)
-                    node->relion_MPI_Send(&random_seed, 1, MPI_INT, follower, MPITag::RANDOMSEED, MPI_COMM_WORLD);
+            for (int follower = 1; follower < node->size; follower++)
+                node->relion_MPI_Send(&random_seed, 1, MPI_INT, follower, MPITag::RANDOMSEED, MPI_COMM_WORLD);
         } else {
             MPI_Status status;
             node->relion_MPI_Recv(&random_seed, 1, MPI_INT, 0, MPITag::RANDOMSEED, MPI_COMM_WORLD, status);
@@ -623,10 +620,10 @@ void MlOptimiserMpi::initialiseWorkLoad() {
              * else()
              * 		(prepare to receive from MPI_Bcast)
              */
-            mymodel.PPrefRank.assign(mymodel.PPref.size(),true);
+            mymodel.PPrefRank.assign(mymodel.PPref.size(), true);
 
             for (int i = 0; i < mymodel.PPref.size(); i++)
-            mymodel.PPrefRank[i] = i % (node->size - 1) == node->rank - 1;
+                mymodel.PPrefRank[i] = i % (node->size - 1) == node->rank - 1;
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
@@ -782,7 +779,7 @@ void MlOptimiserMpi::expectation() {
                 exp_fn_ctf = rec_buf2;
                 free(rec_buf2);
             }
-            calculateExpectedAngularErrors(0, n_trials_acc-1);
+            calculateExpectedAngularErrors(0, n_trials_acc - 1);
         }
 
         // The reconstructing follower Bcast acc_rottilt, acc_psi, acc_trans to all other nodes!
