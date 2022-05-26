@@ -238,7 +238,7 @@ int bestPrecision(float F, int _width) {
 
     if (F == 0) return 1;
 
-    int exp = floor(log10(abs(F)));
+    int exp = floor(log10(fabs(F)));
     int advised_prec;
 
     if (exp >= 0) {
