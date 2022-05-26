@@ -949,26 +949,21 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         );
 
         if (basePckr->do_write_fom_maps) {
-            FileName fn_tmp;
+
             Image<RFLOAT> It_float;
-            Image<int> It_int;
-
             It_float() = Mccf_best_combined;
-            fn_tmp = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_combinedCCF.spi";
-            It_float.write(fn_tmp);
+            It_float.write(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_combinedCCF.spi");
 
+            Image<int> It_int;
             It_int() = Mclass_best_combined;
-            fn_tmp = basePckr->getOutputRootName(fn_mic) + + "_" + basePckr->fn_out + "_combinedCLASS.spi";
-            It_int.write(fn_tmp);
+            It_int.write(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_combinedCLASS.spi");
+
         }
 
         if (basePckr->do_write_fom_maps || basePckr->do_read_fom_maps) {
-            FileName fn_tmp;
             Image<RFLOAT> It;
-
             It() = Mccfplot;
-            fn_tmp =  basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_combinedPLOT.spi";
-            It.write(fn_tmp);
+            It.write(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_combinedPLOT.spi");
         }
     } else {
         #ifdef TIMING

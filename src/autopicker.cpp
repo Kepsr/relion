@@ -1311,7 +1311,7 @@ void AutoPicker::pickAmyloids(
 void AutoPicker::pickCCFPeaks(
     const MultidimArray<RFLOAT> &Mccf,
     const MultidimArray<RFLOAT> &Mstddev, const MultidimArray<RFLOAT> &Mavg,
-    const MultidimArray<int>& Mclass,
+    const MultidimArray<int> &Mclass,
     RFLOAT threshold_value, int peak_r_min, RFLOAT particle_diameter_pix,
     std::vector<ccfPeak>& ccf_peak_list,
     MultidimArray<RFLOAT> &Mccfplot,
@@ -1320,7 +1320,6 @@ void AutoPicker::pickCCFPeaks(
     MultidimArray<int> Mrec;
     std::vector<ccfPixel> ccf_pixel_list;
     ccfPeak ccf_peak_small, ccf_peak_big;
-    std::vector<ccfPeak> ccf_peak_list_aux;
     int new_micrograph_xsize = (float) micrograph_xsize * scale;
     int new_micrograph_ysize = (float) micrograph_ysize * scale;
     int nr_pixels;
@@ -1348,10 +1347,6 @@ void AutoPicker::pickCCFPeaks(
 
     // Init output
     ccf_peak_list.clear();
-    Mccfplot.clear();
-    Mccfplot.resize(Mccf);
-    Mccfplot.initZeros();
-    Mccfplot.setXmippOrigin();
 
     Stats<RFLOAT> stats = Mccf.computeStats();
 
@@ -1532,12 +1527,13 @@ void AutoPicker::pickCCFPeaks(
     Mrec.setXmippOrigin();
     // Sort the peaks from the weakest to the strongest
     for (int new_id = 0; new_id < ccf_peak_list.size(); new_id++) {
-        RFLOAT peak_r2 = ccf_peak_list[new_id].r * ccf_peak_list[new_id].r;
-        int peak_r = ccf_peak_list[new_id].r > 0.0 ? ceil(ccf_peak_list[new_id].r) : -1;
+        ccfPeak &peak = ccf_peak_list[new_id];
+        RFLOAT peak_r2 = peak.r * peak.r;
+        int peak_r = peak.r > 0.0 ? ceil(peak.r) : -1;
 
         // Remove peaks with too small/big radii!
         if (peak_r <= 1 || peak_r > particle_diameter_pix / 2.0) {
-            ccf_peak_list[new_id].r = -1.0;
+            peak.r = -1.0;
             continue;
         }
         for (int dx = -peak_r; dx <= peak_r; dx++)
@@ -1545,8 +1541,8 @@ void AutoPicker::pickCCFPeaks(
             if ((RFLOAT) (dx * dx + dy * dy) > peak_r2)
                 continue;
 
-            int x = dx + round(ccf_peak_list[new_id].x);
-            int y = dy + round(ccf_peak_list[new_id].y);
+            int x = dx + round(peak.x);
+            int y = dy + round(peak.y);
 
             // Out of range
             if (
@@ -1563,32 +1559,26 @@ void AutoPicker::pickCCFPeaks(
         }
     }
 
-    // Collect all valid peaks
-    ccf_peak_list_aux.clear();
-    for (int id = 0; id < ccf_peak_list.size(); id++) {
-        if (ccf_peak_list[id].isValid())
-            ccf_peak_list_aux.push_back(ccf_peak_list[id]);
-    }
-    ccf_peak_list.clear();
-    ccf_peak_list = ccf_peak_list_aux;
-    ccf_peak_list_aux.clear();
+    // Remove invalid peaks
+    ccf_peak_list.erase(std::remove_if(
+        ccf_peak_list.begin(), ccf_peak_list.end(),
+        [] (ccfPeak peak) { return !peak.isValid(); }
+    ), ccf_peak_list.end());
     #ifdef DEBUG_HELIX
-    std::cout << " nr_peaks_pruned= " << ccf_peak_list.size() << std::endl;
+    std::cout << " Number of peaks after pruning = " << ccf_peak_list.size() << std::endl;
     #endif
 
     // TODO: Remove all discrete peaks (one peak should have at least two neighbouring peaks within r=particle_radius)
 
     // Plot
-    for (int ii = 0; ii < ccf_peak_list.size(); ii++)
-    for (int jj = 0; jj < ccf_peak_list[ii].ccf_pixel_list.size(); jj++) {
-        int x, y;
-
-        if (ccf_peak_list[ii].ccf_pixel_list[jj].fom < ccf_peak_list[ii].fom_thres)
-            continue;
-
-        x = round(ccf_peak_list[ii].ccf_pixel_list[jj].x);
-        y = round(ccf_peak_list[ii].ccf_pixel_list[jj].y);
-        Mccfplot.elem(x, y) = 1.0;
+    Mccfplot.clear();
+    Mccfplot.resize(Mccf);
+    Mccfplot.initZeros();
+    Mccfplot.setXmippOrigin();
+    for (const ccfPeak &peak : ccf_peak_list)
+    for (const ccfPixel &pixel : peak.ccf_pixel_list) {
+        if (pixel.fom < peak.fom_thres) continue;
+        Mccfplot.elem(round(pixel.x), round(pixel.y)) = 1.0;
     }
 
     return;
@@ -1596,9 +1586,9 @@ void AutoPicker::pickCCFPeaks(
 
 void AutoPicker::extractHelicalTubes(
     std::vector<ccfPeak> &peak_list,
-    std::vector<std::vector<ccfPeak> > &tube_coord_list,
+    std::vector<std::vector<ccfPeak>> &tube_coord_list,
     std::vector<RFLOAT> &tube_len_list,
-    std::vector<std::vector<ccfPeak> > &tube_track_list,
+    std::vector<std::vector<ccfPeak>> &tube_track_list,
     RFLOAT particle_diameter_pix, RFLOAT curvature_factor_max,
     RFLOAT interbox_distance_pix, RFLOAT tube_diameter_pix,
     float scale
@@ -1869,14 +1859,13 @@ void AutoPicker::extractHelicalTubes(
         //std::cout << " nr Dir2 peaks= " << selected_peaks_dir2.size() << std::endl;
         // Dir2
         // ================================================================================================
-        if (selected_peaks_dir2.size() >= 1) {
+        if (!selected_peaks_dir2.empty()) {
             // Init
             psi_dir2 /= selected_peaks_dir2.size();
-            dist_max = -1.0;
-            for (int peak_id1 = 0; peak_id1 < selected_peaks_dir2.size(); peak_id1++) {
-                if (selected_peaks_dir2[peak_id1].dist > dist_max)
-                    dist_max = selected_peaks_dir2[peak_id1].dist;
-            }
+            dist_max = std::max_element(
+                selected_peaks_dir2.begin(), selected_peaks_dir2.end(),
+                [] (ccfPeak lhs, ccfPeak rhs) { return lhs.dist < rhs.dist; }
+            )->dist;
             len_dir2 = 0.0;
             xc_old = peak_list[peak_id0].x;
             yc_old = peak_list[peak_id0].y;
@@ -3019,7 +3008,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         RFLOAT thres = min_fraction_expected_Pratio;
         int peak_r_min = 1;
         std::vector<ccfPeak> ccf_peak_list;
-        std::vector<std::vector<ccfPeak> > tube_coord_list, tube_track_list;
+        std::vector<std::vector<ccfPeak>> tube_coord_list, tube_track_list;
         std::vector<RFLOAT> tube_len_list;
         MultidimArray<RFLOAT> Mccfplot;
 
@@ -3093,17 +3082,18 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         removeTooCloselyNeighbouringPeaks(peaks, min_distance_pix, scale);
         // Write out a STAR file with the coordinates
         MetaDataTable MDout;
-        for (int ipeak = 0; ipeak < peaks.size(); ipeak++) {
+        for (auto &peak : peaks) {
             MDout.addObject();
-            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)(peaks[ipeak].x) / scale);
-            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)(peaks[ipeak].y) / scale);
-            MDout.setValue(EMDL::PARTICLE_CLASS, peaks[ipeak].ref + 1); // start counting at 1
-            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, peaks[ipeak].fom);
-            MDout.setValue(EMDL::ORIENT_PSI, peaks[ipeak].psi);
+            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) peak.x / scale);
+            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) peak.y / scale);
+            MDout.setValue(EMDL::PARTICLE_CLASS,        peak.ref + 1); // start counting at 1
+            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, peak.fom);
+            MDout.setValue(EMDL::ORIENT_PSI,            peak.psi);
         }
         FileName fn_tmp = getOutputRootName(fn_mic) + "_" + fn_out + ".star";
         MDout.write(fn_tmp);
         }))
+
     }
 }
 
@@ -3248,9 +3238,7 @@ void AutoPicker::prunePeakClusters(
         for (int i = 0; i < cluster.size(); ++i) {
             const Peak &peak1 = cluster[i];
             for (auto peak2_itr = peaks.begin(); peak2_itr != peaks.end(); ++peak2_itr) {
-                float dx = peak1.x - peak2_itr->x;
-                float dy = peak1.y - peak2_itr->y;
-                if (dx * dx + dy * dy < (float) particle_radius2 * scale * scale) {
+                if ((float) dist2(peak1, *peak2_itr) < (float) particle_radius2 * scale * scale) {
                     // Put *peak2_itr in the cluster, and remove from the peaks list
                     cluster.push_back(*peak2_itr);
                     peaks.erase(peak2_itr);
@@ -3279,8 +3267,6 @@ void AutoPicker::prunePeakClusters(
             cluster.erase(std::remove_if(
                 cluster.begin(), cluster.end(),
                 [&bestpeak, &mind2] (const Peak &peak) {
-                    int dx = peak.x - bestpeak.x;
-                    int dy = peak.y - bestpeak.y;
                     return (float) dist2(peak, bestpeak) < mind2;
                 }
             ), cluster.end());
