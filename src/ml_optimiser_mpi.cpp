@@ -658,9 +658,7 @@ void MlOptimiserMpi::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFL
 }
 
 void MlOptimiserMpi::expectation() {
-    #ifdef TIMING
-    timer.tic(TIMING_EXP_1);
-    #endif
+    RCTIC(timer, TIMING_EXP_1)
     #ifdef DEBUG
     std::cerr << "MlOptimiserMpi::expectation: Entering " << std::endl;
     #endif
@@ -685,9 +683,7 @@ void MlOptimiserMpi::expectation() {
 
     // B. Set the PPref Fourier transforms, initialise wsum_model, etc.
     // The leader only holds metadata, it does not set up the wsum_model (to save memory)
-    #ifdef TIMING
-    timer.tic(TIMING_EXP_1a);
-    #endif
+    RCTICTOC(timer, TIMING_EXP_1a, ({
     if (!node->isLeader()) {
         MlOptimiser::expectationSetup();
 
@@ -699,9 +695,7 @@ void MlOptimiserMpi::expectation() {
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    #ifdef TIMING
-    timer.toc(TIMING_EXP_1a);
-    #endif
+    }))
 
     if (!do_split_random_halves) {
         if (!node->isLeader()) {
@@ -746,10 +740,9 @@ void MlOptimiserMpi::expectation() {
     }
     #endif
 
-    #ifdef TIMING
-    timer.toc(TIMING_EXP_1);
-    timer.tic(TIMING_EXP_2);
-    #endif
+    RCTOC(timer, TIMING_EXP_1);
+
+    RCTICTOC(timer, TIMING_EXP_2, ({
     // C. Calculate expected angular errors
     // Do not do this for maxCC
     // Only the first (reconstructing) follower (i.e. from half1) calculates expected angular errors
@@ -786,10 +779,10 @@ void MlOptimiserMpi::expectation() {
         node->relion_MPI_Bcast(&acc_rot,   1, MY_MPI_DOUBLE, first_follower, MPI_COMM_WORLD);
         node->relion_MPI_Bcast(&acc_trans, 1, MY_MPI_DOUBLE, first_follower, MPI_COMM_WORLD);
     }
-        #ifdef TIMING
-        timer.toc(TIMING_EXP_2);
-        timer.tic(TIMING_EXP_3);
-        #endif
+    }))
+
+    RCTICTOC(timer, TIMING_EXP_3, ({
+
     // D. Update the angular sampling (all nodes except leader)
     if (
         !node->isLeader() && (do_auto_refine || do_sgd) && iter > 1 || 
@@ -849,18 +842,18 @@ void MlOptimiserMpi::expectation() {
     // Follower 1 sends has_converged to everyone else (in particular the leader needs it!)
     node->relion_MPI_Bcast(&has_converged,         1, MPI_INT, first_follower, MPI_COMM_WORLD);
     node->relion_MPI_Bcast(&do_join_random_halves, 1, MPI_INT, first_follower, MPI_COMM_WORLD);
-    #ifdef TIMING
-    timer.toc(TIMING_EXP_3);
-    timer.tic(TIMING_EXP_4);
-    timer.tic(TIMING_EXP_4a);
-    #endif
+
+    }))
+
+    RCTICTOC(timer, TIMING_EXP_4, ({
+    RCTICTOC(timer, TIMING_EXP_4a, ({
 
     // Wait until expected angular errors have been calculated
     MPI_Barrier(MPI_COMM_WORLD);
     sleep(1);
-    #ifdef TIMING
-    timer.toc(TIMING_EXP_4a);
-    #endif
+
+    }))
+
     // Now perform real expectation step in parallel, use an on-demand leader-follower system
     #define JOB_FIRST (first_last_nr_images(0))
     #define JOB_LAST (first_last_nr_images(1))
@@ -879,16 +872,14 @@ void MlOptimiserMpi::expectation() {
 
     if (do_gpu && ! node->isLeader()) {
         for (int i = 0; i < cudaDevices.size(); i ++) {
-            #ifdef TIMING
-            timer.tic(TIMING_EXP_4b);
-            #endif
+            RCTICTOC(timer, TIMING_EXP_4b, ({
+
             MlDeviceBundle *b = new MlDeviceBundle(this);
             b->setDevice(cudaDevices[i]);
             b->setupFixedSizedObjects();
             accDataBundles.push_back((void*) b);
-            #ifdef TIMING
-            timer.toc(TIMING_EXP_4b);
-            #endif
+
+            }))
         }
 
         std::vector<unsigned> threadcountOnDevice(accDataBundles.size(),0);
@@ -1000,14 +991,12 @@ void MlOptimiserMpi::expectation() {
     fftw_plan_with_nthreads(1);
     #endif
 
-    #ifdef TIMING
-    timer.toc(TIMING_EXP_4);
-    #endif
+    }))
+
     long int my_nr_particles = subset_size > 0 ? subset_size : mydata.numberOfParticles();
     if (node->isLeader()) {
-        #ifdef TIMING
-        timer.tic(TIMING_EXP_5);
-        #endif
+        RCTICTOC(timer, TIMING_EXP_5, ({
+
         try {
             long int progress_bar_step_size = std::max(1l, my_nr_particles / 60);
             long int prev_barstep = 0;
@@ -1168,14 +1157,12 @@ void MlOptimiserMpi::expectation() {
             std::cerr << "leader encountered error: " << XE;
             MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_FAILURE);
         }
-        #ifdef TIMING
-        timer.toc(TIMING_EXP_5);
-        #endif
+
+        }))
     } else {
         // if not Leader
-        #ifdef TIMING
-        timer.tic(TIMING_EXP_6);
-        #endif
+        RCTICTOC(timer, TIMING_EXP_6, ({
+
         try {
             if (halt_all_followers_except_this > 0) {
                 // Let all followers except this one sleep forever
@@ -1194,14 +1181,10 @@ void MlOptimiserMpi::expectation() {
             node->relion_MPI_Send(first_last_nr_images.data, first_last_nr_images.size(), MPI_LONG, 0, MPITag::JOB_REQUEST, MPI_COMM_WORLD);
 
             while (true) {
-                #ifdef TIMING
-                timer.tic(TIMING_MPISLAVEWAIT1);
-                #endif
+                RCTICTOC(timer, TIMING_MPISLAVEWAIT1, ({
                 //Receive a new bunch of particles
                 node->relion_MPI_Recv(first_last_nr_images.data, first_last_nr_images.size(), MPI_LONG, 0, MPITag::JOB_REPLY, MPI_COMM_WORLD, status);
-                #ifdef TIMING
-                timer.toc(TIMING_MPISLAVEWAIT1);
-                #endif
+                }))
 
                 //Check whether I am done
                 if (JOB_NIMG <= 0) {
@@ -1212,9 +1195,8 @@ void MlOptimiserMpi::expectation() {
                     exp_metadata.clear();
                     break;
                 } else {
-                    #ifdef TIMING
-                    timer.tic(TIMING_MPISLAVEWAIT2);
-                    #endif
+                    RCTICTOC(timer, TIMING_MPISLAVEWAIT2, ({
+
                     // Also receive the imagedata and the metadata for these images from the leader
                     exp_metadata.resize(JOB_NIMG, METADATA_LINE_LENGTH_BEFORE_BODIES + (mymodel.nr_bodies) * METADATA_NR_BODY_PARAMS);
                     node->relion_MPI_Recv(exp_metadata.data, exp_metadata.size(), MY_MPI_DOUBLE, 0, MPITag::METADATA, MPI_COMM_WORLD, status);
@@ -1276,24 +1258,18 @@ void MlOptimiserMpi::expectation() {
                     #ifdef DEBUG_MPIEXP
                     std::cerr << " SLAVE EXECUTING node->rank= " << node->rank << " JOB_FIRST= " << JOB_FIRST << " JOB_LAST= " << JOB_LAST << std::endl;
                     #endif
-                    #ifdef TIMING
-                    timer.toc(TIMING_MPISLAVEWAIT2);
-                    timer.tic(TIMING_MPISLAVEWORK);
-                    #endif
-                    expectationSomeParticles(JOB_FIRST, JOB_LAST);
-                    #ifdef TIMING
-                    timer.toc(TIMING_MPISLAVEWORK);
-                    timer.tic(TIMING_MPISLAVEWAIT3);
-                    #endif
+                    }))
 
+                    RCTICTOC(timer, TIMING_MPISLAVEWORK, ({
+                    expectationSomeParticles(JOB_FIRST, JOB_LAST);
+                    }))
+
+                    RCTICTOC(timer, TIMING_MPISLAVEWAIT3, ({
                     // Report to the leader how many particles I have processed
                     node->relion_MPI_Send(first_last_nr_images.data, first_last_nr_images.size(), MPI_LONG, 0, MPITag::JOB_REQUEST, MPI_COMM_WORLD);
                     // Also send the metadata belonging to those
                     node->relion_MPI_Send(exp_metadata.data, exp_metadata.size(), MY_MPI_DOUBLE, 0, MPITag::METADATA, MPI_COMM_WORLD);
-
-                    #ifdef TIMING
-                    timer.toc(TIMING_MPISLAVEWAIT3);
-                    #endif
+                    }))
                 }
             }
 		// TODO: define MPI_COMM_SLAVES!!!!	MPI_Barrier(node->MPI_COMM_SLAVES);
@@ -1301,9 +1277,8 @@ void MlOptimiserMpi::expectation() {
             #ifdef CUDA
             if (do_gpu) {
                 for (int i = 0; i < accDataBundles.size(); i ++) {
-                    #ifdef TIMING
-                    timer.tic(TIMING_EXP_7);
-                    #endif
+                    RCTICTOC(timer, TIMING_EXP_7, ({
+
                     MlDeviceBundle* b = (MlDeviceBundle*) accDataBundles[i];
                     b->syncAllBackprojects();
 
@@ -1329,43 +1304,39 @@ void MlOptimiserMpi::expectation() {
                         b->backprojectors[j].clear();
                     }
 
-                    for (int j = 0; j < b->coarseProjectionPlans.size(); j++)
-                        b->coarseProjectionPlans[j].clear();
-                        #ifdef TIMING
-                        timer.toc(TIMING_EXP_7);
-                        #endif
+                    for (auto &plan : b->coarseProjectionPlans)
+                        plan.clear();
+
+                    }))
                 }
-                #ifdef TIMING
-                timer.tic(TIMING_EXP_8);
-                #endif
-                for (int i = 0; i < cudaOptimisers.size(); i ++)
-                    delete (MlOptimiserCuda*) cudaOptimisers[i];
+                RCTICTOC(timer, TIMING_EXP_8, ({
+
+                for (auto &optimiser : cudaOptimisers)
+                    delete (MlOptimiserCuda*) optimiser;
 
                 cudaOptimisers.clear();
 
+                for (auto &bundle : accDataBundles) {
 
-                for (int i = 0; i < accDataBundles.size(); i ++) {
-
-                    ((MlDeviceBundle*) accDataBundles[i])->allocator->syncReadyEvents();
-                    ((MlDeviceBundle*) accDataBundles[i])->allocator->freeReadyAllocs();
+                    ((MlDeviceBundle*) bundle)->allocator->syncReadyEvents();
+                    ((MlDeviceBundle*) bundle)->allocator->freeReadyAllocs();
 
                     #ifdef DEBUG_CUDA
-                    if (((MlDeviceBundle*) accDataBundles[i])->allocator->getNumberOfAllocs() != 0) {
+                    if (((MlDeviceBundle*) bundle)->allocator->getNumberOfAllocs() != 0) {
                         printf("DEBUG_ERROR: Non-zero allocation count encountered in custom allocator between iterations.\n");
-                        ((MlDeviceBundle*) accDataBundles[i])->allocator->printState();
+                        ((MlDeviceBundle*) bundle)->allocator->printState();
                         fflush(stdout);
                         CRITICAL(ERR_CANZ);
                     }
                     #endif
                 }
 
-                for (int i = 0; i < accDataBundles.size(); i ++)
-                    delete (MlDeviceBundle*) accDataBundles[i];
+                for (auto &bundle : accDataBundles)
+                    delete (MlDeviceBundle*) bundle;
 
                 accDataBundles.clear();
-                #ifdef TIMING
-                timer.toc(TIMING_EXP_8);
-                #endif
+
+                }))
             }
             #endif // CUDA
             #ifdef ALTCPU
@@ -1394,8 +1365,8 @@ void MlOptimiserMpi::expectation() {
                     b->backprojectors[j].clear();
                 }
 
-                for (int j = 0; j < b->coarseProjectionPlans.size(); j++)
-                    b->coarseProjectionPlans[j].clear();
+                for (auto &plan : b->coarseProjectionPlans)
+                    plan.clear();
 
                 delete b;
                 accDataBundles.clear();
@@ -1414,9 +1385,8 @@ void MlOptimiserMpi::expectation() {
             std::cerr << "follower " << node->rank << " encountered error: " << XE;
             MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_FAILURE);
         }
-        #ifdef TIMING
-        timer.toc(TIMING_EXP_6);
-        #endif
+
+        }))
     }  // Follower node
 
     #ifdef  MKLFFT
@@ -1433,12 +1403,10 @@ void MlOptimiserMpi::expectation() {
         progress_bar(my_nr_particles);
     }
 
-    #ifdef TIMING
     // Measure how long I have to wait for the rest
-    timer.tic(TIMING_MPIWAIT);
+    RCTICTOC(timer, TIMING_MPIWAIT, ({
     node->barrierWait();
-    timer.toc(TIMING_MPIWAIT);
-    #endif
+    }))
 
     // Wait until expected angular errors have been calculated
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1456,12 +1424,8 @@ void MlOptimiserMpi::expectation() {
 }
 
 void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
-
-    #ifdef TIMING
-    timer.tic(TIMING_MPICOMBINEDISC);
-    #endif
+    RCTICTOC(timer, TIMING_MPICOMBINEDISC, ({
     MultidimArray<RFLOAT> Mpack;
-    FileName fn_pack;
 
     int nr_halfsets = do_split_random_halves ? 2 : 1;
 
@@ -1475,7 +1439,8 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
         // B. All followers write their Mpack to disc. Do this SEQUENTIALLY to prevent heavy load on disc I/O
         for (int this_follower = 1; this_follower < node->size; this_follower++ ) {
             if (this_follower == node->rank) {
-                fn_pack.compose(fn_out+"_rank", node->rank, "tmp");
+                FileName fn_pack;
+                fn_pack.compose(fn_out + "_rank", node->rank, "tmp");
                 Mpack.writeBinary(fn_pack);
                 //std::cerr << "Rank "<< node->rank <<" has written: "<<fn_pack << " sum= "<<Mpack.sum()<< std::endl;
             }
@@ -1489,12 +1454,14 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
         for (int first_follower = 1; first_follower <= nr_halfsets; first_follower++) {
             if (node->rank == first_follower) {
                 for (int other_follower = first_follower + nr_halfsets; other_follower < node->size; other_follower += nr_halfsets) {
-                    fn_pack.compose(fn_out+"_rank", other_follower, "tmp");
+                    FileName fn_pack;
+                    fn_pack.compose(fn_out + "_rank", other_follower, "tmp");
                     Mpack.readBinaryAndSum(fn_pack);
                     //std::cerr << "Follower "<<node->rank<<" has read "<<fn_pack<< " sum= "<<Mpack.sum() << std::endl;
                 }
                 // After adding all Mpacks together: write the sum to disc
-                fn_pack.compose(fn_out+"_rank", node->rank, "tmp");
+                FileName fn_pack;
+                fn_pack.compose(fn_out + "_rank", node->rank, "tmp");
                 Mpack.writeBinary(fn_pack);
                 //std::cerr << "Follower "<<node->rank<<" is writing total SUM in "<<fn_pack << std::endl;
             }
@@ -1511,6 +1478,7 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
                 int first_follower = do_split_random_halves ? modulo_alt(this_follower, 2) : 1;
 
                 // Read the corresponding Mpack (which now contains the sum of all Mpacks)
+                FileName fn_pack;
                 fn_pack.compose(fn_out + "_rank", first_follower, "tmp");
                 Mpack.readBinary(fn_pack);
                 //std::cerr << "Rank "<< node->rank <<" has read: "<<fn_pack << " sum= "<<Mpack.sum()<< std::endl;
@@ -1524,8 +1492,9 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
         // Again, do this SEQUENTIALLY to prevent heavy load on disc I/O
         for (int this_follower = 1; this_follower < node->size; this_follower++ ) {
             if (this_follower == node->rank) {
-                fn_pack.compose(fn_out+"_rank", node->rank, "tmp");
-                remove((fn_pack).c_str());
+                FileName fn_pack;
+                fn_pack.compose(fn_out + "_rank", node->rank, "tmp");
+                remove(fn_pack.c_str());
                 //std::cerr << "Rank "<< node->rank <<" has deleted: "<<fn_pack << std::endl;
             }
             if (!do_parallel_disc_io)
@@ -1537,16 +1506,11 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
             wsum_model.unpack(Mpack);
 
     } // end if ((node->size - 1)/nr_halfsets > 1)
-    #ifdef TIMING
-    timer.toc(TIMING_MPICOMBINEDISC);
-    #endif
-
+    }))
 }
 
 void MlOptimiserMpi::combineAllWeightedSums() {
-    #ifdef TIMING
-    timer.tic(TIMING_MPICOMBINENETW);
-    #endif
+    RCTICTOC(timer, TIMING_MPICOMBINENETW, ({
 
     // Pack all weighted sums in Mpack
     MultidimArray<RFLOAT> Mpack, Msum;
@@ -1622,7 +1586,7 @@ void MlOptimiserMpi::combineAllWeightedSums() {
                         #endif
                     }
                 }
-            } // end for this_follower
+            }
 
             // Now loop through all followers again to pass around the Msum
             for (int this_follower = 1; this_follower < node->size; this_follower++) {
@@ -1645,8 +1609,7 @@ void MlOptimiserMpi::combineAllWeightedSums() {
                         #endif
                     }
                 }
-            } // end for this_follower
-
+            }
 
             // Finally all followers unpack Msum into their wsum_model
             if (!node->isLeader()) {
@@ -1654,15 +1617,12 @@ void MlOptimiserMpi::combineAllWeightedSums() {
                 wsum_model.unpack(Msum, piece - 1);
             }
 
-
-        } // end for piece
+        }
 
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    #ifdef TIMING
-    timer.toc(TIMING_MPICOMBINENETW);
-    #endif
+    }))
 }
 
 void MlOptimiserMpi::combineWeightedSumsTwoRandomHalvesViaFile() {
@@ -1782,9 +1742,8 @@ void MlOptimiserMpi::maximization() {
     std::cerr << "MlOptimiserMpi::maximization: Entering " << std::endl;
     #endif
 
-    #ifdef TIMING
-    timer.tic(TIMING_RECONS);
-    #endif
+    RFLOAT helical_twist_half1, helical_rise_half1, helical_twist_half2, helical_rise_half2;
+    RCTICTOC(timer, TIMING_RECONS, ({
 
     // For multi-body refinement: check if all bodies are fixed. If so, just return
     if (mymodel.nr_bodies > 1) {
@@ -1800,9 +1759,8 @@ void MlOptimiserMpi::maximization() {
         init_progress_bar(mymodel.nr_classes);
     }
 
-    RFLOAT helical_twist_half1, helical_rise_half1, helical_twist_half2, helical_rise_half2;
     helical_twist_half1 = helical_twist_half2 = helical_twist_initial;
-    helical_rise_half1 = helical_rise_half2 = helical_rise_initial;
+    helical_rise_half1  = helical_rise_half2  = helical_rise_initial;
 
     // First reconstruct all classes in parallel
     for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
@@ -2154,7 +2112,7 @@ void MlOptimiserMpi::maximization() {
     }
 
     #ifdef DEBUG
-    std::cerr << "rank= "<<node->rank<<" has reached barrier of reconstruction" << std::endl;
+    std::cerr << "rank= " << node->rank << " has reached barrier of reconstruction" << std::endl;
     #endif
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -2275,9 +2233,8 @@ void MlOptimiserMpi::maximization() {
         }
     }
     }))
-    #ifdef TIMING
-    timer.toc(TIMING_RECONS);
-    #endif
+
+    }))
 
     if (node->isLeader()) {
         // The leader also updates the changes in hidden variables
@@ -2826,11 +2783,8 @@ void MlOptimiserMpi::iterate() {
     // Initialize the current resolution
     updateCurrentResolution();
 
-    /// BUG: iter not declared
     for (iter = iter + 1; iter <= nr_iter; iter++) {
-        #ifdef TIMING
-        timer.tic(TIMING_EXP);
-        #endif
+        RCTICTOC(timer, TIMING_EXP, ({
 
         // Update subset_size
         updateSubsetSize(node->isLeader());
@@ -2971,10 +2925,9 @@ void MlOptimiserMpi::iterate() {
             }
         }
 
-        #ifdef TIMING
-        timer.toc(TIMING_EXP);
-        timer.tic(TIMING_MAX);
-        #endif
+        }))
+
+        RCTICTOC(timer, TIMING_MAX, ({
 
         maximization();
 
@@ -3003,15 +2956,11 @@ void MlOptimiserMpi::iterate() {
             }
         }
 
-        #ifdef TIMING
-        timer.toc(TIMING_MAX);
-        #endif
+        }))
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        #ifdef TIMING
-        timer.tic(TIMING_ITER_HELICALREFINE);
-        #endif
+        RCTICTOC(timer, TIMING_ITER_HELICALREFINE, ({
         if (node->isLeader()) {
             if (
                 do_helical_refine && !do_skip_align && !do_skip_rotate && 
@@ -3039,22 +2988,18 @@ void MlOptimiserMpi::iterate() {
 
         // Mask the reconstructions to get rid of noisy solvent areas
         // Skip masking upon convergence (for validation purposes)
-        #ifdef TIMING
-        timer.toc(TIMING_ITER_HELICALREFINE);
-        timer.tic(TIMING_SOLVFLAT);
-        #endif
+        }))
+
+        RCTICTOC(timer, TIMING_SOLVFLAT, ({
         if (do_solvent && !has_converged) solventFlatten();
-        #ifdef TIMING
-        timer.toc(TIMING_SOLVFLAT);
-        timer.tic(TIMING_UPDATERES);
-        #endif
+        }))
+
+        RCTICTOC(timer, TIMING_UPDATERES, ({
         // Re-calculate the current resolution, do this before writing to get the correct values in the output files
         updateCurrentResolution();
-        #ifdef TIMING
-        timer.toc(TIMING_UPDATERES);
-        timer.tic(TIMING_ITER_WRITE);
-        #endif
+        }))
 
+        RCTICTOC(timer, TIMING_ITER_WRITE, ({
         // If we are joining random halves, then do not write an optimiser file so that it cannot be restarted!
         bool do_write_optimiser = !do_join_random_halves;
         // Write out final map without iteration number in the filename
@@ -3067,9 +3012,7 @@ void MlOptimiserMpi::iterate() {
             // The leader only writes the data file (he's the only one who has and manages these data!)
             MlOptimiser::write(DONT_WRITE_SAMPLING, DO_WRITE_DATA, DONT_WRITE_OPTIMISER, DONT_WRITE_MODEL, node->rank);
         }
-        #ifdef TIMING
-        timer.toc(TIMING_ITER_WRITE);
-        #endif
+        }))
 
         if (do_auto_refine && has_converged) {
             if (verb > 0) {
