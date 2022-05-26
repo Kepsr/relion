@@ -42,7 +42,7 @@
  * e-mail address 'xmipp@cnb.csic.es'
  ***************************************************************************/
 
-#include <math.h>
+#include <cmath>
 #include "src/strings.h"
 #include "src/error.h"
 #include "src/macros.h"
@@ -234,29 +234,26 @@ long long textToLongLong(const char *str, int _errno, std::string errmsg) {
 
 }
 
+// A return value of -1 means exponential format
 int bestPrecision(float F, int _width) {
 
     if (F == 0) return 1;
 
-    int exp = floor(log10(fabs(F)));
-    int advised_prec;
+    int exp = floor(log10(std::abs(F)));
 
     if (exp >= 0) {
         if (exp > _width - 3) {
-            advised_prec = -1;
+            return -1;
         } else {
-            advised_prec = _width - 2;
+            int prec = _width - 2;
+            if (prec < 0) return -1;
+            return prec;
         }
     } else {
-        advised_prec = _width + exp - 1 - 3;
-        if (advised_prec <= 0) { advised_prec = -1; }
+        int prec = _width + exp - 1 - 3;
+        if (prec <= 0) return -1;
+        return prec;
     }
-
-    if (advised_prec < 0) { 
-        advised_prec = -1; // Choose exponential format
-    }
-
-    return advised_prec;
 }
 
 bool isNumber(std::string _input) {
