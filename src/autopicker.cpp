@@ -3289,26 +3289,23 @@ void AutoPicker::removeTooCloselyNeighbouringPeaks(
     std::vector<Peak> &peaks, int min_distance, float scale
 ) {
     // Remove peaks that are within min_distance of some other peak
-    std::vector<Peak> pruned_peaks;
     float least_dist_to_other_2_cutoff = (float) (min_distance * min_distance) * scale * scale;
-    for (auto &peak1 : peaks) {
-        // The squared least distance between this peak and any other
-        float least_dist_to_other_2 = 9999999999.0;
-        for (auto &peak2 : peaks) {
-            if (&peak1 != &peak2) {
-                int dx = peak1.x - peak2.x;
-                int dy = peak1.y - peak2.y;
-                int d2 = dx * dx + dy * dy;
-                if (d2 < least_dist_to_other_2)
-                    least_dist_to_other_2 = d2;
+    peaks.erase(std::remove_if(peaks.begin(), peaks.end(),
+        [&peaks, &least_dist_to_other_2_cutoff] (const Peak &peak1) -> bool {
+            // The squared least distance between this peak and any other
+            float least_dist_to_other_2 = 9999999999.0;
+            for (auto &peak2 : peaks) {
+                if (&peak1 != &peak2) {
+                    int dx = peak1.x - peak2.x;
+                    int dy = peak1.y - peak2.y;
+                    int d2 = dx * dx + dy * dy;
+                    if (d2 < least_dist_to_other_2)
+                        least_dist_to_other_2 = d2;
+                }
             }
+            return least_dist_to_other_2 <= least_dist_to_other_2_cutoff;
         }
-        if (least_dist_to_other_2 > least_dist_to_other_2_cutoff)
-            pruned_peaks.push_back(peak1);
-    }
-
-    // Set the pruned peaks back into the input vector
-    peaks = pruned_peaks;
+    ), peaks.end());
 }
 
 int AutoPicker::largestPrime(int query) {
