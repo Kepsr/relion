@@ -152,6 +152,7 @@ void AutoPickerCuda::run() {
         #endif
         autoPickOneMicrograph(basePckr->fn_micrographs[imic], imic);
     }
+    /// BUG: Should this toc be inside the above loop?
         #ifdef TIMING
         basePckr->timer.toc(basePckr->TIMING_A5);
         #endif
@@ -287,14 +288,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     XFLOAT scale = (XFLOAT) basePckr->workSize / (XFLOAT) basePckr->micrograph_size;
 
     // Read in the micrograph
-    #ifdef TIMING
-    basePckr->timer.tic(basePckr->TIMING_A6);
-    #endif
+    RCTICTOC(basePckr->timer.tic, basePckr->TIMING_A6, ({
     CTICTOC(timer, "readMicrograph", ({ Imic.read(fn_mic); }))
     CTICTOC(timer, "setXmippOrigin_0", ({ Imic().setXmippOrigin(); }))
-    #ifdef TIMING
-    basePckr->timer.toc(basePckr->TIMING_A6);
-    #endif
+    }))
 
     // Let's just check the square size again....
     RFLOAT my_xsize = XSIZE(Imic());
@@ -334,20 +331,14 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         std::cerr              << "*------------------------------------------------------------------------------------*" << std::endl;
     }
 
-    #ifdef TIMING
-    basePckr->timer.tic(basePckr->TIMING_A7);
-    #endif
+    RCTICTOC(basePckr->timer, basePckr->TIMING_A7, ({
     CTICTOC(timer, "computeStats", ({
     // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations....
     Stats<RFLOAT> statstuple = Imic().computeStats();
-    RFLOAT avg = stats.avg;
-    RFLOAT stddev = stats.stddev;
-    RFLOAT minval = stats.min;
-    RFLOAT maxval = stats.max;
+    avg0 = stats.avg;
+    stddev0 = stats.stddev;
     }))
-    #ifdef TIMING
-    basePckr->timer.toc(basePckr->TIMING_A7);
-    #endif
+    }))
 
     CTICTOC(timer, "middlePassFilter", ({
     for (long int n = 0; n < Imic().size(); n++) {

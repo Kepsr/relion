@@ -2347,9 +2347,7 @@ void MlOptimiser::iterate() {
         #endif
 
 
-        #ifdef TIMING
-        timer.tic(TIMING_EXP);
-        #endif
+        RCTICTOC(timer, TIMING_EXP, ({
 
         // Update subset_size
         updateSubsetSize();
@@ -2390,10 +2388,9 @@ void MlOptimiser::iterate() {
         }
         symmetriseReconstructions();
 
-        #ifdef TIMING
-        timer.toc(TIMING_EXP);
-        timer.tic(TIMING_MAX);
-        #endif
+        }))
+
+        RCTICTOC(timer, TIMING_MAX, ({
 
         if (do_skip_maximization) {
             // Only write data.star file and break from the iteration loop
@@ -2403,18 +2400,14 @@ void MlOptimiser::iterate() {
 
         maximization();
 
-        #ifdef TIMING
-        timer.toc(TIMING_MAX);
-        timer.tic(TIMING_ITER_LOCALSYM);
-        #endif
+        }))
 
+        RCTICTOC(timer, TIMING_ITER_LOCALSYM, ({
         // Apply local symmetry according to a list of masks and their operators
         applyLocalSymmetryForEachRef();
+        }))
 
-        #ifdef TIMING
-        timer.toc(TIMING_ITER_LOCALSYM);
-        timer.tic(TIMING_ITER_HELICALREFINE);
-        #endif
+        RCTICTOC(timer, TIMING_ITER_HELICALREFINE, ({
         // Shaoda 26 Jul 2015
         // Helical symmetry refinement and imposition of real space helical symmetry.
         if (do_helical_refine && mymodel.ref_dim == 3) {
@@ -2445,38 +2438,30 @@ void MlOptimiser::iterate() {
         if (do_write_unmasked_refs)
             mymodel.write(fn_out+"_unmasked", sampling, false, true);
 
-        #ifdef TIMING
-        timer.toc(TIMING_ITER_HELICALREFINE);
-        timer.tic(TIMING_SOLVFLAT);
-        #endif
+        }))
+
+        RCTICTOC(timer, TIMING_SOLVFLAT, ({
         // Apply masks to the reference images
         // At the last iteration, do not mask the map for validation purposes
         if (do_solvent && !has_converged)
             solventFlatten();
 
-        #ifdef TIMING
-        timer.toc(TIMING_SOLVFLAT);
-        timer.tic(TIMING_UPDATERES);
-        #endif
+        }))
+
+        RCTICTOC(timer, TIMING_UPDATERES, ({
         // Re-calculate the current resolution, do this before writing to get the correct values in the output files
         updateCurrentResolution();
+        }))
 
-        #ifdef TIMING
-        timer.toc(TIMING_UPDATERES);
-        timer.tic(TIMING_ITER_WRITE);
-        #endif
+        RCTICTOC(timer, TIMING_ITER_WRITE, ({
         // Write output files
         write(DO_WRITE_SAMPLING, DO_WRITE_DATA, DO_WRITE_OPTIMISER, DO_WRITE_MODEL, 0);
-
-        #ifdef TIMING
-        timer.toc(TIMING_ITER_WRITE);
-        #endif
+        }))
 
         #ifdef TIMING
         if (verb > 0)
             timer.printTimes(false);
         #endif
-
 
     }
 
@@ -2668,19 +2653,13 @@ void MlOptimiser::expectation() {
 
     while (nr_particles_done < my_nr_particles) {
 
-        #ifdef TIMING
-        timer.tic(TIMING_EXP_METADATA);
-        #endif
-
         long int my_pool_first_part_id = my_first_part_id + nr_particles_done;
         long int my_pool_last_part_id = std::min(my_last_part_id, my_pool_first_part_id + nr_pool - 1);
 
+        RCTICTOC(timer, TIMING_EXP_METADATA, ({
         // Get the metadata for these particles
         getMetaAndImageDataSubset(my_pool_first_part_id, my_pool_last_part_id, !do_parallel_disc_io);
-
-        #ifdef TIMING
-        timer.toc(TIMING_EXP_METADATA);
-        #endif
+        }))
 
         // Abort through the pipeline_control system
         if (pipeline_control_check_abort_job())
@@ -2689,24 +2668,15 @@ void MlOptimiser::expectation() {
         // perform the actual expectation step on several particles
         expectationSomeParticles(my_pool_first_part_id, my_pool_last_part_id);
 
-        #ifdef TIMING
-        timer.tic(TIMING_EXP_CHANGES);
-        #endif
-
+        RCTICTOC(timer, TIMING_EXP_CHANGES, ({
         // Also monitor the changes in the optimal orientations and classes
         monitorHiddenVariableChanges(my_pool_first_part_id, my_pool_last_part_id);
+        }))
 
-        #ifdef TIMING
-        timer.toc(TIMING_EXP_CHANGES);
-        timer.tic(TIMING_EXP_METADATA);
-        #endif
-
+        RCTICTOC(timer, TIMING_EXP_METADATA, ({
         // Set the metadata for these particles
         setMetaDataSubset(my_pool_first_part_id, my_pool_last_part_id);
-
-        #ifdef TIMING
-        timer.toc(TIMING_EXP_METADATA);
-        #endif
+        }))
 
         nr_particles_done += my_pool_last_part_id - my_pool_first_part_id + 1;
         if (verb > 0 && nr_particles_done - prev_barstep > barstep) {
@@ -3071,9 +3041,7 @@ void MlOptimiser::expectationSomeParticles(
     long int my_first_part_id, long int my_last_part_id
 ) {
 
-    #ifdef TIMING
-    timer.tic(TIMING_ESP);
-    #endif
+    RCTICTOC(timer, TIMING_ESP, ({
 
     // #define DEBUG_EXPSOME
     #ifdef DEBUG_EXPSOME
@@ -3227,9 +3195,7 @@ void MlOptimiser::expectationSomeParticles(
 
     if (threadException) throw *threadException;
 
-    #ifdef TIMING
-    timer.toc(TIMING_ESP);
-    #endif
+    }))
 
 }
 
@@ -5252,16 +5218,15 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
         std::vector<MultidimArray<RFLOAT> >&exp_local_Minvsigma2)
 {
 
-#ifdef TIMING
-    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-    {
-        if (do_also_unmasked)
-            timer.tic(TIMING_ESP_PRECW);
-        else if (exp_current_oversampling == 0) timer.tic(TIMING_ESP_PREC1);
-        else timer.tic(TIMING_ESP_PREC2);
+    #ifdef TIMING
+    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
+        timer.tic(
+            do_also_unmasked ?              TIMING_ESP_PRECW :
+            exp_current_oversampling == 0 ? TIMING_ESP_PREC1 :
+                                            TIMING_ESP_PREC2
+        );
     }
-#endif
-
+    #endif
 
     int exp_nr_images = mydata.numberOfImagesInParticle(part_id);
     int nr_shifts = (do_shifts_onthefly || do_skip_align) ? exp_nr_images : exp_nr_images * sampling.NrTranslationalSamplings(exp_current_oversampling);
@@ -5473,10 +5438,11 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
     }
     #ifdef TIMING
     if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
-        if (do_also_unmasked)
-            timer.toc(TIMING_ESP_PRECW);
-        else if (exp_current_oversampling == 0) timer.toc(TIMING_ESP_PREC1);
-        else timer.toc(TIMING_ESP_PREC2);
+        timer.toc(
+            do_also_unmasked ?              TIMING_ESP_PRECW : 
+            exp_current_oversampling == 0 ? TIMING_ESP_PREC1 :
+                                            TIMING_ESP_PREC2
+        );
     }
     #endif
 }
@@ -6067,8 +6033,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
 
     #ifdef TIMING
     if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
-        if (exp_ipass == 0) timer.tic(TIMING_ESP_WEIGHT1);
-        else timer.tic(TIMING_ESP_WEIGHT2);
+        timer.tic(exp_ipass == 0 ? TIMING_ESP_WEIGHT1 : TIMING_ESP_WEIGHT2);
     }
     #endif
 
