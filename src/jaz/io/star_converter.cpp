@@ -100,7 +100,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
     }
 
     // Determine the data type
-    if (tablename == "") {
+    if (tablename.empty()) {
         tablename = in.containsLabel(EMDL::IMAGE_NAME) ? "particles" :
                     in.containsLabel(EMDL::MICROGRAPH_METADATA_NAME) ? "movies" :
                     "micrographs";
@@ -133,7 +133,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
     // This does not do anything if DETECTOR_PIXEL_SIZE or MAGNIFICATION are not in the input STAR file
     unifyPixelSize(outOptics, tablename);
 
-    if (tablename == "particles" || tablename == "") {
+    if (tablename == "particles" || tablename.empty()) {
         // Make translations in Angstroms instead of in pixels
         translateOffsets(outParticles, outOptics);
 
@@ -223,7 +223,7 @@ void StarConverter::unifyPixelSize(
 
             double angpix = 10000 * dstep / mag;
 
-            if (tablename == "particles" || tablename == "") {
+            if (tablename == "particles" || tablename.empty()) {
                 outOptics.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, i);
                 // Do not set EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, because particles might have been down-sampled.
             } else if (tablename == "micrographs") {
