@@ -527,7 +527,7 @@ void MetaDataTable::addLabel(EMDL::EMDLabel label, std::string unknownLabel) {
         REPORT_ERROR(std::string(
             "MetaDataTable::addLabel: unrecognised label: "
         ) + EMDL::label2Str(label));
-    if (label == EMDL::UNKNOWN_LABEL && unknownLabel == "")
+    if (label == EMDL::UNKNOWN_LABEL && unknownLabel.empty())
         REPORT_ERROR("MetaDataTable::addLabel: unknownLabel is empty");
 
     if (label2offset[label] < 0 || label == EMDL::UNKNOWN_LABEL) {
@@ -944,7 +944,7 @@ long int MetaDataTable::readStar(
             token = line.substr(line.find("data_") + 5);
             // If a name has been given, only read data_thatname
             // Otherwise, just read the first data_ block
-            if (name == "" || name == token) {
+            if (name.empty() || name == token) {
                 setName(token);
                 // Get the next item that starts with "_somelabel" or with "loop_"
                 int current_pos = in.tellg();
@@ -1256,7 +1256,7 @@ void MetaDataTable::addToCPlot2D(
     double red, double green, double blue, double linewidth, std::string marker
 ) {
     CDataSet dataSet;
-    if (marker == "") {
+    if (marker.empty()) {
         dataSet.SetDrawMarker(false);
     } else {
         dataSet.SetDrawMarker(true);
@@ -1488,7 +1488,7 @@ MetaDataTable MetaDataTable::combineMetaDataTables(std::vector<MetaDataTable> &M
                 is_present = MDin[j].containsLabel(thisLabel, unknownLabel);
 
                 if (!is_present) {
-                    std::cerr << " + WARNING: ignoring label " << (unknownLabel == "" ? EMDL::label2Str(thisLabel): unknownLabel) << " in " << j+1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
+                    std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel): unknownLabel) << " in " << j+1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
                     break;
                 }
             }
@@ -1508,15 +1508,13 @@ MetaDataTable MetaDataTable::combineMetaDataTables(std::vector<MetaDataTable> &M
 
                 if (!commonLabels.containsLabel(thisLabel, unknownLabel)) {
                     MDin[i].deactivateLabel(thisLabel, unknownLabel);
-                    std::cerr << " + WARNING: ignoring label " << (unknownLabel == "" ? EMDL::label2Str(thisLabel) : unknownLabel) << " in " << i+1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
+                    std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel) : unknownLabel) << " in " << i+1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
                 }
             }
         }
 
         // Then we can just append entire tables
-        for (size_t j = 0; j < MDin.size(); j++) {
-            MDc.append(MDin[j]);
-        }
+        for (const MetaDataTable &mdt: MDin) { MDc.append(mdt); }
     }
 
     return MDc;

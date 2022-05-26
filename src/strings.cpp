@@ -43,6 +43,7 @@
  ***************************************************************************/
 
 #include <cmath>
+#include <algorithm>
 #include "src/strings.h"
 #include "src/error.h"
 #include "src/macros.h"
@@ -56,11 +57,8 @@ const char *double_pattern = "%lf";
 #endif
 
 std::string removeChar(const std::string &str, char character) {
-
-    std::string copy;
-    for (unsigned int i = 0; i < str.length(); i++) {
-        if (str[i] != character) { copy += str[i]; }
-    }
+    std::string copy = str;
+    copy.erase(std::remove(copy.begin(), copy.end(), character), copy.end());
     return copy;
 }
 
@@ -86,7 +84,7 @@ std::string unescape(const std::string &str) {
 
 void escapeStringForSTAR(std::string &value) {
     // TODO: Currently this assumes that value does not contain new lines.
-    if (value == "") {
+    if (value.empty()) {
         // Empty string
         value = "\"\"";
         return;
