@@ -28,6 +28,13 @@
 #define TICTOC(timer, label, block) { block; }
 #endif
 
+// Squared distance between two peaks
+int dist2(Peak peak1, Peak peak2) {
+    int dx = peak1.x - peak2.x;
+    int dy = peak1.y - peak2.y;
+    return dx * dx + dy * dy;
+}
+
 void ccfPeak::clear() {
     id = ref = nr_peak_pixel = -1;
     x = y = r = area_percentage = fom_max = psi = dist = fom_thres = (-1.);
@@ -3272,9 +3279,9 @@ void AutoPicker::prunePeakClusters(
             cluster.erase(std::remove_if(
                 cluster.begin(), cluster.end(),
                 [&bestpeak, &mind2] (const Peak &peak) {
-                    float dx = peak.x - bestpeak.x;
-                    float dy = peak.y - bestpeak.y;
-                    return dx * dx + dy * dy < mind2;
+                    int dx = peak.x - bestpeak.x;
+                    int dy = peak.y - bestpeak.y;
+                    return (float) dist2(peak, bestpeak) < mind2;
                 }
             ), cluster.end());
         }
@@ -3289,21 +3296,19 @@ void AutoPicker::removeTooCloselyNeighbouringPeaks(
     std::vector<Peak> &peaks, int min_distance, float scale
 ) {
     // Remove peaks that are within min_distance of some other peak
-    float least_dist_to_other_2_cutoff = (float) (min_distance * min_distance) * scale * scale;
+    float least_dist2_to_other_cutoff = (float) (min_distance * min_distance) * scale * scale;
     peaks.erase(std::remove_if(peaks.begin(), peaks.end(),
-        [&peaks, &least_dist_to_other_2_cutoff] (const Peak &peak1) -> bool {
+        [&peaks, &least_dist2_to_other_cutoff] (const Peak &peak1) -> bool {
             // The squared least distance between this peak and any other
-            float least_dist_to_other_2 = 9999999999.0;
+            float least_dist2_to_other = 9999999999.0;
             for (auto &peak2 : peaks) {
                 if (&peak1 != &peak2) {
-                    int dx = peak1.x - peak2.x;
-                    int dy = peak1.y - peak2.y;
-                    int d2 = dx * dx + dy * dy;
-                    if (d2 < least_dist_to_other_2)
-                        least_dist_to_other_2 = d2;
+                    float d2 = dist2(peak1, peak2);
+                    if (d2 < least_dist2_to_other)
+                        least_dist2_to_other = d2;
                 }
             }
-            return least_dist_to_other_2 <= least_dist_to_other_2_cutoff;
+            return least_dist2_to_other <= least_dist2_to_other_cutoff;
         }
     ), peaks.end());
 }
