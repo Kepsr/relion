@@ -1,30 +1,37 @@
 #ifndef ZERNIKE_H
 #define ZERNIKE_H
 
-#include <vector>
+namespace Zernike {
 
-class Zernike {
+    // Zernike polynomial
+    struct Z {
 
-    public:
+        const int m, n;  // Where abs(m) <= n
 
-    struct MN { int m, n; };
+        Z(int m, int n);
 
-    static double Z(int m, int n, double rho, double phi);
-    static double Z_cart(int m, int n, double x, double y);
-    static double R(int m, int n, double rho);
+        static Z fromOddIndex(int i);
+        static Z fromEvenIndex(int i);
 
-    static MN evenIndexToMN(int i);
-    static int numberOfEvenCoeffs(int n_max);
+        double operator () (double rho, double phi);
+        double cart(double x, double y);
 
-    static MN oddIndexToMN(int i);
-    static int numberOfOddCoeffs(int n_max);
+    };
 
-    private:
+    // Radial polynomial
+    struct R {
 
-    // Cache for coefficients of the radial polynomials
-    static std::vector<std::vector<std::vector<double>>> R_coeffs;
+        const int m, n;  // Where 0 <= m <= n
 
-    static void prepCoeffs(int n);
+        R(int m, int n);
+
+        double operator () (double rho);
+
+    };
+
+    int numberOfEvenCoeffs(int n_max);
+
+    int numberOfOddCoeffs(int n_max);
 
 };
 
