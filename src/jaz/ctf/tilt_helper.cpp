@@ -32,7 +32,7 @@ void TiltHelper::updateTiltShift(
     const Image<Complex> &prediction,
     const Image<Complex> &observation,
     CTF& ctf, double angpix,
-    Image<Complex>& xyDest,
+    Image<Complex> &xyDest,
     Image<RFLOAT>& wDest,
     bool do_ctf_padding
 ) {
@@ -58,7 +58,7 @@ void TiltHelper::updateTiltShiftPar(
     const Image<Complex> &prediction,
     const Image<Complex> &observation,
     CTF& ctf, double angpix,
-    Image<Complex>& xyDest,
+    Image<Complex> &xyDest,
     Image<RFLOAT>& wDest,
     bool do_ctf_padding
 ) {
@@ -85,10 +85,10 @@ void TiltHelper::fitTiltShift(
     const Image<RFLOAT> &phase,
     const Image<RFLOAT> &weight,
     double Cs, double lambda,
-    double angpix, const Matrix2D<RFLOAT>& mag,
+    double angpix, const Matrix2D<RFLOAT> &mag,
     double *shift_x, double *shift_y,
     double *tilt_x, double *tilt_y,
-    Image<RFLOAT>* fit
+    Image<RFLOAT> *fit
 ) {
     const long w = phase.data.xdim;
     const long h = phase.data.ydim;
@@ -193,7 +193,7 @@ void TiltHelper::optimizeTilt(
     const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
     double Cs, double lambda,
-    double angpix, const Matrix2D<RFLOAT>& mag,
+    double angpix, const Matrix2D<RFLOAT> &mag,
     bool L1,
     double shift0_x, double shift0_y,
     double tilt0_x, double tilt0_y,
@@ -232,11 +232,11 @@ void TiltHelper::optimizeTilt(
 }
 
 std::vector<double> TiltHelper::fitOddZernike(
-    const Image<Complex>& xy,
+    const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
-    double angpix, const Matrix2D<RFLOAT>& mag,
+    double angpix, const Matrix2D<RFLOAT> &mag,
     int n_max,
-    Image<RFLOAT>* fit)
+    Image<RFLOAT> *fit)
 {
     const int w = xy.data.xdim;
     const int h = xy.data.ydim;
@@ -263,7 +263,7 @@ std::vector<double> TiltHelper::fitOddZernike(
 std::vector<double> TiltHelper::optimiseOddZernike(
     const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
-    double angpix, const Matrix2D<RFLOAT>& mag, int n_max,
+    double angpix, const Matrix2D<RFLOAT> &mag, int n_max,
     const std::vector<double> &coeffs,
     Image<RFLOAT> *fit)
 {
@@ -290,7 +290,7 @@ std::vector<double> TiltHelper::optimiseOddZernike(
 }
 
 std::vector<Image<RFLOAT> > TiltHelper::computeOddZernike(
-        int s, double angpix, const Matrix2D<RFLOAT>& mag, int n_max)
+        int s, double angpix, const Matrix2D<RFLOAT> &mag, int n_max)
 {
     const int cc = Zernike::numberOfOddCoeffs(n_max);
     const double as = (double)s * angpix;
@@ -301,9 +301,7 @@ std::vector<Image<RFLOAT> > TiltHelper::computeOddZernike(
     for (int c = 0; c < cc; c++) {
         basis[c] = Image<RFLOAT>(sh,s);
 
-        int m, n;
-
-        Zernike::oddIndexToMN(c, m, n);
+        Zernike::MN mn = Zernike::oddIndexToMN(c);
 
         for (int y = 0; y < s; y++)
         for (int x = 0; x < sh; x++) {
@@ -313,7 +311,7 @@ std::vector<Image<RFLOAT> > TiltHelper::computeOddZernike(
             const double xx = mag(0,0) * xx0 + mag(0,1) * yy0;
             const double yy = mag(1,0) * xx0 + mag(1,1) * yy0;
 
-            basis[c](y, x) = Zernike::Z_cart(m, n, xx, yy);
+            basis[c](y, x) = Zernike::Z_cart(mn.m, mn.n, xx, yy);
         }
     }
 
@@ -322,11 +320,11 @@ std::vector<Image<RFLOAT> > TiltHelper::computeOddZernike(
 
 Image<RFLOAT> TiltHelper::plotOddZernike(
         const std::vector<double>& coeffs,
-        int s, double angpix, const Matrix2D<RFLOAT>& mag)
+        int s, double angpix, const Matrix2D<RFLOAT> &mag)
 {
     Image<RFLOAT> out(s,s);
 
-    const double as = (double)s * angpix;
+    const double as = (double) s * angpix;
 
     for (int y = 0; y < s; y++)
     for (int x = 0; x < s; x++) {
@@ -337,10 +335,8 @@ Image<RFLOAT> TiltHelper::plotOddZernike(
         const double yy = mag(1,0) * xx0 + mag(1,1) * yy0;
 
         for (int c = 0; c < coeffs.size(); c++) {
-            int m, n;
-            Zernike::oddIndexToMN(c, m, n);
-
-            out(y, x) += coeffs[c] * Zernike::Z_cart(m, n, xx, yy);
+            Zernike::MN mn = Zernike::oddIndexToMN(c);
+            out(y, x) += coeffs[c] * Zernike::Z_cart(mn.m, mn.n, xx, yy);
         }
     }
 
@@ -349,7 +345,7 @@ Image<RFLOAT> TiltHelper::plotOddZernike(
 
 Image<RFLOAT> TiltHelper::plotTilt(
         double tx, double ty, int s,
-        double angpix, const Matrix2D<RFLOAT>& mag,
+        double angpix, const Matrix2D<RFLOAT> &mag,
         double Cs, double lambda)
 {
     Image<RFLOAT> out(s,s);
@@ -383,8 +379,8 @@ Image<RFLOAT> TiltHelper::plotTilt(
 std::vector<double> TiltHelper::fitEvenZernike(
         const Image<RFLOAT> &phase,
         const Image<RFLOAT> &weight,
-        double angpix, const Matrix2D<RFLOAT>& mag, int n_max,
-        Image<RFLOAT>* fit)
+        double angpix, const Matrix2D<RFLOAT> &mag, int n_max,
+        Image<RFLOAT> *fit)
 {
     const int w = phase.data.xdim;
     const int h = phase.data.ydim;
@@ -409,11 +405,11 @@ std::vector<double> TiltHelper::fitEvenZernike(
 }
 
 std::vector<double> TiltHelper::optimiseEvenZernike(
-    const Image<Complex>& xy,
+    const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
-    double angpix, const Matrix2D<RFLOAT>& mag, int n_max,
+    double angpix, const Matrix2D<RFLOAT> &mag, int n_max,
     const std::vector<double>& coeffs,
-    Image<RFLOAT>* fit)
+    Image<RFLOAT> *fit)
 {
     const int w = xy.data.xdim;
     const int h = xy.data.ydim;
@@ -438,14 +434,14 @@ std::vector<double> TiltHelper::optimiseEvenZernike(
 }
 
 std::vector<double> TiltHelper::optimiseEvenZernike(
-    const Image<Complex>& xy,
+    const Image<Complex> &xy,
     const Image<RFLOAT> &weight0,
     const Image<RFLOAT>& Axx,
     const Image<RFLOAT>& Axy,
     const Image<RFLOAT>& Ayy,
-    double angpix, const Matrix2D<RFLOAT>& mag, int n_max,
+    double angpix, const Matrix2D<RFLOAT> &mag, int n_max,
     const std::vector<double>& coeffs,
-    Image<RFLOAT>* fit)
+    Image<RFLOAT> *fit)
 {
     const int w = xy.data.xdim;
     const int h = xy.data.ydim;
@@ -470,7 +466,7 @@ std::vector<double> TiltHelper::optimiseEvenZernike(
 }
 
 std::vector<Image<RFLOAT> > TiltHelper::computeEvenZernike(
-        int s, double angpix, const Matrix2D<RFLOAT>& mag, int n_max)
+        int s, double angpix, const Matrix2D<RFLOAT> &mag, int n_max)
 {
     const int cc = Zernike::numberOfEvenCoeffs(n_max);
     const double as = (double)s * angpix;
@@ -479,11 +475,9 @@ std::vector<Image<RFLOAT> > TiltHelper::computeEvenZernike(
     std::vector<Image<RFLOAT>> basis(cc);
 
     for (int c = 0; c < cc; c++) {
-        basis[c] = Image<RFLOAT>(sh,s);
+        basis[c] = Image<RFLOAT>(sh, s);
 
-        int m, n;
-
-        Zernike::evenIndexToMN(c, m, n);
+        Zernike::MN mn = Zernike::evenIndexToMN(c);
 
         for (int y = 0; y < s; y++)
         for (int x = 0; x < sh; x++) {
@@ -493,7 +487,7 @@ std::vector<Image<RFLOAT> > TiltHelper::computeEvenZernike(
             const double xx = mag(0,0) * xx0 + mag(0,1) * yy0;
             const double yy = mag(1,0) * xx0 + mag(1,1) * yy0;
 
-            basis[c](y, x) = Zernike::Z_cart(m, n, xx, yy);
+            basis[c](y, x) = Zernike::Z_cart(mn.m, mn.n, xx, yy);
         }
     }
 
@@ -547,7 +541,7 @@ void TiltHelper::insertTilt(
 }
 
 std::vector<double> TiltHelper::fitBasisLin(
-    const Image<Complex>& xy,
+    const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
     const std::vector<Image<RFLOAT>>& basis)
 {
@@ -638,7 +632,7 @@ void TiltHelper::optimizeAnisoTilt(
     const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
     double Cs, double lambda,
-    double angpix, const Matrix2D<RFLOAT>& mag,
+    double angpix, const Matrix2D<RFLOAT> &mag,
     bool L1,
     double shift0_x, double shift0_y,
     double tilt0_x, double tilt0_y,
@@ -690,7 +684,7 @@ void TiltHelper::drawPhaseShift(
         double shift_x, double shift_y,
         double tilt_x, double tilt_y,
         int w, int h, double as,
-        const Matrix2D<RFLOAT>& mag,
+        const Matrix2D<RFLOAT> &mag,
         Image<RFLOAT> *tgt)
 {
     for (long yi = 0; yi < h; yi++)
@@ -712,7 +706,7 @@ void TiltHelper::drawPhaseShift(
         double tilt_x, double tilt_y,
         double tilt_xx, double tilt_xy, double tilt_yy,
         int w, int h, double as,
-        const Matrix2D<RFLOAT>& mag,
+        const Matrix2D<RFLOAT> &mag,
         Image<RFLOAT> *tgt)
 {
     for (long yi = 0; yi < h; yi++)

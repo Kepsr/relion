@@ -156,9 +156,9 @@ void ObservationModel::save(
 
 ObservationModel::ObservationModel() {}
 
-ObservationModel::ObservationModel(const MetaDataTable &_opticsMdt, bool do_die_upon_error): 
-opticsMdt(_opticsMdt), 
-angpix(_opticsMdt.numberOfObjects()), 
+ObservationModel::ObservationModel(const MetaDataTable &_opticsMdt, bool do_die_upon_error):
+opticsMdt(_opticsMdt),
+angpix(_opticsMdt.numberOfObjects()),
 lambda(_opticsMdt.numberOfObjects()),
 Cs(_opticsMdt.numberOfObjects()),
 boxSizes(_opticsMdt.numberOfObjects(), 0.0),
@@ -166,7 +166,7 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
 ) {
 
     if (
-        !opticsMdt.containsLabel(EMDL::CTF_VOLTAGE) || 
+        !opticsMdt.containsLabel(EMDL::CTF_VOLTAGE) ||
         !opticsMdt.containsLabel(EMDL::CTF_CS) || (
             !opticsMdt.containsLabel(EMDL::IMAGE_PIXEL_SIZE) &&
             !opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE) &&
@@ -196,7 +196,7 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
     phaseCorr = std::vector<std::map<int, Image<Complex>>>(opticsMdt.numberOfObjects());
 
     const bool hasTilt = (
-        opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_X) || 
+        opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_X) ||
         opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_Y)
     );
 
@@ -353,8 +353,8 @@ void ObservationModel::predictObservation(
     }
 
     if (
-        shiftPhases && 
-        oddZernikeCoeffs.size() > opticsGroup && 
+        shiftPhases &&
+        oddZernikeCoeffs.size() > opticsGroup &&
         oddZernikeCoeffs[opticsGroup].size() > 0
     ) {
         const Image<Complex>& corr = getPhaseCorrection(opticsGroup, s_out);
@@ -411,7 +411,7 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
     proj.projectGradient(out, A3D);
 
     if (
-        shiftPhases && oddZernikeCoeffs.size() > opticsGroup && 
+        shiftPhases && oddZernikeCoeffs.size() > opticsGroup &&
         oddZernikeCoeffs[opticsGroup].size() > 0
     ) {
         const Image<Complex>& corr = getPhaseCorrection(opticsGroup, s_out);
@@ -504,7 +504,7 @@ void ObservationModel::demodulatePhase(
     const int sh = obsImage.xdim;
 
     if (
-        oddZernikeCoeffs.size() > opticsGroup && 
+        oddZernikeCoeffs.size() > opticsGroup &&
         oddZernikeCoeffs[opticsGroup].size() > 0
     ) {
         const Image<Complex>& corr = getPhaseCorrection(opticsGroup, s);
@@ -820,7 +820,7 @@ std::vector<std::pair<int, std::vector<int>>> ObservationModel::splitParticlesBy
 }
 
 const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
-    #pragma omp critical(ObservationModel_getMtfImage) 
+    #pragma omp critical(ObservationModel_getMtfImage)
     {
         if (mtfImage[optGroup].find(s) == mtfImage[optGroup].end()) {
             if (mtfImage[optGroup].size() > 100) {
@@ -924,16 +924,15 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
                 double phase = 0.0;
 
                 for (int i = 0; i < oddZernikeCoeffs[optGroup].size(); i++) {
-                    int m, n;
-                    Zernike::oddIndexToMN(i, m, n);
+                    Zernike::MN mn = Zernike::oddIndexToMN(i);
 
                     const double xx0 = x / as;
                     const double yy0 = y < sh - 1 ? y / as : (y - s) / as;
-                    
+
                     const double xx = M(0, 0) * xx0 + M(0, 1) * yy0;
                     const double yy = M(1, 0) * xx0 + M(1, 1) * yy0;
 
-                    phase += oddZernikeCoeffs[optGroup][i] * Zernike::Z_cart(m,n,xx,yy);
+                    phase += oddZernikeCoeffs[optGroup][i] * Zernike::Z_cart(mn.m, mn.n, xx, yy);
                 }
 
                 img(y, x).real = cos(phase);
@@ -946,7 +945,7 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
 }
 
 const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
-    #pragma omp critical(ObservationModel_getGammaOffset) 
+    #pragma omp critical(ObservationModel_getGammaOffset)
     {
         if (gammaOffset[optGroup].find(s) == gammaOffset[optGroup].end()) {
 
@@ -967,16 +966,15 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
                 double phase = 0.0;
 
                 for (int i = 0; i < evenZernikeCoeffs[optGroup].size(); i++) {
-                    int m, n;
-                    Zernike::evenIndexToMN(i, m, n);
+                    Zernike::MN mn = Zernike::evenIndexToMN(i);
 
                     const double xx0 = x / as;
                     const double yy0 = y < sh - 1 ? y / as : (y - s) / as;
-                    
+
                     const double xx = M(0, 0) * xx0 + M(0, 1) * yy0;
                     const double yy = M(1, 0) * xx0 + M(1, 1) * yy0;
 
-                    phase += evenZernikeCoeffs[optGroup][i] * Zernike::Z_cart(m,n,xx,yy);
+                    phase += evenZernikeCoeffs[optGroup][i] * Zernike::Z_cart(mn.m, mn.n, xx, yy);
                 }
 
                 img(y, x) = phase;
