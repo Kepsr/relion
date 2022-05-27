@@ -21,9 +21,9 @@ class Zernike {
 
     private:
 
+    // Cache for coefficients of the radial polynomials
     static std::vector<std::vector<std::vector<double>>> R_coeffs;
 
-    static double factorial(int k);
     static void prepCoeffs(int n);
 
 };
