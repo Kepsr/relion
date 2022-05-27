@@ -924,7 +924,6 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
                 double phase = 0.0;
 
                 for (int i = 0; i < oddZernikeCoeffs[optGroup].size(); i++) {
-                    Zernike::MN mn = Zernike::oddIndexToMN(i);
 
                     const double xx0 = x / as;
                     const double yy0 = y < sh - 1 ? y / as : (y - s) / as;
@@ -932,7 +931,9 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
                     const double xx = M(0, 0) * xx0 + M(0, 1) * yy0;
                     const double yy = M(1, 0) * xx0 + M(1, 1) * yy0;
 
-                    phase += oddZernikeCoeffs[optGroup][i] * Zernike::Z_cart(mn.m, mn.n, xx, yy);
+                    Zernike::Z zmn = Zernike::Z::fromOddIndex(i);
+                    phase += oddZernikeCoeffs[optGroup][i] * zmn.cart(xx, yy);
+
                 }
 
                 img(y, x).real = cos(phase);
@@ -956,17 +957,16 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
 
             const int sh = s / 2 + 1;
             gammaOffset[optGroup][s] = Image<RFLOAT>(sh,s);
-            Image<RFLOAT>& img = gammaOffset[optGroup][s];
+            Image<RFLOAT> &img = gammaOffset[optGroup][s];
 
             const double as = angpix[optGroup] * boxSizes[optGroup];
-            const Matrix2D<RFLOAT>& M = magMatrices[optGroup];
+            const Matrix2D<RFLOAT> &M = magMatrices[optGroup];
 
             for (int y = 0; y < s;  y++)
             for (int x = 0; x < sh; x++) {
-                double phase = 0.0;
 
+                double phase = 0.0;
                 for (int i = 0; i < evenZernikeCoeffs[optGroup].size(); i++) {
-                    Zernike::MN mn = Zernike::evenIndexToMN(i);
 
                     const double xx0 = x / as;
                     const double yy0 = y < sh - 1 ? y / as : (y - s) / as;
@@ -974,7 +974,9 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
                     const double xx = M(0, 0) * xx0 + M(0, 1) * yy0;
                     const double yy = M(1, 0) * xx0 + M(1, 1) * yy0;
 
-                    phase += evenZernikeCoeffs[optGroup][i] * Zernike::Z_cart(mn.m, mn.n, xx, yy);
+                    Zernike::Z zmn = Zernike::Z::fromEvenIndex(i);
+                    phase += evenZernikeCoeffs[optGroup][i] * zmn.cart(xx, yy);
+
                 }
 
                 img(y, x) = phase;
@@ -1004,12 +1006,10 @@ Matrix2D<RFLOAT> ObservationModel::applyAnisoMag(Matrix2D<RFLOAT> A3D, int optic
     return out;
 }
 
-Matrix2D<RFLOAT> ObservationModel::applyScaleDifference(Matrix2D<RFLOAT> A3D, int opticsGroup, int s3D, double angpix3D) {
-    Matrix2D<RFLOAT> out = A3D;
-
-    out *= (boxSizes[opticsGroup] * angpix[opticsGroup]) / (s3D * angpix3D);
-
-    return out;
+Matrix2D<RFLOAT> ObservationModel::applyScaleDifference(
+    Matrix2D<RFLOAT> A3D, int opticsGroup, int s3D, double angpix3D
+) {
+    return A3D * ((boxSizes[opticsGroup] * angpix[opticsGroup]) / (s3D * angpix3D));
 }
 
 bool ObservationModel::containsAllColumnsNeededForPrediction(const MetaDataTable &partMdt) {
