@@ -258,10 +258,10 @@ public:
 	int nr_pixels_circular_mask, nr_pixels_avg_mask, nr_pixels_circular_invmask;
 
 	// Array with Fourier-transform of the inverse of the (circular) mask
-	MultidimArray<Complex > Finvmsk;
+	MultidimArray<Complex> Finvmsk;
 
 	// Array with Fourier-transform of the mask to calculate average density
-	MultidimArray<Complex > Favgmsk;
+	MultidimArray<Complex> Favgmsk;
 
 	// Perform optimisation of the scale factor?
 	bool do_optimise_scale;
@@ -353,7 +353,7 @@ public:
 			RFLOAT tube_length_min_pix,
 			int skip_side, float scale);
 
-	void autoPickLoGOneMicrograph(FileName &fn_mic, long int imic);
+	void autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic);
 	void autoPickOneMicrograph(FileName &fn_mic, long int imic);
 
 	// Get the output coordinate filename given the micrograph filename
@@ -362,9 +362,9 @@ public:
 	// The FFTs of the micrograph (Fmic), micrograph-squared (Fmic2) and the mask (Fmsk) need to be provided at downsize_mic
 	// The putput (Mstddev) will be at (binned) micrograph_size
 	void calculateStddevAndMeanUnderMask(
-			const MultidimArray<Complex > &Fmic,
-			const MultidimArray<Complex > &Fmic2,
-			MultidimArray<Complex > &Fmsk,
+			const MultidimArray<Complex> &Fmic,
+			const MultidimArray<Complex> &Fmic2,
+			MultidimArray<Complex> &Fmsk,
 			int nr_nonzero_pixels_mask,
 			MultidimArray<RFLOAT> &Mstddev,
 			MultidimArray<RFLOAT> &Mmean);
@@ -382,7 +382,7 @@ public:
 	// Only keep those peaks that are at the given distance apart from each other
 	void removeTooCloselyNeighbouringPeaks(std::vector<Peak> &peaks, int min_distance, float scale);
 
-#define LARGEST_ACCEPTABLE_PRIME 43
+	static const int LARGEST_ACCEPTABLE_PRIME = 43;
 
 	int largestPrime(int query);
 

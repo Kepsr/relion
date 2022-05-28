@@ -33,6 +33,10 @@ extern "C" {
 
 using namespace gravis;
 
+inline double safe_atan2(double y, double x) {
+  return x == 0.0 && y == 0.0 ? 0.0 : atan2(y, x);
+}
+
 void FilterHelper::separableGaussianFreq(
     const MultidimArray<Complex> &src,
     MultidimArray<Complex> &dest, double sigma, int k
@@ -1738,7 +1742,7 @@ void FilterHelper::polarRemap(
             continue;
         }
 
-        double phiR = std::atan2(dy,dx);
+        double phiR = std::atan2(dy, dx);
 
         if (phiR < 0.0) phiR += 2.0 * PI;
 
@@ -1829,7 +1833,7 @@ Image<RFLOAT> FilterHelper::polarToCart(const Image<RFLOAT> &img) {
         const double yd = y - cy;
 
         const double r = sqrt(xd * xd + yd * yd);
-        double phi = xd == 0 && yd == 0 ? 0.0 : atan2(yd, xd);
+        double phi = safe_atan2(yd, xd);
         if (phi < 0.0) { phi += 2.0 * PI; }
 
         out(y, x) = Interpolation::cubicXY(img, wp * phi / (2.0 * PI), r, 0, 0);
@@ -1867,7 +1871,7 @@ Image<RFLOAT> FilterHelper::sectorBlend(const Image<RFLOAT> &img0, const Image<R
         const double xd = x - cx;
         const double yd = y - cy;
 
-        double phi = xd == 0 && yd == 0 ? 0.0 : atan2(yd, xd) + PI;
+        double phi = safe_atan2(yd, xd) + PI;
         double a = sectors * phi / (2.0 * PI);
 
         out(y, x) = a - (int) a < 0.5 ? img0(y, x) : img1(y, x);
