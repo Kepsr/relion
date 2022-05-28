@@ -11,7 +11,7 @@ inline double safe_atan2(double y, double x) {
 }
 
 // Cache for coefficients of the radial polynomials
-vector<vector<vector<double>>> R_coeffs (0);
+vector<vector<vector<int>>> R_coeffs (0);
 
 long int factorial(int k) {
     // Alternatively: tgamma(k + 1)
@@ -21,7 +21,7 @@ long int factorial(int k) {
 }
 
 void resize_coefficients(int N) {
-    vector<vector<vector<double>>> newCoeffs (N + 1);
+    vector<vector<vector<int>>> newCoeffs (N + 1);
 
     // Copy all of R_coeffs into the start of newCoeffs
     for (int n = 0; n < R_coeffs.size(); n++) {
@@ -30,7 +30,7 @@ void resize_coefficients(int N) {
 
     // Fill newCoeffs from where R_coeffs left off
     for (int n = R_coeffs.size(); n <= N; n++) {
-        newCoeffs[n] = vector<vector<double>> (n + 1);
+        newCoeffs[n] = vector<vector<int>> (n + 1);
 
         for (int m = 0; m <= n; m++) {
 
@@ -38,13 +38,13 @@ void resize_coefficients(int N) {
             if (diff_div2.rem == 1) continue;
             div_t sum_div2 = std::div(n + m, 2);
 
-            newCoeffs[n][m] = vector<double> (diff_div2.quot + 1);
+            newCoeffs[n][m] = vector<int> (diff_div2.quot + 1);
 
             for (int k = 0; k <= diff_div2.quot; k++) {
                 int sign = 1 - 2 * (k % 2);  // Negative for even k, positive for odd k.
                 newCoeffs[n][m][k] =
-                      (double) (sign * factorial(n - k))
-                    / (double) (factorial(k) * factorial(sum_div2.quot - k) * factorial(diff_div2.quot - k));
+                      (sign * factorial(n - k))
+                    / (factorial(k) * factorial(sum_div2.quot - k) * factorial(diff_div2.quot - k));
             }
         }
     }
@@ -80,18 +80,18 @@ Zernike::R::R(int m, int n): m{m}, n{n} {
 // Value of a radial polynomial at radial distance rho
 double Zernike::R::operator () (double rho) {
 
-    if ((n - m) % 2 == 1) return 0.0;
+    div_t diff_div2 = std::div(n - m, 2);
+    if (diff_div2.rem == 1) return 0.0;
 
     if (R_coeffs.size() <= n) {
         resize_coefficients(n);
     }
 
-    double r = 0.0;
-    for (int k = 0; k <= (n - m) / 2; k++) {
-        r += R_coeffs[n][m][k] * pow(rho, n - 2 * k);
+    double x = 0.0;
+    for (int k = 0; k <= diff_div2.quot; k++) {
+        x += (double) R_coeffs[n][m][k] * pow(rho, n - 2 * k);
     }
-
-    return r;
+    return x;
 }
 
 Zernike::Z Zernike::Z::fromEvenIndex(int i) {
