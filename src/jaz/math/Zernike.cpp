@@ -33,14 +33,18 @@ void resize_coefficients(int N) {
         newCoeffs[n] = vector<vector<double>> (n + 1);
 
         for (int m = 0; m <= n; m++) {
-            if ((n - m) % 2 == 1) continue;
 
-            newCoeffs[n][m] = vector<double> ((n - m) / 2 + 1);
+            div_t diff_div2 = std::div(n - m, 2);
+            if (diff_div2.rem == 1) continue;
+            div_t sum_div2 = std::div(n + m, 2);
 
-            for (int k = 0; k <= (n - m) / 2; k++) {
+            newCoeffs[n][m] = vector<double> (diff_div2.quot + 1);
+
+            for (int k = 0; k <= diff_div2.quot; k++) {
+                int sign = 1 - 2 * (k % 2);  // Negative for even k, positive for odd k.
                 newCoeffs[n][m][k] =
-                      (double) ((1 - 2 * (k % 2)) * factorial(n - k))
-                    / (double) (factorial(k) * factorial((n + m) / 2 - k) * factorial((n - m) / 2 - k));
+                      (double) (sign * factorial(n - k))
+                    / (double) (factorial(k) * factorial(sum_div2.quot - k) * factorial(diff_div2.quot - k));
             }
         }
     }
