@@ -18,16 +18,20 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/autopicker.h"
+#include "src/time.h"
+#include "src/fftw.h"
+#include "src/mask.h"
+#include "src/helix.h"
 
-//#define DEBUG
-//#define DEBUG_HELIX
+// #define DEBUG
+// #define DEBUG_HELIX
 
 inline RFLOAT safer_atan2(RFLOAT dy, RFLOAT dx) {
     return fabs(dx) < 0.01 && fabs(dy) < 0.01 ? 0.0 : atan2(dy, dx);
 }
 
 // Search for this micrograph in the metadata table
-CTF find_micrograph_ctf(MetaDataTable &mdt, FileName fn_mic, ObservationModel &obsModel) {
+CTF find_micrograph_ctf(MetaDataTable &mdt, const FileName &fn_mic, ObservationModel &obsModel) {
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt) {
         if (fn_mic == mdt.getValue<FileName>(EMDL::MICROGRAPH_NAME)) {
             return CTF(mdt, &obsModel);
@@ -37,13 +41,34 @@ CTF find_micrograph_ctf(MetaDataTable &mdt, FileName fn_mic, ObservationModel &o
 }
 
 #ifdef TIMING
-#define TICTOC(timer, label, block) timer.tic(label); { block; } timer.toc(label);
+#define ifdefTIMING(statement) statement
 #else
-#define TICTOC(timer, label, block) { block; }
+#define ifdefTIMING(statement)
 #endif
 
+class TicToc {
+
+    public:
+
+    TicToc(Timer &timer, int label): timer(timer), label(label) {
+        timer.tic(label);
+    }
+
+    ~TicToc() {
+        timer.toc(label);
+    }
+
+    private:
+
+    Timer &timer;
+    // A TicToc must never outlive its referenced Timer.
+
+    int label;
+
+};
+
 // Squared distance between two peaks
-int dist2(Peak peak1, Peak peak2) {
+inline int dist2(const Peak peak1, const Peak peak2) {
     int dx = peak1.x - peak2.x;
     int dy = peak1.y - peak2.y;
     return dx * dx + dy * dy;
@@ -51,18 +76,17 @@ int dist2(Peak peak1, Peak peak2) {
 
 void ccfPeak::clear() {
     id = ref = nr_peak_pixel = -1;
-    x = y = r = area_percentage = fom_max = psi = dist = fom_thres = (-1.);
+    x = y = r = area_percentage = fom_max = psi = dist = fom_thres = -1.0;
     ccf_pixel_list.clear();
 }
 
 bool ccfPeak::isValid() const {
     // Invalid parameters
-    if (r < 0.0 || area_percentage < 0.0 || ccf_pixel_list.size() < 1)
+    if (r < 0.0 || area_percentage < 0.0 || ccf_pixel_list.empty())
         return false;
     // TODO: check ccf values in ccf_pixel_list?
-    for (int id = 0; id < ccf_pixel_list.size(); id++) {
-        if (ccf_pixel_list[id].fom > fom_thres)
-            return true;
+    for (const ccfPixel &pixel : ccf_pixel_list) {
+        if (pixel.fom > fom_thres) return true;
     }
     return false;
 }
@@ -77,31 +101,28 @@ bool ccfPeak::refresh() {
 
     area_percentage = -1.0;
 
-    if (ccf_pixel_list.empty())
-        return false;
+    if (ccf_pixel_list.empty()) return false;
 
     fom_max = -99.0e99;
     int nr_valid_pixel = 0;
     RFLOAT x_avg = 0.0, y_avg = 0.0;
-    for (int id = 0; id < ccf_pixel_list.size(); id++) {
-        if (ccf_pixel_list[id].fom > fom_thres) {
+    for (const ccfPixel &pixel : ccf_pixel_list) {
+        if (pixel.fom > fom_thres) {
             nr_valid_pixel++;
 
-            if (ccf_pixel_list[id].fom > fom_max)
-                fom_max = ccf_pixel_list[id].fom;
+            if (pixel.fom > fom_max) { fom_max = pixel.fom; }
 
-            x_avg += ccf_pixel_list[id].x;
-            y_avg += ccf_pixel_list[id].y;
+            x_avg += pixel.x;
+            y_avg += pixel.y;
         }
     }
     nr_peak_pixel = nr_valid_pixel;
 
-    if (nr_valid_pixel < 1)
-        return false;
+    if (nr_valid_pixel < 1) return false;
 
-    x = x_avg / (RFLOAT)(nr_valid_pixel);
-    y = y_avg / (RFLOAT)(nr_valid_pixel);
-    area_percentage = (RFLOAT)(nr_valid_pixel) / ccf_pixel_list.size();
+    x = x_avg / (RFLOAT) nr_valid_pixel;
+    y = y_avg / (RFLOAT) nr_valid_pixel;
+    area_percentage = (RFLOAT) nr_valid_pixel / ccf_pixel_list.size();
 
     return true;
 };
@@ -142,7 +163,6 @@ void AutoPicker::read(int argc, char **argv) {
     gauss_max_value = textToFloat(parser.getOption("--gauss_max", "Value of the peak in the Gaussian blob reference","0.1"));
     healpix_order = textToInteger(parser.getOption("--healpix_order", "Healpix order for projecting a 3D reference (hp0=60deg; hp1=30deg; hp2=15deg)", "1"));
     symmetry = parser.getOption("--sym", "Symmetry point group for a 3D reference","C1");
-
 
     int log_section = parser.addSection("Laplacian-of-Gaussian options");
     do_LoG = parser.checkOption("--LoG", "Use Laplacian-of-Gaussian filter-based picking, instead of template matching");
@@ -200,31 +220,34 @@ void AutoPicker::usage() {
 
 void AutoPicker::initialise() {
     #ifdef TIMING
-    TIMING_A0  =           timer.setNew("Initialise()");
-    TIMING_A1  =           timer.setNew("--Init");
-    TIMING_A2  =           timer.setNew("--Read Reference(s)");
-    TIMING_A3  =           timer.setNew("--Read Micrograph(s)");
-    TIMING_A4  =           timer.setNew("--Prep projectors");
-    TIMING_A5  =           timer.setNew("autoPickOneMicrograph()");
-    TIMING_A6  =           timer.setNew("--Read Micrographs(s)");
-    TIMING_A7  =           timer.setNew("--Micrograph computestats");
-    TIMING_A8  =           timer.setNew("--CTF-correct micrograph");
-    TIMING_A9  =           timer.setNew("--Resize CCF and PSI-maps");
-    TIMING_B1  =           timer.setNew("--FOM prep");
-    TIMING_B2  =           timer.setNew("--Read reference(s) via FOM");
-    TIMING_B3  =           timer.setNew("--Psi-dep correlation calc");
-    TIMING_B4  =           timer.setNew("----ctf-correction");
-    TIMING_B5  =           timer.setNew("----first psi");
-    TIMING_B6  =           timer.setNew("----rest of psis");
-    TIMING_B7  =           timer.setNew("----write fom maps");
-    TIMING_B8  =           timer.setNew("----peak-prune/-search");
-    TIMING_B9  =           timer.setNew("--final peak-prune");
+    TIMING_A0 = timer.setNew("Initialise()");
+    TIMING_A1 = timer.setNew("--Init");
+    TIMING_A2 = timer.setNew("--Read Reference(s)");
+    TIMING_A3 = timer.setNew("--Read Micrograph(s)");
+    TIMING_A4 = timer.setNew("--Prep projectors");
+    TIMING_A5 = timer.setNew("autoPickOneMicrograph()");
+    TIMING_A6 = timer.setNew("--Read Micrographs(s)");
+    TIMING_A7 = timer.setNew("--Micrograph computestats");
+    TIMING_A8 = timer.setNew("--CTF-correct micrograph");
+    TIMING_A9 = timer.setNew("--Resize CCF and PSI-maps");
+    TIMING_B1 = timer.setNew("--FOM prep");
+    TIMING_B2 = timer.setNew("--Read reference(s) via FOM");
+    TIMING_B3 = timer.setNew("--Psi-dep correlation calc");
+    TIMING_B4 = timer.setNew("----ctf-correction");
+    TIMING_B5 = timer.setNew("----first psi");
+    TIMING_B6 = timer.setNew("----rest of psis");
+    TIMING_B7 = timer.setNew("----write fom maps");
+    TIMING_B8 = timer.setNew("----peak-prune/-search");
+    TIMING_B9 = timer.setNew("--final peak-prune");
     #endif
 
-    TICTOC(timer, TIMING_A0, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A0);)
 
-    TICTOC(timer, TIMING_A1, ({
-    if (random_seed == -1) random_seed = time(NULL);
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A1);)
+
+    if (random_seed == -1) { random_seed = time(nullptr); }
 
     if (fn_in.isStarFile()) {
         ObservationModel::loadSafely(fn_in, obsModel, MDmic, "micrographs", verb);
@@ -283,9 +306,11 @@ void AutoPicker::initialise() {
         for (const FileName &fn_micrograph : fn_micrographs)
             std::cout << "    * " << fn_micrograph << std::endl;
     }
-    }))
+    }
 
-    TICTOC(timer, TIMING_A2, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A2);)
+
     // Make sure that psi-sampling is even around the circle
     RFLOAT old_sampling = psi_sampling;
     int n_sampling = round(360.0 / psi_sampling);
@@ -483,8 +508,10 @@ void AutoPicker::initialise() {
             }
         }
     }
-    }))
-    TICTOC(timer, TIMING_A3, ({
+    }
+
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A3);)
 
     if (!do_LoG) {
         // Re-scale references if necessary
@@ -642,9 +669,10 @@ void AutoPicker::initialise() {
     if (min_particle_distance < 0) {
         min_particle_distance = particle_size * angpix / 2.0;
     }
-    }))
+    }
 
-    TICTOC(timer, TIMING_A4, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A4);)
 
     // Pre-calculate and store Projectors for all references at the right size
     if (!do_read_fom_maps && !do_LoG) {
@@ -761,9 +789,9 @@ void AutoPicker::initialise() {
             progress_bar(Mrefs.size());
 
     }
-    }))
+    }
 
-    }))
+    }
     #ifdef DEBUG
     std::cerr << "Finishing initialise" << std::endl;
     #endif
@@ -819,13 +847,15 @@ void AutoPicker::run() {
             int res = system(("mkdir -p " + fn_dir).c_str());
             fn_olddir = fn_dir;
         }
-        TICTOC(timer, TIMING_A5, ({
+
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_A5);)
         if (do_LoG) {
             autoPickLoGOneMicrograph(fn_micrographs[imic], imic);
         } else {
             autoPickOneMicrograph   (fn_micrographs[imic], imic);
         }
-        }))
+        }
     }
 
     if (verb > 0)
@@ -2355,9 +2385,9 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
 
         Image<RFLOAT> Maux(workSize, workSize);
 
-//		transformer.inverseFourierTransform(Fmic, Maux());
-//		Maux.write("LoG-ctf-filtered.mrc");
-//		REPORT_ERROR("stop");
+        // transformer.inverseFourierTransform(Fmic, Maux());
+        // Maux.write("LoG-ctf-filtered.mrc");
+        // REPORT_ERROR("stop");
 
         // Make the diameter of the LoG filter larger in steps of LoG_incr_search (=1.5)
         // Search sizes from LoG_min_diameter to LoG_max_search (=5) * LoG_max_diameter
@@ -2555,19 +2585,18 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     std::cerr << " fn_mic= " << fn_mic << std::endl;
     #endif
 
-    TICTOC(timer, TIMING_A6, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A6);)
     // Read in the micrograph
     Imic.read(fn_mic);
     Imic().setXmippOrigin();
-    }))
+    }
 
     // Let's just check the square size again...
-    RFLOAT my_size, my_xsize, my_ysize;
-    my_xsize = Xsize(Imic());
-    my_ysize = Ysize(Imic());
-    my_size = std::max(my_xsize, my_ysize);
-    if (extra_padding > 0)
-    my_size += 2 * extra_padding;
+    RFLOAT my_xsize = Xsize(Imic());
+    RFLOAT my_ysize = Ysize(Imic());
+    RFLOAT my_size = std::max(my_xsize, my_ysize);
+    if (extra_padding > 0) { my_size += 2 * extra_padding; }
 
     if (
         my_xsize != micrograph_xsize ||
@@ -2579,7 +2608,8 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         REPORT_ERROR("AutoPicker::autoPickOneMicrograph ERROR: No differently sized micrographs are allowed in one run, sorry you will have to run separately for each size...");
     }
 
-    TICTOC(timer, TIMING_A7, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A7);)
     // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
     Stats<RFLOAT> stats = Imic().computeStats();
 
@@ -2610,10 +2640,11 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             }
         }
     }
-    }))
+    }
 
     MultidimArray<RFLOAT> Fctf;
-    TICTOC(timer, TIMING_A8, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A8);)
     // Read in the CTF information if needed
     if (do_ctf) {
         CTF ctf = find_micrograph_ctf(MDmic, fn_mic, obsModel);
@@ -2625,22 +2656,24 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         );
 
         #ifdef DEBUG
-        std::cerr << " Read CTF info from" << fn_mic.withoutExtension()<<"_ctf.star" << std::endl;
+        std::cerr << " Read CTF info from" << fn_mic.withoutExtension() << "_ctf.star" << std::endl;
         Image<RFLOAT> Ictf;
         Ictf() = Fctf;
         Ictf.write("Mmic_ctf.spi");
         #endif
     }
-    }))
+    }
 
-    TICTOC(timer, TIMING_A9, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_A9);)
     Mccf_best.resize(workSize, workSize);
     Mpsi_best.resize(workSize, workSize);
-    }))
+    }
 
     // Sjors 18 Apr 2016
     RFLOAT normfft = (RFLOAT) (micrograph_size * micrograph_size) / (RFLOAT) nr_pixels_circular_mask;
-    TICTOC(timer, TIMING_B1, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_B1);)
     if (do_read_fom_maps) {
 
         FileName fn_stddev = getOutputRootName(fn_mic) + "_" + fn_out + "_stddevNoise.spi";
@@ -2724,7 +2757,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         Fmic = Faux;
 
     }
-    }))
+    }
 
     // Now start looking for the peaks of all references
     // Clear the output vector with all peaks
@@ -2767,7 +2800,8 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         RFLOAT expected_Pratio; // the expectedFOM for this (ctf-corrected) reference
         if (do_read_fom_maps) {
 
-            TICTOC(timer, TIMING_B2, ({
+            {
+            ifdefTIMING(TicToc tt (timer, TIMING_B2);)
             if (!autopick_helical_segments) {
                 FileName fn_bestCCF;
                 fn_bestCCF.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
@@ -2782,9 +2816,10 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 I_bestPSI.read(fn_bestPSI);
                 Mpsi_best = I_bestPSI();
             }
-            }))
+            }
         } else {
-            TICTOC(timer, TIMING_B3, ({
+            {
+            ifdefTIMING(TicToc tt (timer, TIMING_B3);)
             Mccf_best.initConstant(-LARGE_NUMBER);
             bool is_first_psi = true;
             for (RFLOAT psi = 0.0; psi < 360.0; psi += psi_sampling) {
@@ -2811,9 +2846,10 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
                 // Apply the CTF on-the-fly (so same PPref can be used for many different micrographs)
                 if (do_ctf) {
-                    TICTOC(timer, TIMING_B4, ({
+                    {
+                    ifdefTIMING(TicToc tt (timer, TIMING_B4);)
                     Faux *= Fctf;
-                    }))
+                    }
                     #ifdef DEBUG
                     MultidimArray<RFLOAT> ttt(micrograph_size, micrograph_size);
                     windowFourierTransform(Faux, Faux2, micrograph_size);
@@ -2830,7 +2866,8 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 }
 
                 if (is_first_psi) {
-                    TICTOC(timer, TIMING_B5, ({
+                    {
+                    ifdefTIMING(TicToc tt (timer, TIMING_B5);)
                     // Calculate the expected ratio of probabilities for this CTF-corrected reference
                     // and the sum_ref_under_circ_mask and sum_ref_under_circ_mask2
                     // Do this also if we're not recalculating the fom maps...
@@ -2880,10 +2917,11 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
                     // Maux goes back to the workSize
                     Maux.resize(workSize, workSize);
-                    }))
+                    }
                 }
 
-                TICTOC(timer, TIMING_B6, ({
+                {
+                ifdefTIMING(TicToc tt (timer, TIMING_B6);)
                 // Now multiply template and micrograph to calculate the cross-correlation
                 for (long int n = 0; n < Faux.size(); n++) {
                     Faux[n] = conj(Faux[n]) * Fmic[n];
@@ -2929,11 +2967,12 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 std::cin >> c;
                 #endif
                 is_first_psi = false;
-                }))
+                }
             }
-            }))
+            }
 
-            TICTOC(timer, TIMING_B7, ({
+            {
+            ifdefTIMING(TicToc tt (timer, TIMING_B7);)
             if (do_write_fom_maps && !autopick_helical_segments) {
 
                 Image<RFLOAT> I_bestCCF;
@@ -2954,10 +2993,11 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 // }
                 // exit(0);
             }
-            }))
+            }
         }
 
-        TICTOC(timer, TIMING_B8, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_B8);)
         if (autopick_helical_segments) {
             if (!do_read_fom_maps) {
                 // Combine Mccf_best and Mpsi_best from all refs
@@ -2988,7 +3028,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             // Extend peaks by those of this reference
             peaks.insert(peaks.end(), my_ref_peaks.begin(), my_ref_peaks.end());
         }
-    }))
+    }
     }
 
     if (autopick_helical_segments) {
@@ -3061,7 +3101,8 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }
     } else {
 
-        TICTOC(timer, TIMING_B9, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_B9);)
         //Now that we have done all references, prune the list again...
         prunePeakClusters(peaks, min_distance_pix, scale);
         // And remove all too close neighbours
@@ -3078,7 +3119,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }
         FileName fn = getOutputRootName(fn_mic) + "_" + fn_out + ".star";
         MDout.write(fn);
-        }))
+        }
 
     }
 }

@@ -164,7 +164,6 @@ void TiltEstimator::parametricFit(
         std::cout << " + Fitting beam tilt ..." << std::endl;
     }
 
-    const int gc = mdts.size();
     const int ogc = obsModel->numberOfOpticsGroups();
 
     std::vector<bool> groupUsed(ogc, false);
@@ -179,10 +178,10 @@ void TiltEstimator::parametricFit(
         std::string ogstr = sts.str();
 
         Image<Complex> xyAccSum = Image<Complex>::zeros(sh[og], s[og]);
-        Image<RFLOAT> wAccSum = Image<RFLOAT>::zeros(sh[og], s[og]);
+        Image<RFLOAT >  wAccSum = Image<RFLOAT >::zeros(sh[og], s[og]);
 
-        for (long g = 0; g < gc; g++) {
-            std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdts[g], outPath);
+        for (const MetaDataTable &mdt : mdts) {
+            std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
             if (
                 exists(outRoot + "_xyAcc_optics-group_" + ogstr + "_real.mrc") &&
@@ -190,7 +189,7 @@ void TiltEstimator::parametricFit(
                 exists(outRoot + "_wAcc_optics-group_"  + ogstr + ".mrc")
             ) {
                 Image<Complex> xyAcc;
-                Image<RFLOAT> wAcc;
+                Image<RFLOAT >  wAcc;
 
                 wAcc.read(outRoot + "_wAcc_optics-group_" + ogstr + ".mrc");
                 ComplexIO::read(xyAcc, outRoot + "_xyAcc_optics-group_" + ogstr, ".mrc");
@@ -202,15 +201,13 @@ void TiltEstimator::parametricFit(
             }
         }
 
-        if (!groupUsed[og]) {
-            continue;
-        }
+        if (!groupUsed[og]) continue;
 
         Image<RFLOAT> wgh, phase, fit, phaseFull, fitFull;
 
         FilterHelper::getPhase(xyAccSum, phase);
 
-        Image<Complex> xyNrm(sh[og],s[og]);
+        Image<Complex> xyNrm(sh[og], s[og]);
 
         Image<RFLOAT> wgh0 = reference->getHollowWeight(kmin, s[og], angpix[og]);
 
@@ -283,7 +280,7 @@ void TiltEstimator::parametricFit(
 
             FftwHelper::decenterUnflip2D(fit.data, fitFull.data);
 
-            ImageLog::write(fitFull, outPath+"beamtilt_delta-phase_iter-fit_optics-group_"+ogstr);
+            ImageLog::write(fitFull, outPath + "beamtilt_delta-phase_iter-fit_optics-group_"+ogstr);
 
             imgs_for_eps.push_back(fitFull);
             scales.push_back(1.0);
@@ -298,7 +295,7 @@ void TiltEstimator::parametricFit(
                 optOut.setValue(EMDL::IMAGE_BEAMTILT_Y, tilt_y, og);
             }
         } else {
-            Image<RFLOAT> one(sh[og],s[og]);
+            Image<RFLOAT> one(sh[og], s[og]);
             one.data.initConstant(1);
 
             std::vector<double> Zernike_coeffs = TiltHelper::fitOddZernike(
@@ -367,12 +364,9 @@ bool TiltEstimator::isFinished(const MetaDataTable &mdt) {
     std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
     bool allDone = true;
-
-    std::vector<int> ogp = obsModel->getOptGroupsPresent_zeroBased(mdt);
-
-    for (int i = 0; i < ogp.size(); i++) {
+    for (int og : obsModel->getOptGroupsPresent_zeroBased(mdt)) {
         std::stringstream sts;
-        sts << (ogp[i] + 1);
+        sts << og + 1;
         std::string ogs = sts.str();
 
         if (
