@@ -281,16 +281,15 @@ void AutoPicker::initialise() {
     if (do_only_unfinished) {
         if (verb > 0)
             std::cout << " + Skipping those micrographs for which coordinate file already exists" << std::endl;
-        std::vector<FileName> fns_todo;
-        for (const FileName &fn_mic : fn_micrographs) {
-            if (!exists(getOutputRootName(fn_mic) + "_" + fn_out + ".star"))
-                fns_todo.push_back(fn_mic);
-        }
-
-        fn_micrographs = fns_todo;
+        fn_micrographs.erase(std::remove_if(
+            fn_micrographs.begin(), fn_micrographs.end(), 
+            [this] (const FileName &fn_mic) {
+                return exists(getOutputRootName(fn_mic) + "_" + fn_out + ".star");
+            }
+        ), fn_micrographs.end());
     }
 
-    // If there is nothing to do, then go out of initialise
+    // If there is nothing to do, return early
     todo_anything = !fn_micrographs.empty();
     if (!todo_anything) {
         if (verb > 0)
