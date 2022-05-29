@@ -42,15 +42,7 @@ int TIMING_FAUX = proj_timer.setNew("PROJECTOR - Faux");
 int TIMING_POW = proj_timer.setNew("PROJECTOR - power_spectrum");
 int TIMING_INIT1 = proj_timer.setNew("PROJECTOR - init1");
 int TIMING_INIT2 = proj_timer.setNew("PROJECTOR - init2");
-#define TIMING_TIC(id) proj_timer.tic(id)
-#define TIMING_TOC(id) proj_timer.toc(id)
-#else
-#define TIMING_TIC(id)
-#define TIMING_TOC(id)
 #endif
-
-/// HACK: Imitate a context manager.
-#define TICTOC(n, block) TIMING_TIC(n); block; TIMING_TOC(n);
 
 using namespace gravis;
 
@@ -290,13 +282,15 @@ void Projector::computeFourierTransformMap(
     RFLOAT normfft;
     int padoridim;
     int n[3];
-    bool do_fourier_mask = fourier_mask != NULL;
-    TICTOC(TIMING_TOP, ({
+    bool do_fourier_mask = !!fourier_mask;
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_TOP);)
 
     MultidimArray<Complex> Faux;
     MultidimArray<RFLOAT> Mpad;
     FourierTransformer transformer;
-    TICTOC(TIMING_INIT1, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_INIT1);)
 
     // Size of padded real-space volume
     padoridim = round(padding_factor * ori_size);
@@ -351,7 +345,7 @@ void Projector::computeFourierTransformMap(
 
     mem_req = (size_t) 1024;
     if (do_heavy && do_gpu) {
-        cufftEstimateMany(ref_dim, n, NULL, 0, 0, NULL, 0, 0, cufft_type, 1, &ws_sz);
+        cufftEstimateMany(ref_dim, n, nullptr, 0, 0, nullptr, 0, 0, cufft_type, 1, &ws_sz);
 
         mem_req = (size_t) sizeof(RFLOAT) * vol_in.size()  // dvol
                 + (size_t) sizeof(Complex) * Faux_sz       // dFaux
@@ -359,12 +353,11 @@ void Projector::computeFourierTransformMap(
                 + ws_sz + 4096;                            // workspace for cuFFT + extra space for alingment
     }
 
-    CudaCustomAllocator *allocator = NULL;
+    CudaCustomAllocator *allocator = nullptr;
     if (do_gpu && do_heavy) {
-        int devid;
-        size_t mem_free, mem_tot;
         cudaDeviceProp devProp;
         if (semid < 0) {
+            int devid;
             HANDLE_ERROR(cudaGetDevice(&devid));
             if ((semid = semget(SEMKEY + devid, 1, IPC_CREAT | PERMS)) < 0)
                 REPORT_ERROR("semget error");
@@ -372,6 +365,7 @@ void Projector::computeFourierTransformMap(
         if (semop(semid, &op_lock[0], 2) < 0)
             REPORT_ERROR("semop lock error");
 
+        size_t mem_free, mem_tot;
         HANDLE_ERROR(cudaMemGetInfo(&mem_free, &mem_tot));
         if (mem_free > mem_req) {
             allocator = new CudaCustomAllocator(mem_req, (size_t) 16);
@@ -391,9 +385,10 @@ void Projector::computeFourierTransformMap(
         dvol.cpToDevice();
     }
     #endif
-    }));
+    }
 
-    TICTOC(TIMING_GRID, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_GRID);)
     // First do a gridding pre-correction on the real-space map:
     // Divide by the inverse Fourier transform of the interpolator in Fourier-space
     // 10feb11: at least in 2D case, this seems to be the wrong thing to do!!!
@@ -415,9 +410,10 @@ void Projector::computeFourierTransformMap(
             vol_in.setXmippOrigin();
         }
     }
-    }));
+    }
 
-    TICTOC(TIMING_PAD, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_PAD);)
     // Pad translated map with zeros
     vol_in.setXmippOrigin();
     Mpad.setXmippOrigin();
@@ -437,9 +433,10 @@ void Projector::computeFourierTransformMap(
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) // This will also work for 2D
             Mpad.elem(i, j, k) = vol_in.elem(i, j, k);
     }
-    }));
+    }
 
-    TICTOC(TIMING_TRANS, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_TRANS);)
     // Calculate the oversampled Fourier transform
     if (do_heavy)
         #ifdef CUDA
@@ -456,7 +453,7 @@ void Projector::computeFourierTransformMap(
             AccPtr<char> fft_ws = ptrFactory.make<char>(ws_sz);
             fft_ws.accAlloc();
             cufftSetWorkArea(plan, ~fft_ws);
-            err = cufftMakePlanMany(plan, ref_dim, n, NULL, 0, 0, NULL, 0, 0, cufft_type, 1, &ws_sz);
+            err = cufftMakePlanMany(plan, ref_dim, n, nullptr, 0, 0, nullptr, 0, 0, cufft_type, 1, &ws_sz);
             if (err != CUFFT_SUCCESS)
                 REPORT_ERROR("failed to create cufft plan");
 
@@ -481,9 +478,10 @@ void Projector::computeFourierTransformMap(
         } else
         #endif
         transformer.FourierTransform(Mpad, Faux, false);
-    }));
+    }
 
-    TICTOC(TIMING_CENTER, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_CENTER);)
     // Translate padded map to put origin of FT in the center
     if (do_heavy)
         #ifdef CUDA
@@ -492,10 +490,11 @@ void Projector::computeFourierTransformMap(
         else
         #endif
         CenterFFTbySign(Faux);
-    }));
+    }
 
     MultidimArray<RFLOAT> counter;
-    TICTOC(TIMING_INIT2, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_INIT2);)
     // Free memory: Mpad no longer needed
     #ifdef CUDA
     dMpad.freeIfSet();
@@ -536,9 +535,10 @@ void Projector::computeFourierTransformMap(
     power_spectrum.initZeros(ori_size / 2 + 1);
     counter = power_spectrum;
     counter.initZeros();
-    }));
+    }
 
-    TICTOC(TIMING_FAUX, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_FAUX);)
     int max_r2 = round(r_max * padding_factor) * round(r_max * padding_factor);
     int min_r2 = min_ires > 0 ? round(min_ires * padding_factor) * round(min_ires * padding_factor) : -1;
 
@@ -584,7 +584,7 @@ void Projector::computeFourierTransformMap(
             }
         }
     }
-    }));
+    }
 
     /*
     FourierTransformer ft2;
@@ -601,7 +601,8 @@ void Projector::computeFourierTransformMap(
     REPORT_ERROR("STOP");
     */
 
-    TICTOC(TIMING_POW, ({
+    {
+    ifdefTIMING(TicToc tt (proj_timer, TIMING_POW);)
     // Calculate radial average of power spectrum
     if (do_heavy) {
         #ifdef CUDA
@@ -619,9 +620,9 @@ void Projector::computeFourierTransformMap(
             }
         }
     }
-    }));
+    }
 
-    }));
+    }
     #ifdef CUDA
     ddata.freeIfSet();
     dpower_spectrum.freeIfSet();
@@ -630,7 +631,7 @@ void Projector::computeFourierTransformMap(
     dMpad.freeIfSet();
     dFaux.freeIfSet();
 
-    if (allocator != NULL) {
+    if (allocator) {
         delete allocator;
         if (semop(semid, &op_unlock[0], 1) < 0) REPORT_ERROR("semop unlock error");
     }

@@ -51,22 +51,17 @@
 
 static pthread_mutex_t fftw_plan_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-//#define TIMING_FFTW
+// #define TIMING_FFTW
 #ifdef TIMING_FFTW
-    #define RCTIC(label) (timer_fftw.tic(label))
-    #define RCTOC(label) (timer_fftw.toc(label))
-
-    Timer timer_fftw;
-    int TIMING_FFTW_PLAN = timer_fftw.setNew("fftw - plan");
-    int TIMING_FFTW_EXECUTE = timer_fftw.setNew("fftw - exec");
-    int TIMING_FFTW_NORMALISE = timer_fftw.setNew("fftw - normalise");
-    int TIMING_FFTW_COPY = timer_fftw.setNew("fftw - copy");
+Timer timer_fftw;
+int TIMING_FFTW_PLAN      = timer_fftw.setNew("fftw - plan");
+int TIMING_FFTW_EXECUTE   = timer_fftw.setNew("fftw - exec");
+int TIMING_FFTW_NORMALISE = timer_fftw.setNew("fftw - normalise");
+int TIMING_FFTW_COPY      = timer_fftw.setNew("fftw - copy");
+#define ifdefTIMING_FFTW(statement) statement
 #else
-    #define RCTIC(label)
-    #define RCTOC(label)
+#define ifdefTIMING_FFTW(statement)
 #endif
-
-#define RCTICTOC(label, block) RCTIC(label); block; RCTOC(label);
 
 // #define DEBUG_PLANS
 
@@ -74,14 +69,14 @@ static pthread_mutex_t fftw_plan_mutex = PTHREAD_MUTEX_INITIALIZER;
 FourierTransformer::FourierTransformer(): plans_are_set(false) {
     init();
     #ifdef DEBUG_PLANS
-    std::cerr << "INIT this= "<<this<< std::endl;
+    std::cerr << "INIT this= " << this << std::endl;
     #endif
 }
 
 FourierTransformer::~FourierTransformer() {
     clear();
     #ifdef DEBUG_PLANS
-    std::cerr << "CLEARED this= "<<this<< std::endl;
+    std::cerr << "CLEARED this= " << this << std::endl;
     #endif
 }
 
@@ -94,19 +89,19 @@ plans_are_set(false) {
 }
 
 void FourierTransformer::init() {
-    fReal = NULL;
-    fComplex = NULL;
-    fPlanForward = NULL;
-    fPlanBackward = NULL;
-    dataPtr = NULL;
-    complexDataPtr = NULL;
+    fReal          = nullptr;
+    fComplex       = nullptr;
+    fPlanForward   = nullptr;
+    fPlanBackward  = nullptr;
+    dataPtr        = nullptr;
+    complexDataPtr = nullptr;
 }
 
 void FourierTransformer::clear() {
     fFourier.clear();
     // Clean-up all other FFTW-allocated memory
     destroyPlans();
-    // Initialise all pointers to NULL
+    // Initialise all pointers to nullptr
     init();
 }
 
@@ -197,7 +192,8 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
         // Make new plans
         plans_are_set = true;
 
-        RCTICTOC(TIMING_FFTW_PLAN, ({
+        {
+        ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
         pthread_mutex_lock(&fftw_plan_mutex);
         #ifdef RELION_SINGLE_PRECISION
         fPlanForward = fftwf_plan_dft_r2c(
@@ -223,7 +219,7 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
         );
         #endif
         pthread_mutex_unlock(&fftw_plan_mutex);
-        }))
+        }
 
         if (!fPlanForward || !fPlanBackward)
             REPORT_ERROR("FFTW plans cannot be created");
@@ -276,7 +272,8 @@ void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_p
 
         plans_are_set = true;
 
-        RCTICTOC(TIMING_FFTW_PLAN, ({
+        {
+        ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
         pthread_mutex_lock(&fftw_plan_mutex);
         #ifdef RELION_SINGLE_PRECISION
         fPlanForward = fftwf_plan_dft(ndim, N, (fftwf_complex*) fComplex->data,
@@ -290,7 +287,7 @@ void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_p
                                       (fftw_complex*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE);
         #endif
         pthread_mutex_unlock(&fftw_plan_mutex);
-        }))
+        }
 
         if (!fPlanForward || !fPlanBackward)
             REPORT_ERROR("FFTW plans cannot be created");
@@ -301,7 +298,8 @@ void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_p
 }
 
 void FourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) {
-    RCTICTOC(TIMING_FFTW_COPY, ({
+    {
+    ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_COPY);)
 
     if (!fFourier.sameShape(inputFourier)) {
         std::cerr << " fFourier= "; fFourier.printShape(std::cerr);
@@ -313,7 +311,7 @@ void FourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) 
         inputFourier.data,
         inputFourier.size() * 2 * sizeof(RFLOAT)
     );
-    }))
+    }
 }
 
 static unsigned long int getsize(const FourierTransformer &t) {
@@ -325,7 +323,8 @@ static unsigned long int getsize(const FourierTransformer &t) {
 // Transform ---------------------------------------------------------------
 void FourierTransformer::Transform(int sign) {
     if (sign == FFTW_FORWARD) {
-        RCTICTOC(TIMING_FFTW_EXECUTE, ({
+        {
+        ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_EXECUTE);)
         #ifdef RELION_SINGLE_PRECISION
         fftwf_execute_dft_r2c(fPlanForward,fReal->data,
                 (fftwf_complex*) fFourier.data);
@@ -333,15 +332,17 @@ void FourierTransformer::Transform(int sign) {
         fftw_execute_dft_r2c(fPlanForward,fReal->data,
                 (fftw_complex*) fFourier.data);
         #endif
-        }))
+        }
 
         // Normalise the transform
-        RCTICTOC(TIMING_FFTW_NORMALISE, ({
+        {
+        ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_NORMALISE);)
         unsigned long int size = getsize(*this);
         for (auto &x : fFourier) { x /= size; }
-        }))
+        }
     } else if (sign == FFTW_BACKWARD) {
-        RCTICTOC(TIMING_FFTW_EXECUTE, ({
+        {
+        ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_EXECUTE);)
         #ifdef RELION_SINGLE_PRECISION
         fftwf_execute_dft_c2r(
             fPlanBackward, (fftwf_complex*) fFourier.data, fReal->data
@@ -351,7 +352,7 @@ void FourierTransformer::Transform(int sign) {
             fPlanBackward, (fftw_complex*) fFourier.data, fReal->data
         );
         #endif
-        }))
+        }
     }
 }
 

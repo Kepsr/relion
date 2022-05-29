@@ -229,7 +229,7 @@ void MotionParamEstimator::run() {
 
     if (!estim2 && !estim3) return;
 
-    RCTICTOC(paramTimer, timeSetup, ({ prepAlignment(); }))
+    { ifdefTIMING(TicToc tt (paramTimer, timeSetup);) prepAlignment(); }
 
     d4Vector opt;
 
@@ -266,13 +266,8 @@ void MotionParamEstimator::run() {
     std::string command = " mkdir -p " + newdir;
     int ret = system(command.c_str());
 
-    std::string paramFn;
-
-    if (allGroups) {
-        paramFn = "opt_params_all_groups.txt";
-    } else {
-        paramFn = "opt_params_group_" + obsModel->getGroupName(group) + ".txt";
-    }
+    std::string paramFn = allGroups ? "opt_params_all_groups.txt" :
+        "opt_params_group_" + obsModel->getGroupName(group) + ".txt";
 
     std::ofstream ofs(outPath + paramFn);
     ofs << rnd[0] << " ";
@@ -369,7 +364,7 @@ void MotionParamEstimator::evaluateParams(
         pctot += pc;
 
         if (debug) {
-            std::cout << "    micrograph " << (g+1) << " / " << mdts.size() << ": "
+            std::cout << "    micrograph " << g + 1 << " / " << mdts.size() << ": "
                 << pc << " particles [" << pctot << " total]" << std::endl;
         }
 
@@ -379,7 +374,8 @@ void MotionParamEstimator::evaluateParams(
             }
 
             std::vector<std::vector<gravis::d2Vector>> tracks;
-            RCTICTOC(paramTimer, timeOpt, ({
+            {
+            ifdefTIMING(TicToc tt (paramTimer, timeOpt);)
 
             tracks = motionEstimator->optimize(
                 alignmentSet.CCs[g],
@@ -395,29 +391,27 @@ void MotionParamEstimator::evaluateParams(
                 std::ofstream debugStr(sts.str());
 
                 for (int p = 0; p < pc; p++) {
-                    for (int f = 0; f < fc; f++) {
-                        debugStr << tracks[p][f] << std::endl;
-                    }
-
-                    debugStr << std::endl;
+                for (int f = 0; f < fc; f++) {
+                    debugStr << tracks[p][f] << std::endl;
                 }
-
-                debugStr.close();
+                debugStr << std::endl;
+                }
             }
 
-            }))
+            }
 
-            // Reusing timeEval
-            RCTICTOC(paramTimer, timeEval, ({
+            {
+            ifdefTIMING(TicToc tt (paramTimer, timeEval);)
             tscsAs[i] += alignmentSet.updateTsc(tracks, g, nr_omp_threads);
-            }))
+            }
 
         }
     }
 
     if (debug) { std::cout << std::endl; }
 
-    RCTICTOC(paramTimer, timeEval, ({
+    {
+    ifdefTIMING(TicToc tt (paramTimer, timeEval);)  // Reusing timeEval
 
     // compute final TSC
     for (int i = 0; i < paramCount; i++) {
@@ -428,7 +422,7 @@ void MotionParamEstimator::evaluateParams(
         }
     }
 
-    }))
+    }
 
 }
 
@@ -485,20 +479,20 @@ void MotionParamEstimator::prepAlignment() {
 
         #pragma omp parallel for num_threads(nr_omp_threads)
         for (int p = 0; p < pc; p++) {
-            for (int f = 0; f < fc; f++) {
-                if (maxRange > 0) {
-                    movieCC[p][f] = FilterHelper::cropCorner2D(movieCC[p][f], maxRangeP, maxRangeP);
-                }
-
-                alignmentSet.copyCC(g, p, f, movieCC[p][f]);
-
-                Image<Complex> pred = reference->predict(
-                    mdts[g], p, *obsModel, ReferenceMap::Opposite
-                );
-
-                alignmentSet.accelerate(movie[p][f], alignmentSet.obs[g][p][f]);
-                alignmentSet.accelerate(pred, alignmentSet.pred[g][p]);
+        for (int f = 0; f < fc; f++) {
+            if (maxRange > 0) {
+                movieCC[p][f] = FilterHelper::cropCorner2D(movieCC[p][f], maxRangeP, maxRangeP);
             }
+
+            alignmentSet.copyCC(g, p, f, movieCC[p][f]);
+
+            Image<Complex> pred = reference->predict(
+                mdts[g], p, *obsModel, ReferenceMap::Opposite
+            );
+
+            alignmentSet.accelerate(movie[p][f], alignmentSet.obs[g][p][f]);
+            alignmentSet.accelerate(pred,        alignmentSet.pred[g][p]);
+        }
         }
     }
 

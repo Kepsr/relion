@@ -23,16 +23,6 @@
 // #define PRINT_GPU_MEM_INFO
 // #define DEBUG_BODIES
 
-#ifdef TIMING
-    #define RCTIC(timer, label) (timer.tic(label))
-    #define RCTOC(timer, label) (timer.toc(label))
-#else
-    #define RCTIC(timer, label)
-    #define RCTOC(timer, label)
-#endif
-
-#define RCTICTOC(timer, label, block) RCTIC(timer, label); { block; } RCTOC(timer, label);
-
 #include <sys/time.h>
 #include <stdio.h>
 #include <time.h>
@@ -1367,21 +1357,21 @@ void MlOptimiser::initialiseGeneral(int rank) {
 
     #ifdef TIMING
     // DIFFF = timer.setNew("difff");
-    TIMING_EXP =           timer.setNew("expectation");
-    TIMING_EXP_1 =           timer.setNew("expectation_1");
-    TIMING_EXP_1a =           timer.setNew("expectation_1a");
-    TIMING_EXP_2 =           timer.setNew("expectation_2");
-    TIMING_EXP_3 =           timer.setNew("expectation_3");
-    TIMING_EXP_4 =           timer.setNew("expectation_4");
-    TIMING_EXP_4a =           timer.setNew("expectation_4a");
-    TIMING_EXP_4b =           timer.setNew("expectation_4b");
-    TIMING_EXP_4c =           timer.setNew("expectation_4c");
-    TIMING_EXP_4d =           timer.setNew("expectation_4d");
-    TIMING_EXP_5 =           timer.setNew("expectation_5");
-    TIMING_EXP_6 =           timer.setNew("expectation_6");
-    TIMING_EXP_7 =           timer.setNew("expectation_7");
-    TIMING_EXP_8 =           timer.setNew("expectation_8");
-    TIMING_EXP_9 =           timer.setNew("expectation_9");
+    TIMING_EXP    = timer.setNew("expectation");
+    TIMING_EXP_1  = timer.setNew("expectation_1");
+    TIMING_EXP_1a = timer.setNew("expectation_1a");
+    TIMING_EXP_2  = timer.setNew("expectation_2");
+    TIMING_EXP_3  = timer.setNew("expectation_3");
+    TIMING_EXP_4  = timer.setNew("expectation_4");
+    TIMING_EXP_4a = timer.setNew("expectation_4a");
+    TIMING_EXP_4b = timer.setNew("expectation_4b");
+    TIMING_EXP_4c = timer.setNew("expectation_4c");
+    TIMING_EXP_4d = timer.setNew("expectation_4d");
+    TIMING_EXP_5  = timer.setNew("expectation_5");
+    TIMING_EXP_6  = timer.setNew("expectation_6");
+    TIMING_EXP_7  = timer.setNew("expectation_7");
+    TIMING_EXP_8  = timer.setNew("expectation_8");
+    TIMING_EXP_9  = timer.setNew("expectation_9");
 
     TIMING_EXP_METADATA =  timer.setNew(" - EXP: metadata shuffling");
     TIMING_EXP_CHANGES =   timer.setNew(" - EXP: monitor changes hidden variables");
@@ -2346,8 +2336,8 @@ void MlOptimiser::iterate() {
         << std::endl;
         #endif
 
-
-        RCTICTOC(timer, TIMING_EXP, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_EXP);)
 
         // Update subset_size
         updateSubsetSize();
@@ -2388,9 +2378,10 @@ void MlOptimiser::iterate() {
         }
         symmetriseReconstructions();
 
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_MAX, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_MAX);)
 
         if (do_skip_maximization) {
             // Only write data.star file and break from the iteration loop
@@ -2399,15 +2390,16 @@ void MlOptimiser::iterate() {
         }
 
         maximization();
+        }
 
-        }))
-
-        RCTICTOC(timer, TIMING_ITER_LOCALSYM, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_ITER_LOCALSYM);)
         // Apply local symmetry according to a list of masks and their operators
         applyLocalSymmetryForEachRef();
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_ITER_HELICALREFINE, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_ITER_HELICALREFINE);)
         // Shaoda 26 Jul 2015
         // Helical symmetry refinement and imposition of real space helical symmetry.
         if (do_helical_refine && mymodel.ref_dim == 3) {
@@ -2438,30 +2430,29 @@ void MlOptimiser::iterate() {
         if (do_write_unmasked_refs)
             mymodel.write(fn_out+"_unmasked", sampling, false, true);
 
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_SOLVFLAT, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_SOLVFLAT);)
         // Apply masks to the reference images
         // At the last iteration, do not mask the map for validation purposes
         if (do_solvent && !has_converged)
             solventFlatten();
+        }
 
-        }))
-
-        RCTICTOC(timer, TIMING_UPDATERES, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_UPDATERES);)
         // Re-calculate the current resolution, do this before writing to get the correct values in the output files
         updateCurrentResolution();
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_ITER_WRITE, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_ITER_WRITE);)
         // Write output files
         write(DO_WRITE_SAMPLING, DO_WRITE_DATA, DO_WRITE_OPTIMISER, DO_WRITE_MODEL, 0);
-        }))
+        }
 
-        #ifdef TIMING
-        if (verb > 0)
-            timer.printTimes(false);
-        #endif
+        ifdefTIMING(if (verb > 0) timer.printTimes(false);)
 
     }
 
@@ -2495,7 +2486,7 @@ void MlOptimiser::expectation() {
 
     // C. Calculate expected minimum angular errors (only for 3D refinements)
     // And possibly update orientational sampling automatically
-    if (!(iter == 1 && do_firstiter_cc) && !do_always_cc && !do_skip_align && !do_only_sample_tilt && !do_sgd) {
+    if (!do_cc() && !do_skip_align && !do_only_sample_tilt && !do_sgd) {
         // Set the exp_metadata (but not the exp_imagedata which is not needed for calculateExpectedAngularErrors)
         int n_trials_acc = std::min(
             mymodel.ref_dim == 3 && mymodel.data_dim != 3 ? 100 : 10,
@@ -2656,10 +2647,11 @@ void MlOptimiser::expectation() {
         long int my_pool_first_part_id = my_first_part_id + nr_particles_done;
         long int my_pool_last_part_id = std::min(my_last_part_id, my_pool_first_part_id + nr_pool - 1);
 
-        RCTICTOC(timer, TIMING_EXP_METADATA, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_EXP_METADATA);)
         // Get the metadata for these particles
         getMetaAndImageDataSubset(my_pool_first_part_id, my_pool_last_part_id, !do_parallel_disc_io);
-        }))
+        }
 
         // Abort through the pipeline_control system
         if (pipeline_control_check_abort_job())
@@ -2668,15 +2660,17 @@ void MlOptimiser::expectation() {
         // perform the actual expectation step on several particles
         expectationSomeParticles(my_pool_first_part_id, my_pool_last_part_id);
 
-        RCTICTOC(timer, TIMING_EXP_CHANGES, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_EXP_CHANGES);)
         // Also monitor the changes in the optimal orientations and classes
         monitorHiddenVariableChanges(my_pool_first_part_id, my_pool_last_part_id);
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_EXP_METADATA, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_EXP_METADATA);)
         // Set the metadata for these particles
         setMetaDataSubset(my_pool_first_part_id, my_pool_last_part_id);
-        }))
+        }
 
         nr_particles_done += my_pool_last_part_id - my_pool_first_part_id + 1;
         if (verb > 0 && nr_particles_done - prev_barstep > barstep) {
@@ -3041,7 +3035,8 @@ void MlOptimiser::expectationSomeParticles(
     long int my_first_part_id, long int my_last_part_id
 ) {
 
-    RCTICTOC(timer, TIMING_ESP, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_ESP);)
 
     // #define DEBUG_EXPSOME
     #ifdef DEBUG_EXPSOME
@@ -3195,7 +3190,7 @@ void MlOptimiser::expectationSomeParticles(
 
     if (threadException) throw *threadException;
 
-    }))
+    }
 
 }
 
@@ -3691,7 +3686,8 @@ void MlOptimiser::maximization() {
     // First reconstruct the images for each class
     // multi-body refinement will never get here, as it is only 3D auto-refine and that requires MPI!
     for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++) {
-        RCTICTOC(timer, RCT_1, ({
+        {
+        ifdefTIMING(TicToc tt (timer, RCT_1);)
         if (mymodel.pdf_class[iclass] > 0.0 || mymodel.nr_bodies > 1) {
 
             if (wsum_model.BPref[iclass].weight.sum() > Xmipp::epsilon) {
@@ -3782,20 +3778,22 @@ void MlOptimiser::maximization() {
                 mymodel.Iref    // When not doing SGD, initialise the reference to zero.
             )[iclass].initZeros();
         }
-        }))
+        }
         if (verb > 0)
             progress_bar(iclass);
     }
 
-    RCTICTOC(timer, RCT_3, ({
+    {
+    ifdefTIMING(TicToc tt (timer, RCT_3);)
     // Then perform the update of all other model parameters
     maximizationOtherParameters();
-    }))
+    }
 
-    RCTICTOC(timer, RCT_4, ({
+    {
+    ifdefTIMING(TicToc tt (timer, RCT_4);)
     // Keep track of changes in hidden variables
     updateOverallChangesInHiddenVariables();
-    }))
+    }
 
     if (verb > 0) progress_bar(mymodel.nr_classes);
 
@@ -3808,7 +3806,8 @@ void MlOptimiser::maximizationOtherParameters() {
     #endif
 
     RFLOAT sum_weight;
-    RCTICTOC(timer, RCT_5, ({
+    {
+    ifdefTIMING(TicToc tt (timer, RCT_5);)
     // Calculate total sum of weights, and average CTF for each class (for SSNR estimation)
     sum_weight = 0.0;
     for (int iclass = 0; iclass < mymodel.nr_classes; iclass++)
@@ -3889,9 +3888,10 @@ void MlOptimiser::maximizationOtherParameters() {
             #endif
         }
     }
-    }))
+    }
 
-    RCTICTOC(timer, RCT_6, ({
+    {
+    ifdefTIMING(TicToc tt (timer, RCT_6);)
     // Update model.pdf_class vector (for each k)
     for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
 
@@ -3929,9 +3929,10 @@ void MlOptimiser::maximizationOtherParameters() {
     }
 
     // TODO: update estimates for sigma2_rot, sigma2_tilt and sigma2_psi!
-    }))
+    }
 
-    RCTICTOC(timer, RCT_7, ({
+    {
+    ifdefTIMING(TicToc tt (timer, RCT_7);)
     // Also refrain from updating sigma_noise after the first iteration with first_iter_cc!
     if (!fix_sigma_noise && !(iter == 1 && do_firstiter_cc || do_always_cc)) {
         for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
@@ -3956,9 +3957,10 @@ void MlOptimiser::maximizationOtherParameters() {
             }
         }
     }
-    }))
+    }
 
-    RCTICTOC(timer, RCT_8, ({
+    {
+    ifdefTIMING(TicToc tt (timer, RCT_8);)
     // After the first iteration the references are always CTF-corrected
     if (do_ctf_correction)
         refs_are_ctf_corrected = true;
@@ -4009,7 +4011,7 @@ void MlOptimiser::maximizationOtherParameters() {
             mymodel.pdf_class[0] /= mymodel.nr_classes;
         }
     }
-    }))
+    }
 
     #ifdef DEBUG
     std::cerr << "Leaving maximizationOtherParameters" << std::endl;
