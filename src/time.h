@@ -43,6 +43,12 @@
 #endif
 #endif
 
+#ifdef TIMING
+#define ifdefTIMING(statement) statement
+#else
+#define ifdefTIMING(statement)
+#endif
+
 /** @name Time managing
  *
  * These functions are used to make time measures of the algorithms. If you know
@@ -278,5 +284,25 @@ class Timer {
     void printTimes(bool doClear);
 };
 
+class TicToc {
+
+    public:
+
+    TicToc(Timer &timer, int label): timer(timer), label(label) {
+        timer.tic(label);
+    }
+
+    ~TicToc() {
+        timer.toc(label);
+    }
+
+    private:
+
+    Timer &timer;
+    // A TicToc must never outlive its referenced Timer.
+
+    int label;
+
+};
 
 #endif /* TIME_H_ */

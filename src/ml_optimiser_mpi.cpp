@@ -43,14 +43,7 @@ static inline int modulo_alt(int x, int y) {
 #ifdef TIMING
 int TIMING_MPIPACK, TIMING_MPIWAIT, TIMING_MPICOMBINEDISC, TIMING_MPICOMBINENETW, TIMING_MPISLAVEWORK;
 int TIMING_MPISLAVEWAIT1, TIMING_MPISLAVEWAIT2, TIMING_MPISLAVEWAIT3;
-#define RCTIC(timer, label) (timer.tic(label))
-#define RCTOC(timer, label) (timer.toc(label))
-#else
-#define RCTIC(timer, label)
-#define RCTOC(timer, label)
 #endif
-
-#define RCTICTOC(timer, label, block) RCTIC(timer, label); { block; } RCTOC(timer, label);
 
 void MlOptimiserMpi::read(int argc, char **argv) {
 
@@ -658,19 +651,19 @@ void MlOptimiserMpi::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFL
 }
 
 void MlOptimiserMpi::expectation() {
-    RCTIC(timer, TIMING_EXP_1)
+    int n_trials_acc, first_follower;
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_EXP_1);)
     #ifdef DEBUG
     std::cerr << "MlOptimiserMpi::expectation: Entering " << std::endl;
     #endif
 
-    MultidimArray<long int> first_last_nr_images(6);
-    int first_follower = 1;
+    first_follower = 1;
     // Use maximum of 100 particles for 3D and 10 particles for 2D estimations
-    int n_trials_acc = std::min(
+    n_trials_acc = std::min(
         mymodel.ref_dim == 3 && mymodel.data_dim != 3 ? 100 : 10,
         (int) mydata.numberOfParticles()
     );
-    MPI_Status status;
 
     #ifdef MKLFFT
     // Allow parallel FFTW execution
@@ -683,7 +676,8 @@ void MlOptimiserMpi::expectation() {
 
     // B. Set the PPref Fourier transforms, initialise wsum_model, etc.
     // The leader only holds metadata, it does not set up the wsum_model (to save memory)
-    RCTICTOC(timer, TIMING_EXP_1a, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_EXP_1a);)
     if (!node->isLeader()) {
         MlOptimiser::expectationSetup();
 
@@ -695,7 +689,7 @@ void MlOptimiserMpi::expectation() {
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    }))
+    }
 
     if (!do_split_random_halves) {
         if (!node->isLeader()) {
@@ -740,9 +734,12 @@ void MlOptimiserMpi::expectation() {
     }
     #endif
 
-    RCTOC(timer, TIMING_EXP_1);
+    }
 
-    RCTICTOC(timer, TIMING_EXP_2, ({
+    MPI_Status status;
+
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_EXP_2);)
     // C. Calculate expected angular errors
     // Do not do this for maxCC
     // Only the first (reconstructing) follower (i.e. from half1) calculates expected angular errors
@@ -779,9 +776,10 @@ void MlOptimiserMpi::expectation() {
         node->relion_MPI_Bcast(&acc_rot,   1, MY_MPI_DOUBLE, first_follower, MPI_COMM_WORLD);
         node->relion_MPI_Bcast(&acc_trans, 1, MY_MPI_DOUBLE, first_follower, MPI_COMM_WORLD);
     }
-    }))
+    }
 
-    RCTICTOC(timer, TIMING_EXP_3, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_EXP_3);)
 
     // D. Update the angular sampling (all nodes except leader)
     if (
@@ -843,16 +841,19 @@ void MlOptimiserMpi::expectation() {
     node->relion_MPI_Bcast(&has_converged,         1, MPI_INT, first_follower, MPI_COMM_WORLD);
     node->relion_MPI_Bcast(&do_join_random_halves, 1, MPI_INT, first_follower, MPI_COMM_WORLD);
 
-    }))
+    }
 
-    RCTICTOC(timer, TIMING_EXP_4, ({
-    RCTICTOC(timer, TIMING_EXP_4a, ({
+    MultidimArray<long int> first_last_nr_images (6);
 
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_EXP_4);)
+
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_EXP_4a);)
     // Wait until expected angular errors have been calculated
     MPI_Barrier(MPI_COMM_WORLD);
     sleep(1);
-
-    }))
+    }
 
     // Now perform real expectation step in parallel, use an on-demand leader-follower system
     #define JOB_FIRST (first_last_nr_images(0))
@@ -870,19 +871,17 @@ void MlOptimiserMpi::expectation() {
     std::vector<size_t> allocationSizes;
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (do_gpu && ! node->isLeader()) {
+    if (do_gpu && !node->isLeader()) {
         for (int i = 0; i < cudaDevices.size(); i ++) {
-            RCTICTOC(timer, TIMING_EXP_4b, ({
+            ifdefTIMING(TicToc tt (timer, TIMING_EXP_4b);)
 
             MlDeviceBundle *b = new MlDeviceBundle(this);
             b->setDevice(cudaDevices[i]);
             b->setupFixedSizedObjects();
             accDataBundles.push_back((void*) b);
-
-            }))
         }
 
-        std::vector<unsigned> threadcountOnDevice(accDataBundles.size(),0);
+        std::vector<unsigned> threadcountOnDevice(accDataBundles.size(), 0);
 
         for (int i = 0; i < cudaOptimiserDeviceMap.size(); i++) {
             std::stringstream didSs;
@@ -991,11 +990,12 @@ void MlOptimiserMpi::expectation() {
     fftw_plan_with_nthreads(1);
     #endif
 
-    }))
+    }
 
     long int my_nr_particles = subset_size > 0 ? subset_size : mydata.numberOfParticles();
     if (node->isLeader()) {
-        RCTICTOC(timer, TIMING_EXP_5, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_EXP_5);)
 
         try {
             long int progress_bar_step_size = std::max(1l, my_nr_particles / 60);
@@ -1158,10 +1158,11 @@ void MlOptimiserMpi::expectation() {
             MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_FAILURE);
         }
 
-        }))
+        }
     } else {
         // if not Leader
-        RCTICTOC(timer, TIMING_EXP_6, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_EXP_6);)
 
         try {
             if (halt_all_followers_except_this > 0) {
@@ -1181,10 +1182,11 @@ void MlOptimiserMpi::expectation() {
             node->relion_MPI_Send(first_last_nr_images.data, first_last_nr_images.size(), MPI_LONG, 0, MPITag::JOB_REQUEST, MPI_COMM_WORLD);
 
             while (true) {
-                RCTICTOC(timer, TIMING_MPISLAVEWAIT1, ({
+                {
+                ifdefTIMING(TicToc tt (timer, TIMING_MPISLAVEWAIT1);)
                 //Receive a new bunch of particles
                 node->relion_MPI_Recv(first_last_nr_images.data, first_last_nr_images.size(), MPI_LONG, 0, MPITag::JOB_REPLY, MPI_COMM_WORLD, status);
-                }))
+                }
 
                 //Check whether I am done
                 if (JOB_NIMG <= 0) {
@@ -1195,7 +1197,8 @@ void MlOptimiserMpi::expectation() {
                     exp_metadata.clear();
                     break;
                 } else {
-                    RCTICTOC(timer, TIMING_MPISLAVEWAIT2, ({
+                    {
+                    ifdefTIMING(TicToc tt (timer, TIMING_MPISLAVEWAIT2);)
 
                     // Also receive the imagedata and the metadata for these images from the leader
                     exp_metadata.resize(JOB_NIMG, METADATA_LINE_LENGTH_BEFORE_BODIES + (mymodel.nr_bodies) * METADATA_NR_BODY_PARAMS);
@@ -1258,18 +1261,20 @@ void MlOptimiserMpi::expectation() {
                     #ifdef DEBUG_MPIEXP
                     std::cerr << " SLAVE EXECUTING node->rank= " << node->rank << " JOB_FIRST= " << JOB_FIRST << " JOB_LAST= " << JOB_LAST << std::endl;
                     #endif
-                    }))
+                    }
 
-                    RCTICTOC(timer, TIMING_MPISLAVEWORK, ({
+                    {
+                    ifdefTIMING(TicToc tt (timer, TIMING_MPISLAVEWORK);)
                     expectationSomeParticles(JOB_FIRST, JOB_LAST);
-                    }))
+                    }
 
-                    RCTICTOC(timer, TIMING_MPISLAVEWAIT3, ({
+                    {
+                    ifdefTIMING(TicToc tt (timer, TIMING_MPISLAVEWAIT3);)
                     // Report to the leader how many particles I have processed
                     node->relion_MPI_Send(first_last_nr_images.data, first_last_nr_images.size(), MPI_LONG, 0, MPITag::JOB_REQUEST, MPI_COMM_WORLD);
                     // Also send the metadata belonging to those
                     node->relion_MPI_Send(exp_metadata.data, exp_metadata.size(), MY_MPI_DOUBLE, 0, MPITag::METADATA, MPI_COMM_WORLD);
-                    }))
+                    }
                 }
             }
 		// TODO: define MPI_COMM_SLAVES!!!!	MPI_Barrier(node->MPI_COMM_SLAVES);
@@ -1277,7 +1282,8 @@ void MlOptimiserMpi::expectation() {
             #ifdef CUDA
             if (do_gpu) {
                 for (int i = 0; i < accDataBundles.size(); i ++) {
-                    RCTICTOC(timer, TIMING_EXP_7, ({
+                    {
+                    ifdefTIMING(TicToc tt (timer, TIMING_EXP_7);)
 
                     MlDeviceBundle* b = (MlDeviceBundle*) accDataBundles[i];
                     b->syncAllBackprojects();
@@ -1307,9 +1313,10 @@ void MlOptimiserMpi::expectation() {
                     for (auto &plan : b->coarseProjectionPlans)
                         plan.clear();
 
-                    }))
+                    }
                 }
-                RCTICTOC(timer, TIMING_EXP_8, ({
+                {
+                ifdefTIMING(TicToc tt (timer, TIMING_EXP_8);)
 
                 for (auto &optimiser : cudaOptimisers)
                     delete (MlOptimiserCuda*) optimiser;
@@ -1336,7 +1343,7 @@ void MlOptimiserMpi::expectation() {
 
                 accDataBundles.clear();
 
-                }))
+                }
             }
             #endif // CUDA
             #ifdef ALTCPU
@@ -1386,7 +1393,7 @@ void MlOptimiserMpi::expectation() {
             MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_FAILURE);
         }
 
-        }))
+        }
     }  // Follower node
 
     #ifdef  MKLFFT
@@ -1404,9 +1411,10 @@ void MlOptimiserMpi::expectation() {
     }
 
     // Measure how long I have to wait for the rest
-    RCTICTOC(timer, TIMING_MPIWAIT, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_MPIWAIT);)
     node->barrierWait();
-    }))
+    }
 
     // Wait until expected angular errors have been calculated
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1424,7 +1432,8 @@ void MlOptimiserMpi::expectation() {
 }
 
 void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
-    RCTICTOC(timer, TIMING_MPICOMBINEDISC, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_MPICOMBINEDISC);)
     MultidimArray<RFLOAT> Mpack;
 
     int nr_halfsets = do_split_random_halves ? 2 : 1;
@@ -1506,11 +1515,12 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
             wsum_model.unpack(Mpack);
 
     } // end if ((node->size - 1)/nr_halfsets > 1)
-    }))
+    }
 }
 
 void MlOptimiserMpi::combineAllWeightedSums() {
-    RCTICTOC(timer, TIMING_MPICOMBINENETW, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_MPICOMBINENETW);)
 
     // Pack all weighted sums in Mpack
     MultidimArray<RFLOAT> Mpack, Msum;
@@ -1622,7 +1632,7 @@ void MlOptimiserMpi::combineAllWeightedSums() {
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    }))
+    }
 }
 
 void MlOptimiserMpi::combineWeightedSumsTwoRandomHalvesViaFile() {
@@ -1743,7 +1753,8 @@ void MlOptimiserMpi::maximization() {
     #endif
 
     RFLOAT helical_twist_half1, helical_rise_half1, helical_twist_half2, helical_rise_half2;
-    RCTICTOC(timer, TIMING_RECONS, ({
+    {
+    ifdefTIMING(TicToc tt (timer, TIMING_RECONS);)
 
     // For multi-body refinement: check if all bodies are fixed. If so, just return
     if (mymodel.nr_bodies > 1) {
@@ -1769,7 +1780,8 @@ void MlOptimiserMpi::maximization() {
             continue;
 
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
-            RCTICTOC(timer, RCT_1, ({
+            {
+            ifdefTIMING(TicToc tt (timer, RCT_1);)
             // Either ibody or iclass can be larger than 0, never 2 at the same time!
             int ith_recons = mymodel.nr_bodies > 1 ? ibody : iclass;
 
@@ -2103,7 +2115,7 @@ void MlOptimiserMpi::maximization() {
                     mymodel.Iref[ith_recons].initZeros();
                 }
             }
-            }))
+            }
             // #define DEBUG_RECONSTRUCT
             #ifdef DEBUG_RECONSTRUCT
             MPI_Barrier( MPI_COMM_WORLD);
@@ -2120,7 +2132,8 @@ void MlOptimiserMpi::maximization() {
     std::cerr << "All classes have been reconstructed" << std::endl;
     #endif
 
-    RCTICTOC(timer, RCT_2, ({
+    {
+    ifdefTIMING(TicToc tt (timer, RCT_2);)
     // Once reconstructed, broadcast new models to all other nodes
     // This cannot be done in the reconstruction loop itself because then it will be executed sequentially
     for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
@@ -2232,17 +2245,19 @@ void MlOptimiserMpi::maximization() {
             }
         }
     }
-    }))
+    }
 
-    }))
+    }
 
     if (node->isLeader()) {
         // The leader also updates the changes in hidden variables
-        RCTICTOC(timer, RCT_4, ({ updateOverallChangesInHiddenVariables(); }))
+        { updateOverallChangesInHiddenVariables(); }
+        ifdefTIMING(TicToc tt (timer, RCT_4);)
     } else {
         // Now do the maximisation of all other parameters (and calculate the tau2_class-spectra of the reconstructions
         // The lazy leader never does this: it only handles metadata and does not have the weighted sums
-        RCTICTOC(timer, RCT_3, ({ maximizationOtherParameters(); }))
+        { maximizationOtherParameters(); }
+        ifdefTIMING(TicToc tt (timer, RCT_3);)
     }
 
     // The leader broadcasts the changes in hidden variables to all other nodes
@@ -2784,7 +2799,8 @@ void MlOptimiserMpi::iterate() {
     updateCurrentResolution();
 
     for (iter = iter + 1; iter <= nr_iter; iter++) {
-        RCTICTOC(timer, TIMING_EXP, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_EXP);)
 
         // Update subset_size
         updateSubsetSize(node->isLeader());
@@ -2925,9 +2941,10 @@ void MlOptimiserMpi::iterate() {
             }
         }
 
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_MAX, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_MAX);)
 
         maximization();
 
@@ -2956,11 +2973,12 @@ void MlOptimiserMpi::iterate() {
             }
         }
 
-        }))
+        }
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        RCTICTOC(timer, TIMING_ITER_HELICALREFINE, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_ITER_HELICALREFINE);)
         if (node->isLeader()) {
             if (
                 do_helical_refine && !do_skip_align && !do_skip_rotate && 
@@ -2988,31 +3006,34 @@ void MlOptimiserMpi::iterate() {
 
         // Mask the reconstructions to get rid of noisy solvent areas
         // Skip masking upon convergence (for validation purposes)
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_SOLVFLAT, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_SOLVFLAT);)
         if (do_solvent && !has_converged) solventFlatten();
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_UPDATERES, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_UPDATERES);)
         // Re-calculate the current resolution, do this before writing to get the correct values in the output files
         updateCurrentResolution();
-        }))
+        }
 
-        RCTICTOC(timer, TIMING_ITER_WRITE, ({
+        {
+        ifdefTIMING(TicToc tt (timer, TIMING_ITER_WRITE);)
         // If we are joining random halves, then do not write an optimiser file so that it cannot be restarted!
         bool do_write_optimiser = !do_join_random_halves;
         // Write out final map without iteration number in the filename
         if (do_join_random_halves) { iter = -1; }
 
-        if (node->rank == 1 || (do_split_random_halves && !do_join_random_halves && node->rank == 2)) {
-            //Only the first_follower of each subset writes model to disc (do not write the data.star file, only leader will do this)
+        if (node->rank == 1 || (node->rank == 2 && do_split_random_halves && !do_join_random_halves)) {
+            // Only the first_follower of each subset writes model to disc (do not write the data.star file, only leader will do this)
             MlOptimiser::write(DO_WRITE_SAMPLING, DONT_WRITE_DATA, do_write_optimiser, DO_WRITE_MODEL, node->rank);
         } else if (node->isLeader()) {
             // The leader only writes the data file (he's the only one who has and manages these data!)
             MlOptimiser::write(DONT_WRITE_SAMPLING, DO_WRITE_DATA, DONT_WRITE_OPTIMISER, DONT_WRITE_MODEL, node->rank);
         }
-        }))
+        }
 
         if (do_auto_refine && has_converged) {
             if (verb > 0) {
@@ -3051,12 +3072,10 @@ void MlOptimiserMpi::iterate() {
 
         #ifdef TIMING
         // Only first follower prints it timing information
-        if (node->rank == 1)
-            timer.printTimes(false);
+        if (node->rank == 1) timer.printTimes(false);
         #endif
 
-        if (do_auto_refine && has_converged)
-            break;
+        if (do_auto_refine && has_converged) break;
 
     }
 

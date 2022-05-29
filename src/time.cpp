@@ -121,7 +121,7 @@ void progress_bar(long rlen)
 
 	if (rlen == 0)
 		return;
-	currt = time(NULL);
+	currt = time(nullptr);
 
 	if (rlen < 0)
 	{
@@ -211,13 +211,13 @@ int Timer::setNew(const std::string tag)
 
 void Timer::tic(int timer)
 {
-	gettimeofday(&(start_times[timer]), NULL);
+	gettimeofday(&(start_times[timer]), nullptr);
 	counts[timer]++;
 }
 
 void Timer::toc(int timer)
 {
-	gettimeofday(&end_time, NULL);
+	gettimeofday(&end_time, nullptr);
 	times[timer] += (end_time.tv_sec - start_times[timer].tv_sec) * 1000000 +
 				   (end_time.tv_usec - start_times[timer].tv_usec);
 }

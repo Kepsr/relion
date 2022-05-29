@@ -288,10 +288,11 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     XFLOAT scale = (XFLOAT) basePckr->workSize / (XFLOAT) basePckr->micrograph_size;
 
     // Read in the micrograph
-    RCTICTOC(basePckr->timer.tic, basePckr->TIMING_A6, ({
+    {
+    ifdefTIMING(TicToc tt (basePckr->timer.tic, basePckr->TIMING_A6);)
     CTICTOC(timer, "readMicrograph", ({ Imic.read(fn_mic); }))
     CTICTOC(timer, "setXmippOrigin_0", ({ Imic().setXmippOrigin(); }))
-    }))
+    }
 
     // Let's just check the square size again....
     RFLOAT my_xsize = XSIZE(Imic());
@@ -331,14 +332,15 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         std::cerr              << "*------------------------------------------------------------------------------------*" << std::endl;
     }
 
-    RCTICTOC(basePckr->timer, basePckr->TIMING_A7, ({
+    {
+    ifdefTIMING(TicToc tt (basePckr->timer, basePckr->TIMING_A7);)
     CTICTOC(timer, "computeStats", ({
     // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations....
     Stats<RFLOAT> statstuple = Imic().computeStats();
     avg0 = stats.avg;
     stddev0 = stats.stddev;
     }))
-    }))
+    }
 
     CTICTOC(timer, "middlePassFilter", ({
     for (long int n = 0; n < Imic().size(); n++) {

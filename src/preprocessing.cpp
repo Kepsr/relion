@@ -36,15 +36,10 @@ int TIMING_INV_CONT         = timer.setNew("--invert_contrast");
 int TIMING_COMP_STATS       = timer.setNew("--computeStats");
 int TIMING_PER_IMG_OP_WRITE = timer.setNew("--write");
 int TIMING_REST             = timer.setNew("-rest");
-#define TIMING_TIC(id) timer.tic(id)
-#define TIMING_TOC(id) timer.toc(id)
+#define ifdefPREP_TIMING(statement) statement
 #else
-#define TIMING_TIC(id)
-#define TIMING_TOC(id)
+#define ifdefPREP_TIMING(statement)
 #endif
-
-/// HACK: Imitate a context manager.
-#define TICTOC(n, block) TIMING_TIC(n); block; TIMING_TOC(n);
 
 
 void Preprocessing::read(int argc, char **argv, int rank) {
@@ -417,9 +412,10 @@ void Preprocessing::runExtractParticles() {
 
         if (verb > 0 && imic % barstep == 0) progress_bar(imic);
 
-        TICTOC(TIMING_TOP, {
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_TOP);)
         micIsUsed = extractParticlesFromFieldOfView(fn_mic, imic);
-        })
+        }
 
         if (micIsUsed) MDoutMics.addObject(MDmics.getObject(index));
 
@@ -436,13 +432,13 @@ void Preprocessing::runExtractParticles() {
 void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
     MD.clear();
 
-    bool is_star = (fn_coord.getExtension() == "star");
-    bool is_box = (fn_coord.getExtension() == "box");
+    bool is_star = fn_coord.getExtension() == "star";
+    bool is_box  = fn_coord.getExtension() == "box";
 
     if (is_star) {
         MD.read(fn_coord);
     } else {
-        std::ifstream in(fn_coord.data(), std::ios_base::in);
+        std::ifstream in (fn_coord.data(), std::ios_base::in);
         if (in.fail())
             REPORT_ERROR((std::string) "Preprocessing::readCoordinates ERROR: File " + fn_coord + " does not exists");
 
@@ -456,10 +452,10 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
             if (is_box) {
                 if (words.size() < 4)
                     REPORT_ERROR("Preprocessing::readCoordinates Unexpected number of words on data line of " + fn_coord);
-                int num1 =  textToInteger(words[0]);
-                int num2 =  textToInteger(words[1]);
-                int num3 =  textToInteger(words[2]);
-                int num4 =  textToInteger(words[3]);
+                int num1 = textToInteger(words[0]);
+                int num2 = textToInteger(words[1]);
+                int num3 = textToInteger(words[2]);
+                int num4 = textToInteger(words[3]);
                 int xpos = num1 + num3 / 2;
                 int ypos = num2 + num4 / 2;
 
@@ -481,8 +477,8 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                         sscanf(words[1].c_str(), "%d", &num2)
                     ) {
                         MD.addObject();
-                        MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)num1);
-                        MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)num2);
+                        MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1);
+                        MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2);
 
                         // It could also be a X,Y,Z coordinate...
                         if (words.size() > 2 && sscanf(words[2].c_str(), "%d", &num3))
@@ -499,15 +495,14 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                     int num3;
 
                     MD.addObject();
-                    MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)num1);
-                    MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)num2);
+                    MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1);
+                    MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2);
                     // It could also be a X,Y,Z coordinate...
                     if (words.size() > 2 && sscanf(words[2].c_str(), "%d", &num3))
-                        MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT)num3);
+                    MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT)num3);
                 }
             }
         }
-        in.close();
     }
 }
 
@@ -525,16 +520,12 @@ void Preprocessing::readHelicalCoordinates(FileName fn_mic, FileName fn_coord, M
     Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
 
     Image<RFLOAT>::Dimensions dimensions = Imic.getDimensions();
-         int xdim = dimensions.x;
-         int ydim = dimensions.y;
-         int zdim = dimensions.z;
-    long int ndim = dimensions.n;
 
-    if (ndim != 1) REPORT_ERROR("Preprocessing::readCoordinates ERROR: Extraction of helical segments - " + (std::string)(fn_mic) + " is a stack, not a 2D micrograph or 3D tomogram!");
+    if (dimensions.n != 1) REPORT_ERROR("Preprocessing::readCoordinates ERROR: Extraction of helical segments - " + (std::string)(fn_mic) + " is a stack, not a 2D micrograph or 3D tomogram!");
 
-    bool is_3D = zdim > 1;
-    bool is_star = fn_coord.getExtension() == "star";
-    bool is_box = fn_coord.getExtension() == "box";
+    bool is_3D     = dimensions.z > 1;
+    bool is_star   = fn_coord.getExtension() == "star";
+    bool is_box    = fn_coord.getExtension() == "box";
     bool is_coords = fn_coord.getExtension() == "coords";
     if (!is_star && !is_box && !is_coords)
         REPORT_ERROR("Preprocessing::readCoordinates ERROR: Extraction of helical segments - Unknown file extension (RELION *.star, EMAN2 *.box and XIMDISP *.coords are supported).");
@@ -546,21 +537,21 @@ void Preprocessing::readHelicalCoordinates(FileName fn_mic, FileName fn_coord, M
         // std::cerr << " DEBUG: Extracting helical segments / subtomograms from RELION STAR coordinate files..." << std::endl;
         if (do_extract_helical_tubes) {
             if (is_3D) REPORT_ERROR("Preprocessing::readCoordinates ERROR: Cannot extract 3D helical subtomograms from start-end coordinates!");
-            convertHelicalTubeCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, helical_nr_asu, helical_rise, angpix, xdim, ydim, extract_size, helical_bimodal_angular_priors, helical_cut_into_segments);
+            convertHelicalTubeCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, helical_nr_asu, helical_rise, angpix, dimensions.x, dimensions.y, extract_size, helical_bimodal_angular_priors, helical_cut_into_segments);
         } else {
-            convertHelicalSegmentCoordsToMetaDataTable(fn_coord, MD, total_segments, is_3D, xdim, ydim, zdim, extract_size, helical_bimodal_angular_priors);
+            convertHelicalSegmentCoordsToMetaDataTable(fn_coord, MD, total_segments, is_3D, dimensions.x, dimensions.y, dimensions.z, extract_size, helical_bimodal_angular_priors);
         }
     } else if (is_box) {
         if (do_extract_helical_tubes) {
-            convertEmanHelicalTubeCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, helical_nr_asu, helical_rise, angpix, xdim, ydim, extract_size, helical_bimodal_angular_priors, helical_cut_into_segments);
+            convertEmanHelicalTubeCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, helical_nr_asu, helical_rise, angpix, dimensions.x, dimensions.y, extract_size, helical_bimodal_angular_priors, helical_cut_into_segments);
         } else {
-            convertEmanHelicalSegmentCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, angpix, xdim, ydim, extract_size, helical_bimodal_angular_priors);
+            convertEmanHelicalSegmentCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, angpix, dimensions.x, dimensions.y, extract_size, helical_bimodal_angular_priors);
         }
     } else if (is_coords) {
         if (do_extract_helical_tubes) {
-            convertXimdispHelicalTubeCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, helical_nr_asu, helical_rise, angpix, xdim, ydim, extract_size, helical_bimodal_angular_priors, helical_cut_into_segments);
+            convertXimdispHelicalTubeCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, helical_nr_asu, helical_rise, angpix, dimensions.x, dimensions.y, extract_size, helical_bimodal_angular_priors, helical_cut_into_segments);
         } else {
-            convertXimdispHelicalSegmentCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, angpix, xdim, ydim, extract_size, helical_bimodal_angular_priors);
+            convertXimdispHelicalSegmentCoordsToMetaDataTable(fn_coord, MD, total_segments, total_tubes, angpix, dimensions.x, dimensions.y, extract_size, helical_bimodal_angular_priors);
         }
     } else {
         REPORT_ERROR("Preprocessing::readCoordinates ERROR: Extraction of helical segments - Unknown file extension (RELION *.star, EMAN2 *.box and XIMDISP *.coords are supported).");
@@ -581,7 +572,8 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
     if (exists(fn_star) && only_extract_unfinished) return true;
 
     MetaDataTable MDin, MDout;
-    TICTOC(TIMING_READ_COORD, {
+    {
+    ifdefPREP_TIMING(TicToc tt (timer, TIMING_READ_COORD);)
     // Read in the coordinates file
     if (fn_data != "") {
         // Search for this micrograph in the MDdata table
@@ -595,10 +587,11 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
             readCoordinates(fn_coord, MDin);
         }
     }
-    });
+    }
 
     if (MDin.numberOfObjects() > 0) {
-        TICTOC(TIMING_BIAS_CORRECT, {
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_BIAS_CORRECT);)
         // Correct for bias in the picked coordinates
         if (abs(extract_bias_x) > 0 || abs(extract_bias_y) > 0) {
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
@@ -610,7 +603,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
                 MDin.setValue(EMDL::IMAGE_COORD_Y, ycoor);
             }
         }
-        });
+        }
 
         // Warn for small groups
         int npos = MDin.numberOfObjects();
@@ -648,7 +641,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
         my_current_nr_images += npos;
 
         /// BUG: No TIC!
-        TIMING_TOC(TIMING_EXTCT_FROM_FRAME);
+        ifdefPREP_TIMING(timer.toc(TIMING_EXTCT_FROM_FRAME);)
 
         MDout.setName("images");
         MDout.write(fn_star);
@@ -674,13 +667,14 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
     Image<RFLOAT> Imic;
     RFLOAT my_angpix, mic_avg;
-    TICTOC(TIMING_READ_IMG, {
+    {
+    ifdefPREP_TIMING(TicToc tt (timer, TIMING_READ_IMG);)
 
     Imic.read(fn_mic);
     // Calculate average value in the micrograph, for filling empty region around large-box extraction for premultiplication with CTF
     mic_avg = Imic().average();
 
-    });
+    }
 
     CTF ctf;
     int optics_group;
@@ -743,7 +737,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         }
 
         Image<RFLOAT> Ipart;
-        TICTOC(TIMING_WINDOW, {
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_WINDOW);)
         // extract one particle in Ipart
         if (dimensionality == 3) {
             Imic().window(Ipart(), z0, y0, x0, zF, yF, xF);
@@ -751,7 +746,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             Imic().window(Ipart(), y0, x0, yF, xF, mic_avg);
         }
         Ipart().setXmippOrigin();
-        });
+        }
 
         // Premultiply the CTF of each particle, possibly in a bigger box (premultiply_ctf_extract_size)
         if (do_phase_flip || do_premultiply_ctf) {
@@ -780,7 +775,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             }
         }
 
-        TIMING_TIC(TIMING_BOUNDARY);
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_BOUNDARY);)
         // Check boundaries: fill pixels outside the boundary with the nearest ones inside
         // This will create lines at the edges, rather than zeros
         Ipart().setXmippOrigin();
@@ -830,7 +826,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             }
             Ipart = Iproj;
         }
-        TIMING_TOC(TIMING_BOUNDARY);
+        }
 
         // performPerImageOperations will also append the particle to the output stack in fn_stack
         // Jun24,2015 - Shaoda, extract helical segments
@@ -842,16 +838,18 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             psi_deg  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
         }
 
-        TICTOC(TIMING_PRE_IMG_OPS, {
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_PRE_IMG_OPS);)
         performPerImageOperations(
             Ipart, fn_output_img_root,
             my_current_nr_images + ipos, my_total_nr_images,
             tilt_deg, psi_deg,
             all_avg, all_stddev, all_minval, all_maxval
         );
-        });
+        }
 
-        TICTOC(TIMING_REST, ({
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_REST);)
         // Also store all the particles information in the STAR file
         FileName fn_img;
         if (Ipart().getDim() == 3) {
@@ -906,7 +904,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             }
         }
 
-        }));
+        }
 
         ipos++;
     }
@@ -971,7 +969,8 @@ void Preprocessing::performPerImageOperations(
 
     Ipart().setXmippOrigin();
 
-    TICTOC(TIMING_NORMALIZE, {
+    {
+    ifdefPREP_TIMING(TicToc tt (timer, TIMING_NORMALIZE);)
     // 24 June 2015 - Shaoda, helical segments
     if (do_normalise) {
         RFLOAT bg_helical_radius = helical_tube_outer_diameter * 0.5 / angpix;
@@ -982,15 +981,17 @@ void Preprocessing::performPerImageOperations(
             do_extract_helix, bg_helical_radius, tilt_deg, psi_deg
         );
     }
-    });
+    }
 
-    TICTOC(TIMING_INV_CONT, {
+    {
+    ifdefPREP_TIMING(TicToc tt (timer, TIMING_INV_CONT);)
     if (do_invert_contrast) invert_contrast(Ipart);
-    });
+    }
 
     // Calculate mean, stddev, min and max
     Stats<RFLOAT> stats;
-    TICTOC(TIMING_COMP_STATS, { stats = Ipart().computeStats(); });
+    { stats = Ipart().computeStats(); }
+    ifdefPREP_TIMING(TicToc tt (timer, TIMING_COMP_STATS);)
     RFLOAT avg    = stats.avg;
     RFLOAT stddev = stats.stddev;
     RFLOAT minval = stats.min;
@@ -1003,12 +1004,13 @@ void Preprocessing::performPerImageOperations(
         Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stddev);
         Ipart.setSamplingRateInHeader(output_angpix);
 
-        TIMING_TIC(TIMING_PER_IMG_OP_WRITE);
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_PER_IMG_OP_WRITE);)
         // Write one mrc file for every subtomogram
         FileName fn_img;
         fn_img.compose(fn_output_img_root, image_nr + 1, "mrc");
         Ipart.write(fn_img);
-        TIMING_TOC(TIMING_PER_IMG_OP_WRITE);
+        }
     } else {
         // Keep track of overall statistics
         all_minval = std::min(minval, all_minval);
@@ -1027,7 +1029,8 @@ void Preprocessing::performPerImageOperations(
             Ipart.setSamplingRateInHeader(output_angpix);
         }
 
-        TICTOC(TIMING_PER_IMG_OP_WRITE, {
+        {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_PER_IMG_OP_WRITE);)
         // Write this particle to the stack on disc
         // First particle: write stack in overwrite mode, from then on just append to it
         if (image_nr == 0) {
@@ -1035,7 +1038,7 @@ void Preprocessing::performPerImageOperations(
         } else {
             Ipart.write(fn_output_img_root + ".mrcs", -1, false,            WRITE_APPEND);
         }
-        });
+        }
     }
 }
 
