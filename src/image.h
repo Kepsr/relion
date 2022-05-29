@@ -398,6 +398,13 @@ class Image {
         MDMainHeader.addObject();
     }
 
+    Image(const MultidimArray<T> &arr) {
+        mmapOn = false;
+        clear();
+        MDMainHeader.addObject();
+        data = arr;
+    }
+
     static Image<RFLOAT> from_filename(const FileName &fn) {
         Image<RFLOAT> img;
         img.read(fn);
