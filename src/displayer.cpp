@@ -77,13 +77,6 @@ void DisplayBox::draw() {
     // fl_pop_clip();
 }
 
-// unsigned char rgbToGrey(const unsigned char red, const unsigned char green, const unsigned char blue) {
-//     return colour_scheme.rgbToGrey(red, green, blue);
-    // default:
-    // REPORT_ERROR("Logic error: unrecognised colour scheme.");
-    // return 0;
-// }
-
 void DisplayBox::setData(
     MultidimArray<RFLOAT> &img, MetaDataContainer *MDCin, int _ipos,
     RFLOAT _minval, RFLOAT _maxval, RFLOAT _scale, bool do_relion_scale
@@ -1396,7 +1389,7 @@ int singleViewerCanvas::handle(int ev) {
             int n = ry * box0.xsize_data + rx;
             unsigned char ival =
                 &colour_scheme == &greyscale ? box0.img_data[n] :
-                colour_scheme.rgbToGrey(box0.img_data[3 * n], box0.img_data[3 * n + 1], box0.img_data[3 * n + 2]);
+                colour_scheme.rgbToGrey({box0.img_data[3 * n], box0.img_data[3 * n + 1], box0.img_data[3 * n + 2]});
             RFLOAT step = (box0.maxval - box0.minval) / 255.0;
             RFLOAT dval = ival * step + box0.minval;
             int ysc = round(ry / box0.scale);
