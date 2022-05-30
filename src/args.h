@@ -57,6 +57,9 @@
 #include "src/matrix1d.h"
 template <typename T> class Matrix1D;
 
+// Forward declaration
+struct ColourScheme;
+
 
 /** @defgroup Arguments Functions for parsing the command line
  *
@@ -209,7 +212,7 @@ class IOParser {
         // Write the usage for all options to outstream 
         void writeUsage(std::ostream &outstream);
 
-        int getColourScheme();
+        ColourScheme getColourScheme();
 };
 
 /*

@@ -38,6 +38,7 @@
 #undef Complex
 
 #include "src/image.h"
+#include "src/colour.h"
 #include "src/metadata_label.h"
 #include "src/metadata_table.h"
 #include "src/jaz/obs_model.h"
@@ -71,7 +72,7 @@ static bool has_shift;
 static int preshift_ipos;
 
 static int current_selection_type;
-static int colour_scheme;
+static ColourScheme colour_scheme;
 
 class DisplayBox: public Fl_Box {
 

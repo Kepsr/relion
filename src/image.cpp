@@ -579,7 +579,7 @@ void Image<T>::_write(
     }
     if (err < 0) {
         std::cerr << " Filename = " << filename << " Extension= " << ext_name << std::endl;
-        REPORT_ERROR((std::string)"Error writing file "+ filename + " Extension= " + ext_name);
+        REPORT_ERROR((std::string) "Error writing file " + filename + " Extension= " + ext_name);
     }
 
     /* If initially the file did not exist, once the first image is written, then the file exists
