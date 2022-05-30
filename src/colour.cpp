@@ -2,9 +2,7 @@
 #include <algorithm>
 #include "src/colour.h"
 
-ColourScheme black_grey_red = ColourScheme([] (
-    const unsigned char grey
-) -> rgb_t {
+ColourScheme black_grey_red = ColourScheme([] (const unsigned char grey) -> rgb_t {
     unsigned char red, green, blue;
     if (grey >= 128) {
         red = 255;
@@ -13,17 +11,14 @@ ColourScheme black_grey_red = ColourScheme([] (
         red = green = blue = floor((float) (grey * 2.0));
     }
     return {red, green, blue};
-}, [] (
-    const unsigned char red,
-    const unsigned char green,
-    const unsigned char blue
-) -> unsigned char {
+}, [] (const rgb_t rgb) -> unsigned char {
+    const unsigned char &red   = rgb.r; 
+    const unsigned char &green = rgb.g; 
+    const unsigned char &blue  = rgb.b;
     return floor(red == 255 ? (float) 255.0 - blue / 2.0 : (float) red / 2.0);
 });
 
-ColourScheme blue_grey_white = ColourScheme([] (
-    const unsigned char grey
-) -> rgb_t {
+ColourScheme blue_grey_white = ColourScheme([] (const unsigned char grey) -> rgb_t {
     unsigned char red, green, blue;
     if (grey >= 128) {
         red = green = blue = floor((float) (2 * (grey - 128)));
@@ -32,17 +27,14 @@ ColourScheme blue_grey_white = ColourScheme([] (
         blue = green = floor((float) (255 - 2 * grey));
     }
     return {red, green, blue};
-}, [] (
-    const unsigned char red, 
-    const unsigned char green, 
-    const unsigned char blue
-) -> unsigned char {
+}, [] (const rgb_t rgb) -> unsigned char {
+    const unsigned char &red   = rgb.r; 
+    const unsigned char &green = rgb.g; 
+    const unsigned char &blue  = rgb.b;
     return floor(red == 0 ? (float) (255.0 - blue) / 2.0 : (float) red / 2.0 + 128.0);
 });
 
-ColourScheme blue_grey_red = ColourScheme([] (
-    const unsigned char grey
-) -> rgb_t {
+ColourScheme blue_grey_red = ColourScheme([] (const unsigned char grey) -> rgb_t {
     const float a = grey / 85.0; // group
     const int X = floor(a);	//this is the integer part
     const unsigned char Y = floor(255 * (a - X)); //fractional part from 0 to 255
@@ -53,13 +45,12 @@ ColourScheme blue_grey_red = ColourScheme([] (
         case 2: return { 255, Z, Z };
         case 3: return { 255, 0, 0 };
     }
-}, [] (
-    const unsigned char red, 
-    const unsigned char green, 
-    const unsigned char blue
-) -> unsigned char {
+}, [] (const rgb_t rgb) -> unsigned char {
     int X;
     unsigned char Y;
+    const unsigned char &red   = rgb.r; 
+    const unsigned char &green = rgb.g; 
+    const unsigned char &blue  = rgb.b;
     if (red == 0) {
         X = 0;
         Y = 255 - blue;
@@ -73,9 +64,7 @@ ColourScheme blue_grey_red = ColourScheme([] (
     return ceil(85 * (X + (float) Y / 256.0));
 });
 
-ColourScheme rainbow = ColourScheme([] (
-    const unsigned char grey
-) -> rgb_t {
+ColourScheme rainbow = ColourScheme([] (const unsigned char grey) -> rgb_t {
     const float a = (255 - grey) / 64.0; //invert and group
     const int X = floor(a);
     const unsigned char Y = floor(255 * (a - X)); //fractional part from 0 to 255
@@ -87,13 +76,12 @@ ColourScheme rainbow = ColourScheme([] (
         case 3: return {   0,   Z, 255 };
         case 4: return {   0,   0, 255 };
     }
-}, [] (
-    const unsigned char red, 
-    const unsigned char green, 
-    const unsigned char blue
-) -> unsigned char {
+}, [] (const rgb_t rgb) -> unsigned char {
     int X;
     unsigned char Y;
+    const unsigned char &red   = rgb.r; 
+    const unsigned char &green = rgb.g; 
+    const unsigned char &blue  = rgb.b;
     if (red > 0) {
         if (red == 255) {
             X = 0;
@@ -116,20 +104,17 @@ ColourScheme rainbow = ColourScheme([] (
     return 255 - ceil(64 * (X + (float) Y / 255.0));
 });
 
-ColourScheme cyan_black_yellow = ColourScheme([] (
-    const unsigned char grey
-) -> rgb_t {
+ColourScheme cyan_black_yellow = ColourScheme([] (const unsigned char grey) -> rgb_t {
     const float d_rb = 3 * (grey - 128);
     const float d_g  = 3 * (std::abs(grey - 128) - 42);
     unsigned char red   = floor(std::min(255.0f, std::max(0.0f,  d_rb)));
     unsigned char green = floor(std::min(255.0f, std::max(0.0f,  d_g )));
     unsigned char blue  = floor(std::min(255.0f, std::max(0.0f, -d_rb)));
     return {red, green, blue};
-}, [] (
-    const unsigned char red, 
-    const unsigned char green, 
-    const unsigned char blue
-) -> unsigned char {
+}, [] (const rgb_t rgb) -> unsigned char {
+    const unsigned char &red   = rgb.r; 
+    const unsigned char &green = rgb.g; 
+    const unsigned char &blue  = rgb.b;
     return floor(
         red > 0 ?
         (red  < 255 ?  (float) red  / 3.0 + 128 :  (float) green / 3.0 + 42 + 128) :
@@ -137,8 +122,6 @@ ColourScheme cyan_black_yellow = ColourScheme([] (
     );
 });
 
-ColourScheme greyscale = ColourScheme([] (
-    const unsigned char grey
-) -> rgb_t {
+ColourScheme greyscale = ColourScheme([] (const unsigned char grey) -> rgb_t {
     return {grey, grey, grey};
 }, nullptr);
