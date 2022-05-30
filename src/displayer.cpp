@@ -48,7 +48,7 @@ void DisplayBox::draw() {
     //fl_push_clip(x(),y(),w(),h());
 
     /* Redraw the whole image */
-    int depth = (colour_scheme) ? 3 : 1;
+    int depth = &colour_scheme == &greyscale ? 1 : 3;
     fl_draw_image(
         (const uchar *) img_data,
         xpos, ypos, (short) xsize_data, (short) ysize_data,
@@ -77,68 +77,12 @@ void DisplayBox::draw() {
     // fl_pop_clip();
 }
 
-unsigned char rgbToGrey(const unsigned char red, const unsigned char green, const unsigned char blue) {
-    switch (colour_scheme) {
-
-        case ColourScheme::black_grey_red:
-        return floor(red == 255 ? (RFLOAT) 255.0 - blue / 2.0 : (RFLOAT) red / 2.0);
-
-        case ColourScheme::blue_grey_white:
-        return floor(red == 0 ? (RFLOAT) (255.0 - blue) / 2.0 : (RFLOAT) red / 2.0 + 128.0);
-
-        case ColourScheme::blue_grey_red: {
-        unsigned char Y;
-        int X;
-        if (red == 0) {
-            X = 0;
-            Y = 255 - blue;
-        } else if (red == 255) {
-            X = 2;
-            Y = 255 - blue;
-        } else {
-            X = 1;
-            Y = blue;
-        }
-        return ceil(85 * ((RFLOAT) Y / 256.0 + X));
-        }
-
-        case ColourScheme::rainbow: {
-        unsigned char Y;
-        int X;
-        if (red > 0) {
-            if (red == 255) {
-                X = 0;
-                Y = green;
-            } else {
-                X = 1;
-                Y = 255 - red;
-            }
-        } else if (green > 0) {
-            if (green == 255) {
-                X = 2;
-                Y = blue;
-            } else {
-                X = 3;
-                Y = 255 - green;
-            }
-        } else {
-            Y = 255; X = 4;
-        }
-        return 255 - ceil(64 * ((RFLOAT) Y / 255.0 + X));
-        }
-
-        case ColourScheme::cyan_black_yellow:
-        return (unsigned char) floor(
-            red > 0 ?
-            (red  < 255 ?  (RFLOAT) red  / 3.0 + 128 :  (RFLOAT) green / 3.0 + 42 + 128) :
-            (blue < 255 ? -(RFLOAT) blue / 3.0 + 128 : -(RFLOAT) green / 3.0 - 42 + 128)
-        );
-
-    }
-
-    REPORT_ERROR("Logic error: should not happen");
-    return 0;
-}
+// unsigned char rgbToGrey(const unsigned char red, const unsigned char green, const unsigned char blue) {
+//     return colour_scheme.rgbToGrey(red, green, blue);
+    // default:
+    // REPORT_ERROR("Logic error: unrecognised colour scheme.");
+    // return 0;
+// }
 
 void DisplayBox::setData(
     MultidimArray<RFLOAT> &img, MetaDataContainer *MDCin, int _ipos,
@@ -166,14 +110,14 @@ void DisplayBox::setData(
     ysize_data = ceil(Ysize(img) * scale);
     xoff = xsize_data < w() ? (w() - xsize_data) / 2 : 0;
     yoff = ysize_data < h() ? (h() - ysize_data) / 2 : 0;
-    if (colour_scheme == ColourScheme::greyscale) {
+    if (&colour_scheme == &greyscale) {
         img_data = new unsigned char [xsize_data * ysize_data];
     } else {
         img_data = new unsigned char [3 * xsize_data * ysize_data];
     }
     RFLOAT range = maxval - minval;
     RFLOAT step = range / 255; // 8-bit scaling range from 0 to 255
-    RFLOAT* old_ptr = NULL;
+    RFLOAT *old_ptr = nullptr;
     long int n;
 
     // For micrographs use relion-scaling to avoid bias in down-sampled positions
@@ -183,28 +127,25 @@ void DisplayBox::setData(
 
     // Use the same nearest-neighbor algorithm as in the copy function of Fl_Image...
     if (abs(scale - 1.0) > 0.01 && !do_relion_scale) {
-        /// TODO: Use divmod
-        int xmod   = Xsize(img) % xsize_data;
-        int xstep  = Xsize(img) / xsize_data;
-        int ymod   = Ysize(img) % ysize_data;
-        int ystep  = Ysize(img) / ysize_data;
+        div_t xdiv = std::div((int) Xsize(img), xsize_data);
+        div_t ydiv = std::div((int) Ysize(img), ysize_data);
         int line_d = Xsize(img);
         int dx, dy, sy, xerr, yerr;
 
-        if (colour_scheme == ColourScheme::greyscale) {
+        if (&colour_scheme == &greyscale) {
             for (dy = ysize_data, sy = 0, yerr = ysize_data, n = 0; dy > 0; dy --) {
                 for (dx = xsize_data, xerr = xsize_data, old_ptr = img.data + sy * line_d; dx > 0; dx --, n++) {
                     img_data[n] = (char) floor((*old_ptr - minval) / step);
-                    old_ptr += xstep;
-                    xerr    -= xmod;
+                    old_ptr += xdiv.quot;
+                    xerr    -= xdiv.rem;
                     if (xerr <= 0) {
                         xerr    += xsize_data;
                         old_ptr += 1;
                     }
                 }
 
-                sy   += ystep;
-                yerr -= ymod;
+                sy   += ydiv.quot;
+                yerr -= ydiv.rem;
                 if (yerr <= 0) {
                     yerr += ysize_data;
                     sy ++;
@@ -214,20 +155,20 @@ void DisplayBox::setData(
             for (dy = ysize_data, sy = 0, yerr = ysize_data, n = 0; dy > 0; dy --) {
                 for (dx = xsize_data, xerr = xsize_data, old_ptr = img.data + sy * line_d; dx > 0; dx --, n++) {
                     unsigned char val = floor((*old_ptr - minval) / step);
-                    greyToRGB(
-                        colour_scheme, val, 
-                        img_data[3 * n], img_data[3 * n + 1], img_data[3 * n + 2]
-                    );
-                    old_ptr += xstep;
-                    xerr    -= xmod;
+                    rgb_t rgb = colour_scheme.greyToRGB(val);
+                    img_data[3 * n    ] = rgb.r;
+                    img_data[3 * n + 1] = rgb.g;
+                    img_data[3 * n + 2] = rgb.b;
+                    old_ptr += xdiv.quot;
+                    xerr    -= xdiv.rem;
                     if (xerr <= 0) {
                         xerr    += xsize_data;
                         old_ptr += 1;
                     }
                 }
 
-                sy   += ystep;
-                yerr -= ymod;
+                sy   += ydiv.quot;
+                yerr -= ydiv.rem;
                 if (yerr <= 0) {
                     yerr += ysize_data;
                     sy ++;
@@ -235,17 +176,17 @@ void DisplayBox::setData(
             }
         }
     } else {
-        if (colour_scheme == ColourScheme::greyscale) {
+        if (&colour_scheme == &greyscale) {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(img, n, old_ptr) {
                 img_data[n] = floor((*old_ptr - minval) / step);
             }
         } else {
             FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(img, n, old_ptr) {
                 unsigned char val = floor((*old_ptr - minval) / step);
-                greyToRGB(
-                    colour_scheme, val, 
-                    img_data[3 * n], img_data[3 * n + 1], img_data[3 * n + 2]
-                );
+                rgb_t rgb = colour_scheme.greyToRGB(val);
+                img_data[3 * n    ] = rgb.r;
+                img_data[3 * n + 1] = rgb.g;
+                img_data[3 * n + 2] = rgb.b;
             }
         }
     }
@@ -965,23 +906,18 @@ void multiViewerCanvas::showOriginalImage(int ipos) {
     cl += " --black " + floatToString(minval);
     cl += " --white " + floatToString(maxval);
 
-    switch (colour_scheme) {
-        case (ColourScheme::black_grey_red):
+    if (&colour_scheme == &black_grey_red) {
         cl += " --colour_fire";
-        break;
-        case (ColourScheme::blue_grey_white):
+    } else if (&colour_scheme == &blue_grey_white) {
         cl += " --colour_ice";
-        break;
-        case (ColourScheme::blue_grey_red):
+    } else if (&colour_scheme == &blue_grey_red) {
         cl += " --colour_fire-n-ice";
-        break;
-        case (ColourScheme::rainbow):
+    } else if (&colour_scheme == &rainbow) {
         cl += " --colour_rainbow";
-        break;
-        case (ColourScheme::cyan_black_yellow):
+    } else if (&colour_scheme == &cyan_black_yellow) {
         cl += " --colour_difference";
-        break;
     }
+
     // send job in the background
     cl += " &";
 
@@ -1020,15 +956,17 @@ void basisViewerCanvas::saveImage(int ipos) {
     // User hit cancel?
     if (!chooser.value()) return;
 
-    int xsize = boxes[ipos]->xsize_data;
-    int ysize = boxes[ipos]->ysize_data;
-    unsigned char* img_data = boxes[ipos]->img_data;
+    const auto &box = *boxes[ipos];
+
+    int xsize = box.xsize_data;
+    int ysize = box.ysize_data;
+    unsigned char *img_data = box.img_data;
 
     tImage<bRGB> pngOut(xsize, ysize);
-            pngOut.fill(bRGB(0));
+    pngOut.fill(bRGB(0));
 
     for (size_t n = 0, nlim = xsize * ysize; n < nlim; n++) {
-        if (colour_scheme == ColourScheme::greyscale) {
+        if (&colour_scheme == &greyscale) {
             unsigned char c = img_data[n];
             pngOut[n] = bRGB(c, c, c);
         } else {
@@ -1070,7 +1008,7 @@ void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
         return;
     }
 
-    std::string cl = 
+    std::string cl =
         "relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale)
         + " --show_fourier_phase_angles"
         + " &";  // Send job to background
@@ -1152,7 +1090,7 @@ void multiViewerCanvas::saveSelectedParticles(int save_selected) {
     bool do_training = false;
     std::string ask = "Is this a selection of good classes, so it can be used for Sjors' training set for automated class selection?\n \
             More info here: /public/EM/RELION/training.txt\n";
-    do_training = fl_choice("%s", "Don't use", "Use for training", NULL, ask.c_str());
+    do_training = fl_choice("%s", "Don't use", "Use for training", nullptr, ask.c_str());
 
     if (do_training)
         saveTrainingSet();
@@ -1452,17 +1390,19 @@ int singleViewerCanvas::handle(int ev) {
         int ry = Fl::event_y() - scroll->y() + scroll->scrollbar.value();
         // Left mouse click writes value and coordinates to screen
 
-        if (rx < boxes[0]->xsize_data && ry < boxes[0]->ysize_data && rx >= 0 && ry >=0) {
-            int n = ry * boxes[0]->xsize_data + rx;
-            unsigned char ival = 
-                colour_scheme == ColourScheme::greyscale ? boxes[0]->img_data[n] :
-                rgbToGrey(boxes[0]->img_data[3 * n], boxes[0]->img_data[3 * n + 1], boxes[0]->img_data[3 * n + 2]);
-            RFLOAT step = (boxes[0]->maxval - boxes[0]->minval) / 255.0;
-            RFLOAT dval = ival * step + boxes[0]->minval;
-            int ysc = round(ry / boxes[0]->scale);
-            int xsc = round(rx / boxes[0]->scale);
-            int yscp = ysc - round(boxes[0]->ysize_data / (2.0 * boxes[0]->scale));
-            int xscp = xsc - round(boxes[0]->xsize_data / (2.0 * boxes[0]->scale));
+        const auto &box0 = *boxes[0];
+
+        if (rx < box0.xsize_data && ry < box0.ysize_data && rx >= 0 && ry >=0) {
+            int n = ry * box0.xsize_data + rx;
+            unsigned char ival =
+                &colour_scheme == &greyscale ? box0.img_data[n] :
+                colour_scheme.rgbToGrey(box0.img_data[3 * n], box0.img_data[3 * n + 1], box0.img_data[3 * n + 2]);
+            RFLOAT step = (box0.maxval - box0.minval) / 255.0;
+            RFLOAT dval = ival * step + box0.minval;
+            int ysc = round(ry / box0.scale);
+            int xsc = round(rx / box0.scale);
+            int yscp = ysc - round(box0.ysize_data / (2.0 * box0.scale));
+            int xscp = xsc - round(box0.xsize_data / (2.0 * box0.scale));
             std::cout << " Image value at (" << xsc << "," << ysc << ") or (" << xscp << "," << yscp << ")~= " << dval << std::endl;
         }
         return 1;
@@ -2623,8 +2563,8 @@ void Displayer::run() {
             MDin.setValue(EMDL::IMAGE_NAME, fn_in);
             MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
             RFLOAT new_scale = scale;
-            if (show_fourier_amplitudes || show_fourier_phase_angles) { 
-                new_scale *= 2.0; 
+            if (show_fourier_amplitudes || show_fourier_phase_angles) {
+                new_scale *= 2.0;
             }
             basisViewerWindow win(ceil(new_scale * Xsize(img())), ceil(new_scale * Ysize(img())), fn_in.c_str());
             if (show_fourier_amplitudes) {

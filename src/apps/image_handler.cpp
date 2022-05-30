@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include <src/image.h>
+#include "src/colour.h"
 #include <src/funcs.h>
 #include <src/args.h>
 #include <src/fftw.h>
@@ -44,7 +45,7 @@ class image_handler_parameters {
     RFLOAT multiply_constant, divide_constant, add_constant, subtract_constant, threshold_above, threshold_below, angpix, requested_angpix, real_angpix, force_header_angpix, lowpass, highpass, logfilter, bfactor, shift_x, shift_y, shift_z, replace_nan, randomize_at, optimise_bfactor_subtract;
     // PNG options
     RFLOAT minval, maxval, sigma_contrast;
-    int color_scheme; // There is a global variable called colour_scheme in displayer.h!
+    ColourScheme color_scheme; // There is a global variable called colour_scheme in displayer.h!
 
     std::string directional;
     int verb;
@@ -581,9 +582,8 @@ class image_handler_parameters {
 
             for (long int n = 0; n < Iout().size(); n++) {
                 const unsigned char val = floor((Iout()[n] - minmax.min) / step);
-                unsigned char r, g, b;
-                greyToRGB(color_scheme, val, r, g, b);
-                pngOut[n] = gravis::bRGB(r, g, b);
+                rgb_t rgb = color_scheme.greyToRGB(val);
+                pngOut[n] = gravis::bRGB(rgb.r, rgb.g, rgb.b);
             }
             pngOut.writePNG(my_fn_out);
             #else

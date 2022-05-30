@@ -475,7 +475,7 @@ class Image {
     void writeIMAGIC(long int img_select = -1, int mode = WRITE_OVERWRITE);
 
     int readTIFF(
-        TIFF *ftiff, long int img_select, 
+        TIFF *ftiff, long int img_select,
         bool readdata = false, bool isStack = false, const FileName &name = ""
     );
 
@@ -497,14 +497,14 @@ class Image {
      * The number before @ in the filename is 1-indexed, while select_img is 0-indexed.
      */
     int read(
-        const FileName &name, bool readdata = true, long int select_img = -1, 
+        const FileName &name, bool readdata = true, long int select_img = -1,
         bool mapData = false, bool is_2D = false
     );
 
     /** Read from an open file
      */
     int readFromOpenFile(
-        const FileName &name, fImageHandler &hFile, long int select_img, 
+        const FileName &name, fImageHandler &hFile, long int select_img,
         bool is_2D = false
     ) {
         int err = _read(name, hFile, true, select_img, false, is_2D);
@@ -621,7 +621,7 @@ class Image {
             cast_page_to<RFLOAT>(page, srcPtr, pageSize);
             break;
 
-            case Short: 
+            case Short:
             cast_page_to<short>(page, srcPtr, pageSize);
             break;
 
@@ -765,7 +765,7 @@ class Image {
             // Reset select to get the correct offset
             if (select_img < 0) { select_img = 0; }
 
-            // Allocate memory for image data 
+            // Allocate memory for image data
             // (Assume xdim, ydim, zdim and ndim are already set
             // if memory already allocated use it (no resize allowed)
             data.coreAllocateReuse();
@@ -827,7 +827,7 @@ class Image {
     /** Data access
      *
      * This operator can be used to access the data multidimarray.
-     * In this way 
+     * In this way
      * we could resize an image just by resizing its associated matrix:
      * @code
      * image().resize(128, 128);
@@ -1080,7 +1080,7 @@ class Image {
     );
 
     void _write(
-        const FileName &name, fImageHandler &hFile, long int select_img=-1, 
+        const FileName &name, fImageHandler &hFile, long int select_img=-1,
         bool isStack = false, int mode = WRITE_OVERWRITE
     );
 
@@ -1116,7 +1116,7 @@ void subtractBackgroundRamp(
 
 // For dust removal
 void removeDust(
-    Image<RFLOAT> &I, bool is_white, RFLOAT thresh, 
+    Image<RFLOAT> &I, bool is_white, RFLOAT thresh,
     RFLOAT avg, RFLOAT stddev
 );
 
@@ -1136,75 +1136,4 @@ void rewindow(Image<RFLOAT> &I, int mysize);
 
 MultidimArray<RFLOAT>::MinMax getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
 
-namespace ColourScheme {
-
-    // Different paths through colourspace
-    enum {
-        greyscale, black_grey_red, blue_grey_white, 
-        blue_grey_red, rainbow, cyan_black_yellow
-    };
-
-}
-
-inline void greyToRGB(const int colour_scheme, const unsigned char grey, unsigned char &red, unsigned char &green, unsigned char &blue) {
-    switch (colour_scheme) {
-
-        case ColourScheme::greyscale:
-        red = green = blue = grey;
-        return;
-
-        case ColourScheme::black_grey_red:
-        if (grey >= 128) {
-            red = 255; 
-            blue = green = floor((RFLOAT) (255 - grey) * 2);
-        } else { 
-            red = green = blue = floor((RFLOAT) (grey * 2.0)); 
-        }
-        return;
-
-        case ColourScheme::blue_grey_white:
-        if (grey >= 128) {
-            red = green = blue = floor((RFLOAT)((grey - 128) * 2));
-        } else { 
-            red = 0; 
-            blue = green = floor((RFLOAT) (255 - 2 * grey));
-        }
-        return;
-
-        case ColourScheme::blue_grey_red: {
-            const RFLOAT a = grey / 85.0; // group
-            const int X = floor(a);	//this is the integer part
-            const unsigned char Y = floor(255 * (a - X)); //fractional part from 0 to 255
-            switch (X) {
-                case 0: red =   0; green = 255 - Y; blue = 255 - Y; break;
-                case 1: red =   Y; green =       Y; blue =       Y; break;
-                case 2: red = 255; green = 255 - Y; blue = 255 - Y; break;
-                case 3: red = 255; green =       0; blue =       0; break;
-            }
-            return;
-        }
-
-        case ColourScheme::rainbow: {
-            const RFLOAT a = (255 - grey) / 64.0; //invert and group
-            const int X = floor(a);
-            const unsigned char Y = floor(255 * (a - X)); //fractional part from 0 to 255
-            switch(X) {
-                case 0: red =     255; green =       Y; blue =   0; break;
-                case 1: red = 255 - Y; green =     255; blue =   0; break;
-                case 2: red =       0; green =     255; blue =   Y; break;
-                case 3: red =       0; green = 255 - Y; blue = 255; break;
-                case 4: red =       0; green =       0; blue = 255; break;
-            }
-            return;
-        }
-        case ColourScheme::cyan_black_yellow: {
-            const RFLOAT d_rb = 3 * (grey - 128);
-            const RFLOAT d_g = 3 * (std::abs(grey - 128) - 42);
-            red   = (unsigned char) floor(std::min(255.0, std::max(0.0,  d_rb)));
-            green = (unsigned char) floor(std::min(255.0, std::max(0.0,  d_g )));
-            blue  = (unsigned char) floor(std::min(255.0, std::max(0.0, -d_rb)));
-            return;
-        }
-    }
-}
 #endif
