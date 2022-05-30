@@ -6,20 +6,22 @@ struct rgb_t {
 
 struct ColourScheme {
 
-    typedef unsigned char (*grey_ft)(const rgb_t);
+    using grey_t = unsigned char;
 
-    typedef rgb_t (*rgb_ft)(const unsigned char);
+    typedef grey_t (*grey_ft)(const rgb_t);
+
+    typedef rgb_t (*rgb_ft)(const grey_t);
 
     ColourScheme(rgb_ft greyToRGB = NULL, grey_ft rgbToGrey = NULL): 
     _greyToRGB(greyToRGB), _rgbToGrey(rgbToGrey) {}
 
-    unsigned char rgbToGrey(const rgb_t rgb) {
+    grey_t rgbToGrey(const rgb_t rgb) {
         if (_rgbToGrey)
         return _rgbToGrey(rgb);
         throw std::exception();
     }
 
-    rgb_t greyToRGB(const unsigned char grey) {
+    rgb_t greyToRGB(const grey_t grey) {
         if (_greyToRGB)
         return _greyToRGB(grey);
         throw std::exception();
