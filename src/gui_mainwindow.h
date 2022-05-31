@@ -505,15 +505,10 @@ class GuiMainWindow: public Fl_Window {
     inline void cb_toggle_expand_stdout_i();
 
     static void cb_about(Fl_Widget*, void*);
-    inline void cb_about_i();
 
     public:
 
     static void cb_quit(Fl_Widget*, void*);
-
-    private:
-
-    inline void cb_quit_i();
 
 };
 

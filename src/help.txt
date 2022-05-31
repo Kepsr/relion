@@ -1,3 +1,4 @@
+R"(
 RELION is developed in the groups of:
 
 Sjors H.W. Scheres at the MRC Laboratory of Molecular Biology
@@ -85,3 +86,4 @@ The map shown is the cryo-EM map of mouse heavy-chain apoferritin
 at 1.54 A (EMDB-9865). This is the highest resolution single particle
 reconstruction map deposited to EMDB as of August 2019. The raw dataset
 is also available at EMPIAR-10248.
+)"
