@@ -39,9 +39,9 @@ std::string current_browse_directory;
 ShowHelpText::ShowHelpText(const char *help) {
     int w = 640;
     int h = 480;
-    Fl_Text_Display *disp = new Fl_Text_Display(20, 20, w - 40, h - 40, "relion additional text.");
     Fl_Window *win = new Fl_Window(w, h);
     Fl_Text_Buffer *buff = new Fl_Text_Buffer();
+    Fl_Text_Display *disp = new Fl_Text_Display(20, 20, w - 40, h - 40, "RELION additional text.");
     disp->buffer(buff);
     disp->wrap_mode(1, 79);
     win->resizable(*disp);

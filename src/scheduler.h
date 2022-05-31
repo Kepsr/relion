@@ -346,6 +346,20 @@ class Schedule {
     // Abort a running schedule
     void abort();
 
+    struct rwlock {
+
+        Schedule &schedule;
+
+        rwlock(Schedule& schedule): schedule(schedule) {
+            schedule.read(DO_LOCK);
+        }
+
+        ~rwlock() {
+            schedule.write(DO_LOCK);
+        }
+
+    };
+
 };
 
 #endif /* SCHEDULER_H_ */

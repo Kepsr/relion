@@ -289,6 +289,21 @@ class PipeLine {
 
     // Read in the pipeline from a STAR file
     void read(bool do_lock = false, std::string lock_message = "Undefined lock message");
+
+    struct rwlock {
+
+        PipeLine &pipeline;
+
+        rwlock(PipeLine& pipeline, std::string message): pipeline(pipeline) {
+            pipeline.read(DO_LOCK, message);
+        }
+
+        ~rwlock() {
+            pipeline.write(DO_LOCK);
+        }
+
+    };
+
 };
 
 class PipeLineFlowChart {
