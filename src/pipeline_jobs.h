@@ -294,7 +294,7 @@ class JobOption {
     Node getNode();
 
     // Get a numbered value
-    float getNumber(string &errmsg);
+    float getNumber() throw (string);
 
     // Get a boolean value
     bool getBoolean();

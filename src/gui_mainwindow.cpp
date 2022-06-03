@@ -236,11 +236,11 @@ void NoteEditorWindow::cb_cancel(Fl_Widget*, void* v) {
 
 void NoteEditorWindow::cb_save(Fl_Widget*, void* v) {
     NoteEditorWindow *T = (NoteEditorWindow*) v;
-    T->cb_save_i();
+    T->save();
     T->hide();
 }
 
-void NoteEditorWindow::cb_save_i() {
+void NoteEditorWindow::save() {
     textbuff_note->savefile(fn_note.c_str());
 }
 
@@ -1152,7 +1152,7 @@ void GuiMainWindow::fillSchedulerNodesAndVariables() {
 
     if (mypos_scheduler_variable >= 0) {
         scheduler_variable_browser->value(mypos_scheduler_variable);
-        cb_select_scheduler_variable_i();
+        select_scheduler_variable();
     }
     if (mypos_scheduler_operator >= 0) {
         scheduler_operator_browser->value(mypos_scheduler_operator);
@@ -1196,7 +1196,6 @@ void GuiMainWindow::fillStdOutAndErr() {
             if (in.fail())
                 REPORT_ERROR((std::string) "MetaDataTable::read: File " + fn_outtail + " does not exist");
             int err = textbuff_stdout->loadfile(fn_outtail.c_str());
-            in.close();
         }
         // Scroll to the bottom
         disp_stdout->insert_position(textbuff_stdout->length()-1);
@@ -1217,7 +1216,6 @@ void GuiMainWindow::fillStdOutAndErr() {
             if (in.fail())
                 REPORT_ERROR((std::string) "MetaDataTable::read: File " + fn_errtail + " does not exist");
             int err = textbuff_stderr->loadfile(fn_errtail.c_str());
-            in.close();
         }
         // Scroll to the bottom
         disp_stderr->insert_position(textbuff_stderr->length()-1);
@@ -1310,13 +1308,13 @@ void GuiMainWindow::cb_select_browsegroup_i(bool show_initial_screen) {
     else
         background_grp->hide();
 
-    int iwin = (browser->value() - 1);
+    int iwin = browser->value() - 1;
     if (iwin < 0 || iwin >= NR_BROWSE_TABS) return;
     // Show the 'selected' group. Hide the others.
     for (int t = 0; t < NR_BROWSE_TABS; t++) {
         // During the initial screen: show a nice picture with some explanations
-        if (t == iwin && !show_initial_screen) // browser starts counting at 1...
-        {
+        // browser starts counting at 1...
+        if (t == iwin && !show_initial_screen) {
             browse_grp[t]->show();
         } else {
             browse_grp[t]->hide();
@@ -1391,7 +1389,8 @@ void GuiMainWindow::cb_select_scheduled_job_i() {
     tickTimeLastChanged();
 
     // Show the 'selected' group. Hide the others.
-    int idx = (show_scheduler) ? scheduler_job_browser->value() - 1 : scheduled_job_browser->value() - 1;
+    int idx = (show_scheduler ? scheduler_job_browser->value() : 
+                                scheduled_job_browser->value() ) - 1;
     if (idx < 0) return;
 
     // only if a non-empty line was selected
@@ -1403,16 +1402,12 @@ void GuiMainWindow::cb_select_scheduled_job_i() {
         scheduler_job_name->deactivate();
         bool found = false;
         for (int i = 0; i < 3; i++) {
-            if (schedule.jobs[jobname].mode == job_mode_options[i].label())
-            {
+            if (schedule.jobs[jobname].mode == job_mode_options[i].label()) {
                 found = true;
                 scheduler_job_mode->value(i);
             }
         }
-        if (schedule.jobs[jobname].job_has_started)
-            scheduler_job_has_started->value(0);
-        else
-            scheduler_job_has_started->value(1);
+        scheduler_job_has_started->value(schedule.jobs[jobname].job_has_started);
         scheduler_job_has_started->activate();
 
         if (!found) REPORT_ERROR("ERROR: unrecognised job_mode ...");
@@ -1472,8 +1467,7 @@ void GuiMainWindow::cb_display_io_node(Fl_Widget* o, void* v) {
 
 void GuiMainWindow::cb_display_io_node_i() {
     // Run relion_display on the output node
-    int idx = display_io_node->value();
-    long int mynode = io_nodes[idx];
+    long int mynode = io_nodes[display_io_node->value()];
     std::string command;
 
     if (pipeline.nodeList[mynode].type == Node::MIC_COORDS) {
@@ -1509,26 +1503,32 @@ void GuiMainWindow::cb_display_io_node_i() {
                     + " --white " + manualpickjob.joboptions["white_val"].getString();
 
                 std::string error_message = "";
-                float mylowpass = manualpickjob.joboptions["lowpass"].getNumber(error_message);
-                if (error_message != "") {
-                    fl_message("joboption['lowpass'] %s", error_message.c_str()); return;
-                }
-                if (mylowpass > 0.0)
+                try {
+                    float mylowpass = manualpickjob.joboptions["lowpass"].getNumber();
+                    if (mylowpass > 0.0)
                     command += " --lowpass " + manualpickjob.joboptions["lowpass"].getString();
-
-                float myhighpass = manualpickjob.joboptions["highpass"].getNumber(error_message);
-                if (error_message != "") {
-                    fl_message("joboption['highpass'] %s", error_message.c_str()); return;
+                } catch (std::string errmsg) {
+                    fl_message("joboption[\"lowpass\"] %s", errmsg.c_str()); 
+                    return;
                 }
-                if (myhighpass > 0.0)
+
+                try {
+                    float myhighpass = manualpickjob.joboptions["highpass"].getNumber();
+                    if (myhighpass > 0.0)
                     command += " --highpass " + manualpickjob.joboptions["highpass"].getString();
-
-                float myangpix = manualpickjob.joboptions["angpix"].getNumber(error_message);
-                if (error_message != "") {
-                    fl_message("joboption['angpix'] %s", error_message.c_str()); return;
+                } catch (std::string errmsg) {
+                    fl_message("joboption[\"highpass\"] %s", errmsg.c_str());
+                    return;
                 }
-                if (myangpix > 0.0)
+
+                try {
+                    float myangpix = manualpickjob.joboptions["angpix"].getNumber();
+                    if (myangpix > 0.0)
                     command += " --angpix " + manualpickjob.joboptions["angpix"].getString();
+                } catch (std::string errmsg) {
+                    fl_message("joboption[\"angpix\"] %s", errmsg.c_str());
+                    return;
+                }
 
                 command += " --ctf_scale " + manualpickjob.joboptions["ctfscale"].getString();
 
@@ -1580,11 +1580,11 @@ void GuiMainWindow::cb_add_scheduler_edge(Fl_Widget* o, void*v) {
 
     // Get input
     std::string input = scheduler_get_io(scheduler_edge_input, "input");
-    if (input == "") return;
+    if (input.empty()) return;
 
     // Get output
     std::string output = scheduler_get_io(scheduler_edge_output, "output");
-    if (output == "") return;
+    if (output.empty()) return;
 
     /// TODO: Move schedule.read(DO_LOCK) and schedule.write(DO_LOCK) out of the if-else block.
     int i = scheduler_edge_boolean->value();
@@ -1693,7 +1693,8 @@ void GuiMainWindow::cb_delete_scheduler_variable(Fl_Widget* o, void*v) {
     if (myname.empty()) return;
 
     if (!user_wants_to("Delete!", "delete this variable, and all operators or edges that use it")) {
-        do_overwrite_continue = false; return;
+        do_overwrite_continue = false;
+        return;
     }
 
     {
@@ -1781,10 +1782,10 @@ void GuiMainWindow::cb_delete_scheduler_operator(Fl_Widget* o, void*v) {
 
 void GuiMainWindow::cb_select_scheduler_variable(Fl_Widget* o, void*v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_select_scheduler_variable_i();
+    T->select_scheduler_variable();
 }
 
-void GuiMainWindow::cb_select_scheduler_variable_i() {
+void GuiMainWindow::select_scheduler_variable() {
     // Get position of the browser:
     int i = scheduler_variable_browser->value();
     if (i >= 1) {
@@ -1833,10 +1834,10 @@ void GuiMainWindow::cb_select_scheduler_operator_i() {
 
 void GuiMainWindow::cb_scheduler_set_current(Fl_Widget *o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_scheduler_set_current_i();
+    T->scheduler_set_current();
 }
 
-void GuiMainWindow::cb_scheduler_set_current_i() {
+void GuiMainWindow::scheduler_set_current() {
     if (scheduler_current_node->value() < 0) {
         std::cerr << " ERROR: scheduler_current_node->value()= " << scheduler_current_node->value() << std::endl;
         return;
@@ -1888,7 +1889,7 @@ void GuiMainWindow::cb_scheduler_next(Fl_Widget *o, void* v) {
         if (schedule.edges.size() > 0) {
             schedule.current_node = schedule.edges[0].inputNode;
             scheduler_current_node->value(scheduler_current_node->find_item(schedule.current_node.c_str()));
-            T->cb_scheduler_set_current_i();
+            T->scheduler_set_current();
         }
         return;
     }
@@ -1909,7 +1910,7 @@ void GuiMainWindow::cb_scheduler_next(Fl_Widget *o, void* v) {
                 fl_message("ERROR: next node is undefined");
             } else {
                 scheduler_current_node->value(myitem);
-                T->cb_scheduler_set_current_i();
+                T->scheduler_set_current();
             }
             return;
         }
@@ -1927,7 +1928,7 @@ void GuiMainWindow::cb_scheduler_prev(Fl_Widget *o, void* v) {
         fl_message("ERROR: previous node is undefined");
     } else {
         scheduler_current_node->value(scheduler_current_node->find_item(myprev.c_str()));
-        T->cb_scheduler_set_current_i();
+        T->scheduler_set_current();
     }
 }
 
@@ -1939,7 +1940,7 @@ void GuiMainWindow::cb_scheduler_reset(Fl_Widget *o, void* v) {
             schedule.reset();
         }
         T->fillSchedulerNodesAndVariables();
-        T->cb_scheduler_set_current_i();
+        T->scheduler_set_current();
     }
 }
 
@@ -2032,16 +2033,16 @@ void GuiMainWindow::cb_run(Fl_Widget* o, void* v) {
     // Deactivate Run button to prevent the user from accidentally submitting many jobs
     run_button->deactivate();
     // Run the job
-    T->cb_run_i(false, false); // 1st false means dont only_schedule, 2nd false means dont open the note editor window
+    T->run(false, false); // 1st false means dont only_schedule, 2nd false means dont open the note editor window
 }
 
 // Run button callback functions
 void GuiMainWindow::cb_schedule(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_run_i(true, false); // 1st true means only_schedule, do not run, 2nd false means dont open the note editor window
+    T->run(true, false); // 1st true means only_schedule, do not run, 2nd false means dont open the note editor window
 }
 
-void GuiMainWindow::cb_run_i(bool only_schedule, bool do_open_edit) {
+void GuiMainWindow::run(bool only_schedule, bool do_open_edit) {
     if (do_overwrite_continue) {
         if (user_wants_to("Overwrite!", "overwrite this job")) {
             do_overwrite_continue = false;
@@ -2078,7 +2079,7 @@ void GuiMainWindow::cb_run_i(bool only_schedule, bool do_open_edit) {
     if (!is_main_continue && !do_overwrite_continue) {
         std::string alias = alias_current_job->value();
         if (alias != "Give_alias_here" && alias != pipeline.processList[current_job].name)
-            cb_set_alias_i(alias);
+            set_alias(alias);
     }
 
     do_overwrite_continue = false;
@@ -2207,16 +2208,16 @@ void GuiMainWindow::cb_delete(Fl_Widget* o, void* v) {
 // Run button callback functions
 void GuiMainWindow::cb_gently_clean_all_jobs(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_clean_all_jobs_i(false);
+    T->clean_all_jobs(false);
 }
 
 // Run button callback functions
 void GuiMainWindow::cb_harshly_clean_all_jobs(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_clean_all_jobs_i(true);
+    T->clean_all_jobs(true);
 }
 
-void GuiMainWindow::cb_clean_all_jobs_i(bool harshly) {
+void GuiMainWindow::clean_all_jobs(bool harshly) {
     std::string describe_action = "clean up intermediate files from the entire pipeline";
     if (harshly) {
         describe_action = "harshly " + describe_action + " \n\n\
@@ -2240,9 +2241,11 @@ e.g. by using \"touch Polish/job045/NO_HARSH_CLEAN\". Below is a list of current
     if (user_wants_to("Clean up", describe_action)) {
         std::cout << (harshly ? "Harshly" : "Gently") << " cleaning all finished jobs ..." << std::endl;
 
-        std::string error_message;
-        if (!pipeline.cleanupAllJobs(harshly, error_message))
-            fl_message("%s", error_message.c_str());
+        try {
+            pipeline.cleanupAllJobs(harshly);
+        } catch (std::string errmsg) {
+            fl_message("%s", errmsg.c_str());
+        }
 
         fl_message("Done cleaning! Don't forget the files are all still in the Trash folder. Use the \"Empty Trash\" option from the File menu to permanently delete them.");
     }
@@ -2251,15 +2254,15 @@ e.g. by using \"touch Polish/job045/NO_HARSH_CLEAN\". Below is a list of current
 // Run button callback functions
 void GuiMainWindow::cb_gentle_cleanup(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_cleanup_i(-1, true, false);
+    T->cleanup(-1, true, false);
 }
 
 void GuiMainWindow::cb_harsh_cleanup(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_cleanup_i(-1, true, true);
+    T->cleanup(-1, true, true);
 }
 
-void GuiMainWindow::cb_cleanup_i(int jobindex, bool ask, bool harshly) {
+void GuiMainWindow::cleanup(int jobindex, bool ask, bool harshly) {
     // Allow cleaning the currently selected job from the GUI
     if (jobindex < 0) {
         if (current_job >= 0) {
@@ -2271,19 +2274,21 @@ void GuiMainWindow::cb_cleanup_i(int jobindex, bool ask, bool harshly) {
     }
 
     if (!ask || user_wants_to("Clean up", "clean up intermediate files from " + pipeline.processList[current_job].name)) {
-        std::string error_message;
-        if (!pipeline.cleanupJob(jobindex, harshly, error_message))
-            fl_message("%s", error_message.c_str());
+        try {
+            pipeline.cleanupJob(jobindex, harshly);
+        } catch (std::string errmsg) {
+            fl_message("%s", errmsg.c_str());
+        }
     }
 }
 
 // Run button callback functions
 void GuiMainWindow::cb_set_alias(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_set_alias_i();
+    T->set_alias();
 }
 
-void GuiMainWindow::cb_set_alias_i(std::string alias) {
+void GuiMainWindow::set_alias(std::string alias) {
     if (current_job < 0) {
         fl_message("Please select a job.");
         return;
@@ -2291,10 +2296,9 @@ void GuiMainWindow::cb_set_alias_i(std::string alias) {
 
     FileName fn_pre, fn_jobnr, fn_post, fn_dummy, default_ask;
     if (!decomposePipelineFileName(pipeline.processList[current_job].name, fn_pre, fn_jobnr, fn_post))
-        REPORT_ERROR("GuiMainWindow::cb_set_alias_i ERROR: invalid pipeline process name: " + pipeline.processList[current_job].name);
+        REPORT_ERROR("GuiMainWindow::set_alias ERROR: invalid pipeline process name: " + pipeline.processList[current_job].name);
 
     // Start the asking window with the current alias
-    std::string error_message;
     FileName fn_alias = pipeline.processList[current_job].alias;
     if (fn_alias != "None") {
         default_ask = fn_alias.without(fn_pre);
@@ -2307,19 +2311,20 @@ void GuiMainWindow::cb_set_alias_i(std::string alias) {
     while (true) {
         // If the alias already contains a uniquedate string it may be a continuation of a relion_refine job
         // (where alias_current_job contains a different uniqdate than the outputname of the job)
-        if (alias == "" || decomposePipelineFileName(alias, fn_dummy, fn_dummy, fn_dummy)) {
+        if (alias.empty() || decomposePipelineFileName(alias, fn_dummy, fn_dummy, fn_dummy)) {
             // if an alias is provided, just check it is unique, otherwise ask
-            const char* palias = fl_input("Rename to: ", default_ask.c_str());
+            const char *palias = fl_input("Rename to: ", default_ask.c_str());
             if (!palias) return;
-            std::string al2(palias);  // Direct initialisation
+            std::string al2 (palias);  // Direct initialisation
             alias = al2;
         }
 
-        if (pipeline.setAliasJob(current_job, alias, error_message)) {
+        try {
+            pipeline.setAliasJob(current_job, alias);
             break;
-        } else {
+        } catch (std::string errmsg) {
             alias = "";
-            fl_message("%s", error_message.c_str());
+            fl_message("%s", errmsg.c_str());
         }
     }
 }
@@ -2345,25 +2350,26 @@ void GuiMainWindow::cb_abort(Fl_Widget* o, void* v) {
 // Run button callback functions
 void GuiMainWindow::cb_mark_as_finished(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_mark_as_finished_i();
+    T->mark_as_finished(false);
 }
 
 // Run button callback functions
 void GuiMainWindow::cb_mark_as_failed(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_mark_as_finished_i(true);
+    T->mark_as_finished(true);
 }
 
-void GuiMainWindow::cb_mark_as_finished_i(bool is_failed) {
+void GuiMainWindow::mark_as_finished(bool is_failed) {
 
     if (current_job < 0) {
         fl_message("You can only mark existing jobs as finished!");
         return;
     }
 
-    std::string error_message;
-    if (!pipeline.markAsFinishedJob(current_job, error_message, is_failed)) {
-        fl_message("%s", error_message.c_str());
+    try {
+        pipeline.markAsFinishedJob(current_job, is_failed);
+    } catch (std::string errmsg) {
+        fl_message("%s", errmsg.c_str());
         return;
     }
 
@@ -2379,9 +2385,10 @@ void GuiMainWindow::cb_make_flowchart(Fl_Widget* o, void* v) {
         return;
     }
 
-    std::string error_message;
-    if (!pipeline.makeFlowChart(current_job, true, error_message)) {
-        fl_message("%s", error_message.c_str());
+    try {
+        pipeline.makeFlowChart(current_job, true);
+    } catch (std::string errmsg) {
+        fl_message("%s", errmsg.c_str());
         return;
     }
 
@@ -2390,12 +2397,12 @@ void GuiMainWindow::cb_make_flowchart(Fl_Widget* o, void* v) {
 
 void GuiMainWindow::cb_edit_note(Fl_Widget*, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_edit_note_i();
+    T->cb_edit_note_i(false);
 }
 
 void GuiMainWindow::cb_edit_project_note(Fl_Widget*, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_edit_note_i(true); // true means is_project_note
+    T->cb_edit_note_i(true);
 }
 
 void GuiMainWindow::cb_edit_note_i(bool is_project_note) {
@@ -2420,10 +2427,10 @@ void GuiMainWindow::cb_edit_note_i(bool is_project_note) {
 // Save button callback function
 void GuiMainWindow::cb_save(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_save_i();
+    T->save();
 }
 
-void GuiMainWindow::cb_save_i() {
+void GuiMainWindow::save() {
     // Get which job we're dealing with, and update it from the GUI
     int iwin = browser->value() - 1;
     gui_jobwindows[iwin]->updateMyJob();
@@ -2439,13 +2446,17 @@ void GuiMainWindow::cb_save_i() {
 // Load button callback function
 void GuiMainWindow::cb_load(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
+    T->load();
+}
+
+void GuiMainWindow::load() {
     int iwin = browser->value() - 1;
     gui_jobwindows[iwin]->myjob.read("", is_main_continue);
     alias_current_job->value("Give_alias_here");
     gui_jobwindows[iwin]->updateMyGui();
 
     // Make the current continue-setting active
-    T->cb_toggle_continue_i();
+    cb_toggle_continue_i();
 }
 
 // Load button callback function

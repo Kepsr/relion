@@ -201,10 +201,10 @@ class NoteEditorWindow: public Fl_Window {
     private:
 
     static void cb_save(Fl_Widget*, void*);
-    inline void cb_save_i();
+    inline void save();
 
     static void cb_cancel(Fl_Widget*, void*);
-    inline void cb_cancel_i();
+    inline void cancel();
 
 };
 
@@ -369,7 +369,7 @@ class GuiMainWindow: public Fl_Window {
     inline void cb_delete_scheduler_variable_i();
 
     static void cb_select_scheduler_variable(Fl_Widget*, void*);
-    inline void cb_select_scheduler_variable_i();
+    inline void select_scheduler_variable();
 
     static void cb_add_scheduler_operator(Fl_Widget*, void*);
     inline void cb_add_scheduler_operator_i();
@@ -387,7 +387,7 @@ class GuiMainWindow: public Fl_Window {
     inline void cb_scheduler_add_job_i();
 
     static void cb_scheduler_set_current(Fl_Widget*, void*);
-    inline void cb_scheduler_set_current_i();
+    inline void scheduler_set_current();
 
     static void cb_scheduler_next(Fl_Widget*, void*);
     inline void cb_scheduler_next_i();
@@ -414,28 +414,28 @@ class GuiMainWindow: public Fl_Window {
 
     static void cb_run(Fl_Widget*, void*);
     static void cb_schedule(Fl_Widget*, void*);
-    inline void cb_run_i(bool only_schedule = false, bool do_open_edit = true);
+    inline void run(bool only_schedule = false, bool do_open_edit = true);
 
     static void cb_delete(Fl_Widget*, void*);
     inline void cb_delete_i(bool ask = true, bool recursively = true);
 
     static void cb_gently_clean_all_jobs(Fl_Widget*, void*);
     static void cb_harshly_clean_all_jobs(Fl_Widget*, void*);
-    inline void cb_clean_all_jobs_i(bool harshly);
+    inline void clean_all_jobs(bool harshly);
 
     static void cb_gentle_cleanup(Fl_Widget*, void*);
     static void cb_harsh_cleanup(Fl_Widget*, void*);
-    inline void cb_cleanup_i(int jobindex = -1, bool ask = true, bool harshly = false);
+    inline void cleanup(int jobindex = -1, bool ask = true, bool harshly = false);
 
     static void cb_set_alias(Fl_Widget*, void*);
-    inline void cb_set_alias_i(std::string newalias = "");
+    inline void set_alias(std::string newalias = "");
 
     static void cb_abort(Fl_Widget*, void*);
     inline void cb_abort_i(std::string newalias = "");
 
     static void cb_mark_as_finished(Fl_Widget*, void*);
     static void cb_mark_as_failed(Fl_Widget*, void*);
-    inline void cb_mark_as_finished_i(bool is_failed = false);
+    inline void mark_as_finished(bool is_failed = false);
 
     static void cb_make_flowchart(Fl_Widget*, void*);
     inline void cb_make_flowchart_i();
@@ -448,10 +448,10 @@ class GuiMainWindow: public Fl_Window {
     inline void cb_print_cl_i();
 
     static void cb_save(Fl_Widget*, void*);
-    inline void cb_save_i();
+    inline void save();
 
     static void cb_load(Fl_Widget*, void*);
-    inline void cb_load_i();
+    inline void load();
 
     static void cb_undelete_job(Fl_Widget*, void*);
     inline void cb_undelete_job_i();
