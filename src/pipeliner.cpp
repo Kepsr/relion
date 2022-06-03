@@ -394,14 +394,17 @@ bool PipeLine::getCommandLineJob(
     // Set is_continue flag inside the job
     thisjob.is_continue = is_main_continue;
 
-    bool result = thisjob.getCommands(my_outputname, commands, final_command, do_makedir, job_counter, error_message);
-
-    if (result && commands.empty()) {
-        error_message = " PipeLine::getCommandLineJob: Nothing to do...";
+    try {
+        thisjob.getCommands(my_outputname, commands, final_command, do_makedir, job_counter);
+        if (commands.empty()) {
+            error_message = " PipeLine::getCommandLineJob: Nothing to do...";
+            return false;
+        }
+        return true;
+    } catch (const std::string &errmsg) {
+        error_message = errmsg;
         return false;
     }
-
-    return result;
 }
 
 // Adds thisjob to the pipeline and returns the id of the newprocess

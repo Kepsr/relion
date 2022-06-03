@@ -562,11 +562,10 @@ void RelionJob::initialisePipeline(string &outputname, string defaultname, int j
     outputName = outputname;
 }
 
-bool RelionJob::prepareFinalCommand(
+void RelionJob::prepareFinalCommand(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, string &error_message
-) {
-    int nr_mpi;
+    string &final_command, bool do_makedir
+) throw (string) {
 
     // Create output directory if the outname contains a "/"
     if (do_makedir) {
@@ -585,18 +584,13 @@ bool RelionJob::prepareFinalCommand(
         }
     }
 
+    int nr_mpi;
     // Prepare full mpi commands or save jobsubmission script to disc
     if (joboptions["do_queue"].getBoolean() && do_makedir) {
-        try {
-            // Make the submission script and write it to disc
-            string output_script = outputname + "run_submit.script";
-            saveJobSubmissionScript(output_script, outputname, commands);
-            final_command = joboptions["qsub"].getString() + " " + output_script + " &";
-        } catch (const string &errmsg) {
-            // If saveJobSubmissionScript throws
-            error_message = errmsg;
-            return false;
-        }
+        // Make the submission script and write it to disc
+        string output_script = outputname + "run_submit.script";
+        saveJobSubmissionScript(output_script, outputname, commands);  // May throw
+        final_command = joboptions["qsub"].getString() + " " + output_script + " &";
     } else {
         // If there are multiple commands, then join them all on a single line (final_command)
         // Also add mpirun in front of those commands that have relion_ and _mpi` in it (if no submission via the queue is done)
@@ -604,12 +598,7 @@ bool RelionJob::prepareFinalCommand(
         final_command = "";
         for (size_t icom = 0; icom < commands.size(); icom++) {
             // Is this a relion mpi program?
-            try {
-                nr_mpi = joboptions.find("nr_mpi") == joboptions.end() ? 1 : joboptions["nr_mpi"].getNumber();
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            nr_mpi = joboptions.find("nr_mpi") == joboptions.end() ? 1 : joboptions["nr_mpi"].getNumber();  // May throw
             if (
                 nr_mpi > 1 &&
                 commands[icom].find("_mpi`")   != string::npos &&
@@ -636,11 +625,8 @@ bool RelionJob::prepareFinalCommand(
     char *warning = getenv("RELION_ERROR_LOCAL_MPI");
     int nr_warn = warning ? textToInteger(warning) : DEFAULT::WARNINGLOCALMPI;
 
-    if (nr_mpi > nr_warn && !joboptions["do_queue"].getBoolean()) {
-        error_message = "You're submitting a local job with " + floatToString(nr_mpi) + " parallel MPI processes. That's more than allowed by the RELION_ERROR_LOCAL_MPI environment variable.";
-        return false;
-    }
-    return true;
+    if (nr_mpi > nr_warn && !joboptions["do_queue"].getBoolean())
+    throw "You're submitting a local job with " + floatToString(nr_mpi) + " parallel MPI processes. That's more than allowed by the RELION_ERROR_LOCAL_MPI environment variable.";
 }
 
 
@@ -852,141 +838,119 @@ This may be useful for testing developmental options and/or expert use of the pr
 To print a list of possible options, run the corresponding program from the command line without any arguments.");
 
     // Set the variable name in all joboptions
-    std::map<string, JobOption>::iterator it;
-    for (it = joboptions.begin(); it != joboptions.end(); it++) {
-        it->second.variable = it->first;
+    for (auto &option : joboptions) {
+        option.second.variable = option.first;
     }
 }
 
-bool RelionJob::getCommands(
+void RelionJob::getCommands(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     switch (type) {
 
         case Process::IMPORT:
-        return getCommandsImportJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsImportJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::MOTIONCORR:
-        return getCommandsMotioncorrJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsMotioncorrJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::CTFFIND:
-        return getCommandsCtffindJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsCtffindJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::MANUALPICK:
-        return getCommandsManualpickJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsManualpickJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::AUTOPICK:
-        return getCommandsAutopickJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsAutopickJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::EXTRACT:
-        return getCommandsExtractJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsExtractJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::CLASSSELECT:
-        return getCommandsSelectJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsSelectJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::CLASS2D:
-        return getCommandsClass2DJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsClass2DJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::INIMODEL:
-        return getCommandsInimodelJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsInimodelJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::CLASS3D:
-        return getCommandsClass3DJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsClass3DJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::AUTO3D:
-        return getCommandsAutorefineJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsAutorefineJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::MULTIBODY:
-        return getCommandsMultiBodyJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsMultiBodyJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::MASKCREATE:
-        return getCommandsMaskcreateJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsMaskcreateJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::JOINSTAR:
-        return getCommandsJoinstarJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsJoinstarJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::SUBTRACT:
-        return getCommandsSubtractJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsSubtractJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::POST:
-        return getCommandsPostprocessJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsPostprocessJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::RESMAP:
-        return getCommandsLocalresJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsLocalresJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::MOTIONREFINE:
-        return getCommandsMotionrefineJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsMotionrefineJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::CTFREFINE:
-        return getCommandsCtfrefineJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsCtfrefineJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         case Process::EXTERNAL:
-        return getCommandsExternalJob(
-            outputname, commands, final_command, do_makedir, job_counter,
-            error_message
-        );
+        getCommandsExternalJob(
+            outputname, commands, final_command, do_makedir, job_counter
+        ); break;
 
         default:
         REPORT_ERROR(errorMsg("unrecognised job type: type = " + integerToString(type)));
-        return false;
     }
 }
 
@@ -1024,10 +988,10 @@ Note that due to a bug in a fltk library, you cannot import from directories tha
 }
 
 // Generate the correct commands
-bool RelionJob::getCommandsImportJob(
+void RelionJob::getCommandsImportJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::IMPORT_NAME, job_counter);
 
@@ -1037,28 +1001,23 @@ bool RelionJob::getCommandsImportJob(
     bool do_raw = joboptions["do_raw"].getBoolean();
     bool do_other = joboptions["do_other"].getBoolean();
 
-    if (do_raw && do_other) {
-        error_message = errorMsg("you cannot import BOTH raw movies/micrographs AND other node types at the same time...");
-        return false;
-    }
-    if (!do_raw && !do_other) {
-        error_message = errorMsg("nothing to do... ");
-        return false;
-    }
+    if (do_raw && do_other)
+    throw errorMsg("you cannot import BOTH raw movies/micrographs AND other node types at the same time...");
+
+    if (!do_raw && !do_other)
+    throw errorMsg("nothing to do... ");
 
     if (do_raw) {
         fn_in = joboptions["fn_in_raw"].getString();
 
         if (fn_in.rfind("../") != string::npos) {
             // Forbid at any place
-            error_message = errorMsg("don't import files outside the project directory.\nPlease make a symbolic link by an absolute path before importing.");
-            return false;
+            throw errorMsg("don't import files outside the project directory.\nPlease make a symbolic link by an absolute path before importing.");
         }
 
         if (fn_in.rfind("/", 0) == 0) {
             // Forbid only at the beginning
-            error_message = errorMsg("please import files by a relative path.\nIf you want to import files outside the project directory, make a symbolic link by an absolute path and\nimport the symbolic link by a relative path.");
-            return false;
+            throw errorMsg("please import files by a relative path.\nIf you want to import files outside the project directory, make a symbolic link by an absolute path and\nimport the symbolic link by a relative path.");
         }
 
         if (joboptions["is_multiframe"].getBoolean()) {
@@ -1074,21 +1033,17 @@ bool RelionJob::getCommandsImportJob(
         }
 
         FileName optics_group = joboptions["optics_group_name"].getString();
-        if (optics_group.empty()) {
-            error_message = errorMsg("please specify an optics group name.");
-            return false;
-        }
+        if (optics_group.empty())
+        throw errorMsg("please specify an optics group name.");
 
         if (!optics_group.validateCharactersStrict(true)) {
             // true means: do_allow_double_dollar (for scheduler)
-            error_message = errorMsg("an optics group name may contain only alphanumeric characters and hyphen/minus (-).");
-            return false;
+            throw errorMsg("an optics group name may contain only alphanumeric characters and hyphen/minus (-).");
         }
 
         command += " --optics_group_name \"" + optics_group + "\"";
-        if (!joboptions["fn_mtf"].getString().empty()) {
-            command += " --optics_group_mtf " + joboptions["fn_mtf"].getString();
-        }
+        if (!joboptions["fn_mtf"].getString().empty())
+        command += " --optics_group_mtf " + joboptions["fn_mtf"].getString();
         command += " --angpix " + joboptions["angpix"].getString();
         command += " --kV " + joboptions["kV"].getString();
         command += " --Cs " + joboptions["Cs"].getString();
@@ -1119,47 +1074,44 @@ bool RelionJob::getCommandsImportJob(
                 node_type == "Unfiltered half-map (unfil.mrc)" ? Node::HALFMAP :
                 -1;
 
-            if (node_type_i < 0) {
-                error_message = "Unrecognized menu option for node_type = " + node_type;
-                return false;
-            }
+            if (node_type_i < 0)
+            throw "Unrecognized menu option for node_type = " + node_type;
 
-            Node node(outputname + fn_out, node_type_i);
+            Node node (outputname + fn_out, node_type_i);
             outputNodes.push_back(node);
 
             // Also get the other half-map
             switch (node_type_i) {
 
-                case Node::HALFMAP: {
-                FileName fn_inb = "/" + fn_in;
-                size_t pos = fn_inb.find("half1");
-                if (pos != string::npos) {
-                    fn_inb.replace(pos, 5, "half2");
-                } else {
-                    pos = fn_inb.find("half2");
+                case Node::HALFMAP:
+                {
+                    FileName fn_inb = "/" + fn_in;
+                    size_t pos = fn_inb.find("half1");
                     if (pos != string::npos) {
-                        fn_inb.replace(pos, 5, "half1");
+                        fn_inb.replace(pos, 5, "half2");
+                    } else {
+                        pos = fn_inb.find("half2");
+                        if (pos != string::npos) {
+                            fn_inb.replace(pos, 5, "half1");
+                        }
                     }
-                }
-                fn_inb = fn_inb.afterLastOf("/");
-                Node node2(outputname + fn_inb, node_type_i);
-                outputNodes.push_back(node2);
-                command += " --do_halfmaps";
-                break;
+                    fn_inb = fn_inb.afterLastOf("/");
+                    Node node2(outputname + fn_inb, node_type_i);
+                    outputNodes.push_back(node2);
+                    command += " --do_halfmaps";
+                    break;
                 }
 
-                case Node::PART_DATA: {
-
-                command += " --do_particles";
-                FileName optics_group = joboptions["optics_group_particles"].getString();
-                if (optics_group != "") {
-                    if (!optics_group.validateCharactersStrict()) {
-                        error_message = errorMsg("an optics group name may contain only numbers, alphabets and hyphen(-).");
-                        return false;
+                case Node::PART_DATA:
+                {
+                    command += " --do_particles";
+                    FileName optics_group = joboptions["optics_group_particles"].getString();
+                    if (!optics_group.empty()) {
+                        if (!optics_group.validateCharactersStrict())
+                        throw errorMsg("an optics group name may contain only alphanumeric characters and hyphens.");
+                        command += " --particles_optics_group_name \"" + optics_group + "\"";
                     }
-                    command += " --particles_optics_group_name \"" + optics_group + "\"";
-                }
-                break;
+                    break;
                 }
 
                 default:
@@ -1174,11 +1126,11 @@ bool RelionJob::getCommandsImportJob(
     command += " --ofile " + fn_out;
 
     if (is_continue)
-        command += " --continue ";
+    command += " --continue ";
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseMotioncorrJob() {
@@ -1225,29 +1177,19 @@ Note that multiple MotionCor2 processes should not share a GPU; otherwise, it ca
     joboptions["group_for_ps"] = JobOption("Sum power spectra every e/A2:", 4, 0, 10, 0.5, "McMullan et al (Ultramicroscopy, 2015) sugggest summing power spectra every 4.0 e/A2 gives optimal Thon rings");
 }
 
-bool RelionJob::getCommandsMotioncorrJob(
+void RelionJob::getCommandsMotioncorrJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MOTIONCORR_NAME, job_counter);
 
-    string command;
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_run_motioncorr_mpi`" :
-            "`which relion_run_motioncorr`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?
+        "`which relion_run_motioncorr_mpi`" : "`which relion_run_motioncorr`";
 
     // I/O
-
-    if (joboptions["input_star_mics"].getString().empty()) {
-        error_message = errorMsg("empty field for input STAR file...");
-        return false;
-    }
+    if (joboptions["input_star_mics"].getString().empty())
+    throw errorMsg("empty field for input STAR file...");
 
     command += " --i " + joboptions["input_star_mics"].getString();
     Node node(joboptions["input_star_mics"].getString(), joboptions["input_star_mics"].node_type);
@@ -1288,13 +1230,8 @@ bool RelionJob::getCommandsMotioncorrJob(
     command += " --patch_y " + joboptions["patch_y"].getString();
     command += " --eer_grouping " + joboptions["eer_grouping"].getString();
 
-    try {
-        if (joboptions["group_frames"].getNumber() > 1.0)
+    if (joboptions["group_frames"].getNumber() > 1.0)
         command += " --group_frames " + joboptions["group_frames"].getString();
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
 
     if (joboptions["fn_gain_ref"].getString().length() > 0) {
 
@@ -1329,32 +1266,21 @@ bool RelionJob::getCommandsMotioncorrJob(
     }
 
     if (joboptions["do_save_ps"].getBoolean()) {
-        if (!joboptions["do_own_motioncor"].getBoolean()) {
-            error_message = "'Save sum of power spectra' is not available with UCSF MotionCor2.";
-            return false;
-        }
+        if (!joboptions["do_own_motioncor"].getBoolean())
+        throw "'Save sum of power spectra' is not available with UCSF MotionCor2.";
 
-        try {
+        float dose_for_ps = joboptions["group_for_ps"].getNumber();
+        float dose_rate = joboptions["dose_per_frame"].getNumber();
+        if (dose_rate <= 0)
+        throw "Please specify the dose rate to calculate the grouping for power spectra.";
 
-            float dose_for_ps = joboptions["group_for_ps"].getNumber();
-            float dose_rate = joboptions["dose_per_frame"].getNumber();
-            if (dose_rate <= 0) {
-                error_message = "Please specify the dose rate to calculate the grouping for power spectra.";
-                return false;
-            }
-            if (dose_for_ps <= 0) {
-                error_message = "Invalid dose for the grouping for power spectra.";
-                return false;
-            }
-            int grouping_for_ps = round(dose_for_ps / dose_rate);
-            if (grouping_for_ps == 0) { grouping_for_ps = 1; }
+        if (dose_for_ps <= 0)
+        throw "Invalid dose for the grouping for power spectra.";
 
-            command += " --grouping_for_ps " + integerToString(grouping_for_ps) + " ";
+        int grouping_for_ps = round(dose_for_ps / dose_rate);
+        if (grouping_for_ps == 0) { grouping_for_ps = 1; }
 
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        command += " --grouping_for_ps " + integerToString(grouping_for_ps) + " ";
 
     }
 
@@ -1366,7 +1292,7 @@ bool RelionJob::getCommandsMotioncorrJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseCtffindJob() {
@@ -1413,10 +1339,10 @@ void RelionJob::initialiseCtffindJob() {
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','. ");
 }
 
-bool RelionJob::getCommandsCtffindJob(
+void RelionJob::getCommandsCtffindJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CTFFIND_NAME, job_counter);
 
@@ -1429,22 +1355,14 @@ bool RelionJob::getCommandsCtffindJob(
     Node node3(outputname + "logfile.pdf", Node::PDF_LOGFILE);
     outputNodes.push_back(node3);
 
-    if (joboptions["input_star_mics"].getString().empty()) {
-        error_message = errorMsg("empty field for input STAR file...");
-        return false;
-    }
+    if (joboptions["input_star_mics"].getString().empty())
+    throw errorMsg("empty field for input STAR file...");
 
     Node node2(joboptions["input_star_mics"].getString(), joboptions["input_star_mics"].node_type);
     inputNodes.push_back(node2);
 
-    string command;
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ? 
-            "`which relion_run_ctffind_mpi`" : "`which relion_run_ctffind`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?
+        "`which relion_run_ctffind_mpi`" : "`which relion_run_ctffind`";
 
     command += " --i " + joboptions["input_star_mics"].getString();
     command += " --o " + outputname;
@@ -1480,12 +1398,10 @@ bool RelionJob::getCommandsCtffindJob(
             joboptions["other_gctf_args"].getString().find("--phase_shift_H") != string::npos ||
             joboptions["other_gctf_args"].getString().find("--phase_shift_L") != string::npos ||
             joboptions["other_gctf_args"].getString().find("--phase_shift_S") != string::npos
-        ) {
-            error_message = "Please don't specify --phase_shift_L, H, S in 'Other Gctf options'. Use 'Estimate phase shifts' and 'Phase shift - Min, Max, Step' instead.";
-            return false;
-        }
+        )
+        throw "Please don't specify --phase_shift_L, H, S in 'Other Gctf options'. Use 'Estimate phase shifts' and 'Phase shift - Min, Max, Step' instead.";
 
-        if ((joboptions["other_gctf_args"].getString()).length() > 0)
+        if (!joboptions["other_gctf_args"].getString().empty())
             command += " --extra_gctf_options \" " + joboptions["other_gctf_args"].getString() + " \"";
 
     } else if (joboptions["use_ctffind4"].getBoolean()) {
@@ -1499,8 +1415,7 @@ bool RelionJob::getCommandsCtffindJob(
             command += " --use_given_ps ";
         }
     } else {
-        error_message = errorMsg("Please select use of CTFFIND4.1 or Gctf...");
-        return false;
+        throw errorMsg("Please select use of CTFFIND4.1 or Gctf...");
     }
 
     if (is_continue) { command += " --only_do_unfinished "; }
@@ -1509,7 +1424,7 @@ bool RelionJob::getCommandsCtffindJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseManualpickJob() {
@@ -1542,18 +1457,16 @@ Particles that are not in this STAR file, but present in the picked coordinates 
     joboptions["red_value"] = JobOption("Red value: ", 2.0, 0.0, 4.0, 0.1, "The value of this entry will be red. There will be a linear scale from blue to red, according to this value and the one given above.");
 }
 
-bool RelionJob::getCommandsManualpickJob(
+void RelionJob::getCommandsManualpickJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MANUALPICK_NAME, job_counter);
     string command = "`which relion_manualpick`";
 
-    if (joboptions["fn_in"].getString().empty()) {
-        error_message = errorMsg("empty field for input STAR file...");
-        return false;
-    }
+    if (joboptions["fn_in"].getString().empty())
+    throw errorMsg("empty field for input STAR file...");
 
     command += " --i " + joboptions["fn_in"].getString();
     Node node(joboptions["fn_in"].getString(), joboptions["fn_in"].node_type);
@@ -1577,17 +1490,12 @@ bool RelionJob::getCommandsManualpickJob(
     command += " --black " + joboptions["black_val"].getString();
     command += " --white " + joboptions["white_val"].getString();
 
-    try {
-        if (joboptions["lowpass"].getNumber() > 0.0)
-        command += " --lowpass " + joboptions["lowpass"].getString();
-        if (joboptions["highpass"].getNumber() > 0.0)
-        command += " --highpass " + joboptions["highpass"].getString();
-        if (joboptions["angpix"].getNumber() > 0.0)
-        command += " --angpix " + joboptions["angpix"].getString();
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    if (joboptions["lowpass"].getNumber() > 0.0)
+    command += " --lowpass " + joboptions["lowpass"].getString();
+    if (joboptions["highpass"].getNumber() > 0.0)
+    command += " --highpass " + joboptions["highpass"].getString();
+    if (joboptions["angpix"].getNumber() > 0.0)
+    command += " --angpix " + joboptions["angpix"].getString();
 
     command += " --ctf_scale " + joboptions["ctfscale"].getString();
 
@@ -1617,7 +1525,7 @@ bool RelionJob::getCommandsManualpickJob(
     command = "echo " + fn_pre + fn_jobnr + fn_post + " > " + fn_suffix;
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseAutopickJob() {
@@ -1736,25 +1644,18 @@ Kappa ~ 0.05 is recommended for long and straight tubes (e.g. TMV, VipA/VipB and
 Helical tubes with shorter lengths will not be picked. Note that a long helical tube seen by human eye might be treated as short broken pieces due to low FOM values or high picking threshold.");
 }
 
-bool RelionJob::getCommandsAutopickJob(
+void RelionJob::getCommandsAutopickJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::AUTOPICK_NAME, job_counter);
-    string command;
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_autopick_mpi`" : "`which relion_autopick`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
+        "`which relion_autopick_mpi`" : "`which relion_autopick`";
 
     // Input
-    if (joboptions["fn_input_autopick"].getString().empty()) {
-        error_message = errorMsg("empty field for input STAR file...");
-        return false;
-    }
+    if (joboptions["fn_input_autopick"].getString().empty())
+    throw errorMsg("empty field for input STAR file...");
     command += " --i " + joboptions["fn_input_autopick"].getString();
     Node node(joboptions["fn_input_autopick"].getString(), joboptions["fn_input_autopick"].node_type);
     inputNodes.push_back(node);
@@ -1771,33 +1672,26 @@ bool RelionJob::getCommandsAutopickJob(
     command += " --pickname autopick";
 
     if (joboptions["do_log"].getBoolean()) {
-        if (joboptions["use_gpu"].getBoolean()) {
-            error_message = errorMsg("The Laplacian-of-Gaussian picker does not support GPU.");
-            return false;
-        }
+        if (joboptions["use_gpu"].getBoolean())
+        throw errorMsg("The Laplacian-of-Gaussian picker does not support GPU.");
 
         command += " --LoG ";
         command += " --LoG_diam_min " + joboptions["log_diam_min"].getString();
         command += " --LoG_diam_max " + joboptions["log_diam_max"].getString();
         command += " --shrink 0 --lowpass " + joboptions["log_maxres"].getString();
         command += " --LoG_adjust_threshold " + joboptions["log_adjust_thr"].getString();
-        try {
-            if (joboptions["log_upper_thr"].getNumber() < 999.0)
-            command += " --LoG_upper_threshold " + joboptions["log_upper_thr"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return true;
-        }
+
+        if (joboptions["log_upper_thr"].getNumber() < 999.0)  // May throw
+        command += " --LoG_upper_threshold " + joboptions["log_upper_thr"].getString();
 
         if (joboptions["log_invert"].getBoolean())
             command += " --Log_invert ";
     } else {
+
         if (joboptions["do_ref3d"].getBoolean()) {
 
-            if (joboptions["fn_ref3d_autopick"].getString().empty()) {
-                error_message = errorMsg("empty field for 3D reference...");
-                return false;
-            }
+            if (joboptions["fn_ref3d_autopick"].getString().empty())
+            throw errorMsg("empty field for 3D reference...");
 
             command += " --ref " + joboptions["fn_ref3d_autopick"].getString();
             Node node2(joboptions["fn_ref3d_autopick"].getString(), Node::REF3D);
@@ -1806,21 +1700,20 @@ bool RelionJob::getCommandsAutopickJob(
 
             // Sampling
             int ref3d_sampling = JobOption::getHealPixOrder(joboptions["ref3d_sampling"].getString());
-            if (ref3d_sampling <= 0) {
-                error_message = "Wrong choice for ref3d_sampling";
-                return false;
-            }
+            if (ref3d_sampling <= 0)
+            throw "Wrong choice for ref3d_sampling";
 
             command += " --healpix_order " + integerToString(ref3d_sampling);
+
         } else {
-            if (joboptions["fn_refs_autopick"].getString().empty()) {
-                error_message = errorMsg("empty field for references...");
-                return false;
-            }
+
+            if (joboptions["fn_refs_autopick"].getString().empty())
+            throw errorMsg("empty field for references...");
 
             command += " --ref " + joboptions["fn_refs_autopick"].getString();
             Node node2(joboptions["fn_refs_autopick"].getString(), Node::REFS2D);
             inputNodes.push_back(node2);
+
         }
 
         if (joboptions["do_invert_refs"].getBoolean())
@@ -1835,35 +1728,31 @@ bool RelionJob::getCommandsAutopickJob(
 
         command += " --shrink " + joboptions["shrink"].getString();
 
-        try {
-            if (joboptions["lowpass"].getNumber() > 0.0)
-            command += " --lowpass " + joboptions["lowpass"].getString();
-            if (joboptions["highpass"].getNumber() > 0.0)
-            command += " --highpass " + joboptions["highpass"].getString();
-            if (joboptions["angpix"].getNumber() > 0.0)
-            command += " --angpix " + joboptions["angpix"].getString();
-            if (joboptions["angpix_ref"].getNumber() > 0.0)
-            command += " --angpix_ref " + joboptions["angpix_ref"].getString();
-            if (joboptions["particle_diameter"].getNumber() > 0.0)
-            command += " --particle_diameter " + joboptions["particle_diameter"].getString();
+        // Any of these JobOption::getNumber() calls may throw
 
-            command += " --threshold " + joboptions["threshold_autopick"].getString();
+        if (joboptions["lowpass"].getNumber() > 0.0)
+        command += " --lowpass " + joboptions["lowpass"].getString();
+        if (joboptions["highpass"].getNumber() > 0.0)
+        command += " --highpass " + joboptions["highpass"].getString();
+        if (joboptions["angpix"].getNumber() > 0.0)
+        command += " --angpix " + joboptions["angpix"].getString();
+        if (joboptions["angpix_ref"].getNumber() > 0.0)
+        command += " --angpix_ref " + joboptions["angpix_ref"].getString();
+        if (joboptions["particle_diameter"].getNumber() > 0.0)
+        command += " --particle_diameter " + joboptions["particle_diameter"].getString();
 
-            if (joboptions["do_pick_helical_segments"].getBoolean()) {
-                command += " --min_distance " + floatToString(joboptions["helical_nr_asu"].getNumber() * joboptions["helical_rise"].getNumber());
-            } else {
-                command += " --min_distance " + joboptions["mindist_autopick"].getString();
-            }
+        command += " --threshold " + joboptions["threshold_autopick"].getString();
 
-            command += " --max_stddev_noise " + joboptions["maxstddevnoise_autopick"].getString();
-
-            if (joboptions["minavgnoise_autopick"].getNumber() > -900.0)
-            command += " --min_avg_noise " + joboptions["minavgnoise_autopick"].getString();
-        } catch (const string &errmsg) {
-            // If any of the JobOption::getNumber() calls throw
-            error_message = errmsg;
-            return false;
+        if (joboptions["do_pick_helical_segments"].getBoolean()) {
+            command += " --min_distance " + floatToString(joboptions["helical_nr_asu"].getNumber() * joboptions["helical_rise"].getNumber());
+        } else {
+            command += " --min_distance " + joboptions["mindist_autopick"].getString();
         }
+
+        command += " --max_stddev_noise " + joboptions["maxstddevnoise_autopick"].getString();
+
+        if (joboptions["minavgnoise_autopick"].getNumber() > -900.0)
+        command += " --min_avg_noise " + joboptions["minavgnoise_autopick"].getString();
 
         // Helix
         if (joboptions["do_pick_helical_segments"].getBoolean()) {
@@ -1906,7 +1795,7 @@ bool RelionJob::getCommandsAutopickJob(
     command = "echo " + fn_pre + fn_jobnr + fn_post + " > " +  outputname + "coords_suffix_autopick.star";
     commands.push_back(command.c_str());
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseExtractJob() {
@@ -1949,42 +1838,33 @@ The optimal inter-box distance might also depend on the box size, the helical ri
 
 }
 
-bool RelionJob::getCommandsExtractJob(
+void RelionJob::getCommandsExtractJob(
     string &outputname, vector<string> &commands, string &final_command,
-    bool do_makedir, int job_counter,
-    string &error_message
-) {
+    bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::EXTRACT_NAME, job_counter);
     string command = "which relion_preprocess";
-    try {
-        if (joboptions["nr_mpi"].getNumber() > 1)
-        command += "_mpi";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    if (joboptions["nr_mpi"].getNumber() > 1)  // May throw
+    command += "_mpi";
+
     command = "`" + command + "`";
 
     // Input
-    if (joboptions["star_mics"].getString().empty()) {
-        error_message = errorMsg("empty field for input STAR file...");
-        return false;
-    }
+    if (joboptions["star_mics"].getString().empty())
+    throw errorMsg("empty field for input STAR file...");
+
     command += " --i " + joboptions["star_mics"].getString();
     Node node(joboptions["star_mics"].getString(), joboptions["star_mics"].node_type);
     inputNodes.push_back(node);
 
     if (joboptions["do_reextract"].getBoolean()) {
-        if (joboptions["fndata_reextract"].getString().empty()) {
-            error_message = errorMsg("empty field for refined particles STAR file...");
-            return false;
-        }
 
-        if (joboptions["do_reset_offsets"].getBoolean() && joboptions["do_recenter"].getBoolean()) {
-            error_message = errorMsg("you cannot both reset refined offsets and recenter on refined coordinates, choose one...");
-            return false;
-        }
+        if (joboptions["fndata_reextract"].getString().empty())
+        throw errorMsg("empty field for refined particles STAR file...");
+
+        if (joboptions["do_reset_offsets"].getBoolean() && joboptions["do_recenter"].getBoolean())
+        throw errorMsg("you cannot both reset refined offsets and recenter on refined coordinates, choose one...");
 
         command += " --reextract_data_star " + joboptions["fndata_reextract"].getString();
         Node node2(joboptions["fndata_reextract"].getString(), joboptions["fndata_reextract"].node_type);
@@ -1999,10 +1879,9 @@ bool RelionJob::getCommandsExtractJob(
         }
     } else {
         FileName mysuffix = joboptions["coords_suffix"].getString();
-        if (mysuffix.empty()) {
-            error_message = errorMsg("empty field for coordinate STAR file...");
-            return false;
-        }
+        if (mysuffix.empty())
+        throw errorMsg("empty field for coordinate STAR file...");
+
         command += " --coord_dir " + mysuffix.beforeLastOf("/") + "/";
         command += " --coord_suffix " + (mysuffix.afterLastOf("/")).without("coords_suffix");
         Node node2(joboptions["coords_suffix"].getString(), joboptions["coords_suffix"].node_type);
@@ -2020,27 +1899,22 @@ bool RelionJob::getCommandsExtractJob(
 
     // Operate stuff
     // Get an integer number for the bg_diameter
-    try {
-        RFLOAT bg_diameter = joboptions["bg_diameter"].getNumber() < 0.0 ?
-            0.75 * joboptions["extract_size"].getNumber() :
-                   joboptions["bg_diameter"].getNumber();
-        RFLOAT bg_radius = bg_diameter / 2.0;
-        if (joboptions["do_rescale"].getBoolean()) {
-            command += " --scale " + joboptions["rescale"].getString();
-            bg_radius *= joboptions["rescale"].getNumber();
-            bg_radius /= joboptions["extract_size"].getNumber();
-        }
-        if (joboptions["do_norm"].getBoolean()) {
-            // Get an integer for bg_radius
-            bg_radius = (int) bg_radius;
-            command += " --norm --bg_radius " + floatToString(bg_radius)
-                    +  " --white_dust " + joboptions["white_dust"].getString()
-                    +  " --black_dust " + joboptions["black_dust"].getString();
-        }
-    } catch (const string &errmsg) {
-        // If any of the JobOption::getNumber() calls throw
-        error_message = errmsg;
-        return false;
+    // Any of these JobOption::getNumber() calls may throw
+    RFLOAT bg_diameter = joboptions["bg_diameter"].getNumber() < 0.0 ?
+        0.75 * joboptions["extract_size"].getNumber() :
+                joboptions["bg_diameter"].getNumber();
+    RFLOAT bg_radius = bg_diameter / 2.0;
+    if (joboptions["do_rescale"].getBoolean()) {
+        command += " --scale " + joboptions["rescale"].getString();
+        bg_radius *= joboptions["rescale"].getNumber();
+        bg_radius /= joboptions["extract_size"].getNumber();
+    }
+    if (joboptions["do_norm"].getBoolean()) {
+        // Get an integer for bg_radius
+        bg_radius = (int) bg_radius;
+        command += " --norm --bg_radius " + floatToString(bg_radius)
+                +  " --white_dust " + joboptions["white_dust"].getString()
+                +  " --black_dust " + joboptions["black_dust"].getString();
     }
 
     if (joboptions["do_invert"].getBoolean()) {
@@ -2086,7 +1960,7 @@ bool RelionJob::getCommandsExtractJob(
         outputNodes.push_back(node);
     }
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseSelectJob() {
@@ -2120,10 +1994,10 @@ void RelionJob::initialiseSelectJob() {
     joboptions["image_angpix"] = JobOption("Pixel size before extraction (A)", -1, -1, 10, 0.01, "The pixel size of particles (relevant to rlnOriginX/Y) is read from the STAR file. When the pixel size of the original micrograph used for auto-picking and extraction (relevant to rlnCoordinateX/Y) is different, specify it here. In other words, this is the pixel size after binning during motion correction, but before down-sampling during extraction.");
 }
 
-bool RelionJob::getCommandsSelectJob(
+void RelionJob::getCommandsSelectJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASSSELECT_NAME, job_counter);
     string command;
@@ -2133,19 +2007,16 @@ bool RelionJob::getCommandsSelectJob(
         joboptions["fn_mic"]  .getString().empty() && joboptions["fn_data"]  .getString().empty()
     ) {
         // Nothing was selected...
-        error_message = "Please select an input file.";
-        return false;
+        throw "Please select an input file.";
     }
 
     int c = 0;
-    if (joboptions["do_select_values"].getBoolean())     { c++; }
-    if (joboptions["do_discard"].getBoolean())           { c++; }
-    if (joboptions["do_split"].getBoolean())             { c++; }
-    if (joboptions["do_remove_duplicates"].getBoolean()) { c++; }
-    if (c > 1) {
-        error_message = "You cannot do many tasks simultaneously...";
-        return false;
-    }
+    c += joboptions["do_select_values"].getBoolean();
+    c += joboptions["do_discard"].getBoolean();
+    c += joboptions["do_split"].getBoolean();
+    c += joboptions["do_remove_duplicates"].getBoolean();
+    if (c > 1)
+    throw "You cannot do many tasks simultaneously...";
 
     if (joboptions["do_remove_duplicates"].getBoolean()) {
         // Remove duplicates
@@ -2155,15 +2026,10 @@ bool RelionJob::getCommandsSelectJob(
             !joboptions["fn_mic"]   .getString().empty() ||
             !joboptions["fn_model"] .getString().empty() ||
             !joboptions["fn_coords"].getString().empty()
-        ) {
-            error_message = errorMsg("Duplicate removal is only possible for particle STAR files...");
-            return false;
-        }
+        ) throw errorMsg("Duplicate removal is only possible for particle STAR files...");
 
-        if (joboptions["fn_data"].getString().empty()) {
-            error_message = errorMsg("Duplicate removal needs a particle STAR file...");
-            return false;
-        }
+        if (joboptions["fn_data"].getString().empty())
+        throw errorMsg("Duplicate removal needs a particle STAR file...");
 
         Node node(joboptions["fn_data"].getString(), joboptions["fn_data"].node_type);
         inputNodes.push_back(node);
@@ -2175,13 +2041,8 @@ bool RelionJob::getCommandsSelectJob(
         command += " --o " + fn_out;
 
         command += " --remove_duplicates " + joboptions["duplicate_threshold"].getString();
-        try {
-            if (joboptions["image_angpix"].getNumber() > 0)
-            command += " --image_angpix " + joboptions["image_angpix"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        if (joboptions["image_angpix"].getNumber() > 0)  // May throw
+        command += " --image_angpix " + joboptions["image_angpix"].getString();
 
     } else if (
         joboptions["do_select_values"].getBoolean() ||
@@ -2192,20 +2053,16 @@ bool RelionJob::getCommandsSelectJob(
         command = "`which relion_star_handler`";
 
         if (
-            joboptions["fn_model"].getString() != "" ||
-            joboptions["fn_coords"].getString() != ""
-        ) {
-            error_message = errorMsg("Value-selection or subset splitting is only possible for micrograph or particle STAR files...");
-            return false;
-        }
+            !joboptions["fn_model"].getString().empty() ||
+            !joboptions["fn_coords"].getString().empty()
+        ) throw errorMsg("Value-selection or subset splitting is only possible for micrograph or particle STAR files...");
 
         FileName fn_out;
         if (joboptions["fn_mic"].getString() != "") {
             Node node(joboptions["fn_mic"].getString(), joboptions["fn_mic"].node_type);
             inputNodes.push_back(node);
             command += " --i " + joboptions["fn_mic"].getString();
-            fn_out = outputname+"micrographs.star";
-
+            fn_out = outputname + "micrographs.star";
         } else if (joboptions["fn_data"].getString() != "") {
             Node node(joboptions["fn_data"].getString(), joboptions["fn_data"].node_type);
             inputNodes.push_back(node);
@@ -2244,38 +2101,26 @@ bool RelionJob::getCommandsSelectJob(
                 command += " --random_order ";
             }
 
-            try {
-                if (
-                    joboptions["nr_split"].getNumber() <= 0 &&
-                    joboptions["split_size"].getNumber() <= 0 &&
-                    !joboptions["nr_split"].isSchedulerVariable() &&
-                    !joboptions["split_size"].isSchedulerVariable()
-                ) {
-                    error_message = errorMsg("When splitting the input STAR file into subsets, set nr_split and/or split_size to a positive value");
-                    return false;
-                }
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
+            if (
+                joboptions["nr_split"]  .getNumber() <= 0 &&  // May throw
+                joboptions["split_size"].getNumber() <= 0 &&  // May throw
+                !joboptions["nr_split"].isSchedulerVariable() &&
+                !joboptions["split_size"].isSchedulerVariable()
+            ) throw errorMsg("When splitting the input STAR file into subsets, set nr_split and/or split_size to a positive value");
+
+            if (
+                 joboptions["nr_split"].getNumber() > 0 &&  // May throw
+                !joboptions["nr_split"].isSchedulerVariable()
+            ) {
+                nr_split = joboptions["nr_split"].getNumber();
+                command += " --nr_split " + joboptions["nr_split"].getString();
             }
 
-            try {
-                if (
-                     joboptions["nr_split"].getNumber() > 0 &&
-                    !joboptions["nr_split"].isSchedulerVariable()
-                ) {
-                    nr_split = joboptions["nr_split"].getNumber();
-                    command += " --nr_split " + joboptions["nr_split"].getString();
-                }
-                if (
-                     joboptions["split_size"].getNumber() > 0 &&
-                    !joboptions["split_size"].isSchedulerVariable()
-                ) {
-                    command += " --size_split " + joboptions["split_size"].getString();
-                }
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
+            if (
+                 joboptions["split_size"].getNumber() > 0 &&  // May throw
+                !joboptions["split_size"].isSchedulerVariable()
+            ) {
+                command += " --size_split " + joboptions["split_size"].getString();
             }
 
             // As of relion-3.1, star_handler will write out a star file with the output nodes, which will be read by the pipeliner
@@ -2286,7 +2131,7 @@ bool RelionJob::getCommandsSelectJob(
         command = "`which relion_display`";
 
         // I/O
-        if (joboptions["fn_model"].getString() != "") {
+        if (!joboptions["fn_model"].getString().empty()) {
 
             command += " --gui --i " + joboptions["fn_model"].getString();
             Node node(joboptions["fn_model"].getString(), joboptions["fn_model"].node_type);
@@ -2331,12 +2176,11 @@ bool RelionJob::getCommandsSelectJob(
             RelionJob manualpickjob;
 
             FileName fn_job = ".gui_manualpick";
-            bool iscont=false;
+            bool iscont = false;
             if (exists(fn_job+"job.star") || exists(fn_job+"run.job")) {
                 manualpickjob.read(fn_job.c_str(), iscont, true); // true means do initialise
             } else {
-                error_message = "You need to save 'Manual picking' job settings (using the Jobs menu) before you can display coordinate files.";
-                return false;
+                throw "You need to save 'Manual picking' job settings (using the Jobs menu) before you can display coordinate files.";
             }
 
             // Get the name of the micrograph STAR file from reading the suffix file
@@ -2373,21 +2217,15 @@ bool RelionJob::getCommandsSelectJob(
             command += " --black "          + manualpickjob.joboptions["black_val"].getString();
             command += " --white "          + manualpickjob.joboptions["white_val"].getString();
 
-            try {
+            // These calls to getNumber() may throw
+            if (manualpickjob.joboptions["lowpass"].getNumber() > 0.0)
+            command += " --lowpass " + manualpickjob.joboptions["lowpass"].getString();
 
-                if (manualpickjob.joboptions["lowpass"].getNumber() > 0.0)
-                command += " --lowpass " + manualpickjob.joboptions["lowpass"].getString();
+            if (manualpickjob.joboptions["highpass"].getNumber() > 0.0)
+            command += " --highpass " + manualpickjob.joboptions["highpass"].getString();
 
-                if (manualpickjob.joboptions["highpass"].getNumber() > 0.0)
-                command += " --highpass " + manualpickjob.joboptions["highpass"].getString();
-
-                if (manualpickjob.joboptions["angpix"].getNumber() > 0.0)
-                command += " --angpix " + manualpickjob.joboptions["angpix"].getString();
-
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            if (manualpickjob.joboptions["angpix"].getNumber() > 0.0)
+            command += " --angpix " + manualpickjob.joboptions["angpix"].getString();
 
             command += " --ctf_scale " + manualpickjob.joboptions["ctfscale"].getString();
 
@@ -2408,10 +2246,9 @@ bool RelionJob::getCommandsSelectJob(
 
     // Re-grouping
     if (joboptions["do_regroup"].getBoolean() && joboptions["fn_coords"].getString().empty()) {
-        if (joboptions["fn_model"].getString().empty()) {
-            error_message = "Re-grouping only works for model.star files...";
-            return false;
-        }
+        if (joboptions["fn_model"].getString().empty())
+        throw "Re-grouping only works for model.star files...";
+
         command += " --regroup " + joboptions["nr_groups"].getString();
     }
 
@@ -2420,7 +2257,7 @@ bool RelionJob::getCommandsSelectJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseClass2DJob() {
@@ -2523,54 +2360,41 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','. For example: '0,0:1,1:0,0:1,1'");
 }
 
-bool RelionJob::getCommandsClass2DJob(
+void RelionJob::getCommandsClass2DJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASS2D_NAME, job_counter);
-    string command;
-
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_refine_mpi`" : "`which relion_refine`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
+        "`which relion_refine_mpi`" : "`which relion_refine`";
 
     FileName fn_run = "run";
     if (is_continue) {
-        if (joboptions["fn_cont"].getString().empty()) {
-            error_message = errorMsg("empty field for continuation STAR file...");
-            return false;
-        }
+
+        if (joboptions["fn_cont"].getString().empty())
+        throw errorMsg("empty field for continuation STAR file...");
+
         int pos_it = joboptions["fn_cont"].getString().rfind("_it");
         int pos_op = joboptions["fn_cont"].getString().rfind("_optimiser");
-        if (pos_it < 0 || pos_op < 0) {
-            error_message = "Warning: invalid optimiser.star filename provided for continuation run!";
-            return false;
-        }
-        int it = (int) textToFloat(joboptions["fn_cont"].getString().substr(pos_it + 3, 6).c_str());
+        if (pos_it < 0 || pos_op < 0)
+        throw "Warning: invalid optimiser.star filename provided for continuation run!";
+
+        int it = textToFloat(joboptions["fn_cont"].getString().substr(pos_it + 3, 6).c_str());
         fn_run += "_ct" + floatToString(it);
         command += " --continue " + joboptions["fn_cont"].getString();
     }
 
     command += " --o " + outputname + fn_run;
-    try {
-        int my_iter    = joboptions["nr_iter"].getNumber();
-        int my_classes = joboptions["nr_classes"].getNumber();
-        outputNodes = getOutputNodesRefine(outputname + fn_run, my_iter, my_classes, 2, 1);
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+
+    int my_iter    = joboptions["nr_iter"].getNumber();  // May throw
+    int my_classes = joboptions["nr_classes"].getNumber();  // May throw
+    outputNodes = getOutputNodesRefine(outputname + fn_run, my_iter, my_classes, 2, 1);
 
     if (!is_continue) {
-        if (joboptions["fn_img"].getString().empty()) {
-            error_message = errorMsg("empty field for input STAR file...");
-            return false;
-        }
+        if (joboptions["fn_img"].getString().empty())
+        throw errorMsg("empty field for input STAR file...");
+
         command += " --i " + joboptions["fn_img"].getString();
         Node node(joboptions["fn_img"].getString(), joboptions["fn_img"].node_type);
         inputNodes.push_back(node);
@@ -2603,6 +2427,7 @@ bool RelionJob::getCommandsClass2DJob(
 
     command += " --tau2_fudge " + joboptions["tau_fudge"].getString();
         command += " --particle_diameter " + joboptions["particle_diameter"].getString();
+
     if (!is_continue) {
         if (joboptions["do_fast_subsets"].getBoolean())
             command += " --fast_subsets ";
@@ -2612,13 +2437,9 @@ bool RelionJob::getCommandsClass2DJob(
         command += " --flatten_solvent ";
         if (joboptions["do_zero_mask"].getBoolean())
             command += " --zero_mask ";
-        try {
-            if (joboptions["highres_limit"].getNumber() > 0)
+
+        if (joboptions["highres_limit"].getNumber() > 0)  // May throw
             command += " --strict_highres_exp " + joboptions["highres_limit"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
 
     }
 
@@ -2630,27 +2451,17 @@ bool RelionJob::getCommandsClass2DJob(
         command += " --skip_align ";
     } else {
 
-        try {
-            // The sampling given in the GUI will be the oversampled one!
-            command += " --psi_step " + floatToString(joboptions["psi_sampling"].getNumber() * pow(2.0, iover));
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        // The sampling given in the GUI will be the oversampled one!
+        command += " --psi_step " + floatToString(joboptions["psi_sampling"].getNumber() * pow(2.0, iover));
 
         // Offset range
         command += " --offset_range " + joboptions["offset_range"].getString();
-        try {
-            // The sampling given in the GUI will be the oversampled one!
-            command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
 
-        if (joboptions["allow_coarser"].getBoolean()) {
+        // The sampling given in the GUI will be the oversampled one!
+        command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));
+
+        if (joboptions["allow_coarser"].getBoolean())
             command += " --allow_coarser_sampling";
-        }
 
     }
 
@@ -2662,19 +2473,13 @@ bool RelionJob::getCommandsClass2DJob(
             if (joboptions["do_bimodal_psi"].getBoolean())
                 command += " --bimodal_psi";
 
-            try {
-                RFLOAT range_psi = joboptions["range_psi"].getNumber();
-                if (range_psi <  0.0) { range_psi =  0.0; }
-                if (range_psi > 90.0) { range_psi = 90.0; }
-                command += " --sigma_psi " + floatToString(range_psi / 3.0);
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            RFLOAT range_psi = joboptions["range_psi"].getNumber();  // May throw
+            if (range_psi <  0.0) { range_psi =  0.0; }
+            if (range_psi > 90.0) { range_psi = 90.0; }
+            command += " --sigma_psi " + floatToString(range_psi / 3.0);
 
-            if (joboptions["do_restrict_xoff"].getBoolean()) {
+            if (joboptions["do_restrict_xoff"].getBoolean())
                 command += " --helix --helical_rise_initial " + joboptions["helical_rise"].getString();
-            }
         }
     }
 
@@ -2694,7 +2499,7 @@ bool RelionJob::getCommandsClass2DJob(
     command += " " + joboptions["other_args"].getString();
 
     commands.push_back(command);
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 // Constructor for initial model job
@@ -2786,29 +2591,21 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','. For example: '0,0:1,1:0,0:1,1'");
 }
 
-bool RelionJob::getCommandsInimodelJob(
+void RelionJob::getCommandsInimodelJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
 
     initialisePipeline(outputname, Process::INIMODEL_NAME, job_counter);
 
-    string command;
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_refine_mpi`" : "`which relion_refine`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
+        "`which relion_refine_mpi`" : "`which relion_refine`";
 
     FileName fn_run = "run";
     if (is_continue) {
-        if (joboptions["fn_cont"].getString().empty()) {
-            error_message = errorMsg("empty field for continuation STAR file...");
-            return false;
-        }
+        if (joboptions["fn_cont"].getString().empty())
+        throw errorMsg("empty field for continuation STAR file...");
         int pos_it = joboptions["fn_cont"].getString().rfind("_it");
         int pos_op = joboptions["fn_cont"].getString().rfind("_optimiser");
         if (pos_it < 0 || pos_op < 0)
@@ -2820,20 +2617,14 @@ bool RelionJob::getCommandsInimodelJob(
 
     command += " --o " + outputname + fn_run;
 
-    try {
+    // getNumber() calls may throw
+    int total_nr_iter = joboptions["sgd_ini_iter"].getNumber()
+                      + joboptions["sgd_inbetween_iter"].getNumber()
+                      + joboptions["sgd_fin_iter"].getNumber();
 
-        int total_nr_iter = joboptions["sgd_ini_iter"].getNumber()
-                          + joboptions["sgd_inbetween_iter"].getNumber()
-                          + joboptions["sgd_fin_iter"].getNumber();
+    int nr_classes = joboptions["nr_classes"].getNumber();
 
-        int nr_classes = joboptions["nr_classes"].getNumber();
-
-        outputNodes = getOutputNodesRefine(outputname + fn_run, total_nr_iter, nr_classes, 3, 1);
-
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    outputNodes = getOutputNodesRefine(outputname + fn_run, total_nr_iter, nr_classes, 3, 1);
 
     command += " --sgd_ini_iter "       + joboptions["sgd_ini_iter"].getString();
     command += " --sgd_inbetween_iter " + joboptions["sgd_inbetween_iter"].getString();
@@ -2847,10 +2638,9 @@ bool RelionJob::getCommandsInimodelJob(
     if (!is_continue) {
         command += " --sgd ";
 
-        if (joboptions["fn_img"].getString().empty()) {
-            error_message = errorMsg("empty field for input STAR file...");
-            return false;
-        }
+        if (joboptions["fn_img"].getString().empty())
+        throw errorMsg("empty field for input STAR file...");
+
         command += " --denovo_3dref --i " + joboptions["fn_img"].getString();
         Node node(joboptions["fn_img"].getString(), joboptions["fn_img"].node_type);
         inputNodes.push_back(node);
@@ -2894,22 +2684,17 @@ bool RelionJob::getCommandsInimodelJob(
     command += " --oversampling " + floatToString((float)iover);
 
     int sampling = JobOption::getHealPixOrder(joboptions["sampling"].getString());
-    if (sampling <= 0) {
-        error_message = "Wrong choice for sampling";
-        return false;
-    }
+    if (sampling <= 0)
+    throw "Wrong choice for sampling";
+
     // The sampling given in the GUI will be the oversampled one!
     command += " --healpix_order " + floatToString(sampling - iover);
 
     // Offset range
     command += " --offset_range " + joboptions["offset_range"].getString();
+
     // The sampling given in the GUI will be the oversampled one!
-    try {
-        command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));
 
     // Running stuff
     command += " --j " + joboptions["nr_threads"].getString();
@@ -2924,7 +2709,7 @@ bool RelionJob::getCommandsInimodelJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseClass3DJob() {
@@ -3127,60 +2912,45 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','.  For example: '0,0:1,1:0,0:1,1'");
 }
 
-bool RelionJob::getCommandsClass3DJob(
+void RelionJob::getCommandsClass3DJob(
     string &outputname, vector<string> &commands, string &final_command,
-    bool do_makedir, int job_counter, string &error_message
-) {
+    bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASS3D_NAME, job_counter);
-    string command;
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_refine_mpi`" : "`which relion_refine`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
+        "`which relion_refine_mpi`" : "`which relion_refine`";
 
     FileName fn_run = "run";
     if (is_continue) {
-        if (joboptions["fn_cont"].getString().empty()) {
-            error_message = errorMsg("empty field for continuation STAR file...");
-            return false;
-        }
+        if (joboptions["fn_cont"].getString().empty())
+        throw errorMsg("empty field for continuation STAR file...");
+
         int pos_it = joboptions["fn_cont"].getString().rfind("_it");
         int pos_op = joboptions["fn_cont"].getString().rfind("_optimiser");
         if (pos_it < 0 || pos_op < 0)
             std::cerr << "Warning: invalid optimiser.star filename provided for continuation run: " << joboptions["fn_cont"].getString() << std::endl;
-        int it = (int)textToFloat((joboptions["fn_cont"].getString().substr(pos_it + 3, 6)).c_str());
+        int it = textToFloat((joboptions["fn_cont"].getString().substr(pos_it + 3, 6)).c_str());
         fn_run += "_ct" + floatToString(it);;
         command += " --continue " + joboptions["fn_cont"].getString();
     }
 
     command += " --o " + outputname + fn_run;
 
-    try {
-        int nr_iter    = joboptions["nr_iter"].getNumber();
-        int nr_classes = joboptions["nr_classes"].getNumber();
-        outputNodes = getOutputNodesRefine(outputname + fn_run, nr_iter, nr_classes, 3, 1);
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    int nr_iter    = joboptions["nr_iter"].getNumber();  // May throw
+    int nr_classes = joboptions["nr_classes"].getNumber();  // May throw
+    outputNodes = getOutputNodesRefine(outputname + fn_run, nr_iter, nr_classes, 3, 1);
 
     if (!is_continue) {
-        if (joboptions["fn_img"].getString().empty()) {
-            error_message = errorMsg("empty field for input STAR file...");
-            return false;
-        }
+        if (joboptions["fn_img"].getString().empty())
+        throw errorMsg("empty field for input STAR file...");
+
         command += " --i " + joboptions["fn_img"].getString();
         Node node(joboptions["fn_img"].getString(), joboptions["fn_img"].node_type);
         inputNodes.push_back(node);
 
-        if (joboptions["fn_ref"].getString().empty()) {
-            error_message = errorMsg("empty field for reference. Type None for de-novo subtomogram averaging, provide reference for single-particle analysis.");
-            return false;
-        }
+        if (joboptions["fn_ref"].getString().empty())
+        throw errorMsg("empty field for reference. Type None for de-novo subtomogram averaging, provide reference for single-particle analysis.");
 
         if (joboptions["fn_ref"].getString() != "None") {
             command += " --ref " + joboptions["fn_ref"].getString();
@@ -3191,13 +2961,8 @@ bool RelionJob::getCommandsClass3DJob(
                 command += " --firstiter_cc";
         }
 
-        try {
-            if (joboptions["ini_high"].getNumber() > 0.0)
-            command += " --ini_high " + joboptions["ini_high"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        if (joboptions["ini_high"].getNumber() > 0.0)  // May throw
+        command += " --ini_high " + joboptions["ini_high"].getString();
 
     }
 
@@ -3208,7 +2973,7 @@ bool RelionJob::getCommandsClass3DJob(
         command += " --no_parallel_disc_io";
     if (joboptions["do_preread_images"].getBoolean()) {
         command += " --preread_images " ;
-    } else if (joboptions["scratch_dir"].getString() != "") {
+    } else if (!joboptions["scratch_dir"].getString().empty()) {
         command += " --scratch_dir " +  joboptions["scratch_dir"].getString();
     }
     command += " --pool " + joboptions["nr_pool"].getString();
@@ -3240,15 +3005,12 @@ bool RelionJob::getCommandsClass3DJob(
         command += " --flatten_solvent";
         if (joboptions["do_zero_mask"].getBoolean())
             command += " --zero_mask";
-        try {
-            if (joboptions["highres_limit"].getNumber() > 0)
-            command += " --strict_highres_exp " + joboptions["highres_limit"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+
+        if (joboptions["highres_limit"].getNumber() > 0)  // May throw
+        command += " --strict_highres_exp " + joboptions["highres_limit"].getString();
 
     }
+
     if (joboptions["fn_mask"].getString().length() > 0) {
         command += " --solvent_mask " + joboptions["fn_mask"].getString();
         Node node(joboptions["fn_mask"].getString(), joboptions["fn_mask"].node_type);
@@ -3262,38 +3024,26 @@ bool RelionJob::getCommandsClass3DJob(
         int iover = 1;
         command += " --oversampling " + floatToString((float) iover);
         int sampling = JobOption::getHealPixOrder(joboptions["sampling"].getString());
-        if (sampling <= 0) {
-            error_message = "Wrong choice for sampling";
-            return false;
-        }
+        if (sampling <= 0)
+        throw "Wrong choice for sampling";
+
         // The sampling given in the GUI will be the oversampled one!
         command += " --healpix_order " + integerToString(sampling - iover);
 
         // Manually input local angular searches
         if (joboptions["do_local_ang_searches"].getBoolean()) {
-            try {
-                command += " --sigma_ang " + floatToString(joboptions["sigma_angles"].getNumber() / 3.0);
-                if (joboptions["relax_sym"].getString().length() > 0)
-                command += " --relax_sym " + joboptions["relax_sym"].getString();
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            command += " --sigma_ang " + floatToString(joboptions["sigma_angles"].getNumber() / 3.0);  // May throw
+            if (joboptions["relax_sym"].getString().length() > 0)
+            command += " --relax_sym " + joboptions["relax_sym"].getString();
         }
 
         // Offset range
         command += " --offset_range " + joboptions["offset_range"].getString();
         // The sampling given in the GUI will be the oversampled one!
-        try {
-            command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));  // May  throw
 
-        if (joboptions["allow_coarser"].getBoolean()) {
+        if (joboptions["allow_coarser"].getBoolean())
             command += " --allow_coarser_sampling";
-        }
 
     }
 
@@ -3306,14 +3056,9 @@ bool RelionJob::getCommandsClass3DJob(
     if (!is_continue && joboptions["do_helix"].getBoolean()) {
         command += " --helix";
 
-        try {
-            float inner_diam = joboptions["helical_tube_inner_diameter"].getNumber();
-            if (inner_diam > 0.0)
-            command += " --helical_inner_diameter " + joboptions["helical_tube_inner_diameter"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        float inner_diam = joboptions["helical_tube_inner_diameter"].getNumber();  // May throw
+        if (inner_diam > 0.0)
+        command += " --helical_inner_diameter " + joboptions["helical_tube_inner_diameter"].getString();
 
         command += " --helical_outer_diameter " + joboptions["helical_tube_outer_diameter"].getString();
 
@@ -3322,39 +3067,24 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --helical_twist_initial " + joboptions["helical_twist_initial"].getString();
             command += " --helical_rise_initial " + joboptions["helical_rise_initial"].getString();
 
-            try {
-                float myz = joboptions["helical_z_percentage"].getNumber() / 100.0;
-                command += " --helical_z_percentage " + floatToString(myz);
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            float myz = joboptions["helical_z_percentage"].getNumber() / 100.0;  // May throw
+            command += " --helical_z_percentage " + floatToString(myz);
 
             if (joboptions["do_local_search_helical_symmetry"].getBoolean()) {
                 command += " --helical_symmetry_search";
                 command += " --helical_twist_min " + joboptions["helical_twist_min"].getString();
                 command += " --helical_twist_max " + joboptions["helical_twist_max"].getString();
 
-                try {
-                    float twist_inistep = joboptions["helical_twist_inistep"].getNumber();
-                    if (twist_inistep > 0.0)
-                    command += " --helical_twist_inistep " + joboptions["helical_twist_inistep"].getString();
-                } catch (const string &errmsg) {
-                    error_message = errmsg;
-                    return false;
-                }
+                float twist_inistep = joboptions["helical_twist_inistep"].getNumber();  // May throw
+                if (twist_inistep > 0.0)
+                command += " --helical_twist_inistep " + joboptions["helical_twist_inistep"].getString();
 
                 command += " --helical_rise_min " + joboptions["helical_rise_min"].getString();
                 command += " --helical_rise_max " + joboptions["helical_rise_max"].getString();
 
-                try {
-                    float rise_inistep = joboptions["helical_rise_inistep"].getNumber();
-                    if (rise_inistep > 0.0)
-                    command += " --helical_rise_inistep " + joboptions["helical_rise_inistep"].getString();
-                } catch (const string &errmsg) {
-                    error_message = errmsg;
-                    return false;
-                }
+                float rise_inistep = joboptions["helical_rise_inistep"].getNumber();  // May throw
+                if (rise_inistep > 0.0)
+                command += " --helical_rise_inistep " + joboptions["helical_rise_inistep"].getString();
 
             }
         } else {
@@ -3364,31 +3094,26 @@ bool RelionJob::getCommandsClass3DJob(
             command += " --helical_keep_tilt_prior_fixed";
         if (joboptions["dont_skip_align"].getBoolean() && !joboptions["do_local_ang_searches"].getBoolean()) {
 
-            try {
+            // Any of these getNumber() calls may throw
 
-                float range_tilt = joboptions["range_tilt"].getNumber();
-                if (range_tilt <  0.0) { range_tilt =  0.0; }
-                if (range_tilt > 90.0) { range_tilt = 90.0; }
-                command += " --sigma_tilt " + floatToString(range_tilt / 3.0);
+            float range_tilt = joboptions["range_tilt"].getNumber();
+            if (range_tilt <  0.0) { range_tilt =  0.0; }
+            if (range_tilt > 90.0) { range_tilt = 90.0; }
+            command += " --sigma_tilt " + floatToString(range_tilt / 3.0);
 
-                float range_psi = joboptions["range_psi"].getNumber();
-                if (range_psi <  0.0) { range_psi =  0.0; }
-                if (range_psi > 90.0) { range_psi = 90.0; }
-                command += " --sigma_psi " + floatToString(range_psi / 3.0);
+            float range_psi = joboptions["range_psi"].getNumber();
+            if (range_psi <  0.0) { range_psi =  0.0; }
+            if (range_psi > 90.0) { range_psi = 90.0; }
+            command += " --sigma_psi " + floatToString(range_psi / 3.0);
 
-                float range_rot = joboptions["range_rot"].getNumber();
-                if (range_rot <  0.0) { range_rot =  0.0; }
-                if (range_rot > 90.0) { range_rot = 90.0; }
-                command += " --sigma_rot " + floatToString(range_rot / 3.0);
+            float range_rot = joboptions["range_rot"].getNumber();
+            if (range_rot <  0.0) { range_rot =  0.0; }
+            if (range_rot > 90.0) { range_rot = 90.0; }
+            command += " --sigma_rot " + floatToString(range_rot / 3.0);
 
-                float helical_range_distance = joboptions["helical_range_distance"].getNumber();
-                if (helical_range_distance > 0.0)
-                command += " --helical_sigma_distance " + floatToString(helical_range_distance / 3.0);
-
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            float helical_range_distance = joboptions["helical_range_distance"].getNumber();
+            if (helical_range_distance > 0.0)
+            command += " --helical_sigma_distance " + floatToString(helical_range_distance / 3.0);
 
         }
     }
@@ -3398,10 +3123,9 @@ bool RelionJob::getCommandsClass3DJob(
 
     // GPU-stuff
     if (joboptions["use_gpu"].getBoolean()) {
-        if (!joboptions["dont_skip_align"].getBoolean()) {
-            error_message = errorMsg("you cannot use GPUs when skipping image alignments.");
-            return false;
-        }
+        if (!joboptions["dont_skip_align"].getBoolean())
+        throw errorMsg("you cannot use GPUs when skipping image alignments.");
+
         command += " --gpu \"" + joboptions["gpu_ids"].getString() + "\"";
     }
 
@@ -3410,7 +3134,7 @@ bool RelionJob::getCommandsClass3DJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseAutorefineJob() {
@@ -3590,32 +3314,25 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','.  For example: '0,0:1,1:0,0:1,1'");
 }
 
-bool RelionJob::getCommandsAutorefineJob(
+void RelionJob::getCommandsAutorefineJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::AUTO3D_NAME, job_counter);
-    string command;
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_refine_mpi`" : "`which relion_refine`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
+        "`which relion_refine_mpi`" : "`which relion_refine`";
 
     FileName fn_run = "run";
     if (is_continue) {
-        if (joboptions["fn_cont"].getString().empty()) {
-            error_message = errorMsg("empty field for continuation STAR file...");
-            return false;
-        }
+        if (joboptions["fn_cont"].getString().empty())
+        throw errorMsg("empty field for continuation STAR file...");
+
         int pos_it = joboptions["fn_cont"].getString().rfind("_it");
         int pos_op = joboptions["fn_cont"].getString().rfind("_optimiser");
         if (pos_it < 0 || pos_op < 0)
             std::cerr << "Warning: invalid optimiser.star filename provided for continuation run: " << joboptions["fn_cont"].getString() << std::endl;
-        int it = (int) textToFloat((joboptions["fn_cont"].getString().substr(pos_it + 3, 6)).c_str());
+        int it = textToFloat((joboptions["fn_cont"].getString().substr(pos_it + 3, 6)).c_str());
         fn_run += "_ct" + floatToString(it);
         command += " --continue " + joboptions["fn_cont"].getString();
     }
@@ -3626,16 +3343,14 @@ bool RelionJob::getCommandsAutorefineJob(
 
     if (!is_continue) {
         command += " --auto_refine --split_random_halves --i " + joboptions["fn_img"].getString();
-        if (joboptions["fn_img"].getString().empty()) {
-            error_message = errorMsg("empty field for input STAR file...");
-            return false;
-        }
+        if (joboptions["fn_img"].getString().empty())
+        throw errorMsg("empty field for input STAR file...");
+
         Node node(joboptions["fn_img"].getString(), joboptions["fn_img"].node_type);
         inputNodes.push_back(node);
-        if (joboptions["fn_ref"].getString().empty()) {
-            error_message = errorMsg("empty field for input reference...");
-            return false;
-        }
+        if (joboptions["fn_ref"].getString().empty())
+        throw errorMsg("empty field for input reference...");
+
         if (joboptions["fn_ref"].getString() != "None") {
             command += " --ref " + joboptions["fn_ref"].getString();
             Node node(joboptions["fn_ref"].getString(), joboptions["fn_ref"].node_type);
@@ -3644,13 +3359,9 @@ bool RelionJob::getCommandsAutorefineJob(
             if (!joboptions["ref_correct_greyscale"].getBoolean())
                 command += " --firstiter_cc";
         }
-        try {
-            if (joboptions["ini_high"].getNumber() > 0.0)
-            command += " --ini_high " + joboptions["ini_high"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+
+        if (joboptions["ini_high"].getNumber() > 0.0)  // May throw
+        command += " --ini_high " + joboptions["ini_high"].getString();
     }
 
     // Always do compute stuff
@@ -3660,7 +3371,7 @@ bool RelionJob::getCommandsAutorefineJob(
         command += " --no_parallel_disc_io";
     if (joboptions["do_preread_images"].getBoolean())
         command += " --preread_images " ;
-    else if (joboptions["scratch_dir"].getString() != "")
+    else if (!joboptions["scratch_dir"].getString().empty())
         command += " --scratch_dir " +  joboptions["scratch_dir"].getString();
     command += " --pool " + joboptions["nr_pool"].getString();
     command += joboptions["do_pad1"].getBoolean() ? " --pad 1 " : " --pad 2 ";
@@ -3706,31 +3417,24 @@ bool RelionJob::getCommandsAutorefineJob(
         command += " --oversampling " + floatToString((float)iover);
 
         int sampling = JobOption::getHealPixOrder(joboptions["sampling"].getString());
-        if (sampling <= 0) {
-            error_message = "Wrong choice for sampling";
-            return false;
-        }
+        if (sampling <= 0)
+        throw "Wrong choice for sampling";
+
         // The sampling given in the GUI will be the oversampled one!
         command += " --healpix_order " + integerToString(sampling - iover);
 
         // Minimum sampling rate to perform local searches (may be changed upon continuation
         int auto_local_sampling = JobOption::getHealPixOrder(joboptions["auto_local_sampling"].getString());
-        if (auto_local_sampling <= 0) {
-            error_message = "Wrong choice for auto_local_sampling";
-            return false;
-        }
+        if (auto_local_sampling <= 0)
+        throw "Wrong choice for auto_local_sampling";
+
         // The sampling given in the GUI will be the oversampled one!
         command += " --auto_local_healpix_order " + integerToString(auto_local_sampling - iover);
 
         // Offset range
         command += " --offset_range " + joboptions["offset_range"].getString();
         // The sampling given in the GUI will be the oversampled one!
-        try {
-            command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));  // May throw
 
         command += " --sym " + joboptions["sym_name"].getString();
         // Always join low-res data, as some D&I point group refinements may fall into different hands!
@@ -3742,14 +3446,9 @@ bool RelionJob::getCommandsAutorefineJob(
 
             command += " --helix";
 
-            try {
-                float inner_diam = joboptions["helical_tube_inner_diameter"].getNumber();
-                if (inner_diam > 0.0)
-                command += " --helical_inner_diameter " + joboptions["helical_tube_inner_diameter"].getString();
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            float inner_diam = joboptions["helical_tube_inner_diameter"].getNumber();  // May throw
+            if (inner_diam > 0.0)
+            command += " --helical_inner_diameter " + joboptions["helical_tube_inner_diameter"].getString();
 
             command += " --helical_outer_diameter " + joboptions["helical_tube_outer_diameter"].getString();
             if (joboptions["do_apply_helical_symmetry"].getBoolean()) {
@@ -3757,76 +3456,53 @@ bool RelionJob::getCommandsAutorefineJob(
                 command += " --helical_twist_initial " + joboptions["helical_twist_initial"].getString();
                 command += " --helical_rise_initial " + joboptions["helical_rise_initial"].getString();
 
-                try {
-                    float myz = joboptions["helical_z_percentage"].getNumber() / 100.0;
-                    command += " --helical_z_percentage " + floatToString(myz);
-                } catch (const string &errmsg) {
-                    error_message = errmsg;
-                    return false;
-                }
+                float myz = joboptions["helical_z_percentage"].getNumber() / 100.0;  // May throw
+                command += " --helical_z_percentage " + floatToString(myz);
 
                 if (joboptions["do_local_search_helical_symmetry"].getBoolean()) {
                     command += " --helical_symmetry_search";
                     command += " --helical_twist_min " + joboptions["helical_twist_min"].getString();
                     command += " --helical_twist_max " + joboptions["helical_twist_max"].getString();
 
-                    try {
-                        float twist_inistep = joboptions["helical_twist_inistep"].getNumber();
-                        if (twist_inistep > 0.0)
-                        command += " --helical_twist_inistep " + joboptions["helical_twist_inistep"].getString();
-                    } catch (const string &errmsg) {
-                        error_message = errmsg;
-                        return false;
-                    }
+                    float twist_inistep = joboptions["helical_twist_inistep"].getNumber();  // May throw
+                    if (twist_inistep > 0.0)
+                    command += " --helical_twist_inistep " + joboptions["helical_twist_inistep"].getString();
 
                     command += " --helical_rise_min " + joboptions["helical_rise_min"].getString();
                     command += " --helical_rise_max " + joboptions["helical_rise_max"].getString();
 
-                    try {
-                        float rise_inistep = joboptions["helical_rise_inistep"].getNumber();
-                        if (rise_inistep > 0.0)
-                        command += " --helical_rise_inistep " + joboptions["helical_rise_inistep"].getString();
-                    } catch (const string &errmsg) {
-                        error_message = errmsg;
-                        return false;
-                    }
+                    float rise_inistep = joboptions["helical_rise_inistep"].getNumber();  // May throw
+                    if (rise_inistep > 0.0)
+                    command += " --helical_rise_inistep " + joboptions["helical_rise_inistep"].getString();
+
                 }
             } else {
                 command += " --ignore_helical_symmetry";
             }
 
             if (sampling != auto_local_sampling) {
-                try {
+                // Any of these getNumber() calls may throw
 
-                    float range_tilt = joboptions["range_tilt"].getNumber();
-                    if (range_tilt <  0.0) { range_tilt =  0.0; }
-                    if (range_tilt > 90.0) { range_tilt = 90.0; }
-                    command += " --sigma_tilt " + floatToString(range_tilt / 3.0);
+                float range_tilt = joboptions["range_tilt"].getNumber();
+                if (range_tilt <  0.0) { range_tilt =  0.0; }
+                if (range_tilt > 90.0) { range_tilt = 90.0; }
+                command += " --sigma_tilt " + floatToString(range_tilt / 3.0);
 
-                    float range_psi = joboptions["range_psi"].getNumber();
-                    if (range_psi <  0.0) { range_psi =  0.0; }
-                    if (range_psi > 90.0) { range_psi = 90.0; }
-                    command += " --sigma_psi " + floatToString(range_psi / 3.0);
+                float range_psi = joboptions["range_psi"].getNumber();
+                if (range_psi <  0.0) { range_psi =  0.0; }
+                if (range_psi > 90.0) { range_psi = 90.0; }
+                command += " --sigma_psi " + floatToString(range_psi / 3.0);
 
-                    float range_rot = joboptions["range_rot"].getNumber();
-                    if (range_rot <  0.0) { range_rot =  0.0; }
-                    if (range_rot > 90.0) { range_rot = 90.0; }
-                    command += " --sigma_rot " + floatToString(range_rot / 3.0);
+                float range_rot = joboptions["range_rot"].getNumber();
+                if (range_rot <  0.0) { range_rot =  0.0; }
+                if (range_rot > 90.0) { range_rot = 90.0; }
+                command += " --sigma_rot " + floatToString(range_rot / 3.0);
 
-                } catch (const string &errmsg) {
-                    error_message = errmsg;
-                    return false;
-                }
             }
 
-            try {
-                float helical_range_distance = joboptions["helical_range_distance"].getNumber();
-                if (helical_range_distance > 0.0)
-                command += " --helical_sigma_distance " + floatToString(helical_range_distance / 3.0);
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            float helical_range_distance = joboptions["helical_range_distance"].getNumber();   // May throw
+            if (helical_range_distance > 0.0)
+            command += " --helical_sigma_distance " + floatToString(helical_range_distance / 3.0);
 
             if (joboptions["keep_tilt_prior_fixed"].getBoolean())
                 command += " --helical_keep_tilt_prior_fixed";
@@ -3849,7 +3525,7 @@ bool RelionJob::getCommandsAutorefineJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseMultiBodyJob() {
@@ -3932,38 +3608,28 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','.  For example: '0,0:1,1:0,0:1,1'");
 }
 
-bool RelionJob::getCommandsMultiBodyJob(
+void RelionJob::getCommandsMultiBodyJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MULTIBODY_NAME, job_counter);
-    string command;
 
-    if (!exists(joboptions["fn_bodies"].getString())) {
-        error_message = errorMsg("you have to specify an existing body STAR file.");
-        return false;
-    }
+    if (!exists(joboptions["fn_bodies"].getString()))
+    throw errorMsg("you have to specify an existing body STAR file.");
 
     if (
         is_continue &&
         joboptions["fn_cont"].getString().empty() &&
         !joboptions["do_analyse"].getBoolean()
-    ) {
-        error_message = errorMsg("either specify an optimiser file to continue multibody refinement from; OR run flexibility analysis...");
-        return false;
-    }
+    ) throw errorMsg("either specify an optimiser file to continue multibody refinement from; OR run flexibility analysis...");
 
+    string command;
     FileName fn_run = "";
     if (!is_continue || !joboptions["fn_cont"].getString().empty()) {
 
-        try {
-            command = joboptions["nr_mpi"].getNumber() > 1 ?
-                "`which relion_refine_mpi`" : "`which relion_refine`";
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
+            "`which relion_refine_mpi`" : "`which relion_refine`";
 
         MetaDataTable MD;
         MD.read(joboptions["fn_bodies"].getString());
@@ -3993,10 +3659,9 @@ bool RelionJob::getCommandsMultiBodyJob(
             int iover = 1;
             command += " --oversampling " + floatToString((float)iover);
             int sampling = JobOption::getHealPixOrder(joboptions["sampling"].getString());
-            if (sampling <= 0) {
-                error_message = "Wrong choice for sampling";
-                return false;
-            }
+            if (sampling <= 0)
+            throw "Wrong choice for sampling";
+
             // The sampling given in the GUI will be the oversampled one!
             command += " --healpix_order " + integerToString(sampling - iover);
             // Always perform local searches!
@@ -4005,12 +3670,8 @@ bool RelionJob::getCommandsMultiBodyJob(
             // Offset range
             command += " --offset_range " + joboptions["offset_range"].getString();
             // The sampling given in the GUI will be the oversampled one!
-            try {
-                command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            command += " --offset_step " + floatToString(joboptions["offset_step"].getNumber() * pow(2.0, iover));  // May throw
+
         }
 
         if (joboptions["do_subtracted_bodies"].getBoolean())
@@ -4043,7 +3704,7 @@ bool RelionJob::getCommandsMultiBodyJob(
         command += " " + joboptions["other_args"].getString();
 
         commands.push_back(command);
-    } // end if (!is_continue || (is_continue && joboptions["fn_cont"].getString() != ""))
+    }
 
     if (joboptions["do_analyse"].getBoolean()) {
         command = "`which relion_flex_analyse`";
@@ -4059,14 +3720,12 @@ bool RelionJob::getCommandsMultiBodyJob(
                 if (!fn_model.contains("_it"))
                     fns_ok.push_back(fn_model);
             }
-            if (fns_ok.empty()) {
-                error_message = errorMsg("cannot find appropriate model.star file in the output directory");
-                return false;
-            }
-            if (fns_ok.size() > 1) {
-                error_message = errorMsg("there is more than one model.star file (without '_it' specifiers) in the output directory. Move all but one out of the way.");
-                return false;
-            }
+            if (fns_ok.empty())
+            throw errorMsg("cannot find appropriate model.star file in the output directory");
+
+            if (fns_ok.size() > 1)
+            throw errorMsg("there is more than one model.star file (without '_it' specifiers) in the output directory. Move all but one out of the way.");
+
             fn_run = fns_ok[0].beforeFirstOf("_model.star");
         } else {
             fn_run = outputname + fn_run;
@@ -4079,51 +3738,34 @@ bool RelionJob::getCommandsMultiBodyJob(
         command += " --bodies " + joboptions["fn_bodies"].getString();
         command += " --o " + outputname + "analyse";
 
-        try {
-            // Eigenvector movie maps
-            if (joboptions["nr_movies"].getNumber() > 0) {
-                command += " --do_maps ";
-                command += " --k " + joboptions["nr_movies"].getString();
-            }
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
+        // Eigenvector movie maps
+        if (joboptions["nr_movies"].getNumber() > 0) {
+            command += " --do_maps ";
+            command += " --k " + joboptions["nr_movies"].getString();
         }
 
         // Selection
         if (joboptions["do_select"].getBoolean()) {
 
-            try {
-                float minval = joboptions["eigenval_min"].getNumber();
-                float maxval = joboptions["eigenval_max"].getNumber();
-                if (minval >= maxval) {
-                    error_message = errorMsg("the maximum eigenvalue should be larger than the minimum one!");
-                    return false;
-                }
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            float minval = joboptions["eigenval_min"].getNumber();
+            float maxval = joboptions["eigenval_max"].getNumber();
+            if (minval >= maxval)
+            throw errorMsg("the maximum eigenvalue should be larger than the minimum one!");
 
             command += " --select_eigenvalue "     + joboptions["select_eigenval"].getString();
             command += " --select_eigenvalue_min " + joboptions["eigenval_min"].getString();
             command += " --select_eigenvalue_max " + joboptions["eigenval_max"].getString();
 
-            try {
-                // Add output node: selected particles star file
-                FileName fnt = outputname + "analyse_eval" + integerToString(joboptions["select_eigenval"].getNumber(), 3) + "_select";
-                int min = round(joboptions["eigenval_min"].getNumber());
-                int max = round(joboptions["eigenval_max"].getNumber());
-                if (min > -99998)
-                fnt += "_min" + integerToString(min);
-                if (max < +99998)
-                fnt += "_max" + integerToString(max);
-                fnt += ".star";
-                outputNodes.push_back(Node(fnt, Node::PART_DATA));
-            } catch (const string &errmsg) {
-                error_message = errmsg;
-                return false;
-            }
+            // Add output node: selected particles star file
+            FileName fnt = outputname + "analyse_eval" + integerToString(joboptions["select_eigenval"].getNumber(), 3) + "_select";
+            int min = round(joboptions["eigenval_min"].getNumber());
+            int max = round(joboptions["eigenval_max"].getNumber());
+            if (min > -99998)
+            fnt += "_min" + integerToString(min);
+            if (max < +99998)
+            fnt += "_max" + integerToString(max);
+            fnt += ".star";
+            outputNodes.push_back(Node(fnt, Node::PART_DATA));
 
         }
 
@@ -4135,7 +3777,7 @@ bool RelionJob::getCommandsMultiBodyJob(
         commands.push_back(command);
     }
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseMaskcreateJob() {
@@ -4156,19 +3798,18 @@ If you don't know what value to use, display one of the unfiltered half-maps in 
 The central part of the box contains more reliable information compared to the top and bottom parts along Z axis. Set this value (%) to the central part length along Z axis divided by the box size. Values around 30% are commonly used but you may want to try different lengths.");
 }
 
-bool RelionJob::getCommandsMaskcreateJob(
+void RelionJob::getCommandsMaskcreateJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MASKCREATE_NAME, job_counter);
     string command = "`which relion_mask_create`";
 
     // I/O
-    if (joboptions["fn_in"].getString().empty()) {
-        error_message = errorMsg("empty field for input STAR file...");
-        return false;
-    }
+    if (joboptions["fn_in"].getString().empty())
+    throw errorMsg("empty field for input STAR file...");
+
     command += " --i " + joboptions["fn_in"].getString();
     Node node(joboptions["fn_in"].getString(), joboptions["fn_in"].node_type);
     inputNodes.push_back(node);
@@ -4177,27 +3818,17 @@ bool RelionJob::getCommandsMaskcreateJob(
     Node node2(outputname + "mask.mrc", Node::MASK);
     outputNodes.push_back(node2);
 
-    try {
-        if (joboptions["lowpass_filter"].getNumber() > 0)
-        command += " --lowpass " + joboptions["lowpass_filter"].getString();
-        if (joboptions["angpix"].getNumber() > 0)
-        command += " --angpix " + joboptions["angpix"].getString();
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    if (joboptions["lowpass_filter"].getNumber() > 0)
+    command += " --lowpass " + joboptions["lowpass_filter"].getString();
+    if (joboptions["angpix"].getNumber() > 0)
+    command += " --angpix " + joboptions["angpix"].getString();
 
     command += " --ini_threshold "   + joboptions["inimask_threshold"].getString();
     command += " --extend_inimask "  + joboptions["extend_inimask"].getString();
     command += " --width_soft_edge " + joboptions["width_mask_edge"].getString();
 
-    try {
-        if (joboptions["do_helix"].getBoolean())
-        command += " --helix --z_percentage " + floatToString(joboptions["helical_z_percentage"].getNumber() / 100.0);
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    if (joboptions["do_helix"].getBoolean())
+    command += " --helix --z_percentage " + floatToString(joboptions["helical_z_percentage"].getNumber() / 100.0);
 
     // Running stuff
     command += " --j " + joboptions["nr_threads"].getString();
@@ -4207,7 +3838,7 @@ bool RelionJob::getCommandsMaskcreateJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseJoinstarJob() {
@@ -4232,39 +3863,30 @@ void RelionJob::initialiseJoinstarJob() {
     joboptions["fn_mov4"] = JobOption("Movie STAR file 4: ", Node::MOVIES, "", "movie STAR file (*.star)", "The fourth of the micrograph movie STAR files to be combined. Leave empty if there are only two or three files to be combined.");
 }
 
-bool RelionJob::getCommandsJoinstarJob(
+void RelionJob::getCommandsJoinstarJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::JOINSTAR_NAME, job_counter);
-    string command;
-    command="`which relion_star_handler`";
+    string command = "`which relion_star_handler`";
 
     int ii = 0;
-    if (joboptions["do_part"].getBoolean())
-        ii++;
-    if (joboptions["do_mic"].getBoolean())
-        ii++;
-    if (joboptions["do_mov"].getBoolean())
-        ii++;
-
-    if (ii == 0) {
-        error_message = "You've selected no type of files for joining. Select a single type!";
-        return false;
-    }
-
-    if (ii > 1) {
-        error_message = "You've selected more than one type of files for joining. Only select a single type!";
-        return false;
-    }
+    ii += joboptions["do_part"].getBoolean();
+    ii += joboptions["do_mic"].getBoolean();
+    ii += joboptions["do_mov"].getBoolean();
+    if (ii == 0)
+    throw "You've selected no type of files for joining. Select a single type!";
+    if (ii > 1)
+    throw "You've selected more than one type of files for joining. Only select a single type!";
 
     // I/O
     if (joboptions["do_part"].getBoolean()) {
-        if (joboptions["fn_part1"].getString().empty() || joboptions["fn_part2"].getString().empty()) {
-            error_message = errorMsg("empty field for first or second input STAR file...");
-            return false;
-        }
+        if (
+            joboptions["fn_part1"].getString().empty() ||
+            joboptions["fn_part2"].getString().empty()
+        ) throw errorMsg("empty field for first or second input STAR file...");
+
         command += " --combine --i \" " + joboptions["fn_part1"].getString();
         Node node(joboptions["fn_part1"].getString(), joboptions["fn_part1"].node_type);
         inputNodes.push_back(node);
@@ -4290,10 +3912,11 @@ bool RelionJob::getCommandsJoinstarJob(
         outputNodes.push_back(node5);
 
     } else if (joboptions["do_mic"].getBoolean()) {
-        if (joboptions["fn_mic1"].getString().empty() || joboptions["fn_mic2"].getString().empty()) {
-            error_message = errorMsg("empty field for first or second input STAR file...");
-            return false;
-        }
+        if (
+            joboptions["fn_mic1"].getString().empty() ||
+            joboptions["fn_mic2"].getString().empty()
+        ) throw errorMsg("empty field for first or second input STAR file...");
+
         command += " --combine --i \" " + joboptions["fn_mic1"].getString();
         Node node(joboptions["fn_mic1"].getString(), joboptions["fn_mic1"].node_type);
         inputNodes.push_back(node);
@@ -4319,10 +3942,11 @@ bool RelionJob::getCommandsJoinstarJob(
         outputNodes.push_back(node5);
 
     } else if (joboptions["do_mov"].getBoolean()) {
-        if (joboptions["fn_mov1"].getString().empty() || joboptions["fn_mov2"].getString().empty()) {
-            error_message = errorMsg("empty field for first or second input STAR file...");
-            return false;
-        }
+        if (
+            joboptions["fn_mov1"].getString().empty() ||
+            joboptions["fn_mov2"].getString().empty()
+        ) throw errorMsg("empty field for first or second input STAR file...");
+
         command += " --combine --i \" " + joboptions["fn_mov1"].getString();
         Node node(joboptions["fn_mov1"].getString(), joboptions["fn_mov1"].node_type);
         inputNodes.push_back(node);
@@ -4353,7 +3977,7 @@ bool RelionJob::getCommandsJoinstarJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseSubtractJob() {
@@ -4377,20 +4001,18 @@ which you want to use for subtraction. It will use the maps from this run for th
     joboptions["new_box"] = JobOption("New box size:", -1, 64, 512, 32, "Provide a non-negative value to re-window the subtracted particles in a smaller box size." );
 }
 
-bool RelionJob::getCommandsSubtractJob(
+void RelionJob::getCommandsSubtractJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::SUBTRACT_NAME, job_counter);
     string command;
 
     if (joboptions["do_fliplabel"].getBoolean()) {
 
-        if (joboptions["nr_mpi"].getNumber() > 1) {  // What if getNumber() throws?
-            error_message = "You cannot use MPI parallelization to revert particle labels.";
-            return false;
-        }
+        if (joboptions["nr_mpi"].getNumber() > 1)  // May throw
+        throw "You cannot use MPI parallelization to revert particle labels.";
 
         Node node(joboptions["fn_fliplabel"].getString(), joboptions["fn_fliplabel"].node_type);
         inputNodes.push_back(node);
@@ -4401,19 +4023,12 @@ bool RelionJob::getCommandsSubtractJob(
         command = "`which relion_particle_subtract`";
         command += " --revert " + joboptions["fn_fliplabel"].getString() + " --o " + outputname;
     } else {
-        try {
-            command = joboptions["nr_mpi"].getNumber() > 1 ?
-                "`which relion_particle_subtract_mpi`" : "`which relion_particle_subtract`";
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        command = joboptions["nr_mpi"].getNumber() > 1 ?
+            "`which relion_particle_subtract_mpi`" : "`which relion_particle_subtract`";
 
         // I/O
-        if (joboptions["fn_opt"].getString().empty()) {
-            error_message = errorMsg("empty field for input optimiser.star...");
-            return false;
-        }
+        if (joboptions["fn_opt"].getString().empty())
+        throw errorMsg("empty field for input optimiser.star...");
 
         command += " --i " + joboptions["fn_opt"].getString();
         Node node(joboptions["fn_opt"].getString(), Node::OPTIMISER);
@@ -4425,10 +4040,9 @@ bool RelionJob::getCommandsSubtractJob(
             inputNodes.push_back(node2);
         }
         if (joboptions["do_data"].getBoolean()) {
-            if (joboptions["fn_data"].getString().empty()) {
-                error_message = errorMsg("empty field for the input particle STAR file...");
-                return false;
-            }
+            if (joboptions["fn_data"].getString().empty())
+            throw errorMsg("empty field for the input particle STAR file...");
+
             command += " --data " + joboptions["fn_data"].getString();
             Node node3(joboptions["fn_data"].getString(), joboptions["fn_data"].node_type);
             inputNodes.push_back(node3);
@@ -4446,13 +4060,9 @@ bool RelionJob::getCommandsSubtractJob(
             command += " --center_z " + joboptions["center_z"].getString();
         }
 
-        try {
-            if (joboptions["new_box"].getNumber() > 0)
+        if (joboptions["new_box"].getNumber() > 0)
             command += " --new_box " + joboptions["new_box"].getString();
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+
     }
 
     // Other arguments
@@ -4460,7 +4070,7 @@ bool RelionJob::getCommandsSubtractJob(
 
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialisePostprocessJob() {
@@ -4488,36 +4098,30 @@ In such cases, set this option to Yes and provide an ad-hoc filter as described 
     joboptions["low_pass"] = JobOption("Ad-hoc low-pass filter (A):",5,1,40,1, "This option allows one to low-pass filter the map at a user-provided frequency (in Angstroms). When using a resolution that is higher than the gold-standard FSC-reported resolution, take care not to interpret noise in the map for signal...");
 }
 
-bool RelionJob::getCommandsPostprocessJob(
+void RelionJob::getCommandsPostprocessJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::POST_NAME, job_counter);
-    string command;
-
-    command = "`which relion_postprocess`";
+    string command = "`which relion_postprocess`";
 
     // Input mask
-    if (joboptions["fn_mask"].getString().empty()) {
-        error_message = errorMsg("empty field for input mask...");
-        return false;
-    }
+    if (joboptions["fn_mask"].getString().empty())
+    throw errorMsg("empty field for input mask...");
+
     command += " --mask " + joboptions["fn_mask"].getString();
     Node node3(joboptions["fn_mask"].getString(), joboptions["fn_mask"].node_type);
     inputNodes.push_back(node3);
 
     // Input half map (one of them)
     FileName fn_half1 = joboptions["fn_in"].getString();
-    if (fn_half1.empty()) {
-        error_message = errorMsg("empty field for input half-map...");
-        return false;
-    }
+    if (fn_half1.empty())
+    throw errorMsg("empty field for input half-map...");
+
     FileName fn_half2;
-    if (!fn_half1.getTheOtherHalf(fn_half2)) {
-        error_message = errorMsg("cannot find 'half' substring in the input filename...");
-        return false;
-    }
+    if (!fn_half1.getTheOtherHalf(fn_half2))
+    throw errorMsg("cannot find 'half' substring in the input filename...");
 
     Node node(fn_half1, joboptions["fn_in"].node_type);
     inputNodes.push_back(node);
@@ -4559,7 +4163,7 @@ bool RelionJob::getCommandsPostprocessJob(
     command += " " + joboptions["other_args"].getString();
 
     commands.push_back(command);
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseLocalresJob() {
@@ -4590,30 +4194,25 @@ This is a developmental feature in need of further testing, but initial results 
     joboptions["fn_mtf"] = JobOption("MTF of the detector (STAR file)", "", "STAR Files (*.star)", ".", "The MTF of the detector is used to complement the user-provided B-factor in the sharpening. If you don't have this curve, you can leave this field empty.");
 }
 
-bool RelionJob::getCommandsLocalresJob(
+void RelionJob::getCommandsLocalresJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::RESMAP_NAME, job_counter);
     string command;
 
-    if (joboptions["do_resmap_locres"].getBoolean() == joboptions["do_relion_locres"].getBoolean()) {
-        error_message = errorMsg("choose either ResMap or Relion for local resolution estimation");
-        return false;
-    }
+    if (joboptions["do_resmap_locres"].getBoolean() == joboptions["do_relion_locres"].getBoolean())
+    throw errorMsg("choose either ResMap or Relion for local resolution estimation");
 
-    if (joboptions["fn_in"].getString().empty()) {
-        error_message = errorMsg("empty field for input half-map...");
-        return false;
-    }
+    if (joboptions["fn_in"].getString().empty())
+    throw errorMsg("empty field for input half-map...");
+
     // Get the two half-reconstruction names from the single one
     FileName fn_half1 = joboptions["fn_in"].getString();
     FileName fn_half2;
-    if (!fn_half1.getTheOtherHalf(fn_half2)) {
-        error_message = errorMsg("cannot find 'half' substring in the input filename...");
-        return false;
-    }
+    if (!fn_half1.getTheOtherHalf(fn_half2))
+    throw errorMsg("cannot find 'half' substring in the input filename...");
 
     Node node(joboptions["fn_in"].getString(), joboptions["fn_in"].node_type);
     inputNodes.push_back(node);
@@ -4621,30 +4220,17 @@ bool RelionJob::getCommandsLocalresJob(
     if (joboptions["do_resmap_locres"].getBoolean()) {
 
         // ResMap wrapper
-        if (joboptions["fn_resmap"].getString().length() == 0) {
-            error_message = errorMsg("please provide an executable for the ResMap program.");
-            return false;
-        }
+        if (joboptions["fn_resmap"].getString().empty())
+        throw errorMsg("please provide an executable for the ResMap program.");
 
-        if (joboptions["fn_mask"].getString().empty()) {
-            error_message = errorMsg("Please provide an input mask for ResMap local-resolution estimation.");
-            return false;
-        }
+        if (joboptions["fn_mask"].getString().empty())
+        throw errorMsg("Please provide an input mask for ResMap local-resolution estimation.");
 
-        if (joboptions["do_queue"].getBoolean()) {
-            error_message = errorMsg("You cannot submit a ResMap job to the queue, as it needs user interaction.");
-            return false;
-        }
+        if (joboptions["do_queue"].getBoolean())
+        throw errorMsg("You cannot submit a ResMap job to the queue, as it needs user interaction.");
 
-        try {
-            if (joboptions["nr_mpi"].getNumber() > 1) {
-                error_message = "You cannot use more than 1 MPI processor for the ResMap wrapper...";
-                return false;
-            }
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        if (joboptions["nr_mpi"].getNumber() > 1)
+        throw "You cannot use more than 1 MPI processor for the ResMap wrapper...";
 
         // Make symbolic links to the half-maps in the output directory
         commands.push_back("ln -s ../../" + fn_half1 + " " + outputname + "half1.mrc");
@@ -4668,13 +4254,8 @@ bool RelionJob::getCommandsLocalresJob(
     } else if (joboptions["do_relion_locres"].getBoolean()) {
         // Relion postprocessing
 
-        try {
-            command = joboptions["nr_mpi"].getNumber() > 1 ?
-                "`which relion_postprocess_mpi`" : "`which relion_postprocess`";
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        command = joboptions["nr_mpi"].getNumber() > 1 ?
+            "`which relion_postprocess_mpi`" : "`which relion_postprocess`";
 
         command += " --locres --i " + joboptions["fn_in"].getString();
         command += " --o " + outputname + "relion";
@@ -4701,7 +4282,7 @@ bool RelionJob::getCommandsLocalresJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseMotionrefineJob() {
@@ -4738,57 +4319,35 @@ The mask used for this postprocessing will be applied to the unfiltered half-map
     joboptions["maxres"] = JobOption("Maximum resolution for B-factor fit (A): ", -1, -1, 15, 1, "The maximum spatial frequency (in Angstrom) used in the B-factor fit. If a negative value is given, the maximum is determined from the input FSC curve.");
 }
 
-bool RelionJob::getCommandsMotionrefineJob(
+void RelionJob::getCommandsMotionrefineJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MOTIONREFINE_NAME, job_counter);
-    string command;
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?
+        "`which relion_motion_refine_mpi`" : "`which relion_motion_refine`";
 
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_motion_refine_mpi`" : "`which relion_motion_refine`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    if (joboptions["fn_data"].getString().empty())
+    throw errorMsg("empty field for input particle STAR file...");
 
-    if (joboptions["fn_data"].getString().empty()) {
-        error_message = errorMsg("empty field for input particle STAR file...");
-        return false;
-    }
-    if (joboptions["fn_mic"].getString().empty()) {
-        error_message = errorMsg("empty field for input micrograph STAR file...");
-        return false;
-    }
-    if (joboptions["fn_post"].getString().empty()) {
-        error_message = errorMsg("empty field for input PostProcess STAR file...");
-        return false;
-    }
+    if (joboptions["fn_mic"].getString().empty())
+    throw errorMsg("empty field for input micrograph STAR file...");
 
-    if (joboptions["do_param_optim"].getBoolean() && joboptions["do_polish"].getBoolean()) {
-        error_message = errorMsg("Choose either parameter training or polishing, not both.");
-        return false;
-    }
+    if (joboptions["fn_post"].getString().empty())
+    throw errorMsg("empty field for input PostProcess STAR file...");
 
-    if (!joboptions["do_param_optim"].getBoolean() && !joboptions["do_polish"].getBoolean()) {
-        error_message = errorMsg("nothing to do, choose either parameter training or polishing.");
-        return false;
-    }
+    if (joboptions["do_param_optim"].getBoolean() && joboptions["do_polish"].getBoolean())
+    throw errorMsg("Choose either parameter training or polishing, not both.");
 
-    try {
-        if (!joboptions["eval_frac"].isSchedulerVariable() && (
-            joboptions["eval_frac"].getNumber() <= 0.1 || 
-            joboptions["eval_frac"].getNumber() >  0.9
-        )) {
-            error_message = errorMsg("the fraction of Fourier pixels used for evaluation should be between 0.1 and 0.9.");
-            return false;
-        }
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    if (!joboptions["do_param_optim"].getBoolean() && !joboptions["do_polish"].getBoolean())
+    throw errorMsg("nothing to do, choose either parameter training or polishing.");
+
+    if (!joboptions["eval_frac"].isSchedulerVariable() && (
+        joboptions["eval_frac"].getNumber() <= 0.1 ||
+        joboptions["eval_frac"].getNumber() >  0.9
+    ))
+    throw errorMsg("the fraction of Fourier pixels used for evaluation should be between 0.1 and 0.9.");
 
     Node node(joboptions["fn_data"].getString(), joboptions["fn_data"].node_type);
     inputNodes.push_back(node);
@@ -4805,17 +4364,12 @@ bool RelionJob::getCommandsMotionrefineJob(
 
     if (joboptions["do_param_optim"].getBoolean()) {
         // Estimate meta-parameters
-        try {
-            RFLOAT align_frac = 1.0 - joboptions["eval_frac"].getNumber();
-            command += " --min_p " + joboptions["optim_min_part"].getString();
-            command += " --eval_frac " + joboptions["eval_frac"].getString();
-            command += " --align_frac " + floatToString(align_frac);
-            command += joboptions["sigma_acc"].getNumber() < 0 ?
-                " --params2 " : " --params3 ";
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
-        }
+        RFLOAT align_frac = 1.0 - joboptions["eval_frac"].getNumber();
+        command += " --min_p " + joboptions["optim_min_part"].getString();
+        command += " --eval_frac " + joboptions["eval_frac"].getString();
+        command += " --align_frac " + floatToString(align_frac);
+        command += joboptions["sigma_acc"].getNumber() < 0 ?
+            " --params2 " : " --params3 ";
 
         Node node5(outputname+"opt_params_all_groups.txt", Node::POLISH_PARAMS);
         outputNodes.push_back(node5);
@@ -4826,10 +4380,9 @@ bool RelionJob::getCommandsMotionrefineJob(
             command += " --s_div " + joboptions["sigma_div"].getString();
             command += " --s_acc " + joboptions["sigma_acc"].getString();
         } else {
-            if (joboptions["opt_params"].getString().empty()) {
-                error_message = errorMsg("Please specify an optimised parameter file OR choose 'use own paramaeters' and set three sigma values.");
-                return false;
-            }
+            if (joboptions["opt_params"].getString().empty())
+            throw errorMsg("Please specify an optimised parameter file OR choose 'use own paramaeters' and set three sigma values.");
+
             command += " --params_file " + joboptions["opt_params"].getString();
         }
 
@@ -4837,36 +4390,25 @@ bool RelionJob::getCommandsMotionrefineJob(
         command += " --bfac_minfreq " + joboptions["minres"].getString();
         command += " --bfac_maxfreq " + joboptions["maxres"].getString();
 
-        try {
-            const int window = round(joboptions["extract_size"].getNumber());
-            const int scale  = round(joboptions["rescale"].getNumber());
+        const int window = round(joboptions["extract_size"].getNumber());
+        const int scale  = round(joboptions["rescale"].getNumber());
 
-            if (window * scale <= 0) {
-                error_message = errorMsg("Please specify both the extraction box size and the downsampled size, or leave both the default (-1)");
-                return false;
-            }
+        if (window * scale <= 0)
+        throw errorMsg("Please specify both the extraction box size and the downsampled size, or leave both the default (-1)");
 
-            if (window > 0 && scale > 0) {
-                if (window % 2 != 0) {
-                    error_message = errorMsg("The extraction box size must be an even number");
-                    return false;
-                }
-                command += " --window " + joboptions["extract_size"].getString();
+        if (window > 0 && scale > 0) {
+            if (window % 2 != 0)
+            throw errorMsg("The extraction box size must be an even number");
 
-                if (scale % 2 != 0) {
-                    error_message = errorMsg("The downsampled box size must be an even number.");
-                    return false;
-                }
+            command += " --window " + joboptions["extract_size"].getString();
 
-                if (scale > window) {
-                    error_message = errorMsg("The downsampled box size cannot be larger than the extraction size.");
-                    return false;
-                }
-                command += " --scale " + joboptions["rescale"].getString();
-            }
-        } catch (const string &errmsg) {
-            error_message = errmsg;
-            return false;
+            if (scale % 2 != 0)
+            throw errorMsg("The downsampled box size must be an even number.");
+
+            if (scale > window)
+            throw errorMsg("The downsampled box size cannot be larger than the extraction size.");
+
+            command += " --scale " + joboptions["rescale"].getString();
         }
 
         Node node6(outputname + "logfile.pdf", Node::PDF_LOGFILE);
@@ -4887,7 +4429,7 @@ bool RelionJob::getCommandsMotionrefineJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseCtfrefineJob() {
@@ -4918,40 +4460,28 @@ This option cannot be done simultaneously with higher-order aberration estimatio
     joboptions["do_4thorder"] = JobOption("Estimate 4th order aberrations?", false, "If set to Yes, then relion_ctf_refine will also estimate the Cs and the tetrafoil (4-fold astigmatism) per optics group. This option is only recommended for data sets that extend beyond 3 Angstrom resolution.");
 }
 
-bool RelionJob::getCommandsCtfrefineJob(
+void RelionJob::getCommandsCtfrefineJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CTFREFINE_NAME, job_counter);
-    string command;
+    string command = joboptions["nr_mpi"].getNumber() > 1 ?
+        "`which relion_ctf_refine_mpi`" : "`which relion_ctf_refine`";
 
-    try {
-        command = joboptions["nr_mpi"].getNumber() > 1 ?
-            "`which relion_ctf_refine_mpi`" : "`which relion_ctf_refine`";
-    } catch (const string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    if (joboptions["fn_data"].getString().empty())
+    throw errorMsg("empty field for input particle STAR file...");
 
-    if (joboptions["fn_data"].getString().empty()) {
-        error_message = errorMsg("empty field for input particle STAR file...");
-        return false;
-    }
-    if (joboptions["fn_post"].getString().empty()) {
-        error_message = errorMsg("empty field for input PostProcess STAR file...");
-        return false;
-    }
+    if (joboptions["fn_post"].getString().empty())
+    throw errorMsg("empty field for input PostProcess STAR file...");
 
     if (
         !joboptions["do_aniso_mag"].getBoolean() &&
         !joboptions["do_ctf"].getBoolean() &&
         !joboptions["do_tilt"].getBoolean() &&
         !joboptions["do_4thorder"].getBoolean()
-    ) {
-        error_message = errorMsg("you haven't selected to fit anything...");
-        return false;
-    }
+    )
+    throw errorMsg("you haven't selected to fit anything...");
 
     if (
         !joboptions["do_aniso_mag"].getBoolean() &&
@@ -4960,10 +4490,8 @@ bool RelionJob::getCommandsCtfrefineJob(
         joboptions["do_astig"].getString() == job_ctffit_options[0] &&
         joboptions["do_bfactor"].getString() == job_ctffit_options[0] &&
         joboptions["do_phase"].getString() == job_ctffit_options[0]
-    ) {
-        error_message = errorMsg("you did not select any CTF parameter to fit. Either switch off CTF parameter fitting, or select one to fit.");
-        return false;
-    }
+    )
+    throw errorMsg("you did not select any CTF parameter to fit. Either switch off CTF parameter fitting, or select one to fit.");
 
     Node node(joboptions["fn_data"].getString(), joboptions["fn_data"].node_type);
     inputNodes.push_back(node);
@@ -4993,10 +4521,8 @@ bool RelionJob::getCommandsCtfrefineJob(
             fit_options += "f"; // always have Cs refinement switched off
             fit_options += JobOption::getCtfFitString(joboptions["do_bfactor"].getString());
 
-            if (fit_options.size() != 5) {
-                error_message = "Wrong CTF fitting options";
-                return false;
-            }
+            if (fit_options.size() != 5)
+            throw "Wrong CTF fitting options";
 
             command += " --fit_mode " + fit_options;
         }
@@ -5029,7 +4555,7 @@ bool RelionJob::getCommandsCtfrefineJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
 
 void RelionJob::initialiseExternalJob() {
@@ -5062,49 +4588,46 @@ void RelionJob::initialiseExternalJob() {
     }
 }
 
-bool RelionJob::getCommandsExternalJob(
+void RelionJob::getCommandsExternalJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter, string &error_message
-) {
+    string &final_command, bool do_makedir, int job_counter
+) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::EXTERNAL_NAME, job_counter);
-    string command;
 
-    if (joboptions["fn_exe"].getString().empty()) {
-        error_message = errorMsg("empty field for the external executable script...");
-        return false;
-    }
+    if (joboptions["fn_exe"].getString().empty())
+    throw errorMsg("empty field for the external executable script...");
 
-    command=joboptions["fn_exe"].getString();
+    string command = joboptions["fn_exe"].getString();
     command += " --o " + outputname;
 
     // Optional input nodes
-    if (joboptions["in_mov"].getString() != "") {
+    if (!joboptions["in_mov"].getString().empty()) {
         Node node(joboptions["in_mov"].getString(), joboptions["in_mov"].node_type);
         inputNodes.push_back(node);
         command += " --in_movies " + joboptions["in_mov"].getString();
     }
-    if (joboptions["in_mic"].getString() != "") {
+    if (!joboptions["in_mic"].getString().empty()) {
         Node node(joboptions["in_mic"].getString(), joboptions["in_mic"].node_type);
         inputNodes.push_back(node);
         command += " --in_mics " + joboptions["in_mic"].getString();
     }
-    if (joboptions["in_part"].getString() != "") {
+    if (!joboptions["in_part"].getString().empty()) {
         Node node(joboptions["in_part"].getString(), joboptions["in_part"].node_type);
         inputNodes.push_back(node);
         command += " --in_parts " + joboptions["in_part"].getString();
     }
-    if (joboptions["in_coords"].getString() != "") {
+    if (!joboptions["in_coords"].getString().empty()) {
         Node node(joboptions["in_coords"].getString(), joboptions["in_coords"].node_type);
         inputNodes.push_back(node);
         command += " --in_coords " + joboptions["in_coords"].getString();
     }
-    if (joboptions["in_3dref"].getString() != "") {
+    if (!joboptions["in_3dref"].getString().empty()) {
         Node node(joboptions["in_3dref"].getString(), joboptions["in_3dref"].node_type);
         inputNodes.push_back(node);
         command += " --in_3dref " + joboptions["in_3dref"].getString();
     }
-    if (joboptions["in_mask"].getString() != "") {
+    if (!joboptions["in_mask"].getString().empty()) {
         Node node(joboptions["in_mask"].getString(), joboptions["in_mask"].node_type);
         inputNodes.push_back(node);
         command += " --in_mask " + joboptions["in_mask"].getString();
@@ -5129,5 +4652,5 @@ bool RelionJob::getCommandsExternalJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    return prepareFinalCommand(outputname, commands, final_command, do_makedir, error_message);
+    prepareFinalCommand(outputname, commands, final_command, do_makedir);
 }
