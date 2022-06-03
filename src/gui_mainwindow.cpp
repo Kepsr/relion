@@ -1389,7 +1389,7 @@ void GuiMainWindow::cb_select_scheduled_job_i() {
     tickTimeLastChanged();
 
     // Show the 'selected' group. Hide the others.
-    int idx = (show_scheduler ? scheduler_job_browser->value() : 
+    int idx = (show_scheduler ? scheduler_job_browser->value() :
                                 scheduled_job_browser->value() ) - 1;
     if (idx < 0) return;
 
@@ -1485,30 +1485,29 @@ void GuiMainWindow::cb_display_io_node_i() {
         // Get the name of the micrograph STAR file from reading the suffix file
         FileName fn_suffix = pipeline.nodeList[mynode].name;
         if (fn_suffix.getExtension() == "star") {
-            std::ifstream in(fn_suffix.data(), std::ios_base::in);
+            std::ifstream in (fn_suffix.data(), std::ios_base::in);
             FileName fn_star;
             in >> fn_star ;
             in.close();
-            if (fn_star != "") {
-                FileName fn_dirs = fn_suffix.beforeLastOf("/")+"/";
+            if (!fn_star.empty()) {
+                FileName fn_dirs = fn_suffix.beforeLastOf("/") + "/";
                 fn_suffix = fn_suffix.afterLastOf("/").without("coords_suffix_");
                 fn_suffix = fn_suffix.withoutExtension();
                 // Launch the manualpicker...
                 command = "`which relion_manualpick` --i " + fn_star
-                    + " --odir " + fn_dirs
-                    + " --pickname " + fn_suffix
-                    + " --scale " + manualpickjob.joboptions["micscale"].getString()
-                    + " --sigma_contrast " + manualpickjob.joboptions["sigma_contrast"].getString()
-                    + " --black " + manualpickjob.joboptions["black_val"].getString()
-                    + " --white " + manualpickjob.joboptions["white_val"].getString();
+                        + " --odir " + fn_dirs
+                        + " --pickname " + fn_suffix
+                        + " --scale " + manualpickjob.joboptions["micscale"].getString()
+                        + " --sigma_contrast " + manualpickjob.joboptions["sigma_contrast"].getString()
+                        + " --black " + manualpickjob.joboptions["black_val"].getString()
+                        + " --white " + manualpickjob.joboptions["white_val"].getString();
 
-                std::string error_message = "";
                 try {
                     float mylowpass = manualpickjob.joboptions["lowpass"].getNumber();
                     if (mylowpass > 0.0)
                     command += " --lowpass " + manualpickjob.joboptions["lowpass"].getString();
                 } catch (std::string errmsg) {
-                    fl_message("joboption[\"lowpass\"] %s", errmsg.c_str()); 
+                    fl_message("joboption[\"lowpass\"] %s", errmsg.c_str());
                     return;
                 }
 
@@ -1538,8 +1537,8 @@ void GuiMainWindow::cb_display_io_node_i() {
                     command += " --color_label " + manualpickjob.joboptions["color_label"].getString();
                     command += " --blue " + manualpickjob.joboptions["blue_value"].getString();
                     command += " --red " + manualpickjob.joboptions["red_value"].getString();
-                    if (manualpickjob.joboptions["fn_color"].getString().length() > 0)
-                        command += " --color_star " + manualpickjob.joboptions["fn_color"].getString();
+                    if (!manualpickjob.joboptions["fn_color"].getString().empty())
+                    command += " --color_star " + manualpickjob.joboptions["fn_color"].getString();
                 }
 
                 // Other arguments for extraction
@@ -1560,7 +1559,7 @@ void GuiMainWindow::cb_display_io_node_i() {
     } else if (pipeline.nodeList[mynode].type != Node::POST) {
         command = "relion_display --gui --i " + pipeline.nodeList[mynode].name + " &";
     }
-    //std::cerr << " command= " << command << std::endl;
+    // std::cerr << " command= " << command << std::endl;
     int res = system(command.c_str());
 }
 
@@ -1900,7 +1899,7 @@ void GuiMainWindow::cb_scheduler_next(Fl_Widget *o, void* v) {
                 std::string question = "Fork on " + schedule.edges[i].myBooleanVariable + ". Do you want this to be True or False?";
                 nextnode = fl_choice(
                     "%s", "False", "True", NULL, question.c_str()
-                ) ? schedule.edges[i].outputNodeTrue : 
+                ) ? schedule.edges[i].outputNodeTrue :
                     schedule.edges[i].outputNode;
             } else {
                 nextnode = schedule.edges[i].outputNode;
@@ -2043,11 +2042,9 @@ void GuiMainWindow::cb_schedule(Fl_Widget* o, void* v) {
 }
 
 void GuiMainWindow::run(bool only_schedule, bool do_open_edit) {
-    if (do_overwrite_continue) {
-        if (user_wants_to("Overwrite!", "overwrite this job")) {
-            do_overwrite_continue = false;
-            return;
-        }
+    if (do_overwrite_continue && user_wants_to("Overwrite!", "overwrite this job")) {
+        do_overwrite_continue = false;
+        return;
     }
 
     // Get which jobtype the GUI is on now
@@ -2058,9 +2055,13 @@ void GuiMainWindow::run(bool only_schedule, bool do_open_edit) {
     // Update timer
     tickTimeLastChanged();
 
-    std::string error_message;
-    if (!pipeline.runJob(gui_jobwindows[iwin]->myjob, current_job, only_schedule, is_main_continue, false, do_overwrite_continue, error_message)) {
-        fl_message("%s", error_message.c_str());
+    try {
+        pipeline.runJob(
+            gui_jobwindows[iwin]->myjob, current_job, only_schedule,
+            is_main_continue, false, do_overwrite_continue
+        );
+    } catch (const std::string &errmsg) {
+        fl_message("%s", errmsg.c_str());
         // Allow the user to fix the error and submit this job again
         run_button->activate();
         return;
@@ -2463,7 +2464,10 @@ void GuiMainWindow::load() {
 void GuiMainWindow::cb_undelete_job(Fl_Widget* o, void* v) {
     std::string fn_dir = "./Trash/.";
     std::string fn_filter = "Pipeline STAR files (job_pipeline.star)";
-    Fl_File_Chooser chooser(fn_dir.c_str(),  fn_filter.c_str(), Fl_File_Chooser::SINGLE, "Choose pipeline STAR file to import");
+    Fl_File_Chooser chooser (
+        fn_dir.c_str(), fn_filter.c_str(), 
+        Fl_File_Chooser::SINGLE, "Choose pipeline STAR file to import"
+    );
     chooser.show();
     // Block until user picks something.
     while (chooser.shown()) Fl::wait();
@@ -2479,12 +2483,13 @@ void GuiMainWindow::cb_undelete_job(Fl_Widget* o, void* v) {
 }
 
 void GuiMainWindow::cb_export_jobs(Fl_Widget* o, void* v) {
-    // Get the name of this block of exported jobs and make the corresponding directory
-    std::string mydir = fl_input(std::string("Name of the exported block of jobs? ").c_str(), std::string("export1").c_str());
-
-    std::string error_message;
-    if (!pipeline.exportAllScheduledJobs(mydir, error_message))
-        fl_message("%s", error_message.c_str());
+    try {
+        // Get the name of this block of exported jobs and make the corresponding directory
+        std::string dir = fl_input(std::string("Name of the exported block of jobs? ").c_str(), std::string("export1").c_str());
+        pipeline.exportAllScheduledJobs(dir);
+    } catch (const std::string &errmsg) {
+        fl_message("%s", errmsg.c_str());
+    }
 }
 
 void GuiMainWindow::cb_import_jobs(Fl_Widget* o, void* v) {
@@ -2544,14 +2549,13 @@ void GuiMainWindow::cb_print_notes(Fl_Widget*, void* v) {
             fh << " alias: " << pipeline.processList[i].alias;
         fh << std::endl;
         if (exists(fn_note)) {
-            std::ifstream in(fn_note.data(), std::ios_base::in);
-            std::string line;
+            std::ifstream in (fn_note.data(), std::ios_base::in);
             if (in.fail())
-                REPORT_ERROR((std::string) "ERROR: cannot read file " + fn_note);
+            REPORT_ERROR((std::string) "ERROR: cannot read file " + fn_note);
             in.seekg(0);
+            std::string line;
             while (getline(in, line, '\n'))
                 fh << line << std::endl;
-            in.close();
         }
     }
 
