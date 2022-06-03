@@ -157,18 +157,21 @@ class scheduler_parameters {
             schedule.write(DONT_LOCK, mydir + "schedule.star.bck"); // just save another copy of the starfile ...
         }
 
-        if (newname != "") {
+        if (!newname.empty()) {
             schedule.copy(newname);
             return;
-        } else if (add != "") {
+        } else if (!add.empty()) {
             if (add == "variable") {
                 schedule.setVariable(name, value);
                 if (has_ori_value) schedule.setOriginalVariable(name, ori_value);
             } else if (add == "operator") {
-                std::string error;
-                SchedulerOperator myop = schedule.initialiseOperator(type, input, input2, output, error);
-                if (error != "") REPORT_ERROR(error);
-                else schedule.addOperator(myop);
+                try {
+                    schedule.addOperator(
+                        schedule.initialiseOperator(type, input, input2, output)
+                    );
+                } catch (std::string errmsg) {
+                    REPORT_ERROR(errmsg);
+                }
             } else if (add == "job") {
                 RelionJob myjob;
                 bool dummy;
@@ -181,7 +184,7 @@ class scheduler_parameters {
             }
         } else if (do_reset) {
             schedule.reset();
-        } else if (set_var != "") {
+        } else if (!set_var.empty()) {
             if (isBooleanVariable(set_var)) {
                 if (value != "true" && value != "True" && value != "false" && value != "False") {
                     REPORT_ERROR("ERROR: invalid value for Boolean variable for --value: " + value);
@@ -213,7 +216,7 @@ class scheduler_parameters {
             } else {
                 REPORT_ERROR("ERROR: unrecognised variable whose value to set: " + set_var);
             }
-        } else if (set_mode != "") {
+        } else if (!set_mode.empty()) {
             if (schedule.isJob(set_mode)) {
                 if (value != Schedule::NodeJobMode::NEW && value != Schedule::NodeJobMode::CONTINUE && value != Schedule::NodeJobMode::OVERWRITE) {
                     REPORT_ERROR("ERROR: unvalid option for job mode: " + value);
@@ -223,7 +226,7 @@ class scheduler_parameters {
                 REPORT_ERROR("ERROR: invalid jobname to set mode: " + set_mode);
             }
 
-        } else if (current_node != "") {
+        } else if (!current_node.empty()) {
             schedule.current_node = current_node;
         } else {
             REPORT_ERROR(" ERROR: nothing to do!");

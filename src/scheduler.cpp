@@ -45,16 +45,24 @@ bool isScheduleOperator(std::string _name) {
     return scheduler_global_operators.find(_name) != scheduler_global_operators.end();
 }
 
-SchedulerOperator::SchedulerOperator(std::string _type, std::string _input1, std::string _input2, std::string _output) {
-    std::string myerror = initialise(_type, _input1, _input2, _output);
-    if (myerror != "") REPORT_ERROR(myerror);
+SchedulerOperator::SchedulerOperator(std::string type, std::string input1, std::string input2, std::string output) {
+    try {
+        initialise(type, input1, input2, output);
+    } catch (std::string errmsg) {
+        REPORT_ERROR(errmsg);
+    }
 }
 
-std::string SchedulerOperator::initialise(std::string _type, std::string _input1, std::string _input2, std::string _output) {
-    type = _type;
+void SchedulerOperator::initialise(
+    const std::string &type,
+    const std::string &input1, const std::string &input2,
+    const std::string &output
+) throw (std::string) {
+
+    this->type = type;
 
     // Check output
-    if (!isBooleanVariable(_output) && (
+    if (!isBooleanVariable(output) && (
         type == Schedule::BOOLEAN_OPERATOR_GT ||
         type == Schedule::BOOLEAN_OPERATOR_LT ||
         type == Schedule::BOOLEAN_OPERATOR_EQ ||
@@ -64,10 +72,9 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
         type == Schedule::BOOLEAN_OPERATOR_OR ||
         type == Schedule::BOOLEAN_OPERATOR_FILE_EXISTS ||
         type == Schedule::BOOLEAN_OPERATOR_READ_STAR
-    )) {
-        return "ERROR: boolean operator does not have valid boolean output: " + _output;
-    }
-    if (!isFloatVariable(_output) && (
+    )) throw (std::string) "ERROR: boolean operator does not have valid boolean output: " + output;
+
+    if (!isFloatVariable(output) && (
         type == Schedule::FLOAT_OPERATOR_SET ||
         type == Schedule::FLOAT_OPERATOR_PLUS ||
         type == Schedule::FLOAT_OPERATOR_MINUS ||
@@ -81,10 +88,9 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_MIN ||
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
-    )) {
-        return "ERROR: float operator does not have valid float output: " + _output;
-    }
-    if (!isStringVariable(_output) && (
+    )) throw (std::string) "ERROR: float operator does not have valid float output: " + output;
+
+    if (!isStringVariable(output) && (
         type == Schedule::STRING_OPERATOR_READ_STAR ||
         type == Schedule::STRING_OPERATOR_JOIN ||
         type == Schedule::STRING_OPERATOR_BEFORE_FIRST ||
@@ -93,28 +99,24 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
         type == Schedule::STRING_OPERATOR_AFTER_LAST ||
         type == Schedule::STRING_OPERATOR_GLOB ||
         type == Schedule::STRING_OPERATOR_NTH_WORD
-    )) {
-        return "ERROR: string operator does not have valid string output: " + _output;
-    }
+    )) throw (std::string) "ERROR: string operator does not have valid string output: " + output;
 
     // Check input1
-    if (!isBooleanVariable(_input1) && (
+    if (!isBooleanVariable(input1) && (
         type == Schedule::BOOLEAN_OPERATOR_AND ||
         type == Schedule::BOOLEAN_OPERATOR_OR
-    )) {
-        return "ERROR: boolean operator does not have valid boolean input1: " + _input1;
-    }
-    if (!isFloatVariable(_input1) && (
+    )) throw (std::string) "ERROR: boolean operator does not have valid boolean input1: " + input1;
+
+    if (!isFloatVariable(input1) && (
         type == Schedule::FLOAT_OPERATOR_SET ||
         type == Schedule::FLOAT_OPERATOR_PLUS ||
         type == Schedule::FLOAT_OPERATOR_MINUS ||
         type == Schedule::FLOAT_OPERATOR_MULT ||
         type == Schedule::FLOAT_OPERATOR_DIVIDE ||
         type == Schedule::FLOAT_OPERATOR_ROUND
-    )) {
-        return "ERROR: float operator does not have valid float input1: " + _input1;
-    }
-    if (!isStringVariable(_input1) && (
+    )) throw (std::string) "ERROR: float operator does not have valid float input1: " + input1;
+
+    if (!isStringVariable(input1) && (
         type == Schedule::BOOLEAN_OPERATOR_READ_STAR ||
         type == Schedule::BOOLEAN_OPERATOR_FILE_EXISTS ||
         type == Schedule::FLOAT_OPERATOR_COUNT_IMAGES ||
@@ -136,18 +138,15 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
         type == Schedule::OPERATOR_COPY_FILE ||
         type == Schedule::OPERATOR_MOVE_FILE ||
         type == Schedule::OPERATOR_DELETE_FILE
-    )) {
-        return "ERROR: operator does not have valid string input1: " + _input1;
-    }
+    )) throw (std::string) "ERROR: operator does not have valid string input1: " + input1;
 
     // Check input2
-    if (!isBooleanVariable(_input2) && (
+    if (!isBooleanVariable(input2) && (
         type == Schedule::BOOLEAN_OPERATOR_AND ||
         type == Schedule::BOOLEAN_OPERATOR_OR
-    )) {
-        return "ERROR: boolean operator does not have valid boolean input2: " + _input2;
-    }
-    if (!(isFloatVariable(_input2) || isNumber(_input2)) && (
+    )) throw (std::string) "ERROR: boolean operator does not have valid boolean input2: " + input2;
+
+    if (!isFloatVariable(input2) && !isNumber(input2) && (
         type == Schedule::BOOLEAN_OPERATOR_GT ||
         type == Schedule::BOOLEAN_OPERATOR_LT ||
         type == Schedule::BOOLEAN_OPERATOR_EQ ||
@@ -159,10 +158,9 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
         type == Schedule::FLOAT_OPERATOR_DIVIDE ||
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX ||
         type == Schedule::STRING_OPERATOR_NTH_WORD
-    )) {
-        return "ERROR: operator does not have valid number (float variable or text) input2: " + _input2;
-    }
-    if (!isStringVariable(_input2) && (
+    )) throw (std::string) "ERROR: operator does not have valid number (float variable or text) input2: " + input2;
+
+    if (!isStringVariable(input2) && (
         type == Schedule::OPERATOR_COPY_FILE ||
         type == Schedule::OPERATOR_MOVE_FILE ||
         type == Schedule::STRING_OPERATOR_BEFORE_FIRST ||
@@ -170,15 +168,11 @@ std::string SchedulerOperator::initialise(std::string _type, std::string _input1
         type == Schedule::STRING_OPERATOR_BEFORE_LAST ||
         type == Schedule::STRING_OPERATOR_AFTER_LAST ||
         type == Schedule::STRING_OPERATOR_JOIN
-    )) {
-        return "ERROR: operator does not have valid string input2: " + _input2;
-    }
+    )) throw (std::string) "ERROR: operator does not have valid string input2: " + input2;
 
-    input1 = (_input1 == "") ? "undefined" : _input1;
-    input2 = (_input2 == "") ? "undefined" : _input2;
-    output = (_output == "") ? "undefined" : _output;
-
-    return "";
+    this->input1 = input1.empty() ? "undefined" : input1;
+    this->input2 = input2.empty() ? "undefined" : input2;
+    this->output = output.empty() ? "undefined" : output;
 }
 
 // Separate comma-separated labels for table, input and output
@@ -419,7 +413,7 @@ bool SchedulerOperator::performOperation() const {
         std::string mymessage = std::string(ctime(&my_time)) + "\n";
         mymessage += "input1: " + input1 + " = ";
         if (isStringVariable(input1)) {
-            mymessage += scheduler_global_strings[input1].value + "\n"; 
+            mymessage += scheduler_global_strings[input1].value + "\n";
         } else if (isBooleanVariable(input1)) {
             mymessage += (scheduler_global_bools[input1].value) ? "True \n" : "False \n";
         } else if (isFloatVariable(input1)) {
@@ -616,25 +610,23 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.readStar(in, "schedule_operators");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         // RFLOAT constant;
-        std::string myname = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_NAME);
+        std::string name   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_NAME);
         std::string type   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_TYPE);
         std::string input1 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT1);
         std::string input2 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT2);
         std::string output = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_OUTPUT);
-        SchedulerOperator myval(type, input1, input2, output);
-        scheduler_global_operators[myname] = myval;
+        scheduler_global_operators[name] = SchedulerOperator(type, input1, input2, output);
     }
     MD.clear();
 
     MD.readStar(in, "schedule_jobs");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         // std::string type;
-        std::string myname   = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_NAME);
+        std::string name     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_NAME);
         std::string ori_name = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_ORI_NAME);
         std::string mode     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_MODE);
         bool has_started     = MD.getValue<bool>(EMDL::SCHEDULE_JOB_HAS_STARTED);
-        SchedulerJob myval(myname, mode, has_started);
-        jobs[ori_name] = myval;
+        jobs[ori_name] = SchedulerJob(name, mode, has_started);
     }
     MD.clear();
 
@@ -646,8 +638,7 @@ void Schedule::read(bool do_lock, FileName fn) {
         std::string outputname_true = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT_TRUE);
         std::string bool_name       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_BOOLEAN);
         bool is_fork                = MD.getValue<bool>(EMDL::SCHEDULE_EDGE_IS_FORK);
-        SchedulerEdge myval(inputname, outputname, is_fork, bool_name, outputname_true);
-        edges.push_back(myval);
+        edges.push_back(SchedulerEdge(inputname, outputname, is_fork, bool_name, outputname_true));
     }
     MD.clear();
 
@@ -672,19 +663,18 @@ bool Schedule::isWriteLocked() {
 }
 
 void Schedule::write(bool do_lock, FileName fn) {
-    if (do_read_only)
-        return;
+    if (do_read_only) return;
 
     FileName name_wo_dir = name;
     name_wo_dir = name_wo_dir.beforeLastOf("/");
     FileName dir_lock = ".relion_lock_schedule_" + name_wo_dir.afterLastOf("/"), fn_lock = dir_lock + "/lock_schedule";
     if (do_lock) {
 
-    #ifdef DEBUG_LOCK
+        #ifdef DEBUG_LOCK
         if (exists(fn_lock)) {
             std::cerr << "writing pipeline: " << fn_lock << " exists as expected" << std::endl;
         }
-    #endif
+        #endif
 
         int iwait = 0;
         while (!exists(fn_lock)) {
@@ -701,13 +691,11 @@ void Schedule::write(bool do_lock, FileName fn) {
         }
     }
 
-    if (fn == "") fn = name + "schedule.star";
+    if (fn.empty()) { fn = name + "schedule.star"; }
 
     // B. Write STAR file with the entire schedule
-    std::ofstream  fh;
-    fh.open((fn).c_str(), std::ios::out);
-    if (!fh)
-        REPORT_ERROR( (std::string)"Schedule::write: Cannot write file: " + fn);
+    std::ofstream fh (fn.c_str(), std::ios::out);
+    if (!fh) REPORT_ERROR((std::string) "Schedule::write: Cannot write file: " + fn);
 
     MetaDataTable MDgeneral;
     MDgeneral.setName("schedule_general");
@@ -807,9 +795,9 @@ void Schedule::write(bool do_lock, FileName fn) {
 
     if (do_lock) {
 
-    #ifdef DEBUG_LOCK
+        #ifdef DEBUG_LOCK
         std::cerr << " write schedule: now deleting " << fn_lock << std::endl;
-    #endif
+        #endif
 
         if (!exists(fn_lock))
             REPORT_ERROR("ERROR: Schedule::write was expecting a file called "+fn_lock+ " but it is no longer there.");
@@ -824,66 +812,60 @@ void Schedule::write(bool do_lock, FileName fn) {
 // Reset all variables to their original value
 void Schedule::reset() {
 
-    {
-        std::map<std::string, SchedulerFloatVariable>::iterator it;
-        for (it = scheduler_global_floats.begin(); it != scheduler_global_floats.end(); it++ )
-            it->second.value = it->second.original_value;
-    } {
-        std::map<std::string, SchedulerBooleanVariable>::iterator it;
-        for (it = scheduler_global_bools.begin(); it != scheduler_global_bools.end(); it++ )
-            it->second.value = it->second.original_value;
-    } {
-        std::map<std::string, SchedulerStringVariable>::iterator it;
-        for (it = scheduler_global_strings.begin(); it != scheduler_global_strings.end(); it++ )
-            it->second.value = it->second.original_value;
-    } {
-        std::map<std::string, SchedulerJob>::iterator it;
-        for (it = jobs.begin(); it != jobs.end(); it++) {
-            it->second.current_name = it->first;
-            it->second.job_has_started = false;
-        }
+    for (auto &pair : scheduler_global_floats)
+        pair.second.value = pair.second.original_value;
+
+    for (auto &pair : scheduler_global_bools)
+        pair.second.value = pair.second.original_value;
+
+    for (auto &pair : scheduler_global_strings)
+        pair.second.value = pair.second.original_value;
+
+    for (auto &pair : jobs) {
+        pair.second.current_name = pair.first;
+        pair.second.job_has_started = false;
     }
 
-    current_node = edges.size() > 0 ? edges[0].inputNode : "undefined";
+    current_node = edges.empty() ? "undefined" : edges[0].inputNode;
 }
 
-bool Schedule::isNode(std::string _name) {
-    // is this either an operator or a job?
-    return jobs.find(_name) != jobs.end() || scheduler_global_operators.find(_name) != scheduler_global_operators.end();
+bool Schedule::isNode(std::string name) {
+    // Is this an operator or a job?
+    return jobs.find(name) != jobs.end() || scheduler_global_operators.find(name) != scheduler_global_operators.end();
 }
 
-bool Schedule::isJob(std::string _name) {
-    return jobs.find(_name) != jobs.end();
+bool Schedule::isJob(std::string name) {
+    return jobs.find(name) != jobs.end();
 }
 
-bool Schedule::isOperator(std::string _name) {
-    return isScheduleOperator(_name);
+bool Schedule::isOperator(std::string name) {
+    return isScheduleOperator(name);
 }
 
 void Schedule::setVariable(std::string name, FileName value) {
     float floatval;
-    if (value != "" && sscanf(value.c_str(), "%f", &floatval)) {
-        // is this a number? 
+    if (!value.empty() && sscanf(value.c_str(), "%f", &floatval)) {
+        // is this a number?
         if (isFloatVariable(name)) {
             setFloatVariableValue(name, floatval);
         } else {
             addFloatVariable(name, floatval);
         }
     } else if (
-        value == "true"  || value == "True" || 
+        value == "true"  || value == "True" ||
         value == "false" || value == "False"
     ) {
-        // or a boolean? 
-        bool myval = value == "true" || value == "True";
+        // or a boolean?
+        bool boolval = value == "true" || value == "True";
         if (isBooleanVariable(name)) {
-            setBooleanVariableValue(name, myval);
+            setBooleanVariableValue(name, boolval);
         } else {
-            addBooleanVariable(name, myval);
+            addBooleanVariable(name, boolval);
         }
     } else {
         if (isStringVariable(name)) {
             setStringVariableValue(name, value);
-        } else { 
+        } else {
             addStringVariable(name, value);
         }
     }
@@ -891,20 +873,20 @@ void Schedule::setVariable(std::string name, FileName value) {
 
 void Schedule::setOriginalVariable(std::string name, FileName value) {
     float floatval;
-    if (value != "" && sscanf(value.c_str(), "%f", &floatval)) {
-        // is this a number? 
+    if (!value.empty() && sscanf(value.c_str(), "%f", &floatval)) {
+        // is this a number?
         if (isFloatVariable(name)) setFloatOriginalVariableValue(name, floatval);
         else addFloatVariable(name, floatval);
     } else if (
-        value == "true"  || value == "True" || 
+        value == "true"  || value == "True" ||
         value == "false" || value == "False"
     ) {
-        // or a boolean? 
-        bool myval = value == "true" || value == "True";
+        // or a boolean?
+        bool boolval = value == "true" || value == "True";
         if (isBooleanVariable(name)) {
-            setBooleanOriginalVariableValue(name, myval);
+            setBooleanOriginalVariableValue(name, boolval);
         } else {
-            addBooleanVariable(name, myval);
+            addBooleanVariable(name, boolval);
         }
     } else {
         if (isStringVariable(name)) {
@@ -918,25 +900,19 @@ void Schedule::setOriginalVariable(std::string name, FileName value) {
 void Schedule::addFloatVariable(std::string name, RFLOAT value) {
     if (isFloatVariable(name))
         REPORT_ERROR("ERROR: trying to add a float variable with a name that already exists: " + name);
-
-    SchedulerFloatVariable myvar(value, value);
-    scheduler_global_floats[name] = myvar;
+    scheduler_global_floats[name] = SchedulerFloatVariable(value, value);
 }
 
 void Schedule::addBooleanVariable(std::string name, bool value) {
     if (isBooleanVariable(name))
         REPORT_ERROR("ERROR: trying to add a boolean variable with a name that already exists: " + name);
-
-    SchedulerBooleanVariable myvar(value, value);
-    scheduler_global_bools[name] = myvar;
+    scheduler_global_bools[name] = SchedulerBooleanVariable(value, value);
 }
 
 void Schedule::addStringVariable(std::string name, FileName value) {
     if (isStringVariable(name))
         REPORT_ERROR("ERROR: trying to add a string variable with a name that already exists: " + name);
-
-    SchedulerStringVariable myvar(value, value);
-    scheduler_global_strings[name] = myvar;
+    scheduler_global_strings[name] = SchedulerStringVariable (value, value);
 }
 
 float Schedule::getFloatVariableValue(std::string name) {
@@ -954,7 +930,6 @@ float Schedule::getFloatOriginalVariableValue(std::string name) {
 void Schedule::setFloatVariableValue(std::string name, RFLOAT val) {
     if (!isFloatVariable(name))
         REPORT_ERROR("ERROR: cannot find float variable with name:" + name);
-    scheduler_global_floats[name].value = val;
     scheduler_global_floats[name].value = val;
 }
 
@@ -1013,11 +988,11 @@ void Schedule::setStringOriginalVariableValue(std::string name, std::string val)
 }
 
 std::string Schedule::getVariableValueAsString(std::string name) {
-    if (isStringVariable(name)) 
+    if (isStringVariable(name))
         return scheduler_global_strings[name].value;
-    if (isBooleanVariable(name)) 
+    if (isBooleanVariable(name))
         return scheduler_global_bools[name].value ? "True" : "False";
-    if (isFloatVariable(name)) 
+    if (isFloatVariable(name))
         return floatToString(scheduler_global_floats[name].value);
     REPORT_ERROR("Schedule::getVariableValueAsString: no variable named " + name);
 }
@@ -1030,13 +1005,13 @@ void Schedule::setOperatorParameters(std::string name, std::string _type, std::s
     scheduler_global_operators[name] = myop;
 }
 
-void Schedule::getOperatorParameters(std::string name, std::string &_type, std::string &_input1, std::string &_input2, std::string &_output) {
+void Schedule::getOperatorParameters(std::string name, std::string &type, std::string &input1, std::string &input2, std::string &output) {
     if (!isOperator(name))
         REPORT_ERROR("ERROR: cannot find operator with name:" + name);
-    _type = scheduler_global_operators[name].type;
-    _input1 = scheduler_global_operators[name].input1;
-    _input2 = scheduler_global_operators[name].input2;
-    _output = scheduler_global_operators[name].output;
+    type = scheduler_global_operators[name].type;
+    input1 = scheduler_global_operators[name].input1;
+    input2 = scheduler_global_operators[name].input2;
+    output = scheduler_global_operators[name].output;
 }
 
 std::map<std::string, SchedulerFloatVariable> Schedule::getCurrentFloatVariables() {
@@ -1057,16 +1032,15 @@ std::map<std::string, SchedulerOperator> Schedule::getCurrentOperators() {
 
 SchedulerOperator Schedule::initialiseOperator(
     std::string type, std::string input_name, std::string input2_name,
-    std::string output_name, std::string &error_message
+    std::string output_name
 ) {
-    SchedulerOperator myop;
-    error_message = myop.initialise(type, input_name, input2_name, output_name);
-    return myop;
+    SchedulerOperator op;
+    op.initialise(type, input_name, input2_name, output_name);
+    return op;
 }
 
-void Schedule::addOperator(SchedulerOperator &myop) {
-    std::string myname = myop.getName();
-    scheduler_global_operators[myname] = myop;
+void Schedule::addOperator(SchedulerOperator op) {
+    scheduler_global_operators[op.getName()] = op;
 }
 
 void Schedule::addJob(RelionJob &myjob, std::string jobname, std::string mode) {
@@ -1347,7 +1321,7 @@ bool Schedule::gotoNextJob() {
 
             if (!op_success) return false;
         } else {
-            // this is a job, get its current_name and options 
+            // this is a job, get its current_name and options
             return true;
         }
     }

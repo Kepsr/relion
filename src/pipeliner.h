@@ -79,7 +79,7 @@ class Process {
     static constexpr const char *const CTFREFINE_NAME    = "CtfRefine";    // Jasenko's program for defocus and beamtilt optimisation
     static constexpr const char *const EXTERNAL_NAME     = "External";     // For running non-relion programs
 
-    enum ProcessTypes {
+    enum Type {
         IMPORT, // Import any file as a Node of a given type
         MOTIONCORR, // Import any file as a Node of a given type
         CTFFIND, // Estimate CTF parameters from micrographs for either entire micrographs and/or particles
