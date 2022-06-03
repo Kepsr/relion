@@ -2152,9 +2152,11 @@ void GuiMainWindow::cb_scheduler_add_job(Fl_Widget* o, void* v) {
         }
 
         /// TODO: test the command line
-        std::string error_message, dummy;
-        if (!gui_jobwindows[iwin]->myjob.getCommands(dummy, T->commands, T->final_command, false, 1, error_message)) {
-            fl_message("%s", error_message.c_str());
+        try {
+            std::string dummy;
+            gui_jobwindows[iwin]->myjob.getCommands(dummy, T->commands, T->final_command, false, 1);
+        } catch (const std::string &errmsg) {
+            fl_message("%s", errmsg.c_str());
             return;
         }
 

@@ -1065,8 +1065,11 @@ void Schedule::addJob(RelionJob &myjob, std::string jobname, std::string mode) {
 
     myjob.write(output_name);
 
-    if (!myjob.getCommands(output_name, commands, final_command, false, schedule_pipeline.job_counter, error_message))
-        REPORT_ERROR("ERROR in getting commands for scheduled job: " + error_message);
+    try {
+        myjob.getCommands(output_name, commands, final_command, false, schedule_pipeline.job_counter);
+    } catch (const std::string &errmsg) {
+        REPORT_ERROR("ERROR in getting commands for scheduled job: " + errmsg);
+    }
 
     int current_job = schedule_pipeline.addJob(myjob, Process::SCHEDULED, false, false); // 1st false is do_overwrite, 2nd false is do_write_minipipeline
 
