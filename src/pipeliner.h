@@ -245,25 +245,23 @@ class PipeLine {
     // Check the presence of a file called RELION_OUTPUT_NODES.star, and add the nodes in that STAR file as output nodes for this job
     void getOutputNodesFromStarFile(int this_job);
 
-    // Changes the status of this_job to finished in the pipeline, returns false is job hadn't started yet
-    bool markAsFinishedJob(
-        int this_job, std::string &error_message, bool is_failed = false
-    );
+    // Changes the status of this_job to finished in the pipeline, throws if job hasn't started yet
+    void markAsFinishedJob(int this_job, bool is_failed = false) throw (std::string);
 
     // Set the alias for a job, return true for success, false otherwise
-    bool setAliasJob(int this_job, std::string alias, std::string &error_message);
+    void setAliasJob(int this_job, std::string alias) throw (std::string);
 
     // Make the flowchart for this job
-    bool makeFlowChart(long int current_job, bool do_display_pdf, std::string &error_message);
+    void makeFlowChart(long int current_job, bool do_display_pdf) throw (std::string);
 
     // Undelete a JOb from the pipeline
     void undeleteJob(FileName fn_undel);
 
     // Clean up intermediate files from this_job
-    bool cleanupJob(int this_job, bool do_harsh, std::string &error_message);
+    void cleanupJob(int this_job, bool do_harsh) throw (std::string);
 
     // Clean upintermediate files from all jobs in the pipeline
-    bool cleanupAllJobs(bool do_harsh, std::string &error_message);
+    void cleanupAllJobs(bool do_harsh) throw (std::string);
 
     void replaceFilesForImportExportOfScheduledJobs(
         FileName fn_in_dir, FileName fn_out_dir,

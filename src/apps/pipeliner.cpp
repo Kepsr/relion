@@ -84,30 +84,28 @@ public:
 		{
 			pipeline.checkProcessCompletion();
 		}
-		else if (add_job_star != "")
+		else if (!add_job_star.empty())
 		{
 			RelionJob job;
 			bool is_continue;
 			job.read(add_job_star, is_continue, true); // true = do_initialise
 			job.is_continue = false;
 			int job_num = pipeline.addScheduledJob(job, fn_options);
-			if (fn_alias != "")
-			{
-				std::string error_message;
-				if (!pipeline.setAliasJob(job_num, fn_alias, error_message))
-				{
+			if (!fn_alias.empty()) {
+				try {
+					pipeline.setAliasJob(job_num, fn_alias);
+				} catch (std::string errmsg) {
 					std::cerr << "WARNING: Failed to set the job alias to " << fn_alias << ". The job name remains the default." << std::endl;
 				}
 			}
 		}
-		else if (add_type != "")
+		else if (!add_type.empty())
 		{
 			int job_num = pipeline.addScheduledJob(add_type, fn_options);
-			if (fn_alias != "")
-			{
-				std::string error_message;
-				if (!pipeline.setAliasJob(job_num, fn_alias, error_message))
-				{
+			if (!fn_alias.empty()) {
+				try {
+					pipeline.setAliasJob(job_num, fn_alias);
+				} catch (std::string errmsg) {
 					std::cerr << "WARNING: Failed to set the job alias to " << fn_alias << ". The job name remains the default." << std::endl;
 				}
 			}
@@ -129,11 +127,11 @@ public:
 
 				found = true;
 //				std::cout << "Gentle clean " << pipeline.processList[i].name << std::endl;
-				std::string error_message;
-				if (!pipeline.cleanupJob(i, (job_nr == harsh_clean), error_message))
-				{
+				try {
+					pipeline.cleanupJob(i, job_nr == harsh_clean);
+				} catch (std::string errmsg) {
 					std::cerr << "Failed to clean!" << std::endl;
-					REPORT_ERROR(error_message);
+					REPORT_ERROR(errmsg);
 				}
 				break;
 			}

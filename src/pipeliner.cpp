@@ -396,7 +396,7 @@ bool PipeLine::getCommandLineJob(
 
     bool result = thisjob.getCommands(my_outputname, commands, final_command, do_makedir, job_counter, error_message);
 
-    if (result && commands.size() == 0) {
+    if (result && commands.empty()) {
         error_message = " PipeLine::getCommandLineJob: Nothing to do...";
         return false;
     }
@@ -1058,9 +1058,9 @@ void PipeLine::getOutputNodesFromStarFile(int this_job) {
     }
 }
 
-bool PipeLine::markAsFinishedJob(
-    int this_job, std::string &error_message, bool is_failed
-) {
+void PipeLine::markAsFinishedJob(
+    int this_job, bool is_failed
+) throw (std::string) {
 
     // Read in existing pipeline, in case some other window had changed it
     std::string lock_message = "markAsFinishedJob";
@@ -1113,12 +1113,11 @@ bool PipeLine::markAsFinishedJob(
                 addNewOutputEdge(this_job, node4);
             }
         } else {
-            error_message = 
-            "You are trying to mark a relion_refine job as finished that hasn't even started. \n"
-            " This will be ignored. Perhaps you wanted to delete it instead?";
             processList[this_job].status = Process::RUNNING;
             write(DO_LOCK);
-            return false;
+            throw
+            "You are trying to mark a relion_refine job as finished that hasn't even started. \n"
+            " This will be ignored. Perhaps you wanted to delete it instead?";
         }
     }
 
@@ -1145,14 +1144,10 @@ bool PipeLine::markAsFinishedJob(
     read(DO_LOCK, lock_message);
     write(DO_LOCK);
 
-    return true;
-
 }
 
 // Set the alias for a job
-bool PipeLine::setAliasJob(
-    int this_job, std::string alias, std::string &error_message
-) {
+void PipeLine::setAliasJob(int this_job, std::string alias) throw (std::string) {
 
     FileName fn_pre, fn_jobnr, fn_post;
     if (!decomposePipelineFileName(
@@ -1163,13 +1158,11 @@ bool PipeLine::setAliasJob(
     if (alias.length() == 0) {
         alias = "None";
     } else if (alias.length() < 2) {
-        error_message = "Alias cannot be less than 2 characters, please provide another one";
-        return false;
+        throw "Alias cannot be less than 2 characters, please provide another one";
     } else if (
         alias.length() > 2 && alias[0] == 'j' && alias[1] == 'o' && alias[2] == 'b'
     ) {
-        error_message = "Alias cannot start with 'job', please provide another one";
-        return false;
+        throw "Alias cannot start with 'job', please provide another one";
     } else if (
         alias.find("(")  != std::string::npos || alias.find(")")  != std::string::npos ||
         alias.find("{")  != std::string::npos || alias.find("}")  != std::string::npos ||
@@ -1180,8 +1173,7 @@ bool PipeLine::setAliasJob(
         alias.find("&")  != std::string::npos || alias.find("|")  != std::string::npos ||
         alias.find("%")  != std::string::npos || alias.find("$")  != std::string::npos
     ) {
-        error_message = "Alias cannot contain following symbols: *, ?, (, ), /, \", \\, |, #, <, >, &, %, {, }, $";
-        return false;
+        throw "Alias cannot contain following symbols: *, ?, (, ), /, \", \\, |, #, <, >, &, %, {, }, $";
     } else {
 
         // remove spaces from any potential alias
@@ -1203,8 +1195,7 @@ bool PipeLine::setAliasJob(
             }
         }
         if (!is_unique || alias.length() < 1) {
-            error_message = "Alias is not unique, please provide another one";
-            return false;
+            throw "Alias is not unique, please provide another one";
         }
     }
 
@@ -1244,17 +1235,14 @@ bool PipeLine::setAliasJob(
     // Write new pipeline to disc
     write(DO_LOCK);
 
-    return true;
-
 }
 
-bool PipeLine::makeFlowChart(
-    long int current_job, bool do_display_pdf, std::string &error_message
-) {
-    if (current_job < 0) {
-        error_message = " You can only make flowcharts for existing jobs ... ";
-        return false;
-    }
+void PipeLine::makeFlowChart(
+    long int current_job, bool do_display_pdf
+) throw (std::string) {
+
+    if (current_job < 0)
+    throw " You can only make flowcharts for existing jobs ... ";
 
     const char *pdf_viewer_exe = getenv("RELION_PDFVIEWER_EXECUTABLE");
     if (!pdf_viewer_exe) { pdf_viewer_exe = DEFAULT::PDFVIEWER; }
@@ -1282,7 +1270,6 @@ bool PipeLine::makeFlowChart(
 
     write(DO_LOCK);
 
-    return true;
 }
 
 // Undelete a Job from the pipeline, move back from Trash and insert back into the graph
@@ -1321,11 +1308,10 @@ void PipeLine::undeleteJob(FileName fn_undel) {
     write(DO_LOCK);
 }
 
-bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_message) {
+void PipeLine::cleanupJob(int this_job, bool do_harsh) throw (std::string) {
     std::cout << "Cleaning up " << processList[this_job].name << std::endl;
     if (this_job < 0 || processList[this_job].status != Process::FINISHED_SUCCESS) {
-        error_message =" You can only clean up finished jobs ... ";
-        return false;
+        throw " You can only clean up finished jobs ... ";
     }
 
     // These job types do not have cleanup:
@@ -1336,7 +1322,7 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
         processList[this_job].type == Process::MASKCREATE ||
         processList[this_job].type == Process::JOINSTAR ||
         processList[this_job].type == Process::RESMAP
-    ) return true;
+    ) return;
 
     // Find any subdirectories
     std::vector<FileName> fns_subdir;
@@ -1520,23 +1506,17 @@ bool PipeLine::cleanupJob(int this_job, bool do_harsh, std::string &error_messag
             int res = system(command.c_str());
         }
     }
-
-    return true;
 }
 
 // Clean upintermediate files from all jobs in the pipeline
-bool PipeLine::cleanupAllJobs(bool do_harsh, std::string &error_message) {
-
+void PipeLine::cleanupAllJobs(bool do_harsh) throw (std::string) {
     for (int myjob = 0; myjob < processList.size(); myjob++) {
         if (processList[myjob].status == Process::FINISHED_SUCCESS) {
             if (do_harsh && exists(processList[myjob].name + "NO_HARSH_CLEAN"))
                 continue;
-            if (!cleanupJob(myjob, do_harsh, error_message))
-                return false;
+            cleanupJob(myjob, do_harsh);
         }
     }
-
-    return true;
 }
 
 void PipeLine::replaceFilesForImportExportOfScheduledJobs(
