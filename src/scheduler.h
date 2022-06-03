@@ -86,7 +86,12 @@ class SchedulerOperator {
 
     SchedulerOperator(std::string _type, std::string _input1="undefined", std::string _input2="undefined", std::string _output="undefined");
 
-    std::string initialise(std::string _type, std::string _input1="undefined", std::string _input2="undefined", std::string _output="undefined");
+    void initialise(
+        const std::string &type, 
+        const std::string &input1="undefined",
+        const std::string &input2="undefined",
+        const std::string &output="undefined"
+    ) throw (std::string);
 
     // Generate a meaningful current_name for the operator
     std::string getName();
@@ -301,9 +306,9 @@ class Schedule {
     // Add operators (of any kind), also adds its corresponding node
     SchedulerOperator initialiseOperator(
         std::string type, std::string input_name, std::string input2_name,
-        std::string output_name, std::string &error_message
+        std::string output_name
     );
-    void addOperator(SchedulerOperator &op);
+    void addOperator(SchedulerOperator op);
 
     // Add a new job, also adds its corresponding node
     void addJob(RelionJob &myjob, std::string jobname, std::string mode);

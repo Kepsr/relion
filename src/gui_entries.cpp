@@ -49,7 +49,7 @@ ShowHelpText::ShowHelpText(const char *help) {
     buff->text(help);
 }
 
-ShowHelpText::~ShowHelpText(){};
+ShowHelpText::~ShowHelpText() {};
 
 void GuiEntry::clear() {
     deactivate_option = -1;

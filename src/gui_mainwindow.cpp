@@ -24,6 +24,20 @@
 bool show_scheduler;
 bool show_expand_stdout;
 
+struct GroupContext {
+
+    Fl_Group *&group;
+
+    GroupContext(Fl_Group *&group): group(group) {
+        group->begin();
+    }
+
+    ~GroupContext() {
+        group->end();
+    }
+
+};
+
 // The StdOutDisplay allows looking at the entire stdout or stderr file
 int StdOutDisplay::handle(int ev) {
 
@@ -33,32 +47,28 @@ int StdOutDisplay::handle(int ev) {
             if (show_scheduler) {
                 current_browse_directory = schedule.name;
             } else {
-                if (current_job < 0)
-                    return 0;
+                if (current_job < 0) return 0;
                 current_browse_directory = pipeline.processList[current_job].name;
             }
             FileName fn = current_browse_directory + fn_file;
             if (exists(fn)) {
+                FileName fn_note;
                 if (fn_file == "run.out") {
                     if (maingui_do_read_only) {
-                        NoteEditorWindow* w = new NoteEditorWindow(800, 400, fn.c_str(), fn.c_str(), false); 
-                        // false means dont_allow_save
-                        w->show();
-                        return 1;
+                        fn_note = fn.c_str();
                     } else {
+                        // temp file
+                        fn_note = ".gui_tmpstd";
                         std::string command = "awk -F\"\r\" '{if (NF>1) {print $NF} else {print}}' < " + fn + " > .gui_tmpstd";
                         system(command.c_str());
-                        NoteEditorWindow* w = new NoteEditorWindow(800, 400, fn.c_str(), ".gui_tmpstd", false); 
-                        // false means dont_allow_save, as its temp file anyway
-                        w->show();
-                        return 1;
                     }
                 } else {
-                    NoteEditorWindow* w = new NoteEditorWindow(800, 400, fn.c_str(), fn, true); 
-                    // true means allow_save, this is useful to remove past errors
-                    w->show();
-                    return 1;
+                    fn_note = fn;
                 }
+                NoteEditorWindow *w = new NoteEditorWindow(800, 400, fn.c_str(), fn_note, !maingui_do_read_only);
+                // allow_save (useful to remove past errors) unless maingui_do_read_only
+                w->show();
+                return 1;
             }
         }
     }
@@ -214,13 +224,18 @@ NoteEditorWindow::NoteEditorWindow(int w, int h, const char* title, FileName _fn
     resizable(*this);
 }
 
+template <typename T>
+T *creatio_ex_nihilo(void *v) {
+    return (T*) v;
+}
+
 void NoteEditorWindow::cb_cancel(Fl_Widget*, void* v) {
-    NoteEditorWindow* T = (NoteEditorWindow*)v;
+    NoteEditorWindow *T = (NoteEditorWindow*) v;
     T->hide();
 }
 
 void NoteEditorWindow::cb_save(Fl_Widget*, void* v) {
-    NoteEditorWindow* T = (NoteEditorWindow*)v;
+    NoteEditorWindow *T = (NoteEditorWindow*) v;
     T->cb_save_i();
     T->hide();
 }
@@ -267,7 +282,7 @@ GuiMainWindow::GuiMainWindow(
     xpm_image = new Fl_Pixmap(gui_background);
     image_box->image(xpm_image); // attach xpm image to box
 
-    background_grp->end();
+    background_grp->end();  // No call to background_grp->begin()
 
     // Read in schedule, if it exists.
     // Otherwise, just initialise schedule with its name.
@@ -342,152 +357,45 @@ GuiMainWindow::GuiMainWindow(
 
     // Fill browser in the right order
     browser = new Fl_Hold_Browser(10, MENUHEIGHT + 5, WCOL0 - 20, h - MENUHEIGHT - 60);
+    {
     browser->textsize(RLN_FONTSIZE - 1);
     current_job = -1;
 
-    int i = 0;
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Import");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::IMPORT);
-    browse_grp[i]->end();
-    i++;
+    std::array<std::pair<const char*, Process::Type>, NR_BROWSE_TABS> specs {{
+        {"Import",               Process::IMPORT},
+        {"Motion correction",    Process::MOTIONCORR},
+        {"CTF estimation",       Process::CTFFIND},
+        {"Manual picking",       Process::MANUALPICK},
+        {"Auto-picking",         Process::AUTOPICK},
+        {"Particle extraction",  Process::EXTRACT},
+        {"Subset selection",     Process::CLASSSELECT},
+        {"2D classification",    Process::CLASS2D},
+        {"3D initial model",     Process::INIMODEL},
+        {"3D classification",    Process::CLASS3D},
+        {"3D auto-refine",       Process::AUTO3D},
+        {"3D multi-body",        Process::MULTIBODY},
+        {"CTF refinement",       Process::CTFREFINE},
+        {"Bayesian polishing",   Process::MOTIONREFINE},
+        {"Mask creation",        Process::MASKCREATE},
+        {"Join star files",      Process::JOINSTAR},
+        {"Particle subtraction", Process::SUBTRACT},
+        {"Post-processing",      Process::POST},
+        {"Local resolution",     Process::RESMAP},
+        {"External",             Process::EXTERNAL}
+    }};
 
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Motion correction");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::MOTIONCORR);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("CTF estimation");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::CTFFIND);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Manual picking");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::MANUALPICK);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Auto-picking");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::AUTOPICK);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Particle extraction");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::EXTRACT);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Subset selection");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::CLASSSELECT);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("2D classification");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::CLASS2D);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("3D initial model");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::INIMODEL);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("3D classification");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::CLASS3D);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("3D auto-refine");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::AUTO3D);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("3D multi-body");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::MULTIBODY);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("CTF refinement");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::CTFREFINE);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Bayesian polishing");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::MOTIONREFINE);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Mask creation");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::MASKCREATE);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Join star files");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::JOINSTAR);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Particle subtraction");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::SUBTRACT);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Post-processing");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::POST);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("Local resolution");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::RESMAP);
-    browse_grp[i]->end();
-    i++;
-
-    browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
-    browser->add("External");
-    gui_jobwindows[i] = new JobWindow();
-    gui_jobwindows[i]->initialise(Process::EXTERNAL);
-    browse_grp[i]->end();
+    for (int i = 0; i < specs.size(); ++i) {
+        browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
+        browser->add(specs[i].first);
+        gui_jobwindows[i] = new JobWindow();
+        gui_jobwindows[i]->initialise(specs[i].second);
+        browse_grp[i]->end();
+    }
 
     browser->callback(cb_select_browsegroup, this);
     browser->end();
     browser->select(1); // just start from the beginning
+    }
 
     // Add run buttons on the menubar as well
 
@@ -502,7 +410,8 @@ GuiMainWindow::GuiMainWindow(
 
     // A) Pipeliner part of the GUI
     pipeliner_grp = new Fl_Group(0, 0, 2 * w, 2 * h);
-    pipeliner_grp->begin();
+    {
+    GroupContext context (pipeliner_grp);
 
     run_button = new Fl_Button(GUIWIDTH - 110 , h - 90, 100, 32, "Run!");
     run_button->color(GUI_RUNBUTTON_COLOR);
@@ -544,7 +453,8 @@ GuiMainWindow::GuiMainWindow(
     display_io_node->callback(cb_display_io_node, this);
 
     pipeliner_jobs_grp = new Fl_Group(0, 0, 2 * w, 2 * h);
-    pipeliner_jobs_grp->begin();
+    {
+    GroupContext context (pipeliner_jobs_grp);
 
     // Add browsers for finished and running jobs
     Fl_Text_Buffer *textbuff1 = new Fl_Text_Buffer();
@@ -615,16 +525,18 @@ GuiMainWindow::GuiMainWindow(
     disp_stderr->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
     disp_stdout->scrollbar_width(0);
     disp_stderr->scrollbar_width(0);
+    }
 
-    pipeliner_jobs_grp->end();
-    pipeliner_grp->end();
+    }
 
     // B) Scheduler part of the GUI
     scheduler_grp = new Fl_Group(0, 0, 4 * w, 4 * h);
-    scheduler_grp->begin();
+    {
+    GroupContext context (scheduler_grp);
 
     scheduler_run_grp = new Fl_Group(0, 0, 4 * w, 4 * h);
-    scheduler_run_grp->begin();
+    {
+    GroupContext context (scheduler_run_grp);
 
     // Buttons for current_node and running/aborting the schedule
     scheduler_current_node = new Fl_Choice(XJOBCOL1 + 90 + 65, GUIHEIGHT_EXT_START + 3, 140, 23);
@@ -658,8 +570,7 @@ GuiMainWindow::GuiMainWindow(
     scheduler_run_button->labelfont(FL_ITALIC);
     scheduler_run_button->labelsize(14);
     scheduler_run_button->callback(cb_scheduler_run, this);
-
-    scheduler_run_grp->end();
+    }
 
     scheduler_unlock_button = new Fl_Button(GUIWIDTH - 256, GUIHEIGHT_EXT_START + 1, 80, 25);
     scheduler_unlock_button->label("Unlock");
@@ -702,7 +613,8 @@ GuiMainWindow::GuiMainWindow(
     /// TODO: fill options for this choice!
 
     scheduler_jobs_grp = new Fl_Group(0, 0, 4 * w, 4 * h);
-    scheduler_jobs_grp->begin();
+    {
+    GroupContext context (scheduler_jobs_grp);
 
     // Scheduler variables
     int height_var = 35;
@@ -813,7 +725,6 @@ GuiMainWindow::GuiMainWindow(
     scheduler_output_job_browser->callback(cb_select_output_job, this);
     scheduler_output_job_browser->textsize(RLN_FONTSIZE - 1);
 
-
     // Scheduler edges
     Fl_Text_Buffer *textbuffedge = new Fl_Text_Buffer();
     textbuffedge->text("Edges");
@@ -852,12 +763,11 @@ GuiMainWindow::GuiMainWindow(
     scheduler_edge_browser->callback(cb_select_scheduler_edge, this);
     scheduler_edge_browser->textsize(RLN_FONTSIZE - 2);
     scheduler_edge_browser->end();
+    }
 
-    scheduler_jobs_grp->end();
+    scheduler_run_grp->end();  // scheduler_run_grp->end() already called
 
-    scheduler_run_grp->end();
-
-    scheduler_grp->end();
+    }
 
     if (show_scheduler) {
         pipeliner_grp->hide();
@@ -873,7 +783,8 @@ GuiMainWindow::GuiMainWindow(
 
     // B) Scheduler part of the GUI
     expand_stdout_grp = new Fl_Group(0, 0, 4 * w, 4 * h);
-    expand_stdout_grp->begin();
+    {
+    GroupContext context (expand_stdout_grp);
 
     disp_expand_stdout = new StdOutDisplay(XJOBCOL1, GUIHEIGHT_EXT_START2 - 5, w - 20, 300);
     disp_expand_stderr = new StdOutDisplay(XJOBCOL1, GUIHEIGHT_EXT_START2 - 5 + 305, w - 20, 85);
@@ -890,8 +801,7 @@ GuiMainWindow::GuiMainWindow(
     disp_expand_stderr->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
     disp_expand_stdout->scrollbar_width(0);
     disp_expand_stderr->scrollbar_width(0);
-
-    expand_stdout_grp->end();
+    }
 
     if (!show_expand_stdout) expand_stdout_grp->hide();
 
@@ -1806,33 +1716,34 @@ void GuiMainWindow::cb_add_scheduler_operator(Fl_Widget* o, void*v) {
     }
     std::string type = scheduler_operator_type->text(i);
     i = scheduler_operator_output->value();
-    std::string output = (i < 0 || i >= scheduler_operator_output->size()) ? "" : scheduler_operator_output->text(i);
+    std::string output = i < 0 || i >= scheduler_operator_output->size() ? "" : scheduler_operator_output->text(i);
     i = scheduler_operator_input1->value();
-    std::string input1 = (i < 0 || i >= scheduler_operator_input1->size()) ? "" : scheduler_operator_input1->text(i);
+    std::string input1 = i < 0 || i >= scheduler_operator_input1->size() ? "" : scheduler_operator_input1->text(i);
     i = scheduler_operator_input2->value();
-    std::string input2 = (i < 0 || i >= scheduler_operator_input2->size()) ? "" : scheduler_operator_input2->text(i);
-    std::string error_message;
-    SchedulerOperator myop = schedule.initialiseOperator(type, input1, input2, output, error_message);
-    if (error_message != "") {
-        fl_message("%s", error_message.c_str());
+    std::string input2 = i < 0 || i >= scheduler_operator_input2->size() ? "" : scheduler_operator_input2->text(i);
+    SchedulerOperator op;
+    try {
+        op = schedule.initialiseOperator(type, input1, input2, output);
+    } catch (std::string errmsg) {
+        fl_message("%s", errmsg.c_str());
         return;
-    } else {
-        std::string newname = myop.getName();
-        if (schedule.isOperator(newname)) {
-            fl_message("ERROR: this operator already exists...");
-            return;
-        }
-        {
-            Schedule::rwlock lock (schedule);
-            schedule.addOperator(myop);
-        }
-        // Also reset entry fields
-        scheduler_operator_type->value(-1);
-        scheduler_operator_output->value(-1);
-        scheduler_operator_input1->value(-1);
-        scheduler_operator_input2->value(-1);
-        T->fillSchedulerNodesAndVariables();
     }
+
+    if (schedule.isOperator(op.getName())) {
+        fl_message("ERROR: this operator already exists...");
+        return;
+    }
+
+    {
+        Schedule::rwlock lock (schedule);
+        schedule.addOperator(op);
+    }
+    // Also reset entry fields
+    scheduler_operator_type->value(-1);
+    scheduler_operator_output->value(-1);
+    scheduler_operator_input1->value(-1);
+    scheduler_operator_input2->value(-1);
+    T->fillSchedulerNodesAndVariables();
 }
 
 void GuiMainWindow::cb_delete_scheduler_operator(Fl_Widget* o, void*v) {
@@ -1855,9 +1766,8 @@ void GuiMainWindow::cb_delete_scheduler_operator(Fl_Widget* o, void*v) {
         input2 = scheduler_operator_input2->text(scheduler_operator_input2->value());
 
     {
-        const std::string name = schedule.getOperatorName(type, input1, input2, output);
         Schedule::rwlock lock (schedule);
-        schedule.removeOperator(name);
+        schedule.removeOperator(schedule.getOperatorName(type, input1, input2, output));
     }
 
     // Also reset entry fields
@@ -1876,9 +1786,9 @@ void GuiMainWindow::cb_select_scheduler_variable(Fl_Widget* o, void*v) {
 
 void GuiMainWindow::cb_select_scheduler_variable_i() {
     // Get position of the browser:
-    int idx = scheduler_variable_browser->value();
-    if (idx >=1) {
-        FileName mytext = scheduler_variable_browser->text(idx);
+    int i = scheduler_variable_browser->value();
+    if (i >= 1) {
+        FileName mytext = scheduler_variable_browser->text(i);
         FileName myname = mytext.beforeFirstOf(" = ");
         FileName myval = mytext.afterFirstOf(" = ");
         myval = myval.beforeFirstOf(" (");
@@ -1897,25 +1807,22 @@ void GuiMainWindow::cb_select_scheduler_operator(Fl_Widget *o, void* v) {
 
 void GuiMainWindow::cb_select_scheduler_operator_i() {
     // Get position of the browser:
-    int idx = scheduler_operator_browser->value();
-    if (idx >= 1) {
-        FileName myname = scheduler_operator_browser->text(idx);
+    int i = scheduler_operator_browser->value();
+    if (i >= 1) {
+        FileName myname = scheduler_operator_browser->text(i);
         std::string type, input1, input2, output;
         schedule.getOperatorParameters(myname, type, input1, input2, output);
 
         scheduler_operator_type->value(scheduler_operator_type->find_item(type.c_str()));
-        if (scheduler_operator_output->find_item(output.c_str()))
-            scheduler_operator_output->value(scheduler_operator_output->find_item(output.c_str()));
-        else
-            scheduler_operator_output->value(scheduler_operator_output->find_item(""));
-        if (scheduler_operator_input1->find_item(input1.c_str()))
-            scheduler_operator_input1->value(scheduler_operator_input1->find_item(input1.c_str()));
-        else
-            scheduler_operator_input1->value(scheduler_operator_input1->find_item(""));
-        if (scheduler_operator_input2->find_item(input2.c_str()))
-            scheduler_operator_input2->value(scheduler_operator_input2->find_item(input2.c_str()));
-        else
-            scheduler_operator_input2->value(scheduler_operator_input2->find_item(""));
+        scheduler_operator_output->value(scheduler_operator_output->find_item(
+            scheduler_operator_output->find_item(output.c_str()) ? output.c_str() : ""
+        ));
+        scheduler_operator_input1->value(scheduler_operator_input1->find_item(
+            scheduler_operator_input1->find_item(input1.c_str()) ? input1.c_str() : ""
+        ));
+        scheduler_operator_input2->value(scheduler_operator_input2->find_item(
+            scheduler_operator_input2->find_item(input2.c_str()) ? input2.c_str() : ""
+        ));
     } else {
         scheduler_operator_type->value(-1);
         scheduler_operator_output->value(-1);
@@ -2827,7 +2734,7 @@ constexpr const char* about() {
 }
 
 void GuiMainWindow::cb_about(Fl_Widget* o, void* v) {
-    ShowHelpText *help = new ShowHelpText(about());
+    ShowHelpText help = ShowHelpText(about());
 }
 
 void GuiMainWindow::cb_quit(Fl_Widget* o, void* v) {
