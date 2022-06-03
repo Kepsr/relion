@@ -206,12 +206,11 @@ class PipeLine {
     );
 
     // Runs a job and adds it to the pipeline
-    bool runJob(
+    void runJob(
         RelionJob &_job, int &current_job, 
         bool only_schedule, bool is_main_continue,
-        bool is_scheduled, bool do_overwrite_current, 
-        std::string &error_message
-    );
+        bool is_scheduled, bool do_overwrite_current
+    ) throw (std::string);
 
     // Adds a scheduled job to the pipeline from the command line (with a name for job type)
     int addScheduledJob(std::string job_type, std::string fn_options);
@@ -269,7 +268,7 @@ class PipeLine {
     );
 
     // Export all scheduled jobs
-    bool exportAllScheduledJobs(std::string mydir, std::string &error_message);
+    void exportAllScheduledJobs(std::string mydir) throw (std::string);
 
     // Import previously exported jobs
     void importJobs(FileName fn_export);

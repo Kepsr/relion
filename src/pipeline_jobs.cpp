@@ -33,8 +33,8 @@ vector<Node> getOutputNodesRefine(
 ) {
     vector<Node> result;
 
-    if (!(2 >= dim && dim >= 3))
-        REPORT_ERROR("getOutputNodesRefine " + errorMsg("invalid dim value"));
+    if (2 < dim || dim > 3)
+    REPORT_ERROR("getOutputNodesRefine " + errorMsg("invalid dim value"));
 
     FileName fn_out;
     if (iter < 0) {
@@ -221,15 +221,13 @@ bool JobOption::getBoolean() {
     if (joboption_type != JOBOPTION::BOOLEAN) {
         std::cerr << " joboption_type= " << joboption_type << " label= " << label << " value= " << value << std::endl;
         REPORT_ERROR(errorMsg("this JobOption does not return a boolean: " + label));
-    } else {
-        return value == "Yes";
     }
+    return value == "Yes";
 }
 
-bool JobOption::readValue(std::ifstream& in) {
-    if (label.empty()) {
-        return false;
-    }
+bool JobOption::readValue(std::ifstream &in) {
+    if (label.empty()) return false;
+
     string sought = label;
     if (label == "Estimate beamtilt?") {
         sought = "Perform beamtilt estimation?";
@@ -255,17 +253,14 @@ bool JobOption::readValue(std::ifstream& in) {
     return false;
 }
 
-void JobOption::writeValue(std::ostream& out) {
+void JobOption::writeValue(std::ostream &out) {
     out << label << " == " << value << std::endl;
 }
 
-bool RelionJob::containsLabel(string _label, string &option) {
-    for (
-        std::map<string, JobOption>::iterator it = joboptions.begin();
-        it != joboptions.end(); ++it
-    ) {
-        if (it->second.label == _label) {
-            option = it->first;
+bool RelionJob::containsLabel(const string &label, string &option) {
+    for (const auto &pair : joboptions) {
+        if (pair.second.label == label) {
+            option = pair.first;
             return true;
         }
     }
@@ -349,7 +344,7 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
         is_continue = MDhead.getValue<bool>(EMDL::JOB_IS_CONTINUE);
         _is_continue = is_continue;
         if (do_initialise)
-            initialise(type);
+        initialise(type);
 
         MetaDataTable MDvals;
         MDvals.read(fn_star, "joboptions_values");
@@ -365,38 +360,38 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
         have_read = true;
     }
 
-    if (have_read) {
-        // Just check that went OK
-        std::vector<int> types {
-            Process::IMPORT,
-            Process::MOTIONCORR,
-            Process::CTFFIND,
-            Process::MANUALPICK,
-            Process::AUTOPICK,
-            Process::EXTRACT,
-            Process::CLASSSELECT,
-            Process::CLASS2D,
-            Process::CLASS3D,
-            Process::AUTO3D,
-            Process::MULTIBODY,
-            Process::MASKCREATE,
-            Process::JOINSTAR,
-            Process::SUBTRACT,
-            Process::POST,
-            Process::RESMAP,
-            Process::INIMODEL,
-            Process::MOTIONREFINE,
-            Process::CTFREFINE,
-            Process::EXTERNAL,
-        };
+    if (!have_read) return false;
 
-        if (std::find(std::begin(types), std::end(types), type) == std::end(types)); {
-            // If type isn't recognised
-            REPORT_ERROR(errorMsg("cannot find correct job type in " + myfilename + "run.job, with type= " + integerToString(type)));
-        }
-        return true;
+    // Just check that went OK
+    std::vector<int> types {
+        Process::IMPORT,
+        Process::MOTIONCORR,
+        Process::CTFFIND,
+        Process::MANUALPICK,
+        Process::AUTOPICK,
+        Process::EXTRACT,
+        Process::CLASSSELECT,
+        Process::CLASS2D,
+        Process::CLASS3D,
+        Process::AUTO3D,
+        Process::MULTIBODY,
+        Process::MASKCREATE,
+        Process::JOINSTAR,
+        Process::SUBTRACT,
+        Process::POST,
+        Process::RESMAP,
+        Process::INIMODEL,
+        Process::MOTIONREFINE,
+        Process::CTFREFINE,
+        Process::EXTERNAL,
+    };
+
+    if (std::find(std::begin(types), std::end(types), type) == std::end(types)); {
+        // If type isn't recognised
+        REPORT_ERROR(errorMsg("cannot find correct job type in " + myfilename + "run.job, with type= " + integerToString(type)));
     }
-    return false;
+
+    return true;
 }
 
 
@@ -429,9 +424,9 @@ void RelionJob::write(string fn) {
      */
 
     // Also write 3.1-style STAR file
-    std::ofstream fh((myfilename + "job.star").c_str(), std::ios::out);
+    std::ofstream fh ((myfilename + "job.star").c_str(), std::ios::out);
     if (!fh)
-        REPORT_ERROR(errorMsg("Cannot write to file: " + myfilename + "job.star"));
+    REPORT_ERROR(errorMsg("Cannot write to file: " + myfilename + "job.star"));
 
     MetaDataTable MDhead;
     MetaDataTable MDvals, MDopts;
@@ -453,9 +448,9 @@ void RelionJob::write(string fn) {
     MDvals.write(fh);
 }
 
-bool RelionJob::saveJobSubmissionScript(
-    string newfilename, string outputname, vector<string> commands, string &error_message
-) {
+void RelionJob::saveJobSubmissionScript(
+    string newfilename, string outputname, vector<string> commands
+) throw (string) {
     // Open the standard job submission file
     // Return true unless any of the following fails, in which case return false:
     // - reading from the template submission script
@@ -464,105 +459,92 @@ bool RelionJob::saveJobSubmissionScript(
     FileName fn_qsub = joboptions["qsubscript"].getString();
 
     std::ifstream fh (fn_qsub.c_str(), std::ios_base::in);
-    if (fh.fail()) {
-        error_message = "Error reading template submission script in: " + fn_qsub;
-        return false;
-    }
+    if (fh.fail())
+    throw "Error reading template submission script in: " + fn_qsub;
 
     std::ofstream fo (newfilename.c_str(), std::ios::out);
-    if (fo.fail()) {
-        error_message = "Error writing to job submission script in: " + newfilename;
-        return false;
+    if (fo.fail())
+    throw "Error writing to job submission script in: " + newfilename;
+
+    // These getNumber() calls may throw
+    int nmpi = joboptions.find("nr_mpi")     != joboptions.end() ? joboptions["nr_mpi"].getNumber() : 1;
+    int nthr = joboptions.find("nr_threads") != joboptions.end() ? joboptions["nr_threads"].getNumber() : 1;
+    int ncores = nmpi * nthr;
+    int ndedi = joboptions["min_dedicated"].getNumber();
+    float fnodes = (float) ncores / (float) ndedi;
+    int nnodes = ceil(fnodes);
+
+    if (fmod(fnodes, 1) > 0) {
+        std::cout << "\n";
+        std::cout << " Warning! You're using " << nmpi << " MPI processes with " << nthr << " threads each (i.e. " << ncores << " cores), while asking for " << nnodes << " nodes with " << ndedi << " cores.\n";
+        std::cout << " It is more efficient to make the number of cores (i.e. mpi*threads) a multiple of the minimum number of dedicated cores per node " << std::endl;
     }
 
-    try {
+    fh.clear(); // reset eof if happened...
+    fh.seekg(0, std::ios::beg);
+    std::map<string, string> replacing;
 
-        int nmpi = joboptions.find("nr_mpi")     != joboptions.end() ? joboptions["nr_mpi"].getNumber() : 1;
-        int nthr = joboptions.find("nr_threads") != joboptions.end() ? joboptions["nr_threads"].getNumber() : 1;
-        int ncores = nmpi * nthr;
-        int ndedi = joboptions["min_dedicated"].getNumber();
-        float fnodes = (float) ncores / (float) ndedi;
-        int nnodes = ceil(fnodes);
-
-        if (fmod(fnodes, 1) > 0) {
-            std::cout << "\n";
-            std::cout << " Warning! You're using " << nmpi << " MPI processes with " << nthr << " threads each (i.e. " << ncores << " cores), while asking for " << nnodes << " nodes with " << ndedi << " cores.\n";
-            std::cout << " It is more efficient to make the number of cores (i.e. mpi*threads) a multiple of the minimum number of dedicated cores per node " << std::endl;
+    replacing[flankXXX("mpinodes")] = floatToString(nmpi);
+    replacing[flankXXX("threads")] = floatToString(nthr);
+    replacing[flankXXX("cores")] = floatToString(ncores);
+    replacing[flankXXX("dedicated")] = floatToString(ndedi);
+    replacing[flankXXX("nodes")] = floatToString(nnodes);
+    replacing[flankXXX("name")] = outputname;
+    replacing[flankXXX("errfile")] = outputname + "run.err";
+    replacing[flankXXX("outfile")] = outputname + "run.out";
+    replacing[flankXXX("queue")] = joboptions["queuename"].getString();
+    char *extra_count_text = getenv("RELION_QSUB_EXTRA_COUNT");
+    const char extra_count_val = extra_count_text ? atoi(extra_count_text) : 2;
+    for (int i = 1; i <= extra_count_val; i++) {
+        std::stringstream out;
+        out << i;
+        const string i_str = out.str();
+        if (joboptions.find(string("qsub_extra") + i_str) != joboptions.end()) {
+            replacing[string("XXX") + "extra" + i_str + "XXX"] = joboptions[string("qsub_extra") + i_str].getString();
         }
+    }
 
-        fh.clear(); // reset eof if happened...
-        fh.seekg(0, std::ios::beg);
-        std::map<string, string> replacing;
-
-        replacing[flankXXX("mpinodes")] = floatToString(nmpi);
-        replacing[flankXXX("threads")] = floatToString(nthr);
-        replacing[flankXXX("cores")] = floatToString(ncores);
-        replacing[flankXXX("dedicated")] = floatToString(ndedi);
-        replacing[flankXXX("nodes")] = floatToString(nnodes);
-        replacing[flankXXX("name")] = outputname;
-        replacing[flankXXX("errfile")] = outputname + "run.err";
-        replacing[flankXXX("outfile")] = outputname + "run.out";
-        replacing[flankXXX("queue")] = joboptions["queuename"].getString();
-        char *extra_count_text = getenv("RELION_QSUB_EXTRA_COUNT");
-        const char extra_count_val = extra_count_text ? atoi(extra_count_text) : 2;
-        for (int i = 1; i <= extra_count_val; i++) {
-            std::stringstream out;
-            out << i;
-            const string i_str = out.str();
-            if (joboptions.find(string("qsub_extra") + i_str) != joboptions.end()) {
-                replacing[string("XXX") + "extra" + i_str + "XXX"] = joboptions[string("qsub_extra") + i_str].getString();
+    string line;
+    while (getline(fh, line, '\n')) {
+        // Replace all entries in the replacing map
+        for (std::map<string,string>::iterator it = replacing.begin(); it != replacing.end(); ++it) {
+            string subin  = it->first;
+            string subout = it->second;
+            // For each line, replace every occurrence of subin with subout
+            size_t start_pos = 0;
+            while ((start_pos = line.find(subin, start_pos)) != string::npos) {
+                line.replace(start_pos, subin.length(), subout);
+                start_pos += subout.length();
             }
         }
 
-        string line;
-        while (getline(fh, line, '\n')) {
-            // Replace all entries in the replacing map
-            for (std::map<string,string>::iterator it = replacing.begin(); it != replacing.end(); ++it) {
-                string subin  = it->first;
-                string subout = it->second;
-                // For each line, replace every occurrence of subin with subout
-                size_t start_pos = 0;
-                while ((start_pos = line.find(subin, start_pos)) != string::npos) {
-                    line.replace(start_pos, subin.length(), subout);
-                    start_pos += subout.length();
-                }
-            }
-
-            if (line.find(flankXXX("command")) == string::npos) {
-                fo << line << std::endl;
-            } else {
-                // Append the commands
-                string ori_line = line;
-                for (int icom = 0; icom < commands.size(); icom++) {
-                    // For multiple relion mpi commands: add multiple lines from the XXXcommandXXX template
-                    if (
-                        commands[icom].find("relion_") != string::npos && (
-                        commands[icom].find("_mpi`")   != string::npos || nmpi == 1
-                        )
-                    ) {
-                        // if there are no MPI programs, then still use XXXcommandXXX once
-                        string from = flankXXX("command");
-                        string to = commands[icom];
-                        line.replace(line.find(from), from.length(), to);
-                        fo << line << std::endl;
-                        line = ori_line;
-                    } else {
-                        // Just add the sequential command
-                        fo << commands[icom] << std::endl;
-                    }
+        if (line.find(flankXXX("command")) == string::npos) {
+            fo << line << std::endl;
+        } else {
+            // Append the commands
+            string ori_line = line;
+            for (int icom = 0; icom < commands.size(); icom++) {
+                // For multiple relion mpi commands: add multiple lines from the XXXcommandXXX template
+                if (
+                    commands[icom].find("relion_") != string::npos && (
+                    commands[icom].find("_mpi`")   != string::npos || nmpi == 1
+                    )
+                ) {
+                    // if there are no MPI programs, then still use XXXcommandXXX once
+                    string from = flankXXX("command");
+                    string to = commands[icom];
+                    line.replace(line.find(from), from.length(), to);
+                    fo << line << std::endl;
+                    line = ori_line;
+                } else {
+                    // Just add the sequential command
+                    fo << commands[icom] << std::endl;
                 }
             }
         }
-
-        fo << std::endl;
-
-    } catch (const string &errmsg) {
-        // If any of the JobOption::getNumber() calls throw
-        error_message = errmsg;
-        return false;
     }
 
-    return true;
+    fo << std::endl;
 }
 
 void RelionJob::initialisePipeline(string &outputname, string defaultname, int job_counter) {
@@ -605,12 +587,16 @@ bool RelionJob::prepareFinalCommand(
 
     // Prepare full mpi commands or save jobsubmission script to disc
     if (joboptions["do_queue"].getBoolean() && do_makedir) {
-        // Make the submission script and write it to disc
-        string output_script = outputname + "run_submit.script";
-
-        if (!saveJobSubmissionScript(output_script, outputname, commands, error_message))
+        try {
+            // Make the submission script and write it to disc
+            string output_script = outputname + "run_submit.script";
+            saveJobSubmissionScript(output_script, outputname, commands);
+            final_command = joboptions["qsub"].getString() + " " + output_script + " &";
+        } catch (const string &errmsg) {
+            // If saveJobSubmissionScript throws
+            error_message = errmsg;
             return false;
-        final_command = joboptions["qsub"].getString() + " " + output_script + " &";
+        }
     } else {
         // If there are multiple commands, then join them all on a single line (final_command)
         // Also add mpirun in front of those commands that have relion_ and _mpi` in it (if no submission via the queue is done)
@@ -638,10 +624,10 @@ bool RelionJob::prepareFinalCommand(
 
             // Save stdout and stderr to a .out and .err files
             // But only when a re-direct '>' is NOT already present on the command line!
-            if (string::npos == commands[icom].find(">"))
+            if (commands[icom].find(">") == string::npos)
                 one_command += " >> " + outputname + "run.out 2>> " + outputname + "run.err";
             final_command += one_command;
-            final_command += (icom == commands.size() - 1) ? " & " : " && ";
+            final_command += icom == commands.size() - 1 ? " & " : " && ";
                 // &  end by putting composite job in the background
                 // && execute one command after the other
         }
@@ -1100,7 +1086,7 @@ bool RelionJob::getCommandsImportJob(
         }
 
         command += " --optics_group_name \"" + optics_group + "\"";
-        if (joboptions["fn_mtf"].getString().length() > 0) {
+        if (!joboptions["fn_mtf"].getString().empty()) {
             command += " --optics_group_mtf " + joboptions["fn_mtf"].getString();
         }
         command += " --angpix " + joboptions["angpix"].getString();
@@ -1786,7 +1772,7 @@ bool RelionJob::getCommandsAutopickJob(
 
     if (joboptions["do_log"].getBoolean()) {
         if (joboptions["use_gpu"].getBoolean()) {
-            error_message =errorMsg("The Laplacian-of-Gaussian picker does not support GPU.");
+            error_message = errorMsg("The Laplacian-of-Gaussian picker does not support GPU.");
             return false;
         }
 
@@ -1809,7 +1795,7 @@ bool RelionJob::getCommandsAutopickJob(
         if (joboptions["do_ref3d"].getBoolean()) {
 
             if (joboptions["fn_ref3d_autopick"].getString().empty()) {
-                error_message =errorMsg("empty field for 3D reference...");
+                error_message = errorMsg("empty field for 3D reference...");
                 return false;
             }
 
@@ -1828,7 +1814,7 @@ bool RelionJob::getCommandsAutopickJob(
             command += " --healpix_order " + integerToString(ref3d_sampling);
         } else {
             if (joboptions["fn_refs_autopick"].getString().empty()) {
-                error_message =errorMsg("empty field for references...");
+                error_message = errorMsg("empty field for references...");
                 return false;
             }
 
@@ -2166,9 +2152,9 @@ bool RelionJob::getCommandsSelectJob(
         command = "`which relion_star_handler`";
 
         if (
-            joboptions["fn_mic"]   .getString() != "" ||
-            joboptions["fn_model"] .getString() != "" ||
-            joboptions["fn_coords"].getString() != ""
+            !joboptions["fn_mic"]   .getString().empty() ||
+            !joboptions["fn_model"] .getString().empty() ||
+            !joboptions["fn_coords"].getString().empty()
         ) {
             error_message = errorMsg("Duplicate removal is only possible for particle STAR files...");
             return false;
@@ -4069,11 +4055,11 @@ bool RelionJob::getCommandsMultiBodyJob(
             vector<FileName> fns_model;
             vector<FileName> fns_ok;
             fn_wildcard.globFiles(fns_model);
-            for (int i = 0; i < fns_model.size(); i++) {
-                if (!fns_model[i].contains("_it"))
-                    fns_ok.push_back(fns_model[i]);
+            for (const FileName &fn_model : fns_model) {
+                if (!fn_model.contains("_it"))
+                    fns_ok.push_back(fn_model);
             }
-            if (fns_ok.size() == 0) {
+            if (fns_ok.empty()) {
                 error_message = errorMsg("cannot find appropriate model.star file in the output directory");
                 return false;
             }
@@ -4176,9 +4162,7 @@ bool RelionJob::getCommandsMaskcreateJob(
 ) {
     commands.clear();
     initialisePipeline(outputname, Process::MASKCREATE_NAME, job_counter);
-    string command;
-
-    command = "`which relion_mask_create`";
+    string command = "`which relion_mask_create`";
 
     // I/O
     if (joboptions["fn_in"].getString().empty()) {

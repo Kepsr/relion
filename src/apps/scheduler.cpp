@@ -142,7 +142,6 @@ class scheduler_parameters {
         if (!exists(mydir)) {
             std::string command = "mkdir -p " + mydir;
             int res = system(command.c_str());
-
         }
 
         if (do_abort) {
@@ -160,7 +159,9 @@ class scheduler_parameters {
         if (!newname.empty()) {
             schedule.copy(newname);
             return;
-        } else if (!add.empty()) {
+        }
+
+        if (!add.empty()) {
             if (add == "variable") {
                 schedule.setVariable(name, value);
                 if (has_ori_value) schedule.setOriginalVariable(name, ori_value);

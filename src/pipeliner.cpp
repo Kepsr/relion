@@ -438,23 +438,21 @@ long int PipeLine::addJob(
     return myProcess;
 }
 
-bool PipeLine::runJob(
+void PipeLine::runJob(
     RelionJob &_job, int &current_job, bool only_schedule, bool is_main_continue,
-    bool is_scheduled, bool do_overwrite_current, std::string &error_message
-) {
+    bool is_scheduled, bool do_overwrite_current
+) throw (std::string) {
     std::vector<std::string> commands;
     std::string final_command;
 
     // Remove run.out and run.err when overwriting a job
-    if (do_overwrite_current) is_main_continue = false;
+    if (do_overwrite_current) { is_main_continue = false; }
 
-    // true means makedir
+    std::string error_message;
     if (!getCommandLineJob(
-        _job, current_job, is_main_continue, is_scheduled, true, 
+        _job, current_job, is_main_continue, is_scheduled, true, // makedir
         do_overwrite_current, commands, final_command, error_message
-    )) {
-        return false;
-    }
+    )) throw error_message;
 
     // Remove run.out and run.err when overwriting a job
     if (do_overwrite_current) {
@@ -463,8 +461,10 @@ bool PipeLine::runJob(
         int res = system(command.c_str());
 
         // Above deletes run_submit.script too, so we have to call this again ...
-        if (!getCommandLineJob(_job, current_job, is_main_continue, is_scheduled, true, do_overwrite_current, commands, final_command, error_message))
-            return false;
+        if (!getCommandLineJob(
+            _job, current_job, is_main_continue, is_scheduled, true, 
+            do_overwrite_current, commands, final_command, error_message
+        )) throw error_message;
     }
 
     // Read in the latest version of the pipeline, just in case anyone else made a change meanwhile...
@@ -617,9 +617,8 @@ bool PipeLine::runJob(
     // Copy pipeline star file as backup to the output directory
     FileName fn_pipe = name + "_pipeline.star";
     if (exists(fn_pipe))
-        copy(fn_pipe, processList[current_job].name + fn_pipe);
+    copy(fn_pipe, processList[current_job].name + fn_pipe);
 
-    return true;
 }
 
 // Adds a scheduled job to the pipeline from the command line
@@ -672,23 +671,23 @@ int PipeLine::addScheduledJob(int job_type, std::string fn_options) {
     job.initialise(job_type);
     std::vector<std::string> options;
     splitString(fn_options, ";", options);
-    for (long int iopt = 0; iopt < options.size(); iopt++)
-        job.setOption(options[iopt]);
+    for (const auto &option : options)
+        job.setOption(option);
 
     // Always add Pre-processing jobs as continuation ones (for convenient on-the-fly processing)
     if (
         job_type == Process::MOTIONCORR || job_type == Process::CTFFIND || 
         job_type == Process::AUTOPICK   || job_type == Process::EXTRACT
-    )
-        job.is_continue = true;
+    ) { job.is_continue = true; }
 
-    std::string error_message;
-    int current_job = processList.size();
-    if (!runJob(job, current_job, true, job.is_continue, false, false, error_message))
+    try {
+        int current_job = processList.size();
+        runJob(job, current_job, true, job.is_continue, false, false);
         // true is only_schedule, false means !is_scheduled, 2nd false means dont overwrite current
-        REPORT_ERROR(error_message.c_str());
-
-    return current_job;
+        return current_job;
+    } catch (const std::string &errmsg) {
+        REPORT_ERROR(errmsg.c_str());
+    }
 }
 
 // Adds a scheduled job to the pipeline from the command line
@@ -700,13 +699,14 @@ int PipeLine::addScheduledJob(RelionJob &job, std::string fn_options) {
             job.setOption(options[iopt]);
     }
 
-    std::string error_message;
-    int current_job = processList.size();
-    if (!runJob(job, current_job, true, job.is_continue, false, false, error_message))
+    try {
+        int current_job = processList.size();
+        runJob(job, current_job, true, job.is_continue, false, false);
         // true is only_schedule, false means !is_scheduled, 2nd false means dont overwrite current
-        REPORT_ERROR(error_message.c_str());
-
-    return current_job;
+        return current_job;
+    } catch (const std::string &errmsg) {
+        REPORT_ERROR(errmsg.c_str());
+    }
 }
 
 void PipeLine::waitForJobToFinish(
@@ -828,11 +828,13 @@ void PipeLine::runScheduledJobs(
             }
             now = time(0);
             fh << " + " << ctime(&now) << " ---- Executing " << processList[current_job].name  << std::endl;
-            std::string error_message;
 
-            if (!runJob(myjob, current_job, false, is_continue, true, do_overwrite_current, error_message)) 
+            try {
+                runJob(myjob, current_job, false, is_continue, true, do_overwrite_current);
                 // true means is_scheduled; false=dont overwrite current
-                REPORT_ERROR(error_message);
+            } catch (const std::string &errmsg) {
+                REPORT_ERROR(errmsg);
+            }
 
             // Now wait until that job is done!
             while (true) {
@@ -1554,7 +1556,7 @@ void PipeLine::replaceFilesForImportExportOfScheduledJobs(
     }
 }
 
-bool PipeLine::exportAllScheduledJobs(std::string mydir, std::string &error_message) {
+void PipeLine::exportAllScheduledJobs(std::string mydir) throw (std::string) {
     // Make sure the directory name ends with a slash
     mydir += "/";
     std::string command = "mkdir -p ExportJobs/" + mydir;
@@ -1568,10 +1570,8 @@ bool PipeLine::exportAllScheduledJobs(std::string mydir, std::string &error_mess
     for (long int i = 0; i < processList.size(); i++) {
         if (processList[i].status == Process::SCHEDULED) {
             iexp++;
-            if (processList[i].alias != "None") {
-                error_message = "ERROR: aliases are not allowed on Scheduled jobs that are to be exported! Make sure all scheduled jobs are made with unaliases names.";
-                return false;
-            }
+            if (processList[i].alias != "None")
+            throw "ERROR: aliases are not allowed on Scheduled jobs that are to be exported! Make sure all scheduled jobs are made with unaliases names.";
 
             // A general name for the exported job:
             FileName expname = processList[i].name;
@@ -1588,7 +1588,6 @@ bool PipeLine::exportAllScheduledJobs(std::string mydir, std::string &error_mess
     }
 
     MDexported.write("ExportJobs/" + mydir + "exported.star");
-    return true;
 }
 
 void PipeLine::importJobs(FileName fn_export) {

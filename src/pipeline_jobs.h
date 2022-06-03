@@ -355,7 +355,7 @@ class RelionJob {
     }
 
     // Returns true if the option is present in joboptions
-    bool containsLabel(string label, string &option);
+    bool containsLabel(const string &label, string &option);
 
     // Set this option in the job
     void setOption(string setOptionLine);
@@ -366,14 +366,15 @@ class RelionJob {
         string fn,
         bool &_is_continue, bool do_initialise = false
     );
+
     // return false if unsuccessful
     void write(string fn);
 
     // Write the job submission script
-    bool saveJobSubmissionScript(
+    void saveJobSubmissionScript(
         string newfilename, string outputname,
-        vector<string> commands, string &error_message
-    );
+        vector<string> commands
+    ) throw (string);
 
     // Initialise pipeline stuff for each job, return outputname
     void initialisePipeline(

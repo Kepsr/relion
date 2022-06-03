@@ -1544,8 +1544,11 @@ void Schedule::run(PipeLine &pipeline) {
         }
         jobs[current_node].job_has_started = true;
 
-        if (!pipeline.runJob(myjob, current_job, false, is_continue, true, do_overwrite_current, error_message))
-            REPORT_ERROR(error_message);
+        try {
+            pipeline.runJob(myjob, current_job, false, is_continue, true, do_overwrite_current);
+        } catch (const std::string &errmsg) {
+            REPORT_ERROR(errmsg);
+        }
 
         // Write out current status, but maintain lock on the directory!
         write();
@@ -1556,9 +1559,12 @@ void Schedule::run(PipeLine &pipeline) {
         pipeline.waitForJobToFinish(current_job, is_failure, is_aborted);
 
         std::string message = "";
-        if (is_failure) message = " + Stopping schedule due to job " + jobs[current_node].current_name + " failing with an error ...";
-        else if (is_aborted) message = " + Stopping schedule due to user abort of job " + jobs[current_node].current_name + " ...";
-        if (message != "") {
+        if (is_failure) {
+            message = " + Stopping schedule due to job " + jobs[current_node].current_name + " failing with an error ...";
+        } else if (is_aborted) {
+            message = " + Stopping schedule due to user abort of job " + jobs[current_node].current_name + " ...";
+        }
+        if (!message.empty()) {
             schedulerSendEmail(message, "Schedule: " + name);
             std::cout << message << std::endl;
             is_ok = false;
@@ -1566,7 +1572,7 @@ void Schedule::run(PipeLine &pipeline) {
         }
 
         has_more_jobs = gotoNextJob();
-    } // end while has_more_jobs
+    }
 
     if (is_ok) schedulerSendEmail("Finished successfully!", "Schedule: " + name);
 
