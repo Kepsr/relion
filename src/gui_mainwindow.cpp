@@ -198,7 +198,7 @@ NoteEditorWindow::NoteEditorWindow(int w, int h, const char* title, FileName _fn
     editor->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS,10);
     textbuff_note = new Fl_Text_Buffer;
     editor->buffer(textbuff_note);
-    textbuff_note->transcoding_warning_action = NULL;
+    textbuff_note->transcoding_warning_action = nullptr;
     fn_note = _fn_note;
     if (exists(fn_note)) {
         int err = textbuff_note->loadfile(fn_note.c_str());
@@ -347,8 +347,8 @@ GuiMainWindow::GuiMainWindow(
         FileName schedule_wildcard = "Schedules/*";
         std::vector<FileName> schedules;
         schedule_wildcard.globFiles(schedules);
-        for (int i = 0; i < schedules.size(); i++) {
-            menubar->add(("Schedules/" + schedules[i]).c_str(), 0, cb_toggle_schedule, this);
+        for (const auto &schedule : schedules) {
+            menubar->add(("Schedules/" + schedule).c_str(), 0, cb_toggle_schedule, this);
         }
         menubar->add("Schedules/_Copy schedule", 0, cb_copy_schedule, this);
         menubar->add("Schedules/_Show pipeline", FL_ALT + 'p', cb_toggle_pipeline, this);
@@ -508,8 +508,8 @@ GuiMainWindow::GuiMainWindow(
     textbuff_stdout = new Fl_Text_Buffer();
     textbuff_stderr = new Fl_Text_Buffer();
     // Disable warning message about UTF-8 transcoding
-    textbuff_stdout->transcoding_warning_action = NULL;
-    textbuff_stderr->transcoding_warning_action = NULL;
+    textbuff_stdout->transcoding_warning_action = nullptr;
+    textbuff_stderr->transcoding_warning_action = nullptr;
     disp_stdout = new StdOutDisplay(XJOBCOL1, GUIHEIGHT_EXT_START2 + JOBHEIGHT + STDOUT_Y - 5, w - 20, 105);
     disp_stderr = new StdOutDisplay(XJOBCOL1, GUIHEIGHT_EXT_START2 + JOBHEIGHT + STDERR_Y - 5, w - 20, 50);
     disp_stdout->fn_file = "run.out";
@@ -1608,7 +1608,7 @@ void GuiMainWindow::cb_add_scheduler_edge(Fl_Widget* o, void*v) {
 }
 
 static bool user_wants_to(std::string action, std::string describe_action) {
-    return fl_choice("%s", "Cancel", action.c_str(), NULL, ("Are you sure you want to " + describe_action + "?").c_str());
+    return fl_choice("%s", "Cancel", action.c_str(), nullptr, ("Are you sure you want to " + describe_action + "?").c_str());
 }
 
 void GuiMainWindow::cb_delete_scheduler_edge(Fl_Widget* o, void*v) {
@@ -1854,17 +1854,16 @@ void GuiMainWindow::scheduler_set_current() {
         scheduler_run_grp->activate();
     }
     if (schedule.isJob(schedule.current_node)) {
-        for (long int ii = 0; ii < scheduled_processes.size(); ii++) {
-            long int id = scheduled_processes[ii];
+        for (long int id : scheduled_processes) {
             if (schedule.current_node == getJobNameForDisplay(pipeline.processList[id])) {
-                scheduler_job_browser->value(id+1);
+                scheduler_job_browser->value(id + 1);
                 cb_select_scheduled_job_i();
             }
         }
     } else {
-        for (int i =0; i < operators_list.size(); i++) {
+        for (int i = 0; i < operators_list.size(); i++) {
             if (schedule.current_node == operators_list[i]) {
-                scheduler_operator_browser->value(i+1);
+                scheduler_operator_browser->value(i + 1);
                 cb_select_scheduler_operator_i();
             }
         }
@@ -1873,7 +1872,7 @@ void GuiMainWindow::scheduler_set_current() {
     // Also set the edge from this node to the next one!
     for (int i = 0; i < schedule.edges.size(); i++) {
         if (schedule.edges[i].inputNode == schedule.current_node) {
-            scheduler_edge_browser->value(i+1);
+            scheduler_edge_browser->value(i + 1);
             cb_select_scheduler_edge_i();
         }
     }
@@ -1892,17 +1891,17 @@ void GuiMainWindow::cb_scheduler_next(Fl_Widget *o, void* v) {
         }
         return;
     }
-    for (int i = 0; i < schedule.edges.size(); i++) {
-        if (schedule.edges[i].inputNode == mycurrent) {
+    for (const auto &edge : schedule.edges) {
+        if (edge.inputNode == mycurrent) {
             std::string nextnode;
-            if (schedule.edges[i].is_fork) {
-                std::string question = "Fork on " + schedule.edges[i].myBooleanVariable + ". Do you want this to be True or False?";
+            if (edge.is_fork) {
+                std::string question = "Fork on " + edge.myBooleanVariable + ". Do you want this to be True or False?";
                 nextnode = fl_choice(
-                    "%s", "False", "True", NULL, question.c_str()
-                ) ? schedule.edges[i].outputNodeTrue :
-                    schedule.edges[i].outputNode;
+                    "%s", "False", "True", nullptr, question.c_str()
+                ) ? edge.outputNodeTrue :
+                    edge.outputNode;
             } else {
-                nextnode = schedule.edges[i].outputNode;
+                nextnode = edge.outputNode;
             }
             const Fl_Menu_Item *myitem = scheduler_current_node->find_item(nextnode.c_str());
             if (!myitem) {
@@ -1947,7 +1946,7 @@ void GuiMainWindow::cb_scheduler_unlock(Fl_Widget *o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
     schedule.unlock();
     show_expand_stdout = true;
-    T->cb_toggle_expand_stdout_i();
+    T->toggle_expand_stdout();
     scheduler_run_grp->activate();
 }
 
@@ -1966,7 +1965,7 @@ void GuiMainWindow::cb_scheduler_run(Fl_Widget *o, void* v) {
     scheduler_run_grp->deactivate();
 
     show_expand_stdout = false;
-    T->cb_toggle_expand_stdout_i();
+    T->toggle_expand_stdout();
 }
 
 void GuiMainWindow::cb_display(Fl_Widget* o, void* v) {
@@ -2008,22 +2007,19 @@ void GuiMainWindow::cb_print_cl(Fl_Widget* o, void* v) {
     // And update the job inside it
     gui_jobwindows[iwin]->updateMyJob();
 
-    std::string error_message;
-    if (!pipeline.getCommandLineJob(
-        gui_jobwindows[iwin]->myjob, current_job, is_main_continue, false,
-        DONT_MKDIR, do_overwrite_continue, T->commands, T->final_command, error_message
-    )) {
-        fl_message("%s", error_message.c_str());
-    } else {
-        std::string command =  "", mesg = " The command is: ";
-        for (int icom = 0; icom < T->commands.size(); icom++) {
-            if (icom > 0) command += " && ";
-            command += T->commands[icom];
-        }
-        fl_input("%s", command.c_str(), mesg.c_str());
-        // Don't free the returned string! It comes from Fl_Input::value(), which returns
-        // "pointer to an internal buffer - do not free() this".
+    try {
+        pipeline.getCommandLineJob(
+            gui_jobwindows[iwin]->myjob, current_job, is_main_continue, false,
+            DONT_MKDIR, do_overwrite_continue, T->commands, T->final_command
+        );
+    } catch (std::string errmsg) {
+        fl_message("%s", errmsg.c_str());
+        return;
     }
+
+    fl_input("%s", join(T->commands, " && ").c_str(), " The command is: ");
+    // Don't free the returned string! It comes from Fl_Input::value(), which returns
+    // "pointer to an internal buffer - do not free() this".
 }
 
 // Run button callback functions
@@ -2154,7 +2150,7 @@ void GuiMainWindow::cb_scheduler_add_job(Fl_Widget* o, void* v) {
         /// TODO: test the command line
         try {
             std::string dummy;
-            gui_jobwindows[iwin]->myjob.getCommands(dummy, T->commands, T->final_command, false, 1);
+            T->final_command = gui_jobwindows[iwin]->myjob.getCommands(dummy, T->commands, false, 1);
         } catch (const std::string &errmsg) {
             fl_message("%s", errmsg.c_str());
             return;
@@ -2173,13 +2169,13 @@ void GuiMainWindow::cb_scheduler_add_job(Fl_Widget* o, void* v) {
 // Run button callback functions
 void GuiMainWindow::cb_delete(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    bool ask = true, recursively = true;
 
     if (current_job < 0) {
         fl_message("Please select a job.");
         return;
     }
 
+    bool ask = true, recursively = true;
     std::vector<bool> deleteProcesses, deleteNodes;
     pipeline.deleteJobGetNodesAndProcesses(current_job, recursively, deleteNodes, deleteProcesses);
 
@@ -2229,12 +2225,14 @@ Polish and Subtract directories. This means you will NOT be able to use those im
 although you could always recreate the data by continuing the job (possibly at considerable computing costs).\n \n \
 You can protect specific jobs from harsh cleaning by creating a file called \"NO_HARSH_CLEAN\" inside their directory,\n\
 e.g. by using \"touch Polish/job045/NO_HARSH_CLEAN\". Below is a list of currently protected jobs:\n \n";
-        for (int i = 0; i < pipeline.processList.size(); i++) {
-            if (pipeline.processList[i].status == Process::FINISHED_SUCCESS &&
-                (pipeline.processList[i].type == Process::MOTIONCORR || pipeline.processList[i].type == Process::EXTRACT || pipeline.processList[i].type == Process::SUBTRACT)
-            ) {
-                if (exists(pipeline.processList[i].name + "NO_HARSH_CLEAN"))
-                    describe_action += pipeline.processList[i].name + " \n";
+        for (const auto &process : pipeline.processList) {
+            if (process.status == Process::FINISHED_SUCCESS && (
+                process.type == Process::MOTIONCORR || 
+                process.type == Process::EXTRACT || 
+                process.type == Process::SUBTRACT
+            )) {
+                if (exists(process.name + "NO_HARSH_CLEAN"))
+                    describe_action += process.name + " \n";
             }
         }
     } else {
@@ -2541,14 +2539,14 @@ void GuiMainWindow::cb_empty_trash(Fl_Widget* o, void* v) {
 void GuiMainWindow::cb_print_notes(Fl_Widget*, void* v) {
 
     FileName fn_tmp = pipeline.name + "_all_notes.txt";
-    std::ofstream fh ((fn_tmp).c_str(), std::ios::out);
+    std::ofstream fh (fn_tmp.c_str(), std::ios::out);
 
-    for (size_t i = 0; i < pipeline.processList.size(); i++) {
-        FileName fn_note = pipeline.processList[i].name+"note.txt";
+    for (const auto &process : pipeline.processList) {
+        FileName fn_note = process.name+"note.txt";
         fh << " ################################################################ " << std::endl;
-        fh << " # Job= " << pipeline.processList[i].name;
-        if (pipeline.processList[i].alias != "None")
-            fh << " alias: " << pipeline.processList[i].alias;
+        fh << " # Job= " << process.name;
+        if (process.alias != "None")
+            fh << " alias: " << process.alias;
         fh << std::endl;
         if (exists(fn_note)) {
             std::ifstream in (fn_note.data(), std::ios_base::in);
@@ -2612,7 +2610,7 @@ void GuiMainWindow::cb_toggle_pipeliner_scheduler_i() {
         // After toggling, always go back to non-expanded view
         show_expand_stdout = true;
     }
-    cb_toggle_expand_stdout_i();
+    toggle_expand_stdout();
 }
 
 void GuiMainWindow::cb_create_schedule(Fl_Widget* o, void* v) {
@@ -2726,10 +2724,10 @@ void GuiMainWindow::cb_stop_pipeliner(Fl_Widget* o, void* v) {
 
 void GuiMainWindow::cb_toggle_expand_stdout(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->cb_toggle_expand_stdout_i();
+    T->toggle_expand_stdout();
 }
 
-void GuiMainWindow::cb_toggle_expand_stdout_i() {
+void GuiMainWindow::toggle_expand_stdout() {
     Fl_Group *jobs_grp = show_scheduler ? scheduler_jobs_grp : pipeliner_jobs_grp;
     if (show_expand_stdout) {
         expand_stdout_grp->hide();

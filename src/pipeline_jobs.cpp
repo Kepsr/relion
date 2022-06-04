@@ -150,12 +150,9 @@ JobOption::JobOption(
 }
 
 void JobOption::writeToMetaDataTable(MetaDataTable& MD) const {
-
     MD.addObject();
     MD.setValue(EMDL::JOBOPTION_VARIABLE, variable);
-    MD.setValue(EMDL::JOBOPTION_VALUE, value);
-
-    return;
+    MD.setValue(EMDL::JOBOPTION_VALUE,    value);
 }
 
 
@@ -269,9 +266,8 @@ bool RelionJob::containsLabel(const string &label, string &option) {
 
 void RelionJob::setOption(string setOptionLine) {
     std::size_t i = setOptionLine.find("==");
-    if (i == string::npos) {
-        REPORT_ERROR(" " + errorMsg("no '==' on JobOptionLine: " + setOptionLine));
-    }
+    if (i == string::npos)
+    REPORT_ERROR(" " + errorMsg("no '==' on JobOptionLine: " + setOptionLine));
 
     string option;  // Never initialised
     // label == value
@@ -297,34 +293,31 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
     // For backwards compatibility
     if (!exists(myfilename + "job.star") && exists(myfilename + "run.job")) {
         std::ifstream fh((myfilename + "run.job").c_str(), std::ios_base::in);
-        if (fh.fail()) {
-            REPORT_ERROR("ERROR reading file: " + myfilename + "run.job");
-        } else {
-            string line;
+        if (fh.fail())
+        REPORT_ERROR("ERROR reading file: " + myfilename + "run.job");
 
-            // Get job type from first line
-            getline(fh, line, '\n');
-            size_t i = line.find("==");
-            i++;
+        // Get job type from first line
+        string line;
+        getline(fh, line, '\n');
+        size_t i = line.find("==") + 1;
 
-            type = (int) textToFloat((line.substr(i + 1, line.length() - i)).c_str());
+        type = (int) textToFloat(line.substr(i + 1, line.length() - i).c_str());
 
-            // Get is_continue from second line
-            getline(fh, line, '\n');
-            is_continue = line.rfind("is_continue == true") == 0;
-            _is_continue = is_continue;
+        // Get is_continue from second line
+        getline(fh, line, '\n');
+        _is_continue = is_continue = line.rfind("is_continue == true") == 0;
 
-            if (do_initialise)
-                initialise(type);
+        if (do_initialise) initialise(type);
 
-            // Read in all the stored options
-            bool read_all = true;
-            for (std::pair<const string, JobOption> &pair : joboptions) {
-                if (!pair.second.readValue(fh))
-                    read_all = false;
-            }
-            have_read = true;
+        // Read in all the stored options
+        bool read_all = true;
+        for (std::pair<const string, JobOption> &pair : joboptions) {
+            if (!pair.second.readValue(fh))
+                read_all = false;
         }
+        // Do we want to do anything with read_all?
+        have_read = true;
+
     }
 
     if (!have_read) {
@@ -350,11 +343,10 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
         MDvals.read(fn_star, "joboptions_values");
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDvals) {
             string label = MDvals.getValue<string>(EMDL::JOBOPTION_VARIABLE);
-            string value = MDvals.getValue<string>(EMDL::JOBOPTION_VALUE);
             if (joboptions.find(label) == joboptions.end()) {
                 std::cerr << "WARNING: cannot find " << label << " in the defined joboptions. Ignoring it ..." << std::endl;
             } else {
-                joboptions[label].value = value;
+                joboptions[label].value = MDvals.getValue<string>(EMDL::JOBOPTION_VALUE);
             }
         }
         have_read = true;
@@ -441,8 +433,8 @@ void RelionJob::write(string fn) {
     MDhead.write(fh);
 
     // Now make a table with all the values
-    for (std::map<string,JobOption>::iterator it = joboptions.begin(); it!=joboptions.end(); ++it) {
-        it->second.writeToMetaDataTable(MDvals);
+    for (const auto &option : joboptions) {
+        option.second.writeToMetaDataTable(MDvals);
     }
     MDvals.setName("joboptions_values");
     MDvals.write(fh);
@@ -562,9 +554,8 @@ void RelionJob::initialisePipeline(string &outputname, string defaultname, int j
     outputName = outputname;
 }
 
-void RelionJob::prepareFinalCommand(
-    string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir
+string RelionJob::prepareFinalCommand(
+    const string &outputname, vector<string> &commands, bool do_makedir
 ) throw (string) {
 
     // Create output directory if the outname contains a "/"
@@ -578,48 +569,40 @@ void RelionJob::prepareFinalCommand(
     }
 
     // Add the --pipeline_control argument to all relion_ programs
-    for (int icom = 0; icom < commands.size(); icom++) {
-        if (commands[icom].find("relion_") != string::npos) {
-            commands[icom] += " --pipeline_control " + outputname;
+    for (auto &command : commands) {
+        if (command.find("relion_") != string::npos) {
+            command += " --pipeline_control " + outputname;
         }
     }
 
-    int nr_mpi;
     // Prepare full mpi commands or save jobsubmission script to disc
     if (joboptions["do_queue"].getBoolean() && do_makedir) {
         // Make the submission script and write it to disc
         string output_script = outputname + "run_submit.script";
         saveJobSubmissionScript(output_script, outputname, commands);  // May throw
-        final_command = joboptions["qsub"].getString() + " " + output_script + " &";
-    } else {
-        // If there are multiple commands, then join them all on a single line (final_command)
-        // Also add mpirun in front of those commands that have relion_ and _mpi` in it (if no submission via the queue is done)
-        string one_command;
-        final_command = "";
-        for (size_t icom = 0; icom < commands.size(); icom++) {
-            // Is this a relion mpi program?
-            nr_mpi = joboptions.find("nr_mpi") == joboptions.end() ? 1 : joboptions["nr_mpi"].getNumber();  // May throw
-            if (
-                nr_mpi > 1 &&
-                commands[icom].find("_mpi`")   != string::npos &&
-                commands[icom].find("relion_") != string::npos
-            ) {
-                const char *mpirun = getenv("RELION_MPIRUN");
-                if (!mpirun) { mpirun = DEFAULT::MPIRUN; }
-                one_command = string(mpirun) + " -n " + floatToString(nr_mpi) + " " + commands[icom] ;
-            } else {
-                one_command = commands[icom];
-            }
+        return joboptions["qsub"].getString() + " " + output_script + " &";
+    }
 
-            // Save stdout and stderr to a .out and .err files
-            // But only when a re-direct '>' is NOT already present on the command line!
-            if (commands[icom].find(">") == string::npos)
-                one_command += " >> " + outputname + "run.out 2>> " + outputname + "run.err";
-            final_command += one_command;
-            final_command += icom == commands.size() - 1 ? " & " : " && ";
-                // &  end by putting composite job in the background
-                // && execute one command after the other
+    // Is this a relion mpi program?
+    int nr_mpi = joboptions.find("nr_mpi") == joboptions.end() ? 1 : joboptions["nr_mpi"].getNumber();  // May throw
+
+    for (auto &command : commands) {
+        // Add mpirun in front of those commands that contain "relion_" and "_mpi`"
+        // (if no submission via the queue is done)
+        if (
+            nr_mpi > 1 &&
+            command.find("_mpi`")   != string::npos &&
+            command.find("relion_") != string::npos
+        ) {
+            const char *mpirun = getenv("RELION_MPIRUN");
+            if (!mpirun) { mpirun = DEFAULT::MPIRUN; }
+            command = string(mpirun) + " -n " + floatToString(nr_mpi) + " " + command;
         }
+
+        // Save stdout and stderr to a .out and .err files
+        // But only when a re-direct '>' is NOT already present on the command line!
+        if (command.find(">") == string::npos)
+            command += " >> " + outputname + "run.out 2>> " + outputname + "run.err";
     }
 
     char *warning = getenv("RELION_ERROR_LOCAL_MPI");
@@ -627,6 +610,11 @@ void RelionJob::prepareFinalCommand(
 
     if (nr_mpi > nr_warn && !joboptions["do_queue"].getBoolean())
     throw "You're submitting a local job with " + floatToString(nr_mpi) + " parallel MPI processes. That's more than allowed by the RELION_ERROR_LOCAL_MPI environment variable.";
+
+    // Join the commands on a single line
+    return join(commands, " && ") + " & ";
+    // && execute one command after the other
+    // &  end by putting composite job in the background
 }
 
 
@@ -843,111 +831,111 @@ To print a list of possible options, run the corresponding program from the comm
     }
 }
 
-void RelionJob::getCommands(
+string RelionJob::getCommands(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     switch (type) {
 
         case Process::IMPORT:
-        getCommandsImportJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsImportJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::MOTIONCORR:
-        getCommandsMotioncorrJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsMotioncorrJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::CTFFIND:
-        getCommandsCtffindJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsCtffindJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::MANUALPICK:
-        getCommandsManualpickJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsManualpickJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::AUTOPICK:
-        getCommandsAutopickJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsAutopickJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::EXTRACT:
-        getCommandsExtractJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsExtractJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::CLASSSELECT:
-        getCommandsSelectJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsSelectJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::CLASS2D:
-        getCommandsClass2DJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsClass2DJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::INIMODEL:
-        getCommandsInimodelJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsInimodelJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::CLASS3D:
-        getCommandsClass3DJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsClass3DJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::AUTO3D:
-        getCommandsAutorefineJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsAutorefineJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::MULTIBODY:
-        getCommandsMultiBodyJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsMultiBodyJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::MASKCREATE:
-        getCommandsMaskcreateJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsMaskcreateJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::JOINSTAR:
-        getCommandsJoinstarJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsJoinstarJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::SUBTRACT:
-        getCommandsSubtractJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsSubtractJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::POST:
-        getCommandsPostprocessJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsPostprocessJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::RESMAP:
-        getCommandsLocalresJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsLocalresJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::MOTIONREFINE:
-        getCommandsMotionrefineJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsMotionrefineJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::CTFREFINE:
-        getCommandsCtfrefineJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsCtfrefineJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         case Process::EXTERNAL:
-        getCommandsExternalJob(
-            outputname, commands, final_command, do_makedir, job_counter
-        ); break;
+        return getCommandsExternalJob(
+            outputname, commands, do_makedir, job_counter
+        );
 
         default:
         REPORT_ERROR(errorMsg("unrecognised job type: type = " + integerToString(type)));
@@ -988,9 +976,9 @@ Note that due to a bug in a fltk library, you cannot import from directories tha
 }
 
 // Generate the correct commands
-void RelionJob::getCommandsImportJob(
+string RelionJob::getCommandsImportJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::IMPORT_NAME, job_counter);
@@ -1130,7 +1118,7 @@ void RelionJob::getCommandsImportJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseMotioncorrJob() {
@@ -1177,9 +1165,9 @@ Note that multiple MotionCor2 processes should not share a GPU; otherwise, it ca
     joboptions["group_for_ps"] = JobOption("Sum power spectra every e/A2:", 4, 0, 10, 0.5, "McMullan et al (Ultramicroscopy, 2015) sugggest summing power spectra every 4.0 e/A2 gives optimal Thon rings");
 }
 
-void RelionJob::getCommandsMotioncorrJob(
+string RelionJob::getCommandsMotioncorrJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MOTIONCORR_NAME, job_counter);
@@ -1292,7 +1280,7 @@ void RelionJob::getCommandsMotioncorrJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseCtffindJob() {
@@ -1339,9 +1327,9 @@ void RelionJob::initialiseCtffindJob() {
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','. ");
 }
 
-void RelionJob::getCommandsCtffindJob(
+string RelionJob::getCommandsCtffindJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CTFFIND_NAME, job_counter);
@@ -1424,7 +1412,7 @@ void RelionJob::getCommandsCtffindJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseManualpickJob() {
@@ -1457,9 +1445,9 @@ Particles that are not in this STAR file, but present in the picked coordinates 
     joboptions["red_value"] = JobOption("Red value: ", 2.0, 0.0, 4.0, 0.1, "The value of this entry will be red. There will be a linear scale from blue to red, according to this value and the one given above.");
 }
 
-void RelionJob::getCommandsManualpickJob(
+string RelionJob::getCommandsManualpickJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MANUALPICK_NAME, job_counter);
@@ -1525,7 +1513,7 @@ void RelionJob::getCommandsManualpickJob(
     command = "echo " + fn_pre + fn_jobnr + fn_post + " > " + fn_suffix;
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseAutopickJob() {
@@ -1644,9 +1632,9 @@ Kappa ~ 0.05 is recommended for long and straight tubes (e.g. TMV, VipA/VipB and
 Helical tubes with shorter lengths will not be picked. Note that a long helical tube seen by human eye might be treated as short broken pieces due to low FOM values or high picking threshold.");
 }
 
-void RelionJob::getCommandsAutopickJob(
+string RelionJob::getCommandsAutopickJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::AUTOPICK_NAME, job_counter);
@@ -1795,7 +1783,7 @@ void RelionJob::getCommandsAutopickJob(
     command = "echo " + fn_pre + fn_jobnr + fn_post + " > " +  outputname + "coords_suffix_autopick.star";
     commands.push_back(command.c_str());
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseExtractJob() {
@@ -1838,8 +1826,8 @@ The optimal inter-box distance might also depend on the box size, the helical ri
 
 }
 
-void RelionJob::getCommandsExtractJob(
-    string &outputname, vector<string> &commands, string &final_command,
+string RelionJob::getCommandsExtractJob(
+    string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
@@ -1960,7 +1948,7 @@ void RelionJob::getCommandsExtractJob(
         outputNodes.push_back(node);
     }
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseSelectJob() {
@@ -1994,9 +1982,9 @@ void RelionJob::initialiseSelectJob() {
     joboptions["image_angpix"] = JobOption("Pixel size before extraction (A)", -1, -1, 10, 0.01, "The pixel size of particles (relevant to rlnOriginX/Y) is read from the STAR file. When the pixel size of the original micrograph used for auto-picking and extraction (relevant to rlnCoordinateX/Y) is different, specify it here. In other words, this is the pixel size after binning during motion correction, but before down-sampling during extraction.");
 }
 
-void RelionJob::getCommandsSelectJob(
+string RelionJob::getCommandsSelectJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASSSELECT_NAME, job_counter);
@@ -2257,7 +2245,7 @@ void RelionJob::getCommandsSelectJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseClass2DJob() {
@@ -2360,9 +2348,9 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','. For example: '0,0:1,1:0,0:1,1'");
 }
 
-void RelionJob::getCommandsClass2DJob(
+string RelionJob::getCommandsClass2DJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASS2D_NAME, job_counter);
@@ -2499,7 +2487,7 @@ void RelionJob::getCommandsClass2DJob(
     command += " " + joboptions["other_args"].getString();
 
     commands.push_back(command);
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 // Constructor for initial model job
@@ -2591,9 +2579,9 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','. For example: '0,0:1,1:0,0:1,1'");
 }
 
-void RelionJob::getCommandsInimodelJob(
+string RelionJob::getCommandsInimodelJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
 
@@ -2709,7 +2697,7 @@ void RelionJob::getCommandsInimodelJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseClass3DJob() {
@@ -2912,8 +2900,8 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','.  For example: '0,0:1,1:0,0:1,1'");
 }
 
-void RelionJob::getCommandsClass3DJob(
-    string &outputname, vector<string> &commands, string &final_command,
+string RelionJob::getCommandsClass3DJob(
+    string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
@@ -3134,7 +3122,7 @@ void RelionJob::getCommandsClass3DJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseAutorefineJob() {
@@ -3314,9 +3302,9 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','.  For example: '0,0:1,1:0,0:1,1'");
 }
 
-void RelionJob::getCommandsAutorefineJob(
+string RelionJob::getCommandsAutorefineJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::AUTO3D_NAME, job_counter);
@@ -3525,7 +3513,7 @@ void RelionJob::getCommandsAutorefineJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseMultiBodyJob() {
@@ -3608,9 +3596,9 @@ This will affect the time it takes between the progress-bar in the expectation s
     joboptions["gpu_ids"] = JobOption("Which GPUs to use:", string(""), "This argument is not necessary. If left empty, the job itself will try to allocate available GPU resources. You can override the default allocation by providing a list of which GPUs (0,1,2,3, etc) to use. MPI-processes are separated by ':', threads by ','.  For example: '0,0:1,1:0,0:1,1'");
 }
 
-void RelionJob::getCommandsMultiBodyJob(
+string RelionJob::getCommandsMultiBodyJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MULTIBODY_NAME, job_counter);
@@ -3777,7 +3765,7 @@ void RelionJob::getCommandsMultiBodyJob(
         commands.push_back(command);
     }
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseMaskcreateJob() {
@@ -3798,9 +3786,9 @@ If you don't know what value to use, display one of the unfiltered half-maps in 
 The central part of the box contains more reliable information compared to the top and bottom parts along Z axis. Set this value (%) to the central part length along Z axis divided by the box size. Values around 30% are commonly used but you may want to try different lengths.");
 }
 
-void RelionJob::getCommandsMaskcreateJob(
+string RelionJob::getCommandsMaskcreateJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MASKCREATE_NAME, job_counter);
@@ -3838,7 +3826,7 @@ void RelionJob::getCommandsMaskcreateJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseJoinstarJob() {
@@ -3863,9 +3851,9 @@ void RelionJob::initialiseJoinstarJob() {
     joboptions["fn_mov4"] = JobOption("Movie STAR file 4: ", Node::MOVIES, "", "movie STAR file (*.star)", "The fourth of the micrograph movie STAR files to be combined. Leave empty if there are only two or three files to be combined.");
 }
 
-void RelionJob::getCommandsJoinstarJob(
+string RelionJob::getCommandsJoinstarJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::JOINSTAR_NAME, job_counter);
@@ -3977,7 +3965,7 @@ void RelionJob::getCommandsJoinstarJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseSubtractJob() {
@@ -4001,9 +3989,9 @@ which you want to use for subtraction. It will use the maps from this run for th
     joboptions["new_box"] = JobOption("New box size:", -1, 64, 512, 32, "Provide a non-negative value to re-window the subtracted particles in a smaller box size." );
 }
 
-void RelionJob::getCommandsSubtractJob(
+string RelionJob::getCommandsSubtractJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::SUBTRACT_NAME, job_counter);
@@ -4070,7 +4058,7 @@ void RelionJob::getCommandsSubtractJob(
 
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialisePostprocessJob() {
@@ -4098,9 +4086,9 @@ In such cases, set this option to Yes and provide an ad-hoc filter as described 
     joboptions["low_pass"] = JobOption("Ad-hoc low-pass filter (A):",5,1,40,1, "This option allows one to low-pass filter the map at a user-provided frequency (in Angstroms). When using a resolution that is higher than the gold-standard FSC-reported resolution, take care not to interpret noise in the map for signal...");
 }
 
-void RelionJob::getCommandsPostprocessJob(
+string RelionJob::getCommandsPostprocessJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::POST_NAME, job_counter);
@@ -4163,7 +4151,7 @@ void RelionJob::getCommandsPostprocessJob(
     command += " " + joboptions["other_args"].getString();
 
     commands.push_back(command);
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseLocalresJob() {
@@ -4194,9 +4182,9 @@ This is a developmental feature in need of further testing, but initial results 
     joboptions["fn_mtf"] = JobOption("MTF of the detector (STAR file)", "", "STAR Files (*.star)", ".", "The MTF of the detector is used to complement the user-provided B-factor in the sharpening. If you don't have this curve, you can leave this field empty.");
 }
 
-void RelionJob::getCommandsLocalresJob(
+string RelionJob::getCommandsLocalresJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::RESMAP_NAME, job_counter);
@@ -4282,7 +4270,7 @@ void RelionJob::getCommandsLocalresJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseMotionrefineJob() {
@@ -4319,9 +4307,9 @@ The mask used for this postprocessing will be applied to the unfiltered half-map
     joboptions["maxres"] = JobOption("Maximum resolution for B-factor fit (A): ", -1, -1, 15, 1, "The maximum spatial frequency (in Angstrom) used in the B-factor fit. If a negative value is given, the maximum is determined from the input FSC curve.");
 }
 
-void RelionJob::getCommandsMotionrefineJob(
+string RelionJob::getCommandsMotionrefineJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::MOTIONREFINE_NAME, job_counter);
@@ -4429,7 +4417,7 @@ void RelionJob::getCommandsMotionrefineJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseCtfrefineJob() {
@@ -4460,9 +4448,9 @@ This option cannot be done simultaneously with higher-order aberration estimatio
     joboptions["do_4thorder"] = JobOption("Estimate 4th order aberrations?", false, "If set to Yes, then relion_ctf_refine will also estimate the Cs and the tetrafoil (4-fold astigmatism) per optics group. This option is only recommended for data sets that extend beyond 3 Angstrom resolution.");
 }
 
-void RelionJob::getCommandsCtfrefineJob(
+string RelionJob::getCommandsCtfrefineJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::CTFREFINE_NAME, job_counter);
@@ -4555,7 +4543,7 @@ void RelionJob::getCommandsCtfrefineJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }
 
 void RelionJob::initialiseExternalJob() {
@@ -4588,9 +4576,9 @@ void RelionJob::initialiseExternalJob() {
     }
 }
 
-void RelionJob::getCommandsExternalJob(
+string RelionJob::getCommandsExternalJob(
     string &outputname, vector<string> &commands,
-    string &final_command, bool do_makedir, int job_counter
+    bool do_makedir, int job_counter
 ) throw (string) {
     commands.clear();
     initialisePipeline(outputname, Process::EXTERNAL_NAME, job_counter);
@@ -4652,5 +4640,5 @@ void RelionJob::getCommandsExternalJob(
     command += " " + joboptions["other_args"].getString();
     commands.push_back(command);
 
-    prepareFinalCommand(outputname, commands, final_command, do_makedir);
+    return prepareFinalCommand(outputname, commands, do_makedir);
 }

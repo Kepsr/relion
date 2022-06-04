@@ -167,12 +167,11 @@ double textToDouble(const char *str, int _errno, std::string errmsg) {
 
     if (!str) REPORT_ERROR(errmsg);
 
-    RFLOAT retval;
+    double retval;
     if (!sscanf(str, double_pattern, &retval)) {
         REPORT_ERROR(errmsg);
         return 0;
     }
-
     return retval;
 
 }
@@ -180,13 +179,11 @@ double textToDouble(const char *str, int _errno, std::string errmsg) {
 float textToFloat(const char *str, int _errno, std::string errmsg) {
 
     if (!str) REPORT_ERROR(errmsg);
-
     float retval;
     if (!sscanf(str, "%f", &retval)) {
         REPORT_ERROR(errmsg);
         return 0;
     }
-
     return retval;
 
 }
@@ -196,11 +193,9 @@ int textToInteger(const char *str, int _errno, std::string errmsg) {
     if (!str) REPORT_ERROR(errmsg);
 
     int retval;
-
     if (!sscanf(str, "%d", &retval)) {
         REPORT_ERROR(errmsg);
     }
-
     return retval;
 
 }
@@ -209,7 +204,7 @@ bool textToBool(const char *str, int _errno, std::string errmsg) {
 
     if (!str) REPORT_ERROR(errmsg);
 
-    if (strcasecmp(str, "true")  == 0 || strcasecmp(str, "yes") == 0) {
+    if (strcasecmp(str, "true") == 0 || strcasecmp(str, "yes") == 0) {
         return true;
     } else if (strcasecmp(str, "false") == 0 || strcasecmp(str, "no")  == 0) {
         return false;
@@ -233,22 +228,23 @@ long long textToLongLong(const char *str, int _errno, std::string errmsg) {
 }
 
 // A return value of -1 means exponential format
-int bestPrecision(float F, int _width) {
+int bestPrecision(float x, int width) {
 
-    if (F == 0) return 1;
+    if (x == 0) return 1;
 
-    int exp = floor(log10(std::abs(F)));
+    // abs(x) = 10 ** exp
+    int exp = floor(log10(std::abs(x)));
 
-    if (exp >= 0) {
-        if (exp > _width - 3) {
+    if (exp >= 0) {  // i.e. abs(x) >= 1
+        if (exp > width - 3) {
             return -1;
         } else {
-            int prec = _width - 2;
+            int prec = width - 2;
             if (prec < 0) return -1;
             return prec;
         }
-    } else {
-        int prec = _width + exp - 1 - 3;
+    } else {  // i.e. abs(x) < 1
+        int prec = width + exp - 1 - 3;
         if (prec <= 0) return -1;
         return prec;
     }
@@ -259,7 +255,7 @@ bool isNumber(std::string _input) {
     return sscanf(_input.c_str(), "%f", &floatval);
 }
 
-std::string floatToString(float F, int _width, int _prec) {
+std::string floatToString(float F, int width, int prec) {
     #if GCC_VERSION < 30300
     char aux[15];
     std::ostrstream outs(aux, sizeof(aux));
@@ -269,17 +265,17 @@ std::string floatToString(float F, int _width, int _prec) {
 
     outs.fill(' ');
 
-    if (_width != 0)
-        outs.width(_width);
+    if (width != 0)
+        outs.width(width);
 
-    if (_prec == 0)
-        _prec = bestPrecision(F, _width);
+    if (prec == 0)
+        prec = bestPrecision(F, width);
 
-    if (_prec == -1 && _width > 7) {
-        outs.precision(_width - 7);
+    if (prec == -1 && width > 7) {
+        outs.precision(width - 7);
         outs.setf(std::ios::scientific);
     } else {
-        outs.precision(_prec);
+        outs.precision(prec);
     }
 
     #if GCC_VERSION < 30301
@@ -300,11 +296,10 @@ std::string floatToString(float F, int _width, int _prec) {
     #endif
 }
 
-std::string integerToString(int I, int _width, char fill_with) {
+std::string integerToString(int I, int width, char fill_with) {
     char aux[15];
 
     // Check width
-    int width = _width;
     int Iaux = abs(I);
 
     if (width == 0) {
@@ -345,39 +340,35 @@ int textToInt(const char *str, int _errno, std::string errmsg) {
 
 }
 
-std::string stringToString(const std::string &str, int _width) {
+std::string stringToString(const std::string &str, int width) {
 
-    if (_width == 0) return str;
+    if (width == 0) return str;
 
-    if (_width < str.length()) return str.substr(0, _width);
+    if (width < str.length()) return str.substr(0, width);
 
     std::string copy = str;
-    return copy.append(_width - str.length(), ' ');
+    return copy.append(width - str.length(), ' ');
 }
 
 void checkAngle(const std::string &str) {
-    if (str == "rot" || str == "tilt" || str == "psi")
-        return;
-
-    REPORT_ERROR(
-        static_cast<std::string>("checkAngle: Not recognized angle type: " + str)
-    );
+    if (str != "rot" && str != "tilt" && str != "psi")
+    REPORT_ERROR(static_cast<std::string>("checkAngle: Unrecognized angle type: " + str));
 }
 
-std::string removeSpaces(const std::string &_str) {
+std::string removeSpaces(const std::string &str) {
+    const std::string whitespace = "\n \t";
     std::string retval;
-    int first = _str.find_first_not_of("\n \t");
-    int last = _str.find_last_not_of("\n \t");
+    int first = str.find_first_not_of(whitespace);
+    int last = str.find_last_not_of(whitespace);
     bool after_blank = false;
 
     for (int i = first; i <= last; i++) {
-        if (_str[i] == ' ' || _str[i] == '\n' || _str[i] == '\t') {
-            if (!after_blank)
-                retval += _str[i];
-
+        if (whitespace.find(str[i]) != std::string::npos) {
+            // Only add whitespace after a previous whitespace character
+            if (!after_blank) { retval += str[i]; }
             after_blank = true;
         } else {
-            retval += _str[i];
+            retval += str[i];
             after_blank = false;
         }
     }
@@ -454,41 +445,33 @@ int splitString(
 }
 
 // To lower ================================================================
-void toLower(char *_str) {
-    int i = 0;
-    while (_str[i] != '\0') {
-        if (_str[i] >= 'A' && _str[i] <= 'Z')
-            _str[i] += 'a' - 'A';
-        i++;
-    }
+
+inline char lowercase(char c) {
+    return c >= 'A' && c <= 'Z' ? c + 'a' - 'A' : c;
 }
 
-void toLower(std::string &_str) {
-    int i = 0;
-    while (_str[i] != '\0') {
-        if (_str[i] >= 'A' && _str[i] <= 'Z')
-            _str[i] += 'a' -'A';
-        i++;
-    }
+void toLower(char *str) {
+    for (int i = 0; str[i] != '\0'; ++i) { str[i] = lowercase(str[i]); }
+}
+
+void toLower(std::string &str) {
+    for (char &c : str) { c = lowercase(c); }
 }
 
 // Next token ==============================================================
 std::string nextToken(const std::string &str, int &i) {
-    std::string retval;
 
     // Beyond the end
-    if (i >= str.length())
-        return retval;
+    if (i >= str.length()) return "";
 
     // Only blanks
     int j = str.find_first_not_of(" \t\n", i);
-    if (j == -1)
-        return retval;
+    if (j == -1) return "";
 
+    std::string retval;
     // There is a token. Where is the end?
     int k = str.find_first_of(" \t\n", j + 1);
-    if (k == -1)
-        k = str.length();
+    if (k == -1) { k = str.length(); }
     retval = str.substr(j, k - j + 1); // TAKANORI: CHECKME: TODO: I think this is a bug...
     i = k + 1;
     return retval;
@@ -498,18 +481,15 @@ bool nextTokenInSTAR(const std::string &str, int &i, std::string &retval) {
     const int len = str.length();
 
     // Beyond the end
-    if (i >= len)
-        return false;
+    if (i >= len) return false;
 
     // Only blanks
     int start = str.find_first_not_of(" \t\n", i);
-    if (start == -1)
-        return false;
+    if (start == -1) return false;
 
     // Only comment
     // '#' within a token does NOT start a comment; so this implementation is OK
-    if (str[start] == '#')
-        return false;
+    if (str[start] == '#') return false;
 
     // We do not support multiline string blocks franked by semicolons.
 
@@ -589,4 +569,13 @@ void tokenize(
         // Find next "non-delimiter"
         pos = str.find_first_of(delimiters, lastPos);
     }
+}
+
+std::string join(const std::vector<std::string> &v, const std::string &delim) {
+    std::string result;
+    for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++it) {
+        result.append(*it);
+        if (it != v.end() - 1) { result.append(delim); }
+    }
+    return result;
 }

@@ -502,7 +502,7 @@ class GuiMainWindow: public Fl_Window {
     inline void cb_stop_pipeliner_i();
 
     static void cb_toggle_expand_stdout(Fl_Widget*, void*);
-    inline void cb_toggle_expand_stdout_i();
+    inline void toggle_expand_stdout();
 
     static void cb_about(Fl_Widget*, void*);
 
@@ -512,4 +512,4 @@ class GuiMainWindow: public Fl_Window {
 
 };
 
-#endif /* SRC_NEWGUI_MAINWINDOW_CPP_ */
+#endif
