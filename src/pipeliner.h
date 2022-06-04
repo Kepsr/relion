@@ -192,12 +192,12 @@ class PipeLine {
     bool checkProcessCompletion();
 
     // Get the command line arguments for thisjob
-    bool getCommandLineJob(
+    void getCommandLineJob(
         RelionJob &thisjob, int current_job, bool is_main_continue,
         bool is_scheduled, bool do_makedir, bool do_overwrite_current,
         std::vector<std::string> &commands, 
-        std::string &final_command, std::string &error_message
-    );
+        std::string &final_command
+    ) throw (std::string);
 
     // Adds _job to the pipeline and return the id of the newprocess
     long int addJob(

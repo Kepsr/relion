@@ -456,4 +456,8 @@ void tokenize(const std::string& str,
               const std::string& delimiters = " \t");
 //@}
 //@}
+
+// Join a vector of strings v, delimiting them by the string delim.
+std::string join(const std::vector<std::string> &v, const std::string &delim);
+
 #endif

@@ -1056,7 +1056,6 @@ void Schedule::addJob(RelionJob &myjob, std::string jobname, std::string mode) {
     // Now add this job to the local schedule_pipeline
     std::string error_message;
     std::vector<std::string> commands;
-    std::string final_command;
     std::string output_name = name + jobname + '/';
 
     // Save a copy of the job in the Schedules directory
@@ -1066,7 +1065,8 @@ void Schedule::addJob(RelionJob &myjob, std::string jobname, std::string mode) {
     myjob.write(output_name);
 
     try {
-        myjob.getCommands(output_name, commands, final_command, false, schedule_pipeline.job_counter);
+        std::string final_command = myjob.getCommands(output_name, commands, false, schedule_pipeline.job_counter);
+        // Do we want to do anything with final_command?
     } catch (const std::string &errmsg) {
         REPORT_ERROR("ERROR in getting commands for scheduled job: " + errmsg);
     }

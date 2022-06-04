@@ -370,13 +370,13 @@ bool PipeLine::checkProcessCompletion() {
 
 }
 
-bool PipeLine::getCommandLineJob(
+void PipeLine::getCommandLineJob(
     RelionJob &thisjob, int current_job, bool is_main_continue,
     bool is_scheduled, bool do_makedir, bool do_overwrite_current,
-    std::vector<std::string> &commands, std::string &final_command, std::string &error_message
-) {
+    std::vector<std::string> &commands, std::string &final_command
+) throw (std::string) {
 
-    if (do_overwrite_current) is_main_continue = false;
+    if (do_overwrite_current) { is_main_continue = false; }
 
     // Except for continuation or scheduled jobs, all jobs get a new unique directory
     std::string my_outputname;
@@ -394,17 +394,9 @@ bool PipeLine::getCommandLineJob(
     // Set is_continue flag inside the job
     thisjob.is_continue = is_main_continue;
 
-    try {
-        thisjob.getCommands(my_outputname, commands, final_command, do_makedir, job_counter);
-        if (commands.empty()) {
-            error_message = " PipeLine::getCommandLineJob: Nothing to do...";
-            return false;
-        }
-        return true;
-    } catch (const std::string &errmsg) {
-        error_message = errmsg;
-        return false;
-    }
+    final_command = thisjob.getCommands(my_outputname, commands, do_makedir, job_counter);
+    if (commands.empty())
+    throw " PipeLine::getCommandLineJob: Nothing to do...";
 }
 
 // Adds thisjob to the pipeline and returns the id of the newprocess
@@ -422,14 +414,14 @@ long int PipeLine::addJob(
     mini_pipeline.addNewProcess(process);
 
     // Add all input nodes
-    for (int i=0; i < thisjob.inputNodes.size(); i++) {
-        addNewInputEdge(thisjob.inputNodes[i], myProcess);
-        mini_pipeline.addNewInputEdge(thisjob.inputNodes[i], 0);
+    for (auto &node : thisjob.inputNodes) {
+        addNewInputEdge(node, myProcess);
+        mini_pipeline.addNewInputEdge(node, 0);
     }
     // Add all output nodes
-    for (int i = 0; i < thisjob.outputNodes.size(); i++) {
-        addNewOutputEdge(myProcess, thisjob.outputNodes[i]);
-        mini_pipeline.addNewOutputEdge(0, thisjob.outputNodes[i]);
+    for (auto &node : thisjob.outputNodes) {
+        addNewOutputEdge(myProcess, node);
+        mini_pipeline.addNewOutputEdge(0, node);
     }
 
     if (do_write_minipipeline) {
@@ -451,11 +443,10 @@ void PipeLine::runJob(
     // Remove run.out and run.err when overwriting a job
     if (do_overwrite_current) { is_main_continue = false; }
 
-    std::string error_message;
-    if (!getCommandLineJob(
+    getCommandLineJob(
         _job, current_job, is_main_continue, is_scheduled, true, // makedir
-        do_overwrite_current, commands, final_command, error_message
-    )) throw error_message;
+        do_overwrite_current, commands, final_command
+    );
 
     // Remove run.out and run.err when overwriting a job
     if (do_overwrite_current) {
@@ -464,10 +455,10 @@ void PipeLine::runJob(
         int res = system(command.c_str());
 
         // Above deletes run_submit.script too, so we have to call this again ...
-        if (!getCommandLineJob(
+        getCommandLineJob(
             _job, current_job, is_main_continue, is_scheduled, true, 
-            do_overwrite_current, commands, final_command, error_message
-        )) throw error_message;
+            do_overwrite_current, commands, final_command
+        );
     }
 
     // Read in the latest version of the pipeline, just in case anyone else made a change meanwhile...
@@ -566,14 +557,9 @@ void PipeLine::runJob(
             deleteNodes.resize(nodeList.size(), false);
             deleteProcesses.resize(processList.size(), false);
 
-            for (
-                long int inode = 0; 
-                inode < processList[current_job].outputNodeList.size(); 
-                inode++
-            ) {
-                long int mynode = processList[current_job].outputNodeList[inode];
-                if (!exists(nodeList[mynode].name))
-                    deleteNodes[mynode] = true;
+            for (long int node : processList[current_job].outputNodeList) {
+                if (!exists(nodeList[node].name))
+                    deleteNodes[node] = true;
             }
 
             FileName fn_del = "tmp";
