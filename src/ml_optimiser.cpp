@@ -1584,11 +1584,9 @@ void MlOptimiser::initialiseGeneral(int rank) {
     // 09 Jun 2015 - Shaoda, Helical refinement
     if (do_helical_refine) {
         if (fn_fourier_mask == "None" && helical_fourier_mask_resols != "") {
-            std::vector<std::string> resols;
-            std::vector<RFLOAT> resols_end, resols_start;
-
-            int nresols = splitString(helical_fourier_mask_resols, ",", resols);
+            std::vector<std::string> resols = split(helical_fourier_mask_resols, ",");
             if (resols.size() % 2 == 1) REPORT_ERROR("Provide an even number of start-end resolutions for --fourier_exclude_resols");
+            std::vector<RFLOAT> resols_end, resols_start;
             for (int nshell = 0; nshell < resols.size() / 2; nshell++) {
                 resols_start.push_back(textToFloat(resols[2 * nshell    ]));
                 resols_end  .push_back(textToFloat(resols[2 * nshell + 1]));

@@ -548,4 +548,7 @@ void create_empty_file(const FileName& fn,
 FileName xmippBaseDir();
 //@}
 
+
+std::string join(const std::vector<FileName> &v, const std::string &delim);
+
 #endif /* FILENAME_H_ */

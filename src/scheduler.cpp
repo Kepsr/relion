@@ -177,22 +177,17 @@ void SchedulerOperator::initialise(
 
 // Separate comma-separated labels for table, input and output
 void  SchedulerOperator::readFromStarFile() const {
-    MetaDataTable MD;
-    std::string mystring, mystarfile, mytable;
-    EMDL::EMDLabel mylabel;
 
-    // The localtion is always in input1
-    mystring = scheduler_global_strings[input1].value;
-    std::vector< std::string > splits;
-    int nr_splits = splitString(mystring, ",", splits);
-    if (splits.size() < 3) {
+    // The location is always in input1
+    std::vector<std::string> splits = split(scheduler_global_strings[input1].value, ",");
+    if (splits.size() < 3)
         REPORT_ERROR("Need at least three comma-separated values for starfilename, tablename and labelname");
-    }
-    mystarfile = splits[0];
-    mytable = splits[1];
-    mylabel = EMDL::str2Label(splits[2]);
+    std::string    mystarfile =                 splits[0];
+    std::string    mytable    =                 splits[1];
+    EMDL::EMDLabel mylabel    = EMDL::str2Label(splits[2]);
 
     // Read the correct table from the STAR file
+    MetaDataTable MD;
     MD.read(mystarfile, mytable);
 
     int ival;
@@ -327,8 +322,7 @@ bool SchedulerOperator::performOperation() const {
         if (scheduler_global_strings[input1].value == "undefined") {
             scheduler_global_floats[output].value = 0;
         } else {
-            std::vector<std::string> splits;
-            splitString(scheduler_global_strings[input1].value, ",", splits);
+            std::vector<std::string> splits = split(scheduler_global_strings[input1].value, ",");
             scheduler_global_floats[output].value = splits.size();
         }
     } else if (type == Schedule::STRING_OPERATOR_JOIN) {
@@ -345,18 +339,11 @@ bool SchedulerOperator::performOperation() const {
         FileName input = scheduler_global_strings[input1].value;
         std::vector<FileName> files;
         input.globFiles(files);
-        if (files.size() == 0) {
-            scheduler_global_strings[output].value = "undefined";
-        } else {
-            scheduler_global_strings[output].value = files[0];
-            for (int i = 1; i < files.size(); i++) {
-                scheduler_global_strings[output].value += "," + files[i];
-            }
-        }
+        scheduler_global_strings[output].value = files.empty() ? "undefined" : 
+                                                                 join(files, ",");
     } else if (type == Schedule::STRING_OPERATOR_NTH_WORD) {
 
-        std::vector<std::string> splits;
-        splitString(scheduler_global_strings[input1].value, ",", splits);
+        std::vector<std::string> splits = split(scheduler_global_strings[input1].value, ",");
         int mypos = round(val2);
         // for negative Ns, count from the back
         if (mypos < 0) { mypos = splits.size() - mypos + 1; }
@@ -1097,24 +1084,22 @@ void Schedule::removeVariable(std::string name) {
     }
 }
 
-void Schedule::removeEdgesWithThisInputOutputOrBoolean(std::string name) {
-    std::vector<SchedulerEdge> new_edges;
-    for (int i = 0; i < edges.size(); i++) {
-        if (edges[i].inputNode != name && edges[i].outputNode != name &&
-            edges[i].outputNodeTrue != name && edges[i].myBooleanVariable != name) {
-            new_edges.push_back(edges[i]);
+void Schedule::removeEdgesWithThisInputOutputOrBoolean(const std::string &name) {
+    edges.erase(std::remove_if(
+        edges.begin(), edges.end(), [&name] (const SchedulerEdge &edge) {
+            return edge.inputNode         == name ||
+                   edge.outputNode        == name ||
+                   edge.outputNodeTrue    == name ||
+                   edge.myBooleanVariable == name;
         }
-    }
-    edges = new_edges;
+    ), edges.end());
 }
 
 void Schedule::removeOperator(std::string name) {
-    if (isOperator(name)) {
-        scheduler_global_operators.erase(name);
-    } else {
-        REPORT_ERROR("ERROR: cannot find operator to erase: " + name);
-    }
+    if (!isOperator(name))
+    REPORT_ERROR("ERROR: cannot find operator to erase: " + name);
 
+    scheduler_global_operators.erase(name);
     // Also remove any edges that input/output with this operator
     removeEdgesWithThisInputOutputOrBoolean(name);
 }
@@ -1165,12 +1150,12 @@ void Schedule::copy(FileName newname) {
     }
 
     // Also replace all names of Nodes and Processes in the Pipeliner
-    for (int i = 0; i < schedule_pipeline.nodeList.size(); i++) {
-        FileName myname = schedule_pipeline.nodeList[i].name;
-        if (myname.contains(name)) {
-            myname.replaceAllSubstrings(name, newname);
+    for (auto &node : schedule_pipeline.nodeList) {
+        FileName fn_node = node.name;
+        if (fn_node.contains(name)) {
+            fn_node.replaceAllSubstrings(name, newname);  // Needs a string implementation
+            node.name = fn_node;
         }
-        schedule_pipeline.nodeList[i].name = myname;
     }
 
     for (int i = 0; i < schedule_pipeline.processList.size(); i++) {
@@ -1180,22 +1165,22 @@ void Schedule::copy(FileName newname) {
     }
 
     // Replace all names in the pipeliner jobs
-    for (std::map<std::string, SchedulerJob>::iterator it = jobs.begin(); it != jobs.end(); it++) {
+    for (const auto &job : jobs) {
         RelionJob myjob;
         bool dummy;
-        if (!myjob.read(name + it->first + '/', dummy, true))
-            REPORT_ERROR("There was an error reading job: " + it->first);
+        if (!myjob.read(name + job.first + '/', dummy, true))
+            REPORT_ERROR("There was an error reading job: " + job.first);
 
-        for (std::map<std::string,JobOption>::iterator it2 = myjob.joboptions.begin(); it2 != myjob.joboptions.end(); ++it2) {
-            FileName mystring = (it2->second).value;
-            if (mystring.contains(name)) {
-                mystring.replaceAllSubstrings(name, newname);
-                (it2->second).value = mystring;
+        for (auto &option : myjob.joboptions) {
+            FileName fn = option.second.value;
+            if (fn.contains(name)) {
+                fn.replaceAllSubstrings(name, newname);  // Needs a string implementation
+                option.second.value = fn;
             }
         }
 
         // Write the new job in the new directory
-        std::string mydir = newname + it->first + '/';
+        std::string mydir = newname + job.first + '/';
         std::string command = "mkdir -p " + mydir;
         int res = system(command.c_str());
         myjob.write(mydir);
@@ -1216,13 +1201,13 @@ void schedulerSendEmail(std::string message, std::string subject) {
 }
 
 void Schedule::addEdge(std::string inputnode_name, std::string outputnode_name) {
-    SchedulerEdge myval(inputnode_name, outputnode_name);
-    edges.push_back(myval);
+    edges.push_back(SchedulerEdge(inputnode_name, outputnode_name));
 }
 
 void Schedule::addFork(std::string inputnode_name, std::string mybool_name, std::string outputnode_name_if_true, std::string outputnode_name) {
-    SchedulerEdge myval(inputnode_name, outputnode_name, true, mybool_name, outputnode_name_if_true);
-    edges.push_back(myval);
+    edges.push_back(SchedulerEdge(
+        inputnode_name, outputnode_name, true, mybool_name, outputnode_name_if_true
+    ));
 }
 
 bool Schedule::isValid() {
@@ -1234,31 +1219,30 @@ bool Schedule::isValid() {
 }
 
 std::string Schedule::getNextNode() {
-    std::string result = "undefined";
-    if (current_node == "undefined") {
+    if (current_node == "undefined")
         REPORT_ERROR("ERROR: the current_node is not defined...");
-    } else {
-        for (int i = 0; i < edges.size(); i++) {
-            if (edges[i].inputNode == current_node) {
-                result = edges[i].getOutputNode();
-            }
-        }
+
+    // Return the output node of the last edge 
+    // whose input node is the current node
+    std::string result = "undefined";
+    for (const auto &edge : edges) {
+        if (edge.inputNode == current_node)
+            result = edge.getOutputNode();
     }
     return result;
 }
 
 std::string Schedule::getPreviousNode() {
-    std::string result = "undefined";
     if (current_node == "undefined")
         REPORT_ERROR("ERROR: cannot return previous node, as the current node is undefined or equal to the original start node...");
 
-    for (int i = 0; i < edges.size(); i++) {
-        if (edges[i].getOutputNode() == current_node) {
-            result = edges[i].inputNode;
-            return result;
-        }
+    // Return the input node of the first edge
+    // whose output node is the current node
+    for (const auto &edge : edges) {
+        if (edge.getOutputNode() == current_node)
+            return edge.inputNode;
     }
-    return result;
+    return "undefined";
 }
 
 bool Schedule::gotoNextNode() {
@@ -1323,12 +1307,10 @@ bool Schedule::gotoNextJob() {
             }
 
             if (!op_success) return false;
-        } else {
-            // this is a job, get its current_name and options
-            return true;
         }
+        // this is a job, get its current_name and options
+        return true;
     }
-
     return false;
 }
 
@@ -1380,15 +1362,14 @@ void Schedule::setVariablesInJob(RelionJob &job, FileName original_job_name, boo
     // Check whether there are any options with a value containing $$, which is the sign for inserting Scheduler variables
     for (std::map<std::string,JobOption>::iterator it = ori_job.joboptions.begin(); it != ori_job.joboptions.end(); ++it) {
         FileName mystring = (it->second).value;
-        std::vector< std::string > myvars;
+        std::vector<std::string> myvars;
         bool has_found = false;
         while (mystring.contains("$$")) {
             has_found = true;
             FileName before = mystring.beforeFirstOf("$$");
-            FileName after = mystring.afterFirstOf("$$");
-            std::vector< std::string > splits;
-            int nr_splits = splitString(after, " ", splits);
-            if (splits.size() == 0)
+            FileName after  = mystring.afterFirstOf("$$");
+            std::vector<std::string> splits = split(after, " ");
+            if (splits.empty())
                 REPORT_ERROR(" ERROR: cannot find anything after $$ sign in string: " + mystring);
             std::string mypat = splits[0];
             myvars.push_back(mypat);
@@ -1424,8 +1405,7 @@ void Schedule::setVariablesInJob(RelionJob &job, FileName original_job_name, boo
         if (has_found) {
             job.joboptions[it->first].value = mystring;
             std::string myvarsstr = "";
-            for (int i = 0; i < myvars.size(); i++)
-                myvarsstr += myvars[i] + " ";
+            for (const auto &var : myvars) { myvarsstr.append(var + " "); }
             if (verb > 2) std::cout << " +++ Setting joboption " << it->first << " to " << mystring << " based on variable(s): " << myvarsstr<< std::endl;
         }
     }
@@ -1524,10 +1504,9 @@ void Schedule::run(PipeLine &pipeline) {
         }
 
         // Check whether the input nodes are there, before executing the job
-        for (long int inode = 0; inode < pipeline.processList[current_job].inputNodeList.size(); inode++) {
-            long int mynode = pipeline.processList[current_job].inputNodeList[inode];
-            while (!exists(pipeline.nodeList[mynode].name)) {
-                std::cerr << " + -- Warning " << pipeline.nodeList[mynode].name << " does not exist. Waiting 10 seconds ... " << std::endl;
+        for (long int node : pipeline.processList[current_job].inputNodeList) {
+            while (!exists(pipeline.nodeList[node].name)) {
+                std::cerr << " + -- Warning " << pipeline.nodeList[node].name << " does not exist. Waiting 10 seconds ... " << std::endl;
                 sleep(10);
 
                 // Abort mechanism
@@ -1540,7 +1519,6 @@ void Schedule::run(PipeLine &pipeline) {
         }
 
         // Now actually run the Scheduled job
-        std::string error_message;
         if (verb > 0) {
             time_t my_time = time(NULL);
             std::cout << " + Executing Job: " << jobs[current_node].current_name << " at " << ctime(&my_time);
