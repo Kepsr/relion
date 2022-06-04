@@ -980,30 +980,27 @@ void PipeLine::deleteNodesAndProcesses(
     read(DO_LOCK, lock_message);
 
     // Write new pipeline without the deleted processes and nodes to disc and read in again
-    FileName fn_del;
-    for (int i = 0; i < deleteProcesses.size(); i++)
-        if (deleteProcesses[i]) {
-            fn_del = processList[i].name;
-            break;
-        }
+    auto it = std::find(deleteProcesses.begin(), deleteProcesses.end(), true);
+    FileName fn_del = it == deleteProcesses.end() ? "" :
+        processList[it - deleteProcesses.begin()].name;
+
     write(DO_LOCK, fn_del, deleteNodes, deleteProcesses);
 
     // Delete the output directories for all selected processes from the hard disk
     // Do this after pipeline.write to get the deleted_pipeline.star still in the correct directory
     for (int i = 0; i < deleteProcesses.size(); i++) {
         if (deleteProcesses[i]) {
-            FileName alldirs = processList[i].name;
-            alldirs = alldirs.beforeLastOf("/");
+            FileName alldirs = ((FileName) processList[i].name).beforeLastOf("/");
             // Move entire output directory (with subdirectory structure) to the Trash folder
             FileName firstdirs = alldirs.beforeLastOf("/");
-            FileName fn_tree="Trash/" + firstdirs;
-            int res = mktree(fn_tree);
+            FileName fn_tree = "Trash/" + firstdirs;
+            mktree(fn_tree);
             std::string command = "mv -f " + alldirs + " " + "Trash/" + firstdirs + "/.";
-            res = system(command.c_str());
+            system(command.c_str());
             // Also remove the symlink if it exists
-            FileName fn_alias = (processList[i]).alias;
+            FileName fn_alias = processList[i].alias;
             if (fn_alias != "None") {
-                int res = unlink(fn_alias.beforeLastOf("/").c_str());
+                unlink(fn_alias.beforeLastOf("/").c_str());
             }
 
             deleteTemporaryNodeFiles(processList[i]);
@@ -1011,8 +1008,7 @@ void PipeLine::deleteNodesAndProcesses(
     }
 
     // Read new pipeline back in again
-    lock_message += " part 2";
-    read(DO_LOCK, lock_message);
+    read(DO_LOCK, lock_message + " part 2");
     write(DO_LOCK);
 
 }
@@ -1136,7 +1132,7 @@ void PipeLine::setAliasJob(int this_job, std::string alias) throw (std::string) 
     ))
         REPORT_ERROR("PipeLine::setAlias ERROR: invalid pipeline process name: " + processList[this_job].name);
 
-    if (alias.length() == 0) {
+    if (alias.empty()) {
         alias = "None";
     } else if (alias.length() < 2) {
         throw "Alias cannot be less than 2 characters, please provide another one";
@@ -1290,122 +1286,115 @@ void PipeLine::undeleteJob(FileName fn_undel) {
 }
 
 void PipeLine::cleanupJob(int this_job, bool do_harsh) throw (std::string) {
-    std::cout << "Cleaning up " << processList[this_job].name << std::endl;
-    if (this_job < 0 || processList[this_job].status != Process::FINISHED_SUCCESS) {
+    const auto this_process = processList[this_job];
+    std::cout << "Cleaning up " << this_process.name << std::endl;
+    if (this_job < 0 || this_process.status != Process::FINISHED_SUCCESS) {
         throw " You can only clean up finished jobs ... ";
     }
 
     // These job types do not have cleanup:
     if (
-        processList[this_job].type == Process::IMPORT ||
-        processList[this_job].type == Process::MANUALPICK ||
-        processList[this_job].type == Process::CLASSSELECT ||
-        processList[this_job].type == Process::MASKCREATE ||
-        processList[this_job].type == Process::JOINSTAR ||
-        processList[this_job].type == Process::RESMAP
+        this_process.type == Process::IMPORT ||
+        this_process.type == Process::MANUALPICK ||
+        this_process.type == Process::CLASSSELECT ||
+        this_process.type == Process::MASKCREATE ||
+        this_process.type == Process::JOINSTAR ||
+        this_process.type == Process::RESMAP
     ) return;
 
     // Find any subdirectories
     std::vector<FileName> fns_subdir;
     FileName fn_curr_dir = "";
-    int idir = -1, istop = 0;
-    bool is_first = true;
     // Recursively find all subdirectories
-    while (idir < istop) {
-        FileName fn_curr_dir = is_first ? processList[this_job].name : processList[this_job].name + fns_subdir[idir];
+    for (int idir = -1, istop = 0; idir < istop; istop = fns_subdir.size(), idir++) {
+        FileName fn_curr_dir = idir == -1 ? this_process.name : this_process.name + fns_subdir[idir];
         DIR *dir = opendir(fn_curr_dir.c_str());
-        struct dirent *entry = readdir(dir);
-        while (entry) {
+        for (dirent *entry = readdir(dir); entry; entry = readdir(dir)) {
             // Only want directories, and not '.' or '..'
             if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
-                FileName fnt = is_first ? entry->d_name : fns_subdir[idir] + entry->d_name;
+                FileName fnt = idir == -1 ? entry->d_name : fns_subdir[idir] + entry->d_name;
                 fns_subdir.push_back(fnt + "/");
             }
-            entry = readdir(dir);
         }
         closedir(dir);
-        istop = fns_subdir.size();
-        idir++;
-        is_first = false;
     }
 
     std::vector<FileName> fns_del;
     FileName fn_pattern;
 
     // In all jobs cleanup the .old files (from continuation runs)
-    //fn_pattern = processList[this_job].name + "*.old";
+    //fn_pattern = this_process.name + "*.old";
     //fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
 
     ////////// Now see which jobs needs cleaning up
-    if (processList[this_job].type == Process::MOTIONCORR) {
-        for (int idir = 0; idir < fns_subdir.size(); idir++) {
+    if (this_process.type == Process::MOTIONCORR) {
+        for (const FileName &fn_subdir : fns_subdir) {
             if (do_harsh) {
-                //remove entire movies directory
-                fns_del.push_back(processList[this_job].name + fns_subdir[idir]);
+                // Remove entire movies directory
+                fns_del.push_back(this_process.name + fn_subdir);
             } else {
-                fn_pattern = processList[this_job].name + fns_subdir[idir] + "*.com";
+                fn_pattern = this_process.name + fn_subdir + "*.com";
                 fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
-                fn_pattern = processList[this_job].name + fns_subdir[idir] + "*.err";
+                fn_pattern = this_process.name + fn_subdir + "*.err";
                 fn_pattern.globFiles(fns_del, false);
-                fn_pattern = processList[this_job].name + fns_subdir[idir] + "*.out";
+                fn_pattern = this_process.name + fn_subdir + "*.out";
                 fn_pattern.globFiles(fns_del, false);
-                fn_pattern = processList[this_job].name + fns_subdir[idir] + "*.log";
+                fn_pattern = this_process.name + fn_subdir + "*.log";
                 fn_pattern.globFiles(fns_del, false);
             }
         }
-    } else if (processList[this_job].type == Process::CTFFIND) {
-        fn_pattern = processList[this_job].name + "gctf*.out";
+    } else if (this_process.type == Process::CTFFIND) {
+        fn_pattern = this_process.name + "gctf*.out";
         fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
-        fn_pattern = processList[this_job].name + "gctf*.err";
+        fn_pattern = this_process.name + "gctf*.err";
         fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
-        for (int idir = 0; idir < fns_subdir.size(); idir++) {
-            //remove entire Micrographs directory structure
-            fns_del.push_back(processList[this_job].name + fns_subdir[idir]);
+        for (const FileName &fn_subdir : fns_subdir) {
+            // Remove entire Micrographs directory structure
+            fns_del.push_back(this_process.name + fn_subdir);
         }
 
-    } else if (processList[this_job].type == Process::AUTOPICK) {
-        for (int idir = 0; idir < fns_subdir.size(); idir++) {
-            // remove the Spider files with the FOM maps
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*.spi";
+    } else if (this_process.type == Process::AUTOPICK) {
+        for (const FileName &fn_subdir : fns_subdir) {
+            // Remove the Spider files with the FOM maps
+            fn_pattern = this_process.name + fn_subdir + "*.spi";
             fn_pattern.globFiles(fns_del, false);
         }
-    } else if (processList[this_job].type == Process::EXTRACT) {
-        for (int idir = 0; idir < fns_subdir.size(); idir++) {
+    } else if (this_process.type == Process::EXTRACT) {
+        for (const FileName &fn_subdir : fns_subdir) {
             if (do_harsh) {
-                //remove entire directory (STAR files and particle stacks!
-                fns_del.push_back(processList[this_job].name + fns_subdir[idir]);
+                // Remove entire directory (STAR files and particle stacks!)
+                fns_del.push_back(this_process.name + fn_subdir);
             } else {
-                // only remove the STAR files with the metadata (this will only give moderate file savings)
-                fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_extract.star";
+                // Only remove the STAR files with the metadata (this will only give moderate file savings)
+                fn_pattern = this_process.name + fn_subdir + "*_extract.star";
                 fn_pattern.globFiles(fns_del, false);
             }
         }
     } else if (
-        processList[this_job].type == Process::CLASS2D  ||
-        processList[this_job].type == Process::CLASS3D  ||
-        processList[this_job].type == Process::AUTO3D   ||
-        processList[this_job].type == Process::INIMODEL ||
-        processList[this_job].type == Process::MULTIBODY
+        this_process.type == Process::CLASS2D  ||
+        this_process.type == Process::CLASS3D  ||
+        this_process.type == Process::AUTO3D   ||
+        this_process.type == Process::INIMODEL ||
+        this_process.type == Process::MULTIBODY
     ) {
         // First find the _data.star from each iteration
         std::vector<FileName> fns_iter;
-        fn_pattern = processList[this_job].name + "run_it[0-9][0-9][0-9]_data.star";
+        fn_pattern = this_process.name + "run_it[0-9][0-9][0-9]_data.star";
         fn_pattern.globFiles(fns_iter);
-        fn_pattern = processList[this_job].name + "run_ct[0-9]_it[0-9][0-9][0-9]_data.star";
+        fn_pattern = this_process.name + "run_ct[0-9]_it[0-9][0-9][0-9]_data.star";
         fn_pattern.globFiles(fns_iter, false);
-        fn_pattern = processList[this_job].name + "run_ct[0-9][0-9]_it[0-9][0-9][0-9]_data.star";
+        fn_pattern = this_process.name + "run_ct[0-9][0-9]_it[0-9][0-9][0-9]_data.star";
         fn_pattern.globFiles(fns_iter, false);
-        fn_pattern = processList[this_job].name + "run_ct[0-9][0-9][0-9]_it[0-9][0-9][0-9]_data.star";
+        fn_pattern = this_process.name + "run_ct[0-9][0-9][0-9]_it[0-9][0-9][0-9]_data.star";
         fn_pattern.globFiles(fns_iter, false);
         // Keep everything for the last iteration, such thatone could for example still do a multibody refinement after gentle cleaning
         // Loop over ifile (i.e. the _data.star files from all iterations)
         for (int ifile = 0; ifile < (signed int)(fns_iter.size())-1; ifile++) {
-            FileName fn_file = (fns_iter[ifile]).without("_data.star");
+            FileName fn_file = fns_iter[ifile].without("_data.star");
             // Find the iterations to keep: i.e. those that are part of the pipeline
             bool is_in_pipeline = false;
-            for (long int inode = 0; inode < nodeList.size(); inode++) {
-                FileName fn_node = nodeList[inode].name;
-                if (fn_node.contains(fn_file)) {
+            for (const auto &node : nodeList) {
+                if (((FileName) node.name).contains(fn_file)) {
                     is_in_pipeline = true;
                     break;
                 }
@@ -1417,73 +1406,73 @@ void PipeLine::cleanupJob(int this_job, bool do_harsh) throw (std::string) {
             }
 
             // Also clean up maps for PCA movies when doing harsh cleaning
-            if (do_harsh && processList[this_job].type == Process::MULTIBODY) {
-                fn_pattern = processList[this_job].name + "analyse_component???_bin???.mrc";
+            if (do_harsh && this_process.type == Process::MULTIBODY) {
+                fn_pattern = this_process.name + "analyse_component???_bin???.mrc";
                 fn_pattern.globFiles(fns_del, false);
             }
         }
-    } else if (processList[this_job].type == Process::CTFREFINE) {
-        for (int idir = 0; idir < fns_subdir.size(); idir++) {
+    } else if (this_process.type == Process::CTFREFINE) {
+        for (const FileName &fn_subdir : fns_subdir) {
             // remove the temporary output files
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_wAcc_optics-group*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_wAcc_optics-group*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_xyAcc_optics-group*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_xyAcc_optics-group*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_aberr-Axx_optics-group_*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_aberr-Axx_optics-group_*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_aberr-Axy_optics-group_*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_aberr-Axy_optics-group_*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_aberr-Ayy_optics-group_*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_aberr-Ayy_optics-group_*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_aberr-bx_optics-group_*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_aberr-bx_optics-group_*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_aberr-by_optics-group_*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_aberr-by_optics-group_*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_mag_optics-group_*.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_mag_optics-group_*.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_fit.star";
+            fn_pattern = this_process.name + fn_subdir + "*_fit.star";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_fit.eps";
+            fn_pattern = this_process.name + fn_subdir + "*_fit.eps";
             fn_pattern.globFiles(fns_del, false);
         }
-    } else if (processList[this_job].type == Process::MOTIONREFINE) {
-        for (int idir = 0; idir < fns_subdir.size(); idir++) {
+    } else if (this_process.type == Process::MOTIONREFINE) {
+        for (const FileName &fn_subdir : fns_subdir) {
             // remove the temporary output files
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_FCC_cc.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_FCC_cc.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_FCC_w0.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_FCC_w0.mrc";
             fn_pattern.globFiles(fns_del, false);
-            fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_FCC_w1.mrc";
+            fn_pattern = this_process.name + fn_subdir + "*_FCC_w1.mrc";
             fn_pattern.globFiles(fns_del, false);
 
             if (do_harsh) {
-                fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_shiny.mrcs";
+                fn_pattern = this_process.name + fn_subdir + "*_shiny.mrcs";
                 fn_pattern.globFiles(fns_del, false);
-                fn_pattern = processList[this_job].name + fns_subdir[idir] + "*_shiny.star";
+                fn_pattern = this_process.name + fn_subdir + "*_shiny.star";
                 fn_pattern.globFiles(fns_del, false);
             }
         }
-    } else if (processList[this_job].type == Process::SUBTRACT) {
+    } else if (this_process.type == Process::SUBTRACT) {
         if (do_harsh) {
-            fn_pattern = processList[this_job].name + "subtracted.*";
+            fn_pattern = this_process.name + "subtracted.*";
             fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
         }
-    } else if (processList[this_job].type == Process::POST) {
-        fn_pattern = processList[this_job].name + "*masked.mrc";
+    } else if (this_process.type == Process::POST) {
+        fn_pattern = this_process.name + "*masked.mrc";
         fn_pattern.globFiles(fns_del, false); // false means do not clear fns_del
     }
 
     // Now actually move all the files
     FileName fn_old_dir = "";
     // Loop over all files to be deleted
-    for (long int idel = 0; idel < fns_del.size(); idel++) {
-        FileName fn_dest = "Trash/" + fns_del[idel];
+    for (const FileName &fn_del : fns_del) {
+        FileName fn_dest = "Trash/" + fn_del;
         FileName fn_dir = fn_dest.beforeLastOf("/");
-        if (fn_dir != fn_old_dir && ! exists(fn_dir))
+        if (fn_dir != fn_old_dir && !exists(fn_dir))
             int res = mktree(fn_dir);
         // by removing entire directories, it could be the file is gone already
-        if (exists(fns_del[idel])) {
-            std::string command = "mv -f " + fns_del[idel] + " "+ fn_dir;
+        if (exists(fn_del)) {
+            std::string command = "mv -f " + fn_del + " "+ fn_dir;
             int res = system(command.c_str());
         }
     }
