@@ -456,7 +456,7 @@ void PipeLine::runJob(
 
         // Above deletes run_submit.script too, so we have to call this again ...
         getCommandLineJob(
-            _job, current_job, is_main_continue, is_scheduled, true, 
+            _job, current_job, is_main_continue, is_scheduled, true,
             do_overwrite_current, commands, final_command
         );
     }
@@ -658,14 +658,13 @@ int PipeLine::addScheduledJob(std::string typestring, std::string fn_options) {
 int PipeLine::addScheduledJob(int job_type, std::string fn_options) {
     RelionJob job;
     job.initialise(job_type);
-    std::vector<std::string> options;
-    splitString(fn_options, ";", options);
+    std::vector<std::string> options = split(fn_options, ";");
     for (const auto &option : options)
         job.setOption(option);
 
     // Always add Pre-processing jobs as continuation ones (for convenient on-the-fly processing)
     if (
-        job_type == Process::MOTIONCORR || job_type == Process::CTFFIND || 
+        job_type == Process::MOTIONCORR || job_type == Process::CTFFIND ||
         job_type == Process::AUTOPICK   || job_type == Process::EXTRACT
     ) { job.is_continue = true; }
 
@@ -681,17 +680,15 @@ int PipeLine::addScheduledJob(int job_type, std::string fn_options) {
 
 // Adds a scheduled job to the pipeline from the command line
 int PipeLine::addScheduledJob(RelionJob &job, std::string fn_options) {
-    if (fn_options != "") {
-        std::vector<std::string> options;
-        splitString(fn_options, ";", options);
-        for (long int iopt = 0; iopt < options.size(); iopt++)
-            job.setOption(options[iopt]);
-    }
+
+    std::vector<std::string> options = split(fn_options, ";");
+    for (const auto &option : options)
+        job.setOption(option);
 
     try {
         int current_job = processList.size();
         runJob(job, current_job, true, job.is_continue, false, false);
-        // true is only_schedule, false means !is_scheduled, 2nd false means dont overwrite current
+        //         only_schedule ^        !is_scheduled ^      ^ !do_overwrite_current
         return current_job;
     } catch (const std::string &errmsg) {
         REPORT_ERROR(errmsg.c_str());
@@ -724,29 +721,26 @@ void PipeLine::waitForJobToFinish(
             // Write out the modified pipeline with the new status of current_job
             write(DO_LOCK);
             break;
-        } // endif something has happened
-    } // while true, waiting for job to finish
+        }
+    }
 }
 
 void PipeLine::runScheduledJobs(
     FileName fn_sched, FileName fn_jobids, int nr_repeat,
-    long int minutes_wait, long int minutes_wait_before, long int seconds_wait_after, 
+    long int minutes_wait, long int minutes_wait_before, long int seconds_wait_after,
     bool do_overwrite_current
 ) {
 
-    std::vector<FileName> my_scheduled_processes;
-    std::vector<std::string> jobids;
-    int njobs = splitString(fn_jobids, " ", jobids);
-    if (njobs == 0) {
+    if (fn_jobids.empty())
         REPORT_ERROR("PipeLine::runScheduledJobs: Nothing to do...");
-    } else {
-        for (int i = 0; i < njobs; i++)
-            my_scheduled_processes.push_back(jobids[i]);
-    }
+
+    std::vector<std::string> jobids = split(fn_jobids, " ");
+    std::vector<FileName> my_scheduled_processes;
+    for (const std::string &id : jobids)
+        my_scheduled_processes.push_back(id);
 
     FileName fn_log = "pipeline_" + fn_sched + ".log";
-    std::ofstream  fh;
-    fh.open((fn_log).c_str(), std::ios::app);
+    std::ofstream fh (fn_log.c_str(), std::ios::app);
 
     if (nr_repeat > 1) {
         std::cout << " PIPELINER: writing out information in logfile " << fn_log << std::endl;
@@ -803,7 +797,7 @@ void PipeLine::runScheduledJobs(
             }
             RelionJob myjob;
             bool is_continue;
-            if (!myjob.read(processList[current_job].name, is_continue, true)) 
+            if (!myjob.read(processList[current_job].name, is_continue, true))
                 // true means also initialise the job
                 REPORT_ERROR("There was an error reading job: " + processList[current_job].name);
 
@@ -840,8 +834,8 @@ void PipeLine::runScheduledJobs(
                     processList[current_job].status == Process::FINISHED_FAILURE
                 ) {
                     // Prepare a string for a more informative .lock file
-                    std::string lock_message = 
-                        " Scheduler " + fn_sched + " noticed that " 
+                    std::string lock_message =
+                        " Scheduler " + fn_sched + " noticed that "
                         + processList[current_job].name + " finished and is trying to update the pipeline";
 
                     // Read in existing pipeline, in case some other window had changed something else
@@ -853,8 +847,8 @@ void PipeLine::runScheduledJobs(
                             int mytype = processList[current_job].type;
                             // The following jobtypes have functionality to only do the unfinished part of the job
                             if (
-                                mytype == Process::MOTIONCORR || mytype == Process::CTFFIND || 
-                                mytype == Process::AUTOPICK   || mytype == Process::EXTRACT || 
+                                mytype == Process::MOTIONCORR || mytype == Process::CTFFIND ||
+                                mytype == Process::AUTOPICK   || mytype == Process::EXTRACT ||
                                 mytype == Process::CLASSSELECT
                             ) {
                                 myjob.is_continue = true;
@@ -931,20 +925,18 @@ void PipeLine::runScheduledJobs(
     }
 
     fh << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-    fh.close();
 
 }
 
 void PipeLine::deleteJobGetNodesAndProcesses(
-    int this_job, bool do_recursive, 
+    int this_job, bool do_recursive,
     std::vector<bool> &deleteNodes, std::vector<bool> &deleteProcesses
 ) {
 
     deleteProcesses.resize(processList.size(), false);
     deleteNodes    .resize(nodeList.size(),    false);
 
-    std::vector<long int> to_delete_processes;
-    to_delete_processes.push_back(this_job);
+    std::vector<long int> to_delete_processes {this_job};
 
     bool is_done = false;
     size_t istart = 0;
@@ -956,18 +948,16 @@ void PipeLine::deleteJobGetNodesAndProcesses(
             long int idel = to_delete_processes[i];
             deleteProcesses[idel] = true;
             is_done = true;
-            for (size_t inode = 0; inode < (processList[idel]).outputNodeList.size(); inode++) {
-                long int mynode = (processList[idel]).outputNodeList[inode];
-                deleteNodes[mynode] = true;
+            for (long int node : processList[idel].outputNodeList) {
+                deleteNodes[node] = true;
 
                 if (do_recursive) {
                     // Check whether this node is being used as input for another process, and if so, delete those as well
-                    for (size_t ii = 0; ii < (nodeList[mynode]).inputForProcessList.size(); ii++) {
-                        long int iproc = (nodeList[mynode]).inputForProcessList[ii];
+                    for (long int iproc : nodeList[node].inputForProcessList) {
                         // See if this process is not already in the list to be deleted
                         bool already_in = false;
-                        for (size_t j = 0; j < to_delete_processes.size(); j++) {
-                            if (to_delete_processes[j] == iproc)
+                        for (long int process : to_delete_processes) {
+                            if (process == iproc)
                                 already_in = true;
                         }
                         if (!already_in) {
@@ -1157,9 +1147,9 @@ void PipeLine::setAliasJob(int this_job, std::string alias) throw (std::string) 
     } else if (
         alias.find("(")  != std::string::npos || alias.find(")")  != std::string::npos ||
         alias.find("{")  != std::string::npos || alias.find("}")  != std::string::npos ||
-        alias.find("<")  != std::string::npos || alias.find(">")  != std::string::npos || 
-        alias.find("*")  != std::string::npos || alias.find("?")  != std::string::npos || 
-        alias.find("/")  != std::string::npos || alias.find("\"") != std::string::npos || 
+        alias.find("<")  != std::string::npos || alias.find(">")  != std::string::npos ||
+        alias.find("*")  != std::string::npos || alias.find("?")  != std::string::npos ||
+        alias.find("/")  != std::string::npos || alias.find("\"") != std::string::npos ||
         alias.find("\\") != std::string::npos || alias.find("#")  != std::string::npos ||
         alias.find("&")  != std::string::npos || alias.find("|")  != std::string::npos ||
         alias.find("%")  != std::string::npos || alias.find("$")  != std::string::npos
@@ -1511,7 +1501,7 @@ void PipeLine::cleanupAllJobs(bool do_harsh) throw (std::string) {
 }
 
 void PipeLine::replaceFilesForImportExportOfScheduledJobs(
-    FileName fn_in_dir, FileName fn_out_dir, 
+    FileName fn_in_dir, FileName fn_out_dir,
     std::vector<std::string> &find_pattern, std::vector<std::string> &replace_pattern
 ) {
     int res;
@@ -2082,7 +2072,7 @@ std::string PipeLineFlowChart::getDownwardsArrowLabel(
 
         case Node::MASK:
         return "mask";
-    
+
         case Node::MODEL:
         nr_obj = MD.read(pipeline.nodeList[mynode].name, "model_classes", true); // true means: only count nr entries;
         return integerToString(nr_obj) + " classes";
@@ -2118,8 +2108,8 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
 ) {
     branched_procs.clear();
     FileName procname;
-    procname = pipeline.processList[new_process].alias == "None" ? 
-        pipeline.processList[new_process].name : 
+    procname = pipeline.processList[new_process].alias == "None" ?
+        pipeline.processList[new_process].name :
         pipeline.processList[new_process].alias;
 
     if (do_short_names) {
@@ -2351,7 +2341,7 @@ void PipeLineFlowChart::makeAllUpwardsFlowCharts(
     do_branches = false;
     FileName myorititle = pipeline.processList[from_process].alias == "None" ?
         pipeline.processList[from_process].name :
-        pipeline.processList[from_process].alias; 
+        pipeline.processList[from_process].alias;
     myorititle = myorititle.beforeLastOf("/");
     adaptNamesForTikZ(myorititle);
     fh << "\\section*{Overview flowchart for " << myorititle << "}" << std::endl;
@@ -2365,9 +2355,9 @@ void PipeLineFlowChart::makeAllUpwardsFlowCharts(
     int i = 0;
     all_branches.push_back(from_process);
     while (i < all_branches.size()) {
-        FileName mytitle = pipeline.processList[all_branches[i]].alias == "None" ? 
+        FileName mytitle = pipeline.processList[all_branches[i]].alias == "None" ?
             pipeline.processList[all_branches[i]].name :
-            pipeline.processList[all_branches[i]].alias; 
+            pipeline.processList[all_branches[i]].alias;
         mytitle=mytitle.beforeLastOf("/");
         adaptNamesForTikZ(mytitle);
         if (i == 0) {

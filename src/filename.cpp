@@ -608,3 +608,11 @@ FileName getOutputFileWithNewUniqueDate(FileName fn_input, FileName fn_new_outpu
     return fn_new_outputdir + fn_post;
 }
 
+std::string join(const std::vector<FileName> &v, const std::string &delim) {
+    std::string result;
+    for (std::vector<FileName>::const_iterator it = v.begin(); it != v.end(); ++it) {
+        result.append(*it);
+        if (it != v.end() - 1) { result.append(delim); }
+    }
+    return result;
+}

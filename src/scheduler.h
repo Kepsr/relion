@@ -317,7 +317,7 @@ class Schedule {
 
     // Remove variables/operators/jobs
     void removeVariable(std::string name);
-    void removeEdgesWithThisInputOutputOrBoolean(std::string name);
+    void removeEdgesWithThisInputOutputOrBoolean(const std::string &name);
     void removeOperator(std::string name);
     void removeOperatorsWithThisInputOrOutput(std::string name);
     void removeJob(std::string name);

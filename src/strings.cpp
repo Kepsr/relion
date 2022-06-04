@@ -392,56 +392,32 @@ void removeQuotes(char **_str) {
 }
 
 // Split a string ==========================================================
-int splitString(
-    const std::string &input, const std::string &delimiter,
-    std::vector<std::string> &results,
-    bool includeEmpties
+
+std::vector<std::string> split(
+    const std::string &input, const std::string &delimiter
 ) {
-    results.clear();
-    int iPos = 0;
-    int newPos = -1;
-    int sizeS2 = static_cast<int>(delimiter.size());
-    int isize = static_cast<int>(input.size());
+    if (input.empty() || delimiter.empty()) return {input};
 
-    if (isize == 0 || sizeS2 == 0) return 0;
+    int delimiter_index = input.find(delimiter, 0);
+    if (delimiter_index == std::string::npos) return {input};
 
+    int delimiter_size = delimiter.size();
     std::vector<int> positions;
-    newPos = input.find(delimiter, 0);
-
-    if (newPos < 0) {
-        results.push_back(input);
-        return 1;
+    for (int progress = 0; progress <= delimiter_index;) {
+        positions.push_back(delimiter_index);
+        progress = delimiter_index;
+        delimiter_index = input.find(delimiter, progress + delimiter_size);
     }
 
-    int numFound = 0;
-    while (newPos >= iPos) {
-        numFound++;
-        positions.push_back(newPos);
-        iPos = newPos;
-        newPos = input.find(delimiter, iPos + sizeS2);
+    std::vector<std::string> results;
+    int input_size = input.size();
+    for (int i = 0; i <= positions.size(); i++) {
+        int curr_position = positions[i];
+        int prev_position = positions[i - 1];
+        int offset = i == 0 ? 0 : prev_position + delimiter_size;
+        results.push_back(input.substr(offset, curr_position - offset));
     }
-
-    if (numFound == 0) return 0;
-
-    for (int i = 0; i <= static_cast<int>(positions.size()); i++) {
-        std::string s("");
-        if (i == 0)
-            s = input.substr(i, positions[i]);
-        int offset = positions[i-1] + sizeS2;
-        if (offset < isize) {
-            if (i == positions.size()) {
-                s = input.substr(offset);
-            } else if (i > 0) {
-                s = input.substr(
-                    positions[i - 1] + sizeS2,
-                    positions[i] - positions[i - 1] - sizeS2
-                );
-            }
-        }
-        if (includeEmpties || s.size() > 0)
-            results.push_back(s);
-    }
-    return numFound;
+    return results;
 }
 
 // To lower ================================================================
