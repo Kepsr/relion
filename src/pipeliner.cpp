@@ -578,48 +578,36 @@ void PipeLine::runJob(
 
 }
 
+const std::vector<std::pair<std::string, int>> string2type_mapping {
+    {{Process::IMPORT_NAME},      Process::IMPORT},
+    {{Process::MOTIONCORR_NAME},  Process::MOTIONCORR},
+    {{Process::CTFFIND_NAME},     Process::CTFFIND},
+    {{Process::MANUALPICK_NAME},  Process::MANUALPICK},
+    {{Process::AUTOPICK_NAME},    Process::AUTOPICK},
+    {{Process::EXTRACT_NAME},     Process::EXTRACT},
+    {{Process::CLASSSELECT_NAME}, Process::CLASSSELECT},
+    {{Process::CLASS2D_NAME},     Process::CLASS2D},
+    {{Process::CLASS3D_NAME},     Process::CLASS3D},
+    {{Process::AUTO3D_NAME},      Process::AUTO3D},
+    {{Process::MASKCREATE_NAME},  Process::MASKCREATE},
+    {{Process::JOINSTAR_NAME},    Process::JOINSTAR},
+    {{Process::SUBTRACT_NAME},    Process::SUBTRACT},
+    {{Process::POST_NAME},        Process::POST},
+    {{Process::RESMAP_NAME},      Process::RESMAP},
+    {{Process::INIMODEL_NAME},    Process::INIMODEL},
+    {{Process::EXTERNAL_NAME},    Process::EXTERNAL}
+};
+
 // Adds a scheduled job to the pipeline from the command line
 int PipeLine::addScheduledJob(std::string typestring, std::string fn_options) {
-    int type;
-    if (typestring == Process::IMPORT_NAME) {
-        type = Process::IMPORT;
-    } else if (typestring == Process::MOTIONCORR_NAME) {
-        type = Process::MOTIONCORR;
-    } else if (typestring == Process::CTFFIND_NAME) {
-        type = Process::CTFFIND;
-    } else if (typestring == Process::MANUALPICK_NAME) {
-        type = Process::MANUALPICK;
-    } else if (typestring == Process::AUTOPICK_NAME) {
-        type = Process::AUTOPICK;
-    } else if (typestring == Process::EXTRACT_NAME) {
-        type = Process::EXTRACT;
-    } else if (typestring == Process::CLASSSELECT_NAME) {
-        type = Process::CLASSSELECT;
-    } else if (typestring == Process::CLASS2D_NAME) {
-        type = Process::CLASS2D;
-    } else if (typestring == Process::CLASS3D_NAME) {
-        type = Process::CLASS3D;
-    } else if (typestring == Process::AUTO3D_NAME) {
-        type = Process::AUTO3D;
-    } else if (typestring == Process::MASKCREATE_NAME) {
-        type = Process::MASKCREATE;
-    } else if (typestring == Process::JOINSTAR_NAME) {
-        type = Process::JOINSTAR;
-    } else if (typestring == Process::SUBTRACT_NAME) {
-        type = Process::SUBTRACT;
-    } else if (typestring == Process::POST_NAME) {
-        type = Process::POST;
-    } else if (typestring == Process::RESMAP_NAME) {
-        type = Process::RESMAP;
-    } else if (typestring == Process::INIMODEL_NAME) {
-        type = Process::INIMODEL;
-    } else if (typestring == Process::EXTERNAL_NAME) {
-        type = Process::EXTERNAL;
-    } else {
+    auto it = std::find_if(
+        string2type_mapping.begin(), string2type_mapping.end(),
+        [&typestring] (std::pair<std::string, int> pair) { return typestring == pair.first; }
+    );
+    if (it == string2type_mapping.end())
         REPORT_ERROR("ERROR: unrecognised string for job type: " + typestring);
-    }
 
-    return addScheduledJob(type, fn_options);
+    return addScheduledJob(it->second, fn_options);
 }
 
 // Adds a scheduled job to the pipeline from the command line
