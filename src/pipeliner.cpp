@@ -20,6 +20,7 @@
 
 #include "src/pipeliner.h"
 #include <unistd.h>
+#include <unordered_map>
 
 // #define DEBUG
 
@@ -578,7 +579,7 @@ void PipeLine::runJob(
 
 }
 
-const std::map<std::string, int> string2type_mapping {
+static const std::unordered_map<std::string, int> string2type_mapping {
     {{Process::IMPORT_NAME},      Process::IMPORT},
     {{Process::MOTIONCORR_NAME},  Process::MOTIONCORR},
     {{Process::CTFFIND_NAME},     Process::CTFFIND},
