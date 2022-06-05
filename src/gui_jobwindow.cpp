@@ -643,7 +643,7 @@ void JobWindow::initialiseAutopickWindow() {
 
     tabcarr[2]->end();
     tabcarr[3]->begin();
-    tabcarr[3]->label("autopicking");
+    tabcarr[3]->label("Autopicking");
     resetHeight();
 
     place("threshold_autopick");
@@ -742,7 +742,7 @@ void JobWindow::initialiseExtractWindow() {
     tabcarr[0]->end();
 
     tabcarr[1]->begin();
-    tabcarr[1]->label("extract");
+    tabcarr[1]->label("Extract");
     resetHeight();
 
     place("extract_size", TOGGLE_DEACTIVATE); //(current_y,"Particle box size (pix):", 128, 64, 512, 8, "Size of the extracted particles (in pixels). This should be an even number!");
@@ -1656,7 +1656,7 @@ void JobWindow::initialiseJoinstarWindow() {
 
     setupTabs(3);
     tabcarr[0]->begin();
-    tabcarr[0]->label("particles");
+    tabcarr[0]->label("Particles");
     resetHeight();
 
     group1 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
@@ -1673,7 +1673,7 @@ void JobWindow::initialiseJoinstarWindow() {
     tabcarr[0]->end();
 
     tabcarr[1]->begin();
-    tabcarr[1]->label("micrographs");
+    tabcarr[1]->label("Micrographs");
     resetHeight();
 
     group2 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
@@ -1690,7 +1690,7 @@ void JobWindow::initialiseJoinstarWindow() {
     tabcarr[1]->end();
 
     tabcarr[2]->begin();
-    tabcarr[2]->label("movies");
+    tabcarr[2]->label("Movies");
     resetHeight();
 
     group3 = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, "");
