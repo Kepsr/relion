@@ -23,59 +23,53 @@
 
 // #define DEBUG
 
-long int PipeLine::addNode(Node &_Node, bool touch_if_not_exist) {
+long int PipeLine::addNode(Node &node, bool touch_if_not_exist) {
 
-    if (_Node.name == "")
+    if (node.name.empty())
         REPORT_ERROR("PipeLine::addNode ERROR: Adding an empty nodename. Did you fill in all Node names correctly?");
 
-    // Check if _Node has an aliased name, and if so, revert back to the original name!
-    FileName fn_node = _Node.name;
-    for (size_t i = 0; i < processList.size(); i++) {
-        if (fn_node.contains(processList[i].alias)) {
-            // Replace the alias by the name
-            fn_node = processList[i].name + fn_node.without(processList[i].alias);
-            _Node.name = fn_node;
-            break;
-        }
+    // Check if node has an aliased name
+    FileName fn_node = node.name;
+    auto search = std::find_if(
+        processList.begin(), processList.end(),
+        [&fn_node] (const Process &process) { return fn_node.contains(process.alias); }
+    );
+    // If so, revert back to the original name
+    if (search != processList.end()) {
+        node.name = search->name + fn_node.without(search->alias);
     }
 
-    bool is_found = false;
-    long int i;
-    for (i = 0; i < nodeList.size(); i++) {
-        if (nodeList[i].name == _Node.name) {
-            is_found = true;
-            break;
-        }
-    }
-    if (!is_found) {
-        nodeList.push_back(_Node);
+    auto it = std::find_if(
+        nodeList.begin(), nodeList.end(),
+        [&node] (const Node &other_node) { return node.name == other_node.name; }
+    );
+
+    if (it == nodeList.end()) {
+        nodeList.push_back(node);  // invalidates it
+        it = nodeList.end() - 1;
     }
 
-    touchTemporaryNodeFile(nodeList[i], touch_if_not_exist);
+    touchTemporaryNodeFile(*it, touch_if_not_exist);
 
-    return i;
+    return it - nodeList.begin();
 
 }
 
 
-void PipeLine::addNewInputEdge(Node &_Node, long int myProcess) {
+void PipeLine::addNewInputEdge(Node &node, long int myProcess) {
 
     // 1. Check whether Node with that name already exists in the Node list
     long int oldsize = nodeList.size();
-    long int myNode  = addNode(_Node);
+    long int myNode  = addNode(node);
     long int newsize = nodeList.size();
 
     // 2. Set the input_for_process in the inputForProcessList of this Node
     // But only if it doesn't exist yet
-    bool found = false;
-    for (size_t i = 0; i < (nodeList[myNode]).inputForProcessList.size(); i++) {
-        if ((nodeList[myNode]).inputForProcessList[i] == myProcess) {
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
-        nodeList[myNode].inputForProcessList.push_back(myProcess);
+    auto &inputForProcessList = nodeList[myNode].inputForProcessList;
+    if (std::find(
+        inputForProcessList.begin(), inputForProcessList.end(), myProcess
+    ) == inputForProcessList.end()) {
+        inputForProcessList.push_back(myProcess);
         processList[myProcess].inputNodeList.push_back(myNode);
     }
 
@@ -97,7 +91,7 @@ void PipeLine::addNewInputEdge(Node &_Node, long int myProcess) {
     }
 }
 
-void PipeLine::addNewOutputEdge(long int myProcess, Node &_Node) {
+void PipeLine::addNewOutputEdge(long int myProcess, Node &node) {
 
     long int old_size = nodeList.size();
 
@@ -106,8 +100,8 @@ void PipeLine::addNewOutputEdge(long int myProcess, Node &_Node) {
     bool touch_if_not_exist = (processList[myProcess].status == Process::SCHEDULED);
 
     // 2. Set the output_from_process of this Node
-    _Node.outputFromProcess = myProcess;
-    long int myNode = addNode(_Node, touch_if_not_exist);
+    node.outputFromProcess = myProcess;
+    long int myNode = addNode(node, touch_if_not_exist);
 
     // 3. Only for new Nodes, add this Node to the outputNodeList of myProcess
     if (myNode == old_size)
@@ -115,57 +109,50 @@ void PipeLine::addNewOutputEdge(long int myProcess, Node &_Node) {
 
 }
 
-long int PipeLine::addNewProcess(Process &_Process, bool do_overwrite) {
-    // Check whether Process with the same name already exists in the processList
-    bool is_found = false;
-    long int i;
-    for (i = 0; i < processList.size(); i++) {
-        if (processList[i].name == _Process.name) {
-            is_found = true;
-            processList[i].status = _Process.status;
-            break;
-        }
-    }
-    if (!is_found) {
-        processList.push_back(_Process);
+long int PipeLine::addNewProcess(Process &process, bool do_overwrite) {
+    // Is there already a process with the same name in the processList?
+    auto it = std::find_if(
+        processList.begin(), processList.end(), 
+        [&process] (const Process &other_process) { return process.name == other_process.name; }
+    );
+    if (it == processList.end()) {
+        processList.push_back(process);  // invalidates it
+        it = processList.end() - 1;
         job_counter++;
-    } else if (!do_overwrite) {
+    } else {
+        it->status = process.status;
+        if (!do_overwrite)
         REPORT_ERROR("PipeLine::addNewProcess: ERROR: trying to add existing Process to the pipeline, while overwriting is not allowed.");
     }
-    return i;
+    return it - processList.begin();
 }
 
 long int PipeLine::findNodeByName(std::string name) {
-    for (long int ipos = 0 ; ipos < nodeList.size() ; ipos++) {
-        if (nodeList[ipos].name == name)
-            return ipos;
+    for (long int ipos = 0; ipos < nodeList.size(); ipos++) {
+        if (nodeList[ipos].name == name) return ipos;
     }
     return -1;
 }
 
 
 long int PipeLine::findProcessByName(std::string name) {
-    for (long int ipos = 0 ; ipos < processList.size() ; ipos++) {
-        if (processList[ipos].name == name)
-            return ipos;
+    for (long int ipos = 0; ipos < processList.size(); ipos++) {
+        if (processList[ipos].name == name) return ipos;
     }
     return -1;
 }
 
 long int PipeLine::findProcessByAlias(std::string name) {
-    if (name == "None")
-        return -1;
+    if (name == "None") return -1;
 
-    for (long int ipos = 0 ; ipos < processList.size() ; ipos++) {
-        if (processList[ipos].alias == name)
-            return ipos;
+    for (long int ipos = 0; ipos < processList.size(); ipos++) {
+        if (processList[ipos].alias == name) return ipos;
     }
     return -1;
 }
 
 bool PipeLine::touchTemporaryNodeFile(Node &node, bool touch_even_if_not_exist) {
-    if (do_read_only)
-        return false;
+    if (do_read_only) return false;
 
     FileName fn_dir = ".Nodes/";
     FileName fnt;
@@ -193,40 +180,31 @@ bool PipeLine::touchTemporaryNodeFile(Node &node, bool touch_even_if_not_exist) 
         FileName mydir = fn_dir + fn_type + fnt.substr(0, fnt.rfind("/") + 1);
         FileName mynode = fn_dir + fn_type + fnt;
         std::string command;
-        if (!exists(mydir)) {
-            command = "mkdir -p " + mydir;
-            int res = system(command.c_str());
-        }
+        if (!exists(mydir))
+            system(("mkdir -p " + mydir).c_str());
         touch(mynode);
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 void PipeLine::touchTemporaryNodeFiles(Process &process) {
-
     if (do_read_only) return;
 
-    bool touch_if_not_exist = (process.status == Process::SCHEDULED);
-
-    for (int j = 0; j < process.outputNodeList.size(); j++) {
-        long int mynode = process.outputNodeList[j];
-        touchTemporaryNodeFile(nodeList[mynode], touch_if_not_exist);
-    }
-
+    bool touch_if_not_exist = process.status == Process::SCHEDULED;
+    for (long int node : process.outputNodeList)
+        touchTemporaryNodeFile(nodeList[node], touch_if_not_exist);
 }
 
 void PipeLine::deleteTemporaryNodeFile(Node &node) {
-    if (do_read_only)
-        return;
+    if (do_read_only) return;
 
     FileName fn_dir = ".Nodes/";
-    FileName fnt;
 
     // Check whether there is an alias for the corresponding process
     FileName fn_alias = node.outputFromProcess < 0 ? "None" : processList[node.outputFromProcess].alias;
 
+    FileName fnt;
     if (fn_alias != "None") {
         // Make sure fn_alias ends with a slash
         if (fn_alias[fn_alias.length()-1] != '/')
@@ -243,54 +221,46 @@ void PipeLine::deleteTemporaryNodeFile(Node &node) {
 
     FileName fn_type = integerToString(node.type) + "/";
     FileName fn = fn_dir + fn_type + fnt;
-    int res = remove(fn.c_str());
+    remove(fn.c_str());
 
     // Also remove the directory if it is empty
     /// TODO: Check what happens if the directory is not empty yet.
     fn = fn.beforeLastOf("/");
-    res = remove(fn.c_str());
+    remove(fn.c_str());
 
 }
 
 void PipeLine::deleteTemporaryNodeFiles(Process &process) {
-    if (do_read_only)
-        return;
+    if (do_read_only) return;
 
-    for (int j = 0; j < process.outputNodeList.size(); j++) {
-        long int mynode = process.outputNodeList[j];
-        deleteTemporaryNodeFile(nodeList[mynode]);
-    }
-
+    for (long int node : process.outputNodeList)
+        deleteTemporaryNodeFile(nodeList[node]);
 }
 
 void PipeLine::remakeNodeDirectory() {
-    if (do_read_only)
-        return;
+    if (do_read_only) return;
 
     // Clear existing directory
     FileName fn_dir = ".Nodes/";
-    std::string command = " rm -rf " + fn_dir;
-    int res = system(command.c_str());
+    system((" rm -rf " + fn_dir).c_str());
 
-    for (long int i = 0; i < nodeList.size(); i++) {
-        int myproc = nodeList[i].outputFromProcess;
-        bool touch_if_not_exist = myproc >= 0 && processList[myproc].status == Process::SCHEDULED;
-        touchTemporaryNodeFile(nodeList[i], touch_if_not_exist);
+    for (Node &node : nodeList) {
+        int process = node.outputFromProcess;
+        bool touch_if_not_exist = process >= 0 && processList[process].status == Process::SCHEDULED;
+        touchTemporaryNodeFile(node, touch_if_not_exist);
     }
-    command = "chmod 777 -R " + fn_dir;
-    res = system(command.c_str());
+    system(("chmod 777 -R " + fn_dir).c_str());
 }
 
 
 bool PipeLine::checkProcessCompletion() {
-    if (do_read_only)
-        return false;
+    if (do_read_only) return false;
 
     std::vector<long int> finished_success_processes;
     std::vector<long int> finished_failure_processes;
     std::vector<long int> finished_aborted_processes;
 
-    for (long int i=0; i < processList.size(); i++) {
+    for (long int i = 0; i < processList.size(); i++) {
         // Only check running processes for file existence
         if (processList[i].status == Process::RUNNING) {
 
@@ -306,67 +276,65 @@ bool PipeLine::checkProcessCompletion() {
 
     // Only do read/write cycle in case a process was finished, otherwise the GUI slows down too much
     if (
-        finished_success_processes.size() > 0 ||
-        finished_failure_processes.size() > 0 ||
-        finished_aborted_processes.size() > 0 ||
-        exists(PIPELINE_HAS_CHANGED)
-    ) {
-        // Read in the latest version of the pipeline, just in case anyone else made a change meanwhile...
-        std::string lock_message = "";
-        if (finished_success_processes.size() > 0) {
-            lock_message += "checkProcessCompletion: the following jobs have successfully finished: ";
-            for (long int i = 0; i < finished_success_processes.size(); i++)
-                lock_message += " " + processList[finished_success_processes[i]].name;
-            lock_message += "\n";
-        }
-        if (finished_failure_processes.size() > 0) {
-            lock_message += "checkProcessCompletion: the following jobs have failed with an error: ";
-            for (long int i = 0; i < finished_failure_processes.size(); i++)
-                lock_message += " " + processList[finished_failure_processes[i]].name;
-            lock_message += "\n";
-        }
-        if (finished_aborted_processes.size() > 0) {
-            lock_message += "checkProcessCompletion: the following jobs have been aborted: ";
-            for (long int i = 0; i < finished_aborted_processes.size(); i++)
-                lock_message += " " + processList[finished_aborted_processes[i]].name;
-            lock_message += "\n";
-        }
+        finished_success_processes.empty() &&
+        finished_failure_processes.empty() &&
+        finished_aborted_processes.empty() &&
+        !exists(PIPELINE_HAS_CHANGED)
+    ) return false;
 
-        read(DO_LOCK, lock_message);
-
-        // Set the new status of all the finished processes
-        for (int i = 0; i < finished_success_processes.size(); i++) {
-            int myproc = finished_success_processes[i];
-            processList[myproc].status = Process::FINISHED_SUCCESS;
-
-            // Also see whether there was an output nodes starfile
-            getOutputNodesFromStarFile(myproc);
-
-            // Also touch the outputNodes in the .Nodes directory
-            for (long int j = 0; j < processList[myproc].outputNodeList.size(); j++) {
-                int myNode = (processList[myproc]).outputNodeList[j];
-                if (myNode < 0 || myNode >= nodeList.size())
-                    REPORT_ERROR("pipeline checkProcessCompletion ERROR: " + integerToString(j) + "th output node of " + processList[myproc].name + " is invalid: " + integerToString(myNode));
-                if (!touchTemporaryNodeFile(nodeList[myNode]))
-                    std::cerr << "WARNING: output node " + nodeList[myNode].name + " does not exist, while job " + processList[myproc].name +" should have finished successfully. You can manually mark this job as failed to suppress this message." << std::endl;
-            }
-
-        }
-        for (int i = 0; i < finished_failure_processes.size(); i++) {
-            processList[finished_failure_processes[i]].status = Process::FINISHED_FAILURE;
-        }
-        for (int i = 0; i < finished_aborted_processes.size(); i++) {
-            processList[finished_aborted_processes[i]].status = Process::FINISHED_ABORTED;
-        }
-
-        // Always couple read/write with DO_LOCK
-        // This is to make sure two different windows do not get out-of-sync
-        write(DO_LOCK);
-        if (exists(PIPELINE_HAS_CHANGED)) std::remove(PIPELINE_HAS_CHANGED);
-        return true;
+    // Read in the latest version of the pipeline, just in case anyone else made a change meanwhile...
+    std::string lock_message = "";
+    if (finished_success_processes.size() > 0) {
+        lock_message += "checkProcessCompletion: the following jobs have successfully finished: ";
+        for (long int i = 0; i < finished_success_processes.size(); i++)
+            lock_message += " " + processList[finished_success_processes[i]].name;
+        lock_message += "\n";
+    }
+    if (finished_failure_processes.size() > 0) {
+        lock_message += "checkProcessCompletion: the following jobs have failed with an error: ";
+        for (long int i = 0; i < finished_failure_processes.size(); i++)
+            lock_message += " " + processList[finished_failure_processes[i]].name;
+        lock_message += "\n";
+    }
+    if (finished_aborted_processes.size() > 0) {
+        lock_message += "checkProcessCompletion: the following jobs have been aborted: ";
+        for (long int i = 0; i < finished_aborted_processes.size(); i++)
+            lock_message += " " + processList[finished_aborted_processes[i]].name;
+        lock_message += "\n";
     }
 
-    return false;
+    read(DO_LOCK, lock_message);
+
+    // Set the new status of all the finished processes
+    for (int i = 0; i < finished_success_processes.size(); i++) {
+        int myproc = finished_success_processes[i];
+        processList[myproc].status = Process::FINISHED_SUCCESS;
+
+        // Also see whether there was an output nodes starfile
+        getOutputNodesFromStarFile(myproc);
+
+        // Also touch the outputNodes in the .Nodes directory
+        for (long int j = 0; j < processList[myproc].outputNodeList.size(); j++) {
+            int myNode = (processList[myproc]).outputNodeList[j];
+            if (myNode < 0 || myNode >= nodeList.size())
+                REPORT_ERROR("pipeline checkProcessCompletion ERROR: " + integerToString(j) + "th output node of " + processList[myproc].name + " is invalid: " + integerToString(myNode));
+            if (!touchTemporaryNodeFile(nodeList[myNode]))
+                std::cerr << "WARNING: output node " + nodeList[myNode].name + " does not exist, while job " + processList[myproc].name +" should have finished successfully. You can manually mark this job as failed to suppress this message." << std::endl;
+        }
+
+    }
+    for (long int i : finished_failure_processes) {
+        processList[i].status = Process::FINISHED_FAILURE;
+    }
+    for (long int i : finished_aborted_processes) {
+        processList[i].status = Process::FINISHED_ABORTED;
+    }
+
+    // Always couple read/write with DO_LOCK
+    // This is to make sure two different windows do not get out-of-sync
+    write(DO_LOCK);
+    if (exists(PIPELINE_HAS_CHANGED)) std::remove(PIPELINE_HAS_CHANGED);
+    return true;
 
 }
 
@@ -1495,63 +1463,57 @@ void PipeLine::replaceFilesForImportExportOfScheduledJobs(
 ) {
     int res;
     std::string command;
-    std::vector<std::string> myfiles;
-    myfiles.push_back("run.job");
-    myfiles.push_back("note.txt");
-    myfiles.push_back("job_pipeline.star");
+    std::vector<std::string> fns {"run.job", "note.txt", "job_pipeline.star"};
 
     // Copy the run.job, the note.txt and the job_pipeline.star
     // Replace all instances of all find_pattern's with the replace_pattern's
-    for (int ifile = 0; ifile < myfiles.size(); ifile++) {
-        for (int ipatt = 0; ipatt < find_pattern.size(); ipatt++) {
-            FileName outfile = fn_out_dir + myfiles[ifile];
-            FileName tmpfile = fn_out_dir + "tmp";
-            FileName infile = (ipatt == 0) ? fn_in_dir + myfiles[ifile] : tmpfile;
-            // Create directory first time round
-            if (ipatt == 0) {
-                FileName dirs = outfile.beforeLastOf("/");
-                command =  "mkdir -p " + dirs;
-                res = system(command.c_str());
-            }
-            command =  "sed 's|" + find_pattern[ipatt] + "|" + replace_pattern[ipatt] + "|g' < " + infile + " > " + outfile;
-            // std::cerr << " Executing: " << command<<std::endl;
-            res = system(command.c_str());
-            if (ipatt + 1 < find_pattern.size()) {
-                std::rename(outfile.c_str(), tmpfile.c_str());
-                // std::cerr << " Excuting: mv " << outfile<<" "<<tmpfile<<std::endl;
-            }
+    for (const std::string &fn : fns) {
+    for (int ipatt = 0; ipatt < find_pattern.size(); ipatt++) {
+        FileName outfile = fn_out_dir + fn;
+        FileName tmpfile = fn_out_dir + "tmp";
+        FileName infile = ipatt == 0 ? fn_in_dir + fn : tmpfile;
+        // Create directory first time round
+        if (ipatt == 0) {
+            FileName dirs = outfile.beforeLastOf("/");
+            system(("mkdir -p " + dirs).c_str());
         }
+        command = "sed 's|" + find_pattern[ipatt] + "|" + replace_pattern[ipatt] + "|g' < " + infile + " > " + outfile;
+        // std::cerr << " Executing: " << command<<std::endl;
+        res = system(command.c_str());
+        if (ipatt + 1 < find_pattern.size()) {
+            std::rename(outfile.c_str(), tmpfile.c_str());
+            // std::cerr << " Excuting: mv " << outfile<<" "<<tmpfile<<std::endl;
+        }
+    }
     }
 }
 
 void PipeLine::exportAllScheduledJobs(std::string mydir) throw (std::string) {
-    // Make sure the directory name ends with a slash
-    mydir += "/";
-    std::string command = "mkdir -p ExportJobs/" + mydir;
-    int res = system(command.c_str());
+    mydir.append("/");  // Make sure the directory name ends with a slash
+    system(("mkdir -p ExportJobs/" + mydir).c_str());
 
     MetaDataTable MDexported;
 
     // Loop through all the Scheduled jobs and export them one-by-one
     int iexp = 0;
     std::vector<std::string> find_pattern, replace_pattern;
-    for (long int i = 0; i < processList.size(); i++) {
-        if (processList[i].status == Process::SCHEDULED) {
+    for (const auto &process : processList) {
+        if (process.status == Process::SCHEDULED) {
             iexp++;
-            if (processList[i].alias != "None")
+            if (process.alias != "None")
             throw "ERROR: aliases are not allowed on Scheduled jobs that are to be exported! Make sure all scheduled jobs are made with unaliases names.";
 
             // A general name for the exported job:
-            FileName expname = processList[i].name;
+            FileName expname = process.name;
             expname = expname.beforeFirstOf("/") + "/exp" + integerToString(iexp, 3) + "/";
-            find_pattern.push_back(processList[i].name);
+            find_pattern.push_back(process.name);
             replace_pattern.push_back(expname);
 
             MDexported.addObject();
             MDexported.setValue(EMDL::PIPELINE_PROCESS_NAME, expname);
 
             // Copy the run.job, the note.txt and the job_pipeline.star and replace patterns
-            replaceFilesForImportExportOfScheduledJobs(processList[i].name, "ExportJobs/" + mydir + expname, find_pattern, replace_pattern);
+            replaceFilesForImportExportOfScheduledJobs(process.name, "ExportJobs/" + mydir + expname, find_pattern, replace_pattern);
         }
     }
 
@@ -1606,29 +1568,29 @@ bool PipeLine::importPipeline(std::string _name) {
     long int ori_nr_node = nodeList.size();
 
     bool imported = false;
-    for (int iproc = 0; iproc < mini_pipeline.processList.size(); iproc++) {
+    for (auto &process : mini_pipeline.processList) {
         // Check that the new processes all have unique names
-        if (findProcessByName(mini_pipeline.processList[iproc].name) >= 0)
-            REPORT_ERROR("importPipeline ERROR: cannot import pipeline with non-unique job name: " + mini_pipeline.processList[iproc].name);
+        if (findProcessByName(process.name) >= 0)
+            REPORT_ERROR("importPipeline ERROR: cannot import pipeline with non-unique job name: " + process.name);
 
-        if (findProcessByAlias(mini_pipeline.processList[iproc].alias) >= 0) {
-            std::cerr << "importPipeline WARNING: resetting non-unique imported alias: " << mini_pipeline.processList[iproc].alias << std::endl;
-            mini_pipeline.processList[iproc].alias = "None";
+        if (findProcessByAlias(process.alias) >= 0) {
+            std::cerr << "importPipeline WARNING: resetting non-unique imported alias: " << process.alias << std::endl;
+            process.alias = "None";
         }
 
         imported_process_nr.push_back(processList.size());
-        processList.push_back(mini_pipeline.processList[iproc]);
+        processList.push_back(process);
         imported = true;
 
     }
 
     if (imported) {
-        for (int inode = 0; inode < mini_pipeline.nodeList.size(); inode++) {
+        for (const auto &node : mini_pipeline.nodeList) {
             // Only push_back nodes that weren't present yet
-            int mynode = findNodeByName(mini_pipeline.nodeList[inode].name);
+            int mynode = findNodeByName(node.name);
             if (mynode < 0) {
                 imported_node_nr.push_back(nodeList.size());
-                nodeList.push_back(mini_pipeline.nodeList[inode]);
+                nodeList.push_back(node);
             } else {
                 //std::cerr << "mynode= "<<mynode << " name=" << nodeList[mynode].name << std::endl;
                 imported_node_nr.push_back(mynode);
@@ -1636,25 +1598,25 @@ bool PipeLine::importPipeline(std::string _name) {
         }
 
         // Now fix the numbers of the lists in the imported processes and nodes
-        for (int iproc = ori_nr_proc; iproc < processList.size(); iproc++) {
-            for (int inode = 0; inode < processList[iproc].inputNodeList.size(); inode++) {
-                int ori_node = processList[iproc].inputNodeList[inode];
+        for (auto &process : processList) {
+            for (long int &node : process.inputNodeList) {
+                int ori_node = node;
                 //std::cerr << " ori_node=" << ori_node << " name= "<<nodeList[ori_node].name << std::endl;
                 //std::cerr << " imported_node_nr[ori_node]= " << imported_node_nr[ori_node] << " name= "<<nodeList[imported_node_nr[ori_node]].name<<std::endl;
-                processList[iproc].inputNodeList[inode] = imported_node_nr[ori_node];
+                node = imported_node_nr[ori_node];
             }
-            for (int inode = 0; inode < processList[iproc].outputNodeList.size(); inode++) {
-                int ori_node = processList[iproc].outputNodeList[inode];
-                processList[iproc].outputNodeList[inode] = imported_node_nr[ori_node];
+            for (long int &node : process.outputNodeList) {
+                int ori_node = node;
+                node = imported_node_nr[ori_node];
             }
         }
-        for (int inode = ori_nr_node; inode < nodeList.size(); inode++) {
-            for (int iproc = 0; iproc < nodeList[inode].inputForProcessList.size(); iproc++) {
-                int ori_proc = nodeList[inode].inputForProcessList[iproc];
-                nodeList[inode].inputForProcessList[iproc] = imported_process_nr[ori_proc];
+        for (auto &node : nodeList) {
+            for (long int &process : node.inputForProcessList) {
+                int ori_proc = process;
+                process = imported_process_nr[ori_proc];
             }
-            int ori_proc2 = nodeList[inode].outputFromProcess;
-            nodeList[inode].outputFromProcess = imported_process_nr[ori_proc2];
+            int ori_proc2 = node.outputFromProcess;
+            node.outputFromProcess = imported_process_nr[ori_proc2];
         }
     }
 
@@ -1735,35 +1697,30 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
 
     MDproc.readStar(in, "pipeline_processes");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDproc) {
-        std::string name, alias;
-        int type, status;
         try {
-            name   = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
-            alias  = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_ALIAS);
-            type   = MDproc.getValue<int>        (EMDL::PIPELINE_PROCESS_TYPE);
-            status = MDproc.getValue<int>        (EMDL::PIPELINE_PROCESS_STATUS);
+            std::string name   = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
+            std::string alias  = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_ALIAS);
+            int         type   = MDproc.getValue<int>        (EMDL::PIPELINE_PROCESS_TYPE);
+            int         status = MDproc.getValue<int>        (EMDL::PIPELINE_PROCESS_STATUS);
+            processList.push_back(Process(name, type, status, alias));
+
+            // Make a symbolic link to the alias if it isn't there...
+            if (alias != "None") {
+                // Also make a symbolic link for the output directory!
+                // Make sure it doesn't end in a slash
+                FileName fn_alias = alias;
+                if (fn_alias[fn_alias.length() - 1] == '/')
+                    fn_alias = fn_alias.beforeLastOf("/");
+
+                // Only make the alias if it doesn't exist yet, otherwise you end up with recursive ones.
+                if (!exists(fn_alias)) {
+                    // ln -s ../{name} {fn_alias}
+                    symlink(("../" + name).c_str(), fn_alias.c_str());
+                }
+            }
+
         } catch (const char *errmsg) {
             REPORT_ERROR("PipeLine::read: cannot find name or type in pipeline_processes table");
-        }
-
-        Process newProcess(name, type, status, alias);
-        processList.push_back(newProcess);
-
-        // Make a symbolic link to the alias if it isn't there...
-        if (alias != "None") {
-            // Also make a symbolic link for the output directory!
-            // Make sure it doesn't end in a slash
-            FileName fn_alias = alias;
-            if (fn_alias[fn_alias.length() - 1] == '/')
-                fn_alias = fn_alias.beforeLastOf("/");
-
-            // Only make the alias if it doesn't exist yet, otherwise you end up with recursive ones.
-            if (!exists(fn_alias)) {
-                //std::string command = " ln -s ../" + name + " " + fn_alias;
-                //int res= system(command.c_str());
-                std::string path1 = "../" + name;
-                int res = symlink(path1.c_str(), fn_alias.c_str());
-            }
         }
     }
 
@@ -1818,7 +1775,7 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
             //REPORT_ERROR("PipeLine::read ERROR: cannot find from-process with name: " + procname);
         }
         long int toNode = findNodeByName(tonodename);
-        if (toNode < 0 || toNode  >= nodeList.size()) {
+        if (toNode < 0 || toNode >= nodeList.size()) {
             std::cerr << "PipeLine WARNING: cannot find child node with name: " << tonodename << std::endl;
             found_both = false;
             //REPORT_ERROR("PipeLine::read ERROR: cannot find to-node with name: " + tonodename);
@@ -1828,16 +1785,12 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
             nodeList[toNode].outputFromProcess = myProcess;
         }
     }
-
-    // Close file handler
-    in.close();
 }
 
 void PipeLine::write(
     bool do_lock, FileName fn_del, std::vector<bool> deleteNode, std::vector<bool> deleteProcess
 ) {
-    if (do_read_only)
-        return;
+    if (do_read_only) return;
 
     FileName name_wo_dir = name;
     FileName dir_lock = ".relion_lock", fn_lock = ".relion_lock/lock_" + name_wo_dir.afterLastOf("/") + "_pipeline.star";
@@ -1864,12 +1817,12 @@ void PipeLine::write(
         }
     }
 
-    std::ofstream  fh, fh_del;
     FileName fn = name + "_pipeline.star";
-    fh.open(fn.c_str(), std::ios::out);
+    std::ofstream fh (fn.c_str(), std::ios::out);
     if (fh.fail()) REPORT_ERROR("ERROR: cannot write to pipeline file: " + fn);
 
-    if (fn_del != "") {
+    std::ofstream fh_del;
+    if (!fn_del.empty()) {
         FileName fnt = fn_del + "deleted_pipeline.star";
         fh_del.open(fnt.c_str(), std::ios::out);
         if (deleteNode.size() != nodeList.size())
@@ -1901,8 +1854,8 @@ void PipeLine::write(
 
     MDproc.setName("pipeline_processes");
     MDproc_del.setName("pipeline_processes");
-    for (long int i=0 ; i < processList.size(); i++) {
-        if (fn_del == "" || !deleteProcess[i]) {
+    for (long int i = 0 ; i < processList.size(); i++) {
+        if (fn_del.empty() || !deleteProcess[i]) {
             MDproc.addObject();
             MDproc.setValue(EMDL::PIPELINE_PROCESS_NAME,   processList[i].name);
             MDproc.setValue(EMDL::PIPELINE_PROCESS_ALIAS,  processList[i].alias);
@@ -1921,13 +1874,13 @@ void PipeLine::write(
     MDproc.write(std::cerr);
     #endif
     MDproc.write(fh);
-    if (fn_del != "")
+    if (!fn_del.empty())
         MDproc_del.write(fh_del);
 
     MDnode.setName("pipeline_nodes");
     MDnode_del.setName("pipeline_nodes");
     for (long int i = 0; i < nodeList.size(); i++) {
-        if (fn_del == "" || !deleteNode[i]) {
+        if (fn_del.empty() || !deleteNode[i]) {
             MDnode.addObject();
             MDnode.setValue(EMDL::PIPELINE_NODE_NAME, nodeList[i].name);
             MDnode.setValue(EMDL::PIPELINE_NODE_TYPE, nodeList[i].type);
@@ -1942,60 +1895,55 @@ void PipeLine::write(
     MDnode.write(std::cerr);
     #endif
     MDnode.write(fh);
-    if (fn_del != "")
+    if (!fn_del.empty())
         MDnode_del.write(fh_del);
 
     // Also write all (Node->Process) edges to a single table
     MDedge1.setName("pipeline_input_edges");
     MDedge1_del.setName("pipeline_input_edges");
-    for (long int i = 0; i < processList.size(); i++) {
-        for (long int j = 0; j < (processList[i].inputNodeList).size(); j++) {
-            long int inputNode = (processList[i].inputNodeList)[j];
-            if (fn_del == "" || (!deleteProcess[i] && !deleteNode[inputNode])) {
-                MDedge1.addObject();
-                MDedge1.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[inputNode].name);
-                MDedge1.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name);
-            } else {
-                MDedge1_del.addObject();
-                MDedge1_del.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[inputNode].name);
-                MDedge1_del.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name);
-            }
+    for (long int i = 0; i < processList.size(); i++)
+    for (long int input_node : processList[i].inputNodeList) {
+        if (!fn_del.empty() || !deleteProcess[i] && !deleteNode[input_node]) {
+            MDedge1.addObject();
+            MDedge1.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[input_node].name);
+            MDedge1.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name);
+        } else {
+            MDedge1_del.addObject();
+            MDedge1_del.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[input_node].name);
+            MDedge1_del.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name);
         }
     }
     #ifdef DEBUG
     MDedge1.write(std::cerr);
     #endif
     MDedge1.write(fh);
-    if (fn_del != "")
+    if (!fn_del.empty())
         MDedge1_del.write(fh_del);
 
     // Also write all (Process->Node) edges to a single table
     MDedge2.setName("pipeline_output_edges");
     MDedge2_del.setName("pipeline_output_edges");
-    for (long int i = 0; i < processList                  .size(); i++)
-    for (long int j = 0; j < processList[i].outputNodeList.size(); j++) {
-        long int outputNode = processList[i].outputNodeList[j];
-        if (fn_del == "" || (!deleteProcess[i] && !deleteNode[outputNode])) {
+    for (long int i = 0; i < processList.size(); i++)
+    for (long int output_node : processList[i].outputNodeList) {
+        if (fn_del.empty() || !deleteProcess[i] && !deleteNode[output_node]) {
             MDedge2.addObject();
             MDedge2.setValue(EMDL::PIPELINE_EDGE_PROCESS,  processList[i].name);
-            MDedge2.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[outputNode].name);
+            MDedge2.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[output_node].name);
         } else {
             MDedge2_del.addObject();
             MDedge2_del.setValue(EMDL::PIPELINE_EDGE_PROCESS,  processList[i].name);
-            MDedge2_del.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[outputNode].name);
+            MDedge2_del.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[output_node].name);
         }
     }
     MDedge2.write(fh);
-    if (fn_del != "")
-        MDedge2_del.write(fh_del);
+    if (!fn_del.empty()) MDedge2_del.write(fh_del);
 
     #ifdef DEBUG
     MDedge2.write(std::cerr);
     #endif
 
     fh.close();
-    if (fn_del != "")
-        fh_del.close();
+    if (!fn_del.empty()) fh_del.close();
 
     if (do_lock) {
 
@@ -2298,17 +2246,17 @@ void PipeLineFlowChart::makeOneUpwardsFlowChart(
 
         // See if there are any new branches, and if so add them to the all_branches vector
         if (do_branches) {
-            for (int i = 0; i <  branched_procs.size(); i++) {
-                long int mybranch = branched_procs[i];
-                bool already_exists= false;
-                for (int j = 0; j < all_branches.size(); j++) {
-                    if (all_branches[j] == mybranch) {
-                        already_exists = true;
-                        break;
-                    }
-                }
-                if (!already_exists && pipeline.processList[mybranch].type != Process::IMPORT) {
-                    all_branches.push_back(mybranch);
+            for (long int branch :  branched_procs) {
+                if (
+                    // If the process of this branch is not an import process
+                    pipeline.processList[branch].type != Process::IMPORT &&
+                    // and the branch is not to be found,
+                    std::find(
+                        all_branches.begin(), all_branches.end(), branch
+                    ) == all_branches.end()
+                ) {
+                    // add it.
+                    all_branches.push_back(branch);
                 }
             }
         }
@@ -2363,7 +2311,6 @@ void PipeLineFlowChart::makeAllUpwardsFlowCharts(
         i++;
     }
 
-
     closeFlowChartFile(fh);
 }
 
@@ -2391,7 +2338,7 @@ void PipeLineFlowChart::closeTikZPicture(std::ofstream &fh, bool is_main_flow) {
 
 void PipeLineFlowChart::openFlowChartFile(FileName &fn_out, std::ofstream &fh) {
 
-    fh.open((fn_out).c_str(), std::ios::out);
+    fh.open(fn_out.c_str(), std::ios::out);
     if (!fh) REPORT_ERROR((std::string) "PipeLineFlowChart ERROR: Cannot write to file: " + fn_out);
 
     // Set up the LaTex header
