@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include "src/gui_jobwindow.h"
 #include "src/pipeliner.h"
+#include <unordered_map>
 
 JobWindow::JobWindow(int _x, int _y, int _w, int _h, const char* title ) : Fl_Box(x,y,w,h,title) {
     clear();
@@ -284,70 +285,38 @@ void JobWindow::updateMyJob() {
     }
 }
 
-void JobWindow::initialise(int my_job_type) {
-    if (my_job_type == Process::IMPORT) {
-        myjob.initialise(my_job_type);
-        initialiseImportWindow();
-    } else if (my_job_type == Process::MOTIONCORR) {
-        myjob.initialise(my_job_type);
-        initialiseMotioncorrWindow();
-    } else if (my_job_type == Process::CTFFIND) {
-        myjob.initialise(my_job_type);
-        initialiseCtffindWindow();
-    } else if (my_job_type == Process::MANUALPICK) {
-        myjob.initialise(my_job_type);
-        initialiseManualpickWindow();
-    } else if (my_job_type == Process::AUTOPICK) {
-        myjob.initialise(my_job_type);
-        initialiseAutopickWindow();
-    } else if (my_job_type == Process::EXTRACT) {
-        myjob.initialise(my_job_type);
-        initialiseExtractWindow();
-    } else if (my_job_type == Process::CLASSSELECT) {
-        myjob.initialise(my_job_type);
-        initialiseSelectWindow();
-    } else if (my_job_type == Process::CLASS2D) {
-        myjob.initialise(my_job_type);
-        initialiseClass2DWindow();
-    } else if (my_job_type == Process::INIMODEL) {
-        myjob.initialise(my_job_type);
-        initialiseInimodelWindow();
-    } else if (my_job_type == Process::CLASS3D) {
-        myjob.initialise(my_job_type);
-        initialiseClass3DWindow();
-    } else if (my_job_type == Process::AUTO3D) {
-        myjob.initialise(my_job_type);
-        initialiseAutorefineWindow();
-    } else if (my_job_type == Process::MULTIBODY) {
-        myjob.initialise(my_job_type);
-        initialiseMultiBodyWindow();
-    } else if (my_job_type == Process::MASKCREATE) {
-        myjob.initialise(my_job_type);
-        initialiseMaskcreateWindow();
-    } else if (my_job_type == Process::JOINSTAR) {
-        myjob.initialise(my_job_type);
-        initialiseJoinstarWindow();
-    } else if (my_job_type == Process::SUBTRACT) {
-        myjob.initialise(my_job_type);
-        initialiseSubtractWindow();
-    } else if (my_job_type == Process::POST) {
-        myjob.initialise(my_job_type);
-        initialisePostprocessWindow();
-    } else if (my_job_type == Process::RESMAP) {
-        myjob.initialise(my_job_type);
-        initialiseLocresWindow();
-    } else if (my_job_type == Process::MOTIONREFINE) {
-        myjob.initialise(my_job_type);
-        initialiseMotionrefineWindow();
-    } else if (my_job_type == Process::CTFREFINE) {
-        myjob.initialise(my_job_type);
-        initialiseCtfrefineWindow();
-    } else if (my_job_type == Process::EXTERNAL) {
-        myjob.initialise(my_job_type);
-        initialiseExternalWindow();
-    } else {
+void JobWindow::initialise(int job_type) {
+
+    // A mapping from ints (job types) to member function pointers
+    const std::unordered_map<int, void (JobWindow::*)()> i2mfp {
+        {Process::IMPORT,       &JobWindow::initialiseImportWindow},
+        {Process::MOTIONCORR,   &JobWindow::initialiseMotioncorrWindow},
+        {Process::CTFFIND,      &JobWindow::initialiseCtffindWindow},
+        {Process::MANUALPICK,   &JobWindow::initialiseManualpickWindow},
+        {Process::AUTOPICK,     &JobWindow::initialiseAutopickWindow},
+        {Process::EXTRACT,      &JobWindow::initialiseExtractWindow},
+        {Process::CLASSSELECT,  &JobWindow::initialiseSelectWindow},
+        {Process::CLASS2D,      &JobWindow::initialiseClass2DWindow},
+        {Process::INIMODEL,     &JobWindow::initialiseInimodelWindow},
+        {Process::CLASS3D,      &JobWindow::initialiseClass3DWindow},
+        {Process::AUTO3D,       &JobWindow::initialiseAutorefineWindow},
+        {Process::MULTIBODY,    &JobWindow::initialiseMultiBodyWindow},
+        {Process::MASKCREATE,   &JobWindow::initialiseMaskcreateWindow},
+        {Process::JOINSTAR,     &JobWindow::initialiseJoinstarWindow},
+        {Process::SUBTRACT,     &JobWindow::initialiseSubtractWindow},
+        {Process::POST,         &JobWindow::initialisePostprocessWindow},
+        {Process::RESMAP,       &JobWindow::initialiseLocresWindow},
+        {Process::MOTIONREFINE, &JobWindow::initialiseMotionrefineWindow},
+        {Process::CTFREFINE,    &JobWindow::initialiseCtfrefineWindow},
+        {Process::EXTERNAL,     &JobWindow::initialiseExternalWindow}
+    };
+
+    auto it = i2mfp.find(job_type);
+    if (it == i2mfp.end())
         REPORT_ERROR("ERROR: unrecognised job-type to add to the GUI");
-    }
+
+    myjob.initialise(job_type);
+    (this->*(it->second))();  // Call the member function through its pointer
 
     // read settings if hidden file exists
     myjob.read("", is_continue);
