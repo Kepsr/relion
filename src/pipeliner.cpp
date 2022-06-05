@@ -578,7 +578,7 @@ void PipeLine::runJob(
 
 }
 
-const std::vector<std::pair<std::string, int>> string2type_mapping {
+const std::map<std::string, int> string2type_mapping {
     {{Process::IMPORT_NAME},      Process::IMPORT},
     {{Process::MOTIONCORR_NAME},  Process::MOTIONCORR},
     {{Process::CTFFIND_NAME},     Process::CTFFIND},
@@ -600,10 +600,7 @@ const std::vector<std::pair<std::string, int>> string2type_mapping {
 
 // Adds a scheduled job to the pipeline from the command line
 int PipeLine::addScheduledJob(std::string typestring, std::string fn_options) {
-    auto it = std::find_if(
-        string2type_mapping.begin(), string2type_mapping.end(),
-        [&typestring] (std::pair<std::string, int> pair) { return typestring == pair.first; }
-    );
+    auto it = string2type_mapping.find(typestring);
     if (it == string2type_mapping.end())
         REPORT_ERROR("ERROR: unrecognised string for job type: " + typestring);
 
