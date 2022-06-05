@@ -753,7 +753,7 @@ void PipeLine::runScheduledJobs(
 
         // Get starting time of the repeat cycle
         timeval time_start, time_end;
-        gettimeofday(&time_start, NULL);
+        gettimeofday(&time_start, nullptr);
 
         for (long int i = 0; i < my_scheduled_processes.size(); i++) {
             int current_job = findProcessByName(my_scheduled_processes[i]);
@@ -852,7 +852,7 @@ void PipeLine::runScheduledJobs(
         if (is_failure || is_aborted) break;
 
         // Wait at least until 'minutes_wait' minutes have passed from the beginning of the repeat cycle
-        gettimeofday(&time_end, NULL);
+        gettimeofday(&time_end, nullptr);
         long int passed_minutes = (time_end.tv_sec - time_start.tv_sec) / 60;
         long int still_wait = minutes_wait - passed_minutes;
         if (still_wait > 0 && repeat + 1 != nr_repeat) {
@@ -923,12 +923,9 @@ void PipeLine::deleteJobGetNodesAndProcesses(
                     // Check whether this node is being used as input for another process, and if so, delete those as well
                     for (long int iproc : nodeList[node].inputForProcessList) {
                         // See if this process is not already in the list to be deleted
-                        bool already_in = false;
-                        for (long int process : to_delete_processes) {
-                            if (process == iproc)
-                                already_in = true;
-                        }
-                        if (!already_in) {
+                        if (std::find(
+                            to_delete_processes.begin(), to_delete_processes.end(), iproc
+                        ) == to_delete_processes.end()) {
                             to_delete_processes.push_back(iproc);
                             is_done = false;
                         }
@@ -1003,9 +1000,7 @@ void PipeLine::getOutputNodesFromStarFile(int this_job) {
     }
 }
 
-void PipeLine::markAsFinishedJob(
-    int this_job, bool is_failed
-) throw (std::string) {
+void PipeLine::markAsFinishedJob(int this_job, bool is_failed) throw (std::string) {
 
     // Read in existing pipeline, in case some other window had changed it
     std::string lock_message = "markAsFinishedJob";
@@ -1094,97 +1089,93 @@ void PipeLine::markAsFinishedJob(
 // Set the alias for a job
 void PipeLine::setAliasJob(int this_job, std::string alias) throw (std::string) {
 
+    Process &process = processList[this_job];
+
     FileName fn_pre, fn_jobnr, fn_post;
     if (!decomposePipelineFileName(
-        processList[this_job].name, fn_pre, fn_jobnr, fn_post
+        process.name, fn_pre, fn_jobnr, fn_post
     ))
-        REPORT_ERROR("PipeLine::setAlias ERROR: invalid pipeline process name: " + processList[this_job].name);
+        REPORT_ERROR("PipeLine::setAlias ERROR: invalid pipeline process name: " + process.name);
+
+    const std::vector<char> forbidden_chars {
+        '(', ')', '{', '}', '<', '>', '\"', '/', '\\', 
+        '&', '|', '*', '?', '#', '%', '$'
+    };
 
     if (alias.empty()) {
         alias = "None";
     } else if (alias.length() < 2) {
         throw "Alias cannot be less than 2 characters, please provide another one";
     } else if (
-        alias.length() > 2 && alias[0] == 'j' && alias[1] == 'o' && alias[2] == 'b'
+        alias.substr(0, 3) == "job"
     ) {
         throw "Alias cannot start with 'job', please provide another one";
-    } else if (
-        alias.find("(")  != std::string::npos || alias.find(")")  != std::string::npos ||
-        alias.find("{")  != std::string::npos || alias.find("}")  != std::string::npos ||
-        alias.find("<")  != std::string::npos || alias.find(">")  != std::string::npos ||
-        alias.find("*")  != std::string::npos || alias.find("?")  != std::string::npos ||
-        alias.find("/")  != std::string::npos || alias.find("\"") != std::string::npos ||
-        alias.find("\\") != std::string::npos || alias.find("#")  != std::string::npos ||
-        alias.find("&")  != std::string::npos || alias.find("|")  != std::string::npos ||
-        alias.find("%")  != std::string::npos || alias.find("$")  != std::string::npos
-    ) {
-        throw "Alias cannot contain following symbols: *, ?, (, ), /, \", \\, |, #, <, >, &, %, {, }, $";
+    } else if (std::find_if(
+        forbidden_chars.begin(), forbidden_chars.end(),
+        [&alias] (char c) { return alias.find(c) != std::string::npos; }
+    ) != forbidden_chars.end()) {
+        throw "Alias cannot contain following symbols: " 
+                + join(forbidden_chars, ", ") + '.';
     } else {
 
-        // remove spaces from any potential alias
-        for (int i = 0; i < alias.length(); i++) {
-            if (alias[i] == ' ')
-                alias[i] = '_';
+        // Turn spaces in alias into underscores
+        for (auto &c : alias) {
+            if (c == ' ') { c = '_'; }
         }
 
         // Make sure the alias ends with a slash
-        if (alias[alias.length()-1] != '/')
+        if (alias[alias.length() - 1] != '/')
             alias += "/";
 
-        // Check uniqueness of the alias
-        bool is_unique = true;
-        for (size_t i = 0; i < processList.size(); i++) {
-            if (processList[i].alias == fn_pre + alias && alias != "None") {
-                is_unique = false;
-                break;
+        if (alias.length() < 1 || std::find_if(
+            processList.begin(), processList.end(),
+            // Check uniqueness of the alias
+            [&fn_pre, &alias] (const Process &process) {
+                return process.alias == fn_pre + alias && alias != "None";  // alias will never be "None" though
             }
-        }
-        if (!is_unique || alias.length() < 1) {
+        ) != processList.end()) {
             throw "Alias is not unique, please provide another one";
         }
     }
-
 
     // Read in existing pipeline, in case some other window had changed it
     std::string lock_message = "setAliasJob";
     read(DO_LOCK, lock_message);
 
     // Remove the original .Nodes entry
-    deleteTemporaryNodeFiles(processList[this_job]);
+    deleteTemporaryNodeFiles(process);
 
-    FileName fn_old_alias = processList[this_job].alias;
+    FileName fn_old_alias = process.alias;
     if (fn_old_alias != "None")
         fn_old_alias = fn_old_alias.beforeLastOf("/");
 
     // No alias if the alias contains a unique jobnr string because of continuation of relion_refine jobs
     if (alias == "None" ) {
-        processList[this_job].alias = "None";
+        process.alias = "None";
     } else {
         // If this was already an alias: remove the old symbolic link
         if (fn_old_alias != "None")
-            int res2 = unlink(fn_old_alias.c_str());
+            unlink(fn_old_alias.c_str());
 
         // Set the alias in the pipeline
-        processList[this_job].alias = fn_pre + alias;
+        process.alias = fn_pre + alias;
 
         //Make the new symbolic link
-        FileName path1 = "../" + processList[this_job].name;
-        FileName path2 = processList[this_job].alias;
-        int res = symlink(path1.c_str(), path2.beforeLastOf("/").c_str());
+        FileName path1 = "../" + process.name;
+        FileName path2 = process.alias;
+        symlink(path1.c_str(), path2.beforeLastOf("/").c_str());
 
     }
 
     // Remake the new .Nodes entry
-    touchTemporaryNodeFiles(processList[this_job]);
+    touchTemporaryNodeFiles(process);
 
     // Write new pipeline to disc
     write(DO_LOCK);
 
 }
 
-void PipeLine::makeFlowChart(
-    long int current_job, bool do_display_pdf
-) throw (std::string) {
+void PipeLine::makeFlowChart(long int current_job, bool do_display_pdf) throw (std::string) {
 
     if (current_job < 0)
     throw " You can only make flowcharts for existing jobs ... ";
