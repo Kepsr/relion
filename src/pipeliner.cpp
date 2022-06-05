@@ -602,7 +602,7 @@ int PipeLine::addScheduledJob(std::string typestring, std::string fn_options) {
     } else if (typestring == Process::AUTO3D_NAME) {
         type = Process::AUTO3D;
     } else if (typestring == Process::MASKCREATE_NAME) {
-        typestring = Process::MASKCREATE;
+        type = Process::MASKCREATE;
     } else if (typestring == Process::JOINSTAR_NAME) {
         type = Process::JOINSTAR;
     } else if (typestring == Process::SUBTRACT_NAME) {
