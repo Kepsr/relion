@@ -610,13 +610,12 @@ int PipeLine::addScheduledJob(std::string typestring, std::string fn_options) {
 
 // Adds a scheduled job to the pipeline from the command line
 int PipeLine::addScheduledJob(int job_type, std::string fn_options) {
-    RelionJob job;
-    job.initialise(job_type);
+    RelionJob job (job_type);
     std::vector<std::string> options = split(fn_options, ";");
     for (const auto &option : options)
         job.setOption(option);
 
-    // Always add Pre-processing jobs as continuation ones (for convenient on-the-fly processing)
+    // Always add preprocessing jobs as continuation ones (for convenient on-the-fly processing)
     if (
         job_type == Process::MOTIONCORR || job_type == Process::CTFFIND ||
         job_type == Process::AUTOPICK   || job_type == Process::EXTRACT

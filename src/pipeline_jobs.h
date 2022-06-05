@@ -339,10 +339,15 @@ class RelionJob {
     public:
 
     // Constructor
-    RelionJob() { clear(); };
+    RelionJob() { clear(); }
+
+    RelionJob(int job_type) {
+        clear();
+        initialise(job_type);
+    }
 
     // Empty Destructor
-    ~RelionJob() { clear(); };
+    ~RelionJob() { clear(); }
 
     // Clear everything
     void clear() {
