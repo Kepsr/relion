@@ -555,3 +555,12 @@ std::string join(const std::vector<std::string> &v, const std::string &delim) {
     }
     return result;
 }
+
+std::string join(const std::vector<char> &v, const std::string &delim) {
+    std::string result;
+    for (std::vector<char>::const_iterator it = v.begin(); it != v.end(); ++it) {
+        result += *it;
+        if (it != v.end() - 1) { result.append(delim); }
+    }
+    return result;
+}
