@@ -50,7 +50,8 @@ class JobWindow: public Fl_Box {
 
     // Tabs
     Fl_Tabs *tabs;
-    Fl_Group *tab1, *tab2, *tab3, *tab4, *tab5, *tab6, *tab7, *runtab;
+    Fl_Group *tabcarr[7];  // A C-style array of Fl_Group pointers
+    Fl_Group *runtab;
 
     // Groups
     Fl_Group *group1, *group2, *group3, *group4, *group5, *group6, *group7, *group8, *queue_group;
@@ -104,8 +105,7 @@ class JobWindow: public Fl_Box {
     static void cb_menu_continue(Fl_Widget*, void*);
     inline void cb_menu_continue_i();
 
-
-    // initialise the window for each of the jobtypes
+    // Each job type has its own window initialisation function
     void initialiseImportWindow();
     void initialiseMotioncorrWindow();
     void initialiseCtffindWindow();
