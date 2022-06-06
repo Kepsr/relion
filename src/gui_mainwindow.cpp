@@ -1998,9 +1998,9 @@ void GuiMainWindow::cb_print_cl(Fl_Widget* o, void* v) {
     gui_jobwindows[iwin]->updateMyJob();
 
     try {
-        pipeline.getCommandLineJob(
+        T->final_command = pipeline.getCommandLineJob(
             gui_jobwindows[iwin]->myjob, current_job, is_main_continue, false,
-            DONT_MKDIR, do_overwrite_continue, T->commands, T->final_command
+            DONT_MKDIR, do_overwrite_continue, T->commands
         );
     } catch (std::string errmsg) {
         fl_message("%s", errmsg.c_str());
