@@ -973,15 +973,15 @@ void GuiMainWindow::fillToAndFromJobLists() {
     output_processes.clear();
 
     if (current_job >= 0) {
+
         // Where do the input nodes come from?
         for (long int node : pipeline.processList[current_job].inputNodeList) {
 
-            // no display for movie rootname
+            // No display for movie rootname
             if (pipeline.nodeList[node].type != Node::MOVIES) {
                 FileName fnt = pipeline.nodeList[node].name;
                 if (exists(fnt)) {
-                    fnt = "in: " + fnt.afterLastOf("/");
-                    display_io_node->add(fnt.c_str());
+                    display_io_node->add(("in: " + fnt.afterLastOf("/")).c_str());
                     io_nodes.push_back(node);
                 }
             }
@@ -995,20 +995,20 @@ void GuiMainWindow::fillToAndFromJobLists() {
                     input_processes.push_back(proc);
                     std::string jobname = getJobNameForDisplay(pipeline.processList[proc]);
                     if (show_scheduler) {
-                        Fl_Hold_Browser *browser = scheduler_input_job_browser;
+                        scheduler_input_job_browser->add(jobname.c_str());
                     } else {
-                        Fl_Select_Browser *browser = input_job_browser;
+                        input_job_browser->add(jobname.c_str());
                     }
-                    browser->add(jobname.c_str());
                 }
             }
         }
+
         // Where do the output nodes lead to?
         for (long int node : pipeline.processList[current_job].outputNodeList) {
+
             FileName fnt = pipeline.nodeList[node].name;
             if (exists(fnt)) {
-                fnt = "out: " + fnt.afterLastOf("/");
-                display_io_node->add(fnt.c_str());
+                display_io_node->add(("out: " + fnt.afterLastOf("/")).c_str());
                 io_nodes.push_back(node);
             }
 
@@ -1027,6 +1027,7 @@ void GuiMainWindow::fillToAndFromJobLists() {
                 }
             }
         }
+
     }
 }
 
