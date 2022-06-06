@@ -1002,7 +1002,7 @@ void PipeLine::markAsFinishedJob(int this_job, bool is_failed) throw (std::strin
     ) {
         // Get the last iteration optimiser file
         FileName fn_opt;
-        FileName fn_root1 = processList[this_job].alias != "None" ? processList[this_job].alias : processList[this_job].name;
+        FileName fn_root1 = processList[this_job].alias_or_name();
 
         std::vector<FileName> fn_opts;
         fn_opt = fn_root1 + "run_it*optimiser.star";
@@ -2020,10 +2020,7 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
     long int lower_process, long int new_process, std::vector<long int> &branched_procs
 ) {
     branched_procs.clear();
-    FileName procname;
-    procname = pipeline.processList[new_process].alias == "None" ?
-        pipeline.processList[new_process].name :
-        pipeline.processList[new_process].alias;
+    FileName procname = pipeline.processList[new_process].alias_or_name();
 
     if (do_short_names) {
         procname = procname.beforeFirstOf("/");
@@ -2139,11 +2136,7 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
                 } else {
                     // Keep track of all the side-wards branches
                     branched_procs.push_back(parent_process);
-                    if (pipeline.processList[parent_process].alias != "None") {
-                        newprocname = pipeline.processList[parent_process].alias;
-                    } else {
-                        newprocname = pipeline.processList[parent_process].name;
-                    }
+                    newprocname = pipeline.processList[parent_process].alias_or_name();
                     if (do_short_names) {
                         newprocname = newprocname.beforeFirstOf("/");
                     } else {
@@ -2252,9 +2245,7 @@ void PipeLineFlowChart::makeAllUpwardsFlowCharts(
     // At the beginning of the flowchart file, first make an overview flowchart with short names
     do_short_names = true;
     do_branches = false;
-    FileName myorititle = pipeline.processList[from_process].alias == "None" ?
-        pipeline.processList[from_process].name :
-        pipeline.processList[from_process].alias;
+    FileName myorititle = pipeline.processList[from_process].alias_or_name();
     myorititle = myorititle.beforeLastOf("/");
     adaptNamesForTikZ(myorititle);
     fh << "\\section*{Overview flowchart for " << myorititle << "}" << std::endl;
@@ -2264,27 +2255,21 @@ void PipeLineFlowChart::makeAllUpwardsFlowCharts(
     // Then, make fully branched flowcharts below
     do_short_names = false;
     do_branches = true;
-    std::vector<long int> all_branches;
-    int i = 0;
-    all_branches.push_back(from_process);
-    while (i < all_branches.size()) {
-        FileName mytitle = pipeline.processList[all_branches[i]].alias == "None" ?
-            pipeline.processList[all_branches[i]].name :
-            pipeline.processList[all_branches[i]].alias;
-        mytitle=mytitle.beforeLastOf("/");
+    std::vector<long int> all_branches {from_process};
+    for (int i = 0; i < all_branches.size(); ++i) {
+        FileName mytitle = pipeline.processList[all_branches[i]].alias_or_name();
+        mytitle = mytitle.beforeLastOf("/");
         adaptNamesForTikZ(mytitle);
         if (i == 0) {
-            std::cout << " Making main branched flowchart ... " <<std::endl;
+            std::cout << " Making main branched flowchart ... " << std::endl;
             fh << "\\section*{Branched flowchart for " << mytitle << "}" << std::endl;
         } else {
             std::cout << " Making flowchart for branch: " << integerToString(i) << " ... " << std::endl;
             std::string hypertarget = "sec:" + mytitle;
-            fh << "\\subsection*{Flowchart for branch " << integerToString(i)<< ": "<< mytitle << "\\hypertarget{"<<hypertarget<<"}{}}" << std::endl;
+            fh << "\\subsection*{Flowchart for branch " << integerToString(i) << ": " << mytitle << "\\hypertarget{" << hypertarget << "}{}}" << std::endl;
         }
 
         makeOneUpwardsFlowChart(fh, pipeline, all_branches[i], all_branches, i == 0);
-
-        i++;
     }
 
     closeFlowChartFile(fh);

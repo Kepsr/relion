@@ -55,6 +55,10 @@ class Process {
         outputNodeList.clear();
     }
 
+    inline std::string alias_or_name() {
+        return alias == "None" ? name : alias;
+    }
+
     // All the directory names of the different types of jobs defined inside the pipeline
     static constexpr const char *const IMPORT_NAME       = "Import";       // Import any file as a Node of a given type
     static constexpr const char *const MOTIONCORR_NAME   = "MotionCorr";   // Import any file as a Node of a given type

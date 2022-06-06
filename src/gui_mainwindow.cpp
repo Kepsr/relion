@@ -24,10 +24,6 @@
 bool show_scheduler;
 bool show_expand_stdout;
 
-inline std::string alias_or_name(const Process &job) {
-    return job.alias == "None" ? job.name : job.alias;
-}
-
 // The StdOutDisplay allows looking at the entire stdout or stderr file
 int StdOutDisplay::handle(int ev) {
 
@@ -866,7 +862,7 @@ std::string GuiMainWindow::getJobNameForDisplay(Process &job) {
     } else if (!decomposePipelineFileName(job.name, fn_pre, fn_jobnr, fn_post)) {
         return job.name;
     } else {
-        return fn_jobnr.afterFirstOf("b").beforeFirstOf("/") + ": " + alias_or_name(job);
+        return fn_jobnr.afterFirstOf("b").beforeFirstOf("/") + ": " + job.alias_or_name();
     }
 }
 
@@ -906,7 +902,7 @@ void GuiMainWindow::fillRunningJobLists() {
         std::vector<std::pair<std::string, long int> > enumerate_jobs;
         for (long int i = pipeline.processList.size() - 1; i >= 0; i--) {
             enumerate_jobs.push_back(std::make_pair(
-                alias_or_name(pipeline.processList[i]), i
+                pipeline.processList[i].alias_or_name(), i
             ));
         }
         // Sort the pairs
@@ -2176,7 +2172,7 @@ void GuiMainWindow::cb_delete(Fl_Widget* o, void* v) {
         for (size_t i = 0; i < deleteProcesses.size(); i++) {
             if (deleteProcesses[i]) {
                 Process job = pipeline.processList[i];
-                describe_action += " - " + alias_or_name(job) + "\n";
+                describe_action += " - " + job.alias_or_name() + "\n";
             }
         };
     }
@@ -2409,7 +2405,7 @@ void GuiMainWindow::cb_edit_note_i(bool is_project_note) {
         }
         Process job = pipeline.processList[current_job];
         fn_note = job.name + "note.txt";
-        title = alias_or_name(job);
+        title = job.alias_or_name();
     }
     NoteEditorWindow* w = new NoteEditorWindow(660, 400, title.c_str(), fn_note, !maingui_do_read_only);
     w->show();
