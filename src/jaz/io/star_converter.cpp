@@ -89,9 +89,8 @@ void StarConverter::convert_3p0_particlesTo_3p1(
 
     outParticles = in;
 
-    for (int l = 0; l < opticsLabelCount_double; l++) {
-        outParticles.deactivateLabel(opticsLabels_double[l]);
-    }
+    for (EMDL::EMDLabel label : opticsLabels_double)
+        outParticles.deactivateLabel(label);
 
     outParticles.addLabel(EMDL::IMAGE_OPTICS_GROUP);
 
@@ -114,8 +113,8 @@ void StarConverter::convert_3p0_particlesTo_3p1(
     outOptics.addLabel(EMDL::IMAGE_OPTICS_GROUP);
     outOptics.addLabel(EMDL::IMAGE_OPTICS_GROUP_NAME);
 
-    for (int l = 0; l < opticsLabelCount_double; l++) {
-        outOptics.addLabel(opticsLabels_double[l]);
+    for (EMDL::EMDLabel label : opticsLabels_double) {
+        outOptics.addLabel(label);
     }
 
     for (int g = 0; g < groupValues_double.size(); g++) {
@@ -162,7 +161,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
 
                 try {
                     Image<double> img;
-                    img.read(fn_img, false); // false means read only header, skip real data
+                    img.read(fn_img, false);  // false means read only header, skip real data
                     int image_size = img().xdim;
 
                     if (image_size % 2 != 0) {
@@ -210,7 +209,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
 }
 
 void StarConverter::unifyPixelSize(
-    MetaDataTable& outOptics, std::string tablename
+    MetaDataTable& outOptics, const std::string &tablename
 ) {
     if (
         outOptics.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE) && 
