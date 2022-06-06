@@ -339,10 +339,10 @@ bool PipeLine::checkProcessCompletion() {
 
 }
 
-void PipeLine::getCommandLineJob(
+std::string PipeLine::getCommandLineJob(
     RelionJob &thisjob, int current_job, bool is_main_continue,
     bool is_scheduled, bool do_makedir, bool do_overwrite_current,
-    std::vector<std::string> &commands, std::string &final_command
+    std::vector<std::string> &commands
 ) throw (std::string) {
 
     if (do_overwrite_current) { is_main_continue = false; }
@@ -363,9 +363,10 @@ void PipeLine::getCommandLineJob(
     // Set is_continue flag inside the job
     thisjob.is_continue = is_main_continue;
 
-    final_command = thisjob.getCommands(my_outputname, commands, do_makedir, job_counter);
+    std::string final_command = thisjob.getCommands(my_outputname, commands, do_makedir, job_counter);
     if (commands.empty())
     throw " PipeLine::getCommandLineJob: Nothing to do...";
+    return final_command;
 }
 
 // Adds thisjob to the pipeline and returns the id of the newprocess
@@ -406,15 +407,14 @@ void PipeLine::runJob(
     RelionJob &_job, int &current_job, bool only_schedule, bool is_main_continue,
     bool is_scheduled, bool do_overwrite_current
 ) throw (std::string) {
-    std::vector<std::string> commands;
-    std::string final_command;
 
     // Remove run.out and run.err when overwriting a job
     if (do_overwrite_current) { is_main_continue = false; }
 
-    getCommandLineJob(
+    std::vector<std::string> commands;
+    std::string final_command = getCommandLineJob(
         _job, current_job, is_main_continue, is_scheduled, true, // makedir
-        do_overwrite_current, commands, final_command
+        do_overwrite_current, commands
     );
 
     // Remove run.out and run.err when overwriting a job
@@ -424,9 +424,9 @@ void PipeLine::runJob(
         int res = system(command.c_str());
 
         // Above deletes run_submit.script too, so we have to call this again ...
-        getCommandLineJob(
+        final_command = getCommandLineJob(
             _job, current_job, is_main_continue, is_scheduled, true,
-            do_overwrite_current, commands, final_command
+            do_overwrite_current, commands
         );
     }
 

@@ -42,11 +42,11 @@ class Process {
     std::vector<long int> outputNodeList; // List of Nodes of output from this process
 
     // Constructor
-    Process(std::string _name, int _type, int _status, std::string _alias="None") {
-        name = _name;
-        type = _type;
-        status = _status;
-        alias = _alias;
+    Process(std::string name, int type, int status, std::string alias="None") {
+        this->name = name;
+        this->type = type;
+        this->status = status;
+        this->alias = alias;
     }
 
     // Destructor
@@ -147,28 +147,28 @@ class PipeLine {
         job_counter = 1;
     }
 
-    void setName(std::string _name) {
-        name = _name;
+    void setName(std::string name) {
+        this->name = name;
     }
 
     // Add a new input Edge to the list
     // Check whether Node with that name already exists in the Node list, and if so update that one
     // The input_for_process will be added to the inputForProcessList of this Node
     //
-    void addNewInputEdge(Node &_Node, long int input_for_process);
+    void addNewInputEdge(Node &node, long int input_for_process);
 
     // Add a new output Edge to the list
     // Check whether Node with that name already exists in the Node list, and if so update that one
     // The output_from_process will be added to the outputFromProcessList of this Node
     //
-    void addNewOutputEdge(long int output_from_process, Node &_Node);
+    void addNewOutputEdge(long int output_from_process, Node &node);
 
     // Check whether Node already exists in the nodeList. If not add and return pointer to new node, otherwise return pointer to existing node
     // Also touch entry in .Nodes directory, use touch_if_not_exist for scheduled jobs
-    long int addNode(Node &_Node, bool touch_if_not_exist = false);
+    long int addNode(Node &node, bool touch_if_not_exist = false);
 
     // Add a new Process to the list (no checks are performed)
-    long int addNewProcess(Process &_Process, bool do_overwrite = false);
+    long int addNewProcess(Process &process, bool do_overwrite = false);
 
     // Find nodes or process (by name or alias)
     long int findNodeByName(std::string name);
@@ -191,23 +191,22 @@ class PipeLine {
     // Returns true if any of the running processes has completed, false otherwise
     bool checkProcessCompletion();
 
-    // Get the command line arguments for thisjob
-    void getCommandLineJob(
-        RelionJob &thisjob, int current_job, bool is_main_continue,
+    // Get the command line arguments for job
+    std::string getCommandLineJob(
+        RelionJob &job, int current_job, bool is_main_continue,
         bool is_scheduled, bool do_makedir, bool do_overwrite_current,
-        std::vector<std::string> &commands, 
-        std::string &final_command
+        std::vector<std::string> &commands
     ) throw (std::string);
 
-    // Adds _job to the pipeline and return the id of the newprocess
+    // Adds job to the pipeline and return the id of the newprocess
     long int addJob(
-        RelionJob &_job, int as_status, 
+        RelionJob &job, int as_status, 
         bool do_overwrite, bool do_write_minipipeline = true
     );
 
     // Runs a job and adds it to the pipeline
     void runJob(
-        RelionJob &_job, int &current_job, 
+        RelionJob &job, int &current_job, 
         bool only_schedule, bool is_main_continue,
         bool is_scheduled, bool do_overwrite_current
     ) throw (std::string);
