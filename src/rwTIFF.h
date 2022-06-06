@@ -124,12 +124,10 @@ int Image<T>::readTIFF(
     if (isStack) {
         dims.z = 1;
         replaceNsize = dims.n;
-        std::stringstream Num;
-        std::stringstream Num2;
-        if (img_select >= (int)dims.n) {
-            Num  << img_select + 1;
-            Num2 << dims.n;
-            REPORT_ERROR((std::string) "readTIFF: Image number " + Num.str() + " exceeds stack size " + Num2.str() + " of image " + name);
+        if (img_select >= (int) dims.n) {
+            std::string Num1str = std::to_string(img_select + 1);
+            std::string Num2str = std::to_string(dims.n);
+            REPORT_ERROR((std::string) "readTIFF: Image number " + Num1str + " exceeds stack size " + Num2str + " of image " + name);
         }
     } else {
         replaceNsize = 0;

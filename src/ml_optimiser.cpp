@@ -7481,7 +7481,6 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                 // Get CTF for this particle
                 if (do_ctf_correction) {
                     if (mymodel.data_dim == 3) {
-                        Image<RFLOAT> Ictf;
                         // Read CTF-image from disc
                         FileName fn_ctf;
                         if (!mydata.getImageNameOnScratch(part_id, img_id, fn_ctf, true)) {
@@ -7490,6 +7489,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             for (int i = 0; i <= metadata_offset; i++)
                                 getline(split, fn_ctf);
                         }
+                        Image<RFLOAT> Ictf;
                         Ictf.read(fn_ctf);
                         Fctf.resize(current_image_size, current_image_size, current_image_size / 2 + 1);
 
@@ -7509,7 +7509,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                         }
                     } else {
-                        Fctf.resize(current_image_size, current_image_size/ 2 + 1);
+                        Fctf.resize(current_image_size, current_image_size / 2 + 1);
 
                         // Get parameters that change per-particle from the exp_metadata
                         CTF ctf = CTF(

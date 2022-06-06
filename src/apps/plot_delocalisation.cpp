@@ -123,16 +123,14 @@ int main(int argc, char *argv[]) {
 
     int first = -1;
 
-    for (int b = maxBin-1; b >= 0; b--) {
+    for (int b = maxBin - 1; b >= 0; b--) {
         cumulC += histCent[b];
         histCentCumul[b] = cumulC;
 
         cumulW += histWorst[b];
         histWorstCumul[b] = cumulW;
 
-        if (first < 0 && cumulW > 0.0) {
-            first = b;
-        }
+        if (first < 0 && cumulW > 0.0) { first = b; }
     }
 
     if (first < 0) {
@@ -143,28 +141,11 @@ int main(int argc, char *argv[]) {
 
     CPlot2D plot2D("");
 
-    std::stringstream ogsts;
-    ogsts << optGroup + 1;
-
     std::string title = "Delocalisation";
-    if (name != "") { title = title + " for " + name + " (opt. gr. " + ogsts.str() + ")"; }
-
-    std::stringstream pssts;
-    pssts << angpix;
-
-    std::stringstream frq0sts;
-    frq0sts << minFreqAng;
-
-    std::stringstream frq1sts;
-    frq1sts << maxFreqAng;
-
-    title = title + " at " + pssts.str() + " A/px";
-
-    if (minFreqAng <= 0) {
-        title = title + " (up to " + frq1sts.str() + " A)";
-    } else {
-        title = title + " (" + frq0sts.str() + " A - " + frq1sts.str() + " A)";
-    }
+    if (!name.empty())
+    title.append(" for " + name + " (opt. gr. " + std::to_string(optGroup + 1) + ")");
+    title.append(" at " + std::to_string(angpix) + " A/px");
+    title.append((minFreqAng <= 0 ? " (up to " : " (" + std::to_string(minFreqAng) + " A - ") + std::to_string(maxFreqAng) + " A)");
 
     plot2D.SetTitle(title);
     plot2D.SetDrawLegend(true);
@@ -175,25 +156,15 @@ int main(int argc, char *argv[]) {
     center.SetLineWidth(0.5);
     center.SetDatasetTitle("particle center");
 
-    std::stringstream radsts;
-    radsts << rad;
-
     CDataSet edge;
     edge.SetDrawMarker(false);
     edge.SetDatasetColor(0.3,0.3,0.6);
     edge.SetLineWidth(0.5);
-    edge.SetDatasetTitle("worst periphery point (radius " + radsts.str() + " A)");
+    edge.SetDatasetTitle("worst periphery point (radius " + std::to_string(rad) + " A)");
 
-    for (int i = 0; i < first + radPx + 1; i++) {
-        if (i < maxBin && i <= first) {
-            CDataPoint point(2 * i, histCentCumul[i] / histCentCumul[0]);
-            center.AddDataPoint(point);
-        }
-
-        if (i < maxBin && i <= first) {
-            CDataPoint point(2 * i, histWorstCumul[i] / histWorstCumul[0]);
-            edge.AddDataPoint(point);
-        }
+    for (int i = 0; i < first + radPx && i < maxBin && i <= first + 1; i++) {
+        center.AddDataPoint(CDataPoint(2 * i, histCentCumul[i] / histCentCumul[0]));
+        edge.AddDataPoint(CDataPoint(2 * i, histWorstCumul[i] / histWorstCumul[0]));
     }
 
     plot2D.AddDataSet(center);

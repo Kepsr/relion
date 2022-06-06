@@ -121,10 +121,7 @@ void MagnificationEstimator::processMicrograph(
 
         std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
-        std::stringstream sts;
-        sts << (og + 1);
-
-        MagnificationHelper::writeEQs(magEq, outRoot + "_mag_optics-group_" + sts.str());
+        MagnificationHelper::writeEQs(magEq, outRoot + "_mag_optics-group_" + std::to_string(og + 1));
 
     }
 }
@@ -158,15 +155,14 @@ void MagnificationEstimator::parametricFit(
     for (int og = 0; og < ogc; og++) {
         Volume<Equation2x2> magEqs(sh[og], s[og], 1), magEqsG(sh[og], s[og], 1);
 
-        std::stringstream sts;
-        sts << (og + 1);
+        std::string ogstr = std::to_string(og + 1);
 
         bool groupPresent = false;
 
         for (long g = 0; g < gc; g++) {
             std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdts[g], outPath);
 
-            std::string fn = outRoot + "_mag_optics-group_" + sts.str();
+            std::string fn = outRoot + "_mag_optics-group_" + ogstr;
 
             if (
                 exists(fn + "_Axx.mrc") ||
@@ -200,15 +196,15 @@ void MagnificationEstimator::parametricFit(
         FftwHelper::decenterUnflip2D(flowx.data, flowxFull.data);
         FftwHelper::decenterUnflip2D(flowy.data, flowyFull.data);
 
-        ImageLog::write(flowxFull, outPath + "mag_disp_x_optics-group_" + sts.str());
-        ImageLog::write(flowyFull, outPath + "mag_disp_y_optics-group_" + sts.str());
+        ImageLog::write(flowxFull, outPath + "mag_disp_x_optics-group_" + ogstr);
+        ImageLog::write(flowyFull, outPath + "mag_disp_y_optics-group_" + ogstr);
 
         imgs_for_eps.push_back(flowxFull);
         scales.push_back(1.0);
         labels.push_back("X-disp obs [-1,+1] " + obsModel->getGroupName(og));
 
         imgs_for_eps.push_back(flowyFull);
-        scales.push_back(1.);
+        scales.push_back(1.0);
         labels.push_back("Y-disp obs [-1,+1] " + obsModel->getGroupName(og));
 
 
@@ -219,8 +215,8 @@ void MagnificationEstimator::parametricFit(
         FftwHelper::decenterUnflip2D(flowx.data, flowxFull.data);
         FftwHelper::decenterUnflip2D(flowy.data, flowyFull.data);
 
-        ImageLog::write(flowxFull, outPath + "mag_disp_x_fit_optics-group_" + sts.str());
-        ImageLog::write(flowyFull, outPath + "mag_disp_y_fit_optics-group_" + sts.str());
+        ImageLog::write(flowxFull, outPath + "mag_disp_x_fit_optics-group_" + ogstr);
+        ImageLog::write(flowyFull, outPath + "mag_disp_y_fit_optics-group_" + ogstr);
 
 
         imgs_for_eps.push_back(flowxFull);
@@ -232,9 +228,9 @@ void MagnificationEstimator::parametricFit(
         labels.push_back("Y-disp fit [-1,+1] " + obsModel->getGroupName(og));
 
         #ifdef DEBUG
-        std::ofstream os(outPath + "mag_matrix_optics-group_" + sts.str() + ".txt");
-        os << mat(0,0) << " " << mat(0,1) << "\n";
-        os << mat(1,0) << " " << mat(1,1) << "\n";
+        std::ofstream os(outPath + "mag_matrix_optics-group_" + ogstr + ".txt");
+        os << mat(0, 0) << " " << mat(0, 1) << "\n";
+        os << mat(1, 0) << " " << mat(1, 1) << "\n";
         os.close();
         #endif
         mat_by_optGroup[og] = mat;
@@ -264,9 +260,9 @@ void MagnificationEstimator::parametricFit(
 
         obsModel->setMagMatrix(og, mat1);
 
-        FileName fn_root = outPath + "mag_disp_optics-group_"+ sts.str();
+        FileName fn_root = outPath + "mag_disp_optics-group_" + ogstr;
         ColorHelper::writeSignedToEPS(fn_root, 2, imgs_for_eps, scales, labels);
-        fn_eps.push_back(fn_root+".eps");
+        fn_eps.push_back(fn_root + ".eps");
     }
 
     obsModel->hasMagMatrices = true;
@@ -279,34 +275,22 @@ void MagnificationEstimator::parametricFit(
 }
 
 bool MagnificationEstimator::isFinished(const MetaDataTable &mdt) {
-    if (!ready) {
+    if (!ready)
         REPORT_ERROR("ERROR: TiltEstimator::isFinished: DefocusEstimator not initialized.");
-    }
 
-    std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
-
-    bool allThere = true;
+    const std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
     std::vector<int> ogp = obsModel->getOptGroupsPresent_zeroBased(mdt);
 
-    for (int pog = 0; pog < ogp.size(); pog++) {
-        const int og = ogp[pog];
-
-        std::stringstream sts;
-        sts << (og + 1);
-        std::string ogstr = sts.str();
-
-        if (
-            !exists(outRoot + "_mag_optics-group_" + ogstr + "_Axx.mrc") ||
-            !exists(outRoot + "_mag_optics-group_" + ogstr + "_Axy.mrc") ||
-            !exists(outRoot + "_mag_optics-group_" + ogstr + "_Ayy.mrc") ||
-            !exists(outRoot + "_mag_optics-group_" + ogstr + "_bx.mrc")  ||
-            !exists(outRoot + "_mag_optics-group_" + ogstr + "_by.mrc")
-        ) {
-            allThere = false;
-            break;
+    return std::all_of(
+        ogp.begin(), ogp.end(),
+        [&outRoot] (int og) {
+            std::string ogstr = std::to_string(og + 1);
+            return exists(outRoot + "_mag_optics-group_" + ogstr + "_Axx.mrc") &&
+                   exists(outRoot + "_mag_optics-group_" + ogstr + "_Axy.mrc") &&
+                   exists(outRoot + "_mag_optics-group_" + ogstr + "_Ayy.mrc") &&
+                   exists(outRoot + "_mag_optics-group_" + ogstr + "_bx.mrc")  &&
+                   exists(outRoot + "_mag_optics-group_" + ogstr + "_by.mrc");
         }
-    }
-
-    return allThere;
+    );
 }

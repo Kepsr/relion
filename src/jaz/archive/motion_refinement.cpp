@@ -633,9 +633,7 @@ void MotionRefinement::writeTracks(
     mdt.clear();
 
     for (int p = 0; p < pc; p++) {
-        std::stringstream sts;
-        sts << p;
-        mdt.setName(sts.str());
+        mdt.setName(std::to_string(p));
 
         for (int f = 0; f < fc; f++) {
             mdt.addObject();
@@ -669,9 +667,7 @@ std::vector<std::vector<d2Vector>> MotionRefinement::readTracks(std::string fn) 
     int fc = 0, lastFc = 0;
 
     for (int p = 0; p < pc; p++) {
-        std::stringstream sts;
-        sts << p;
-        mdt.readStar(ifs, sts.str());
+        mdt.readStar(ifs, std::to_string(p));
 
         fc = mdt.numberOfObjects();
 
@@ -1458,9 +1454,7 @@ std::vector<std::vector<d2Vector>> MotionRefinement::readCollectivePaths(
         if (pc == 0) {
             fc = fcp;
         } else if (fcp != fc) {
-            std::stringstream isss;
-            isss << (pc + 1);
-            REPORT_ERROR("insufficient number of frames for particle " + isss.str());
+            REPORT_ERROR("insufficient number of frames for particle " + std::to_string(pc + 1));
         }
 
         std::istringstream iss(line);
@@ -1522,10 +1516,7 @@ std::vector<std::pair<int, std::vector<d2Vector>>> MotionRefinement::readPaths(
             int fcp = delims / 3;
 
             if (fcp < frameNum) {
-                std::stringstream rst;
-                rst << (blockNum * i + blockNum);
-
-                REPORT_ERROR("not enough frames in " + fn + ", line " + rst.str());
+                REPORT_ERROR("not enough frames in " + fn + ", line " + std::to_string(blockNum * (i + 1)));
             }
 
             out[blockNum * i + j] = std::make_pair(0, std::vector<d2Vector>(frameNum));

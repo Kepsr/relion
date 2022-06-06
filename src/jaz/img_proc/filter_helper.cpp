@@ -767,12 +767,7 @@ void FilterHelper::richardsonLucy(Image<RFLOAT> &img, CTF &ctf, RFLOAT angpix, R
         modulate(imgR, ctf, angpix, imgRM);
         multiply(imgRM, img1, img1);
 
-        std::stringstream sts;
-        sts << it + 1;
-        std::string fn;
-        sts >> fn;
-
-        VtkHelper::writeVTK(img1, "rl_it" + fn + ".vtk");
+        VtkHelper::writeVTK(img1, "rl_it" + std::to_string(it + 1) + ".vtk");
     }
 }
 

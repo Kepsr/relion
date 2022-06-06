@@ -145,15 +145,14 @@ void AberrationEstimator::processMicrograph(
 
         std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
-        std::stringstream sts;
-        sts << (og + 1);
+        std::string ogstr = std::to_string(og + 1);
 
-        AxxSum.write(outRoot+"_aberr-Axx_optics-group_" + sts.str() + ".mrc");
-        AxySum.write(outRoot+"_aberr-Axy_optics-group_" + sts.str() + ".mrc");
-        AyySum.write(outRoot+"_aberr-Ayy_optics-group_" + sts.str() + ".mrc");
+        AxxSum.write(outRoot + "_aberr-Axx_optics-group_" + ogstr + ".mrc");
+        AxySum.write(outRoot + "_aberr-Axy_optics-group_" + ogstr + ".mrc");
+        AyySum.write(outRoot + "_aberr-Ayy_optics-group_" + ogstr + ".mrc");
 
-        bxSum.write(outRoot+"_aberr-bx_optics-group_" + sts.str() + ".mrc");
-        bySum.write(outRoot+"_aberr-by_optics-group_" + sts.str() + ".mrc");
+        bxSum.write(outRoot + "_aberr-bx_optics-group_" + ogstr + ".mrc");
+        bySum.write(outRoot + "_aberr-by_optics-group_" + ogstr + ".mrc");
     }
 }
 
@@ -176,9 +175,7 @@ void AberrationEstimator::parametricFit(
 
     #pragma omp parallel for num_threads(nr_omp_threads)
     for (int og = 0; og < ogc; og++) {
-        std::stringstream sts;
-        sts << og + 1;
-        std::string ogstr = sts.str();
+        std::string ogstr = std::to_string(og + 1);
 
         Image<RFLOAT>
             AxxSum(sh[og], s[og]), AxySum(sh[og], s[og]), AyySum(sh[og], s[og]),
@@ -272,7 +269,7 @@ void AberrationEstimator::parametricFit(
         if (debug) {
             Image<RFLOAT> full;
             FftwHelper::decenterDouble2D(wgh(), full());
-            ImageLog::write(full, outPath + "aberr_weight-full_optics-group_"+ogstr);
+            ImageLog::write(full, outPath + "aberr_weight-full_optics-group_" + ogstr);
         }
 
         std::vector<Image<RFLOAT>> imgs_for_eps;
@@ -281,7 +278,7 @@ void AberrationEstimator::parametricFit(
 
         Image<RFLOAT> fit, phaseFull, fitFull;
         FftwHelper::decenterDouble2D(phase.data, phaseFull.data);
-        ImageLog::write(phaseFull, outPath + "aberr_delta-phase_per-pixel_optics-group_"+ogstr);
+        ImageLog::write(phaseFull, outPath + "aberr_delta-phase_per-pixel_optics-group_" + ogstr);
 
         imgs_for_eps.push_back(phaseFull);
         scales.push_back(1.);
@@ -298,12 +295,11 @@ void AberrationEstimator::parametricFit(
 
             FftwHelper::decenterDouble2D(fit.data, fitFull.data);
 
-            std::stringstream sts;
-            sts << aberr_n_max;
+            std::string Nstr = std::to_string(aberr_n_max);
 
             ImageLog::write(
                 fitFull, 
-                outPath + "aberr_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + sts.str()
+                outPath + "aberr_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + ogstr
             );
 
             {
@@ -312,7 +308,7 @@ void AberrationEstimator::parametricFit(
 
                 ImageLog::write(
                     residual, 
-                    outPath + "aberr_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + sts.str() + "_residual");
+                    outPath + "aberr_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + ogstr + "_residual");
             }
 
             std::vector<double> Zernike_coeffs_opt = TiltHelper::optimiseEvenZernike(
@@ -325,15 +321,15 @@ void AberrationEstimator::parametricFit(
 
             ImageLog::write(
                 fitFull, 
-                outPath + "aberr_delta-phase_iter-fit_optics-group_" + ogstr + "_N-" + sts.str()
+                outPath + "aberr_delta-phase_iter-fit_optics-group_" + ogstr + "_N-" + ogstr
             );
 
             imgs_for_eps.push_back(fitFull);
             scales.push_back(1.);
-            labels.push_back("Symm. (N=" + sts.str() + ") fit [-1, 1] " + obsModel->getGroupName(og));
+            labels.push_back("Symm. (N=" + ogstr + ") fit [-1, 1] " + obsModel->getGroupName(og));
             imgs_for_eps.push_back(fitFull);
             scales.push_back(PI);
-            labels.push_back("Symm. (N=" + sts.str() + ") fit [-pi, pi] " + obsModel->getGroupName(og));
+            labels.push_back("Symm. (N=" + ogstr + ") fit [-pi, pi] " + obsModel->getGroupName(og));
 
 
             // extract Q0, Cs, defocus and astigmatism?
@@ -352,33 +348,22 @@ void AberrationEstimator::parametricFit(
 }
 
 bool AberrationEstimator::isFinished(const MetaDataTable &mdt) {
-    if (!ready) {
+    if (!ready)
         REPORT_ERROR("ERROR: AberrationEstimator::isFinished: AberrationEstimator not initialized.");
-    }
 
-    std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
-
-    bool allDone = true;
+    const std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
     std::vector<int> ogs = obsModel->getOptGroupsPresent_oneBased(mdt);
 
-    for (int i = 0; i < ogs.size(); i++) {
-        const int og = ogs[i];
-
-        std::stringstream sts;
-        sts << og;
-
-        if (
-            !exists(outRoot + "_aberr-Axx_optics-group_" + sts.str() + ".mrc") ||
-            !exists(outRoot + "_aberr-Axy_optics-group_" + sts.str() + ".mrc") ||
-            !exists(outRoot + "_aberr-Ayy_optics-group_" + sts.str() + ".mrc") ||
-            !exists(outRoot + "_aberr-bx_optics-group_"  + sts.str() + ".mrc") ||
-            !exists(outRoot + "_aberr-by_optics-group_"  + sts.str() + ".mrc")
-        ) {
-            allDone = false;
-            break;
+    std::all_of(
+        ogs.begin(), ogs.end(),
+        [&outRoot] (int og) {
+            std::string ogstr = std::to_string(og);  // Don't we want og + 1?
+            return exists(outRoot + "_aberr-Axx_optics-group_" + ogstr + ".mrc") &&
+                   exists(outRoot + "_aberr-Axy_optics-group_" + ogstr + ".mrc") &&
+                   exists(outRoot + "_aberr-Ayy_optics-group_" + ogstr + ".mrc") &&
+                   exists(outRoot + "_aberr-bx_optics-group_"  + ogstr + ".mrc") &&
+                   exists(outRoot + "_aberr-by_optics-group_"  + ogstr + ".mrc");
         }
-    }
-
-    return allDone;
+    );
 }

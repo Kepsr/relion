@@ -192,15 +192,13 @@ int Image<T>::readSPIDER(long int img_select) {
 
     size_t pad = 0;
 
-    std::stringstream Num;
-    std::stringstream Num2;
     // image is in stack? and set right initial and final image
     if (isStack) {
         pad = offset;
         if (img_select > dims.n) {
-            Num  << img_select;
-            Num2 << dims.n;
-            REPORT_ERROR((std::string) "readSpider: Image number " + Num.str() + " exceeds stack size " + Num2.str());
+            std::string Num1str = std::to_string(img_select);
+            std::string Num2str = std::to_string(dims.n);
+            REPORT_ERROR((std::string) "readSpider: Image number " + Num1str + " exceeds stack size " + Num2str);
         }
         offset += offset;
     }
