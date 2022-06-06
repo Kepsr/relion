@@ -24,20 +24,6 @@
 bool show_scheduler;
 bool show_expand_stdout;
 
-struct GroupContext {
-
-    Fl_Group *&group;
-
-    GroupContext(Fl_Group *&group): group(group) {
-        group->begin();
-    }
-
-    ~GroupContext() {
-        group->end();
-    }
-
-};
-
 // The StdOutDisplay allows looking at the entire stdout or stderr file
 int StdOutDisplay::handle(int ev) {
 
@@ -262,7 +248,7 @@ GuiMainWindow::GuiMainWindow(
     FileName fn_lock = ".gui_projectdir";
     if (!exists(fn_lock)) {
         int ret = fl_choice("Your current directory does not look like a RELION project directory.\nOnly run the RELION GUI from your project directory.\nDo you want to start a new project here?", "No", "Yes", 0);
-        this->begin(); // apparently fl_choice changes Fl_Group::current. Thus, we have to reclaim it.
+        this->begin();  // apparently fl_choice changes Fl_Group::current. Thus, we have to reclaim it.
         if (ret != 1) {
             std::cout << " Exiting ... " << std::endl;
             exit(0);
@@ -273,16 +259,16 @@ GuiMainWindow::GuiMainWindow(
     // First set up the old part of the GUI
     h = GUIHEIGHT_OLD;
 
+    {
     /// TODO: control file location and use better figure
-    background_grp = new Fl_Group(WCOL0 - 10, 0, w - WCOL0, h - 55);
+    GroupContext context (background_grp = new Fl_Group(WCOL0 - 10, 0, w - WCOL0, h - 55));
 
     // Initial screen picture with some explanation on how to use the GUI
-    // image_box = new Fl_Box(WCOL0 - 8, 0, w - WCOL0, h - 35); // widget that will contain image
-    image_box = new Fl_Box(WCOL0 - 8, 50, w - WCOL0, h - 120); // widget that will contain image
+    // image_box = new Fl_Box(WCOL0 - 8, 0, w - WCOL0, h - 35);  // widget that will contain image
+    image_box = new Fl_Box(WCOL0 - 8, 50, w - WCOL0, h - 120);  // widget that will contain image
     xpm_image = new Fl_Pixmap(gui_background);
-    image_box->image(xpm_image); // attach xpm image to box
-
-    background_grp->end();  // No call to background_grp->begin()
+    image_box->image(xpm_image);  // attach xpm image to box
+    }
 
     // Read in schedule, if it exists.
     // Otherwise, just initialise schedule with its name.
@@ -298,7 +284,7 @@ GuiMainWindow::GuiMainWindow(
         } else {
             std::string command = "mkdir -p " + fn_sched;
             system(command.c_str());
-            schedule.write(DONT_LOCK); // empty write
+            schedule.write(DONT_LOCK);  // empty write
         }
     } else {
         show_scheduler = false;
@@ -385,16 +371,15 @@ GuiMainWindow::GuiMainWindow(
     }};
 
     for (int i = 0; i < specs.size(); ++i) {
-        browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT);
+        GroupContext context (browse_grp[i] = new Fl_Group(WCOL0, 2, 550, 615 - MENUHEIGHT));
         browser->add(specs[i].first);
         gui_jobwindows[i] = new JobWindow();
         gui_jobwindows[i]->initialise(specs[i].second);
-        browse_grp[i]->end();
     }
 
     browser->callback(cb_select_browsegroup, this);
     browser->end();
-    browser->select(1); // just start from the beginning
+    browser->select(1);  // just start from the beginning
     }
 
     // Add run buttons on the menubar as well
@@ -447,7 +432,7 @@ GuiMainWindow::GuiMainWindow(
     alias_current_job = new Fl_Input(XJOBCOL2 , GUIHEIGHT_EXT_START + 3, JOBCOLWIDTH, MENUHEIGHT - 6, "Current:");
 
     // Left-hand side browsers for input/output nodes and processes
-    display_io_node  = new Fl_Choice(XJOBCOL3 + 50, GUIHEIGHT_EXT_START + 3, 200, MENUHEIGHT - 6);
+    display_io_node = new Fl_Choice(XJOBCOL3 + 50, GUIHEIGHT_EXT_START + 3, 200, MENUHEIGHT - 6);
     display_io_node->label("Display:");
     display_io_node->color(GUI_BUTTON_COLOR);
     display_io_node->callback(cb_display_io_node, this);
@@ -462,7 +447,7 @@ GuiMainWindow::GuiMainWindow(
     Fl_Text_Display* textdisp1 = new Fl_Text_Display(XJOBCOL1, GUIHEIGHT_EXT_START2, JOBCOLWIDTH, 25);
     textdisp1->buffer(textbuff1);
     textdisp1->color(GUI_BACKGROUND_COLOR);
-    finished_job_browser  = new Fl_Select_Browser(XJOBCOL1, GUIHEIGHT_EXT_START2 + 25, JOBCOLWIDTH, JOBHEIGHT + 25);
+    finished_job_browser = new Fl_Select_Browser(XJOBCOL1, GUIHEIGHT_EXT_START2 + 25, JOBCOLWIDTH, JOBHEIGHT + 25);
     finished_job_browser->callback(cb_select_finished_job, this);
     finished_job_browser->textsize(RLN_FONTSIZE - 1);
     finished_job_browser->end();
@@ -472,7 +457,7 @@ GuiMainWindow::GuiMainWindow(
     Fl_Text_Display* textdisp2 = new Fl_Text_Display(XJOBCOL2, GUIHEIGHT_EXT_START2, JOBCOLWIDTH, 25);
     textdisp2->buffer(textbuff2);
     textdisp2->color(GUI_BACKGROUND_COLOR);
-    running_job_browser   = new Fl_Select_Browser(XJOBCOL2, GUIHEIGHT_EXT_START2 + 25, JOBCOLWIDTH, JOBHALFHEIGHT);
+    running_job_browser = new Fl_Select_Browser(XJOBCOL2, GUIHEIGHT_EXT_START2 + 25, JOBCOLWIDTH, JOBHALFHEIGHT);
     running_job_browser->callback(cb_select_running_job, this);
     running_job_browser->textsize(RLN_FONTSIZE - 1);
     running_job_browser->end();
@@ -491,7 +476,7 @@ GuiMainWindow::GuiMainWindow(
     Fl_Text_Display* textdisp4 = new Fl_Text_Display(XJOBCOL3, GUIHEIGHT_EXT_START2, JOBCOLWIDTH, 25);
     textdisp4->buffer(textbuff4);
     textdisp4->color(GUI_BACKGROUND_COLOR);
-    input_job_browser    = new Fl_Select_Browser(XJOBCOL3,  GUIHEIGHT_EXT_START2 + 25, JOBCOLWIDTH, JOBHALFHEIGHT);
+    input_job_browser = new Fl_Select_Browser(XJOBCOL3,  GUIHEIGHT_EXT_START2 + 25, JOBCOLWIDTH, JOBHALFHEIGHT);
     input_job_browser->callback(cb_select_input_job, this);
     input_job_browser->textsize(RLN_FONTSIZE - 1);
 
@@ -500,7 +485,7 @@ GuiMainWindow::GuiMainWindow(
     Fl_Text_Display* textdisp5 = new Fl_Text_Display(XJOBCOL3, GUIHEIGHT_EXT_START2 + JOBHALFHEIGHT + 25, JOBCOLWIDTH, 25);
     textdisp5->buffer(textbuff5);
     textdisp5->color(GUI_BACKGROUND_COLOR);
-    output_job_browser   = new Fl_Select_Browser(XJOBCOL3,  GUIHEIGHT_EXT_START2 + 25 + JOBHALFHEIGHT + 25, JOBCOLWIDTH, JOBHALFHEIGHT);
+    output_job_browser = new Fl_Select_Browser(XJOBCOL3,  GUIHEIGHT_EXT_START2 + 25 + JOBHALFHEIGHT + 25, JOBCOLWIDTH, JOBHALFHEIGHT);
     output_job_browser->callback(cb_select_output_job, this);
     output_job_browser->textsize(RLN_FONTSIZE - 1);
 
@@ -587,7 +572,7 @@ GuiMainWindow::GuiMainWindow(
     scheduler_abort_button->color(GUI_RUNBUTTON_COLOR);
     scheduler_abort_button->callback(cb_scheduler_abort, this);
 
-    //scheduler_grp->end();
+    // scheduler_grp->end();
 
     scheduler_job_name = new Fl_Input(GUIWIDTH - 550, h - 83, 150, 25, "Name:");
     scheduler_job_name->color(GUI_INPUT_COLOR);
@@ -599,7 +584,7 @@ GuiMainWindow::GuiMainWindow(
     add_job_button->callback(cb_scheduler_add_job, this);
 
     // Select one of three modes for adding a new job
-    scheduler_job_mode  = new Fl_Choice(GUIWIDTH - 400 , h - 83, 80, 25);
+    scheduler_job_mode = new Fl_Choice(GUIWIDTH - 400 , h - 83, 80, 25);
     scheduler_job_mode->label("");
     scheduler_job_mode->color(GUI_BUTTON_COLOR);
     scheduler_job_mode->textsize(12);
@@ -642,7 +627,7 @@ GuiMainWindow::GuiMainWindow(
     set_scheduler_variable_button->labelsize(RLN_FONTSIZE);
     set_scheduler_variable_button->label("Set");
     set_scheduler_variable_button->callback(cb_set_scheduler_variable, this);
-    scheduler_variable_browser  = new Fl_Hold_Browser(XJOBCOL1, GUIHEIGHT_EXT_START + height_var + 44, JOBCOLWIDTH, 182);
+    scheduler_variable_browser = new Fl_Hold_Browser(XJOBCOL1, GUIHEIGHT_EXT_START + height_var + 44, JOBCOLWIDTH, 182);
     scheduler_variable_browser->callback(cb_select_scheduler_variable, this);
     scheduler_variable_browser->textsize(RLN_FONTSIZE - 2);
     scheduler_variable_browser->end();
@@ -682,7 +667,7 @@ GuiMainWindow::GuiMainWindow(
     add_scheduler_operator_button->labelsize(RLN_FONTSIZE);
     add_scheduler_operator_button->label("Add");
     add_scheduler_operator_button->callback(cb_add_scheduler_operator, this);
-    scheduler_operator_browser  = new Fl_Hold_Browser(XJOBCOL2, GUIHEIGHT_EXT_START + height_var + 65, JOBCOLWIDTH, 161);
+    scheduler_operator_browser = new Fl_Hold_Browser(XJOBCOL2, GUIHEIGHT_EXT_START + height_var + 65, JOBCOLWIDTH, 161);
     scheduler_operator_browser->callback(cb_select_scheduler_operator, this);
     scheduler_operator_browser->textsize(RLN_FONTSIZE - 2);
     scheduler_operator_browser->end();
@@ -711,7 +696,7 @@ GuiMainWindow::GuiMainWindow(
     textdisp4s->buffer(textbuff4s);
     textdisp4s->textsize(12);
     textdisp4s->color(GUI_BACKGROUND_COLOR);
-    scheduler_input_job_browser     = new Fl_Hold_Browser(XJOBCOL2, GUIHEIGHT_EXT - 160 + 24, JOBCOLWIDTH, 50);
+    scheduler_input_job_browser = new Fl_Hold_Browser(XJOBCOL2, GUIHEIGHT_EXT - 160 + 24, JOBCOLWIDTH, 50);
     scheduler_input_job_browser->callback(cb_select_input_job, this);
     scheduler_input_job_browser->textsize(RLN_FONTSIZE - 1);
 
@@ -721,7 +706,7 @@ GuiMainWindow::GuiMainWindow(
     textdisp5s->buffer(textbuff5s);
     textdisp5s->textsize(12);
     textdisp5s->color(GUI_BACKGROUND_COLOR);
-    scheduler_output_job_browser    = new Fl_Hold_Browser(XJOBCOL2, GUIHEIGHT_EXT - 160 + 100, JOBCOLWIDTH, 50);
+    scheduler_output_job_browser = new Fl_Hold_Browser(XJOBCOL2, GUIHEIGHT_EXT - 160 + 100, JOBCOLWIDTH, 50);
     scheduler_output_job_browser->callback(cb_select_output_job, this);
     scheduler_output_job_browser->textsize(RLN_FONTSIZE - 1);
 
@@ -759,7 +744,7 @@ GuiMainWindow::GuiMainWindow(
     add_scheduler_edge_button->labelsize(RLN_FONTSIZE);
     add_scheduler_edge_button->label("Add");
     add_scheduler_edge_button->callback(cb_add_scheduler_edge, this);
-    scheduler_edge_browser  = new Fl_Hold_Browser(XJOBCOL3, GUIHEIGHT_EXT_START + height_var + 65, JOBCOLWIDTH, 320);
+    scheduler_edge_browser = new Fl_Hold_Browser(XJOBCOL3, GUIHEIGHT_EXT_START + height_var + 65, JOBCOLWIDTH, 320);
     scheduler_edge_browser->callback(cb_select_scheduler_edge, this);
     scheduler_edge_browser->textsize(RLN_FONTSIZE - 2);
     scheduler_edge_browser->end();
@@ -819,7 +804,7 @@ GuiMainWindow::GuiMainWindow(
     cb_show_initial_screen_i();
 
     // Set and activate current selection from side-browser
-    cb_select_browsegroup_i(true); // make default active; true is used to show_initial_screen
+    cb_select_browsegroup_i(true);  // make default active; true is used to show_initial_screen
     is_main_continue = false;      // default is a new run
 }
 
@@ -1280,7 +1265,7 @@ void GuiMainWindow::loadJobFromPipeline(int this_job) {
 
     // Set the alias in the window
     alias_current_job->value((getJobNameForDisplay(pipeline.processList[current_job])).c_str());
-    alias_current_job->position(0); //left-centered text in box
+    alias_current_job->position(0);  //left-centered text in box
 
     // Update all job lists in the main GUI
     updateJobLists();
@@ -1338,7 +1323,7 @@ void GuiMainWindow::cb_select_browsegroup_i(bool show_initial_screen) {
     scheduler_job_name->value("");
     scheduler_job_name->activate();
     scheduler_job_has_started->deactivate();
-    scheduler_job_has_started->picked(&job_has_started_options[1]); // initialise to has_not_started
+    scheduler_job_has_started->picked(&job_has_started_options[1]);  // initialise to has_not_started
 
     textbuff_stdout->text("stdout will go here; double-click this window to open stdout in a separate window");
     textbuff_stderr->text("stderr will go here; double-click this window to open stderr in a separate window");
@@ -1476,7 +1461,7 @@ void GuiMainWindow::cb_display_io_node_i() {
         FileName fn_job = ".gui_manualpick";
         bool iscont = false;
         if (exists(fn_job + "job.star") || exists(fn_job + "run.job")) {
-            manualpickjob.read(fn_job.c_str(), iscont, true); // true means do initialise
+            manualpickjob.read(fn_job.c_str(), iscont, true);  // true means do initialise
         } else {
             fl_message("ERROR: Save a Manual picking job parameter file (using the Save jobs settings option from the Jobs menu) before displaying coordinate files. ");
             return;
@@ -2028,13 +2013,13 @@ void GuiMainWindow::cb_run(Fl_Widget* o, void* v) {
     // Deactivate Run button to prevent the user from accidentally submitting many jobs
     run_button->deactivate();
     // Run the job
-    T->run(false, false); // 1st false means dont only_schedule, 2nd false means dont open the note editor window
+    T->run(false, false);  // 1st false means dont only_schedule, 2nd false means dont open the note editor window
 }
 
 // Run button callback functions
 void GuiMainWindow::cb_schedule(Fl_Widget* o, void* v) {
     GuiMainWindow *T = (GuiMainWindow*) v;
-    T->run(true, false); // 1st true means only_schedule, do not run, 2nd false means dont open the note editor window
+    T->run(true, false);  // 1st true means only_schedule, do not run, 2nd false means dont open the note editor window
 }
 
 void GuiMainWindow::run(bool only_schedule, bool do_open_edit) {
@@ -2674,7 +2659,7 @@ void GuiMainWindow::cb_toggle_schedule_i(bool do_pipeline, FileName fn_new_sched
             pipeline.name = fn_sched + "/schedule";
         } else {
             system(("mkdir -p " + fn_sched).c_str());
-            schedule.write(DONT_LOCK); // empty write
+            schedule.write(DONT_LOCK);  // empty write
         }
         fillStdOutAndErr();
     }
