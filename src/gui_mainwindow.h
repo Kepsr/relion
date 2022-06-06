@@ -171,6 +171,37 @@ static bool do_order_alphabetically;
 // The last time something changed
 static time_t time_last_change;
 
+/**
+ * If we give our GroupContext a name, 
+ * it will be destroyed at the end of the scope in which we declared it.
+ * @code
+ * {
+ *     GroupContext context (grp);  // grp->begin() called
+ *     do_something();
+ * }  // grp->end() called
+ * @endcode
+ *
+ * If we don't give our GroupContext a name, 
+ * it will be destroyed immediately.
+ * @code
+ * GroupContext (grp);  // grp->begin() and grp->end() called in succession
+ * @endcode
+ *
+ */
+struct GroupContext {
+
+    Fl_Group *&group;
+
+    GroupContext(Fl_Group *&group): group(group) {
+        group->begin();
+    }
+
+    ~GroupContext() {
+        group->end();
+    }
+
+};
+
 // Stdout and stderr display
 class StdOutDisplay: public Fl_Text_Display {
 
