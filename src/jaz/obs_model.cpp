@@ -75,7 +75,7 @@ void ObservationModel::loadSafely(
         oldMdt.read(filename);
 
         StarConverter::convert_3p0_particlesTo_3p1(oldMdt, particlesMdt, opticsMdt, mytablename, do_die_upon_error);
-        if (!do_die_upon_error && opticsMdt.numberOfObjects() == 0) return; // return an empty optics table if error was raised
+        if (!do_die_upon_error && opticsMdt.numberOfObjects() == 0) return;  // return an empty optics table if error was raised
 
         if (mytablename.empty() || mytablename == "discover") {
             if (particlesMdt.containsLabel(EMDL::IMAGE_NAME)) {
@@ -89,24 +89,18 @@ void ObservationModel::loadSafely(
     }
 
     obsModel = ObservationModel(opticsMdt, do_die_upon_error);
-    if (!do_die_upon_error && obsModel.opticsMdt.numberOfObjects() == 0) return; // return an empty optics table if error was raised
+    if (!do_die_upon_error && obsModel.opticsMdt.numberOfObjects() == 0) return;  // return an empty optics table if error was raised
 
     // make sure all optics groups are defined
 
     std::vector<int> undefinedOptGroups = obsModel.findUndefinedOptGroups(particlesMdt);
 
-    if (undefinedOptGroups.size() > 0) {
-        std::stringstream sts;
+    if (!undefinedOptGroups.empty()) {
+        std::vector<std::string> v;
+        for (int i : undefinedOptGroups)
+            v.push_back(std::to_string(i));
 
-        for (int i = 0; i < undefinedOptGroups.size(); i++) {
-            sts << undefinedOptGroups[i];
-
-            if (i < undefinedOptGroups.size() - 1) {
-                sts << ", ";
-            }
-        }
-
-        REPORT_ERROR("ERROR: The following optics groups were not defined in " + filename + ": " + sts.str());
+        REPORT_ERROR("ERROR: The following optics groups were not defined in " + filename + ": " + join(v, ", "));
     }
 
     // make sure the optics groups appear in the right order (and rename them if necessary)
@@ -648,13 +642,8 @@ void ObservationModel::setCtfPremultiplied(int og, bool val) {
 }
 
 std::string ObservationModel::getGroupName(int og) {
-    if (og < groupNames.size()) {
-        return groupNames[og];
-    } else {
-        std::stringstream sts;
-        sts << og + 1;
-        return sts.str();
-    }
+    if (og < groupNames.size()) return groupNames[og];
+    return std::to_string(og + 1);
 }
 
 bool ObservationModel::allPixelAndBoxSizesIdentical(const MetaDataTable &mdt) {
@@ -840,7 +829,7 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
             int i = 0;
             RFLOAT resol_inv_pixel = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL);
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmtf) {
-                direct::elem(mtf_resol, i) = resol_inv_pixel / originalAngpix[optGroup]; // resolution needs to be given in 1/Ang
+                direct::elem(mtf_resol, i) = resol_inv_pixel / originalAngpix[optGroup];  // resolution needs to be given in 1/Ang
                 direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
                 if (direct::elem(mtf_value, i) < 1e-10) {
                     std::cerr << " i= " << i <<  " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
@@ -861,9 +850,9 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
             for (int y = 0; y < s;  y++)
             for (int x = 0; x < sh; x++) {
                 const double xx = x / as;  // logical X-coordinate in 1/A
-                const double yy = y < sh ? y / as : (y - s) / as; // logical Y-coordinate in 1/A
+                const double yy = y < sh ? y / as : (y - s) / as;  // logical Y-coordinate in 1/A
 
-                RFLOAT res = sqrt(xx * xx + yy * yy); // get resolution in 1/Ang
+                RFLOAT res = sqrt(xx * xx + yy * yy);  // get resolution in 1/Ang
                 int i_0 = floor(res / res_per_elem);
                 RFLOAT mtf;
                 if (i_0 <= 0) {

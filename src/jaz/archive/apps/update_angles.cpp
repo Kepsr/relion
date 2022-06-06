@@ -224,9 +224,6 @@ int main(int argc, char *argv[]) {
     for (long g = g0; g <= gc; g++) {
         std::cout << "micrograph " << g << " / " << mdts.size() <<"\n";
 
-        std::stringstream stsg;
-        stsg << g;
-
         const int pc = mdts[g].numberOfObjects();
 
         std::vector<Image<Complex>> obsF = StackHelper::loadStackFS(

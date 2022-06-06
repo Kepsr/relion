@@ -178,9 +178,9 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
         std::stringstream Num2;
         if (img_select >= (int) dims.n) {
             // img_select starts from 0, while dims.n from 1
-            Num  << img_select + 1;
-            Num2 << dims.n;
-            REPORT_ERROR((std::string) "readMRC: Image number " + Num.str() + " exceeds stack size " + Num2.str() + " of image " + name);
+            std::string Num1str = std::to_string(img_select + 1);
+            std::string Num2str = std::to_string(dims.n);
+            REPORT_ERROR((std::string) "readMRC: Image number " + Num1str + " exceeds stack size " + Num2str + " of image " + name);
         }
     } else {
         replaceNsize = 0;

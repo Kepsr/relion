@@ -109,8 +109,6 @@ int AberrationPlot::_run()
 
 		for (long g = minMG; g <= gc; g++)
 		{
-			std::stringstream stsg;
-			stsg << g;
 
 			std::cout << "micrograph " << g << " / " << mdts.size() <<"\n";
 
@@ -204,8 +202,6 @@ int AberrationPlot::_run()
 
 			for (long g = minMG; g <= gc; g++)
 			{
-				std::stringstream stsg;
-				stsg << g;
 
 				std::cout << "micrograph " << g << " / " << mdts.size() <<"\n";
 

@@ -24,8 +24,10 @@ int main(int argc, char *argv[]) {
     const bool prescaled = true;
 
     TomoStack ts;
+    std::string binstr = std::to_string(bin);
 
     if (!prescaled) {
+
         ts = TomoStack(
             tomoFn, frameCount, tltFn,
             xfFn, aliFn,
@@ -34,24 +36,21 @@ int main(int argc, char *argv[]) {
 
         std::cout << "loading done.\n";
 
-        std::stringstream sts;
-        sts << bin;
-
         ts.downsample(bin);
-        ts.saveImages("frames/bin" + sts.str() + "_*.mrc");
+        ts.saveImages("frames/bin" + binstr + "_*.mrc");
 
         std::cout << "downsampling done.\n";
+
     } else {
-        std::stringstream sts;
-        sts << bin;
 
         ts = TomoStack(
-            "frames/bin" + sts.str() + "_*.mrc",
+            "frames/bin" + binstr + "_*.mrc",
             frameCount, tltFn, xfFn, aliFn,
             angpix * bin, 1.0 / bin
         );
 
         std::cout << "loading done.\n";
+
     }
 
     const int w = 400;

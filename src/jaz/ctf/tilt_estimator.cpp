@@ -144,11 +144,9 @@ void TiltEstimator::processMicrograph(
 
         std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
-        std::stringstream sts;
-        sts << (og + 1);
-
-        ComplexIO::write(xyAccSum(), outRoot + "_xyAcc_optics-group_" + sts.str(), ".mrc");
-        wAccSum.write(outRoot + "_wAcc_optics-group_" + sts.str() + ".mrc");
+        std::string ogstr = std::to_string(og + 1);
+        ComplexIO::write(xyAccSum(), outRoot + "_xyAcc_optics-group_" + ogstr, ".mrc");
+        wAccSum.write(outRoot + "_wAcc_optics-group_" + ogstr + ".mrc");
     }
 }
 
@@ -170,12 +168,10 @@ void TiltEstimator::parametricFit(
 
     #pragma omp parallel for num_threads(nr_omp_threads)
     for (int og = 0; og < ogc; og++) {
-        double Cs = obsModel->getSphericalAberration(og);
+        double Cs     = obsModel->getSphericalAberration(og);
         double lambda = obsModel->getWavelength(og);
 
-        std::stringstream sts;
-        sts << og + 1;
-        std::string ogstr = sts.str();
+        std::string ogstr = std::to_string(og + 1);
 
         Image<Complex> xyAccSum = Image<Complex>::zeros(sh[og], s[og]);
         Image<RFLOAT >  wAccSum = Image<RFLOAT >::zeros(sh[og], s[og]);
@@ -304,11 +300,10 @@ void TiltEstimator::parametricFit(
 
             FftwHelper::decenterUnflip2D(fit.data, fitFull.data);
 
-            std::stringstream sts;
-            sts << aberr_n_max;
+            std::string Nstr = std::to_string(aberr_n_max);
 
             ImageLog::write(fitFull,
-                outPath + "beamtilt_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + sts.str()
+                outPath + "beamtilt_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + Nstr
             );
 
             {
@@ -317,7 +312,7 @@ void TiltEstimator::parametricFit(
 
                 ImageLog::write(
                     residual,
-                    outPath + "beamtilt_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + sts.str() + "_residual"
+                    outPath + "beamtilt_delta-phase_lin-fit_optics-group_" + ogstr + "_N-" + Nstr + "_residual"
                 );
             }
 
@@ -330,14 +325,15 @@ void TiltEstimator::parametricFit(
 
             ImageLog::write(
                 fitFull,
-                outPath + "beamtilt_delta-phase_iter-fit_optics-group_" + ogstr + "_N-" + sts.str());
+                outPath + "beamtilt_delta-phase_iter-fit_optics-group_" + ogstr + "_N-" + Nstr
+            );
 
             imgs_for_eps.push_back(fitFull);
-            scales.push_back(1.);
-            labels.push_back("Asymm. fit (N=" + sts.str() + ") fit [-1, 1] " + obsModel->getGroupName(og));
+            scales.push_back(1.0);
+            labels.push_back("Asymm. fit (N=" + Nstr + ") fit [-1, 1] " + obsModel->getGroupName(og));
             imgs_for_eps.push_back(fitFull);
             scales.push_back(PI);
-            labels.push_back("Asymm. fit (N=" + sts.str() + ") fit [-pi, pi] " + obsModel->getGroupName(og));
+            labels.push_back("Asymm. fit (N=" + Nstr + ") fit [-pi, pi] " + obsModel->getGroupName(og));
 
             TiltHelper::extractTilt(Zernike_coeffs_opt, tilt_x, tilt_y, Cs, lambda);
 
@@ -349,7 +345,7 @@ void TiltEstimator::parametricFit(
             }
         }
 
-        FileName fn_root = outPath + "asymmetric_aberrations_optics-group_"+ ogstr;
+        FileName fn_root = outPath + "asymmetric_aberrations_optics-group_" + ogstr;
         ColorHelper::writeSignedToEPS(fn_root, 2, imgs_for_eps, scales, labels);
         fn_eps.push_back(fn_root + ".eps");
 
@@ -357,27 +353,20 @@ void TiltEstimator::parametricFit(
 }
 
 bool TiltEstimator::isFinished(const MetaDataTable &mdt) {
-    if (!ready) {
+    if (!ready)
         REPORT_ERROR("ERROR: TiltEstimator::isFinished: TiltEstimator not initialized.");
-    }
 
-    std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
+    const std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
+    std::vector<int> optics_groups = obsModel->getOptGroupsPresent_zeroBased(mdt);
 
-    bool allDone = true;
-    for (int og : obsModel->getOptGroupsPresent_zeroBased(mdt)) {
-        std::stringstream sts;
-        sts << og + 1;
-        std::string ogs = sts.str();
-
-        if (
-            !exists(outRoot + "_xyAcc_optics-group_" + ogs + "_real.mrc") ||
-            !exists(outRoot + "_xyAcc_optics-group_" + ogs + "_imag.mrc") ||
-            !exists(outRoot + "_wAcc_optics-group_"  + ogs + ".mrc")
-        ) {
-            allDone = false;
-            break;
+    // Return true iff all optics groups have been dealt with
+    return std::all_of(
+        optics_groups.begin(), optics_groups.end(),
+        [&outRoot] (int og) {
+            std::string ogstr = std::to_string(og + 1);
+            return exists(outRoot + "_xyAcc_optics-group_" + ogstr + "_real.mrc") &&
+                   exists(outRoot + "_xyAcc_optics-group_" + ogstr + "_imag.mrc") &&
+                   exists(outRoot + "_wAcc_optics-group_"  + ogstr + ".mrc");
         }
-    }
-
-    return allDone;
+    );
 }

@@ -104,8 +104,8 @@ void JobWindow::setupRunTab() {
     GroupContext (queue_group = new Fl_Group(WCOL0, MENUHEIGHT, 550, 600 - MENUHEIGHT, ""));
 
     place("do_queue", TOGGLE_LEAVE_ACTIVE, queue_group);
-
-    queue_group->begin();
+    {
+    GroupContext context (queue_group);
 
     place("queuename");
 
@@ -114,12 +114,9 @@ void JobWindow::setupRunTab() {
     char *extra_count_text = getenv("RELION_QSUB_EXTRA_COUNT");
     const char extra_count_val = extra_count_text ? atoi(extra_count_text) : 2;
     for (int i = 1; i <= extra_count_val; i++) {
-        std::stringstream out;
-        out << i;
-        const std::string i_str = out.str();
-        if (myjob.joboptions.find(std::string("qsub_extra") + i_str) != myjob.joboptions.end()) {
-            place(std::string("qsub_extra")+i_str);
-        }
+        const std::string fn = "qsub_extra" + std::to_string(i);
+        if (myjob.joboptions.find(fn) != myjob.joboptions.end())
+            place(fn);
     }
 
     place("qsubscript");
@@ -127,7 +124,7 @@ void JobWindow::setupRunTab() {
     place("min_dedicated");
     guientries["min_dedicated"].deactivate(!do_allow_change_minimum_dedicated);
 
-    queue_group->end();
+    }
     guientries["do_queue"].cb_menu_i();  // This is to make the default effective
 
     // Add a little spacer
