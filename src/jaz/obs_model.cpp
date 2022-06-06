@@ -652,8 +652,6 @@ bool ObservationModel::allPixelAndBoxSizesIdentical(const MetaDataTable &mdt) {
     int boxSize0 = getBoxSize(og0);
     double angpix0 = getPixelSize(og0);
 
-    bool allGood = true;
-
     const int pc = mdt.numberOfObjects();
 
     for (int p = 1; p < pc; p++) {
@@ -664,13 +662,12 @@ bool ObservationModel::allPixelAndBoxSizesIdentical(const MetaDataTable &mdt) {
             double angpix = getPixelSize(og);
 
             if (boxSize != boxSize0 || angpix != angpix0) {
-                allGood = false;
-                break;
+                return false;
             }
         }
     }
 
-    return allGood;
+    return true;
 }
 
 bool ObservationModel::containsGroup(const MetaDataTable &mdt, int group) {

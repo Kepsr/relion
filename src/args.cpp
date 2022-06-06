@@ -70,19 +70,17 @@ std::string getParameter(
     if (0 < found_at && found_at < argc - 1) {
         return argv[found_at + 1];
     } else {
-        if (option != "NULL") {
-            return (std::string)option;
-        } else {
+        if (option == "NULL")
             REPORT_ERROR((std::string)"Argument " + param + " not found or invalid argument");
-        }
+
+        return (std::string) option;
     }
 }
 
-// Check if a boolean parameter was included the command line =============
+// Check if a parameter was included the command line =============
 bool checkParameter(int argc, char **argv, std::string param) {
     int i = 0;
-    while ((i < argc) && (strcmp(param.c_str(), argv[i]) != 0))
-        i++;
+    for (; i < argc && strcmp(param.c_str(), argv[i]) != 0; ++i) {}
     return i < argc;
 }
 
@@ -96,7 +94,7 @@ IOParser::IOParser(const IOParser &in) {
 
 IOParser& IOParser::operator= (const IOParser &in) {
     copy(in);
-    return (*this);
+    return *this;
 }
 
 IOParser::~IOParser() {
@@ -119,7 +117,7 @@ void IOParser::copy(const IOParser &in) {
 
 void IOParser::clear() {
     argc = 0;
-    argv = NULL;
+    argv = nullptr;
     options.clear();
     usages.clear();
     optionals.clear();
@@ -131,9 +129,9 @@ void IOParser::clear() {
     current_section = 0;
 }
 
-void IOParser::setCommandLine(int _argc, char **_argv) {
-    argc = _argc;
-    argv = _argv;
+void IOParser::setCommandLine(int argc, char **argv) {
+    this->argc = argc;
+    this->argv = argv;
 
     // Print version of software and exit
     if (checkParameter(argc, argv, "--version")) {
@@ -152,7 +150,7 @@ void IOParser::addOption(
     if (hidden) {
         hiddenOptions.push_back(option);
     } else {
-        if (section_names.size() == 0)
+        if (section_names.empty())
             REPORT_ERROR("IOParser::addOption: ERROR First add a section to the parser, then the options!");
         options.push_back(option);
         usages.push_back(usage);
@@ -178,15 +176,9 @@ void IOParser::setSection(int number) {
     current_section = number;
 }
 
-bool element(std::string option, std::vector<std::string> options) {
-    for (int i = 0; i < options.size(); i++)
-        if (strcmp(options[i].c_str(), option.c_str()) == 0)
-            return true;
-    return false;
-}
-
 bool IOParser::optionExists(std::string option) {
-    return element(option, options) || element(option, hiddenOptions);
+    return std::find(options.begin(), options.end(), option) != options.end() || 
+           std::find(hiddenOptions.begin(), hiddenOptions.end(), option) != hiddenOptions.end();
 }
 
 std::string IOParser::getOption(
@@ -200,12 +192,11 @@ std::string IOParser::getOption(
     if (0 < found_at && found_at < argc - 1) {
         return argv[found_at + 1];
     } else {
-        if (defaultvalue != "NULL") {
-            return (std::string)defaultvalue;
-        } else {
-            error_messages.push_back((std::string)"ERROR: Argument " + option + " not found or invalid argument");
+        if (defaultvalue == "NULL") {
+            error_messages.push_back((std::string) "ERROR: Argument " + option + " not found or invalid argument");
             return "";
         }
+        return defaultvalue;
     }
 }
 
@@ -224,7 +215,6 @@ void IOParser::writeCommandLine(std::ostream &out) {
     for (int i = 1; i < argc; i++)
         out << argv[i] << " ";
     out << std::endl;
-
 }
 
 bool IOParser::checkForErrors(int verb) {
@@ -235,7 +225,7 @@ bool IOParser::checkForErrors(int verb) {
     }
     if (
         argc == 1
-        || (argc == 2 && checkParameter(argc, argv, "--continue"))
+        || argc == 2 && checkParameter(argc, argv, "--continue")
         || checkParameter(argc, argv, "--help")
         || checkParameter(argc, argv, "-h")
     ) {
@@ -247,43 +237,42 @@ bool IOParser::checkForErrors(int verb) {
     checkForUnknownArguments();
 
     // First print warning messages
-    if (warning_messages.size() > 0)
+    if (!warning_messages.empty())
         if (verb > 0) {
             std::cerr << "The following warnings were encountered upon command-line parsing: " << std::endl;
-            for (unsigned int i = 0; i < warning_messages.size(); ++i)
-                std::cerr << warning_messages[i] << std::endl;
+            for (const std::string &wrnmsg : warning_messages)
+                std::cerr << wrnmsg << std::endl;
         }
 
     // Then check for error messages
-    if (error_messages.size() > 0) {
+    if (!error_messages.empty()) {
         if (verb > 0) {
             std::cerr << "The following errors were encountered upon command-line parsing: " << std::endl;
-            for (unsigned int i = 0; i < error_messages.size(); ++i)
-                std::cerr << error_messages[i] << std::endl;
+            for (const std::string &errmsg : error_messages)
+                std::cerr << errmsg << std::endl;
         }
         return true;
     }
     return false;
 }
 
-bool is_ok(IOParser parser, char** argv, int i) {
+bool is_ok(IOParser parser, char **argv, int i) {
     // Valid options should start with "--"
-    if (strncmp("--", argv[i], 2) == 0) {
+    if (strncmp("--", argv[i], 2) == 0)
         return parser.optionExists((std::string) argv[i]) || strncmp("--pipeline_control", argv[i], 18) == 0;
-    } else if (strncmp("-", argv[i], 1) == 0) {
+    if (strncmp("-", argv[i], 1) == 0) {
         // If argv[i] starts with one "-", it must be a number and argv[i - 1] must be a valid option.
         float testval;
         return sscanf(argv[i], "%f", &testval) && parser.optionExists(argv[i - 1]);
-    } else {
-        return true;
     }
+        return true;
 }
 
 void IOParser::checkForUnknownArguments() {
     for (int i = 1; i < argc; i++)
         if (!is_ok(*this, argv, i))
             warning_messages.push_back(
-                (std::string)"WARNING: Option " + argv[i] + "\tis not a valid RELION argument"
+                (std::string) "WARNING: Option " + argv[i] + "\tis not a valid RELION argument"
             );
 }
 

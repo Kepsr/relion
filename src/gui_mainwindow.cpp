@@ -2619,7 +2619,7 @@ void GuiMainWindow::cb_copy_schedule(Fl_Widget* o, void* v) {
         "%s", "", std::string(" Name of the copy schedule: ").c_str()
     ));
 
-    if (fn_copy.length() == 0) return;
+    if (fn_copy.empty()) return;
 
     schedule.copy("Schedules/" + fn_copy);
     T->cb_toggle_schedule_i(false, fn_copy);
@@ -2678,7 +2678,6 @@ void GuiMainWindow::cb_toggle_schedule_i(bool do_pipeline, FileName fn_new_sched
 }
 
 void GuiMainWindow::cb_start_pipeliner(Fl_Widget* o, void* v) {
-    // GuiMainWindow *T = (GuiMainWindow*) v;
     // GuiMainWindow *T = (GuiMainWindow*) v;
     std::vector<FileName> job_names;
 
