@@ -635,32 +635,36 @@ void MetaDataTable::append(const MetaDataTable& mdt) {
 
 
 MetaDataContainer* MetaDataTable::getObject(long objectID) const {
-    if (objectID < 0) {
-        objectID = current_objectID;
-    }
+    if (objectID < 0) { objectID = current_objectID; }
 
-    checkObjectID(objectID, "MetaDataTable::getObject");
+    try { checkObjectID(objectID); }
+    catch (const std::string &errmsg) { 
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    }
 
     return objects[objectID];
 }
 
 void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
-    if (objectID < 0) {
-        objectID = current_objectID;
+    if (objectID < 0) { objectID = current_objectID; }
+
+    try { checkObjectID(objectID); }
+    catch (const std::string &errmsg) { 
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
     }
 
-    checkObjectID(objectID, "MetaDataTable::setObject");
     addMissingLabels(data->table);
 
     setObjectUnsafe(data, objectID);
 }
 
 void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long objectID) {
-    if (objectID < 0) {
-        objectID = current_objectID;
-    }
+    if (objectID < 0) { objectID = current_objectID; }
 
-    checkObjectID(objectID, "MetaDataTable::setValuesOfDefinedLabels");
+    try { checkObjectID(objectID); }
+    catch (const std::string &errmsg) { 
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    }
 
     setObjectUnsafe(data, objectID);
 }
@@ -748,7 +752,10 @@ void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
 void MetaDataTable::removeObject(long objectID) {
     long i = objectID < 0 ? current_objectID : objectID;
 
-    checkObjectID(i, "MetaDataTable::removeObject");
+    try { checkObjectID(i); }
+    catch (const std::string &errmsg) { 
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    }
 
     delete objects[i];
     objects.erase(objects.begin() + i);
@@ -772,7 +779,10 @@ long int MetaDataTable::nextObject() {
 }
 
 long int MetaDataTable::goToObject(long int objectID) {
-    checkObjectID(objectID, "MetaDataTable::goToObject");
+    try { checkObjectID(objectID); }
+    catch (const std::string &errmsg) { 
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    }
 
     current_objectID = objectID;
     return current_objectID;
@@ -1322,15 +1332,9 @@ void MetaDataTable::randomiseOrder() {
     std::random_shuffle(objects.begin(), objects.end());
 }
 
-void MetaDataTable::checkObjectID(long id, std::string caller) const {
-    if (id >= objects.size() || id < 0) {
-        std::stringstream sts0, sts1;
-        sts0 << id;
-        sts1 << objects.size();
-        REPORT_ERROR(
-            caller + ": object " + sts0.str() + " out of bounds! (" + sts1.str() + " objects present)"
-        );
-    }
+void MetaDataTable::checkObjectID(long id) const throw (std::string) {
+    if (id >= objects.size() || id < 0)
+        throw "object " + std::to_string(id) + " out of bounds! (" + std::to_string(objects.size()) + " objects present)";
 }
 
 //FIXME: does not support unknownLabels but this function is only used by relion_star_handler

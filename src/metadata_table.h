@@ -338,8 +338,8 @@ class MetaDataTable {
     private:
 
     // Check if 'id' corresponds to an actual object.
-    // Crash if it does not.
-    void checkObjectID(long id, std::string caller) const;
+    // Throw if it does not.
+    void checkObjectID(long id) const throw (std::string);
 
     /* setObjectUnsafe(data)
      *  Same as setObject, but assumes that all labels are present. */
@@ -428,7 +428,10 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
         if (objectID < 0) {
             objectID = current_objectID;
         } else {
-            checkObjectID(objectID, "MetaDataTable::getValue");
+            try { checkObjectID(objectID); }
+            catch (const std::string &errmsg) {
+                REPORT_ERROR((std::string) __func__ + ": " + errmsg);
+            }
         }
 
         objects[objectID]->getValue(off, value);
@@ -461,7 +464,10 @@ bool MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int obje
     if (objectID < 0) {
         objectID = current_objectID;
     } else {
-        checkObjectID(objectID, "MetaDataTable::setValue");
+        try { checkObjectID(objectID); }
+        catch (const std::string &errmsg) {
+            REPORT_ERROR((std::string) __func__ + ": " + errmsg);
+        }
     }
 
     if (off <= -1) return false;

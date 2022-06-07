@@ -697,7 +697,7 @@ class star_handler_parameters {
                 }
             } else if (EMDL::isBool(label1)) {
                 REPORT_ERROR("ERROR: cannot operate on a boolean!");
-            } else if (EMDL::isBool(label1)) {
+            } else if (EMDL::isBool(label1)) {  // What?
                 // @TODO:
                 REPORT_ERROR("ERROR: cannot operate on vectors (yet)!");
             }
