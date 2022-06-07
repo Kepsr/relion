@@ -227,7 +227,7 @@ int basisViewerWindow::fillCanvas(
 
     // Pre-set the canvas to the correct size
     MDin.firstObject();
-    FileName fn_img = MDin.getValue<FileName>(display_label);
+    FileName fn_img = MDin.getValue<std::string>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img, false);
     int nimgs = MDin.numberOfObjects();
@@ -388,12 +388,12 @@ void basisViewerCanvas::fill(
     boxes.resize(number_of_images);
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
         // Read in image stacks as a whole, i.e. don't re-open and close stack for every individual image to save speed
-        fn_img = MDin.getValue<FileName>(display_label, ipos);
+        fn_img = MDin.getValue<std::string>(display_label, ipos);
         fn_img.decompose(my_number, fn_my_stack);
 
         // See whether the next image has the same stackname....
         if (ipos + 1 < number_of_images) {
-            fn_tmp = MDin.getValue<FileName>(display_label, ipos + 1);
+            fn_tmp = MDin.getValue<std::string>(display_label, ipos + 1);
             fn_tmp.decompose(my_next_number, fn_next_stack);
         } else {
             fn_next_stack = "";
@@ -892,7 +892,7 @@ void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
 
 void multiViewerCanvas::showOriginalImage(int ipos) {
     // Make system call because otherwise the green drawing for distance measurements doesn't work....
-    FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label);
 
     std::string cl = "relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale);
     cl += " --sigma_contrast " + floatToString(sigma_contrast);
@@ -917,7 +917,7 @@ void multiViewerCanvas::showOriginalImage(int ipos) {
     system(cl.c_str());
 
     /*
-    FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img);
     basisViewerWindow win(ceil(ori_scale*Xsize(img())), ceil(ori_scale*Ysize(img())), fn_img.c_str());
@@ -973,7 +973,7 @@ void basisViewerCanvas::saveImage(int ipos) {
 
 void multiViewerCanvas::showFourierAmplitudes(int ipos) {
     // Make system call because otherwise the green drawing for distance measurements doesn't work....
-    FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img, false);
     if (Zsize(img()) > 1 || Nsize(img()) > 1) {
@@ -993,7 +993,7 @@ void multiViewerCanvas::showFourierAmplitudes(int ipos) {
 
 void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
     // Make system call because otherwise the green drawing for distance measurements doesn't work....
-    FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img, false);
     if (Zsize(img()) > 1 || Nsize(img()) > 1) {
@@ -1015,7 +1015,7 @@ void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
 
     std::string mydefault = std::string(default_pdf_viewer);
 
-    FileName fn_img = boxes[ipos]->MDimg.getValue<FileName>(display_label);
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img);
 
@@ -1238,7 +1238,7 @@ void multiViewerCanvas::saveTrainingSet() {
     // Copy all images
     FileName fn_img, fn_old = "";
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
-        fn_img = MDout.getValue<FileName>(display_label);
+        fn_img = MDout.getValue<std::string>(display_label);
         long int nr;
         fn_img.decompose(nr, fn_img);
         FileName fn_new_img;
@@ -1306,7 +1306,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
             long int nr_images = MDout.numberOfObjects();
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
                 i++;
-                FileName fn_img = MDout.getValue<FileName>(EMDL::MLMODEL_REF_IMAGE);
+                FileName fn_img = MDout.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
                 img.read(fn_img);
                 selfTranslateCenterOfMassToCenter(img());
                 FileName fn_out;
@@ -1774,10 +1774,10 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
     }
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcolor) {
-        FileName _fn_mic = MDcolor.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        FileName _fn_mic = MDcolor.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (fn_mic == _fn_mic) {
             // Get the imagename
-            FileName _fn_img = MDcolor.getValue<FileName>(EMDL::IMAGE_NAME);
+            FileName _fn_img = MDcolor.getValue<std::string>(EMDL::IMAGE_NAME);
             long int iimg;
             std::string dum;
             _fn_img.decompose(iimg, dum);

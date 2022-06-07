@@ -20,8 +20,7 @@
 #include "src/metadata_container.h"
 
 MetaDataContainer::MetaDataContainer()
-    :   doubles(0), ints(0), bools(0), strings(0), doubleVectors(0), unknowns(0)
-{}
+    :   doubles(0), ints(0), bools(0), strings(0), doubleVectors(0), unknowns(0) {}
 
 
 MetaDataContainer::MetaDataContainer(
@@ -33,8 +32,7 @@ MetaDataContainer::MetaDataContainer(
   bools(boolCount, false),
   strings(stringCount, ""),
   doubleVectors(doubleVectorCount),
-  unknowns(unknownCount)
-{}
+  unknowns(unknownCount) {}
 
 MetaDataContainer::MetaDataContainer(
         MetaDataTable *table, MetaDataContainer* mdc)
@@ -44,87 +42,79 @@ MetaDataContainer::MetaDataContainer(
   bools(mdc->bools),
   strings(mdc->strings),
   doubleVectors(mdc->doubleVectors),
-  unknowns(mdc->unknowns)
-{}
+  unknowns(mdc->unknowns) {}
 
-void MetaDataContainer::getValue(long offset, double& dest) const
-{
-    dest = doubles[offset];
+template <>
+double MetaDataContainer::getValue(long offset) const {
+    return doubles[offset];
 }
 
-void MetaDataContainer::getValue(long offset, float& dest) const
-{
-    dest = (float)doubles[offset];
+template <>
+float MetaDataContainer::getValue(long offset) const {
+    return (float) doubles[offset];
 }
 
-void MetaDataContainer::getValue(long offset, int& dest) const
-{
-    dest = (int)ints[offset];
+template <>
+int MetaDataContainer::getValue(long offset) const {
+    return (int) ints[offset];
 }
 
-void MetaDataContainer::getValue(long offset, long& dest) const
-{
-    dest = ints[offset];
+template <>
+long MetaDataContainer::getValue(long offset) const {
+    return ints[offset];
 }
 
-void MetaDataContainer::getValue(long offset, bool& dest) const
-{
-    dest = bools[offset];
+template <>
+bool MetaDataContainer::getValue(long offset) const {
+    return bools[offset];
 }
 
-void MetaDataContainer::getValue(long offset, std::vector<double>& dest) const
-{
-	dest = doubleVectors[offset];
+template <>
+std::vector<double> MetaDataContainer::getValue(long offset) const {
+	return doubleVectors[offset];
 }
 
-void MetaDataContainer::getValue(long offset, std::vector<float>& dest) const
-{
-	dest.resize(doubleVectors[offset].size());
-	std::copy(doubleVectors[offset].begin(), doubleVectors[offset].end(), dest.begin());
+template <>
+std::vector<float> MetaDataContainer::getValue(long offset) const {
+    std::vector<float> result (doubleVectors[offset].size());
+	std::copy(doubleVectors[offset].begin(), doubleVectors[offset].end(), result.begin());
+    return result;
 }
 
-void MetaDataContainer::getValue(long offset, std::string& dest) const
-{
-	dest = (strings[offset] == "\"\"") ? "" : strings[offset];
+template <>
+std::string MetaDataContainer::getValue(long offset) const {
+	return strings[offset] == "\"\"" ? "" : strings[offset];
 }
 
-void MetaDataContainer::setValue(long offset, const double& src)
-{
+void MetaDataContainer::setValue(long offset, double src) {
     doubles[offset] = src;
 }
 
-void MetaDataContainer::setValue(long offset, const float& src)
-{
+void MetaDataContainer::setValue(long offset, float src) {
     doubles[offset] = src;
 }
 
-void MetaDataContainer::setValue(long offset, const int& src)
-{
+void MetaDataContainer::setValue(long offset, int src) {
     ints[offset] = src;
 }
 
-void MetaDataContainer::setValue(long offset, const long& src)
-{
+void MetaDataContainer::setValue(long offset, long src) {
     ints[offset] = src;
 }
 
-void MetaDataContainer::setValue(long offset, const bool& src)
-{
+void MetaDataContainer::setValue(long offset, bool src) {
     bools[offset] = src;
 }
 
-void MetaDataContainer::setValue(long offset, const std::string& src)
-{
-	strings[offset] = (src.length() == 0) ? "\"\"" : src;
+void MetaDataContainer::setValue(long offset, const std::string &src) {
+	strings[offset] = src.empty() ? "\"\"" : src;
 }
 
-void MetaDataContainer::setValue(long offset, const std::vector<double>& src)
-{
+void MetaDataContainer::setValue(long offset, const std::vector<double> &src) {
 	doubleVectors[offset] = src;
 }
 
-void MetaDataContainer::setValue(long offset, const std::vector<float>& src)
-{
+void MetaDataContainer::setValue(long offset, const std::vector<float> &src) {
 	doubleVectors[offset].resize(src.size());
 	std::copy(src.begin(), src.end(), doubleVectors[offset].begin());
 }

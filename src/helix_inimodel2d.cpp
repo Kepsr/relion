@@ -124,9 +124,9 @@ void HelixAligner::initialise() {
         FileName fn_img;
         Image<RFLOAT> img;
         if (MD.containsLabel(EMDL::IMAGE_NAME)) {
-            fn_img = MD.getValue<FileName>(EMDL::IMAGE_NAME);
+            fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         } else if (MD.containsLabel(EMDL::MLMODEL_REF_IMAGE)) {
-            fn_img = MD.getValue<FileName>(EMDL::MLMODEL_REF_IMAGE);
+            fn_img = MD.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
         } else {
             REPORT_ERROR("ERROR: input STAR file does not contain rlnImageName or rlnReferenceImage!");
         }
@@ -163,7 +163,7 @@ void HelixAligner::initialise() {
 
         // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
-            FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+            FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             FileName fn_pre, fn_jobnr, fn_post;
             decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
             FileName fn_coord = fn_coord_dir + fn_post.withoutExtension() + fn_coord_suffix;
@@ -278,9 +278,9 @@ void HelixAligner::readImages() {
         FileName fn_img;
         Image<RFLOAT> img;
         if (MD.containsLabel(EMDL::IMAGE_NAME)) {
-            fn_img = MD.getValue<FileName>(EMDL::IMAGE_NAME);
+            fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         } else if (MD.containsLabel(EMDL::MLMODEL_REF_IMAGE)) {
-            fn_img = MD.getValue<FileName>(EMDL::MLMODEL_REF_IMAGE);
+            fn_img = MD.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
         } else {
             REPORT_ERROR("ERROR: input STAR file does not contain rlnImageName or rlnReferenceImage!");
         }
@@ -363,7 +363,7 @@ void HelixAligner::getHelicesFromMics() {
     long int imic = 0;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
         imic++;
-        FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
         FileName fn_coord = fn_coord_dir + fn_post.withoutExtension() + fn_coord_suffix;

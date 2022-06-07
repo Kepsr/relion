@@ -222,7 +222,7 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID,
             double v = getValue<double>(label, objectID);
 
             if (abs(v) > 0.0 && abs(v) < 0.001 || abs(v) > 100000.0) {
-                // If the magnitude of v is very small or very large, 
+                // If the magnitude of v is very small or very large,
                 // use floating-point form (6.02e-23).
                 snprintf(buffer, 13, v < 0.0 ? "%12.5e" : "%12.6e", v);
             } else {
@@ -638,8 +638,8 @@ MetaDataContainer* MetaDataTable::getObject(long objectID) const {
     if (objectID < 0) { objectID = current_objectID; }
 
     try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) { 
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    catch (const std::string &errmsg) {
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
 
     return objects[objectID];
@@ -649,8 +649,8 @@ void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
     if (objectID < 0) { objectID = current_objectID; }
 
     try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) { 
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    catch (const std::string &errmsg) {
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
 
     addMissingLabels(data->table);
@@ -662,8 +662,8 @@ void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long objec
     if (objectID < 0) { objectID = current_objectID; }
 
     try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) { 
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    catch (const std::string &errmsg) {
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
 
     setObjectUnsafe(data, objectID);
@@ -753,8 +753,8 @@ void MetaDataTable::removeObject(long objectID) {
     long i = objectID < 0 ? current_objectID : objectID;
 
     try { checkObjectID(i); }
-    catch (const std::string &errmsg) { 
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    catch (const std::string &errmsg) {
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
 
     delete objects[i];
@@ -780,8 +780,8 @@ long int MetaDataTable::nextObject() {
 
 long int MetaDataTable::goToObject(long int objectID) {
     try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) { 
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg); 
+    catch (const std::string &errmsg) {
+        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
 
     current_objectID = objectID;
@@ -1287,11 +1287,9 @@ void MetaDataTable::addToCPlot2D(
         if (xaxis == EMDL::UNDEFINED) {
             xval = idx + 1;
         } else if (EMDL::isDouble(xaxis)) {
-            objects[idx]->getValue(offx, mydbl);
-            xval = mydbl;
+            xval = objects[idx]->getValue<double>(offx);
         } else if (EMDL::isInt(xaxis)) {
-            objects[idx]->getValue(offx, myint);
-            xval = myint;
+            xval = objects[idx]->getValue<int>(offx);
         } else
             REPORT_ERROR("MetaDataTable::addToCPlot2D ERROR: can only plot x-axis double, int or long int");
 
@@ -1300,11 +1298,9 @@ void MetaDataTable::addToCPlot2D(
             REPORT_ERROR("MetaDataTable::addToCPlot2D ERROR: cannot find y-axis label");
 
         if (EMDL::isDouble(yaxis)) {
-            objects[idx]->getValue(offy, mydbl);
-            yval = mydbl;
+            yval = objects[idx]->getValue<double>(offy);
         } else if (EMDL::isInt(yaxis)) {
-            objects[idx]->getValue(offy, myint);
-            yval = myint;
+            yval = objects[idx]->getValue<int>(offy);
         } else
             REPORT_ERROR("MetaDataTable::addToCPlot2D ERROR: can only plot y-axis double, int or long int");
 
@@ -1323,9 +1319,8 @@ void MetaDataTable::addToCPlot2D(
 }
 
 void MetaDataTable::printLabels(std::ostream &ost) {
-    for (int i = 0; i < activeLabels.size(); i++) {
-        ost << EMDL::label2Str(activeLabels[i]) << "\n";
-    }
+    for (EMDL::EMDLabel label : activeLabels)
+        ost << EMDL::label2Str(label) << "\n";
 }
 
 void MetaDataTable::randomiseOrder() {
@@ -1370,9 +1365,9 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
     MDonly1.clear();
     MDonly2.clear();
 
-    std::string mystr1, mystr2;
-    long int myint1, myint2;
-    double myd1, myd2, mydy1 = 0.0, mydy2 = 0.0, mydz1 = 0.0, mydz2 = 0.0;
+    std::string mystr1;
+    long int myint1;
+    double myd1, mydy1 = 0.0, mydz1 = 0.0;
 
     // loop over MD1
     std::vector<long int> to_remove_from_only2;
@@ -1402,15 +1397,15 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
             current_object2 = MD2.nextObject()
         ) {
             if (EMDL::isString(label1)) {
-                mystr2 = MD2.getValue<std::string>(label1);
-                if (strcmp(mystr1.c_str(), mystr2.c_str()) == 0) {
+                std::string mystr2 = MD2.getValue<std::string>(label1);
+                if (mystr1 == mystr2) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
                     MDboth.addObject(MD1.getObject());
                     break;
                 }
             } else if (EMDL::isInt(label1)) {
-                myint2 = MD2.getValue<int>(label1);
+                long int myint2 = MD2.getValue<int>(label1);
                 if (abs(myint2 - myint1) <= round(eps)) {
                     have_in_2 = true;
                     to_remove_from_only2.push_back(current_object2);
@@ -1418,11 +1413,11 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
                     break;
                 }
             } else if (EMDL::isDouble(label1)) {
-                myd2 = MD2.getValue<double>(label1);
-                if (label2 != EMDL::UNDEFINED)
-                mydy2 = MD2.getValue<double>(label2);
-                if (label3 != EMDL::UNDEFINED)
-                mydz2 = MD2.getValue<double>(label3);
+                double myd2 = MD2.getValue<double>(label1);
+                double mydy2 = label2 == EMDL::UNDEFINED ? 0.0 :
+                    MD2.getValue<double>(label2);
+                double mydz2 = label3 == EMDL::UNDEFINED ? 0.0 :
+                    MD2.getValue<double>(label3);
 
                 double dist = sqrt(
                     (myd1  - myd2)  * (myd1  - myd2)  +
@@ -1451,16 +1446,12 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
         current_object2 != MetaDataTable::NO_MORE_OBJECTS && current_object2 != MetaDataTable::NO_OBJECTS_STORED;
         current_object2 = MD2.nextObject()
     ) {
-
-        bool to_be_removed = false;
-        for (long int i = 0; i < to_remove_from_only2.size(); i++) {
-            if (to_remove_from_only2[i] == current_object2) {
-                to_be_removed = true;
-                break;
-            }
-        }
-        if (!to_be_removed) {
-            //std::cerr << " doNOT remove current_object2= " << current_object2 << std::endl;
+        // If there is no current_object2 in to_remove_from_only2
+        if (std::find(
+            to_remove_from_only2.begin(), to_remove_from_only2.end(),
+            current_object2
+        ) == to_remove_from_only2.end()) {
+            // std::cerr << " doNOT remove current_object2= " << current_object2 << std::endl;
             MDonly2.addObject(MD2.getObject(current_object2));
         }
     }

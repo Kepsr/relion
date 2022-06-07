@@ -149,10 +149,9 @@ void MotioncorrRunner::initialise() {
     if (do_motioncor2) {
         // Get the MOTIONCOR2 executable
         if (fn_motioncor2_exe.empty()) {
-            char * penv;
-            penv = getenv("RELION_MOTIONCOR2_EXECUTABLE");
-            if (penv!= NULL) {
-                fn_motioncor2_exe = (std::string)penv;
+            char *penv = getenv("RELION_MOTIONCOR2_EXECUTABLE");
+            if (penv) {
+                fn_motioncor2_exe = (std::string) penv;
             } else {
                 REPORT_ERROR("ERROR: You have to specify the path to MotionCor2 as --motioncor2_exe or the RELION_MOTIONCOR2_EXECUTABLE variable");
             }
@@ -211,7 +210,7 @@ void MotioncorrRunner::initialise() {
         fn_micrographs.clear();
         optics_group_micrographs.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            FileName fn_mic = MDin.getValue<FileName>(EMDL::MICROGRAPH_MOVIE_NAME);
+            FileName fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME);
             fn_micrographs.push_back(fn_mic);
 
             int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
@@ -1386,7 +1385,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
         if (n_obs <= n_params) {
             std::cerr << fn_mic << ": too few valid local trajectories to fit local motion model." << std::endl;
-            mic.model = NULL;
+            mic.model = nullptr;
             goto skip_fitting; // TODO: Refactor!
         }
 
@@ -1476,7 +1475,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             logfile << "The polynomial motion model did not explain the observation very well." << std::endl;
             logfile << "Local correction is disabled for this micrograph." << std::endl;
             delete mic.model;
-            mic.model = NULL;
+            mic.model = nullptr;
 
             // remove fitted trajectories
             for (int i = 0, ilim = mic.localFitX.size(); i < ilim; i++) {
@@ -1486,7 +1485,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         }
         }
     } else {
-        mic.model = NULL;
+        mic.model = nullptr;
     }
 
     skip_fitting:
@@ -1621,7 +1620,7 @@ void MotioncorrRunner::realSpaceInterpolation(
     std::ostream &logfile
 ) {
     int model_version = MOTION_MODEL_NULL;
-    if (model != NULL) {
+    if (model) {
         model_version = model->getModelVersion();
     }
 

@@ -277,7 +277,7 @@ class prepare_subtomo {
         // Check whether each tomogram sits in a separate folder
         fns_tomo.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
-            fn1 = MD_tomo.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+            fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             fns_tomo.push_back(fn1);
         }
         if (fns_tomo.size() < 1)
@@ -301,7 +301,7 @@ class prepare_subtomo {
         MD_tmp.clear();
         img.clear();
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
-            fn1 = MD_tomo.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+            fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             std::cout << " 3D reconstructed tomogram in STAR file: " << fn1 << std::flush;
 
             // Check 3D reconstructed tomogram
@@ -521,7 +521,7 @@ class prepare_subtomo {
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
             std::cout << std::endl;
 
-            FileName fn_tomo = MD_tomo.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+            FileName fn_tomo = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             std::cout << "#### Processing tomogram " << fn_tomo << " ... ####" << std::endl;
 
             FileName dir_ctf = fn_tomo.beforeLastOf("/") + "/Ctffind";

@@ -256,7 +256,7 @@ class star_handler_parameters {
         std::vector<RFLOAT> avgs, stddevs;
         long int ii = 0;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-            FileName fn_img = MDin.getValue<FileName>(EMDL::str2Label(discard_label));
+            FileName fn_img = MDin.getValue<std::string>(EMDL::str2Label(discard_label));
             Image<RFLOAT> img;
             img.read(fn_img);
             Stats<RFLOAT> stats = img().computeStats();
@@ -542,7 +542,7 @@ class star_handler_parameters {
             FileName fn_this, fn_prev = "";
             MetaDataTable MDsort;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
-                fn_this = MDout.getValue<FileName>(label);
+                fn_this = MDout.getValue<std::string>(label);
                 MDsort.addObject();
                 MDsort.setValue(label, fn_this);
             }
@@ -550,7 +550,7 @@ class star_handler_parameters {
             MDsort.newSort(label);
             long int nr_duplicates = 0;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsort) {
-                fn_this = MDsort.getValue<FileName>(label);
+                fn_this = MDsort.getValue<std::string>(label);
                 if (fn_this == fn_prev) {
                     nr_duplicates++;
                     std::cerr << " WARNING: duplicate entry: " << fn_this << std::endl;

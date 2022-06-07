@@ -135,7 +135,7 @@ void Reconstructor::initialise() {
         output_boxsize = ctf_dim;
     } else {
         (DF).firstObject();
-        fn_img = DF.getValue<FileName>(EMDL::IMAGE_NAME);
+        fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME);
 
         if (image_path != "") {
             fn_img = image_path + "/" + fn_img.substr(fn_img.find_last_of("/") + 1);
@@ -355,7 +355,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     Image<RFLOAT> img;
 
     if (!do_reconstruct_ctf && fn_noise == "") {
-        fn_img = DF.getValue<FileName>(EMDL::IMAGE_NAME, p);
+        fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME, p);
         img.read(fn_img);
         img().setXmippOrigin();
         transformer.FourierTransform(img(), F2D);
@@ -377,9 +377,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
         // TODO: Refactor code duplication from relion_project!
         FileName fn_group;
         if (DF.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-            fn_group = DF.getValue<FileName>(EMDL::MLMODEL_GROUP_NAME);
+            fn_group = DF.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME);
         } else if (DF.containsLabel(EMDL::MICROGRAPH_NAME)) {
-            fn_group = DF.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+            fn_group = DF.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         } else {
             REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --i file...");
         }
@@ -415,7 +415,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
             Image<RFLOAT> Ictf;
             FileName fn_ctf;
             try {
-                fn_ctf = DF.getValue<FileName>(EMDL::CTF_IMAGE, p);
+                fn_ctf = DF.getValue<std::string>(EMDL::CTF_IMAGE, p);
             } catch (const char *errmsg) {
                 REPORT_ERROR("ERROR: cannot find rlnCtfImage for 3D CTF correction!");
             }

@@ -141,7 +141,7 @@ void Preprocessing::initialise() {
         Image<RFLOAT> Imic;
 
         MDmics.goToObject(0);
-        FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
         Image<RFLOAT>::Dimensions dimensions = Imic.getDimensions();
              int xdim = dimensions.x;
@@ -189,7 +189,7 @@ void Preprocessing::initialise() {
             if (verb > 0 && fn_data == "") {
                 FileName fn_mic;
                 FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
-                    fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+                    fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
                     FileName fn_coord = getCoordinateFileName(fn_mic);
                     if (!exists(fn_coord))
                         std::cerr << "Warning: coordinate file " << fn_coord << " does not exist..." << std::endl;
@@ -263,7 +263,7 @@ void Preprocessing::joinAllStarFiles() {
         current_object1 = MDmics.nextObject()
     ) {
         // Micrograph filename
-        FileName fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
 
         // Get the filename of the STAR file for just this micrograph
         FileName fn_star = getOutputFileNameRoot(fn_mic) + "_extract.star";
@@ -392,7 +392,7 @@ void Preprocessing::runExtractParticles() {
         if (pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         int optics_group = obsModelMic.getOpticsGroup(MDmics);
 
         // Set the pixel size for this micrograph
@@ -1053,7 +1053,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
     // To upgrade to ObsModel, the following no longer works.
     // MDresult.read(fn_data, "particles", NULL, fn_post);
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
-        FileName fn_mic_in_particle_star = MDimg.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        FileName fn_mic_in_particle_star = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (fn_mic_in_particle_star.contains(fn_post))
             MDresult.addObject(MDimg.getObject(index));
     }

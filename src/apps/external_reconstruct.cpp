@@ -58,10 +58,10 @@ class ext_recons_parameters {
 
         MetaDataTable MDlist, MDtau;
         MDlist.read(fn_star, "external_reconstruct_general");
-        fn_data_real   = MDlist.getValue<FileName>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL);
-        fn_data_imag   = MDlist.getValue<FileName>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG);
-        fn_weight      = MDlist.getValue<FileName>(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT);
-        fn_recons      = MDlist.getValue<FileName>(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT);
+        fn_data_real   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL);
+        fn_data_imag   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG);
+        fn_weight      = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT);
+        fn_recons      = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT);
         tau2_fudge     = MDlist.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_FUDGE_FACTOR);
         padding_factor = MDlist.getValue<float>(EMDL::MLMODEL_PADDING_FACTOR);
         ref_dim        = MDlist.getValue<int>(EMDL::MLMODEL_DIMENSIONALITY);

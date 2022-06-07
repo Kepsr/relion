@@ -2707,7 +2707,7 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
     map_mics.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         mic_name.clear();
-        mic_name = MD.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (divide_according_to_helical_tube_id) {
             helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
             if (helical_tube_id < 1)
@@ -2776,7 +2776,7 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
 
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         mic_name.clear();
-        mic_name = MD.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+        mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (divide_according_to_helical_tube_id) {
             helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
             if (helical_tube_id < 1)
@@ -3503,7 +3503,7 @@ void simulateHelicalSegments(
         if (is_3d_tomo)
             MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
 
-        fn_mic = MD.getValue<FileName>(EMDL::IMAGE_NAME);
+        fn_mic = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         fn_ext = fn_mic.getExtension();
         fn_mic = fn_mic.withoutExtension() + "_norm." + fn_ext;
         MD.setValue(EMDL::IMAGE_NAME, fn_mic);
@@ -5221,7 +5221,7 @@ void averageAsymmetricUnits2D(
     init_progress_bar(MDimgs.numberOfObjects());
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimgs) {
 
-        FileName fn_img       = MDimgs.getValue<FileName>(EMDL::IMAGE_NAME);
+        FileName fn_img       = MDimgs.getValue<std::string>(EMDL::IMAGE_NAME);
         RFLOAT psi            = MDimgs.getValue<RFLOAT>(EMDL::ORIENT_PSI);
         int optics_group      = MDimgs.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
         RFLOAT angpix         = obsModel.getPixelSize(optics_group);

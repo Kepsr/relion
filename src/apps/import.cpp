@@ -153,7 +153,7 @@ class import_parameters {
                 // TODO: this N^2 algorithm might get too expensive with large data sets....
                 bool already_there = false;
                 for (long j = 0; j < old_nr_files; j++) {
-                    FileName oldfile = MDout.getValue<FileName>(mylabel, j);
+                    FileName oldfile = MDout.getValue<std::string>(mylabel, j);
                     if (oldfile == fns_in[i]) {
                         already_there = true;
                         int old_optics_group_number = MDout.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, j);

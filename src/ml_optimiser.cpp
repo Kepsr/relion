@@ -765,10 +765,10 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread) {
     in.close();
 
     try {
-        fn_out = MD.getValue<FileName>(EMDL::OPTIMISER_OUTPUT_ROOTNAME);
-        fn_model = MD.getValue<FileName>(EMDL::OPTIMISER_MODEL_STARFILE);
-        fn_data = MD.getValue<FileName>(EMDL::OPTIMISER_DATA_STARFILE);
-        fn_sampling = MD.getValue<FileName>(EMDL::OPTIMISER_SAMPLING_STARFILE);
+        fn_out = MD.getValue<std::string>(EMDL::OPTIMISER_OUTPUT_ROOTNAME);
+        fn_model = MD.getValue<std::string>(EMDL::OPTIMISER_MODEL_STARFILE);
+        fn_data = MD.getValue<std::string>(EMDL::OPTIMISER_DATA_STARFILE);
+        fn_sampling = MD.getValue<std::string>(EMDL::OPTIMISER_SAMPLING_STARFILE);
         iter = MD.getValue<int>(EMDL::OPTIMISER_ITERATION_NO);
         nr_iter = MD.getValue<int>(EMDL::OPTIMISER_NR_ITERATIONS);
         do_split_random_halves = MD.getValue<bool>(EMDL::OPTIMISER_DO_SPLIT_RANDOM_HALVES);
@@ -780,9 +780,9 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread) {
         width_mask_edge = MD.getValue<int>(EMDL::OPTIMISER_WIDTH_MASK_EDGE);
         do_zero_mask = MD.getValue<bool>(EMDL::OPTIMISER_DO_ZERO_MASK);
         do_solvent = MD.getValue<bool>(EMDL::OPTIMISER_DO_SOLVENT_FLATTEN);
-        fn_mask = MD.getValue<FileName>(EMDL::OPTIMISER_SOLVENT_MASK_NAME);
-        fn_mask2 = MD.getValue<FileName>(EMDL::OPTIMISER_SOLVENT_MASK2_NAME);
-        fn_tau = MD.getValue<FileName>(EMDL::OPTIMISER_TAU_SPECTRUM_NAME);
+        fn_mask = MD.getValue<std::string>(EMDL::OPTIMISER_SOLVENT_MASK_NAME);
+        fn_mask2 = MD.getValue<std::string>(EMDL::OPTIMISER_SOLVENT_MASK2_NAME);
+        fn_tau = MD.getValue<std::string>(EMDL::OPTIMISER_TAU_SPECTRUM_NAME);
         max_coarse_size = MD.getValue<int>(EMDL::OPTIMISER_MAX_COARSE_SIZE);
         strict_highres_exp = MD.getValue<RFLOAT>(EMDL::OPTIMISER_HIGHRES_LIMIT_EXP);
         incr_size = MD.getValue<int>(EMDL::OPTIMISER_INCR_SIZE);
@@ -825,40 +825,40 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread) {
         var = defaultval; \
     }
 
-    TRYSETVAR(fn_local_symmetry,                    FileName, EMDL::OPTIMISER_LOCAL_SYMMETRY_FILENAME,           "None");
-    TRYSETVAR(do_helical_refine,                    bool,     EMDL::OPTIMISER_DO_HELICAL_REFINE,                 false);
-    TRYSETVAR(ignore_helical_symmetry,              bool,     EMDL::OPTIMISER_IGNORE_HELICAL_SYMMETRY,           false);
-    TRYSETVAR(helical_twist_initial,                RFLOAT,   EMDL::OPTIMISER_HELICAL_TWIST_INITIAL,              0.0);
-    TRYSETVAR(helical_rise_initial,                 RFLOAT,   EMDL::OPTIMISER_HELICAL_RISE_INITIAL,               0.0);
-    TRYSETVAR(helical_z_percentage,                 RFLOAT,   EMDL::OPTIMISER_HELICAL_Z_PERCENTAGE,               0.3);
-    TRYSETVAR(helical_nstart,                       int,      EMDL::OPTIMISER_HELICAL_NSTART,                     1);
-    TRYSETVAR(helical_tube_inner_diameter,          RFLOAT,   EMDL::OPTIMISER_HELICAL_TUBE_INNER_DIAMETER,       -1.0);
-    TRYSETVAR(helical_tube_outer_diameter,          RFLOAT,   EMDL::OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER,       -1.0);
-    TRYSETVAR(do_helical_symmetry_local_refinement, bool,     EMDL::OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, false);
-    TRYSETVAR(helical_sigma_distance,               RFLOAT,   EMDL::OPTIMISER_HELICAL_SIGMA_DISTANCE,            -1.0);
-    TRYSETVAR(helical_keep_tilt_prior_fixed,        bool,     EMDL::OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED,     false);
+    TRYSETVAR(fn_local_symmetry,                    std::string, EMDL::OPTIMISER_LOCAL_SYMMETRY_FILENAME,           "None");
+    TRYSETVAR(do_helical_refine,                    bool,        EMDL::OPTIMISER_DO_HELICAL_REFINE,                 false);
+    TRYSETVAR(ignore_helical_symmetry,              bool,        EMDL::OPTIMISER_IGNORE_HELICAL_SYMMETRY,           false);
+    TRYSETVAR(helical_twist_initial,                RFLOAT,      EMDL::OPTIMISER_HELICAL_TWIST_INITIAL,              0.0);
+    TRYSETVAR(helical_rise_initial,                 RFLOAT,      EMDL::OPTIMISER_HELICAL_RISE_INITIAL,               0.0);
+    TRYSETVAR(helical_z_percentage,                 RFLOAT,      EMDL::OPTIMISER_HELICAL_Z_PERCENTAGE,               0.3);
+    TRYSETVAR(helical_nstart,                       int,         EMDL::OPTIMISER_HELICAL_NSTART,                     1);
+    TRYSETVAR(helical_tube_inner_diameter,          RFLOAT,      EMDL::OPTIMISER_HELICAL_TUBE_INNER_DIAMETER,       -1.0);
+    TRYSETVAR(helical_tube_outer_diameter,          RFLOAT,      EMDL::OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER,       -1.0);
+    TRYSETVAR(do_helical_symmetry_local_refinement, bool,        EMDL::OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, false);
+    TRYSETVAR(helical_sigma_distance,               RFLOAT,      EMDL::OPTIMISER_HELICAL_SIGMA_DISTANCE,            -1.0);
+    TRYSETVAR(helical_keep_tilt_prior_fixed,        bool,        EMDL::OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED,     false);
 
     // New SGD (13 Feb 2018)
-    TRYSETVAR(do_sgd,                   bool,     EMDL::OPTIMISER_DO_SGD,                    false);
-    TRYSETVAR(do_avoid_sgd,             bool,     EMDL::OPTIMISER_DO_STOCHASTIC_EM,          false);
-    TRYSETVAR(sgd_ini_iter,             int,      EMDL::OPTIMISER_SGD_INI_ITER,              50);
-    TRYSETVAR(sgd_fin_iter,             int,      EMDL::OPTIMISER_SGD_FIN_ITER,              50);
-    TRYSETVAR(sgd_inbetween_iter,       int,      EMDL::OPTIMISER_SGD_INBETWEEN_ITER,        200);
-    TRYSETVAR(sgd_ini_resol,            RFLOAT,   EMDL::OPTIMISER_SGD_INI_RESOL,             35.0);
-    TRYSETVAR(sgd_fin_resol,            RFLOAT,   EMDL::OPTIMISER_SGD_FIN_RESOL,             15.0);
-    TRYSETVAR(sgd_ini_subset_size,      int,      EMDL::OPTIMISER_SGD_INI_SUBSET_SIZE,       100);
-    TRYSETVAR(sgd_fin_subset_size,      int,      EMDL::OPTIMISER_SGD_FIN_SUBSET_SIZE,       500);
-    TRYSETVAR(mu,                       RFLOAT,   EMDL::OPTIMISER_SGD_MU,                    0.9);
-    TRYSETVAR(sgd_sigma2fudge_ini,      RFLOAT,   EMDL::OPTIMISER_SGD_SIGMA2FUDGE_INI,       8.0);
-    TRYSETVAR(sgd_sigma2fudge_halflife, long,     EMDL::OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, -1);
-    TRYSETVAR(do_sgd_skip_anneal,       bool,     EMDL::OPTIMISER_SGD_SKIP_ANNNEAL,         false);
-    TRYSETVAR(subset_size,              long,     EMDL::OPTIMISER_SGD_SUBSET_SIZE,          -1);
-    TRYSETVAR(sgd_stepsize,             RFLOAT,   EMDL::OPTIMISER_SGD_STEPSIZE,              0.5);
-    TRYSETVAR(write_every_sgd_iter,     int,      EMDL::OPTIMISER_SGD_WRITE_EVERY_SUBSET,    1);
-    TRYSETVAR(fn_body_masks,            FileName, EMDL::BODY_STAR_FILE,                     "None");
-    TRYSETVAR(do_phase_random_fsc,      bool,     EMDL::OPTIMISER_DO_SOLVENT_FSC,           false);
-    TRYSETVAR(do_fast_subsets,          bool,     EMDL::OPTIMISER_FAST_SUBSETS,             false);
-    TRYSETVAR(do_external_reconstruct,  bool,     EMDL::OPTIMISER_DO_EXTERNAL_RECONSTRUCT,  false);
+    TRYSETVAR(do_sgd,                   bool,        EMDL::OPTIMISER_DO_SGD,                    false);
+    TRYSETVAR(do_avoid_sgd,             bool,        EMDL::OPTIMISER_DO_STOCHASTIC_EM,          false);
+    TRYSETVAR(sgd_ini_iter,             int,         EMDL::OPTIMISER_SGD_INI_ITER,              50);
+    TRYSETVAR(sgd_fin_iter,             int,         EMDL::OPTIMISER_SGD_FIN_ITER,              50);
+    TRYSETVAR(sgd_inbetween_iter,       int,         EMDL::OPTIMISER_SGD_INBETWEEN_ITER,        200);
+    TRYSETVAR(sgd_ini_resol,            RFLOAT,      EMDL::OPTIMISER_SGD_INI_RESOL,             35.0);
+    TRYSETVAR(sgd_fin_resol,            RFLOAT,      EMDL::OPTIMISER_SGD_FIN_RESOL,             15.0);
+    TRYSETVAR(sgd_ini_subset_size,      int,         EMDL::OPTIMISER_SGD_INI_SUBSET_SIZE,       100);
+    TRYSETVAR(sgd_fin_subset_size,      int,         EMDL::OPTIMISER_SGD_FIN_SUBSET_SIZE,       500);
+    TRYSETVAR(mu,                       RFLOAT,      EMDL::OPTIMISER_SGD_MU,                    0.9);
+    TRYSETVAR(sgd_sigma2fudge_ini,      RFLOAT,      EMDL::OPTIMISER_SGD_SIGMA2FUDGE_INI,       8.0);
+    TRYSETVAR(sgd_sigma2fudge_halflife, long,        EMDL::OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, -1);
+    TRYSETVAR(do_sgd_skip_anneal,       bool,        EMDL::OPTIMISER_SGD_SKIP_ANNNEAL,         false);
+    TRYSETVAR(subset_size,              long,        EMDL::OPTIMISER_SGD_SUBSET_SIZE,          -1);
+    TRYSETVAR(sgd_stepsize,             RFLOAT,      EMDL::OPTIMISER_SGD_STEPSIZE,              0.5);
+    TRYSETVAR(write_every_sgd_iter,     int,         EMDL::OPTIMISER_SGD_WRITE_EVERY_SUBSET,    1);
+    TRYSETVAR(fn_body_masks,            std::string, EMDL::BODY_STAR_FILE,                     "None");
+    TRYSETVAR(do_phase_random_fsc,      bool,        EMDL::OPTIMISER_DO_SOLVENT_FSC,           false);
+    TRYSETVAR(do_fast_subsets,          bool,        EMDL::OPTIMISER_FAST_SUBSETS,             false);
+    TRYSETVAR(do_external_reconstruct,  bool,        EMDL::OPTIMISER_DO_EXTERNAL_RECONSTRUCT,  false);
 
     #undef TRYSETVAR
 
@@ -872,14 +872,14 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread) {
     } }
 
     try {
-        fn_fourier_mask = MD.getValue<FileName>(EMDL::OPTIMISER_FOURIER_MASK);
+        fn_fourier_mask = MD.getValue<std::string>(EMDL::OPTIMISER_FOURIER_MASK);
     } catch (const char* errmsg) {
         fn_fourier_mask = "None";
     }
 
     if (do_split_random_halves) {
         try {
-            fn_model2 = MD.getValue<FileName>(EMDL::OPTIMISER_MODEL_STARFILE2);
+            fn_model2 = MD.getValue<std::string>(EMDL::OPTIMISER_MODEL_STARFILE2);
         } catch (const char* errmsg) {
             REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 not found in optimiser_general table");
         }
@@ -1957,13 +1957,13 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 }
             } else {
                 if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img)) {
-                    fn_img = MDimg.getValue<FileName>(EMDL::IMAGE_NAME);
+                    fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
                 } else if (!do_parallel_disc_io) {
                     // When not doing parallel disk IO,
                     // only those MPI processes running on the same node as the leader have scratch.
                     fn_img.decompose(dump, fn_stack);
                     if (!exists(fn_stack))
-                        fn_img = MDimg.getValue<FileName>(EMDL::IMAGE_NAME);
+                        fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
                 }
 
                 fn_img.decompose(dump, fn_stack);
@@ -8233,20 +8233,20 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
             // Get the image names from the MDimg table
             FileName fn_img = "", fn_rec_img = "", fn_ctf = "";
             if (!mydata.getImageNameOnScratch(part_id, img_id, fn_img))
-                fn_img = mydata.MDimg.getValue<FileName>(EMDL::IMAGE_NAME, ori_img_id);
+                fn_img = mydata.MDimg.getValue<std::string>(EMDL::IMAGE_NAME, ori_img_id);
 
             if (mymodel.data_dim == 3 && do_ctf_correction) {
                 // Also read the CTF image from disc
                 if (!mydata.getImageNameOnScratch(part_id, img_id, fn_ctf, true)) {
                     try {
-                        fn_ctf = mydata.MDimg.getValue<FileName>(EMDL::CTF_IMAGE, ori_img_id);
+                        fn_ctf = mydata.MDimg.getValue<std::string>(EMDL::CTF_IMAGE, ori_img_id);
                     } catch (const char* errmsg) {
                         REPORT_ERROR("MlOptimiser::getMetaAndImageDataSubset ERROR: cannot find rlnCtfImage for 3D CTF correction!");
                     }
                 }
             }
             if (has_converged && do_use_reconstruct_images) {
-                fn_rec_img = mydata.MDimg.getValue<FileName>(EMDL::IMAGE_RECONSTRUCT_NAME, ori_img_id);
+                fn_rec_img = mydata.MDimg.getValue<std::string>(EMDL::IMAGE_RECONSTRUCT_NAME, ori_img_id);
             }
 
             if (do_also_imagedata) {

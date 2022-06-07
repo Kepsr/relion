@@ -363,7 +363,7 @@ void readRelionFormatMasksAndOperators(
 
     // Load mask names
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        FileName fn_mask = MD.getValue<FileName>(EMDL::MASK_NAME);
+        FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME);
         bool is_maskname_found = false;
         for (auto &fn_mask2 : fn_mask_list) {
             if (fn_mask == fn_mask2) {
@@ -374,8 +374,8 @@ void readRelionFormatMasksAndOperators(
         if (!is_maskname_found)
             fn_mask_list.push_back(fn_mask);
     }
-    if (fn_mask_list.size() < 1)
-        REPORT_ERROR("ERROR: No mask filenames in " + (std::string)(fn_info) + " !");
+    if (fn_mask_list.empty())
+        REPORT_ERROR("ERROR: No mask filenames in " + (std::string) fn_info + " !");
 
     // Load all operators
     op.initZeros(NR_LOCALSYM_PARAMETERS);
@@ -391,7 +391,7 @@ void readRelionFormatMasksAndOperators(
 
         // Find all operators for this mask
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-            FileName fn_mask = MD.getValue<FileName>(EMDL::MASK_NAME);
+            FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME);
             if (fn_mask != fn_mask_list[id_mask])
                 continue;
 
@@ -492,7 +492,7 @@ void readRelionFormatMasksWithoutOperators(
     fns.clear();
     ids.clear();
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        fn = MD.getValue<FileName>(EMDL::MASK_NAME);
+        fn = MD.getValue<std::string>(EMDL::MASK_NAME);
         id = MD.getValue<int>(EMDL::AREA_ID);
         fns.push_back(fn);
         ids.push_back(id);

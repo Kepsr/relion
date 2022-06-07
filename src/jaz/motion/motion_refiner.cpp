@@ -442,7 +442,7 @@ void MotionRefiner::combineEPSAndSTARfiles() {
 FileName MotionRefiner::getOutputFileNameRoot(
     std::string outPath, const MetaDataTable& mdt
 ) {
-    FileName fn_mic = mdt.getValue<FileName>(EMDL::MICROGRAPH_NAME, 0);
+    FileName fn_mic = mdt.getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
     FileName fn_pre, fn_jobnr, fn_post;
     decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
     return outPath + fn_post.withoutExtension();

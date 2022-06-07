@@ -63,7 +63,7 @@ class star_converter {
             std::cout << "The (binned) pixel size and the voltage are taken from the first metadata STAR file." << std::endl;
             FileName fn_meta;
             try {
-                fn_meta = mdtOut.getValue<FileName>(EMDL::MICROGRAPH_METADATA_NAME, 0);
+                fn_meta = mdtOut.getValue<std::string>(EMDL::MICROGRAPH_METADATA_NAME, 0);
             } catch (const char *errmsg) {
                 REPORT_ERROR("Failed to find the metadata STAR file");
             }
