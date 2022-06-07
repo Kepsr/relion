@@ -93,7 +93,7 @@ class stack_create_parameters {
         int xdim, ydim, zdim;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
             if (is_first) {
-                fn_img = MD.getValue<FileName>(EMDL::IMAGE_NAME);
+                fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
                 in.read(fn_img);
                 xdim = in().xdim;
                 ydim = in().ydim;
@@ -102,7 +102,7 @@ class stack_create_parameters {
             }
 
             if (do_split_per_micrograph) {
-                fn_mic = MD.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+                fn_mic = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME);
                 bool have_found = false;
                 for (int m = 0; m < fn_mics.size(); m++) {
                     if (fn_mic == fn_mics[m]) {
@@ -160,13 +160,13 @@ class stack_create_parameters {
             init_progress_bar(ndim);
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
 
-                FileName fn_mymic = do_split_per_micrograph ? MD.getValue<FileName>(EMDL::MICROGRAPH_NAME) : "";
+                FileName fn_mymic = do_split_per_micrograph ? MD.getValue<std::string>(EMDL::MICROGRAPH_NAME) : "";
                 int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
                 RFLOAT angpix = do_ignore_optics ? 1.0 : obsModel.getPixelSize(optics_group);
 
                 if (fn_mymic == fn_mic) {
 
-                    fn_img = MD.getValue<FileName>(EMDL::IMAGE_NAME);
+                    fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
                     in.read(fn_img);
 
                     if (do_apply_trans || do_apply_trans_only) {

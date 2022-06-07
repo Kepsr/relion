@@ -300,7 +300,7 @@ class project_parameters {
                 if (do_ctf || do_ctf2) {
                     if (do_3d_rot) {
                         Image<RFLOAT> Ictf;
-                        FileName fn_ctf = MDang.getValue<FileName>(EMDL::CTF_IMAGE);
+                        FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE);
                         Ictf.read(fn_ctf);
 
                         // Set the CTF-image in Fctf
@@ -341,11 +341,11 @@ class project_parameters {
                         // This does however mean that I no longer know mic_id of this image: replace by 0....
                         FileName fn_group;
                         if (MDang.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-                            fn_group = MDang.getValue<FileName>(EMDL::MLMODEL_GROUP_NAME);
+                            fn_group = MDang.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME);
                         } else {
                             if (MDang.containsLabel(EMDL::MICROGRAPH_NAME)) {
                                 FileName fn_orig, fn_pre, fn_jobnr;
-                                fn_orig = MDang.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+                                fn_orig = MDang.getValue<std::string>(EMDL::MICROGRAPH_NAME);
                                 if (!decomposePipelineFileName(fn_orig, fn_pre, fn_jobnr, fn_group)) {
                                     fn_group = fn_orig; // Not a pipeline filename; use as is
                                 }
@@ -391,7 +391,7 @@ class project_parameters {
 
                 // Subtract the projection from the corresponding experimental image
                 if (do_subtract_exp || do_simulate) {
-                    fn_expimg = MDang.getValue<FileName>(EMDL::IMAGE_NAME);
+                    fn_expimg = MDang.getValue<std::string>(EMDL::IMAGE_NAME);
                     MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg); // Store fn_expimg in rlnOriginalParticleName
                     expimg.read(fn_expimg);
                     img() = expimg() - img();
@@ -453,7 +453,7 @@ class project_parameters {
                     if (do_ctf || do_ctf2) {
                         if (do_3d_rot) {
                             Image<RFLOAT> Ictf;
-                            FileName fn_ctf = MDang.getValue<FileName>(EMDL::CTF_IMAGE);
+                            FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE);
                             Ictf.read(fn_ctf);
                             Ictf().setXmippOrigin();
 

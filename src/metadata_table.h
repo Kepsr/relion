@@ -434,7 +434,7 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
             }
         }
 
-        objects[objectID]->getValue(off, value);
+        value = objects[objectID]->getValue<T>(off);
     } else {
         throw "Negative offset";
     }

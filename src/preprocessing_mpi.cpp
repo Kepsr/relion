@@ -67,7 +67,7 @@ void PreprocessingMpi::runExtractParticles() {
                 if (pipeline_control_check_abort_job())
                     MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_ABORTED);
 
-                fn_mic = MDmics.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+                fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
                 int optics_group = obsModelMic.getOpticsGroup(MDmics);
 
                 // Set the pixel size for this micrograph

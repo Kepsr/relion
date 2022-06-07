@@ -224,8 +224,8 @@ void ParticleSubtractor::revert() {
 
     // Swap image names
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        FileName f1 = MD.getValue<FileName>(EMDL::IMAGE_ORI_NAME);
-        FileName f2 = MD.getValue<FileName>(EMDL::IMAGE_NAME);
+        FileName f1 = MD.getValue<std::string>(EMDL::IMAGE_ORI_NAME);
+        FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         MD.setValue(EMDL::IMAGE_ORI_NAME, f2);
         MD.setValue(EMDL::IMAGE_NAME,     f1);
     }
@@ -237,7 +237,7 @@ void ParticleSubtractor::revert() {
         if (fixed_box_size[og])
             continue;
 
-        FileName img_name = MD.getValue<FileName>(EMDL::IMAGE_NAME);
+        FileName img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         FileName fn_img;
         long int dummy;
         img_name.decompose(dummy, fn_img);
@@ -486,7 +486,7 @@ void ParticleSubtractor::subtractOneParticle(
 
     if (opt.do_ctf_correction) {
         if (opt.mymodel.data_dim == 3) {
-            FileName fn_ctf = opt.mydata.MDimg.getValue<FileName>(EMDL::CTF_IMAGE, ori_img_id);
+            FileName fn_ctf = opt.mydata.MDimg.getValue<std::string>(EMDL::CTF_IMAGE, ori_img_id);
             Image<RFLOAT> Ictf;
             Ictf.read(fn_ctf);
 

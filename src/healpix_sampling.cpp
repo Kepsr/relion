@@ -198,7 +198,7 @@ void HealpixSampling::read(FileName fn_in) {
     if (is_3D) {
         try {
             healpix_order = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER);
-            fn_sym        = MD.getValue<FileName>(EMDL::SAMPLING_SYMMETRY);
+            fn_sym        = MD.getValue<std::string>(EMDL::SAMPLING_SYMMETRY);
             limit_tilt    = MD.getValue<RFLOAT>(EMDL::SAMPLING_LIMIT_TILT);
         } catch (const char *errmsg) {
             REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table for 3D sampling");

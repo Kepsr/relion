@@ -197,7 +197,7 @@ void MlModel::read(FileName fn_in) {
 
         FileName fn_tmp;
         try {
-            fn_tmp          = MDclass.getValue<FileName>(EMDL::MLMODEL_REF_IMAGE);
+            fn_tmp          = MDclass.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
             acc_rot[iclass] = MDclass.getValue<RFLOAT>(EMDL::MLMODEL_ACCURACY_ROT);
         } catch (const char *errmsg) {
             REPORT_ERROR("MlModel::readStar: incorrect model_classes/bodies table: no ref_image or acc_rot");
@@ -242,7 +242,7 @@ void MlModel::read(FileName fn_in) {
             do_sgd = true;
             if (iclass == 0)
                 Igrad.resize(nr_classes);
-            img.read(MDclass.getValue<FileName>(EMDL::MLMODEL_SGD_GRADIENT_IMAGE));
+            img.read(MDclass.getValue<std::string>(EMDL::MLMODEL_SGD_GRADIENT_IMAGE));
             Igrad[iclass] = img();
         } catch (const char *errmsg) {}
         iclass++;
@@ -257,7 +257,7 @@ void MlModel::read(FileName fn_in) {
             // Groups are indexed from 1.
             scale_correction      [igroup - 1] = MDgroup.getValue<RFLOAT>(EMDL::MLMODEL_GROUP_SCALE_CORRECTION);
             nr_particles_per_group[igroup - 1] = MDgroup.getValue<long>(EMDL::MLMODEL_GROUP_NR_PARTICLES);
-            group_names           [igroup - 1] = MDgroup.getValue<FileName>(EMDL::MLMODEL_GROUP_NAME);
+            group_names           [igroup - 1] = MDgroup.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME);
         } catch (const char *errmsg) {
             REPORT_ERROR("MlModel::readStar: incorrect model_groups table");
         }
@@ -645,13 +645,13 @@ void MlModel::initialiseFromImages(
             MetaDataTable MDref;
             MDref.read(fn_ref, "model_classes");
             try {
-                fn_tmp = MDref.getValue<FileName>(EMDL::MLMODEL_REF_IMAGE);
+                fn_tmp = MDref.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
             } catch (const char *errmsg) {
                 // if we did not find the meta-data label _rlnReferenceImage in a directed search, try more generally
                 MDref.read(fn_ref);
             }
             try {
-                fn_tmp = MDref.getValue<FileName>(EMDL::MLMODEL_REF_IMAGE);
+                fn_tmp = MDref.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
             } catch (const char* errmsg) {
                 // if we still did not find the meta-data label _rlnReferenceImage, report an error
                 REPORT_ERROR("When specifying a .star-file as --ref input, you need to have the _rlnReferenceImage field");
@@ -663,7 +663,7 @@ void MlModel::initialiseFromImages(
             Iref.clear();
             Igrad.clear();
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDref) {
-                img.read(MDref.getValue<FileName>(EMDL::MLMODEL_REF_IMAGE));
+                img.read(MDref.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE));
                 img().setXmippOrigin();
                 if (_ref_angpix > 0.0) {
                     pixel_size = _ref_angpix;
@@ -834,7 +834,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
     Matrix1D<RFLOAT> one_direction(3);
     bool has_rotate_directions = false;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-        fn_mask = MD.getValue<FileName>(EMDL::BODY_MASK_NAME);
+        fn_mask = MD.getValue<std::string>(EMDL::BODY_MASK_NAME);
         Imask.read(fn_mask);
         MultidimArray<RFLOAT>::MinMax range = Imask().minmax();
         if (range.min < 0.0 || range.max > 1.0)
@@ -965,7 +965,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         if (MD.containsLabel(EMDL::BODY_REFERENCE_NAME)) {
             int ibody = 0;
             FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-                FileName fn_ref = MD.getValue<FileName>(EMDL::BODY_REFERENCE_NAME);
+                FileName fn_ref = MD.getValue<std::string>(EMDL::BODY_REFERENCE_NAME);
                 if (fn_ref != "None") {
                     Image<RFLOAT> img;
                     img.read(fn_ref);

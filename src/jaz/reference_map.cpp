@@ -52,9 +52,9 @@ void ReferenceMap::load(int verb, bool debug) {
         MetaDataTable MD;
         MD.read(fscFn, "general");
         try {
-            fn_half1 = MD.getValue<FileName>(EMDL::POSTPROCESS_UNFIL_HALFMAP1);
-            fn_half2 = MD.getValue<FileName>(EMDL::POSTPROCESS_UNFIL_HALFMAP2);
-            fn_mask  = MD.getValue<FileName>(EMDL::MASK_NAME);
+            fn_half1 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP1);
+            fn_half2 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP2);
+            fn_mask  = MD.getValue<std::string>(EMDL::MASK_NAME);
             if (verb > 0) {
                 std::cout << " + The names of the reference half maps and the mask were taken from the PostProcess STAR file.\n";
                 std::cout << "   - Half map 1: " << fn_half1 << "\n";

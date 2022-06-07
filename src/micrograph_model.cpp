@@ -116,13 +116,13 @@ void ThirdOrderPolynomialModel::read(std::ifstream &fh, std::string block_name) 
     }
 }
 
-Micrograph::Micrograph(): ready(false), model(NULL) { clearFields(); }
+Micrograph::Micrograph(): ready(false), model(nullptr) { clearFields(); }
 
-Micrograph::Micrograph(const Micrograph& m): ready(m.ready), model(m.model != NULL ? m.model->clone() : NULL) {
+Micrograph::Micrograph(const Micrograph& m): ready(m.ready), model(m.model ? m.model->clone() : nullptr) {
     copyFieldsFrom(m);
 }
 
-Micrograph::Micrograph(FileName filename, FileName fnGain, RFLOAT binning, int eer_upsampling, int eer_grouping): ready(false), model(NULL) {
+Micrograph::Micrograph(FileName filename, FileName fnGain, RFLOAT binning, int eer_upsampling, int eer_grouping): ready(false), model(nullptr) {
 
     clearFields();
 
@@ -141,14 +141,14 @@ Micrograph::Micrograph(FileName filename, FileName fnGain, RFLOAT binning, int e
 }
 
 Micrograph::~Micrograph() {
-    if (model != NULL) delete model;
+    delete model;
 }
 
 Micrograph& Micrograph::operator = (const Micrograph& m) {
     ready = m.ready;
 
-    if (model != NULL) delete model;
-    model = (m.model != NULL)? m.model->clone() : NULL;
+    delete model;
+    model = m.model ? m.model->clone() : nullptr;
 
     copyFieldsFrom(m);
 
@@ -204,11 +204,7 @@ void Micrograph::write(FileName filename) {
             MD.setValue(EMDL::MICROGRAPH_EER_GROUPING, this->eer_grouping);
     }
 
-    if (model != NULL) {
-        MD.setValue(EMDL::MICROGRAPH_MOTION_MODEL_VERSION, model->getModelVersion());
-    } else {
-        MD.setValue(EMDL::MICROGRAPH_MOTION_MODEL_VERSION, (int)MOTION_MODEL_NULL);
-    }
+    MD.setValue(EMDL::MICROGRAPH_MOTION_MODEL_VERSION, model ? model->getModelVersion() : (int) MOTION_MODEL_NULL);
 
     MD.write(fh);
 
@@ -222,7 +218,7 @@ void Micrograph::write(FileName filename) {
     }
     MD.write(fh);
 
-    if (model != NULL) {
+    if (model) {
         std::string block_name = "local_motion_model";
         model->write(fh, block_name);
     }
@@ -346,7 +342,7 @@ int Micrograph::getShiftAt(RFLOAT frame, RFLOAT x, RFLOAT y, RFLOAT &shiftx, RFL
         return -1;
     }
 
-    if (model != NULL && use_local) {
+    if (model && use_local) {
         // both frame and first_frame is 1 indexed
         model->getShiftAt(frame - first_frame, x, y, shiftx, shifty);
     } else {
@@ -375,10 +371,8 @@ void Micrograph::setGlobalShift(int frame, RFLOAT shiftx, RFLOAT shifty) {
 }
 
 void Micrograph::read(FileName fn_in, bool read_hotpixels) {
-    if (model != NULL) {
-        delete model;
-        model = NULL;
-    }
+    delete model;
+    model = nullptr;
 
     // Clear current model
     clearFields();
@@ -398,7 +392,7 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
         width    = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_X);
         height   = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_Y);
         n_frames = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_Z);
-        fnMovie  = MDglobal.getValue<FileName>(EMDL::MICROGRAPH_MOVIE_NAME);
+        fnMovie  = MDglobal.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME);
     } catch (const char *errmsg) {
         REPORT_ERROR("MicrographModel::read: insufficient general information in " + fn_in);
     }
@@ -410,14 +404,14 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
     try { (assignmenttarget) = (table).getValue<T>((label)); } \
     catch (const char *errmsg) { (assignmenttarget) = (defaultvalue); }
 
-    TRY_ASSIGN_FROM_MDT(fnGain,         MDglobal, FileName, EMDL::MICROGRAPH_GAIN_NAME,   "");
-    TRY_ASSIGN_FROM_MDT(fnDefect,       MDglobal, FileName, EMDL::MICROGRAPH_DEFECT_FILE, "");
-    TRY_ASSIGN_FROM_MDT(binning,        MDglobal, RFLOAT,   EMDL::MICROGRAPH_BINNING,     1.0);
-    TRY_ASSIGN_FROM_MDT(angpix,         MDglobal, RFLOAT,   EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, -1);
-    TRY_ASSIGN_FROM_MDT(pre_exposure,   MDglobal, RFLOAT,   EMDL::MICROGRAPH_PRE_EXPOSURE, -1);
-    TRY_ASSIGN_FROM_MDT(dose_per_frame, MDglobal, RFLOAT,   EMDL::MICROGRAPH_DOSE_RATE, -1);
-    TRY_ASSIGN_FROM_MDT(voltage,        MDglobal, RFLOAT,   EMDL::CTF_VOLTAGE, -1);
-    TRY_ASSIGN_FROM_MDT(first_frame,    MDglobal, int,      EMDL::MICROGRAPH_START_FRAME, 1);  // 1-indexed
+    TRY_ASSIGN_FROM_MDT(fnGain,         MDglobal, std::string, EMDL::MICROGRAPH_GAIN_NAME,   "");
+    TRY_ASSIGN_FROM_MDT(fnDefect,       MDglobal, std::string, EMDL::MICROGRAPH_DEFECT_FILE, "");
+    TRY_ASSIGN_FROM_MDT(binning,        MDglobal, RFLOAT,      EMDL::MICROGRAPH_BINNING,     1.0);
+    TRY_ASSIGN_FROM_MDT(angpix,         MDglobal, RFLOAT,      EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, -1);
+    TRY_ASSIGN_FROM_MDT(pre_exposure,   MDglobal, RFLOAT,      EMDL::MICROGRAPH_PRE_EXPOSURE, -1);
+    TRY_ASSIGN_FROM_MDT(dose_per_frame, MDglobal, RFLOAT,      EMDL::MICROGRAPH_DOSE_RATE, -1);
+    TRY_ASSIGN_FROM_MDT(voltage,        MDglobal, RFLOAT,      EMDL::CTF_VOLTAGE, -1);
+    TRY_ASSIGN_FROM_MDT(first_frame,    MDglobal, int,         EMDL::MICROGRAPH_START_FRAME, 1);  // 1-indexed
 
     if (EERRenderer::isEER(fnMovie)) {
     TRY_ASSIGN_FROM_MDT(eer_upsampling, MDglobal, int,      EMDL::MICROGRAPH_EER_UPSAMPLING, -1);
@@ -426,13 +420,13 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
 
     #undef TRY_ASSIGN_FROM_MDT
 
-    model = NULL;
+    model = nullptr;
     try {
         int model_version = MDglobal.getValue<int>(EMDL::MICROGRAPH_MOTION_MODEL_VERSION);
         if (model_version == MOTION_MODEL_THIRD_ORDER_POLYNOMIAL) {
             model = new ThirdOrderPolynomialModel();  // Where does this memory get deallocated?
         } else if (model_version == (int) MOTION_MODEL_NULL) {
-            model = NULL;
+            model = nullptr;
         } else {
             std::cerr << "Warning: Ignoring unknown motion model " << model_version << std::endl;
         }
@@ -440,7 +434,7 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
         std::cerr << "Warning: local motion model is absent in the micrograph star file." << std::endl;
     }
 
-    if (model != NULL) {
+    if (model) {
         model->read(in, "local_motion_model");
     }
 

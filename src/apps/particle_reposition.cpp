@@ -65,7 +65,7 @@ class particle_reposition_parameters {
 
     void run() {
 
-        if (fn_out == "" && fn_odir == "")
+        if (fn_out.empty() && fn_odir.empty())
             REPORT_ERROR("ERROR: You need to provide either --o or --odir");
 
         if (fn_odir.length() > 0 && fn_odir[fn_odir.length()-1] != '/') fn_odir += "/";
@@ -81,7 +81,7 @@ class particle_reposition_parameters {
         optimiser.mymodel.setFourierTransformMaps(false);
 
         // Use a user-provided subset of particles instead of all of them?
-        if (fn_dat != "") {
+        if (!fn_dat.empty()) {
             std::cout <<" Reading data ..." << std::endl;
             MetaDataTable MDdata;
             MDdata.read(fn_dat);
@@ -96,9 +96,9 @@ class particle_reposition_parameters {
         FileName fn_prevdir = "";
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(DFi) {
 
-            FileName fn_mic = DFi.getValue<FileName>(EMDL::MICROGRAPH_NAME);
-            FileName fn_mic_out = fn_out == "" ? fn_mic : fn_mic.insertBeforeExtension("_" + fn_out);
-            if (fn_odir != "") {
+            FileName fn_mic = DFi.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+            FileName fn_mic_out = fn_out.empty() ? fn_mic : fn_mic.insertBeforeExtension("_" + fn_out);
+            if (!fn_odir.empty()) {
                 FileName fn_pre, fn_jobnr, fn_post;
                 if (decomposePipelineFileName(fn_mic_out, fn_pre, fn_jobnr, fn_post)) {
                     fn_mic_out = fn_odir + fn_post;
@@ -155,7 +155,7 @@ class particle_reposition_parameters {
                 if (do_subtract && fabs(my_pixel_size - mic_pixel_size) > 1e-6)
                     REPORT_ERROR("ERROR: subtract code has only been validated with same pixel size for particles and micrographs... Sorry!");
 
-                FileName fn_mic2 = optimiser.mydata.MDimg.getValue<FileName>(EMDL::MICROGRAPH_NAME, ori_img_id);
+                FileName fn_mic2 = optimiser.mydata.MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME, ori_img_id);
                 FileName fn_mic2_pre, fn_mic2_jobnr, fn_mic2_post;
                 decomposePipelineFileName(fn_mic2, fn_mic2_pre, fn_mic2_jobnr, fn_mic2_post);
 
@@ -227,7 +227,7 @@ class particle_reposition_parameters {
                         if (optimiser.mymodel.data_dim == 3) {
                             Image<RFLOAT> Ictf;
 
-                            FileName fn_ctf = optimiser.mydata.MDimg.getValue<FileName>(EMDL::CTF_IMAGE, ori_img_id);
+                            FileName fn_ctf = optimiser.mydata.MDimg.getValue<std::string>(EMDL::CTF_IMAGE, ori_img_id);
                             Ictf.read(fn_ctf);
 
                             // If there is a redundant half, get rid of it
@@ -401,7 +401,7 @@ class particle_reposition_parameters {
 
 
         FileName fn_star_out = fn_odir + "micrographs_reposition.star";
-        if (fn_out != "") fn_star_out = fn_star_out.insertBeforeExtension("_" + fn_out);
+        if (!fn_out.empty()) fn_star_out = fn_star_out.insertBeforeExtension("_" + fn_out);
         std::cout << "Writing out star file with the new micrographs: " << fn_star_out << std::endl;
         obsModelMics.save(MDmics_out, fn_star_out, "micrographs");
 

@@ -973,7 +973,7 @@ void PipeLine::getOutputNodesFromStarFile(int this_job) {
         MDnodes.read(outnodes, "output_nodes");
 
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnodes) {
-            FileName nodename = MDnodes.getValue<FileName>(EMDL::PIPELINE_NODE_NAME);
+            FileName nodename = MDnodes.getValue<std::string>(EMDL::PIPELINE_NODE_NAME);
             int      nodetype = MDnodes.getValue<int>     (EMDL::PIPELINE_NODE_TYPE);
 
             // if this node does not exist yet, then add it to the pipeline
@@ -1207,7 +1207,7 @@ void PipeLine::undeleteJob(FileName fn_undel) {
     MDproc.read(fn_undel, "pipeline_processes");
     std::cout <<"  Undeleting from Trash ... " << std::endl;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDproc) {
-        FileName fn_proc = MDproc.getValue<FileName>(EMDL::PIPELINE_PROCESS_NAME);
+        FileName fn_proc = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
 
         // Copy the job back from the Trash folder
         FileName fn_dest = fn_proc.beforeLastOf("/"); //gets rid of ending "/"
@@ -1510,7 +1510,7 @@ void PipeLine::importJobs(FileName fn_export) {
 
     std::vector<std::string> find_pattern, replace_pattern;
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDexported) {
-        FileName expname = MDexported.getValue<FileName>(EMDL::PIPELINE_PROCESS_NAME);
+        FileName expname = MDexported.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
         find_pattern.push_back(expname);
         // Make a new name for this job
         FileName newname = expname.beforeFirstOf("/") + "/job" + integerToString(job_counter, 3) + "/";

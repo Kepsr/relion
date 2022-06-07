@@ -150,7 +150,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
 
                 FileName fn_img;
                 try {
-                    fn_img = outParticles.getValue<FileName>(EMDL::IMAGE_NAME, p);
+                    fn_img = outParticles.getValue<std::string>(EMDL::IMAGE_NAME, p);
                 } catch (const char *errmsg) {
                     if (do_die_upon_error) {
                         REPORT_ERROR("BUG: cannot find name for particle...");

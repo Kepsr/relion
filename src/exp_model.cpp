@@ -540,7 +540,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
         if (index % check_abort_frequency == 0 && pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        FileName fn_img = MDimg.getValue<FileName>(EMDL::IMAGE_NAME);
+        FileName fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
 
         int optics_group;
         try {
@@ -594,7 +594,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                 img.write(fn_new);
                 if (also_do_ctf_image) {
-                    FileName fn_ctf = MDimg.getValue<FileName>(EMDL::CTF_IMAGE);
+                    FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE);
                     img.read(fn_ctf);
                     fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                     img.write(fn_new);
@@ -746,7 +746,7 @@ void Experiment::read(
         star_contains_micname = MDimg.containsLabel(EMDL::MICROGRAPH_NAME);
         if (star_contains_micname) {
             // See if the micrograph names contain an "@", i.e. whether they are movies and we are inside polishing or so.
-            FileName fn_mic = MDimg.getValue<FileName>(EMDL::MICROGRAPH_NAME);
+            FileName fn_mic = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             if (fn_mic.contains("@")) {
                 is_mic_a_movie = true;
                 MDimg.newSort(EMDL::MICROGRAPH_NAME, false, true); // sort on part AFTER "@"
@@ -881,7 +881,7 @@ void Experiment::read(
             }
 
             // Create a new image in this particle
-            FileName img_name = MDimg.getValue<FileName>(EMDL::IMAGE_NAME, ori_img_id);
+            FileName img_name = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, ori_img_id);
 
             bool do_cache = prev_img_name != img_name || prev_optics_group != optics_group;
             #ifdef DEBUG_SCRATCH

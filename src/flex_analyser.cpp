@@ -401,7 +401,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
 
         DFo.addObject();
         DFo.setValue(EMDL::MLMODEL_REF_IMAGE, fn_img);
-        fn_img = data.MDimg.getValue<FileName>(EMDL::IMAGE_NAME, part_id);
+        fn_img = data.MDimg.getValue<std::string>(EMDL::IMAGE_NAME, part_id);
         DFo.setValue(EMDL::IMAGE_NAME, fn_img);
     }
 }
@@ -606,7 +606,7 @@ void FlexAnalyser::writeAllPCAProjections(std::vector<std::vector<double>> &proj
         REPORT_ERROR((std::string) " FlexAnalyser::writeAllPCAProjections: cannot write to file: " + fnt);
 
     for (long int ipart = 0; ipart < projected_input.size(); ipart++) {
-        fnt = data.MDimg.getValue<FileName>(EMDL::IMAGE_NAME, ipart);
+        fnt = data.MDimg.getValue<std::string>(EMDL::IMAGE_NAME, ipart);
         fh << fnt << " ";
         for (int ival = 0; ival < projected_input[ipart].size(); ival++) {
             fh.width(15);

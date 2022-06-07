@@ -622,11 +622,11 @@ class image_handler_parameters {
             }
             if (fn_out.getExtension() != "mrcs")
                 std::cout << "NOTE: the input (--i) is a STAR file but the output (--o) does not have .mrcs extension. The output is treated as a suffix, not a path." << std::endl;
-            FileName fn_img = MD.getValue<FileName>(EMDL::IMAGE_NAME, 0);
+            FileName fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, 0);
             fn_img.decompose(slice_id, fn_stem);
             input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
         } else if (input_is_stack) {
-            if (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)) {
+            if (bin_avg > 0 || avg_first >= 0 && avg_last >= 0) {
                 MD.addObject();
                 MD.setValue(EMDL::IMAGE_NAME, fn_in);
             } else {
@@ -653,7 +653,7 @@ class image_handler_parameters {
 
         bool do_md_out = false;
         FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
-            FileName fn_img = MD.getValue<FileName>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
+            FileName fn_img = MD.getValue<std::string>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
 
             // For fourfilter...
             RFLOAT psi;

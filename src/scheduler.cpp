@@ -587,8 +587,8 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.readStar(in, "schedule_strings");
     FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
         std::string myname         = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_NAME);
-        FileName    value          = MD.getValue<FileName>(EMDL::SCHEDULE_VAR_STRING_VALUE);
-        FileName    original_value = MD.getValue<FileName>(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE);
+        FileName    value          = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_VALUE);
+        FileName    original_value = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE);
         SchedulerStringVariable myval(value, original_value);
         scheduler_global_strings[myname] = myval;
     }
