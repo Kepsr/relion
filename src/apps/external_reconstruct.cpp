@@ -72,10 +72,8 @@ class ext_recons_parameters {
 
         MDtau.read(fn_star, "external_reconstruct_tau2");
         tau2.resize(MDtau.numberOfObjects());
-        int idx = 0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtau) {
-            tau2[idx] = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
-            idx++;
+        for (long int i : MDtau) {
+            tau2[i] = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
         }
 
     }

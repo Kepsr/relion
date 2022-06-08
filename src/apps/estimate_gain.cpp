@@ -124,7 +124,7 @@ class estimate_gain {
             init_progress_bar(MDin.numberOfObjects());
         }
 
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+        for (long int _ : MDin) {
             fn_img = MDin.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME);
 
             int n_frames;

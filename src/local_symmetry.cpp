@@ -362,16 +362,11 @@ void readRelionFormatMasksAndOperators(
     ) REPORT_ERROR("ERROR: You need rlnMaskName, rlnAngleRot, rlnAngleTilt, rlnAnglePsi, rlnOriginXAngst, rlnOriginYAngst and rlnOriginZAngst columns. Some of them are missing in your STAR file " + (std::string)(fn_info) + ". Note that rlnOriginX/Y/Z were changed to rlnOriginX/Y/ZAngst in RELION 3.1. Since the values in the symmetry definition file were in Angstrom from the beginning, please only edit the column names, not values.");
 
     // Load mask names
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME);
-        bool is_maskname_found = false;
-        for (auto &fn_mask2 : fn_mask_list) {
-            if (fn_mask == fn_mask2) {
-                is_maskname_found = true;
-                break;
-            }
-        }
-        if (!is_maskname_found)
+        if (fn_mask_list.end() == std::find(
+            fn_mask_list.begin(), fn_mask_list.end(), fn_mask
+        ))
             fn_mask_list.push_back(fn_mask);
     }
     if (fn_mask_list.empty())
@@ -390,7 +385,7 @@ void readRelionFormatMasksAndOperators(
         }
 
         // Find all operators for this mask
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int _ : MD) {
             FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME);
             if (fn_mask != fn_mask_list[id_mask])
                 continue;
@@ -491,7 +486,7 @@ void readRelionFormatMasksWithoutOperators(
     // Collect all entries
     fns.clear();
     ids.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         fn = MD.getValue<std::string>(EMDL::MASK_NAME);
         id = MD.getValue<int>(EMDL::AREA_ID);
         fns.push_back(fn);

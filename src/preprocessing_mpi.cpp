@@ -59,8 +59,7 @@ void PreprocessingMpi::runExtractParticles() {
         }
 
         FileName fn_mic, fn_olddir = "";
-        long int imic = 0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
+        for (long int imic : MDmics) {
             if (imic >= my_first_mic && imic <= my_last_mic) {
 
                 // Abort through the pipeline_control system
@@ -91,7 +90,6 @@ void PreprocessingMpi::runExtractParticles() {
 
                 extractParticlesFromFieldOfView(fn_mic, imic);
             }
-            imic++;
         }
     }
 

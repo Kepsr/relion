@@ -88,10 +88,9 @@ class stack_create_parameters {
         std::vector<int> mics_ndims;
 
         // First get number of images and their size
-        int ndim = 0;
         bool is_first = true;
         int xdim, ydim, zdim;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int ndim : MD) {
             if (is_first) {
                 fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
                 in.read(fn_img);
@@ -116,16 +115,16 @@ class stack_create_parameters {
                     mics_ndims.push_back(1);
                 }
             }
-            ndim++;
         }
 
         // If not splitting, just fill fn_mics and mics_ndim with one entry (to re-use loop below)
         if (!do_split_per_micrograph) {
             fn_mics.push_back("");
-            mics_ndims.push_back(ndim);
+            mics_ndims.push_back(MD.numberOfObjects());
         }
 
         // Loop over all micrographs
+        int ndim = 0;
         for (int m = 0; m < fn_mics.size(); m++) {
             ndim = mics_ndims[m];
             fn_mic = fn_mics[m];
@@ -158,7 +157,7 @@ class stack_create_parameters {
 
             int n = 0;
             init_progress_bar(ndim);
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+            for (long int _ : MD) {
 
                 FileName fn_mymic = do_split_per_micrograph ? MD.getValue<std::string>(EMDL::MICROGRAPH_NAME) : "";
                 int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;

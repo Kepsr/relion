@@ -652,7 +652,7 @@ class image_handler_parameters {
             init_progress_bar(MD.numberOfObjects());
 
         bool do_md_out = false;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int index : MD) {
             FileName fn_img = MD.getValue<std::string>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
 
             // For fourfilter...
@@ -877,12 +877,12 @@ class image_handler_parameters {
                 MD.write(fn_md_out);
             } else {
                 if (my_new_box_size > 0) {
-                    FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+                    for (long int _ : obsModel.opticsMdt) {
                         obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, my_new_box_size);
                     }
                 }
                 if (real_angpix > 0) {
-                    FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+                    for (long int _ : obsModel.opticsMdt) {
                         obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, real_angpix);
                     }
                 }

@@ -384,7 +384,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     // Read in the CTF information if needed
     if (basePckr->do_ctf) {
         // Search for this micrograph in the metadata table
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(basePckr->MDmic) {
+        for (MetaDataTable::iterator it = basePckr->MDmic.begin(); it != basePckr->MDmic.end(); ++it) {
             FileName fn_tmp = basePckr->MDmic.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
                 CTF ctf = CTF(basePckr->MDmic, &basePckr->obsModel);

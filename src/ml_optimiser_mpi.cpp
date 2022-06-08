@@ -430,7 +430,7 @@ void MlOptimiserMpi::initialise() {
         int idx;
         MetaDataTable MDsigma;
         MDsigma.read(fn_sigma);
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) {
+        for (long int _  : MDsigma) {
             RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
             idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
             if (idx < Xsize(mymodel.sigma2_noise[0])) { 

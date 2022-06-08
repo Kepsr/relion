@@ -341,7 +341,7 @@ bool RelionJob::read(string fn, bool &_is_continue, bool do_initialise) {
 
         MetaDataTable MDvals;
         MDvals.read(fn_star, "joboptions_values");
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDvals) {
+        for (long int _ : MDvals) {
             string label = MDvals.getValue<string>(EMDL::JOBOPTION_VARIABLE);
             if (joboptions.find(label) == joboptions.end()) {
                 std::cerr << "WARNING: cannot find " << label << " in the defined joboptions. Ignoring it ..." << std::endl;

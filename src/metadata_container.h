@@ -37,16 +37,18 @@ class MetaDataContainer
 
         MetaDataTable* table;
 
-        std::vector<double> doubles;
-        std::vector<long> ints;
+        std::vector<double> doubles;  // Extended precision
+        std::vector<long> ints;  // Extended precision
         std::vector<bool> bools;
 	std::vector<std::string> strings;
 	std::vector<std::vector<double> > doubleVectors;
 	std::vector<std::string> unknowns;
 
         MetaDataContainer();
-        MetaDataContainer(MetaDataTable* table, long doubleCount, long intCount,
-                          long boolCount, long stringCount, long doubleVectorCount, long unknownCount);
+        MetaDataContainer(
+                MetaDataTable* table, long doubleCount, long intCount, long boolCount, 
+                long stringCount, long doubleVectorCount, long unknownCount
+        );
         MetaDataContainer(MetaDataTable* table, MetaDataContainer* mdc);
 
         template <typename T>

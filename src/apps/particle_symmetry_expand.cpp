@@ -122,8 +122,7 @@ class particle_symmetry_expand_parameters {
         DFo.clear();
 
         // Loop over input MetadataTable
-        long int imgno = 0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(DFi) {
+        for (long int imgno : DFi) {
 
             RFLOAT rotp, tiltp, psip;
 
@@ -169,7 +168,6 @@ class particle_symmetry_expand_parameters {
             }
 
             if (imgno % barstep == 0) progress_bar(imgno);
-            imgno++;
 
         }
         progress_bar(DFi.numberOfObjects());

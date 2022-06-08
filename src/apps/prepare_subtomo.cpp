@@ -276,7 +276,7 @@ class prepare_subtomo {
             REPORT_ERROR("Tomogram STAR file " + fn_tomo_list + " should contain _rlnMicrographName!");
         // Check whether each tomogram sits in a separate folder
         fns_tomo.clear();
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
+        for (long int _ : MD_tomo) {
             fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             fns_tomo.push_back(fn1);
         }
@@ -300,7 +300,7 @@ class prepare_subtomo {
         bool is_star_coords = false, is_txt_coords = false;
         MD_tmp.clear();
         img.clear();
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
+        for (long int _ : MD_tomo) {
             fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             std::cout << " 3D reconstructed tomogram in STAR file: " << fn1 << std::flush;
 
@@ -518,7 +518,7 @@ class prepare_subtomo {
             fout1 << std::endl;
         }
 
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_tomo) {
+        for (long int _ : MD_tomo) {
             std::cout << std::endl;
 
             FileName fn_tomo = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
@@ -672,7 +672,7 @@ class prepare_subtomo {
                 MD_ctf_results.addLabel(EMDL::CTF_DEFOCUSU);
                 MD_ctf_results.addLabel(EMDL::CTF_DEFOCUSV);
                 //MD_ctf_results.addLabel(EMDL::CTF_DEFOCUS_ANGLE);
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_ctf_results) {
+                for (long int _ : MD_ctf_results) {
                     MD_ctf_results.setValue(EMDL::CTF_DEFOCUSU, 0.0);
                     MD_ctf_results.setValue(EMDL::CTF_DEFOCUSV, 0.0);
                     // MD_ctf_results.setValue(EMDL::CTF_DEFOCUS_ANGLE, 0.0);
@@ -745,7 +745,7 @@ class prepare_subtomo {
                 !MD_ctf_results.containsLabel(EMDL::CTF_DEFOCUSV) ||
                 !MD_ctf_results.containsLabel(EMDL::MICROGRAPH_NAME)
             ) REPORT_ERROR("micrographs_ctf.star should contain _rlnDefocusU, _rlnDefocusV and _rlnMicrographName! Please check whether CTF estimation was done successfully.");
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_ctf_results) {
+            for (long int _ : MD_ctf_results) {
                 du = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);
                 dv = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV);
                 avg_defoci.push_back(du); // TODO: Why just read in defocusU but not with defocusV and defocusAngle ???
@@ -808,7 +808,6 @@ class prepare_subtomo {
             std::cout << " Tomogram XYZN dimensions = " << dimensions.x << " * " << dimensions.y << " * " << dimensions.z << " * " << dimensions.n << std::endl;
             std::cout << " Writing out .star files to make 3D CTF volumes..." << std::endl;
 
-            int nr_subtomo = 0;
             bool write_star_file = false;
             FileName fn_subtomo_star, fn_subtomo_mrc;
             MetaDataTable MD_coords, MD_this_subtomo;
@@ -853,19 +852,17 @@ class prepare_subtomo {
             // Loop over every picked 3D point
             if (MD_coords.numberOfObjects() < 1)
                 REPORT_ERROR("MD_coords is empty! It reads from .coord or .star file: " + fn_coords);
-            nr_subtomo = 0;
             RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_coords) {
-                nr_subtomo++;
+            for (long int nr_subtomo : MD_coords) {
                 xx = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
                 yy = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
                 zz = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
 
-                write_star_file = (do_skip_ctf_correction && nr_subtomo == 1) || !do_skip_ctf_correction;
+                write_star_file = (do_skip_ctf_correction && nr_subtomo == 0) || !do_skip_ctf_correction;
                 if (!write_star_file) continue; // TODO: check this! OK. I think it is fine.
 
                 // Only do once if do_skip_ctf_correction
-                if (do_skip_ctf_correction && nr_subtomo == 1) {
+                if (do_skip_ctf_correction && nr_subtomo == 0) {
                     fn_subtomo_star = "Particles/" + fn_tomo.withoutExtension() + "_ctf.star";
                     fn_subtomo_mrc  = "Particles/" + fn_tomo.withoutExtension() + "_ctf.mrc";
                     #ifdef DEBUG
@@ -874,8 +871,8 @@ class prepare_subtomo {
                 }
                 // For every sub-tomogram
                 if (!do_skip_ctf_correction) {
-                    fn_subtomo_star = "Particles/" + fn_tomo.withoutExtension() + "_ctf" + integerToString(nr_subtomo, 6, '0') + ".star";
-                    fn_subtomo_mrc	= "Particles/" + fn_tomo.withoutExtension() + "_ctf" + integerToString(nr_subtomo, 6, '0') + ".mrc";
+                    fn_subtomo_star = "Particles/" + fn_tomo.withoutExtension() + "_ctf" + integerToString(nr_subtomo + 1, 6, '0') + ".star";
+                    fn_subtomo_mrc	= "Particles/" + fn_tomo.withoutExtension() + "_ctf" + integerToString(nr_subtomo + 1, 6, '0') + ".mrc";
                     #ifdef DEBUG
                     std::cout << " fn_subtomo_star = " << fn_subtomo_star << " , fn_subtomo_mrc = " << fn_subtomo_mrc << std::endl;
                     #endif
@@ -957,7 +954,7 @@ class prepare_subtomo {
                 fout1 << command << std::endl;
 
                 // Write a new object to MD_part
-                FileName fn_extract_part = "Extract/" + fn_extract_job_alias + "/" + fn_tomo.withoutExtension() + integerToString(nr_subtomo, 6, '0') + ".mrc";
+                FileName fn_extract_part = "Extract/" + fn_extract_job_alias + "/" + fn_tomo.withoutExtension() + integerToString(nr_subtomo + 1, 6, '0') + ".mrc";
                 if (fn_coords.getExtension() == "star")
                     MD_part.addObject(MD_coords.getObject()); // Append extra information from MD_coords
                 else

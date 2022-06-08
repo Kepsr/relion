@@ -84,7 +84,7 @@ class align_symmetry {
         double best_diff2 = 1E99;
 
         /// TODO: parallelise?
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDang) {
+        for (long int index : MDang) {
             RFLOAT rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
             RFLOAT tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
             RFLOAT psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);

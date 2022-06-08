@@ -246,16 +246,15 @@ void Postprocessing::divideByMtf(MultidimArray<Complex> &FT) {
         mtf_resol.resize(MDmtf.numberOfObjects());
         mtf_value.resize(mtf_resol);
 
-        int i = 0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmtf) {
+        for (long int i : MDmtf) {
             direct::elem(mtf_resol, i) = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL) / mtf_angpix; // resolution needs to be given in 1/Ang
             direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
             if (direct::elem(mtf_value, i) < 1e-10) {
                 std::cerr << " i= " << i << " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
                 REPORT_ERROR("Postprocessing::sharpenMap ERROR: zero or negative values encountered in MTF curve!");
             }
-            i++;
         }
+        int i = MDmtf.numberOfObjects();
 
         // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
         RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
@@ -808,7 +807,7 @@ void Postprocessing::writeFscXml(MetaDataTable &MDfsc) {
 
     fh << "<fsc title=\"RELION masked-corrected FSC\" xaxis=\"Resolution (A-1)\" yaxis=\"Correlation Coefficient\">"<<std::endl;
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDfsc) {
+    for (long int i : MDfsc) {
         RFLOAT xx = MDfsc.getValue<RFLOAT>(EMDL::RESOLUTION);
         RFLOAT yy = MDfsc.getValue<RFLOAT>(EMDL::POSTPROCESS_FSC_TRUE);
         fh << "  <coordinate>" << std::endl;

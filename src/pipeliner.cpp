@@ -972,7 +972,7 @@ void PipeLine::getOutputNodesFromStarFile(int this_job) {
         MetaDataTable MDnodes;
         MDnodes.read(outnodes, "output_nodes");
 
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnodes) {
+        for (long int i : MDnodes) {
             FileName nodename = MDnodes.getValue<std::string>(EMDL::PIPELINE_NODE_NAME);
             int      nodetype = MDnodes.getValue<int>     (EMDL::PIPELINE_NODE_TYPE);
 
@@ -1206,7 +1206,7 @@ void PipeLine::undeleteJob(FileName fn_undel) {
     MetaDataTable MDproc;
     MDproc.read(fn_undel, "pipeline_processes");
     std::cout <<"  Undeleting from Trash ... " << std::endl;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDproc) {
+    for (long int i : MDproc) {
         FileName fn_proc = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
 
         // Copy the job back from the Trash folder
@@ -1509,7 +1509,7 @@ void PipeLine::importJobs(FileName fn_export) {
     read(DO_LOCK, lock_message);
 
     std::vector<std::string> find_pattern, replace_pattern;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDexported) {
+    for (long int i : MDexported) {
         FileName expname = MDexported.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
         find_pattern.push_back(expname);
         // Make a new name for this job
@@ -1662,7 +1662,7 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
     }
 
     MDnode.readStar(in, "pipeline_nodes");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnode) try {
+    for (long int i : MDnode) try {
         std::string name = MDnode.getValue<std::string>(EMDL::PIPELINE_NODE_NAME);
         int         type = MDnode.getValue<int>        (EMDL::PIPELINE_NODE_TYPE);
         Node newNode(name, type);
@@ -1672,7 +1672,7 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
     }
 
     MDproc.readStar(in, "pipeline_processes");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDproc) {
+    for (long int i : MDproc) {
         try {
             std::string name   = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_NAME);
             std::string alias  = MDproc.getValue<std::string>(EMDL::PIPELINE_PROCESS_ALIAS);
@@ -1702,7 +1702,7 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
 
     // Read in all input (Node->Process) edges
     MDedge1.readStar(in, "pipeline_input_edges");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDedge1) {
+    for (long int i : MDedge1) {
         std::string fromnodename, procname;
         try {
             procname     = MDedge1.getValue<std::string>(EMDL::PIPELINE_EDGE_PROCESS);
@@ -1733,7 +1733,7 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
 
     // Read in all output (Process->Node) edges
     MDedge2.readStar(in, "pipeline_output_edges");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDedge2) {
+    for (long int i : MDedge2) {
         std::string tonodename, procname;
         try {
             tonodename = MDedge2.getValue<std::string>(EMDL::PIPELINE_EDGE_TO);

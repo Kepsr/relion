@@ -365,7 +365,7 @@ void Experiment::initialiseBodies(int _nr_bodies) {
         MetaDataTable MDbody;
         MDbody.isList = false;
         bool is_3d = (MDimg.containsLabel(EMDL::ORIENT_ORIGIN_Z));
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
+        for (long int index : MDimg) {
             MDbody.addObject();
             RFLOAT zero = 0.0, ninety = 90.0;  // Is this an lvalue / rvalue thing?
             RFLOAT norm = MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
@@ -535,7 +535,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
 
     FileName prev_img_name = "/Unlikely$filename$?*!";
     int prev_optics_group = -999;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
+    for (long int index : MDimg) {
         // TODO: think about MPI_Abort here....
         if (index % check_abort_frequency == 0 && pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
@@ -777,7 +777,7 @@ void Experiment::read(
 
         FileName prev_img_name = "/Unlikely$filename$?*!";
         int prev_optics_group = -999;
-        //FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg)
+        //for (long int index : MDimg)
         // Loop over all objects in MDimg (ori_part_id)
         for (long int ori_img_id = 0; ori_img_id < MDimg.numberOfObjects(); ori_img_id++) {
             // Get the optics group of this particle
@@ -970,7 +970,7 @@ void Experiment::read(
     if (need_tiltpsipriors_for_helical_refine && !have_tiltpsi_prior && !have_tiltpsi) {
         REPORT_ERROR("exp_model.cpp: Experiment::read(): Tilt and psi priors of helical segments are missing!");
     }
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
+    for (long int index : MDimg) {
         RFLOAT dzero = 0.0, done = 1.0;
         int izero = 0;
         if (!have_rot)

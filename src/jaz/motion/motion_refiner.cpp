@@ -376,14 +376,14 @@ void MotionRefiner::combineEPSAndSTARfiles() {
             mdt.read(fn_root + "_shiny" + frameRecombiner.getOutputSuffix() + ".star");
             mdtAll.append(mdt);
 
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt) {
+            for (long int _ : mdt) {
                 n_OgPresent[obsModel.getOpticsGroup(mdt)]++;
             }
         } else {
             // Non-processed particles belonging to micrographs not present in the MotionCorr STAR file
             // Remove them from the output
 
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(allMdts[g]) {
+            for (long int _ : allMdts[g]) {
                 n_OgAbsent[obsModel.getOpticsGroup(allMdts[g])]++;
             }
         }

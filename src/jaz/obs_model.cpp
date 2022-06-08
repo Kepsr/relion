@@ -118,7 +118,7 @@ void ObservationModel::loadSafely(
         if (!obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE)) {
             std::cerr << "Pixel size in rlnImagePixelSize will be copied to rlnMicrographPixelSize column. Please make sure this is correct!" << std::endl;
 
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+            for (long int _ : obsModel.opticsMdt) {
                 RFLOAT image_angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE);
                 obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, image_angpix);
             }
@@ -823,19 +823,18 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
             mtf_resol.resize(MDmtf.numberOfObjects());
             mtf_value.resize(mtf_resol);
 
-            int i = 0;
             RFLOAT resol_inv_pixel = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL);
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmtf) {
+            for (long int i : MDmtf) {
                 direct::elem(mtf_resol, i) = resol_inv_pixel / originalAngpix[optGroup];  // resolution needs to be given in 1/Ang
                 direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
                 if (direct::elem(mtf_value, i) < 1e-10) {
                     std::cerr << " i= " << i <<  " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
                     REPORT_ERROR("ERROR: zero or negative values encountered in MTF curve: " + fnMtfs[optGroup]);
                 }
-                i++;
             }
 
             // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
+            int i = MDmtf.numberOfObjects();
             RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
             if (res_per_elem < 1e-10) REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
 

@@ -255,7 +255,7 @@ class star_handler_parameters {
         RFLOAT sum_n = 0.0;
         std::vector<RFLOAT> avgs, stddevs;
         long int ii = 0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+        for (long int _ : MDin) {
             FileName fn_img = MDin.getValue<std::string>(EMDL::str2Label(discard_label));
             Image<RFLOAT> img;
             img.read(fn_img);
@@ -289,7 +289,7 @@ class star_handler_parameters {
 
         long int i = 0, nr_discard = 0;
         MetaDataTable MDout;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+        for (long int index : MDin) {
             if (
                 avgs[i] > sum_avg - discard_sigma * sum2_avg &&
                 avgs[i] < sum_avg + discard_sigma * sum2_avg &&
@@ -338,7 +338,7 @@ class star_handler_parameters {
             std::vector<std::string> optics_group_uniq_names;
 
             // Initialise optics_group_uniq_names with the first table
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+            for (long int _ : obsModel.opticsMdt) {
                 std::string myname = obsModel.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
                 optics_group_uniq_names.push_back(myname);
             }
@@ -348,7 +348,7 @@ class star_handler_parameters {
                 const int obs_id = MDs_id - 1;
 
                 std::vector<int> new_optics_groups;
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsin[MDs_id]) {
+                for (long int _ : MDsin[MDs_id]) {
                     int tmp = MDsin[MDs_id].getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
                     new_optics_groups.push_back(tmp);
                 }
@@ -356,7 +356,7 @@ class star_handler_parameters {
                 MetaDataTable unique_opticsMdt;
                 unique_opticsMdt.addMissingLabels(&obsModels[obs_id].opticsMdt);
 
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModels[obs_id].opticsMdt) {
+                for (long int _ : obsModels[obs_id].opticsMdt) {
                     std::string myname          = obsModels[obs_id].opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
                     int         my_optics_group = obsModels[obs_id].opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
 
@@ -400,7 +400,7 @@ class star_handler_parameters {
 
                 obsModels[obs_id].opticsMdt = unique_opticsMdt;
 
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsin[MDs_id]) {
+                for (long int index : MDsin[MDs_id]) {
                     MDsin[MDs_id].setValue(EMDL::IMAGE_OPTICS_GROUP, new_optics_groups[index]);
 
                     // Also rename the rlnGroupName to not have groups overlapping from different optics groups
@@ -469,12 +469,12 @@ class star_handler_parameters {
                 MetaDataTable &mdt_optics = MDoptics[i];
                 if (has_beamtilt && has_not_beamtilt) {
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_BEAMTILT_X)) {
-                        FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt_optics) {
+                        for (long int _ : mdt_optics) {
                             mdt_optics.setValue(EMDL::IMAGE_BEAMTILT_X, 0.0);
                         }
                     }
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_BEAMTILT_Y)) {
-                        FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt_optics) {
+                        for (long int _ : mdt_optics) {
                             mdt_optics.setValue(EMDL::IMAGE_BEAMTILT_Y, 0.0);
                         }
                     }
@@ -487,7 +487,7 @@ class star_handler_parameters {
                         !mdt_optics.containsLabel(EMDL::IMAGE_MAG_MATRIX_10) ||
                         !mdt_optics.containsLabel(EMDL::IMAGE_MAG_MATRIX_11)
                     ) {
-                        FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt_optics) {
+                        for (long int _ : mdt_optics) {
                             mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_00, 1.0);
                             mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_01, 0.0);
                             mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_10, 0.0);
@@ -499,7 +499,7 @@ class star_handler_parameters {
                 if (has_odd_zernike && has_not_odd_zernike) {
                     std::vector<RFLOAT> six_zeros(6, 0);
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_ODD_ZERNIKE_COEFFS)) {
-                        FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt_optics) {
+                        for (long int _ : mdt_optics) {
                             mdt_optics.setValue(EMDL::IMAGE_ODD_ZERNIKE_COEFFS, six_zeros);
                         }
                     }
@@ -508,7 +508,7 @@ class star_handler_parameters {
                 if (has_even_zernike && has_not_even_zernike) {
                     std::vector<RFLOAT> nine_zeros(9, 0);
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS)) {
-                        FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt_optics) {
+                        for (long int _ : mdt_optics) {
                             mdt_optics.setValue(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS, nine_zeros);
                         }
                     }
@@ -516,7 +516,7 @@ class star_handler_parameters {
 
                 if (has_ctf_premultiplied && has_not_ctf_premultiplied) {
                     if (!mdt_optics.containsLabel(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED)) {
-                        FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt_optics) {
+                        for (long int _ : mdt_optics) {
                             mdt_optics.setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, false);
                         }
                     }
@@ -541,7 +541,7 @@ class star_handler_parameters {
             /// Don't want to mess up original order, so make a MDsort with only that label...
             FileName fn_this, fn_prev = "";
             MetaDataTable MDsort;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
+            for (long int _ : MDout) {
                 fn_this = MDout.getValue<std::string>(label);
                 MDsort.addObject();
                 MDsort.setValue(label, fn_this);
@@ -549,7 +549,7 @@ class star_handler_parameters {
             // sort on the label
             MDsort.newSort(label);
             long int nr_duplicates = 0;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsort) {
+            for (long int _ : MDsort) {
                 fn_this = MDsort.getValue<std::string>(label);
                 if (fn_this == fn_prev) {
                     nr_duplicates++;
@@ -596,7 +596,7 @@ class star_handler_parameters {
         std::vector<MetaDataTable> MDouts (nr_split);
 
         long int n = 0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int index : MD) {
             int my_split = n / size_split;
             if (my_split < nr_split) {
                 MDouts[my_split].addObject(MD.getObject(index));
@@ -642,7 +642,7 @@ class star_handler_parameters {
 
         MetaDataTable MD = read_check_ignore_optics(fn_in);
 
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int _ : MD) {
             if (EMDL::isDouble(label1)) {
                 RFLOAT val;
                 if (!fn_set.empty()) {
@@ -721,7 +721,7 @@ class star_handler_parameters {
         YY(my_center) = center_Y;
         ZZ(my_center) = center_Z;
 
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int _ : MD) {
 
             RFLOAT angpix;
             if (do_ignore_optics) {
@@ -788,7 +788,7 @@ class star_handler_parameters {
             }
         }
 
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int _ : MD) {
             if (EMDL::isDouble(label)) {
                 RFLOAT aux = set_value ? textToFloat(add_col_value) : MD.getValue<RFLOAT>(source_label);
                 MD.setValue(label, aux);

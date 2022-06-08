@@ -1634,7 +1634,7 @@ void convertHelicalTubeCoordsToMetaDataTable(
     bool bimodal_angular_priors,
     bool cut_into_segments
 ) {
-    int nr_segments, MDobj_id;
+    int nr_segments;
     RFLOAT psi_deg, psi_rad, x1, y1, x2, y2, dx, dy, step_pix, half_box_size_pix, len_pix, psi_prior_flip_ratio;
     MetaDataTable MD_in;
     std::vector<RFLOAT> x1_coord_list, y1_coord_list, x2_coord_list, y2_coord_list, pitch_list;
@@ -1675,12 +1675,10 @@ void convertHelicalTubeCoordsToMetaDataTable(
     y2_coord_list.clear();
     tube_id_list.clear();
     pitch_list.clear();
-    MDobj_id = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
-        MDobj_id++;
+    for (long int index : MD_in) {
         RFLOAT xp = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         RFLOAT yp = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-        if (MDobj_id % 2) {
+        if (index % 2) {
             x1_coord_list.push_back(xp);
             y1_coord_list.push_back(yp);
             if (MDin_has_id) {
@@ -1858,7 +1856,7 @@ void combineParticlePriorsWithKaiLocalCTF(
     Cs.clear(); pix.clear(); mag.clear(); Q0.clear(); volt.clear(); // necessary
     fom.clear(); maxres.clear(); bfac.clear(); sfac.clear(); phase.clear(); // optional
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_local_ctf) {
+    for (long int index : MD_local_ctf) {
         _x      = MD_local_ctf.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);           x   .push_back(_x);
         _y      = MD_local_ctf.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);           y   .push_back(_y);
         _dU     = MD_local_ctf.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);            dU  .push_back(_dU);
@@ -1909,7 +1907,7 @@ void combineParticlePriorsWithKaiLocalCTF(
         MD_priors.addLabel(EMDL::CTF_PHASESHIFT);
 
     ii = -1;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_priors) {
+    for (long int index : MD_priors) {
         ii++;
         _x = MD_priors.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         _y = MD_priors.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
@@ -1978,7 +1976,7 @@ void setNullTiltPriorsInDataStar(FileName& fn_in, FileName& fn_out) {
     MD.read(fn_in);
     if (!MD.containsLabel(EMDL::ORIENT_TILT_PRIOR))
         MD.addLabel(EMDL::ORIENT_TILT_PRIOR);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         MD.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
     }
     MD.write(fn_out);
@@ -2006,7 +2004,7 @@ void removeBadTiltHelicalSegmentsFromDataStar(
         REPORT_ERROR("helix.cpp::removeBadTiltParticlesFromDataStar(): Input .star file contains no tilt angles.");
 
     nr_segments_old = nr_segments_new = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         nr_segments_old++;
         tilt_deg = MD_in.getValue<RFLOAT>(EMDL::ORIENT_TILT);
         if (fabs(tilt_deg - 90.0) < max_dev_deg) {
@@ -2039,7 +2037,7 @@ void removeBadPsiHelicalSegmentsFromDataStar(
         REPORT_ERROR("helix.cpp::removeBadTiltParticlesFromDataStar(): Input .star file contains no psi angles with their priors.");
 
     nr_segments_old = nr_segments_new = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         nr_segments_old++;
         psi_deg       = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
         psi_prior_deg = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
@@ -2138,7 +2136,7 @@ void convertHelicalSegmentCoordsToMetaDataTable(
 
     int nr_segments = 0;
     z = 1.0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         x = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         y = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         if (is_3D_data)
@@ -2705,7 +2703,7 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
 
     // Count micrograph names
     map_mics.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         mic_name.clear();
         mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (divide_according_to_helical_tube_id) {
@@ -2774,7 +2772,7 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
     if ( (ratio > 1.5) || ( (1. / ratio) > 1.5) )
         REPORT_ERROR("helix.cpp::divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(): Numbers of helical segments from two half sets are extremely unbalanced!");
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         mic_name.clear();
         mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (divide_according_to_helical_tube_id) {
@@ -3157,7 +3155,7 @@ void divideStarFile(FileName& fn_in, int nr) {
     line_id = 0;
     file_id = 0;
     MD.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         line_id++;
         MD.addObject(MD_in.getObject());
         if (line_id % nr_lines == 0 && total_lines - line_id > nr_lines) {
@@ -3205,7 +3203,7 @@ void mergeStarFiles(FileName& fn_in) {
     for (file_id = 0; file_id < fns_list.size(); file_id++) {
         MD_in.clear();
         MD_in.read(fns_list[file_id]);
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+        for (long int index : MD_in) {
             MD_combined.addObject(MD_in.getObject());
         }
         std::cout << "  " << MD_combined.numberOfObjects() << " objects loaded." << std::endl;
@@ -3238,7 +3236,7 @@ void sortHelicalTubeID(MetaDataTable& MD) {
     ) REPORT_ERROR("helix.cpp::sortHelicalTubeID: Labels of helical prior information are missing!");
 
     int_tube_id = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         str_particle_fullname = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         int_tube_id           = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
         str_comment = str_particle_name + "@TUBE@" + integerToString(int_tube_id, 6);
@@ -3257,7 +3255,7 @@ void sortHelicalTubeID(MetaDataTable& MD) {
     nr_tubes = tubes.size();
     tubes.clear();
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         str_comment = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         str_particle_id = str_comment.substr(str_comment.find("@PARTICLE@") + 10);
         str_particle_name = str_comment.substr(0, str_comment.find("@TUBE@"));
@@ -3492,7 +3490,7 @@ void simulateHelicalSegments(
     fout.close();
 
     MD.deactivateLabel(EMDL::ORIENT_ROT_PRIOR);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         MD.setValue(EMDL::ORIENT_ROT, 0.0);
         if (!is_3d_tomo) {
             MD.setValue(EMDL::ORIENT_TILT,       90.0);
@@ -3510,7 +3508,7 @@ void simulateHelicalSegments(
     }
     MD.write(fn_star_out_priors);
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         MD.setValue(EMDL::ORIENT_ROT,  0.0);
         MD.setValue(EMDL::ORIENT_TILT, 0.0);
         MD.setValue(EMDL::ORIENT_PSI,  0.0);
@@ -3602,7 +3600,7 @@ void excludeLowCTFCCMicrographs(
 
     nr_mics_old = nr_mics_new = 0;
     MD_out.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         nr_mics_old++;
         cc      = MD_in.getValue<RFLOAT>(EMDL::CTF_FOM);
         EPA_res = MD_in.getValue<RFLOAT>(EMDL::CTF_MAXRES);
@@ -4087,7 +4085,7 @@ void updatePriorsForHelicalReconstruction(
     // Read _data.star file
     list.clear();
     MDobjectID = -1;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         HelicalSegmentPriorInfoEntry segment;
 
         segment.clear();
@@ -4210,7 +4208,7 @@ void updateAngularPriorsForHelicalReconstructionFromLastIter(
     // Hopefully the compiler will notice this 
     // and be able to optimise away the overhead by hoisting this loop-invariant code.
     // https://en.wikipedia.org/wiki/Loop-invariant_code_motion
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         if (have_tilt && have_tilt_prior && !keep_tilt_prior_fixed) {
             MD.setValue(EMDL::ORIENT_TILT_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_TILT));
         }
@@ -4227,7 +4225,7 @@ void updateAngularPriorsForHelicalReconstructionFromLastIter(
 void setPsiFlipRatioInStarFile(MetaDataTable& MD, RFLOAT ratio) {
     if (!MD.containsLabel(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO))
         REPORT_ERROR("helix.cpp::setPsiFlipRatioInStarFile: Psi flip ratio is not found in this STAR file!");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         MD.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, ratio);
     }
 }
@@ -4260,7 +4258,7 @@ void grabParticleCoordinates(FileName& fn_in, FileName& fn_out) {
     MD_out.clear();
     RFLOAT x, y, z;
     x = y = z = 0.0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         x = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         y = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         if (contain_z_coord)
@@ -4341,7 +4339,7 @@ void transformCartesianToHelicalCoordsForStarFiles(MetaDataTable& MD_in, MetaDat
     MD_out.clear();
     MD_out = MD_in;
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         rot  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ROT);
         tilt = MD_in.getValue<RFLOAT>(EMDL::ORIENT_TILT);
         psi  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
@@ -4391,7 +4389,7 @@ void normaliseHelicalSegments(
     if (!have_psi_prior && !MD.containsLabel(EMDL::ORIENT_PSI))
         REPORT_ERROR("helix.cpp::normaliseHelicalSegments(): MetaDataLabel _rlnAnglePsi or _rlnAnglePsiPrior is missing!");
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int index : MD) {
         // Read image name and angular priors
         img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         file_ext = img_name.getExtension();
@@ -4549,7 +4547,7 @@ void HermiteInterpolateOne3DHelicalFilament(
 
     // Load all manually picked coordinates
     xlist.clear(); ylist.clear(); zlist.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_in) {
+    for (long int index : MD_in) {
         x0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         y0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         z0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
@@ -4894,7 +4892,7 @@ void Interpolate3DCurves(
                 !MD.containsLabel(EMDL::IMAGE_COORD_Y) || 
                 !MD.containsLabel(EMDL::IMAGE_COORD_Z)
             ) REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Input coordinate STAR file " + (std::string)(fn_in) + " should contain _rlnCoordinateX Y and Z!");
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+            for (long int index : MD) {
                 xx = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
                 yy = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
                 zz = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
@@ -5122,7 +5120,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
 
         // Firstly, check whether the pixel sizes of segments in MD_3d are the same
         Dpix = -1.0, Mag = -1.0, _Dpix = -1.0, _Mag = -1.0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_3d) {
+        for (long int index : MD_3d) {
             _Dpix = MD_3d.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
             _Mag  = MD_3d.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
             if (_Dpix <= 0.0 || _Mag <= 0.0)
@@ -5139,7 +5137,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
 
         // Then, check whether the pixel sizes of segments in MD_2d are the same. Store Dpix and Mag.
         Dpix = -1.0, Mag = -1.0, _Dpix = -1.0, _Mag = -1.0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_2d) {
+        for (long int index : MD_2d) {
             _Dpix = MD_2d.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
             _Mag  = MD_2d.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
             if (_Dpix <= 0.0 || _Mag <= 0.0)
@@ -5160,7 +5158,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
     // Gather all the selected subtomograms
     //xlist.clear(); ylist.clear(); zlist.clear(); idlist.clear();
     mic_list.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_2d) {
+    for (long int index : MD_2d) {
         // xx = MD_2d.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         // yy = MD_2d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         // zz = MD_2d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
@@ -5175,7 +5173,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
 
     // Scan through all the subtomograms
     MD_out.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD_3d) {
+    for (long int index : MD_3d) {
         // xx = MD_3d.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         // yy = MD_3d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         // zz = MD_3d.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
@@ -5219,7 +5217,7 @@ void averageAsymmetricUnits2D(
 
     long int imgno = 0;
     init_progress_bar(MDimgs.numberOfObjects());
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimgs) {
+    for (long int index : MDimgs) {
 
         FileName fn_img       = MDimgs.getValue<std::string>(EMDL::IMAGE_NAME);
         RFLOAT psi            = MDimgs.getValue<RFLOAT>(EMDL::ORIENT_PSI);

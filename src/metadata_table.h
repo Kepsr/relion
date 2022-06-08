@@ -48,25 +48,6 @@
 
 const int CURRENT_MDT_VERSION = 30001;
 
-/** For all objects.
-    @code
-    FOR_ALL_OBJECTS_IN_METADATA(metadata) {
-        RFLOAT rot = DF.getValue<RFLOAT>(EMDL::ANGLEROT);
-    }
-    @endcode
-
- This is not thread-safe because current_objectID is updated!
-
- @TODO: remove "&& current_object >= 0"
-        and make "nextObject()" return "current_object++"
-        after "enum errors" has been removed (see below)
- */
-#define FOR_ALL_OBJECTS_IN_METADATA_TABLE(table) for ( \
-        long int index = (table).firstObject(); \
-        0 <= index && index < (table).numberOfObjects(); \
-        index = (table).nextObject() \
-    )
-
 /*	class MetaDataTable:
  *
  *	- stores a table of values for an arbitrary subset of predefined EMDLabels
@@ -138,9 +119,12 @@ class MetaDataTable {
 
     MetaDataTable();
 
-    // Copy constructor and assignment operator:
+    // Copy constructor
     // Fill the new table with *copies* of all objects
-    MetaDataTable(const MetaDataTable & c);
+    MetaDataTable(const MetaDataTable &c);
+
+    // Assignment
+    // Fill the new table with *copies* of all objects
     MetaDataTable& operator = (const MetaDataTable &MD);
 
     ~MetaDataTable();
@@ -254,10 +238,68 @@ class MetaDataTable {
 
     long firstObject();
     long nextObject();
-    // @TODO: remove nextObject() after removing calls in:
-    // - "particle_reposition.cpp"
-    // - "helix.cpp"
-    // - "preprocessing.cpp"
+    /** TODO: make "nextObject()" return "current_object++" 
+     * after "enum errors" has been removed (see below)
+     */
+
+    /** @TODO: remove nextObject() after removing calls in:
+     * - "particle_reposition.cpp"
+     * - "helix.cpp"
+     * - "preprocessing.cpp"/
+     */
+
+    
+    /** MetaDataTable::iterator
+     *    
+     * This struct lets us iterate over the object indices in a MetaDataTable:
+     * @code
+     * for (long int i : mdt) {
+     *     foo(i);
+     * }
+     * @endcode
+     *
+     * This is not thread-safe, because current_objectID is updated.
+     */
+    struct iterator {
+
+        bool isDone;
+        MetaDataTable *mdt;
+        long int i;
+
+        iterator(MetaDataTable *mdt, bool isDone = false):
+        isDone(isDone), mdt(mdt), i(isDone ? 0 : mdt->firstObject()) {}
+
+        long int operator *() const {
+            return i;
+        }
+
+        void check() {
+            /// TODO: remove "i < 0"
+            isDone = i < 0 || i + 1 >= mdt->numberOfObjects();
+            // isDone = i == MetaDataTable::NO_MORE_OBJECTS || 
+            //          i == MetaDataTable::NO_OBJECTS_STORED;  // Do we want to check this every time?
+        }
+
+        iterator &operator ++() {
+            // assert !isDone
+            check();
+            if (!isDone) { i = mdt->nextObject(); }
+            return *this;
+        }
+
+        bool operator != (const iterator &other) const {
+            return isDone != other.isDone || mdt != other.mdt || i != other.i;
+        }
+
+    };
+
+    iterator begin() {
+        return iterator(this, false);
+    }
+
+    iterator end() {
+        return iterator(this, true);
+    }
 
     long goToObject(long objectID);
 

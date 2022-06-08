@@ -220,7 +220,7 @@ void  SchedulerOperator::readFromStarFile() const {
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
     ) {
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+        for (long int _ : MD) {
             if (EMDL::isDouble(mylabel)) {
                 myval = MD.getValue<RFLOAT>(mylabel);
             } else if (EMDL::isInt(mylabel)) {
@@ -565,7 +565,7 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.clear();
 
     MD.readStar(in, "schedule_floats");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         std::string myname    = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_FLOAT_NAME);
         RFLOAT value          = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_VALUE);
         RFLOAT original_value = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE);
@@ -575,7 +575,7 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.clear();
 
     MD.readStar(in, "schedule_bools");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         std::string myname  = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_BOOL_NAME);
         bool value          = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_VALUE);
         bool original_value = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE);
@@ -585,7 +585,7 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.clear();
 
     MD.readStar(in, "schedule_strings");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         std::string myname         = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_NAME);
         FileName    value          = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_VALUE);
         FileName    original_value = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE);
@@ -595,7 +595,7 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.clear();
 
     MD.readStar(in, "schedule_operators");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         // RFLOAT constant;
         std::string name   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_NAME);
         std::string type   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_TYPE);
@@ -607,7 +607,7 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.clear();
 
     MD.readStar(in, "schedule_jobs");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         // std::string type;
         std::string name     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_NAME);
         std::string ori_name = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_ORI_NAME);
@@ -618,7 +618,7 @@ void Schedule::read(bool do_lock, FileName fn) {
     MD.clear();
 
     MD.readStar(in, "schedule_edges");
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         // int number;
         std::string inputname       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_INPUT);
         std::string outputname      = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT);

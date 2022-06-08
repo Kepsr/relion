@@ -84,34 +84,31 @@ void ThirdOrderPolynomialModel::read(std::ifstream &fh, std::string block_name) 
     MD.readStar(fh, block_name);
 
     const int NUM_COEFFS = NUM_COEFFS_PER_DIM * 2;
-    int num_read = 0;
 
     coeffX.resize(NUM_COEFFS_PER_DIM); coeffX.initZeros();
     coeffY.resize(NUM_COEFFS_PER_DIM); coeffY.initZeros();
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int i : MD) {
 
-        int i;
+        int idx;
         RFLOAT val;
         try {
-            i = MD.getValue<int>(EMDL::MICROGRAPH_MOTION_COEFFS_IDX);
+            idx = MD.getValue<int>(EMDL::MICROGRAPH_MOTION_COEFFS_IDX);
             val = MD.getValue<RFLOAT>(EMDL::MICROGRAPH_MOTION_COEFF);
         } catch (const char *errmsg) {
             REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: missing index or coefficients");
         }
 
-        if (i >= 0 && i < NUM_COEFFS_PER_DIM) {
-            coeffX[i] = val;
-        } else if (i >= NUM_COEFFS_PER_DIM && i < NUM_COEFFS) {
-            coeffY[i - NUM_COEFFS_PER_DIM] = val;
+        if (idx >= 0 && idx < NUM_COEFFS_PER_DIM) {
+            coeffX[idx] = val;
+        } else if (idx >= NUM_COEFFS_PER_DIM && idx < NUM_COEFFS) {
+            coeffY[idx - NUM_COEFFS_PER_DIM] = val;
         } else {
             REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: wrong index");
         }
-
-        num_read++;
     }
 
-    if (num_read != NUM_COEFFS) {
+    if (MD.numberOfObjects() != NUM_COEFFS) {
         REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: incomplete values");
     }
 }
@@ -434,43 +431,36 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
         std::cerr << "Warning: local motion model is absent in the micrograph star file." << std::endl;
     }
 
-    if (model) {
+    if (model)
         model->read(in, "local_motion_model");
-    }
 
     // Read global shifts
-    int frame;
-    RFLOAT shiftX, shiftY;
-
     MDglobal.readStar(in, "global_shift");
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDglobal) {
-        try {
-            frame  = MDglobal.getValue<int>(EMDL::MICROGRAPH_FRAME_NUMBER);
-            shiftX = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_X);
-            shiftY = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_Y);
-        } catch (const char *errmsg) {
-            REPORT_ERROR("MicrographModel::read: incorrect global_shift table in " + fn_in);
+    try {
+        for (long int i : MDglobal) {
+            int frame  = MDglobal.getValue<int>(EMDL::MICROGRAPH_FRAME_NUMBER);
+            RFLOAT shiftX = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_X);
+            RFLOAT shiftY = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_Y);
+            // frame is 1-indexed!
+            globalShiftX[frame - 1] = shiftX;
+            globalShiftY[frame - 1] = shiftY;
         }
-
-        // frame is 1-indexed!
-        globalShiftX[frame - 1] = shiftX;
-        globalShiftY[frame - 1] = shiftY;
+    } catch (const char *errmsg) {
+        REPORT_ERROR("MicrographModel::read: incorrect global_shift table in " + fn_in);
     }
 
     if (read_hotpixels) {
         MDhot.readStar(in, "hot_pixels");
-        RFLOAT x, y;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDhot) {
-            try {
-                x = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-                y = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-            } catch (const char *errmsg) {
-                REPORT_ERROR("MicrographModel::read: incorrect hot_pixels table in " + fn_in);
+        try {
+            for (long int i : MDhot) {
+                RFLOAT x = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+                RFLOAT y = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+                hotpixelX.push_back((int) x);
+                hotpixelY.push_back((int) y);
             }
-
-            hotpixelX.push_back((int) x);
-            hotpixelY.push_back((int) y);
+        } catch (const char *errmsg) {
+            REPORT_ERROR("MicrographModel::read: incorrect hot_pixels table in " + fn_in);
         }
     }
 }

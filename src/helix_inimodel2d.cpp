@@ -162,7 +162,7 @@ void HelixAligner::initialise() {
             fn_coord_dir+="/";
 
         // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
+        for (long int _ : MDmics) {
             FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             FileName fn_pre, fn_jobnr, fn_post;
             decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
@@ -272,8 +272,7 @@ void HelixAligner::readImages() {
         init_progress_bar(MD.numberOfObjects());
     }
 
-    long int ipart = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int ipart : MD) {
 
         FileName fn_img;
         Image<RFLOAT> img;
@@ -329,7 +328,6 @@ void HelixAligner::readImages() {
             }
         }
 
-        ipart++;
         if (verb > 0 && ipart % 50 == 0)
             progress_bar(ipart);
 
@@ -361,7 +359,7 @@ void HelixAligner::getHelicesFromMics() {
     // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
     // Surely imic should be part of the for loop?
     long int imic = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
+    for (long int _ : MDmics) {
         imic++;
         FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         FileName fn_pre, fn_jobnr, fn_post;
@@ -389,7 +387,7 @@ void HelixAligner::getHelicesFromMics() {
             std::vector<RFLOAT> x1_coord_list, y1_coord_list, x2_coord_list, y2_coord_list, pitch_list;
             RFLOAT xp, yp;
             int MDobj_id = 0;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
+            for (long int _ : MDcoords) {
                 MDobj_id++;
                 xp = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
                 yp = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);

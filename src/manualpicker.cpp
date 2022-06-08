@@ -224,7 +224,7 @@ int manualpickerGuiWindow::fill() {
     viewmic_buttons.clear();
     viewctf_buttons.clear();
     number_picked.clear();
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+    for (long int _ : MDin) {
         fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         // Display the name of the micrograph
         global_fn_mics.push_back(fn_mic);
@@ -316,7 +316,7 @@ void manualpickerGuiWindow::readOutputStarfile() {
         for (int imic = 0; imic < selected.size(); imic++) {
             FileName fn_mic_in = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME, imic);
             bool has_found = false;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
+            for (long int _ : MDout) {
                 FileName fn_mic = MDout.getValue<std::string>(EMDL::MICROGRAPH_NAME);
                 // Which one in the input metadatatable was this one?
                 if (fn_mic == fn_mic_in) {
@@ -505,7 +505,7 @@ void ManualPicker::initialise() {
                 REPORT_ERROR("ERROR: the input STAR file does not contain the micrograph pixel size, and it is not given through --angpix.");
             }
             std::cout << " Setting angpix to " << global_angpix << " based on command-line input... " << std::endl;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+            for (long int _ : obsModel.opticsMdt) {
                 obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, global_angpix);
             }
         }

@@ -38,7 +38,7 @@ inline RFLOAT safer_atan2(RFLOAT dy, RFLOAT dx) {
 
 // Search for this micrograph in the metadata table
 CTF find_micrograph_ctf(MetaDataTable &mdt, const FileName &fn_mic, ObservationModel &obsModel) {
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt) {
+    for (long int _ : mdt) {
         if (fn_mic == mdt.getValue<std::string>(EMDL::MICROGRAPH_NAME)) {
             return CTF(mdt, &obsModel);
         }
@@ -231,7 +231,7 @@ void AutoPicker::initialise() {
     if (fn_in.isStarFile()) {
         ObservationModel::loadSafely(fn_in, obsModel, MDmic, "micrographs", verb);
         fn_micrographs.clear();
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmic) {
+        for (long int _ : MDmic) {
             FileName fn_mic = MDmic.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             fn_micrographs.push_back(fn_mic);
         }
@@ -359,7 +359,7 @@ void AutoPicker::initialise() {
     } else if (fn_ref.isStarFile()) {
         MetaDataTable MDref;
         MDref.read(fn_ref);
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDref) {
+        for (long int _ : MDref) {
             // Get all reference images and their names
             Image<RFLOAT> Iref;
 
@@ -834,7 +834,7 @@ void AutoPicker::run() {
 
 static RFLOAT mean(MetaDataTable mdt, EMDL::EMDLabel label, long int n) {
     RFLOAT mu = 0.0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdt) {
+    for (long int _ : mdt) {
         mu += mdt.getValue<RFLOAT>(label);
     }
     return mu / (RFLOAT) n;
