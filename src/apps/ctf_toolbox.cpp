@@ -124,10 +124,9 @@ class ctf_toolbox_parameters {
             ObservationModel::loadSafely(fn_in, obsModel, MD);
             bool do_mic_name = obsModel.opticsMdt.getName() == "micrographs";
 
-            long int i_img = 0;
             if (verb > 0) init_progress_bar(MD.numberOfObjects());
 
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+            for (long int i_img : MD) {
 
                 CTF ctf = CTF(MD, &obsModel);
                 int og = obsModel.getOpticsGroup(MD);
@@ -177,7 +176,6 @@ class ctf_toolbox_parameters {
                 MD.setValue(EMDL::IMAGE_NAME, my_fn_out);
                 obsModel.setCtfPremultiplied(og, true);
 
-                i_img++;
                 if (verb > 0) progress_bar(i_img);
             }
 

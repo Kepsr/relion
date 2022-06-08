@@ -263,9 +263,8 @@ class project_parameters {
                 }
             }
 
-            long int imgno = 0;
             long int max_imgno = MDang.numberOfObjects() - 1;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDang) {
+            for (long int imgno : MDang) {
                 rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
                 tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
                 psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
@@ -505,7 +504,7 @@ class project_parameters {
                 } else {
                     // Write this particle to the stack on disc
                     // First particle: write stack in overwrite mode, from then on just append to it
-                    fn_img.compose(imgno+1,fn_out+".mrcs");
+                    fn_img.compose(imgno + 1, fn_out + ".mrcs");
                     if (imgno == 0) {
                         img.write(fn_img, -1, false, WRITE_OVERWRITE);
                     } else {
@@ -529,14 +528,13 @@ class project_parameters {
                 }
 
                 if (imgno % 60 == 0) progress_bar(imgno);
-                imgno++;
             }
             progress_bar(MDang.numberOfObjects());
 
             // Write out STAR file with all information
             fn_img = fn_out + ".star";
             obsModel.save(DFo, fn_img);
-            std::cout << " Done writing " << imgno << " images in " << fn_img << std::endl;
+            std::cout << " Done writing " << MDang.numberOfObjects() << " images in " << fn_img << std::endl;
 
         }
     }

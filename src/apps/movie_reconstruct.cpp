@@ -195,7 +195,7 @@ void MovieReconstructor::initialise() {
     MetaDataTable corrMic;
     // Don't die even if conversion failed. Polishing does not use obsModel from a motion correction STAR file
     ObservationModel::loadSafely(fn_corrmic, obsModel, corrMic, "micrographs", verb, false);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(corrMic) {
+    for (long int index : corrMic) {
         std::string micName  = corrMic.getValueToString(EMDL::MICROGRAPH_NAME);
         std::string metaName = corrMic.getValueToString(EMDL::MICROGRAPH_METADATA_NAME);
         // remove the pipeline job prefix
@@ -319,7 +319,7 @@ void MovieReconstructor::backproject(int rank, int size) {
             Image<Complex> Fparticle;
             int n_processed = 0;
 
-            // FOR_ALL_OBJECTS_IN_METADATA_TABLE(mdts[imov])
+            // for (long int index : mdts[imov])
             // You cannot do this within omp parallel (because current_object changes)
             // Loop over particles
             for (long int ipart = 0; ipart < mdts[imov].numberOfObjects(); ipart++) {

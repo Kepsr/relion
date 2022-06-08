@@ -217,8 +217,7 @@ class tiltpair_plot_parameters {
     }
 
     void run() {
-        int iline = 0;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDu) {
+        for (long int iline : MDu) {
 
             // Read input data
             // RFLOAT best_tilt, best_alpha, best_beta;
@@ -229,7 +228,6 @@ class tiltpair_plot_parameters {
             RFLOAT tilt2 = MDt.getValue<RFLOAT>(EMDL::ORIENT_TILT, iline);
             RFLOAT psi1  = MDu.getValue<RFLOAT>(EMDL::ORIENT_PSI);
             RFLOAT psi2  = MDt.getValue<RFLOAT>(EMDL::ORIENT_PSI, iline);
-            iline++;
 
             // Bring both angles to a normalized set
             rot1  = wrap(rot1,  -180.0, +180.0);

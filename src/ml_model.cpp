@@ -184,9 +184,8 @@ void MlModel::read(FileName fn_in) {
     Image<RFLOAT> img;
     MDclass.readStar(in, nr_bodies > 1 ? "model_bodies" : "model_classes");
 
-    int iclass = 0;
     do_sgd = false;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDclass) {
+    for (long int iclass : MDclass) {
         try {
             acc_trans[iclass] = MDclass.getValue<RFLOAT>(EMDL::MLMODEL_ACCURACY_TRANS_ANGSTROM);
         } catch (const char *errmsg) { try {
@@ -245,13 +244,12 @@ void MlModel::read(FileName fn_in) {
             img.read(MDclass.getValue<std::string>(EMDL::MLMODEL_SGD_GRADIENT_IMAGE));
             Igrad[iclass] = img();
         } catch (const char *errmsg) {}
-        iclass++;
     }
 
     // Read group stuff
     MDgroup.readStar(in, "model_groups");
     // long int optics_group;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDgroup) {
+    for (long int _ : MDgroup) {
         try {
             long int igroup = MDgroup.getValue<long int>(EMDL::MLMODEL_GROUP_NO);
             // Groups are indexed from 1.
@@ -266,7 +264,7 @@ void MlModel::read(FileName fn_in) {
     // Read SSNR, noise reduction, tau2_class spectra for each class
     for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
         MDsigma.readStar(in, (nr_bodies > 1 ? "model_body_" : "model_class_") + integerToString(iclass + 1));
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) try {
+        for (long int _ : MDsigma) try {
             int idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
             data_vs_prior_class   [iclass](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_DATA_VS_PRIOR_REF);
             tau2_class            [iclass](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
@@ -290,7 +288,7 @@ void MlModel::read(FileName fn_in) {
 
         if (nr_particles_per_group[igroup] > 0) {
             MDsigma.readStar(in, "model_group_" + integerToString(igroup + 1));
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDsigma) try {
+            for (long int _ : MDsigma) try {
                 int idx                   = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
                 sigma2_noise[igroup](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
             } catch (const char *errmsg) {
@@ -307,8 +305,7 @@ void MlModel::read(FileName fn_in) {
             MDclass.readStar(in, (nr_bodies > 1 ? "model_pdf_orient_body_" : "model_pdf_orient_class_") + integerToString(iclass + 1));
             pdf_direction[iclass].clear();
             std::vector<RFLOAT> vaux;
-            vaux.clear();
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDclass) try {
+            for (long int _ : MDclass) try {
                 vaux.push_back(MDclass.getValue<RFLOAT>(EMDL::MLMODEL_PDF_ORIENT));
             } catch (const char *errmsg) {
                 REPORT_ERROR("MlModel::readStar: incorrect table model_pdf_orient_class_" + integerToString(iclass + 1));
@@ -603,7 +600,7 @@ void  MlModel::readTauSpectrum(FileName fn_tau, int verb) {
     RFLOAT val;
     int idx;
     MDtau.read(fn_tau);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtau) {
+    for (long int _ : MDtau) {
         idx = MDtau.getValue<int>(EMDL::SPECTRAL_IDX);
         val = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
         if (idx < Xsize(tau2_class[0]))
@@ -662,7 +659,7 @@ void MlModel::initialiseFromImages(
             nr_classes = 0;
             Iref.clear();
             Igrad.clear();
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDref) {
+            for (long int _ : MDref) {
                 img.read(MDref.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE));
                 img().setXmippOrigin();
                 if (_ref_angpix > 0.0) {
@@ -833,7 +830,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
     std::vector<int> relatives_to;
     Matrix1D<RFLOAT> one_direction(3);
     bool has_rotate_directions = false;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         fn_mask = MD.getValue<std::string>(EMDL::BODY_MASK_NAME);
         Imask.read(fn_mask);
         MultidimArray<RFLOAT>::MinMax range = Imask().minmax();
@@ -964,7 +961,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         // If provided a specific reference, re-set the corresponding Iref entry
         if (MD.containsLabel(EMDL::BODY_REFERENCE_NAME)) {
             int ibody = 0;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+            for (long int _ : MD) {
                 FileName fn_ref = MD.getValue<std::string>(EMDL::BODY_REFERENCE_NAME);
                 if (fn_ref != "None") {
                     Image<RFLOAT> img;

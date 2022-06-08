@@ -111,7 +111,7 @@ class import_parameters {
                 MDout.read(old_fn_out, tablename);
                 old_nr_files = MDout.numberOfObjects();
                 std::string old_optics_group_name;
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDopt) {
+                for (long int _ : MDopt) {
                     old_optics_group_name = MDopt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
                     if (old_optics_group_name == optics_group_name) {
                         do_new_optics_group = false;

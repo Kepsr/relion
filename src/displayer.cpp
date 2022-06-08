@@ -386,7 +386,7 @@ void basisViewerCanvas::fill(
         number_of_images = max_images;
     boxes.clear();
     boxes.resize(number_of_images);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+    for (long int _ : MDin) {
         // Read in image stacks as a whole, i.e. don't re-open and close stack for every individual image to save speed
         fn_img = MDin.getValue<std::string>(display_label, ipos);
         fn_img.decompose(my_number, fn_my_stack);
@@ -786,10 +786,8 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
     }
 
     std::vector<int> selected(boxes.size(), false);
-    long int ipos = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDbackup) {
+    for (long int ipos : MDbackup) {
         selected[ipos] = MDbackup.getValue<int>(EMDL::SELECTED);
-        ipos++;
     }
 
     for (long int ipos = 0; ipos < boxes.size(); ipos++) {
@@ -834,7 +832,7 @@ void multiViewerCanvas::printMetaData(int main_ipos) {
                 nselected_classes++;
                 // Get class number (may not be ipos + 1 if resorted!)
                 int myclass = boxes[ipos]->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(*MDdata) {
+                for (long int _ : *MDdata) {
                     if (MDdata->getValue<int>(EMDL::PARTICLE_CLASS) == myclass)
                     nselected_particles++;
                 }
@@ -1037,7 +1035,7 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
         if (boxes[ipos]->selected == selected) {
             // Get class number (may not be ipos+1 if resorted!)
             int myclass = boxes[ipos]->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(*MDdata) {
+            for (long int _ : *MDdata) {
                 if (MDdata->getValue<int>(EMDL::PARTICLE_CLASS) == myclass)
                     MDpart.addObject(MDdata->getObject());
             }
@@ -1054,7 +1052,7 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
             if (boxes[ipos]->selected == selected) {
                 int nr_selected = 0;
                 int myclass = boxes[ipos]->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtmp) {
+                for (long int _ : MDtmp) {
                     if (MDtmp.getValue<int>(EMDL::PARTICLE_CLASS) == myclass) {
                         MDpart.addObject(MDtmp.getObject());
                         nr_selected++;
@@ -1112,12 +1110,12 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
 
     // Find out which optics group each scale group belongs to
     // Also initialise rlnGroupNrParticles for this selection
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDgroups) {
+    for (long int _ : MDgroups) {
         MDgroups.setValue(EMDL::IMAGE_OPTICS_GROUP,        -1);
         MDgroups.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, 0);
     }
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDdata) {
+    for (long int _ : MDdata) {
         long int group_id        = MDdata  .getValue<long int>(EMDL::MLMODEL_GROUP_NO); // 1-indexed
         long int part_optics_id  = MDdata  .getValue<long int>(EMDL::IMAGE_OPTICS_GROUP);
         long int group_optics_id = MDgroups.getValue<long int>(EMDL::IMAGE_OPTICS_GROUP, group_id - 1); // 0-indexed
@@ -1160,7 +1158,7 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
         long int nr_parts_in_new_group = 0;
         new_group_id++;
 
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDgroups) {
+        for (long int _ : MDgroups) {
 
             long int group_optics_id = MDgroups.getValue<long int>(EMDL::IMAGE_OPTICS_GROUP);
             if (group_optics_id != optics_group_id) continue;
@@ -1178,7 +1176,7 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
         }
     }
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDdata) {
+    for (long int _ : MDdata) {
         long int group_id = MDdata.getValue<long int>(EMDL::MLMODEL_GROUP_NO);
 
         it = new_group_names.find(group_id);
@@ -1237,7 +1235,7 @@ void multiViewerCanvas::saveTrainingSet() {
 
     // Copy all images
     FileName fn_img, fn_old = "";
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
+    for (long int _ : MDout) {
         fn_img = MDout.getValue<std::string>(display_label);
         long int nr;
         fn_img.decompose(nr, fn_img);
@@ -1302,18 +1300,16 @@ void multiViewerCanvas::saveSelected(int save_selected) {
         if (do_recenter) {
             FileName fn_stack = fn_selected_imgs.withoutExtension()+".mrcs";
             Image<RFLOAT> img;
-            long int i = 0;
             long int nr_images = MDout.numberOfObjects();
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
-                i++;
+            for (long int i : MDout) {
                 FileName fn_img = MDout.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
                 img.read(fn_img);
                 selfTranslateCenterOfMassToCenter(img());
                 FileName fn_out;
-                fn_out.compose(i, fn_stack);
+                fn_out.compose(i + 1, fn_stack);
                 MDout.setValue(EMDL::MLMODEL_REF_IMAGE, fn_out);
 
-                if (i == 1) {
+                if (i == 0) {
                     img.write(fn_stack, -1, nr_images > 1, WRITE_OVERWRITE);
                 } else {
                     img.write(fn_stack, -1, false,         WRITE_APPEND);
@@ -1506,10 +1502,8 @@ int popupSetContrastWindow::fill() {
 void pickerViewerCanvas::draw() {
     RFLOAT scale = boxes[0]->scale;
 
-    long int icoord = 0;
     int xcoori_start, ycoori_start;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
-        icoord++;
+    for (long int icoord : MDcoords) {
 
         RFLOAT xcoor = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         RFLOAT ycoor = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
@@ -1555,13 +1549,12 @@ void pickerViewerCanvas::draw() {
             fl_color(FL_GREEN);
         }
 
-        int xcoori, ycoori;
-        xcoori = round(xcoor * coord_scale * scale) + scroll->x() - scroll->hscrollbar.value();
-        ycoori = round(ycoor * coord_scale * scale) + scroll->y() - scroll->scrollbar.value();
+        int xcoori = round(xcoor * coord_scale * scale) + scroll->x() - scroll->hscrollbar.value();
+        int ycoori = round(ycoor * coord_scale * scale) + scroll->y() - scroll->scrollbar.value();
         fl_circle(xcoori, ycoori, particle_radius);
 
         if (do_startend) {
-            if (icoord % 2 == 1) {
+            if (icoord + 1 % 2 == 1) {
                 xcoori_start = xcoori;
                 ycoori_start = ycoori;
             } else {
@@ -1588,7 +1581,7 @@ int pickerViewerCanvas::handle(int ev) {
         if (button == FL_LEFT_MOUSE && !with_shift && !with_control) {
             // Left mouse for picking
             // Check the pick is not inside an existing circle
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
+            for (long int _ : MDcoords) {
                 RFLOAT xcoor_p = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X) - xcoor;
                 RFLOAT ycoor_p = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y) - ycoor;
 
@@ -1636,7 +1629,7 @@ int pickerViewerCanvas::handle(int ev) {
         ) {
             boxes[0]->redraw();
             // Middle mouse for deleting
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
+            for (long int _ : MDcoords) {
                 RFLOAT xcoor_p = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X) - xcoor;
                 RFLOAT ycoor_p = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y) - ycoor;
 
@@ -1764,16 +1757,16 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
 
     // Pre-set all color_label column in the MDcoords to -999.
     if (EMDL::isInt(color_label)) {
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
+        for (long int _ : MDcoords) {
             MDcoords.setValue<int>(color_label, -999);
         }
     } else {
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcoords) {
+        for (long int _ : MDcoords) {
             MDcoords.setValue<RFLOAT>(color_label, -999.0);
         }
     }
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDcolor) {
+    for (long int _ : MDcolor) {
         FileName _fn_mic = MDcolor.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (fn_mic == _fn_mic) {
             // Get the imagename
@@ -2466,10 +2459,8 @@ void Displayer::run() {
 
         // Store class number in metadata table
         if (do_class) {
-            int iclass = 0;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-                iclass++; // start counting at 1
-                MDin.setValue(EMDL::PARTICLE_CLASS, iclass);
+            for (long int iclass : MDin) {
+                MDin.setValue(EMDL::PARTICLE_CLASS, iclass + 1);  // start counting at 1
             }
         }
 

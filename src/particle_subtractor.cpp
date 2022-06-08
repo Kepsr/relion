@@ -223,7 +223,7 @@ void ParticleSubtractor::revert() {
         REPORT_ERROR("The input STAR file does not contain the rlnImageName column");
 
     // Swap image names
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         FileName f1 = MD.getValue<std::string>(EMDL::IMAGE_ORI_NAME);
         FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         MD.setValue(EMDL::IMAGE_ORI_NAME, f2);
@@ -232,7 +232,7 @@ void ParticleSubtractor::revert() {
 
     // Fix box size
     std::vector<bool> fixed_box_size(obsModel.numberOfOpticsGroups(), false);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         const int og = obsModel.getOpticsGroup(MD);
         if (fixed_box_size[og])
             continue;
@@ -322,7 +322,7 @@ void ParticleSubtractor::saveStarFile(int myrank) {
 
         // Reset image size in optics table, if the images were rewindowed in a different box
         if (boxsize > 0) {
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(opt.mydata.obsModel.opticsMdt) {
+            for (long int _ : opt.mydata.obsModel.opticsMdt) {
                 opt.mydata.obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, boxsize);
             }
         }

@@ -22,6 +22,15 @@
 // #define DEBUG_CHECKSIZES
 // #define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
 
+RFLOAT get_or_fallback(const MetaDataTable &MD, EMDL::EMDLabel label, RFLOAT fallback) {
+    try {
+        return MD.getValue<RFLOAT>(label);
+    } catch (const char *errmsg) {
+        return fallback;
+    }
+}
+
+
 void HealpixSampling::clear() {
     is_3D = false;
     isRelax = false;
@@ -172,28 +181,13 @@ void HealpixSampling::read(FileName fn_in) {
     }
 
     // Shaoda 19 Jun 2015: Helical translational searches (backwards compatibility)
-    try {
-        helical_offset_step = MD.getValue<RFLOAT>(EMDL::SAMPLING_HELICAL_OFFSET_STEP);
-    } catch (const char *errmsg) {
-        helical_offset_step = -1.0;
-    }
+    helical_offset_step = get_or_fallback(MD, EMDL::SAMPLING_HELICAL_OFFSET_STEP, -1.0);
 
     // SHWS 27 Feb 2020: older star files will not yet have original sampling parameters, just use current ones (backwards compatibility)
-    try { 
-        offset_step_ori = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_STEP_ORI); 
-    } catch (const char *errmsg) {
-        offset_step_ori = offset_step;
-    };
-    try { 
-        offset_range_ori = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_RANGE_ORI); 
-    } catch (const char *errmsg) {
-        offset_range_ori = offset_range;
-    };
-    try { 
-        psi_step_ori = MD.getValue<RFLOAT>(EMDL::SAMPLING_PSI_STEP_ORI); 
-    } catch (const char *errmsg) {
-        psi_step_ori = psi_step;
-    };
+
+    offset_step_ori  = get_or_fallback(MD, EMDL::SAMPLING_OFFSET_STEP_ORI,  offset_step);
+    offset_range_ori = get_or_fallback(MD, EMDL::SAMPLING_OFFSET_RANGE_ORI, offset_range);
+    psi_step_ori     = get_or_fallback(MD, EMDL::SAMPLING_PSI_STEP_ORI,     psi_step);
 
     if (is_3D) {
         try {
@@ -210,11 +204,7 @@ void HealpixSampling::read(FileName fn_in) {
         psi_step = -1.0;
 
         // SHWS 27 Feb 2020: backwards compatibility: older star files will not yet have original sampling parameters, just use current ones
-        try {
-            healpix_order_ori = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER_ORI);
-        } catch (const char *errmsg) {
-            healpix_order_ori = healpix_order;
-        }
+        healpix_order_ori = get_or_fallback(MD, EMDL::SAMPLING_HEALPIX_ORDER_ORI, healpix_order);
 
     } else {
         fn_sym = "irrelevant";
@@ -227,8 +217,7 @@ void HealpixSampling::read(FileName fn_in) {
 void HealpixSampling::write(FileName fn_out) {
 
     FileName fn_tmp = fn_out + "_sampling.star";
-    std::ofstream fh;
-    fh.open((fn_tmp).c_str(), std::ios::out);
+    std::ofstream fh ((fn_tmp).c_str(), std::ios::out);
     if (!fh) REPORT_ERROR((std::string) "HealpixSampling::write: Cannot write file: " + fn_tmp);
 
     MetaDataTable MD;
@@ -273,8 +262,6 @@ void HealpixSampling::write(FileName fn_out) {
         MD.write(fh);
     }
 
-    // Close the file
-    fh.close();
 }
 
 void HealpixSampling::setTranslations(

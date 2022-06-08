@@ -412,7 +412,7 @@ void MetaDataTable::sort(
     vp.reserve(objects.size());
     long int i = 0;
 
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(*this) {
+    for (auto it = this->begin(); it != this->end(); ++it) {
         double dval;
         if (do_random) {
             dval = (double) rand();
@@ -769,9 +769,7 @@ long int MetaDataTable::firstObject() {
 }
 
 long int MetaDataTable::nextObject() {
-    current_objectID++;
-
-    if (current_objectID >= objects.size()) {
+    if (++current_objectID >= objects.size()) {
         return NO_MORE_OBJECTS;
     } else {
         return current_objectID;
@@ -1137,7 +1135,8 @@ void MetaDataTable::columnHistogram(
         REPORT_ERROR(prependERROR("The column specified is not present in the MetaDataTable."));
 
     std::vector<RFLOAT> values;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(*this) {
+    for (auto it = begin(); it != end(); ++it) {
+        // As the internal state of MDin gets incremented...
         RFLOAT val;
         if (EMDL::isDouble(label)) {
             val = getValue<double>(label);
@@ -1458,61 +1457,55 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
 }
 
 MetaDataTable MetaDataTable::combineMetaDataTables(std::vector<MetaDataTable> &MDin) {
-    MetaDataTable MDc;
 
-    if (MDin.size() == 0) {
+    if (MDin.empty())
         REPORT_ERROR("combineMetaDataTables ERROR: No input STAR files selected!");
-    } else if (MDin.size() == 1) {
-        MDc = MDin[0];
-    } else {
-        // Find which taTable combineMetaDataTables
-        MetaDataTable commonLabels;
+    if (MDin.size() == 1)
+        return MDin[0];
 
-        // Loop over all labels in first
-        // activeLabels is private but accessible from other instances of the same class in C++.
-        for (size_t i = 0; i < MDin[0].activeLabels.size(); i++) {
-            // Check their presence in each of the input files
-            bool is_present = true;
+    MetaDataTable MDc;
+    // Find which taTable combineMetaDataTables
+    MetaDataTable commonLabels;
 
-            EMDL::EMDLabel thisLabel = MDin[0].activeLabels[i];
-            std::string unknownLabel = "";
-            if (thisLabel == EMDL::UNKNOWN_LABEL)
-                unknownLabel = MDin[0].getUnknownLabelNameAt(i);
+    // Loop over all labels in first
+    // activeLabels is private but accessible from other instances of the same class in C++.
+    for (size_t i = 0; i < MDin[0].activeLabels.size(); i++) {
+        // Check their presence in each of the input files
 
-            for (size_t j = 1; j < MDin.size(); j++) {
-                is_present = MDin[j].containsLabel(thisLabel, unknownLabel);
+        EMDL::EMDLabel thisLabel = MDin[0].activeLabels[i];
+        std::string unknownLabel = thisLabel == EMDL::UNKNOWN_LABEL ? MDin[0].getUnknownLabelNameAt(i) : "";
 
-                if (!is_present) {
-                    std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel): unknownLabel) << " in " << j+1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
-                    break;
-                }
-            }
+        bool is_present = true;  // Is this label present in every MetaDataTable in MDin?
+        for (size_t j = 1; j < MDin.size(); j++) {
+            is_present = MDin[j].containsLabel(thisLabel, unknownLabel);
 
-            if (is_present) {
-                commonLabels.addLabel(thisLabel, unknownLabel);
+            if (!is_present) {
+                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel) : unknownLabel)
+                            << " in " << j + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
+                break;
             }
         }
 
-        // Also disable any labels that do not occur in all input tables
-        for (int i = 0; i < MDin.size(); i++) {
-            for (int j = 0; j < MDin[i].activeLabels.size(); j++) {
-                EMDL::EMDLabel thisLabel = MDin[i].activeLabels[j];
-                std::string unknownLabel = "";
-                if (thisLabel == EMDL::UNKNOWN_LABEL)
-                    unknownLabel = MDin[i].getUnknownLabelNameAt(j);
-
-                if (!commonLabels.containsLabel(thisLabel, unknownLabel)) {
-                    MDin[i].deactivateLabel(thisLabel, unknownLabel);
-                    std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel) : unknownLabel) << " in " << i+1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
-                }
-            }
+        if (is_present) {
+            commonLabels.addLabel(thisLabel, unknownLabel);
         }
-
-        // Then we can just append entire tables
-        for (const MetaDataTable &mdt: MDin) { MDc.append(mdt); }
     }
 
-    return MDc;
+    // Also disable any labels that do not occur in all input tables
+    for (int i = 0; i < MDin.size(); i++) {
+        for (int j = 0; j < MDin[i].activeLabels.size(); j++) {
+            EMDL::EMDLabel thisLabel = MDin[i].activeLabels[j];
+            std::string unknownLabel = thisLabel == EMDL::UNKNOWN_LABEL ? MDin[i].getUnknownLabelNameAt(j) : "";
+
+            if (!commonLabels.containsLabel(thisLabel, unknownLabel)) {
+                MDin[i].deactivateLabel(thisLabel, unknownLabel);
+                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel) : unknownLabel) << " in " << i + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
+            }
+        }
+    }
+
+    // Then we can just append entire tables
+    for (const MetaDataTable &mdt: MDin) { MDc.append(mdt); }
 }
 
 bool MetaDataTable::compareLabels(
@@ -1525,9 +1518,7 @@ bool MetaDataTable::compareLabels(
     // all labels in MD1 are present in MD2.
     for (size_t id = 0; id < MD1.activeLabels.size(); id++) {
         EMDL::EMDLabel l = MD1.activeLabels[id];
-        std::string unknownLabel = "";
-        if (l == EMDL::UNKNOWN_LABEL)
-            unknownLabel = MD1.getUnknownLabelNameAt(id);
+        std::string unknownLabel = l == EMDL::UNKNOWN_LABEL ? MD1.getUnknownLabelNameAt(id) : "";
 
         if (!MD2.containsLabel(l, unknownLabel))
             return false;
@@ -1546,12 +1537,12 @@ MetaDataTable subsetMetaDataTable(
         REPORT_ERROR("subsetMetadataTable ERROR: input MetaDataTable does not contain label: " +  EMDL::label2Str(label));
 
     MetaDataTable MDout;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        RFLOAT val = EMDL::isInt(label) ? MDin.getValue<long>(label) : MDin.getValue<RFLOAT>(label);
+    for (long int i : MDin) {
+        RFLOAT x = EMDL::isInt(label) ? MDin.getValue<long>(label) 
+                                      : MDin.getValue<RFLOAT>(label);
 
-        if (val <= max_value && val >= min_value) {
-            MDout.addObject(MDin.getObject(index));
-        }
+        if (x <= max_value && x >= min_value)
+            MDout.addObject(MDin.getObject(i));
     }
 
     return MDout;
@@ -1569,11 +1560,11 @@ MetaDataTable subsetMetaDataTable(
         REPORT_ERROR("subsetMetadataTable ERROR: input MetaDataTable does not contain label: " +  EMDL::label2Str(label));
 
     MetaDataTable MDout;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        if ((
+    for (long int i : MDin) {
+        if (exclude != (
             MDin.getValue<std::string>(label).find(search_str) != std::string::npos
-        ) != exclude) {
-            MDout.addObject(MDin.getObject(index));
+        )) {
+            MDout.addObject(MDin.getObject(i));
         }
     }
 
@@ -1609,26 +1600,26 @@ MetaDataTable removeDuplicatedParticles(
 
     // group by micrograph
     std::map<std::string, std::vector<long>> grouped;
-    // Populate xs and ys
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+    // Populate xs, ys, zs
+    for (long int i : MDin) {
 
         std::string mic_name = MDin.getValue<std::string>(mic_label);
 
         RFLOAT origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
         RFLOAT coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-        xs[index] = coordinate - origin * origin_scale;
+        xs[i] = coordinate - origin * origin_scale;
 
         origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
         coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-        ys[index] = coordinate - origin * origin_scale;
+        ys[i] = coordinate - origin * origin_scale;
 
         if (dataIs3D) {
         origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
         coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
-        zs[index] = coordinate - origin * origin_scale;
+        zs[i] = coordinate - origin * origin_scale;
         }
 
-        grouped[mic_name].push_back(index);
+        grouped[mic_name].push_back(i);
     }
 
     // The minimal permitted distance between any two particles
@@ -1637,17 +1628,14 @@ MetaDataTable removeDuplicatedParticles(
 
     // Remove duplicates
     // For each particle group
-    for (
-        std::map<std::string, std::vector<long>>::iterator it = grouped.begin();
-        it != grouped.end(); ++it
-    ) {
+    for (auto pair : grouped) {
 
         // For every ordered pair of non-identical particles
-        long n_particles = it->second.size();
+        long n_particles = pair.second.size();
         for (long i = 0; i < n_particles; i++) {
-            long part_id1 = it->second[i];
+            long part_id1 = pair.second[i];
             for (long j = i + 1; j < n_particles; j++) {
-                long part_id2 = it->second[j];
+                long part_id2 = pair.second[j];
 
                 RFLOAT dx = xs[part_id1] - xs[part_id2];
                 RFLOAT dy = ys[part_id1] - ys[part_id2];
@@ -1660,7 +1648,7 @@ MetaDataTable removeDuplicatedParticles(
 
                 // If the particles are too close, invalidate one.
                 if (dist_sq <= threshold_sq) {
-                    // std::cout << it->first << " " << part_id1 << " " << part_id2 << " " << dist_sq << std::endl;
+                    // std::cout << pair.first << " " << part_id1 << " " << part_id2 << " " << dist_sq << std::endl;
                     valid[part_id1] = false;
                     break;
                 }
@@ -1669,20 +1657,14 @@ MetaDataTable removeDuplicatedParticles(
     }
 
     MetaDataTable MDout, MDremoved;
-    long n_removed = 0;
     // (Bookkeeping) Make a note of which particles were kept and which removed.
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-        if (valid[index]) {
-            MDout.addObject(MDin.getObject(index));
-        } else {
-            MDremoved.addObject(MDin.getObject(index));
-            n_removed++;
-        }
+    for (long int i : MDin) {
+        (valid[i] ? MDout : MDremoved).addObject(MDin.getObject(i));
     }
 
-    if (fn_removed != "") MDremoved.write(fn_removed);
+    if (!fn_removed.empty()) MDremoved.write(fn_removed);
 
-    std::cout << "Removed " << n_removed << " duplicated objects from " << MDin.numberOfObjects() << " objects." << std::endl;
+    std::cout << "Removed " << MDremoved.numberOfObjects() << " duplicated objects from " << MDin.numberOfObjects() << " objects." << std::endl;
 
     return MDout;
 }

@@ -209,7 +209,7 @@ void MotioncorrRunner::initialise() {
 
         fn_micrographs.clear();
         optics_group_micrographs.clear();
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
+        for (long int _ : MDin) {
             FileName fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME);
             fn_micrographs.push_back(fn_mic);
 
@@ -228,7 +228,7 @@ void MotioncorrRunner::initialise() {
         if (voltage < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the acceleration voltage, and no voltage is given through --voltage.");
         }
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+        for (long int _ : obsModel.opticsMdt) {
             obsModel.opticsMdt.setValue(EMDL::CTF_VOLTAGE, voltage);
         }
     }
@@ -236,7 +236,7 @@ void MotioncorrRunner::initialise() {
         if (angpix < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the pixel size, and no pixel size is given through --angpix.");
         }
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+        for (long int _ : obsModel.opticsMdt) {
             obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, angpix);
         }
     }
@@ -798,7 +798,7 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
     // Write out STAR files at the end
     // In the opticsMdt, set EMDL::MICROGRAPH_PIXEL_SIZE (i.e. possibly binned pixel size).
     // Keep EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE for MTF correction
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModel.opticsMdt) {
+    for (long int _ : obsModel.opticsMdt) {
         obsModel.opticsMdt.setValue(
             EMDL::MICROGRAPH_PIXEL_SIZE, 
             (RFLOAT) (obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE) * bin_factor)

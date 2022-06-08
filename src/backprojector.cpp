@@ -1136,7 +1136,7 @@ void BackProjector::externalReconstruct(
             REPORT_ERROR("ERROR: external reconstruct output STAR file does not contain spectral idx!");
 
         // Directly update tau2 spectrum
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDnewtau) {
+        for (long int _ : MDnewtau) {
             int idx = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX);
 
             if (idx >= Xsize(tau2_io)) continue;

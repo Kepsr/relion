@@ -19,30 +19,30 @@
  ***************************************************************************/
 #include "src/metadata_container.h"
 
-MetaDataContainer::MetaDataContainer()
-    :   doubles(0), ints(0), bools(0), strings(0), doubleVectors(0), unknowns(0) {}
+MetaDataContainer::MetaDataContainer():
+doubles(0), ints(0), bools(0), strings(0), doubleVectors(0), unknowns(0) {}
 
 
 MetaDataContainer::MetaDataContainer(
-        MetaDataTable *table, long doubleCount, long intCount,
-        long boolCount, long stringCount, long doubleVectorCount, long unknownCount)
-: table(table),
-  doubles(doubleCount, 0),
-  ints(intCount, 0),
-  bools(boolCount, false),
-  strings(stringCount, ""),
-  doubleVectors(doubleVectorCount),
-  unknowns(unknownCount) {}
+    MetaDataTable *table, long doubleCount, long intCount,
+    long boolCount, long stringCount, long doubleVectorCount, long unknownCount
+):
+table(table),
+doubles(doubleCount, 0),
+ints(intCount, 0),
+bools(boolCount, false),
+strings(stringCount, ""),
+doubleVectors(doubleVectorCount),
+unknowns(unknownCount) {}
 
-MetaDataContainer::MetaDataContainer(
-        MetaDataTable *table, MetaDataContainer* mdc)
-: table(table),
-  doubles(mdc->doubles),
-  ints(mdc->ints),
-  bools(mdc->bools),
-  strings(mdc->strings),
-  doubleVectors(mdc->doubleVectors),
-  unknowns(mdc->unknowns) {}
+MetaDataContainer::MetaDataContainer(MetaDataTable *table, MetaDataContainer* mdc):
+table(table),
+doubles(mdc->doubles),
+ints(mdc->ints),
+bools(mdc->bools),
+strings(mdc->strings),
+doubleVectors(mdc->doubleVectors),
+unknowns(mdc->unknowns) {}
 
 template <>
 double MetaDataContainer::getValue(long offset) const {

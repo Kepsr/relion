@@ -188,7 +188,7 @@ void Preprocessing::initialise() {
             // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
             if (verb > 0 && fn_data == "") {
                 FileName fn_mic;
-                FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
+                for (long int i : MDmics) {
                     fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
                     FileName fn_coord = getCoordinateFileName(fn_mic);
                     if (!exists(fn_coord))
@@ -292,7 +292,7 @@ void Preprocessing::joinAllStarFiles() {
         std::map<std::string, RFLOAT> optics_group_mic_angpix;
         if (fn_data != "") {
             RFLOAT mic_angpix;
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(obsModelMic.opticsMdt) {
+            for (long int i : obsModelMic.opticsMdt) {
                 mic_angpix    = obsModelMic.opticsMdt.getValue<RFLOAT>     (EMDL::MICROGRAPH_PIXEL_SIZE);
                 optgroup_name = obsModelMic.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
 
@@ -304,7 +304,7 @@ void Preprocessing::joinAllStarFiles() {
         myOutObsModel = fn_data == "" || keep_ctf_from_micrographs ? &obsModelMic : &obsModelPart;
 
         std::set<std::string> isOgPresent;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDout) {
+        for (long int i : MDout) {
             og = myOutObsModel->getOpticsGroup(MDout);
             std::string optgroup_name = myOutObsModel->opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, og);
             isOgPresent.insert(optgroup_name);
@@ -312,9 +312,9 @@ void Preprocessing::joinAllStarFiles() {
 
         RFLOAT my_angpix;
         // Set the (possibly rescale output_angpix and the output image size in the opticsMdt
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(myOutObsModel->opticsMdt) {
+        for (long int i : myOutObsModel->opticsMdt) {
             // Find the pixel size for the original micrograph
-            if (fn_data == "") {
+            if (fn_data.empty()) {
                 my_angpix = obsModelMic.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE);
             } else {
                 std::string optgroup_name = myOutObsModel->opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
@@ -354,7 +354,7 @@ void Preprocessing::joinAllStarFiles() {
             }
         }
 
-        if (fn_data == "") {
+        if (fn_data.empty()) {
             myOutObsModel->opticsMdt.deactivateLabel(EMDL::MICROGRAPH_PIXEL_SIZE);
         }
 
@@ -387,7 +387,7 @@ void Preprocessing::runExtractParticles() {
     FileName fn_mic, fn_olddir = "";
     long int imic = 0;
     bool micIsUsed;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDmics) {
+    for (long int i : MDmics) {
         // Abort through the pipeline_control system
         if (pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
@@ -417,7 +417,7 @@ void Preprocessing::runExtractParticles() {
         micIsUsed = extractParticlesFromFieldOfView(fn_mic, imic);
         }
 
-        if (micIsUsed) MDoutMics.addObject(MDmics.getObject(index));
+        if (micIsUsed) MDoutMics.addObject(MDmics.getObject(i));
 
         imic++;
     }
@@ -594,11 +594,11 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
         ifdefPREP_TIMING(TicToc tt (timer, TIMING_BIAS_CORRECT);)
         // Correct for bias in the picked coordinates
         if (abs(extract_bias_x) > 0 || abs(extract_bias_y) > 0) {
-            FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDin) {
-                RFLOAT xcoor = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-                RFLOAT ycoor = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-                xcoor += extract_bias_x;
-                ycoor += extract_bias_y;
+            for (long int i : MDin) {
+                RFLOAT xcoor = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_X)
+                             + extract_bias_x;
+                RFLOAT ycoor = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y)
+                             + extract_bias_y;
                 MDin.setValue(EMDL::IMAGE_COORD_X, xcoor);
                 MDin.setValue(EMDL::IMAGE_COORD_Y, ycoor);
             }
@@ -692,7 +692,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     MultidimArray<Complex> FT;
     FourierTransformer transformer;
     int ipos = 0;
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MD) {
+    for (long int _ : MD) {
         RFLOAT dxpos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         RFLOAT dypos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         long int xpos = (long int) dxpos;
@@ -1052,10 +1052,10 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
 
     // To upgrade to ObsModel, the following no longer works.
     // MDresult.read(fn_data, "particles", NULL, fn_post);
-    FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDimg) {
+    for (long int i : MDimg) {
         FileName fn_mic_in_particle_star = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME);
         if (fn_mic_in_particle_star.contains(fn_post))
-            MDresult.addObject(MDimg.getObject(index));
+            MDresult.addObject(MDimg.getObject(i));
     }
 
     RFLOAT mag2, dstep2, particle_angpix, rescale_fndata = 1.0;
@@ -1070,7 +1070,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
         }
 
         RFLOAT xoff, yoff, zoff, rot, tilt, psi, xcoord, ycoord, zcoord, diffx, diffy, diffz;
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDresult) {
+        for (long int i : MDresult) {
             // Get the optics group for this particle
             /// FIXME: How can we guarantee optics group IDs are consistent among Part and Mic?
             int optics_group = obsModelMic.getOpticsGroup(MDresult);

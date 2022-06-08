@@ -118,13 +118,13 @@ class angular_error_parameters {
             REPORT_ERROR("ERROR: Tilted STAR file does not contain the rlnCoordinateX or Y labels");
 
         p_unt.clear();
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDunt) {
+        for (long int _ : MDunt) {
             p_unt.push_back((int) MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X));
             p_unt.push_back((int) MDunt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y));
         }
 
         p_til.clear();
-        FOR_ALL_OBJECTS_IN_METADATA_TABLE(MDtil) {
+        for (long int _ : MDtil) {
             p_til.push_back((int) MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_X));
             p_til.push_back((int) MDtil.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y));
         }
