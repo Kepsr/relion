@@ -280,7 +280,7 @@ bool MagnificationEstimator::isFinished(const MetaDataTable &mdt) {
 
     const std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
-    std::vector<int> ogp = obsModel->getOptGroupsPresent_zeroBased(mdt);
+    std::vector<int> ogp = obsModel->getOptGroupsPresent(mdt);
 
     return std::all_of(
         ogp.begin(), ogp.end(),

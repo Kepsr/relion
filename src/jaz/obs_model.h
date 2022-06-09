@@ -172,10 +172,7 @@ class ObservationModel
 		void sortOpticsGroups(MetaDataTable& partMdt);
 
 		/* Return the set of optics groups present in partMdt */
-		std::vector<int> getOptGroupsPresent_oneBased(const MetaDataTable& partMdt) const;
-
-		/* Return the set of optics groups present in partMdt */
-		std::vector<int> getOptGroupsPresent_zeroBased(const MetaDataTable& partMdt) const;
+		std::vector<int> getOptGroupsPresent(const MetaDataTable& partMdt) const;
 
 		std::vector<std::pair<int, std::vector<int> > > splitParticlesByOpticsGroup(const MetaDataTable& partMdt) const;
 };

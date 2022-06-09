@@ -108,7 +108,7 @@ void BFactorRefiner::processMicrograph(
 
         // find optics group of minimal pixel size present in this micrograph
 
-        std::vector<int> pogs = obsModel->getOptGroupsPresent_zeroBased(mdt);
+        std::vector<int> pogs = obsModel->getOptGroupsPresent(mdt);
 
         int ogRef = pogs[0];
         double angpixMin = angpix[pogs[0]];
