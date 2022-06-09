@@ -82,14 +82,9 @@ frqWghByGroup(frqWghByGroup) {
     angpix = obsModel->getPixelSizes();
 
     if (obsModel->hasEvenZernike) {
-        std::vector<int> ogPres = obsModel->getOptGroupsPresent_zeroBased(mdt);
-
         aberrationByGroup.resize(obsModel->numberOfOpticsGroups());
-
-        for (int ogpi = 0; ogpi < ogPres.size(); ogpi++) {
-            const int og = ogPres[ogpi];
+        for (int og : obsModel->getOptGroupsPresent(mdt))
             aberrationByGroup[og] = obsModel->getGammaOffset(og, obsModel->getBoxSize(og));
-        }
     }
 }
 
@@ -152,7 +147,7 @@ double ModularCtfOptimisation::f(const std::vector<double> &x) const {
 double ModularCtfOptimisation::f(
     const std::vector<double> &x, void *tempStorage
 ) const {
-    if (tempStorage == 0) return f(x);
+    if (!tempStorage) return f(x);
 
     std::vector<double>* out = (std::vector<double>*) tempStorage;
     const int stride = param_count + DATA_PAD;
@@ -228,9 +223,7 @@ void ModularCtfOptimisation::grad(
     const std::vector<double> &x,
     std::vector<double> &gradDest
 ) const {
-    for (int i = 0; i < gradDest.size(); i++) {
-        gradDest[i] = 0.0;
-    }
+    for (auto &x : gradDest) { x = 0.0; }
 
     for (int p = 0; p < particle_count; p++) {
         const double ph = readParam(Phase, x, p);
@@ -329,17 +322,18 @@ void ModularCtfOptimisation::grad(
         }
     }
 }
+
 void ModularCtfOptimisation::grad(
     const std::vector<double> &x,
     std::vector<double> &gradDest,
     void *tempStorage
 ) const {
-    if (tempStorage == 0) {
+    if (!tempStorage) {
         grad(x, gradDest);
         return;
     }
 
-    std::vector<double>* out = (std::vector<double>*) tempStorage;
+    std::vector<double> *out = (std::vector<double>*) tempStorage;
     const int stride = param_count + DATA_PAD;
 
     #pragma omp parallel for num_threads(num_treads)
@@ -557,15 +551,10 @@ void ModularCtfOptimisation::writeToTable(const std::vector<double> &x) {
 }
 
 bool ModularCtfOptimisation::validateModeString(std::string mode) {
-    if (mode.length() != 5) return false;
-
-    for (int i = 0; i < 5; i++) {
-        if (mode[i] != 'p' && mode[i] != 'm' && mode[i] != 'f') {
-            return false;
-        }
-    }
-
-    return true;
+    // mode must consist of 5 chars from the set {'p', 'm', 'f'}
+    return mode.length() == 5 && std::all_of(mode.begin(), mode.end(), [] (char c) {
+        return std::string("pmf").find(c) != std::string::npos;
+    });
 }
 
 std::vector<ModularCtfOptimisation::Mode> ModularCtfOptimisation::decodeModes(

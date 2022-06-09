@@ -353,12 +353,12 @@ bool AberrationEstimator::isFinished(const MetaDataTable &mdt) {
 
     const std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
 
-    std::vector<int> ogs = obsModel->getOptGroupsPresent_oneBased(mdt);
+    std::vector<int> ogs = obsModel->getOptGroupsPresent(mdt);
 
     std::all_of(
         ogs.begin(), ogs.end(),
         [&outRoot] (int og) {
-            std::string ogstr = std::to_string(og);  // Don't we want og + 1?
+            std::string ogstr = std::to_string(og + 1);
             return exists(outRoot + "_aberr-Axx_optics-group_" + ogstr + ".mrc") &&
                    exists(outRoot + "_aberr-Axy_optics-group_" + ogstr + ".mrc") &&
                    exists(outRoot + "_aberr-Ayy_optics-group_" + ogstr + ".mrc") &&

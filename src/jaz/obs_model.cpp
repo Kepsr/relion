@@ -729,54 +729,28 @@ void ObservationModel::sortOpticsGroups(MetaDataTable &partMdt) {
     }
 }
 
-std::vector<int> ObservationModel::getOptGroupsPresent_oneBased(const MetaDataTable &partMdt) const {
+std::vector<int> ObservationModel::getOptGroupsPresent(const MetaDataTable &partMdt) const {
     const int gc = opticsMdt.numberOfObjects();
     const long long int pc = partMdt.numberOfObjects();
 
     std::vector<bool> optGroupIsPresent(gc, false);
-
     for (long int p = 0; p < pc; p++) {
         int og = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p);
         optGroupIsPresent[og - 1] = true;
     }
 
-    std::vector<int> out(0);
+    std::vector<int> out;
     out.reserve(gc);
-
-    for (int g = 0; g < gc; g++) {
-        if (optGroupIsPresent[g]) {
-            out.push_back(g + 1);
-        }
-    }
-
-    return out;
-}
-
-std::vector<int> ObservationModel::getOptGroupsPresent_zeroBased(const MetaDataTable &partMdt) const {
-    const int gc = opticsMdt.numberOfObjects();
-    const long long int pc = partMdt.numberOfObjects();
-
-    std::vector<bool> optGroupIsPresent(gc, false);
-
-    for (long int p = 0; p < pc; p++) {
-        int og = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p);
-        optGroupIsPresent[og - 1] = true;
-    }
-
-    std::vector<int> out(0);
-    out.reserve(gc);
-
     for (int g = 0; g < gc; g++) {
         if (optGroupIsPresent[g]) {
             out.push_back(g);
         }
     }
-
     return out;
 }
 
 std::vector<std::pair<int, std::vector<int>>> ObservationModel::splitParticlesByOpticsGroup(const MetaDataTable &partMdt) const {
-    std::vector<int> presentGroups = ObservationModel::getOptGroupsPresent_zeroBased(partMdt);
+    std::vector<int> presentGroups = ObservationModel::getOptGroupsPresent(partMdt);
 
     const int pogc = presentGroups.size();
     const int ogc = opticsMdt.numberOfObjects();

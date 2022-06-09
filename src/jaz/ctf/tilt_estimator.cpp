@@ -357,7 +357,7 @@ bool TiltEstimator::isFinished(const MetaDataTable &mdt) {
         REPORT_ERROR("ERROR: TiltEstimator::isFinished: TiltEstimator not initialized.");
 
     const std::string outRoot = CtfRefiner::getOutputFilenameRoot(mdt, outPath);
-    std::vector<int> optics_groups = obsModel->getOptGroupsPresent_zeroBased(mdt);
+    std::vector<int> optics_groups = obsModel->getOptGroupsPresent(mdt);
 
     // Return true iff all optics groups have been dealt with
     return std::all_of(
