@@ -70,8 +70,8 @@ class ObservationModel
 	public:
 
 		// Prediction //
-		void predictObservation(const Projector &proj, const MetaDataTable &partMdt, long int particle,
-		                        MultidimArray<Complex>& dest, double angpix_ref,
+		MultidimArray<Complex> predictObservation(const Projector &proj, const MetaDataTable &partMdt,
+								long int particle, double angpix_ref,
 		                        bool applyCtf = true, bool shiftPhases = true, bool applyShift = true, bool applyMtf = true,
 		                        bool applyCtfPadding = false);
 

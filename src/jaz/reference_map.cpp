@@ -221,9 +221,7 @@ Image<Complex> ReferenceMap::predict(
 
     int pi = hs == Own ? randSubset : 1 - randSubset;
 
-    Image<Complex> pred;
-    obs.predictObservation(projectors[pi], mdt, p, pred(), angpix, applyCtf, applyTilt, applyShift, applyMtf, applyCtfPadding);
-    return pred;
+    return obs.predictObservation(projectors[pi], mdt, p, angpix, applyCtf, applyTilt, applyShift, applyMtf, applyCtfPadding);
 }
 
 std::vector<Volume<gravis::t2Vector<Complex>>> ReferenceMap::predictAllComplexGradients(
