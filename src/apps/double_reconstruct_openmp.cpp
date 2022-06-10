@@ -396,7 +396,7 @@ class reconstruct_parameters {
                             fom = table.getValue<RFLOAT>(EMDL::PARTICLE_FOM, p);
                         }
 
-                        MultidimArray<Complex> Fsub, F2D, F2DP, F2DQ;
+                        MultidimArray<Complex> F2D, F2DP, F2DQ;
 
                         CenterFFT(obsR[p](), true);
 
@@ -466,9 +466,9 @@ class reconstruct_parameters {
                         BackProjector backproj = backprojectors[randSubset][threadnum];
 
                         // Subtract reference projection
-                        if (fn_sub != "") {
-                            obsModel.predictObservation(
-                                subProjector, table, p, Fsub, true, true, true
+                        if (!fn_sub.empty()) {
+                            MultidimArray<Complex> Fsub = obsModel.predictObservation(
+                                subProjector, table, p, true, true, true
                             );
 
                             F2D -= Fsub;

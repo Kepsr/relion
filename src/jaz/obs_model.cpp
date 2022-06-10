@@ -283,9 +283,9 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
 
 }
 
-void ObservationModel::predictObservation(
-    const Projector &proj, const MetaDataTable &partMdt, long int particle,
-    MultidimArray<Complex> &dest, double angpix_ref,
+MultidimArray<Complex> ObservationModel::predictObservation(
+    const Projector &proj, const MetaDataTable &partMdt,
+    long int particle, double angpix_ref,
     bool applyCtf, bool shiftPhases, bool applyShift, bool applyMtf, bool applyCtfPadding
 ) {
 
@@ -311,16 +311,11 @@ void ObservationModel::predictObservation(
     A3D = applyAnisoMag(A3D, opticsGroup);
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 
-    if (dest.xdim != sh_out || dest.ydim != s_out) {
-        dest.resize(s_out, sh_out);
-    }
-
-    dest.initZeros();
-
-    proj.get2DFourierTransform(dest, A3D);
+    MultidimArray<Complex> pred = MultidimArray<Complex>::zeros(sh_out, s_out);
+    proj.get2DFourierTransform(pred, A3D);
 
     if (applyShift) {
-        shiftImageInFourierTransform(dest, dest, s_out, s_out / 2 - xoff, s_out / 2 - yoff);
+        shiftImageInFourierTransform(pred, pred, s_out, s_out / 2 - xoff, s_out / 2 - yoff);
     }
 
     if (applyCtf) {
@@ -335,38 +330,31 @@ void ObservationModel::predictObservation(
         if (getCtfPremultiplied(opticsGroup)) {
             for (int y = 0; y < s_out;  y++)
             for (int x = 0; x < sh_out; x++) {
-                dest(y, x) *= ctfImg(y, x) * ctfImg(y, x);
+                pred(y, x) *= ctfImg(y, x) * ctfImg(y, x);
             }
-
         } else {
             for (int y = 0; y < s_out;  y++)
             for (int x = 0; x < sh_out; x++) {
-                dest(y, x) *= ctfImg(y, x);
+                pred(y, x) *= ctfImg(y, x);
             }
         }
     }
 
     if (
         shiftPhases &&
-        oddZernikeCoeffs.size() > opticsGroup &&
+        opticsGroup < oddZernikeCoeffs.size() &&
         oddZernikeCoeffs[opticsGroup].size() > 0
     ) {
-        const Image<Complex>& corr = getPhaseCorrection(opticsGroup, s_out);
-
-        for (int y = 0; y < s_out;  y++)
-        for (int x = 0; x < sh_out; x++) {
-            dest(y, x) *= corr(y, x);
-        }
+        const Image<Complex> &corr = getPhaseCorrection(opticsGroup, s_out);
+        pred *= corr.data;
     }
 
-    if (applyMtf && fnMtfs.size() > opticsGroup) {
+    if (applyMtf && opticsGroup < fnMtfs.size()) {
         const Image<RFLOAT> &mtf = getMtfImage(opticsGroup, s_out);
-
-        for (int y = 0; y < s_out;  y++)
-        for (int x = 0; x < sh_out; x++) {
-            dest(y, x) *= mtf(y, x);
-        }
+        pred *= mtf.data;
     }
+
+    return pred;
 }
 
 Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
