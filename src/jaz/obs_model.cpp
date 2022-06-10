@@ -284,7 +284,7 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
 }
 
 void ObservationModel::predictObservation(
-    Projector &proj, const MetaDataTable &partMdt, long int particle,
+    const Projector &proj, const MetaDataTable &partMdt, long int particle,
     MultidimArray<Complex> &dest, double angpix_ref,
     bool applyCtf, bool shiftPhases, bool applyShift, bool applyMtf, bool applyCtfPadding
 ) {
@@ -895,8 +895,7 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
 
                 }
 
-                img(y, x).real = cos(phase);
-                img(y, x).imag = sin(phase);
+                img(y, x) = Complex::unit(phase);
             }
         }
     }

@@ -211,19 +211,18 @@ std::vector<Image<Complex>> ReferenceMap::predictAll(
 }
 
 Image<Complex> ReferenceMap::predict(
-    const MetaDataTable& mdt, int p,
+    const MetaDataTable &mdt, int p,
     ObservationModel& obs,
     HalfSet hs,
     bool applyCtf, bool applyTilt, bool applyShift, bool applyMtf, bool applyCtfPadding
 ) {
-    Image<Complex> pred;
 
     int randSubset = mdt.getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
 
     int pi = hs == Own ? randSubset : 1 - randSubset;
 
+    Image<Complex> pred;
     obs.predictObservation(projectors[pi], mdt, p, pred(), angpix, applyCtf, applyTilt, applyShift, applyMtf, applyCtfPadding);
-
     return pred;
 }
 

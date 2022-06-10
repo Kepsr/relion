@@ -251,7 +251,7 @@ class Projector {
     * Get a 2D Fourier Transform from the 2D or 3D data array
     * Depending on the dimension of the map, this will be a projection or a rotation operation
     */
-    void get2DFourierTransform(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A) {
+    void get2DFourierTransform(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A) const {
         // Rotation of a 3D Fourier Transform
         if (data_dim == 3) {
             if (ref_dim != 3)
@@ -280,7 +280,7 @@ class Projector {
     /*
     * Get a 2D slice from the 3D map (forward projection)
     */
-    void project(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A);
+    void project(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A) const;
 
     /*
     * Get the two gradients (real and imaginary) of that slice.
@@ -293,16 +293,16 @@ class Projector {
     /*
     * Get a 1D slice from the 2D map (forward projection)
     */
-    void project2Dto1D(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A);
+    void project2Dto1D(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A) const;
 
     /*
     * Get an in-plane rotated version of the 2D map (mere interpolation)
     */
-    void rotate2D(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A);
+    void rotate2D(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A) const;
 
     /*
     * Get a rotated version of the 3D map (mere interpolation)
     */
-    void rotate3D(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A);
+    void rotate3D(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A) const;
 };
 #endif
