@@ -429,8 +429,8 @@ void ObservationModel::divideByMtf(
     if (do_correct_average_mtf && !hasMultipleMtfs) return;
 
     if (fnMtfs.size() > opticsGroup) {
-        const Image<RFLOAT>& mtf = getMtfImage(opticsGroup, s);
-        const Image<RFLOAT>& avgmtf = getAverageMtfImage(s);
+        const Image<RFLOAT> &mtf = getMtfImage(opticsGroup, s);
+        const Image<RFLOAT> &avgmtf = getAverageMtfImage(s);
 
         if (do_multiply_instead) {
             if (do_correct_average_mtf) {
@@ -466,26 +466,21 @@ void ObservationModel::demodulatePhase(
     int opticsGroup, MultidimArray<Complex> &obsImage,
     bool do_modulate_instead
 ) {
+    if (
+        oddZernikeCoeffs.size() <= opticsGroup ||
+        oddZernikeCoeffs[opticsGroup].size() <= 0
+    ) return;
+
     const int s  = obsImage.ydim;
     const int sh = obsImage.xdim;
+    const Image<Complex> &corr = getPhaseCorrection(opticsGroup, s);
 
-    if (
-        oddZernikeCoeffs.size() > opticsGroup &&
-        oddZernikeCoeffs[opticsGroup].size() > 0
-    ) {
-        const Image<Complex>& corr = getPhaseCorrection(opticsGroup, s);
+    auto f = do_modulate_instead ? [] (Complex x) { return x; }
+                                 : [] (Complex x) { return x.conj(); };
 
-        if (do_modulate_instead) {
-            for (int y = 0; y < s;  y++)
-            for (int x = 0; x < sh; x++) {
-                obsImage(y, x) *= corr(y, x);
-            }
-        } else {
-            for (int y = 0; y < s;  y++)
-            for (int x = 0; x < sh; x++) {
-                obsImage(y, x) *= corr(y, x).conj();
-            }
-        }
+    for (int y = 0; y < s;  y++)
+    for (int x = 0; x < sh; x++) {
+        obsImage(x, y) *= f(corr(x, y));
     }
 }
 
@@ -516,7 +511,7 @@ void ObservationModel::setPixelSize(int opticsGroup, RFLOAT newPixelSize) {
     gammaOffset[opticsGroup].clear();
 
     // mtfImage can be empty
-    if (mtfImage.size() > 0)
+    if (!mtfImage.empty())
         mtfImage[opticsGroup].clear();
 }
 
