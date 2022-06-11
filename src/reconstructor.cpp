@@ -446,8 +446,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
             );
 
             if (!do_ignore_optics) {
-                obsModel.demodulatePhase(DF, p, F2D);
-                obsModel.divideByMtf    (DF, p, F2D);
+                int opticsGroup = DF.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
+                obsModel.demodulatePhase(opticsGroup, F2D, p);
+                obsModel.divideByMtf    (opticsGroup, F2D, p);
             }
 
             // Ewald-sphere curvature correction

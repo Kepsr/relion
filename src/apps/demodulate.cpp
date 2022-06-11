@@ -49,17 +49,18 @@ int main(int argc, char *argv[]) {
 
     const int mc = mdts.size();
 
-    for (int m = 0; m < mc; m++) {
-        const int pc = mdts[m].numberOfObjects();
+    for (MetaDataTable &mdt : mdts) {
 
         std::vector<Image<Complex>> obs;
-        obs = StackHelper::loadStackFS(mdts[m], "", nr_omp_threads, false);
+        obs = StackHelper::loadStackFS(mdt, "", nr_omp_threads, false);
 
-        std::string fullName = mdts[m].getValue<std::string>(EMDL::IMAGE_NAME, 0);
+        std::string fullName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
         std::string name = fullName.substr(fullName.find("@") + 1);
 
+        const int pc = mdt.numberOfObjects();
         for (int p = 0; p < pc; p++) {
-            obsModel.demodulatePhase(mdts[m], p, obs[p].data);
+            int opticsGroup = mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
+            obsModel.demodulatePhase(opticsGroup, obs[p].data, p);
         }
 
         std::vector<Image<RFLOAT>> demodulated = StackHelper::inverseFourierTransform(obs);
@@ -71,15 +72,11 @@ int main(int argc, char *argv[]) {
         std::string outFn = outPath + fn_post;
 
         if (outFn.find_last_of("/") != std::string::npos) {
-            std::string command = " mkdir -p " + outFn.substr(0, outFn.find_last_of("/"));
-            int res = system(command.c_str());
+            system((" mkdir -p " + outFn.substr(0, outFn.find_last_of("/"))).c_str());
         }
 
         for (int p = 0; p < pc; p++) {
-            std::stringstream sts;
-            sts << (p + 1) << "@" << outFn;
-
-            mdts[m].setValue(EMDL::IMAGE_NAME, sts.str(), p);
+            mdt.setValue(EMDL::IMAGE_NAME, std::to_string(p + 1) + "@" + outFn, p);
         }
 
         out.write(outFn);
@@ -87,8 +84,8 @@ int main(int argc, char *argv[]) {
 
     MetaDataTable mdt1;
 
-    for (int m = 0; m < mc; m++) {
-        mdt1.append(mdts[m]);
+    for (const MetaDataTable &mdt: mdts) {
+        mdt1.append(mdt);
     }
 
     if (!r31) {
