@@ -420,12 +420,12 @@ class Matrix2D {
     }
 
     /** In-place matrix addition
-    *
-    * @code
-    * A += B;
-    * @endcode
-    */
-    void operator += (const Matrix2D<T> &op1) const {  // How is this const?
+     *
+     * @code
+     * A += B;
+     * @endcode
+     */
+    void operator += (const Matrix2D<T> &op1) {
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator+=: Not same sizes in matrix addition");
 
