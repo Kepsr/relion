@@ -83,9 +83,6 @@ class ObservationModel
 		// Correction //
 
 		// divide by MTF of detector (using cache)
-		void divideByMtf(const MetaDataTable& partMdt, long particle, MultidimArray<Complex>& obsImage,
-		                 bool do_multiply_instead = false, bool do_correct_average_mtf = true);
-
 		void divideByMtf(int opticsGroup, MultidimArray<Complex>& obsImage,
 		                 bool do_multiply_instead = false, bool do_correct_average_mtf = true);
 
@@ -97,10 +94,6 @@ class ObservationModel
 
 		// apply effect of antisymmetric aberration (using cache)
 		void demodulatePhase(int optGroup, MultidimArray<Complex>& obsImage, bool do_modulate_instead = false);
-
-		// syntactic sugar
-		void demodulatePhase(const MetaDataTable &partMdt, long int particle, MultidimArray<Complex>& obsImage,
-		                     bool do_modulate_instead = false);
 
 		// effect of antisymmetric aberration (cached)
 		const Image<Complex>& getPhaseCorrection(int optGroup, int s);

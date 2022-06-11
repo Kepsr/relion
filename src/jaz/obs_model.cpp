@@ -419,14 +419,6 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
 }
 
 void ObservationModel::divideByMtf(
-    const MetaDataTable &partMdt, long particle, MultidimArray<Complex> &obsImage,
-    bool do_multiply_instead, bool do_correct_average_mtf
-) {
-    int opticsGroup = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1;
-    divideByMtf(opticsGroup, obsImage, do_multiply_instead, do_correct_average_mtf);
-}
-
-void ObservationModel::divideByMtf(
     int opticsGroup, MultidimArray<Complex> &obsImage,
     bool do_multiply_instead, bool do_correct_average_mtf
 ) {
@@ -468,14 +460,6 @@ void ObservationModel::divideByMtf(
             }
         }
     }
-}
-
-void ObservationModel::demodulatePhase(
-    const MetaDataTable &partMdt, long particle, MultidimArray<Complex> &obsImage,
-    bool do_modulate_instead
-) {
-    int opticsGroup = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1;
-    demodulatePhase(opticsGroup, obsImage, do_modulate_instead);
 }
 
 void ObservationModel::demodulatePhase(
