@@ -107,8 +107,17 @@ class ObservationModel
 
 		// Bureaucracy
 
-		bool allPixelSizesIdentical() const;
-		bool allBoxSizesIdentical() const;
+		inline bool allPixelSizesIdentical() const {
+			return std::adjacent_find(
+				angpix.begin(), angpix.end(), std::not_equal_to<double>()
+			) == angpix.end();
+		}
+
+		inline bool allBoxSizesIdentical() const {
+			return std::adjacent_find(
+				boxSizes.begin(), boxSizes.end(), std::not_equal_to<int>()
+			) == boxSizes.end();
+		};
 
 		double angToPix(double a, int s, int opticsGroup) const;
 		double pixToAng(double p, int s, int opticsGroup) const;
