@@ -2120,7 +2120,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
 
                 // At this point anisotropic magnification shouldn't matter
                 // Also: dont applyScaleDifference, as img() was rescaled to mymodel.ori_size and mymodel.pixel_size
-                //A = mydata.obsModel.applyAnisoMag(A, optics_group);
+                // if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
                 //A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
                 // Construct initial references from random subsets
                 windowFourierTransform(Faux, Fimg, wsum_model.current_size);
@@ -5027,7 +5027,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     Matrix2D<RFLOAT> Abody = Aori * (mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * mymodel.orient_bodies[obody];
 
                     // Apply anisotropic mag and scaling
-                    Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
+                    if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
                     Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
 
                     // Get the FT of the projection in the right direction
@@ -5616,11 +5616,11 @@ void MlOptimiser::getAllSquaredDifferences(
                             // For multi-body refinements, A are only 'residual' orientations, Abody is the complete Euler matrix
                             if (mymodel.nr_bodies > 1) {
                                 Abody =  Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
-                                Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
+                                if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
                                 Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
                                 (mymodel.PPref[ibody]).get2DFourierTransform(Fref, Abody);
                             } else {
-                                A = mydata.obsModel.applyAnisoMag(A, optics_group);
+                                if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
                                 A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
                                 mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
                             }
@@ -6625,7 +6625,7 @@ void MlOptimiser::storeWeightedSums(
                 exp_pointer_dir_nonzeroprior, exp_directions_prior, exp_pointer_psi_nonzeroprior, exp_psi_prior
             );
 
-            // The order of the looping here has changed for 3.1: different img_id have different optics_group and therefore different applyAnisoMag....
+            // The order of the looping here has changed for 3.1: different img_id have different optics_group and therefore different magnifications....
             for (int img_id = 0; img_id < exp_nr_images; img_id++) {
                 int group_id = mydata.getGroupId(part_id, img_id);
                 const int optics_group = mydata.getOpticsGroup(part_id, img_id);
@@ -6645,10 +6645,10 @@ void MlOptimiser::storeWeightedSums(
                     // For multi-body refinements, A are only 'residual' orientations, Abody is the complete Euler matrix
                     if (mymodel.nr_bodies > 1) {
                         Abody = Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
-                        Abody = mydata.obsModel.applyAnisoMag(Abody, optics_group);
+                        if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
                         Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
                     } else {
-                        A = mydata.obsModel.applyAnisoMag(A, optics_group);
+                        if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
                         A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
                     }
 
@@ -7607,7 +7607,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
 
                         // Get the FT of the first image
                         A1 = Euler::angles2matrix(rot1, tilt1, psi1);
-                        A1 = mydata.obsModel.applyAnisoMag(A1, optics_group);
+                        if (mydata.obsModel.hasMagMatrices) { A1 *= mydata.obsModel.anisoMag(optics_group); }
                         A1 = mydata.obsModel.applyScaleDifference(A1, optics_group, mymodel.ori_size, mymodel.pixel_size);
                         mymodel.PPref[iclass].get2DFourierTransform(F1, A1);
 
@@ -7670,7 +7670,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         if (imode == 0) {
                             // Get new rotated version of reference
                             A2 = Euler::angles2matrix(rot2, tilt2, psi2);
-                            A2 = mydata.obsModel.applyAnisoMag(A2, optics_group);
+                            if (mydata.obsModel.hasMagMatrices) { A2 *= mydata.obsModel.anisoMag(optics_group); }
                             A2 = mydata.obsModel.applyScaleDifference(A2, optics_group, mymodel.ori_size, mymodel.pixel_size);
                             mymodel.PPref[iclass].get2DFourierTransform(F2, A2);
                         } else {

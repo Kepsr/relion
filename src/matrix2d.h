@@ -277,6 +277,12 @@ class Matrix2D {
         initZeros();
     }
 
+    static Matrix2D<T> identity(int n) {
+        Matrix2D<T> m (n, n);
+        m.initIdentity();
+        return m;
+    }
+
     /** 2D Identity matrix of current size
     *
     * If actually the matrix is not square then an identity matrix is
@@ -419,13 +425,17 @@ class Matrix2D {
     * A += B;
     * @endcode
     */
-    void operator += (const Matrix2D<T> &op1) const {
+    void operator += (const Matrix2D<T> &op1) const {  // How is this const?
         if (mdimx != op1.mdimx || mdimy != op1.mdimy)
             REPORT_ERROR("operator+=: Not same sizes in matrix addition");
 
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
         at(i, j) += op1.at(i, j);
+    }
+
+    void operator *= (const Matrix2D<T> &other) {
+        *this = *this * other;
     }
 
     /** Matrix subtraction

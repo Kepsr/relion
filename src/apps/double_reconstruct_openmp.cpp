@@ -363,8 +363,8 @@ class reconstruct_parameters {
                         // If we are considering Ewald sphere curvature, the mag. matrix
                         // has to be provided to the backprojector explicitly
                         // (to avoid creating an Ewald ellipsoid)
-                        if (!do_ewald || Ewald_ellipsoid) {
-                            A3D = obsModel.applyAnisoMag(A3D, opticsGroup);
+                        if ((!do_ewald || Ewald_ellipsoid) && obsModel.hasMagMatrices) {
+                            A3D *= obsModel.anisoMag(opticsGroup);
                         }
 
                         A3D = obsModel.applyScaleDifference(A3D, opticsGroup, boxOut, angpixOut);

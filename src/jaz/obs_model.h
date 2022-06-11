@@ -101,8 +101,6 @@ class ObservationModel
 		// effect of symmetric aberration (cached)
 		const Image<RFLOAT>& getGammaOffset(int optGroup, int s);
 
-		Matrix2D<RFLOAT> applyAnisoMag(Matrix2D<RFLOAT> A3D, int opticsGroup);
-
 		Matrix2D<RFLOAT> applyScaleDifference(Matrix2D<RFLOAT> A3D, int opticsGroup, int s3D, double angpix3D);
 
 		// Bureaucracy
@@ -117,7 +115,7 @@ class ObservationModel
 			return std::adjacent_find(
 				boxSizes.begin(), boxSizes.end(), std::not_equal_to<int>()
 			) == boxSizes.end();
-		};
+		}
 
 		double angToPix(double a, int s, int opticsGroup) const;
 		double pixToAng(double p, int s, int opticsGroup) const;
@@ -142,6 +140,8 @@ class ObservationModel
 		Matrix2D<RFLOAT> getMagMatrix(int opticsGroup) const;
 		std::vector<Matrix2D<RFLOAT> > getMagMatrices() const;
 		void setMagMatrix(int opticsGroup, const Matrix2D<RFLOAT>& M);
+
+		Matrix2D<RFLOAT> anisoMag(int opticsGroup) const;
 
 		// 0-indexed
 		int getOpticsGroup(const MetaDataTable &particlesMdt, long int particle = -1) const;
