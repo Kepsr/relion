@@ -471,9 +471,8 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
 
     if (do_ewald && ctf_premultiplied)
         REPORT_ERROR("We cannot perform Ewald sphere correction on CTF premultiplied particles.");
-    Matrix2D<RFLOAT> magMat;
-    if (!do_ewald) {
-        A3D = obsModel.applyAnisoMag(A3D, opticsGroup);
+    if (!do_ewald && obsModel.hasMagMatrices) {
+        A3D *= obsModel.anisoMag(opticsGroup);
     }
 
     // We don't need this, since we are backprojecting as is.
@@ -530,14 +529,9 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
         direct::elem(F2D, 0, 0) = 0.0;
 
         if (do_ewald) {
-            Matrix2D<RFLOAT> magMat;
-
-            if (obsModel.hasMagMatrices) {
-                magMat = obsModel.getMagMatrix(opticsGroup);
-            } else {
-                magMat = Matrix2D<RFLOAT>(2,2);
-                magMat.initIdentity();
-            }
+            Matrix2D<RFLOAT> magMat = obsModel.hasMagMatrices ?
+                obsModel.getMagMatrix(opticsGroup) :
+                Matrix2D<RFLOAT>::identity(2);
 
             backprojector[this_subset - 1].set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, +1.0, &magMat);
             backprojector[this_subset - 1].set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, -1.0, &magMat);

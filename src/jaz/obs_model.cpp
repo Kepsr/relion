@@ -174,7 +174,7 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
 
     // symmetrical high-order aberrations:
     hasEvenZernike = opticsMdt.containsLabel(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS);
-    evenZernikeCoeffs = std::vector<std::vector<double> >(opticsMdt.numberOfObjects(), std::vector<double>(0));
+    evenZernikeCoeffs = std::vector<std::vector<double>>(opticsMdt.numberOfObjects(), std::vector<double>(0));
     gammaOffset = std::vector<std::map<int, Image<RFLOAT>>>(opticsMdt.numberOfObjects());
 
     // antisymmetrical high-order aberrations:
@@ -259,8 +259,7 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
         // If none are defined, keep a set of identity matrices
 
         Matrix2D<RFLOAT> &magMatrix = magMatrices[i];
-        magMatrix = Matrix2D<RFLOAT>(2, 2);
-        magMatrix.initIdentity();
+        magMatrix = Matrix2D<RFLOAT>::identity(2);
 
         // See if there is more than one MTF, for more rapid divideByMtf
         hasMultipleMtfs = std::adjacent_find(
@@ -304,7 +303,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
     Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-    A3D = applyAnisoMag(A3D, opticsGroup);
+    if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 
     MultidimArray<Complex> pred = MultidimArray<Complex>::zeros(sh_out, s_out);
@@ -383,7 +382,7 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
     Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-    A3D = applyAnisoMag(A3D, opticsGroup);
+    if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
     A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
 
     proj.projectGradient(out, A3D);
@@ -572,8 +571,18 @@ void ObservationModel::setMagMatrix(int opticsGroup, const Matrix2D<RFLOAT> &M) 
     magMatrices[opticsGroup] = M;
 }
 
-std::vector<Matrix2D<RFLOAT> > ObservationModel::getMagMatrices() const {
+std::vector<Matrix2D<RFLOAT>> ObservationModel::getMagMatrices() const {
     return magMatrices;
+}
+
+Matrix2D<RFLOAT> ObservationModel::anisoMag(int opticsGroup) const {
+    const Matrix2D<RFLOAT> &magmatrix = magMatrices[opticsGroup];
+    Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+    mag(0, 0) = magmatrix(0, 0);
+    mag(0, 1) = magmatrix(0, 1);
+    mag(1, 0) = magmatrix(1, 0);
+    mag(1, 1) = magmatrix(1, 1);
+    return mag.inv();
 }
 
 int ObservationModel::getOpticsGroup(const MetaDataTable &particlesMdt, long int particle) const {
@@ -896,25 +905,6 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
     return gammaOffset[optGroup][s];
 }
 
-Matrix2D<RFLOAT> ObservationModel::applyAnisoMag(Matrix2D<RFLOAT> A3D, int opticsGroup) {
-    Matrix2D<RFLOAT> out;
-
-    if (hasMagMatrices) {
-        Matrix2D<RFLOAT> mag3D(3, 3);
-        mag3D.initIdentity();
-
-        mag3D(0, 0) = magMatrices[opticsGroup](0, 0);
-        mag3D(0, 1) = magMatrices[opticsGroup](0, 1);
-        mag3D(1, 0) = magMatrices[opticsGroup](1, 0);
-        mag3D(1, 1) = magMatrices[opticsGroup](1, 1);
-        out = mag3D.inv() * A3D;
-    } else {
-        out = A3D;
-    }
-
-    return out;
-}
-
 Matrix2D<RFLOAT> ObservationModel::applyScaleDifference(
     Matrix2D<RFLOAT> A3D, int opticsGroup, int s3D, double angpix3D
 ) {
@@ -922,12 +912,10 @@ Matrix2D<RFLOAT> ObservationModel::applyScaleDifference(
 }
 
 bool ObservationModel::containsAllColumnsNeededForPrediction(const MetaDataTable &partMdt) {
-    return (
-        partMdt.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) &&
-        partMdt.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) &&
-        partMdt.containsLabel(EMDL::ORIENT_ROT) &&
-        partMdt.containsLabel(EMDL::ORIENT_TILT) &&
-        partMdt.containsLabel(EMDL::ORIENT_PSI) &&
-        partMdt.containsLabel(EMDL::PARTICLE_RANDOM_SUBSET)
-    );
+    return partMdt.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) &&
+           partMdt.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) &&
+           partMdt.containsLabel(EMDL::ORIENT_ROT) &&
+           partMdt.containsLabel(EMDL::ORIENT_TILT) &&
+           partMdt.containsLabel(EMDL::ORIENT_PSI) &&
+           partMdt.containsLabel(EMDL::PARTICLE_RANDOM_SUBSET);
 }

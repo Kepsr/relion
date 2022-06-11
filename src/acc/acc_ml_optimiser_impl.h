@@ -753,7 +753,9 @@ void getFourierTransformsAndCtfs(
                     Matrix2D<RFLOAT> Abody = Aori * (baseMLO->mymodel.orient_bodies[obody]).transpose() * baseMLO->A_rot90 * Aresi * baseMLO->mymodel.orient_bodies[obody];
 
                     // Apply anisotropic mag and scaling
-                    Abody = baseMLO->mydata.obsModel.applyAnisoMag(Abody, optics_group);
+                    if (baseMLO->mydata.obsModel.hasMagMatrices) {
+                        Abody *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+                    }
                     Abody = baseMLO->mydata.obsModel.applyScaleDifference(Abody, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
 
                     // Get the FT of the projection in the right direction
@@ -920,9 +922,10 @@ void getAllSquaredDifferencesCoarse(
                 }
 
                 int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, 0); // get optics group of first image for this particle...
-                Matrix2D<RFLOAT> mag;
-                mag.initIdentity(3);
-                mag = baseMLO->mydata.obsModel.applyAnisoMag(mag, optics_group);
+                Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+                if (baseMLO->mydata.obsModel.hasMagMatrices) {
+                    mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+                }
                 mag = baseMLO->mydata.obsModel.applyScaleDifference(mag, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
                 if (!mag.isIdentity()) {
                     MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? MBL * mag : mag;
@@ -1391,9 +1394,10 @@ void getAllSquaredDifferencesFine(
                 eulers[exp_iclass - sp.iclass_min].setSize(9 * FineProjectionData[img_id].class_entries[exp_iclass]);
                 eulers[exp_iclass - sp.iclass_min].hostAlloc();
 
-                Matrix2D<RFLOAT> mag;
-                mag.initIdentity(3);
-                mag = baseMLO->mydata.obsModel.applyAnisoMag(mag, optics_group);
+                Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+                if (baseMLO->mydata.obsModel.hasMagMatrices) {
+                    mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+                }
                 mag = baseMLO->mydata.obsModel.applyScaleDifference(mag, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
                 if (!mag.isIdentity()) {
                     MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? mag * MBL : mag;
@@ -2652,9 +2656,10 @@ void storeWeightedSums(
 
             CTICTOC(accMLO->timer, "generateEulerMatricesProjector", ({
 
-            Matrix2D<RFLOAT> mag;
-            mag.initIdentity(3);
-            mag = baseMLO->mydata.obsModel.applyAnisoMag(mag, optics_group);
+            Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+            if (baseMLO->mydata.obsModel.hasMagMatrices) {
+                mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+            }
             mag = baseMLO->mydata.obsModel.applyScaleDifference(mag, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
             if (!mag.isIdentity()) {
                 MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? mag * MBL : mag;

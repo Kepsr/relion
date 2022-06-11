@@ -541,7 +541,9 @@ void ParticleSubtractor::subtractOneParticle(
             // The real orientation to be applied is the obody transformation applied and the original one
             Matrix2D<RFLOAT> Abody = Aori * (opt.mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * opt.mymodel.orient_bodies[obody];
             // Apply anisotropic mag and scaling
-            Abody = opt.mydata.obsModel.applyAnisoMag(Abody, optics_group);
+            if (opt.mydata.obsModel.hasMagMatrices) {
+                Abody *= opt.mydata.obsModel.anisoMag(optics_group);
+            }
             Abody = opt.mydata.obsModel.applyScaleDifference(Abody, optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
 
             // Get the FT of the projection in the right direction
@@ -602,7 +604,9 @@ void ParticleSubtractor::subtractOneParticle(
         Matrix2D<RFLOAT> A3D_pure_rot = Euler::angles2matrix(rot, tilt, psi);
 
         // Apply anisotropic mag and scaling
-        Matrix2D<RFLOAT> A3D = opt.mydata.obsModel.applyAnisoMag(A3D_pure_rot, optics_group);
+        Matrix2D<RFLOAT> A3D = opt.mydata.obsModel.hasMagMatrices ?
+            A3D_pure_rot :
+            A3D_pure_rot * opt.mydata.obsModel.anisoMag(optics_group);
         A3D = opt.mydata.obsModel.applyScaleDifference(A3D, optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
         opt.mymodel.PPref[myclass].get2DFourierTransform(Fsubtrahend, A3D);
 
