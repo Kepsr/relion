@@ -34,20 +34,11 @@
 
 using namespace gravis;
 
-template <typename T>
-inline bool allIdentical(std::vector<T> xs) {
-    for (int i = 1; i < xs.size(); i++) {
-        if (xs[i] != xs[0]) return false;
-    }
-    return true;
-}
-
 void ObservationModel::loadSafely(
     std::string filename, ObservationModel& obsModel,
     MetaDataTable &particlesMdt, std::string tablename,
     int verb, bool do_die_upon_error
 ) {
-    MetaDataTable opticsMdt;
 
     std::string mytablename;
 
@@ -63,6 +54,8 @@ void ObservationModel::loadSafely(
         particlesMdt.read(filename, tablename);
         mytablename = tablename;
     }
+
+    MetaDataTable opticsMdt;
     opticsMdt.read(filename, "optics");
 
     if (opticsMdt.numberOfObjects() == 0) {
@@ -265,17 +258,20 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
         // Always keep a set of mag matrices
         // If none are defined, keep a set of identity matrices
 
-        magMatrices[i] = Matrix2D<RFLOAT>(2,2);
-        magMatrices[i].initIdentity();
+        Matrix2D<RFLOAT> &magMatrix = magMatrices[i];
+        magMatrix = Matrix2D<RFLOAT>(2, 2);
+        magMatrix.initIdentity();
 
         // See if there is more than one MTF, for more rapid divideByMtf
-        hasMultipleMtfs = !allIdentical(fnMtfs);
+        hasMultipleMtfs = std::adjacent_find(
+            fnMtfs.begin(), fnMtfs.end(), std::not_equal_to<FileName>()
+        ) != fnMtfs.end();
 
         if (hasMagMatrices) {
-            magMatrices[i](0, 0) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_00, i);
-            magMatrices[i](0, 1) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_01, i);
-            magMatrices[i](1, 0) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_10, i);
-            magMatrices[i](1, 1) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_11, i);
+            magMatrix(0, 0) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_00, i);
+            magMatrix(0, 1) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_01, i);
+            magMatrix(1, 0) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_10, i);
+            magMatrix(1, 1) = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_MAG_MATRIX_11, i);
         }
     }
 
@@ -484,14 +480,6 @@ void ObservationModel::demodulatePhase(
     }
 }
 
-bool ObservationModel::allPixelSizesIdentical() const {
-    return allIdentical(angpix);
-}
-
-bool ObservationModel::allBoxSizesIdentical() const {
-    return allIdentical(boxSizes);
-}
-
 double ObservationModel::angToPix(double a, int s, int opticsGroup) const {
     return s * angpix[opticsGroup] / a;
 }
@@ -597,11 +585,7 @@ int ObservationModel::getOpticsGroup(const MetaDataTable &particlesMdt, long int
 }
 
 bool ObservationModel::getCtfPremultiplied(int og) const {
-    if (og < CtfPremultiplied.size()) {
-        return CtfPremultiplied[og];
-    } else {
-        return false;
-    }
+    return og < CtfPremultiplied.size() && CtfPremultiplied[og];
 }
 
 void ObservationModel::setCtfPremultiplied(int og, bool val) {
