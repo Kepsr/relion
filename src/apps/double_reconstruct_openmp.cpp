@@ -367,7 +367,7 @@ class reconstruct_parameters {
                             A3D *= obsModel.anisoMag(opticsGroup);
                         }
 
-                        A3D = obsModel.applyScaleDifference(A3D, opticsGroup, boxOut, angpixOut);
+                        A3D *= obsModel.scaleDifference(opticsGroup, boxOut, angpixOut);
                         A3D /= padding_factor_2D;
 
                         // Translations (either through phase-shifts or in real space

@@ -544,7 +544,7 @@ void ParticleSubtractor::subtractOneParticle(
             if (opt.mydata.obsModel.hasMagMatrices) {
                 Abody *= opt.mydata.obsModel.anisoMag(optics_group);
             }
-            Abody = opt.mydata.obsModel.applyScaleDifference(Abody, optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
+            Abody *= opt.mydata.obsModel.scaleDifference(optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
 
             // Get the FT of the projection in the right direction
             MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
@@ -607,7 +607,7 @@ void ParticleSubtractor::subtractOneParticle(
         Matrix2D<RFLOAT> A3D = opt.mydata.obsModel.hasMagMatrices ?
             A3D_pure_rot :
             A3D_pure_rot * opt.mydata.obsModel.anisoMag(optics_group);
-        A3D = opt.mydata.obsModel.applyScaleDifference(A3D, optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
+        A3D *= opt.mydata.obsModel.scaleDifference(optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
         opt.mymodel.PPref[myclass].get2DFourierTransform(Fsubtrahend, A3D);
 
         // Shift in opposite direction as offsets in the STAR file

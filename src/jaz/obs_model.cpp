@@ -182,18 +182,14 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
     oddZernikeCoeffs = std::vector<std::vector<double>>(opticsMdt.numberOfObjects(), std::vector<double>(0));
     phaseCorr = std::vector<std::map<int, Image<Complex>>>(opticsMdt.numberOfObjects());
 
-    const bool hasTilt = (
-        opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_X) ||
-        opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_Y)
-    );
+    const bool hasTilt = opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_X) ||
+                         opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_Y);
 
     // anisotropic magnification:
-    hasMagMatrices = (
-        opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_00) ||
-        opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_01) ||
-        opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_10) ||
-        opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_11)
-    );
+    hasMagMatrices = opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_00) ||
+                     opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_01) ||
+                     opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_10) ||
+                     opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_11);
 
     magMatrices.resize(opticsMdt.numberOfObjects());
 
@@ -304,7 +300,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
 
     Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
     if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
-    A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
+    A3D *= scaleDifference(opticsGroup, s_ref, angpix_ref);
 
     MultidimArray<Complex> pred = MultidimArray<Complex>::zeros(sh_out, s_out);
     proj.get2DFourierTransform(pred, A3D);
@@ -383,15 +379,15 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
 
     Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
     if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
-    A3D = applyScaleDifference(A3D, opticsGroup, s_ref, angpix_ref);
+    A3D *= scaleDifference(opticsGroup, s_ref, angpix_ref);
 
     proj.projectGradient(out, A3D);
 
     if (
-        shiftPhases && oddZernikeCoeffs.size() > opticsGroup &&
+        shiftPhases && opticsGroup < oddZernikeCoeffs.size() &&
         oddZernikeCoeffs[opticsGroup].size() > 0
     ) {
-        const Image<Complex>& corr = getPhaseCorrection(opticsGroup, s_out);
+        const Image<Complex> &corr = getPhaseCorrection(opticsGroup, s_out);
 
         for (int y = 0; y < s_out;  y++)
         for (int x = 0; x < sh_out; x++) {
@@ -401,7 +397,7 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
     }
 
     if (applyMtf && fnMtfs.size() > opticsGroup) {
-        const Image<RFLOAT>& mtf = getMtfImage(opticsGroup, s_out);
+        const Image<RFLOAT> &mtf = getMtfImage(opticsGroup, s_out);
 
         for (int y = 0; y < s_out;  y++)
         for (int x = 0; x < sh_out; x++) {
@@ -554,11 +550,11 @@ void ObservationModel::getBoxSizes(std::vector<int>& sDest, std::vector<int>& sh
         REPORT_ERROR("ObservationModel::getBoxSizes: box sizes not available. Make sure particle images are available before converting/importing STAR files from earlier versions of RELION.\n");
     }
 
-    sDest.resize(boxSizes.size());
+     sDest.resize(boxSizes.size());
     shDest.resize(boxSizes.size());
 
     for (int i = 0; i < boxSizes.size(); i++) {
-        sDest[i] = boxSizes[i];
+         sDest[i] = boxSizes[i];
         shDest[i] = boxSizes[i] / 2 + 1;
     }
 }
@@ -710,8 +706,8 @@ std::vector<int> ObservationModel::getOptGroupsPresent(const MetaDataTable &part
 }
 
 std::vector<std::pair<int, std::vector<int>>> ObservationModel::splitParticlesByOpticsGroup(const MetaDataTable &partMdt) const {
-    std::vector<int> presentGroups = ObservationModel::getOptGroupsPresent(partMdt);
 
+    std::vector<int> presentGroups = ObservationModel::getOptGroupsPresent(partMdt);
     const int pogc = presentGroups.size();
     const int ogc = opticsMdt.numberOfObjects();
 
@@ -834,14 +830,14 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
 
             const int sh = s / 2 + 1;
             phaseCorr[optGroup][s] = Image<Complex>(sh, s);
-            Image<Complex>& img = phaseCorr[optGroup][s];
+            Image<Complex> &img = phaseCorr[optGroup][s];
             const double as = angpix[optGroup] * boxSizes[optGroup];
-            const Matrix2D<RFLOAT>& M = magMatrices[optGroup];
+            const Matrix2D<RFLOAT> &M = magMatrices[optGroup];
 
             for (int y = 0; y < s;  y++)
             for (int x = 0; x < sh; x++) {
-                double phase = 0.0;
 
+                double phase = 0.0;
                 for (int i = 0; i < oddZernikeCoeffs[optGroup].size(); i++) {
 
                     const double xx0 = x / as;
@@ -905,10 +901,8 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
     return gammaOffset[optGroup][s];
 }
 
-Matrix2D<RFLOAT> ObservationModel::applyScaleDifference(
-    Matrix2D<RFLOAT> A3D, int opticsGroup, int s3D, double angpix3D
-) {
-    return A3D * ((boxSizes[opticsGroup] * angpix[opticsGroup]) / (s3D * angpix3D));
+double ObservationModel::scaleDifference(int opticsGroup, int s3D, double angpix3D) {
+    return (boxSizes[opticsGroup] * angpix[opticsGroup]) / (s3D * angpix3D);
 }
 
 bool ObservationModel::containsAllColumnsNeededForPrediction(const MetaDataTable &partMdt) {

@@ -2103,10 +2103,10 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 init_random_generator(random_seed + part_id);
                 // Randomize the initial orientations for initial reference generation at this step....
                 // TODO: this is not an even angular distribution....
-                RFLOAT rot  = mymodel.ref_dim == 2 ? 0.0 : rnd_unif () * 360.0;
-                RFLOAT tilt = mymodel.ref_dim == 2 ? 0.0 : rnd_unif () * 180.0;
-                RFLOAT psi  = rnd_unif () * 360.0;
-                int iclass  = rnd_unif () * mymodel.nr_classes;
+                RFLOAT rot  = mymodel.ref_dim == 2 ? 0.0 : rnd_unif() * 360.0;
+                RFLOAT tilt = mymodel.ref_dim == 2 ? 0.0 : rnd_unif() * 180.0;
+                RFLOAT psi  = rnd_unif() * 360.0;
+                int iclass  = rnd_unif() * mymodel.nr_classes;
                 if (iclass == mymodel.nr_classes)
                     iclass = mymodel.nr_classes - 1;
                 if (iclass >= mymodel.nr_classes) {
@@ -2119,9 +2119,9 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 Matrix2D<RFLOAT> A = Euler::angles2matrix(rot, tilt, psi);
 
                 // At this point anisotropic magnification shouldn't matter
-                // Also: dont applyScaleDifference, as img() was rescaled to mymodel.ori_size and mymodel.pixel_size
+                // Also: dont apply scaleDifference, as img() was rescaled to mymodel.ori_size and mymodel.pixel_size
                 // if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
-                //A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                //A *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                 // Construct initial references from random subsets
                 windowFourierTransform(Faux, Fimg, wsum_model.current_size);
                 CenterFFTbySign(Fimg);
@@ -5028,7 +5028,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
                     // Apply anisotropic mag and scaling
                     if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
-                    Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                    Abody *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
 
                     // Get the FT of the projection in the right direction
                     MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
@@ -5617,11 +5617,11 @@ void MlOptimiser::getAllSquaredDifferences(
                             if (mymodel.nr_bodies > 1) {
                                 Abody =  Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
                                 if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
-                                Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                                Abody *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                                 (mymodel.PPref[ibody]).get2DFourierTransform(Fref, Abody);
                             } else {
                                 if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
-                                A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                                A *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                                 mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
                             }
 
@@ -6646,10 +6646,10 @@ void MlOptimiser::storeWeightedSums(
                     if (mymodel.nr_bodies > 1) {
                         Abody = Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
                         if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
-                        Abody = mydata.obsModel.applyScaleDifference(Abody, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                        Abody *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                     } else {
                         if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
-                        A = mydata.obsModel.applyScaleDifference(A, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                        A *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                     }
 
                     #ifdef TIMING
@@ -7608,7 +7608,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         // Get the FT of the first image
                         A1 = Euler::angles2matrix(rot1, tilt1, psi1);
                         if (mydata.obsModel.hasMagMatrices) { A1 *= mydata.obsModel.anisoMag(optics_group); }
-                        A1 = mydata.obsModel.applyScaleDifference(A1, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                        A1 *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                         mymodel.PPref[iclass].get2DFourierTransform(F1, A1);
 
                         // Apply the angular or shift error
@@ -7671,7 +7671,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             // Get new rotated version of reference
                             A2 = Euler::angles2matrix(rot2, tilt2, psi2);
                             if (mydata.obsModel.hasMagMatrices) { A2 *= mydata.obsModel.anisoMag(optics_group); }
-                            A2 = mydata.obsModel.applyScaleDifference(A2, optics_group, mymodel.ori_size, mymodel.pixel_size);
+                            A2 *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                             mymodel.PPref[iclass].get2DFourierTransform(F2, A2);
                         } else {
                             // Get shifted version

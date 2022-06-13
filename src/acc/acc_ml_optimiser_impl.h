@@ -756,7 +756,7 @@ void getFourierTransformsAndCtfs(
                     if (baseMLO->mydata.obsModel.hasMagMatrices) {
                         Abody *= baseMLO->mydata.obsModel.anisoMag(optics_group);
                     }
-                    Abody = baseMLO->mydata.obsModel.applyScaleDifference(Abody, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
+                    Abody *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
 
                     // Get the FT of the projection in the right direction
                     MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
@@ -926,7 +926,7 @@ void getAllSquaredDifferencesCoarse(
                 if (baseMLO->mydata.obsModel.hasMagMatrices) {
                     mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
                 }
-                mag = baseMLO->mydata.obsModel.applyScaleDifference(mag, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
+                mag *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
                 if (!mag.isIdentity()) {
                     MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? MBL * mag : mag;
                 }
@@ -1398,7 +1398,7 @@ void getAllSquaredDifferencesFine(
                 if (baseMLO->mydata.obsModel.hasMagMatrices) {
                     mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
                 }
-                mag = baseMLO->mydata.obsModel.applyScaleDifference(mag, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
+                mag *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
                 if (!mag.isIdentity()) {
                     MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? mag * MBL : mag;
                 }
@@ -2660,7 +2660,7 @@ void storeWeightedSums(
             if (baseMLO->mydata.obsModel.hasMagMatrices) {
                 mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
             }
-            mag = baseMLO->mydata.obsModel.applyScaleDifference(mag, optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
+            mag *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
             if (!mag.isIdentity()) {
                 MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? mag * MBL : mag;
             }
