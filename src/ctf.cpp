@@ -101,79 +101,28 @@ void CTF::readValue(
     } }
 }
 
+template <typename T>
+T getMDT(EMDL::EMDLabel label, const MetaDataTable &mdt1, const MetaDataTable &mdt2, long int objectID, T defval) {
+    try {
+        return mdt1.getValue<T>(label, objectID);
+    } catch (const char *errmsg) { try {
+        return mdt2.getValue<T>(label, objectID);
+    } catch (const char *errmsg) {
+        return defval;
+    } }
+}
+
 void CTF::read(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
 
-    try {
-        kV = MD1.getValue<RFLOAT>(EMDL::CTF_VOLTAGE, objectID);
-    } catch (const char *errmsg) { try {
-        kV = MD2.getValue<RFLOAT>(EMDL::CTF_VOLTAGE, objectID);
-    } catch (const char *errmsg) {
-        kV = 200;
-    } }
-
-    try {
-        DeltafU = MD1.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, objectID);
-    } catch (const char *errmsg) { try {
-        DeltafU = MD2.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, objectID);
-    } catch (const char *errmsg) {
-        DeltafU = 0;
-    } }
-
-    try {
-        DeltafV = MD1.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, objectID);
-    } catch (const char *errmsg) { try {
-        DeltafV = MD2.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, objectID);
-    } catch (const char *errmsg) {
-        DeltafV = DeltafU;
-    } }
-
-    try {
-        azimuthal_angle = MD1.getValue<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, objectID);
-    } catch (const char *errmsg) { try {
-        azimuthal_angle = MD2.getValue<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, objectID);
-    } catch (const char *errmsg) {
-        azimuthal_angle = 0;
-    } }
-
-    try {
-        Cs = MD1.getValue<RFLOAT>(EMDL::CTF_CS, objectID);
-    } catch (const char *errmsg) { try {
-        Cs = MD2.getValue<RFLOAT>(EMDL::CTF_CS, objectID);
-    } catch (const char *errmsg) {
-        Cs = 0;
-    } }
-
-    try {
-        Bfac = MD1.getValue<RFLOAT>(EMDL::CTF_BFACTOR, objectID);
-    } catch (const char *errmsg) { try {
-        Bfac = MD2.getValue<RFLOAT>(EMDL::CTF_BFACTOR, objectID);
-    } catch (const char *errmsg) {
-        Bfac = 0;
-    } }
-
-    try {
-        scale = MD1.getValue<RFLOAT>(EMDL::CTF_SCALEFACTOR, objectID);
-    } catch (const char *errmsg) { try {
-        scale = MD2.getValue<RFLOAT>(EMDL::CTF_SCALEFACTOR, objectID);
-    } catch (const char *errmsg) {
-        scale = 1;
-    } }
-
-    try {
-        Q0 = MD1.getValue<RFLOAT>(EMDL::CTF_Q0, objectID);
-    } catch (const char *errmsg) { try {
-        Q0 = MD2.getValue<RFLOAT>(EMDL::CTF_Q0, objectID);
-    } catch (const char *errmsg) {
-        Q0 = 0;
-    } }
-
-    try {
-        phase_shift = MD1.getValue<RFLOAT>(EMDL::CTF_PHASESHIFT, objectID);
-    } catch (const char *errmsg) { try {
-        phase_shift = MD2.getValue<RFLOAT>(EMDL::CTF_PHASESHIFT, objectID);
-    } catch (const char *errmsg) {
-        phase_shift = 0;
-    } }
+    kV              = getMDT<RFLOAT>(EMDL::CTF_VOLTAGE,       MD1, MD2, objectID, 200);
+    DeltafU         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSU,      MD1, MD2, objectID, 0);
+    DeltafV         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSV,      MD1, MD2, objectID, DeltafU);
+    azimuthal_angle = getMDT<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, MD1, MD2, objectID, 0);
+    Cs              = getMDT<RFLOAT>(EMDL::CTF_CS,            MD1, MD2, objectID, 0);
+    Bfac            = getMDT<RFLOAT>(EMDL::CTF_BFACTOR,       MD1, MD2, objectID, 0);
+    scale           = getMDT<RFLOAT>(EMDL::CTF_SCALEFACTOR,   MD1, MD2, objectID, 1);
+    Q0              = getMDT<RFLOAT>(EMDL::CTF_Q0,            MD1, MD2, objectID, 0);
+    phase_shift     = getMDT<RFLOAT>(EMDL::CTF_PHASESHIFT,    MD1, MD2, objectID, 0);
 
     initialise();
 }
@@ -607,13 +556,9 @@ void CTF::applyWeightEwaldSphereCurvature(
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;
 
-    Matrix2D<RFLOAT> M(2,2);
-
-    if (obsModel && obsModel->hasMagMatrices) {
-        M = obsModel->getMagMatrix(opticsGroup);
-    } else {
-        M.initIdentity();
-    }
+    Matrix2D<RFLOAT> M = obsModel && obsModel->hasMagMatrices ?
+        obsModel->getMagMatrix(opticsGroup) : 
+        Matrix2D<RFLOAT>::identity(2);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
         RFLOAT xu = (RFLOAT) ip / xs;
