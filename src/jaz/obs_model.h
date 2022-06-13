@@ -51,6 +51,15 @@ class ObservationModel {
     MetaDataTable opticsMdt;
     bool hasEvenZernike, hasOddZernike, hasMagMatrices, hasBoxSizes, hasMultipleMtfs;
 
+    void magnify(RFLOAT &X, RFLOAT &Y, const Matrix2D<RFLOAT> &M) {
+        if (hasMagMatrices) {
+            RFLOAT Xd = M(0, 0) * X + M(0, 1) * Y;
+            RFLOAT Yd = M(1, 0) * X + M(1, 1) * Y;
+            X = Xd;
+            Y = Yd;
+        }
+    }
+
     protected:
 
     // cached values - protected to prevent users from accidentally changing them,

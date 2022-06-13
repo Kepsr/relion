@@ -52,7 +52,7 @@
 
 using namespace gravis;
 
-static void ensure_square(int orixdim, int oriydim) {
+static void assert_square(int orixdim, int oriydim) {
     if (orixdim != oriydim) {
         REPORT_ERROR_STR(
             "CTF::getFftwImage: currently, symmetric aberrations are supported "
@@ -66,7 +66,7 @@ void CTF::readByGroup(
     const MetaDataTable &partMdt, ObservationModel* obs, long int particle
 ) {
 
-    opticsGroup = 
+    opticsGroup =
         obs == 0 ? -1 :
         partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1;
 
@@ -309,10 +309,7 @@ MultidimArray<RFLOAT> CTF::getFftwImage(
     // Here, calculate the CTF in a 2x larger box to support finer oscillations,
     // and then rescale the large CTF to simulate the effect of the windowing operation
     if (do_ctf_padding) {
-        bool ctf_premultiplied = false;
-        if (obsModel) {
-            ctf_premultiplied = obsModel->getCtfPremultiplied(opticsGroup);
-        }
+        bool ctf_premultiplied = obsModel && obsModel->getCtfPremultiplied(opticsGroup);
 
         // two-fold padding, increased to 4-fold padding for pre-multiplied CTFs
         int orixdim_pad = 2 * orixdim;
@@ -363,8 +360,8 @@ MultidimArray<RFLOAT> CTF::getFftwImage(
                     RFLOAT mctfipj = Mctf.elem(i, jp);
                     if (ctf_premultiplied) {
                         // Constrain result[i, j] to the interval [0.0, 1.0]
-                        direct::elem(result, i, j) = 
-                            mctfipj < 0.0 ? 0.0 : 
+                        direct::elem(result, i, j) =
+                            mctfipj < 0.0 ? 0.0 :
                             mctfipj > 1.0 ? 1.0 :
                             sqrt(mctfipj);
                     } else {
@@ -379,7 +376,7 @@ MultidimArray<RFLOAT> CTF::getFftwImage(
 
         if (obsModel && obsModel->hasEvenZernike) {
 
-            ensure_square(orixdim, oriydim);
+            assert_square(orixdim, oriydim);
 
             if (obsModel->getBoxSize(opticsGroup) != orixdim) {
                 REPORT_ERROR_STR(
@@ -409,8 +406,10 @@ MultidimArray<RFLOAT> CTF::getFftwImage(
                 const int x0 = i;
                 const int y0 = j <= result.ydim / 2 ? j : gammaOffset.data.ydim + j - result.ydim;
 
+                if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
                 RFLOAT t = getCTF(
-                    x, y, do_only_flip_phases, do_intact_until_first_peak,
+                    x, y,
+                    do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, gammaOffset(y0, x0), do_intact_after_first_peak
                 );
                 direct::elem(result, i, j) = do_abs ? abs(t) : t;
@@ -420,8 +419,10 @@ MultidimArray<RFLOAT> CTF::getFftwImage(
                 RFLOAT x = (RFLOAT) ip / xs;
                 RFLOAT y = (RFLOAT) jp / ys;
 
+                if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
                 RFLOAT t = getCTF(
-                    x, y, do_only_flip_phases, do_intact_until_first_peak,
+                    x, y,
+                    do_only_flip_phases, do_intact_until_first_peak,
                     do_damping, 0.0, do_intact_after_first_peak
                 );
                 direct::elem(result, i, j) = do_abs ? abs(t) : t;
@@ -453,8 +454,8 @@ MultidimArray<Complex> CTF::getCTFPImage(
     RFLOAT ys = (RFLOAT) oriydim * angpix;
 
     if (obsModel && obsModel->hasEvenZernike) {
-        
-        ensure_square(orixdim, oriydim);
+
+        assert_square(orixdim, oriydim);
 
         const Image<RFLOAT> &gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
 
@@ -520,8 +521,10 @@ MultidimArray<RFLOAT> CTF::getCenteredImage(
     FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
         RFLOAT x = (RFLOAT) i / xs;
         RFLOAT y = (RFLOAT) j / ys;
+        if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
         RFLOAT t = getCTF(
-            x, y, do_only_flip_phases, do_intact_until_first_peak,
+            x, y,
+            do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
         result.elem(i, j) = do_abs ? abs(t) : t;
@@ -541,8 +544,10 @@ void CTF::get1DProfile(
     for (int i = Xinit(result); i <= Xlast(result); i++) {
         RFLOAT x = (RFLOAT) i * cos(radians(angle)) / xs;
         RFLOAT y = (RFLOAT) i * sin(radians(angle)) / xs;
+        if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
         RFLOAT t = getCTF(
-            x, y, do_only_flip_phases, do_intact_until_first_peak,
+            x, y,
+            do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
         );
         result.elem(i) = do_abs ? abs(t) : t;
@@ -557,7 +562,7 @@ void CTF::applyWeightEwaldSphereCurvature(
     RFLOAT ys = (RFLOAT) oriydim * angpix;
 
     Matrix2D<RFLOAT> M = obsModel && obsModel->hasMagMatrices ?
-        obsModel->getMagMatrix(opticsGroup) : 
+        obsModel->getMagMatrix(opticsGroup) :
         Matrix2D<RFLOAT>::identity(2);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
@@ -595,8 +600,8 @@ void CTF::applyWeightEwaldSphereCurvature_new(
 
     for (int yi = 0; yi <      s;  yi++)
     for (int xi = 0; xi < half_s; xi++) {
-        const double x = xi / as;
-        const double y = yi < half_s ? yi / as : (yi - s) / as;
+        double x = xi / as;
+        double y = yi < half_s ? yi / as : (yi - s) / as;
 
         // shift of this frequency resulting from CTF:
         const t2Vector<RFLOAT> shift2D = RFLOAT(1.0 / (2 * angpix * PI)) * getGammaGrad(x, y);
@@ -614,6 +619,7 @@ void CTF::applyWeightEwaldSphereCurvature_new(
         RFLOAT A = alpha == 0.0 ? 0.0 : (alpha - sin(alpha)) / PI;
 
         // abs. value of CTFR (no damping):
+        if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
         const double ctf_val = getCTF(x, y, true, false, false, false, 0.0);
 
         direct::elem(result, xi, yi) = 0.5 * (A * (2.0 * ctf_val - 1.0) + 1.0);
@@ -635,6 +641,7 @@ void CTF::applyWeightEwaldSphereCurvature_noAniso(
         RFLOAT inv_d = Pythag(x, y);
         RFLOAT aux = 2.0 * deltaf * lambda * inv_d / particle_diameter;
         RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
+        if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
         direct::elem(result, i, j) = 0.5 * (A * (2.0 * fabs(getCTF(x, y)) - 1.0) + 1.0);
         // Within RELION, sin(chi) is used rather than 2 * sin(chi).
         // Hence the 0.5 above to keep everything on the same scale.

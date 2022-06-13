@@ -50,8 +50,11 @@
 #include "src/jaz/obs_model.h"
 #include <map>
 
+class ctf_toolbox_parameters;
 
 class CTF {
+
+    friend class ctf_toolbox_parameters;
 
     protected:
 
@@ -121,7 +124,7 @@ class CTF {
     // Longitudinal mechanical displacement (Angstrom). Typical value 100
     RFLOAT DeltaF;
 
-    // Transversal mechanical displacement (Angstrom). Typical value 3
+    // Transverse mechanical displacement (Angstrom). Typical value 3
     RFLOAT DeltaR;
 
     // Amplitude contrast. Typical values 0.07 for cryo, 0.2 for negative stain
@@ -139,47 +142,36 @@ class CTF {
     /** Empty constructor. */
     CTF():
     kV(200), DeltafU(0), DeltafV(0), azimuthal_angle(0), phase_shift(0),
-    Cs(0), Bfac(0), Q0(0), scale(1), obsModel(0), opticsGroup(0)
+    Cs(0), Bfac(0), Q0(0), scale(1), obsModel(NULL), opticsGroup(0)
     {}
 
     CTF(
-        RFLOAT _defU, RFLOAT _defV, RFLOAT _defAng,
-        RFLOAT _voltage, RFLOAT _Cs, RFLOAT _Q0,
-        RFLOAT _Bfac = 0.0, RFLOAT _scale = 1.0, RFLOAT _phase_shift = 0.0
+        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
+        RFLOAT voltage, RFLOAT Cs, RFLOAT Q0,
+        RFLOAT Bfac = 0.0, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
     ) {
-        setValues(_defU, _defV, _defAng, _voltage, _Cs, _Q0, _Bfac, _scale, _phase_shift);
+        setValues(defU, defV, defAng, voltage, Cs, Q0, Bfac, scale, phase_shift);
     }
 
     CTF(
         ObservationModel *obs, int opticsGroup,
-        RFLOAT _defU, RFLOAT _defV, RFLOAT _defAng,
-        RFLOAT _Bfac = 0.0, RFLOAT _scale = 1.0, RFLOAT _phase_shift = 0.0
+        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
+        RFLOAT Bfac = 0.0, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
     ) {
-        setValuesByGroup(
-            obs, opticsGroup,
-            _defU, _defV, _defAng,
-            _Bfac, _scale, _phase_shift
-        );
+        setValuesByGroup(obs, opticsGroup, defU, defV, defAng, Bfac, scale, phase_shift);
     }
 
-    CTF(
-        const MetaDataTable &partMdt, ObservationModel *obs,
-        long int particle = -1
-    ) {
+    CTF(const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1) {
         readByGroup(partMdt, obs, particle);
     }
 
-    CTF(
-        const MetaDataTable &MD1, const MetaDataTable &MD2,
-        long int objectID = -1
-    ) {
+    CTF(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID = -1) {
         read(MD1, MD2, objectID);
     }
 
     // Read CTF parameters from particle table partMdt and optics table opticsMdt.
     void readByGroup(
-        const MetaDataTable &partMdt, ObservationModel *obs,
-        long int particle = -1
+        const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1
     );
 
     void readValue(
@@ -226,6 +218,7 @@ class CTF {
     void initialise();
 
     RFLOAT operator () (RFLOAT X, RFLOAT Y) {
+        if (obsModel) obsModel->magnify(X, Y, obsModel->getMagMatrix(opticsGroup));
         return getCTF(X, Y);
     }
 
@@ -236,14 +229,6 @@ class CTF {
         bool do_intact_until_first_peak = false, bool do_damping = true,
         double gammaOffset = 0.0, bool do_intact_after_first_peak = false
     ) const {
-        if (obsModel && obsModel->hasMagMatrices) {
-            const Matrix2D<RFLOAT> &M = obsModel->getMagMatrix(opticsGroup);
-            RFLOAT Xd = M(0, 0) * X + M(0, 1) * Y;
-            RFLOAT Yd = M(1, 0) * X + M(1, 1) * Y;
-
-            X = Xd;
-            Y = Yd;
-        }
 
         RFLOAT u2 = X * X + Y * Y;  // u2 is the squared hypotenuse length of a right triangle with side lengths X, Y
         RFLOAT u4 = u2 * u2;
@@ -290,14 +275,7 @@ class CTF {
     gravis::t2Vector<RFLOAT> getGammaGrad(RFLOAT X, RFLOAT Y) const;
 
     inline Complex getCTFP(RFLOAT X, RFLOAT Y, bool is_positive, double gammaOffset = 0.0) const {
-        if (obsModel && obsModel->hasMagMatrices) {
-            const Matrix2D<RFLOAT> &M = obsModel->getMagMatrix(opticsGroup);
-            RFLOAT Xd = M(0, 0) * X + M(0, 1) * Y;
-            RFLOAT Yd = M(1, 0) * X + M(1, 1) * Y;
-
-            X = Xd;
-            Y = Yd;
-        }
+        if (obsModel) obsModel->magnify(X, Y, obsModel->getMagMatrix(opticsGroup));
 
         RFLOAT u2 = X * X + Y * Y;
         RFLOAT u4 = u2 * u2;

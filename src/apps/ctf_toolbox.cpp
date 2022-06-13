@@ -111,7 +111,12 @@ class ctf_toolbox_parameters {
                 RFLOAT x = (RFLOAT) i / xs;
                 RFLOAT y = (RFLOAT) j / ys;
 
-                Ictf().elem(i, j) = ctf.getCTF(x, y, false, do_intact_ctf_until_first_peak, true, 0.0, do_intact_ctf_after_first_peak);
+                if (ctf.obsModel) ctf.obsModel->magnify(x, y, ctf.obsModel->getMagMatrix(ctf.opticsGroup));
+                Ictf().elem(i, j) = ctf.getCTF(
+                    x, y,
+                    false, do_intact_ctf_until_first_peak,
+                    true, 0.0, do_intact_ctf_after_first_peak
+                );
             }
 
             resizeMap(Ictf(), sim_box);
@@ -145,9 +150,9 @@ class ctf_toolbox_parameters {
                 transformer.FourierTransform(img(), Fimg, false);
 
                 MultidimArray<RFLOAT> Fctf = ctf.getFftwImage(
-                    Xsize(Fimg), Ysize(Fimg), 
-                    Xsize(img()), Ysize(img()), 
-                    angpix, false, false, do_intact_ctf_until_first_peak, 
+                    Xsize(Fimg), Ysize(Fimg),
+                    Xsize(img()), Ysize(img()),
+                    angpix, false, false, do_intact_ctf_until_first_peak,
                     false, do_ctf_pad, do_intact_ctf_after_first_peak
                 );
                 if (!do_intact_ctf_after_first_peak) {
