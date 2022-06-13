@@ -274,7 +274,7 @@ class CTF {
 
     gravis::t2Vector<RFLOAT> getGammaGrad(RFLOAT X, RFLOAT Y) const;
 
-    inline Complex getCTFP(RFLOAT X, RFLOAT Y, bool is_positive, double gammaOffset = 0.0) const {
+    inline Complex getCTFP(RFLOAT X, RFLOAT Y, double gammaOffset = 0.0) const {
         if (obsModel) obsModel->magnify(X, Y, obsModel->getMagMatrix(opticsGroup));
 
         RFLOAT u2 = X * X + Y * Y;
@@ -282,9 +282,7 @@ class CTF {
 
         RFLOAT gamma = K1 * (Axx * X * X + 2.0 * Axy * X * Y + Ayy * Y * Y) + K2 * u4 - K5 - K3 + gammaOffset + PI / 2.0;
 
-        Complex c = Complex::unit(gamma);
-        if (!is_positive) { c.imag = -c.imag; }  // Complex conjugate
-        return c;
+        return Complex::unit(gamma);
     }
 
     // Compute Deltaf at a given direction (no longer used by getCTF)

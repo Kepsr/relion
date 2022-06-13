@@ -477,11 +477,9 @@ MultidimArray<Complex> CTF::getCTFPImage(
             const int x0 = i;
             const int y0 = j <= Ysize(result) / 2 ? jp : Ysize(gammaOffset.data) + jp;
 
-            direct::elem(result, i, j) = getCTFP(
-                x, y,
-                (myangle >= anglerad) == is_positive,
-                gammaOffset(y0, x0)
-            );
+            Complex ctfp = getCTFP(x, y, gammaOffset(y0, x0));
+            if ((myangle >= anglerad) != is_positive) { ctfp = ctfp.conj(); }
+            direct::elem(result, i, j) = ctfp;
         }
     } else {
         // FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
@@ -492,10 +490,9 @@ MultidimArray<Complex> CTF::getCTFPImage(
             RFLOAT y = (RFLOAT) jp / ys;
             RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
 
-            direct::elem(result, i, j) = getCTFP(
-                x, y,
-                (myangle >= anglerad) == is_positive
-            );
+            Complex ctfp = getCTFP(x, y);
+            if ((myangle >= anglerad) != is_positive) { ctfp = ctfp.conj(); }
+            direct::elem(result, i, j) = ctfp;
         }
     }
     // Special line along the vertical (Y-)axis, where FFTW stores both Friedel mates and Friedel symmetry needs to remain
