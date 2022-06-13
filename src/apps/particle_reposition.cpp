@@ -209,7 +209,7 @@ class particle_reposition_parameters {
                         if (optimiser.mydata.obsModel.hasMagMatrices) {
                             A *= optimiser.mydata.obsModel.anisoMag(optics_group);
                         }
-                        A = optimiser.mydata.obsModel.applyScaleDifference(A, optics_group, optimiser.mymodel.ori_size, optimiser.mymodel.pixel_size);
+                        A *= optimiser.mydata.obsModel.scaleDifference(optics_group, optimiser.mymodel.ori_size, optimiser.mymodel.pixel_size);
                     }
 
                     // Get the 2D image (in its ori_size)

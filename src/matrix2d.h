@@ -476,15 +476,13 @@ class Matrix2D {
     * Returns true if this object has the same shape (origin and size)
     * as the argument and the same values (to within machine epsilon).
     */
-    bool equal(
-        const Matrix2D<T> &op, RFLOAT accuracy = Xmipp::epsilon
-    ) const {
-        if (!sameShape(op)) 
+    bool equal(const Matrix2D<T> &other, RFLOAT accuracy = Xmipp::epsilon) const {
+        if (!sameShape(other)) 
             return false;
 
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
-        if (abs((*this)(i, j) - op(i, j)) > accuracy) return false;
+        if (abs((*this)(i, j) - other(i, j)) > accuracy) return false;
 
         return true;
     }

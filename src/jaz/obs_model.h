@@ -30,152 +30,154 @@
 
 class BackProjector;
 
-class ObservationModel
-{
+class ObservationModel {
+
     public:
-		// tablename can be "particles", "micrographs" or "movies".
-		// If tablename is "discover", the function will try to read the data table with all three names (in that order).
-		static void loadSafely(std::string filename, ObservationModel& obsModel,
-		                       MetaDataTable& particlesMdt, std::string tablename = "particles", int verb = 0, bool do_die_upon_error = true);
+    // tablename can be "particles", "micrographs" or "movies".
+    // If tablename is "discover", the function will try to read the data table with all three names (in that order).
+    static void loadSafely(std::string filename, ObservationModel& obsModel,
+                            MetaDataTable& particlesMdt, std::string tablename = "particles", int verb = 0, bool do_die_upon_error = true);
 
-		static void saveNew(MetaDataTable& particlesMdt, MetaDataTable& opticsMdt,
-		                    std::string filename, std::string _tablename = "particles");
+    static void saveNew(MetaDataTable& particlesMdt, MetaDataTable& opticsMdt,
+                        std::string filename, std::string _tablename = "particles");
 
-		void save(MetaDataTable& particlesMdt, std::string filename, std::string _tablename = "particles");
+    void save(MetaDataTable& particlesMdt, std::string filename, std::string _tablename = "particles");
 
-		static bool containsAllColumnsNeededForPrediction(const MetaDataTable& partMdt);
+    static bool containsAllColumnsNeededForPrediction(const MetaDataTable& partMdt);
 
-	        ObservationModel();
-	        ObservationModel(const MetaDataTable &opticsMdt, bool do_die_upon_error = true);
+        ObservationModel();
+        ObservationModel(const MetaDataTable &opticsMdt, bool do_die_upon_error = true);
 
-		MetaDataTable opticsMdt;
-		bool hasEvenZernike, hasOddZernike, hasMagMatrices, hasBoxSizes, hasMultipleMtfs;
+    MetaDataTable opticsMdt;
+    bool hasEvenZernike, hasOddZernike, hasMagMatrices, hasBoxSizes, hasMultipleMtfs;
 
-	protected:
-		// cached values - protected to prevent users from accidentally changing them,
-		// expecting the changes to propagate into the optics star-file
-		std::vector<double> angpix, originalAngpix, lambda, Cs;
-		std::vector<int> boxSizes;
-		std::vector<bool> CtfPremultiplied;
-		std::vector<std::vector<double> > evenZernikeCoeffs, oddZernikeCoeffs;
-		std::vector<Matrix2D<RFLOAT> > magMatrices;
-		std::vector<std::string> fnMtfs, groupNames;
+    protected:
 
-		// cached aberration effects for a set of given image sizes
-		// e.g.: phaseCorr[opt. group][img. height](y,x)
-		std::vector<std::map<int,Image<Complex> > > phaseCorr;
-		std::vector<std::map<int,Image<RFLOAT> > > gammaOffset, mtfImage;
-		std::map<int,Image<RFLOAT> > avgMtfImage;
+    // cached values - protected to prevent users from accidentally changing them,
+    // expecting the changes to propagate into the optics star-file
+    std::vector<double> angpix, originalAngpix, lambda, Cs;
+    std::vector<int> boxSizes;
+    std::vector<bool> CtfPremultiplied;
+    std::vector<std::vector<double> > evenZernikeCoeffs, oddZernikeCoeffs;
+    std::vector<Matrix2D<RFLOAT> > magMatrices;
+    std::vector<std::string> fnMtfs, groupNames;
 
-	public:
+    // cached aberration effects for a set of given image sizes
+    // e.g.: phaseCorr[opt. group][img. height](y,x)
+    std::vector<std::map<int,Image<Complex> > > phaseCorr;
+    std::vector<std::map<int,Image<RFLOAT> > > gammaOffset, mtfImage;
+    std::map<int,Image<RFLOAT> > avgMtfImage;
 
-		// Prediction //
-		MultidimArray<Complex> predictObservation(const Projector &proj, const MetaDataTable &partMdt,
-								long int particle, double angpix_ref,
-		                        bool applyCtf = true, bool shiftPhases = true, bool applyShift = true, bool applyMtf = true,
-		                        bool applyCtfPadding = false);
+    public:
 
-		Volume<gravis::t2Vector<Complex> > predictComplexGradient(Projector &proj, const MetaDataTable &partMdt,
-		                                                          long int particle, double angpix_ref,
-		                                                          bool applyCtf = true, bool shiftPhases = true, bool applyShift = true,
-		                                                          bool applyMtf = true,	bool applyCtfPadding = false);
+    // Prediction //
+    MultidimArray<Complex> predictObservation(const Projector &proj, const MetaDataTable &partMdt,
+                            long int particle, double angpix_ref,
+                            bool applyCtf = true, bool shiftPhases = true, bool applyShift = true, bool applyMtf = true,
+                            bool applyCtfPadding = false);
 
-		// Correction //
+    Volume<gravis::t2Vector<Complex> > predictComplexGradient(Projector &proj, const MetaDataTable &partMdt,
+                                                                long int particle, double angpix_ref,
+                                                                bool applyCtf = true, bool shiftPhases = true, bool applyShift = true,
+                                                                bool applyMtf = true,	bool applyCtfPadding = false);
 
-		// divide by MTF of detector (using cache)
-		void divideByMtf(int opticsGroup, MultidimArray<Complex>& obsImage,
-		                 bool do_multiply_instead = false, bool do_correct_average_mtf = true);
+    // Correction //
 
-		// 2D image with the MTF (cached)
-		const Image<RFLOAT>& getMtfImage(int optGroup, int s);
+    // divide by MTF of detector (using cache)
+    void divideByMtf(int opticsGroup, MultidimArray<Complex>& obsImage,
+                        bool do_multiply_instead = false, bool do_correct_average_mtf = true);
 
-		// 2D image with the average MTF (cached)
-		const Image<RFLOAT>& getAverageMtfImage(int s);
+    // 2D image with the MTF (cached)
+    const Image<RFLOAT>& getMtfImage(int optGroup, int s);
 
-		// apply effect of antisymmetric aberration (using cache)
-		void demodulatePhase(int optGroup, MultidimArray<Complex>& obsImage, bool do_modulate_instead = false);
+    // 2D image with the average MTF (cached)
+    const Image<RFLOAT>& getAverageMtfImage(int s);
 
-		// effect of antisymmetric aberration (cached)
-		const Image<Complex>& getPhaseCorrection(int optGroup, int s);
+    // apply effect of antisymmetric aberration (using cache)
+    void demodulatePhase(int optGroup, MultidimArray<Complex>& obsImage, bool do_modulate_instead = false);
 
-		// effect of symmetric aberration (cached)
-		const Image<RFLOAT>& getGammaOffset(int optGroup, int s);
+    // effect of antisymmetric aberration (cached)
+    const Image<Complex>& getPhaseCorrection(int optGroup, int s);
 
-		Matrix2D<RFLOAT> applyScaleDifference(Matrix2D<RFLOAT> A3D, int opticsGroup, int s3D, double angpix3D);
+    // effect of symmetric aberration (cached)
+    const Image<RFLOAT>& getGammaOffset(int optGroup, int s);
 
-		// Bureaucracy
+    double scaleDifference(int opticsGroup, int s3D, double angpix3D);
 
-		inline bool allPixelSizesIdentical() const {
-			return std::adjacent_find(
-				angpix.begin(), angpix.end(), std::not_equal_to<double>()
-			) == angpix.end();
-		}
+    // Bureaucracy
 
-		inline bool allBoxSizesIdentical() const {
-			return std::adjacent_find(
-				boxSizes.begin(), boxSizes.end(), std::not_equal_to<int>()
-			) == boxSizes.end();
-		}
+    inline bool allPixelSizesIdentical() const {
+        return std::adjacent_find(
+            angpix.begin(), angpix.end(), std::not_equal_to<double>()
+        ) == angpix.end();
+    }
 
-		double angToPix(double a, int s, int opticsGroup) const;
-		double pixToAng(double p, int s, int opticsGroup) const;
+    inline bool allBoxSizesIdentical() const {
+        return std::adjacent_find(
+            boxSizes.begin(), boxSizes.end(), std::not_equal_to<int>()
+        ) == boxSizes.end();
+    }
 
-		double getPixelSize(int opticsGroup) const;
-		std::vector<double> getPixelSizes() const;
+    double angToPix(double a, int s, int opticsGroup) const;
+    double pixToAng(double p, int s, int opticsGroup) const;
 
-		double getWavelength(int opticsGroup) const;
-		std::vector<double> getWavelengths() const;
+    double getPixelSize(int opticsGroup) const;
+    std::vector<double> getPixelSizes() const;
 
-		double getSphericalAberration(int opticsGroup) const;
-		std::vector<double> getSphericalAberrations() const;
+    double getWavelength(int opticsGroup) const;
+    std::vector<double> getWavelengths() const;
 
-		int getBoxSize(int opticsGroup) const;
-		void getBoxSizes(std::vector<int>& sDest, std::vector<int>& shDest) const;
+    double getSphericalAberration(int opticsGroup) const;
+    std::vector<double> getSphericalAberrations() const;
 
-		// These do NOT update the metadata table!
-		// These are only to change prediction etc.
-		void setBoxSize(int opticsGroup, int newBoxSize);
-		void setPixelSize(int opticsGroup, RFLOAT newPixelSize);
+    int getBoxSize(int opticsGroup) const;
+    void getBoxSizes(std::vector<int>& sDest, std::vector<int>& shDest) const;
 
-		Matrix2D<RFLOAT> getMagMatrix(int opticsGroup) const;
-		std::vector<Matrix2D<RFLOAT> > getMagMatrices() const;
-		void setMagMatrix(int opticsGroup, const Matrix2D<RFLOAT>& M);
+    // These do NOT update the metadata table!
+    // These are only to change prediction etc.
+    void setBoxSize(int opticsGroup, int newBoxSize);
+    void setPixelSize(int opticsGroup, RFLOAT newPixelSize);
 
-		Matrix2D<RFLOAT> anisoMag(int opticsGroup) const;
+    Matrix2D<RFLOAT> getMagMatrix(int opticsGroup) const;
+    std::vector<Matrix2D<RFLOAT> > getMagMatrices() const;
+    void setMagMatrix(int opticsGroup, const Matrix2D<RFLOAT>& M);
 
-		// 0-indexed
-		int getOpticsGroup(const MetaDataTable &particlesMdt, long int particle = -1) const;
+    Matrix2D<RFLOAT> anisoMag(int opticsGroup) const;
 
-		bool getCtfPremultiplied(int og) const;
-		void setCtfPremultiplied(int og, bool val);
+    // 0-indexed
+    int getOpticsGroup(const MetaDataTable &particlesMdt, long int particle = -1) const;
 
-		std::string getGroupName(int og);
+    bool getCtfPremultiplied(int og) const;
+    void setCtfPremultiplied(int og, bool val);
 
-		bool allPixelAndBoxSizesIdentical(const MetaDataTable& mdt);
-		bool containsGroup(const MetaDataTable& mdt, int group);
+    std::string getGroupName(int og);
 
-		/* duh */
-		int numberOfOpticsGroups() const;
+    bool allPixelAndBoxSizesIdentical(const MetaDataTable& mdt);
+    bool containsGroup(const MetaDataTable& mdt, int group);
 
-		/* Check whether the optics groups appear in the correct order.
-		   This makes it possible to access a group g through:
+    /* duh */
+    int numberOfOpticsGroups() const;
 
-		       opticsMdt.getValue(label, g-1);
-		*/
-		bool opticsGroupsSorted() const;
+    /* Check whether the optics groups appear in the correct order.
+        This makes it possible to access a group g through:
 
-		/* Find all optics groups used in particles table partMdt
-		   that are not defined in opticsMdt (should return an empty vector) */
-		std::vector<int> findUndefinedOptGroups(const MetaDataTable& partMdt) const;
+            opticsMdt.getValue(label, g-1);
+    */
+    bool opticsGroupsSorted() const;
 
-		/* Rename optics groups to enforce the correct order
-		   and translate the indices in particle table partMdt.
-		   (Merely changing the order in opticsMdt would fail if groups were missing.) */
-		void sortOpticsGroups(MetaDataTable& partMdt);
+    /* Find all optics groups used in particles table partMdt
+        that are not defined in opticsMdt (should return an empty vector) */
+    std::vector<int> findUndefinedOptGroups(const MetaDataTable& partMdt) const;
 
-		/* Return the set of optics groups present in partMdt */
-		std::vector<int> getOptGroupsPresent(const MetaDataTable& partMdt) const;
+    /* Rename optics groups to enforce the correct order
+        and translate the indices in particle table partMdt.
+        (Merely changing the order in opticsMdt would fail if groups were missing.) */
+    void sortOpticsGroups(MetaDataTable& partMdt);
 
-		std::vector<std::pair<int, std::vector<int> > > splitParticlesByOpticsGroup(const MetaDataTable& partMdt) const;
+    /* Return the set of optics groups present in partMdt */
+    std::vector<int> getOptGroupsPresent(const MetaDataTable& partMdt) const;
+
+    std::vector<std::pair<int, std::vector<int> > > splitParticlesByOpticsGroup(const MetaDataTable& partMdt) const;
+
 };
 #endif

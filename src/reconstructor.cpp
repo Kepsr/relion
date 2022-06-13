@@ -276,7 +276,7 @@ void Reconstructor::backproject(int rank, int size) {
 }
 
 void Reconstructor::backprojectOneParticle(long int p) {
-    RFLOAT rot, tilt, psi, fom, r_ewald_sphere;
+    RFLOAT rot, tilt, psi, r_ewald_sphere;
     FourierTransformer transformer;
 
     int randSubset = 0, classid = 0;
@@ -326,23 +326,28 @@ void Reconstructor::backprojectOneParticle(long int p) {
         if (!do_ewald && obsModel.hasMagMatrices) {
             A3D *= obsModel.anisoMag(opticsGroup);
         }
-        A3D = obsModel.applyScaleDifference(A3D, opticsGroup, output_boxsize, angpix);
+        A3D *= obsModel.scaleDifference(opticsGroup, output_boxsize, angpix);
     }
 
     // Translations (either through phase-shifts or in real space
     Matrix1D<RFLOAT> trans = Matrix1D<RFLOAT>::zeros(data_dim);
-    trans[0] = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
-    trans[1] = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
-    if (data_dim == 3)
-    trans[2] = DF.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, p);
+    std::array<EMDL::EMDLabel, 3> origin_labels {
+        EMDL::ORIENT_ORIGIN_X_ANGSTROM,
+        EMDL::ORIENT_ORIGIN_Y_ANGSTROM,
+        EMDL::ORIENT_ORIGIN_Z_ANGSTROM
+    };
+    for (int i = 0; i < data_dim; ++i) {
+        trans[i] = DF.getValue<RFLOAT>(origin_labels[i], p);
+    }
 
     if (shift_error > 0.0) {
-        for (int i = 0; i <= data_dim; i++) { trans[i] += rnd_gaus(0.0, shift_error); }
+        for (int i = 0; i < data_dim; ++i) { trans[i] += rnd_gaus(0.0, shift_error); }
     }
 
     // As of v3.1, shifts are in Angstroms in the STAR files, convert back to pixels here
     trans /= myPixelSize;
 
+    RFLOAT fom;
     if (do_fom_weighting)
     fom = DF.getValue<RFLOAT>(EMDL::PARTICLE_FOM, p);
 
@@ -353,7 +358,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     FileName fn_img;
     Image<RFLOAT> img;
 
-    if (!do_reconstruct_ctf && fn_noise == "") {
+    if (!do_reconstruct_ctf && fn_noise.empty()) {
         fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME, p);
         img.read(fn_img);
         img().setXmippOrigin();
@@ -372,7 +377,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         }
     }
 
-    if (fn_noise != "") {
+    if (!fn_noise.empty()) {
         // TODO: Refactor code duplication from relion_project!
         FileName fn_group;
         if (DF.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
@@ -467,7 +472,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
     // Subtract reference projection
     MultidimArray<Complex> Fsub;
-    if (fn_sub != "") {
+    if (!fn_sub.empty()) {
         Fsub.resize(F2D);
         projector.get2DFourierTransform(Fsub, A3D);
 
@@ -505,7 +510,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
             std::string fullName = DF.getValue<std::string>(EMDL::IMAGE_NAME, 0);
             std::string name = fullName.substr(fullName.find("@") + 1);
 
-            if (image_path != "") {
+            if (!image_path.empty()) {
                 name = image_path + "/" + name.substr(name.find_last_of("/") + 1);
             }
 
@@ -535,14 +540,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
         direct::elem(F2D, 0, 0) = 0.0;
 
         if (do_ewald) {
-            Matrix2D<RFLOAT> magMat;
-
-            if (!do_ignore_optics && obsModel.hasMagMatrices) {
-                magMat = obsModel.getMagMatrix(opticsGroup);
-            } else {
-                magMat = Matrix2D<RFLOAT>(2, 2);
-                magMat.initIdentity();
-            }
+            Matrix2D<RFLOAT> magMat = !do_ignore_optics && obsModel.hasMagMatrices ?
+                obsModel.getMagMatrix(opticsGroup) :
+                Matrix2D<RFLOAT>::identity(2);
 
             backprojector.set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, +1.0, &magMat);
             backprojector.set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, -1.0, &magMat);
@@ -558,7 +558,7 @@ void Reconstructor::reconstruct() {
     MultidimArray<RFLOAT> fsc;
     fsc.resize(output_boxsize / 2 + 1);
 
-    if (fn_fsc != "") {
+    if (!fn_fsc.empty()) {
         do_map = true;
         do_use_fsc = true;
         MetaDataTable MDfsc;

@@ -478,7 +478,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
     // We don't need this, since we are backprojecting as is.
     /*
     std::cout << "before: " << A3D << std::endl;
-    A3D = obsModel.applyScaleDifference(A3D, opticsGroup, output_boxsize, angpix);
+    A3D *= obsModel.scaleDifference(opticsGroup, output_boxsize, angpix);
     std::cout << "after: " << A3D << std::endl;
     */
 
