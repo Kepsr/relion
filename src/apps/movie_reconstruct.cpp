@@ -495,6 +495,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
 
         Fctf = ctf.getFftwImage(
             Xsize(Fctf), Ysize(Fctf), output_boxsize, output_boxsize, angpix,
+            &obsModel,
             ctf_phase_flipped, only_flip_phases,
             intact_ctf_first_peak, true
         );

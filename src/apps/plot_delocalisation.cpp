@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
 
                 if (r2 > r2max || r2 < r2min) continue;
 
+                obsModel.magnify(xx, yy, obsModel.getMagMatrix(ctf.opticsGroup));
                 t2Vector<RFLOAT> delocCent = RFLOAT(1.0 / (2 * angpix * PI)) * ctf.getGammaGrad(xx,yy);
 
                 double delocCentVal = delocCent.normLInf();

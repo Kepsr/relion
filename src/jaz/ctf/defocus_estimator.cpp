@@ -293,7 +293,7 @@ void DefocusEstimator::bruteForceFit(
         if (fitAstigmatism) {
             double u, v, phi;
             DefocusHelper::findAstigmatismNM(
-                pred[p], obs[p], freqWeights[og], ctf0,
+                pred[p], obs[p], freqWeights[og], ctf0, obsModel,
                 angpix[og], &u, &v, &phi
             );
 
@@ -303,7 +303,7 @@ void DefocusEstimator::bruteForceFit(
         } else {
             double u, v;
             DefocusHelper::findDefocus1D(
-                pred[p], obs[p], freqWeights[og], ctf0,
+                pred[p], obs[p], freqWeights[og], ctf0, obsModel,
                 angpix[og], &u, &v, defocusRange
             );
 

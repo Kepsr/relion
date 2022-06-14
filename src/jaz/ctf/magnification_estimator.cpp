@@ -108,7 +108,8 @@ void MagnificationEstimator::processMicrograph(
             int threadnum = omp_get_thread_num();
 
             MagnificationHelper::updateScaleFreq(
-                pred[p], predGradient[p], obs[p], ctf, angpix[og],
+                pred[p], predGradient[p], obs[p], ctf, obsModel,
+                angpix[og],
                 magEqs[threadnum], do_ctf_padding
             );
         }

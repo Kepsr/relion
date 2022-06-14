@@ -29,8 +29,12 @@ class NoiseHelper
 {
     public:
 
-        static Image<RFLOAT> predictCCNoise(Projector& prj, double sigma2, double nsamples_ppp, int max_nsamples, int nangles,
-                Image<RFLOAT> &dmgWeight, CTF ctf0, double defocusMu, double defocusSigma, double angpix, int thread_num = 1);
+        static Image<RFLOAT> predictCCNoise(
+            Projector& prj, double sigma2, double nsamples_ppp, int max_nsamples, int nangles,
+            Image<RFLOAT> &dmgWeight,
+            CTF ctf0, ObservationModel *obsModel,
+            double defocusMu, double defocusSigma, double angpix, int thread_num = 1
+        );
 
         static Image<RFLOAT> visualize(std::vector<double>);
 

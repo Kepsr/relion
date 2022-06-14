@@ -427,6 +427,7 @@ class reconstruct_parameters {
 
                         Fctf = ctf.getFftwImage(
                             Xsize(Fctf), Ysize(Fctf), sPad2D, sPad2D, pixelsize,
+                            &obsModel,
                             ctf_phase_flipped, only_flip_phases,
                             intact_ctf_first_peak, true
                         );

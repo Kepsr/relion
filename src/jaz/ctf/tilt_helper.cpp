@@ -31,16 +31,17 @@ using namespace gravis;
 void TiltHelper::updateTiltShift(
     const Image<Complex> &prediction,
     const Image<Complex> &observation,
-    CTF& ctf, double angpix,
+    CTF &ctf, ObservationModel *obsModel,
+    double angpix,
     Image<Complex> &xyDest,
-    Image<RFLOAT>& wDest,
+    Image<RFLOAT> &wDest,
     bool do_ctf_padding
 ) {
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -57,16 +58,17 @@ void TiltHelper::updateTiltShift(
 void TiltHelper::updateTiltShiftPar(
     const Image<Complex> &prediction,
     const Image<Complex> &observation,
-    CTF& ctf, double angpix,
+    CTF &ctf, ObservationModel *obsModel,
+    double angpix,
     Image<Complex> &xyDest,
-    Image<RFLOAT>& wDest,
+    Image<RFLOAT> &wDest,
     bool do_ctf_padding
 ) {
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
 
     #pragma omp parallel for
     for (long y = 0; y < h; y++)
@@ -319,7 +321,7 @@ std::vector<Image<RFLOAT> > TiltHelper::computeOddZernike(
 }
 
 Image<RFLOAT> TiltHelper::plotOddZernike(
-        const std::vector<double>& coeffs,
+        const std::vector<double> &coeffs,
         int s, double angpix, const Matrix2D<RFLOAT> &mag
 ) {
     Image<RFLOAT> out(s,s);
@@ -408,7 +410,7 @@ std::vector<double> TiltHelper::optimiseEvenZernike(
     const Image<Complex> &xy,
     const Image<RFLOAT> &weight,
     double angpix, const Matrix2D<RFLOAT> &mag, int n_max,
-    const std::vector<double>& coeffs,
+    const std::vector<double> &coeffs,
     Image<RFLOAT> *fit
 ) {
     const int w = xy.data.xdim;
@@ -436,11 +438,11 @@ std::vector<double> TiltHelper::optimiseEvenZernike(
 std::vector<double> TiltHelper::optimiseEvenZernike(
     const Image<Complex> &xy,
     const Image<RFLOAT> &weight0,
-    const Image<RFLOAT>& Axx,
-    const Image<RFLOAT>& Axy,
-    const Image<RFLOAT>& Ayy,
+    const Image<RFLOAT> &Axx,
+    const Image<RFLOAT> &Axy,
+    const Image<RFLOAT> &Ayy,
     double angpix, const Matrix2D<RFLOAT> &mag, int n_max,
-    const std::vector<double>& coeffs,
+    const std::vector<double> &coeffs,
     Image<RFLOAT> *fit
 ) {
     const int w = xy.data.xdim;
@@ -495,8 +497,8 @@ std::vector<Image<RFLOAT> > TiltHelper::computeEvenZernike(
 }
 
 void TiltHelper::extractTilt(
-    std::vector<double>& oddZernikeCoeffs,
-    double& tilt_x, double& tilt_y,
+    std::vector<double> &oddZernikeCoeffs,
+    double &tilt_x, double &tilt_y,
     double Cs, double lambda
 ) {
     if (oddZernikeCoeffs.size() <= 5)
@@ -831,7 +833,7 @@ basis(basis),
 L1(L1) {}
 
 double AnisoBasisOptimisation::f(const std::vector<double> &x, void *tempStorage) const {
-    Image<RFLOAT>& recomb = *((Image<RFLOAT>*)tempStorage);
+    Image<RFLOAT> &recomb = *((Image<RFLOAT>*)tempStorage);
     recomb.data.initZeros();
 
     for (int c  = 0; c < cc; c++)

@@ -142,7 +142,7 @@ void BFactorRefiner::processMicrograph(
 
             CTF ctf = CTF(mdt, obsModel, p);
             Image<RFLOAT> ctfImg(sh[og], s[og]);
-            ctfImg() = ctf.getFftwImage(sh[og], s[og], s[og], s[og], angpix[og], false, false, false, false, do_ctf_padding);
+            ctfImg() = ctf.getFftwImage(sh[og], s[og], s[og], s[og], angpix[og], obsModel, false, false, false, false, do_ctf_padding);
 
             for (int y = 0; y < s[og];  y++)
             for (int x = 0; x < sh[og]; x++) {
@@ -189,6 +189,7 @@ void BFactorRefiner::processMicrograph(
             Image<RFLOAT> ctfImg(sh[og], s[og]);
             ctfImg() = ctf.getFftwImage(
                 sh[og], s[og], s[og], s[og], angpix[og], 
+                obsModel,
                 false, false, false, false, do_ctf_padding
             );
 

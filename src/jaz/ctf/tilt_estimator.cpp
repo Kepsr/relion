@@ -124,7 +124,7 @@ void TiltEstimator::processMicrograph(
             int threadnum = omp_get_thread_num();
 
             TiltHelper::updateTiltShift(
-                pred[p], obs[p], ctf, angpix[og],
+                pred[p], obs[p], ctf,  obsModel, angpix[og],
                 xyAcc[threadnum], wAcc[threadnum], do_ctf_padding
             );
         }

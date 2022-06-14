@@ -2322,8 +2322,9 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         if (LoG_use_ctf) {
             CTF ctf = find_micrograph_ctf(MDmic, fn_mic, obsModel);
             MultidimArray<RFLOAT> Fctf = ctf.getFftwImage(
-                Xsize(Fmic), Ysize(Fmic), micrograph_size, micrograph_size, 
-                angpix, false, false, false, false, false, true
+                Xsize(Fmic), Ysize(Fmic), micrograph_size, micrograph_size, angpix,
+                &obsModel,
+                false, false, false, false, false, true
             );
             Fmic /= Fctf;  // this is safe because getCTF does not return 0.
         }
@@ -2590,8 +2591,9 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         Fctf.resize(downsize_mic, downsize_mic / 2 + 1);
         Fctf = ctf.getFftwImage(
             downsize_mic, downsize_mic / 2 + 1, 
-            micrograph_size, micrograph_size, 
-            angpix, false, false, intact_ctf_first_peak, true
+            micrograph_size, micrograph_size,
+            angpix, &obsModel,
+            false, false, intact_ctf_first_peak, true
         );
 
         #ifdef DEBUG

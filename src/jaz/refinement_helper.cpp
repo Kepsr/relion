@@ -43,7 +43,7 @@ namespace constrain {
 using namespace gravis;
 
 void RefinementHelper::drawFSC(
-    const MetaDataTable *mdt, std::vector<double>& dest1D,
+    const MetaDataTable *mdt, std::vector<double> &dest1D,
     Image<RFLOAT> &dest, double thresh
 ) {
     const int n = mdt->numberOfObjects();
@@ -106,7 +106,7 @@ void RefinementHelper::computeSNR(const MetaDataTable *mdt, Image<RFLOAT> &dest,
 }
 
 void RefinementHelper::computeSigInvSq(
-    const MetaDataTable *mdt, const std::vector<double>& signalPow,
+    const MetaDataTable *mdt, const std::vector<double> &signalPow,
     Image<RFLOAT> &dest, double eps
 ) {
     const int n = mdt->numberOfObjects();
@@ -190,9 +190,9 @@ Image<RFLOAT> RefinementHelper::correlation(
 }
 
 void RefinementHelper::addToQR(
-    const Image<Complex>& prediction,
-    const Image<Complex>& observation,
-    Image<Complex>& q, Image<RFLOAT>& r
+    const Image<Complex> &prediction,
+    const Image<Complex> &observation,
+    Image<Complex> &q, Image<RFLOAT> &r
 ) {
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
@@ -208,9 +208,9 @@ void RefinementHelper::addToQR(
 }
 
 void RefinementHelper::addToPQR(
-    const Image<Complex>& prediction,
-    const Image<Complex>& observation,
-    Image<RFLOAT>& p, Image<Complex>& q, Image<RFLOAT>& r
+    const Image<Complex> &prediction,
+    const Image<Complex> &observation,
+    Image<RFLOAT> &p, Image<Complex> &q, Image<RFLOAT> &r
 ) {
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
@@ -227,15 +227,16 @@ void RefinementHelper::addToPQR(
 }
 
 double RefinementHelper::squaredDiff(
-    const Image<Complex>& prediction,
-    const Image<Complex>& observation,
-    CTF& ctf, RFLOAT angpix, const Image<RFLOAT>& weight
+    const Image<Complex> &prediction,
+    const Image<Complex> &observation,
+    CTF &ctf, ObservationModel *obsModel,
+    RFLOAT angpix, const Image<RFLOAT> &weight
 ) {
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel);
 
     double out = 0.0;
     for (long y = 0; y < h; y++)
@@ -253,11 +254,11 @@ double RefinementHelper::squaredDiff(
 double RefinementHelper::squaredDiff(
     const std::vector<Image<Complex>> &predictions,
     const std::vector<Image<Complex>> &observations,
-    CTF &ctf, RFLOAT angpix, const Image<RFLOAT> &weight
+    CTF &ctf, ObservationModel *obsModel, RFLOAT angpix, const Image<RFLOAT> &weight
 ) {
     double out = 0.0;
     for (long i = 0; i < predictions.size(); i++) {
-        out += squaredDiff(predictions[i], observations[i], ctf, angpix, weight);
+        out += squaredDiff(predictions[i], observations[i], ctf, obsModel, angpix, weight);
     }
     return out;
 }

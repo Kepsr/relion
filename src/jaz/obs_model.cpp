@@ -314,7 +314,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
 
         Image<RFLOAT> ctfImg(sh_out, s_out);
         ctfImg() = ctf.getFftwImage(
-            sh_out, s_out, s_out, s_out, angpix[opticsGroup],
+            sh_out, s_out, s_out, s_out, angpix[opticsGroup], this,
             false, false, false, true, applyCtfPadding
         );
 

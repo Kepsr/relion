@@ -133,8 +133,9 @@ int AberrationPlot::_run()
 				for (int y = 0; y < s;	y++)
 				for (int x = 0; x < sh; x++)
 				{
-					const double xf = x;
-					const double yf = y < sh? y : y - s;
+					double xf = x;
+					double yf = y < sh? y : y - s;
+					obsModel.magnify(xf, yf);
 					const double gamma_i = ctf0.getGamma(xf/as, yf/as);
 					const double cg = cos(gamma_i);
 					const double sg = sin(gamma_i);
@@ -226,8 +227,9 @@ int AberrationPlot::_run()
 					for (int y = 0; y < s;	y++)
 					for (int x = 0; x < sh; x++)
 					{
-						const double xf = x;
-						const double yf = y < sh? y : y - s;
+						double xf = x;
+						double yf = y < sh? y : y - s;
+						obsModel.magnify(xf, yf);
 						const double gamma_i = ctf0.getGamma(xf/as, yf/as);
 						const double cg = cos(gamma_i);
 						const double sg = sin(gamma_i);
