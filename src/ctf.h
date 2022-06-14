@@ -51,10 +51,12 @@
 #include <map>
 
 class ctf_toolbox_parameters;
+class FilterHelper;
 
 class CTF {
 
     friend class ctf_toolbox_parameters;
+    friend class FilterHelper;
 
     protected:
 
@@ -218,7 +220,6 @@ class CTF {
     void initialise();
 
     RFLOAT operator () (RFLOAT X, RFLOAT Y) {
-        if (obsModel) obsModel->magnify(X, Y, obsModel->getMagMatrix(opticsGroup));
         return getCTF(X, Y);
     }
 
@@ -275,7 +276,6 @@ class CTF {
     gravis::t2Vector<RFLOAT> getGammaGrad(RFLOAT X, RFLOAT Y) const;
 
     inline Complex getCTFP(RFLOAT X, RFLOAT Y, double gammaOffset = 0.0) const {
-        if (obsModel) obsModel->magnify(X, Y, obsModel->getMagMatrix(opticsGroup));
 
         RFLOAT u2 = X * X + Y * Y;
         RFLOAT u4 = u2 * u2;
