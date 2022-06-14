@@ -2133,6 +2133,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                     CTF ctf = CTF(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
                     Fctf = ctf.getFftwImage(
                         Xsize(Fctf), Ysize(Fctf), mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
+                        &mydata.obsModel,
                         ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                     );
 
@@ -4968,6 +4969,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
                 Fctf = ctf.getFftwImage(
                     Xsize(Fctf), Ysize(Fctf), image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
+                    &mydata.obsModel,
                     ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                 );
 
@@ -4988,7 +4990,10 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             Image<RFLOAT> tmp;
             tmp() = Fctf;
             tmp.write("Fctf.spi");
-            tmp() = ctf.getCenteredImage(mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size, ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true);
+            tmp() = ctf.getCenteredImage(
+                mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
+                &mydata.obsModel, ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true
+            );
             tmp.write("Fctf_cen.spi");
             std::cerr << "Written Fctf.spi, Fctf_cen.spi. Press any key to continue..." << std::endl;
             char c;
@@ -7525,6 +7530,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         Fctf = ctf.getFftwImage(
                             Xsize(Fctf), Ysize(Fctf),
                             image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
+                            &mydata.obsModel,
                             ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                         );
                     }

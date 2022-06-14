@@ -104,9 +104,10 @@ void AberrationEstimator::processMicrograph(
 
             for (int y = 0; y < s[og];  y++)
             for (int x = 0; x < sh[og]; x++) {
-                const double xf = x;
-                const double yf = y < sh[og] ? y : y - s[og];
+                double xf = x;
+                double yf = y < sh[og] ? y : y - s[og];
 
+                obsModel->magnify(xf, yf, obsModel->getMagMatrix(ctf.opticsGroup));
                 const double gamma_i = ctf.getGamma(xf / as, yf / as);
                 const double cg = cos(gamma_i);
                 const double sg = sin(gamma_i);

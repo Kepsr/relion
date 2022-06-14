@@ -386,7 +386,9 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 Fctf = ctf.getFftwImage(
                     basePckr->workSize / 2 + 1, basePckr->workSize, 
                     basePckr->micrograph_size, basePckr->micrograph_size,
-                    basePckr->angpix, false, false, basePckr->intact_ctf_first_peak, true
+                    basePckr->angpix,
+                    NULL,  // No ObservationModel
+                    false, false, basePckr->intact_ctf_first_peak, true
                 );
                 break;
             }

@@ -98,8 +98,11 @@ public:
 	// perform the gridding reconstruction
 	void reconstruct();
 
-	void applyCTFPandCTFQ(MultidimArray<Complex> &Fin, CTF &ctf, FourierTransformer &transformer,
-	                      MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask=false);
+	void applyCTFPandCTFQ(
+		MultidimArray<Complex> &Fin, CTF &ctf, ObservationModel *obsModel,
+		FourierTransformer &transformer,
+		MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask=false
+	);
 };
 
 #endif /* SRC_RECONSTRUCTOR_H_ */

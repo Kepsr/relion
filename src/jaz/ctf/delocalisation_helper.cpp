@@ -4,8 +4,8 @@
 using namespace gravis;
 
 void DelocalisationHelper::maskOutsideBox(
-    const CTF &ctf, double radius, 
-    double angpix, int s_orig, 
+    const CTF &ctf, ObservationModel *obsModel,
+    double radius, double angpix, int s_orig, 
     MultidimArray<RFLOAT> &fftwCtfImg,
     double offsetx, double offsety
 ) {
@@ -18,9 +18,10 @@ void DelocalisationHelper::maskOutsideBox(
             
     for (int y = 0; y < s;  y++)
     for (int x = 0; x < sh; x++) {
-        const double xx = x/as;
-        const double yy = y < sh? y/as : (y - s)/as;
+        double xx = x/as;
+        double yy = y < sh? y/as : (y - s)/as;
         
+        if (obsModel) obsModel->magnify(xx, yy, obsModel->getMagMatrix(ctf.opticsGroup));
         t2Vector<RFLOAT> delocCent = RFLOAT(1.0 / (2 * angpix * PI)) * ctf.getGammaGrad(xx,yy);
         
         double out = 0.0;
@@ -59,7 +60,7 @@ void DelocalisationHelper::maskOutsideBox(
 }
 
 Image<RFLOAT> DelocalisationHelper::plotDelocalisation(
-    const CTF &ctf, Image<RFLOAT> &mask, double angpix
+    const CTF &ctf, ObservationModel *obsModel, Image<RFLOAT> &mask, double angpix
 ) {
     const int s = mask.data.ydim;
     const int sh = mask.data.xdim;
@@ -72,7 +73,8 @@ Image<RFLOAT> DelocalisationHelper::plotDelocalisation(
     for (int x = 0; x < s; x++) {
         double xx = x < sh? x/as : (x - s)/as;
         double yy = y < sh? y/as : (y - s)/as;
-        
+
+        if (obsModel) obsModel->magnify(xx, yy, obsModel->getMagMatrix(ctf.opticsGroup));
         t2Vector<RFLOAT> delocCent = RFLOAT(1.0 / (2 * angpix * PI)) * ctf.getGammaGrad(xx,yy);
         
         if (

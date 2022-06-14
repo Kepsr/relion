@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     const double angpix = obsModel.getPixelSize(opticsGroup);
 
     CTF ctf = CTF(allMdts[mg], &obsModel, 0);
-    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix);
+    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix, &obsModel);
 
     const int tc = sh / step + 1;
 
@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
             double xx = x / as;
             double yy = y < sh ? y / as : (y - s) / as;
 
+            obsModel.magnify(xx, yy, obsModel.getMagMatrix(ctf.opticsGroup));
             double slope = ctf.getGammaGrad(xx,yy).length() / (as * PI);
 
             if (mask[t](y, x) >= 0.5) {

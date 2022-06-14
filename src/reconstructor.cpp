@@ -445,6 +445,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
             Fctf = ctf.getFftwImage(
                 Xsize(Fctf), Ysize(Fctf), myBoxSize, myBoxSize, myPixelSize,
+                do_ignore_optics ? nullptr : &obsModel,
                 ctf_phase_flipped, only_flip_phases,
                 intact_ctf_first_peak, true
             );
@@ -457,11 +458,18 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
             // Ewald-sphere curvature correction
             if (do_ewald) {
-                applyCTFPandCTFQ(F2D, ctf, transformer, F2DP, F2DQ, skip_mask);
+                applyCTFPandCTFQ(
+                    F2D, ctf, do_ignore_optics ? nullptr : &obsModel,
+                    transformer, F2DP, F2DQ, skip_mask
+                );
 
                 if (!skip_weighting) {
                     // Also calculate W, store again in Fctf
-                    ctf.applyWeightEwaldSphereCurvature_noAniso(Fctf, myBoxSize, myBoxSize, myPixelSize, mask_diameter);
+                    ctf.applyWeightEwaldSphereCurvature_noAniso(
+                        Fctf, myBoxSize, myBoxSize, myPixelSize,
+                        do_ignore_optics ? nullptr : &obsModel,
+                        mask_diameter
+                    );
                 }
 
                 // Also calculate the radius of the Ewald sphere (in pixels)
@@ -647,7 +655,7 @@ void Reconstructor::reconstruct() {
 }
 
 void Reconstructor::applyCTFPandCTFQ(
-    MultidimArray<Complex> &Fin, CTF &ctf, FourierTransformer &transformer,
+    MultidimArray<Complex> &Fin, CTF &ctf, ObservationModel *obsModel, FourierTransformer &transformer,
     MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask
 ) {
     // FourierTransformer transformer;
@@ -662,7 +670,11 @@ void Reconstructor::applyCTFPandCTFQ(
             bool is_my_positive = (ipass == 1) == is_reverse;
 
             // Get CTFP and multiply the Fapp with it
-            CTFP = ctf.getCTFPImage(Fin.xdim, Fin.ydim, Ysize(Fin), Ysize(Fin), angpix, is_my_positive, angle);
+            CTFP = ctf.getCTFPImage(
+                Fin.xdim, Fin.ydim, Ysize(Fin), Ysize(Fin), angpix, 
+                obsModel,
+                is_my_positive, angle
+            );
 
             Fapp = Fin * CTFP; // element-wise complex multiplication!
 

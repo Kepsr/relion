@@ -50,13 +50,8 @@
 #include "src/jaz/obs_model.h"
 #include <map>
 
-class ctf_toolbox_parameters;
-class FilterHelper;
 
 class CTF {
-
-    friend class ctf_toolbox_parameters;
-    friend class FilterHelper;
 
     protected:
 
@@ -75,13 +70,9 @@ class CTF {
     // defocus_deviation = (defocus_u - defocus_v)/2
     RFLOAT defocus_deviation;
 
-    // Pointer to observation model kept after a call to readByGroup() to enable
-    // caching of symmetric aberrations (CTF instances can be reallocated for each particle,
-    // while the same obs. model lives for the entire duration of the program)
-    ObservationModel *obsModel;
-    int opticsGroup;
-
     public:
+
+    int opticsGroup;
 
     // Acceleration voltage (kilovolts)
     RFLOAT kV;
@@ -144,7 +135,7 @@ class CTF {
     /** Empty constructor. */
     CTF():
     kV(200), DeltafU(0), DeltafV(0), azimuthal_angle(0), phase_shift(0),
-    Cs(0), Bfac(0), Q0(0), scale(1), obsModel(NULL), opticsGroup(0)
+    Cs(0), Bfac(0), Q0(0), scale(1), opticsGroup(0)
     {}
 
     CTF(
@@ -308,6 +299,7 @@ class CTF {
     // The dimensions of the result array should have been set correctly already
     MultidimArray<RFLOAT> getFftwImage(
         long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel,
         bool do_abs = false, bool do_only_flip_phases = false,
         bool do_intact_until_first_peak = false, bool do_damping = true,
         bool do_ctf_padding = false, bool do_intact_after_first_peak = false
@@ -316,6 +308,7 @@ class CTF {
     // Get a complex image with the CTFP/Q values, where the angle is in degrees between the Y-axis and the CTFP/Q sector line
     MultidimArray<Complex> getCTFPImage(
         long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel,
         bool is_positive, float angle
     );
 
@@ -323,6 +316,7 @@ class CTF {
     // The dimensions of the result array should have been set correctly already
     MultidimArray<RFLOAT> getCenteredImage(
         long int Xdim, long int Ydim, RFLOAT angpix,
+        ObservationModel *obsModel,
         bool do_abs = false, bool do_only_flip_phases = false,
         bool do_intact_until_first_peak = false, bool do_damping = true,
         bool do_intact_after_first_peak = false
@@ -332,6 +326,7 @@ class CTF {
     // The dimensions of the result array should have been set correctly already, i.e. at the image size!
     void get1DProfile(
         MultidimArray<RFLOAT> &result, RFLOAT angle, RFLOAT angpix,
+        ObservationModel *obsModel,
         bool do_abs = false, bool do_only_flip_phases = false,
         bool do_intact_until_first_peak = false, bool do_damping = true,
         bool do_intact_after_first_peak = false
@@ -340,17 +335,20 @@ class CTF {
     // Calculate weight W for Ewald-sphere curvature correction: apply this to the result from getFftwImage
     void applyWeightEwaldSphereCurvature(
         MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel,
         RFLOAT particle_diameter
     );
 
     void applyWeightEwaldSphereCurvature_new(
         MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel,
         RFLOAT particle_diameter
     );
 
     // Calculate weight W for Ewald-sphere curvature correction: apply this to the result from getFftwImage
     void applyWeightEwaldSphereCurvature_noAniso(
         MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel,
         RFLOAT particle_diameter
     );
 

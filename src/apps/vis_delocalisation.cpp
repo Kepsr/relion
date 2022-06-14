@@ -139,7 +139,8 @@ int main(int argc, char *argv[]) {
 }
 
 Image<RFLOAT> visualiseBand(
-    CTF& ctf, int s, double r0, double r1, double flank, double angpix,
+    CTF& ctf, ObservationModel *obsModel,
+    int s, double r0, double r1, double flank, double angpix,
     std::string outPath, std::string tag,
     bool delocSupp, double mask_rad, bool writeVtks
 ) {
@@ -151,7 +152,7 @@ Image<RFLOAT> visualiseBand(
     Image<RFLOAT> mask = FilterHelper::raisedCosEnvRingFreq2D(one, r0, r1, flank);
 
     Image<RFLOAT> ctfImg(sh, s), ctfImgFull(s, s);
-    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix);
+    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix, obsModel);
 
     if (delocSupp) {
         DelocalisationHelper::maskOutsideBox(ctf, mask_rad, angpix, s, ctfImg(), 0.0, 0.0);

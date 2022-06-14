@@ -250,6 +250,7 @@ class particle_reposition_parameters {
                             CTF ctf = CTF(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
                             Fctf = ctf.getFftwImage(
                                 Xsize(Fctf), Ysize(Fctf), my_image_size, my_image_size, my_pixel_size,
+                                &optimiser.mydata.obsModel,
                                 optimiser.ctf_phase_flipped, false, optimiser.intact_ctf_first_peak, true
                             );
                         }

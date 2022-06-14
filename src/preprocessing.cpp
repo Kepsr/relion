@@ -677,9 +677,11 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     }
 
     CTF ctf;
+    ObservationModel *obsModel;
     int optics_group;
     if (mic_star_has_ctf || keep_ctf_from_micrographs) {
         ctf.readByGroup(MDmics, &obsModelMic, imic);
+        obsModel = &obsModelMic;
         optics_group = obsModelMic.getOpticsGroup(MDmics, imic);
 
         // Micrograph STAR file might not have a box size
@@ -730,6 +732,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         // Read per-particle CTF
         if (MDin_has_ctf && !keep_ctf_from_micrographs) {
             ctf.readByGroup(MD, &obsModelPart);
+            obsModel = &obsModelPart;
             optics_group = obsModelPart.getOpticsGroup(MD);
             if (obsModelPart.getBoxSize(optics_group) != my_extract_size)
                 obsModelPart.setBoxSize(optics_group, my_extract_size);
@@ -759,6 +762,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             MultidimArray<RFLOAT> Fctf = ctf.getFftwImage(
                 Xsize(FT), Ysize(FT),
                 my_extract_size, my_extract_size, my_angpix,
+                obsModel,
                 false, do_phase_flip, do_ctf_intact_first_peak, true, false
                 // do_abs, phase_flip, intact_first_peak, damping, padding
             );

@@ -95,7 +95,8 @@ void MagnificationHelper::updateScaleFreq(
     const Image<Complex> &prediction,
     const Volume<t2Vector<Complex>>& predGradient,
     const Image<Complex> &observation,
-    CTF &ctf, double angpix, Volume<Equation2x2> &eqs,
+    CTF &ctf,  ObservationModel *obsModel,
+    double angpix, Volume<Equation2x2> &eqs,
     bool do_ctf_padding
 ) {
     const long w = prediction.data.xdim;
@@ -106,7 +107,11 @@ void MagnificationHelper::updateScaleFreq(
     FilterHelper::centralGrad2D(prediction, gradReal, gradImg);*/
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
+    ctfImg() = ctf.getFftwImage(
+        w, h, h, h, angpix,
+        obsModel,
+        false, false, false, true, do_ctf_padding
+    );
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -131,7 +136,8 @@ void MagnificationHelper::updateScaleReal(
     const Image<Complex> &prediction,
     const Image<Complex> &observation,
     const Image<RFLOAT>& snr,
-    CTF &ctf, double angpix,
+    CTF &ctf, ObservationModel *obsModel,
+    double angpix,
     Volume<Equation2x2> &eqs,
     bool do_ctf_padding
 ) {
@@ -143,7 +149,7 @@ void MagnificationHelper::updateScaleReal(
     Image<RFLOAT> realPred(ww, h), realObs(ww, h);
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -357,7 +363,8 @@ void MagnificationHelper::writeEQs(
 void MagnificationHelper::updatePowSpec(
     const Image<Complex> &prediction,
     const Image<Complex> &observation,
-    CTF &ctf, double angpix,
+    CTF &ctf, ObservationModel *obsModel,
+    double angpix,
     Image<RFLOAT> &powSpecPred,
     Image<RFLOAT> &powSpecObs,
     bool do_ctf_padding
@@ -366,7 +373,7 @@ void MagnificationHelper::updatePowSpec(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, false, false, false, true, do_ctf_padding);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {

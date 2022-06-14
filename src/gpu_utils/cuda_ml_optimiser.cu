@@ -750,6 +750,7 @@ void getFourierTransformsAndCtfs(
 
                 Fctf = ctf.getFftwImage(
                     Xsize(Fctf), Ysize(Fctf), baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size,
+                    NULL,  // No ObservationModel
                     baseMLO->ctf_phase_flipped, baseMLO->only_flip_phases, baseMLO->intact_ctf_first_peak, true
                 );
                 }))

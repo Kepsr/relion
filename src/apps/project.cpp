@@ -130,9 +130,9 @@ class project_parameters {
             for (long int i = 0; i < nr_uniform; i++) {
                 RFLOAT rot = rnd_unif() * 360.0;
                 // tilt will be a random angle in the interval [0.0, 180.0]
-                // sin(tilt) (which will thus be in the interval [0.0, 1.0]) 
+                // sin(tilt) (which will thus be in the interval [0.0, 1.0])
                 // must be greater than a random number from that same interval [0.0, 1.0]
-                RFLOAT tilt; 
+                RFLOAT tilt;
                 do {
                     tilt = rnd_unif() * 180.0;
                 } while (sin(radians(tilt)) <= rnd_unif());
@@ -234,7 +234,7 @@ class project_parameters {
                 // Add white noise
                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
                     direct::elem(F2D, i, j, k) += Complex(
-                        rnd_gaus(0.0, stddev_white_noise), 
+                        rnd_gaus(0.0, stddev_white_noise),
                         rnd_gaus(0.0, stddev_white_noise)
                     );
                 }
@@ -323,7 +323,11 @@ class project_parameters {
                     } else {
                         CTF ctf = CTF(MDang, &obsModel); // This MDimg only contains one particle!
                         Fctf.resize(F2D);
-                        Fctf = ctf.getFftwImage(Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
+                        Fctf = ctf.getFftwImage(
+                            Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,
+                            &obsModel,
+                            ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true
+                        );
                     }
 
                     for (long int n = 0; n < F2D.size(); n++) {
@@ -473,7 +477,11 @@ class project_parameters {
                         } else {
                             CTF ctf = CTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
                             Fctf.resize(F2D);
-                            Fctf = ctf.getFftwImage(Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix, ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true);
+                            Fctf = ctf.getFftwImage(
+                                Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,
+                                nullptr,  // No ObservationModel
+                                ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true
+                            );
                         }
 
                         for (long int n = 0; n < F2D.size(); n++) {
