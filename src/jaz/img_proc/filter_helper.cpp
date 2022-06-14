@@ -627,7 +627,9 @@ void FilterHelper::phaseFlip(
         const int x = j;
         const int y = i < imgFreq.ydim / 2 ? i : i - imgFreq.ydim;
 
-        RFLOAT c = ctf(x / xs, y / ys);
+        RFLOAT x2 = x, y2 = y;
+        if (ctf.obsModel) ctf.obsModel->magnify(x2, y2, ctf.obsModel->getMagMatrix(ctf.opticsGroup));
+        RFLOAT c = ctf(x2 / xs, y2 / ys);
 
         if (c < 0) {
             direct::elem(imgFreq, i, j) *= -1;
@@ -719,7 +721,9 @@ void FilterHelper::wienerFilter(Image<RFLOAT> &img, CTF &ctf, RFLOAT angpix, RFL
         const int x = j;
         const int y = i < imgFreq.ydim / 2 ? i : i - imgFreq.ydim;
 
-        RFLOAT c = ctf(x / xs, y / ys);
+        RFLOAT x2 = x, y2 = y;
+        if (ctf.obsModel) ctf.obsModel->magnify(x2, y2, ctf.obsModel->getMagMatrix(ctf.opticsGroup));
+        RFLOAT c = ctf(x2 / xs, y2 / ys);
         if (Bfac > 0.0) { c *= exp(-Bfac * (x * x + y * y) / 4.0); }
 
         direct::elem(imgFreq, i, j) = c * direct::elem(imgFreq, i, j) / (c * c + eps);
