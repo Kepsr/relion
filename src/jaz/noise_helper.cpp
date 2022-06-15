@@ -28,7 +28,7 @@
 Image<RFLOAT> NoiseHelper::predictCCNoise(
     Projector &prj, double sigma2,
     double nsamples_ppp, int max_nsamples, int nangles, Image<RFLOAT> &dmgWeight,
-    CTF ctf0, ObservationModel *obsModel,
+    CTF ctf0, ObservationModel *obsModel, int opticsGroup,
     double defocusMu, double defocusSigma, double angpix, int thread_num
 ) {
     const int s = prj.ori_size;
@@ -70,7 +70,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         ctf0.DeltafV = defocus;
         ctf0.initialise();
 
-        FilterHelper::modulate(spec(), ctf0, obsModel, angpix);
+        FilterHelper::modulate(spec(), ctf0, obsModel, opticsGroup, angpix);
 
         Image<Complex> ccspec(sh, s);
         for (long int yy = 0; yy < s; yy++)

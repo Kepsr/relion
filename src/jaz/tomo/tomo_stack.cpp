@@ -158,7 +158,7 @@ void TomoStack :: phaseFlip(int f0, int fc)
 
     for (int i = f0; i < ic; i++)
     {
-        FilterHelper::phaseFlip(images[i], ctfs[i], nullptr, angpix, images[i]);
+        FilterHelper::phaseFlip(images[i], ctfs[i], nullptr, -1, angpix, images[i]);
     }
 }
 
@@ -168,7 +168,7 @@ void TomoStack :: ctfModulate(int f0, int fc)
 
     for (int i = f0; i < ic; i++)
     {
-        FilterHelper::modulate(images[i], ctfs[i], nullptr, angpix, images[i]);
+        FilterHelper::modulate(images[i], ctfs[i], nullptr, -1, angpix, images[i]);
     }
 }
 
@@ -178,7 +178,7 @@ void TomoStack :: wienerFilter(RFLOAT eps, RFLOAT Bfac, int f0, int fc)
 
     for (int i = f0; i < ic; i++)
     {
-        FilterHelper::wienerFilter(images[i], ctfs[i], nullptr, angpix, eps, Bfac, images[i]);
+        FilterHelper::wienerFilter(images[i], ctfs[i], nullptr, -1, angpix, eps, Bfac, images[i]);
     }
 }
 
@@ -188,7 +188,7 @@ void TomoStack :: richardsonLucy(int iterations, RFLOAT eps, int f0, int fc)
 
     for (int i = f0; i < ic; i++)
     {
-        FilterHelper::richardsonLucy(images[i], ctfs[i], nullptr, angpix, eps, iterations, images[i]);
+        FilterHelper::richardsonLucy(images[i], ctfs[i], nullptr, -1, angpix, eps, iterations, images[i]);
     }
 }
 
@@ -262,7 +262,7 @@ void TomoStack :: defocusStack(int f, double dz0, double dz1, double eps, double
 
         ctf.initialise();
 
-        FilterHelper::wienerFilter(img, ctf, nullptr, angpix, eps, Bfac, dest[z]);
+        FilterHelper::wienerFilter(img, ctf, nullptr, -1, angpix, eps, Bfac, dest[z]);
         //FilterHelper::lowPassFilter(dest[z], 0.2, 0.1);
         //FilterHelper::phaseFlip(img, ctf, angpix, dest[z]);
 

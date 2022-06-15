@@ -32,7 +32,7 @@ class NoiseHelper
         static Image<RFLOAT> predictCCNoise(
             Projector& prj, double sigma2, double nsamples_ppp, int max_nsamples, int nangles,
             Image<RFLOAT> &dmgWeight,
-            CTF ctf0, ObservationModel *obsModel,
+            CTF ctf0, ObservationModel *obsModel, int opticsGroup,
             double defocusMu, double defocusSigma, double angpix, int thread_num = 1
         );
 

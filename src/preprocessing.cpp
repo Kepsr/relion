@@ -731,7 +731,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
         // Read per-particle CTF
         if (MDin_has_ctf && !keep_ctf_from_micrographs) {
-            ctf.readByGroup(MD, &obsModelPart);
+            ctf.readByGroup(MD, &obsModelPart, optics_group);
             obsModel = &obsModelPart;
             optics_group = obsModelPart.getOpticsGroup(MD);
             if (obsModelPart.getBoxSize(optics_group) != my_extract_size)

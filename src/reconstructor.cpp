@@ -450,8 +450,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 intact_ctf_first_peak, true
             );
 
+            int opticsGroup;
             if (!do_ignore_optics) {
-                int opticsGroup = DF.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
+                opticsGroup = DF.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
                 obsModel.demodulatePhase(opticsGroup, F2D, p);
                 obsModel.divideByMtf    (opticsGroup, F2D, p);
             }
@@ -459,7 +460,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
             // Ewald-sphere curvature correction
             if (do_ewald) {
                 applyCTFPandCTFQ(
-                    F2D, ctf, do_ignore_optics ? nullptr : &obsModel,
+                    F2D,
+                    ctf, do_ignore_optics ? nullptr : &obsModel, opticsGroup,
                     transformer, F2DP, F2DQ, skip_mask
                 );
 
@@ -468,6 +470,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
                     ctf.applyWeightEwaldSphereCurvature_noAniso(
                         Fctf, myBoxSize, myBoxSize, myPixelSize,
                         do_ignore_optics ? nullptr : &obsModel,
+                        opticsGroup,
                         mask_diameter
                     );
                 }
@@ -655,7 +658,9 @@ void Reconstructor::reconstruct() {
 }
 
 void Reconstructor::applyCTFPandCTFQ(
-    MultidimArray<Complex> &Fin, CTF &ctf, ObservationModel *obsModel, FourierTransformer &transformer,
+    MultidimArray<Complex> &Fin,
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+    FourierTransformer &transformer,
     MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask
 ) {
     // FourierTransformer transformer;
@@ -672,7 +677,7 @@ void Reconstructor::applyCTFPandCTFQ(
             // Get CTFP and multiply the Fapp with it
             CTFP = ctf.getCTFPImage(
                 Fin.xdim, Fin.ydim, Ysize(Fin), Ysize(Fin), angpix, 
-                obsModel,
+                obsModel, opticsGroup,
                 is_my_positive, angle
             );
 

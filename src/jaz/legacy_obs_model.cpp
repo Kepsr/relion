@@ -43,7 +43,7 @@ void LegacyObservationModel::predictObservation(
     if (applyCtf) {
         CTF ctf = CTF(mdt, mdt, particle);  // Repetition of mdt is redundant
 
-        FilterHelper::modulate(dest, ctf, nullptr, angpix);
+        FilterHelper::modulate(dest, ctf, nullptr, -1, angpix);
     }
 
     if (applyTilt) {
@@ -124,7 +124,7 @@ void LegacyObservationModel::insertObservation(
     if (applyCtf) {
         CTF ctf = CTF(mdt, mdt, particle); // Repetition of mdt is redundant
 
-        Fctf = ctf.getFftwImage(sh, s, s, s, angpix, nullptr);
+        Fctf = ctf.getFftwImage(sh, s, s, s, angpix, nullptr, -1);
 
         for (long int n = 0; n < F2D.size(); n++) {
             F2D[n]  *= Fctf[n];

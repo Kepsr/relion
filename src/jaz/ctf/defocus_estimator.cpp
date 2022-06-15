@@ -290,10 +290,12 @@ void DefocusEstimator::bruteForceFit(
 
         CTF ctf0 = CTF(mdt, obsModel, p);
 
+        int opticsGroup = obsModel ? mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1 : -1;
+
         if (fitAstigmatism) {
             double u, v, phi;
             DefocusHelper::findAstigmatismNM(
-                pred[p], obs[p], freqWeights[og], ctf0, obsModel,
+                pred[p], obs[p], freqWeights[og], ctf0, obsModel, opticsGroup,
                 angpix[og], &u, &v, &phi
             );
 
@@ -303,7 +305,7 @@ void DefocusEstimator::bruteForceFit(
         } else {
             double u, v;
             DefocusHelper::findDefocus1D(
-                pred[p], obs[p], freqWeights[og], ctf0, obsModel,
+                pred[p], obs[p], freqWeights[og], ctf0, obsModel, opticsGroup,
                 angpix[og], &u, &v, defocusRange
             );
 

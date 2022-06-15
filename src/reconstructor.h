@@ -99,7 +99,8 @@ public:
 	void reconstruct();
 
 	void applyCTFPandCTFQ(
-		MultidimArray<Complex> &Fin, CTF &ctf, ObservationModel *obsModel,
+		MultidimArray<Complex> &Fin,
+		CTF &ctf, ObservationModel *obsModel, int opticsGroup,
 		FourierTransformer &transformer,
 		MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, bool skip_mask=false
 	);

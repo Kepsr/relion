@@ -99,6 +99,7 @@ void AberrationEstimator::processMicrograph(
             const int p = partIndices[pp];
 
             CTF ctf = CTF(mdt, obsModel, p);
+            int opticsGroup = mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
 
             int t = omp_get_thread_num();
 
@@ -107,7 +108,7 @@ void AberrationEstimator::processMicrograph(
                 double xf = x;
                 double yf = y < sh[og] ? y : y - s[og];
 
-                obsModel->magnify(xf, yf, obsModel->getMagMatrix(ctf.opticsGroup));
+                obsModel->magnify(xf, yf, obsModel->getMagMatrix(opticsGroup));
                 const double gamma_i = ctf.getGamma(xf / as, yf / as);
                 const double cg = cos(gamma_i);
                 const double sg = sin(gamma_i);

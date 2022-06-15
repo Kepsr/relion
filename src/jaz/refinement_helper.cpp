@@ -229,14 +229,14 @@ void RefinementHelper::addToPQR(
 double RefinementHelper::squaredDiff(
     const Image<Complex> &prediction,
     const Image<Complex> &observation,
-    CTF &ctf, ObservationModel *obsModel,
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
     RFLOAT angpix, const Image<RFLOAT> &weight
 ) {
     const long w = prediction.data.xdim;
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
 
     double out = 0.0;
     for (long y = 0; y < h; y++)
@@ -254,11 +254,11 @@ double RefinementHelper::squaredDiff(
 double RefinementHelper::squaredDiff(
     const std::vector<Image<Complex>> &predictions,
     const std::vector<Image<Complex>> &observations,
-    CTF &ctf, ObservationModel *obsModel, RFLOAT angpix, const Image<RFLOAT> &weight
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, const Image<RFLOAT> &weight
 ) {
     double out = 0.0;
     for (long i = 0; i < predictions.size(); i++) {
-        out += squaredDiff(predictions[i], observations[i], ctf, obsModel, angpix, weight);
+        out += squaredDiff(predictions[i], observations[i], ctf, obsModel, opticsGroup, angpix, weight);
     }
     return out;
 }

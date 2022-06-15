@@ -80,15 +80,15 @@ class FilterHelper
         static RFLOAT averageValue(Image<RFLOAT>& img);
         static RFLOAT maxValue(Image<RFLOAT>& img);
 
-        static void phaseFlip(Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, RFLOAT angpix, Image<RFLOAT>& dest);
+        static void phaseFlip(Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, Image<RFLOAT>& dest);
         static void applyBeamTilt(Image<RFLOAT>& img, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
                                   RFLOAT lambda, RFLOAT Cs, RFLOAT angpix, int s, Image<RFLOAT>& dest);
-        static void modulate      (Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, RFLOAT angpix, Image<RFLOAT>& dest);
-        static void modulate (Image<Complex>& imgFreq, CTF& ctf, ObservationModel *obsModel, RFLOAT angpix, Image<RFLOAT>& dest);
-        static void modulate(MultidimArray<Complex>& imgFreq, CTF& ctf, ObservationModel *obsModel, RFLOAT angpix);
-        static void drawCtf                           (CTF& ctf, ObservationModel *obsModel, RFLOAT angpix, Image<Complex>& dest);
-        static void wienerFilter  (Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, RFLOAT angpix, RFLOAT eps, RFLOAT Bfac, Image<RFLOAT>& dest);
-        static void richardsonLucy(Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, RFLOAT angpix, RFLOAT eps, int iterations, Image<RFLOAT>& dest);
+        static void modulate      (Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, Image<RFLOAT>& dest);
+        static void modulate (Image<Complex>& imgFreq, CTF& ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, Image<RFLOAT>& dest);
+        static void modulate(MultidimArray<Complex>& imgFreq, CTF& ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix);
+        static void drawCtf                           (CTF& ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, Image<Complex>& dest);
+        static void wienerFilter  (Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, RFLOAT eps, RFLOAT Bfac, Image<RFLOAT>& dest);
+        static void richardsonLucy(Image<RFLOAT>& img, CTF& ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, RFLOAT eps, int iterations, Image<RFLOAT>& dest);
         static void rampFilter(Image<RFLOAT>& img, RFLOAT s0, RFLOAT t1, double ux, double uy, Image<RFLOAT>& dest);
         static void rampFilter3D(Image<Complex>& img, RFLOAT s0, RFLOAT t1, double tx, double ty, double tz);
         static void doubleRampFilter3D(Image<Complex>& img, RFLOAT s0, RFLOAT t1, double tx, double ty, double tz);
