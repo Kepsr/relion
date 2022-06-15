@@ -1,6 +1,7 @@
 #include "src/jaz/legacy_obs_model.h"
 #include "src/jaz/stack_helper.h"
 #include "src/jaz/img_proc/filter_helper.h"
+#include "src/jaz/ctf_helper.h"
 #include "src/jaz/Fourier_helper.h"
 
 #include <src/backprojector.h>
@@ -41,7 +42,7 @@ void LegacyObservationModel::predictObservation(
     }
 
     if (applyCtf) {
-        CTF ctf = CTF(mdt, mdt, particle);  // Repetition of mdt is redundant
+        CTF ctf = CtfHelper::makeCTF(mdt, mdt, particle);  // Repetition of mdt is redundant
 
         FilterHelper::modulate(dest, ctf, nullptr, -1, angpix);
     }
@@ -122,7 +123,7 @@ void LegacyObservationModel::insertObservation(
     Fctf.initConstant(1.0);
 
     if (applyCtf) {
-        CTF ctf = CTF(mdt, mdt, particle); // Repetition of mdt is redundant
+        CTF ctf = CtfHelper::makeCTF(mdt, mdt, particle);  // Repetition of mdt is redundant
 
         Fctf = ctf.getFftwImage(sh, s, s, s, angpix, nullptr, -1);
 

@@ -2,6 +2,7 @@
 #include <src/jaz/ctf/magnification_helper.h>
 #include <src/ctf.h>
 #include <omp.h>
+#include "src/jaz/ctf_helper.h"
 
 using namespace gravis;
 
@@ -29,7 +30,7 @@ frqWghByGroup(frqWghByGroup) {
     initialValues.resize(CtfParamCount * particle_count);
 
     for (int p = 0; p < particle_count; p++) {
-        CTF ctf = CTF(mdt, obsModel, p);
+        CTF ctf = CtfHelper::makeCTF(mdt, obsModel, p);
 
         std::vector<double> K = ctf.getK();
 
@@ -513,7 +514,7 @@ void ModularCtfOptimisation::writeToTable(const std::vector<double> &x) {
         const double bf = readParam(BFactor, x, p);
         const double kf = readParam(ScaleFactor, x, p);
 
-        CTF ctf = CTF(mdt, obsModel, p);
+        CTF ctf = CtfHelper::makeCTF(mdt, obsModel, p);
 
         std::vector<double> K = ctf.getK();
 

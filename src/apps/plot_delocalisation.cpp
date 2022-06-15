@@ -13,6 +13,7 @@
 #include <src/jaz/new_ft.h>
 #include <src/jaz/noise_helper.h>
 #include <src/jaz/fftw_helper.h>
+#include <src/jaz/ctf_helper.h>
 
 #include <omp.h>
 
@@ -85,7 +86,7 @@ int main(int argc, char *argv[]) {
 
             if (ogp != optGroup) continue;
 
-            CTF ctf = CTF(allMdts[m], &obsModel, p);
+            CTF ctf = CtfHelper::makeCTF(allMdts[m], &obsModel, p);
             int opticsGroup = allMdts[m].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
 
             for (int y = 0; y < s;  y++)

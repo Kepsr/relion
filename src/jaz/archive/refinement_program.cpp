@@ -310,7 +310,7 @@ int RefinementProgram::init(int argc, char *argv[]) {
     int rc0 = _init();
 
     if (useFsc) {
-        RefinementHelper::drawFSC(&fscMdt, freqWeight1D, freqWeight);
+        freqWeight = RefinementHelper::drawFSC(&fscMdt, freqWeight1D);
     } else if (!noReference) {
         freqWeight1D = std::vector<double>(sh, 1.0);
         freqWeight = Image<RFLOAT>(sh, s);

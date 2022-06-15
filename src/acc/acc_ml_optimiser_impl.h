@@ -1,6 +1,7 @@
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #include "src/ml_optimiser_mpi.h"
+#include "src/jaz/ctf_helper.h"
 
 #define EQUAL(a, b) ((a) > (b) - 0.01 && (a) < (b) + 0.01)
 
@@ -699,7 +700,7 @@ void getFourierTransformsAndCtfs(
 
             } else {
                 CTICTOC(accMLO->timer, "CTFRead2D", ({
-                CTF ctf = CTF(
+                CTF ctf = CtfHelper::makeCTF(
                     &baseMLO->mydata.obsModel, optics_group,
                     direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_U),
                     direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_V),

@@ -13,6 +13,7 @@
 #include <src/jaz/new_ft.h>
 #include <src/jaz/noise_helper.h>
 #include <src/jaz/fftw_helper.h>
+#include <src/jaz/ctf_helper.h>
 
 #include <omp.h>
 
@@ -61,7 +62,7 @@ int main(int argc, char *argv[]) {
 
     const double angpix = obsModel.getPixelSize(opticsGroup);
 
-    CTF ctf = CTF(allMdts[mg], &obsModel, 0);
+    CTF ctf = CtfHelper::makeCTF(allMdts[mg], &obsModel, 0);
     ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix, &obsModel, allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1);
 
     const int tc = sh / step + 1;

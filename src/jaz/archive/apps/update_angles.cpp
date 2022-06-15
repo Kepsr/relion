@@ -168,9 +168,8 @@ int main(int argc, char *argv[]) {
     const int sh = s / 2 + 1;
 
     Image<RFLOAT> imgSnr;
-
     if (useFsc) {
-        RefinementHelper::computeSNR(&fscMdt, imgSnr);
+        imgSnr = RefinementHelper::computeSNR(&fscMdt);
     } else {
         imgSnr = Image<RFLOAT>(sh, s);
         imgSnr.data.initConstant(1.0);

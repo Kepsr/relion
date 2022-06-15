@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "src/particle_subtractor.h"
+#include "src/jaz/ctf_helper.h"
 
 
 // Like modulo, but return the modulus instead of zero.
@@ -505,7 +506,7 @@ void ParticleSubtractor::subtractOneParticle(
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
             }
         } else {
-            CTF ctf = CTF(opt.mydata.MDimg, &opt.mydata.obsModel, ori_img_id);
+            CTF ctf = CtfHelper::makeCTF(opt.mydata.MDimg, &opt.mydata.obsModel, ori_img_id);
             Fctf = ctf.getFftwImage(
                 Xsize(Fctf), Ysize(Fctf), Xsize(img()), Ysize(img()), my_pixel_size,
                 &opt.mydata.obsModel,

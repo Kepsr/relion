@@ -103,59 +103,60 @@ class AstigmatismOptimizationAcc : public Optimization
         RFLOAT angpix, phiScale, csScale;
 };
 
-class DefocusHelper
+namespace DefocusHelper
 {
-    public:
 
-        static RFLOAT findDefocus1D(
-            const Image<Complex>& prediction,
-            const Image<Complex>& observation,
-            const Image<RFLOAT>& weight,
-            const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
-            RFLOAT angpix,
-            double* destU, double* destV,
-            RFLOAT range = 1000.0, int steps = 11,
-            int recDepth = 2, RFLOAT recScale = 10.0);
+    RFLOAT findDefocus1D(
+        const Image<Complex>& prediction,
+        const Image<Complex>& observation,
+        const Image<RFLOAT>& weight,
+        const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
+        RFLOAT angpix,
+        double* destU, double* destV,
+        RFLOAT range = 1000.0, int steps = 11,
+        int recDepth = 2, RFLOAT recScale = 10.0);
 
-        static void findAstigmatismNM(
-            const Image<Complex>& prediction,
-            const Image<Complex>& observation,
-            const Image<RFLOAT>& weight,
-            const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
-            RFLOAT angpix,
-            double* destU, double* destV, double* destPhi);
+    void findAstigmatismNM(
+        const Image<Complex>& prediction,
+        const Image<Complex>& observation,
+        const Image<RFLOAT>& weight,
+        const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
+        RFLOAT angpix,
+        double* destU, double* destV, double* destPhi);
 
-        static void findAstigmatismAndPhaseNM(
-            const std::vector<Image<Complex>>& prediction,
-            const std::vector<Image<Complex>>& observation,
-            const Image<RFLOAT>& weight,
-            const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
-            RFLOAT angpix,
-            double* destU, double* destV, double* destPhi, double* destPhase);
+    void findAstigmatismAndPhaseNM(
+        const std::vector<Image<Complex>>& prediction,
+        const std::vector<Image<Complex>>& observation,
+        const Image<RFLOAT>& weight,
+        const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
+        RFLOAT angpix,
+        double* destU, double* destV, double* destPhi, double* destPhase);
 
-        static void findAstigmatismPhaseAndCsNM(
-            const std::vector<Image<Complex>>& prediction,
-            const std::vector<Image<Complex>>& observation,
-            const Image<RFLOAT>& weight,
-            const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
-            RFLOAT angpix,
-            double* destU, double* destV,
-            double* destPhi, double* destPhase, double* destCs);
+    void findAstigmatismPhaseAndCsNM(
+        const std::vector<Image<Complex>>& prediction,
+        const std::vector<Image<Complex>>& observation,
+        const Image<RFLOAT>& weight,
+        const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
+        RFLOAT angpix,
+        double* destU, double* destV,
+        double* destPhi, double* destPhase, double* destCs);
 
-        static void findAstigmatismNM(
-            const std::vector<Image<Complex>>& prediction,
-            const std::vector<Image<Complex>>& observation,
-            const Image<RFLOAT>& weight,
-            const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
-            RFLOAT angpix,
-            double* destU, double* destV, double* destPhi);
+    void findAstigmatismNM(
+        const std::vector<Image<Complex>>& prediction,
+        const std::vector<Image<Complex>>& observation,
+        const Image<RFLOAT>& weight,
+        const CTF& ctf0, ObservationModel *obsModel, int opticsGroup,
+        RFLOAT angpix,
+        double* destU, double* destV, double* destPhi);
 
-        static std::vector<gravis::d2Vector> diagnoseDefocus(
-            const Image<Complex>& prediction,
-            const Image<Complex>& observation,
-            const Image<RFLOAT>& weight,
-            const CTF& ctf0, RFLOAT angpix,
-            double range, int steps, int threads);
+    std::vector<gravis::d2Vector> diagnoseDefocus(
+        const Image<Complex>& prediction,
+        const Image<Complex>& observation,
+        const Image<RFLOAT>& weight,
+        const CTF &ctf0, ObservationModel *obsModel, int opticsGroup, 
+        RFLOAT angpix,
+        double range, int steps, int threads);
+
 };
 
 #endif

@@ -25,6 +25,7 @@
 #include <src/jaz/micrograph_handler.h>
 #include <src/jaz/obs_model.h>
 #include <src/jaz/stack_helper.h>
+#include <src/jaz/ctf_helper.h>
 #include <src/jaz/vtk_helper.h>
 #include <src/jaz/damage_helper.h>
 #include <src/jaz/image_log.h>
@@ -343,7 +344,7 @@ void FrameRecombiner::process(
 
             // Premultiply by CTF
             if (do_ctf_multiply) {
-                CTF ctf = CTF(mdtOut, obsModel, p);
+                CTF ctf = CtfHelper::makeCTF(mdtOut, obsModel, p);
                 int og = obsModel->getOpticsGroup(mdtOut, p);
                 #pragma omp critical(FrameRecombiner_process)
                 {

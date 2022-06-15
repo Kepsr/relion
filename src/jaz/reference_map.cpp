@@ -128,7 +128,7 @@ void ReferenceMap::load(int verb, bool debug) {
     projectors[1] = Projector(s, TRILINEAR, paddingFactor, 10, 2);
     projectors[1].computeFourierTransformMap(maps[1].data, powSpec[1].data, maps[1].data.xdim);
 
-    if (fscFn != "") {
+    if (!fscFn.empty()) {
         MetaDataTable fscMdt;
         fscMdt.read(fscFn, "fsc");
 
@@ -140,10 +140,10 @@ void ReferenceMap::load(int verb, bool debug) {
             REPORT_ERROR(fscFn + " does not contain a value for " + EMDL::label2Str(EMDL::POSTPROCESS_FSC_TRUE));
         }
 
-        RefinementHelper::drawFSC(&fscMdt, freqWeight1D, freqWeight);
+        freqWeight = RefinementHelper::drawFSC(&fscMdt, freqWeight1D);
     } else {
         freqWeight1D = std::vector<double>(sh, 1.0);
-        freqWeight = Image<RFLOAT>(sh,s);
+        freqWeight = Image<RFLOAT>(sh, s);
         freqWeight.data.initConstant(1.0);
     }
 

@@ -10,6 +10,7 @@
 #include <signal.h>
 
 #include "src/ml_optimiser.h"
+#include "src/jaz/ctf_helper.h"
 #include "src/acc/acc_ptr.h"
 #include "src/acc/acc_projector.h"
 #include "src/acc/acc_backprojector.h"
@@ -387,7 +388,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         for (MetaDataTable::iterator it = basePckr->MDmic.begin(); it != basePckr->MDmic.end(); ++it) {
             FileName fn_tmp = basePckr->MDmic.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
-                CTF ctf = CTF(basePckr->MDmic, &basePckr->obsModel);
+                CTF ctf = CtfHelper::makeCTF(basePckr->MDmic, &basePckr->obsModel);
                 Fctf.resize(basePckr->workSize, basePckr->workSize / 2 + 1);
                 Fctf = ctf.getFftwImage(
                     basePckr->workSize / 2 + 1, basePckr->workSize, basePckr->micrograph_size, basePckr->micrograph_size, basePckr->angpix,

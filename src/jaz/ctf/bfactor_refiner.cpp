@@ -9,6 +9,7 @@
 #include <src/jaz/obs_model.h>
 #include <src/jaz/reference_map.h>
 #include <src/jaz/fftw_helper.h>
+#include <src/jaz/ctf_helper.h>
 #include <src/jaz/image_log.h>
 #include <src/jaz/img_proc/filter_helper.h>
 #include <src/jaz/gravis/t2Vector.h>
@@ -140,7 +141,7 @@ void BFactorRefiner::processMicrograph(
 
             const int t = omp_get_thread_num();
 
-            CTF ctf = CTF(mdt, obsModel, p);
+            CTF ctf = CtfHelper::makeCTF(mdt, obsModel, p);
             Image<RFLOAT> ctfImg(sh[og], s[og]);
             ctfImg() = ctf.getFftwImage(sh[og], s[og], s[og], s[og], angpix[og], obsModel, false, false, false, false, do_ctf_padding);
 
@@ -185,7 +186,7 @@ void BFactorRefiner::processMicrograph(
         for (long p = 0; p < pc; p++) {
             const int og = obsModel->getOpticsGroup(mdt, p);
 
-            CTF ctf = CTF(mdt, obsModel, p);
+            CTF ctf = CtfHelper::makeCTF(mdt, obsModel, p);
             Image<RFLOAT> ctfImg(sh[og], s[og]);
             ctfImg() = ctf.getFftwImage(
                 sh[og], s[og], s[og], s[og], angpix[og], 

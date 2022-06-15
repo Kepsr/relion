@@ -23,6 +23,7 @@
 #include <src/fftw.h>
 #include <src/args.h>
 #include <src/ctf.h>
+#include "src/jaz/ctf_helper.h"
 #include <src/strings.h>
 #include <src/funcs.h>
 #include <src/memory.h>
@@ -321,7 +322,7 @@ class project_parameters {
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                         }
                     } else {
-                        CTF ctf = CTF(MDang, &obsModel); // This MDimg only contains one particle!
+                        CTF ctf = CtfHelper::makeCTF(MDang, &obsModel); // This MDimg only contains one particle!
                         Fctf.resize(F2D);
                         Fctf = ctf.getFftwImage(
                             Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,
@@ -475,7 +476,7 @@ class project_parameters {
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                             }
                         } else {
-                            CTF ctf = CTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
+                            CTF ctf = CtfHelper::makeCTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
                             Fctf.resize(F2D);
                             Fctf = ctf.getFftwImage(
                                 Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,

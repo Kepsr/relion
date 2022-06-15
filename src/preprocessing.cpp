@@ -18,6 +18,7 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/preprocessing.h"
+#include "src/jaz/ctf_helper.h"
 
 
 // #define PREP_TIMING
@@ -680,7 +681,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     ObservationModel *obsModel;
     int optics_group;
     if (mic_star_has_ctf || keep_ctf_from_micrographs) {
-        ctf.readByGroup(MDmics, &obsModelMic, imic);
+        CtfHelper::readByGroup(ctf, MDmics, &obsModelMic, imic);
         obsModel = &obsModelMic;
         optics_group = obsModelMic.getOpticsGroup(MDmics, imic);
 
@@ -731,7 +732,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
         // Read per-particle CTF
         if (MDin_has_ctf && !keep_ctf_from_micrographs) {
-            ctf.readByGroup(MD, &obsModelPart, optics_group);
+            CtfHelper::readByGroup(ctf, MD, &obsModelPart, optics_group);
             obsModel = &obsModelPart;
             optics_group = obsModelPart.getOpticsGroup(MD);
             if (obsModelPart.getBoxSize(optics_group) != my_extract_size)
@@ -884,18 +885,17 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
                     MD.setValue(EMDL::CTF_FOM, fom);
                 }
 
-                ctf.write(MD);
+                CtfHelper::write(ctf, MD);
             }
 
             // Only set beamtilt from the micrographs STAR file if the input STAR file did not contain it!
             if (!MDin_has_beamtilt || keep_ctf_from_micrographs) {
-                RFLOAT tilt_x, tilt_y;
                 if (MDmics.containsLabel(EMDL::IMAGE_BEAMTILT_X)) {
-                    tilt_x = MDmics.getValue<RFLOAT>(EMDL::IMAGE_BEAMTILT_X, imic);
+                    RFLOAT tilt_x = MDmics.getValue<RFLOAT>(EMDL::IMAGE_BEAMTILT_X, imic);
                     MD.setValue(EMDL::IMAGE_BEAMTILT_X, tilt_x);
                 }
                 if (MDmics.containsLabel(EMDL::IMAGE_BEAMTILT_Y)) {
-                    tilt_y = MDmics.getValue<RFLOAT>(EMDL::IMAGE_BEAMTILT_Y, imic);
+                    RFLOAT tilt_y = MDmics.getValue<RFLOAT>(EMDL::IMAGE_BEAMTILT_Y, imic);
                     MD.setValue(EMDL::IMAGE_BEAMTILT_Y, tilt_y);
                 }
             }

@@ -25,6 +25,7 @@
 
 #include <src/jaz/reference_map.h>
 #include <src/jaz/fftw_helper.h>
+#include <src/jaz/ctf_helper.h>
 #include <src/jaz/vtk_helper.h>
 #include <src/jaz/image_log.h>
 #include <src/jaz/img_proc/color_helper.h>
@@ -103,7 +104,7 @@ void MagnificationEstimator::processMicrograph(
         for (long pp = 0; pp < pc; pp++) {
             const int p = partIndices[pp];
 
-            CTF ctf = CTF(mdt, obsModel, p);
+            CTF ctf = CtfHelper::makeCTF(mdt, obsModel, p);
 
             int threadnum = omp_get_thread_num();
 
