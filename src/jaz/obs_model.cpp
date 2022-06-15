@@ -26,6 +26,7 @@
 #include "src/jaz/math/Zernike.h"
 #include "src/jaz/vtk_helper.h"
 #include "src/jaz/io/star_converter.h"
+#include "src/jaz/ctf_helper.h"
 
 #include <src/backprojector.h>
 
@@ -310,7 +311,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     }
 
     if (applyCtf) {
-        CTF ctf = CTF(partMdt, this, particle);
+        CTF ctf = CtfHelper::makeCTF(partMdt, this, particle);
 
         Image<RFLOAT> ctfImg(sh_out, s_out);
         ctfImg() = ctf.getFftwImage(

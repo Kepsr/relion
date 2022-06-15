@@ -19,12 +19,8 @@
  ***************************************************************************/
 
 #include <src/jaz/refinement_helper.h>
-#include <src/jaz/slice_helper.h>
 #include <src/projector.h>
-#include <src/jaz/img_proc/filter_helper.h>
-#include <src/jaz/optimization/nelder_mead.h>
 #include <src/jaz/gravis/t4Matrix.h>
-#include <src/jaz/vtk_helper.h>
 
 namespace constrain {
 
@@ -42,24 +38,23 @@ namespace constrain {
 
 using namespace gravis;
 
-void RefinementHelper::drawFSC(
+Image<RFLOAT> RefinementHelper::drawFSC(
     const MetaDataTable *mdt, std::vector<double> &dest1D,
-    Image<RFLOAT> &dest, double thresh
+    double thresh
 ) {
+    /// TODO: Also return dest1D
     const int n = mdt->numberOfObjects();
     const int w = 2 * (n - 1);
     const int h = 2 * (n - 1);
 
     dest1D = std::vector<double>(n);
-
     for (int i = 0; i < n; i++) {
         int idx   = mdt->getValue<int>   (EMDL::SPECTRAL_IDX,         i);
         dest1D[i] = mdt->getValue<double>(EMDL::POSTPROCESS_FSC_TRUE, i);
         if (dest1D[i] < thresh) { dest1D[i] = 0.0; }
     }
 
-    dest = Image<RFLOAT>(n, h);
-
+    Image<RFLOAT> result (n, h);
     for (int y = 0; y < h; y++)
     for (int x = 0; x < n; x++) {
         double xx = x;
@@ -69,17 +64,17 @@ void RefinementHelper::drawFSC(
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        direct::elem(dest.data, x, y) = dest1D[ri];
+        direct::elem(result.data, x, y) = dest1D[ri];
     }
+    return result;
 }
 
-void RefinementHelper::computeSNR(const MetaDataTable *mdt, Image<RFLOAT> &dest, double eps) {
+Image<RFLOAT> RefinementHelper::computeSNR(const MetaDataTable *mdt, double eps) {
     const int n = mdt->numberOfObjects();
     const int w = 2 * (n - 1);
     const int h = 2 * (n - 1);
 
     std::vector<double> snr(n);
-
     for (int i = 0; i < n; i++) {
         int    idx = mdt->getValue<int>   (EMDL::SPECTRAL_IDX,         i);
         double fsc = mdt->getValue<double>(EMDL::POSTPROCESS_FSC_TRUE, i);
@@ -90,8 +85,7 @@ void RefinementHelper::computeSNR(const MetaDataTable *mdt, Image<RFLOAT> &dest,
         snr[i] = fsc / (1.0 - fsc);
     }
 
-    dest = Image<RFLOAT>(n, h);
-
+    Image<RFLOAT> result (n, h);
     for (int y = 0; y < h; y++)
     for (int x = 0; x < n; x++) {
         double xx = x;
@@ -101,13 +95,14 @@ void RefinementHelper::computeSNR(const MetaDataTable *mdt, Image<RFLOAT> &dest,
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        direct::elem(dest.data, x, y) = snr[ri];
+        direct::elem(result.data, x, y) = snr[ri];
     }
+    return result;
 }
 
-void RefinementHelper::computeSigInvSq(
+Image<RFLOAT> RefinementHelper::computeSigInvSq(
     const MetaDataTable *mdt, const std::vector<double> &signalPow,
-    Image<RFLOAT> &dest, double eps
+    double eps
 ) {
     const int n = mdt->numberOfObjects();
     const int w = 2 * (n - 1);
@@ -129,8 +124,7 @@ void RefinementHelper::computeSigInvSq(
         sigInvSq[i] = snr / sigPow;
     }
 
-    dest = Image<RFLOAT>(n,h);
-
+    Image<RFLOAT> result (n, h);
     for (int y = 0; y < h; y++)
     for (int x = 0; x < n; x++) {
         double xx = x;
@@ -140,8 +134,9 @@ void RefinementHelper::computeSigInvSq(
         int ri = (int) (r + 0.5);
         if (ri > w / 2) { ri = w / 2; }
 
-        direct::elem(dest.data, x, y) = sigInvSq[ri];
+        direct::elem(result.data, x, y) = sigInvSq[ri];
     }
+    return result;
 }
 
 Image<RFLOAT> RefinementHelper::correlation(
@@ -151,7 +146,6 @@ Image<RFLOAT> RefinementHelper::correlation(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> out(w, h);
-
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
         Complex vx = direct::elem(prediction .data, x, y);
@@ -160,7 +154,6 @@ Image<RFLOAT> RefinementHelper::correlation(
         // Dot product
         direct::elem(out.data, x, y) = vy.real * vx.real + vy.imag * vx.imag;
     }
-
     return out;
 }
 
@@ -241,7 +234,7 @@ double RefinementHelper::squaredDiff(
     double out = 0.0;
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
-        Complex vx = direct::elem(prediction.data, x, y);
+        const Complex vx = direct::elem(prediction.data, x, y);
         const Complex vy = direct::elem(observation.data, x, y);
         const RFLOAT  vw = direct::elem(weight     .data, x, y);
 
@@ -254,7 +247,8 @@ double RefinementHelper::squaredDiff(
 double RefinementHelper::squaredDiff(
     const std::vector<Image<Complex>> &predictions,
     const std::vector<Image<Complex>> &observations,
-    CTF &ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, const Image<RFLOAT> &weight
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+    RFLOAT angpix, const Image<RFLOAT> &weight
 ) {
     double out = 0.0;
     for (long i = 0; i < predictions.size(); i++) {

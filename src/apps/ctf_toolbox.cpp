@@ -25,6 +25,7 @@
 #include <src/ctf.h>
 #include <src/time.h>
 #include <src/symmetries.h>
+#include "src/jaz/ctf_helper.h"
 
 class ctf_toolbox_parameters {
 
@@ -132,7 +133,7 @@ class ctf_toolbox_parameters {
 
             for (long int i_img : MD) {
 
-                CTF ctf = CTF(MD, &obsModel);
+                CTF ctf = CtfHelper::makeCTF(MD, &obsModel);
                 int og = obsModel.getOpticsGroup(MD);
                 RFLOAT angpix = obsModel.getPixelSize(og);
 

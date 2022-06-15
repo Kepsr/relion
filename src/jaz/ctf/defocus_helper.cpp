@@ -57,7 +57,7 @@ RFLOAT DefocusHelper::findDefocus1D(
         ctf.initialise();
 
         double err = RefinementHelper::squaredDiff(
-            prediction, observation, ctf, nullptr, -1,  // No ObservationModel
+            prediction, observation, ctf, obsModel, opticsGroup,
             angpix, weight
         );
 
@@ -172,7 +172,8 @@ std::vector<d2Vector> DefocusHelper::diagnoseDefocus(
         const Image<Complex> &prediction,
         const Image<Complex> &observation,
         const Image<RFLOAT> &weight,
-        const CTF &ctf0, RFLOAT angpix,
+        const CTF &ctf0, ObservationModel *obsModel, int opticsGroup,
+        RFLOAT angpix,
         double range, int steps, int threads)
 {
     const RFLOAT delta = ctf0.DeltafV - ctf0.DeltafU;
@@ -192,8 +193,7 @@ std::vector<d2Vector> DefocusHelper::diagnoseDefocus(
 
         out[s][0] = u;
         out[s][1] = RefinementHelper::squaredDiff(
-            prediction, observation, ctf, nullptr, -1, // No ObservationModel
-            angpix, weight
+            prediction, observation, ctf, obsModel, opticsGroup, angpix, weight
         );
     }
 
@@ -314,11 +314,10 @@ double AstigmatismOptimizationAcc::f(
     const long w = data.data.xdim;
     const long h = data.data.ydim;
 
-    double out = 0.0;
-
     Image<RFLOAT> ctfImg(w, h);
     ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
 
+    double out = 0.0;
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
         Complex vd = direct::elem(data.data, x, y);
@@ -327,7 +326,6 @@ double AstigmatismOptimizationAcc::f(
         RFLOAT dx = vd.real - vm;
         out += vd.imag * dx * dx;
     }
-
     return out;
 }
 
@@ -352,18 +350,10 @@ double AstigmatismOptimizationAcc::getCs(const std::vector<double> &x) {
 }
 
 std::vector<double> AstigmatismOptimizationAcc::getInitialParams() {
-    int num = 3;
-    if (phaseShift) { num++; }
-    if (spherAberr) { num++; }
-
-    std::vector<double> initial(num);
-
-    initial[0] = ctf0.DeltafU;
-    initial[1] = ctf0.DeltafU;
-    initial[2] = phiScale * ctf0.azimuthal_angle;
-
-    if (phaseShift) initial[3] = phiScale * ctf0.phase_shift;
-    if (spherAberr) initial[phaseShift ? 4 : 3] = csScale * ctf0.Cs;
-
-    return initial;
+    std::vector<double> params;
+    params.reserve(3 + phaseShift + spherAberr);
+    params = {ctf0.DeltafU, ctf0.DeltafV, ctf0.azimuthal_angle * phiScale};
+    if (phaseShift) params.push_back(ctf0.phase_shift * phiScale);
+    if (spherAberr) params.push_back(ctf0.Cs * csScale);
+    return params;
 }

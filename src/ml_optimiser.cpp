@@ -34,6 +34,7 @@
 #include "src/macros.h"
 #include "src/error.h"
 #include "src/ml_optimiser.h"
+#include "src/jaz/ctf_helper.h"
 #ifdef CUDA
     #include "src/acc/cuda/cuda_ml_optimiser.h"
     #include <nvToolsExt.h>
@@ -2130,7 +2131,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
 
                 // Apply CTF if necessary (skip this for subtomograms!)
                 if (do_ctf_correction && mymodel.data_dim != 3) {
-                    CTF ctf = CTF(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
+                    CTF ctf = CtfHelper::makeCTF(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
                     Fctf = ctf.getFftwImage(
                         Xsize(Fctf), Ysize(Fctf), mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
                         &mydata.obsModel,
@@ -4957,7 +4958,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             } else {
 
                 // Get parameters that change per-particle from the exp_metadata
-                CTF ctf = CTF(
+                CTF ctf = CtfHelper::makeCTF(
                     &mydata.obsModel, optics_group,
                     direct::elem(exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_U),
                     direct::elem(exp_metadata, my_metadata_offset, METADATA_CTF_DEFOCUS_V),
@@ -7517,7 +7518,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         Fctf.resize(current_image_size, current_image_size / 2 + 1);
 
                         // Get parameters that change per-particle from the exp_metadata
-                        CTF ctf = CTF(
+                        CTF ctf = CtfHelper::makeCTF(
                             &mydata.obsModel, optics_group,
                             direct::elem(exp_metadata, metadata_offset, METADATA_CTF_DEFOCUS_U),
                             direct::elem(exp_metadata, metadata_offset, METADATA_CTF_DEFOCUS_V),

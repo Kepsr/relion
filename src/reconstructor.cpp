@@ -18,6 +18,7 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/reconstructor.h"
+#include "src/jaz/ctf_helper.h"
 
 void Reconstructor::read(int argc, char **argv) {
     parser.setCommandLine(argc, argv);
@@ -440,8 +441,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
             }
         } else {
-            CTF ctf = do_ignore_optics ? CTF(DF, DF,        p) :  // Repetition of DF is redundant
-                                         CTF(DF, &obsModel, p);
+            CTF ctf = do_ignore_optics ? CtfHelper::makeCTF(DF, DF,        p) :  // Repetition of DF is redundant
+                                         CtfHelper::makeCTF(DF, &obsModel, p);
 
             Fctf = ctf.getFftwImage(
                 Xsize(Fctf), Ysize(Fctf), myBoxSize, myBoxSize, myPixelSize,

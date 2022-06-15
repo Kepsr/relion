@@ -8,6 +8,7 @@
 #include <src/jaz/complex_io.h>
 #include <src/jaz/img_proc/filter_helper.h>
 #include <src/jaz/fftw_helper.h>
+#include <src/jaz/ctf_helper.h>
 #include <src/jaz/vtk_helper.h>
 #include <src/jaz/image_log.h>
 #include <src/jaz/gravis/t2Vector.h>
@@ -98,7 +99,7 @@ void AberrationEstimator::processMicrograph(
         for (long pp = 0; pp < pc; pp++) {
             const int p = partIndices[pp];
 
-            CTF ctf = CTF(mdt, obsModel, p);
+            CTF ctf = CtfHelper::makeCTF(mdt, obsModel, p);
             int opticsGroup = mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
 
             int t = omp_get_thread_num();

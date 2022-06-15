@@ -28,6 +28,7 @@
 #include <src/jaz/obs_model.h>
 #include <src/jaz/reference_map.h>
 #include <src/jaz/fftw_helper.h>
+#include "src/jaz/ctf_helper.h"
 #include <src/jaz/image_log.h>
 #include <src/jaz/img_proc/filter_helper.h>
 #include <src/jaz/gravis/t2Vector.h>
@@ -255,11 +256,12 @@ void DefocusEstimator::bruteForceFit(
         for (long p = 0; p < pc; p++) {
             const int og = obsModel->getOpticsGroup(mdt, p);
 
-            CTF ctf0 = CTF(mdt, obsModel, p);
+            CTF ctf0 = CtfHelper::makeCTF(mdt, obsModel, p);
 
             std::vector<d2Vector> cost = DefocusHelper::diagnoseDefocus(
                 pred[p], obs[p], freqWeights[og],
-                ctf0, angpix[og], defocusRange, 100, nr_omp_threads
+                ctf0, obsModel, mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p),
+                angpix[og], defocusRange, 100, nr_omp_threads
             );
 
             double cMin = cost[0][1];
@@ -288,7 +290,7 @@ void DefocusEstimator::bruteForceFit(
         std::stringstream stsp;
         stsp << p;
 
-        CTF ctf0 = CTF(mdt, obsModel, p);
+        CTF ctf0 = CtfHelper::makeCTF(mdt, obsModel, p);
 
         int opticsGroup = obsModel ? mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1 : -1;
 

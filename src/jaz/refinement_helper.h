@@ -29,44 +29,41 @@
 #include <src/jaz/gravis/t2Matrix.h>
 #include <vector>
 
-class Projector;
+namespace RefinementHelper {
 
-class RefinementHelper
-{
-    public:
+    Image<RFLOAT> drawFSC(const MetaDataTable* mdt, std::vector<double> &dest1D,
+                            double thresh = 0.143);
 
-        static void drawFSC(const MetaDataTable* mdt, std::vector<double> &dest1D,
-                            Image<RFLOAT> &dest, double thresh = 0.143);
+    Image<RFLOAT> computeSNR(const MetaDataTable* mdt, double eps = 1e-15);
+    Image<RFLOAT> computeSigInvSq(const MetaDataTable* mdt, const std::vector<double> &signalPow,
+                                    double eps = 1e-15);
 
-        static void computeSNR(const MetaDataTable* mdt, Image<RFLOAT> &dest, double eps = 1e-15);
-        static void computeSigInvSq(const MetaDataTable* mdt, const std::vector<double> &signalPow,
-                                    Image<RFLOAT> &dest, double eps = 1e-15);
+    Image<RFLOAT> correlation(const Image<Complex> &prediction,
+                                            const Image<Complex> &observation);
 
-        static Image<RFLOAT> correlation(const Image<Complex> &prediction,
-                                         const Image<Complex> &observation);
+    Image<RFLOAT> correlation(const std::vector<Image<Complex> > &prediction,
+                                            const std::vector<Image<Complex> > &observation);
 
-        static Image<RFLOAT> correlation(const std::vector<Image<Complex> > &prediction,
-                                         const std::vector<Image<Complex> > &observation);
+    void addToQR(
+            const Image<Complex> &prediction, const Image<Complex> &observation,
+            Image<Complex> &q, Image<RFLOAT> &r);
 
-        static void addToQR(
-                const Image<Complex> &prediction, const Image<Complex> &observation,
-                Image<Complex> &q, Image<RFLOAT> &r);
+    void addToPQR(
+            const Image<Complex> &prediction,
+            const Image<Complex> &observation,
+            Image<RFLOAT> &p, Image<Complex> &q, Image<RFLOAT> &r);
 
-        static void addToPQR(
-                const Image<Complex> &prediction,
-                const Image<Complex> &observation,
-                Image<RFLOAT> &p, Image<Complex> &q, Image<RFLOAT> &r);
+    double squaredDiff(
+            const Image<Complex> &prediction, const Image<Complex> &observation,
+            CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+            RFLOAT angpix, const Image<RFLOAT> &weight);
 
-        static double squaredDiff(
-                const Image<Complex> &prediction, const Image<Complex> &observation,
-                CTF &ctf, ObservationModel *obsModel, int opticsGroup,
-                RFLOAT angpix, const Image<RFLOAT> &weight);
+    double squaredDiff(
+            const std::vector<Image<Complex>> &predictions,
+            const std::vector<Image<Complex>> &observations,
+            CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+            RFLOAT angpix, const Image<RFLOAT> &weight);
 
-        static double squaredDiff(
-                const std::vector<Image<Complex>> &predictions,
-                const std::vector<Image<Complex>> &observations,
-                CTF &ctf, ObservationModel *obsModel, int opticsGroup,
-                RFLOAT angpix, const Image<RFLOAT> &weight);
 };
 
 #endif

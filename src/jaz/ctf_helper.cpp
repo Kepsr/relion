@@ -123,3 +123,138 @@ CTF CtfHelper::setFromFile(
 
     return CTF(defocus1, defocus2, azimuth, voltage, Cs, Q0, Bfac, scale, phaseShift);
 }
+
+void CtfHelper::setValuesByGroup(
+    CTF &ctf, ObservationModel *obs, int opticsGroup,
+    RFLOAT defU, RFLOAT defV, RFLOAT defAng,
+    RFLOAT Bfac, RFLOAT scale, RFLOAT phase_shift
+) {
+    ctf.DeltafU         = defU;
+    ctf.DeltafV         = defV;
+    ctf.azimuthal_angle = defAng;
+
+    ctf.Bfac            = Bfac;
+    ctf.scale           = scale;
+    ctf.phase_shift     = phase_shift;
+
+    ctf.kV = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_VOLTAGE, opticsGroup);
+    ctf.Cs = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_CS,      opticsGroup);
+    ctf.Q0 = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_Q0,      opticsGroup);
+
+    ctf.initialise();
+}
+
+/* Read -------------------------------------------------------------------- */
+void CtfHelper::readByGroup(
+    CTF &ctf, const MetaDataTable &partMdt, ObservationModel *obsModel, long int particle
+) {
+    int opticsGroup = obsModel ? partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1 : -1;
+
+    ctf.kV              = readValue(EMDL::CTF_VOLTAGE,       200,         particle, opticsGroup, partMdt, obsModel);
+    ctf.DeltafU         = readValue(EMDL::CTF_DEFOCUSU,      0,           particle, opticsGroup, partMdt, obsModel);
+    ctf.DeltafV         = readValue(EMDL::CTF_DEFOCUSV,      ctf.DeltafU, particle, opticsGroup, partMdt, obsModel);
+    ctf.azimuthal_angle = readValue(EMDL::CTF_DEFOCUS_ANGLE, 0,           particle, opticsGroup, partMdt, obsModel);
+    ctf.Cs              = readValue(EMDL::CTF_CS,            0,           particle, opticsGroup, partMdt, obsModel);
+    ctf.Bfac            = readValue(EMDL::CTF_BFACTOR,       0,           particle, opticsGroup, partMdt, obsModel);
+    ctf.scale           = readValue(EMDL::CTF_SCALEFACTOR,   1,           particle, opticsGroup, partMdt, obsModel);
+    ctf.Q0              = readValue(EMDL::CTF_Q0,            0,           particle, opticsGroup, partMdt, obsModel);
+    ctf.phase_shift     = readValue(EMDL::CTF_PHASESHIFT,    0,           particle, opticsGroup, partMdt, obsModel);
+
+    ctf.initialise();
+}
+
+CTF CtfHelper::makeCTF(const MetaDataTable &partMdt, ObservationModel *obs, long int particle) {
+    CTF ctf;
+    readByGroup(ctf, partMdt, obs, particle);
+    return ctf;
+}
+
+CTF CtfHelper::makeCTF(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
+    CTF ctf;
+    read(ctf, MD1, MD2, objectID);
+    return ctf;
+}
+
+CTF CtfHelper::makeCTF(
+    ObservationModel *obs, int opticsGroup,
+    RFLOAT defU, RFLOAT defV, RFLOAT defAng,
+    RFLOAT Bfac, RFLOAT scale, RFLOAT phase_shift
+) {
+    CTF ctf;
+    setValuesByGroup(ctf, obs, opticsGroup, defU, defV, defAng, Bfac, scale, phase_shift);
+    return ctf;
+}
+
+// Read from a MetaDataTable
+void CtfHelper::read(CTF &ctf, const MetaDataTable &MD) {
+    MetaDataTable MDempty;
+    MDempty.addObject(); // add one empty object
+    read(ctf, MD, MDempty);
+}
+
+template <typename T>
+T getMDT(EMDL::EMDLabel label, const MetaDataTable &mdt1, const MetaDataTable &mdt2, long int objectID, T defval) {
+    try {
+        return mdt1.getValue<T>(label, objectID);
+    } catch (const char *errmsg) { try {
+        return mdt2.getValue<T>(label, objectID);
+    } catch (const char *errmsg) {
+        return defval;
+    } }
+}
+
+// Read parameters from MetaDataTables containing micrograph/particle information
+void CtfHelper::read(CTF &ctf, const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
+
+    // Parameterse that MD1 does not contain, are tried to be read from MD2.
+    ctf.kV              = getMDT<RFLOAT>(EMDL::CTF_VOLTAGE,       MD1, MD2, objectID, 200);
+    ctf.DeltafU         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSU,      MD1, MD2, objectID, 0);
+    ctf.DeltafV         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSV,      MD1, MD2, objectID, ctf.DeltafU);
+    ctf.azimuthal_angle = getMDT<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, MD1, MD2, objectID, 0);
+    ctf.Cs              = getMDT<RFLOAT>(EMDL::CTF_CS,            MD1, MD2, objectID, 0);
+    ctf.Bfac            = getMDT<RFLOAT>(EMDL::CTF_BFACTOR,       MD1, MD2, objectID, 0);
+    ctf.scale           = getMDT<RFLOAT>(EMDL::CTF_SCALEFACTOR,   MD1, MD2, objectID, 1);
+    ctf.Q0              = getMDT<RFLOAT>(EMDL::CTF_Q0,            MD1, MD2, objectID, 0);
+    ctf.phase_shift     = getMDT<RFLOAT>(EMDL::CTF_PHASESHIFT,    MD1, MD2, objectID, 0);
+
+    ctf.initialise();
+}
+
+RFLOAT CtfHelper::readValue(
+    EMDL::EMDLabel label, RFLOAT defaultVal,
+    long int particle, int opticsGroup,
+    const MetaDataTable &partMdt, const ObservationModel* obs
+) {
+    try {
+        return partMdt.getValue<RFLOAT>(label, particle);
+    } catch (const char *errmsg) { try {
+        if (opticsGroup < 0) { throw "Negative optics group!"; }
+        if (!obs) { throw "No ObservationModel!"; }
+        return obs->opticsMdt.getValue<RFLOAT>(label, opticsGroup);
+    } catch (const char *errmsg) {
+        return defaultVal;
+    } }
+}
+
+/* Read -------------------------------------------------------------------- */
+
+// Write to an existing object in a MetaDataTable
+void CtfHelper::write(CTF &ctf, MetaDataTable &MD) {
+    // For versions >= 3.1: store kV, Cs, Q0 in optics table
+    // MD.setValue(EMDL::CTF_VOLTAGE, ctf.kV);
+    MD.setValue(EMDL::CTF_DEFOCUSU, ctf.DeltafU);
+    MD.setValue(EMDL::CTF_DEFOCUSV, ctf.DeltafV);
+    MD.setValue(EMDL::CTF_DEFOCUS_ANGLE, ctf.azimuthal_angle);
+    // MD.setValue(EMDL::CTF_CS, ctf.Cs);
+    MD.setValue(EMDL::CTF_BFACTOR, ctf.Bfac);
+    MD.setValue(EMDL::CTF_SCALEFACTOR, ctf.scale);
+    MD.setValue(EMDL::CTF_PHASESHIFT, ctf.phase_shift);
+    // MD.setValue(EMDL::CTF_Q0, ctf.Q0);
+}
+
+void CtfHelper::write(CTF &ctf, std::ostream &out) {
+    MetaDataTable MD;
+    MD.addObject();
+    write(ctf, MD);
+    MD.write(out);
+}

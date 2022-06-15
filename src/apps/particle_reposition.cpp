@@ -21,6 +21,7 @@
 #include <src/args.h>
 #include <src/ml_optimiser.h>
 #include <src/jaz/obs_model.h>
+#include "src/jaz/ctf_helper.h"
 #include <stdlib.h>
 
 class particle_reposition_parameters {
@@ -247,7 +248,7 @@ class particle_reposition_parameters {
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                             }
                         } else {
-                            CTF ctf = CTF(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
+                            CTF ctf = CtfHelper::makeCTF(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
                             Fctf = ctf.getFftwImage(
                                 Xsize(Fctf), Ysize(Fctf), my_image_size, my_image_size, my_pixel_size,
                                 &optimiser.mydata.obsModel,

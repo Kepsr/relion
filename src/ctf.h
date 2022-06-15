@@ -46,9 +46,7 @@
 #define _CTF_HH
 
 #include "src/multidim_array.h"
-#include "src/metadata_table.h"
 #include "src/jaz/obs_model.h"
-#include <map>
 
 
 class CTF {
@@ -144,68 +142,14 @@ class CTF {
         setValues(defU, defV, defAng, voltage, Cs, Q0, Bfac, scale, phase_shift);
     }
 
-    CTF(
-        ObservationModel *obs, int opticsGroup,
-        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
-        RFLOAT Bfac = 0.0, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
-    ) {
-        setValuesByGroup(obs, opticsGroup, defU, defV, defAng, Bfac, scale, phase_shift);
-    }
-
-    CTF(const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1) {
-        readByGroup(partMdt, obs, particle);
-    }
-
-    CTF(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID = -1) {
-        read(MD1, MD2, objectID);
-    }
-
-    // Read CTF parameters from particle table partMdt and optics table opticsMdt.
-    void readByGroup(
-        const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1
-    );
-
-    void readValue(
-        EMDL::EMDLabel label, RFLOAT &dest, RFLOAT defaultVal,
-        long int particle, int opticsGroup,
-        const MetaDataTable &partMdt, const ObservationModel *obs
-    );
-
-    /** Read CTF parameters from MetaDataTables MD1 and MD2 (deprecated).
-    * If a parameter is not found in MD1 it is tried to be read from MD2.
-    * If it is also not found in the second then a default value is used.
-    * This is useful if micrograph-specific parameters are stored in a separate MD from the image-specific parameters.
-    */
-    void read(
-        const MetaDataTable &MD1, const MetaDataTable &MD2,
-        long int objectID = -1
-    );
-
     /** Just set all values explicitly */
     void setValues(
-        RFLOAT _defU, RFLOAT _defV, RFLOAT _defAng,
-        RFLOAT _voltage, RFLOAT _Cs, RFLOAT _Q0,
-        RFLOAT _Bfac, RFLOAT _scale = 1.0, RFLOAT _phase_shift = 0.0
+        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
+        RFLOAT voltage, RFLOAT Cs, RFLOAT Q0,
+        RFLOAT Bfac, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
     );
 
-    /** Set all values explicitly in 3.1 */
-    void setValuesByGroup(
-        ObservationModel *obs, int opticsGroup,
-        RFLOAT _defU, RFLOAT _defV, RFLOAT _defAng,
-        RFLOAT _Bfac = 0.0, RFLOAT _scale = 1.0, RFLOAT _phase_shift = 0.0
-    );
-
-    /** Read from a single MetaDataTable */
-    void read(const MetaDataTable &MD);
-
-    /** Write to MetaDataTable. */
-    void write(MetaDataTable &MD);
-
-    /** Write to output. */
-    void write(std::ostream &out);
-
-    // Set up the CTF object, read parameters from MetaDataTables with micrograph and particle information
-    // If no MDmic is provided or it does not contain certain parameters, these parameters are tried to be read from MDimg
+    // Initialise a CTF
     void initialise();
 
     RFLOAT operator () (RFLOAT X, RFLOAT Y) {

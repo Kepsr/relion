@@ -45,7 +45,6 @@
 #include "src/ctf.h"
 #include "src/args.h"
 #include "src/fftw.h"
-#include "src/metadata_table.h"
 #include <src/jaz/obs_model.h>
 #include <src/jaz/gravis/t2Matrix.h>
 #include "src/numerical_recipes.h" // For Pythag
@@ -59,69 +58,6 @@ static void assert_square(int orixdim, int oriydim) {
             << "only for square images.\n"
         );
     }
-}
-
-/* Read -------------------------------------------------------------------- */
-void CTF::readByGroup(
-    const MetaDataTable &partMdt, ObservationModel* obs, long int particle
-) {
-
-    int opticsGroup = obs ? partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1 : -1;
-
-    readValue(EMDL::CTF_VOLTAGE,       kV,              200,     particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_DEFOCUSU,      DeltafU,         0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_DEFOCUSV,      DeltafV,         DeltafU, particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle, 0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_CS,            Cs,              0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_BFACTOR,       Bfac,            0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_SCALEFACTOR,   scale,           1,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_Q0,            Q0,              0,       particle, opticsGroup, partMdt, obs);
-    readValue(EMDL::CTF_PHASESHIFT,    phase_shift,     0,       particle, opticsGroup, partMdt, obs);
-
-    initialise();
-}
-
-/// TODO: Return dest
-void CTF::readValue(
-    EMDL::EMDLabel label, RFLOAT& dest, RFLOAT defaultVal,
-    long int particle, int opticsGroup,
-    const MetaDataTable& partMdt, const ObservationModel* obs
-) {
-    try {
-        dest = partMdt.getValue<RFLOAT>(label, particle);
-    } catch (const char *errmsg) { try {
-        if (opticsGroup < 0) { throw "Negative optics group!"; }
-        if (!obs) { throw "No ObservationModel!"; }
-        dest = obs->opticsMdt.getValue<RFLOAT>(label, opticsGroup);
-    } catch (const char *errmsg) {
-        dest = defaultVal;
-    } }
-}
-
-template <typename T>
-T getMDT(EMDL::EMDLabel label, const MetaDataTable &mdt1, const MetaDataTable &mdt2, long int objectID, T defval) {
-    try {
-        return mdt1.getValue<T>(label, objectID);
-    } catch (const char *errmsg) { try {
-        return mdt2.getValue<T>(label, objectID);
-    } catch (const char *errmsg) {
-        return defval;
-    } }
-}
-
-void CTF::read(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
-
-    kV              = getMDT<RFLOAT>(EMDL::CTF_VOLTAGE,       MD1, MD2, objectID, 200);
-    DeltafU         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSU,      MD1, MD2, objectID, 0);
-    DeltafV         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSV,      MD1, MD2, objectID, DeltafU);
-    azimuthal_angle = getMDT<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, MD1, MD2, objectID, 0);
-    Cs              = getMDT<RFLOAT>(EMDL::CTF_CS,            MD1, MD2, objectID, 0);
-    Bfac            = getMDT<RFLOAT>(EMDL::CTF_BFACTOR,       MD1, MD2, objectID, 0);
-    scale           = getMDT<RFLOAT>(EMDL::CTF_SCALEFACTOR,   MD1, MD2, objectID, 1);
-    Q0              = getMDT<RFLOAT>(EMDL::CTF_Q0,            MD1, MD2, objectID, 0);
-    phase_shift     = getMDT<RFLOAT>(EMDL::CTF_PHASESHIFT,    MD1, MD2, objectID, 0);
-
-    initialise();
 }
 
 void CTF::setValues(
@@ -142,57 +78,6 @@ void CTF::setValues(
     initialise();
 }
 
-void CTF::setValuesByGroup(
-    ObservationModel *obs, int opticsGroup,
-    RFLOAT _defU, RFLOAT _defV, RFLOAT _defAng,
-    RFLOAT _Bfac, RFLOAT _scale, RFLOAT _phase_shift
-) {
-
-    DeltafU         = _defU;
-    DeltafV         = _defV;
-    azimuthal_angle = _defAng;
-
-    Bfac            = _Bfac;
-    scale           = _scale;
-    phase_shift     = _phase_shift;
-
-    kV = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_VOLTAGE, opticsGroup);
-    Cs = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_CS,      opticsGroup);
-    Q0 = obs->opticsMdt.getValue<RFLOAT>(EMDL::CTF_Q0,      opticsGroup);
-
-    initialise();
-}
-
-/* Read from 1 MetaDataTable ----------------------------------------------- */
-void CTF::read(const MetaDataTable &MD) {
-    MetaDataTable MDempty;
-    MDempty.addObject(); // add one empty object
-    read(MD, MDempty);
-}
-
-/** Write to an existing object in a MetaDataTable. */
-void CTF::write(MetaDataTable &MD) {
-    // From version-3.1 onwards: store kV, Cs, Q0 in optics table
-    // MD.setValue(EMDL::CTF_VOLTAGE, kV);
-    MD.setValue(EMDL::CTF_DEFOCUSU, DeltafU);
-    MD.setValue(EMDL::CTF_DEFOCUSV, DeltafV);
-    MD.setValue(EMDL::CTF_DEFOCUS_ANGLE, azimuthal_angle);
-    // MD.setValue(EMDL::CTF_CS, Cs);
-    MD.setValue(EMDL::CTF_BFACTOR, Bfac);
-    MD.setValue(EMDL::CTF_SCALEFACTOR, scale);
-    MD.setValue(EMDL::CTF_PHASESHIFT, phase_shift);
-    // MD.setValue(EMDL::CTF_Q0, Q0);
-}
-
-/* Write ------------------------------------------------------------------- */
-void CTF::write(std::ostream &out) {
-    MetaDataTable MD;
-    MD.addObject();
-    write(MD);
-    MD.write(out);
-}
-
-/* Initialise the CTF ------------------------------------------------------ */
 void CTF::initialise() {
     // Change units
     RFLOAT local_Cs = Cs * 1e7;
@@ -218,7 +103,7 @@ void CTF::initialise() {
     K1 = PI / 2 * 2 * lambda;
     K2 = PI / 2 * local_Cs * lambda * lambda * lambda;
     K3 = atan(Q0 / sqrt(1 - Q0 * Q0));
-    K4 = -Bfac / 4.;
+    K4 = -Bfac / 4.0;
 
     // Phase shift in radians
     K5 = radians(phase_shift);
@@ -234,9 +119,9 @@ void CTF::initialise() {
     const double sin_az = sin(rad_azimuth);
     const double cos_az = cos(rad_azimuth);
 
-    d2Matrix Q(cos_az, sin_az, -sin_az, cos_az);
-    d2Matrix Qt(cos_az, -sin_az, sin_az, cos_az);
-    d2Matrix D(-DeltafU, 0.0, 0.0, -DeltafV);
+    d2Matrix Q (cos_az, +sin_az, -sin_az, cos_az);
+    d2Matrix Qt(cos_az, -sin_az, +sin_az, cos_az);
+    d2Matrix D (-DeltafU, 0.0, 0.0, -DeltafV);
 
     d2Matrix A = Qt * D * Q;
 

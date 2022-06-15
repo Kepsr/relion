@@ -22,6 +22,7 @@
 #include "src/fftw.h"
 #include "src/mask.h"
 #include "src/helix.h"
+#include "src/jaz/ctf_helper.h"
 
 // #define DEBUG
 // #define DEBUG_HELIX
@@ -38,9 +39,9 @@ inline RFLOAT safer_atan2(RFLOAT dy, RFLOAT dx) {
 
 // Search for this micrograph in the metadata table
 CTF find_micrograph_ctf(MetaDataTable &mdt, const FileName &fn_mic, ObservationModel &obsModel) {
-    for (long int _ : mdt) {
+    for (long int _ : mdt) {  // BEWARE: Iterating over mdt modifies it.
         if (fn_mic == mdt.getValue<std::string>(EMDL::MICROGRAPH_NAME)) {
-            return CTF(mdt, &obsModel);
+            return CtfHelper::makeCTF(mdt, &obsModel);
         }
     }
     REPORT_ERROR("Logic error: failed to find CTF information for " + fn_mic);
