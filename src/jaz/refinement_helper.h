@@ -59,13 +59,13 @@ class RefinementHelper
 
         static double squaredDiff(
                 const Image<Complex> &prediction, const Image<Complex> &observation,
-                CTF &ctf, ObservationModel *obsModel,
+                CTF &ctf, ObservationModel *obsModel, int opticsGroup,
                 RFLOAT angpix, const Image<RFLOAT> &weight);
 
         static double squaredDiff(
                 const std::vector<Image<Complex>> &predictions,
                 const std::vector<Image<Complex>> &observations,
-                CTF &ctf, ObservationModel *obsModel,
+                CTF &ctf, ObservationModel *obsModel, int opticsGroup,
                 RFLOAT angpix, const Image<RFLOAT> &weight);
 };
 

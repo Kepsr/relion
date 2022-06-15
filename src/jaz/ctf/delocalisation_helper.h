@@ -6,16 +6,16 @@
 class DelocalisationHelper
 {
 	public:
-		
+
 		static void maskOutsideBox(
-				const CTF& ctf, ObservationModel *obsModel, double radius, 
-				double angpix, int s_orig, 
+				const CTF& ctf, ObservationModel *obsModel, int opticsGroup,
+				double radius, double angpix, int s_orig,
 				MultidimArray<RFLOAT>& fftwCtfImg,
 				double offsetx, double offsety);
-		
+
 		static Image<RFLOAT> plotDelocalisation(
-				const CTF& ctf, ObservationModel *obsModel, Image<RFLOAT>& mask,
-				double angpix);
+				const CTF& ctf, ObservationModel *obsModel, int opticsGroup,
+				Image<RFLOAT>& mask, double angpix);
 };
 
 #endif

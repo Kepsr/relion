@@ -614,7 +614,9 @@ RFLOAT FilterHelper::maxValue(Image<RFLOAT> &img) {
 }
 
 void FilterHelper::phaseFlip(
-    Image<RFLOAT> &img, CTF &ctf, ObservationModel *obsModel, RFLOAT angpix, Image<RFLOAT> &dest
+    Image<RFLOAT> &img,
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+    RFLOAT angpix, Image<RFLOAT> &dest
 ) {
     MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
@@ -628,7 +630,7 @@ void FilterHelper::phaseFlip(
         const int y = i < imgFreq.ydim / 2 ? i : i - imgFreq.ydim;
 
         RFLOAT x2 = x, y2 = y;
-        if (obsModel) obsModel->magnify(x2, y2, obsModel->getMagMatrix(ctf.opticsGroup));
+        if (obsModel) obsModel->magnify(x2, y2, obsModel->getMagMatrix(opticsGroup));
         RFLOAT c = ctf(x2 / xs, y2 / ys);
 
         if (c < 0) {
@@ -659,25 +661,27 @@ void FilterHelper::applyBeamTilt(
 }
 
 void FilterHelper::modulate(
-    Image<RFLOAT> &img, CTF &ctf, ObservationModel *obsModel, RFLOAT angpix, Image<RFLOAT> &dest
+    Image<RFLOAT> &img, 
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+    RFLOAT angpix, Image<RFLOAT> &dest
 ) {
     Image<Complex> imgFreq;
     FourierTransformer ft;
     ft.FourierTransform(img(), imgFreq(), false);
 
-    modulate(imgFreq, ctf, obsModel, angpix, dest);
+    modulate(imgFreq, ctf, obsModel, opticsGroup, angpix, dest);
 }
 
 void FilterHelper::modulate(
     Image<Complex> &imgFreq, 
-    CTF &ctf, ObservationModel *obsModel, 
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
     RFLOAT angpix, Image<RFLOAT> &dest
 ) {
     const int w = imgFreq.data.xdim;
     const int h = imgFreq.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
     
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq()) {
         direct::elem(imgFreq(), i, j) *= direct::elem(ctfImg(), i, j);
@@ -693,32 +697,41 @@ void FilterHelper::modulate(
 
 void FilterHelper::modulate(
     MultidimArray<Complex> &imgFreq, 
-    CTF &ctf, ObservationModel *obsModel, RFLOAT angpix
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+    RFLOAT angpix
 ) {
     const int w = imgFreq.xdim;
     const int h = imgFreq.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
         direct::elem(imgFreq, i, j) *= direct::elem(ctfImg(), i, j);
     }
 }
 
-void FilterHelper::drawCtf(CTF &ctf, ObservationModel *obsModel, RFLOAT angpix, Image<Complex> &dest) {
+void FilterHelper::drawCtf(
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+    RFLOAT angpix, 
+    Image<Complex> &dest
+) {
     const int w = dest.data.xdim;
     const int h = dest.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel);
+    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(dest()) {
         direct::elem(dest(), i, j) = direct::elem(ctfImg(), i, j);
     }
 }
 
-void FilterHelper::wienerFilter(Image<RFLOAT> &img, CTF &ctf, ObservationModel *obsModel, RFLOAT angpix, RFLOAT eps, RFLOAT Bfac, Image<RFLOAT> &dest) {
+void FilterHelper::wienerFilter(
+    Image<RFLOAT> &img,
+    CTF &ctf, ObservationModel *obsModel, int opticsGroup,
+    RFLOAT angpix, RFLOAT eps, RFLOAT Bfac, Image<RFLOAT> &dest
+) {
     MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
     ft.FourierTransform(img(), imgFreq, false);
@@ -731,7 +744,7 @@ void FilterHelper::wienerFilter(Image<RFLOAT> &img, CTF &ctf, ObservationModel *
         const int y = i < imgFreq.ydim / 2 ? i : i - imgFreq.ydim;
 
         RFLOAT x2 = x, y2 = y;
-        if (obsModel) obsModel->magnify(x2, y2, obsModel->getMagMatrix(ctf.opticsGroup));
+        if (obsModel) obsModel->magnify(x2, y2, obsModel->getMagMatrix(opticsGroup));
         RFLOAT c = ctf(x2 / xs, y2 / ys);
         if (Bfac > 0.0) { c *= exp(-Bfac * (x * x + y * y) / 4.0); }
 
@@ -747,7 +760,7 @@ void FilterHelper::wienerFilter(Image<RFLOAT> &img, CTF &ctf, ObservationModel *
 }
 
 void FilterHelper::richardsonLucy(
-    Image<RFLOAT> &img, CTF &ctf, ObservationModel *obsModel, RFLOAT angpix, RFLOAT eps, int iterations, Image<RFLOAT> &dest
+    Image<RFLOAT> &img, CTF &ctf, ObservationModel *obsModel, int opticsGroup, RFLOAT angpix, RFLOAT eps, int iterations, Image<RFLOAT> &dest
 ) {
     const int w = img.data.xdim;
     const int h = img.data.ydim;
@@ -768,7 +781,7 @@ void FilterHelper::richardsonLucy(
         direct::elem(img0.data, i, j) = direct::elem(img.data, i, j) + vmin;
     }
 
-    wienerFilter(img0, ctf, obsModel, angpix, eps, Bfac, img1);
+    wienerFilter(img0, ctf, obsModel, opticsGroup, angpix, eps, Bfac, img1);
 
     VtkHelper::writeVTK(img1, "rl_it0.vtk");
 
@@ -777,9 +790,9 @@ void FilterHelper::richardsonLucy(
         //      = img1 * IFT( ctf * FT(img / IFT( ctf * FT(img1) ) ) )
         //      = img1 * ctf_mod( img / ctf_mod(img1) )
 
-        modulate(img1, ctf, obsModel, angpix, img1M);
+        modulate(img1, ctf, obsModel, opticsGroup, angpix, img1M);
         wienerDivide(img0, img1M, eps, imgR);
-        modulate(imgR, ctf, obsModel, angpix, imgRM);
+        modulate(imgR, ctf, obsModel, opticsGroup, angpix, imgRM);
         multiply(imgRM, img1, img1);
 
         VtkHelper::writeVTK(img1, "rl_it" + std::to_string(it + 1) + ".vtk");

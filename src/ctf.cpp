@@ -66,7 +66,7 @@ void CTF::readByGroup(
     const MetaDataTable &partMdt, ObservationModel* obs, long int particle
 ) {
 
-    opticsGroup = obs ? partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1 : -1;
+    int opticsGroup = obs ? partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1 : -1;
 
     readValue(EMDL::CTF_VOLTAGE,       kV,              200,     particle, opticsGroup, partMdt, obs);
     readValue(EMDL::CTF_DEFOCUSU,      DeltafU,         0,       particle, opticsGroup, partMdt, obs);
@@ -143,11 +143,10 @@ void CTF::setValues(
 }
 
 void CTF::setValuesByGroup(
-    ObservationModel *obs, int _opticsGroup,
+    ObservationModel *obs, int opticsGroup,
     RFLOAT _defU, RFLOAT _defV, RFLOAT _defAng,
     RFLOAT _Bfac, RFLOAT _scale, RFLOAT _phase_shift
 ) {
-    opticsGroup     = _opticsGroup;
 
     DeltafU         = _defU;
     DeltafV         = _defV;
@@ -280,7 +279,7 @@ t2Vector<RFLOAT> CTF::getGammaGrad(RFLOAT X, RFLOAT Y) const {
 // Generate a complete CTF Image ----------------------------------------------
 MultidimArray<RFLOAT> CTF::getFftwImage(
     long int Xdim, long int Ydim, int orixdim, int oriydim,
-    RFLOAT angpix, ObservationModel *obsModel,
+    RFLOAT angpix, ObservationModel *obsModel, int opticsGroup,
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_ctf_padding, bool do_intact_after_first_peak
 ) const {
@@ -416,7 +415,7 @@ MultidimArray<RFLOAT> CTF::getFftwImage(
 // Generate a complete CTFP (complex) image (with sector along angle) ---------
 MultidimArray<Complex> CTF::getCTFPImage(
     long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
-    ObservationModel *obsModel,
+    ObservationModel *obsModel, int opticsGroup,
     bool is_positive, float angle
 ) {
     if (angle < 0.0 || angle >= 360.0)
@@ -490,7 +489,7 @@ MultidimArray<Complex> CTF::getCTFPImage(
 
 MultidimArray<RFLOAT> CTF::getCenteredImage(
     long int Xdim, long int Ydim,
-    RFLOAT Tm, ObservationModel *obsModel,
+    RFLOAT Tm, ObservationModel *obsModel, int opticsGroup,
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_intact_after_first_peak
 ) {
@@ -505,13 +504,13 @@ MultidimArray<RFLOAT> CTF::getCenteredImage(
 
 
     // Maybe apply magnification
-    auto g = obsModel ? [] (CTF *ctf, ObservationModel *obsModel, RFLOAT &x, RFLOAT &y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(ctf->opticsGroup)); }
-                      : [] (CTF *ctf, ObservationModel *obsModel, RFLOAT &x, RFLOAT &y) -> void {};
+    auto g = obsModel ? [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup)); }
+                      : [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void {};
 
     FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
         RFLOAT x = (RFLOAT) i / xs;
         RFLOAT y = (RFLOAT) j / ys;
-        g(this, obsModel, x, y);
+        g(obsModel, opticsGroup, x, y);
         RFLOAT t = getCTF(
             x, y,
             do_only_flip_phases, do_intact_until_first_peak,
@@ -524,7 +523,7 @@ MultidimArray<RFLOAT> CTF::getCenteredImage(
 
 void CTF::get1DProfile(
     MultidimArray<RFLOAT> &result, RFLOAT angle, RFLOAT Tm,
-    ObservationModel *obsModel,
+    ObservationModel *obsModel, int opticsGroup,
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_intact_after_first_peak
 ) {
@@ -535,13 +534,13 @@ void CTF::get1DProfile(
     auto f = do_abs ? [] (RFLOAT x) -> RFLOAT { return abs(x); }
                     : [] (RFLOAT x) -> RFLOAT { return x; };
 
-    auto g = obsModel ? [] (CTF *ctf, ObservationModel *obsModel, RFLOAT x, RFLOAT y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(ctf->opticsGroup)); }
-                      : [] (CTF *ctf, ObservationModel *obsModel, RFLOAT x, RFLOAT y) -> void {};
+    auto g = obsModel ? [] (ObservationModel *obsModel, int opticsGroup, RFLOAT x, RFLOAT y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup)); }
+                      : [] (ObservationModel *obsModel, int opticsGroup, RFLOAT x, RFLOAT y) -> void {};
 
     for (int i = Xinit(result); i <= Xlast(result); i++) {
         RFLOAT x = (RFLOAT) i * cos(radians(angle)) / xs;
         RFLOAT y = (RFLOAT) i * sin(radians(angle)) / xs;
-        g(this, obsModel, x, y);
+        g(obsModel, opticsGroup, x, y);
         RFLOAT t = getCTF(
             x, y,
             do_only_flip_phases, do_intact_until_first_peak,
@@ -553,7 +552,7 @@ void CTF::get1DProfile(
 
 void CTF::applyWeightEwaldSphereCurvature(
     MultidimArray<RFLOAT> &result, int orixdim, int oriydim,
-    RFLOAT angpix, ObservationModel *obsModel, RFLOAT particle_diameter
+    RFLOAT angpix, ObservationModel *obsModel, int opticsGroup, RFLOAT particle_diameter
 ) {
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;
@@ -588,7 +587,7 @@ void CTF::applyWeightEwaldSphereCurvature(
 
 void CTF::applyWeightEwaldSphereCurvature_new(
     MultidimArray<RFLOAT>& result, int orixdim, int oriydim,
-    RFLOAT angpix, ObservationModel *obsModel, RFLOAT particle_diameter
+    RFLOAT angpix, ObservationModel *obsModel, int opticsGroup, RFLOAT particle_diameter
 ) {
     const int s = oriydim;
     const int half_s = s / 2 + 1;
@@ -628,7 +627,7 @@ void CTF::applyWeightEwaldSphereCurvature_new(
 
 void CTF::applyWeightEwaldSphereCurvature_noAniso(
     MultidimArray <RFLOAT> &result, int orixdim, int oriydim,
-    RFLOAT angpix, ObservationModel *obsModel, RFLOAT particle_diameter
+    RFLOAT angpix, ObservationModel *obsModel, int opticsGroup, RFLOAT particle_diameter
 ) {
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;

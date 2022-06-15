@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     const double angpix = obsModel.getPixelSize(opticsGroup);
 
     CTF ctf = CTF(allMdts[mg], &obsModel, 0);
-    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix, &obsModel);
+    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix, &obsModel, allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1);
 
     const int tc = sh / step + 1;
 
@@ -93,13 +93,14 @@ int main(int argc, char *argv[]) {
         const double as = s * angpix;
 
         double minSlope = 100, maxSlope = -100;
+        int opticsGroup = allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1;
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {
             double xx = x / as;
             double yy = y < sh ? y / as : (y - s) / as;
 
-            obsModel.magnify(xx, yy, obsModel.getMagMatrix(ctf.opticsGroup));
+            obsModel.magnify(xx, yy, obsModel.getMagMatrix(opticsGroup));
             double slope = ctf.getGammaGrad(xx,yy).length() / (as * PI);
 
             if (mask[t](y, x) >= 0.5) {
