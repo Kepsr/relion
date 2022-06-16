@@ -21,6 +21,7 @@
 #include "src/complex.h"
 #include "src/helix.h"
 #include "src/error.h"
+#include "src/jaz/ctf_helper.h"
 #include <fstream>
 #include <cuda_runtime.h>
 #include "src/parallel.h"
@@ -748,7 +749,8 @@ void getFourierTransformsAndCtfs(
                     direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_CTF_PHASE_SHIFT)
                 );
 
-                Fctf = ctf.getFftwImage(
+                Fctf = CtfHelper::getFftwImage(
+                    ctf,
                     Xsize(Fctf), Ysize(Fctf), baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size,
                     NULL,  // No ObservationModel
                     baseMLO->ctf_phase_flipped, baseMLO->only_flip_phases, baseMLO->intact_ctf_first_peak, true

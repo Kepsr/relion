@@ -13,6 +13,7 @@
 #include <src/jaz/image_log.h>
 #include <src/jaz/new_ft.h>
 #include <src/jaz/noise_helper.h>
+#include "src/jaz/ctf_helper.h"
 #include <src/jaz/fftw_helper.h>
 #include <src/jaz/ctf/delocalisation_helper.h>
 #include <src/jaz/img_proc/color_helper.h>
@@ -74,9 +75,9 @@ int main(int argc, char *argv[]) {
 
     std::cout << "drawing A...\n";
 
-    Image<RFLOAT> img0(sh,s), img1(sh,s);
-    ctf.applyWeightEwaldSphereCurvature(img0.data, s, s, angpix, 2*mask_rad);
-    ctf.applyWeightEwaldSphereCurvature_new(img1.data, s, s, angpix, 2*mask_rad);
+    Image<RFLOAT> img0(sh, s), img1(sh, s);
+    CtfHelper::applyWeightEwaldSphereCurvature    (ctf, img0.data, s, s, angpix, 2 * mask_rad);
+    CtfHelper::applyWeightEwaldSphereCurvature_new(ctf, img1.data, s, s, angpix, 2 * mask_rad);
 
     Image<RFLOAT> img0Full, img1Full;
     FftwHelper::decenterDouble2D(img0(), img0Full());

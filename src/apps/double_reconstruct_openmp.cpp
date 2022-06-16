@@ -35,6 +35,7 @@
 #include <src/jaz/new_ft.h>
 #include <src/jaz/img_proc/filter_helper.h>
 #include <src/jaz/ctf/delocalisation_helper.h>
+#include "src/jaz/ctf_helper.h"
 
 
 class reconstruct_parameters {
@@ -216,9 +217,9 @@ class reconstruct_parameters {
                     anglemin = radians(anglemin);
                     anglemax = radians(anglemax);
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
-                        RFLOAT x = ip;
-                        RFLOAT y = jp;
-                        RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
+                        const RFLOAT x = ip;
+                        const RFLOAT y = jp;
+                        const RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0,1)
                         // Only take the relevant sector now...
                         if (do_wrap_max) {
                             if (myangle >= anglemin) {
@@ -315,8 +316,6 @@ class reconstruct_parameters {
                 backprojectors[1][threadnum].initZeros(2 * r_max);
 
                 RFLOAT rot, tilt, psi, fom, r_ewald_sphere;
-                MultidimArray<RFLOAT> Fctf;
-                Matrix1D<RFLOAT> trans(2);
                 FourierTransformer transformer;
 
                 #pragma omp for
@@ -371,6 +370,7 @@ class reconstruct_parameters {
                         A3D /= padding_factor_2D;
 
                         // Translations (either through phase-shifts or in real space
+                        Matrix1D<RFLOAT> trans (2 + do_3d_rot);
                         trans.initZeros();
                         XX(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
                         YY(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
@@ -384,7 +384,6 @@ class reconstruct_parameters {
                         }
 
                         if (do_3d_rot) {
-                            trans.resize(3);
                             ZZ(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z, p);
 
                             if (shift_error > 0.0) {
@@ -396,8 +395,6 @@ class reconstruct_parameters {
                             fom = table.getValue<RFLOAT>(EMDL::PARTICLE_FOM, p);
                         }
 
-                        MultidimArray<Complex> F2D, F2DP, F2DQ;
-
                         CenterFFT(obsR[p](), true);
 
                         const int sPad2D = paddedSizes2D[opticsGroup];
@@ -406,6 +403,7 @@ class reconstruct_parameters {
                             obsR[p] = FilterHelper::padCorner2D(obsR[p], sPad2D, sPad2D);
                         }
 
+                        MultidimArray<Complex> F2D, F2DP, F2DQ;
                         transformer.FourierTransform(obsR[p](), F2D);
 
                         if (abs(XX(trans)) > 0.0 || abs(YY(trans)) > 0.0) {
@@ -420,12 +418,14 @@ class reconstruct_parameters {
                             }
                         }
 
+                        MultidimArray<RFLOAT> Fctf;
                         Fctf.resize(F2D);
                         Fctf.initConstant(1.0);
 
-                        CTF ctf = CTF(table, &obsModel, p);
+                        CTF ctf = CtfHelper::make_CTF(table, &obsModel, p);
 
-                        Fctf = ctf.getFftwImage(
+                        Fctf = CtfHelper::getFftwImage(
+                            ctf,
                             Xsize(Fctf), Ysize(Fctf), sPad2D, sPad2D, pixelsize,
                             &obsModel,
                             ctf_phase_flipped, only_flip_phases,
@@ -441,24 +441,16 @@ class reconstruct_parameters {
                         }
 
                         obsModel.demodulatePhase(table, p, F2D);
-                        obsModel.divideByMtf(table, p, F2D);
+                        obsModel.divideByMtf    (table, p, F2D);
 
                         if (do_ewald) {
                             // Ewald-sphere curvature correction
                             applyCTFPandCTFQ(F2D, ctf, transformer, F2DP, F2DQ, pixelsize);
 
                             // Also calculate W, store again in Fctf
-
-                            void (CTF::*ewald_weight_function) (MultidimArray<double>, int, int, double, double);
-                            if (new_Ewald_weight) {
-                                ewald_weight_function = ctf.applyWeightEwaldSphereCurvature_new;
-                            } else {
-                                ewald_weight_function = ctf.applyWeightEwaldSphereCurvature;
-                            }
-
-                            ewald_weight_function(
-                                Fctf, sPad2D, sPad2D, angpix[opticsGroup], mask_diameter
-                            );
+                            (new_Ewald_weight ? CtfHelper::applyWeightEwaldSphereCurvature_new
+                                              : CtfHelper::applyWeightEwaldSphereCurvature)
+                            (ctf, sPad2D, sPad2D, angpix[opticsGroup], mask_diameter);  // IIFE
 
                             // Also calculate the radius of the Ewald sphere (in pixels)
                             r_ewald_sphere = boxOut * angpix[opticsGroup] / ctf.lambda;
@@ -468,11 +460,10 @@ class reconstruct_parameters {
 
                         // Subtract reference projection
                         if (!fn_sub.empty()) {
-                            MultidimArray<Complex> Fsub = obsModel.predictObservation(
+
+                            F2D -= obsModel.predictObservation(
                                 subProjector, table, p, true, true, true
                             );
-
-                            F2D -= Fsub;
 
                             // Back-project difference image
                             backproj.set2DFourierTransform(F2D, A3D);
