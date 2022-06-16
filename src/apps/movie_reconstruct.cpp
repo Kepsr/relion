@@ -26,6 +26,7 @@
 #include <src/renderEER.h>
 #include <src/jaz/obs_model.h>
 #include <src/jaz/stack_helper.h>
+#include "src/jaz/ctf_helper.h"
 #include <src/jaz/motion/motion_helper.h>
 #include <src/jaz/img_proc/filter_helper.h>
 
@@ -491,17 +492,18 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
 
     // Apply CTF if necessary
     if (do_ctf) {
-        CTF ctf = CTF(mdt, &obsModel, p);
+        CTF ctf = CtfHelper::makeCTF(mdt, &obsModel, p);
 
-        Fctf = ctf.getFftwImage(
+        Fctf = CtfHelper::getFftwImage(
+            ctf,
             Xsize(Fctf), Ysize(Fctf), output_boxsize, output_boxsize, angpix,
             &obsModel,
             ctf_phase_flipped, only_flip_phases,
             intact_ctf_first_peak, true
         );
 
-        obsModel.demodulatePhase(mdt, p, F2D); // This internally uses angpix!!
-        obsModel.divideByMtf(mdt, p, F2D);
+        obsModel.demodulatePhase(mdt, p, F2D);  // Uses angpix internally!
+        obsModel.divideByMtf    (mdt, p, F2D);
 
         // Ewald-sphere curvature correction
         if (do_ewald) {
@@ -509,7 +511,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
 
             if (!skip_weighting) {
                 // Also calculate W, store again in Fctf
-                ctf.applyWeightEwaldSphereCurvature_noAniso(Fctf, output_boxsize, output_boxsize, angpix, mask_diameter);
+                CtfHelper::applyWeightEwaldSphereCurvature_noAniso(ctf, Fctf, output_boxsize, output_boxsize, angpix, mask_diameter);
             }
 
             // Also calculate the radius of the Ewald sphere (in pixels)

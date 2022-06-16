@@ -13,6 +13,7 @@
 #include <src/jaz/image_log.h>
 #include <src/jaz/new_ft.h>
 #include <src/jaz/noise_helper.h>
+#include <src/jaz/ctf_helper.h>
 #include <src/jaz/fftw_helper.h>
 #include <src/jaz/ctf/delocalisation_helper.h>
 #include <src/jaz/img_proc/color_helper.h>
@@ -152,7 +153,7 @@ Image<RFLOAT> visualiseBand(
     Image<RFLOAT> mask = FilterHelper::raisedCosEnvRingFreq2D(one, r0, r1, flank);
 
     Image<RFLOAT> ctfImg(sh, s), ctfImgFull(s, s);
-    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix, obsModel);
+    ctfImg() = CtfHelper::getFftwImage(ctf, s, sh, s, s, angpix, obsModel);
 
     if (delocSupp) {
         DelocalisationHelper::maskOutsideBox(ctf, mask_rad, angpix, s, ctfImg(), 0.0, 0.0);
