@@ -342,61 +342,43 @@ MultidimArray<RFLOAT> CtfHelper::getFftwImage(
     return result;
 }
 
-// Boxing the particle in a small box from the whole micrograph leads to loss of delocalised information (or aliaising in the CTF)
-// Here, calculate the CTF in a 2x larger box to support finer oscillations,
-// and then rescale the large CTF to simulate the effect of the windowing operation
-MultidimArray<RFLOAT> CtfHelper::getFftwImage_padded(
-    const CTF &ctf,
-    long int Xdim, long int Ydim, int orixdim, int oriydim,
-    RFLOAT angpix, ObservationModel *obsModel, int opticsGroup,
-    bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
-    bool do_damping, bool do_intact_after_first_peak
+MultidimArray<RFLOAT> pad_ctf(
+    const MultidimArray<RFLOAT> &Fctf, int Xdim, int Ydim,
+    int orixdim, int oriydim, int orixdim_pad, int oriydim_pad,
+    bool ctf_premultiplied
 ) {
+
     MultidimArray<RFLOAT> result(Xdim, Ydim);
-    bool ctf_premultiplied = obsModel && obsModel->getCtfPremultiplied(opticsGroup);
 
-    // two-fold padding, increased to 4-fold padding for pre-multiplied CTFs
-    int orixdim_pad = 2 * orixdim;
-    int oriydim_pad = 2 * oriydim;
-    // Such a big box might not be necessary
-    if (ctf_premultiplied) {
-        orixdim_pad *= 2;
-        oriydim_pad *= 2;
-    }
-
-    MultidimArray<RFLOAT> Fctf = getFftwImage(
-        ctf,
-        oriydim_pad / 2 + 1, oriydim_pad, orixdim_pad, oriydim_pad, angpix,
-        obsModel,
-        do_abs, do_only_flip_phases, do_intact_until_first_peak, do_damping, false, do_intact_after_first_peak
-    );
+    // Maybe square
+    auto f = ctf_premultiplied ? [] (RFLOAT x) { return x * x; }
+                               : [] (RFLOAT x) { return x; };
 
     // From half to whole
     MultidimArray<RFLOAT> Mctf(oriydim_pad, orixdim_pad);
     Mctf.setXmippOrigin();
-    for (int j = 0 ; j < Ysize(Fctf); j++) {
+    for (int j = 0; j < Ysize(Fctf); j++) {
         // Don't take the middle row of the half-transform
         if (j != Ysize(Fctf) / 2) {
             int jp = j < Xsize(Fctf) ? j : j - Ysize(Fctf);
             // Don't take the last column from the half-transform
             for (int i = 0; i < Xsize(Fctf) - 1; i++) {
                 RFLOAT fctfij = direct::elem(Fctf, i, j);
-                if (ctf_premultiplied) {
-                    Mctf.elem(+i, +jp) = fctfij * fctfij;
-                    Mctf.elem(-i, -jp) = fctfij * fctfij;
-                } else {
-                    Mctf.elem(+i, +jp) = fctfij;
-                    Mctf.elem(-i, -jp) = fctfij;
-                }
+                Mctf.elem(+i, +jp) = f(fctfij);
+                Mctf.elem(-i, -jp) = f(fctfij);
             }
         }
     }
 
     resizeMap(Mctf, orixdim);
 
+    // Maybe square root (and constrain to the interval [0, 1])
+    auto g = ctf_premultiplied ? [] (RFLOAT x) { return x < 0.0 ? 0.0 : x > 1.0 ? 1.0 : sqrt(x); }
+                               : [] (RFLOAT x) { return x; };
+
     Mctf.setXmippOrigin();
     // From whole to half
-    for (int j = 0 ; j < Ysize(result); j++) {
+    for (int j = 0; j < Ysize(result); j++) {
         // Don't take the middle row of the half-transform
         if (j != Ysize(result) / 2) {
             int jp = j < Xsize(result) ? j : j - Ysize(result);
@@ -404,19 +386,43 @@ MultidimArray<RFLOAT> CtfHelper::getFftwImage_padded(
             for (int i = 0; i < Xsize(result) - 1; i++) {
                 // Make just one lookup on Mctf.data
                 RFLOAT mctfipj = Mctf.elem(i, jp);
-                if (ctf_premultiplied) {
-                    // Constrain result[i, j] to the interval [0.0, 1.0]
-                    direct::elem(result, i, j) =
-                        mctfipj < 0.0 ? 0.0 :
-                        mctfipj > 1.0 ? 1.0 :
-                        sqrt(mctfipj);
-                } else {
-                    direct::elem(result, i, j) = mctfipj;
-                }
+                direct::elem(result, i, j) = g(mctfipj);
             }
         }
     }
     return result;
+}
+
+// Boxing the particle in a small box from the whole micrograph
+// leads to loss of delocalised information (or aliasing in the CTF).
+// Here, calculate the CTF in a 2× larger box to support finer oscillations,
+// and then rescale the large CTF to simulate the effect of the windowing operation.
+MultidimArray<RFLOAT> CtfHelper::getFftwImage_padded(
+    const CTF &ctf,
+    long int Xdim, long int Ydim, int orixdim, int oriydim,
+    RFLOAT angpix, ObservationModel *obsModel, int opticsGroup,
+    bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
+    bool do_damping, bool do_intact_after_first_peak
+) {
+    bool ctf_premultiplied = obsModel && obsModel->getCtfPremultiplied(opticsGroup);
+
+    int factor = ctf_premultiplied ? 4 : 2;
+    // 2× padding (increased to 4× padding for pre-multiplied CTFs)
+    // Such a big box (4×) might not be necessary
+    int orixdim_pad = factor * orixdim;
+    int oriydim_pad = factor * oriydim;
+
+    return pad_ctf(
+        getFftwImage(
+            ctf,
+            oriydim_pad / 2 + 1, oriydim_pad, orixdim_pad, oriydim_pad, angpix,
+            obsModel, opticsGroup,
+            do_abs, do_only_flip_phases, do_intact_until_first_peak,
+            do_damping, false, do_intact_after_first_peak
+        ), Xdim, Ydim,
+        orixdim, oriydim, orixdim_pad, oriydim_pad, 
+        ctf_premultiplied
+    );
 }
 
 Complex _get_ctfp_(
