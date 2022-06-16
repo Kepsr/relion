@@ -567,7 +567,7 @@ void CtfHelper::applyWeightEwaldSphereCurvature(
         RFLOAT x = M(0, 0) * xu + M(0, 1) * yu;
         RFLOAT y = M(1, 0) * xu + M(1, 1) * yu;
 
-        const RFLOAT astigDefocus = ctf.Axx * x * x + 2.0 * ctf.Axy * x * y + ctf.Ayy * y * y;
+        const RFLOAT astigDefocus = ctf.astigDefocus(x, y);
         RFLOAT u2 = x * x + y * y;
         RFLOAT u4 = u2 * u2;
         RFLOAT gamma = ctf.K1 * astigDefocus + ctf.K2 * u4 - ctf.K5 - ctf.K3;

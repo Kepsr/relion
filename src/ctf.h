@@ -174,7 +174,7 @@ class CTF {
         // if (u2>=ua2) return 0;
         // RFLOAT deltaf = getDeltaF(X, Y);
         // RFLOAT gamma = K1 * deltaf * u2 + K2 * u4 - K5 - K3 + gammaOffset;
-        RFLOAT gamma = K1 * (Axx * X * X + 2.0 * Axy * X * Y + Ayy * Y * Y) + K2 * u4 - K5 - K3 + gammaOffset;
+        RFLOAT gamma = K1 * astigDefocus(X, Y) + K2 * u4 - K5 - K3 + gammaOffset;
         // Quadratic: xx + 2xy + yy
 
         RFLOAT retval = (
@@ -213,12 +213,9 @@ class CTF {
     gravis::t2Vector<RFLOAT> getGammaGrad(RFLOAT X, RFLOAT Y) const;
 
     inline Complex getCTFP(RFLOAT X, RFLOAT Y, double gammaOffset = 0.0) const {
-
         RFLOAT u2 = X * X + Y * Y;
         RFLOAT u4 = u2 * u2;
-
-        RFLOAT gamma = K1 * (Axx * X * X + 2.0 * Axy * X * Y + Ayy * Y * Y) + K2 * u4 - K5 - K3 + gammaOffset + PI / 2.0;
-
+        RFLOAT gamma = K1 * astigDefocus(X, Y) + K2 * u4 - K5 - K3 + gammaOffset + PI / 2.0;
         return Complex::unit(gamma);
     }
 
@@ -228,15 +225,15 @@ class CTF {
             return 0;
 
         RFLOAT ellipsoid_ang = atan2(Y, X) - rad_azimuth;
-        /*
-        * For a derivation of this formula,
-        * see Principles of Electron Optics p. 1380.
-        * In particular, term defocus and twofold axial astigmatism
-        * take into account that a1 and a2 are
-        * the coefficient of the Zernike polynomials difference of defocus
-        * at 0 and at 45 degrees.
-        * In this case, a2 = 0.
-        */
+        /**
+         * For a derivation of this formula,
+         * see Principles of Electron Optics p. 1380.
+         * In particular, term defocus and twofold axial astigmatism
+         * take into account that a1 and a2 are
+         * the coefficient of the Zernike polynomials difference of defocus
+         * at 0 and at 45 degrees.
+         * In this case, a2 = 0.
+         */
         return defocus_average + defocus_deviation * cos(2 * ellipsoid_ang);
 
     }
@@ -245,6 +242,10 @@ class CTF {
     double getAxx();
     double getAxy();
     double getAyy();
+
+    inline double astigDefocus(RFLOAT x, RFLOAT y) const {
+        return Axx * x * x + 2.0 * Axy * x * y + Ayy * y * y;
+    }
 
 };
 

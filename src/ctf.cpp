@@ -121,11 +121,9 @@ void CTF::initialise() {
 }
 
 RFLOAT CTF::getGamma(RFLOAT X, RFLOAT Y) const {
-
     RFLOAT u2 = X * X + Y * Y;
     RFLOAT u4 = u2 * u2;
-
-    return K1 * (Axx * X * X + 2.0 * Axy * X * Y + Ayy * Y * Y) + K2 * u4 - K5 - K3;
+    return K1 * astigDefocus(X, Y) + K2 * u4 - K5 - K3;
 }
 
 RFLOAT CTF::getCtfFreq(RFLOAT X, RFLOAT Y) {
