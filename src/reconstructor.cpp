@@ -444,7 +444,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
             CTF ctf = do_ignore_optics ? CtfHelper::makeCTF(DF, DF,        p) :  // Repetition of DF is redundant
                                          CtfHelper::makeCTF(DF, &obsModel, p);
 
-            Fctf = ctf.getFftwImage(
+            Fctf = CtfHelper::getFftwImage(
+                ctf,
                 Xsize(Fctf), Ysize(Fctf), myBoxSize, myBoxSize, myPixelSize,
                 do_ignore_optics ? nullptr : &obsModel,
                 ctf_phase_flipped, only_flip_phases,
@@ -468,7 +469,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
                 if (!skip_weighting) {
                     // Also calculate W, store again in Fctf
-                    ctf.applyWeightEwaldSphereCurvature_noAniso(
+                    CtfHelper::applyWeightEwaldSphereCurvature_noAniso(
+                        ctf,
                         Fctf, myBoxSize, myBoxSize, myPixelSize,
                         do_ignore_optics ? nullptr : &obsModel,
                         opticsGroup,
@@ -676,7 +678,8 @@ void Reconstructor::applyCTFPandCTFQ(
             bool is_my_positive = (ipass == 1) == is_reverse;
 
             // Get CTFP and multiply the Fapp with it
-            CTFP = ctf.getCTFPImage(
+            CTFP = CtfHelper::getCTFPImage(
+                ctf,
                 Fin.xdim, Fin.ydim, Ysize(Fin), Ysize(Fin), angpix, 
                 obsModel, opticsGroup,
                 is_my_positive, angle

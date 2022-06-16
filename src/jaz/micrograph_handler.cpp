@@ -21,6 +21,7 @@
 #include "micrograph_handler.h"
 #include <src/jaz/stack_helper.h>
 #include <src/renderEER.h>
+#include "src/jaz/obs_model.h"
 
 using namespace gravis;
 

@@ -125,7 +125,7 @@ void LegacyObservationModel::insertObservation(
     if (applyCtf) {
         CTF ctf = CtfHelper::makeCTF(mdt, mdt, particle);  // Repetition of mdt is redundant
 
-        Fctf = ctf.getFftwImage(sh, s, s, s, angpix, nullptr, -1);
+        Fctf = CtfHelper::getFftwImage(ctf, sh, s, s, s, angpix, nullptr, -1);
 
         for (long int n = 0; n < F2D.size(); n++) {
             F2D[n]  *= Fctf[n];

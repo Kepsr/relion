@@ -21,13 +21,14 @@
 #ifndef CTF_HELPER_H
 #define CTF_HELPER_H
 
+#include <vector>
 #include <src/ctf.h>
 #include <src/image.h>
 #include <src/metadata_table.h>
 #include <src/jaz/optimization/optimization.h>
 #include <src/jaz/volume.h>
 #include <src/jaz/gravis/t2Matrix.h>
-#include <vector>
+#include "src/jaz/obs_model.h"
 
 namespace CtfHelper {
 		
@@ -89,6 +90,70 @@ namespace CtfHelper {
 
     // Write to an output stream
     void write(CTF &ctf, std::ostream &out);
+
+    // Generate (Fourier-space, i.e. FFTW format) image with all CTF values.
+    // The dimensions of the result array should have been set correctly already
+    MultidimArray<RFLOAT> getFftwImage(
+        const CTF &ctf,
+        long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        bool do_abs = false, bool do_only_flip_phases = false,
+        bool do_intact_until_first_peak = false, bool do_damping = true,
+        bool do_ctf_padding = false, bool do_intact_after_first_peak = false
+    );
+
+    // Get a complex image with the CTFP/Q values, where the angle is in degrees between the Y-axis and the CTFP/Q sector line
+    MultidimArray<Complex> getCTFPImage(
+        const CTF &ctf,
+        long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        bool is_positive, float angle
+    );
+
+
+    // Generate a centered image (with Hermitian symmetry)
+    // The dimensions of the result array should have been set correctly already
+    MultidimArray<RFLOAT> getCenteredImage(
+        const CTF &ctf, long int Xdim, long int Ydim, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        bool do_abs = false, bool do_only_flip_phases = false,
+        bool do_intact_until_first_peak = false, bool do_damping = true,
+        bool do_intact_after_first_peak = false
+    );
+
+
+    // Generate a 1D profile along defocusAngle
+    // The dimensions of the result array should have been set correctly already, i.e. at the image size!
+    MultidimArray<RFLOAT> get1DProfile(
+        const CTF &ctf, long int Xdim, long int Ydim, RFLOAT angle, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        bool do_abs = false, bool do_only_flip_phases = false,
+        bool do_intact_until_first_peak = false, bool do_damping = true,
+        bool do_intact_after_first_peak = false
+    );
+
+    // Calculate weight W for Ewald-sphere curvature correction: apply this to the result from getFftwImage
+    void applyWeightEwaldSphereCurvature(
+        CTF &ctf,
+        MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        RFLOAT particle_diameter
+    );
+
+    void applyWeightEwaldSphereCurvature_new(
+        CTF &ctf,
+        MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        RFLOAT particle_diameter
+    );
+
+    // Calculate weight W for Ewald-sphere curvature correction: apply this to the result from getFftwImage
+    void applyWeightEwaldSphereCurvature_noAniso(
+        CTF &ctf,
+        MultidimArray<RFLOAT> &result, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        RFLOAT particle_diameter
+    );
 
 };
 

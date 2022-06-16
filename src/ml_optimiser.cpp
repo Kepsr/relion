@@ -2132,13 +2132,14 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 // Apply CTF if necessary (skip this for subtomograms!)
                 if (do_ctf_correction && mymodel.data_dim != 3) {
                     CTF ctf = CtfHelper::makeCTF(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
-                    Fctf = ctf.getFftwImage(
+                    Fctf = CtfHelper::getFftwImage(
+                        ctf,
                         Xsize(Fctf), Ysize(Fctf), mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
                         &mydata.obsModel,
                         ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                     );
 
-                    for (long int n = 0; n < (Fimg).size(); n++) {
+                    for (long int n = 0; n < Fimg.size(); n++) {
                         Fimg[n] *= Fctf[n];
                         Fctf[n] *= Fctf[n];
                     }
@@ -4968,7 +4969,8 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     direct::elem(exp_metadata, my_metadata_offset, METADATA_CTF_PHASE_SHIFT)
                 );
 
-                Fctf = ctf.getFftwImage(
+                Fctf = CtfHelper::getFftwImage(
+                    ctf,
                     Xsize(Fctf), Ysize(Fctf), image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
                     &mydata.obsModel,
                     ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
@@ -7528,7 +7530,8 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             direct::elem(exp_metadata, metadata_offset, METADATA_CTF_PHASE_SHIFT)
                         );
 
-                        Fctf = ctf.getFftwImage(
+                        Fctf = CtfHelper::getFftwImage(
+                            ctf,
                             Xsize(Fctf), Ysize(Fctf),
                             image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
                             &mydata.obsModel,

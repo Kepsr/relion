@@ -709,7 +709,8 @@ void getFourierTransformsAndCtfs(
                     direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_CTF_KFACTOR),
                     direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_CTF_PHASE_SHIFT));
 
-                Fctf = ctf.getFftwImage(
+                Fctf = CtfHelper::getFftwImage(
+                    ctf,
                     Xsize(Fctf), Ysize(Fctf), baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group], my_pixel_size,
                     &baseMLO->mydata.obsModel,
                     baseMLO->ctf_phase_flipped, baseMLO->only_flip_phases, baseMLO->intact_ctf_first_peak, true, baseMLO->do_ctf_padding

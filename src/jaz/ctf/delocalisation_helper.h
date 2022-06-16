@@ -2,6 +2,7 @@
 #define DELOCALISATION_HELPER_H
 
 #include <src/ctf.h>
+#include "src/jaz/obs_model.h"
 
 namespace DelocalisationHelper {
 

@@ -21,13 +21,14 @@
 #ifndef REFINEMENT_HELPER_H
 #define REFINEMENT_HELPER_H
 
+#include <vector>
 #include <src/ctf.h>
 #include <src/image.h>
 #include <src/metadata_table.h>
 #include <src/jaz/optimization/optimization.h>
 #include <src/jaz/volume.h>
 #include <src/jaz/gravis/t2Matrix.h>
-#include <vector>
+#include "src/jaz/obs_model.h"
 
 namespace RefinementHelper {
 

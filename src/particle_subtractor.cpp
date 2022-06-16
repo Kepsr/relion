@@ -507,7 +507,8 @@ void ParticleSubtractor::subtractOneParticle(
             }
         } else {
             CTF ctf = CtfHelper::makeCTF(opt.mydata.MDimg, &opt.mydata.obsModel, ori_img_id);
-            Fctf = ctf.getFftwImage(
+            Fctf = CtfHelper::getFftwImage(
+                ctf,
                 Xsize(Fctf), Ysize(Fctf), Xsize(img()), Ysize(img()), my_pixel_size,
                 &opt.mydata.obsModel,
                 opt.ctf_phase_flipped, false, opt.intact_ctf_first_peak, true
