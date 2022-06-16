@@ -51,11 +51,7 @@
 
 class CTF {
 
-    /** TODO: Hide the following data members from CtfHelper
-     * and make them protected again.
-     * protected:
-     */
-    public:
+    protected:
 
     // Different constants
     RFLOAT K1, K2, K3, K4, K5;
@@ -242,6 +238,8 @@ class CTF {
     double getAxx();
     double getAxy();
     double getAyy();
+
+    inline RFLOAT getLambda() const { return lambda; }
 
     inline double astigDefocus(RFLOAT x, RFLOAT y) const {
         return Axx * x * x + 2.0 * Axy * x * y + Ayy * y * y;
