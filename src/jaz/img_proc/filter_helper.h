@@ -30,6 +30,7 @@
 #include <src/jaz/gravis/t2Matrix.h>
 #include <src/jaz/gravis/t3Matrix.h>
 #include <src/jaz/volume.h>
+#include <src/jaz/obs_model.h>
 
 class FilterHelper
 {

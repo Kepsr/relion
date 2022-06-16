@@ -24,6 +24,7 @@
 #include <src/jaz/gravis/t2Vector.h>
 #include <src/jaz/tensor2x2.h>
 #include <src/jaz/interpolation.h>
+#include "src/jaz/ctf_helper.h"
 
 #include <limits>
 
@@ -681,7 +682,7 @@ void FilterHelper::modulate(
     const int h = imgFreq.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
     
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq()) {
         direct::elem(imgFreq(), i, j) *= direct::elem(ctfImg(), i, j);
@@ -704,7 +705,7 @@ void FilterHelper::modulate(
     const int h = imgFreq.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
         direct::elem(imgFreq, i, j) *= direct::elem(ctfImg(), i, j);
@@ -720,7 +721,7 @@ void FilterHelper::drawCtf(
     const int h = dest.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
 
     FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(dest()) {
         direct::elem(dest(), i, j) = direct::elem(ctfImg(), i, j);

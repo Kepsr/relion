@@ -21,6 +21,7 @@
 #include "magnification_helper.h"
 
 #include <src/jaz/slice_helper.h>
+#include "src/jaz/ctf_helper.h"
 #include <src/projector.h>
 #include <src/jaz/img_proc/filter_helper.h>
 #include <src/jaz/optimization/nelder_mead.h>
@@ -107,7 +108,8 @@ void MagnificationHelper::updateScaleFreq(
     FilterHelper::centralGrad2D(prediction, gradReal, gradImg);*/
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(
+    ctfImg() = CtfHelper::getFftwImage(
+        ctf,
         w, h, h, h, angpix,
         obsModel,
         false, false, false, true, do_ctf_padding
@@ -149,7 +151,10 @@ void MagnificationHelper::updateScaleReal(
     Image<RFLOAT> realPred(ww, h), realObs(ww, h);
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
+    ctfImg() = CtfHelper::getFftwImage(
+        ctf, w, h, h, h, angpix, obsModel,
+        false, false, false, true, do_ctf_padding
+    );
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -373,7 +378,7 @@ void MagnificationHelper::updatePowSpec(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {

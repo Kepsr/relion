@@ -63,7 +63,10 @@ int main(int argc, char *argv[]) {
     const double angpix = obsModel.getPixelSize(opticsGroup);
 
     CTF ctf = CtfHelper::makeCTF(allMdts[mg], &obsModel, 0);
-    ctfImg() = ctf.getFftwImage(s, sh, s, s, angpix, &obsModel, allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1);
+    ctfImg() = CtfHelper::getFftwImage(
+        ctf, s, sh, s, s, angpix, &obsModel,
+        allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1
+    );
 
     const int tc = sh / step + 1;
 

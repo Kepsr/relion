@@ -314,7 +314,8 @@ MultidimArray<Complex> ObservationModel::predictObservation(
         CTF ctf = CtfHelper::makeCTF(partMdt, this, particle);
 
         Image<RFLOAT> ctfImg(sh_out, s_out);
-        ctfImg() = ctf.getFftwImage(
+        ctfImg() = CtfHelper::getFftwImage(
+            ctf,
             sh_out, s_out, s_out, s_out, angpix[opticsGroup], this,
             false, false, false, true, applyCtfPadding
         );

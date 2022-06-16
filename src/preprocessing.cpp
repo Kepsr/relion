@@ -760,7 +760,8 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             // The boxsize in ObsModel has been updated above.
             // In contrast to Polish, we premultiply particle BEFORE down-sampling, so PixelSize in ObsModel is OK.
             // But we are doing this after extraction, so there is not much merit...
-            MultidimArray<RFLOAT> Fctf = ctf.getFftwImage(
+            MultidimArray<RFLOAT> Fctf = CtfHelper::getFftwImage(
+                ctf,
                 Xsize(FT), Ysize(FT),
                 my_extract_size, my_extract_size, my_angpix,
                 obsModel,

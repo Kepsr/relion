@@ -324,18 +324,16 @@ class project_parameters {
                     } else {
                         CTF ctf = CtfHelper::makeCTF(MDang, &obsModel); // This MDimg only contains one particle!
                         Fctf.resize(F2D);
-                        Fctf = ctf.getFftwImage(
+                        Fctf = CtfHelper::getFftwImage(
+                            ctf,
                             Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,
                             &obsModel,
                             ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true
                         );
                     }
 
-                    for (long int n = 0; n < F2D.size(); n++) {
-                        F2D[n] *= Fctf[n];
-                        if (do_ctf2)
-                        F2D[n] *= Fctf[n];
-                    }
+                    F2D *= do_ctf2 ? Fctf * Fctf : Fctf;
+
                 }
 
                 // Apply Gaussian noise
@@ -478,7 +476,8 @@ class project_parameters {
                         } else {
                             CTF ctf = CtfHelper::makeCTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
                             Fctf.resize(F2D);
-                            Fctf = ctf.getFftwImage(
+                            Fctf = CtfHelper::getFftwImage(
+                                ctf,
                                 Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,
                                 nullptr,  // No ObservationModel
                                 ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true

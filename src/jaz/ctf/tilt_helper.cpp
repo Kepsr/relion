@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "tilt_helper.h"
+#include "src/jaz/ctf_helper.h"
 
 #include <src/jaz/gravis/t2Matrix.h>
 #include <src/jaz/gravis/t4Matrix.h>
@@ -41,7 +42,7 @@ void TiltHelper::updateTiltShift(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
 
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
@@ -68,7 +69,7 @@ void TiltHelper::updateTiltShiftPar(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, false, false, false, true, do_ctf_padding);
 
     #pragma omp parallel for
     for (long y = 0; y < h; y++)

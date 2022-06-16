@@ -149,7 +149,8 @@ class ctf_toolbox_parameters {
                 MultidimArray<Complex> Fimg;
                 transformer.FourierTransform(img(), Fimg, false);
 
-                MultidimArray<RFLOAT> Fctf = ctf.getFftwImage(
+                MultidimArray<RFLOAT> Fctf = CtfHelper::getFftwImage(
+                    ctf,
                     Xsize(Fimg), Ysize(Fimg),
                     Xsize(img()), Ysize(img()),
                     angpix, &obsModel,

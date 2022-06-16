@@ -355,7 +355,8 @@ void FrameRecombiner::process(
                 }
 
                 MultidimArray<RFLOAT> Fctf(Ysize(sum()), Xsize(sum()));
-                Fctf = ctf.getFftwImage(
+                Fctf = CtfHelper::getFftwImage(
+                    ctf,
                     Xsize(sum()), Ysize(sum()), s_out[og], s_out[og], angpix_out[og],
                     obsModel,
                     false, false, false, true, false

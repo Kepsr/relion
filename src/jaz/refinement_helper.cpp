@@ -21,6 +21,7 @@
 #include <src/jaz/refinement_helper.h>
 #include <src/projector.h>
 #include <src/jaz/gravis/t4Matrix.h>
+#include "src/jaz/ctf_helper.h"
 
 namespace constrain {
 
@@ -229,7 +230,7 @@ double RefinementHelper::squaredDiff(
     const long h = prediction.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
 
     double out = 0.0;
     for (long y = 0; y < h; y++)

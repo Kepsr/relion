@@ -28,6 +28,7 @@
 #include <src/jaz/volume.h>
 #include <src/jaz/gravis/t2Matrix.h>
 #include <vector>
+#include "src/jaz/obs_model.h"
 
 class TiltOptimization : public Optimization
 {

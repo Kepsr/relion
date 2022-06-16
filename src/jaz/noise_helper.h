@@ -24,6 +24,7 @@
 #include <vector>
 #include "src/projector.h"
 #include "src/ctf.h"
+#include "src/jaz/obs_model.h"
 
 class NoiseHelper
 {

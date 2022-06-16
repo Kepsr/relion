@@ -25,6 +25,7 @@
 #include <src/jaz/refinement_helper.h>
 #include <src/jaz/optimization/nelder_mead.h>
 #include <src/jaz/gravis/t4Matrix.h>
+#include "src/jaz/ctf_helper.h"
 
 #include <src/projector.h>
 
@@ -315,9 +316,10 @@ double AstigmatismOptimizationAcc::f(
     const long h = data.data.ydim;
 
     Image<RFLOAT> ctfImg(w, h);
-    ctfImg() = ctf.getFftwImage(w, h, h, h, angpix, obsModel, opticsGroup);
+    ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
 
     double out = 0.0;
+
     for (long y = 0; y < h; y++)
     for (long x = 0; x < w; x++) {
         Complex vd = direct::elem(data.data, x, y);
