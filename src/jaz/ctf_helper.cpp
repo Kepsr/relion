@@ -570,11 +570,11 @@ void CtfHelper::applyWeightEwaldSphereCurvature(
         const RFLOAT astigDefocus = ctf.astigDefocus(x, y);
         RFLOAT u2 = x * x + y * y;
         RFLOAT u4 = u2 * u2;
-        RFLOAT gamma = ctf.K1 * astigDefocus + ctf.K2 * u4 - ctf.K5 - ctf.K3;
+        RFLOAT gamma = ctf.getGamma(x, y);  // XXX Computes u2, u4, astigDefocus() again internally
 
         RFLOAT deltaf = u2 > 0.0 ? std::abs(astigDefocus / u2) : 0.0;
         RFLOAT inv_d = sqrt(u2);
-        RFLOAT aux = 2.0 * deltaf * ctf.lambda * inv_d / particle_diameter;
+        RFLOAT aux = 2.0 * deltaf * ctf.getLambda() * inv_d / particle_diameter;
         RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
 
         direct::elem(result, i, j) = 0.5 * (A * (2.0 * fabs(sin(gamma)) - 1.0) + 1.0);
