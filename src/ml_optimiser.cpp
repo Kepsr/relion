@@ -1085,8 +1085,8 @@ void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_writ
     // Then write the mymodel to file
     if (do_write_model)
     mymodel.write(
-        do_split_random_halves && !do_join_random_halves ? fn_root2 + "_half" + integerToString(random_subset) : 
-                                                           fn_root2, 
+        do_split_random_halves && !do_join_random_halves ? fn_root2 + "_half" + integerToString(random_subset) :
+                                                           fn_root2,
         sampling, do_write_bild
     );
 
@@ -1336,7 +1336,7 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
 
         for (long int n = 0; n < (Isolvent()).size(); n++) {
             if (Isolvent()[n] < 0.0) { Isolvent()[n] = 0.0; }
-            else 
+            else
             if (Isolvent()[n] > 1.0) { Isolvent()[n] = 1.0; }
         }
     }
@@ -2133,8 +2133,8 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 if (do_ctf_correction && mymodel.data_dim != 3) {
                     CTF ctf = CtfHelper::makeCTF(MDimg, &mydata.obsModel, 0); // This MDimg only contains one particle!
                     Fctf = CtfHelper::getFftwImage(
-                        ctf,
-                        Xsize(Fctf), Ysize(Fctf), mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
+                        ctf, Xsize(Fctf), Ysize(Fctf),
+                        mymodel.ori_size, mymodel.ori_size, mymodel.pixel_size,
                         &mydata.obsModel,
                         ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                     );
@@ -3076,7 +3076,7 @@ void MlOptimiser::expectationSomeParticles(
 
         // If skipping alignment or rotations, then store the old translation and orientation for each particle
         // If we do local angular searches, get the previously assigned angles to center the prior
-        bool do_clear = (part_id_sorted == my_first_part_id);
+        bool do_clear = part_id_sorted == my_first_part_id;
         if (do_skip_align || do_skip_rotate) {
             // Also set the rotations
             RFLOAT old_rot  = direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
@@ -4462,10 +4462,10 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             icol_xoff = 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
             icol_yoff = 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
             icol_zoff = 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            my_refined_ibody_offset[0] = direct::elem(exp_metadata, my_metadata_offset, icol_xoff);
-            my_refined_ibody_offset[1] = direct::elem(exp_metadata, my_metadata_offset, icol_yoff);
-            if (mymodel.data_dim == 3)
-            my_refined_ibody_offset[2] = direct::elem(exp_metadata, my_metadata_offset, icol_zoff);
+            const std::array<int, 3> icol_offs {icol_xoff, icol_yoff, icol_zoff};
+            for (int i = 0; i < mymodel.data_dim; ++i) {
+                my_refined_ibody_offset[i] = direct::elem(exp_metadata, my_metadata_offset, icol_offs[i]);
+            }
 
             // For multi-body refinement: set the priors of the translations to zero (i.e. everything centred around consensus offset)
             my_prior.initZeros();
@@ -4478,13 +4478,12 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             }
             #endif
 
-
         }
 
         // Uninitialised priors were set to 999.
         for (int i = 0; i < mymodel.data_dim; i++) {
-            if (my_prior[i] > 998.99 && my_prior[i] < 999.01) { 
-                my_prior[i] = 0.0; 
+            if (my_prior[i] > 998.99 && my_prior[i] < 999.01) {
+                my_prior[i] = 0.0;
             }
         }
 
@@ -4771,7 +4770,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             exp_old_offset[img_id] = my_old_offset_helix_coords;
         } else {
             // For multi-bodies: store only the old refined offset, not the constant consensus offset or the projected COM of this body
-            exp_old_offset[img_id] = mymodel.nr_bodies > 1 ? my_refined_ibody_offset : 
+            exp_old_offset[img_id] = mymodel.nr_bodies > 1 ? my_refined_ibody_offset :
                                                              my_old_offset;  // Not doing helical refinement. Rounded Cartesian offsets are stored.
         }
         #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
@@ -4810,7 +4809,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         MultidimArray<RFLOAT> Mnoise;
         bool is_helical_segment = do_helical_refine || mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0;
         // For multibodies: have the mask radius equal to maximum radius within body mask plus the translational offset search range
-        RFLOAT my_mask_radius = mymodel.nr_bodies > 1 ? (mymodel.max_radius_mask_bodies[ibody] + sampling.offset_range) / my_pixel_size : 
+        RFLOAT my_mask_radius = mymodel.nr_bodies > 1 ? (mymodel.max_radius_mask_bodies[ibody] + sampling.offset_range) / my_pixel_size :
                                                         particle_diameter / (2.0 * my_pixel_size);
         if (!do_zero_mask) {
             // Make a noisy background image with the same spectrum as the sigma2_noise
@@ -4970,8 +4969,8 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 );
 
                 Fctf = CtfHelper::getFftwImage(
-                    ctf,
-                    Xsize(Fctf), Ysize(Fctf), image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
+                    ctf, Xsize(Fctf), Ysize(Fctf),
+                    image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
                     &mydata.obsModel,
                     ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
                 );
@@ -5373,8 +5372,8 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                         std::cerr << "Helical xyz shift = (" << xshift << ", " << yshift << ", " << zshift << ")" << std::endl;
                         #endif
                         transformCartesianAndHelicalCoords(
-                            xshift, yshift, zshift, 
-                            rot_deg, tilt_deg, psi_deg, 
+                            xshift, yshift, zshift,
+                            rot_deg, tilt_deg, psi_deg,
                             mymodel.data_dim, HELICAL_TO_CART_COORDS
                         );
                         #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH
@@ -5447,7 +5446,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
     #ifdef TIMING
     if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
         timer.toc(
-            do_also_unmasked ?              TIMING_ESP_PRECW : 
+            do_also_unmasked ?              TIMING_ESP_PRECW :
             exp_current_oversampling == 0 ? TIMING_ESP_PREC1 :
                                             TIMING_ESP_PREC2
         );
@@ -6216,7 +6215,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
                                 RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
                                 transformCartesianAndHelicalCoords(
                                     myprior_x, myprior_y, myprior_z,
-                                    rot_deg, tilt_deg, psi_deg, 
+                                    rot_deg, tilt_deg, psi_deg,
                                     mymodel.data_dim, CART_TO_HELICAL_COORDS
                                 );
                             }
@@ -6478,6 +6477,12 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
         timer.toc(exp_ipass == 0 ? TIMING_ESP_WEIGHT1 : TIMING_ESP_WEIGHT2);
     }
     #endif
+}
+
+template <typename T>
+void update_and_remember(T &x, T &y, T z) {
+    x = y;
+    y = z;
 }
 
 void MlOptimiser::storeWeightedSums(
@@ -7013,26 +7018,26 @@ void MlOptimiser::storeWeightedSums(
                                     // This is not necessary as rot, tilt and psi remain unchanged!
                                     // angles_t angles = Euler::matrix2angles(A);
 
-                                    int icol_rot  = mymodel.nr_bodies == 1 ? METADATA_ROT  : 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-                                    int icol_tilt = mymodel.nr_bodies == 1 ? METADATA_TILT : 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-                                    int icol_psi  = mymodel.nr_bodies == 1 ? METADATA_PSI  : 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-                                    int icol_xoff = mymodel.nr_bodies == 1 ? METADATA_XOFF : 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-                                    int icol_yoff = mymodel.nr_bodies == 1 ? METADATA_YOFF : 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-                                    int icol_zoff = mymodel.nr_bodies == 1 ? METADATA_ZOFF : 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                                    const int imx = mymodel.nr_bodies == 1 ? 0 : METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                                    int icol_rot  = METADATA_ROT  + imx;
+                                    int icol_tilt = METADATA_TILT + imx;
+                                    int icol_psi  = METADATA_PSI  + imx;
+                                    int icol_xoff = METADATA_XOFF + imx;
+                                    int icol_yoff = METADATA_YOFF + imx;
+                                    int icol_zoff = METADATA_ZOFF + imx;
 
-                                    RFLOAT old_rot = direct::elem(exp_metadata, my_metadata_offset, icol_rot);
-                                    direct::elem(exp_metadata, my_metadata_offset, icol_rot) = rot;
-                                    RFLOAT old_tilt = direct::elem(exp_metadata, my_metadata_offset, icol_tilt);
-                                    direct::elem(exp_metadata, my_metadata_offset, icol_tilt) = tilt;
-                                    RFLOAT old_psi = direct::elem(exp_metadata, my_metadata_offset, icol_psi);
-                                    direct::elem(exp_metadata, my_metadata_offset, icol_psi) = psi;
+                                    RFLOAT old_rot, old_tilt, old_psi;
+                                    update_and_remember(old_rot,  direct::elem(exp_metadata, my_metadata_offset, icol_rot),  rot);
+                                    update_and_remember(old_tilt, direct::elem(exp_metadata, my_metadata_offset, icol_tilt), tilt);
+                                    update_and_remember(old_psi,  direct::elem(exp_metadata, my_metadata_offset, icol_psi),  psi);
+
                                     Matrix1D<RFLOAT> shifts(mymodel.data_dim);
-
                                     // include old_offsets for normal refinement (i.e. non multi-body)
                                     shifts[0] = exp_old_offset[img_id][0] + oversampled_translations_x[iover_trans];
                                     shifts[1] = exp_old_offset[img_id][1] + oversampled_translations_y[iover_trans];
                                     if (mymodel.data_dim == 3)
                                     shifts[2] = exp_old_offset[img_id][2] + oversampled_translations_z[iover_trans];
+
                                     #ifdef DEBUG_BODIES2
                                     std::cerr << ihidden_over << " weight= " << weight;
                                     std::cerr << " exp_old_offset= " << exp_old_offset[img_id].transpose() << std::endl;
@@ -7326,15 +7331,14 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
                     old_iclass = 0;
 
                     // New optimal parameters
-                    #define METADATA_BODY_GET(i) direct::elem(exp_metadata, metadata_offset, i + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS);
-                    rot = METADATA_BODY_GET(0);
-                    tilt = METADATA_BODY_GET(1);
-                    psi = METADATA_BODY_GET(2);
-                    xoff = my_pixel_size * METADATA_BODY_GET(3);
-                    yoff = my_pixel_size * METADATA_BODY_GET(4);
+                    const int imx = METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                    rot  = direct::elem(exp_metadata, metadata_offset, imx + METADATA_ROT);
+                    tilt = direct::elem(exp_metadata, metadata_offset, imx + METADATA_TILT);
+                    psi  = direct::elem(exp_metadata, metadata_offset, imx + METADATA_PSI);
+                    xoff = direct::elem(exp_metadata, metadata_offset, imx + METADATA_XOFF) * my_pixel_size;
+                    yoff = direct::elem(exp_metadata, metadata_offset, imx + METADATA_YOFF) * my_pixel_size;
                     if (mymodel.data_dim == 3)
-                        zoff = my_pixel_size * METADATA_BODY_GET(5);
-                    #undef METADATA_BODY_GET
+                    zoff = direct::elem(exp_metadata, metadata_offset, imx + METADATA_ZOFF) * my_pixel_size;
                     iclass = 0;
 
                 } else {
@@ -7368,12 +7372,11 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
                     sum_changes_optimal_classes += 1.0;
                 sum_changes_count += 1.0;
 
-            } // end loop ibody
+            }
 
-        } // end loop img_id
+        }
 
-    } //end loop part_id
-
+    }
 
 }
 
@@ -7531,8 +7534,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         );
 
                         Fctf = CtfHelper::getFftwImage(
-                            ctf,
-                            Xsize(Fctf), Ysize(Fctf),
+                            ctf, Xsize(Fctf), Ysize(Fctf),
                             image_full_size[optics_group], image_full_size[optics_group], my_pixel_size,
                             &mydata.obsModel,
                             ctf_phase_flipped, only_flip_phases, intact_ctf_first_peak, true, do_ctf_padding
@@ -7666,13 +7668,13 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         // Get the FT of the second image
                         if (mymodel.data_dim == 2) {
                             F2.initZeros(
-                                current_image_size, 
+                                current_image_size,
                                 current_image_size / 2 + 1
                             );
                         } else {
                             F2.initZeros(
-                                current_image_size, 
-                                current_image_size, 
+                                current_image_size,
+                                current_image_size,
                                 current_image_size/ 2 + 1
                             );
                         }
@@ -7686,7 +7688,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         } else {
                             // Get shifted version
                             shiftImageInFourierTransform(
-                                F1, F2, (RFLOAT) image_full_size[optics_group], 
+                                F1, F2, (RFLOAT) image_full_size[optics_group],
                                 -xshift, -yshift, -zshift
                             );
                         }
@@ -7713,10 +7715,10 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             }
                         }
 
-                        RFLOAT remap_image_sizes = 
-                            (mymodel.ori_size * mymodel.pixel_size) / 
+                        RFLOAT remap_image_sizes =
+                            (mymodel.ori_size * mymodel.pixel_size) /
                             (image_full_size[optics_group] * my_pixel_size);
-                        MultidimArray<int> *myMresol = Ysize(F1) == image_coarse_size[optics_group] ? 
+                        MultidimArray<int> *myMresol = Ysize(F1) == image_coarse_size[optics_group] ?
                             &Mresol_coarse[optics_group] : &Mresol_fine[optics_group];
                         my_snr = 0.0;
                         for (long int n = 0; n < (F1).size(); n++) {
@@ -7821,8 +7823,8 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
         if (mymodel.ref_dim == 3) {
 
             // If doing CC first iteration, there will not be a acc_rot yet: use minimum sampling based on resolution instead
-            RFLOAT my_min_sampling = iter == 1 && do_firstiter_cc ? 
-                360.0 / ceil(PI * particle_diameter * mymodel.current_resolution) : 
+            RFLOAT my_min_sampling = iter == 1 && do_firstiter_cc ?
+                360.0 / ceil(PI * particle_diameter * mymodel.current_resolution) :
                 acc_rot;
 
             // 3D classification
@@ -7872,7 +7874,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
         new_offset_step = std::max(new_offset_step, sampling.offset_step_ori);
         sampling.setTranslations(
             new_offset_step, sampling.offset_range, false,
-            do_helical_refine && !ignore_helical_symmetry, 
+            do_helical_refine && !ignore_helical_symmetry,
             sampling.helical_offset_step, helical_rise_initial, helical_twist_initial
         );
 
@@ -7899,7 +7901,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
         int nr_ang_steps = ceil(PI * particle_diameter * mymodel.current_resolution);
         RFLOAT myresol_angstep = 360.0 / nr_ang_steps;
         // But don't go down to local searches too early, i.e. at last exhaustive sampling first stabilise resolution
-        bool do_proceed_resolution = auto_resolution_based_angles && myresol_angstep < old_rottilt_step && sampling.healpix_order + 1 != autosampling_hporder_local_searches || 
+        bool do_proceed_resolution = auto_resolution_based_angles && myresol_angstep < old_rottilt_step && sampling.healpix_order + 1 != autosampling_hporder_local_searches ||
             nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN;
 
         const bool do_proceed_hidden_variables = auto_ignore_angle_changes || nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES;
@@ -7926,8 +7928,8 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
             }
 
             if (
-                all_bodies_are_done || 
-                old_rottilt_step < maximum_angular_sampling && maximum_angular_sampling > 0.0 || 
+                all_bodies_are_done ||
+                old_rottilt_step < maximum_angular_sampling && maximum_angular_sampling > 0.0 ||
                 old_rottilt_step < 0.75 * acc_rot && (old_rottilt_step <= minimum_angular_sampling || minimum_angular_sampling <= 0.0)
                 // Old rottilt step is already below 75% of estimated accuracy: have to stop refinement?
                 // If a minimum_angular_sampling is given and we're not there yet, also just continue
@@ -8002,7 +8004,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
                 }
 
                 // 8 Jun 2015 Shaoda & Sjors, Helical refinement
-                bool do_local_searches_helical = do_auto_refine && do_helical_refine && 
+                bool do_local_searches_helical = do_auto_refine && do_helical_refine &&
                     sampling.healpix_order >= autosampling_hporder_local_searches;
 
                 // Don't go to coarse angular samplings. Then just keep doing as it was
@@ -8033,7 +8035,7 @@ void MlOptimiser::updateAngularSampling(bool myverb) {
                     // 20 Aug 2015 - Shaoda, Helical refinement
                     if (do_helical_refine && !ignore_helical_symmetry)
                         mymodel.sigma2_rot = getHelicalSigma2Rot(
-                            helical_rise_initial, helical_twist_initial, 
+                            helical_rise_initial, helical_twist_initial,
                             sampling.helical_offset_step, new_rottilt_step, mymodel.sigma2_rot
                         );
                 }
@@ -8424,14 +8426,13 @@ void MlOptimiser::getMetaAndImageDataSubset(long int first_part_id, long int las
                         if (mymodel.data_dim == 3)
                         zoff = mydata.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
                     } catch (const char* errmsg) {}
-                    #define MULTIBODY_METADATA_INDEX(i) i + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS
-                    direct::elem(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(0)) = rot;
-                    direct::elem(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(1)) = tilt;
-                    direct::elem(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(2)) = psi;
-                    direct::elem(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(3)) = xoff / my_pixel_size;
-                    direct::elem(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(4)) = yoff / my_pixel_size;
-                    direct::elem(exp_metadata, metadata_offset, MULTIBODY_METADATA_INDEX(5)) = zoff / my_pixel_size;
-                    #undef MULTIBODY_METADATA_INDEX
+                    const int imx = METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+                    direct::elem(exp_metadata, metadata_offset, imx + METADATA_ROT)  = rot;
+                    direct::elem(exp_metadata, metadata_offset, imx + METADATA_TILT) = tilt;
+                    direct::elem(exp_metadata, metadata_offset, imx + METADATA_PSI)  = psi;
+                    direct::elem(exp_metadata, metadata_offset, imx + METADATA_XOFF) = xoff / my_pixel_size;
+                    direct::elem(exp_metadata, metadata_offset, imx + METADATA_YOFF) = yoff / my_pixel_size;
+                    direct::elem(exp_metadata, metadata_offset, imx + METADATA_ZOFF) = zoff / my_pixel_size;
                 }
             }
         }

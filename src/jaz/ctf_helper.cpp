@@ -28,7 +28,7 @@
 using namespace gravis;
 
 std::vector<CTF> CtfHelper::loadCtffind4(
-    std::string path, int imageCount, 
+    std::string path, int imageCount,
     double voltage, double Cs, double Q0, double Bfac, double scale
 ) {
     /*
@@ -40,61 +40,57 @@ std::vector<CTF> CtfHelper::loadCtffind4(
     # Columns: #1 - micrograph number; #2 - defocus 1 [Angstroms]; #3 - defocus 2; #4 - azimuth of astigmatism; #5 - additional phase shift [radians]; #6 - cross correlation; #7 - spacing (in Angstroms) up to which CTF rings were fit successfully
     1.000000 10295.926758 10012.275391 -38.856349 0.000000 0.030650 5.279412
     */
-    
+
     std::vector<CTF> ctfs(imageCount);
-    
+
     size_t ast = path.find_first_of('*');
-    
+
     if (ast == std::string::npos) {
         std::ifstream file(path);
         int currImg = 0;
-        
+
         char text[4096];
 
         while (file.getline(text, 4096)) {
             if (text[0] == '#') continue;
-            
+
             std::stringstream line(text);
 
             ctfs[currImg] = setFromFile(line, voltage, Cs, Q0, Bfac, scale);
             currImg++;
-            
+
             if (currImg >= imageCount) break;
         }
-        
+
         if (currImg < imageCount) {
             REPORT_ERROR_STR("Insufficient number of CTFs found in " << path << ".\n"
                              << imageCount << " requested, " << currImg << " found.\n");
         }
     } else {
         std::string fnBase = path.substr(0, ast);
-        std::string fnEnd = path.substr(ast + 1);
-        
+        std::string fnEnd  = path.substr(ast + 1);
+
         for (int i = 0; i < imageCount; i++) {
-            std::stringstream sts;
-            sts << i;
-            std::string fnm;
-            sts >> fnm;
-    
-            std::string fn = fnBase + fnm + fnEnd;
+
+            std::string fn = fnBase + std::to_string(i) + fnEnd;
             std::ifstream file(fn.c_str());
-    
+
             if (!file.is_open()) {
                 REPORT_ERROR("failed to open " + fn + '\n');
             }
-            
+
             char text[4096];
-    
+
             while (file.getline(text, 4096)) {
                 if (text[0] == '#') continue;
-    
+
                 std::stringstream line(text);
-    
+
                 ctfs[i] = setFromFile(line, voltage, Cs, Q0, Bfac, scale);
             }
         }
     }
-    
+
     return ctfs;
 }
 
@@ -240,7 +236,7 @@ RFLOAT CtfHelper::readValue(
 /* Read -------------------------------------------------------------------- */
 
 // Write to an existing object in a MetaDataTable
-void CtfHelper::write(CTF &ctf, MetaDataTable &MD) {
+void CtfHelper::write(const CTF &ctf, MetaDataTable &MD) {
     // For versions >= 3.1: store kV, Cs, Q0 in optics table
     // MD.setValue(EMDL::CTF_VOLTAGE, ctf.kV);
     MD.setValue(EMDL::CTF_DEFOCUSU, ctf.DeltafU);
@@ -253,7 +249,7 @@ void CtfHelper::write(CTF &ctf, MetaDataTable &MD) {
     // MD.setValue(EMDL::CTF_Q0, ctf.Q0);
 }
 
-void CtfHelper::write(CTF &ctf, std::ostream &out) {
+void CtfHelper::write(const CTF &ctf, std::ostream &out) {
     MetaDataTable MD;
     MD.addObject();
     write(ctf, MD);
@@ -277,130 +273,146 @@ MultidimArray<RFLOAT> CtfHelper::getFftwImage(
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_ctf_padding, bool do_intact_after_first_peak
 ) {
-    MultidimArray<RFLOAT> result(Xdim, Ydim);
-    // Boxing the particle in a small box from the whole micrograph leads to loss of delocalised information (or aliaising in the CTF)
-    // Here, calculate the CTF in a 2x larger box to support finer oscillations,
-    // and then rescale the large CTF to simulate the effect of the windowing operation
     if (do_ctf_padding) {
-        bool ctf_premultiplied = obsModel && obsModel->getCtfPremultiplied(opticsGroup);
-
-        // two-fold padding, increased to 4-fold padding for pre-multiplied CTFs
-        int orixdim_pad = 2 * orixdim;
-        int oriydim_pad = 2 * oriydim;
-        // Such a big box might not be necessary
-        if (ctf_premultiplied) {
-            orixdim_pad *= 2;
-            oriydim_pad *= 2;
-        }
-
-        MultidimArray<RFLOAT> Fctf = getFftwImage(
-            ctf,
-            oriydim_pad / 2 + 1, oriydim_pad, orixdim_pad, oriydim_pad, angpix,
-            obsModel,
-            do_abs, do_only_flip_phases, do_intact_until_first_peak, do_damping, false, do_intact_after_first_peak
+        return getFftwImage_padded(
+            ctf, Xdim, Ydim, orixdim, oriydim, angpix, obsModel, opticsGroup,
+            do_abs, do_only_flip_phases, do_intact_until_first_peak,
+            do_damping, do_intact_after_first_peak
         );
+    }
 
-        // From half to whole
-        MultidimArray<RFLOAT> Mctf(oriydim_pad, orixdim_pad);
-        Mctf.setXmippOrigin();
-        for (int j = 0 ; j < Ysize(Fctf); j++) {
-            // Don't take the middle row of the half-transform
-            if (j != Ysize(Fctf) / 2) {
-                int jp = j < Xsize(Fctf) ? j : j - Ysize(Fctf);
-                // Don't take the last column from the half-transform
-                for (int i = 0; i < Xsize(Fctf) - 1; i++) {
-                    RFLOAT fctfij = direct::elem(Fctf, i, j);
-                    if (ctf_premultiplied) {
-                        Mctf.elem(+i, +jp) = fctfij * fctfij;
-                        Mctf.elem(-i, -jp) = fctfij * fctfij;
-                    } else {
-                        Mctf.elem(+i, +jp) = fctfij;
-                        Mctf.elem(-i, -jp) = fctfij;
-                    }
-                }
-            }
+    MultidimArray<RFLOAT> result(Xdim, Ydim);
+    RFLOAT xs = (RFLOAT) orixdim * angpix;
+    RFLOAT ys = (RFLOAT) oriydim * angpix;
+
+    if (obsModel && obsModel->hasEvenZernike) {
+
+        assert_square(orixdim, oriydim);
+
+        if (obsModel->getBoxSize(opticsGroup) != orixdim) {
+            REPORT_ERROR_STR(
+                "CTF::getFftwImage: requested output image size "
+                << orixdim
+                << " is not consistent with that in the optics group table "
+                << obsModel->getBoxSize(opticsGroup) << "\n"
+            );
         }
 
-        resizeMap(Mctf, orixdim);
+        if (fabs(obsModel->getPixelSize(opticsGroup) - angpix) > 1e-4) {
+            REPORT_ERROR_STR(
+                "CTF::getFftwImage: requested pixel size ("
+                << angpix
+                << ") is not consistent with that in the optics group table ("
+                << obsModel->getPixelSize(opticsGroup) << ")\n"
+            );
+        }
 
-        Mctf.setXmippOrigin();
-        // From whole to half
-        for (int j = 0 ; j < Ysize(result); j++) {
-            // Don't take the middle row of the half-transform
-            if (j != Ysize(result) / 2) {
-                int jp = j < Xsize(result) ? j : j - Ysize(result);
-                // Don't take the last column from the half-transform
-                for (int i = 0; i < Xsize(result) - 1; i++) {
-                    // Make just one lookup on Mctf.data
-                    RFLOAT mctfipj = Mctf.elem(i, jp);
-                    if (ctf_premultiplied) {
-                        // Constrain result[i, j] to the interval [0.0, 1.0]
-                        direct::elem(result, i, j) =
-                            mctfipj < 0.0 ? 0.0 :
-                            mctfipj > 1.0 ? 1.0 :
-                            sqrt(mctfipj);
-                    } else {
-                        direct::elem(result, i, j) = mctfipj;
-                    }
-                }
-            }
+        const Image<RFLOAT>& gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
+
+        for (int j = 0; j < result.ydim; j++)
+        for (int i = 0; i < result.xdim; i++) {
+            RFLOAT x = i / xs;
+            RFLOAT y = (j <= result.ydim / 2 ? j : j - result.ydim) / ys;
+
+            const int x0 = i;
+            const int y0 = j <= result.ydim / 2 ? j : gammaOffset.data.ydim + j - result.ydim;
+
+            if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
+            RFLOAT t = ctf.getCTF(
+                x, y,
+                do_only_flip_phases, do_intact_until_first_peak,
+                do_damping, gammaOffset(y0, x0), do_intact_after_first_peak
+            );
+            direct::elem(result, i, j) = do_abs ? abs(t) : t;
         }
     } else {
-        RFLOAT xs = (RFLOAT) orixdim * angpix;
-        RFLOAT ys = (RFLOAT) oriydim * angpix;
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
+            RFLOAT x = (RFLOAT) ip / xs;
+            RFLOAT y = (RFLOAT) jp / ys;
 
-        if (obsModel && obsModel->hasEvenZernike) {
+            if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
+            RFLOAT t = ctf.getCTF(
+                x, y,
+                do_only_flip_phases, do_intact_until_first_peak,
+                do_damping, 0.0, do_intact_after_first_peak
+            );
+            direct::elem(result, i, j) = do_abs ? abs(t) : t;
+        }
+    }
+    return result;
+}
 
-            assert_square(orixdim, oriydim);
+// Boxing the particle in a small box from the whole micrograph leads to loss of delocalised information (or aliaising in the CTF)
+// Here, calculate the CTF in a 2x larger box to support finer oscillations,
+// and then rescale the large CTF to simulate the effect of the windowing operation
+MultidimArray<RFLOAT> CtfHelper::getFftwImage_padded(
+    const CTF &ctf,
+    long int Xdim, long int Ydim, int orixdim, int oriydim,
+    RFLOAT angpix, ObservationModel *obsModel, int opticsGroup,
+    bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
+    bool do_damping, bool do_intact_after_first_peak
+) {
+    MultidimArray<RFLOAT> result(Xdim, Ydim);
+    bool ctf_premultiplied = obsModel && obsModel->getCtfPremultiplied(opticsGroup);
 
-            if (obsModel->getBoxSize(opticsGroup) != orixdim) {
-                REPORT_ERROR_STR(
-                    "CTF::getFftwImage: requested output image size "
-                    << orixdim
-                    << " is not consistent with that in the optics group table "
-                    << obsModel->getBoxSize(opticsGroup) << "\n"
-                );
+    // two-fold padding, increased to 4-fold padding for pre-multiplied CTFs
+    int orixdim_pad = 2 * orixdim;
+    int oriydim_pad = 2 * oriydim;
+    // Such a big box might not be necessary
+    if (ctf_premultiplied) {
+        orixdim_pad *= 2;
+        oriydim_pad *= 2;
+    }
+
+    MultidimArray<RFLOAT> Fctf = getFftwImage(
+        ctf,
+        oriydim_pad / 2 + 1, oriydim_pad, orixdim_pad, oriydim_pad, angpix,
+        obsModel,
+        do_abs, do_only_flip_phases, do_intact_until_first_peak, do_damping, false, do_intact_after_first_peak
+    );
+
+    // From half to whole
+    MultidimArray<RFLOAT> Mctf(oriydim_pad, orixdim_pad);
+    Mctf.setXmippOrigin();
+    for (int j = 0 ; j < Ysize(Fctf); j++) {
+        // Don't take the middle row of the half-transform
+        if (j != Ysize(Fctf) / 2) {
+            int jp = j < Xsize(Fctf) ? j : j - Ysize(Fctf);
+            // Don't take the last column from the half-transform
+            for (int i = 0; i < Xsize(Fctf) - 1; i++) {
+                RFLOAT fctfij = direct::elem(Fctf, i, j);
+                if (ctf_premultiplied) {
+                    Mctf.elem(+i, +jp) = fctfij * fctfij;
+                    Mctf.elem(-i, -jp) = fctfij * fctfij;
+                } else {
+                    Mctf.elem(+i, +jp) = fctfij;
+                    Mctf.elem(-i, -jp) = fctfij;
+                }
             }
+        }
+    }
 
-            if (fabs(obsModel->getPixelSize(opticsGroup) - angpix) > 1e-4) {
-                REPORT_ERROR_STR(
-                    "CTF::getFftwImage: requested pixel size "
-                    << angpix
-                    << " is not consistent with that in the optics group table "
-                    << obsModel->getPixelSize(opticsGroup) << "\n"
-                );
-            }
+    resizeMap(Mctf, orixdim);
 
-            const Image<RFLOAT>& gammaOffset = obsModel->getGammaOffset(opticsGroup, oriydim);
-
-            for (int j = 0; j < result.ydim; j++)
-            for (int i = 0; i < result.xdim; i++) {
-                RFLOAT x = i / xs;
-                RFLOAT y = (j <= result.ydim / 2 ? j : j - result.ydim) / ys;
-
-                const int x0 = i;
-                const int y0 = j <= result.ydim / 2 ? j : gammaOffset.data.ydim + j - result.ydim;
-
-                if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
-                RFLOAT t = ctf.getCTF(
-                    x, y,
-                    do_only_flip_phases, do_intact_until_first_peak,
-                    do_damping, gammaOffset(y0, x0), do_intact_after_first_peak
-                );
-                direct::elem(result, i, j) = do_abs ? abs(t) : t;
-            }
-        } else {
-            FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-                RFLOAT x = (RFLOAT) ip / xs;
-                RFLOAT y = (RFLOAT) jp / ys;
-
-                if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
-                RFLOAT t = ctf.getCTF(
-                    x, y,
-                    do_only_flip_phases, do_intact_until_first_peak,
-                    do_damping, 0.0, do_intact_after_first_peak
-                );
-                direct::elem(result, i, j) = do_abs ? abs(t) : t;
+    Mctf.setXmippOrigin();
+    // From whole to half
+    for (int j = 0 ; j < Ysize(result); j++) {
+        // Don't take the middle row of the half-transform
+        if (j != Ysize(result) / 2) {
+            int jp = j < Xsize(result) ? j : j - Ysize(result);
+            // Don't take the last column from the half-transform
+            for (int i = 0; i < Xsize(result) - 1; i++) {
+                // Make just one lookup on Mctf.data
+                RFLOAT mctfipj = Mctf.elem(i, jp);
+                if (ctf_premultiplied) {
+                    // Constrain result[i, j] to the interval [0.0, 1.0]
+                    direct::elem(result, i, j) =
+                        mctfipj < 0.0 ? 0.0 :
+                        mctfipj > 1.0 ? 1.0 :
+                        sqrt(mctfipj);
+                } else {
+                    direct::elem(result, i, j) = mctfipj;
+                }
             }
         }
     }
@@ -570,7 +582,7 @@ void CtfHelper::applyWeightEwaldSphereCurvature(
         const RFLOAT astigDefocus = ctf.astigDefocus(x, y);
         RFLOAT u2 = x * x + y * y;
         RFLOAT u4 = u2 * u2;
-        RFLOAT gamma = ctf.getGamma(x, y);  // XXX Computes u2, u4, astigDefocus() again internally
+        RFLOAT gamma = ctf.getGamma(x, y);  // Recomputes u2, u4, astigDefocus()
 
         RFLOAT deltaf = u2 > 0.0 ? std::abs(astigDefocus / u2) : 0.0;
         RFLOAT inv_d = sqrt(u2);

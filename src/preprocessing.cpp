@@ -681,7 +681,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     ObservationModel *obsModel;
     int optics_group;
     if (mic_star_has_ctf || keep_ctf_from_micrographs) {
-        CtfHelper::readByGroup(ctf, MDmics, &obsModelMic, imic);
+        ctf = CtfHelper::makeCTF(MDmics, &obsModelMic, imic);
         obsModel = &obsModelMic;
         optics_group = obsModelMic.getOpticsGroup(MDmics, imic);
 
@@ -732,7 +732,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
         // Read per-particle CTF
         if (MDin_has_ctf && !keep_ctf_from_micrographs) {
-            CtfHelper::readByGroup(ctf, MD, &obsModelPart, optics_group);
+            ctf = CtfHelper::makeCTF(MD, &obsModelPart, optics_group);
             obsModel = &obsModelPart;
             optics_group = obsModelPart.getOpticsGroup(MD);
             if (obsModelPart.getBoxSize(optics_group) != my_extract_size)

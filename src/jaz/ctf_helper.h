@@ -86,10 +86,10 @@ namespace CtfHelper {
     );
 
     // Write to a MetaDataTable
-    void write(CTF &ctf, MetaDataTable &MD);
+    void write(const CTF &ctf, MetaDataTable &MD);
 
     // Write to an output stream
-    void write(CTF &ctf, std::ostream &out);
+    void write(const CTF &ctf, std::ostream &out);
 
     // Generate (Fourier-space, i.e. FFTW format) image with all CTF values.
     // The dimensions of the result array should have been set correctly already
@@ -100,6 +100,15 @@ namespace CtfHelper {
         bool do_abs = false, bool do_only_flip_phases = false,
         bool do_intact_until_first_peak = false, bool do_damping = true,
         bool do_ctf_padding = false, bool do_intact_after_first_peak = false
+    );
+
+    MultidimArray<RFLOAT> getFftwImage_padded(
+        const CTF &ctf,
+        long int Xdim, long int Ydim, int orixdim, int oriydim, RFLOAT angpix,
+        ObservationModel *obsModel, int opticsGroup,
+        bool do_abs = false, bool do_only_flip_phases = false,
+        bool do_intact_until_first_peak = false, bool do_damping = true,
+        bool do_intact_after_first_peak = false
     );
 
     // Get a complex image with the CTFP/Q values, where the angle is in degrees between the Y-axis and the CTFP/Q sector line

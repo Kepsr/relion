@@ -184,7 +184,7 @@ class CTF {
         }
 
         if (do_only_flip_phases) {
-            retval = retval == 0.0 ? 1.0 : sgn(retval);
+            retval = float(retval >= 0.0);
         }
 
         retval *= scale;
@@ -193,7 +193,7 @@ class CTF {
         // In order to prevent division by zero in GPU code, 
         // don't allow very small CTF values.
         if (fabs(retval) < 1e-8) {
-            retval = 1e-8 * (retval == 0.0 ? 1.0 : sgn(retval));
+            retval = 1e-8 * float(retval >= 0.0);
         }
 
         return retval;
