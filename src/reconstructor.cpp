@@ -441,8 +441,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
             }
         } else {
-            CTF ctf = do_ignore_optics ? CtfHelper::makeCTF(DF, DF,        p) :  // Repetition of DF is redundant
-                                         CtfHelper::makeCTF(DF, &obsModel, p);
+            CTF ctf = do_ignore_optics ? CtfHelper::makeCTF(DF, p)
+                                       : CtfHelper::makeCTF(DF, &obsModel, p);
 
             Fctf = CtfHelper::getFftwImage(
                 ctf,

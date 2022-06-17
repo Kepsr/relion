@@ -166,6 +166,12 @@ CTF CtfHelper::makeCTF(const MetaDataTable &partMdt, ObservationModel *obs, long
     return ctf;
 }
 
+CTF CtfHelper::makeCTF(const MetaDataTable &mdt, long int objectID) {
+    CTF ctf;
+    read(ctf, mdt, objectID);
+    return ctf;
+}
+
 CTF CtfHelper::makeCTF(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID) {
     CTF ctf;
     read(ctf, MD1, MD2, objectID);
@@ -182,11 +188,13 @@ CTF CtfHelper::makeCTF(
     return ctf;
 }
 
-// Read from a MetaDataTable
-void CtfHelper::read(CTF &ctf, const MetaDataTable &MD) {
-    MetaDataTable MDempty;
-    MDempty.addObject(); // add one empty object
-    read(ctf, MD, MDempty);
+template <typename T>
+T getMDT(EMDL::EMDLabel label, const MetaDataTable &mdt1, long int objectID, T defval) {
+    try {
+        return mdt1.getValue<T>(label, objectID);
+    } catch (const char *errmsg) {
+        return defval;
+    }
 }
 
 template <typename T>
@@ -198,6 +206,23 @@ T getMDT(EMDL::EMDLabel label, const MetaDataTable &mdt1, const MetaDataTable &m
     } catch (const char *errmsg) {
         return defval;
     } }
+}
+
+// Read from a MetaDataTable
+void CtfHelper::read(CTF &ctf, const MetaDataTable &mdt, long int objectID) {
+
+    // Parameterse that MD1 does not contain, are tried to be read from MD2.
+    ctf.kV              = getMDT<RFLOAT>(EMDL::CTF_VOLTAGE,       mdt, objectID, 200);
+    ctf.DeltafU         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSU,      mdt, objectID, 0);
+    ctf.DeltafV         = getMDT<RFLOAT>(EMDL::CTF_DEFOCUSV,      mdt, objectID, ctf.DeltafU);
+    ctf.azimuthal_angle = getMDT<RFLOAT>(EMDL::CTF_DEFOCUS_ANGLE, mdt, objectID, 0);
+    ctf.Cs              = getMDT<RFLOAT>(EMDL::CTF_CS,            mdt, objectID, 0);
+    ctf.Bfac            = getMDT<RFLOAT>(EMDL::CTF_BFACTOR,       mdt, objectID, 0);
+    ctf.scale           = getMDT<RFLOAT>(EMDL::CTF_SCALEFACTOR,   mdt, objectID, 1);
+    ctf.Q0              = getMDT<RFLOAT>(EMDL::CTF_Q0,            mdt, objectID, 0);
+    ctf.phase_shift     = getMDT<RFLOAT>(EMDL::CTF_PHASESHIFT,    mdt, objectID, 0);
+
+    ctf.initialise();
 }
 
 // Read parameters from MetaDataTables containing micrograph/particle information

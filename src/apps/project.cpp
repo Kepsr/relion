@@ -107,7 +107,7 @@ class project_parameters {
         MetaDataTable DFo, MDang, MDang_sim;
         FileName fn_expimg;
 
-        MultidimArray<Complex > F3D, F2D, Fexpimg;
+        MultidimArray<Complex> F3D, F2D, Fexpimg;
         MultidimArray<RFLOAT> Fctf, dummy;
         Image<RFLOAT> vol, img, expimg;
         FourierTransformer transformer, transformer_expimg;
@@ -116,7 +116,7 @@ class project_parameters {
         vol.read(fn_map);
         std::cout << " Done reading map!" << std::endl;
 
-        if (fn_mask != "") {
+        if (!fn_mask.empty()) {
             Image<RFLOAT> msk;
             msk.read(fn_mask);
             if (!msk().sameShape(vol()))
@@ -169,7 +169,7 @@ class project_parameters {
             ObservationModel::loadSafely(fn_ang, obsModel, MDang);
             std::cout << " Done reading STAR file!" << std::endl;
 
-            if (do_simulate && fn_ang_simulate != "") {
+            if (do_simulate && !fn_ang_simulate.empty()) {
                 std::cout << " Reading STAR file with angles for simulated images " << fn_ang << std::endl;
                 MDang_sim.read(fn_ang_simulate);
                 std::cout << " Done reading STAR file with angles for simulated images!" << std::endl;
@@ -227,7 +227,7 @@ class project_parameters {
 
             // 1 Feb 2017 - Shaoda, add white noise to 2D / 3D single images
             if (do_add_noise) {
-                if (!(stddev_white_noise > 0.0) || fn_model != "")
+                if (!(stddev_white_noise > 0.0) || !fn_model.empty())
                     REPORT_ERROR("ERROR: Only add --white_noise to a single image!");
                 // fftw normalization and factor sqrt(2) for two-dimensionality of complex plane
                 // TODO: sqrt(2) ??? Why ???
@@ -255,7 +255,7 @@ class project_parameters {
             // Can only add noise to multiple images
             // Feb 01,2017 - Shaoda, now we can add white noise to 2D / 3D single images
             if (do_add_noise) {
-                if (fn_model != "") {
+                if (!fn_model.empty()) {
                     model.read(fn_model);
                 } else if (stddev_white_noise > 0.) {
                     stddev_white_noise /= Xsize(vol()) * sqrt(2); // fftw normalization and factor sqrt(2) for two-dimensionality of complex plane
@@ -323,10 +323,9 @@ class project_parameters {
                         }
                     } else {
                         CTF ctf = CtfHelper::makeCTF(MDang, &obsModel); // This MDimg only contains one particle!
-                        Fctf.resize(F2D);
                         Fctf = CtfHelper::getFftwImage(
                             ctf,
-                            Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,
+                            Xsize(F2D), Ysize(F2D), Xsize(vol()), Xsize(vol()), angpix,
                             &obsModel,
                             ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true
                         );
@@ -338,7 +337,7 @@ class project_parameters {
 
                 // Apply Gaussian noise
                 if (do_add_noise) {
-                    if (fn_model != "") {
+                    if (!fn_model.empty()) {
                         //// 23 May 2014: for preparation of 1.3 release: removed reading a exp_model, replaced by just reading MDang
                         // This does however mean that I no longer know mic_id of this image: replace by 0....
                         FileName fn_group;
@@ -474,11 +473,10 @@ class project_parameters {
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                             }
                         } else {
-                            CTF ctf = CtfHelper::makeCTF(MDang, MDang, imgno);  // Repetition of MDang is redundant
-                            Fctf.resize(F2D);
+                            CTF ctf = CtfHelper::makeCTF(MDang, imgno);
                             Fctf = CtfHelper::getFftwImage(
                                 ctf,
-                                Xsize(Fctf), Ysize(Fctf), Xsize(vol()), Xsize(vol()), angpix,
+                                Xsize(F2D), Ysize(F2D), Xsize(vol()), Xsize(vol()), angpix,
                                 nullptr,  // No ObservationModel
                                 ctf_phase_flipped, false,  do_ctf_intact_1st_peak, true
                             );

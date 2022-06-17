@@ -56,9 +56,9 @@ namespace CtfHelper {
         CTF &ctf, const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1
     );
 
-    CTF makeCTF(const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1);
-
+    CTF makeCTF(const MetaDataTable &mdt, long int objectID = -1);
     CTF makeCTF(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID = -1);
+    CTF makeCTF(const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1);
 
     CTF makeCTF(
         ObservationModel *obs, int opticsGroup,
@@ -67,13 +67,13 @@ namespace CtfHelper {
     );
 
     // Read from a MetaDataTable
-    void read(CTF &ctf, const MetaDataTable &MD);
+    void read(CTF &ctf, const MetaDataTable &MD, long int objectID = -1);
 
     /** Read CTF parameters from MetaDataTables MD1 and MD2 (deprecated).
-    * If a parameter is not found in MD1 it is tried to be read from MD2.
-    * If it is also not found in the second then a default value is used.
-    * This is useful if micrograph-specific parameters are stored in a separate MD from the image-specific parameters.
-    */
+     * If a parameter is not found in MD1 it is tried to be read from MD2.
+     * If it is also not found in the second then a default value is used.
+     * This is useful if micrograph-specific parameters are stored in a separate MD from the image-specific parameters.
+     */
     void read(
         CTF &ctf, const MetaDataTable &MD1, const MetaDataTable &MD2,
         long int objectID = -1
