@@ -381,7 +381,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         for (long int index : basePckr->MDmic) {
             FileName fn_tmp = basePckr->MDmic.getValue(EMDL::MICROGRAPH_NAME);
             if (fn_tmp == fn_mic) {
-                CTF ctf = CTF(basePckr->MDmic, basePckr->MDmic);  // Repetition of basePckr->MDmic is redundant
+                CTF ctf = CTF(basePckr->MDmic);
                 Fctf = CtfHelper::getFftwImage(
                     ctf,
                     basePckr->workSize / 2 + 1, basePckr->workSize, 
