@@ -289,7 +289,7 @@ void GaussianPyramid<T>::timeTest(const Image<T> &img0) {
 
     for (int p = 0; p < pc;     p++)
     for (int q = 0; q < pc - 1; q++) {
-        ft.FourierTransform(img(), fs());
+        fs() = ft.FourierTransform(img());
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {

@@ -52,7 +52,7 @@ void FourierHelper::FourierShift2D(
     FourierTransformer ft;
     MultidimArray<Complex> imgC;
 
-    ft.FourierTransform(img, imgC);
+    imgC = ft.FourierTransform(img);
     //FourierShift2D(imgC, xshift, yshift);
     shiftImageInFourierTransform(imgC, imgC, img.ydim, xshift, yshift);
 

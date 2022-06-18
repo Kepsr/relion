@@ -478,10 +478,10 @@ void ParticleSubtractor::subtractOneParticle(
     }
 
     // Now that the particle is centered (for multibody), get the FourierTransform of the particle
-    MultidimArray<Complex> Faux, Fimg;
+    MultidimArray<Complex> Faux;
     MultidimArray<RFLOAT> Fctf;
     FourierTransformer transformer;
-    transformer.FourierTransform(img(), Fimg);
+    MultidimArray<Complex> Fimg = transformer.FourierTransform(img());
     CenterFFTbySign(Fimg);
     Fctf.resize(Fimg);
 

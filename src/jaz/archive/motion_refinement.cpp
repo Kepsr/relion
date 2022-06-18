@@ -43,17 +43,17 @@ Image<RFLOAT> MotionRefinement::recompose(
     Image<Complex> outC = Image<Complex>::zeros(w / 2 + 1, h);
 
     FourierTransformer ft;
-    Image<Complex> imgC;
 
     for (int i = 0; i < ic; i++) {
         Image<RFLOAT> obs2 = obs[i];
-        ft.FourierTransform(obs2(), imgC());
+        Image<Complex> imgC;
+        imgC() = ft.FourierTransform(obs2());
 
         if (pos[2 * i] != 0.0 || pos[2 * i + 1] != 0.0) {
             shiftImageInFourierTransform(imgC(), imgC(), imgC.data.ydim, -pos[2 * i], -pos[2 * i + 1]);
         }
 
-        ImageOp::linearCombination(imgC, outC, 1.0, 1.0/(double)ic, outC);
+        ImageOp::linearCombination(imgC, outC, 1.0, 1.0 / (double) ic, outC);
     }
 
     ft.inverseFourierTransform(outC(), out());

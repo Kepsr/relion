@@ -280,10 +280,10 @@ class image_handler_parameters {
                 }
 
                 if (optimise_bfactor_subtract > 0.0) {
-                    MultidimArray<Complex> FTop, FTop_bfac;
-                    FourierTransformer transformer;
+                    MultidimArray<Complex> FTop_bfac;
                     MultidimArray<RFLOAT> Isharp(Iop());
-                    transformer.FourierTransform(Iop(), FTop);
+                    FourierTransformer transformer;
+                    MultidimArray<Complex> FTop = transformer.FourierTransform(Iop());
 
                     RFLOAT my_bfac, smallest_diff2 = 99.0e99;
                     for (RFLOAT bfac = -optimise_bfactor_subtract; bfac <= optimise_bfactor_subtract; bfac += 10.0) {
@@ -374,10 +374,9 @@ class image_handler_parameters {
         } else if (fn_cosDPhi != "") {
             MetaDataTable MDcos;
 
-            MultidimArray<Complex> FT1, FT2;
             FourierTransformer transformer;
-            transformer.FourierTransform(Iout(), FT1);
-            transformer.FourierTransform(Iop(), FT2);
+            MultidimArray<Complex> FT1 = transformer.FourierTransform(Iout());
+            MultidimArray<Complex> FT2 = transformer.FourierTransform(Iop());
 
             MultidimArray<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
             MDcos.setName("cos");
@@ -775,8 +774,7 @@ class image_handler_parameters {
                     selfApplyGeometry(Iin(), A, IS_NOT_INV, DONT_WRAP);
                 }
 
-                MultidimArray<Complex> FT;
-                transformer.FourierTransform(Iin(), FT);
+                MultidimArray<Complex> FT = transformer.FourierTransform(Iin());
 
                 if (do_avg_ampl) {
                     for (long int n = 0; n < FT.size(); n++) {

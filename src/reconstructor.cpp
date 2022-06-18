@@ -363,7 +363,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME, p);
         img.read(fn_img);
         img().setXmippOrigin();
-        transformer.FourierTransform(img(), F2D);
+        F2D = transformer.FourierTransform(img());
         CenterFFTbySign(F2D);
 
         if (abs(trans[0]) > 0.0 || abs(trans[1]) > 0.0 || abs(trans[2]) > 0.0) {

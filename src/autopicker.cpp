@@ -689,7 +689,7 @@ void AutoPicker::initialise() {
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
                 Maux.elem(i, j) = Mcirc_mask.elem(i, j);
             }
-            transformer.FourierTransform(Maux, Favgmsk);
+            Favgmsk = transformer.FourierTransform(Maux);
             CenterFFTbySign(Favgmsk);
 
         }
@@ -710,7 +710,7 @@ void AutoPicker::initialise() {
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
             Maux.elem(i, j) = Mcirc_mask.elem(i, j);
         }
-        transformer.FourierTransform(Maux, Finvmsk);
+        Finvmsk = transformer.FourierTransform(Maux);
         CenterFFTbySign(Finvmsk);
 
         // Also get the particle-area mask
@@ -2313,9 +2313,8 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
             }
         }
 
-        MultidimArray<Complex> Faux;
         // Fourier Transform (and downscale) Imic()
-        transformer.FourierTransform(Imic(), Faux);
+        MultidimArray<Complex> Faux = transformer.FourierTransform(Imic());
 
         // Use downsized FFTs
         windowFourierTransform(Faux, Fmic, workSize);
@@ -2651,7 +2650,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
          */
 
         // Fourier Transform (and downscale) Imic()
-        transformer.FourierTransform(Imic(), Fmic);
+        Fmic = transformer.FourierTransform(Imic());
 
         if (highpass > 0.0) {
             lowPassFilterMap(Fmic, micrograph_size, highpass, angpix, 2, true); // true means highpass instead of lowpass!
@@ -2663,8 +2662,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         // Also calculate the FFT of the squared micrograph
         Maux.resize(micrograph_size, micrograph_size);
         Maux = Imic() * Imic();
-        MultidimArray<Complex> Fmic2;
-        transformer.FourierTransform(Maux, Fmic2);
+        MultidimArray<Complex> Fmic2 = transformer.FourierTransform(Maux);
         CenterFFTbySign(Fmic2);
 
         Maux.resize(workSize,workSize);

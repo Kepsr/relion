@@ -146,26 +146,26 @@ class FourierTransformer {
 
     public:
 
-    /** Real array, in fact a pointer to the user array is stored. */
+    // Pointer to a real array
     MultidimArray<RFLOAT> *fReal;
 
-     /** Complex array, in fact a pointer to the user array is stored. */
+    // Pointer to a complex array
     MultidimArray<Complex> *fComplex;
 
-    /** Fourier array  */
+    // Fourier array
     MultidimArray<Complex> fFourier;
 
     #ifdef RELION_SINGLE_PRECISION
-    /* fftw Forward plan */
+    // fftw Forward plan
     fftwf_plan fPlanForward;
 
-    /* fftw Backward plan */
+    // fftw Backward plan
     fftwf_plan fPlanBackward;
     #else
-    /* fftw Forward plan */
+    // fftw Forward plan
     fftw_plan fPlanForward;
 
-    /* fftw Backward plan */
+    // fftw Backward plan
     fftw_plan fPlanBackward;
     #endif
 
@@ -178,14 +178,6 @@ class FourierTransformer {
 
     /** Destructor */
     ~FourierTransformer();
-
-    /** Copy constructor
-     *
-     * The created FourierTransformer is a perfect copy of the input array but with a
-     * different memory assignment.
-     *
-     */
-    FourierTransformer(const FourierTransformer& op);
 
     /** Compute the Fourier transform of a MultidimArray, 2D and 3D.
         If getCopy is false, an alias to the transformed data is returned.
@@ -202,6 +194,15 @@ class FourierTransformer {
         } else {
             getFourierAlias(V);
         }
+    }
+
+    template <typename T>
+    MultidimArray<tComplex<T> > FourierTransform(MultidimArray<T> &v, bool force_new_plans = false) {
+        MultidimArray<tComplex<T> > V;
+        setReal(v, force_new_plans);
+        Transform(FFTW_FORWARD);
+        getFourierCopy(V);
+        return V;
     }
 
     /** Compute the Fourier transform.
