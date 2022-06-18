@@ -724,14 +724,10 @@ void Reconstructor::applyCTFPandCTFQ(
                 anglemin -= 180.0;
                 anglemax -= 180.0;
             }
-            MultidimArray<Complex> *myCTFPorQ, *myCTFPorQb;
-            if (is_angle_reverse) {
-                myCTFPorQ  = ipass == 0 ? &outQ : &outP;
-                myCTFPorQb = ipass == 0 ? &outP : &outQ;
-            } else {
-                myCTFPorQ  = ipass == 0 ? &outP : &outQ;
-                myCTFPorQb = ipass == 0 ? &outQ : &outP;
-            }
+
+            bool PorQoutP = is_angle_reverse != (ipass == 0);
+            auto &myCTFPorQ  = PorQoutP ? outP : outQ;
+            auto &myCTFPorQb = PorQoutP ? outQ : outP;
 
             // Deal with sectors with the Y-axis in the middle of the sector...
             bool do_wrap_max = anglemin < 180.0 && anglemax > 180.0;
@@ -741,19 +737,17 @@ void Reconstructor::applyCTFPandCTFQ(
             anglemin = radians(anglemin);
             anglemax = radians(anglemax);
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(CTFP) {
-                RFLOAT x = (RFLOAT) jp;
-                RFLOAT y = (RFLOAT) ip;
-                RFLOAT myangle = x * x + y * y > 0 ? acos(y / sqrt(x * x + y * y)) : 0; // dot-product with Y-axis: (0,1)
+                RFLOAT theta = atan2(jp, ip);
                 // Only take the relevant sector now...
                 if (do_wrap_max) {
-                    if (myangle >= anglemin) {
-                        direct::elem(*myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
-                    } else if (myangle < anglemax) {
-                        direct::elem(*myCTFPorQb, i, j) = direct::elem(Fapp, i, j);
+                    if (theta >= anglemin) {
+                        direct::elem(myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
+                    } else if (theta < anglemax) {
+                        direct::elem(myCTFPorQb, i, j) = direct::elem(Fapp, i, j);
                     }
                 } else {
-                    if (myangle >= anglemin && myangle < anglemax) {
-                        direct::elem(*myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
+                    if (theta >= anglemin && theta < anglemax) {
+                        direct::elem(myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
                     }
                 }
             }
