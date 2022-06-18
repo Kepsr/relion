@@ -250,8 +250,8 @@ RFLOAT CtfHelper::readValue(
     try {
         return partMdt.getValue<RFLOAT>(label, particle);
     } catch (const char *errmsg) { try {
-        if (opticsGroup < 0) { throw "Negative optics group!"; }
-        if (!obs) { throw "No ObservationModel!"; }
+        if (opticsGroup < 0) throw "Negative optics group!";
+        if (!obs) throw "No ObservationModel!";
         return obs->opticsMdt.getValue<RFLOAT>(label, opticsGroup);
     } catch (const char *errmsg) {
         return defaultVal;
@@ -336,8 +336,11 @@ MultidimArray<RFLOAT> CtfHelper::getFftwImage(
 
         for (int j = 0; j < result.ydim; j++)
         for (int i = 0; i < result.xdim; i++) {
-            RFLOAT x = i / xs;
-            RFLOAT y = (j <= result.ydim / 2 ? j : j - result.ydim) / ys;
+            const int ip = i;
+            const int jp = j <= result.ydim / 2 ? j : j - result.ydim;
+
+            RFLOAT x = (RFLOAT) ip / xs;
+            RFLOAT y = (RFLOAT) jp / ys;
 
             const int x0 = i;
             const int y0 = j <= result.ydim / 2 ? j : gammaOffset.data.ydim + j - result.ydim;
@@ -618,7 +621,7 @@ void CtfHelper::applyWeightEwaldSphereCurvature(
         RFLOAT deltaf = u2 > 0.0 ? std::abs(astigDefocus / u2) : 0.0;
         RFLOAT inv_d = sqrt(u2);
         RFLOAT aux = 2.0 * deltaf * ctf.getLambda() * inv_d / particle_diameter;
-        RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
+        RFLOAT A = aux > 1.0 ? 0.0 : 2.0 / PI * (acos(aux) - aux * sqrt(1 - aux * aux));
 
         direct::elem(result, i, j) = 0.5 * (A * (2.0 * fabs(sin(gamma)) - 1.0) + 1.0);
         // Within RELION, sin(chi) is used rather than 2 * sin(chi).

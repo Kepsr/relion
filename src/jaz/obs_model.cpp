@@ -320,16 +320,13 @@ MultidimArray<Complex> ObservationModel::predictObservation(
             false, false, false, true, applyCtfPadding
         );
 
-        if (getCtfPremultiplied(opticsGroup)) {
-            for (int y = 0; y < s_out;  y++)
-            for (int x = 0; x < sh_out; x++) {
-                pred(y, x) *= ctfImg(y, x) * ctfImg(y, x);
-            }
-        } else {
-            for (int y = 0; y < s_out;  y++)
-            for (int x = 0; x < sh_out; x++) {
-                pred(y, x) *= ctfImg(y, x);
-            }
+        // Maybe square
+        auto f = getCtfPremultiplied(opticsGroup) ? [] (RFLOAT x) { return x * x; }
+                                                  : [] (RFLOAT x) { return x; };
+
+        for (int y = 0; y < s_out;  y++)
+        for (int x = 0; x < sh_out; x++) {
+            pred(y, x) *= f(ctfImg(y, x));
         }
     }
 
@@ -338,13 +335,11 @@ MultidimArray<Complex> ObservationModel::predictObservation(
         opticsGroup < oddZernikeCoeffs.size() &&
         oddZernikeCoeffs[opticsGroup].size() > 0
     ) {
-        const Image<Complex> &corr = getPhaseCorrection(opticsGroup, s_out);
-        pred *= corr.data;
+        pred *= getPhaseCorrection(opticsGroup, s_out).data;
     }
 
     if (applyMtf && opticsGroup < fnMtfs.size()) {
-        const Image<RFLOAT> &mtf = getMtfImage(opticsGroup, s_out);
-        pred *= mtf.data;
+        pred *= getMtfImage(opticsGroup, s_out).data;
     }
 
     return pred;

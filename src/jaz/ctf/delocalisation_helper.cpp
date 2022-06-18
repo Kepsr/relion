@@ -42,11 +42,11 @@ void DelocalisationHelper::maskOutsideBox(
             double fx, fy;
 
             if (dx < -radius) fx = 0.0;
-            else if (dx < radius) fx = 1.0 - acos(dx/radius)/PI + dx * sqrt(r2 - dx*dx)/(PI * r2);
+            else if (dx < radius) fx = 1.0 - (acos(dx / radius) - dx * sqrt(r2 - dx*dx) / r2) / PI;
             else fx = 1.0;
 
             if (dy < -radius) fy = 0.0;
-            else if (dy < radius) fy = 1.0 - acos(dy/radius)/PI + dy * sqrt(r2 - dy*dy)/(PI * r2);
+            else if (dy < radius) fy = 1.0 - (acos(dy / radius) - dy * sqrt(r2 - dy*dy) / r2) / PI;
             else fy = 1.0;
 
             const double f = fx * fy;
