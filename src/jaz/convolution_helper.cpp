@@ -34,8 +34,8 @@ Image<RFLOAT> ConvolutionHelper::convolve2D(
 
     Image<Complex> I0, I1, P(wf,h);
 
-    ft.FourierTransform(img0(), I0());
-    ft.FourierTransform(img1(), I1());
+    I0() = ft.FourierTransform(img0());
+    I1() = ft.FourierTransform(img1());
 
     double sc = w * h;
 

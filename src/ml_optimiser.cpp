@@ -1928,7 +1928,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
     int nr_particles_done = 0;
     FileName fn_img, fn_stack;
     // For spectrum calculation: recycle the transformer (so do not call getSpectrum all the time)
-    MultidimArray<Complex > Faux;
+    MultidimArray<Complex> Faux;
     FourierTransformer transformer;
     MetaDataTable MDimg;
 
@@ -2256,9 +2256,8 @@ void MlOptimiser::initialLowPassFilterReferences() {
         radius -= WIDTH_FMASK_EDGE / 2.0;
         RFLOAT radius_p = radius + WIDTH_FMASK_EDGE;
         FourierTransformer transformer;
-        MultidimArray<Complex> Faux;
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
-            transformer.FourierTransform(mymodel.Iref[iclass], Faux);
+            MultidimArray<Complex> Faux = transformer.FourierTransform(mymodel.Iref[iclass]);
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
                 RFLOAT r = sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp));
                 if (r < radius) {
@@ -4392,7 +4391,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
     FourierTransformer transformer;
     for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++) {
         Image<RFLOAT> img, rec_img;
-        MultidimArray<Complex > Fimg, Faux;
+        MultidimArray<Complex> Fimg;
         MultidimArray<RFLOAT> Fctf;
         Matrix2D<RFLOAT> Aori;
         Matrix1D<RFLOAT> my_projected_com(mymodel.data_dim), my_refined_ibody_offset(mymodel.data_dim);
@@ -4797,7 +4796,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         // Always store FT of image without mask (to be used for the reconstruction)
         MultidimArray<RFLOAT> img_aux;
         img_aux = has_converged && do_use_reconstruct_images ? rec_img() : img();
-        transformer.FourierTransform(img_aux, Faux);
+        MultidimArray<Complex> Faux = transformer.FourierTransform(img_aux);
         windowFourierTransform(Faux, Fimg, image_current_size[optics_group]);
         CenterFFTbySign(Fimg);
 
@@ -4877,7 +4876,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         #endif
 
         // Store the Fourier Transform of the image Fimg
-        transformer.FourierTransform(img(), Faux);
+        Faux = transformer.FourierTransform(img());
 
         // Store the power_class spectrum of the whole image (to fill sigma2_noise between current_size and ori_size
         if (image_current_size[optics_group] < image_full_size[optics_group]) {
@@ -5162,7 +5161,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             }
             #endif
             // And back to Fourier space now
-            transformer.FourierTransform(img(), Faux);
+            Faux = transformer.FourierTransform(img());
             windowFourierTransform(Faux, Fsum_obody, image_current_size[optics_group]);
             CenterFFTbySign(Fsum_obody);
 

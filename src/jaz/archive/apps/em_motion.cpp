@@ -199,8 +199,8 @@ int main(int argc, char *argv[]) {
         Image<Complex> ref0, ref1, deltaRef(sh,s,s);
 
         FourierTransformer ft;
-        ft.FourierTransform(map0(), ref0());
-        ft.FourierTransform(map1(), ref1());
+        ref0() = ft.FourierTransform(map0());
+        ref1() = ft.FourierTransform(map1());
 
         ImageOp::linearCombination(ref0, ref1, 0.5, -0.5, deltaRef);
         sigma2ref = FscHelper::powerSpectrum3D(deltaRef);

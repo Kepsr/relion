@@ -397,8 +397,8 @@ class reconstruct_parameters {
                             obsR[p] = FilterHelper::padCorner2D(obsR[p], sPad2D, sPad2D);
                         }
 
-                        MultidimArray<Complex> F2D, F2DP, F2DQ;
-                        transformer.FourierTransform(obsR[p](), F2D);
+                        MultidimArray<Complex> F2DP, F2DQ;
+                        MultidimArray<Complex> F2D = transformer.FourierTransform(obsR[p]());
 
                         if (abs(XX(trans)) > 0.0 || abs(YY(trans)) > 0.0) {
                             if (do_3d_rot) {

@@ -583,7 +583,7 @@ std::vector<Image<Complex>> StackHelper::FourierTransform(
 
     for (long i = 0; i < ic; i++) {
         FourierTransformer ft;
-        ft.FourierTransform(stack[i].data, out[i].data);
+        out[i].data = ft.FourierTransform(stack[i].data);
     }
 
     return out;

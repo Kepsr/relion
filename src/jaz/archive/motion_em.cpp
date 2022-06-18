@@ -165,7 +165,7 @@ void MotionEM::updateVelocities() {
         std::vector<Image<Complex>> posProbFs(fc);
 
         for (int f = 0; f < fc; f++) {
-            fts_pos[threadnum].FourierTransform(posProb[p][f](), posProbFs[f]());
+            posProbFs[f]() = fts_pos[threadnum].FourierTransform(posProb[p][f]());
         }
 
         for (int f = 0; f < fc - 1; f++) {
@@ -199,7 +199,7 @@ void MotionEM::consolidateVelocities(int maxPc) {
 
         for (int p = 0; p < pc; p++) {
             velProbNext[p] = Image<RFLOAT>(s_vel[f],s_vel[f]);
-            fts_vel[threads * sig_vel_class[f] + threadnum].FourierTransform(velProb[p][f](), velProbFs[p]());
+            velProbFs[p]() = fts_vel[threads * sig_vel_class[f] + threadnum].FourierTransform(velProb[p][f]());
         }
 
         for (int p = 0; p < debug_pc; p++) {
@@ -271,7 +271,7 @@ void MotionEM::smoothVelocities() {
         std::vector<Image<Complex>> velProbFs(fc - 1);
 
         for (int f = 0; f < fc - 1; f++) {
-            fts_vel[threads * sig_vel_class[f] + threadnum].FourierTransform(velProb[p][f](), velProbFs[f]());
+            velProbFs[f]() = fts_vel[threads * sig_vel_class[f] + threadnum].FourierTransform(velProb[p][f]());
         }
 
         for (int f = 0; f < fc - 1; f++) {
@@ -362,8 +362,8 @@ void MotionEM::updatePositions(bool backward, int maxPc) {
 
             Image<RFLOAT> velProbLarge = FilterHelper::padCorner2D(velProb[p][fv], s_pos, s_pos);
 
-            fts_pos[threadnum].FourierTransform(velProbLarge(), velProbLargeFs());
-            fts_pos[threadnum].FourierTransform(posProb[p][f](), posProbFs());
+            velProbLargeFs() = fts_pos[threadnum].FourierTransform(velProbLarge());
+            posProbFs()      = fts_pos[threadnum].FourierTransform(posProb[p][f]());
 
             for (int y = 0; y < s_pos; y++)
             for (int x = 0; x < sh_pos; x++) {

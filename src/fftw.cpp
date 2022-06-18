@@ -49,6 +49,9 @@
 #include <string.h>
 #include <math.h>
 
+using RealArray = MultidimArray<RFLOAT>;
+using ComplexArray = MultidimArray<Complex>;
+
 static pthread_mutex_t fftw_plan_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // #define TIMING_FFTW
@@ -78,14 +81,6 @@ FourierTransformer::~FourierTransformer() {
     #ifdef DEBUG_PLANS
     std::cerr << "CLEARED this= " << this << std::endl;
     #endif
-}
-
-FourierTransformer::FourierTransformer(const FourierTransformer &op):
-plans_are_set(false) {
-    // Clear current object
-    clear();
-    // New object is an extact copy of op
-    *this = op;
 }
 
 void FourierTransformer::init() {
@@ -317,7 +312,7 @@ void FourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) 
 static unsigned long int getsize(const FourierTransformer &t) {
     if (t.fReal)    return t.fReal->size();
     if (t.fComplex) return t.fComplex->size();
-    REPORT_ERROR("No complex nor real data defined");
+    REPORT_ERROR("No data defined");
 }
 
 // Transform ---------------------------------------------------------------
@@ -474,10 +469,9 @@ void getFSC(
     MultidimArray<RFLOAT> &m1, MultidimArray<RFLOAT> &m2,
     MultidimArray<RFLOAT> &fsc
 ) {
-    MultidimArray<Complex> FT1, FT2;
     FourierTransformer transformer;
-    transformer.FourierTransform(m1, FT1);
-    transformer.FourierTransform(m2, FT2);
+    MultidimArray<Complex> FT1 = transformer.FourierTransform(m1);
+    MultidimArray<Complex> FT2 = transformer.FourierTransform(m2);
     getFSC(FT1, FT2, fsc);
 }
 
@@ -575,10 +569,9 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
     MultidimArray<RFLOAT> &acorr,
     MultidimArray<RFLOAT> &dpr
 ) {
-    MultidimArray<Complex> FT1, FT2;
     FourierTransformer transformer;
-    transformer.FourierTransform(m1, FT1);
-    transformer.FourierTransform(m2, FT2);
+    MultidimArray<Complex> FT1 = transformer.FourierTransform(m1);
+    MultidimArray<Complex> FT2 = transformer.FourierTransform(m2);
     getAmplitudeCorrelationAndDifferentialPhaseResidual(FT1, FT2, acorr, dpr);
 }
 

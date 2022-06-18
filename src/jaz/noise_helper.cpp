@@ -515,7 +515,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     Image<Complex> spec = Image<Complex>::zeros(sh, s);
 
     FourierTransformer ft;
-    ft.FourierTransform(img(), spec());
+    spec() = ft.FourierTransform(img());
 
     Image<Complex> ccspec(sh, s);
     for (long int yy = 0; yy < s;  yy++)
@@ -554,7 +554,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
             direct::elem(imgD.data, xx, yy) = DistributionHelper::sampleGauss(v, sig);
         }
 
-        ft.FourierTransform(imgD(), imgDs());
+        imgDs() = ft.FourierTransform(imgD());
 
         for (long int yy = 0; yy < s;  yy++)
         for (long int xx = 0; xx < sh; xx++) {
@@ -595,7 +595,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
     Image<Complex> spec(sh, s);
 
     FourierTransformer ft;
-    ft.FourierTransform(img(), spec());
+    spec() = ft.FourierTransform(img());
 
     VtkHelper::writeVTK(spec, "debug/spec.vtk");
 
@@ -727,7 +727,7 @@ void NoiseHelper::testParseval() {
         varr /= s * s;
 
         FourierTransformer ft;
-        ft.FourierTransform(real(), freq());
+        freq() = ft.FourierTransform(real());
 
         double var = 0.0;
 

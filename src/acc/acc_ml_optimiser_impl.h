@@ -835,7 +835,7 @@ void getFourierTransformsAndCtfs(
             softMaskOutsideMap(img(), my_mask_radius, (RFLOAT)baseMLO->width_mask_edge);
 
             // And back to Fourier space now
-            accMLO->transformer.FourierTransform(img(), Faux);
+            Faux = accMLO->transformer.FourierTransform(img());
             windowFourierTransform(Faux, Fsum_obody, baseMLO->image_current_size[optics_group]);
             CenterFFTbySign(Fsum_obody);
 

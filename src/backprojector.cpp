@@ -2099,7 +2099,7 @@ void BackProjector::windowToOridimRealSpace(
     // transformer.inverseFourierTransform(Fin, Mout);
 
     Fin.clear();
-    transformer.fReal = NULL;  // Make sure to re-calculate fftw plan
+    transformer.fReal = nullptr;  // Make sure to re-calculate fftw plan
     Mout.setXmippOrigin();
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
@@ -2145,8 +2145,8 @@ void BackProjector::windowToOridimRealSpace(
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
     tt() = Mout;
     tt.write("windoworidim_Mwindowed_masked.spi");
-    FourierTransformer ttf;
-    ttf.FourierTransform(Mout, Fin);
+    // FourierTransformer ttf;
+    Fin = FourierTransformer{}.FourierTransform(Mout);
     tt().resize(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     for (long int n = 0; n < Fin.size(); n++) {
         tt()[n] = abs(Fin[n]);
