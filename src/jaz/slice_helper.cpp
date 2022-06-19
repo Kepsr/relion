@@ -254,18 +254,18 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
         );
      }
 
-    Image<RFLOAT> dest2r = Image<RFLOAT>(2 * (dest2.data.xdim - 1), dest2.data.ydim);
-    dest2r() = FourierTransformer{}.inverseFourierTransform(dest2.data);
-    CenterFFT(dest2r.data, true);
+    MultidimArray<RFLOAT> dest2r (2 * (dest2.data.xdim - 1), dest2.data.ydim);
+    dest2r = FourierTransformer{}.inverseFourierTransform(dest2.data);
+    CenterFFT(dest2r, true);
 
-    Image<RFLOAT> weightr = Image<RFLOAT>(2 * (dest2.data.xdim - 1), dest2.data.ydim);
-    weightr() = FourierTransformer{}.inverseFourierTransform(weight.data);
-    CenterFFT(weightr.data, true);
+    MultidimArray<RFLOAT> weightr (2 * (dest2.data.xdim - 1), dest2.data.ydim);
+    weightr = FourierTransformer{}.inverseFourierTransform(weight.data);
+    CenterFFT(weightr, true);
 
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, x, y) = direct::elem(dest2r.data, x, y)
-                                      / direct::elem(weightr.data, x, y);
+        direct::elem(dest.data, x, y) = direct::elem(dest2r, x, y)
+                                      / direct::elem(weightr, x, y);
     }
 }
 
@@ -292,9 +292,8 @@ void SliceHelper::insertSpectralSlices(
     for (int i = 0; i < ic; i++) {
         avgPad2D(src[i], img, imgPad);
 
-        FourierTransformer ft;
         CenterFFT(img.data, false);
-        ft.FourierTransform(img(), srcSpectra[i].data, true);
+        srcSpectra[i].data = FourierTransformer{}.FourierTransform(img.data);
 
         shifts[i] = d2Vector(volCentImg[i].x - wir/2.0, volCentImg[i].y - hir/2.0);
 
@@ -398,9 +397,8 @@ void SliceHelper::insertWeightedSpectralSlices(
     for (int i = 0; i < ic; i++) {
         avgPad2D(src[i], img, imgPad);
 
-        FourierTransformer ft;
         CenterFFT(img.data, false);
-        ft.FourierTransform(img(), srcSpectra[i].data, true);
+        srcSpectra[i].data = FourierTransformer{}.FourierTransform(img.data);
 
         shifts[i] = d2Vector(volCentImg[i].x - wir/2.0, volCentImg[i].y - hir/2.0);
 

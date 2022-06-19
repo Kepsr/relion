@@ -559,15 +559,14 @@ void selfScaleToSizeFourier(long int Ydim, long int Xdim, MultidimArray<RFLOAT>&
 
     // Mmem = *this
     // memory for fourier transform output
-    MultidimArray<Complex > MmemFourier;
     // Perform the Fourier transform
     FourierTransformer transformerM;
     transformerM.setThreadsNumber(nThreads);
-    transformerM.FourierTransform(Mpmem, MmemFourier, true);
+    MultidimArray<Complex> MmemFourier = transformerM.FourierTransform(Mpmem);
 
     // Create space for the downsampled image and its Fourier transform
     Mpmem.resize(Xdim, Ydim);
-    MultidimArray<Complex > MpmemFourier;
+    MultidimArray<Complex> MpmemFourier;
     FourierTransformer transformerMp;
     transformerMp.setReal(Mpmem);
     transformerMp.getFourierAlias(MpmemFourier);
@@ -1006,10 +1005,11 @@ void resizeMap(MultidimArray<RFLOAT> &img, int newsize) {
 void applyBFactorToMap(
     MultidimArray<Complex> &FT, int ori_size, RFLOAT bfactor, RFLOAT angpix
 ) {
+    const RFLOAT Nyquist = 0.5 / angpix;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         int r2 = euclidsq(ip, jp, kp);
         RFLOAT res = sqrt((RFLOAT) r2) / (ori_size * angpix); // get resolution in 1/Angstrom
-        if (res <= 1.0 / (angpix * 2.0)) {
+        if (res <= Nyquist) {
             // Apply B-factor sharpening until Nyquist, then low-pass filter later on (with a soft edge)
             direct::elem(FT, i, j, k) *= exp(-(bfactor / 4.0) * res * res);
         } else {
