@@ -128,8 +128,7 @@ void MotionEM::computeInitial() {
             }
 
             Image<RFLOAT> ccRs(s_full,s_full);
-
-            fts_full[threadnum].inverseFourierTransform(ccFs(), ccRs());
+            ccRs() = fts_full[threadnum].inverseFourierTransform(ccFs());
 
             for (int y = 0; y < s_full; y++)
             for (int x = 0; x < s_full; x++) {
@@ -179,9 +178,7 @@ void MotionEM::updateVelocities() {
             }
 
             Image<RFLOAT> velProbLarge(s_pos,s_pos);
-
-            fts_pos[threadnum].inverseFourierTransform(velProbLargeFs(), velProbLarge());
-
+            velProbLarge() = fts_pos[threadnum].inverseFourierTransform(velProbLargeFs());
             velProb[p][f] = FilterHelper::cropCorner2D(velProbLarge, s_vel[f], s_vel[f]);
         }
     }
@@ -310,7 +307,6 @@ void MotionEM::smoothVelocities() {
 }
 
 Image<RFLOAT> MotionEM::blurVelocity(const Image<Complex> &velProbFs, double sigma, int f, int threadnum) {
-    Image<RFLOAT> velProbB(s_vel[f], s_vel[f]);
 
     const double sig_freq = s_vel[f] / (2.0 * PI * sigma);
     const double sig2_freq = sig_freq * sig_freq;
@@ -325,8 +321,8 @@ Image<RFLOAT> MotionEM::blurVelocity(const Image<Complex> &velProbFs, double sig
         velProbFs_env(y, x) *= exp(-0.5 * (xx * xx + yy * yy) / sig2_freq);
     }
 
-    fts_vel[threads * sig_vel_class[f] + threadnum].inverseFourierTransform(velProbFs_env(), velProbB());
-
+    Image<RFLOAT> velProbB(s_vel[f], s_vel[f]);
+    velProbB() = fts_vel[threads * sig_vel_class[f] + threadnum].inverseFourierTransform(velProbFs_env());
     return velProbB;
 }
 
@@ -353,7 +349,6 @@ void MotionEM::updatePositions(bool backward, int maxPc) {
     for (int p = 0; p < debug_pc; p++) {
         int threadnum = omp_get_thread_num();
 
-        Image<RFLOAT>  posProbMapped(s_pos, s_pos);
         Image<Complex> posProbFs(sh_pos, s_pos), velProbLargeFs(sh_pos, s_pos);
 
         for (int f = f0; f != f1; f += df) {
@@ -372,7 +367,8 @@ void MotionEM::updatePositions(bool backward, int maxPc) {
                 );
             }
 
-            fts_pos[threadnum].inverseFourierTransform(posProbFs(), posProbMapped());
+            Image<RFLOAT> posProbMapped(s_pos, s_pos);
+            posProbMapped() = fts_pos[threadnum].inverseFourierTransform(posProbFs());
 
             double sum = 0.0;
 

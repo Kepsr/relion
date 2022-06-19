@@ -2096,7 +2096,7 @@ void BackProjector::windowToOridimRealSpace(
     transformer.inverseFourierTransform();
     }
 
-    // transformer.inverseFourierTransform(Fin, Mout);
+    // Mout = transformer.inverseFourierTransform(Fin);
 
     Fin.clear();
     transformer.fReal = nullptr;  // Make sure to re-calculate fftw plan

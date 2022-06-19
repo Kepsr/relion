@@ -148,7 +148,6 @@ void MagnificationHelper::updateScaleReal(
     const long h = prediction.data.ydim;
 
     Image<Complex> pred2(w, h), obs2(w, h);
-    Image<RFLOAT> realPred(ww, h), realObs(ww, h);
 
     Image<RFLOAT> ctfImg(w, h);
     ctfImg() = CtfHelper::getFftwImage(
@@ -167,9 +166,9 @@ void MagnificationHelper::updateScaleReal(
         direct::elem(obs2 .data, x, y) = sn * vy;
     }
 
-    FourierTransformer ft0, ft1;
-    ft0.inverseFourierTransform(pred2.data, realPred.data);
-    ft1.inverseFourierTransform(obs2 .data, realObs .data);
+    Image<RFLOAT> realPred(ww, h), realObs(ww, h);
+    realPred.data = FourierTransformer{}.inverseFourierTransform(pred2.data);
+    realObs.data  = FourierTransformer{}.inverseFourierTransform(obs2.data);
 
     Volume<gravis::d2Vector> grad(ww, h, 1);
     FilterHelper::centralGrad2D(realPred, grad);

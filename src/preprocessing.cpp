@@ -771,7 +771,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
             FT *= Fctf;
 
-            transformer.inverseFourierTransform(FT, Ipart());
+            Ipart() = transformer.inverseFourierTransform(FT);
 
             if (extract_size != premultiply_ctf_extract_size) {
                 Ipart().window(

@@ -674,7 +674,7 @@ void ParticleSubtractor::subtractOneParticle(
     } else {
         // And go finally back to real-space
         CenterFFTbySign(Fimg);
-        transformer.inverseFourierTransform(Fimg, img());
+        img() = transformer.inverseFourierTransform(Fimg);
 
         if (do_center || opt.fn_body_masks != "None") {
             // Recenter the particles

@@ -255,20 +255,17 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
      }
 
     Image<RFLOAT> dest2r = Image<RFLOAT>(2 * (dest2.data.xdim - 1), dest2.data.ydim);
-    Image<RFLOAT> weightr = Image<RFLOAT>(2 * (dest2.data.xdim - 1), dest2.data.ydim);
-
-    FourierTransformer ft;
-    ft.inverseFourierTransform(dest2.data, dest2r());
+    dest2r() = FourierTransformer{}.inverseFourierTransform(dest2.data);
     CenterFFT(dest2r.data, true);
 
-    FourierTransformer ftw;
-    ftw.inverseFourierTransform(weight.data, weightr());
+    Image<RFLOAT> weightr = Image<RFLOAT>(2 * (dest2.data.xdim - 1), dest2.data.ydim);
+    weightr() = FourierTransformer{}.inverseFourierTransform(weight.data);
     CenterFFT(weightr.data, true);
 
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
         direct::elem(dest.data, x, y) = direct::elem(dest2r.data, x, y)
-                                         / direct::elem(weightr.data, x, y);
+                                      / direct::elem(weightr.data, x, y);
     }
 }
 

@@ -241,7 +241,7 @@ class project_parameters {
                 }
             }
 
-            transformer.inverseFourierTransform(F2D, img());
+            img() = transformer.inverseFourierTransform(F2D);
             // Shift the image back to the center...
             CenterFFT(img(), false);
             img.setSamplingRateInHeader(angpix);
@@ -386,7 +386,7 @@ class project_parameters {
                 }
 
                 img().initZeros();
-                transformer.inverseFourierTransform(F2D, img());
+                img() = transformer.inverseFourierTransform(F2D);
                 // Shift the image back to the center...
                 CenterFFT(img(), false);
 
@@ -490,7 +490,7 @@ class project_parameters {
                     }
 
                     expimg().initZeros();
-                    transformer.inverseFourierTransform(F2D, expimg());
+                    expimg() = transformer.inverseFourierTransform(F2D);
                     // Shift the image back to the center...
                     CenterFFT(expimg(), false);
 

@@ -592,20 +592,16 @@ std::vector<Image<Complex>> StackHelper::FourierTransform(
 std::vector<Image<RFLOAT>> StackHelper::inverseFourierTransform(
     std::vector<Image<Complex>>& stack
 ) {
-    std::vector<Image<RFLOAT>> out(stack.size());
     const long ic = stack.size();
-
     const int h = stack[0].data.ydim;
     const int ww = stack[0].data.xdim;
     const int w = 2*(ww - 1);
 
+    std::vector<Image<RFLOAT>> out(ic);
     for (long i = 0; i < ic; i++) {
-        out[i] = Image<RFLOAT>(w,h);
-
-        FourierTransformer ft;
-        ft.inverseFourierTransform(stack[i].data, out[i].data);
+        out[i] = Image<RFLOAT>(w, h);
+        out[i].data = FourierTransformer{}.inverseFourierTransform(stack[i].data);
     }
-
     return out;
 }
 

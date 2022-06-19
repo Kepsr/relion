@@ -163,7 +163,7 @@ class ctf_toolbox_parameters {
                     Fimg /= Fctf;  // this is safe because getCTF does not return RELION_EXIT_SUCCESS.
                 }
 
-                transformer.inverseFourierTransform(Fimg, img());
+                img() = transformer.inverseFourierTransform(Fimg);
 
                 // Write out the result
                 // Check whether fn_out has an "@": if so REPLACE the corresponding frame in the output stack!

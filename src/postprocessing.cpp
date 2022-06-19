@@ -395,7 +395,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
         direct::elem(FT, i, j, k) /= aux;
     }
 
-    transformer.inverseFourierTransform(FT, I);
+    I = transformer.inverseFourierTransform(FT);
 }
 
 RFLOAT Postprocessing::sharpenMap() {
@@ -465,7 +465,7 @@ RFLOAT Postprocessing::sharpenMap() {
         lowPassFilterMap(FT, Xsize(I1()), applied_filter, angpix, filter_edge_width);
     }
 
-    transformer.inverseFourierTransform(FT, I1());
+    I1() = transformer.inverseFourierTransform(FT);
 
     return applied_filter;
 }
@@ -957,7 +957,7 @@ void Postprocessing::run_locres(int rank, int size) {
                 lowPassFilterMap(FT, Xsize(I1()), local_resol, angpix, filter_edge_width);
 
                 // Re-use I1m to save some memory
-                transformer.inverseFourierTransform(FT, I1m);
+                I1m = transformer.inverseFourierTransform(FT);
 
                 // Store weighted sum of local resolution and filtered map
                 for (long int n = 0; n < I1m.size(); n++) {

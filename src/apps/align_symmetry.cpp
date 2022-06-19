@@ -228,7 +228,7 @@ class align_symmetry {
         vol_out().reshape(vol_in());
         full_projector.get2DFourierTransform(F2D, A3D);
 
-        transformer.inverseFourierTransform(F2D, vol_out());
+        vol_out() = transformer.inverseFourierTransform(F2D);
         CenterFFT(vol_out(), false);
         vol_out.setSamplingRateInHeader(angpix);
         vol_out.write(fn_out);

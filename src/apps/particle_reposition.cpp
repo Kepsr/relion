@@ -276,7 +276,7 @@ class particle_reposition_parameters {
                     }
 
                     // Take inverse transform
-                    transformer.inverseFourierTransform(Fref, Mref);
+                    Mref = transformer.inverseFourierTransform(Fref);
                     CenterFFT(Mref, false);
                     Mref.setXmippOrigin();
 

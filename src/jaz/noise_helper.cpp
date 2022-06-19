@@ -80,10 +80,9 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         }
 
         Image<RFLOAT> mu0(s,s), img(s,s);
-
         FourierTransformer ft;
-        ft.inverseFourierTransform(ccspec.data, mu0.data);
-        ft.inverseFourierTransform(spec.data, img.data);
+        mu0.data = ft.inverseFourierTransform(ccspec.data);
+        img.data = ft.inverseFourierTransform(spec.data);
 
         const Image<RFLOAT> mu = mu0;
 
@@ -524,7 +523,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     }
 
     Image<RFLOAT> mu(s,s);
-    ft.inverseFourierTransform(ccspec.data, mu.data);
+    mu.data = ft.inverseFourierTransform(ccspec.data);
 
     double varScale = 0.0;
 
@@ -541,7 +540,6 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     Image<RFLOAT> varImg = img;
     varImg.data.initZeros();
 
-    Image<RFLOAT> ccD(s,s);
     Image<Complex> imgDs(sh,s), ccDs(sh,s);
 
     const int N = 10000;
@@ -563,12 +561,13 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
               * direct::elem(imgDs.data, xx, yy).conj();
         }
 
-        ft.inverseFourierTransform(ccDs.data, ccD.data);
+        MultidimArray<RFLOAT> ccD(s,s);
+        ccD = ft.inverseFourierTransform(ccDs.data);
 
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < s; xx++) {
             double m0 = direct::elem(mu.data, xx, yy);
-            double md = direct::elem(ccD.data, xx, yy);
+            double md = direct::elem(ccD, xx, yy);
             double d = md - m0;
 
             direct::elem(varImg.data, xx, yy) += d * d / N;
@@ -640,7 +639,6 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
     Image<RFLOAT> varImg = img;
     varImg.data.initZeros();
 
-    Image<RFLOAT> ccD(s, s);
     Image<Complex> ccDs(sh, s);
 
     const int N = 10000;
@@ -678,12 +676,12 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
             }
         }
 
-        ft.inverseFourierTransform(ccDs.data, ccD.data);
+        MultidimArray<RFLOAT> ccD(s, s);
+        ccD = ft.inverseFourierTransform(ccDs.data);
 
         for (long int y = 0; y < s; y++)
         for (long int x = 0; x < s; x++) {
-            double d = direct::elem(ccD.data, x, y);
-
+            double d = direct::elem(ccD, x, y);
             direct::elem(varImg.data, x, y) += d * d / (N * varPred);
         }
     }
@@ -764,7 +762,7 @@ void NoiseHelper::testParseval() {
         varf /= s * s;
 
         FourierTransformer ft;
-        ft.inverseFourierTransform(freq(), real());
+        real() = ft.inverseFourierTransform(freq());
 
         double var = 0.0;
 

@@ -144,7 +144,6 @@ const MultidimArray<Complex> &FourierTransformer::getComplex() const {
     return *fComplex;
 }
 
-
 void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_plans) {
 
     bool recomputePlan =
@@ -378,7 +377,6 @@ void FourierTransformer::enforceHermitianSymmetry() {
         break;
     }
 }
-
 
 void randomizePhasesBeyond(MultidimArray<RFLOAT> &v, int index) {
     MultidimArray<Complex> FT;
