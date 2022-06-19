@@ -209,8 +209,8 @@ class FourierTransformer {
         but you need to be careful that an inverse Fourier transform may
         change the data.
     */
-    template <typename T, typename T1>
-    void FourierTransform(T& v, T1& V, bool getCopy=true, bool force_new_plans = false) {
+    template <typename T>
+    void FourierTransform(MultidimArray<T> &v, MultidimArray<tComplex<T> > &V, bool getCopy=true, bool force_new_plans = false) {
         setReal(v, force_new_plans);
         Transform(FFTW_FORWARD);
         if (getCopy) {
@@ -250,8 +250,8 @@ class FourierTransformer {
         can be any matrix1D, 2D or 3D. It is important that the output
         matrix is already resized to the right size before entering
         in this function. */
-    template <typename T, typename T1>
-    void inverseFourierTransform(const T& V, T1& v) {
+    template <typename T>
+    void inverseFourierTransform(const MultidimArray<tComplex<T> > &V, MultidimArray<T> &v) {
         setReal(v);
         setFourier(V);
         Transform(FFTW_BACKWARD);
@@ -398,7 +398,7 @@ class FourierTransformer {
 // Randomize phases beyond the given F-space shell (index) of R-space input image
 void randomizePhasesBeyond(MultidimArray<RFLOAT> &I, int index);
 
-// // Randomize phases beyond the given F-space shell (index) of F-space input image
+// Randomize phases beyond the given F-space shell (index) of F-space input image
 // void randomizePhasesBeyond(MultidimArray<Complex> &v, int index);
 
 template <typename T>
@@ -537,7 +537,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
             for (int j = 0; j < l; j++) {
                 int jp = j + shift;
 
-                        if (jp <  0) { jp += l; }
+                     if (jp <  0) { jp += l; }
                 else if (jp >= l) { jp -= l; }
 
                 aux(jp) = direct::elem(v, i, j, k);
@@ -561,7 +561,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
             for (int k = 0; k < l; k++) {
                 int kp = k + shift;
 
-                        if (kp <  0) { kp += l; }
+                     if (kp <  0) { kp += l; }
                 else if (kp >= l) { kp -= l; }
 
                 aux(kp) = direct::elem(v, i, j, k);
