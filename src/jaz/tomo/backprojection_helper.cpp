@@ -247,11 +247,9 @@ void BackprojectionHelper::backprojectExactWeights(
     vol.resize(0,0,0);
 
     Image<Complex> dataFreq;
+    FourierTransformer{}.FourierTransform(volRL(), dataFreq.data, false);
 
-    FourierTransformer ft;
-    ft.FourierTransform(volRL(), dataFreq.data, false);
-
-    FilterHelper::divideExcessive(dataFreq, weight, weight(0,0,0)/(double)stack.images.size(), dataFreq);
+    FilterHelper::divideExcessive(dataFreq, weight, weight(0, 0, 0) / (double) stack.images.size(), dataFreq);
 
     volRL() = FourierTransformer{}.inverseFourierTransform(dataFreq.data);
 
@@ -291,10 +289,9 @@ void BackprojectionHelper::backprojectExactWeightsFreq(
     VolumeConverter::convert(vol, volRL);
     vol.resize(0,0,0);
 
-    FourierTransformer ft;
-    ft.FourierTransform(volRL(), dest.data, true);
+    dest.data = FourierTransformer{}.FourierTransform(volRL());
 
-    const double theta = weight(0,0,0)/(double)stack.images.size();
+    const double theta = weight(0, 0, 0) / (double) stack.images.size();
 
     for (long int z = 0; z < dv; z++)
     for (long int y = 0; y < hv; y++)
@@ -462,8 +459,7 @@ void BackprojectionHelper::backprojectDotsFS(
 
     CenterFFT(volRL.data, true);
 
-    FourierTransformer ft;
-    ft.FourierTransform(volRL(), dest.data, true);
+    dest.data = FourierTransformer{}.FourierTransform(volRL());
 }
 
 void BackprojectionHelper::backprojectDotsSeparately(

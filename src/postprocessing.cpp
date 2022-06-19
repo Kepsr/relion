@@ -399,9 +399,8 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
 }
 
 RFLOAT Postprocessing::sharpenMap() {
-    MultidimArray<Complex> FT;
     FourierTransformer transformer;
-    transformer.FourierTransform(I1(), FT, true);
+    MultidimArray<Complex> FT = transformer.FourierTransform(I1());
 
     makeGuinierPlot(FT, guinierin);
 
@@ -847,9 +846,8 @@ void Postprocessing::run_locres(int rank, int size) {
 
     // Pre-sharpen the sum of the two half-maps with the provided MTF curve and adhoc B-factor
     do_fsc_weighting = false;
-    MultidimArray<Complex> FTsum;
     FourierTransformer transformer;
-    transformer.FourierTransform(Isum, FTsum, true);
+    MultidimArray<Complex> FTsum = transformer.FourierTransform(Isum);
     divideByMtf(FTsum);
     applyBFactorToMap(FTsum, Xsize(Isum), adhoc_bfac, angpix);
 
