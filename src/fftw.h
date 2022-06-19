@@ -53,6 +53,30 @@
 #include "src/complex.h"
 #include "src/CPlot2D.h"
 
+#ifdef RELION_SINGLE_PRECISION
+
+typedef fftwf_complex FFTW_COMPLEX;
+#define FFTW_PLAN_DFT        fftwf_plan_dft
+#define FFTW_PLAN_DFT_R2C    fftwf_plan_dft_r2c
+#define FFTW_PLAN_DFT_C2R    fftwf_plan_dft_c2r
+#define FFTW_EXECUTE_DFT_R2C fftwf_execute_dft_r2c
+#define FFTW_EXECUTE_DFT_C2R fftwf_execute_dft_c2r
+#define FFTW_CLEANUP         fftwf_cleanup
+#define FFTW_DESTROY_PLAN    fftwf_destroy_plan
+
+#else
+
+typedef fftw_complex FFTW_COMPLEX;
+#define FFTW_PLAN_DFT        fftw_plan_dft
+#define FFTW_PLAN_DFT_R2C    fftw_plan_dft_r2c
+#define FFTW_PLAN_DFT_C2R    fftw_plan_dft_c2r
+#define FFTW_EXECUTE_DFT_R2C fftw_execute_dft_r2c
+#define FFTW_EXECUTE_DFT_C2R fftw_execute_dft_c2r
+#define FFTW_CLEANUP         fftw_cleanup
+#define FFTW_DESTROY_PLAN    fftw_destroy_plan
+
+#endif
+
 //#define TIMING_FFTW
 #ifdef TIMING_FFTW
     #include "src/time.h"
