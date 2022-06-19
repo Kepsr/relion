@@ -56,6 +56,7 @@
 #ifdef RELION_SINGLE_PRECISION
 
 typedef fftwf_complex FFTW_COMPLEX;
+#define FFTW_PLAN            fftwf_plan
 #define FFTW_PLAN_DFT        fftwf_plan_dft
 #define FFTW_PLAN_DFT_R2C    fftwf_plan_dft_r2c
 #define FFTW_PLAN_DFT_C2R    fftwf_plan_dft_c2r
@@ -67,6 +68,7 @@ typedef fftwf_complex FFTW_COMPLEX;
 #else
 
 typedef fftw_complex FFTW_COMPLEX;
+#define FFTW_PLAN            fftw_plan
 #define FFTW_PLAN_DFT        fftw_plan_dft
 #define FFTW_PLAN_DFT_R2C    fftw_plan_dft_r2c
 #define FFTW_PLAN_DFT_C2R    fftw_plan_dft_c2r
@@ -126,27 +128,36 @@ typedef fftw_complex FFTW_COMPLEX;
     for (long int j = 0, jp = 0; j < Ysize(V); j++, jp = j < Xsize(V) ? j : j - Ysize(V)) \
     for (long int i = 0, ip = 0; i < Xsize(V); i++, ip = i)
 
-/** FFTW volume element: Logical access.
- *
- * @code
- *
- * FFTW_ELEM(V, -1, -2, 1) = 1;
- * val = FFTW_ELEM(V, -1, -2, 1);
- * @endcode
- */
-#define FFTW_ELEM(V, ip, jp, kp) \
-    (direct::elem((V), (ip), ((jp < 0) ? (jp + Ysize(V)) : (jp)), ((kp < 0) ? (kp + Zsize(V)) : (kp))))
+namespace FFTW {
 
-/** FFTW 2D image element: Logical access.
- *
- * @code
- *
- * FFTW2D_ELEM(V, --2, 1) = 1;
- * val = FFTW2D_ELEM(V, -2, 1);
- * @endcode
- */
-#define FFTW2D_ELEM(V, ip, jp) \
-    (direct::elem((V), (ip), ((jp < 0) ? (jp + Ysize(V)) : (jp))))
+    /** Logical access to FFTW element in 3D
+     *
+     * @code
+     * FFTW::elem(V, -1, -2, 1) = 1;
+     * val = FFTW::elem(V, -1, -2, 1);
+     * @endcode
+     */
+    template <typename T>
+    T& elem(const MultidimArray<T> &V, int ip, int jp, int kp) {
+        return direct::elem(V, ip,
+                            jp < 0 ? jp + Ysize(V) : jp,
+                            kp < 0 ? kp + Zsize(V) : kp);
+    }
+
+    /** Logical access to FFTW element in 2D
+     *
+     * @code
+     * FFTW::elem(V, -2, 1) = 1;
+     * val = FFTW::elem(V, -2, 1);
+     * @endcode
+     */
+    template <typename T>
+    T& elem(const MultidimArray<T> &V, int ip, int jp) {
+        return direct::elem(V, ip,
+                            jp < 0 ? jp + Ysize(V) : jp);
+    }
+
+}
 
 /** Fourier Transformer class.
  * @ingroup FourierW
@@ -179,19 +190,11 @@ class FourierTransformer {
     // Fourier array
     MultidimArray<Complex> fFourier;
 
-    #ifdef RELION_SINGLE_PRECISION
     // fftw Forward plan
-    fftwf_plan fPlanForward;
+    FFTW_PLAN fPlanForward;
 
     // fftw Backward plan
-    fftwf_plan fPlanBackward;
-    #else
-    // fftw Forward plan
-    fftw_plan fPlanForward;
-
-    // fftw Backward plan
-    fftw_plan fPlanBackward;
-    #endif
+    FFTW_PLAN fPlanBackward;
 
     bool plans_are_set;
 
@@ -437,7 +440,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         for (int i = 0; i < l; i++) {
             int ip = i + shift;
 
-                 if (ip <  0) { ip += l; } 
+                 if (ip <  0) { ip += l; }
             else if (ip >= l) { ip -= l; }
 
             aux(ip) = direct::elem(v, i);
@@ -462,7 +465,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
             for (int i = 0; i < l; i++) {
                 int ip = i + shift;
 
-                     if (ip <  0) { ip += l; } 
+                     if (ip <  0) { ip += l; }
                 else if (ip >= l) { ip -= l; }
 
                 aux(ip) = direct::elem(v, i, j);
@@ -731,15 +734,15 @@ void windowFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
     }
 
     if (newhdim > Xsize(in)) {
-        long int max_r2 = (Xsize(in) -1) * (Xsize(in) - 1);
+        long int max_r2 = (Xsize(in) - 1) * (Xsize(in) - 1);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(in) {
             // Make sure windowed FT has nothing in the corners, otherwise we end up with an asymmetric FT!
             if (kp * kp + ip * ip + jp * jp <= max_r2)
-                FFTW_ELEM(out, ip, jp, kp) = FFTW_ELEM(in, ip, jp, kp);
+                FFTW::elem(out, ip, jp, kp) = FFTW::elem(in, ip, jp, kp);
         }
     } else {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(out) {
-            FFTW_ELEM(out, ip, jp, kp) = FFTW_ELEM(in, ip, jp, kp);
+            FFTW::elem(out, ip, jp, kp) = FFTW::elem(in, ip, jp, kp);
         }
     }
 }

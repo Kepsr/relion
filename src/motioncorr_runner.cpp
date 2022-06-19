@@ -1168,7 +1168,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
                 // logical 2D access, i = logical_y, j = logical_x
                 // F(i, j) = conj(F(-i, -j))
                 // accessor is (Y, X)
-                PS_sum().elem(i, j) += abs(j > 0 ? FFTW2D_ELEM(F_sum, i, j) : FFTW2D_ELEM(F_sum, -i, -j));
+                PS_sum().elem(i, j) += abs(j > 0 ? FFTW::elem(F_sum, i, j) : FFTW::elem(F_sum, -i, -j));
                 // Maybe use signum?
             }
         }

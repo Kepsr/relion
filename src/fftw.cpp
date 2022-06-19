@@ -1429,9 +1429,9 @@ void amplitudeOrPhaseMap(
         ) {
             RFLOAT val;
             if (output_map_type == AMPLITUDE_MAP) {
-                val = FFTW2D_ELEM(Faux, ip, jp).abs();
+                val = FFTW::elem(Faux, ip, jp).abs();
             } else if (output_map_type == PHASE_MAP) {
-                val = degrees(FFTW2D_ELEM(Faux, ip, jp).arg());
+                val = degrees(FFTW::elem(Faux, ip, jp).arg());
             } else {
                 REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR Unknown type of output map.");
             }
@@ -1482,8 +1482,8 @@ void helicalLayerLineProfile(
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux) {
         if (ip * ip + jp * jp < maxr2 && ip > 0) {
             nr_pix_list[jp] += 1.0;
-            ampl_list[jp] += FFTW2D_ELEM(Faux,  ip, jp).abs();
-            ampr_list[jp] += FFTW2D_ELEM(Faux, -ip, jp).abs();
+            ampl_list[jp] += FFTW::elem(Faux,  ip, jp).abs();
+            ampr_list[jp] += FFTW::elem(Faux, -ip, jp).abs();
         }
     }
     CDataSet dataSetAmpl, dataSetAmpr;

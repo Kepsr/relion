@@ -26,6 +26,7 @@
 #include "src/funcs.h"
 #include "src/tabfuncs.h"
 #include "src/complex.h"
+#include "src/fftw.h"
 #include "src/CPlot2D.h"
 
 /*
@@ -56,21 +57,13 @@ class ParFourierTransformer {
     MultidimArray<Complex > *fComplex;
 
     /** Fourier array  */
-    MultidimArray< Complex > fFourier;
+    MultidimArray<Complex> fFourier;
 
-    #ifdef RELION_SINGLE_PRECISION
     /* fftw Forward plan */
-    fftwf_plan fPlanForward;
+    FFTW_PLAN fPlanForward;
 
     /* fftw Backward plan */
-    fftwf_plan fPlanBackward;
-    #else
-    /* fftw Forward plan */
-    fftw_plan fPlanForward;
-
-    /* fftw Backward plan */
-    fftw_plan fPlanBackward;
-    #endif
+    FFTW_PLAN fPlanBackward;
 
     bool plans_are_set;
 

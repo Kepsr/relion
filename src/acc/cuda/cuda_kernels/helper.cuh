@@ -975,7 +975,7 @@ __global__ void cuda_kernel_calcPowerSpectrum(
         int r2 = kp * kp + ip * ip + jp * jp;
         // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
         if (r2 <= max_r2) {
-            //if (do_fourier_mask) weight = FFTW_ELEM(*fourier_mask, round(kp/padding_factor), round(ip/padding_factor), round(jp/padding_factor));
+            //if (do_fourier_mask) weight = FFTW::elem(*fourier_mask, round(ip/padding_factor), round(jp/padding_factor), round(kp/padding_factor));
             if (do_fourier_mask) {
                 int lkp = round(kp / padding_factor);
                 int lip = round(ip / padding_factor);
