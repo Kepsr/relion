@@ -38,8 +38,6 @@ Image<RFLOAT> MotionRefinement::recompose(
     const int h = obs[0].data.ydim;
     const int ic = obs.size();
 
-    Image<RFLOAT> out(w,h);
-
     Image<Complex> outC = Image<Complex>::zeros(w / 2 + 1, h);
 
     FourierTransformer ft;
@@ -56,8 +54,8 @@ Image<RFLOAT> MotionRefinement::recompose(
         ImageOp::linearCombination(imgC, outC, 1.0, 1.0 / (double) ic, outC);
     }
 
-    ft.inverseFourierTransform(outC(), out());
-
+    Image<RFLOAT> out(w, h);
+    out() = ft.inverseFourierTransform(outC());
     return out;
 }
 
@@ -67,8 +65,6 @@ Image<RFLOAT> MotionRefinement::recompose(
     const int w = 2 * obs[0].data.xdim - 1;
     const int h = obs[0].data.ydim;
     const int ic = obs.size();
-
-    Image<RFLOAT> out(w, h);
 
     Image<Complex> outC = Image<Complex>::zeros(obs[0].data.xdim, obs[0].data.ydim);
 
@@ -87,8 +83,9 @@ Image<RFLOAT> MotionRefinement::recompose(
         ImageOp::linearCombination(imgC, outC, 1.0, 1.0 / (double) ic, outC);
     }
 
-    ft.inverseFourierTransform(outC(), out());
 
+    Image<RFLOAT> out(w, h);
+    out() = ft.inverseFourierTransform(outC());
     return out;
 }
 
@@ -118,10 +115,8 @@ Image<RFLOAT> MotionRefinement::averageStack(
     }
 
     Image<RFLOAT> outR(2 * obs[0].data.xdim - 1, obs[0].data.ydim);
-
     FourierTransformer ft;
-    ft.inverseFourierTransform(outC(), outR());
-
+    outR() = ft.inverseFourierTransform(outC());
     return outR;
 }
 
@@ -182,7 +177,7 @@ std::vector<std::vector<Image<RFLOAT>>> MotionRefinement::movieCC(
                 ccsFs[t](y, x) = movie[p][f](y, x) * damageWeights[f](y, x) * pred(y, x).conj();
             }
 
-            fts[t].inverseFourierTransform(ccsFs[t](), ccsRs[t]());
+            ccsRs[t]() = fts[t].inverseFourierTransform(ccsFs[t]());
 
             for (int y = 0; y < s; y++)
             for (int x = 0; x < s; x++) {
@@ -334,8 +329,6 @@ Image<float> MotionRefinement::crossCorrelation2D(
     int w = 2 * wf - 1;
     int h = obs().ydim;
 
-    Image<RFLOAT> corr(w, h);
-
     Image<Complex> prod, prod2;
 
     ImageOp::multiply(obs, predConj, prod);
@@ -357,8 +350,9 @@ Image<float> MotionRefinement::crossCorrelation2D(
         }
     }
 
+    Image<RFLOAT> corr(w, h);
     FourierTransformer ft;
-    ft.inverseFourierTransform(prod2(), corr());
+    corr() = ft.inverseFourierTransform(prod2());
 
     Image<float> out(w,h);
 
@@ -418,8 +412,8 @@ Image<float> MotionRefinement::crossCorrelation2D(
         Image<RFLOAT> obsR(w,h), predR(w,h);
 
         FourierTransformer ft;
-        ft.inverseFourierTransform(obsM(), obsR());
-        ft.inverseFourierTransform(predM(), predR());
+        obsR()  = ft.inverseFourierTransform(obsM());
+        predR() = ft.inverseFourierTransform(predM());
 
         double muObs = 0.0;
         double muPred = 0.0;
@@ -456,7 +450,7 @@ Image<float> MotionRefinement::crossCorrelation2D(
         }
 
         Image<RFLOAT> corrR(w,h);
-        ft.inverseFourierTransform(corrF(), corrR());
+        corrR() = ft.inverseFourierTransform(corrF());
 
         VtkHelper::writeVTK(corrR, "corrDebug/corrR_FS.vtk");
 
@@ -508,12 +502,11 @@ Image<float> MotionRefinement::crossCorrelation2D(
         }
     }
 
-    Image<RFLOAT> corr(w, h);
 
     direct::elem(prod.data, 0, 0) = 0.0;
 
-    FourierTransformer ft;
-    ft.inverseFourierTransform(prod(), corr());
+    Image<RFLOAT> corr(w, h);
+    corr() = FourierTransformer{}.inverseFourierTransform(prod());
 
     Image<float> out(w,h);
 
@@ -702,8 +695,8 @@ d3Vector MotionRefinement::measureValueScaleReal(
     Image<RFLOAT> dataR(w, h), refR(w, h);
 
     FourierTransformer ft;
-    ft.inverseFourierTransform(dataC(), dataR());
-    ft.inverseFourierTransform(refC (), refR ());
+    dataR() = ft.inverseFourierTransform(dataC());
+    refR () = ft.inverseFourierTransform(refC ());
 
     double num = 0.0;
     double denom = 0.0;
@@ -813,9 +806,9 @@ void MotionRefinement::testCC(
 
     FourierTransformer ft;
 
-    Image<RFLOAT> obsWR(w,h), predWR(w,h);
-    ft.inverseFourierTransform(obsW (), obsWR());
-    ft.inverseFourierTransform(predW(), predWR());
+    Image<RFLOAT> obsWR(w, h), predWR(w, h);
+    obsWR()  = ft.inverseFourierTransform(obsW());
+    predWR() = ft.inverseFourierTransform(predW());
 
     ImageLog::write(obsWR, "debug/obsWR");
     ImageLog::write(predWR, "debug/predWR");
@@ -873,7 +866,7 @@ void MotionRefinement::testCC(
         }
     }
 
-    ft.inverseFourierTransform(prod(), corr());
+    corr() = ft.inverseFourierTransform(prod());
 
     for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {

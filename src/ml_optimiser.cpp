@@ -2268,7 +2268,7 @@ void MlOptimiser::initialLowPassFilterReferences() {
                     direct::elem(Faux, i, j, k) *= 0.5 - 0.5 * cos(PI * (radius_p - r) / WIDTH_FMASK_EDGE);
                 }
             }
-            transformer.inverseFourierTransform(Faux, mymodel.Iref[iclass]);
+            mymodel.Iref[iclass] = transformer.inverseFourierTransform(Faux);
         }
     }
 }
@@ -3463,12 +3463,12 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         MultidimArray<Complex> Fimg1;
         Fimg1 = exp_local_Fimgs_shifted[0][0];
         FourierTransformer transformer;
-        transformer.inverseFourierTransform(Fimg1, tt());
+        tt() = transformer.inverseFourierTransform(Fimg1);
         CenterFFT(tt(), false);
         std::string fnm = mode + std::string("_out_shifted_image.mrc");
         tt.write(fnm);
         tt().resize(Xsize(Mresol_coarse[optics_group]), Ysize(Mresol_coarse[optics_group]));
-        for (long int n = 0; n < (tt()).size(); n++) {
+        for (long int n = 0; n < tt().size(); n++) {
             tt()[n] = (RFLOAT) Mresol_coarse[optics_group][n];
         }
         fnm = mode + std::string("_out_mresol_coarse.mrc");
@@ -5061,7 +5061,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                                 << " ocol_yoff= " << direct::elem(exp_metadata, my_metadata_offset, ocol_yoff) << std::endl;
                         */
                         windowFourierTransform(FTo, Faux, mymodel.ori_size);
-                        transformer.inverseFourierTransform(Faux, img());
+                        img() = transformer.inverseFourierTransform(Faux);
                         CenterFFT(img(), false);
                         FileName fn_img = "unshifted.spi";
                         fn_img = fn_img.insertBeforeExtension("_ibody" + integerToString(ibody+1));
@@ -5134,13 +5134,13 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             // First the unmasked one, which will be used for reconstruction
             // Only do this if the flag below is true. Otherwise, use the original particles for reconstruction
             if (do_reconstruct_subtracted_bodies) {
-                exp_Fimg_nomask[img_id]  -= Fsum_obody;
+                exp_Fimg_nomask[img_id] -= Fsum_obody;
             }
 
             // For the masked one, have to mask outside the circular mask to prevent negative values outside the mask in the subtracted image!
             CenterFFTbySign(Fsum_obody);
             windowFourierTransform(Fsum_obody, Faux, image_full_size[optics_group]);
-            transformer.inverseFourierTransform(Faux, img());
+            img() = transformer.inverseFourierTransform(Faux);
 
             #ifdef DEBUG_BODIES
             if (part_id == round(debug1)) {
@@ -5183,14 +5183,14 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             #ifdef DEBUG_BODIES
             if (part_id == round(debug1)) {
                 windowFourierTransform(exp_Fimg, Faux, image_full_size[optics_group]);
-                transformer.inverseFourierTransform(Faux, img());
+                img() = transformer.inverseFourierTransform(Faux);
                 CenterFFT(img(), false);
                 fn_img = "exp_Fimgs_subtracted.spi";
                 fn_img = fn_img.insertBeforeExtension("_ibody" + integerToString(ibody+1));
                 img.write(fn_img);
                 std::cerr << "written " << fn_img << std::endl;
                 windowFourierTransform(exp_Fimg_nomask[img_id], Faux, image_full_size[optics_group]);
-                transformer.inverseFourierTransform(Faux, img());
+                img() = transformer.inverseFourierTransform(Faux);
                 CenterFFT(img(), false);
                 fn_img = "exp_Fimgs_nomask_subtracted.spi";
                 fn_img = fn_img.insertBeforeExtension("_ibody" + integerToString(ibody+1));
@@ -5402,7 +5402,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                             );
                             Faux = exp_local_Fimgs_shifted[img_id][my_trans_image];
                             windowFourierTransform(Faux, Fo, mymodel.ori_size);
-                            transformer.inverseFourierTransform(Fo, tt());
+                            tt() = transformer.inverseFourierTransform(Fo);
                             CenterFFT(tt(), false);
                             img_save_mask() += tt();
                             img_save_mask.write("translational_searches_mask_helix.spi");
@@ -5428,7 +5428,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                             tt().resize((mymodel.data_dim == 3) ? (mymodel.ori_size) : (1), mymodel.ori_size, mymodel.ori_size);
                             Faux = exp_local_Fimgs_shifted_nomask[img_id][my_trans_image];
                             windowFourierTransform(Faux, Fo, mymodel.ori_size);
-                            transformer.inverseFourierTransform(Fo, tt());
+                            tt() = transformer.inverseFourierTransform(Fo);
                             CenterFFT(tt(), false);
                             img_save_nomask() += tt();
                             img_save_nomask.write("translational_searches_nomask_helix.spi");
@@ -5848,13 +5848,13 @@ void MlOptimiser::getAllSquaredDifferences(
                                                 tt().resize(exp_current_image_size, exp_current_image_size, exp_current_image_size);
                                             else
                                                 tt().resize(exp_current_image_size, exp_current_image_size);
-                                            transformer.inverseFourierTransform(Fish, tt());
+                                            tt() = transformer.inverseFourierTransform(Fish);
                                             CenterFFT(tt(),false);
                                             FileName fnt = "Fimg.spi";
                                             //fnt.compose("Fimg_shift1_i", ihidden_over, "spi");
                                             tt.write(fnt);
 
-                                            transformer.inverseFourierTransform(Frefctf, tt());
+                                            tt() = transformer.inverseFourierTransform(Frefctf);
                                             CenterFFT(tt(),false);
                                             fnt="Fref.spi";
                                             //fnt.compose("Fref1_i", ihidden_over, "spi");
@@ -5926,19 +5926,19 @@ void MlOptimiser::getAllSquaredDifferences(
                                             else
                                                 exp_current_image_size = image_current_size[optics_group];
                                             tt().resize(exp_current_image_size, exp_current_image_size);
-                                            transformer.inverseFourierTransform(Fish, tt());
+                                            tt() = transformer.inverseFourierTransform(Fish);
                                             CenterFFT(tt(),false);
                                             tt.write("Fimg_shift.spi");
                                             std::cerr << "written Fimg_shift.spi" << std::endl;
                                             FourierTransformer transformer2;
                                             tt().initZeros();
-                                            transformer2.inverseFourierTransform(Frefctf, tt());
+                                            tt() = transformer2.inverseFourierTransform(Frefctf);
                                             CenterFFT(tt(),false);
                                             tt.write("Frefctf.spi");
                                             std::cerr << "written Frefctf.spi" << std::endl;
                                             FourierTransformer transformer3;
                                             tt().initZeros();
-                                            transformer3.inverseFourierTransform(Fref, tt());
+                                            tt() = transformer3.inverseFourierTransform(Fref);
                                             CenterFFT(tt(),false);
                                             tt.write("Fref.spi");
                                             std::cerr << "written Fref.spi" << std::endl;
@@ -5948,7 +5948,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             std::cerr << " exp_iclass= " << exp_iclass << std::endl;
                                             Fref.resize(exp_local_Minvsigma2[img_id]);
                                             (mymodel.PPref[exp_iclass]).get2DFourierTransform(Fref, A);
-                                            transformer3.inverseFourierTransform(Fref, tt());
+                                            tt() = transformer3.inverseFourierTransform(Fref);
                                             CenterFFT(tt(),false);
                                             tt.write("Fref2.spi");
                                             std::cerr << "written Fref2.spi" << std::endl;
@@ -6337,7 +6337,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             FourierTransformer transformer;
             windowFourierTransform(exp_Fimg, Faux, mymodel.ori_size);
             It().resize(mymodel.ori_size, mymodel.ori_size);
-            transformer.inverseFourierTransform(Faux, It());
+            It() = transformer.inverseFourierTransform(Faux);
             CenterFFT(It(), false);
             It.write("exp_Fimg.spi");
             std::cerr << "written exp_Fimgs.spi " << std::endl;
@@ -6958,13 +6958,13 @@ void MlOptimiser::storeWeightedSums(
 
                                     Image<RFLOAT> tt;
                                     tt().resize(exp_current_image_size, exp_current_image_size);
-                                    transformer.inverseFourierTransform(Ftt, tt());
+                                    tt() = transformer.inverseFourierTransform(Ftt);
                                     CenterFFT(tt(),false);
                                     FileName fnt = "BPimg_body" + integerToString(ibody + 1, 1) + "_ihidden" + integerToString(ihidden_over) + ".spi";
                                     tt.write(fnt);
                                     Ftt = Frefctf;
                                     tt().resize(exp_current_image_size, exp_current_image_size);
-                                    transformer.inverseFourierTransform(Ftt, tt());
+                                    tt() = transformer.inverseFourierTransform(Ftt);
                                     CenterFFT(tt(), false);
                                     fnt = "Fref_body" + integerToString(ibody + 1, 1) + "_ihidden" + integerToString(ihidden_over) + ".spi";
                                     tt.write(fnt);

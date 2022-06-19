@@ -257,6 +257,15 @@ class FourierTransformer {
         Transform(FFTW_BACKWARD);
     }
 
+    template <typename T>
+    MultidimArray<tComplex<T> > inverseFourierTransform(const MultidimArray<tComplex<T> > &V) {
+        MultidimArray<T> v;
+        setReal(v);
+        setFourier(V);
+        Transform(FFTW_BACKWARD);
+        return v;
+    }
+
     /** Get Fourier coefficients. */
     template <typename T>
     void getFourierAlias(T& V) { V.alias(fFourier); }

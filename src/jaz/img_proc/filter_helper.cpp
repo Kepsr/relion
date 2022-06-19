@@ -566,8 +566,7 @@ void FilterHelper::lowPassFilter(
 
     lowPassFilterSpectrum(imgFreq, maxFreq0, maxFreq1);
 
-    FourierTransformer ft2;
-    ft2.inverseFourierTransform(imgFreq, dest());
+    dest() = FourierTransformer{}.inverseFourierTransform(imgFreq);
 }
 
 void FilterHelper::lowPassFilterSpectrum(
@@ -643,8 +642,7 @@ void FilterHelper::phaseFlip(
         dest.data.resize(img.data);
     }
 
-    FourierTransformer ft2;
-    ft2.inverseFourierTransform(imgFreq, dest());
+    dest() = FourierTransformer{}.inverseFourierTransform(imgFreq);
 }
 
 void FilterHelper::applyBeamTilt(
@@ -657,8 +655,7 @@ void FilterHelper::applyBeamTilt(
 
     selfApplyBeamTilt(imgFreq, beamtilt_x, beamtilt_y, lambda, Cs, angpix, s);
 
-    FourierTransformer ft2;
-    ft2.inverseFourierTransform(imgFreq, dest());
+    dest() = FourierTransformer{}.inverseFourierTransform(imgFreq);
 }
 
 void FilterHelper::modulate(
@@ -692,8 +689,7 @@ void FilterHelper::modulate(
         dest.data.resize(imgFreq.data.xdim, 2 * (imgFreq.data.ydim - 1));
     }
 
-    FourierTransformer ft2;
-    ft2.inverseFourierTransform(imgFreq(), dest());
+    dest() = FourierTransformer{}.inverseFourierTransform(imgFreq());
 }
 
 void FilterHelper::modulate(
@@ -756,8 +752,7 @@ void FilterHelper::wienerFilter(
         dest.data.resize(img.data);
     }
 
-    FourierTransformer ft2;
-    ft2.inverseFourierTransform(imgFreq, dest());
+    dest() = FourierTransformer{}.inverseFourierTransform(imgFreq);
 }
 
 void FilterHelper::richardsonLucy(
@@ -819,8 +814,7 @@ void FilterHelper::rampFilter(Image<RFLOAT> &img, RFLOAT s0, RFLOAT t1, double u
         dest.data.resize(img.data);
     }
 
-    FourierTransformer ft2;
-    ft2.inverseFourierTransform(imgFreq, dest());
+    dest() = FourierTransformer{}.inverseFourierTransform(imgFreq);
 }
 
 void FilterHelper::rampFilter3D(Image<Complex> &img, RFLOAT s0, RFLOAT t1, double tx, double ty, double tz) {

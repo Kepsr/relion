@@ -289,7 +289,7 @@ class image_handler_parameters {
                     for (RFLOAT bfac = -optimise_bfactor_subtract; bfac <= optimise_bfactor_subtract; bfac += 10.0) {
                         FTop_bfac = FTop;
                         applyBFactorToMap(FTop_bfac, Xsize(Iop()), bfac, angpix);
-                        transformer.inverseFourierTransform(FTop_bfac, Isharp);
+                        Isharp = transformer.inverseFourierTransform(FTop_bfac);
 
                         RFLOAT sum_aa = 0.0, sum_xa = 0.0, sum_xx = 0.0;
                         for (long int n = 0; n < Iin().size(); n++) {
@@ -317,7 +317,7 @@ class image_handler_parameters {
                     }
                     std::cout << " Optimised bfactor = " << my_bfac << "; optimised scale = " << my_scale << std::endl;
                     applyBFactorToMap(FTop, Xsize(Iop()), my_bfac, angpix);
-                    transformer.inverseFourierTransform(FTop, Iop());
+                    Iop() = transformer.inverseFourierTransform(FTop);
 
                 } else {
                     RFLOAT sum_aa = 0.0, sum_xa = 0.0;

@@ -45,8 +45,7 @@ Image<RFLOAT> ConvolutionHelper::convolve2D(
     }
 
     Image<RFLOAT> out(w, h);
-    ft.inverseFourierTransform(P(), out());
-
+    out() = ft.inverseFourierTransform(P());
     return out;
 }
 

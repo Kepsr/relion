@@ -830,7 +830,7 @@ void getFourierTransformsAndCtfs(
             // For the masked one, have to mask outside the circular mask to prevent negative values outside the mask in the subtracted image!
             CenterFFTbySign(Fsum_obody);
             windowFourierTransform(Fsum_obody, Faux, baseMLO->image_full_size[optics_group]);
-            accMLO->transformer.inverseFourierTransform(Faux, img());
+            img() = accMLO->transformer.inverseFourierTransform(Faux);
 
             softMaskOutsideMap(img(), my_mask_radius, (RFLOAT)baseMLO->width_mask_edge);
 

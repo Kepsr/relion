@@ -161,7 +161,7 @@ class reconstruct_parameters {
                     Fapp = Fin * CTFP; // Element-wise complex multiplication
 
                     // Inverse Fourier transform and mask out the particle
-                    transformer.inverseFourierTransform(Fapp, Iapp);
+                    Iapp = transformer.inverseFourierTransform(Fapp);
                     CenterFFT(Iapp, false);
 
                     softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);

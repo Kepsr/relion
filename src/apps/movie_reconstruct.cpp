@@ -592,7 +592,7 @@ void MovieReconstructor::applyCTFPandCTFQ(
             if (!skip_mask) {
                 // inverse transform and mask out the particle.
                 CenterFFTbySign(Fapp);
-                transformer.inverseFourierTransform(Fapp, Iapp);
+                Iapp = transformer.inverseFourierTransform(Fapp);
 
                 softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 

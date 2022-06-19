@@ -253,8 +253,7 @@ void BackprojectionHelper::backprojectExactWeights(
 
     FilterHelper::divideExcessive(dataFreq, weight, weight(0,0,0)/(double)stack.images.size(), dataFreq);
 
-    FourierTransformer ft2;
-    ft2.inverseFourierTransform(dataFreq.data, volRL());
+    volRL() = FourierTransformer{}.inverseFourierTransform(dataFreq.data);
 
     VolumeConverter::convert(volRL, dest);
 }
