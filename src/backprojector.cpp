@@ -1498,10 +1498,9 @@ void BackProjector::reconstruct(
     {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[11]);)
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Ftmp) {
-        if (kp * kp + ip * ip + jp * jp < r_max * r_max) {
-            direct::elem(Ftmp, i, j, k) = FFTW_ELEM(Fconv, kp * padding_factor, ip * padding_factor, jp * padding_factor);
-        } else {
-            direct::elem(Ftmp, i, j, k) = 0.0;
+        direct::elem(Ftmp, i, j, k) = ip * ip + jp * jp + kp * kp < r_max * r_max ?
+            FFTW::elem(Fconv, ip * padding_factor, jp * padding_factor, kp * padding_factor)
+          : 0.0;
         }
     }
     }

@@ -563,11 +563,11 @@ void Projector::computeFourierTransformMap(
             // Set data array
             if (r2 <= max_r2) {
                 if (do_fourier_mask) {
-                    weight = FFTW_ELEM(
+                    weight = FFTW::elem(
                         *fourier_mask,
-                        (int) round(kp / padding_factor),
-                        (int) round(ip / padding_factor),
-                        (int) round(jp / padding_factor)
+                        round(ip / padding_factor),
+                        round(jp / padding_factor),
+                        round(kp / padding_factor)
                     );
                 }
                 // Set data array
