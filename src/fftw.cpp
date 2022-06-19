@@ -52,7 +52,20 @@
 using RealArray = MultidimArray<RFLOAT>;
 using ComplexArray = MultidimArray<Complex>;
 
+// Anything to do with plans has to be protected for threads
 static pthread_mutex_t fftw_plan_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+struct fftw_plan_mutex_guard {
+
+    fftw_plan_mutex_guard() {
+        pthread_mutex_lock(&fftw_plan_mutex);
+    }
+
+    ~fftw_plan_mutex_guard() {
+        pthread_mutex_unlock(&fftw_plan_mutex);
+    }
+
+};
 
 // #define TIMING_FFTW
 #ifdef TIMING_FFTW
@@ -105,35 +118,21 @@ void FourierTransformer::cleanup() {
     clear();
     // Then clean up all the junk fftw keeps lying around
     // SOMEHOW THE FOLLOWING IS NOT ALLOWED WHEN USING MULTPLE TRANSFORMER OBJECTS....
-    #ifdef RELION_SINGLE_PRECISION
-    fftwf_cleanup();
-    #else
-    fftw_cleanup();
-    #endif
+    FFTW_CLEANUP();
 
     #ifdef DEBUG_PLANS
-    std::cerr << "CLEANED-UP this= "<<this<< std::endl;
+    std::cerr << "CLEANED-UP this= " << this << std::endl;
     #endif
 
 }
 
 void FourierTransformer::destroyPlans() {
-    // Anything to do with plans has to be protected for threads!
-    pthread_mutex_lock(&fftw_plan_mutex);
-
+    fftw_plan_mutex_guard guard;
     if (plans_are_set) {
-        #ifdef RELION_SINGLE_PRECISION
-        fftwf_destroy_plan(fPlanForward);
-        fftwf_destroy_plan(fPlanBackward);
-        #else
-        fftw_destroy_plan(fPlanForward);
-        fftw_destroy_plan(fPlanBackward);
-        #endif
+        FFTW_DESTROY_PLAN(fPlanForward);
+        FFTW_DESTROY_PLAN(fPlanBackward);
         plans_are_set = false;
     }
-
-    pthread_mutex_unlock(&fftw_plan_mutex);
-
 }
 
 // Initialization ----------------------------------------------------------
@@ -189,31 +188,19 @@ void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_pl
 
         {
         ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
-        pthread_mutex_lock(&fftw_plan_mutex);
-        #ifdef RELION_SINGLE_PRECISION
-        fPlanForward = fftwf_plan_dft_r2c(
+        fftw_plan_mutex_guard guard;
+
+        fPlanForward = FFTW_PLAN_DFT_R2C(
             ndim, N,
-            fReal->data, (fftwf_complex*) fFourier.data,
+            fReal->data, (FFTW_COMPLEX*) fFourier.data,
             FFTW_ESTIMATE
         );
-        fPlanBackward = fftwf_plan_dft_c2r(
+        fPlanBackward = FFTW_PLAN_DFT_C2R(
             ndim, N,
-            (fftwf_complex*) fFourier.data, fReal->data,
+            (FFTW_COMPLEX*) fFourier.data, fReal->data,
             FFTW_ESTIMATE
         );
-        #else
-        fPlanForward = fftw_plan_dft_r2c(
-            ndim, N,
-            fReal->data, (fftw_complex*) fFourier.data,
-            FFTW_ESTIMATE
-        );
-        fPlanBackward = fftw_plan_dft_c2r(
-            ndim, N,
-            (fftw_complex*) fFourier.data, fReal->data,
-            FFTW_ESTIMATE
-        );
-        #endif
-        pthread_mutex_unlock(&fftw_plan_mutex);
+
         }
 
         if (!fPlanForward || !fPlanBackward)
@@ -269,26 +256,26 @@ void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_p
 
         {
         ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
-        pthread_mutex_lock(&fftw_plan_mutex);
-        #ifdef RELION_SINGLE_PRECISION
-        fPlanForward = fftwf_plan_dft(ndim, N, (fftwf_complex*) fComplex->data,
-                                      (fftwf_complex*) fFourier.data, FFTW_FORWARD, FFTW_ESTIMATE);
-        fPlanBackward = fftwf_plan_dft(ndim, N, (fftwf_complex*) fFourier.data,
-                                       (fftwf_complex*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE);
-        #else
-        fPlanForward = fftw_plan_dft(ndim, N, (fftw_complex*) fComplex->data,
-                                     (fftw_complex*) fFourier.data, FFTW_FORWARD, FFTW_ESTIMATE);
-        fPlanBackward = fftw_plan_dft(ndim, N, (fftw_complex*) fFourier.data,
-                                      (fftw_complex*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE);
-        #endif
-        pthread_mutex_unlock(&fftw_plan_mutex);
+        fftw_plan_mutex_guard guard;
+
+        fPlanForward = FFTW_PLAN_DFT(
+            ndim, N, (FFTW_COMPLEX*)
+            fComplex->data, (FFTW_COMPLEX*) fFourier.data,
+            FFTW_FORWARD, FFTW_ESTIMATE
+        );
+        fPlanBackward = FFTW_PLAN_DFT(
+            ndim, N,
+            (FFTW_COMPLEX*) fFourier.data, (FFTW_COMPLEX*) fComplex->data,
+            FFTW_BACKWARD, FFTW_ESTIMATE
+        );
+
         }
 
         if (!fPlanForward || !fPlanBackward)
             REPORT_ERROR("FFTW plans cannot be created");
 
         delete[] N;
-        complexDataPtr=fComplex->data;
+        complexDataPtr = fComplex->data;
     }
 }
 
@@ -317,16 +304,12 @@ static unsigned long int getsize(const FourierTransformer &t) {
 
 // Transform ---------------------------------------------------------------
 void FourierTransformer::Transform(int sign) {
-    if (sign == FFTW_FORWARD) {
+    switch (sign) {
+
+        case FFTW_FORWARD:
         {
         ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_EXECUTE);)
-        #ifdef RELION_SINGLE_PRECISION
-        fftwf_execute_dft_r2c(fPlanForward,fReal->data,
-                (fftwf_complex*) fFourier.data);
-        #else
-        fftw_execute_dft_r2c(fPlanForward,fReal->data,
-                (fftw_complex*) fFourier.data);
-        #endif
+        FFTW_EXECUTE_DFT_R2C(fPlanForward,fReal->data, (FFTW_COMPLEX*) fFourier.data);
         }
 
         // Normalise the transform
@@ -335,19 +318,17 @@ void FourierTransformer::Transform(int sign) {
         unsigned long int size = getsize(*this);
         for (auto &x : fFourier) { x /= size; }
         }
-    } else if (sign == FFTW_BACKWARD) {
+        return;
+
+        case FFTW_BACKWARD:
         {
         ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_EXECUTE);)
-        #ifdef RELION_SINGLE_PRECISION
-        fftwf_execute_dft_c2r(
-            fPlanBackward, (fftwf_complex*) fFourier.data, fReal->data
+        FFTW_EXECUTE_DFT_C2R(
+            fPlanBackward, (FFTW_COMPLEX*) fFourier.data, fReal->data
         );
-        #else
-        fftw_execute_dft_c2r(
-            fPlanBackward, (fftw_complex*) fFourier.data, fReal->data
-        );
-        #endif
         }
+        return;
+
     }
 }
 
