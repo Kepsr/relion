@@ -116,7 +116,7 @@ std::vector<std::vector<Image<RFLOAT>>> MotionHelper::movieCC(
 
     for (int t = 0; t < threads; t++)
     {
-        ccsFs[t] = Image<Complex>(sh,s);
+        ccsFs[t] = Image<Complex>(s, sh);
         ccsFs[t].data.xinit = 0;
         ccsFs[t].data.yinit = 0;
 

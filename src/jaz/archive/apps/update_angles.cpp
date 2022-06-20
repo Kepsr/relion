@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
     if (useFsc) {
         imgSnr = RefinementHelper::computeSNR(&fscMdt);
     } else {
-        imgSnr = Image<RFLOAT>(sh, s);
+        imgSnr = Image<RFLOAT>(s, sh);
         imgSnr.data.initConstant(1.0);
     }
 

@@ -102,8 +102,8 @@ int AberrationPlot::_run()
 	if (differential)
 	{
 		std::vector<Image<double>>
-				A(nr_omp_threads, Image<double>(sh,s)),
-				b(nr_omp_threads, Image<double>(sh,s));
+				A(nr_omp_threads, Image<double>(s, sh)),
+				b(nr_omp_threads, Image<double>(s, sh));
 
 		const double as = (double)s * angpix;
 
@@ -162,7 +162,7 @@ int AberrationPlot::_run()
 			}
 		}
 
-		Image<RFLOAT> dgamma(sh,s);
+		Image<RFLOAT> dgamma(s, sh);
 
 		for (int y = 0; y < s;	y++)
 		for (int x = 0; x < sh; x++)
@@ -177,7 +177,7 @@ int AberrationPlot::_run()
 	}
 	else
 	{
-		Image<RFLOAT> cosPhi(sh,s), sinPhi(sh,s), phase(sh,s);
+		Image<RFLOAT> cosPhi(s, sh), sinPhi(s, sh), phase(s, sh);
 
 		if (precomputed)
 		{
@@ -193,11 +193,11 @@ int AberrationPlot::_run()
 		else
 		{
 			std::vector<Image<double>>
-				Axx(nr_omp_threads, Image<double>(sh,s)),
-				Axy(nr_omp_threads, Image<double>(sh,s)),
-				Ayy(nr_omp_threads, Image<double>(sh,s)),
-				bx(nr_omp_threads, Image<double>(sh,s)),
-				by(nr_omp_threads, Image<double>(sh,s));
+				Axx(nr_omp_threads, Image<double>(s, sh)),
+				Axy(nr_omp_threads, Image<double>(s, sh)),
+				Ayy(nr_omp_threads, Image<double>(s, sh)),
+				bx(nr_omp_threads, Image<double>(s, sh)),
+				by(nr_omp_threads, Image<double>(s, sh));
 
 			const double as = (double)s * angpix;
 

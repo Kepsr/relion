@@ -296,13 +296,13 @@ std::vector<Image<RFLOAT> > TiltHelper::computeOddZernike(
         int s, double angpix, const Matrix2D<RFLOAT> &mag, int n_max
 ) {
     const int cc = Zernike::numberOfOddCoeffs(n_max);
-    const double as = (double)s * angpix;
-    const int sh = s/2 + 1;
+    const double as = (double) s * angpix;
+    const int sh = s / 2 + 1;
 
     std::vector<Image<RFLOAT>> basis(cc);
 
     for (int c = 0; c < cc; c++) {
-        basis[c] = Image<RFLOAT>(sh, s);
+        basis[c] = Image<RFLOAT>(s, sh);
 
         Zernike::Z zmn = Zernike::Z::fromOddIndex(c);
 
@@ -472,13 +472,13 @@ std::vector<Image<RFLOAT> > TiltHelper::computeEvenZernike(
     int s, double angpix, const Matrix2D<RFLOAT> &mag, int n_max
 ) {
     const int cc = Zernike::numberOfEvenCoeffs(n_max);
-    const double as = (double) s * angpix;
-    const int sh = s/2 + 1;
+    const double as = (double)  s * angpix;
+    const int sh = s / 2 + 1;
 
     std::vector<Image<RFLOAT>> basis(cc);
 
     for (int c = 0; c < cc; c++) {
-        basis[c] = Image<RFLOAT>(sh, s);
+        basis[c] = Image<RFLOAT>(s, sh);
 
         Zernike::Z zmn = Zernike::Z::fromEvenIndex(c);
 

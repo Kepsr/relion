@@ -280,8 +280,8 @@ void GaussianPyramid<T>::timeTest(const Image<T> &img0) {
     std::cout << "both: " << t2 - t0 << "s\n";
 
     FourierTransformer ft;
-    Image<Complex> fs(sh, s);
-    Image<RFLOAT>  rs(s,  s);
+    Image<Complex> fs(s, sh);
+    Image<RFLOAT>  rs(s, s);
 
     double sig_hat = s / (2.0 * PI * sig);
     double sh2 = sig_hat * sig_hat;

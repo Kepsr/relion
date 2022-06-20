@@ -60,7 +60,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, 0.0);
 
-        Image<Complex> spec = Image<Complex>::zeros(sh, s);
+        Image<Complex> spec = Image<Complex>::zeros(s, sh);
 
         prj.get2DFourierTransform(spec.data, A3D);
 
@@ -72,7 +72,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         FilterHelper::modulate(spec(), ctf0, obsModel, opticsGroup, angpix);
 
-        Image<Complex> ccspec(sh, s);
+        Image<Complex> ccspec(s, sh);
         for (long int yy = 0; yy < s; yy++)
         for (long int xx = 0; xx < sh; xx++) {
             direct::elem(  spec.data, xx, yy) *= sqrt(direct::elem(dmgWeight.data, xx, yy));
@@ -511,12 +511,12 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     const int s = img.data.xdim;
     const int sh = s / 2 + 1;
 
-    Image<Complex> spec = Image<Complex>::zeros(sh, s);
+    Image<Complex> spec = Image<Complex>::zeros(s, sh);
 
     FourierTransformer ft;
     spec() = ft.FourierTransform(img());
 
-    Image<Complex> ccspec(sh, s);
+    Image<Complex> ccspec(s, sh);
     for (long int yy = 0; yy < s;  yy++)
     for (long int xx = 0; xx < sh; xx++) {
         direct::elem(ccspec.data, xx, yy) = direct::elem(spec.data, xx, yy).norm();
@@ -540,7 +540,7 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     Image<RFLOAT> varImg = img;
     varImg.data.initZeros();
 
-    Image<Complex> imgDs(sh,s), ccDs(sh,s);
+    Image<Complex> imgDs(s, sh), ccDs(s, sh);
 
     const int N = 10000;
     for (int i = 0; i < N; i++) {
@@ -591,7 +591,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
     const int s = img.data.xdim;
     const int sh = s / 2 + 1;
 
-    Image<Complex> spec(sh, s);
+    Image<Complex> spec(s, sh);
 
     FourierTransformer ft;
     spec() = ft.FourierTransform(img());
@@ -639,7 +639,7 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
     Image<RFLOAT> varImg = img;
     varImg.data.initZeros();
 
-    Image<Complex> ccDs(sh, s);
+    Image<Complex> ccDs(s, sh);
 
     const int N = 10000;
     const double sqrtH = sqrt(0.5);
@@ -708,7 +708,7 @@ void NoiseHelper::testParseval() {
     const int sh = s / 2 + 1;
 
     Image<RFLOAT> real(s,s);
-    Image<Complex> freq(sh,s);
+    Image<Complex> freq(s, sh);
 
     for (int i = 0; i < 10; i++) {
         double varr = 0.0;

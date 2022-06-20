@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     const int mgc = allMdts.size();
 
 
-    Image<RFLOAT> freqWgh(sh, s);
+    Image<RFLOAT> freqWgh(s, sh);
     freqWgh.data.initConstant(1.0);
 
     freqWgh = FilterHelper::raisedCosEnvFreq2D(freqWgh, reference.k_out - 1, reference.k_out + 1);

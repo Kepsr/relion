@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "drawing A...\n";
 
-    Image<RFLOAT> img0(sh, s), img1(sh, s);
+    Image<RFLOAT> img0(s, sh), img1(s, sh);
     CtfHelper::applyWeightEwaldSphereCurvature    (ctf, img0.data, s, s, angpix, 2 * mask_rad);
     CtfHelper::applyWeightEwaldSphereCurvature_new(ctf, img1.data, s, s, angpix, 2 * mask_rad);
 

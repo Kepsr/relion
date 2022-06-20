@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 
     const int sh = s / 2 + 1;
 
-    Image<RFLOAT> ctfImg(sh, s), one(sh, s);
+    Image<RFLOAT> ctfImg(s, sh), one(s, sh);
     one.data.initConstant(1.0);
 
     const double angpix = obsModel.getPixelSize(opticsGroup);
@@ -81,8 +81,8 @@ int main(int argc, char *argv[]) {
 
         mask[t] = t < tc ? FilterHelper::raisedCosEnvRingFreq2D(one, k0, k1, flankWidth) : one;
 
-        Image<Complex> ctfZ(sh,s);
-        Image<RFLOAT> maskedCTF_half(sh,s);
+        Image<Complex> ctfZ(s, sh);
+        Image<RFLOAT> maskedCTF_half(s, sh);
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {

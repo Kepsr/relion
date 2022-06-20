@@ -142,7 +142,7 @@ std::vector<std::vector<Image<RFLOAT>>> MotionRefinement::movieCC(
     std::vector<Image<RFLOAT>> ccsRs(threads);
 
     for (int t = 0; t < threads; t++) {
-        ccsFs[t] = Image<Complex>(sh, s);
+        ccsFs[t] = Image<Complex>(s, sh);
         ccsFs[t].data.xinit = 0;
         ccsFs[t].data.yinit = 0;
 
