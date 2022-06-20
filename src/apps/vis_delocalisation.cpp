@@ -147,13 +147,13 @@ Image<RFLOAT> visualiseBand(
 ) {
     const int sh = s / 2 + 1;
 
-    Image<RFLOAT> one(sh, s);
+    Image<RFLOAT> one(s, sh);
     one.data.initConstant(1);
 
     Image<RFLOAT> mask = FilterHelper::raisedCosEnvRingFreq2D(one, r0, r1, flank);
 
-    Image<RFLOAT> ctfImg(sh, s), ctfImgFull(s, s);
-    ctfImg() = CtfHelper::getFftwImage(ctf, s, sh, s, s, angpix, obsModel);
+    Image<RFLOAT> ctfImg(s, sh), ctfImgFull(s, s);
+    ctfImg() = CtfHelper::getFftwImage(ctf, s, s, sh, s, angpix, obsModel);
 
     if (delocSupp) {
         DelocalisationHelper::maskOutsideBox(ctf, mask_rad, angpix, s, ctfImg(), 0.0, 0.0);
@@ -164,7 +164,7 @@ Image<RFLOAT> visualiseBand(
     FftwHelper::decenterDouble2D(ctfImg(), ctfImgFull());
     if (writeVtks) VtkHelper::writeVTK(ctfImgFull, outPath + "_" + tag + "_ctf.vtk");
 
-    Image<Complex> ctfImgComplex(sh, s);
+    Image<Complex> ctfImgComplex(s, sh);
 
     for (int y = 0; y < s;  y++)
     for (int x = 0; x < sh; x++) {

@@ -143,7 +143,7 @@ void ReferenceMap::load(int verb, bool debug) {
         freqWeight = RefinementHelper::drawFSC(&fscMdt, freqWeight1D);
     } else {
         freqWeight1D = std::vector<double>(sh, 1.0);
-        freqWeight = Image<RFLOAT>(sh, s);
+        freqWeight = Image<RFLOAT>(s, sh);
         freqWeight.data.initConstant(1.0);
     }
 

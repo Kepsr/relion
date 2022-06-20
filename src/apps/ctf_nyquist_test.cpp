@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
         countN[c] = std::vector<Image<RFLOAT>>(threads);
 
         for (int t = 0; t < threads; t++) {
-            countN[c][t] = Image<RFLOAT>(sh, s);
+            countN[c][t] = Image<RFLOAT>(s, sh);
         }
     }
 

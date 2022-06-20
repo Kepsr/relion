@@ -1400,8 +1400,6 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
 void amplitudeOrPhaseMap(
     const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &amp, int output_map_type
 ) {
-    FourierTransformer transformer;
-    transformer.clear();
     MultidimArray<Complex> Faux;
     Faux.clear();
     MultidimArray<RFLOAT> out;
@@ -1414,8 +1412,13 @@ void amplitudeOrPhaseMap(
     long int XYdim = Xsize(out);
 
     // Fourier Transform
-    transformer.FourierTransform(out, Faux, false); // TODO: false???
+    FourierTransformer{}.FourierTransform(out, Faux, false); // TODO: false???
     CenterFFTbySign(Faux);
+
+    auto f = output_map_type == AMPLITUDE_MAP ? +[] (Complex x) { return         x.abs() ; } :
+             output_map_type == PHASE_MAP     ? +[] (Complex x) { return degrees(x.arg()); } :
+             nullptr;
+    if (!f) REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR Unknown type of output map.");
 
     // Write to output files
     out.setXmippOrigin();
@@ -1427,16 +1430,8 @@ void amplitudeOrPhaseMap(
             jp > Yinit(out) && jp < Ylast(out) &&
             ip * ip + jp * jp < maxr2
         ) {
-            RFLOAT val;
-            if (output_map_type == AMPLITUDE_MAP) {
-                val = FFTW::elem(Faux, ip, jp).abs();
-            } else if (output_map_type == PHASE_MAP) {
-                val = degrees(FFTW::elem(Faux, ip, jp).arg());
-            } else {
-                REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR Unknown type of output map.");
-            }
-
-            out.elem(-ip, -jp) = out.elem(ip, jp) = val;
+            RFLOAT val = f(FFTW::elem(Faux, ip, jp));
+            out.elem(ip, jp) = out.elem(-ip, -jp) = val;
         }
     }
     out.elem(0, 0) = 0.0;
@@ -1448,16 +1443,14 @@ void helicalLayerLineProfile(
     const MultidimArray<RFLOAT> &v, std::string title, std::string fn_eps
 ) {
     long int XYdim, maxr2;
-    FourierTransformer transformer;
     MultidimArray<Complex> Faux;
     MultidimArray<RFLOAT> out;
     std::vector<RFLOAT> ampl_list, ampr_list, nr_pix_list;
 
-    transformer.clear();
     Faux.clear();
     out.clear();
 
-    // TODO: DO I NEED TO ROTATE THE ORIGINAL MULTIDINARRAY BY 90 DEGREES ?
+    // TODO: DO I NEED TO ROTATE THE ORIGINAL MULTIDIMARRAY BY 90 DEGREES ?
 
     // Pad and float
     padAndFloat2DMap(v, out);
@@ -1467,7 +1460,7 @@ void helicalLayerLineProfile(
     XYdim = Xsize(out);
 
     // Fourier Transform
-    transformer.FourierTransform(out, Faux, false); // TODO: false???
+    FourierTransformer{}.FourierTransform(out, Faux, false); // TODO: false???
     CenterFFTbySign(Faux);
 
     // Statistics

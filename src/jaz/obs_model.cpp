@@ -766,7 +766,7 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
             if (res_per_elem < 1e-10) REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
 
             const int sh = s / 2 + 1;
-            mtfImage[optGroup][s] = Image<RFLOAT>(sh, s);
+            mtfImage[optGroup][s] = Image<RFLOAT>(s, sh);
             Image<RFLOAT> &img = mtfImage[optGroup][s];
             const double as = angpix[optGroup] * boxSizes[optGroup];
 
@@ -826,7 +826,7 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
             }
 
             const int sh = s / 2 + 1;
-            phaseCorr[optGroup][s] = Image<Complex>(sh, s);
+            phaseCorr[optGroup][s] = Image<Complex>(s, sh);
             Image<Complex> &img = phaseCorr[optGroup][s];
             const double as = angpix[optGroup] * boxSizes[optGroup];
             const Matrix2D<RFLOAT> &M = magMatrices[optGroup];
@@ -867,7 +867,7 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
             }
 
             const int sh = s / 2 + 1;
-            gammaOffset[optGroup][s] = Image<RFLOAT>(sh,s);
+            gammaOffset[optGroup][s] = Image<RFLOAT>(s, sh);
             Image<RFLOAT> &img = gammaOffset[optGroup][s];
 
             const double as = angpix[optGroup] * boxSizes[optGroup];

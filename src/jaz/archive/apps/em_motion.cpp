@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     }
 
     const int s = map0.data.xdim;
-    const int sh = map0.data.xdim / 2 + 1;
+    const int sh = s / 2 + 1;
 
     if (maskFn != "") {
         std::cout << "masking references...\n";
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
 
     if (refVar) {
         std::cout << "measuring reference variance...\n";
-        Image<Complex> ref0, ref1, deltaRef(sh,s,s);
+        Image<Complex> ref0, ref1, deltaRef(s, sh, s);
 
         FourierTransformer ft;
         ref0() = ft.FourierTransform(map0());

@@ -70,7 +70,7 @@ Image<RFLOAT> AberrationFit::draw(AberrationBasis *fit, double angpix, int s) {
     const int sh = s / 2 + 1;
     const double as = angpix * s;
 
-    Image<RFLOAT> vis(sh,s);
+    Image<RFLOAT> vis(s, sh);
 
     std::vector<double> vals(fit->coefficients.size(), 0.0);
 
