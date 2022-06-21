@@ -6,9 +6,6 @@
 
 using std::vector;
 
-inline double safe_atan2(double y, double x) {
-  return x == 0.0 && y == 0.0 ? 0.0 : atan2(y, x);
-}
 
 // Cache for coefficients of the radial polynomials
 vector<vector<vector<int>>> R_coeffs (0);
@@ -68,7 +65,7 @@ double Zernike::Z::operator () (double rho, double phi) {
 }
 
 double Zernike::Z::cart(double x, double y) {
-    return (*this)(sqrt(x * x + y * y), safe_atan2(y, x));
+    return (*this)(sqrt(x * x + y * y), atan2(y, x));
 }
 
 Zernike::R::R(int m, int n): m{m}, n{n} {
