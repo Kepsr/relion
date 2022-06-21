@@ -420,19 +420,19 @@ void Assembly::join(Assembly &tojoin) {
 void Assembly::sortResidues() {
 
     // Loop over all molecules
-    for (int imol = 0; imol < molecules.size(); imol++) {
+    for (auto &molecule : molecules) {
 
         // A. Sort all Residues
         std::vector<std::pair<int, int>> vp;
-        for (int ires = 0; ires < molecules[imol].residues.size(); ires++) {
-            vp.push_back(std::make_pair(molecules[imol].residues[ires].number, ires));
+        for (int ires = 0; ires < molecule.residues.size(); ires++) {
+            vp.emplace_back(molecule.residues[ires].number, ires);
         }
         std::sort(vp.begin(), vp.end());
         std::vector<Residue> new_residues;
-        for (int ires = 0; ires < molecules[imol].residues.size(); ires++) {
-            new_residues.push_back(molecules[imol].residues[vp[ires].second]);
+        for (int ires = 0; ires < molecule.residues.size(); ires++) {
+            new_residues.push_back(molecule.residues[vp[ires].second]);
         }
-        molecules[imol].residues = new_residues;
+        molecule.residues = new_residues;
     }
 
 }
