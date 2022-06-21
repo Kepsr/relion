@@ -2920,44 +2920,7 @@ class MultidimArray {
      * // will be substituted by its nearest border
      * @endcode
      */
-    void threshold(
-        const std::string &type, T a, T b,
-        MultidimArray<int> *mask = NULL
-    ) {
-
-        int mode =
-            type == "abs_above" ?  1 :
-            type == "abs_below" ?  2 :
-            type == "above"     ?  3 :
-            type == "below"     ?  4 :
-            type == "range"     ?  5 :
-                                   0;
-
-        if (mode == 0)
-            REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
-
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            // Hopefully the compiler will hoist this loop-invariant switch block
-            if (!mask || (*mask)[n] > 0) {
-                switch (mode) {
-
-                    case 1: if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } break;
-
-                    case 2: if (abs(*ptr) < a) { *ptr = b * sgn(*ptr); } break;
-
-                    case 3: if (*ptr > a) { *ptr = b; } break;
-
-                    case 4: if (*ptr < a) { *ptr = b; } break;
-
-                    case 5: if (*ptr < a) { *ptr = a; } else
-                            if (*ptr > b) { *ptr = b; } break;
-
-                }
-            }
-        }
-    }
+    void threshold(const std::string &type, T a, T b, MultidimArray<int> *mask = NULL);
 
     /** Count with threshold.
      *
