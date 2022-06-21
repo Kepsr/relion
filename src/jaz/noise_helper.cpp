@@ -120,7 +120,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
             if (dm <= 6.0 * sigmaCC) {
                 plausibleVals.push_back(m);
-                plausiblePixels.push_back(std::make_pair(x,y));
+                plausiblePixels.emplace_back(x, y);
             }
         }
 

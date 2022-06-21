@@ -2876,7 +2876,7 @@ class MultidimArray {
         std::vector<std::pair<T, long int> > vp;
         vp.reserve(xdim);
         for (long int n = 0; n < size(); n++) {
-            vp.push_back(std::make_pair((*this)[n], n));
+            vp.emplace_back((*this)[n], n);
         }
         // Sort on the first elements of the pairs
         std::sort(vp.begin(), vp.end());

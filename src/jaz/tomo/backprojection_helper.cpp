@@ -63,12 +63,10 @@ void BackprojectionHelper::backprojectRaw(
     std::vector<double> angles;
     std::vector<d4Matrix> vol2img;
 
-    const double deg2rad = PI/180.0;
-
     while (anglesFile.good()) {
         double a;
         anglesFile >> a;
-        a *= deg2rad;
+        a = radians(a);
 
         angles.push_back(a);
 

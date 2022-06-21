@@ -226,7 +226,7 @@ void BFactorRefiner::processMicrograph(
             d2Vector BK = BFactorRefiner::findBKRec1D(t_rad, s_rad, min_B_px[og], max_B_px[og], min_scale, stepsPerIter, numIters);
 
             int threadnum = omp_get_thread_num();
-            valsPerPart[threadnum].push_back(std::make_pair(p, BK));
+            valsPerPart[threadnum].emplace_back(p, BK);
 
             if (diag) writePerParticleDiagEPS(mdt, BK, s_rad, t_rad, p);
         }

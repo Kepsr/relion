@@ -625,7 +625,7 @@ void Schedule::read(bool do_lock, FileName fn) {
         std::string outputname_true = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT_TRUE);
         std::string bool_name       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_BOOLEAN);
         bool is_fork                = MD.getValue<bool>(EMDL::SCHEDULE_EDGE_IS_FORK);
-        edges.push_back(SchedulerEdge(inputname, outputname, is_fork, bool_name, outputname_true));
+        edges.emplace_back(inputname, outputname, is_fork, bool_name, outputname_true);
     }
     MD.clear();
 

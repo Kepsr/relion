@@ -423,7 +423,7 @@ void MetaDataTable::sort(
             dval = getValue<double>(name);
         }
 
-        vp.push_back(std::make_pair(dval, i));
+        vp.emplace_back(dval, i);
         i++;
     }
 

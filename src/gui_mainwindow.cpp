@@ -901,9 +901,7 @@ void GuiMainWindow::fillRunningJobLists() {
         // Only re-order the finished jobs!
         std::vector<std::pair<std::string, long int> > enumerate_jobs;
         for (long int i = pipeline.processList.size() - 1; i >= 0; i--) {
-            enumerate_jobs.push_back(std::make_pair(
-                pipeline.processList[i].alias_or_name(), i
-            ));
+            enumerate_jobs.emplace_back(pipeline.processList[i].alias_or_name(), i);
         }
         // Sort the pairs
         // (the first element of each pair will be used for the comparison)
