@@ -71,18 +71,14 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
 template <typename T>
 void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArray<int> *mask) {
 
-    static std::unordered_map<std::string, int> s2i {
-        {"abs_above", 1},
-        {"abs_below", 2},
-        {"above",     3},
-        {"below",     4},
-        {"range",     5},
+    static const std::vector<std::string> types {
+        "abs_above", "abs_below", "above", "below", "range",
     };
 
-    auto it = s2i.find(type);
-    if (it == s2i.end())
+    auto it = std::find(types.begin(), types.end(), type);
+    if (it == types.end())
         REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
-    int mode = it->second;
+    int mode = it - types.begin() + 1;
 
     auto f = mode == 1 ? [] (T *ptr, T a, T b) { if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } } :
              mode == 2 ? [] (T *ptr, T a, T b) { if (abs(*ptr) < a) { *ptr = b * sgn(*ptr); } } :
