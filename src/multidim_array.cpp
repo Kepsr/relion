@@ -69,22 +69,46 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
 }
 
 template <typename T>
+void threshold_abs_above(T *ptr, T a, T b) {
+    if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); }
+}
+
+template <typename T>
+void threshold_abs_below(T *ptr, T a, T b) {
+    if (abs(*ptr) < a) { *ptr = b * sgn(*ptr); }
+}
+
+template <typename T>
+void threshold_above(T *ptr, T a, T b) {
+    if (*ptr > a) { *ptr = b; }
+}
+
+template <typename T>
+void threshold_below(T *ptr, T a, T b) {
+    if (*ptr < a) { *ptr = b; }
+}
+
+template <typename T>
+void threshold_range(T *ptr, T a, T b) {
+    if (*ptr < a) { *ptr = a; } else
+    if (*ptr > b) { *ptr = b; }
+}
+
+template <typename T>
 void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArray<int> *mask) {
 
-    static const std::vector<std::string> types {
-        "abs_above", "abs_below", "above", "below", "range",
+    static const std::unordered_map<std::string, void (*)(T *ptr, T a, T b)> s2f {
+        {"abs_above", &threshold_abs_above},
+        {"abs_below", &threshold_abs_below},
+        {"above",     &threshold_above},
+        {"below",     &threshold_below},
+        {"range",     &threshold_range},
     };
 
-    auto it = std::find(types.begin(), types.end(), type);
-    if (it == types.end())
+    auto it = s2f.find(type);
+    if (it == s2f.end())
         REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
-    int mode = it - types.begin() + 1;
-
-    auto f = mode == 1 ? [] (T *ptr, T a, T b) { if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } } :
-             mode == 2 ? [] (T *ptr, T a, T b) { if (abs(*ptr) < a) { *ptr = b * sgn(*ptr); } } :
-             mode == 3 ? [] (T *ptr, T a, T b) { if (*ptr > a) { *ptr = b; } } :
-             mode == 4 ? [] (T *ptr, T a, T b) { if (*ptr < a) { *ptr = b; } } :
-                         [] (T *ptr, T a, T b) { if (*ptr < a) { *ptr = a; } else if (*ptr > b) { *ptr = b; } };
+    auto f = it->second;
 
     T *ptr;
     long int n;
