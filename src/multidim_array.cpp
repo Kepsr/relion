@@ -43,7 +43,7 @@
  ***************************************************************************/
 
 #include "src/multidim_array.h"
-
+#include <unordered_map>
 
 // Show a complex array ---------------------------------------------------
 std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v) {
@@ -71,16 +71,18 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
 template <typename T>
 void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArray<int> *mask) {
 
-    int mode =
-        type == "abs_above" ?  1 :
-        type == "abs_below" ?  2 :
-        type == "above"     ?  3 :
-        type == "below"     ?  4 :
-        type == "range"     ?  5 :
-                               0;
+    static std::unordered_map<std::string, int> s2i {
+        {"abs_above", 1},
+        {"abs_below", 2},
+        {"above",     3},
+        {"below",     4},
+        {"range",     5},
+    };
 
-    if (mode == 0)
+    auto it = s2i.find(type);
+    if (it == s2i.end())
         REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
+    int mode = it->second;
 
     auto f = mode == 1 ? [] (T *ptr, T a, T b) { if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } } :
              mode == 2 ? [] (T *ptr, T a, T b) { if (abs(*ptr) < a) { *ptr = b * sgn(*ptr); } } :
