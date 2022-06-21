@@ -68,6 +68,32 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
     return ostrm;
 }
 
+template <typename T>
+void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArray<int> *mask) {
+
+    int mode =
+        type == "abs_above" ?  1 :
+        type == "abs_below" ?  2 :
+        type == "above"     ?  3 :
+        type == "below"     ?  4 :
+        type == "range"     ?  5 :
+                               0;
+
+    if (mode == 0)
+        REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
+
+    auto f = mode == 1 ? [] (T *ptr, T a, T b) { if (abs(*ptr) > a) { *ptr = b * sgn(*ptr); } } :
+             mode == 2 ? [] (T *ptr, T a, T b) { if (abs(*ptr) < a) { *ptr = b * sgn(*ptr); } } :
+             mode == 3 ? [] (T *ptr, T a, T b) { if (*ptr > a) { *ptr = b; } } :
+             mode == 4 ? [] (T *ptr, T a, T b) { if (*ptr < a) { *ptr = b; } } :
+                         [] (T *ptr, T a, T b) { if (*ptr < a) { *ptr = a; } else if (*ptr > b) { *ptr = b; } };
+
+    T *ptr;
+    long int n;
+    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        if (!mask || (*mask)[n] > 0) f(ptr, a, b);
+    }
+}
 
 /** Array (vector) by scalar.
  *
