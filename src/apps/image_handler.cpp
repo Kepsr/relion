@@ -163,9 +163,9 @@ class image_handler_parameters {
         if (parser.checkForErrors())
             REPORT_ERROR("Errors encountered on the command line (see above), exiting...");
 
-        verb = !do_stats && !do_calc_com && fn_fsc == "" && fn_cosDPhi == "" && !do_power;
+        verb = !do_stats && !do_calc_com && fn_fsc.empty() && fn_cosDPhi.empty() && !do_power;
 
-        if (fn_out == "" && verb == 1)
+        if (fn_out.empty() && verb == 1)
             REPORT_ERROR("Please specify the output file name with --o.");
     }
 
@@ -178,9 +178,10 @@ class image_handler_parameters {
             REPORT_ERROR("You can only write a 2D image to a PNG file.");
 
         if (angpix < 0 && (
-            requested_angpix > 0 || fn_fsc != "" || randomize_at > 0 ||
-            do_power || fn_cosDPhi != "" || fn_correct_ampl != "" ||
-            fabs(bfactor) > 0 || logfilter > 0 || lowpass > 0 || highpass > 0 || fabs(optimise_bfactor_subtract) > 0
+            requested_angpix > 0 || randomize_at > 0 || do_power ||
+            !fn_fsc.empty() || !fn_cosDPhi.empty() || !fn_correct_ampl.empty() ||
+            logfilter > 0 || lowpass > 0 || highpass > 0 ||
+            fabs(bfactor) > 0 || fabs(optimise_bfactor_subtract) > 0
         )) {
             angpix = Iin.samplingRateX();
             std::cerr << "WARNING: You did not specify --angpix. The pixel size in the image header, " << angpix << " A/px, is used." << std::endl;
@@ -234,6 +235,7 @@ class image_handler_parameters {
             Iout = Iin;
             randomizePhasesBeyond(Iout(), iran);
         }
+
         if (fabs(multiply_constant - 1.0) > 0.0) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 direct::elem(Iout(), i, j, k) *= multiply_constant;
@@ -250,11 +252,11 @@ class image_handler_parameters {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 direct::elem(Iout(), i, j, k) -= subtract_constant;
             }
-        } else if (fn_mult != "") {
+        } else if (!fn_mult.empty()) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 direct::elem(Iout(), i, j, k) *= direct::elem(Iop(), i, j, k);
             }
-        } else if (fn_div != "") {
+        } else if (!fn_div.empty()) {
             bool is_first = true;
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 if (abs(direct::elem(Iop(), i, j, k)) < 1e-10) {
@@ -267,11 +269,11 @@ class image_handler_parameters {
                     direct::elem(Iout(), i, j, k) /= direct::elem(Iop(), i, j, k);
                 }
             }
-        } else if (fn_add != "") {
+        } else if (!fn_add.empty()) {
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 direct::elem(Iout(), i, j, k) += direct::elem(Iop(), i, j, k);
             }
-        } else if (fn_subtract != "") {
+        } else if (!fn_subtract.empty()) {
             RFLOAT my_scale = 1.0, best_diff2 ;
             if (do_optimise_scale_subtract) {
                 if (fn_mask == "") {
@@ -330,24 +332,23 @@ class image_handler_parameters {
                     }
                     my_scale = sum_xa / sum_aa;
                     std::cout << " Optimised scale = " << my_scale << std::endl;
-
                 }
             }
 
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
                 direct::elem(Iout(), i, j, k) -= my_scale * direct::elem(Iop(), i, j, k);
             }
-        } else if (fn_fsc != "") {
+        } else if (!fn_fsc.empty()) {
             MultidimArray<RFLOAT> fsc;
-            MetaDataTable MDfsc;
             getFSC(Iout(), Iop(), fsc);
+            MetaDataTable MDfsc;
             MDfsc.setName("fsc");
             FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc) {
                 MDfsc.addObject();
                 RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
-                MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
-                MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
+                MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);     // Pixels per Angstrom
+                MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);  // Angstroms per pixel
                 MDfsc.setValue(EMDL::POSTPROCESS_FSC_GENERAL, direct::elem(fsc, i));
             }
             MDfsc.write(std::cout);
@@ -367,11 +368,11 @@ class image_handler_parameters {
                 MDpower.setValue(EMDL::MLMODEL_POWER_REF, direct::elem(spectrum, i));
             }
             MDpower.write(std::cout);
-        } else if (fn_adjust_power != "") {
+        } else if (!fn_adjust_power.empty()) {
             MultidimArray<RFLOAT> spectrum;
             getSpectrum(Iop(), spectrum, AMPLITUDE_SPECTRUM);
             adaptSpectrum(Iin(), Iout(), spectrum, AMPLITUDE_SPECTRUM);
-        } else if (fn_cosDPhi != "") {
+        } else if (!fn_cosDPhi.empty()) {
             MetaDataTable MDcos;
 
             FourierTransformer transformer;
@@ -389,13 +390,13 @@ class image_handler_parameters {
                 MDcos.setValue(EMDL::POSTPROCESS_FSC_GENERAL, direct::elem(cosDPhi, i));
             }
             MDcos.write(std::cout);
-        } else if (fn_correct_ampl != "") {
+        } else if (!fn_correct_ampl.empty()) {
             MultidimArray<Complex> FT;
             transformer.FourierTransform(Iin(), FT, false);
             FT /= avg_ampl;
             transformer.inverseFourierTransform();
             Iout = Iin;
-        } else if (fn_fourfilter != "") {
+        } else if (!fn_fourfilter.empty()) {
             MultidimArray<Complex> FT;
             transformer.FourierTransform(Iin(), FT, false);
 
