@@ -558,7 +558,7 @@ void Projector::computeFourierTransformMap(
         #endif
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
             // This will also work for 2D
-            int r2 = kp * kp + ip * ip + jp * jp;
+            int r2 = euclidsq(ip, jp, kp);
             // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
             // Set data array
             if (r2 <= max_r2) {
@@ -575,11 +575,11 @@ void Projector::computeFourierTransformMap(
 
                 // Calculate power spectrum
                 int ires = round(sqrt((RFLOAT) r2) / padding_factor);
-                // Factor two because of two-dimensionality of the complex plane
                 direct::elem(power_spectrum, ires) += norm(data.elem(ip, jp, kp)) / 2.0;
-                direct::elem(counter, ires) += weight;
+                // Divide by two because of the complex plane's two-dimensionality
+                direct::elem(counter,        ires) += weight;
 
-                // Apply high pass filter of the reference only after calculating the power spectrum
+                // High-pass filter the reference
                 if (r2 <= min_r2) { data.elem(ip, jp, kp) = 0; }
             }
         }
@@ -648,7 +648,7 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
     // Correct real-space map by dividing it by the Fourier transform of the interpolator(s)
     vol_in.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) {
-        RFLOAT r = sqrt((RFLOAT)(k * k + i * i + j * j));
+        RFLOAT r = sqrt((RFLOAT) euclidsq(i, j, k));
         // if (r == 0) {} // do nothing (i.e. divide by 1)
         if (r > 0.0) {
             RFLOAT rval = r / (ori_size * padding_factor);
@@ -694,15 +694,15 @@ void Projector::project(MultidimArray<Complex> &f2d, Matrix2D<RFLOAT> &A) const 
 
     // #define DEBUG
     #ifdef DEBUG
-    std::cerr << " Xsize(f2d)= " << Xsize(f2d) << std::endl;
-    std::cerr << " Ysize(f2d)= " << Ysize(f2d) << std::endl;
+    std::cerr << " Xsize(f2d)= "  << Xsize(f2d)  << std::endl;
+    std::cerr << " Ysize(f2d)= "  << Ysize(f2d)  << std::endl;
     std::cerr << " Xsize(data)= " << Xsize(data) << std::endl;
     std::cerr << " Ysize(data)= " << Ysize(data) << std::endl;
     std::cerr << " Xinit(data)= " << Xinit(data) << std::endl;
     std::cerr << " Yinit(data)= " << Yinit(data) << std::endl;
     std::cerr << " Zinit(data)= " << Zinit(data) << std::endl;
-    std::cerr << " max_r= " << r_max << std::endl;
-    std::cerr << " Ainv= " << Ainv << std::endl;
+    std::cerr << " max_r= "       << r_max       << std::endl;
+    std::cerr << " Ainv= "        << Ainv        << std::endl;
     #endif
 
     for (int i = 0; i < Ysize(f2d); i++) {
@@ -740,7 +740,7 @@ void Projector::project(MultidimArray<Complex> &f2d, Matrix2D<RFLOAT> &A) const 
 
 
 void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFLOAT>& At) {
-    const int s = img_out.dimy;
+    const int s  = img_out.dimy;
     const int sh = img_out.dimx;
 
     Matrix2D<RFLOAT> Ainv = At.inv();
