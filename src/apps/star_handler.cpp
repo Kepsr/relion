@@ -387,11 +387,7 @@ class star_handler_parameters {
                     }
 
                     // Update the optics_group entry for all particles in the MDsin
-                    for (
-                        long int current_object2 = MDsin[MDs_id].firstObject();
-                        current_object2 < MDsin[MDs_id].numberOfObjects() && current_object2 >= 0;
-                        current_object2 = MDsin[MDs_id].nextObject()
-                    ) {
+                    for (long int current_object2 : MDsin[MDs_id]) {
                         int old_optics_group = MDsin[MDs_id].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, current_object2);
                         if (old_optics_group == my_optics_group)
                             new_optics_groups[current_object2] = new_group;

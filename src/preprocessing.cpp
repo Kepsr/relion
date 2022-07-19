@@ -258,11 +258,7 @@ void Preprocessing::joinAllStarFiles() {
 
     long int imic = 0, ibatch = 0;
     MetaDataTable MDout, MDmicnames, MDbatch;
-    for (
-        long int current_object1 = MDmics.firstObject();
-        current_object1 != MetaDataTable::NO_MORE_OBJECTS && current_object1 != MetaDataTable::NO_OBJECTS_STORED;
-        current_object1 = MDmics.nextObject()
-    ) {
+    for (long int current_object1 : MDmics) {
         // Micrograph filename
         FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
 

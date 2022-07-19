@@ -124,13 +124,11 @@ MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
 }
 
 MetaDataTable::~MetaDataTable() {
-    for (long i = 0; i < objects.size(); i++) {
-        delete objects[i];
-    }
+    for (const auto &object : objects) delete object;
 }
 
 bool MetaDataTable::isEmpty() const {
-    return objects.size() == 0;
+    return objects.empty();
 }
 
 size_t MetaDataTable::numberOfObjects() const {
@@ -138,9 +136,7 @@ size_t MetaDataTable::numberOfObjects() const {
 }
 
 void MetaDataTable::clear() {
-    for (long i = 0; i < objects.size(); i++) {
-        delete objects[i];
-    }
+    for (const auto &object : objects) delete object;
     objects.clear();
 
     label2offset = std::vector<long>(EMDL::LAST_LABEL, -1);
@@ -171,7 +167,7 @@ std::string MetaDataTable::getComment() const {
 }
 
 bool MetaDataTable::containsComment() const {
-    return comment != std::string("");
+    return !comment.empty();
 }
 
 void MetaDataTable::setName(const std::string newName) {
@@ -221,7 +217,8 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID,
         if (EMDL::isDouble(label)) {
             double v = getValue<double>(label, objectID);
 
-            if (abs(v) > 0.0 && abs(v) < 0.001 || abs(v) > 100000.0) {
+            auto mag = abs(v);
+            if (mag > 0.0 && mag < 0.001 || mag > 100000.0) {
                 // If the magnitude of v is very small or very large,
                 // use floating-point form (6.02e-23).
                 snprintf(buffer, 13, v < 0.0 ? "%12.5e" : "%12.6e", v);
@@ -238,38 +235,28 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID,
         } else if (EMDL::isDoubleVector(label)) {
             std::vector<double> v = getValue<std::vector<double>>(label, objectID);
 
-            if (v.size() == 0) {
-                value = "[]";
-            } else {
-                std::stringstream sts;
+            if (v.empty()) return "[]";
 
-                sts << std::setprecision(12);
-                sts << '[';
-
-                for (int i = 0; i < v.size() - 1; i++) {
-                    sts << v[i] << ',';
-                }
-                sts << v[v.size() - 1];
-
-                sts << ']';
-
-                value = sts.str();
+            std::stringstream sts;
+            sts << std::setprecision(12);
+            sts << '[';
+            // It would be nice to use join for this
+            // (but it doesn't currently work with string streams)
+            for (int i = 0; i < v.size() - 1; i++) {
+                sts << v[i] << ',';
             }
-            return value;
+            sts << v[v.size() - 1];
+            sts << ']';
+            return sts.str();
         }
         return std::string(buffer);
     }
 }
 
-bool MetaDataTable::setUnknownValue(int labelPosition, const std::string &value) {
+void MetaDataTable::setUnknownValue(int labelPosition, const std::string &value) {
     long offset = unknownLabelPosition2Offset[labelPosition];
-    if (offset < 0) REPORT_ERROR("MetaDataTable::setValueFromString BUG: offset should not be negative here....");
-
-    if (offset > -1) {
-        objects[current_objectID]->unknowns[offset] = value;
-        return true;
-    }
-    return false;
+    if (offset < 0) REPORT_ERROR("MetaDataTable::setUnknownValue BUG: offset should not be negative here....");
+    objects[current_objectID]->unknowns[offset] = value;
 }
 
 bool MetaDataTable::setValueFromString(
@@ -537,48 +524,48 @@ void MetaDataTable::addLabel(EMDL::EMDLabel label, std::string unknownLabel) {
         if (EMDL::isDouble(label)) {
             id = doubleLabels;
 
-            for (long i = 0; i < objects.size(); i++) {
-                objects[i]->doubles.push_back(0);
+            for (const auto &object : objects) {
+                object->doubles.push_back(0);
             }
 
             doubleLabels++;
         } else if (EMDL::isInt(label)) {
             id = intLabels;
 
-            for (long i = 0; i < objects.size(); i++) {
-                objects[i]->ints.push_back(0);
+            for (const auto &object : objects) {
+                object->ints.push_back(0);
             }
 
             intLabels++;
         } else if (EMDL::isBool(label)) {
             id = boolLabels;
 
-            for (long i = 0; i < objects.size(); i++) {
-                objects[i]->bools.push_back(false);
+            for (const auto &object : objects) {
+                object->bools.push_back(false);
             }
 
             boolLabels++;
         } else if (EMDL::isString(label)) {
             id = stringLabels;
 
-            for (long i = 0; i < objects.size(); i++) {
-                objects[i]->strings.push_back("empty");
+            for (const auto &object : objects) {
+                object->strings.push_back("empty");
             }
 
             stringLabels++;
         } else if (EMDL::isDoubleVector(label)) {
             id = doubleVectorLabels;
 
-            for (long i = 0; i < objects.size(); i++) {
-                objects[i]->doubleVectors.push_back(std::vector<double>());
+            for (const auto &object : objects) {
+                object->doubleVectors.push_back(std::vector<double>());
             }
 
             doubleVectorLabels++;
         } else if (EMDL::isUnknown(label)) {
             id = unknownLabels;
 
-            for (long i = 0; i < objects.size(); i++) {
-                objects[i]->unknowns.push_back("empty");
+            for (const auto &object : objects) {
+                object->unknowns.push_back("empty");
             }
 
             unknownLabelNames.push_back(unknownLabel);
@@ -637,36 +624,35 @@ void MetaDataTable::append(const MetaDataTable& mdt) {
 MetaDataContainer* MetaDataTable::getObject(long objectID) const {
     if (objectID < 0) { objectID = current_objectID; }
 
-    try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) {
+    try {
+        checkObjectID(objectID);
+        return objects[objectID];
+    } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
-
-    return objects[objectID];
 }
 
 void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
     if (objectID < 0) { objectID = current_objectID; }
 
-    try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) {
+    try { 
+        checkObjectID(objectID); 
+        addMissingLabels(data->table);
+        setObjectUnsafe(data, objectID);
+    } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
-
-    addMissingLabels(data->table);
-
-    setObjectUnsafe(data, objectID);
 }
 
 void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long objectID) {
     if (objectID < 0) { objectID = current_objectID; }
 
-    try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) {
+    try {
+        checkObjectID(objectID);
+        setObjectUnsafe(data, objectID);
+    } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
-
-    setObjectUnsafe(data, objectID);
 }
 
 void MetaDataTable::reserve(size_t capacity) {
@@ -724,7 +710,7 @@ void MetaDataTable::addObject() {
         doubleVectorLabels, unknownLabels
     ));
 
-    current_objectID = objects.size()-1;
+    current_objectID = objects.size() - 1;
 }
 
 void MetaDataTable::addObject(MetaDataContainer* data) {
@@ -745,45 +731,38 @@ void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
         stringLabels, doubleVectorLabels, unknownLabels
     ));
 
-    setValuesOfDefinedLabels(data, objects.size()-1);
-    current_objectID = objects.size()-1;
+    setValuesOfDefinedLabels(data, objects.size() - 1);
+    current_objectID = objects.size() - 1;
 }
 
 void MetaDataTable::removeObject(long objectID) {
     long i = objectID < 0 ? current_objectID : objectID;
 
-    try { checkObjectID(i); }
-    catch (const std::string &errmsg) {
+    try {
+        checkObjectID(i);
+        delete objects[i];
+        objects.erase(objects.begin() + i);
+        current_objectID = objects.size() - 1;
+    } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
-
-    delete objects[i];
-    objects.erase(objects.begin() + i);
-
-    current_objectID = objects.size() - 1;
 }
 
 long int MetaDataTable::firstObject() {
-    current_objectID = 0;
-    return 0;
+    return current_objectID = 0;
 }
 
 long int MetaDataTable::nextObject() {
-    if (++current_objectID >= objects.size()) {
-        return NO_MORE_OBJECTS;
-    } else {
-        return current_objectID;
-    }
+    return ++current_objectID;
 }
 
 long int MetaDataTable::goToObject(long int objectID) {
-    try { checkObjectID(objectID); }
-    catch (const std::string &errmsg) {
+    try {
+        checkObjectID(objectID);
+        return current_objectID = objectID;
+    } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
-
-    current_objectID = objectID;
-    return current_objectID;
 }
 
 long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
@@ -1058,7 +1037,7 @@ void MetaDataTable::write(std::ostream& out) {
                     entryComment = getValue<std::string>(EMDL::COMMENT, idx);
                 }
             }
-            if (entryComment != std::string("")) {
+            if (!entryComment.empty()) {
                 out << "# " << entryComment;
             }
             out << "\n";
@@ -1102,7 +1081,7 @@ void MetaDataTable::write(std::ostream& out) {
                 out << val << "\n";
             }
         }
-        if (entryComment != std::string("")) {
+        if (!entryComment.empty()) {
             out << "# " << entryComment << "\n";
         }
 
@@ -1370,11 +1349,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
 
     // loop over MD1
     std::vector<long int> to_remove_from_only2;
-    for (
-        long int current_object1 = MD1.firstObject();
-        current_object1 != MetaDataTable::NO_MORE_OBJECTS && current_object1 != MetaDataTable::NO_OBJECTS_STORED;
-        current_object1 = MD1.nextObject()
-    ) {
+    for (long int current_object1 : MD1) {
         if (EMDL::isString(label1)) {
             mystr1 = MD1.getValue<std::string>(label1);
         } else if (EMDL::isInt(label1)) {
@@ -1390,11 +1365,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
         }
         // loop over MD2
         bool have_in_2 = false;
-        for (
-            long int current_object2 = MD2.firstObject();
-            current_object2 != MetaDataTable::NO_MORE_OBJECTS && current_object2 != MetaDataTable::NO_OBJECTS_STORED;
-            current_object2 = MD2.nextObject()
-        ) {
+        for (long int current_object2 : MD2) {
             if (EMDL::isString(label1)) {
                 std::string mystr2 = MD2.getValue<std::string>(label1);
                 if (mystr1 == mystr2) {
@@ -1440,11 +1411,7 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
         }
     }
 
-    for (
-        long int current_object2 = MD2.firstObject();
-        current_object2 != MetaDataTable::NO_MORE_OBJECTS && current_object2 != MetaDataTable::NO_OBJECTS_STORED;
-        current_object2 = MD2.nextObject()
-    ) {
+    for (long int current_object2 : MD2) {
         // If there is no current_object2 in to_remove_from_only2
         if (std::find(
             to_remove_from_only2.begin(), to_remove_from_only2.end(),
