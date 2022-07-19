@@ -160,7 +160,7 @@ class MetaDataTable {
     template<class T>
     bool setValue(EMDL::EMDLabel name, const T &value, long int objectID = -1);
 
-    bool setUnknownValue(int labelPosition, const std::string &value);
+    void setUnknownValue(int labelPosition, const std::string &value);
     bool setValueFromString(EMDL::EMDLabel label, const std::string &value, long int objectID = -1);
 
     // Sort the order of the elements based on the values in the input label
@@ -238,16 +238,10 @@ class MetaDataTable {
 
     long firstObject();
     long nextObject();
-    /** TODO: make "nextObject()" return "current_object++" 
-     * after "enum errors" has been removed (see below)
-     */
 
     /** @TODO: remove nextObject() after removing calls in:
-     * - "particle_reposition.cpp"
      * - "helix.cpp"
-     * - "preprocessing.cpp"/
      */
-
     
     /** MetaDataTable::iterator
      *    
@@ -263,7 +257,7 @@ class MetaDataTable {
     struct iterator {
 
         bool isDone;
-        MetaDataTable *mdt;
+        MetaDataTable *const mdt;
         long int i;
 
         iterator(MetaDataTable *mdt, bool isDone = false):
@@ -273,17 +267,9 @@ class MetaDataTable {
             return i;
         }
 
-        void check() {
-            /// TODO: remove "i < 0"
-            isDone = i < 0 || i + 1 >= mdt->numberOfObjects();
-            // isDone = i == MetaDataTable::NO_MORE_OBJECTS || 
-            //          i == MetaDataTable::NO_OBJECTS_STORED;  // Do we want to check this every time?
-        }
-
         iterator &operator ++() {
             // assert !isDone
-            check();
-            if (!isDone) { i = mdt->nextObject(); }
+            if (!(isDone = i + 1 >= mdt->numberOfObjects())) { i = mdt->nextObject(); }
             return *this;
         }
 
@@ -363,16 +349,6 @@ class MetaDataTable {
 
     // Join 2 metadata tables. Only include labels that are present in both of them.
     static MetaDataTable combineMetaDataTables(std::vector<MetaDataTable> &MDin);
-
-    // legacy error codes:
-    // @TODO: remove after changing:
-    //	 - particle_reposition.cpp, line ~127
-    //	 - preprocessing.cpp, line ~299
-    enum errors {
-        NO_OBJECTS_STORED = -1,
-        NO_MORE_OBJECTS = -2,
-        NO_OBJECT_FOUND = -3
-    };
 
     template<class T>
     bool isTypeCompatible(EMDL::EMDLabel label, T &value) const;
