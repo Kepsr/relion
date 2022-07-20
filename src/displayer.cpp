@@ -1510,7 +1510,7 @@ void pickerViewerCanvas::draw() {
 
         if (color_label != EMDL::UNDEFINED) {
             RFLOAT colval;
-            if (EMDL::isInt(color_label)) {
+            if (EMDL::is<int>(color_label)) {
                 int ival;
                 try {
                     ival = MDcoords.getValue<int>(color_label);
@@ -1756,7 +1756,7 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
         REPORT_ERROR("--color STAR file does not contain the specified color_label!");
 
     // Pre-set all color_label column in the MDcoords to -999.
-    if (EMDL::isInt(color_label)) {
+    if (EMDL::is<int>(color_label)) {
         for (long int _ : MDcoords) {
             MDcoords.setValue<int>(color_label, -999);
         }
@@ -1791,7 +1791,7 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
             } else {
                 MDcoords.setValue(
                     color_label,
-                    EMDL::isInt(color_label) ?
+                    EMDL::is<int>(color_label) ?
                         MDcolor.getValue<int>   (color_label) :
                         MDcolor.getValue<RFLOAT>(color_label),
                     iimg
@@ -2381,7 +2381,7 @@ int Displayer::runGui() {
 
         std::vector<EMDL::EMDLabel> activeLabels = MD.getActiveLabels();
         for (int ilab = 0; ilab < activeLabels.size(); ilab++) {
-            if (EMDL::isNumber(activeLabels[ilab]))
+            if (EMDL::is<int>(activeLabels[ilab]) || EMDL::is<double>(activeLabels[ilab]))
                 win.sort_labels.push_back(EMDL::label2Str(activeLabels[ilab]));
         }
 

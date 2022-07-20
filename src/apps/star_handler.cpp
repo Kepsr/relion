@@ -639,7 +639,7 @@ class star_handler_parameters {
         MetaDataTable MD = read_check_ignore_optics(fn_in);
 
         for (long int _ : MD) {
-            if (EMDL::isDouble(label1)) {
+            if (EMDL::is<double>(label1)) {
                 RFLOAT val;
                 if (!fn_set.empty()) {
                     val = textToFloat(fn_set);
@@ -661,7 +661,7 @@ class star_handler_parameters {
                         MD.setValue(label3, val);
                     }
                 }
-            } else if (EMDL::isInt(label1)) {
+            } else if (EMDL::is<int>(label1)) {
                 int val;
                 if (!fn_set.empty()) {
                     val = textToInteger(fn_set);
@@ -683,7 +683,7 @@ class star_handler_parameters {
                         MD.setValue(label3, val);
                     }
                 }
-            } else if (EMDL::isString(label1)) {
+            } else if (EMDL::is<std::string>(label1)) {
                 if (!fn_set.empty()) {
                     MD.setValue(label1, fn_set);
                     if (!fn_operate2.empty()) MD.setValue(label2, fn_set);
@@ -691,9 +691,9 @@ class star_handler_parameters {
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
                     REPORT_ERROR("ERROR: cannot multiply_by or add_to a string!");
                 }
-            } else if (EMDL::isBool(label1)) {
+            } else if (EMDL::is<bool>(label1)) {
                 REPORT_ERROR("ERROR: cannot operate on a boolean!");
-            } else if (EMDL::isBool(label1)) {  // What?
+            } else if (EMDL::is<bool>(label1)) {  // What?
                 // @TODO:
                 REPORT_ERROR("ERROR: cannot operate on vectors (yet)!");
             }
@@ -785,19 +785,19 @@ class star_handler_parameters {
         }
 
         for (long int _ : MD) {
-            if (EMDL::isDouble(label)) {
+            if (EMDL::is<double>(label)) {
                 RFLOAT aux = set_value ? textToFloat(add_col_value) : MD.getValue<RFLOAT>(source_label);
                 MD.setValue(label, aux);
-            } else if (EMDL::isInt(label)) {
+            } else if (EMDL::is<int>(label)) {
                 long aux = set_value ? textToInteger(add_col_value) : MD.getValue<long int>(source_label);
                 MD.setValue(label, aux);
-            } else if (EMDL::isBool(label)) {
+            } else if (EMDL::is<bool>(label)) {
                 bool aux = set_value ? textToInteger(add_col_value) : MD.getValue<bool>(source_label);
                 MD.setValue(label, aux);
-            } else if (EMDL::isString(label)) {
+            } else if (EMDL::is<std::string>(label)) {
                 std::string aux = set_value ? add_col_value : MD.getValue<std::string>(source_label);
                 MD.setValue(label, add_col_value);
-            } else if (EMDL::isString(label)) {  // What?
+            } else if (EMDL::is<std::string>(label)) {  // What?
                 std::string auxStr = set_value ? add_col_value : MD.getValueToString(source_label);
                 MD.setValueFromString(label, add_col_value);
             }
