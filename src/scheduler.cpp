@@ -205,13 +205,13 @@ void  SchedulerOperator::readFromStarFile() const {
         type == Schedule::FLOAT_OPERATOR_READ_STAR ||
         type == Schedule::STRING_OPERATOR_READ_STAR
     ) {
-        if (EMDL::isDouble(mylabel)) {
+        if (EMDL::is<double>(mylabel)) {
             scheduler_global_floats[output].value = MD.getValue<RFLOAT>(mylabel, idx);
-        } else if (EMDL::isInt(mylabel)) {
+        } else if (EMDL::is<int>(mylabel)) {
             scheduler_global_floats[output].value = MD.getValue<int>(mylabel, idx);
-        } else if (EMDL::isString(mylabel)) {
+        } else if (EMDL::is<std::string>(mylabel)) {
             scheduler_global_strings[output].value = MD.getValue<std::string>(mylabel, idx);
-        } else if (EMDL::isBool(mylabel)) {
+        } else if (EMDL::is<bool>(mylabel)) {
             scheduler_global_bools[output].value = MD.getValue<bool>(mylabel, idx);
         }
     } else if (
@@ -221,9 +221,9 @@ void  SchedulerOperator::readFromStarFile() const {
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
     ) {
         for (long int _ : MD) {
-            if (EMDL::isDouble(mylabel)) {
+            if (EMDL::is<double>(mylabel)) {
                 myval = MD.getValue<RFLOAT>(mylabel);
-            } else if (EMDL::isInt(mylabel)) {
+            } else if (EMDL::is<int>(mylabel)) {
                 myval = MD.getValue<int>(mylabel);
             } else {
                 REPORT_ERROR("ERROR: metadata label " + EMDL::label2Str(mylabel) + " is not of a number type!");

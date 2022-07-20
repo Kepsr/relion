@@ -158,10 +158,10 @@ class MetaDataTable {
     // If no objectID is given, the internal iterator 'current_objectID' is used
     // objectID is 0-indexed.
     template<class T>
-    bool setValue(EMDL::EMDLabel name, const T &value, long int objectID = -1);
+    void setValue(EMDL::EMDLabel name, const T &value, long int objectID = -1);
 
     void setUnknownValue(int labelPosition, const std::string &value);
-    bool setValueFromString(EMDL::EMDLabel label, const std::string &value, long int objectID = -1);
+    void setValueFromString(EMDL::EMDLabel label, const std::string &value, long int objectID = -1);
 
     // Sort the order of the elements based on the values in the input label
     // (only numbers, no strings/bools)
@@ -182,7 +182,7 @@ class MetaDataTable {
     void deactivateLabel(EMDL::EMDLabel label, std::string unknownLabel="");
 
     // Add a new label and update all objects
-    void addLabel(EMDL::EMDLabel label, std::string unknownLabel="");
+    void addLabel(const EMDL::EMDLabel label, const std::string &unknownLabel="");
 
     // Add missing labels that are present in 'app'.
     void addMissingLabels(const MetaDataTable *app);
@@ -237,11 +237,11 @@ class MetaDataTable {
     void removeObject(long objectID = -1);
 
     long firstObject();
-    long nextObject();
 
     /** @TODO: remove nextObject() after removing calls in:
      * - "helix.cpp"
      */
+    long nextObject();  // If we remove this, current_objectID will have to be made public
     
     /** MetaDataTable::iterator
      *    
@@ -293,7 +293,7 @@ class MetaDataTable {
     long int readStarLoop(std::ifstream &in, bool do_only_count = false);
 
     /* Read a STAR list
-     * The function returns true if the list is followed by a loop, false otherwise */
+     * Return true if the list is followed by a loop, false otherwise */
     bool readStarList(std::ifstream &in);
 
     /* Read a MetaDataTable from a STAR-format data block
@@ -351,7 +351,7 @@ class MetaDataTable {
     static MetaDataTable combineMetaDataTables(std::vector<MetaDataTable> &MDin);
 
     template<class T>
-    bool isTypeCompatible(EMDL::EMDLabel label, T &value) const;
+    bool isTypeCompatible(EMDL::EMDLabel label) const;
 
     private:
 
@@ -396,7 +396,7 @@ MetaDataTable removeDuplicatedParticles(
 #ifdef METADATA_TABLE_TYPE_CHECK
 //#pragma message("typecheck enabled")
 template<class T>
-bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label, T& value) const {
+bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label) const {
     // remove const appended by setValue()
     typedef typename std::remove_const<T>::type U;
 
@@ -407,19 +407,19 @@ bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label, T& value) const {
         std::is_same<double, U>::value || std::is_same<float, U>::value ||
         std::is_same<int, U>::value || std::is_same<long, U>::value ||
         std::is_same<std::vector<double>, U>::value || std::is_same<std::vector<float>, U>::value,
-        "Compile error: wrong type given to MetaDataTable::getValur or setValue"
+        "Compile error: wrong type given to MetaDataTable::getValue or setValue"
     );
 
     if (std::is_same<bool, U>::value) {
-        return EMDL::isBool(label);
+        return EMDL::is<bool>(label);
     } else if (std::is_same<FileName, U>::value || std::is_same<std::string, U>::value) {
-        return EMDL::isString(label);
+        return EMDL::is<std::string>(label);
     } else if (std::is_same<double, U>::value || std::is_same<float, U>::value) {
-        return EMDL::isDouble(label);
+        return EMDL::is<double>(label);
     } else if (std::is_same<int, U>::value || std::is_same<long, U>::value) {
-        return EMDL::isInt(label);
+        return EMDL::is<int>(label);
     } else if (std::is_same<std::vector<double>, U>::value || std::is_same<std::vector<float>, U>::value) {
-        return EMDL::isVector(label);
+        return EMDL::is<std::vector<double>>(label);
     } else {
         return false;
     }
@@ -431,45 +431,40 @@ bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label, T& value) const {
 template<typename T>
 T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
 
-    T value;
     if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 
     if (label == EMDL::UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
 
     #ifdef METADATA_TABLE_TYPE_CHECK
-    if (!isTypeCompatible(label, value))
+    if (!isTypeCompatible<T>(label))
         REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::getValue for label " + EMDL::label2Str(label));
     #endif
 
     const long off = label2offset[label];
-    if (off > -1) {
-        if (objectID < 0) {
-            objectID = current_objectID;
-        } else {
-            try { checkObjectID(objectID); }
-            catch (const std::string &errmsg) {
-                REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-            }
-        }
 
-        value = objects[objectID]->getValue<T>(off);
+    if (off < 0) throw "Negative offset";
+
+    if (objectID < 0) {
+        objectID = current_objectID;
     } else {
-        throw "Negative offset";
+        try { checkObjectID(objectID); } catch (const std::string &errmsg) {
+            REPORT_ERROR((std::string) __func__ + ": " + errmsg);
+        }
     }
-    return value;
+
+    return objects[objectID]->getValue<T>(off);
 }
 
 
-/// TODO: value rather than &value
 template<class T>
-bool MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int objectID) {
+void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int objectID) {
 
-    if (label < 0 || label >= EMDL::LAST_LABEL) return false;
+    if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 
     if (label == EMDL::UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
 
     #ifdef METADATA_TABLE_TYPE_CHECK
-    if (!isTypeCompatible(label, value)) REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));
+    if (!isTypeCompatible<T>(label)) REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));
     #endif
 
     long off = label2offset[label];
@@ -482,16 +477,14 @@ bool MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int obje
     if (objectID < 0) {
         objectID = current_objectID;
     } else {
-        try { checkObjectID(objectID); }
-        catch (const std::string &errmsg) {
+        try { checkObjectID(objectID); } catch (const std::string &errmsg) {
             REPORT_ERROR((std::string) __func__ + ": " + errmsg);
         }
     }
 
-    if (off <= -1) return false;
+    if (off < 0) throw "Negative offset";
 
     objects[objectID]->setValue(off, value);
-    return true;
 }
 
 #endif
