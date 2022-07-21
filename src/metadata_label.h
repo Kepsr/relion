@@ -556,14 +556,14 @@ class EMDL {
 
     class StaticInitialization;  // A class for static initialization
 
-    static std::map<const EMDLabel, const LabelData> data;
-    static std::map<std::string, EMDLabel> labels;
-    static std::map<std::string, std::string> definitions;
+    static std::map<const EMDLabel,    const LabelData>   data;
+    static std::map<const std::string, const EMDLabel>    labels;
+    static std::map<const std::string, const std::string> definitions;
     static StaticInitialization initialization;
 
     template <typename T>
-    static void addLabel(EMDLabel label, const std::string &name, const std::string &definition = "undocumented");
-    static void addAltLabel(EMDLabel label, std::string name);
+    static void addLabel(const EMDLabel label, const std::string &name, const std::string &definition = "undocumented");
+    static void addAltLabel(const EMDLabel label, const std::string &name);
 
     friend class StaticInitialization;
 

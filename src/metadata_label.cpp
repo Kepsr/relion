@@ -46,8 +46,8 @@
 
 // This is needed for static memory allocation
 std::map<const EMDL::EMDLabel, const EMDL::LabelData> EMDL::data;
-std::map<std::string, EMDL::EMDLabel> EMDL::labels;
-std::map<std::string, std::string> EMDL::definitions;
+std::map<const std::string,    const EMDL::EMDLabel>  EMDL::labels;
+std::map<const std::string,    const std::string>     EMDL::definitions;
 
 struct EMDL::LabelData {
 
@@ -59,12 +59,12 @@ struct EMDL::LabelData {
 template <typename T>
 void EMDL::addLabel(const EMDLabel label, const std::string &name, const std::string &definition) {
     data.emplace(label, LabelData {name, typeid(T)});
-    labels[name] = label;
-    definitions[name] = definition;
+    labels.emplace(name, label);
+    definitions.emplace(name, definition);
 }
 
-void EMDL::addAltLabel(EMDLabel label, std::string name) {
-    labels[name] = label;
+void EMDL::addAltLabel(const EMDLabel label, const std::string &name) {
+    labels.emplace(name, label);
 }
 
 void EMDL::printDefinitions(std::ostream& out) {
@@ -73,7 +73,7 @@ void EMDL::printDefinitions(std::ostream& out) {
     for (const auto &p : definitions) {
         out << std::setw(30) << p.first;
 
-        const EMDL::EMDLabel label = labels[p.first];
+        const EMDL::EMDLabel label = labels.at(p.first);
         if (EMDL::is<int>(label)) {
             out << " (int)    ";
         } else if (EMDL::is<bool>(label)) {
@@ -95,11 +95,13 @@ void EMDL::printDefinitions(std::ostream& out) {
 }
 
 EMDL::EMDLabel EMDL::str2Label(const std::string &labelName) {
-    return labels.find(labelName) == labels.end() ? EMDL::UNDEFINED : labels[labelName];
+    const auto search = labels.find(labelName);
+    return search == labels.end() ? EMDL::UNDEFINED : search->second;
 }
 
 std::string EMDL::label2Str(const EMDLabel &label) {
-    return data.find(label) == data.end() ? "" : data.at(label).name;
+    const auto search = data.find(label);
+    return search == data.end() ? "" : search->second.name;
 }
 
 template <typename T>
