@@ -41,10 +41,11 @@
  *  All comments concerning this program package may be sent to the
  *  e-mail address 'xmipp@cnb.csic.es'
  ***************************************************************************/
+#include <typeindex>
 #include "src/metadata_label.h"
 
 // This is needed for static memory allocation
-std::map<EMDL::EMDLabel, const EMDL::LabelData> EMDL::data;
+std::map<const EMDL::EMDLabel, const EMDL::LabelData> EMDL::data;
 std::map<std::string, EMDL::EMDLabel> EMDL::labels;
 std::map<std::string, std::string> EMDL::definitions;
 StaticInitialization EMDL::initialization;  // Just for initialization
@@ -52,32 +53,13 @@ StaticInitialization EMDL::initialization;  // Just for initialization
 struct EMDL::LabelData {
 
     const std::string name;
-    const LabelType type;
-
-    LabelData(): name{}, type{} {}  // Needed for LabelData to be put in a map
-
-    LabelData(const std::string &s, EMDL::LabelType t): name{s}, type{t} {}
+    const std::type_index type;
 
 };
 
-template <>
-EMDL::LabelType EMDL::type2enum<int>() { return EMDL::INT; }
-
-template <>
-EMDL::LabelType EMDL::type2enum<bool>() { return EMDL::BOOL; }
-
-template <>
-EMDL::LabelType EMDL::type2enum<double>() { return EMDL::DOUBLE; }
-
-template <>
-EMDL::LabelType EMDL::type2enum<std::string>() { return EMDL::STRING; }
-
-template <>
-EMDL::LabelType EMDL::type2enum<std::vector<double> >() { return EMDL::DOUBLE_VECTOR; }
-
 template <typename T>
-void EMDL::addLabel(EMDLabel label, const std::string &name, const std::string &definition) {
-    data.insert({label, {name, EMDL::type2enum<T>()}});
+void EMDL::addLabel(const EMDLabel label, const std::string &name, const std::string &definition) {
+    data.emplace(label, LabelData {name, typeid(T)});
     labels[name] = label;
     definitions[name] = definition;
 }
@@ -121,12 +103,12 @@ EMDL::EMDLabel EMDL::str2Label(const std::string &labelName) {
 
 std::string EMDL::label2Str(const EMDLabel &label) {
     if (data.find(label) == data.end()) return "";
-    return data[label].name;
+    return data.at(label).name;
 }
 
 template <typename T>
 bool EMDL::is(const EMDL::EMDLabel &label) {
-    return data[label].type == EMDL::type2enum<T>();
+    return data.at(label).type == typeid(T);
 }
 
 bool EMDL::isValidLabel(const EMDLabel &label) {

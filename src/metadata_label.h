@@ -58,15 +58,7 @@ class EMDL {
 
     public:
 
-    // Why are we rebuilding the type system?
-    enum LabelType { INT, BOOL, DOUBLE, STRING, DOUBLE_VECTOR, UNKNOWN };
-
-    template <typename T>
-    static LabelType type2enum() { return UNKNOWN; }
-
-    // Just a struct to store type and string alias
-    // template <typename T>
-    struct LabelData;
+    struct LabelData;  // For storing the name and type of a data label
 
     // This enum defines what MetaDataLabels this class can manage. 
     // If you need a new one add it here and modify affected methods:
@@ -564,7 +556,7 @@ class EMDL {
 
     private:
 
-    static std::map<EMDLabel, const LabelData> data;
+    static std::map<const EMDLabel, const LabelData> data;
     static std::map<std::string, EMDLabel> labels;
     static std::map<std::string, std::string> definitions;
     static StaticInitialization initialization; // Just for initialization
