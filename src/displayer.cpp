@@ -169,12 +169,13 @@ void DisplayBox::setData(
             }
         }
     } else {
+        unsigned char *img_data_ptr = img_data;
         if (&colour_scheme == &greyscale) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(img, n, old_ptr) {
-                img_data[n] = floor((*old_ptr - minval) / step);
+            for (RFLOAT *old_ptr = img.begin(); old_ptr != img.end(); ++old_ptr, ++img_data_ptr) {
+                *img_data_ptr = floor((*old_ptr - minval) / step);
             }
         } else {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(img, n, old_ptr) {
+            for (RFLOAT *old_ptr = img.begin(); old_ptr != img.end(); ++old_ptr, ++img_data_ptr) {
                 unsigned char val = floor((*old_ptr - minval) / step);
                 rgb_t rgb = colour_scheme.greyToRGB(val);
                 img_data[3 * n    ] = rgb.r;

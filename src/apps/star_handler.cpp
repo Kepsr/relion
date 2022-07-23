@@ -345,7 +345,7 @@ class star_handler_parameters {
 
             // Now check uniqueness of the other tables
             for (int MDs_id = 1; MDs_id < fns_in.size(); MDs_id++) {
-                const int obs_id = MDs_id - 1;
+                auto &om = obsModels[MDs_id - 1];
 
                 std::vector<int> new_optics_groups;
                 for (long int _ : MDsin[MDs_id]) {
@@ -354,11 +354,11 @@ class star_handler_parameters {
                 }
 
                 MetaDataTable unique_opticsMdt;
-                unique_opticsMdt.addMissingLabels(&obsModels[obs_id].opticsMdt);
+                unique_opticsMdt.addMissingLabels(om.opticsMdt);
 
-                for (long int _ : obsModels[obs_id].opticsMdt) {
-                    std::string myname          = obsModels[obs_id].opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
-                    int         my_optics_group = obsModels[obs_id].opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+                for (long int _ : om.opticsMdt) {
+                    std::string myname          = om.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
+                    int         my_optics_group = om.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
 
                     auto it = std::find(
                         optics_group_uniq_names.begin(), optics_group_uniq_names.end(),
@@ -372,10 +372,10 @@ class star_handler_parameters {
 
                         optics_group_uniq_names.push_back(myname);
                         // Add the line to the global obsModel
-                        obsModels[obs_id].opticsMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, new_group);
+                        om.opticsMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, new_group);
 
                         unique_opticsMdt.addObject();
-                        unique_opticsMdt.setObject(obsModels[obs_id].opticsMdt.getObject());
+                        unique_opticsMdt.setObject(om.opticsMdt.getObject());
                     } else {
                         std::cout << " + Joining optics_groups with the same name: " << myname << std::endl;
                         std::cerr << " + WARNING: if these are different data sets, you might want to rename optics groups instead of joining them!" << std::endl;
@@ -394,7 +394,7 @@ class star_handler_parameters {
                     }
                 }
 
-                obsModels[obs_id].opticsMdt = unique_opticsMdt;
+                om.opticsMdt = unique_opticsMdt;
 
                 for (long int index : MDsin[MDs_id]) {
                     MDsin[MDs_id].setValue(EMDL::IMAGE_OPTICS_GROUP, new_optics_groups[index]);
@@ -484,6 +484,7 @@ class star_handler_parameters {
                         !mdt_optics.containsLabel(EMDL::IMAGE_MAG_MATRIX_11)
                     ) {
                         for (long int _ : mdt_optics) {
+                            // 2×2 identity matrix
                             mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_00, 1.0);
                             mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_01, 0.0);
                             mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_10, 0.0);
@@ -526,7 +527,7 @@ class star_handler_parameters {
         // Combine the particles tables
         MetaDataTable MDout = MetaDataTable::combineMetaDataTables(MDsin);
 
-        //Deactivate the group_name column
+        // Deactivate the group_name column
         MDout.deactivateLabel(EMDL::MLMODEL_GROUP_NO);
 
         if (!fn_check.empty()) {
@@ -534,7 +535,7 @@ class star_handler_parameters {
             if (!MDout.containsLabel(label))
                 REPORT_ERROR("ERROR: the output file does not contain the label to check for duplicates. Is it present in all input files?");
 
-            /// Don't want to mess up original order, so make a MDsort with only that label...
+            // Don't want to mess up original order, so make a MDsort with only that label...
             FileName fn_this, fn_prev = "";
             MetaDataTable MDsort;
             for (long int _ : MDout) {

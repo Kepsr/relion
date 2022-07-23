@@ -347,7 +347,7 @@ struct StringComparator {
 
 };
 
-// Can we get this to inherit from StringComperator?
+// Can we get this to inherit from StringComparator?
 struct StringAfterAtComparator {
 
     long index;
@@ -364,7 +364,7 @@ struct StringAfterAtComparator {
 
 };
 
-// Can we get this to inherit from StringComperator?
+// Can we get this to inherit from StringComparator?
 struct StringBeforeAtComparator {
 
     long index;
@@ -479,10 +479,11 @@ bool MetaDataTable::labelExists(EMDL::EMDLabel name) const {
 }
 
 bool MetaDataTable::containsLabel(const EMDL::EMDLabel label, std::string unknownLabel) const {
+    /// TODO: Use std::any_of
     for (int i = 0; i < activeLabels.size(); i++) {
         if (
             activeLabels[i] == label &&
-            (label != EMDL::UNKNOWN_LABEL || getUnknownLabelNameAt(i) == unknownLabel)
+            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknownLabelPosition2Offset[i]])
         ) return true;
     }
     return false;
@@ -496,7 +497,7 @@ void MetaDataTable::deactivateLabel(EMDL::EMDLabel label, std::string unknownLab
     for (int i = 0; i < activeLabels.size(); i++) {
         if (
             activeLabels[i] == label &&
-            (label != EMDL::UNKNOWN_LABEL || unknownLabelNames[unknownLabelPosition2Offset[i]] == unknownLabel)
+            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknownLabelPosition2Offset[i]])
         ) {
             activeLabels.erase(activeLabels.begin() + i);
             unknownLabelPosition2Offset.erase(unknownLabelPosition2Offset.begin() + i);
@@ -577,12 +578,12 @@ void MetaDataTable::addLabel(const EMDL::EMDLabel label, const std::string &unkn
     }
 }
 
-void MetaDataTable::addMissingLabels(const MetaDataTable* mdt) {
-    for (long i = 0; i < mdt->activeLabels.size(); i++) {
-        EMDL::EMDLabel l = mdt->activeLabels[i];
+void MetaDataTable::addMissingLabels(const MetaDataTable &mdt) {
+    for (long i = 0; i < mdt.activeLabels.size(); i++) {
+        EMDL::EMDLabel l = mdt.activeLabels[i];
 
         if (l == EMDL::UNKNOWN_LABEL) {
-            std::string unknownLabel = mdt->getUnknownLabelNameAt(i);
+            std::string unknownLabel = mdt.unknownLabelNames[mdt.unknownLabelPosition2Offset[i]];
             if (!containsLabel(l, unknownLabel)) {
                 addLabel(l, unknownLabel);
             }
@@ -592,10 +593,10 @@ void MetaDataTable::addMissingLabels(const MetaDataTable* mdt) {
     }
 }
 
-void MetaDataTable::append(const MetaDataTable& mdt) {
+void MetaDataTable::append(const MetaDataTable &mdt) {
     if (activeLabels.empty()) {
         // If the current one is empty, add missing labels and append the new one:
-        addMissingLabels(&mdt);
+        addMissingLabels(mdt);
     } else {
         // If the current one is not-empty, check all labels are the same before appending. Otherwise, raise error
         if (!compareLabels(*this, mdt))
@@ -620,9 +621,8 @@ void MetaDataTable::append(const MetaDataTable& mdt) {
 
 
 MetaDataContainer* MetaDataTable::getObject(long objectID) const {
-    if (objectID < 0) { objectID = current_objectID; }
-
     try {
+        if (objectID < 0) { objectID = current_objectID; }
         checkObjectID(objectID);
         return objects[objectID];
     } catch (const std::string &errmsg) {
@@ -631,11 +631,10 @@ MetaDataContainer* MetaDataTable::getObject(long objectID) const {
 }
 
 void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
-    if (objectID < 0) { objectID = current_objectID; }
-
     try { 
+        if (objectID < 0) { objectID = current_objectID; }
         checkObjectID(objectID); 
-        addMissingLabels(data->table);
+        addMissingLabels(*data->table);
         setObjectUnsafe(data, objectID);
     } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
@@ -643,9 +642,8 @@ void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
 }
 
 void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long objectID) {
-    if (objectID < 0) { objectID = current_objectID; }
-
     try {
+        if (objectID < 0) { objectID = current_objectID; }
         checkObjectID(objectID);
         setObjectUnsafe(data, objectID);
     } catch (const std::string &errmsg) {
@@ -664,39 +662,32 @@ void MetaDataTable::setObjectUnsafe(MetaDataContainer* data, long objectID) {
         EMDL::EMDLabel label = data->table->activeLabels[i];
 
         if (label != EMDL::UNKNOWN_LABEL) {
-            long myOff = label2offset[label];
-            long srcOff = data->table->label2offset[label];
+            const long this_off =              label2offset[label];
+            const long that_off = data->table->label2offset[label];
 
-            if (myOff < 0)
-                continue;
+            if (this_off < 0) continue;
 
             if (EMDL::is<double>(label)) {
-                obj->doubles[myOff] = data->doubles[srcOff];
+                obj->doubles[this_off] = data->doubles[that_off];
             } else if (EMDL::is<int>(label)) {
-                obj->ints[myOff] = data->ints[srcOff];
+                obj->ints[this_off] = data->ints[that_off];
             } else if (EMDL::is<bool>(label)) {
-                obj->bools[myOff] = data->bools[srcOff];
+                obj->bools[this_off] = data->bools[that_off];
             } else if (EMDL::is<std::string>(label)) {
-                obj->strings[myOff] = data->strings[srcOff];
+                obj->strings[this_off] = data->strings[that_off];
             } else if (EMDL::is<std::vector<double>>(label)) {
-                obj->doubleVectors[myOff] = data->doubleVectors[srcOff];
+                obj->doubleVectors[this_off] = data->doubleVectors[that_off];
             }
         } else {
-            std::string unknownLabel = data->table->getUnknownLabelNameAt(i);
-            long srcOff = data->table->unknownLabelPosition2Offset[i];
-            long myOff = -1;
+            const long that_off            = data->table->unknownLabelPosition2Offset[i];
+            const std::string unknownLabel = data->table->unknownLabelNames[that_off];
+            const auto search = std::find(unknownLabelNames.begin(), unknownLabelNames.end(), unknownLabel);
 
-            for (int j = 0; j < unknownLabelNames.size(); j++) {
-                if (unknownLabelNames[j] == unknownLabel) {
-                    myOff = j;
-                    break;
-                }
-            }
+            if (search == unknownLabelNames.end())
+                REPORT_ERROR("MetaDataTable::setObjectUnsafe: logic error."
+                             "unknownLabel was not found.");
 
-            if (myOff < 0)
-                REPORT_ERROR("MetaDataTable::setObjectUnsafe: logic error. cannot find srcOff.");
-
-            obj->unknowns[myOff] = data->unknowns[srcOff];
+            obj->unknowns[search - unknownLabelNames.begin()] = data->unknowns[that_off];
         }
     }
 }
@@ -734,12 +725,11 @@ void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
 }
 
 void MetaDataTable::removeObject(long objectID) {
-    long i = objectID < 0 ? current_objectID : objectID;
-
     try {
-        checkObjectID(i);
-        delete objects[i];
-        objects.erase(objects.begin() + i);
+        if (objectID < 0) { objectID = current_objectID; }
+        checkObjectID(objectID);
+        delete objects[objectID];
+        objects.erase(objects.begin() + objectID);
         current_objectID = objects.size() - 1;
     } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
@@ -763,345 +753,6 @@ long int MetaDataTable::goToObject(long int objectID) {
     }
 }
 
-long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
-    isList = false;
-
-    //Read column labels
-    int labelPosition = 0;
-    std::string line, token;
-
-    // First read all the column labels
-    while (getline(in, line, '\n')) {
-        line = simplify(line);
-        // TODO: handle comments...
-        if (line[0] == '#' || line[0] == '\0' || line[0] == ';')
-            continue;
-
-        if (line[0] == '_') {
-            // label definition line
-            // Take string from "_" until "#"
-            size_t start = line.find("_");
-            size_t end = line.find("#");
-
-            token = line.substr(start + 1, end - start - 2);
-
-            EMDL::EMDLabel label = EMDL::str2Label(token);
-
-            if (label == EMDL::UNDEFINED) {
-                std::cerr << " + WARNING: will ignore (but maintain) values for the unknown label: " << token << std::endl;
-                label = EMDL::UNKNOWN_LABEL;
-            }
-
-            addLabel(label, token);
-
-            labelPosition++;
-        } else {
-            // found first data line
-            break;
-        }
-    }
-
-    // Then fill the table (dont read another line until the one from above has been handled)
-    bool is_first = true;
-    long int nr_objects = 0;
-    const int num_labels = activeLabels.size();
-
-    while (is_first || getline(in, line, '\n')) {
-        is_first = false;
-
-        line = simplify(line);
-        // Stop at empty line
-        if (line[0] == '\0')
-            break;
-
-        nr_objects++;
-        if (!do_only_count) {
-            // Add a new line to the table
-            addObject();
-
-            // Parse data values
-            int pos = 0;
-            std::string value;
-            labelPosition = 0;
-            while (nextTokenInSTAR(line, pos, value)) {
-                if (labelPosition >= num_labels) {
-                    std::cerr << "Error in line: " << line << std::endl;
-                    REPORT_ERROR("A line in the STAR file contains more columns than the number of labels.");
-                }
-                // Check whether this is an unknown label
-                if (activeLabels[labelPosition] == EMDL::UNKNOWN_LABEL) {
-                    setUnknownValue(labelPosition, value);
-                } else {
-                    setValueFromString(activeLabels[labelPosition], value);
-                }
-                labelPosition++;
-            }
-            if (labelPosition < num_labels && num_labels > 2) {
-                // For backward-compatibility for cases like "fn_mtf <empty>", don't die if num_labels == 2.
-                std::cerr << "Error in line: " << line << std::endl;
-                REPORT_ERROR("A line in the STAR file contains fewer columns than the number of labels. Expected = " + integerToString(num_labels) + " Found = " +  integerToString(labelPosition));
-            }
-        }
-    }
-
-    return nr_objects;
-}
-
-bool MetaDataTable::readStarList(std::ifstream &in) {
-    isList = true;
-    addObject();
-    long int objectID = objects.size() - 1;
-
-    std::string line, firstword, value;
-
-    bool also_has_loop = false;
-
-    // Read data and fill structures accordingly
-    int labelPosition = 0;
-    while (getline(in, line, '\n')) {
-        int pos = 0;
-        // Ignore empty lines
-        if (!nextTokenInSTAR(line, pos, firstword))
-            continue;
-
-        // Get label-value pairs
-        if (firstword[0] == '_') {
-            std::string token = firstword.substr(1); // get rid of leading underscore
-            EMDL::EMDLabel label = EMDL::str2Label(token);
-            if (!nextTokenInSTAR(line, pos, value))
-                REPORT_ERROR("MetaDataTable::readStarList: did not encounter a single word after "+firstword);
-
-            if (label == EMDL::UNDEFINED) {
-                label = EMDL::UNKNOWN_LABEL;
-                addLabel(label, token);
-                setUnknownValue(labelPosition, value);
-                std::cerr << " + WARNING: will ignore (but maintain) values for the unknown label: " << token << std::endl;
-            } else {
-                addLabel(label);
-                setValueFromString(label, value, objectID);
-            }
-            labelPosition++;
-        } else if (firstword[0] == '#' || firstword[0] == ';') {
-            // Check whether there is a comment or an empty line
-            // TODO: handle comments?
-            continue;
-        } else if (firstword.find("loop_") == 0) {
-            // Check whether a loop structure comes after this list
-            also_has_loop = true;
-            return also_has_loop;
-        } else if (firstword.find("data_") == 0) {
-            // Check whether this data blocks ends (because a next one is there)
-            // Should I reverse the pointer one line?
-            return also_has_loop;
-        }
-    }
-    // Reached the end of the file
-    return also_has_loop;
-}
-
-long int MetaDataTable::readStar(
-    std::ifstream &in, const std::string &name, bool do_only_count
-) {
-    std::string line, token, value;
-    clear();
-    bool also_has_loop;
-
-    // Start reading the ifstream at the top
-    in.seekg(0);
-
-    // Set the version to 30000 by default, in case there is no version tag
-    // (version tags were introduced in version 31000)
-    version = 30000;
-
-    // Proceed until the next data_ or _loop statement
-    // The loop statement may be necessary for data blocks that have a list AND a table inside them
-    while (getline(in, line, '\n')) {
-        trim(line);
-        if (line.find("# version ") != std::string::npos) {
-            token = line.substr(line.find("# version ") + std::string("# version ").length());
-
-            std::istringstream sts(token);
-            sts >> version;
-        }
-
-        // Find data_ lines
-        if (line.find("data_") != std::string::npos) {
-            token = line.substr(line.find("data_") + 5);
-            // If a name has been given, only read data_thatname
-            // Otherwise, just read the first data_ block
-            if (name.empty() || name == token) {
-                setName(token);
-                // Get the next item that starts with "_somelabel" or with "loop_"
-                int current_pos = in.tellg();
-                while (getline(in, line, '\n')) {
-                    if (line.find("loop_") != std::string::npos) {
-                        return readStarLoop(in, do_only_count);
-                    } else if (line[0] == '_') {
-                        // go back one line in the ifstream
-                        in.seekg(current_pos);
-                        also_has_loop = readStarList(in);
-                        return !also_has_loop;
-                    }
-                }
-            }
-        }
-    }
-
-    // Clear the eofbit so we can perform more actions on the stream.
-    in.clear();
-
-    return 0;
-}
-
-long int MetaDataTable::read(
-    const FileName &filename, const std::string &name, bool do_only_count
-) {
-
-    // Clear current table
-    clear();
-
-    // Check for an :star extension
-    FileName fn_read = filename.removeFileFormat();
-
-    std::ifstream in(fn_read.data(), std::ios_base::in);
-
-    if (in.fail()) {
-        REPORT_ERROR( (std::string) "MetaDataTable::read: File " + fn_read + " does not exist" );
-    }
-
-    return readStar(in, name, do_only_count);
-
-    in.close();
-
-    // Go to the first object
-    firstObject();
-}
-
-void MetaDataTable::write(std::ostream& out) {
-    // Only write tables that have something in them
-    if (isEmpty()) {
-        return;
-    }
-
-    if (version >= 30000) {
-        out << "\n";
-        out << "# version " << getCurrentVersion() <<"\n";
-    }
-
-    out << "\n";
-    out << "data_" << getName() <<"\n";
-
-    if (containsComment()) {
-        out << "# "<< comment << "\n";
-    }
-
-    out << "\n";
-
-    if (!isList) {
-        // Write loop header structure
-        out << "loop_ \n";
-
-        for (long i = 0, n_printed = 1; i < activeLabels.size(); i++) {
-            EMDL::EMDLabel l = activeLabels[i];
-            if (l == EMDL::UNKNOWN_LABEL) {
-                const long offset = unknownLabelPosition2Offset[i];
-                out << "_" << unknownLabelNames[offset]<< " #" << (n_printed++) << " \n";
-            } else if (l != EMDL::COMMENT && l != EMDL::SORTED_IDX) {
-                // EMDL::SORTED_IDX is only for internal use, never write it out!
-                out << "_" << EMDL::label2Str(l) << " #" << (n_printed++) << " \n";
-            }
-        }
-
-        // Write actual data block
-        for (long int idx = 0; idx < objects.size(); idx++) {
-            std::string entryComment = "";
-
-            for (long i = 0; i < activeLabels.size(); i++) {
-                EMDL::EMDLabel l = activeLabels[i];
-
-                if (l == EMDL::UNKNOWN_LABEL) {
-                    out.width(10);
-                    std::string token, val;
-                    long offset = unknownLabelPosition2Offset[i];
-                    val = objects[idx]->unknowns[offset];
-                    escapeStringForSTAR(val);
-                    out << val << " ";
-                } else if (l != EMDL::COMMENT && l != EMDL::SORTED_IDX) {
-                    out.width(10);
-                    std::string val = getValueToString(l, idx, true); // escape=true
-                    out << val << " ";
-                }
-                if (l == EMDL::COMMENT) {
-                    entryComment = getValue<std::string>(EMDL::COMMENT, idx);
-                }
-            }
-            if (!entryComment.empty()) {
-                out << "# " << entryComment;
-            }
-            out << "\n";
-        }
-        // Finish table with a white-line
-        out << " \n";
-
-    } else {
-        // isList
-        // Get first object. In this case (row format) there is a single object
-        std::string entryComment = "";
-        int maxWidth = 10;
-
-        for (long i = 0; i < activeLabels.size(); i++) {
-            EMDL::EMDLabel l = activeLabels[i];
-
-            if (l != EMDL::COMMENT && l != EMDL::UNKNOWN_LABEL) {
-                int w = EMDL::label2Str(l).length();
-                if (w > maxWidth) maxWidth = w;
-            } else if (l == EMDL::UNKNOWN_LABEL) {
-                long offset = unknownLabelPosition2Offset[i];
-                int w = unknownLabelNames[offset].length();
-                if (w > maxWidth) maxWidth = w;
-            } else {
-                entryComment = getValue<std::string>(EMDL::COMMENT, 0);
-            }
-        }
-
-        for (long i = 0; i < activeLabels.size(); i++) {
-            EMDL::EMDLabel l = activeLabels[i];
-
-            if (l == EMDL::UNKNOWN_LABEL) {
-                long offset = unknownLabelPosition2Offset[i];
-                int w = unknownLabelNames[offset].length();
-                out << "_" << unknownLabelNames[offset] << std::setw(12 + maxWidth - w) << " " << objects[0]->unknowns[offset] << "\n";
-            } else if (l != EMDL::COMMENT) {
-                int w = EMDL::label2Str(l).length();
-                out << "_" << EMDL::label2Str(l) << std::setw(12 + maxWidth - w) << " ";
-
-                std::string val = getValueToString(l, 0, true); // escape=true
-                out << val << "\n";
-            }
-        }
-        if (!entryComment.empty()) {
-            out << "# " << entryComment << "\n";
-        }
-
-        // End a data block with a white line
-        out << " \n";
-    }
-}
-
-void MetaDataTable::write(const FileName &fn_out) {
-    std::ofstream fh;
-    FileName fn_tmp = fn_out + ".tmp";
-    fh.open((fn_tmp).c_str(), std::ios::out);
-    if (!fh)
-        REPORT_ERROR( (std::string)"MetaDataTable::write: cannot write to file: " + fn_out);
-    //    fh << "# RELION; version " << g_RELION_VERSION << std::endl;
-    write(fh);
-    fh.close();
-    // Rename to prevent errors with programs in pipeliner reading in incomplete STAR files
-    std::rename(fn_tmp.c_str(), fn_out.c_str());
-
-}
-
 void MetaDataTable::columnHistogram(
     EMDL::EMDLabel label, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
     int verb, CPlot2D *plot2D,
@@ -1112,7 +763,7 @@ void MetaDataTable::columnHistogram(
         REPORT_ERROR(prependERROR("The column specified is not present in the MetaDataTable."));
 
     std::vector<RFLOAT> values;
-    for (auto it = begin(); it != end(); ++it) {
+    for (auto _ : *this) {
         // As the internal state of MDin gets incremented...
         RFLOAT val;
         if (EMDL::is<double>(label)) {
@@ -1138,9 +789,8 @@ void MetaDataTable::histogram(
     bool do_fractional_instead, bool do_cumulative_instead
 ) {
     double sum = 0, sumsq = 0;
-    for (size_t i = 0, ilim = values.size(); i < ilim; i++) {
-        RFLOAT value = values[i];
-        sum += value;
+    for (RFLOAT value : values) {
+        sum   += value;
         sumsq += value * value;
     }
 
@@ -1303,14 +953,17 @@ void MetaDataTable::randomiseOrder() {
     std::random_shuffle(objects.begin(), objects.end());
 }
 
+// Bounds checking
 void MetaDataTable::checkObjectID(long id) const throw (std::string) {
-    if (id >= objects.size() || id < 0)
+    if (id < 0 || id >= objects.size())
         throw "object " + std::to_string(id) + " out of bounds! (" + std::to_string(objects.size()) + " objects present)";
 }
 
 //FIXME: does not support unknownLabels but this function is only used by relion_star_handler
 //       so I will leave this for future...
-void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
+// Decompose two tables (A, B) into (A - B, A & B, B - A)
+void compareMetaDataTable(
+    MetaDataTable &MD1, MetaDataTable &MD2,
     MetaDataTable &MDboth, MetaDataTable &MDonly1, MetaDataTable &MDonly2,
     EMDL::EMDLabel label1, double eps, EMDL::EMDLabel label2, EMDL::EMDLabel label3
 ) {
@@ -1412,13 +1065,37 @@ void compareMetaDataTable(MetaDataTable &MD1, MetaDataTable &MD2,
     for (long int current_object2 : MD2) {
         // If there is no current_object2 in to_remove_from_only2
         if (std::find(
-            to_remove_from_only2.begin(), to_remove_from_only2.end(),
-            current_object2
+            to_remove_from_only2.begin(), to_remove_from_only2.end(), current_object2
         ) == to_remove_from_only2.end()) {
             // std::cerr << " doNOT remove current_object2= " << current_object2 << std::endl;
             MDonly2.addObject(MD2.getObject(current_object2));
         }
     }
+}
+
+MetaDataTable MetaDataTable::getCommonLabels(const std::vector<MetaDataTable> &mdts) {
+    MetaDataTable common_labels;
+    // Assume mdts.size() > 1
+    const MetaDataTable &first_mdt = mdts[0];
+    // For each label in the first table
+    for (size_t i = 0; i < first_mdt.activeLabels.size(); i++) {
+        // Check their presence in each of the input files
+
+        const EMDL::EMDLabel label = first_mdt.activeLabels[i];
+        std::string unknownLabel = label == EMDL::UNKNOWN_LABEL ? first_mdt.unknownLabelNames[first_mdt.unknownLabelPosition2Offset[i]] : "";
+
+        // Is this label present in all of the other MetaDataTables?
+        for (size_t j = 1; j < mdts.size(); j++) {
+            if (!mdts[j].containsLabel(label, unknownLabel)) {
+                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(label) : unknownLabel)
+                << " in " << j + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
+                goto next_label;
+            }
+        }
+        common_labels.addLabel(label, unknownLabel);
+        next_label: {}
+    }
+    return common_labels;
 }
 
 MetaDataTable MetaDataTable::combineMetaDataTables(std::vector<MetaDataTable> &MDin) {
@@ -1430,41 +1107,21 @@ MetaDataTable MetaDataTable::combineMetaDataTables(std::vector<MetaDataTable> &M
 
     MetaDataTable MDc;
     // Find which taTable combineMetaDataTables
-    MetaDataTable commonLabels;
 
-    // Loop over all labels in first
-    // activeLabels is private but accessible from other instances of the same class in C++.
-    for (size_t i = 0; i < MDin[0].activeLabels.size(); i++) {
-        // Check their presence in each of the input files
+    MetaDataTable common_labels = getCommonLabels(MDin);
 
-        EMDL::EMDLabel thisLabel = MDin[0].activeLabels[i];
-        std::string unknownLabel = thisLabel == EMDL::UNKNOWN_LABEL ? MDin[0].getUnknownLabelNameAt(i) : "";
+    /// TODO: Can the loop used to construct common_labels also be used to disable labels?
 
-        bool is_present = true;  // Is this label present in every MetaDataTable in MDin?
-        for (size_t j = 1; j < MDin.size(); j++) {
-            is_present = MDin[j].containsLabel(thisLabel, unknownLabel);
-
-            if (!is_present) {
-                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel) : unknownLabel)
-                            << " in " << j + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
-                break;
-            }
-        }
-
-        if (is_present) {
-            commonLabels.addLabel(thisLabel, unknownLabel);
-        }
-    }
-
-    // Also disable any labels that do not occur in all input tables
+    // And disable those labels that do not occur in all input tables
     for (int i = 0; i < MDin.size(); i++) {
-        for (int j = 0; j < MDin[i].activeLabels.size(); j++) {
-            EMDL::EMDLabel thisLabel = MDin[i].activeLabels[j];
-            std::string unknownLabel = thisLabel == EMDL::UNKNOWN_LABEL ? MDin[i].getUnknownLabelNameAt(j) : "";
+        MetaDataTable &mdt = MDin[i];
+        for (int j = 0; j < mdt.activeLabels.size(); j++) {
+            EMDL::EMDLabel label = mdt.activeLabels[j];
+            std::string unknownLabel = label == EMDL::UNKNOWN_LABEL ? mdt.getUnknownLabelNameAt(j) : "";
 
-            if (!commonLabels.containsLabel(thisLabel, unknownLabel)) {
-                MDin[i].deactivateLabel(thisLabel, unknownLabel);
-                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(thisLabel) : unknownLabel) << " in " << i + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
+            if (!common_labels.containsLabel(label, unknownLabel)) {
+                mdt.deactivateLabel(label, unknownLabel);
+                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(label) : unknownLabel) << " in " << i + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
             }
         }
     }
@@ -1479,8 +1136,8 @@ bool MetaDataTable::compareLabels(
     if (MD1.activeLabels.size() != MD2.activeLabels.size())
         return false;
 
-    // Since we have the same number of labels, it suffices to check
-    // all labels in MD1 are present in MD2.
+    // Since we have the same number of labels,
+    // it suffices to check that all labels in MD1 are present in MD2.
     for (size_t id = 0; id < MD1.activeLabels.size(); id++) {
         EMDL::EMDLabel l = MD1.activeLabels[id];
         std::string unknownLabel = l == EMDL::UNKNOWN_LABEL ? MD1.getUnknownLabelNameAt(id) : "";
@@ -1511,9 +1168,9 @@ MetaDataTable subsetMetaDataTable(
     }
 
     return MDout;
-
 }
 
+// Exclude determines whether to perform A * +B or A * -B
 MetaDataTable subsetMetaDataTable(
     MetaDataTable &MDin, EMDL::EMDLabel label, std::string search_str, bool exclude
 ) {
@@ -1536,6 +1193,40 @@ MetaDataTable subsetMetaDataTable(
     return MDout;
 }
 
+static std::map<std::string, std::vector<long>> group_particles_by_micrograph(
+    MetaDataTable mdt, EMDL::EMDLabel mic_label, RFLOAT origin_scale,
+    std::vector<RFLOAT> &xs, std::vector<RFLOAT> &ys, std::vector<RFLOAT> &zs,
+    bool dataIs3D
+) {
+    // Populate xs, ys, zs
+    // Map each micrograph name to a collection of object indices
+    std::map<std::string, std::vector<long>> grouped;
+    for (long int i : mdt) {
+
+        RFLOAT origin, coordinate;
+
+        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        xs[i] = coordinate - origin * origin_scale;
+
+        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        ys[i] = coordinate - origin * origin_scale;
+
+        if (dataIs3D) {
+        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
+        zs[i] = coordinate - origin * origin_scale;
+        }
+
+        std::string mic_name = mdt.getValue<std::string>(mic_label);
+        grouped[mic_name].push_back(i);  // Will insert key-value pair if key not found
+
+    }
+    return grouped;
+}
+
+
 MetaDataTable removeDuplicatedParticles(
     MetaDataTable &MDin, EMDL::EMDLabel mic_label, RFLOAT threshold,
     RFLOAT origin_scale, FileName fn_removed, bool verb
@@ -1550,11 +1241,9 @@ MetaDataTable removeDuplicatedParticles(
     if (!MDin.containsLabel(mic_label))
         REPORT_ERROR("STAR file does not contain " + EMDL::label2Str(mic_label));
 
-    std::vector<bool> valid(MDin.numberOfObjects(), true);
-    std::vector<RFLOAT> xs(MDin.numberOfObjects(), 0.0);
-    std::vector<RFLOAT> ys(MDin.numberOfObjects(), 0.0);
+    std::vector<RFLOAT> xs (MDin.numberOfObjects(), 0.0);
+    std::vector<RFLOAT> ys (MDin.numberOfObjects(), 0.0);
     std::vector<RFLOAT> zs;
-
     bool dataIs3D = false;
     if (MDin.containsLabel(EMDL::IMAGE_COORD_Z)) {
         if (!MDin.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM))
@@ -1563,61 +1252,41 @@ MetaDataTable removeDuplicatedParticles(
         zs.resize(MDin.numberOfObjects(), 0.0);
     }
 
-    // group by micrograph
-    std::map<std::string, std::vector<long>> grouped;
-    // Populate xs, ys, zs
-    for (long int i : MDin) {
-
-        std::string mic_name = MDin.getValue<std::string>(mic_label);
-
-        RFLOAT origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-        RFLOAT coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-        xs[i] = coordinate - origin * origin_scale;
-
-        origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-        coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-        ys[i] = coordinate - origin * origin_scale;
-
-        if (dataIs3D) {
-        origin     = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
-        coordinate = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
-        zs[i] = coordinate - origin * origin_scale;
-        }
-
-        grouped[mic_name].push_back(i);
-    }
+    std::map<std::string, std::vector<long>> grouped = group_particles_by_micrograph(
+        MDin, mic_label, origin_scale, xs, ys, zs, dataIs3D
+    );
 
     // The minimal permitted distance between any two particles
     // (technically the maximal forbidden distance)
     RFLOAT threshold_sq = threshold * threshold;
 
-    // Remove duplicates
-    // For each particle group
-    for (auto pair : grouped) {
+    // For each particle group, remove duplicates
+    std::vector<bool> valid (MDin.numberOfObjects(), true);
+    for (auto mic_name_and_object_indices : grouped) {
 
         // For every ordered pair of non-identical particles
-        long n_particles = pair.second.size();
+        long n_particles = mic_name_and_object_indices.second.size();
         for (long i = 0; i < n_particles; i++) {
-            long part_id1 = pair.second[i];
-            for (long j = i + 1; j < n_particles; j++) {
-                long part_id2 = pair.second[j];
+        long part_id1 = mic_name_and_object_indices.second[i];
+        for (long j = i + 1; j < n_particles; j++) {
+        long part_id2 = mic_name_and_object_indices.second[j];
 
-                RFLOAT dx = xs[part_id1] - xs[part_id2];
-                RFLOAT dy = ys[part_id1] - ys[part_id2];
-                // The squared distance between the two particles
-                RFLOAT dist_sq = dx * dx + dy * dy;
-                if (dataIs3D) {
-                    RFLOAT dz = zs[part_id1] - zs[part_id2];
-                    dist_sq += dz * dz;
-                }
-
-                // If the particles are too close, invalidate one.
-                if (dist_sq <= threshold_sq) {
-                    // std::cout << pair.first << " " << part_id1 << " " << part_id2 << " " << dist_sq << std::endl;
-                    valid[part_id1] = false;
-                    break;
-                }
+            RFLOAT dx = xs[part_id1] - xs[part_id2];
+            RFLOAT dy = ys[part_id1] - ys[part_id2];
+            // The squared distance between the two particles
+            RFLOAT dist_sq = dx * dx + dy * dy;
+            if (dataIs3D) {
+                RFLOAT dz = zs[part_id1] - zs[part_id2];
+                dist_sq += dz * dz;
             }
+
+            // If the particles are too close, invalidate one.
+            if (dist_sq <= threshold_sq) {
+                // std::cout << mic_name_and_object_indices.first << " " << part_id1 << " " << part_id2 << " " << dist_sq << std::endl;
+                valid[part_id1] = false;
+                break;
+            }
+        }
         }
     }
 
@@ -1632,4 +1301,341 @@ MetaDataTable removeDuplicatedParticles(
     std::cout << "Removed " << MDremoved.numberOfObjects() << " duplicated objects from " << MDin.numberOfObjects() << " objects." << std::endl;
 
     return MDout;
+}
+
+/// STAR file i/o
+
+// Reading
+
+long int MetaDataTable::read(
+    const FileName &filename, const std::string &name, bool do_only_count
+) {
+
+    // Clear current table
+    clear();
+
+    // Check for an :star extension
+    FileName fn_read = filename.removeFileFormat();
+
+    std::ifstream in (fn_read.data(), std::ios_base::in);
+    if (in.fail()) {
+        REPORT_ERROR((std::string) "MetaDataTable::read: File " + fn_read + " does not exist");
+    }
+
+    return readStar(in, name, do_only_count);
+
+    // Go to the first object
+    firstObject();
+}
+
+long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
+    isList = false;
+
+    //Read column labels
+    int labelPosition = 0;
+    std::string line, token;
+
+    // First read all the column labels
+    while (getline(in, line, '\n')) {
+        line = simplify(line);
+        // TODO: handle comments...
+        if (line[0] == '#' || line[0] == '\0' || line[0] == ';')
+            continue;
+
+        if (line[0] != '_') break;  // found first data line
+
+        // label definition line
+        // Take string from "_" until "#"
+        size_t start = line.find("_");
+        size_t end   = line.find("#");
+
+        token = line.substr(start + 1, end - start - 2);
+
+        EMDL::EMDLabel label = EMDL::str2Label(token);
+
+        if (label == EMDL::UNDEFINED) {
+            std::cerr << " + WARNING: will ignore (but maintain) values for the unknown label: " << token << std::endl;
+            label = EMDL::UNKNOWN_LABEL;
+        }
+
+        addLabel(label, token);
+
+        labelPosition++;
+    }
+
+    // Then fill the table (dont read another line until the one from above has been handled)
+    bool is_first = true;
+    long int nr_objects = 0;
+    const int num_labels = activeLabels.size();
+
+    while (is_first || getline(in, line, '\n')) {
+        is_first = false;
+
+        line = simplify(line);
+        // Stop at empty line
+        if (line[0] == '\0')
+            break;
+
+        nr_objects++;
+        if (!do_only_count) {
+            // Add a new line to the table
+            addObject();
+
+            // Parse data values
+            int pos = 0;
+            std::string value;
+            labelPosition = 0;
+            while (nextTokenInSTAR(line, pos, value)) {
+                if (labelPosition >= num_labels) {
+                    std::cerr << "Error in line: " << line << std::endl;
+                    REPORT_ERROR("A line in the STAR file contains more columns than the number of labels.");
+                }
+                // Check whether this is an unknown label
+                if (activeLabels[labelPosition] == EMDL::UNKNOWN_LABEL) {
+                    setUnknownValue(labelPosition, value);
+                } else {
+                    setValueFromString(activeLabels[labelPosition], value);
+                }
+                labelPosition++;
+            }
+            if (labelPosition < num_labels && num_labels > 2) {
+                // For backward-compatibility for cases like "fn_mtf <empty>", don't die if num_labels == 2.
+                std::cerr << "Error in line: " << line << std::endl;
+                REPORT_ERROR("A line in the STAR file contains fewer columns than the number of labels. Expected = " + integerToString(num_labels) + " Found = " +  integerToString(labelPosition));
+            }
+        }
+    }
+
+    return nr_objects;
+}
+
+bool MetaDataTable::readStarList(std::ifstream &in) {
+    isList = true;
+    addObject();
+    long int objectID = objects.size() - 1;
+
+    std::string line, firstword, value;
+
+    bool also_has_loop = false;
+
+    // Read data and fill structures accordingly
+    int labelPosition = 0;
+    while (getline(in, line, '\n')) {
+        int pos = 0;
+        // Ignore empty lines
+        if (!nextTokenInSTAR(line, pos, firstword))
+            continue;
+
+        // Get label-value pairs
+        if (firstword[0] == '_') {
+            std::string token = firstword.substr(1); // get rid of leading underscore
+            EMDL::EMDLabel label = EMDL::str2Label(token);
+            if (!nextTokenInSTAR(line, pos, value))
+                REPORT_ERROR("MetaDataTable::readStarList: did not encounter a single word after " + firstword);
+
+            if (label == EMDL::UNDEFINED) {
+                label = EMDL::UNKNOWN_LABEL;
+                addLabel(label, token);
+                setUnknownValue(labelPosition, value);
+                std::cerr << " + WARNING: will ignore (but maintain) values for the unknown label: " << token << std::endl;
+            } else {
+                addLabel(label);
+                setValueFromString(label, value, objectID);
+            }
+            labelPosition++;
+        } else if (firstword[0] == '#' || firstword[0] == ';') {
+            // Check whether there is a comment or an empty line
+            // TODO: handle comments?
+            continue;
+        } else if (firstword.find("loop_") == 0) {
+            // Check whether a loop structure comes after this list
+            also_has_loop = true;
+            return also_has_loop;
+        } else if (firstword.find("data_") == 0) {
+            // Check whether this data blocks ends (because a next one is there)
+            // Should I reverse the pointer one line?
+            return also_has_loop;
+        }
+    }
+    // Reached the end of the file
+    return also_has_loop;
+}
+
+long int MetaDataTable::readStar(
+    std::ifstream &in, const std::string &name, bool do_only_count
+) {
+    std::string line, token, value;
+    clear();
+    bool also_has_loop;
+
+    // Start reading the ifstream at the top
+    in.seekg(0);
+
+    // Set the version to 30000 by default, in case there is no version tag
+    // (version tags were introduced in version 31000)
+    version = 30000;
+
+    // Proceed until the next data_ or _loop statement
+    // The loop statement may be necessary for data blocks that have a list AND a table inside them
+    while (getline(in, line, '\n')) {
+        trim(line);
+        if (line.find("# version ") != std::string::npos) {
+            token = line.substr(line.find("# version ") + std::string("# version ").length());
+
+            std::istringstream sts(token);
+            sts >> version;
+        }
+
+        // Find data_ lines
+        if (line.find("data_") != std::string::npos) {
+            token = line.substr(line.find("data_") + 5);
+            // If a name has been given, only read data_thatname
+            // Otherwise, just read the first data_ block
+            if (name.empty() || name == token) {
+                setName(token);
+                // Get the next item that starts with "_somelabel" or with "loop_"
+                int current_pos = in.tellg();
+                while (getline(in, line, '\n')) {
+                    if (line.find("loop_") != std::string::npos) {
+                        return readStarLoop(in, do_only_count);
+                    } else if (line[0] == '_') {
+                        // go back one line in the ifstream
+                        in.seekg(current_pos);
+                        also_has_loop = readStarList(in);
+                        return !also_has_loop;
+                    }
+                }
+            }
+        }
+    }
+
+    // Clear the eofbit so we can perform more actions on the stream.
+    in.clear();
+
+    return 0;
+}
+
+// Writing
+
+void MetaDataTable::write(std::ostream& out) {
+    // Only write tables that have something in them
+    if (isEmpty()) {
+        return;
+    }
+
+    if (version >= 30000) {
+        out << "\n";
+        out << "# version " << getCurrentVersion() <<"\n";
+    }
+
+    out << "\n";
+    out << "data_" << getName() <<"\n";
+
+    if (containsComment()) {
+        out << "# "<< comment << "\n";
+    }
+
+    out << "\n";
+
+    if (!isList) {
+        // Write loop header structure
+        out << "loop_ \n";
+
+        for (long i = 0, n_printed = 1; i < activeLabels.size(); i++) {
+            EMDL::EMDLabel l = activeLabels[i];
+            if (l == EMDL::UNKNOWN_LABEL) {
+                const long offset = unknownLabelPosition2Offset[i];
+                out << "_" << unknownLabelNames[offset]<< " #" << (n_printed++) << " \n";
+            } else if (l != EMDL::COMMENT && l != EMDL::SORTED_IDX) {
+                // EMDL::SORTED_IDX is only for internal use, never write it out!
+                out << "_" << EMDL::label2Str(l) << " #" << (n_printed++) << " \n";
+            }
+        }
+
+        // Write actual data block
+        for (long int idx = 0; idx < objects.size(); idx++) {
+            std::string entryComment = "";
+
+            for (long i = 0; i < activeLabels.size(); i++) {
+                EMDL::EMDLabel l = activeLabels[i];
+
+                if (l == EMDL::UNKNOWN_LABEL) {
+                    out.width(10);
+                    std::string token, val;
+                    long offset = unknownLabelPosition2Offset[i];
+                    val = objects[idx]->unknowns[offset];
+                    escapeStringForSTAR(val);
+                    out << val << " ";
+                } else if (l != EMDL::COMMENT && l != EMDL::SORTED_IDX) {
+                    out.width(10);
+                    std::string val = getValueToString(l, idx, true); // escape=true
+                    out << val << " ";
+                }
+                if (l == EMDL::COMMENT) {
+                    entryComment = getValue<std::string>(EMDL::COMMENT, idx);
+                }
+            }
+            if (!entryComment.empty()) {
+                out << "# " << entryComment;
+            }
+            out << "\n";
+        }
+        // Finish table with a white-line
+        out << " \n";
+
+    } else {
+        // isList
+        // Get first object. In this case (row format) there is a single object
+        std::string entryComment = "";
+        int maxWidth = 10;
+
+        for (long i = 0; i < activeLabels.size(); i++) {
+            EMDL::EMDLabel l = activeLabels[i];
+
+            if (l != EMDL::COMMENT && l != EMDL::UNKNOWN_LABEL) {
+                int w = EMDL::label2Str(l).length();
+                if (w > maxWidth) maxWidth = w;
+            } else if (l == EMDL::UNKNOWN_LABEL) {
+                long offset = unknownLabelPosition2Offset[i];
+                int w = unknownLabelNames[offset].length();
+                if (w > maxWidth) maxWidth = w;
+            } else {
+                entryComment = getValue<std::string>(EMDL::COMMENT, 0);
+            }
+        }
+
+        for (long i = 0; i < activeLabels.size(); i++) {
+            EMDL::EMDLabel l = activeLabels[i];
+
+            if (l == EMDL::UNKNOWN_LABEL) {
+                long offset = unknownLabelPosition2Offset[i];
+                int w = unknownLabelNames[offset].length();
+                out << "_" << unknownLabelNames[offset] << std::setw(12 + maxWidth - w) << " " << objects[0]->unknowns[offset] << "\n";
+            } else if (l != EMDL::COMMENT) {
+                int w = EMDL::label2Str(l).length();
+                out << "_" << EMDL::label2Str(l) << std::setw(12 + maxWidth - w) << " ";
+
+                std::string val = getValueToString(l, 0, true); // escape=true
+                out << val << "\n";
+            }
+        }
+        if (!entryComment.empty()) {
+            out << "# " << entryComment << "\n";
+        }
+
+        // End a data block with a white line
+        out << " \n";
+    }
+}
+
+void MetaDataTable::write(const FileName &fn_out) {
+    FileName fn_tmp = fn_out + ".tmp";
+    std::ofstream fh (fn_tmp.c_str(), std::ios::out);
+    if (!fh)
+        REPORT_ERROR((std::string) "MetaDataTable::write: cannot write to file: " + fn_out);
+    //    fh << "# RELION; version " << g_RELION_VERSION << std::endl;
+    write(fh);
+    // Rename to prevent errors with programs in pipeliner reading in incomplete STAR files
+    std::rename(fn_tmp.c_str(), fn_out.c_str());
+
 }
