@@ -212,24 +212,6 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int j = Yinit(V); j <= Ylast(V); j++) \
     for (long int i = Xinit(V); i <= Xlast(V); i++)
 
-/** For all direct elements in the array, pointer version
- *
- * This macro is used to generate loops for the array in an easy manner. It
- * defines an internal index 'k' which goes over the slices and 'n' that
- * goes over the pixels in each slice. Each element can be accessed through
- * an external pointer called ptr.
- *
- * @code
- * T *ptr = NULL;
- * long int n;
- * FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) {
- *     std::cout << *ptr << " ";
- * }
- * @endcode
- */
-#define FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) \
-    for ((n) = 0, (ptr) = (v).data; (n) < (v).size(); ++(n), ++(ptr))
-
 /** For all elements in the array.
  *
  * This macro is used to generate loops for the volume in an easy way. It
@@ -347,8 +329,6 @@ namespace direct {
 //@}
 
 // Forward declarations ====================================================
-template<typename T>
-class MultidimArray;
 
 struct Origin {
 
@@ -367,21 +347,21 @@ struct Origin {
 };
 
 /** Template class for Xmipp arrays.
-  * This class provides physical and logical access.
-*/
+ * This class provides physical and logical access.
+ */
 template<typename T>
 class MultidimArray {
 
     public:
 
-    /* The array itself.
-    The array is always a 3D array (Z,Y,X) (i.e. a 3rd-order tensor).
-
-    For vectors  (1st-order tensors), the shape of the array is (1, 1, m) (so size = m).
-    For matrices (2nd-order tensors), the shape of the array is (1, n, m) (so size = m × n).
-
-    The pixel (i,j) (y,x) is at the position data[i * Xdim + j] or data[y * Xdim + x]
-    */
+    /** The array itself.
+     * The array is always a 3D array (Z,Y,X) (i.e. a 3rd-order tensor).
+     *
+     * For vectors  (1st-order tensors), the shape of the array is (1, 1, m) (so size = m).
+     * For matrices (2nd-order tensors), the shape of the array is (1, n, m) (so size = m × n).
+     *
+     * The pixel (i,j) (y,x) is at the position data[i * Xdim + j] or data[y * Xdim + x]
+     */
     T *data;
 
     // Destroy data
@@ -390,7 +370,7 @@ class MultidimArray {
     struct Dimensions {
         // Essentially a 4D vector.
         // For vectors and matrices, the higher order dimensions will be 1:
-        // (x, 1, 1) or (x, y, 1).
+        // (x, 1, 1, 1) or (x, y, 1, 1).
 
         long int x, y, z, n;
 
@@ -404,7 +384,7 @@ class MultidimArray {
 
         template <typename T2>
         bool operator != (T2 other) {
-            return !((*this) == other);
+            return !(*this == other);
         }
 
     };
@@ -424,6 +404,18 @@ class MultidimArray {
     // X/Y/Zinit
     long int xinit, yinit, zinit;
 
+    /** "Iterator" support
+     *
+     * begin returns a pointer to the start of the data.
+     * end returns a pointer just beyond the data.
+     * Together, they can be used to iterate over the array:
+     *
+     * @code
+     * for (float *ptr = begin(); ptr != end(); ++ptr) {
+     *     std::cout << *ptr << " ";
+     * }
+     * @endcode
+     */
     T* begin() { return data; }
     T* end() { return &data[size()]; }
 
@@ -1912,13 +1904,9 @@ class MultidimArray {
         if (size() <= 0) return static_cast<T>(0);
 
         T maxval = data[0];
-
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             if (*ptr > maxval) { maxval = *ptr; }
         }
-
         return maxval;
     }
 
@@ -1927,13 +1915,9 @@ class MultidimArray {
         if (size() <= 0) return static_cast<T>(0);
 
         T minval = data[0];
-
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (*ptr < minval) {minval = *ptr;}
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
+            if (*ptr < minval) { minval = *ptr; }
         }
-
         return minval;
     }
 
@@ -2067,13 +2051,10 @@ class MultidimArray {
 
         if (size() <= 0) return MinMax(min, max); // Uninitialised RFLOATs
 
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            T val = *ptr;
-            if (n == 0) { min = max = static_cast<RFLOAT>(val); }
-            else if (val < min) { min = static_cast<RFLOAT>(val); }
-            else if (val > max) { max = static_cast<RFLOAT>(val); }
+        min = max = static_cast<RFLOAT>(data[0]);
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
+                 if (*ptr < min) { min = static_cast<RFLOAT>(*ptr); }
+            else if (*ptr > max) { max = static_cast<RFLOAT>(*ptr); }
         }
         return MinMax(min, max);
     }
@@ -2087,11 +2068,8 @@ class MultidimArray {
         if (size() <= 0) return 0;
 
         RFLOAT sum = 0;
-
-        T *ptr = NULL;
-        long int n;
         // Fold/reduce
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             sum += static_cast<RFLOAT>(*ptr);
         }
         return sum / size();
@@ -2110,9 +2088,6 @@ class MultidimArray {
         RFLOAT avg = 0, stddev = 0;
         long int N = size();
 
-        T *ptr = NULL;
-        long int n;
-
         #ifdef RELION_SINGLE_PRECISION
             // Two passes through the data, as single-precision is not enough for a single pass
             // Also: averages of large arrays will give trouble: compute median first.
@@ -2121,33 +2096,25 @@ class MultidimArray {
                 median = median();
 
             RFLOAT sumofdeviations = 0;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-                RFLOAT val = static_cast<RFLOAT>(*ptr);
-                sumofdeviations += val - median;
+            for (T *ptr = begin(); ptr != end(); ++ptr) {
+                sumofdeviations += static_cast<RFLOAT>(*ptr) - median;
             }
             avg = median + sumofdeviations / N;
 
             RFLOAT sumofsquareddeviations = 0;
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+            for (T *ptr = begin(); ptr != end(); ++ptr) {
                 RFLOAT x = static_cast<RFLOAT>(*ptr);
                 RFLOAT dev = x - avg;
                 sumofsquareddeviations += dev * dev;
             }
 
-            RFLOAT var = 0;
-
-            if (N > 1) {
-                var = sumofsquareddeviations / N - 1;
-                // Foreseeing numerical instabilities
-                stddev = sqrt(static_cast<RFLOAT>(abs(var)));
-            } else {
-                stddev = 0;
-            }
+            // Foreseeing numerical instabilities
+            stddev = N <= 0 ? 0 : sqrt(static_cast<RFLOAT>(abs(sumofsquareddeviations / N - 1)));
         #else
             RFLOAT total = 0;
             RFLOAT sumofsquares = 0;
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+            for (T *ptr = begin(); ptr != end(); ++ptr) {
                 RFLOAT x = static_cast<RFLOAT>(*ptr);
                 total += x;
                 sumofsquares += x * x;
@@ -2187,17 +2154,14 @@ class MultidimArray {
         stats.min =  std::numeric_limits<double>::max();
         stats.max = -std::numeric_limits<double>::max();
 
-        T *ptr;
-        long int n;
         // Make one pass through the array.
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            T val = *ptr;
-            double x = static_cast<double>(val);
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
+            double x = static_cast<double>(*ptr);
             sumx  += x;
             sumxx += x * x;
 
-                 if (val > stats.max) { stats.max = val; }
-            else if (val < stats.min) { stats.min = val; }
+                 if (*ptr > stats.max) { stats.max = *ptr; }
+            else if (*ptr < stats.min) { stats.min = *ptr; }
         }
 
         long int N = size();
@@ -2272,9 +2236,7 @@ class MultidimArray {
             static_cast<RFLOAT>(maxF - minF) /
             static_cast<RFLOAT>(range.max - range.min);
 
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             // a + b * x
             *ptr = minF + static_cast<T>(slope * static_cast<RFLOAT>(*ptr - range.min));
         }
@@ -2305,9 +2267,7 @@ class MultidimArray {
             static_cast<RFLOAT>(maxF - minF) /
             static_cast<RFLOAT>(range.max - range.min);
 
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             // a + b * x
             *ptr = minF + static_cast<T>(slope * static_cast<RFLOAT>(*ptr - range.min));
         }
@@ -2318,19 +2278,13 @@ class MultidimArray {
         RFLOAT min, max;
         int *maskptr = mask.data;
 
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        min = max = data[0];
+
+        for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
             if (*maskptr) {
-                T val = *ptr;
-                if (n == 0) {
-                    min = max = (RFLOAT) val;
-                } else {
-                    min = std::min(min, (RFLOAT) val);
-                    max = std::max(max, (RFLOAT) val);
-                }
+                min = std::min(min, (RFLOAT) *ptr);
+                max = std::max(max, (RFLOAT) *ptr);
             }
-            maskptr++;
         }
         return MinMax(min, max);
     }
@@ -2343,7 +2297,7 @@ class MultidimArray {
     * (L2 sense) to the values of the array shown as sample
     */
 
-    // As written this will only work for T=RFLOAT
+    // As written this will only work for [T = RFLOAT]
     // nevertheless since this is used is better
     // to use T than RFLOAT or will create problem for int multidim arrays
     void rangeAdjust(
@@ -2354,10 +2308,8 @@ class MultidimArray {
 
         T *targetptr = target.data;
         int *maskptr = mask ? mask->data : NULL;
-        T *ptr;
-        long int n;
         RFLOAT N = 0, sumx = 0, sumy = 0, sumxx = 0, sumxy = 0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             if (!mask || *maskptr != 0) {
                 N++;
                 T x = *ptr; T y = *targetptr;
@@ -2369,7 +2321,7 @@ class MultidimArray {
         }
         RFLOAT slope = (N * sumxy - sumx * sumy) / (N * sumxx - sumx * sumx);
         RFLOAT intercept = sumy / N - slope * sumx / N;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             // a + b * x
             *ptr = static_cast<RFLOAT>(intercept + slope * static_cast<RFLOAT>(*ptr));
         }
@@ -2398,9 +2350,7 @@ class MultidimArray {
                    static_cast<RFLOAT>(stddevF)  / static_cast<RFLOAT>(stats.stddev);
         RFLOAT b = static_cast<RFLOAT>(avgF) - a * static_cast<RFLOAT>(stats.avg);
 
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             *ptr = static_cast<T>(a * static_cast<RFLOAT>(*ptr) + b);
         }
     }
@@ -2507,9 +2457,7 @@ class MultidimArray {
      * @endcode
      */
     void initConstant(T val) {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) { *ptr = val; }
+        for (T *ptr = begin(); ptr != end(); ++ptr) { *ptr = val; }
     }
 
     /** Initialize to zeros following a pattern.
@@ -2655,25 +2603,20 @@ class MultidimArray {
      * are not modified.
      *
      * @code
-     * v.initRandom(0, 1);
+     * v.randomize(0, 1, "uniform");
      * // uniform distribution between 0 and 1
      *
-     * v.initRandom(0, 1, "uniform");
-     * // the same
-     *
-     * v.initRandom(0, 1, "gaussian");
-     * // gaussian distribution with 0 mean and stddev=1
+     * v.randomize(0, 1, "gaussian");
+     * // gaussian distribution with mean 0 and stddev 1
      * @endcode
      */
-    void initRandom(RFLOAT op1, RFLOAT op2, const std::string &mode = "uniform") {
-        T *ptr = NULL;
-        long int n;
-               if (mode == "uniform") {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            { *ptr = static_cast<T>(rnd_unif(op1, op2)); }
+    void randomize(RFLOAT op1, RFLOAT op2, const std::string &mode = "uniform") {
+        if (mode == "uniform") {
+            for (T *ptr = begin(); ptr != end(); ++ptr)
+                *ptr = static_cast<T>(rnd_unif(op1, op2));
         } else if (mode == "gaussian") {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            { *ptr = static_cast<T>(rnd_gaus(op1, op2)); }
+            for (T *ptr = begin(); ptr != end(); ++ptr)
+                *ptr = static_cast<T>(rnd_gaus(op1, op2));
         } else {
             REPORT_ERROR(static_cast<std::string>("InitRandom: Mode not supported (" + mode + ")"));
         }
@@ -2710,19 +2653,17 @@ class MultidimArray {
         const std::string &mode = "uniform",
         RFLOAT df = 3.0
     ) const {
-        T *ptr = NULL;
-        unsigned long int n;
-               if (mode == "uniform") {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            { *ptr += static_cast<T>(rnd_unif(op1, op2)); }
+        if (mode == "uniform") {
+            for (T *ptr = begin(); ptr != end(); ++ptr)
+                *ptr += static_cast<T>(rnd_unif(op1, op2));
         } else if (mode == "gaussian") {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            { *ptr += static_cast<T>(rnd_gaus(op1, op2)); }
+            for (T *ptr = begin(); ptr != end(); ++ptr)
+                *ptr += static_cast<T>(rnd_gaus(op1, op2));
         } else if (mode == "student") {
-            FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
-            { *ptr += static_cast<T>(rnd_student_t(df, op1, op2)); }
+            for (T *ptr = begin(); ptr != end(); ++ptr)
+                *ptr += static_cast<T>(rnd_student_t(df, op1, op2));
         } else {
-            REPORT_ERROR( static_cast< std::string >("AddNoise: Mode not supported (" + mode + ")"));
+            REPORT_ERROR(static_cast< std::string >("AddNoise: Mode not supported (" + mode + ")"));
         }
     }
     //@}
@@ -2938,11 +2879,9 @@ class MultidimArray {
         if (!mode) REPORT_ERROR(static_cast<std::string>("CountThreshold: mode not supported (" + type + ")"));
 
         long int ret = 0;
-
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (!mask || (*mask)[n] > 0) {
+        int *maskptr = mask ? mask->begin() : NULL;
+        for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
+            if (!mask || maskptr > 0) {
                 switch (mode) {
 
                     case 1: if (abs(*ptr) > a) { ret++; } break;
@@ -2971,11 +2910,10 @@ class MultidimArray {
         T oldv, T newv, RFLOAT accuracy = Xmipp::epsilon,
         MultidimArray<int> *mask = NULL
     ) {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        int *maskptr = mask ? mask->begin() : NULL;
+        for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
             if (
-                (!mask || (*mask)[n] > 0)
+                (!mask || *maskptr > 0)
                 && abs(*ptr - oldv) <= accuracy
             ) { *ptr = newv; }
         }
@@ -2991,11 +2929,10 @@ class MultidimArray {
         T oldv, T avgv, T sigv, RFLOAT accuracy = Xmipp::epsilon,
         MultidimArray<int> *mask = NULL
     ) {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        int *maskptr = mask ? mask->begin() : NULL;
+        for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
             if (
-                (!mask || (*mask)[n] > 0)
+                (!mask || *maskptr > 0)
                 && abs(*ptr - oldv) <= accuracy
             ) { *ptr = rnd_gaus(avgv, sigv); }
         }
@@ -3011,10 +2948,9 @@ class MultidimArray {
         RFLOAT val = 0, RFLOAT accuracy = Xmipp::epsilon,
         MultidimArray<int> *mask = NULL
     ) {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-            if (!mask || (*mask)[n] > 0) {
+        int *maskptr = mask ? mask->begin() : NULL;
+        for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
+            if (!mask || *maskptr > 0) {
                 *ptr = *ptr > val + accuracy;
             }
         }
@@ -3067,9 +3003,7 @@ class MultidimArray {
      * component.
      */
     void selfSQRT() {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
+        for (T *ptr = begin(); ptr != end(); ++ptr)
         *ptr = static_cast<T>(sqrt(static_cast<RFLOAT>(*ptr)));
     }
 
@@ -3083,9 +3017,7 @@ class MultidimArray {
      */
     RFLOAT sum() const {
         RFLOAT sum = 0;
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
+        for (T *ptr = begin(); ptr != end(); ++ptr)
         sum += *ptr;
         return sum;
     }
@@ -3101,9 +3033,7 @@ class MultidimArray {
      */
     RFLOAT sum2() const {
         RFLOAT sum = 0;
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
+        for (T *ptr = begin(); ptr != end(); ++ptr)
         sum += *ptr * *ptr;
         return sum;
     }
@@ -3113,19 +3043,17 @@ class MultidimArray {
      * Each component of the result is the log10 of the original components.
      */
     void selfLog10() {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
+        for (T *ptr = begin(); ptr != end(); ++ptr)
         *ptr = static_cast<T>(log10(static_cast<RFLOAT>(*ptr)));
     }
 
-        /** Reverse matrix values over X axis, keep in this object.
-         *
-         * Maybe better with an example:
-         *
-         * @code
-         * slice 0
-         * [01 02 03          [07 08 09
+    /** Reverse matrix values over X axis, keep in this object.
+     *
+     * Maybe better with an example:
+     *
+     * @code
+     * slice 0
+     * [01 02 03          [07 08 09
      *  04 05 06           04 05 06
      *  07 08 09]          01 02 03]
      *
@@ -3292,18 +3220,18 @@ class MultidimArray {
 
     /** Edit with xmipp_editor.
      *
-     * This function generates a random filename starting with PPP and
-     * edits it with xmipp_editor. After closing the editor the file is
-     * removed.
+     * This function generates a random filename starting with PPP
+     * and edits it with xmipp_editor.
+     * After closing the editor the file is removed.
      */
     void edit() {
-        FileName nam;
-        nam.initRandom(15);
+        FileName fn;
+        fn.initRandom(15);
 
-        nam = static_cast<std::string>("PPP" + nam + ".txt");
-        write(nam);
+        fn = static_cast<std::string>("PPP" + fn + ".txt");
+        write(fn);
 
-        system((static_cast<std::string>("xmipp_edit -i " + nam + " -remove &").c_str()));
+        system((static_cast<std::string>("xmipp_edit -i " + fn + " -remove &").c_str()));
     }
 
     /* Write to a binary file
@@ -3313,9 +3241,7 @@ class MultidimArray {
         if (!ofs)
             REPORT_ERROR(static_cast<std::string>("MultidimArray::write: File " + fn + " cannot be opened for output"));
 
-        T *ptr;
-        unsigned long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
+        for (T *ptr = begin(); ptr != end(); ++ptr)
             ofs.write(reinterpret_cast<char*>(ptr), sizeof(T));
     }
 
@@ -3327,9 +3253,7 @@ class MultidimArray {
         if (!ifs)
             REPORT_ERROR(static_cast<std::string>("MultidimArray::read: File " + fn + " not found"));
 
-        T *ptr;
-        unsigned long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr)
+        for (T *ptr = begin(); ptr != end(); ++ptr)
             ifs.read(reinterpret_cast<char*>(ptr), sizeof(T));
 
     }
@@ -3342,9 +3266,7 @@ class MultidimArray {
         if (!ifs)
             REPORT_ERROR(static_cast<std::string>("MultidimArray::read: File " + fn + " not found"));
 
-        T *ptr;
-        unsigned long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
+        for (T *ptr = begin(); ptr != end(); ++ptr) {
             T val;
             ifs.read(reinterpret_cast<char*>(&val), sizeof(T));
             *ptr += val;
@@ -3406,10 +3328,8 @@ class MultidimArray {
      * @endcode
      */
     MultidimArray<T> operator - () const {
-        MultidimArray<T> tmp(*this);
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(tmp, n, ptr) { *ptr = -(*ptr); }
+        MultidimArray<T> tmp (*this);
+        for (T *ptr = tmp.begin(); ptr != tmp.end(); ++ptr) { *ptr = -*ptr; }
         return tmp;
     }
 
@@ -3425,9 +3345,7 @@ class MultidimArray {
      * This function is not ported to Python.
      */
     friend std::istream& operator >> (std::istream& in, MultidimArray<T> &v) {
-        T *ptr;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) { in >> *ptr; }
+        for (T *ptr = v.begin(); ptr != v.end(); ++ptr) { in >> *ptr; }
         return in;
     }
 
@@ -3470,9 +3388,9 @@ void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) 
     if (n < 0) {
         v2.resize(v1);
         T1 *ptr1;
-        long int n;
-        FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v1, n, ptr1) {
-            v2[n] = static_cast<T2>(*ptr1);
+        T2 *ptr2;
+        for (ptr1 = v1.begin(), ptr2 = v2.begin(); ptr1 != v1.end(); ++ptr1, ++ptr2) {
+            *ptr2 = static_cast<T2>(*ptr1);
         }
     } else {
         v2.resize(v1.xdim, v1.ydim, v1.zdim);
@@ -3543,9 +3461,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
     ostrm << '\n';
 
     T max_val = abs(direct::elem(v, 0, 0, 0));
-    T *ptr;
-    long int n;
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(v, n, ptr) {
+    for (T *ptr = v.begin(); ptr != v.end(); ++ptr) {
         max_val = std::max(max_val, (T) std::abs(*ptr));
     }
 

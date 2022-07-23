@@ -185,7 +185,7 @@ class MetaDataTable {
     void addLabel(const EMDL::EMDLabel label, const std::string &unknownLabel="");
 
     // Add missing labels that are present in 'app'.
-    void addMissingLabels(const MetaDataTable *app);
+    void addMissingLabels(const MetaDataTable &app);
 
     // Append all rows from 'app' to the end of the table and insert all missing labels.
     void append(const MetaDataTable &app);
@@ -349,6 +349,7 @@ class MetaDataTable {
 
     // Join 2 metadata tables. Only include labels that are present in both of them.
     static MetaDataTable combineMetaDataTables(std::vector<MetaDataTable> &MDin);
+    static MetaDataTable getCommonLabels(const std::vector<MetaDataTable> &mdts);
 
     template<class T>
     bool isTypeCompatible(EMDL::EMDLabel label) const;
@@ -430,6 +431,8 @@ bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label) const {
 // objectID is 0-indexed.
 template<typename T>
 T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
+    // When called with the objectID argument omitted, this function is impure,
+    // since the result will depend on the variable member current_objectID.
 
     if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 

@@ -110,10 +110,9 @@ void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArra
         REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
     auto f = it->second;
 
-    T *ptr;
-    long int n;
-    FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY_ptr(*this, n, ptr) {
-        if (!mask || (*mask)[n] > 0) f(ptr, a, b);
+    int *maskptr = mask ? mask->begin() : nullptr;
+    for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
+        if (!mask || *maskptr > 0) f(ptr, a, b);
     }
 }
 

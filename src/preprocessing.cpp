@@ -272,8 +272,8 @@ void Preprocessing::joinAllStarFiles() {
 
                 if (MDout.numberOfObjects() > 0 && !MetaDataTable::compareLabels(MDout, MDonestack)) {
                     std::cout << "The STAR file " << fn_star << " contains a column not present in others. Missing values will be filled by default values (0 or empty string)" << std::endl;
-                    MDout.addMissingLabels(&MDonestack);
-                    MDonestack.addMissingLabels(&MDout);
+                    MDout.addMissingLabels(MDonestack);
+                    MDonestack.addMissingLabels(MDout);
                 }
                 MDout.append(MDonestack);
             }
