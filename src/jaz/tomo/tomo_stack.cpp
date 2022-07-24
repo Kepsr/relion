@@ -29,7 +29,7 @@
 
 using namespace gravis;
 
-TomoStack :: TomoStack(std::string imagesFn, int imgCount, std::string angles, 
+TomoStack::TomoStack(std::string imagesFn, int imgCount, std::string angles, 
 					   std::string affineTransforms, std::string ctfPath,
                        double angpix, double scaleFactor, bool loadImgs)
 :   angpix(angpix),
@@ -95,7 +95,7 @@ TomoStack :: TomoStack(std::string imagesFn, int imgCount, std::string angles,
     }
 }
 
-TomoStack TomoStack :: extractSubStack(gravis::d3Vector center, int w, int h)
+TomoStack TomoStack::extractSubStack(gravis::d3Vector center, int w, int h)
 {
     const int ic = images.size();
 
@@ -136,7 +136,7 @@ TomoStack TomoStack :: extractSubStack(gravis::d3Vector center, int w, int h)
     return ts;
 }
 
-void TomoStack :: downsample(int factor, int f0, int fc)
+void TomoStack::downsample(int factor, int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
@@ -152,7 +152,7 @@ void TomoStack :: downsample(int factor, int f0, int fc)
     scaleFactor /= factor;
 }
 
-void TomoStack :: phaseFlip(int f0, int fc)
+void TomoStack::phaseFlip(int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
@@ -162,7 +162,7 @@ void TomoStack :: phaseFlip(int f0, int fc)
     }
 }
 
-void TomoStack :: ctfModulate(int f0, int fc)
+void TomoStack::ctfModulate(int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
@@ -172,7 +172,7 @@ void TomoStack :: ctfModulate(int f0, int fc)
     }
 }
 
-void TomoStack :: wienerFilter(RFLOAT eps, RFLOAT Bfac, int f0, int fc)
+void TomoStack::wienerFilter(RFLOAT eps, RFLOAT Bfac, int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
@@ -182,7 +182,7 @@ void TomoStack :: wienerFilter(RFLOAT eps, RFLOAT Bfac, int f0, int fc)
     }
 }
 
-void TomoStack :: richardsonLucy(int iterations, RFLOAT eps, int f0, int fc)
+void TomoStack::richardsonLucy(int iterations, RFLOAT eps, int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
@@ -192,7 +192,7 @@ void TomoStack :: richardsonLucy(int iterations, RFLOAT eps, int f0, int fc)
     }
 }
 
-void TomoStack :: rampFilter(RFLOAT s0, RFLOAT t1, int f0, int fc)
+void TomoStack::rampFilter(RFLOAT s0, RFLOAT t1, int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
@@ -205,13 +205,14 @@ void TomoStack :: rampFilter(RFLOAT s0, RFLOAT t1, int f0, int fc)
     }
 }
 
-void TomoStack :: safeLog(RFLOAT eps, int f0, int fc)
+void TomoStack::safeLog(RFLOAT eps, int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
     for (int im = f0; im < ic; im++)
     {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(images[im].data) {
+        for (long int j = 0; j < Ysize(images[im].data); j++)
+        for (long int i = 0; i < Xsize(images[im].data); i++) {
             const double v = direct::elem(images[im].data, i, j);
 
             direct::elem(images[im].data, i, j) = v > eps ? log(v) : log(eps);
@@ -219,20 +220,21 @@ void TomoStack :: safeLog(RFLOAT eps, int f0, int fc)
     }
 }
 
-void TomoStack :: scaledExp(RFLOAT scale, int f0, int fc)
+void TomoStack::scaledExp(RFLOAT scale, int f0, int fc)
 {
     const int ic = fc < 0? images.size() : fc+f0;
 
     for (int im = f0; im < ic; im++)
     {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(images[im].data)
+        for (long int j = 0; j < Ysize(images[im].data); j++)
+        for (long int i = 0; i < Xsize(images[im].data); i++)
         {
             direct::elem(images[im].data, i, j) = exp(scale * direct::elem(images[im].data, i, j));
         }
     }
 }
 
-void TomoStack :: defocusStack(int f, double dz0, double dz1, double eps, double Bfac, std::vector<Image<RFLOAT> >& dest, int x0, int y0, int w, int h)
+void TomoStack::defocusStack(int f, double dz0, double dz1, double eps, double Bfac, std::vector<Image<RFLOAT> >& dest, int x0, int y0, int w, int h)
 {
     int zc = dest.size();
 
@@ -270,7 +272,7 @@ void TomoStack :: defocusStack(int f, double dz0, double dz1, double eps, double
     }
 }
 
-void TomoStack :: saveImages(std::string path, int f0, int fc)
+void TomoStack::saveImages(std::string path, int f0, int fc)
 {
     size_t ast = path.find_first_of('*');
     if (ast == std::string::npos)

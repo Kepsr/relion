@@ -189,7 +189,8 @@ class image_handler_parameters {
 
         if (do_add_edge) {
             // Treat X-boundaries
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 if (i < edge_x0) {
                     direct::elem(Iin(), i, j) = direct::elem(Iin(), edge_x0, j);
                 } else if (i > edge_xF) {
@@ -197,7 +198,8 @@ class image_handler_parameters {
                 }
             }
             // Treat Y-boundaries
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 if (j < edge_y0) {
                     direct::elem(Iin(), i, j) = direct::elem(Iin(), i, edge_y0);
                 } else if (j > edge_yF) {
@@ -209,12 +211,14 @@ class image_handler_parameters {
         // Flipping: this needs to be done from Iin to Iout (i.e. can't be done on-line on Iout only!)
         if (do_flipXY) {
             // Flip X/Y
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j) = direct::elem(Iin(), j, i);
             }
         } else if (do_flipmXY) {
             // Flip mX/Y
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j) = direct::elem(Iin(), Xsize(Iin()) - 1 - j, Ysize(Iin()) - 1 - i);
             }
         } else {
@@ -224,7 +228,9 @@ class image_handler_parameters {
         // From here on also 3D options
         if (do_remove_nan) {
             Iout().setXmippOrigin();
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout()) {
+            for (long int k = 0; k < Zsize(Iout()); k++)
+            for (long int j = 0; j < Ysize(Iout()); j++)
+            for (long int i = 0; i < Xsize(Iout()); i++) {
                 if (std::isnan(direct::elem(Iout(), i, j, k)) || std::isinf(direct::elem(Iout(), i, j, k)))
                     direct::elem(Iout(), i, j, k) = replace_nan;
             }
@@ -237,28 +243,40 @@ class image_handler_parameters {
         }
 
         if (fabs(multiply_constant - 1.0) > 0.0) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) *= multiply_constant;
             }
         } else if (fabs(divide_constant - 1.0) > 0.0) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) /= divide_constant;
             }
         } else if (fabs(add_constant) > 0.0) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) += add_constant;
             }
         } else if (fabs(subtract_constant) > 0.0) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) -= subtract_constant;
             }
         } else if (!fn_mult.empty()) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) *= direct::elem(Iop(), i, j, k);
             }
         } else if (!fn_div.empty()) {
             bool is_first = true;
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 if (abs(direct::elem(Iop(), i, j, k)) < 1e-10) {
                     if (is_first) {
                         std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
@@ -270,7 +288,9 @@ class image_handler_parameters {
                 }
             }
         } else if (!fn_add.empty()) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) += direct::elem(Iop(), i, j, k);
             }
         } else if (!fn_subtract.empty()) {
@@ -335,7 +355,9 @@ class image_handler_parameters {
                 }
             }
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) -= my_scale * direct::elem(Iop(), i, j, k);
             }
         } else if (!fn_fsc.empty()) {
@@ -343,7 +365,7 @@ class image_handler_parameters {
             getFSC(Iout(), Iop(), fsc);
             MetaDataTable MDfsc;
             MDfsc.setName("fsc");
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc) {
+            for (long int i = 0; i < Xsize(fsc); i++) {
                 MDfsc.addObject();
                 RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
@@ -357,7 +379,7 @@ class image_handler_parameters {
             getSpectrum(Iout(), spectrum, POWER_SPECTRUM);
             MetaDataTable MDpower;
             MDpower.setName("power");
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(spectrum) {
+            for (long int i = 0; i < Xsize(spectrum); i++) {
                 if (i > Xsize(Iout()) / 2 + 1) break; // getSpectrum returns beyond Nyquist!!
 
                 MDpower.addObject();
@@ -381,7 +403,7 @@ class image_handler_parameters {
 
             MultidimArray<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
             MDcos.setName("cos");
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(cosDPhi) {
+            for (long int i = 0; i < Xsize(cosDPhi); i++) {
                 MDcos.addObject();
                 RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDcos.setValue(EMDL::SPECTRAL_IDX, (int) i);
@@ -425,7 +447,7 @@ class image_handler_parameters {
         if (logfilter > 0.0) {
             LoGFilterMap(Iout(), logfilter, angpix);
             RFLOAT avg, stddev, minval, maxval;
-            //Iout().statisticsAdjust(0,1);
+            // Iout().statisticsAdjust(0,1);
         }
 
         if (lowpass > 0.0) {
@@ -445,24 +467,32 @@ class image_handler_parameters {
         if (do_flipX) {
             // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 5, 4, 3, 2, 1, 0
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) = Iin().elem(Xsize(Iin()) - 1 - i, j, k);
             }
         } else if (do_flipY) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) = Iin().elem(i, Ysize(Iin()) - 1 - j, k);
             }
         } else if (do_flipZ) {
             if (Zsize(Iout()) < 2)
                 REPORT_ERROR("ERROR: this is not a 3D map, so cannot be flipped in Z");
 
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j, k) = Iin().elem(i, j, Zsize(Iin()) - 1 - k);
             }
         } else if (do_invert_hand) {
             // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
             // This gives: 0, 5, 4, 3, 2, 1
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iin()) {
+            for (long int k = 0; k < Zsize(Iin()); k++)
+            for (long int j = 0; j < Ysize(Iin()); j++)
+            for (long int i = 0; i < Xsize(Iin()); i++) {
                 long int dest_x = (Xsize(Iin()) - j) % Xsize(Iin());
                 direct::elem(Iout(), i, j, k) = Iin().elem(i, dest_x, k);
             }
@@ -553,13 +583,17 @@ class image_handler_parameters {
 
         // Thresholding (can be done after any other operation)
         if (fabs(threshold_above - 999.0) > 0.0) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout()) {
+            for (long int k = 0; k < Zsize(Iout()); k++)
+            for (long int j = 0; j < Ysize(Iout()); j++)
+            for (long int i = 0; i < Xsize(Iout()); i++) {
                 if (direct::elem(Iout(), i, j, k) > threshold_above)
                     direct::elem(Iout(), i, j, k) = threshold_above;
             }
         }
         if (fabs(threshold_below + 999.0) > 0.0) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Iout()) {
+            for (long int k = 0; k < Zsize(Iout()); k++)
+            for (long int j = 0; j < Ysize(Iout()); j++)
+            for (long int i = 0; i < Xsize(Iout()); i++) {
                 if (direct::elem(Iout(), i, j, k) < threshold_below)
                     direct::elem(Iout(), i, j, k) = threshold_below;
             }
@@ -799,7 +833,9 @@ class image_handler_parameters {
             } else if (do_average_all_frames) {
                 Iin.read(fn_img);
                 for (int n = 0; n < ndim; n++) {
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(avg_ampl) {
+                    for (long int k = 0; k < Zsize(avg_ampl); k++)
+                    for (long int j = 0; j < Ysize(avg_ampl); j++)
+                    for (long int i = 0; i < Xsize(avg_ampl); i++) {
                         direct::elem(avg_ampl, i, j, k) +=  direct::elem(Iin(), i, j, k, n);
                     }
                 }
@@ -823,7 +859,8 @@ class image_handler_parameters {
                     if (bin_avg > 0) {
                         int myframe = nn / bin_avg;
                         if (myframe < avgndim) {
-                            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iin()) {
+                            for (long int j = 0; j < Ysize(Iin()); j++)
+                            for (long int i = 0; i < Xsize(Iin()); i++) {
                                 direct::elem(Iavg(), i, j, 0, myframe) += direct::elem(Iin(), i, j); // just store sum
                             }
                         }

@@ -225,14 +225,18 @@ void softMaskOutsideMap(MultidimArray<RFLOAT> &vol, MultidimArray<RFLOAT> &msk, 
 
     // Replace solvent by the average value in the solvent region
     RFLOAT sum = 0.0, sum_bg = 0.0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(msk) {
+    for (long int k = 0; k < Zsize(msk); k++)
+    for (long int j = 0; j < Ysize(msk); j++)
+    for (long int i = 0; i < Xsize(msk); i++) {
         RFLOAT solv = invert_mask ? direct::elem(msk, i, j, k) : 1.0 - direct::elem(msk, i, j, k);
         sum    += solv;
         sum_bg += solv * direct::elem(vol, i, j, k);
     }
     sum_bg /= sum;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(msk) {
+    for (long int k = 0; k < Zsize(msk); k++)
+    for (long int j = 0; j < Ysize(msk); j++)
+    for (long int i = 0; i < Xsize(msk); i++) {
         RFLOAT solv = invert_mask ? direct::elem(msk, i, j, k) : 1.0 - direct::elem(msk, i, j, k);
         direct::elem(vol, i, j, k) = (1.0 - solv) * direct::elem(vol, i, j, k) + solv * sum_bg;
     }

@@ -260,7 +260,9 @@ void getFourierTransformsAndCtfs(
                 }))
                 // Only allow a single image per call of this function!!! nr_pool needs to be set to 1!!!!
                 // This will save memory, as we'll need to store all translated images in memory....
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
+                for (long int k = 0; k < Zsize(img()); k++)
+                for (long int j = 0; j < Ysize(img()); j++)
+                for (long int i = 0; i < Xsize(img()); i++) {
                     direct::elem(img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, k);
                 }
                 img().setXmippOrigin();
@@ -268,7 +270,9 @@ void getFourierTransformsAndCtfs(
                 if (baseMLO->has_converged && baseMLO->do_use_reconstruct_images) {
                     rec_img().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
                     int offset = (baseMLO->do_ctf_correction) ? 2 * baseMLO->image_full_size[optics_group] : baseMLO->image_full_size[optics_group];
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(rec_img()) {
+                    for (long int k = 0; k < Zsize(rec_img()); k++)
+                    for (long int j = 0; j < Ysize(rec_img()); j++)
+                    for (long int i = 0; i < Xsize(rec_img()); i++) {
                         direct::elem(rec_img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, offset + k);
                     }
                     rec_img().setXmippOrigin();
@@ -279,7 +283,8 @@ void getFourierTransformsAndCtfs(
             } else {
                 CTICTOC(accMLO->timer, "Read2DImages", ({
                 img().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img()) {
+                for (long int j = 0; j < Ysize(img()); j++)
+                for (long int i = 0; i < Xsize(img()); i++) {
                     direct::elem(img(), i, j) = direct::elem(baseMLO->exp_imagedata, my_metadata_offset, i, j);
                 }
                 img().setXmippOrigin();
@@ -288,7 +293,8 @@ void getFourierTransformsAndCtfs(
                     /// TODO: this will be WRONG for multi-image particles, but I guess that's not going to happen anyway...
                     int my_nr_particles = baseMLO->exp_my_last_part_id - baseMLO->exp_my_first_part_id + 1;
                     rec_img().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
+                    for (long int j = 0; j < Ysize(rec_img()); j++)
+                    for (long int i = 0; i < Xsize(rec_img()); i++) {
                         direct::elem(rec_img(), i, j) = direct::elem(baseMLO->exp_imagedata, i, j, my_nr_particles + my_metadata_offset);
                     }
                     rec_img().setXmippOrigin();
@@ -328,7 +334,7 @@ void getFourierTransformsAndCtfs(
                 // Remap mymodel.sigma2_noise[group_id] onto remapped_sigma2_noise for this images's size and angpix
                 MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(Xsize(img()) / 2 + 1);
                 RFLOAT remap_image_sizes = (baseMLO->image_full_size[optics_group] * my_pixel_size) / (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size);
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(baseMLO->mymodel.sigma2_noise[group_id]) {
+                for (long int i = 0; i < Xsize(baseMLO->mymodel.sigma2_noise[group_id]); i++) {
                     int i_remap = round(remap_image_sizes * i);
                     if (i_remap < Xsize(remapped_sigma2_noise)) {
                         direct::elem(remapped_sigma2_noise, i_remap) = direct::elem(baseMLO->mymodel.sigma2_noise[group_id], i);
@@ -673,7 +679,9 @@ void getFourierTransformsAndCtfs(
                     CTICTOC(accMLO->timer, "CTFRead3D_array", ({
                     // Unpack the CTF-image from the exp_imagedata array
                     Ictf().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ictf()) {
+                    for (long int k = 0; k < Zsize(Ictf()); k++)
+                    for (long int j = 0; j < Ysize(Ictf()); j++)
+                    for (long int i = 0; i < Xsize(Ictf()); i++) {
                         direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->image_full_size[optics_group] + k);
                     }
                     }))
@@ -2931,7 +2939,7 @@ void storeWeightedSums(
             int my_image_size = baseMLO->mydata.getOpticsImageSize(optics_group);
             RFLOAT my_pixel_size = baseMLO->mydata.getOpticsPixelSize(optics_group);
             RFLOAT remap_image_sizes = (baseMLO->mymodel.ori_size * baseMLO->mymodel.pixel_size) / (my_image_size * my_pixel_size);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(thr_wsum_sigma2_noise[img_id]) {
+            for (long int i = 0; i < Xsize(thr_wsum_sigma2_noise[img_id]); i++) {
                 int i_resam = round(i * remap_image_sizes);
                 if (i_resam < Xsize(baseMLO->wsum_model.sigma2_noise[igroup])) {
                     direct::elem(baseMLO->wsum_model.sigma2_noise[igroup], i_resam) += direct::elem(thr_wsum_sigma2_noise[img_id], i);

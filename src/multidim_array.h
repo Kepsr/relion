@@ -229,23 +229,6 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int j = Yinit(V); j <= Ylast(V); j++) \
     for (long int i = Xinit(V); i <= Xlast(V); i++)
 
-/** For all direct elements in the array.
- *
- * This macro is used to generate loops for the volume in an easy way. It
- * defines internal indices 'k','i' and 'j' which ranges the volume using its
- * physical definition.
- *
- * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
- *     std::cout << direct::elem(m, i, j, k) << " ";
- * }
- * @endcode
- */
-#define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) \
-    for (long int k = 0; k < Zsize(V); k++) \
-    for (long int j = 0; j < Ysize(V); j++) \
-    for (long int i = 0; i < Xsize(V); i++)
-
 /** For all elements in the array
  *
  * This macro is used to easily loop through a matrix.
@@ -261,43 +244,35 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
     for (long int j = Yinit(m); j <= Ylast(m); j++) \
     for (long int i = Xinit(m); i <= Xlast(m); i++)
 
-/** For all elements in the array, accessed physically
- *
- * This macro is used to easily loop through a matrix using physical indices.
- * It defines physical indices 'i' and 'j' which range over the matrix.
- *
- * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(m) {
- *     std::cout << direct::elem(m, i, j) << " ";
- * }
- * @endcode
- */
-#define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(m) \
-    for (long int j = 0; j < Ysize(m); j++) \
-    for (long int i = 0; i < Xsize(m); i++)
-
-/** For all elements in the array, accessed physically
- *
- * This macro is used to generate loops for the vector in an easy way using
- * physical indices. It defines internal the index 'i' which ranges the vector
- * using its physical definition.
- *
- * @code
- * FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) {
- *     std::cout << direct::elem(v, i) << " ";
- * }
- * @endcode
- */
-#define FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(v) for (long int i = 0; i < v.xdim; i++)
-
 /** Direct access
  *
- * Be careful. 
- * These functions give physical/direct access to an array element
- * without taking its logical position into account.
+ * Be careful.
  * These functions go against the array library philosophy,
  * and should therefore be avoided.
- * Arrays usually follow the C convention of starting index == 0.
+ * They give physical/direct access into an array
+ * without taking logical position into account.
+ * Arrays usually follow the C convention of starting index 0.
+ *
+ * For instance, you can loop over a vector by physical index:
+ * @code
+ * for (long int i = 0; i < Xsize(v); i++)
+ *     foo(direct::elem(v, i));
+ * @endcode
+ *
+ * You can loop over a matrix by physical index:
+ * @code
+ * for (long int j = 0; j < Ysize(m); j++)
+ * for (long int i = 0; i < Xsize(m); i++)
+ *     foo(direct::elem(m, i, j));
+ * @endcode
+ *
+ * You can loop over a volume by physical index:
+ * @code
+ * for (long int k = 0; k < Zsize(V); k++)
+ * for (long int j = 0; j < Ysize(V); j++)
+ * for (long int i = 0; i < Xsize(V); i++)
+ *     foo(direct::elem(m, i, j, k));
+ * @endcode
  */
 namespace direct {
 
@@ -328,8 +303,6 @@ namespace direct {
 };
 //@}
 
-// Forward declarations ====================================================
-
 struct Origin {
 
     long int x, y, z;
@@ -346,9 +319,7 @@ struct Origin {
 
 };
 
-/** Template class for Xmipp arrays.
- * This class provides physical and logical access.
- */
+/// Xmipp arrays
 template<typename T>
 class MultidimArray {
 
@@ -1533,7 +1504,9 @@ class MultidimArray {
             REPORT_ERROR(" Multidimarray getImage: n larger than ndim (out of bounds)");
 
         M.resize(xdim, ydim, zdim);
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M) {
+        for (long int k = 0; k < Zsize(M); k++)
+        for (long int j = 0; j < Ysize(M); j++)
+        for (long int i = 0; i < Xsize(M); i++) {
             direct::elem(M, i, j) = direct::elem(*this, i, j, k, n);
         }
 
@@ -1559,7 +1532,9 @@ class MultidimArray {
         if (M.zdim != zdim || M.ydim != ydim || M.xdim != xdim)
             REPORT_ERROR("setImage: MultidimArray dimensions different from the input image ones");
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(M)
+        for (long int k = 0; k < Zsize(M); k++)
+        for (long int j = 0; j < Ysize(M); j++)
+        for (long int i = 0; i < Xsize(M); i++)
             direct::elem(*this, i, j, k, n) = direct::elem(M, i, j, k);
 
     }
@@ -1590,7 +1565,8 @@ class MultidimArray {
 
             k -= firstZ();
             M.resize(xdim, ydim);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
+            for (long int j = 0; j < Ysize(M); j++)
+            for (long int i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, j, i, k, n);
             }
             M.xinit = firstX();
@@ -1603,7 +1579,8 @@ class MultidimArray {
 
             k -= firstY();
             M.resize(xdim, zdim);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
+            for (long int j = 0; j < Ysize(M); j++)
+            for (long int i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, k, j, i, n);
             }
             M.xinit = firstX();
@@ -1616,7 +1593,8 @@ class MultidimArray {
 
             k -= firstX();
             M.resize(ydim, zdim);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(M) {
+            for (long int j = 0; j < Ysize(M); j++)
+            for (long int i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, j, k, i, n);
             }
             M.xinit = firstY();
@@ -1651,8 +1629,9 @@ class MultidimArray {
 
         k -= firstZ();
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v)
-        direct::elem(*this, i, j, k, n) = direct::elem(v, i, j);
+        for (long int j = 0; j < Ysize(v); j++)
+        for (long int i = 0; i < Xsize(v); i++)
+            direct::elem(*this, i, j, k, n) = direct::elem(v, i, j);
     }
 
     /** Get Column
@@ -2685,7 +2664,9 @@ class MultidimArray {
         T ***m = NULL;
         ask_Tvolume(m, 1, zdim, 1, ydim, 1, xdim);
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(*this)
+        for (long int k = 0; k < Zsize(*this); k++)
+        for (long int j = 0; j < Ysize(*this); j++)
+        for (long int i = 0; i < Xsize(*this); i++)
             m[i + 1][j + 1][k + 1] = direct::elem(*this, i, j, k, n);
 
         return m;
@@ -2707,7 +2688,8 @@ class MultidimArray {
         T **m = NULL;
         ask_Tmatrix(m, 1, ydim, 1, xdim);
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(*this)
+        for (long int j = 0; j < Ysize(*this); j++)
+        for (long int i = 0; i < Xsize(*this); i++)
             m[i + 1][j + 1] = direct::elem(*this, i, j, 0, n);
 
         return m;
@@ -3394,7 +3376,9 @@ void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) 
         }
     } else {
         v2.resize(v1.xdim, v1.ydim, v1.zdim);
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v2) {
+        for (long int k = 0; k < Zsize(v2); k++)
+        for (long int j = 0; j < Ysize(v2); j++)
+        for (long int i = 0; i < Xsize(v2); i++) {
             direct::elem(v2, i, j, k) = static_cast<T2>(direct::elem(v1, i, j, k, n));
         }
     }

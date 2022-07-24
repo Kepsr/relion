@@ -612,7 +612,7 @@ void Projector::computeFourierTransformMap(
             dpower_spectrum.cpToHost();
         } else
         #endif
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(power_spectrum) {
+        for (long int i = 0; i < Xsize(power_spectrum); i++) {
             if (direct::elem(counter, i) < 1.0) {
                 direct::elem(power_spectrum, i) = 0.0;
             } else {

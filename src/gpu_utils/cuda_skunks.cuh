@@ -86,7 +86,7 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
     }
 
     // Calculate radial average of power spectrum
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(power_spectrum) {
+    for (long int i = 0; i < Xsize(power_spectrum); i++) {
         if (direct::elem(counter, i) < 1.0) {
             direct::elem(power_spectrum, i) = 0.0;
         } else {

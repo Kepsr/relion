@@ -2507,12 +2507,9 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
             // Calculate FSC of the unmasked maps
             getFSC(Iunreg1(), Iunreg2(), fsc_unmasked);
 
-            Image<RFLOAT> Imask;
-            if (mymodel.nr_bodies > 1) {
-                Imask() = mymodel.masks_bodies[ibody];
-            } else {
-                Imask.read(fn_mask);
-            }
+            Image<RFLOAT> Imask = mymodel.nr_bodies > 1 ?
+                Image<RFLOAT>(mymodel.masks_bodies[ibody]) :
+                Image<RFLOAT>::from_filename(fn_mask);
             Imask().setXmippOrigin();
             Iunreg1() *= Imask();
             Iunreg2() *= Imask();
@@ -2526,13 +2523,18 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
 
             // Check at which resolution shell the FSC drops below 0.8
             int randomize_at = -1;
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
+            for (long int i = 0; i < Xsize(fsc_unmasked); i++) {
                 if (i > 0 && direct::elem(fsc_unmasked, i) < 0.8) {
                     randomize_at = i;
                     break;
                 }
             }
-            if (randomize_at > 0) {
+            if (randomize_at <= 0) {
+                std::cerr << " WARNING: FSC curve between unmasked maps never drops below 0.8. Using unmasked FSC as FSC_true... " << std::endl;
+                std::cerr << " WARNING: This message should go away during the later stages of refinement!" << std::endl;
+
+                mymodel.fsc_halves_class[ibody] = fsc_unmasked;
+            } {
                 if (verb > 0) {
                     std::cout.width(35); 
                     std::cout << std::left << "  + randomize phases beyond: ";
@@ -2548,7 +2550,7 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
                 // Now that we have fsc_masked and fsc_random_masked, calculate fsc_true according to Richard's formula
                 // FSC_true = FSC_t - FSC_n / ( )
                 fsc_true.resize(fsc_masked);
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
+                for (long int i = 0; i < Xsize(fsc_true); i++) {
                     // 29jan2015: let's move this 2 shells upwards, because of small artefacts near the resolution of randomisation!
                     if (i < randomize_at + 2) {
                         direct::elem(fsc_true, i) = direct::elem(fsc_masked, i);
@@ -2563,11 +2565,6 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
                     }
                 }
                 mymodel.fsc_halves_class[ibody] = fsc_true;
-            } else {
-                std::cerr << " WARNING: FSC curve between unmasked maps never drops below 0.8. Using unmasked FSC as FSC_true... "<<std::endl;
-                std::cerr << " WARNING: This message should go away during the later stages of refinement!" << std::endl;
-
-                mymodel.fsc_halves_class[ibody] = fsc_unmasked;
             }
 
             // Set fsc_halves_class explicitly to zero beyond the current_size
@@ -2917,7 +2914,7 @@ void MlOptimiserMpi::iterate() {
 
                     int fsc05   = -1;
                     int fsc0143 = -1;
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(mymodel.fsc_halves_class[ibody]) {
+                    for (long int i = 0; i < Xsize(mymodel.fsc_halves_class[ibody]); i++) {
                         if (direct::elem(mymodel.fsc_halves_class[ibody], i) < 0.5 && fsc05 < 0)
                         { fsc05 = i; }
                         if (direct::elem(mymodel.fsc_halves_class[ibody], i) < 0.143 && fsc0143 < 0)

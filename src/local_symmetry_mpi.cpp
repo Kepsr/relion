@@ -378,7 +378,8 @@ void local_symmetry_parameters_mpi::run() {
                     divide_equally(nr_total_samplings, node->size, id_rank, first, last);
 
                     // Beware: Ysize(op_samplings_batch_packed) is larger than (last - first + 1)
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
+                    for (long int j = 0; j < Ysize(op_samplings_batch_packed); j++)
+                    for (long int i = 0; i < Xsize(op_samplings_batch_packed); i++) {
                         if (i >= 0 && i <= last - first)
                             direct::elem(op_samplings_batch_packed, i, j) = op_samplings[i + first][j];
                     }
@@ -429,7 +430,8 @@ void local_symmetry_parameters_mpi::run() {
                         node->relion_MPI_Recv(op_samplings_batch_packed.data, (last - first + 1) * NR_LOCALSYM_PARAMETERS, MY_MPI_DOUBLE, id_rank, MPITag::LOCALSYM_SAMPLINGS_PACK, MPI_COMM_WORLD, status);
 
                     // Leader does something for itself if id_rank == 0
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(op_samplings_batch_packed) {
+                    for (long int j = 0; j < Ysize(op_samplings_batch_packed); j++)
+                    for (long int i = 0; i < Xsize(op_samplings_batch_packed); i++) {
                         // Beware: Ysize(op_samplings_batch_packed) is larger than (last - first + 1)
                         if (i >= 0 && i <= last - first)
                             op_samplings[i + first][CC_POS] = direct::elem(op_samplings_batch_packed, i, CC_POS);

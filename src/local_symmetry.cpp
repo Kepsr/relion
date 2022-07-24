@@ -31,7 +31,9 @@ void sum3DCubicMask(
 ) {
     val_sum = val_ctr = 0.0;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
+    for (long int k = 0; k < Zsize(v); k++)
+    for (long int j = 0; j < Ysize(v); j++)
+    for (long int i = 0; i < Xsize(v); i++) {
         RFLOAT val = direct::elem(v, i, j, k);
         if (Xmipp::lt(val, 0.0) || Xmipp::gt(val, 1.0))
             REPORT_ERROR("ERROR: mask - values are not in range [0,1]!");
@@ -63,14 +65,8 @@ void truncateMultidimArray(
     MultidimArray<RFLOAT> &v, RFLOAT minval, RFLOAT maxval
 ) {
 
-    if (minval > maxval)
-        REPORT_ERROR("ERROR: minval should be smaller than maxval!");
-
-    // FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(v) {
-    //     RFLOAT val = direct::elem(v, i, j, k);
-    //     if (val < minval) { direct::elem(v, i, j, k) = minval; }
-    //     if (val > maxval) { direct::elem(v, i, j, k) = maxval; }
-    // }
+    if (minval >= maxval)
+        REPORT_ERROR("ERROR: minval must be less than maxval!");
 
     for (auto &x : v) {
         if (x < minval) { x = minval; }
@@ -1136,7 +1132,9 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
         mask().copyShape(ori_map); // VERY IMPORTANT!
 
         // 'Vol1' contains one symmetrised subunit, make it into perfect "mask-weighted sum"
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol1) {
+        for (long int k = 0; k < Zsize(vol1); k++)
+        for (long int j = 0; j < Ysize(vol1); j++)
+        for (long int i = 0; i < Xsize(vol1); i++) {
             // Get values of mask in every voxel
             mask_val = direct::elem(mask(), i, j, k); // "weights from mask" - w
             if (Xmipp::lt(mask_val, 0.0) || Xmipp::gt(mask_val, 1.0))
@@ -1185,7 +1183,9 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
     // TODO: check! please always ensure - free memory space in time!
 
     // sym_map and w contain all symmetised subunits (wsum) and mask coefficients (w) needed
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(sym_map) {
+    for (long int k = 0; k < Zsize(sym_map); k++)
+    for (long int j = 0; j < Ysize(sym_map); j++)
+    for (long int i = 0; i < Xsize(sym_map); i++) {
         mask_val = direct::elem(w, i, j, k); // get weights
 
         // TODO: check radius2 here!
@@ -1217,7 +1217,9 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
         yinit = Xmipp::init(Ysize(sym_map));
         zinit = Xmipp::init(Zsize(sym_map));
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(sym_map) {
+        for (long int k = 0; k < Zsize(sym_map); k++)
+        for (long int j = 0; j < Ysize(sym_map); j++)
+        for (long int i = 0; i < Xsize(sym_map); i++) {
             dist2 = euclidsq(i + xinit, j + yinit, k + zinit);
             if (dist2 > radiusw2) {
                 direct::elem(sym_map, i, j, k) = 0.0;
@@ -1618,7 +1620,9 @@ void calculateOperatorCC(
         applyGeometry(dest, vol, op_mat, IS_NOT_INV, DONT_WRAP);
 
         cc = 0.0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol) {
+        for (long int k = 0; k < Zsize(vol); k++)
+        for (long int j = 0; j < Ysize(vol); j++)
+        for (long int i = 0; i < Xsize(vol); i++) {
             mask_val = direct::elem(mask, i, j, k);
             if (mask_val < Xmipp::epsilon)
                 continue;
@@ -1687,7 +1691,9 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
 
     // Count voxels with positive values
     pos_val_ctr = 0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
+    for (long int k = 0; k < Zsize(img()); k++)
+    for (long int j = 0; j < Ysize(img()); j++)
+    for (long int i = 0; i < Xsize(img()); i++) {
         float_val = direct::elem(img(), i, j, k);
         //if (val < -Xmipp::epsilon)
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");
@@ -1704,7 +1710,9 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     #endif
 
     id = 0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol_rec) {
+    for (long int k = 0; k < Zsize(vol_rec); k++)
+    for (long int j = 0; j < Ysize(vol_rec); j++)
+    for (long int i = 0; i < Xsize(vol_rec); i++) {
         int_val = direct::elem(vol_rec, i, j, k);
         if (int_val != 0)
             continue;
@@ -1757,7 +1765,9 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
         img_out().initZeros(img());
         //img_out().setXmippOrigin();
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(vol_rec) {
+        for (long int k = 0; k < Zsize(vol_rec); k++)
+        for (long int j = 0; j < Ysize(vol_rec); j++)
+        for (long int i = 0; i < Xsize(vol_rec); i++) {
             if (direct::elem(vol_rec, i, j, k) == icen + 1)
                 direct::elem(img_out(), i, j, k) = 1.0;
         }
@@ -1830,7 +1840,9 @@ void separateMasksKMeans(
 
     // Count voxels with positive values
     pos_val_ctr = 0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
+    for (long int k = 0; k < Zsize(img()); k++)
+    for (long int j = 0; j < Ysize(img()); j++)
+    for (long int i = 0; i < Xsize(img()); i++) {
         val = direct::elem(img(), i, j, k);
         //if (val < -Xmipp::epsilon)
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");

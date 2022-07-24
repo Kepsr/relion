@@ -299,17 +299,20 @@ class FourierTransformer {
         }
         switch (ndim) {
             case 1:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
+            for (long int i = 0; i < Xsize(V); i++) {
                 direct::elem(V, i) = i < Xsize(fFourier) ? direct::elem(fFourier, i) :
                     conj(direct::elem(fFourier, Xsize(*fReal) - i));
             } break;
             case 2:
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
+                for (long int j = 0; j < Ysize(V); j++)
+                for (long int i = 0; i < Xsize(V); i++) {
                     direct::elem(V, i, j) = j < Xsize(fFourier) ? direct::elem(fFourier, i, j) :
                         conj(direct::elem(fFourier, Xsize(*fReal) - j, (Ysize(*fReal) - i) % Ysize(*fReal)));
                 } break;
             case 3:
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
+                for (long int k = 0; k < Zsize(V); k++)
+                for (long int j = 0; j < Ysize(V); j++)
+                for (long int i = 0; i < Xsize(V); i++) {
                     direct::elem(V, i, j, k) = j < Xsize(fFourier) ? direct::elem(fFourier, i, j, k) :
                         conj(direct::elem(fFourier, Xsize(*fReal) - j, (Ysize(*fReal) - i) % Ysize(*fReal), (Zsize(*fReal) - k) % Zsize(*fReal)));
                 } break;
@@ -329,15 +332,18 @@ class FourierTransformer {
         }
         switch (ndim) {
             case 1:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fFourier)
+            for (long int i = 0; i < Xsize(fFourier); i++)
                 direct::elem(fFourier, i) = direct::elem(V, i);
             break;
             case 2:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(fFourier)
+            for (long int j = 0; j < Ysize(fFourier); j++)
+            for (long int i = 0; i < Xsize(fFourier); i++)
                 direct::elem(fFourier, i, j) = direct::elem(V, i, j);
             break;
             case 3:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier)
+            for (long int k = 0; k < Zsize(fFourier); k++)
+            for (long int j = 0; j < Ysize(fFourier); j++)
+            for (long int i = 0; i < Xsize(fFourier); i++)
                 direct::elem(fFourier, i, j, k) = direct::elem(V, i, j, k);
             break;
         }

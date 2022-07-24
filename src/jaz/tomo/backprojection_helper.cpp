@@ -380,7 +380,9 @@ void BackprojectionHelper::backprojectDots(
     FourierTransformer ft;
     ft.FourierTransform(volRL(), spectrum.data, false);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data) {
+    for (long int k = 0; k < Zsize(spectrum.data); k++)
+    for (long int j = 0; j < Ysize(spectrum.data); j++)
+    for (long int i = 0; i < Xsize(spectrum.data); i++) {
         Complex z = direct::elem(spectrum.data, i, j, k);
 
         dest(j, i, k) = z.abs();
@@ -494,37 +496,23 @@ void BackprojectionHelper::backprojectDotsSeparately(
         d4Matrix vol2img = stack.worldToImage[im] * vol2world;
         d4Vector volOrigImg = vol2img * originVol;
 
-#if JAZ_USE_OPENMP
+        #if JAZ_USE_OPENMP
         #pragma omp parallel for
-#endif
+        #endif
         FOR_ALL_VOXELS(streakVol) {
-            double sum = 0.0;
-
             d4Vector pw(x,y,z,1.0);
 
             d4Vector pi = vol2img * pw;
 
             d4Vector d = pi - volOrigImg;
 
-            double dx, dy;
+            double dx = std::abs(d.x) > 1.0 ? 0.0 : 1.0 - std::abs(d.x);
+            double dy = std::abs(d.y) > 1.0 ? 0.0 : 1.0 - std::abs(d.y);
 
-            if (d.x < -1 || d.x > 1) {
-                dx = 0.0;
-            } else {
-                dx = 1.0 - std::abs(d.x);
-            }
-            if (d.y < -1 || d.y > 1) {
-                dy = 0.0;
-            } else {
-                dy = 1.0 - std::abs(d.y);
-            }
-
-            sum += dx*dy;
-
-            streakVol(x,y,z) = sum;
+            streakVol(x, y, z) = dx * dy;
         }
 
-        taperEdges(streakVol, 0.05*wv, 0.02*hv, 0.05*dv);
+        taperEdges(streakVol, 0.05 * wv, 0.02 * hv, 0.05 * dv);
         VolumeConverter::convert(streakVol, volRL);
 
         FourierTransformer ft;
@@ -536,11 +524,13 @@ void BackprojectionHelper::backprojectDotsSeparately(
             std::string fn;
             sts >> fn;
 
-            //VtkHelper::writeVTK(streakVol, "streakVol_"+fn+".vtk");
-            //VtkHelper::writeVTK_Complex(spectrum.data, "streakVol_"+fn+"_FS.vtk");
+            // VtkHelper::writeVTK(streakVol, "streakVol_"+fn+".vtk");
+            // VtkHelper::writeVTK_Complex(spectrum.data, "streakVol_"+fn+"_FS.vtk");
         }
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum.data) {
+        for (long int k = 0; k < Zsize(spectrum.data); k++)
+        for (long int j = 0; j < Ysize(spectrum.data); j++)
+        for (long int i = 0; i < Xsize(spectrum.data); i++) {
             Complex z = direct::elem(spectrum.data, i, j, k);
 
             dest(j,i,k) += z.abs();
