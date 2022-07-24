@@ -1072,7 +1072,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         const int NUM_MIN_OK = 6;
         const int D_MAX = isEER ? 4 : 2;
         const int PBUF_SIZE = 100;
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(bBad) {
+        for (long int j = 0; j < Ysize(bBad); j++)
+        for (long int i = 0; i < Xsize(bBad); i++) {
             if (!direct::elem(bBad, i, j)) continue;
 			// std::cout << "Hot pixel at (" << i << ", " << j << ")" << std::endl;
             #pragma omp parallel for num_threads(n_threads)

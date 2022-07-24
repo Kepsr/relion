@@ -45,12 +45,10 @@
 
           -- J. Zivanov, Feb. 9th 2018
 */
-
-
 class ParFourierTransformer {
 
     public:
-    /** Real array, in fact a pointer to the user array is stored. */
+    /** Pointer to real array */
     MultidimArray<RFLOAT> *fReal;
 
      /** Complex array, in fact a pointer to the user array is stored. */
@@ -146,91 +144,15 @@ class ParFourierTransformer {
         );
     }
 
-    /** Return a complete Fourier transform (two halves).
-    */
+    /** Return a complete Fourier transform (two halves). */
     template <typename T>
-    void getCompleteFourier(T& V) {
-        V.reshape(*fReal);
-        int ndim = 3;
-        if (Zsize(*fReal) == 1) {
-            ndim = 2;
-            if (Ysize(*fReal) == 1)
-                ndim = 1;
-        }
-        switch (ndim) {
-
-            case 1:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(V) {
-                direct::elem(V, i) = i < Xsize(fFourier) ? direct::elem(fFourier, i) :
-                                                      conj(direct::elem(fFourier, Xsize(*fReal) - i));
-            }
-            break;
-
-            case 2:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(V) {
-                if (j < Xsize(fFourier)) {
-                    direct::elem(V, i, j) = direct::elem(fFourier, i, j);
-                } else {
-                    direct::elem(V, i, j) = conj(direct::elem(
-                        fFourier, 
-                        Xsize(*fReal) - j,
-                        (Ysize(*fReal) - i) % Ysize(*fReal)
-                    ));
-                }
-            }
-            break;
-
-            case 3:
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(V) {
-                    if (j < Xsize(fFourier)) {
-                        direct::elem(V, i, j, k) = direct::elem(fFourier, i, j, k);
-                    } else {
-                        direct::elem(V, i, j, k) = conj(direct::elem(
-                            fFourier, 
-                            Xsize(*fReal) - j,
-                            (Ysize(*fReal) - i) % Ysize(*fReal), 
-                            (Zsize(*fReal) - k) % Zsize(*fReal)
-                        ));
-                    }
-                }
-                break;
-
-        }
-    }
+    void getCompleteFourier(MultidimArray<T>& V) const;
 
     /** Set one half of the FT in fFourier from the input complete Fourier transform (two halves).
-        The fReal and fFourier already should have the right sizes
+        fReal and fFourier should already be of the right size.
     */
     template <typename T>
-    void setFromCompleteFourier(T& V) {
-        int ndim = 3;
-        if (Zsize(*fReal) == 1) {
-            ndim = 2;
-            if (Ysize(*fReal) == 1)
-                ndim = 1;
-        }
-        switch (ndim) {
-
-            case 1:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fFourier) {
-                direct::elem(fFourier, i) = direct::elem(V, i);
-            }
-            break;
-
-            case 2:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(fFourier) {
-                direct::elem(fFourier, i, j) = direct::elem(V, i, j);
-            }
-            break;
-
-            case 3:
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(fFourier) {
-                direct::elem(fFourier, i, j, k) = direct::elem(V, i, j, k);
-            }
-            break;
-
-        }
-    }
+    void setFromCompleteFourier(const MultidimArray<T>& V);
 
     // Internal methods
     public:
@@ -246,8 +168,7 @@ class ParFourierTransformer {
     /** Clear object */
     void clear();
 
-    /** This calls fftw_cleanup.
-    */
+    /** Call fftw_cleanup */
     void cleanup();
 
     /** Destroy both forward and backward fftw planes (mutex locked */

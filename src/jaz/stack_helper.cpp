@@ -379,7 +379,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             const int D_MAX = 2; // EER code path does not use this function
             const int PBUF_SIZE = 100;
             #pragma omp parallel for num_threads(threads_p)
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(muGraph.data) {
+            for (long int j = 0; j < Ysize(muGraph.data); j++)
+            for (long int i = 0; i < Xsize(muGraph.data); i++) {
                 if (!direct::elem(*defectMask, i, j)) continue;
 
                 int n_ok = 0;

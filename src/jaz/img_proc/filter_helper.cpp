@@ -569,7 +569,9 @@ void FilterHelper::lowPassFilter(
 void FilterHelper::lowPassFilterSpectrum(
     MultidimArray<Complex> &spectrum, double maxFreq0, double maxFreq1
 ) {
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(spectrum) {
+    for (long int k = 0; k < Zsize(spectrum); k++)
+    for (long int j = 0; j < Ysize(spectrum); j++)
+    for (long int i = 0; i < Xsize(spectrum); i++) {
         double xi =       j / (double) spectrum.xdim;
         double yi = 2.0 * i / (double) spectrum.ydim;
         double zi = 2.0 * k / (double) spectrum.zdim;
@@ -622,7 +624,8 @@ void FilterHelper::phaseFlip(
     RFLOAT xs = (RFLOAT) img.data.xdim * angpix;
     RFLOAT ys = (RFLOAT) img.data.ydim * angpix;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
+    for (long int j = 0; j < Ysize(imgFreq); j++)
+    for (long int i = 0; i < Xsize(imgFreq); i++) {
         const int x = j;
         const int y = i < imgFreq.ydim / 2 ? i : i - imgFreq.ydim;
 
@@ -678,7 +681,8 @@ void FilterHelper::modulate(
     Image<RFLOAT> ctfImg(w, h);
     ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
     
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq()) {
+    for (long int j = 0; j < Ysize(imgFreq()); j++)
+    for (long int i = 0; i < Xsize(imgFreq()); i++) {
         direct::elem(imgFreq(), i, j) *= direct::elem(ctfImg(), i, j);
     }
 
@@ -700,7 +704,8 @@ void FilterHelper::modulate(
     Image<RFLOAT> ctfImg(w, h);
     ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
+    for (long int j = 0; j < Ysize(imgFreq); j++)
+    for (long int i = 0; i < Xsize(imgFreq); i++) {
         direct::elem(imgFreq, i, j) *= direct::elem(ctfImg(), i, j);
     }
 }
@@ -716,7 +721,8 @@ void FilterHelper::drawCtf(
     Image<RFLOAT> ctfImg(w, h);
     ctfImg() = CtfHelper::getFftwImage(ctf, w, h, h, h, angpix, obsModel, opticsGroup);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(dest()) {
+    for (long int j = 0; j < Ysize(dest()); j++)
+    for (long int i = 0; i < Xsize(dest()); i++) {
         direct::elem(dest(), i, j) = direct::elem(ctfImg(), i, j);
     }
 }
@@ -733,7 +739,8 @@ void FilterHelper::wienerFilter(
     RFLOAT xs = (RFLOAT) img.data.xdim * angpix;
     RFLOAT ys = (RFLOAT) img.data.ydim * angpix;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
+    for (long int j = 0; j < Ysize(imgFreq); j++)
+    for (long int i = 0; i < Xsize(imgFreq); i++) {
         const int x = j;
         const int y = i < imgFreq.ydim / 2 ? i : i - imgFreq.ydim;
 
@@ -763,14 +770,16 @@ void FilterHelper::richardsonLucy(
     double vmin = 0;
     double Bfac = (double) w / 4.0;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img.data) {
+    for (long int j = 0; j < Ysize(img.data); j++)
+    for (long int i = 0; i < Xsize(img.data); i++) {
         double v0 = direct::elem(img.data, i, j);
         if (v0 < vmin) { vmin = v0; }
     }
 
     vmin -= 10;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img.data) {
+    for (long int j = 0; j < Ysize(img.data); j++)
+    for (long int i = 0; i < Xsize(img.data); i++) {
         direct::elem(img0.data, i, j) = direct::elem(img.data, i, j) + vmin;
     }
 
@@ -797,7 +806,8 @@ void FilterHelper::rampFilter(Image<RFLOAT> &img, RFLOAT s0, RFLOAT t1, double u
     FourierTransformer ft;
     ft.FourierTransform(img(), imgFreq, false);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
+    for (long int j = 0; j < Ysize(imgFreq); j++)
+    for (long int i = 0; i < Xsize(imgFreq); i++) {
         const int x = j;
         const int y = i < imgFreq.ydim / 2 ? i : i - imgFreq.ydim;
 
@@ -817,7 +827,9 @@ void FilterHelper::rampFilter(Image<RFLOAT> &img, RFLOAT s0, RFLOAT t1, double u
 void FilterHelper::rampFilter3D(Image<Complex> &img, RFLOAT s0, RFLOAT t1, double tx, double ty, double tz) {
     d3Vector ta(tx, ty, tz);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
+    for (long int k = 0; k < Zsize(img.data); k++)
+    for (long int j = 0; j < Ysize(img.data); j++)
+    for (long int i = 0; i < Xsize(img.data); i++) {
         const int x = j;
         const int y = i < img.data.ydim / 2 ? i : i - img.data.ydim;
         const int z = k < img.data.zdim / 2 ? k : k - img.data.zdim;
@@ -835,7 +847,9 @@ void FilterHelper::rampFilter3D(Image<Complex> &img, RFLOAT s0, RFLOAT t1, doubl
 void FilterHelper::doubleRampFilter3D(Image<Complex> &img, RFLOAT s0, RFLOAT t1, double tx, double ty, double tz) {
     d3Vector ta(tx,ty,tz);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
+    for (long int k = 0; k < Zsize(img.data); k++)
+    for (long int j = 0; j < Ysize(img.data); j++)
+    for (long int i = 0; i < Xsize(img.data); i++) {
         const int x = j;
         const int y = i < img.data.ydim / 2 ? i : i - img.data.ydim;
         const int z = k < img.data.zdim / 2 ? k : k - img.data.zdim;
@@ -916,7 +930,8 @@ void FilterHelper::powerSpectrum2D(Image<RFLOAT> &img, Volume<RFLOAT>& spectrum)
 
     spectrum.resize(imgFreq.xdim, imgFreq.ydim, 1);
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(imgFreq) {
+    for (long int j = 0; j < Ysize(imgFreq); j++)
+    for (long int i = 0; i < Xsize(imgFreq); i++) {
         Complex z = direct::elem(imgFreq, i, j);
 
         spectrum(j, i, 0) = z.abs();
@@ -2567,7 +2582,8 @@ void FilterHelper::blendSoft(
 double FilterHelper::totalVariation(const Image<RFLOAT> &src) {
     double sum = 0.0;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(src.data) {
+    for (long int j = 0; j < Ysize(src.data); j++)
+    for (long int i = 0; i < Xsize(src.data); i++) {
         if (i == src.data.ydim - 1 || j == src.data.xdim - 1) continue;
 
         double v0 = direct::elem(src.data, i, j);
@@ -2588,7 +2604,8 @@ double FilterHelper::totalVariation(const Image<RFLOAT> &src) {
 double FilterHelper::totalLogVariation(const Image<RFLOAT> &src, double delta) {
     double sum = 0.0;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(src.data) {
+    for (long int j = 0; j < Ysize(src.data); j++)
+    for (long int i = 0; i < Xsize(src.data); i++) {
         if (i == src.data.ydim - 1 || j == src.data.xdim - 1) continue;
 
         double v0 = direct::elem(src.data, i, j);

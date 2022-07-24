@@ -195,7 +195,8 @@ void HelixAligner::initialise() {
 
             MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(img());
             applyGeometry(img(), Mrot, Arot, true, false);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot) {
+            for (long int j = 0; j < Ysize(Mrot); j++)
+            for (long int i = 0; i < Xsize(Mrot); i++) {
                 direct::elem(vol(), i, j, k) = direct::elem(Mrot, i, j);
             }
         }
@@ -936,7 +937,6 @@ void HelixAligner::reconstruct2D(int iclass) {
         softMaskOutsideMap(model.Arec[iclass], pixel_radius, 0.0);
     }
 
-
     #ifdef DEBUGREC2D
     It() = model.Arec[iclass];
     resizeMap(It(), ori_size);
@@ -975,6 +975,16 @@ void HelixAligner::reconstruct2D(int iclass) {
     #endif
 }
 
+static void write_subroutine(Image<RFLOAT> &img, const std::vector<MultidimArray<RFLOAT>> &v, const FileName &fn) {
+    for (int iclass = 0; iclass < Nsize(img()); iclass++) {
+        const auto &arr = v[iclass];
+        for (long int j = 0; j < Ysize(arr); j++)
+        for (long int i = 0; i < Xsize(arr); i++)
+            direct::elem(img(), i, j, 0, iclass) = direct::elem(arr, i, j);
+    }
+    img.write(fn);
+}
+
 void HelixAligner::writeOut(int iter) {
 
     // std::cout << " **** Model for iteration " << iter << std::endl;
@@ -983,7 +993,7 @@ void HelixAligner::writeOut(int iter) {
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         FileName fn_class = fn_out + "_it" + integerToString(iter, 3) + "_class" + integerToString(iclass + 1, 3) + ".spi";
         Image<RFLOAT> Ic;
-        Ic()=model.Aref[iclass];
+        Ic() = model.Aref[iclass];
         Ic.write(fn_class);
         std::cout << " * Written " << fn_class << std::endl;
         fn_class = fn_out + "_it" + integerToString(iter, 3) + "_class" + integerToString(iclass + 1, 3) + "_reconstructed.spi";
@@ -994,29 +1004,13 @@ void HelixAligner::writeOut(int iter) {
     #else
     FileName fn_iter = fn_out + "_it" + integerToString(iter, 3);
     MD.write(fn_iter + ".star");
-    Image<RFLOAT> Aimg(xrect, yrect, 1, nr_classes);
 
-    for (int iclass = 0; iclass < nr_classes; iclass++) {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Aref[iclass]) {
-            direct::elem(Aimg(), i, j, 0, iclass) = direct::elem(model.Aref[iclass], i, j);
-        }
-    }
-    Aimg.write(fn_iter + "_reprojections.mrcs");
+    Image<RFLOAT> Aimg (xrect, yrect, 1, nr_classes);
+    write_subroutine(Aimg, model.Aref, fn_iter + "_reprojections.mrcs");
+    write_subroutine(Aimg, model.Asum, fn_iter + "_summed_classes.mrcs");
 
-    for (int iclass = 0; iclass < nr_classes; iclass++) {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Asum[iclass]) {
-            direct::elem(Aimg(), i, j, 0, iclass) = direct::elem(model.Asum[iclass], i, j);
-        }
-    }
-    Aimg.write(fn_iter + "_summed_classes.mrcs");
-
-    Image<RFLOAT> Aimg2(yrect, yrect, 1, nr_classes);
-    for (int iclass = 0; iclass < nr_classes; iclass++) {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(model.Arec[iclass]) {
-            direct::elem(Aimg2(), i, j, 0, iclass) = direct::elem(model.Arec[iclass], i, j);
-        }
-    }
-    Aimg2.write(fn_iter + "_reconstructed.mrcs");
+    Image<RFLOAT> Aimg2 (yrect, yrect, 1, nr_classes);
+    write_subroutine(Aimg2, model.Arec, fn_iter + "_reconstructed.mrcs");
     #endif
 
     if (nr_classes > 1) {
@@ -1054,7 +1048,8 @@ void HelixAligner::reconstruct3D() {
 
             MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(Mori);
             applyGeometry(Mori, Mrot, Arot, true, false);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Mrot) {
+            for (long int j = 0; j < Ysize(Mrot); j++) \
+            for (long int i = 0; i < Xsize(Mrot); i++) {
                 direct::elem(Ic(), i, j, k) = direct::elem(Mrot, i, j);
             }
         }

@@ -125,7 +125,8 @@ class EERRenderer {
             // gain = 4K and grid = 8K
         ) {
             gain.initZeros(size_out, size_out);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(gain)
+            for (long int j = 0; j < Ysize(gain); j++)
+            for (long int i = 0; i < Xsize(gain); i++)
                 direct::elem(gain, i, j) = direct::elem(original(), i / 2, j / 2);
         } else if (
             (eer_upsampling == 1 && nx_in == EER_IMAGE_WIDTH && ny_in == EER_IMAGE_HEIGHT) || // gain = 4K and grid = 4K
@@ -137,7 +138,8 @@ class EERRenderer {
             // gain = 8K and grid = 4K
         ) {
             gain.initZeros(size_out, size_out);
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(original())
+            for (long int j = 0; j < Ysize(original()); j++)
+            for (long int i = 0; i < Xsize(original()); i++)
                 direct::elem(gain, i / 2, j / 2) += direct::elem(original(), i, j);
         } else {
             std::cerr << "Size of input gain: X = " << nx_in << " Y = " << ny_in << " Expected: X = " << size_out << " Y = " << size_out << std::endl;

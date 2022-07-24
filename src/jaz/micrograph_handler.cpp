@@ -496,7 +496,8 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
                 const int NUM_MIN_OK = 6;
                 const int D_MAX = isEER ? 4: 2;
                 const int PBUF_size = 100;
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(defectMask) {
+                for (long int j = 0; j < Ysize(defectMask); j++)
+                for (long int i = 0; i < Xsize(defectMask); i++) {
                     if (!direct::elem(defectMask, i, j) && (
                         !mgHasGain || direct::elem(lastGainRef(), i, j) != 0
                     )) continue;

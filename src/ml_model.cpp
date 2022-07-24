@@ -311,7 +311,7 @@ void MlModel::read(FileName fn_in) {
                 REPORT_ERROR("MlModel::readStar: incorrect table model_pdf_orient_class_" + integerToString(iclass + 1));
             }
             pdf_direction[iclass].resize(vaux.size());
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(pdf_direction[iclass]) {
+            for (long int i = 0; i < Xsize(pdf_direction[iclass]); i++) {
                 direct::elem(pdf_direction[iclass], i) = vaux[i];
             }
             nr_directions = vaux.size();
@@ -344,20 +344,18 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     if (ref_dim == 2) {
         Image<RFLOAT> img(Xsize(Iref[0]), Ysize(Iref[0]), 1, nr_classes_bodies);
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Iref[iclass]) {
+            for (long int j = 0; j < Ysize(Iref[iclass]); j++)
+            for (long int i = 0; i < Xsize(Iref[iclass]); i++) {
                 direct::elem(img(), i, j, 0, iclass) = direct::elem(Iref[iclass], i, j);
             }
         }
         img.setSamplingRateInHeader(pixel_size);
-        if (nr_bodies > 1) {
-            img.write(fn_out + "_bodies.mrcs");
-        } else {
-            img.write(fn_out + "_classes.mrcs");
-        }
+        img.write(fn_out + "_" + (nr_bodies > 1 ? "bodies" : "classes") + ".mrcs");
 
         if (do_sgd) {
             for (int iclass = 0; iclass < nr_classes; iclass++) {
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(Igrad[iclass]) {
+                for (long int j = 0; j < Ysize(Igrad[iclass]); j++)
+                for (long int i = 0; i < Xsize(Igrad[iclass]); i++) {
                     direct::elem(img(), i, j, 0, iclass) = direct::elem(Igrad[iclass], i, j);
                 }
             }
@@ -984,7 +982,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         for (int ibody = 1; ibody < nr_bodies; ibody++)
             sum_mask += masks_bodies[ibody];
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(sum_mask)
+        for (long int i = 0; i < Xsize(sum_mask); i++)
             if (direct::elem(sum_mask, i) > 1.0)
                 for (int ibody = 0; ibody < nr_bodies; ibody++)
                     direct::elem(masks_bodies[ibody], i) /= direct::elem(sum_mask, i);
@@ -1177,7 +1175,7 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
         // Update the tau2_class spectrum for this reference
         // This is only for writing out in the it000000_model.star file
         if (!fix_tau) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(tau2_class[iclass]) {
+            for (long int i = 0; i < Xsize(tau2_class[iclass]); i++) {
                 direct::elem(tau2_class[iclass], i) = tau2_fudge_factor * direct::elem(spectrum, i);
             }
         }
@@ -1188,7 +1186,7 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
             fsc_halves_class[iclass].initZeros(ori_size / 2 + 1);
         }
 
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(tau2_class[iclass]) {
+        for (long int i = 0; i < Xsize(tau2_class[iclass]); i++) {
             RFLOAT evidence = nr_particles * pdf_class[iclass] / direct::elem(avg_sigma2_noise, i);
             // empirical accounting for ratio of pixels in 3D shells compared to 2D shells
             if (ref_dim == 3 && i > 0)
@@ -1197,7 +1195,7 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
             RFLOAT myssnr = evidence / prior;
             direct::elem(data_vs_prior_class[iclass], i) = myssnr;
             // Also initialise FSC-halves here (...)
-            //direct::elem(fsc_halves_class[iclass], i) = myssnr / (myssnr + 1);
+            // direct::elem(fsc_halves_class[iclass], i) = myssnr / (myssnr + 1);
         }
     }
 

@@ -843,10 +843,8 @@ void divideBySpectrum(
     bool leave_origin_intact
 ) {
 
-    MultidimArray<RFLOAT> div_spec(spectrum);
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(spectrum) {
-        direct::elem(div_spec, i) = safelydivide(1.0, direct::elem(spectrum, i));
-    }
+    MultidimArray<RFLOAT> div_spec (spectrum);
+    for (RFLOAT &x : div_spec) { x = safelydivide(1.0, x); }
     multiplyBySpectrum(Min, div_spec, leave_origin_intact);
 }
 
@@ -894,7 +892,7 @@ void adaptSpectrum(
 
     MultidimArray<RFLOAT> spectrum;
     getSpectrum(Min, spectrum, spectrum_type);
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(spectrum) {
+    for (long int i = 0; i < Xsize(spectrum); i++) {
         direct::elem(spectrum, i) = safelydivide(direct::elem(spectrum_ref, i), direct::elem(spectrum, i));
     }
     Mout = Min;
@@ -1370,7 +1368,8 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     // Calculate background and border values
     RFLOAT bg_val, bg_pix, bd_val, bd_pix;
     bg_val = bg_pix = bd_val = bd_pix = 0.0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {
+    for (long int j = 0; j < Ysize(v); j++)
+    for (long int i = 0; i < Xsize(v); i++) {
         bg_val += direct::elem(v, i, j);
         bg_pix += 1.0;
         if (i == 0 || j == 0 || i == Xsize(v) - 1 || j == Ysize(v) - 1) {
@@ -1392,7 +1391,8 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     out.resize(box_len, box_len);
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v) {
+    for (long int j = 0; j < Ysize(v); j++)
+    for (long int i = 0; i < Xsize(v); i++) {
         out.elem(i + Xmipp::init(Xsize(v)), j + Xmipp::init(Ysize(v))) = direct::elem(v, i, j) - bg_val;
     }
 }

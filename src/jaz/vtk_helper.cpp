@@ -72,7 +72,9 @@ void VtkHelper::writeVTK(
     if (binary) {
         os.write((char*) img.data.data, sizeof(RFLOAT) * size);
     } else {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
+        for (long int k = 0; k < Zsize(img.data); k++)
+        for (long int j = 0; j < Ysize(img.data); j++)
+        for (long int i = 0; i < Xsize(img.data); i++) {
             os << direct::elem(img.data, i, j, k) << "\n";
         }
     }
@@ -109,7 +111,9 @@ void VtkHelper::writeVTK(
     if (binary) {
         os.write((char*) img.data.data, sizeof(RFLOAT) * size);
     } else {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
+        for (long int k = 0; k < Zsize(img.data); k++) \
+        for (long int j = 0; j < Ysize(img.data); j++) \
+        for (long int i = 0; i < Xsize(img.data); i++) {
             os << direct::elem(img.data, i, j, k) << "\n";
         }
     }
@@ -149,7 +153,9 @@ void VtkHelper::writeVTK(
     if (binary) {
         os.write((char*) (img.data.data), 2 * sizeof(RFLOAT) * size);
     } else {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img.data) {
+        for (long int k = 0; k < Zsize(img.data); k++)
+        for (long int j = 0; j < Ysize(img.data); j++)
+        for (long int i = 0; i < Xsize(img.data); i++) {
             os << direct::elem(img.data, i, j, k).real << "\n";
             os << direct::elem(img.data, i, j, k).imag << "\n";
         }
@@ -190,7 +196,9 @@ void VtkHelper::writeVTK(
     if (binary) {
         os.write((char*) img.data, sizeof(RFLOAT) * size);
     } else {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
+        for (long int k = 0; k < Zsize(img); k++)
+        for (long int j = 0; j < Ysize(img); j++)
+        for (long int i = 0; i < Xsize(img); i++) {
             os << direct::elem(img, i, j, k) << "\n";
         }
     }
@@ -225,7 +233,9 @@ void VtkHelper::writeVTK_Complex(const MultidimArray<Complex> &img, std::string 
     if (binary) {
         os.write((char*) img.data, 2*sizeof(RFLOAT) * size);
     } else {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
+        for (long int k = 0; k < Zsize(img); k++)
+        for (long int j = 0; j < Ysize(img); j++)
+        for (long int i = 0; i < Xsize(img); i++) {
             os << direct::elem(img, i, j, k).real << "\n";
             os << direct::elem(img, i, j, k).imag << "\n";
         }
@@ -259,9 +269,11 @@ void VtkHelper::writeVTK_d3(MultidimArray<gravis::t3Vector<RFLOAT> > &img, std::
     os << "LOOKUP_TABLE default\n";
 
     if (binary) {
-        os.write((char*) img.data, 2*sizeof(RFLOAT) * size);
+        os.write((char*) img.data, 2 * sizeof(RFLOAT) * size);
     } else {
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img) {
+        for (long int k = 0; k < Zsize(img); k++)
+        for (long int j = 0; j < Ysize(img); j++)
+        for (long int i = 0; i < Xsize(img); i++) {
             os << direct::elem(img, i, j, k).x << "\n";
             os << direct::elem(img, i, j, k).y << "\n";
             os << direct::elem(img, i, j, k).z << "\n";
@@ -339,7 +351,8 @@ void VtkHelper::write(
         os.write((char*) stack[0].data.data, sizeof(RFLOAT) * size);
     } else {
         for (int ind = 0; ind < stack.size(); ind++) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data) {
+            for (long int j = 0; j < Ysize(stack[ind].data); j++)
+            for (long int i = 0; i < Xsize(stack[ind].data); i++) {
                 os << direct::elem(stack[ind].data, i, j) << "\n";
             }
         }
@@ -381,7 +394,8 @@ void VtkHelper::writeCentered(
         const int h = stack[0].data.ydim;
 
         for (int ind = 0; ind < stack.size(); ind++) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data) {
+            for (long int j = 0; j < Ysize(stack[ind].data); j++)
+            for (long int i = 0; i < Xsize(stack[ind].data); i++) {
                 int ii = (h + i - h / 2) % h;
                 int jj = (w + j - w / 2) % w;
 
@@ -423,7 +437,8 @@ void VtkHelper::write(
         os.write((char*) stack[0].data.data, sizeof(RFLOAT) * size);
     } else {
         for (int ind = 0; ind < stack.size(); ind++) {
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(stack[ind].data) {
+            for (long int j = 0; j < Ysize(stack[ind].data); j++)
+            for (long int i = 0; i < Xsize(stack[ind].data); i++) {
                 os << direct::elem(stack[ind].data, i, j) << "\n";
             }
         }

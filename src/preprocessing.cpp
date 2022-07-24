@@ -823,7 +823,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             // Project the 3D sub-tomogram into a 2D particle again
             Image<RFLOAT> Iproj(Ysize(Ipart()), Xsize(Ipart()));
             Iproj().setXmippOrigin();
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ipart()) {
+            for (long int k = 0; k < Zsize(Ipart()); k++)
+            for (long int j = 0; j < Ysize(Ipart()); j++)
+            for (long int i = 0; i < Xsize(Ipart()); i++) {
                 direct::elem(Iproj(), i, j) += direct::elem(Ipart(), i, j, k);
             }
             Ipart = Iproj;

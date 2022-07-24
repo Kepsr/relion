@@ -198,7 +198,9 @@ void getFourierTransformsAndCtfs(
                 }))
                 // Only allow a single image per call of this function!!! nr_pool needs to be set to 1!!!!
                 // This will save memory, as we'll need to store all translated images in memory....
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(img()) {
+                for (long int k = 0; k < Zsize(img()); k++)
+                for (long int j = 0; j < Ysize(img()); j++)
+                for (long int i = 0; i < Xsize(img()); i++) {
                     direct::elem(img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, k);
                 }
                 img().setXmippOrigin();
@@ -206,7 +208,9 @@ void getFourierTransformsAndCtfs(
                 if (baseMLO->has_converged && baseMLO->do_use_reconstruct_images) {
                     rec_img().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size,baseMLO-> mymodel.ori_size);
                     int offset = baseMLO->do_ctf_correction ? 2 * baseMLO->mymodel.ori_size : baseMLO->mymodel.ori_size;
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(rec_img()) {
+                    for (long int k = 0; k < Zsize(rec_img()); k++)
+                    for (long int j = 0; j < Ysize(rec_img()); j++)
+                    for (long int i = 0; i < Xsize(rec_img()); i++) {
                         direct::elem(rec_img(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, offset + k);
                     }
                     rec_img().setXmippOrigin();
@@ -217,7 +221,8 @@ void getFourierTransformsAndCtfs(
             } else {
                 CTICTOC(cudaMLO->timer, "Read2DImages", ({
                 img().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size);
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(img()) {
+                for (long int j = 0; j < Ysize(img()); j++)
+                for (long int i = 0; i < Xsize(img()); i++) {
                     direct::elem(img(), i, j) = direct::elem(baseMLO->exp_imagedata, i, j, op.metadata_offset + ipart);
                 }
                 img().setXmippOrigin();
@@ -225,7 +230,8 @@ void getFourierTransformsAndCtfs(
 
                     ////////////// TODO: think this through for no-threads here.....
                     rec_img().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(rec_img()) {
+                    for (long int j = 0; j < Ysize(rec_img()); j++)
+                    for (long int i = 0; i < Xsize(rec_img()); i++) {
                         direct::elem(rec_img(), i, j) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->exp_nr_images + op.metadata_offset + ipart);
                     }
                     rec_img().setXmippOrigin();
@@ -722,7 +728,9 @@ void getFourierTransformsAndCtfs(
                     CTICTOC(cudaMLO->timer, "CTFRead3D_array", ({
                     // Unpack the CTF-image from the exp_imagedata array
                     Ictf().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Ictf()) {
+                    for (long int k = 0; k < Zsize(Ictf()); k++)
+                    for (long int j = 0; j < Ysize(Ictf()); j++)
+                    for (long int i = 0; i < Xsize(Ictf()); i++) {
                         direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->mymodel.ori_size + k);
                     }
                     }))

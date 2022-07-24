@@ -1412,11 +1412,12 @@ void makeBlot(
     RFLOAT y, RFLOAT x, RFLOAT r
 ) {
     MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
-    if (dimensions.n != 1 || dimensions.z != 1 || YXsize(v) <= 2)
+    if (dimensions.n != 1 || dimensions.z != 1 || Xsize(v) * Ysize(v) <= 2)
         return;
 
     RFLOAT min = direct::elem(v, 0, 0);
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY2D(v)
+    for (long int j = 0; j < Ysize(v); j++)
+    for (long int i = 0; i < Xsize(v); i++)
         min = (direct::elem(v, i, j) < min) ? direct::elem(v, i, j) : min;
 
     v.setXmippOrigin();

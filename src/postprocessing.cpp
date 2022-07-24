@@ -485,7 +485,7 @@ void Postprocessing::calculateFSCtrue(
 
 
     fsc_true.resize(fsc_masked);
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
+    for (long int i = 0; i < Xsize(fsc_true); i++) {
         // 29jan2015: let's move this 2 shells upwards, because of small artefacts near the resolution of randomisation!
         if (i < randomize_at + 2) {
             direct::elem(fsc_true, i) = direct::elem(fsc_masked, i);
@@ -508,7 +508,7 @@ void Postprocessing::calculateFSCpart(const MultidimArray<RFLOAT> fsc_unmasked, 
         direct::elem(fsc_random_masked, 0) = 1.0;
 
     fsc_part.resize(fsc_unmasked);
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_part) {
+    for (long int i = 0; i < Xsize(fsc_part); i++) {
         direct::elem(fsc_part, i) = fraction * direct::elem(fsc_unmasked, i) / (1.0 + (fraction - 1) * direct::elem(fsc_unmasked, i));
     }
 
@@ -519,20 +519,20 @@ void Postprocessing::applyFscWeighting(MultidimArray<Complex > &FT, MultidimArra
     // Set all weights to zero beyond that resolution
     int ires_max = 0;
 
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(my_fsc) {
+    for (long int i = 0; i < Xsize(my_fsc); i++) {
         if (direct::elem(my_fsc, i) < 0.0001)
             break;
         ires_max = i;
     }
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int ires = round(sqrt(euclidsq(ip, jp, kp)));
+        int ires = round(euclid(ip, jp, kp));
         if (ires <= ires_max) {
             RFLOAT fsc = direct::elem(my_fsc, ires);
             if (fsc > 0.0) {
                 direct::elem(FT, i, j, k) *= sqrt((2 * fsc) / (1 + fsc));
             } else {
-                direct::elem(FT, i, j, k) *= 0.0; // ?? Surely just = 0.0
+                direct::elem(FT, i, j, k) = 0.0;
             }
         } else {
             direct::elem(FT, i, j, k) = 0.0;
@@ -627,7 +627,7 @@ void Postprocessing::writeOutput() {
     MDlist.write(fh);
 
     MDfsc.setName("fsc");
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
+    for (long int i = 0; i < Xsize(fsc_true); i++) {
         MDfsc.addObject();
         RFLOAT res = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
         MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
@@ -924,7 +924,7 @@ void Postprocessing::run_locres(int rank, int size) {
                     MetaDataTable MDfsc;
                     FileName fn_name = "fsc_" + integerToString(ii, 5) + "_" + integerToString(jj, 5) + "_" + integerToString(kk, 5);
                     MDfsc.setName(fn_name);
-                    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
+                    for (long int i = 0; i < Xsize(fsc_true); i++) {
                         MDfsc.addObject();
                         RFLOAT res = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
                         MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
@@ -940,7 +940,7 @@ void Postprocessing::run_locres(int rank, int size) {
 
                 float local_resol = 999.0;
                 // See where corrected FSC drops below 0.143
-                FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
+                for (long int i = 0; i < Xsize(fsc_true); i++) {
                     if (direct::elem(fsc_true, i) < 0.143)
                         break;
                     local_resol = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
@@ -1091,7 +1091,7 @@ void Postprocessing::run() {
             randomize_at = (int) (angpix * Xsize(I1()) / randomize_at_A );
         } else {
             // Check when FSC drops below randomize_fsc_at
-            FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
+            for (long int i = 0; i < Xsize(fsc_unmasked); i++) {
                 if (i > 0 && direct::elem(fsc_unmasked, i) < randomize_fsc_at) {
                     randomize_at = i;
                     break;
@@ -1134,7 +1134,7 @@ void Postprocessing::run() {
     global_resol = 999.0;
     // See where corrected FSC drops below 0.143
     int global_resol_i = 0;
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_true) {
+    for (long int i = 0; i < Xsize(fsc_true); i++) {
         if (direct::elem(fsc_true, i) < 0.143) break;
         global_resol = Xsize(I1()) * angpix / (RFLOAT) i;
         global_resol_i = i;
@@ -1143,7 +1143,7 @@ void Postprocessing::run() {
     // Perform some checks on phase-randomisation..
     if (do_mask) {
         int unmasked_resol_i = 0;
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fsc_unmasked) {
+        for (long int i = 0; i < Xsize(fsc_unmasked); i++) {
             if (direct::elem(fsc_unmasked, i) < 0.143) break;
             unmasked_resol_i = i;
         }

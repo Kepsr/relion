@@ -921,7 +921,7 @@ void BackProjector::updateSSNRarrays(
     }
 
     // Average (inverse of) sigma2 in reconstruction
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(sigma2) {
+    for (long int i = 0; i < Xsize(sigma2); i++) {
         double x = direct::elem(sigma2, i);
         if (x > 1e-10) {
             x = direct::elem(counter, i) / x;
@@ -945,7 +945,7 @@ void BackProjector::updateSSNRarrays(
             sigma2.printShape(std::cerr);
             REPORT_ERROR("ERROR BackProjector::reconstruct: sigma2, tau2 and fsc have different sizes");
         }
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(sigma2) {
+        for (long int i = 0; i < Xsize(sigma2); i++) {
             // FSC cannot be negative or zero for conversion into tau2
             RFLOAT myfsc = std::max(0.001, direct::elem(fsc, i));
             if (iswhole) {
@@ -1017,7 +1017,7 @@ void BackProjector::updateSSNRarrays(
     }
 
     // Calculate Fourier coverage in each shell
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(fourier_coverage) {
+    for (long int i = 0; i < Xsize(fourier_coverage); i++) {
         if (direct::elem(counter, i) > 0.0)
             direct::elem(fourier_coverage, i) /= direct::elem(counter, i);
     }
@@ -1315,7 +1315,7 @@ void BackProjector::reconstruct(
         }
 
         // Calculate 1/1000th of radial averaged weight
-        FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY1D(radavg_weight) {
+        for (long int i = 0; i < Xsize(radavg_weight); i++) {
             if (
                 direct::elem(counter,       i) > 0.0 ||
                 direct::elem(radavg_weight, i) > 0.0
@@ -1978,7 +1978,9 @@ void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool
     //blob.alpha = 15;
 
     // Multiply with FT of the blob kernel
-    FOR_ALL_DIRECT_ELEMENTS_IN_ARRAY3D(Mconv) {
+    for (long int k = 0; k < Zsize(Mconv); k++)
+    for (long int j = 0; j < Ysize(Mconv); j++)
+    for (long int i = 0; i < Xsize(Mconv); i++) {
         int kp = k < padhdim ? k : k - pad_size;
         int ip = i < padhdim ? i : i - pad_size;
         int jp = j < padhdim ? j : j - pad_size;
