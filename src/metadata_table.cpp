@@ -52,7 +52,7 @@ inline std::string prependERROR(const std::string &s) {
 
 MetaDataTable::MetaDataTable():
     objects(0),
-    label2offset(EMDL::LAST_LABEL, -1),
+    label_indices(EMDL::LAST_LABEL, -1),
     current_objectID(0),
     doubleLabels(0),
     intLabels(0),
@@ -69,8 +69,8 @@ MetaDataTable::MetaDataTable():
 
 MetaDataTable::MetaDataTable(const MetaDataTable &MD):
     objects(MD.objects.size()),
-    label2offset(MD.label2offset),
-    unknownLabelPosition2Offset(MD.unknownLabelPosition2Offset),
+    label_indices(MD.label_indices),
+    unknown_label_indices(MD.unknown_label_indices),
     unknownLabelNames(MD.unknownLabelNames),
     current_objectID(0),
     doubleLabels(MD.doubleLabels),
@@ -96,8 +96,8 @@ MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
         clear();
 
         objects.resize(MD.objects.size());
-        label2offset = MD.label2offset;
-        unknownLabelPosition2Offset = MD.unknownLabelPosition2Offset;
+        label_indices = MD.label_indices;
+        unknown_label_indices = MD.unknown_label_indices;
         unknownLabelNames = MD.unknownLabelNames;
         current_objectID = 0;
         doubleLabels = MD.doubleLabels;
@@ -139,9 +139,9 @@ void MetaDataTable::clear() {
     for (const auto &object : objects) delete object;
     objects.clear();
 
-    label2offset = std::vector<long>(EMDL::LAST_LABEL, -1);
+    label_indices = std::vector<long>(EMDL::LAST_LABEL, -1);
     current_objectID = 0;
-    unknownLabelPosition2Offset.clear();
+    unknown_label_indices.clear();
     unknownLabelNames.clear();
 
     doubleLabels = 0;
@@ -194,7 +194,7 @@ std::string MetaDataTable::getUnknownLabelNameAt(int i) const {
     if (activeLabels[i] != EMDL::UNKNOWN_LABEL)
         REPORT_ERROR("MetaDataTable::getUnknownLabelNameAt(): the requested column is not an unknown label.");
 
-    return unknownLabelNames[unknownLabelPosition2Offset[i]];
+    return unknownLabelNames[unknown_label_indices[i]];
 }
 
 std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID, bool escape) const {
@@ -252,10 +252,10 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID,
     return std::string(buffer);
 }
 
-void MetaDataTable::setUnknownValue(int labelPosition, const std::string &value) {
-    long offset = unknownLabelPosition2Offset[labelPosition];
-    if (offset < 0) REPORT_ERROR("MetaDataTable::setUnknownValue BUG: offset should not be negative here....");
-    objects[current_objectID]->unknowns[offset] = value;
+void MetaDataTable::setUnknownValue(int i, const std::string &value) {
+    long j = unknown_label_indices[i];
+    if (j < 0) REPORT_ERROR("MetaDataTable::setUnknownValue BUG: j should not be negative here....");
+    objects[current_objectID]->unknowns[j] = value;
 }
 
 void MetaDataTable::setValueFromString(
@@ -441,28 +441,28 @@ void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_reverse, bool do
         if (do_sort_after_at) {
             std::stable_sort(
                 objects.begin(), objects.end(),
-                MD::StringAfterAtComparator(label2offset[label])
+                MD::StringAfterAtComparator(label_indices[label])
             );
         } else if (do_sort_before_at) {
             std::stable_sort(
                 objects.begin(), objects.end(),
-                MD::StringBeforeAtComparator(label2offset[label])
+                MD::StringBeforeAtComparator(label_indices[label])
             );
         } else {
             std::stable_sort(
                 objects.begin(), objects.end(),
-                MD::StringComparator(label2offset[label])
+                MD::StringComparator(label_indices[label])
             );
         }
     } else if (EMDL::is<double>(label)) {
         std::stable_sort(
             objects.begin(), objects.end(),
-            MD::DoubleComparator(label2offset[label])
+            MD::DoubleComparator(label_indices[label])
         );
     } else if (EMDL::is<int>(label)) {
         std::stable_sort(
             objects.begin(), objects.end(),
-            MD::IntComparator(label2offset[label])
+            MD::IntComparator(label_indices[label])
         );
     } else {
         REPORT_ERROR("Cannot sort this label: " + EMDL::label2Str(label));
@@ -473,17 +473,12 @@ void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_reverse, bool do
     }
 }
 
-// Will be removed in 3.2
-bool MetaDataTable::labelExists(EMDL::EMDLabel name) const {
-    return containsLabel(name);
-}
-
-bool MetaDataTable::containsLabel(const EMDL::EMDLabel label, std::string unknownLabel) const {
+bool MetaDataTable::containsLabel(const EMDL::EMDLabel label, const std::string &unknownLabel) const {
     /// TODO: Use std::any_of
     for (int i = 0; i < activeLabels.size(); i++) {
         if (
             activeLabels[i] == label &&
-            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknownLabelPosition2Offset[i]])
+            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknown_label_indices[i]])
         ) return true;
     }
     return false;
@@ -493,17 +488,17 @@ std::vector<EMDL::EMDLabel> MetaDataTable::getActiveLabels() const {
     return activeLabels;
 }
 
-void MetaDataTable::deactivateLabel(EMDL::EMDLabel label, std::string unknownLabel) {
+void MetaDataTable::deactivateLabel(EMDL::EMDLabel label, const std::string &unknownLabel) {
     for (int i = 0; i < activeLabels.size(); i++) {
         if (
             activeLabels[i] == label &&
-            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknownLabelPosition2Offset[i]])
+            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknown_label_indices[i]])
         ) {
             activeLabels.erase(activeLabels.begin() + i);
-            unknownLabelPosition2Offset.erase(unknownLabelPosition2Offset.begin() + i);
+            unknown_label_indices.erase(unknown_label_indices.begin() + i);
 
             if (label != EMDL::UNKNOWN_LABEL)
-                label2offset[label] = -1;
+                label_indices[label] = -1;
         }
     }
 }
@@ -516,79 +511,57 @@ void MetaDataTable::addLabel(const EMDL::EMDLabel label, const std::string &unkn
     if (label == EMDL::UNKNOWN_LABEL && unknownLabel.empty())
         REPORT_ERROR("MetaDataTable::addLabel: unknownLabel is empty");
 
-    if (label2offset[label] < 0 || label == EMDL::UNKNOWN_LABEL) {
-        // keep pushing the same unknown label...
-        long id;
+    if (label_indices[label] >= 0 && label != EMDL::UNKNOWN_LABEL) return;
+    // keep pushing the same unknown label...
+    long i;
 
-        if (EMDL::is<double>(label)) {
-            id = doubleLabels;
-
-            for (const auto &object : objects) {
-                object->doubles.push_back(0);
-            }
-
-            doubleLabels++;
-        } else if (EMDL::is<int>(label)) {
-            id = intLabels;
-
-            for (const auto &object : objects) {
-                object->ints.push_back(0);
-            }
-
-            intLabels++;
-        } else if (EMDL::is<bool>(label)) {
-            id = boolLabels;
-
-            for (const auto &object : objects) {
-                object->bools.push_back(false);
-            }
-
-            boolLabels++;
-        } else if (EMDL::is<std::string>(label)) {
-            id = stringLabels;
-
-            for (const auto &object : objects) {
-                object->strings.emplace_back("empty");
-            }
-
-            stringLabels++;
-        } else if (EMDL::is<std::vector<double>>(label)) {
-            id = doubleVectorLabels;
-
-            for (const auto &object : objects) {
-                object->doubleVectors.emplace_back();
-            }
-
-            doubleVectorLabels++;
-        } else if (EMDL::is<void>(label)) {
-            id = unknownLabels;
-
-            for (const auto &object : objects) {
-                object->unknowns.emplace_back("empty");
-            }
-
-            unknownLabelNames.push_back(unknownLabel);
-            unknownLabels++;
+    if (EMDL::is<double>(label)) {
+        for (const auto &object : objects) {
+            object->doubles.push_back(0);
         }
-
-        activeLabels.push_back(label);
-        unknownLabelPosition2Offset.push_back(EMDL::is<void>(label) ? id : -1);
-
-        label2offset[label] = id;
+        i = doubleLabels++;
+    } else if (EMDL::is<int>(label)) {
+        for (const auto &object : objects) {
+            object->ints.push_back(0);
+        }
+        i = intLabels++;
+    } else if (EMDL::is<bool>(label)) {
+        for (const auto &object : objects) {
+            object->bools.push_back(false);
+        }
+        i = boolLabels++;
+    } else if (EMDL::is<std::string>(label)) {
+        for (const auto &object : objects) {
+            object->strings.emplace_back("empty");
+        }
+        i = stringLabels++;
+    } else if (EMDL::is<std::vector<double>>(label)) {
+        for (const auto &object : objects) {
+            object->doubleVectors.emplace_back();
+        }
+        i = doubleVectorLabels++;
+    } else if (EMDL::is<void>(label)) {
+        for (const auto &object : objects) {
+            object->unknowns.emplace_back("empty");
+        }
+        unknownLabelNames.push_back(unknownLabel);
+        i = unknownLabels++;
     }
+
+    activeLabels.push_back(label);
+    unknown_label_indices.push_back(EMDL::is<void>(label) ? i : -1);
+
+    label_indices[label] = i;
 }
 
 void MetaDataTable::addMissingLabels(const MetaDataTable &mdt) {
     for (long i = 0; i < mdt.activeLabels.size(); i++) {
-        EMDL::EMDLabel l = mdt.activeLabels[i];
-
-        if (l == EMDL::UNKNOWN_LABEL) {
-            std::string unknownLabel = mdt.unknownLabelNames[mdt.unknownLabelPosition2Offset[i]];
-            if (!containsLabel(l, unknownLabel)) {
-                addLabel(l, unknownLabel);
-            }
-        } else if (label2offset[l] < 0) {
-            addLabel(l);
+        auto lu = label_and_unknown(i);
+        if (
+            lu.first == EMDL::UNKNOWN_LABEL && !containsLabel(lu.first, lu.second) ||
+            label_indices[lu.first] < 0
+        ) {
+            addLabel(lu.first, lu.second);
         }
     }
 }
@@ -662,8 +635,8 @@ void MetaDataTable::setObjectUnsafe(MetaDataContainer* data, long objectID) {
         EMDL::EMDLabel label = data->table->activeLabels[i];
 
         if (label != EMDL::UNKNOWN_LABEL) {
-            const long this_off =              label2offset[label];
-            const long that_off = data->table->label2offset[label];
+            const long this_off =              label_indices[label];
+            const long that_off = data->table->label_indices[label];
 
             if (this_off < 0) continue;
 
@@ -679,7 +652,7 @@ void MetaDataTable::setObjectUnsafe(MetaDataContainer* data, long objectID) {
                 obj->doubleVectors[this_off] = data->doubleVectors[that_off];
             }
         } else {
-            const long that_off            = data->table->unknownLabelPosition2Offset[i];
+            const long that_off            = data->table->unknown_label_indices[i];
             const std::string unknownLabel = data->table->unknownLabelNames[that_off];
             const auto search = std::find(unknownLabelNames.begin(), unknownLabelNames.end(), unknownLabel);
 
@@ -906,7 +879,7 @@ void MetaDataTable::addToCPlot2D(
     long int myint;
     double xval, yval;
     for (long int idx = 0; idx < objects.size(); idx++) {
-        const long offx = label2offset[xaxis];
+        const long offx = label_indices[xaxis];
         if (offx < 0)
             REPORT_ERROR("MetaDataTable::addToCPlot2D ERROR: cannot find x-axis label");
 
@@ -919,7 +892,7 @@ void MetaDataTable::addToCPlot2D(
         } else
             REPORT_ERROR("MetaDataTable::addToCPlot2D ERROR: can only plot x-axis double, int or long int");
 
-        const long offy = label2offset[yaxis];
+        const long offy = label_indices[yaxis];
         if (offy < 0)
             REPORT_ERROR("MetaDataTable::addToCPlot2D ERROR: cannot find y-axis label");
 
@@ -1081,18 +1054,16 @@ MetaDataTable MetaDataTable::getCommonLabels(const std::vector<MetaDataTable> &m
     for (size_t i = 0; i < first_mdt.activeLabels.size(); i++) {
         // Check their presence in each of the input files
 
-        const EMDL::EMDLabel label = first_mdt.activeLabels[i];
-        std::string unknownLabel = label == EMDL::UNKNOWN_LABEL ? first_mdt.unknownLabelNames[first_mdt.unknownLabelPosition2Offset[i]] : "";
-
+        const auto lu = first_mdt.label_and_unknown(i);
         // Is this label present in all of the other MetaDataTables?
         for (size_t j = 1; j < mdts.size(); j++) {
-            if (!mdts[j].containsLabel(label, unknownLabel)) {
-                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(label) : unknownLabel)
+            if (!mdts[j].containsLabel(lu.first, lu.second)) {
+                std::cerr << " + WARNING: ignoring label " << (lu.second.empty() ? EMDL::label2Str(lu.first) : lu.second)
                 << " in " << j + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
                 goto next_label;
             }
         }
-        common_labels.addLabel(label, unknownLabel);
+        common_labels.addLabel(lu.first, lu.second);
         next_label: {}
     }
     return common_labels;
@@ -1116,12 +1087,11 @@ MetaDataTable MetaDataTable::combineMetaDataTables(std::vector<MetaDataTable> &M
     for (int i = 0; i < MDin.size(); i++) {
         MetaDataTable &mdt = MDin[i];
         for (int j = 0; j < mdt.activeLabels.size(); j++) {
-            EMDL::EMDLabel label = mdt.activeLabels[j];
-            std::string unknownLabel = label == EMDL::UNKNOWN_LABEL ? mdt.getUnknownLabelNameAt(j) : "";
-
-            if (!common_labels.containsLabel(label, unknownLabel)) {
-                mdt.deactivateLabel(label, unknownLabel);
-                std::cerr << " + WARNING: ignoring label " << (unknownLabel.empty() ? EMDL::label2Str(label) : unknownLabel) << " in " << i + 1 << "th STAR file because it is not present in all STAR files to be combined." << std::endl;
+            const auto lu = mdt.label_and_unknown(j);
+            if (!common_labels.containsLabel(lu.first, lu.second)) {
+                mdt.deactivateLabel(lu.first, lu.second);
+                std::cerr << " + WARNING: ignoring label " << (lu.second.empty() ? EMDL::label2Str(lu.first) : lu.second) << " in " << i + 1 << "th STAR file"
+                "because it is not present in all STAR files to be combined." << std::endl;
             }
         }
     }
@@ -1138,11 +1108,9 @@ bool MetaDataTable::compareLabels(
 
     // Since we have the same number of labels,
     // it suffices to check that all labels in MD1 are present in MD2.
-    for (size_t id = 0; id < MD1.activeLabels.size(); id++) {
-        EMDL::EMDLabel l = MD1.activeLabels[id];
-        std::string unknownLabel = l == EMDL::UNKNOWN_LABEL ? MD1.getUnknownLabelNameAt(id) : "";
-
-        if (!MD2.containsLabel(l, unknownLabel))
+    for (size_t i = 0; i < MD1.activeLabels.size(); i++) {
+        const auto lu = MD1.label_and_unknown(i);
+        if (!MD2.containsLabel(lu.first, lu.second))
             return false;
     }
 
@@ -1542,13 +1510,12 @@ void MetaDataTable::write(std::ostream& out) {
         out << "loop_ \n";
 
         for (long i = 0, n_printed = 1; i < activeLabels.size(); i++) {
-            EMDL::EMDLabel l = activeLabels[i];
-            if (l == EMDL::UNKNOWN_LABEL) {
-                const long offset = unknownLabelPosition2Offset[i];
-                out << "_" << unknownLabelNames[offset]<< " #" << (n_printed++) << " \n";
-            } else if (l != EMDL::COMMENT && l != EMDL::SORTED_IDX) {
+            const auto lu = label_and_unknown(i);
+            if (lu.first == EMDL::UNKNOWN_LABEL) {
+                out << "_" << lu.second << " #" << (n_printed++) << " \n";
+            } else if (lu.first != EMDL::COMMENT && lu.first != EMDL::SORTED_IDX) {
                 // EMDL::SORTED_IDX is only for internal use, never write it out!
-                out << "_" << EMDL::label2Str(l) << " #" << (n_printed++) << " \n";
+                out << "_" << EMDL::label2Str(lu.first) << " #" << (n_printed++) << " \n";
             }
         }
 
@@ -1561,9 +1528,7 @@ void MetaDataTable::write(std::ostream& out) {
 
                 if (l == EMDL::UNKNOWN_LABEL) {
                     out.width(10);
-                    std::string token, val;
-                    long offset = unknownLabelPosition2Offset[i];
-                    val = objects[idx]->unknowns[offset];
+                    std::string val = objects[idx]->unknowns[unknown_label_indices[i]];
                     escapeStringForSTAR(val);
                     out << val << " ";
                 } else if (l != EMDL::COMMENT && l != EMDL::SORTED_IDX) {
@@ -1590,14 +1555,12 @@ void MetaDataTable::write(std::ostream& out) {
         int maxWidth = 10;
 
         for (long i = 0; i < activeLabels.size(); i++) {
-            EMDL::EMDLabel l = activeLabels[i];
-
-            if (l != EMDL::COMMENT && l != EMDL::UNKNOWN_LABEL) {
-                int w = EMDL::label2Str(l).length();
+            const auto lu = label_and_unknown(i);
+            if (lu.first != EMDL::COMMENT && lu.first != EMDL::UNKNOWN_LABEL) {
+                int w = EMDL::label2Str(lu.first).length();
                 if (w > maxWidth) maxWidth = w;
-            } else if (l == EMDL::UNKNOWN_LABEL) {
-                long offset = unknownLabelPosition2Offset[i];
-                int w = unknownLabelNames[offset].length();
+            } else if (lu.first == EMDL::UNKNOWN_LABEL) {
+                int w = lu.second.length();
                 if (w > maxWidth) maxWidth = w;
             } else {
                 entryComment = getValue<std::string>(EMDL::COMMENT, 0);
@@ -1605,18 +1568,16 @@ void MetaDataTable::write(std::ostream& out) {
         }
 
         for (long i = 0; i < activeLabels.size(); i++) {
-            EMDL::EMDLabel l = activeLabels[i];
-
-            if (l == EMDL::UNKNOWN_LABEL) {
-                long offset = unknownLabelPosition2Offset[i];
-                int w = unknownLabelNames[offset].length();
-                out << "_" << unknownLabelNames[offset] << std::setw(12 + maxWidth - w) << " " << objects[0]->unknowns[offset] << "\n";
-            } else if (l != EMDL::COMMENT) {
-                int w = EMDL::label2Str(l).length();
-                out << "_" << EMDL::label2Str(l) << std::setw(12 + maxWidth - w) << " ";
-
-                std::string val = getValueToString(l, 0, true); // escape=true
-                out << val << "\n";
+            const auto lu = label_and_unknown(i);
+            if (lu.first == EMDL::UNKNOWN_LABEL) {
+                int w = lu.second.length();
+                long offset = unknown_label_indices[i];
+                out << "_" << lu.second << std::setw(12 + maxWidth - w) << " "
+                    << objects[0]->unknowns[offset] << "\n";
+            } else if (lu.first != EMDL::COMMENT) {
+                int w = EMDL::label2Str(lu.first).length();
+                out << "_" << EMDL::label2Str(lu.first) << std::setw(12 + maxWidth - w) << " "
+                    << getValueToString(lu.first, 0, true) << "\n";  // true for escape
             }
         }
         if (!entryComment.empty()) {
