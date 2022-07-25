@@ -31,37 +31,37 @@
 
 class MetaDataTable;
 
-class MetaDataContainer
-{
+class MetaDataContainer {
+
     public:
 
-        MetaDataTable* table;
+    MetaDataTable* table;
 
-        std::vector<double> doubles;  // Extended precision
-        std::vector<long> ints;  // Extended precision
-        std::vector<bool> bools;
-	std::vector<std::string> strings;
-	std::vector<std::vector<double> > doubleVectors;
-	std::vector<std::string> unknowns;
+    std::vector<double> doubles;  // Extended precision
+    std::vector<long> ints;  // Extended precision
+    std::vector<bool> bools;
+    std::vector<std::string> strings;
+    std::vector<std::vector<double> > doubleVectors;
+    std::vector<std::string> unknowns;
 
-        MetaDataContainer();
-        MetaDataContainer(
-                MetaDataTable* table, long doubleCount, long intCount, long boolCount, 
-                long stringCount, long doubleVectorCount, long unknownCount
-        );
-        MetaDataContainer(MetaDataTable* table, MetaDataContainer* mdc);
+    MetaDataContainer();
+    MetaDataContainer(
+        MetaDataTable* table, long doubleCount, long intCount, long boolCount, 
+        long stringCount, long doubleVectorCount, long unknownCount
+    );
+    MetaDataContainer(MetaDataTable* table, MetaDataContainer* mdc);
 
-        template <typename T>
-        T getValue(long offset) const;
+    template <typename T>
+    T getValue(long i) const;
 
-        void setValue(long offset, double src);
-        void setValue(long offset, float src);
-        void setValue(long offset, int src);
-        void setValue(long offset, long src);
-        void setValue(long offset, bool src);
-	void setValue(long offset, const std::string &src);
-	void setValue(long offset, const std::vector<double> &src);
-	void setValue(long offset, const std::vector<float> &src);
+    void setValue(long i, double src);
+    void setValue(long i, float src);
+    void setValue(long i, int src);
+    void setValue(long i, long src);
+    void setValue(long i, bool src);
+    void setValue(long i, const std::string &src);
+    void setValue(long i, const std::vector<double> &src);
+    void setValue(long i, const std::vector<float> &src);
 };
 
 #endif

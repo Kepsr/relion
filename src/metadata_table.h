@@ -63,18 +63,18 @@ const int CURRENT_MDT_VERSION = 30001;
  *        The label is only removed from `activeLabels`.
  *
  *        Each data type (int, double, etc) contains its own storage array inside `MetaDataContainer`.
- *        Thus, values in `label2offsets` are NOT unique. Accessing columns via a wrong type is
+ *        Thus, values in `label_indicess` are NOT unique. Accessing columns via a wrong type is
  *        very DANGEROUS. Use `cmake -DMDT_TYPE_CHECK=ON` to enable runtime checks.
  *
  *        Handling of labels unknown to RELION needs care.
  *        They all share the same label, EMD_UNKNOWN_LABEL. Thus, `addLabel`, `containsLabel`,
  *        `compareLabels` etc must check not only EMDLabel in `activeLabels` but also the
  *        real labels stored in `unknownLabelNames`. This should be done via `getUnknownLabelNameAt`.
- *	  Note that two STAR files might contain the same set of unknown labels, but in different orders.
+ *        Note that two STAR files might contain the same set of unknown labels, but in different orders.
  *
- *        Whenever `activeLabels` is modified, `unknownLabelPosition2Offset` MUST be updated accordingly.
+ *        Whenever `activeLabels` is modified, `unknown_label_indices` MUST be updated accordingly.
  *        When the label for a column is EMD_UNKNOWN_LABEL, the corresponding element in
- *        `unknownLabelPosition2Offset` must store the offset in `unknownLabelNames` and
+ *        `unknown_label_indices` must store the offset in `unknownLabelNames` and
  *        `MetaDataContainer->unknowns`. Otherwise, the value does not matter.
  */
 class MetaDataTable {
@@ -83,13 +83,13 @@ class MetaDataTable {
     std::vector<MetaDataContainer*> objects;
 
     // Maps labels to corresponding indices in the vectors in MetaDataContainer.
-    // The length of label2offset is always equal to the number of defined labels (~320)
+    // The length of label_indices is always equal to the number of defined labels (~320)
     // e.g.:
     // the value of "defocus-U" for row r is stored in:
-    //	 objects[r]->doubles[label2offset[EMDL::CTF_DEFOCUSU]]
+    //	 objects[r]->doubles[label_indices[EMDL::CTF_DEFOCUSU]]
     // the value of "image name" is stored in:
-    //	 objects[r]->strings[label2offset[EMDL::IMAGE_NAME]]
-    std::vector<long> label2offset;
+    //	 objects[r]->strings[label_indices[EMDL::IMAGE_NAME]]
+    std::vector<long> label_indices;
 
     /** What labels have been read from a docfile/metadata file
      *  and/or will be stored on a new metadata file when "save" is
@@ -98,7 +98,7 @@ class MetaDataTable {
     std::vector<EMDL::EMDLabel> activeLabels;
 
     std::vector<std::string> unknownLabelNames;
-    std::vector<long> unknownLabelPosition2Offset;
+    std::vector<long> unknown_label_indices;
 
     // Current object id
     long current_objectID;
@@ -152,6 +152,16 @@ class MetaDataTable {
 
     std::string getValueToString(EMDL::EMDLabel label, long int objectID = -1, bool escape=false) const;
 
+    inline std::string unknown_label_name_or_empty(int i) const {
+        return activeLabels[i] == EMDL::UNKNOWN_LABEL ? unknownLabelNames[unknown_label_indices[i]] : "";
+    }
+
+    inline std::pair<EMDL::EMDLabel, std::string> label_and_unknown(int i) const {
+        EMDL::EMDLabel label = activeLabels[i];
+        std::string unknownLabelName = label == EMDL::UNKNOWN_LABEL ? unknownLabelNames[unknown_label_indices[i]] : "";
+        return std::make_pair(label, unknownLabelName);
+    }
+
     std::string getUnknownLabelNameAt(int i) const;
 
     // Set the value of label for a specified object.
@@ -163,23 +173,19 @@ class MetaDataTable {
     void setUnknownValue(int labelPosition, const std::string &value);
     void setValueFromString(EMDL::EMDLabel label, const std::string &value, long int objectID = -1);
 
-    // Sort the order of the elements based on the values in the input label
+    // Sort elements based on the values in the input label
     // (only numbers, no strings/bools)
     void sort(EMDL::EMDLabel name, bool do_reverse = false, bool only_set_index = false, bool do_random = false);
 
     void newSort(const EMDL::EMDLabel name, bool do_reverse = false, bool do_sort_after_at = false, bool do_sort_before_at = false);
 
-    // Check whether a label is defined in the table.
-    // This is redundant and will be removed in 3.2.
-    bool labelExists(EMDL::EMDLabel name) const;
-
     // Does 'activeLabels' contain 'label'?
-    bool containsLabel(const EMDL::EMDLabel label, const std::string unknownLabel="") const;
+    bool containsLabel(const EMDL::EMDLabel label, const std::string &unknownLabel="") const;
 
     std::vector<EMDL::EMDLabel> getActiveLabels() const;
 
     // Deactivate a column from a table, so that it is no longer written out
-    void deactivateLabel(EMDL::EMDLabel label, std::string unknownLabel="");
+    void deactivateLabel(EMDL::EMDLabel label, const std::string &unknownLabel="");
 
     // Add a new label and update all objects
     void addLabel(const EMDL::EMDLabel label, const std::string &unknownLabel="");
@@ -443,7 +449,7 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
         REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::getValue for label " + EMDL::label2Str(label));
     #endif
 
-    const long off = label2offset[label];
+    const long off = label_indices[label];
 
     if (off < 0) throw "Negative offset";
 
@@ -470,11 +476,11 @@ void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int obje
     if (!isTypeCompatible<T>(label)) REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));
     #endif
 
-    long off = label2offset[label];
+    long off = label_indices[label];
 
     if (off < 0) {
         addLabel(label);
-        off = label2offset[label];
+        off = label_indices[label];
     }
 
     if (objectID < 0) {

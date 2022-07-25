@@ -43,11 +43,9 @@ void StarConverter::convert_3p0_particlesTo_3p1(
 
     std::vector<EMDL::EMDLabel> opticsLabels_double(0);
 
-    for (int l = 0; l < allOpticsLabels_double.size(); l++) {
-        if (in.labelExists(allOpticsLabels_double[l])) {
-            opticsLabels_double.push_back(allOpticsLabels_double[l]);
-        }
-    }
+    for (auto x : allOpticsLabels_double)
+        if (in.containsLabel(x))
+            opticsLabels_double.push_back(x);
 
     const int opticsLabelCount_double = opticsLabels_double.size();
 

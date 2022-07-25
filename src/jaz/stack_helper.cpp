@@ -39,7 +39,7 @@ using namespace gravis;
 std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTable& mdt) {
     std::vector<MetaDataTable> out(0);
 
-    if (!mdt.labelExists(EMDL::MICROGRAPH_NAME)) {
+    if (!mdt.containsLabel(EMDL::MICROGRAPH_NAME)) {
         REPORT_ERROR(
             "StackHelper::splitByMicrographName: "
             + EMDL::label2Str(EMDL::MICROGRAPH_NAME)
@@ -86,7 +86,7 @@ MetaDataTable StackHelper::merge(const std::vector<MetaDataTable> &mdts) {
 std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
     std::vector<MetaDataTable> out(0);
 
-    if (!mdt->labelExists(EMDL::IMAGE_NAME)) {
+    if (!mdt->containsLabel(EMDL::IMAGE_NAME)) {
         REPORT_ERROR("StackHelper::splitByStack: " + EMDL::label2Str(EMDL::IMAGE_NAME) + " missing in meta_data_table.\n");
     }
 
