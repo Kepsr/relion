@@ -150,7 +150,7 @@ class MetaDataTable {
     template<class T>
     T getValue(EMDL::EMDLabel label, long objectID = -1) const;
 
-    std::string getValueToString(EMDL::EMDLabel label, long int objectID = -1, bool escape=false) const;
+    std::string getValueToString(EMDL::EMDLabel label, long int objectID = -1) const;
 
     inline std::string unknown_label_name_or_empty(int i) const {
         return activeLabels[i] == EMDL::UNKNOWN_LABEL ? unknownLabelNames[unknown_label_indices[i]] : "";
