@@ -82,37 +82,30 @@ std::string unescape(const std::string &str) {
     return copy;
 }
 
-void escapeStringForSTAR(std::string &value) {
-    // TODO: Currently this assumes that value does not contain new lines.
-    if (value.empty()) {
-        // Empty string
-        value = "\"\"";
-        return;
-    }
+std::string escapeStringForSTAR(const std::string &str) {
+    // TODO: Currently this assumes that str does not contain new lines.
+    if (str.empty()) return "\"\"";
 
-    if (
-        value[0] == '"' || value[0] == '\'' || // starts with quote
-        value.find_first_of(" \t") != -1 // contains whitespace
-    ) {
-        std::string escaped = "\"";
+    // Escape strings that either start with a quotation mark or contain whitespace.
+    if (str.find_first_of("\"\'") !=  0 &&
+        str.find_first_of(" \t")  == -1) return str;
 
-        for (int pos = 0, len = value.length(); pos < len; pos++) {
-            if (value[pos] == '"') {
-                const int next_pos = pos + 1;
-                if (
-                    next_pos  == len - 1 || // last character is quote
-                    value[next_pos] == ' ' || value[next_pos] == '\t'  // next character is whitespace
-                ) {
-                    escaped += "\a";
-                }
-            }
-            escaped += value[pos];				             
+    std::string escaped = "\"";
+    escaped.reserve(str.length());
+
+    const auto end = str.end();
+    for (auto it = str.begin(); it != end; ++it) {
+        if (*it == '\"') {
+            const auto next = it + 1;
+            // If this is the last character or the next character is whitespace,
+            // append an alert character ('\a').
+            if (next == end || *next == ' ' || *next == '\t') escaped += "\a";
         }
-
-        escaped += "\"";
-        // std::cout << "ESCAPED '" << value << "' TO: " << escaped << std::endl;
-        value = escaped;
+        escaped += *it;
     }
+
+    escaped += "\"";
+    return escaped;
 }
 
 std::string simplify(const std::string &str) {

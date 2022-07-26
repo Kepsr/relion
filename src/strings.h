@@ -70,7 +70,7 @@ std::string removeChar(const std::string &str, char character);
  * */
 std::string unescape(const std::string &str);
 
-void escapeStringForSTAR(std::string &value);
+std::string escapeStringForSTAR(const std::string &str);
 
 /** Best precision for a float number.
  *

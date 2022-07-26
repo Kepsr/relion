@@ -71,7 +71,7 @@ float elapsed_time(TimeStamp &time, bool _IN_SECS)
 	if (_IN_SECS)
 	{
 		userTime /= XmippTICKS;
-		sysTime /= XmippTICKS;
+		sysTime  /= XmippTICKS;
 	}
 	return userTime + sysTime;
 }
@@ -131,7 +131,7 @@ void progress_bar(long rlen)
 		fprintf(stdout, "~~(,_,\">");
 		for (i = 1; i < 10; i++)
 			fprintf(stdout, "      ");
-		fprintf(stdout, "    [oo]");
+		fprintf(stdout, "    [oo]\n");
 		fflush(stdout);
 	}
 	else if (totlen > 0)
