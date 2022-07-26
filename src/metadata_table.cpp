@@ -92,32 +92,31 @@ MetaDataTable::MetaDataTable(const MetaDataTable &MD):
 }
 
 MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
-    if (this != &MD) {
-        clear();
+    if (this == &MD) return *this;
 
-        objects.resize(MD.objects.size());
-        label_indices = MD.label_indices;
-        unknown_label_indices = MD.unknown_label_indices;
-        unknownLabelNames = MD.unknownLabelNames;
-        current_objectID = 0;
-        doubleLabels = MD.doubleLabels;
-        intLabels = MD.intLabels;
-        boolLabels = MD.boolLabels;
-        stringLabels = MD.stringLabels;
-        doubleVectorLabels = MD.doubleVectorLabels;
-        unknownLabels = MD.unknownLabels;
+    clear();
 
-        isList = MD.isList;
-        name = MD.name;
-        comment = MD.comment;
-        version = MD.version;
+    objects.resize(MD.objects.size());
+    label_indices = MD.label_indices;
+    unknown_label_indices = MD.unknown_label_indices;
+    unknownLabelNames = MD.unknownLabelNames;
+    current_objectID = 0;
+    doubleLabels = MD.doubleLabels;
+    intLabels = MD.intLabels;
+    boolLabels = MD.boolLabels;
+    stringLabels = MD.stringLabels;
+    doubleVectorLabels = MD.doubleVectorLabels;
+    unknownLabels = MD.unknownLabels;
 
-        activeLabels = MD.activeLabels;
+    isList = MD.isList;
+    name = MD.name;
+    comment = MD.comment;
+    version = MD.version;
 
-        for (long int idx = 0; idx < MD.objects.size(); idx++) {
-            objects[idx] = new MetaDataContainer(this, MD.objects[idx]);
-            objects[idx]->table = this;
-        }
+    activeLabels = MD.activeLabels;
+
+    for (long int idx = 0; idx < MD.objects.size(); idx++) {
+        objects[idx] = new MetaDataContainer(this, MD.objects[idx]);
     }
 
     return *this;
@@ -474,11 +473,11 @@ void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_reverse, bool do
 }
 
 bool MetaDataTable::containsLabel(const EMDL::EMDLabel label, const std::string &unknownLabel) const {
-    /// TODO: Use std::any_of
+    const bool is_known = label != EMDL::UNKNOWN_LABEL;
     for (int i = 0; i < activeLabels.size(); i++) {
         if (
-            activeLabels[i] == label &&
-            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknown_label_indices[i]])
+            label == activeLabels[i] &&
+            (is_known || unknownLabel == unknownLabelNames[unknown_label_indices[i]])
         ) return true;
     }
     return false;
@@ -489,15 +488,16 @@ std::vector<EMDL::EMDLabel> MetaDataTable::getActiveLabels() const {
 }
 
 void MetaDataTable::deactivateLabel(EMDL::EMDLabel label, const std::string &unknownLabel) {
+    const bool is_known = label != EMDL::UNKNOWN_LABEL;
     for (int i = 0; i < activeLabels.size(); i++) {
         if (
             activeLabels[i] == label &&
-            (label != EMDL::UNKNOWN_LABEL || unknownLabel == unknownLabelNames[unknown_label_indices[i]])
+            (is_known || unknownLabel == unknownLabelNames[unknown_label_indices[i]])
         ) {
             activeLabels.erase(activeLabels.begin() + i);
             unknown_label_indices.erase(unknown_label_indices.begin() + i);
 
-            if (label != EMDL::UNKNOWN_LABEL)
+            if (is_known)
                 label_indices[label] = -1;
         }
     }
@@ -508,10 +508,11 @@ void MetaDataTable::addLabel(const EMDL::EMDLabel label, const std::string &unkn
         REPORT_ERROR(std::string(
             "MetaDataTable::addLabel: unrecognised label: "
         ) + EMDL::label2Str(label));
-    if (label == EMDL::UNKNOWN_LABEL && unknownLabel.empty())
+    const bool is_known = label != EMDL::UNKNOWN_LABEL;
+    if (!is_known && unknownLabel.empty())
         REPORT_ERROR("MetaDataTable::addLabel: unknownLabel is empty");
 
-    if (label_indices[label] >= 0 && label != EMDL::UNKNOWN_LABEL) return;
+    if (label_indices[label] >= 0 && is_known) return;
     // keep pushing the same unknown label...
     long i;
 
@@ -788,7 +789,7 @@ void MetaDataTable::histogram(
             hist_min = values[0];
             hist_max = values[n_row - 1];
             bin_width = 2 * iqr / std::pow(n_row, 1.0 / 3); // Freedman-Diaconis rule
-            bin_size = (unsigned int)(std::ceil((hist_max - hist_min) / bin_width));
+            bin_size = (unsigned int) (std::ceil((hist_max - hist_min) / bin_width));
             if (bin_size > 5000) bin_size = 5000; // FIXME: Ad hoc upper limit to avoid using too much memory
         } else {
             if (!std::isfinite(hist_min) || hist_min == -LARGE_NUMBER) { hist_min = values[0]; }
@@ -927,9 +928,9 @@ void MetaDataTable::randomiseOrder() {
 }
 
 // Bounds checking
-void MetaDataTable::checkObjectID(long id) const throw (std::string) {
-    if (id < 0 || id >= objects.size())
-        throw "object " + std::to_string(id) + " out of bounds! (" + std::to_string(objects.size()) + " objects present)";
+void MetaDataTable::checkObjectID(long i) const throw (std::string) {
+    if (i < 0 || i >= objects.size())
+        throw "object " + std::to_string(i) + " out of bounds! (" + std::to_string(objects.size()) + " objects present)";
 }
 
 //FIXME: does not support unknownLabels but this function is only used by relion_star_handler
@@ -1244,8 +1245,8 @@ MetaDataTable removeDuplicatedParticles(
             // The squared distance between the two particles
             RFLOAT dist_sq = dx * dx + dy * dy;
             if (dataIs3D) {
-                RFLOAT dz = zs[part_id1] - zs[part_id2];
-                dist_sq += dz * dz;
+            RFLOAT dz = zs[part_id1] - zs[part_id2];
+            dist_sq += dz * dz;
             }
 
             // If the particles are too close, invalidate one.
