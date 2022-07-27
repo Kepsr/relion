@@ -389,7 +389,7 @@ MetaDataTable subsetMetaDataTable(
 // find a subset of the input metadata table that has corresponding entries with or without a given substring
 MetaDataTable subsetMetaDataTable(
     MetaDataTable &MDin, EMDL::EMDLabel label,
-    std::string search_str, bool exclude=false
+    const std::string &search_str, bool exclude=false
 );
 
 // remove duplicated particles that are in the same micrograph (mic_label) and within a given threshold [px]
