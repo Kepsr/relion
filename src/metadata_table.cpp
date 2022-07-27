@@ -312,75 +312,73 @@ void MetaDataTable::setValueFromString(
     REPORT_ERROR("Logic error: should not happen");
 }
 
-// Comparators used for sorting
+// Comparators used for sorting (essentially lambdas)
 namespace MD {
 
-struct DoubleComparator {
+struct CompareAt {
 
-    DoubleComparator(long index): index(index) {}
+    long i;
 
-    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
-        return lh->doubles[index] < rh->doubles[index];
-    }
-
-    long index;
-};
-
-struct IntComparator {
-
-    IntComparator(long index): index(index) {}
+    CompareAt(long i): i(i) {}
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
-        return lh->ints[index] < rh->ints[index];
-    }
-
-    long index;
-};
-
-struct StringComparator {
-
-    long index;
-
-    StringComparator(long index): index(index) {}
-
-    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
-        return lh->strings[index] < rh->strings[index];
+        return true;  // Dummy implementation
     }
 
 };
 
-// Can we get this to inherit from StringComparator?
-struct StringAfterAtComparator {
+struct CompareDoublesAt: public CompareAt {
 
-    long index;
-
-    StringAfterAtComparator(long index): index(index) {}
+    using CompareAt::CompareAt;
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
-        std::string slh = lh->strings[index];
-        std::string srh = rh->strings[index];
-        slh = slh.substr(slh.find("@") + 1);
-        srh = srh.substr(srh.find("@") + 1);
-        return slh < srh;
+        return lh->doubles[i] < rh->doubles[i];
     }
 
 };
 
-// Can we get this to inherit from StringComparator?
-struct StringBeforeAtComparator {
+struct CompareIntsAt: public CompareAt {
 
-    long index;
-
-    StringBeforeAtComparator(long index): index(index) {}
+    using CompareAt::CompareAt;
 
     bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
-        std::string slh = lh->strings[index];
-        std::string srh = rh->strings[index];
-        slh = slh.substr(0, slh.find("@"));
-        srh = srh.substr(0, srh.find("@"));
+        return lh->ints[i] < rh->ints[i];
+    }
+
+};
+
+struct CompareStringsAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        return lh->strings[i] < rh->strings[i];
+    }
+
+};
+
+struct CompareStringsAfterAtAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        std::string slh = lh->strings[i];
+        std::string srh = rh->strings[i];
+        return slh.substr(slh.find("@") + 1) < srh.substr(srh.find("@") + 1);
+    }
+
+};
+
+struct CompareStringsBeforeAtAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        std::string slh = lh->strings[i];
+        std::string srh = rh->strings[i];
         std::stringstream stslh, stsrh;
-        stslh << slh;
-        stsrh << srh;
+        stslh << slh.substr(0, slh.find("@"));
+        stsrh << srh.substr(0, srh.find("@"));
         long ilh, irh;
         stslh >> ilh;
         stsrh >> irh;
@@ -397,17 +395,17 @@ void MetaDataTable::sort(
     if (do_random) {
         srand(time(nullptr)); // initialise random seed
     } else if (!EMDL::is<int>(name) && !EMDL::is<double>(name)) {
-        REPORT_ERROR("MetadataTable::sort%% " + prependERROR("can only sorted numbers"));
+        REPORT_ERROR("MetadataTable::sort%% " + prependERROR("can only sort numbers"));
     }
 
     std::vector<std::pair<double, long int>> vp;
-    long int N = objects.size();
+    const auto N = objects.size();
     vp.reserve(N);
     for (long int i = 0; i < N; ++i) {
         if (do_random) {
-            vp.emplace_back((double) rand(), i);
+            vp.emplace_back(rand(), i);
         } else if (EMDL::is<int>(name)) {
-            vp.emplace_back((double) getValue<long>(name), i);
+            vp.emplace_back(getValue<long>(name), i);
         } else {
             // EMDL::is<double>(name)
             vp.emplace_back(getValue<double>(name), i);
@@ -425,10 +423,11 @@ void MetaDataTable::sort(
         }
     } else {
         // Change the actual order in the MetaDataTable
-        std::vector<MetaDataContainer*> objs(N);
+        std::vector<MetaDataContainer*> objs;
+        objs.reserve(N);
 
-        for (long j = 0; j < vp.size(); j++) {
-            objs[j] = objects[vp[j].second];
+        for (const auto &x : vp) {
+            objs.push_back(objects[x.second]);
         }
 
         objects = objs;
@@ -439,40 +438,29 @@ void MetaDataTable::sort(
 
 void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_reverse, bool do_sort_after_at, bool do_sort_before_at) {
 
+    MD::CompareAt comp (0);  // Ideally, we wouldn't have to initialise the base class.
+
     if (EMDL::is<std::string>(label)) {
         if (do_sort_after_at) {
-            std::stable_sort(
-                objects.begin(), objects.end(),
-                MD::StringAfterAtComparator(label_indices[label])
-            );
+            comp = MD::CompareStringsAfterAtAt(label_indices[label]);
         } else if (do_sort_before_at) {
-            std::stable_sort(
-                objects.begin(), objects.end(),
-                MD::StringBeforeAtComparator(label_indices[label])
-            );
+            comp = MD::CompareStringsBeforeAtAt(label_indices[label]);
         } else {
-            std::stable_sort(
-                objects.begin(), objects.end(),
-                MD::StringComparator(label_indices[label])
-            );
+            comp = MD::CompareStringsAt(label_indices[label]);
         }
     } else if (EMDL::is<double>(label)) {
-        std::stable_sort(
-            objects.begin(), objects.end(),
-            MD::DoubleComparator(label_indices[label])
-        );
+        comp = MD::CompareDoublesAt(label_indices[label]);
     } else if (EMDL::is<int>(label)) {
-        std::stable_sort(
-            objects.begin(), objects.end(),
-            MD::IntComparator(label_indices[label])
-        );
+        comp = MD::CompareIntsAt(label_indices[label]);
     } else {
         REPORT_ERROR("Cannot sort this label: " + EMDL::label2Str(label));
     }
 
-    if (do_reverse) {
-        std::reverse(objects.begin(), objects.end());
-    }
+    std::stable_sort(objects.begin(), objects.end(), comp);
+
+    if (do_reverse)
+    std::reverse(objects.begin(), objects.end());
+
 }
 
 bool MetaDataTable::containsLabel(const EMDL::EMDLabel label, const std::string &unknownLabel) const {
@@ -1116,7 +1104,7 @@ MetaDataTable subsetMetaDataTable(
         REPORT_ERROR("subsetMetadataTable ERROR: can only make a subset selection based on numbers");
 
     if (!MDin.containsLabel(label))
-        REPORT_ERROR("subsetMetadataTable ERROR: input MetaDataTable does not contain label: " +  EMDL::label2Str(label));
+        REPORT_ERROR("subsetMetadataTable ERROR: input MetaDataTable does not contain label: " + EMDL::label2Str(label));
 
     MetaDataTable MDout;
     for (long int i : MDin) {
@@ -1126,13 +1114,12 @@ MetaDataTable subsetMetaDataTable(
         if (x <= max_value && x >= min_value)
             MDout.addObject(MDin.getObject(i));
     }
-
     return MDout;
 }
 
-// Exclude determines whether to perform A * +B or A * -B
 MetaDataTable subsetMetaDataTable(
-    MetaDataTable &MDin, EMDL::EMDLabel label, std::string search_str, bool exclude
+    MetaDataTable &MDin, EMDL::EMDLabel label, const std::string &search_str, bool exclude
+    // exclude determines whether to perform A * +B or A * -B
 ) {
 
     if (!EMDL::is<std::string>(label))
@@ -1269,8 +1256,7 @@ long int MetaDataTable::read(
 
     clear();  // Clear current table
 
-    // Check for an :star extension
-    FileName fn_read = filename.removeFileFormat();
+    FileName fn_read = filename.removeFileFormat();  // Check for a :star extension
 
     std::ifstream in (fn_read.data(), std::ios_base::in);
     if (in.fail())
@@ -1284,7 +1270,7 @@ long int MetaDataTable::read(
 long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
     isList = false;
 
-    //Read column labels
+    // Read column labels
     int labelPosition = 0;
     std::string line, token;
 
