@@ -188,7 +188,7 @@ class image_handler_parameters {
         }
 
         if (do_add_edge) {
-            // Treat X-boundaries
+            // Treat boundaries
             for (long int j = 0; j < Ysize(Iin()); j++)
             for (long int i = 0; i < Xsize(Iin()); i++) {
                 if (i < edge_x0) {
@@ -196,10 +196,6 @@ class image_handler_parameters {
                 } else if (i > edge_xF) {
                     direct::elem(Iin(), i, j) = direct::elem(Iin(), edge_xF, j);
                 }
-            }
-            // Treat Y-boundaries
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
                 if (j < edge_y0) {
                     direct::elem(Iin(), i, j) = direct::elem(Iin(), i, edge_y0);
                 } else if (j > edge_yF) {
