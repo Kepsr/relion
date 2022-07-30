@@ -518,12 +518,12 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
 
 }
 
-MultidimArray<RFLOAT> cosDeltaPhase(
-    MultidimArray<Complex> &FT1,
-    MultidimArray<Complex> &FT2
+std::vector<RFLOAT> cosDeltaPhase(
+    const MultidimArray<Complex> &FT1,
+    const MultidimArray<Complex> &FT2
 ) {
-    MultidimArray<int> radial_count(Xsize(FT1));
-    MultidimArray<RFLOAT> cosPhi = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
+    std::vector<RFLOAT> radial_count (Xsize(FT1), 0);
+    std::vector<RFLOAT> cos_phi      (Xsize(FT1), 0);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         int idx = round(euclid(ip, jp, kp));
@@ -531,15 +531,15 @@ MultidimArray<RFLOAT> cosDeltaPhase(
 
         RFLOAT delta_phase = direct::elem(FT1, i, j, k).arg() 
                            - direct::elem(FT2, i, j, k).arg();
-        cosPhi(idx) += cos(delta_phase);
-        radial_count(idx)++;
+        cos_phi[idx] += cos(delta_phase);
+        radial_count[idx]++;
     }
 
-    for (int i = Xinit(cosPhi); i <= Xlast(cosPhi); i++) {
-        if (radial_count(i) > 0) { cosPhi(i) /= (RFLOAT) radial_count(i); }
+    for (int i = 0; i < cos_phi.size(); i++) {
+        if (radial_count[i] > 0) { cos_phi[i] /= radial_count[i]; }
     }
 
-    return cosPhi;
+    return cos_phi;
 }
 
 void getAmplitudeCorrelationAndDifferentialPhaseResidual(
@@ -1383,8 +1383,8 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     bg_val /= bg_pix;
     bd_val /= bd_pix;
     // DEBUG
-    //std::cout << "bg_val = " << bg_val << ", bg_pix = " << bg_pix << std::endl;
-    //std::cout << "bd_val = " << bd_val << ", bd_pix = " << bd_pix << std::endl;
+    // std::cout << "bg_val = " << bg_val << ", bg_pix = " << bg_pix << std::endl;
+    // std::cout << "bd_val = " << bd_val << ", bd_pix = " << bd_pix << std::endl;
 
     // Pad and float output MultidimArray (2× original size by default)
     long int box_len = std::max(dimensions.x, dimensions.y) * factor;
@@ -1507,21 +1507,22 @@ void helicalLayerLineProfile(
     delete plot2D;
 }
 
-void generateBinaryHelicalFourierMask(
-    MultidimArray<RFLOAT> &mask,
+MultidimArray<RFLOAT> generateBinaryHelicalFourierMask(
+    long int xdim, long int ydim, long int zdim,
     std::vector<RFLOAT> exclude_begin,
     std::vector<RFLOAT> exclude_end,
     RFLOAT angpix
 ) {
-    if (exclude_begin.size() != exclude_end.size()) REPORT_ERROR("BUG: generateHelicalFourierMask: provide start-end resolutions for each shell.");
+    if (exclude_begin.size() != exclude_end.size())
+        REPORT_ERROR("BUG: generateHelicalFourierMask: provide start-end resolutions for each shell.");
 
-    mask.initConstant(1.0);
+    auto mask = MultidimArray<RFLOAT>::ones(xdim, ydim, zdim);
 
-    bool is_2d = mask.getDim() == 2;
+    const bool is_2d = mask.getDim() == 2;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(mask) {
-        RFLOAT res =
-        is_2d ? (jp == 0 ? 999.0 : Ysize(mask) * angpix / fabs(jp)) : // helical axis along X-axis, so only jp matters!
-                (kp == 0 ? 999.0 : Zsize(mask) * angpix / fabs(kp));  // helical axis along Z-axis, so only kp matters!
+        RFLOAT res = is_2d ?
+            jp == 0 ? 999.0 : Ysize(mask) * angpix / fabs(jp) : // helical axis along X-axis, so only jp matters!
+            kp == 0 ? 999.0 : Zsize(mask) * angpix / fabs(kp);  // helical axis along Z-axis, so only kp matters!
 
         for (int ishell = 0; ishell < exclude_begin.size(); ishell++) {
             if (res <= exclude_begin[ishell] && res >= exclude_end[ishell]) {
@@ -1529,4 +1530,5 @@ void generateBinaryHelicalFourierMask(
             }
         }
     }
+    return mask;
 }

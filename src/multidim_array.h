@@ -2481,7 +2481,7 @@ class MultidimArray {
     }
 
     static MultidimArray<T> zeros(long int Xdim) {
-        MultidimArray<T> arr(Xdim);
+        MultidimArray<T> arr (Xdim);
         arr.initZeros();
         return arr;
     }
@@ -2493,7 +2493,7 @@ class MultidimArray {
     }
 
     static MultidimArray<T> zeros(long int Ydim, long int Xdim) {
-        MultidimArray<T> arr(Ydim, Xdim);
+        MultidimArray<T> arr (Ydim, Xdim);
         arr.initZeros();
         return arr;
     }
@@ -2505,7 +2505,7 @@ class MultidimArray {
     }
 
     static MultidimArray<T> zeros(long int Zdim, long int Ydim, long int Xdim) {
-        MultidimArray<T> arr(Zdim, Ydim, Xdim);
+        MultidimArray<T> arr (Zdim, Ydim, Xdim);
         arr.initZeros();
         return arr;
     }
@@ -2519,8 +2519,14 @@ class MultidimArray {
     }
 
     static MultidimArray<T> zeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
-        MultidimArray<T> arr(Xdim, Ydim, Zdim, Ndim);
+        MultidimArray<T> arr (Xdim, Ydim, Zdim, Ndim);
         arr.initZeros();
+        return arr;
+    }
+
+    static MultidimArray<T> ones(long int Xdim = 1, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
+        MultidimArray<T> arr (Xdim, Ydim, Zdim, Ndim);
+        memset(arr.data, 1, arr.size() * sizeof(T));
         return arr;
     }
 

@@ -68,10 +68,10 @@ const bool WRAP = true;
  * m must have been already resized to 3x3
  *
  * @code
- *  rotation2DMatrix(60,m);
+ * m = rotation2DMatrix(60);
  * @endcode
  */
-void rotation2DMatrix(RFLOAT ang, Matrix2D<RFLOAT> &m, bool homogeneous=true);
+Matrix2D<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous=true);
 
 /** Creates a translational matrix (3x3) for images
  * @ingroup GeometricalTransformations
@@ -298,8 +298,6 @@ void applyGeometry(
         RFLOAT minyp = -cen_yp;
         RFLOAT maxxp = Xsize(V1) - cen_xp - 1;
         RFLOAT maxyp = Ysize(V1) - cen_yp - 1;
-        int Xdim = Xsize(V1);
-        int Ydim = Ysize(V1);
 
         // Now we go from the output image to the input image.
         // ie, for any pixel in the output image
@@ -331,9 +329,9 @@ void applyGeometry(
 
                 #ifdef DEBUG_APPLYGEO
 
-                std::cout << "Computing (" << i << "," << j << ")\n";
-                std::cout << "   (y, x) =(" << y << "," << x << ")\n"
-                << "   before wrapping (y',x')=(" << yp << "," << xp << ") "
+                std::cout << "Computing "       "(" << i << "," << j << ")\n"
+                          << "   (y, x) ="      "(" << y << "," << x << ")\n"
+                << "   before wrapping (y',x')=""(" << yp << "," << xp << ")"
                 << std::endl;
                 #endif
                 // If the point is outside the image, apply a periodic extension of the image
@@ -344,78 +342,23 @@ void applyGeometry(
 
                 if (do_wrap) {
 
-                    if (
-                        Xmipp::lt(xp, minxp) || Xmipp::gt(xp, maxxp)
-                    ) { xp = wrap(xp, minxp - 0.5, maxxp + 0.5); }
+                    if (Xmipp::lt(xp, minxp) || Xmipp::gt(xp, maxxp))
+                        xp = wrap(xp, minxp - 0.5, maxxp + 0.5);
 
-                    if (
-                        Xmipp::lt(yp, minyp) || Xmipp::gt(yp, maxyp)
-                    ) { yp = wrap(yp, minyp - 0.5, maxyp + 0.5); }
+                    if (Xmipp::lt(yp, minyp) || Xmipp::gt(yp, maxyp))
+                        yp = wrap(yp, minyp - 0.5, maxyp + 0.5);
 
                 }
 
                 #ifdef DEBUG_APPLYGEO
-                std::cout << "   after wrapping (y',x')=(" << yp << "," << xp << ") "
-                << std::endl;
-                std::cout << "   Interp = " << interp << std::endl;
+                std::cout << "   after wrapping (y',x')=(" << yp << "," << xp << ")\n"
+                          << "   Interp = " << interp << std::endl;
                 // The following line sounds dangerous...
-                //x++;
+                // x++;
                 #endif
-
-                if (interp) {
-                    // Linear interpolation
-
-                    // Calculate the integer position in input image.
-                    // Be careful that it is not the nearest but the one at the top left corner
-                    // of the interpolation square.
-                    // ie, (0.7, 0.7) would give (0, 0).
-                    // Also calculate weights for point (m1 + 1, n1 + 1).
-                    RFLOAT wx = xp + cen_xp;
-                    int m1 = wx;
-                    wx = wx - m1;
-                    int m2 = m1 + 1;
-
-                    RFLOAT wy = yp + cen_yp;
-                    int n1 = wy;
-                    wy = wy - n1;
-                    int n2 = n1 + 1;
-
-                    // m2 and n2 can be out by 1 so do_wrap must be checked here
-                    if (do_wrap) {
-                        if (m2 >= Xdim) { m2 = 0; }
-                        if (n2 >= Ydim) { n2 = 0; }
-                    }
-
-                    #ifdef DEBUG_APPLYGEO
-                    std::cout << "   From (" << m1 << "," << n1 << ") and ("
-                    << m2 << "," << n2 << ")\n";
-                    std::cout << "   wx= " << wx << " wy= " << wy << std::endl;
-                    #endif
-
-                    // Perform interpolation
-                    // if wx == 0 means that the rightest point is useless for this
-                    // interpolation, and even it might not be defined if m1=xdim-1
-                    // The same can be said for wy.
-                    T tmp = ((1 - wy) * (1 - wx) * direct::elem(V1, m1, n1));
-
-                    if (m2 < V1.xdim)
-                        tmp += (T) ((1 - wy) * wx * direct::elem(V1, m2, n1));
-
-                    if (n2 < V1.ydim) {
-                        tmp += (T) (wy * (1 - wx) * direct::elem(V1, m1, n2));
-
-                        if (m2 < V1.xdim)
-                            tmp += (T) (wy * wx * direct::elem(V1, m2, n2));
-                    }
-
-                    direct::elem(V2, i, j) = tmp;
-                    #ifdef DEBUG_APPYGEO
-                    std::cout << "   val= " << direct::elem(V2, i, j) << std::endl;
-                    #endif
-
-                } else {
-                	direct::elem(V2, i, j) = outside;
-                }
+                direct::elem(V2, i, j) = interp ? interpolate_sub(
+                    V1, xp, yp, cen_xp, cen_yp, do_wrap
+                ) : outside;
 
                 // Compute new point inside input image
                 xp += Aref(0, 0);
@@ -426,9 +369,9 @@ void applyGeometry(
         // 3D transformation
 
         // Find center of MultidimArray
-        int cen_z = V2.zdim / 2;
-        int cen_y = V2.ydim / 2;
-        int cen_x = V2.xdim / 2;
+        int cen_z  = V2.zdim / 2;
+        int cen_y  = V2.ydim / 2;
+        int cen_x  = V2.xdim / 2;
         int cen_zp = V1.zdim / 2;
         int cen_yp = V1.ydim / 2;
         int cen_xp = V1.xdim / 2;
@@ -440,7 +383,8 @@ void applyGeometry(
         RFLOAT maxzp = V1.zdim - cen_zp - 1;
 
         #ifdef DEBUG
-        std::cout << "Geometry 2 center=("
+        std::cout
+        << "Geometry 2 center=("
         << cen_z  << "," << cen_y  << "," << cen_x  << ")\n"
         << "Geometry 1 center=("
         << cen_zp << "," << cen_yp << "," << cen_xp << ")\n"
@@ -473,12 +417,11 @@ void applyGeometry(
 
             for (int i = 0; i < V2.xdim; i++) {
 
+                bool show_debug = false;
                 #ifdef DEBUG
-
-                bool show_debug = (
+                show_debug =
                     i == 0 && j == 0 && k == 0 ||
-                    i == V2.xdim - 1 && j == V2.ydim - 1 && k == V2.zdim - 1
-                );
+                    i == V2.xdim - 1 && j == V2.ydim - 1 && k == V2.zdim - 1;
 
                 if (show_debug)
                     std::cout << "(x,y,z)-->(xp,yp,zp)= "
@@ -510,101 +453,9 @@ void applyGeometry(
 
                 }
 
-                if (interp) {
-
-                    // Linear interpolation
-
-                    // Calculate the integer position in input volume,
-                    // be careful that it is not the nearest but the one at the
-                    // top left corner of the interpolation square.
-                    // ie (0.7, 0.7) would give (0, 0)
-                    // Also calculate weights for point (m1 + 1, n1 + 1)
-                    RFLOAT wx = xp + cen_xp;
-                    int m1 = wx;
-                    wx = wx - m1;
-                    int m2 = m1 + 1;
-
-                    RFLOAT wy = yp + cen_yp;
-                    int n1 = wy;
-                    wy = wy - n1;
-                    int n2 = n1 + 1;
-
-                    RFLOAT wz = zp + cen_zp;
-                    int o1 = wz;
-                    wz = wz - o1;
-                    int o2 = o1 + 1;
-
-                    #ifdef DEBUG
-
-                    if (show_debug) {
-                        std::cout << "After wrapping(xp,yp,zp)= "
-                        << "(" << xp << "," << yp << "," << zp << ")\n";
-                        std::cout << "(m1,n1,o1)-->(m2,n2,o2)="
-                        << "(" << m1 << "," << n1 << "," << o1 << ") "
-                        << "(" << m2 << "," << n2 << "," << o2 << ")\n";
-                        std::cout << "(wx,wy,wz)="
-                        << "(" << wx << "," << wy << "," << wz << ")\n";
-                    }
-                    #endif
-
-                    // Perform interpolation
-                    // if wx == 0 means that the rightest point is useless for
-                    // this interpolation, and even it might not be defined if
-                    // m1=xdim-1
-                    // The same can be said for wy.
-                    T tmp = ((1 - wz) * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o1));
-
-                    if (m2 < V1.xdim)
-                        tmp += (T) ((1 - wz) * (1 - wy) * wx * direct::elem(V1, m2, n1, o1));
-
-                    if (n2 < V1.ydim) {
-                        tmp += (T) ((1 - wz) * wy * (1 - wx) * direct::elem(V1, m1, n2, o1));
-                        if (m2 < V1.xdim)
-                            tmp += (T) ((1 - wz) * wy * wx * direct::elem(V1, m2, n2, o1));
-                    }
-
-                    if (o2 < V1.zdim) {
-                        tmp += (T) (wz * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o2));
-                        if (m2 < V1.xdim)
-                            tmp += (T) (wz * (1 - wy) * wx * direct::elem(V1, m2, n1, o2));
-                        if (n2 < V1.ydim) {
-                            tmp += (T) (wz * wy * (1 - wx) * direct::elem(V1, m1, n2, o2));
-                            if (m2 < V1.xdim)
-                                tmp += (T) (wz * wy * wx * direct::elem(V1, m2, n2, o2));
-                        }
-                    }
-
-                    #ifdef DEBUG
-                    if (show_debug)
-                        std::cout <<
-                        "tmp1=" << direct::elem(V1, m1, n1, o1) << " "
-                        << (T) ((1 - wz) *(1 - wy) *(1 - wx) * direct::elem(V1, m1, n1, o1))
-                        << std::endl <<
-                        "tmp2=" << direct::elem(V1, m2, n1, o1) << " "
-                        << (T) ((1 - wz) *(1 - wy) * wx * direct::elem(V1, m2, n1, o1))
-                        << std::endl <<
-                        "tmp3=" << direct::elem(V1, m1, n2, o1) << " "
-                        << (T) ((1 - wz) * wy *(1 - wx) * direct::elem(V1, m1, n2, o1))
-                        << std::endl <<
-                        "tmp4=" << direct::elem(V1, m2, n2, o1) << " "
-                        << (T) ((1 - wz) * wy * wx * direct::elem(V1, m1, n1, o2))
-                        << std::endl <<
-                        "tmp6=" << direct::elem(V1, m2, n1, o2) << " "
-                        << (T) (wz * (1 - wy) * wx * direct::elem(V1, m2, n1, o2))
-                        << std::endl <<
-                        "tmp7=" << direct::elem(V1, m1, n2, o2) << " "
-                        << (T) (wz * wy *(1 - wx) * direct::elem(V1, m1, n2, o2))
-                        << std::endl <<
-                        "tmp8=" << direct::elem(V1, m2, n2, o2) << " "
-                        << (T) (wz * wy * wx * direct::elem(V1, m2, n2, o2))
-                        << std::endl <<
-                        "tmp= " << tmp << std::endl;
-                    #endif
-
-                    direct::elem(V2, i, j, k) = tmp;
-                } else {
-                    direct::elem(V2, i, j, k) = outside;
-                }
+                direct::elem(V2, i, j, k) = interp ? interpolate_sub(
+                    V1, xp, yp, zp, cen_xp, cen_yp, cen_zp, show_debug
+                ) : outside;
 
                 // Compute new point inside input image
                 xp += Aref(0, 0);
@@ -614,6 +465,22 @@ void applyGeometry(
         }
     }
 }
+
+template <typename T>
+T interpolate_sub(
+    const MultidimArray<T>& V1,
+    RFLOAT xp, RFLOAT yp,
+    int cen_xp, int cen_yp,
+    bool do_wrap
+);
+
+template <typename T>
+T interpolate_sub(
+    const MultidimArray<T> &V1,
+    RFLOAT xp, RFLOAT yp, RFLOAT zp,
+    int cen_xp, int cen_yp, int cen_zp,
+    bool show_debug
+);
 
 /** Applies a geometrical transformation and overwrites the input matrix.
  * @ingroup GeometricalTransformations
@@ -652,7 +519,7 @@ void rotate(
 ) {
     Matrix2D<RFLOAT> tmp;
            if (V1.getDim() == 2) {
-        rotation2DMatrix(ang, tmp);
+        tmp = rotation2DMatrix(ang);
     } else if (V1.getDim() == 3) {
         rotation3DMatrix(ang, axis, tmp);
     } else {

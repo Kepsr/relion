@@ -1061,7 +1061,7 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     pix_list.resize(vec_len);
     for (vec_id = 0; vec_id < vec_len; vec_id++)
         sum_list[vec_id] = pix_list[vec_id] = 0.0;
-    rotation2DMatrix(psi_deg, R, false);
+    R = rotation2DMatrix(psi_deg, false);
     R.setSmallValuesToZero();
 
     FOR_ALL_ELEMENTS_IN_ARRAY2D(v)
@@ -1435,7 +1435,6 @@ void makeSimpleHelixFromPDBParticle(
     int nr_copy, bool do_center
 ) {
     int nr_ori_atoms;
-    Matrix2D<RFLOAT> rotational_matrix;
 
     if (nr_copy < 3)
         REPORT_ERROR("helix.cpp::makeHelixFromPDBParticle(): More than 3 copies of original assemblies are required to form a helix!");
@@ -1479,7 +1478,6 @@ void makeSimpleHelixFromPDBParticle(
     }
 
     // Construct the helix
-    rotational_matrix.clear();
     Matrix1D<RFLOAT> shift = Matrix1D<RFLOAT>::zeros(3);
     helix.clear();
     helix.join(aux0);
@@ -1487,7 +1485,7 @@ void makeSimpleHelixFromPDBParticle(
         if (ii == 0)
             continue;
 
-        rotation2DMatrix((RFLOAT) ii * twist_deg, rotational_matrix, true);
+        Matrix2D<RFLOAT> rotational_matrix = rotation2DMatrix((RFLOAT) ii * twist_deg, true);
         ZZ(shift) = (RFLOAT) ii * rise_A;
 
         Assembly aux1;
@@ -2849,7 +2847,6 @@ void makeHelicalReference3D(
 {
     RFLOAT rise_pix, tube_diameter_pix, particle_diameter_pix, particle_radius_pix;
     int particle_radius_max_pix;
-    Matrix2D<RFLOAT> matrix1, matrix2;
     Matrix1D<RFLOAT> vec0, vec1, vec2;
     out.clear();
 
@@ -2894,7 +2891,7 @@ void makeHelicalReference3D(
     {
         RFLOAT rot1_deg, x1, y1, z1;
         rot1_deg = (RFLOAT)(id) * twist_deg;
-        rotation2DMatrix(rot1_deg, matrix1, false);
+        Matrix2D<RFLOAT> matrix1 = rotation2DMatrix(rot1_deg, false);
         vec1 = matrix1 * vec0;
 
         x1 = XX(vec1);
@@ -2907,7 +2904,7 @@ void makeHelicalReference3D(
         {
             RFLOAT rot2_deg, x2, y2, z2;
             rot2_deg = (360.0) * (RFLOAT)(Cn) / (RFLOAT)(sym_Cn);
-            rotation2DMatrix(rot2_deg, matrix2, false);
+            Matrix2D<RFLOAT> matrix2 = rotation2DMatrix(rot2_deg, false);
             vec2 = matrix2 * vec1;
             x2 = XX(vec2);
             y2 = YY(vec2);
@@ -2963,7 +2960,6 @@ void makeHelicalReference3DWithPolarity(
     RFLOAT rise_pix, tube_diameter_pix, particle_diameter_pix, particle_radius_pix, cyl_radius_pix, top_radius_pix, bottom_radius_pix;
     int particle_radius_max_pix;
     bool append_additional_densities = false;
-    Matrix2D<RFLOAT> matrix1, matrix2;
     Matrix1D<RFLOAT> vec0, vec1, vec2;
     out.clear();
 
@@ -3022,7 +3018,7 @@ void makeHelicalReference3DWithPolarity(
     for (int id = 0; true; id++) {
         RFLOAT rot1_deg, x1, y1, z1;
         rot1_deg = (RFLOAT)(id) * twist_deg;
-        rotation2DMatrix(rot1_deg, matrix1, false);
+        Matrix2D<RFLOAT> matrix1 = rotation2DMatrix(rot1_deg, false);
         vec1 = matrix1 * vec0;
 
         x1 = XX(vec1);
@@ -3034,7 +3030,7 @@ void makeHelicalReference3DWithPolarity(
         for (int Cn = 0; Cn < sym_Cn; Cn++) {
             RFLOAT rot2_deg, x2, y2, z2;
             rot2_deg = 360.0 * (RFLOAT) Cn / (RFLOAT) sym_Cn;
-            rotation2DMatrix(rot2_deg, matrix2, false);
+            Matrix2D<RFLOAT> matrix2 = rotation2DMatrix(rot2_deg, false);
             vec2 = matrix2 * vec1;
             x2 = XX(vec2);
             y2 = YY(vec2);

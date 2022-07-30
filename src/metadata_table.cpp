@@ -436,7 +436,7 @@ void MetaDataTable::sort(
     firstObject();
 }
 
-void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_reverse, bool do_sort_after_at, bool do_sort_before_at) {
+void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_sort_after_at, bool do_sort_before_at) {
 
     MD::CompareAt comp (0);  // Ideally, we wouldn't have to initialise the base class.
 
@@ -457,9 +457,6 @@ void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_reverse, bool do
     }
 
     std::stable_sort(objects.begin(), objects.end(), comp);
-
-    if (do_reverse)
-    std::reverse(objects.begin(), objects.end());
 
 }
 

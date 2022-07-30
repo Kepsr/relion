@@ -749,7 +749,7 @@ void Experiment::read(
             FileName fn_mic = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME);
             if (fn_mic.contains("@")) {
                 is_mic_a_movie = true;
-                MDimg.newSort(EMDL::MICROGRAPH_NAME, false, true); // sort on part AFTER "@"
+                MDimg.newSort(EMDL::MICROGRAPH_NAME, true); // sort on part AFTER "@"
             } else {
                 is_mic_a_movie = false;
                 MDimg.newSort(EMDL::MICROGRAPH_NAME); // just sort on fn_mic

@@ -46,17 +46,17 @@
 #include "src/transformations.h"
 
 /* Rotation 2D ------------------------------------------------------------- */
-void rotation2DMatrix(RFLOAT ang, Matrix2D<RFLOAT> &result, bool homogeneous) {
+Matrix2D<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous) {
+
+    int n = homogeneous ? 3 : 2;
+    Matrix2D<RFLOAT> result(n, n);
 
     if (homogeneous) {
-        result.resize(3, 3);
         result.at(0, 2) = 0;
         result.at(1, 2) = 0;
         result.at(2, 0) = 0;
         result.at(2, 1) = 0;
         result.at(2, 2) = 1;
-    } else {
-        result.resize(2, 2);
     }
 
     ang = radians(ang);  // Why don't we just get passed angles in radians?
@@ -65,9 +65,174 @@ void rotation2DMatrix(RFLOAT ang, Matrix2D<RFLOAT> &result, bool homogeneous) {
 
     result.at(0, 0) =  cosang;
     result.at(0, 1) = -sinang;
-    result.at(1, 0) = sinang;
-    result.at(1, 1) = cosang;
+    result.at(1, 0) =  sinang;
+    result.at(1, 1) =  cosang;
 }
+
+// Decompose w into an integral part and a fractional part
+static int subtract_integral(RFLOAT &w) {
+    int i = w;
+    w -= i;
+    return i;
+};
+
+template <typename T>
+T interpolate_sub(
+    const MultidimArray<T> &V1,
+    RFLOAT xp, RFLOAT yp,
+    int cen_xp, int cen_yp,
+    bool do_wrap
+) {
+    // Linear interpolation
+
+    // Calculate the integer position in input image.
+    // Be careful that it is not the nearest but the one at the top left corner
+    // of the interpolation square.
+    // ie, (0.7, 0.7) would give (0, 0).
+    // Also calculate weights for point (m1 + 1, n1 + 1).
+    RFLOAT wx = xp + cen_xp;
+    const int m1 = subtract_integral(wx);
+          int m2 = m1 + 1;
+
+    RFLOAT wy = yp + cen_yp;
+    const int n1 = subtract_integral(wy);
+          int n2 = n1 + 1;
+
+    // In case m2 and n2 are out of bounds
+    if (do_wrap) {
+        if (m2 >= Xsize(V1)) { m2 = 0; }
+        if (n2 >= Ysize(V1)) { n2 = 0; }
+    }
+
+    #ifdef DEBUG_APPLYGEO
+    std::cout << "   From "
+        << "(" << m1 << "," << n1 << ") and "
+        << "(" << m2 << "," << n2 << ")\n"
+        << "   wx= " << wx << " wy= " << wy << std::endl;
+    #endif
+
+    // Perform interpolation
+    // If wx == 0, then the rightmost point is useless for this interpolation,
+    // and might not even be defined if m1 == xdim - 1.
+    T tmp = ((1 - wy) * (1 - wx) * direct::elem(V1, m1, n1));
+
+    if (m2 < V1.xdim)
+        tmp += (T) ((1 - wy) * wx * direct::elem(V1, m2, n1));
+
+    if (n2 < V1.ydim) {
+        tmp += (T) (wy * (1 - wx) * direct::elem(V1, m1, n2));
+
+        if (m2 < V1.xdim)
+            tmp += (T) (wy * wx * direct::elem(V1, m2, n2));
+    }
+
+    #ifdef DEBUG_APPYGEO
+    std::cout << "   val= " << tmp << std::endl;
+    #endif
+    return tmp;
+}
+
+template <typename T>
+T interpolate_sub(
+    const MultidimArray<T> &V1,
+    RFLOAT xp, RFLOAT yp, RFLOAT zp,
+    int cen_xp, int cen_yp, int cen_zp,
+    bool show_debug
+) {
+    // Linear interpolation
+
+    // Calculate the integer position in input volume,
+    // be careful that it is not the nearest but the one at the
+    // top left corner of the interpolation square.
+    // ie (0.7, 0.7) would give (0, 0)
+    // Also calculate weights for point (m1 + 1, n1 + 1)
+    RFLOAT wx = xp + cen_xp;
+    const int m1 = subtract_integral(wx);
+    const int m2 = m1 + 1;
+
+    RFLOAT wy = yp + cen_yp;
+    const int n1 = subtract_integral(wy);
+    const int n2 = n1 + 1;
+
+    RFLOAT wz = zp + cen_zp;
+    const int o1 = subtract_integral(wz);
+    const int o2 = o1 + 1;
+
+    #ifdef DEBUG
+    if (show_debug) {
+        std::cout << "After wrapping(xp,yp,zp)= "
+        << "(" << xp << "," << yp << "," << zp << ")\n";
+        std::cout << "(m1,n1,o1)-->(m2,n2,o2)="
+        << "(" << m1 << "," << n1 << "," << o1 << ") "
+        << "(" << m2 << "," << n2 << "," << o2 << ")\n";
+        std::cout << "(wx,wy,wz)="
+        << "(" << wx << "," << wy << "," << wz << ")\n";
+    }
+    #endif
+
+    // Perform interpolation
+    // If wx == 0, then the rightmost point is useless for this interpolation,
+    // and might not even be defined if m1 == xdim - 1.
+    T tmp = ((1 - wz) * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o1));
+
+    if (m2 < V1.xdim)
+        tmp += (T) ((1 - wz) * (1 - wy) * wx * direct::elem(V1, m2, n1, o1));
+
+    if (n2 < V1.ydim) {
+        tmp += (T) ((1 - wz) * wy * (1 - wx) * direct::elem(V1, m1, n2, o1));
+        if (m2 < V1.xdim)
+            tmp += (T) ((1 - wz) * wy * wx * direct::elem(V1, m2, n2, o1));
+    }
+
+    if (o2 < V1.zdim) {
+        tmp += (T) (wz * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o2));
+        if (m2 < V1.xdim)
+        tmp += (T) (wz * (1 - wy) * wx * direct::elem(V1, m2, n1, o2));
+        if (n2 < V1.ydim) {
+            tmp += (T) (wz * wy * (1 - wx) * direct::elem(V1, m1, n2, o2));
+            if (m2 < V1.xdim)
+                tmp += (T) (wz * wy * wx * direct::elem(V1, m2, n2, o2));
+        }
+    }
+
+    #ifdef DEBUG
+    if (show_debug)
+        std::cout <<
+        "tmp1=" << direct::elem(V1, m1, n1, o1) << " "
+        << (T) ((1 - wz) * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o1))
+        << std::endl <<
+        "tmp2=" << direct::elem(V1, m2, n1, o1) << " "
+        << (T) ((1 - wz) * (1 - wy) * wx * direct::elem(V1, m2, n1, o1))
+        << std::endl <<
+        "tmp3=" << direct::elem(V1, m1, n2, o1) << " "
+        << (T) ((1 - wz) * wy * (1 - wx) * direct::elem(V1, m1, n2, o1))
+        << std::endl <<
+        "tmp4=" << direct::elem(V1, m2, n2, o1) << " "
+        << (T) ((1 - wz) * wy * wx * direct::elem(V1, m1, n1, o2))
+        << std::endl <<
+        "tmp6=" << direct::elem(V1, m2, n1, o2) << " "
+        << (T) (wz * (1 - wy) * wx * direct::elem(V1, m2, n1, o2))
+        << std::endl <<
+        "tmp7=" << direct::elem(V1, m1, n2, o2) << " "
+        << (T) (wz * wy * (1 - wx) * direct::elem(V1, m1, n2, o2))
+        << std::endl <<
+        "tmp8=" << direct::elem(V1, m2, n2, o2) << " "
+        << (T) (wz * wy * wx * direct::elem(V1, m2, n2, o2))
+        << std::endl <<
+        "tmp= " << tmp << std::endl;
+    #endif
+    return tmp;
+}
+
+// Manual instantiation
+
+template RFLOAT interpolate_sub(
+    const MultidimArray<RFLOAT>&, RFLOAT, RFLOAT, int, int, bool
+);
+
+template RFLOAT interpolate_sub(
+    const MultidimArray<RFLOAT>&, RFLOAT, RFLOAT, RFLOAT, int, int, int, bool
+);
 
 /* Translation 2D ---------------------------------------------------------- */
 void translation2DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {

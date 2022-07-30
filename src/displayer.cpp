@@ -438,13 +438,12 @@ void basisViewerCanvas::fill(
 
                 if (_do_apply_orient && have_optics_group) {
                     Matrix1D<RFLOAT> offset(3);
-                    Matrix2D<RFLOAT> A;
                     RFLOAT psi = MDin.getValue<RFLOAT>(EMDL::ORIENT_PSI,               my_ipos);
                     XX(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_ipos);
                     YY(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_ipos);
                     if (img().getDim() == 2) {
                         offset /= angpix;
-                        rotation2DMatrix(psi, A);
+                        Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
                         A.at(0, 2) = cos(radians(psi)) * XX(offset) - sin(radians(psi)) * YY(offset);
                         A.at(1, 2) = cos(radians(psi)) * YY(offset) + sin(radians(psi)) * XX(offset);
                         selfApplyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
@@ -453,7 +452,7 @@ void basisViewerCanvas::fill(
                         RFLOAT tilt = MDin.getValue<RFLOAT>(EMDL::ORIENT_TILT,              my_ipos);
                         ZZ(offset)  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
                         offset /= angpix;
-                        A = Euler::rotation3DMatrix(rot, tilt, psi);
+                        Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(rot, tilt, psi);
                         A.at(0, 3) = A.at(0, 0) * XX(offset) + A.at(0, 1) * YY(offset) + A.at(0, 2) * ZZ(offset);
                         A.at(1, 3) = A.at(1, 0) * XX(offset) + A.at(1, 1) * YY(offset) + A.at(1, 2) * ZZ(offset);
                         A.at(2, 3) = A.at(2, 0) * XX(offset) + A.at(2, 1) * YY(offset) + A.at(2, 2) * ZZ(offset);

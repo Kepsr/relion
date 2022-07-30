@@ -564,8 +564,7 @@ void HealpixSampling::writeNonZeroPriorOrientationsToBild(
 
 RFLOAT HealpixSampling::calculateDeltaRot(Matrix1D<RFLOAT> my_direction, RFLOAT rot_prior) {
     // Rotate the x,y-components of the direction, according to rot-prior
-    Matrix2D<RFLOAT> A;
-    rotation2DMatrix(rot_prior, A);
+    Matrix2D<RFLOAT> A = rotation2DMatrix(rot_prior);
     Matrix1D<RFLOAT> my_rot_direction = A.inv() * my_direction;
     // Get component along the new Y-axis
     return fabs(degrees(asin(my_rot_direction[1])));

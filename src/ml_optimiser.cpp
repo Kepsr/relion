@@ -1593,9 +1593,12 @@ void MlOptimiser::initialiseGeneral(int rank) {
                 resols_end  .push_back(textToFloat(resols[2 * nshell + 1]));
             }
 
-            MultidimArray<RFLOAT> tmpmsk;
-            tmpmsk.resize(Xsize(mymodel.Iref[0]), Ysize(mymodel.Iref[0]), Zsize(mymodel.Iref[0]) / 2 + 1);
-            generateBinaryHelicalFourierMask(tmpmsk, resols_start, resols_end, mymodel.pixel_size);
+
+            MultidimArray<RFLOAT> tmpmsk = generateBinaryHelicalFourierMask(
+                Xsize(mymodel.Iref[0]), Ysize(mymodel.Iref[0]), Zsize(mymodel.Iref[0]) / 2 + 1,
+                resols_start, resols_end, mymodel.pixel_size
+            );
+            tmpmsk.setXmippOrigin();
             // make a 2-pixel soft edge of fourier mask
             autoMask(tmpmsk, helical_fourier_mask, 0.5, 0.0, 2.0, false, nr_threads);
 

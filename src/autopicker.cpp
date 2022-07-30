@@ -942,9 +942,8 @@ std::vector<AmyloidCoord> AutoPicker::findNextCandidateCoordinates(
     int new_micrograph_xsize = (float) micrograph_xsize * scale;
     int new_micrograph_ysize = (float) micrograph_ysize * scale;
     int skip_side_pix = round(skip_side * scale);
-    Matrix2D<RFLOAT> A2D;
     Matrix1D<RFLOAT> vec_c(2), vec_p(2);
-    rotation2DMatrix(-mycoord.psi, A2D, false);
+    Matrix2D<RFLOAT> A2D = rotation2DMatrix(-mycoord.psi, false);
 
     for (const auto &coord : circle) {
         // Rotate the circle-vector coordinates along the mycoord.psi

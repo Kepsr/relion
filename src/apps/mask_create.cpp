@@ -122,7 +122,7 @@ class mask_create_parameters
     void makeMaskFromFile(Image<RFLOAT> &Iout)
     {
         Image<RFLOAT> Iin, Ip;
-        std:: cout << " Creating a mask ..." << std::endl;
+        std::cout << " Creating a mask ..." << std::endl;
         Iin.read(fn_thr);
 
         if (angpix < 0) {
@@ -137,56 +137,45 @@ class mask_create_parameters
 
         Iin().setXmippOrigin();
 
-        if (fn_and != "") {
+        if (!fn_and.empty()) {
             Ip.read(fn_and);
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --and maps are different shapes!");
             for (long int n = 0; n < Ip().size(); n++) {
-                if (Ip()[n] > ini_threshold && Iin()[n] > ini_threshold) {
-                    Iin()[n] = ini_threshold + 1.0;
-                } else {
-                    Iin()[n] = ini_threshold - 1.0;
-                }
+                Iin()[n] = ini_threshold +
+                    (Ip()[n] > ini_threshold && Iin()[n] > ini_threshold ? +1.0 : -1.0);
             }
-        } else if (fn_or != "") {
+        } else if (!fn_or.empty()) {
             Ip.read(fn_or);
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --or maps are different shapes!");
             for (long int n = 0; n < Ip().size(); n++) {
-                if (Ip()[n] > ini_threshold || Iin()[n] > ini_threshold) {
-                    Iin()[n] = ini_threshold + 1.0;
-                } else {
-                    Iin()[n] = ini_threshold - 1.0;
-                }
+                Iin()[n] = ini_threshold + 
+                    (Ip()[n] > ini_threshold || Iin()[n] > ini_threshold ? +1.0 : -1.0);
             }
-        } else if (fn_andnot != "") {
+        } else if (!fn_andnot.empty()) {
             Ip.read(fn_andnot);
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --not maps are different shapes!");
             for (long int n = 0; n < Ip().size(); n++) {
-                if (Iin()[n] > ini_threshold && Ip()[n] < ini_threshold) {
-                    Iin()[n] = ini_threshold + 1.0;
-                } else {
-                    Iin()[n] = ini_threshold - 1.0;
-                }
+                Iin()[n] = ini_threshold +
+                    (Iin()[n] > ini_threshold && Ip()[n] < ini_threshold ? +1.0 : -1.0);
             }
-        } else if (fn_ornot != "") {
+        } else if (!fn_ornot.empty()) {
             Ip.read(fn_ornot);
             Ip().setXmippOrigin();
             if (!Ip().sameShape(Iin()))
                 REPORT_ERROR("ERROR: --i and --not maps are different shapes!");
             for (long int n = 0; n < Ip().size(); n++) {
-                if (Iin()[n] > ini_threshold || Ip()[n] < ini_threshold) {
-                    Iin()[n] = ini_threshold + 1.0;
-                } else {
-                    Iin()[n] = ini_threshold - 1.0;
-                }
+                Iin()[n] = ini_threshold +
+                    (Iin()[n] > ini_threshold || Ip()[n] < ini_threshold ? +1.0 : -1.0);
             }
         }
 
+        Iin().setXmippOrigin();
         autoMask(Iin(), Iout(), ini_threshold, extend_ini_mask, width_soft_edge, true, n_threads); // true sets verbosity
 
         if (do_helix) {
