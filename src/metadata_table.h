@@ -177,7 +177,7 @@ class MetaDataTable {
     // (only numbers, no strings/bools)
     void sort(EMDL::EMDLabel name, bool do_reverse = false, bool only_set_index = false, bool do_random = false);
 
-    void newSort(const EMDL::EMDLabel name, bool do_reverse = false, bool do_sort_after_at = false, bool do_sort_before_at = false);
+    void newSort(const EMDL::EMDLabel name, bool do_sort_after_at = false, bool do_sort_before_at = false);
 
     // Does 'activeLabels' contain 'label'?
     bool containsLabel(const EMDL::EMDLabel label, const std::string &unknownLabel="") const;

@@ -871,7 +871,7 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(MultidimArray<Complex> 
 void getAmplitudeCorrelationAndDifferentialPhaseResidual(MultidimArray<RFLOAT> &m1, MultidimArray<RFLOAT> &m2,
                                                          MultidimArray<RFLOAT> &acorr, MultidimArray<RFLOAT> &dpr);
 
-MultidimArray<RFLOAT> cosDeltaPhase(MultidimArray<Complex> &FT1, MultidimArray<Complex> &FT2);
+std::vector<RFLOAT> cosDeltaPhase(const MultidimArray<Complex> &FT1, const MultidimArray<Complex> &FT2);
 
 // Get precalculated AB-matrices for on-the-fly shift calculations (without tabulated sine and cosine)
 void getAbMatricesForShiftImageInFourierTransform(MultidimArray<Complex> &in, MultidimArray<Complex> &out,
@@ -985,7 +985,10 @@ void amplitudeOrPhaseMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &
 
 void helicalLayerLineProfile(const MultidimArray<RFLOAT> &v, std::string title, std::string fn_eps);
 
-void generateBinaryHelicalFourierMask(MultidimArray<RFLOAT> &mask, std::vector<RFLOAT> exclude_begin, std::vector<RFLOAT> exclude_end, RFLOAT angpix);
+MultidimArray<RFLOAT> generateBinaryHelicalFourierMask(
+    long int xdim, long int zdim, long int ydim,
+    std::vector<RFLOAT> exclude_begin, std::vector<RFLOAT> exclude_end, RFLOAT angpix
+);
 
 template <class T>
 void cropInFourierSpace(MultidimArray<T> &Fref, MultidimArray<T> &Fbinned) {

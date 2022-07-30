@@ -32,6 +32,38 @@
 
 #include <map>
 
+// Will only issue warning once, even when called multiple times
+void issue_division_warning() {
+    static bool called = false;
+    if (!called++)
+    std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
+}
+
+RFLOAT get_scale(
+    const MultidimArray<RFLOAT> &W,
+    const MultidimArray<RFLOAT> &X,
+    const MultidimArray<RFLOAT> &A
+) {
+    RFLOAT sum_aa = 0.0, sum_xa = 0.0;
+    // sum_aa = sum(W * W * X * X)
+    // sum_xa = sum(W * W * A * X)
+    for (long int n = 0; n < X.size(); n++) {
+        RFLOAT w = W[n];
+        RFLOAT x = X[n];
+        RFLOAT a = A[n];
+        sum_aa += w * w * a * a;
+        sum_xa += w * w * x * a;
+    }
+    return sum_xa / sum_aa;
+}
+
+
+template <typename T, typename F>
+inline T maybe(T t, F f) {
+    try { return f(); } catch (const char *errmsg) { return t; }
+}
+
+
 class image_handler_parameters {
 
     public:
@@ -204,12 +236,14 @@ class image_handler_parameters {
             }
         }
 
-        // Flipping: this needs to be done from Iin to Iout (i.e. can't be done on-line on Iout only!)
+        // Flipping: this needs to be done from Iin to Iout (i.e. can't be done in-place on Iout)
         if (do_flipXY) {
             // Flip X/Y
             for (long int j = 0; j < Ysize(Iin()); j++)
             for (long int i = 0; i < Xsize(Iin()); i++) {
                 direct::elem(Iout(), i, j) = direct::elem(Iin(), j, i);
+                // if (i < j)
+                // std::swap(direct::elem(Iin(), i, j), direct::elem(Iin(), j, i));
             }
         } else if (do_flipmXY) {
             // Flip mX/Y
@@ -239,60 +273,32 @@ class image_handler_parameters {
         }
 
         if (fabs(multiply_constant - 1.0) > 0.0) {
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) *= multiply_constant;
-            }
+            Iout() *= multiply_constant;
         } else if (fabs(divide_constant - 1.0) > 0.0) {
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) /= divide_constant;
-            }
+            Iout() /= divide_constant;
         } else if (fabs(add_constant) > 0.0) {
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) += add_constant;
-            }
+            Iout() += add_constant;
         } else if (fabs(subtract_constant) > 0.0) {
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) -= subtract_constant;
-            }
+            Iout() -= subtract_constant;
         } else if (!fn_mult.empty()) {
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) *= direct::elem(Iop(), i, j, k);
-            }
+            Iout() *= Iop();
         } else if (!fn_div.empty()) {
-            bool is_first = true;
             for (long int k = 0; k < Zsize(Iin()); k++)
             for (long int j = 0; j < Ysize(Iin()); j++)
             for (long int i = 0; i < Xsize(Iin()); i++) {
                 if (abs(direct::elem(Iop(), i, j, k)) < 1e-10) {
-                    if (is_first) {
-                        std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
-                        is_first = false;
-                    }
+                    issue_division_warning();
                     direct::elem(Iout(), i, j, k) = 0.0;
                 } else {
                     direct::elem(Iout(), i, j, k) /= direct::elem(Iop(), i, j, k);
                 }
             }
         } else if (!fn_add.empty()) {
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) += direct::elem(Iop(), i, j, k);
-            }
+            Iout() += Iop();
         } else if (!fn_subtract.empty()) {
-            RFLOAT my_scale = 1.0, best_diff2 ;
+            RFLOAT scale = 1.0, best_diff2 ;
             if (do_optimise_scale_subtract) {
-                if (fn_mask == "") {
+                if (fn_mask.empty()) {
                     Imask(). resize(Iop());
                     Imask().initConstant(1.0);
                 }
@@ -303,58 +309,42 @@ class image_handler_parameters {
                     FourierTransformer transformer;
                     MultidimArray<Complex> FTop = transformer.FourierTransform(Iop());
 
-                    RFLOAT my_bfac, smallest_diff2 = 99.0e99;
-                    for (RFLOAT bfac = -optimise_bfactor_subtract; bfac <= optimise_bfactor_subtract; bfac += 10.0) {
+                    RFLOAT bfac, smallest_diff2 = 99.0e99;
+                    for (RFLOAT bfac_this_iter = -optimise_bfactor_subtract; bfac_this_iter <= optimise_bfactor_subtract; bfac_this_iter += 10.0) {
                         FTop_bfac = FTop;
-                        applyBFactorToMap(FTop_bfac, Xsize(Iop()), bfac, angpix);
+                        applyBFactorToMap(FTop_bfac, Xsize(Iop()), bfac_this_iter, angpix);
                         Isharp = transformer.inverseFourierTransform(FTop_bfac);
 
-                        RFLOAT sum_aa = 0.0, sum_xa = 0.0, sum_xx = 0.0;
-                        for (long int n = 0; n < Iin().size(); n++) {
-                            RFLOAT w = Imask()[n] * Imask()[n];
-                            RFLOAT x = Iin()[n];
-                            RFLOAT a = Isharp[n];
-                            sum_aa += w * a * a;
-                            sum_xa += w * x * a;
-                            sum_xx += w * x * x;
-                        }
-
-                        RFLOAT scale = sum_xa / sum_aa;
+                        RFLOAT scale_this_iter = get_scale(Imask(), Iin(), Isharp);
                         RFLOAT diff2 = 0.0;
+                        // diff2 = Imask * Imask * (Iin - scale_this_iter * Isharp) * (Iin - scale_this_iter * Isharp)
                         for (long int n = 0; n < Iin().size(); n++) {
                             RFLOAT w = Imask()[n];
                             RFLOAT x = Iin()[n];
                             RFLOAT a = Isharp[n];
-                            diff2 += w * w * (x - scale * a) * (x - scale * a);
+                            diff2 += w * w * (x - scale_this_iter * a) * (x - scale_this_iter * a);
                         }
                         if (diff2 < smallest_diff2) {
                             smallest_diff2 = diff2;
-                            my_bfac = bfac;
-                            my_scale = scale;
+                            bfac  = bfac_this_iter;
+                            scale = scale_this_iter;
                         }
                     }
-                    std::cout << " Optimised bfactor = " << my_bfac << "; optimised scale = " << my_scale << std::endl;
-                    applyBFactorToMap(FTop, Xsize(Iop()), my_bfac, angpix);
+                    std::cout << " Optimised bfactor = " << bfac << "; optimised scale = " << scale << std::endl;
+                    applyBFactorToMap(FTop, Xsize(Iop()), bfac, angpix);
                     Iop() = transformer.inverseFourierTransform(FTop);
 
                 } else {
-                    RFLOAT sum_aa = 0.0, sum_xa = 0.0;
-                    for (long int n = 0; n < Iin().size(); n++) {
-                        RFLOAT w = Imask()[n];
-                        RFLOAT x = Iin()[n];
-                        RFLOAT a = Iop()[n];
-                        sum_aa += w * w * a * a;
-                        sum_xa += w * w * x * a;
-                    }
-                    my_scale = sum_xa / sum_aa;
-                    std::cout << " Optimised scale = " << my_scale << std::endl;
+                    scale = get_scale(Imask(), Iin(), Iop());
+                    std::cout << " Optimised scale = " << scale << std::endl;
                 }
             }
 
             for (long int k = 0; k < Zsize(Iin()); k++)
             for (long int j = 0; j < Ysize(Iin()); j++)
             for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) -= my_scale * direct::elem(Iop(), i, j, k);
+                direct::elem(Iout(), i, j, k) -= scale * direct::elem(Iop(), i, j, k);
+                // Looks like a job for expression templates
             }
         } else if (!fn_fsc.empty()) {
             MultidimArray<RFLOAT> fsc;
@@ -380,7 +370,7 @@ class image_handler_parameters {
 
                 MDpower.addObject();
                 RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
-                MDpower.setValue(EMDL::SPECTRAL_IDX, (int) i);
+                MDpower.setValue(EMDL::SPECTRAL_IDX, i);
                 MDpower.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDpower.setValue(EMDL::RESOLUTION_ANGSTROM, res);
                 MDpower.setValue(EMDL::MLMODEL_POWER_REF, direct::elem(spectrum, i));
@@ -397,15 +387,15 @@ class image_handler_parameters {
             MultidimArray<Complex> FT1 = transformer.FourierTransform(Iout());
             MultidimArray<Complex> FT2 = transformer.FourierTransform(Iop());
 
-            MultidimArray<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
+            std::vector<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
             MDcos.setName("cos");
-            for (long int i = 0; i < Xsize(cosDPhi); i++) {
+            for (long int i = 0; i < cosDPhi.size(); i++) {
                 MDcos.addObject();
                 RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDcos.setValue(EMDL::SPECTRAL_IDX, (int) i);
                 MDcos.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDcos.setValue(EMDL::RESOLUTION_ANGSTROM, res);
-                MDcos.setValue(EMDL::POSTPROCESS_FSC_GENERAL, direct::elem(cosDPhi, i));
+                MDcos.setValue(EMDL::POSTPROCESS_FSC_GENERAL, cosDPhi[i]);
             }
             MDcos.write(std::cout);
         } else if (!fn_correct_ampl.empty()) {
@@ -419,8 +409,7 @@ class image_handler_parameters {
             transformer.FourierTransform(Iin(), FT, false);
 
             // Note: only 2D rotations are done! 3D application assumes zero rot and tilt!
-            Matrix2D<RFLOAT> A;
-            rotation2DMatrix(psi, A);
+            Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
 
             Iop().setXmippOrigin();
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
@@ -442,12 +431,11 @@ class image_handler_parameters {
 
         if (logfilter > 0.0) {
             LoGFilterMap(Iout(), logfilter, angpix);
-            RFLOAT avg, stddev, minval, maxval;
-            // Iout().statisticsAdjust(0,1);
+            // Iout().statisticsAdjust(0, 1);
         }
 
         if (lowpass > 0.0) {
-            if (directional == "") {
+            if (directional.empty()) {
                 lowPassFilterMap(Iout(), lowpass, angpix, filter_edge_width);
             } else {
                 directionalFilterMap(
@@ -456,9 +444,8 @@ class image_handler_parameters {
             }
         }
 
-        if (highpass > 0.0) {
+        if (highpass > 0.0)
             highPassFilterMap(Iout(), highpass, angpix, filter_edge_width);
-        }
 
         if (do_flipX) {
             // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
@@ -489,8 +476,8 @@ class image_handler_parameters {
             for (long int k = 0; k < Zsize(Iin()); k++)
             for (long int j = 0; j < Ysize(Iin()); j++)
             for (long int i = 0; i < Xsize(Iin()); i++) {
-                long int dest_x = (Xsize(Iin()) - j) % Xsize(Iin());
-                direct::elem(Iout(), i, j, k) = Iin().elem(i, dest_x, k);
+                long int ii = (Xsize(Iin()) - i) % Xsize(Iin());
+                direct::elem(Iout(), i, j, k) = Iin().elem(ii, j, k);
             }
         }
 
@@ -502,13 +489,11 @@ class image_handler_parameters {
             fabs(shift_y) > 0.0 ||
             fabs(shift_z) > 0.0
         ) {
-            Matrix1D<RFLOAT> shift(2);
+            Matrix1D<RFLOAT> shift (2 + (zdim > 1));
             XX(shift) = shift_x;
             YY(shift) = shift_y;
-            if (zdim > 1) {
-                shift.resize(3);
-                ZZ(shift) = shift_z;
-            }
+            if (zdim > 1)
+            ZZ(shift) = shift_z;
             selfTranslate(Iout(), shift, DONT_WRAP);
         }
 
@@ -691,12 +676,7 @@ class image_handler_parameters {
             FileName fn_img = MD.getValue<std::string>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
 
             // For fourfilter...
-            RFLOAT psi;
-            try {
-                psi = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-            } catch (const char* errmsg) {
-                psi = 0.0;
-            }
+            RFLOAT psi = maybe(0.0, [&] (){ return MD.getValue<RFLOAT>(EMDL::ORIENT_PSI); });
 
             Image<RFLOAT> Iin;
             // Initialise for the first image
@@ -715,33 +695,32 @@ class image_handler_parameters {
                 if (zdim > 1 && (bin_avg > 0 || avg_first >= 0 && avg_last >= 0))
                     REPORT_ERROR("ERROR: you cannot perform movie-averaging operations on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
 
-                if (fn_mult != "") {
+                if (!fn_mult.empty()) {
                     Iop.read(fn_mult);
-                } else if (fn_div != "") {
+                } else if (!fn_div.empty()) {
                     Iop.read(fn_div);
-                } else if (fn_add != "") {
+                } else if (!fn_add.empty()) {
                     Iop.read(fn_add);
-                } else if (fn_subtract != "") {
+                } else if (!fn_subtract.empty()) {
                     Iop.read(fn_subtract);
-                    if (do_optimise_scale_subtract && fn_mask != "") {
+                    if (do_optimise_scale_subtract && !fn_mask.empty())
                         Imask.read(fn_mask);
-                    }
-                } else if (fn_fsc != "") {
+                } else if (!fn_fsc.empty()) {
                     Iop.read(fn_fsc);
-                } else if (fn_cosDPhi != "") {
+                } else if (!fn_cosDPhi.empty()) {
                     Iop.read(fn_cosDPhi);
-                } else if (fn_adjust_power != "") {
+                } else if (!fn_adjust_power.empty()) {
                     Iop.read(fn_adjust_power);
-                } else if (fn_fourfilter != "") {
+                } else if (!fn_fourfilter.empty()) {
                     Iop.read(fn_fourfilter);
-                } else if (fn_correct_ampl != "") {
+                } else if (!fn_correct_ampl.empty()) {
                     Iop.read(fn_correct_ampl);
 
                     // Calculate by the radial average in the Fourier domain
                     MultidimArray<RFLOAT> spectrum = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                        long int idx = round(sqrt(ip * ip + jp * jp + kp * kp));
+                        long int idx = round(euclidsq(ip, jp, kp));
                         spectrum(idx) += direct::elem(Iop(), i, j, k);
                         count(idx) += 1.0;
                     }
@@ -751,7 +730,7 @@ class image_handler_parameters {
                     }
 
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                        long int idx = round(sqrt(ip * ip + jp * jp + kp * kp));
+                        long int idx = round(euclidsq(ip, jp, kp));
                         if (idx > minr_ampl_corr) {
                             direct::elem(Iop(), i, j, k) /= spectrum(idx);
                         } else {
@@ -762,7 +741,7 @@ class image_handler_parameters {
                     Iop.write("test.mrc");
                 }
 
-                if (fn_mult != "" || fn_div != "" || fn_add != "" || fn_subtract != "" || fn_fsc != "" || fn_adjust_power != "" || fn_fourfilter != "")
+                if (!fn_mult.empty() || !fn_div.empty() || !fn_add.empty() || !fn_subtract.empty() || !fn_fsc.empty() || !fn_adjust_power.empty() || !fn_fourfilter.empty())
                     if (Xsize(Iop()) != xdim || Ysize(Iop()) != ydim || Zsize(Iop()) != zdim)
                         REPORT_ERROR("Error: operate-image is not of the correct size");
 
@@ -777,18 +756,20 @@ class image_handler_parameters {
                 // only write statistics to screen
                 Iin.read(fn_img);
                 Stats<RFLOAT> stats = Iin().computeStats();
-                RFLOAT avg    = stats.avg;
-                RFLOAT stddev = stats.stddev;
-                RFLOAT minval = stats.min;
-                RFLOAT maxval = stats.max;
                 RFLOAT header_angpix = Iin.samplingRateX();
-                std::cout << fn_img << " : (x, y, z, n) = " << Xsize(Iin()) << " × "<< Ysize(Iin()) << " × " << Zsize(Iin()) << " × " << Nsize(Iin()) << " ; avg = " << avg << " stddev = " << stddev << " minval = " <<minval << " maxval = " << maxval << "; angpix = " << header_angpix << std::endl;
+                std::cout << fn_img << " : (x, y, z, n) = "
+                    << Xsize(Iin()) << " × " << Ysize(Iin()) << " × "
+                    << Zsize(Iin()) << " × " << Nsize(Iin()) << " ; "
+                    "avg = " << stats.avg << " stddev = " << stats.stddev << " "
+                    "minval = " << stats.min << " maxval = " << stats.max << "; "
+                    "angpix = " << header_angpix << std::endl;
             } else if (do_calc_com) {
                 Matrix1D <RFLOAT> com(3);
                 Iin.read(fn_img);
                 Iin().setXmippOrigin();
                 Iin().centerOfMass(com);
-                std::cout << fn_img << " : center of mass (relative to XmippOrigin) x " << XX(com);
+                std::cout << fn_img << " : center of mass (relative to XmippOrigin)"
+                                                 " x " << XX(com);
                 if (com.size() > 1) std::cout << " y " << YY(com);
                 if (com.size() > 2) std::cout << " z " << ZZ(com);
                 std::cout << std::endl;
@@ -796,15 +777,11 @@ class image_handler_parameters {
                 Iin.read(fn_img);
 
                 if (do_avg_ampl2_ali) {
-                    RFLOAT xoff = 0.0;
-                    RFLOAT yoff = 0.0;
-                    RFLOAT psi  = 0.0;
-                    xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X);
-                    yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y);
-                    psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+                    auto psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+                    auto xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X);
+                    auto yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y);
                     // Apply the actual transformation
-                    Matrix2D<RFLOAT> A;
-                    rotation2DMatrix(psi, A);
+                    Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
                     A.at(0, 2) = xoff;
                     A.at(1, 2) = yoff;
                     selfApplyGeometry(Iin(), A, IS_NOT_INV, DONT_WRAP);
@@ -835,19 +812,16 @@ class image_handler_parameters {
                         direct::elem(avg_ampl, i, j, k) +=  direct::elem(Iin(), i, j, k, n);
                     }
                 }
-            } else if (bin_avg > 0 || (avg_first >= 0 && avg_last >= 0)) {
+            } else if (bin_avg > 0 || avg_first >= 0 && avg_last >= 0) {
                 // movie-frame averaging operations
-                int avgndim = 1;
-                if (bin_avg > 0) {
-                    avgndim = ndim / bin_avg;
-                }
+                int avgndim = bin_avg > 0 ? ndim / bin_avg : 1;
                 Image<RFLOAT> Iavg(xdim, ydim, zdim, avgndim);
 
                 if (ndim == 1)
                     REPORT_ERROR("ERROR: you are trying to perform movie-averaging options on a single image/volume");
 
                 FileName fn_ext = fn_out.getExtension();
-                if (Nsize(Iavg()) > 1 && (fn_ext.contains("mrc") && !fn_ext.contains("mrcs")))
+                if (Nsize(Iavg()) > 1 && fn_ext.contains("mrc") && !fn_ext.contains("mrcs"))
                     REPORT_ERROR("ERROR: trying to write a stack into an MRC image. Use .mrcs extensions for stacks!");
 
                 for (long int nn = 0; nn < ndim; nn++) {
@@ -861,7 +835,7 @@ class image_handler_parameters {
                             }
                         }
                     } else if (avg_first >= 0 && avg_last >= 0 && nn + 1 >= avg_first && nn + 1 <= avg_last) {
-                        //                                           ^ Start counting at 1
+                        //                                             ^ Start counting at 1
                         Iavg() += Iin(); // just store sum
                     }
                 }

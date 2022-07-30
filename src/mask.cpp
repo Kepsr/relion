@@ -245,14 +245,13 @@ void softMaskOutsideMap(MultidimArray<RFLOAT> &vol, MultidimArray<RFLOAT> &msk, 
 }
 
 void autoMask(
-    MultidimArray<RFLOAT> &img_in, MultidimArray<RFLOAT> &msk_out,
+    const MultidimArray<RFLOAT> &img_in, MultidimArray<RFLOAT> &msk_out,
     RFLOAT ini_mask_density_threshold, RFLOAT extend_ini_mask, RFLOAT width_soft_mask_edge, 
     bool verb, int n_threads
 ) {
 
     // Resize output mask
     msk_out.clear();
-    img_in.setXmippOrigin();
     msk_out.resize(img_in);
 
     // A. Calculate initial binary mask based on density threshold

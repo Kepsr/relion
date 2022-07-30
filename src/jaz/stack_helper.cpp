@@ -67,7 +67,7 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
     }
 
     for (int i = 0; i <= curInd; i++) {
-        out[i].newSort(EMDL::IMAGE_NAME, false, false, true);
+        out[i].newSort(EMDL::IMAGE_NAME, false, true);
     }
 
     return out;
@@ -97,7 +97,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
     }
 
     MetaDataTable md2(*mdt);
-    md2.newSort(EMDL::IMAGE_NAME, false, true);
+    md2.newSort(EMDL::IMAGE_NAME, true);
 
     const long lc = md2.numberOfObjects();
     std::string lastName = "";
@@ -117,7 +117,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
     }
 
     for (int i = 0; i <= curInd; i++) {
-        out[i].newSort(EMDL::IMAGE_NAME, false, false, true);
+        out[i].newSort(EMDL::IMAGE_NAME, false, true);
     }
 
     return out;
