@@ -125,7 +125,7 @@ int SymList::read_sym_file(FileName fn_sym) {
             RFLOAT rot_ang;
             L.initIdentity();
             for (int j = 1, rot_ang = ang_incr; j < fold; j++, rot_ang += ang_incr) {
-                rotation3DMatrix(rot_ang, axis, R);
+                R = rotation3DMatrix(rot_ang, axis);
                 R.setSmallValuesToZero();
                 set_matrices(i++, L, R.transpose());
             }
@@ -721,13 +721,10 @@ void symmetriseMap(MultidimArray<RFLOAT> &img, FileName &fn_sym, bool do_wrap) {
 
     Matrix2D<RFLOAT> L(4, 4), R(4, 4); // A matrix from the list
     MultidimArray<RFLOAT> sum = img;
-    MultidimArray<RFLOAT> aux;
-    aux.resize(img);
 
     for (int isym = 0; isym < SL.SymsNo(); isym++) {
         SL.get_matrices(isym, L, R);
-        applyGeometry(img, aux, R, IS_INV, do_wrap);
-        sum += aux;
+        sum += applyGeometry(img, R, IS_INV, do_wrap);
     }
 
     // Overwrite the input

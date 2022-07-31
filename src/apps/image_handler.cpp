@@ -483,7 +483,7 @@ class image_handler_parameters {
 
         // Shifting
         if (do_shiftCOM) {
-            selfTranslateCenterOfMassToCenter(Iout(), DONT_WRAP, true); // verbose=true!
+            Iout() = translateCenterOfMassToCenter(Iout(), DONT_WRAP, true); // verbose
         } else if (
             fabs(shift_x) > 0.0 ||
             fabs(shift_y) > 0.0 ||
@@ -494,7 +494,7 @@ class image_handler_parameters {
             YY(shift) = shift_y;
             if (zdim > 1)
             ZZ(shift) = shift_z;
-            selfTranslate(Iout(), shift, DONT_WRAP);
+            Iout() = translate(Iout(), shift, DONT_WRAP);
         }
 
         // Re-scale
@@ -784,7 +784,7 @@ class image_handler_parameters {
                     Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
                     A.at(0, 2) = xoff;
                     A.at(1, 2) = yoff;
-                    selfApplyGeometry(Iin(), A, IS_NOT_INV, DONT_WRAP);
+                    Iin() = applyGeometry(Iin(), A, IS_NOT_INV, DONT_WRAP);
                 }
 
                 MultidimArray<Complex> FT = transformer.FourierTransform(Iin());

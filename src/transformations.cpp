@@ -200,31 +200,31 @@ T interpolate_sub(
         std::cout <<
         "tmp1=" << direct::elem(V1, m1, n1, o1) << " "
         << (T) ((1 - wz) * (1 - wy) * (1 - wx) * direct::elem(V1, m1, n1, o1))
-        << std::endl <<
+        << "\n" <<
         "tmp2=" << direct::elem(V1, m2, n1, o1) << " "
         << (T) ((1 - wz) * (1 - wy) * wx * direct::elem(V1, m2, n1, o1))
-        << std::endl <<
+        << "\n" <<
         "tmp3=" << direct::elem(V1, m1, n2, o1) << " "
         << (T) ((1 - wz) * wy * (1 - wx) * direct::elem(V1, m1, n2, o1))
-        << std::endl <<
+        << "\n" <<
         "tmp4=" << direct::elem(V1, m2, n2, o1) << " "
         << (T) ((1 - wz) * wy * wx * direct::elem(V1, m1, n1, o2))
-        << std::endl <<
+        << "\n" <<
         "tmp6=" << direct::elem(V1, m2, n1, o2) << " "
         << (T) (wz * (1 - wy) * wx * direct::elem(V1, m2, n1, o2))
-        << std::endl <<
+        << "\n" <<
         "tmp7=" << direct::elem(V1, m1, n2, o2) << " "
         << (T) (wz * wy * (1 - wx) * direct::elem(V1, m1, n2, o2))
-        << std::endl <<
+        << "\n" <<
         "tmp8=" << direct::elem(V1, m2, n2, o2) << " "
         << (T) (wz * wy * wx * direct::elem(V1, m2, n2, o2))
-        << std::endl <<
+        << "\n" <<
         "tmp= " << tmp << std::endl;
     #endif
     return tmp;
 }
 
-// Manual instantiation
+// Manual template instantiation
 
 template RFLOAT interpolate_sub(
     const MultidimArray<RFLOAT>&, RFLOAT, RFLOAT, int, int, bool
@@ -235,53 +235,50 @@ template RFLOAT interpolate_sub(
 );
 
 /* Translation 2D ---------------------------------------------------------- */
-void translation2DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
+Matrix2D<RFLOAT> translation2DMatrix(const Matrix1D<RFLOAT> &v) {
     // if (v.size() != 2)
     //    REPORT_ERROR("Translation2D_matrix: vector is not in R2");
-
+    Matrix2D<RFLOAT> result;
     result.initIdentity(3);
     result.at(0, 2) = XX(v);
     result.at(1, 2) = YY(v);
+    return result;
 }
 
 /* Rotation 3D around the system axes -------------------------------------- */
-void rotation3DMatrix(
-    RFLOAT ang, char axis, Matrix2D<RFLOAT> &result, bool homogeneous
+Matrix2D<RFLOAT> rotation3DMatrix(
+    RFLOAT ang, char axis, bool homogeneous
 ) {
-    if (homogeneous) {
-        result.initZeros(4,4);
-        result.at(3, 3) = 1;
-    } else {
-        result.initZeros(3, 3);
-    }
+    const int n = homogeneous ? 4 : 3;
+    auto result = Matrix2D<RFLOAT>::zeros(n, n);
+    if (homogeneous) { result.at(3, 3) = 1; }
 
-    ang = radians(ang);
-    RFLOAT cosine = cos(ang);
-    RFLOAT sine = sin(ang);
+    RFLOAT cosa = cos(radians(ang));
+    RFLOAT sina = sin(radians(ang));
 
     switch (axis) {
 
         case 'Z':
-        result.at(0, 0) = cosine;
-        result.at(0, 1) = -sine;
-        result.at(1, 0) = sine;
-        result.at(1, 1) = cosine;
+        result.at(0, 0) =  cosa;
+        result.at(0, 1) = -sina;
+        result.at(1, 0) =  sina;
+        result.at(1, 1) =  cosa;
         result.at(2, 2) = 1;
         break;
 
         case 'Y':
-        result.at(0, 0) = cosine;
-        result.at(0, 2) = -sine;
-        result.at(2, 0) = sine;
-        result.at(2, 2) = cosine;
+        result.at(0, 0) =  cosa;
+        result.at(0, 2) = -sina;
+        result.at(2, 0) =  sina;
+        result.at(2, 2) =  cosa;
         result.at(1, 1) = 1;
         break;
 
         case 'X':
-        result.at(1, 1) = cosine;
-        result.at(1, 2) = -sine;
-        result.at(2, 1) = sine;
-        result.at(2, 2) = cosine;
+        result.at(1, 1) =  cosa;
+        result.at(1, 2) = -sina;
+        result.at(2, 1) =  sina;
+        result.at(2, 2) =  cosa;
         result.at(0, 0) = 1;
         break;
 
@@ -289,6 +286,7 @@ void rotation3DMatrix(
         REPORT_ERROR("rotation3DMatrix: Unknown axis");
 
     }
+    return result;
 }
 
 /* Align a vector with Z axis */
@@ -335,43 +333,43 @@ void alignWithZ(
 }
 
 /* Rotation 3D around any axis -------------------------------------------- */
-void rotation3DMatrix(
+Matrix2D<RFLOAT> rotation3DMatrix(
     RFLOAT ang, const Matrix1D<RFLOAT> &axis,
-    Matrix2D<RFLOAT> &result, bool homogeneous
+    bool homogeneous
 ) {
     // Compute a matrix which makes the turning axis coincident with Z
     // And turn around this axis
-    Matrix2D<RFLOAT> A, R;
+    Matrix2D<RFLOAT> A;
     alignWithZ(axis, A, homogeneous);
-    rotation3DMatrix(ang, 'Z', R, homogeneous);
-    result = A.transpose() * R * A;
+    const Matrix2D<RFLOAT> R = rotation3DMatrix(ang, 'Z', homogeneous);
+    return A.transpose() * R * A;
 }
 
 /* Translation 3D ---------------------------------------------------------- */
-void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &result) {
+Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v) {
     if (v.size() != 3)
         REPORT_ERROR("Translation3D_matrix: vector is not in R3");
-
+    Matrix2D<RFLOAT> result;
     result.initIdentity(4);
     result.at(0, 3) = XX(v);
     result.at(1, 3) = YY(v);
     result.at(2, 3) = ZZ(v);
+    return result;
 }
 
 /* Scale 3D ---------------------------------------------------------------- */
-void scale3DMatrix(
-    const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT> &result, bool homogeneous
+Matrix2D<RFLOAT> scale3DMatrix(
+    const Matrix1D<RFLOAT> &sc, bool homogeneous
 ) {
     if (sc.size() != 3)
         REPORT_ERROR("Scale3D_matrix: vector is not in R3");
 
-    if (homogeneous) {
-        result.initZeros(4, 4);
-        result.at(3, 3) = 1;
-    } else {
-        result.initZeros(3, 3);
-    }
+    const int n = homogeneous ? 4 : 3;
+    auto result = Matrix2D<RFLOAT>::zeros(n, n);
+    if (homogeneous) { result.at(3, 3) = 1; }
+
     result.at(0, 0) = XX(sc);
     result.at(1, 1) = YY(sc);
     result.at(2, 2) = ZZ(sc);
+    return result;
 }

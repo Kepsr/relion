@@ -116,7 +116,7 @@ void DisplayBox::setData(
     // For micrographs use relion-scaling to avoid bias in down-sampled positions
     // For multi-image viewers, do not use this scaling as it is slower...
     if (do_relion_scale && abs(scale - 1.0) > 0.01)
-        selfScaleToSize(img, xsize_data, ysize_data);
+        img = scaleToSize(img, xsize_data, ysize_data);
 
     // Use the same nearest-neighbor algorithm as in the copy function of Fl_Image...
     if (abs(scale - 1.0) > 0.01 && !do_relion_scale) {
@@ -436,38 +436,37 @@ void basisViewerCanvas::fill(
                     }
                 }
 
-                if (_do_apply_orient && have_optics_group) {
-                    Matrix1D<RFLOAT> offset(3);
-                    RFLOAT psi = MDin.getValue<RFLOAT>(EMDL::ORIENT_PSI,               my_ipos);
-                    XX(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_ipos);
-                    YY(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_ipos);
-                    if (img().getDim() == 2) {
+                if (_do_apply_orient) {
+                    if (have_optics_group) {
+                        Matrix1D<RFLOAT> offset (3);
+                        XX(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_ipos);
+                        YY(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_ipos);
+                        if (img().getDim() == 3)
+                        ZZ(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
                         offset /= angpix;
-                        Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
-                        A.at(0, 2) = cos(radians(psi)) * XX(offset) - sin(radians(psi)) * YY(offset);
-                        A.at(1, 2) = cos(radians(psi)) * YY(offset) + sin(radians(psi)) * XX(offset);
-                        selfApplyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
-                    } else {
-                        RFLOAT rot  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ROT,               my_ipos);
-                        RFLOAT tilt = MDin.getValue<RFLOAT>(EMDL::ORIENT_TILT,              my_ipos);
-                        ZZ(offset)  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
-                        offset /= angpix;
-                        Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(rot, tilt, psi);
-                        A.at(0, 3) = A.at(0, 0) * XX(offset) + A.at(0, 1) * YY(offset) + A.at(0, 2) * ZZ(offset);
-                        A.at(1, 3) = A.at(1, 0) * XX(offset) + A.at(1, 1) * YY(offset) + A.at(1, 2) * ZZ(offset);
-                        A.at(2, 3) = A.at(2, 0) * XX(offset) + A.at(2, 1) * YY(offset) + A.at(2, 2) * ZZ(offset);
-                        selfApplyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
+                        const RFLOAT psi = MDin.getValue<RFLOAT>(EMDL::ORIENT_PSI, my_ipos);
+                        if (img().getDim() == 2) {
+                            Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
+                            A.at(0, 2) = cos(radians(psi)) * XX(offset) - sin(radians(psi)) * YY(offset);
+                            A.at(1, 2) = cos(radians(psi)) * YY(offset) + sin(radians(psi)) * XX(offset);
+                            img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
+                        } else {
+                            const RFLOAT rot  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ROT,  my_ipos);
+                            const RFLOAT tilt = MDin.getValue<RFLOAT>(EMDL::ORIENT_TILT, my_ipos);
+                            Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(rot, tilt, psi);
+                            for (int i : {0, 1, 2})
+                                A.at(i, 3) = A.at(i, 0) * XX(offset) + A.at(i, 1) * YY(offset) + A.at(i, 2) * ZZ(offset);
+                            img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
+                        }
+                    } else if (MDin.containsLabel(EMDL::MLMODEL_IS_HELIX) && img().getDim() == 3) {
+                        Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(0, 90, 0);
+                        for (int i : {0, 1, 2})
+                            A.at(i, 3) = A.at(i, 0) + A.at(i, 1) + A.at(i, 2);
+                        img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
                     }
-                } else if (_do_apply_orient && MDin.containsLabel(EMDL::MLMODEL_IS_HELIX) && img().getDim() == 3) {
-                    Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(0, 90, 0);
-                    A.at(0, 3) = A.at(0, 0) + A.at(0, 1) + A.at(0, 2);
-                    A.at(1, 3) = A.at(1, 0) + A.at(1, 1) + A.at(1, 2);
-                    A.at(2, 3) = A.at(2, 0) + A.at(2, 1) + A.at(2, 2);
-                    selfApplyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
                 }
-                if (_do_recenter) {
-                    selfTranslateCenterOfMassToCenter(img());
-                }
+                if (_do_recenter)
+                    img() = translateCenterOfMassToCenter(img());
 
                 if (lowpass  > 0.0 && have_optics_group) lowPassFilterMap (img(), lowpass,  angpix);
                 if (highpass > 0.0 && have_optics_group) highPassFilterMap(img(), highpass, angpix);
@@ -1304,7 +1303,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
             for (long int i : MDout) {
                 FileName fn_img = MDout.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
                 img.read(fn_img);
-                selfTranslateCenterOfMassToCenter(img());
+                img() = translateCenterOfMassToCenter(img());
                 FileName fn_out;
                 fn_out.compose(i + 1, fn_stack);
                 MDout.setValue(EMDL::MLMODEL_REF_IMAGE, fn_out);

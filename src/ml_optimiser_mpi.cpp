@@ -1878,7 +1878,7 @@ void MlOptimiserMpi::maximization() {
                     // Apply the body mask
                     if (mymodel.nr_bodies > 1) {
                         // 19may2015 translate the reconstruction back to its C.O.M.
-                        selfTranslate(mymodel.Iref[ibody], mymodel.com_bodies[ibody], DONT_WRAP);
+                        mymodel.Iref[ibody] = translate(mymodel.Iref[ibody], mymodel.com_bodies[ibody], DONT_WRAP);
 
                         //#define DEBUG_BODIES_SPI
                         #ifdef DEBUG_BODIES_SPI
@@ -2040,13 +2040,12 @@ void MlOptimiserMpi::maximization() {
                             // Apply the body mask
                             if (mymodel.nr_bodies > 1) {
                                 // 19 May 2015 Translate the reconstruction back to its C.O.M.
-                                selfTranslate(mymodel.Iref[ibody], mymodel.com_bodies[ibody], DONT_WRAP);
+                                mymodel.Iref[ibody] = translate(mymodel.Iref[ibody], mymodel.com_bodies[ibody], DONT_WRAP);
 
                                 #ifdef DEBUG_BODIES_SPI
                                 FileName fn_tmp;
                                 fn_tmp.compose(fn_out + "_unmasked_half2_body", ibody + 1, "spi");
-                                Image<RFLOAT> Itmp;
-                                Itmp()=mymodel.Iref[ibody];
+                                Image<RFLOAT> Itmp (mymodel.Iref[ibody]);
                                 Itmp.write(fn_tmp);
                                 #endif
                             }
@@ -2451,7 +2450,7 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
 
             if (mymodel.nr_bodies > 1) {
                 // 19may2015 translate the reconstruction back to its C.O.M.
-                selfTranslate(Iunreg(), mymodel.com_bodies[ibody], DONT_WRAP);
+                Iunreg() = translate(Iunreg(), mymodel.com_bodies[ibody], DONT_WRAP);
             }
 
             // Update header information
@@ -2681,7 +2680,7 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
 
     if (mymodel.nr_bodies > 1) {
         // 19may2015 translate the reconstruction back to its C.O.M.
-        selfTranslate(Iunreg(), mymodel.com_bodies[iclass], DONT_WRAP);
+        Iunreg() = translate(Iunreg(), mymodel.com_bodies[iclass], DONT_WRAP);
     }
 
     // Update header information

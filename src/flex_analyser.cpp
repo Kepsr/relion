@@ -92,7 +92,7 @@ void FlexAnalyser::initialise() {
     // This creates a rotation matrix for (rot,tilt,psi) = (0,90,0)
     // It will be used to make all Abody orientation matrices relative to (0,90,0) instead of the more logical (0,0,0)
     // This is useful, as psi-priors are ill-defined around tilt=0, as rot becomes the same as -psi!!
-    rotation3DMatrix(-90., 'Y', A_rot90, false);
+    A_rot90 = rotation3DMatrix(-90.0, 'Y', false);
     A_rot90T = A_rot90.transpose();
 
     if (do_PCA_orient) {
@@ -118,7 +118,7 @@ void FlexAnalyser::initialise() {
             MultidimArray<RFLOAT> Mbody, Irefp;
             Irefp = model.Iref[ibody] * model.masks_bodies[ibody];
             // Place each body with its center-of-mass in the center of the box
-            selfTranslate(Irefp, -model.com_bodies[ibody], DONT_WRAP);
+            Irefp = translate(Irefp, -model.com_bodies[ibody], DONT_WRAP);
 
             Matrix2D<RFLOAT> Aresi, Abody;
             f_weights << ibody + 1;
@@ -127,8 +127,7 @@ void FlexAnalyser::initialise() {
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
-            applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
-            Mbody -= Irefp;
+            Mbody = applyGeometry(Irefp, Abody, IS_NOT_INV, DONT_WRAP) - Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
             f_weights << " " << sqrt(Mbody.sum2());
             // tilt
@@ -136,8 +135,7 @@ void FlexAnalyser::initialise() {
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
-            applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
-            Mbody -= Irefp;
+            Mbody = applyGeometry(Irefp, Abody, IS_NOT_INV, DONT_WRAP) - Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
             f_weights << " " << sqrt(Mbody.sum2());
             // psi
@@ -145,8 +143,7 @@ void FlexAnalyser::initialise() {
             Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
-            applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
-            Mbody -= Irefp;
+            Mbody = applyGeometry(Irefp, Abody, IS_NOT_INV, DONT_WRAP) - Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
             f_weights << " " << sqrt(Mbody.sum2());
             // translation x & y (considered the same)
@@ -155,8 +152,7 @@ void FlexAnalyser::initialise() {
             Abody.resize(4, 4);
             Abody.at(0, 3) = 1.0;
             Abody.at(3, 3) = 1.0;
-            applyGeometry(Irefp, Mbody, Abody, IS_NOT_INV, DONT_WRAP);
-            Mbody -= Irefp;
+            Mbody = applyGeometry(Irefp, Abody, IS_NOT_INV, DONT_WRAP) - Irefp;
             norm_pca.push_back(sqrt(Mbody.sum2()));
             f_weights << " " << sqrt(Mbody.sum2()) << std::endl;
         }
@@ -180,20 +176,22 @@ void FlexAnalyser::run(int rank, int size) {
 
 void FlexAnalyser::setup3DModels() {
     for (int ibody = 0; ibody < model.nr_bodies; ibody++) {
+        auto &map = model.Iref[ibody];
+        auto &mask = model.masks_bodies[ibody];
         // Premultiply the map with the mask (otherwise need to do this again for every particle
-        model.Iref[ibody] *= model.masks_bodies[ibody];
+        map *= mask;
         // Place each body with its center-of-mass in the center of the box, as that's where the rotations are around
-        selfTranslate(model.Iref[ibody], -model.com_bodies[ibody], DONT_WRAP);
+        map  = translate(map,  -model.com_bodies[ibody], DONT_WRAP);
         // And do the same for the masks
-        selfTranslate(model.masks_bodies[ibody], -model.com_bodies[ibody], DONT_WRAP);
+        mask = translate(mask, -model.com_bodies[ibody], DONT_WRAP);
 
-        if (size_3dmodels < Xsize(model.Iref[ibody])) {
-            rescale_3dmodels = (RFLOAT) size_3dmodels / (RFLOAT) Xsize(model.Iref[ibody]);
+        if (size_3dmodels < Xsize(map)) {
+            rescale_3dmodels = (RFLOAT) size_3dmodels / (RFLOAT) Xsize(map);
             std::cerr << " rescale_3dmodels= " << rescale_3dmodels << std::endl;
-            selfScaleToSize(model.Iref[ibody], size_3dmodels, size_3dmodels, size_3dmodels);
-            selfScaleToSize(model.masks_bodies[ibody], size_3dmodels, size_3dmodels, size_3dmodels);
-            model.Iref[ibody].setXmippOrigin();
-            model.masks_bodies[ibody].setXmippOrigin();
+            map  = scaleToSize(map,  size_3dmodels, size_3dmodels, size_3dmodels);
+            mask = scaleToSize(mask, size_3dmodels, size_3dmodels, size_3dmodels);
+            map.setXmippOrigin();
+            mask.setXmippOrigin();
         }
     }
 }
@@ -377,13 +375,11 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
             Abody.at(2, 3) = ZZ(body_offset_3d);
             Abody.at(3, 3) = 1.0;
 
-            Mbody.resize(model.Iref[ibody]);
-            Mmask.resize(model.masks_bodies[ibody]);
-            applyGeometry(model.Iref[ibody],         Mbody, Abody, IS_NOT_INV, DONT_WRAP);
-            applyGeometry(model.masks_bodies[ibody], Mmask, Abody, IS_NOT_INV, DONT_WRAP);
+            Mbody = applyGeometry(model.Iref[ibody],         Abody, IS_NOT_INV, DONT_WRAP);
+            Mmask = applyGeometry(model.masks_bodies[ibody], Abody, IS_NOT_INV, DONT_WRAP);
 
             img() += Mbody;
-            sumw += Mmask;
+            sumw  += Mmask;
         }
 
     }
@@ -575,13 +571,11 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
                 Abody.at(2, 3) = ZZ(body_offset_3d);
                 Abody.at(3, 3) = 1.0;
 
-                Mbody.resize(model.Iref[ibody]);
-                Mmask.resize(model.masks_bodies[ibody]);
-                applyGeometry(model.Iref[ibody], Mbody, Abody, IS_NOT_INV, DONT_WRAP);
-                applyGeometry(model.masks_bodies[ibody], Mmask, Abody, IS_NOT_INV, DONT_WRAP);
+                Mbody = applyGeometry(model.Iref[ibody], Abody, IS_NOT_INV, DONT_WRAP);
+                Mmask = applyGeometry(model.masks_bodies[ibody], Abody, IS_NOT_INV, DONT_WRAP);
 
                 img() += Mbody * Mmask;
-                sumw += Mmask;
+                sumw  += Mmask;
             }
 
             // Divide the img by sumw to deal with overlapping bodies: just take average
@@ -779,26 +773,27 @@ void principalComponentsAnalysis(
                     d[iq] += h;
                     a[iq][ip] = 0.0;
 
-                    #define rotate(a, i, j, k, l) \
+                    #define ROTATE(a, i, j, k, l) \
                         g = a[i][j]; \
                         h = a[k][l]; \
                         a[i][j] = g - s * (h + g * tau); \
                         a[k][l] = h + s * (g - h * tau);
 
                     for (int j = 0; j < ip; j++) {
-                        rotate(a, ip, j, iq, j)
+                        ROTATE(a, ip, j, iq, j)
                     }
                     for (int j = ip + 1; j < iq; j++) {
-                        rotate(a, j, ip, iq, j)
+                        ROTATE(a, j, ip, iq, j)
                     }
                     for (int j = iq + 1; j < n; j++) {
-                        rotate(a, j, ip, j, iq)
+                        ROTATE(a, j, ip, j, iq)
                     }
                     for (int j = 0; j < n; j++) {
-                        rotate(v, ip, j, iq, j)
+                        ROTATE(v, ip, j, iq, j)
                     }
+                    #undef ROTATE
 
-                    nrot += 1;
+                    nrot++;
                 }
             }
         }

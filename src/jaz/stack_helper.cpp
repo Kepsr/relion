@@ -75,11 +75,8 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
 
 MetaDataTable StackHelper::merge(const std::vector<MetaDataTable> &mdts) {
     MetaDataTable out;
-
-    for (int i = 0; i < mdts.size(); i++) {
-        out.append(mdts[i]);
-    }
-
+    for (const auto &mdt : mdts)
+        out.append(mdt);
     return out;
 }
 

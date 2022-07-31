@@ -1664,14 +1664,9 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
         REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution Xsize(pdf_direction) != rot_angles.size()!");
     }
 
-    Stats<RFLOAT> stats = pdf_direction.computeStats();
-    RFLOAT pdfmean  = stats.avg;
-    RFLOAT pdfsigma = stats.stddev;
-    RFLOAT pdfmin   = stats.min;
-    RFLOAT pdfmax   = stats.max;
+    Stats<RFLOAT> pdf_stats = pdf_direction.computeStats();
 
-    std::ofstream fh_bild;
-    fh_bild.open(fn_bild.c_str(), std::ios::out);
+    std::ofstream fh_bild (fn_bild.c_str(), std::ios::out);
     if (!fh_bild)
         REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution: cannot open " + fn_bild);
 
@@ -1682,49 +1677,44 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
         RFLOAT pdf = direct::elem(pdf_direction, iang);
 
         // Don't make a cylinder for pdf==0
-        if (pdf > 0.0) {
-            // Colour from blue to red according to deviations from sigma_pdf
-            RFLOAT colscale = (1.0 + std::max(-1.0, std::min((pdf - pdfmean) / pdfsigma, 5.0))) / 6.0;
-            // colscale ranges from 0 (-5 sigma) to 1 (+5 sigma)
+        if (pdf <= 0.0) continue;
 
-            // The length of the cylinder will depend on the pdf_direction
-            RFLOAT Rp = R + Rmax_frac * R * pdf / pdfmax;
+        // Colour from blue to red according to deviations from sigma_pdf
+        RFLOAT colscale = (1.0 + std::max(-1.0, std::min((pdf - pdf_stats.avg) / pdf_stats.stddev, 5.0))) / 6.0;
+        // colscale ranges from 0 (-5 sigma) to 1 (+5 sigma)
 
-            Matrix1D<RFLOAT> v = Euler::angles2direction(rot_angles[iang], tilt_angles[iang]);
+        // The length of the cylinder will depend on the pdf_direction
+        RFLOAT Rp = R + Rmax_frac * R * pdf / pdf_stats.max;
 
-            if (Aorient) {
-                // In multi-body refinement, the rotations are relative to (rot,tilt)=(0,90) to prevent problems with psi-prior!!!
-                Matrix2D<RFLOAT> A;
-                rotation3DMatrix(90.0, 'Y', A, false);
-                v = (*Aorient).transpose() * A * v;
-            }
+        Matrix1D<RFLOAT> v = Euler::angles2direction(rot_angles[iang], tilt_angles[iang]);
 
-            Matrix1D<RFLOAT> offsetp(3);
-            offsetp = Acom ? *Acom : Matrix1D<RFLOAT>::zeros(3);
+        if (Aorient) {
+            // In multi-body refinement, the rotations are relative to (rot,tilt)=(0,90) to prevent problems with psi-prior!!!
+            Matrix2D<RFLOAT> A = rotation3DMatrix(90.0, 'Y', false);
+            v = Aorient->transpose() * A * v;
+        }
 
-            // Don't include cylinders with zero length, as chimera will complain about that....
-            if (
-                abs((R - Rp) * XX(v)) > 0.01 ||
-                abs((R - Rp) * YY(v)) > 0.01 ||
-                abs((R - Rp) * ZZ(v)) > 0.01
-            ) {
-                // The width of the cylinders will be determined by the sampling:
-                fh_bild << ".color " << colscale << " 0 " << 1.0 - colscale << std::endl;
-                fh_bild << ".cylinder "
-                        << R  * XX(v) + offset + XX(offsetp) << " "
-                        << R  * YY(v) + offset + YY(offsetp) << " "
-                        << R  * ZZ(v) + offset + ZZ(offsetp) << " "
-                        << Rp * XX(v) + offset + XX(offsetp) << " "
-                        << Rp * YY(v) + offset + YY(offsetp) << " "
-                        << Rp * ZZ(v) + offset + ZZ(offsetp) << " "
-                        << width
-                        << "\n";
-            }
-         }
+        Matrix1D<RFLOAT> offsetp = Acom ? *Acom : Matrix1D<RFLOAT>::zeros(3);
+
+        // Don't include cylinders with zero length, as chimera will complain about that....
+        if (
+            abs(R - Rp) * XX(v) > 0.01 ||
+            abs(R - Rp) * YY(v) > 0.01 ||
+            abs(R - Rp) * ZZ(v) > 0.01
+        ) {
+            // The width of the cylinders will be determined by the sampling:
+            fh_bild << ".color " << colscale << " 0 " << 1.0 - colscale << std::endl;
+            fh_bild << ".cylinder "
+                    << R  * XX(v) + offset + XX(offsetp) << " "
+                    << R  * YY(v) + offset + YY(offsetp) << " "
+                    << R  * ZZ(v) + offset + ZZ(offsetp) << " "
+                    << Rp * XX(v) + offset + XX(offsetp) << " "
+                    << Rp * YY(v) + offset + YY(offsetp) << " "
+                    << Rp * ZZ(v) + offset + ZZ(offsetp) << " "
+                    << width
+                    << "\n";
+        }
     }
-
-    // Close and write file to disc
-    fh_bild.close();
 }
 
 

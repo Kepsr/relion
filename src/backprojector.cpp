@@ -1693,7 +1693,7 @@ void BackProjector::applyHelicalSymmetry(
         if (hh != 0) {
             // h == 0 is done before the for loop (where sum_data = data)
             RFLOAT rot_ang = hh * (-helical_twist);
-            rotation3DMatrix(rot_ang, 'Z', R);
+            R = rotation3DMatrix(rot_ang, 'Z');
             R.setSmallValuesToZero();  // TODO: invert rotation matrix?
 
             // Loop over all points in the output (i.e. rotated, or summed) array

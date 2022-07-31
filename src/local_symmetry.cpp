@@ -1035,21 +1035,19 @@ void duplicateLocalSymmetry(
             #ifdef NEW_APPLY_SYMMETRY_METHOD
             Localsym_operator2matrix(ops[imask][iop], op_mat);
 
-            if (duplicate_masks_only) {
-                applyGeometry(mask(), vol1, op_mat, IS_NOT_INV, DONT_WRAP);
-            } else {
-                applyGeometry(ori_map_masked, vol1, op_mat, IS_NOT_INV, DONT_WRAP);
-            }
+            vol1 = applyGeometry(
+                duplicate_masks_only ? mask() : ori_map_masked,
+                op_mat, IS_NOT_INV, DONT_WRAP
+            );
             #else
             Localsym_angles2matrix(ops[imask][iop], op_mat);
             Localsym_translations2vector(ops[imask][iop], trans_vec);
 
-            if (duplicate_masks_only) {
-                applyGeometry(mask(), vol1, op_mat, IS_NOT_INV, DONT_WRAP);
-            } else {
-                applyGeometry(ori_map_masked, vol1, op_mat, IS_NOT_INV, DONT_WRAP);
-            }
-            selfTranslate(vol1, trans_vec, DONT_WRAP);
+            vol1 = applyGeometry(
+                duplicate_masks_only ? mask() : ori_map_masked,
+                op_mat, IS_NOT_INV, DONT_WRAP
+            );
+            vol1 = translate(vol1, trans_vec, DONT_WRAP);
             #endif
             out_map += vol1;
         }
@@ -1108,13 +1106,14 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
             #ifdef NEW_APPLY_SYMMETRY_METHOD
             Localsym_operator2matrix(ops[imask][iop], op_mat, LOCALSYM_OP_DO_INVERT);
 
-            applyGeometry(ori_map, vol2, op_mat, IS_NOT_INV, DONT_WRAP);
+            vol2 = applyGeometry(ori_map, op_mat, IS_NOT_INV, DONT_WRAP);
             #else
             Localsym_translations2vector(ops[imask][iop], trans_vec, LOCALSYM_OP_DO_INVERT);
             Localsym_angles2matrix(ops[imask][iop], op_mat, LOCALSYM_OP_DO_INVERT);
 
-            translate(ori_map, vol2, trans_vec, DONT_WRAP);
-            selfApplyGeometry(vol2, op_mat, IS_NOT_INV, DONT_WRAP);
+            vol2 = applyGeometry(translate(
+                ori_map, trans_vec, DONT_WRAP),
+                op_mat, IS_NOT_INV, DONT_WRAP);
             #endif
             vol1 += vol2;
         }
@@ -1156,19 +1155,17 @@ void applyLocalSymmetry(MultidimArray<RFLOAT> &sym_map,
             #ifdef NEW_APPLY_SYMMETRY_METHOD
             Localsym_operator2matrix(ops[imask][iop], op_mat);
 
-            applyGeometry(vol1, vol2, op_mat, IS_NOT_INV, DONT_WRAP);
-            sym_map += vol2;
-            applyGeometry(mask(), vol2, op_mat, IS_NOT_INV, DONT_WRAP);
-            w += vol2;
+            sym_map += applyGeometry(vol1,   op_mat, IS_NOT_INV, DONT_WRAP);
+            w       += applyGeometry(mask(), op_mat, IS_NOT_INV, DONT_WRAP);
             #else
             Localsym_angles2matrix(ops[imask][iop], op_mat);
             Localsym_translations2vector(ops[imask][iop], trans_vec);
 
-            applyGeometry(vol1, vol2, op_mat, IS_NOT_INV, DONT_WRAP);
-            selfTranslate(vol2, trans_vec, DONT_WRAP);
+            vol2 = applyGeometry(vol1, op_mat, IS_NOT_INV, DONT_WRAP);
+            vol2 = translate(vol2, trans_vec, DONT_WRAP);
             sym_map += vol2;
-            applyGeometry(mask(), vol2, op_mat, IS_NOT_INV, DONT_WRAP);
-            selfTranslate(vol2, trans_vec, DONT_WRAP);
+            vol2 = applyGeometry(mask(), op_mat, IS_NOT_INV, DONT_WRAP);
+            vol2 = translate(trans_vec, DONT_WRAP);
             w += vol2;
             #endif
         }
@@ -1617,7 +1614,7 @@ void calculateOperatorCC(
     }
     for (auto &op : op_samplings) {
         Localsym_operator2matrix(op, op_mat, LOCALSYM_OP_DO_INVERT);
-        applyGeometry(dest, vol, op_mat, IS_NOT_INV, DONT_WRAP);
+        vol = applyGeometry(dest, op_mat, IS_NOT_INV, DONT_WRAP);
 
         cc = 0.0;
         for (long int k = 0; k < Zsize(vol); k++)
@@ -2525,11 +2522,10 @@ void local_symmetry_parameters::run() {
             return;
         }
 
-        Image<RFLOAT> img;
         Matrix2D<RFLOAT> op_mat;
         Matrix1D<RFLOAT> op;
 
-        img.read(fn_unsym);
+        auto img = Image<RFLOAT>::from_filename(fn_unsym);
         standardiseEulerAngles(rot, tilt, psi, rot, tilt, psi);
         Localsym_composeOperator(op, rot, tilt, psi, xoff / angpix_image, yoff / angpix_image, zoff / angpix_image);
 
@@ -2539,7 +2535,7 @@ void local_symmetry_parameters::run() {
         std::cout << std::endl;
 
         Localsym_operator2matrix(op, op_mat, LOCALSYM_OP_DONT_INVERT);
-        selfApplyGeometry(img(), op_mat, IS_NOT_INV, DONT_WRAP);
+        img() = applyGeometry(img(), op_mat, IS_NOT_INV, DONT_WRAP);
         img.write(fn_sym);
 
         std::cout << " Done writing " << fn_sym << std::endl;
@@ -2579,7 +2575,7 @@ void local_symmetry_parameters::run() {
 
         img1.read(fn_unsym);
         img2 = img1;
-        applyGeometry(img1(), img2(), op_mat1, IS_NOT_INV, DONT_WRAP);
+        img2() = applyGeometry(img1(), op_mat1, IS_NOT_INV, DONT_WRAP);
         img2.write(fn_sym);
 
         return;
