@@ -190,7 +190,7 @@ class stack_create_parameters {
                         Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
                         A.at(0, 2) = xoff * cos(radians(psi)) - yoff * sin(radians(psi));
                         A.at(1, 2) = yoff * cos(radians(psi)) + xoff * sin(radians(psi));
-                        selfApplyGeometry(in(), A, IS_NOT_INV, DONT_WRAP);
+                        in() = applyGeometry(in(), A, IS_NOT_INV, DONT_WRAP);
 
                         MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, (ori_xoff - xoff) * angpix);
                         MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, (ori_yoff - yoff) * angpix);

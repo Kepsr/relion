@@ -845,7 +845,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         com_bodies[nr_bodies].resize(3);
         for (int i = 0; i < 3; i++) {
             com_bodies[nr_bodies][i] = i >= mydim ? 0.0 : round(com[i]);
-            // Round to avoid interpolation artifacts in selfTranslate(Iref)
+            // Round to avoid interpolation artifacts in translate(Iref)
         }
         // Find maximum radius for mask around com
         int max_d2 = 0.0;
@@ -1115,27 +1115,25 @@ void MlModel::setFourierTransformMaps(
     bool do_heavy = true;
     for (int iclass = 0; iclass < PPref.size(); iclass++) {
 
-        MultidimArray<RFLOAT> Irefp;
-        if (nr_bodies > 1) {
+        MultidimArray<RFLOAT> Irefp = [&] () {
+            if (nr_bodies == 0) return Iref[iclass];
+
             // ibody deals with overlapping bodies here, as iclass can be larger than nr_bodies when bodies overlap,
             // but there are only nr_bodies Iref; ibody is the number of the original body (max nr_bodies)
             int ibody = pointer_body_overlap_inv[iclass];
-            Irefp = Iref[ibody] * masks_bodies[iclass];
             // Place each body with its center-of-mass in the center of the box
-            selfTranslate(Irefp, -com_bodies[ibody], DONT_WRAP);
-        } else {
-            Irefp = Iref[iclass];
-        }
+            return translate(Iref[ibody] * masks_bodies[iclass], -com_bodies[ibody], DONT_WRAP);
+        }();
 
         if (PPrefRank.size() > 1)
             do_heavy = PPrefRank[iclass];
 
-        if (update_tau2_spectra && iclass < nr_classes * nr_bodies) {
-            PPref[iclass].computeFourierTransformMap(Irefp, tau2_class[iclass], current_size, nr_threads, true, do_heavy, min_ires, fourier_mask, do_gpu);
-        } else {
-            MultidimArray<RFLOAT> dummy;
-            PPref[iclass].computeFourierTransformMap(Irefp, dummy, current_size, nr_threads, true, do_heavy, min_ires, fourier_mask, do_gpu);
-        }
+        MultidimArray<RFLOAT> dummy;
+        PPref[iclass].computeFourierTransformMap(Irefp,
+            update_tau2_spectra && iclass < nr_classes * nr_bodies ?
+                tau2_class[iclass] : dummy,
+            current_size, nr_threads, true, do_heavy, min_ires, fourier_mask, do_gpu
+        );
     }
 }
 

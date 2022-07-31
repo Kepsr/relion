@@ -192,8 +192,7 @@ void HelixAligner::initialise() {
             float ang = deg_per_pixel * k;
             Matrix2D<RFLOAT> Arot = rotation2DMatrix(ang);
 
-            MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(img());
-            applyGeometry(img(), Mrot, Arot, true, false);
+            MultidimArray<RFLOAT> Mrot = applyGeometry(img(), Arot, true, false);
             for (long int j = 0; j < Ysize(Mrot); j++)
             for (long int i = 0; i < Xsize(Mrot); i++) {
                 direct::elem(vol(), i, j, k) = direct::elem(Mrot, i, j);
@@ -293,20 +292,18 @@ void HelixAligner::readImages() {
         // Apply the actual transformation
         Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
         A.at(1, 2) = -yoff / angpix;
-        selfApplyGeometry(img(), A, IS_INV, DONT_WRAP);
+        img() = applyGeometry(img(), A, IS_INV, DONT_WRAP);
 
-        std::vector<MultidimArray<RFLOAT>> dummy;
-        Xrects.push_back(dummy);
+        Xrects.emplace_back();
 
         // Calculate all rotated versions
         if (ipart == 0) psis.clear();
 
         for (int iflip = 0; iflip < 2; iflip++) {
             for (RFLOAT ang = 0; ang <= max_rotate; ang += step_rotate) {
-                MultidimArray<RFLOAT> Irot = MultidimArray<RFLOAT>::zeros(img());
                 RFLOAT myang = iflip == 1 ? ang + 180.0 : ang;
                 Matrix2D<RFLOAT> Arot = rotation2DMatrix(myang);
-                applyGeometry(img(), Irot, Arot, true, false);
+                MultidimArray<RFLOAT> Irot = applyGeometry(img(), Arot, true, false);
                 resizeMap(Irot, down_size);
                 Irot.setXmippOrigin();
                 Xrects[Xrects.size() - 1].push_back(Irot);
@@ -315,8 +312,7 @@ void HelixAligner::readImages() {
 
                 if (ang > 0.0) {
                     // Also rotate in the opposite direction
-                    Irot.initZeros(img());
-                    applyGeometry(img(), Irot, Arot, false, false);
+                    Irot = applyGeometry(img(), Arot, false, false);
                     resizeMap(Irot, down_size);
                     Irot.setXmippOrigin();
                     Xrects[Xrects.size()-1].push_back(Irot);
@@ -915,9 +911,7 @@ void HelixAligner::reconstruct2D(int iclass) {
         for (int i = 1; i < symmetry; i++) {
             RFLOAT ang = i * 360.0 / (RFLOAT) symmetry;
             Matrix2D<RFLOAT> A2D = rotation2DMatrix(ang);
-            MultidimArray<RFLOAT> Arot = MultidimArray<RFLOAT>::zeros(model.Arec[iclass]);
-            applyGeometry(model.Arec[iclass], Arot, A2D, false, false);
-            Asum += Arot;
+            Asum += applyGeometry(model.Arec[iclass], A2D, false, false);
         }
         model.Arec[iclass] = Asum / (RFLOAT) symmetry;
     }
@@ -1034,8 +1028,7 @@ void HelixAligner::reconstruct3D() {
             float ang = deg_per_pixel * k;
             Matrix2D<RFLOAT> Arot = rotation2DMatrix(ang);
 
-            MultidimArray<RFLOAT> Mrot = MultidimArray<RFLOAT>::zeros(Mori);
-            applyGeometry(Mori, Mrot, Arot, true, false);
+            MultidimArray<RFLOAT> Mrot = applyGeometry(Mori, Arot, true, false);
             for (long int j = 0; j < Ysize(Mrot); j++) \
             for (long int i = 0; i < Xsize(Mrot); i++) {
                 direct::elem(Ic(), i, j, k) = direct::elem(Mrot, i, j);

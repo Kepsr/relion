@@ -84,7 +84,7 @@ Matrix2D<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous=true);
  * m = translation2DMatrix(vectorR2(1, 0));
  * @endcode
  */
-void translation2DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &m);
+Matrix2D<RFLOAT> translation2DMatrix(const Matrix1D<RFLOAT> &v);
 
 /** Creates a rotational matrix (4x4) for volumes around system axis
  * @ingroup GeometricalTransformations
@@ -118,7 +118,7 @@ void translation2DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &m);
  * m = rotation3DMatrix(60, 'X');
  * @endcode
  */
-void rotation3DMatrix(RFLOAT ang, char axis, Matrix2D<RFLOAT> &m, bool homogeneous=true);
+Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT ang, char axis, bool homogeneous=true);
 
 /** Creates a rotational matrix (4x4) for volumes around any axis
  * @ingroup GeometricalTransformations
@@ -131,7 +131,7 @@ void rotation3DMatrix(RFLOAT ang, char axis, Matrix2D<RFLOAT> &m, bool homogeneo
  * m = rotation3DMatrix(60, vectorR3(1, 1, 1));
  * @endcode
  */
-void rotation3DMatrix(RFLOAT ang, const Matrix1D<RFLOAT> &axis, Matrix2D<RFLOAT> &m, bool homogeneous=true);
+Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT ang, const Matrix1D<RFLOAT> &axis, bool homogeneous=true);
 
 /** Matrix which transforms the given axis into Z
  * @ingroup GeometricalTransformations
@@ -161,7 +161,7 @@ void alignWithZ(const Matrix1D<RFLOAT> &axis, Matrix2D<RFLOAT> &m, bool homogene
  * m = translation3DMatrix(vectorR3(0, 0, 2));
  * @endcode
  */
-void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &m);
+Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v);
 
 /** Creates a scaling matrix (4x4) for volumes
  * @ingroup GeometricalTransformations
@@ -169,13 +169,13 @@ void translation3DMatrix(const Matrix1D<RFLOAT> &v, Matrix2D<RFLOAT> &m);
  * The scaling factors for the different axis must be given as a vector. So
  * that, XX(sc)=scale for X axis, YY(sc)=...
  */
-void scale3DMatrix(const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT> &m, bool homogeneous=true);
+Matrix2D<RFLOAT> scale3DMatrix(const Matrix1D<RFLOAT> &sc, bool homogeneous=true);
 
 /** Applies a geometrical transformation.
  * @ingroup GeometricalTransformations
  *
  * Apply a geometrical transformation defined by the matrix A (RFLOAT (4x4)!!
- * ie, in homogeneous R3 coordinates) to the volume V1.
+ * ie, in homogeneous R3 coordinates) to the volume V.
  * The result is stored in V2 (it cannot be the same as the input volume).
  * An exception is thrown if the transformation matrix is not 4x4.
  *
@@ -192,7 +192,7 @@ void scale3DMatrix(const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT> &m, bool homogen
  * transformation, then multiply r11, r22 and r33 by it.
  *
  * The result volume (with ndim=1) is resized to the same
- * dimensions as V1 if V2 is empty (0x0) at the beginning, if it
+ * dimensions as V if V2 is empty (0x0) at the beginning, if it
  * is not, ie, if V2 has got some size then only those values in
  * the volume are filled, this is very useful for resizing the
  * volume, then you manually resize the output volume to the
@@ -239,38 +239,33 @@ void scale3DMatrix(const Matrix1D<RFLOAT> &sc, Matrix2D<RFLOAT> &m, bool homogen
  * Although you can also use the constants IS_INV, or WRAP.
  *
  * @code
- * Matrix2D<RFLOAT> A(4,4);
+ * Matrix2D<RFLOAT> A(4, 4);
  * A.initIdentity;
- * applyGeometry(V2, A, V1);
+ * A = applyGeometry(A, V);
  * @endcode
  */
 template<typename T>
-void applyGeometry(
-    const MultidimArray<T> &V1,
-    MultidimArray<T> &V2,
+MultidimArray<T> applyGeometry(
+    const MultidimArray<T> &V,
     const Matrix2D<RFLOAT> A,
     bool inv, bool do_wrap,
     T outside = 0
 ) {
 
-    if (&V1 == &V2)
-        REPORT_ERROR("ApplyGeometry: Input array cannot be the same as output array");
-
-    if (V1.getDim() == 2 && (A.mdimx != 3 || A.mdimy != 3))
+    if (V.getDim() == 2 && (A.mdimx != 3 || A.mdimy != 3))
         REPORT_ERROR("ApplyGeometry: 2D transformation matrix is not 3×3");
 
-    if (V1.getDim() == 3 && (A.mdimx != 4 || A.mdimy != 4))
+    if (V.getDim() == 3 && (A.mdimx != 4 || A.mdimy != 4))
         REPORT_ERROR("ApplyGeometry: 3D transformation matrix is not 4×4");
 
-    if (A.isIdentity()) {
-        V2 = V1;
-        return;
-    }
+    if (A.isIdentity())
+        return V;
 
-    if (Xsize(V1) == 0) {
-        V2.clear();
-        return;
-    }
+    if (Xsize(V) == 0)
+        return MultidimArray<RFLOAT>();
+
+    MultidimArray<RFLOAT> result;
+    result.resize(V);
 
     Matrix2D<RFLOAT> Ainv;
     const Matrix2D<RFLOAT> *Aptr = &A;
@@ -283,21 +278,21 @@ void applyGeometry(
     // For scalings the output matrix is resized outside to the final
     // size instead of being resized inside the routine with the
     // same size as the input matrix
-    if (Xsize(V2) == 0)
-        V2.resize(V1);
+    if (Xsize(result) == 0)
+        result.resize(V);
 
-    if (V1.getDim() == 2) {
+    if (V.getDim() == 2) {
         // 2D transformation
 
         // Find center and limits of image
-        int cen_y  = Ysize(V2) / 2;
-        int cen_x  = Xsize(V2) / 2;
-        int cen_yp = Ysize(V1) / 2;
-        int cen_xp = Xsize(V1) / 2;
+        int cen_x  = Xsize(result) / 2;
+        int cen_y  = Ysize(result) / 2;
+        int cen_xp = Xsize(V) / 2;
+        int cen_yp = Ysize(V) / 2;
         RFLOAT minxp = -cen_xp;
         RFLOAT minyp = -cen_yp;
-        RFLOAT maxxp = Xsize(V1) - cen_xp - 1;
-        RFLOAT maxyp = Ysize(V1) - cen_yp - 1;
+        RFLOAT maxxp = Xsize(V) - cen_xp - 1;
+        RFLOAT maxyp = Ysize(V) - cen_yp - 1;
 
         // Now we go from the output image to the input image.
         // ie, for any pixel in the output image
@@ -313,7 +308,7 @@ void applyGeometry(
         << "(max_xp,max_yp)=(" << maxxp  << "," << maxyp  << ")\n";
         #endif
 
-        for (int j = 0; j < Ysize(V2); j++) {
+        for (int j = 0; j < Ysize(result); j++) {
             // Calculate position of the beginning of the row in the output image
             RFLOAT x =   - cen_x;
             RFLOAT y = j - cen_y;
@@ -325,7 +320,7 @@ void applyGeometry(
             RFLOAT xp = x * Aref(0, 0) + y * Aref(0, 1) + Aref(0, 2);
             RFLOAT yp = x * Aref(1, 0) + y * Aref(1, 1) + Aref(1, 2);
 
-            for (int i = 0; i < Xsize(V2); i++) {
+            for (int i = 0; i < Xsize(result); i++) {
 
                 #ifdef DEBUG_APPLYGEO
 
@@ -356,8 +351,8 @@ void applyGeometry(
                 // The following line sounds dangerous...
                 // x++;
                 #endif
-                direct::elem(V2, i, j) = interp ? interpolate_sub(
-                    V1, xp, yp, cen_xp, cen_yp, do_wrap
+                direct::elem(result, i, j) = interp ? interpolate_sub(
+                    V, xp, yp, cen_xp, cen_yp, do_wrap
                 ) : outside;
 
                 // Compute new point inside input image
@@ -369,18 +364,18 @@ void applyGeometry(
         // 3D transformation
 
         // Find center of MultidimArray
-        int cen_z  = V2.zdim / 2;
-        int cen_y  = V2.ydim / 2;
-        int cen_x  = V2.xdim / 2;
-        int cen_zp = V1.zdim / 2;
-        int cen_yp = V1.ydim / 2;
-        int cen_xp = V1.xdim / 2;
+        int cen_z  = result.zdim / 2;
+        int cen_y  = result.ydim / 2;
+        int cen_x  = result.xdim / 2;
+        int cen_zp = V.zdim / 2;
+        int cen_yp = V.ydim / 2;
+        int cen_xp = V.xdim / 2;
         RFLOAT minxp = -cen_xp;
         RFLOAT minyp = -cen_yp;
         RFLOAT minzp = -cen_zp;
-        RFLOAT maxxp = V1.xdim - cen_xp - 1;
-        RFLOAT maxyp = V1.ydim - cen_yp - 1;
-        RFLOAT maxzp = V1.zdim - cen_zp - 1;
+        RFLOAT maxxp = V.xdim - cen_xp - 1;
+        RFLOAT maxyp = V.ydim - cen_yp - 1;
+        RFLOAT maxzp = V.zdim - cen_zp - 1;
 
         #ifdef DEBUG
         std::cout
@@ -400,9 +395,9 @@ void applyGeometry(
         // ones in the original MultidimArray, make an interpolation with them and put
         // this value at the output voxel
 
-        // V2 is not initialised to 0 because all its pixels are rewritten
-        for (int k = 0; k < V2.zdim; k++)
-        for (int j = 0; j < V2.ydim; j++) {
+        // result is not initialised to 0 because all its pixels are rewritten
+        for (int k = 0; k < result.zdim; k++)
+        for (int j = 0; j < result.ydim; j++) {
             // Calculate position of the beginning of the row in the output MultidimArray
             RFLOAT x =   - cen_x;
             RFLOAT y = j - cen_y;
@@ -415,13 +410,13 @@ void applyGeometry(
             RFLOAT yp = x * Aref(1, 0) + y * Aref(1, 1) + z * Aref(1, 2) + Aref(1, 3);
             RFLOAT zp = x * Aref(2, 0) + y * Aref(2, 1) + z * Aref(2, 2) + Aref(2, 3);
 
-            for (int i = 0; i < V2.xdim; i++) {
+            for (int i = 0; i < result.xdim; i++) {
 
                 bool show_debug = false;
                 #ifdef DEBUG
                 show_debug =
                     i == 0 && j == 0 && k == 0 ||
-                    i == V2.xdim - 1 && j == V2.ydim - 1 && k == V2.zdim - 1;
+                    i == result.xdim - 1 && j == result.ydim - 1 && k == result.zdim - 1;
 
                 if (show_debug)
                     std::cout << "(x,y,z)-->(xp,yp,zp)= "
@@ -453,8 +448,8 @@ void applyGeometry(
 
                 }
 
-                direct::elem(V2, i, j, k) = interp ? interpolate_sub(
-                    V1, xp, yp, zp, cen_xp, cen_yp, cen_zp, show_debug
+                direct::elem(result, i, j, k) = interp ? interpolate_sub(
+                    V, xp, yp, zp, cen_xp, cen_yp, cen_zp, show_debug
                 ) : outside;
 
                 // Compute new point inside input image
@@ -464,11 +459,12 @@ void applyGeometry(
             }
         }
     }
+    return result;
 }
 
 template <typename T>
 T interpolate_sub(
-    const MultidimArray<T>& V1,
+    const MultidimArray<T>& V,
     RFLOAT xp, RFLOAT yp,
     int cen_xp, int cen_yp,
     bool do_wrap
@@ -476,27 +472,11 @@ T interpolate_sub(
 
 template <typename T>
 T interpolate_sub(
-    const MultidimArray<T> &V1,
+    const MultidimArray<T> &V,
     RFLOAT xp, RFLOAT yp, RFLOAT zp,
     int cen_xp, int cen_yp, int cen_zp,
     bool show_debug
 );
-
-/** Applies a geometrical transformation and overwrites the input matrix.
- * @ingroup GeometricalTransformations
- *
- * The same as the previous function, but input array is overwritten
- */
-template<typename T>
-void selfApplyGeometry(
-    MultidimArray<T> &V1,
-    const Matrix2D<RFLOAT> A, bool inv,
-    bool do_wrap, T outside = 0
-) {
-    MultidimArray<T> aux = V1;
-    V1.initZeros();
-    applyGeometry(aux, V1, A, inv, do_wrap, outside);
-}
 
 /** Rotate an array around a given system axis.
  * @ingroup GeometricalTransformations
@@ -506,45 +486,26 @@ void selfApplyGeometry(
  * exception is thrown if the axis given is not one of these.
  *
  * @code
- * rotate(Vin, Vout, 60);
+ * Vout = rotate(Vin, 60);
  * @endcode
  */
 
 template<typename T>
-void rotate(
-    const MultidimArray<T> &V1,
-    MultidimArray<T> &V2,
+MultidimArray<T> rotate(
+    const MultidimArray<T> &V,
     RFLOAT ang, char axis = 'Z',
     bool do_wrap = DONT_WRAP, T outside = 0
 ) {
-    Matrix2D<RFLOAT> tmp;
-           if (V1.getDim() == 2) {
-        tmp = rotation2DMatrix(ang);
-    } else if (V1.getDim() == 3) {
-        rotation3DMatrix(ang, axis, tmp);
-    } else {
-        REPORT_ERROR("rotate ERROR: rotate only valid for 2D or 3D arrays");
+    Matrix2D<RFLOAT> m;
+    switch (V.getDim()) {
+        case 2: m = rotation2DMatrix(ang); break;  // axis is irrelevant
+        case 3: m = rotation3DMatrix(ang, axis); break;
+        default: REPORT_ERROR("rotate ERROR: rotate only valid for 2D or 3D arrays");
     }
-
-    applyGeometry(V1, V2, tmp, IS_NOT_INV, do_wrap, outside);
+    return applyGeometry(V, m, IS_NOT_INV, do_wrap, outside);
 }
 
-/** Rotate an array around a given system axis.
- * @ingroup GeometricalTransformations
- *
- * The same as the previous function, but input array is overwritten
- */
-template<typename T>
-void selfRotate(
-    MultidimArray<T> &V1,
-    RFLOAT ang, char axis = 'Z',
-    bool do_wrap = DONT_WRAP, T outside = 0
-) {
-    MultidimArray<T> aux = V1;
-    rotate(aux, V1, ang, axis, do_wrap, outside);
-}
-
-/** Translate a array.
+/** Translate an array.
  * @ingroup GeometricalTransformations
  *
  * The shift is given as a R2 or R3 vector (shift_X, shift_Y, shift_Z) for 2D and 3D arrays, respectively.
@@ -552,38 +513,22 @@ void selfRotate(
  *
  * @code
  * // Displacement of 2 pixels down
- * V2 = V1.translate(vectorR3(0, 0, 2));
+ * V2 = translate(V, vectorR3(0, 0, 2));
  * @endcode
  */
 template<typename T>
-void translate(
-    const MultidimArray<T> &V1,
-    MultidimArray<T> &V2,
+MultidimArray<T> translate(
+    const MultidimArray<T> &V,
     const Matrix1D<RFLOAT> &v,
     bool do_wrap = WRAP, T outside = 0
 ) {
-    Matrix2D<RFLOAT> tmp;
-    switch (V1.getDim()) {
-        case 2: translation2DMatrix(v, tmp); break;
-        case 3: translation3DMatrix(v, tmp); break;
+    Matrix2D<RFLOAT> m;
+    switch (V.getDim()) {
+        case 2: m = translation2DMatrix(v); break;
+        case 3: m = translation3DMatrix(v); break;
         default: REPORT_ERROR("translate ERROR: translate only valid for 2D or 3D arrays");
     }
-    applyGeometry(V1, V2, tmp, IS_NOT_INV, do_wrap, outside);
-}
-
-/** Translate an array.
- * @ingroup GeometricalTransformations
- *
- * The same as the previous function, but input array is overwritten
- */
-template<typename T>
-void selfTranslate(
-    MultidimArray<T> &V1,
-    const Matrix1D<RFLOAT> &v,
-    bool do_wrap = WRAP, T outside = 0
-) {
-    MultidimArray<T> aux = V1;
-    translate(aux, V1, v, do_wrap, outside);
+    return applyGeometry(V, m, IS_NOT_INV, do_wrap, outside);
 }
 
 /** Translate center of mass to center
@@ -593,35 +538,19 @@ void selfTranslate(
  * between 0 and 1.
  */
 template<typename T>
-void translateCenterOfMassToCenter(
-    const MultidimArray<T> &V1,
-    MultidimArray<T> &V2,
+MultidimArray<T> translateCenterOfMassToCenter(
+    const MultidimArray<T> &V,
     bool do_wrap = WRAP,
     bool verb = false
 ) {
-    V2 = V1;
+    MultidimArray<T> V2 = V;
     V2.setXmippOrigin();
     Matrix1D<RFLOAT> center;
     V2.centerOfMass(center);
     if (verb) {
     	std::cout << " Center of mass: x= " << XX(center) << " y= " << YY(center) << " z= " << ZZ(center) << std::endl;
     }
-    center *= -1;
-    translate(V1, V2, center, do_wrap, 0.0);
-}
-
-/** Translate center of mass to center
- * @ingroup GeometricalTransformations
- *
- * The same as the previous function, but input array is overwritten
- */
-template<typename T>
-void selfTranslateCenterOfMassToCenter(
-    MultidimArray<T> &V1,
-    bool do_wrap = WRAP, bool verb = false
-) {
-    MultidimArray<T> aux = V1;
-    translateCenterOfMassToCenter(aux, V1, do_wrap, verb);
+    return translate(V, -center, do_wrap, 0.0);
 }
 
 /** Scales to a new size.
@@ -632,32 +561,29 @@ void selfTranslateCenterOfMassToCenter(
  * than the actual one.
  *
  * @code
- * scaleToSize(Vin, Vout, 128, 128, 128);
+ * Vout = scaleToSize(Vin, 128, 128, 128);
  * @endcode
  */
 template<typename T>
-void scaleToSize(
-    const MultidimArray<T> &V1,
-    MultidimArray<T> &V2,
+MultidimArray<T> scaleToSize(
+    const MultidimArray<T> &V,
     int Xdim, int Ydim, int Zdim = 1
 ) {
 
     Matrix2D<RFLOAT> tmp;
-    switch (V1.getDim()) {
+    switch (V.getDim()) {
 
         case 2:
         tmp.initIdentity(3);
-        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V1);
-        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V1);
-        V2.resize(Xdim, Ydim);
+        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V);
+        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V);
         break;
 
         case 3:
         tmp.initIdentity(4);
-        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V1);
-        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V1);
-        tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) Zsize(V1);
-        V2.resize(Xdim, Ydim, Zdim);
+        tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V);
+        tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V);
+        tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) Zsize(V);
         break;
 
         default:
@@ -665,21 +591,7 @@ void scaleToSize(
 
     }
 
-    applyGeometry(V1, V2, tmp, IS_NOT_INV, WRAP, (T) 0);
-}
-
-/** Scales to a new size.
- * @ingroup GeometricalTransformations
- *
- * The same as the previous function, but input array is overwritten
- */
-template<typename T>
-void selfScaleToSize(
-    MultidimArray<T> &V1,
-    int Xdim, int Ydim, int Zdim = 1
-) {
-    MultidimArray<T> aux = V1;
-    scaleToSize(aux, V1, Xdim, Ydim, Zdim);
+    return applyGeometry(V, tmp, IS_NOT_INV, WRAP, (T) 0);
 }
 
 /** Does a radial average of a 2D/3D image, around the voxel where is the origin.

@@ -352,8 +352,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
     if (do_fom_weighting)
     fom = DF.getValue<RFLOAT>(EMDL::PARTICLE_FOM, p);
 
-    // Use either selfTranslate OR shiftImageInFourierTransform!!
-    //selfTranslate(img(), trans, WRAP);
+    // Use either translate OR shiftImageInFourierTransform!!
+    // img() = translate(img(), trans, WRAP);
 
     MultidimArray<Complex> F2D;
     FileName fn_img;

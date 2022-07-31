@@ -1571,7 +1571,7 @@ void MlOptimiser::initialiseGeneral(int rank) {
         // This creates a rotation matrix for (rot,tilt,psi) = (0,90,0)
         // It will be used to make all Abody orientation matrices relative to (0,90,0) instead of the more logical (0,0,0)
         // This is useful, as psi-priors are ill-defined around tilt=0, as rot becomes the same as -psi!!
-        rotation3DMatrix(-90.0, 'Y', A_rot90, false);
+        A_rot90 = rotation3DMatrix(-90.0, 'Y', false);
         A_rot90T = A_rot90.transpose();
     }
 
@@ -4749,9 +4749,9 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         }
 
         for (auto &x : my_old_offset) { x = round(x); }
-        selfTranslate(img(), my_old_offset, DONT_WRAP);
+        img() = translate(img(), my_old_offset, DONT_WRAP);
         if (has_converged && do_use_reconstruct_images) {
-            selfTranslate(rec_img(), my_old_offset, DONT_WRAP);
+            rec_img() = translate(rec_img(), my_old_offset, DONT_WRAP);
         }
 
         #ifdef DEBUG_HELICAL_ORIENTATIONAL_SEARCH

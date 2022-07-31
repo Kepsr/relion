@@ -780,11 +780,8 @@ class helix_bilder_parameters {
                 if (hh == 0) {
                     Msum += img();
                 } else {
-                    MultidimArray<RFLOAT> Maux1;
-                    rotate(img(), Maux1, RFLOAT(hh) * twist_deg);
                     ZZ(transZ) = RFLOAT(hh) * rise_A / pixel_size_A;
-                    selfTranslate(Maux1, transZ, WRAP);
-                    Msum += Maux1;
+                    Msum += translate(rotate(img(), RFLOAT(hh) * twist_deg), transZ, WRAP);
                 }
             }
             img() = Msum / RFLOAT(nr_asu);

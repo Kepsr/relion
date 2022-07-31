@@ -153,7 +153,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         // This creates a rotation matrix for (rot,tilt,psi) = (0,90,0)
         // It will be used to make all Abody orientation matrices relative to (0,90,0) instead of the more logical (0,0,0)
         // This is useful, as psi-priors are ill-defined around tilt=0, as rot becomes the same as -psi!!
-        rotation3DMatrix(-90.0, 'Y', A_rot90, false);
+        A_rot90 = rotation3DMatrix(-90.0, 'Y', false);
         A_rot90T = A_rot90.transpose();
 
         // Find out which body has the biggest overlap with the keepmask, use these orientations
@@ -472,7 +472,7 @@ void ParticleSubtractor::subtractOneParticle(
         my_residual_offset = my_old_offset;
         // Apply the old_offset (rounded to avoid interpolation errors)
         for (auto &x : my_old_offset) { x = round(x); }
-        selfTranslate(img(), my_old_offset, WRAP);
+        img() = translate(img(), my_old_offset, WRAP);
         // keep track of the differences between the rounded and the original offsets
         my_residual_offset -= my_old_offset;
     }
@@ -681,7 +681,7 @@ void ParticleSubtractor::subtractOneParticle(
             centering_offset = my_residual_offset;
             for (auto &x : centering_offset) { x = round(x); }
             my_residual_offset -= centering_offset;
-            selfTranslate(img(), centering_offset, WRAP);
+            img() = translate(img(), centering_offset, WRAP);
 
             // Set the non-integer difference between the rounded centering offset and the actual offsets in the STAR file
             opt.mydata.MDimg.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_pixel_size * XX(my_residual_offset), ori_img_id);

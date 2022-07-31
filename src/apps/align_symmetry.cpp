@@ -138,7 +138,7 @@ class align_symmetry {
         }
 
         if (!keep_centre) {
-            selfTranslateCenterOfMassToCenter(vol_in(), DONT_WRAP, true);
+            vol_in() = translateCenterOfMassToCenter(vol_in(), DONT_WRAP, true);
             std::cout << " Re-centred to the centre of the mass" << std::endl;
         }
 
