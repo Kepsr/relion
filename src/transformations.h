@@ -628,36 +628,37 @@ void radialAverage(
 
     // First determine the maximum distance that one should expect,
     // to set the dimension of the radial average vector.
-    MultidimArray<int> distances(8);
+    std::vector<int> distances;
+    distances.reserve(8);
 
-    RFLOAT z = Zinit(m) - ZZ(center_of_rot);
-    RFLOAT y = Yinit(m) - YY(center_of_rot);
-    RFLOAT x = Xinit(m) - XX(center_of_rot);
+    RFLOAT x = Xinit(m) - XX(center_of_rot),
+           y = Yinit(m) - YY(center_of_rot),
+           z = Zinit(m) - ZZ(center_of_rot);
 
-    distances(0) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
     x = Xlast(m) - XX(center_of_rot);
 
-    distances(1) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
     y = Ylast(m) - YY(center_of_rot);
 
-    distances(2) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
     x = Xinit(m) - XX(center_of_rot);
 
-    distances(3) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
     z = Zlast(m) - ZZ(center_of_rot);
 
-    distances(4) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
     x = Xlast(m) - XX(center_of_rot);
 
-    distances(5) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
     y = Yinit(m) - YY(center_of_rot);
 
-    distances(6) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
     x = Xinit(m) - XX(center_of_rot);
 
-    distances(7) = floor(euclid(x, y, z));
+    distances.push_back(floor(euclid(x, y, z)));
 
-    int dim = ceil(distances.max()) + 1 + rounding;
+    const int dim = ceil(*std::max_element(distances.begin(), distances.end())) + 1 + rounding;
 
     // Define the vectors
     radial_mean.resize(dim);
