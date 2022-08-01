@@ -751,8 +751,7 @@ void windowFourierTransform(MultidimArray<T> &V, long int newdim) {
 
     MultidimArray<T> tmp;
     windowFourierTransform<T>(V, tmp, newdim);
-    V.moveFrom(tmp);
-    // return std::move(tmp);
+    V = std::move(tmp);
 }
 
 // A resize operation in Fourier-space (i.e. changing the sampling of the Fourier Transform) by windowing in real-space

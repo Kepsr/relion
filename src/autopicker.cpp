@@ -445,12 +445,12 @@ void AutoPicker::initialise() {
             int my_ori_size = Xsize(Istk());
             Projector projector(my_ori_size, TRILINEAR, padding);
             MultidimArray<RFLOAT> dummy;
-               int lowpass_size = 2 * ceil(my_ori_size * angpix_ref / lowpass);
+            int lowpass_size = 2 * ceil(my_ori_size * angpix_ref / lowpass);
             projector.computeFourierTransformMap(Istk(), dummy, lowpass_size);
             MultidimArray<RFLOAT> Mref(my_ori_size, my_ori_size);
-            MultidimArray<Complex> Fref;
             FourierTransformer transformer;
             transformer.setReal(Mref);
+            MultidimArray<Complex> Fref;
             Fref.alias(transformer.getFourier());
 
             FileName fn_img, fn_proj = fn_odir + "reference_projections.mrcs";

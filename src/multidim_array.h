@@ -508,16 +508,19 @@ class MultidimArray {
         }
     }
 
-    // MultidimArray(MultidimArray<T>&& other) {
-    //     // moveFrom(other)
-    //     coreDeallocate(); // Otherwise there may be a memory leak!
-    //     copyShape(other);
-    //     data = other.data;
-    //     destructible = true;
-    //     allocated_size = other.allocated_size;
-    //     other.destructible = false;
-    //     other.allocated_size = 0;
-    // }
+    /** Move ctor
+     * Steal the guts of a soon-to-die object.
+     */
+    MultidimArray(MultidimArray<T>&& other) {
+        coreDeallocate(); // Otherwise there may be a memory leak!
+        copyShape(other);
+        data = other.data;
+        other.data = nullptr;
+        destructible = true;
+        other.destructible = false;
+        allocated_size = other.allocated_size;
+        other.allocated_size = 0;
+    }
 
     template <typename T2>
     MultidimArray<T>(const MultidimArray<T2> &other) {
@@ -681,24 +684,6 @@ class MultidimArray {
         destructible = false;  // Do not allow data to be freed when this array is destroyed. We don't own it.
     }
 
-    /** Move from a multidimarray.
-     *
-     * Treat the multidimarray as if it were a volume. The data is not copied
-     * into new memory, but a pointer to the multidimarray is copied.
-     *
-     * After the operation, the operand m will become an alias of this array.
-     * Same operation as alias, but reverse the relation between the two arrays
-     */
-    void moveFrom(MultidimArray<T> &other) {
-        coreDeallocate(); // Otherwise there may be a memory leak!
-        copyShape(other);
-        data = other.data;
-        destructible = true;
-        allocated_size = other.allocated_size;
-        other.destructible = false;
-        other.allocated_size = 0;
-    }
-
     //@}
 
     /// @name Size
@@ -763,7 +748,7 @@ class MultidimArray {
     }
 
     /**
-     * The functions reshape, moveFrom and shrinkToFit were added
+     * The functions reshape and shrinkToFit were added
      * on suggestion by Yunxiao Zhang (5 April 2016)
      */
 
@@ -1096,7 +1081,7 @@ class MultidimArray {
     ) {
         MultidimArray<T> result;
         window(result, z0, y0, x0, zF, yF, xF, init_value, n);
-        moveFrom(result);
+        *this = std::move(result);
     }
 
     /** Put a 2D window to the nth matrix
