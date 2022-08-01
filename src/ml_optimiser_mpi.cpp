@@ -2724,7 +2724,7 @@ void MlOptimiserMpi::compareTwoHalves() {
 
             //#define DEBUG_FSC
             #ifdef DEBUG_FSC
-            MultidimArray<Complex > avg;
+            MultidimArray<Complex> avg;
             MultidimArray<RFLOAT> Mavg;
             if (mymodel.ref_dim == 2) {
                 Mavg.resize(mymodel.ori_size, mymodel.ori_size);
@@ -2734,7 +2734,7 @@ void MlOptimiserMpi::compareTwoHalves() {
 
             FourierTransformer transformer_debug;
             transformer_debug.setReal(Mavg);
-            transformer_debug.getFourierAlias(avg);
+            avg.alias(transformer_debug.getFourier());
             wsum_model.BPref[0].decenter(avg1, avg, wsum_model.BPref[0].r_max * wsum_model.BPref[0].r_max);
             transformer_debug.inverseFourierTransform();
             FileName fnt;

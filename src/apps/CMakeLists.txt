@@ -1,6 +1,7 @@
 include_directories("${CMAKE_SOURCE_DIR}")
 
 message("Running apps/CMakeLists.txt...")
+set(CUDA_NVCC_FLAGS "-std=c++11")
 
 if(NOT MKLFFT)
 	include_directories("${FFTW_INCLUDES}")
@@ -146,6 +147,7 @@ endif(GUI)
 if (CUDA_FOUND)
 	file(GLOB REL_CUDA_SRC "${CMAKE_SOURCE_DIR}/src/acc/cuda/*.cu" "${CMAKE_SOURCE_DIR}/src/acc/cuda/cuda_kernels/*.cu" )
 	cuda_add_library(relion_gpu_util ${REL_CUDA_SRC})
+	set_target_properties(relion_gpu_util PROPERTIES CUDA_ARCHITECTURES "35;50;72")
 
 	if (${CMAKE_BUILD_TYPE_LOWER} STREQUAL "profiling")
 		find_library(NV_TOOLS_LIBRARIES   NAMES nvToolsExt  PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib ${CUDA_TOOLKIT_ROOT_DIR}/lib64)

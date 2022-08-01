@@ -201,7 +201,7 @@ class project_parameters {
             img().resize(Xsize(vol()), Ysize(vol()));
         }
         transformer.setReal(img());
-        transformer.getFourierAlias(F2D);
+        F2D.alias(transformer.getFourier());
 
         // Set up the projector
         int data_dim = (do_3d_rot) ? 3 : 2;

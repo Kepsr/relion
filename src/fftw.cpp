@@ -569,7 +569,7 @@ void selfScaleToSizeFourier(long int Ydim, long int Xdim, MultidimArray<RFLOAT>&
     MultidimArray<Complex> MpmemFourier;
     FourierTransformer transformerMp;
     transformerMp.setReal(Mpmem);
-    transformerMp.getFourierAlias(MpmemFourier);
+    MpmemFourier.alias(transformerMp.getFourier());
     long int ihalf = std::min((Ysize(MpmemFourier)/2+1),(Ysize(MmemFourier)/2+1));
     long int xsize = std::min((Xsize(MmemFourier)),(Xsize(MpmemFourier)));
     // Init with zero

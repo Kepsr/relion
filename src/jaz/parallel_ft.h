@@ -88,14 +88,14 @@ class ParFourierTransformer {
         but you need to be careful that an inverse Fourier transform may
         change the data.
         */
-    template <typename T, typename T1>
-    void FourierTransform(T& v, T1& V, bool getCopy=true) {
+    template <typename T>
+    void FourierTransform(MultidimArray<T> &v, MultidimArray<tComplex<T> > &V, bool getCopy=true) {
         setReal(v);
         Transform(FFTW_FORWARD);
-        if (getCopy) { 
-            getFourierCopy(V); 
-        } else { 
-            getFourierAlias(V); 
+        if (getCopy) {
+            V = fFourier;
+        } else {
+            V.alias(fFourier);
         }
     }
 
@@ -128,21 +128,7 @@ class ParFourierTransformer {
     }
 
     /** Get Fourier coefficients. */
-    template <typename T>
-    void getFourierAlias(T& V) { V.alias(fFourier); }
-
-    /** Get Fourier coefficients. */
-    MultidimArray<Complex> &getFourierReference() { return fFourier; }
-
-    /** Get Fourier coefficients. */
-    template <typename T>
-    void getFourierCopy(T& V) {
-        V.reshape(fFourier);
-        memcpy(
-            V.data, fFourier.data,
-            fFourier.size() * 2 * sizeof(RFLOAT)
-        );
-    }
+    MultidimArray<Complex> &getFourier() { return fFourier; }
 
     /** Return a complete Fourier transform (two halves). */
     template <typename T>

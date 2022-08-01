@@ -451,7 +451,7 @@ void AutoPicker::initialise() {
             MultidimArray<Complex> Fref;
             FourierTransformer transformer;
             transformer.setReal(Mref);
-            transformer.getFourierAlias(Fref);
+            Fref.alias(transformer.getFourier());
 
             FileName fn_img, fn_proj = fn_odir + "reference_projections.mrcs";
             for (long int idir = 0; idir < sampling.NrDirections(); idir++) {
