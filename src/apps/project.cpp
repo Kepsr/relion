@@ -107,7 +107,7 @@ class project_parameters {
         MetaDataTable DFo, MDang, MDang_sim;
         FileName fn_expimg;
 
-        MultidimArray<Complex> F3D, F2D, Fexpimg;
+        MultidimArray<Complex> F3D, Fexpimg;
         MultidimArray<RFLOAT> Fctf, dummy;
         Image<RFLOAT> vol, img, expimg;
         FourierTransformer transformer, transformer_expimg;
@@ -201,6 +201,7 @@ class project_parameters {
             img().resize(Xsize(vol()), Ysize(vol()));
         }
         transformer.setReal(img());
+        MultidimArray<Complex> F2D;
         F2D.alias(transformer.getFourier());
 
         // Set up the projector
