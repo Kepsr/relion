@@ -1679,10 +1679,8 @@ void BackProjector::applyHelicalSymmetry(
 
     int rmax2 = round(r_max * padding_factor) * round(r_max * padding_factor);
 
-    Matrix2D<RFLOAT> R(4, 4);  // A matrix from the list
     MultidimArray<RFLOAT> sum_weight;
     MultidimArray<Complex> sum_data;
-    bool is_neg_x;
 
     // First symmetry operator (not stored in SL) is the identity matrix
     sum_weight = weight;
@@ -1690,119 +1688,118 @@ void BackProjector::applyHelicalSymmetry(
     int h_min = -nr_helical_asu / 2;
     int h_max = -h_min + nr_helical_asu % 2;
     for (int hh = h_min; hh < h_max; hh++) {
-        if (hh != 0) {
-            // h == 0 is done before the for loop (where sum_data = data)
-            RFLOAT rot_ang = hh * (-helical_twist);
-            R = rotation3DMatrix(rot_ang, 'Z');
-            R.setSmallValuesToZero();  // TODO: invert rotation matrix?
+        if (hh == 0) continue;  // h == 0 is done before the loop (where sum_data = data)
 
-            // Loop over all points in the output (i.e. rotated, or summed) array
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight) {
-                RFLOAT x = j;  // Xinit(sum_weight) is zero!
-                RFLOAT y = i;
-                RFLOAT z = k;
-                RFLOAT r2 = x * x + y * y + z * z;
-                if (r2 <= rmax2) {
-                    // coords_output(x, y) = A * coords_input (xp, yp)
-                    RFLOAT xp = x * R(0, 0) + y * R(0, 1) + z * R(0, 2);
-                    RFLOAT yp = x * R(1, 0) + y * R(1, 1) + z * R(1, 2);
-                    RFLOAT zp = x * R(2, 0) + y * R(2, 1) + z * R(2, 2);
+        Matrix2D<RFLOAT> R = rotation3DMatrix(-hh * helical_twist, 'Z');
+        R.setSmallValuesToZero();  // TODO: invert rotation matrix?
 
-                    is_neg_x = xp < 0;
-                    // Only asymmetric half is stored
-                    if (is_neg_x) {
-                        // Get complex conjugated hermitian symmetry pair
-                        xp = -xp;
-                        yp = -yp;
-                        zp = -zp;
-                    }
+        // Loop over all points in the output (i.e. rotated, or summed) array
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight) {
+            RFLOAT x = j;  // Xinit(sum_weight) is zero!
+            RFLOAT y = i;
+            RFLOAT z = k;
+            RFLOAT r2 = euclidsq(x, y, z);
+            if (r2 <= rmax2) {
+                // coords_output(x, y) = A * coords_input (xp, yp)
+                RFLOAT xp = x * R(0, 0) + y * R(0, 1) + z * R(0, 2);
+                RFLOAT yp = x * R(1, 0) + y * R(1, 1) + z * R(1, 2);
+                RFLOAT zp = x * R(2, 0) + y * R(2, 1) + z * R(2, 2);
 
-                    // Trilinear interpolation (with physical coords)
-                    // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
-                    // In that way use direct::elem, rather than elem
-                    int x0 = floor(xp);
-                    RFLOAT fx = xp - x0;
-                    int x1 = x0 + 1;
-
-                    int y0 = floor(yp);
-                    RFLOAT fy = yp - y0;
-                    y0 -= Yinit(data);
-                    int y1 = y0 + 1;
-
-                    int z0 = floor(zp);
-                    RFLOAT fz = zp - z0;
-                    z0 -= Zinit(data);
-                    int z1 = z0 + 1;
-
-                    #ifdef CHECK_SIZE
-                    if (
-                        x0 < 0 || y0 < 0 || z0 < 0 ||
-                        x1 < 0 || y1 < 0 || z1 < 0 ||
-                        x0 >= Xsize(data) || y0 >= Ysize(data) || z0 >= Zsize(data) ||
-                        x1 >= Xsize(data) || y1 >= Ysize(data) || z1 >= Zsize(data)
-                    ) {
-                        std::cerr << " x0= " << x0 << " y0= " << y0 << " z0= " << z0 << std::endl;
-                        std::cerr << " x1= " << x1 << " y1= " << y1 << " z1= " << z1 << std::endl;
-                        data.printShape();
-                        REPORT_ERROR("BackProjector::applyPointGroupSymmetry: checksize!!!");
-                    }
-                    #endif
-                    // First interpolate (complex) data
-                    Complex d000 = direct::elem(data, x0, y0, z0);
-                    Complex d001 = direct::elem(data, x1, y0, z0);
-                    Complex d010 = direct::elem(data, x0, y1, z0);
-                    Complex d011 = direct::elem(data, x1, y1, z0);
-                    Complex d100 = direct::elem(data, x0, y0, z1);
-                    Complex d101 = direct::elem(data, x1, y0, z1);
-                    Complex d110 = direct::elem(data, x0, y1, z1);
-                    Complex d111 = direct::elem(data, x1, y1, z1);
-
-                    Complex dx00 = LIN_INTERP(fx, d000, d001);
-                    Complex dx01 = LIN_INTERP(fx, d100, d101);
-                    Complex dx10 = LIN_INTERP(fx, d010, d011);
-                    Complex dx11 = LIN_INTERP(fx, d110, d111);
-                    Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
-                    Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
-
-                    // Take complex conjugated for half with negative x
-                    Complex ddd = LIN_INTERP(fz, dxy0, dxy1);
-
-                    if (is_neg_x) { ddd = conj(ddd); }
-
-                    // Also apply a phase shift for helical translation along Z
-                    if (abs(helical_rise) > 0.0) {
-                        RFLOAT zshift = -hh * helical_rise / (ori_size * padding_factor);
-                        RFLOAT dotp = 2 * PI * z * zshift;
-                        Complex X = Complex(cos(dotp), sin(dotp));  // cis(dotp)
-                        Complex Z = Complex(X.real * ddd.real, X.imag * ddd.imag);  // X dot ddd
-                        ddd = Complex(
-                            Z.real - Z.imag,
-                            (X.real + X.imag) * (ddd.real + ddd.imag) - Z.real - Z.imag
-                        );
-                    }
-                    // Accumulated sum of the data term
-                    sum_data.elem(i, j, k) += ddd;
-
-                    // Then interpolate (real) weight
-                    RFLOAT dd000 = direct::elem(weight, x0, y0, z0);
-                    RFLOAT dd001 = direct::elem(weight, x1, y0, z0);
-                    RFLOAT dd010 = direct::elem(weight, x0, y1, z0);
-                    RFLOAT dd011 = direct::elem(weight, x1, y1, z0);
-                    RFLOAT dd100 = direct::elem(weight, x0, y0, z1);
-                    RFLOAT dd101 = direct::elem(weight, x1, y0, z1);
-                    RFLOAT dd110 = direct::elem(weight, x0, y1, z1);
-                    RFLOAT dd111 = direct::elem(weight, x1, y1, z1);
-
-                    RFLOAT ddx00 = LIN_INTERP(fx, dd000, dd001);
-                    RFLOAT ddx01 = LIN_INTERP(fx, dd100, dd101);
-                    RFLOAT ddx10 = LIN_INTERP(fx, dd010, dd011);
-                    RFLOAT ddx11 = LIN_INTERP(fx, dd110, dd111);
-                    RFLOAT ddxy0 = LIN_INTERP(fy, ddx00, ddx10);
-                    RFLOAT ddxy1 = LIN_INTERP(fy, ddx01, ddx11);
-
-                    sum_weight.elem(i, j, k) += LIN_INTERP(fz, ddxy0, ddxy1);
-
+                const bool is_neg_x = xp < 0;
+                // Only asymmetric half is stored
+                if (is_neg_x) {
+                    // Get complex conjugated hermitian symmetry pair
+                    xp = -xp;
+                    yp = -yp;
+                    zp = -zp;
                 }
+
+                // Trilinear interpolation (with physical coords)
+                // Subtract X/Y/Zinit for faster data access
+                // In that way use direct::elem, rather than elem
+                int x0 = floor(xp);
+                RFLOAT fx = xp - x0;
+                x0 -= Xinit(data);  // no-op since Xinit(data) is 0
+                int x1 = x0 + 1;
+
+                int y0 = floor(yp);
+                RFLOAT fy = yp - y0;
+                y0 -= Yinit(data);
+                int y1 = y0 + 1;
+
+                int z0 = floor(zp);
+                RFLOAT fz = zp - z0;
+                z0 -= Zinit(data);
+                int z1 = z0 + 1;
+
+                #ifdef CHECK_SIZE
+                if (
+                    x0 < 0 || y0 < 0 || z0 < 0 ||
+                    x1 < 0 || y1 < 0 || z1 < 0 ||
+                    x0 >= Xsize(data) || y0 >= Ysize(data) || z0 >= Zsize(data) ||
+                    x1 >= Xsize(data) || y1 >= Ysize(data) || z1 >= Zsize(data)
+                ) {
+                    std::cerr << " x0= " << x0 << " y0= " << y0 << " z0= " << z0 << std::endl;
+                    std::cerr << " x1= " << x1 << " y1= " << y1 << " z1= " << z1 << std::endl;
+                    data.printShape();
+                    REPORT_ERROR("BackProjector::applyPointGroupSymmetry: checksize!!!");
+                }
+                #endif
+                // First interpolate (complex) data
+                Complex d000 = direct::elem(data, x0, y0, z0);
+                Complex d001 = direct::elem(data, x1, y0, z0);
+                Complex d010 = direct::elem(data, x0, y1, z0);
+                Complex d011 = direct::elem(data, x1, y1, z0);
+                Complex d100 = direct::elem(data, x0, y0, z1);
+                Complex d101 = direct::elem(data, x1, y0, z1);
+                Complex d110 = direct::elem(data, x0, y1, z1);
+                Complex d111 = direct::elem(data, x1, y1, z1);
+
+                Complex dx00 = LIN_INTERP(fx, d000, d001);
+                Complex dx01 = LIN_INTERP(fx, d100, d101);
+                Complex dx10 = LIN_INTERP(fx, d010, d011);
+                Complex dx11 = LIN_INTERP(fx, d110, d111);
+                Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
+                Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
+
+                // Take complex conjugated for half with negative x
+                Complex ddd = LIN_INTERP(fz, dxy0, dxy1);
+
+                if (is_neg_x) { ddd = conj(ddd); }
+
+                // Also apply a phase shift for helical translation along Z
+                if (abs(helical_rise) > 0.0) {
+                    RFLOAT zshift = -hh * helical_rise / (ori_size * padding_factor);
+                    RFLOAT dotp = 2 * PI * z * zshift;
+                    Complex X = Complex(cos(dotp), sin(dotp));  // cis(dotp)
+                    Complex Z = Complex(X.real * ddd.real, X.imag * ddd.imag);  // X dot ddd
+                    ddd = Complex(
+                        Z.real - Z.imag,
+                        (X.real + X.imag) * (ddd.real + ddd.imag) - Z.real - Z.imag
+                    );
+                }
+                // Accumulated sum of the data term
+                sum_data.elem(i, j, k) += ddd;
+
+                // Then interpolate (real) weight
+                RFLOAT dd000 = direct::elem(weight, x0, y0, z0);
+                RFLOAT dd001 = direct::elem(weight, x1, y0, z0);
+                RFLOAT dd010 = direct::elem(weight, x0, y1, z0);
+                RFLOAT dd011 = direct::elem(weight, x1, y1, z0);
+                RFLOAT dd100 = direct::elem(weight, x0, y0, z1);
+                RFLOAT dd101 = direct::elem(weight, x1, y0, z1);
+                RFLOAT dd110 = direct::elem(weight, x0, y1, z1);
+                RFLOAT dd111 = direct::elem(weight, x1, y1, z1);
+
+                RFLOAT ddx00 = LIN_INTERP(fx, dd000, dd001);
+                RFLOAT ddx01 = LIN_INTERP(fx, dd100, dd101);
+                RFLOAT ddx10 = LIN_INTERP(fx, dd010, dd011);
+                RFLOAT ddx11 = LIN_INTERP(fx, dd110, dd111);
+                RFLOAT ddxy0 = LIN_INTERP(fy, ddx00, ddx10);
+                RFLOAT ddxy1 = LIN_INTERP(fy, ddx01, ddx11);
+
+                sum_weight.elem(i, j, k) += LIN_INTERP(fz, ddxy0, ddxy1);
+
             }
         }
     }
@@ -2019,12 +2016,11 @@ void BackProjector::windowToOridimRealSpace(
     };
     #endif
 
-    // Because Fin is a reference, it must be initialised at declaration time,
-    // and so we cannot put it in its own scope 
-    // (as we would do in order to use a TicToc).
-    ifdefTIMING(OriDimTimer.tic(OriDims[0]);)
-    MultidimArray<Complex> &Fin = transformer.getFourierReference();
-    ifdefTIMING(OriDimTimer.toc(OriDims[0]);)
+    auto &Fin = [&] () -> MultidimArray<Complex> & {
+        ifdefTIMING(TicToc tt (OriDimTimer, OriDims[0]);)
+        // Why are we timing this? It's just a member access.
+        return transformer.getFourierReference();
+    }();
 
     int padoridim;  // Size of padded real-space volume
     {
@@ -2047,26 +2043,22 @@ void BackProjector::windowToOridimRealSpace(
     windowFourierTransform(Fin, padoridim);
     }
 
-    RFLOAT normfft;
-    {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[2]);)
-    if (ref_dim == 2) {
-        Mout.reshape(padoridim, padoridim);
-        normfft = (
-            data_dim == 2 ?
-            padding_factor * padding_factor :
-            padding_factor * padding_factor * ori_size
-        );
-    } else {
-        Mout.reshape(padoridim, padoridim, padoridim);
-        normfft = (
-            data_dim == 3 ?
-            padding_factor * padding_factor * padding_factor :
-            padding_factor * padding_factor * padding_factor * ori_size
-        );
-    }
-    Mout.setXmippOrigin();
-    }
+    const RFLOAT normfft = [&] () {
+        ifdefTIMING(TicToc tt (OriDimTimer, OriDims[2]);)
+        if (ref_dim == 2) {
+            Mout.reshape(padoridim, padoridim);
+            Mout.setXmippOrigin();
+            return data_dim == 2 ?
+                padding_factor * padding_factor :
+                padding_factor * padding_factor * ori_size;
+        } else {
+            Mout.reshape(padoridim, padoridim, padoridim);
+            Mout.setXmippOrigin();
+            return data_dim == 3 ?
+                padding_factor * padding_factor * padding_factor :
+                padding_factor * padding_factor * padding_factor * ori_size;
+        }
+    }();
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
     tt().reshape(Xsize(Fin), Ysize(Fin), Zsize(Fin));
@@ -2111,16 +2103,12 @@ void BackProjector::windowToOridimRealSpace(
     // Window in real-space
     {
     ifdefTIMING(TicToc tt (OriDimTimer, OriDims[6]);)
+    const long int init = Xmipp::init(ori_size);
+    const long int last = Xmipp::last(ori_size);
     if (ref_dim == 2) {
-        Mout.window(
-            Xmipp::init(ori_size), Xmipp::init(ori_size),
-            Xmipp::last(ori_size), Xmipp::last(ori_size)
-        );
+        Mout.window(init, init, last, last);
     } else {
-        Mout.window(
-            Xmipp::init(ori_size), Xmipp::init(ori_size), Xmipp::init(ori_size),
-            Xmipp::last(ori_size), Xmipp::last(ori_size), Xmipp::last(ori_size)
-        );
+        Mout.window(init, init, init, last, last, last);
     }
     Mout.setXmippOrigin();
     }

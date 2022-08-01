@@ -1224,19 +1224,17 @@ class MultidimArray {
     }
 
     /** inside for 3D matrices */
-    bool inside(long int i, long int j, long int k) const {
-        // Why j <-> X and i <-> Y?
-        return inXbounds(j, *this) && inYbounds(i, *this) && inZbounds(k, *this);
+    inline bool inside(long int i, long int j, long int k) const {
+        return inXbounds(i, *this) && inYbounds(j, *this) && inZbounds(k, *this);
     }
 
     /** inside for 2D matrices */
-    bool inside(long int i, long int j) const {
-        // Why j <-> X and i <-> Y?
-        return inXbounds(j, *this) && inYbounds(i, *this);
+    inline bool inside(long int i, long int j) const {
+        return inXbounds(i, *this) && inYbounds(j, *this);
     }
 
     /** inside for 1D matrices */
-    bool inside(long int i) const {
+    inline bool inside(long int i) const {
         return inXbounds(i, *this);
     }
 
@@ -1264,9 +1262,9 @@ class MultidimArray {
             case 1:
             return outside(XX(r));
             case 2:
-            return outside(YY(r), XX(r));
+            return outside(XX(r), YY(r));
             case 3:
-            return outside(YY(r), XX(r), ZZ(r));
+            return outside(XX(r), YY(r), ZZ(r));
             default:
             REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
         }
@@ -1296,35 +1294,23 @@ class MultidimArray {
         xinit = Xmipp::init(xdim);
     }
 
-    /** The first logical Z index. */
-    inline long int firstZ() const {
-        return Xmipp::init(zdim);
-    }
+    // First logical X index
+    inline long int firstX() const { return Xmipp::init(xdim); }
 
-    /** The last logical Z index. */
-    inline long int lastZ() const {
-        return Xmipp::last(zdim);
-    }
+    // Last logical X index
+    inline long int  lastX() const { return Xmipp::last(xdim); }
 
-    /** The first logical Y index. */
-    inline long int firstY() const {
-        return Xmipp::init(ydim);
-    }
+    // First logical Y index
+    inline long int firstY() const { return Xmipp::init(ydim); }
 
-    /** The last logical Y index. */
-    inline long int lastY() const {
-        return Xmipp::last(ydim);
-    }
+    // Last logical Y index
+    inline long int  lastY() const { return Xmipp::last(ydim); }
 
-    /** The first logical X index. */
-    inline long int firstX() const {
-        return Xmipp::init(xdim);
-    }
+    // First logical Z index
+    inline long int firstZ() const { return Xmipp::init(zdim); }
 
-    /** The last logical X index. */
-    inline long int lastX() const {
-        return Xmipp::last(xdim);
-    }
+    // Last logical Z index
+    inline long int  lastZ() const { return Xmipp::last(zdim); }
 
     /** IsCorner (in 2D or 3D matrix)
      *
@@ -1362,7 +1348,7 @@ class MultidimArray {
     T* begin() const { return data; }
     T* end() const { return &data[size()]; }
 
-    /** Volume element access by RFLOAT vector.
+    /** Volume element access by integer vector.
      *
      * Returns the value of a matrix logical position, but this time the
      * element position is determined by a R3 vector. The elements can be used
@@ -1377,20 +1363,6 @@ class MultidimArray {
      * val = V(vectorR3(1, -2, 0));
      * @endcode
      */
-    T& operator()(const Matrix1D<RFLOAT> &v) const {
-        switch (v.size()) {
-            case 1:
-            return elem(round(XX(v)));
-            case 2:
-            return elem(round(XX(v)), round(YY(v)));
-            case 3:
-            return elem(round(XX(v)), round(YY(v)), round(ZZ(v)));
-            default:
-            REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
-        }
-    }
-
-    /** Volume element access by integer vector. */
     T& operator()(const Matrix1D<long int> &v) const {
         switch (v.size()) {
             case 1:
@@ -1416,7 +1388,7 @@ class MultidimArray {
     * val = V(0, 0, -2, 1);
     * @endcode
     */
-    inline T& operator()(long n, long int k, long int i, long int j) const {
+    inline T& operator()(long i, long int j, long int k, long int n) const {
         return elem(i, j, k, n);
     }
 
@@ -1432,7 +1404,7 @@ class MultidimArray {
     * val = V(0, -2, 1);
     * @endcode
     */
-    inline T& operator()(long int k, long int i, long int j) const {
+    inline T& operator()(long int i, long int j, long int k) const {
         return elem(i, j, k);
     }
 
@@ -1833,14 +1805,14 @@ class MultidimArray {
         RFLOAT fz = z - z0;
         long int z1 = z0 + 1;
 
-        T d000 = outside(y0, x0, z0) ? outside_value : elem(x0, y0, z0, n);
-        T d001 = outside(y0, x1, z0) ? outside_value : elem(x1, y0, z0, n);
-        T d010 = outside(y1, x0, z0) ? outside_value : elem(x0, y1, z0, n);
-        T d011 = outside(y1, x1, z0) ? outside_value : elem(x1, y1, z0, n);
-        T d100 = outside(y0, x0, z1) ? outside_value : elem(x0, y0, z1, n);
-        T d101 = outside(y0, x1, z1) ? outside_value : elem(x1, y0, z1, n);
-        T d110 = outside(y1, x0, z1) ? outside_value : elem(x0, y1, z1, n);
-        T d111 = outside(y1, x1, z1) ? outside_value : elem(x1, y1, z1, n);
+        T d000 = outside(x0, y0, z0) ? outside_value : elem(x0, y0, z0, n);
+        T d001 = outside(x1, y0, z0) ? outside_value : elem(x1, y0, z0, n);
+        T d010 = outside(x0, y1, z0) ? outside_value : elem(x0, y1, z0, n);
+        T d011 = outside(x1, y1, z0) ? outside_value : elem(x1, y1, z0, n);
+        T d100 = outside(x0, y0, z1) ? outside_value : elem(x0, y0, z1, n);
+        T d101 = outside(x1, y0, z1) ? outside_value : elem(x1, y0, z1, n);
+        T d110 = outside(x0, y1, z1) ? outside_value : elem(x0, y1, z1, n);
+        T d111 = outside(x1, y1, z1) ? outside_value : elem(x1, y1, z1, n);
 
         RFLOAT dx00 = LIN_INTERP(fx, (RFLOAT) d000, (RFLOAT) d001);
         RFLOAT dx01 = LIN_INTERP(fx, (RFLOAT) d100, (RFLOAT) d101);
@@ -1864,10 +1836,10 @@ class MultidimArray {
         RFLOAT fy = y - y0;
         long int y1 = y0 + 1;
 
-        T d00 = outside(y0, x0) ? outside_value : elem(x0, y0, 0, n);
-        T d10 = outside(y1, x0) ? outside_value : elem(x0, y1, 0, n);
-        T d11 = outside(y1, x1) ? outside_value : elem(x1, y1, 0, n);
-        T d01 = outside(y0, x1) ? outside_value : elem(x1, y0, 0, n);
+        T d00 = outside(x0, y0) ? outside_value : elem(x0, y0, 0, n);
+        T d10 = outside(x0, y1) ? outside_value : elem(x0, y1, 0, n);
+        T d11 = outside(x1, y1) ? outside_value : elem(x1, y1, 0, n);
+        T d01 = outside(x1, y0) ? outside_value : elem(x1, y0, 0, n);
 
         RFLOAT d0 = (T) LIN_INTERP(fx, (RFLOAT) d00, (RFLOAT) d01);
         RFLOAT d1 = (T) LIN_INTERP(fx, (RFLOAT) d10, (RFLOAT) d11);
