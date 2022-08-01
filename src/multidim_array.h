@@ -508,6 +508,17 @@ class MultidimArray {
         }
     }
 
+    // MultidimArray(MultidimArray<T>&& other) {
+    //     // moveFrom(other)
+    //     coreDeallocate(); // Otherwise there may be a memory leak!
+    //     copyShape(other);
+    //     data = other.data;
+    //     destructible = true;
+    //     allocated_size = other.allocated_size;
+    //     other.destructible = false;
+    //     other.allocated_size = 0;
+    // }
+
     template <typename T2>
     MultidimArray<T>(const MultidimArray<T2> &other) {
         coreInit();
@@ -659,12 +670,15 @@ class MultidimArray {
      * into new memory, but a pointer to the multidimarray is copied.
      * You should not make any operation on this volume so the
      * memory locations are changed
+     * 
+     * MultidimArray<float> x = foo(), y;
+     * y.alias(x);
      */
     void alias(const MultidimArray<T> &other) {
         coreDeallocate();  // Otherwise there may be a memory leak!
         copyShape(other);
-        data = other.data;
-        destructible = false;
+        data = other.data;  // We are sharing this pointer with other.
+        destructible = false;  // Do not allow data to be freed when this array is destroyed. We don't own it.
     }
 
     /** Move from a multidimarray.
@@ -695,7 +709,7 @@ class MultidimArray {
      *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
      *
      */
-    void setDimensions(long int Xdim, long int Ydim, long int Zdim, long int Ndim) {
+    void setDimensions(long int Xdim = 1, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
         ndim = Ndim;
         zdim = Zdim;
         ydim = Ydim;
@@ -3271,7 +3285,7 @@ class MultidimArray {
      */
     MultidimArray<T> &operator = (const MultidimArray<T> &op1) {
         if (&op1 != this) {
-            if (!data || !sameShape(op1)) resize(op1);
+            resize(op1);
             memcpy(data, op1.data, op1.size() * sizeof(T));
         }
         return *this;

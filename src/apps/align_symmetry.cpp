@@ -177,7 +177,7 @@ class align_symmetry {
         rotated.reshape(vol_work());
         symmetrised.reshape(vol_work());
         transformer.setReal(rotated);
-        transformer.getFourierAlias(F2D);
+        F2D.alias(transformer.getFourier());
 
         // Set up the projector
         int data_dim = 3;

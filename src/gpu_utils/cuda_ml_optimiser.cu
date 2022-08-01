@@ -472,7 +472,7 @@ void getFourierTransformsAndCtfs(
             MultidimArray<Complex> Fnoise;
             Mnoise.resize(img());
             cudaMLO->transformer.setReal(Mnoise);
-            cudaMLO->transformer.getFourierAlias(Fnoise);
+            Fnoise.alias(cudaMLO->transformer.getFourier());
             // Fill Fnoise with random numbers, use power spectrum of the noise for its variance
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fnoise) {
                 int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));

@@ -217,19 +217,17 @@ class FourierTransformer {
         setReal(v, force_new_plans);
         Transform(FFTW_FORWARD);
         if (getCopy) {
-            getFourierCopy(V);
+            V = fFourier;
         } else {
-            getFourierAlias(V);
+            V.alias(fFourier);
         }
     }
 
     template <typename T>
     MultidimArray<tComplex<T> > FourierTransform(MultidimArray<T> &v, bool force_new_plans = false) {
-        MultidimArray<tComplex<T> > V;
         setReal(v, force_new_plans);
         Transform(FFTW_FORWARD);
-        getFourierCopy(V);
-        return V;
+        return fFourier;
     }
 
     /** Compute the Fourier transform.
@@ -270,21 +268,7 @@ class FourierTransformer {
     }
 
     /** Get Fourier coefficients. */
-    template <typename T>
-    void getFourierAlias(T& V) { V.alias(fFourier); }
-
-    /** Get Fourier coefficients. */
-    MultidimArray<Complex>& getFourierReference() { return fFourier; }
-
-    /** Get Fourier coefficients. */
-    template <typename T>
-    void getFourierCopy(T& V) {
-        V.reshape(fFourier);
-        memcpy(
-            V.data, fFourier.data,
-            fFourier.size() * 2 * sizeof(RFLOAT)
-        );
-    }
+    MultidimArray<Complex>& getFourier() { return fFourier; }
 
     /** Return a complete Fourier transform (two halves).
     */
@@ -768,6 +752,7 @@ void windowFourierTransform(MultidimArray<T> &V, long int newdim) {
     MultidimArray<T> tmp;
     windowFourierTransform<T>(V, tmp, newdim);
     V.moveFrom(tmp);
+    // return std::move(tmp);
 }
 
 // A resize operation in Fourier-space (i.e. changing the sampling of the Fourier Transform) by windowing in real-space

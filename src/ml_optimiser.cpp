@@ -4828,10 +4828,10 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             init_random_generator(random_seed + part_id); // This only serves for exact reproducibility tests with 1.3-code...
 
             // Create noisy image for outside the mask
-            MultidimArray<Complex > Fnoise;
+            MultidimArray<Complex> Fnoise;
             Mnoise.resize(img());
             transformer.setReal(Mnoise);
-            transformer.getFourierAlias(Fnoise);
+            Fnoise.alias(transformer.getFourier());
 
             // Remap mymodel.sigma2_noise[group_id] onto remapped_sigma2_noise for this images's size and angpix
             MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(Xsize(Mnoise) / 2 + 1);

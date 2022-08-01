@@ -1213,7 +1213,7 @@ void BackProjector::reconstruct(
     FourierTransformer transformer;
     const int max_r2 = round(r_max * padding_factor) * round(r_max * padding_factor);
     /// TODO: Turn this block into an init function.
-    {
+    auto &Fconv = [&] () -> MultidimArray<Complex> & {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[0]);)
     oversampling_correction = ref_dim == 3 ?
         padding_factor * padding_factor * padding_factor :
@@ -1221,28 +1221,23 @@ void BackProjector::reconstruct(
 
     // #define DEBUG_RECONSTRUCT
     #ifdef DEBUG_RECONSTRUCT
-    Image<RFLOAT> ttt;
-    FileName fnttt;
-    ttt() = weight;
-    ttt.write("reconstruct_initial_weight.spi");
+    Image<RFLOAT>(weight).write("reconstruct_initial_weight.spi");
     std::cerr << " pad_size= " << pad_size << " padding_factor= " << padding_factor << " max_r2= " << max_r2 << std::endl;
     #endif
 
     // Set Fconv to the right size
     if (ref_dim == 2) {
-        vol_out.setDimensions(pad_size, pad_size, 1, 1);
+        vol_out.setDimensions(pad_size, pad_size);
     } else {
         // Too costly to actually allocate the space
         // Trick transformer with the right dimensions
-        vol_out.setDimensions(pad_size, pad_size, pad_size, 1);
+        vol_out.setDimensions(pad_size, pad_size, pad_size);
     }
 
     transformer.setReal(vol_out);  // Fake set real. 1. Allocate space for Fconv 2. calculate plans.
-    }
-
-    /// TODO: Find some way of putting these two lines back inside the above block.
-    MultidimArray<Complex> &Fconv = transformer.getFourierReference();
     vol_out.clear();  // Reset dimensions to 0
+    return transformer.getFourier();
+    }();
 
     MultidimArray<RFLOAT> Fweight;
     {
@@ -1259,7 +1254,7 @@ void BackProjector::reconstruct(
     if (do_map) {
         // Then, add the inverse of tau2-spectrum values to the weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fconv) {
-            int r2 = kp * kp + ip * ip + jp * jp;
+            int r2 = euclidsq(ip, jp, kp);
             if (r2 < max_r2) {
                 int ires = round(sqrt((RFLOAT) r2) / padding_factor);
                 RFLOAT invw = direct::elem(Fweight, i, j, k);
@@ -1298,7 +1293,7 @@ void BackProjector::reconstruct(
         MultidimArray<RFLOAT> radavg_weight(r_max), counter(r_max);
         const int round_max_r2 = round(r_max * padding_factor * r_max * padding_factor);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
-            const int r2 = kp * kp + ip * ip + jp * jp;
+            const int r2 = euclidsq(ip, jp, kp);
             // Note that (r < ires) != (r2 < max_r2), because max_r2 = round(r_max * padding_factor)^2.
             // We have to use round_max_r2 = round((r_max * padding_factor)^2).
             // e.g. k = 0, i = 7, j = 28, max_r2 = 841, r_max = 16, padding_factor = 18.
@@ -1331,7 +1326,7 @@ void BackProjector::reconstruct(
         bool have_warned = false;
         // perform std::max on all weight elements, and do division of data/weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
-            const int r2 = kp * kp + ip * ip + jp * jp;
+            const int r2 = euclidsq(ip, jp, kp);
             const int ires = floor(sqrt((RFLOAT) r2) / padding_factor);
             const RFLOAT weight =  std::max(
                 direct::elem(Fweight, i, j, k),
@@ -1397,7 +1392,7 @@ void BackProjector::reconstruct(
             RFLOAT w, corr_min = LARGE_NUMBER, corr_max = -LARGE_NUMBER, corr_avg = 0.0, corr_nn = 0.0;
 
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fconv) {
-                if (kp * kp + ip * ip + jp * jp < max_r2) {
+                if (euclidsq(ip, jp, kp) < max_r2) {
 
                     // Make sure no division by zero can occur....
                     w = std::max(1e-6, abs(direct::elem(Fconv, i, j, k)));
@@ -1492,15 +1487,15 @@ void BackProjector::reconstruct(
     FourierTransformer transformer2;
     transformer2.setReal(vol_out);  // cannot use the first transformer because Fconv is inside there!!
     MultidimArray<Complex> Ftmp;
-    transformer2.getFourierAlias(Ftmp);
+    Ftmp.alias(transformer2.getFourier());
     }
 
     {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[11]);)
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Ftmp) {
-        direct::elem(Ftmp, i, j, k) = ip * ip + jp * jp + kp * kp < r_max * r_max ?
-            FFTW::elem(Fconv, ip * padding_factor, jp * padding_factor, kp * padding_factor)
-          : 0.0;
+        direct::elem(Ftmp, i, j, k) = euclidsq(ip, jp, kp) < r_max * r_max ?
+            FFTW::elem(Fconv, ip * padding_factor, jp * padding_factor, kp * padding_factor) :
+            0.0;
         }
     }
     }
@@ -1981,7 +1976,7 @@ void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool
         int kp = k < padhdim ? k : k - pad_size;
         int ip = i < padhdim ? i : i - pad_size;
         int jp = j < padhdim ? j : j - pad_size;
-        RFLOAT rval = sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)) / (ori_size * padding_factor);
+        RFLOAT rval = sqrt((RFLOAT) euclidsq(ip, jp, kp)) / (ori_size * padding_factor);
         //if (kp==0 && ip==0 && jp > 0)
         //	std::cerr << " jp= " << jp << " rval= " << rval << " tab_ftblob(rval) / normftblob= " << tab_ftblob(rval) / normftblob << " ori_size/2= " << ori_size/2 << std::endl;
         // In the final reconstruction: mask the real-space map beyond its original size to prevent aliasing ghosts
@@ -2019,7 +2014,7 @@ void BackProjector::windowToOridimRealSpace(
     auto &Fin = [&] () -> MultidimArray<Complex> & {
         ifdefTIMING(TicToc tt (OriDimTimer, OriDims[0]);)
         // Why are we timing this? It's just a member access.
-        return transformer.getFourierReference();
+        return transformer.getFourier();
     }();
 
     int padoridim;  // Size of padded real-space volume
