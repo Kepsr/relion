@@ -557,9 +557,8 @@ void FilterHelper::lowPassFilter(
     double maxFreq0, double maxFreq1, 
     Image<RFLOAT> &dest
 ) {
-    MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
-    ft.FourierTransform(img(), imgFreq, false);
+    MultidimArray<Complex> &imgFreq = ft.FourierTransform(img());
 
     lowPassFilterSpectrum(imgFreq, maxFreq0, maxFreq1);
 
@@ -617,9 +616,8 @@ void FilterHelper::phaseFlip(
     CTF &ctf, ObservationModel *obsModel, int opticsGroup,
     RFLOAT angpix, Image<RFLOAT> &dest
 ) {
-    MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
-    ft.FourierTransform(img(), imgFreq, false);
+    MultidimArray<Complex> &imgFreq = ft.FourierTransform(img());
 
     RFLOAT xs = (RFLOAT) img.data.xdim * angpix;
     RFLOAT ys = (RFLOAT) img.data.ydim * angpix;
@@ -649,9 +647,8 @@ void FilterHelper::applyBeamTilt(
     Image<RFLOAT> &img, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
     RFLOAT lambda, RFLOAT Cs, RFLOAT angpix, int s, Image<RFLOAT> &dest
 ) {
-    MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
-    ft.FourierTransform(img(), imgFreq, false);
+    MultidimArray<Complex> &imgFreq = ft.FourierTransform(img());
 
     selfApplyBeamTilt(imgFreq, beamtilt_x, beamtilt_y, lambda, Cs, angpix, s);
 
@@ -663,9 +660,9 @@ void FilterHelper::modulate(
     CTF &ctf, ObservationModel *obsModel, int opticsGroup,
     RFLOAT angpix, Image<RFLOAT> &dest
 ) {
-    Image<Complex> imgFreq;
     FourierTransformer ft;
-    ft.FourierTransform(img(), imgFreq(), false);
+    Image<Complex> imgFreq;
+    imgFreq() = ft.FourierTransform(img()); // Can we make imgFreq() a reference to ft.fFourier?
 
     modulate(imgFreq, ctf, obsModel, opticsGroup, angpix, dest);
 }
@@ -732,9 +729,8 @@ void FilterHelper::wienerFilter(
     CTF &ctf, ObservationModel *obsModel, int opticsGroup,
     RFLOAT angpix, RFLOAT eps, RFLOAT Bfac, Image<RFLOAT> &dest
 ) {
-    MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
-    ft.FourierTransform(img(), imgFreq, false);
+    MultidimArray<Complex> &imgFreq = ft.FourierTransform(img());
 
     RFLOAT xs = (RFLOAT) img.data.xdim * angpix;
     RFLOAT ys = (RFLOAT) img.data.ydim * angpix;
@@ -802,9 +798,8 @@ void FilterHelper::richardsonLucy(
 }
 
 void FilterHelper::rampFilter(Image<RFLOAT> &img, RFLOAT s0, RFLOAT t1, double ux, double uy, Image<RFLOAT> &dest) {
-    MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
-    ft.FourierTransform(img(), imgFreq, false);
+    MultidimArray<Complex> &imgFreq = ft.FourierTransform(img());
 
     for (long int j = 0; j < Ysize(imgFreq); j++)
     for (long int i = 0; i < Xsize(imgFreq); i++) {
@@ -924,9 +919,8 @@ void FilterHelper::getImag(const Image<Complex> &img, Image<RFLOAT> &dest) {
 }
 
 void FilterHelper::powerSpectrum2D(Image<RFLOAT> &img, Volume<RFLOAT>& spectrum) {
-    MultidimArray<Complex> imgFreq;
     FourierTransformer ft;
-    ft.FourierTransform(img(), imgFreq, false);
+    MultidimArray<Complex> &imgFreq = ft.FourierTransform(img());
 
     spectrum.resize(imgFreq.xdim, imgFreq.ydim, 1);
 

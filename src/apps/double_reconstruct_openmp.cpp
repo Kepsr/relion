@@ -144,7 +144,7 @@ class reconstruct_parameters {
             MultidimArray<Complex> &Fin, CTF &ctf, FourierTransformer &transformer,
             MultidimArray<Complex> &outP, MultidimArray<Complex> &outQ, double angpix
         ) {
-            //FourierTransformer transformer;
+            // FourierTransformer transformer;
             outP.resize(Fin);
             outQ.resize(Fin);
             float angle_step = 180.0 / nr_sectors;
@@ -178,7 +178,7 @@ class reconstruct_parameters {
 
                     // Back into Fourier-space
                     CenterFFT(Iapp, true);
-                    transformer.FourierTransform(Iapp, Fapp, false); // false means: leave Fapp in the transformer
+                    Fapp = transformer.FourierTransform(Iapp);  // std::move?
 
                     // First time round: resize the output arrays
                     if (ipass == 0 && fabs(angle) < Xmipp::epsilon) {

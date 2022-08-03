@@ -50,11 +50,9 @@ void FourierHelper::FourierShift2D(
     MultidimArray<RFLOAT> &img, RFLOAT xshift, RFLOAT yshift
 ) {
     FourierTransformer ft;
-    MultidimArray<Complex> imgC;
-
-    imgC = ft.FourierTransform(img);
-    //FourierShift2D(imgC, xshift, yshift);
+    MultidimArray<Complex> imgC = ft.FourierTransform(img);
+    // FourierShift2D(imgC, xshift, yshift);
     shiftImageInFourierTransform(imgC, imgC, img.ydim, xshift, yshift);
 
-    ft.inverseFourierTransform(imgC, img);
+    img = ft.inverseFourierTransform(imgC);  // std::move?
 }

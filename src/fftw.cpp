@@ -55,25 +55,14 @@ using ComplexArray = MultidimArray<Complex>;
 // Anything to do with plans has to be protected for threads
 static pthread_mutex_t fftw_plan_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-struct fftw_plan_mutex_guard {
-
-    fftw_plan_mutex_guard() {
-        pthread_mutex_lock(&fftw_plan_mutex);
-    }
-
-    ~fftw_plan_mutex_guard() {
-        pthread_mutex_unlock(&fftw_plan_mutex);
-    }
-
-};
-
 // #define TIMING_FFTW
 #ifdef TIMING_FFTW
+#include "src/time.h"
 Timer timer_fftw;
-int TIMING_FFTW_PLAN      = timer_fftw.setNew("fftw - plan");
-int TIMING_FFTW_EXECUTE   = timer_fftw.setNew("fftw - exec");
-int TIMING_FFTW_NORMALISE = timer_fftw.setNew("fftw - normalise");
-int TIMING_FFTW_COPY      = timer_fftw.setNew("fftw - copy");
+const int TIMING_FFTW_PLAN      = timer_fftw.setNew("fftw - plan");
+const int TIMING_FFTW_EXECUTE   = timer_fftw.setNew("fftw - exec");
+const int TIMING_FFTW_NORMALISE = timer_fftw.setNew("fftw - normalise");
+const int TIMING_FFTW_COPY      = timer_fftw.setNew("fftw - copy");
 #define ifdefTIMING_FFTW(statement) statement
 #else
 #define ifdefTIMING_FFTW(statement)
@@ -127,97 +116,72 @@ void FourierTransformer::cleanup() {
 }
 
 void FourierTransformer::destroyPlans() {
-    fftw_plan_mutex_guard guard;
     if (plans_are_set) {
+        pthread_lock_guard guard (&fftw_plan_mutex);
         FFTW_DESTROY_PLAN(fPlanForward);
         FFTW_DESTROY_PLAN(fPlanBackward);
         plans_are_set = false;
     }
 }
 
+const MultidimArray<RFLOAT> &FourierTransformer::getReal() const { return *fReal; }
+
+const MultidimArray<Complex> &FourierTransformer::getComplex() const { return *fComplex; }
+
 // Initialization ----------------------------------------------------------
-const MultidimArray<RFLOAT> &FourierTransformer::getReal() const {
-    return *fReal;
-}
+void FourierTransformer::setReal(const MultidimArray<RFLOAT> &input, bool force_new_plans) {
 
-const MultidimArray<Complex> &FourierTransformer::getComplex() const {
-    return *fComplex;
-}
-
-void FourierTransformer::setReal(MultidimArray<RFLOAT> &input, bool force_new_plans) {
-
-    bool recomputePlan =
+    const bool recomputePlan =
+        force_new_plans ||
         !fReal ||
         dataPtr != input.data ||
         !fReal->sameShape(input) ||
         Xsize(fFourier) != Xsize(input) / 2 + 1 ||
         complexDataPtr != fFourier.data;
 
-    if (recomputePlan || force_new_plans) {
-        fFourier.reshape(Xsize(input) / 2 + 1, Ysize(input), Zsize(input));
-        fReal = &input;
+    if (!recomputePlan) return;
 
-        int ndim = 3;
-        if (Zsize(input) == 1) {
-            ndim = 2;
-            if (Ysize(input) == 1)
-                ndim = 1;
-        }
-        int *N = new int[ndim];
-        switch (ndim) {
-            case 1:
-            N[0] = Xsize(input);
-            break;
-            case 2:
-            N[0] = Ysize(input);
-            N[1] = Xsize(input);
-            break;
-            case 3:
-            N[0] = Zsize(input);
-            N[1] = Ysize(input);
-            N[2] = Xsize(input);
-            break;
-        }
+    fFourier.reshape(Xsize(input) / 2 + 1, Ysize(input), Zsize(input));
+    fReal = &input;
 
-        // Destroy both forward and backward plans if they already exist
-        destroyPlans();
+    const int rank = get_array_rank(input);
+    const int *const n = new_n(input, rank);
 
-        // Make new plans
-        plans_are_set = true;
+    // Destroy both forward and backward plans if they already exist
+    destroyPlans();
 
-        {
-        ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
-        fftw_plan_mutex_guard guard;
+    // Make new plans
+    {
+    ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
+    pthread_lock_guard guard (&fftw_plan_mutex);
 
-        fPlanForward = FFTW_PLAN_DFT_R2C(
-            ndim, N,
-            fReal->data, (FFTW_COMPLEX*) fFourier.data,
-            FFTW_ESTIMATE
-        );
-        fPlanBackward = FFTW_PLAN_DFT_C2R(
-            ndim, N,
-            (FFTW_COMPLEX*) fFourier.data, fReal->data,
-            FFTW_ESTIMATE
-        );
-
-        }
-
-        if (!fPlanForward || !fPlanBackward)
-            REPORT_ERROR("FFTW plans cannot be created");
-
-        #ifdef DEBUG_PLANS
-        std::cerr << " SETREAL fPlanForward= " << fPlanForward << " fPlanBackward= " << fPlanBackward  <<" this= "<<this<< std::endl;
-        #endif
-
-        delete[] N;
-        dataPtr = fReal->data;
-        complexDataPtr = fFourier.data;
-
+    fPlanForward = FFTW_PLAN_DFT_R2C(
+        rank, n, fReal->data, (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE
+    );
+    fPlanBackward = FFTW_PLAN_DFT_C2R(
+        rank, n, (FFTW_COMPLEX*) fFourier.data, fReal->data, FFTW_ESTIMATE
+    );
     }
+
+    delete[] n;
+
+    if (!fPlanForward || !fPlanBackward)
+        REPORT_ERROR("FFTW plans cannot be created");
+
+    #ifdef DEBUG_PLANS
+    std::cerr << " SETREAL fPlanForward= " << fPlanForward << " fPlanBackward= " << fPlanBackward  << " this= " << this << std::endl;
+    #endif
+
+    plans_are_set = true;
+    dataPtr = fReal->data;
+    complexDataPtr = fFourier.data;
+
 }
 
-void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_plans) {
-    bool recomputePlan =
+void FourierTransformer::setReal(const MultidimArray<Complex> &input, bool force_new_plans) {
+
+    const bool recomputePlan =
+        force_new_plans ||
         !fComplex ||
         complexDataPtr != input.data ||
         !fComplex->sameShape(input);
@@ -225,61 +189,41 @@ void FourierTransformer::setReal(MultidimArray<Complex> &input, bool force_new_p
     fFourier.resize(input);
     fComplex = &input;
 
-    if (recomputePlan || force_new_plans) {
-        int ndim = 3;
-        if (Zsize(input) == 1) {
-            ndim = 2;
-            if (Ysize(input) == 1)
-                ndim = 1;
-        }
-        int *N = new int[ndim];
-        switch (ndim) {
-            case 1:
-            N[0] = Xsize(input);
-            break;
-            case 2:
-            N[0] = Ysize(input);
-            N[1] = Xsize(input);
-            break;
-            case 3:
-            N[0] = Zsize(input);
-            N[1] = Ysize(input);
-            N[2] = Xsize(input);
-            break;
-        }
+    if (!recomputePlan) return;
 
-        // Destroy both forward and backward plans if they already exist
-        destroyPlans();
+    const int rank = get_array_rank(input);
+    const int *const n = new_n(input, rank);
 
-        plans_are_set = true;
+    // Destroy both forward and backward plans if they already exist
+    destroyPlans();
 
-        {
-        ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
-        fftw_plan_mutex_guard guard;
+    {
+    ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
+    pthread_lock_guard guard (&fftw_plan_mutex);
 
-        fPlanForward = FFTW_PLAN_DFT(
-            ndim, N, (FFTW_COMPLEX*)
-            fComplex->data, (FFTW_COMPLEX*) fFourier.data,
-            FFTW_FORWARD, FFTW_ESTIMATE
-        );
-        fPlanBackward = FFTW_PLAN_DFT(
-            ndim, N,
-            (FFTW_COMPLEX*) fFourier.data, (FFTW_COMPLEX*) fComplex->data,
-            FFTW_BACKWARD, FFTW_ESTIMATE
-        );
-
-        }
-
-        if (!fPlanForward || !fPlanBackward)
-            REPORT_ERROR("FFTW plans cannot be created");
-
-        delete[] N;
-        complexDataPtr = fComplex->data;
+    fPlanForward = FFTW_PLAN_DFT(
+        rank, n, (FFTW_COMPLEX*)
+        fComplex->data, (FFTW_COMPLEX*) fFourier.data,
+        FFTW_FORWARD, FFTW_ESTIMATE
+    );
+    fPlanBackward = FFTW_PLAN_DFT(
+        rank, n,
+        (FFTW_COMPLEX*) fFourier.data, (FFTW_COMPLEX*) fComplex->data,
+        FFTW_BACKWARD, FFTW_ESTIMATE
+    );
     }
+
+    delete[] n;
+
+    if (!fPlanForward || !fPlanBackward)
+        REPORT_ERROR("FFTW plans cannot be created");
+
+    plans_are_set = true;
+    complexDataPtr = fComplex->data;
+
 }
 
 void FourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) {
-    {
     ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_COPY);)
 
     if (!fFourier.sameShape(inputFourier)) {
@@ -287,15 +231,33 @@ void FourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) 
         std::cerr << " inputFourier= "; inputFourier.printShape(std::cerr);
         REPORT_ERROR("BUG: incompatible shaped in setFourier part of FFTW transformer");
     }
-    memcpy(
-        fFourier.data,
-        inputFourier.data,
-        inputFourier.size() * 2 * sizeof(RFLOAT)
-    );
+
+    memcpy(fFourier.data, inputFourier.data, inputFourier.size() * sizeof(Complex));
+
+}
+
+template <typename T>
+void FourierTransformer::setFromCompleteFourier(const MultidimArray<T> &V) {
+    switch (get_array_rank(V)) {
+        case 1:
+        for (long int i = 0; i < Xsize(fFourier); i++)
+            direct::elem(fFourier, i) = direct::elem(V, i);
+        break;
+        case 2:
+        for (long int j = 0; j < Ysize(fFourier); j++)
+        for (long int i = 0; i < Xsize(fFourier); i++)
+            direct::elem(fFourier, i, j) = direct::elem(V, i, j);
+        break;
+        case 3:
+        for (long int k = 0; k < Zsize(fFourier); k++)
+        for (long int j = 0; j < Ysize(fFourier); j++)
+        for (long int i = 0; i < Xsize(fFourier); i++)
+            direct::elem(fFourier, i, j, k) = direct::elem(V, i, j, k);
+        break;
     }
 }
 
-static unsigned long int getsize(const FourierTransformer &t) {
+inline unsigned long int getsize(const FourierTransformer &t) {
     if (t.fReal)    return t.fReal->size();
     if (t.fComplex) return t.fComplex->size();
     REPORT_ERROR("No data defined");
@@ -308,14 +270,15 @@ void FourierTransformer::Transform(int sign) {
         case FFTW_FORWARD:
         {
         ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_EXECUTE);)
-        FFTW_EXECUTE_DFT_R2C(fPlanForward,fReal->data, (FFTW_COMPLEX*) fFourier.data);
+        FFTW_EXECUTE_DFT_R2C(fPlanForward, fReal->data, (FFTW_COMPLEX*) fFourier.data);
         }
 
         // Normalise the transform
         {
         ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_NORMALISE);)
-        unsigned long int size = getsize(*this);
-        for (auto &x : fFourier) { x /= size; }
+        const RFLOAT n = getsize(*this);
+        for (auto &x : fFourier) { x /= n; }
+        /// TODO: fFourier /= (RFLOAT) getsize(*this);
         }
         return;
 
@@ -341,15 +304,9 @@ void FourierTransformer::inverseFourierTransform() {
 
 // Inforce Hermitian symmetry ---------------------------------------------
 void FourierTransformer::enforceHermitianSymmetry() {
-    int ndim = 3;
-    if (Zsize(*fReal) == 1) {
-        ndim = 2;
-        if (Ysize(*fReal) == 1)
-            ndim = 1;
-    }
-    long int yHalf = Ysize(*fReal) / 2 - (Ysize(*fReal) % 2 == 0);
-    long int zHalf = Zsize(*fReal) / 2 - (Zsize(*fReal) % 2 == 0);
-    switch (ndim) {
+    const long int yHalf = Ysize(*fReal) / 2 + Ysize(*fReal) % 2 - 1;
+    const long int zHalf = Zsize(*fReal) / 2 + Zsize(*fReal) % 2 - 1;
+    switch (get_array_rank(*fReal)) {
         case 2:
         for (long int j = 1; j <= yHalf; j++) {
             long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
@@ -379,10 +336,9 @@ void FourierTransformer::enforceHermitianSymmetry() {
 }
 
 void randomizePhasesBeyond(MultidimArray<RFLOAT> &v, int index) {
-    MultidimArray<Complex> FT;
-    FourierTransformer transformer;
 
-    transformer.FourierTransform(v, FT, false);
+    FourierTransformer transformer;
+    auto &FT = transformer.FourierTransform(v);
 
     int index2 = index * index;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
@@ -566,10 +522,9 @@ void selfScaleToSizeFourier(long int Ydim, long int Xdim, MultidimArray<RFLOAT>&
 
     // Create space for the downsampled image and its Fourier transform
     Mpmem.resize(Xdim, Ydim);
-    MultidimArray<Complex> MpmemFourier;
     FourierTransformer transformerMp;
     transformerMp.setReal(Mpmem);
-    MpmemFourier.alias(transformerMp.getFourier());
+    MultidimArray<Complex> &MpmemFourier = transformerMp.getFourier();
     long int ihalf = std::min((Ysize(MpmemFourier)/2+1),(Ysize(MmemFourier)/2+1));
     long int xsize = std::min((Xsize(MmemFourier)),(Xsize(MpmemFourier)));
     // Init with zero
@@ -675,7 +630,7 @@ void shiftImageInFourierTransformWithTabSincos(
         xshift /= -oridim;
         yshift /= -oridim;
         if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) {
-            windowFourierTransform(in, out, newdim);
+            out = windowFourierTransform(in, newdim);
             return;
         }
 
@@ -696,7 +651,7 @@ void shiftImageInFourierTransformWithTabSincos(
         yshift /= -oridim;
         zshift /= -oridim;
         if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon && abs(zshift) < Xmipp::epsilon) {
-            windowFourierTransform(in, out, newdim);
+            out = windowFourierTransform(in, newdim);
             return;
         }
 
@@ -810,24 +765,23 @@ void getSpectrum(
     const int spectrum_type
 ) {
 
-    MultidimArray<Complex> Faux;
     int xsize = Xsize(Min);
     // Takanori: The above line should be Xsize(Min) / 2 + 1 but for compatibility reasons, I keep this as it is.
-    FourierTransformer transformer;
 
     spectrum.initZeros(xsize);
-    MultidimArray<RFLOAT> count = MultidimArray<int>::zeros(xsize);
-    transformer.FourierTransform(Min, Faux, false);
+    FourierTransformer transformer;
+    auto &FT = transformer.FourierTransform(Min);
     auto f = spectrum_type == AMPLITUDE_SPECTRUM ? [] (Complex x) { return abs(x); } :
                                                    [] (Complex x) { return norm(x); };
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
+    std::vector<RFLOAT> count (xsize, 0);
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         long int idx = round(euclid(ip, jp, kp));
-        spectrum(idx) += f(direct::elem(Faux, i, j, k));
-        count(idx)++;
+        spectrum(idx) += f(direct::elem(FT, i, j, k));
+        count[idx]++;
     }
 
     for (long int i = 0; i < xsize; i++) {
-        if (count(i) > 0) { spectrum(i) /= (RFLOAT) count(i); }
+        if (count[i] > 0) { spectrum(i) /= (RFLOAT) count[i]; }
     }
 
 }
@@ -854,15 +808,14 @@ void multiplyBySpectrum(
     bool leave_origin_intact
 ) {
 
-    MultidimArray<Complex> Faux;
     FourierTransformer transformer;
     // RFLOAT dim3 = Xsize(Min) * Ysize(Min) * Zsize(Min);
-    transformer.FourierTransform(Min, Faux, false);
+    MultidimArray<Complex> &FT = transformer.FourierTransform(Min);
     MultidimArray<RFLOAT> lspectrum = spectrum;
     if (leave_origin_intact) { lspectrum(0) = 1.0; }
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         long int idx = round(euclid(ip, jp, kp));
-        direct::elem(Faux, i, j, k) *= lspectrum(idx);  // * dim3;
+        direct::elem(FT, i, j, k) *= lspectrum(idx);  // * dim3;
     }
     transformer.inverseFourierTransform();
 
@@ -988,15 +941,9 @@ RFLOAT getKullbackLeiblerDivergence(
 void resizeMap(MultidimArray<RFLOAT> &img, int newsize) {
 
     FourierTransformer transformer;
-    MultidimArray<Complex> FT, FT2;
-    transformer.FourierTransform(img, FT, false);
-    windowFourierTransform(FT, FT2, newsize);
-    if (img.getDim() == 2) {
-        img.resize(newsize, newsize);
-    } else if (img.getDim() == 3) {
-        img.resize(newsize, newsize, newsize);
-    }
-    transformer.inverseFourierTransform(FT2, img);
+    const auto &FT = transformer.FourierTransform(img);
+    const auto FT2 = windowFourierTransform(FT, newsize);
+    img = transformer.inverseFourierTransform(FT2);
 
 }
 
@@ -1009,7 +956,7 @@ void applyBFactorToMap(
         RFLOAT res = sqrt((RFLOAT) r2) / (ori_size * angpix); // get resolution in 1/Angstrom
         if (res <= Nyquist) {
             // Apply B-factor sharpening until Nyquist, then low-pass filter later on (with a soft edge)
-            direct::elem(FT, i, j, k) *= exp(-(bfactor / 4.0) * res * res);
+            direct::elem(FT, i, j, k) *= exp(res * res * -bfactor / 4.0);
         } else {
             direct::elem(FT, i, j, k) = 0.0;
         }
@@ -1020,8 +967,7 @@ void applyBFactorToMap(
     MultidimArray<RFLOAT> &img, RFLOAT bfactor, RFLOAT angpix
 ) {
     FourierTransformer transformer;
-    MultidimArray<Complex> FT;
-    transformer.FourierTransform(img, FT, false);
+    MultidimArray<Complex> &FT = transformer.FourierTransform(img);
     applyBFactorToMap(FT, Xsize(img), bfactor, angpix);
     transformer.inverseFourierTransform();
 }
@@ -1038,7 +984,7 @@ void LoGFilterMap(MultidimArray<Complex> &FT, int ori_size, RFLOAT sigma, RFLOAT
     // and its Fourier Transform is: r^2 * exp(-0.5*r2/isigma2);
     // Then to normalise for different scales: divide by isigma2;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        RFLOAT r2 = (RFLOAT) ip * (RFLOAT) ip + (RFLOAT) jp * (RFLOAT) jp + (RFLOAT) kp * (RFLOAT) kp;
+        RFLOAT r2 = euclidsq((RFLOAT) ip, (RFLOAT) jp, (RFLOAT) kp);
         direct::elem(FT, i, j, k) *= exp(-0.5 * r2 / isigma2) * r2 / isigma2;
     }
 
@@ -1075,8 +1021,7 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
         }
     }
     FourierTransformer transformer;
-    MultidimArray<Complex> FT;
-    transformer.FourierTransform(img, FT, false);
+    MultidimArray<Complex> &FT = transformer.FourierTransform(img);
     LoGFilterMap(FT, Xsize(img), sigma, angpix);
     transformer.inverseFourierTransform();
     img.setXmippOrigin();
@@ -1098,8 +1043,8 @@ void lowPassFilterMap(
 ) {
 
     // Which resolution shell is the filter?
-    int ires_filter = round((ori_size * angpix) / low_pass);
-    int filter_edge_halfwidth = filter_edge_width / 2;
+    const int ires_filter = round((ori_size * angpix) / low_pass);
+    const int filter_edge_halfwidth = filter_edge_width / 2;
 
     // Soft-edge: from 1 shell less to one shell more:
     RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
@@ -1163,8 +1108,7 @@ void lowPassFilterMap(
         }
     }
     FourierTransformer transformer;
-    MultidimArray<Complex> FT;
-    transformer.FourierTransform(img, FT, false);
+    MultidimArray<Complex> &FT = transformer.FourierTransform(img);
     lowPassFilterMap(FT, Xsize(img), low_pass, angpix, filter_edge_width, false);
     transformer.inverseFourierTransform();
     img.setXmippOrigin();
@@ -1184,8 +1128,7 @@ void highPassFilterMap(
     MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
 ) {
     FourierTransformer transformer;
-    MultidimArray<Complex> FT;
-    transformer.FourierTransform(img, FT, false);
+    auto &FT = transformer.FourierTransform(img);
     lowPassFilterMap(FT, Xsize(img), low_pass, angpix, filter_edge_width, true);
     transformer.inverseFourierTransform();
 }
@@ -1284,8 +1227,7 @@ void directionalFilterMap(
         }
     }
     FourierTransformer transformer;
-    MultidimArray<Complex> FT;
-    transformer.FourierTransform(img, FT, false);
+    auto &FT = transformer.FourierTransform(img);
     directionalFilterMap(FT, Xsize(img), low_pass, angpix, axis, filter_edge_width);
     transformer.inverseFourierTransform();
     img.setXmippOrigin();
@@ -1400,8 +1342,6 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
 void amplitudeOrPhaseMap(
     const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &amp, int output_map_type
 ) {
-    MultidimArray<Complex> Faux;
-    Faux.clear();
     MultidimArray<RFLOAT> out;
     out.clear();
 
@@ -1412,8 +1352,9 @@ void amplitudeOrPhaseMap(
     long int XYdim = Xsize(out);
 
     // Fourier Transform
-    FourierTransformer{}.FourierTransform(out, Faux, false); // TODO: false???
-    CenterFFTbySign(Faux);
+    FourierTransformer transformer;
+    auto FT = transformer.FourierTransform(out);
+    CenterFFTbySign(FT);
 
     auto f = output_map_type == AMPLITUDE_MAP ? +[] (Complex x) { return         x.abs() ; } :
              output_map_type == PHASE_MAP     ? +[] (Complex x) { return degrees(x.arg()); } :
@@ -1424,13 +1365,13 @@ void amplitudeOrPhaseMap(
     out.setXmippOrigin();
     out.initZeros(XYdim, XYdim);
     long int maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux) {
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(FT) {
         if (
             ip > Xinit(out) && ip < Xlast(out) &&
             jp > Yinit(out) && jp < Ylast(out) &&
             ip * ip + jp * jp < maxr2
         ) {
-            RFLOAT val = f(FFTW::elem(Faux, ip, jp));
+            RFLOAT val = f(FFTW::elem(FT, ip, jp));
             out.elem(ip, jp) = out.elem(-ip, -jp) = val;
         }
     }
@@ -1443,11 +1384,9 @@ void helicalLayerLineProfile(
     const MultidimArray<RFLOAT> &v, std::string title, std::string fn_eps
 ) {
     long int XYdim, maxr2;
-    MultidimArray<Complex> Faux;
     MultidimArray<RFLOAT> out;
     std::vector<RFLOAT> ampl_list, ampr_list, nr_pix_list;
 
-    Faux.clear();
     out.clear();
 
     // TODO: DO I NEED TO ROTATE THE ORIGINAL MULTIDIMARRAY BY 90 DEGREES ?
@@ -1460,23 +1399,24 @@ void helicalLayerLineProfile(
     XYdim = Xsize(out);
 
     // Fourier Transform
-    FourierTransformer{}.FourierTransform(out, Faux, false); // TODO: false???
-    CenterFFTbySign(Faux);
+    FourierTransformer transformer;
+    auto FT = transformer.FourierTransform(out);
+    CenterFFTbySign(FT);
 
     // Statistics
     out.setXmippOrigin();
     maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
-    ampl_list.resize(Xsize(Faux) + 2);
-    ampr_list.resize(Xsize(Faux) + 2);
-    nr_pix_list.resize(Xsize(Faux) + 2);
+    ampl_list.resize(Xsize(FT) + 2);
+    ampr_list.resize(Xsize(FT) + 2);
+    nr_pix_list.resize(Xsize(FT) + 2);
     for (int ii = 0; ii < ampl_list.size(); ii++)
         ampl_list[ii] = ampr_list[ii] = nr_pix_list[ii] = 0.0;
 
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(Faux) {
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(FT) {
         if (ip * ip + jp * jp < maxr2 && ip > 0) {
             nr_pix_list[jp] += 1.0;
-            ampl_list[jp] += FFTW::elem(Faux,  ip, jp).abs();
-            ampr_list[jp] += FFTW::elem(Faux, -ip, jp).abs();
+            ampl_list[jp] += FFTW::elem(FT,  ip, jp).abs();
+            ampr_list[jp] += FFTW::elem(FT, -ip, jp).abs();
         }
     }
     CDataSet dataSetAmpl, dataSetAmpr;

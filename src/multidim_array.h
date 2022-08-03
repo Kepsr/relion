@@ -335,9 +335,6 @@ class MultidimArray {
      */
     T *data;
 
-    // Destroy data
-    bool destructible;
-
     struct Dimensions {
         // Essentially a 4D vector.
         // For vectors and matrices, the higher order dimensions will be 1:
@@ -446,47 +443,20 @@ class MultidimArray {
     /// @name Constructors
     //@{
 
-    /** Empty constructor.
+    /** Default ctor
      * Create an empty array with no memory associated.
      */
-    MultidimArray() {
-        coreInit();
-    }
+    MultidimArray():
+    xdim(0), ydim(0), zdim(0), ndim(0),
+    xinit(0), yinit(0), zinit(0),
+    data(nullptr), allocated_size(0), mmapOn(false), mFd(0) {}
 
-    /** Size constructor with 4D size.
-     * The Size constructor creates an array with memory associated,
-     * and fills it with zeros.
+    /** Size ctor
+     * Construct an array (heap-allocate memory) and fill it with zeros.
      */
-    MultidimArray(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
+    MultidimArray(long int Xdim, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
         coreInit();
         resize(Xdim, Ydim, Zdim, Ndim);
-    }
-
-    /** Size constructor with 3D size.
-     * The Size constructor creates an array with memory associated,
-     * and fills it with zeros.
-     */
-    MultidimArray(long int Zdim, long int Ydim, long int Xdim) {
-        coreInit();
-        resize(Xdim, Ydim, Zdim);
-    }
-
-    /** Size constructor with 2D size.
-     * The Size constructor creates an array with memory associated,
-     * and fills it with zeros.
-     */
-    MultidimArray(long int Ydim, long int Xdim) {
-        coreInit();
-        resize(Xdim, Ydim);
-    }
-
-    /** Size constructor with 1D size.
-     * The Size constructor creates an array with memory associated,
-     * and fills it with zeros.
-     */
-    MultidimArray(long int Xdim) {
-        coreInit();
-        resize(Xdim);
     }
 
     /** Copy constructor
@@ -511,14 +481,10 @@ class MultidimArray {
     /** Move ctor
      * Steal the guts of a soon-to-die object.
      */
-    MultidimArray(MultidimArray<T>&& other) {
-        coreDeallocate(); // Otherwise there may be a memory leak!
+    MultidimArray(MultidimArray<T> &&other) noexcept:
+    data(other.data), allocated_size(other.allocated_size) {
         copyShape(other);
-        data = other.data;
         other.data = nullptr;
-        destructible = true;
-        other.destructible = false;
-        allocated_size = other.allocated_size;
         other.allocated_size = 0;
     }
 
@@ -581,7 +547,6 @@ class MultidimArray {
         xinit = 0;
         data = NULL;
         allocated_size = 0;
-        destructible = true;
         mmapOn = false;
         mFd = 0;
     }
@@ -652,7 +617,7 @@ class MultidimArray {
      * Essential to avoid memory leaks.
      */
     void coreDeallocate() {
-        if (data && destructible) {
+        if (data) {
             if (mmapOn) {
                 munmap(data, allocated_size * sizeof(T));
                 close(mFd);
@@ -660,28 +625,9 @@ class MultidimArray {
             } else {
                 RELION_ALIGNED_FREE(data);
             }
+            data = nullptr;
         }
-        data = NULL;
         allocated_size = 0;
-    }
-
-    // A job for shared_ptr?
-
-    /** Alias a multidimarray.
-     *
-     * Treat the multidimarray as if it were a volume. The data is not copied
-     * into new memory, but a pointer to the multidimarray is copied.
-     * You should not make any operation on this volume so the
-     * memory locations are changed
-     * 
-     * MultidimArray<float> x = foo(), y;
-     * y.alias(x);
-     */
-    void alias(const MultidimArray<T> &other) {
-        coreDeallocate();  // Otherwise there may be a memory leak!
-        copyShape(other);
-        data = other.data;  // We are sharing this pointer with other.
-        destructible = false;  // Do not allow data to be freed when this array is destroyed. We don't own it.
     }
 
     //@}
@@ -736,8 +682,6 @@ class MultidimArray {
      * limits.
      */
     void shrinkToFit() {
-        if (!destructible)
-            REPORT_ERROR("Array marked as indestructible!");
         if (!data || mmapOn || size() <= 0 || allocated_size <= size())
             return;
         T* old_data = data;
@@ -3256,18 +3200,7 @@ class MultidimArray {
     /// @name Operators
     /// @{
 
-    /** Assignment.
-     *
-     * You can build as complex assignment expressions as you like.
-     * Multiple assignment is allowed.
-     *
-     * @code
-     * v1 = v2 + v3;
-     * v1 = v2 = v3;
-     * @endcode
-     *
-     * This function is ported to Python as assign.
-     */
+    // Copy assignment
     MultidimArray<T> &operator = (const MultidimArray<T> &op1) {
         if (&op1 != this) {
             resize(op1);
@@ -3276,16 +3209,18 @@ class MultidimArray {
         return *this;
     }
 
-    /** Unary minus.
-     *
-     * It is used to build arithmetic expressions. You can make a minus
-     * of anything as long as it is correct semantically.
-     *
-     * @code
-     * v1 = -v2;
-     * v1 = -v2.transpose();
-     * @endcode
-     */
+    // Move assignment
+    MultidimArray<T> &operator = (MultidimArray<T>&& other) {
+        coreDeallocate(); // Otherwise there may be a memory leak!
+        copyShape(other);
+        data = other.data;
+        other.data = nullptr;
+        allocated_size = other.allocated_size;
+        other.allocated_size = 0;
+        return *this;
+    }
+
+    // Unary minus
     MultidimArray<T> operator - () const {
         MultidimArray<T> tmp (*this);
         for (T *ptr = tmp.begin(); ptr != tmp.end(); ++ptr) { *ptr = -*ptr; }

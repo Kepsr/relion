@@ -875,14 +875,13 @@ void HelixAligner::reconstruct2D(int iclass) {
     std::vector<MultidimArray<Complex> > myFlines;
     for (int i = 0; i < Xsize(model.Aref[iclass]); i++) {
         MultidimArray<RFLOAT> myline(Ysize(model.Aref[iclass]));
-        MultidimArray<Complex> myFline;
-        FourierTransformer transformer;
 
         for (int j = 0; j < Ysize(model.Aref[iclass]); j++)
             direct::elem(myline, j) = direct::elem(model.Aref[iclass], i, j);
 
         CenterFFT(myline, true);
-        transformer.FourierTransform(myline, myFline, false);
+        FourierTransformer transformer;
+        MultidimArray<Complex> &myFline = transformer.FourierTransform(myline);
         myFlines.push_back(myFline);
     }
 

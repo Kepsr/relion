@@ -31,7 +31,6 @@ class align_symmetry {
     private:
 
     Matrix2D<RFLOAT> A3D;
-    MultidimArray<Complex> F2D;
     MultidimArray<RFLOAT> rotated, symmetrised, dummy;
     FourierTransformer transformer;
 
@@ -90,6 +89,7 @@ class align_symmetry {
             RFLOAT psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
 
             A3D = Euler::rotation3DMatrix(rot, tilt, psi);
+            MultidimArray<Complex> F2D;
             F2D.initZeros();
             projector.get2DFourierTransform(F2D, A3D);
 
@@ -177,7 +177,7 @@ class align_symmetry {
         rotated.reshape(vol_work());
         symmetrised.reshape(vol_work());
         transformer.setReal(rotated);
-        F2D.alias(transformer.getFourier());
+        MultidimArray<Complex> &fFourier = transformer.getFourier();
 
         // Set up the projector
         int data_dim = 3;
@@ -224,11 +224,11 @@ class align_symmetry {
 
         full_projector.computeFourierTransformMap(vol_in(), dummy, 2 * orig_size);
         A3D = Euler::rotation3DMatrix(rot, tilt, psi);
-        F2D.initZeros(orig_size, orig_size, orig_size / 2 + 1);
+        fFourier.initZeros(orig_size, orig_size, orig_size / 2 + 1);
         vol_out().reshape(vol_in());
-        full_projector.get2DFourierTransform(F2D, A3D);
+        full_projector.get2DFourierTransform(fFourier, A3D);
 
-        vol_out() = transformer.inverseFourierTransform(F2D);
+        vol_out() = transformer.inverseFourierTransform(fFourier);
         CenterFFT(vol_out(), false);
         vol_out.setSamplingRateInHeader(angpix);
         vol_out.write(fn_out);

@@ -45,69 +45,30 @@
 
           -- J. Zivanov, Feb. 9th 2018
 */
-class ParFourierTransformer {
+class ParFourierTransformer: public FourierTransformer {
 
     public:
-    /** Pointer to real array */
-    MultidimArray<RFLOAT> *fReal;
 
-     /** Complex array, in fact a pointer to the user array is stored. */
-    MultidimArray<Complex > *fComplex;
-
-    /** Fourier array  */
-    MultidimArray<Complex> fFourier;
-
-    /* fftw Forward plan */
-    FFTW_PLAN fPlanForward;
-
-    /* fftw Backward plan */
-    FFTW_PLAN fPlanBackward;
-
-    bool plans_are_set;
-
-    // Public methods
-
-    public:
-    /** Default constructor */
     ParFourierTransformer();
 
-    /** Destructor */
     ~ParFourierTransformer();
 
-    /** Copy constructor
-     *
-     * The created ParFourierTransformer is a perfect copy of the input array but with a
-     * different memory assignment.
-     *
-     */
+    // Copy ctor
     ParFourierTransformer(const ParFourierTransformer& op);
 
     /** Compute the Fourier transform of a MultidimArray, 2D and 3D.
-        If getCopy is false, an alias to the transformed data is returned.
-        This is a faster option since a copy of all the data is avoided,
-        but you need to be careful that an inverse Fourier transform may
-        change the data.
-        */
+     */
     template <typename T>
-    void FourierTransform(MultidimArray<T> &v, MultidimArray<tComplex<T> > &V, bool getCopy=true) {
+    MultidimArray<tComplex<T> > &FourierTransform(MultidimArray<T> &v) {
         setReal(v);
         Transform(FFTW_FORWARD);
-        if (getCopy) {
-            V = fFourier;
-        } else {
-            V.alias(fFourier);
-        }
+        return fFourier;
     }
 
     /** Compute the Fourier transform.
         The data is taken from the matrix with which the object was
         created. */
     void FourierTransform();
-
-    /** Enforce Hermitian symmetry.
-        If the Fourier transform risks of losing Hermitian symmetry,
-        use this function to renforce it. */
-    void enforceHermitianSymmetry();
 
     /** Compute the inverse Fourier transform.
         The result is stored in the same real data that was passed for
@@ -140,37 +101,12 @@ class ParFourierTransformer {
     template <typename T>
     void setFromCompleteFourier(const MultidimArray<T>& V);
 
-    // Internal methods
     public:
-    /* Pointer to the array of RFLOATs with which the plan was computed */
-    RFLOAT *dataPtr;
-
-    /* Pointer to the array of complex<RFLOAT> with which the plan was computed */
-    Complex *complexDataPtr;
 
     /* Initialise all pointers to NULL */
     void init();
 
-    /** Clear object */
-    void clear();
-
-    /** Call fftw_cleanup */
-    void cleanup();
-
-    /** Destroy both forward and backward fftw planes (mutex locked */
-    void destroyPlans();
-
-    /** Computes the transform, specified in Init() function
-        If normalization=true the forward transform is normalized
-        (no normalization is made in the inverse transform)
-        If normalize=false no normalization is performed and therefore
-        the image is scaled by the number of pixels.
-    */
     void Transform(int sign);
-
-    /** Get the Multidimarray that is being used as input. */
-    const MultidimArray<RFLOAT> &getReal() const;
-    const MultidimArray<Complex> &getComplex() const;
 
     /** Set a Multidimarray for input.
         The data of img will be the one of fReal. In forward

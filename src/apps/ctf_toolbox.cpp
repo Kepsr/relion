@@ -146,8 +146,7 @@ class ctf_toolbox_parameters {
                 Image<RFLOAT> img;
                 img.read(fn_img);
 
-                MultidimArray<Complex> Fimg;
-                transformer.FourierTransform(img(), Fimg, false);
+                MultidimArray<Complex> &Fimg = transformer.FourierTransform(img());
 
                 MultidimArray<RFLOAT> Fctf = CtfHelper::getFftwImage(
                     ctf,

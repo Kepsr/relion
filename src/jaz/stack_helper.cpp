@@ -447,9 +447,9 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             }
 
             if (outPs == moviePs) {
-                fts[t].FourierTransform(aux0[t](), out[p][f]());
+                out[p][f]() = fts[t].FourierTransform(aux0[t]());
             } else {
-                fts[t].FourierTransform(aux0[t](), aux1[t]());
+                aux1[t]() = fts[t].FourierTransform(aux0[t]());
                 out[p][f] = FilterHelper::cropCorner2D(aux1[t], squareSize/2+1, squareSize);
             }
 
@@ -561,9 +561,9 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             }
 
             if (outPs == moviePs) {
-                fts[t].FourierTransform(aux0[t](), out[p][f]());
+                out[p][f]() = fts[t].FourierTransform(aux0[t]());
             } else {
-                fts[t].FourierTransform(aux0[t](), aux1[t]());
+                aux1[t]() = fts[t].FourierTransform(aux0[t]());
                 out[p][f] = FilterHelper::cropCorner2D(aux1[t], squareSize / 2 + 1, squareSize);
             }
 

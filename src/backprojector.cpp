@@ -1482,13 +1482,12 @@ void BackProjector::reconstruct(
     }
     }
 
-    {
+    auto Ftmp = [&] () -> MultidimArray<Complex> {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[10]);)
-    FourierTransformer transformer2;
-    transformer2.setReal(vol_out);  // cannot use the first transformer because Fconv is inside there!!
-    MultidimArray<Complex> Ftmp;
-    Ftmp.alias(transformer2.getFourier());
-    }
+    FourierTransformer transformer;  // Different transformer from outer scope, to preserve Fconv.
+    transformer.setReal(vol_out);
+    return transformer.getFourier();  // std::move?
+    }();
 
     {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[11]);)

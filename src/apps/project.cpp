@@ -201,8 +201,7 @@ class project_parameters {
             img().resize(Xsize(vol()), Ysize(vol()));
         }
         transformer.setReal(img());
-        MultidimArray<Complex> F2D;
-        F2D.alias(transformer.getFourier());
+        MultidimArray<Complex> &F2D = transformer.getFourier();
 
         // Set up the projector
         int data_dim = (do_3d_rot) ? 3 : 2;
@@ -317,7 +316,7 @@ class project_parameters {
                             }
                         } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                             // otherwise, just window the CTF to the current resolution
-                            windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
+                            Fctf = windowFourierTransform(Ictf(), Ysize(Fctf));
                         } else {
                             // if dimensions are neither cubical nor FFTW, stop
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -468,7 +467,7 @@ class project_parameters {
                                 }
                             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                                 // otherwise, just window the CTF to the current resolution
-                                windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
+                                Fctf = windowFourierTransform(Ictf(), Ysize(Fctf));
                             } else {
                                 // if dimensions are neither cubical nor FFTW, stop
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");

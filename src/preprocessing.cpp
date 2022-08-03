@@ -750,7 +750,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
         // Premultiply the CTF of each particle, possibly in a bigger box (premultiply_ctf_extract_size)
         if (do_phase_flip || do_premultiply_ctf) {
-            transformer.FourierTransform(Ipart(), FT, false);
+            FT = transformer.FourierTransform(Ipart());  // std::move?
 
             // 190802 TAKANORI: The original code using getCTF was do_damping=false, but for consistency with Polishing, I changed it.
             // The boxsize in ObsModel has been updated above.

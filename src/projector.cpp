@@ -477,7 +477,7 @@ void Projector::computeFourierTransformMap(
             scale((RFLOAT*) ~dFaux, 2 * dFaux.getSize(), 1.0 / (RFLOAT) cudanormfft);
         } else
         #endif
-        transformer.FourierTransform(Mpad, Faux, false);
+        Faux = transformer.FourierTransform(Mpad);
     }
 
     {
