@@ -324,9 +324,8 @@ bool Postprocessing::findSurfacePixel(
 }
 
 void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I) {
-    MultidimArray<Complex> FT;
     FourierTransformer transformer;
-    transformer.FourierTransform(I, FT, false);
+    MultidimArray<Complex> &FT = transformer.FourierTransform(I);
 
     // First calculate radial average, to normalize the power spectrum
     int myradius = Xsize(FT);

@@ -5210,7 +5210,7 @@ void averageAsymmetricUnits2D(
     RFLOAT angpix;
 
     FourierTransformer transformer;
-    MultidimArray<Complex> Fimg, Faux, Fsum;
+    MultidimArray<Complex> Faux, Fsum;
 
     long int imgno = 0;
     init_progress_bar(MDimgs.numberOfObjects());
@@ -5223,7 +5223,7 @@ void averageAsymmetricUnits2D(
 
         Image<RFLOAT> img;
         img.read(fn_img);
-        transformer.FourierTransform(img(), Fimg, false);
+        MultidimArray<Complex> &Fimg = transformer.FourierTransform(img());
         Fsum = Fimg; // original image
 
         // std::cerr << " imgno= " << imgno << " fn_img= " << fn_img << " psi= " << psi << " rise= " << rise  << " angpix= " << angpix << " nr_asu= " << nr_asu << " xsize= " << Xsize(img()) << std::endl;

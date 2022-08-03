@@ -299,19 +299,18 @@ class image_handler_parameters {
             RFLOAT scale = 1.0, best_diff2 ;
             if (do_optimise_scale_subtract) {
                 if (fn_mask.empty()) {
-                    Imask(). resize(Iop());
+                    Imask().resize(Iop());
                     Imask().initConstant(1.0);
                 }
 
                 if (optimise_bfactor_subtract > 0.0) {
-                    MultidimArray<Complex> FTop_bfac;
                     MultidimArray<RFLOAT> Isharp(Iop());
                     FourierTransformer transformer;
                     MultidimArray<Complex> FTop = transformer.FourierTransform(Iop());
 
                     RFLOAT bfac, smallest_diff2 = 99.0e99;
                     for (RFLOAT bfac_this_iter = -optimise_bfactor_subtract; bfac_this_iter <= optimise_bfactor_subtract; bfac_this_iter += 10.0) {
-                        FTop_bfac = FTop;
+                        MultidimArray<Complex> FTop_bfac = FTop;
                         applyBFactorToMap(FTop_bfac, Xsize(Iop()), bfac_this_iter, angpix);
                         Isharp = transformer.inverseFourierTransform(FTop_bfac);
 
@@ -381,13 +380,13 @@ class image_handler_parameters {
             getSpectrum(Iop(), spectrum, AMPLITUDE_SPECTRUM);
             adaptSpectrum(Iin(), Iout(), spectrum, AMPLITUDE_SPECTRUM);
         } else if (!fn_cosDPhi.empty()) {
-            MetaDataTable MDcos;
 
             FourierTransformer transformer;
             MultidimArray<Complex> FT1 = transformer.FourierTransform(Iout());
             MultidimArray<Complex> FT2 = transformer.FourierTransform(Iop());
 
             std::vector<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
+            MetaDataTable MDcos;
             MDcos.setName("cos");
             for (long int i = 0; i < cosDPhi.size(); i++) {
                 MDcos.addObject();
@@ -399,14 +398,12 @@ class image_handler_parameters {
             }
             MDcos.write(std::cout);
         } else if (!fn_correct_ampl.empty()) {
-            MultidimArray<Complex> FT;
-            transformer.FourierTransform(Iin(), FT, false);
+            MultidimArray<Complex> &FT = transformer.FourierTransform(Iin());
             FT /= avg_ampl;
             transformer.inverseFourierTransform();
             Iout = Iin;
         } else if (!fn_fourfilter.empty()) {
-            MultidimArray<Complex> FT;
-            transformer.FourierTransform(Iin(), FT, false);
+            MultidimArray<Complex> &FT = transformer.FourierTransform(Iin());
 
             // Note: only 2D rotations are done! 3D application assumes zero rot and tilt!
             Matrix2D<RFLOAT> A = rotation2DMatrix(psi);

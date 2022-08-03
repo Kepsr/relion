@@ -1931,7 +1931,6 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
     int nr_particles_done = 0;
     FileName fn_img, fn_stack;
     // For spectrum calculation: recycle the transformer (so do not call getSpectrum all the time)
-    MultidimArray<Complex> Faux;
     FourierTransformer transformer;
     MetaDataTable MDimg;
 
@@ -2082,7 +2081,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             MultidimArray<RFLOAT> ind_spectrum = MultidimArray<RFLOAT>::zeros(spectral_size);
             MultidimArray<RFLOAT> count        = MultidimArray<RFLOAT>::zeros(spectral_size);
             // recycle the same transformer for all images
-            transformer.FourierTransform(img(), Faux, false);
+            MultidimArray<Complex> &Faux = transformer.FourierTransform(img());
 
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
                 long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
@@ -2101,7 +2100,6 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             if (fn_ref == "None" && !(do_sgd && part_id < sgd_ini_subset_size * mymodel.nr_classes)) {
 
                 MultidimArray<RFLOAT> Fctf, Fweight;
-                MultidimArray<Complex> Fimg;
 
                 // Make sure MPI and sequential behave exactly the same
                 init_random_generator(random_seed + part_id);
@@ -2127,7 +2125,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 // if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
                 //A *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                 // Construct initial references from random subsets
-                windowFourierTransform(Faux, Fimg, wsum_model.current_size);
+                MultidimArray<Complex> Fimg = windowFourierTransform(Faux, wsum_model.current_size);
                 CenterFFTbySign(Fimg);
                 Fctf.resize(Fimg);
                 Fctf.initConstant(1.0);
@@ -2251,28 +2249,27 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
 }
 
 void MlOptimiser::initialLowPassFilterReferences() {
-    if (ini_high > 0.0) {
-
-        // Make a soft (raised cosine) filter in Fourier space to prevent artefacts in real-space
-        // The raised cosine goes through 0.5 at the filter frequency and has a width of width_mask_edge fourier pixels
-        RFLOAT radius = mymodel.ori_size * mymodel.pixel_size / ini_high;
-        radius -= WIDTH_FMASK_EDGE / 2.0;
-        RFLOAT radius_p = radius + WIDTH_FMASK_EDGE;
-        FourierTransformer transformer;
-        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
-            MultidimArray<Complex> Faux = transformer.FourierTransform(mymodel.Iref[iclass]);
-            FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
-                RFLOAT r = sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp));
-                if (r < radius) {
-                    continue;
-                } else if (r > radius_p) {
-                    direct::elem(Faux, i, j, k) = 0.0;
-                } else {
-                    direct::elem(Faux, i, j, k) *= 0.5 - 0.5 * cos(PI * (radius_p - r) / WIDTH_FMASK_EDGE);
-                }
+    if (ini_high <= 0.0) return;
+    // Make a soft (raised cosine) filter in Fourier space to prevent artefacts in real-space
+    // The raised cosine goes through 0.5 at the filter frequency and has a width of width_mask_edge fourier pixels
+    RFLOAT radius = mymodel.ori_size * mymodel.pixel_size / ini_high;
+    radius -= WIDTH_FMASK_EDGE / 2.0;
+    RFLOAT radius_p = radius + WIDTH_FMASK_EDGE;
+    FourierTransformer transformer;
+    for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
+        auto &reference = mymodel.Iref[iclass];
+        MultidimArray<Complex> Faux = transformer.FourierTransform(reference);
+        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
+            RFLOAT r = euclid(ip, jp, kp);
+            if (r < radius) {
+                continue;
+            } else if (r > radius_p) {
+                direct::elem(Faux, i, j, k) = 0.0;
+            } else {
+                direct::elem(Faux, i, j, k) *= 0.5 - 0.5 * cos(PI * (radius_p - r) / WIDTH_FMASK_EDGE);
             }
-            mymodel.Iref[iclass] = transformer.inverseFourierTransform(Faux);
         }
+        reference = transformer.inverseFourierTransform(Faux);
     }
 }
 
@@ -2961,7 +2958,7 @@ void MlOptimiser::precalculateABMatrices() {
         RFLOAT my_pixel_size = mydata.getOpticsPixelSize(optics_group);
 
         // Set the global AB-matrices for the FFT phase-shifted images
-        MultidimArray<Complex> Fab_current, Fab_coarse;
+        MultidimArray<Complex> Fab_current;
         if (mymodel.data_dim == 3) {
             Fab_current.resize(
                 image_current_size[optics_group],
@@ -2997,7 +2994,7 @@ void MlOptimiser::precalculateABMatrices() {
                 tmp_zoff
             );
 
-            windowFourierTransform(Fab_current, Fab_coarse, image_coarse_size[optics_group]);
+            const MultidimArray<Complex> Fab_coarse = windowFourierTransform(Fab_current, image_coarse_size[optics_group]);
             global_fftshifts_ab_coarse[optics_group].push_back(Fab_coarse);
             if (adaptive_oversampling == 0) {
                 global_fftshifts_ab_current[optics_group].push_back(Fab_current);
@@ -3019,7 +3016,7 @@ void MlOptimiser::precalculateABMatrices() {
 
                     global_fftshifts_ab2_current[optics_group].push_back(Fab_current);
                     if (strict_highres_exp > 0.0) {
-                        windowFourierTransform(Fab_current, Fab_coarse, image_coarse_size[optics_group]);
+                        const MultidimArray<Complex> Fab_coarse = windowFourierTransform(Fab_current, image_coarse_size[optics_group]);
                         global_fftshifts_ab2_coarse[optics_group].push_back(Fab_coarse);
                     }
                 }
@@ -4394,7 +4391,6 @@ void MlOptimiser::getFourierTransformsAndCtfs(
     FourierTransformer transformer;
     for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++) {
         Image<RFLOAT> img, rec_img;
-        MultidimArray<Complex> Fimg;
         MultidimArray<RFLOAT> Fctf;
         Matrix2D<RFLOAT> Aori;
         Matrix1D<RFLOAT> my_projected_com(mymodel.data_dim), my_refined_ibody_offset(mymodel.data_dim);
@@ -4794,19 +4790,16 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
         // #define DEBUG_SOFTMASK
         #ifdef DEBUG_SOFTMASK
-        Image<RFLOAT> tt;
-        tt() = img();
-        tt.write("Fimg_unmasked.spi");
+        Image<RFLOAT>(img()).write("Fimg_unmasked.spi");
         std::cerr << "written Fimg_unmasked.spi; press any key to continue..." << std::endl;
         char c;
 		// std::cin >> c;
         #endif
 
         // Always store FT of image without mask (to be used for the reconstruction)
-        MultidimArray<RFLOAT> img_aux;
-        img_aux = has_converged && do_use_reconstruct_images ? rec_img() : img();
+        MultidimArray<RFLOAT> img_aux = has_converged && do_use_reconstruct_images ? rec_img() : img();
         MultidimArray<Complex> Faux = transformer.FourierTransform(img_aux);
-        windowFourierTransform(Faux, Fimg, image_current_size[optics_group]);
+        MultidimArray<Complex> Fimg = windowFourierTransform(Faux, image_current_size[optics_group]);
         CenterFFTbySign(Fimg);
 
         // Here apply the aberration corrections if necessary
@@ -4817,8 +4810,9 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         MultidimArray<RFLOAT> Mnoise;
         bool is_helical_segment = do_helical_refine || mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0;
         // For multibodies: have the mask radius equal to maximum radius within body mask plus the translational offset search range
-        RFLOAT my_mask_radius = mymodel.nr_bodies > 1 ? (mymodel.max_radius_mask_bodies[ibody] + sampling.offset_range) / my_pixel_size :
-                                                        particle_diameter / (2.0 * my_pixel_size);
+        RFLOAT my_mask_radius = (mymodel.nr_bodies > 1 ?
+            mymodel.max_radius_mask_bodies[ibody] + sampling.offset_range :
+            particle_diameter / 2.0) / my_pixel_size;
         if (!do_zero_mask) {
             // Make a noisy background image with the same spectrum as the sigma2_noise
 
@@ -4828,10 +4822,9 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             init_random_generator(random_seed + part_id); // This only serves for exact reproducibility tests with 1.3-code...
 
             // Create noisy image for outside the mask
-            MultidimArray<Complex> Fnoise;
             Mnoise.resize(img());
             transformer.setReal(Mnoise);
-            Fnoise.alias(transformer.getFourier());
+            MultidimArray<Complex> &Fnoise = transformer.getFourier();
 
             // Remap mymodel.sigma2_noise[group_id] onto remapped_sigma2_noise for this images's size and angpix
             MultidimArray<RFLOAT> remapped_sigma2_noise = MultidimArray<RFLOAT>::zeros(Xsize(Mnoise) / 2 + 1);
@@ -4878,8 +4871,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             }
         }
         #ifdef DEBUG_SOFTMASK
-        tt() = img();
-        tt.write("Fimg_masked.spi");
+        Image<RFLOAT>(img()).write("Fimg_masked.spi");
         std::cerr << "written Fimg_masked.spi; dying now..." << std::endl;
 		// exit(0);
         #endif
@@ -4913,7 +4905,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
         // We never need any resolutions higher than current_size
         // So resize the Fourier transforms
-        windowFourierTransform(Faux, Fimg, image_current_size[optics_group]);
+        Fimg = windowFourierTransform(Faux, image_current_size[optics_group]);
         // Inside Projector and Backprojector the origin of the Fourier Transform is centered!
         CenterFFTbySign(Fimg);
 
@@ -4960,7 +4952,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     }
                 } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution
-                    windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
+                    Fctf = windowFourierTransform(Ictf(), Ysize(Fctf));
                 } else {
                     // if dimensions are neither cubical nor FFTW, stop
                     REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -4989,9 +4981,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
             // #define DEBUG_CTF_FFTW_IMAGE
             #ifdef DEBUG_CTF_FFTW_IMAGE
-            Image<RFLOAT> tt;
-            tt() = Fctf;
-            tt.write("relion_ctf.spi");
+            Image<RFLOAT>(Fctf).write("relion_ctf.spi");
             std::cerr << "Written relion_ctf.spi, now exiting..." << std::endl;
             exit(1);
             #endif
@@ -5071,7 +5061,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                                 << " ocol_xoff= " << direct::elem(exp_metadata, my_metadata_offset, ocol_xoff)
                                 << " ocol_yoff= " << direct::elem(exp_metadata, my_metadata_offset, ocol_yoff) << std::endl;
                         */
-                        windowFourierTransform(FTo, Faux, mymodel.ori_size);
+                        Faux = windowFourierTransform(FTo, mymodel.ori_size);
                         img() = transformer.inverseFourierTransform(Faux);
                         CenterFFT(img(), false);
                         FileName fn_img = "unshifted.spi";
@@ -5150,7 +5140,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
             // For the masked one, have to mask outside the circular mask to prevent negative values outside the mask in the subtracted image!
             CenterFFTbySign(Fsum_obody);
-            windowFourierTransform(Fsum_obody, Faux, image_full_size[optics_group]);
+            Faux = windowFourierTransform(Fsum_obody, image_full_size[optics_group]);
             img() = transformer.inverseFourierTransform(Faux);
 
             #ifdef DEBUG_BODIES
@@ -5173,7 +5163,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             #endif
             // And back to Fourier space now
             Faux = transformer.FourierTransform(img());
-            windowFourierTransform(Faux, Fsum_obody, image_current_size[optics_group]);
+            Fsum_obody = windowFourierTransform(Faux, image_current_size[optics_group]);
             CenterFFTbySign(Fsum_obody);
 
             // Subtract the other-body FT from the masked exp_Fimgs
@@ -5193,14 +5183,14 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
             #ifdef DEBUG_BODIES
             if (part_id == round(debug1)) {
-                windowFourierTransform(exp_Fimg, Faux, image_full_size[optics_group]);
+                Faux = windowFourierTransform(exp_Fimg, image_full_size[optics_group]);
                 img() = transformer.inverseFourierTransform(Faux);
                 CenterFFT(img(), false);
                 fn_img = "exp_Fimgs_subtracted.spi";
                 fn_img = fn_img.insertBeforeExtension("_ibody" + integerToString(ibody+1));
                 img.write(fn_img);
                 std::cerr << "written " << fn_img << std::endl;
-                windowFourierTransform(exp_Fimg_nomask[img_id], Faux, image_full_size[optics_group]);
+                Faux = windowFourierTransform(exp_Fimg_nomask[img_id], image_full_size[optics_group]);
                 img() = transformer.inverseFourierTransform(Faux);
                 CenterFFT(img(), false);
                 fn_img = "exp_Fimgs_nomask_subtracted.spi";
@@ -5286,11 +5276,11 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
         bool do_masked_shifts = (do_ctf_invsig || nr_shifts != exp_local_Fimgs_shifted[img_id].size()); // size or nr_shifts has changed
 
         if (do_masked_shifts) {
-            windowFourierTransform(exp_Fimg[img_id], Fimg, exp_current_image_size);
+            Fimg = windowFourierTransform(exp_Fimg[img_id], exp_current_image_size);
             exp_local_Fimgs_shifted[img_id].resize(nr_shifts);
         }
         if (do_also_unmasked) {
-            windowFourierTransform(exp_Fimg_nomask[img_id], Fimg_nomask, exp_current_image_size);
+            Fimg_nomask = windowFourierTransform(exp_Fimg_nomask[img_id], exp_current_image_size);
             exp_local_Fimgs_shifted_nomask[img_id].resize(nr_shifts);
         }
 
@@ -5310,7 +5300,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
             // Also store downsized Fctfs
             // In the second pass of the adaptive approach this will have no effect,
             // since then exp_current_image_size will be the same as the size of exp_Fctfs
-            windowFourierTransform(exp_Fctf[img_id], exp_local_Fctf[img_id], exp_current_image_size);
+            exp_local_Fctf[img_id] = windowFourierTransform(exp_Fctf[img_id], exp_current_image_size);
 
             // Also prepare Minvsigma2
             if (mymodel.data_dim == 3) {
@@ -5404,15 +5394,14 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                                     << Ysize(exp_local_Fimgs_shifted[img_id][my_trans_image]) << ", "
                                     << Xsize(exp_local_Fimgs_shifted[img_id][my_trans_image]) << std::endl;
                             std::cerr << " mymodel.ori_size = " << mymodel.ori_size << std::endl;
-                            MultidimArray<Complex> Faux, Fo;
                             Image<RFLOAT> tt;
                             FourierTransformer transformer;
                             tt().resize(
                                 mymodel.data_dim == 3 ? mymodel.ori_size : 1, mymodel.ori_size,
                                 mymodel.ori_size
                             );
-                            Faux = exp_local_Fimgs_shifted[img_id][my_trans_image];
-                            windowFourierTransform(Faux, Fo, mymodel.ori_size);
+                            MultidimArray<Complex> Faux = exp_local_Fimgs_shifted[img_id][my_trans_image];
+                            MultidimArray<Complex> Fo = windowFourierTransform(Faux, mymodel.ori_size);
                             tt() = transformer.inverseFourierTransform(Fo);
                             CenterFFT(tt(), false);
                             img_save_mask() += tt();
@@ -5433,12 +5422,11 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                                     << Ysize(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << ", "
                                     << Xsize(exp_local_Fimgs_shifted_nomask[img_id][my_trans_image]) << std::endl;
                             std::cerr << " mymodel.ori_size = " << mymodel.ori_size << std::endl;
-                            copMultidimArray<Complex> Faux, Fo;
                             Image<RFLOAT> tt;
                             FourierTransformer transformer;
                             tt().resize((mymodel.data_dim == 3) ? (mymodel.ori_size) : (1), mymodel.ori_size, mymodel.ori_size);
-                            Faux = exp_local_Fimgs_shifted_nomask[img_id][my_trans_image];
-                            windowFourierTransform(Faux, Fo, mymodel.ori_size);
+                            copMultidimArray<Complex> Faux = exp_local_Fimgs_shifted_nomask[img_id][my_trans_image];
+                            copMultidimArray<Complex> Fo = windowFourierTransform(Faux, mymodel.ori_size);
                             tt() = transformer.inverseFourierTransform(Fo);
                             CenterFFT(tt(), false);
                             img_save_nomask() += tt();
@@ -6344,9 +6332,8 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             std::cerr << " part_id= " << part_id << std::endl;
             std::cerr << " img_id= " << img_id << std::endl;
             /*
-            MultidimArray<Complex> Faux;
             FourierTransformer transformer;
-            windowFourierTransform(exp_Fimg, Faux, mymodel.ori_size);
+            MultidimArray<Complex> Faux = windowFourierTransform(exp_Fimg, mymodel.ori_size);
             It().resize(mymodel.ori_size, mymodel.ori_size);
             It() = transformer.inverseFourierTransform(Faux);
             CenterFFT(It(), false);
@@ -7524,7 +7511,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             }
                         } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                             // otherwise, just window the CTF to the current resolution
-                            windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
+                            Fctf = windowFourierTransform(Ictf(), Ysize(Fctf));
                         } else {
                             // if dimensions are neither cubical nor FFTW, stop
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");

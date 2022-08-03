@@ -699,7 +699,7 @@ void getFourierTransformsAndCtfs(
                     }
                 } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                     // otherwise, just window the CTF to the current resolution
-                    windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
+                    Fctf = windowFourierTransform(Ictf(), Ysize(Fctf));
                 } else {
                     // if dimensions are neither cubical nor FFTW, stop
                     REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -837,14 +837,14 @@ void getFourierTransformsAndCtfs(
 
             // For the masked one, have to mask outside the circular mask to prevent negative values outside the mask in the subtracted image!
             CenterFFTbySign(Fsum_obody);
-            windowFourierTransform(Fsum_obody, Faux, baseMLO->image_full_size[optics_group]);
+            Faux = windowFourierTransform(Fsum_obody, baseMLO->image_full_size[optics_group]);
             img() = accMLO->transformer.inverseFourierTransform(Faux);
 
             softMaskOutsideMap(img(), my_mask_radius, (RFLOAT)baseMLO->width_mask_edge);
 
             // And back to Fourier space now
             Faux = accMLO->transformer.FourierTransform(img());
-            windowFourierTransform(Faux, Fsum_obody, baseMLO->image_current_size[optics_group]);
+            Fsum_obody = windowFourierTransform(Faux, baseMLO->image_current_size[optics_group]);
             CenterFFTbySign(Fsum_obody);
 
             // Subtract the other-body FT from the masked exp_Fimgs
@@ -1051,8 +1051,7 @@ void getAllSquaredDifferencesCoarse(
 
         int exp_current_image_size = (baseMLO->strict_highres_exp > 0.|| baseMLO->adaptive_oversampling > 0) ?
                 baseMLO->image_coarse_size[optics_group] : baseMLO->image_current_size[optics_group];
-        MultidimArray<Complex> Fimg;
-        windowFourierTransform(op.Fimg[img_id], Fimg, exp_current_image_size);
+        MultidimArray<Complex> Fimg = windowFourierTransform(op.Fimg[img_id], exp_current_image_size);
 
         for (unsigned long i = 0; i < image_size; i ++) {
             XFLOAT pixel_correction = 1.0/scale_correction;
@@ -1276,8 +1275,7 @@ void getAllSquaredDifferencesFine(
         XFLOAT scale_correction = baseMLO->do_scale_correction ? baseMLO->mymodel.scale_correction[group_id] : 1;
 
         int exp_current_image_size = (baseMLO->strict_highres_exp > 0.0 ? baseMLO->image_coarse_size : baseMLO->image_current_size)[optics_group];
-        MultidimArray<Complex> Fimg, Fimg_nomask;
-        windowFourierTransform(op.Fimg[img_id], Fimg, exp_current_image_size);
+        MultidimArray<Complex> Fimg = windowFourierTransform(op.Fimg[img_id], exp_current_image_size);
 
         for (unsigned long i = 0; i < image_size; i++) {
             XFLOAT pixel_correction = 1.0 / scale_correction;
@@ -2507,9 +2505,8 @@ void storeWeightedSums(
         AccPtr<XFLOAT> Fimgs;
         CTICTOC(accMLO->timer, "translation_3", ({
 
-        MultidimArray<Complex> Fimg, Fimg_nonmask;
-        windowFourierTransform(op.Fimg[img_id], Fimg, baseMLO->image_current_size[optics_group]); // TODO PO isn't this already done in getFourierTransformsAndCtfs?
-        windowFourierTransform(op.Fimg_nomask[img_id], Fimg_nonmask, baseMLO->image_current_size[optics_group]);
+        MultidimArray<Complex> Fimg = windowFourierTransform(op.Fimg[img_id], baseMLO->image_current_size[optics_group]); // TODO PO isn't this already done in getFourierTransformsAndCtfs?
+        MultidimArray<Complex> Fimg_nonmask = windowFourierTransform(op.Fimg_nomask[img_id], baseMLO->image_current_size[optics_group]);
         image_size = Fimg.size();
 
         re_offset        = 0 * (size_t) image_size;

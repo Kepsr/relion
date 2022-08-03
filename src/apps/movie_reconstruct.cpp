@@ -606,7 +606,7 @@ void MovieReconstructor::applyCTFPandCTFQ(
 
                 }
                 // Back into Fourier-space
-                transformer.FourierTransform(Iapp, Fapp, false); // false means leave Fapp in the transformer
+                Fapp = transformer.FourierTransform(Iapp); // std::move?
                 CenterFFTbySign(Fapp);
             }
 

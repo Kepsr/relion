@@ -245,7 +245,8 @@ void BackprojectionHelper::backprojectExactWeights(
     vol.resize(0,0,0);
 
     Image<Complex> dataFreq;
-    FourierTransformer{}.FourierTransform(volRL(), dataFreq.data, false);
+    dataFreq.data = FourierTransformer{}.FourierTransform(volRL());
+    // Can we move this short-lived FourierTransformer's fFourier into dataFreq.data?
 
     FilterHelper::divideExcessive(dataFreq, weight, weight(0, 0, 0) / (double) stack.images.size(), dataFreq);
 
@@ -378,7 +379,7 @@ void BackprojectionHelper::backprojectDots(
     CenterFFT(volRL.data, true);
 
     FourierTransformer ft;
-    ft.FourierTransform(volRL(), spectrum.data, false);
+    spectrum.data = ft.FourierTransform(volRL());  // std::move?
 
     for (long int k = 0; k < Zsize(spectrum.data); k++)
     for (long int j = 0; j < Ysize(spectrum.data); j++)
@@ -516,7 +517,7 @@ void BackprojectionHelper::backprojectDotsSeparately(
         VolumeConverter::convert(streakVol, volRL);
 
         FourierTransformer ft;
-        ft.FourierTransform(volRL(), spectrum.data, false);
+        spectrum.data = ft.FourierTransform(volRL());  // std::move ?
 
         if (im % 10 == 1) {
             std::stringstream sts;

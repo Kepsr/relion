@@ -7,7 +7,6 @@
 
 void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, MultidimArray<RFLOAT> &power_spectrum, int current_size = -1, int nr_threads = 1, bool do_gridding = true) {
     MultidimArray<RFLOAT> Mpad;
-    MultidimArray<Complex> Faux;
     FourierTransformer transformer;
     RFLOAT normfft;
 
@@ -54,7 +53,7 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
     CenterFFT(Mpad, true);
 
     // Calculate the oversampled Fourier transform
-    transformer.FourierTransform(Mpad, Faux, false);
+    MultidimArray<Complex> &Faux = transformer.FourierTransform(Mpad);
 
     // Free memory: Mpad no longer needed
     Mpad.clear();

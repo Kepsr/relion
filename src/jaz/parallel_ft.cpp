@@ -27,32 +27,10 @@
 
 static pthread_mutex_t fftw_plan_mutex_par = PTHREAD_MUTEX_INITIALIZER;
 
-struct thread_guard {
-
-    thread_guard() {
-        pthread_mutex_lock(&fftw_plan_mutex_par);
-    }
-
-    ~thread_guard() {
-        pthread_mutex_unlock(&fftw_plan_mutex_par);
-    }
-
-};
-
 // #define DEBUG_PLANS
 
-static inline int get_n(const MultidimArray<RFLOAT> &arr) {
-    return Zsize(arr) == 1 ? Ysize(arr) == 1 ? 1 : 2 : 3;
-}
-
 // Constructors and destructors --------------------------------------------
-
-ParFourierTransformer::ParFourierTransformer(): plans_are_set(false) {
-    init();
-    #ifdef DEBUG_PLANS
-    std::cerr << "INIT this= " << this << std::endl;
-    #endif
-}
+ParFourierTransformer::ParFourierTransformer() {}
 
 ParFourierTransformer::~ParFourierTransformer() {
     clear();
@@ -61,62 +39,13 @@ ParFourierTransformer::~ParFourierTransformer() {
     #endif
 }
 
-ParFourierTransformer::ParFourierTransformer(const ParFourierTransformer& op): plans_are_set(false) {
-    // Clear current object
-    clear();
-    // New object is an extact copy of op
-    *this = op;
-}
-
-void ParFourierTransformer::init() {
-    fReal          = nullptr;
-    fComplex       = nullptr;
-    fPlanForward   = nullptr;
-    fPlanBackward  = nullptr;
-    dataPtr        = nullptr;
-    complexDataPtr = nullptr;
-}
-
-void ParFourierTransformer::clear() {
-    fFourier.clear();
-    // Clean-up all other FFTW-allocated memory
-    destroyPlans();
-    // Initialise all pointers to nullptr
-    init();
-}
-
-void ParFourierTransformer::cleanup() {
-    // First clear object and destroy plans
-    clear();
-    // Then clean up all the junk fftw keeps lying around
-    // SOMEHOW THE FOLLOWING IS NOT ALLOWED WHEN USING MULTPLE TRANSFORMER OBJECTS....
-    FFTW_CLEANUP();
-
-    #ifdef DEBUG_PLANS
-    std::cerr << "CLEANED-UP this= " << this << std::endl;
-    #endif
-}
-
-void ParFourierTransformer::destroyPlans() {
-    // Anything to do with plans has to be protected for threads!
-    thread_guard g;
-    if (plans_are_set) {
-        FFTW_DESTROY_PLAN(fPlanForward);
-        FFTW_DESTROY_PLAN(fPlanBackward);
-        plans_are_set = false;
-    }
+ParFourierTransformer::ParFourierTransformer(const ParFourierTransformer& op) {
+    plans_are_set = false;
+    clear();     // Clear current object
+    *this = op;  // Make an extact copy of op
 }
 
 // Initialization ----------------------------------------------------------
-const MultidimArray<RFLOAT> &ParFourierTransformer::getReal() const {
-    return *fReal;
-}
-
-const MultidimArray<Complex > &ParFourierTransformer::getComplex() const {
-    return *fComplex;
-}
-
-
 void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
     bool recomputePlan =
         !fReal ||
@@ -127,26 +56,8 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
     fReal = &input;
 
     if (recomputePlan) {
-        int ndim = get_n(input);
-        int *N = new int[ndim];
-        switch (ndim) {
-
-            case 1:
-            N[0] = Xsize(input);
-            break;
-
-            case 2:
-            N[0] = Ysize(input);
-            N[1] = Xsize(input);
-            break;
-
-            case 3:
-            N[0] = Zsize(input);
-            N[1] = Ysize(input);
-            N[2] = Xsize(input);
-            break;
-
-        }
+        const int rank = get_array_rank(input);
+        const int *const n = new_n(input, rank);
 
         // Destroy any forward or backward plans
         destroyPlans();
@@ -155,14 +66,12 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
         plans_are_set = true;
 
         {
-        thread_guard g;
+        pthread_lock_guard guard (&fftw_plan_mutex_par);
         fPlanForward = FFTW_PLAN_DFT_R2C(
-            ndim, N, fReal->data,
-            (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE
+            rank, n, fReal->data, (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE
         );
         fPlanBackward = FFTW_PLAN_DFT_C2R(
-            ndim, N, (FFTW_COMPLEX*) fFourier.data,
-            fReal->data, FFTW_ESTIMATE
+            rank, n, (FFTW_COMPLEX*) fFourier.data, fReal->data, FFTW_ESTIMATE
         );
         }
 
@@ -173,7 +82,7 @@ void ParFourierTransformer::setReal(MultidimArray<RFLOAT> &input) {
         std::cerr << " SETREAL fPlanForward= " << fPlanForward << " fPlanBackward= " << fPlanBackward  <<" this= " << this << std::endl;
         #endif
 
-        delete[] N;
+        delete[] n;
         dataPtr = fReal->data;
     }
 }
@@ -188,26 +97,8 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
     fComplex = &input;
 
     if (recomputePlan) {
-        int ndim = get_n(input);
-        int *N = new int[ndim];
-        switch (ndim) {
-
-            case 1:
-            N[0] = Xsize(input);
-            break;
-
-            case 2:
-            N[0] = Ysize(input);
-            N[1] = Xsize(input);
-            break;
-
-            case 3:
-            N[0] = Zsize(input);
-            N[1] = Ysize(input);
-            N[2] = Xsize(input);
-            break;
-
-        }
+        const int rank = get_array_rank(input);
+        const int *const n = new_n(input, rank);
 
         // Destroy any forward or backward plans
         destroyPlans();
@@ -215,13 +106,13 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
         plans_are_set = true;
 
         {
-        thread_guard g;
+        pthread_lock_guard guard (&fftw_plan_mutex_par);
         fPlanForward = FFTW_PLAN_DFT(
-            ndim, N, (FFTW_COMPLEX*) fComplex->data,
+            rank, n, (FFTW_COMPLEX*) fComplex->data,
             (FFTW_COMPLEX*) fFourier.data, FFTW_FORWARD, FFTW_ESTIMATE
         );
         fPlanBackward = FFTW_PLAN_DFT(
-            ndim, N, (FFTW_COMPLEX*) fFourier.data,
+            rank, n, (FFTW_COMPLEX*) fFourier.data,
             (FFTW_COMPLEX*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE
         );
         }
@@ -229,7 +120,7 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
         if (!fPlanForward || !fPlanBackward)
             REPORT_ERROR("FFTW plans cannot be created");
 
-        delete[] N;
+        delete[] n;
         complexDataPtr = fComplex->data;
     }
 }
@@ -237,7 +128,7 @@ void ParFourierTransformer::setReal(MultidimArray<Complex> &input) {
 void ParFourierTransformer::setFourier(const MultidimArray<Complex> &inputFourier) {
     memcpy(
         fFourier.data, inputFourier.data,
-        inputFourier.size() * 2 * sizeof(RFLOAT)
+        inputFourier.size() * sizeof(Complex)
     );
 }
 
@@ -267,18 +158,10 @@ void ParFourierTransformer::Transform(int sign) {
     }
 }
 
-void ParFourierTransformer::FourierTransform() {
-    Transform(FFTW_FORWARD);
-}
-
-void ParFourierTransformer::inverseFourierTransform() {
-    Transform(FFTW_BACKWARD);
-}
-
 template <typename T>
 void ParFourierTransformer::getCompleteFourier(MultidimArray<T> &V) const {
     V.reshape(*fReal);
-    switch (get_n(*fReal)) {
+    switch (get_array_rank(*fReal)) {
 
         case 1:
         for (long int i = 0; i < Xsize(V); i++) {
@@ -330,7 +213,7 @@ void ParFourierTransformer::getCompleteFourier(MultidimArray<T> &V) const {
 
 template <typename T>
 void ParFourierTransformer::setFromCompleteFourier(const MultidimArray<T>& V) {
-    switch (get_n(*fReal)) {
+    switch (get_array_rank(*fReal)) {
 
         case 1:
         for (long int i = 0; i < Xsize(fFourier); i++) {
@@ -350,46 +233,6 @@ void ParFourierTransformer::setFromCompleteFourier(const MultidimArray<T>& V) {
         for (long int j = 0; j < Ysize(fFourier); j++)
         for (long int i = 0; i < Xsize(fFourier); i++)
             direct::elem(fFourier, i, j, k) = direct::elem(V, i, j, k);
-        break;
-
-    }
-}
-
-
-// Enforce Hermitian symmetry ---------------------------------------------
-void ParFourierTransformer::enforceHermitianSymmetry() {
-    long int yHalf = Ysize(*fReal) / 2;
-    if (Ysize(*fReal) % 2 == 0) { yHalf--; }
-    long int zHalf = Zsize(*fReal) / 2;
-    if (Zsize(*fReal) % 2 == 0) { zHalf--; }
-
-    switch (get_n(*fReal)) {
-
-        case 2:
-        for (long int j = 1; j <= yHalf; j++) {
-            long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
-            Complex mean = 0.5 * (direct::elem(fFourier, 0, j) + conj(direct::elem(fFourier, 0, jsym)));
-            direct::elem(fFourier, 0, j) = mean;
-            direct::elem(fFourier, 0, jsym) = conj(mean);
-        }
-        break;
-
-        case 3:
-        for (long int k = 0; k < Zsize(*fReal); k++) {
-            long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            for (long int j = 1; j <= yHalf; j++) {
-                long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
-                Complex mean = 0.5 * (direct::elem(fFourier, 0, j, k) + conj(direct::elem(fFourier, 0, jsym, ksym)));
-                direct::elem(fFourier, 0, j,    k) = mean;
-                direct::elem(fFourier, 0, jsym, ksym) = conj(mean);
-            }
-        }
-        for (long int k = 1; k <= zHalf; k++) {
-            long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            Complex mean = 0.5 * (direct::elem(fFourier, 0, 0, k) + conj(direct::elem(fFourier, 0, 0, ksym)));
-            direct::elem(fFourier, 0, 0, k) = mean;
-            direct::elem(fFourier, 0, 0, ksym) = conj(mean);
-        }
         break;
 
     }

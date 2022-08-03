@@ -169,23 +169,33 @@ namespace FFTW {
  * Here you have an example of use
  * @code
  * FourierTransformer transformer;
- * MultidimArray<Complex> Vfft;
- * transformer.FourierTransform(V(),Vfft,false);
+ * MultidimArray<Complex> &Vfft = transformer.FourierTransform(V());
  * MultidimArray<RFLOAT> Vmag;
  * Vmag.resize(Vfft);
  * FOR_ALL_ELEMENTS_IN_ARRAY3D(Vmag)
- *	Vmag(k,i,j)=20*log10(abs(Vfft(k,i,j)));
+    *	Vmag(k, i, j) = 20 * log10(abs(Vfft(k, i, j)));
  * @endcode
  */
 class FourierTransformer {
 
     public:
 
+    static inline int get_array_rank(const MultidimArray<RFLOAT> &arr) {
+        return Zsize(arr) == 1 ? Ysize(arr) == 1 ? 1 : 2 : 3;
+    }
+
+    static int *new_n(const MultidimArray<RFLOAT> &arr, int rank) {
+        int *n = new int[rank];
+        const std::array<long int, 3> v { Xsize(arr), Ysize(arr), Zsize(arr) };
+        for (int i = 0; i < rank; i++) { n[rank - i - 1] = v[i]; }
+        return n;
+    }
+
     // Pointer to a real array
-    MultidimArray<RFLOAT> *fReal;
+    const MultidimArray<RFLOAT> *fReal;
 
     // Pointer to a complex array
-    MultidimArray<Complex> *fComplex;
+    const MultidimArray<Complex> *fComplex;
 
     // Fourier array
     MultidimArray<Complex> fFourier;
@@ -207,24 +217,9 @@ class FourierTransformer {
     ~FourierTransformer();
 
     /** Compute the Fourier transform of a MultidimArray, 2D and 3D.
-        If getCopy is false, an alias to the transformed data is returned.
-        This is a faster option since a copy of all the data is avoided,
-        but you need to be careful that an inverse Fourier transform may
-        change the data.
-    */
+     */
     template <typename T>
-    void FourierTransform(MultidimArray<T> &v, MultidimArray<tComplex<T> > &V, bool getCopy=true, bool force_new_plans = false) {
-        setReal(v, force_new_plans);
-        Transform(FFTW_FORWARD);
-        if (getCopy) {
-            V = fFourier;
-        } else {
-            V.alias(fFourier);
-        }
-    }
-
-    template <typename T>
-    MultidimArray<tComplex<T> > FourierTransform(MultidimArray<T> &v, bool force_new_plans = false) {
+    MultidimArray<tComplex<T> > &FourierTransform(MultidimArray<T> &v, bool force_new_plans = false) {
         setReal(v, force_new_plans);
         Transform(FFTW_FORWARD);
         return fFourier;
@@ -248,23 +243,15 @@ class FourierTransformer {
 
     /** Compute the inverse Fourier transform.
         New data is provided for the Fourier coefficients and the output
-        can be any matrix1D, 2D or 3D. It is important that the output
-        matrix is already resized to the right size before entering
-        in this function. */
+        can be any MultiDimarray (1D, 2D or 3D). */
     template <typename T>
-    void inverseFourierTransform(const MultidimArray<tComplex<T> > &V, MultidimArray<T> &v) {
-        setReal(v);
+    MultidimArray<T> inverseFourierTransform(const MultidimArray<tComplex<T> > &V) {
+        MultidimArray<T> IFT;
+        IFT.resize(2 * (Xsize(V) - 1), Ysize(V), Zsize(V));
+        setReal(IFT);
         setFourier(V);
         Transform(FFTW_BACKWARD);
-    }
-
-    template <typename T>
-    MultidimArray<tComplex<T> > inverseFourierTransform(const MultidimArray<tComplex<T> > &V) {
-        MultidimArray<T> v;
-        setReal(v);
-        setFourier(V);
-        Transform(FFTW_BACKWARD);
-        return v;
+        return IFT;
     }
 
     /** Get Fourier coefficients. */
@@ -275,13 +262,7 @@ class FourierTransformer {
     template <typename T>
     void getCompleteFourier(T& V) {
         V.reshape(*fReal);
-        int ndim = 3;
-        if (Zsize(*fReal) == 1) {
-            ndim = 2;
-            if (Ysize(*fReal) == 1)
-                ndim = 1;
-        }
-        switch (ndim) {
+        switch (get_array_rank(V)) {
             case 1:
             for (long int i = 0; i < Xsize(V); i++) {
                 direct::elem(V, i) = i < Xsize(fFourier) ? direct::elem(fFourier, i) :
@@ -307,31 +288,7 @@ class FourierTransformer {
         The fReal and fFourier already should have the right sizes
     */
     template <typename T>
-    void setFromCompleteFourier(T& V) {
-        int ndim = 3;
-        if (Zsize(*fReal) == 1) {
-            ndim = 2;
-            if (Ysize(*fReal) == 1)
-                ndim = 1;
-        }
-        switch (ndim) {
-            case 1:
-            for (long int i = 0; i < Xsize(fFourier); i++)
-                direct::elem(fFourier, i) = direct::elem(V, i);
-            break;
-            case 2:
-            for (long int j = 0; j < Ysize(fFourier); j++)
-            for (long int i = 0; i < Xsize(fFourier); i++)
-                direct::elem(fFourier, i, j) = direct::elem(V, i, j);
-            break;
-            case 3:
-            for (long int k = 0; k < Zsize(fFourier); k++)
-            for (long int j = 0; j < Ysize(fFourier); j++)
-            for (long int i = 0; i < Xsize(fFourier); i++)
-                direct::elem(fFourier, i, j, k) = direct::elem(V, i, j, k);
-            break;
-        }
-    }
+    void setFromCompleteFourier(const MultidimArray<T> &V);
 
     public:
 
@@ -371,14 +328,14 @@ class FourierTransformer {
         transforms it is not modified, but in backward transforms,
         the result will be stored in img. This means that the size
         of img cannot change between calls. */
-    void setReal(MultidimArray<RFLOAT> &img, bool force_new_plans = false);
+    void setReal(const MultidimArray<RFLOAT> &img, bool force_new_plans = false);
 
     /** Set a Multidimarray for input.
         The data of img will be the one of fComplex. In forward
         transforms it is not modified, but in backward transforms,
         the result will be stored in img. This means that the size
         of img cannot change between calls. */
-    void setReal(MultidimArray<Complex> &img, bool force_new_plans = false);
+    void setReal(const MultidimArray<Complex> &img, bool force_new_plans = false);
 
     /** Set a Multidimarray for the Fourier transform.
         The values of the input array are copied in the internal array.
@@ -386,6 +343,7 @@ class FourierTransformer {
         the one for the Fourier array are already resized.
         No plan is updated. */
     void setFourier(const MultidimArray<Complex> &imgFourier);
+
 };
 
 // Randomize phases beyond the given F-space shell (index) of R-space input image
@@ -689,7 +647,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
 // Window an FFTW-centered Fourier-transform to a given size
 template<class T>
-void windowFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long int newdim) {
+MultidimArray<T> windowFourierTransform(const MultidimArray<T> &in, long int newdim) {
     // Check size of the input array
     if (Ysize(in) > 1 && Ysize(in) / 2 + 1 != Xsize(in))
         REPORT_ERROR("windowFourierTransform ERROR: the Fourier transform should be of an image with equal sizes in all dimensions!");
@@ -697,37 +655,24 @@ void windowFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
 
     // If same size, just return input
     // Sjors 5dec2017: only check for xdim is not enough, even/off ydim leaves ambiguity for dim>1
-    if (newdim == Ysize(in) && newhdim == Xsize(in)) {
-        out = in;
-        return;
-    }
+    if (newhdim == Xsize(in) && newdim == Ysize(in))
+        return in;
 
-    // Otherwise apply a windowing operation
-    // Initialise output array
-    switch (in.getDim()) {
-
-        case 1:
-        out.initZeros(newhdim);
-        break;
-
-        case 2:
-        out.initZeros(newdim, newhdim);
-        break;
-
-        case 3:
-        out.initZeros(newdim, newdim, newhdim);
-        break;
-
-        default:
+    const int rank = in.getDim();
+    if (rank < 1 || rank > 3)
         REPORT_ERROR("windowFourierTransform ERROR: dimension should be 1, 2 or 3!");
 
-    }
+    // Apply a windowing operation
+    // Initialise output array
+    auto out = MultidimArray<T>::zeros(
+        newhdim, rank >= 2 ? newdim : 1, rank >= 3 ? newdim : 1
+    );
 
     if (newhdim > Xsize(in)) {
         long int max_r2 = (Xsize(in) - 1) * (Xsize(in) - 1);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(in) {
             // Make sure windowed FT has nothing in the corners, otherwise we end up with an asymmetric FT!
-            if (kp * kp + ip * ip + jp * jp <= max_r2)
+            if (euclidsq(ip, jp, kp) <= max_r2)
                 FFTW::elem(out, ip, jp, kp) = FFTW::elem(in, ip, jp, kp);
         }
     } else {
@@ -735,29 +680,13 @@ void windowFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
             FFTW::elem(out, ip, jp, kp) = FFTW::elem(in, ip, jp, kp);
         }
     }
-}
-
-// Same as above, acts on the input array directly
-template<class T>
-void windowFourierTransform(MultidimArray<T> &V, long int newdim) {
-    // Check size of the input array
-    if (Ysize(V) > 1 && Ysize(V)/2 + 1 != Xsize(V))
-        REPORT_ERROR("windowFourierTransform ERROR: the Fourier transform should be of an image with equal sizes in all dimensions!");
-    long int newhdim = newdim / 2 + 1;
-
-    // If same size, just return input
-    // Sjors 5dec2017: only check for xdim is not enough, even/off ydim leaves ambiguity for dim>1
-    if (newdim == Ysize(V) && newhdim == Xsize(V)) return;
-
-    MultidimArray<T> tmp;
-    windowFourierTransform<T>(V, tmp, newdim);
-    V = std::move(tmp);
+    return out;
 }
 
 // A resize operation in Fourier-space (i.e. changing the sampling of the Fourier Transform) by windowing in real-space
 // If recenter=true, the real-space array will be recentered to have its origin at the origin of the FT
 template<class T>
-void resizeFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long int newdim, bool do_recenter=true) {
+void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, long int newdim, bool do_recenter=true) {
     // Check size of the input array
     if (Ysize(in) > 1 && Ysize(in) / 2 + 1 != Xsize(in))
         REPORT_ERROR("windowFourierTransform ERROR: the Fourier transform should be of an image with equal sizes in all dimensions!");
@@ -771,14 +700,21 @@ void resizeFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
     }
 
     // Otherwise apply a windowing operation
-    MultidimArray<Complex> Fin;
-    MultidimArray<RFLOAT> Min;
     FourierTransformer transformer;
     long int x0, y0, z0, xF, yF, zF;
     x0 = y0 = z0 = Xmipp::init(newdim);
     xF = yF = zF = Xmipp::last(newdim);
 
+    // in might be a MultidimArray<RFLOAT>,
+    // so we make a copy Fin of in, of type MultidimArray<Complex>
+    MultidimArray<Complex> Fin;
+    Fin.reshape(Xsize(in), Ysize(in), Zsize(in));
+    for (long int i = 0; i < in.size(); i++) {
+        Fin.data[i] = in.data[i];
+    }
+
     // Initialise output array
+    MultidimArray<RFLOAT> Min;
     switch (in.getDim()) {
 
         case 1:
@@ -800,12 +736,7 @@ void resizeFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
 
     }
 
-    // This is to handle RFLOAT-valued input arrays
-    Fin.reshape(Zsize(in), Ysize(in), Xsize(in));
-    for (long int i = 0, end = in.size(); i < end; i++) {
-        Fin.data[i] = in.data[i];
-    }
-    transformer.inverseFourierTransform(Fin, Min);
+    Min = transformer.inverseFourierTransform(Fin);
     Min.setXmippOrigin();
     if (do_recenter) {
         CenterFFT(Min, false);
@@ -818,7 +749,7 @@ void resizeFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
     // If upsizing: mask the corners to prevent aliasing artefacts
     if (newdim > olddim) {
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Min) {
-            if (k * k + i * i + j * j > olddim * olddim / 4) {
+            if (euclidsq(i, j, k) > olddim * olddim / 4) {
                 Min.elem(i, j, k) = 0.0;
             }
         }
@@ -830,7 +761,7 @@ void resizeFourierTransform(MultidimArray<T> &in, MultidimArray<T> &out, long in
 
     // And do the inverse Fourier transform
     transformer.clear();
-    transformer.FourierTransform(Min, out);
+    out = transformer.FourierTransform(Min);
 }
 
 /** Fourier-Ring-Correlation between two multidimArrays using FFT
@@ -993,5 +924,19 @@ void cropInFourierSpace(MultidimArray<T> &Fref, MultidimArray<T> &Fbinned) {
         }
     }
 }
+
+struct pthread_lock_guard {
+
+    pthread_mutex_t *mutex;
+
+    pthread_lock_guard(pthread_mutex_t *mutex): mutex(mutex) {
+        pthread_mutex_lock(mutex);
+    }
+
+    ~pthread_lock_guard() {
+        pthread_mutex_unlock(mutex);
+    }
+
+};
 
 #endif // __RELIONFFTW_H

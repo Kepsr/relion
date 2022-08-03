@@ -435,7 +435,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 }
             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
                 // otherwise, just window the CTF to the current resolution
-                windowFourierTransform(Ictf(), Fctf, Ysize(Fctf));
+                Fctf = windowFourierTransform(Ictf(), Ysize(Fctf));
             } else {
                 // if dimensions are neither cubical nor FFTW, stop
                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
@@ -704,7 +704,7 @@ void Reconstructor::applyCTFPandCTFQ(
 
                 }
                 // Back into Fourier-space
-                transformer.FourierTransform(Iapp, Fapp, false); // false means: leave Fapp in the transformer
+                Fapp = transformer.FourierTransform(Iapp);  // std::move?
                 CenterFFTbySign(Fapp);
             }
 
