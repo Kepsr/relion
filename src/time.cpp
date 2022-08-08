@@ -199,9 +199,9 @@ void Timer::initZero()
 	}
 }
 
-int Timer::setNew(const std::string tag)
+int Timer::setNew(const std::string &tag)
 {
-	//std::cerr << " tag = " << tag << std::endl;
+	// std::cerr << " tag = " << tag << std::endl;
 	start_times.push_back(end_time);
 	counts.push_back(0);
 	times.push_back(0);
@@ -211,7 +211,7 @@ int Timer::setNew(const std::string tag)
 
 void Timer::tic(int timer)
 {
-	gettimeofday(&(start_times[timer]), nullptr);
+	gettimeofday(&start_times[timer], nullptr);
 	counts[timer]++;
 }
 

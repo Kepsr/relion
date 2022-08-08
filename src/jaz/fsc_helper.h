@@ -113,10 +113,10 @@ class FscHelper
                 const std::vector<Image<RFLOAT>>& weights1,
                 int k0, int k1);
 
-        static void computeNoiseSq(
-                std::vector<std::vector<Image<Complex> > > frames,
-                std::vector<Image<Complex> > predictions,
-                Image<RFLOAT>& sigma2);
+        static MultidimArray<RFLOAT> computeNoiseSq(
+                const std::vector<std::vector<Image<Complex> > > &frames,
+                const std::vector<Image<Complex> > &predictions
+                );
 
         static Image<RFLOAT> computeSignalSq(
                 const Image<RFLOAT>& sigma2,

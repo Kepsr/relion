@@ -284,15 +284,14 @@ class BackProjector: public Projector {
      *	padding_factor*padding_factor*padding_factor voxels
      *	This will then be used for FSC calculation between two random halves
      */
-    void getDownsampledAverage(MultidimArray<Complex>& avg, bool divide = true) const;
+    MultidimArray<Complex> getDownsampledAverage(bool divide = true) const;
 
     /*
      * From two of the straightforward downsampled averages, calculate an FSC curve
      */
-    void calculateDownSampledFourierShellCorrelation(
-        const MultidimArray<Complex> &avg1, 
-        const MultidimArray<Complex> &avg2, 
-        MultidimArray<RFLOAT>& fsc
+    MultidimArray<RFLOAT> calculateDownSampledFourierShellCorrelation(
+        const MultidimArray<Complex> &avg1,
+        const MultidimArray<Complex> &avg2
     ) const;
 
     void updateSSNRarrays(
@@ -433,12 +432,12 @@ class BackProjector: public Projector {
     #ifdef RELION_SINGLE_PRECISION
     // Fnewweight needs decentering, but has to be in double-precision for correct calculations!
     template <typename T>
-    void decenter(MultidimArray<T> &Min, MultidimArray<double> &Mout, int my_rmax2) {
+    void decenter(const MultidimArray<T> &Min, MultidimArray<double> &Mout, int my_rmax2) {
         // Mout should already have the right size
         // Initialize to zero
         Mout.initZeros();
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
-            if (kp * kp + ip * ip + jp * jp <= my_rmax2) {
+            if (euclidsq(ip, jp, kp) <= my_rmax2) {
                 direct::elem(Mout, i, j, k) = (double) Min.elem(ip, jp, kp);
             }
         }

@@ -368,7 +368,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
         if (abs(trans[0]) > 0.0 || abs(trans[1]) > 0.0 || abs(trans[2]) > 0.0) {
             // trans[2] is 0 in case data_dim=2
-            shiftImageInFourierTransform(F2D, F2D, Xsize(img()), trans[0], trans[1], trans[2]);
+            shiftImageInFourierTransform(F2D, Xsize(img()), trans[0], trans[1], trans[2]);
         }
     } else {
         if (data_dim == 3) {

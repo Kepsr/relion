@@ -116,17 +116,28 @@ typedef fftw_complex FFTW_COMPLEX;
  * @endcode
  */
 #define FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(V) \
-    for (long int k = 0, kp = 0; k < Zsize(V); k++, kp = k < Xsize(V) ? k : k - Zsize(V)) \
-    for (long int j = 0, jp = 0; j < Ysize(V); j++, jp = j < Xsize(V) ? j : j - Ysize(V)) \
-    for (long int i = 0, ip = 0; i < Xsize(V); i++, ip = i)
+    for (long int k = 0, kp = 0; k < Zsize(V); k++, kp = Fourier::K(V, k)) \
+    for (long int j = 0, jp = 0; j < Ysize(V); j++, jp = Fourier::J(V, j)) \
+    for (long int i = 0, ip = 0; i < Xsize(V); i++, ip = Fourier::I(V, i))
+
+namespace Fourier {
+
+    template <typename T>
+    inline int I(const MultidimArray<T> &arr, int i) { return i; }
+    template <typename T>
+    inline int J(const MultidimArray<T> &arr, int j) { return j < Xsize(arr) ? j : j - Ysize(arr); }
+    template <typename T>
+    inline int K(const MultidimArray<T> &arr, int k) { return k < Xsize(arr) ? k : k - Zsize(arr); }
+
+};
 
 /** For all direct elements in the complex array in FFTW format.
- * The same as above, but now only for 2D images (this saves some time as k is not sampled
+ * The same as above, but now only for 2D images
  */
 // FOR_i_j_ip_jp_IN_FFTW_TRANSFORM2D
 #define FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(V) \
-    for (long int j = 0, jp = 0; j < Ysize(V); j++, jp = j < Xsize(V) ? j : j - Ysize(V)) \
-    for (long int i = 0, ip = 0; i < Xsize(V); i++, ip = i)
+    for (long int j = 0, jp = 0; j < Ysize(V); j++, jp = Fourier::J(V, j)) \
+    for (long int i = 0, ip = 0; i < Xsize(V); i++, ip = Fourier::I(V, i))
 
 namespace FFTW {
 
@@ -768,23 +779,27 @@ void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, l
  * From precalculated Fourier Transforms
  * Simpler I/O than above.
  */
-void getFSC(MultidimArray<Complex> &FT1,
-            MultidimArray<Complex> &FT2,
-            MultidimArray<RFLOAT> &fsc);
+MultidimArray<RFLOAT> getFSC(
+    const MultidimArray<Complex> &FT1,
+    const MultidimArray<Complex> &FT2
+);
 
 /** Fourier-Ring-Correlation between two multidimArrays using FFT
  * @ingroup FourierOperations
  * Simpler I/O than above.
  */
-void getFSC(MultidimArray<RFLOAT> & m1,
-            MultidimArray<RFLOAT> & m2,
-            MultidimArray<RFLOAT> &fsc);
+MultidimArray<RFLOAT> getFSC(
+    MultidimArray<RFLOAT> &m1,
+    MultidimArray<RFLOAT> &m2
+);
 
-void getAmplitudeCorrelationAndDifferentialPhaseResidual(MultidimArray<Complex> &FT1, MultidimArray<Complex> &FT2,
-                                                         MultidimArray<RFLOAT> &acorr, MultidimArray<RFLOAT> &dpr);
+std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationAndDifferentialPhaseResidual(
+    const MultidimArray<Complex> &FT1, const MultidimArray<Complex> &FT2
+);
 
-void getAmplitudeCorrelationAndDifferentialPhaseResidual(MultidimArray<RFLOAT> &m1, MultidimArray<RFLOAT> &m2,
-                                                         MultidimArray<RFLOAT> &acorr, MultidimArray<RFLOAT> &dpr);
+std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationAndDifferentialPhaseResidual(
+    MultidimArray<RFLOAT> &m1, MultidimArray<RFLOAT> &m2
+);
 
 std::vector<RFLOAT> cosDeltaPhase(const MultidimArray<Complex> &FT1, const MultidimArray<Complex> &FT2);
 
@@ -792,17 +807,29 @@ std::vector<RFLOAT> cosDeltaPhase(const MultidimArray<Complex> &FT1, const Multi
 void getAbMatricesForShiftImageInFourierTransform(MultidimArray<Complex> &in, MultidimArray<Complex> &out,
                                                   RFLOAT oridim, RFLOAT shift_x, RFLOAT shift_y, RFLOAT shift_z = 0.);
 
-void shiftImageInFourierTransformWithTabSincos(MultidimArray<Complex> &in, MultidimArray<Complex> &out,
-                                               RFLOAT oridim, long int newdim,
-                                               TabSine& tabsin, TabCosine& tabcos,
-                                               RFLOAT xshift, RFLOAT yshift, RFLOAT zshift = 0.);
+MultidimArray<Complex> shiftImageInFourierTransform(
+    const MultidimArray<Complex> &in,
+    RFLOAT oridim, RFLOAT xshift, RFLOAT yshift, RFLOAT zshift = 0.0
+);
+
+void shiftImageInFourierTransform(
+    MultidimArray<Complex> &in_out,
+    RFLOAT oridim, RFLOAT xshift, RFLOAT yshift, RFLOAT zshift = 0.0
+);
 
 // Shift an image through phase-shifts in its Fourier Transform (without tabulated sine and cosine)
 // Note that in and out may be the same array, in that case in is overwritten with the result
 // if oridim is in pixels, xshift, yshift and zshift should be in pixels as well!
 // or both can be in Angstroms
-void shiftImageInFourierTransform(MultidimArray<Complex> &in, MultidimArray<Complex> &out,
-                                  RFLOAT oridim, RFLOAT shift_x, RFLOAT shift_y, RFLOAT shift_z = 0.);
+void shiftImageInFourierTransform(
+    const MultidimArray<Complex> &in, MultidimArray<Complex> &out,
+    RFLOAT oridim, RFLOAT shift_x, RFLOAT shift_y, RFLOAT shift_z = 0.0
+);
+
+void shiftImageInFourierTransformWithTabSincos(MultidimArray<Complex> &in, MultidimArray<Complex> &out,
+                                               RFLOAT oridim, long int newdim,
+                                               TabSine& tabsin, TabCosine& tabcos,
+                                               RFLOAT xshift, RFLOAT yshift, RFLOAT zshift = 0.);
 
 #define POWER_SPECTRUM 0
 #define AMPLITUDE_SPECTRUM 1

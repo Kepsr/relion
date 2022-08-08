@@ -79,7 +79,7 @@ class project_parameters {
         fn_model = parser.getOption("--model_noise", "Model STAR file with power spectra for coloured Gaussian noise", "");
         do_subtract_exp = parser.checkOption("--subtract_exp", "Subtract projections from experimental images (in --ang)");
         do_ignore_particle_name = parser.checkOption("--ignore_particle_name", "Ignore the rlnParticleName column (in --ang)");
-        do_only_one = (fn_ang == "None" && nr_uniform < 0);
+        do_only_one = fn_ang == "None" && nr_uniform < 0;
         do_3d_rot = parser.checkOption("--3d_rot", "Perform 3D rotations instead of projection into 2D images");
         do_simulate = parser.checkOption("--simulate", "Simulate data with known ground-truth by subtracting signal and adding projection in random orientation.");
         simulate_SNR = textToFloat(parser.getOption("--adjust_simulation_SNR", "Relative SNR compared to input images for realistic simulation of data", "1."));
@@ -105,20 +105,16 @@ class project_parameters {
 
     void project() {
         MetaDataTable DFo, MDang, MDang_sim;
-        FileName fn_expimg;
 
-        MultidimArray<Complex> F3D, Fexpimg;
-        MultidimArray<RFLOAT> Fctf, dummy;
-        Image<RFLOAT> vol, img, expimg;
-        FourierTransformer transformer, transformer_expimg;
+        MultidimArray<RFLOAT> Fctf;
+        FourierTransformer transformer;
 
         std::cout << " Reading map: " << fn_map << std::endl;
-        vol.read(fn_map);
+        auto vol = Image<RFLOAT>::from_filename(fn_map);
         std::cout << " Done reading map!" << std::endl;
 
         if (!fn_mask.empty()) {
-            Image<RFLOAT> msk;
-            msk.read(fn_mask);
+            auto msk = Image<RFLOAT>::from_filename(fn_mask);
             if (!msk().sameShape(vol()))
                 REPORT_ERROR("project ERROR: mask and map have different sizes!");
             vol() *= msk();
@@ -137,13 +133,13 @@ class project_parameters {
                 do {
                     tilt = rnd_unif() * 180.0;
                 } while (sin(radians(tilt)) <= rnd_unif());
-                RFLOAT psi = rnd_unif() * 360.0;
-                RFLOAT xoff = rnd_gaus(0.0, sigma_offset);
-                RFLOAT yoff = rnd_gaus(0.0, sigma_offset);
+                const RFLOAT psi  = rnd_unif() * 360.0;
+                const RFLOAT xoff = rnd_gaus(0.0, sigma_offset);
+                const RFLOAT yoff = rnd_gaus(0.0, sigma_offset);
                 MDang.addObject();
-                MDang.setValue(EMDL::ORIENT_ROT, rot);
+                MDang.setValue(EMDL::ORIENT_ROT,  rot);
                 MDang.setValue(EMDL::ORIENT_TILT, tilt);
-                MDang.setValue(EMDL::ORIENT_PSI, psi);
+                MDang.setValue(EMDL::ORIENT_PSI,  psi);
                 MDang.setValue(EMDL::ORIENT_ORIGIN_X, xoff);
                 MDang.setValue(EMDL::ORIENT_ORIGIN_Y, yoff);
                 MDang.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
@@ -153,15 +149,13 @@ class project_parameters {
             MetaDataTable MDopt;
             MDopt.addObject();
             MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
-            std::string name = "optics1";
-            MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, name);
+            MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, "optics1");
             MDopt.setValue(EMDL::CTF_VOLTAGE, 300.0);
             MDopt.setValue(EMDL::CTF_CS, 2.7);
             angpix = vol.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
             MDopt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix);
             MDopt.setValue(EMDL::IMAGE_SIZE, Xsize(vol()));
-            int mydim = do_3d_rot ? 3 : 2;
-            MDopt.setValue(EMDL::IMAGE_DIMENSIONALITY, mydim);
+            MDopt.setValue(EMDL::IMAGE_DIMENSIONALITY, do_3d_rot ? 3 : 2);
 
             obsModel = ObservationModel(MDopt);
         } else if (!do_only_one) {
@@ -195,18 +189,16 @@ class project_parameters {
         r_max = maxres < 0.0 ? Xsize(vol()) : ceil(Xsize(vol()) * angpix / maxres);
 
         // Set right size of F2D and initialize to zero
-        if (do_3d_rot) {
-            img().resize(Xsize(vol()), Ysize(vol()), Zsize(vol()));
-        } else {
-            img().resize(Xsize(vol()), Ysize(vol()));
-        }
+        Image<RFLOAT> img;
+        img().resize(Xsize(vol()), Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1);
         transformer.setReal(img());
         MultidimArray<Complex> &F2D = transformer.getFourier();
 
         // Set up the projector
-        int data_dim = (do_3d_rot) ? 3 : 2;
+        const int data_dim = do_3d_rot ? 3 : 2;
         Projector projector((int) Xsize(vol()), interpolator, padding_factor, r_min_nn, data_dim);
-        projector.computeFourierTransformMap(vol(), dummy, 2* r_max);
+        MultidimArray<RFLOAT> dummy;
+        projector.computeFourierTransformMap(vol(), dummy, 2 * r_max);
 
         if (do_only_one) {
             Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
@@ -219,15 +211,15 @@ class project_parameters {
                 if (do_3d_rot) {
                     shift.resize(3);
                     ZZ(shift) = -zoff;
-                    shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift));
+                    shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift));
                 } else {
-                    shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift));
+                    shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift));
                 }
             }
 
             // 1 Feb 2017 - Shaoda, add white noise to 2D / 3D single images
             if (do_add_noise) {
-                if (!(stddev_white_noise > 0.0) || !fn_model.empty())
+                if (stddev_white_noise <= 0.0 || !fn_model.empty())
                     REPORT_ERROR("ERROR: Only add --white_noise to a single image!");
                 // fftw normalization and factor sqrt(2) for two-dimensionality of complex plane
                 // TODO: sqrt(2) ??? Why ???
@@ -246,11 +238,11 @@ class project_parameters {
             CenterFFT(img(), false);
             img.setSamplingRateInHeader(angpix);
             img.write(fn_out);
-            std::cout<<" Done writing "<<fn_out<<std::endl;
+            std::cout << " Done writing " << fn_out << std::endl;
         } else {  // !do_only_one
             init_progress_bar(MDang.numberOfObjects());
             DFo.clear();
-            rot = tilt = psi = xoff = yoff = zoff = 0.;
+            rot = tilt = psi = xoff = yoff = zoff = 0.0;
 
             // Can only add noise to multiple images
             // Feb 01,2017 - Shaoda, now we can add white noise to 2D / 3D single images
@@ -269,14 +261,10 @@ class project_parameters {
                 rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
                 tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
                 psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-                xoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-                yoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+                xoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM) / angpix;
+                yoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) / angpix;
                 if (do_3d_rot)
-                zoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
-
-                xoff /= angpix;
-                yoff /= angpix;
-                zoff /= angpix;
+                zoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM) / angpix;
 
                 Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
                 F2D.initZeros();
@@ -290,18 +278,17 @@ class project_parameters {
                     if (do_3d_rot) {
                         shift.resize(3);
                         ZZ(shift) = -zoff;
-                        shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift) );
+                        shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift));
                     } else {
-                        shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift));
+                        shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift));
                     }
                 }
 
                 // Apply CTF if necessary
                 if (do_ctf || do_ctf2) {
                     if (do_3d_rot) {
-                        Image<RFLOAT> Ictf;
-                        FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE);
-                        Ictf.read(fn_ctf);
+                        const FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE);
+                        auto Ictf = Image<RFLOAT>::from_filename(fn_ctf);
 
                         // Set the CTF-image in Fctf
                         Fctf.resize(F2D);
@@ -322,7 +309,7 @@ class project_parameters {
                             REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                         }
                     } else {
-                        CTF ctf = CtfHelper::makeCTF(MDang, &obsModel); // This MDimg only contains one particle!
+                        const CTF ctf = CtfHelper::makeCTF(MDang, &obsModel); // This MDimg only contains one particle!
                         Fctf = CtfHelper::getFftwImage(
                             ctf,
                             Xsize(F2D), Ysize(F2D), Xsize(vol()), Xsize(vol()), angpix,
@@ -335,7 +322,8 @@ class project_parameters {
 
                 }
 
-                // Apply Gaussian noise
+                // Apply complex Gaussian noise
+                // (magnitude follows a chi distribution, argument follows uniform distribution)
                 if (do_add_noise) {
                     if (!fn_model.empty()) {
                         //// 23 May 2014: for preparation of 1.3 release: removed reading a exp_model, replaced by just reading MDang
@@ -354,27 +342,23 @@ class project_parameters {
                                 REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --ang file...");
                             }
                         }
-                        int my_mic_id = -1;
-                        for (int mic_id = 0; mic_id < model.group_names.size(); mic_id++) {
-                            if (fn_group == model.group_names[mic_id]) {
-                                my_mic_id = mic_id;
-                                break;
-                            }
-                        }
-                        if (my_mic_id < 0)
-                            REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
 
-                        RFLOAT normcorr = 1.0;
-                        if (MDang.containsLabel(EMDL::IMAGE_NORM_CORRECTION)) {
-                            normcorr = MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
-                        }
+                        const auto search = std::find(model.group_names.begin(), model.group_names.end(), fn_group);
+                        if (search == model.group_names.end())
+                            REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
+                        const int i = search - model.group_names.begin();
+                        const auto &sigmas = model.sigma2_noise[i];
+
+                        // RFLOAT normcorr = MDang.containsLabel(EMDL::IMAGE_NORM_CORRECTION) ?
+                        //     MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION) : 1.0;
 
                         // Add coloured noise
                         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-                            int Nyquist = model.ori_size / 2;
-                            int ires = std::min((int) round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), Nyquist);   // at freqs higher than Nyquist: use last sigma2 value
+                            const int Nyquist = model.ori_size / 2;
+                            // At frequences higher than Nyquist, use last sigma2 value
+                            const int ires = std::min((int) round(euclid(ip, jp, kp)), Nyquist);
 
-                            RFLOAT sigma = sqrt(direct::elem(model.sigma2_noise[my_mic_id], ires));
+                            const RFLOAT sigma = sqrt(direct::elem(sigmas, ires));
                             direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
                         }
                     } else {
@@ -392,16 +376,15 @@ class project_parameters {
 
                 // Subtract the projection from the corresponding experimental image
                 if (do_subtract_exp || do_simulate) {
-                    fn_expimg = MDang.getValue<std::string>(EMDL::IMAGE_NAME);
-                    MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg); // Store fn_expimg in rlnOriginalParticleName
-                    expimg.read(fn_expimg);
+                    const FileName fn_expimg = MDang.getValue<std::string>(EMDL::IMAGE_NAME);
+                    MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg);  // Store fn_expimg in rlnOriginalParticleName
+                    const auto expimg = Image<RFLOAT>::from_filename(fn_expimg);
                     img() = expimg() - img();
                 }
 
                 // If we're simulating realistic images, then now add CTF-affected projection again
                 if (do_simulate) {
-                    // Take random orientation from the input STAR file is fn_ang_simulate is empty. Otherwise, use fn_ang_simulate
-                    if (fn_ang_simulate == "") {
+                    if (fn_ang_simulate.empty()) {  // Take random orientation from the input STAR file
                         long int random_imgno = -1;
                         while (random_imgno < 0 || random_imgno > max_imgno) {
                             random_imgno = rnd_unif() * max_imgno;
@@ -410,26 +393,18 @@ class project_parameters {
                         rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT,               random_imgno);
                         tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT,              random_imgno);
                         psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI,               random_imgno);
-                        xoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, random_imgno);
-                        yoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, random_imgno);
+                        xoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, random_imgno) / angpix;
+                        yoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, random_imgno) / angpix;
                         if (do_3d_rot)
-                        zoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, random_imgno);
-
-                        xoff /= angpix;
-                        yoff /= angpix;
-                        zoff /= angpix;
-                    } else {
+                        zoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, random_imgno) / angpix;
+                    } else {  // Use fn_ang_simulate
                         rot  = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ROT,               imgno);
                         tilt = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_TILT,              imgno);
                         psi  = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_PSI,               imgno);
-                        xoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, imgno);
-                        yoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, imgno);
+                        xoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, imgno) / angpix;
+                        yoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, imgno) / angpix;
                         if (do_3d_rot)
-                        zoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, imgno);
-
-                        xoff /= angpix;
-                        yoff /= angpix;
-                        zoff /= angpix;
+                        zoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, imgno) / angpix;
                     }
 
                     Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
@@ -444,25 +419,23 @@ class project_parameters {
                         if (do_3d_rot) {
                             shift.resize(3);
                             ZZ(shift) = -zoff;
-                            shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift) );
+                            shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift) );
                         } else {
-                            shiftImageInFourierTransform(F2D, F2D, Xsize(vol()), XX(shift), YY(shift));
+                            shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift));
                         }
                     }
 
                     // Apply CTF
                     if (do_ctf || do_ctf2) {
                         if (do_3d_rot) {
-                            Image<RFLOAT> Ictf;
-                            FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE);
-                            Ictf.read(fn_ctf);
+                            const FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE);
+                            auto Ictf = Image<RFLOAT>::from_filename(fn_ctf);
                             Ictf().setXmippOrigin();
 
                             // If there is a redundant half, get rid of it
                             if (Xsize(Ictf()) == Ysize(Ictf())) {
-                                Ictf().setXmippOrigin();
                                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
-                                    // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
+                                    // Use negative indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
                                     direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                                 }
                             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
@@ -473,7 +446,7 @@ class project_parameters {
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                             }
                         } else {
-                            CTF ctf = CtfHelper::makeCTF(MDang, imgno);
+                            const CTF ctf = CtfHelper::makeCTF(MDang, imgno);
                             Fctf = CtfHelper::getFftwImage(
                                 ctf,
                                 Xsize(F2D), Ysize(F2D), Xsize(vol()), Xsize(vol()), angpix,
@@ -489,48 +462,43 @@ class project_parameters {
                         }
                     }
 
-                    expimg().initZeros();
-                    expimg() = transformer.inverseFourierTransform(F2D);
+                    MultidimArray<RFLOAT> IFT = transformer.inverseFourierTransform(F2D);
                     // Shift the image back to the center...
-                    CenterFFT(expimg(), false);
+                    CenterFFT(IFT, false);
 
                     // Modify the strength of the signal
                     if (fabs(simulate_SNR - 1.0) > 0.000001) {
-                        expimg() *= simulate_SNR;
+                        IFT *= simulate_SNR;
                     }
 
-                    img() += expimg();
+                    img() += IFT;
 
                 }
 
                 img.setSamplingRateInHeader(angpix);
                 if (do_3d_rot) {
-                    fn_img.compose(fn_out, imgno + 1,"mrc");
+                    fn_img.compose(fn_out, imgno + 1, "mrc");
                     img.write(fn_img);
                 } else {
                     // Write this particle to the stack on disc
                     // First particle: write stack in overwrite mode, from then on just append to it
                     fn_img.compose(imgno + 1, fn_out + ".mrcs");
-                    if (imgno == 0) {
-                        img.write(fn_img, -1, false, WRITE_OVERWRITE);
-                    } else {
-                        img.write(fn_img, -1, false, WRITE_APPEND);
-                    }
+                    img.write(fn_img, -1, false, imgno == 0 ? WRITE_OVERWRITE : WRITE_APPEND);
                 }
 
                 // Set the image name to the output STAR file
                 DFo.addObject();
                 DFo.setObject(MDang.getObject());
-                DFo.setValue(EMDL::IMAGE_NAME,fn_img);
+                DFo.setValue(EMDL::IMAGE_NAME, fn_img);
 
                 if (do_simulate) {
-                    DFo.setValue(EMDL::ORIENT_ROT, rot);
+                    DFo.setValue(EMDL::ORIENT_ROT,  rot);
                     DFo.setValue(EMDL::ORIENT_TILT, tilt);
-                    DFo.setValue(EMDL::ORIENT_PSI, psi);
+                    DFo.setValue(EMDL::ORIENT_PSI,  psi);
                     DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix);
                     DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff * angpix);
                     if (do_3d_rot)
-                        DFo.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix);
+                    DFo.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix);
                 }
 
                 if (imgno % 60 == 0) progress_bar(imgno);
@@ -555,7 +523,7 @@ int main(int argc, char *argv[]) {
         prm.read(argc, argv);
         prm.project();
     } catch (RelionError XE) {
-        //prm.usage();
+        // prm.usage();
         std::cerr << XE;
         return RELION_EXIT_FAILURE;
     }

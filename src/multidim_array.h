@@ -3137,45 +3137,6 @@ class MultidimArray {
         system((static_cast<std::string>("xmipp_edit -i " + fn + " -remove &").c_str()));
     }
 
-    /* Write to a binary file
-    */
-    void writeBinary(const FileName &fn) const {
-        std::ofstream ofs(fn.c_str(), std::ios::out | std::ios::binary);
-        if (!ofs)
-            REPORT_ERROR(static_cast<std::string>("MultidimArray::write: File " + fn + " cannot be opened for output"));
-
-        for (T *ptr = begin(); ptr != end(); ++ptr)
-            ofs.write(reinterpret_cast<char*>(ptr), sizeof(T));
-    }
-
-    /** Read from a binary file.
-     * The array must be previously resized to the correct size.
-     */
-    void readBinary(const FileName &fn) {
-        std::ifstream ifs(fn.c_str(), std::ios::in | std::ios::binary);
-        if (!ifs)
-            REPORT_ERROR(static_cast<std::string>("MultidimArray::read: File " + fn + " not found"));
-
-        for (T *ptr = begin(); ptr != end(); ++ptr)
-            ifs.read(reinterpret_cast<char*>(ptr), sizeof(T));
-
-    }
-
-    /** Read from a binary file, while summing to the existing array
-     * The array must be previously resized to the correct size.
-     */
-    void readBinaryAndSum(const FileName &fn) {
-        std::ifstream ifs(fn.c_str(), std::ios::in | std::ios::binary);
-        if (!ifs)
-            REPORT_ERROR(static_cast<std::string>("MultidimArray::read: File " + fn + " not found"));
-
-        for (T *ptr = begin(); ptr != end(); ++ptr) {
-            T val;
-            ifs.read(reinterpret_cast<char*>(&val), sizeof(T));
-            *ptr += val;
-        }
-    }
-
     /** Write to an ASCII file.
      */
     void write(const FileName &fn) const {

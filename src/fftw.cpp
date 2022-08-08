@@ -154,13 +154,10 @@ void FourierTransformer::setReal(const MultidimArray<RFLOAT> &input, bool force_
     {
     ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
     pthread_lock_guard guard (&fftw_plan_mutex);
-
-    fPlanForward = FFTW_PLAN_DFT_R2C(
-        rank, n, fReal->data, (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE
-    );
-    fPlanBackward = FFTW_PLAN_DFT_C2R(
-        rank, n, (FFTW_COMPLEX*) fFourier.data, fReal->data, FFTW_ESTIMATE
-    );
+    fPlanForward  = FFTW_PLAN_DFT_R2C(rank, n, fReal->data,
+        (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE);
+    fPlanBackward = FFTW_PLAN_DFT_C2R(rank, n, (FFTW_COMPLEX*) fFourier.data,
+                          fReal->data, FFTW_ESTIMATE);
     }
 
     delete[] n;
@@ -200,17 +197,10 @@ void FourierTransformer::setReal(const MultidimArray<Complex> &input, bool force
     {
     ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
     pthread_lock_guard guard (&fftw_plan_mutex);
-
-    fPlanForward = FFTW_PLAN_DFT(
-        rank, n, (FFTW_COMPLEX*)
-        fComplex->data, (FFTW_COMPLEX*) fFourier.data,
-        FFTW_FORWARD, FFTW_ESTIMATE
-    );
-    fPlanBackward = FFTW_PLAN_DFT(
-        rank, n,
-        (FFTW_COMPLEX*) fFourier.data, (FFTW_COMPLEX*) fComplex->data,
-        FFTW_BACKWARD, FFTW_ESTIMATE
-    );
+    fPlanForward  = FFTW_PLAN_DFT(rank, n, (FFTW_COMPLEX*) fComplex->data,
+        (FFTW_COMPLEX*) fFourier.data,  FFTW_FORWARD,  FFTW_ESTIMATE);
+    fPlanBackward = FFTW_PLAN_DFT(rank, n, (FFTW_COMPLEX*) fFourier.data,
+        (FFTW_COMPLEX*) fComplex->data, FFTW_BACKWARD, FFTW_ESTIMATE);
     }
 
     delete[] n;
@@ -317,13 +307,13 @@ void FourierTransformer::enforceHermitianSymmetry() {
         break;
         case 3:
         for (long int k = 0; k < Zsize(*fReal); k++) {
-            long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
-            for (long int j = 1; j <= yHalf; j++) {
-                long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
-                Complex mean = 0.5 * (direct::elem(fFourier, 0, j, k) + conj(direct::elem(fFourier, 0, jsym, ksym)));
-                direct::elem(fFourier, 0, j,    k) = mean;
-                direct::elem(fFourier, 0, jsym, ksym) = conj(mean);
-            }
+        long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
+        for (long int j = 1; j <= yHalf; j++) {
+        long int jsym = wrap(-j, 0, Ysize(*fReal) - 1);
+            Complex mean = 0.5 * (direct::elem(fFourier, 0, j, k) + conj(direct::elem(fFourier, 0, jsym, ksym)));
+            direct::elem(fFourier, 0, j,    k) = mean;
+            direct::elem(fFourier, 0, jsym, ksym) = conj(mean);
+        }
         }
         for (long int k = 1; k <= zHalf; k++) {
             long int ksym = wrap(-k, 0, Zsize(*fReal) - 1);
@@ -344,8 +334,8 @@ void randomizePhasesBeyond(MultidimArray<RFLOAT> &v, int index) {
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         if (euclidsq(ip, jp, kp) >= index2) {
             RFLOAT mag = abs(direct::elem(FT, i, j, k));
-            RFLOAT phas = rnd_unif(0.0, 2.0 * PI);
-            direct::elem(FT, i, j, k) = Complex(mag * cos(phas), mag * sin(phas));
+            RFLOAT phase = rnd_unif(0.0, 2.0 * PI);
+            direct::elem(FT, i, j, k) = Complex(mag * cos(phase), mag * sin(phase));
         }
     }
 
@@ -371,17 +361,17 @@ void randomizePhasesBeyond(MultidimArray<Complex> &v, int index) {
 
 // Fourier ring correlation -----------------------------------------------
 // from precalculated Fourier Transforms, and without sampling rate etc.
-void getFSC(
-    MultidimArray<Complex> &FT1, MultidimArray<Complex> &FT2,
-    MultidimArray<RFLOAT> &fsc
+MultidimArray<RFLOAT> getFSC(
+    const MultidimArray<Complex> &FT1,
+    const MultidimArray<Complex> &FT2
 ) {
     if (!FT1.sameShape(FT2))
         REPORT_ERROR("fourierShellCorrelation ERROR: MultidimArrays have different shapes!");
 
-    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
-    MultidimArray<RFLOAT> den1 = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
-    MultidimArray<RFLOAT> den2 = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
-    fsc.initZeros(num);
+    auto num  = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
+    auto den1 = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
+    auto den2 = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
+    auto fsc  = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         int idx = round(euclid(ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
@@ -397,32 +387,32 @@ void getFSC(
     for (int i = Xinit(fsc); i <= Xlast(fsc); i++) {
         fsc(i) = num(i) / sqrt(den1(i) * den2(i));
     }
+    return fsc;
 
 }
 
-void getFSC(
-    MultidimArray<RFLOAT> &m1, MultidimArray<RFLOAT> &m2,
-    MultidimArray<RFLOAT> &fsc
+MultidimArray<RFLOAT> getFSC(
+    MultidimArray<RFLOAT> &m1,
+    MultidimArray<RFLOAT> &m2
 ) {
     FourierTransformer transformer;
     MultidimArray<Complex> FT1 = transformer.FourierTransform(m1);
     MultidimArray<Complex> FT2 = transformer.FourierTransform(m2);
-    getFSC(FT1, FT2, fsc);
+    return getFSC(FT1, FT2);
 }
 
-void getAmplitudeCorrelationAndDifferentialPhaseResidual(
-    MultidimArray<Complex> &FT1, MultidimArray<Complex> &FT2,
-    MultidimArray<RFLOAT> &acorr, MultidimArray<RFLOAT> &dpr
+std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationAndDifferentialPhaseResidual(
+    const MultidimArray<Complex> &FT1, const MultidimArray<Complex> &FT2
 ) {
 
     MultidimArray<int> radial_count(Xsize(FT1));
-    MultidimArray<RFLOAT> mu1  = MultidimArray<RFLOAT>::zeros(radial_count);
-    MultidimArray<RFLOAT> mu2  = MultidimArray<RFLOAT>::zeros(radial_count);
-    MultidimArray<RFLOAT> sig1 = MultidimArray<RFLOAT>::zeros(radial_count);
-    MultidimArray<RFLOAT> sig2 = MultidimArray<RFLOAT>::zeros(radial_count);
-    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(radial_count);
-    acorr.initZeros(radial_count);
-    dpr.initZeros(radial_count);
+    auto mu1   = MultidimArray<RFLOAT>::zeros(radial_count);
+    auto mu2   = MultidimArray<RFLOAT>::zeros(radial_count);
+    auto sig1  = MultidimArray<RFLOAT>::zeros(radial_count);
+    auto sig2  = MultidimArray<RFLOAT>::zeros(radial_count);
+    auto num   = MultidimArray<RFLOAT>::zeros(radial_count);
+    auto acorr = MultidimArray<RFLOAT>::zeros(radial_count);  // Amplitude correlation
+    auto dpr   = MultidimArray<RFLOAT>::zeros(radial_count);  // Differential phase residual
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         // Amplitudes
         int idx = round(euclid(ip, jp, kp));
@@ -454,24 +444,21 @@ void getAmplitudeCorrelationAndDifferentialPhaseResidual(
 
     // Now calculate Pearson's correlation coefficient
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
-        int idx = round(euclid(ip, jp, kp));
+        const int idx = round(euclid(ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
-        RFLOAT z1 = abs(direct::elem(FT1, i, j, k)) - mu1(idx);
-        RFLOAT z2 = abs(direct::elem(FT2, i, j, k)) - mu2(idx);
+        const RFLOAT z1 = abs(direct::elem(FT1, i, j, k)) - mu1(idx);
+        const RFLOAT z2 = abs(direct::elem(FT2, i, j, k)) - mu2(idx);
         acorr(idx) += z1 * z2;
         sig1(idx)  += z1 * z1;
         sig2(idx)  += z2 * z2;
     }
 
     for (int i = Xinit(acorr); i <= Xlast(acorr); i++) {
-        RFLOAT aux = sqrt(sig1(i)) * sqrt(sig2(i));
-        if (aux > 0.0) {
-            acorr(i) /= aux;
-        } else {
-            acorr(i) = 1.0;
-        }
+        const RFLOAT divisor = sqrt(sig1(i) * sig2(i));
+        if (divisor > 0.0) { acorr(i) /= divisor; } else { acorr(i) = 1.0; }
     }
 
+    return {acorr, dpr};
 }
 
 std::vector<RFLOAT> cosDeltaPhase(
@@ -498,16 +485,13 @@ std::vector<RFLOAT> cosDeltaPhase(
     return cos_phi;
 }
 
-void getAmplitudeCorrelationAndDifferentialPhaseResidual(
-    MultidimArray<RFLOAT> &m1,
-    MultidimArray<RFLOAT> &m2,
-    MultidimArray<RFLOAT> &acorr,
-    MultidimArray<RFLOAT> &dpr
+std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationAndDifferentialPhaseResidual(
+    MultidimArray<RFLOAT> &m1, MultidimArray<RFLOAT> &m2
 ) {
     FourierTransformer transformer;
     MultidimArray<Complex> FT1 = transformer.FourierTransform(m1);
     MultidimArray<Complex> FT2 = transformer.FourierTransform(m2);
-    getAmplitudeCorrelationAndDifferentialPhaseResidual(FT1, FT2, acorr, dpr);
+    return getAmplitudeCorrelationAndDifferentialPhaseResidual(FT1, FT2);
 }
 
 /*
@@ -672,12 +656,10 @@ void shiftImageInFourierTransformWithTabSincos(
 
 // Shift an image through phase-shifts in its Fourier Transform (without pretabulated sine and cosine)
 void shiftImageInFourierTransform(
-    MultidimArray<Complex> &in,
-    MultidimArray<Complex> &out,
+    const MultidimArray<Complex> &in, MultidimArray<Complex> &out,
     RFLOAT oridim, RFLOAT xshift, RFLOAT yshift, RFLOAT zshift
 ) {
     out.resize(in);
-    RFLOAT x, y, z;
     switch (in.getDim()) {
 
         case 1:
@@ -687,7 +669,7 @@ void shiftImageInFourierTransform(
             return;
         }
         for (long int i = 0; i < Xsize(in); i++) {
-            x = i;
+            RFLOAT x = i;
             Complex X = direct::elem(in, i);
             Complex Y = Complex::unit(2 * PI * (x * xshift));
             direct::elem(out, i) = Complex(
@@ -695,7 +677,7 @@ void shiftImageInFourierTransform(
                 X.imag * Y.real + X.real * Y.imag   // (i conj X) dot Y
             );
         }
-        break;
+        return;
 
         case 2:
         xshift /= -oridim;
@@ -706,8 +688,7 @@ void shiftImageInFourierTransform(
         }
         for (long int j = 0; j < Xsize(in); j++)
         for (long int i = 0; i < Xsize(in); i++) {
-            x = i;
-            y = j;
+            RFLOAT x = i, y = j;
             Complex X = direct::elem(in, i, j);
             Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
             direct::elem(out, i, j) = Complex(
@@ -716,9 +697,9 @@ void shiftImageInFourierTransform(
             );
         }
         for (long int j = Ysize(in) - 1; j >= Xsize(in); j--) {
-        y = j - Ysize(in);
+        RFLOAT y = j - Ysize(in);
         for (long int i = 0; i < Xsize(in); i++) {
-        x = i;
+        RFLOAT x = i;
         Complex X = direct::elem(in, i, j);
         Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
         direct::elem(out, i, j) = Complex(
@@ -727,7 +708,7 @@ void shiftImageInFourierTransform(
         );
         }
         }
-        break;
+        return;
 
         case 3:
         xshift /= -oridim;
@@ -738,11 +719,11 @@ void shiftImageInFourierTransform(
             return;
         }
         for (long int k = 0; k < Zsize(in); k++) {
-        z = k < Xsize(in) ? k : k - Zsize(in);
+        RFLOAT z = k < Xsize(in) ? k : k - Zsize(in);
         for (long int j = 0; j < Ysize(in); j++) {
-        y = j < Xsize(in) ? j : j - Ysize(in);
+        RFLOAT y = j < Xsize(in) ? j : j - Ysize(in);
         for (long int i = 0; i < Xsize(in); i++) {
-            x = i;
+            RFLOAT x = i;
             Complex X = direct::elem(in, i, j, k);
             Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift + z * zshift));
             direct::elem(out, i, j, k) = Complex(
@@ -752,11 +733,18 @@ void shiftImageInFourierTransform(
         }
         }
         }
-        break;
+        return;
 
         default:
         REPORT_ERROR("shiftImageInFourierTransform ERROR: dimension should be 1, 2 or 3!");
     }
+}
+
+void shiftImageInFourierTransform(
+    MultidimArray<Complex> &in_out,
+    RFLOAT oridim, RFLOAT xshift, RFLOAT yshift, RFLOAT zshift
+) {
+    shiftImageInFourierTransform(in_out, in_out, oridim, xshift, yshift, zshift);
 }
 
 void getSpectrum(
@@ -1047,14 +1035,14 @@ void lowPassFilterMap(
     const int filter_edge_halfwidth = filter_edge_width / 2;
 
     // Soft-edge: from 1 shell less to one shell more:
-    RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
-    RFLOAT edge_high = std::min((double) Xsize(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
-    RFLOAT edge_width = edge_high - edge_low;
+    const RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    const RFLOAT edge_high = std::min((double) Xsize(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    const RFLOAT edge_width = edge_high - edge_low;
 
     // Put a raised cosine from edge_low to edge_high
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        RFLOAT r2 = euclidsq(ip, jp, kp);
-        RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
+        const RFLOAT r2 = euclidsq(ip, jp, kp);
+        const RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
 
         if (do_highpass_instead) {
             if (res < edge_low) {

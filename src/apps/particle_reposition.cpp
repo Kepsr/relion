@@ -214,24 +214,21 @@ class particle_reposition_parameters {
                     }
 
                     // Get the 2D image (in its ori_size)
-                    (optimiser.mymodel.PPref[iclass]).get2DFourierTransform(Fref, A);
+                    optimiser.mymodel.PPref[iclass].get2DFourierTransform(Fref, A);
 
-                    if (optimiser.mymodel.data_dim == 2) {
-                        shiftImageInFourierTransform(Fref, Fref, my_image_size, -XX(offsets), -YY(offsets));
-                    } else {
-                        shiftImageInFourierTransform(Fref, Fref, my_image_size, -XX(offsets), -YY(offsets), -ZZ(offsets));
-                    }
-
+                    shiftImageInFourierTransform(
+                        Fref, my_image_size, -XX(offsets), -YY(offsets),
+                        optimiser.mymodel.data_dim == 2 ? 0 : -ZZ(offsets)
+                    );
 
                     if (do_ctf) {
                         MultidimArray<RFLOAT> Fctf;
                         Fctf.resize(Fref);
 
                         if (optimiser.mymodel.data_dim == 3) {
-                            Image<RFLOAT> Ictf;
 
                             FileName fn_ctf = optimiser.mydata.MDimg.getValue<std::string>(EMDL::CTF_IMAGE, ori_img_id);
-                            Ictf.read(fn_ctf);
+                            auto Ictf = Image<RFLOAT>::from_filename(fn_ctf);
 
                             // If there is a redundant half, get rid of it
                             if (Xsize(Ictf()) == Ysize(Ictf())) {
@@ -248,7 +245,7 @@ class particle_reposition_parameters {
                                 REPORT_ERROR("3D CTF volume must be either cubical or adhere to FFTW format!");
                             }
                         } else {
-                            CTF ctf = CtfHelper::makeCTF(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
+                            const CTF ctf = CtfHelper::makeCTF(optimiser.mydata.MDimg, &optimiser.mydata.obsModel, ori_img_id);
                             Fctf = CtfHelper::getFftwImage(
                                 ctf,
                                 Xsize(Fctf), Ysize(Fctf), my_image_size, my_image_size, my_pixel_size,
@@ -264,8 +261,8 @@ class particle_reposition_parameters {
                         }
 
                         // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
-                        optimiser.mydata.obsModel.demodulatePhase(optics_group, Fref, true); // true means do_modulate_instead
-                        optimiser.mydata.obsModel.divideByMtf(optics_group, Fref, true); // true means do_multiply_instead
+                        optimiser.mydata.obsModel.demodulatePhase(optics_group, Fref, true);  // true means do_modulate_instead
+                        optimiser.mydata.obsModel.divideByMtf    (optics_group, Fref, true);  // true means do_multiply_instead
 
                     }
 
@@ -287,10 +284,10 @@ class particle_reposition_parameters {
                         Mpart_mic.setXmippOrigin();
                     }
 
-                    //Image<RFLOAT> It;
-                    //It()=Mpart_mic;
-                    //It.write("It.spi");
-                    //exit(1);
+                    // Image<RFLOAT> It;
+                    // It()=Mpart_mic;
+                    // It.write("It.spi");
+                    // exit(1);
 
                     // To keep raw micrograph and reference projections on the same scale, need to re-obtain
                     // the multiplicative normalisation of the background area (outside circle) again
@@ -340,17 +337,17 @@ class particle_reposition_parameters {
                     Imic_out().xinit = -round(xcoord);
                     Imic_out().yinit = -round(ycoord);
                     Imic_out().zinit = -round(zcoord);
-                    Imic_sum.xinit = -round(xcoord);
-                    Imic_sum.yinit = -round(ycoord);
-                    Imic_sum.zinit = -round(zcoord);
+                    Imic_sum.xinit   = -round(xcoord);
+                    Imic_sum.yinit   = -round(ycoord);
+                    Imic_sum.zinit   = -round(zcoord);
                     radius = optimiser.particle_diameter / (2.0 * mic_pixel_size);
                     FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
-                        long int idx = round(sqrt(i * i + j * j + k * k));
+                        long int idx = round(euclid(i, j, k));
                         if (idx < radius) {
                             // check the particles do not go off the side
-                            int ip = i - Xinit(Imic_sum);
-                            int jp = j - Yinit(Imic_sum);
-                            int kp = k - Zinit(Imic_sum);
+                            const int ip = i - Xinit(Imic_sum);
+                            const int jp = j - Yinit(Imic_sum);
+                            const int kp = k - Zinit(Imic_sum);
                             if (
                                 ip >= 0 && ip < Xsize(Imic_sum) &&
                                 jp >= 0 && jp < Ysize(Imic_sum) &&
@@ -403,7 +400,6 @@ class particle_reposition_parameters {
 
         } // end loop over input MetadataTable
         progress_bar(DFi.numberOfObjects());
-
 
         FileName fn_star_out = fn_odir + "micrographs_reposition.star";
         if (!fn_out.empty()) fn_star_out = fn_star_out.insertBeforeExtension("_" + fn_out);

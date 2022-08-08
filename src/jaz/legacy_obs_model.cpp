@@ -38,7 +38,7 @@ void LegacyObservationModel::predictObservation(
     proj.get2DFourierTransform(dest, A3D);
 
     if (applyShift) {
-        shiftImageInFourierTransform(dest, dest, s, s / 2 - xoff, s / 2 - yoff);
+        shiftImageInFourierTransform(dest, s, s / 2 - xoff, s / 2 - yoff);
     }
 
     if (applyCtf) {
@@ -99,15 +99,14 @@ void LegacyObservationModel::insertObservation(
     const MetaDataTable &mdt, int particle,
     bool applyCtf, bool applyTilt, double shift_x, double shift_y
 ) {
-    const int s = img.data.ydim;
     const int sh = img.data.xdim;
+    const int s  = img.data.ydim;
 
+    const RFLOAT rot  = mdt.getValue<RFLOAT>(EMDL::ORIENT_ROT,  particle);
+    const RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, particle);
+    const RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI,  particle);
 
-    RFLOAT rot  = mdt.getValue<RFLOAT>(EMDL::ORIENT_ROT, particle);
-    RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, particle);
-    RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI, particle);
-
-    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+    const Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     double tx = 0.0, ty = 0.0;
     tx = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X, particle) + shift_x;
@@ -115,11 +114,9 @@ void LegacyObservationModel::insertObservation(
 
     MultidimArray<Complex> F2D = img.data;
 
-    shiftImageInFourierTransform(F2D, F2D, s, tx, ty);
+    shiftImageInFourierTransform(F2D, s, tx, ty);
 
-    MultidimArray<RFLOAT> Fctf;
-    Fctf.resize(F2D);
-    Fctf.initConstant(1.0);
+    auto Fctf = MultidimArray<RFLOAT>::ones(F2D.xdim, F2D.ydim, F2D.zdim, F2D.ndim);
 
     if (applyCtf) {
         CTF ctf = CtfHelper::makeCTF(mdt, particle);
@@ -132,14 +129,12 @@ void LegacyObservationModel::insertObservation(
     }
 
     if (applyTilt) {
-        double my_tilt_x = 0.0;
-        double my_tilt_y = 0.0;
 
-        if (mdt.containsLabel(EMDL::IMAGE_BEAMTILT_X))
-        my_tilt_x = mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_X, particle);
+        const double my_tilt_x = mdt.containsLabel(EMDL::IMAGE_BEAMTILT_X) ?
+            mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_X, particle) : 0.0;
 
-        if (mdt.containsLabel(EMDL::IMAGE_BEAMTILT_Y))
-        my_tilt_y = mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_Y, particle);
+        const double my_tilt_y = mdt.containsLabel(EMDL::IMAGE_BEAMTILT_Y) ?
+            mdt.getValue<double>(EMDL::IMAGE_BEAMTILT_Y, particle) : 0.0;
 
         selfApplyBeamTilt(F2D, my_tilt_x, my_tilt_y, lambda, Cs, angpix, sh);
     }

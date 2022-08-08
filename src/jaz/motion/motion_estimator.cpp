@@ -543,7 +543,7 @@ void MotionEstimator::updateFCC(
 
         for (int f = 0; f < fc; f++) {
             shiftImageInFourierTransform(
-                obs[f](), obs[f](), s[og], -tracks[p][f].x, -tracks[p][f].y
+                obs[f](), s[og], -tracks[p][f].x, -tracks[p][f].y
             );
         }
 

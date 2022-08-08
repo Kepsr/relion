@@ -182,13 +182,10 @@ std::vector<Image<Complex>> StackHelper::loadStackFS(
         if (centerParticle) {
             const int s = in.data.ydim;
 
-            double xoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i);
-            double yoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i);
+            const double xoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i) / angpix;
+            const double yoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i) / angpix;
 
-            xoff /= angpix;
-            yoff /= angpix;
-
-            shiftImageInFourierTransform(out[i](), out[i](), s, xoff - s / 2, yoff - s / 2);
+            shiftImageInFourierTransform(out[i](), s, xoff - s / 2, yoff - s / 2);
         }
     }
 

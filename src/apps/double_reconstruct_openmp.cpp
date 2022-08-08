@@ -366,11 +366,8 @@ class reconstruct_parameters {
                         // Translations (either through phase-shifts or in real space
                         Matrix1D<RFLOAT> trans (2 + do_3d_rot);
                         trans.initZeros();
-                        XX(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);
-                        YY(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
-
-                        XX(trans) /= pixelsize;
-                        YY(trans) /= pixelsize;
+                        XX(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p) / pixelsize;
+                        YY(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p) / pixelsize;
 
                         if (shift_error > 0.0) {
                             XX(trans) += rnd_gaus(0.0, shift_error);
@@ -397,24 +394,14 @@ class reconstruct_parameters {
                             obsR[p] = FilterHelper::padCorner2D(obsR[p], sPad2D, sPad2D);
                         }
 
-                        MultidimArray<Complex> F2DP, F2DQ;
                         MultidimArray<Complex> F2D = transformer.FourierTransform(obsR[p]());
 
-                        if (abs(XX(trans)) > 0.0 || abs(YY(trans)) > 0.0) {
-                            if (do_3d_rot) {
-                                shiftImageInFourierTransform(
-                                    F2D, F2D, sPad2D, XX(trans), YY(trans), ZZ(trans)
-                                );
-                            } else {
-                                shiftImageInFourierTransform(
-                                    F2D, F2D, sPad2D, XX(trans), YY(trans)
-                                );
-                            }
-                        }
+                        if (abs(XX(trans)) > 0.0 || abs(YY(trans)) > 0.0)
+                            shiftImageInFourierTransform(
+                                F2D, sPad2D, XX(trans), YY(trans), do_3d_rot ? ZZ(trans) : 0.0
+                            );
 
-                        MultidimArray<RFLOAT> Fctf;
-                        Fctf.resize(F2D);
-                        Fctf.initConstant(1.0);
+                        auto Fctf = MultidimArray<RFLOAT>::ones(F2D.xdim, F2D.ydim, F2D.zdim, F2D.ndim);
 
                         CTF ctf = CtfHelper::make_CTF(table, &obsModel, p);
 
@@ -437,6 +424,7 @@ class reconstruct_parameters {
                         obsModel.demodulatePhase(table, p, F2D);
                         obsModel.divideByMtf    (table, p, F2D);
 
+                        MultidimArray<Complex> F2DP, F2DQ;
                         if (do_ewald) {
                             // Ewald-sphere curvature correction
                             applyCTFPandCTFQ(F2D, ctf, transformer, F2DP, F2DQ, pixelsize);
@@ -515,19 +503,20 @@ class reconstruct_parameters {
             std::vector<BackProjector*> backprojector(2);
 
             for (int j = 0; j < 2; j++) {
-                std::cerr << " + Merging volumes for half-set " << (j+1) << "...\n";
+                std::cerr << " + Merging volumes for half-set " << j + 1 << "...\n";
 
                 backprojector[j] = &backprojectors[j][0];
 
                 for (int bpi = 1; bpi < nr_omp_threads; bpi++) {
-                    backprojector[j]->data += backprojectors[j][bpi].data;
-                    backprojectors[j][bpi].data.clear();
+                    auto &bp = backprojectors[j][bpi];
+                    backprojector[j]->data += bp.data;
+                    bp.data.clear();
 
-                    backprojector[j]->weight += backprojectors[j][bpi].weight;
-                    backprojectors[j][bpi].weight.clear();
+                    backprojector[j]->weight += bp.weight;
+                    bp.weight.clear();
                 }
 
-                std::cerr << " + Symmetrising half-set " << (j+1) << "...\n";
+                std::cerr << " + Symmetrising half-set " << j + 1 << "...\n";
 
                 backprojector[j]->symmetrise(
                     nr_helical_asu, helical_twist, helical_rise / angpixOut, nr_omp_threads
@@ -537,14 +526,12 @@ class reconstruct_parameters {
             bool do_map = wiener;
             bool do_use_fsc = wiener;
 
-            MultidimArray<RFLOAT> fsc(boxOut / 2 + 1);
+            MultidimArray<RFLOAT> fsc (boxOut / 2 + 1);
 
             if (wiener) {
-                MultidimArray<Complex> avg0, avg1;
-
-                backprojector[0]->getDownsampledAverage(avg0, div_avg);
-                backprojector[1]->getDownsampledAverage(avg1, div_avg);
-                backprojector[0]->calculateDownSampledFourierShellCorrelation(avg0, avg1, fsc);
+                const MultidimArray<Complex> avg0 = backprojector[0]->getDownsampledAverage(div_avg);
+                const MultidimArray<Complex> avg1 = backprojector[1]->getDownsampledAverage(div_avg);
+                fsc = backprojector[0]->calculateDownSampledFourierShellCorrelation(avg0, avg1);
             }
 
             if (debug) {

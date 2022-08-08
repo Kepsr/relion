@@ -478,7 +478,6 @@ void ParticleSubtractor::subtractOneParticle(
     }
 
     // Now that the particle is centered (for multibody), get the FourierTransform of the particle
-    MultidimArray<Complex> Faux;
     MultidimArray<RFLOAT> Fctf;
     FourierTransformer transformer;
     MultidimArray<Complex> Fimg = transformer.FourierTransform(img());
@@ -568,13 +567,13 @@ void ParticleSubtractor::subtractOneParticle(
             other_projected_com -= my_projected_com;
 
             shiftImageInFourierTransform(
-                FTo, Faux, (RFLOAT)Xsize(img()),
+                FTo, (RFLOAT) Xsize(img()),
                 XX(other_projected_com), YY(other_projected_com), ZZ(other_projected_com)
             );
 
             // Sum the Fourier transforms of all the obodies
-            Fsubtrahend += Faux;
-        } // end for obody
+            Fsubtrahend += FTo;
+        }
 
         // Set orientations back into the original RELION system of coordinates
         Matrix2D<RFLOAT> Abody;
@@ -615,7 +614,7 @@ void ParticleSubtractor::subtractOneParticle(
 
         // Shift in opposite direction as offsets in the STAR file
         shiftImageInFourierTransform(
-            Fsubtrahend, Fsubtrahend, (RFLOAT) Xsize(img()),
+            Fsubtrahend, (RFLOAT) Xsize(img()),
             -XX(my_old_offset), -YY(my_old_offset), -ZZ(my_old_offset)
         );
 
