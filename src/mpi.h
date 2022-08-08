@@ -52,6 +52,18 @@
 #include "src/error.h"
 #include "src/macros.h"
 
+namespace relion_MPI {
+
+    #ifdef RELION_SINGLE_PRECISION
+    const auto DOUBLE  = MPI_FLOAT;
+    const auto COMPLEX = MPI_C_COMPLEX;
+    #else
+    const auto DOUBLE  = MPI_DOUBLE;
+    const auto COMPLEX = MPI_C_DOUBLE_COMPLEX;
+    #endif
+
+};
+
 namespace MPITag { enum {
     JOB_REQUEST,
     JOB_REPLY,
@@ -86,7 +98,7 @@ class MpiNode {
 
     bool isLeader() const;
 
-    // Prints the random subset for this rank
+    // The "random" subset for this rank
     int myRandomSubset() const;
 
     // Returns the name of the host this rank is running on
@@ -104,7 +116,7 @@ class MpiNode {
     int relion_MPI_Bcast(void *buffer, long int count, MPI_Datatype datatype, int root, MPI_Comm comm);
 
     /* Better error handling of MPI error messages */
-    void report_MPI_ERROR(int error_code);
+    void possibly_report_MPI_ERROR(int error_code);
 
 };
 
