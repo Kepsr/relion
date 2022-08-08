@@ -50,8 +50,8 @@ void ReconstructorMpi::run() {
 
         MultidimArray<Complex> sumd(backprojector.data);
         MultidimArray<RFLOAT> sumw(backprojector.weight);
-        MPI_Allreduce(backprojector.data.data,   sumd.data, 2 * backprojector.data.size(),   MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(backprojector.weight.data, sumw.data,     backprojector.weight.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(backprojector.data.data,   sumd.data, backprojector.data.size() * 2, relion_MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(backprojector.weight.data, sumw.data, backprojector.weight.size(),   relion_MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
         if (node->isLeader()) {
             backprojector.data   = sumd;

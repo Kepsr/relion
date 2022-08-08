@@ -929,7 +929,7 @@ void Postprocessing::run_locres(int rank, int size) {
                     fh << " ii= " << ii << " jj= " << jj << " kk= " << kk << " local resolution= " << local_resol << std::endl;
 
                 // Now low-pass filter Isum to the estimated resolution
-                MultidimArray<Complex > FT = FTsum;
+                MultidimArray<Complex> FT = FTsum;
                 applyFscWeighting(FT, fsc_true);
                 lowPassFilterMap(FT, Xsize(I1()), local_resol, angpix, filter_edge_width);
 
@@ -953,19 +953,18 @@ void Postprocessing::run_locres(int rank, int size) {
     if (verb > 0)
         init_progress_bar(nr_samplings);
 
-
     if (size > 1) {
 
         I1m.initZeros();
-        MPI_Allreduce(Ifil.data, I1m.data, Ifil.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(Ifil.data, I1m.data, Ifil.size(), relion_MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Ifil = I1m;
 
         I1m.initZeros();
-        MPI_Allreduce(Ilocres.data, I1m.data, Ilocres.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(Ilocres.data, I1m.data, Ilocres.size(), relion_MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Ilocres = I1m;
 
         I1m.initZeros();
-        MPI_Allreduce(Isumw.data, I1m.data, Isumw.size(), MY_MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(Isumw.data, I1m.data, Isumw.size(), relion_MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         Isumw = I1m;
 
     }
