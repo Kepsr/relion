@@ -26,6 +26,10 @@
 
 #include "src/backprojector.h"
 
+inline RFLOAT divide_or_zero(RFLOAT dividend, RFLOAT divisor) {
+    if (divisor == 0.0) return 0.0;
+    return dividend / divisor;
+}
 
 void BackProjector::initialiseDataAndWeight(int current_size) {
     initialiseData(current_size);
@@ -740,8 +744,8 @@ void BackProjector::getLowResDataAndWeight(
 
     // fill lowres arrays with relevant values
     FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
-        if (k * k + i * i + j * j <= lowres_r2_max) {
-            lowres_data.elem(i, j, k) = data.elem(i, j, k);
+        if (euclidsq(i, j, k) <= lowres_r2_max) {
+            lowres_data  .elem(i, j, k) = data  .elem(i, j, k);
             lowres_weight.elem(i, j, k) = weight.elem(i, j, k);
         }
     }
@@ -781,16 +785,16 @@ void BackProjector::setLowResDataAndWeight(
 
     // Overwrite data and weight with the lowres arrays
     FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
-        if (k * k + i * i + j * j <= lowres_r2_max) {
-            data.elem(i, j, k) = lowres_data.elem(i, j, k);
+        if (euclidsq(i, j, k) <= lowres_r2_max) {
+            data  .elem(i, j, k) = lowres_data  .elem(i, j, k);
             weight.elem(i, j, k) = lowres_weight.elem(i, j, k);
         }
     }
 }
 
-void BackProjector::getDownsampledAverage(
-    MultidimArray<Complex> &avg, bool divide
-) const {
+MultidimArray<Complex> BackProjector::getDownsampledAverage(bool divide) const {
+
+    MultidimArray<Complex> avg;
 
     // Pre-set down_data and down_weight sizes
     const int down_size = 2 * (r_max + 1) + 1;
@@ -817,9 +821,9 @@ void BackProjector::getDownsampledAverage(
 
     // Now calculate the down-sized sum
     FOR_ALL_ELEMENTS_IN_ARRAY3D(data) {
-        int kp = round((RFLOAT) k / padding_factor);
-        int ip = round((RFLOAT) i / padding_factor);
-        int jp = round((RFLOAT) j / padding_factor);
+        const int jp = round((RFLOAT) j / padding_factor);
+        const int ip = round((RFLOAT) i / padding_factor);
+        const int kp = round((RFLOAT) k / padding_factor);
 
         // TMP
         // #define CHECK_SIZE
@@ -839,39 +843,36 @@ void BackProjector::getDownsampledAverage(
     }
 
     // Calculate the straightforward average in the downsampled arrays
-    for (long int n = 0; n < avg.size(); n++) {
-        if (down_weight[n] > 0.0) {
-            avg[n] /= down_weight[n];
-        } else {
-            avg[n] = 0.0;
-        }
-    }
+    for (long int n = 0; n < avg.size(); n++)
+        divide_or_zero(avg[n], down_weight[n]);
+
+    return avg;
 }
 
-void BackProjector::calculateDownSampledFourierShellCorrelation(
+MultidimArray<RFLOAT> BackProjector::calculateDownSampledFourierShellCorrelation(
     const MultidimArray<Complex> &avg1,
-    const MultidimArray<Complex> &avg2,
-    MultidimArray<RFLOAT> &fsc
+    const MultidimArray<Complex> &avg2
 ) const {
     if (!avg1.sameShape(avg2))
         REPORT_ERROR("ERROR BackProjector::calculateDownSampledFourierShellCorrelation: two arrays have different sizes");
 
-    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
-    MultidimArray<RFLOAT> den1 = MultidimArray<RFLOAT>::zeros(num);
-    MultidimArray<RFLOAT> den2 = MultidimArray<RFLOAT>::zeros(num);
-    fsc.initZeros(num);
+    const long int n = ori_size / 2 + 1;
+    auto num  = MultidimArray<RFLOAT>::zeros(n);
+    auto den1 = MultidimArray<RFLOAT>::zeros(n);
+    auto den2 = MultidimArray<RFLOAT>::zeros(n);
+    auto fsc  = MultidimArray<RFLOAT>::zeros(n);
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(avg1) {
-        const RFLOAT R = sqrt(k * k + i * i + j * j);
+        const RFLOAT R = euclid(i, j, k);
 
         if (R > r_max) continue;
 
-        int idx = round(R);
+        const int idx = round(R);
 
-        Complex z1 = avg1.elem(i, j, k);
-        Complex z2 = avg2.elem(i, j, k);
+        const Complex z1 = avg1.elem(i, j, k);
+        const Complex z2 = avg2.elem(i, j, k);
 
-        num(idx) += z1.real * z2.real + z1.imag * z2.imag;
+        num (idx) += dot(z1, z2);
         den1(idx) += z1.norm();
         den2(idx) += z2.norm();
     }
@@ -886,6 +887,7 @@ void BackProjector::calculateDownSampledFourierShellCorrelation(
     // Raimond Ravelli reported a problem with FSC=1 at res=0 on 13feb2013...
     // (because of a suboptimal normalisation scheme, but anyway)
     fsc(0) = 1.0;
+    return fsc;
 }
 
 void BackProjector::updateSSNRarrays(
@@ -911,7 +913,7 @@ void BackProjector::updateSSNRarrays(
     MultidimArray<RFLOAT> sigma2  = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     MultidimArray<RFLOAT> counter = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
-        const int r2 = k * k + i * i + j * j;
+        const int r2 = euclidsq(i, j, k);
         if (r2 < max_r2) {
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
             RFLOAT invw = oversampling_correction * weight.elem(i, j, k);
@@ -967,7 +969,7 @@ void BackProjector::updateSSNRarrays(
     // Now accumulate data_vs_prior if (!update_tau2_with_fsc)
     // Also accumulate fourier_coverage
     FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
-        int r2 = k * k + i * i + j * j;
+        int r2 = euclidsq(i, j, k);
         if (r2 < max_r2) {
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
             RFLOAT invw = weight.elem(i, j, k);
@@ -1063,16 +1065,15 @@ void BackProjector::externalReconstruct(
     Idata.clear();
 
     // Write out weight array
-    Image<RFLOAT> Iweight;
+    MultidimArray<RFLOAT> weight;
     if (ref_dim == 2) {
-        Iweight().resize(pad_size, pad_size / 2 + 1);
+        weight.resize(pad_size, pad_size / 2 + 1);
     } else {
-        Iweight().resize(pad_size, pad_size, pad_size / 2 + 1);
+        weight.resize(pad_size, pad_size, pad_size / 2 + 1);
     }
-    Projector::decenter(weight, Iweight(), max_r2);
-    windowFourierTransform(Iweight(), padoridim);
-    Iweight.write(fn_out+"_external_reconstruct_weight.mrc");
-    Iweight.clear();
+    Projector::decenter(weight, weight, max_r2);
+    windowFourierTransform(weight, padoridim);
+    Image<RFLOAT>(weight).write(fn_out + "_external_reconstruct_weight.mrc");
 
     // Write out STAR file for input to external reconstruction program
     MetaDataTable MDlist, MDtau;
@@ -1115,16 +1116,14 @@ void BackProjector::externalReconstruct(
     if (verb > 0)
         std::cout << std::endl << " + Making system call for external reconstruction: " << command << std::endl;
 
-    int res = system(command.c_str());
-    if (res) {
+    if (system(command.c_str())) {
         REPORT_ERROR(" ERROR: there was something wrong with system call: " + command);
     } else if (verb > 0) {
         std::cout << " + External reconstruction finished successfully, reading result back in ... " << std::endl;
     }
 
     // Read the resulting map back into memory
-    Iweight.read(fn_recons);
-    vol_out = Iweight();
+    vol_out = Image<RFLOAT>::from_filename(fn_recons).data;
     vol_out.setXmippOrigin();
 
     if (exists(fn_out_star)) {
@@ -1240,10 +1239,10 @@ void BackProjector::reconstruct(
     }();
 
     MultidimArray<RFLOAT> Fweight;
+    Fweight.reshape(Fconv);
     {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[1]);)
     // Go from projector-centered to FFTW-uncentered
-    Fweight.reshape(Fconv);
     Projector::decenter(weight, Fweight, max_r2);
     }
 
@@ -1273,10 +1272,9 @@ void BackProjector::reconstruct(
 
                 // Only for (ires >= minres_map) add Wiener-filter like term
                 if (ires >= minres_map) {
-                    // Now add the inverse-of-tau2_class term
-                    invw += invtau2;
-                    // Store the new weight again in Fweight
-                    direct::elem(Fweight, i, j, k) = invw;
+                    // Add the inverse-of-tau2_class term
+                    // and store the new weight again in Fweight
+                    direct::elem(Fweight, i, j, k) = invw += invtau2;
                 }
             }
         }
@@ -1298,7 +1296,7 @@ void BackProjector::reconstruct(
             // We have to use round_max_r2 = round((r_max * padding_factor)^2).
             // e.g. k = 0, i = 7, j = 28, max_r2 = 841, r_max = 16, padding_factor = 18.
             if (r2 < round_max_r2) {
-                const int ires = floor(sqrt((RFLOAT)r2) / padding_factor);
+                const int ires = floor(sqrt((RFLOAT) r2) / padding_factor);
                 if (ires >= Xsize(radavg_weight)) {
                     std::cerr << " k= " << k << " i= " << i << " j= " << j << std::endl;
                     std::cerr << " ires= " << ires << " Xsize(radavg_weight)= " << Xsize(radavg_weight) << std::endl;
@@ -1326,19 +1324,21 @@ void BackProjector::reconstruct(
         bool have_warned = false;
         // perform std::max on all weight elements, and do division of data/weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
-            const int r2 = euclidsq(ip, jp, kp);
-            const int ires = floor(sqrt((RFLOAT) r2) / padding_factor);
+            const int ires = floor(euclid(ip, jp, kp) / padding_factor);
             const RFLOAT weight =  std::max(
                 direct::elem(Fweight, i, j, k),
                 direct::elem(radavg_weight, ires < r_max ? ires : r_max - 1)
             );
-            if (weight == 0) {
-                if (!have_warned) {
-                    std::cerr << " WARNING: ignoring divide by zero in skip_gridding: ires = " << ires << " kp = " << kp << " ip = " << ip << " jp = " << jp << std::endl;
-                    std::cerr << " max_r2 = " << max_r2 << " r_max = " << r_max << " padding_factor = " << padding_factor
-                              << " round(sqrt(max_r2)) = " << round(sqrt(max_r2)) << " round(r_max * padding_factor) = " << round(r_max * padding_factor) << std::endl;
-                    have_warned = true;
-                }
+            if (weight == 0 && !have_warned) {
+                std::cerr << " WARNING: ignoring divide by zero in skip_gridding: "
+                    << "ires = " << ires
+                    << " ip = " << ip << " jp = " << jp << " kp = " << kp << std::endl
+                    << " max_r2 = " << max_r2 << " r_max = " << r_max << " "
+                    << "padding_factor = " << padding_factor
+                    << " round(sqrt(max_r2)) = " << round(sqrt(max_r2)) << " "
+                    << "round(r_max * padding_factor) = " << round(r_max * padding_factor)
+                    << std::endl;
+                have_warned = true;
             } else {
                 direct::elem(Fconv, i, j, k) /= weight;
             }
@@ -1353,15 +1353,15 @@ void BackProjector::reconstruct(
         #endif
         Fweight /= normalise;
         data /= (Complex) normalise;
-
         }
 
         MultidimArray<double> Fnewweight;
         {
         ifdefTIMING(TicToc tt (ReconTimer, ReconS[5]);)
         // Initialise Fnewweight with 1's and 0's. (also see comments below)
+        /// XXX: But this is changing weight!?
         FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
-            weight.elem(i, j, k) = k * k + i * i + j * j < max_r2;
+            weight.elem(i, j, k) = euclidsq(i, j, k) < max_r2;
         }
         // Fnewweight can become too large for a float: always keep this one in double-precision
         Fnewweight.reshape(Fconv);
@@ -1381,9 +1381,7 @@ void BackProjector::reconstruct(
             // but each "sampling point" counts "Fweight" times!
             // That is why Fnewweight is multiplied by Fweight prior to the convolution
 
-            for (long int n = 0; n < Fconv.size(); n++) {
-                Fconv[n] = Fnewweight[n] * Fweight[n];
-            }
+            Fconv = Fnewweight * Fweight;
 
             // convolute through Fourier-transform (as both grids are rectangular)
             // Note that convoluteRealSpace acts on the complex array inside the transformer
@@ -1421,13 +1419,12 @@ void BackProjector::reconstruct(
         ifdefTIMING(TicToc tt (ReconTimer, ReconS[7]);)
 
         #ifdef DEBUG_RECONSTRUCT
-        Image<double> tttt;
-        tttt()=Fnewweight;
-        tttt.write("reconstruct_gridding_weight.spi");
+        Image<double> img (Fnewweight);
+        img.write("reconstruct_gridding_weight.spi");
         for (long int n = 0; n < Fconv.size(); n++) {
-            ttt()[n] = abs(Fconv[n]);
+            img()[n] = abs(Fconv[n]);
         }
-        ttt.write("reconstruct_gridding_correction_term.spi");
+        img.write("reconstruct_gridding_correction_term.spi");
         #endif
 
         // Clear memory
@@ -1442,11 +1439,7 @@ void BackProjector::reconstruct(
         for (long int n = 0; n < Fconv.size(); n++) {
             #ifdef RELION_SINGLE_PRECISION
             // Prevent numerical instabilities in single-precision reconstruction with very unevenly sampled orientations
-            #define BIGNUM 1e20
-            if (Fnewweight[n] > BIGNUM) {
-                Fnewweight[n] = BIGNUM;
-            }
-            #undef BIGNUM
+            if (Fnewweight[n] > 1e20) { Fnewweight[n] = 1e20; }
             #endif
             Fconv[n] *= Fnewweight[n];
         }
@@ -1530,7 +1523,7 @@ void BackProjector::reconstruct(
     RFLOAT normftblob = tab_ftblob(0.0);
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_out) {
 
-        RFLOAT r = sqrt((RFLOAT) (k * k + i * i + j * j));
+        RFLOAT r = euclid(i, j, k);
         RFLOAT rval = r / (ori_size * padding_factor);
         vol_out.elem(i, j, k) /= tab_ftblob(rval) / normftblob;
         // if (k == 0 && i == 0)
@@ -1561,8 +1554,7 @@ void BackProjector::reconstruct(
     #endif
 
     #ifdef DEBUG_RECONSTRUCT
-    ttt() = vol_out;
-    ttt.write("reconstruct_before_gridding_correction.spi");
+    Image<double>(vol_out).write("reconstruct_before_gridding_correction.spi");
     #endif
 
     // Correct for the linear/nearest-neighbour interpolation that led to the data array
@@ -1583,57 +1575,56 @@ void BackProjector::reconstruct(
     if (printTimes) ReconTimer.printTimes(true);
     #endif
 
-
     #ifdef DEBUG_RECONSTRUCT
     std::cerr << "done with reconstruct" << std::endl;
     #endif
 
-    if (weight_out != 0) {
-        weight_out->data = MultidimArray<RFLOAT>(1, ori_size, ori_size, ori_size / 2 + 1);
+    if (!weight_out) return;
 
-        Image<RFLOAT> count = Image<RFLOAT>::zeros(ori_size / 2 + 1, ori_size, ori_size);
+    weight_out->data = MultidimArray<RFLOAT>(1, ori_size, ori_size, ori_size / 2 + 1);
 
-        // downsample while considering padding:
+    Image<RFLOAT> count = Image<RFLOAT>::zeros(ori_size / 2 + 1, ori_size, ori_size);
 
-        for (long int z = 0; z < Fweight.zdim; z++)
-        for (long int y = 0; y < Fweight.ydim; y++)
-        for (long int x = 0; x < Fweight.xdim; x++) {
-            int xl = x;
-            int yl = y < Fweight.ydim / 2 ? y : y - Fweight.ydim;
-            int zl = z < Fweight.zdim / 2 ? z : z - Fweight.zdim;
+    // downsample while considering padding:
 
-            if (
-                xl == Fweight.xdim - 1 ||
-                yl == Fweight.ydim / 2 || yl == -Fweight.ydim / 2 - 1 ||
-                zl == Fweight.zdim / 2 || zl == -Fweight.zdim / 2 - 1
-            ) {
-                continue;
-            }
+    for (long int z = 0; z < Fweight.zdim; z++)
+    for (long int y = 0; y < Fweight.ydim; y++)
+    for (long int x = 0; x < Fweight.xdim; x++) {
+        int xl = x;
+        int yl = y < Fweight.ydim / 2 ? y : y - Fweight.ydim;
+        int zl = z < Fweight.zdim / 2 ? z : z - Fweight.zdim;
 
-            int xx =        round(xl / padding_factor);
-            int yy = ((int) round(yl / padding_factor) + ori_size) % ori_size;
-            int zz = ((int) round(zl / padding_factor) + ori_size) % ori_size;
-
-            if (
-                   xx >= 0 && xx < ori_size / 2 + 1
-                && yy >= 0 && yy < ori_size
-                && zz >= 0 && zz < ori_size
-            ) {
-                direct::elem(weight_out->data, xx, yy, zz) += direct::elem(Fweight, x, y, z);
-                direct::elem(count.data, xx, xx, zz) += 1.0;
-            }
+        if (
+            xl == Fweight.xdim - 1 ||
+            yl == Fweight.ydim / 2 || yl == -Fweight.ydim / 2 - 1 ||
+            zl == Fweight.zdim / 2 || zl == -Fweight.zdim / 2 - 1
+        ) {
+            continue;
         }
 
-        const double pad3 = padding_factor * padding_factor * padding_factor;
+        int xx =        round(xl / padding_factor);
+        int yy = ((int) round(yl / padding_factor) + ori_size) % ori_size;
+        int zz = ((int) round(zl / padding_factor) + ori_size) % ori_size;
 
-        for (long int z = 0; z < ori_size; z++)
-        for (long int y = 0; y < ori_size; y++)
-        for (long int x = 0; x < ori_size / 2 + 1; x++) {
-            const RFLOAT c = direct::elem(count.data, x, y, z);
+        if (
+               xx >= 0 && xx < ori_size / 2 + 1
+            && yy >= 0 && yy < ori_size
+            && zz >= 0 && zz < ori_size
+        ) {
+            direct::elem(weight_out->data, xx, yy, zz) += direct::elem(Fweight, x, y, z);
+            direct::elem(count.data,       xx, xx, zz) += 1.0;
+        }
+    }
 
-            if (c > 0.0) {
-                direct::elem(weight_out->data, x, y, z) *= pad3 / c;
-            }
+    const double pad3 = padding_factor * padding_factor * padding_factor;
+
+    for (long int z = 0; z < ori_size; z++)
+    for (long int y = 0; y < ori_size; y++)
+    for (long int x = 0; x < ori_size / 2 + 1; x++) {
+        const RFLOAT c = direct::elem(count.data, x, y, z);
+
+        if (c > 0.0) {
+            direct::elem(weight_out->data, x, y, z) *= pad3 / c;
         }
     }
 }
@@ -1655,9 +1646,8 @@ void BackProjector::enforceHermitianSymmetry() {
     // Make sure all points are only included once.
     for (int iz = Zinit(data); iz <= Zlast(data); iz++)
     for (int iy = iz >= 0;     iy <= Ylast(data); iy++) {
-        // I just need to sum the two points, not divide by 2!
         Complex fsum = data.elem(0, iy, iz) + conj(data.elem(0, -iy, -iz));
-        data.elem(0, +iy, +iz) = fsum;
+        data.elem(0, +iy, +iz) =      fsum;
         data.elem(0, -iy, -iz) = conj(fsum);
         RFLOAT sum = weight.elem(0, iy, iz) + weight.elem(0, -iy, -iz);
         weight.elem(0, +iy, +iz) = sum;
@@ -1668,17 +1658,13 @@ void BackProjector::enforceHermitianSymmetry() {
 void BackProjector::applyHelicalSymmetry(
     int nr_helical_asu, RFLOAT helical_twist, RFLOAT helical_rise
 ) {
-    if (nr_helical_asu < 2 || ref_dim != 3)
-        return;
+    if (nr_helical_asu < 2 || ref_dim != 3) return;
 
     int rmax2 = round(r_max * padding_factor) * round(r_max * padding_factor);
 
-    MultidimArray<RFLOAT> sum_weight;
-    MultidimArray<Complex> sum_data;
-
+    MultidimArray<RFLOAT>  sum_weight = weight;
+    MultidimArray<Complex> sum_data   = data;
     // First symmetry operator (not stored in SL) is the identity matrix
-    sum_weight = weight;
-    sum_data = data;
     int h_min = -nr_helical_asu / 2;
     int h_max = -h_min + nr_helical_asu % 2;
     for (int hh = h_min; hh < h_max; hh++) {
@@ -1689,12 +1675,13 @@ void BackProjector::applyHelicalSymmetry(
 
         // Loop over all points in the output (i.e. rotated, or summed) array
         FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight) {
-            RFLOAT x = j;  // Xinit(sum_weight) is zero!
-            RFLOAT y = i;
+            RFLOAT x = i;  // Xinit(sum_weight) is zero!
+            RFLOAT y = j;
             RFLOAT z = k;
             RFLOAT r2 = euclidsq(x, y, z);
             if (r2 <= rmax2) {
                 // coords_output(x, y) = A * coords_input (xp, yp)
+                // {xp, yp zp} = R({x, y, z})
                 RFLOAT xp = x * R(0, 0) + y * R(0, 1) + z * R(0, 2);
                 RFLOAT yp = x * R(1, 0) + y * R(1, 1) + z * R(1, 2);
                 RFLOAT zp = x * R(2, 0) + y * R(2, 1) + z * R(2, 2);
@@ -1764,9 +1751,9 @@ void BackProjector::applyHelicalSymmetry(
                 // Also apply a phase shift for helical translation along Z
                 if (abs(helical_rise) > 0.0) {
                     RFLOAT zshift = -hh * helical_rise / (ori_size * padding_factor);
-                    RFLOAT dotp = 2 * PI * z * zshift;
-                    Complex X = Complex(cos(dotp), sin(dotp));  // cis(dotp)
-                    Complex Z = Complex(X.real * ddd.real, X.imag * ddd.imag);  // X dot ddd
+                    RFLOAT phase = 2 * PI * z * zshift;
+                    const Complex X = Complex::unit(phase);
+                    const Complex Z = Complex(X.real * ddd.real, X.imag * ddd.imag);
                     ddd = Complex(
                         Z.real - Z.imag,
                         (X.real + X.imag) * (ddd.real + ddd.imag) - Z.real - Z.imag
@@ -1798,7 +1785,7 @@ void BackProjector::applyHelicalSymmetry(
         }
     }
 
-    data = sum_data;
+    data  = sum_data;
     weight = sum_weight;
 }
 
@@ -1857,6 +1844,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     // In that way use direct::elem, rather than elem
                     int x0 = floor(xp);
                     RFLOAT fx = xp - x0;
+                    // x0 -= Xinit(data);
                     int x1 = x0 + 1;
 
                     int y0 = floor(yp);
@@ -1928,7 +1916,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
             }
         }
 
-        data = sum_data;
+        data   = sum_data;
         weight = sum_weight;
         // Average
         // The division should only be done if we would search all (C1) directions, not if we restrict the angular search!
@@ -1939,13 +1927,11 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
         }
         */
     }
-
 }
 
 void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool do_mask) {
 
     MultidimArray<RFLOAT> Mconv;
-    int padhdim = pad_size / 2;
 
     // Set up right dimension of real-space array
     // TODO: resize this according to r_max!!!
@@ -1969,13 +1955,14 @@ void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool
     //blob.alpha = 15;
 
     // Multiply with FT of the blob kernel
+    const int padhdim = pad_size / 2;
     for (long int k = 0; k < Zsize(Mconv); k++)
     for (long int j = 0; j < Ysize(Mconv); j++)
     for (long int i = 0; i < Xsize(Mconv); i++) {
         int kp = k < padhdim ? k : k - pad_size;
-        int ip = i < padhdim ? i : i - pad_size;
         int jp = j < padhdim ? j : j - pad_size;
-        RFLOAT rval = sqrt((RFLOAT) euclidsq(ip, jp, kp)) / (ori_size * padding_factor);
+        int ip = i < padhdim ? i : i - pad_size;
+        RFLOAT rval = euclid(ip, jp, kp) / (ori_size * padding_factor);
         //if (kp==0 && ip==0 && jp > 0)
         //	std::cerr << " jp= " << jp << " rval= " << rval << " tab_ftblob(rval) / normftblob= " << tab_ftblob(rval) / normftblob << " ori_size/2= " << ori_size/2 << std::endl;
         // In the final reconstruction: mask the real-space map beyond its original size to prevent aliasing ghosts
@@ -1996,41 +1983,39 @@ void BackProjector::windowToOridimRealSpace(
 ) {
 
     #ifdef TIMING
+    /// FIXME: These are out of order
     Timer OriDimTimer;
-    int OriDims[] = {
-        OriDimTimer.setNew(" OrD1_getFourier "),
-        OriDimTimer.setNew(" OrD2_windowFFT "),
-        OriDimTimer.setNew(" OrD3_reshape "),
-        OriDimTimer.setNew(" OrD4_setReal "),
-        OriDimTimer.setNew(" OrD5_invFFT "),
-        OriDimTimer.setNew(" OrD6_centerFFT "),
-        OriDimTimer.setNew(" OrD7_window "),
-        OriDimTimer.setNew(" OrD8_norm "),
-        OriDimTimer.setNew(" OrD9_softMask "),
-    };
+    int OrD1_getFourier = OriDimTimer.setNew(" OrD1_getFourier ");
+    int OrD2_windowFFT  = OriDimTimer.setNew(" OrD2_windowFFT ");
+    int OrD3_reshape    = OriDimTimer.setNew(" OrD3_reshape ");
+    int OrD4_setReal    = OriDimTimer.setNew(" OrD4_setReal ");
+    int OrD5_invFFT     = OriDimTimer.setNew(" OrD5_invFFT ");
+    int OrD6_centerFFT  = OriDimTimer.setNew(" OrD6_centerFFT ");
+    int OrD7_window     = OriDimTimer.setNew(" OrD7_window ");
+    int OrD8_norm       = OriDimTimer.setNew(" OrD8_norm ");
+    int OrD9_softMask   = OriDimTimer.setNew(" OrD9_softMask ");
     #endif
 
     auto &Fin = [&] () -> MultidimArray<Complex> & {
-        ifdefTIMING(TicToc tt (OriDimTimer, OriDims[0]);)
+        ifdefTIMING(TicToc tt (OriDimTimer, OrD1_getFourier);)
         // Why are we timing this? It's just a member access.
         return transformer.getFourier();
     }();
 
     int padoridim;  // Size of padded real-space volume
     {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[1]);)
+    ifdefTIMING(TicToc tt (OriDimTimer, OrD2_windowFFT);)
     padoridim = round(padding_factor * ori_size);
     // Enforce divisibility by 2
     padoridim += padoridim % 2;
 
     // #define DEBUG_WINDOWORIDIMREALSPACE
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-    Image<RFLOAT> tt;
-    tt().reshape(Xsize(Fin), Ysize(Fin), Zsize(Fin));
+    MultidimArray<RFLOAT> tmp (Xsize(Fin), Ysize(Fin), Zsize(Fin));
     for (long int n = 0; n < Fin.size(); n++) {
-        tt()[n] = abs(Fin[n]);
+        tmp()[n] = abs(Fin[n]);
     }
-    tt.write("windoworidim_Fin.spi");
+    Image<RFLOAT>(tmp).write("windoworidim_Fin.spi");
     #endif
 
     // Resize incoming complex array to the correct size
@@ -2038,44 +2023,42 @@ void BackProjector::windowToOridimRealSpace(
     }
 
     const RFLOAT normfft = [&] () {
-        ifdefTIMING(TicToc tt (OriDimTimer, OriDims[2]);)
+        ifdefTIMING(TicToc tt (OriDimTimer, OrD3_reshape);)
         if (ref_dim == 2) {
             Mout.reshape(padoridim, padoridim);
             Mout.setXmippOrigin();
-            return data_dim == 2 ?
-                padding_factor * padding_factor :
-                padding_factor * padding_factor * ori_size;
+            return padding_factor * padding_factor
+                * (data_dim == 2 ? 1 : ori_size);
         } else {
             Mout.reshape(padoridim, padoridim, padoridim);
             Mout.setXmippOrigin();
-            return data_dim == 3 ?
-                padding_factor * padding_factor * padding_factor :
-                padding_factor * padding_factor * padding_factor * ori_size;
+            return padding_factor * padding_factor * padding_factor
+                * (data_dim == 3 ? 1 : ori_size);
         }
     }();
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-    tt().reshape(Xsize(Fin), Ysize(Fin), Zsize(Fin));
+    tmp.reshape(Xsize(Fin), Ysize(Fin), Zsize(Fin));
     for (long int n = 0; n < Fin.size(); n++) {
-        tt()[n] = abs(Fin[n]);
+        tmp[n] = abs(Fin[n]);
     }
-    tt.write("windoworidim_Fresized.spi");
+    Image<RFLOAT>(tmp).write("windoworidim_Fresized.spi");
     #endif
 
     // Shift the map back to its origin
     {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[5]);)
+    ifdefTIMING(TicToc tt (OriDimTimer, OrD6_centerFFT);)
     CenterFFTbySign(Fin);
     }
 
     {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[3]);)
+    ifdefTIMING(TicToc tt (OriDimTimer, OrD4_setReal);)
     transformer.setReal(Mout);
     }
 
     // Do the inverse FFT
     {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[4]);)
+    ifdefTIMING(TicToc tt (OriDimTimer, OrD5_invFFT);)
     #ifdef TIMING
     if (printTimes)
         std::cout << std::endl << "FFTrealDims = (" << transformer.fReal->xdim << " , " << transformer.fReal->ydim << " , " << transformer.fReal->zdim << " ) " << std::endl;
@@ -2090,15 +2073,13 @@ void BackProjector::windowToOridimRealSpace(
     Mout.setXmippOrigin();
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-    tt() = Mout;
-    tt.write("windoworidim_Munwindowed.spi");
+    Image<RFLOAT>(Mout).write("windoworidim_Munwindowed.spi");
     #endif
 
     // Window in real-space
     {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[6]);)
-    const long int init = Xmipp::init(ori_size);
-    const long int last = Xmipp::last(ori_size);
+    ifdefTIMING(TicToc tt (OriDimTimer, OrD7_window);)
+    const long int init = Xmipp::init(ori_size), last = Xmipp::last(ori_size);
     if (ref_dim == 2) {
         Mout.window(init, init, last, last);
     } else {
@@ -2110,31 +2091,29 @@ void BackProjector::windowToOridimRealSpace(
     // Normalisation factor of FFTW
     // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size * ori_size
     {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[7]);)
-    Mout /= normfft; 
+    ifdefTIMING(TicToc tt (OriDimTimer, OrD8_norm);)
+    Mout /= normfft;
     }
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-    tt() = Mout;
-    tt.write("windoworidim_Mwindowed.spi");
+    Image<RFLOAT>(Mout).write("windoworidim_Mwindowed.spi");
     #endif
 
     // Mask out corners to prevent aliasing artefacts
     {
-    ifdefTIMING(TicToc tt (OriDimTimer, OriDims[8]);)
+    ifdefTIMING(TicToc tt (OriDimTimer, OrD9_softMask);)
     softMaskOutsideMap(Mout);
     }
 
     #ifdef DEBUG_WINDOWORIDIMREALSPACE
-    tt() = Mout;
-    tt.write("windoworidim_Mwindowed_masked.spi");
+    Image<RFLOAT>(Mout).write("windoworidim_Mwindowed_masked.spi");
     // FourierTransformer ttf;
     Fin = FourierTransformer{}.FourierTransform(Mout);
-    tt().resize(Zsize(Fin), Ysize(Fin), Xsize(Fin));
+    imtt().resize(Zsize(Fin), Ysize(Fin), Xsize(Fin));
     for (long int n = 0; n < Fin.size(); n++) {
-        tt()[n] = abs(Fin[n]);
+        imtt()[n] = abs(Fin[n]);
     }
-    tt.write("windoworidim_Fnew.spi");
+    imtt.write("windoworidim_Fnew.spi");
     #endif
 
     #ifdef TIMING

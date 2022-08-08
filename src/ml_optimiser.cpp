@@ -5106,12 +5106,12 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     }
                     #endif
                     shiftImageInFourierTransform(
-                        FTo, Faux, (RFLOAT) mymodel.ori_size,
+                        FTo, (RFLOAT) mymodel.ori_size,
                         other_projected_com[0], other_projected_com[1], mymodel.data_dim == 3 ? other_projected_com[2] : 0
                     );
 
                     // Sum the Fourier transforms of all the obodies
-                    Fsum_obody += Faux;
+                    Fsum_obody += FTo;
 
                 }
             }
@@ -5170,14 +5170,12 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             exp_Fimg[img_id] -= Fsum_obody;
 
             // 23 Jul 17: NEW: as we haven't applied the (nonROUNDED!!)  my_refined_ibody_offset yet, do this now in the FourierTransform
-            Faux = exp_Fimg[img_id];
             shiftImageInFourierTransform(
-                Faux, exp_Fimg[img_id], (RFLOAT) image_full_size[optics_group],
+                exp_Fimg[img_id], (RFLOAT) image_full_size[optics_group],
                 my_refined_ibody_offset[0], my_refined_ibody_offset[1], mymodel.data_dim == 3 ? my_refined_ibody_offset[2] : 0.0
             );
-            Faux = exp_Fimg_nomask[img_id];
             shiftImageInFourierTransform(
-                Faux, exp_Fimg_nomask[img_id], (RFLOAT)image_full_size[optics_group],
+                exp_Fimg_nomask[img_id], (RFLOAT)image_full_size[optics_group],
                 my_refined_ibody_offset[0], my_refined_ibody_offset[1], mymodel.data_dim == 3 ? my_refined_ibody_offset[2] : 0.0
             );
 
@@ -7591,7 +7589,6 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         // ori_img_id to keep exactly the same as in relion-3.0....
                         init_random_generator(random_seed + mydata.getOriginalImageId(part_id, img_id));
 
-                        MultidimArray<Complex> F1, F2;
                         Matrix2D<RFLOAT> A1, A2;
 
                         RFLOAT rot1  = direct::elem(exp_metadata, metadata_offset, METADATA_ROT);
@@ -7601,18 +7598,14 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         RFLOAT yoff1 = 0.0;
                         RFLOAT zoff1 = 0.0;
 
-                        if (mymodel.data_dim == 2) {
-                            F1.initZeros(
-                                current_image_size,
-                                current_image_size / 2 + 1
-                            );
-                        } else {
-                            F1.initZeros(
-                                current_image_size,
-                                current_image_size,
-                                current_image_size / 2 + 1
-                            );
-                        }
+                        auto F1 = mymodel.data_dim == 2 ? MultidimArray<Complex>::zeros(
+                            current_image_size / 2 + 1,
+                            current_image_size
+                        ) : MultidimArray<Complex>::zeros(
+                            current_image_size / 2 + 1,
+                            current_image_size,
+                            current_image_size
+                        );
 
                         // Get the FT of the first image
                         A1 = Euler::angles2matrix(rot1, tilt1, psi1);
@@ -7662,19 +7655,16 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                                 }
                             }
                         }
+
                         // Get the FT of the second image
-                        if (mymodel.data_dim == 2) {
-                            F2.initZeros(
-                                current_image_size,
-                                current_image_size / 2 + 1
-                            );
-                        } else {
-                            F2.initZeros(
-                                current_image_size,
-                                current_image_size,
-                                current_image_size/ 2 + 1
-                            );
-                        }
+                        auto F2 = mymodel.data_dim == 2 ? MultidimArray<Complex>::zeros(
+                            current_image_size / 2 + 1,
+                            current_image_size
+                        ) : MultidimArray<Complex>::zeros(
+                            current_image_size / 2 + 1,
+                            current_image_size,
+                            current_image_size
+                        );
 
                         if (imode == 0) {
                             // Get new rotated version of reference

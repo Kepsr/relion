@@ -388,12 +388,12 @@ MultidimArray<RFLOAT> pad_ctf(
     for (int j = 0; j < Ysize(Fctf); j++) {
         // Don't take the middle row of the half-transform
         if (j != Ysize(Fctf) / 2) {
-            int jp = j < Xsize(Fctf) ? j : j - Ysize(Fctf);
+            const int jp = Fourier::J(Fctf, j);
             // Don't take the last column from the half-transform
             for (int i = 0; i < Xsize(Fctf) - 1; i++) {
-                RFLOAT fctfij = direct::elem(Fctf, i, j);
-                Mctf.elem(+i, +jp) = f(fctfij);
-                Mctf.elem(-i, -jp) = f(fctfij);
+                const RFLOAT x = f(direct::elem(Fctf, i, j));
+                Mctf.elem(+i, +jp) = x;
+                Mctf.elem(-i, -jp) = x;
             }
         }
     }
@@ -409,7 +409,7 @@ MultidimArray<RFLOAT> pad_ctf(
     for (int j = 0; j < Ysize(result); j++) {
         // Don't take the middle row of the half-transform
         if (j != Ysize(result) / 2) {
-            int jp = j < Xsize(result) ? j : j - Ysize(result);
+            const int jp = Fourier::J(result, j);
             // Don't take the last column from the half-transform
             for (int i = 0; i < Xsize(result) - 1; i++) {
                 // Make just one lookup on Mctf.data

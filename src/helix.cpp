@@ -5210,16 +5210,16 @@ void averageAsymmetricUnits2D(
     RFLOAT angpix;
 
     FourierTransformer transformer;
-    MultidimArray<Complex> Faux, Fsum;
+    MultidimArray<Complex> Fsum;
 
     long int imgno = 0;
     init_progress_bar(MDimgs.numberOfObjects());
     for (long int index : MDimgs) {
 
-        FileName fn_img       = MDimgs.getValue<std::string>(EMDL::IMAGE_NAME);
-        RFLOAT psi            = MDimgs.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-        int optics_group      = MDimgs.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
-        RFLOAT angpix         = obsModel.getPixelSize(optics_group);
+              FileName fn_img  = MDimgs.getValue<std::string>(EMDL::IMAGE_NAME);
+        const RFLOAT psi       = MDimgs.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        const int optics_group = MDimgs.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
+        const RFLOAT angpix    = obsModel.getPixelSize(optics_group);
 
         Image<RFLOAT> img;
         img.read(fn_img);
@@ -5230,26 +5230,22 @@ void averageAsymmetricUnits2D(
 
         Matrix1D<RFLOAT> in(2), out(2);
         for (int i = 2; i <= nr_asu; i++) {
-            if (i % 2 == 0) {
-                // one way
-                XX(in) = rise * i * 0.5 / angpix;
-            } else {
-                // the other way
-                XX(in) = -1.0 * rise * i * 0.5 / angpix;
-            }
+            XX(in) = i % 2 == 0 ?
+                +rise * i * 0.5 / angpix :  // one way
+                -rise * i * 0.5 / angpix ;  // the other way
             YY(in) = 0.0;
 
             transformCartesianAndHelicalCoords(in, out, 0.0, 0.0, psi, HELICAL_TO_CART_COORDS);
-            //std::cerr << " i= " << i << " XX(in)= " << XX(in) << " YY(in)= " << YY(in) << " XX(out)= " << XX(out) << " YY(out)= " << YY(out)   << std::endl;
+            // std::cerr << " i= " << i << " XX(in)= " << XX(in) << " YY(in)= " << YY(in) << " XX(out)= " << XX(out) << " YY(out)= " << YY(out) << std::endl;
+            MultidimArray<Complex> Faux;
             shiftImageInFourierTransform(Fimg, Faux, Xsize(img()), XX(out), YY(out));
             Fsum += Faux;
         }
 
-
         for (long int n = 0; n < Fimg.size(); n++) {
             Fimg[n] = Fsum[n] / (RFLOAT) nr_asu;
         }
-        transformer.inverseFourierTransform();
+        transformer.inverseFourierTransform();  // Alters Fimg
 
         // Write this particle to the stack on disc
         // First particle: write stack in overwrite mode, from then on just append to it

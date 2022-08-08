@@ -198,6 +198,12 @@ tComplex<T1> operator / (const tComplex<T1>& z, const T2& x) {
     return tComplex<T1>(z.real / x, z.imag / x);
 }
 
+// Dot/inner product
+template <class T> inline
+T dot(const tComplex<T>& z, const tComplex<T>& w) {
+    return z.real * w.real + z.imag * w.imag;
+}
+
 template <class T> inline
 std::ostream& operator << (std::ostream& os, const tComplex<T>& z) {
   os << "[" << z.real << ", " << z.imag << "]";

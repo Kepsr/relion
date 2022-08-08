@@ -592,7 +592,7 @@ int main(int argc, char *argv[]) {
 
                     if (it_number > 0) {
                         for (int f = 0; f < fc; f++) {
-                            shiftImageInFourierTransform(obs[f](), obs[f](), s, -tracks[p][f].x, -tracks[p][f].y);
+                            shiftImageInFourierTransform(obs[f](), s, -tracks[p][f].x, -tracks[p][f].y);
                         }
                     }
 

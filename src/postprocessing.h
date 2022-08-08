@@ -184,14 +184,18 @@ public:
 	void makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fit_point2D> &guinier);
 
 	// Use Richard's formula to calculate FSC_true
-	void calculateFSCtrue(MultidimArray<RFLOAT> &fsc_true, MultidimArray<RFLOAT> &fsc_unmasked,
-			MultidimArray<RFLOAT> &fsc_masked, MultidimArray<RFLOAT> &fsc_random_masked, int randomize_at );
+	MultidimArray<RFLOAT> calculateFSCtrue(
+		MultidimArray<RFLOAT> &fsc_unmasked, MultidimArray<RFLOAT> &fsc_masked,
+		MultidimArray<RFLOAT> &fsc_random_masked, int randomize_at
+	);
 
 	// cisTEM-like FSC corrected for fraction of solvent mask
-	void calculateFSCpart(const MultidimArray<RFLOAT> fsc_unmasked, RFLOAT fraction, MultidimArray<RFLOAT> &fsc_part);
+	MultidimArray<RFLOAT> calculateFSCpart(
+		const MultidimArray<RFLOAT> &fsc_unmasked, RFLOAT fraction
+	);
 
-	// Apply sqrt(2FSC/(FSC=1)) weighting prior to B-factor sharpening
-	void applyFscWeighting(MultidimArray<Complex > &FT, MultidimArray<RFLOAT> my_fsc);
+	// Apply sqrt(2FSC/(FSC+1)) weighting prior to B-factor sharpening
+	void applyFscWeighting(MultidimArray<Complex> &FT, const MultidimArray<RFLOAT> &my_fsc);
 
 	// Output map and masked map
 	void writeMaps(FileName fn_root);

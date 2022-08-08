@@ -30,7 +30,6 @@ void getFourierTransformsAndCtfs(
         int icol_rot, icol_tilt, icol_psi, icol_xoff, icol_yoff, icol_zoff;
         Matrix1D<RFLOAT> my_old_offset, my_prior, my_old_offset_ori;
         Image<RFLOAT> img, rec_img;
-        MultidimArray<Complex> Faux;
         MultidimArray<RFLOAT> Fctf;
         Matrix2D<RFLOAT> Aori;
         Matrix1D<RFLOAT> my_projected_com(baseMLO->mymodel.data_dim), my_refined_ibody_offset(baseMLO->mymodel.data_dim);
@@ -802,13 +801,13 @@ void getFourierTransformsAndCtfs(
                     other_projected_com += my_old_offset;
 
                     shiftImageInFourierTransform(
-                        FTo, Faux,
+                        FTo,
                         (RFLOAT) baseMLO->image_full_size[optics_group],
                         XX(other_projected_com), YY(other_projected_com), accMLO->dataIs3D ? ZZ(other_projected_com) : 0.0
                     );
 
                     // Sum the Fourier transforms of all the obodies
-                    Fsum_obody += Faux;
+                    Fsum_obody += FTo;
 
                 }
             }
@@ -837,10 +836,10 @@ void getFourierTransformsAndCtfs(
 
             // For the masked one, have to mask outside the circular mask to prevent negative values outside the mask in the subtracted image!
             CenterFFTbySign(Fsum_obody);
-            Faux = windowFourierTransform(Fsum_obody, baseMLO->image_full_size[optics_group]);
+            MultidimArray<Complex> Faux = windowFourierTransform(Fsum_obody, baseMLO->image_full_size[optics_group]);
             img() = accMLO->transformer.inverseFourierTransform(Faux);
 
-            softMaskOutsideMap(img(), my_mask_radius, (RFLOAT)baseMLO->width_mask_edge);
+            softMaskOutsideMap(img(), my_mask_radius, (RFLOAT) baseMLO->width_mask_edge);
 
             // And back to Fourier space now
             Faux = accMLO->transformer.FourierTransform(img());
@@ -850,20 +849,18 @@ void getFourierTransformsAndCtfs(
             // Subtract the other-body FT from the masked exp_Fimgs
             op.Fimg.at(img_id) -= Fsum_obody;
 
-            // 23jul17: NEW: as we haven't applied the (nonROUNDED!!)  my_refined_ibody_offset yet, do this now in the FourierTransform
-            Faux = op.Fimg.at(img_id);
+            // 23jul17: NEW: as we haven't applied the (nonROUNDED!!) my_refined_ibody_offset yet, do this now in the FourierTransform
             shiftImageInFourierTransform(
-                Faux, op.Fimg.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
+                op.Fimg.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
                 XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), accMLO->dataIs3D ? ZZ(my_refined_ibody_offset) : 0
             );
-            Faux = op.Fimg_nomask.at(img_id);
             shiftImageInFourierTransform(
-                Faux, op.Fimg_nomask.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
+                op.Fimg_nomask.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
                 XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), accMLO->dataIs3D ? ZZ(my_refined_ibody_offset) : 0
             );
         }
     }
-    //accMLO->transformer.clear();
+    // accMLO->transformer.clear();
     #ifdef TIMING
     if (part_id == baseMLO->exp_my_first_part_id)
         baseMLO->timer.toc(baseMLO->TIMING_ESP_FT);
@@ -908,14 +905,14 @@ void getAllSquaredDifferencesCoarse(
 
     }))
 
-    std::vector< AccProjectorPlan > projectorPlans(0, (CudaCustomAllocator *) accMLO->getAllocator());
+    std::vector<AccProjectorPlan> projectorPlans (0, (CudaCustomAllocator *) accMLO->getAllocator());
 
-    //If particle specific sampling plan required
-    if (accMLO->generateProjectionPlanOnTheFly) {
+    if (!accMLO->generateProjectionPlanOnTheFly) {
+        projectorPlans = accMLO->bundle->coarseProjectionPlans;
+    } else {  // If particle specific sampling plan required
         CTICTOC(accMLO->timer, "generateProjectionSetupCoarse", ({
 
         projectorPlans.resize(baseMLO->mymodel.nr_classes, (CudaCustomAllocator *)accMLO->getAllocator());
-
 
         for (unsigned long iclass = sp.iclass_min; iclass <= sp.iclass_max; iclass++) {
             if (baseMLO->mymodel.pdf_class[iclass] > 0.0) {
@@ -966,8 +963,6 @@ void getAllSquaredDifferencesCoarse(
             }
         }
         }))
-    } else {
-        projectorPlans = accMLO->bundle->coarseProjectionPlans;
     }
 
     // Loop only from sp.iclass_min to sp.iclass_max to deal with seed generation in first iteration
@@ -1049,12 +1044,12 @@ void getAllSquaredDifferencesCoarse(
 
         XFLOAT scale_correction = baseMLO->do_scale_correction ? baseMLO->mymodel.scale_correction[group_id] : 1;
 
-        int exp_current_image_size = (baseMLO->strict_highres_exp > 0.|| baseMLO->adaptive_oversampling > 0) ?
+        int exp_current_image_size = baseMLO->strict_highres_exp > 0.0 || baseMLO->adaptive_oversampling > 0 ?
                 baseMLO->image_coarse_size[optics_group] : baseMLO->image_current_size[optics_group];
-        MultidimArray<Complex> Fimg = windowFourierTransform(op.Fimg[img_id], exp_current_image_size);
+        const MultidimArray<Complex> Fimg = windowFourierTransform(op.Fimg[img_id], exp_current_image_size);
 
         for (unsigned long i = 0; i < image_size; i ++) {
-            XFLOAT pixel_correction = 1.0/scale_correction;
+            XFLOAT pixel_correction = 1.0 / scale_correction;
             if (baseMLO->do_ctf_correction && fabs(op.local_Fctf[img_id].data[i]) > 1e-8) {
                 // if ctf[i]==0, pix_corr[i] becomes NaN.
                 // However, corr_img[i]==0, so pix-diff in kernel==0.

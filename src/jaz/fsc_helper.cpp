@@ -22,15 +22,17 @@
 #include <src/jaz/gravis/t2Matrix.h>
 #include <src/jaz/optimization/nelder_mead.h>
 
+static const double epsilon = 1e-3;
+
 using namespace gravis;
 
 /**
  * @brief Divide dividend by divisor, unless divisor is zero, in which case return zero.
- * 
- * @tparam T 
- * @param dividend 
- * @param divisor 
- * @return T 
+ *
+ * @tparam T
+ * @param dividend
+ * @param divisor
+ * @return T
  */
 template <typename T>
 static T safedivide(T dividend, T divisor) {
@@ -39,8 +41,8 @@ static T safedivide(T dividend, T divisor) {
 }
 
 void FscHelper::computeFscTable(
-    const std::vector<std::vector<Image<Complex> > > &frames,
-    const std::vector<Image<Complex> > &predictions,
+    const std::vector<std::vector<Image<Complex>>> &frames,
+    const std::vector<Image<Complex>> &predictions,
     Image<RFLOAT> &table, Image<RFLOAT> &weight
 ) {
     const int w = predictions[0].data.xdim;
@@ -50,31 +52,29 @@ void FscHelper::computeFscTable(
     table  = Image<RFLOAT>::zeros(w, fc);
     weight = Image<RFLOAT>::zeros(w, fc);
 
-    Image<RFLOAT> weight1 = Image<RFLOAT>::zeros(w, fc);
-    Image<RFLOAT> weight2 = Image<RFLOAT>::zeros(w, fc);
+    auto weight1 = MultidimArray<RFLOAT>::zeros(w, fc);
+    auto weight2 = MultidimArray<RFLOAT>::zeros(w, fc);
 
     for (int p = 0; p < pc; p++)
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[p][f]()) {
-            int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+            const int idx = round(euclid(ip, jp, kp));
 
-            if (idx >= w) {
-                continue;
-            }
+            if (idx >= w) continue;
 
-            Complex z1 = direct::elem(frames[p][f](),   i, j, k);
-            Complex z2 = direct::elem(predictions[p](), i, j, k);
+            const Complex z1 = direct::elem(frames[p][f](),   i, j, k);
+            const Complex z2 = direct::elem(predictions[p](), i, j, k);
 
-            direct::elem(table.data,   idx, f) += z1.real * z2.real + z1.imag * z2.imag;
-            direct::elem(weight1.data, idx, f) += z1.norm();
-            direct::elem(weight2.data, idx, f) += z2.norm();
+            direct::elem(table.data,   idx, f) += dot(z1, z2);
+            direct::elem(weight1, idx, f) += z1.norm();
+            direct::elem(weight2, idx, f) += z2.norm();
         }
     }
 
     for (int f = 0; f < fc; f++)
     for (int x = 0; x < w;  x++) {
-        RFLOAT w1 = direct::elem(weight1.data, x, f);
-        RFLOAT w2 = direct::elem(weight2.data, x, f);
+        RFLOAT w1 = direct::elem(weight1, x, f);
+        RFLOAT w2 = direct::elem(weight2, x, f);
         RFLOAT ww = sqrt(w1 * w2);
 
         direct::elem(weight.data, x, f)  = ww;
@@ -91,16 +91,14 @@ void FscHelper::computeFscRow(
     std::vector<double> weight1(w, 0.0), weight2(w, 0.0), data(w, 0.0);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(data0) {
-        int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+        const int idx = round(euclid(ip, jp, kp));
 
-        if (idx >= w) {
-            continue;
-        }
+        if (idx >= w) continue;
 
-        Complex z1 = direct::elem(data0, i, j, k);
-        Complex z2 = direct::elem(data1, i, j, k);
+        const Complex z1 = direct::elem(data0, i, j, k);
+        const Complex z2 = direct::elem(data1, i, j, k);
 
-        data[idx] += z1.real * z2.real + z1.imag * z2.imag;
+        data[idx] += dot(z1, z2);
         weight1[idx] += z1.norm();
         weight2[idx] += z2.norm();
     }
@@ -116,7 +114,7 @@ void FscHelper::computeFscRow(
 }
 
 void FscHelper::initFscTable(
-    int kc, int tc, Image<RFLOAT> &table, 
+    int kc, int tc, Image<RFLOAT> &table,
     Image<RFLOAT> &weight0, Image<RFLOAT> &weight1
 ) {
     table   = Image<RFLOAT>::zeros(kc, tc);
@@ -132,7 +130,7 @@ void FscHelper::updateFscTable(
     Image<RFLOAT> &weight1
 ) {
     const int fc = frames.size();
-
+    /// TODO: for (auto &frame : frames)
     for (int f = 0; f < fc; f++) {
         updateFscTable(frames[f], f, prediction, scale, table, weight0, weight1);
     }
@@ -147,16 +145,14 @@ void FscHelper::updateFscTable(
     const int w = prediction.data.xdim;
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frame()) {
-        int idx = round(scale * sqrt(kp * kp + ip * ip + jp * jp));
+        const int idx = round(scale * euclid(ip, jp, kp));
 
-        if (idx >= w) {
-            continue;
-        }
+        if (idx >= w) continue;
 
-        Complex z1 = direct::elem(frame(),      i, j, k);
-        Complex z2 = direct::elem(prediction(), i, j, k);
+        const Complex z1 = direct::elem(frame(),      i, j, k);
+        const Complex z2 = direct::elem(prediction(), i, j, k);
 
-        direct::elem(table.data,   idx, f) += z1.real * z2.real + z1.imag * z2.imag;
+        direct::elem(table.data,   idx, f) += dot(z1, z2);
         direct::elem(weight0.data, idx, f) += z1.norm();
         direct::elem(weight1.data, idx, f) += z2.norm();
     }
@@ -175,20 +171,18 @@ void FscHelper::updateFscTableVelWgh(
 
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[f]()) {
-            int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+            const int idx = round(euclid(ip, jp, kp));
 
-            if (idx >= w) {
-                continue;
-            }
+            if (idx >= w) continue;
 
             double kv = (ip * velocities[f].y + jp * velocities[f].x)/(double)w;
             double wgh = kv < 1e-20 ? 1.0 : sin(PI * kv) / PI * kv;
-            // double wgh = exp(-0.5*kv*kv/0.5);
+            // double wgh = exp(-0.5 * kv * kv / 0.5);
 
-            Complex z1 = direct::elem(frames[f](), i, j, k);
-            Complex z2 = wgh * direct::elem(prediction(), i, j, k);
+            const Complex z1 = direct::elem(frames[f](),  i, j, k);
+            const Complex z2 = direct::elem(prediction(), i, j, k) * wgh;
 
-            direct::elem(table.data,   idx, f) += z1.real * z2.real + z1.imag * z2.imag;
+            direct::elem(table.data,   idx, f) += dot(z1, z2);
             direct::elem(weight0.data, idx, f) += z1.norm();
             direct::elem(weight1.data, idx, f) += z2.norm();
         }
@@ -211,22 +205,19 @@ void FscHelper::updateVelFscTable(
 
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[f]()) {
-            int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+            const int idx = round(euclid(ip, jp, kp));
 
-            if (idx >= w || idx < kmin || idx > kmax) {
-                continue;
-            }
+            if (idx >= w || idx < kmin || idx > kmax) continue;
 
             double kv = ip * velocities[f].y + jp * velocities[f].x;
-            int kvidx = round(kv);
+            const int kvidx = abs(round(kv));
 
-            if (kvidx < 0) { kvidx = -kvidx; }
             if (kvidx >= table().xdim) continue;
 
-            Complex z1 = direct::elem(frames[f](),  i, j, k);
-            Complex z2 = direct::elem(prediction(), i, j, k);
+            const Complex z1 = direct::elem(frames[f](),  i, j, k);
+            const Complex z2 = direct::elem(prediction(), i, j, k);
 
-            direct::elem(table.data,   kvidx, f) += z1.real * z2.real + z1.imag * z2.imag;
+            direct::elem(table.data,   kvidx, f) += dot(z1, z2);
             direct::elem(weight0.data, kvidx, f) += z1.norm();
             direct::elem(weight1.data, kvidx, f) += z2.norm();
         }
@@ -243,9 +234,9 @@ void FscHelper::mergeFscTables(
     const int fc = tables[0].data.ydim;
     const int mgc = tables.size();
 
-    Image<RFLOAT> tableSum   = Image<RFLOAT>::zeros(w, fc);
-    Image<RFLOAT> weightSum0 = Image<RFLOAT>::zeros(w, fc);
-    Image<RFLOAT> weightSum1 = Image<RFLOAT>::zeros(w, fc);
+    auto tableSum   = MultidimArray<RFLOAT>::zeros(w, fc);
+    auto weightSum0 = MultidimArray<RFLOAT>::zeros(w, fc);
+    auto weightSum1 = MultidimArray<RFLOAT>::zeros(w, fc);
 
     table  = Image<RFLOAT>(w, fc);
     weight = Image<RFLOAT>(w, fc);
@@ -253,19 +244,19 @@ void FscHelper::mergeFscTables(
     for (int m = 0; m < mgc; m++)
     for (int f = 0; f < fc;  f++)
     for (int x = 0; x < w;   x++) {
-        direct::elem(tableSum.data,   x, f) += direct::elem(tables[m].data,   x, f);
-        direct::elem(weightSum0.data, x, f) += direct::elem(weights0[m].data, x, f);
-        direct::elem(weightSum1.data, x, f) += direct::elem(weights1[m].data, x, f);
+        direct::elem(tableSum,   x, f) += direct::elem(tables[m].data,   x, f);
+        direct::elem(weightSum0, x, f) += direct::elem(weights0[m].data, x, f);
+        direct::elem(weightSum1, x, f) += direct::elem(weights1[m].data, x, f);
     }
 
     for (int f = 0; f < fc; f++)
     for (int x = 0; x < w; x++) {
-        RFLOAT w1 = direct::elem(weightSum0.data, x, f);
-        RFLOAT w2 = direct::elem(weightSum1.data, x, f);
-        RFLOAT ww = sqrt(w1 * w2);
+        const RFLOAT w1 = direct::elem(weightSum0, x, f);
+        const RFLOAT w2 = direct::elem(weightSum1, x, f);
+        const RFLOAT ww = sqrt(w1 * w2);
 
         direct::elem(weight.data, x, f) = ww;
-        direct::elem(table.data,  x, f) = safedivide(direct::elem(tableSum.data, x, f), ww);
+        direct::elem(table.data,  x, f) = safedivide(direct::elem(tableSum, x, f), ww);
     }
 }
 
@@ -275,7 +266,7 @@ double FscHelper::computeTsc(
     const std::vector<Image<RFLOAT>> &weights1,
     int k0, int k1
 ) {
-    //const int kc = tables[0].data.xdim;
+    // const int kc = tables[0].data.xdim;
     const int fc = tables[0].data.ydim;
     const int tc = tables.size();
 
@@ -289,41 +280,42 @@ double FscHelper::computeTsc(
         w1Sum += weights1[t](f, k);
     }
 
-    double ww = sqrt(w0Sum * w1Sum);
+    const double ww = sqrt(w0Sum * w1Sum);
 
     return safedivide(tSum, ww);
 }
 
-void FscHelper::computeNoiseSq(
-    std::vector<std::vector<Image<Complex> > > frames,
-    std::vector<Image<Complex> > predictions, Image<RFLOAT> &sigma2
+MultidimArray<RFLOAT> FscHelper::computeNoiseSq(
+    const std::vector<std::vector<Image<Complex>>> &frames,
+    const std::vector<Image<Complex>> &predictions
 ) {
     const int w = predictions[0].data.xdim;
     const int pc = frames.size();
     const int fc = frames[0].size();
 
-    sigma2              = Image<RFLOAT>::zeros(w, fc);
-    Image<RFLOAT> count = Image<RFLOAT>::zeros(w, fc);
+    auto sigma2 = MultidimArray<RFLOAT>::zeros(w, fc);
+    auto count  = MultidimArray<RFLOAT>::zeros(w, fc);
 
     for (int p = 0; p < pc; p++)
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[p][f]()) {
-            int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+            const int idx = round(euclid(ip, jp, kp));
 
             if (idx >= w) continue;
 
-            Complex z1 = direct::elem(frames[p][f](), i, j, k);
-            Complex z2 = direct::elem(predictions[p](), i, j, k);
+            const Complex z1 = direct::elem(frames     [p][f](), i, j, k);
+            const Complex z2 = direct::elem(predictions[p]   (), i, j, k);
 
-            direct::elem(sigma2.data, idx, f) += (z2 - z1).norm();
-            direct::elem(count.data,  idx, f) += 1.0;
+            direct::elem(sigma2, idx, f) += (z2 - z1).norm();
+            direct::elem(count,  idx, f) += 1.0;
         }
     }
 
     for (int f = 0; f < fc; f++)
-    for (int x = 0; x < w; x++) {
-        if (direct::elem(count.data,  x, f) > 0.0) {
-            direct::elem(sigma2.data, x, f) /= direct::elem(count.data, x, f);
+    for (int x = 0; x < w ; x++) {
+        const auto &divisor = direct::elem(count, x, f);
+        if (divisor > 0.0) {
+            direct::elem(sigma2, x, f) /= divisor;
         }
     }
 }
@@ -336,17 +328,15 @@ Image<RFLOAT> FscHelper::computeSignalSq(
 
     Image<RFLOAT> out(kc, fc);
 
-    const RFLOAT eps = 1e-3;
-
     for (int f = 0; f < fc; f++)
     for (int k = 0; k < kc; k++) {
         RFLOAT c  = direct::elem(frc.data,    k, f);
         RFLOAT s2 = direct::elem(sigma2.data, k, f);
 
-        if (c < eps) {
+        if (c < epsilon) {
             direct::elem(out.data, k, f) = 0.0;
         } else {
-            if (c > 1.0 - eps) { c = 1.0 - eps; }
+            if (c > 1.0 - epsilon) { c = 1.0 - epsilon; }
             RFLOAT snr2 = c / (1.0 - c);
             direct::elem(out.data, k, f) = snr2 * s2;
         }
@@ -432,8 +422,6 @@ std::vector<d2Vector> FscHelper::fitBfactors(
         avgFsc[k] /= wsum;
     }
 
-    const double eps = 1e-3;
-
     for (int i = 0; i < ic; i++) {
         d2Matrix A(0.0, 0.0, 0.0, 0.0);
         d2Vector b(0.0, 0.0);
@@ -442,11 +430,11 @@ std::vector<d2Vector> FscHelper::fitBfactors(
             RFLOAT fsc = direct::elem(table.data, i, k);
             RFLOAT fscA = avgFsc[k];
 
-            if (fsc < eps || fscA < eps) continue;
+            if (fsc < epsilon || fscA < epsilon) continue;
 
             RFLOAT t = sqrt((fsc - fsc * fscA) / (fscA - fsc * fscA));
 
-            if (t < eps) continue;
+            if (t < epsilon) continue;
 
             RFLOAT w = t * t * direct::elem(weight.data, i, k);
             RFLOAT x = k * k;
@@ -492,14 +480,12 @@ Image<RFLOAT> FscHelper::tauRatio(
         avgFsc[k] /= wsum;
     }
 
-    const double eps = 1e-3;
-
     for (int i = 0; i < ic; i++) {
         for (int k = 0; k < kc; k++) {
             RFLOAT fsc = direct::elem(table.data, i, k);
             RFLOAT fscA = avgFsc[k];
 
-            if (fsc < eps || fscA < eps) continue;
+            if (fsc < epsilon || fscA < epsilon) continue;
 
             direct::elem(out.data, i, k) = (fsc - fsc * fscA) / (fscA - fsc * fscA);
         }
@@ -525,7 +511,7 @@ void FscHelper::computeBfactors(
 
 std::vector<double> FscHelper::powerSpectrum3D(const Image<Complex> &img) {
     const int sh = img.data.xdim;
-    const int s = img.data.ydim;
+    const int s  = img.data.ydim;
 
     std::vector<double> sum(sh, 0.0), wgh(sh, 0.0);
 
@@ -536,8 +522,7 @@ std::vector<double> FscHelper::powerSpectrum3D(const Image<Complex> &img) {
         const double yy = y < sh ? y : y - s;
         const double zz = z < sh ? z : z - s;
 
-        const double r = sqrt(xx * xx + yy * yy + zz * zz);
-        const int ri = round(r);
+        const int ri = round(euclid(xx, yy, zz));
 
         if (ri < sh) {
             sum[ri] += direct::elem(img.data, x, y, z).norm();
@@ -579,4 +564,3 @@ double BFactorFit::f(const std::vector<double> &x, void *tempStorage) const {
 
     return sum;
 }
-

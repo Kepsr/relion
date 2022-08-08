@@ -74,7 +74,7 @@ void Postprocessing::read(int argc, char **argv) {
 
     // Check for errors in the command-line option
     if (parser.checkForErrors())
-        REPORT_ERROR("Errors encountered on the command line (see above), exiting...");
+        REPORT_ERROR("Errors encountered on the command line (see above). Exiting...");
 }
 
 void Postprocessing::usage() {
@@ -83,7 +83,7 @@ void Postprocessing::usage() {
 
 void Postprocessing::clear() {
     fn_I1 = fn_I2 = "";
-    fn_out="postprocess";
+    fn_out = "postprocess";
     angpix = 1.0;
     mtf_angpix = 1.0;
     do_auto_mask = false;
@@ -106,11 +106,8 @@ void Postprocessing::clear() {
 
 void Postprocessing::initialise() {
     // Read in the input maps
-    if (fn_I2 == "") {
-        if (!fn_I1.getTheOtherHalf(fn_I2))
-            REPORT_ERROR("The input filename does not contain 'half1' or 'half2'");
-    }
-
+    if (fn_I2.empty() && !fn_I1.getTheOtherHalf(fn_I2))
+        REPORT_ERROR("The input filename does not contain 'half1' or 'half2'");
 
     if (verb > 0) {
         std::cout << "== Reading input half-reconstructions: " << std::endl;
@@ -144,20 +141,20 @@ void Postprocessing::initialise() {
         frac_molweight = 0.476 * std::pow(Xsize(I1()) * angpix, 3) * 0.81 / ( molweight * 1000) ;
         if (verb > 0) {
             std::cout.width(35);
-            std::cout << std::left << "  + ordered molecular weight (kDa): ";
-            std::cout << molweight << std::endl;
+            std::cout << std::left << "  + ordered molecular weight (kDa): "
+                      << molweight << std::endl;
             std::cout.width(35);
-            std::cout << std::left << "  + fraction f (molweight based): ";
-            std::cout << frac_molweight << std::endl;
+            std::cout << std::left << "  + fraction f (molweight based): "
+                      << frac_molweight << std::endl;
         }
     }
 
     if (!I1().sameShape(I2())) {
-        std::cerr << " Size of half1 map: "; 
-        I1().printShape(std::cerr); 
+        std::cerr << " Size of half1 map: ";
+        I1().printShape(std::cerr);
         std::cerr << std::endl;
-        std::cerr << " Size of half2 map: "; 
-        I2().printShape(std::cerr); 
+        std::cerr << " Size of half2 map: ";
+        I2().printShape(std::cerr);
         std::cerr << std::endl;
         REPORT_ERROR("Postprocessing::initialise ERROR: The two half reconstructions are not of the same size!");
     }
@@ -168,7 +165,7 @@ void Postprocessing::initialise() {
         if (locres_edgwidth < 0.0)
             locres_edgwidth = locres_sampling;
 
-        if (fn_mask != "" && verb > 0)
+        if (!fn_mask.empty() && verb > 0)
             std::cerr << " WARNING: --mask is used only to make a histogram of local resolutions; it is not used for local resolution calculation itself." << std::endl;
         if (do_auto_bfac)
             REPORT_ERROR("Postprocessing::initialise ERROR: for --locres, you cannot do --auto_bfac, use --adhoc_bfac instead!");
@@ -182,122 +179,121 @@ void Postprocessing::initialise() {
 }
 
 bool Postprocessing::getMask() {
-    if (fn_mask != "") {
-        if (verb > 0) {
-            std::cout << "== Using a user-provided mask ... " <<std::endl;
-            std::cout.width(35); std::cout << std::left   << "  + input mask: "; std::cout  << fn_mask <<std::endl;
-        }
 
-        // Read the mask in memory
-        Im.read(fn_mask);
-        Im().setXmippOrigin();
-
-        // Check values are between 0 and 1
-        Stats<RFLOAT> stats = Im().computeStats();
-        RFLOAT avg    = stats.avg;
-
-        long summask = 0;
-        for (auto &x : Im()) { if (x > 0.5) { summask++; } }
-        avg = (RFLOAT) summask / (RFLOAT) Im().size();
-        frac_solvent_mask = 0.476 / avg;
-        molweight_frommask = avg * std::pow(Xsize(Im()) * angpix, 3) * 0.81;
-
-        if (verb > 0) {
-            std::cout.width(35); std::cout << std::left << "  + fraction f (solvent mask based): ";      std::cout  << frac_solvent_mask << std::endl;
-            std::cout.width(35); std::cout << std::left << "  + molecular weight inside protein mask: "; std::cout  << molweight_frommask << std::endl;
-        }
-
-        if (stats.min < -1e-6 || stats.max - 1.0 > 1.e-6) {
-            std::cerr << " stats.min= " << stats.min << " stats.max= " << stats.max << std::endl;
-            REPORT_ERROR("Postprocessing::mask ERROR: mask values not in range [0,1]!");
-        }
-
-        // Also check the mask is the same size as the input maps
-        if (!Im().sameShape(I2())) {
-            std::cerr << " Size of input mask: "; Im().printShape(std::cerr); std::cerr<< std::endl;
-            std::cerr << " Size of input maps: "; I1().printShape(std::cerr); std::cerr<< std::endl;
-            REPORT_ERROR("Postprocessing::mask ERROR: mask and input maps do not have the same size!");
-        }
-
-    } else {
+    if (fn_mask.empty()) {
         if (verb > 0) {
             std::cout << "== Not performing any masking ... " << std::endl;
             frac_solvent_mask = 0.0;
         }
         return false;
     }
+
+    if (verb > 0) {
+        std::cout << "== Using a user-provided mask ... " << std::endl;
+        std::cout.width(35);
+        std::cout << std::left << "  + input mask: " << fn_mask << std::endl;
+    }
+
+    // Read the mask in memory
+    Im.read(fn_mask);
+    Im().setXmippOrigin();
+
+    // Check values are between 0 and 1
+    const Stats<RFLOAT> stats = Im().computeStats();
+
+    const long summask = std::count_if(Im().begin(), Im().end(),
+        [&] (RFLOAT x) { return x > 0.5; });
+    const RFLOAT avg = (RFLOAT) summask / (RFLOAT) Im().size();
+    frac_solvent_mask = 0.476 / avg;
+    molweight_frommask = avg * std::pow(Xsize(Im()) * angpix, 3) * 0.81;
+
+    if (verb > 0) {
+        std::cout.width(35); std::cout << std::left << "  + fraction f (solvent mask based): ";      std::cout  << frac_solvent_mask << std::endl;
+        std::cout.width(35); std::cout << std::left << "  + molecular weight inside protein mask: "; std::cout  << molweight_frommask << std::endl;
+    }
+
+    if (stats.min < -1e-6 || stats.max - 1.0 > 1.e-6) {
+        std::cerr << " stats.min= " << stats.min << " stats.max= " << stats.max << std::endl;
+        REPORT_ERROR("Postprocessing::mask ERROR: mask values not in range [0,1]!");
+    }
+
+    // Also check the mask is the same size as the input maps
+    if (!Im().sameShape(I2())) {
+        std::cerr << " Size of input mask: "; Im().printShape(std::cerr); std::cerr<< std::endl;
+        std::cerr << " Size of input maps: "; I1().printShape(std::cerr); std::cerr<< std::endl;
+        REPORT_ERROR("Postprocessing::mask ERROR: mask and input maps do not have the same size!");
+    }
+
     return true;
 }
 
 void Postprocessing::divideByMtf(MultidimArray<Complex> &FT) {
-    if (fn_mtf != "") {
-        if (verb > 0) {
-            std::cout << "== Dividing map by the MTF of the detector ..." << std::endl;
-            std::cout.width(35); std::cout << std::left <<"  + mtf STAR-file: "; std::cout << fn_mtf << std::endl;
+    if (fn_mtf.empty()) return;
+
+    if (verb > 0) {
+        std::cout << "== Dividing map by the MTF of the detector ..." << std::endl;
+        std::cout.width(35); std::cout << std::left <<"  + mtf STAR-file: "; std::cout << fn_mtf << std::endl;
+    }
+
+    if (!fn_mtf.isStarFile())
+        REPORT_ERROR("Postprocessing::divideByMtf ERROR: input MTF file is not a STAR file.");
+
+    MetaDataTable MDmtf;
+    MDmtf.read(fn_mtf);
+    int i = MDmtf.numberOfObjects();
+    MultidimArray<RFLOAT> mtf_resol (i), mtf_value (i);
+
+    for (long int i : MDmtf) {
+        direct::elem(mtf_resol, i) = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL) / mtf_angpix; // resolution needs to be given in 1/Ang
+        direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
+        if (direct::elem(mtf_value, i) < 1e-10) {
+            std::cerr << " i= " << i << " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
+            REPORT_ERROR("Postprocessing::sharpenMap ERROR: zero or negative values encountered in MTF curve!");
+        }
+    }
+
+    i = MDmtf.numberOfObjects();
+    // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
+    const RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
+    if (res_per_elem < 1e-10)
+        REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
+
+    const auto xsize_ang = angpix * Xsize(I1());
+    const auto Nyquist = 0.5 / angpix;
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
+        const auto res = euclid((RFLOAT) ip, (RFLOAT) jp, (RFLOAT) kp) / xsize_ang; // Resolution in 1/Ang
+        if (res >= Nyquist) continue;
+        const int i_0 = floor(res / res_per_elem);
+        RFLOAT mtf;
+        // check boundaries of the array
+        if (i_0 >= mtf_value.size() - 1) {
+            mtf = direct::elem(mtf_value, mtf_value.size() - 1);
+        } else if (i_0 <= 0) {
+            mtf = direct::elem(mtf_value, 0);
+        } else {
+            // linear interpolation:
+            const RFLOAT x_0 = direct::elem(mtf_resol, i_0);
+            const RFLOAT y_0 = direct::elem(mtf_value, i_0);
+            const RFLOAT x_1 = direct::elem(mtf_resol, i_0 + 1);
+            const RFLOAT y_1 = direct::elem(mtf_value, i_0 + 1);
+            mtf = y_0 + (y_1 - y_0) * (res - x_0) / (x_1 - x_0);
         }
 
-        MetaDataTable MDmtf;
-
-        if (!fn_mtf.isStarFile())
-            REPORT_ERROR("Postprocessing::divideByMtf ERROR: input MTF file is not a STAR file.");
-
-        MDmtf.read(fn_mtf);
-        MultidimArray<RFLOAT> mtf_resol, mtf_value;
-        mtf_resol.resize(MDmtf.numberOfObjects());
-        mtf_value.resize(mtf_resol);
-
-        for (long int i : MDmtf) {
-            direct::elem(mtf_resol, i) = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL) / mtf_angpix; // resolution needs to be given in 1/Ang
-            direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
-            if (direct::elem(mtf_value, i) < 1e-10) {
-                std::cerr << " i= " << i << " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
-                REPORT_ERROR("Postprocessing::sharpenMap ERROR: zero or negative values encountered in MTF curve!");
-            }
-        }
-        int i = MDmtf.numberOfObjects();
-
-        // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
-        RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
-        if (res_per_elem < 1e-10) REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
-
-        RFLOAT xsize_ang = angpix * Xsize(I1());
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-            int r2 = ip * ip + jp * jp + kp * kp;
-            RFLOAT res = sqrt((RFLOAT) r2) / xsize_ang; // get resolution in 1/Ang
-            if (res < 1.0 / (2.0 * angpix)) {
-                int i_0 = floor(res / res_per_elem);
-                RFLOAT mtf;
-                // check boundaries of the array
-                if (i_0 >= mtf_value.size() - 1) {
-                    mtf = direct::elem(mtf_value, mtf_value.size() - 1);
-                } else if (i_0 <= 0) {
-                    mtf = direct::elem(mtf_value, 0);
-                } else {
-                    // linear interpolation:
-                    RFLOAT x_0 = direct::elem(mtf_resol, i_0);
-                    RFLOAT y_0 = direct::elem(mtf_value, i_0);
-                    RFLOAT x_1 = direct::elem(mtf_resol, i_0 + 1);
-                    RFLOAT y_1 = direct::elem(mtf_value, i_0 + 1);
-                    mtf = y_0 + (y_1 - y_0) * (res - x_0) / (x_1 - x_0);
-                }
-
-                // Divide Fourier component by the MTF
-                direct::elem(FT, i, j, k) /= mtf;
-            }
-        }
+        // Divide Fourier component by the MTF
+        direct::elem(FT, i, j, k) /= mtf;
     }
 }
 
 bool Postprocessing::findSurfacePixel(
     int idx, int kp, int ip, int jp,
     int &best_kpp, int &best_ipp, int &best_jpp,
-    int myradius_count, int search
+    int radius_count, int search
 ) {
     // bring kp, ip, jp onto the sphere
-    RFLOAT frac = (RFLOAT) myradius_count / (RFLOAT) idx;
-    int ipp = round(frac * ip);
-    int jpp = round(frac * jp);
-    int kpp = round(frac * kp);
+    const RFLOAT frac = (RFLOAT) radius_count / (RFLOAT) idx;
+    const int ipp = round(frac * ip);
+    const int jpp = round(frac * jp);
+    const int kpp = round(frac * kp);
 
     // Search +/- 2 pixels in all directions and choose voxel closest to the circle
     int best_dist = 999;
@@ -309,8 +305,8 @@ bool Postprocessing::findSurfacePixel(
     for (int jppp = jpp - search; jppp <= jpp + search; jppp++)
     for (int kppp = kpp - search; kppp <= kpp + search; kppp++) {
         // Distance to surface on the sphere
-        int dist = abs(round(sqrt((RFLOAT) euclidsq(ippp, jppp, kppp))) - myradius_count);
-        int reldist2 = euclidsq(ippp - ipp, jppp - jpp, kppp - kpp);
+        const int dist = abs(round(euclid((RFLOAT) ippp, (RFLOAT) jppp, (RFLOAT) kppp)) - radius_count);
+        const int reldist2 = euclidsq(ippp - ipp, jppp - jpp, kppp - kpp);
         if (dist < 0.5 && reldist2 < best_dist) {
             best_ipp = ippp;
             best_jpp = jppp;
@@ -319,7 +315,6 @@ bool Postprocessing::findSurfacePixel(
             found = true;
         }
     }
-
     return found;
 }
 
@@ -328,70 +323,62 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
     MultidimArray<Complex> &FT = transformer.FourierTransform(I);
 
     // First calculate radial average, to normalize the power spectrum
-    int myradius = Xsize(FT);
-    MultidimArray<int> radial_count(myradius);
-    MultidimArray<RFLOAT> num  = MultidimArray<RFLOAT>::zeros(myradius);
-    MultidimArray<RFLOAT> ravg = MultidimArray<RFLOAT>::zeros(myradius);
+    const int radius = Xsize(FT);
+    MultidimArray<int> radial_count(radius);
+    auto ravg = MultidimArray<RFLOAT>::zeros(radius);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int idx = round(sqrt(euclidsq(ip, jp, kp)));
-        if (idx >= myradius)
-            continue;
+        const int idx = round(euclid(ip, jp, kp));
+        if (idx >= radius) continue;
         ravg(idx) += norm(direct::elem(FT, i, j, k));
         radial_count(idx)++;
     }
     for (int i = Xinit(ravg); i <= Xlast(ravg); i++) {
-        if (radial_count(i) > 0) {
-            ravg(i) /= radial_count(i);
-        }
+        if (radial_count(i) > 0) { ravg(i) /= radial_count(i); }
     }
 
     // Apply correction only beyond low-res fitting of B-factors
-    int minr = floor(Xsize(FT) * angpix / fit_minres);
-    int myradius_count = minr;
+    const int radius_count = floor(Xsize(FT) * angpix / fit_minres);
     MultidimArray<RFLOAT> sum3d;
     MultidimArray<int> count3d;
-    sum3d.resize(2 * myradius_count + 4, 2 * myradius_count + 4, 2 * myradius_count + 4);
+    const int n = 2 * radius_count + 4;
+    sum3d.resize(n, n, n);
     sum3d.setXmippOrigin();
-    count3d.resize(sum3d);
+    count3d.resize(n, n, n);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int idx = round(sqrt(euclidsq(ip, jp, kp)));
-        // only correct from fit_minres to Nyquist
-        if (idx < minr || idx >= myradius)
-            continue;
+        const int idx = round(euclid(ip, jp, kp));
+        // Only correct from fit_minres to Nyquist
+        if (idx < radius_count || idx >= radius) continue;
 
         int best_kpp, best_ipp, best_jpp;
-        if (!findSurfacePixel(idx, kp, ip, jp, best_kpp, best_ipp, best_jpp, myradius_count, 2)) {
-            std::cerr << "Postprocessing::correctRadialAmplitudeDistribution ERROR! ip= " << ip << " jp= " << jp << " kp= " << kp << std::endl;
+        if (!findSurfacePixel(idx, kp, ip, jp, best_kpp, best_ipp, best_jpp, radius_count, 2)) {
+            std::cerr << "Postprocessing::correctRadialAmplitudeDistribution ERROR! "
+                "ip= " << ip << " jp= " << jp << " kp= " << kp << std::endl;
         }
 
         // Apply correction on the spectrum-corrected values!
-        RFLOAT aux = norm(direct::elem(FT, i, j, k)) / ravg(idx);
+        const RFLOAT aux = norm(direct::elem(FT, i, j, k)) / ravg(idx);
           sum3d.elem(best_ipp, best_jpp, best_kpp) += aux;
         count3d.elem(best_ipp, best_jpp, best_kpp) += 1;
     }
 
     // Average
-    for (long int n = 0; n < sum3d.size(); n++) {
-        if (count3d[n] > 0) {
-            sum3d[n] /= count3d[n];
-        }
-    }
+    for (long int n = 0; n < sum3d.size(); n++)
+        if (count3d[n] > 0) { sum3d[n] /= count3d[n]; }
 
     // Now divide all elements by the normalized correction term
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int idx = round(sqrt(euclidsq(ip, jp, kp)));
+        const int idx = round(euclid(ip, jp, kp));
         // only correct from fit_minres to Nyquist
-        if (idx < minr || idx >= myradius)
-            continue;
+        if (idx < radius_count || idx >= radius) continue;
 
-        int best_kpp, best_ipp, best_jpp;
-        if (!findSurfacePixel(idx, kp, ip, jp, best_kpp, best_ipp, best_jpp, myradius_count, 2)) {
-            std::cerr << "Postprocessing::correctRadialAmplitudeDistribution ERROR!  kp= " << kp << " ip= " << ip << " jp= " << jp << std::endl;
+        int best_ipp, best_jpp, best_kpp;
+        if (!findSurfacePixel(idx, kp, ip, jp, best_kpp, best_ipp, best_jpp, radius_count, 2)) {
+            std::cerr << "Postprocessing::correctRadialAmplitudeDistribution ERROR!  "
+                << "kp= " << kp << " ip= " << ip << " jp= " << jp << std::endl;
         }
 
         // Apply correction on the spectrum-corrected values!
-        RFLOAT aux = sqrt(sum3d.elem(best_ipp, best_jpp, best_kpp));
-        direct::elem(FT, i, j, k) /= aux;
+        direct::elem(FT, i, j, k) /= sqrt(sum3d.elem(best_ipp, best_jpp, best_kpp));
     }
 
     I = transformer.inverseFourierTransform(FT);
@@ -399,7 +386,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
 
 RFLOAT Postprocessing::sharpenMap() {
     FourierTransformer transformer;
-    MultidimArray<Complex> FT = transformer.FourierTransform(I1());
+    MultidimArray<Complex> &FT = transformer.FourierTransform(I1());
 
     makeGuinierPlot(FT, guinierin);
 
@@ -468,22 +455,26 @@ RFLOAT Postprocessing::sharpenMap() {
     return applied_filter;
 }
 
-void Postprocessing::calculateFSCtrue(
-    MultidimArray<RFLOAT> &fsc_true,   MultidimArray<RFLOAT> &fsc_unmasked,
-    MultidimArray<RFLOAT> &fsc_masked, MultidimArray<RFLOAT> &fsc_random_masked, 
+// Sometimes FSC becomes -1 at origin!
+inline void correct_origin(MultidimArray<RFLOAT> &fsc) {
+    auto &origin = direct::elem(fsc, 0);
+    if (origin <= 0.0) origin = 1.0;
+}
+
+MultidimArray<RFLOAT> Postprocessing::calculateFSCtrue(
+    MultidimArray<RFLOAT> &fsc_unmasked,
+    MultidimArray<RFLOAT> &fsc_masked, MultidimArray<RFLOAT> &fsc_random_masked,
     int randomize_at
 ) {
     // Now that we have fsc_masked and fsc_random_masked, calculate fsc_true according to Richard's formula
     // FSC_true = FSC_t - FSC_n / ( )
 
-    // Sometimes FSc at origin becomes -1!
-    if (direct::elem(fsc_masked, 0) <= 0.0)
-        direct::elem(fsc_masked, 0) = 1.0;
-    if (direct::elem(fsc_random_masked, 0) <= 0.0)
-        direct::elem(fsc_random_masked, 0) = 1.0;
+    correct_origin(fsc_masked);
+    correct_origin(fsc_random_masked);
 
-
+    MultidimArray<RFLOAT> fsc_true;
     fsc_true.resize(fsc_masked);
+
     for (long int i = 0; i < Xsize(fsc_true); i++) {
         // 29jan2015: let's move this 2 shells upwards, because of small artefacts near the resolution of randomisation!
         if (i < randomize_at + 2) {
@@ -494,45 +485,39 @@ void Postprocessing::calculateFSCtrue(
             direct::elem(fsc_true, i) = (fsct - fscn) / (1.0 - fscn);
         }
     }
+    return fsc_true;
 }
 
-void Postprocessing::calculateFSCpart(const MultidimArray<RFLOAT> fsc_unmasked, RFLOAT fraction, MultidimArray<RFLOAT> &fsc_part) {
+MultidimArray<RFLOAT> Postprocessing::calculateFSCpart(const MultidimArray<RFLOAT> &fsc_unmasked, RFLOAT fraction) {
     // Now that we have fsc_masked and fsc_random_masked, calculate fsc_true according to Richard's formula
     // FSC_true = FSC_t - FSC_n / ( )
 
-    // Sometimes FSc at origin becomes -1!
-    if (direct::elem(fsc_masked, 0) <= 0.0)
-        direct::elem(fsc_masked, 0) = 1.0;
-    if (direct::elem(fsc_random_masked, 0) <= 0.0)
-        direct::elem(fsc_random_masked, 0) = 1.0;
+    /// XXX: Not used
+    correct_origin(fsc_masked);
+    correct_origin(fsc_random_masked);
 
+    MultidimArray<RFLOAT> fsc_part;
     fsc_part.resize(fsc_unmasked);
+
     for (long int i = 0; i < Xsize(fsc_part); i++) {
-        direct::elem(fsc_part, i) = fraction * direct::elem(fsc_unmasked, i) / (1.0 + (fraction - 1) * direct::elem(fsc_unmasked, i));
+        const auto &x = direct::elem(fsc_unmasked, i);
+        direct::elem(fsc_part, i) = fraction * x / (1.0 + (fraction - 1) * x);
     }
 
 }
 
-void Postprocessing::applyFscWeighting(MultidimArray<Complex > &FT, MultidimArray<RFLOAT> my_fsc) {
+void Postprocessing::applyFscWeighting(MultidimArray<Complex> &FT, const MultidimArray<RFLOAT> &fsc_spectrum) {
     // Find resolution where fsc_true drops below zero for the first time
     // Set all weights to zero beyond that resolution
-    int ires_max = 0;
-
-    for (long int i = 0; i < Xsize(my_fsc); i++) {
-        if (direct::elem(my_fsc, i) < 0.0001)
-            break;
-        ires_max = i;
-    }
+    const auto search = std::find_if(fsc_spectrum.begin(), fsc_spectrum.end(),
+        [] (RFLOAT fsc) { return fsc < 0.0001; });
+    const int ires_max = search == fsc_spectrum.begin() ? 0 : search - 1 - fsc_spectrum.begin();
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int ires = round(euclid(ip, jp, kp));
+        const int ires = round(euclid(ip, jp, kp));
         if (ires <= ires_max) {
-            RFLOAT fsc = direct::elem(my_fsc, ires);
-            if (fsc > 0.0) {
-                direct::elem(FT, i, j, k) *= sqrt((2 * fsc) / (1 + fsc));
-            } else {
-                direct::elem(FT, i, j, k) = 0.0;
-            }
+            const RFLOAT fsc = direct::elem(fsc_spectrum, ires);
+            direct::elem(FT, i, j, k) *= sqrt(2 * fsc / (1 + fsc));
         } else {
             direct::elem(FT, i, j, k) = 0.0;
         }
@@ -544,8 +529,7 @@ void Postprocessing::makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fi
     MultidimArray<RFLOAT> lnF(Xsize(FT));
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        int r2 = ip * ip + jp * jp + kp * kp;
-        int ires = round(sqrt((RFLOAT)r2));
+        int ires = round(euclid(ip, jp, kp));
         if (ires < Xsize(radial_count)) {
             lnF(ires) += abs(direct::elem(FT, i, j, k));
             radial_count(ires)++;
@@ -584,13 +568,12 @@ void Postprocessing::writeOutput() {
     writeMaps(fn_out);
 
     // Write an output STAR file with FSC curves, Guinier plots etc
-    std::ofstream  fh;
     fn_tmp = fn_out + ".star";
     if (verb > 0) {
         std::cout.width(35); std::cout << std::left << "  + Metadata file: "; std::cout << fn_tmp << std::endl;
     }
 
-    fh.open((fn_tmp).c_str(), std::ios::out);
+    std::ofstream fh ((fn_tmp).c_str(), std::ios::out);
     if (!fh)
         REPORT_ERROR((std::string) "MlOptimiser::write: Cannot write file: " + fn_tmp);
 
@@ -659,7 +642,7 @@ void Postprocessing::writeOutput() {
     MDfsc.write(fh);
 
     // Write a plot with the FSC curves
-    std::string title= "Final resolution = " + floatToString(global_resol, 5, 2) + " Angstroms";
+    const std::string title = "Final resolution = " + floatToString(global_resol, 5, 2) + " Angstroms";
     CPlot2D *plot2D = new CPlot2D(title);
     plot2D->SetXAxisSize(600);
     plot2D->SetYAxisSize(400);
@@ -698,7 +681,7 @@ void Postprocessing::writeOutput() {
         MDguinier.addObject();
         MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, guinierin[i].x);
         MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_IN,      guinierin[i].y);
-        if (fn_mtf != "")
+        if (!fn_mtf.empty())
             MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_INVMTF, guinierinvmtf[i].y);
         if (do_fsc_weighting) {
             MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y);
@@ -720,37 +703,36 @@ void Postprocessing::writeOutput() {
             MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_INTERCEPT, global_intercept);
     }
     MDguinier.write(fh);
-    fh.close();
 
     CPlot2D *plot2Dc = new CPlot2D("Guinier plots");
     plot2Dc->SetXAxisSize(600);
     plot2Dc->SetYAxisSize(400);
     MDguinier.addToCPlot2D(
-        plot2Dc, 
-        EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, 
-        EMDL::POSTPROCESS_GUINIER_VALUE_IN, 
+        plot2Dc,
+        EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
+        EMDL::POSTPROCESS_GUINIER_VALUE_IN,
         0.0, 0.0, 0.0
     );
-    if (fn_mtf != "")
+    if (!fn_mtf.empty())
         MDguinier.addToCPlot2D(
-            plot2Dc, 
-            EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, 
-            EMDL::POSTPROCESS_GUINIER_VALUE_INVMTF, 
+            plot2Dc,
+            EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
+            EMDL::POSTPROCESS_GUINIER_VALUE_INVMTF,
             0.0, 1.0, 0.0
         );
     if (do_fsc_weighting) {
         MDextra1.addToCPlot2D(
-            plot2Dc, 
-            EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, 
-            EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, 
+            plot2Dc,
+            EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
+            EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED,
             0.0, 0.0, 1.0
         );
     }
     if (do_auto_bfac || abs(adhoc_bfac) > 0.0) {
         MDextra2.addToCPlot2D(
-            plot2Dc, 
-            EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, 
-            EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, 
+            plot2Dc,
+            EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
+            EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED,
             1.0, 0.0, 0.0
         );
     }
@@ -785,7 +767,7 @@ void Postprocessing::writeMaps(FileName fn_root) {
     }
 
     // Also write the masked postprocessed map
-    if (fn_mask != "") {
+    if (!fn_mask.empty()) {
         fn_tmp = fn_root + "_masked.mrc";
         I1() *= Im();
         I1.setStatisticsInHeader();
@@ -798,10 +780,9 @@ void Postprocessing::writeMaps(FileName fn_root) {
 
 void Postprocessing::writeFscXml(MetaDataTable &MDfsc) {
     FileName fn_fsc = fn_out + "_fsc.xml";
-    std::ofstream  fh;
-    fh.open((fn_fsc).c_str(), std::ios::out);
+    std::ofstream fh (fn_fsc.c_str(), std::ios::out);
     if (!fh)
-        REPORT_ERROR( (std::string)"MetaDataTable::write Cannot write to file: " + fn_fsc);
+        REPORT_ERROR((std::string) "MetaDataTable::write Cannot write to file: " + fn_fsc);
 
     fh << "<fsc title=\"RELION masked-corrected FSC\" xaxis=\"Resolution (A-1)\" yaxis=\"Correlation Coefficient\">"<<std::endl;
 
@@ -814,7 +795,6 @@ void Postprocessing::writeFscXml(MetaDataTable &MDfsc) {
         fh << "  </coordinate>" << std::endl;
     }
     fh << "</fsc>" << std::endl;
-    fh.close();
 }
 
 void Postprocessing::run_locres(int rank, int size) {
@@ -822,7 +802,7 @@ void Postprocessing::run_locres(int rank, int size) {
     initialise();
 
     // Also read the user-provided mask
-    //getMask();
+    // getMask();
 
     MultidimArray<RFLOAT> I1m, I2m, I1p, I2p, Isum, locmask;
 
@@ -856,7 +836,7 @@ void Postprocessing::run_locres(int rank, int size) {
     int edgewidth_pix = round(locres_edgwidth / angpix);
 
     // Get the unmasked FSC curve
-    getFSC(I1(), I2(), fsc_unmasked);
+    fsc_unmasked = getFSC(I1(), I2());
 
     // Randomize phases of unmasked maps from user-provided resolution
     int randomize_at = Xsize(I1()) * angpix / locres_randomize_fsc;
@@ -908,16 +888,16 @@ void Postprocessing::run_locres(int rank, int size) {
                 // FSC of masked maps
                 I1m = I1() * locmask;
                 I2m = I2() * locmask;
-                getFSC(I1m, I2m, fsc_masked);
+                fsc_masked = getFSC(I1m, I2m);
 
                 // FSC of masked randomized-phase map
                 I1m = I1p * locmask;
                 I2m = I2p * locmask;
-                getFSC(I1m, I2m, fsc_random_masked);
+                fsc_random_masked = getFSC(I1m, I2m);
 
                 // Now that we have fsc_masked and fsc_random_masked, calculate fsc_true according to Richard's formula
                 // FSC_true = FSC_t - FSC_n / ( )
-                calculateFSCtrue(fsc_true, fsc_unmasked, fsc_masked, fsc_random_masked, randomize_at);
+                fsc_true = calculateFSCtrue(fsc_unmasked, fsc_masked, fsc_random_masked, randomize_at);
 
                 if (rank == 0) {
                     MetaDataTable MDfsc;
@@ -970,7 +950,6 @@ void Postprocessing::run_locres(int rank, int size) {
         }
     }
 
-    fh.close();
     if (verb > 0)
         init_progress_bar(nr_samplings);
 
@@ -1016,7 +995,7 @@ void Postprocessing::run_locres(int rank, int size) {
         I1.write(fn_tmp);
         #endif
 
-        if (fn_mask != "") {
+        if (!fn_mask.empty()) {
             std::cout << "Calculating a histogram of local resolutions within the mask." << std::endl;
 
             Image<RFLOAT> Imask;
@@ -1060,9 +1039,12 @@ void Postprocessing::run() {
     }
 
     // Calculate FSC of the unmask maps
-    getFSC(I1(), I2(), fsc_unmasked);
-    if (do_ampl_corr)
-        getAmplitudeCorrelationAndDifferentialPhaseResidual(I1(), I2(), acorr_unmasked, dpr_unmasked);
+    fsc_unmasked = getFSC(I1(), I2());
+    if (do_ampl_corr) {
+        auto acorr_and_dpr = getAmplitudeCorrelationAndDifferentialPhaseResidual(I1(), I2());
+        acorr_unmasked = std::move(acorr_and_dpr.first);
+        dpr_unmasked   = std::move(acorr_and_dpr.second);
+    }
 
     // Check whether we'll do masking
     do_mask = getMask();
@@ -1070,12 +1052,17 @@ void Postprocessing::run() {
         if (verb > 0) {
             std::cout << "== Masking input maps ..." << std::endl;
         }
+
         // Mask I1 and I2 and calculated fsc_masked
         I1() *= Im();
         I2() *= Im();
-        getFSC(I1(), I2(), fsc_masked);
-        if (do_ampl_corr)
-            getAmplitudeCorrelationAndDifferentialPhaseResidual(I1(), I2(), acorr_masked, dpr_masked);
+
+        fsc_masked = getFSC(I1(), I2());
+        if (do_ampl_corr) {
+            auto acorr_and_dpr = getAmplitudeCorrelationAndDifferentialPhaseResidual(I1(), I2());
+            acorr_masked = std::move(acorr_and_dpr.first);
+            dpr_masked   = std::move(acorr_and_dpr.second);
+        }
 
         // To save memory re-read the same input maps again and randomize phases before masking
         I1.read(fn_I1);
@@ -1084,41 +1071,40 @@ void Postprocessing::run() {
         I2().setXmippOrigin();
 
         // Check at which resolution shell the FSC drops below randomize_fsc_at
-        randomize_at = -1;
+        randomize_at = [&] () -> int {
+            if (randomize_at_A > 0.0)
+                return angpix * Xsize(I1()) / randomize_at_A;
 
-        if (randomize_at_A > 0.0) {
-            randomize_at = (int) (angpix * Xsize(I1()) / randomize_at_A );
-        } else {
             // Check when FSC drops below randomize_fsc_at
-            for (long int i = 0; i < Xsize(fsc_unmasked); i++) {
-                if (i > 0 && direct::elem(fsc_unmasked, i) < randomize_fsc_at) {
-                    randomize_at = i;
-                    break;
-                }
-            }
-        }
+            // Precondition: fsc_unmask.size() > 1
+            const auto search = std::find_if(
+                fsc_unmasked.begin() + 1, fsc_unmasked.end(),
+                [&] (RFLOAT fsc) { return fsc < randomize_fsc_at; }
+            );
+            if (search == fsc_unmasked.end())
+                REPORT_ERROR("Postprocessing::run ERROR: FSC curve never drops below randomize_fsc_at.");
+            return search - fsc_unmasked.begin();
+        }();  // Postcondition: randomize_at > 0
+
         if (verb > 0) {
             std::cout.width(35); std::cout << std::left << "  + randomize phases beyond: "; std::cout << Xsize(I1()) * angpix / randomize_at << " Angstroms" << std::endl;
         }
-        if (randomize_at > 0) {
-            randomizePhasesBeyond(I1(), randomize_at);
-            randomizePhasesBeyond(I2(), randomize_at);
-            // Mask randomized phases maps and calculated fsc_random_masked
-            I1() *= Im();
-            I2() *= Im();
-            getFSC(I1(), I2(), fsc_random_masked);
-        } else {
-            REPORT_ERROR("Postprocessing::run ERROR: FSC curve never drops below randomize_fsc_at.");
-        }
+
+        randomizePhasesBeyond(I1(), randomize_at);
+        randomizePhasesBeyond(I2(), randomize_at);
+        // Mask randomized phases maps and calculated fsc_random_masked
+        I1() *= Im();
+        I2() *= Im();
+        fsc_random_masked = getFSC(I1(), I2());
 
         // Now that we have fsc_masked and fsc_random_masked, calculate fsc_true according to Richard's formula
         // FSC_true = FSC_t - FSC_n / ( )
-        calculateFSCtrue(fsc_true, fsc_unmasked, fsc_masked, fsc_random_masked, randomize_at);
+        fsc_true = calculateFSCtrue(fsc_unmasked, fsc_masked, fsc_random_masked, randomize_at);
 
         // Also calculate cisTEM-like corrected part_FSC based on expected ordered molecular weight
-        calculateFSCpart(fsc_unmasked, frac_molweight, fsc_part_molweight);
+        fsc_part_molweight = calculateFSCpart(fsc_unmasked, frac_molweight);
         // and based on fraction of white voxels in the solvent mask used for RELION-correction
-        calculateFSCpart(fsc_unmasked, frac_solvent_mask, fsc_part_fracmask);
+        fsc_part_fracmask = calculateFSCpart(fsc_unmasked, frac_solvent_mask);
 
         // Now re-read the original maps yet again into memory
         I1.read(fn_I1);
@@ -1130,46 +1116,46 @@ void Postprocessing::run() {
         fsc_true = fsc_unmasked;
     }
 
-    global_resol = 999.0;
+    const auto is_insignificant = [] (RFLOAT fsc) { return fsc < 0.143; };
+
     // See where corrected FSC drops below 0.143
-    int global_resol_i = 0;
-    for (long int i = 0; i < Xsize(fsc_true); i++) {
-        if (direct::elem(fsc_true, i) < 0.143) break;
-        global_resol = Xsize(I1()) * angpix / (RFLOAT) i;
-        global_resol_i = i;
-    }
+    const auto search = std::find_if(fsc_true.begin(), fsc_true.end(), is_insignificant);
+    const int global_resol_i = search == fsc_true.begin() ? 0 : search - 1 - fsc_true.begin();
+    global_resol = search == fsc_true.begin() ? 999.0 : Xsize(I1()) * angpix / (RFLOAT) global_resol_i;
 
     // Perform some checks on phase-randomisation..
     if (do_mask) {
-        int unmasked_resol_i = 0;
-        for (long int i = 0; i < Xsize(fsc_unmasked); i++) {
-            if (direct::elem(fsc_unmasked, i) < 0.143) break;
-            unmasked_resol_i = i;
-        }
+
+        const auto search = std::find_if(fsc_unmasked.begin(), fsc_unmasked.end(), is_insignificant);
+        const int unmasked_resol_i = search == fsc_true.begin() ? 0 : search - 1 - fsc_unmasked.begin();
+
         // Check whether global_resol is worse than the unmasked one
         if (unmasked_resol_i > global_resol_i) {
             if (force_mask) {
                 std::cerr << " WARNING: the unmasked FSC extends beyond the solvent-corrected FSC." << std::endl;
             } else {
-                std::cerr << " WARNING: the unmasked FSC extends beyond the solvent-corrected FSC. Skip masking for now, but you may want to adjust you mask!" << std::endl;
-                std::cerr << "          You can force the mask by the '--force_mask' option." << std::endl;
+                std::cerr << " WARNING: the unmasked FSC extends beyond the solvent-corrected FSC. "
+                             "Skip masking for now, but you may want to adjust your mask!\n"
+                             "          You can force the mask with the '--force_mask' option." << std::endl;
                 fsc_true = fsc_unmasked;
                 global_resol = Xsize(I1()) * angpix / (RFLOAT) unmasked_resol_i;
             }
         } else if (direct::elem(fsc_random_masked, global_resol_i) > 0.1) {
             // Check whether the phase-randomised FSC is less than 5% at the resolution estimate, otherwise warn the user
-            std::cerr << " WARNING: The phase-randomised FSC is larger than 0.10 at the estimated resolution!" << std::endl;
-            std::cerr << " WARNING: This may result in an incorrect resolution estimation. Provide a softer mask with less features to get lower phase-randomised FSCs." << std::endl;
+            std::cerr << " WARNING: The phase-randomised FSC is larger than 0.10 at the estimated resolution!\n"
+                         " WARNING: This may result in an incorrect resolution estimation. "
+                         "Provide a softer, less featureful mask to get lower phase-randomised FSCs." << std::endl;
         }
     }
 
     // Add the two half-maps together for subsequent sharpening
     I1() += I2();
-    for (auto &x : I1()) { x *= 0.5; }
+    I1() *= 0.5;
+    /// TODO: Expression templates
 
     // Divide by MTF and perform FSC-weighted B-factor sharpening, as in Rosenthal and Henderson, 2003
     // also low-pass filters...
-    RFLOAT applied_filter = sharpenMap();
+    const RFLOAT applied_filter = sharpenMap();
 
     // Write original and corrected FSC curve, Guinier plot, etc.
     writeOutput();

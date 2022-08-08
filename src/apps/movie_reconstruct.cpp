@@ -435,7 +435,7 @@ void MovieReconstructor::backproject(int rank, int size) {
                 Fparticle() = transformer[this_subset - 1].FourierTransform(Iparticle());
                 if (output_boxsize != movie_boxsize)
                     Fparticle = FilterHelper::cropCorner2D(Fparticle, output_boxsize / 2 + 1, output_boxsize);
-                shiftImageInFourierTransform(Fparticle(), Fparticle(), output_boxsize, dxR / angpix, dyR / angpix);
+                shiftImageInFourierTransform(Fparticle(), output_boxsize, dxR / angpix, dyR / angpix);
                 CenterFFTbySign(Fparticle());
 
                 backprojectOneParticle(mdts[imov], ipart, Fparticle(), this_subset);

@@ -346,8 +346,7 @@ class image_handler_parameters {
                 // Looks like a job for expression templates
             }
         } else if (!fn_fsc.empty()) {
-            MultidimArray<RFLOAT> fsc;
-            getFSC(Iout(), Iop(), fsc);
+            MultidimArray<RFLOAT> fsc = getFSC(Iout(), Iop());
             MetaDataTable MDfsc;
             MDfsc.setName("fsc");
             for (long int i = 0; i < Xsize(fsc); i++) {

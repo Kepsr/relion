@@ -27,9 +27,7 @@ void FourierHelper::FourierShift2D(MultidimArray<Complex> &img, RFLOAT xshift, R
     xshift /= h;
     yshift /= h;
 
-    if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) {
-        return;
-    }
+    if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) return;
 
     for (long int yy = 0; yy < h; yy++)
     for (long int xx = 0; xx < w; xx++) {
@@ -50,9 +48,9 @@ void FourierHelper::FourierShift2D(
     MultidimArray<RFLOAT> &img, RFLOAT xshift, RFLOAT yshift
 ) {
     FourierTransformer ft;
-    MultidimArray<Complex> imgC = ft.FourierTransform(img);
+    MultidimArray<Complex> &imgC = ft.FourierTransform(img);
     // FourierShift2D(imgC, xshift, yshift);
-    shiftImageInFourierTransform(imgC, imgC, img.ydim, xshift, yshift);
+    shiftImageInFourierTransform(imgC, img.ydim, xshift, yshift);
 
-    img = ft.inverseFourierTransform(imgC);  // std::move?
+    img = ft.inverseFourierTransform(imgC);
 }

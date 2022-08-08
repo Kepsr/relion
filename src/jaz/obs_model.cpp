@@ -307,7 +307,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     proj.get2DFourierTransform(pred, A3D);
 
     if (applyShift) {
-        shiftImageInFourierTransform(pred, pred, s_out, s_out / 2 - xoff, s_out / 2 - yoff);
+        shiftImageInFourierTransform(pred, s_out, s_out / 2 - xoff, s_out / 2 - yoff);
     }
 
     if (applyCtf) {

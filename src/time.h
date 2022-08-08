@@ -275,7 +275,7 @@ class Timer {
 
     void initZero();
 
-    int setNew(const std::string tag);
+    int setNew(const std::string &tag);
 
     void tic(int timer);
 

@@ -48,7 +48,7 @@ Image<RFLOAT> MotionRefinement::recompose(
         imgC() = ft.FourierTransform(obs2());
 
         if (pos[2 * i] != 0.0 || pos[2 * i + 1] != 0.0) {
-            shiftImageInFourierTransform(imgC(), imgC(), imgC.data.ydim, -pos[2 * i], -pos[2 * i + 1]);
+            shiftImageInFourierTransform(imgC(), imgC.data.ydim, -pos[2 * i], -pos[2 * i + 1]);
         }
 
         ImageOp::linearCombination(imgC, outC, 1.0, 1.0 / (double) ic, outC);
@@ -76,7 +76,7 @@ Image<RFLOAT> MotionRefinement::recompose(
 
         if (pos[2 * i] != 0.0 || pos[2 * i + 1] != 0.0) {
             shiftImageInFourierTransform(
-                imgC(), imgC(), imgC.data.ydim, -pos[2 * i], -pos[2 * i + 1]
+                imgC(), imgC.data.ydim, -pos[2 * i], -pos[2 * i + 1]
             );
         }
 

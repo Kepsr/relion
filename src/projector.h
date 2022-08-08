@@ -235,17 +235,16 @@ class Projector {
     * Go from the Projector-centered fourier transform back to FFTW-uncentered one
     */
     template<typename T>
-    void decenter(MultidimArray<T> &Min, MultidimArray<T> &Mout, int my_rmax2) {
+    void decenter(const MultidimArray<T> &Min, MultidimArray<T> &Mout, int my_rmax2) {
 
         // Mout should already have the right size
         // Initialize to zero
         Mout.initZeros();
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
-            if (kp * kp + ip * ip + jp * jp <= my_rmax2)
+            if (euclidsq(ip, jp, kp) <= my_rmax2)
                 direct::elem(Mout, i, j, k) = Min.elem(ip, jp, kp);
         }
     }
-
 
     /*
     * Get a 2D Fourier Transform from the 2D or 3D data array
