@@ -32,7 +32,7 @@ if (ptr.getDevicePtr() == NULL)
 if (ptr.getAllocator() == NULL)
 	printf("DEBUG_WARNING: getArgMaxOnDevice called with null allocator.\n");
 #endif
-	AccPtr<cub::KeyValuePair<int, T> >  max_pair(1, ptr.getStream(), ptr.getAllocator());
+	AccPtr<cub::KeyValuePair<int, T> >  max_pair(1, ptr.getAllocator(), ptr.getStream());
 	max_pair.deviceAlloc();
 	size_t temp_storage_size = 0;
 
@@ -68,7 +68,7 @@ if (ptr.getDevicePtr() == NULL)
 if (ptr.getAllocator() == NULL)
 	printf("DEBUG_WARNING: getArgMinOnDevice called with null allocator.\n");
 #endif
-	AccPtr<cub::KeyValuePair<int, T> >  min_pair(1, ptr.getStream(), ptr.getAllocator());
+	AccPtr<cub::KeyValuePair<int, T> >  min_pair(1, ptr.getAllocator(), ptr.getStream());
 	min_pair.deviceAlloc();
 	size_t temp_storage_size = 0;
 
@@ -104,7 +104,7 @@ if (ptr.getDevicePtr() == NULL)
 if (ptr.getAllocator() == NULL)
 	printf("DEBUG_ERROR: getMaxOnDevice called with null allocator.\n");
 #endif
-	AccPtr<T>  max_val(1, ptr.getStream(), ptr.getAllocator());
+	AccPtr<T>  max_val(1, ptr.getAllocator(), ptr.getStream());
 	max_val.deviceAlloc();
 	size_t temp_storage_size = 0;
 
@@ -136,7 +136,7 @@ if (ptr.getDevicePtr() == NULL)
 if (ptr.getAllocator() == NULL)
 	printf("DEBUG_ERROR: getMinOnDevice called with null allocator.\n");
 #endif
-	AccPtr<T>  min_val(1, ptr.getStream(), ptr.getAllocator());
+	AccPtr<T> min_val(1, ptr.getAllocator(), ptr.getStream());
 	min_val.deviceAlloc();
 	size_t temp_storage_size = 0;
 
@@ -168,7 +168,7 @@ if (ptr.getDevicePtr() == NULL)
 if (ptr.getAllocator() == NULL)
 	printf("DEBUG_ERROR: getSumOnDevice called with null allocator.\n");
 #endif
-	AccPtr<T>  val(1, ptr.getStream(), ptr.getAllocator());
+	AccPtr<T> val (1, ptr.getAllocator(), ptr.getStream());
 	val.deviceAlloc();
 	size_t temp_storage_size = 0;
 
@@ -303,7 +303,7 @@ if (in.getAllocator() == NULL)
 
 	cudaStream_t stream = in.getStream();
 
-	AccPtr<int>  num_selected_out(1, stream, in.getAllocator());
+	AccPtr<int> num_selected_out(1, in.getAllocator(), stream);
 	num_selected_out.deviceAlloc();
 
 	DEBUG_HANDLE_ERROR(cub::DeviceSelect::If(NULL, temp_storage_size, ~in, ~out, ~num_selected_out, in.getSize(), select_op, stream));

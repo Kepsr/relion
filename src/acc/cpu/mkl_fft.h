@@ -250,14 +250,14 @@ public:
 		if ((xSize * ySize * zSize)==0)
 			ACC_PTR_DEBUG_FATAL("Reals array resized to size zero.\n");
 //		reals.resizeHostCopy(xSize * ySize * zSize);
-		reals.freeHostIfSet();
+		reals.freeHost();
 		reals.setSize(xSize * ySize * zSize);
 		reals.hostAlloc();
 		
 		if ((xFSize * yFSize * zFSize)==0)
 			ACC_PTR_DEBUG_FATAL("Fouriers array resized to size zero.\n");
 //		fouriers.resizeHostCopy(xFSize * yFSize * zFSize);
-		fouriers.freeHostIfSet();
+		fouriers.freeHost();
 		fouriers.setSize(xFSize * yFSize * zFSize);
 		fouriers.hostAlloc();
 
@@ -322,8 +322,8 @@ public:
 
 	void clear()
 	{
-		reals.freeIfSet();
-		fouriers.freeIfSet();
+		reals.free();
+		fouriers.free();
 	
 		if (planSet)
 		{

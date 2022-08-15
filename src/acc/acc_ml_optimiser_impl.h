@@ -1603,30 +1603,31 @@ void convertAllSquaredDifferencesToWeights(
         }
 
         if (baseMLO->iter == 1 && baseMLO->do_firstiter_cc || baseMLO->do_always_cc) {
+            auto &weights = PassWeights[img_id].weights;
             if (exp_ipass == 0) {
                 int nr_coarse_weights = (sp.iclass_max - sp.iclass_min + 1) * sp.nr_images * sp.nr_dir * sp.nr_psi * sp.nr_trans;
-                PassWeights[img_id].weights.setAccPtr(&(~Mweight)[img_id * nr_coarse_weights]);
-                PassWeights[img_id].weights.setHostPtr(&Mweight[img_id * nr_coarse_weights]);
-                PassWeights[img_id].weights.setSize(nr_coarse_weights);
+                weights.setAccPtr(&(~Mweight)[img_id * nr_coarse_weights]);
+                weights.setHostPtr(&Mweight[img_id * nr_coarse_weights]);
+                weights.setSize(nr_coarse_weights);
             }
-            PassWeights[img_id].weights.doFreeHost = false;
+            weights.setDoFreeHost(false);
 
-            std::pair<size_t, XFLOAT> min_pair=AccUtilities::getArgMinOnDevice<XFLOAT>(PassWeights[img_id].weights);
-            PassWeights[img_id].weights.cpToHost();
+            std::pair<size_t, XFLOAT> min_pair = AccUtilities::getArgMinOnDevice<XFLOAT>(weights);
+            weights.cpToHost();
             DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
 
             // Set all device-located weights to zero, and only the smallest one to 1.
             #ifdef CUDA
-            DEBUG_HANDLE_ERROR(cudaMemsetAsync(~(PassWeights[img_id].weights), 0.f, PassWeights[img_id].weights.getSize() * sizeof(XFLOAT), 0));
+            DEBUG_HANDLE_ERROR(cudaMemsetAsync(~(weights), 0.f, weights.getSize() * sizeof(XFLOAT), 0));
 
             XFLOAT unity = 1;  // Oh the joys of pass-by-reference!
-            DEBUG_HANDLE_ERROR(cudaMemcpyAsync(&(PassWeights[img_id].weights(min_pair.first)), &unity, sizeof(XFLOAT), cudaMemcpyHostToDevice, 0));
+            DEBUG_HANDLE_ERROR(cudaMemcpyAsync(&(weights(min_pair.first)), &unity, sizeof(XFLOAT), cudaMemcpyHostToDevice, 0));
 
-            PassWeights[img_id].weights.cpToHost();
+            weights.cpToHost();
             DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
             #else
-            deviceInitValue<XFLOAT>(PassWeights[img_id].weights, (XFLOAT) 0.0);
-            PassWeights[img_id].weights[min_pair.first] = (XFLOAT) 1.0;
+            deviceInitValue<XFLOAT>(weights, (XFLOAT) 0.0);
+            weights[min_pair.first] = (XFLOAT) 1.0;
             #endif
 
             my_significant_weight = 0.999;
@@ -1635,7 +1636,7 @@ void convertAllSquaredDifferencesToWeights(
                 for (int ihidden = 0; ihidden < Xsize(op.Mcoarse_significant); ihidden++)
                     direct::elem(op.Mcoarse_significant, img_id, ihidden) = direct::elem(op.Mweight, img_id, ihidden) >= my_significant_weight;
             } else {
-                std::pair<size_t, XFLOAT> max_pair = AccUtilities::getArgMaxOnDevice<XFLOAT>(PassWeights[img_id].weights);
+                std::pair<size_t, XFLOAT> max_pair = AccUtilities::getArgMaxOnDevice<XFLOAT>(weights);
                 op.max_index[img_id].fineIdx = PassWeights[img_id].ihidden_overs[max_pair.first];
                 op.max_weight[img_id] = max_pair.second;
             }
