@@ -279,7 +279,7 @@ class Projector {
     /*
     * Get a 2D slice from the 3D map (forward projection)
     */
-    void project(MultidimArray<Complex> &img_out, Matrix2D<RFLOAT> &A) const;
+    void project(MultidimArray<Complex> &img_out, const Matrix2D<RFLOAT> &A) const;
 
     /*
     * Get the two gradients (real and imaginary) of that slice.

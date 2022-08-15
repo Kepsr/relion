@@ -114,6 +114,13 @@ const double PI = 3.14159265358979323846;
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 #endif
 
+inline float sinc(float theta) {
+    return sin(theta) / theta;
+}
+
+inline double sinc(double theta) {
+    return sin(theta) / theta;
+}
 
 /** signum
  *
