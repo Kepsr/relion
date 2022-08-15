@@ -1537,10 +1537,9 @@ void BackProjector::reconstruct(
     // This is the same as convolution with a SINC. It seems to give better maps.
     // Then just make the blob look as much as a SINC as possible....
     // The "standard" r1.9, m2 and a15 blob looks quite like a sinc until the first zero (perhaps that's why it is standard?)
-    //for (RFLOAT r = 0.1; r < 10.; r+=0.01)
-    //{
-    //	RFLOAT sinc = sin(PI * r / padding_factor ) / ( PI * r / padding_factor);
-    //	std::cout << " r= " << r << " sinc= " << sinc << " blob= " << blob_val(r, blob) << std::endl;
+    //for (RFLOAT r = 0.1; r < 10.0; r += 0.01) {
+    //	RFLOAT sinc_theta = sinc(PI * r / padding_factor );
+    //	std::cout << " r= " << r << " sinc= " << sinc_theta << " blob= " << blob_val(r, blob) << std::endl;
     //}
 
     // Now do inverse FFT and window to original size in real-space
@@ -1581,9 +1580,8 @@ void BackProjector::reconstruct(
 
     if (!weight_out) return;
 
-    weight_out->data = MultidimArray<RFLOAT>(1, ori_size, ori_size, ori_size / 2 + 1);
-
-    Image<RFLOAT> count = Image<RFLOAT>::zeros(ori_size / 2 + 1, ori_size, ori_size);
+    weight_out->data    = MultidimArray<RFLOAT>(ori_size / 2 + 1, ori_size, ori_size);
+    Image<RFLOAT> count = Image<RFLOAT>::zeros (ori_size / 2 + 1, ori_size, ori_size);
 
     // downsample while considering padding:
 
@@ -1800,12 +1798,10 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
     int rmax2 = round(r_max * padding_factor) * round(r_max * padding_factor);
     if (SL.SymsNo() > 0 && ref_dim == 3) {
         Matrix2D<RFLOAT> L(4, 4), R(4, 4);  // A matrix from the list
-        MultidimArray<RFLOAT> sum_weight;
-        MultidimArray<Complex> sum_data;
-
         // First symmetry operator (not stored in SL) is the identity matrix
-        sum_weight = weight;
-        sum_data = data;
+        MultidimArray<RFLOAT>  sum_weight = weight;
+        MultidimArray<Complex> sum_data   = data;
+
         // Loop over all other symmetry operators
         for (int isym = 0; isym < SL.SymsNo(); isym++) {
             SL.get_matrices(isym, L, R);
@@ -1821,7 +1817,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                 RFLOAT x = j;  // Xinit(sum_weight) is zero!
                 RFLOAT y = i;
                 RFLOAT z = k;
-                RFLOAT r2 = x * x + y * y + z * z;
+                RFLOAT r2 = euclidsq(x, y, z);
 
                 if (r2 <= rmax2) {
                     // coords_output(x,y) = A * coords_input (xp,yp)
@@ -1829,7 +1825,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                     RFLOAT yp = x * R(1, 0) + y * R(1, 1) + z * R(1, 2);
                     RFLOAT zp = x * R(2, 0) + y * R(2, 1) + z * R(2, 2);
 
-                    bool is_neg_x = xp < 0;
+                    const bool is_neg_x = xp < 0;
 
                     // Only asymmetric half is stored
                     if (is_neg_x) {
@@ -1931,15 +1927,9 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
 
 void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool do_mask) {
 
-    MultidimArray<RFLOAT> Mconv;
-
     // Set up right dimension of real-space array
     // TODO: resize this according to r_max!!!
-    if (ref_dim == 2) {
-        Mconv.reshape(pad_size, pad_size);
-    } else {
-        Mconv.reshape(pad_size, pad_size, pad_size);
-    }
+    MultidimArray<RFLOAT> Mconv (pad_size, pad_size, ref_dim == 2 ? 1 : pad_size);
 
     // inverse FFT
     transformer.setReal(Mconv);
