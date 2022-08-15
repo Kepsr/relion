@@ -5,14 +5,14 @@
 // #define PP_TIMING
 #ifdef PP_TIMING
     Timer timer;
-    int TIMING_TOP = timer.setNew("setup");
-    int TIMING_SAMPLING = 	timer.setNew(" sampling");
-    int TIMING_PRIOR = 		timer.setNew("  prior");
-    int TIMING_PROC_CALC = 	timer.setNew("  procCalc");
-    int TIMING_PROC = 		timer.setNew("  proc");
-    int TIMING_GEN = 		timer.setNew("   genOri");
-    int TIMING_PERTURB = 	timer.setNew("   perturb");
-    int TIMING_EULERS = 	timer.setNew(" eulers");
+    int TIMING_TOP        = timer.setNew("setup");
+    int TIMING_SAMPLING   =	timer.setNew(" sampling");
+    int TIMING_PRIOR      = timer.setNew("  prior");
+    int TIMING_PROC_CALC  = timer.setNew("  procCalc");
+    int TIMING_PROC       = timer.setNew("  proc");
+    int TIMING_GEN        = timer.setNew("   genOri");
+    int TIMING_PERTURB    = timer.setNew("   perturb");
+    int TIMING_EULERS     = timer.setNew(" eulers");
     #define TIMING_TIC(id) timer.tic(id)
     #define TIMING_TOC(id) timer.toc(id)
 #else
@@ -109,21 +109,18 @@ void AccProjectorPlan::setup(
     betas.hostAlloc();
     gammas.hostAlloc();
 
-    eulers.freeIfSet();
+    eulers.free();
     eulers.setSize(nr_dir * nr_psi * nr_oversampled_rot * 9);
     eulers.hostAlloc();
 
-    iorientclasses.freeIfSet();
+    iorientclasses.free();
     iorientclasses.setSize(nr_dir * nr_psi * nr_oversampled_rot);
     iorientclasses.hostAlloc();
 
     orientation_num = 0;
 
-    Matrix2D<RFLOAT> L(3, 3);
-    Matrix2D<RFLOAT> R(3, 3);
-
-    L.initIdentity();
-    R.initIdentity();
+    auto L = Matrix2D<RFLOAT>::identity(3);
+    auto R = Matrix2D<RFLOAT>::identity(3);
 
     bool doL = false, doR = false;
     RFLOAT myperturb(0.0);
@@ -201,11 +198,11 @@ void AccProjectorPlan::setup(
                 // Loop over all oversampled orientations (only a single one in the first pass)
                 for (long int iover_rot = 0; iover_rot < nr_oversampled_rot; iover_rot++, ipart++) {
                     if (sampling.is_3D) {
-                        alphas[orientation_num] = oversampled_rot[iover_rot];
-                        betas[orientation_num]  = oversampled_tilt[iover_rot];
-                        gammas[orientation_num] = oversampled_psi[iover_rot];
+                        alphas[orientation_num] = oversampled_rot [iover_rot];
+                        betas [orientation_num] = oversampled_tilt[iover_rot];
+                        gammas[orientation_num] = oversampled_psi [iover_rot];
                     } else {
-                        alphas[orientation_num] = oversampled_psi[iover_rot] + myperturb;
+                        alphas[orientation_num] = oversampled_psi [iover_rot] + myperturb;
                     }
 
                     iorientclasses[orientation_num] = iorientclass;
@@ -355,9 +352,9 @@ void AccProjectorPlan::printTo(std::ostream &os) {
 
 void AccProjectorPlan::clear() {
     orientation_num = 0;
-    iorientclasses.freeIfSet();
+    iorientclasses.free();
     iorientclasses.setSize(0);
-    eulers.freeIfSet();
+    eulers.free();
     eulers.setSize(0);
     #ifdef PP_TIMING
     timer.printTimes(false);

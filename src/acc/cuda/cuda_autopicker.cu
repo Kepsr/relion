@@ -179,7 +179,8 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     RFLOAT normfft = (RFLOAT) (mic_size * mic_size) / (RFLOAT) nr_nonzero_pixels_mask;
 
     AccPtr<ACCCOMPLEX> d_Fcov = d_Fmic.make<ACCCOMPLEX>();
-    d_Fcov.deviceAlloc(d_Fmic.getSize());
+    d_Fcov.setSize(d_Fmic.getSize());
+    d_Fcov.deviceAlloc();
 
     int Bsize;
     CTICTOC("PRE-multi_0", ({
@@ -523,8 +524,11 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         // The following calculate mu and sig under the solvent area at every position in the micrograph
         CTICTOC("calculateStddevAndMeanUnderMask", ({
 
-        d_Mstddev.deviceAlloc(basePckr->workSize * basePckr->workSize);
-        d_Mmean.deviceAlloc(basePckr->workSize * basePckr->workSize);
+        const size_t workSize2 = basePckr->workSize * basePckr->workSize;
+        d_Mstddev.setSize(workSize2);
+        d_Mstddev.deviceAlloc();
+        d_Mmean.setSize(workSize2);
+        d_Mmean.deviceAlloc();
 
         if (basePckr->autopick_helical_segments) {
 
@@ -533,8 +537,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             AccPtr<XFLOAT> d_Mstddev2(allocator);
 
             d_Fmsk2.deviceAlloc();
-            d_Mavg.deviceAlloc(basePckr->workSize * basePckr->workSize);
-            d_Mstddev2.deviceAlloc(basePckr->workSize * basePckr->workSize);
+            d_Mavg.setSize(workSize2);
+            d_Mavg.deviceAlloc();
+            d_Mstddev2.setSize(workSize2);
+            d_Mstddev2.deviceAlloc();
 
             /// TODO: Do this only once further up in scope
             for (int i = 0; i < d_Fmsk2.getSize(); i++) {

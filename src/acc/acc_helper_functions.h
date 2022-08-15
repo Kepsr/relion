@@ -158,7 +158,7 @@ size_t findThresholdIdxInCumulativeSum(AccPtr<T> &data, T threshold) {
         return(0);
     } else {
         #ifdef CUDA
-        AccPtr<size_t>  idx(1, data.getStream(), data.getAllocator());
+        AccPtr<size_t> idx(1, data.getAllocator(), data.getStream());
         idx[0] = 0;
 
         idx.putOnDevice();

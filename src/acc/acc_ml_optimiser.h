@@ -323,28 +323,28 @@ class IndexedDataArray {
     }
 
     void host_alloc_all() {
-        weights.freeHostIfSet();
+        weights.freeHost();
         weights.hostAlloc();
-        rot_id.freeHostIfSet();
+        rot_id.freeHost();
         rot_id.hostAlloc();
-        rot_idx.freeHostIfSet();
+        rot_idx.freeHost();
         rot_idx.hostAlloc();
-        trans_idx.freeHostIfSet();
+        trans_idx.freeHost();
         trans_idx.hostAlloc();
-        ihidden_overs.freeHostIfSet();
+        ihidden_overs.freeHost();
         ihidden_overs.hostAlloc();
     }
 
     void device_alloc_all() {
-        weights.freeDeviceIfSet();
+        weights.freeDevice();
         weights.deviceAlloc();
-        rot_id.freeDeviceIfSet();
+        rot_id.freeDevice();
         rot_id.deviceAlloc();
-        rot_idx.freeDeviceIfSet();
+        rot_idx.freeDevice();
         rot_idx.deviceAlloc();
-        trans_idx.freeDeviceIfSet();
+        trans_idx.freeDevice();
         trans_idx.deviceAlloc();
-        ihidden_overs.freeDeviceIfSet();
+        ihidden_overs.freeDevice();
         ihidden_overs.deviceAlloc();
     }
 
@@ -354,16 +354,16 @@ class IndexedDataArray {
     }
     
     void dual_free_all() {
-        weights.freeDeviceIfSet();
-        rot_id.freeDeviceIfSet();
-        rot_idx.freeDeviceIfSet();
-        trans_idx.freeDeviceIfSet();
-        ihidden_overs.freeDeviceIfSet();
-        weights.freeHostIfSet();
-        rot_id.freeHostIfSet();
-        rot_idx.freeHostIfSet();
-        trans_idx.freeHostIfSet();
-        ihidden_overs.freeHostIfSet();
+        weights.freeDevice();
+        rot_id.freeDevice();
+        rot_idx.freeDevice();
+        trans_idx.freeDevice();
+        ihidden_overs.freeDevice();
+        weights.freeHost();
+        rot_id.freeHost();
+        rot_idx.freeHost();
+        trans_idx.freeHost();
+        ihidden_overs.freeHost();
     }
     
     ~IndexedDataArray() {

@@ -60,8 +60,7 @@ class Image: public AccPtr<T> {
     bool is3D() { return z > 1; }
 
     void setSize(int box_dim, bool is_fourier, bool is3D) {
-        fourier = is_fourier;
-        if (is_fourier) {
+        if (fourier = is_fourier) {
             x = box_dim / 2 + 1;
             y = box_dim;
             z = is3D ? box_dim : 1;
@@ -69,40 +68,20 @@ class Image: public AccPtr<T> {
         AccPtr<T>::setSize(x * y * z);
     }
 
-    void setSize(int xdim) {
-        x = xdim;
-        y = 1;
-        z = 1;
-        AccPtr<T>::setSize(x);
-    }
-
-    void setSize(int xdim, int ydim) {
-        x = xdim;
-        y = ydim;
-        z = 1;
-        AccPtr<T>::setSize(x * y);
-    }
-
-    void setSize(int xdim, int ydim, int zdim) {
-        x = xdim;
-        y = ydim;
-        z = zdim;
-        AccPtr<T>::setSize(x * y * z);
+    void setSize(int xdim, int ydim = 1, int zdim = 1) {
+        AccPtr<T>::setSize(xdim * ydim * zdim);
     }
 
     template <typename T1>
     void setSize(MultidimArray<T1> img) {
-        x = img.xdim;
-        y = img.xdim;
-        z = img.xdim;
-        AccPtr<T>::setSize(x * y * z);
+        AccPtr<T>::setSize(img.xdim * img.xdim * img.xdim);
     }
 
     template <typename T1>
     void setHost(MultidimArray<T1> &img) {
         if (img.xdim != x || img.ydim != y || img.zdim != z) {
             if (img.size() > AccPtr<T>::getSize()) {
-                AccPtr<T>::freeIfSet();
+                AccPtr<T>::free();
                 setSize(img);
                 AccPtr<T>::hostAlloc();
             } else {
@@ -110,9 +89,7 @@ class Image: public AccPtr<T> {
             }
         }
 
-        if (AccPtr<T>::getHostPtr() == NULL) {
-            AccPtr<T>::hostAlloc();
-        }
+        if (!AccPtr<T>::getHostPtr()) AccPtr<T>::hostAlloc();
 
         T *ptr = AccPtr<T>::getHostPtr();
 

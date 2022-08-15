@@ -268,8 +268,7 @@ void Projector::computeFourierTransformMap(
     AccPtr<RFLOAT> dfourier_mask;
     AccPtr<RFLOAT> dpower_spectrum;
     AccPtr<RFLOAT> dcounter;
-    size_t cudanormfft;
-    cufftType cufft_type;
+    const cufftType cufft_type = sizeof(RFLOAT) == sizeof(double) ? CUFFT_D2Z : CUFFT_R2C;
     struct sembuf op_lock[2] = {
         0, 0, 0, /* wait for sem #0 to become 0 */
         0, 1, SEM_UNDO /* then increment sem #0 by 1 */
@@ -277,7 +276,6 @@ void Projector::computeFourierTransformMap(
     struct sembuf op_unlock[1] = { 0, -1, (IPC_NOWAIT | SEM_UNDO) /* decrement sem #0 by 1 (sets it to 0) */ };
     int fmXsz, fmYsz, fmZsz;
     size_t mem_req, ws_sz;
-    int Faux_sz;
     #endif
     RFLOAT normfft;
     int padoridim;
@@ -336,21 +334,17 @@ void Projector::computeFourierTransformMap(
     }
     #ifdef CUDA
 
-    Faux_sz = padoridim * (padoridim / 2 + 1);
+    const int Faux_sz = (padoridim / 2 + 1) * padoridim * (ref_dim == 3 ? padoridim : 1);
     n[0] = padoridim; n[1] = padoridim; n[2] = padoridim;
-    cufft_type = CUFFT_R2C;
-    if (sizeof(RFLOAT) == sizeof(double)) { cufft_type = CUFFT_D2Z; }
-
-    if (ref_dim == 3) { Faux_sz *= padoridim; }
 
     mem_req = (size_t) 1024;
     if (do_heavy && do_gpu) {
         cufftEstimateMany(ref_dim, n, nullptr, 0, 0, nullptr, 0, 0, cufft_type, 1, &ws_sz);
 
-        mem_req = (size_t) sizeof(RFLOAT) * vol_in.size()  // dvol
-                + (size_t) sizeof(Complex) * Faux_sz       // dFaux
-                + (size_t) sizeof(RFLOAT) * Mpad.size()    // dMpad
-                + ws_sz + 4096;                            // workspace for cuFFT + extra space for alingment
+        mem_req = (size_t) sizeof(RFLOAT)  * vol_in.size()  // dvol
+                + (size_t) sizeof(Complex) * Faux_sz        // dFaux
+                + (size_t) sizeof(RFLOAT)  * Mpad.size()    // dMpad
+                + ws_sz + 4096;                             // workspace for cuFFT + extra space for alignment
     }
 
     CudaCustomAllocator *allocator = nullptr;
@@ -435,6 +429,7 @@ void Projector::computeFourierTransformMap(
     }
     }
 
+    const size_t cudanormfft = (size_t) padoridim * (size_t) padoridim * (ref_dim == 3 ? (size_t) padoridim : 1);
     {
     ifdefTIMING(TicToc tt (proj_timer, TIMING_TRANS);)
     // Calculate the oversampled Fourier transform
@@ -466,10 +461,7 @@ void Projector::computeFourierTransformMap(
                 REPORT_ERROR("failed to exec fft");
             // deallocate plan, free mem
             cufftDestroy(plan);
-            fft_ws.freeIfSet();
-
-            cudanormfft = (size_t) padoridim * (size_t) padoridim;
-            if (ref_dim == 3) cudanormfft *= (size_t) padoridim;
+            fft_ws.free();
 
             if (ref_dim == 2) Faux.reshape(padoridim / 2 + 1, padoridim);
             if (ref_dim == 3) Faux.reshape(padoridim / 2 + 1, padoridim, padoridim);
@@ -496,7 +488,7 @@ void Projector::computeFourierTransformMap(
     ifdefTIMING(TicToc tt (proj_timer, TIMING_INIT2);)
     // Free memory: Mpad no longer needed
     #ifdef CUDA
-    dMpad.freeIfSet();
+    dMpad.free();
     #endif
     Mpad.clear();
 
@@ -552,7 +544,7 @@ void Projector::computeFourierTransformMap(
             );
             ddata.setHostPtr(data.data);
             ddata.cpToHost();
-            dfourier_mask.freeIfSet();
+            dfourier_mask.free();
         } else
         #endif
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
@@ -623,12 +615,12 @@ void Projector::computeFourierTransformMap(
 
     }
     #ifdef CUDA
-    ddata.freeIfSet();
-    dpower_spectrum.freeIfSet();
-    dcounter.freeIfSet();
-    dvol.freeIfSet();
-    dMpad.freeIfSet();
-    dFaux.freeIfSet();
+    ddata.free();
+    dpower_spectrum.free();
+    dcounter.free();
+    dvol.free();
+    dMpad.free();
+    dFaux.free();
 
     if (allocator) {
         delete allocator;

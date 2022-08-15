@@ -48,8 +48,8 @@ class CudaFFT {
     int batchSpace, batchIters, reqN;
 
     CudaFFT(cudaStream_t stream, CudaCustomAllocator *allocator, int transformDimension = 2):
-        reals(stream, allocator),
-        fouriers(stream, allocator),
+        reals(allocator, stream),
+        fouriers(allocator, stream),
         cufftPlanForward(0),
         cufftPlanBackward(0),
         direction(0),
@@ -284,8 +284,8 @@ class CudaFFT {
 
     void clear() {
         if (planSet) {
-            reals.freeIfSet();
-            fouriers.freeIfSet();
+            reals.free();
+            fouriers.free();
             if (direction <= 0)
                 HANDLE_CUFFT_ERROR(cufftDestroy(cufftPlanForward));
             if (direction >= 0)
