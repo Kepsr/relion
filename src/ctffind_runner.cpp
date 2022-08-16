@@ -18,6 +18,7 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/ctffind_runner.h"
+#include "src/multidim_array_statistics.h"
 #include <cmath>
 
 #ifdef CUDA
@@ -575,15 +576,11 @@ void CtffindRunner::executeCtffind3(long int imic) {
             Xmipp::last(ctf_win), Xmipp::last(ctf_win)
         );
         // Calculate mean, stddev, min and max
-        Stats<RFLOAT> stats = I().computeStats();
-        RFLOAT avg    = stats.avg;
-        RFLOAT stddev = stats.stddev;
-        RFLOAT minval = stats.min;
-        RFLOAT maxval = stats.max;
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, minval);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, maxval);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, avg);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stddev);
+        const Stats<RFLOAT> stats = computeStats(I());
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev);
         I.write(fn_mic_win);
     } else {
         fn_mic_win = fn_mic;
@@ -659,15 +656,11 @@ void CtffindRunner::executeCtffind4(long int imic) {
         I().setXmippOrigin();
         I().window(Xmipp::init(ctf_win), Xmipp::init(ctf_win), Xmipp::last(ctf_win), Xmipp::last(ctf_win));
         // Calculate mean, stddev, min and max
-        Stats<RFLOAT> stats = I().computeStats();
-        RFLOAT avg    = stats.avg;
-        RFLOAT stddev = stats.stddev;
-        RFLOAT minval = stats.min;
-        RFLOAT maxval = stats.max;
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, minval);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, maxval);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, avg);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stddev);
+        const Stats<RFLOAT> stats = computeStats(I());
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev);
         I.write(fn_mic_win);
     } else {
         fn_mic_win = fn_mic;

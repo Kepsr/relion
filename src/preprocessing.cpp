@@ -669,7 +669,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
 
     Imic.read(fn_mic);
     // Calculate average value in the micrograph, for filling empty region around large-box extraction for premultiplication with CTF
-    mic_avg = Imic().average();
+    mic_avg = average(Imic());
 
     }
 
@@ -992,19 +992,16 @@ void Preprocessing::performPerImageOperations(
     }
 
     // Calculate mean, stddev, min and max
-    Stats<RFLOAT> stats;
-    { stats = Ipart().computeStats(); }
-    ifdefPREP_TIMING(TicToc tt (timer, TIMING_COMP_STATS);)
-    RFLOAT avg    = stats.avg;
-    RFLOAT stddev = stats.stddev;
-    RFLOAT minval = stats.min;
-    RFLOAT maxval = stats.max;
+    Stats<RFLOAT> stats = [&] () {
+        ifdefPREP_TIMING(TicToc tt (timer, TIMING_COMP_STATS);)
+        return computeStats(Ipart());
+    }();
 
     if (Ipart().getDim() == 3) {
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    minval);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    maxval);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    avg);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stddev);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev);
         Ipart.setSamplingRateInHeader(output_angpix);
 
         {
@@ -1016,10 +1013,10 @@ void Preprocessing::performPerImageOperations(
         }
     } else {
         // Keep track of overall statistics
-        all_minval = std::min(minval, all_minval);
-        all_maxval = std::max(maxval, all_maxval);
-        all_avg	   += avg;
-        all_stddev += stddev * stddev;
+        all_minval = std::min(stats.min, all_minval);
+        all_maxval = std::max(stats.max, all_maxval);
+        all_avg	   += stats.avg;
+        all_stddev += stats.stddev * stats.stddev;
 
         // Last particle: reset the min, max, avg and stddev values in the main header
         if (image_nr == nr_of_images - 1) {

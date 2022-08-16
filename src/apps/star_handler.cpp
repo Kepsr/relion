@@ -257,20 +257,15 @@ class star_handler_parameters {
         long int ii = 0;
         for (long int _ : MDin) {
             FileName fn_img = MDin.getValue<std::string>(EMDL::str2Label(discard_label));
-            Image<RFLOAT> img;
-            img.read(fn_img);
-            Stats<RFLOAT> stats = img().computeStats();
-            RFLOAT avg    = stats.avg;
-            RFLOAT stddev = stats.stddev;
-            RFLOAT minval = stats.min;
-            RFLOAT maxval = stats.max;
-            sum_avg += avg;
-            sum2_avg += avg * avg;
-            sum_stddev += stddev;
-            sum2_stddev += stddev * stddev;
+            const auto img = Image<RFLOAT>::from_filename(fn_img);
+            Stats<RFLOAT> stats = computeStats(img());
+            sum_avg     += stats.avg;
+            sum2_avg    += stats.avg * stats.avg;
+            sum_stddev  += stats.stddev;
+            sum2_stddev += stats.stddev * stats.stddev;
             sum_n += 1.0;
-            avgs.push_back(avg);
-            stddevs.push_back(stddev);
+            avgs.push_back(stats.avg);
+            stddevs.push_back(stats.stddev);
 
             ii++;
             if (ii % 100 == 0)

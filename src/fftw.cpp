@@ -48,6 +48,7 @@
 #include "src/args.h"
 #include <string.h>
 #include <math.h>
+#include "src/multidim_array_statistics.h"
 
 using RealArray = MultidimArray<RFLOAT>;
 using ComplexArray = MultidimArray<Complex>;
@@ -987,7 +988,7 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
-            Stats<RFLOAT> stats = img.computeStats();
+            Stats<RFLOAT> stats = computeStats(img);
 
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
@@ -1075,7 +1076,7 @@ void lowPassFilterMap(
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
-            Stats<RFLOAT> stats = img.computeStats();
+            const Stats<RFLOAT> stats = computeStats(img);
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
                 Xmipp::last(my_size), Xmipp::last(my_size)
@@ -1194,7 +1195,7 @@ void directionalFilterMap(
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
-            Stats<RFLOAT> stats = img.computeStats();
+            const Stats<RFLOAT> stats = computeStats(img);
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
                 Xmipp::last(my_size), Xmipp::last(my_size)

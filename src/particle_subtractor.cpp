@@ -97,7 +97,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
     nr_particles_in_optics_group.resize(opt.mydata.obsModel.opticsMdt.numberOfObjects(), 0);
 
     // Overwrite the particles STAR file with a smaller subset
-    if (fn_sel != "") {
+    if (!fn_sel.empty()) {
         opt.mydata.clear();
         bool is_helical_segment = opt.do_helical_refine || (opt.mymodel.ref_dim == 2 && opt.helical_tube_outer_diameter > 0.0);
         opt.mydata.read(fn_sel, false, false, false, is_helical_segment);
@@ -106,13 +106,13 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
     divideLabour(rank, size, my_first_part_id, my_last_part_id);
 
     Image<RFLOAT> Imask;
-    if (fn_msk != "" && !do_ssnr) {
+    if (!fn_msk.empty() && !do_ssnr) {
         if (verb > 0) std::cout << " + Reading in mask ... " << std::endl;
         // Mask stuff
         Imask.read(fn_msk);
         Imask().setXmippOrigin();
 
-        MultidimArray<RFLOAT>::MinMax range = Imask().minmax();
+        MinMax range = minmax(Imask());
         if (range.min < 0.0 || range.max > 1.0) {
             REPORT_ERROR("ERROR: the keep_inside mask has values outside the range [0,1]");
         }

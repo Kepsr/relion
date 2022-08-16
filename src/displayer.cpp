@@ -471,7 +471,7 @@ void basisViewerCanvas::fill(
                 if (lowpass  > 0.0 && have_optics_group) lowPassFilterMap (img(), lowpass,  angpix);
                 if (highpass > 0.0 && have_optics_group) highPassFilterMap(img(), highpass, angpix);
 
-                MultidimArray<RFLOAT>::MinMax minmax = getImageContrast(img(), _minval, _maxval, _sigma_contrast);
+                const MinMax minmax = getImageContrast(img(), _minval, _maxval, _sigma_contrast);
 
                 long int my_sorted_ipos = my_ipos;
                 if (MDin.containsLabel(EMDL::SORTED_IDX)) {
@@ -523,7 +523,7 @@ void basisViewerCanvas::fill(
 ) {
     xoff = yoff = 0;
     nrow = ncol = 1;
-    MultidimArray<RFLOAT>::MinMax minmax = getImageContrast(image, _minval, _maxval, _sigma_contrast);
+    const MinMax minmax = getImageContrast(image, _minval, _maxval, _sigma_contrast);
     xsize_box = ceil(_scale * Xsize(image));
     ysize_box = ceil(_scale * Ysize(image));
     DisplayBox *my_box = new DisplayBox(0, 0, xsize_box, ysize_box, "dummy");
@@ -2510,9 +2510,7 @@ void Displayer::run() {
 
             // Use a single minval and maxval for all slice
             if (minval == maxval) {
-                Image<RFLOAT> It;
-                It.read(fn_in);
-                MultidimArray<RFLOAT>::MinMax range = It().minmax();
+                const MinMax range = minmax(Image<RFLOAT>::from_filename(fn_in)());
                 minval = range.min;
                 maxval = range.max;
             }

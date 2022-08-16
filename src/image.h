@@ -59,6 +59,7 @@
 #include "src/memory.h"
 #include "src/filename.h"
 #include "src/multidim_array.h"
+#include "src/multidim_array_statistics.h"
 #include "src/transformations.h"
 #include "src/metadata_table.h"
 #include "src/fftw.h"
@@ -973,7 +974,7 @@ class Image {
 
     // Set image statistics in the main header
     void setStatisticsInHeader() {
-        Stats<T> statistics = data.computeStats();
+        Stats<T> statistics = computeStats(data);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    statistics.avg);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, statistics.stddev);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    statistics.min);
@@ -1134,6 +1135,6 @@ void rewindow(Image<RFLOAT> &I, int mysize);
 // Functions belonging to this topic are commented in rw*.h
 //@}
 
-MultidimArray<RFLOAT>::MinMax getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
+MinMax getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
 
 #endif

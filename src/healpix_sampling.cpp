@@ -18,6 +18,7 @@
  * author citations must be preserved.
  ***************************************************************************/
 #include "src/healpix_sampling.h"
+#include "src/multidim_array_statistics.h"
 // #define DEBUG_SAMPLING
 // #define DEBUG_CHECKSIZES
 // #define DEBUG_HELICAL_ORIENTATIONAL_SEARCH
@@ -1664,7 +1665,7 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
         REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution Xsize(pdf_direction) != rot_angles.size()!");
     }
 
-    Stats<RFLOAT> pdf_stats = pdf_direction.computeStats();
+    Stats<RFLOAT> pdf_stats = computeStats(pdf_direction);
 
     std::ofstream fh_bild (fn_bild.c_str(), std::ios::out);
     if (!fh_bild)
