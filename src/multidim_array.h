@@ -58,38 +58,6 @@
 #include <limits>
 using std::pair;
 
-template<typename T>
-struct Stats {
-
-    RFLOAT avg, stddev;
-    T min, max;
-
-    /** Print statistics
-     *
-     * No end of line character is written after this print out.
-     *
-     * @code
-     * Stats<RFLOAT> stats = arr.computeStats();
-     * std::cout << "Statistics: ";
-     * stats.print(std::cout);
-     * std::cout << std::endl;
-     * @endcode
-     */
-    void print(std::ostream &out = std::cout) const {
-
-        out.setf(std::ios::showpoint);
-        int old_prec = out.precision(7);
-
-        out << " min= "; out.width(9); out << min;
-        out << " max= "; out.width(9); out << max;
-        out << " avg= "; out.width(9); out << avg;
-        out << " dev= "; out.width(9); out << stddev;
-
-        out.precision(old_prec);
-    }
-
-};
-
 struct MinMax {
     RFLOAT min, max;
     MinMax(RFLOAT min, RFLOAT max): min(min), max(max) {}
