@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include <omp.h>
 #include "src/mask.h"
+#include "src/multidim_array_statistics.h"
 
 // https://stackoverflow.com/questions/48273190/undefined-symbol-error-for-stdstringempty-c-standard-method-linking-error/48273604#48273604
 #if defined(__APPLE__)
@@ -216,8 +217,8 @@ void softMaskOutsideMapForHelix(
 
 void softMaskOutsideMap(MultidimArray<RFLOAT> &vol, MultidimArray<RFLOAT> &msk, bool invert_mask) {
 
-    if (msk.min() < 0.0 || msk.max() > 1.0) {
-        std::cerr << " msk.max() = " << msk.max() << "; msk.min() = " << msk.min() << ";" << std::endl;
+    if (min(msk) < 0.0 || max(msk) > 1.0) {
+        std::cerr << " msk.max() = " << max(msk) << "; msk.min() = " << min(msk) << ";" << std::endl;
         REPORT_ERROR("ERROR: Values in the solvent mask should be between zero and one.");
     }
     if (!msk.sameShape(vol))

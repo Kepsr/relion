@@ -23,6 +23,7 @@
 #include "src/mask.h"
 #include "src/helix.h"
 #include "src/jaz/ctf_helper.h"
+#include "src/multidim_array_statistics.h"
 
 // #define DEBUG
 // #define DEBUG_HELIX
@@ -1161,7 +1162,7 @@ void AutoPicker::pickAmyloids(
     bool ccf_peaks_remaining = true;
     while (ccf_peaks_remaining) {
         long int imax, jmax;
-        float myccf = Mccf.maxIndex(imax, jmax);
+        float myccf = maxIndex(Mccf, imax, jmax);
         float mypsi = Mpsi(imax, jmax);
 
         // Stop searching if all pixels are below min_ccf!
@@ -1341,7 +1342,7 @@ void AutoPicker::pickCCFPeaks(
     // Init output
     ccf_peak_list.clear();
 
-    Stats<RFLOAT> stats = Mccf.computeStats();
+    Stats<RFLOAT> stats = computeStats(Mccf);
 
     // Collect all high ccf pixels
     std::vector<ccfPixel> ccf_pixel_list;
@@ -2270,7 +2271,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         }
 
         // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
-        Stats<RFLOAT> stats = Imic().computeStats();
+        Stats<RFLOAT> stats = computeStats(Imic());
 
         for (RFLOAT &x : Imic()) {
             // Values that are too far from the mean are set to the mean (0)
@@ -2458,7 +2459,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
     // Now just start from the biggest peak: put a particle coordinate there, remove all neighbouring pixels within corresponding Mbest_size and loop
     MetaDataTable MDout;
     long int imax, jmax;
-    while (Mbest_fom.maxIndex(imax, jmax) > 0.0) {
+    while (maxIndex(Mbest_fom, imax, jmax) > 0.0) {
         RFLOAT fom_here = Mbest_fom.elem(imax, jmax);
         if (fom_here < my_upper_limit) {
             MDout.addObject();
@@ -2542,7 +2543,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     {
     ifdefTIMING(TicToc tt (timer, TIMING_A7);)
     // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
-    Stats<RFLOAT> stats = Imic().computeStats();
+    Stats<RFLOAT> stats = computeStats(Imic());
 
     for (auto &x : Imic()) {
         // Remove pixel values that are too far away from the mean

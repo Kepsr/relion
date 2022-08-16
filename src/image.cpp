@@ -352,7 +352,7 @@ void rewindow(Image<RFLOAT> &I, int size) {
     }
 }
 
-MultidimArray<RFLOAT>::MinMax getImageContrast(
+MinMax getImageContrast(
     MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast
 ) {
     // First check whether to apply sigma-contrast, 
@@ -360,7 +360,7 @@ MultidimArray<RFLOAT>::MinMax getImageContrast(
     bool redo_minmax = sigma_contrast > 0.0 || minval != maxval;
 
     if (sigma_contrast > 0.0 || minval == maxval) {
-        Stats<RFLOAT> stats = image.computeStats();
+        Stats<RFLOAT> stats = computeStats(image);
         if (sigma_contrast > 0.0) {
             minval = stats.avg - stats.stddev * sigma_contrast;
             maxval = stats.avg + stats.stddev * sigma_contrast;

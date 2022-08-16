@@ -9,6 +9,7 @@
 #include <cuda_runtime.h>
 #include <signal.h>
 
+#include "src/multidim_array_statistics.h"
 #include "src/ml_optimiser.h"
 #include "src/jaz/ctf_helper.h"
 #include "src/acc/acc_ptr.h"
@@ -342,7 +343,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #endif
     Stats<RFLOAT> stats;
     CTICTOC("computeStats", ({
-    stats = Imic().computeStats();
+    stats = computeStats(Imic());
     }));
     #ifdef TIMING
     basePckr->timer.toc(basePckr->TIMING_A7);

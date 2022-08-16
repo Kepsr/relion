@@ -365,7 +365,7 @@ void HelixAligner::getHelicesFromMics() {
         } else {
             Image<RFLOAT> Imic;
             Imic.read(fn_mic);
-            RFLOAT avg = Imic().average();
+            RFLOAT avg = average(Imic());
 
             // Read in the coordinate files
             MetaDataTable MDcoords;
@@ -523,7 +523,7 @@ void HelixAligner::getHelicesFromMics() {
                         // Downscale if needed
                         MultidimArray<RFLOAT> Idown = Ihelix;
                         if (down_angpix > angpix) {
-                            RFLOAT avg = Idown.average();
+                            RFLOAT avg = average(Idown);
 
                             int oldxsize = Xsize(Idown);
                             int oldysize = Ysize(Idown);
@@ -554,13 +554,8 @@ void HelixAligner::getHelicesFromMics() {
                         }
 
                         // Ad-hoc image normalisation
-                        Stats<RFLOAT> stats = Idown.computeStats();
-                        RFLOAT avg    = stats.avg;
-                        RFLOAT stddev = stats.stddev;
-                        RFLOAT min    = stats.min;
-                        RFLOAT max    = stats.max;
-                        Idown -= avg;
-                        Idown /= -stddev; // Invert contrast
+                        Stats<RFLOAT> stats = computeStats(Idown);
+                        Idown = (Idown - stats.avg) / -stats.stddev;  // Invert contrast
 
                         Xrects[Xrects.size() - 1].push_back(Idown);
                     }

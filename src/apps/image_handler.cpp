@@ -586,7 +586,7 @@ class image_handler_parameters {
         n--;
         if (isPNG) {
             #ifdef HAVE_PNG
-            MultidimArray<RFLOAT>::MinMax minmax = getImageContrast(Iout(), minval, maxval, sigma_contrast); // Update if necessary
+            const MinMax minmax = getImageContrast(Iout(), minval, maxval, sigma_contrast); // Update if necessary
             const RFLOAT range = minmax.max - minmax.min;
             const RFLOAT step = range / 255;
 
@@ -748,7 +748,7 @@ class image_handler_parameters {
             if (do_stats) {
                 // only write statistics to screen
                 Iin.read(fn_img);
-                Stats<RFLOAT> stats = Iin().computeStats();
+                Stats<RFLOAT> stats = computeStats(Iin());
                 RFLOAT header_angpix = Iin.samplingRateX();
                 std::cout << fn_img << " : (x, y, z, n) = "
                     << Xsize(Iin()) << " × " << Ysize(Iin()) << " × "
