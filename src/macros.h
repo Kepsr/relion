@@ -114,6 +114,10 @@ const double PI = 3.14159265358979323846;
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 #endif
 
+inline int make_even(int n) {
+    return n - n % 2;
+}
+
 inline float sinc(float theta) {
     return sin(theta) / theta;
 }
