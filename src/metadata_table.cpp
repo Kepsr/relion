@@ -1300,17 +1300,13 @@ long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
     }
 
     // Then fill the table (dont read another line until the one from above has been handled)
-    bool is_first = true;
     long int nr_objects = 0;
     const int num_labels = activeLabels.size();
-
-    while (is_first || getline(in, line, '\n')) {
-        is_first = false;
+    do {
 
         line = simplify(line);
         // Stop at empty line
-        if (line[0] == '\0')
-            break;
+        if (line[0] == '\0') break;
 
         nr_objects++;
         if (!do_only_count) {
@@ -1339,7 +1335,7 @@ long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
                 REPORT_ERROR("A line in the STAR file contains fewer columns than the number of labels. Expected = " + integerToString(num_labels) + " Found = " +  integerToString(labelPosition));
             }
         }
-    }
+    } while (getline(in, line, '\n'));
 
     return nr_objects;
 }
