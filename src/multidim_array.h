@@ -3099,44 +3099,6 @@ class MultidimArray {
         }
     }
 
-    /** Show using gnuplot
-     *
-     * This function uses gnuplot to plot this vector. You must supply the
-     * xlabel, ylabel, and title.
-     */
-    void showWithGnuPlot(const std::string& xlabel, const std::string& title) {
-        checkDimension(1);
-
-        FileName fn_tmp;
-        fn_tmp.initRandom(10);
-        MultidimArray<T>::write(static_cast<std::string>("PPP") + fn_tmp + ".txt");
-
-        std::ofstream fh_gplot((static_cast<std::string>("PPP") + fn_tmp + ".gpl").c_str());
-        if (!fh_gplot)
-            REPORT_ERROR(static_cast<std::string>("vector::showWithGnuPlot: Cannot open PPP") + fn_tmp + ".gpl for output");
-        fh_gplot << "set xlabel \"" + xlabel + "\"\n";
-        fh_gplot << "plot \"PPP" + fn_tmp + ".txt\" title \"" + title +
-        "\" w l\n";
-        fh_gplot << "pause 300 \"\"\n";
-        system((static_cast<std::string>("(gnuplot PPP") + fn_tmp + ".gpl; rm PPP" + fn_tmp + ".txt PPP" + fn_tmp + ".gpl) &").c_str());
-    }
-
-    /** Edit with xmipp_editor.
-     *
-     * This function generates a random filename starting with PPP
-     * and edits it with xmipp_editor.
-     * After closing the editor the file is removed.
-     */
-    void edit() {
-        FileName fn;
-        fn.initRandom(15);
-
-        fn = static_cast<std::string>("PPP" + fn + ".txt");
-        write(fn);
-
-        system((static_cast<std::string>("xmipp_edit -i " + fn + " -remove &").c_str()));
-    }
-
     /** Write to an ASCII file.
      */
     void write(const FileName &fn) const {
