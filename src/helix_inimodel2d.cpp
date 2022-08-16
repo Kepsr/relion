@@ -222,8 +222,7 @@ void HelixAligner::initialise() {
     down_angpix = 0.;
     int best_size = 0;
     for (int delta_size = -search_size; delta_size <= search_size; delta_size += 2) {
-        int mysize = down_size + delta_size;
-        mysize -= mysize % 2;  // Ensure divisibility by 2
+        const int mysize = make_even(down_size + delta_size);
         if (mysize <= ori_size) {
             float myangpix = angpix * (float) ori_size / (float) mysize;
             float mydiv = 2.0 * crossover_distance / myangpix;
@@ -243,8 +242,7 @@ void HelixAligner::initialise() {
     std::cout <<     " *** best_angpix= " << down_angpix << " rectangles xsize= " << 2.0 * crossover_distance / down_angpix << std::endl;
 
     down_size = best_size;
-    yrect  = round(ori_size * angpix / down_angpix);
-    yrect -= yrect % 2;  // Ensure divisibility by 2
+    yrect  = make_even(round(ori_size * angpix / down_angpix));
     xrect  = round(2.0 * crossover_distance / down_angpix);
     model.initialise(nr_classes, yrect, xrect);
     max_shift = ceil(max_shift_A / down_angpix);
@@ -540,16 +538,12 @@ void HelixAligner::getHelicesFromMics() {
                                     avg
                                 );
                             }
-                            int newsize = round(oldsize * angpix / down_angpix);
-                            newsize -= newsize % 2; // Ensure divisibility by 2
+                            int newsize = make_even(round(oldsize * angpix / down_angpix));
                             resizeMap(Idown, newsize);
 
                             if (oldxsize != oldysize) {
-                                int newxsize = round(oldxsize * angpix / down_angpix);
-                                int newysize = round(oldysize * angpix / down_angpix);
-                                // Enforce divisibility by 2
-                                newxsize -= newxsize % 2;
-                                newysize -= newysize % 2;
+                                int newxsize = make_even(round(oldxsize * angpix / down_angpix));
+                                int newysize = make_even(round(oldysize * angpix / down_angpix));
                                 Idown.setXmippOrigin();
                                 Idown.window(
                                     Xmipp::init(newysize), Xmipp::init(newxsize),

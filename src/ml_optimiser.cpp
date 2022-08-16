@@ -1297,7 +1297,7 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
         if (rank == 0) {
             // Only the leader writes out the new mask
             int rescale_size = round(Xsize(Isolvent()) * mask_pixel_size / mymodel.pixel_size);
-            rescale_size += rescale_size % 2;  // Ensure divisibility by 2
+            rescale_size += rescale_size % 2;  // Ensure divisibility by 2 (+= rather than -=)
             resizeMap(Isolvent(), rescale_size);
             Isolvent.setSamplingRateInHeader(mymodel.pixel_size);
         }

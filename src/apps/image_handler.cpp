@@ -507,8 +507,7 @@ class image_handler_parameters {
                 );
             }
 
-            int newsize = round(oldsize * (angpix / requested_angpix));
-            newsize -= newsize % 2; // Force divisibility by 2
+            int newsize = make_even(round(oldsize * (angpix / requested_angpix)));
 
             real_angpix = oldsize * angpix / newsize;
             if (fabs(real_angpix - requested_angpix) / requested_angpix > 0.001)
@@ -523,10 +522,8 @@ class image_handler_parameters {
             my_new_box_size = newsize;
 
             if (oldxsize != oldysize && Iout().getDim() == 2) {
-                int newxsize = round(oldxsize * (angpix / real_angpix));
-                int newysize = round(oldysize * (angpix / real_angpix));
-                newxsize -= newxsize % 2; // Force divisibility by 2
-                newysize -= newysize % 2; // Force divisibility by 2
+                int newxsize = make_even(round(oldxsize * (angpix / real_angpix)));
+                int newysize = make_even(round(oldysize * (angpix / real_angpix)));
                 Iout().setXmippOrigin();
                 Iout().window(
                     Xmipp::init(newysize), Xmipp::init(newxsize),
