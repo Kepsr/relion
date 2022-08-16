@@ -191,7 +191,7 @@ RFLOAT computeStddev(const MultidimArray<T> &arr) {
         // Also: averages of large arrays will give trouble: compute median first.
         RFLOAT median = 0.0;
         if (N > 1e6)
-            median = median();
+            median = arr.median();
 
         RFLOAT sumofdeviations = 0;
         for (const auto &x : arr) {
@@ -234,6 +234,38 @@ RFLOAT computeStddev(const MultidimArray<T> &arr) {
     return stddev;
 }
 
+template<typename T>
+struct Stats {
+
+    RFLOAT avg, stddev;
+    T min, max;
+
+    /** Print statistics
+     *
+     * No end of line character is written after this print out.
+     *
+     * @code
+     * const auto stats = computeStats(arr);
+     * std::cout << "Statistics: ";
+     * stats.print(std::cout);
+     * std::cout << std::endl;
+     * @endcode
+     */
+    void print(std::ostream &out = std::cout) const {
+
+        out.setf(std::ios::showpoint);
+        int old_prec = out.precision(7);
+
+        out << " min= "; out.width(9); out << min;
+        out << " max= "; out.width(9); out << max;
+        out << " avg= "; out.width(9); out << avg;
+        out << " dev= "; out.width(9); out << stddev;
+
+        out.precision(old_prec);
+    }
+
+};
+
 /** Compute statistics.
  *
  * Return the average, standard deviation, minimum and maximum.
@@ -250,7 +282,7 @@ Stats<T> computeStats(const MultidimArray<T> &arr) {
     double sumxx = 0;
 
     Stats<T> stats;
-    stats.min =  std::numeric_limits<double>::max();
+    stats.min = +std::numeric_limits<double>::max();
     stats.max = -std::numeric_limits<double>::max();
 
     // Make one pass through the array.
@@ -283,32 +315,25 @@ Stats<T> computeStats(const MultidimArray<T> &arr) {
 /** Median
  *
  * @code
- * med = v1.median();
+ * med = median(v1);
  * @endcode
  */
 template <typename T>
 RFLOAT median(const MultidimArray<T> &arr) {
 
-    if (arr.xdim == 0) return 0;
+    if (arr.xdim == 0) throw "Cannot take the median of an empty collection!";
 
-    if (arr.xdim == 1) return arr[0];
-
-    // Copy *this
-    long int N = arr.size();
-    MultidimArray<RFLOAT> temp(N);
-    // MultidimArray<RFLOAT> temp = arr;
-    for (long int n = 0; n < arr.size(); n++) {
-        temp[n] = arr[n];
-    }
+    // Copy the array
+    auto copy = arr;
 
     // Sort indices
-    temp.sort();
+    copy.sort();
 
-    // Get median
+    long int N = arr.size();
     if (N % 2 == 0) {
-        return (temp[N / 2 - 1] + temp[N / 2]) * 0.5;
+        return (RFLOAT) (copy[N / 2 - 1] + copy[N / 2]) / 2.0;
     } else {
-        return temp[N / 2];
+        return copy[N / 2];
     }
 }
 
@@ -328,7 +353,7 @@ void rangeAdjust(MultidimArray<T> &arr, T minF, T maxF) {
 
     if (arr.size() <= 0) return;
 
-    MinMax range = minmax(arr);
+    const MinMax range = minmax(arr);
 
     // If range.min == range.max, the vector is a constant one,
     // so the only possible transformation is to a fixed minF
