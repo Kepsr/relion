@@ -1731,63 +1731,6 @@ class MultidimArray {
         i_log = i_phys + firstX();
     }
 
-    /** Interpolates the value of the nth 3D matrix M at the point (x,y,z).
-     *
-     * (x,y,z) are in logical coordinates.
-     */
-    T interpolatedElement3D(RFLOAT x, RFLOAT y, RFLOAT z, T outside_value = (T) 0, long int n = 0) {
-        long int x0 = floor(x);
-        RFLOAT fx = x - x0;
-        long int x1 = x0 + 1;
-
-        long int y0 = floor(y);
-        RFLOAT fy = y - y0;
-        long int y1 = y0 + 1;
-
-        long int z0 = floor(z);
-        RFLOAT fz = z - z0;
-        long int z1 = z0 + 1;
-
-        T d000 = outside(x0, y0, z0) ? outside_value : elem(x0, y0, z0, n);
-        T d001 = outside(x1, y0, z0) ? outside_value : elem(x1, y0, z0, n);
-        T d010 = outside(x0, y1, z0) ? outside_value : elem(x0, y1, z0, n);
-        T d011 = outside(x1, y1, z0) ? outside_value : elem(x1, y1, z0, n);
-        T d100 = outside(x0, y0, z1) ? outside_value : elem(x0, y0, z1, n);
-        T d101 = outside(x1, y0, z1) ? outside_value : elem(x1, y0, z1, n);
-        T d110 = outside(x0, y1, z1) ? outside_value : elem(x0, y1, z1, n);
-        T d111 = outside(x1, y1, z1) ? outside_value : elem(x1, y1, z1, n);
-
-        RFLOAT dx00 = LIN_INTERP(fx, (RFLOAT) d000, (RFLOAT) d001);
-        RFLOAT dx01 = LIN_INTERP(fx, (RFLOAT) d100, (RFLOAT) d101);
-        RFLOAT dx10 = LIN_INTERP(fx, (RFLOAT) d010, (RFLOAT) d011);
-        RFLOAT dx11 = LIN_INTERP(fx, (RFLOAT) d110, (RFLOAT) d111);
-        RFLOAT dxy0 = LIN_INTERP(fy, (RFLOAT) dx00, (RFLOAT) dx10);
-        RFLOAT dxy1 = LIN_INTERP(fy, (RFLOAT) dx01, (RFLOAT) dx11);
-
-        return (T) LIN_INTERP(fz, dxy0, dxy1);
-    }
-
-    /** Interpolates the value of the nth 2D matrix M at the point (x,y)
-     *
-     * Bilinear interpolation. (x,y) are in logical coordinates.
-     */
-    inline T interpolatedElement2D(RFLOAT x, RFLOAT y, T outside_value = (T) 0, long int n = 0) const {
-        long int x0 = floor(x);
-        RFLOAT fx = x - x0;
-        long int x1 = x0 + 1;
-        long int y0 = floor(y);
-        RFLOAT fy = y - y0;
-        long int y1 = y0 + 1;
-
-        T d00 = outside(x0, y0) ? outside_value : elem(x0, y0, 0, n);
-        T d10 = outside(x0, y1) ? outside_value : elem(x0, y1, 0, n);
-        T d11 = outside(x1, y1) ? outside_value : elem(x1, y1, 0, n);
-        T d01 = outside(x1, y0) ? outside_value : elem(x1, y0, 0, n);
-
-        RFLOAT d0 = (T) LIN_INTERP(fx, (RFLOAT) d00, (RFLOAT) d01);
-        RFLOAT d1 = (T) LIN_INTERP(fx, (RFLOAT) d10, (RFLOAT) d11);
-        return (T) LIN_INTERP(fy, d0, d1);
-    }
     //@}
 
     /// @name Statistics functions
@@ -3077,28 +3020,6 @@ class MultidimArray {
         zinit = -lastZ();
     }
 
-    /** Extracts the 1D profile between two points in a 2D array
-     *
-     * Given two logical indices,
-     * use bilinear interpolation to return N samples of the line between them.
-     */
-    void profile(
-        long int x0, long int y0, long int xF, long int yF, long int N,
-        MultidimArray<RFLOAT> &profile
-    ) const {
-        checkDimension(2);
-        profile.initZeros(N);
-        RFLOAT tx_step = (RFLOAT)(xF - x0) / (N - 1);
-        RFLOAT ty_step = (RFLOAT)(yF - y0) / (N - 1);
-        RFLOAT tx = x0, ty = y0;
-
-        for (long int i = 0; i < N; i++) {
-            profile(i) = interpolatedElement2D(tx, ty);
-            tx += tx_step;
-            ty += ty_step;
-        }
-    }
-
     /** Write to an ASCII file.
      */
     void write(const FileName &fn) const {
@@ -3145,9 +3066,9 @@ class MultidimArray {
 
     // Unary minus
     MultidimArray<T> operator - () const {
-        MultidimArray<T> tmp (*this);
-        for (T *ptr = tmp.begin(); ptr != tmp.end(); ++ptr) { *ptr = -*ptr; }
-        return tmp;
+        auto copy (*this);
+        for (auto &x : copy) { x = -x; }
+        return copy;
     }
 
     /** Input from input stream.
@@ -3162,7 +3083,7 @@ class MultidimArray {
      * This function is not ported to Python.
      */
     friend std::istream& operator >> (std::istream& in, MultidimArray<T> &v) {
-        for (T *ptr = v.begin(); ptr != v.end(); ++ptr) { in >> *ptr; }
+        for (auto &x : v) { in >> x; }
         return in;
     }
 
