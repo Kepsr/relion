@@ -513,18 +513,18 @@ class image_handler_parameters {
             real_angpix = oldsize * angpix / newsize;
             if (fabs(real_angpix - requested_angpix) / requested_angpix > 0.001)
                 std::cerr << "WARNING: The requested pixel size (--rescale_angpix) is " << requested_angpix << " A/px. "
-                "However, the actual pixel size will be " << real_angpix << " A/px, "
-                "because the box size will be trimmed to an even number - "
-                << newsize << " in this case. "
-                "The image header will contain the actual pixel size, "
-                "but you can overwrite the header pixel size with --force_header_angpix." << std::endl;
+                "However, because the box size will be trimmed to an even number "
+                "(" << newsize << " in this case), "
+                "the actual pixel size will be " << real_angpix << " A/px. "
+                "The actual pixel size will be written into the image header, "
+                "unless you use --force_header_angpix." << std::endl;
 
             resizeMap(Iout(), newsize);
             my_new_box_size = newsize;
 
             if (oldxsize != oldysize && Iout().getDim() == 2) {
                 int newxsize = round(oldxsize * (angpix / real_angpix));
-                int newysize = round(oldysize * (angpix / real_angpix));;
+                int newysize = round(oldysize * (angpix / real_angpix));
                 newxsize -= newxsize % 2; // Force divisibility by 2
                 newysize -= newysize % 2; // Force divisibility by 2
                 Iout().setXmippOrigin();
