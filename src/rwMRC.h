@@ -168,19 +168,14 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
         for (i = 0; i < extent; i += 4) swapbytes(b + i, 4);
     }
 
-    typename MultidimArray<T>::Dimensions dims { (int) header->nx, (int) header->ny, (int) header->nz, 1 };
+    std::array<unsigned long int, 4> dims { (unsigned long int) header->nx, (unsigned long int) header->ny, (unsigned long int) header->nz, 1 };
 
     if (isStack) {
-        dims.n = (long int) dims.z;
-        dims.z = 1;
-        replaceNsize = dims.n;
-        std::stringstream Num;
-        std::stringstream Num2;
-        if (img_select >= (int) dims.n) {
-            // img_select starts from 0, while dims.n from 1
-            std::string Num1str = std::to_string(img_select + 1);
-            std::string Num2str = std::to_string(dims.n);
-            REPORT_ERROR((std::string) "readMRC: Image number " + Num1str + " exceeds stack size " + Num2str + " of image " + name);
+        std::swap(dims[2], dims[3]);
+        replaceNsize = dims[3];
+        if (img_select >= (int) dims[3]) {
+            // img_select starts from 0, while dims[3] from 1
+            REPORT_ERROR((std::string) "readMRC: Image number " + std::to_string(img_select + 1) + " exceeds stack size " + std::to_string(dims[3]) + " of image " + name);
         }
     } else {
         replaceNsize = 0;
@@ -189,15 +184,15 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
     // Map the parameters
     if (isStack) {
         if (img_select == -1) {
-            dims.z = 1;
+            dims[2] = 1;
         } else {
-            dims.z = dims.n = 1;
+            dims[2] = dims[3] = 1;
         }
     } else {
-        dims.n = 1;
+        dims[3] = 1;
     }
 
-    data.setDimensions(dims.x, dims.y, dims.z, dims.n);
+    data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
 
     DataType datatype;
 
@@ -208,7 +203,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
         // This is SerialEM's non-standard extension.
         // https://bio3d.colorado.edu/imod/doc/mrc_format.txt
         // http://bio3d.colorado.edu/SerialEM/hlp/html/hidd_k2_save_options.htm
-        if (dims.x % 2 == 1 && dims.y % 2 == 1)
+        if (dims[0] % 2 == 1 && dims[1] % 2 == 1)
             REPORT_ERROR("Currently we support 4-bit MRC (mode 101) only when nx * ny is an even number.");
         datatype = UHalf;
     } else {
@@ -248,7 +243,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT)header->a / header->mx);
     if (header->my && header->b != 0) //yx
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT)header->b / header->my);
-    if (header->mz && header->c != 0)//zx
+    if (header->mz && header->c != 0) //zx
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT)header->c / header->mz);
 
     if (isStack && !dataflag) {

@@ -146,7 +146,7 @@ int Image<T>::readSPIDER(long int img_select) {
         fabs(header->nslice) < 1
     ) {
         swap = 1;
-        for (i = 0; i < extent; i+= 4) { swapbytes(b + i, 4); }
+        for (i = 0; i < extent; i += 4) { swapbytes(b + i, 4); }
     }
 
     if (header->labbyt != header->labrec * header->lenbyt)
@@ -163,14 +163,9 @@ int Image<T>::readSPIDER(long int img_select) {
 
     bool isStack = header->istack > 0;
 
-    typename MultidimArray<T>::Dimensions dims { (long int) header->nsam, (long int) header->nrow, (long int) header->nslice, 1 };
+    std::array<unsigned long int, 4> dims { (unsigned long int) header->nsam, (unsigned long int) header->nrow, (unsigned long int) header->nslice, 1 };
 
-    if (isStack) {
-        dims.n = header->maxim;
-        replaceNsize = dims.n;
-    } else {
-        replaceNsize = 0;
-    }
+    replaceNsize = isStack ? (dims[3] = header->maxim) : 0;
 
     /************
      * BELOW HERE DO NOT USE HEADER BUT LOCAL VARIABLES
@@ -178,8 +173,8 @@ int Image<T>::readSPIDER(long int img_select) {
 
     // Map the parameters.
     data.setDimensions(
-        dims.x, dims.y, dims.z,
-        isStack && img_select == -1 ? dims.n : 1
+        dims[0], dims[1], dims[2],
+        isStack && img_select == -1 ? dims[3] : 1
         // Read the whole object (-1) or a slide.
         // Only handle stacks of images, not of volumes.
     );
@@ -195,10 +190,8 @@ int Image<T>::readSPIDER(long int img_select) {
     // image is in stack? and set right initial and final image
     if (isStack) {
         pad = offset;
-        if (img_select > dims.n) {
-            std::string Num1str = std::to_string(img_select);
-            std::string Num2str = std::to_string(dims.n);
-            REPORT_ERROR((std::string) "readSpider: Image number " + Num1str + " exceeds stack size " + Num2str);
+        if (img_select > dims[3]) {
+            REPORT_ERROR((std::string) "readSpider: Image number " + std::to_string(img_select) + " exceeds stack size " + std::to_string(dims[3]));
         }
         offset += offset;
     }
@@ -209,7 +202,7 @@ int Image<T>::readSPIDER(long int img_select) {
     size_t header_size = offset;
     size_t image_size  = header_size + Xsize(data) * Ysize(data) * Zsize(data) * sizeof(float);
     std::cerr << "DEBUG readSPIDER: header_size = " << header_size << " image_size = " << image_size << std::endl;
-    std::cerr << "DEBUG readSPIDER: img_select= " << img_select << " n= " << dims.n << " pad = " << pad << std::endl;
+    std::cerr << "DEBUG readSPIDER: img_select= " << img_select << " n= " << dims[3] << " pad = " << pad << std::endl;
     #endif
     // offset should point to the begin of the data
     return readData(fimg, img_select, datatype, pad);
@@ -230,7 +223,7 @@ int Image<T>::readSPIDER(long int img_select) {
 */
 template <typename T>
 int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
-    // return(1);
+
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG
@@ -243,9 +236,9 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     //in an existing stack
     //IsStack?
     //else
-    typename MultidimArray<T>::Dimensions dims = data.getDimensions();
+    const auto dims = data.getDimensions();
 
-    float lenbyt = sizeof(float) * dims.x;  // Record length (in bytes)
+    float lenbyt = sizeof(float) * dims[0];  // Record length (in bytes)
     float labrec = floor(SPIDERSIZE / lenbyt); // # header records
     if (fmod(SPIDERSIZE,lenbyt) != 0) { labrec++; }
     float labbyt = labrec * lenbyt;   // Size of header in bytes
@@ -253,20 +246,20 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     SPIDERhead *header = (SPIDERhead *) askMemory((int) labbyt * sizeof(char));
 
     // Map the parameters
-    header->lenbyt = lenbyt;     // Record length (in bytes)
-    header->labrec = labrec;     // # header records
-    header->labbyt = labbyt;     // Size of header in bytes
+    header->lenbyt = lenbyt;  // Record length (bytes)
+    header->labrec = labrec;  // # header records
+    header->labbyt = labbyt;  // Size of header (bytes)
 
     header->irec   = labrec + floor(Xsize(data) * Ysize(data) * Zsize(data) * sizeof(float) / lenbyt + 0.999999); // Total # records
-    header->nsam   = dims.x;
-    header->nrow   = dims.y;
-    header->nslice = dims.z;
+    header->nsam   = dims[0];
+    header->nrow   = dims[1];
+    header->nslice = dims[2];
 
     #ifdef DEBUG
     printf("DEBUG writeSPIDER: Size: %g %g %g\n", header->nsam, header->nrow, header->nslice);
     #endif
 
-    header->iform = dims.z < 2 ? 1 : 2;  // 2D image or 3D volume?
+    header->iform = dims[2] <= 1 ? 1 : 2;  // 2D image or 3D volume?
     header->imami = 0; // never trust max/min
 
     if (!MDMainHeader.isEmpty()) {
@@ -287,10 +280,10 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
         } catch (const char *errmsg) {}
     }
     // For multi-image files
-    if (dims.n > 1 || mode == WRITE_APPEND || isStack) {
+    if (dims[3] > 1 || mode == WRITE_APPEND || isStack) {
         header->istack = 2;
         header->inuse =  1;
-        header->maxim = dims.n;
+        header->maxim = dims[3];
         if (mode == WRITE_APPEND)
         header->maxim = replaceNsize + 1;
     } else {
@@ -302,15 +295,14 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     // else end
     // Set time and date
     time_t timer;
-    time (&timer);
+    time(&timer);
     tm *t = localtime(&timer);
     while (t->tm_year > 100) { t->tm_year -= 100; }
     sprintf(header->ctim, "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
     sprintf(header->cdat, "%02d-%02d-%02d", t->tm_mday, t->tm_mon, t->tm_year);
 
-    size_t datasize, datasize_n;
-    datasize_n = dims.x * dims.y * dims.z;
-    datasize = datasize_n * gettypesize(Float);
+    const size_t datasize_n = dims[0] * dims[1] * dims[2];
+    const size_t datasize = datasize_n * gettypesize(Float);
 
     #ifdef DEBUG
     printf("DEBUG writeSPIDER: Date and time: %s %s\n", header->cdat, header->ctim);
@@ -347,17 +339,18 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
         castPage2Datatype(fdata, data.data, Float, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
     } else {
-        if (mode == WRITE_APPEND) {
-            fseek(fimg, 0, SEEK_END);
-        } else if (mode == WRITE_REPLACE) {
-            fseek(fimg, offset + (offset + datasize) * select_img, SEEK_SET);
+        switch (mode) {
+            case WRITE_APPEND:
+            fseek(fimg, 0, SEEK_END); break;
+            case WRITE_REPLACE:
+            fseek(fimg, offset + (offset + datasize) * select_img, SEEK_SET); break;
         }
 
         // Sjors 30 Oct 2012: I am completely unsure whether the code below will actually work....
         // Let's just raise an error and exit...
         REPORT_ERROR("writeSPIDER append/replace writing of SPIDER stacks not implemented yet....");
     }
-    //I guess I do not need to unlock since we are going to close the file
+    // I guess I do not need to unlock since we are going to close the file
     fl.l_type   = F_UNLCK;
     fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
 

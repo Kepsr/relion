@@ -1288,10 +1288,10 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     out.clear();
 
     // Check dimensions
-    MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
-    if (dimensions.z > 1 || dimensions.n > 1)
+    const auto dimensions = v.getDimensions();
+    if (dimensions[2] > 1 || dimensions[3] > 1)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray should be 2D.");
-    if (dimensions.x * dimensions.y <= 16)
+    if (dimensions[0] * dimensions[1] <= 16)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR MultidimArray is too small.");
     if (factor <= 1)
         REPORT_ERROR("fftw.cpp::padAndFloat2DMap(): ERROR Padding factor should be larger than 1.");
@@ -1318,7 +1318,7 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
     // std::cout << "bd_val = " << bd_val << ", bd_pix = " << bd_pix << std::endl;
 
     // Pad and float output MultidimArray (2× original size by default)
-    long int box_len = std::max(dimensions.x, dimensions.y) * factor;
+    long int box_len = std::max(dimensions[0], dimensions[1]) * factor;
     out.resize(box_len, box_len);
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
