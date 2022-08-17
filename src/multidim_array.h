@@ -249,52 +249,25 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  */
 namespace direct {
 
-    // Direct access into a 1D array (vector)
+    // Direct array access
     template <typename T>
-    inline T& elem(const MultidimArray<T> &v, long int i) {
-        return v.data[i];
-    }
-
-    // Direct access into a 2D array (matrix)
-    template <typename T>
-    inline T& elem(const MultidimArray<T> &v, long int i, long int j) {
-        return v.data[i + j * v.xdim];
-    }
-
-    // Direct access into a 3D array
-    template <typename T>
-    inline T& elem(const MultidimArray<T> &v, long int i, long int j, long int k) {
-        return v.data[i + j * v.xdim + k * v.xdim * v.ydim];
-    }
-
-    // Direct access into a 4D array
-    template <typename T>
-    inline T& elem(MultidimArray<T> v, long int i, long int j, long int k, long int l) {
-        return v.data[i + j * v.xdim + k * v.xdim * v.ydim + l * v.xdim * v.ydim * v.zdim];
+    inline T& elem(const MultidimArray<T> &v, long int i, long int j = 0, long int k = 0, long int l = 0) {
+        return v.data[
+            i +
+            j * v.xdim +
+            k * v.xdim * v.ydim +
+            l * v.xdim * v.ydim * v.zdim];
     }
 
 };
 //@}
 
-struct Origin {
-
-    long int x, y, z;
-
-    Origin(long int x, long int y, long int z): x(x), y(y), z(z) {}
-
-    bool operator == (Origin other) {
-        return x == other.x && y == other.y && z == other.z;
-    }
-
-    bool operator != (Origin other) {
-        return !((*this) == other);
-    }
-
-};
-
 /// Xmipp arrays
 template<typename T>
 class MultidimArray {
+
+    using  index_t =          long int;
+    using uindex_t = unsigned long int;
 
     public:
 
@@ -308,34 +281,12 @@ class MultidimArray {
      */
     T *data;
 
-    struct Dimensions {
-        // Essentially a 4D vector.
-        // For vectors and matrices, the higher order dimensions will be 1:
-        // (x, 1, 1, 1) or (x, y, 1, 1).
-
-        long int x, y, z, n;
-
-        Dimensions(long int x, long int y, long int z, long int n):
-        x(x), y(y), z(z), n(n) {}
-
-        template <typename T2>
-        bool operator == (T2 other) {
-            return x == other.x && y == other.y && z == other.z && n == other.n;
-        }
-
-        template <typename T2>
-        bool operator != (T2 other) {
-            return !(*this == other);
-        }
-
-    };
-
     /** Number of elements in X/Y/Z/N
      * Conventions:
      * - The Z dimension splits our array into slices
      * - The N dimension splits our array into images
      */
-    unsigned long int xdim, ydim, zdim, ndim;
+    uindex_t xdim, ydim, zdim, ndim;
 
     /// TODO: Manage access to xdim, ydim, zdim, ndim.
 
@@ -343,7 +294,7 @@ class MultidimArray {
     inline unsigned long int size() const { return xdim * ydim * zdim * ndim; }
 
     // X/Y/Zinit
-    long int xinit, yinit, zinit;
+    index_t xinit, yinit, zinit;
 
     /** "Iterator" support
      *
@@ -352,34 +303,17 @@ class MultidimArray {
      * Together, they can be used to iterate over the array:
      *
      * @code
-     * for (float *ptr = begin(); ptr != end(); ++ptr) {
-     *     std::cout << *ptr << " ";
+     * for (const auto *ptr = begin(); ptr != end(); ++ptr) {
+     *     foo(*ptr);
      * }
      * @endcode
      */
-    T* begin() { return data; }
-    T* end() { return &data[size()]; }
+    T* begin() const { return data; }
+    T* end() const { return data + size(); }
 
     // Logical array access
-
-    // Vector element
-    inline T& elem(long int i) const {
-        return direct::elem(*this, i - xinit);
-    }
-
-    // Matrix element
-    inline T& elem(long int i, long int j) const {
-        return direct::elem(*this, i - xinit, j - yinit);
-    }
-
-    // Volume element
-    inline T& elem(long int i, long int j, long int k) const {
+    inline T& elem(index_t i, index_t j = 0, index_t k = 0, index_t l = 0) const {
         return direct::elem(*this, i - xinit, j - yinit, k - zinit);
-    }
-
-    // Multidim element
-    inline T& elem(long int i, long int j, long int k, long int l) const {
-        return direct::elem(*this, i - xinit, j - yinit, k - zinit, l);
     }
 
     private:
@@ -526,7 +460,7 @@ class MultidimArray {
 
     /** Core allocate with dimensions.
      */
-    void coreAllocate(unsigned long int _xdim, unsigned long int _ydim, unsigned long int _zdim, unsigned long int _ndim) {
+    void coreAllocate(uindex_t _xdim, uindex_t _ydim, uindex_t _zdim, uindex_t _ndim) {
         if (_xdim == 0 || _ydim == 0 || _zdim == 0 || _ndim == 0) {
             clear();
             return;
@@ -571,13 +505,8 @@ class MultidimArray {
      * The dimensions should be set beforehand.
      */
     void coreAllocateReuse() {
-
-        if (data && size() <= allocated_size) {
-            return;  // Memory already allocated
-        } else if (size() > allocated_size) {
-            coreDeallocate();
-        }
-
+        if (data && size() <= allocated_size) return;  // Memory already allocated
+        if (size() > allocated_size) coreDeallocate();
         _allocate_memory();
     }
 
@@ -613,7 +542,7 @@ class MultidimArray {
      *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
      *
      */
-    void setDimensions(long int Xdim = 1, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
+    void setDimensions(index_t Xdim = 1, index_t Ydim = 1, index_t Zdim = 1, index_t Ndim = 1) {
         ndim = Ndim;
         zdim = Zdim;
         ydim = Ydim;
@@ -623,26 +552,22 @@ class MultidimArray {
     /** NOTE: When setXdim/setYdim/setZdim/setNdim are used, the array is not resized.
      * This should be done separately with coreAllocate()
      */
-
-    void setNdim(long int Ndim) { ndim = Ndim; }
-
-    void setZdim(long int Zdim) { zdim = Zdim; }
-
-    void setYdim(long int Ydim) { ydim = Ydim; }
-
-    void setXdim(long int Xdim) { xdim = Xdim; }
+    void setXdim(index_t Xdim) { xdim = Xdim; }
+    void setYdim(index_t Ydim) { ydim = Ydim; }
+    void setZdim(index_t Zdim) { zdim = Zdim; }
+    void setNdim(index_t Ndim) { ndim = Ndim; }
 
     /** Copy the shape parameters
      *
      */
     void copyShape(const MultidimArray<T> &m) {
-        ndim = m.ndim;
-        zdim = m.zdim;
-        ydim = m.ydim;
         xdim = m.xdim;
-        zinit = m.zinit;
-        yinit = m.yinit;
+        ydim = m.ydim;
+        zdim = m.zdim;
+        ndim = m.ndim;
         xinit = m.xinit;
+        yinit = m.yinit;
+        zinit = m.zinit;
     }
 
     /** Shrink to fit
@@ -676,7 +601,7 @@ class MultidimArray {
      * If shape is unchanged, then so is the data.
      * Otherwise, data is almost always destroyed.
      */
-    void reshape(long Xdim = 1, long Ydim = 1, long Zdim = 1, long Ndim = 1) {
+    void reshape(index_t Xdim = 1, index_t Ydim = 1, index_t Zdim = 1, index_t Ndim = 1) {
         if (data && allocated_size == Xdim * Ydim * Zdim * Ndim) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
             return;
@@ -689,19 +614,6 @@ class MultidimArray {
 
         coreDeallocate();
         coreAllocate(Xdim, Ydim, Zdim, Ndim);
-    }
-
-    void dynamic_reshape(long dim, int dimensionality) {
-        // Dynamic dispatch
-               if (dimensionality == 1) {
-            reshape(dim);
-        } else if (dimensionality == 2) {
-            reshape(dim, dim);
-        } else if (dimensionality == 3) {
-            reshape(dim, dim, dim);
-        } else if (dimensionality == 4) {
-            reshape(dim, dim, dim, dim);
-        }
     }
 
     /** Adjust shape to match the target array
@@ -732,9 +644,9 @@ class MultidimArray {
      * V1.resize(3, 3, 2);
      * @endcode
      */
-    void resizeNoCp(unsigned long int Xdim = 1, unsigned long int Ydim = 1, unsigned long int Zdim = 1, unsigned long int Ndim = 1) {
+    void resizeNoCp(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
 
-        size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
+        const size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
         if (NZYXdim == allocated_size && data)
             return;
 
@@ -791,7 +703,7 @@ class MultidimArray {
      * V1.resize(3, 3, 2);
      * @endcode
      */
-    void resize(unsigned long int Xdim = 1, unsigned long int Ydim = 1, unsigned long int Zdim = 1, unsigned long int Ndim = 1) {
+    void resize(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
         size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
         if (allocated_size == NZYXdim && data) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
@@ -828,10 +740,10 @@ class MultidimArray {
         }
 
         // Copy needed elements, fill with 0 if necessary
-        for (long int l = 0; l < Ndim; l++)
-        for (long int k = 0; k < Zdim; k++)
-        for (long int j = 0; j < Ydim; j++)
-        for (long int i = 0; i < Xdim; i++) {
+        for (index_t l = 0; l < Ndim; l++)
+        for (index_t k = 0; k < Zdim; k++)
+        for (index_t j = 0; j < Ydim; j++)
+        for (index_t i = 0; i < Xdim; i++) {
             // 0 if out of bounds
             new_data[i + j * Xdim + k * Xdim * Ydim + l * Xdim * Ydim * Zdim] = (
                 k >= zdim || i >= ydim || j >= xdim
@@ -874,20 +786,22 @@ class MultidimArray {
         zinit = other.zinit;
     }
 
-    /** Return a struct of the array's X/Y/Z/N dimensions.
+    /** Return the array's X/Y/Z/N dimensions.
      *
      * Could also be considered the "size" of the array.
+     * For vectors and matrices, the higher order dimensions will be 1:
+     * (x, 1, 1, 1) or (x, y, 1, 1).
      *
      * @code
      * dimensions = V.getDimensions();
      * @endcode
      */
-    Dimensions getDimensions() const {
-        return Dimensions(xdim, ydim, zdim, ndim);
+    std::array<uindex_t, 4> getDimensions() const {
+        return { xdim, ydim, zdim, ndim };
     }
 
-    Origin getOrigin() const {
-        return Origin(xinit, yinit, zinit);
+    std::array<index_t, 3> getOrigin() const {
+        return { xinit, yinit, zinit };
     }
 
     /** The dimension of an array.
@@ -899,10 +813,7 @@ class MultidimArray {
      * @endcode
      */
     inline int getDim() const {
-        if (size() < 1) return 0; // 0-dimensional (dimensionless) array (scalar)
-        if (zdim > 1) return 3;      // 3-dimensional array
-        if (ydim > 1) return 2;      // 2-dimensional array (matrix)
-        return 1;                    // 1-dimensional array (vector)
+        return zdim > 1 ? 3 : ydim > 1 ? 2 : xdim > 1 ? 1 : 0;
     }
 
     /** Check dimension.
@@ -927,8 +838,8 @@ class MultidimArray {
      * This function will call to 3D,2D or 1D specific window routines
      */
     void window(
-        long int n0, long int z0, long int y0, long int x0,
-        long int nF, long int zF, long int yF, long int xF,
+        index_t n0, index_t z0, index_t y0, index_t x0,
+        index_t nF, index_t zF, index_t yF, index_t xF,
         T init_value = 0, long n = 0
     ) {
         if (ndim > 1)
@@ -973,8 +884,8 @@ class MultidimArray {
      */
     void window(
         MultidimArray<T> &result,
-        long int z0, long int y0, long int x0,
-        long int zF, long int yF, long int xF,
+        index_t z0, index_t y0, index_t x0,
+        index_t zF, index_t yF, index_t xF,
         T init_value = 0, long n = 0
     ) const {
         result.resize(xF - x0 + 1, yF - y0 + 1, zF - z0 + 1);
@@ -982,9 +893,9 @@ class MultidimArray {
         result.yinit = y0;
         result.zinit = z0;
 
-        for (long int k = z0; k <= zF; k++)
-        for (long int j = y0; j <= yF; j++)
-        for (long int i = x0; i <= xF; i++) {
+        for (index_t k = z0; k <= zF; k++)
+        for (index_t j = y0; j <= yF; j++)
+        for (index_t i = x0; i <= xF; i++) {
             result.elem(i, j, k) = inside(i, j, k) ?
                 elem(i, j, k, n) : init_value;
         }
@@ -992,8 +903,8 @@ class MultidimArray {
 
     // As above but acts on itself
     void window(
-        long int z0, long int y0, long int x0,
-        long int zF, long int yF, long int xF,
+        index_t z0, index_t y0, index_t x0,
+        index_t zF, index_t yF, index_t xF,
         T init_value = 0, long n = 0
     ) {
         MultidimArray<T> result;
@@ -1022,8 +933,8 @@ class MultidimArray {
      */
     void window(
         MultidimArray<T> &result,
-        long int y0, long int x0,
-        long int yF, long int xF,
+        index_t y0, index_t x0,
+        index_t yF, index_t xF,
         T init_value = 0, long n = 0
     ) const {
         result.resize(xF - x0 + 1, yF - y0 + 1);
@@ -1038,8 +949,8 @@ class MultidimArray {
 
     // As above but acts on itself
     void window(
-        long int y0, long int x0,
-        long int yF, long int xF,
+        index_t y0, index_t x0,
+        index_t yF, index_t xF,
         T init_value = 0, long n = 0
     ) {
         MultidimArray<T> result;
@@ -1064,21 +975,21 @@ class MultidimArray {
      */
     void window(
         MultidimArray<T> &result,
-        long int x0,
-        long int xF,
+        index_t x0,
+        index_t xF,
         T init_value = 0, long n = 0
     ) const {
         result.resize(xF - x0 + 1);
         result.xinit = x0;
 
-        for (long int i = x0; i <= xF; i++) {
+        for (index_t i = x0; i <= xF; i++) {
             result.elem(i) = inside(i) ?
                 elem(i, 0, 0, n) : init_value;
             }
     }
 
     // As above but acts on itself
-    void window(long int x0, long int xF, T init_value = 0, long n = 0) {
+    void window(index_t x0, index_t xF, T init_value = 0, long n = 0) {
         MultidimArray<T> result;
         window(result, x0, xF, init_value, n);
         *this = result;
@@ -1140,32 +1051,32 @@ class MultidimArray {
     }
 
     /** inside for 3D matrices */
-    inline bool inside(long int i, long int j, long int k) const {
+    inline bool inside(index_t i, index_t j, index_t k) const {
         return inXbounds(i, *this) && inYbounds(j, *this) && inZbounds(k, *this);
     }
 
     /** inside for 2D matrices */
-    inline bool inside(long int i, long int j) const {
+    inline bool inside(index_t i, index_t j) const {
         return inXbounds(i, *this) && inYbounds(j, *this);
     }
 
     /** inside for 1D matrices */
-    inline bool inside(long int i) const {
+    inline bool inside(index_t i) const {
         return inXbounds(i, *this);
     }
 
     /** outside for 3D matrices */
-    bool outside(long int i, long int j, long int k) const {
+    bool outside(index_t i, index_t j, index_t k) const {
         return !inside(i, j, k);
     }
 
     /** outside for 2D matrices */
-    bool outside(long int i, long int j) const {
+    bool outside(index_t i, index_t j) const {
         return !inside(i, j);
     }
 
     /** outside for 1D matrices */
-    bool outside(long int i) const {
+    bool outside(index_t i) const {
         return !inside(i);
     }
 
@@ -1187,10 +1098,10 @@ class MultidimArray {
     }
 
     /** Return Y dimension. */
-    inline long int rowNumber() const { return ydim; }
+    inline index_t rowNumber() const { return ydim; }
 
     /** Return X dimension. */
-    inline long int colNumber() const { return xdim; }
+    inline index_t colNumber() const { return xdim; }
 
     // Wouldn't it be nice to have this in the Xmipp namespace? As in:
     // Xmipp::setOrigin(arr);
@@ -1211,22 +1122,22 @@ class MultidimArray {
     }
 
     // First logical X index
-    inline long int firstX() const { return Xmipp::init(xdim); }
+    inline index_t firstX() const { return Xmipp::init(xdim); }
 
     // Last logical X index
-    inline long int  lastX() const { return Xmipp::last(xdim); }
+    inline index_t  lastX() const { return Xmipp::last(xdim); }
 
     // First logical Y index
-    inline long int firstY() const { return Xmipp::init(ydim); }
+    inline index_t firstY() const { return Xmipp::init(ydim); }
 
     // Last logical Y index
-    inline long int  lastY() const { return Xmipp::last(ydim); }
+    inline index_t  lastY() const { return Xmipp::last(ydim); }
 
     // First logical Z index
-    inline long int firstZ() const { return Xmipp::init(zdim); }
+    inline index_t firstZ() const { return Xmipp::init(zdim); }
 
     // Last logical Z index
-    inline long int  lastZ() const { return Xmipp::last(zdim); }
+    inline index_t  lastZ() const { return Xmipp::last(zdim); }
 
     /** IsCorner (in 2D or 3D matrix)
      *
@@ -1259,10 +1170,7 @@ class MultidimArray {
     ///@name Access to the pixel values
     //@{
 
-    T& operator [] (long int n) const { return data[n]; }
-
-    T* begin() const { return data; }
-    T* end() const { return &data[size()]; }
+    T& operator [] (index_t n) const { return data[n]; }
 
     /** Volume element access by integer vector.
      *
@@ -1279,7 +1187,7 @@ class MultidimArray {
      * val = V(vectorR3(1, -2, 0));
      * @endcode
      */
-    T& operator()(const Matrix1D<long int> &v) const {
+    T& operator()(const Matrix1D<index_t> &v) const {
         switch (v.size()) {
             case 1:
             return elem(XX(v));
@@ -1292,44 +1200,12 @@ class MultidimArray {
         }
     }
 
-    /** 4D element access by index.
-    *
-    * Returns the value of a matrix logical position. In our example we could
-    * access from v(0, 0,-2,-1) to v(0, 1,2,1). The elements can be used either by
-    * value or by reference. An exception is thrown if the index is outside
-    * the logical range. Be careful that the argument order is (Z,Y,X).
-    *
-    * @code
-    * V(0, 0, -2, 1) = 1;
-    * val = V(0, 0, -2, 1);
-    * @endcode
-    */
-    inline T& operator()(long i, long int j, long int k, long int n) const {
-        return elem(i, j, k, n);
-    }
-
-    /** 3D element access by index.
-    *
-    * Returns the value of a matrix logical position. In our example we could
-    * access from v(0,-2,-1) to v(1,2,1). The elements can be used either by
-    * value or by reference. An exception is thrown if the index is outside
-    * the logical range. Be careful that the argument order is (Z,Y,X).
-    *
-    * @code
-    * V(0, -2, 1) = 1;
-    * val = V(0, -2, 1);
-    * @endcode
-    */
-    inline T& operator()(long int i, long int j, long int k) const {
-        return elem(i, j, k);
-    }
-
     /** 3D element access by index (getVoxel).
     *
     * Same function as operator() but with a name. Needed by swig.
     *
     */
-    inline T getVoxel(long int k, long int i, long int j) const {
+    inline T getVoxel(index_t k, index_t i, index_t j) const {
         return elem(i, j, k);
     }
 
@@ -1338,7 +1214,7 @@ class MultidimArray {
     * Same function as operator() but with a name. Needed by swig.
     *
     */
-    inline void setVoxel(long int k, long int i, long int j, T newval) {
+    inline void setVoxel(index_t k, index_t i, index_t j, T newval) {
         elem(i, j, k) = newval;
     }
 
@@ -1355,7 +1231,7 @@ class MultidimArray {
      * val = m(-2, 1);
      * @endcode
      */
-    inline T& operator()(long int i, long int j) const {
+    inline T& operator()(index_t i, index_t j) const {
         return elem(i, j);
     }
 
@@ -1371,7 +1247,7 @@ class MultidimArray {
      * val = v(-2);
      * @endcode
      */
-    inline T& operator()(long int i) const {
+    inline T& operator()(index_t i) const {
         return elem(i);
     }
 
@@ -1392,9 +1268,9 @@ class MultidimArray {
             REPORT_ERROR(" Multidimarray getImage: n larger than ndim (out of bounds)");
 
         M.resize(xdim, ydim, zdim);
-        for (long int k = 0; k < Zsize(M); k++)
-        for (long int j = 0; j < Ysize(M); j++)
-        for (long int i = 0; i < Xsize(M); i++) {
+        for (index_t k = 0; k < Zsize(M); k++)
+        for (index_t j = 0; j < Ysize(M); j++)
+        for (index_t i = 0; i < Xsize(M); i++) {
             direct::elem(M, i, j) = direct::elem(*this, i, j, k, n);
         }
 
@@ -1420,9 +1296,9 @@ class MultidimArray {
         if (M.zdim != zdim || M.ydim != ydim || M.xdim != xdim)
             REPORT_ERROR("setImage: MultidimArray dimensions different from the input image ones");
 
-        for (long int k = 0; k < Zsize(M); k++)
-        for (long int j = 0; j < Ysize(M); j++)
-        for (long int i = 0; i < Xsize(M); i++)
+        for (index_t k = 0; k < Zsize(M); k++)
+        for (index_t j = 0; j < Ysize(M); j++)
+        for (index_t i = 0; i < Xsize(M); i++)
             direct::elem(*this, i, j, k, n) = direct::elem(M, i, j, k);
 
     }
@@ -1439,7 +1315,7 @@ class MultidimArray {
      * V.slice(0, m);
      * @endcode
      */
-    void getSlice(long int k, MultidimArray<T> &M, char axis = 'Z', long n = 0) const {
+    void getSlice(index_t k, MultidimArray<T> &M, char axis = 'Z', long n = 0) const {
         if (xdim == 0) {
             M.clear();
             return;
@@ -1453,8 +1329,8 @@ class MultidimArray {
 
             k -= firstZ();
             M.resize(xdim, ydim);
-            for (long int j = 0; j < Ysize(M); j++)
-            for (long int i = 0; i < Xsize(M); i++) {
+            for (index_t j = 0; j < Ysize(M); j++)
+            for (index_t i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, j, i, k, n);
             }
             M.xinit = firstX();
@@ -1467,8 +1343,8 @@ class MultidimArray {
 
             k -= firstY();
             M.resize(xdim, zdim);
-            for (long int j = 0; j < Ysize(M); j++)
-            for (long int i = 0; i < Xsize(M); i++) {
+            for (index_t j = 0; j < Ysize(M); j++)
+            for (index_t i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, k, j, i, n);
             }
             M.xinit = firstX();
@@ -1481,8 +1357,8 @@ class MultidimArray {
 
             k -= firstX();
             M.resize(ydim, zdim);
-            for (long int j = 0; j < Ysize(M); j++)
-            for (long int i = 0; i < Xsize(M); i++) {
+            for (index_t j = 0; j < Ysize(M); j++)
+            for (index_t i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, j, k, i, n);
             }
             M.xinit = firstY();
@@ -1505,7 +1381,7 @@ class MultidimArray {
      * V.setSlice(1, (V.slice(0)));
      * @endcode
      */
-    void setSlice(long int k, const MultidimArray<T> &v, long n = 0) {
+    void setSlice(index_t k, const MultidimArray<T> &v, long n = 0) {
         if (xdim == 0)
             return;
 
@@ -1517,8 +1393,8 @@ class MultidimArray {
 
         k -= firstZ();
 
-        for (long int j = 0; j < Ysize(v); j++)
-        for (long int i = 0; i < Xsize(v); i++)
+        for (index_t j = 0; j < Ysize(v); j++)
+        for (index_t i = 0; i < Xsize(v); i++)
             direct::elem(*this, i, j, k, n) = direct::elem(v, i, j);
     }
 
@@ -1531,7 +1407,7 @@ class MultidimArray {
      * m.getCol(-1, v);
         * @endcode
         */
-    void getCol(long int j, MultidimArray<T> &v) const {
+    void getCol(index_t j, MultidimArray<T> &v) const {
             if (xdim == 0 || ydim == 0) {
                 v.clear();
                 return;
@@ -1541,7 +1417,7 @@ class MultidimArray {
             REPORT_ERROR("getCol: Matrix subscript (j) greater than matrix dimension");
 
         v.resize(ydim);
-        for (long int i = 0; i < ydim; i++)
+        for (index_t i = 0; i < ydim; i++)
             v(i) = (*this)(i, j);
     }
 
@@ -1554,7 +1430,7 @@ class MultidimArray {
      * m.setCol(0, (m.row(1)).transpose()); // Copies row 1 in column 0
      * @endcode
      */
-    void setCol(long int j, const MultidimArray<T> &v) {
+    void setCol(index_t j, const MultidimArray<T> &v) {
         if (xdim == 0 || ydim == 0)
             REPORT_ERROR("setCol: Target matrix is empty");
 
@@ -1564,7 +1440,7 @@ class MultidimArray {
         if (v.xdim != ydim)
             REPORT_ERROR("setCol: Vector dimension different from matrix one");
 
-        for (long int i = 0; i < ydim; i++)
+        for (index_t i = 0; i < ydim; i++)
             (*this)(i, j) = v(i);
     }
 
@@ -1578,7 +1454,7 @@ class MultidimArray {
      * m.getRow(-2, v);
     * @endcode
     */
-    void getRow(long int i, MultidimArray<T> &v) const {
+    void getRow(index_t i, MultidimArray<T> &v) const {
         if (xdim == 0 || ydim == 0) {
             v.clear();
             return;
@@ -1588,7 +1464,7 @@ class MultidimArray {
             REPORT_ERROR("getRow: Matrix subscript (i) greater than matrix dimension");
 
         v.resize(xdim);
-        for (long int j = 0; j < xdim; j++)
+        for (index_t j = 0; j < xdim; j++)
             v(j) = (*this)(i, j);
     }
 
@@ -1600,7 +1476,7 @@ class MultidimArray {
      * m.setRow(-2, m.row(1)); // Copies row 1 in row -2
      * @endcode
      */
-    void setRow(long int i, const MultidimArray<T> &v) {
+    void setRow(index_t i, const MultidimArray<T> &v) {
         if (xdim == 0 || ydim == 0)
             REPORT_ERROR("setRow: Target matrix is empty");
 
@@ -1610,7 +1486,7 @@ class MultidimArray {
         if (v.xdim != xdim)
             REPORT_ERROR("setRow: Vector dimension different from matrix one");
 
-        for (long int j = 0; j < xdim; j++)
+        for (index_t j = 0; j < xdim; j++)
             (*this)(i, j) = v(j);
     }
 
@@ -1623,8 +1499,8 @@ class MultidimArray {
      * @endcode
      */
     void toPhysical(
-        long int  k_log,  long int  i_log,  long int  j_log,
-        long int &k_phys, long int &i_phys, long int &j_phys
+        index_t  k_log,  index_t  i_log,  index_t  j_log,
+        index_t &k_phys, index_t &i_phys, index_t &j_phys
     ) const {
         k_phys = k_log - firstZ();
         i_phys = i_log - firstY();
@@ -1640,8 +1516,8 @@ class MultidimArray {
      * @endcode
      */
     void toLogical(
-        long int  k_phys, long int  i_phys, long int  j_phys,
-        long int &k_log,  long int &i_log,  long int &j_log
+        index_t  k_phys, index_t  i_phys, index_t  j_phys,
+        index_t &k_log,  index_t &i_log,  index_t &j_log
     ) const {
         k_log = k_phys + firstZ();
         i_log = i_phys + firstY();
@@ -1657,8 +1533,8 @@ class MultidimArray {
      * @endcode
      */
     void toPhysical(
-        long int  i_log,  long int  j_log,
-        long int &i_phys, long int &j_phys
+        index_t  i_log,  index_t  j_log,
+        index_t &i_phys, index_t &j_phys
     ) const {
         i_phys = i_log - firstY();
         j_phys = j_log - firstX();
@@ -1673,8 +1549,8 @@ class MultidimArray {
      * @endcode
      */
     void toLogical(
-        long int  i_phys, long int j_phys,
-        long int &i_log,  long int &j_log
+        index_t  i_phys, index_t j_phys,
+        index_t &i_log,  index_t &j_log
     ) const {
         i_log = i_phys + firstY();
         j_log = j_phys + firstX();
@@ -1688,7 +1564,7 @@ class MultidimArray {
      * v.toPhysical(i_log, i_phys);
      * @endcode
      */
-    void toPhysical(long int i_log, long int &i_phys) const {
+    void toPhysical(index_t i_log, index_t &i_phys) const {
         i_phys = i_log - firstX();
     }
 
@@ -1700,7 +1576,7 @@ class MultidimArray {
      * v.toLogical(i_phys, i_log);
      * @endcode
      */
-    void toLogical(long int i_phys, long int &i_log) const {
+    void toLogical(index_t i_phys, index_t &i_log) const {
         i_log = i_phys + firstX();
     }
 

@@ -50,21 +50,21 @@ int Image<T>::readTIFF(
     ) REPORT_ERROR("The input TIFF file does not have the width or height field.");
 
     // True image dimensions
-    typename MultidimArray<T>::Dimensions dims { width, length, 1, 1 };
+    std::array<unsigned long int, 4> dims { width, length, 1, 1 };
 
     uint16 bitsPerSample, sampleFormat;
     TIFFGetFieldDefaulted(ftiff, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
     TIFFGetFieldDefaulted(ftiff, TIFFTAG_SAMPLEFORMAT,  &sampleFormat);
 
     // Find the number of frames
-    while (TIFFSetDirectory(ftiff, dims.n) != 0) { dims.n++; }
+    while (TIFFSetDirectory(ftiff, dims[3]) != 0) { dims[3]++; }
     // and go back to the start
     TIFFSetDirectory(ftiff, 0);
 
     #ifdef DEBUG_TIFF
     printf(
         "TIFF width %d, length %d, nDim %d, sample format %d, bits per sample %d\n",
-        width, length, dims.n, sampleFormat, bitsPerSample
+        width, length, dims[3], sampleFormat, bitsPerSample
     );
     #endif
 
@@ -82,7 +82,7 @@ int Image<T>::readTIFF(
 
     if (packed_4bit) {
         datatype = UHalf;
-        dims.x *= 2;
+        dims[0] *= 2;
     } else if (bitsPerSample == 8 && sampleFormat == SAMPLEFORMAT_UINT) {
         datatype = UChar;
     } else if (bitsPerSample == 8 && sampleFormat == SAMPLEFORMAT_INT) {
@@ -122,11 +122,11 @@ int Image<T>::readTIFF(
 
     // TODO: TIFF is always a stack, isn't it?
     if (isStack) {
-        dims.z = 1;
-        replaceNsize = dims.n;
-        if (img_select >= (int) dims.n) {
+        dims[2] = 1;
+        replaceNsize = dims[3];
+        if (img_select >= (int) dims[3]) {
             std::string Num1str = std::to_string(img_select + 1);
-            std::string Num2str = std::to_string(dims.n);
+            std::string Num2str = std::to_string(dims[3]);
             REPORT_ERROR((std::string) "readTIFF: Image number " + Num1str + " exceeds stack size " + Num2str + " of image " + name);
         }
     } else {
@@ -135,12 +135,12 @@ int Image<T>::readTIFF(
 
     // Map the parameters
     if (isStack) {
-        dims.z = 1;
+        dims[2] = 1;
         if (img_select != -1) {
-            dims.n = 1;
+            dims[3] = 1;
         }
     }
-    data.setDimensions(dims.x, dims.y, dims.z, dims.n);
+    data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
     data.coreAllocateReuse();
 
     /*
@@ -156,7 +156,7 @@ int Image<T>::readTIFF(
         if (img_select == -1) { img_select = 0; }  // img_select starts from 0
 
         size_t haveread_n = 0;
-        for (int i = 0; i < dims.n; i++) {
+        for (int i = 0; i < dims[3]; i++) {
             TIFFSetDirectory(ftiff, img_select);
 
             // Make sure image property is consistent for all frames
@@ -220,11 +220,11 @@ int Image<T>::readTIFF(
            We follow this.
         */
 
-        const int ylim = dims.y / 2, z = 0;
-        for (int n = 0; n < dims.n; n++)
+        const int ylim = dims[1] / 2, z = 0;
+        for (int n = 0; n < dims[3]; n++)
         for (int y1 = 0; y1 < ylim; y1++) {
-            const int y2 = dims.y - 1 - y1;
-            for (int x = 0; x < dims.x; x++) {
+            const int y2 = dims[1] - 1 - y1;
+            for (int x = 0; x < dims[0]; x++) {
                 /// TODO: memcpy or pointer arithmetic is probably faster
                 std::swap(
                     direct::elem(data, x, y1, z, n),

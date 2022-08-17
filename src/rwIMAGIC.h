@@ -127,21 +127,17 @@ int Image<T>::readIMAGIC(long int img_select) {
                 swapbytes(b + i, 4);
     }
 
-    typename MultidimArray<T>::Dimensions dims { (long int) header->iylp, (long int) header->ixlp, 1, (long int) header->ifn + 1 };
+    std::array<unsigned long int, 4> dims { (unsigned long int) header->iylp, (unsigned long int) header->ixlp, 1, (unsigned long int) header->ifn + 1 };
 
-    std::stringstream Num;
-    std::stringstream Num2;
-    if (img_select > (long int) dims.n) {
-        Num  << img_select;
-        Num2 << dims.n;
-        REPORT_ERROR((std::string)"readImagic: Image number " + Num.str() + " exceeds stack size " + Num2.str());
+    if (img_select > (long int) dims[3]) {
+        REPORT_ERROR((std::string) "readImagic: Image number " + std::to_string(img_select) + " exceeds stack size " + std::to_string(dims[3]));
     }
 
     if (img_select > -1)
-        dims.n = 1;
+        dims[3] = 1;
     // setDimensions do not allocate data
-    data.setDimensions(dims.x, dims.y, dims.z, dims.n);
-    replaceNsize = dims.n;
+    data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
+    replaceNsize = dims[3];
 
     DataType datatype;
     if (strstr(header->type, "PACK")) {
@@ -209,15 +205,15 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
     IMAGIChead *header = new IMAGIChead;
 
-    typename MultidimArray<T>::Dimensions dims = data.getDimensions();
+    const auto dims = data.getDimensions();
 
     // Fill in the file header
     header->nhfr   = 1;
-    header->npix2  = dims.x * dims.y;
+    header->npix2  = dims[0] * dims[1];
     header->npixel = header->npix2;
-    header->iylp   = dims.x;
-    header->ixlp   = dims.y;
-    header->ifn    = dims.n - 1;
+    header->iylp   = dims[0];
+    header->ixlp   = dims[1];
+    header->ifn    = dims[3] - 1;
 
     time_t timer;
     time (&timer);
@@ -246,7 +242,7 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         REPORT_ERROR("ERROR write IMAGIC image: invalid typeid(T)");
     }
 
-    size_t datasize = dims.x * dims.y * dims.z * gettypesize(Float);
+    size_t datasize = dims[0] * dims[1] * dims[2] * gettypesize(Float);
 
     if (!MDMainHeader.isEmpty()) {
         try {

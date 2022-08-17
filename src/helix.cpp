@@ -818,8 +818,8 @@ void imposeHelicalSymmetryInRealSpace(
 
     if (v.getDim() != 3)
         REPORT_ERROR("helix.cpp::imposeHelicalSymmetryInRealSpace(): Input helical reference is not 3D! (vol.getDim() = " + integerToString(v.getDim()) + ")");
-    MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
-    long int box_len = std::min({dimensions.x, dimensions.y, dimensions.z});
+    const auto dimensions = v.getDimensions();
+    long int box_len = std::min({dimensions[0], dimensions[1], dimensions[2]});
 
     // Check helical parameters
     checkParametersFor3DHelicalReconstruction(
@@ -846,7 +846,7 @@ void imposeHelicalSymmetryInRealSpace(
 
     // Crop the central slices
     v.setXmippOrigin();
-    z_max = (RFLOAT) dimensions.z * z_percentage / 2.0;
+    z_max = (RFLOAT) dimensions[2] * z_percentage / 2.0;
     if (z_max > (RFLOAT) Zlast(v) - 1.0) { z_max = (RFLOAT) Zlast(v) - 1.0; }
     z_min = -z_max;
     if (z_min < (RFLOAT) Zinit(v)  + 1.0) { z_min = (RFLOAT) Zinit(v)  + 1.0; }
@@ -858,7 +858,7 @@ void imposeHelicalSymmetryInRealSpace(
     vout.setXmippOrigin();
 
     // Calculate tabulated sine and cosine values
-    rec_len = 2 + ceil((RFLOAT(dimensions.z) + 2.0) / rise_pix);
+    rec_len = 2 + ceil((RFLOAT(dimensions[2]) + 2.0) / rise_pix);
     sin_rec.clear();
     cos_rec.clear();
     sin_rec.resize(rec_len);
@@ -1411,8 +1411,8 @@ void makeBlot(
     MultidimArray<RFLOAT> &v,
     RFLOAT y, RFLOAT x, RFLOAT r
 ) {
-    MultidimArray<RFLOAT>::Dimensions dimensions = v.getDimensions();
-    if (dimensions.n != 1 || dimensions.z != 1 || Xsize(v) * Ysize(v) <= 2)
+    const auto dimensions = v.getDimensions();
+    if (dimensions[3] != 1 || dimensions[2] != 1 || Xsize(v) * Ysize(v) <= 2)
         return;
 
     RFLOAT min = direct::elem(v, 0, 0);
@@ -3637,8 +3637,8 @@ MultidimArray<RFLOAT> cutOutPartOfHelix(
         REPORT_ERROR("helix.cpp::cutOutPartOfHelix(): Angular range must be larger than 0!");
     ang_deg = ang_deg > 91.0 ? 91.0 : ang_deg;
 
-    MultidimArray<RFLOAT>::Dimensions dimensions = vin.getDimensions();
-    long int old_boxdim = std::min({dimensions.x, dimensions.y, dimensions.z});
+    const auto dimensions = vin.getDimensions();
+    long int old_boxdim = std::min({dimensions[0], dimensions[1], dimensions[2]});
 
     if (new_boxdim <= 0 || new_boxdim > old_boxdim / 2)
         new_boxdim = old_boxdim / 2;
