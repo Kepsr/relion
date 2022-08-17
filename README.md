@@ -41,12 +41,19 @@ make
 
 By performing `git checkout ver3.1` instead of `git checkout master`, you can access
 the latest (developmental) updates for RELION 3.1.x. The code there is not
-tested as throughfully as that in the master branch and not generally recommended.
+tested as thoroughly as that in the master branch and is not recommended for general use.
 
 The binaries will be produced in the `build/bin` directory. If you want to copy binaries
 into somewhere else, run `cmake` with `-DCMAKE_INSTALL_PREFIX=/where/to/install/` and
 perform `make install` as the final step. Do not specify the build directory itself
 as `CMAKE_INSTALL_PREFIX`! This will not work.
+
+Alternatively, to build from within the top-level `relion` directory:
+
+```
+cmake . -B build
+make -C build --no-print-directory
+```
 
 Also note that the MPI library used for compilation must be the one you intend to use RELION with.
 Compiling RELION with one version of MPI and running the resulting binary with mpirun from another
