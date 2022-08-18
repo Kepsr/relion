@@ -105,10 +105,10 @@ void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArra
         {"range",     &threshold_range},
     };
 
-    auto it = s2f.find(type);
+    const auto it = s2f.find(type);
     if (it == s2f.end())
         REPORT_ERROR(static_cast<std::string>("Threshold: mode not supported (" + type + ")"));
-    auto f = it->second;
+    const auto f = it->second;
 
     int *maskptr = mask ? mask->begin() : nullptr;
     for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
@@ -116,73 +116,52 @@ void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArra
     }
 }
 
-/** Array (vector) by scalar.
- *
- * Take a vector and a constant,
- * and apply the appropriate operation element-wise.
- * This is the function which really implements the operations.
- * Simple calls to it perform much faster than calls to the corresponding operators.
- * It is supposed to be hidden from users.
- *
- * This function is not ported to Python.
- */
-template <typename T>
-inline MultidimArray<T> arrayByScalar(
-    const MultidimArray<T> &input, T scalar, MultidimArray<T> &output,
-    T (*operation) (T, T)
-) {
-    if (!output.data || !output.sameShape(input)) { output.resize(input); }
-    T *iptr = input.data, *optr = output.data;
-    // These two pointers will move through (respectively) input and output.
-    // *iptr will be used to assign *optr.
-    for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr) {
-        *optr = operation(*iptr, scalar);
-    }
-    return output;
-}
-
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator + (const T scalar) const {
-    MultidimArray<T> output;
-    return arrayByScalar(*this, scalar, output, +[] (const T x, T y) -> T { return x + y; });
+    auto copy (*this);
+    return copy += scalar;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator - (const T scalar) const {
-    MultidimArray<T> output;
-    return arrayByScalar(*this, scalar, output, +[] (const T x, T y) -> T { return x - y; });
+    auto copy (*this);
+    return copy -= scalar;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator * (const T scalar) const {
-    MultidimArray<T> output;
-    return arrayByScalar(*this, scalar, output, +[] (const T x, T y) -> T { return x * y; });
+    auto copy (*this);
+    return copy *= scalar;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator / (const T scalar) const {
-    MultidimArray<T> output;
-    return arrayByScalar(*this, scalar, output, +[] (const T x, T y) -> T { return x / y; });
+    auto copy (*this);
+    return copy /= scalar;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator += (const T scalar) {
-    return arrayByScalar(*this, scalar, *this, +[] (const T x, T y) -> T { return x + y; });
+MultidimArray<T>& MultidimArray<T>::operator += (const T scalar) {
+    for (auto &x : *this) { x += scalar; }
+    return *this;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator -= (const T scalar) {
-    return arrayByScalar(*this, scalar, *this, +[] (const T x, T y) -> T { return x - y; });
+MultidimArray<T>& MultidimArray<T>::operator -= (const T scalar) {
+    for (auto &x : *this) { x -= scalar; }
+    return *this;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator *= (const T scalar) {
-    return arrayByScalar(*this, scalar, *this, +[] (const T x, T y) -> T { return x * y; });
+MultidimArray<T>& MultidimArray<T>::operator *= (const T scalar) {
+    for (auto &x : *this) { x *= scalar; }
+    return *this;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator /= (const T scalar) {
-    return arrayByScalar(*this, scalar, *this, +[] (const T x, T y) -> T { return x / y; });
+MultidimArray<T>& MultidimArray<T>::operator /= (const T scalar) {
+    for (auto &x : *this) { x /= scalar; }
+    return *this;
 }
 
 /** Array by array
@@ -194,120 +173,97 @@ MultidimArray<T> MultidimArray<T>::operator /= (const T scalar) {
  * to be a hidden function not useable by normal programmers.
  *
  */
-template <typename T, typename Op>
-inline MultidimArray<T> arrayByArray(
-    const MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
-    MultidimArray<T> &output,
-    Op operation
+template <typename T>
+inline MultidimArray<T>& pointwise(
+    MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
+    T (*operation)(T, T)
 ) {
     if (!arg1.sameShape(arg2)) {
         arg1.printShape();
         arg2.printShape();
         REPORT_ERROR((std::string) "Array_by_array: different shapes");
     }
-    if (!output.data || !output.sameShape(arg1)) { output.resize(arg1); }
-    T *arg1ptr, *arg2ptr, *optr;
-    long int n;
     for (
-        n = 0, optr = output.data, arg1ptr = arg1.data, arg2ptr = arg2.data;
-        n < arg1.xdim * arg1.ydim * arg1.zdim;
-        ++n, ++arg1ptr, ++arg2ptr, ++optr
+        T *ptr1 = arg1.data, *ptr2 = arg2.data,
+          *end = arg1.data + arg1.xdim * arg1.ydim * arg1.zdim;
+        ptr1 != end;
+        ++ptr1, ++ptr2
     ) {
-        *optr = operation(*arg1ptr, *arg2ptr);
+        *ptr1 = operation(*ptr1, *ptr2);
     }
-    return output;
+    return arg1;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator + (const MultidimArray<T> &arg) const {
-    MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, +[] (T x, T y) -> T { return x + y; });
+    auto copy (*this);
+    return copy += arg;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator - (const MultidimArray<T> &arg) const {
-    MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, +[] (T x, T y) -> T { return x - y; });
+    auto copy (*this);
+    return copy -= arg;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator * (const MultidimArray<T> &arg) const {
-    MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, +[] (T x, T y) -> T { return x * y; });
+    auto copy (*this);
+    return copy *= arg;
 }
 
 template <typename T>
 MultidimArray<T> MultidimArray<T>::operator / (const MultidimArray<T> &arg) const {
-    MultidimArray<T> output;
-    return arrayByArray(*this, arg, output, +[] (T x, T y) -> T { return x / y; });
+    auto copy (*this);
+    return copy /= arg;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator += (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, +[] (T x, T y) -> T { return x + y; });
+MultidimArray<T>& MultidimArray<T>::operator += (const MultidimArray<T> &arg) {
+    return pointwise(*this, arg, +[] (T x, T y) -> T { return x + y; });
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator -= (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, +[] (T x, T y) -> T { return x - y; });
+MultidimArray<T>& MultidimArray<T>::operator -= (const MultidimArray<T> &arg) {
+    return pointwise(*this, arg, +[] (T x, T y) -> T { return x - y; });
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator *= (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, +[] (T x, T y) -> T { return x * y; });
+MultidimArray<T>& MultidimArray<T>::operator *= (const MultidimArray<T> &arg) {
+    return pointwise(*this, arg, +[] (T x, T y) -> T { return x * y; });
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
-    return arrayByArray(*this, arg, *this, +[] (T x, T y) -> T { return x / y; });
-}
-
-/** Scalar by array.
- *
- * This function must take one scalar and a vector, and operate element by
- * element according to the operation required. This is the function which
- * really implements the operations. Simple calls to it perform much faster
- * than calls to the corresponding operators. Although it is supposed to
- * be a hidden function not useable by normal programmers.
- *
- * This function is not ported to Python.
- */
-template <typename T>
-inline MultidimArray<T> scalarByArray(
-    const T scalar,
-    const MultidimArray<T> &input,
-    MultidimArray<T> &output,
-    T (*operation) (T, T)
-) {
-    if (!output.data || !output.sameShape(input)) { output.resize(input); }
-    T *iptr = output.data, *optr = input.data;
-    for (long int n = 0; n < input.xdim * input.ydim * input.zdim; ++n, ++optr, ++iptr)
-        *optr = operation(scalar, *iptr);
-    return output;
+MultidimArray<T>& MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
+    return pointwise(*this, arg, +[] (T x, T y) -> T { return x / y; });
 }
 
 template <typename T>
 MultidimArray<T> operator + (const T scalar, const MultidimArray<T> &input) {
-    MultidimArray<T> output;
-    return scalarByArray(scalar, input, output, +[] (const T x, T y) -> T { return x + y; });
+    auto copy (input);
+    for (auto &x : copy) { x = scalar + x; }
+    return copy;
 }
 
 template <typename T>
 MultidimArray<T> operator - (const T scalar, const MultidimArray<T> &input) {
-    MultidimArray<T> output;
-    return scalarByArray(scalar, input, output, +[] (const T x, T y) -> T { return x - y; });
+    auto copy (input);
+    for (auto &x : copy) { x = scalar - x; }
+    return copy;
 }
 
 template <typename T>
 MultidimArray<T> operator * (const T scalar, const MultidimArray<T> &input) {
-    MultidimArray<T> output;
-    return scalarByArray(scalar, input, output, +[] (const T x, T y) -> T { return x * y; });
+    auto copy (input);
+    for (auto &x : copy) { x = scalar * x; }
+    return copy;
 }
 
 template <typename T>
 MultidimArray<T> operator / (const T scalar, const MultidimArray<T> &input) {
-    MultidimArray<T> output;
-    return scalarByArray(scalar, input, output, +[] (const T x, T y) -> T { return x / y; });
+    auto copy (input);
+    for (auto &x : copy) { x = scalar / x; }
+    return copy;
 }
 
 template class MultidimArray<float>;

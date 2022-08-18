@@ -1645,13 +1645,13 @@ class MultidimArray {
 
     MultidimArray<T> operator / (const MultidimArray<T> &arg) const;
 
-    MultidimArray<T> operator += (const MultidimArray<T> &arg);
+    MultidimArray<T>& operator += (const MultidimArray<T> &arg);
 
-    MultidimArray<T> operator -= (const MultidimArray<T> &arg);
+    MultidimArray<T>& operator -= (const MultidimArray<T> &arg);
 
-    MultidimArray<T> operator *= (const MultidimArray<T> &arg);
+    MultidimArray<T>& operator *= (const MultidimArray<T> &arg);
 
-    MultidimArray<T> operator /= (const MultidimArray<T> &arg);
+    MultidimArray<T>& operator /= (const MultidimArray<T> &arg);
     //@}
 
     /** @name Array "by" scalar operations
@@ -1674,13 +1674,13 @@ class MultidimArray {
 
     MultidimArray<T> operator / (const T scalar) const;
 
-    MultidimArray<T> operator += (const T scalar);
+    MultidimArray<T>& operator += (const T scalar);
 
-    MultidimArray<T> operator -= (const T scalar);
+    MultidimArray<T>& operator -= (const T scalar);
 
-    MultidimArray<T> operator *= (const T scalar);
+    MultidimArray<T>& operator *= (const T scalar);
 
-    MultidimArray<T> operator /= (const T scalar);
+    MultidimArray<T>& operator /= (const T scalar);
     //@}
 
     /** @name Scalar "by" array operations
@@ -1715,15 +1715,14 @@ class MultidimArray {
     /** Same value in all components.
      *
      * The constant must be of a type compatible with the array type, ie,
-     * you cannot  assign a RFLOAT to an integer array without a casting.
-     * It is not an error if the array is empty, then nothing is done.
+     * you cannot assign a RFLOAT to an integer array without a casting.
      *
      * @code
      * v.initConstant(3.14);
      * @endcode
      */
-    void initConstant(T val) {
-        for (T *ptr = begin(); ptr != end(); ++ptr) { *ptr = val; }
+    void initConstant(T scalar) {
+        for (auto &x : *this) { x = scalar; }
     }
 
     /** Initialize to zeros following a pattern.
