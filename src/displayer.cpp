@@ -25,7 +25,7 @@
 #include <src/jaz/gravis/tImage.h>
 #endif
 
-const Fl_Menu_Item color_choices[] = {
+const Fl_Menu_Item color_choices[] {
     // text, shortcut, callback, user_data, flags, type, font, size, color
     {"Red (1)",     0, (Fl_Callback*) 0, (void*) 1, 0, 0, 0, 0, FL_RED},
     {"Green (2)",   0, (Fl_Callback*) 0, (void*) 2, 0, 0, 0, 0, FL_GREEN},
@@ -54,7 +54,7 @@ void DisplayBox::draw() {
         xpos, ypos, (short) xsize_data, (short) ysize_data,
         depth
     );
-    if (img_label != "") {
+    if (!img_label.empty()) {
         fl_color(FL_WHITE);
         fl_draw(img_label.c_str(), xpos, ypos + fl_height());
     }
@@ -232,7 +232,9 @@ int basisViewerWindow::fillCanvas(
     Image<RFLOAT> img;
     img.read(fn_img, false);
     int nimgs = MDin.numberOfObjects();
-    if (viewer_type == MULTIVIEWER) {
+
+    switch (viewer_type) {
+        case MULTIVIEWER: {
         int xsize_canvas = _ncol * (ceil(Xsize(img()) * _scale) + BOX_OFFSET);
         int nrow = ceil((RFLOAT) nimgs / _ncol);
         int ysize_canvas = nrow * (ceil(Ysize(img()) * _scale) + BOX_OFFSET);
@@ -272,9 +274,9 @@ int basisViewerWindow::fillCanvas(
 
         // Pre-load existing backup_selection.star file
         FileName fn_sel, fn_dir = ".";
-        if (fn_selected_imgs != "") {
+        if (!fn_selected_imgs.empty()) {
             fn_dir = fn_selected_imgs.beforeLastOf("/");
-        } else if (fn_selected_parts != "") {
+        } else if (!fn_selected_parts.empty()) {
             fn_dir = fn_selected_parts.beforeLastOf("/");
         }
 
@@ -285,7 +287,8 @@ int basisViewerWindow::fillCanvas(
         resizable(*this);
         show();
         return Fl::run();
-    } else if (viewer_type == SINGLEVIEWER) {
+        }
+        case SINGLEVIEWER: {
         if (nimgs > 1)
             REPORT_ERROR("ERROR: trying to launch a singleViewerCanvas with multiple images...");
         int xsize_canvas = ceil(Xsize(img()) * _scale);
@@ -297,6 +300,7 @@ int basisViewerWindow::fillCanvas(
         resizable(*this);
         show();
         return Fl::run();
+        }
     }
 
     REPORT_ERROR("Logic error: should not come here");
@@ -328,7 +332,7 @@ int basisViewerWindow::fillPickerViewerCanvas(
     canvas.biggest_color_value  = std::max(_color_blue_value, _color_red_value);
     canvas.do_blue_to_red = (_color_blue_value < _color_red_value);
     canvas.do_read_whole_stacks = false;
-    if (_fn_coords != "" && exists(_fn_coords)) {
+    if (!_fn_coords.empty() && exists(_fn_coords)) {
         canvas.loadCoordinates(false);
         canvas.redraw();
     }
@@ -428,12 +432,11 @@ void basisViewerCanvas::fill(
                 bool have_optics_group = false;
                 RFLOAT angpix = 0.0;
 
-                if (_do_apply_orient || lowpass > 0.0 || highpass > 0.0) {
-                    if (MDin.containsLabel(EMDL::IMAGE_OPTICS_GROUP)) {
-                        int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, my_ipos) - 1;
-                        angpix = obsModel->opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, optics_group);
-                        have_optics_group = true;
-                    }
+                if ((_do_apply_orient || lowpass > 0.0 || highpass > 0.0)
+                && MDin.containsLabel(EMDL::IMAGE_OPTICS_GROUP)) {
+                    int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, my_ipos) - 1;
+                    angpix = obsModel->opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, optics_group);
+                    have_optics_group = true;
                 }
 
                 if (_do_apply_orient) {
@@ -445,19 +448,19 @@ void basisViewerCanvas::fill(
                         ZZ(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
                         offset /= angpix;
                         const RFLOAT psi = MDin.getValue<RFLOAT>(EMDL::ORIENT_PSI, my_ipos);
+                        Matrix2D<RFLOAT> A;
                         if (img().getDim() == 2) {
-                            Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
-                            A.at(0, 2) = cos(radians(psi)) * XX(offset) - sin(radians(psi)) * YY(offset);
-                            A.at(1, 2) = cos(radians(psi)) * YY(offset) + sin(radians(psi)) * XX(offset);
-                            img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
+                            A = rotation2DMatrix(psi);
+                            for (const int i : {0, 1})
+                                A.at(i, 2) = cos(radians(psi)) * XX(offset) - sin(radians(psi)) * YY(offset);
                         } else {
                             const RFLOAT rot  = MDin.getValue<RFLOAT>(EMDL::ORIENT_ROT,  my_ipos);
                             const RFLOAT tilt = MDin.getValue<RFLOAT>(EMDL::ORIENT_TILT, my_ipos);
-                            Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(rot, tilt, psi);
-                            for (int i : {0, 1, 2})
+                            A = Euler::rotation3DMatrix(rot, tilt, psi);
+                            for (const int i : {0, 1, 2})
                                 A.at(i, 3) = A.at(i, 0) * XX(offset) + A.at(i, 1) * YY(offset) + A.at(i, 2) * ZZ(offset);
-                            img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
                         }
+                        img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
                     } else if (MDin.containsLabel(EMDL::MLMODEL_IS_HELIX) && img().getDim() == 3) {
                         Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(0, 90, 0);
                         for (int i : {0, 1, 2})
@@ -480,9 +483,9 @@ void basisViewerCanvas::fill(
                     // Then set the original index in the sorted index, so that particles can be written out in the correct order
                     MDin.setValue(EMDL::SORTED_IDX, my_ipos, my_ipos);
                 }
-                div_t division = std::div((int) my_sorted_ipos, ncol);
-                int icol = division.rem;
-                int irow = division.quot;
+                const div_t division = std::div((int) my_sorted_ipos, ncol);
+                const int icol = division.rem;
+                const int irow = division.quot;
                 nrow = std::max(nrow, irow + 1);
                 if (my_ipos == 0) {
                     xsize_box = 2 * xoff + ceil(_scale * Xsize(img()));  // 2 pixels on each side in between all images
@@ -537,188 +540,187 @@ void basisViewerCanvas::fill(
 }
 
 void basisViewerCanvas::draw() {
-    for (int ipos = 0 ; ipos < boxes.size(); ipos++)
-        boxes[ipos]->redraw();
+    for (auto *box : boxes)
+        box->redraw();
 }
 
 int multiViewerCanvas::handle(int ev) {
-    if (ev == FL_PUSH) {
-        int xc = (int) Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
-        int yc = (int) Fl::event_y() - scroll->y() + scroll->scrollbar.value();
-        int xpos = xc / xsize_box;
-        int ypos = yc / ysize_box;
-        int ipos = ypos * ncol + xpos;
-        // Check there was no click in the area outside the boxes...
-        // ipos within valid region
-        if (xpos < ncol && ypos < nrow && ipos < boxes.size()) {
-            if (Fl::event_button() == FL_LEFT_MOUSE) {
-                // Shift-left-click will select a whole range
-                if (Fl::event_state(FL_SHIFT)) {
-                    if (has_shift) {
-                        int postshift_ipos = ipos;
-                        int ipos0 = (postshift_ipos > preshift_ipos) ? preshift_ipos : postshift_ipos;
-                        int iposF = (postshift_ipos > preshift_ipos) ? postshift_ipos : preshift_ipos;
-                        // Select all images from ipos0 to iposF
-                        // TODO!!! Cannot do this here: have to define an event for the multiview window as a whole!
-                        // This multiview window should have all the DisplayBoxes inside it....
-                        for (int my_ipos = ipos0; my_ipos <= iposF; my_ipos++) {
-                            boxes[my_ipos]->select();
-                        }
-                    } else {
-                        preshift_ipos = ipos;
-                    }
-                    has_shift = !has_shift;
-                } else {
-                    boxes[ipos]->toggleSelect(current_selection_type);
+    if (ev != FL_PUSH) return 0;
+
+    const int xc = (int) Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
+    const int yc = (int) Fl::event_y() - scroll->y() + scroll->scrollbar.value();
+    const int xpos = xc / xsize_box;
+    const int ypos = yc / ysize_box;
+    const int ipos = ypos * ncol + xpos;
+    // Check there was no click in the area outside the boxes...
+    // ipos within valid region
+    if (xpos >= ncol || ypos >= nrow || ipos >= boxes.size()) return 0;
+
+    if (Fl::event_button() == FL_LEFT_MOUSE) {
+        // Shift-left-click will select a whole range
+        if (Fl::event_state(FL_SHIFT)) {
+            if (has_shift) {
+                int postshift_ipos = ipos;
+                int ipos0 = (postshift_ipos > preshift_ipos) ? preshift_ipos : postshift_ipos;
+                int iposF = (postshift_ipos > preshift_ipos) ? postshift_ipos : preshift_ipos;
+                // Select all images from ipos0 to iposF
+                // TODO!!! Cannot do this here: have to define an event for the multiview window as a whole!
+                // This multiview window should have all the DisplayBoxes inside it....
+                for (int my_ipos = ipos0; my_ipos <= iposF; my_ipos++) {
+                    boxes[my_ipos]->select();
                 }
-            } else if (Fl::event_button() == FL_RIGHT_MOUSE) {
-                Fl_Menu_Item rclick_menu;
-                if (do_class) {
+            } else {
+                preshift_ipos = ipos;
+            }
+            has_shift = !has_shift;
+        } else {
+            boxes[ipos]->toggleSelect(current_selection_type);
+        }
+    } else if (Fl::event_button() == FL_RIGHT_MOUSE) {
+        Fl_Menu_Item rclick_menu;
+        if (do_class) {
 
-                    Fl_Menu_Item rclick_menu[] = {
-                        { "Save backup selection" },
-                        { "Load backup selection" },
-                        { "Clear selection" },
-                        { "Invert selection" },
-                        { "Select all classes below" },
-                        { "Select all classes above" },
-                        { "Show metadata this class" },
-                        { "Show original image" },
-                        { "Save image as PNG" },
-                        { "Show Fourier amplitudes (2x)" },
-                        { "Show Fourier phase angles (2x)" },
-                        { "Show helical layer line profile" },
-                        { "Show particles from selected classes" },
-                        { "Set selection type" },
-                        { "Save selected classes" }, // idx = 14; change below when re-ordered!!
-                        { "Quit" },
-                        { 0 }
-                    };
+            Fl_Menu_Item rclick_menu[] {
+                { "Save backup selection" },
+                { "Load backup selection" },
+                { "Clear selection" },
+                { "Invert selection" },
+                { "Select all classes below" },
+                { "Select all classes above" },
+                { "Show metadata this class" },
+                { "Show original image" },
+                { "Save image as PNG" },
+                { "Show Fourier amplitudes (2x)" },
+                { "Show Fourier phase angles (2x)" },
+                { "Show helical layer line profile" },
+                { "Show particles from selected classes" },
+                { "Set selection type" },
+                { "Save selected classes" }, // idx = 14; change below when re-ordered!!
+                { "Quit" },
+                { 0 }
+            };
 
-                    if (!do_allow_save) {
-                        rclick_menu[14].deactivate();
-                    }
+            if (!do_allow_save) {
+                rclick_menu[14].deactivate();
+            }
 
-                    const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, 0);
-                    if (!m) {
-                        return 0;
-                    } else if (strcmp(m->label(), "Save backup selection") == 0) {
-                        saveBackupSelection();
-                    } else if (strcmp(m->label(), "Load backup selection") == 0) {
-                        loadBackupSelection();
-                    } else if (strcmp(m->label(), "Clear selection") == 0) {
-                        clearSelection();
-                    } else if (strcmp(m->label(), "Invert selection") == 0) {
-                        invertSelection();
-                    } else if (strcmp(m->label(), "Select all classes below") == 0) {
-                        selectFromHereBelow(ipos);
-                    } else if (strcmp(m->label(), "Select all classes above") == 0) {
-                        selectFromHereAbove(ipos);
-                    } else if (strcmp(m->label(), "Show metadata this class") == 0) {
-                        printMetaData(ipos);
-                    } else if (strcmp(m->label(), "Show original image") == 0) {
-                        showOriginalImage(ipos);
-                    } else if (strcmp(m->label(), "Save image as PNG") == 0) {
-                        saveImage(ipos);
-                    } else if (strcmp(m->label(), "Show Fourier amplitudes (2x)") == 0) {
-                        showFourierAmplitudes(ipos);
-                    } else if (strcmp(m->label(), "Show Fourier phase angles (2x)") == 0) {
-                        showFourierPhaseAngles(ipos);
-                    } else if (strcmp(m->label(), "Show helical layer line profile") == 0) {
-                        showHelicalLayerLineProfile(ipos);
-                    } else if (strcmp(m->label(), "Set selection type") == 0) {
-                        setSelectionType();
-                    } else if (strcmp(m->label(), "Show particles from selected classes") == 0) {
-                        showSelectedParticles(current_selection_type);
-                    } else if (strcmp(m->label(), "Save selected classes") == 0) {
-                        saveBackupSelection();
-                        saveSelected(current_selection_type);
-                        saveSelectedParticles(current_selection_type);
-                        // save the exit_success file after saving already,
-                        // as many users close the window through the operating system's cross symbol on the window, instead of a proper exit
-                        RELION_EXIT_SUCCESS;
-                    } else if (strcmp(m->label(), "Quit") == 0) {
-                        //clean exit
-                        exit(RELION_EXIT_SUCCESS);
-                    }
-                } else {
-                    Fl_Menu_Item rclick_menu[] = {
-                        { "Save backup selection" },
-                        { "Load backup selection" },
-                        { "Clear selection" },
-                        { "Invert selection" },
-                        { "Select all below" },
-                        { "Select all above" },
-                        { "Show average of selection" },
-                        { "Show stddev of selection" },
-                        { "Show original image" },
-                        { "Save image as PNG" },
-                        { "Show Fourier amplitudes (2x)" },
-                        { "Show Fourier phase angles (2x)" },
-                        { "Show helical layer line profile" },
-                        { "Set selection type" },
-                        { "Show metadata" },
-                        { "Save STAR with selected images" }, // idx = 15; change below when re-ordered!!
-                        { "Quit" },
-                        { 0 }
-                    };
-                    if (!do_allow_save) {
-                        rclick_menu[15].deactivate();
-                    }
+            const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, 0);
+            if (!m) {
+                return 0;
+            } else if (strcmp(m->label(), "Save backup selection") == 0) {
+                saveBackupSelection();
+            } else if (strcmp(m->label(), "Load backup selection") == 0) {
+                loadBackupSelection();
+            } else if (strcmp(m->label(), "Clear selection") == 0) {
+                clearSelection();
+            } else if (strcmp(m->label(), "Invert selection") == 0) {
+                invertSelection();
+            } else if (strcmp(m->label(), "Select all classes below") == 0) {
+                selectFromHereBelow(ipos);
+            } else if (strcmp(m->label(), "Select all classes above") == 0) {
+                selectFromHereAbove(ipos);
+            } else if (strcmp(m->label(), "Show metadata this class") == 0) {
+                printMetaData(ipos);
+            } else if (strcmp(m->label(), "Show original image") == 0) {
+                showOriginalImage(ipos);
+            } else if (strcmp(m->label(), "Save image as PNG") == 0) {
+                saveImage(ipos);
+            } else if (strcmp(m->label(), "Show Fourier amplitudes (2x)") == 0) {
+                showFourierAmplitudes(ipos);
+            } else if (strcmp(m->label(), "Show Fourier phase angles (2x)") == 0) {
+                showFourierPhaseAngles(ipos);
+            } else if (strcmp(m->label(), "Show helical layer line profile") == 0) {
+                showHelicalLayerLineProfile(ipos);
+            } else if (strcmp(m->label(), "Set selection type") == 0) {
+                setSelectionType();
+            } else if (strcmp(m->label(), "Show particles from selected classes") == 0) {
+                showSelectedParticles(current_selection_type);
+            } else if (strcmp(m->label(), "Save selected classes") == 0) {
+                saveBackupSelection();
+                saveSelected(current_selection_type);
+                saveSelectedParticles(current_selection_type);
+                // save the exit_success file after saving already,
+                // as many users close the window through the operating system's cross symbol on the window, instead of a proper exit
+                RELION_EXIT_SUCCESS;
+            } else if (strcmp(m->label(), "Quit") == 0) {
+                //clean exit
+                exit(RELION_EXIT_SUCCESS);
+            }
+        } else {
+            Fl_Menu_Item rclick_menu[] {
+                { "Save backup selection" },
+                { "Load backup selection" },
+                { "Clear selection" },
+                { "Invert selection" },
+                { "Select all below" },
+                { "Select all above" },
+                { "Show average of selection" },
+                { "Show stddev of selection" },
+                { "Show original image" },
+                { "Save image as PNG" },
+                { "Show Fourier amplitudes (2x)" },
+                { "Show Fourier phase angles (2x)" },
+                { "Show helical layer line profile" },
+                { "Set selection type" },
+                { "Show metadata" },
+                { "Save STAR with selected images" }, // idx = 15; change below when re-ordered!!
+                { "Quit" },
+                { 0 }
+            };
+            if (!do_allow_save) {
+                rclick_menu[15].deactivate();
+            }
 
-                    const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, 0);
-                    if (!m) {
-                        return 0;
-                    } else if (strcmp(m->label(), "Save backup selection") == 0)  {
-                        saveBackupSelection();
-                    } else if (strcmp(m->label(), "Load backup selection") == 0) {
-                        loadBackupSelection();
-                    } else if (strcmp(m->label(), "Clear selection") == 0) {
-                        clearSelection();
-                    } else if (strcmp(m->label(), "Invert selection") == 0) {
-                        invertSelection();
-                    } else if (strcmp(m->label(), "Select all below") == 0) {
-                        selectFromHereBelow(ipos);
-                    } else if (strcmp(m->label(), "Select all above") == 0) {
-                        selectFromHereAbove(ipos);
-                    } else if (strcmp(m->label(), "Show average of selection") == 0) {
-                        showAverage(DISPLAYER_SELECTED, false);
-                    } else if (strcmp(m->label(), "Show stddev of selection") == 0) {
-                        showAverage(DISPLAYER_SELECTED, true);
-                    } else if (strcmp(m->label(), "Show original image") == 0) {
-                        showOriginalImage(ipos);
-                    } else if (strcmp(m->label(), "Save image as PNG") == 0) {
-                        saveImage(ipos);
-                    } else if (strcmp(m->label(), "Show Fourier amplitudes (2x)") == 0) {
-                        showFourierAmplitudes(ipos);
-                    } else if (strcmp(m->label(), "Show Fourier phase angles (2x)") == 0) {
-                        showFourierPhaseAngles(ipos);
-                    } else if (strcmp(m->label(), "Show helical layer line profile") == 0) {
-                        showHelicalLayerLineProfile(ipos);
-                    } else if (strcmp(m->label(), "Set selection type") == 0) {
-                        setSelectionType();
-                    } else if (strcmp(m->label(), "Show metadata") == 0) {
-                        printMetaData(ipos);
-                    } else if (strcmp(m->label(), "Save STAR with selected images") == 0) {
-                        saveBackupSelection();
-                        saveSelected(DISPLAYER_SELECTED);
-                        // save the exit_success file after saving already,
-                        // as many users close the window through the operating system's cross symbol on the window, instead of a proper exit
-                        RELION_EXIT_SUCCESS;
-                    } else if (strcmp(m->label(), "Quit") == 0) {
-                        exit(0);
-                    }
-                }
-                return 1;  // Report successful event handling to caller
+            const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, 0);
+            if (!m) {
+                return 0;
+            } else if (strcmp(m->label(), "Save backup selection") == 0)  {
+                saveBackupSelection();
+            } else if (strcmp(m->label(), "Load backup selection") == 0) {
+                loadBackupSelection();
+            } else if (strcmp(m->label(), "Clear selection") == 0) {
+                clearSelection();
+            } else if (strcmp(m->label(), "Invert selection") == 0) {
+                invertSelection();
+            } else if (strcmp(m->label(), "Select all below") == 0) {
+                selectFromHereBelow(ipos);
+            } else if (strcmp(m->label(), "Select all above") == 0) {
+                selectFromHereAbove(ipos);
+            } else if (strcmp(m->label(), "Show average of selection") == 0) {
+                showAverage(DISPLAYER_SELECTED, false);
+            } else if (strcmp(m->label(), "Show stddev of selection") == 0) {
+                showAverage(DISPLAYER_SELECTED, true);
+            } else if (strcmp(m->label(), "Show original image") == 0) {
+                showOriginalImage(ipos);
+            } else if (strcmp(m->label(), "Save image as PNG") == 0) {
+                saveImage(ipos);
+            } else if (strcmp(m->label(), "Show Fourier amplitudes (2x)") == 0) {
+                showFourierAmplitudes(ipos);
+            } else if (strcmp(m->label(), "Show Fourier phase angles (2x)") == 0) {
+                showFourierPhaseAngles(ipos);
+            } else if (strcmp(m->label(), "Show helical layer line profile") == 0) {
+                showHelicalLayerLineProfile(ipos);
+            } else if (strcmp(m->label(), "Set selection type") == 0) {
+                setSelectionType();
+            } else if (strcmp(m->label(), "Show metadata") == 0) {
+                printMetaData(ipos);
+            } else if (strcmp(m->label(), "Save STAR with selected images") == 0) {
+                saveBackupSelection();
+                saveSelected(DISPLAYER_SELECTED);
+                // save the exit_success file after saving already,
+                // as many users close the window through the operating system's cross symbol on the window, instead of a proper exit
+                RELION_EXIT_SUCCESS;
+            } else if (strcmp(m->label(), "Quit") == 0) {
+                exit(0);
             }
         }
-
+        return 1;  // Report successful event handling to caller
     }
     return 0;
 }
 
 void multiViewerCanvas::saveBackupSelection() {
-    std::vector<int> selected(boxes.size());
+    std::vector<int> selected (boxes.size());
     for (long int ipos = 0; ipos < boxes.size(); ipos++) {
         long int my_sorted_ipos = boxes[ipos]->MDimg.containsLabel(EMDL::SORTED_IDX) ?
             boxes[ipos]->MDimg.getValue<long int>(EMDL::SORTED_IDX) :
@@ -734,25 +736,21 @@ void multiViewerCanvas::saveBackupSelection() {
         MDbackup.setValue(EMDL::SELECTED, selected[ipos], ipos);
     }
 
-    FileName fn_dir;
-    if (fn_selected_imgs != "") {
-        fn_dir = fn_selected_imgs.beforeLastOf("/");
-    } else if (fn_selected_parts != "") {
-        fn_dir = fn_selected_parts.beforeLastOf("/");
-    } else {
-        fn_dir = ".";
-    }
-    fn_dir += "/backup_selection.star";
+    const FileName fn_dir = (
+        !fn_selected_imgs.empty() ? fn_selected_imgs.beforeLastOf("/") :
+        !fn_selected_parts.empty() ? fn_selected_parts.beforeLastOf("/") :
+        "."
+    ) + "/backup_selection.star";
 
     MDbackup.write(fn_dir);
-    std::cout <<" Written out " << fn_dir << std::endl;
+    std::cout << " Written out " << fn_dir << std::endl;
 }
 
 void multiViewerCanvas::loadBackupSelection(bool do_ask) {
 
-    FileName fn_dir = (
-        fn_selected_imgs  != "" ? fn_selected_imgs .beforeLastOf("/") :
-        fn_selected_parts != "" ? fn_selected_parts.beforeLastOf("/") :
+    const FileName fn_dir = (
+        !fn_selected_imgs.empty() ? fn_selected_imgs.beforeLastOf("/") :
+        !fn_selected_parts.empty() ? fn_selected_parts.beforeLastOf("/") :
         "."
     ) + "/";
 
@@ -761,12 +759,10 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
         Fl_File_Chooser chooser(
             fn_dir.c_str(), "(backup_selection.star)",
             Fl_File_Chooser::SINGLE, "Choose selection file to load"
-        );      // chooser type
+        );  // chooser type
         chooser.show();
         // Block until user picks something.
-        while (chooser.shown()) {
-            Fl::wait();
-        }
+        while (chooser.shown()) Fl::wait();
 
         // User hit cancel?
         if (!chooser.value()) return;
@@ -784,7 +780,7 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
         return;
     }
 
-    std::vector<int> selected(boxes.size(), false);
+    std::vector<int> selected (boxes.size(), false);
     for (long int ipos : MDbackup) {
         selected[ipos] = MDbackup.getValue<int>(EMDL::SELECTED);
     }
@@ -798,27 +794,23 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
 }
 
 void multiViewerCanvas::clearSelection() {
-    for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-        boxes[ipos]->unSelect();
-    }
+    for (auto *box : boxes)
+        box->unSelect();
 }
 
 void multiViewerCanvas::invertSelection() {
-    for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-        boxes[ipos]->toggleSelect(current_selection_type);
-    }
+    for (auto *box : boxes)
+        box->toggleSelect(current_selection_type);
 }
 
 void multiViewerCanvas::selectFromHereBelow(int iposp) {
-    for (long int ipos = iposp; ipos < boxes.size(); ipos++) {
+    for (long int ipos = iposp; ipos < boxes.size(); ipos++)
         boxes[ipos]->select();
-    }
 }
 
 void multiViewerCanvas::selectFromHereAbove(int iposp) {
-    for (long int ipos = 0; ipos <= iposp; ipos++) {
+    for (long int ipos = 0; ipos <= iposp; ipos++)
         boxes[ipos]->select();
-    }
 }
 
 void multiViewerCanvas::printMetaData(int main_ipos) {
@@ -826,11 +818,11 @@ void multiViewerCanvas::printMetaData(int main_ipos) {
 
     if (do_class) {
         int nselected_classes = 0, nselected_particles = 0;
-        for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-            if (boxes[ipos]->selected == DISPLAYER_SELECTED) {
+        for (const auto *box : boxes) {
+            if (box->selected == DISPLAYER_SELECTED) {
                 nselected_classes++;
-                // Get class number (may not be ipos + 1 if resorted!)
-                int myclass = boxes[ipos]->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
+                // Get class number
+                int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
                 for (long int _ : *MDdata) {
                     if (MDdata->getValue<int>(EMDL::PARTICLE_CLASS) == myclass)
                     nselected_particles++;
@@ -860,10 +852,10 @@ void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
     MultidimArray<RFLOAT> sum2(ysize, xsize);
 
     int nn = 0;
-    for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-        if (boxes[ipos]->selected == selected) {
+    for (const auto *box : boxes) {
+        if (box->selected == selected) {
             for (long int n = 0; n < sum.size(); n++) {
-                int ival = boxes[ipos]->img_data[n];
+                int ival = box->img_data[n];
                 if (ival < 0) { ival += 256; }
                 sum[n]  += ival;
                 sum2[n] += ival * ival;
@@ -891,27 +883,19 @@ void multiViewerCanvas::showOriginalImage(int ipos) {
     // Make system call because otherwise the green drawing for distance measurements doesn't work....
     FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label);
 
-    std::string cl = "relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale);
-    cl += " --sigma_contrast " + floatToString(sigma_contrast);
-    cl += " --black " + floatToString(minval);
-    cl += " --white " + floatToString(maxval);
-
-    if (&colour_scheme == &black_grey_red) {
-        cl += " --colour_fire";
-    } else if (&colour_scheme == &blue_grey_white) {
-        cl += " --colour_ice";
-    } else if (&colour_scheme == &blue_grey_red) {
-        cl += " --colour_fire-n-ice";
-    } else if (&colour_scheme == &rainbow) {
-        cl += " --colour_rainbow";
-    } else if (&colour_scheme == &cyan_black_yellow) {
-        cl += " --colour_difference";
-    }
-
-    // send job in the background
-    cl += " &";
-
-    system(cl.c_str());
+    system(("relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale)
+        + " --sigma_contrast " + floatToString(sigma_contrast)
+        + " --black " + floatToString(minval)
+        + " --white " + floatToString(maxval)
+        + (
+            &colour_scheme == &black_grey_red    ? " --colour_fire" :
+            &colour_scheme == &blue_grey_white   ? " --colour_ice" :
+            &colour_scheme == &blue_grey_red     ? " --colour_fire-n-ice" :
+            &colour_scheme == &rainbow           ? " --colour_rainbow" :
+            &colour_scheme == &cyan_black_yellow ? " --colour_difference" :
+            ""
+        ) + " &"  // Send job to background
+    ).c_str());
 
     /*
     FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label);
@@ -948,20 +932,23 @@ void basisViewerCanvas::saveImage(int ipos) {
 
     const auto &box = *boxes[ipos];
 
-    int xsize = box.xsize_data;
-    int ysize = box.ysize_data;
-    unsigned char *img_data = box.img_data;
+    const int xsize = box.xsize_data;
+    const int ysize = box.ysize_data;
+    const unsigned char *img_data = box.img_data;
 
     tImage<bRGB> pngOut(xsize, ysize);
     pngOut.fill(bRGB(0));
 
     for (size_t n = 0, nlim = xsize * ysize; n < nlim; n++) {
+        unsigned char r, g, b;
         if (&colour_scheme == &greyscale) {
-            unsigned char c = img_data[n];
-            pngOut[n] = bRGB(c, c, c);
+            r = g = b = img_data[n];
         } else {
-            pngOut[n] = bRGB(img_data[3 * n], img_data[3 * n + 1], img_data[3 * n + 2]);
+            r = img_data[3 * n + 0];
+            g = img_data[3 * n + 1];
+            b = img_data[3 * n + 2];
         }
+        pngOut[n] = bRGB(r, g, b);
     }
 
     pngOut.writePNG(chooser.value());
@@ -998,12 +985,13 @@ void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
         return;
     }
 
-    std::string cl =
-        "relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale)
+    system((
+        std::string("relion_display")
+        + " --i " + fn_img
+        + " --scale " + floatToString(ori_scale)
         + " --show_fourier_phase_angles"
-        + " &";  // Send job to background
-
-    system(cl.c_str());
+        + " &"
+    ).c_str());  // Send job to background
 }
 
 void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
@@ -1030,10 +1018,10 @@ void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
 
 void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTable &MDpart) {
     MDpart.clear();
-    for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-        if (boxes[ipos]->selected == selected) {
-            // Get class number (may not be ipos+1 if resorted!)
-            int myclass = boxes[ipos]->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
+    for (const auto *box : boxes) {
+        if (box->selected == selected) {
+            // Get class number
+            int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
             for (long int _ : *MDdata) {
                 if (MDdata->getValue<int>(EMDL::PARTICLE_CLASS) == myclass)
                     MDpart.addObject(MDdata->getObject());
@@ -1047,10 +1035,10 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
         MetaDataTable MDtmp = MDpart;
         MDpart.clear();
         MDtmp.sort(EMDL::UNDEFINED, false, false, true);
-        for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-            if (boxes[ipos]->selected == selected) {
+        for (const auto *box : boxes) {
+            if (box->selected == selected) {
                 int nr_selected = 0;
-                int myclass = boxes[ipos]->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
+                int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS);
                 for (long int _ : MDtmp) {
                     if (MDtmp.getValue<int>(EMDL::PARTICLE_CLASS) == myclass) {
                         MDpart.addObject(MDtmp.getObject());
@@ -1070,7 +1058,7 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
 }
 
 void multiViewerCanvas::saveSelectedParticles(int save_selected) {
-    if (fn_selected_parts == "") {
+    if (fn_selected_parts.empty()) {
         std::cout << " Not saving selected particles, as no filename was provided..." << std::endl;
         return;
     }
@@ -1095,7 +1083,7 @@ void multiViewerCanvas::saveSelectedParticles(int save_selected) {
         obsModel->save(MDpart, fn_selected_parts, "particles");
         std::cout << "Saved " << fn_selected_parts << " with " << nparts << " selected particles." << std::endl;
     } else {
-        std::cout <<" No classes selected. Please select one or more classes..." << std::endl;
+        std::cout << "No classes selected. Please select one or more classes..." << std::endl;
     }
 }
 
@@ -1105,7 +1093,6 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
     if (nr_regroups <= 0)
         return;
 
-    int max_optics_group_id = -1;
 
     // Find out which optics group each scale group belongs to
     // Also initialise rlnGroupNrParticles for this selection
@@ -1114,6 +1101,7 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
         MDgroups.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, 0);
     }
 
+    int max_optics_group_id = -1;
     for (long int _ : MDdata) {
         long int group_id        = MDdata  .getValue<long int>(EMDL::MLMODEL_GROUP_NO); // 1-indexed
         long int part_optics_id  = MDdata  .getValue<long int>(EMDL::IMAGE_OPTICS_GROUP);
@@ -1209,7 +1197,7 @@ void multiViewerCanvas::showSelectedParticles(int save_selected) {
 }
 
 void multiViewerCanvas::saveTrainingSet() {
-    FileName fn_rootdir = "/net/dstore1/teraraid3/scheres/trainingset/";
+    const FileName fn_rootdir = "/net/dstore1/teraraid3/scheres/trainingset/";
 
     // Make the output job directory
     char my_dir[200];
@@ -1223,9 +1211,9 @@ void multiViewerCanvas::saveTrainingSet() {
     // Now save the selected images in a MetaData file.
     MetaDataTable MDout;
     int nsel = 0;
-    for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-        MDout.addObject(boxes[ipos]->MDimg.getObject());
-        MDout.setValue(EMDL::SELECTED, boxes[ipos]->selected);
+    for (const auto *box : boxes) {
+        MDout.addObject(box->MDimg.getObject());
+        MDout.setValue(EMDL::SELECTED, box->selected);
     }
 
     // Maintain the original image ordering
@@ -1278,16 +1266,16 @@ void multiViewerCanvas::saveTrainingSet() {
 }
 
 void multiViewerCanvas::saveSelected(int save_selected) {
-    if (fn_selected_imgs == "")
+    if (fn_selected_imgs.empty())
         return;
 
     // Now save the selected images in a MetaData file.
     MetaDataTable MDout;
     int nsel = 0;
-    for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-        if (boxes[ipos]->selected == save_selected) {
+    for (const auto *box : boxes) {
+        if (box->selected == save_selected) {
             nsel++;
-            MDout.addObject(boxes[ipos]->MDimg.getObject());
+            MDout.addObject(box->MDimg.getObject());
         }
     }
     if (nsel > 0) {
@@ -1317,7 +1305,6 @@ void multiViewerCanvas::saveSelected(int save_selected) {
             }
         }
 
-
         if (obsModel->opticsMdt.numberOfObjects() > 0 && !do_class) {
             if (
                 metadata_table_name == "micrographs" ||
@@ -1325,25 +1312,24 @@ void multiViewerCanvas::saveSelected(int save_selected) {
                 !MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME)
             ) {
                 obsModel->save(MDout, fn_selected_imgs, "micrographs");
-                std::cout << "Saved "<< fn_selected_imgs << " with " << nsel << " selected micrographs." << std::endl;
+                std::cout << "Saved " << fn_selected_imgs << " with " << nsel << " selected micrographs." << std::endl;
             } else if (
                 metadata_table_name == "movies" ||
                 MDout.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME) &&
                 !MDout.containsLabel(EMDL::IMAGE_NAME)
             ) {
                 obsModel->save(MDout, fn_selected_imgs, "movies");
-                std::cout << "Saved "<< fn_selected_imgs << " with " << nsel << " selected movies." << std::endl;
-
+                std::cout << "Saved " << fn_selected_imgs << " with " << nsel << " selected movies." << std::endl;
             } else {
                 obsModel->save(MDout, fn_selected_imgs, "particles");
-                std::cout << "Saved "<< fn_selected_imgs << " with " << nsel << " selected particles." << std::endl;
+                std::cout << "Saved " << fn_selected_imgs << " with " << nsel << " selected particles." << std::endl;
             }
         } else {
             MDout.write(fn_selected_imgs);
-            std::cout << "Saved "<< fn_selected_imgs << " with " << nsel << " selected images." << std::endl;
+            std::cout << "Saved " << fn_selected_imgs << " with " << nsel << " selected images." << std::endl;
         }
     } else {
-        std::cout <<" No images to save...." << std::endl;
+        std::cout << " No images to save...." << std::endl;
     }
 }
 
@@ -1373,88 +1359,107 @@ int popupSelectionTypeWindow::fill() {
 }
 
 int singleViewerCanvas::handle(int ev) {
-    if (ev == FL_PUSH && Fl::event_button() == FL_LEFT_MOUSE) {
-        int rx = Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
-        int ry = Fl::event_y() - scroll->y() + scroll->scrollbar.value();
-        // Left mouse click writes value and coordinates to screen
+    switch (ev) {
 
-        const auto &box0 = *boxes[0];
+        case FL_PUSH:
+        if (Fl::event_button() == FL_LEFT_MOUSE) {
 
-        if (rx < box0.xsize_data && ry < box0.ysize_data && rx >= 0 && ry >=0) {
-            int n = ry * box0.xsize_data + rx;
-            unsigned char ival =
-                &colour_scheme == &greyscale ? box0.img_data[n] :
-                colour_scheme.rgbToGrey({box0.img_data[3 * n], box0.img_data[3 * n + 1], box0.img_data[3 * n + 2]});
-            RFLOAT step = (box0.maxval - box0.minval) / 255.0;
-            RFLOAT dval = ival * step + box0.minval;
-            int ysc = round(ry / box0.scale);
-            int xsc = round(rx / box0.scale);
-            int yscp = ysc - round(box0.ysize_data / (2.0 * box0.scale));
-            int xscp = xsc - round(box0.xsize_data / (2.0 * box0.scale));
-            std::cout << " Image value at (" << xsc << "," << ysc << ") or (" << xscp << "," << yscp << ")~= " << dval << std::endl;
+            int rx = Fl::event_x() - scroll->x() + scroll->hscrollbar.value();
+            int ry = Fl::event_y() - scroll->y() + scroll->scrollbar.value();
+            // Left mouse click writes value and coordinates to screen
+
+            const auto *box = boxes[0];
+
+            if (rx < box->xsize_data && ry < box->ysize_data && rx >= 0 && ry >=0) {
+                int n = ry * box->xsize_data + rx;
+                unsigned char ival =
+                    &colour_scheme == &greyscale ? box->img_data[n] :
+                    colour_scheme.rgbToGrey({box->img_data[3 * n], box->img_data[3 * n + 1], box->img_data[3 * n + 2]});
+                RFLOAT step = (box->maxval - box->minval) / 255.0;
+                RFLOAT dval = ival * step + box->minval;
+                int ysc = round(ry / box->scale);
+                int xsc = round(rx / box->scale);
+                int yscp = ysc - round(box->ysize_data / (2.0 * box->scale));
+                int xscp = xsc - round(box->xsize_data / (2.0 * box->scale));
+                std::cout << " Image value at (" << xsc << "," << ysc << ") or (" << xscp << "," << yscp << ")~= " << dval << std::endl;
+            }
+            return 1;
+
+        } else if (Fl::event_button() == FL_RIGHT_MOUSE) {
+
+            Fl_Menu_Item rclick_menu[] {
+                { "Show metadata" },
+                { "Save image as PNG" },
+                { "Help" },
+                { "Quit" },
+                { 0 }
+            };
+            const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, 0);
+            if (!m)
+                return 0;
+            if (strcmp(m->label(), "Show metadata") == 0) {
+                printMetaData();
+            } else if (strcmp(m->label(), "Save image as PNG") == 0) {
+                saveImage();
+            } else if (strcmp(m->label(), "Help") == 0) {
+                printHelp();
+            } else if (strcmp(m->label(), "Quit") == 0) {
+                exit(0);
+            } return 1;          // (tells caller we handled this event)
+
+        } else if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+
+            // Middle-mouse dragging for measuring distances
+            if (!has_dragged) {
+                redraw();
+                predrag_xc = Fl::event_x();
+                predrag_yc = Fl::event_y();
+                has_dragged = true;
+                fl_color(FL_RED);
+                fl_circle(predrag_xc, predrag_yc, 3);
+            }
+            return 1;
+
         }
-        return 1;
-    } else if (ev == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE) {
-        Fl_Menu_Item rclick_menu[] = {
-            { "Show metadata" },
-            { "Save image as PNG" },
-            { "Help" },
-            { "Quit" },
-            { 0 }
-        };
-        const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, 0);
-        if (!m)
-            return 0;
-        if (strcmp(m->label(), "Show metadata") == 0) {
-            printMetaData();
-        } else if (strcmp(m->label(), "Save image as PNG") == 0) {
-            saveImage();
-        } else if (strcmp(m->label(), "Help") == 0) {
-            printHelp();
-        } else if (strcmp(m->label(), "Quit") == 0) {
-            exit(0);
-        } return 1;          // (tells caller we handled this event)
-    } else if (ev==FL_PUSH && Fl::event_button() == FL_MIDDLE_MOUSE) {
-        // Middle-mouse dragging for measuring distances
-        if (!has_dragged) {
-            redraw();
-            predrag_xc = Fl::event_x();
-            predrag_yc = Fl::event_y();
-            has_dragged = true;
+        return 0;
+
+        case FL_DRAG:
+        if (Fl::event_button() == FL_MIDDLE_MOUSE) {
             fl_color(FL_RED);
             fl_circle(predrag_xc, predrag_yc, 3);
         }
-        return 1;
-    } else if (ev == FL_DRAG && Fl::event_button() == FL_MIDDLE_MOUSE) {
-        fl_color(FL_RED);
-        fl_circle(predrag_xc, predrag_yc, 3);
-    } else if (ev == FL_RELEASE  && Fl::event_button() == FL_MIDDLE_MOUSE) {
-        int postdrag_xc = Fl::event_x();
-        int postdrag_yc = Fl::event_y();
-        if (has_dragged) {
-            fl_color(FL_RED);
-            fl_circle(predrag_xc, predrag_yc, 3);
-            fl_line(predrag_xc, predrag_yc, postdrag_xc, postdrag_yc);
-            fl_circle(postdrag_xc, postdrag_yc, 3);
-            int dx = postdrag_xc - predrag_xc;
-            int dy = postdrag_yc - predrag_yc;
-            RFLOAT dist = sqrt((RFLOAT) (dx * dx + dy * dy));
-            std::string text = floatToString(dist / boxes[0]->scale) + " pixels";
-            fl_draw(text.c_str(), (postdrag_xc + predrag_xc) / 2, (postdrag_yc + predrag_yc) / 2);
-            // Also write to the screen, in case the text falls outside the screen
-            std::cout << "distance= " << dist / boxes[0]->scale << " pixels" << std::endl;
-            has_dragged = false;
+        return 0;
+
+        case FL_RELEASE:
+        if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+            if (has_dragged) {
+                const int postdrag_xc = Fl::event_x();
+                const int postdrag_yc = Fl::event_y();
+                fl_color(FL_RED);
+                fl_circle(predrag_xc, predrag_yc, 3);
+                fl_line(predrag_xc, predrag_yc, postdrag_xc, postdrag_yc);
+                fl_circle(postdrag_xc, postdrag_yc, 3);
+                const int dx = postdrag_xc - predrag_xc;
+                const int dy = postdrag_yc - predrag_yc;
+                const int midx = (postdrag_xc + predrag_xc) / 2;
+                const int midy = (postdrag_yc + predrag_yc) / 2;
+                RFLOAT dist = Pythag(dx, dy) / boxes[0]->scale;
+                fl_draw((floatToString(dist) + " pixels").c_str(), midx, midy);
+                // Also write to the screen, in case the text falls outside the screen
+                std::cout << "distance= " << dist << " pixels" << std::endl;
+                has_dragged = false;
+            }
+            return 1;
         }
-        return 1;
+        return 0;
+
     }
-
-    return 0;
 }
 
 void singleViewerCanvas::printHelp() {
-    std::cout <<" + Left-mouse click: print coordinates and intensity value to screen " << std::endl;
-    std::cout <<" + Middle-mouse drag: measure distances " << std::endl;
-    std::cout <<" + Right-mouse click: pop-up menu" << std::endl;
+    std::cout << " + Left-mouse click: print coordinates and intensity value to screen " << std::endl;
+    std::cout << " + Middle-mouse drag: measure distances " << std::endl;
+    std::cout << " + Right-mouse click: pop-up menu" << std::endl;
 }
 
 /*
@@ -1504,10 +1509,12 @@ void pickerViewerCanvas::draw() {
     int xcoori_start, ycoori_start;
     for (long int icoord : MDcoords) {
 
-        RFLOAT xcoor = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-        RFLOAT ycoor = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        const RFLOAT xcoor = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        const RFLOAT ycoor = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
 
-        if (color_label != EMDL::UNDEFINED) {
+        if (color_label == EMDL::UNDEFINED) {
+            fl_color(FL_GREEN);
+        } else {
             RFLOAT colval;
             if (EMDL::is<int>(color_label)) {
                 int ival;
@@ -1544,8 +1551,6 @@ void pickerViewerCanvas::draw() {
                     fl_color(red, 0, blue);
                 }
             }
-        } else {
-            fl_color(FL_GREEN);
         }
 
         int xcoori = round(xcoor * coord_scale * scale) + scroll->x() - scroll->hscrollbar.value();
@@ -1643,7 +1648,7 @@ int pickerViewerCanvas::handle(int ev) {
             button == FL_RIGHT_MOUSE || button == FL_LEFT_MOUSE && with_control
         ) {
             redraw();
-            Fl_Menu_Item rclick_menu[] = {
+            Fl_Menu_Item rclick_menu[] {
                 { "Save STAR with coordinates (CTRL-s)" },
                 // { "Save_as STAR with coordinates" },
                 { "Load coordinates" },
@@ -1712,7 +1717,7 @@ void pickerViewerCanvas::saveCoordinates(bool ask_filename) {
         FileName fn_tmp(newfile);
         fn_out = fn_tmp;
     } else {
-        fn_out = fn_coords == "" ? "picked.star" : fn_coords;
+        fn_out = fn_coords.empty() ? "picked.star" : fn_coords;
     }
 
     FileName fn_dirs = fn_coords.beforeLastOf("/");
@@ -1721,12 +1726,12 @@ void pickerViewerCanvas::saveCoordinates(bool ask_filename) {
         int res = system(command.c_str());
     }
     // Never write out columns that come from the fn_color file....
-    if (fn_color != "" && color_label != EMDL::UNDEFINED) {
+    if (fn_color.empty() || color_label == EMDL::UNDEFINED) {
+        MDcoords.write(fn_out);
+    } else {
         MetaDataTable MDnew = MDcoords;
         MDnew.deactivateLabel(color_label);
         MDnew.write(fn_out); // write out a copy of the MDcoord to maintain the Z-score label active...
-    } else {
-        MDcoords.write(fn_out);
     }
     std::cout << "Saved " << fn_out << " with " << MDcoords.numberOfObjects() << " selected coordinates." << std::endl;
 }
@@ -1740,11 +1745,11 @@ void pickerViewerCanvas::loadCoordinates(bool ask_filename) {
         FileName fn_tmp(newfile);
         fn_coord_in = fn_tmp;
     } else {
-        fn_coord_in = fn_coords == "" ? "picked.star" : fn_coords;
+        fn_coord_in = fn_coords.empty() ? "picked.star" : fn_coords;
     }
     MDcoords.read(fn_coord_in);
 
-    if (fn_color != "") findColorColumnForCoordinates();
+    if (!fn_color.empty()) findColorColumnForCoordinates();
 }
 
 void pickerViewerCanvas::findColorColumnForCoordinates() {
@@ -1911,7 +1916,7 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
     if (is_multi) {
         // Multiview box
         Fl_Box *box3;
-        if (do_allow_save && fn_parts != "") {
+        if (do_allow_save && !fn_parts.empty()) {
             box3 = new Fl_Box(15, y - round(0.25 * ystep), width - 15, round(2.5 * ystep), "");
         } else {
             box3 = new Fl_Box(15, y - round(0.25 * ystep), width - 15, round(1.5 * ystep), "");
@@ -1936,7 +1941,7 @@ int displayerGuiWindow::fill(FileName &_fn_in) {
         max_nr_images_input->value("1000");
         max_nr_images_input->color(GUI_INPUT_COLOR);
 
-        if (do_allow_save && fn_parts != "") {
+        if (do_allow_save && !fn_parts.empty()) {
             y += ystep;
             max_parts_per_class_input = new Fl_Input(x2p, y, 40, height, "Max nr selected parts per class:");
             max_parts_per_class_input->value("-1");
@@ -1994,9 +1999,9 @@ void displayerGuiWindow::readLastSettings() {
     in.seekg(0, std::ios::beg);
     std::string line;
     while (getline(in, line, '\n')) {
-        int ispos = line.rfind("=");
-        std::string label = line.substr(0, ispos - 1);             // lhs
-        std::string value = line.substr(ispos + 2, line.length()); // rhs
+        const int ispos = line.rfind("=");
+        const std::string label = line.substr(0, ispos - 1);             // lhs
+        const std::string value = line.substr(ispos + 2, line.length()); // rhs
 
         if (label == scale_input->label()) {
             scale_input->value(value.c_str());
@@ -2029,7 +2034,7 @@ void displayerGuiWindow::writeLastSettings() {
     FileName fn = ".relion_display_gui_settings";
     fh.open(fn.c_str(), std::ios::out);
     if (!fh) {
-        //std::cerr << "Cannot write last settings to file: "<<fn<<std::endl;
+        // std::cerr << "Cannot write last settings to file: " << fn << std::endl;
         return;
     }
 
@@ -2130,12 +2135,12 @@ void displayerGuiWindow::cb_display_i() {
 
     if (do_allow_save) {
         cl += " --allow_save ";
-        if (fn_parts != "") {
+        if (!fn_parts.empty()) {
             cl += " --fn_parts " + fn_parts;
             if (textToInteger(max_parts_per_class_input->value()) > 0)
                 cl += " --max_nr_parts_per_class " + (std::string)max_parts_per_class_input->value();
         }
-        if (fn_imgs != "")
+        if (!fn_imgs.empty())
             cl += " --fn_imgs " + fn_imgs;
     }
 
@@ -2147,7 +2152,7 @@ void displayerGuiWindow::cb_display_i() {
         cl += " --recenter";
     }
 
-    if (pipeline_control != "") {
+    if (!pipeline_control.empty()) {
         cl += " --pipeline_control " + pipeline_control;
     }
 
@@ -2224,7 +2229,7 @@ void Displayer::usage() {
 }
 
 void Displayer::initialise() {
-    if (!do_gui && fn_in == "")
+    if (!do_gui && fn_in.empty())
         REPORT_ERROR("Displayer::initialise ERROR: either provide --i or --gui");
     Fl::visual(FL_RGB);
     // initialise some static variables
@@ -2313,7 +2318,7 @@ void Displayer::initialise() {
 int Displayer::runGui() {
     Fl::scheme("gtk+");
 
-    if (fn_in == "") {
+    if (fn_in.empty()) {
         // Shall I make a browser window in this GUI or in the general relion GUI?
         // Perhaps here is better..., then there will be no fn_in yet....
         // Update entire window each time the entry of the browser changes...
@@ -2431,7 +2436,7 @@ void Displayer::run() {
         if (highpass > 0.0)
             highPassFilterMap(img(), highpass, angpix, 25); // use a rather soft high-pass edge of 25 pixels wide
         basisViewerWindow win(ceil(scale * Xsize(img())), ceil(scale * Ysize(img())), fn_in.c_str());
-        if (fn_coords == "")
+        if (fn_coords.empty())
             fn_coords = fn_in.withoutExtension() + "_coords.star";
         win.fillPickerViewerCanvas(img(), minval, maxval, sigma_contrast, scale, coord_scale, round(scale * particle_radius), do_pick_startend, fn_coords,
             fn_color, fn_in, color_label, color_blue_value, color_red_value);
@@ -2489,7 +2494,7 @@ void Displayer::run() {
         if (Nsize(img()) > 1) {
             for (int n = 0; n < Nsize(img()); n++) {
                 FileName fn_tmp;
-                fn_tmp.compose(n+1,fn_in);
+                fn_tmp.compose(n + 1, fn_in);
                 MDin.addObject();
                 MDin.setValue(EMDL::IMAGE_NAME, fn_tmp);
                 MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
@@ -2549,13 +2554,17 @@ void Displayer::run() {
             }
             basisViewerWindow win(ceil(new_scale * Xsize(img())), ceil(new_scale * Ysize(img())), fn_in.c_str());
             if (show_fourier_amplitudes) {
-                amplitudeOrPhaseMap(img(), img(), AMPLITUDE_MAP);
-                win.fillSingleViewerCanvas(img(), minval, maxval, sigma_contrast, scale);
+                win.fillSingleViewerCanvas(
+                    amplitudeOrPhaseMap(img(), AMPLITUDE_MAP),
+                    minval, maxval, sigma_contrast, scale);
             } else if (show_fourier_phase_angles) {
-                amplitudeOrPhaseMap(img(), img(), PHASE_MAP);
-                win.fillSingleViewerCanvas(img(), -180.0, 180.0, 0.0, scale);
+                win.fillSingleViewerCanvas(
+                    amplitudeOrPhaseMap(img(), PHASE_MAP),
+                    -180.0, 180.0, 0.0, scale);
             } else {
-                win.fillSingleViewerCanvas(img(), minval, maxval, sigma_contrast, scale);
+                win.fillSingleViewerCanvas(
+                    img(),
+                    minval, maxval, sigma_contrast, scale);
             }
         }
     }

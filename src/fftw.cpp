@@ -326,39 +326,27 @@ void FourierTransformer::enforceHermitianSymmetry() {
     }
 }
 
-void randomizePhasesBeyond(MultidimArray<RFLOAT> &v, int index) {
+MultidimArray<RFLOAT> randomizePhasesBeyond(const MultidimArray<RFLOAT> &v, int index) {
 
+    MultidimArray<RFLOAT> copy = v;
     FourierTransformer transformer;
-    auto &FT = transformer.FourierTransform(v);
+    auto &FT = transformer.FourierTransform(copy);
+    FT = randomizePhasesBeyond(FT, index);
+    return transformer.inverseFourierTransform(FT);
+}
 
-    int index2 = index * index;
+MultidimArray<Complex> randomizePhasesBeyond(const MultidimArray<Complex> &FT, int index) {
+
+    const int index2 = index * index;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         if (euclidsq(ip, jp, kp) >= index2) {
-            RFLOAT mag = abs(direct::elem(FT, i, j, k));
-            RFLOAT phase = rnd_unif(0.0, 2.0 * PI);
+            const RFLOAT mag = abs(direct::elem(FT, i, j, k));
+            const RFLOAT phase = rnd_unif(0.0, 2.0 * PI);
             direct::elem(FT, i, j, k) = Complex(mag * cos(phase), mag * sin(phase));
         }
     }
-
-    // Inverse transform
-    transformer.inverseFourierTransform();
-
+    return FT;
 }
-
-/*
-void randomizePhasesBeyond(MultidimArray<Complex> &v, int index) {
-    int index2 = index*index;
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(v) {
-       if (euclidsq(ip, jp, kp) >= index2) {
-               RFLOAT mag = abs(direct::elem(v, i, j, k));
-               RFLOAT phas = rnd_unif(0.0, 2.0 * PI);
-               RFLOAT realval = mag * cos(phas);
-               RFLOAT imagval = mag * sin(phas);
-               direct::elem(v, i, j, k) = Complex(realval, imagval);
-       }
-    }
-}
-*/
 
 // Fourier ring correlation -----------------------------------------------
 // from precalculated Fourier Transforms, and without sampling rate etc.
@@ -1283,9 +1271,7 @@ void selfApplyBeamTilt(
     }
 }
 
-void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out, int factor) {
-
-    out.clear();
+MultidimArray<RFLOAT> padAndFloat2DMap(const MultidimArray<RFLOAT> &v, int factor) {
 
     // Check dimensions
     const auto dimensions = v.getDimensions();
@@ -1319,69 +1305,64 @@ void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out
 
     // Pad and float output MultidimArray (2× original size by default)
     long int box_len = std::max(dimensions[0], dimensions[1]) * factor;
-    out.resize(box_len, box_len);
+    MultidimArray<RFLOAT> out (box_len, box_len);
     out.initConstant(bd_val - bg_val);
     out.setXmippOrigin();
     for (long int j = 0; j < Ysize(v); j++)
     for (long int i = 0; i < Xsize(v); i++) {
-        out.elem(i + Xmipp::init(Xsize(v)), j + Xmipp::init(Ysize(v))) = direct::elem(v, i, j) - bg_val;
+        direct::elem(out, i, j) = direct::elem(v, i, j) - bg_val;
     }
+    return out;
 }
 
-void amplitudeOrPhaseMap(
-    const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &amp, int output_map_type
+MultidimArray<RFLOAT> amplitudeOrPhaseMap(
+    const MultidimArray<RFLOAT> &v, int output_map_type
 ) {
-    MultidimArray<RFLOAT> out;
-    out.clear();
-
     // Pad and float
-    padAndFloat2DMap(v, out);
-    if (Xsize(out) != Ysize(out) || Zsize(out) > 1 || Nsize(out) > 1)
+    MultidimArray<RFLOAT> amp = padAndFloat2DMap(v);
+    if (Xsize(amp) != Ysize(amp) || Zsize(amp) > 1 || Nsize(amp) > 1)
         REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR MultidimArray should be 2D square.");
-    long int XYdim = Xsize(out);
+    long int XYdim = Xsize(amp);
 
     // Fourier Transform
     FourierTransformer transformer;
-    auto FT = transformer.FourierTransform(out);
+    auto FT = transformer.FourierTransform(amp);
     CenterFFTbySign(FT);
 
-    auto f = output_map_type == AMPLITUDE_MAP ? +[] (Complex x) { return         x.abs() ; } :
-             output_map_type == PHASE_MAP     ? +[] (Complex x) { return degrees(x.arg()); } :
-             nullptr;
+    const auto f = output_map_type == AMPLITUDE_MAP ? +[] (Complex x) { return         x.abs() ; } :
+                   output_map_type == PHASE_MAP     ? +[] (Complex x) { return degrees(x.arg()); } :
+                   nullptr;
     if (!f) REPORT_ERROR("fftw.cpp::amplitudeOrPhaseMap(): ERROR Unknown type of output map.");
 
     // Write to output files
-    out.setXmippOrigin();
-    out.initZeros(XYdim, XYdim);
+    amp.setXmippOrigin();
+    amp.initZeros(XYdim, XYdim);
     long int maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(FT) {
         if (
-            ip > Xinit(out) && ip < Xlast(out) &&
-            jp > Yinit(out) && jp < Ylast(out) &&
+            ip > Xinit(amp) && ip < Xlast(amp) &&
+            jp > Yinit(amp) && jp < Ylast(amp) &&
             ip * ip + jp * jp < maxr2
         ) {
             RFLOAT val = f(FFTW::elem(FT, ip, jp));
-            out.elem(ip, jp) = out.elem(-ip, -jp) = val;
+            amp.elem(ip, jp) = amp.elem(-ip, -jp) = val;
         }
     }
-    out.elem(0, 0) = 0.0;
-    amp.clear();
-    amp = out;
+    amp.elem(0, 0) = 0.0;
+    return amp;
 }
 
 void helicalLayerLineProfile(
     const MultidimArray<RFLOAT> &v, std::string title, std::string fn_eps
 ) {
     long int XYdim, maxr2;
-    MultidimArray<RFLOAT> out;
     std::vector<RFLOAT> ampl_list, ampr_list, nr_pix_list;
 
-    out.clear();
 
     // TODO: DO I NEED TO ROTATE THE ORIGINAL MULTIDIMARRAY BY 90 DEGREES ?
 
     // Pad and float
-    padAndFloat2DMap(v, out);
+    MultidimArray<RFLOAT> out = padAndFloat2DMap(v);
     if (
         Xsize(out) != Ysize(out) || Zsize(out) > 1 || Nsize(out) > 1
     ) REPORT_ERROR("fftw.cpp::helicalLayerLineProfile(): ERROR MultidimArray should be 2D square.");
