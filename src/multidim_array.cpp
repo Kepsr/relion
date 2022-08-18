@@ -175,22 +175,17 @@ MultidimArray<T>& MultidimArray<T>::operator /= (const T scalar) {
  */
 template <typename T>
 inline MultidimArray<T>& pointwise(
-    MultidimArray<T> &arg1, const MultidimArray<T> &arg2,
-    T (*operation)(T, T)
+    MultidimArray<T> &arg1, const MultidimArray<T> &arg2, T (*operation)(T, T)
 ) {
     if (!arg1.sameShape(arg2)) {
         arg1.printShape();
         arg2.printShape();
         REPORT_ERROR((std::string) "Array_by_array: different shapes");
     }
-    for (
-        T *ptr1 = arg1.data, *ptr2 = arg2.data,
-          *end = arg1.data + arg1.xdim * arg1.ydim * arg1.zdim;
-        ptr1 != end;
-        ++ptr1, ++ptr2
-    ) {
-        *ptr1 = operation(*ptr1, *ptr2);
-    }
+    std::transform(
+        arg1.begin(), arg1.begin() + arg1.xdim * arg1.ydim * arg1.zdim,  // Disregard slices
+        arg2.begin(), arg1.begin(), operation
+    );
     return arg1;
 }
 
