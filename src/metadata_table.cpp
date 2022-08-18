@@ -801,19 +801,19 @@ void MetaDataTable::histogram(
     for (int i = 0; i < bin_size; i++) {
         if (i == 0) {
             if (verb > 0) std::cout << "[-INF, " << hist_min << "): ";
-            histX[4 * i]     = hist_min - bin_width;
+            histX[4 * i + 0] = hist_min - bin_width;
             histX[4 * i + 1] = hist_min - bin_width;
             histX[4 * i + 2] = hist_min;
             histX[4 * i + 3] = hist_min;
         } else if (i == bin_size - 1) {
             if (verb > 0) std::cout << "[" << hist_max << ", +INF]: ";
-            histX[4 * i]     = hist_max;
+            histX[4 * i + 0] = hist_max;
             histX[4 * i + 1] = hist_max;
             histX[4 * i + 2] = hist_max + bin_width;
             histX[4 * i + 3] = hist_max + bin_width;
         } else {
             if (verb > 0) std::cout << "[" << (hist_min + bin_width * (i - 1)) << ", " << (hist_min + bin_width * i) << "): ";
-            histX[4 * i]     = hist_min + bin_width * (i - 1);
+            histX[4 * i + 0] = hist_min + bin_width * (i - 1);
             histX[4 * i + 1] = hist_min + bin_width * (i - 1);
             histX[4 * i + 2] = hist_min + bin_width * i;
             histX[4 * i + 3] = hist_min + bin_width * i;
@@ -829,7 +829,7 @@ void MetaDataTable::histogram(
         if (verb > 0) { std::cout  << hist[i] << std::endl; }
 
         histY[4 * i + 1] = histY[4 * i + 2] = hist[i];
-        histY[4 * i] = histY[4 * i + 3] = 0.0;
+        histY[4 * i + 0] = histY[4 * i + 3] = 0.0;
 
     }
     histX[histX.size() - 1] = histX[histX.size() - 2];

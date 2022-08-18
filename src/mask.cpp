@@ -409,20 +409,25 @@ void autoMask(
 
 }
 
-void raisedCosineMask(
-    MultidimArray<RFLOAT> &mask, 
+MultidimArray<RFLOAT> raisedCosineMask(
+    long int Xdim, long int Ydim, long int Zdim, long int Ndim,
     RFLOAT radius, RFLOAT radius_p, 
     int x, int y, int z
 ) {
+    MultidimArray<RFLOAT> mask (Xdim, Ydim, Zdim, Ndim);
     mask.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY3D(mask) {
         // calculate distance from the origin
-        RFLOAT d = sqrt((RFLOAT) ((z - k) * (z - k) + (y - i) * (y - i) + (x - j) * (x - j)));
+        const RFLOAT x0 = x - i;
+        const RFLOAT y0 = y - j;
+        const RFLOAT z0 = z - k;
+        const RFLOAT d = sqrt(x0 * x0 + y0 * y0 + z0 * z0);
         mask.elem(i, j, k) = 
             d > radius_p ? 0.0 :
             d < radius   ? 1.0 :
             0.5 * (1.0 - cos(PI * (radius_p - d) / (radius_p - radius)));
     }
+    return mask;
 }
 
 void raisedCrownMask(

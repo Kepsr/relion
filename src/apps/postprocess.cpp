@@ -20,26 +20,16 @@
 #include <src/postprocessing.h>
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	Postprocessing prm;
-
-	try
-	{
+	try {
 		prm.read(argc, argv);
-
-		if (prm.do_locres)
-			prm.run_locres();
-		else
-			prm.run();
-	}
-	catch (RelionError XE)
-	{
-		//prm.usage();
+		if (prm.do_locres) prm.run_locres();
+		else 			   prm.run();
+	} catch (RelionError XE) {
+		// prm.usage();
 		std::cerr << XE;
-
 		return RELION_EXIT_FAILURE;
 	}
-
 	return RELION_EXIT_SUCCESS;
 }

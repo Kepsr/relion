@@ -358,10 +358,10 @@ class FourierTransformer {
 };
 
 // Randomize phases beyond the given F-space shell (index) of R-space input image
-void randomizePhasesBeyond(MultidimArray<RFLOAT> &I, int index);
+MultidimArray<RFLOAT> randomizePhasesBeyond(const MultidimArray<RFLOAT> &I, int index);
 
 // Randomize phases beyond the given F-space shell (index) of F-space input image
-// void randomizePhasesBeyond(MultidimArray<Complex> &v, int index);
+MultidimArray<Complex> randomizePhasesBeyond(const MultidimArray<Complex> &FT, int index);
 
 template <typename T>
 void CenterFFTbySign(MultidimArray <T> &v) {
@@ -921,9 +921,9 @@ void selfApplyBeamTilt(MultidimArray<Complex> &Fimg,
 void applyBeamTilt(const MultidimArray<Complex> &Fin, MultidimArray<Complex> &Fout, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
                    RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size);
 
-void padAndFloat2DMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &out, int factor = 2);
+MultidimArray<RFLOAT> padAndFloat2DMap(const MultidimArray<RFLOAT> &v, int factor = 2);
 
-void amplitudeOrPhaseMap(const MultidimArray<RFLOAT> &v, MultidimArray<RFLOAT> &amp, int output_map_type);
+MultidimArray<RFLOAT> amplitudeOrPhaseMap(const MultidimArray<RFLOAT> &v, int output_map_type);
 
 void helicalLayerLineProfile(const MultidimArray<RFLOAT> &v, std::string title, std::string fn_eps);
 

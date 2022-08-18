@@ -167,12 +167,15 @@ public:
 
 	// Divide by MTF and perform FSC-weighted B-factor sharpening, as in Rosenthal and Henderson, 2003
 	// Returns the applied filter resolution
-	RFLOAT sharpenMap();
+	RFLOAT sharpenMap(Image<RFLOAT> &Imap);
 
 	// Map nay 3D FFTW pixel onto the surface of a sphere with radius myradius_count
-	bool findSurfacePixel(int idx, int kp, int ip, int jp,
-			int &best_kpp, int &best_ipp, int &best_jpp,
-			int myradius_count, int search=2);
+	bool findSurfacePixel(
+		int idx,
+		int ip, int jp, int kp,
+		int &best_ipp, int &best_jpp, int &best_kpp,
+		int myradius_count, int search=2
+	);
 
 	// Correct amplitudes inhomogeneity due to non-uniform orientational distributions
 	void correctRadialAmplitudeDistribution(MultidimArray<RFLOAT > &I);
@@ -181,12 +184,13 @@ public:
 	void divideByMtf(MultidimArray<Complex > &FT);
 
 	// Make a Guinier plot from the Fourier transform of an image
-	void makeGuinierPlot(MultidimArray<Complex > &FT, std::vector<fit_point2D> &guinier);
+	std::vector<fit_point2D> makeGuinierPlot(const MultidimArray<Complex> &FT);
 
 	// Use Richard's formula to calculate FSC_true
-	MultidimArray<RFLOAT> calculateFSCtrue(
-		MultidimArray<RFLOAT> &fsc_unmasked, MultidimArray<RFLOAT> &fsc_masked,
-		MultidimArray<RFLOAT> &fsc_random_masked, int randomize_at
+	static MultidimArray<RFLOAT> calculateFSCtrue(
+		const MultidimArray<RFLOAT> &fsc_masked,
+		const MultidimArray<RFLOAT> &fsc_random_masked,
+		int randomize_at
 	);
 
 	// cisTEM-like FSC corrected for fraction of solvent mask
@@ -198,7 +202,7 @@ public:
 	void applyFscWeighting(MultidimArray<Complex> &FT, const MultidimArray<RFLOAT> &my_fsc);
 
 	// Output map and masked map
-	void writeMaps(FileName fn_root);
+	void writeMaps(Image<RFLOAT> &image, FileName fn_root);
 
 	// Output map and STAR files with metadata, also write final resolution to screen
 	void writeOutput();

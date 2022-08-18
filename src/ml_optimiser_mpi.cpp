@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include "src/ml_optimiser_mpi.h"
 #include "src/ml_optimiser.h"
+#include "src/postprocessing.h"
 #ifdef CUDA
 #include "src/acc/cuda/cuda_ml_optimiser.h"
 #endif
@@ -1793,6 +1794,8 @@ void MlOptimiserMpi::maximization() {
         if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
             continue;
 
+        auto &fsc_curve = mymodel.fsc_halves_class[ibody];
+
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             {
             ifdefTIMING(TicToc tt (timer, RCT_1);)
@@ -1822,7 +1825,7 @@ void MlOptimiserMpi::maximization() {
                             mymodel.sigma2_class[ith_recons],
                             mymodel.data_vs_prior_class[ith_recons],
                             mymodel.fourier_coverage_class[ith_recons],
-                            mymodel.fsc_halves_class[ibody],
+                            fsc_curve,
                             do_split_random_halves,
                             do_join_random_halves || do_always_join_random_halves
                         );
@@ -1986,7 +1989,7 @@ void MlOptimiserMpi::maximization() {
                                 mymodel.sigma2_class[ith_recons],
                                 mymodel.data_vs_prior_class[ith_recons],
                                 mymodel.fourier_coverage_class[ith_recons],
-                                mymodel.fsc_halves_class[ibody],
+                                fsc_curve,
                                 do_split_random_halves,
                                 do_join_random_halves || do_always_join_random_halves
                             );
@@ -2174,13 +2177,13 @@ void MlOptimiserMpi::maximization() {
                                     node->relion_MPI_Send(mymodel.data_vs_prior_class   [ith_recons].data, mymodel.data_vs_prior_class   [ith_recons].size(), relion_MPI::DOUBLE, recv_node, MPITag::METADATA, MPI_COMM_WORLD);
                                     node->relion_MPI_Send(mymodel.fourier_coverage_class[ith_recons].data, mymodel.fourier_coverage_class[ith_recons].size(), relion_MPI::DOUBLE, recv_node, MPITag::METADATA, MPI_COMM_WORLD);
                                     node->relion_MPI_Send(mymodel.sigma2_class          [ith_recons].data, mymodel.sigma2_class          [ith_recons].size(), relion_MPI::DOUBLE, recv_node, MPITag::RFLOAT,   MPI_COMM_WORLD);
-                                    // node->relion_MPI_Send(mymodel.fsc_halves_class[ibody].data, mymodel.fsc_halves_class[ibody].size(), relion_MPI::DOUBLE, recv_node, MPITag::RANDOMSEED, MPI_COMM_WORLD);
+                                    // node->relion_MPI_Send(fsc_curve.data, fsc_curve.size(), relion_MPI::DOUBLE, recv_node, MPITag::RANDOMSEED, MPI_COMM_WORLD);
                                 } else if (node->rank != reconstruct_rank && node->rank == recv_node) {
                                     node->relion_MPI_Recv(mymodel.Iref                  [ith_recons].data, mymodel.Iref                  [ith_recons].size(), relion_MPI::DOUBLE, reconstruct_rank, MPITag::IMAGE,    MPI_COMM_WORLD, status);
                                     node->relion_MPI_Recv(mymodel.data_vs_prior_class   [ith_recons].data, mymodel.data_vs_prior_class   [ith_recons].size(), relion_MPI::DOUBLE, reconstruct_rank, MPITag::METADATA, MPI_COMM_WORLD, status);
                                     node->relion_MPI_Recv(mymodel.fourier_coverage_class[ith_recons].data, mymodel.fourier_coverage_class[ith_recons].size(), relion_MPI::DOUBLE, reconstruct_rank, MPITag::METADATA, MPI_COMM_WORLD, status);
                                     node->relion_MPI_Recv(mymodel.sigma2_class          [ith_recons].data, mymodel.sigma2_class          [ith_recons].size(), relion_MPI::DOUBLE, reconstruct_rank, MPITag::RFLOAT,   MPI_COMM_WORLD, status);
-                                    // node->relion_MPI_Recv(mymodel.fsc_halves_class[ibody].data, mymodel.fsc_halves_class[ibody].size(), relion_MPI::DOUBLE, reconstruct_rank, MPITag::RANDOMSEED, MPI_COMM_WORLD, status);
+                                    // node->relion_MPI_Recv(fsc_curve.data, fsc_curve.size(), relion_MPI::DOUBLE, reconstruct_rank, MPITag::RANDOMSEED, MPI_COMM_WORLD, status);
                                     #ifdef DEBUG
                                     std::cerr << "ihalfset= " <<ihalfset<< " Received!!!=" <<iclass<<" ibody=" <<ibody<<" from node " <<reconstruct_rank<<" at node " <<node->rank<< std::endl;
                                     #endif
@@ -2431,6 +2434,8 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
         if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
             continue;
 
+        auto &fsc_curve = mymodel.fsc_halves_class[ibody];
+
         int reconstruct_rank1 = 2 * (ibody % ((node->size - 1) / 2)) + 1;
         int reconstruct_rank2 = 2 * (ibody % ((node->size - 1) / 2)) + 2;  // reconstruct_rank1 + 1
         if (
@@ -2489,7 +2494,6 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
             }
 
             // Read in the half-reconstruction from rank2 and perform the postprocessing-like FSC correction
-            Image<RFLOAT> Iunreg1, Iunreg2;
             FileName fn_root1, fn_root2;
             if (iter >= 0) {
                 fn_root1.compose(fn_out + "_it", iter, "", 3);
@@ -2497,87 +2501,64 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
                 fn_root1 = fn_out;
             }
             if (mymodel.nr_bodies > 1) {
-                fn_root2.compose(fn_root1 + "_half2_body", ibody + 1, "", 3);
                 fn_root1.compose(fn_root1 + "_half1_body", ibody + 1, "", 3);
+                fn_root2.compose(fn_root1 + "_half2_body", ibody + 1, "", 3);
             } else {
-                fn_root2.compose(fn_root1 + "_half2_class", 1, "", 3);
                 fn_root1.compose(fn_root1 + "_half1_class", 1, "", 3);
+                fn_root2.compose(fn_root1 + "_half2_class", 1, "", 3);
             }
-            fn_root1 += "_unfil.mrc";
-            fn_root2 += "_unfil.mrc";
-            Iunreg1.read(fn_root1);
-            Iunreg2.read(fn_root2);
+            auto Iunreg1 = Image<RFLOAT>::from_filename(fn_root1 + "_unfil.mrc");
+            auto Iunreg2 = Image<RFLOAT>::from_filename(fn_root2 + "_unfil.mrc");
             Iunreg1().setXmippOrigin();
             Iunreg2().setXmippOrigin();
-
-            // Now do phase-randomisation FSC-correction for the solvent mask
-            MultidimArray<RFLOAT> fsc_true;
 
             // Calculate FSC of the unmasked maps
-            MultidimArray<RFLOAT> fsc_unmasked = getFSC(Iunreg1(), Iunreg2());
+            const auto fsc_unmasked = getFSC(Iunreg1(), Iunreg2());
 
-            Image<RFLOAT> Imask = mymodel.nr_bodies > 1 ?
-                Image<RFLOAT>(mymodel.masks_bodies[ibody]) :
-                Image<RFLOAT>::from_filename(fn_mask);
-            Imask().setXmippOrigin();
-            Iunreg1() *= Imask();
-            Iunreg2() *= Imask();
-            MultidimArray<RFLOAT> fsc_masked = getFSC(Iunreg1(), Iunreg2());
-
-            // To save memory re-read the same input maps again and randomize phases before masking
-            Iunreg1.read(fn_root1);
-            Iunreg2.read(fn_root2);
-            Iunreg1().setXmippOrigin();
-            Iunreg2().setXmippOrigin();
-
-            // Check at which resolution shell the FSC drops below 0.8
+            // At what resolution does the FSC drop below 0.8 (if at all)?
             const auto search = std::find_if(fsc_unmasked.begin() + 1, fsc_unmasked.end(),
                 [] (RFLOAT fsc) { return fsc < 0.8; });
             if (search == fsc_unmasked.end()) {
                 std::cerr << " WARNING: FSC curve between unmasked maps never drops below 0.8. Using unmasked FSC as FSC_true... " << std::endl;
                 std::cerr << " WARNING: This message should go away during the later stages of refinement!" << std::endl;
 
-                mymodel.fsc_halves_class[ibody] = fsc_unmasked;
+                fsc_curve = fsc_unmasked;
             } else {
+
+                Image<RFLOAT> Imask = mymodel.nr_bodies > 1 ?
+                    Image<RFLOAT>(mymodel.masks_bodies[ibody]) :
+                    Image<RFLOAT>::from_filename(fn_mask);
+                Imask().setXmippOrigin();
+
+                // Calculate FSC of the masked maps
+                const auto fsc_masked = getFSC(Iunreg1() * Imask(), Iunreg2() * Imask());
+
+                // Do phase-randomised FSC-correction for the solvent mask
                 const int randomize_at = search - fsc_unmasked.begin();
                 if (verb > 0) {
                     std::cout.width(35);
                     std::cout << std::left << "  + randomize phases beyond: ";
                     std::cout << Xsize(Iunreg1()) * mymodel.pixel_size / randomize_at << " Angstroms" << std::endl;
                 }
-                randomizePhasesBeyond(Iunreg1(), randomize_at);
-                randomizePhasesBeyond(Iunreg2(), randomize_at);
                 // Mask randomized phases maps and calculated fsc_random_masked
-                Iunreg1() *= Imask();
-                Iunreg2() *= Imask();
-                MultidimArray<RFLOAT> fsc_random_masked = getFSC(Iunreg1(), Iunreg2());
+                const auto fsc_random_masked = getFSC(
+                    randomizePhasesBeyond(Iunreg1(), randomize_at) * Imask(),
+                    randomizePhasesBeyond(Iunreg2(), randomize_at) * Imask()
+                );
 
-                // Now that we have fsc_masked and fsc_random_masked, calculate fsc_true according to Richard's formula
-                // FSC_true = FSC_t - FSC_n / ( )
-                fsc_true.resize(fsc_masked);
-                for (long int i = 0; i < Xsize(fsc_true); i++) {
-                    // 29jan2015: let's move this 2 shells upwards, because of small artefacts near the resolution of randomisation!
-                    if (i < randomize_at + 2) {
-                        direct::elem(fsc_true, i) = direct::elem(fsc_masked, i);
-                    } else {
-                        const RFLOAT fsct = direct::elem(fsc_masked, i);
-                        const RFLOAT fscn = direct::elem(fsc_random_masked, i);
-                        direct::elem(fsc_true, i) = fscn > fsct ? 0.0 : (fsct - fscn) / (1.0 - fscn);
-                    }
-                }
-                mymodel.fsc_halves_class[ibody] = fsc_true;
+                fsc_curve = Postprocessing::calculateFSCtrue(
+                    fsc_masked, fsc_random_masked, randomize_at
+                );
             }
 
             // Set fsc_halves_class explicitly to zero beyond the current_size
-            auto &arr = mymodel.fsc_halves_class[ibody];
-            for (int i = mymodel.current_size / 2 + 1; i < arr.size(); i++)
-                direct::elem(arr, i) = 0.0;
+            for (int i = mymodel.current_size / 2 + 1; i < fsc_curve.size(); i++)
+                direct::elem(fsc_curve, i) = 0.0;
         }
 
-        // Now the leader sends the fsc curve to everyone else
+        // Now the leader sends the FSC curve to everyone else
         node->relion_MPI_Bcast(
-            mymodel.fsc_halves_class[ibody].data,
-            mymodel.fsc_halves_class[ibody].size(),
+            fsc_curve.data, fsc_curve.size(),
             relion_MPI::DOUBLE, 0, MPI_COMM_WORLD
         );
 
@@ -2586,7 +2567,6 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
 
 void MlOptimiserMpi::writeTemporaryDataAndWeightArrays() {
     if (node->rank == 1 || do_split_random_halves && node->rank == 2) {
-        Image<RFLOAT> It;
         //#define DEBUG_RECONSTRUCTION
         #ifdef DEBUG_RECONSTRUCTION
         FileName fn_root = fn_out + "_it" + integerToString(iter, 3) + "_half" + integerToString(node->rank);
@@ -2595,30 +2575,33 @@ void MlOptimiserMpi::writeTemporaryDataAndWeightArrays() {
         #endif
 
         // Write out temporary arrays for all classes
-        for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
-            for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
-                int ith_recons = (mymodel.nr_bodies > 1) ? ibody : iclass;
+        for (int ibody  = 0; ibody  < mymodel.nr_bodies;  ibody++ ) {
+        for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
+            int ith_recons = mymodel.nr_bodies > 1 ? ibody : iclass;
 
-                FileName fn_tmp;
-                if (mymodel.nr_bodies > 1) {
-                    fn_tmp.compose(fn_root + "_body",  ibody + 1,  "", 3);
-                } else {
-                    fn_tmp.compose(fn_root + "_class", iclass + 1, "", 3);
-                }
-                if (mymodel.pdf_class[iclass] > 0.0) {
-                    It().resize(wsum_model.BPref[ith_recons].data);
-                    for (long int n = 0; n < It().size(); n++) {
-                        It()[n] = wsum_model.BPref[ith_recons].data[n].real;
-                    }
-                    It.write(fn_tmp + "_data_real.mrc");
-                    for (long int n = 0; n < It().size(); n++) {
-                        It()[n] = wsum_model.BPref[ith_recons].data[n].imag;
-                    }
-                    It.write(fn_tmp + "_data_imag.mrc");
-                    It() = wsum_model.BPref[ith_recons].weight;
-                    It.write(fn_tmp + "_weight.mrc");
-                }
+            FileName fn_tmp;
+            if (mymodel.nr_bodies > 1) {
+                fn_tmp.compose(fn_root + "_body",  ibody + 1,  "", 3);
+            } else {
+                fn_tmp.compose(fn_root + "_class", iclass + 1, "", 3);
             }
+            if (mymodel.pdf_class[iclass] > 0.0) {
+                const auto &data = wsum_model.BPref[ith_recons].data;
+                Image<RFLOAT> Ireal;
+                Ireal().resize(data);
+                for (long int n = 0; n < data.size(); n++) {
+                    Ireal()[n] = data[n].real;
+                }
+                Ireal.write(fn_tmp + "_data_real.mrc");
+                Image<RFLOAT> Iimag;
+                Iimag().resize(data);
+                for (long int n = 0; n < data.size(); n++) {
+                    Iimag()[n] = data[n].imag;
+                }
+                Iimag.write(fn_tmp + "_data_imag.mrc");
+                Image<RFLOAT>(wsum_model.BPref[ith_recons].weight).write(fn_tmp + "_weight.mrc");
+            }
+        }
         }
      }
 
@@ -2912,19 +2895,21 @@ void MlOptimiserMpi::iterate() {
                     if (mymodel.nr_bodies > 1 && mymodel.keep_fixed_bodies[ibody] > 0)
                         continue;
 
+                    auto &fsc_curve = mymodel.fsc_halves_class[ibody];
+
                     int fsc05   = -1;
                     int fsc0143 = -1;
-                    for (long int i = 0; i < Xsize(mymodel.fsc_halves_class[ibody]); i++) {
-                        if (direct::elem(mymodel.fsc_halves_class[ibody], i) < 0.5 && fsc05 < 0)
+                    for (long int i = 0; i < Xsize(fsc_curve); i++) {
+                        if (direct::elem(fsc_curve, i) < 0.5 && fsc05 < 0)
                         { fsc05 = i; }
-                        if (direct::elem(mymodel.fsc_halves_class[ibody], i) < 0.143 && fsc0143 < 0)
+                        if (direct::elem(fsc_curve, i) < 0.143 && fsc0143 < 0)
                         { fsc0143 = i; }
                     }
 
                     // At least fsc05 - fsc0143 + 5 shells as incr_size
                     incr_size = std::max(incr_size, fsc0143 - fsc05 + 5);
                     if (!has_high_fsc_at_limit)
-                        has_high_fsc_at_limit = (direct::elem(mymodel.fsc_halves_class[ibody], mymodel.current_size / 2 - 1) > 0.2);
+                        has_high_fsc_at_limit = (direct::elem(fsc_curve, mymodel.current_size / 2 - 1) > 0.2);
                 }
             }
 
