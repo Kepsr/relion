@@ -2197,9 +2197,7 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
     // Calculate sigma2_noise estimates as average of power class spectra, and subtract power spectrum of the average image from that
     if (do_calculate_initial_sigma_noise) {
         // Calculate power spectrum of the average image
-        MultidimArray<RFLOAT> spect;
-        getSpectrum(Mavg, spect, POWER_SPECTRUM);
-        spect /= 2.0; // because of 2-dimensionality of the complex plane
+        auto spect = getSpectrum(Mavg, POWER_SPECTRUM) / 2.0;  // because of 2-dimensionality of the complex plane
         spect.resize(mymodel.sigma2_noise[0]);
 
         // Set noise spectra, once for each group

@@ -230,7 +230,7 @@ class FourierTransformer {
     /** Compute the Fourier transform of a MultidimArray, 2D and 3D.
      */
     template <typename T>
-    MultidimArray<tComplex<T> > &FourierTransform(MultidimArray<T> &v, bool force_new_plans = false) {
+    MultidimArray<tComplex<T>> &FourierTransform(const MultidimArray<T> &v, bool force_new_plans = false) {
         setReal(v, force_new_plans);
         Transform(FFTW_FORWARD);
         return fFourier;
@@ -840,34 +840,35 @@ void shiftImageInFourierTransformWithTabSincos(MultidimArray<Complex> &in, Multi
  * @ingroup FourierOperations
     i.e. the radial average of the (squared) amplitudes of all Fourier components
 */
-void getSpectrum(MultidimArray<RFLOAT> &Min,
-                 MultidimArray<RFLOAT> &spectrum,
-                 int spectrum_type=POWER_SPECTRUM);
+MultidimArray<RFLOAT> getSpectrum(const MultidimArray<RFLOAT> &Min, int spectrum_type=POWER_SPECTRUM);
 
 /** Divide the input map in Fourier-space by the spectrum provided.
  *  @ingroup FourierOperations
-    If leave_origin_intact==true, the origin pixel will remain untouched
 */
-void divideBySpectrum(MultidimArray<RFLOAT> &Min, MultidimArray<RFLOAT> &spectrum, bool leave_origin_intact=false);
+void divideBySpectrum(MultidimArray<RFLOAT> &Min, const MultidimArray<RFLOAT> &spectrum);
 
 /** Multiply the input map in Fourier-space by the spectrum provided.
  *  @ingroup FourierOperations
-    If leave_origin_intact==true, the origin pixel will remain untouched
 */
-void multiplyBySpectrum(MultidimArray<RFLOAT> &Min, MultidimArray<RFLOAT> &spectrum, bool leave_origin_intact=false);
+void multiplyBySpectrum(MultidimArray<RFLOAT> &Min, const MultidimArray<RFLOAT> &spectrum);
 
 /** Perform a whitening of the amplitude/power_class spectrum of a 3D map
  *  @ingroup FourierOperations
     If leave_origin_intact==true, the origin pixel will remain untouched
 */
-void whitenSpectrum(MultidimArray<RFLOAT> &Min, MultidimArray<RFLOAT> &Mout, int spectrum_type=AMPLITUDE_SPECTRUM, bool leave_origin_intact=false);
+MultidimArray<RFLOAT> whitenSpectrum(
+    const MultidimArray<RFLOAT> &Min,
+    int spectrum_type=AMPLITUDE_SPECTRUM, bool leave_origin_intact=false
+);
 
 /** Adapts Min to have the same spectrum as spectrum_ref
  *  @ingroup FourierOperations
     If only_amplitudes==true, the amplitude rather than the power_class spectrum will be equalized
 */
-void adaptSpectrum(MultidimArray<RFLOAT> &Min, MultidimArray<RFLOAT> &Mout,
-                   const MultidimArray<RFLOAT> &spectrum_ref, int spectrum_type=AMPLITUDE_SPECTRUM, bool leave_origin_intact=false);
+MultidimArray<RFLOAT> adaptSpectrum(
+    const MultidimArray<RFLOAT> &Min, const MultidimArray<RFLOAT> &spectrum_ref,
+    int spectrum_type=AMPLITUDE_SPECTRUM, bool leave_origin_intact=false
+);
 
 /** Kullback-Leibler divergence */
 RFLOAT getKullbackLeiblerDivergence(MultidimArray<Complex> &Fimg,

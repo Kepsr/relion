@@ -359,15 +359,14 @@ class image_handler_parameters {
             }
             MDfsc.write(std::cout);
         } else if (do_power) {
-            MultidimArray<RFLOAT> spectrum;
-            getSpectrum(Iout(), spectrum, POWER_SPECTRUM);
+            const auto spectrum = getSpectrum(Iout(), POWER_SPECTRUM);
             MetaDataTable MDpower;
             MDpower.setName("power");
-            for (long int i = 0; i < Xsize(spectrum); i++) {
-                if (i > Xsize(Iout()) / 2 + 1) break; // getSpectrum returns beyond Nyquist!!
+            const long int Nyquist = Xsize(Iout()) / 2 + 1;
+            for (long int i = 0; i <= Nyquist; i++) {
 
                 MDpower.addObject();
-                RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
+                const RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDpower.setValue(EMDL::SPECTRAL_IDX, i);
                 MDpower.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDpower.setValue(EMDL::RESOLUTION_ANGSTROM, res);
@@ -375,21 +374,20 @@ class image_handler_parameters {
             }
             MDpower.write(std::cout);
         } else if (!fn_adjust_power.empty()) {
-            MultidimArray<RFLOAT> spectrum;
-            getSpectrum(Iop(), spectrum, AMPLITUDE_SPECTRUM);
-            adaptSpectrum(Iin(), Iout(), spectrum, AMPLITUDE_SPECTRUM);
+            const auto spectrum = getSpectrum(Iop(), AMPLITUDE_SPECTRUM);
+            Iout() = adaptSpectrum(Iin(), spectrum, AMPLITUDE_SPECTRUM);
         } else if (!fn_cosDPhi.empty()) {
 
             FourierTransformer transformer;
-            MultidimArray<Complex> FT1 = transformer.FourierTransform(Iout());
-            MultidimArray<Complex> FT2 = transformer.FourierTransform(Iop());
+            const MultidimArray<Complex> FT1 = transformer.FourierTransform(Iout());
+            const MultidimArray<Complex> FT2 = transformer.FourierTransform(Iop());
 
-            std::vector<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
+            const std::vector<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
             MetaDataTable MDcos;
             MDcos.setName("cos");
             for (long int i = 0; i < cosDPhi.size(); i++) {
                 MDcos.addObject();
-                RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
+                const RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDcos.setValue(EMDL::SPECTRAL_IDX, (int) i);
                 MDcos.setValue(EMDL::RESOLUTION, 1.0 / res);
                 MDcos.setValue(EMDL::RESOLUTION_ANGSTROM, res);

@@ -1115,10 +1115,11 @@ class MultidimArray {
      * V.setXmippOrigin();
      * @endcode
      */
-    void setXmippOrigin() {
+    MultidimArray<T>& setXmippOrigin() {
         zinit = Xmipp::init(zdim);
         yinit = Xmipp::init(ydim);
         xinit = Xmipp::init(xdim);
+        return *this;
     }
 
     // First logical X index
