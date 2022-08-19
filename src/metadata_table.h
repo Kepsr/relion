@@ -123,6 +123,14 @@ class MetaDataTable {
     // Fill the new table with *copies* of all objects
     MetaDataTable(const MetaDataTable &c);
 
+    static MetaDataTable from_filename(
+        const FileName &filename, const std::string &name = "", bool do_only_count = false
+    ) {
+        MetaDataTable mdt;
+        mdt.read(filename);
+        return mdt;
+    }
+
     // Assignment
     // Fill the new table with *copies* of all objects
     MetaDataTable& operator = (const MetaDataTable &MD);

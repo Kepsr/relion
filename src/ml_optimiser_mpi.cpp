@@ -2487,71 +2487,8 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
 
         if (node->rank == 0) {
             // Let's do this on the leader (hopefully it has more memory)
-            if (mymodel.nr_bodies > 1) {
-                std::cout << " Calculating solvent-corrected gold-standard FSC for " << ibody + 1 << "th body ..." << std::endl;
-            } else {
-                std::cout << " Calculating solvent-corrected gold-standard FSC ..." << std::endl;
-            }
-
-            // Read in the half-reconstruction from rank2 and perform the postprocessing-like FSC correction
-            FileName fn_root1, fn_root2;
-            if (iter >= 0) {
-                fn_root1.compose(fn_out + "_it", iter, "", 3);
-            } else {
-                fn_root1 = fn_out;
-            }
-            if (mymodel.nr_bodies > 1) {
-                fn_root1.compose(fn_root1 + "_half1_body", ibody + 1, "", 3);
-                fn_root2.compose(fn_root1 + "_half2_body", ibody + 1, "", 3);
-            } else {
-                fn_root1.compose(fn_root1 + "_half1_class", 1, "", 3);
-                fn_root2.compose(fn_root1 + "_half2_class", 1, "", 3);
-            }
-            auto Iunreg1 = Image<RFLOAT>::from_filename(fn_root1 + "_unfil.mrc");
-            auto Iunreg2 = Image<RFLOAT>::from_filename(fn_root2 + "_unfil.mrc");
-            Iunreg1().setXmippOrigin();
-            Iunreg2().setXmippOrigin();
-
-            // Calculate FSC of the unmasked maps
-            const auto fsc_unmasked = getFSC(Iunreg1(), Iunreg2());
-
-            // At what resolution does the FSC drop below 0.8 (if at all)?
-            const auto search = std::find_if(fsc_unmasked.begin() + 1, fsc_unmasked.end(),
-                [] (RFLOAT fsc) { return fsc < 0.8; });
-            if (search == fsc_unmasked.end()) {
-                std::cerr << " WARNING: FSC curve between unmasked maps never drops below 0.8. Using unmasked FSC as FSC_true... " << std::endl;
-                std::cerr << " WARNING: This message should go away during the later stages of refinement!" << std::endl;
-
-                fsc_curve = fsc_unmasked;
-            } else {
-
-                Image<RFLOAT> Imask = mymodel.nr_bodies > 1 ?
-                    Image<RFLOAT>(mymodel.masks_bodies[ibody]) :
-                    Image<RFLOAT>::from_filename(fn_mask);
-                Imask().setXmippOrigin();
-
-                // Calculate FSC of the masked maps
-                const auto fsc_masked = getFSC(Iunreg1() * Imask(), Iunreg2() * Imask());
-
-                // Do phase-randomised FSC-correction for the solvent mask
-                const int randomize_at = search - fsc_unmasked.begin();
-                if (verb > 0) {
-                    std::cout.width(35);
-                    std::cout << std::left << "  + randomize phases beyond: ";
-                    std::cout << Xsize(Iunreg1()) * mymodel.pixel_size / randomize_at << " Angstroms" << std::endl;
-                }
-                // Mask randomized phases maps and calculated fsc_random_masked
-                const auto fsc_random_masked = getFSC(
-                    randomizePhasesBeyond(Iunreg1(), randomize_at) * Imask(),
-                    randomizePhasesBeyond(Iunreg2(), randomize_at) * Imask()
-                );
-
-                fsc_curve = Postprocessing::calculateFSCtrue(
-                    fsc_masked, fsc_random_masked, randomize_at
-                );
-            }
-
-            // Set fsc_halves_class explicitly to zero beyond the current_size
+            fsc_curve = compute_FSC_curve(ibody);
+            // Set fsc_curve explicitly to zero beyond the current_size
             for (int i = mymodel.current_size / 2 + 1; i < fsc_curve.size(); i++)
                 direct::elem(fsc_curve, i) = 0.0;
         }
@@ -2563,6 +2500,68 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
         );
 
     }
+}
+
+MultidimArray<RFLOAT> MlOptimiserMpi::compute_FSC_curve(int ibody) {
+    if (mymodel.nr_bodies > 1) {
+        std::cout << " Calculating solvent-corrected gold-standard FSC for " << ibody + 1 << "th body ..." << std::endl;
+    } else {
+        std::cout << " Calculating solvent-corrected gold-standard FSC ..." << std::endl;
+    }
+
+    // Read in the half-reconstruction from rank2 and perform the postprocessing-like FSC correction
+    FileName fn_root1, fn_root2;
+    if (iter >= 0) {
+        fn_root1.compose(fn_out + "_it", iter, "", 3);
+    } else {
+        fn_root1 = fn_out;
+    }
+    if (mymodel.nr_bodies > 1) {
+        fn_root1.compose(fn_root1 + "_half1_body", ibody + 1, "", 3);
+        fn_root2.compose(fn_root1 + "_half2_body", ibody + 1, "", 3);
+    } else {
+        fn_root1.compose(fn_root1 + "_half1_class", 1, "", 3);
+        fn_root2.compose(fn_root1 + "_half2_class", 1, "", 3);
+    }
+    const auto halfmap1 = Image<RFLOAT>::from_filename(fn_root1 + "_unfil.mrc")().setXmippOrigin();
+    const auto halfmap2 = Image<RFLOAT>::from_filename(fn_root2 + "_unfil.mrc")().setXmippOrigin();
+
+    // Calculate FSC of the unmasked maps
+    const auto fsc_unmasked = getFSC(halfmap1, halfmap2);
+
+    // At what resolution does the FSC drop below 0.8 (if at all)?
+    const auto search = std::find_if(fsc_unmasked.begin() + 1, fsc_unmasked.end(),
+        [] (RFLOAT fsc) { return fsc < 0.8; });
+    if (search == fsc_unmasked.end()) {
+        std::cerr << " WARNING: FSC curve between unmasked maps never drops below 0.8. Using unmasked FSC as FSC_true... " << std::endl;
+        std::cerr << " WARNING: This message should go away during the later stages of refinement!" << std::endl;
+        return fsc_unmasked;
+    }
+
+    auto mask = mymodel.nr_bodies > 1 ?
+        mymodel.masks_bodies[ibody] :
+        Image<RFLOAT>::from_filename(fn_mask)();
+    mask.setXmippOrigin();  // mask could be const but for this modifying call
+
+    // Calculate FSC of the masked maps
+    const auto fsc_masked = getFSC(halfmap1 * mask, halfmap2 * mask);
+
+    // Do phase-randomised FSC-correction for the solvent mask
+    const int randomize_at = search - fsc_unmasked.begin();
+    if (verb > 0) {
+        std::cout.width(35);
+        std::cout << std::left << "  + randomize phases beyond: ";
+        std::cout << Xsize(halfmap1) * mymodel.pixel_size / randomize_at << " Angstroms" << std::endl;
+    }
+    // Mask randomized phases maps and calculated fsc_random_masked
+    const auto fsc_random_masked = getFSC(
+        randomizePhasesBeyond(halfmap1, randomize_at) * mask,
+        randomizePhasesBeyond(halfmap2, randomize_at) * mask
+    );
+
+    return Postprocessing::calculateFSCtrue(
+        fsc_masked, fsc_random_masked, randomize_at
+    );
 }
 
 void MlOptimiserMpi::writeTemporaryDataAndWeightArrays() {
@@ -2778,7 +2777,7 @@ void MlOptimiserMpi::iterate() {
     // Initialize the current resolution
     updateCurrentResolution();
 
-    for (iter = iter + 1; iter <= nr_iter; iter++) {
+    for (iter += 1; iter <= nr_iter; iter++) {
         {
         ifdefTIMING(TicToc tt (timer, TIMING_EXP);)
 

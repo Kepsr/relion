@@ -105,6 +105,8 @@ class MlOptimiserMpi: public MlOptimiser {
       */
     void reconstructUnregularisedMapAndCalculateSolventCorrectedFSC();
 
+    MultidimArray<RFLOAT> compute_FSC_curve(int ibody);
+
     /**
      *  Write temporary data and weight arrays from the backprojector to disc to allow unregularized reconstructions
      */

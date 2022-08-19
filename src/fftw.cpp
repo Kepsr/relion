@@ -736,16 +736,12 @@ void shiftImageInFourierTransform(
     shiftImageInFourierTransform(in_out, in_out, oridim, xshift, yshift, zshift);
 }
 
-void getSpectrum(
-    MultidimArray<RFLOAT> &Min,
-    MultidimArray<RFLOAT> &spectrum,
-    const int spectrum_type
-) {
+MultidimArray<RFLOAT> getSpectrum(const MultidimArray<RFLOAT> &Min, const int spectrum_type) {
 
-    int xsize = Xsize(Min);
+    const int xsize = Xsize(Min);
     // Takanori: The above line should be Xsize(Min) / 2 + 1 but for compatibility reasons, I keep this as it is.
+    auto spectrum = MultidimArray<RFLOAT>::zeros(xsize);
 
-    spectrum.initZeros(xsize);
     FourierTransformer transformer;
     auto &FT = transformer.FourierTransform(Min);
     auto f = spectrum_type == AMPLITUDE_SPECTRUM ? [] (Complex x) { return abs(x); } :
@@ -753,14 +749,14 @@ void getSpectrum(
     std::vector<RFLOAT> count (xsize, 0);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         long int idx = round(euclid(ip, jp, kp));
-        spectrum(idx) += f(direct::elem(FT, i, j, k));
+        spectrum[idx] += f(direct::elem(FT, i, j, k));
         count[idx]++;
     }
 
     for (long int i = 0; i < xsize; i++) {
-        if (count[i] > 0) { spectrum(i) /= (RFLOAT) count[i]; }
+        if (count[i] > 0) { spectrum[i] /= (RFLOAT) count[i]; }
     }
-
+    return spectrum;
 }
 
 inline RFLOAT safelydivide(RFLOAT dividend, RFLOAT divisor) {
@@ -770,63 +766,54 @@ inline RFLOAT safelydivide(RFLOAT dividend, RFLOAT divisor) {
 
 void divideBySpectrum(
     MultidimArray<RFLOAT> &Min,
-    MultidimArray<RFLOAT> &spectrum,
-    bool leave_origin_intact
+    const MultidimArray<RFLOAT> &spectrum
 ) {
 
-    MultidimArray<RFLOAT> div_spec (spectrum);
-    for (RFLOAT &x : div_spec) { x = safelydivide(1.0, x); }
-    multiplyBySpectrum(Min, div_spec, leave_origin_intact);
+    MultidimArray<RFLOAT> inverse_spectrum (spectrum);
+    // Is this really better than just doing the division normally?
+    for (RFLOAT &x : inverse_spectrum) { x = safelydivide(1.0, x); }
+    multiplyBySpectrum(Min, inverse_spectrum);
 }
 
 void multiplyBySpectrum(
     MultidimArray<RFLOAT> &Min,
-    MultidimArray<RFLOAT> &spectrum,
-    bool leave_origin_intact
+    const MultidimArray<RFLOAT> &spectrum
 ) {
 
     FourierTransformer transformer;
     // RFLOAT dim3 = Xsize(Min) * Ysize(Min) * Zsize(Min);
     MultidimArray<Complex> &FT = transformer.FourierTransform(Min);
-    MultidimArray<RFLOAT> lspectrum = spectrum;
-    if (leave_origin_intact) { lspectrum(0) = 1.0; }
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        long int idx = round(euclid(ip, jp, kp));
-        direct::elem(FT, i, j, k) *= lspectrum(idx);  // * dim3;
+        const long int idx = round(euclid(ip, jp, kp));
+        direct::elem(FT, i, j, k) *= spectrum[idx];  // * dim3;
     }
     transformer.inverseFourierTransform();
 
 }
 
-void whitenSpectrum(
-    MultidimArray<RFLOAT> &Min,
-    MultidimArray<RFLOAT> &Mout,
-    int spectrum_type,
-    bool leave_origin_intact
+MultidimArray<RFLOAT> whitenSpectrum(
+    const MultidimArray<RFLOAT> &Min, int spectrum_type, bool leave_origin_intact
 ) {
 
-    MultidimArray<RFLOAT> spectrum;
-    getSpectrum(Min, spectrum, spectrum_type);
-    Mout = Min;
-    divideBySpectrum(Mout, spectrum, leave_origin_intact);
-
+    auto spectrum = getSpectrum(Min, spectrum_type);
+    if (!leave_origin_intact) { spectrum[0] = 1.0; }
+    MultidimArray<RFLOAT> Mout = Min;
+    divideBySpectrum(Mout, spectrum);
+    return Mout;
 }
 
-void adaptSpectrum(
-    MultidimArray<RFLOAT> &Min,
-    MultidimArray<RFLOAT> &Mout,
+MultidimArray<RFLOAT> adaptSpectrum(
+    const MultidimArray<RFLOAT> &Min,
     const MultidimArray<RFLOAT> &spectrum_ref,
     int spectrum_type,
     bool leave_origin_intact
 ) {
 
-    MultidimArray<RFLOAT> spectrum;
-    getSpectrum(Min, spectrum, spectrum_type);
-    for (long int i = 0; i < Xsize(spectrum); i++) {
-        direct::elem(spectrum, i) = safelydivide(direct::elem(spectrum_ref, i), direct::elem(spectrum, i));
-    }
-    Mout = Min;
-    multiplyBySpectrum(Mout, spectrum, leave_origin_intact);
+    auto spectrum = spectrum_ref / getSpectrum(Min, spectrum_type);
+    if (!leave_origin_intact) { spectrum[0] = 1.0; }
+    MultidimArray<RFLOAT> Mout = Min;
+    multiplyBySpectrum(Mout, spectrum);
+    return Mout;
 }
 
 /** Kullback-Leibler divergence */

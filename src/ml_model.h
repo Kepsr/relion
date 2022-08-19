@@ -120,7 +120,7 @@ public:
     std::vector<FileName> group_names;
 
     // One noise spectrum for each group
-    std::vector<MultidimArray<RFLOAT > > sigma2_noise;
+    std::vector<MultidimArray<RFLOAT>> sigma2_noise;
 
     // One intensity scale for each group
     std::vector<RFLOAT> scale_correction;
