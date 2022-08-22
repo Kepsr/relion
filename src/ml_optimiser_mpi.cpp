@@ -1857,8 +1857,7 @@ void MlOptimiserMpi::maximization() {
                                 node->rank == 1  // only first follower is verbose
                             );
                         } else {
-                            wsum_model.BPref[ith_recons].reconstruct(
-                                reference,
+                            reference = wsum_model.BPref[ith_recons].reconstruct(
                                 gridding_nr_iter,
                                 do_map,
                                 mymodel.tau2_class[ith_recons],
@@ -2019,8 +2018,7 @@ void MlOptimiserMpi::maximization() {
                                     do_join_random_halves || do_always_join_random_halves,
                                     mymodel.tau2_fudge_factor);
                             } else {
-                                wsum_model.BPref[ith_recons].reconstruct(
-                                    reference,
+                                reference = wsum_model.BPref[ith_recons].reconstruct(
                                     gridding_nr_iter,
                                     do_map,
                                     mymodel.tau2_class[ith_recons],
@@ -2459,21 +2457,21 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
             }
             BackProjector BPextra(wsum_model.BPref[ibody]);
 
-            Image<RFLOAT> Iunreg;
-            MultidimArray<RFLOAT> dummy;
-            BPextra.reconstruct(Iunreg(), gridding_nr_iter, false, dummy);
+            MultidimArray<RFLOAT> tau2;
+            MultidimArray<RFLOAT> reconstruction = BPextra.reconstruct(gridding_nr_iter, false, tau2);
 
             if (mymodel.nr_bodies > 1) {
                 // 19may2015 translate the reconstruction back to its C.O.M.
-                Iunreg() = translate(Iunreg(), mymodel.com_bodies[ibody], DONT_WRAP);
+                reconstruction = translate(reconstruction, mymodel.com_bodies[ibody], DONT_WRAP);
             }
 
+            reconstruction.setXmippOrigin();
             // Update header information
-            Iunreg().setXmippOrigin();
-            Iunreg.setStatisticsInHeader();
-            Iunreg.setSamplingRateInHeader(mymodel.pixel_size);
+            Image<RFLOAT> img (std::move(reconstruction));
+            img.setStatisticsInHeader();
+            img.setSamplingRateInHeader(mymodel.pixel_size);
             // And write the resulting model to disc
-            Iunreg.write(fn_root + "_unfil.mrc");
+            img.write(fn_root + "_unfil.mrc");
         }
 
         // reconstruct_rank1 also sends the current_size to the leader, so that it knows where to cut the FSC to zero
@@ -2658,20 +2656,20 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
     }
 
     // Now perform the unregularized reconstruction
-    Image<RFLOAT> Iunreg;
-    MultidimArray<RFLOAT> dummy;
-    wsum_model.BPref[iclass].reconstruct(Iunreg(), gridding_nr_iter, false, dummy);
+    MultidimArray<RFLOAT> tau2;
+    MultidimArray<RFLOAT> reconstruction = wsum_model.BPref[iclass].reconstruct(gridding_nr_iter, false, tau2);
 
     if (mymodel.nr_bodies > 1) {
         // 19may2015 translate the reconstruction back to its C.O.M.
-        Iunreg() = translate(Iunreg(), mymodel.com_bodies[iclass], DONT_WRAP);
+        reconstruction = translate(reconstruction, mymodel.com_bodies[iclass], DONT_WRAP);
     }
 
+    Image<RFLOAT> img (std::move(reconstruction));
     // Update header information
-    Iunreg.setStatisticsInHeader();
-    Iunreg.setSamplingRateInHeader(mymodel.pixel_size);
+    img.setStatisticsInHeader();
+    img.setSamplingRateInHeader(mymodel.pixel_size);
     // And write the resulting model to disc
-    Iunreg.write(fn_root + "_unfil.mrc");
+    img.write(fn_root + "_unfil.mrc");
 
     // remove temporary arrays from the disc
     #ifndef DEBUG_RECONSTRUCTION

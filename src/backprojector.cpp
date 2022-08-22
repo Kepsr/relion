@@ -1169,8 +1169,7 @@ void BackProjector::externalReconstruct(
 
 }
 
-void BackProjector::reconstruct(
-    MultidimArray<RFLOAT> &vol_out,
+MultidimArray<RFLOAT> BackProjector::reconstruct(
     int max_iter_preweight, bool do_map,
     const MultidimArray<RFLOAT> &tau2,
     RFLOAT tau2_fudge, RFLOAT normalise,
@@ -1212,6 +1211,7 @@ void BackProjector::reconstruct(
     FourierTransformer transformer;
     const int max_r2 = round(r_max * padding_factor) * round(r_max * padding_factor);
     /// TODO: Turn this block into an init function.
+    MultidimArray<RFLOAT> vol_out;
     auto &Fconv = [&] () -> MultidimArray<Complex> & {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[0]);)
     oversampling_correction = ref_dim == 3 ?
@@ -1578,7 +1578,7 @@ void BackProjector::reconstruct(
     std::cerr << "done with reconstruct" << std::endl;
     #endif
 
-    if (!weight_out) return;
+    if (!weight_out) return vol_out;
 
     weight_out->data    = MultidimArray<RFLOAT>(ori_size / 2 + 1, ori_size, ori_size);
     Image<RFLOAT> count = Image<RFLOAT>::zeros (ori_size / 2 + 1, ori_size, ori_size);

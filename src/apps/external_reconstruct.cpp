@@ -85,11 +85,10 @@ class ext_recons_parameters {
         if (skip_gridding) BP.skip_gridding = skip_gridding;
 
         Image<Complex> Idata;
-        Image<RFLOAT> Iweight;
-        std::string fn_ext = "." + fn_data_real.getExtension();
-        std::string fn_root = fn_data_real.beforeFirstOf("_real");
+        const std::string fn_ext = "." + fn_data_real.getExtension();
+        const std::string fn_root = fn_data_real.beforeFirstOf("_real");
         ComplexIO::read(Idata, fn_root, fn_ext);
-        Iweight.read(fn_weight);
+        const auto Iweight = Image<RFLOAT>::from_filename(fn_weight);
 
         // Could there be a 1-pixel different in size? use FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM to be safe
         const int r_max = current_size / 2;
@@ -101,8 +100,7 @@ class ext_recons_parameters {
             }
         }
 
-        BP.reconstruct(Iweight(), 10, do_map, tau2, tau2_fudge);
-        Iweight.write(fn_recons);
+        Image<RFLOAT>(BP.reconstruct(10, do_map, tau2, tau2_fudge)).write(fn_recons);
     }
 };
 

@@ -417,12 +417,13 @@ RFLOAT Postprocessing::sharpenMap(Image<RFLOAT> &Imap) {
         fitStraightLine(guinierweighted, global_slope, global_intercept, global_corr_coeff);
         global_bfactor = 4.0 * global_slope;
         if (verb > 0) {
-            std::cout.width(35);
-            std::cout << std::left << "  + slope of fit: " << global_slope << std::endl;
-            std::cout.width(35);
-            std::cout << std::left << "  + intercept of fit: " << global_intercept << std::endl;
-            std::cout.width(35);
-            std::cout << std::left << "  + correlation of fit: " << global_corr_coeff << std::endl;
+            std::cout
+                << std::setw(35) << std::left
+                << "  + slope of fit: " << global_slope << std::endl
+                << std::setw(35) << std::left
+                << "  + intercept of fit: " << global_intercept << std::endl
+                << std::setw(35) << std::left
+                << "  + correlation of fit: " << global_corr_coeff << std::endl;
         }
     } else if (abs(adhoc_bfac) > 0.0) {
         if (verb > 0) {
@@ -430,15 +431,16 @@ RFLOAT Postprocessing::sharpenMap(Image<RFLOAT> &Imap) {
         }
         if (adhoc_bfac > 0.0)
             std::cout << " WARNING: using a positive B-factor. "
-            "This will effectively dampen your map. "
-            "Use negative value to sharpen it!" << std::endl;
+                "This will effectively dampen your map. "
+                "Use negative value to sharpen it!" << std::endl;
         global_bfactor = adhoc_bfac;
     }
 
     // Now apply the B-factor
     if (abs(global_bfactor) > 0.0) {
         if (verb > 0) {
-            std::cout.width(35); std::cout << std::left  <<"  + apply b-factor of: "; std::cout << global_bfactor << std::endl;
+            std::cout << std::setw(35) << std::left
+                << "  + apply b-factor of: " << global_bfactor << std::endl;
         }
         applyBFactorToMap(FT, Xsize(Imap()), global_bfactor, angpix);
     }
@@ -451,8 +453,9 @@ RFLOAT Postprocessing::sharpenMap(Image<RFLOAT> &Imap) {
             applied_filter = global_resol;
 
         if (verb > 0) {
-            std::cout << "== Low-pass filtering final map ... " << std::endl;
-            std::cout.width(35); std::cout << std::left  <<"  + filter frequency: "; std::cout << applied_filter << std::endl;
+            std::cout << "== Low-pass filtering final map ... " << std::endl
+                << std::setw(35) << std::left
+                << "  + filter frequency: " << applied_filter << std::endl;
         }
 
         lowPassFilterMap(FT, Xsize(Imap()), applied_filter, angpix, filter_edge_width);
@@ -464,9 +467,10 @@ RFLOAT Postprocessing::sharpenMap(Image<RFLOAT> &Imap) {
 }
 
 // Sometimes FSC becomes -1 at origin!
-inline void correct_origin(MultidimArray<RFLOAT> &fsc) {
+inline MultidimArray<RFLOAT>& correct_origin(MultidimArray<RFLOAT> &&fsc) {
     auto &origin = direct::elem(fsc, 0);
     if (origin <= 0.0) origin = 1.0;
+    return fsc;
 }
 
 MultidimArray<RFLOAT> Postprocessing::calculateFSCtrue(
@@ -889,18 +893,19 @@ void Postprocessing::run_locres(int rank, int size) {
                 );
 
                 // FSC of masked maps
-                fsc_masked = getFSC(I1() * locmask, I2() * locmask);
-                correct_origin(fsc_masked);
+                fsc_masked = correct_origin(getFSC(I1() * locmask, I2() * locmask));
 
                 // FSC of masked randomized-phase map
-                fsc_random_masked = getFSC(I1p * locmask, I2p * locmask);
-                correct_origin(fsc_random_masked);
+                fsc_random_masked = correct_origin(getFSC(I1p * locmask, I2p * locmask));
 
                 fsc_true = calculateFSCtrue(fsc_masked, fsc_random_masked, randomize_at);
 
                 if (rank == 0) {
                     MetaDataTable MDfsc;
-                    FileName fn_name = "fsc_" + integerToString(ii, 5) + "_" + integerToString(jj, 5) + "_" + integerToString(kk, 5);
+                    const FileName fn_name = "fsc_"
+                        + integerToString(ii, 5) + "_"
+                        + integerToString(jj, 5) + "_"
+                        + integerToString(kk, 5);
                     MDfsc.setName(fn_name);
                     for (long int i = 0; i < Xsize(fsc_true); i++) {
                         MDfsc.addObject();
@@ -988,8 +993,7 @@ void Postprocessing::run_locres(int rank, int size) {
         I2.write(fn_out + "_locres_filtered.mrc");
 
         #ifdef DEBUG
-        I1() = Isumw;
-        I1.write(fn_out + "_locres_sumw.mrc");
+        Image<RFLOAT>(Isumw).write(fn_out + "_locres_sumw.mrc");
         #endif
 
         if (!fn_mask.empty()) {
@@ -1048,8 +1052,7 @@ void Postprocessing::run() {
         }
 
         // Mask I1 and I2 and calculated fsc_masked
-        fsc_masked = getFSC(I1() * Im(), I2() * Im());
-        correct_origin(fsc_masked);
+        fsc_masked = correct_origin(getFSC(I1() * Im(), I2() * Im()));
 
         if (do_ampl_corr) {
             auto acorr_and_dpr = getAmplitudeCorrelationAndDifferentialPhaseResidual(I1(), I2());
@@ -1074,15 +1077,17 @@ void Postprocessing::run() {
         }();  // Postcondition: randomize_at > 0
 
         if (verb > 0) {
-            std::cout.width(35); std::cout << std::left << "  + randomize phases beyond: "; std::cout << Xsize(I1()) * angpix / randomize_at << " Angstroms" << std::endl;
+            if (randomize_at_A <= 0.0)
+                randomize_at_A = angpix * Xsize(I1()) / randomize_at;
+            std::cout << std::setw(35) << std::left
+                << "  + randomize phases beyond: " << randomize_at_A << " Angstroms" << std::endl;
         }
 
         // Mask randomized phases maps and calculated fsc_random_masked
-        fsc_random_masked = getFSC(
+        fsc_random_masked = correct_origin(getFSC(
             randomizePhasesBeyond(I1(), randomize_at) * Im(),
             randomizePhasesBeyond(I2(), randomize_at) * Im()
-        );
-        correct_origin(fsc_random_masked);
+        ));
 
         fsc_true = calculateFSCtrue(fsc_masked, fsc_random_masked, randomize_at);
 
@@ -1148,15 +1153,15 @@ void Postprocessing::run() {
         verb = 0;
 
         std::cout << "  + half1" << std::endl;
-        I1.read(fn_I1);
-        I1().setXmippOrigin();
-        sharpenMap(I1);
-        writeMaps(I1, fn_out + "_half1");
+        auto img_half1 = Image<RFLOAT>::from_filename(fn_I1);
+        img_half1().setXmippOrigin();
+        sharpenMap(img_half1);
+        writeMaps(img_half1, fn_out + "_half1");
 
         std::cout << "  + half2" << std::endl;
-        I1.read(fn_I2);
-        I1().setXmippOrigin();
-        sharpenMap(I1);
-        writeMaps(I1, fn_out + "_half2");
+        auto img_half2 = Image<RFLOAT>::from_filename(fn_I2);
+        img_half2().setXmippOrigin();
+        sharpenMap(img_half2);
+        writeMaps(img_half2, fn_out + "_half2");
     }
 }

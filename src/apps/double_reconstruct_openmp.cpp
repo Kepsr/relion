@@ -567,24 +567,21 @@ class reconstruct_parameters {
                     BackProjector::recenterWhole(tempC(), backprojector[j]->weight);
                 }
 
-                Image<RFLOAT> weightOut;
-
                 std::cout << " + Starting the reconstruction ..." << std::endl;
 
                 MultidimArray<RFLOAT> tau2;
                 if (do_use_fsc)
-                    backprojector[j]->updateSSNRarrays(1., tau2, dummy, dummy, dummy, fsc, do_use_fsc, true);
+                    backprojector[j]->updateSSNRarrays(1.0, tau2, dummy, dummy, dummy, fsc, do_use_fsc, true);
 
-                backprojector[j]->reconstruct(
-                    vol(), grid_iters, do_map, tau2,
-                    1.0, 1.0, -1, false, writeWeights ? &weightOut : 0
+                Image<RFLOAT> *weights = writeWeights ? new Image<RFLOAT> : nullptr;
+                vol() = backprojector[j]->reconstruct(
+                    grid_iters, do_map, tau2,
+                    1.0, 1.0, -1, false, weights
                 );
 
                 if (writeWeights) {
-                    std::stringstream sts;
-                    sts << (j + 1);
-                    std::string fnWgh = fn_out + "_half" + sts.str() + "_class001_unfil_weight.mrc";
-                    weightOut.write(fnWgh);
+                    weights->write(fn_out + "_half" + std::to_string(j + 1) + "_class001_unfil_weight.mrc");
+                    delete weights;
                 }
 
                 prevRefs[j] = vol;
@@ -593,10 +590,7 @@ class reconstruct_parameters {
 
             // Write each half to a .mrc file
             for (int j = 0; j < 2; j++) {
-                std::stringstream sts;
-                sts << (j + 1);
-
-                std::string fnFull = fn_out + "_half" + sts.str() + "_class001_unfil.mrc";
+                const std::string fnFull = fn_out + "_half" + std::to_string(j + 1) + "_class001_unfil.mrc";
 
                 prevRefs[j].write(fnFull);
                 std::cout << " Done writing map in " << fnFull << "\n";

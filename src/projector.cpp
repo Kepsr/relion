@@ -833,7 +833,7 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
     }
 }
 
-void Projector::project2Dto1D(MultidimArray<Complex> &f1d, Matrix2D<RFLOAT> &A) const {
+void Projector::project2Dto1D(MultidimArray<Complex> &f1d, const Matrix2D<RFLOAT> &A) const {
     // f1d should already be in the right size (ori_size,orihalfdim)
     // AND the points outside r_max should already be zero...
     // f1d.initZeros();
@@ -868,7 +868,7 @@ void Projector::project2Dto1D(MultidimArray<Complex> &f1d, Matrix2D<RFLOAT> &A) 
 }
 
 
-void Projector::rotate2D(MultidimArray<Complex> &f2d, Matrix2D<RFLOAT> &A) const {
+void Projector::rotate2D(MultidimArray<Complex> &f2d, const Matrix2D<RFLOAT> &A) const {
     // f2d should already be in the right size (ori_size,orihalfdim)
     // AND the points outside max_r should already be zero...
     // f2d.initZeros();
@@ -964,7 +964,7 @@ void Projector::rotate2D(MultidimArray<Complex> &f2d, Matrix2D<RFLOAT> &A) const
 }
 
 
-void Projector::rotate3D(MultidimArray<Complex> &f3d, Matrix2D<RFLOAT> &A) const {
+void Projector::rotate3D(MultidimArray<Complex> &f3d, const Matrix2D<RFLOAT> &A) const {
     // f3d should already be in the right size (ori_size,orihalfdim)
     // AND the points outside max_r should already be zero
     // f3d.initZeros();
