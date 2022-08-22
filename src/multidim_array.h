@@ -350,12 +350,9 @@ class MultidimArray {
     /// @name Constructors
     //@{
 
-    /** Default ctor
-     * Create an empty array with no memory associated.
-     */
+    // Default ctor
     MultidimArray():
-    xdim(0), ydim(0), zdim(0), ndim(0),
-    xinit(0), yinit(0), zinit(0),
+    xdim(0), ydim(0), zdim(0), ndim(0), xinit(0), yinit(0), zinit(0),
     data(nullptr), allocated_size(0), mmapOn(false), mFd(0) {}
 
     /** Size ctor
@@ -366,39 +363,26 @@ class MultidimArray {
         resize(Xdim, Ydim, Zdim, Ndim);
     }
 
-    /** Copy constructor
-     *
-     * The created volume is a perfect copy of the input array but with a
-     * different memory assignment.
-     *
-     * @code
-     * MultidimArray<RFLOAT> V2(V1);
-     * @endcode
-     */
-    MultidimArray(const MultidimArray<T> &V, bool parent=false) {
+    // Copy ctor
+    MultidimArray(const MultidimArray<T> &other) {
         coreInit();
-        if (parent) {
-            copyShape(V);
-            coreAllocate();
-        } else {
-            *this = V;
-        }
+        resize(other);
+        memcpy(data, other.data, other.size() * sizeof(T));
     }
 
-    /** Move ctor
-     * Steal the guts of a soon-to-die object.
-     */
-    MultidimArray(MultidimArray<T> &&other) noexcept:
-    data(other.data), allocated_size(other.allocated_size) {
-        copyShape(other);
-        other.data = nullptr;
-        other.allocated_size = 0;
-    }
-
-    template <typename T2>
-    MultidimArray<T>(const MultidimArray<T2> &other) {
+    // Copy ctor with type cast
+    template <typename U>
+    MultidimArray<T>(const MultidimArray<U> &other) {
         coreInit();
         *this = other;
+    }
+
+    // Move ctor
+    MultidimArray(MultidimArray<T> &&other) noexcept:
+    xdim(other.xdim), ydim(other.ydim), zdim(other.zdim), ndim(other.ndim),
+    xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
+    data(other.data), allocated_size(other.allocated_size) {
+        other.data = nullptr;
     }
 
     /** Constructor from a Matrix1D.
@@ -424,14 +408,11 @@ class MultidimArray {
             (*this)[i] = v[i];
     }
 
-    /** Destructor.
-     */
+    // Dtor
     ~MultidimArray() {
         coreDeallocate();
     }
 
-    /** Clear.
-     */
     void clear() {
         coreDeallocate();
         coreInit();
@@ -452,7 +433,7 @@ class MultidimArray {
         zinit = 0;
         yinit = 0;
         xinit = 0;
-        data = NULL;
+        data = nullptr;
         allocated_size = 0;
         mmapOn = false;
         mFd = 0;
@@ -655,7 +636,7 @@ class MultidimArray {
             return;
         }
 
-        // data can be NULL even when xdim etc are not zero
+        // data can be nullptr even when xdim etc are not zero
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
         if (size() > 0 && !data) {
@@ -716,7 +697,7 @@ class MultidimArray {
             return;
         }
 
-        // data can be NULL even when xdim etc are not zero
+        // data can be nullptr even when xdim etc are not zero
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
         if (size() > 0 && !data) {
@@ -968,9 +949,9 @@ class MultidimArray {
      * -2.
      *
      * @code
-     * v1.window(-1, 2); // v1=[-1 0 1 2]; v1.firstX() == -1
+     * v1.window(-1, 2);  // v1=[-1 0 1 2]; v1.firstX() == -1
      *
-     * v1.window(-3, 1); // v1=[0 -2 -1 0 1]; v1.firstX() == -3
+     * v1.window(-3, 1);  // v1=[0 -2 -1 0 1]; v1.firstX() == -3
      * @endcode
      */
     void window(
@@ -1428,7 +1409,7 @@ class MultidimArray {
      * inside matrix.
      *
      * @code
-     * m.setCol(0, (m.row(1)).transpose()); // Copies row 1 in column 0
+     * m.setCol(0, (m.row(1)).transpose());  // Copies row 1 in column 0
      * @endcode
      */
     void setCol(index_t j, const MultidimArray<T> &v) {
@@ -1474,7 +1455,7 @@ class MultidimArray {
      * Set a row vector corresponding to the choosen row in the 2D Matrix
      *
      * @code
-     * m.setRow(-2, m.row(1)); // Copies row 1 in row -2
+     * m.setRow(-2, m.row(1));  // Copies row 1 in row -2
      * @endcode
      */
     void setRow(index_t i, const MultidimArray<T> &v) {
@@ -1595,13 +1576,13 @@ class MultidimArray {
     // nevertheless since this is used is better
     // to use T than RFLOAT or will create problem for int multidim arrays
     void rangeAdjust(
-        const MultidimArray<T> &target, const MultidimArray<int> *mask = NULL
+        const MultidimArray<T> &target, const MultidimArray<int> *mask = nullptr
     ) {
 
         if (size() <= 0) return;
 
         T *targetptr = target.data;
-        int *maskptr = mask ? mask->data : NULL;
+        int *maskptr = mask ? mask->data : nullptr;
         RFLOAT N = 0, sumx = 0, sumy = 0, sumxx = 0, sumxy = 0;
         for (T *ptr = begin(); ptr != end(); ++ptr) {
             if (!mask || *maskptr != 0) {
@@ -1667,21 +1648,22 @@ class MultidimArray {
      */
     //@{
 
-    MultidimArray<T> operator + (const T scalar) const;
+    MultidimArray<T> operator + (T scalar) const;
 
-    MultidimArray<T> operator - (const T scalar) const;
+    MultidimArray<T> operator - (T scalar) const;
 
-    MultidimArray<T> operator * (const T scalar) const;
+    MultidimArray<T> operator * (T scalar) const;
 
-    MultidimArray<T> operator / (const T scalar) const;
+    MultidimArray<T> operator / (T scalar) const;
 
-    MultidimArray<T>& operator += (const T scalar);
+    MultidimArray<T>& operator += (T scalar);
 
-    MultidimArray<T>& operator -= (const T scalar);
+    MultidimArray<T>& operator -= (T scalar);
 
-    MultidimArray<T>& operator *= (const T scalar);
+    MultidimArray<T>& operator *= (T scalar);
 
-    MultidimArray<T>& operator /= (const T scalar);
+    MultidimArray<T>& operator /= (T scalar);
+
     //@}
 
     /** @name Scalar "by" array operations
@@ -1698,16 +1680,16 @@ class MultidimArray {
     //@{
 
     template <typename A>
-    friend MultidimArray<A> operator + (const A scalar, const MultidimArray<A> &input);
+    friend MultidimArray<A> operator + (A scalar, const MultidimArray<A> &input);
 
     template <typename A>
-    friend MultidimArray<A> operator - (const A scalar, const MultidimArray<A> &input);
+    friend MultidimArray<A> operator - (A scalar, const MultidimArray<A> &input);
 
     template <typename A>
-    friend MultidimArray<A> operator * (const A scalar, const MultidimArray<A> &input);
+    friend MultidimArray<A> operator * (A scalar, const MultidimArray<A> &input);
 
     template <typename A>
-    friend MultidimArray<A> operator / (const A scalar, const MultidimArray<A> &input);
+    friend MultidimArray<A> operator / (A scalar, const MultidimArray<A> &input);
     //@}
 
     /// @name Initialization
@@ -1827,17 +1809,17 @@ class MultidimArray {
      * default working mode for the function.
      *
      * @code
-     * v1.initLinear(1, 3); // v1=[1 2 3]
-     * v1.initLinear(1.5, 3.1); // v1=[1.5 2.5]
-     * v1.initLinear(0, 10, 3); // v1=[0 3 6 9]
-     * v1.initLinear(0, 10, 3, "incr"); // v1=[0 3 6 9]
+     * v1.initLinear(1, 3);  // v1=[1 2 3]
+     * v1.initLinear(1.5, 3.1);  // v1=[1.5 2.5]
+     * v1.initLinear(0, 10, 3);  // v1=[0 3 6 9]
+     * v1.initLinear(0, 10, 3, "incr");  // v1=[0 3 6 9]
      * @endcode
      *
      * Step functionality: The given range is divided in as many points as
      * indicated (in the example 6 points).
      *
      * @code
-     * v1.initLinear(0, 10, 6, "steps"); // v1=[0 2 4 6 8 10]
+     * v1.initLinear(0, 10, 6, "steps");  // v1=[0 2 4 6 8 10]
      * @endcode
      */
     void initLinear(T minF, T maxF, int n = 1, const std::string& mode = "incr") {
@@ -1846,7 +1828,7 @@ class MultidimArray {
 
         if (mode == "incr") {
             steps = 1 + floor((RFLOAT) abs(maxF - minF) / (RFLOAT) n);
-            slope = n * sgn(maxF - minF); // maxF and minF should not be equal
+            slope = n * sgn(maxF - minF);  // maxF and minF should not be equal
         } else if (mode == "steps") {
             steps = n;
             slope = (maxF - minF) / (steps - 1);
@@ -1954,7 +1936,7 @@ class MultidimArray {
      * memory is needed to hold the new RFLOAT pointer array.
      */
     T*** adaptForNumericalRecipes3D(long int n = 0) const {
-        T ***m = NULL;
+        T ***m = nullptr;
         ask_Tvolume(m, 1, zdim, 1, ydim, 1, xdim);
 
         for (long int k = 0; k < Zsize(*this); k++)
@@ -1978,7 +1960,7 @@ class MultidimArray {
      * memory is needed to hold the new RFLOAT pointer array.
      */
     T** adaptForNumericalRecipes2D(long int n = 0) const {
-        T **m = NULL;
+        T **m = nullptr;
         ask_Tmatrix(m, 1, ydim, 1, xdim);
 
         for (long int j = 0; j < Ysize(*this); j++)
@@ -2041,7 +2023,7 @@ class MultidimArray {
 
     /** Computes the center of mass of the nth array
      */
-    void centerOfMass(Matrix1D<RFLOAT> &center, void *mask = NULL, long int n = 0) {
+    void centerOfMass(Matrix1D<RFLOAT> &center, void *mask = nullptr, long int n = 0) {
             center.initZeros(3);
             MultidimArray<int> *imask = (MultidimArray<int>*) mask;
 
@@ -2136,14 +2118,14 @@ class MultidimArray {
      * // will be substituted by its nearest border
      * @endcode
      */
-    void threshold(const std::string &type, T a, T b, MultidimArray<int> *mask = NULL);
+    void threshold(const std::string &type, T a, T b, MultidimArray<int> *mask = nullptr);
 
     /** Count with threshold.
      *
      * Return the number of elements meeting the threshold
      * condition.
      */
-    long int countThreshold(const std::string& type, T a, T b, MultidimArray<int> *mask = NULL) {
+    long int countThreshold(const std::string& type, T a, T b, MultidimArray<int> *mask = nullptr) {
         int mode =
             type == "abs_above" ? 1 :
             type == "abs_below" ? 2 :
@@ -2154,7 +2136,7 @@ class MultidimArray {
         if (!mode) REPORT_ERROR(static_cast<std::string>("CountThreshold: mode not supported (" + type + ")"));
 
         long int ret = 0;
-        int *maskptr = mask ? mask->begin() : NULL;
+        int *maskptr = mask ? mask->begin() : nullptr;
         for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
             if (!mask || maskptr > 0) {
                 switch (mode) {
@@ -2183,9 +2165,9 @@ class MultidimArray {
      */
     void substitute(
         T oldv, T newv, RFLOAT accuracy = Xmipp::epsilon,
-        MultidimArray<int> *mask = NULL
+        MultidimArray<int> *mask = nullptr
     ) {
-        int *maskptr = mask ? mask->begin() : NULL;
+        int *maskptr = mask ? mask->begin() : nullptr;
         for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
             if (
                 (!mask || *maskptr > 0)
@@ -2202,9 +2184,9 @@ class MultidimArray {
      */
     void randomSubstitute(
         T oldv, T avgv, T sigv, RFLOAT accuracy = Xmipp::epsilon,
-        MultidimArray<int> *mask = NULL
+        MultidimArray<int> *mask = nullptr
     ) {
-        int *maskptr = mask ? mask->begin() : NULL;
+        int *maskptr = mask ? mask->begin() : nullptr;
         for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
             if (
                 (!mask || *maskptr > 0)
@@ -2221,9 +2203,9 @@ class MultidimArray {
      */
     void binarize(
         RFLOAT val = 0, RFLOAT accuracy = Xmipp::epsilon,
-        MultidimArray<int> *mask = NULL
+        MultidimArray<int> *mask = nullptr
     ) {
-        int *maskptr = mask ? mask->begin() : NULL;
+        int *maskptr = mask ? mask->begin() : nullptr;
         for (T *ptr = begin(); ptr != end(); ++ptr, ++maskptr) {
             if (!mask || *maskptr > 0) {
                 *ptr = *ptr > val + accuracy;
@@ -2474,22 +2456,19 @@ class MultidimArray {
     /// @{
 
     // Copy assignment
-    MultidimArray<T> &operator = (const MultidimArray<T> &op1) {
-        if (&op1 != this) {
-            resize(op1);
-            memcpy(data, op1.data, op1.size() * sizeof(T));
-        }
+    MultidimArray<T> &operator = (const MultidimArray<T> &other) {
+        auto copy (other);
+        std::swap(*this, copy);
         return *this;
     }
 
     // Move assignment
     MultidimArray<T> &operator = (MultidimArray<T>&& other) {
-        coreDeallocate(); // Otherwise there may be a memory leak!
+        coreDeallocate();  // Otherwise there may be a memory leak!
         copyShape(other);
         data = other.data;
         other.data = nullptr;
         allocated_size = other.allocated_size;
-        other.allocated_size = 0;
         return *this;
     }
 
