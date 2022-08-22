@@ -552,17 +552,14 @@ void MovieReconstructor::reconstruct() {
 
     #pragma omp parallel for num_threads(nr_threads)
     for (int i = 0; i < 2; i++) {
-        MultidimArray<RFLOAT> fsc, dummy;
-        Image<RFLOAT> vol;
-        fsc.resize(output_boxsize / 2 + 1);
 
         backprojector[i].symmetrise(nr_helical_asu, helical_twist, helical_rise / angpix);
 
         MultidimArray<RFLOAT> tau2;
-        backprojector[i].reconstruct(vol(), iter, do_map, tau2);
+        Image<RFLOAT> vol (backprojector[i].reconstruct(iter, do_map, tau2));
 
         vol.setSamplingRateInHeader(angpix);
-        FileName fn_half = fn_out.withoutExtension() + "_half" + integerToString(i + 1) + ".mrc";
+        const FileName fn_half = fn_out.withoutExtension() + "_half" + integerToString(i + 1) + ".mrc";
         vol.write(fn_half);
         if (verb > 0)
             std::cout << " + Done! Written output map in: " << fn_half << std::endl;

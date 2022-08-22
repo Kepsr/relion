@@ -883,9 +883,8 @@ void HelixAligner::reconstruct2D(int iclass) {
         Matrix2D<RFLOAT> A2D = rotation2DMatrix(rot);
         BP.set2DFourierTransform(myFlines[j], A2D);
     }
-    MultidimArray<RFLOAT> dummy;
-    model.Arec[iclass].initZeros();
-    BP.reconstruct(model.Arec[iclass], 10, false, dummy);
+    MultidimArray<RFLOAT> tau2;
+    model.Arec[iclass] = BP.reconstruct(10, false, tau2);
 
     if (symmetry > 1) {
 
@@ -918,23 +917,23 @@ void HelixAligner::reconstruct2D(int iclass) {
     // Now project the reconstruction back out into the model.Aref[iclass]
     Projector PP(Ysize(model.Aref[iclass]), TRILINEAR, 2, 1, 1);
     // Set the FT of img inside the Projector
-    PP.computeFourierTransformMap(model.Arec[iclass], dummy, Ysize(model.Aref[iclass]), 1);
+    MultidimArray<RFLOAT> power_spectrum;
+    PP.computeFourierTransformMap(model.Arec[iclass], power_spectrum, Ysize(model.Aref[iclass]), 1);
 
     // Calculate all projected lines
     for (int i = 0; i < myFlines.size(); i++) {
-        MultidimArray<RFLOAT> myline(Ysize(model.Aref[iclass]));
-        FourierTransformer transformer;
 
-        RFLOAT rot = (RFLOAT) i * 360.0 / Xsize(model.Aref[iclass]);
-        Matrix2D<RFLOAT> A2D = rotation2DMatrix(rot);
+        const RFLOAT rot = (RFLOAT) i * 360.0 / Xsize(model.Aref[iclass]);
+        const Matrix2D<RFLOAT> A2D = rotation2DMatrix(rot);
         myFlines[i].initZeros();
         PP.get2DFourierTransform(myFlines[i], A2D);
-        myline = transformer.inverseFourierTransform(myFlines[i]);
+        FourierTransformer transformer;
+        MultidimArray<RFLOAT> line = transformer.inverseFourierTransform(myFlines[i]);
         // Shift the image back to the center...
-        CenterFFT(myline, false);
+        CenterFFT(line, false);
 
         for (int j = 0; j < Ysize(model.Aref[iclass]); j++)
-             direct::elem(model.Aref[iclass], i, j) = direct::elem(myline, j);
+            direct::elem(model.Aref[iclass], i, j) = direct::elem(line, j);
 
     }
     #ifdef DEBUGREC2D

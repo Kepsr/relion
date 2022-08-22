@@ -323,8 +323,7 @@ class BackProjector: public Projector {
          * If do_map is true, 1 will be added to all weights
          * alpha will contain the noise-reduction spectrum
     */
-    void reconstruct(
-        MultidimArray<RFLOAT> &vol_out,
+    MultidimArray<RFLOAT> reconstruct(
         int max_iter_preweight,
         bool do_map,
         const MultidimArray<RFLOAT> &tau2,

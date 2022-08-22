@@ -650,7 +650,7 @@ void Reconstructor::reconstruct() {
                 tau2, tmp, tmp, tmp, false, 1.0, 1
             );
         } else {
-            backprojector.reconstruct(vol(), iter, do_map, tau2);
+            vol() = backprojector.reconstruct(iter, do_map, tau2);
         }
     }
 

@@ -2187,10 +2187,10 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
     if (fn_ref == "None") {
         for (int iclass = 0; iclass < mymodel.nr_classes * mymodel.nr_bodies; iclass++) {
 
-            MultidimArray<RFLOAT> dummy;
-            (wsum_model.BPref[iclass]).reconstruct(mymodel.Iref[iclass], gridding_nr_iter, false, dummy);
+            MultidimArray<RFLOAT> tau2;
+            mymodel.Iref[iclass] = wsum_model.BPref[iclass].reconstruct(gridding_nr_iter, false, tau2);
             // 2D projection data were CTF-corrected, subtomograms were not
-            refs_are_ctf_corrected = (mymodel.data_dim == 3) ? false : true;
+            refs_are_ctf_corrected = mymodel.data_dim != 3;
         }
     }
 
@@ -3722,8 +3722,7 @@ void MlOptimiser::maximization() {
                         1  // verbose
                     );
                 } else {
-                    wsum_model.BPref[iclass].reconstruct(
-                        mymodel.Iref[iclass],
+                    mymodel.Iref[iclass] = wsum_model.BPref[iclass].reconstruct(
                         gridding_nr_iter,
                         do_map,
                         mymodel.tau2_class[iclass],
