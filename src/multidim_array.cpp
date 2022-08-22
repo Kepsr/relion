@@ -117,49 +117,49 @@ void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArra
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator + (const T scalar) const {
+MultidimArray<T> MultidimArray<T>::operator + (T scalar) const {
     auto copy (*this);
     return copy += scalar;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator - (const T scalar) const {
+MultidimArray<T> MultidimArray<T>::operator - (T scalar) const {
     auto copy (*this);
     return copy -= scalar;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator * (const T scalar) const {
+MultidimArray<T> MultidimArray<T>::operator * (T scalar) const {
     auto copy (*this);
     return copy *= scalar;
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator / (const T scalar) const {
+MultidimArray<T> MultidimArray<T>::operator / (T scalar) const {
     auto copy (*this);
     return copy /= scalar;
 }
 
 template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator += (const T scalar) {
+MultidimArray<T>& MultidimArray<T>::operator += (T scalar) {
     for (auto &x : *this) { x += scalar; }
     return *this;
 }
 
 template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator -= (const T scalar) {
+MultidimArray<T>& MultidimArray<T>::operator -= (T scalar) {
     for (auto &x : *this) { x -= scalar; }
     return *this;
 }
 
 template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator *= (const T scalar) {
+MultidimArray<T>& MultidimArray<T>::operator *= (T scalar) {
     for (auto &x : *this) { x *= scalar; }
     return *this;
 }
 
 template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator /= (const T scalar) {
+MultidimArray<T>& MultidimArray<T>::operator /= (T scalar) {
     for (auto &x : *this) { x /= scalar; }
     return *this;
 }
@@ -233,42 +233,48 @@ MultidimArray<T>& MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
     return pointwise(*this, arg, +[] (T x, T y) -> T { return x / y; });
 }
 
-template <typename T>
-MultidimArray<T> operator + (const T scalar, const MultidimArray<T> &input) {
+template <typename A>
+MultidimArray<A> operator + (A scalar, const MultidimArray<A> &input) {
     auto copy (input);
     for (auto &x : copy) { x = scalar + x; }
     return copy;
 }
 
-template <typename T>
-MultidimArray<T> operator - (const T scalar, const MultidimArray<T> &input) {
+template <typename A>
+MultidimArray<A> operator - (A scalar, const MultidimArray<A> &input) {
     auto copy (input);
     for (auto &x : copy) { x = scalar - x; }
     return copy;
 }
 
-template <typename T>
-MultidimArray<T> operator * (const T scalar, const MultidimArray<T> &input) {
+template <typename A>
+MultidimArray<A> operator * (A scalar, const MultidimArray<A> &input) {
     auto copy (input);
     for (auto &x : copy) { x = scalar * x; }
     return copy;
 }
 
-template <typename T>
-MultidimArray<T> operator / (const T scalar, const MultidimArray<T> &input) {
+template <typename A>
+MultidimArray<A> operator / (A scalar, const MultidimArray<A> &input) {
     auto copy (input);
     for (auto &x : copy) { x = scalar / x; }
     return copy;
 }
 
-template class MultidimArray<float>;
-template class MultidimArray<double>;
-template class MultidimArray<unsigned short>;
-template class MultidimArray<short>;
-template class MultidimArray<unsigned char>;
-template class MultidimArray<signed char>;
-template class MultidimArray<int>;
-template class MultidimArray<Complex>;
+#define INSTANTIATE_TEMPLATES(T) \
+    template class MultidimArray<T>; \
+    template MultidimArray<T> operator + (T scalar, const MultidimArray<T> &input); \
+    template MultidimArray<T> operator - (T scalar, const MultidimArray<T> &input); \
+    template MultidimArray<T> operator * (T scalar, const MultidimArray<T> &input); \
+    template MultidimArray<T> operator / (T scalar, const MultidimArray<T> &input);
 
-// Required for compilation of ml_model.cpp
-template MultidimArray<double> operator * (double scalar, const MultidimArray<double> &input);
+INSTANTIATE_TEMPLATES(float)
+INSTANTIATE_TEMPLATES(double)
+INSTANTIATE_TEMPLATES(unsigned short)
+INSTANTIATE_TEMPLATES(short)
+INSTANTIATE_TEMPLATES(unsigned char)
+INSTANTIATE_TEMPLATES(signed char)
+INSTANTIATE_TEMPLATES(int)
+INSTANTIATE_TEMPLATES(Complex)
+
+#undef INSTANTIATE_TEMPLATES
