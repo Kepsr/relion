@@ -28,11 +28,11 @@
 namespace ComplexIO {
 
     template <typename T>
-    void write(const MultidimArray<tComplex<T> > &img, std::string fnBase, std::string fnSuffix) {
+    void write(const MultidimArray<tComplex<T>> &img, std::string fnBase, std::string fnSuffix) {
         Image<RFLOAT> realimg(img.xdim, img.ydim, img.zdim, img.ndim);
         Image<RFLOAT> imagimg(img.xdim, img.ydim, img.zdim, img.ndim);
 
-        FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img) {
+        FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img, i, j, k, l) {
             direct::elem(realimg.data, i, j, k, l) = direct::elem(img, i, j, k, l).real;
             direct::elem(imagimg.data, i, j, k, l) = direct::elem(img, i, j, k, l).imag;
         }
@@ -42,12 +42,12 @@ namespace ComplexIO {
     }
 
     template <typename T>
-    void read(Image<tComplex<T> > &img, std::string fnBase, std::string fnSuffix) {
+    void read(Image<tComplex<T>> &img, std::string fnBase, std::string fnSuffix) {
         Image<RFLOAT> realimg = Image<RFLOAT>::from_filename(fnBase + "_real" + fnSuffix);
         Image<RFLOAT> imagimg = Image<RFLOAT>::from_filename(fnBase + "_imag" + fnSuffix);
 
         img = Image<Complex>(realimg.data.xdim, realimg.data.ydim, realimg.data.zdim, realimg.data.ndim);
-        FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
+        FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data, i, j, k, l) {
             direct::elem(img.data, i, j, k, l) = Complex(
                 direct::elem(realimg.data, i, j, k, l),
                 direct::elem(imagimg.data, i, j, k, l)

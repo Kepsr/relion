@@ -668,7 +668,7 @@ void radialAverage(
 
     Matrix1D<RFLOAT> idx(3);
     // Perform the radial sum and count pixels that contribute to every distance
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(m) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(m, i, j, k) {
         XX(idx) = i - XX(center_of_rot);
         YY(idx) = j - YY(center_of_rot);
         ZZ(idx) = k - ZZ(center_of_rot);

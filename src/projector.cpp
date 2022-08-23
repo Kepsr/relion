@@ -424,7 +424,7 @@ void Projector::computeFourierTransformMap(
         }
         else
         #endif
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) // This will also work for 2D
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in, i, j, k) // This will also work for 2D
             Mpad.elem(i, j, k) = vol_in.elem(i, j, k);
     }
     }
@@ -637,7 +637,7 @@ void Projector::computeFourierTransformMap(
 void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
     // Correct real-space map by dividing it by the Fourier transform of the interpolator(s)
     vol_in.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in, i, j, k) {
         const RFLOAT r = euclid(i, j, k);
         if (r > 0.0) {
             const RFLOAT rval = r / (ori_size * padding_factor);

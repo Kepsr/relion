@@ -644,7 +644,7 @@ void HelixAligner::initialiseClasses() {
             for (int i_smear = -max_smear; i_smear <= max_smear; i_smear++) {
 
                 double smearw = max_smear == 0 ? 1 : gaussian1D((double) i_smear, (double) max_smear / 3);
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(Xrects[ipart][0]) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(Xrects[ipart][0], i, j) {
                     int ip = i + random_xoffset + i_smear;
                     while (ip < Xinit(model.Aref[myclass])) { ip += xrect; }
                     while (ip > Xlast(model.Aref[myclass])) { ip -= xrect; }
@@ -768,7 +768,7 @@ void HelixAligner::expectationOneParticleNoFFT(long int ipart) {
     {
         for (int i_smear = -max_smear; i_smear <= max_smear; i_smear++) {
             double smearw = max_smear < Xmipp::epsilon ? 1 : gaussian1D((double) i_smear, (double) max_smear / 3);
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(Xrects[ipart][best_k_rot]) {
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(Xrects[ipart][best_k_rot], i, j) {
 
                 int ip = i + best_i_offset + i_smear;
                 while (ip < Xinit(model.Aref[best_class])) { ip += xrect; }

@@ -108,9 +108,9 @@ class ctf_toolbox_parameters {
             Ictf().setXmippOrigin();
             RFLOAT xs = (RFLOAT) sim_box_large * sim_angpix;
             RFLOAT ys = (RFLOAT) sim_box_large * sim_angpix;
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(Ictf()) {
-                RFLOAT x = (RFLOAT) i / xs;
-                RFLOAT y = (RFLOAT) j / ys;
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(Ictf(), i, j) {
+                const RFLOAT x = (RFLOAT) i / xs;
+                const RFLOAT y = (RFLOAT) j / ys;
 
                 Ictf().elem(i, j) = ctf.getCTF(
                     x, y,

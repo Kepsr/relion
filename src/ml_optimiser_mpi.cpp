@@ -2627,7 +2627,7 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
         Ireal().printShape(std::cerr);
         REPORT_ERROR("Incompatible size of " + fn_root + "_data_real.mrc");
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(Ireal()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(Ireal(), i, j, k) {
         wsum_model.BPref[iclass].data.elem(i, j, k).real = Ireal().elem(i, j, k);
     }
 
@@ -2639,7 +2639,7 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
         Iimag().printShape(std::cerr);
         REPORT_ERROR("Incompatible size of " + fn_root + "_data_imag.mrc");
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(Iimag()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(Iimag(), i, j, k) {
         wsum_model.BPref[iclass].data.elem(i, j, k).imag = Iimag().elem(i, j, k);
     }
 
@@ -2651,7 +2651,7 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
         Iweight().printShape(std::cerr);
         REPORT_ERROR("Incompatible size of " + fn_root + "_weight.mrc");
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(Iweight()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(Iweight(), i, j, k) {
         wsum_model.BPref[iclass].weight.elem(i, j, k) = Iweight().elem(i, j, k);
     }
 

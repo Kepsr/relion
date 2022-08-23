@@ -358,7 +358,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
         // Fill region outside the original window with white Gaussian noise to prevent all-zeros in Mstddev
         CTICTOC(timer, "gaussNoiseOutside", ({
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic(), i, j) {
             if (
                 j < Xmipp::init(basePckr->micrograph_ysize) ||
                 j > Xmipp::last(basePckr->micrograph_ysize) ||
@@ -740,13 +740,14 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             }))
 
             CTICTOC(timer, "suma_FP", ({
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mctfref) {
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mctfref, i, j) {
                 // only loop over smaller Mctfref, but take values from large Maux!
                 if (i * i + j * j < basePckr->particle_radius2) {
-                    suma2 += Maux.elem(i, j) * Maux.elem(i, j);
-                    suma2 += 2.0 * Maux.elem(i, j) * rnd_gaus(0.0, 1.0);
-                    sum_ref_under_circ_mask += Maux.elem(i, j);
-                    sum_ref2_under_circ_mask += Maux.elem(i, j) * Maux.elem(i, j);
+                    const auto &x = Maux.elem(i, j);
+                    suma2 += x * x;
+                    suma2 += 2.0 * x * rnd_gaus(0.0, 1.0);
+                    sum_ref_under_circ_mask += x;
+                    sum_ref2_under_circ_mask += x * x;
                     sumn += 1.0;
                 }
             }

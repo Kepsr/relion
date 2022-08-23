@@ -151,31 +151,21 @@ inline int sgn_nozero(T val) {
     return val >= T(0) ? +1 : -1;
 }
 
+// Euclidean distance in 2D
+template <typename T>
+inline T euclid(T a, T b) { return sqrt(a * a + b * b); }
+
 // Euclidean distance in 3D
 template <typename T>
 inline T euclid(T a, T b, T c) { return sqrt(a * a + b * b + c * c); }
 
+// Squared Euclidean distance in 2D
+template <typename T>
+inline T euclidsq(T a, T b) { return a * a + b * b; }
+
 // Squared Euclidean distance in 3D
 template <typename T>
 inline T euclidsq(T a, T b, T c) { return a * a + b * b + c * c; }
-
-#ifndef XMIPP_MIN
-/** Minimum
- * @code
- * lesser = XMIPP_MIN(x, y);
- * @endcode
- */
-#define XMIPP_MIN(x, y) ((x) <= (y) ? (x) : (y))
-#endif
-
-#ifndef XMIPP_MAX
-/** Maximum
- * @code
- * greater = XMIPP_MAX(x, y);
- * @endcode
- */
-#define XMIPP_MAX(x, y) ((x) <= (y) ? (y) : (x))
-#endif
 
 /** Round to next integer
  *

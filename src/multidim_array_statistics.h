@@ -39,7 +39,7 @@ T minIndex(const MultidimArray<T> &arr, long int &imin, long int &jmin, long int
     lmin = 0;
     T minval = arr.elem(imin, jmin, kmin, lmin);
 
-    FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(arr) {
+    FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(arr, i, j, k, l) {
         if (arr.elem(i, j, k, l) > minval) {
             minval = arr.elem(i, j, k, l);
             imin = i;
@@ -100,7 +100,7 @@ T maxIndex(const MultidimArray<T> &arr, long int &imax, long int &jmax, long int
     lmax = 0;
     T maxval = arr.elem(imax, jmax, kmax, lmax);
 
-    FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(arr) {
+    FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(arr, i, j, k, l) {
         if (arr.elem(i, j, k, l) > maxval) {
             maxval = arr.elem(i, j, k, l);
             imax = i;

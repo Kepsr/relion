@@ -1165,7 +1165,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             }
 
             #pragma omp parallel for num_threads(n_threads)
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(PS_sum()) {
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(PS_sum(), i, j) {
                 // logical 2D access, i = logical_y, j = logical_x
                 // F(i, j) = conj(F(-i, -j))
                 // accessor is (Y, X)
@@ -1216,7 +1216,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
         PS_sum_cropped = Image<float>(nx_needed, nx_needed);
         PS_sum().setXmippOrigin();
         PS_sum_cropped().setXmippOrigin();
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(PS_sum_cropped())
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(PS_sum_cropped(), i, j)
             PS_sum_cropped().elem(i, j) = PS_sum().elem(i, j);
 
         #ifdef DEBUG_PS

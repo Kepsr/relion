@@ -216,7 +216,7 @@ void FilterHelper::drawTestPattern(Volume<RFLOAT>& volume, int squareSize) {
 Image<RFLOAT> FilterHelper::expImg(Image<RFLOAT> &img, double scale) {
     Image<RFLOAT> out = img;
 
-    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
+    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data, i, j, k, l) {
         direct::elem(out.data, i, j, k, l) = exp(scale * direct::elem(img.data, i, j, k, l));
     }
 
@@ -226,7 +226,7 @@ Image<RFLOAT> FilterHelper::expImg(Image<RFLOAT> &img, double scale) {
 Image<RFLOAT> FilterHelper::logImg(Image<RFLOAT> &img, double thresh, double scale) {
     Image<RFLOAT> out = img;
 
-    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
+    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data, i, j, k, l) {
         double v = direct::elem(img.data, i, j, k, l);
         if (v < thresh) { v = thresh; }
         direct::elem(out.data, i, j, k, l) = log(scale * v);
@@ -593,7 +593,7 @@ void FilterHelper::lowPassFilterSpectrum(
 RFLOAT FilterHelper::averageValue(Image<RFLOAT> &img) {
     RFLOAT sum;
 
-    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
+    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data, i, j, k, l) {
         sum += direct::elem(img.data, i, j, k, l);
     }
 
@@ -603,7 +603,7 @@ RFLOAT FilterHelper::averageValue(Image<RFLOAT> &img) {
 RFLOAT FilterHelper::maxValue(Image<RFLOAT> &img) {
     RFLOAT vMax = -std::numeric_limits<double>::max();
 
-    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
+    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data, i, j, k, l) {
         RFLOAT v = direct::elem(img.data, i, j, k, l);
         if (v > vMax) { vMax = v; }
     }
@@ -1211,9 +1211,9 @@ void FilterHelper::divide(
     Image<Complex> &dividend, Image<RFLOAT> &divisor, RFLOAT epsilon, 
     Image<Complex> &dest
 ) {
-    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(dividend.data) {
+    FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(dividend.data, i, j, k, l) {
         direct::elem(dest.data, i, j, k, l) = direct::elem(dividend.data, i, j, k, l)
-                                                / (direct::elem(divisor.data, i, j, k, l) + epsilon);  // epsilon saves us from division by zero
+                                            / (direct::elem(divisor.data, i, j, k, l) + epsilon);  // epsilon saves us from division by zero
     }
 }
 
@@ -1243,22 +1243,26 @@ void FilterHelper::wienerDeconvolve(
         Complex zz = direct::elem(divisor.data, x, y, z);
         Complex z0 = direct::elem(dividend.data, x, y, z);
 
-        /*std::cout << "z0 = " << z0.real << " + " << z0.imag << " * i\n";
+        /*
+        std::cout << "z0 = " << z0.real << " + " << z0.imag << " * i\n";
         std::cout << "zz = " << zz.real << " + " << zz.imag << " * i\n";
         std::cout << "zzB * z0 = " << (zz.conj() * z0).real << " + " << (zz.conj() * z0).imag << " * i\n";
-        std::cout << "((zz.conj() * zz).real + theta) = " << ((zz.conj() * zz).real + theta) << " * i\n";*/
+        std::cout << "((zz.conj() * zz).real + theta) = " << ((zz.conj() * zz).real + theta) << " * i\n";
+        */
 
-        //direct::elem(dest.data, x, y, z) = (zz.conj() * z0) / ((zz.conj() * zz).real + theta);
+        // direct::elem(dest.data, x, y, z) = (zz.conj() * z0) / ((zz.conj() * zz).real + theta);
 
         direct::elem(dest.data, x, y, z) = (zz.real * z0) / (zz.real * zz.real + theta);
 
-        /*RFLOAT t = zz.abs()/theta;
+        /*
+        RFLOAT t = zz.abs() / theta;
 
         if (t > 1) {
             direct::elem(dest.data, x, y, z) = direct::elem(dividend.data, x, y, z) / t;
         } else {
             direct::elem(dest.data, x, y, z) = direct::elem(dividend.data, x, y, z);
-        }*/
+        }
+        */
     }
 }
 

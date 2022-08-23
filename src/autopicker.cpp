@@ -347,16 +347,14 @@ void AutoPicker::initialise() {
         psi_sampling = 360.0;
         do_ctf = false;
 
-        Image<RFLOAT> Iref;
-        Iref().initZeros(particle_size, particle_size);
-        Iref().setXmippOrigin();
+        auto ref = MultidimArray<RFLOAT>::zeros(particle_size, particle_size).setXmippOrigin();
         // Make a Gaussian reference. sigma is 1/6th of the particle size, such that 3 sigma is at the image edge
         RFLOAT normgauss = gaussian1D(0.0, particle_size / 6.0, 0.0);
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(Iref()) {
-            double r = sqrt((RFLOAT) (i * i + j * j));
-            Iref().elem(i, j) = gauss_max_value * gaussian1D(r, particle_size / 6.0, 0.0) / normgauss;
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(ref, i, j) {
+            double r = euclid(i, j);
+            ref.elem(i, j) = gauss_max_value * gaussian1D(r, particle_size / 6.0, 0.0) / normgauss;
         }
-        Mrefs.push_back(Iref());
+        Mrefs.push_back(ref);
 
     } else if (fn_ref.isStarFile()) {
         MetaDataTable MDref;
@@ -667,8 +665,8 @@ void AutoPicker::initialise() {
             nr_pixels_avg_mask = Mcirc_mask.size();
 
             long int inner_radius = round(helical_tube_diameter / (2.0 * angpix));
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-                if (i * i + j * j < inner_radius * inner_radius) {
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
+                if (euclidsq(i, j) < inner_radius * inner_radius) {
                     Mcirc_mask.elem(i, j) = 0.0;
                     nr_pixels_avg_mask--;
                 }
@@ -676,8 +674,8 @@ void AutoPicker::initialise() {
 
             if (max_local_avg_diameter > 0) {
                 long int outer_radius = round(max_local_avg_diameter / (2.0 * angpix));
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-                    if (i * i + j * j > outer_radius * outer_radius) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
+                    if (euclidsq(i, j) > outer_radius * outer_radius) {
                         Mcirc_mask.elem(i, j) = 0.0;
                         nr_pixels_avg_mask--;
                     }
@@ -686,7 +684,7 @@ void AutoPicker::initialise() {
 
             // Now set the mask in the large square and store its FFT
             Maux.initZeros();
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
                 Maux.elem(i, j) = Mcirc_mask.elem(i, j);
             }
             Favgmsk = transformer.FourierTransform(Maux);
@@ -698,8 +696,8 @@ void AutoPicker::initialise() {
         // For squared difference, need the mask of the background to locally normalise the micrograph
         nr_pixels_circular_invmask = 0;
         Mcirc_mask.initZeros();
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-            if (i * i + j * j >= particle_radius2) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
+            if (euclidsq(i, j) >= particle_radius2) {
                 Mcirc_mask.elem(i, j) = 1.0;
                 nr_pixels_circular_invmask++;
             }
@@ -707,7 +705,7 @@ void AutoPicker::initialise() {
 
         // Now set the mask in the large square and store its FFT
         Maux.initZeros();
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
             Maux.elem(i, j) = Mcirc_mask.elem(i, j);
         }
         Finvmsk = transformer.FourierTransform(Maux);
@@ -716,8 +714,8 @@ void AutoPicker::initialise() {
         // Also get the particle-area mask
         nr_pixels_circular_mask = 0;
         Mcirc_mask.initZeros();
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask) {
-            if (i * i + j * j < particle_radius2) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
+            if (euclidsq(i, j) < particle_radius2) {
                 Mcirc_mask.elem(i, j) = 1.0;
                 nr_pixels_circular_mask++;
             }
@@ -743,7 +741,7 @@ void AutoPicker::initialise() {
             // Set reference in the large box of the micrograph
             Maux.initZeros();
             Maux.setXmippOrigin();
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mrefs[iref]) {
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(Mrefs[iref], i, j) {
                 Maux.elem(i, j) = Mrefs[iref].elem(i, j);
             }
 
@@ -2292,7 +2290,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
             rewindow(Imic, micrograph_size);
 
             // Fill region outside the original window with white Gaussian noise to prevent all-zeros in Mstddev
-            FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic()) {
+            FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic(), i, j) {
                 if (
                     j < Xmipp::init(micrograph_ysize) ||
                     j > Xmipp::last(micrograph_ysize) ||
@@ -2561,7 +2559,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         rewindow(Imic, micrograph_size);
 
         // Fill region outside the original window with white Gaussian noise to prevent all-zeros in Mstddev
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic(), i, j) {
             if (
                 j < Xmipp::init(micrograph_ysize) ||
                 j > Xmipp::last(micrograph_ysize) ||
@@ -2787,7 +2785,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                     ttt.setXmippOrigin();
                     tt().resize(particle_size, particle_size);
                     tt().setXmippOrigin();
-                    FOR_ALL_ELEMENTS_IN_ARRAY2D(tt()) {
+                    FOR_ALL_ELEMENTS_IN_ARRAY2D(tt(), i, j) {
                         tt.elem(i, j) = ttt.elem(i, j);
                     }
                     tt.write("Mref_rot_ctf.spi");
@@ -2817,7 +2815,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                     RFLOAT sumn = 1.0;
                     MultidimArray<RFLOAT> Mctfref(particle_size, particle_size);
                     Mctfref.setXmippOrigin();
-                    FOR_ALL_ELEMENTS_IN_ARRAY2D(Mctfref) {
+                    FOR_ALL_ELEMENTS_IN_ARRAY2D(Mctfref, i, j) {
                         // only loop over smaller Mctfref, but take values from large Maux!
                         if (i * i + j * j < particle_radius2) {
                             suma2 += Maux.elem(i, j) * Maux.elem(i, j);

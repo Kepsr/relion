@@ -1263,7 +1263,7 @@ void getMinCropSize(
     xori = XX(center); yori = YY(center); zori = ZZ(center);
 
     dist2_max = -999.0;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
         val = vol.elem(i, j, k);
 
         if (val < -Xmipp::epsilon)
@@ -1880,7 +1880,7 @@ void separateMasksKMeans(
     std::cout << std::endl;
 #endif
     best_cen = pos_val_ctr = 0;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(img())
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(img(), i, j, k)
     {
         if (best_cen >= K)
             break;
@@ -1924,7 +1924,7 @@ void separateMasksKMeans(
 #ifdef DEBUG
         std::cout << std::endl;
 #endif
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(img())
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(img(), i, j, k)
         {
             // For voxels with positive values
             val = img().elem(i, j, k);
@@ -1977,7 +1977,7 @@ void separateMasksKMeans(
         img_out().initZeros(img());
         img_out().setXmippOrigin();
 
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_rec)
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_rec, i, j, k)
         {
             if (vol_rec.elem(i, j, k) == icen + 1)
                 img_out().elem(i, j, k) = img().elem(i, j, k);

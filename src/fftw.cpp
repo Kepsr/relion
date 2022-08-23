@@ -970,12 +970,12 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
                 Xmipp::last(my_size), Xmipp::last(my_size)
             );
             if (my_small_size == my_xsize) {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
@@ -1057,12 +1057,12 @@ void lowPassFilterMap(
                 Xmipp::last(my_size), Xmipp::last(my_size)
             );
             if (my_small_size == my_xsize) {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
@@ -1176,12 +1176,12 @@ void directionalFilterMap(
                 Xmipp::last(my_size), Xmipp::last(my_size)
             );
             if (my_small_size == my_xsize) {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
             } else {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img) {
+                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
                         img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
                 }
