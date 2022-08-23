@@ -54,7 +54,7 @@ void softMaskOutsideMap(
     RFLOAT sum_bg = 0.0, sum = 0.0;
     if (!Mnoise) {
         // Calculate average background value
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
 
             RFLOAT r = sqrt(euclidsq(i, j, k));
             if (r < radius) continue;
@@ -72,7 +72,7 @@ void softMaskOutsideMap(
     }
 
     // Apply noisy or average background value
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
         RFLOAT r = sqrt((RFLOAT) euclid(i, j, k));
         if (r < radius) continue;
 
@@ -140,7 +140,7 @@ void softMaskOutsideMapForHelix(
     // Calculate noise weights for all voxels
     RFLOAT sum_bg = sum = 0.0;
     if (!Mnoise) {
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
             // X, Y, Z coordinates
             XX(coords) =            (RFLOAT) i;
             YY(coords) =            (RFLOAT) j;
@@ -169,7 +169,7 @@ void softMaskOutsideMapForHelix(
 
     // Apply noisy or average background value
     RFLOAT noise_val = sum_bg;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
         // X, Y, Z coordinates
         XX(coords) =            (RFLOAT) i;
         YY(coords) =            (RFLOAT) j;
@@ -280,7 +280,7 @@ void autoMask(
         msk_cp = msk_out;
         if (extend_ini_mask > 0.0) {
             #pragma omp parallel for num_threads(n_threads)
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp) {
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp, i, j, k) {
                 // only extend zero values to 1.
                 if (msk_cp.elem(i, j, k) < 0.001) {
                     bool already_done = false;
@@ -317,7 +317,7 @@ void autoMask(
             }
         } else {
             #pragma omp parallel for num_threads(n_threads)
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp) {
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp, i, j, k) {
                 // only extend one values to zero.
                 if (msk_cp.elem(i, j, k) > 0.999) {
                     bool already_done = false;
@@ -371,7 +371,7 @@ void autoMask(
         int extend_size = ceil(width_soft_mask_edge);
         RFLOAT width_soft_mask_edge2 = width_soft_mask_edge * width_soft_mask_edge;
         #pragma omp parallel for num_threads(n_threads)
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(msk_cp, i, j, k) {
             // only extend zero values to values between 0 and 1.
             if (msk_cp.elem(i, j, k) < 0.001) {
                 RFLOAT min_r2 = 9999.0;
@@ -416,7 +416,7 @@ MultidimArray<RFLOAT> raisedCosineMask(
 ) {
     MultidimArray<RFLOAT> mask (Xdim, Ydim, Zdim, Ndim);
     mask.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(mask) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(mask, i, j, k) {
         // calculate distance from the origin
         const RFLOAT x0 = x - i;
         const RFLOAT y0 = y - j;
@@ -439,7 +439,7 @@ void raisedCrownMask(
     RFLOAT outer_border = outer_radius + width;
 
     mask.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(mask) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(mask, i, j, k) {
         RFLOAT d = sqrt((RFLOAT) ((z - k) * (z - k) + (y - i) * (y - i) + (x - j) * (x - j)));
         mask.elem(i, j, k) =
             d < inner_border ? 0.0 :

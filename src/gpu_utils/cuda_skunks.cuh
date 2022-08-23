@@ -46,7 +46,7 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
     // Pad translated map with zeros
     vol_in.setXmippOrigin();
     Mpad.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in) // This will also work for 2D
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in, i, j, k) // This will also work for 2D
         Mpad.elem(i, j, k) = vol_in.elem(i, j, k);
 
     // Translate padded map to put origin of FT in the center

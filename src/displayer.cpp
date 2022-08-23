@@ -2421,7 +2421,7 @@ void Displayer::run() {
 
     } else if (do_colourbar) {
         Image<RFLOAT> img(256, 10);
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(img()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(img(), i, j) {
             img().elem(i, j) = (RFLOAT) i;
         }
         FileName fnt = "colour scheme";

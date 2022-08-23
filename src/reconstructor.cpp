@@ -222,19 +222,19 @@ void Reconstructor::readDebugArrays() {
         std::cout << " Size of reconstruction: " ;
         It().printShape();
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(It(), i, j, k) {
         backprojector.data.elem(i, j, k).real = It().elem(i, j, k);
     }
     It.read(fn_debug + "_data_imag.mrc");
     It().setXmippOrigin();
     It().xinit = 0;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(It(), i, j, k) {
         backprojector.data.elem(i, j, k).imag = It().elem(i, j, k);
     }
     It.read(fn_debug+"_weight.mrc");
     It().setXmippOrigin();
     It().xinit = 0;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(It(), i, j, k) {
         backprojector.weight.elem(i, j, k) = It().elem(i, j, k);
     }
     output_boxsize = debug_ori_size;
@@ -595,7 +595,7 @@ void Reconstructor::reconstruct() {
         vol().initZeros(ctf_dim, ctf_dim, ctf_dim);
         vol().setXmippOrigin();
 
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol(), i, j, k) {
             int jp = j;
             int ip = i;
             int kp = k;

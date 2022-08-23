@@ -743,7 +743,7 @@ void BackProjector::getLowResDataAndWeight(
     lowres_weight.xinit = 0;
 
     // fill lowres arrays with relevant values
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data, i, j, k) {
         if (euclidsq(i, j, k) <= lowres_r2_max) {
             lowres_data  .elem(i, j, k) = data  .elem(i, j, k);
             lowres_weight.elem(i, j, k) = weight.elem(i, j, k);
@@ -784,7 +784,7 @@ void BackProjector::setLowResDataAndWeight(
     lowres_weight.xinit = 0;
 
     // Overwrite data and weight with the lowres arrays
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data, i, j, k) {
         if (euclidsq(i, j, k) <= lowres_r2_max) {
             data  .elem(i, j, k) = lowres_data  .elem(i, j, k);
             weight.elem(i, j, k) = lowres_weight.elem(i, j, k);
@@ -820,7 +820,7 @@ MultidimArray<Complex> BackProjector::getDownsampledAverage(bool divide) const {
     // down_weight same size as down_data
 
     // Now calculate the down-sized sum
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(data) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(data, i, j, k) {
         const int jp = round((RFLOAT) j / padding_factor);
         const int ip = round((RFLOAT) i / padding_factor);
         const int kp = round((RFLOAT) k / padding_factor);
@@ -862,7 +862,7 @@ MultidimArray<RFLOAT> BackProjector::calculateDownSampledFourierShellCorrelation
     auto den2 = MultidimArray<RFLOAT>::zeros(n);
     auto fsc  = MultidimArray<RFLOAT>::zeros(n);
 
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(avg1) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(avg1, i, j, k) {
         const RFLOAT R = euclid(i, j, k);
 
         if (R > r_max) continue;
@@ -912,7 +912,7 @@ void BackProjector::updateSSNRarrays(
     // Then, if (do_map) add the inverse of tau2-spectrum values to the weight
     MultidimArray<RFLOAT> sigma2  = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     MultidimArray<RFLOAT> counter = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(weight, i, j, k) {
         const int r2 = euclidsq(i, j, k);
         if (r2 < max_r2) {
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
@@ -968,7 +968,7 @@ void BackProjector::updateSSNRarrays(
 
     // Now accumulate data_vs_prior if (!update_tau2_with_fsc)
     // Also accumulate fourier_coverage
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(weight, i, j, k) {
         int r2 = euclidsq(i, j, k);
         if (r2 < max_r2) {
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
@@ -1360,7 +1360,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
         ifdefTIMING(TicToc tt (ReconTimer, ReconS[5]);)
         // Initialise Fnewweight with 1's and 0's. (also see comments below)
         /// XXX: But this is changing weight!?
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(weight) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(weight, i, j, k) {
             weight.elem(i, j, k) = euclidsq(i, j, k) < max_r2;
         }
         // Fnewweight can become too large for a float: always keep this one in double-precision
@@ -1521,7 +1521,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[16]);)
     // Gridding correction for the blob
     RFLOAT normftblob = tab_ftblob(0.0);
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_out) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_out, i, j, k) {
 
         RFLOAT r = euclid(i, j, k);
         RFLOAT rval = r / (ori_size * padding_factor);
@@ -1672,7 +1672,7 @@ void BackProjector::applyHelicalSymmetry(
         R.setSmallValuesToZero();  // TODO: invert rotation matrix?
 
         // Loop over all points in the output (i.e. rotated, or summed) array
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight, i, j, k) {
             RFLOAT x = i;  // Xinit(sum_weight) is zero!
             RFLOAT y = j;
             RFLOAT z = k;

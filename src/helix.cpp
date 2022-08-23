@@ -156,7 +156,7 @@ bool calcCCofHelicalSymmetry(
     // Test a chunk of Z length = rise
     //dev_chunk.clear();
     // Iterate through all coordinates on Z, Y and then X axes
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
 
         // Test a chunk of Z length = rise
         // for (idz = startZ; (idz <= (startZ + ((int)(floor(rise_pix))))) && (idz <= finishZ); idz++)
@@ -870,7 +870,7 @@ void imposeHelicalSymmetryInRealSpace(
         SINCOS(radians((RFLOAT) id * twist_deg), &sin_rec[id], &cos_rec[id]);
         #endif
 
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
         // Out of the mask
         RFLOAT dd = i * i + j * j;
         RFLOAT rr = dd + (RFLOAT) (k * k);
@@ -1064,7 +1064,7 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     R = rotation2DMatrix(psi_deg, false);
     R.setSmallValuesToZero();
 
-    FOR_ALL_ELEMENTS_IN_ARRAY2D(v)
+    FOR_ALL_ELEMENTS_IN_ARRAY2D(v, i, j)
     {
         x = j;
         y = i;
@@ -1161,7 +1161,7 @@ RFLOAT searchPsiFor2DHelicalSegment(
 void calcRadialAverage(
     const MultidimArray<RFLOAT> &v, std::vector<RFLOAT> &radial_avg_val_list
 ) {
-    int ii, Xdim, Ydim, Zdim, Ndim, list_size, dist;
+    int ii, Xdim, Ydim, Zdim, Ndim, list_size;
     MultidimArray<RFLOAT> vol;
     std::vector<RFLOAT> radial_pix_counter_list;
 
@@ -1184,10 +1184,9 @@ void calcRadialAverage(
         radial_avg_val_list[ii]     = 0.0;
     }
 
-    vol = v;
-    vol.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol) {
-        dist = round(sqrt(i * i + j * j));
+    (vol = v).setXmippOrigin();
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
+        int dist = round(euclid(i, j));
         if (dist < 0 || dist > list_size - 1) continue;
         radial_pix_counter_list[dist] += 1.0;
         radial_avg_val_list[dist]     += vol.elem(i, j, k);
@@ -1230,7 +1229,7 @@ void cutZCentralPartOfSoftMask(
     //std::cout << "z_len, z_percentage, cosine_width = " << Zdim << ", " << z_percentage << ", " << cosine_width << std::endl;
     //std::cout << "idz_s_w, idz_s, idz_e, idz_e_w = " << idz_s_w << ", " << idz_s << ", " << idz_e << ", " << idz_e_w << std::endl;
     mask.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(mask) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(mask, i, j, k) {
         idz = k;
         if (idz > idz_s && idz < idz_e) {} else if (idz < idz_s_w || idz > idz_e_w) {
             mask.elem(i, j, k) = 0.0;
@@ -1273,7 +1272,7 @@ void createCylindricalReference(
     v.clear();
     v.resize(box_size, box_size, box_size);
     v.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
         r = sqrt(i * i + j * j);
         if (r > inner_radius_pix && r < outer_radius_pix) {
             v.elem(i, j, k) = 1.0;
@@ -1421,7 +1420,7 @@ void makeBlot(
         min = (direct::elem(v, i, j) < min) ? direct::elem(v, i, j) : min;
 
     v.setXmippOrigin();
-    FOR_ALL_ELEMENTS_IN_ARRAY2D(v) {
+    FOR_ALL_ELEMENTS_IN_ARRAY2D(v, i, j) {
         RFLOAT dist = sqrt((i - y) * (i - y) + (j - x) * (j - x));
         if (dist < r) { v.elem(i, j) = min; }
     }
@@ -1560,7 +1559,7 @@ void applySoftSphericalMask(
         r_max = sphere_diameter / 2.0;
     r_max_edge = r_max + cosine_width;
 
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
         r = euclid(i, j, k);
         if (r > r_max) {
             if (r < r_max_edge) {
@@ -2823,12 +2822,12 @@ void makeHelicalReference2D(
     out.initZeros();
     out.setXmippOrigin();
 
-    RFLOAT val = is_tube_white ? 1.0 : -1.0;
-    FOR_ALL_ELEMENTS_IN_ARRAY2D(out) {
-        dist2 = (RFLOAT) (i * i + j * j);
+    const RFLOAT contrast = is_tube_white ? +1.0 : -1.0;
+    FOR_ALL_ELEMENTS_IN_ARRAY2D(out, i, j) {
+        dist2 = euclidsq(i, j);
         p2 = (RFLOAT) (j * j);
         if (dist2 < r2 && p2 < t2) {
-            out.elem(i, j) = val;
+            out.elem(i, j) = contrast;
         }
     }
     return;
@@ -4310,7 +4309,7 @@ void calculateRadialAvg(MultidimArray<RFLOAT> &v, RFLOAT angpix) {
     for (int ii = 0; ii < rval.size(); ii++)
         rval[ii] = rcount[ii] = 0.0;
 
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
         rint = round(sqrt((RFLOAT) (i * i + j * j)));
         if (rint >= size)
             continue;

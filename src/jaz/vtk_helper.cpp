@@ -313,7 +313,7 @@ void VtkHelper::writeTomoVTK(
     if (binary) {
         os.write((char*) img.data.data, sizeof(RFLOAT) * size);
     } else {
-        FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data) {
+        FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(img.data, i, j, k, l) {
             os << direct::elem(img.data, i, j, 0, l) << "\n";
         }
     }

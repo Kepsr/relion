@@ -300,7 +300,7 @@ class particle_reposition_parameters {
                         Imic_in().xinit = -round(xcoord);
                         Imic_in().yinit = -round(ycoord);
                         Imic_in().zinit = -round(zcoord);
-                        FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
+                        FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic, i, j, k) {
                             // check the particles do not go off the side
                             int ip = i - Xinit(Imic_in());
                             int jp = j - Yinit(Imic_in());
@@ -341,7 +341,7 @@ class particle_reposition_parameters {
                     Imic_sum.yinit   = -round(ycoord);
                     Imic_sum.zinit   = -round(zcoord);
                     radius = optimiser.particle_diameter / (2.0 * mic_pixel_size);
-                    FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic) {
+                    FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic, i, j, k) {
                         long int idx = round(euclid(i, j, k));
                         if (idx < radius) {
                             // check the particles do not go off the side

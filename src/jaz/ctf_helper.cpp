@@ -550,7 +550,7 @@ MultidimArray<RFLOAT> CtfHelper::getCenteredImage(
     auto g = obsModel ? [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup)); }
                       : [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void {};
 
-    FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
+    FOR_ALL_ELEMENTS_IN_ARRAY2D(result, i, j) {
         RFLOAT x = (RFLOAT) i / xs;
         RFLOAT y = (RFLOAT) j / ys;
         g(obsModel, opticsGroup, x, y);

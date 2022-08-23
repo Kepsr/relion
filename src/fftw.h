@@ -183,7 +183,7 @@ namespace FFTW {
  * MultidimArray<Complex> &Vfft = transformer.FourierTransform(V());
  * MultidimArray<RFLOAT> Vmag;
  * Vmag.resize(Vfft);
- * FOR_ALL_ELEMENTS_IN_ARRAY3D(Vmag)
+ * FOR_ALL_ELEMENTS_IN_ARRAY3D(Vmag, i, j, k)
     *	Vmag(k, i, j) = 20 * log10(abs(Vfft(k, i, j)));
  * @endcode
  */
@@ -369,7 +369,7 @@ void CenterFFTbySign(MultidimArray <T> &v) {
     // Unfortunately, this cannot be checked within this function...
     // Forward and backward shifts are equivalent.
 
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(v) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
     // NOTE: != has higher precedence than & in C as pointed out in GitHub issue #637.
     // So (k ^ i ^ j) & 1 != 0 is not good (fortunately in this case the behaviour happened to be the same)
         if (((i ^ j ^ k) & 1) != 0) // if ODD
@@ -759,7 +759,7 @@ void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, l
 
     // If upsizing: mask the corners to prevent aliasing artefacts
     if (newdim > olddim) {
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(Min) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(Min, i, j, k) {
             if (euclidsq(i, j, k) > olddim * olddim / 4) {
                 Min.elem(i, j, k) = 0.0;
             }

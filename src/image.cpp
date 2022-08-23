@@ -175,7 +175,7 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
         #endif
 
         // Calculate avg in the background pixels
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(I(), i, j, k) {
             // X, Y, Z coordinates
             ZZ(coords) = dim == 3 ? (RFLOAT) k : 0.0;
             YY(coords) =            (RFLOAT) i;
@@ -209,7 +209,7 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
         #endif
     } else {
         // Calculate avg in the background pixels
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(I(), i, j, k) {
             if (i * i + j * j + k * k > bg_radius2) {
                 RFLOAT x = I().elem(i, j, k);
                 sum += x;
@@ -248,17 +248,13 @@ void subtractBackgroundRamp(
         // not implemented for 3D data
         if (I().getDim() == 2) { tilt_deg = 0.0; }
 
-        Matrix1D<RFLOAT> coords;
-        // Init coords
-        coords.clear();
-        coords.resize(3);
-        coords.initZeros();
+        auto coords = Matrix1D<RFLOAT>::zeros(3);
 
         // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
         // Since Z = 0, tilt_deg does not matter
         Matrix2D<RFLOAT> A = Euler::angles2matrix(0.0, tilt_deg, psi_deg).transpose();
 
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(I(), i, j) {
             // not implemented for 3D data
             XX(coords) = (RFLOAT) i;
             YY(coords) = (RFLOAT) j;
@@ -278,7 +274,7 @@ void subtractBackgroundRamp(
             REPORT_ERROR("image.cpp::subtractBackgroundRamp(): Less than 5 pixels in background are found. Radius of helical mask is too large.");
         }
     } else {
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(I(), i, j) {
             if (i * i + j * j > bg_radius2) {
                 point.x = i;
                 point.y = j;
@@ -293,7 +289,7 @@ void subtractBackgroundRamp(
     fitLeastSquaresPlane(allpoints, pA, pB, pC);
 
     // Substract the plane from the image
-    FOR_ALL_ELEMENTS_IN_ARRAY2D(I()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY2D(I(), i, j) {
         I().elem(i, j) -= pA * i + pB * j + pC;
     }
 
@@ -302,7 +298,7 @@ void subtractBackgroundRamp(
 void removeDust(
     Image<RFLOAT> &I, bool is_white, RFLOAT thresh, RFLOAT avg, RFLOAT stddev
 ) {
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(I()) {
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(I(), i, j, k) {
         RFLOAT aux = I().elem(i, j, k);
         if (
              is_white && aux - avg >  thresh * stddev ||

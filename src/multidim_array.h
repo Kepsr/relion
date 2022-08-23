@@ -151,17 +151,16 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
 /** For all direct elements in the array
  *
- * This macro is used to generate loops for the array in an easy
- * manner. It defines internal indices 'l', 'k','i' and 'j' which
- * ranges over the n volume using its physical definition.
+ * This macro is used to generate loops for the array in an easy manner.
+ * It binds the names provided to direct indices which iterate over the data.
  *
  * @code
- * FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v) {
+ * FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v, i, j, k, l) {
  *     std::cout << direct::elem(v, i, j, k, l) << " ";
  * }
  * @endcode
  */
-#define FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V) \
+#define FOR_ALL_DIRECT_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V, i, j, k, l) \
     for (long int l = 0; l < Nsize(V); l++) \
     for (long int k = 0; k < Zsize(V); k++) \
     for (long int j = 0; j < Ysize(V); j++) \
@@ -169,17 +168,18 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
 /** For all elements in the array
  *
- * This macro is used to generate loops for the array in an easy
- * manner. It defines internal indices 'l', 'k','i' and 'j' which
- * ranges over the n volume using its logical definition.
+ * This macro is used to generate loops for the array in an easy manner.
+ * It binds the names provided to logical indices which iterate over the data.
+ * 
+ * This macro is used to easily loop through a matrix.
  *
  * @code
- * FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v) {
+ * FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(v, i, j, k, l) {
  *     std::cout << v.elem(i, j, k, l) << " ";
  * }
  * @endcode
  */
-#define FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V) \
+#define FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(V, i, j, k, l) \
     for (long int l = 0; l < Nsize(V); l++) \
     for (long int k = Zinit(V); k <= Zlast(V); k++) \
     for (long int j = Yinit(V); j <= Ylast(V); j++) \
@@ -187,17 +187,16 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 
 /** For all elements in the array.
  *
- * This macro is used to generate loops for the volume in an easy way. It
- * defines internal indices 'k','i' and 'j' which ranges the volume using its
- * mathematical definition (ie, logical access).
+ * This macro is used to generate loops for the volume in an easy way.
+ * It binds the names provided to logical indices which iterate over the data.
  *
  * @code
- * FOR_ALL_ELEMENTS_IN_ARRAY3D(V) {
- *     std::cout << V(k, i, j) << " ";
+ * FOR_ALL_ELEMENTS_IN_ARRAY3D(V, i, j, k) {
+ *     std::cout << V.elem(i, j, k) << " ";
  * }
  * @endcode
  */
-#define FOR_ALL_ELEMENTS_IN_ARRAY3D(V) \
+#define FOR_ALL_ELEMENTS_IN_ARRAY3D(V, i, j, k) \
     for (long int k = Zinit(V); k <= Zlast(V); k++) \
     for (long int j = Yinit(V); j <= Ylast(V); j++) \
     for (long int i = Xinit(V); i <= Xlast(V); i++)
@@ -205,15 +204,15 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
 /** For all elements in the array
  *
  * This macro is used to easily loop through a matrix.
- * It defines logical indices 'i' and 'j' which range over the matrix.
+ * It binds the names provided to logical indices which iterate over the data.
  *
  * @code
- * FOR_ALL_ELEMENTS_IN_ARRAY2D(m) {
- *     std::cout << m(i, j) << " ";
+ * FOR_ALL_ELEMENTS_IN_ARRAY2D(m, i, j) {
+ *     std::cout << m.elem(i, j) << " ";
  * }
  * @endcode
  */
-#define FOR_ALL_ELEMENTS_IN_ARRAY2D(m) \
+#define FOR_ALL_ELEMENTS_IN_ARRAY2D(m, i, j) \
     for (long int j = Yinit(m); j <= Ylast(m); j++) \
     for (long int i = Xinit(m); i <= Xlast(m); i++)
 
@@ -271,15 +270,7 @@ class MultidimArray {
 
     public:
 
-    /** The array itself.
-     * The array is always a 3D array (Z,Y,X) (i.e. a 3rd-order tensor).
-     *
-     * For vectors  (1st-order tensors), the shape of the array is (1, 1, m) (so size = m).
-     * For matrices (2nd-order tensors), the shape of the array is (1, n, m) (so size = m × n).
-     *
-     * The pixel (i,j) (y,x) is at the position data[i * Xdim + j] or data[y * Xdim + x]
-     */
-    T *data;
+    T *data;  // Pointer to heap-allocated memory
 
     /** Number of elements in X/Y/Z/N
      * Conventions:
@@ -924,7 +915,7 @@ class MultidimArray {
         result.xinit = x0;
         result.yinit = y0;
 
-        FOR_ALL_ELEMENTS_IN_ARRAY2D(result) {
+        FOR_ALL_ELEMENTS_IN_ARRAY2D(result, i, j) {
             result.elem(i, j) = inside(i, j) ?
                 elem(i, j, 0, n) : init_value;
         }
@@ -2030,10 +2021,10 @@ class MultidimArray {
             MultidimArray<int> *imask = (MultidimArray<int>*) mask;
 
             RFLOAT mass = 0;
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(*this) {
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(*this, i, j, k) {
                 if ((!imask || imask->elem(i, j, k, n)) && elem(i, j, k) > 0) {
-                XX(center) += j * elem(i, j, k, n);
-                YY(center) += i * elem(i, j, k, n);
+                XX(center) += i * elem(i, j, k, n);
+                YY(center) += j * elem(i, j, k, n);
                 ZZ(center) += k * elem(i, j, k, n);
 
                 mass += elem(i, j, k, n);

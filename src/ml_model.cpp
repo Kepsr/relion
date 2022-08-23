@@ -843,7 +843,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         }
         // Find maximum radius for mask around com
         int max_d2 = 0.0;
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(Imask()) {
+        FOR_ALL_ELEMENTS_IN_ARRAY3D(Imask(), i, j, k) {
             if (Imask().elem(i, j, k) > 0.05) {
                 int d2 = (k - ZZ(com)) * (k - ZZ(com))
                        + (j - YY(com)) * (j - YY(com))

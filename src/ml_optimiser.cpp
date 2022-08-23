@@ -4051,15 +4051,15 @@ void MlOptimiser::solventFlatten() {
                     width_mask_edge
                 );
             } else {
-                FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent()) {
+                FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent(), i, j, k) {
                     Isolvent().elem(i, j, k) = 1.0;
                 }
             }
         } else {
             RFLOAT radius = particle_diameter / (2.0 * mymodel.pixel_size);
             RFLOAT radius_p = radius + width_mask_edge;
-            FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent()) {
-                RFLOAT r = sqrt((RFLOAT)(k * k + i * i + j * j));
+            FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent(), i, j, k) {
+                RFLOAT r = euclid(i, j, k);
                 Isolvent().elem(i, j, k) =
                 r < radius   ? 1.0 :
                 r > radius_p ? 0.0 :
