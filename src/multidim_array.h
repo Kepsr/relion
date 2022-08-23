@@ -364,10 +364,13 @@ class MultidimArray {
     }
 
     // Copy ctor
-    MultidimArray(const MultidimArray<T> &other) {
-        coreInit();
+    MultidimArray(const MultidimArray<T> &other):
+    xdim(other.xdim), ydim(other.ydim), zdim(other.zdim), ndim(other.ndim),
+    xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
+    data(nullptr), allocated_size(other.allocated_size),
+    mmapOn(false), mFd(0) {
         resize(other);
-        memcpy(data, other.data, other.size() * sizeof(T));
+        memcpy(data, other.data, sizeof(T) * size());
     }
 
     // Copy ctor with type cast
@@ -381,9 +384,8 @@ class MultidimArray {
     MultidimArray(MultidimArray<T> &&other) noexcept:
     xdim(other.xdim), ydim(other.ydim), zdim(other.zdim), ndim(other.ndim),
     xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
-    data(other.data), allocated_size(other.allocated_size) {
-        other.data = nullptr;
-    }
+    data(other.data), allocated_size(other.allocated_size),
+    mmapOn(false), mFd(0) { other.data = nullptr; }
 
     /** Constructor from a Matrix1D.
      * The Size constructor creates an array with memory associated,
@@ -2455,20 +2457,12 @@ class MultidimArray {
     /// @name Operators
     /// @{
 
-    // Copy assignment
-    MultidimArray<T> &operator = (const MultidimArray<T> &other) {
-        auto copy (other);
-        std::swap(*this, copy);
-        return *this;
-    }
-
-    // Move assignment
-    MultidimArray<T> &operator = (MultidimArray<T>&& other) {
-        coreDeallocate();  // Otherwise there may be a memory leak!
+    // Copy/move assignment
+    MultidimArray<T> &operator = (MultidimArray<T> other) {
         copyShape(other);
         data = other.data;
-        other.data = nullptr;
         allocated_size = other.allocated_size;
+        other.data = nullptr;
         return *this;
     }
 
