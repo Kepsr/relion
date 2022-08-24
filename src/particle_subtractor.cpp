@@ -112,8 +112,8 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         Imask.read(fn_msk);
         Imask().setXmippOrigin();
 
-        MinMax range = minmax(Imask());
-        if (range.min < 0.0 || range.max > 1.0) {
+        const auto range = minmax(Imask());
+        if (range.first < 0.0 || range.second > 1.0) {
             REPORT_ERROR("ERROR: the keep_inside mask has values outside the range [0,1]");
         }
     } else {

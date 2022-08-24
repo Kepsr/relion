@@ -1135,6 +1135,6 @@ void rewindow(Image<RFLOAT> &I, int mysize);
 // Functions belonging to this topic are commented in rw*.h
 //@}
 
-MinMax getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
+std::pair<RFLOAT, RFLOAT> getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
 
 #endif

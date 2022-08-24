@@ -56,12 +56,6 @@
 #include "src/matrix2d.h"
 #include "src/complex.h"
 #include <limits>
-using std::pair;
-
-struct MinMax {
-    RFLOAT min, max;
-    MinMax(RFLOAT min, RFLOAT max): min(min), max(max) {}
-};
 
 // Intel MKL provides an FFTW-like interface, so this is enough.
 #include <fftw3.h>
@@ -2064,7 +2058,7 @@ class MultidimArray {
     void sorted_index(MultidimArray<long> &idx) const {
         checkDimension(1);
         // Set up a vector of pairs
-        std::vector<std::pair<T, long int> > vp;
+        std::vector<std::pair<T, long int>> vp;
         vp.reserve(xdim);
         for (long int n = 0; n < size(); n++) {
             vp.emplace_back((*this)[n], n);
