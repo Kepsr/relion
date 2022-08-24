@@ -304,7 +304,7 @@ class MultidimArray {
 
     // Logical array access
     inline T& elem(index_t i, index_t j = 0, index_t k = 0, index_t l = 0) const {
-        return direct::elem(*this, i - xinit, j - yinit, k - zinit);
+        return direct::elem(*this, i - xinit, j - yinit, k - zinit, l);
     }
 
     private:

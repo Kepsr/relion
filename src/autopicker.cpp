@@ -1159,8 +1159,11 @@ void AutoPicker::pickAmyloids(
     std::vector<Helix> helices;
     bool ccf_peaks_remaining = true;
     while (ccf_peaks_remaining) {
-        long int imax, jmax;
-        float myccf = maxIndex(Mccf, imax, jmax);
+        const auto it = std::max_element(Mccf.begin(), Mccf.end());
+        float myccf = *it;
+        const auto direct_indices = offset_to_direct_indices(Mccf, it - Mccf.begin());
+        const auto Xmipp_indices = direct_indices_to_Xmipp_indices(Mccf, direct_indices[0], direct_indices[1], direct_indices[2], direct_indices[3]);
+        const long int imax = Xmipp_indices[0], jmax = Xmipp_indices[1];
         float mypsi = Mpsi(imax, jmax);
 
         // Stop searching if all pixels are below min_ccf!
@@ -2429,35 +2432,35 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
     sum_fom_high /= count_high;
     sum_fom_ok /= count_ok;
     // Variance of FOMs outside desired diameter range
-    sum2_fom_low = sum2_fom_low / count_low - sum_fom_low * sum_fom_low;
+    sum2_fom_low  = sum2_fom_low  / count_low  - sum_fom_low  * sum_fom_low;
     sum2_fom_high = sum2_fom_high / count_high - sum_fom_high * sum_fom_high;
-    sum2_fom_ok = sum2_fom_ok / count_ok - sum_fom_ok * sum_fom_ok;
+    sum2_fom_ok   = sum2_fom_ok   / count_ok   - sum_fom_ok   * sum_fom_ok;
     //float my_threshold =  sum_fom_low + LoG_adjust_threshold * sqrt(sum2_fom_low);
     //Sjors 25May2018: better have threshold only depend on fom_ok, as in some cases fom_low/high are on very different scale...
-    float my_threshold =  sum_fom_ok + LoG_adjust_threshold * sqrt(sum2_fom_ok);
-    float my_upper_limit = sum_fom_ok + LoG_upper_limit * sqrt(sum2_fom_ok);
+    const float my_threshold   = sum_fom_ok + sqrt(sum2_fom_ok) * LoG_adjust_threshold;
+    const float my_upper_limit = sum_fom_ok + sqrt(sum2_fom_ok) * LoG_upper_limit;
 
     #ifdef DEBUG_LOG
-        std::cerr << " avg_fom_low= " << sum_fom_low << " stddev_fom_low= " << sqrt(sum2_fom_low) << " N= "<< count_low << std::endl;
-        std::cerr << " avg_fom_high= " << sum_fom_high<< " stddev_fom_high= " << sqrt(sum2_fom_high) << " N= "<< count_high << std::endl;
-        std::cerr << " avg_fom_ok= " << sum_fom_ok<< " stddev_fom_ok= " << sqrt(sum2_fom_ok) << " N= "<< count_ok<< std::endl;
-        std::cerr << " avg_fom_outside= " << sum_fom_outside << std::endl;
-        std::cerr << " my_threshold= " << my_threshold << " LoG_adjust_threshold= "<< LoG_adjust_threshold << std::endl;
+    std::cerr << " avg_fom_low= "  << sum_fom_low  << " stddev_fom_low= "  << sqrt(sum2_fom_low)  << " N= " << count_low  << std::endl;
+    std::cerr << " avg_fom_high= " << sum_fom_high << " stddev_fom_high= " << sqrt(sum2_fom_high) << " N= " << count_high << std::endl;
+    std::cerr << " avg_fom_ok= "   << sum_fom_ok   << " stddev_fom_ok= "   << sqrt(sum2_fom_ok)   << " N= " << count_ok   << std::endl;
+    std::cerr << " avg_fom_outside= " << sum_fom_outside << std::endl;
+    std::cerr << " my_threshold= " << my_threshold << " LoG_adjust_threshold= " << LoG_adjust_threshold << std::endl;
     #endif
 
     // Threshold the best_fom map
     for (auto &x : Mbest_fom) { if (x < my_threshold) { x = 0.0; } }
 
-    if (do_write_fom_maps) {
-        Image<float> IMbest_fom (Mbest_fom);
-        FileName fn_bestLoGc = getOutputRootName(fn_mic) + "_" + fn_out + "_bestLoGc.spi";
-        IMbest_fom.write(fn_bestLoGc);
-    }
+    if (do_write_fom_maps)
+    Image<float>(Mbest_fom).write(getOutputRootName(fn_mic) + "_" + fn_out + "_bestLoGc.spi");
 
     // Now just start from the biggest peak: put a particle coordinate there, remove all neighbouring pixels within corresponding Mbest_size and loop
     MetaDataTable MDout;
-    long int imax, jmax;
-    while (maxIndex(Mbest_fom, imax, jmax) > 0.0) {
+    auto it = Mbest_fom.begin();
+    while (*(it = std::max_element(Mbest_fom.begin(), Mbest_fom.end())) > 0.0) {
+        const auto direct_indices = offset_to_direct_indices(Mbest_fom, it - Mbest_fom.begin());
+        const auto Xmipp_indices = direct_indices_to_Xmipp_indices(Mbest_fom, direct_indices[0], direct_indices[1], direct_indices[2], direct_indices[3]);
+        const long int imax = Xmipp_indices[0], jmax = Xmipp_indices[1];
         RFLOAT fom_here = Mbest_fom.elem(imax, jmax);
         if (fom_here < my_upper_limit) {
             MDout.addObject();
@@ -2466,7 +2469,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
             MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xx / scale);
             MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) yy / scale);
             MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, Mbest_fom.elem(imax, jmax));
-            MDout.setValue(EMDL::PARTICLE_CLASS, 0); // Dummy values to avoid problems in JoinStar
+            MDout.setValue(EMDL::PARTICLE_CLASS, 0);  // Dummy values to avoid problems in JoinStar
             MDout.setValue(EMDL::ORIENT_PSI, 0.0);
         }
 

@@ -21,145 +21,57 @@ T min(const MultidimArray<T> &arr) {
 
 }
 
-/** 4D Indices for the minimum element.
- *
- * Return the index of the minimum element of an array.
- * array(i,j,k,l). Returns -1 if the array is empty
- */
+// offset2indices;
+
+// inline int f(int i, int j = 0, int k = 0, int l = 0) {
+//     return g(i - v.xinit, j - v.yinit, k - v.zinit);
+// }
+
 template <typename T>
-T minIndex(const MultidimArray<T> &arr, long int &imin, long int &jmin, long int &kmin, long int &lmin) {
-    if (arr.xdim == 0) {
-        imin = jmin = kmin = lmin = -1;
-        return 0;
-    }
-
-    imin = arr.firstX();
-    jmin = arr.firstY();
-    kmin = arr.firstZ();
-    lmin = 0;
-    T minval = arr.elem(imin, jmin, kmin, lmin);
-
-    FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(arr, i, j, k, l) {
-        if (arr.elem(i, j, k, l) > minval) {
-            minval = arr.elem(i, j, k, l);
-            imin = i;
-            jmin = j;
-            kmin = k;
-            lmin = l;
-        }
-    }
-
-    return minval;
+std::array<unsigned long int, 4> offset_to_direct_indices(
+    const MultidimArray<T> &arr, long int offset
+) {
+    ldiv_t div;
+    div = std::div(offset, arr.xdim * arr.ydim * arr.zdim);
+    const unsigned long int l = div.quot;
+    div = std::div(div.rem, arr.xdim * arr.ydim);
+    const unsigned long int k = div.quot;
+    div = std::div(div.rem, arr.xdim);
+    const unsigned long int j = div.quot, i = div.rem;
+    return {i, j, k, l};
 }
 
-/** 3D Indices for the minimum element.
- *
- * Call to the 4D function
- */
 template <typename T>
-T minIndex(const MultidimArray<T> &arr, long int &imin, long int &jmin, long int &kmin) {
-    long int zero = 0;
-    return minIndex(arr, imin, jmin, kmin, zero);
+inline std::array<long int, 4> direct_indices_to_Xmipp_indices(
+    const MultidimArray<T> &arr, long int i, long int j = 0, long int k = 0, long int l = 0
+) {
+    return {i + arr.xinit, j + arr.yinit, k + arr.zinit, l};
 }
 
-/** 2D Indices for the minimum element.
- *
- * Call to the 4D function
- */
+// Indices of the minimum element
 template <typename T>
-T minIndex(const MultidimArray<T> &arr, long int &imin, long int &jmin) {
-    long int zero = 0;
-    return minIndex(arr, imin, jmin, zero, zero);
+std::array<long int, 4> minIndex(const MultidimArray<T> &arr) {
+    const auto it = std::min_element(arr.begin(), arr.end());
+    const auto direct_indices = offset_to_direct_indices(it - arr.begin());
+    return direct_indices_to_Xmipp_indices(direct_indices[0], direct_indices[1], direct_indices[2], direct_indices[3]);
 }
 
-/** 1D Indices for the minimum element.
- *
- * Call to the 4D function
- */
+// Indices of the maximum element
 template <typename T>
-T minIndex(const MultidimArray<T> &arr, long int &imin) {
-    long int zero = 0;
-    return minIndex(arr, imin, zero, zero, zero);
+std::array<long int, 4> maxIndex(const MultidimArray<T> &arr) {
+    const auto it = std::max_element(arr.begin(), arr.end());
+    const auto direct_indices = offset_to_direct_indices(it - arr.begin());
+    return direct_indices_to_Xmipp_indices(direct_indices[0], direct_indices[1], direct_indices[2], direct_indices[3]);
 }
 
-/** 4D Indices for the maximum element.
- *
- * Return the index of the maximum element of an array.
- * array(i,j,k,l). Returns -1 if the array is empty
- */
-template <typename T>
-T maxIndex(const MultidimArray<T> &arr, long int &imax, long int &jmax, long int &kmax, long int &lmax) {
-    if (arr.xdim == 0) {
-        lmax = kmax = imax = jmax = -1;
-        return 0;
-    }
-
-    imax = arr.firstX();
-    jmax = arr.firstY();
-    kmax = arr.firstZ();
-    lmax = 0;
-    T maxval = arr.elem(imax, jmax, kmax, lmax);
-
-    FOR_ALL_NZYX_ELEMENTS_IN_MULTIDIMARRAY(arr, i, j, k, l) {
-        if (arr.elem(i, j, k, l) > maxval) {
-            maxval = arr.elem(i, j, k, l);
-            imax = i;
-            jmax = j;
-            kmax = k;
-            lmax = l;
-        }
-    }
-
-    return maxval;
-}
-
-/** 3D Indices for the maximum element.
- *
- * Call to the 4D function
- */
-template <typename T>
-T maxIndex(const MultidimArray<T> &arr, long int &imax, long int &jmax, long int &kmax) {
-    long int _;
-    return maxIndex(arr, imax, jmax, kmax, _);
-}
-
-/** 2D Indices for the maximum element.
- *
- * Call to the 4D function
- */
-template <typename T>
-T maxIndex(const MultidimArray<T> &arr, long int &imax, long int &jmax) {
-    long int _;
-    return maxIndex(arr, imax, jmax, _, _);
-}
-
-/** 1D Indices for the maximum element.
- *
- * Call to the 4D function
- */
-template <typename T>
-T maxIndex(const MultidimArray<T> &arr, long int &imax) {
-    long int _;
-    return maxIndex(arr, imax, _, _, _);
-}
-
-/** Minimum and maximum of the values in the array.
- *
- * As RFLOATs.
- */
+// Minimum and maximum of the values in the array
 template <typename T>
 MinMax minmax(const MultidimArray<T> &arr) {
 
-    RFLOAT min, max;
+    if (arr.size() <= 0) return MinMax(T(), T());  // Value-initialise min and max
 
-    if (arr.size() <= 0) return MinMax(min, max); // Uninitialised RFLOATs
-
-    min = max = static_cast<RFLOAT>(arr[0]);
-    for (const auto &x : arr) {
-        if (x < min) { min = static_cast<RFLOAT>(x); } else
-        if (x > max) { max = static_cast<RFLOAT>(x); }
-    }
-    return MinMax(min, max);
+    const auto pair = std::minmax_element(arr.begin(), arr.end());
+    return {*pair.first, *pair.second};
 }
 
 /** Average of the values in the array.
