@@ -584,15 +584,15 @@ class image_handler_parameters {
         n--;
         if (isPNG) {
             #ifdef HAVE_PNG
-            const MinMax minmax = getImageContrast(Iout(), minval, maxval, sigma_contrast); // Update if necessary
-            const RFLOAT range = minmax.max - minmax.min;
+            const auto minmax = getImageContrast(Iout(), minval, maxval, sigma_contrast); // Update if necessary
+            const RFLOAT range = minmax.second - minmax.first;
             const RFLOAT step = range / 255;
 
             gravis::tImage<gravis::bRGB> pngOut(Xsize(Iout()), Ysize(Iout()));
             pngOut.fill(gravis::bRGB(0));
 
             for (long int n = 0; n < Iout().size(); n++) {
-                const unsigned char val = floor((Iout()[n] - minmax.min) / step);
+                const unsigned char val = floor((Iout()[n] - minmax.first) / step);
                 rgb_t rgb = color_scheme.greyToRGB(val);
                 pngOut[n] = gravis::bRGB(rgb.r, rgb.g, rgb.b);
             }

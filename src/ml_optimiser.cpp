@@ -1323,21 +1323,18 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
         }
     }
 
-    const MinMax range = minmax(Isolvent());
-    if (range.min < 0.0 || range.max > 1.0) {
+    const auto range = minmax(Isolvent());
+    if (range.first < 0.0 || range.second > 1.0) {
         need_new_mask = true;
 
         if (verb > 0) {
-            std::cerr << " + WARNING: solvent mask minimum: " << range.min
-            << " or maximum: " << range.max << " are outside the [0,1] range." << std::endl;
+            std::cerr << " + WARNING: solvent mask minimum: " << range.first
+            << " or maximum: " << range.second << " are outside the [0,1] range." << std::endl;
             std::cerr << " + WARNING: thresholding the mask value to [0,1] range ... " << std::endl;
         }
 
-        for (long int n = 0; n < (Isolvent()).size(); n++) {
-            if (Isolvent()[n] < 0.0) { Isolvent()[n] = 0.0; }
-            else
-            if (Isolvent()[n] > 1.0) { Isolvent()[n] = 1.0; }
-        }
+        for (auto &x : Isolvent())
+            if (x < 0.0) { x = 0.0; } else if (x > 1.0) { x = 1.0; }
     }
 
     if (need_new_mask) {
@@ -4070,8 +4067,8 @@ void MlOptimiser::solventFlatten() {
         Isolvent.read(fn_mask);
         Isolvent().setXmippOrigin();
 
-        const MinMax range = minmax(Isolvent());
-        if (range.min < 0.0 || range.max > 1.0)
+        const auto range = minmax(Isolvent());
+        if (range.first < 0.0 || range.second > 1.0)
             REPORT_ERROR("MlOptimiser::solventFlatten: ERROR solvent mask should contain values between 0 and 1 only...");
     }
 

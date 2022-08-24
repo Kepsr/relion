@@ -348,7 +348,7 @@ void rewindow(Image<RFLOAT> &I, int size) {
     }
 }
 
-MinMax getImageContrast(
+std::pair<RFLOAT, RFLOAT> getImageContrast(
     MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast
 ) {
     // First check whether to apply sigma-contrast, 

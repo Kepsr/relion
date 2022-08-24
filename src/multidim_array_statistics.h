@@ -66,9 +66,9 @@ std::array<long int, 4> maxIndex(const MultidimArray<T> &arr) {
 
 // Minimum and maximum of the values in the array
 template <typename T>
-MinMax minmax(const MultidimArray<T> &arr) {
+std::pair<T, T> minmax(const MultidimArray<T> &arr) {
 
-    if (arr.size() <= 0) return MinMax(T(), T());  // Value-initialise min and max
+    if (arr.size() <= 0) return {T(), T()};  // Value-initialise min and max
 
     const auto pair = std::minmax_element(arr.begin(), arr.end());
     return {*pair.first, *pair.second};
@@ -185,7 +185,7 @@ struct Stats {
  * than separately computing average, standard deviation, minimum, and maximum.
  */
 template <typename T>
-Stats<T> computeStats(const MultidimArray<T> &arr) {
+Stats<T> computeStats(const MultidimArray<T> &arr) throw (const char*) {
 
     if (arr.size() <= 0)
         throw "Statistics cannot be computed for a dimensionless array!";
@@ -198,7 +198,7 @@ Stats<T> computeStats(const MultidimArray<T> &arr) {
     stats.max = -std::numeric_limits<double>::max();
 
     // Make one pass through the array.
-    for (const auto &xx : arr) {
+    for (auto xx : arr) {
         double x = static_cast<double>(xx);
         sumx  += x;
         sumxx += x * x;
@@ -207,7 +207,7 @@ Stats<T> computeStats(const MultidimArray<T> &arr) {
             if (xx < stats.min) { stats.min = xx; }
     }
 
-    long int N = arr.size();
+    const long int N = arr.size();
 
     stats.avg = sumx / N;
     if (N > 1) {
@@ -231,9 +231,9 @@ Stats<T> computeStats(const MultidimArray<T> &arr) {
  * @endcode
  */
 template <typename T>
-RFLOAT median(const MultidimArray<T> &arr) {
+RFLOAT median(const MultidimArray<T> &arr) throw (const char*) {
 
-    if (arr.xdim == 0) throw "Cannot take the median of an empty collection!";
+    if (arr.size <= 0) throw "Cannot take the median of an empty collection!";
 
     // Copy the array
     auto copy = arr;
@@ -241,7 +241,7 @@ RFLOAT median(const MultidimArray<T> &arr) {
     // Sort indices
     copy.sort();
 
-    long int N = arr.size();
+    const long int N = arr.size();
     if (N % 2 == 0) {
         return (RFLOAT) (copy[N / 2 - 1] + copy[N / 2]) / 2.0;
     } else {
@@ -265,13 +265,13 @@ void rangeAdjust(MultidimArray<T> &arr, T minF, T maxF) {
 
     if (arr.size() <= 0) return;
 
-    const MinMax range = minmax(arr);
+    const auto range = minmax(arr);
 
     // If range.min == range.max, the vector is a constant one,
     // so the only possible transformation is to a fixed minF
-    RFLOAT slope = range.min == range.max ? 0 :
+    RFLOAT slope = range.first == range.second ? 0 :
         static_cast<RFLOAT>(maxF - minF) /
-        static_cast<RFLOAT>(range.max - range.min);
+        static_cast<RFLOAT>(range.second - range.first);
 
     for (auto &x : arr) {
         // a + b * x
@@ -281,7 +281,7 @@ void rangeAdjust(MultidimArray<T> &arr, T minF, T maxF) {
 
 // For use in rangeAdjust
 template <typename T>
-MinMax maskminmax(MultidimArray<T> &arr, MultidimArray<int> &mask) {
+std::pair<T, T> maskminmax(MultidimArray<T> &arr, const MultidimArray<int> &mask) {
     RFLOAT min, max;
     int *maskptr = mask.data;
 
@@ -293,7 +293,7 @@ MinMax maskminmax(MultidimArray<T> &arr, MultidimArray<int> &mask) {
             max = std::max(max, (RFLOAT) *ptr);
         }
     }
-    return MinMax(min, max);
+    return {min, max};
 }
 
 /** Adjust the range of the array to a given one within a mask.
@@ -310,11 +310,11 @@ MinMax maskminmax(MultidimArray<T> &arr, MultidimArray<int> &mask) {
  */
 // This function must be explictly implemented outside
 template <typename T>
-void rangeAdjust(MultidimArray<T> &arr, MultidimArray<int> &mask, T minF, T maxF) {
+void rangeAdjust(MultidimArray<T> &arr, const MultidimArray<int> &mask, T minF, T maxF) {
 
     if (arr.size() <= 0) return;
 
-    MinMax range = maskminmax(arr, mask);
+    const auto range = maskminmax(arr, mask);
 
     // If range.min == range.max, the vector is a constant one,
     // so the only possible transformation is to a fixed minF
