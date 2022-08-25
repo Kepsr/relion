@@ -97,7 +97,7 @@ void normalise(
 
     if (white_dust_stddev > 0.0 || black_dust_stddev > 0.0) {
         // Calculate initial avg and stddev values
-        Stats<RFLOAT> stats = calculateBackgroundAvgStddev(
+        const auto stats = calculateBackgroundAvgStddev(
             I, bg_radius,
             is_helical_segment, helical_mask_tube_outer_radius_pix,
             tilt_deg, psi_deg
@@ -120,7 +120,7 @@ void normalise(
     }
 
     // Calculate avg and stddev (also redo if dust was removed!)
-    Stats<RFLOAT> stats = calculateBackgroundAvgStddev(
+    const auto stats = calculateBackgroundAvgStddev(
         I, bg_radius,
         is_helical_segment, helical_mask_tube_outer_radius_pix,
         tilt_deg, psi_deg
@@ -356,7 +356,7 @@ std::pair<RFLOAT, RFLOAT> getImageContrast(
     bool redo_minmax = sigma_contrast > 0.0 || minval != maxval;
 
     if (sigma_contrast > 0.0 || minval == maxval) {
-        Stats<RFLOAT> stats = computeStats(image);
+        const auto stats = computeStats(image);
         if (sigma_contrast > 0.0) {
             minval = stats.avg - stats.stddev * sigma_contrast;
             maxval = stats.avg + stats.stddev * sigma_contrast;

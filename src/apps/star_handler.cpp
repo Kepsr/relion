@@ -258,7 +258,7 @@ class star_handler_parameters {
         for (long int _ : MDin) {
             FileName fn_img = MDin.getValue<std::string>(EMDL::str2Label(discard_label));
             const auto img = Image<RFLOAT>::from_filename(fn_img);
-            Stats<RFLOAT> stats = computeStats(img());
+            const auto stats = computeStats(img());
             sum_avg     += stats.avg;
             sum2_avg    += stats.avg * stats.avg;
             sum_stddev  += stats.stddev;

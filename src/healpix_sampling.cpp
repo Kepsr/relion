@@ -1665,7 +1665,7 @@ void HealpixSampling::writeBildFileOrientationalDistribution(
         REPORT_ERROR("HealpixSampling::writeBildFileOrientationalDistribution Xsize(pdf_direction) != rot_angles.size()!");
     }
 
-    Stats<RFLOAT> pdf_stats = computeStats(pdf_direction);
+    const auto pdf_stats = computeStats(pdf_direction);
 
     std::ofstream fh_bild (fn_bild.c_str(), std::ios::out);
     if (!fh_bild)

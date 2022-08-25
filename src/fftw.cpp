@@ -963,7 +963,7 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
-            Stats<RFLOAT> stats = computeStats(img);
+            const auto stats = computeStats(img);
 
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
@@ -1051,7 +1051,7 @@ void lowPassFilterMap(
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
-            const Stats<RFLOAT> stats = computeStats(img);
+            const auto stats = computeStats(img);
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
                 Xmipp::last(my_size), Xmipp::last(my_size)
@@ -1170,7 +1170,7 @@ void directionalFilterMap(
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
-            const Stats<RFLOAT> stats = computeStats(img);
+            const auto stats = computeStats(img);
             img.window(
                 Xmipp::init(my_size), Xmipp::init(my_size),
                 Xmipp::last(my_size), Xmipp::last(my_size)

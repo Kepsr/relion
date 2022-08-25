@@ -554,7 +554,7 @@ void HelixAligner::getHelicesFromMics() {
                         }
 
                         // Ad-hoc image normalisation
-                        Stats<RFLOAT> stats = computeStats(Idown);
+                        const auto stats = computeStats(Idown);
                         Idown = (Idown - stats.avg) / -stats.stddev;  // Invert contrast
 
                         Xrects[Xrects.size() - 1].push_back(Idown);

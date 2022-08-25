@@ -125,7 +125,7 @@ class particle_reposition_parameters {
             Imic_sum.setXmippOrigin();
             // Get mean and stddev of the input micrograph
             // The min and max are not used
-            Stats<RFLOAT> stats = computeStats(Imic_in());
+            const auto stats = computeStats(Imic_in());
             RFLOAT mean_mic = stats.avg;
             RFLOAT stddev_mic = stats.stddev;
 

@@ -341,10 +341,9 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #ifdef TIMING
     basePckr->timer.tic(basePckr->TIMING_A7);
     #endif
-    Stats<RFLOAT> stats;
-    CTICTOC("computeStats", ({
-    stats = computeStats(Imic());
-    }));
+    const auto stats = [&] () -> Stats<RFLOAT> {
+        CTICTOC("computeStats", ({ return computeStats(Imic()); }));
+    }();
     #ifdef TIMING
     basePckr->timer.toc(basePckr->TIMING_A7);
     #endif

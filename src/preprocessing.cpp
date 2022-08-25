@@ -992,7 +992,7 @@ void Preprocessing::performPerImageOperations(
     }
 
     // Calculate mean, stddev, min and max
-    Stats<RFLOAT> stats = [&] () {
+    const auto stats = [&] () {
         ifdefPREP_TIMING(TicToc tt (timer, TIMING_COMP_STATS);)
         return computeStats(Ipart());
     }();

@@ -406,9 +406,9 @@ class Image {
         data = arr;
     }
 
-    static Image<RFLOAT> from_filename(const FileName &fn) {
+    static Image<RFLOAT> from_filename(const FileName &fn, bool readdata = true) {
         Image<RFLOAT> img;
-        img.read(fn);
+        img.read(fn, readdata);
         return img;
     }
 
@@ -974,7 +974,7 @@ class Image {
 
     // Set image statistics in the main header
     void setStatisticsInHeader() {
-        Stats<T> statistics = computeStats(data);
+        const auto statistics = computeStats(data);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    statistics.avg);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, statistics.stddev);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    statistics.min);

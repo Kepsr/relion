@@ -4365,14 +4365,12 @@ void normaliseHelicalSegments(
 ) {
     bool is_3D_data = false, have_tilt_prior = false, have_psi_prior = false, read_angpix_from_star = false;
     RFLOAT rot_deg = 0.0, tilt_deg = 0.0, psi_deg = 0.0, det_pixel_size = 0.0, mag = 0.0;
-    Image<RFLOAT> img0;
-    MetaDataTable MD;
-    FileName img_name, file_ext;
 
     if (fn_in.getExtension() != "star")
         REPORT_ERROR("helix.cpp::normaliseHelicalSegments(): Please provide a STAR file as input!");
 
     // Read STAR file
+    MetaDataTable MD;
     MD.clear();
     MD.read(fn_in);
     have_tilt_prior = MD.containsLabel(EMDL::ORIENT_TILT_PRIOR);
@@ -4387,8 +4385,8 @@ void normaliseHelicalSegments(
 
     for (long int index : MD) {
         // Read image name and angular priors
-        img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME);
-        file_ext = img_name.getExtension();
+        FileName img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+        const std::string file_ext = img_name.getExtension();
         rot_deg = tilt_deg = psi_deg = 0.0;
         tilt_deg = MD.getValue<RFLOAT>(have_tilt_prior ? EMDL::ORIENT_TILT_PRIOR : EMDL::ORIENT_TILT);
         psi_deg  = MD.getValue<RFLOAT>(have_psi_prior  ? EMDL::ORIENT_PSI_PRIOR  : EMDL::ORIENT_PSI);
@@ -4405,8 +4403,7 @@ void normaliseHelicalSegments(
             REPORT_ERROR("helix.cpp::normaliseHelicalSegments(): Diameter of the tubular mask should be larger than 10 pixels!");
 
         // Read image
-        img0.clear();
-        img0.read(img_name);
+        auto img0 = Image<RFLOAT>::from_filename(img_name);
         is_3D_data = Zsize(img0()) > 1 || Nsize(img0()) > 1;
         if (
             Xsize(img0()) < helical_outer_diameter_A / pixel_size_A || 
@@ -4416,7 +4413,7 @@ void normaliseHelicalSegments(
             rot_deg = tilt_deg = 0.0;
 
         // Calculate avg and stddev
-        Stats<RFLOAT> bg_stats = calculateBackgroundAvgStddev(
+        auto bg_stats = calculateBackgroundAvgStddev(
             img0, 0, true,
             helical_outer_diameter_A * 0.5 / pixel_size_A,
             tilt_deg, psi_deg
@@ -4452,9 +4449,10 @@ void normaliseHelicalSegments(
 
     if (!is_3D_data) {
         // Read the header of .mrcs stack
+        FileName img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         img_name = img_name.substr(img_name.find("@") + 1);
         // Set the pixel size in the file header
-        img0.read(img_name);
+        auto img0 = Image<RFLOAT>::from_filename(img_name);
         img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A);
         img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A);
         img0.write(img_name);
@@ -4474,19 +4472,16 @@ RFLOAT HermiteInterpolate1D(
     RFLOAT y0, RFLOAT y1, RFLOAT y2, RFLOAT y3,
     RFLOAT mu, RFLOAT tension, RFLOAT bias
 ) {
-    RFLOAT m0 = 0.0, m1 = 0.0, mu2 = 0.0, mu3 = 0.0, a0 = 0.0, a1 = 0.0, a2 = 0.0, a3 = 0.0;
-
-    mu2 = mu * mu;
-    mu3 = mu2 * mu;
-    m0  = (y1 - y0) * (1.0 + bias) * (1.0 - tension) / 2.0;
-    m0 += (y2 - y1) * (1.0 - bias) * (1.0 - tension) / 2.0;
-    m1  = (y2 - y1) * (1.0 + bias) * (1.0 - tension) / 2.0;
-    m1 += (y3 - y2) * (1.0 - bias) * (1.0 - tension) / 2.0;
-    a0  = 2.0 * mu3 - 3.0 * mu2 + 1.0;
-    a1  = mu3 - 2.0 * mu2 + mu;
-    a2  = mu3 - mu2;
-    a3  = -2.0 * mu3 + 3.0 * mu2;
-
+    const RFLOAT m0  = ((y1 - y0) * (1.0 + bias) * (1.0 - tension)
+                     +  (y2 - y1) * (1.0 - bias) * (1.0 - tension)) / 2.0;
+    const RFLOAT m1  = ((y2 - y1) * (1.0 + bias) * (1.0 - tension)
+                     +  (y3 - y2) * (1.0 - bias) * (1.0 - tension)) / 2.0;
+    const RFLOAT mu2 = mu * mu;
+    const RFLOAT mu3 = mu * mu2;
+    const RFLOAT a0  = 2.0 * mu3 - 3.0 * mu2 + 1.0;
+    const RFLOAT a1  = mu3 - 2.0 * mu2 + mu;
+    const RFLOAT a2  = mu3 - mu2;
+    const RFLOAT a3  = -2.0 * mu3 + 3.0 * mu2;
     return a0 * y1 + a1 * m0 + a2 * m1 + a3 * y2;
 }
 
@@ -4502,7 +4497,6 @@ void HermiteInterpolateOne3DHelicalFilament(
     RFLOAT step_pix, chord_pix, accu_len_pix, present_len_pix, len_pix, psi_prior_flip_ratio, tilt_deg, psi_deg;
     RFLOAT half_box_size_pix = box_size_pix / 2.0;
     int nr_partitions, nr_segments;
-    std::vector<RFLOAT> xlist, ylist, zlist;
 
     // DEBUG: Do not exclude particles on the edges
     // Xdim = Ydim = Zdim = 999999.0;
@@ -4542,14 +4536,11 @@ void HermiteInterpolateOne3DHelicalFilament(
         : UNIMODAL_PSI_PRIOR_FLIP_RATIO;
 
     // Load all manually picked coordinates
-    xlist.clear(); ylist.clear(); zlist.clear();
+    std::vector<RFLOAT> xlist, ylist, zlist;
     for (long int index : MD_in) {
-        x0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-        y0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-        z0 = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
-        xlist.push_back(x0);
-        ylist.push_back(y0);
-        zlist.push_back(z0);
+        xlist.push_back(MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_X));
+        ylist.push_back(MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y));
+        zlist.push_back(MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z));
     }
 
     // Interpolate
@@ -4597,24 +4588,24 @@ void HermiteInterpolateOne3DHelicalFilament(
 
         // Chord distance between point 1 and 2
         // TODO: what will happen if the chord length is smaller than step_pix?
-        chord_pix = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
+        chord_pix = euclid(x1 - x2, y1 - y2, z1 - z2);
         nr_partitions = ceil(chord_pix / step_pix);
         if (nr_partitions <= 0) { nr_partitions = 1; }
 
         // Partitioning
         for (int ip = 0; ip < nr_partitions; ip++) {
             xa = ya = za = xb = yb = zb = mu1 = mu2 = len_pix = 0.0;
-            mu1 = RFLOAT( (RFLOAT(ip)) / (RFLOAT(nr_partitions)) );
-            mu2 = RFLOAT( (RFLOAT(ip) + 1.0) / (RFLOAT(nr_partitions)) );
+            mu1 = RFLOAT((RFLOAT(ip)) / (RFLOAT(nr_partitions)));
+            mu2 = RFLOAT((RFLOAT(ip) + 1.0) / (RFLOAT(nr_partitions)));
             xa = HermiteInterpolate1D(x0, x1, x2, x3, mu1);
             ya = HermiteInterpolate1D(y0, y1, y2, y3, mu1);
             za = HermiteInterpolate1D(z0, z1, z2, z3, mu1);
             xb = HermiteInterpolate1D(x0, x1, x2, x3, mu2);
             yb = HermiteInterpolate1D(y0, y1, y2, y3, mu2);
             zb = HermiteInterpolate1D(z0, z1, z2, z3, mu2);
-            len_pix = sqrt((xa - xb) * (xa - xb) + (ya - yb) * (ya - yb) + (za - zb) * (za - zb));
+            len_pix = euclid(xa - xb, ya - yb, za - zb);
             present_len_pix += len_pix;
-            accu_len_pix += len_pix;
+            accu_len_pix    += len_pix;
 
             // Output one segment (xb, yb, zb)
             if (present_len_pix > 0.0) {
@@ -4644,10 +4635,8 @@ void HermiteInterpolateOne3DHelicalFilament(
 
                 XX(dr) = xb - xa; YY(dr) = yb - ya; ZZ(dr) = zb - za;
                 estimateTiltPsiPriors(dr, tilt_deg, psi_deg);
-                if (fabs(tilt_deg) < 0.001)
-                    tilt_deg = 0.0;
-                if (fabs(psi_deg) < 0.001)
-                    psi_deg = 0.0;
+                if (fabs(tilt_deg) < 0.001) tilt_deg = 0.0;
+                if (fabs(psi_deg)  < 0.001) psi_deg  = 0.0;
                 MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, tilt_deg);
                 MD_out.setValue(EMDL::ORIENT_PSI_PRIOR,  psi_deg);
 

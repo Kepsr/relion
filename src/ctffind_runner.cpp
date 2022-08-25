@@ -576,7 +576,7 @@ void CtffindRunner::executeCtffind3(long int imic) {
             Xmipp::last(ctf_win), Xmipp::last(ctf_win)
         );
         // Calculate mean, stddev, min and max
-        const Stats<RFLOAT> stats = computeStats(I());
+        const auto stats = computeStats(I());
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
@@ -651,12 +651,11 @@ void CtffindRunner::executeCtffind4(long int imic) {
         // Window micrograph to a smaller, squared sub-micrograph to estimate CTF on
         fn_mic_win = fn_root + "_win.mrc";
         // Read in micrograph, window and write out again
-        Image<RFLOAT> I;
-        I.read(fn_mic);
+        auto I = Image<RFLOAT>::from_filename(fn_mic);
         I().setXmippOrigin();
         I().window(Xmipp::init(ctf_win), Xmipp::init(ctf_win), Xmipp::last(ctf_win), Xmipp::last(ctf_win));
         // Calculate mean, stddev, min and max
-        const Stats<RFLOAT> stats = computeStats(I());
+        const auto stats = computeStats(I());
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
@@ -669,8 +668,7 @@ void CtffindRunner::executeCtffind4(long int imic) {
     int ctf_boxsize = box_size;
     RFLOAT ctf_angpix = angpix;
     if (use_given_ps) {
-        Image<RFLOAT> Ihead;
-        Ihead.read(fn_mic_win, false);
+        auto Ihead = Image<RFLOAT>::from_filename(fn_mic_win, false);
         ctf_boxsize = Xsize(Ihead());
         ctf_angpix = Ihead.samplingRateX();
     }

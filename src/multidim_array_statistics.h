@@ -166,14 +166,13 @@ struct Stats {
     void print(std::ostream &out = std::cout) const {
 
         out.setf(std::ios::showpoint);
-        int old_prec = out.precision(7);
+        const int old_prec = out.precision(7);
 
-        out << " min= "; out.width(9); out << min;
-        out << " max= "; out.width(9); out << max;
-        out << " avg= "; out.width(9); out << avg;
-        out << " dev= "; out.width(9); out << stddev;
-
-        out.precision(old_prec);
+        out << " min= " << std::setw(9) << min
+            << " max= " << std::setw(9) << max
+            << " avg= " << std::setw(9) << avg
+            << " dev= " << std::setw(9) << stddev
+            << std::setprecision(old_prec);
     }
 
 };
@@ -235,13 +234,11 @@ RFLOAT median(const MultidimArray<T> &arr) throw (const char*) {
 
     if (arr.size <= 0) throw "Cannot take the median of an empty collection!";
 
-    // Copy the array
-    auto copy = arr;
+    // Copy the array into a std::vector
+    std::vector<T> copy (arr.begin(), arr.end());
+    std::sort(copy.begin(), copy.end());
 
-    // Sort indices
-    copy.sort();
-
-    const long int N = arr.size();
+    const long int N = copy.size();
     if (N % 2 == 0) {
         return (RFLOAT) (copy[N / 2 - 1] + copy[N / 2]) / 2.0;
     } else {
@@ -249,43 +246,39 @@ RFLOAT median(const MultidimArray<T> &arr) throw (const char*) {
     }
 }
 
-/** Adjust the range of the array to a given one.
- *
- * Scale the values of the array
- * so that they lie between the two values set.
- * Modify the array itself.
+/** Scale the array so that it spans the interval [minF,maxF]
  *
  * @code
- * v.rangeAdjust(0, 1);
- * // The array is now ranging from 0 to 1
+ * const auto range = v.rangeAdjust(0, 1);
+ * // The array now spans the interval [0,1] (provided range != 0)
  * @endcode
  */
 template <typename T>
-void rangeAdjust(MultidimArray<T> &arr, T minF, T maxF) {
+T rangeAdjust(MultidimArray<T> &arr, T minF, T maxF) {
 
     if (arr.size() <= 0) return;
 
-    const auto range = minmax(arr);
-
-    // If range.min == range.max, the vector is a constant one,
-    // so the only possible transformation is to a fixed minF
-    RFLOAT slope = range.first == range.second ? 0 :
+    const auto interval = minmax(arr);
+    const T range = interval.second - interval.first;
+    const RFLOAT slope = range == 0 ? 0 :
         static_cast<RFLOAT>(maxF - minF) /
-        static_cast<RFLOAT>(range.second - range.first);
-
+        static_cast<RFLOAT>(range);
+    // If range == 0, then the array is flat.
+    // No scaling can bring it to span the interval [minF, maxF].
+    // We choose to just fill it with minF.
     for (auto &x : arr) {
         // a + b * x
-        x = minF + static_cast<T>(slope * static_cast<RFLOAT>(x - range.min));
+        x = minF + static_cast<T>(slope * static_cast<RFLOAT>(x - interval.min));
     }
+    return range;  // Let the caller know the range
 }
 
 // For use in rangeAdjust
 template <typename T>
-std::pair<T, T> maskminmax(MultidimArray<T> &arr, const MultidimArray<int> &mask) {
-    RFLOAT min, max;
-    int *maskptr = mask.data;
+std::pair<T, T> minmax_inside_mask(const MultidimArray<T> &arr, const MultidimArray<int> &mask) {
 
-    min = max = arr[0];
+    RFLOAT min = arr[0], max = arr[0];
+    int *maskptr = mask.data;
 
     for (T *ptr = arr.begin(); ptr != arr.end(); ++ptr, ++maskptr) {
         if (*maskptr) {
@@ -296,35 +289,74 @@ std::pair<T, T> maskminmax(MultidimArray<T> &arr, const MultidimArray<int> &mask
     return {min, max};
 }
 
-/** Adjust the range of the array to a given one within a mask.
+/** Adjust the array so that within the mask it spans the interval [minF,maxF]
  *
  * A linear operation is performed on the values of the array
  * so that the values of the array are comprissed between the two values set.
- * The actual array is modified itself.
  * The linear transformation is computed within the mask, but it is applied everywhere.
  *
  * @code
- * v.rangeAdjust(0, 1, mask);
- * // The array is now ranging from 0 to 1
+ * @code
+ * const auto range = v.rangeAdjust(0, 1);
+ * // The array now spans the interval [0,1] (provided range != 0)
  * @endcode
  */
-// This function must be explictly implemented outside
 template <typename T>
 void rangeAdjust(MultidimArray<T> &arr, const MultidimArray<int> &mask, T minF, T maxF) {
 
     if (arr.size() <= 0) return;
 
-    const auto range = maskminmax(arr, mask);
-
-    // If range.min == range.max, the vector is a constant one,
-    // so the only possible transformation is to a fixed minF
-    RFLOAT slope = range.min == range.max ? 0 :
+    const auto interval = minmax_inside_mask(arr, mask);
+    const T range = interval.second - interval.first;
+    const RFLOAT slope = range == 0 ? 0 :
         static_cast<RFLOAT>(maxF - minF) /
-        static_cast<RFLOAT>(range.max - range.min);
-
+        static_cast<RFLOAT>(range);
+    // If range == 0, then the array is flat.
+    // No scaling can bring it to span the interval [minF, maxF].
+    // We choose to just fill it with minF.
     for (auto &x : arr) {
         // a + b * x
-        x = minF + static_cast<T>(slope * static_cast<RFLOAT>(x - range.min));
+        x = minF + static_cast<T>(slope * static_cast<RFLOAT>(x - interval.min));
+    }
+    return range;  // Let the caller know the range
+}
+
+
+/** Adjust the range of the array to the range of another array in
+    a least squares sense.
+*
+* A linear operation is performed on the values of the array so
+* after it, the values of the self array are as similar as possible
+* (L2 sense) to the values of the array shown as sample
+*/
+
+// As written this will only work for [T = RFLOAT]
+// nevertheless since this is used is better
+// to use T than RFLOAT or will create problem for int multidim arrays
+template <typename T>
+void rangeAdjust(
+    MultidimArray<T> &arr,
+    const MultidimArray<T> &target, const MultidimArray<int> *mask = nullptr
+) {
+
+    if (arr.size() <= 0) return;
+
+    T *targetptr = target.data;
+    int *maskptr = mask ? mask->data : nullptr;
+    RFLOAT N = 0, sumx = 0, sumy = 0, sumxx = 0, sumxy = 0;
+    for (T *ptr = arr.begin(); ptr != arr.end(); ++ptr, ++targetptr, ++maskptr) {
+        if (!mask || *maskptr != 0) {
+            N++;
+            T x = *ptr; T y = *targetptr;
+            sumx += x; sumxx += x * x;
+            sumy += y; sumxy += x * y;
+        }
+    }
+    RFLOAT slope = (N * sumxy - sumx * sumy) / (N * sumxx - sumx * sumx);
+    RFLOAT intercept = sumy / N - slope * sumx / N;
+    for (auto &x : arr) {
+        // a + b * x
+        x = static_cast<RFLOAT>(intercept + slope * static_cast<RFLOAT>(x));
     }
 }
 
@@ -340,13 +372,12 @@ void rangeAdjust(MultidimArray<T> &arr, const MultidimArray<int> &mask, T minF, 
  * // Now the array has mean 0 and stddev 1.
  * @endcode
  */
-// This function must be explictly implemented outside.
 template <typename T>
 void statisticsAdjust(MultidimArray<T> &arr, RFLOAT avgF, RFLOAT stddevF) {
 
     if (arr.size() == 0) return;
 
-    Stats<T> stats = computeStats(arr);
+    const auto stats = computeStats(arr);
 
     const RFLOAT a = stats.stddev == 0 ? 0 :
         static_cast<RFLOAT>(stddevF) / static_cast<RFLOAT>(stats.stddev);

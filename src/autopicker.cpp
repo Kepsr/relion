@@ -1160,18 +1160,18 @@ void AutoPicker::pickAmyloids(
     bool ccf_peaks_remaining = true;
     while (ccf_peaks_remaining) {
         const auto it = std::max_element(Mccf.begin(), Mccf.end());
-        float myccf = *it;
+        const float ccf = *it;
         const auto direct_indices = offset_to_direct_indices(Mccf, it - Mccf.begin());
         const auto Xmipp_indices = direct_indices_to_Xmipp_indices(Mccf, direct_indices[0], direct_indices[1], direct_indices[2], direct_indices[3]);
         const long int imax = Xmipp_indices[0], jmax = Xmipp_indices[1];
-        float mypsi = Mpsi(imax, jmax);
+        const float psi = Mpsi(imax, jmax);
 
         // Stop searching if all pixels are below min_ccf!
-        // std::cerr << " myccf= " << myccf << " imax= " << imax << " jmax= " << jmax << std::endl;
-        // std::cerr << " helices.size()= " << helices.size() << " threshold_value= " << threshold_value << " mypsi= " << mypsi << std::endl;
-        if (myccf < threshold_value) { ccf_peaks_remaining = false; }
+        // std::cerr << " ccf= " << ccf << " imax= " << imax << " jmax= " << jmax << std::endl;
+        // std::cerr << " helices.size()= " << helices.size() << " threshold_value= " << threshold_value << " psi= " << psi << std::endl;
+        if (ccf < threshold_value) { ccf_peaks_remaining = false; }
 
-        AmyloidCoord coord { (RFLOAT) jmax, (RFLOAT) imax, mypsi, myccf };
+        AmyloidCoord coord {(RFLOAT) imax, (RFLOAT) jmax, psi, ccf};
 
         Helix helix {coord};
 
@@ -1183,9 +1183,9 @@ void AutoPicker::pickAmyloids(
                     helix[0], circle, threshold_value, max_psidiff,
                     helical_tube_diameter / angpix, round(skip_side), scale, Mccf, Mpsi
                 );
-                //std::cerr << " START newcoord.x= " << newcoord.x << " newcoord.y= " << newcoord.y << " newcoord.fom= " << newcoord.fom
-                //		<< " stddev = " << Mstddev.elem(round(newcoord.x), round(newcoord.y))
-                //		<< " avg= " <<	Mavg.elem(round(newcoord.x), round(newcoord.y))	<< std::endl;
+                // std::cerr << " START newcoord.x= " << newcoord.x << " newcoord.y= " << newcoord.y << " newcoord.fom= " << newcoord.fom
+                //     << " stddev = " << Mstddev.elem(round(newcoord.x), round(newcoord.y))
+                //     << " avg= " <<	Mavg.elem(round(newcoord.x), round(newcoord.y))	<< std::endl;
                 // Also check for Mstddev value
                 if (
                     newcoord.fom > threshold_value &&
@@ -1216,7 +1216,7 @@ void AutoPicker::pickAmyloids(
             // std::cerr << " is_done_start= " << is_done_start << " is_done_end= " << is_done_end << std::endl;
         }
 
-        //std::cerr << " helix.size()= " << helix.size() << std::endl;
+        // std::cerr << " helix.size()= " << helix.size() << std::endl;
         if (helical_tube_diameter * 0.5 * helix.size() > helical_tube_length_min) {
             helices.push_back(helix);
             /*
@@ -1229,7 +1229,7 @@ void AutoPicker::pickAmyloids(
             It.write("Mccf.spi");
 
             // TMP
-            //ccf_peaks_remaining=false;
+            // ccf_peaks_remaining=false;
              */
         }
 
@@ -1250,7 +1250,6 @@ void AutoPicker::pickAmyloids(
     MDout.addLabel(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM);
     MDout.addLabel(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO);
     MDout.addLabel(EMDL::ORIENT_ROT_PRIOR_FLIP_RATIO);	// KThurber
-
 
     float interbox_dist = min_particle_distance / angpix;
     // Write out segments all all helices
@@ -1343,7 +1342,7 @@ void AutoPicker::pickCCFPeaks(
     // Init output
     ccf_peak_list.clear();
 
-    Stats<RFLOAT> stats = computeStats(Mccf);
+    const auto stats = computeStats(Mccf);
 
     // Collect all high ccf pixels
     std::vector<ccfPixel> ccf_pixel_list;
@@ -1796,8 +1795,8 @@ void AutoPicker::extractHelicalTubes(
                 nr_psi_within_range = 0.0;
                 int id_peak_dist_max;
                 for (int peak_id1 = 0; peak_id1 < selected_peaks_dir1.size(); peak_id1++) {
-                    //std::cout << "  Peak id " << selected_peaks_dir1[ii].id << " x, y, r, psi, psidir1= " << selected_peaks_dir1[ii].x << ", " << selected_peaks_dir1[ii].y
-                    //		<< ", " << selected_peaks_dir1[ii].r << ", " << selected_peaks_dir1[ii].psi << ", " << psi_dir1 << std::endl;
+                    // std::cout << "  Peak id " << selected_peaks_dir1[ii].id << " x, y, r, psi, psidir1= " << selected_peaks_dir1[ii].x << ", " << selected_peaks_dir1[ii].y
+                    //     << ", " << selected_peaks_dir1[ii].r << ", " << selected_peaks_dir1[ii].psi << ", " << psi_dir1 << std::endl;
 
                     RFLOAT curvature = radians(abs(selected_peaks_dir1[peak_id1].psi - psi_dir1)) / selected_peaks_dir1[peak_id1].dist;
                     if (curvature < curvature_max) {
@@ -2214,8 +2213,8 @@ void AutoPicker::exportHelicalTubes(
             RFLOAT fom = Mccf.elem(x_int, y_int);
 
             MDout.addObject();
-            RFLOAT xval = tube_coord_list[itube][icoord].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize);
-            RFLOAT yval = tube_coord_list[itube][icoord].y / scale - (RFLOAT) Xmipp::init(micrograph_ysize);
+            const RFLOAT xval = tube_coord_list[itube][icoord].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize);
+            const RFLOAT yval = tube_coord_list[itube][icoord].y / scale - (RFLOAT) Xmipp::init(micrograph_ysize);
             MDout.setValue(EMDL::IMAGE_COORD_X, xval);
             MDout.setValue(EMDL::IMAGE_COORD_Y, yval);
             MDout.setValue(EMDL::PARTICLE_CLASS, iref + 1); // start counting at 1
@@ -2236,7 +2235,6 @@ void AutoPicker::exportHelicalTubes(
 }
 
 void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic) {
-    Image<RFLOAT> Imic;
     FourierTransformer transformer;
     MultidimArray<float> Mbest_size, Mbest_fom;
     float scale = (float) workSize / (float) micrograph_size;
@@ -2253,7 +2251,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         init_random_generator(random_seed + imic);
 
         // Read in the micrograph
-        Imic.read(fn_mic);
+        auto Imic = Image<RFLOAT>::from_filename(fn_mic);
         Imic().setXmippOrigin();
 
         // Let's just check the square size again...
@@ -2272,7 +2270,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         }
 
         // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
-        Stats<RFLOAT> stats = computeStats(Imic());
+        const auto stats = computeStats(Imic());
 
         for (RFLOAT &x : Imic()) {
             // Values that are too far from the mean are set to the mean (0)
@@ -2295,10 +2293,10 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
             // Fill region outside the original window with white Gaussian noise to prevent all-zeros in Mstddev
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic(), i, j) {
                 if (
-                    j < Xmipp::init(micrograph_ysize) ||
-                    j > Xmipp::last(micrograph_ysize) ||
                     i < Xmipp::init(micrograph_xsize) ||
-                    i > Xmipp::last(micrograph_xsize)
+                    i > Xmipp::last(micrograph_xsize) ||
+                    j < Xmipp::init(micrograph_ysize) ||
+                    j > Xmipp::last(micrograph_ysize)
                 ) {
                     Imic().elem(i, j) = rnd_gaus(0.0, 1.0);
                 }
@@ -2351,17 +2349,16 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         }
 
     } else {
-        Image<RFLOAT> Maux;
 
         // Read back in pre-calculated LoG maps
         for (const RFLOAT &d : diams_LoG) {
 
-            FileName fn_LoG = getOutputRootName(fn_mic) + "_" + fn_out + "_LoG" + integerToString(round(d)) + ".spi";
-            Maux.read(fn_LoG);
+            const FileName fn_LoG = getOutputRootName(fn_mic) + "_" + fn_out + "_LoG" + integerToString(round(d)) + ".spi";
+            const auto LoG = Image<RFLOAT>::from_filename(fn_LoG)();
 
-            for (long int n = 0; n < Maux().size(); n++) {
-                if (Maux()[n] > Mbest_fom[n]) {
-                    Mbest_fom[n] = Maux()[n];
+            for (long int n = 0; n < LoG.size(); n++) {
+                if (LoG[n] > Mbest_fom[n]) {
+                    Mbest_fom[n] = LoG[n];
                     Mbest_size[n] = d;
                 }
             }
@@ -2370,13 +2367,11 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
 
     if (do_write_fom_maps) {
 
-        Image<float> IMbest_fom (Mbest_fom);
-        FileName fn_bestLoG = getOutputRootName(fn_mic) + "_" + fn_out + "_bestLoG.spi";
-        IMbest_fom.write(fn_bestLoG);
+        const FileName fn_bestLoG = getOutputRootName(fn_mic) + "_" + fn_out + "_bestLoG.spi";
+        Image<float>(Mbest_fom).write(fn_bestLoG);
 
-        Image<float> IMbest_size (Mbest_size);
-        FileName fn_bestSize = getOutputRootName(fn_mic) + "_" + fn_out + "_bestSize.spi";
-        IMbest_size.write(fn_bestSize);
+        const FileName fn_bestSize = getOutputRootName(fn_mic) + "_" + fn_out + "_bestSize.spi";
+        Image<float>(Mbest_size).write(fn_bestSize);
 
     }
 
@@ -2461,8 +2456,8 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         const auto direct_indices = offset_to_direct_indices(Mbest_fom, it - Mbest_fom.begin());
         const auto Xmipp_indices = direct_indices_to_Xmipp_indices(Mbest_fom, direct_indices[0], direct_indices[1], direct_indices[2], direct_indices[3]);
         const long int imax = Xmipp_indices[0], jmax = Xmipp_indices[1];
-        RFLOAT fom_here = Mbest_fom.elem(imax, jmax);
-        if (fom_here < my_upper_limit) {
+        const RFLOAT fom = Mbest_fom.elem(imax, jmax);
+        if (fom < my_upper_limit) {
             MDout.addObject();
             long int xx = imax - Xmipp::init((float) micrograph_xsize * scale);
             long int yy = jmax - Xmipp::init((float) micrograph_ysize * scale);
@@ -2544,7 +2539,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     {
     ifdefTIMING(TicToc tt (timer, TIMING_A7);)
     // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations.
-    Stats<RFLOAT> stats = computeStats(Imic());
+    const auto stats = computeStats(Imic());
 
     for (auto &x : Imic()) {
         // Remove pixel values that are too far away from the mean
@@ -2742,9 +2737,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
                 FileName fn_bestPSI;
                 fn_bestPSI.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
-                Image<RFLOAT> I_bestPSI;
-                I_bestPSI.read(fn_bestPSI);
-                Mpsi_best = I_bestPSI();
+                Mpsi_best = Image<RFLOAT>::from_filename(fn_bestPSI)();
             }
             }
         } else {
@@ -2969,18 +2962,15 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
         if (do_write_fom_maps) {
 
-            Image<RFLOAT> It_float (Mccf_best_combined);
             FileName fn_combinedCCF = getOutputRootName(fn_mic) + "_" + fn_out + "_combinedCCF.spi";
-            It_float.write(fn_combinedCCF);
+            Image<RFLOAT>(Mccf_best_combined).write(fn_combinedCCF);
 
             if (do_amyloid) {
-                Image<RFLOAT> It_float (Mpsi_best_combined);
                 FileName fn_combinedPSI = getOutputRootName(fn_mic) + "_" + fn_out + "_combinedPSI.spi";
-                It_float.write(fn_combinedPSI);
+                Image<RFLOAT>(Mpsi_best_combined).write(fn_combinedPSI);
             } else {
-                Image<int> It_int (Mclass_best_combined);
                 FileName fn_combinedCLASS = getOutputRootName(fn_mic) + + "_" + fn_out + "_combinedCLASS.spi";
-                It_int.write(fn_combinedCLASS);
+                Image<int>(Mclass_best_combined).write(fn_combinedCLASS);
             }
         }
 

@@ -2004,7 +2004,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 RFLOAT sphere_radius_pix, cyl_radius_pix;
                 cyl_radius_pix = helical_tube_outer_diameter / (2.0 * my_pixel_size);
                 sphere_radius_pix = particle_diameter / (2.0 * my_pixel_size);
-                Stats<RFLOAT> bg_stats = calculateBackgroundAvgStddev(img, round(sphere_radius_pix), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
+                const auto bg_stats = calculateBackgroundAvgStddev(img, round(sphere_radius_pix), is_helical_segment, cyl_radius_pix, tilt_deg, psi_deg);
 
                 // Average should be close to 0, i.e. max +/-50% of stddev...
                 // Stddev should be close to 1, i.e. larger than 0.5 and smaller than 2)
@@ -4089,18 +4089,17 @@ void MlOptimiser::solventFlatten() {
     }
 
     for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
-        MultidimArray<RFLOAT> Itmp;
+        MultidimArray<RFLOAT> tmp;
         if (fn_lowpass_mask != "None") {
-            Itmp = mymodel.Iref[iclass];
-            Itmp *= Ilowpass();
-            lowPassFilterMap(Itmp, lowpass, mymodel.pixel_size);
+            tmp = mymodel.Iref[iclass] * Ilowpass();
+            lowPassFilterMap(tmp, lowpass, mymodel.pixel_size);
         }
 
         // Then apply the expanded solvent mask to the map
-        mymodel.Iref[iclass] *= Isolvent(); // this is the tight mask
+        mymodel.Iref[iclass] *= Isolvent();  // this is the tight mask
 
         if (fn_lowpass_mask != "None")
-            mymodel.Iref[iclass] += Itmp;
+            mymodel.Iref[iclass] += tmp;
 
         // Apply a second solvent mask if necessary
         // This may for example be useful to set the interior of icosahedral viruses to a constant density value that is higher than the solvent
@@ -4179,7 +4178,7 @@ void MlOptimiser::updateCurrentResolution() {
                 }
             } else {
                 // If we are not doing MAP-estimation, set maxres to Nyquist
-                maxres = mymodel.ori_size/2;
+                maxres = mymodel.ori_size / 2;
             }
             RFLOAT newres = mymodel.getResolution(maxres);
 
@@ -4242,23 +4241,21 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
 
     // Calculate number of pixels per resolution shell
     Npix_per_shell.initZeros(mymodel.ori_size / 2 + 1);
-    MultidimArray<RFLOAT> aux;
-    if (mymodel.data_dim == 3) {
-        aux.resize(mymodel.ori_size, mymodel.ori_size, mymodel.ori_size / 2 + 1);
-    } else {
-        aux.resize(                  mymodel.ori_size, mymodel.ori_size / 2 + 1);
-    }
+    MultidimArray<RFLOAT> aux (
+        mymodel.ori_size / 2 + 1, mymodel.ori_size,
+        mymodel.data_dim == 3 ? mymodel.ori_size : 1
+    );
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(aux) {
-        int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
+        int ires = round(euclid(ip, jp, kp));
         // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
         // Exclude points beyond Xsize(Npix_per_shell), and exclude half of the x=0 column that is stored twice in FFTW
-        if (ires < mymodel.ori_size / 2 + 1 && !(jp == 0 && ip < 0))
+        if (ires < mymodel.ori_size / 2 + 1 && (jp != 0 || ip >= 0))
             Npix_per_shell(ires) += 1;
     }
 
     // Also set sizes for the images in all optics groups
-    int nr_optics_groups = mydata.numberOfOpticsGroups();
+    const int nr_optics_groups = mydata.numberOfOpticsGroups();
     image_coarse_size.resize(nr_optics_groups);
     image_current_size.resize(nr_optics_groups);
     image_full_size.resize(nr_optics_groups);
@@ -4267,7 +4264,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
     for (int optics_group = 0; optics_group < nr_optics_groups; optics_group++) {
 
         RFLOAT my_pixel_size = mydata.getOpticsPixelSize(optics_group);
-        int my_image_size = mydata.getOpticsImageSize(optics_group);
+        int    my_image_size = mydata.getOpticsImageSize(optics_group);
         RFLOAT remap_sizes = (my_pixel_size * my_image_size) / (mymodel.pixel_size * mymodel.ori_size);
 
         image_full_size[optics_group] = my_image_size;
@@ -4299,47 +4296,33 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
         image_coarse_size[optics_group] = std::min(image_current_size[optics_group], image_coarse_size[optics_group]);
 
         /// Also update the resolution pointers here
-        if (mymodel.data_dim == 3) {
-            Mresol_fine[optics_group].resize(
-                image_current_size[optics_group],
-                image_current_size[optics_group],
-                image_current_size[optics_group] / 2 + 1
-            );
-        } else {
-            Mresol_fine[optics_group].resize(
-                image_current_size[optics_group],
-                image_current_size[optics_group] / 2 + 1
-            );
-        }
+        Mresol_fine[optics_group].resize(
+            image_current_size[optics_group] / 2 + 1,
+            image_current_size[optics_group],
+            mymodel.data_dim == 3 ? image_current_size[optics_group] : 1
+        );
         Mresol_fine[optics_group].initConstant(-1);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_fine[optics_group]) {
-            int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
+            int ires = round(euclid(ip, jp, kp));
             // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
             // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
-            if (ires < image_current_size[optics_group] / 2 + 1  && !(jp == 0 && ip < 0)) {
+            if (ires < image_current_size[optics_group] / 2 + 1  && (jp != 0 || ip >= 0)) {
                 direct::elem(Mresol_fine[optics_group], i, j, k) = ires;
             }
         }
 
-        if (mymodel.data_dim == 3) {
-            Mresol_coarse[optics_group].resize(
-                image_coarse_size[optics_group],
-                image_coarse_size[optics_group],
-                image_coarse_size[optics_group] / 2 + 1
-            );
-        } else {
-            Mresol_coarse[optics_group].resize(
-                image_coarse_size[optics_group],
-                image_coarse_size[optics_group] / 2 + 1
-            );
-        }
+        Mresol_coarse[optics_group].resize(
+            image_coarse_size[optics_group] / 2 + 1,
+            image_coarse_size[optics_group],
+            mymodel.data_dim == 3 ? image_coarse_size[optics_group] : 1
+        );
 
         Mresol_coarse[optics_group].initConstant(-1);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_coarse[optics_group]) {
-            int ires = round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp)));
+            int ires = round(euclid(ip, jp, kp));
             // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
             // exclude lowest-resolution points
-            if (ires < image_coarse_size[optics_group] / 2 + 1 && !(jp == 0 && ip < 0)) {
+            if (ires < image_coarse_size[optics_group] / 2 + 1 && (jp != 0 || ip >= 0)) {
                 direct::elem(Mresol_coarse[optics_group], i, j, k) = ires;
             }
         }
@@ -4415,7 +4398,6 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         // Sjors 5mar18: it is very important that my_old_offset has baseMLO->mymodel.data_dim and not just (3), as transformCartesianAndHelicalCoords will give different results!!!
         Matrix1D<RFLOAT> my_old_offset(mymodel.data_dim), my_prior(mymodel.data_dim), my_old_offset_ori;
 
-        int icol_rot, icol_tilt, icol_psi, icol_xoff, icol_yoff, icol_zoff;
         my_old_offset[0] = direct::elem(exp_metadata, my_metadata_offset, METADATA_XOFF);
         my_prior[0]      = direct::elem(exp_metadata, my_metadata_offset, METADATA_XOFF_PRIOR);
         my_old_offset[1] = direct::elem(exp_metadata, my_metadata_offset, METADATA_YOFF);
@@ -4451,12 +4433,9 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             my_old_offset -= my_projected_com;
 
             // Also get refined offset for this body
-            icol_xoff = 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            icol_yoff = 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            icol_zoff = 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            const std::array<int, 3> icol_offs {icol_xoff, icol_yoff, icol_zoff};
+            const int N = METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
             for (int i = 0; i < mymodel.data_dim; ++i) {
-                my_refined_ibody_offset[i] = direct::elem(exp_metadata, my_metadata_offset, icol_offs[i]);
+                my_refined_ibody_offset[i] = direct::elem(exp_metadata, my_metadata_offset, N + 3 + i);
             }
 
             // For multi-body refinement: set the priors of the translations to zero (i.e. everything centred around consensus offset)
@@ -4484,12 +4463,10 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
             // Centre local searches around the orientation from the previous iteration, this one goes with overall sigma2_ang
             // On top of that, apply prior on the deviation from (0,0,0) with mymodel.sigma_tilt_bodies[ibody] and mymodel.sigma_psi_bodies[ibody]
-            icol_rot  = 0 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            icol_tilt = 1 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            icol_psi  = 2 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            RFLOAT prior_rot  = direct::elem(exp_metadata, my_metadata_offset, icol_rot);
-            RFLOAT prior_tilt = direct::elem(exp_metadata, my_metadata_offset, icol_tilt);
-            RFLOAT prior_psi =  direct::elem(exp_metadata, my_metadata_offset, icol_psi);
+            const int N = METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
+            const RFLOAT prior_rot  = direct::elem(exp_metadata, my_metadata_offset, N + 0);
+            const RFLOAT prior_tilt = direct::elem(exp_metadata, my_metadata_offset, N + 1);
+            const RFLOAT prior_psi  = direct::elem(exp_metadata, my_metadata_offset, N + 2);
             sampling.selectOrientationsWithNonZeroPriorProbability(
                 prior_rot, prior_tilt, prior_psi,
                 sqrt(mymodel.sigma2_rot), sqrt(mymodel.sigma2_tilt), sqrt(mymodel.sigma2_psi),
