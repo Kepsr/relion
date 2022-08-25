@@ -334,12 +334,13 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     {
     ifdefTIMING(TicToc tt (basePckr->timer, basePckr->TIMING_A7);)
-    CTICTOC(timer, "computeStats", ({
-    // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations....
-    Stats<RFLOAT> statstuple = Imic().computeStats();
-    avg0 = stats.avg;
-    stddev0 = stats.stddev;
-    }))
+    const auto stats = [&] () -> Stats<RFLOAT> {
+        CTICTOC(timer, "computeStats", ({
+        // Set mean to zero and stddev to 1 to prevent numerical problems with one-sweep stddev calculations....
+        return computeStats(Imic());
+        }))}();
+        avg0 = stats.avg;
+        stddev0 = stats.stddev;
     }
 
     CTICTOC(timer, "middlePassFilter", ({

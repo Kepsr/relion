@@ -199,7 +199,7 @@ bool Postprocessing::getMask() {
     Im().setXmippOrigin();
 
     // Check values are between 0 and 1
-    const Stats<RFLOAT> stats = computeStats(Im());
+    const auto stats = computeStats(Im());
 
     const long summask = std::count_if(Im().begin(), Im().end(),
         [&] (RFLOAT x) { return x > 0.5; });

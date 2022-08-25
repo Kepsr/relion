@@ -746,7 +746,7 @@ class image_handler_parameters {
             if (do_stats) {
                 // only write statistics to screen
                 Iin.read(fn_img);
-                Stats<RFLOAT> stats = computeStats(Iin());
+                const auto stats = computeStats(Iin());
                 RFLOAT header_angpix = Iin.samplingRateX();
                 std::cout << fn_img << " : (x, y, z, n) = "
                     << Xsize(Iin()) << " × " << Ysize(Iin()) << " × "

@@ -1551,44 +1551,6 @@ class MultidimArray {
 
     //@}
 
-    /** Adjust the range of the array to the range of another array in
-        a least squares sense.
-    *
-    * A linear operation is performed on the values of the array so
-    * after it, the values of the self array are as similar as possible
-    * (L2 sense) to the values of the array shown as sample
-    */
-
-    // As written this will only work for [T = RFLOAT]
-    // nevertheless since this is used is better
-    // to use T than RFLOAT or will create problem for int multidim arrays
-    void rangeAdjust(
-        const MultidimArray<T> &target, const MultidimArray<int> *mask = nullptr
-    ) {
-
-        if (size() <= 0) return;
-
-        T *targetptr = target.data;
-        int *maskptr = mask ? mask->data : nullptr;
-        RFLOAT N = 0, sumx = 0, sumy = 0, sumxx = 0, sumxy = 0;
-        for (T *ptr = begin(); ptr != end(); ++ptr) {
-            if (!mask || *maskptr != 0) {
-                N++;
-                T x = *ptr; T y = *targetptr;
-                sumx += x; sumxx += x * x;
-                sumy += y; sumxy += x * y;
-            }
-            targetptr++;
-            if (mask) { maskptr++; }
-        }
-        RFLOAT slope = (N * sumxy - sumx * sumy) / (N * sumxx - sumx * sumx);
-        RFLOAT intercept = sumy / N - slope * sumx / N;
-        for (T *ptr = begin(); ptr != end(); ++ptr) {
-            // a + b * x
-            *ptr = static_cast<RFLOAT>(intercept + slope * static_cast<RFLOAT>(*ptr));
-        }
-    }
-
     //@}
 
     /** @name Array "by" array operations.
