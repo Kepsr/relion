@@ -1867,99 +1867,7 @@ class MultidimArray {
      */
     //@{
 
-    /** Produce a 3D array suitable for working with Numerical Recipes.
-     *
-     * This function must be used only as a preparation for routines which need
-     * that the first physical index is 1 and not 0 as it usually is in C. New
-     * memory is needed to hold the new RFLOAT pointer array.
-     */
-    T*** adaptForNumericalRecipes3D(long int n = 0) const {
-        T ***m = nullptr;
-        ask_Tvolume(m, 1, zdim, 1, ydim, 1, xdim);
-
-        for (long int k = 0; k < Zsize(*this); k++)
-        for (long int j = 0; j < Ysize(*this); j++)
-        for (long int i = 0; i < Xsize(*this); i++)
-            m[i + 1][j + 1][k + 1] = direct::elem(*this, i, j, k, n);
-
-        return m;
-    }
-
-    /** Kill a 3D array produced for numerical recipes.
-     */
-    void killAdaptationForNumericalRecipes3D(T ***m) const {
-        free_Tvolume(m, 1, zdim, 1, ydim, 1, xdim);
-    }
-
-    /** Produce a 2D array suitable for working with Numerical Recipes
-     *
-     * This function must be used only as a preparation for routines which need
-     * that the first physical index is 1 and not 0 as it usually is in C. New
-     * memory is needed to hold the new RFLOAT pointer array.
-     */
-    T** adaptForNumericalRecipes2D(long int n = 0) const {
-        T **m = nullptr;
-        ask_Tmatrix(m, 1, ydim, 1, xdim);
-
-        for (long int j = 0; j < Ysize(*this); j++)
-        for (long int i = 0; i < Xsize(*this); i++)
-            m[i + 1][j + 1] = direct::elem(*this, i, j, 0, n);
-
-        return m;
-    }
-
-    /** Produce a 1D pointer suitable for working with Numerical Recipes (2)
-     *
-     * This function meets the same goal as the one before, however this one
-     * work with 2D arrays as a single pointer. The first element of the array
-     * is pointed by result[1*Xdim+1], and in general result[i*Xdim+j]
-     */
-    T* adaptForNumericalRecipes22D() const { return data - 1 - xdim; }
-
-    /** Load 2D array from numerical recipes result.
-     */
-    void loadFromNumericalRecipes2D(T **m, long int Ydim, long int Xdim) {
-        resize(Xdim, Ydim);
-
-        for (long int i = 1; i <= Ydim; i++)
-        for (long int j = 1; j <= Xdim; j++)
-        { (*this)(i - 1, j - 1) = m[i][j]; }
-    }
-
-    /** Kill a 2D array produced for numerical recipes
-     *
-     * The allocated memory is freed.
-     */
-    void killAdaptationForNumericalRecipes2D(T** m) const {
-        free_Tmatrix(m, 1, ydim, 1, xdim);
-    }
-
-    /** Kill a 2D array produced for numerical recipes, 2.
-     *
-     * Nothing needs to be done.
-     */
-    void killAdaptationForNumericalRecipes22D(T** m) const {}
-
-    /** Produce a 1D array suitable for working with Numerical Recipes
-     *
-     * This function must be used only as a preparation for routines which need
-     * that the first physical index is 1 and not 0 as it usually is in C. In
-     * fact the vector provided for Numerical recipes is exactly this same one
-     * but with the indices changed.
-     *
-     * This function is not ported to Python.
-     */
-    T* adaptForNumericalRecipes1D() const { return data - 1; }
-
-    /** Kill a 1D array produced for Numerical Recipes.
-     *
-     * Nothing needs to be done in fact.
-     *
-     * This function is not ported to Python.
-     */
-    void killAdaptationForNumericalRecipes1D(T* m) const {}
-
-    /** Computes the center of mass of the nth array
+    /** Computes the center of mass of the nth slice
      */
     void centerOfMass(Matrix1D<RFLOAT> &center, void *mask = nullptr, long int n = 0) {
             center.initZeros(3);
@@ -1982,20 +1890,6 @@ class MultidimArray {
         int dim = getDim();
         if (dim == 1 || dim == 2) { center.resize(dim); }
 
-    }
-
-    /** Sort 1D vector elements
-     *
-     * Sort in ascending order the vector elements. You can use the "selfReverseX"
-     * function to sort in descending order.
-     *
-     * @code
-     * v1.sort();
-     * @endcode
-     */
-    void sort() {
-        checkDimension(1);
-        std::sort(data, data + xdim);
     }
 
     /** Get the indices that sort the 1D vector elements (original array intact)

@@ -6352,16 +6352,15 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
 
         // Only select non-zero probabilities to speed up sorting
         long int np = 0;
-        for (long int n = 0; n < (sorted_weight).size(); n++) {
+        for (long int n = 0; n < sorted_weight.size(); n++) {
             if (sorted_weight[n] > 0.0) {
-                sorted_weight[np] = sorted_weight[n];
-                np++;
+                sorted_weight[np++] = sorted_weight[n];
             }
         }
         sorted_weight.resize(np);
 
         // Sort from low to high values
-        sorted_weight.sort();
+        std::sort(sorted_weight.begin(), sorted_weight.end());
 
         #ifdef TIMING
         if (part_id == mydata.sorted_idx[exp_my_first_part_id])
@@ -6388,12 +6387,9 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
         #ifdef DEBUG_SORT
         // Check sorted array is really sorted
         RFLOAT prev = 0.0;
-        for (long int n = 0; n < (sorted_weight).size(); n++) {
+        for (long int n = 0; n < sorted_weight.size(); n++) {
             if (sorted_weight[n] < prev) {
-                Image<RFLOAT> It;
-                It()=sorted_weight;
-                It() *= 10000;
-                It.write("sorted_weight.spi");
+                Image<RFLOAT>(sorted_weight * 10000).write("sorted_weight.spi");
                 std::cerr << "written sorted_weight.spi" << std::endl;
                 REPORT_ERROR("Error in sorting!");
             }
