@@ -308,7 +308,6 @@ class MultidimArray {
     bool mmapOn;  // Whether to allocate memory or map to a file
     FileName mapFile;  // Mapped file name
     int mFd;  // Mapped file handler
-    long int allocated_size;  // Number of elements in allocated memory
 
     T* attempt_mmap(FileName &mapFile, int &mFd, off_t offset) {
         mapFile.initRandom(8);
@@ -338,7 +337,7 @@ class MultidimArray {
     // Default ctor
     MultidimArray():
     xdim(0), ydim(0), zdim(0), ndim(0), xinit(0), yinit(0), zinit(0),
-    data(nullptr), allocated_size(0), mmapOn(false), mFd(0) {}
+    data(nullptr), mmapOn(false), mFd(0) {}
 
     /** Size ctor
      * Construct an array (heap-allocate memory) and fill it with zeros.
@@ -352,8 +351,7 @@ class MultidimArray {
     MultidimArray(const MultidimArray<T> &other):
     xdim(other.xdim), ydim(other.ydim), zdim(other.zdim), ndim(other.ndim),
     xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
-    data(nullptr), allocated_size(other.allocated_size),
-    mmapOn(false), mFd(0) {
+    data(nullptr), mmapOn(false), mFd(0) {
         resize(other);
         memcpy(data, other.data, sizeof(T) * size());
     }
@@ -369,8 +367,7 @@ class MultidimArray {
     MultidimArray(MultidimArray<T> &&other) noexcept:
     xdim(other.xdim), ydim(other.ydim), zdim(other.zdim), ndim(other.ndim),
     xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
-    data(other.data), allocated_size(other.allocated_size),
-    mmapOn(false), mFd(0) { other.data = nullptr; }
+    data(other.data), mmapOn(false), mFd(0) { other.data = nullptr; }
 
     /** Constructor from a Matrix1D.
      * The Size constructor creates an array with memory associated,
@@ -421,7 +418,6 @@ class MultidimArray {
         yinit = 0;
         xinit = 0;
         data = nullptr;
-        allocated_size = 0;
         mmapOn = false;
         mFd = 0;
     }
@@ -465,7 +461,6 @@ class MultidimArray {
             data = (T*) RELION_ALIGNED_MALLOC(size() * sizeof(T));
             if (!data) REPORT_ERROR("Allocate: No space left");
         }
-        allocated_size = size();
     }
 
     /** Core allocate without dimensions.
@@ -473,8 +468,7 @@ class MultidimArray {
      * The dimensions should be set beforehand.
      */
     void coreAllocateReuse() {
-        if (data && size() <= allocated_size) return;  // Memory already allocated
-        if (size() > allocated_size) coreDeallocate();
+        if (data) return;  // Memory already allocated
         _allocate_memory();
     }
 
@@ -489,7 +483,7 @@ class MultidimArray {
     void coreDeallocate() {
         if (data) {
             if (mmapOn) {
-                munmap(data, allocated_size * sizeof(T));
+                munmap(data, size() * sizeof(T));
                 close(mFd);
                 remove(mapFile.c_str());
             } else {
@@ -497,7 +491,6 @@ class MultidimArray {
             }
             data = nullptr;
         }
-        allocated_size = 0;
     }
 
     //@}
@@ -548,13 +541,12 @@ class MultidimArray {
      * limits.
      */
     void shrinkToFit() {
-        if (!data || mmapOn || size() <= 0 || allocated_size <= size())
+        if (!data || mmapOn || size() <= 0)
             return;
         T* old_data = data;
         data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * size());
         memcpy(data, old_data, sizeof(T) * size());
         RELION_ALIGNED_FREE(old_data);
-        allocated_size = size();
     }
 
     /**
@@ -570,7 +562,7 @@ class MultidimArray {
      * Otherwise, data is almost always destroyed.
      */
     void reshape(index_t Xdim = 1, index_t Ydim = 1, index_t Zdim = 1, index_t Ndim = 1) {
-        if (data && allocated_size == Xdim * Ydim * Zdim * Ndim) {
+        if (data && size() == Xdim * Ydim * Zdim * Ndim) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
             return;
         }
@@ -615,7 +607,7 @@ class MultidimArray {
     void resizeNoCp(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
 
         const size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
-        if (NZYXdim == allocated_size && data)
+        if (NZYXdim == size() && data)
             return;
 
         if (NZYXdim == 0) {
@@ -655,7 +647,6 @@ class MultidimArray {
         data = new_data;
         mFd = new_mFd;
         mapFile = new_mapFile;
-        allocated_size = size();
     }
 
     /** Resize to a given size
@@ -673,9 +664,8 @@ class MultidimArray {
      */
     void resize(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
         size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
-        if (allocated_size == NZYXdim && data) {
+        if (data && NZYXdim == size()) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
-            allocated_size = size();
             return;
         }
 
@@ -726,7 +716,6 @@ class MultidimArray {
         setDimensions(Xdim, Ydim, Zdim, Ndim);
         mFd = new_mFd;
         mapFile = new_mapFile;
-        allocated_size = size();
     }
 
     /** Resize according to a pattern.
@@ -2408,7 +2397,6 @@ class MultidimArray {
     MultidimArray<T> &operator = (MultidimArray<T> other) {
         copyShape(other);
         data = other.data;
-        allocated_size = other.allocated_size;
         other.data = nullptr;
         return *this;
     }
