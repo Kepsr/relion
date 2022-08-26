@@ -100,8 +100,8 @@ class MetaDataTable {
     std::vector<std::string> unknownLabelNames;
     std::vector<long> unknown_label_indices;
 
-    // Current object id
-    long current_objectID;
+    // Current object
+    MetaDataContainer **current_object;
 
     // Number of labels of each type
     long doubleLabels, intLabels, boolLabels, stringLabels, doubleVectorLabels, unknownLabels;
@@ -144,11 +144,11 @@ class MetaDataTable {
     size_t numberOfObjects() const;
     void clear();
 
-    void setComment(const std::string Comment);
+    void setComment(const std::string &comment);
     std::string getComment() const;
     bool containsComment() const;
 
-    void setName(const std::string Name);
+    void setName(const std::string &name);
     std::string getName() const;
 
     void setVersion(int v);
@@ -173,7 +173,7 @@ class MetaDataTable {
     std::string getUnknownLabelNameAt(int i) const;
 
     // Set the value of label for a specified object.
-    // If no objectID is given, the internal iterator 'current_objectID' is used
+    // If no objectID is given, the internal pointer current_object is used
     // objectID is 0-indexed.
     template<class T>
     void setValue(EMDL::EMDLabel name, const T &value, long int objectID = -1);
@@ -204,13 +204,13 @@ class MetaDataTable {
     // Append all rows from 'app' to the end of the table and insert all missing labels.
     void append(const MetaDataTable &app);
 
-    // Get metadatacontainer for objectID (current_objectID if objectID < 0)
+    // Get metadatacontainer for objectID (current_object if objectID < 0)
     MetaDataContainer* getObject(long objectID = -1) const;
 
     /* setObject(data, objectID)
      *  copies values from 'data' to object 'objectID'.
      *  The target object is assumed to exist.
-     *  If objectID < 0, then current_objectID is set.
+     *  If objectID < 0, then current_object is set.
      *  Undefined labels are inserted.
      *
      *  Use addObject() to set an object that does not yet exist */
@@ -219,7 +219,7 @@ class MetaDataTable {
     /* setValuesOfDefinedLabels(data, objectID)
      * copies values from 'data' to object 'objectID'.
      * The target object is assumed to exist.
-     * If objectID < 0, then current_objectID is set.
+     * If objectID < 0, then current_object is set.
      * Only already defined labels are considered.
      *
      * Use addValuesOfDefinedLabels() to add an object that does not yet exist */
@@ -230,32 +230,32 @@ class MetaDataTable {
 
     /* addObject()
      *  Adds a new object and initializes the defined labels with default values.
-     *  Afterwards, 'current_objectID' points to the newly added object.*/
+     *  Afterwards, 'current_object' points to the newly added object.*/
     void addObject();
 
     /* addObject(data)
      *  Adds a new object and sets its values to those from 'data'.
      *  The set of labels for the table is extended as necessary.
-     *  Afterwards, 'current_objectID' points to the newly added object.*/
+     *  Afterwards, 'current_object' points to the newly added object.*/
     void addObject(MetaDataContainer* data);
 
     /* addValuesOfDefinedLabels(data)
      *  Adds a new object and sets the already defined values to those from 'data'.
      *  Labels from 'data' that are not already defined are ignored.
-     *  Afterwards, 'current_objectID' points to the newly added object.*/
+     *  Afterwards, 'current_object' points to the newly added object.*/
     void addValuesOfDefinedLabels(MetaDataContainer* data);
 
     /* removeObject(objectID)
-     *  If objectID is not given, 'current_objectID' will be removed.
-     *  'current_objectID' is set to the last object in the list. */
+     *  If objectID is not given, 'current_object' will be removed.
+     *  'current_object' is set to the last object in the list. */
     void removeObject(long objectID = -1);
 
-    long firstObject();
+    MetaDataContainer** firstObject();
 
     /** @TODO: remove nextObject() after removing calls in:
      * - "helix.cpp"
      */
-    long nextObject();  // If we remove this, current_objectID will have to be made public
+    MetaDataContainer** nextObject();  // If we remove this, current_object will have to be made public
     
     /** MetaDataTable::iterator
      *    
@@ -266,29 +266,30 @@ class MetaDataTable {
      * }
      * @endcode
      *
-     * This is not thread-safe, because current_objectID is updated.
+     * This is not thread-safe, because current_object is updated.
      */
     struct iterator {
 
         bool isDone;
         MetaDataTable *const mdt;
-        long int i;
+        MetaDataContainer** object;
 
         iterator(MetaDataTable *mdt, bool isDone = false):
-        isDone(isDone), mdt(mdt), i(isDone ? 0 : mdt->firstObject()) {}
+        isDone(isDone), mdt(mdt), object(isDone ? nullptr : mdt->firstObject()) {}
 
         long int operator *() const {
-            return i;
+            return object - &*mdt->objects.begin();
         }
 
         iterator &operator ++() {
             // assert !isDone
-            if (!(isDone = i + 1 >= mdt->numberOfObjects())) { i = mdt->nextObject(); }
+            isDone = (long int) (object + 1 - &*mdt->objects.begin()) >= mdt->numberOfObjects();
+            if (!isDone) { object = mdt->nextObject(); }
             return *this;
         }
 
         bool operator != (const iterator &other) const {
-            return isDone != other.isDone || mdt != other.mdt || i != other.i;
+            return isDone != other.isDone || mdt != other.mdt || object != other.object;
         }
 
     };
@@ -301,7 +302,7 @@ class MetaDataTable {
         return iterator(this, true);
     }
 
-    long goToObject(long objectID);
+    MetaDataContainer** goToObject(long objectID);
 
     // Read a STAR loop structure
     long int readStarLoop(std::ifstream &in, bool do_only_count = false);
@@ -446,7 +447,7 @@ bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label) const {
 template<typename T>
 T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
     // When called with the objectID argument omitted, this function is impure,
-    // since the result will depend on the variable member current_objectID.
+    // since the result will depend on the variable member current_object.
 
     if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 
@@ -462,7 +463,7 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
     if (off < 0) throw "Negative offset";
 
     if (objectID < 0) {
-        objectID = current_objectID;
+        objectID = current_object - &*objects.begin();
     } else {
         try { checkObjectID(objectID); } catch (const std::string &errmsg) {
             REPORT_ERROR((std::string) __func__ + ": " + errmsg);
@@ -492,7 +493,7 @@ void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int obje
     }
 
     if (objectID < 0) {
-        objectID = current_objectID;
+        objectID = current_object - &*objects.begin();
     } else {
         try { checkObjectID(objectID); } catch (const std::string &errmsg) {
             REPORT_ERROR((std::string) __func__ + ": " + errmsg);

@@ -365,7 +365,7 @@ void Experiment::initialiseBodies(int _nr_bodies) {
         MetaDataTable MDbody;
         MDbody.isList = false;
         bool is_3d = (MDimg.containsLabel(EMDL::ORIENT_ORIGIN_Z));
-        for (long int index : MDimg) {
+        for (auto _ : MDimg) {
             MDbody.addObject();
             RFLOAT zero = 0.0, ninety = 90.0;  // Is this an lvalue / rvalue thing?
             RFLOAT norm = MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
@@ -535,24 +535,24 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
 
     FileName prev_img_name = "/Unlikely$filename$?*!";
     int prev_optics_group = -999;
-    for (long int index : MDimg) {
+    for (auto index : MDimg) {
         // TODO: think about MPI_Abort here....
         if (index % check_abort_frequency == 0 && pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        FileName fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
+        const FileName fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
 
-        int optics_group;
-        try {
-            optics_group = MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
-        } catch (const char *errmsg) {
-            optics_group = 0;
-        }
+        const int optics_group = [&] () {
+            try {
+                return MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
+            } catch (const char *errmsg) {
+                return 0;
+            };
+        }();
 
         // Get the size of the first particle
         if (nr_parts_on_scratch[optics_group] == 0) {
-            Image<RFLOAT> tmp;
-            tmp.read(fn_img, false); // false means: only read the header!
+            const auto tmp = Image<RFLOAT>::from_filename(fn_img, false); // false means: only read the header!
             one_part_space = Xsize(tmp()) * Ysize(tmp()) * Zsize(tmp()) * sizeof(float); // MRC images are stored in floats!
             if (is_3D != (Zsize(tmp()) > 1)) REPORT_ERROR("BUG: inconsistent is_3D values!");
             // add MRC header size for subtomograms, which are stored as 1 MRC file each
@@ -585,13 +585,10 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
             }
 
             Image<RFLOAT> img;
-            long int imgno;
-            FileName fn_ctf, fn_stack, fn_new;
-            fImageHandler hFile;
             if (is_3D) {
                 // For subtomograms, write individual .mrc files,possibly also CTF images
                 img.read(fn_img);
-                fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
+                FileName fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                 img.write(fn_new);
                 if (also_do_ctf_image) {
                     FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE);
@@ -601,7 +598,10 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 }
             } else {
                 // Only open/close new stacks, so check if this is a new stack
+                long int imgno;
+                FileName fn_stack;
                 fn_img.decompose(imgno, fn_stack);
+                fImageHandler hFile;
                 if (fn_stack != fn_open_stack) {
                     // Manual closing isn't necessary: if still open, then openFile will first close the filehandler
                     // Also closing the last one isn't necessary, as destructor will do this.
@@ -612,6 +612,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 }
                 img.readFromOpenFile(fn_img, hFile, -1, false);
 
+                FileName fn_new;
                 fn_new.compose(nr_parts_on_scratch[optics_group] + 1, fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs");
                 if (nr_parts_on_scratch[optics_group] == 0) {
                     img.write(fn_new, -1, false, WRITE_OVERWRITE);
@@ -777,7 +778,7 @@ void Experiment::read(
 
         FileName prev_img_name = "/Unlikely$filename$?*!";
         int prev_optics_group = -999;
-        //for (long int index : MDimg)
+        //for (auto _ : MDimg)
         // Loop over all objects in MDimg (ori_part_id)
         for (long int ori_img_id = 0; ori_img_id < MDimg.numberOfObjects(); ori_img_id++) {
             // Get the optics group of this particle
@@ -970,7 +971,7 @@ void Experiment::read(
     if (need_tiltpsipriors_for_helical_refine && !have_tiltpsi_prior && !have_tiltpsi) {
         REPORT_ERROR("exp_model.cpp: Experiment::read(): Tilt and psi priors of helical segments are missing!");
     }
-    for (long int index : MDimg) {
+    for (auto _ : MDimg) {
         RFLOAT dzero = 0.0, done = 1.0;
         int izero = 0;
         if (!have_rot)

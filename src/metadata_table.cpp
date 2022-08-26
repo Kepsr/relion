@@ -53,7 +53,7 @@ inline std::string prependERROR(const std::string &s) {
 MetaDataTable::MetaDataTable():
     objects(0),
     label_indices(EMDL::LAST_LABEL, -1),
-    current_objectID(0),
+    current_object(nullptr),
     doubleLabels(0),
     intLabels(0),
     boolLabels(0),
@@ -72,7 +72,7 @@ MetaDataTable::MetaDataTable(const MetaDataTable &MD):
     label_indices(MD.label_indices),
     unknown_label_indices(MD.unknown_label_indices),
     unknownLabelNames(MD.unknownLabelNames),
-    current_objectID(0),
+    current_object(nullptr),
     doubleLabels(MD.doubleLabels),
     intLabels(MD.intLabels),
     boolLabels(MD.boolLabels),
@@ -100,7 +100,7 @@ MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
     label_indices = MD.label_indices;
     unknown_label_indices = MD.unknown_label_indices;
     unknownLabelNames = MD.unknownLabelNames;
-    current_objectID = 0;
+    current_object = &*objects.begin();
     doubleLabels = MD.doubleLabels;
     intLabels = MD.intLabels;
     boolLabels = MD.boolLabels;
@@ -139,7 +139,7 @@ void MetaDataTable::clear() {
     objects.clear();
 
     label_indices = std::vector<long>(EMDL::LAST_LABEL, -1);
-    current_objectID = 0;
+    current_object = &*objects.begin();
     unknown_label_indices.clear();
     unknownLabelNames.clear();
 
@@ -157,8 +157,8 @@ void MetaDataTable::clear() {
     activeLabels.clear();
 }
 
-void MetaDataTable::setComment(const std::string newComment) {
-    comment = newComment;
+void MetaDataTable::setComment(const std::string &comment) {
+    this->comment = comment;
 }
 
 std::string MetaDataTable::getComment() const {
@@ -169,8 +169,8 @@ bool MetaDataTable::containsComment() const {
     return !comment.empty();
 }
 
-void MetaDataTable::setName(const std::string newName) {
-    name = newName;
+void MetaDataTable::setName(const std::string &name) {
+    this->name = name;
 }
 
 std::string MetaDataTable::getName() const {
@@ -257,7 +257,7 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID)
 void MetaDataTable::setUnknownValue(int i, const std::string &value) {
     long j = unknown_label_indices[i];
     if (j < 0) REPORT_ERROR("MetaDataTable::setUnknownValue BUG: j should not be negative here....");
-    objects[current_objectID]->unknowns[j] = value;
+    (*current_object)->unknowns[j] = value;
 }
 
 void MetaDataTable::setValueFromString(
@@ -578,7 +578,7 @@ void MetaDataTable::append(const MetaDataTable &mdt) {
 
 MetaDataContainer* MetaDataTable::getObject(long objectID) const {
     try {
-        if (objectID < 0) { objectID = current_objectID; }
+        if (objectID < 0) { objectID = current_object - &*objects.begin(); }
         checkObjectID(objectID);
         return objects[objectID];
     } catch (const std::string &errmsg) {
@@ -588,7 +588,7 @@ MetaDataContainer* MetaDataTable::getObject(long objectID) const {
 
 void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
     try { 
-        if (objectID < 0) { objectID = current_objectID; }
+        if (objectID < 0) { objectID = current_object - &*objects.begin(); }
         checkObjectID(objectID); 
         addMissingLabels(*data->table);
         setObjectUnsafe(data, objectID);
@@ -599,7 +599,7 @@ void MetaDataTable::setObject(MetaDataContainer* data, long objectID) {
 
 void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long objectID) {
     try {
-        if (objectID < 0) { objectID = current_objectID; }
+        if (objectID < 0) { objectID = current_object - &*objects.begin(); }
         checkObjectID(objectID);
         setObjectUnsafe(data, objectID);
     } catch (const std::string &errmsg) {
@@ -655,7 +655,7 @@ void MetaDataTable::addObject() {
         doubleVectorLabels, unknownLabels
     ));
 
-    current_objectID = objects.size() - 1;
+    current_object = &*objects.end() - 1;
 }
 
 void MetaDataTable::addObject(MetaDataContainer* data) {
@@ -666,7 +666,7 @@ void MetaDataTable::addObject(MetaDataContainer* data) {
     ));
 
     setObject(data, objects.size() - 1);
-    current_objectID = objects.size() - 1;
+    current_object = &*objects.end() - 1;
 }
 
 void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
@@ -677,33 +677,33 @@ void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
     ));
 
     setValuesOfDefinedLabels(data, objects.size() - 1);
-    current_objectID = objects.size() - 1;
+    current_object = &*objects.end() - 1;
 }
 
 void MetaDataTable::removeObject(long objectID) {
     try {
-        if (objectID < 0) { objectID = current_objectID; }
+        if (objectID < 0) { objectID = current_object - &*objects.begin(); }
         checkObjectID(objectID);
         delete objects[objectID];
         objects.erase(objects.begin() + objectID);
-        current_objectID = objects.size() - 1;
+        current_object = &*objects.end() - 1;
     } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
 }
 
-long int MetaDataTable::firstObject() {
-    return current_objectID = 0;
+MetaDataContainer** MetaDataTable::firstObject() {
+    return current_object = &*objects.begin();
 }
 
-long int MetaDataTable::nextObject() {
-    return ++current_objectID;
+MetaDataContainer** MetaDataTable::nextObject() {
+    return ++current_object;
 }
 
-long int MetaDataTable::goToObject(long int objectID) {
+MetaDataContainer** MetaDataTable::goToObject(long int objectID) {
     try {
         checkObjectID(objectID);
-        return current_objectID = objectID;
+        return current_object = &*objects.begin() + objectID;
     } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }

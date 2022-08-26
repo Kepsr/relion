@@ -154,7 +154,7 @@ void CtffindRunner::initialise() {
         fn_micrographs_all.clear();
         optics_group_micrographs_all.clear();
         fn_micrographs_ctf_all.clear();
-        for (long int i : MDin) {
+        for (auto _ : MDin) {
             FileName fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME);
 
             fn_micrographs_all.push_back(fn_mic); // Dose weighted image
@@ -181,7 +181,7 @@ void CtffindRunner::initialise() {
         if (Cs < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the spherical aberration, and it is not given through --CS.");
         }
-        for (long int i : obsModel.opticsMdt) {
+        for (auto _ : obsModel.opticsMdt) {
             obsModel.opticsMdt.setValue(EMDL::CTF_CS, Cs);
         }
     }
@@ -189,7 +189,7 @@ void CtffindRunner::initialise() {
         if (Voltage < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the acceleration voltage, and it is not given through --HT.");
         }
-        for (long int i : obsModel.opticsMdt) {
+        for (auto _ : obsModel.opticsMdt) {
             obsModel.opticsMdt.setValue(EMDL::CTF_VOLTAGE, Voltage);
         }
     }
@@ -197,7 +197,7 @@ void CtffindRunner::initialise() {
         if (AmplitudeContrast < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the amplitude contrast, and it is not given through --AmpCnst.");
         }
-        for (long int i : obsModel.opticsMdt) {
+        for (auto _ : obsModel.opticsMdt) {
             obsModel.opticsMdt.setValue(EMDL::CTF_Q0, AmplitudeContrast);
         }
     }
@@ -205,7 +205,7 @@ void CtffindRunner::initialise() {
         if (angpix < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the micrograph pixel size, and it is not given through --angpix.");
         }
-        for (long int i : obsModel.opticsMdt) {
+        for (auto _ : obsModel.opticsMdt) {
             obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix);
         }
     }
