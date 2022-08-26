@@ -51,11 +51,30 @@
 
 #define NR_CLASS_MUTEXES 5
 
-//Some global threads management variables
+// Some global thread management variables
 static pthread_mutex_t global_mutex2[NR_CLASS_MUTEXES] = { PTHREAD_MUTEX_INITIALIZER };
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 Barrier * global_barrier;
 ThreadManager * global_ThreadManager;
+
+template <typename T>
+MultidimArray<T>& copyXYZ(MultidimArray<T> &dest, const MultidimArray<T> &src, long int n, long int offset = 0) {
+    dest.resize(n, n, n);
+    for (long int k = 0; k < n; k++)
+    for (long int j = 0; j < n; j++)
+    for (long int i = 0; i < n; i++)
+    direct::elem(dest, i, j, k) = direct::elem(src, i, j, k + offset);
+    return dest;
+}
+
+template <typename T>
+MultidimArray<T>& copyXY(MultidimArray<T> &dest, const MultidimArray<T> &src, long int n, long int offset = 0) {
+    dest.resize(n, n);
+    for (long int j = 0; j < n; j++)
+    for (long int i = 0; i < n; i++)
+    direct::elem(dest, i, j) = direct::elem(src, i, j, offset);
+    return dest;
+}
 
 /** ========================== Threaded parallelization of expectation ===== */
 
@@ -4256,16 +4275,16 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
 
     // Also set sizes for the images in all optics groups
     const int nr_optics_groups = mydata.numberOfOpticsGroups();
-    image_coarse_size.resize(nr_optics_groups);
+    image_coarse_size .resize(nr_optics_groups);
     image_current_size.resize(nr_optics_groups);
-    image_full_size.resize(nr_optics_groups);
-    Mresol_fine.resize(nr_optics_groups);
-    Mresol_coarse.resize(nr_optics_groups);
+    image_full_size   .resize(nr_optics_groups);
+    Mresol_fine       .resize(nr_optics_groups);
+    Mresol_coarse     .resize(nr_optics_groups);
     for (int optics_group = 0; optics_group < nr_optics_groups; optics_group++) {
 
-        RFLOAT my_pixel_size = mydata.getOpticsPixelSize(optics_group);
-        int    my_image_size = mydata.getOpticsImageSize(optics_group);
-        RFLOAT remap_sizes = (my_pixel_size * my_image_size) / (mymodel.pixel_size * mymodel.ori_size);
+        const RFLOAT my_pixel_size = mydata.getOpticsPixelSize(optics_group);
+        const int    my_image_size = mydata.getOpticsImageSize(optics_group);
+        const RFLOAT remap_sizes   = (my_pixel_size * my_image_size) / (mymodel.pixel_size * mymodel.ori_size);
 
         image_full_size[optics_group] = my_image_size;
         // Remap from model size to mysize, and keep even!
@@ -4273,7 +4292,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
         // Current size can never become bigger than original image size for this optics_group!
         image_current_size[optics_group] = std::min(my_image_size, image_current_size[optics_group]);
 
-        int my_max_coarse_size = (max_coarse_size > 0) ?  remap_sizes * max_coarse_size : image_full_size[optics_group];
+        int my_max_coarse_size = max_coarse_size > 0 ? remap_sizes * max_coarse_size : image_full_size[optics_group];
 
         // Update coarse_size
         if (strict_highres_exp > 0.0) {
@@ -4281,9 +4300,9 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
             image_coarse_size[optics_group] = 2 * round((RFLOAT) (remap_sizes * mymodel.ori_size * mymodel.pixel_size / strict_highres_exp));
         } else if (adaptive_oversampling > 0.0) {
             // Dependency of coarse_size on the angular sampling used in the first pass
-            RFLOAT rotated_distance = sampling.getAngularSampling() * PI * particle_diameter / 360.0;
-            RFLOAT keepsafe_factor = mymodel.ref_dim == 3 ? 1.2 : 1.5;
-            RFLOAT coarse_resolution = rotated_distance / keepsafe_factor;
+            const RFLOAT rotated_distance  = sampling.getAngularSampling() * PI * particle_diameter / 360.0;
+            const RFLOAT keepsafe_factor   = mymodel.ref_dim == 3 ? 1.2 : 1.5;
+            const RFLOAT coarse_resolution = rotated_distance / keepsafe_factor;
             // Note coarse_size should be even-valued!
             image_coarse_size[optics_group] = 2 * ceil(remap_sizes * mymodel.pixel_size * mymodel.ori_size / coarse_resolution);
             // Coarse size can never be larger than max_coarse_size
@@ -4492,16 +4511,17 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             bool do_local_angular_searches = do_auto_refine_local_searches || do_classification_local_searches;
 
             // If there were no defined priors (i.e. their values were 999.0), then use the "normal" angles
-            if (prior_rot > 998.99 && prior_rot < 999.01)
+            if (abs(prior_rot - 999.0) > 0.01)
                 prior_rot = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
-            if (prior_tilt > 998.99 && prior_tilt < 999.01)
+            if (abs(prior_tilt - 999.0) > 0.01)
                 prior_tilt = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
-            if (prior_psi > 998.99 && prior_psi < 999.01)
+            if (abs(prior_psi - 999.0) > 0.01)
                 prior_psi = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
-            if (prior_psi_flip_ratio > 998.99 && prior_psi_flip_ratio < 999.01)
+            if (abs(prior_psi_flip_ratio - 999.0) > 0.01)
                 prior_psi_flip_ratio = 0.5;
-            if (prior_rot_flip_ratio > 998.99 && prior_rot_flip_ratio < 999.01) // Kthurber
-                prior_rot_flip_ratio = 0.5; // Kthurber
+            // Kthurber:
+            if (abs(prior_rot_flip_ratio - 999.0) > 0.01)
+                prior_rot_flip_ratio = 0.5;
 
             // Select only those orientations that have non-zero prior probability
             // Jun04,2015 - Shaoda & Sjors, bimodal psi searches for helices
@@ -4533,11 +4553,9 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         if (do_parallel_disc_io) {
             // If all followers had preread images into RAM: get those now
             if (do_preread_images) {
-                img().reshape(mydata.particles[part_id].images[img_id].img);
 
-                for (long int n = 0; n < (mydata.particles[part_id].images[img_id].img).size(); n++) {
-                    img()[n] = (RFLOAT) mydata.particles[part_id].images[img_id].img[n];
-                }
+                img() = mydata.particles[part_id].images[img_id].img;
+
             } else {
 
                 // #define DEBUG_SIMULTANEOUS_READ
@@ -4595,46 +4613,28 @@ void MlOptimiser::getFourierTransformsAndCtfs(
         } else {
 
             // Unpack the image from the imagedata
+            const long int n = image_full_size[optics_group];
             if (mymodel.data_dim == 3) {
-                img().resize(image_full_size[optics_group], image_full_size[optics_group], image_full_size[optics_group]);
                 // Only allow a single image per call of this function!!! nr_pool needs to be set to 1!!!!
                 // This will save memory, as we'll need to store all translated images in memory....
-                for (long int k = 0; k < Zsize(img()); k++)
-                for (long int j = 0; j < Ysize(img()); j++)
-                for (long int i = 0; i < Xsize(img()); i++) {
-                    direct::elem(img(), i, j, k) = direct::elem(exp_imagedata, i, j, k);
-                }
-                img().setXmippOrigin();
+                copyXYZ(img(), exp_imagedata, n).setXmippOrigin();
 
                 if (has_converged && do_use_reconstruct_images) {
-                    rec_img().resize(image_full_size[optics_group], image_full_size[optics_group], image_full_size[optics_group]);
-                    int offset = do_ctf_correction ? 2 * image_full_size[optics_group] : image_full_size[optics_group];
-                    for (long int k = 0; k < Zsize(rec_img()); k++)
-                    for (long int j = 0; j < Ysize(rec_img()); j++)
-                    for (long int i = 0; i < Xsize(rec_img()); i++) {
-                        direct::elem(rec_img(), i, j, k) = direct::elem(exp_imagedata, i, j, offset + k);
-                    }
-                    rec_img().setXmippOrigin();
+                    const int offset = do_ctf_correction ? 2 * n : n;
+                    copyXYZ(rec_img(), exp_imagedata, n, offset).setXmippOrigin();
                 }
+
             } else {
-                img().resize(image_full_size[optics_group], image_full_size[optics_group]);
-                for (long int j = 0; j < Ysize(img()); j++)
-                for (long int i = 0; i < Xsize(img()); i++) {
-                    direct::elem(img(), i, j) = direct::elem(exp_imagedata, i, j, my_metadata_offset);
-                }
-                img().setXmippOrigin();
-                if (has_converged && do_use_reconstruct_images) {
 
+                copyXY(img(), exp_imagedata, n, my_metadata_offset).setXmippOrigin();
+
+                if (has_converged && do_use_reconstruct_images) {
                     /// TODO: this will be WRONG for multi-image particles, but I guess that's not going to happen anyway...
-                    int my_nr_particles = exp_my_last_part_id - exp_my_first_part_id + 1;
+                    const int my_nr_particles = exp_my_last_part_id + 1 - exp_my_first_part_id;
                     ////////////// TODO: think this through for no-threads here.....
-                    rec_img().resize(image_full_size[optics_group], image_full_size[optics_group]);
-                    for (long int j = 0; j < Ysize(rec_img()); j++)
-                    for (long int i = 0; i < Xsize(rec_img()); i++) {
-                        direct::elem(rec_img(), i, j) = direct::elem(exp_imagedata, i, j, my_nr_particles + my_metadata_offset);
-                    }
-                    rec_img().setXmippOrigin();
+                    copyXY(rec_img(), exp_imagedata, n, my_metadata_offset + my_nr_particles).setXmippOrigin();
                 }
+
             }
         }
 
