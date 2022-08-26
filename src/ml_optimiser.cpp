@@ -76,6 +76,117 @@ MultidimArray<T>& copyXY(MultidimArray<T> &dest, const MultidimArray<T> &src, lo
     return dest;
 }
 
+
+template <typename T>
+MultidimArray<T>& copyXYZ_fourier(MultidimArray<T> &FT, long int n, long int rank) {
+    FT.resize(n / 2 + 1, n, rank == 3 ? n : 1);
+    FT.initConstant(-1);
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
+        const int ires = round(euclid(ip, jp, kp));
+        // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
+        // exclude lowest-resolution points
+        // TODO: better check for volume_refine, but the same still seems to hold...
+        // Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
+        if (ires < n / 2 + 1 && (jp != 0 || ip >= 0)) {
+            direct::elem(FT, i, j, k) = ires;
+        }
+    }
+    return FT;
+}
+
+Complex *get_shifted_image(
+    int img_id, int exp_nr_oversampled_trans,
+    int exp_nr_images, int itrans, int exp_itrans_min,  int iover_trans,
+    std::vector<std::vector<MultidimArray<Complex>>> &exp_local_Fimgs_shifted,
+    const std::vector<MultidimArray<Complex>> &global_fftshifts_ab_coarse,
+    const std::vector<MultidimArray<Complex>> &global_fftshifts_ab_current,
+    const std::vector<MultidimArray<Complex>> &global_fftshifts_ab2_coarse,
+    const std::vector<MultidimArray<Complex>> &global_fftshifts_ab2_current,
+    bool do_shifts_onthefly, bool do_skip_align,
+    bool do_helical_refine, bool ignore_helical_symmetry,
+    const std::vector<RFLOAT> &oversampled_translations_x,
+    const std::vector<RFLOAT> &oversampled_translations_y,
+    const std::vector<RFLOAT> &oversampled_translations_z,
+    int data_dim, int ori_size,
+    int exp_current_oversampling,
+    const MultidimArray<RFLOAT> &exp_metadata,
+    long int offset,
+    float strict_highres_exp,
+    int current_size, int coarse_size, long int ydim,
+    MultidimArray<Complex> &Fimg_otfshift,
+    TabSine &tab_sin, TabCosine &tab_cos
+) {
+    if (!do_shifts_onthefly) {
+        long int ishift = img_id * exp_nr_oversampled_trans * exp_nr_images +
+            (itrans - exp_itrans_min) * exp_nr_oversampled_trans + iover_trans;
+        if (do_skip_align)
+            ishift = img_id;
+        #ifdef DEBUG_CHECKSIZES
+        if (ishift >= exp_local_Fimgs_shifted.size()) {
+            std::cerr<< "ishift= "<<ishift<<" exp_local_Fimgs_shifted.size()= "<< exp_local_Fimgs_shifted.size() <<std::endl;
+            std::cerr << " itrans= " << itrans << std::endl;
+            std::cerr << " img_id= " << img_id << std::endl;
+            std::cerr << " exp_nr_oversampled_trans= " << exp_nr_oversampled_trans << " exp_nr_trans= " << exp_nr_trans << " iover_trans= " << iover_trans << std::endl;
+            REPORT_ERROR("ishift >= exp_local_Fimgs_shifted.size()");
+        }
+        #endif
+        return exp_local_Fimgs_shifted[img_id][ishift].data;
+    } else {
+        // Calculate shifted image on-the-fly to save replicating memory in multi-threaded jobs.
+        // Feb01,2017 - Shaoda, on-the-fly shifts in helical reconstuctions (2D and 3D)
+        auto &first_Fimg_shifted = exp_local_Fimgs_shifted[img_id][0];
+        if (do_helical_refine && !ignore_helical_symmetry) {
+            RFLOAT xshift = 0.0, yshift = 0.0, zshift = 0.0;
+            xshift = oversampled_translations_x[exp_current_oversampling == 0 ? 0 : iover_trans];
+            yshift = oversampled_translations_y[exp_current_oversampling == 0 ? 0 : iover_trans];
+            if (data_dim == 3)
+            zshift = oversampled_translations_z[exp_current_oversampling == 0 ? 0 : iover_trans];
+
+            const RFLOAT rot_deg  = direct::elem(exp_metadata, offset, METADATA_ROT);
+            const RFLOAT tilt_deg = direct::elem(exp_metadata, offset, METADATA_TILT);
+            const RFLOAT psi_deg  = direct::elem(exp_metadata, offset, METADATA_PSI);
+            transformCartesianAndHelicalCoords(
+                xshift, yshift, zshift,
+                rot_deg, tilt_deg, psi_deg,
+                data_dim, HELICAL_TO_CART_COORDS
+            );
+
+            bool use_coarse_size =
+                exp_current_oversampling == 0 && ydim == coarse_size ||
+                exp_current_oversampling >  0 && strict_highres_exp > 0.0;
+            shiftImageInFourierTransformWithTabSincos(
+                first_Fimg_shifted,
+                Fimg_otfshift,
+                (RFLOAT) ori_size,
+                use_coarse_size ? coarse_size : current_size,
+                tab_sin, tab_cos,
+                xshift, yshift, zshift
+            );
+        } else {
+            Complex *myAB;
+            if (exp_current_oversampling == 0) {
+                myAB = (ydim == coarse_size ?
+                    global_fftshifts_ab_coarse : global_fftshifts_ab_current
+                )[itrans].data;
+            } else {
+                int iitrans = itrans * exp_nr_oversampled_trans +  iover_trans;
+                myAB = (strict_highres_exp > 0.0 ?
+                    global_fftshifts_ab2_coarse : global_fftshifts_ab2_current
+                )[iitrans].data;
+            }
+            for (long int n = 0; n < first_Fimg_shifted.size(); n++) {
+                Complex A = myAB[n];
+                Complex X = first_Fimg_shifted[n];
+                Fimg_otfshift[n] = Complex(
+                    A.real * X.real - A.imag * X.imag,  // A dot conj X
+                    A.real * X.imag + A.imag * X.real   // A dot (i conj X)
+                );
+            }
+        }
+        return Fimg_otfshift.data;
+    }
+}
+
 /** ========================== Threaded parallelization of expectation ===== */
 
 void globalThreadExpectationSomeParticles(ThreadArgument &thArg) {
@@ -4315,47 +4426,19 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
         image_coarse_size[optics_group] = std::min(image_current_size[optics_group], image_coarse_size[optics_group]);
 
         /// Also update the resolution pointers here
-        Mresol_fine[optics_group].resize(
-            image_current_size[optics_group] / 2 + 1,
-            image_current_size[optics_group],
-            mymodel.data_dim == 3 ? image_current_size[optics_group] : 1
-        );
-        Mresol_fine[optics_group].initConstant(-1);
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_fine[optics_group]) {
-            int ires = round(euclid(ip, jp, kp));
-            // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
-            // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
-            if (ires < image_current_size[optics_group] / 2 + 1  && (jp != 0 || ip >= 0)) {
-                direct::elem(Mresol_fine[optics_group], i, j, k) = ires;
-            }
-        }
-
-        Mresol_coarse[optics_group].resize(
-            image_coarse_size[optics_group] / 2 + 1,
-            image_coarse_size[optics_group],
-            mymodel.data_dim == 3 ? image_coarse_size[optics_group] : 1
-        );
-
-        Mresol_coarse[optics_group].initConstant(-1);
-        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mresol_coarse[optics_group]) {
-            int ires = round(euclid(ip, jp, kp));
-            // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
-            // exclude lowest-resolution points
-            if (ires < image_coarse_size[optics_group] / 2 + 1 && (jp != 0 || ip >= 0)) {
-                direct::elem(Mresol_coarse[optics_group], i, j, k) = ires;
-            }
-        }
+        copyXYZ_fourier(Mresol_fine[optics_group],   image_current_size[optics_group], mymodel.data_dim);
+        copyXYZ_fourier(Mresol_coarse[optics_group], image_coarse_size[optics_group],  mymodel.data_dim);
 
         // #define DEBUG_MRESOL
         #ifdef DEBUG_MRESOL
         Image<RFLOAT> img;
         img().resize(Xsize(Mresol_fine[optics_group]), Ysize(Mresol_fine[optics_group]));
-        for (long int n = 0; n < (img()).size(); n++) {
+        for (long int n = 0; n < img().size(); n++) {
             img()[n] = (RFLOAT) Mresol_fine[optics_group][n];
         }
         img.write("Mresol_fine.mrc");
         img().resize(Xsize(Mresol_coarse[optics_group]), Ysize(Mresol_coarse[optics_group]));
-        for (long int n = 0; n < (img()).size(); n++) {
+        for (long int n = 0; n < img().size(); n++) {
             img()[n] = (RFLOAT) Mresol_coarse[optics_group][n];
         }
         img.write("Mresol_coarse.mrc");
@@ -5184,14 +5267,14 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmasked, bool is_for_store_wsums,
         long int part_id, int exp_current_oversampling, int metadata_offset,
         int exp_itrans_min, int exp_itrans_max,
-        std::vector<MultidimArray<Complex > > &exp_Fimg,
-        std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
-        std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-        std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted,
-        std::vector<std::vector<MultidimArray<Complex > > > &exp_local_Fimgs_shifted_nomask,
-        std::vector<MultidimArray<RFLOAT> >&exp_local_Fctf,
+        std::vector<MultidimArray<Complex>> &exp_Fimg,
+        std::vector<MultidimArray<Complex>> &exp_Fimg_nomask,
+        std::vector<MultidimArray<RFLOAT>> &exp_Fctf,
+        std::vector<std::vector<MultidimArray<Complex>>> &exp_local_Fimgs_shifted,
+        std::vector<std::vector<MultidimArray<Complex>>> &exp_local_Fimgs_shifted_nomask,
+        std::vector<MultidimArray<RFLOAT>>&exp_local_Fctf,
         std::vector<RFLOAT> &exp_local_sqrtXi2,
-        std::vector<MultidimArray<RFLOAT> >&exp_local_Minvsigma2)
+        std::vector<MultidimArray<RFLOAT>>&exp_local_Minvsigma2)
 {
 
     #ifdef TIMING
@@ -5205,7 +5288,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
     #endif
 
     int exp_nr_images = mydata.numberOfImagesInParticle(part_id);
-    int nr_shifts = (do_shifts_onthefly || do_skip_align) ? exp_nr_images : exp_nr_images * sampling.NrTranslationalSamplings(exp_current_oversampling);
+    int nr_shifts = do_shifts_onthefly || do_skip_align ? exp_nr_images : exp_nr_images * sampling.NrTranslationalSamplings(exp_current_oversampling);
     // Don't re-do if nothing has changed....
 
     // Use pre-sized vectors instead of push_backs!!
@@ -5217,9 +5300,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
     exp_local_Fctf.resize(exp_nr_images);
     exp_local_sqrtXi2.resize(exp_nr_images);
 
-    MultidimArray<Complex > Fimg, Fimg_nomask;
-    for (int img_id = 0, my_trans_image = 0; img_id < exp_nr_images; img_id++)
-    {
+    for (int img_id = 0, my_trans_image = 0; img_id < exp_nr_images; img_id++) {
 
         int group_id = mydata.getGroupId(part_id, img_id);
         int optics_group = mydata.getOpticsGroup(part_id, img_id);
@@ -5244,10 +5325,12 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
         bool do_ctf_invsig = exp_local_Fctf.size() > 0 ? Ysize(exp_local_Fctf[0])  != exp_current_image_size : true; // size has changed
         bool do_masked_shifts = (do_ctf_invsig || nr_shifts != exp_local_Fimgs_shifted[img_id].size()); // size or nr_shifts has changed
 
+        MultidimArray<Complex> Fimg;
         if (do_masked_shifts) {
             Fimg = windowFourierTransform(exp_Fimg[img_id], exp_current_image_size);
             exp_local_Fimgs_shifted[img_id].resize(nr_shifts);
         }
+        MultidimArray<Complex> Fimg_nomask;
         if (do_also_unmasked) {
             Fimg_nomask = windowFourierTransform(exp_Fimg_nomask[img_id], exp_current_image_size);
             exp_local_Fimgs_shifted_nomask[img_id].resize(nr_shifts);
@@ -5258,6 +5341,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
             // Could exp_current_image_size ever be different from mymodel.current_size?
             // Probably therefore do it here rather than in getFourierTransforms
             if (do_cc()) {
+                // std::transform_reduce
                 RFLOAT sumxi2 = 0.0;
                 for (long int n = 0; n < Fimg.size(); n++) {
                     sumxi2 += norm(Fimg[n]);
@@ -5280,7 +5364,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
 
             // Map from model_size sigma2_noise array to my_image_size
             RFLOAT remap_image_sizes = (mymodel.ori_size * mymodel.pixel_size) / (my_image_size * my_pixel_size);
-            int *myMresol = (Ysize(Fimg) == image_coarse_size[optics_group]) ? Mresol_coarse[optics_group].data : Mresol_fine[optics_group].data;
+            int *myMresol = Ysize(Fimg) == image_coarse_size[optics_group] ? Mresol_coarse[optics_group].data : Mresol_fine[optics_group].data;
             // With group_id and relevant size of Fimg, calculate inverse of sigma^2 for relevant parts of Mresol
             for (long int n = 0; n < (exp_local_Minvsigma2[img_id]).size(); n++) {
                 int ires = *(myMresol + n);
@@ -5510,9 +5594,8 @@ void MlOptimiser::getAllSquaredDifferences(
             // Local variables
             std::vector<RFLOAT> oversampled_rot, oversampled_tilt, oversampled_psi;
             std::vector<RFLOAT> oversampled_translations_x, oversampled_translations_y, oversampled_translations_z;
-            MultidimArray<Complex> Fimg, Fref, Frefctf, Fimg_otfshift;
             RFLOAT *Minvsigma2;
-            Matrix2D<RFLOAT> A, Abody, Aori;
+            Matrix2D<RFLOAT> Abody, Aori;
 
             if (mymodel.nr_bodies > 1) {
                 // ipart=0 because in multi-body refinement we do not do movie frames!
@@ -5522,6 +5605,7 @@ void MlOptimiser::getAllSquaredDifferences(
                 Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
             }
 
+            MultidimArray<Complex> Fref, Frefctf, Fimg_otfshift;
             Fref.resize(exp_local_Minvsigma2[0]);
             Frefctf.resize(exp_local_Minvsigma2[0]);
             if (do_shifts_onthefly)
@@ -5544,7 +5628,7 @@ void MlOptimiser::getAllSquaredDifferences(
                 } else if (mymodel.orientational_prior_mode == NOPRIOR) {
                     #ifdef DEBUG_CHECKSIZES
                     if (idir >= Xsize(mymodel.pdf_direction[exp_iclass])) {
-                        std::cerr<< "idir= "<<idir<<" Xsize(mymodel.pdf_direction[exp_iclass])= "<< Xsize(mymodel.pdf_direction[exp_iclass]) <<std::endl;
+                        std::cerr<< "idir= " << idir << " Xsize(mymodel.pdf_direction[exp_iclass])= " << Xsize(mymodel.pdf_direction[exp_iclass]) << std::endl;
                         REPORT_ERROR("idir >= mymodel.pdf_direction[exp_iclass].size()");
                     }
                     #endif
@@ -5574,7 +5658,7 @@ void MlOptimiser::getAllSquaredDifferences(
                             bool ctf_premultiplied = mydata.obsModel.getCtfPremultiplied(optics_group);
 
                             // Get the Euler matrix
-                            A = Euler::angles2matrix(
+                            Matrix2D<RFLOAT> A = Euler::angles2matrix(
                                 oversampled_rot[iover_rot],
                                 oversampled_tilt[iover_rot],
                                 oversampled_psi[iover_rot]
@@ -5599,7 +5683,6 @@ void MlOptimiser::getAllSquaredDifferences(
                                 mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
                             }
 
-
                             #ifdef TIMING
                             // Only time one thread, as I also only time one MPI process
                             if (part_id == mydata.sorted_idx[exp_my_first_part_id])
@@ -5612,11 +5695,11 @@ void MlOptimiser::getAllSquaredDifferences(
                             if (do_ctf_correction && refs_are_ctf_corrected) {
                                 if (ctf_premultiplied) {
                                     // TODO: ignore CTF until first peak of premultiplied CTF?
-                                    for (long int n = 0; n < (Fref).size(); n++) {
+                                    for (long int n = 0; n < Fref.size(); n++) {
                                         Frefctf[n] = Fref[n] * exp_local_Fctf[img_id][n] * exp_local_Fctf[img_id][n];
                                     }
                                 } else {
-                                    for (long int n = 0; n < (Fref).size(); n++) {
+                                    for (long int n = 0; n < Fref.size(); n++) {
                                         Frefctf[n] = Fref[n] * exp_local_Fctf[img_id][n];
                                     }
                                 }
@@ -5657,78 +5740,30 @@ void MlOptimiser::getAllSquaredDifferences(
                                         #endif
                                         /// Now get the shifted image
                                         // Use a pointer to avoid copying the entire array again in this highly expensive loop
-                                        Complex *Fimg_shift;
-                                        if (!do_shifts_onthefly) {
-                                            long int ishift = img_id * exp_nr_oversampled_trans * exp_nr_images +
-                                                (itrans - exp_itrans_min) * exp_nr_oversampled_trans + iover_trans;
-                                            if (do_skip_align)
-                                                ishift = img_id;
-                                            #ifdef DEBUG_CHECKSIZES
-                                            if (ishift >= exp_local_Fimgs_shifted.size()) {
-                                                std::cerr<< "ishift= "<<ishift<<" exp_local_Fimgs_shifted.size()= "<< exp_local_Fimgs_shifted.size() <<std::endl;
-                                                std::cerr << " itrans= " << itrans << std::endl;
-                                                std::cerr << " img_id= " << img_id << std::endl;
-                                                std::cerr << " exp_nr_oversampled_trans= " << exp_nr_oversampled_trans << " exp_nr_trans= " << exp_nr_trans << " iover_trans= " << iover_trans << std::endl;
-                                                REPORT_ERROR("ishift >= exp_local_Fimgs_shifted.size()");
-                                            }
-                                            #endif
-                                            Fimg_shift = exp_local_Fimgs_shifted[img_id][ishift].data;
-                                        } else {
-                                            // Calculate shifted image on-the-fly to save replicating memory in multi-threaded jobs.
-                                            // Feb01,2017 - Shaoda, on-the-fly shifts in helical reconstuctions (2D and 3D)
-                                            if (do_helical_refine && !ignore_helical_symmetry) {
-                                                bool use_coarse_size = false;
-                                                RFLOAT xshift = 0.0, yshift = 0.0, zshift = 0.0;
-
-                                                xshift = oversampled_translations_x[exp_current_oversampling == 0 ? 0 : iover_trans];
-                                                yshift = oversampled_translations_y[exp_current_oversampling == 0 ? 0 : iover_trans];
-                                                if (mymodel.data_dim == 3)
-                                                zshift = oversampled_translations_z[exp_current_oversampling == 0 ? 0 : iover_trans];
-
-                                                RFLOAT rot_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
-                                                RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
-                                                RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
-                                                transformCartesianAndHelicalCoords(
-                                                    xshift, yshift, zshift,
-                                                    rot_deg, tilt_deg, psi_deg,
-                                                    mymodel.data_dim,
-                                                    HELICAL_TO_CART_COORDS
-                                                );
-
-                                                use_coarse_size =
-                                                    exp_current_oversampling == 0 && Ysize(Frefctf) == image_coarse_size[optics_group] ||
-                                                    exp_current_oversampling >  0 && strict_highres_exp > 0.0;
-                                                shiftImageInFourierTransformWithTabSincos(
-                                                    exp_local_Fimgs_shifted[img_id][0],
-                                                    Fimg_otfshift,
-                                                    (RFLOAT) mymodel.ori_size,
-                                                    (use_coarse_size ? image_coarse_size : image_current_size)[optics_group],
-                                                    tab_sin, tab_cos,
-                                                    xshift, yshift, zshift
-                                                );
-                                            } else {
-                                                Complex *myAB;
-                                                if (exp_current_oversampling == 0) {
-                                                    myAB = (Ysize(Frefctf) == image_coarse_size[optics_group] ?
-                                                        global_fftshifts_ab_coarse : global_fftshifts_ab_current
-                                                    )[optics_group][itrans].data;
-                                                } else {
-                                                    int iitrans = itrans * exp_nr_oversampled_trans +  iover_trans;
-                                                    myAB = (strict_highres_exp > 0.0 ?
-                                                        global_fftshifts_ab2_coarse : global_fftshifts_ab2_current
-                                                    )[optics_group][iitrans].data;
-                                                }
-                                                for (long int n = 0; n < (exp_local_Fimgs_shifted[img_id][0]).size(); n++) {
-                                                    Complex A = *(myAB + n);
-                                                    Complex X = exp_local_Fimgs_shifted[img_id][0][n];
-                                                    Fimg_otfshift[n] = Complex(
-                                                        A.real * X.real - A.imag * X.imag,  // A dot conj X
-                                                        A.real * X.imag + A.imag * X.real   // A dot (i conj X)
-                                                    );
-                                                }
-                                            }
-                                            Fimg_shift = Fimg_otfshift.data;
-                                        }
+                                        Complex *Fimg_shift = get_shifted_image(
+                                            img_id, exp_nr_oversampled_trans,
+                                            exp_nr_images, itrans, exp_itrans_min, iover_trans,
+                                            exp_local_Fimgs_shifted,
+                                            global_fftshifts_ab_coarse[optics_group],
+                                            global_fftshifts_ab_current[optics_group],
+                                            global_fftshifts_ab2_coarse[optics_group],
+                                            global_fftshifts_ab2_current[optics_group],
+                                            do_shifts_onthefly, do_skip_align,
+                                            do_helical_refine, ignore_helical_symmetry,
+                                            oversampled_translations_x,
+                                            oversampled_translations_y,
+                                            oversampled_translations_z,
+                                            mymodel.data_dim, mymodel.ori_size,
+                                            exp_current_oversampling,
+                                            exp_metadata,
+                                            my_metadata_offset,
+                                            strict_highres_exp,
+                                            image_current_size[optics_group],
+                                            image_coarse_size[optics_group],
+                                            Ysize(Frefctf),
+                                            Fimg_otfshift,
+                                            tab_sin, tab_cos
+                                        );
                                         #ifdef TIMING
                                         // Only time one thread, as I also only time one MPI process
                                         if (part_id == mydata.sorted_idx[exp_my_first_part_id])
@@ -5746,9 +5781,9 @@ void MlOptimiser::getAllSquaredDifferences(
                                             // Negative values because smaller is worse in this case
                                             diff2 = 0.0;
                                             RFLOAT suma2 = 0.0;
-                                            for (long int n = 0; n < (Frefctf).size(); n++) {
+                                            for (long int n = 0; n < Frefctf.size(); n++) {
                                                 Complex A = Frefctf[n];
-                                                Complex X = *(Fimg_shift + n);
+                                                Complex X = Fimg_shift[n];
                                                 diff2 -= A.real * X.real + A.imag * X.imag;  // A dot X
                                                 suma2 += norm(A);
                                             }
@@ -5761,9 +5796,8 @@ void MlOptimiser::getAllSquaredDifferences(
                                             // Factor two because of factor 2 in division below, NOT because of 2-dimensionality of the complex plane!
                                             diff2 = exp_highres_Xi2_img[img_id] / 2.0;
                                             for (long int n = 0; n < (Frefctf).size(); n++) {
-                                                RFLOAT diff_real = Frefctf[n].real - (Fimg_shift + n)->real;
-                                                RFLOAT diff_imag = Frefctf[n].imag - (Fimg_shift + n)->imag;
-                                                diff2 += (diff_real * diff_real + diff_imag * diff_imag) * 0.5 * (*(Minvsigma2 + n));
+                                                Complex diff = Frefctf[n] - Fimg_shift[n];
+                                                diff2 += (diff.real * diff.real + diff.imag * diff.imag) * 0.5 * Minvsigma2[n];
                                             }
                                         }
                                         #ifdef TIMING
@@ -5773,8 +5807,9 @@ void MlOptimiser::getAllSquaredDifferences(
                                         #endif
 
                                         // Store all diff2 in exp_Mweight
-                                        long int ihidden_over = sampling.getPositionOversampledSamplingPoint(ihidden, exp_current_oversampling,
-                                                                                                        iover_rot, iover_trans);
+                                        long int ihidden_over = sampling.getPositionOversampledSamplingPoint(
+                                            ihidden, exp_current_oversampling, iover_rot, iover_trans
+                                        );
                                         //#define DEBUG_GETALLDIFF2
                                         #ifdef DEBUG_GETALLDIFF2
                                         pthread_mutex_lock(&global_mutex);
@@ -5799,8 +5834,8 @@ void MlOptimiser::getAllSquaredDifferences(
                                             FourierTransformer transformer;
                                             MultidimArray<Complex> Fish;
                                             Fish.resize(exp_local_Minvsigma2[img_id]);
-                                            for (long int n = 0; n < (Fish).size(); n++) {
-                                                Fish[n] = *(Fimg_shift + n);
+                                            for (long int n = 0; n < Fish.size(); n++) {
+                                                Fish[n] = Fimg_shift[n];
                                             }
                                             Image<RFLOAT> tt;
                                             int exp_current_image_size;
@@ -5827,7 +5862,6 @@ void MlOptimiser::getAllSquaredDifferences(
                                             fnt="Fref.spi";
                                             //fnt.compose("Fref1_i", ihidden_over, "spi");
                                             tt.write(fnt);
-
 
                                             //for (int i = 0; i< mymodel.scale_correction.size(); i++)
                                             //	std::cerr << i << " scale="<<mymodel.scale_correction[i]<<std::endl;
@@ -5954,7 +5988,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             std::cerr << " ihidden_over= " << ihidden_over << " Xsize(Mweight)= " << Xsize(exp_Mweight) << std::endl;
                                             REPORT_ERROR("ihidden_over >= Xsize(Mweight)");
                                         }
-#endif
+                                        #endif
                                         direct::elem(exp_Mweight, img_id, ihidden_over) = diff2;
 
                                         // Keep track of minimum of all diff2, only for the last image in this series
@@ -5983,13 +6017,11 @@ void MlOptimiser::getAllSquaredDifferences(
         }
     }
 
-#ifdef TIMING
-    if (part_id == mydata.sorted_idx[exp_my_first_part_id])
-    {
-        if (exp_ipass == 0) timer.toc(TIMING_ESP_DIFF1);
-        else timer.toc(TIMING_ESP_DIFF2);
+    #ifdef TIMING
+    if (part_id == mydata.sorted_idx[exp_my_first_part_id]) {
+        timer.toc(exp_ipass == 0 ? TIMING_ESP_DIFF1 : TIMING_ESP_DIFF2);
     }
-#endif
+    #endif
 }
 
 
@@ -6821,10 +6853,9 @@ void MlOptimiser::storeWeightedSums(
                                         if (ires > -1) {
                                             // Use FT of masked image for noise estimation!
                                             Complex A = Frefctf[n];
-                                            Complex X = *(Fimg_shift + n);
-                                            RFLOAT diff_real = A.real - X.real;
-                                            RFLOAT diff_imag = A.imag - X.imag;
-                                            RFLOAT wdiff2 = weight * (diff_real * diff_real + diff_imag * diff_imag);
+                                            Complex X = Fimg_shift[n];
+                                            Complex diff = A - X;
+                                            RFLOAT wdiff2 = weight * (diff.real * diff.real + diff.imag * diff.imag);
                                             // group-wise sigma2_noise
                                             thr_wsum_sigma2_noise[img_id][ires] += wdiff2;
                                             // For norm_correction
@@ -6862,9 +6893,9 @@ void MlOptimiser::storeWeightedSums(
                                         mypriors_len2 += myprior_z * myprior_z;
                                     // If it is doing helical refinement AND Cartesian vector myprior has a length > 0, transform the vector to its helical coordinates
                                     if (do_helical_refine && !ignore_helical_symmetry && mypriors_len2 > 0.00001) {
-                                        RFLOAT rot_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
-                                        RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
-                                        RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
+                                        const RFLOAT rot_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
+                                        const RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
+                                        const RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
                                         transformCartesianAndHelicalCoords(
                                             myprior_x, myprior_y, myprior_z,
                                             rot_deg, tilt_deg, psi_deg,
@@ -6879,7 +6910,7 @@ void MlOptimiser::storeWeightedSums(
                                     RFLOAT diffy = myprior_y - old_offset_y - oversampled_translations_y[iover_trans];
                                     thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffy * diffy;
                                     if (mymodel.data_dim == 3) {
-                                        RFLOAT diffz  = myprior_z - old_offset_z - oversampled_translations_z[iover_trans];
+                                        RFLOAT diffz = myprior_z - old_offset_z - oversampled_translations_z[iover_trans];
                                         if (!do_helical_refine || ignore_helical_symmetry)
                                             thr_wsum_sigma2_offset += weight * my_pixel_size * my_pixel_size * diffz * diffz;
                                     }
