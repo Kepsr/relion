@@ -431,9 +431,6 @@ class FileName: public std::string {
         */
         size_t getFileSize() const;
 
-        // Get the other half map by swapping half1 and half2
-        bool getTheOtherHalf(FileName &fn_out) const;
-
         bool validateCharactersStrict(bool do_allow_double_dollar = false) const;
 
         /** From a wild-card containing filename get a vector with all existing filenames,

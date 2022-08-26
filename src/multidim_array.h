@@ -662,16 +662,16 @@ class MultidimArray {
      * V1.resize(3, 3, 2);
      * @endcode
      */
-    void resize(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
+    MultidimArray<T>& resize(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
         size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
         if (data && NZYXdim == size()) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
-            return;
+            return *this;
         }
 
         if (NZYXdim == 0) {
             clear();
-            return;
+            return *this;
         }
 
         // data can be nullptr even when xdim etc are not zero
@@ -679,7 +679,7 @@ class MultidimArray {
         // In that case, initialize data to zeros.
         if (size() > 0 && !data) {
             coreAllocate();
-            return;
+            return *this;
         }
 
         // Ask for memory
@@ -716,6 +716,7 @@ class MultidimArray {
         setDimensions(Xdim, Ydim, Zdim, Ndim);
         mFd = new_mFd;
         mapFile = new_mapFile;
+        return *this;
     }
 
     /** Resize according to a pattern.

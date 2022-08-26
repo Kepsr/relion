@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "src/postprocessing.h"
+#include "src/pipeline_jobs.h"
 
 void Postprocessing::read(int argc, char **argv) {
 
@@ -106,17 +107,18 @@ void Postprocessing::clear() {
 
 void Postprocessing::initialise() {
     // Read in the input maps
-    if (fn_I2.empty() && !fn_I1.getTheOtherHalf(fn_I2))
-        REPORT_ERROR("The input filename does not contain 'half1' or 'half2'");
+    if (fn_I2.empty()) {
+        try {
+            fn_I2 = getTheOtherHalf(fn_I1);
+        } catch (const char* errmsg) {
+            REPORT_ERROR(errmsg);
+        }
+    }
 
     if (verb > 0) {
-        std::cout << "== Reading input half-reconstructions: " << std::endl;
-        std::cout.width(35);
-        std::cout << std::left << "  + half1-map: ";
-        std::cout << fn_I1 << std::endl;
-        std::cout.width(35);
-        std::cout << std::left << "  + half2-map: ";
-        std::cout << fn_I2 << std::endl;
+        std::cout << "== Reading input half-reconstructions: " << std::endl
+            << std::setw(35) << std::left << "  + half1-map: " << fn_I1 << std::endl
+            << std::setw(35) << std::left << "  + half2-map: " << fn_I2 << std::endl;
     }
 
     I1.read(fn_I1);
@@ -140,12 +142,11 @@ void Postprocessing::initialise() {
     if (molweight > 0.0) {
         frac_molweight = 0.476 * std::pow(Xsize(I1()) * angpix, 3) * 0.81 / (molweight * 1000) ;
         if (verb > 0) {
-            std::cout.width(35);
-            std::cout << std::left << "  + ordered molecular weight (kDa): "
-                      << molweight << std::endl;
-            std::cout.width(35);
-            std::cout << std::left << "  + fraction f (molweight based): "
-                      << frac_molweight << std::endl;
+            std::cout
+                << std::setw(35) << std::left
+                << "  + ordered molecular weight (kDa): " << molweight << std::endl
+                << std::setw(35) << std::left
+                << "  + fraction f (molweight based): " << frac_molweight << std::endl;
         }
     }
 

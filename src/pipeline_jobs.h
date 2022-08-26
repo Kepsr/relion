@@ -149,6 +149,8 @@ struct gui_layout {
     RFLOAT w;
 };
 
+// Get the other half map by swapping half1 and half2
+FileName getTheOtherHalf(const FileName &fn_half1) throw (const char*);
 
 /*
  * The Node class represents data and metadata that are either input to or output from Processes
@@ -213,10 +215,10 @@ class JobOption {
     public:
 
     // Get HealPix order from string. Return -1 on failure.
-    static int getHealPixOrder(string s);
+    static int getHealPixOrder(const string &s);
 
     // Get a f/p/m character for CTF fitting. Return "" on failutre.
-    static string getCtfFitString(string option);
+    static string getCtfFitString(const string &option);
 
     public:
 
@@ -238,33 +240,33 @@ class JobOption {
     public:
 
     // Any constructor
-    JobOption(string _label, string _default_value, string _helptext);
+    JobOption(const string &_label, const string &_default_value, const string &_helptext);
 
     // FileName constructor
     JobOption(
-        string _label, string  _default_value, string _pattern,
-        string _directory, string _helptext
+        const string &_label, const string & _default_value, const string &_pattern,
+        const string &_directory, const string &_helptext
     );
 
     // InputNode constructor
     JobOption(
-        string _label, int _nodetype, string _default_value,
-        string _pattern, string _helptext
+        const string &_label, int _nodetype, const string &_default_value,
+        const string &_pattern, const string &_helptext
     );
 
     // Radio constructor
     JobOption(
-        string _label, vector<string> radio_options,
-        int ioption, string _helptext
+        const string &_label, const vector<string> &radio_options,
+        int ioption, const string &_helptext
     );
 
     // Boolean constructor
-    JobOption(string _label, bool _boolvalue, string _helptext);
+    JobOption(const string &_label, bool _boolvalue, const string &_helptext);
 
     // Slider constructor
     JobOption(
-        string _label, float _default_value, float _min_value,
-        float _max_value, float _step_value, string _helptext
+        const string &_label, float _default_value, float _min_value,
+        float _max_value, float _step_value, const string &_helptext
     );
 
     // Write to a STAR file
@@ -279,7 +281,7 @@ class JobOption {
     void clear();
 
     // Set values of label, value, default_value and helptext (common for all types)
-    void initialise(string _label, string _default_value, string _helptext);
+    void initialise(const string &_label, const string &_default_value, const string &_helptext);
 
     // Contains $$ for SchedulerVariable
     bool isSchedulerVariable();
@@ -288,7 +290,7 @@ class JobOption {
     string getString();
 
     // Set a string value
-    void setString(string newvalue);
+    void setString(const string &newvalue);
 
     // Get a string value
     Node getNode();
@@ -363,27 +365,27 @@ class RelionJob {
     bool containsLabel(const string &label, string &option);
 
     // Set this option in the job
-    void setOption(string setOptionLine);
+    void setOption(const string &setOptionLine);
 
     // Read/write settings from/to disc
     // fn is a directory name (e.g. Refine3D/job123/) or a STAR file
     bool read(
-        string fn,
-        bool &_is_continue, bool do_initialise = false
+        const string &fn,
+        bool &is_continue, bool do_initialise = false
     );
 
     // return false if unsuccessful
-    void write(string fn);
+    void write(const string &fn);
 
     // Write the job submission script
     void saveJobSubmissionScript(
-        string newfilename, string outputname,
-        vector<string> commands
+        const string &newfilename, const string &outputname,
+        const vector<string> &commands
     ) throw (string);
 
     // Initialise pipeline stuff for each job, return outputname
     void initialisePipeline(
-        string &outputname, string defaultname, int job_counter
+        string &outputname, const string &defaultname, int job_counter
     );
 
     // Prepare the final (job submission or combined (mpi) command of possibly multiple lines)
