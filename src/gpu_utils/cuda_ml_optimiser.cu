@@ -66,14 +66,15 @@ void getFourierTransformsAndCtfs(
         int group_id = baseMLO->mydata.getGroupId(part_id);
 
         // Get the right line in the exp_fn_img strings (also exp_fn_recimg and exp_fn_ctfs)
-        int istop = 0;
+        int istop = ipart;
         for (long int ii = baseMLO->exp_my_first_ori_particle; ii < my_ori_particle; ii++)
             istop += baseMLO->mydata.ori_particles[ii].particles_id.size();
-        istop += ipart;
 
-        if (!baseMLO->mydata.getImageNameOnScratch(part_id, fn_img)) {
-            std::istringstream split(baseMLO->exp_fn_img);
-            for (int i = 0; i <= istop; i++) { getline(split, fn_img); }
+        try {
+            fn_img = baseMLO->mydata.getImageNameOnScratch(part_id, fn_img);
+        } catch (const char* errmsg) {
+            std::istringstream split (baseMLO->exp_fn_img);
+            for (int i = 0; i <= istop; i++) getline(split, fn_img);
         }
         sp.current_img = fn_img;
 
@@ -87,8 +88,8 @@ void getFourierTransformsAndCtfs(
         XX(my_prior)      = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_XOFF_PRIOR);
         YY(my_prior)      = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_YOFF_PRIOR);
         // Uninitialised priors were set to 999.
-        if (XX(my_prior) > 998.99 && XX(my_prior) < 999.01) { XX(my_prior) = 0.0; }
-        if (YY(my_prior) > 998.99 && YY(my_prior) < 999.01) { YY(my_prior) = 0.0; }
+        if (std::abs(XX(my_prior) - 999.0)) > 0.01 { XX(my_prior) = 0.0; }
+        if (std::abs(YY(my_prior) - 999.0)) > 0.01 { YY(my_prior) = 0.0; }
 
         if (cudaMLO->dataIs3D) {
             my_old_offset.resize(3);
@@ -96,7 +97,7 @@ void getFourierTransformsAndCtfs(
             ZZ(my_old_offset) = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_ZOFF);
             ZZ(my_prior)      = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_ZOFF_PRIOR);
             // Unitialised priors were set to 999.
-            if (ZZ(my_prior) > 998.99 && ZZ(my_prior) < 999.01) { ZZ(my_prior) = 0.0; }
+            if (std::abs(ZZ(my_prior) - 999.0)) > 0.01 { ZZ(my_prior) = 0.0; }
         }
         }))
 
@@ -715,7 +716,9 @@ void getFourierTransformsAndCtfs(
                     CTICTOC(cudaMLO->timer, "CTFRead3D_disk", ({
                     // Read CTF-image from disc
                     FileName fn_ctf;
-                    if (!baseMLO->mydata.getImageNameOnScratch(part_id, fn_ctf, true)) {
+                    try {
+                        fn_ctf = baseMLO->mydata.getImageNameOnScratch(part_id, true);
+                    } catch (const char* errmsg) {
                         std::istringstream split(baseMLO->exp_fn_ctf);
                         // Get the right line in the exp_fn_img string
                         for (int i = 0; i <= istop; i++)
@@ -726,12 +729,12 @@ void getFourierTransformsAndCtfs(
                 } else {
                     CTICTOC(cudaMLO->timer, "CTFRead3D_array", ({
                     // Unpack the CTF-image from the exp_imagedata array
-                    Ictf().resize(baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size, baseMLO->mymodel.ori_size);
-                    for (long int k = 0; k < Zsize(Ictf()); k++)
-                    for (long int j = 0; j < Ysize(Ictf()); j++)
-                    for (long int i = 0; i < Xsize(Ictf()); i++) {
-                        direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->mymodel.ori_size + k);
-                    }
+                    const long int n = baseMLO->mymodel.ori_size;
+                    Ictf().resize(n, n, n);
+                    for (long int k = 0; k < n; k++)
+                    for (long int j = 0; j < n; j++)
+                    for (long int i = 0; i < n; i++)
+                        direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, k + n);
                     }))
                 }
                 // Set the CTF-image in Fctf
