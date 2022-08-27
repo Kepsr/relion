@@ -18,7 +18,7 @@ void getFourierTransformsAndCtfs(
     AccPtrFactory ptrFactory,
     int ibody = 0
 ) {
-    GTICTOC(accMLO->timer, "getFourierTransformsAndCtfs", ({
+    // GTICTOC(accMLO->timer, "getFourierTransformsAndCtfs", ({
     #ifdef TIMING
     if (part_id == baseMLO->exp_my_first_part_id)
         baseMLO->timer.tic(baseMLO->TIMING_ESP_FT);
@@ -36,7 +36,7 @@ void getFourierTransformsAndCtfs(
         int my_metadata_offset, optics_group, group_id;
         RFLOAT my_pixel_size, normcorr;
         FileName fn_img;
-        CTICTOC(accMLO->timer, "init", ({
+        // CTICTOC(accMLO->timer, "init", ({
 
         // Which group do I belong to?
         group_id = baseMLO->mydata.getGroupId(part_id, img_id);
@@ -48,14 +48,15 @@ void getFourierTransformsAndCtfs(
         my_metadata_offset = op.metadata_offset + img_id;
 
         // Get the right line in the exp_fn_img strings (also exp_fn_recimg and exp_fn_ctfs)
-        int istop = 0;
+        int istop = img_id;
         for (long int ii = baseMLO->exp_my_first_part_id; ii < part_id; ii++) {
             istop += baseMLO->mydata.numberOfImagesInParticle(part_id);
         }
-        istop += img_id;
 
-        if (!baseMLO->mydata.getImageNameOnScratch(part_id, img_id, fn_img)) {
-            std::istringstream split(baseMLO->exp_fn_img);
+        try {
+            fn_img = baseMLO->mydata.getImageNameOnScratch(part_id, img_id);
+        } catch (const char *errmsg) {
+            std::istringstream split (baseMLO->exp_fn_img);
             for (int i = 0; i <= my_metadata_offset; i++) {
                 getline(split, fn_img);
             }
@@ -125,7 +126,7 @@ void getFourierTransformsAndCtfs(
             my_prior.initZeros();
         }
 
-        }))
+        // }))
 
         CTICTOC(accMLO->timer, "nonZeroProb", ({
         // Orientational priors
@@ -663,26 +664,28 @@ void getFourierTransformsAndCtfs(
             if (accMLO->dataIs3D) {
                 Image<RFLOAT> Ictf;
                 if (baseMLO->do_parallel_disc_io) {
-                    CTICTOC(accMLO->timer, "CTFRead3D_disk", ({
+                    // CTICTOC(accMLO->timer, "CTFRead3D_disk", ({
                     // Read CTF-image from disc
                     FileName fn_ctf;
-                    if (!baseMLO->mydata.getImageNameOnScratch(part_id, img_id, fn_ctf, true)) {
-                        std::istringstream split(baseMLO->exp_fn_ctf);
+                    try {
+                        fn_ctf = baseMLO->mydata.getImageNameOnScratch(part_id, img_id, true);
+                    } catch (const char* errmsg) {
+                        std::istringstream split (baseMLO->exp_fn_ctf);
                         // Get the right line in the exp_fn_img string
                         for (int i = 0; i <= my_metadata_offset; i++)
                             getline(split, fn_ctf);
                     }
                     Ictf.read(fn_ctf);
-                    }))
+                    // }))
                 } else {
                     CTICTOC(accMLO->timer, "CTFRead3D_array", ({
                     // Unpack the CTF-image from the exp_imagedata array
-                    Ictf().resize(baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group], baseMLO->image_full_size[optics_group]);
-                    for (long int k = 0; k < Zsize(Ictf()); k++)
-                    for (long int j = 0; j < Ysize(Ictf()); j++)
-                    for (long int i = 0; i < Xsize(Ictf()); i++) {
-                        direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, baseMLO->image_full_size[optics_group] + k);
-                    }
+                    const long int n = baseMLO->image_full_size[optics_group];
+                    Ictf().resize(n, n, n);
+                    for (long int k = 0; k < n; k++)
+                    for (long int j = 0; j < n; j++)
+                    for (long int i = 0; i < n; i++)
+                    direct::elem(Ictf(), i, j, k) = direct::elem(baseMLO->exp_imagedata, i, j, k + n);
                     }))
                 }
 
@@ -865,7 +868,7 @@ void getFourierTransformsAndCtfs(
     if (part_id == baseMLO->exp_my_first_part_id)
         baseMLO->timer.toc(baseMLO->TIMING_ESP_FT);
     #endif
-    }))
+    // }))
     GATHERGPUTIMINGS(accMLO->timer);
 }
 

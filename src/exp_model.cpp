@@ -387,30 +387,31 @@ void Experiment::initialiseBodies(int _nr_bodies) {
     }
 }
 
-bool Experiment::getImageNameOnScratch(long int part_id, int img_id, FileName &fn_img, bool is_ctf_image) {
-    int optics_group = getOpticsGroup(part_id, img_id);
-    long int my_id = particles[part_id].images[img_id].optics_group_id;
+FileName Experiment::getImageNameOnScratch(long int part_id, int img_id, bool is_ctf_image) throw (const char*) {
+    const int optics_group = getOpticsGroup(part_id, img_id);
+    const long int my_id = particles[part_id].images[img_id].optics_group_id;
 
     #ifdef DEBUG_SCRATCH
     std::cerr << "part_id = " << part_id << " img_id = " << img_id << " my_id = " << my_id << " nr_parts_on_scratch[" << optics_group << "] = " << nr_parts_on_scratch[optics_group] << std::endl;
+    #define RETURN(expression) \
+        std::cerr << "getImageNameOnScratch: " << particles[part_id].name << " is cached at " << fn_img << std::endl; \
+        return expression;
+    #else
+    #define RETURN(expression) return expression;
     #endif
 
-    if (fn_scratch != "" && my_id < nr_parts_on_scratch[optics_group]) {
-        if (is_3D) {
-            fn_img = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + (is_ctf_image ? "_particle_ctf" : "_particle") + integerToString(my_id + 1) + ".mrc";
-        } else {
-            // Write different optics groups into different stacks, as sizes might be different
-            FileName fn_tmp = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs";
-            fn_img.compose(my_id + 1, fn_tmp);
-        }
+    if (fn_scratch.empty() || my_id >= nr_parts_on_scratch[optics_group])
+        throw "!";
 
-        #ifdef DEBUG_SCRATCH
-        std::cerr << "getImageNameOnScratch: " << particles[part_id].name << " is cached at " << fn_img << std::endl;
-        #endif
-        return true;
-    } else {
-        return false;
-    }
+    if (is_3D)
+        RETURN(fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + (is_ctf_image ? "_particle_ctf" : "_particle") + integerToString(my_id + 1) + ".mrc");
+
+    // Write different optics groups into different stacks, as sizes might be different
+    const FileName fn_tmp = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs";
+    FileName fn_img;
+    fn_img.compose(my_id + 1, fn_tmp);
+    RETURN(fn_img);
+    #undef RETURN
 }
 
 void Experiment::setScratchDirectory(FileName _fn_scratch, bool do_reuse_scratch, int verb) {
