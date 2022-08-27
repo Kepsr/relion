@@ -83,7 +83,7 @@ class stack_create_parameters {
             REPORT_ERROR("ERROR: Input STAR file does not contain the rlnMicrographName label");
 
         Image<RFLOAT> in;
-        FileName fn_img, fn_mic;
+        FileName fn_mic;
         std::vector<FileName> fn_mics;
         std::vector<int> mics_ndims;
 
@@ -92,7 +92,7 @@ class stack_create_parameters {
         int xdim, ydim, zdim;
         for (long int ndim : MD) {
             if (is_first) {
-                fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+                const FileName fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
                 in.read(fn_img);
                 xdim = in().xdim;
                 ydim = in().ydim;
@@ -134,56 +134,50 @@ class stack_create_parameters {
             if (!do_one_by_one) {
                 // Resize the output image
                 std::cout << "Resizing the output stack to "<< ndim << " images of size: " << xdim << "x" << ydim << "x" << zdim << std::endl;
-                RFLOAT Gb = (RFLOAT) ndim * zdim * ydim * xdim * sizeof(RFLOAT) / (1024.0 * 1024.0 * 1024.0);
+                out().reshape(xdim, ydim, zdim, ndim);
+                RFLOAT Gb = RFLOAT(out().size() * sizeof(RFLOAT)) / (1024.0 * 1024.0 * 1024.0);
                 std::cout << "This will require " << Gb << "Gb of memory...." << std::endl;
                 std::cout << "If this runs out of memory, please try --one_by_one." << std::endl;
-                out().reshape(xdim, ydim, zdim, ndim);
             }
 
-            FileName fn_out;
-            if (do_split_per_micrograph) {
+            const FileName fn_out = (do_split_per_micrograph ?
                 // Remove any extensions from micrograph names....
-                fn_out = fn_root + "_" + fn_mic.withoutExtension() + fn_ext;
-            } else {
-                fn_out = fn_root + fn_ext;
-            }
+                fn_root + "_" + fn_mic.withoutExtension() :
+                fn_root) + fn_ext;
 
-            // Make all output directories if necessary
+            // Make all necessary output directories
             if (fn_out.contains("/")) {
-                FileName path = fn_out.beforeLastOf("/");
+                const auto path = fn_out.beforeLastOf("/");
                 std::string command = " mkdir -p " + path;
-                int res = system(command.c_str());
+                system(command.c_str());
             }
 
             int n = 0;
             init_progress_bar(ndim);
-            for (long int _ : MD) {
+            for (auto _ : MD) {
 
-                FileName fn_mymic = do_split_per_micrograph ? MD.getValue<std::string>(EMDL::MICROGRAPH_NAME) : "";
-                int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
-                RFLOAT angpix = do_ignore_optics ? 1.0 : obsModel.getPixelSize(optics_group);
+                const FileName fn_mymic = do_split_per_micrograph ? MD.getValue<std::string>(EMDL::MICROGRAPH_NAME) : "";
+                const int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
+                const RFLOAT angpix = do_ignore_optics ? 1.0 : obsModel.getPixelSize(optics_group);
 
                 if (fn_mymic == fn_mic) {
 
-                    fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
-                    in.read(fn_img);
+                    in.read(MD.getValue<std::string>(EMDL::IMAGE_NAME));
 
                     if (do_apply_trans || do_apply_trans_only) {
-                        RFLOAT ori_xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-                        RFLOAT ori_yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-                        RFLOAT ori_psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-                        ori_xoff /= angpix;
-                        ori_yoff /= angpix;
+                        const RFLOAT ori_xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM) / angpix;
+                        const RFLOAT ori_yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) / angpix;
+                        const RFLOAT ori_psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
 
                         RFLOAT xoff, yoff, psi;
                         if (do_apply_trans_only) {
                             xoff = round(ori_xoff);
                             yoff = round(ori_yoff);
-                            psi = 0.0;
+                            psi  = 0.0;
                         } else {
                             xoff = ori_xoff;
                             yoff = ori_yoff;
-                            psi = ori_psi;
+                            psi  = ori_psi;
                         }
 
                         // Apply the actual transformation
@@ -196,24 +190,22 @@ class stack_create_parameters {
                         MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, (ori_yoff - yoff) * angpix);
                         MD.setValue(EMDL::ORIENT_PSI, ori_psi - psi);
                     }
-                    FileName fn_img;
-                    fn_img.compose(n + 1, fn_out);
+                    const auto fn_img = FileName::compose(n + 1, fn_out);
                     MD.setValue(EMDL::IMAGE_NAME, fn_img);
 
-                    if (!do_one_by_one) {
-                        out().printShape();
-                        in().printShape();
-                        out().setImage(n, in());
-                    } else {
+                    if (do_one_by_one) {
                         if (n == 0) {
                             in.write(fn_img, -1, false, WRITE_OVERWRITE);
                         } else {
                             in.write(fn_img, -1, true, WRITE_APPEND);
                         }
+                    } else {
+                        out().printShape();
+                        in().printShape();
+                        out().setImage(n, in());
                     }
 
-                    n++;
-                    if (n % 100 == 0) progress_bar(n);
+                    if (++n % 100 == 0) progress_bar(n);
                 }
             }
             progress_bar(ndim);
@@ -223,9 +215,10 @@ class stack_create_parameters {
             std::cout << "Written out: " << fn_out << std::endl;
         }
 
-        if (do_ignore_optics) { MD.write(fn_root+".star"); }
-        else { obsModel.save(MD, fn_root+".star", "particles"); }
-        std::cout << "Written out: " << fn_root << ".star" << std::endl;
+        const auto fn_star = fn_root + ".star";
+        if (do_ignore_optics) MD.write(fn_star);
+        else obsModel.save(MD, fn_star, "particles");
+        std::cout << "Written out: " << fn_star << std::endl;
         std::cout << "Done!" <<std::endl;
     }
 };

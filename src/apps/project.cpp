@@ -477,12 +477,12 @@ class project_parameters {
 
                 img.setSamplingRateInHeader(angpix);
                 if (do_3d_rot) {
-                    fn_img.compose(fn_out, imgno + 1, "mrc");
+                    fn_img = FileName::compose(fn_out, imgno + 1, "mrc");
                     img.write(fn_img);
                 } else {
                     // Write this particle to the stack on disc
                     // First particle: write stack in overwrite mode, from then on just append to it
-                    fn_img.compose(imgno + 1, fn_out + ".mrcs");
+                    fn_img = FileName::compose(imgno + 1, fn_out + ".mrcs");
                     img.write(fn_img, -1, false, imgno == 0 ? WRITE_OVERWRITE : WRITE_APPEND);
                 }
 

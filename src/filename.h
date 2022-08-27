@@ -152,18 +152,18 @@ class FileName: public std::string {
         /** Compose from root, number and extension
          *
          * @code
-         * fn_proj.compose("g1ta", 1, "xmp");  // fn_proj = "g1ta000001.xmp"
+         * auto fn_proj = FileName::compose("g1ta", 1, "xmp");  // "g1ta000001.xmp"
          * @endcode
          */
-        void compose(const std::string& str, long int no, const std::string& ext, int numberlength = FILENAMENUMBERLENGTH);
+        static FileName compose(const std::string& str, long int no, const std::string& ext, int numberlength = FILENAMENUMBERLENGTH);
 
         /** Prefix with number @. Mainly for selfiles
          *
          * @code
-         * fn_proj.compose(1,"g1ta.xmp");  // fn_proj = "000001@g1ta.xmp"
+         * auto fn_proj = FileName::compose(1, "g1ta.xmp");  // "000001@g1ta.xmp"
          * @endcode
          */
-        void compose(long int no, const std::string& str, int numberlength = FILENAMENUMBERLENGTH);
+        static FileName compose(long int no, const std::string& str, int numberlength = FILENAMENUMBERLENGTH);
 
         /** True if this filename belongs to a stack
          */

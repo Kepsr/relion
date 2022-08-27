@@ -356,26 +356,21 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
             img.write(fn_out + "_gradients.mrcs");
         }
     } else {
-        Image<RFLOAT> img;
         // Set correct voxel size in the header
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
-            img() = Iref[iclass];
+            Image<RFLOAT> img (Iref[iclass]);
             img.setSamplingRateInHeader(pixel_size);
-            FileName fn;
-            fn.compose(fn_out + (nr_bodies > 1 ? "_body" : "_class"), iclass + 1, "mrc", 3);
+            const auto fn = FileName::compose(fn_out + (nr_bodies > 1 ? "_body" : "_class"), iclass + 1, "mrc", 3);
             // apply the body mask for output to the user
             // No! That interferes with a clean continuation of multibody refinement, as ref will be masked 2x then!
             // img() *= masks_bodies[iclass];
-
             img.write(fn);
         }
+
         if (do_sgd) {
             for (int iclass = 0; iclass < nr_classes; iclass++) {
-                FileName fn;
-                fn.compose(fn_out + "_grad", iclass + 1, "mrc", 3);
-
-                img() = Igrad[iclass];
-                img.write(fn);
+                const auto fn = FileName::compose(fn_out + "_grad", iclass + 1, "mrc", 3);
+                Image<RFLOAT>(Igrad[iclass]).write(fn);
             }
         }
 
@@ -384,10 +379,8 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
             // Also write out angular distributions
             // Don't do this for bodies, only for classes!
             for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
-                FileName fn_bild;
-                fn_bild.compose(fn_out + (nr_bodies > 1 ? "_body" : "_class"), iclass + 1, "", 3);
-                fn_bild += "_angdist.bild";
-                RFLOAT offset = ori_size * pixel_size / 2.0;
+                FileName fn_bild = FileName::compose(fn_out + (nr_bodies > 1 ? "_body" : "_class"), iclass + 1, "", 3) + "_angdist.bild";
+                const RFLOAT offset = ori_size * pixel_size / 2.0;
                 if (nr_bodies > 1) {
                     // 14 Jul 2017: rotations are all relative to (rot,tilt)=(0,90) to prevent problems with psi-prior around  tilt=0!
                     sampling.writeBildFileOrientationalDistribution(
@@ -395,7 +388,9 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
                         &orient_bodies[iclass], &com_bodies[iclass]
                     );
                 } else {
-                    sampling.writeBildFileOrientationalDistribution(pdf_direction[iclass], fn_bild, offset, offset);
+                    sampling.writeBildFileOrientationalDistribution(
+                        pdf_direction[iclass], fn_bild, offset, offset
+                    );
                 }
             }
         }
@@ -466,30 +461,26 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         if (ref_dim == 2) {
             if (nr_bodies > 1) {
                 fn_tmp = fn_out + "_bodies.mrcs";
-                FileName fn_tmp2;
-                fn_tmp2.compose(fn_root + "_body", iclass + 1, "", 3); // class number from 1 to K!
-                fn_tmp2 += "_mask.mrc";
+                const auto fn_tmp2 = FileName::compose(fn_root + "_body", iclass + 1, "", 3) + "_mask.mrc";
+                // class number from 1 to K!
             } else {
                 fn_tmp = fn_out + "_classes.mrcs";
             }
-            fn_tmp.compose(iclass + 1, fn_tmp); // fn_tmp = integerToString(iclass) + "@" + fn_tmp;
+            fn_tmp = FileName::compose(iclass + 1, fn_tmp);  // fn_tmp = integerToString(iclass) + "@" + fn_tmp;
         } else {
             if (nr_bodies > 1) {
-                fn_tmp.compose(fn_out  + "_body", iclass + 1, "mrc", 3); // class number from 1 to K!
-                FileName fn_tmp2;
-                fn_tmp2.compose(fn_root + "_body", iclass + 1, "",    3); // class number from 1 to K!
-                fn_tmp2 += "_mask.mrc";
+                fn_tmp = FileName::compose(fn_out  + "_body", iclass + 1, "mrc", 3); // class number from 1 to K!
+                const auto fn_tmp2 = FileName::compose(fn_root + "_body", iclass + 1, "", 3) + "_mask.mrc";
             } else {
-                fn_tmp.compose(fn_out+"_class",iclass+1,"mrc", 3); // class number from 1 to K!
+                fn_tmp = FileName::compose(fn_out + "_class", iclass + 1, "mrc", 3); // class number from 1 to K!
             }
         }
         MDclass.setValue(EMDL::MLMODEL_REF_IMAGE, fn_tmp);
+
         if (do_sgd) {
-            if (ref_dim == 2) {
-                fn_tmp.compose(iclass + 1, fn_out + "_gradients.mrcs");
-            } else {
-                fn_tmp.compose(fn_out + "_grad", iclass + 1, "mrc", 3);
-            }
+            fn_tmp = ref_dim == 2 ?
+                FileName::compose(iclass + 1, fn_out + "_gradients.mrcs") :
+                FileName::compose(fn_out + "_grad", iclass + 1, "mrc", 3);
             MDclass.setValue(EMDL::MLMODEL_SGD_GRADIENT_IMAGE, fn_tmp);
         }
 
@@ -892,8 +883,8 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         } }
 
         // Also write the mask with the standard name to disk
-        fn_mask.compose(fn_root_out + "_body", nr_bodies + 1, "", 3); // body number from 1 to K!
-        fn_mask += "_mask.mrc";
+        fn_mask = FileName::compose(fn_root_out + "_body", nr_bodies + 1, "", 3) + "_mask.mrc";
+        // body number from 1 to K!
 
         if (rank == 0)
             Imask.write(fn_mask);

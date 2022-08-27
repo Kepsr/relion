@@ -47,42 +47,33 @@
 #include <unistd.h>
 
 // Constructor with root, number and extension .............................
-void FileName::compose(const std::string &str, long int no, const std::string &ext, int numberlength)
+FileName FileName::compose(const std::string &str, long int no, const std::string &ext, int numberlength)
 {
-    *this = (FileName) str;
+    FileName copy (str);
     if (no != -1)
     {
-
-        char aux_str[numberlength+1];
-        std::string tmp_fileformat;
-        tmp_fileformat = (std::string) "%0" +
-                         integerToString(numberlength)+
-                         (std::string)"d";
+        char aux_str[numberlength + 1];
+        const std::string tmp_fileformat = "%0" + integerToString(numberlength) + "d";
         sprintf(aux_str, tmp_fileformat.c_str(), no);
-        *this += aux_str;
+        copy += aux_str;
     }
 
-    if (ext != "")
-        *this += (std::string)"." + ext;
+    if (!ext.empty())
+        copy += "." + ext;
+    return copy;
 }
 
 // Constructor: prefix number and filename, mainly for selfiles..
-void FileName::compose(long int no , const std::string &str, int numberlength)
+FileName FileName::compose(long int no , const std::string &str, int numberlength)
 {
-    *this = (FileName) str;
     if (no != -1)
     {
-
-        char aux_str[numberlength+2];
-        std::string tmp_fileformat;
-        tmp_fileformat = (std::string) "%0" +
-                         integerToString(numberlength)+
-                         (std::string)"d@";
+        char aux_str[numberlength + 2];
+        const std::string tmp_fileformat = "%0" + integerToString(numberlength) + "d@";
         sprintf(aux_str, tmp_fileformat.c_str(), no);
-        *this = aux_str + str;
+        return aux_str + str;
     }
-    else
-        *this = str;
+    else return str;
 }
 
 // Is in stack ............................................................

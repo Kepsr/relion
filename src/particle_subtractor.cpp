@@ -390,16 +390,13 @@ FileName ParticleSubtractor::getParticleName(
     nr_particles_in_optics_group[optics_group]++;
 
     // Now write out the image
-    FileName fn_img;
     FileName fn_stack = fn_out + "Particles/subtracted";
     if (size > 1)
         fn_stack += "_rank" + integerToString(myrank + 1);
 
-    if (opt.mymodel.data_dim == 3) {
-        fn_img.compose(fn_stack, imgno + 1, "mrc");
-    } else {
-        fn_img.compose(nr_particles_in_optics_group[optics_group], fn_stack + "_opticsgroup" + integerToString(optics_group + 1) + ".mrcs");
-    }
+    const auto fn_img = opt.mymodel.data_dim == 3 ?
+        FileName::compose(fn_stack, imgno + 1, "mrc") :
+        FileName::compose(nr_particles_in_optics_group[optics_group], fn_stack + "_opticsgroup" + integerToString(optics_group + 1) + ".mrcs");
 
     imgno_to_filename[imgno] = fn_img;
     #ifdef DEBUG

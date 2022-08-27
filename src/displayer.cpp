@@ -1226,8 +1226,7 @@ void multiViewerCanvas::saveTrainingSet() {
         fn_img = MDout.getValue<std::string>(display_label);
         long int nr;
         fn_img.decompose(nr, fn_img);
-        FileName fn_new_img;
-        fn_new_img.compose(nr, fn_img.afterLastOf("/"));
+        const auto fn_new_img = FileName::compose(nr, fn_img.afterLastOf("/"));
         MDout.setValue(display_label, fn_new_img);
         if (fn_img != fn_old) // prevent multiple copies of single stack from Class2D
             copy(fn_img, fn_odir + "/" + fn_img.afterLastOf("/"));
@@ -1292,8 +1291,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
                 FileName fn_img = MDout.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
                 img.read(fn_img);
                 img() = translateCenterOfMassToCenter(img());
-                FileName fn_out;
-                fn_out.compose(i + 1, fn_stack);
+                const auto fn_out = FileName::compose(i + 1, fn_stack);
                 MDout.setValue(EMDL::MLMODEL_REF_IMAGE, fn_out);
 
                 if (i == 0) {
@@ -2493,8 +2491,7 @@ void Displayer::run() {
         // display stacks
         if (Nsize(img()) > 1) {
             for (int n = 0; n < Nsize(img()); n++) {
-                FileName fn_tmp;
-                fn_tmp.compose(n + 1, fn_in);
+                const auto fn_tmp = FileName::compose(n + 1, fn_in);
                 MDin.addObject();
                 MDin.setValue(EMDL::IMAGE_NAME, fn_tmp);
                 MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
@@ -2522,9 +2519,7 @@ void Displayer::run() {
 
             // Trick MD with :mrcs extension....
             for (int n = 0; n < Zsize(img()); n++) {
-                FileName fn_tmp;
-                fn_tmp.compose(n + 1, fn_in);
-                fn_tmp += ":mrcs";
+                const auto fn_tmp = FileName::compose(n + 1, fn_in) + ":mrcs";
                 MDin.addObject();
                 MDin.setValue(EMDL::IMAGE_NAME, fn_tmp);
                 MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
