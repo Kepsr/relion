@@ -643,11 +643,10 @@ class image_handler_parameters {
             } else {
                 // Read the header to get the number of images inside the stack and generate that many lines in the MD
                 Image<RFLOAT> tmp;
-                FileName fn_tmp;
                 tmp.read(fn_in, false); // false means do not read image now, only header
                 for (int i = 1; i <= Nsize(tmp()); i++) {
                     MD.addObject();
-                    fn_tmp.compose(i, fn_in);
+                    const auto fn_tmp = FileName::compose(i, fn_in);
                     MD.setValue(EMDL::IMAGE_NAME, fn_tmp);
                 }
             }
@@ -837,7 +836,7 @@ class image_handler_parameters {
 
                 if (fn_out.getExtension() == "mrcs" && !fn_out.contains("@")) {
                     // index starts counting from 0, thus needs to be incremented.
-                    my_fn_out.compose(index + 1, fn_out);
+                    my_fn_out = FileName::compose(index + 1, fn_out);
                 } else {
                     if (input_is_stack) {
                         my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
@@ -845,7 +844,7 @@ class image_handler_parameters {
                         FileName fn_tmp;
                         my_fn_out.decompose(dummy, fn_tmp);
                         n_images[fn_tmp]++; // this is safe. see https://stackoverflow.com/questions/16177596/stdmapstring-int-default-initialization-of-value.
-                        my_fn_out.compose(n_images[fn_tmp], fn_tmp);
+                        my_fn_out = FileName::compose(n_images[fn_tmp], fn_tmp);
                     } else if (input_is_star) {
                         my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
                     } else {

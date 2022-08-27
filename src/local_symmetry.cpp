@@ -2470,9 +2470,9 @@ void local_symmetry_parameters::run() {
                 std::stable_sort(op_samplings.begin(), op_samplings.end(), compareOperatorsByCC);
 
                 // Master outputs the local searches results
-                fn_tmp.compose(fn_info_out.withoutExtension() + "_cc_mask", imask + 1, "tmp", 3);  // "*_cc_mask001.tmp"
-                fn_tmp = fn_tmp.withoutExtension(); // "*_cc_mask001"
-                fn_searched_op_samplings.compose(fn_tmp + "_op", iop + 1, "star", 3); // "*_cc_mask001_op001.star"
+                // "*_cc_mask001.tmp" -> "*_cc_mask001"
+                fn_tmp = FileName::compose(fn_info_out.withoutExtension() + "_cc_mask", imask + 1, "tmp", 3).withoutExtension();
+                fn_searched_op_samplings = FileName::compose(fn_tmp + "_op", iop + 1, "star", 3);  // "*_cc_mask001_op001.star"
                 writeRelionFormatLocalSearchOperatorResults(fn_searched_op_samplings, op_samplings, angpix_image);
                 std::cout << " + List of sampling points for this local symmetry operator: " << fn_searched_op_samplings << std::endl;
 

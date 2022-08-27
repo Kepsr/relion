@@ -1085,14 +1085,10 @@ void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_writ
     if (subset_size > 0 && (iter % write_every_sgd_iter) != 0 && iter != nr_iter)
         return;
 
-    FileName fn_root, fn_tmp, fn_model, fn_model2, fn_data, fn_sampling, fn_root2;
-    if (iter > -1) {
-        fn_root.compose(fn_out + "_it", iter, "", 3);
-    } else {
-        fn_root = fn_out;
-    }
+    FileName fn_tmp, fn_model, fn_model2, fn_data, fn_sampling;
+    FileName fn_root = iter > -1 ? FileName::compose(fn_out + "_it", iter, "", 3) : fn_out;
     // fn_root2 is used to write out the model and optimiser, and adds a subset number in SGD
-    fn_root2 = fn_root;
+    FileName fn_root2 = fn_root;
     bool do_write_bild = !do_skip_align && !do_skip_rotate && !do_sgd;
 
     // First write "main" STAR file with all information from this run
@@ -3837,13 +3833,11 @@ void MlOptimiser::maximization() {
                 );
 
                 if (do_external_reconstruct) {
-                    FileName fn_ext_root;
-                    if (iter > -1) {
-                        fn_ext_root.compose(fn_out + "_it", iter, "", 3);
-                    } else {
-                        fn_ext_root = fn_out;
-                    }
-                    fn_ext_root.compose(fn_ext_root + "_class", iclass + 1, "", 3);
+                    FileName fn_ext_root = iter > -1 ?
+                        FileName::compose(fn_out + "_it", iter, "", 3) :
+                        fn_out;
+                    fn_ext_root =
+                        FileName::compose(fn_ext_root + "_class", iclass + 1, "", 3);
                     wsum_model.BPref[iclass].externalReconstruct(
                         mymodel.Iref[iclass],
                         fn_ext_root,
@@ -5865,30 +5859,30 @@ void MlOptimiser::getAllSquaredDifferences(
                                             tt() = transformer.inverseFourierTransform(Fish);
                                             CenterFFT(tt(),false);
                                             FileName fnt = "Fimg.spi";
-                                            //fnt.compose("Fimg_shift1_i", ihidden_over, "spi");
+                                            // fnt = FileName::compose("Fimg_shift1_i", ihidden_over, "spi");
                                             tt.write(fnt);
 
                                             tt() = transformer.inverseFourierTransform(Frefctf);
-                                            CenterFFT(tt(),false);
-                                            fnt="Fref.spi";
-                                            //fnt.compose("Fref1_i", ihidden_over, "spi");
+                                            CenterFFT(tt(), false);
+                                            fnt = "Fref.spi";
+                                            // fnt = FileName::compose("Fref1_i", ihidden_over, "spi");
                                             tt.write(fnt);
 
                                             //for (int i = 0; i< mymodel.scale_correction.size(); i++)
                                             //	std::cerr << i << " scale="<<mymodel.scale_correction[i]<<std::endl;
                                             int group_id = mydata.getGroupId(part_id, img_id);
                                             RFLOAT myscale = mymodel.scale_correction[group_id];
-                                            //std::cerr << " oversampled_rot[iover_rot]= " << oversampled_rot[iover_rot] << " oversampled_tilt[iover_rot]= " << oversampled_tilt[iover_rot] << " oversampled_psi[iover_rot]= " << oversampled_psi[iover_rot] << std::endl;
-                                            //std::cerr << " group_id= " << group_id << " myscale= " << myscale <<std::endl;
-                                            std::cerr << " itrans= " << itrans << " itrans * exp_nr_oversampled_trans +  iover_trans= " << itrans * exp_nr_oversampled_trans +  iover_trans << " ihidden= " << ihidden << std::endl;
-                                            std::cerr <<" part_id= "<<part_id<<" name= "<< mydata.particles[part_id].name << std::endl;
-                                            std::cerr <<" img_id= "<<img_id<<" name= "<< mydata.particles[part_id].images[img_id].name << std::endl;
+                                            // std::cerr << " oversampled_rot[iover_rot]= " << oversampled_rot[iover_rot] << " oversampled_tilt[iover_rot]= " << oversampled_tilt[iover_rot] << " oversampled_psi[iover_rot]= " << oversampled_psi[iover_rot] << std::endl;
+                                            // std::cerr << " group_id= " << group_id << " myscale= " << myscale <<std::endl;
+                                            std::cerr << " itrans= "  << itrans  << " itrans * exp_nr_oversampled_trans +  iover_trans= " << itrans * exp_nr_oversampled_trans +  iover_trans << " ihidden= " << ihidden << std::endl;
+                                            std::cerr << " part_id= " << part_id << " name= " << mydata.particles[part_id].name << std::endl;
+                                            std::cerr << " img_id= "  << img_id  << " name= " << mydata.particles[part_id].images[img_id].name << std::endl;
 
-                                            //std::cerr << " myrank= "<< myrank<<std::endl;
-                                            //std::cerr << "Written Fimg_shift.spi and Fref.spi. Press any key to continue... part_id= " << part_id<< std::endl;
+                                            // std::cerr << " myrank= "<< myrank<<std::endl;
+                                            // std::cerr << "Written Fimg_shift.spi and Fref.spi. Press any key to continue... part_id= " << part_id<< std::endl;
                                             char c;
                                             std::cin >> c;
-                                            //exit(0);
+                                            // exit(0);
                                         }
                                         pthread_mutex_unlock(&global_mutex);
 

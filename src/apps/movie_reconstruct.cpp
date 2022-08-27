@@ -296,8 +296,7 @@ void MovieReconstructor::backproject(int rank, int size) {
             renderer.setFramesOfInterest(frame_start, frame_end);
             renderer.renderFrames(frame_start, frame_end, Iframe());
         } else {
-            FileName fn_frame;
-            fn_frame.compose(frame_no, fn_movie);
+            const auto fn_frame = FileName::compose(frame_no, fn_movie);
             Iframe.read(fn_frame);
         }
         const int w0 = Xsize(Iframe());

@@ -3434,11 +3434,10 @@ void simulateHelicalSegments(
         MD.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_flip_ratio);
         MD.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, tube_id);
         if (is_3d_tomo) {
-            fn_mic.compose(id + 1, "dummy");
-            fn_mic = fn_mic.beforeFirstOf("@");
-            fn_mic = (std::string)("subtomo-3d-") + (std::string)(fn_mic) + (std::string)(".mrc");
+            fn_mic = FileName::compose(id + 1, "dummy").beforeFirstOf("@");
+            fn_mic = std::string("subtomo-3d-") + std::string(fn_mic) + std::string(".mrc");
         } else {
-            fn_mic.compose((id + 1), "segments-2d.mrcs");
+            fn_mic = FileName::compose(id + 1, "segments-2d.mrcs");
         }
         MD.setValue(EMDL::IMAGE_NAME, fn_mic);
         if (is_3d_tomo) {
@@ -5238,12 +5237,12 @@ void averageAsymmetricUnits2D(
         // Write this particle to the stack on disc
         // First particle: write stack in overwrite mode, from then on just append to it
         MDimgs.setValue(EMDL::IMAGE_ORI_NAME, fn_img);
-        fn_img.compose(imgno + 1, fn_o_root + "particles.mrcs");
+        fn_img = FileName::compose(imgno + 1, fn_o_root + "particles.mrcs");
         img.write(fn_img, -1, false, imgno == 0 ? WRITE_OVERWRITE : WRITE_APPEND);
         MDimgs.setValue(EMDL::IMAGE_NAME, fn_img);
 
         if (imgno % 60 == 0) progress_bar(imgno);
-        imgno++;
+            imgno++;
     }
     progress_bar(MDimgs.numberOfObjects());
 

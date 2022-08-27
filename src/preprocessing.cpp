@@ -855,12 +855,10 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         {
         ifdefPREP_TIMING(TicToc tt (timer, TIMING_REST);)
         // Also store all the particles information in the STAR file
-        FileName fn_img;
-        if (Ipart().getDim() == 3) {
-            fn_img.compose(fn_output_img_root, my_current_nr_images + ipos + 1, "mrc");
-        } else {
-            fn_img.compose(my_current_nr_images + ipos + 1, fn_output_img_root + ".mrcs"); // start image counting in stacks at 1!
-        }
+        const auto fn_img = Ipart().getDim() == 3 ?
+            FileName::compose(fn_output_img_root, my_current_nr_images + ipos + 1, "mrc") :
+            FileName::compose(my_current_nr_images + ipos + 1, fn_output_img_root + ".mrcs"); // start image counting in stacks at 1!
+
         MD.setValue(EMDL::IMAGE_NAME,      fn_img);
         MD.setValue(EMDL::MICROGRAPH_NAME, fn_mic);
 
@@ -1007,8 +1005,7 @@ void Preprocessing::performPerImageOperations(
         {
         ifdefPREP_TIMING(TicToc tt (timer, TIMING_PER_IMG_OP_WRITE);)
         // Write one mrc file for every subtomogram
-        FileName fn_img;
-        fn_img.compose(fn_output_img_root, image_nr + 1, "mrc");
+        const auto fn_img = FileName::compose(fn_output_img_root, image_nr + 1, "mrc");
         Ipart.write(fn_img);
         }
     } else {

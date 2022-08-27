@@ -325,11 +325,8 @@ void HelixAligner::readImages() {
 
         // #define DEBUG_READIMAGES
         #ifdef DEBUG_READIMAGES
-        FileName fnt;
-        fnt.compose("helixnew", Xrects.size(),"spi",3);
-        Image<RFLOAT> It;
-        It()=Xrects[Xrects.size()-1][3];
-        It.write(fnt);
+        const auto fnt = FileName::compose("helixnew", Xrects.size(),"spi",3);
+        Image<RFLOAT>(Xrects[Xrects.size() - 1][3]).write(fnt);
         #endif
     }
 
@@ -513,11 +510,8 @@ void HelixAligner::getHelicesFromMics() {
                         }
                         // #define DEBUG_GETHELICESFROMMICS
                         #ifdef DEBUG_GETHELICESFROMMICS
-                        FileName fntt;
-                        fntt.compose("helixnew1_beforedown", Xrects.size(), "spi", 3);
-                        Image<RFLOAT> Itt;
-                        Itt() = Ihelix;
-                        Itt.write(fntt);
+                        const auto fntt = FileName::compose("helixnew1_beforedown", Xrects.size(), "spi", 3);
+                        Image<RFLOAT>(Ihelix).write(fntt);
                         #endif
 
                         // Downscale if needed
@@ -566,11 +560,8 @@ void HelixAligner::getHelicesFromMics() {
 
                 // #define DEBUG_GETHELICESFROMMICS2
                 #ifdef DEBUG_GETHELICESFROMMICS2
-                FileName fnt;
-                fnt.compose("helixnew1", Xrects.size(),"spi",3);
-                Image<RFLOAT> It;
-                It()=Xrects[Xrects.size()-1][1];
-                It.write(fnt);
+                const auto fnt = FileName::compose("helixnew1", Xrects.size(), "spi", 3);
+                Image<RFLOAT>(Xrects[Xrects.size() - 1][1]).write(fnt);
                 #endif
             }
         }

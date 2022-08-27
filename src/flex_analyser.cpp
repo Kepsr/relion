@@ -231,13 +231,9 @@ void FlexAnalyser::loopThroughParticles(int rank, int size) {
         progress_bar(todo_particles);
 
     if (do_3dmodels) {
-        FileName fn_star;
-        if (size > 1) {
-            fn_star.compose(fn_out + "_", rank + 1, "");
-            fn_star = fn_star + "_3dmodels.star";
-        } else {
-            fn_star = fn_out + "_3dmodels.star";
-        }
+        const auto fn_star = (size > 1 ?
+            FileName::compose(fn_out + "_", rank + 1, "") :
+            fn_out) + "_3dmodels.star";
         DFo.write(fn_star);
     }
 
@@ -390,8 +386,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
             if (sumw[n] > 1.0) { img()[n] /= sumw[n]; }
         }
         // Write the image to disk
-        FileName fn_img;
-        fn_img.compose(fn_out + "_part", imgno + 1, "mrc");
+        auto fn_img = FileName::compose(fn_out + "_part", imgno + 1, "mrc");
         img.setSamplingRateInHeader(model.pixel_size);
         img.write(fn_img);
 

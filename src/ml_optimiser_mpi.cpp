@@ -772,9 +772,8 @@ void MlOptimiserMpi::expectation() {
     #ifdef DEBUG
     if (node->rank == 2) {
         for (int i = 0; i < mymodel.PPref.size(); i++) {
-            FileName fn_tmp;
-            fn_tmp.compose("PPref_", i, "dat");
-            std::ofstream ofs(fn_tmp.c_str());
+            const auto fn_tmp = FileName::compose("PPref_", i, "dat");
+            std::ofstream ofs (fn_tmp.c_str());
             for (auto &x : mymodel.PPref[i].data)
                 ofs << x.real << std::endl;
         }
@@ -1468,10 +1467,9 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
         // B. All followers write their Mpack to disc. Do this SEQUENTIALLY to prevent heavy load on disc I/O
         for (int this_follower = 1; this_follower < node->size; this_follower++ ) {
             if (this_follower == node->rank) {
-                FileName fn_pack;
-                fn_pack.compose(fn_out + "_rank", node->rank, "tmp");
+                const auto fn_pack = FileName::compose(fn_out + "_rank", node->rank, "tmp");
                 writeBinary(Mpack, fn_pack);
-                // std::cerr << "Rank " << node->rank <<" has written: " <<fn_pack << " sum= " <<Mpack.sum()<< std::endl;
+                // std::cerr << "Rank " << node->rank << " has written: " << fn_pack << " sum= " <<Mpack.sum() << std::endl;
             }
             if (!do_parallel_disc_io)
                 MPI_Barrier(MPI_COMM_WORLD);
@@ -1483,14 +1481,12 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
         for (int first_follower = 1; first_follower <= nr_halfsets; first_follower++) {
             if (node->rank == first_follower) {
                 for (int other_follower = first_follower + nr_halfsets; other_follower < node->size; other_follower += nr_halfsets) {
-                    FileName fn_pack;
-                    fn_pack.compose(fn_out + "_rank", other_follower, "tmp");
+                    const auto fn_pack = FileName::compose(fn_out + "_rank", other_follower, "tmp");
                     readBinaryAndSum(Mpack, fn_pack);
                     // std::cerr << "Follower " <<node->rank<<" has read " <<fn_pack<< " sum= " <<Mpack.sum() << std::endl;
                 }
                 // After adding all Mpacks together: write the sum to disc
-                FileName fn_pack;
-                fn_pack.compose(fn_out + "_rank", node->rank, "tmp");
+                const auto fn_pack = FileName::compose(fn_out + "_rank", node->rank, "tmp");
                 writeBinary(Mpack, fn_pack);
                 //std::cerr << "Follower " <<node->rank<<" is writing total SUM in " <<fn_pack << std::endl;
             }
@@ -1507,8 +1503,7 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
                 int first_follower = do_split_random_halves ? modulo_alt(this_follower, 2) : 1;
 
                 // Read the corresponding Mpack (which now contains the sum of all Mpacks)
-                FileName fn_pack;
-                fn_pack.compose(fn_out + "_rank", first_follower, "tmp");
+                const auto fn_pack = FileName::compose(fn_out + "_rank", first_follower, "tmp");
                 readBinary(Mpack, fn_pack);
                 // std::cerr << "Rank " << node->rank << " has read: " << fn_pack << " sum= " << Mpack.sum() << std::endl;
             }
@@ -1521,8 +1516,7 @@ void MlOptimiserMpi::combineAllWeightedSumsViaFile() {
         // Again, do this SEQUENTIALLY to prevent heavy load on disc I/O
         for (int this_follower = 1; this_follower < node->size; this_follower++ ) {
             if (this_follower == node->rank) {
-                FileName fn_pack;
-                fn_pack.compose(fn_out + "_rank", node->rank, "tmp");
+                const auto fn_pack = FileName::compose(fn_out + "_rank", node->rank, "tmp");
                 remove(fn_pack.c_str());
                 //std::cerr << "Rank " << node->rank <<" has deleted: " <<fn_pack << std::endl;
             }
@@ -1831,20 +1825,15 @@ void MlOptimiserMpi::maximization() {
                         );
 
                         if (do_external_reconstruct) {
-                            FileName fn_ext_root;
-                            if (iter >= 0) {
-                                fn_ext_root.compose(fn_out+"_it", iter, "", 3);
-                            } else {
-                                fn_ext_root = fn_out;
-                            }
+                            auto fn_ext_root = iter >= 0 ?
+                                FileName::compose(fn_out + "_it", iter, "", 3) :
+                                fn_out;
                             if (do_split_random_halves && !do_join_random_halves) {
                                 fn_ext_root += "_half1";
                             }
-                            if (mymodel.nr_bodies > 1) {
-                                fn_ext_root.compose(fn_ext_root + "_body",  ibody + 1,  "", 3);
-                            } else {
-                                fn_ext_root.compose(fn_ext_root + "_class", iclass + 1, "", 3);
-                            }
+                            fn_ext_root = mymodel.nr_bodies > 1 ?
+                                FileName::compose(fn_ext_root + "_body",  ibody  + 1, "", 3) :
+                                FileName::compose(fn_ext_root + "_class", iclass + 1, "", 3) ;
                             wsum_model.BPref[ith_recons].externalReconstruct(
                                 reference,
                                 fn_ext_root,
@@ -1900,11 +1889,8 @@ void MlOptimiserMpi::maximization() {
                         //#define DEBUG_BODIES_SPI
                         #ifdef DEBUG_BODIES_SPI
                         // Also write out unmasked body reconstruction
-                        FileName fn_tmp;
-                        fn_tmp.compose(fn_out + "_unmasked_half1_body", ibody + 1, "spi");
-                        Image<RFLOAT> Itmp;
-                        Itmp() = mymodel.Iref[ibody];
-                        Itmp.write(fn_tmp);
+                        const auto fn_tmp = FileName::compose(fn_out + "_unmasked_half1_body", ibody + 1, "spi");
+                        Image<RFLOAT>(mymodel.Iref[ibody]).write(fn_tmp);
                         #endif
 
                     }
@@ -1994,20 +1980,15 @@ void MlOptimiserMpi::maximization() {
                             );
 
                             if (do_external_reconstruct) {
-                                FileName fn_ext_root;
-                                if (iter >= 0) {
-                                    fn_ext_root.compose(fn_out+"_it", iter, "", 3);
-                                } else {
-                                    fn_ext_root = fn_out;
-                                }
+                                auto fn_ext_root = iter >= 0 ?
+                                    FileName::compose(fn_out + "_it", iter, "", 3) :
+                                    fn_out;
                                 if (do_split_random_halves && !do_join_random_halves) {
                                     fn_ext_root += "_half2";
                                 }
-                                if (mymodel.nr_bodies > 1) {
-                                    fn_ext_root.compose(fn_ext_root + "_body",  ibody + 1, "", 3);
-                                } else {
-                                    fn_ext_root.compose(fn_ext_root + "_class", iclass + 1, "", 3);
-                                }
+                                fn_ext_root = mymodel.nr_bodies > 1 ?
+                                    FileName::compose(fn_ext_root + "_body",  ibody  + 1, "", 3) :
+                                    FileName::compose(fn_ext_root + "_class", iclass + 1, "", 3) ;
                                 wsum_model.BPref[ith_recons].externalReconstruct(
                                     reference,
                                     fn_ext_root,
@@ -2057,10 +2038,8 @@ void MlOptimiserMpi::maximization() {
                                 mymodel.Iref[ibody] = translate(mymodel.Iref[ibody], mymodel.com_bodies[ibody], DONT_WRAP);
 
                                 #ifdef DEBUG_BODIES_SPI
-                                FileName fn_tmp;
-                                fn_tmp.compose(fn_out + "_unmasked_half2_body", ibody + 1, "spi");
-                                Image<RFLOAT> Itmp (mymodel.Iref[ibody]);
-                                Itmp.write(fn_tmp);
+                                const auto fn_tmp = FileName::compose(fn_out + "_unmasked_half2_body", ibody + 1, "spi");
+                                Image<RFLOAT>(mymodel.Iref[ibody]).write(fn_tmp);
                                 #endif
                             }
 
@@ -2442,19 +2421,14 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
                 (node->rank == reconstruct_rank2 && do_split_random_halves)
             )
         ) {
-            FileName fn_root;
-            if (iter >= 0) {
-                fn_root.compose(fn_out + "_it", iter, "", 3);
-            } else {
-                fn_root = fn_out;
-            }
+            auto fn_root = iter >= 0 ?
+                FileName::compose(fn_out + "_it", iter, "", 3) :
+                fn_out;
             int random_halfset = modulo_alt(node->rank, 2);
             fn_root += "_half" + integerToString(random_halfset);
-            if (mymodel.nr_bodies > 1) {
-                fn_root.compose(fn_root + "_body", ibody + 1, "", 3);
-            } else {
-                fn_root.compose(fn_root + "_class", 1, "", 3);
-            }
+            fn_root = mymodel.nr_bodies > 1 ?
+                FileName::compose(fn_root + "_body", ibody + 1, "", 3) :
+                FileName::compose(fn_root + "_class", 1,        "", 3) ;
             BackProjector BPextra(wsum_model.BPref[ibody]);
 
             MultidimArray<RFLOAT> tau2;
@@ -2508,18 +2482,16 @@ MultidimArray<RFLOAT> MlOptimiserMpi::compute_FSC_curve(int ibody) {
     }
 
     // Read in the half-reconstruction from rank2 and perform the postprocessing-like FSC correction
+    const auto fn_root = iter >= 0 ?
+        FileName::compose(fn_out + "_it", iter, "", 3) :
+        fn_out;
     FileName fn_root1, fn_root2;
-    if (iter >= 0) {
-        fn_root1.compose(fn_out + "_it", iter, "", 3);
-    } else {
-        fn_root1 = fn_out;
-    }
     if (mymodel.nr_bodies > 1) {
-        fn_root1.compose(fn_root1 + "_half1_body", ibody + 1, "", 3);
-        fn_root2.compose(fn_root1 + "_half2_body", ibody + 1, "", 3);
+        fn_root1 = FileName::compose(fn_root + "_half1_body", ibody + 1, "", 3);
+        fn_root2 = FileName::compose(fn_root + "_half2_body", ibody + 1, "", 3);
     } else {
-        fn_root1.compose(fn_root1 + "_half1_class", 1, "", 3);
-        fn_root2.compose(fn_root1 + "_half2_class", 1, "", 3);
+        fn_root1 = FileName::compose(fn_root + "_half1_class", 1, "", 3);
+        fn_root2 = FileName::compose(fn_root + "_half2_class", 1, "", 3);
     }
     const auto halfmap1 = Image<RFLOAT>::from_filename(fn_root1 + "_unfil.mrc")().setXmippOrigin();
     const auto halfmap2 = Image<RFLOAT>::from_filename(fn_root2 + "_unfil.mrc")().setXmippOrigin();
@@ -2576,12 +2548,9 @@ void MlOptimiserMpi::writeTemporaryDataAndWeightArrays() {
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             int ith_recons = mymodel.nr_bodies > 1 ? ibody : iclass;
 
-            FileName fn_tmp;
-            if (mymodel.nr_bodies > 1) {
-                fn_tmp.compose(fn_root + "_body",  ibody + 1,  "", 3);
-            } else {
-                fn_tmp.compose(fn_root + "_class", iclass + 1, "", 3);
-            }
+            const auto fn_tmp = mymodel.nr_bodies > 1 ?
+                FileName::compose(fn_root + "_body",  ibody + 1,  "", 3) :
+                FileName::compose(fn_root + "_class", iclass + 1, "", 3) ;
             if (mymodel.pdf_class[iclass] > 0.0) {
                 const auto &data = wsum_model.BPref[ith_recons].data;
                 Image<RFLOAT> Ireal;
@@ -2612,11 +2581,9 @@ void MlOptimiserMpi::readTemporaryDataAndWeightArraysAndReconstruct(int iclass, 
     #else
     FileName fn_root = fn_out + "_half" + integerToString(ihalf);
     #endif
-    if (mymodel.nr_bodies > 1) {
-        fn_root.compose(fn_root + "_body",  iclass + 1, "", 3);  // Surely ibody?
-    } else {
-        fn_root.compose(fn_root + "_class", iclass + 1, "", 3);
-    }
+    fn_root = mymodel.nr_bodies > 1 ?
+        FileName::compose(fn_root + "_body",  iclass + 1, "", 3) :  // Surely ibody?
+        FileName::compose(fn_root + "_class", iclass + 1, "", 3) ;
 
     // Read temporary arrays back in
     auto Ireal = Image<RFLOAT>::from_filename(fn_root + "_data_real.mrc");
@@ -2719,12 +2686,9 @@ void MlOptimiserMpi::compareTwoHalves() {
             avg.alias(transformer_debug.getFourier());
             wsum_model.BPref[0].decenter(avg1, avg, wsum_model.BPref[0].r_max * wsum_model.BPref[0].r_max);
             transformer_debug.inverseFourierTransform();
-            FileName fnt;
-            fnt.compose("downsampled_avg_half", node->rank, "spi");
-            Image<RFLOAT> It;
+            const auto fnt = FileName::compose("downsampled_avg_half", node->rank, "spi");
             CenterFFT(Mavg, true);
-            It() = Mavg;
-            It.write(fnt);
+            Image<RFLOAT>(Mavg).write(fnt);
             #endif
 
             if (node->rank == 2) {

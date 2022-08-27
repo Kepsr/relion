@@ -451,7 +451,7 @@ void AutoPicker::initialise() {
             transformer.setReal(Mref);
             MultidimArray<Complex> &Fref = transformer.getFourier();
 
-            FileName fn_img, fn_proj = fn_odir + "reference_projections.mrcs";
+            FileName fn_proj = fn_odir + "reference_projections.mrcs";
             for (long int idir = 0; idir < sampling.NrDirections(); idir++) {
                 RFLOAT rot  = sampling.rot_angles [idir];
                 RFLOAT tilt = sampling.tilt_angles[idir];
@@ -466,9 +466,8 @@ void AutoPicker::initialise() {
 
                 if (verb > 0) {
                     // Also write out a stack with the 2D reference projections
-                    Image<RFLOAT> Iprojs (Mref);
-                    fn_img.compose(idir + 1,fn_proj);
-                    Iprojs.write(fn_img, -1, false, idir == 0 ? WRITE_OVERWRITE : WRITE_APPEND);
+                    const auto fn_img = FileName::compose(idir + 1, fn_proj);
+                    Image<RFLOAT>(Mref).write(fn_img, -1, false, idir == 0 ? WRITE_OVERWRITE : WRITE_APPEND);
                 }
             }
         } else {
@@ -2728,15 +2727,13 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             {
             ifdefTIMING(TicToc tt (timer, TIMING_B2);)
             if (!autopick_helical_segments) {
-                FileName fn_bestCCF;
-                fn_bestCCF.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
+                const auto fn_bestCCF = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
                 Image<RFLOAT> I_bestCCF;
                 I_bestCCF.read(fn_bestCCF);
                 Mccf_best = I_bestCCF();
                 expected_Pratio = I_bestCCF.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the header of the image
 
-                FileName fn_bestPSI;
-                fn_bestPSI.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
+                const auto fn_bestPSI = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
                 Mpsi_best = Image<RFLOAT>::from_filename(fn_bestPSI)();
             }
             }
@@ -2900,13 +2897,11 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
                 Image<RFLOAT> I_bestCCF (Mccf_best);
                 I_bestCCF.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Store expected_Pratio in the header of the image
-                FileName fn_bestCCF;
-                fn_bestCCF.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
+                const auto fn_bestCCF = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
                 I_bestCCF.write(fn_bestCCF);
 
                 Image<RFLOAT> I_bestPSI (Mpsi_best);
-                FileName fn_bestPSI;
-                fn_bestPSI.compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
+                const auto fn_bestPSI = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
                 I_bestPSI.write(fn_bestPSI);
 
                 // for (long int n=0; n<((Mccf_best).size() / 10); n+=1) {

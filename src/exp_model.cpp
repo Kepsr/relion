@@ -407,9 +407,8 @@ FileName Experiment::getImageNameOnScratch(long int part_id, int img_id, bool is
         RETURN(fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + (is_ctf_image ? "_particle_ctf" : "_particle") + integerToString(my_id + 1) + ".mrc");
 
     // Write different optics groups into different stacks, as sizes might be different
-    const FileName fn_tmp = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs";
-    FileName fn_img;
-    fn_img.compose(my_id + 1, fn_tmp);
+    const auto fn_tmp = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs";
+    const auto fn_img = FileName::compose(my_id + 1, fn_tmp);
     RETURN(fn_img);
     #undef RETURN
 }
@@ -613,8 +612,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 }
                 img.readFromOpenFile(fn_img, hFile, -1, false);
 
-                FileName fn_new;
-                fn_new.compose(nr_parts_on_scratch[optics_group] + 1, fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs");
+                const auto fn_new = FileName::compose(nr_parts_on_scratch[optics_group] + 1, fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs");
                 if (nr_parts_on_scratch[optics_group] == 0) {
                     img.write(fn_new, -1, false, WRITE_OVERWRITE);
                 } else {
@@ -704,8 +702,7 @@ void Experiment::read(
         nr_images_per_optics_group.resize(1, 0);
 
         for (long int n = 0; n <  Nsize(img()); n++) {
-            FileName fn_img;
-            fn_img.compose(n+1, fn_exp); // fn_img = integerToString(n) + "@" + fn_exp;
+            const auto fn_img = FileName::compose(n + 1, fn_exp); // fn_img = integerToString(n) + "@" + fn_exp;
             // Add the particle to my_area = 0
             part_id = addParticle(fn_img, 0);
             // Just add a single image per particle

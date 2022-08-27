@@ -53,21 +53,14 @@ vector<Node> getOutputNodesRefine(
     if (2 < dim || dim > 3)
     REPORT_ERROR("getOutputNodesRefine " + errorMsg("invalid dim value"));
 
-    FileName fn_out;
-    if (iter < 0) {
-        // 3D auto-refine
-        fn_out = outputname;
-    } else {
-        // 2D or 3D classification
-        fn_out.compose(outputname + "_it", iter, "", 3);
-    }
+    FileName fn_out = iter < 0 ?
+        outputname :  // 3D auto-refine
+        FileName::compose(outputname + "_it", iter, "", 3);  // 2D or 3D classification
 
     // Data and model.star files
     if (nr_bodies > 1) {
         for (int ibody = 0; ibody < nr_bodies; ibody++) {
-            FileName fn_tmp;
-            fn_tmp.compose(fn_out + "_half1_body", ibody + 1, "", 3);
-            fn_tmp += "_unfil.mrc";
+            const auto fn_tmp = FileName::compose(fn_out + "_half1_body", ibody + 1, "", 3) + "_unfil.mrc";
             result.emplace_back(fn_tmp, Node::HALFMAP);
         }
     } else {
@@ -85,8 +78,7 @@ vector<Node> getOutputNodesRefine(
         // For 3D classification or 3D auto-refine, also use individual 3D maps as outputNodes
         if (dim == 3) {
             for (int iclass = 0; iclass < K; iclass++) {
-                FileName fn_tmp;
-                fn_tmp.compose(fn_out + "_class", iclass + 1, "mrc", 3);
+                const auto fn_tmp = FileName::compose(fn_out + "_class", iclass + 1, "mrc", 3);
                 result.emplace_back(fn_tmp, Node::REF3D);
             }
         }
