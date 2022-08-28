@@ -31,7 +31,7 @@ inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
 }
 
 // Get size of datatype
-unsigned long gettypesize(DataType type) {
+size_t gettypesize(DataType type) throw (RelionError) {
 
     switch (type) {
 

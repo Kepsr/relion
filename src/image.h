@@ -89,7 +89,7 @@ enum DataType {
 
 /** Returns memory size of datatype
  */
-unsigned long gettypesize(DataType type);
+size_t gettypesize(DataType type) throw (RelionError);
 
 /** WriteMode
  * To indicate the writing behavior.
@@ -467,7 +467,7 @@ class Image {
 
     int writeSPIDER(long int select_img=-1, bool isStack = false, int mode = WRITE_OVERWRITE);
 
-    int readMRC(long int img_select, bool isStack = false, const FileName &name = "");
+    int readMRC(long int img_select, bool isStack = false, const FileName &name = "") throw (RelionError);
 
     int writeMRC(long int img_select, bool isStack = false, int mode = WRITE_OVERWRITE);
 
@@ -691,7 +691,7 @@ class Image {
      * The memory for the casted page is allocated and freed internally.
      */
     void writePageAsDatatype(FILE *fimg, DataType datatype, size_t datasize_n ) {
-        size_t datasize = datasize_n * gettypesize(datatype);
+        const size_t datasize = datasize_n * gettypesize(datatype);
         char * fdata = (char *) askMemory(datasize);
         castPage2Datatype(fdata, data.data, datatype, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
@@ -702,7 +702,7 @@ class Image {
       * input pointer char *
       */
     void swapPage(char *page, size_t pageNrElements, DataType datatype) {
-        unsigned long datatypesize = gettypesize(datatype);
+        const size_t datatypesize = gettypesize(datatype);
         #ifdef DEBUG
             std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
             << swap << " datatypesize= " << datatypesize
@@ -713,8 +713,8 @@ class Image {
 
         // Swap bytes if required
         if (swap >= 1) {
-            unsigned long increment = swap == 1 ? datatypesize : swap;
-            for (unsigned long i = 0; i < pageNrElements; i += increment)
+            size_t increment = swap == 1 ? datatypesize : swap;
+            for (size_t i = 0; i < pageNrElements; i += increment)
                 swapbytes(page + i, increment);
         }
     }
@@ -862,8 +862,7 @@ class Image {
     * @endcode
     */
     T& operator () (int i, int j) const {
-        // return data.elem(i, j);
-        return data.data[(j - data.xinit) + data.xdim * (i - data.yinit)];
+        return data.elem(i, j);
     }
 
     #ifdef IMGPIXEL
@@ -946,11 +945,9 @@ class Image {
     * @endcode
     */
     RFLOAT samplingRateX(const long int n = 0) const {
-        try {
+        if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X))
             return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
-        } catch (const char *errmsg) {
-            return 1.0;
-        }
+        else return 1.0;
     }
 
     /** Sampling rate in Y
@@ -960,16 +957,14 @@ class Image {
     * @endcode
     */
     RFLOAT samplingRateY(const long int n = 0) const {
-        try {
+        if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))
             return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y);
-        } catch (const char *errmsg) {
-            return 1.0;
-        }
+        else return 1.0;
     }
 
     // Set file name
-    void setName(const FileName &_filename) {
-        filename = _filename;
+    void setName(const FileName &filename) {
+        this->filename = filename;
     }
 
     // Set image statistics in the main header
@@ -981,14 +976,24 @@ class Image {
         MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    statistics.max);
     }
 
-    void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y = -1.0, RFLOAT rate_z = -1.0) {
+    void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y , RFLOAT rate_z) {
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x);
-        if (rate_y < 0.0) rate_y = rate_x;
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y);
-        if (Zsize(data) > 1) {
-            if (rate_z < 0.0) rate_z = rate_x;
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate_z);
-        }
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate_z);
+    }
+
+    void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y) {
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x);
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y);
+    }
+
+    void setSamplingRateInHeader(RFLOAT rate) {
+        if (Xsize(data) > 1)
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate);
+        if (Ysize(data) > 1)
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate);
+        if (Zsize(data) > 1)
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate);
     }
 
     // Show image properties
@@ -1054,18 +1059,13 @@ class Image {
 
         }
         o << std::endl;
-
-        o << "dimensions   : " << Nsize(I()) << " x " << Zsize(I()) << " x " << Ysize(I()) << " x " << Xsize(I());
+        o << "dimensions   : " << Xsize(I()) << " x " << Ysize(I()) << " x " << Zsize(I()) << " x " << Nsize(I());
         o << "	(noObjects x slices x rows x columns)" << std::endl;
         return o;
     }
 
-    /** Sum this object with other file and keep in this object
-      */
     void sumWithFile(const FileName &fn) {
-        Image<T> aux;
-        aux.read(fn);
-        (*this)() += aux();
+        data += Image<T>::from_filename(fn).data;
     }
 
     int readTiffInMemory(
