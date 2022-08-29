@@ -56,7 +56,7 @@ MotionModel* ThirdOrderPolynomialModel::clone() const {
 
 void ThirdOrderPolynomialModel::write(std::ostream &fh, std::string block_name) {
     MetaDataTable MD;
-    MD.setName(block_name);
+    MD.name = block_name;
 
     int coeff_idx = 0;
 
@@ -163,7 +163,7 @@ void Micrograph::write(FileName filename) {
         REPORT_ERROR((std::string)"Micrograph::write: Cannot write file: " + filename);
     }
 
-        MD.setName("general");
+        MD.name = "general";
         MD.isList = true;
         MD.addObject();
         MD.setValue(EMDL::IMAGE_SIZE_X, width);
@@ -206,7 +206,7 @@ void Micrograph::write(FileName filename) {
     MD.write(fh);
 
     MD.clear();
-    MD.setName("global_shift");
+    MD.name = "global_shift";
     for (int frame = 0; frame < n_frames; frame++) {
         MD.addObject();
         MD.setValue(EMDL::MICROGRAPH_FRAME_NUMBER, frame + 1); // make 1-indexed
@@ -221,7 +221,7 @@ void Micrograph::write(FileName filename) {
     }
 
     MD.clear();
-    MD.setName("hot_pixels");
+    MD.name = "hot_pixels";
 
     if (hotpixelX.size() != hotpixelY.size())
         REPORT_ERROR("Logic error: hotpixelX.size() != hotpixelY.size()");
@@ -234,7 +234,7 @@ void Micrograph::write(FileName filename) {
     MD.write(fh);
 
     MD.clear();
-    MD.setName("local_shift");
+    MD.name = "local_shift";
 
     int n_local_trajectory = localShiftX.size();
     if (

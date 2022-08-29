@@ -1114,7 +1114,7 @@ void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_writ
 
         MetaDataTable MD;
         MD.isList = true;
-        MD.setName("optimiser_general");
+        MD.name = "optimiser_general";
         MD.addObject();
         MD.setValue(EMDL::OPTIMISER_OUTPUT_ROOTNAME, fn_out);
         if (do_split_random_halves) {
@@ -3838,8 +3838,7 @@ void MlOptimiser::maximization() {
                         fn_out;
                     fn_ext_root =
                         FileName::compose(fn_ext_root + "_class", iclass + 1, "", 3);
-                    wsum_model.BPref[iclass].externalReconstruct(
-                        mymodel.Iref[iclass],
+                    mymodel.Iref[iclass] = wsum_model.BPref[iclass].externalReconstruct(
                         fn_ext_root,
                         mymodel.fsc_halves_class[iclass],
                         mymodel.tau2_class[iclass],

@@ -640,7 +640,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
         /// BUG: No TIC!
         ifdefPREP_TIMING(timer.toc(TIMING_EXTCT_FROM_FRAME);)
 
-        MDout.setName("images");
+        MDout.name = "images";
         MDout.write(fn_star);
         return true;
     } else {

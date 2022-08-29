@@ -72,13 +72,10 @@ void ObservationModel::loadSafely(
         if (!do_die_upon_error && opticsMdt.numberOfObjects() == 0) return;  // return an empty optics table if error was raised
 
         if (mytablename.empty() || mytablename == "discover") {
-            if (particlesMdt.containsLabel(EMDL::IMAGE_NAME)) {
-                particlesMdt.setName("particles");
-            } else if (particlesMdt.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME)) {
-                particlesMdt.setName("movies");
-            } else {
-                particlesMdt.setName("micrographs");
-            }
+            particlesMdt.name =
+                particlesMdt.containsLabel(EMDL::IMAGE_NAME)            ? "particles" :
+                particlesMdt.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME) ? "movies" :
+                                                                          "micrographs";
         }
     }
 
@@ -87,13 +84,13 @@ void ObservationModel::loadSafely(
 
     // make sure all optics groups are defined
 
-    std::vector<int> undefinedOptGroups = obsModel.findUndefinedOptGroups(particlesMdt);
+    const std::vector<int> undefinedOptGroups = obsModel.findUndefinedOptGroups(particlesMdt);
 
     if (!undefinedOptGroups.empty()) {
         std::vector<std::string> v;
+        v.reserve(undefinedOptGroups.size());
         for (int i : undefinedOptGroups)
             v.push_back(std::to_string(i));
-
         REPORT_ERROR("ERROR: The following optics groups were not defined in " + filename + ": " + join(v, ", "));
     }
 
@@ -127,10 +124,10 @@ void ObservationModel::saveNew(
     std::string tmpfilename = filename + ".tmp";
     std::ofstream of(tmpfilename);
 
-    opticsMdt.setName("optics");
+    opticsMdt.name = "optics";
     opticsMdt.write(of);
 
-    particlesMdt.setName(tablename);
+    particlesMdt.name = tablename;
     particlesMdt.write(of);
 
     std::rename(tmpfilename.c_str(), filename.c_str());
@@ -155,11 +152,10 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
 
     if (
         !opticsMdt.containsLabel(EMDL::CTF_VOLTAGE) ||
-        !opticsMdt.containsLabel(EMDL::CTF_CS) || (
-            !opticsMdt.containsLabel(EMDL::IMAGE_PIXEL_SIZE) &&
-            !opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE) &&
-            !opticsMdt.containsLabel(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE)
-        )
+        !opticsMdt.containsLabel(EMDL::CTF_CS) ||
+        !opticsMdt.containsLabel(EMDL::IMAGE_PIXEL_SIZE) &&
+        !opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE) &&
+        !opticsMdt.containsLabel(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE)
     ) {
         if (do_die_upon_error) {
             REPORT_ERROR_STR(
@@ -209,13 +205,12 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
     }
 
     for (int i = 0; i < opticsMdt.numberOfObjects(); i++) {
-        try {
-            angpix[i] = opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, i);
-        } catch (const char *errmsg) { try {
-            angpix[i] = opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, i);
-        } catch (const char *errmsg) {
-            angpix[i] = opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, i);
-        } }
+        angpix[i] =
+            opticsMdt.containsLabel(EMDL::IMAGE_PIXEL_SIZE) ?
+            opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, i) :
+            opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE) ?
+            opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, i) :
+            opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, i);
 
         if (opticsMdt.containsLabel(EMDL::IMAGE_OPTICS_GROUP_NAME))
             groupNames[i] = opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, i);
@@ -224,12 +219,11 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
         if (opticsMdt.containsLabel(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE))
             originalAngpix[i] = opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, i);
         if (opticsMdt.containsLabel(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED)) {
-            CtfPremultiplied[i] = (bool) opticsMdt.getValue<bool>(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, i);
+            CtfPremultiplied[i] = opticsMdt.getValue<bool>(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, i);
         }
         boxSizes[i] = opticsMdt.getValue<int>(EMDL::IMAGE_SIZE, i);
 
-        double kV = opticsMdt.getValue<double>(EMDL::CTF_VOLTAGE, i);
-        double V = kV * 1e3;
+        const double kV = opticsMdt.getValue<double>(EMDL::CTF_VOLTAGE, i), V = kV * 1e3;
         lambda[i] = 12.2643247 / sqrt(V * (1.0 + V * 0.978466e-6));
 
         Cs[i] = opticsMdt.getValue<RFLOAT>(EMDL::CTF_CS, i);
@@ -241,9 +235,8 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
         oddZernikeCoeffs[i] = opticsMdt.getValue<std::vector<RFLOAT>>(EMDL::IMAGE_ODD_ZERNIKE_COEFFS, i);
 
         if (hasTilt) {
-            double tx = 0, ty = 0;
-            tx = opticsMdt.getValue<double>(EMDL::IMAGE_BEAMTILT_X, i);
-            ty = opticsMdt.getValue<double>(EMDL::IMAGE_BEAMTILT_Y, i);
+            const double tx = opticsMdt.getValue<double>(EMDL::IMAGE_BEAMTILT_X, i);
+            const double ty = opticsMdt.getValue<double>(EMDL::IMAGE_BEAMTILT_Y, i);
 
             if (!hasOddZernike) {
                 oddZernikeCoeffs[i] = std::vector<double>(6, 0.0);
@@ -255,7 +248,7 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
         // Always keep a set of mag matrices
         // If none are defined, keep a set of identity matrices
 
-        Matrix2D<RFLOAT> &magMatrix = magMatrices[i];
+        auto &magMatrix = magMatrices[i];
         magMatrix = Matrix2D<RFLOAT>::identity(2);
 
         // See if there is more than one MTF, for more rapid divideByMtf
@@ -311,7 +304,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     }
 
     if (applyCtf) {
-        CTF ctf = CtfHelper::makeCTF(partMdt, this, particle);
+        const CTF ctf = CtfHelper::makeCTF(partMdt, this, particle);
 
         Image<RFLOAT> ctfImg(sh_out, s_out);
         ctfImg() = CtfHelper::getFftwImage(
@@ -410,9 +403,8 @@ void ObservationModel::divideByMtf(
     int opticsGroup, MultidimArray<Complex> &obsImage,
     bool do_multiply_instead, bool do_correct_average_mtf
 ) {
-    const int s  = obsImage.ydim;
-    const int sh = obsImage.xdim;
 
+    const int sh = obsImage.xdim, s = obsImage.ydim;
     // If there is only a single MTF and we are correcting for the average, then do nothing...
     if (do_correct_average_mtf && !hasMultipleMtfs) return;
 
@@ -424,8 +416,7 @@ void ObservationModel::divideByMtf(
             if (do_correct_average_mtf) {
                 for (int y = 0; y < s;  y++)
                 for (int x = 0; x < sh; x++) {
-                    obsImage(y, x) *= mtf(y, x);
-                    obsImage(y, x) /= avgmtf(y, x);
+                    obsImage(y, x) *= mtf(y, x) / avgmtf(y, x);
                 }
             } else {
                 for (int y = 0; y < s;  y++)
@@ -437,8 +428,7 @@ void ObservationModel::divideByMtf(
             if (do_correct_average_mtf) {
                 for (int y = 0; y < s;  y++)
                 for (int x = 0; x < sh; x++) {
-                    obsImage(y, x) /= mtf(y, x);
-                    obsImage(y, x) *= avgmtf(y, x);
+                    obsImage(y, x) *= avgmtf(y, x) / mtf(y, x);
                 }
             } else {
                 for (int y = 0; y < s;  y++)
@@ -455,12 +445,12 @@ void ObservationModel::demodulatePhase(
     bool do_modulate_instead
 ) {
     if (
-        oddZernikeCoeffs.size() <= opticsGroup ||
+        opticsGroup >= oddZernikeCoeffs.size() ||
         oddZernikeCoeffs[opticsGroup].size() <= 0
     ) return;
 
-    const int s  = obsImage.ydim;
-    const int sh = obsImage.xdim;
+    const int sh = obsImage.xdim, s = obsImage.ydim;
+
     const Image<Complex> &corr = getPhaseCorrection(opticsGroup, s);
 
     auto f = do_modulate_instead ? [] (Complex x) { return x; }

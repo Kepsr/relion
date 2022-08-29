@@ -4,8 +4,8 @@ void StarConverter::convert_3p0_particlesTo_3p1(
     const MetaDataTable &in, MetaDataTable &outParticles, MetaDataTable &outOptics,
     std::string tablename, bool do_die_upon_error
 ) {
-    int ver = in.getVersion();
-    int curVer = MetaDataTable::getCurrentVersion();
+    const int ver = in.version;
+    const int curVer = MetaDataTable::CurrentVersion;
 
     if (ver == curVer) {
         if (do_die_upon_error) {
@@ -103,11 +103,11 @@ void StarConverter::convert_3p0_particlesTo_3p1(
                     "micrographs";
     }
 
-    outParticles.setName(tablename);
-    outParticles.setVersion(curVer);
+    outParticles.name = tablename;
+    outParticles.version = curVer;
 
-    outOptics.setName("optics");
-    outOptics.setVersion(curVer);
+    outOptics.name = "optics";
+    outOptics.version = curVer;
     outOptics.addLabel(EMDL::IMAGE_OPTICS_GROUP);
     outOptics.addLabel(EMDL::IMAGE_OPTICS_GROUP_NAME);
 

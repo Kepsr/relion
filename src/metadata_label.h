@@ -79,7 +79,6 @@ class EMDL {
 
         AREA_ID,   ///< ID   for the area (or field of view). If one does not use (tilt) series, area would be the same as micrograph...
         AREA_NAME, ///< Name for the area (or field of view). If one does not use (tilt) series, area would be the same as micrograph...
-        COMMENT, // The COMMENT is handled specially as well
 
         BODY_MASK_NAME,  ///< For multi-body refinements
         BODY_KEEP_FIXED, ///< For multi-body refinements

@@ -598,7 +598,7 @@ void Postprocessing::writeOutput() {
     MetaDataTable MDlist, MDfsc, MDguinier;
 
     MDlist.isList = true;
-    MDlist.setName("general");
+    MDlist.name = "general";
     MDlist.addObject();
     MDlist.setValue(EMDL::POSTPROCESS_FINAL_RESOLUTION, global_resol);
     MDlist.setValue(EMDL::POSTPROCESS_BFACTOR, global_bfactor );
@@ -621,7 +621,7 @@ void Postprocessing::writeOutput() {
     }
     MDlist.write(fh);
 
-    MDfsc.setName("fsc");
+    MDfsc.name = "fsc";
     for (long int i = 0; i < Xsize(fsc_true); i++) {
         MDfsc.addObject();
         RFLOAT res = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
@@ -688,7 +688,7 @@ void Postprocessing::writeOutput() {
     // Also write XML file with FSC_true curve for EMDB submission
     writeFscXml(MDfsc);
 
-    MDguinier.setName("guinier");
+    MDguinier.name = "guinier";
     MetaDataTable MDextra1, MDextra2; // for postscript plot
     for (int i = 0; i < guinierin.size(); i++) {
         MDguinier.addObject();
@@ -907,7 +907,7 @@ void Postprocessing::run_locres(int rank, int size) {
                         + integerToString(ii, 5) + "_"
                         + integerToString(jj, 5) + "_"
                         + integerToString(kk, 5);
-                    MDfsc.setName(fn_name);
+                    MDfsc.name = fn_name;
                     for (long int i = 0; i < Xsize(fsc_true); i++) {
                         MDfsc.addObject();
                         RFLOAT res = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;

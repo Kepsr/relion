@@ -4328,18 +4328,20 @@ void calculateRadialAvg(MultidimArray<RFLOAT> &v, RFLOAT angpix) {
 }
 
 void transformCartesianToHelicalCoordsForStarFiles(MetaDataTable& MD_in, MetaDataTable& MD_out) {
-    RFLOAT rot, tilt, psi, xoff, yoff, zoff;
-    bool is_3d_trans = MD_in.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+
+    const bool is_3d_trans = MD_in.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
     MD_out.clear();
     MD_out = MD_in;
 
     for (long int index : MD_in) {
-        rot  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-        tilt = MD_in.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-        psi  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-        xoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-        yoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+
+        const RFLOAT rot  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ROT);
+        const RFLOAT tilt = MD_in.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+        const RFLOAT psi  = MD_in.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        RFLOAT xoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
+        RFLOAT yoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
+        RFLOAT zoff;
         if (is_3d_trans)
         zoff = MD_in.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
 
@@ -4350,11 +4352,11 @@ void transformCartesianToHelicalCoordsForStarFiles(MetaDataTable& MD_in, MetaDat
             CART_TO_HELICAL_COORDS
         );
 
-        MD_out.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff);
-        MD_out.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff);
+        MD_out.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff, index);
+        MD_out.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff, index);
         if (is_3d_trans)
-        MD_out.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff);
-        MD_out.nextObject();
+        MD_out.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff, index);
+
     }
 }
 
@@ -4374,7 +4376,7 @@ void normaliseHelicalSegments(
     MD.read(fn_in);
     have_tilt_prior = MD.containsLabel(EMDL::ORIENT_TILT_PRIOR);
     have_psi_prior = MD.containsLabel(EMDL::ORIENT_PSI_PRIOR);
-    read_angpix_from_star = (MD.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)) && (MD.containsLabel(EMDL::CTF_MAGNIFICATION));
+    read_angpix_from_star = MD.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE) && MD.containsLabel(EMDL::CTF_MAGNIFICATION);
     if (!MD.containsLabel(EMDL::IMAGE_NAME))
         REPORT_ERROR("helix.cpp::normaliseHelicalSegments(): MetaDataLabel _rlnImageName is missing!");
     if (!have_tilt_prior && !MD.containsLabel(EMDL::ORIENT_TILT))

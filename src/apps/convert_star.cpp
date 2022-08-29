@@ -57,7 +57,7 @@ class star_converter {
 
         if (mdt.containsLabel(EMDL::IMAGE_NAME)) {
             std::cout << "The input is a particle STAR file" << std::endl;
-            mdtOut.setName("particles");
+            mdtOut.name = "particles";
         } else if (isMotionCorrSTAR) {
             std::cout << "The input is a STAR file from a MotionCorr job." << std::endl;
             std::cout << "The (binned) pixel size and the voltage are taken from the first metadata STAR file." << std::endl;
@@ -90,10 +90,10 @@ class star_converter {
 
             std::cout << "\nAll necessary information is ready." << std::endl;
 
-            mdtOut.setName("micrographs");
+            mdtOut.name = "micrographs";
         } else {
             std::cout << "The input is a micrograph STAR file with CTF information." << std::endl;
-            mdtOut.setName("micrographs");
+            mdtOut.name = "micrographs";
         }
     
         std::ofstream of(fn_out);

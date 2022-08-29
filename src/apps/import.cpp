@@ -129,7 +129,7 @@ class import_parameters {
                     REPORT_ERROR("The optics group name may contain only numbers, alphabets and hyphen(-).");
 
                 // Generate MDopt for the optics group
-                MDopt.setName("optics");
+                MDopt.name = "optics";
                 MDopt.addObject();
                 MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, optics_group_name);
                 MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_number);
@@ -146,7 +146,7 @@ class import_parameters {
             }
 
             // Fill in the actual data (movies/micrographs) table
-            MDout.setName(tablename);
+            MDout.name = tablename;
             EMDL::EMDLabel mylabel = (do_movies) ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::MICROGRAPH_NAME;
             for (long i = 0; i < nr_input_files; i++) {
                 // Check this file was not yet present in the input STAR file

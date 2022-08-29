@@ -227,7 +227,6 @@ int basisViewerWindow::fillCanvas(
     Fl_Scroll scroll(0, 0, w(), h());
 
     // Pre-set the canvas to the correct size
-    MDin.firstObject();
     FileName fn_img = MDin.getValue<std::string>(display_label);
     Image<RFLOAT> img;
     img.read(fn_img, false);
@@ -262,7 +261,7 @@ int basisViewerWindow::fillCanvas(
         canvas.do_apply_orient = _do_apply_orient;
         canvas.obsModel = obsModel;
         canvas.text_label = text_label;
-        canvas.metadata_table_name = MDin.getName();
+        canvas.metadata_table_name = MDin.name;
         if (canvas.nr_regroups > 0)
             canvas.MDgroups = _MDgroups;
         if (_do_class) {
@@ -1593,7 +1592,7 @@ int pickerViewerCanvas::handle(int ev) {
             int iaux = current_selection_type;
 
             // Else store new coordinate
-            if (!MDcoords.isEmpty()) {
+            if (!MDcoords.empty()) {
                 // If there were already entries in MDcoords, then copy the last one.
                 // This will take care of re-picking in coordinate files from previous refinements
                 long int last_idx = MDcoords.numberOfObjects() - 1;

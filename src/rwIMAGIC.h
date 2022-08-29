@@ -244,7 +244,7 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
     const size_t datasize = dims[0] * dims[1] * dims[2] * gettypesize(Float);
 
-    if (!MDMainHeader.isEmpty()) {
+    if (!MDMainHeader.empty()) {
         try {
             header->densmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN);
         } catch (const char* errmsg) {}

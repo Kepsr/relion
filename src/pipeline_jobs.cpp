@@ -430,14 +430,14 @@ void RelionJob::write(const string &fn) {
     MDhead.setValue(EMDL::JOB_IS_CONTINUE, is_continue);
     // TODO: add name for output directories!!! make a std:;map between type and name for all options!
     //MDhead.setValue(EMDL::JOB_TYPE_NAME, type);
-    MDhead.setName("job");
+    MDhead.name = "job";
     MDhead.write(fh);
 
     // Now make a table with all the values
     for (const auto &option : joboptions) {
         option.second.writeToMetaDataTable(MDvals);
     }
-    MDvals.setName("joboptions_values");
+    MDvals.name = "joboptions_values";
     MDvals.write(fh);
 }
 

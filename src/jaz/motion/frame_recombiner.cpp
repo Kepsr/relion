@@ -526,7 +526,7 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
     }
 
     MetaDataTable mdt;
-    mdt.setName("perframe_bfactors");
+    mdt.name = "perframe_bfactors";
 
     for (int f = 0; f < fc; f++) {
         double sig = bkFacs.first[f].x;

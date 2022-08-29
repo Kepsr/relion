@@ -120,7 +120,6 @@ void HelixAligner::initialise() {
         // Get the image size
         MetaDataTable MD;
         MD.read(fn_imgs);
-        MD.firstObject();
         FileName fn_img;
         Image<RFLOAT> img;
         if (MD.containsLabel(EMDL::IMAGE_NAME)) {

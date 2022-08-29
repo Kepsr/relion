@@ -307,8 +307,7 @@ class BackProjector: public Projector {
 
     /* Get the 3D reconstruction, but perform it through a system call outside relion_refine!
     */
-    void externalReconstruct(
-        MultidimArray<RFLOAT> &vol_out,
+    MultidimArray<RFLOAT> externalReconstruct(
         FileName &fn_out,
         MultidimArray<RFLOAT> &fsc_halves_io,
         MultidimArray<RFLOAT> &tau2_io,

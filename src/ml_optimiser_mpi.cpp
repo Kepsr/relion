@@ -1834,8 +1834,7 @@ void MlOptimiserMpi::maximization() {
                             fn_ext_root = mymodel.nr_bodies > 1 ?
                                 FileName::compose(fn_ext_root + "_body",  ibody  + 1, "", 3) :
                                 FileName::compose(fn_ext_root + "_class", iclass + 1, "", 3) ;
-                            wsum_model.BPref[ith_recons].externalReconstruct(
-                                reference,
+                            reference = wsum_model.BPref[ith_recons].externalReconstruct(
                                 fn_ext_root,
                                 mymodel.fsc_halves_class[ith_recons],
                                 mymodel.tau2_class[ith_recons],
@@ -1989,8 +1988,7 @@ void MlOptimiserMpi::maximization() {
                                 fn_ext_root = mymodel.nr_bodies > 1 ?
                                     FileName::compose(fn_ext_root + "_body",  ibody  + 1, "", 3) :
                                     FileName::compose(fn_ext_root + "_class", iclass + 1, "", 3) ;
-                                wsum_model.BPref[ith_recons].externalReconstruct(
-                                    reference,
+                                reference = wsum_model.BPref[ith_recons].externalReconstruct(
                                     fn_ext_root,
                                     mymodel.fsc_halves_class[ith_recons],
                                     mymodel.tau2_class[ith_recons],

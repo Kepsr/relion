@@ -1814,22 +1814,22 @@ void PipeLine::write(
     std::cerr << " writing pipeline as " << fn << std::endl;
     #endif
 
-    MDgen.setName("pipeline_general");
+    MDgen.name = "pipeline_general";
     MDgen.isList = true;
     MDgen.addObject();
     MDgen.setValue(EMDL::PIPELINE_JOB_COUNTER, job_counter);
     MDgen.write(fh);
 
     if (fn_del != "") {
-        MDgen_del.setName("pipeline_general");
+        MDgen_del.name = "pipeline_general";
         MDgen_del.isList = true;
         MDgen_del.addObject();
         MDgen_del.setValue(EMDL::PIPELINE_JOB_COUNTER, job_counter);
         MDgen_del.write(fh_del);
     }
 
-    MDproc.setName("pipeline_processes");
-    MDproc_del.setName("pipeline_processes");
+    MDproc.name = "pipeline_processes";
+    MDproc_del.name = "pipeline_processes";
     for (long int i = 0 ; i < processList.size(); i++) {
         if (fn_del.empty() || !deleteProcess[i]) {
             MDproc.addObject();
@@ -1853,8 +1853,8 @@ void PipeLine::write(
     if (!fn_del.empty())
         MDproc_del.write(fh_del);
 
-    MDnode.setName("pipeline_nodes");
-    MDnode_del.setName("pipeline_nodes");
+    MDnode.name = "pipeline_nodes";
+    MDnode_del.name = "pipeline_nodes";
     for (long int i = 0; i < nodeList.size(); i++) {
         if (fn_del.empty() || !deleteNode[i]) {
             MDnode.addObject();
@@ -1875,8 +1875,8 @@ void PipeLine::write(
         MDnode_del.write(fh_del);
 
     // Also write all (Node->Process) edges to a single table
-    MDedge1.setName("pipeline_input_edges");
-    MDedge1_del.setName("pipeline_input_edges");
+    MDedge1.name = "pipeline_input_edges";
+    MDedge1_del.name = "pipeline_input_edges";
     for (long int i = 0; i < processList.size(); i++)
     for (long int input_node : processList[i].inputNodeList) {
         if (!fn_del.empty() || !deleteProcess[i] && !deleteNode[input_node]) {
@@ -1897,8 +1897,8 @@ void PipeLine::write(
         MDedge1_del.write(fh_del);
 
     // Also write all (Process->Node) edges to a single table
-    MDedge2.setName("pipeline_output_edges");
-    MDedge2_del.setName("pipeline_output_edges");
+    MDedge2.name = "pipeline_output_edges";
+    MDedge2_del.name = "pipeline_output_edges";
     for (long int i = 0; i < processList.size(); i++)
     for (long int output_node : processList[i].outputNodeList) {
         if (fn_del.empty() || !deleteProcess[i] && !deleteNode[output_node]) {

@@ -1031,8 +1031,7 @@ void BackProjector::updateSSNRarrays(
     fourier_coverage_out = fourier_coverage;
 }
 
-void BackProjector::externalReconstruct(
-    MultidimArray<RFLOAT> &vol_out,
+MultidimArray<RFLOAT> BackProjector::externalReconstruct(
     FileName &fn_out,
     MultidimArray<RFLOAT> &fsc_halves_io,
     MultidimArray<RFLOAT> &tau2_io,
@@ -1043,6 +1042,7 @@ void BackProjector::externalReconstruct(
     int verb
 ) {
 
+    MultidimArray<RFLOAT> vol_out;
     FileName fn_recons = fn_out + "_external_reconstruct.mrc";
     FileName fn_star = fn_out + "_external_reconstruct.star";
     FileName fn_out_star = fn_out + "_external_reconstruct_out.star";
@@ -1054,11 +1054,7 @@ void BackProjector::externalReconstruct(
 
     // Write out data array
     Image<Complex> Idata;
-    if (ref_dim == 2) {
-        Idata().resize(pad_size, pad_size / 2 + 1);
-    } else {
-        Idata().resize(pad_size, pad_size, pad_size / 2 + 1);
-    }
+    Idata().resize(pad_size / 2 + 1, pad_size, ref_dim == 3 ? pad_size : 1);
     Projector::decenter(data, Idata(), max_r2);
     windowFourierTransform(Idata(), padoridim);
     ComplexIO::write(Idata(), fn_out + "_external_reconstruct_data", ".mrc");
@@ -1078,7 +1074,7 @@ void BackProjector::externalReconstruct(
     // Write out STAR file for input to external reconstruction program
     MetaDataTable MDlist, MDtau;
 
-    MDlist.setName("external_reconstruct_general");
+    MDlist.name = "external_reconstruct_general";
     MDlist.isList = true;
     MDlist.addObject();
     MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, fn_out + "_external_reconstruct_data_real.mrc");
@@ -1092,7 +1088,7 @@ void BackProjector::externalReconstruct(
     MDlist.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size);
     MDlist.setValue(EMDL::MLMODEL_CURRENT_SIZE, 2 * r_max);
 
-    MDtau.setName("external_reconstruct_tau2");
+    MDtau.name = "external_reconstruct_tau2";
     for (int ii = 0; ii < Xsize(tau2); ii++) {
         MDtau.addObject();
         MDtau.setValue(EMDL::SPECTRAL_IDX, ii);
@@ -1167,6 +1163,7 @@ void BackProjector::externalReconstruct(
             std::cout << " + External reconstruction successfully updated external tau2 array ... " << std::endl;
     }
 
+    return vol_out;
 }
 
 MultidimArray<RFLOAT> BackProjector::reconstruct(

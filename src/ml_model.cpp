@@ -409,7 +409,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     MetaDataTable MDlog;
     MDlog.isList = true;
     MDlog.addObject();
-    MDlog.setName("model_general");
+    MDlog.name = "model_general";
     MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim);
     MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY_DATA, data_dim);
     MDlog.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size);
@@ -448,12 +448,8 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
 
     // Write metadata and images for all classes
     MetaDataTable MDclass;
-    FileName fn_root = fn_out.beforeFirstOf("_it");
-    if (nr_bodies > 1) {
-        MDclass.setName("model_bodies");
-    } else {
-        MDclass.setName("model_classes");
-    }
+    const FileName fn_root = fn_out.beforeFirstOf("_it");
+    MDclass.name = nr_bodies > 1 ? "model_bodies" : "model_classes";
     for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
         MDclass.addObject();
         Image<RFLOAT> Itmp;
@@ -514,9 +510,9 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
         MetaDataTable MDsigma;
         if (nr_bodies > 1) {
-            MDsigma.setName("model_body_" + integerToString(iclass + 1));
+            MDsigma.name = "model_body_" + integerToString(iclass + 1);
         } else {
-            MDsigma.setName("model_class_" + integerToString(iclass + 1));
+            MDsigma.name = "model_class_" + integerToString(iclass + 1);
         }
         for (int ii = 0; ii < Xsize(tau2_class[iclass]); ii++) {
             MDsigma.addObject();
@@ -537,7 +533,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
 
     // Write scale-correction for all groups
     MetaDataTable MDgroup;
-    MDgroup.setName("model_groups");
+    MDgroup.name = "model_groups";
     for (long int igroup = 0; igroup < nr_groups; igroup++) {
         MDgroup.addObject();
         //Start counting of groups at 1, not at 0....
@@ -552,7 +548,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     for (int igroup = 0; igroup < nr_groups; igroup++) {
         if (nr_particles_per_group[igroup] > 0) {
             MetaDataTable MDsigma;
-            MDsigma.setName("model_group_" + integerToString(igroup + 1));
+            MDsigma.name = "model_group_" + integerToString(igroup + 1);
             for (int ii = 0; ii < Xsize(sigma2_noise[igroup]); ii++) {
                 MDsigma.addObject();
                 // Some points in sigma2_noise arrays are never used...
@@ -571,14 +567,12 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     if (ref_dim == 3) {
         for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
             MetaDataTable MDclass;
-            if (nr_bodies > 1) {
-                MDclass.setName("model_pdf_orient_body_" + integerToString(iclass + 1));
-            } else {
-                MDclass.setName("model_pdf_orient_class_" + integerToString(iclass + 1));
-            }
-            for (int ii = 0; ii < Xsize(pdf_direction[iclass]); ii++) {
+            MDclass.name = nr_bodies > 1 ?
+                "model_pdf_orient_body_"  + integerToString(iclass + 1) :
+                "model_pdf_orient_class_" + integerToString(iclass + 1) ;
+            for (RFLOAT x : pdf_direction[iclass]) {
                 MDclass.addObject();
-                MDclass.setValue(EMDL::MLMODEL_PDF_ORIENT, pdf_direction[iclass](ii));
+                MDclass.setValue(EMDL::MLMODEL_PDF_ORIENT, x);
             }
             MDclass.write(fh);
         }
@@ -600,7 +594,7 @@ void  MlModel::readTauSpectrum(FileName fn_tau, int verb) {
     }
     // Use the same spectrum for all classes
     for (int iclass = 0; iclass < nr_classes; iclass++)
-        tau2_class[iclass] =  tau2_class[0];
+        tau2_class[iclass] = tau2_class[0];
 
 }
 
@@ -610,7 +604,6 @@ void MlModel::initialiseFromImages(
     bool &do_average_unaligned, bool &do_generate_seeds, bool &refs_are_ctf_corrected,
     RFLOAT _ref_angpix, bool do_sgd, bool _do_trust_ref_size, bool verb
 ) {
-
 
     // Data dimensionality
     if (!_mydata.obsModel.opticsMdt.containsLabel(EMDL::IMAGE_DIMENSIONALITY)) {
@@ -763,7 +756,7 @@ void MlModel::initialiseFromImages(
         for (int iclass = 0; iclass < nr_classes; iclass++) {
             Iref.push_back(img());
             if (do_sgd)
-                Igrad.push_back(img());
+            Igrad.push_back(img());
         }
     }
 

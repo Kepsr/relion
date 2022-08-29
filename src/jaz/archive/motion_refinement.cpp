@@ -617,7 +617,7 @@ void MotionRefinement::writeTracks(
     std::ofstream ofs(fn);
     MetaDataTable mdt;
 
-    mdt.setName("general");
+    mdt.name = "general";
     mdt.isList = true;
     mdt.addObject();
     mdt.setValue(EMDL::PARTICLE_NUMBER, pc);
@@ -626,7 +626,7 @@ void MotionRefinement::writeTracks(
     mdt.clear();
 
     for (int p = 0; p < pc; p++) {
-        mdt.setName(std::to_string(p));
+        mdt.name = std::to_string(p);
 
         for (int f = 0; f < fc; f++) {
             mdt.addObject();

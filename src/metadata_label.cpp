@@ -124,8 +124,6 @@ class EMDL::StaticInitialization {
      */
     StaticInitialization() {
         /// NOTE: ==== Add labels entries from here in the SAME ORDER as declared in ENUM ==========
-        EMDL::addLabel<std::string>(EMDL::COMMENT, "rlnComment", "A metadata comment (This is treated in a special way)");
-
         EMDL::addLabel<int>        (EMDL::AREA_ID,   "rlnAreaId", "ID (i.e. a unique number) of an area (i.e. field-of-view)");
         EMDL::addLabel<std::string>(EMDL::AREA_NAME, "rlnAreaName", "Name of an area (i.e. field-of-view)");
 

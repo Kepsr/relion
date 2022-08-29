@@ -348,7 +348,7 @@ class image_handler_parameters {
         } else if (!fn_fsc.empty()) {
             MultidimArray<RFLOAT> fsc = getFSC(Iout(), Iop());
             MetaDataTable MDfsc;
-            MDfsc.setName("fsc");
+            MDfsc.name = "fsc";
             for (long int i = 0; i < Xsize(fsc); i++) {
                 MDfsc.addObject();
                 RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
@@ -361,7 +361,7 @@ class image_handler_parameters {
         } else if (do_power) {
             const auto spectrum = getSpectrum(Iout(), POWER_SPECTRUM);
             MetaDataTable MDpower;
-            MDpower.setName("power");
+            MDpower.name = "power";
             const long int Nyquist = Xsize(Iout()) / 2 + 1;
             for (long int i = 0; i <= Nyquist; i++) {
 
@@ -384,7 +384,7 @@ class image_handler_parameters {
 
             const std::vector<RFLOAT> cosDPhi = cosDeltaPhase(FT1, FT2);
             MetaDataTable MDcos;
-            MDcos.setName("cos");
+            MDcos.name = "cos";
             for (long int i = 0; i < cosDPhi.size(); i++) {
                 MDcos.addObject();
                 const RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
