@@ -139,7 +139,7 @@ class star_handler_parameters {
               + duplicate_threshold > 0;
         if (c != 1) {
             MetaDataTable MD = read_check_ignore_optics(fn_in);
-            write_check_ignore_optics(MD, fn_out, MD.getName());
+            write_check_ignore_optics(MD, fn_out, MD.name);
             //REPORT_ERROR("ERROR: specify (only and at least) one of the following options: --compare, --select, --select_by_str, --combine, --split, --operate, --center, --remove_column, --add_column, --hist_column or --remove_duplicates.");
         }
 
@@ -202,13 +202,13 @@ class star_handler_parameters {
         std::cout << MDonly1.numberOfObjects() << " entries occur only in the 1st input STAR file." << std::endl;
         std::cout << MDonly2.numberOfObjects() << " entries occur only in the 2nd input STAR file." << std::endl;
 
-        write_check_ignore_optics(MDboth, fn_out.insertBeforeExtension("_both"), MD1.getName());
+        write_check_ignore_optics(MDboth, fn_out.insertBeforeExtension("_both"), MD1.name);
         std::cout << " Written: " << fn_out.insertBeforeExtension("_both") << std::endl;
-        write_check_ignore_optics(MDonly1, fn_out.insertBeforeExtension("_only1"), MD1.getName());
+        write_check_ignore_optics(MDonly1, fn_out.insertBeforeExtension("_only1"), MD1.name);
         std::cout << " Written: " << fn_out.insertBeforeExtension("_only1") << std::endl;
         // Use MD2's optics group for MDonly2.
         obsModel = obsModelCompare;
-        write_check_ignore_optics(MDonly2, fn_out.insertBeforeExtension("_only2"), MD1.getName());
+        write_check_ignore_optics(MDonly2, fn_out.insertBeforeExtension("_only2"), MD1.name);
         std::cout << " Written: " << fn_out.insertBeforeExtension("_only2") << std::endl;
     }
 
@@ -218,7 +218,7 @@ class star_handler_parameters {
 
         MetaDataTable MDout = subsetMetaDataTable(MDin, EMDL::str2Label(select_label), select_minval, select_maxval);
 
-        write_check_ignore_optics(MDout, fn_out, MDin.getName());
+        write_check_ignore_optics(MDout, fn_out, MDin.name);
         std::cout << " Written: " << fn_out << " with " << MDout.numberOfObjects() << " item(s)" << std::endl;
     }
 
@@ -235,7 +235,7 @@ class star_handler_parameters {
             subsetMetaDataTable(MDin, EMDL::str2Label(select_str_label), select_include_str, false) :
             subsetMetaDataTable(MDin, EMDL::str2Label(select_str_label), select_exclude_str, true);
 
-        write_check_ignore_optics(MDout, fn_out, MDin.getName());
+        write_check_ignore_optics(MDout, fn_out, MDin.name);
         std::cout << " Written: " << fn_out << std::endl;
 
     }
@@ -300,7 +300,7 @@ class star_handler_parameters {
 
         std::cout << " Discarded " << nr_discard << " Images because of too large or too small average/stddev values " << std::endl;
 
-        write_check_ignore_optics(MDout, fn_out, MDin.getName());
+        write_check_ignore_optics(MDout, fn_out, MDin.name);
         std::cout << " Written: " << fn_out << std::endl;
     }
 
@@ -554,7 +554,7 @@ class star_handler_parameters {
                 std::cerr << " WARNING: Total number of duplicate "<< fn_check << " entries: " << nr_duplicates << std::endl;
         }
 
-        write_check_ignore_optics(MDout, fn_out, MDin.getName());
+        write_check_ignore_optics(MDout, fn_out, MDin.name);
         std::cout << " Written: " << fn_out << std::endl;
     }
 
@@ -600,18 +600,17 @@ class star_handler_parameters {
 
         // Sjors 19 Jun 2019: write out a star file with the output nodes
         MetaDataTable MDnodes;
-        MDnodes.setName("output_nodes");
-        FileName fnt0 = integerToString(nr_split);
+        MDnodes.name = "output_nodes";
         for (int isplit = 0; isplit < nr_split; isplit ++) {
-            FileName fnt = fn_out.insertBeforeExtension("_split" + integerToString(isplit + 1));
-            write_check_ignore_optics(MDouts[isplit], fnt, MD.getName());
+            const FileName fnt = fn_out.insertBeforeExtension("_split" + integerToString(isplit + 1));
+            write_check_ignore_optics(MDouts[isplit], fnt, MD.name);
             std::cout << " Written: " << fnt << " with " << MDouts[isplit].numberOfObjects() << " objects." << std::endl;
 
             MDnodes.addObject();
             MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt);
-            int type =
-                MD.getName() == "micrographs" ? Node::MICS :
-                MD.getName() == "movies"      ? Node::MOVIES :
+            const int type =
+                MD.name == "micrographs" ? Node::MICS :
+                MD.name == "movies"      ? Node::MOVIES :
    /* Otherwise, assume these are particles. */ Node::PART_DATA;
 
             MDnodes.setValue(EMDL::PIPELINE_NODE_TYPE, type);
@@ -695,7 +694,7 @@ class star_handler_parameters {
             }
         }
 
-        write_check_ignore_optics(MD, fn_out, MD.getName());
+        write_check_ignore_optics(MD, fn_out, MD.name);
         std::cout << " Written: " << fn_out << std::endl;
     }
 
@@ -749,14 +748,14 @@ class star_handler_parameters {
             }
         }
 
-        write_check_ignore_optics(MD, fn_out, MD.getName());
+        write_check_ignore_optics(MD, fn_out, MD.name);
         std::cout << " Written: " << fn_out << std::endl;
     }
 
     void remove_column() {
         MetaDataTable MD = read_check_ignore_optics(fn_in);
         MD.deactivateLabel(EMDL::str2Label(remove_col_label));
-        write_check_ignore_optics(MD, fn_out, MD.getName());
+        write_check_ignore_optics(MD, fn_out, MD.name);
         std::cout << " Written: " << fn_out << std::endl;
     }
 
@@ -799,7 +798,7 @@ class star_handler_parameters {
             }
         }
 
-        write_check_ignore_optics(MD, fn_out, MD.getName());
+        write_check_ignore_optics(MD, fn_out, MD.name);
         std::cout << " Written: " << fn_out << std::endl;
     }
 

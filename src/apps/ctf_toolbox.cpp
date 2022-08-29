@@ -127,7 +127,7 @@ class ctf_toolbox_parameters {
         } else {
 
             ObservationModel::loadSafely(fn_in, obsModel, MD);
-            bool do_mic_name = obsModel.opticsMdt.getName() == "micrographs";
+            bool do_mic_name = obsModel.opticsMdt.name == "micrographs";
 
             if (verb > 0) init_progress_bar(MD.numberOfObjects());
 

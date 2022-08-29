@@ -685,7 +685,7 @@ void Schedule::write(bool do_lock, FileName fn) {
     if (!fh) REPORT_ERROR((std::string) "Schedule::write: Cannot write file: " + fn);
 
     MetaDataTable MDgeneral;
-    MDgeneral.setName("schedule_general");
+    MDgeneral.name = "schedule_general";
     MDgeneral.isList = true;
     MDgeneral.addObject();
     MDgeneral.setValue(EMDL::SCHEDULE_GENERAL_NAME, name);
@@ -694,75 +694,70 @@ void Schedule::write(bool do_lock, FileName fn) {
 
     if (scheduler_global_floats.size() > 0) {
         MetaDataTable MD;
-        MD.setName("schedule_floats");
-        std::map<std::string, SchedulerFloatVariable>::iterator it;
-        for (it = scheduler_global_floats.begin(); it != scheduler_global_floats.end(); it++) {
+        MD.name = "schedule_floats";
+        for (auto pair : scheduler_global_floats) {
             MD.addObject();
-            MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_NAME, it->first);
-            MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_VALUE, it->second.value);
-            MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE, it->second.original_value);
+            MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_NAME, pair.first);
+            MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_VALUE, pair.second.value);
+            MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE, pair.second.original_value);
         }
         MD.write(fh);
     }
 
     if (scheduler_global_bools.size() > 0) {
         MetaDataTable MD;
-        MD.setName("schedule_bools");
-        std::map<std::string, SchedulerBooleanVariable>::iterator it;
-        for (it = scheduler_global_bools.begin(); it != scheduler_global_bools.end(); it++) {
+        MD.name = "schedule_bools";
+        for (auto pair : scheduler_global_bools) {
             MD.addObject();
-            MD.setValue(EMDL::SCHEDULE_VAR_BOOL_NAME, it->first);
-            MD.setValue(EMDL::SCHEDULE_VAR_BOOL_VALUE, it->second.value);
-            MD.setValue(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE, it->second.original_value);
+            MD.setValue(EMDL::SCHEDULE_VAR_BOOL_NAME, pair.first);
+            MD.setValue(EMDL::SCHEDULE_VAR_BOOL_VALUE, pair.second.value);
+            MD.setValue(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE, pair.second.original_value);
         }
         MD.write(fh);
     }
 
     if (scheduler_global_strings.size() > 0) {
         MetaDataTable MD;
-        MD.setName("schedule_strings");
-        std::map<std::string, SchedulerStringVariable>::iterator it;
-        for (it = scheduler_global_strings.begin(); it != scheduler_global_strings.end(); it++) {
+        MD.name = "schedule_strings";
+        for (auto pair : scheduler_global_strings) {
             MD.addObject();
-            MD.setValue(EMDL::SCHEDULE_VAR_STRING_NAME, it->first);
-            MD.setValue(EMDL::SCHEDULE_VAR_STRING_VALUE, it->second.value);
-            MD.setValue(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE, it->second.original_value);
+            MD.setValue(EMDL::SCHEDULE_VAR_STRING_NAME, pair.first);
+            MD.setValue(EMDL::SCHEDULE_VAR_STRING_VALUE, pair.second.value);
+            MD.setValue(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE, pair.second.original_value);
         }
         MD.write(fh);
     }
 
     if (scheduler_global_operators.size() > 0) {
         MetaDataTable MD;
-        MD.setName("schedule_operators");
-        std::map<std::string, SchedulerOperator>::iterator it;
-        for (it = scheduler_global_operators.begin(); it != scheduler_global_operators.end(); it++) {
+        MD.name = "schedule_operators";
+        for (auto pair : scheduler_global_operators) {
             MD.addObject();
-            MD.setValue(EMDL::SCHEDULE_OPERATOR_NAME, it->first);
-            MD.setValue(EMDL::SCHEDULE_OPERATOR_TYPE, it->second.type);
-            MD.setValue(EMDL::SCHEDULE_OPERATOR_OUTPUT, it->second.output );
-            MD.setValue(EMDL::SCHEDULE_OPERATOR_INPUT1, it->second.input1 );
-            MD.setValue(EMDL::SCHEDULE_OPERATOR_INPUT2, it->second.input2 );
+            MD.setValue(EMDL::SCHEDULE_OPERATOR_NAME, pair.first);
+            MD.setValue(EMDL::SCHEDULE_OPERATOR_TYPE, pair.second.type);
+            MD.setValue(EMDL::SCHEDULE_OPERATOR_OUTPUT, pair.second.output );
+            MD.setValue(EMDL::SCHEDULE_OPERATOR_INPUT1, pair.second.input1 );
+            MD.setValue(EMDL::SCHEDULE_OPERATOR_INPUT2, pair.second.input2 );
         }
         MD.write(fh);
     }
 
     if (jobs.size() > 0) {
         MetaDataTable MD;
-        MD.setName("schedule_jobs");
-        std::map<std::string, SchedulerJob>::iterator it;
-        for (it = jobs.begin(); it != jobs.end(); it++) {
+        MD.name = "schedule_jobs";
+        for (auto pair : jobs) {
             MD.addObject();
-            MD.setValue(EMDL::SCHEDULE_JOB_ORI_NAME, it->first);
-            MD.setValue(EMDL::SCHEDULE_JOB_NAME, it->second.current_name);
-            MD.setValue(EMDL::SCHEDULE_JOB_MODE, it->second.mode);
-            MD.setValue(EMDL::SCHEDULE_JOB_HAS_STARTED, it->second.job_has_started);
+            MD.setValue(EMDL::SCHEDULE_JOB_ORI_NAME, pair.first);
+            MD.setValue(EMDL::SCHEDULE_JOB_NAME, pair.second.current_name);
+            MD.setValue(EMDL::SCHEDULE_JOB_MODE, pair.second.mode);
+            MD.setValue(EMDL::SCHEDULE_JOB_HAS_STARTED, pair.second.job_has_started);
         }
         MD.write(fh);
     }
 
     if (edges.size() > 0) {
         MetaDataTable MD;
-        MD.setName("schedule_edges");
+        MD.name = "schedule_edges";
         for (int i = 0; i < edges.size(); i++) {
             MD.addObject();
             MD.setValue(EMDL::SCHEDULE_EDGE_INPUT, edges[i].inputNode);
@@ -1187,7 +1182,7 @@ void Schedule::copy(FileName newname) {
     }
 
     // Change the name itself
-    setName(newname);
+    name = newname;
 
     // And write the new schedule.star and scheule_pipeline.star files
     write();

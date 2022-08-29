@@ -346,7 +346,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     header->nyStart = (int) 0;
     header->nzStart = (int) 0;
 
-    if (!MDMainHeader.isEmpty()) {
+    if (!MDMainHeader.empty()) {
 
         // If MDMainHeader contains none of these,
         // we will be looping through `data` more times than necessary.

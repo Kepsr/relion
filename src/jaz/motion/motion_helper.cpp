@@ -349,7 +349,7 @@ void MotionHelper::writeTracks(
     std::ofstream ofs(fn);
     MetaDataTable mdt;
 
-    mdt.setName("general");
+    mdt.name = "general";
     mdt.isList = true;
     mdt.addObject();
     mdt.setValue(EMDL::PARTICLE_NUMBER, pc);
@@ -358,9 +358,7 @@ void MotionHelper::writeTracks(
     mdt.clear();
 
     for (int p = 0; p < pc; p++) {
-        std::stringstream sts;
-        sts << p;
-        mdt.setName(sts.str());
+        mdt.name = std::to_string(p);
 
         for (int f = 0; f < fc; f++) {
             mdt.addObject();

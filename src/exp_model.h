@@ -281,7 +281,7 @@ class Experiment {
         MDimg.clear();
         MDimg.isList = false;
         MDbodies.clear();
-        MDimg.setName("images");
+        MDimg.name = "images";
     }
 
     // Calculate the total number of particles in this experiment

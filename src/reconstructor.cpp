@@ -128,23 +128,21 @@ void Reconstructor::initialise() {
     // Is this 2D or 3D data?
     data_dim = 2; // Initial default value
 
-    if (fn_noise != "")
+    if (!fn_noise.empty())
         model.read(fn_noise);
 
     // Get dimension of the images
     if (do_reconstruct_ctf) {
         output_boxsize = ctf_dim;
     } else {
-        (DF).firstObject();
         fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME);
 
-        if (image_path != "") {
+        if (!image_path.empty()) {
             fn_img = image_path + "/" + fn_img.substr(fn_img.find_last_of("/") + 1);
         }
 
-        Image<RFLOAT> img0;
-        img0.read(fn_img, false);
-        output_boxsize = (int) Xsize(img0());
+        auto img0 = Image<RFLOAT>::from_filename(fn_img, false);
+        output_boxsize = Xsize(img0());
         // When doing Ewald-curvature correction or when having optics groups: allow reconstructing smaller box than the input images (which should have large boxes!!)
         if ((do_ewald || !do_ignore_optics) && newbox > 0) {
             output_boxsize = newbox;
@@ -186,7 +184,7 @@ void Reconstructor::initialise() {
 }
 
 void Reconstructor::run() {
-    if (fn_debug != "") {
+    if (!fn_debug.empty()) {
         readDebugArrays();
     } else {
         initialise();
@@ -201,9 +199,8 @@ void Reconstructor::readDebugArrays() {
         std::cout << " + Reading in the debug arrays ... " << std::endl;
 
     // We first read the image to set the data_dim automatically from backprojector data
-    Image<RFLOAT> It;
-    It.read(fn_debug+"_data_real.mrc");
-    data_dim = It().getDim();
+    auto Ireal = Image<RFLOAT>::from_filename(fn_debug + "_data_real.mrc");
+    data_dim = Ireal().getDim();
 
     backprojector = BackProjector(debug_ori_size, 3, fn_sym, interpolator, padding_factor, r_min_nn, blob_order, blob_radius, blob_alpha, data_dim, skip_gridding);
 
@@ -215,23 +212,23 @@ void Reconstructor::readDebugArrays() {
         backprojector.weight.printShape();
     }
 
-    It().setXmippOrigin();
-    It().xinit = 0;
+    Ireal().setXmippOrigin();
+    Ireal().xinit = 0;
 
     if (verb > 0) {
         std::cout << " Size of reconstruction: " ;
-        It().printShape();
+        Ireal().printShape();
     }
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It(), i, j, k) {
-        backprojector.data.elem(i, j, k).real = It().elem(i, j, k);
+
+    auto Iimag = Image<RFLOAT>::from_filename(fn_debug + "_data_imag.mrc");
+    Iimag().setXmippOrigin();
+    Iimag().xinit = 0;
+    FOR_ALL_ELEMENTS_IN_ARRAY3D(backprojector.data, i, j, k) {
+        backprojector.data.elem(i, j, k).real = Ireal().elem(i, j, k);
+        backprojector.data.elem(i, j, k).imag = Iimag().elem(i, j, k);
     }
-    It.read(fn_debug + "_data_imag.mrc");
-    It().setXmippOrigin();
-    It().xinit = 0;
-    FOR_ALL_ELEMENTS_IN_ARRAY3D(It(), i, j, k) {
-        backprojector.data.elem(i, j, k).imag = It().elem(i, j, k);
-    }
-    It.read(fn_debug+"_weight.mrc");
+
+    auto It = Image<RFLOAT>::from_filename(fn_debug + "_weight.mrc");
     It().setXmippOrigin();
     It().xinit = 0;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(It(), i, j, k) {
@@ -241,10 +238,9 @@ void Reconstructor::readDebugArrays() {
 }
 
 void Reconstructor::backproject(int rank, int size) {
-    if (fn_sub != "") {
+    if (!fn_sub.empty()) {
         projector = Projector(output_boxsize, interpolator, padding_factor, r_min_nn);
-        Image<RFLOAT> sub;
-        sub.read(fn_sub);
+        auto sub = Image<RFLOAT>::from_filename(fn_sub);
         MultidimArray<RFLOAT> dummy;
         projector.computeFourierTransformMap(sub(), dummy, 2 * r_max);
     }
@@ -294,18 +290,16 @@ void Reconstructor::backprojectOneParticle(long int p) {
     if (ref_dim == 2) {
         rot = tilt = 0.0;
     } else {
-        rot =  DF.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
+        rot  = DF.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
         tilt = DF.getValue<RFLOAT>(EMDL::ORIENT_TILT, p);
     }
 
-    psi = 0.0;
-    psi = DF.getValue<RFLOAT>(EMDL::ORIENT_PSI, p);
+    psi = DF.containsLabel(EMDL::ORIENT_PSI) ? DF.getValue<RFLOAT>(EMDL::ORIENT_PSI, p) : 0.0;
 
     if (angular_error > 0.0) {
         rot  += rnd_gaus(0.0, angular_error);
         tilt += rnd_gaus(0.0, angular_error);
         psi  += rnd_gaus(0.0, angular_error);
-        // std::cout << rnd_gaus(0., angular_error) << std::endl;
     }
 
     Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
@@ -645,9 +639,8 @@ void Reconstructor::reconstruct() {
 
         if (do_external_reconstruct) {
             FileName fn_root = fn_out.withoutExtension();
-            backprojector.externalReconstruct(
-                vol(), fn_root,
-                tau2, tmp, tmp, tmp, false, 1.0, 1
+            vol() = backprojector.externalReconstruct(
+                fn_root, tau2, tmp, tmp, tmp, false, 1.0, 1
             );
         } else {
             vol() = backprojector.reconstruct(iter, do_map, tau2);

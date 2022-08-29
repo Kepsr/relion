@@ -382,7 +382,7 @@ void Experiment::initialiseBodies(int _nr_bodies) {
         MDbodies.resize(nr_bodies, MDbody);
         for (int ibody = 0; ibody < nr_bodies; ibody++) {
             std::string tablename = "images_body_" + integerToString(ibody+1);
-            MDbodies[ibody].setName(tablename);
+            MDbodies[ibody].name = tablename;
         }
     }
 }
@@ -1026,11 +1026,11 @@ void Experiment::write(FileName fn_root) {
     if (!fh)
         REPORT_ERROR((std::string) "Experiment::write: Cannot write file: " + fn_tmp);
 
-    obsModel.opticsMdt.setName("optics");
+    obsModel.opticsMdt.name = "optics";
     obsModel.opticsMdt.write(fh);
 
     // Always write MDimg
-    MDimg.setName("particles");
+    MDimg.name = "particles";
     MDimg.write(fh);
 
     if (nr_bodies > 1) {

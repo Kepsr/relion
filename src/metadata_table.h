@@ -106,6 +106,8 @@ class MetaDataTable {
     // Number of labels of each type
     long doubleLabels, intLabels, boolLabels, stringLabels, doubleVectorLabels, unknownLabels;
 
+    public:
+
     // Name of the metadata table
     std::string name;
 
@@ -114,8 +116,6 @@ class MetaDataTable {
 
     // The version number of the file format (multiplied by 10,000)
     int version;
-
-    public:
 
     MetaDataTable();
 
@@ -140,20 +140,14 @@ class MetaDataTable {
     // Is this a 1D list (as opposed to a 2D table)?
     bool isList;
 
-    bool isEmpty() const;
+    inline bool empty() const {
+        return objects.empty();
+    }
+
     size_t numberOfObjects() const;
     void clear();
 
-    void setComment(const std::string &comment);
-    std::string getComment() const;
-    bool containsComment() const;
-
-    void setName(const std::string &name);
-    std::string getName() const;
-
-    void setVersion(int v);
-    int getVersion() const;
-    static int getCurrentVersion();
+    static const int CurrentVersion = CURRENT_MDT_VERSION;
 
     template<class T>
     T getValue(EMDL::EMDLabel label, long objectID = -1) const;
@@ -249,13 +243,6 @@ class MetaDataTable {
      *  If objectID is not given, 'current_object' will be removed.
      *  'current_object' is set to the last object in the list. */
     void removeObject(long objectID = -1);
-
-    MetaDataContainer** firstObject();
-
-    /** @TODO: remove nextObject() after removing calls in:
-     * - "helix.cpp"
-     */
-    MetaDataContainer** nextObject();  // If we remove this, current_object will have to be made public
     
     /** MetaDataTable::iterator
      *    
@@ -270,36 +257,34 @@ class MetaDataTable {
      */
     struct iterator {
 
-        bool isDone;
         MetaDataTable *const mdt;
         MetaDataContainer** object;
+        long int i;
 
-        iterator(MetaDataTable *mdt, bool isDone = false):
-        isDone(isDone), mdt(mdt), object(isDone ? nullptr : mdt->firstObject()) {}
+        iterator(MetaDataTable *mdt, long int i = 0):
+        i(i), mdt(mdt), object(&mdt->objects[i]) {}
 
         long int operator *() const {
-            return object - &*mdt->objects.begin();
+            return i;
         }
 
         iterator &operator ++() {
-            // assert !isDone
-            isDone = (long int) (object + 1 - &*mdt->objects.begin()) >= mdt->numberOfObjects();
-            if (!isDone) { object = mdt->nextObject(); }
+            object = &mdt->objects[++i];
             return *this;
         }
 
         bool operator != (const iterator &other) const {
-            return isDone != other.isDone || mdt != other.mdt || object != other.object;
+            return i != other.i || mdt != other.mdt || object != other.object;
         }
 
     };
 
     iterator begin() {
-        return iterator(this, false);
+        return iterator(this, 0);
     }
 
     iterator end() {
-        return iterator(this, true);
+        return iterator(this, objects.size());
     }
 
     MetaDataContainer** goToObject(long objectID);

@@ -262,7 +262,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     header->iform = dims[2] <= 1 ? 1 : 2;  // 2D image or 3D volume?
     header->imami = 0; // never trust max/min
 
-    if (!MDMainHeader.isEmpty()) {
+    if (!MDMainHeader.empty()) {
         #ifdef DEBUG
         std::cerr << "Non-empty MDMainHeader" << std::endl;
         #endif

@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
         obsModel.opticsMdt.deactivateLabel(EMDL::IMAGE_OPTICS_GROUP);
 
-        mdt1.setVersion(30000);
+        mdt1.version = 30000;
     } else {
         obsModel.opticsMdt.deactivateLabel(EMDL::IMAGE_BEAMTILT_X);
         obsModel.opticsMdt.deactivateLabel(EMDL::IMAGE_BEAMTILT_Y);

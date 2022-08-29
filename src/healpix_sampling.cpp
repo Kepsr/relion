@@ -224,7 +224,7 @@ void HealpixSampling::write(FileName fn_out) {
     MetaDataTable MD;
     MD.isList = true;
     MD.addObject();
-    MD.setName("sampling_general");
+    MD.name = "sampling_general";
     MD.setValue(EMDL::SAMPLING_IS_3D, is_3D);
     MD.setValue(EMDL::SAMPLING_IS_3D_TRANS, is_3d_trans);
     if (is_3D) {
@@ -252,7 +252,7 @@ void HealpixSampling::write(FileName fn_out) {
     if (is_3D) {
         MD.clear();
         MD.isList = false;
-        MD.setName("sampling_directions");
+        MD.name = "sampling_directions";
         for (long int idir = 0; idir < NrDirections(); idir++) {
             RFLOAT rot, tilt;
             getDirection(idir, rot, tilt);

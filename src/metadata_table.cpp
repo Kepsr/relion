@@ -63,7 +63,7 @@ MetaDataTable::MetaDataTable():
     isList(false),
     name(""),
     comment(""),
-    version(CURRENT_MDT_VERSION),
+    version(CurrentVersion),
     activeLabels(0)
 {}
 
@@ -126,10 +126,6 @@ MetaDataTable::~MetaDataTable() {
     for (const auto &object : objects) delete object;
 }
 
-bool MetaDataTable::isEmpty() const {
-    return objects.empty();
-}
-
 size_t MetaDataTable::numberOfObjects() const {
     return objects.size();
 }
@@ -152,41 +148,9 @@ void MetaDataTable::clear() {
     isList = false;
     name = "";
     comment = "";
-    version = CURRENT_MDT_VERSION;
+    version = CurrentVersion;
 
     activeLabels.clear();
-}
-
-void MetaDataTable::setComment(const std::string &comment) {
-    this->comment = comment;
-}
-
-std::string MetaDataTable::getComment() const {
-    return comment;
-}
-
-bool MetaDataTable::containsComment() const {
-    return !comment.empty();
-}
-
-void MetaDataTable::setName(const std::string &name) {
-    this->name = name;
-}
-
-std::string MetaDataTable::getName() const {
-    return name;
-}
-
-void MetaDataTable::setVersion(int v) {
-    version = v;
-}
-
-int MetaDataTable::getVersion() const {
-    return version;
-}
-
-int MetaDataTable::getCurrentVersion() {
-    return CURRENT_MDT_VERSION;
 }
 
 std::map<EMDL::EMDLabel, std::string> labels_and_unknowns(const MetaDataTable& mdt) {
@@ -432,8 +396,7 @@ void MetaDataTable::sort(
 
         objects = objs;
     }
-    // reset pointer to the beginning of the table
-    firstObject();
+    goToObject(0);  // reset pointer to the beginning of the table
 }
 
 void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_sort_after_at, bool do_sort_before_at) {
@@ -571,8 +534,7 @@ void MetaDataTable::append(const MetaDataTable &mdt) {
         setObjectUnsafe(mdt.getObject(i), objects.size() - 1);
     }
 
-    // reset pointer to the beginning of the table
-    firstObject();
+    goToObject(0);  // reset pointer to the beginning of the table
 }
 
 
@@ -690,14 +652,6 @@ void MetaDataTable::removeObject(long objectID) {
     } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
-}
-
-MetaDataContainer** MetaDataTable::firstObject() {
-    return current_object = &*objects.begin();
-}
-
-MetaDataContainer** MetaDataTable::nextObject() {
-    return ++current_object;
 }
 
 MetaDataContainer** MetaDataTable::goToObject(long int objectID) {
@@ -1137,7 +1091,7 @@ MetaDataTable subsetMetaDataTable(
 // Map each micrograph name to a collection of object indices
 // Also, populate xs, ys, zs
 static std::map<std::string, std::vector<long>> group_particles_by_micrograph(
-    MetaDataTable mdt, EMDL::EMDLabel mic_label, RFLOAT origin_scale,
+    MetaDataTable &mdt, EMDL::EMDLabel mic_label, RFLOAT origin_scale,
     std::vector<RFLOAT> &xs, std::vector<RFLOAT> &ys, std::vector<RFLOAT> &zs,
     bool dataIs3D
 ) {
@@ -1160,8 +1114,8 @@ static std::map<std::string, std::vector<long>> group_particles_by_micrograph(
         zs[i] = coordinate - origin * origin_scale;
         }
 
-        std::string mic_name = mdt.getValue<std::string>(mic_label);
-        grouped[mic_name].push_back(i);  // Will insert key-value pair if key not found
+        const std::string mic_name = mdt.getValue<std::string>(mic_label);
+        grouped[mic_name].push_back(i);  // operator [] will insert if key not found
 
     }
     return grouped;
@@ -1192,31 +1146,31 @@ MetaDataTable removeDuplicatedParticles(
         zs.resize(MDin.numberOfObjects(), 0.0);
     }
 
-    std::map<std::string, std::vector<long>> grouped = group_particles_by_micrograph(
+    const auto grouped = group_particles_by_micrograph(
         MDin, mic_label, origin_scale, xs, ys, zs, dataIs3D
     );
 
     // The minimal permitted distance between any two particles
     // (technically the maximal forbidden distance)
-    RFLOAT threshold_sq = threshold * threshold;
+    const RFLOAT threshold_sq = threshold * threshold;
 
     // For each particle group, remove duplicates
     std::vector<bool> valid (MDin.numberOfObjects(), true);
     for (auto mic_name_and_object_indices : grouped) {
 
         // For every ordered pair of non-identical particles
-        long n_particles = mic_name_and_object_indices.second.size();
+        const long n_particles = mic_name_and_object_indices.second.size();
         for (long i = 0; i < n_particles; i++) {
-        long part_id1 = mic_name_and_object_indices.second[i];
+        const long part_id1 = mic_name_and_object_indices.second[i];
         for (long j = i + 1; j < n_particles; j++) {
-        long part_id2 = mic_name_and_object_indices.second[j];
+        const long part_id2 = mic_name_and_object_indices.second[j];
 
-            RFLOAT dx = xs[part_id1] - xs[part_id2];
-            RFLOAT dy = ys[part_id1] - ys[part_id2];
+            const RFLOAT dx = xs[part_id1] - xs[part_id2];
+            const RFLOAT dy = ys[part_id1] - ys[part_id2];
             // The squared distance between the two particles
-            RFLOAT dist_sq = dx * dx + dy * dy;
+            RFLOAT dist_sq = euclidsq(dx, dy);
             if (dataIs3D) {
-            RFLOAT dz = zs[part_id1] - zs[part_id2];
+            const RFLOAT dz = zs[part_id1] - zs[part_id2];
             dist_sq += dz * dz;
             }
 
@@ -1261,7 +1215,7 @@ long int MetaDataTable::read(
 
     return readStar(in, name, do_only_count);
 
-    firstObject();  // Go to the first object
+    goToObject(0);  // Go to the first object
 }
 
 long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
@@ -1418,7 +1372,7 @@ long int MetaDataTable::readStar(
             // If a name has been given, only read data_thatname
             // Otherwise, just read the first data_ block
             if (name.empty() || name == token) {
-                setName(token);
+                this->name = token;
                 // Get the next item that starts with "_somelabel" or with "loop_"
                 int current_pos = in.tellg();
                 while (getline(in, line, '\n')) {
@@ -1440,55 +1394,62 @@ long int MetaDataTable::readStar(
     return 0;
 }
 
+std::vector<std::string> data_names(MetaDataTable mtd) {
+    std::vector<std::string> names;
+    const auto lus = labels_and_unknowns(mtd);
+    names.reserve(lus.size());
+    for (const auto &lu : lus) {
+        // EMDL::SORTED_IDX is only for internal use, never write it out!
+        if (lu.first != EMDL::SORTED_IDX) {
+            names.push_back(lu.first == EMDL::UNKNOWN_LABEL ? lu.second : EMDL::label2Str(lu.first));
+        }
+    }
+    return names;
+}
+
 // Writing
 
 void MetaDataTable::write(std::ostream& out) {
-    // Only write tables that have something in them
-    if (isEmpty()) return;
+
+    if (empty()) return;  // Only write tables that have something in them
 
     if (version >= 30000) {
         out << "\n"
-            << "# version " << getCurrentVersion() << "\n";
+            << "# version " << CurrentVersion << "\n";
     }
 
-    out << "\n"
-        << "data_" << getName() << "\n";
+    out << "\n";
+    // Begin data block
+    out << "data_" << name << "\n";
 
-    if (containsComment())
+    if (!comment.empty())
     out << "# " << comment << "\n";
 
     out << "\n";
 
     if (!isList) {
 
-        // Write loop header
+        // Begin data loop
         out << "loop_\n";
 
+        // Data names
         long int i = 0;
-        for (const auto &lu : labels_and_unknowns(*this)) {
-            if (lu.first != EMDL::COMMENT && lu.first != EMDL::SORTED_IDX) {
-                // EMDL::SORTED_IDX is only for internal use, never write it out!
-                out << "_" << (lu.first == EMDL::UNKNOWN_LABEL ? lu.second :
-                    EMDL::label2Str(lu.first)) << " #" << ++i << "\n";
-            }
+        for (const std::string &name : data_names(*this)) {
+            out << "_" << name << " #" << ++i << "\n";
         }
 
-        // Write data block
+        // Data items
         for (long int j = 0; j < objects.size(); j++) {
             std::string entryComment = "";
 
             for (long int i = 0; i < activeLabels.size(); i++) {
                 EMDL::EMDLabel l = activeLabels[i];
                 if (l == EMDL::SORTED_IDX) continue;
-                if (l == EMDL::COMMENT) {
-                    entryComment = "# " + getValue<std::string>(EMDL::COMMENT, j);
-                } else {
-                    out.width(10);
-                    out << escapeStringForSTAR(l == EMDL::UNKNOWN_LABEL ?
-                        objects[j]->unknowns[unknown_label_indices[i]] :
-                        getValueToString(l, j))
-                        << " ";
-                }
+                out.width(10);
+                out << escapeStringForSTAR(l == EMDL::UNKNOWN_LABEL ?
+                    objects[j]->unknowns[unknown_label_indices[i]] :
+                    getValueToString(l, j))
+                    << " ";
             }
             out << entryComment << "\n";
         }
@@ -1501,18 +1462,13 @@ void MetaDataTable::write(std::ostream& out) {
         // Determine column width
         int maxWidth = 10;
         for (const auto &lu : labels_and_unknowns(*this)) {
-            if (lu.first == EMDL::COMMENT) {
-                entryComment = "# " + getValue<std::string>(EMDL::COMMENT, 0);
-            } else {
-                int w = (lu.first == EMDL::UNKNOWN_LABEL ? lu.second : 
-                    EMDL::label2Str(lu.first)).length();
-                if (w > maxWidth) maxWidth = w;
-            }
+            int w = (lu.first == EMDL::UNKNOWN_LABEL ? lu.second : 
+                EMDL::label2Str(lu.first)).length();
+            if (w > maxWidth) maxWidth = w;
         }
 
         for (long i = 0; i < activeLabels.size(); i++) {
             const auto lu = label_and_unknown(i);
-            if (lu.first == EMDL::COMMENT) continue;
             const bool is_known = lu.first == EMDL::UNKNOWN_LABEL;
             const std::string key = is_known ? EMDL::label2Str(lu.first) : lu.second;
             const std::string val = escapeStringForSTAR(is_known ?
@@ -1527,7 +1483,7 @@ void MetaDataTable::write(std::ostream& out) {
 }
 
 void MetaDataTable::write(const FileName &fn_out) {
-    FileName fn_tmp = fn_out + ".tmp";
+    const FileName fn_tmp = fn_out + ".tmp";
     std::ofstream fh (fn_tmp.c_str(), std::ios::out);
     if (!fh)
         REPORT_ERROR((std::string) "MetaDataTable::write: cannot write to file: " + fn_out);
