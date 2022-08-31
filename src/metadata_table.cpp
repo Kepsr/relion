@@ -1446,8 +1446,8 @@ void MetaDataTable::write(std::ostream& out) {
                 EMDL::EMDLabel l = activeLabels[i];
                 if (l == EMDL::SORTED_IDX) continue;
                 out.width(10);
-                out << escapeStringForSTAR(l == EMDL::UNKNOWN_LABEL ?
-                    objects[j]->unknowns[unknown_label_indices[i]] :
+                out << (l == EMDL::UNKNOWN_LABEL ?
+                    escapeStringForSTAR(objects[j]->unknowns[unknown_label_indices[i]]) :
                     getValueToString(l, j))
                     << " ";
             }
@@ -1470,11 +1470,11 @@ void MetaDataTable::write(std::ostream& out) {
         for (long i = 0; i < activeLabels.size(); i++) {
             const auto lu = label_and_unknown(i);
             const bool is_known = lu.first == EMDL::UNKNOWN_LABEL;
-            const std::string key = is_known ? EMDL::label2Str(lu.first) : lu.second;
-            const std::string val = escapeStringForSTAR(is_known ?
+            const std::string name = is_known ? EMDL::label2Str(lu.first) : lu.second;
+            const std::string item = is_known ?
                 getValueToString(lu.first, 0) :
-                objects[0]->unknowns[unknown_label_indices[i]]);
-            out << "_" << key << std::setw(12 + maxWidth - key.length()) << " " << val << "\n";
+                escapeStringForSTAR(objects[0]->unknowns[unknown_label_indices[i]]);
+            out << "_" << name << std::setw(12 + maxWidth - name.length()) << " " << item << "\n";
         }
         out << entryComment << "\n";
     }
