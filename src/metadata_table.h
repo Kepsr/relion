@@ -154,14 +154,10 @@ class MetaDataTable {
 
     std::string getValueToString(EMDL::EMDLabel label, long int objectID = -1) const;
 
-    inline std::string unknown_label_name_or_empty(int i) const {
-        return activeLabels[i] == EMDL::UNKNOWN_LABEL ? unknownLabelNames[unknown_label_indices[i]] : "";
-    }
-
     inline std::pair<EMDL::EMDLabel, std::string> label_and_unknown(int i) const {
-        EMDL::EMDLabel label = activeLabels[i];
-        std::string unknownLabelName = label == EMDL::UNKNOWN_LABEL ? unknownLabelNames[unknown_label_indices[i]] : "";
-        return std::make_pair(label, unknownLabelName);
+        const EMDL::EMDLabel label = activeLabels[i];
+        const std::string unknownLabelName = label == EMDL::UNKNOWN_LABEL ? unknownLabelNames[unknown_label_indices[i]] : "";
+        return {label, unknownLabelName};
     }
 
     std::string getUnknownLabelNameAt(int i) const;
@@ -243,9 +239,9 @@ class MetaDataTable {
      *  If objectID is not given, 'current_object' will be removed.
      *  'current_object' is set to the last object in the list. */
     void removeObject(long objectID = -1);
-    
+
     /** MetaDataTable::iterator
-     *    
+     *
      * This struct lets us iterate over the object indices in a MetaDataTable:
      * @code
      * for (long int i : mdt) {
@@ -258,23 +254,21 @@ class MetaDataTable {
     struct iterator {
 
         MetaDataTable *const mdt;
-        MetaDataContainer** object;
         long int i;
 
         iterator(MetaDataTable *mdt, long int i = 0):
-        i(i), mdt(mdt), object(&mdt->objects[i]) {}
+        i(i), mdt(mdt) {}
 
         long int operator *() const {
             return i;
         }
 
         iterator &operator ++() {
-            object = &mdt->objects[++i];
             return *this;
         }
 
         bool operator != (const iterator &other) const {
-            return i != other.i || mdt != other.mdt || object != other.object;
+            return i != other.i || mdt != other.mdt;
         }
 
     };
@@ -464,7 +458,7 @@ void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int obje
 
     if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 
-    if (label == EMDL::UNKNOWN_LABEL) REPORT_ERROR("MetaDataTable::setValue does not support unknown label.");
+    if (label == EMDL::UNKNOWN_LABEL) REPORT_ERROR(std::string(__func__) + " does not support unknown label.");
 
     #ifdef METADATA_TABLE_TYPE_CHECK
     if (!isTypeCompatible<T>(label)) REPORT_ERROR("Runtime error: wrong type given to MetaDataTable::setValue for label " + EMDL::label2Str(label));

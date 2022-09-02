@@ -613,7 +613,7 @@ void MlOptimiserMpi::initialiseWorkLoad() {
         if (!do_reuse_scratch) {
             bool also_do_ctfimage = mymodel.data_dim == 3 && do_ctf_correction;
             if (do_parallel_disc_io) {
-                FileName fn_lock = mydata.initialiseScratchLock(fn_scratch, fn_out);
+                FileName fn_lock = mydata.initialiseScratchLock(fn_out);
                 // One rank after the other, all followers pass through mydata.prepareScratchDirectory()
                 // This way, only the first rank on each hostname will actually copy the particle stacks
                 // The rest will just update the filenames in exp_model

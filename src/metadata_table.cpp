@@ -187,11 +187,12 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID)
         sts << std::setprecision(12);
         sts << '[';
         // It would be nice to use join for this
-        // (but it doesn't currently work with string streams)
-        for (int i = 0; i < v.size() - 1; i++) {
-            sts << v[i] << ',';
+        // (but it doesn't currently work with stringstreams)
+        auto i = v.begin();
+        for (; i != v.end() - 1; ++i) {
+            sts << *i << ',';
         }
-        sts << v[v.size() - 1];
+        sts << *i;
         sts << ']';
         return sts.str();
     }
@@ -231,7 +232,7 @@ void MetaDataTable::setValueFromString(
         setValue(label, value, objectID);
         return;
     } else {
-        std::istringstream i(value);
+        std::istringstream i (value);
 
         if (EMDL::is<double>(label)) {
             double v;
@@ -252,7 +253,7 @@ void MetaDataTable::setValueFromString(
             std::vector<double> v;
             v.reserve(32);
 
-            char* temp = new char[value.size()+1];
+            char* temp = new char[value.size() + 1];
             strcpy(temp, value.c_str());
 
             char* token;
@@ -1207,7 +1208,7 @@ long int MetaDataTable::read(
 
     clear();  // Clear current table
 
-    FileName fn_read = filename.removeFileFormat();  // Check for a :star extension
+    const FileName fn_read = filename.removeFileFormat();  // Check for a :star extension
 
     std::ifstream in (fn_read.data(), std::ios_base::in);
     if (in.fail())
@@ -1223,7 +1224,7 @@ long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
 
     // Read column labels
     int labelPosition = 0;
-    std::string line, token;
+    std::string line;
 
     // First read all the column labels
     while (getline(in, line, '\n')) {
@@ -1239,10 +1240,9 @@ long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
         size_t start = line.find("_");
         size_t end   = line.find("#");
 
-        token = line.substr(start + 1, end - start - 2);
+        const std::string token = line.substr(start + 1, end - start - 2);
 
-        EMDL::EMDLabel label = EMDL::str2Label(token);
-
+        auto label = EMDL::str2Label(token);
         if (label == EMDL::UNDEFINED) {
             std::cerr << " + WARNING: will ignore (but maintain) values for the unknown label: " << token << std::endl;
             label = EMDL::UNKNOWN_LABEL;
@@ -1268,10 +1268,9 @@ long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
             addObject();  // Add a new line to the table
 
             // Parse data values
-            int pos = 0;
             std::string value;
             labelPosition = 0;
-            for (; nextTokenInSTAR(line, pos, value); labelPosition++) {
+            for (int pos = 0; nextTokenInSTAR(line, pos, value); labelPosition++) {
                 if (labelPosition >= num_labels) {
                     std::cerr << "Error in line: " << line << std::endl;
                     REPORT_ERROR("A line in the STAR file contains more columns than the number of labels.");
@@ -1297,7 +1296,7 @@ long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
 bool MetaDataTable::readStarList(std::ifstream &in) {
     isList = true;
     addObject();
-    long int objectID = objects.size() - 1;
+    const long int objectID = objects.size() - 1;
 
     std::string line, firstword, value;
 
@@ -1345,7 +1344,6 @@ bool MetaDataTable::readStarList(std::ifstream &in) {
 long int MetaDataTable::readStar(
     std::ifstream &in, const std::string &name, bool do_only_count
 ) {
-    std::string line, token, value;
     clear();
 
     // Start reading the ifstream at the top
@@ -1357,18 +1355,19 @@ long int MetaDataTable::readStar(
 
     // Proceed until the next data_ or _loop statement
     // The loop statement may be necessary for data blocks that have a list AND a table inside them
+    std::string line;
     while (getline(in, line, '\n')) {
         trim(line);
-        if (line.find("# version ") != std::string::npos) {
-            token = line.substr(line.find("# version ") + std::string("# version ").length());
-
-            std::istringstream sts(token);
-            sts >> version;
+        const auto search_version = line.find("# version ");
+        if (search_version != std::string::npos) {
+            const std::string token = line.substr(search_version + std::string("# version ").length());
+            std::istringstream(token) >> version;
         }
 
         // Find data_ lines
-        if (line.find("data_") != std::string::npos) {
-            token = line.substr(line.find("data_") + 5);
+        const auto search_data = line.find("data_");
+        if (search_data != std::string::npos) {
+            const std::string token = line.substr(search_data + 5);
             // If a name has been given, only read data_thatname
             // Otherwise, just read the first data_ block
             if (name.empty() || name == token) {
@@ -1440,7 +1439,6 @@ void MetaDataTable::write(std::ostream& out) {
 
         // Data items
         for (long int j = 0; j < objects.size(); j++) {
-            std::string entryComment = "";
 
             for (long int i = 0; i < activeLabels.size(); i++) {
                 EMDL::EMDLabel l = activeLabels[i];
@@ -1451,13 +1449,12 @@ void MetaDataTable::write(std::ostream& out) {
                     getValueToString(l, j))
                     << " ";
             }
-            out << entryComment << "\n";
+            out << "\n";
         }
 
     } else {
         // isList
         // Get first object. In this case (row format) there is a single object
-        std::string entryComment = "";
 
         // Determine column width
         int maxWidth = 10;
@@ -1476,7 +1473,7 @@ void MetaDataTable::write(std::ostream& out) {
                 escapeStringForSTAR(objects[0]->unknowns[unknown_label_indices[i]]);
             out << "_" << name << std::setw(12 + maxWidth - name.length()) << " " << item << "\n";
         }
-        out << entryComment << "\n";
+        out << "\n";
     }
     // Finish table/data block with an empty line
     out << "\n";

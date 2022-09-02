@@ -333,17 +333,17 @@ class Experiment {
     MetaDataTable getMetaDataImage(long int part_id, int img_id);
 
     // Add a particle
-    long int addParticle(std::string part_name, int random_subset = 0);
+    long int addParticle(const std::string &part_name, int random_subset = 0);
 
      // Add an image to the given particle
     int addImageToParticle(long int part_id, std::string img_name, long int ori_img_id, long int group_id, long int micrograph_id,
                            int optics_group, bool unique);
 
     // Add a group
-    long int addGroup(std::string mic_name, int optics_group);
+    long int addGroup(const std::string &mic_name, int optics_group);
 
     // Add a micrograph
-    long int addMicrograph(std::string mic_name);
+    long int addMicrograph(const std::string &mic_name);
 
     // for separate refinement of random halves of the data
     void divideParticlesInRandomHalves(int seed, bool do_helical_refine = false);
@@ -363,14 +363,14 @@ class Experiment {
 
     // For parallel executions, lock the scratch directory with a unique code, so we won't copy the same data many times to the same position
     // This determines the lockname and removes the lock if it exists
-    FileName initialiseScratchLock(FileName _fn_scratch, FileName _fn_out);
+    FileName initialiseScratchLock(const FileName &fn_out);
 
     // Returns true if particles need to be copied, and creates a lock file.
     // Returns false if the particles do not need to be copied. In that case, only the number of particles on the scratch disk needs to be counted
     // Also checks how much free space there is on the scratch dir
-    bool prepareScratchDirectory(FileName _fn_scratch, FileName fn_lock = "");
+    bool prepareScratchDirectory(const FileName &fn_scratch, const FileName &fn_lock = "");
 
-    void setScratchDirectory(FileName _fn_scratch, bool do_reuse_scratch, int verb=0);
+    void setScratchDirectory(const FileName &fn_scratch, bool do_reuse_scratch, int verb=0);
 
     // Wipe the generic scratch directory clean
     void deleteDataOnScratch();

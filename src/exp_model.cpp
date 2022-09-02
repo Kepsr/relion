@@ -60,11 +60,11 @@ int Experiment::getOpticsImageSize(int optics_group) {
 }
 
 long int Experiment::getMicrographId(long int part_id, int img_id) {
-    return (particles[part_id].images[img_id]).micrograph_id;
+    return particles[part_id].images[img_id].micrograph_id;
 }
 
 long int Experiment::getGroupId(long int part_id, int img_id) {
-    return (particles[part_id].images[img_id]).group_id;
+    return particles[part_id].images[img_id].group_id;
 }
 
 int Experiment::getOpticsGroup(long part_id, int img_id) {
@@ -79,7 +79,7 @@ int Experiment::getOriginalImageId(long part_id, int img_id) {
     return particles[part_id].images[img_id].id;
 }
 RFLOAT Experiment::getImagePixelSize(long int part_id, int img_id) {
-    int optics_group = particles[part_id].images[img_id].optics_group;
+    const int optics_group = particles[part_id].images[img_id].optics_group;
     return obsModel.getPixelSize(optics_group);
 }
 
@@ -97,7 +97,7 @@ MetaDataTable Experiment::getMetaDataImage(long int part_id, int img_id) {
     return result;
 }
 
-long int Experiment::addParticle(std::string part_name, int random_subset) {
+long int Experiment::addParticle(const std::string &part_name, int random_subset) {
 
     ExpParticle particle;
     particle.name = part_name;
@@ -145,7 +145,7 @@ int Experiment::addImageToParticle(
     return particles[part_id].images.size() - 1;
 }
 
-long int Experiment::addGroup(std::string group_name, int _optics_group) {
+long int Experiment::addGroup(const std::string &group_name, int _optics_group) {
     // Add new group to this Experiment
     ExpGroup group;
     group.id = groups.size(); // start counting groups at 0!
@@ -159,7 +159,7 @@ long int Experiment::addGroup(std::string group_name, int _optics_group) {
     return group.id;
 }
 
-long int Experiment::addMicrograph(std::string mic_name) {
+long int Experiment::addMicrograph(const std::string &mic_name) {
     // Add new micrograph to this Experiment
     ExpMicrograph micrograph;
     micrograph.id = micrographs.size();
@@ -174,38 +174,34 @@ long int Experiment::addMicrograph(std::string mic_name) {
 
 void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine) {
     // Only do this if the random_subset of all original_particles is zero
-    bool all_are_zero = true;
-    bool some_are_zero = false;
+    bool anyzero = false, allzero = true;
     nr_particles_subset1 = 0;
     nr_particles_subset2 = 0;
-    for (long int i = 0; i < particles.size(); i++) {
-        int random_subset = particles[i].random_subset;
-        if (random_subset != 0) {
-            all_are_zero = false;
+    for (const auto &particle : particles) {
+        if (particle.random_subset == 0) {
+            anyzero = true;
+        } else {
+            allzero = false;
             // Keep track of how many particles there are in each subset
-            if (random_subset == 1) {
+            if (particle.random_subset == 1) {
                 nr_particles_subset1++;
-            } else if (random_subset == 2) {
+            } else if (particle.random_subset == 2) {
                 nr_particles_subset2++;
             } else {
-                REPORT_ERROR("ERROR Experiment::divideParticlesInRandomHalves: invalid number for random subset (i.e. not 1 or 2): " + integerToString(random_subset));
+                REPORT_ERROR("ERROR Experiment::divideParticlesInRandomHalves: invalid number for random subset (i.e. not 1 or 2): " + integerToString(particle.random_subset));
             }
-        } else {
-            some_are_zero = true;
         }
 
-        if (!all_are_zero && some_are_zero)
+        if (!allzero && anyzero)
             REPORT_ERROR("ERROR Experiment::divideParticlesInRandomHalves: some random subset values are zero and others are not. They should all be zero, or all bigger than zero!");
     }
 
-    if (all_are_zero) {
+    if (allzero) {
         // Only randomise them if the random_subset values were not read in from the STAR file
         srand(seed);
         if (do_helical_refine) {
             std::string mic_name, img_name;
             int nr_swaps, nr_segments_subset1, nr_segments_subset2, helical_tube_id;
-            std::map<std::string, int> map_mics;
-            std::map<std::string, int>::const_iterator ii_map;
             std::vector<std::pair<std::string, int> > vec_mics;
 
             bool divide_according_to_helical_tube_id = false;
@@ -213,7 +209,7 @@ void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine)
                 divide_according_to_helical_tube_id = true;
 
             // Count micrograph names
-            map_mics.clear();
+            std::map<std::string, int> map_mics;
             for (long int part_id = 0; part_id < particles.size(); part_id++) {
                 // Get name of micrograph of the first image in this particle
                 long int mic_id = particles[part_id].images[0].micrograph_id;
@@ -226,13 +222,13 @@ void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine)
                     mic_name += std::string("_TUBEID_");
                     mic_name += std::string(integerToString(helical_tube_id));
                 }
-                if ((map_mics.insert(std::make_pair(mic_name, 1))).second == false)
+                if (!map_mics.emplace(mic_name, 1).second)
                     map_mics[mic_name]++;
             }
 
             vec_mics.clear();
-            for (ii_map = map_mics.begin(); ii_map != map_mics.end(); ii_map++)
-                vec_mics.push_back(*ii_map);
+            for (const auto &mic : map_mics)
+                vec_mics.push_back(mic);
 
             // NEW RANDOMISATION (better than the old one)
             nr_swaps = 0;
@@ -250,15 +246,15 @@ void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine)
             // Divide micrographs into halves
             map_mics.clear();
             nr_segments_subset1 = nr_segments_subset2 = 0;
-            for (int ii = 0; ii < vec_mics.size(); ii++) {
+            for (auto &pair : vec_mics) {
                 if (nr_segments_subset1 < nr_segments_subset2) {
-                    nr_segments_subset1 += vec_mics[ii].second;
-                    vec_mics[ii].second = 1;
+                    nr_segments_subset1 += pair.second;
+                    pair.second = 1;
                 } else {
-                    nr_segments_subset2 += vec_mics[ii].second;
-                    vec_mics[ii].second = 2;
+                    nr_segments_subset2 += pair.second;
+                    pair.second = 2;
                 }
-                map_mics.insert(vec_mics[ii]);
+                map_mics.insert(pair);
             }
 
             for (long int part_id = 0; part_id < particles.size(); part_id++) {
@@ -270,15 +266,13 @@ void Experiment::divideParticlesInRandomHalves(int seed, bool do_helical_refine)
                     helical_tube_id = MDimg.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID, ori_img_id);
                     if (helical_tube_id < 1)
                         REPORT_ERROR("ERROR Experiment::divideParticlesInRandomHalves: Helical tube ID should be positive integer!");
-                    mic_name += std::string("_TUBEID_");
-                    mic_name += std::string(integerToString(helical_tube_id));
+                    mic_name += std::string("_TUBEID_") + std::string(integerToString(helical_tube_id));
                 }
                 particles[part_id].random_subset = map_mics[mic_name];
             }
         } else {
-            for (long int part_id = 0; part_id < particles.size(); part_id++) {
-                int random_subset = rand() % 2 + 1;
-                particles[part_id].random_subset = random_subset; // randomly 1 or 2
+            for (auto &particle : particles) {
+                particle.random_subset = rand() % 2 + 1;  // randomly 1 or 2
             }
         }
 
@@ -357,33 +351,30 @@ void Experiment::randomiseParticlesOrder(int seed, bool do_split_random_halves, 
     }
 }
 
-void Experiment::initialiseBodies(int _nr_bodies) {
-    if (_nr_bodies < 2) {
-        return;
-    } else {
-        nr_bodies = _nr_bodies;
-        MetaDataTable MDbody;
-        MDbody.isList = false;
-        bool is_3d = (MDimg.containsLabel(EMDL::ORIENT_ORIGIN_Z));
-        for (auto _ : MDimg) {
-            MDbody.addObject();
-            RFLOAT zero = 0.0, ninety = 90.0;  // Is this an lvalue / rvalue thing?
-            RFLOAT norm = MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
-            MDbody.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, zero);
-            MDbody.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, zero);
-            MDbody.setValue(EMDL::ORIENT_ROT, zero);
-            MDbody.setValue(EMDL::ORIENT_TILT, ninety);
-            MDbody.setValue(EMDL::ORIENT_PSI, zero);
-            MDbody.setValue(EMDL::IMAGE_NORM_CORRECTION, norm);
-            if (is_3d)
-            MDbody.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zero);
-        }
-        // Now just fill all bodies with that MDbody
-        MDbodies.resize(nr_bodies, MDbody);
-        for (int ibody = 0; ibody < nr_bodies; ibody++) {
-            std::string tablename = "images_body_" + integerToString(ibody+1);
-            MDbodies[ibody].name = tablename;
-        }
+void Experiment::initialiseBodies(int nr_bodies) {
+    if (nr_bodies < 2) return;
+
+    this->nr_bodies = nr_bodies;
+    MetaDataTable MDbody;
+    MDbody.isList = false;
+    const bool is_3d = MDimg.containsLabel(EMDL::ORIENT_ORIGIN_Z);
+    for (auto _ : MDimg) {
+        MDbody.addObject();
+        const RFLOAT norm = MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
+        MDbody.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0);
+        MDbody.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
+        MDbody.setValue(EMDL::ORIENT_ROT,   0.0);
+        MDbody.setValue(EMDL::ORIENT_TILT, 90.0);
+        MDbody.setValue(EMDL::ORIENT_PSI,   0.0);
+        MDbody.setValue(EMDL::IMAGE_NORM_CORRECTION, norm);
+        if (is_3d)
+        MDbody.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
+    }
+    // Now just fill all bodies with that MDbody
+    MDbodies.resize(nr_bodies, MDbody);
+    for (int ibody = 0; ibody < nr_bodies; ibody++) {
+        const std::string tablename = "images_body_" + integerToString(ibody + 1);
+        MDbodies[ibody].name = tablename;
     }
 }
 
@@ -413,23 +404,24 @@ FileName Experiment::getImageNameOnScratch(long int part_id, int img_id, bool is
     #undef RETURN
 }
 
-void Experiment::setScratchDirectory(FileName _fn_scratch, bool do_reuse_scratch, int verb) {
+void Experiment::setScratchDirectory(const FileName &fn_scratch, bool do_reuse_scratch, int verb) {
+    this->fn_scratch = fn_scratch;
     // Make sure fn_scratch ends with a slash
-    if (_fn_scratch[_fn_scratch.length() - 1] != '/')
-        _fn_scratch += '/';
-    fn_scratch = _fn_scratch + "relion_volatile/";
+    if (fn_scratch[fn_scratch.length() - 1] != '/')
+        this->fn_scratch += '/';
+    this->fn_scratch += "relion_volatile/";
 
     if (do_reuse_scratch) {
         nr_parts_on_scratch.resize(numberOfOpticsGroups(), 0);
         for (int optics_group = 0; optics_group < numberOfOpticsGroups(); optics_group++) {
             if (is_3D) {
-                FileName fn_tmp = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle*.mrc";
+                FileName fn_tmp = this->fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle*.mrc";
                 std::vector<FileName> fn_all;
                 fn_tmp.globFiles(fn_all, true);
                 nr_parts_on_scratch[optics_group] = fn_all.size();
 
             } else {
-                FileName fn_tmp = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs";
+                FileName fn_tmp = this->fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs";
                 if (exists(fn_tmp)) {
                     Image<RFLOAT> Itmp;
                     Itmp.read(fn_tmp, false);
@@ -444,13 +436,13 @@ void Experiment::setScratchDirectory(FileName _fn_scratch, bool do_reuse_scratch
     }
 }
 
-FileName Experiment::initialiseScratchLock(FileName _fn_scratch, FileName _fn_out) {
+FileName Experiment::initialiseScratchLock(const FileName &fn_out) {
     // Get a unique lockname for this run
-    int uniqnr = rand() % 100000;
-    FileName fn_uniq = _fn_out;
+    const int uid = rand() % 100000;
+    FileName fn_uniq = fn_out;
     fn_uniq.replaceAllSubstrings("/", "_");
-    fn_uniq += "_lock" + integerToString(uniqnr);
-    FileName fn_lock = fn_scratch + fn_uniq;
+    fn_uniq += "_lock" + integerToString(uid);
+    const FileName fn_lock = fn_scratch + fn_uniq;
 
     if (exists(fn_lock))
         remove(fn_lock.c_str());
@@ -458,43 +450,39 @@ FileName Experiment::initialiseScratchLock(FileName _fn_scratch, FileName _fn_ou
     return fn_lock;
 }
 
-bool Experiment::prepareScratchDirectory(FileName _fn_scratch, FileName fn_lock) {
-    if (fn_lock != "" && exists(fn_lock)) {
+bool Experiment::prepareScratchDirectory(const FileName &fn_scratch, const FileName &fn_lock) {
+    if (!fn_lock.empty() && exists(fn_lock)) {
         // Still measure how much free space there is
         struct statvfs vfs;
-        statvfs(_fn_scratch.c_str(), &vfs);
+        statvfs(fn_scratch.c_str(), &vfs);
         char nodename[64] = "undefined";
         gethostname(nodename, sizeof(nodename));
-        std::string myhost(nodename);
-        free_space_Gb = (RFLOAT)vfs.f_bsize * vfs.f_bfree / (1024 * 1024 * 1024);
-
+        free_space_Gb = (RFLOAT) vfs.f_bsize * vfs.f_bfree / (1024 * 1024 * 1024);
         return false;
     } else {
         // Wipe the directory clean and make a new one
-        std::string command;
         deleteDataOnScratch();
 
         // Make the scratch directory with write permissions
-        command = "install -d -m 0777 " + fn_scratch;
+        const std::string command = "install -d -m 0777 " + this->fn_scratch;
         if (system(command.c_str()))
             REPORT_ERROR("ERROR: cannot execute: " + command);
 
         // Touch the lock file
-        if (fn_lock != "") {
+        if (fn_lock.empty()) {
             touch(fn_lock);
-            command = "chmod 0777 " + fn_lock;
+            const std::string command = "chmod 0777 " + fn_lock;
             if (system(command.c_str()))
                 REPORT_ERROR("ERROR: cannot execute: " + command);
         }
 
         // Measure how much free space there is
         struct statvfs vfs;
-        statvfs(_fn_scratch.c_str(), &vfs);
+        statvfs(fn_scratch.c_str(), &vfs);
         char nodename[64] = "undefined";
         gethostname(nodename, sizeof(nodename));
-        std::string myhost(nodename);
-        free_space_Gb = (RFLOAT)vfs.f_bsize * vfs.f_bfree / (1024 * 1024 * 1024);
-        std::cout << " + On host " << myhost << ": free scratch space = " << free_space_Gb << " Gb." << std::endl;
+        free_space_Gb = (RFLOAT) vfs.f_bsize * vfs.f_bfree / (1024 * 1024 * 1024);
+        std::cout << " + On host " << std::string(nodename) << ": free scratch space = " << free_space_Gb << " Gb." << std::endl;
 
         return true;
     }
@@ -502,8 +490,8 @@ bool Experiment::prepareScratchDirectory(FileName _fn_scratch, FileName fn_lock)
 
 void Experiment::deleteDataOnScratch() {
     // Wipe the scratch directory
-    if (fn_scratch != "" && exists(fn_scratch)) {
-        std::string command = " rm -rf " + fn_scratch;
+    if (!fn_scratch.empty() && exists(fn_scratch)) {
+        const std::string command = " rm -rf " + fn_scratch;
         if (system(command.c_str()))
             REPORT_ERROR("ERROR: cannot execute: " + command);
     }
@@ -579,22 +567,19 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
             if (used_space > max_space) {
                 char nodename[64] = "undefined";
                 gethostname(nodename, sizeof(nodename));
-                std::string myhost(nodename);
-                std::cerr << " Warning: scratch space full on " << myhost << ". Remaining " << nr_part - total_nr_parts_on_scratch << " particles will be read from where they were."<< std::endl;
+                std::cerr << " Warning: scratch space on " << std::string(nodename) << " full. "
+                    "Remaining " << nr_part - total_nr_parts_on_scratch << " particles will be read from where they were." << std::endl;
                 break;
             }
 
-            Image<RFLOAT> img;
             if (is_3D) {
                 // For subtomograms, write individual .mrc files,possibly also CTF images
-                img.read(fn_img);
-                FileName fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
-                img.write(fn_new);
+                const FileName new_fn_img = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
+                Image<RFLOAT>::from_filename(fn_img).write(new_fn_img);
                 if (also_do_ctf_image) {
-                    FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE);
-                    img.read(fn_ctf);
-                    fn_new = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
-                    img.write(fn_new);
+                    const FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE);
+                    const FileName new_fn_ctf = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
+                    Image<RFLOAT>::from_filename(fn_ctf).write(new_fn_ctf);
                 }
             } else {
                 // Only open/close new stacks, so check if this is a new stack
@@ -610,6 +595,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                     hFile.openFile(fn_stack, WRITE_READONLY);
                     fn_open_stack = fn_stack;
                 }
+                Image<RFLOAT> img;
                 img.readFromOpenFile(fn_img, hFile, -1, false);
 
                 const auto fn_new = FileName::compose(nr_parts_on_scratch[optics_group] + 1, fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particles.mrcs");
@@ -645,7 +631,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
     }
 
     if (do_copy && total_nr_parts_on_scratch > 1) {
-        std::string command = " chmod -R 777 " + fn_scratch + "/";
+        const std::string command = " chmod -R 777 " + fn_scratch + "/";
         if (system(command.c_str()))
             REPORT_ERROR("ERROR in executing: " + command);
     }
@@ -676,7 +662,7 @@ void Experiment::read(
     // Only open stacks once and then read multiple images
     fImageHandler hFile;
     long int dump;
-    FileName fn_stack, fn_open_stack="";
+    FileName fn_stack, fn_open_stack = "";
 
     // Initialize by emptying everything
     clear();
@@ -694,15 +680,14 @@ void Experiment::read(
             REPORT_ERROR("Experiment::read: ERROR: MRC stacks of 2D images should be have extension .mrcs, not .mrc!");
 
         // Read in header-only information to get the Nsize of the stack
-        Image<RFLOAT> img;
-        img.read(fn_exp, false); // false means skip data, only read header
+        auto img = Image<RFLOAT>::from_filename(fn_exp, false);  // false means skip data, only read header
 
         // allocate 1 block of memory
         particles.reserve(Nsize(img()));
         nr_images_per_optics_group.resize(1, 0);
 
-        for (long int n = 0; n <  Nsize(img()); n++) {
-            const auto fn_img = FileName::compose(n + 1, fn_exp); // fn_img = integerToString(n) + "@" + fn_exp;
+        for (long int n = 0; n < Nsize(img()); n++) {
+            const auto fn_img = FileName::compose(n + 1, fn_exp);  // fn_img = integerToString(n) + "@" + fn_exp;
             // Add the particle to my_area = 0
             part_id = addParticle(fn_img, 0);
             // Just add a single image per particle
@@ -711,15 +696,14 @@ void Experiment::read(
             MDimg.addObject();
 
             if (do_preread_images) {
-                Image<float> img;
                 fn_img.decompose(dump, fn_stack);
                 if (fn_stack != fn_open_stack) {
                     hFile.openFile(fn_stack, WRITE_READONLY);
                     fn_open_stack = fn_stack;
                 }
+                Image<float> img;
                 img.readFromOpenFile(fn_img, hFile, -1, false);
-                img().setXmippOrigin();
-                particles[part_id].images[0].img = img();
+                particles[part_id].images[0].img = img().setXmippOrigin();
             }
 
             // Set the filename and other metadata parameters
@@ -901,15 +885,14 @@ void Experiment::read(
             #endif
 
             if (do_preread_images) {
-                Image<float> img;
                 img_name.decompose(dump, fn_stack);
                 if (fn_stack != fn_open_stack) {
                     hFile.openFile(fn_stack, WRITE_READONLY);
                     fn_open_stack = fn_stack;
                 }
+                Image<float> img;
                 img.readFromOpenFile(img_name, hFile, -1, false);
-                img().setXmippOrigin();
-                particles[part_id].images[img_id].img = img();
+                particles[part_id].images[img_id].img = img().setXmippOrigin();
             }
 
             #ifdef DEBUG_READ
@@ -928,17 +911,13 @@ void Experiment::read(
         #endif
 
         // Check for the presence of multiple bodies (for multi-body refinement)
-        bool is_done = false;
         nr_bodies = 0;
-        while (!is_done) {
-            std::string tablename = "images_body_" + integerToString(nr_bodies + 1);
+        while (true) {
+            const std::string tablename = "images_body_" + integerToString(nr_bodies + 1);
             MetaDataTable MDimgin;
-            if (MDimgin.read(fn_exp, tablename) > 0) {
-                nr_bodies++;
-                MDbodies.push_back(MDimgin);
-            } else {
-                is_done = true;
-            }
+            if (MDimgin.read(fn_exp, tablename) <= 0) break;
+            nr_bodies++;
+            MDbodies.push_back(MDimgin);
         }
         // Even if we don't do multi-body refinement, then nr_bodies is still 1
         nr_bodies = std::max(nr_bodies, 1);
@@ -1004,8 +983,7 @@ void Experiment::read(
     }
 
     // Set is_3D from MDopt
-    int mydim = obsModel.opticsMdt.getValue<int>(EMDL::IMAGE_DIMENSIONALITY, 0);
-    is_3D = mydim == 3;
+    is_3D = obsModel.opticsMdt.getValue<int>(EMDL::IMAGE_DIMENSIONALITY, 0) == 3;
 
     #ifdef DEBUG_READ
     timer.toc(tdef);
@@ -1020,9 +998,8 @@ void Experiment::read(
 
 // Write to file
 void Experiment::write(FileName fn_root) {
-    std::ofstream  fh;
-    FileName fn_tmp = fn_root + "_data.star";
-    fh.open((fn_tmp).c_str(), std::ios::out);
+    const FileName fn_tmp = fn_root + "_data.star";
+    std::ofstream fh ((fn_tmp).c_str(), std::ios::out);
     if (!fh)
         REPORT_ERROR((std::string) "Experiment::write: Cannot write file: " + fn_tmp);
 
@@ -1039,5 +1016,4 @@ void Experiment::write(FileName fn_root) {
         }
     }
 
-    fh.close();
 }

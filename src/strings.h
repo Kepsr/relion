@@ -104,9 +104,9 @@ std::string escapeStringForSTAR(const std::string &str);
  *
  * @endcode
  */
-int bestPrecision(float F, int _width);
+int bestPrecision(float F, int width);
 
-bool isNumber(std::string);
+bool isNumber(const std::string&);
 
 /** String (char*) to double conversion.
  *
@@ -249,30 +249,6 @@ std::string floatToString(float F, int _width = 0, int _prec = 0);
  * @endcode
  */
 std::string integerToString(int I, int _width = 0, char fill_with = '0');
-
-/** Character to integer conversion.
- *
- * Takes a character and produces a number according to its ASCII code minus 48.
- * For instance, ASCII=48 produces number 0, ASCII=49 produces 1, ..., ASCII=57
- * produces 9, ASCII=58 produces 10!!, ... This is used when you have codified
- * numbers greater than 9 in a single character.
- *
- * @code
- * int param_no = textToInt(token, 1602, "Error reading number parameters");
- * @endcode
- */
-int textToInt(const char* str,
-              int _errno = 2103,
-              std::string errmsg = "Error in textToInt");
-
-/** String to string with given length conversion.
- *
- * The output string will have the information of the input one with the given
- * width. If the width is smaller than the string length then the string is
- * truncated and if it is greater the string is right padded with spaces. If
- * width==0 then the same string is returned.
- */
-std::string stringToString(const std::string& str, int _width = 0);
 
 /** Check angle.
  *
