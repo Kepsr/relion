@@ -93,13 +93,12 @@ std::string escapeStringForSTAR(const std::string &str) {
     std::string escaped = "\"";
     escaped.reserve(str.length());
 
-    const auto end = str.end();
-    for (auto it = str.begin(); it != end; ++it) {
+    for (auto it = str.begin(); it != str.end(); ++it) {
         if (*it == '\"') {
             const auto next = it + 1;
             // If this is the last character or the next character is whitespace,
             // append an alert character ('\a').
-            if (next == end || *next == ' ' || *next == '\t') escaped += "\a";
+            if (next == str.end() || *next == ' ' || *next == '\t') escaped += "\a";
         }
         escaped += *it;
     }
@@ -226,26 +225,24 @@ int bestPrecision(float x, int width) {
     if (x == 0) return 1;
 
     // abs(x) = 10 ** exp
-    int exp = floor(log10(std::abs(x)));
+    const int exp = floor(log10(std::abs(x)));
 
     if (exp >= 0) {  // i.e. abs(x) >= 1
         if (exp > width - 3) {
             return -1;
         } else {
-            int prec = width - 2;
-            if (prec < 0) return -1;
-            return prec;
+            const int prec = width - 2;
+            return prec < 0 ? -1 : prec;
         }
     } else {  // i.e. abs(x) < 1
-        int prec = width + exp - 1 - 3;
-        if (prec <= 0) return -1;
-        return prec;
+        const int prec = width + exp - 1 - 3;
+        return prec <= 0 ? -1 : prec;
     }
 }
 
-bool isNumber(std::string _input) {
+bool isNumber(const std::string &str) {
     float floatval;
-    return sscanf(_input.c_str(), "%f", &floatval);
+    return sscanf(str.c_str(), "%f", &floatval);
 }
 
 std::string floatToString(float F, int width, int prec) {
@@ -281,8 +278,8 @@ std::string floatToString(float F, int width, int prec) {
     return std::string(aux);
     #else
 
-    std::string retval = outs.str();
-    int i = retval.find('\0');
+    const std::string retval = outs.str();
+    const int i = retval.find('\0');
     if (i == -1) return retval;
     return retval.substr(0, i);
 
@@ -290,57 +287,31 @@ std::string floatToString(float F, int width, int prec) {
 }
 
 std::string integerToString(int I, int width, char fill_with) {
-    char aux[15];
 
     // Check width
-    int Iaux = abs(I);
-
+    int mag = abs(I);
     if (width == 0) {
         do {
-            Iaux /= 10;
+            mag /= 10;
             width++;
-        } while (Iaux != 0);
+        } while (mag != 0);
     } else if (I < 0) {
         width--;
     }
 
-    // Fill the number with the fill character
-    for (int i = 0; i < width; i++)
-        aux[i] = fill_with;
+    // Fill with fill character
+    char buffer[15] = {fill_with};
 
-    // Start filling the array
-    aux[width--] = '\0';
-    Iaux = abs(I);
+    buffer[width--] = '\0';  // Null-terminate
+
+    // Write digits
+    mag = abs(I);
     do {
-        aux[width--] = '0' + Iaux % 10;
-        Iaux /= 10;
-    } while (Iaux != 0);
+        buffer[width--] = '0' + mag % 10;
+        mag /= 10;
+    } while (mag != 0);
 
-    return static_cast<std::string>(I < 0 ? "-" : "") + aux;
-}
-
-int textToInt(const char *str, int _errno, std::string errmsg) {
-
-    if (!str) REPORT_ERROR(errmsg);
-
-    char readval;
-    if (!sscanf(str, "%c", &readval)) {
-        REPORT_ERROR(errmsg);
-        return 0;
-    }
-
-    return readval - 48;
-
-}
-
-std::string stringToString(const std::string &str, int width) {
-
-    if (width == 0) return str;
-
-    if (width < str.length()) return str.substr(0, width);
-
-    std::string copy = str;
-    return copy.append(width - str.length(), ' ');
+    return static_cast<std::string>(I < 0 ? "-" : "") + buffer;
 }
 
 void checkAngle(const std::string &str) {
@@ -350,38 +321,35 @@ void checkAngle(const std::string &str) {
 
 std::string removeSpaces(const std::string &str) {
     const std::string whitespace = "\n \t";
-    std::string retval;
-    int first = str.find_first_not_of(whitespace);
-    int last = str.find_last_not_of(whitespace);
+    std::string output;
+    const int first = str.find_first_not_of(whitespace),
+               last = str.find_last_not_of(whitespace);
     bool after_blank = false;
 
     for (int i = first; i <= last; i++) {
         if (whitespace.find(str[i]) != std::string::npos) {
             // Only add whitespace after a previous whitespace character
-            if (!after_blank) { retval += str[i]; }
+            if (!after_blank) { output += str[i]; }
             after_blank = true;
         } else {
-            retval += str[i];
+            output += str[i];
             after_blank = false;
         }
     }
 
-    return retval;
+    return output;
 }
 
 // Remove quotes ===========================================================
-void removeQuotes(char **_str) {
-    std::string retval = *_str;
-    if (retval.length() == 0)
-        return;
-    char c = retval[0];
-    if (c == '\"' || c == '\'')
+void removeQuotes(char **str) {
+    std::string retval = *str;
+    if (retval.empty()) return;
+    if (retval.front() == '\"' || retval.front() == '\'')
         retval = retval.substr(1, retval.length() - 1);
-    c = retval[retval.length()-1];
-    if (c == '\"' || c == '\'')
+    if (retval.back() == '\"' || retval.back() == '\'')
         retval = retval.substr(0, retval.length() - 1);
-    free(*_str);
-    *_str = strdup(retval.c_str());
+    free(*str);
+    *str = strdup(retval.c_str());
 }
 
 // Split a string ==========================================================
@@ -394,7 +362,7 @@ std::vector<std::string> split(
     int delimiter_index = input.find(delimiter, 0);
     if (delimiter_index == std::string::npos) return {input};
 
-    int delimiter_size = delimiter.size();
+    const int delimiter_size = delimiter.size();
     std::vector<int> positions;
     for (int progress = 0; progress <= delimiter_index;) {
         positions.push_back(delimiter_index);
@@ -403,7 +371,6 @@ std::vector<std::string> split(
     }
 
     std::vector<std::string> results;
-    int input_size = input.size();
     for (int i = 0; i <= positions.size(); i++) {
         int curr_position = positions[i];
         int prev_position = positions[i - 1];
@@ -542,18 +509,22 @@ void tokenize(
 
 std::string join(const std::vector<std::string> &v, const std::string &delim) {
     std::string result;
-    for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++it) {
+    std::vector<std::string>::const_iterator it = v.begin();
+    for (; it != v.end() - 1; ++it) {
         result.append(*it);
-        if (it != v.end() - 1) { result.append(delim); }
+        result.append(delim);
     }
+    result.append(*it);
     return result;
 }
 
 std::string join(const std::vector<char> &v, const std::string &delim) {
     std::string result;
-    for (std::vector<char>::const_iterator it = v.begin(); it != v.end(); ++it) {
+    std::vector<char>::const_iterator it = v.begin();
+    for (; it != v.end() - 1; ++it) {
         result += *it;
-        if (it != v.end() - 1) { result.append(delim); }
+        result.append(delim);
     }
+    result += *it;
     return result;
 }
