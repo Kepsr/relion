@@ -660,10 +660,10 @@ class image_handler_parameters {
 
         bool do_md_out = false;
         for (long int index : MD) {
-            FileName fn_img = MD.getValue<std::string>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME);
+            FileName fn_img = MD.getValue<std::string>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME, index);
 
             // For fourfilter...
-            RFLOAT psi = maybe(0.0, [&] (){ return MD.getValue<RFLOAT>(EMDL::ORIENT_PSI); });
+            RFLOAT psi = maybe(0.0, [&] (){ return MD.getValue<RFLOAT>(EMDL::ORIENT_PSI, index); });
 
             Image<RFLOAT> Iin;
             // Initialise for the first image
@@ -764,9 +764,9 @@ class image_handler_parameters {
                 Iin.read(fn_img);
 
                 if (do_avg_ampl2_ali) {
-                    auto psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-                    auto xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X);
-                    auto yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y);
+                    auto psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI, index);
+                    auto xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X, index);
+                    auto yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y, index);
                     // Apply the actual transformation
                     Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
                     A.at(0, 2) = xoff;

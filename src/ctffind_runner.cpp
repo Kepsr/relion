@@ -154,18 +154,18 @@ void CtffindRunner::initialise() {
         fn_micrographs_all.clear();
         optics_group_micrographs_all.clear();
         fn_micrographs_ctf_all.clear();
-        for (auto _ : MDin) {
-            FileName fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        for (long int i : MDin) {
+            FileName fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
 
-            fn_micrographs_all.push_back(fn_mic); // Dose weighted image
+            fn_micrographs_all.push_back(fn_mic);  // Dose-weighted image
 
             if (do_use_without_doseweighting)
-                fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME_WODOSE);
+                fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME_WODOSE, i);
             else if (use_given_ps)
-                fn_mic = MDin.getValue<std::string>(EMDL::CTF_POWER_SPECTRUM);
+                fn_mic = MDin.getValue<std::string>(EMDL::CTF_POWER_SPECTRUM, i);
             fn_micrographs_ctf_all.push_back(fn_mic); // Image for CTF estsimation
 
-            int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+            int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
             optics_group_micrographs_all.push_back(optics_group);
         }
     } else {

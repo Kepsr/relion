@@ -225,20 +225,19 @@ void ParticleSubtractor::revert() {
 
     // Swap image names
     for (long int i : MD) {
-        const FileName f1 = MD.getValue<std::string>(EMDL::IMAGE_ORI_NAME);
-        const FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+        const FileName f1 = MD.getValue<std::string>(EMDL::IMAGE_ORI_NAME, i);
+        const FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME, i);
         MD.setValue(EMDL::IMAGE_ORI_NAME, f2, i);
         MD.setValue(EMDL::IMAGE_NAME,     f1, i);
     }
 
     // Fix box size
     std::vector<bool> fixed_box_size(obsModel.numberOfOpticsGroups(), false);
-    for (long int _ : MD) {
+    for (long int i : MD) {
         const int og = obsModel.getOpticsGroup(MD);
-        if (fixed_box_size[og])
-            continue;
+        if (fixed_box_size[og]) continue;
 
-        FileName img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+        FileName img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME, i);
         FileName fn_img;
         long int dummy;
         img_name.decompose(dummy, fn_img);

@@ -222,12 +222,12 @@ class tiltpair_plot_parameters {
             // Read input data
             // RFLOAT best_tilt, best_alpha, best_beta;
 
-            RFLOAT rot1  = MDu.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-            RFLOAT rot2  = MDt.getValue<RFLOAT>(EMDL::ORIENT_ROT, iline);
-            RFLOAT tilt1 = MDu.getValue<RFLOAT>(EMDL::ORIENT_TILT);
+            RFLOAT rot1  = MDu.getValue<RFLOAT>(EMDL::ORIENT_ROT,  iline);
+            RFLOAT rot2  = MDt.getValue<RFLOAT>(EMDL::ORIENT_ROT,  iline);
+            RFLOAT tilt1 = MDu.getValue<RFLOAT>(EMDL::ORIENT_TILT, iline);
             RFLOAT tilt2 = MDt.getValue<RFLOAT>(EMDL::ORIENT_TILT, iline);
-            RFLOAT psi1  = MDu.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-            RFLOAT psi2  = MDt.getValue<RFLOAT>(EMDL::ORIENT_PSI, iline);
+            RFLOAT psi1  = MDu.getValue<RFLOAT>(EMDL::ORIENT_PSI,  iline);
+            RFLOAT psi2  = MDt.getValue<RFLOAT>(EMDL::ORIENT_PSI,  iline);
 
             // Bring both angles to a normalized set
             rot1  = wrap(rot1,  -180.0, +180.0);
@@ -244,7 +244,7 @@ class tiltpair_plot_parameters {
             RFLOAT distp  = check_symmetries(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);
 
             // Calculate distance to user-defined point
-            Matrix1D<RFLOAT> aux2(4);
+            Matrix1D<RFLOAT> aux2 (4);
             // SINCOS?
             RFLOAT xp = dist_from_tilt * cos(radians(dist_from_alpha));
             RFLOAT yp = dist_from_tilt * sin(radians(dist_from_alpha));
@@ -253,7 +253,7 @@ class tiltpair_plot_parameters {
             XX(aux2) = tilt2p;
             YY(aux2) = rot2p;
             ZZ(aux2) = psi2p;
-            aux2[3] = sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y));
+            aux2[3] = euclid(xp - x, yp - y);
             add_to_postscript(tilt2p, rot2p, psi2p);
         }
 

@@ -384,7 +384,7 @@ std::vector<std::vector<d2Vector>> MotionHelper::readTracksInPix(
 
     int pc;
     try {
-        pc = mdt.getValue<int>(EMDL::PARTICLE_NUMBER);
+        pc = mdt.getValue<int>(EMDL::PARTICLE_NUMBER, 0);
     } catch (const char *errmsg) {
         REPORT_ERROR("MotionHelper::readTracks: missing particle number in " + fn + ".");
 

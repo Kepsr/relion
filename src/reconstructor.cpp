@@ -105,7 +105,7 @@ void Reconstructor::initialise() {
 
     do_ignore_optics = false;
     // Read MetaData file, which should have the image names and their angles!
-    if (fn_debug == "") {
+    if (fn_debug.empty()) {
         ObservationModel::loadSafely(fn_sel, obsModel, DF, "particles", 0, false);
         if (obsModel.opticsMdt.numberOfObjects() == 0) {
             do_ignore_optics = true;
@@ -135,7 +135,7 @@ void Reconstructor::initialise() {
     if (do_reconstruct_ctf) {
         output_boxsize = ctf_dim;
     } else {
-        fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME);
+        fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME, DF.index());
 
         if (!image_path.empty()) {
             fn_img = image_path + "/" + fn_img.substr(fn_img.find_last_of("/") + 1);
@@ -167,8 +167,9 @@ void Reconstructor::initialise() {
             if (
                 DF.containsLabel(EMDL::CTF_MAGNIFICATION) && DF.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)
             ) {
-                RFLOAT mag   = DF.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
-                RFLOAT dstep = DF.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
+                const long int i = DF.index();
+                RFLOAT mag   = DF.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION, i);
+                RFLOAT dstep = DF.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
                 angpix = 10000.0 * dstep / mag;
                 if (verb > 0)
                     std::cout << " + Using pixel size calculated from magnification and detector pixel size in the input STAR file: " << angpix << std::endl;
@@ -375,28 +376,28 @@ void Reconstructor::backprojectOneParticle(long int p) {
     if (!fn_noise.empty()) {
         // TODO: Refactor code duplication from relion_project!
         FileName fn_group;
+        const long int i = DF.index();
         if (DF.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-            fn_group = DF.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME);
+            fn_group = DF.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME, i);
         } else if (DF.containsLabel(EMDL::MICROGRAPH_NAME)) {
-            fn_group = DF.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+            fn_group = DF.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
         } else {
             REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --i file...");
         }
 
-        std::vector<FileName>::iterator it = std::find(model.group_names.begin(), model.group_names.end(), fn_group);
+        const auto it = std::find(model.group_names.begin(), model.group_names.end(), fn_group);
         if (it == model.group_names.end()) REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
         int imic = it - model.group_names.begin();
 
         RFLOAT normcorr = 1.0;
         if (DF.containsLabel(EMDL::IMAGE_NORM_CORRECTION))
-        normcorr = DF.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
+        normcorr = DF.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, i);
 
         // Make coloured noise image
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-            int ires = std::min((int) round(sqrt((RFLOAT) (kp * kp + ip * ip + jp * jp))), myBoxSize / 2);
+            const int ires = std::min((int) round(euclid(ip, jp, kp)), myBoxSize / 2);
             // at freqs higher than Nyquist: use last sigma2 value
-
-            RFLOAT sigma = sqrt(direct::elem(model.sigma2_noise[imic], ires));
+            const RFLOAT sigma = sqrt(direct::elem(model.sigma2_noise[imic], ires));
             direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
         }
     }
@@ -571,9 +572,9 @@ void Reconstructor::reconstruct() {
         do_use_fsc = true;
         MetaDataTable MDfsc;
         MDfsc.read(fn_fsc);
-        for (long int _ : MDfsc) {
-            int    idx = MDfsc.getValue<int>(EMDL::SPECTRAL_IDX);
-            RFLOAT val = MDfsc.getValue<RFLOAT>(EMDL::MLMODEL_FSC_HALVES_REF);
+        for (long int i : MDfsc) {
+            int    idx = MDfsc.getValue<int>(EMDL::SPECTRAL_IDX, i);
+            RFLOAT val = MDfsc.getValue<RFLOAT>(EMDL::MLMODEL_FSC_HALVES_REF, i);
             fsc(idx) = val;
         }
     }

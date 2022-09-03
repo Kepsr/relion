@@ -220,11 +220,11 @@ void  SchedulerOperator::readFromStarFile() const {
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_AVG ||
         type == Schedule::FLOAT_OPERATOR_READ_STAR_TABLE_SORT_IDX
     ) {
-        for (long int _ : MD) {
+        for (long int i : MD) {
             if (EMDL::is<double>(mylabel)) {
-                myval = MD.getValue<RFLOAT>(mylabel);
+                myval = MD.getValue<RFLOAT>(mylabel, i);
             } else if (EMDL::is<int>(mylabel)) {
-                myval = MD.getValue<int>(mylabel);
+                myval = MD.getValue<int>(mylabel, i);
             } else {
                 REPORT_ERROR("ERROR: metadata label " + EMDL::label2Str(mylabel) + " is not of a number type!");
             }
@@ -560,71 +560,65 @@ void Schedule::read(bool do_lock, FileName fn) {
     // For reading: do the nodes before the general table, in order to set current_node
     MetaDataTable MD;
     MD.readStar(in, "schedule_general");
-    name         = MD.getValue<std::string>(EMDL::SCHEDULE_GENERAL_NAME);
-    current_node = MD.getValue<std::string>(EMDL::SCHEDULE_GENERAL_CURRENT_NODE);
+    name         = MD.getValue<std::string>(EMDL::SCHEDULE_GENERAL_NAME, 0);
+    current_node = MD.getValue<std::string>(EMDL::SCHEDULE_GENERAL_CURRENT_NODE, 0);
     MD.clear();
 
     MD.readStar(in, "schedule_floats");
-    for (long int _ : MD) {
-        std::string myname    = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_FLOAT_NAME);
-        RFLOAT value          = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_VALUE);
-        RFLOAT original_value = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE);
-        SchedulerFloatVariable myval(value, original_value);
-        scheduler_global_floats[myname] = myval;
+    for (long int i : MD) {
+        const std::string myname    = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_FLOAT_NAME, i);
+        const RFLOAT value          = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_VALUE, i);
+        const RFLOAT original_value = MD.getValue<RFLOAT>(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE, i);
+        scheduler_global_floats[myname] = SchedulerFloatVariable(value, original_value);
     }
     MD.clear();
 
     MD.readStar(in, "schedule_bools");
-    for (long int _ : MD) {
-        std::string myname  = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_BOOL_NAME);
-        bool value          = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_VALUE);
-        bool original_value = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE);
-        SchedulerBooleanVariable myval(value, original_value);
-        scheduler_global_bools[myname] = myval;
+    for (long int i : MD) {
+        const std::string myname  = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_BOOL_NAME, i);
+        const bool value          = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_VALUE, i);
+        const bool original_value = MD.getValue<bool>(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE, i);
+        scheduler_global_bools[myname] = SchedulerBooleanVariable(value, original_value);
     }
     MD.clear();
 
     MD.readStar(in, "schedule_strings");
-    for (long int _ : MD) {
-        std::string myname         = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_NAME);
-        FileName    value          = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_VALUE);
-        FileName    original_value = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE);
-        SchedulerStringVariable myval(value, original_value);
-        scheduler_global_strings[myname] = myval;
+    for (long int i : MD) {
+        const std::string myname         = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_NAME, i);
+        const FileName    value          = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_VALUE, i);
+        const FileName    original_value = MD.getValue<std::string>(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE, i);
+        scheduler_global_strings[myname] = SchedulerStringVariable(value, original_value);
     }
     MD.clear();
 
     MD.readStar(in, "schedule_operators");
-    for (long int _ : MD) {
-        // RFLOAT constant;
-        std::string name   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_NAME);
-        std::string type   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_TYPE);
-        std::string input1 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT1);
-        std::string input2 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT2);
-        std::string output = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_OUTPUT);
+    for (long int i : MD) {
+        const std::string name   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_NAME, i);
+        const std::string type   = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_TYPE, i);
+        const std::string input1 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT1, i);
+        const std::string input2 = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_INPUT2, i);
+        const std::string output = MD.getValue<std::string>(EMDL::SCHEDULE_OPERATOR_OUTPUT, i);
         scheduler_global_operators[name] = SchedulerOperator(type, input1, input2, output);
     }
     MD.clear();
 
     MD.readStar(in, "schedule_jobs");
-    for (long int _ : MD) {
-        // std::string type;
-        std::string name     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_NAME);
-        std::string ori_name = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_ORI_NAME);
-        std::string mode     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_MODE);
-        bool has_started     = MD.getValue<bool>(EMDL::SCHEDULE_JOB_HAS_STARTED);
+    for (long int i : MD) {
+        const std::string name     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_NAME, i);
+        const std::string ori_name = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_ORI_NAME, i);
+        const std::string mode     = MD.getValue<std::string>(EMDL::SCHEDULE_JOB_MODE, i);
+        const bool has_started     = MD.getValue<bool>(EMDL::SCHEDULE_JOB_HAS_STARTED, i);
         jobs[ori_name] = SchedulerJob(name, mode, has_started);
     }
     MD.clear();
 
     MD.readStar(in, "schedule_edges");
-    for (long int _ : MD) {
-        // int number;
-        std::string inputname       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_INPUT);
-        std::string outputname      = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT);
-        std::string outputname_true = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT_TRUE);
-        std::string bool_name       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_BOOLEAN);
-        bool is_fork                = MD.getValue<bool>(EMDL::SCHEDULE_EDGE_IS_FORK);
+    for (long int i : MD) {
+        const std::string inputname       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_INPUT, i);
+        const std::string outputname      = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT, i);
+        const std::string outputname_true = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_OUTPUT_TRUE, i);
+        const std::string bool_name       = MD.getValue<std::string>(EMDL::SCHEDULE_EDGE_BOOLEAN, i);
+        const bool is_fork                = MD.getValue<bool>(EMDL::SCHEDULE_EDGE_IS_FORK, i);
         edges.emplace_back(inputname, outputname, is_fork, bool_name, outputname_true);
     }
     MD.clear();

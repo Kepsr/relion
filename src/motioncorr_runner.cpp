@@ -209,11 +209,10 @@ void MotioncorrRunner::initialise() {
 
         fn_micrographs.clear();
         optics_group_micrographs.clear();
-        for (long int _ : MDin) {
-            FileName fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME);
+        for (long int i : MDin) {
+            const FileName fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME, i);
             fn_micrographs.push_back(fn_mic);
-
-            int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+            const int optics_group = MDin.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
             optics_group_micrographs.push_back(optics_group);
         }
     } else {
@@ -795,7 +794,7 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
     // In the opticsMdt, set EMDL::MICROGRAPH_PIXEL_SIZE (i.e. possibly binned pixel size).
     // Keep EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE for MTF correction
     for (long int i : obsModel.opticsMdt) {
-        const auto angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE);
+        const auto angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, i);
         obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, (RFLOAT) (angpix * bin_factor), i);
     }
     obsModel.save(MDavg, fn_out + "corrected_micrographs.star", "micrographs");

@@ -83,10 +83,10 @@ class align_symmetry {
         double best_diff2 = 1E99;
 
         /// TODO: parallelise?
-        for (long int index : MDang) {
-            RFLOAT rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-            RFLOAT tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-            RFLOAT psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+        for (long int i : MDang) {
+            RFLOAT rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT,  i);
+            RFLOAT tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT, i);
+            RFLOAT psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI,  i);
 
             A3D = Euler::rotation3DMatrix(rot, tilt, psi);
             MultidimArray<Complex> F2D;
@@ -103,10 +103,10 @@ class align_symmetry {
 
             if (best_diff2 > diff2) {
                 best_diff2 = diff2;
-                best_at = index;
+                best_at = i;
             }
 
-            if (index % 30 == 0) progress_bar(index);
+            if (i % 30 == 0) progress_bar(i);
             #ifdef DEBUG
             std::cout << rot << " " << tilt << " " << psi << " " << diff2 << std::endl;
             #endif

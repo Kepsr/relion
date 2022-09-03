@@ -46,15 +46,16 @@ void ReferenceMap::read(IOParser& parser, int argc, char* argv[]) {
 }
 
 void ReferenceMap::load(int verb, bool debug) {
-    if (reconFn0 == "" || reconFn1 == "") {
+    if (reconFn0.empty() || reconFn1.empty()) {
         // Get half maps and masks from the PostProcess STAR file.
         FileName fn_half1, fn_half2, fn_mask;
         MetaDataTable MD;
         MD.read(fscFn, "general");
         try {
-            fn_half1 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP1);
-            fn_half2 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP2);
-            fn_mask  = MD.getValue<std::string>(EMDL::MASK_NAME);
+            const long int i = MD.index();
+            fn_half1 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP1, i);
+            fn_half2 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP2, i);
+            fn_mask  = MD.getValue<std::string>(EMDL::MASK_NAME, i);
             if (verb > 0) {
                 std::cout << " + The names of the reference half maps and the mask were taken from the PostProcess STAR file.\n";
                 std::cout << "   - Half map 1: " << fn_half1 << "\n";

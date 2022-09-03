@@ -124,8 +124,8 @@ class estimate_gain {
             init_progress_bar(MDin.numberOfObjects());
         }
 
-        for (long int _ : MDin) {
-            fn_img = MDin.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME);
+        for (long int i : MDin) {
+            fn_img = MDin.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME, i);
 
             int n_frames;
             if (!EERRenderer::isEER(fn_img)) {

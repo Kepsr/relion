@@ -245,17 +245,20 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
     const size_t datasize = dims[0] * dims[1] * dims[2] * gettypesize(Float);
 
     if (!MDMainHeader.empty()) {
+
+        const long int i = MDMainHeader.index();
+
         try {
-            header->densmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN);
+            header->densmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         } catch (const char* errmsg) {}
         try {
-            header->densmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX);
+            header->densmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX, i);
         } catch (const char* errmsg) {}
         try {
-            header->avdens = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG);
+            header->avdens = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG, i);
         } catch (const char* errmsg) {}
         try {
-            float sigma = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV);
+            const float sigma = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
             header->sigma = sigma;
             header->varian = sigma * sigma;
         } catch (const char* errmsg) {}

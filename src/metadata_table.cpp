@@ -167,7 +167,7 @@ std::string MetaDataTable::getUnknownLabelNameAt(int i) const {
     return unknownLabelNames[unknown_label_indices[i]];
 }
 
-std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID) const {
+std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long i) const {
     // SHWS 18 Jul 2018: this function previously had a stringstream, but it greatly slowed down
     // writing of large STAR files in some strange circumstances
     // (with large data.star and model.star files in refinement)
@@ -176,10 +176,10 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID)
     // JZ 9 Aug 2018: still using a stringstream for vector<double> fields
     // => Avoid vector-valued columns in particle star-files.
 
-    if (EMDL::is<std::string>(label)) return getValue<std::string>(label, objectID);
+    if (EMDL::is<std::string>(label)) return getValue<std::string>(label, i);
 
     if (EMDL::is<std::vector<double>>(label)) {
-        const std::vector<double> v = getValue<std::vector<double>>(label, objectID);
+        const std::vector<double> v = getValue<std::vector<double>>(label, i);
 
         if (v.empty()) return "[]";
 
@@ -199,7 +199,7 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID)
 
     char buffer[14];
     if (EMDL::is<double>(label)) {
-        const double v = getValue<double>(label, objectID);
+        const double v = getValue<double>(label, i);
         auto mag = abs(v);
         if (mag > 0.0 && mag < 0.001 || mag > 100000.0) {
             // If the magnitude of v is very small or very large,
@@ -210,10 +210,10 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long objectID)
             snprintf(buffer, 13, v < 0.0 ? "%12.5f" : "%12.6f", v);
         }
     } else if (EMDL::is<int>(label)) {
-        const long v = getValue<long>(label, objectID);
+        const long v = getValue<long>(label, i);
         snprintf(buffer, 13, "%12ld", v);
     } else if (EMDL::is<bool>(label)) {
-        const bool v = getValue<bool>(label, objectID);
+        const bool v = getValue<bool>(label, i);
         snprintf(buffer, 13, "%12d", (int) v);
     }
     return std::string(buffer);
@@ -355,11 +355,11 @@ struct CompareStringsBeforeAtAt: public CompareAt {
 };
 
 void MetaDataTable::sort(
-    EMDL::EMDLabel name, bool do_reverse, bool only_set_index, bool do_random
+    EMDL::EMDLabel label, bool do_reverse, bool only_set_index, bool do_random
 ) {
     if (do_random) {
         srand(time(nullptr)); // initialise random seed
-    } else if (!EMDL::is<int>(name) && !EMDL::is<double>(name)) {
+    } else if (!EMDL::is<int>(label) && !EMDL::is<double>(label)) {
         REPORT_ERROR("MetadataTable::sort%% " + prependERROR("can only sort numbers"));
     }
 
@@ -369,11 +369,11 @@ void MetaDataTable::sort(
     for (long int i = 0; i < N; ++i) {
         if (do_random) {
             vp.emplace_back(rand(), i);
-        } else if (EMDL::is<int>(name)) {
-            vp.emplace_back(getValue<long>(name), i);
+        } else if (EMDL::is<int>(label)) {
+            vp.emplace_back(getValue<long>(label, i), i);
         } else {
-            // EMDL::is<double>(name)
-            vp.emplace_back(getValue<double>(name), i);
+            // EMDL::is<double>(label)
+            vp.emplace_back(getValue<double>(label, i), i);
         }
     }
 
@@ -676,22 +676,22 @@ void MetaDataTable::columnHistogram(
         REPORT_ERROR(prependERROR("The column specified is not present in the MetaDataTable."));
 
     std::vector<RFLOAT> values;
-    for (auto _ : *this) {
+    for (auto i : *this) {
         // As the internal state of MDin gets incremented...
         RFLOAT val;
         if (EMDL::is<double>(label)) {
-            val = getValue<double>(label);
+            val = getValue<double>(label, i);
         } else if (EMDL::is<int>(label)) {
-            val = getValue<long>(label);
+            val = getValue<long>(label, i);
         } else if (EMDL::is<bool>(label)) {
-            val = getValue<bool>(label);
+            val = getValue<bool>(label, i);
         } else {
             REPORT_ERROR("Cannot use --stat_column for this type of column");
         }
         values.push_back(val);
     }
 
-    std::string title = EMDL::label2Str(label);
+    const std::string title = EMDL::label2Str(label);
     histogram(values, histX, histY, verb, title, plot2D, nr_bin, hist_min, hist_max, do_fractional_instead, do_cumulative_instead);
 }
 
@@ -913,45 +913,46 @@ void compareMetaDataTable(
 
     // loop over MD1
     std::vector<long int> to_remove_from_only2;
-    for (long int current_object1 : MD1) {
+    for (long int i : MD1) {
         if (EMDL::is<std::string>(label1)) {
-            mystr1 = MD1.getValue<std::string>(label1);
+            mystr1 = MD1.getValue<std::string>(label1, i);
         } else if (EMDL::is<int>(label1)) {
-            myint1 = MD1.getValue<int>(label1);
+            myint1 = MD1.getValue<int>(label1, i);
         } else if (EMDL::is<double>(label1)) {
-            myd1 = MD1.getValue<double>(label1);
+            myd1 = MD1.getValue<double>(label1, i);
             if (label2 != EMDL::UNDEFINED)
-            mydy1 = MD1.getValue<double>(label2);
+            mydy1 = MD1.getValue<double>(label2, i);
             if (label3 != EMDL::UNDEFINED)
-            mydz1 = MD1.getValue<double>(label3);
+            mydz1 = MD1.getValue<double>(label3, i);
         } else {
             REPORT_ERROR("compareMetaDataTableEqualLabel ERROR: only implemented for strings, integers or doubles");
         }
         // loop over MD2
         bool have_in_2 = false;
-        for (long int current_object2 : MD2) {
+        for (long int j : MD2) {
             if (EMDL::is<std::string>(label1)) {
-                std::string mystr2 = MD2.getValue<std::string>(label1);
+                std::string mystr2 = MD2.getValue<std::string>(label1, j);
                 if (mystr1 == mystr2) {
                     have_in_2 = true;
-                    to_remove_from_only2.push_back(current_object2);
+                    to_remove_from_only2.push_back(j);
                     MDboth.addObject(MD1.getObject());
                     break;
                 }
             } else if (EMDL::is<int>(label1)) {
-                long int myint2 = MD2.getValue<int>(label1);
+                long int myint2 = MD2.getValue<int>(label1, j);
                 if (abs(myint2 - myint1) <= round(eps)) {
                     have_in_2 = true;
-                    to_remove_from_only2.push_back(current_object2);
+                    to_remove_from_only2.push_back(j);
                     MDboth.addObject(MD1.getObject());
                     break;
                 }
             } else if (EMDL::is<double>(label1)) {
-                double myd2 = MD2.getValue<double>(label1);
+                double myd2 =
+                    MD2.getValue<double>(label1, j);
                 double mydy2 = label2 == EMDL::UNDEFINED ? 0.0 :
-                    MD2.getValue<double>(label2);
+                    MD2.getValue<double>(label2, j);
                 double mydz2 = label3 == EMDL::UNDEFINED ? 0.0 :
-                    MD2.getValue<double>(label3);
+                    MD2.getValue<double>(label3, j);
 
                 double dist = sqrt(
                     (myd1  - myd2)  * (myd1  - myd2)  +
@@ -960,10 +961,10 @@ void compareMetaDataTable(
                 );
                 if (abs(dist) <= eps) {
                     have_in_2 = true;
-                    to_remove_from_only2.push_back(current_object2);
-                    //std::cerr << " current_object1= " << current_object1 << std::endl;
-                    //std::cerr << " myd1= " << myd1 << " myd2= " << myd2 << " mydy1= " << mydy1 << " mydy2= " << mydy2 << " dist= "<<dist<<std::endl;
-                    //std::cerr << " to be removed current_object2= " << current_object2 << std::endl;
+                    to_remove_from_only2.push_back(j);
+                    // std::cerr << " i= " << i << std::endl;
+                    // std::cerr << " myd1= " << myd1 << " myd2= " << myd2 << " mydy1= " << mydy1 << " mydy2= " << mydy2 << " dist= "<<dist<<std::endl;
+                    // std::cerr << " to be removed j= " << j << std::endl;
                     MDboth.addObject(MD1.getObject());
                     break;
                 }
@@ -1062,8 +1063,8 @@ MetaDataTable subsetMetaDataTable(
 
     MetaDataTable MDout;
     for (long int i : MDin) {
-        RFLOAT x = EMDL::is<int>(label) ? MDin.getValue<long>(label) :
-            MDin.getValue<RFLOAT>(label);
+        RFLOAT x = EMDL::is<int>(label) ? MDin.getValue<long>(label, i) :
+            MDin.getValue<RFLOAT>(label, i);
 
         if (x <= max_value && x >= min_value)
             MDout.addObject(MDin.getObject(i));
@@ -1085,7 +1086,7 @@ MetaDataTable subsetMetaDataTable(
     MetaDataTable MDout;
     for (long int i : MDin) {
         if (exclude == (
-            MDin.getValue<std::string>(label).find(search_str) == std::string::npos
+            MDin.getValue<std::string>(label, i).find(search_str) == std::string::npos
         )) MDout.addObject(MDin.getObject(i));
     }
     return MDout;
@@ -1103,21 +1104,21 @@ static std::map<std::string, std::vector<long>> group_particles_by_micrograph(
 
         RFLOAT origin, coordinate;
 
-        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
+        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i);
+        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, i);
         xs[i] = coordinate - origin * origin_scale;
 
-        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i);
+        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, i);
         ys[i] = coordinate - origin * origin_scale;
 
         if (dataIs3D) {
-        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
-        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
+        origin     = mdt.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, i);
+        coordinate = mdt.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z, i);
         zs[i] = coordinate - origin * origin_scale;
         }
 
-        const std::string mic_name = mdt.getValue<std::string>(mic_label);
+        const std::string mic_name = mdt.getValue<std::string>(mic_label, i);
         grouped[mic_name].push_back(i);  // operator [] will insert if key not found
 
     }

@@ -358,8 +358,8 @@ void readRelionFormatMasksAndOperators(
     ) REPORT_ERROR("ERROR: You need rlnMaskName, rlnAngleRot, rlnAngleTilt, rlnAnglePsi, rlnOriginXAngst, rlnOriginYAngst and rlnOriginZAngst columns. Some of them are missing in your STAR file " + (std::string)(fn_info) + ". Note that rlnOriginX/Y/Z were changed to rlnOriginX/Y/ZAngst in RELION 3.1. Since the values in the symmetry definition file were in Angstrom from the beginning, please only edit the column names, not values.");
 
     // Load mask names
-    for (long int _ : MD) {
-        FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME);
+    for (long int i : MD) {
+        FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME, i);
         if (fn_mask_list.end() == std::find(
             fn_mask_list.begin(), fn_mask_list.end(), fn_mask
         ))
@@ -381,18 +381,18 @@ void readRelionFormatMasksAndOperators(
         }
 
         // Find all operators for this mask
-        for (long int _ : MD) {
-            FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME);
+        for (long int i : MD) {
+            FileName fn_mask = MD.getValue<std::string>(EMDL::MASK_NAME, i);
             if (fn_mask != fn_mask_list[id_mask])
                 continue;
 
             // Get this operator
-            RFLOAT aa = MD.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-            RFLOAT bb = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-            RFLOAT gg = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-            RFLOAT dx = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-            RFLOAT dy = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-            RFLOAT dz = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
+            RFLOAT aa = MD.getValue<RFLOAT>(EMDL::ORIENT_ROT,  i);
+            RFLOAT bb = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT, i);
+            RFLOAT gg = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI,  i);
+            RFLOAT dx = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i);
+            RFLOAT dy = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i);
+            RFLOAT dz = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, i);
 
             // Re-calculate angles so that they follow the conventions in RELION!
             standardiseEulerAngles(aa, bb, gg, aa, bb, gg);
@@ -482,9 +482,9 @@ void readRelionFormatMasksWithoutOperators(
     // Collect all entries
     fns.clear();
     ids.clear();
-    for (long int _ : MD) {
-        fn = MD.getValue<std::string>(EMDL::MASK_NAME);
-        id = MD.getValue<int>(EMDL::AREA_ID);
+    for (long int i : MD) {
+        fn = MD.getValue<std::string>(EMDL::MASK_NAME, i);
+        id = MD.getValue<int>(EMDL::AREA_ID, i);
         fns.push_back(fn);
         ids.push_back(id);
         if (id <= 0)
@@ -493,11 +493,11 @@ void readRelionFormatMasksWithoutOperators(
 
     // Check whether there exist duplicated mask filenames
     // fns.size() = id_max
-    for (int ii = 0; ii < fns.size() - 1; ii++) {
-        for (int jj = ii + 1; jj < fns.size(); jj++) {
-            if (fns[ii] == fns[jj])
-                REPORT_ERROR("ERROR: Duplicated mask filenames have been detected: " + fns[ii]);
-        }
+    for (auto i = fns.begin(); i != fns.end() - 1; ++i) {
+    for (auto j = i + 1; j != fns.end(); ++j) {
+        if (*i == *j)
+            REPORT_ERROR("ERROR: Duplicated mask filenames have been detected: " + *i);
+    }
     }
 
     // Initialise empty op_masks_tmp[0 ... id_max]
@@ -1668,9 +1668,10 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
 
     if (Xsize(img()) != Ysize(img()) || Xsize(img()) != Zsize(img()))
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
-    x_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
-    y_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y);
-    z_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z);
+    const long int i = img.MDMainHeader.index();
+    x_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, i);
+    y_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, i);
+    z_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z, i);
 
     // Initialise vol_rec
     vol_rec.initZeros(img());
@@ -1818,9 +1819,10 @@ void separateMasksKMeans(
         REPORT_ERROR("ERROR: Image file " + fn_in + " is an invalid 3D map! (< 10 X 10 X 10 pixels)");
     if ( (Xsize(img()) != Ysize(img())) || (Xsize(img()) != Zsize(img())) )
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
-    x_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X);
-    y_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y);
-    z_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z);
+    const long int i = img.MDMainHeader.index();
+    x_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, i);
+    y_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y, i);
+    z_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z, i);
 
     // Count voxels with positive values
     pos_val_ctr = 0;

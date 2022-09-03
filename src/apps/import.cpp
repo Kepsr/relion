@@ -110,12 +110,11 @@ class import_parameters {
                 MDopt.read(old_fn_out, "optics");
                 MDout.read(old_fn_out, tablename);
                 old_nr_files = MDout.numberOfObjects();
-                std::string old_optics_group_name;
-                for (long int _ : MDopt) {
-                    old_optics_group_name = MDopt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
+                for (long int i : MDopt) {
+                    const std::string old_optics_group_name = MDopt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, i);
                     if (old_optics_group_name == optics_group_name) {
                         do_new_optics_group = false;
-                        optics_group_number = MDopt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+                        optics_group_number = MDopt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
                         break;
                     }
                 }

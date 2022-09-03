@@ -40,8 +40,8 @@ inline RFLOAT safer_atan2(RFLOAT dy, RFLOAT dx) {
 
 // Search for this micrograph in the metadata table
 CTF find_micrograph_ctf(MetaDataTable &mdt, const FileName &fn_mic, ObservationModel &obsModel) {
-    for (auto _ : mdt) {  // BEWARE: Iterating over mdt modifies it.
-        if (fn_mic == mdt.getValue<std::string>(EMDL::MICROGRAPH_NAME)) {
+    for (long int i : mdt) {  // BEWARE: Iterating over mdt modifies it.
+        if (fn_mic == mdt.getValue<std::string>(EMDL::MICROGRAPH_NAME, i)) {
             return CtfHelper::makeCTF(mdt, &obsModel);
         }
     }
@@ -233,8 +233,8 @@ void AutoPicker::initialise() {
     if (fn_in.isStarFile()) {
         ObservationModel::loadSafely(fn_in, obsModel, MDmic, "micrographs", verb);
         fn_micrographs.clear();
-        for (auto _ : MDmic) {
-            FileName fn_mic = MDmic.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        for (long int i : MDmic) {
+            const FileName fn_mic = MDmic.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
             fn_micrographs.push_back(fn_mic);
         }
 
@@ -359,16 +359,16 @@ void AutoPicker::initialise() {
     } else if (fn_ref.isStarFile()) {
         MetaDataTable MDref;
         MDref.read(fn_ref);
-        for (auto _ : MDref) {
+        for (long int i : MDref) {
             // Get all reference images and their names
             Image<RFLOAT> Iref;
 
             FileName fn_img;
             try {
-                fn_img = MDref.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
+                fn_img = MDref.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE, i);
             } catch (const char *errmsg) {
                 try {
-                    fn_img = MDref.getValue<std::string>(EMDL::IMAGE_NAME);
+                    fn_img = MDref.getValue<std::string>(EMDL::IMAGE_NAME, i);
                 } catch (const char* errmsg) {
                     REPORT_ERROR("AutoPicker::initialise ERROR: either provide rlnReferenceImage or rlnImageName in the reference STAR file!");
                 }
@@ -832,8 +832,8 @@ void AutoPicker::run() {
 
 static RFLOAT mean(MetaDataTable &mdt, EMDL::EMDLabel label, long int n) {
     RFLOAT mu = 0.0;
-    for (auto _ : mdt) {
-        mu += mdt.getValue<RFLOAT>(label);
+    for (long int i : mdt) {
+        mu += mdt.getValue<RFLOAT>(label, i);
     }
     return mu / (RFLOAT) n;
 }
@@ -2730,7 +2730,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 Image<RFLOAT> I_bestCCF;
                 I_bestCCF.read(fn_bestCCF);
                 Mccf_best = I_bestCCF();
-                expected_Pratio = I_bestCCF.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the header of the image
+                expected_Pratio = I_bestCCF.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_STATS_MAX, I_bestCCF.MDMainHeader.index());  // Retrieve expected_Pratio from the header of the image
 
                 const auto fn_bestPSI = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
                 Mpsi_best = Image<RFLOAT>::from_filename(fn_bestPSI)();

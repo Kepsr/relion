@@ -904,121 +904,122 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread) {
     MD.readStar(in, "optimiser_general");
     in.close();
 
+    const long int i = MD.index();
     try {
-        fn_out = MD.getValue<std::string>(EMDL::OPTIMISER_OUTPUT_ROOTNAME);
-        fn_model = MD.getValue<std::string>(EMDL::OPTIMISER_MODEL_STARFILE);
-        fn_data = MD.getValue<std::string>(EMDL::OPTIMISER_DATA_STARFILE);
-        fn_sampling = MD.getValue<std::string>(EMDL::OPTIMISER_SAMPLING_STARFILE);
-        iter = MD.getValue<int>(EMDL::OPTIMISER_ITERATION_NO);
-        nr_iter = MD.getValue<int>(EMDL::OPTIMISER_NR_ITERATIONS);
-        do_split_random_halves = MD.getValue<bool>(EMDL::OPTIMISER_DO_SPLIT_RANDOM_HALVES);
-        low_resol_join_halves = MD.getValue<RFLOAT>(EMDL::OPTIMISER_LOWRES_JOIN_RANDOM_HALVES);
-        adaptive_oversampling = MD.getValue<int>(EMDL::OPTIMISER_ADAPTIVE_OVERSAMPLING);
-        adaptive_fraction = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ADAPTIVE_FRACTION);
-        random_seed = MD.getValue<int>(EMDL::OPTIMISER_RANDOM_SEED);
-        particle_diameter = MD.getValue<RFLOAT>(EMDL::OPTIMISER_PARTICLE_DIAMETER);
-        width_mask_edge = MD.getValue<int>(EMDL::OPTIMISER_WIDTH_MASK_EDGE);
-        do_zero_mask = MD.getValue<bool>(EMDL::OPTIMISER_DO_ZERO_MASK);
-        do_solvent = MD.getValue<bool>(EMDL::OPTIMISER_DO_SOLVENT_FLATTEN);
-        fn_mask = MD.getValue<std::string>(EMDL::OPTIMISER_SOLVENT_MASK_NAME);
-        fn_mask2 = MD.getValue<std::string>(EMDL::OPTIMISER_SOLVENT_MASK2_NAME);
-        fn_tau = MD.getValue<std::string>(EMDL::OPTIMISER_TAU_SPECTRUM_NAME);
-        max_coarse_size = MD.getValue<int>(EMDL::OPTIMISER_MAX_COARSE_SIZE);
-        strict_highres_exp = MD.getValue<RFLOAT>(EMDL::OPTIMISER_HIGHRES_LIMIT_EXP);
-        incr_size = MD.getValue<int>(EMDL::OPTIMISER_INCR_SIZE);
-        do_map = MD.getValue<bool>(EMDL::OPTIMISER_DO_MAP);
-        do_auto_refine = MD.getValue<bool>(EMDL::OPTIMISER_DO_AUTO_REFINE);
-        autosampling_hporder_local_searches = MD.getValue<int>(EMDL::OPTIMISER_AUTO_LOCAL_HP_ORDER);
-        nr_iter_wo_resol_gain = MD.getValue<int>(EMDL::OPTIMISER_NR_ITER_WO_RESOL_GAIN);
-        best_resol_thus_far = MD.getValue<RFLOAT>(EMDL::OPTIMISER_BEST_RESOL_THUS_FAR);
-        nr_iter_wo_large_hidden_variable_changes = MD.getValue<int>(EMDL::OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES);
-        do_skip_align = MD.getValue<bool>(EMDL::OPTIMISER_DO_SKIP_ALIGN);
-        // do_skip_rotate = MD.getValue<bool>(EMDL::OPTIMISER_DO_SKIP_ROTATE);
-        acc_rot = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ACCURACY_ROT);
-        current_changes_optimal_orientations = MD.getValue<RFLOAT>(EMDL::OPTIMISER_CHANGES_OPTIMAL_ORIENTS);
-        current_changes_optimal_offsets = MD.getValue<RFLOAT>(EMDL::OPTIMISER_CHANGES_OPTIMAL_OFFSETS);
-        current_changes_optimal_classes = MD.getValue<RFLOAT>(EMDL::OPTIMISER_CHANGES_OPTIMAL_CLASSES);
-        smallest_changes_optimal_orientations = MD.getValue<RFLOAT>(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS);
-        smallest_changes_optimal_offsets = MD.getValue<RFLOAT>(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS);
-        smallest_changes_optimal_classes = MD.getValue<RFLOAT>(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES);
-        has_converged = MD.getValue<bool>(EMDL::OPTIMISER_HAS_CONVERGED);
-        has_high_fsc_at_limit = MD.getValue<bool>(EMDL::OPTIMISER_HAS_HIGH_FSC_AT_LIMIT);
-        has_large_incr_size_iter_ago = MD.getValue<bool>(EMDL::OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO);
-        do_norm_correction = MD.getValue<bool>(EMDL::OPTIMISER_DO_CORRECT_NORM);
-        do_scale_correction = MD.getValue<bool>(EMDL::OPTIMISER_DO_CORRECT_SCALE);
-        do_ctf_correction = MD.getValue<bool>(EMDL::OPTIMISER_DO_CORRECT_CTF);
-        intact_ctf_first_peak = MD.getValue<bool>(EMDL::OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK);
-        ctf_phase_flipped = MD.getValue<bool>(EMDL::OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED);
-        only_flip_phases = MD.getValue<bool>(EMDL::OPTIMISER_DO_ONLY_FLIP_CTF_PHASES);
-        refs_are_ctf_corrected = MD.getValue<bool>(EMDL::OPTIMISER_REFS_ARE_CTF_CORRECTED);
-        fix_sigma_noise = MD.getValue<bool>(EMDL::OPTIMISER_FIX_SIGMA_NOISE);
-        fix_sigma_offset = MD.getValue<bool>(EMDL::OPTIMISER_FIX_SIGMA_OFFSET);
-        nr_pool = MD.getValue<int>(EMDL::OPTIMISER_MAX_NR_POOL);
+        fn_out = MD.getValue<std::string>(EMDL::OPTIMISER_OUTPUT_ROOTNAME, i);
+        fn_model = MD.getValue<std::string>(EMDL::OPTIMISER_MODEL_STARFILE, i);
+        fn_data = MD.getValue<std::string>(EMDL::OPTIMISER_DATA_STARFILE, i);
+        fn_sampling = MD.getValue<std::string>(EMDL::OPTIMISER_SAMPLING_STARFILE, i);
+        iter = MD.getValue<int>(EMDL::OPTIMISER_ITERATION_NO, i);
+        nr_iter = MD.getValue<int>(EMDL::OPTIMISER_NR_ITERATIONS, i);
+        do_split_random_halves = MD.getValue<bool>(EMDL::OPTIMISER_DO_SPLIT_RANDOM_HALVES, i);
+        low_resol_join_halves = MD.getValue<RFLOAT>(EMDL::OPTIMISER_LOWRES_JOIN_RANDOM_HALVES, i);
+        adaptive_oversampling = MD.getValue<int>(EMDL::OPTIMISER_ADAPTIVE_OVERSAMPLING, i);
+        adaptive_fraction = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ADAPTIVE_FRACTION, i);
+        random_seed = MD.getValue<int>(EMDL::OPTIMISER_RANDOM_SEED, i);
+        particle_diameter = MD.getValue<RFLOAT>(EMDL::OPTIMISER_PARTICLE_DIAMETER, i);
+        width_mask_edge = MD.getValue<int>(EMDL::OPTIMISER_WIDTH_MASK_EDGE, i);
+        do_zero_mask = MD.getValue<bool>(EMDL::OPTIMISER_DO_ZERO_MASK, i);
+        do_solvent = MD.getValue<bool>(EMDL::OPTIMISER_DO_SOLVENT_FLATTEN, i);
+        fn_mask = MD.getValue<std::string>(EMDL::OPTIMISER_SOLVENT_MASK_NAME, i);
+        fn_mask2 = MD.getValue<std::string>(EMDL::OPTIMISER_SOLVENT_MASK2_NAME, i);
+        fn_tau = MD.getValue<std::string>(EMDL::OPTIMISER_TAU_SPECTRUM_NAME, i);
+        max_coarse_size = MD.getValue<int>(EMDL::OPTIMISER_MAX_COARSE_SIZE, i);
+        strict_highres_exp = MD.getValue<RFLOAT>(EMDL::OPTIMISER_HIGHRES_LIMIT_EXP, i);
+        incr_size = MD.getValue<int>(EMDL::OPTIMISER_INCR_SIZE, i);
+        do_map = MD.getValue<bool>(EMDL::OPTIMISER_DO_MAP, i);
+        do_auto_refine = MD.getValue<bool>(EMDL::OPTIMISER_DO_AUTO_REFINE, i);
+        autosampling_hporder_local_searches = MD.getValue<int>(EMDL::OPTIMISER_AUTO_LOCAL_HP_ORDER, i);
+        nr_iter_wo_resol_gain = MD.getValue<int>(EMDL::OPTIMISER_NR_ITER_WO_RESOL_GAIN, i);
+        best_resol_thus_far = MD.getValue<RFLOAT>(EMDL::OPTIMISER_BEST_RESOL_THUS_FAR, i);
+        nr_iter_wo_large_hidden_variable_changes = MD.getValue<int>(EMDL::OPTIMISER_NR_ITER_WO_HIDDEN_VAR_CHANGES, i);
+        do_skip_align = MD.getValue<bool>(EMDL::OPTIMISER_DO_SKIP_ALIGN, i);
+        // do_skip_rotate = MD.getValue<bool>(EMDL::OPTIMISER_DO_SKIP_ROTATE, i);
+        acc_rot = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ACCURACY_ROT, i);
+        current_changes_optimal_orientations = MD.getValue<RFLOAT>(EMDL::OPTIMISER_CHANGES_OPTIMAL_ORIENTS, i);
+        current_changes_optimal_offsets = MD.getValue<RFLOAT>(EMDL::OPTIMISER_CHANGES_OPTIMAL_OFFSETS, i);
+        current_changes_optimal_classes = MD.getValue<RFLOAT>(EMDL::OPTIMISER_CHANGES_OPTIMAL_CLASSES, i);
+        smallest_changes_optimal_orientations = MD.getValue<RFLOAT>(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_ORIENTS, i);
+        smallest_changes_optimal_offsets = MD.getValue<RFLOAT>(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_OFFSETS, i);
+        smallest_changes_optimal_classes = MD.getValue<RFLOAT>(EMDL::OPTIMISER_SMALLEST_CHANGES_OPT_CLASSES, i);
+        has_converged = MD.getValue<bool>(EMDL::OPTIMISER_HAS_CONVERGED, i);
+        has_high_fsc_at_limit = MD.getValue<bool>(EMDL::OPTIMISER_HAS_HIGH_FSC_AT_LIMIT, i);
+        has_large_incr_size_iter_ago = MD.getValue<bool>(EMDL::OPTIMISER_HAS_LARGE_INCR_SIZE_ITER_AGO, i);
+        do_norm_correction = MD.getValue<bool>(EMDL::OPTIMISER_DO_CORRECT_NORM, i);
+        do_scale_correction = MD.getValue<bool>(EMDL::OPTIMISER_DO_CORRECT_SCALE, i);
+        do_ctf_correction = MD.getValue<bool>(EMDL::OPTIMISER_DO_CORRECT_CTF, i);
+        intact_ctf_first_peak = MD.getValue<bool>(EMDL::OPTIMISER_IGNORE_CTF_UNTIL_FIRST_PEAK, i);
+        ctf_phase_flipped = MD.getValue<bool>(EMDL::OPTIMISER_DATA_ARE_CTF_PHASE_FLIPPED, i);
+        only_flip_phases = MD.getValue<bool>(EMDL::OPTIMISER_DO_ONLY_FLIP_CTF_PHASES, i);
+        refs_are_ctf_corrected = MD.getValue<bool>(EMDL::OPTIMISER_REFS_ARE_CTF_CORRECTED, i);
+        fix_sigma_noise = MD.getValue<bool>(EMDL::OPTIMISER_FIX_SIGMA_NOISE, i);
+        fix_sigma_offset = MD.getValue<bool>(EMDL::OPTIMISER_FIX_SIGMA_OFFSET, i);
+        nr_pool = MD.getValue<int>(EMDL::OPTIMISER_MAX_NR_POOL, i);
     } catch (const char* errmsg) {
         REPORT_ERROR("MlOptimiser::readStar: incorrect optimiser_general table");
     }
 
     // Backwards compatibility with RELION-1.4
-    fn_local_symmetry                    = tryget<std::string>(MD, EMDL::OPTIMISER_LOCAL_SYMMETRY_FILENAME,          "None");
-    do_helical_refine                    = tryget<bool>       (MD, EMDL::OPTIMISER_DO_HELICAL_REFINE,                 false);
-    ignore_helical_symmetry              = tryget<bool>       (MD, EMDL::OPTIMISER_IGNORE_HELICAL_SYMMETRY,           false);
-    helical_twist_initial                = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_TWIST_INITIAL,              0.0);
-    helical_rise_initial                 = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_RISE_INITIAL,               0.0);
-    helical_z_percentage                 = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_Z_PERCENTAGE,               0.3);
-    helical_nstart                       = tryget<int>        (MD, EMDL::OPTIMISER_HELICAL_NSTART,                     1);
-    helical_tube_inner_diameter          = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_TUBE_INNER_DIAMETER,       -1.0);
-    helical_tube_outer_diameter          = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER,       -1.0);
-    do_helical_symmetry_local_refinement = tryget<bool>       (MD, EMDL::OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, false);
-    helical_sigma_distance               = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_SIGMA_DISTANCE,            -1.0);
-    helical_keep_tilt_prior_fixed        = tryget<bool>       (MD, EMDL::OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED,     false);
+    fn_local_symmetry                    = tryget<std::string>(MD, EMDL::OPTIMISER_LOCAL_SYMMETRY_FILENAME,          "None", i);
+    do_helical_refine                    = tryget<bool>       (MD, EMDL::OPTIMISER_DO_HELICAL_REFINE,                 false, i);
+    ignore_helical_symmetry              = tryget<bool>       (MD, EMDL::OPTIMISER_IGNORE_HELICAL_SYMMETRY,           false, i);
+    helical_twist_initial                = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_TWIST_INITIAL,              0.0, i);
+    helical_rise_initial                 = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_RISE_INITIAL,               0.0, i);
+    helical_z_percentage                 = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_Z_PERCENTAGE,               0.3, i);
+    helical_nstart                       = tryget<int>        (MD, EMDL::OPTIMISER_HELICAL_NSTART,                     1, i);
+    helical_tube_inner_diameter          = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_TUBE_INNER_DIAMETER,       -1.0, i);
+    helical_tube_outer_diameter          = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_TUBE_OUTER_DIAMETER,       -1.0, i);
+    do_helical_symmetry_local_refinement = tryget<bool>       (MD, EMDL::OPTIMISER_HELICAL_SYMMETRY_LOCAL_REFINEMENT, false, i);
+    helical_sigma_distance               = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_HELICAL_SIGMA_DISTANCE,            -1.0, i);
+    helical_keep_tilt_prior_fixed        = tryget<bool>       (MD, EMDL::OPTIMISER_HELICAL_KEEP_TILT_PRIOR_FIXED,     false, i);
 
     // New SGD (13 Feb 2018)
-    do_sgd                   = tryget<bool>       (MD, EMDL::OPTIMISER_DO_SGD,                    false);
-    do_avoid_sgd             = tryget<bool>       (MD, EMDL::OPTIMISER_DO_STOCHASTIC_EM,          false);
-    sgd_ini_iter             = tryget<int>        (MD, EMDL::OPTIMISER_SGD_INI_ITER,              50);
-    sgd_fin_iter             = tryget<int>        (MD, EMDL::OPTIMISER_SGD_FIN_ITER,              50);
-    sgd_inbetween_iter       = tryget<int>        (MD, EMDL::OPTIMISER_SGD_INBETWEEN_ITER,        200);
-    sgd_ini_resol            = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_INI_RESOL,             35.0);
-    sgd_fin_resol            = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_FIN_RESOL,             15.0);
-    sgd_ini_subset_size      = tryget<int>        (MD, EMDL::OPTIMISER_SGD_INI_SUBSET_SIZE,       100);
-    sgd_fin_subset_size      = tryget<int>        (MD, EMDL::OPTIMISER_SGD_FIN_SUBSET_SIZE,       500);
-    mu                       = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_MU,                    0.9);
-    sgd_sigma2fudge_ini      = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_SIGMA2FUDGE_INI,       8.0);
-    sgd_sigma2fudge_halflife = tryget<long>       (MD, EMDL::OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, -1);
-    do_sgd_skip_anneal       = tryget<bool>       (MD, EMDL::OPTIMISER_SGD_SKIP_ANNNEAL,         false);
-    subset_size              = tryget<long>       (MD, EMDL::OPTIMISER_SGD_SUBSET_SIZE,          -1);
-    sgd_stepsize             = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_STEPSIZE,              0.5);
-    write_every_sgd_iter     = tryget<int>        (MD, EMDL::OPTIMISER_SGD_WRITE_EVERY_SUBSET,    1);
-    fn_body_masks            = tryget<std::string>(MD, EMDL::BODY_STAR_FILE,                     "None");
-    do_phase_random_fsc      = tryget<bool>       (MD, EMDL::OPTIMISER_DO_SOLVENT_FSC,           false);
-    do_fast_subsets          = tryget<bool>       (MD, EMDL::OPTIMISER_FAST_SUBSETS,             false);
-    do_external_reconstruct  = tryget<bool>       (MD, EMDL::OPTIMISER_DO_EXTERNAL_RECONSTRUCT,  false);
+    do_sgd                   = tryget<bool>       (MD, EMDL::OPTIMISER_DO_SGD,                    false, i);
+    do_avoid_sgd             = tryget<bool>       (MD, EMDL::OPTIMISER_DO_STOCHASTIC_EM,          false, i);
+    sgd_ini_iter             = tryget<int>        (MD, EMDL::OPTIMISER_SGD_INI_ITER,              50, i);
+    sgd_fin_iter             = tryget<int>        (MD, EMDL::OPTIMISER_SGD_FIN_ITER,              50, i);
+    sgd_inbetween_iter       = tryget<int>        (MD, EMDL::OPTIMISER_SGD_INBETWEEN_ITER,        200, i);
+    sgd_ini_resol            = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_INI_RESOL,             35.0, i);
+    sgd_fin_resol            = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_FIN_RESOL,             15.0, i);
+    sgd_ini_subset_size      = tryget<int>        (MD, EMDL::OPTIMISER_SGD_INI_SUBSET_SIZE,       100, i);
+    sgd_fin_subset_size      = tryget<int>        (MD, EMDL::OPTIMISER_SGD_FIN_SUBSET_SIZE,       500, i);
+    mu                       = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_MU,                    0.9, i);
+    sgd_sigma2fudge_ini      = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_SIGMA2FUDGE_INI,       8.0, i);
+    sgd_sigma2fudge_halflife = tryget<long>       (MD, EMDL::OPTIMISER_SGD_SIGMA2FUDGE_HALFLIFE, -1, i);
+    do_sgd_skip_anneal       = tryget<bool>       (MD, EMDL::OPTIMISER_SGD_SKIP_ANNNEAL,         false, i);
+    subset_size              = tryget<long>       (MD, EMDL::OPTIMISER_SGD_SUBSET_SIZE,          -1, i);
+    sgd_stepsize             = tryget<RFLOAT>     (MD, EMDL::OPTIMISER_SGD_STEPSIZE,              0.5, i);
+    write_every_sgd_iter     = tryget<int>        (MD, EMDL::OPTIMISER_SGD_WRITE_EVERY_SUBSET,    1, i);
+    fn_body_masks            = tryget<std::string>(MD, EMDL::BODY_STAR_FILE,                     "None", i);
+    do_phase_random_fsc      = tryget<bool>       (MD, EMDL::OPTIMISER_DO_SOLVENT_FSC,           false, i);
+    do_fast_subsets          = tryget<bool>       (MD, EMDL::OPTIMISER_FAST_SUBSETS,             false, i);
+    do_external_reconstruct  = tryget<bool>       (MD, EMDL::OPTIMISER_DO_EXTERNAL_RECONSTRUCT,  false, i);
 
     // Backwards compatibility with RELION 3.0
     try {
-        acc_trans = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ACCURACY_TRANS_ANGSTROM);
+        acc_trans = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ACCURACY_TRANS_ANGSTROM, i);
     } catch (const char* errmsg) { try {
-        acc_trans = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ACCURACY_TRANS);
+        acc_trans = MD.getValue<RFLOAT>(EMDL::OPTIMISER_ACCURACY_TRANS, i);
     } catch (const char* errmsg) {
         REPORT_ERROR("MlOptimiser::readStar::ERROR no accuracy of translations defined!");
     } }
 
     try {
-        fn_fourier_mask = MD.getValue<std::string>(EMDL::OPTIMISER_FOURIER_MASK);
+        fn_fourier_mask = MD.getValue<std::string>(EMDL::OPTIMISER_FOURIER_MASK, i);
     } catch (const char* errmsg) {
         fn_fourier_mask = "None";
     }
 
     if (do_split_random_halves) {
         try {
-            fn_model2 = MD.getValue<std::string>(EMDL::OPTIMISER_MODEL_STARFILE2);
+            fn_model2 = MD.getValue<std::string>(EMDL::OPTIMISER_MODEL_STARFILE2, i);
         } catch (const char* errmsg) {
             REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 not found in optimiser_general table");
         }
         if (fn_model2.empty())
             REPORT_ERROR("MlOptimiser::readStar: splitting data into two random halves, but rlnModelStarFile2 is empty. Probably you specified an optimiser STAR file generated with --force_converge. You cannot perform continuation or subtraction from this file. Please use one from the previous iteration.");
         try {
-            strict_lowres_exp = MD.getValue<RFLOAT>(EMDL::OPTIMISER_LOWRES_LIMIT_EXP);
+            strict_lowres_exp = MD.getValue<RFLOAT>(EMDL::OPTIMISER_LOWRES_LIMIT_EXP, i);
         } catch (const char* errmsg) {
             strict_lowres_exp = -1.0;
         }
@@ -1337,9 +1338,9 @@ void MlOptimiser::initialise() {
         MetaDataTable MDsigma;
         MDsigma.read(fn_sigma);
         int idx;
-        for (long int _ : MDsigma) {
-            idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
-            RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
+        for (long int i : MDsigma) {
+            idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX, i);
+            RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE, i);
             if (idx < Xsize(mymodel.sigma2_noise[0]))
                 mymodel.sigma2_noise[0](idx) = val;
         }
@@ -1410,7 +1411,7 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
     Image<RFLOAT> Isolvent;
     Isolvent.read(_fn_mask);
     Isolvent().setXmippOrigin();
-    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
+    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, Isolvent.MDMainHeader.index());
 
     bool need_new_mask = false;
     if (fabs(mask_pixel_size-mymodel.pixel_size) > 0.001) {
@@ -2087,10 +2088,10 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                         long int dump;
                         fn_img.decompose(dump, fn_stack);
                         if (!exists(fn_stack))
-                            fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
+                            fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, MDimg.index());
                     }
                 } catch (const char *errmsg) {
-                    fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
+                    fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, MDimg.index());
                 }
 
                 FileName fn_stack;
@@ -2108,25 +2109,23 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             // 24 May 2015 - Shaoda & Sjors, Helical refinement
             RFLOAT psi_deg = 0.0, tilt_deg = 0.0;
             bool is_helical_segment = do_helical_refine || mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0;
+            const long int i = MDimg.index();
             if (is_helical_segment) {
                 try {
-                    psi_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
+                    psi_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR, i);
+                } catch (const char* errmsg) { try {
+                    psi_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI, i);
                 } catch (const char* errmsg) {
-                    try {
-                        psi_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI);
-                    } catch (const char* errmsg) {
-                        REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Psi priors of helical segments are missing!");
-                    }
-                }
+                    REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Psi priors of helical segments are missing!");
+                } }
+
                 try {
-                    tilt_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR);
+                    tilt_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR, i);
+                } catch (const char* errmsg) { try {
+                    tilt_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT, i);
                 } catch (const char* errmsg) {
-                    try {
-                        tilt_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-                    } catch (const char* errmsg) {
-                        REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Tilt priors of helical segments are missing!");
-                    }
-                }
+                    REPORT_ERROR("ml_optimiser.cpp::calculateSumOfPowerSpectraAndAverageImage: Tilt priors of helical segments are missing!");
+                } }
             }
 
             // Check that the average in the noise area is approximately zero and the stddev is one

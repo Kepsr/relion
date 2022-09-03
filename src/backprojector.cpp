@@ -1131,17 +1131,17 @@ MultidimArray<RFLOAT> BackProjector::externalReconstruct(
             REPORT_ERROR("ERROR: external reconstruct output STAR file does not contain spectral idx!");
 
         // Directly update tau2 spectrum
-        for (auto _ : MDnewtau) {
-            int idx = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX);
+        for (long int i : MDnewtau) {
+            int idx = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX, i);
 
             if (idx >= Xsize(tau2_io)) continue;
 
             if (MDnewtau.containsLabel(EMDL::MLMODEL_TAU2_REF)) {
-                tau2_io(idx)       = MDnewtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
+                tau2_io(idx)       = MDnewtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF, i);
                 data_vs_prior(idx) = tau2_io(idx) / sigma2_ref(idx);
             } else if (MDnewtau.containsLabel(EMDL::POSTPROCESS_FSC_GENERAL)) {
-                idx                = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX);
-                fsc_halves_io(idx) = MDnewtau.getValue<RFLOAT>(EMDL::POSTPROCESS_FSC_GENERAL);
+                idx                = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX, i);
+                fsc_halves_io(idx) = MDnewtau.getValue<RFLOAT>(EMDL::POSTPROCESS_FSC_GENERAL, i);
 
                 RFLOAT myfsc = std::max(0.001, fsc_halves_io(idx));
                 if (iswhole) {
