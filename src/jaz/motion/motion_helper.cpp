@@ -352,7 +352,8 @@ void MotionHelper::writeTracks(
     mdt.name = "general";
     mdt.isList = true;
     mdt.addObject();
-    mdt.setValue(EMDL::PARTICLE_NUMBER, pc);
+    const long int i = mdt.index();
+    mdt.setValue(EMDL::PARTICLE_NUMBER, pc, i);
 
     mdt.write(ofs);
     mdt.clear();
@@ -362,9 +363,8 @@ void MotionHelper::writeTracks(
 
         for (int f = 0; f < fc; f++) {
             mdt.addObject();
-
-            mdt.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * tracksInPix[p][f].x);
-            mdt.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * tracksInPix[p][f].y);
+            mdt.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * tracksInPix[p][f].x, f);
+            mdt.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * tracksInPix[p][f].y, f);
         }
 
         mdt.write(ofs);

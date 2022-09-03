@@ -351,23 +351,23 @@ class star_handler_parameters {
                 MetaDataTable unique_opticsMdt;
                 unique_opticsMdt.addMissingLabels(om.opticsMdt);
 
-                for (long int _ : om.opticsMdt) {
-                    std::string myname          = om.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
-                    int         my_optics_group = om.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+                for (long int i : om.opticsMdt) {
+                    const std::string myname          = om.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME);
+                    const int         my_optics_group = om.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
 
-                    auto it = std::find(
+                    const auto it = std::find(
                         optics_group_uniq_names.begin(), optics_group_uniq_names.end(),
                         myname
                     );
-                    int new_group = it + 1 - optics_group_uniq_names.begin();  // start counting groups at 1, not 0!
+                    const int new_group = it + 1 - optics_group_uniq_names.begin();  // start counting groups at 1, not 0!
 
-                    // If myame is unique
+                    // If myname is unique
                     if (it == optics_group_uniq_names.end()) {
                         std::cout << " + Adding new optics_group with name: " << myname << std::endl;
 
                         optics_group_uniq_names.push_back(myname);
                         // Add the line to the global obsModel
-                        om.opticsMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, new_group);
+                        om.opticsMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, new_group, i);
 
                         unique_opticsMdt.addObject();
                         unique_opticsMdt.setObject(om.opticsMdt.getObject());
@@ -391,14 +391,15 @@ class star_handler_parameters {
 
                 om.opticsMdt = unique_opticsMdt;
 
-                for (long int index : MDsin[MDs_id]) {
-                    MDsin[MDs_id].setValue(EMDL::IMAGE_OPTICS_GROUP, new_optics_groups[index]);
+                for (long int i : MDsin[MDs_id]) {
+                    MDsin[MDs_id].setValue(EMDL::IMAGE_OPTICS_GROUP, new_optics_groups[i], i);
 
                     // Also rename the rlnGroupName to not have groups overlapping from different optics groups
                     try {
-                        std::string name = MDsin[MDs_id].getValue<std::string>(EMDL::MLMODEL_GROUP_NAME);
-                        name = "optics" + integerToString(new_optics_groups[index]) + "_" + name;
-                        MDsin[MDs_id].setValue(EMDL::MLMODEL_GROUP_NAME, name);
+                        const std::string name
+                            = "optics" + integerToString(new_optics_groups[i]) + "_"
+                            + MDsin[MDs_id].getValue<std::string>(EMDL::MLMODEL_GROUP_NAME);
+                        MDsin[MDs_id].setValue(EMDL::MLMODEL_GROUP_NAME, name, i);
                     } catch (const char* errmsg) {}
                 }
             }
@@ -460,13 +461,13 @@ class star_handler_parameters {
                 MetaDataTable &mdt_optics = MDoptics[i];
                 if (has_beamtilt && has_not_beamtilt) {
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_BEAMTILT_X)) {
-                        for (long int _ : mdt_optics) {
-                            mdt_optics.setValue(EMDL::IMAGE_BEAMTILT_X, 0.0);
+                        for (long int i : mdt_optics) {
+                            mdt_optics.setValue(EMDL::IMAGE_BEAMTILT_X, 0.0, i);
                         }
                     }
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_BEAMTILT_Y)) {
-                        for (long int _ : mdt_optics) {
-                            mdt_optics.setValue(EMDL::IMAGE_BEAMTILT_Y, 0.0);
+                        for (long int i : mdt_optics) {
+                            mdt_optics.setValue(EMDL::IMAGE_BEAMTILT_Y, 0.0, i);
                         }
                     }
                 }
@@ -478,12 +479,12 @@ class star_handler_parameters {
                         !mdt_optics.containsLabel(EMDL::IMAGE_MAG_MATRIX_10) ||
                         !mdt_optics.containsLabel(EMDL::IMAGE_MAG_MATRIX_11)
                     ) {
-                        for (long int _ : mdt_optics) {
+                        for (long int i : mdt_optics) {
                             // 2×2 identity matrix
-                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_00, 1.0);
-                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_01, 0.0);
-                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_10, 0.0);
-                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_11, 1.0);
+                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_00, 1.0, i);
+                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_01, 0.0, i);
+                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_10, 0.0, i);
+                            mdt_optics.setValue(EMDL::IMAGE_MAG_MATRIX_11, 1.0, i);
                         }
                     }
                 }
@@ -491,8 +492,8 @@ class star_handler_parameters {
                 if (has_odd_zernike && has_not_odd_zernike) {
                     std::vector<RFLOAT> six_zeros(6, 0);
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_ODD_ZERNIKE_COEFFS)) {
-                        for (long int _ : mdt_optics) {
-                            mdt_optics.setValue(EMDL::IMAGE_ODD_ZERNIKE_COEFFS, six_zeros);
+                        for (long int i : mdt_optics) {
+                            mdt_optics.setValue(EMDL::IMAGE_ODD_ZERNIKE_COEFFS, six_zeros, i);
                         }
                     }
                 }
@@ -500,16 +501,16 @@ class star_handler_parameters {
                 if (has_even_zernike && has_not_even_zernike) {
                     std::vector<RFLOAT> nine_zeros(9, 0);
                     if (!mdt_optics.containsLabel(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS)) {
-                        for (long int _ : mdt_optics) {
-                            mdt_optics.setValue(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS, nine_zeros);
+                        for (long int i : mdt_optics) {
+                            mdt_optics.setValue(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS, nine_zeros, i);
                         }
                     }
                 }
 
                 if (has_ctf_premultiplied && has_not_ctf_premultiplied) {
                     if (!mdt_optics.containsLabel(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED)) {
-                        for (long int _ : mdt_optics) {
-                            mdt_optics.setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, false);
+                        for (long int i : mdt_optics) {
+                            mdt_optics.setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, false, i);
                         }
                     }
                 }
@@ -531,18 +532,18 @@ class star_handler_parameters {
                 REPORT_ERROR("ERROR: the output file does not contain the label to check for duplicates. Is it present in all input files?");
 
             // Don't want to mess up original order, so make a MDsort with only that label...
-            FileName fn_this, fn_prev = "";
+            FileName fn_prev = "";
             MetaDataTable MDsort;
-            for (long int _ : MDout) {
-                fn_this = MDout.getValue<std::string>(label);
+            for (long int i : MDout) {
+                const FileName fn_this = MDout.getValue<std::string>(label);
                 MDsort.addObject();
-                MDsort.setValue(label, fn_this);
+                MDsort.setValue(label, fn_this, i);
             }
             // sort on the label
             MDsort.newSort(label);
             long int nr_duplicates = 0;
             for (long int _ : MDsort) {
-                fn_this = MDsort.getValue<std::string>(label);
+                const FileName fn_this = MDsort.getValue<std::string>(label);
                 if (fn_this == fn_prev) {
                     nr_duplicates++;
                     std::cerr << " WARNING: duplicate entry: " << fn_this << std::endl;
@@ -607,13 +608,13 @@ class star_handler_parameters {
             std::cout << " Written: " << fnt << " with " << MDouts[isplit].numberOfObjects() << " objects." << std::endl;
 
             MDnodes.addObject();
-            MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt);
+            MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt, isplit);
             const int type =
                 MD.name == "micrographs" ? Node::MICS :
                 MD.name == "movies"      ? Node::MOVIES :
-   /* Otherwise, assume these are particles. */ Node::PART_DATA;
+                                           Node::PART_DATA;  // Otherwise, assume these are particles.
 
-            MDnodes.setValue(EMDL::PIPELINE_NODE_TYPE, type);
+            MDnodes.setValue(EMDL::PIPELINE_NODE_TYPE, type, isplit);
         }
 
         // Write out the star file with the output nodes
@@ -633,56 +634,56 @@ class star_handler_parameters {
 
         MetaDataTable MD = read_check_ignore_optics(fn_in);
 
-        for (long int _ : MD) {
+        for (long int i : MD) {
             if (EMDL::is<double>(label1)) {
                 RFLOAT val;
                 if (!fn_set.empty()) {
                     val = textToFloat(fn_set);
-                    MD.setValue(label1, val);
-                    if (!fn_operate2.empty()) MD.setValue(label2, val);
-                    if (!fn_operate3.empty()) MD.setValue(label3, val);
+                    MD.setValue(label1, val, i);
+                    if (!fn_operate2.empty()) MD.setValue(label2, val, i);
+                    if (!fn_operate3.empty()) MD.setValue(label3, val, i);
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
                     val = MD.getValue<RFLOAT>(label1);
                     val = multiply_by * val + add_to;
-                    MD.setValue(label1, val);
+                    MD.setValue(label1, val, i);
                     if (!fn_operate2.empty()) {
                         val = MD.getValue<RFLOAT>(label2);
                         val = multiply_by * val + add_to;
-                        MD.setValue(label2, val);
+                        MD.setValue(label2, val, i);
                     }
                     if (!fn_operate3.empty()) {
                         val = MD.getValue<RFLOAT>(label3);
                         val = multiply_by * val + add_to;
-                        MD.setValue(label3, val);
+                        MD.setValue(label3, val, i);
                     }
                 }
             } else if (EMDL::is<int>(label1)) {
                 int val;
                 if (!fn_set.empty()) {
                     val = textToInteger(fn_set);
-                    MD.setValue(label1, val);
-                    if (!fn_operate2.empty()) MD.setValue(label2, val);
-                    if (!fn_operate3.empty()) MD.setValue(label3, val);
+                    MD.setValue(label1, val, i);
+                    if (!fn_operate2.empty()) MD.setValue(label2, val, i);
+                    if (!fn_operate3.empty()) MD.setValue(label3, val, i);
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
                     val = MD.getValue<int>(label1);
                     val = multiply_by * val + add_to;
-                    MD.setValue(label1, val);
+                    MD.setValue(label1, val, i);
                     if (!fn_operate2.empty()) {
                         val = MD.getValue<int>(label2);
                         val = multiply_by * val + add_to;
-                        MD.setValue(label2, val);
+                        MD.setValue(label2, val, i);
                     }
                     if (!fn_operate3.empty()) {
                         val = MD.getValue<int>(label3);
                         val = multiply_by * val + add_to;
-                        MD.setValue(label3, val);
+                        MD.setValue(label3, val, i);
                     }
                 }
             } else if (EMDL::is<std::string>(label1)) {
                 if (!fn_set.empty()) {
-                    MD.setValue(label1, fn_set);
-                    if (!fn_operate2.empty()) MD.setValue(label2, fn_set);
-                    if (!fn_operate3.empty()) MD.setValue(label3, fn_set);
+                    MD.setValue(label1, fn_set, i);
+                    if (!fn_operate2.empty()) MD.setValue(label2, fn_set, i);
+                    if (!fn_operate3.empty()) MD.setValue(label3, fn_set, i);
                 } else if (multiply_by != 1.0 || add_to != 0.0) {
                     REPORT_ERROR("ERROR: cannot multiply_by or add_to a string!");
                 }
@@ -712,7 +713,7 @@ class star_handler_parameters {
         YY(my_center) = center_Y;
         ZZ(my_center) = center_Z;
 
-        for (long int _ : MD) {
+        for (long int i : MD) {
 
             RFLOAT angpix;
             if (do_ignore_optics) {
@@ -736,15 +737,15 @@ class star_handler_parameters {
             yoff -= YY(my_projected_center);
 
             // Set back the new centers
-            MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix);
-            MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff * angpix);
+            MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix, i);
+            MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff * angpix, i);
 
             // also allow 3D data (subtomograms)
             RFLOAT zoff;
             if (do_contains_z) {
                 zoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM) / angpix;
                 zoff -= ZZ(my_projected_center);
-                MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix);
+                MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix, i);
             }
         }
 
@@ -779,22 +780,22 @@ class star_handler_parameters {
             }
         }
 
-        for (long int _ : MD) {
+        for (long int i : MD) {
             if (EMDL::is<double>(label)) {
                 RFLOAT aux = set_value ? textToFloat(add_col_value) : MD.getValue<RFLOAT>(source_label);
-                MD.setValue(label, aux);
+                MD.setValue(label, aux, i);
             } else if (EMDL::is<int>(label)) {
                 long aux = set_value ? textToInteger(add_col_value) : MD.getValue<long int>(source_label);
-                MD.setValue(label, aux);
+                MD.setValue(label, aux, i);
             } else if (EMDL::is<bool>(label)) {
                 bool aux = set_value ? textToInteger(add_col_value) : MD.getValue<bool>(source_label);
-                MD.setValue(label, aux);
+                MD.setValue(label, aux, i);
             } else if (EMDL::is<std::string>(label)) {
                 std::string aux = set_value ? add_col_value : MD.getValue<std::string>(source_label);
-                MD.setValue(label, add_col_value);
+                MD.setValue(label, add_col_value, i);
             } else if (EMDL::is<std::string>(label)) {  // What?
                 std::string auxStr = set_value ? add_col_value : MD.getValueToString(source_label);
-                MD.setValueFromString(label, add_col_value);
+                MD.setValueFromString(label, add_col_value, i);
             }
         }
 

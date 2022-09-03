@@ -184,7 +184,7 @@ class particle_reposition_parameters {
 
                     MDcoord.addObject();
                     MDcoord.setObject(optimiser.mydata.MDimg.getObject(ori_img_id));
-                    MDcoord.setValue(EMDL::MICROGRAPH_NAME,fn_mic_out);
+                    MDcoord.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, MDcoord.index());
 
                     xcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_X,            ori_img_id);
                     ycoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y,            ori_img_id);
@@ -384,7 +384,7 @@ class particle_reposition_parameters {
 
                 MDmics_out.addObject();
                 MDmics_out.setObject(DFi.getObject());
-                MDmics_out.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out);
+                MDmics_out.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, MDmics_out.index());
 
                 // Also write out a STAR file with the particles used
                 FileName fn_coord_out = fn_mic_out.withoutExtension()+ "_coord.star";

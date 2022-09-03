@@ -327,21 +327,16 @@ void Preprocessing::joinAllStarFiles() {
             }
 
             if (do_rescale)
-                my_angpix *= (RFLOAT)extract_size / (RFLOAT)scale;
-            myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, my_angpix);
+                my_angpix *= (RFLOAT) extract_size / (RFLOAT) scale;
 
-            if (do_rewindow) {
-                myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_SIZE, window);
-            } else if (do_rescale) {
-                myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_SIZE, scale);
-            } else {
-                myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_SIZE, extract_size);
-            }
+            myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, my_angpix, i);
 
-            myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_DIMENSIONALITY, dimensionality);
+            myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_SIZE, do_rewindow ? window : do_rescale ? scale : extract_size, i);
+
+            myOutObsModel->opticsMdt.setValue(EMDL::IMAGE_DIMENSIONALITY, dimensionality, i);
 
             if (do_premultiply_ctf)
-                myOutObsModel->opticsMdt.setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, true);
+                myOutObsModel->opticsMdt.setValue(EMDL::OPTIMISER_DATA_ARE_CTF_PREMULTIPLIED, true, i);
 
             int igroup = myOutObsModel->opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
             if (my_angpix < 0) {
@@ -457,8 +452,9 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                 int ypos = num2 + num4 / 2;
 
                 MD.addObject();
-                MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)xpos);
-                MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)ypos);
+                const long int i = MD.index();
+                MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xpos, i);
+                MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) ypos, i);
             } else {
                 // Try reading as plain ASCII....
                 // The first line might be a special header (as in ximdisp or xmipp2 format)
@@ -474,12 +470,13 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                         sscanf(words[1].c_str(), "%d", &num2)
                     ) {
                         MD.addObject();
-                        MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1);
-                        MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2);
+                        const long int i = MD.index();
+                        MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1, i);
+                        MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2, i);
 
                         // It could also be a X,Y,Z coordinate...
                         if (words.size() > 2 && sscanf(words[2].c_str(), "%d", &num3))
-                            MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT) num3);
+                            MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT) num3, i);
                     }
                 } else {
                     // All other lines contain x, y as first two entries, and possibly a Z-coordinate as well.
@@ -492,11 +489,12 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                     int num3;
 
                     MD.addObject();
-                    MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1);
-                    MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2);
+                    const long int i = MD.index();
+                    MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1, i);
+                    MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2, i);
                     // It could also be a X,Y,Z coordinate...
                     if (words.size() > 2 && sscanf(words[2].c_str(), "%d", &num3))
-                    MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT)num3);
+                    MD.setValue(EMDL::IMAGE_COORD_Z, (RFLOAT) num3, i);
                 }
             }
         }
@@ -596,8 +594,8 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
                              + extract_bias_x;
                 RFLOAT ycoor = MDin.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y)
                              + extract_bias_y;
-                MDin.setValue(EMDL::IMAGE_COORD_X, xcoor);
-                MDin.setValue(EMDL::IMAGE_COORD_Y, ycoor);
+                MDin.setValue(EMDL::IMAGE_COORD_X, xcoor, i);
+                MDin.setValue(EMDL::IMAGE_COORD_Y, ycoor, i);
             }
         }
         }
@@ -691,7 +689,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
     MultidimArray<Complex> FT;
     FourierTransformer transformer;
     int ipos = 0;
-    for (long int _ : MD) {
+    for (long int i : MD) {
         RFLOAT dxpos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         RFLOAT dypos = MD.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
         long int xpos = (long int) dxpos;
@@ -859,13 +857,13 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             FileName::compose(fn_output_img_root, my_current_nr_images + ipos + 1, "mrc") :
             FileName::compose(my_current_nr_images + ipos + 1, fn_output_img_root + ".mrcs"); // start image counting in stacks at 1!
 
-        MD.setValue(EMDL::IMAGE_NAME,      fn_img);
-        MD.setValue(EMDL::MICROGRAPH_NAME, fn_mic);
+        MD.setValue(EMDL::IMAGE_NAME,      fn_img, i);
+        MD.setValue(EMDL::MICROGRAPH_NAME, fn_mic, i);
 
         // Set the optics group for this particle to the one from the micrograph
         if (!MDin_has_optics_group) {
             int optics_group = MDmics.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, imic);
-            MD.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group);
+            MD.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group, i);
         }
 
         // Also fill in the per-particle CTF parameters
@@ -875,11 +873,11 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
                 RFLOAT maxres, fom;
                 if (MDmics.containsLabel(EMDL::CTF_MAXRES)) {
                     maxres = MDmics.getValue<RFLOAT>(EMDL::CTF_MAXRES, imic);
-                    MD.setValue(EMDL::CTF_MAXRES, maxres);
+                    MD.setValue(EMDL::CTF_MAXRES, maxres, i);
                 }
                 if (MDmics.containsLabel(EMDL::CTF_FOM)) {
                     fom = MDmics.getValue<RFLOAT>(EMDL::CTF_FOM, imic);
-                    MD.setValue(EMDL::CTF_FOM, fom);
+                    MD.setValue(EMDL::CTF_FOM, fom, i);
                 }
 
                 CtfHelper::write(ctf, MD);
@@ -889,11 +887,11 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             if (!MDin_has_beamtilt || keep_ctf_from_micrographs) {
                 if (MDmics.containsLabel(EMDL::IMAGE_BEAMTILT_X)) {
                     RFLOAT tilt_x = MDmics.getValue<RFLOAT>(EMDL::IMAGE_BEAMTILT_X, imic);
-                    MD.setValue(EMDL::IMAGE_BEAMTILT_X, tilt_x);
+                    MD.setValue(EMDL::IMAGE_BEAMTILT_X, tilt_x, i);
                 }
                 if (MDmics.containsLabel(EMDL::IMAGE_BEAMTILT_Y)) {
                     RFLOAT tilt_y = MDmics.getValue<RFLOAT>(EMDL::IMAGE_BEAMTILT_Y, imic);
-                    MD.setValue(EMDL::IMAGE_BEAMTILT_Y, tilt_y);
+                    MD.setValue(EMDL::IMAGE_BEAMTILT_Y, tilt_y, i);
                 }
             }
 
@@ -901,7 +899,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             // for backwards compatibility with release 3.0
             if (!MDin_has_tiltgroup && MDmics.containsLabel(EMDL::PARTICLE_BEAM_TILT_CLASS)) {
                 int tilt_class = MDmics.getValue<int>(EMDL::PARTICLE_BEAM_TILT_CLASS, imic);
-                MD.setValue(EMDL::PARTICLE_BEAM_TILT_CLASS, tilt_class);
+                MD.setValue(EMDL::PARTICLE_BEAM_TILT_CLASS, tilt_class, i);
             }
         }
 
@@ -995,11 +993,13 @@ void Preprocessing::performPerImageOperations(
         return computeStats(Ipart());
     }();
 
+    const long int i = Ipart.MDMainHeader.index();
+
     if (Ipart().getDim() == 3) {
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max,    i);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg,    i);
+        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev, i);
         Ipart.setSamplingRateInHeader(output_angpix);
 
         {
@@ -1019,10 +1019,10 @@ void Preprocessing::performPerImageOperations(
         if (image_nr == nr_of_images - 1) {
             all_avg /= nr_of_images;
             all_stddev = sqrt(all_stddev / nr_of_images);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN, all_minval);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, all_maxval);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG, all_avg);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, all_stddev);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    all_minval, i);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    all_maxval, i);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    all_avg,    i);
+            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, all_stddev, i);
             Ipart.setSamplingRateInHeader(output_angpix);
         }
 
@@ -1077,11 +1077,11 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
             // reset input offsets
             if (do_reset_offsets) {
                 if (contains_xy) {
-                    MDresult.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0);
-                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0, i);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0, i);
                 }
                 if (contains_z) {
-                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0, i);
                 }
             } else if (abs(rescale_fndata - 1.0) > 1e-6 || do_recenter) {
                 // re-scale or re-center (irrelevant if do_reset_offsets)
@@ -1130,12 +1130,12 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     ycoord -= round(yoff);
                     xoff = diffx;
                     yoff = diffy;
-                    MDresult.setValue(EMDL::IMAGE_COORD_X, xcoord);
-                    MDresult.setValue(EMDL::IMAGE_COORD_Y, ycoord);
+                    MDresult.setValue(EMDL::IMAGE_COORD_X, xcoord, i);
+                    MDresult.setValue(EMDL::IMAGE_COORD_Y, ycoord, i);
                 }
 
-                MDresult.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * xoff);
-                MDresult.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * yoff);
+                MDresult.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * xoff, i);
+                MDresult.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * yoff, i);
                 if (contains_z) {
                     zoff = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
                     zoff /= particle_angpix;
@@ -1147,9 +1147,9 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                         diffz = zoff - round(zoff);
                         zcoord -= round(zoff);
                         zoff = diffz;
-                        MDresult.setValue(EMDL::IMAGE_COORD_Z, zcoord);
+                        MDresult.setValue(EMDL::IMAGE_COORD_Z, zcoord, i);
                     }
-                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Z, angpix * zoff);
+                    MDresult.setValue(EMDL::ORIENT_ORIGIN_Z, angpix * zoff, i);
                 }
             }
         }

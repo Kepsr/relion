@@ -109,9 +109,9 @@ void ObservationModel::loadSafely(
         if (!obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE)) {
             std::cerr << "Pixel size in rlnImagePixelSize will be copied to rlnMicrographPixelSize column. Please make sure this is correct!" << std::endl;
 
-            for (long int _ : obsModel.opticsMdt) {
+            for (long int i : obsModel.opticsMdt) {
                 RFLOAT image_angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE);
-                obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, image_angpix);
+                obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, image_angpix, i);
             }
         }
     }

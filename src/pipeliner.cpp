@@ -1480,13 +1480,12 @@ void PipeLine::exportAllScheduledJobs(std::string mydir) throw (std::string) {
             throw "ERROR: aliases are not allowed on Scheduled jobs that are to be exported! Make sure all scheduled jobs are made with unaliases names.";
 
             // A general name for the exported job:
-            FileName expname = process.name;
-            expname = expname.beforeFirstOf("/") + "/exp" + integerToString(iexp, 3) + "/";
+            const FileName expname = FileName(process.name).beforeFirstOf("/") + "/exp" + integerToString(iexp, 3) + "/";
             find_pattern.push_back(process.name);
             replace_pattern.push_back(expname);
 
             MDexported.addObject();
-            MDexported.setValue(EMDL::PIPELINE_PROCESS_NAME, expname);
+            MDexported.setValue(EMDL::PIPELINE_PROCESS_NAME, expname, MDexported.index());
 
             // Copy the run.job, the note.txt and the job_pipeline.star and replace patterns
             replaceFilesForImportExportOfScheduledJobs(process.name, "ExportJobs/" + mydir + expname, find_pattern, replace_pattern);
@@ -1817,34 +1816,27 @@ void PipeLine::write(
     MDgen.name = "pipeline_general";
     MDgen.isList = true;
     MDgen.addObject();
-    MDgen.setValue(EMDL::PIPELINE_JOB_COUNTER, job_counter);
+    MDgen.setValue(EMDL::PIPELINE_JOB_COUNTER, job_counter, MDgen.index());
     MDgen.write(fh);
 
-    if (fn_del != "") {
+    if (!fn_del.empty()) {
         MDgen_del.name = "pipeline_general";
         MDgen_del.isList = true;
         MDgen_del.addObject();
-        MDgen_del.setValue(EMDL::PIPELINE_JOB_COUNTER, job_counter);
+        MDgen_del.setValue(EMDL::PIPELINE_JOB_COUNTER, job_counter, MDgen_del.index());
         MDgen_del.write(fh_del);
     }
 
-    MDproc.name = "pipeline_processes";
-    MDproc_del.name = "pipeline_processes";
+    MDproc.name = MDproc_del.name = "pipeline_processes";
     for (long int i = 0 ; i < processList.size(); i++) {
-        if (fn_del.empty() || !deleteProcess[i]) {
-            MDproc.addObject();
-            MDproc.setValue(EMDL::PIPELINE_PROCESS_NAME,   processList[i].name);
-            MDproc.setValue(EMDL::PIPELINE_PROCESS_ALIAS,  processList[i].alias);
-            MDproc.setValue(EMDL::PIPELINE_PROCESS_TYPE,   processList[i].type);
-            MDproc.setValue(EMDL::PIPELINE_PROCESS_STATUS, processList[i].status);
-        } else {
-            MDproc_del.addObject();
-            MDproc_del.setValue(EMDL::PIPELINE_PROCESS_NAME,   processList[i].name);
-            MDproc_del.setValue(EMDL::PIPELINE_PROCESS_ALIAS,  processList[i].alias);
-            MDproc_del.setValue(EMDL::PIPELINE_PROCESS_TYPE,   processList[i].type);
-            MDproc_del.setValue(EMDL::PIPELINE_PROCESS_STATUS, processList[i].status);
-        }
-
+        const auto &process = processList[i];
+        auto &mdt = fn_del.empty() || !deleteProcess[i] ? MDproc : MDproc_del;
+        mdt.addObject();
+        const long int index = mdt.index();
+        mdt.setValue(EMDL::PIPELINE_PROCESS_NAME,   process.name,   index);
+        mdt.setValue(EMDL::PIPELINE_PROCESS_ALIAS,  process.alias,  index);
+        mdt.setValue(EMDL::PIPELINE_PROCESS_TYPE,   process.type,   index);
+        mdt.setValue(EMDL::PIPELINE_PROCESS_STATUS, process.status, index);
     }
     #ifdef DEBUG
     MDproc.write(std::cerr);
@@ -1853,19 +1845,14 @@ void PipeLine::write(
     if (!fn_del.empty())
         MDproc_del.write(fh_del);
 
-    MDnode.name = "pipeline_nodes";
-    MDnode_del.name = "pipeline_nodes";
+    MDnode.name = MDnode_del.name = "pipeline_nodes";
     for (long int i = 0; i < nodeList.size(); i++) {
-        if (fn_del.empty() || !deleteNode[i]) {
-            MDnode.addObject();
-            MDnode.setValue(EMDL::PIPELINE_NODE_NAME, nodeList[i].name);
-            MDnode.setValue(EMDL::PIPELINE_NODE_TYPE, nodeList[i].type);
-        } else {
-            MDnode_del.addObject();
-            MDnode_del.setValue(EMDL::PIPELINE_NODE_NAME, nodeList[i].name);
-            MDnode_del.setValue(EMDL::PIPELINE_NODE_TYPE, nodeList[i].type);
-
-        }
+        const auto &node = nodeList[i];
+        auto &mdt = fn_del.empty() || !deleteNode[i] ? MDnode : MDnode_del;
+        mdt.addObject();
+        const long int index = mdt.index();
+        mdt.setValue(EMDL::PIPELINE_NODE_NAME, node.name, index);
+        mdt.setValue(EMDL::PIPELINE_NODE_TYPE, node.type, index);
     }
     #ifdef DEBUG
     MDnode.write(std::cerr);
@@ -1875,19 +1862,14 @@ void PipeLine::write(
         MDnode_del.write(fh_del);
 
     // Also write all (Node->Process) edges to a single table
-    MDedge1.name = "pipeline_input_edges";
-    MDedge1_del.name = "pipeline_input_edges";
+    MDedge1.name = MDedge1_del.name = "pipeline_input_edges";
     for (long int i = 0; i < processList.size(); i++)
     for (long int input_node : processList[i].inputNodeList) {
-        if (!fn_del.empty() || !deleteProcess[i] && !deleteNode[input_node]) {
-            MDedge1.addObject();
-            MDedge1.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[input_node].name);
-            MDedge1.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name);
-        } else {
-            MDedge1_del.addObject();
-            MDedge1_del.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[input_node].name);
-            MDedge1_del.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name);
-        }
+        auto &mdt = !fn_del.empty() || !deleteProcess[i] && !deleteNode[input_node] ? MDedge1 : MDedge1_del;
+        mdt.addObject();
+        const long int index = mdt.index();
+        mdt.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[input_node].name, index);
+        mdt.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name, index);
     }
     #ifdef DEBUG
     MDedge1.write(std::cerr);
@@ -1897,19 +1879,14 @@ void PipeLine::write(
         MDedge1_del.write(fh_del);
 
     // Also write all (Process->Node) edges to a single table
-    MDedge2.name = "pipeline_output_edges";
-    MDedge2_del.name = "pipeline_output_edges";
+    MDedge2.name = MDedge2_del.name = "pipeline_output_edges";
     for (long int i = 0; i < processList.size(); i++)
     for (long int output_node : processList[i].outputNodeList) {
-        if (fn_del.empty() || !deleteProcess[i] && !deleteNode[output_node]) {
-            MDedge2.addObject();
-            MDedge2.setValue(EMDL::PIPELINE_EDGE_PROCESS,  processList[i].name);
-            MDedge2.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[output_node].name);
-        } else {
-            MDedge2_del.addObject();
-            MDedge2_del.setValue(EMDL::PIPELINE_EDGE_PROCESS,  processList[i].name);
-            MDedge2_del.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[output_node].name);
-        }
+        auto &mdt = fn_del.empty() || !deleteProcess[i] && !deleteNode[output_node] ?  MDedge2 : MDedge2_del;
+        mdt.addObject();
+        const long int index = mdt.index();
+        mdt.setValue(EMDL::PIPELINE_EDGE_PROCESS,  processList[i].name, index);
+        mdt.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[output_node].name, index);
     }
     MDedge2.write(fh);
     if (!fn_del.empty()) MDedge2_del.write(fh_del);
@@ -1918,7 +1895,6 @@ void PipeLine::write(
     MDedge2.write(std::cerr);
     #endif
 
-    fh.close();
     if (!fn_del.empty()) fh_del.close();
 
     if (do_lock) {

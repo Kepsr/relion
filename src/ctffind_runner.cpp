@@ -181,32 +181,32 @@ void CtffindRunner::initialise() {
         if (Cs < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the spherical aberration, and it is not given through --CS.");
         }
-        for (auto _ : obsModel.opticsMdt) {
-            obsModel.opticsMdt.setValue(EMDL::CTF_CS, Cs);
+        for (auto i : obsModel.opticsMdt) {
+            obsModel.opticsMdt.setValue(EMDL::CTF_CS, Cs, i);
         }
     }
     if (!obsModel.opticsMdt.containsLabel(EMDL::CTF_VOLTAGE)) {
         if (Voltage < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the acceleration voltage, and it is not given through --HT.");
         }
-        for (auto _ : obsModel.opticsMdt) {
-            obsModel.opticsMdt.setValue(EMDL::CTF_VOLTAGE, Voltage);
+        for (auto i : obsModel.opticsMdt) {
+            obsModel.opticsMdt.setValue(EMDL::CTF_VOLTAGE, Voltage, i);
         }
     }
     if (!obsModel.opticsMdt.containsLabel(EMDL::CTF_Q0)) {
         if (AmplitudeContrast < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the amplitude contrast, and it is not given through --AmpCnst.");
         }
-        for (auto _ : obsModel.opticsMdt) {
-            obsModel.opticsMdt.setValue(EMDL::CTF_Q0, AmplitudeContrast);
+        for (auto i : obsModel.opticsMdt) {
+            obsModel.opticsMdt.setValue(EMDL::CTF_Q0, AmplitudeContrast, i);
         }
     }
     if (!obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_PIXEL_SIZE)) {
         if (angpix < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the micrograph pixel size, and it is not given through --angpix.");
         }
-        for (auto _ : obsModel.opticsMdt) {
-            obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix);
+        for (auto i : obsModel.opticsMdt) {
+            obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix, i);
         }
     }
 
@@ -404,24 +404,25 @@ void CtffindRunner::joinCtffindResults() {
             FileName fn_root = getOutputFileWithNewUniqueDate(fn_microot, fn_out);
             FileName fn_ctf = fn_root + ".ctf:mrc";
             MDctf.addObject();
+            const long int i = MDctf.index();
 
             if (do_use_without_doseweighting)
-                MDctf.setValue(EMDL::MICROGRAPH_NAME_WODOSE, fn_micrographs_ctf_all[imic]);
-            MDctf.setValue(EMDL::MICROGRAPH_NAME, fn_micrographs_all[imic]);
-            MDctf.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_micrographs_all[imic]);
-            MDctf.setValue(EMDL::CTF_IMAGE, fn_ctf);
-            MDctf.setValue(EMDL::CTF_DEFOCUSU, defU);
-            MDctf.setValue(EMDL::CTF_DEFOCUSV, defV);
-            MDctf.setValue(EMDL::CTF_ASTIGMATISM, fabs(defU-defV));
-            MDctf.setValue(EMDL::CTF_DEFOCUS_ANGLE, defAng);
+                MDctf.setValue(EMDL::MICROGRAPH_NAME_WODOSE, fn_micrographs_ctf_all[imic], i);
+            MDctf.setValue(EMDL::MICROGRAPH_NAME, fn_micrographs_all[imic], i);
+            MDctf.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_micrographs_all[imic], i);
+            MDctf.setValue(EMDL::CTF_IMAGE, fn_ctf, i);
+            MDctf.setValue(EMDL::CTF_DEFOCUSU, defU, i);
+            MDctf.setValue(EMDL::CTF_DEFOCUSV, defV, i);
+            MDctf.setValue(EMDL::CTF_ASTIGMATISM, fabs(defU-defV), i);
+            MDctf.setValue(EMDL::CTF_DEFOCUS_ANGLE, defAng, i);
             if (!std::isfinite(CC)) CC = 0.0; // GCTF might return NaN
-            MDctf.setValue(EMDL::CTF_FOM, CC);
+            MDctf.setValue(EMDL::CTF_FOM, CC, i);
             if (fabs(maxres + 999.) > 0.0) {
                 // Put an upper limit on maxres, as gCtf may put 999. now max is 25.
-                MDctf.setValue(EMDL::CTF_MAXRES, std::min(25.0, maxres));
+                MDctf.setValue(EMDL::CTF_MAXRES, std::min(25.0, maxres), i);
             }
-            if (fabs(phaseshift + 999.0) > 0.0) { MDctf.setValue(EMDL::CTF_PHASESHIFT,      phaseshift); }
-            if (fabs(valscore   + 999.0) > 0.0) { MDctf.setValue(EMDL::CTF_VALIDATIONSCORE, valscore);   }
+            if (fabs(phaseshift + 999.0) > 0.0) { MDctf.setValue(EMDL::CTF_PHASESHIFT,      phaseshift, i); }
+            if (fabs(valscore   + 999.0) > 0.0) { MDctf.setValue(EMDL::CTF_VALIDATIONSCORE, valscore,   i); }
         }
 
         if (verb > 0 && imic % 60 == 0) progress_bar(imic);
@@ -577,10 +578,11 @@ void CtffindRunner::executeCtffind3(long int imic) {
         );
         // Calculate mean, stddev, min and max
         const auto stats = computeStats(I());
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev);
+        const long int i = I.MDMainHeader.index();
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max,    i);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg,    i);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev, i);
         I.write(fn_mic_win);
     } else {
         fn_mic_win = fn_mic;
@@ -656,10 +658,11 @@ void CtffindRunner::executeCtffind4(long int imic) {
         I().window(Xmipp::init(ctf_win), Xmipp::init(ctf_win), Xmipp::last(ctf_win), Xmipp::last(ctf_win));
         // Calculate mean, stddev, min and max
         const auto stats = computeStats(I());
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg);
-        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev);
+        const long int i = I.MDMainHeader.index();
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max,    i);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg,    i);
+        I.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev, i);
         I.write(fn_mic_win);
     } else {
         fn_mic_win = fn_mic;
@@ -672,10 +675,8 @@ void CtffindRunner::executeCtffind4(long int imic) {
         ctf_boxsize = Xsize(Ihead());
         ctf_angpix = Ihead.samplingRateX();
     }
-    //std::string ctffind4_options = " --omp-num-threads " + integerToString(nr_threads);
-    std::string ctffind4_options = "";
-    if (use_given_ps)
-        ctffind4_options += " --amplitude-spectrum-input";
+    // std::string ctffind4_options = " --omp-num-threads " + integerToString(nr_threads);
+    const std::string ctffind4_options = use_given_ps ? " --amplitude-spectrum-input" : "";
 
     // Write script to run ctffind
     fh << "#!/usr/bin/env " << fn_shell << std::endl;

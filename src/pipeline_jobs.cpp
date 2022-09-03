@@ -154,8 +154,9 @@ JobOption::JobOption(
 
 void JobOption::writeToMetaDataTable(MetaDataTable& MD) const {
     MD.addObject();
-    MD.setValue(EMDL::JOBOPTION_VARIABLE, variable);
-    MD.setValue(EMDL::JOBOPTION_VALUE,    value);
+    const long int i = MD.index();
+    MD.setValue(EMDL::JOBOPTION_VARIABLE, variable, i);
+    MD.setValue(EMDL::JOBOPTION_VALUE,    value,    i);
 }
 
 void JobOption::clear() {
@@ -422,18 +423,18 @@ void RelionJob::write(const string &fn) {
     REPORT_ERROR(errorMsg("Cannot write to file: " + myfilename + "job.star"));
 
     MetaDataTable MDhead;
-    MetaDataTable MDvals, MDopts;
-
+    MDhead.name = "job";
     MDhead.isList = true;
     MDhead.addObject();
-    MDhead.setValue(EMDL::JOB_TYPE, type);
-    MDhead.setValue(EMDL::JOB_IS_CONTINUE, is_continue);
+    const long int i = MDhead.index();
+    MDhead.setValue(EMDL::JOB_TYPE, type, i);
+    MDhead.setValue(EMDL::JOB_IS_CONTINUE, is_continue, i);
     // TODO: add name for output directories!!! make a std:;map between type and name for all options!
-    //MDhead.setValue(EMDL::JOB_TYPE_NAME, type);
-    MDhead.name = "job";
+    // MDhead.setValue(EMDL::JOB_TYPE_NAME, type, i);
     MDhead.write(fh);
 
     // Now make a table with all the values
+    MetaDataTable MDvals;
     for (const auto &option : joboptions) {
         option.second.writeToMetaDataTable(MDvals);
     }

@@ -137,25 +137,26 @@ class project_parameters {
                 const RFLOAT xoff = rnd_gaus(0.0, sigma_offset);
                 const RFLOAT yoff = rnd_gaus(0.0, sigma_offset);
                 MDang.addObject();
-                MDang.setValue(EMDL::ORIENT_ROT,  rot);
-                MDang.setValue(EMDL::ORIENT_TILT, tilt);
-                MDang.setValue(EMDL::ORIENT_PSI,  psi);
-                MDang.setValue(EMDL::ORIENT_ORIGIN_X, xoff);
-                MDang.setValue(EMDL::ORIENT_ORIGIN_Y, yoff);
-                MDang.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
+                MDang.setValue(EMDL::ORIENT_ROT,  rot,      i);
+                MDang.setValue(EMDL::ORIENT_TILT, tilt,     i);
+                MDang.setValue(EMDL::ORIENT_PSI,  psi,      i);
+                MDang.setValue(EMDL::ORIENT_ORIGIN_X, xoff, i);
+                MDang.setValue(EMDL::ORIENT_ORIGIN_Y, yoff, i);
+                MDang.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             }
 
             std::cout << " Setting default values for optics table, though CTFs are not used in the projections ... " << std::endl;
             MetaDataTable MDopt;
             MDopt.addObject();
-            MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
-            MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, "optics1");
-            MDopt.setValue(EMDL::CTF_VOLTAGE, 300.0);
-            MDopt.setValue(EMDL::CTF_CS, 2.7);
+            const long int i = MDopt.index();
+            MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
+            MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, "optics1", i);
+            MDopt.setValue(EMDL::CTF_VOLTAGE, 300.0, i);
+            MDopt.setValue(EMDL::CTF_CS, 2.7, i);
             angpix = vol.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
-            MDopt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix);
-            MDopt.setValue(EMDL::IMAGE_SIZE, Xsize(vol()));
-            MDopt.setValue(EMDL::IMAGE_DIMENSIONALITY, do_3d_rot ? 3 : 2);
+            MDopt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, i);
+            MDopt.setValue(EMDL::IMAGE_SIZE, Xsize(vol()), i);
+            MDopt.setValue(EMDL::IMAGE_DIMENSIONALITY, do_3d_rot ? 3 : 2, i);
 
             obsModel = ObservationModel(MDopt);
         } else if (!do_only_one) {
@@ -377,7 +378,7 @@ class project_parameters {
                 // Subtract the projection from the corresponding experimental image
                 if (do_subtract_exp || do_simulate) {
                     const FileName fn_expimg = MDang.getValue<std::string>(EMDL::IMAGE_NAME);
-                    MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg);  // Store fn_expimg in rlnOriginalParticleName
+                    MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg, MDang.index());  // Store fn_expimg in rlnOriginalParticleName
                     const auto expimg = Image<RFLOAT>::from_filename(fn_expimg);
                     img() = expimg() - img();
                 }
@@ -489,16 +490,17 @@ class project_parameters {
                 // Set the image name to the output STAR file
                 DFo.addObject();
                 DFo.setObject(MDang.getObject());
-                DFo.setValue(EMDL::IMAGE_NAME, fn_img);
+                const long int i = DFo.index();
+                DFo.setValue(EMDL::IMAGE_NAME, fn_img, i);
 
                 if (do_simulate) {
-                    DFo.setValue(EMDL::ORIENT_ROT,  rot);
-                    DFo.setValue(EMDL::ORIENT_TILT, tilt);
-                    DFo.setValue(EMDL::ORIENT_PSI,  psi);
-                    DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix);
-                    DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff * angpix);
+                    DFo.setValue(EMDL::ORIENT_ROT,  rot, i);
+                    DFo.setValue(EMDL::ORIENT_TILT, tilt, i);
+                    DFo.setValue(EMDL::ORIENT_PSI,  psi, i);
+                    DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix, i);
+                    DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff * angpix, i);
                     if (do_3d_rot)
-                    DFo.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix);
+                    DFo.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix, i);
                 }
 
                 if (imgno % 60 == 0) progress_bar(imgno);

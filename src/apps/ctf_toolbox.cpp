@@ -179,7 +179,7 @@ class ctf_toolbox_parameters {
                     img.write(my_fn_out);
                 }
 
-                MD.setValue(EMDL::IMAGE_NAME, my_fn_out);
+                MD.setValue(EMDL::IMAGE_NAME, my_fn_out, i_img);
                 obsModel.setCtfPremultiplied(og, true);
 
                 if (verb > 0) progress_bar(i_img);

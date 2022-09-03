@@ -228,16 +228,16 @@ void MotioncorrRunner::initialise() {
         if (voltage < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the acceleration voltage, and no voltage is given through --voltage.");
         }
-        for (long int _ : obsModel.opticsMdt) {
-            obsModel.opticsMdt.setValue(EMDL::CTF_VOLTAGE, voltage);
+        for (long int i : obsModel.opticsMdt) {
+            obsModel.opticsMdt.setValue(EMDL::CTF_VOLTAGE, voltage, i);
         }
     }
     if (!obsModel.opticsMdt.containsLabel(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE)) {
         if (angpix < 0.0) {
             REPORT_ERROR("ERROR: the input STAR file does not contain the pixel size, and no pixel size is given through --angpix.");
         }
-        for (long int _ : obsModel.opticsMdt) {
-            obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, angpix);
+        for (long int i : obsModel.opticsMdt) {
+            obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, angpix, i);
         }
     }
 
@@ -751,43 +751,40 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
         FileName fn_avg = getOutputFileNames(fn_ori_micrographs[imic]);
         if (exists(fn_avg)) {
             MDavg.addObject();
+            const long int i = MDavg.index();
             if (do_dose_weighting && save_noDW) {
-                FileName fn_avg_wodose = fn_avg.withoutExtension() + "_noDW.mrc";
-                MDavg.setValue(EMDL::MICROGRAPH_NAME_WODOSE, fn_avg_wodose);
+                const FileName fn_avg_wodose = fn_avg.withoutExtension() + "_noDW.mrc";
+                MDavg.setValue(EMDL::MICROGRAPH_NAME_WODOSE, fn_avg_wodose, i);
             }
             if (grouping_for_ps > 0) {
-                MDavg.setValue(EMDL::CTF_POWER_SPECTRUM, fn_avg.withoutExtension() + "_PS.mrc");
+                MDavg.setValue(EMDL::CTF_POWER_SPECTRUM, fn_avg.withoutExtension() + "_PS.mrc", i);
             }
-            MDavg.setValue(EMDL::MICROGRAPH_NAME, fn_avg);
-            MDavg.setValue(EMDL::MICROGRAPH_METADATA_NAME, fn_avg.withoutExtension() + ".star");
-            MDavg.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_ori_micrographs[imic]);
+            MDavg.setValue(EMDL::MICROGRAPH_NAME, fn_avg, i);
+            MDavg.setValue(EMDL::MICROGRAPH_METADATA_NAME, fn_avg.withoutExtension() + ".star", i);
+            MDavg.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_ori_micrographs[imic], i);
             FileName fn_star = fn_avg.withoutExtension() + ".star";
             if (exists(fn_star)) {
-                Micrograph mic(fn_star);
+                Micrograph mic (fn_star);
                 RFLOAT cutoff_frame = (dose_motionstats_cutoff - mic.pre_exposure) / mic.dose_per_frame;
                 RFLOAT sum_total = 0.0;
                 RFLOAT sum_early = 0.0;
-                RFLOAT sum_late = 0.0;
+                RFLOAT sum_late  = 0.0;
 
                 RFLOAT x = 0.0, y = 0.0, xold = 0.0, yold = 0.0;
                 for (RFLOAT frame = 1.; frame <= mic.getNframes(); frame += 1.0) {
                     if (mic.getShiftAt(frame, 0., 0., x, y, false, false) != 0)
                         continue;
                     if (frame >= 2.0) {
-                        RFLOAT d = sqrt((x - xold) * (x - xold) + (y - yold) * (y - yold));
+                        const RFLOAT d = euclid(x - xold, y - yold);
                         sum_total += d;
-                        if (frame <= cutoff_frame) {
-                            sum_early += d;
-                        } else {
-                            sum_late += d;
-                        }
+                        (frame <= cutoff_frame ? sum_early : sum_late) += d;
                     }
                     xold = x;
                     yold = y;
                 }
-                MDavg.setValue(EMDL::MICROGRAPH_ACCUM_MOTION_TOTAL, sum_total);
-                MDavg.setValue(EMDL::MICROGRAPH_ACCUM_MOTION_EARLY, sum_early);
-                MDavg.setValue(EMDL::MICROGRAPH_ACCUM_MOTION_LATE, sum_late);
+                MDavg.setValue(EMDL::MICROGRAPH_ACCUM_MOTION_TOTAL, sum_total, i);
+                MDavg.setValue(EMDL::MICROGRAPH_ACCUM_MOTION_EARLY, sum_early, i);
+                MDavg.setValue(EMDL::MICROGRAPH_ACCUM_MOTION_LATE,  sum_late,  i);
             }
         }
 
@@ -798,11 +795,9 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
     // Write out STAR files at the end
     // In the opticsMdt, set EMDL::MICROGRAPH_PIXEL_SIZE (i.e. possibly binned pixel size).
     // Keep EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE for MTF correction
-    for (long int _ : obsModel.opticsMdt) {
-        obsModel.opticsMdt.setValue(
-            EMDL::MICROGRAPH_PIXEL_SIZE, 
-            (RFLOAT) (obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE) * bin_factor)
-        );
+    for (long int i : obsModel.opticsMdt) {
+        const auto angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE);
+        obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, (RFLOAT) (angpix * bin_factor), i);
     }
     obsModel.save(MDavg, fn_out + "corrected_micrographs.star", "micrographs");
 

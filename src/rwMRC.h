@@ -227,18 +227,19 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 
     offset = MRCSIZE + header->nsymbt;
 
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->amean);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms);
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype);
+    const long int i = MDMainHeader.index();
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->amean, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms, i);
+    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
     if (header->mx && header->a != 0)  // ux
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT)header->a / header->mx);
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT)header->a / header->mx, i);
     if (header->my && header->b != 0)  // yx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT)header->b / header->my);
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT)header->b / header->my, i);
     if (header->mz && header->c != 0)  // zx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT)header->c / header->mz);
+        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT)header->c / header->mz, i);
 
     if (isStack && !dataflag) {
         // Don't read the individual header and the data if not necessary

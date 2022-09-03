@@ -1737,18 +1737,19 @@ void convertHelicalTubeCoordsToMetaDataTable(
 
         if (!cut_into_segments) {
             MD_out.addObject();
-            MD_out.setValue(EMDL::IMAGE_COORD_X, ((x1 + x2) / 2.0));
-            MD_out.setValue(EMDL::IMAGE_COORD_Y, ((y1 + y2) / 2.0));
-            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, (tube_id + 1));
-            MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-            MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, 0.0);
-            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+            const long int i = MD_out.index();
+            MD_out.setValue(EMDL::IMAGE_COORD_X, ((x1 + x2) / 2.0), i);
+            MD_out.setValue(EMDL::IMAGE_COORD_Y, ((y1 + y2) / 2.0), i);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, (tube_id + 1), i);
+            MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, 0.0, i);
+            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
 
             if (MDin_has_id)
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, id);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, id, i);
             if (MDin_has_pitch)
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_PITCH, pitch);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_PITCH, pitch, i);
 
             nr_segments++;
             continue;
@@ -1782,18 +1783,19 @@ void convertHelicalTubeCoordsToMetaDataTable(
                 #endif
 
                 MD_out.addObject();
-                MD_out.setValue(EMDL::IMAGE_COORD_X, xp);
-                MD_out.setValue(EMDL::IMAGE_COORD_Y, yp);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, tube_id + 1);
-                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+                const long int i = MD_out.index();
+                MD_out.setValue(EMDL::IMAGE_COORD_X, xp, i);
+                MD_out.setValue(EMDL::IMAGE_COORD_Y, yp, i);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, tube_id + 1, i);
+                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
 
                 if (MDin_has_id)
-                    MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, id);
+                    MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, id, i);
                 if (MDin_has_pitch)
-                    MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_PITCH, pitch);
+                    MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_PITCH, pitch, i);
                nr_segments++;
             }
         }
@@ -1904,34 +1906,32 @@ void combineParticlePriorsWithKaiLocalCTF(
     if (!MD_priors.containsLabel(EMDL::CTF_PHASESHIFT))
         MD_priors.addLabel(EMDL::CTF_PHASESHIFT);
 
-    ii = -1;
-    for (long int index : MD_priors) {
-        ii++;
+    for (long int i : MD_priors) {
         _x = MD_priors.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
         _y = MD_priors.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-        if (fabs(x[ii] - _x) > 1.001 || fabs(y[ii] - _y) > 1.001)
+        if (fabs(x[i] - _x) > 1.001 || fabs(y[i] - _y) > 1.001)
             REPORT_ERROR("helix.cpp::combineParticlePriorsWithKaiLocalCTF(): Coordinates from the two MetaDataTables do not match.");
 
-        //MD_priors.setValue(EMDL::IMAGE_COORD_X, x[ii]);
-        //MD_priors.setValue(EMDL::IMAGE_COORD_Y, y[ii]);
-        MD_priors.setValue(EMDL::CTF_DEFOCUSU, dU[ii]);
-        MD_priors.setValue(EMDL::CTF_DEFOCUSV, dV[ii]);
-        MD_priors.setValue(EMDL::CTF_DEFOCUS_ANGLE, dAng[ii]);
-        MD_priors.setValue(EMDL::CTF_CS, Cs[ii]);
-        MD_priors.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, pix[ii]);
-        MD_priors.setValue(EMDL::CTF_MAGNIFICATION, mag[ii]);
-        MD_priors.setValue(EMDL::CTF_Q0, Q0[ii]);
-        MD_priors.setValue(EMDL::CTF_VOLTAGE, volt[ii]);
+        // MD_priors.setValue(EMDL::IMAGE_COORD_X, x[i], i);
+        // MD_priors.setValue(EMDL::IMAGE_COORD_Y, y[i], i);
+        MD_priors.setValue(EMDL::CTF_DEFOCUSU, dU[i], i);
+        MD_priors.setValue(EMDL::CTF_DEFOCUSV, dV[i], i);
+        MD_priors.setValue(EMDL::CTF_DEFOCUS_ANGLE, dAng[i], i);
+        MD_priors.setValue(EMDL::CTF_CS, Cs[i], i);
+        MD_priors.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, pix[i], i);
+        MD_priors.setValue(EMDL::CTF_MAGNIFICATION, mag[i], i);
+        MD_priors.setValue(EMDL::CTF_Q0, Q0[i], i);
+        MD_priors.setValue(EMDL::CTF_VOLTAGE, volt[i], i);
         if (MD_local_ctf.containsLabel(EMDL::CTF_FOM))
-            MD_priors.setValue(EMDL::CTF_FOM, fom[ii]);
+            MD_priors.setValue(EMDL::CTF_FOM, fom[i], i);
         if (MD_local_ctf.containsLabel(EMDL::CTF_MAXRES))
-            MD_priors.setValue(EMDL::CTF_MAXRES, maxres[ii]);
+            MD_priors.setValue(EMDL::CTF_MAXRES, maxres[i], i);
         if (MD_local_ctf.containsLabel(EMDL::CTF_BFACTOR))
-            MD_priors.setValue(EMDL::CTF_BFACTOR, bfac[ii]);
+            MD_priors.setValue(EMDL::CTF_BFACTOR, bfac[i], i);
         if (MD_local_ctf.containsLabel(EMDL::CTF_SCALEFACTOR))
-            MD_priors.setValue(EMDL::CTF_SCALEFACTOR, sfac[ii]);
+            MD_priors.setValue(EMDL::CTF_SCALEFACTOR, sfac[i], i);
         if (MD_local_ctf.containsLabel(EMDL::CTF_PHASESHIFT))
-            MD_priors.setValue(EMDL::CTF_PHASESHIFT, phase[ii]);
+            MD_priors.setValue(EMDL::CTF_PHASESHIFT, phase[i], i);
     }
 
     MD_priors.write(fn_combined);
@@ -1974,8 +1974,8 @@ void setNullTiltPriorsInDataStar(FileName& fn_in, FileName& fn_out) {
     MD.read(fn_in);
     if (!MD.containsLabel(EMDL::ORIENT_TILT_PRIOR))
         MD.addLabel(EMDL::ORIENT_TILT_PRIOR);
-    for (long int index : MD) {
-        MD.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
+    for (long int i : MD) {
+        MD.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
     }
     MD.write(fn_out);
     return;
@@ -2155,9 +2155,10 @@ void convertHelicalSegmentCoordsToMetaDataTable(
         #endif
         nr_segments++;
         MD_out.addObject(MD_in.getObject());
+        const long int i = MD_out.index();
 
         /// TODO: check whether there is a bug...
-        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
 
     }
     total_segments = nr_segments;
@@ -2245,13 +2246,14 @@ void convertXimdispHelicalSegmentCoordsToMetaDataTable(
 
         nr_segments++;
         MD_out.addObject();
-        MD_out.setValue(EMDL::IMAGE_COORD_X, x);
-        MD_out.setValue(EMDL::IMAGE_COORD_Y, y);
-        MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes);
-        MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-        MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix);
-        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+        const long int i = MD_out.index();
+        MD_out.setValue(EMDL::IMAGE_COORD_X, x, i);
+        MD_out.setValue(EMDL::IMAGE_COORD_Y, y, i);
+        MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
+        MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+        MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix, i);
+        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
 
         line.clear();
     }
@@ -2341,13 +2343,14 @@ void convertXimdispHelicalTubeCoordsToMetaDataTable(
 
         if (!cut_into_segments) {
             MD_out.addObject();
-            MD_out.setValue(EMDL::IMAGE_COORD_X, (x1 + x2) / 2.0);
-            MD_out.setValue(EMDL::IMAGE_COORD_Y, (y1 + y2) / 2.0);
-            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes);
-            MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-            MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, 0.0);
-            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+            const long int i = MD_out.index();
+            MD_out.setValue(EMDL::IMAGE_COORD_X, (x1 + x2) / 2.0, i);
+            MD_out.setValue(EMDL::IMAGE_COORD_Y, (y1 + y2) / 2.0, i);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
+            MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, 0.0, i);
+            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
             continue;
         }
 
@@ -2379,13 +2382,14 @@ void convertXimdispHelicalTubeCoordsToMetaDataTable(
                 #endif
 
                 MD_out.addObject();
-                MD_out.setValue(EMDL::IMAGE_COORD_X, xp);
-                MD_out.setValue(EMDL::IMAGE_COORD_Y, yp);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes);
-                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+                const long int i = MD_out.index();
+                MD_out.setValue(EMDL::IMAGE_COORD_X, xp, i);
+                MD_out.setValue(EMDL::IMAGE_COORD_Y, yp, i);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
+                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
 
                 nr_segments++;
             }
@@ -2491,13 +2495,14 @@ void convertEmanHelicalSegmentCoordsToMetaDataTable(
 
         nr_segments++;
         MD_out.addObject();
-        MD_out.setValue(EMDL::IMAGE_COORD_X, x);
-        MD_out.setValue(EMDL::IMAGE_COORD_Y, y);
-        MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes);
-        MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-        MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix);
-        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+        const long int i = MD_out.index();
+        MD_out.setValue(EMDL::IMAGE_COORD_X, x, i);
+        MD_out.setValue(EMDL::IMAGE_COORD_Y, y, i);
+        MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
+        MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+        MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix, i);
+        MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
 
         line.clear();
     }
@@ -2607,14 +2612,14 @@ void convertEmanHelicalTubeCoordsToMetaDataTable(
 
         if (!cut_into_segments) {
             MD_out.addObject();
-            MD_out.setValue(EMDL::IMAGE_COORD_X, ((x1 + x2) / 2.0));
-            MD_out.setValue(EMDL::IMAGE_COORD_Y, ((y1 + y2) / 2.0));
-            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes);
-            MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-            MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, 0.0);
-            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
-
+            const long int i = MD_out.index();
+            MD_out.setValue(EMDL::IMAGE_COORD_X, ((x1 + x2) / 2.0), i);
+            MD_out.setValue(EMDL::IMAGE_COORD_Y, ((y1 + y2) / 2.0), i);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
+            MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+            MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, 0.0, i);
+            MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
             continue;
         }
 
@@ -2646,13 +2651,14 @@ void convertEmanHelicalTubeCoordsToMetaDataTable(
                 #endif
 
                 MD_out.addObject();
-                MD_out.setValue(EMDL::IMAGE_COORD_X, xp);
-                MD_out.setValue(EMDL::IMAGE_COORD_Y, yp);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes);
-                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio);
+                const long int i = MD_out.index();
+                MD_out.setValue(EMDL::IMAGE_COORD_X, xp, i);
+                MD_out.setValue(EMDL::IMAGE_COORD_Y, yp, i);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
+                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR, -psi_deg, i);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, pixel_size_A * len_pix, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
 
                 nr_segments++;
             }
@@ -3232,7 +3238,7 @@ void sortHelicalTubeID(MetaDataTable& MD) {
     ) REPORT_ERROR("helix.cpp::sortHelicalTubeID: Labels of helical prior information are missing!");
 
     int_tube_id = 0;
-    for (long int index : MD) {
+    for (long int i : MD) {
         str_particle_fullname = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         int_tube_id           = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID);
         str_comment = str_particle_name + "@TUBE@" + integerToString(int_tube_id, 6);
@@ -3243,20 +3249,20 @@ void sortHelicalTubeID(MetaDataTable& MD) {
         str_comment = str_particle_name + "@TUBE@" + integerToString(int_tube_id, 6) + "@PARTICLE@" + str_particle_id;
 
         // DEBUG
-        //std::cout << str_comment << std::endl;
+        // std::cout << str_comment << std::endl;
 
-        MD.setValue(EMDL::IMAGE_NAME, str_comment);
+        MD.setValue(EMDL::IMAGE_NAME, str_comment, i);
     }
     MD.newSort(EMDL::IMAGE_NAME);
     nr_tubes = tubes.size();
     tubes.clear();
 
-    for (long int index : MD) {
+    for (long int i : MD) {
         str_comment = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         str_particle_id = str_comment.substr(str_comment.find("@PARTICLE@") + 10);
         str_particle_name = str_comment.substr(0, str_comment.find("@TUBE@"));
         str_comment = str_particle_id + "@" + str_particle_name;
-        MD.setValue(EMDL::IMAGE_NAME, str_comment);
+        MD.setValue(EMDL::IMAGE_NAME, str_comment, i);
     }
 
     std::vector<RFLOAT> dummy;
@@ -3420,33 +3426,34 @@ void simulateHelicalSegments(
         }
 
         MD.addObject();
-        MD.setValue(EMDL::ORIENT_ROT, rot);
-        MD.setValue(EMDL::ORIENT_TILT, new_tilt);
-        MD.setValue(EMDL::ORIENT_PSI, new_psi);
-        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff);
-        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff);
+        const long int i = MD.index();
+        MD.setValue(EMDL::ORIENT_ROT, rot, i);
+        MD.setValue(EMDL::ORIENT_TILT, new_tilt, i);
+        MD.setValue(EMDL::ORIENT_PSI, new_psi, i);
+        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff, i);
+        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff, i);
         if (is_3d_tomo)
-            MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff);
-        MD.setValue(EMDL::ORIENT_ROT_PRIOR, rot);
-        MD.setValue(EMDL::ORIENT_TILT_PRIOR, new_tilt);
-        MD.setValue(EMDL::ORIENT_PSI_PRIOR, new_psi);
-        MD.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, angpix * len_pix);
-        MD.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_flip_ratio);
-        MD.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, tube_id);
+        MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff, i);
+        MD.setValue(EMDL::ORIENT_ROT_PRIOR, rot, i);
+        MD.setValue(EMDL::ORIENT_TILT_PRIOR, new_tilt, i);
+        MD.setValue(EMDL::ORIENT_PSI_PRIOR, new_psi, i);
+        MD.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, angpix * len_pix, i);
+        MD.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_flip_ratio, i);
+        MD.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, tube_id, i);
         if (is_3d_tomo) {
             fn_mic = FileName::compose(id + 1, "dummy").beforeFirstOf("@");
             fn_mic = std::string("subtomo-3d-") + std::string(fn_mic) + std::string(".mrc");
         } else {
             fn_mic = FileName::compose(id + 1, "segments-2d.mrcs");
         }
-        MD.setValue(EMDL::IMAGE_NAME, fn_mic);
+        MD.setValue(EMDL::IMAGE_NAME, fn_mic, i);
         if (is_3d_tomo) {
-            MD.setValue(EMDL::MICROGRAPH_NAME, (std::string)("tomogram-01.mrc"));
+            MD.setValue(EMDL::MICROGRAPH_NAME, (std::string)("tomogram-01.mrc"), i);
         } else {
-            MD.setValue(EMDL::MICROGRAPH_NAME, (std::string)("micrograph-01.mrc"));
+            MD.setValue(EMDL::MICROGRAPH_NAME, (std::string)("micrograph-01.mrc"), i);
         }
-        MD.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, 14.0);
-        MD.setValue(EMDL::CTF_MAGNIFICATION, 140000.0 / angpix);
+        MD.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, 14.0, i);
+        MD.setValue(EMDL::CTF_MAGNIFICATION, 140000.0 / angpix, i);
 
         // Generate .sh script
         if (is_3d_tomo) {
@@ -3485,28 +3492,28 @@ void simulateHelicalSegments(
     fout.close();
 
     MD.deactivateLabel(EMDL::ORIENT_ROT_PRIOR);
-    for (long int index : MD) {
-        MD.setValue(EMDL::ORIENT_ROT, 0.0);
+    for (long int i : MD) {
+        MD.setValue(EMDL::ORIENT_ROT, 0.0, i);
         if (!is_3d_tomo) {
-            MD.setValue(EMDL::ORIENT_TILT,       90.0);
-            MD.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
+            MD.setValue(EMDL::ORIENT_TILT,       90.0, i);
+            MD.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
         }
-        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0);
-        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
+        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0, i);
+        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0, i);
         if (is_3d_tomo)
-            MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
+            MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0, i);
 
         fn_mic = MD.getValue<std::string>(EMDL::IMAGE_NAME);
         fn_ext = fn_mic.getExtension();
         fn_mic = fn_mic.withoutExtension() + "_norm." + fn_ext;
-        MD.setValue(EMDL::IMAGE_NAME, fn_mic);
+        MD.setValue(EMDL::IMAGE_NAME, fn_mic, i);
     }
     MD.write(fn_star_out_priors);
 
-    for (long int index : MD) {
-        MD.setValue(EMDL::ORIENT_ROT,  0.0);
-        MD.setValue(EMDL::ORIENT_TILT, 0.0);
-        MD.setValue(EMDL::ORIENT_PSI,  0.0);
+    for (long int i : MD) {
+        MD.setValue(EMDL::ORIENT_ROT,  0.0, i);
+        MD.setValue(EMDL::ORIENT_TILT, 0.0, i);
+        MD.setValue(EMDL::ORIENT_PSI,  0.0, i);
     }
     MD.deactivateLabel(EMDL::ORIENT_TILT_PRIOR);
     MD.deactivateLabel(EMDL::ORIENT_PSI_PRIOR);
@@ -4203,16 +4210,16 @@ void updateAngularPriorsForHelicalReconstructionFromLastIter(
     // Hopefully the compiler will notice this 
     // and be able to optimise away the overhead by hoisting this loop-invariant code.
     // https://en.wikipedia.org/wiki/Loop-invariant_code_motion
-    for (long int index : MD) {
+    for (long int i : MD) {
         if (have_tilt && have_tilt_prior && !keep_tilt_prior_fixed) {
-            MD.setValue(EMDL::ORIENT_TILT_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_TILT));
+            MD.setValue(EMDL::ORIENT_TILT_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_TILT), i);
         }
         if (have_psi && have_psi_prior) {
-            MD.setValue(EMDL::ORIENT_PSI_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_PSI));
+            MD.setValue(EMDL::ORIENT_PSI_PRIOR,  MD.getValue<RFLOAT>(EMDL::ORIENT_PSI), i);
         }
         // KThurber add rot section
         if (have_rot && have_rot_prior) {
-            MD.setValue(EMDL::ORIENT_ROT_PRIOR, MD.getValue<RFLOAT>(EMDL::ORIENT_ROT));
+            MD.setValue(EMDL::ORIENT_ROT_PRIOR,  MD.getValue<RFLOAT>(EMDL::ORIENT_ROT), i);
         }
     }
 }
@@ -4220,8 +4227,8 @@ void updateAngularPriorsForHelicalReconstructionFromLastIter(
 void setPsiFlipRatioInStarFile(MetaDataTable& MD, RFLOAT ratio) {
     if (!MD.containsLabel(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO))
         REPORT_ERROR("helix.cpp::setPsiFlipRatioInStarFile: Psi flip ratio is not found in this STAR file!");
-    for (long int index : MD) {
-        MD.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, ratio);
+    for (long int i : MD) {
+        MD.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, ratio, i);
     }
 }
 
@@ -4232,8 +4239,9 @@ void plotLatticePoints(MetaDataTable& MD, int x1, int y1, int x2, int y2) {
     for (int i = -10; i <= 10; i++)
     for (int j = -10; j <= 10; j++) {
         MD.addObject();
-        MD.setValue(EMDL::IMAGE_COORD_X, RFLOAT(i * x1 + j * x2));
-        MD.setValue(EMDL::IMAGE_COORD_Y, RFLOAT(i * y1 + j * y2));
+        const long int index = MD.index();
+        MD.setValue(EMDL::IMAGE_COORD_X, RFLOAT(i * x1 + j * x2), index);
+        MD.setValue(EMDL::IMAGE_COORD_Y, RFLOAT(i * y1 + j * y2), index);
     }
 }
 
@@ -4260,10 +4268,11 @@ void grabParticleCoordinates(FileName& fn_in, FileName& fn_out) {
         z = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
 
         MD_out.addObject();
-        MD_out.setValue(EMDL::IMAGE_COORD_X, x);
-        MD_out.setValue(EMDL::IMAGE_COORD_Y, y);
+        const long int i = MD_out.index();
+        MD_out.setValue(EMDL::IMAGE_COORD_X, x, i);
+        MD_out.setValue(EMDL::IMAGE_COORD_Y, y, i);
         if (contain_z_coord)
-        MD_out.setValue(EMDL::IMAGE_COORD_Z, z);
+        MD_out.setValue(EMDL::IMAGE_COORD_Z, z, i);
     }
     MD_out.write(fn_out);
 
@@ -4454,8 +4463,9 @@ void normaliseHelicalSegments(
         img_name = img_name.substr(img_name.find("@") + 1);
         // Set the pixel size in the file header
         auto img0 = Image<RFLOAT>::from_filename(img_name);
-        img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A);
-        img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A);
+        const long int i = img0.MDMainHeader.index();
+        img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
+        img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
         img0.write(img_name);
     }
 }
@@ -4629,20 +4639,21 @@ void HermiteInterpolateOne3DHelicalFilament(
                 // Add this segment to the list
                 nr_segments++;
                 MD_out.addObject();
-                MD_out.setValue(EMDL::IMAGE_COORD_X, xb);
-                MD_out.setValue(EMDL::IMAGE_COORD_Y, yb);
-                MD_out.setValue(EMDL::IMAGE_COORD_Z, zb);
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, helical_tube_id);
+                const long int i = MD_out.index();
+                MD_out.setValue(EMDL::IMAGE_COORD_X, xb, i);
+                MD_out.setValue(EMDL::IMAGE_COORD_Y, yb, i);
+                MD_out.setValue(EMDL::IMAGE_COORD_Z, zb, i);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, helical_tube_id, i);
 
                 XX(dr) = xb - xa; YY(dr) = yb - ya; ZZ(dr) = zb - za;
                 estimateTiltPsiPriors(dr, tilt_deg, psi_deg);
                 if (fabs(tilt_deg) < 0.001) tilt_deg = 0.0;
                 if (fabs(psi_deg)  < 0.001) psi_deg  = 0.0;
-                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, tilt_deg);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR,  psi_deg);
+                MD_out.setValue(EMDL::ORIENT_TILT_PRIOR, tilt_deg, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR,  psi_deg, i);
 
-                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, accu_len_pix * pixel_size_A);
-                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO,            psi_prior_flip_ratio);
+                MD_out.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, accu_len_pix * pixel_size_A, i);
+                MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO,            psi_prior_flip_ratio, i);
              }
         }
     }
@@ -4933,22 +4944,25 @@ void Interpolate3DCurves(
             // Start point
             if (id == 0) {
                 MD_in.addObject();
-                MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[0]);
-                MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[0]);
-                MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[0]);
+                const long int i = MD_in.index();
+                MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[0], i);
+                MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[0], i);
+                MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[0], i);
                 continue;
             }
             // Middle points of each short line segment
             MD_in.addObject();
-            MD_in.setValue(EMDL::IMAGE_COORD_X, (xlist[id] + xlist[id - 1]) / 2.0);
-            MD_in.setValue(EMDL::IMAGE_COORD_Y, (ylist[id] + ylist[id - 1]) / 2.0);
-            MD_in.setValue(EMDL::IMAGE_COORD_Z, (zlist[id] + zlist[id - 1]) / 2.0);
+            const long int i = MD_in.index();
+            MD_in.setValue(EMDL::IMAGE_COORD_X, (xlist[id] + xlist[id - 1]) / 2.0, i);
+            MD_in.setValue(EMDL::IMAGE_COORD_Y, (ylist[id] + ylist[id - 1]) / 2.0, i);
+            MD_in.setValue(EMDL::IMAGE_COORD_Z, (zlist[id] + zlist[id - 1]) / 2.0, i);
             // End point
             if (id == xlist.size() - 1) {
                 MD_in.addObject();
-                MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[id]);
-                MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[id]);
-                MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[id]);
+                const long int i = MD_in.index();
+                MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[id], i);
+                MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[id], i);
+                MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[id], i);
                 break;
             }
         }
@@ -5177,8 +5191,9 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
             MD_out.addObject(MD_3d.getObject());
             // For particle rescaling - reset pixel size
             if (auto_pixel_size) {
-                MD_out.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, Dpix);
-                MD_out.setValue(EMDL::CTF_MAGNIFICATION, Mag);
+                const long int i = MD_out.index();
+                MD_out.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, Dpix, i);
+                MD_out.setValue(EMDL::CTF_MAGNIFICATION, Mag, i);
             }
         }
     }
@@ -5210,8 +5225,7 @@ void averageAsymmetricUnits2D(
         const int optics_group = MDimgs.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
         const RFLOAT angpix    = obsModel.getPixelSize(optics_group);
 
-        Image<RFLOAT> img;
-        img.read(fn_img);
+        auto img = Image<RFLOAT>::from_filename(fn_img);
         MultidimArray<Complex> &Fimg = transformer.FourierTransform(img());
         Fsum = Fimg; // original image
 
@@ -5238,13 +5252,14 @@ void averageAsymmetricUnits2D(
 
         // Write this particle to the stack on disc
         // First particle: write stack in overwrite mode, from then on just append to it
-        MDimgs.setValue(EMDL::IMAGE_ORI_NAME, fn_img);
+        MDimgs.setValue(EMDL::IMAGE_ORI_NAME, fn_img, index);
         fn_img = FileName::compose(imgno + 1, fn_o_root + "particles.mrcs");
         img.write(fn_img, -1, false, imgno == 0 ? WRITE_OVERWRITE : WRITE_APPEND);
-        MDimgs.setValue(EMDL::IMAGE_NAME, fn_img);
+        MDimgs.setValue(EMDL::IMAGE_NAME, fn_img, index);
 
         if (imgno % 60 == 0) progress_bar(imgno);
-            imgno++;
+
+        imgno++;
     }
     progress_bar(MDimgs.numberOfObjects());
 

@@ -510,9 +510,10 @@ class helix_bilder_parameters {
             applySoftSphericalMask(
                 img(), RFLOAT(boxdim) * sphere_percentage, width_edge_pix
             );
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A);
+            const long int i = img.MDMainHeader.index();
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
             img.write(fn_out);
         } else if (do_set_default_tilt) {
             if (show_usage_for_an_option) {
@@ -586,9 +587,10 @@ class helix_bilder_parameters {
             applySoftSphericalMask(
                 img(), RFLOAT(boxdim) * sphere_percentage, width_edge_pix
             );
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A);
+            const long int i = img.MDMainHeader.index();
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
             img.write(fn_out);
         } else if (do_impose_helical_symmetry) {
             if (show_usage_for_an_option) {
@@ -614,9 +616,10 @@ class helix_bilder_parameters {
                 cyl_inner_diameter_A / 2.0, cyl_outer_diameter_A / 2.0,
                 z_percentage, rise_A, twist_deg, width_edge_pix
             );
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A);
+            const long int i = img.MDMainHeader.index();
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
             img.write(fn_out);
         } else if (do_local_search_helical_symmetry) {
             if (show_usage_for_an_option) {
@@ -785,9 +788,10 @@ class helix_bilder_parameters {
                 }
             }
             img() = Msum / RFLOAT(nr_asu);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A);
-            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A);
+            const long int i = img.MDMainHeader.index();
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
+            img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
             img.write(fn_out);
         } else if (do_check_parameters) {
             if (show_usage_for_an_option) {

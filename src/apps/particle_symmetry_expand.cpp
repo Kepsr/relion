@@ -144,9 +144,10 @@ class particle_symmetry_expand_parameters {
                         rotp = rot - z_pos * twist;
                         DFo.addObject();
                         DFo.setObject(DFi.getObject());
-                        DFo.setValue(EMDL::ORIENT_ROT, rotp);
-                        DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xp);
-                        DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yp);
+                        const long int i = DFo.index();
+                        DFo.setValue(EMDL::ORIENT_ROT, rotp, i);
+                        DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xp, i);
+                        DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yp, i);
                     }
                 }
             } else {
@@ -160,10 +161,11 @@ class particle_symmetry_expand_parameters {
                     R.resize(3, 3); // as only the relative orientation is useful and not the translation
                     angles_t angles = Euler::apply_transf(L, R, rot, tilt, psi);
                     DFo.addObject();
+                    const long int i = DFo.index();
                     DFo.setObject(DFi.getObject());
-                    DFo.setValue(EMDL::ORIENT_ROT,  angles.rot);
-                    DFo.setValue(EMDL::ORIENT_TILT, angles.tilt);
-                    DFo.setValue(EMDL::ORIENT_PSI,  angles.psi);
+                    DFo.setValue(EMDL::ORIENT_ROT,  angles.rot, i);
+                    DFo.setValue(EMDL::ORIENT_TILT, angles.tilt, i);
+                    DFo.setValue(EMDL::ORIENT_PSI,  angles.psi, i);
                 }
             }
 

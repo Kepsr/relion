@@ -358,23 +358,22 @@ void Experiment::initialiseBodies(int nr_bodies) {
     MetaDataTable MDbody;
     MDbody.isList = false;
     const bool is_3d = MDimg.containsLabel(EMDL::ORIENT_ORIGIN_Z);
-    for (auto _ : MDimg) {
+    for (auto i : MDimg) {
         MDbody.addObject();
         const RFLOAT norm = MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
-        MDbody.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0);
-        MDbody.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
-        MDbody.setValue(EMDL::ORIENT_ROT,   0.0);
-        MDbody.setValue(EMDL::ORIENT_TILT, 90.0);
-        MDbody.setValue(EMDL::ORIENT_PSI,   0.0);
-        MDbody.setValue(EMDL::IMAGE_NORM_CORRECTION, norm);
+        MDbody.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0, i);
+        MDbody.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0, i);
+        MDbody.setValue(EMDL::ORIENT_ROT,   0.0, i);
+        MDbody.setValue(EMDL::ORIENT_TILT, 90.0, i);
+        MDbody.setValue(EMDL::ORIENT_PSI,   0.0, i);
+        MDbody.setValue(EMDL::IMAGE_NORM_CORRECTION, norm, i);
         if (is_3d)
-        MDbody.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0);
+        MDbody.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0, i);
     }
     // Now just fill all bodies with that MDbody
     MDbodies.resize(nr_bodies, MDbody);
     for (int ibody = 0; ibody < nr_bodies; ibody++) {
-        const std::string tablename = "images_body_" + integerToString(ibody + 1);
-        MDbodies[ibody].name = tablename;
+        MDbodies[ibody].name = "images_body_" + integerToString(ibody + 1);
     }
 }
 
@@ -948,25 +947,23 @@ void Experiment::read(
     if (need_tiltpsipriors_for_helical_refine && !have_tiltpsi_prior && !have_tiltpsi) {
         REPORT_ERROR("exp_model.cpp: Experiment::read(): Tilt and psi priors of helical segments are missing!");
     }
-    for (auto _ : MDimg) {
-        RFLOAT dzero = 0.0, done = 1.0;
-        int izero = 0;
+    for (auto i : MDimg) {
         if (!have_rot)
-            MDimg.setValue(EMDL::ORIENT_ROT, dzero);
+            MDimg.setValue(EMDL::ORIENT_ROT, 0.0, i);
         if (!have_tilt)
-            MDimg.setValue(EMDL::ORIENT_TILT, dzero);
+            MDimg.setValue(EMDL::ORIENT_TILT, 0.0, i);
         if (!have_psi)
-            MDimg.setValue(EMDL::ORIENT_PSI, dzero);
+            MDimg.setValue(EMDL::ORIENT_PSI, 0.0, i);
         if (!have_xoff)
-            MDimg.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, dzero);
+            MDimg.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0, i);
         if (!have_yoff)
-            MDimg.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, dzero);
+            MDimg.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0, i);
         if (!have_zoff && have_zcoord)
-            MDimg.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, dzero);
+            MDimg.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, 0.0, i);
         if (!have_clas)
-            MDimg.setValue(EMDL::PARTICLE_CLASS, izero);
+            MDimg.setValue(EMDL::PARTICLE_CLASS, 0, i);
         if (!have_norm)
-            MDimg.setValue(EMDL::IMAGE_NORM_CORRECTION, done);
+            MDimg.setValue(EMDL::IMAGE_NORM_CORRECTION, 1.0, i);
         if (need_tiltpsipriors_for_helical_refine && have_tiltpsi_prior) {
             // If doing 3D helical reconstruction and PRIORs exist
             RFLOAT tilt = 0.0, psi = 0.0;
@@ -976,8 +973,8 @@ void Experiment::read(
             if (!have_tiltpsi || abs(tilt) < 0.001) {
                 tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR);
                 psi  = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
-                MDimg.setValue(EMDL::ORIENT_TILT, tilt);
-                MDimg.setValue(EMDL::ORIENT_PSI,  psi);
+                MDimg.setValue(EMDL::ORIENT_TILT, tilt, i);
+                MDimg.setValue(EMDL::ORIENT_PSI,  psi,  i);
             }
         }
     }

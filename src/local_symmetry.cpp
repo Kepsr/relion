@@ -610,13 +610,14 @@ void writeRelionFormatMasksAndOperators(
             REPORT_ERROR("ERROR: no operators for mask: " + fn_mask_list[imask]);
         for (auto &op : ops[imask]) {
             MD.addObject();
-            MD.setValue(EMDL::MASK_NAME, fn_mask_list[imask]);
-            MD.setValue(EMDL::ORIENT_ROT,                        op[AA_POS]);
-            MD.setValue(EMDL::ORIENT_TILT,                       op[BB_POS]);
-            MD.setValue(EMDL::ORIENT_PSI,                        op[GG_POS]);
-            MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * op[DX_POS]);
-            MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * op[DY_POS]);
-            MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * op[DZ_POS]);
+            const long int i = MD.index();
+            MD.setValue(EMDL::MASK_NAME, fn_mask_list[imask], i);
+            MD.setValue(EMDL::ORIENT_ROT,                        op[AA_POS], i);
+            MD.setValue(EMDL::ORIENT_TILT,                       op[BB_POS], i);
+            MD.setValue(EMDL::ORIENT_PSI,                        op[GG_POS], i);
+            MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * op[DX_POS], i);
+            MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * op[DY_POS], i);
+            MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * op[DZ_POS], i);
         }
     }
     MD.write(fn_info);
@@ -650,13 +651,14 @@ void writeRelionFormatLocalSearchOperatorResults(
             REPORT_ERROR("ERROR: syntax errors in results!");
 
         MD.addObject();
-        MD.setValue(EMDL::ORIENT_ROT,                        op[AA_POS]);
-        MD.setValue(EMDL::ORIENT_TILT,                       op[BB_POS]);
-        MD.setValue(EMDL::ORIENT_PSI,                        op[GG_POS]);
-        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * op[DX_POS]);
-        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * op[DY_POS]);
-        MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * op[DZ_POS]);
-        MD.setValue(EMDL::IMAGE_WEIGHT,                      op[CC_POS]);
+        const long int i = MD.index();
+        MD.setValue(EMDL::ORIENT_ROT,                        op[AA_POS], i);
+        MD.setValue(EMDL::ORIENT_TILT,                       op[BB_POS], i);
+        MD.setValue(EMDL::ORIENT_PSI,                        op[GG_POS], i);
+        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, angpix * op[DX_POS], i);
+        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, angpix * op[DY_POS], i);
+        MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, angpix * op[DZ_POS], i);
+        MD.setValue(EMDL::IMAGE_WEIGHT,                      op[CC_POS], i);
     }
     MD.write(fn_out);
 }
@@ -1774,7 +1776,7 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
         img_out.write(fn_out);
 
         MD.addObject();
-        MD.setValue(EMDL::MASK_NAME, fn_out);
+        MD.setValue(EMDL::MASK_NAME, fn_out, MD.index());
     }
     fn_out = fn_in.withoutExtension() + "_masklist.star";
     MD.write(fn_out);

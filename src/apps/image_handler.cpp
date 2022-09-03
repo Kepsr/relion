@@ -352,10 +352,10 @@ class image_handler_parameters {
             for (long int i = 0; i < Xsize(fsc); i++) {
                 MDfsc.addObject();
                 RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
-                MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
-                MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);     // Pixels per Angstrom
-                MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);  // Angstroms per pixel
-                MDfsc.setValue(EMDL::POSTPROCESS_FSC_GENERAL, direct::elem(fsc, i));
+                MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i, i);
+                MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res, i);     // Pixels per Angstrom
+                MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res, i);  // Angstroms per pixel
+                MDfsc.setValue(EMDL::POSTPROCESS_FSC_GENERAL, direct::elem(fsc, i), i);
             }
             MDfsc.write(std::cout);
         } else if (do_power) {
@@ -367,10 +367,10 @@ class image_handler_parameters {
 
                 MDpower.addObject();
                 const RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
-                MDpower.setValue(EMDL::SPECTRAL_IDX, i);
-                MDpower.setValue(EMDL::RESOLUTION, 1.0 / res);
-                MDpower.setValue(EMDL::RESOLUTION_ANGSTROM, res);
-                MDpower.setValue(EMDL::MLMODEL_POWER_REF, direct::elem(spectrum, i));
+                MDpower.setValue(EMDL::SPECTRAL_IDX, i, i);
+                MDpower.setValue(EMDL::RESOLUTION, 1.0 / res, i);
+                MDpower.setValue(EMDL::RESOLUTION_ANGSTROM, res, i);
+                MDpower.setValue(EMDL::MLMODEL_POWER_REF, direct::elem(spectrum, i), i);
             }
             MDpower.write(std::cout);
         } else if (!fn_adjust_power.empty()) {
@@ -388,10 +388,10 @@ class image_handler_parameters {
             for (long int i = 0; i < cosDPhi.size(); i++) {
                 MDcos.addObject();
                 const RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
-                MDcos.setValue(EMDL::SPECTRAL_IDX, (int) i);
-                MDcos.setValue(EMDL::RESOLUTION, 1.0 / res);
-                MDcos.setValue(EMDL::RESOLUTION_ANGSTROM, res);
-                MDcos.setValue(EMDL::POSTPROCESS_FSC_GENERAL, cosDPhi[i]);
+                MDcos.setValue(EMDL::SPECTRAL_IDX, (int) i, i);
+                MDcos.setValue(EMDL::RESOLUTION, 1.0 / res, i);
+                MDcos.setValue(EMDL::RESOLUTION_ANGSTROM, res, i);
+                MDcos.setValue(EMDL::POSTPROCESS_FSC_GENERAL, cosDPhi[i], i);
             }
             MDcos.write(std::cout);
         } else if (!fn_correct_ampl.empty()) {
@@ -639,7 +639,7 @@ class image_handler_parameters {
         } else if (input_is_stack) {
             if (bin_avg > 0 || avg_first >= 0 && avg_last >= 0) {
                 MD.addObject();
-                MD.setValue(EMDL::IMAGE_NAME, fn_in);
+                MD.setValue(EMDL::IMAGE_NAME, fn_in, MD.index());
             } else {
                 // Read the header to get the number of images inside the stack and generate that many lines in the MD
                 Image<RFLOAT> tmp;
@@ -647,13 +647,13 @@ class image_handler_parameters {
                 for (int i = 1; i <= Nsize(tmp()); i++) {
                     MD.addObject();
                     const auto fn_tmp = FileName::compose(i, fn_in);
-                    MD.setValue(EMDL::IMAGE_NAME, fn_tmp);
+                    MD.setValue(EMDL::IMAGE_NAME, fn_tmp, MD.index());
                 }
             }
         } else {
             // Just individual image input
             MD.addObject();
-            MD.setValue(EMDL::IMAGE_NAME, fn_in);
+            MD.setValue(EMDL::IMAGE_NAME, fn_in, MD.index());
         }
 
         int i_img = 0;
@@ -853,7 +853,7 @@ class image_handler_parameters {
                 }
                 perImageOperations(Iin, my_fn_out, psi);
                 do_md_out = true;
-                MD.setValue(EMDL::IMAGE_NAME, my_fn_out);
+                MD.setValue(EMDL::IMAGE_NAME, my_fn_out, MD.index());
             }
 
             i_img += ndim;
@@ -878,13 +878,13 @@ class image_handler_parameters {
                 MD.write(fn_md_out);
             } else {
                 if (my_new_box_size > 0) {
-                    for (long int _ : obsModel.opticsMdt) {
-                        obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, my_new_box_size);
+                    for (long int i : obsModel.opticsMdt) {
+                        obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, my_new_box_size, i);
                     }
                 }
                 if (real_angpix > 0) {
-                    for (long int _ : obsModel.opticsMdt) {
-                        obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, real_angpix);
+                    for (long int i : obsModel.opticsMdt) {
+                        obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, real_angpix, i);
                     }
                 }
                 obsModel.save(MD, fn_md_out);

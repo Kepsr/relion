@@ -919,18 +919,15 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
             if (basePckr->do_write_fom_maps && !basePckr->autopick_helical_segments) {
                 CTICTOC("writeFomMaps", ({
-                // TMP output
-                FileName fn_tmp;
-                Image<RFLOAT> It;
-                It() = Mccf_best;
+                Image<RFLOAT> IMccf_best (Mccf_best);
                 // Store expected_Pratio in the header of the image..
-                It.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Store expected_Pratio in the header of the image
-                fn_tmp = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
-                It.write(fn_tmp);
+                IMccf_best.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio, IMccf_best.MDMainHeader.index());  // Store expected_Pratio in the header of the image
+                const auto fn_Mccf_best = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
+                IMccf_best.write(fn_Mccf_best);
 
-                It() = Mpsi_best;
-                fn_tmp = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestPSI.spi");
-                It.write(fn_tmp);
+                Image<RFLOAT> IMpsi_best (Mpsi_best);
+                const auto fn_Mpsi_best = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestPSI.spi");
+                IMpsi_best.write(fn_Mpsi_best);
                 }));
             }
             #ifdef TIMING
@@ -1079,16 +1076,17 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
         // Write out a STAR file with the coordinates
         MetaDataTable MDout;
-        for (int ipeak = 0; ipeak < peaks.size(); ipeak++) {
+        for (const auto &peak : peaks) {
             MDout.addObject();
-            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)(peaks[ipeak].x) / scale);
-            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)(peaks[ipeak].y) / scale);
-            MDout.setValue(EMDL::PARTICLE_CLASS, peaks[ipeak].ref + 1); // start counting at 1
-            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, peaks[ipeak].fom);
-            MDout.setValue(EMDL::ORIENT_PSI, peaks[ipeak].psi);
+            const long int i = MDout.index();
+            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) (peak.x) / scale, i);
+            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) (peak.y) / scale, i);
+            MDout.setValue(EMDL::PARTICLE_CLASS, peak.ref + 1, i); // start counting at 1
+            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, peak.fom, i);
+            MDout.setValue(EMDL::ORIENT_PSI, peak.psi, i);
         }
-        FileName fn_tmp = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + ".star";
-        MDout.write(fn_tmp);
+        const FileName fn = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + ".star";
+        MDout.write(fn);
         #ifdef TIMING
         basePckr->timer.toc(basePckr->TIMING_B9);
         #endif

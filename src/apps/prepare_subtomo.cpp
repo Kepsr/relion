@@ -633,7 +633,7 @@ class prepare_subtomo {
                         res = system(command.c_str());
                     }
                     MD_ctf.addObject();
-                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec);
+                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.index());
 
                     // Command 2
                     fn_sec = dir_ctf + "/" + (fn_trial.afterLastOf("/")).withoutExtension() + "_image" + floatToString(tilts[ida]) + "_" + integerToString(2 * ida + 1) + ".mrc";
@@ -647,7 +647,7 @@ class prepare_subtomo {
                         res = system(command.c_str());
                     }
                     MD_ctf.addObject();
-                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec);
+                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.index());
                 } else {
                     fn_sec = dir_ctf + "/" + (fn_stack.afterLastOf("/")).withoutExtension() + "_image" + floatToString(tilts[ida]) + "_" + integerToString(ida) + ".mrc";
                     if (continue_old && exists(fn_sec)) {} else {
@@ -660,7 +660,7 @@ class prepare_subtomo {
                         res = system(command.c_str());
                     }
                     MD_ctf.addObject();
-                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec);
+                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.index());
                 }
             }
             MD_ctf.write(fn_ctf);
@@ -672,10 +672,10 @@ class prepare_subtomo {
                 MD_ctf_results.addLabel(EMDL::CTF_DEFOCUSU);
                 MD_ctf_results.addLabel(EMDL::CTF_DEFOCUSV);
                 //MD_ctf_results.addLabel(EMDL::CTF_DEFOCUS_ANGLE);
-                for (long int _ : MD_ctf_results) {
-                    MD_ctf_results.setValue(EMDL::CTF_DEFOCUSU, 0.0);
-                    MD_ctf_results.setValue(EMDL::CTF_DEFOCUSV, 0.0);
-                    // MD_ctf_results.setValue(EMDL::CTF_DEFOCUS_ANGLE, 0.0);
+                for (long int i : MD_ctf_results) {
+                    MD_ctf_results.setValue(EMDL::CTF_DEFOCUSU, 0.0, i);
+                    MD_ctf_results.setValue(EMDL::CTF_DEFOCUSV, 0.0, i);
+                    // MD_ctf_results.setValue(EMDL::CTF_DEFOCUS_ANGLE, 0.0, i);
                 }
                 MD_ctf_results.write(dir_ctf_results + "/micrographs_ctf.star");
             } else {
@@ -832,9 +832,10 @@ class prepare_subtomo {
                         REPORT_ERROR("Invalid input file: " + fn_coords);
 
                     MD_coords.addObject();
-                    MD_coords.setValue(EMDL::IMAGE_COORD_X, textToFloat(words[0]));
-                    MD_coords.setValue(EMDL::IMAGE_COORD_Y, textToFloat(words[1]));
-                    MD_coords.setValue(EMDL::IMAGE_COORD_Z, textToFloat(words[2]));
+                    const long int i = MD_coords.index();
+                    MD_coords.setValue(EMDL::IMAGE_COORD_X, textToFloat(words[0]), i);
+                    MD_coords.setValue(EMDL::IMAGE_COORD_Y, textToFloat(words[1]), i);
+                    MD_coords.setValue(EMDL::IMAGE_COORD_Z, textToFloat(words[2]), i);
                 }
                 fin1.close();
             } else {
@@ -934,15 +935,16 @@ class prepare_subtomo {
                     dose_w = cur_accu_dose * bfactor; // TODO: check this bfactor. T think it is fine.
 
                     MD_this_subtomo.addObject();
-                    MD_this_subtomo.setValue(EMDL::CTF_DEFOCUSU, ptcldefocus);
-                    MD_this_subtomo.setValue(EMDL::CTF_VOLTAGE, Voltage);
-                    MD_this_subtomo.setValue(EMDL::CTF_CS, Cs);
-                    MD_this_subtomo.setValue(EMDL::CTF_Q0, AmplitudeContrast);
-                    MD_this_subtomo.setValue(EMDL::ORIENT_ROT, 0.0);
-                    MD_this_subtomo.setValue(EMDL::ORIENT_TILT, tilt_deg);
-                    MD_this_subtomo.setValue(EMDL::ORIENT_PSI, 0.0);
-                    MD_this_subtomo.setValue(EMDL::CTF_BFACTOR, dose_w);
-                    MD_this_subtomo.setValue(EMDL::CTF_SCALEFACTOR, tilt_scale);
+                    const long int i = MD_this_subtomo.index();
+                    MD_this_subtomo.setValue(EMDL::CTF_DEFOCUSU, ptcldefocus, i);
+                    MD_this_subtomo.setValue(EMDL::CTF_VOLTAGE, Voltage, i);
+                    MD_this_subtomo.setValue(EMDL::CTF_CS, Cs, i);
+                    MD_this_subtomo.setValue(EMDL::CTF_Q0, AmplitudeContrast, i);
+                    MD_this_subtomo.setValue(EMDL::ORIENT_ROT, 0.0, i);
+                    MD_this_subtomo.setValue(EMDL::ORIENT_TILT, tilt_deg, i);
+                    MD_this_subtomo.setValue(EMDL::ORIENT_PSI, 0.0, i);
+                    MD_this_subtomo.setValue(EMDL::CTF_BFACTOR, dose_w, i);
+                    MD_this_subtomo.setValue(EMDL::CTF_SCALEFACTOR, tilt_scale, i);
                 }
                 MD_this_subtomo.write(fn_subtomo_star);
 
@@ -959,14 +961,15 @@ class prepare_subtomo {
                     MD_part.addObject(MD_coords.getObject()); // Append extra information from MD_coords
                 else
                     MD_part.addObject(); // Otherwise, add an empty object
-                MD_part.setValue(EMDL::MICROGRAPH_NAME, fn_tomo);
-                MD_part.setValue(EMDL::IMAGE_COORD_X, xx);
-                MD_part.setValue(EMDL::IMAGE_COORD_Y, yy);
-                MD_part.setValue(EMDL::IMAGE_COORD_Z, zz);
-                MD_part.setValue(EMDL::IMAGE_NAME, fn_extract_part);
-                MD_part.setValue(EMDL::CTF_IMAGE, fn_subtomo_mrc);
-                MD_part.setValue(EMDL::CTF_MAGNIFICATION, Magnification);
-                MD_part.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, PixelSize);
+                const long int i = MD_part.index();
+                MD_part.setValue(EMDL::MICROGRAPH_NAME, fn_tomo, i);
+                MD_part.setValue(EMDL::IMAGE_COORD_X, xx, i);
+                MD_part.setValue(EMDL::IMAGE_COORD_Y, yy, i);
+                MD_part.setValue(EMDL::IMAGE_COORD_Z, zz, i);
+                MD_part.setValue(EMDL::IMAGE_NAME, fn_extract_part, i);
+                MD_part.setValue(EMDL::CTF_IMAGE, fn_subtomo_mrc, i);
+                MD_part.setValue(EMDL::CTF_MAGNIFICATION, Magnification, i);
+                MD_part.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, PixelSize, i);
             }
             // Close fn_rec here? And chmod u+x? I don't need this.
         }

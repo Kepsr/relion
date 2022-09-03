@@ -385,16 +385,16 @@ class angular_error_parameters {
 
         // Write out STAR files with the coordinates
         MetaDataTable MDu, MDt;
-        for (int t = 0; t < p_til.size()/2; t++) {
+        for (int t = 0; t < p_til.size() / 2; t++) {
             int u = pairs_t2u[t];
             if (u >= 0) {
                 MDu.addObject();
-                MDu.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) p_unt[2 * u    ]);
-                MDu.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) p_unt[2 * u + 1]);
+                MDu.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) p_unt[2 * u    ], t);
+                MDu.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) p_unt[2 * u + 1], t);
 
                 MDt.addObject();
-                MDt.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) p_til[2 * t    ]);
-                MDt.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) p_til[2 * t + 1]);
+                MDt.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) p_til[2 * t    ], t);
+                MDt.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) p_til[2 * t + 1], t);
             }
         }
         fn_unt = fn_unt.withoutExtension() + "_pairs.star";

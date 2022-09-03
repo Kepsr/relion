@@ -401,7 +401,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
 
     // B. Write STAR file with metadata
     FileName fn_model = fn_out + "_model.star";
-    std::ofstream fh ((fn_model).c_str(), std::ios::out);
+    std::ofstream fh (fn_model.c_str(), std::ios::out);
     if (!fh)
         REPORT_ERROR((std::string) "MlModel::write: Cannot write file: " + fn_model);
 
@@ -409,38 +409,39 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     MetaDataTable MDlog;
     MDlog.isList = true;
     MDlog.addObject();
+    const long int i = MDlog.index();
     MDlog.name = "model_general";
-    MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim);
-    MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY_DATA, data_dim);
-    MDlog.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size);
-    MDlog.setValue(EMDL::MLMODEL_CURRENT_RESOLUTION, 1.0 / current_resolution);
-    MDlog.setValue(EMDL::MLMODEL_CURRENT_SIZE, current_size);
-    MDlog.setValue(EMDL::MLMODEL_PADDING_FACTOR, padding_factor);
-    MDlog.setValue(EMDL::MLMODEL_IS_HELIX, is_helix);
+    MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim, i);
+    MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY_DATA, data_dim, i);
+    MDlog.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size, i);
+    MDlog.setValue(EMDL::MLMODEL_CURRENT_RESOLUTION, 1.0 / current_resolution, i);
+    MDlog.setValue(EMDL::MLMODEL_CURRENT_SIZE, current_size, i);
+    MDlog.setValue(EMDL::MLMODEL_PADDING_FACTOR, padding_factor, i);
+    MDlog.setValue(EMDL::MLMODEL_IS_HELIX, is_helix, i);
     if (is_helix) {
-        MDlog.setValue(EMDL::MLMODEL_HELICAL_NR_ASU, helical_nr_asu);
-        MDlog.setValue(EMDL::MLMODEL_HELICAL_TWIST_MIN, helical_twist_min);
-        MDlog.setValue(EMDL::MLMODEL_HELICAL_TWIST_MAX, helical_twist_max);
-        MDlog.setValue(EMDL::MLMODEL_HELICAL_TWIST_INITIAL_STEP, helical_twist_inistep);
-        MDlog.setValue(EMDL::MLMODEL_HELICAL_RISE_MIN, helical_rise_min);
-        MDlog.setValue(EMDL::MLMODEL_HELICAL_RISE_MAX, helical_rise_max);
-        MDlog.setValue(EMDL::MLMODEL_HELICAL_RISE_INITIAL_STEP, helical_rise_inistep);
+        MDlog.setValue(EMDL::MLMODEL_HELICAL_NR_ASU, helical_nr_asu, i);
+        MDlog.setValue(EMDL::MLMODEL_HELICAL_TWIST_MIN, helical_twist_min, i);
+        MDlog.setValue(EMDL::MLMODEL_HELICAL_TWIST_MAX, helical_twist_max, i);
+        MDlog.setValue(EMDL::MLMODEL_HELICAL_TWIST_INITIAL_STEP, helical_twist_inistep, i);
+        MDlog.setValue(EMDL::MLMODEL_HELICAL_RISE_MIN, helical_rise_min, i);
+        MDlog.setValue(EMDL::MLMODEL_HELICAL_RISE_MAX, helical_rise_max, i);
+        MDlog.setValue(EMDL::MLMODEL_HELICAL_RISE_INITIAL_STEP, helical_rise_inistep, i);
     }
-    MDlog.setValue(EMDL::MLMODEL_INTERPOLATOR, interpolator);
-    MDlog.setValue(EMDL::MLMODEL_MINIMUM_RADIUS_NN_INTERPOLATION, r_min_nn);
-    MDlog.setValue(EMDL::MLMODEL_PIXEL_SIZE, pixel_size);
-    MDlog.setValue(EMDL::MLMODEL_NR_CLASSES, nr_classes);
-    MDlog.setValue(EMDL::MLMODEL_NR_BODIES, nr_bodies);
-    MDlog.setValue(EMDL::MLMODEL_NR_GROUPS, nr_groups);
-    MDlog.setValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge_factor);
-    MDlog.setValue(EMDL::MLMODEL_NORM_CORRECTION_AVG, avg_norm_correction);
-    MDlog.setValue(EMDL::MLMODEL_SIGMA_OFFSET_ANGSTROM, sqrt(sigma2_offset));
-    MDlog.setValue(EMDL::MLMODEL_PRIOR_MODE, orientational_prior_mode);
-    MDlog.setValue(EMDL::MLMODEL_SIGMA_ROT, sqrt(sigma2_rot));
-    MDlog.setValue(EMDL::MLMODEL_SIGMA_TILT, sqrt(sigma2_tilt));
-    MDlog.setValue(EMDL::MLMODEL_SIGMA_PSI, sqrt(sigma2_psi));
-    MDlog.setValue(EMDL::MLMODEL_LL, LL);
-    MDlog.setValue(EMDL::MLMODEL_AVE_PMAX, ave_Pmax);
+    MDlog.setValue(EMDL::MLMODEL_INTERPOLATOR, interpolator, i);
+    MDlog.setValue(EMDL::MLMODEL_MINIMUM_RADIUS_NN_INTERPOLATION, r_min_nn, i);
+    MDlog.setValue(EMDL::MLMODEL_PIXEL_SIZE, pixel_size, i);
+    MDlog.setValue(EMDL::MLMODEL_NR_CLASSES, nr_classes, i);
+    MDlog.setValue(EMDL::MLMODEL_NR_BODIES, nr_bodies, i);
+    MDlog.setValue(EMDL::MLMODEL_NR_GROUPS, nr_groups, i);
+    MDlog.setValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge_factor, i);
+    MDlog.setValue(EMDL::MLMODEL_NORM_CORRECTION_AVG, avg_norm_correction, i);
+    MDlog.setValue(EMDL::MLMODEL_SIGMA_OFFSET_ANGSTROM, sqrt(sigma2_offset), i);
+    MDlog.setValue(EMDL::MLMODEL_PRIOR_MODE, orientational_prior_mode, i);
+    MDlog.setValue(EMDL::MLMODEL_SIGMA_ROT, sqrt(sigma2_rot), i);
+    MDlog.setValue(EMDL::MLMODEL_SIGMA_TILT, sqrt(sigma2_tilt), i);
+    MDlog.setValue(EMDL::MLMODEL_SIGMA_PSI, sqrt(sigma2_psi), i);
+    MDlog.setValue(EMDL::MLMODEL_LL, LL, i);
+    MDlog.setValue(EMDL::MLMODEL_AVE_PMAX, ave_Pmax, i);
     MDlog.write(fh);
 
     // Calculate resolutions and total Fourier coverages for each class
@@ -471,37 +472,37 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
                 fn_tmp = FileName::compose(fn_out + "_class", iclass + 1, "mrc", 3); // class number from 1 to K!
             }
         }
-        MDclass.setValue(EMDL::MLMODEL_REF_IMAGE, fn_tmp);
+        MDclass.setValue(EMDL::MLMODEL_REF_IMAGE, fn_tmp, iclass);
 
         if (do_sgd) {
             fn_tmp = ref_dim == 2 ?
                 FileName::compose(iclass + 1, fn_out + "_gradients.mrcs") :
                 FileName::compose(fn_out + "_grad", iclass + 1, "mrc", 3);
-            MDclass.setValue(EMDL::MLMODEL_SGD_GRADIENT_IMAGE, fn_tmp);
+            MDclass.setValue(EMDL::MLMODEL_SGD_GRADIENT_IMAGE, fn_tmp, iclass);
         }
 
         // For multiple bodies: only star PDF_CLASS in the first one!
         int myclass = nr_bodies > 1 ? 0 : iclass; // for multi-body: just set iclass=0
-        MDclass.setValue(EMDL::MLMODEL_PDF_CLASS, pdf_class[myclass]);
-        MDclass.setValue(EMDL::MLMODEL_ACCURACY_ROT, acc_rot[iclass]);
-        MDclass.setValue(EMDL::MLMODEL_ACCURACY_TRANS_ANGSTROM, acc_trans[iclass]);
-        MDclass.setValue(EMDL::MLMODEL_ESTIM_RESOL_REF, estimated_resolution[iclass]);
-        MDclass.setValue(EMDL::MLMODEL_FOURIER_COVERAGE_TOTAL_REF, total_fourier_coverage[iclass]);
+        MDclass.setValue(EMDL::MLMODEL_PDF_CLASS, pdf_class[myclass], iclass);
+        MDclass.setValue(EMDL::MLMODEL_ACCURACY_ROT, acc_rot[iclass], iclass);
+        MDclass.setValue(EMDL::MLMODEL_ACCURACY_TRANS_ANGSTROM, acc_trans[iclass], iclass);
+        MDclass.setValue(EMDL::MLMODEL_ESTIM_RESOL_REF, estimated_resolution[iclass], iclass);
+        MDclass.setValue(EMDL::MLMODEL_FOURIER_COVERAGE_TOTAL_REF, total_fourier_coverage[iclass], iclass);
         if (nr_bodies > 1) {
-            MDclass.setValue(EMDL::BODY_ROTATE_DIRECTION_X, XX(rotate_direction_bodies[iclass]));
-            MDclass.setValue(EMDL::BODY_ROTATE_DIRECTION_Y, YY(rotate_direction_bodies[iclass]));
-            MDclass.setValue(EMDL::BODY_ROTATE_DIRECTION_Z, ZZ(rotate_direction_bodies[iclass]));
-            MDclass.setValue(EMDL::BODY_KEEP_FIXED, keep_fixed_bodies[iclass]);
+            MDclass.setValue(EMDL::BODY_ROTATE_DIRECTION_X, XX(rotate_direction_bodies[iclass]), iclass);
+            MDclass.setValue(EMDL::BODY_ROTATE_DIRECTION_Y, YY(rotate_direction_bodies[iclass]), iclass);
+            MDclass.setValue(EMDL::BODY_ROTATE_DIRECTION_Z, ZZ(rotate_direction_bodies[iclass]), iclass);
+            MDclass.setValue(EMDL::BODY_KEEP_FIXED, keep_fixed_bodies[iclass], iclass);
         }
 
         if (ref_dim == 2) {
-            MDclass.setValue(EMDL::MLMODEL_PRIOR_OFFX_CLASS, XX(prior_offset_class[iclass]));
-            MDclass.setValue(EMDL::MLMODEL_PRIOR_OFFY_CLASS, YY(prior_offset_class[iclass]));
+            MDclass.setValue(EMDL::MLMODEL_PRIOR_OFFX_CLASS, XX(prior_offset_class[iclass]), iclass);
+            MDclass.setValue(EMDL::MLMODEL_PRIOR_OFFY_CLASS, YY(prior_offset_class[iclass]), iclass);
         }
 
         if (is_helix) {
-            MDclass.setValue(EMDL::MLMODEL_HELICAL_RISE, helical_rise[iclass]);
-            MDclass.setValue(EMDL::MLMODEL_HELICAL_TWIST, helical_twist[iclass]);
+            MDclass.setValue(EMDL::MLMODEL_HELICAL_RISE, helical_rise[iclass], iclass);
+            MDclass.setValue(EMDL::MLMODEL_HELICAL_TWIST, helical_twist[iclass], iclass);
         }
     }
     MDclass.write(fh);
@@ -509,24 +510,22 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     // Write radial_average of tau2_class and data_vs_prior_class for each reference
     for (int iclass = 0; iclass < nr_classes_bodies; iclass++) {
         MetaDataTable MDsigma;
-        if (nr_bodies > 1) {
-            MDsigma.name = "model_body_" + integerToString(iclass + 1);
-        } else {
-            MDsigma.name = "model_class_" + integerToString(iclass + 1);
-        }
-        for (int ii = 0; ii < Xsize(tau2_class[iclass]); ii++) {
+        MDsigma.name = nr_bodies > 1 ?
+            "model_body_"  + integerToString(iclass + 1) :
+            "model_class_" + integerToString(iclass + 1) ;
+        for (int i = 0; i < Xsize(tau2_class[iclass]); i++) {
             MDsigma.addObject();
-            MDsigma.setValue(EMDL::SPECTRAL_IDX, ii);
-            MDsigma.setValue(EMDL::RESOLUTION, getResolution(ii));
-            MDsigma.setValue(EMDL::RESOLUTION_ANGSTROM, getResolutionAngstrom(ii));
-            MDsigma.setValue(EMDL::MLMODEL_DATA_VS_PRIOR_REF, data_vs_prior_class[iclass](ii));
-            MDsigma.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves_class[iclass](ii));
-            MDsigma.setValue(EMDL::MLMODEL_FOURIER_COVERAGE_REF, fourier_coverage_class[iclass](ii));
-            MDsigma.setValue(EMDL::MLMODEL_SIGMA2_REF, sigma2_class[iclass](ii));
-            MDsigma.setValue(EMDL::MLMODEL_TAU2_REF, tau2_class[iclass](ii));
+            MDsigma.setValue(EMDL::SPECTRAL_IDX, i, i);
+            MDsigma.setValue(EMDL::RESOLUTION, getResolution(i), i);
+            MDsigma.setValue(EMDL::RESOLUTION_ANGSTROM, getResolutionAngstrom(i), i);
+            MDsigma.setValue(EMDL::MLMODEL_DATA_VS_PRIOR_REF, data_vs_prior_class[iclass](i), i);
+            MDsigma.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves_class[iclass](i), i);
+            MDsigma.setValue(EMDL::MLMODEL_FOURIER_COVERAGE_REF, fourier_coverage_class[iclass](i), i);
+            MDsigma.setValue(EMDL::MLMODEL_SIGMA2_REF, sigma2_class[iclass](i), i);
+            MDsigma.setValue(EMDL::MLMODEL_TAU2_REF, tau2_class[iclass](i), i);
             // Only write orientabilities if they have been determined
             if (Xsize(orientability_contrib[iclass]) == Xsize(tau2_class[iclass]))
-                MDsigma.setValue(EMDL::MLMODEL_ORIENTABILITY_CONTRIBUTION, orientability_contrib[iclass](ii));
+            MDsigma.setValue(EMDL::MLMODEL_ORIENTABILITY_CONTRIBUTION, orientability_contrib[iclass](i), i);
         }
         MDsigma.write(fh);
     }
@@ -536,11 +535,10 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     MDgroup.name = "model_groups";
     for (long int igroup = 0; igroup < nr_groups; igroup++) {
         MDgroup.addObject();
-        //Start counting of groups at 1, not at 0....
-        MDgroup.setValue(EMDL::MLMODEL_GROUP_NO, igroup + 1);
-        MDgroup.setValue(EMDL::MLMODEL_GROUP_NAME, group_names[igroup]);
-        MDgroup.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, nr_particles_per_group[igroup]);
-        MDgroup.setValue(EMDL::MLMODEL_GROUP_SCALE_CORRECTION, scale_correction[igroup]);
+        MDgroup.setValue(EMDL::MLMODEL_GROUP_NO, igroup + 1, igroup);
+        MDgroup.setValue(EMDL::MLMODEL_GROUP_NAME, group_names[igroup], igroup);
+        MDgroup.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, nr_particles_per_group[igroup], igroup);
+        MDgroup.setValue(EMDL::MLMODEL_GROUP_SCALE_CORRECTION, scale_correction[igroup], igroup);
     }
     MDgroup.write(fh);
 
@@ -549,14 +547,14 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
         if (nr_particles_per_group[igroup] > 0) {
             MetaDataTable MDsigma;
             MDsigma.name = "model_group_" + integerToString(igroup + 1);
-            for (int ii = 0; ii < Xsize(sigma2_noise[igroup]); ii++) {
+            for (int i = 0; i < Xsize(sigma2_noise[igroup]); i++) {
                 MDsigma.addObject();
                 // Some points in sigma2_noise arrays are never used...
-                RFLOAT sigma = sigma2_noise[igroup](ii);
+                RFLOAT sigma = sigma2_noise[igroup](i);
                 if (sigma > 0.0) {
-                    MDsigma.setValue(EMDL::SPECTRAL_IDX, ii);
-                    MDsigma.setValue(EMDL::RESOLUTION, getResolution(ii));
-                    MDsigma.setValue(EMDL::MLMODEL_SIGMA2_NOISE, sigma);
+                    MDsigma.setValue(EMDL::SPECTRAL_IDX, i, i);
+                    MDsigma.setValue(EMDL::RESOLUTION, getResolution(i), i);
+                    MDsigma.setValue(EMDL::MLMODEL_SIGMA2_NOISE, sigma, i);
                 }
             }
             MDsigma.write(fh);
@@ -572,7 +570,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
                 "model_pdf_orient_class_" + integerToString(iclass + 1) ;
             for (RFLOAT x : pdf_direction[iclass]) {
                 MDclass.addObject();
-                MDclass.setValue(EMDL::MLMODEL_PDF_ORIENT, x);
+                MDclass.setValue(EMDL::MLMODEL_PDF_ORIENT, x, MDclass.index());
             }
             MDclass.write(fh);
         }

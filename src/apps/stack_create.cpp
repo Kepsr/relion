@@ -154,7 +154,7 @@ class stack_create_parameters {
 
             int n = 0;
             init_progress_bar(ndim);
-            for (auto _ : MD) {
+            for (auto i : MD) {
 
                 const FileName fn_mymic = do_split_per_micrograph ? MD.getValue<std::string>(EMDL::MICROGRAPH_NAME) : "";
                 const int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
@@ -186,12 +186,12 @@ class stack_create_parameters {
                         A.at(1, 2) = yoff * cos(radians(psi)) + xoff * sin(radians(psi));
                         in() = applyGeometry(in(), A, IS_NOT_INV, DONT_WRAP);
 
-                        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, (ori_xoff - xoff) * angpix);
-                        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, (ori_yoff - yoff) * angpix);
-                        MD.setValue(EMDL::ORIENT_PSI, ori_psi - psi);
+                        MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, (ori_xoff - xoff) * angpix, i);
+                        MD.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, (ori_yoff - yoff) * angpix, i);
+                        MD.setValue(EMDL::ORIENT_PSI, ori_psi - psi, i);
                     }
                     const auto fn_img = FileName::compose(n + 1, fn_out);
-                    MD.setValue(EMDL::IMAGE_NAME, fn_img);
+                    MD.setValue(EMDL::IMAGE_NAME, fn_img, i);
 
                     if (do_one_by_one) {
                         if (n == 0) {
