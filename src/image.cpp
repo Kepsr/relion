@@ -319,15 +319,16 @@ void rescale(Image<RFLOAT> &I, int mysize) {
     resizeMap(I(), mysize);
 
     // Try to rescale entries in I.MDmainheader
+    const long int i = I.MDMainHeader.index();
     try {
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X) * (RFLOAT) olddim / (RFLOAT) mysize);
+        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X) * (RFLOAT) olddim / (RFLOAT) mysize, i);
     } catch (const char *errmsg) {}
     try {
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y) * (RFLOAT) olddim / (RFLOAT) mysize);
+        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y) * (RFLOAT) olddim / (RFLOAT) mysize, i);
     } catch (const char *errmsg) {}
     if (I().getDim() == 3)
     try {
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z) * (RFLOAT) olddim / (RFLOAT) mysize);
+        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z) * (RFLOAT) olddim / (RFLOAT) mysize, i);
     } catch (const char *errmsg) {}
 }
 

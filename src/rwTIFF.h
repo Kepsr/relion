@@ -27,6 +27,27 @@
 
 #include "src/image.h"
 
+inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat) throw (int) {
+    switch (bitsPerSample) {
+
+        case 8:
+        if (sampleFormat == SAMPLEFORMAT_UINT) return UChar;
+        if (sampleFormat == SAMPLEFORMAT_INT) return SChar;
+        break;
+
+        case 16:
+        if (sampleFormat == SAMPLEFORMAT_UINT) return UShort;
+        if (sampleFormat == SAMPLEFORMAT_INT) return Short;
+        break;
+
+        case 32:
+        if (sampleFormat == SAMPLEFORMAT_IEEEFP) return Float;
+
+        default:
+        throw 1;
+    }
+}
+
 // I/O prototypes
 /** TIFF Reader
   * @ingroup TIFF
@@ -71,34 +92,25 @@ int Image<T>::readTIFF(
     // Detect 4-bit packed TIFFs. This is IMOD's own extension.
     // It is not easy to detect this format. Here we check only the image size.
     // See IMOD's iiTIFFCheck() in libiimod/iitif.c and sizeCanBe4BitK2SuperRes() in libiimod/mrcfiles.c.
-    bool packed_4bit = (bitsPerSample == 8 && (
+    const bool packed_4bit = (bitsPerSample == 8 && (
         width == 5760 && length == 8184  || width == 8184  && length == 5760 || // K3 SR: 11520 x 8184
         width == 4092 && length == 11520 || width == 11520 && length == 4092 ||
         width == 3710 && length == 7676  || width == 7676  && length == 3710 || // K2 SR: 7676 x 7420
         width == 3838 && length == 7420  || width == 7420  && length == 3838
     ));
 
-    DataType datatype;
+    if (packed_4bit) dims[0] *= 2;
 
-    if (packed_4bit) {
-        datatype = UHalf;
-        dims[0] *= 2;
-    } else if (bitsPerSample == 8 && sampleFormat == SAMPLEFORMAT_UINT) {
-        datatype = UChar;
-    } else if (bitsPerSample == 8 && sampleFormat == SAMPLEFORMAT_INT) {
-        datatype = SChar;
-    } else if (bitsPerSample == 16 && sampleFormat == SAMPLEFORMAT_UINT) {
-        datatype = UShort;
-    } else if (bitsPerSample == 16 && sampleFormat == SAMPLEFORMAT_INT) {
-        datatype = Short;
-    } else if (bitsPerSample == 32 && sampleFormat == SAMPLEFORMAT_IEEEFP) {
-        datatype = Float;
-    } else {
+    DataType datatype;
+    try {
+        datatype = packed_4bit ? UHalf : determine_datatype(bitsPerSample, sampleFormat);
+    } catch (int) {
         std::cerr << "Unsupported TIFF format in " << name << ": sample format = " << sampleFormat << ", bits per sample = " << bitsPerSample << std::endl;
         REPORT_ERROR("Unsupported TIFF format.\n");
     }
 
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype);
+    const long int i = MDMainHeader.index();
+    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
     uint16 resolutionUnit;
     float xResolution;
@@ -108,11 +120,11 @@ int Image<T>::readTIFF(
     ) {
         // We don't support anistropic pixel size
         if (resolutionUnit == RESUNIT_INCH) {
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(2.54E8 / xResolution));  // 1 inch = 2.54 cm
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(2.54E8 / xResolution));
+            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(2.54E8 / xResolution), i);  // 1 inch = 2.54 cm
+            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(2.54E8 / xResolution), i);
         } else if (resolutionUnit == RESUNIT_CENTIMETER) {
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(1.00E8 / xResolution));
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(1.00E8 / xResolution));
+            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(1.00E8 / xResolution), i);
+            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(1.00E8 / xResolution), i);
         }
         #ifdef DEBUG_TIFF
         std::cout << "resolutionUnit = " << resolutionUnit << " xResolution = " << xResolution << std::endl;

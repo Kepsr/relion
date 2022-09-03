@@ -505,8 +505,8 @@ void ManualPicker::initialise() {
                 REPORT_ERROR("ERROR: the input STAR file does not contain the micrograph pixel size, and it is not given through --angpix.");
             }
             std::cout << " Setting angpix to " << global_angpix << " based on command-line input... " << std::endl;
-            for (long int _ : obsModel.opticsMdt) {
-                obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, global_angpix);
+            for (long int i : obsModel.opticsMdt) {
+                obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, global_angpix, i);
             }
         }
     } else {
@@ -514,7 +514,7 @@ void ManualPicker::initialise() {
         fn_in.globFiles(glob_fn_mics);
         for (int imic = 0; imic < glob_fn_mics.size(); imic++) {
             MDin.addObject();
-            MDin.setValue(EMDL::MICROGRAPH_NAME, glob_fn_mics[imic]);
+            MDin.setValue(EMDL::MICROGRAPH_NAME, glob_fn_mics[imic], MDin.index());
         }
 
         if (global_angpix < 0.0) {

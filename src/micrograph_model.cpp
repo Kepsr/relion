@@ -61,19 +61,17 @@ void ThirdOrderPolynomialModel::write(std::ostream &fh, std::string block_name) 
     int coeff_idx = 0;
 
     // Write coeffX
-    for (int i = 0; i < NUM_COEFFS_PER_DIM; i++) {
+    for (int i = 0; i < NUM_COEFFS_PER_DIM; i++, coeff_idx++) {
         MD.addObject();
-        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, coeff_idx);
-        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF, coeffX[i]);
-        coeff_idx++;
+        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, coeff_idx, coeff_idx);
+        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF,      coeffX[i], coeff_idx);
     }
 
     // Write coeffY
-    for (int i = 0; i < NUM_COEFFS_PER_DIM; i++) {
+    for (int i = 0; i < NUM_COEFFS_PER_DIM; i++, coeff_idx++) {
         MD.addObject();
-        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, coeff_idx);
-        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF, coeffY[i]);
-        coeff_idx++;
+        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, coeff_idx, coeff_idx);
+        MD.setValue(EMDL::MICROGRAPH_MOTION_COEFF,      coeffY[i], coeff_idx);
     }
 
     MD.write(fh);
@@ -155,53 +153,53 @@ Micrograph& Micrograph::operator = (const Micrograph& m) {
 void Micrograph::write(FileName filename) {
     checkReadyFlag("write");
 
-    std::ofstream fh;
-    MetaDataTable MD;
 
-    fh.open(filename.c_str());
+    std::ofstream fh (filename.c_str());
     if (!fh) {
         REPORT_ERROR((std::string)"Micrograph::write: Cannot write file: " + filename);
     }
 
-        MD.name = "general";
-        MD.isList = true;
-        MD.addObject();
-        MD.setValue(EMDL::IMAGE_SIZE_X, width);
-        MD.setValue(EMDL::IMAGE_SIZE_Y, height);
-        MD.setValue(EMDL::IMAGE_SIZE_Z, n_frames);
-        MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fnMovie);
+    MetaDataTable MD;
+    MD.name = "general";
+    MD.isList = true;
+    MD.addObject();
+    const long int i = MD.index();
+    MD.setValue(EMDL::IMAGE_SIZE_X, width, i);
+    MD.setValue(EMDL::IMAGE_SIZE_Y, height, i);
+    MD.setValue(EMDL::IMAGE_SIZE_Z, n_frames, i);
+    MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fnMovie, i);
 
-    if (fnGain != "")
-        MD.setValue(EMDL::MICROGRAPH_GAIN_NAME, fnGain);
+    if (!fnGain.empty())
+        MD.setValue(EMDL::MICROGRAPH_GAIN_NAME, fnGain, i);
 
-    if (fnDefect != "")
-        MD.setValue(EMDL::MICROGRAPH_DEFECT_FILE, fnDefect);
+    if (!fnDefect.empty())
+        MD.setValue(EMDL::MICROGRAPH_DEFECT_FILE, fnDefect, i);
 
-    MD.setValue(EMDL::MICROGRAPH_BINNING, binning);
+    MD.setValue(EMDL::MICROGRAPH_BINNING, binning, i);
 
     if (angpix != -1)
-        MD.setValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, angpix);
+        MD.setValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, angpix, i);
 
     if (dose_per_frame != -1)
-        MD.setValue(EMDL::MICROGRAPH_DOSE_RATE, dose_per_frame);
+        MD.setValue(EMDL::MICROGRAPH_DOSE_RATE, dose_per_frame, i);
 
     if (pre_exposure != -1)
-        MD.setValue(EMDL::MICROGRAPH_PRE_EXPOSURE, pre_exposure);
+        MD.setValue(EMDL::MICROGRAPH_PRE_EXPOSURE, pre_exposure, i);
 
     if (voltage != -1)
-        MD.setValue(EMDL::CTF_VOLTAGE, voltage);
+        MD.setValue(EMDL::CTF_VOLTAGE, voltage, i);
 
-    MD.setValue(EMDL::MICROGRAPH_START_FRAME, first_frame); // 1-indexed
+    MD.setValue(EMDL::MICROGRAPH_START_FRAME, first_frame, i); // 1-indexed
 
     if (EERRenderer::isEER(fnMovie)) {
         if (eer_upsampling > 0)
-            MD.setValue(EMDL::MICROGRAPH_EER_UPSAMPLING, this->eer_upsampling);
+            MD.setValue(EMDL::MICROGRAPH_EER_UPSAMPLING, this->eer_upsampling, i);
 
         if (eer_grouping > 0)
-            MD.setValue(EMDL::MICROGRAPH_EER_GROUPING, this->eer_grouping);
+            MD.setValue(EMDL::MICROGRAPH_EER_GROUPING, this->eer_grouping, i);
     }
 
-    MD.setValue(EMDL::MICROGRAPH_MOTION_MODEL_VERSION, model ? model->getModelVersion() : (int) MOTION_MODEL_NULL);
+    MD.setValue(EMDL::MICROGRAPH_MOTION_MODEL_VERSION, model ? model->getModelVersion() : (int) MOTION_MODEL_NULL, i);
 
     MD.write(fh);
 
@@ -209,9 +207,9 @@ void Micrograph::write(FileName filename) {
     MD.name = "global_shift";
     for (int frame = 0; frame < n_frames; frame++) {
         MD.addObject();
-        MD.setValue(EMDL::MICROGRAPH_FRAME_NUMBER, frame + 1); // make 1-indexed
-        MD.setValue(EMDL::MICROGRAPH_SHIFT_X, globalShiftX[frame]);
-        MD.setValue(EMDL::MICROGRAPH_SHIFT_Y, globalShiftY[frame]);
+        MD.setValue(EMDL::MICROGRAPH_FRAME_NUMBER, frame + 1, frame); // make 1-indexed
+        MD.setValue(EMDL::MICROGRAPH_SHIFT_X, globalShiftX[frame], frame);
+        MD.setValue(EMDL::MICROGRAPH_SHIFT_Y, globalShiftY[frame], frame);
     }
     MD.write(fh);
 
@@ -228,8 +226,9 @@ void Micrograph::write(FileName filename) {
 
     for (int i = 0, ilim = hotpixelX.size(); i < ilim; i++) {
         MD.addObject();
-        MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT)hotpixelX[i]);
-        MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT)hotpixelY[i]);
+        const long int index = MD.index();
+        MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) hotpixelX[i], index);
+        MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) hotpixelY[i], index);
     }
     MD.write(fh);
 
@@ -247,15 +246,15 @@ void Micrograph::write(FileName filename) {
     }
     for (int i = 0; i < n_local_trajectory; i++) {
         MD.addObject();
-        MD.setValue(EMDL::MICROGRAPH_FRAME_NUMBER, (int)patchZ[i]);
-        MD.setValue(EMDL::IMAGE_COORD_X, patchX[i]);
-        MD.setValue(EMDL::IMAGE_COORD_Y, patchY[i]);
-        MD.setValue(EMDL::MICROGRAPH_SHIFT_X, localShiftX[i]);
-        MD.setValue(EMDL::MICROGRAPH_SHIFT_Y, localShiftY[i]);
+        const long int index = MD.index();
+        MD.setValue(EMDL::MICROGRAPH_FRAME_NUMBER, (int) patchZ[i], index);
+        MD.setValue(EMDL::IMAGE_COORD_X, patchX[i], index);
+        MD.setValue(EMDL::IMAGE_COORD_Y, patchY[i], index);
+        MD.setValue(EMDL::MICROGRAPH_SHIFT_X, localShiftX[i], index);
+        MD.setValue(EMDL::MICROGRAPH_SHIFT_Y, localShiftY[i], index);
     }
     MD.write(fh);
 
-    fh.close();
 }
 
 FileName Micrograph::getGainFilename() const {

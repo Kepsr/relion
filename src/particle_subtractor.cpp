@@ -224,11 +224,11 @@ void ParticleSubtractor::revert() {
         REPORT_ERROR("The input STAR file does not contain the rlnImageName column");
 
     // Swap image names
-    for (long int _ : MD) {
-        FileName f1 = MD.getValue<std::string>(EMDL::IMAGE_ORI_NAME);
-        FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME);
-        MD.setValue(EMDL::IMAGE_ORI_NAME, f2);
-        MD.setValue(EMDL::IMAGE_NAME,     f1);
+    for (long int i : MD) {
+        const FileName f1 = MD.getValue<std::string>(EMDL::IMAGE_ORI_NAME);
+        const FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+        MD.setValue(EMDL::IMAGE_ORI_NAME, f2, i);
+        MD.setValue(EMDL::IMAGE_NAME,     f1, i);
     }
 
     // Fix box size
@@ -308,12 +308,12 @@ void ParticleSubtractor::saveStarFile(int myrank) {
             MetaDataTable MD;
             for (int ires = 0; ires < Xsize(sum_S2); ires++) {
                 MD.addObject();
-                MD.setValue(EMDL::SPECTRAL_IDX, ires);
-                MD.setValue(EMDL::RESOLUTION, opt.mymodel.getResolution(ires));
-                MD.setValue(EMDL::RESOLUTION_ANGSTROM, opt.mymodel.getResolutionAngstrom(ires));
-                MD.setValue(EMDL::MLMODEL_SSNR_REF, sum_S2(ires)/sum_N2(ires));
-                MD.setValue(EMDL::MLMODEL_TAU2_REF, sum_S2(ires) / sum_count(ires) );
-                MD.setValue(EMDL::MLMODEL_SIGMA2_NOISE, sum_N2(ires) / sum_count(ires) );
+                MD.setValue(EMDL::SPECTRAL_IDX, ires, ires);
+                MD.setValue(EMDL::RESOLUTION, opt.mymodel.getResolution(ires), ires);
+                MD.setValue(EMDL::RESOLUTION_ANGSTROM, opt.mymodel.getResolutionAngstrom(ires), ires);
+                MD.setValue(EMDL::MLMODEL_SSNR_REF, sum_S2(ires)/sum_N2(ires), ires);
+                MD.setValue(EMDL::MLMODEL_TAU2_REF, sum_S2(ires) / sum_count(ires) , ires);
+                MD.setValue(EMDL::MLMODEL_SIGMA2_NOISE, sum_N2(ires) / sum_count(ires) , ires);
             }
             std::cout << " Writing out STAR file with spectral SNR in: " << fn_out << "spectral_snr.star" << " ..." << std::endl;
             MD.write(fn_out+"spectral_snr.star");
@@ -323,8 +323,8 @@ void ParticleSubtractor::saveStarFile(int myrank) {
 
         // Reset image size in optics table, if the images were rewindowed in a different box
         if (boxsize > 0) {
-            for (long int _ : opt.mydata.obsModel.opticsMdt) {
-                opt.mydata.obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, boxsize);
+            for (long int i : opt.mydata.obsModel.opticsMdt) {
+                opt.mydata.obsModel.opticsMdt.setValue(EMDL::IMAGE_SIZE, boxsize, i);
             }
         }
 
@@ -583,9 +583,9 @@ void ParticleSubtractor::subtractOneParticle(
         psi = angles.psi;
 
         // Store the optimal orientations in the MDimg table
-        opt.mydata.MDimg.setValue(EMDL::ORIENT_ROT, rot, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_ROT,  rot,  ori_img_id);
         opt.mydata.MDimg.setValue(EMDL::ORIENT_TILT, tilt, ori_img_id);
-        opt.mydata.MDimg.setValue(EMDL::ORIENT_PSI, psi, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_PSI,  psi,  ori_img_id);
 
         // Also get refined offset for this body
         XX(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);

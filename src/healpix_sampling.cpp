@@ -224,27 +224,28 @@ void HealpixSampling::write(FileName fn_out) {
     MetaDataTable MD;
     MD.isList = true;
     MD.addObject();
+    const long int i = MD.index();
     MD.name = "sampling_general";
-    MD.setValue(EMDL::SAMPLING_IS_3D, is_3D);
-    MD.setValue(EMDL::SAMPLING_IS_3D_TRANS, is_3d_trans);
+    MD.setValue(EMDL::SAMPLING_IS_3D, is_3D, i);
+    MD.setValue(EMDL::SAMPLING_IS_3D_TRANS, is_3d_trans, i);
     if (is_3D) {
-        MD.setValue(EMDL::SAMPLING_HEALPIX_ORDER, healpix_order);
-        MD.setValue(EMDL::SAMPLING_SYMMETRY, fn_sym);
-        MD.setValue(EMDL::SAMPLING_LIMIT_TILT, limit_tilt);
+        MD.setValue(EMDL::SAMPLING_HEALPIX_ORDER, healpix_order, i);
+        MD.setValue(EMDL::SAMPLING_SYMMETRY, fn_sym, i);
+        MD.setValue(EMDL::SAMPLING_LIMIT_TILT, limit_tilt, i);
     }
-    MD.setValue(EMDL::SAMPLING_PSI_STEP, psi_step);
-    MD.setValue(EMDL::SAMPLING_OFFSET_RANGE, offset_range);
-    MD.setValue(EMDL::SAMPLING_OFFSET_STEP, offset_step);
+    MD.setValue(EMDL::SAMPLING_PSI_STEP, psi_step, i);
+    MD.setValue(EMDL::SAMPLING_OFFSET_RANGE, offset_range, i);
+    MD.setValue(EMDL::SAMPLING_OFFSET_STEP, offset_step, i);
     // Shaoda 19 Jun 2015: Helical translational searches
-    MD.setValue(EMDL::SAMPLING_HELICAL_OFFSET_STEP, helical_offset_step);
-    MD.setValue(EMDL::SAMPLING_PERTURB, random_perturbation);
-    MD.setValue(EMDL::SAMPLING_PERTURBATION_FACTOR, perturbation_factor);
+    MD.setValue(EMDL::SAMPLING_HELICAL_OFFSET_STEP, helical_offset_step, i);
+    MD.setValue(EMDL::SAMPLING_PERTURB, random_perturbation, i);
+    MD.setValue(EMDL::SAMPLING_PERTURBATION_FACTOR, perturbation_factor, i);
 
     // SHWS 27 Feb 2020: write original sampling rates to allow 2D/3D classifications to use coarser ones in initial iterations
-    MD.setValue(EMDL::SAMPLING_HEALPIX_ORDER_ORI, healpix_order_ori);
-    MD.setValue(EMDL::SAMPLING_PSI_STEP_ORI, psi_step_ori);
-    MD.setValue(EMDL::SAMPLING_OFFSET_RANGE_ORI, offset_range_ori);
-    MD.setValue(EMDL::SAMPLING_OFFSET_STEP_ORI, offset_step_ori);
+    MD.setValue(EMDL::SAMPLING_HEALPIX_ORDER_ORI, healpix_order_ori, i);
+    MD.setValue(EMDL::SAMPLING_PSI_STEP_ORI, psi_step_ori, i);
+    MD.setValue(EMDL::SAMPLING_OFFSET_RANGE_ORI, offset_range_ori, i);
+    MD.setValue(EMDL::SAMPLING_OFFSET_STEP_ORI, offset_step_ori, i);
 
     MD.write(fh);
 
@@ -257,8 +258,9 @@ void HealpixSampling::write(FileName fn_out) {
             RFLOAT rot, tilt;
             getDirection(idir, rot, tilt);
             MD.addObject();
-            MD.setValue(EMDL::ORIENT_ROT, rot);
-            MD.setValue(EMDL::ORIENT_TILT, tilt);
+            const long int i = MD.index();
+            MD.setValue(EMDL::ORIENT_ROT,  rot,  i);
+            MD.setValue(EMDL::ORIENT_TILT, tilt, i);
         }
         MD.write(fh);
     }

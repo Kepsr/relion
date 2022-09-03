@@ -310,19 +310,19 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         std::cout << "The number of movies in the input: " << MD.numberOfObjects() << std::endl;
     } else if (fn_in_ext == "lst") {
         // treat as a simple list
-        std::ifstream f;
+        std::ifstream f (fn_in);
         std::string line;
-        f.open(fn_in);
         while (std::getline(f, line)) {
             MD.addObject();
-            MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, line);
+            const long int i = MD.index();
+            MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, line, i);
         }
-        f.close();
 
         fn_first = MD.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME, 0);
     } else {
         MD.addObject();
-        MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_in);
+        const long int i = MD.index();
+        MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_in, i);
         fn_first = fn_in;
     }
 

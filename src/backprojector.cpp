@@ -1077,23 +1077,25 @@ MultidimArray<RFLOAT> BackProjector::externalReconstruct(
     MDlist.name = "external_reconstruct_general";
     MDlist.isList = true;
     MDlist.addObject();
-    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, fn_out + "_external_reconstruct_data_real.mrc");
-    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, fn_out + "_external_reconstruct_data_imag.mrc");
-    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT, fn_out + "_external_reconstruct_weight.mrc");
-    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT, fn_recons);
-    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_NEWSTAR, fn_out_star);
-    MDlist.setValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge);
-    MDlist.setValue(EMDL::MLMODEL_PADDING_FACTOR, padding_factor);
-    MDlist.setValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim);
-    MDlist.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size);
-    MDlist.setValue(EMDL::MLMODEL_CURRENT_SIZE, 2 * r_max);
+    const long int i = MDlist.index();
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, fn_out + "_external_reconstruct_data_real.mrc", i);
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, fn_out + "_external_reconstruct_data_imag.mrc", i);
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT,    fn_out + "_external_reconstruct_weight.mrc",    i);
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT, fn_recons, i);
+    MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_NEWSTAR, fn_out_star, i);
+    MDlist.setValue(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, tau2_fudge, i);
+    MDlist.setValue(EMDL::MLMODEL_PADDING_FACTOR, padding_factor, i);
+    MDlist.setValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim, i);
+    MDlist.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size, i);
+    MDlist.setValue(EMDL::MLMODEL_CURRENT_SIZE, 2 * r_max, i);
 
     MDtau.name = "external_reconstruct_tau2";
     for (int ii = 0; ii < Xsize(tau2); ii++) {
         MDtau.addObject();
-        MDtau.setValue(EMDL::SPECTRAL_IDX, ii);
-        MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2(ii));
-        MDtau.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves(ii));
+        const long int i = MDtau.index();
+        MDtau.setValue(EMDL::SPECTRAL_IDX, ii, i);
+        MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2(ii), i);
+        MDtau.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves(ii), i);
     }
 
     {

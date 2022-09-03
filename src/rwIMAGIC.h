@@ -82,6 +82,14 @@ struct IMAGIChead {
     char history[228];      // 199-255   history
 } ;
 
+inline DataType determine_datatype(IMAGIChead *header) throw (RelionError) {
+    if (strstr(header->type, "PACK")) return UChar;
+    if (strstr(header->type, "INTG")) return Short;
+    if (strstr(header->type, "REAL")) return Float;
+    if (strstr(header->type, "RECO") || strstr(header->type,"COMP"))
+    REPORT_ERROR("readIMAGIC: only real-space images can be read into RELION");
+}
+
 /************************************************************************
 @Function: readIMAGIC
 @Description:
@@ -139,16 +147,7 @@ int Image<T>::readIMAGIC(long int img_select) {
     data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
     replaceNsize = dims[3];
 
-    DataType datatype;
-    if (strstr(header->type, "PACK")) {
-        datatype = UChar;
-    } else if (strstr(header->type, "INTG")) {
-        datatype = Short;
-    } else if (strstr(header->type, "REAL")) {
-        datatype = Float;
-    } else if (strstr(header->type, "RECO") || strstr(header->type,"COMP")) {
-        REPORT_ERROR("readIMAGIC: only real-space images can be read into RELION");
-    }
+    DataType datatype = determine_datatype(header);
 
     // Set min-max values and other statistical values
     if (header->sigma == 0 && header->varian != 0) {
@@ -159,12 +158,13 @@ int Image<T>::readIMAGIC(long int img_select) {
         header->densmax = header->avdens + header->sigma;
     }
 
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->densmin);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->densmax);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->avdens);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sigma);
+    const long int i = MDMainHeader.index();
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->densmin, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->densmax, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->avdens, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sigma, i);
     setSamplingRateInHeader((RFLOAT) 1.0);
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype);
+    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
     offset = 0;   // separate header file
 

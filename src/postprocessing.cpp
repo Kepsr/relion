@@ -600,24 +600,25 @@ void Postprocessing::writeOutput() {
     MDlist.isList = true;
     MDlist.name = "general";
     MDlist.addObject();
-    MDlist.setValue(EMDL::POSTPROCESS_FINAL_RESOLUTION, global_resol);
-    MDlist.setValue(EMDL::POSTPROCESS_BFACTOR, global_bfactor );
-    MDlist.setValue(EMDL::POSTPROCESS_UNFIL_HALFMAP1, fn_I1);
-    MDlist.setValue(EMDL::POSTPROCESS_UNFIL_HALFMAP2, fn_I2);
+    const long int i = MDlist.index();
+    MDlist.setValue(EMDL::POSTPROCESS_FINAL_RESOLUTION, global_resol, i);
+    MDlist.setValue(EMDL::POSTPROCESS_BFACTOR, global_bfactor, i);
+    MDlist.setValue(EMDL::POSTPROCESS_UNFIL_HALFMAP1, fn_I1, i);
+    MDlist.setValue(EMDL::POSTPROCESS_UNFIL_HALFMAP2, fn_I2, i);
     if (molweight > 0.0) {
-        MDlist.setValue(EMDL::POSTPROCESS_MOLWEIGHT, molweight);
-        MDlist.setValue(EMDL::POSTPROCESS_FRACTION_MOLWEIGHT, frac_molweight);
+        MDlist.setValue(EMDL::POSTPROCESS_MOLWEIGHT, molweight, i);
+        MDlist.setValue(EMDL::POSTPROCESS_FRACTION_MOLWEIGHT, frac_molweight, i);
     }
     if (do_mask) {
-        MDlist.setValue(EMDL::POSTPROCESS_FRACTION_SOLVENT_MASK, frac_solvent_mask);
+        MDlist.setValue(EMDL::POSTPROCESS_FRACTION_SOLVENT_MASK, frac_solvent_mask, i);
         RFLOAT randomize_at_Ang = Xsize(I1()) * angpix / randomize_at;
-        MDlist.setValue(EMDL::MASK_NAME, fn_mask);
-        MDlist.setValue(EMDL::POSTPROCESS_RANDOMISE_FROM, randomize_at_Ang);
+        MDlist.setValue(EMDL::MASK_NAME, fn_mask, i);
+        MDlist.setValue(EMDL::POSTPROCESS_RANDOMISE_FROM, randomize_at_Ang, i);
     }
     if (do_auto_bfac) {
-        MDlist.setValue(EMDL::POSTPROCESS_GUINIER_FIT_SLOPE, global_slope);
-        MDlist.setValue(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, global_intercept);
-        MDlist.setValue(EMDL::POSTPROCESS_GUINIER_FIT_CORRELATION, global_corr_coeff);
+        MDlist.setValue(EMDL::POSTPROCESS_GUINIER_FIT_SLOPE, global_slope, i);
+        MDlist.setValue(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, global_intercept, i);
+        MDlist.setValue(EMDL::POSTPROCESS_GUINIER_FIT_CORRELATION, global_corr_coeff, i);
     }
     MDlist.write(fh);
 
@@ -625,30 +626,30 @@ void Postprocessing::writeOutput() {
     for (long int i = 0; i < Xsize(fsc_true); i++) {
         MDfsc.addObject();
         RFLOAT res = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
-        MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
-        MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
-        MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
+        MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i, i);
+        MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res, i);
+        MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res, i);
         if (do_mask) {
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          direct::elem(fsc_true,          i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_FRACMASK, direct::elem(fsc_part_fracmask, i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          direct::elem(fsc_true,          i), i);
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_FRACMASK, direct::elem(fsc_part_fracmask, i), i);
             if (molweight > 0.0)
-                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, direct::elem(fsc_part_molweight, i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      direct::elem(fsc_unmasked,      i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        direct::elem(fsc_masked,        i));
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, direct::elem(fsc_random_masked, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, direct::elem(fsc_part_molweight, i), i);
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      direct::elem(fsc_unmasked,      i), i);
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        direct::elem(fsc_masked,        i), i);
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, direct::elem(fsc_random_masked, i), i);
             if (do_ampl_corr) {
-                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, direct::elem(acorr_unmasked, i));
-                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_MASKED,   direct::elem(acorr_masked,   i));
-                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      direct::elem(dpr_unmasked,   i));
-                MDfsc.setValue(EMDL::POSTPROCESS_DPR_MASKED,        direct::elem(dpr_masked,     i));
+                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, direct::elem(acorr_unmasked, i), i);
+                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_MASKED,   direct::elem(acorr_masked,   i), i);
+                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      direct::elem(dpr_unmasked,   i), i);
+                MDfsc.setValue(EMDL::POSTPROCESS_DPR_MASKED,        direct::elem(dpr_masked,     i), i);
             }
         } else {
-            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED, direct::elem(fsc_true, i));
+            MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED, direct::elem(fsc_true, i), i);
             if (molweight > 0.0)
-                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, direct::elem(fsc_part_molweight, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_FSC_PART_MOLWEIGHT, direct::elem(fsc_part_molweight, i), i);
             if (do_ampl_corr) {
-                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, direct::elem(acorr_unmasked, i));
-                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      direct::elem(dpr_unmasked, i));
+                MDfsc.setValue(EMDL::POSTPROCESS_AMPLCORR_UNMASKED, direct::elem(acorr_unmasked, i), i);
+                MDfsc.setValue(EMDL::POSTPROCESS_DPR_UNMASKED,      direct::elem(dpr_unmasked, i), i);
             }
         }
     }
@@ -692,28 +693,30 @@ void Postprocessing::writeOutput() {
     MetaDataTable MDextra1, MDextra2; // for postscript plot
     for (int i = 0; i < guinierin.size(); i++) {
         MDguinier.addObject();
-        MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, guinierin[i].x);
-        MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_IN,      guinierin[i].y);
+        MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED, guinierin[i].x, i);
+        MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_IN,      guinierin[i].y, i);
         if (!fn_mtf.empty())
-            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_INVMTF, guinierinvmtf[i].y);
+            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_INVMTF, guinierinvmtf[i].y, i);
         if (do_fsc_weighting) {
-            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y);
+            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y, i);
             if (guinierweighted[i].y > -99.0) {
                 MDextra1.addObject();
-                MDextra1.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,  guinierin[i].x);
-                MDextra1.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y);
+                const long int index = MDextra2.index();
+                MDextra1.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,  guinierin[i].x, index);
+                MDextra1.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y, index);
             }
         }
         if (do_auto_bfac || abs(adhoc_bfac) > 0.0) {
-            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, guiniersharpen[i].y);
+            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, guiniersharpen[i].y, i);
             if (guiniersharpen[i].y > -99.0) {
                 MDextra2.addObject();
-                MDextra2.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,   guinierin[i].x);
-                MDextra2.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, guiniersharpen[i].y);
+                const long int index = MDextra2.index();
+                MDextra2.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,   guinierin[i].x, index);
+                MDextra2.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, guiniersharpen[i].y, index);
             }
         }
         if (do_auto_bfac)
-            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_INTERCEPT, global_intercept);
+            MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_INTERCEPT, global_intercept, i);
     }
     MDguinier.write(fh);
 
@@ -911,13 +914,13 @@ void Postprocessing::run_locres(int rank, int size) {
                     for (long int i = 0; i < Xsize(fsc_true); i++) {
                         MDfsc.addObject();
                         RFLOAT res = i > 0 ? Xsize(I1()) * angpix / (RFLOAT) i : 999.0;
-                        MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i);
-                        MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res);
-                        MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res);
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          direct::elem(fsc_true,          i));
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      direct::elem(fsc_unmasked,      i));
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        direct::elem(fsc_masked,        i));
-                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, direct::elem(fsc_random_masked, i));
+                        MDfsc.setValue(EMDL::SPECTRAL_IDX, (int) i, i);
+                        MDfsc.setValue(EMDL::RESOLUTION, 1.0 / res, i);
+                        MDfsc.setValue(EMDL::RESOLUTION_ANGSTROM, res, i);
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_TRUE,          direct::elem(fsc_true,          i), i);
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_UNMASKED,      direct::elem(fsc_unmasked,      i), i);
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_MASKED,        direct::elem(fsc_masked,        i), i);
+                        MDfsc.setValue(EMDL::POSTPROCESS_FSC_RANDOM_MASKED, direct::elem(fsc_random_masked, i), i);
                     }
                     MDfsc.write(fh);
                 }

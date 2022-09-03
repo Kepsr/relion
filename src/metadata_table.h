@@ -162,11 +162,14 @@ class MetaDataTable {
 
     std::string getUnknownLabelNameAt(int i) const;
 
-    // Set the value of label for a specified object.
-    // If no objectID is given, the internal pointer current_object is used
-    // objectID is 0-indexed.
+    // Set the value of label for the ith object (i >= 0)
     template<class T>
-    void setValue(EMDL::EMDLabel name, const T &value, long int objectID = -1);
+    void setValue(EMDL::EMDLabel label, const T &value, long int i);
+
+    // The index of the current active object
+    inline long int index() const {
+        return current_object - &*objects.begin();
+    }
 
     void setUnknownValue(int labelPosition, const std::string &value);
     void setValueFromString(EMDL::EMDLabel label, const std::string &value, long int objectID = -1);
@@ -454,7 +457,7 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
 
 
 template<class T>
-void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int objectID) {
+void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int i) {
 
     if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 
@@ -471,17 +474,19 @@ void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int obje
         off = label_indices[label];
     }
 
-    if (objectID < 0) {
-        objectID = current_object - &*objects.begin();
+    if (i < 0) {
+        i = index();
     } else {
-        try { checkObjectID(objectID); } catch (const std::string &errmsg) {
+        try {
+            checkObjectID(i);
+        } catch (const std::string &errmsg) {
             REPORT_ERROR((std::string) __func__ + ": " + errmsg);
         }
     }
 
     if (off < 0) throw "Negative offset";
 
-    objects[objectID]->setValue(off, value);
+    objects[i]->setValue(off, value);
 }
 
 #endif

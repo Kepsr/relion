@@ -69,24 +69,26 @@ class star_converter {
             }
 
             Micrograph mic(fn_meta);
+            const long int i = optOut.index();
+
             std::cout << "- voltage: " << mic.voltage << std::endl;
-            optOut.setValue(EMDL::CTF_VOLTAGE, mic.voltage);
+            optOut.setValue(EMDL::CTF_VOLTAGE, mic.voltage, i);
 
             std::cout << "- unbinned pixel size: " << mic.angpix << std::endl;
             std::cout << "- binning factor: " << mic.getBinningFactor() << std::endl;
             const RFLOAT angpix = mic.angpix * mic.getBinningFactor();
             std::cout << "- binned pixel size: " << angpix << std::endl;
-            optOut.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix);
+            optOut.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, angpix, i);
 
             std::cout << "\nThe other microscope parameters must be specified in the command line." << std::endl;
             if (Cs < 0)
                 REPORT_ERROR("Please specify the spherical aberration (mm) in the --Cs option.");
             std::cout << "- spherical aberration: " << Cs << std::endl;
-            optOut.setValue(EMDL::CTF_CS, Cs);
+            optOut.setValue(EMDL::CTF_CS, Cs, i);
             if (Q0 < 0)
                 REPORT_ERROR("Please specify the amplitude contrast in the --Q0 option");
             std::cout << "- amplitude contrast: " << Q0 << std::endl;
-            optOut.setValue(EMDL::CTF_Q0, Q0);
+            optOut.setValue(EMDL::CTF_Q0, Q0, i);
 
             std::cout << "\nAll necessary information is ready." << std::endl;
 

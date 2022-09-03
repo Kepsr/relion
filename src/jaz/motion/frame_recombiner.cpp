@@ -534,9 +534,9 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
         double k = log(bkFacs.first[f].y);
 
         mdt.addObject();
-        mdt.setValue(EMDL::IMAGE_FRAME_NR, f);
-        mdt.setValue(EMDL::POSTPROCESS_BFACTOR, b);
-        mdt.setValue(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, k);
+        mdt.setValue(EMDL::IMAGE_FRAME_NR, f, f);
+        mdt.setValue(EMDL::POSTPROCESS_BFACTOR, b, f);
+        mdt.setValue(EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT, k, f);
     }
 
     mdt.write(outPath + "/bfactors.star");

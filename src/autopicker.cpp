@@ -861,9 +861,10 @@ void AutoPicker::generatePDFLogfile() {
 
                 // Abuse MetadataTable to conveniently make histograms and value-plots
                 MDresult.addObject();
-                MDresult.setValue(EMDL::MICROGRAPH_NAME, fn_ori_micrographs[imic]);
-                MDresult.setValue(EMDL::PARTICLE_AUTOPICK_FOM, avg_fom);
-                MDresult.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, nr_pick);
+                const long int i = MDresult.index();
+                MDresult.setValue(EMDL::MICROGRAPH_NAME, fn_ori_micrographs[imic], i);
+                MDresult.setValue(EMDL::PARTICLE_AUTOPICK_FOM, avg_fom, i);
+                MDresult.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, nr_pick, i);
             }
         }
 
@@ -1274,7 +1275,7 @@ void AutoPicker::pickAmyloids(
             // Distance to next segment
             float dx = (float) (helix[iseg + 1].x - helix[iseg].x) / scale;
             float dy = (float) (helix[iseg + 1].y - helix[iseg].y) / scale;
-            float distnex = sqrt(dx * dx + dy * dy);
+            float distnex = euclid(dx, dy);
             float psi = -atan2(dy, dx);
             for (float position = leftover_dist; position < distnex; position += interbox_dist) {
                 RFLOAT frac = position / distnex;
@@ -1282,15 +1283,16 @@ void AutoPicker::pickAmyloids(
                 RFLOAT yval = helix[iseg].y / scale - (RFLOAT) Xmipp::init(micrograph_ysize) + frac * dy;
 
                 MDout.addObject();
-                MDout.setValue(EMDL::IMAGE_COORD_X, xval);
-                MDout.setValue(EMDL::IMAGE_COORD_Y, yval);
-                MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, helix[iseg].fom);
-                MDout.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, ihelix + 1); // start counting at 1
-                MDout.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-                MDout.setValue(EMDL::ORIENT_PSI_PRIOR, degrees(psi));
-                MDout.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, angpix * tube_length);
-                MDout.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, 0.5);
-                MDout.setValue(EMDL::ORIENT_ROT_PRIOR_FLIP_RATIO, 0.5);	// KThurber
+                const long int i = MDout.index();
+                MDout.setValue(EMDL::IMAGE_COORD_X, xval, i);
+                MDout.setValue(EMDL::IMAGE_COORD_Y, yval, i);
+                MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, helix[iseg].fom, i);
+                MDout.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, ihelix + 1, i); // start counting at 1
+                MDout.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+                MDout.setValue(EMDL::ORIENT_PSI_PRIOR, degrees(psi), i);
+                MDout.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, angpix * tube_length, i);
+                MDout.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, 0.5, i);
+                MDout.setValue(EMDL::ORIENT_ROT_PRIOR_FLIP_RATIO, 0.5, i);	// KThurber
 
                 leftover_dist = interbox_dist + (distnex - position);
                 tube_length += interbox_dist;
@@ -1299,8 +1301,7 @@ void AutoPicker::pickAmyloids(
         helixid++;
     }
 
-    FileName fn = getOutputRootName(fn_mic_in) + "_" + fn_star_out + ".star";
-    MDout.write(fn);
+    MDout.write(getOutputRootName(fn_mic_in) + "_" + fn_star_out + ".star");
 
 }
 
@@ -2214,16 +2215,17 @@ void AutoPicker::exportHelicalTubes(
             MDout.addObject();
             const RFLOAT xval = tube_coord_list[itube][icoord].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize);
             const RFLOAT yval = tube_coord_list[itube][icoord].y / scale - (RFLOAT) Xmipp::init(micrograph_ysize);
-            MDout.setValue(EMDL::IMAGE_COORD_X, xval);
-            MDout.setValue(EMDL::IMAGE_COORD_Y, yval);
-            MDout.setValue(EMDL::PARTICLE_CLASS, iref + 1); // start counting at 1
-            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, fom);
-            MDout.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, helical_tube_id);
-            MDout.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0);
-            MDout.setValue(EMDL::ORIENT_PSI_PRIOR, -tube_coord_list[itube][icoord].psi); // Beware! Multiplied by -1!
-            MDout.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, angpix * helical_tube_len);
-            MDout.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, BIMODAL_PSI_PRIOR_FLIP_RATIO);
-            MDout.setValue(EMDL::ORIENT_ROT_PRIOR_FLIP_RATIO, BIMODAL_PSI_PRIOR_FLIP_RATIO);	// KThurber
+            const long int i = MDout.index();
+            MDout.setValue(EMDL::IMAGE_COORD_X, xval, i);
+            MDout.setValue(EMDL::IMAGE_COORD_Y, yval, i);
+            MDout.setValue(EMDL::PARTICLE_CLASS, iref + 1, i); // start counting at 1
+            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, fom, i);
+            MDout.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, helical_tube_id, i);
+            MDout.setValue(EMDL::ORIENT_TILT_PRIOR, 90.0, i);
+            MDout.setValue(EMDL::ORIENT_PSI_PRIOR, -tube_coord_list[itube][icoord].psi, i); // Beware! Multiplied by -1!
+            MDout.setValue(EMDL::PARTICLE_HELICAL_TRACK_LENGTH_ANGSTROM, angpix * helical_tube_len, i);
+            MDout.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, BIMODAL_PSI_PRIOR_FLIP_RATIO, i);
+            MDout.setValue(EMDL::ORIENT_ROT_PRIOR_FLIP_RATIO, BIMODAL_PSI_PRIOR_FLIP_RATIO, i);	// KThurber
         }
     }
 
@@ -2458,13 +2460,14 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         const RFLOAT fom = Mbest_fom.elem(imax, jmax);
         if (fom < my_upper_limit) {
             MDout.addObject();
-            long int xx = imax - Xmipp::init((float) micrograph_xsize * scale);
-            long int yy = jmax - Xmipp::init((float) micrograph_ysize * scale);
-            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xx / scale);
-            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) yy / scale);
-            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, Mbest_fom.elem(imax, jmax));
-            MDout.setValue(EMDL::PARTICLE_CLASS, 0);  // Dummy values to avoid problems in JoinStar
-            MDout.setValue(EMDL::ORIENT_PSI, 0.0);
+            const long int i = MDout.index();
+            const long int xx = imax - Xmipp::init((float) micrograph_xsize * scale);
+            const long int yy = jmax - Xmipp::init((float) micrograph_ysize * scale);
+            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xx / scale, i);
+            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) yy / scale, i);
+            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, Mbest_fom.elem(imax, jmax), i);
+            MDout.setValue(EMDL::PARTICLE_CLASS, 0, i);  // Dummy values to avoid problems in JoinStar
+            MDout.setValue(EMDL::ORIENT_PSI, 0.0, i);
         }
 
         // Now set all pixels of Mbest_fom within a distance of 0.5* the corresponding Mbest_size to zero
@@ -2896,7 +2899,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             if (do_write_fom_maps && !autopick_helical_segments) {
 
                 Image<RFLOAT> I_bestCCF (Mccf_best);
-                I_bestCCF.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Store expected_Pratio in the header of the image
+                I_bestCCF.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio, I_bestCCF.MDMainHeader.index());  // Store expected_Pratio in the header of the image
                 const auto fn_bestCCF = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
                 I_bestCCF.write(fn_bestCCF);
 
@@ -3020,13 +3023,14 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         MetaDataTable MDout;
         for (const Peak &peak : peaks) {
             MDout.addObject();
-            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) peak.x / scale);
-            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) peak.y / scale);
-            MDout.setValue(EMDL::PARTICLE_CLASS,        peak.ref + 1); // start counting at 1
-            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, peak.fom);
-            MDout.setValue(EMDL::ORIENT_PSI,            peak.psi);
+            const long int i = MDout.index();
+            MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) peak.x / scale, i);
+            MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) peak.y / scale, i);
+            MDout.setValue(EMDL::PARTICLE_CLASS,        peak.ref + 1, i); // start counting at 1
+            MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, peak.fom, i);
+            MDout.setValue(EMDL::ORIENT_PSI,            peak.psi, i);
         }
-        FileName fn = getOutputRootName(fn_mic) + "_" + fn_out + ".star";
+        const FileName fn = getOutputRootName(fn_mic) + "_" + fn_out + ".star";
         MDout.write(fn);
         }
 

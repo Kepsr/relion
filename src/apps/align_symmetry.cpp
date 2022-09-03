@@ -154,7 +154,7 @@ class align_symmetry {
             tilt = 0;
             psi = 0;
             for (long int i = 0; i < nr_uniform; i++) {
-                rot = rnd_unif() * 360.;
+                rot = rnd_unif() * 360.0;
 
                 if (!only_rot) {
                     do { 
@@ -164,9 +164,9 @@ class align_symmetry {
                 }
 
                 MDang.addObject();
-                MDang.setValue(EMDL::ORIENT_ROT,  rot);
-                MDang.setValue(EMDL::ORIENT_TILT, tilt);
-                MDang.setValue(EMDL::ORIENT_PSI,  psi);
+                MDang.setValue(EMDL::ORIENT_ROT,  rot,  i);
+                MDang.setValue(EMDL::ORIENT_TILT, tilt, i);
+                MDang.setValue(EMDL::ORIENT_PSI,  psi,  i);
             }
         }
 
@@ -197,18 +197,19 @@ class align_symmetry {
         MDang.clear();
 
         for (int i = -search_range; i <= search_range; i++) {
-            for (int j = -search_range; j <= search_range; j++) {
-                if (only_rot && j != 0) continue;
+        for (int j = -search_range; j <= search_range; j++) {
+            if (only_rot && j != 0) continue;
 
-                for (int k = -search_range; k <= search_range; k++) {
-                    if (only_rot && k != 0) continue;
+        for (int k = -search_range; k <= search_range; k++) {
+            if (only_rot && k != 0) continue;
 
-                    MDang.addObject();
-                    MDang.setValue(EMDL::ORIENT_ROT,  rot  + i * search_step);
-                    MDang.setValue(EMDL::ORIENT_TILT, tilt + j * search_step);
-                    MDang.setValue(EMDL::ORIENT_PSI,  psi  + k * search_range);
-                }
-            }
+            MDang.addObject();
+            const long int index = MDang.index();
+            MDang.setValue(EMDL::ORIENT_ROT,  rot  + i * search_step, index);
+            MDang.setValue(EMDL::ORIENT_TILT, tilt + j * search_step, index);
+            MDang.setValue(EMDL::ORIENT_PSI,  psi  + k * search_range, index);
+        }
+        }
         }
 
         best_at = search(MDang, projector);

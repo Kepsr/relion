@@ -262,16 +262,17 @@ RFLOAT CtfHelper::readValue(
 
 // Write to an existing object in a MetaDataTable
 void CtfHelper::write(const CTF &ctf, MetaDataTable &MD) {
+    const long int i = MD.index();
     // For versions >= 3.1: store kV, Cs, Q0 in optics table
     // MD.setValue(EMDL::CTF_VOLTAGE, ctf.kV);
-    MD.setValue(EMDL::CTF_DEFOCUSU, ctf.DeltafU);
-    MD.setValue(EMDL::CTF_DEFOCUSV, ctf.DeltafV);
-    MD.setValue(EMDL::CTF_DEFOCUS_ANGLE, ctf.azimuthal_angle);
-    // MD.setValue(EMDL::CTF_CS, ctf.Cs);
-    MD.setValue(EMDL::CTF_BFACTOR, ctf.Bfac);
-    MD.setValue(EMDL::CTF_SCALEFACTOR, ctf.scale);
-    MD.setValue(EMDL::CTF_PHASESHIFT, ctf.phase_shift);
-    // MD.setValue(EMDL::CTF_Q0, ctf.Q0);
+    MD.setValue(EMDL::CTF_DEFOCUSU, ctf.DeltafU, i);
+    MD.setValue(EMDL::CTF_DEFOCUSV, ctf.DeltafV, i);
+    MD.setValue(EMDL::CTF_DEFOCUS_ANGLE, ctf.azimuthal_angle, i);
+    // MD.setValue(EMDL::CTF_CS, ctf.Cs, i);
+    MD.setValue(EMDL::CTF_BFACTOR, ctf.Bfac, i);
+    MD.setValue(EMDL::CTF_SCALEFACTOR, ctf.scale, i);
+    MD.setValue(EMDL::CTF_PHASESHIFT, ctf.phase_shift, i);
+    // MD.setValue(EMDL::CTF_Q0, ctf.Q0, i);
 }
 
 void CtfHelper::write(const CTF &ctf, std::ostream &out) {

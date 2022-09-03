@@ -155,11 +155,14 @@ int Image<T>::readSPIDER(long int img_select) {
     offset = (int) header->labbyt;
     DataType datatype = Float;
 
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->fmin);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->fmax);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->av);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sig);
+    {
+    const long int i = MDMainHeader.index();
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->fmin, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->fmax, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->av,   i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sig,  i);
     setSamplingRateInHeader((RFLOAT) header->scale);
+    }
 
     bool isStack = header->istack > 0;
 

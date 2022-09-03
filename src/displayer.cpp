@@ -1095,9 +1095,9 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
 
     // Find out which optics group each scale group belongs to
     // Also initialise rlnGroupNrParticles for this selection
-    for (long int _ : MDgroups) {
-        MDgroups.setValue(EMDL::IMAGE_OPTICS_GROUP,        -1);
-        MDgroups.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, 0);
+    for (long int i : MDgroups) {
+        MDgroups.setValue(EMDL::IMAGE_OPTICS_GROUP,        -1, i);
+        MDgroups.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, 0, i);
     }
 
     int max_optics_group_id = -1;
@@ -1162,12 +1162,12 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
         }
     }
 
-    for (long int _ : MDdata) {
+    for (long int i : MDdata) {
         long int group_id = MDdata.getValue<long int>(EMDL::MLMODEL_GROUP_NO);
 
         it = new_group_names.find(group_id);
         if (it != new_group_names.end()) {
-            MDdata.setValue(EMDL::MLMODEL_GROUP_NAME, new_group_names[group_id]);
+            MDdata.setValue(EMDL::MLMODEL_GROUP_NAME, new_group_names[group_id], i);
         } else {
             std::cerr << "Logic error: cannot find group_id " << group_id << " during remapping." << std::endl;
             REPORT_ERROR("Failed in regrouping");
@@ -1212,7 +1212,7 @@ void multiViewerCanvas::saveTrainingSet() {
     int nsel = 0;
     for (const auto *box : boxes) {
         MDout.addObject(box->MDimg.getObject());
-        MDout.setValue(EMDL::SELECTED, box->selected);
+        MDout.setValue(EMDL::SELECTED, box->selected, MDout.index());
     }
 
     // Maintain the original image ordering
@@ -1221,12 +1221,12 @@ void multiViewerCanvas::saveTrainingSet() {
 
     // Copy all images
     FileName fn_img, fn_old = "";
-    for (long int _ : MDout) {
+    for (long int i : MDout) {
         fn_img = MDout.getValue<std::string>(display_label);
         long int nr;
         fn_img.decompose(nr, fn_img);
         const auto fn_new_img = FileName::compose(nr, fn_img.afterLastOf("/"));
-        MDout.setValue(display_label, fn_new_img);
+        MDout.setValue(display_label, fn_new_img, i);
         if (fn_img != fn_old) // prevent multiple copies of single stack from Class2D
             copy(fn_img, fn_odir + "/" + fn_img.afterLastOf("/"));
         fn_old = fn_img;
@@ -1291,7 +1291,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
                 img.read(fn_img);
                 img() = translateCenterOfMassToCenter(img());
                 const auto fn_out = FileName::compose(i + 1, fn_stack);
-                MDout.setValue(EMDL::MLMODEL_REF_IMAGE, fn_out);
+                MDout.setValue(EMDL::MLMODEL_REF_IMAGE, fn_out, i);
 
                 if (i == 0) {
                     img.write(fn_stack, -1, nr_images > 1, WRITE_OVERWRITE);
@@ -1518,8 +1518,8 @@ void pickerViewerCanvas::draw() {
                 try {
                     ival = MDcoords.getValue<int>(color_label);
                 } catch (const char *errmsg) {
-                    ival = 2; // populate as green if absent
-                    MDcoords.setValue(color_label, ival);
+                    // populate as green if absent
+                    MDcoords.setValue(color_label, ival = 2, icoord);
                 }
                 colval = ival;
                 fl_color(
@@ -1597,31 +1597,33 @@ int pickerViewerCanvas::handle(int ev) {
                 // This will take care of re-picking in coordinate files from previous refinements
                 long int last_idx = MDcoords.numberOfObjects() - 1;
                 MDcoords.addObject(MDcoords.getObject(last_idx));
+                const long int i = MDcoords.index();
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ROT);
-                    MDcoords.setValue(EMDL::ORIENT_ROT, -999.0);
+                    MDcoords.setValue(EMDL::ORIENT_ROT, -999.0, i);
                 } catch (const char *errmsg) {}
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-                    MDcoords.setValue(EMDL::ORIENT_TILT, -999.0);
+                    MDcoords.setValue(EMDL::ORIENT_TILT, -999.0, i);
                 } catch (const char *errmsg) {}
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM);
-                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0);
+                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0, i);
                 } catch (const char *errmsg) {}
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
-                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0);
+                    MDcoords.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0, i);
                 } catch (const char *errmsg) {}
             } else {
                 MDcoords.addObject();
             }
-            MDcoords.setValue(EMDL::IMAGE_COORD_X, xcoor);
-            MDcoords.setValue(EMDL::IMAGE_COORD_Y, ycoor);
+            const long int i = MDcoords.index();
+            MDcoords.setValue(EMDL::IMAGE_COORD_X, xcoor, i);
+            MDcoords.setValue(EMDL::IMAGE_COORD_Y, ycoor, i);
             // No autopicking, but still always fill in the parameters for autopicking with dummy values (to prevent problems in joining autopicked and manually picked coordinates)
-            MDcoords.setValue(EMDL::PARTICLE_CLASS, iaux);
-            MDcoords.setValue(EMDL::ORIENT_PSI,            -999.0);
-            MDcoords.setValue(EMDL::PARTICLE_AUTOPICK_FOM, -999.0);
+            MDcoords.setValue(EMDL::PARTICLE_CLASS, iaux, i);
+            MDcoords.setValue(EMDL::ORIENT_PSI,            -999.0, i);
+            MDcoords.setValue(EMDL::PARTICLE_AUTOPICK_FOM, -999.0, i);
 
             redraw();
             return 1;
@@ -1756,14 +1758,14 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
     if (!MDcolor.containsLabel(color_label))
         REPORT_ERROR("--color STAR file does not contain the specified color_label!");
 
-    // Pre-set all color_label column in the MDcoords to -999.
+    // Initialise all color_label column in the MDcoords to -999.
     if (EMDL::is<int>(color_label)) {
-        for (long int _ : MDcoords) {
-            MDcoords.setValue<int>(color_label, -999);
+        for (long int i : MDcoords) {
+            MDcoords.setValue<int>(color_label, -999, i);
         }
     } else {
-        for (long int _ : MDcoords) {
-            MDcoords.setValue<RFLOAT>(color_label, -999.0);
+        for (long int i : MDcoords) {
+            MDcoords.setValue<RFLOAT>(color_label, -999.0, i);
         }
     }
 
@@ -2281,7 +2283,7 @@ void Displayer::initialise() {
             // As of v3.1 the input STAR files should always store the pixel size, no more check necessary...
             if (do_ignore_optics) {
                 if (angpix > 0.0) {
-                    obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix);
+                    obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, obsModel.opticsMdt.index());
                 }
             }
         } else {
@@ -2289,7 +2291,7 @@ void Displayer::initialise() {
             obsModel.opticsMdt.addObject();
             if (angpix > 0.0) {
                 std::cout << " Using pixel size from command-line input of " << angpix << " Angstroms" << std::endl;
-                obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix);
+                obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, obsModel.opticsMdt.index());
             } else {
                 REPORT_ERROR("Displayer::initialise ERROR: you provided a low- or highpass filter in Angstroms, so please also provide --angpix.");
             }
@@ -2461,7 +2463,7 @@ void Displayer::run() {
         // Store class number in metadata table
         if (do_class) {
             for (long int iclass : MDin) {
-                MDin.setValue(EMDL::PARTICLE_CLASS, iclass + 1);  // start counting at 1
+                MDin.setValue(EMDL::PARTICLE_CLASS, iclass + 1, iclass);
             }
         }
 
@@ -2492,8 +2494,9 @@ void Displayer::run() {
             for (int n = 0; n < Nsize(img()); n++) {
                 const auto fn_tmp = FileName::compose(n + 1, fn_in);
                 MDin.addObject();
-                MDin.setValue(EMDL::IMAGE_NAME, fn_tmp);
-                MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
+                const long int i = MDin.index();
+                MDin.setValue(EMDL::IMAGE_NAME, fn_tmp, i);
+                MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             }
             basisViewerWindow win(MULTIVIEW_WINDOW_WIDTH, MULTIVIEW_WINDOW_HEIGHT, fn_in.c_str());
             win.fillCanvas(
@@ -2520,8 +2523,9 @@ void Displayer::run() {
             for (int n = 0; n < Zsize(img()); n++) {
                 const auto fn_tmp = FileName::compose(n + 1, fn_in) + ":mrcs";
                 MDin.addObject();
-                MDin.setValue(EMDL::IMAGE_NAME, fn_tmp);
-                MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
+                const long int i = MDin.index();
+                MDin.setValue(EMDL::IMAGE_NAME, fn_tmp, i);
+                MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             }
 
             basisViewerWindow win(MULTIVIEW_WINDOW_WIDTH, MULTIVIEW_WINDOW_HEIGHT, fn_in.c_str());
@@ -2540,8 +2544,9 @@ void Displayer::run() {
                 highPassFilterMap(img(), highpass, angpix);
 
             MDin.addObject();
-            MDin.setValue(EMDL::IMAGE_NAME, fn_in);
-            MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1);
+            const long int i = MDin.index();
+            MDin.setValue(EMDL::IMAGE_NAME, fn_in, i);
+            MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             RFLOAT new_scale = scale;
             if (show_fourier_amplitudes || show_fourier_phase_angles) {
                 new_scale *= 2.0;

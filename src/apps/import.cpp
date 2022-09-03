@@ -131,17 +131,18 @@ class import_parameters {
                 // Generate MDopt for the optics group
                 MDopt.name = "optics";
                 MDopt.addObject();
-                MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, optics_group_name);
-                MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_number);
-                if (fn_mtf != "") MDopt.setValue(EMDL::IMAGE_MTF_FILENAME, fn_mtf);
-                if (do_micrographs) MDopt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, pixel_size);
-                MDopt.setValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, pixel_size);
-                MDopt.setValue(EMDL::CTF_VOLTAGE, kV);
-                MDopt.setValue(EMDL::CTF_CS, Cs);
-                MDopt.setValue(EMDL::CTF_Q0, Q0);
+                const long int i = MDopt.index();
+                MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, optics_group_name, i);
+                MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_number, i);
+                if (!fn_mtf.empty()) MDopt.setValue(EMDL::IMAGE_MTF_FILENAME, fn_mtf, i);
+                if (do_micrographs) MDopt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, pixel_size, i);
+                MDopt.setValue(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE, pixel_size, i);
+                MDopt.setValue(EMDL::CTF_VOLTAGE, kV, i);
+                MDopt.setValue(EMDL::CTF_CS, Cs, i);
+                MDopt.setValue(EMDL::CTF_Q0, Q0, i);
                 if (fabs(beamtilt_x) + fabs(beamtilt_y) > 0.001) {
-                    MDopt.setValue(EMDL::IMAGE_BEAMTILT_X, beamtilt_x);
-                    MDopt.setValue(EMDL::IMAGE_BEAMTILT_Y, beamtilt_y);
+                    MDopt.setValue(EMDL::IMAGE_BEAMTILT_X, beamtilt_x, i);
+                    MDopt.setValue(EMDL::IMAGE_BEAMTILT_Y, beamtilt_y, i);
                 }
             }
 
@@ -166,8 +167,9 @@ class import_parameters {
                 }
                 if (!already_there) {
                     MDout.addObject();
-                    MDout.setValue(mylabel, fns_in[i]);
-                    MDout.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_number);
+                    const long int i = MDout.index();
+                    MDout.setValue(mylabel, fns_in[i], i);
+                    MDout.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_number, i);
                 }
             }
 
