@@ -611,7 +611,7 @@ void MetaDataTable::setObjectUnsafe(MetaDataContainer* data, long objectID) {
     }
 }
 
-void MetaDataTable::addObject() {
+long int MetaDataTable::addObject() {
     objects.push_back(new MetaDataContainer(
         this,
         doubleLabels, intLabels, boolLabels, stringLabels,
@@ -619,9 +619,10 @@ void MetaDataTable::addObject() {
     ));
 
     current_object = &*objects.end() - 1;
+    return index();  // numberOfObjects() - 1;
 }
 
-void MetaDataTable::addObject(MetaDataContainer* data) {
+long int MetaDataTable::addObject(MetaDataContainer* data) {
     objects.push_back(new MetaDataContainer(
         this,
         doubleLabels, intLabels, boolLabels, stringLabels,
@@ -630,6 +631,7 @@ void MetaDataTable::addObject(MetaDataContainer* data) {
 
     setObject(data, objects.size() - 1);
     current_object = &*objects.end() - 1;
+    return index();
 }
 
 void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
@@ -1295,8 +1297,7 @@ long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {
 
 bool MetaDataTable::readStarList(std::ifstream &in) {
     isList = true;
-    addObject();
-    const long int objectID = objects.size() - 1;
+    const long int i = addObject();
 
     std::string line, firstword, value;
 
@@ -1321,7 +1322,7 @@ bool MetaDataTable::readStarList(std::ifstream &in) {
                 std::cerr << " + WARNING: will ignore (but maintain) values for the unknown label: " << token << std::endl;
             } else {
                 addLabel(label);
-                setValueFromString(label, value, objectID);
+                setValueFromString(label, value, i);
             }
             labelPosition++;
         } else if (firstword[0] == '#' || firstword[0] == ';') {

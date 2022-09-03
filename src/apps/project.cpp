@@ -147,8 +147,7 @@ class project_parameters {
 
             std::cout << " Setting default values for optics table, though CTFs are not used in the projections ... " << std::endl;
             MetaDataTable MDopt;
-            MDopt.addObject();
-            const long int i = MDopt.index();
+            const long int i = MDopt.addObject();
             MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, "optics1", i);
             MDopt.setValue(EMDL::CTF_VOLTAGE, 300.0, i);
@@ -488,9 +487,8 @@ class project_parameters {
                 }
 
                 // Set the image name to the output STAR file
-                DFo.addObject();
+                const long int i = DFo.addObject();
                 DFo.setObject(MDang.getObject());
-                const long int i = DFo.index();
                 DFo.setValue(EMDL::IMAGE_NAME, fn_img, i);
 
                 if (do_simulate) {

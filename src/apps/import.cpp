@@ -130,8 +130,7 @@ class import_parameters {
 
                 // Generate MDopt for the optics group
                 MDopt.name = "optics";
-                MDopt.addObject();
-                const long int i = MDopt.index();
+                const long int i = MDopt.addObject();
                 MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, optics_group_name, i);
                 MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_number, i);
                 if (!fn_mtf.empty()) MDopt.setValue(EMDL::IMAGE_MTF_FILENAME, fn_mtf, i);
@@ -166,8 +165,7 @@ class import_parameters {
                     }
                 }
                 if (!already_there) {
-                    MDout.addObject();
-                    const long int i = MDout.index();
+                    const long int i = MDout.addObject();
                     MDout.setValue(mylabel, fns_in[i], i);
                     MDout.setValue(EMDL::IMAGE_OPTICS_GROUP, optics_group_number, i);
                 }

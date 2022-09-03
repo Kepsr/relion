@@ -351,9 +351,7 @@ void MotionHelper::writeTracks(
 
     mdt.name = "general";
     mdt.isList = true;
-    mdt.addObject();
-    const long int i = mdt.index();
-    mdt.setValue(EMDL::PARTICLE_NUMBER, pc, i);
+    mdt.setValue(EMDL::PARTICLE_NUMBER, pc, mdt.addObject());
 
     mdt.write(ofs);
     mdt.clear();

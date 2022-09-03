@@ -182,9 +182,9 @@ class particle_reposition_parameters {
                     Matrix1D<RFLOAT> offsets(3);
 
 
-                    MDcoord.addObject();
+                    const long int i = MDcoord.addObject();
                     MDcoord.setObject(optimiser.mydata.MDimg.getObject(ori_img_id));
-                    MDcoord.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, MDcoord.index());
+                    MDcoord.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, i);
 
                     xcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_X,            ori_img_id);
                     ycoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y,            ori_img_id);
@@ -382,9 +382,9 @@ class particle_reposition_parameters {
                 // Write out the new micrograph
                 Imic_out.write(fn_mic_out);
 
-                MDmics_out.addObject();
+                const long int i = MDmics_out.addObject();
                 MDmics_out.setObject(DFi.getObject());
-                MDmics_out.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, MDmics_out.index());
+                MDmics_out.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, i);
 
                 // Also write out a STAR file with the particles used
                 FileName fn_coord_out = fn_mic_out.withoutExtension()+ "_coord.star";

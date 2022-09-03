@@ -687,8 +687,7 @@ void Schedule::write(bool do_lock, FileName fn) {
     MetaDataTable MDgeneral;
     MDgeneral.name = "schedule_general";
     MDgeneral.isList = true;
-    MDgeneral.addObject();
-    const long int i = MDgeneral.index();
+    const long int i = MDgeneral.addObject();
     MDgeneral.setValue(EMDL::SCHEDULE_GENERAL_NAME, name, i);
     MDgeneral.setValue(EMDL::SCHEDULE_GENERAL_CURRENT_NODE, current_node, i);
     MDgeneral.write(fh);
@@ -697,8 +696,7 @@ void Schedule::write(bool do_lock, FileName fn) {
         MetaDataTable MD;
         MD.name = "schedule_floats";
         for (auto pair : scheduler_global_floats) {
-            MD.addObject();
-            const long int i = MD.index();
+            const long int i = MD.addObject();
             MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_NAME, pair.first, i);
             MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_VALUE, pair.second.value, i);
             MD.setValue(EMDL::SCHEDULE_VAR_FLOAT_ORI_VALUE, pair.second.original_value, i);
@@ -710,8 +708,7 @@ void Schedule::write(bool do_lock, FileName fn) {
         MetaDataTable MD;
         MD.name = "schedule_bools";
         for (auto pair : scheduler_global_bools) {
-            MD.addObject();
-            const long int i = MD.index();
+            const long int i = MD.addObject();
             MD.setValue(EMDL::SCHEDULE_VAR_BOOL_NAME, pair.first, i);
             MD.setValue(EMDL::SCHEDULE_VAR_BOOL_VALUE, pair.second.value, i);
             MD.setValue(EMDL::SCHEDULE_VAR_BOOL_ORI_VALUE, pair.second.original_value, i);
@@ -723,8 +720,7 @@ void Schedule::write(bool do_lock, FileName fn) {
         MetaDataTable MD;
         MD.name = "schedule_strings";
         for (auto pair : scheduler_global_strings) {
-            MD.addObject();
-            const long int i = MD.index();
+            const long int i = MD.addObject();
             MD.setValue(EMDL::SCHEDULE_VAR_STRING_NAME, pair.first, i);
             MD.setValue(EMDL::SCHEDULE_VAR_STRING_VALUE, pair.second.value, i);
             MD.setValue(EMDL::SCHEDULE_VAR_STRING_ORI_VALUE, pair.second.original_value, i);
@@ -736,8 +732,7 @@ void Schedule::write(bool do_lock, FileName fn) {
         MetaDataTable MD;
         MD.name = "schedule_operators";
         for (auto pair : scheduler_global_operators) {
-            MD.addObject();
-            const long int i = MD.index();
+            const long int i = MD.addObject();
             MD.setValue(EMDL::SCHEDULE_OPERATOR_NAME, pair.first, i);
             MD.setValue(EMDL::SCHEDULE_OPERATOR_TYPE, pair.second.type, i);
             MD.setValue(EMDL::SCHEDULE_OPERATOR_OUTPUT, pair.second.output , i);
@@ -751,8 +746,7 @@ void Schedule::write(bool do_lock, FileName fn) {
         MetaDataTable MD;
         MD.name = "schedule_jobs";
         for (auto pair : jobs) {
-            MD.addObject();
-            const long int i = MD.index();
+            const long int i = MD.addObject();
             MD.setValue(EMDL::SCHEDULE_JOB_ORI_NAME, pair.first, i);
             MD.setValue(EMDL::SCHEDULE_JOB_NAME, pair.second.current_name, i);
             MD.setValue(EMDL::SCHEDULE_JOB_MODE, pair.second.mode, i);

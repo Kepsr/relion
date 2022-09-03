@@ -224,13 +224,13 @@ class MetaDataTable {
     /* addObject()
      *  Adds a new object and initializes the defined labels with default values.
      *  Afterwards, 'current_object' points to the newly added object.*/
-    void addObject();
+    long int addObject();
 
     /* addObject(data)
      *  Adds a new object and sets its values to those from 'data'.
      *  The set of labels for the table is extended as necessary.
      *  Afterwards, 'current_object' points to the newly added object.*/
-    void addObject(MetaDataContainer* data);
+    long int addObject(MetaDataContainer* data);
 
     /* addValuesOfDefinedLabels(data)
      *  Adds a new object and sets the already defined values to those from 'data'.

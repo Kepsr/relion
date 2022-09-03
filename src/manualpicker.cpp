@@ -513,8 +513,7 @@ void ManualPicker::initialise() {
         std::vector<FileName> glob_fn_mics;
         fn_in.globFiles(glob_fn_mics);
         for (int imic = 0; imic < glob_fn_mics.size(); imic++) {
-            MDin.addObject();
-            MDin.setValue(EMDL::MICROGRAPH_NAME, glob_fn_mics[imic], MDin.index());
+            MDin.setValue(EMDL::MICROGRAPH_NAME, glob_fn_mics[imic], MDin.addObject());
         }
 
         if (global_angpix < 0.0) {

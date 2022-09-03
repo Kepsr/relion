@@ -390,8 +390,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
         img.setSamplingRateInHeader(model.pixel_size);
         img.write(fn_img);
 
-        DFo.addObject();
-        const long int i = DFo.index();
+        const long int i = DFo.addObject();
         DFo.setValue(EMDL::MLMODEL_REF_IMAGE, fn_img, i);
         fn_img = data.MDimg.getValue<std::string>(EMDL::IMAGE_NAME, part_id);
         DFo.setValue(EMDL::IMAGE_NAME, fn_img, i);

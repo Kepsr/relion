@@ -1072,12 +1072,10 @@ MultidimArray<RFLOAT> BackProjector::externalReconstruct(
     Image<RFLOAT>(weight).write(fn_out + "_external_reconstruct_weight.mrc");
 
     // Write out STAR file for input to external reconstruction program
-    MetaDataTable MDlist, MDtau;
-
+    MetaDataTable MDlist;
     MDlist.name = "external_reconstruct_general";
     MDlist.isList = true;
-    MDlist.addObject();
-    const long int i = MDlist.index();
+    const long int i = MDlist.addObject();
     MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, fn_out + "_external_reconstruct_data_real.mrc", i);
     MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, fn_out + "_external_reconstruct_data_imag.mrc", i);
     MDlist.setValue(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT,    fn_out + "_external_reconstruct_weight.mrc",    i);
@@ -1089,13 +1087,13 @@ MultidimArray<RFLOAT> BackProjector::externalReconstruct(
     MDlist.setValue(EMDL::MLMODEL_ORIGINAL_SIZE, ori_size, i);
     MDlist.setValue(EMDL::MLMODEL_CURRENT_SIZE, 2 * r_max, i);
 
+    MetaDataTable MDtau;
     MDtau.name = "external_reconstruct_tau2";
-    for (int ii = 0; ii < Xsize(tau2); ii++) {
+    for (int i = 0; i < Xsize(tau2); i++) {
         MDtau.addObject();
-        const long int i = MDtau.index();
-        MDtau.setValue(EMDL::SPECTRAL_IDX, ii, i);
-        MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2(ii), i);
-        MDtau.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves(ii), i);
+        MDtau.setValue(EMDL::SPECTRAL_IDX, i, i);
+        MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2(i), i);
+        MDtau.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves(i), i);
     }
 
     {

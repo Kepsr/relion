@@ -153,8 +153,7 @@ JobOption::JobOption(
 }
 
 void JobOption::writeToMetaDataTable(MetaDataTable& MD) const {
-    MD.addObject();
-    const long int i = MD.index();
+    const long int i = MD.addObject();
     MD.setValue(EMDL::JOBOPTION_VARIABLE, variable, i);
     MD.setValue(EMDL::JOBOPTION_VALUE,    value,    i);
 }
@@ -425,8 +424,7 @@ void RelionJob::write(const string &fn) {
     MetaDataTable MDhead;
     MDhead.name = "job";
     MDhead.isList = true;
-    MDhead.addObject();
-    const long int i = MDhead.index();
+    const long int i = MDhead.addObject();
     MDhead.setValue(EMDL::JOB_TYPE, type, i);
     MDhead.setValue(EMDL::JOB_IS_CONTINUE, is_continue, i);
     // TODO: add name for output directories!!! make a std:;map between type and name for all options!

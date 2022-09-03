@@ -451,8 +451,7 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                 int xpos = num1 + num3 / 2;
                 int ypos = num2 + num4 / 2;
 
-                MD.addObject();
-                const long int i = MD.index();
+                const long int i = MD.addObject();
                 MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xpos, i);
                 MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) ypos, i);
             } else {
@@ -469,8 +468,7 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                         sscanf(words[0].c_str(), "%d", &num1) &&
                         sscanf(words[1].c_str(), "%d", &num2)
                     ) {
-                        MD.addObject();
-                        const long int i = MD.index();
+                        const long int i = MD.addObject();
                         MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1, i);
                         MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2, i);
 
@@ -488,8 +486,7 @@ void Preprocessing::readCoordinates(FileName fn_coord, MetaDataTable &MD) {
                     int num2 = textToInteger(words[1]);
                     int num3;
 
-                    MD.addObject();
-                    const long int i = MD.index();
+                    const long int i = MD.addObject();
                     MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) num1, i);
                     MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) num2, i);
                     // It could also be a X,Y,Z coordinate...

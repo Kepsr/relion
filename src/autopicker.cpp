@@ -860,8 +860,7 @@ void AutoPicker::generatePDFLogfile() {
                 RFLOAT avg_fom = mean(MD, EMDL::PARTICLE_AUTOPICK_FOM, nr_pick);
 
                 // Abuse MetadataTable to conveniently make histograms and value-plots
-                MDresult.addObject();
-                const long int i = MDresult.index();
+                const long int i = MDresult.addObject();
                 MDresult.setValue(EMDL::MICROGRAPH_NAME, fn_ori_micrographs[imic], i);
                 MDresult.setValue(EMDL::PARTICLE_AUTOPICK_FOM, avg_fom, i);
                 MDresult.setValue(EMDL::MLMODEL_GROUP_NR_PARTICLES, nr_pick, i);
@@ -1265,11 +1264,11 @@ void AutoPicker::pickAmyloids(
 
                 RFLOAT xval = (helix[iseg].x / scale) - (RFLOAT)(Xmipp::init(micrograph_xsize));
                 RFLOAT yval = (helix[iseg].y / scale) - (RFLOAT)(Xmipp::init(micrograph_ysize));
-                MDout.addObject();
-                MDout.setValue(EMDL::IMAGE_COORD_X, xval);
-                MDout.setValue(EMDL::IMAGE_COORD_Y, yval);
-                MDout.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, ihelix+1); // start counting at 1
-                MDout.setValue(EMDL::ORIENT_PSI_PRIOR, helix[iseg].psi);
+                const long int i = MDout.addObject();
+                MDout.setValue(EMDL::IMAGE_COORD_X, xval, i);
+                MDout.setValue(EMDL::IMAGE_COORD_Y, yval, i);
+                MDout.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, ihelix+1, i); // start counting at 1
+                MDout.setValue(EMDL::ORIENT_PSI_PRIOR, helix[iseg].psi, i);
                 */
 
             // Distance to next segment
@@ -1282,8 +1281,7 @@ void AutoPicker::pickAmyloids(
                 RFLOAT xval = helix[iseg].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize) + frac * dx;
                 RFLOAT yval = helix[iseg].y / scale - (RFLOAT) Xmipp::init(micrograph_ysize) + frac * dy;
 
-                MDout.addObject();
-                const long int i = MDout.index();
+                const long int i = MDout.addObject();
                 MDout.setValue(EMDL::IMAGE_COORD_X, xval, i);
                 MDout.setValue(EMDL::IMAGE_COORD_Y, yval, i);
                 MDout.setValue(EMDL::PARTICLE_AUTOPICK_FOM, helix[iseg].fom, i);
@@ -2212,10 +2210,9 @@ void AutoPicker::exportHelicalTubes(
             int iref = Mclass.elem(x_int, y_int);
             RFLOAT fom = Mccf.elem(x_int, y_int);
 
-            MDout.addObject();
+            const long int i = MDout.addObject();
             const RFLOAT xval = tube_coord_list[itube][icoord].x / scale - (RFLOAT) Xmipp::init(micrograph_xsize);
             const RFLOAT yval = tube_coord_list[itube][icoord].y / scale - (RFLOAT) Xmipp::init(micrograph_ysize);
-            const long int i = MDout.index();
             MDout.setValue(EMDL::IMAGE_COORD_X, xval, i);
             MDout.setValue(EMDL::IMAGE_COORD_Y, yval, i);
             MDout.setValue(EMDL::PARTICLE_CLASS, iref + 1, i); // start counting at 1
@@ -2459,8 +2456,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
         const long int imax = Xmipp_indices[0], jmax = Xmipp_indices[1];
         const RFLOAT fom = Mbest_fom.elem(imax, jmax);
         if (fom < my_upper_limit) {
-            MDout.addObject();
-            const long int i = MDout.index();
+            const long int i = MDout.addObject();
             const long int xx = imax - Xmipp::init((float) micrograph_xsize * scale);
             const long int yy = jmax - Xmipp::init((float) micrograph_ysize * scale);
             MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) xx / scale, i);
@@ -3022,8 +3018,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         // Write out a STAR file with the coordinates
         MetaDataTable MDout;
         for (const Peak &peak : peaks) {
-            MDout.addObject();
-            const long int i = MDout.index();
+            const long int i = MDout.addObject();
             MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) peak.x / scale, i);
             MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) peak.y / scale, i);
             MDout.setValue(EMDL::PARTICLE_CLASS,        peak.ref + 1, i); // start counting at 1
