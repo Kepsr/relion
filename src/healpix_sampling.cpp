@@ -223,8 +223,7 @@ void HealpixSampling::write(FileName fn_out) {
 
     MetaDataTable MD;
     MD.isList = true;
-    MD.addObject();
-    const long int i = MD.index();
+    const long int i = MD.addObject();
     MD.name = "sampling_general";
     MD.setValue(EMDL::SAMPLING_IS_3D, is_3D, i);
     MD.setValue(EMDL::SAMPLING_IS_3D_TRANS, is_3d_trans, i);
@@ -257,8 +256,7 @@ void HealpixSampling::write(FileName fn_out) {
         for (long int idir = 0; idir < NrDirections(); idir++) {
             RFLOAT rot, tilt;
             getDirection(idir, rot, tilt);
-            MD.addObject();
-            const long int i = MD.index();
+            const long int i = MD.addObject();
             MD.setValue(EMDL::ORIENT_ROT,  rot,  i);
             MD.setValue(EMDL::ORIENT_TILT, tilt, i);
         }

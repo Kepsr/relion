@@ -35,21 +35,15 @@ int main(int argc, char *argv[]) {
         optGrTransl[i].resize(ogc);
 
         for (int g = 0; g < ogc; g++) {
-            opticsOut.addObject(obsModels[i].opticsMdt.getObject(g));
-
-            const int ogNew = opticsOut.numberOfObjects() - 1;
-
+            const int ogNew = opticsOut.addObject(obsModels[i].opticsMdt.getObject(g));
             opticsOut.setValue(EMDL::IMAGE_OPTICS_GROUP, ogNew + 1, ogNew);
-
             optGrTransl[i][g] = ogNew;
         }
 
         const int pc = particleMdts[i].numberOfObjects();
 
         for (int p = 0; p < pc; p++) {
-            particleOut.addObject(particleMdts[i].getObject(p));
-
-            const int pNew = particleOut.numberOfObjects() - 1;
+            const int pNew = particleOut.addObject(particleMdts[i].getObject(p));
             int og0 = particleOut.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, pNew) - 1;
             int og1 = optGrTransl[i][og0];
             particleOut.setValue(EMDL::IMAGE_OPTICS_GROUP, og1 + 1, pNew);

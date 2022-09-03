@@ -146,7 +146,7 @@ void parseDMFormatMasksAndOperators(
 void readRelionFormatMasksAndOperators(
     FileName fn_info,
     std::vector<FileName> &fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT> > > &ops,
+    std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
     RFLOAT angpix = 1.0,
     bool verb = false
 );
@@ -154,8 +154,8 @@ void readRelionFormatMasksAndOperators(
 void readRelionFormatMasksWithoutOperators(
     FileName fn_info,
     std::vector<FileName> &fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT> > > &ops,
-    std::vector<std::vector<FileName> > &op_masks,
+    std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
+    std::vector<std::vector<FileName>> &op_masks,
     bool all_angular_search_ranges_are_global = true,
     bool verb = false
 );
@@ -163,51 +163,52 @@ void readRelionFormatMasksWithoutOperators(
 void writeRelionFormatMasksAndOperators(
     FileName fn_info,
     const std::vector<FileName> &fn_mask_list,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > > &ops,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
     RFLOAT angpix = 1.0
 );
 
 void writeRelionFormatLocalSearchOperatorResults(
     FileName fn_out,
-    const std::vector<Matrix1D<RFLOAT> > &op_samplings,
+    const std::vector<Matrix1D<RFLOAT>> &op_samplings,
     RFLOAT angpix = 1.0
 );
 
 void readDMFormatMasksAndOperators(
-        FileName fn_info,
-        std::vector<FileName> &fn_mask_list,
-        std::vector<std::vector<Matrix1D<RFLOAT> > > &op_list,
-        RFLOAT angpix = 1.0,
-        bool verb = false);
+    FileName fn_info,
+    std::vector<FileName> &fn_mask_list,
+    std::vector<std::vector<Matrix1D<RFLOAT>>> &op_list,
+    RFLOAT angpix = 1.0,
+    bool verb = false
+);
 
 void writeDMFormatMasksAndOperators(
     FileName fn_info,
     const std::vector<FileName> &fn_mask_list,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > > &ops,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
     RFLOAT angpix = 1.0
 );
 
 void duplicateLocalSymmetry(
     MultidimArray<RFLOAT> &out_map,
     const MultidimArray<RFLOAT> &ori_map,
-    const std::vector<FileName> fn_masks,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > > ops,
+    const std::vector<FileName> &fn_masks,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
     bool duplicate_masks_only = false
 );
 
 void applyLocalSymmetry(
     MultidimArray<RFLOAT> &sym_map,
     const MultidimArray<RFLOAT> &ori_map,
-    const std::vector<FileName> fn_masks,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > > ops,
+    const std::vector<FileName> &fn_masks,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
     RFLOAT radius = -1.0,
     RFLOAT cosine_width_pix = 5.0
 );
 
 void applyLocalSymmetry(
     MultidimArray<RFLOAT> &map,
-    const std::vector<FileName> fn_masks,
-    const std::vector<std::vector<Matrix1D<RFLOAT> > > ops,
+    const std::vector<FileName> &fn_masks,
+    const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
     RFLOAT radius = -1.0,
     RFLOAT cosine_width_pix = 5.0
 );
@@ -224,7 +225,7 @@ bool compareOperatorsByCC(const Matrix1D<RFLOAT> &lhs, const Matrix1D<RFLOAT> &r
 void getLocalSearchOperatorSamplings(
     const Matrix1D<RFLOAT> &op_old,
     const Matrix1D<RFLOAT> &op_search_ranges,
-    std::vector<Matrix1D<RFLOAT> > &op_samplings,
+    std::vector<Matrix1D<RFLOAT>> &op_samplings,
     RFLOAT ang_search_step = 1.0,
     RFLOAT trans_search_step = 1.0,
     bool use_healpix = false,
@@ -235,7 +236,7 @@ void calculateOperatorCC(
     const MultidimArray<RFLOAT> &src,
     const MultidimArray<RFLOAT> &dest,
     const MultidimArray<RFLOAT> &mask,
-    std::vector<Matrix1D<RFLOAT> > &op_samplings,
+    std::vector<Matrix1D<RFLOAT>> &op_samplings,
     bool do_sort = true, bool verb = true
 );
 

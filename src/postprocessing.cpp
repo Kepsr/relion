@@ -599,8 +599,7 @@ void Postprocessing::writeOutput() {
 
     MDlist.isList = true;
     MDlist.name = "general";
-    MDlist.addObject();
-    const long int i = MDlist.index();
+    const long int i = MDlist.addObject();
     MDlist.setValue(EMDL::POSTPROCESS_FINAL_RESOLUTION, global_resol, i);
     MDlist.setValue(EMDL::POSTPROCESS_BFACTOR, global_bfactor, i);
     MDlist.setValue(EMDL::POSTPROCESS_UNFIL_HALFMAP1, fn_I1, i);
@@ -700,8 +699,7 @@ void Postprocessing::writeOutput() {
         if (do_fsc_weighting) {
             MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y, i);
             if (guinierweighted[i].y > -99.0) {
-                MDextra1.addObject();
-                const long int index = MDextra2.index();
+                const long int index = MDextra1.addObject();
                 MDextra1.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,  guinierin[i].x, index);
                 MDextra1.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED, guinierweighted[i].y, index);
             }
@@ -709,8 +707,7 @@ void Postprocessing::writeOutput() {
         if (do_auto_bfac || abs(adhoc_bfac) > 0.0) {
             MDguinier.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, guiniersharpen[i].y, i);
             if (guiniersharpen[i].y > -99.0) {
-                MDextra2.addObject();
-                const long int index = MDextra2.index();
+                const long int index = MDextra2.addObject();
                 MDextra2.setValue(EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,   guinierin[i].x, index);
                 MDextra2.setValue(EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED, guiniersharpen[i].y, index);
             }

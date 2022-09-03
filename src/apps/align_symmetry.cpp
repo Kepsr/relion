@@ -203,8 +203,7 @@ class align_symmetry {
         for (int k = -search_range; k <= search_range; k++) {
             if (only_rot && k != 0) continue;
 
-            MDang.addObject();
-            const long int index = MDang.index();
+            const long int index = MDang.addObject();
             MDang.setValue(EMDL::ORIENT_ROT,  rot  + i * search_step, index);
             MDang.setValue(EMDL::ORIENT_TILT, tilt + j * search_step, index);
             MDang.setValue(EMDL::ORIENT_PSI,  psi  + k * search_range, index);

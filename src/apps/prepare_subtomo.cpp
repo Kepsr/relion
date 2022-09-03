@@ -632,8 +632,7 @@ class prepare_subtomo {
                         //#endif
                         res = system(command.c_str());
                     }
-                    MD_ctf.addObject();
-                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.index());
+                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.addObject());
 
                     // Command 2
                     fn_sec = dir_ctf + "/" + (fn_trial.afterLastOf("/")).withoutExtension() + "_image" + floatToString(tilts[ida]) + "_" + integerToString(2 * ida + 1) + ".mrc";
@@ -646,8 +645,7 @@ class prepare_subtomo {
                         // #endif
                         res = system(command.c_str());
                     }
-                    MD_ctf.addObject();
-                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.index());
+                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.addObject());
                 } else {
                     fn_sec = dir_ctf + "/" + (fn_stack.afterLastOf("/")).withoutExtension() + "_image" + floatToString(tilts[ida]) + "_" + integerToString(ida) + ".mrc";
                     if (continue_old && exists(fn_sec)) {} else {
@@ -659,8 +657,7 @@ class prepare_subtomo {
                         // #endif
                         res = system(command.c_str());
                     }
-                    MD_ctf.addObject();
-                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.index());
+                    MD_ctf.setValue(EMDL::MICROGRAPH_NAME, fn_sec, MD_ctf.addObject());
                 }
             }
             MD_ctf.write(fn_ctf);
@@ -831,8 +828,7 @@ class prepare_subtomo {
                     if (words.size() != 3)
                         REPORT_ERROR("Invalid input file: " + fn_coords);
 
-                    MD_coords.addObject();
-                    const long int i = MD_coords.index();
+                    const long int i = MD_coords.addObject();
                     MD_coords.setValue(EMDL::IMAGE_COORD_X, textToFloat(words[0]), i);
                     MD_coords.setValue(EMDL::IMAGE_COORD_Y, textToFloat(words[1]), i);
                     MD_coords.setValue(EMDL::IMAGE_COORD_Z, textToFloat(words[2]), i);
@@ -934,8 +930,7 @@ class prepare_subtomo {
                     }
                     dose_w = cur_accu_dose * bfactor; // TODO: check this bfactor. T think it is fine.
 
-                    MD_this_subtomo.addObject();
-                    const long int i = MD_this_subtomo.index();
+                    const long int i = MD_this_subtomo.addObject();
                     MD_this_subtomo.setValue(EMDL::CTF_DEFOCUSU, ptcldefocus, i);
                     MD_this_subtomo.setValue(EMDL::CTF_VOLTAGE, Voltage, i);
                     MD_this_subtomo.setValue(EMDL::CTF_CS, Cs, i);
@@ -957,11 +952,9 @@ class prepare_subtomo {
 
                 // Write a new object to MD_part
                 FileName fn_extract_part = "Extract/" + fn_extract_job_alias + "/" + fn_tomo.withoutExtension() + integerToString(nr_subtomo + 1, 6, '0') + ".mrc";
-                if (fn_coords.getExtension() == "star")
-                    MD_part.addObject(MD_coords.getObject()); // Append extra information from MD_coords
-                else
+                const long int i = fn_coords.getExtension() == "star" ?
+                    MD_part.addObject(MD_coords.getObject()) : // Append extra information from MD_coords
                     MD_part.addObject(); // Otherwise, add an empty object
-                const long int i = MD_part.index();
                 MD_part.setValue(EMDL::MICROGRAPH_NAME, fn_tomo, i);
                 MD_part.setValue(EMDL::IMAGE_COORD_X, xx, i);
                 MD_part.setValue(EMDL::IMAGE_COORD_Y, yy, i);

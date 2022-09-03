@@ -162,8 +162,7 @@ void Micrograph::write(FileName filename) {
     MetaDataTable MD;
     MD.name = "general";
     MD.isList = true;
-    MD.addObject();
-    const long int i = MD.index();
+    const long int i = MD.addObject();
     MD.setValue(EMDL::IMAGE_SIZE_X, width, i);
     MD.setValue(EMDL::IMAGE_SIZE_Y, height, i);
     MD.setValue(EMDL::IMAGE_SIZE_Z, n_frames, i);
@@ -225,8 +224,7 @@ void Micrograph::write(FileName filename) {
         REPORT_ERROR("Logic error: hotpixelX.size() != hotpixelY.size()");
 
     for (int i = 0, ilim = hotpixelX.size(); i < ilim; i++) {
-        MD.addObject();
-        const long int index = MD.index();
+        const long int index = MD.addObject();
         MD.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) hotpixelX[i], index);
         MD.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) hotpixelY[i], index);
     }
@@ -245,8 +243,7 @@ void Micrograph::write(FileName filename) {
         REPORT_ERROR("Logic error: inconsistent local trajectory");
     }
     for (int i = 0; i < n_local_trajectory; i++) {
-        MD.addObject();
-        const long int index = MD.index();
+        const long int index = MD.addObject();
         MD.setValue(EMDL::MICROGRAPH_FRAME_NUMBER, (int) patchZ[i], index);
         MD.setValue(EMDL::IMAGE_COORD_X, patchX[i], index);
         MD.setValue(EMDL::IMAGE_COORD_Y, patchY[i], index);

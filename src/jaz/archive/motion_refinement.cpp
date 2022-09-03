@@ -619,8 +619,7 @@ void MotionRefinement::writeTracks(
 
     mdt.name = "general";
     mdt.isList = true;
-    mdt.addObject();
-    mdt.setValue(EMDL::PARTICLE_NUMBER, pc);
+    mdt.setValue(EMDL::PARTICLE_NUMBER, pc, mdt.addObject());
 
     mdt.write(ofs);
     mdt.clear();
@@ -630,8 +629,8 @@ void MotionRefinement::writeTracks(
 
         for (int f = 0; f < fc; f++) {
             mdt.addObject();
-            mdt.setValue(EMDL::ORIENT_ORIGIN_X, tracks[p][f].x);
-            mdt.setValue(EMDL::ORIENT_ORIGIN_Y, tracks[p][f].y);
+            mdt.setValue(EMDL::ORIENT_ORIGIN_X, tracks[p][f].x, f);
+            mdt.setValue(EMDL::ORIENT_ORIGIN_Y, tracks[p][f].y, f);
         }
 
         mdt.write(ofs);

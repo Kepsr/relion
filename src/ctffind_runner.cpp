@@ -403,8 +403,7 @@ void CtffindRunner::joinCtffindResults() {
         } else {
             FileName fn_root = getOutputFileWithNewUniqueDate(fn_microot, fn_out);
             FileName fn_ctf = fn_root + ".ctf:mrc";
-            MDctf.addObject();
-            const long int i = MDctf.index();
+            const long int i = MDctf.addObject();
 
             if (do_use_without_doseweighting)
                 MDctf.setValue(EMDL::MICROGRAPH_NAME_WODOSE, fn_micrographs_ctf_all[imic], i);

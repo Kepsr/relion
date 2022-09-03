@@ -408,8 +408,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
     // Write the output STAR file
     MetaDataTable MDlog;
     MDlog.isList = true;
-    MDlog.addObject();
-    const long int i = MDlog.index();
+    const long int i = MDlog.addObject();
     MDlog.name = "model_general";
     MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY, ref_dim, i);
     MDlog.setValue(EMDL::MLMODEL_DIMENSIONALITY_DATA, data_dim, i);
@@ -569,8 +568,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
                 "model_pdf_orient_body_"  + integerToString(iclass + 1) :
                 "model_pdf_orient_class_" + integerToString(iclass + 1) ;
             for (RFLOAT x : pdf_direction[iclass]) {
-                MDclass.addObject();
-                MDclass.setValue(EMDL::MLMODEL_PDF_ORIENT, x, MDclass.index());
+                MDclass.setValue(EMDL::MLMODEL_PDF_ORIENT, x, MDclass.addObject());
             }
             MDclass.write(fh);
         }

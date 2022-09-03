@@ -1077,8 +1077,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         // Write out a STAR file with the coordinates
         MetaDataTable MDout;
         for (const auto &peak : peaks) {
-            MDout.addObject();
-            const long int i = MDout.index();
+            const long int i = MDout.addObject();
             MDout.setValue(EMDL::IMAGE_COORD_X, (RFLOAT) (peak.x) / scale, i);
             MDout.setValue(EMDL::IMAGE_COORD_Y, (RFLOAT) (peak.y) / scale, i);
             MDout.setValue(EMDL::PARTICLE_CLASS, peak.ref + 1, i); // start counting at 1

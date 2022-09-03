@@ -638,22 +638,19 @@ class image_handler_parameters {
             input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
         } else if (input_is_stack) {
             if (bin_avg > 0 || avg_first >= 0 && avg_last >= 0) {
-                MD.addObject();
-                MD.setValue(EMDL::IMAGE_NAME, fn_in, MD.index());
+                MD.setValue(EMDL::IMAGE_NAME, fn_in, MD.addObject());
             } else {
                 // Read the header to get the number of images inside the stack and generate that many lines in the MD
                 Image<RFLOAT> tmp;
                 tmp.read(fn_in, false); // false means do not read image now, only header
                 for (int i = 1; i <= Nsize(tmp()); i++) {
-                    MD.addObject();
                     const auto fn_tmp = FileName::compose(i, fn_in);
-                    MD.setValue(EMDL::IMAGE_NAME, fn_tmp, MD.index());
+                    MD.setValue(EMDL::IMAGE_NAME, fn_tmp, MD.addObject());
                 }
             }
         } else {
             // Just individual image input
-            MD.addObject();
-            MD.setValue(EMDL::IMAGE_NAME, fn_in, MD.index());
+            MD.setValue(EMDL::IMAGE_NAME, fn_in, MD.addObject());
         }
 
         int i_img = 0;

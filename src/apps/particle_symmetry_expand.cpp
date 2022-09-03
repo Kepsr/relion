@@ -142,9 +142,8 @@ class particle_symmetry_expand_parameters {
                         RFLOAT xp = x + xxt * cos(radians(-psi));
                         RFLOAT yp = y + xxt * sin(radians(-psi));
                         rotp = rot - z_pos * twist;
-                        DFo.addObject();
+                        const long int i = DFo.addObject();
                         DFo.setObject(DFi.getObject());
-                        const long int i = DFo.index();
                         DFo.setValue(EMDL::ORIENT_ROT, rotp, i);
                         DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xp, i);
                         DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yp, i);
@@ -160,8 +159,7 @@ class particle_symmetry_expand_parameters {
                     L.resize(3, 3); // Erase last row and column
                     R.resize(3, 3); // as only the relative orientation is useful and not the translation
                     angles_t angles = Euler::apply_transf(L, R, rot, tilt, psi);
-                    DFo.addObject();
-                    const long int i = DFo.index();
+                    const long int i = DFo.addObject();
                     DFo.setObject(DFi.getObject());
                     DFo.setValue(EMDL::ORIENT_ROT,  angles.rot, i);
                     DFo.setValue(EMDL::ORIENT_TILT, angles.tilt, i);

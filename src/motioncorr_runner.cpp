@@ -750,8 +750,7 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
         // For output STAR file
         FileName fn_avg = getOutputFileNames(fn_ori_micrographs[imic]);
         if (exists(fn_avg)) {
-            MDavg.addObject();
-            const long int i = MDavg.index();
+            const long int i = MDavg.addObject();
             if (do_dose_weighting && save_noDW) {
                 const FileName fn_avg_wodose = fn_avg.withoutExtension() + "_noDW.mrc";
                 MDavg.setValue(EMDL::MICROGRAPH_NAME_WODOSE, fn_avg_wodose, i);

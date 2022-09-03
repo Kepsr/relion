@@ -1209,10 +1209,9 @@ void multiViewerCanvas::saveTrainingSet() {
 
     // Now save the selected images in a MetaData file.
     MetaDataTable MDout;
-    int nsel = 0;
     for (const auto *box : boxes) {
-        MDout.addObject(box->MDimg.getObject());
-        MDout.setValue(EMDL::SELECTED, box->selected, MDout.index());
+        const long int i = MDout.addObject(box->MDimg.getObject());
+        MDout.setValue(EMDL::SELECTED, box->selected, i);
     }
 
     // Maintain the original image ordering
@@ -1596,8 +1595,7 @@ int pickerViewerCanvas::handle(int ev) {
                 // If there were already entries in MDcoords, then copy the last one.
                 // This will take care of re-picking in coordinate files from previous refinements
                 long int last_idx = MDcoords.numberOfObjects() - 1;
-                MDcoords.addObject(MDcoords.getObject(last_idx));
-                const long int i = MDcoords.index();
+                const long int i = MDcoords.addObject(MDcoords.getObject(last_idx));
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ROT);
                     MDcoords.setValue(EMDL::ORIENT_ROT, -999.0, i);
@@ -2281,17 +2279,15 @@ void Displayer::initialise() {
     if (!do_class && (do_apply_orient || lowpass > 0 || highpass > 0)) {
         if (fn_in.isStarFile()) {
             // As of v3.1 the input STAR files should always store the pixel size, no more check necessary...
-            if (do_ignore_optics) {
-                if (angpix > 0.0) {
-                    obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, obsModel.opticsMdt.index());
-                }
+            if (do_ignore_optics && angpix > 0.0) {
+                obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, obsModel.opticsMdt.index());
             }
         } else {
             // if not a STAR file: always need command-line input for pixel
-            obsModel.opticsMdt.addObject();
+            const long int i = obsModel.opticsMdt.addObject();
             if (angpix > 0.0) {
                 std::cout << " Using pixel size from command-line input of " << angpix << " Angstroms" << std::endl;
-                obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, obsModel.opticsMdt.index());
+                obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, i);
             } else {
                 REPORT_ERROR("Displayer::initialise ERROR: you provided a low- or highpass filter in Angstroms, so please also provide --angpix.");
             }
@@ -2493,8 +2489,7 @@ void Displayer::run() {
         if (Nsize(img()) > 1) {
             for (int n = 0; n < Nsize(img()); n++) {
                 const auto fn_tmp = FileName::compose(n + 1, fn_in);
-                MDin.addObject();
-                const long int i = MDin.index();
+                const long int i = MDin.addObject();
                 MDin.setValue(EMDL::IMAGE_NAME, fn_tmp, i);
                 MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             }
@@ -2522,8 +2517,7 @@ void Displayer::run() {
             // Trick MD with :mrcs extension....
             for (int n = 0; n < Zsize(img()); n++) {
                 const auto fn_tmp = FileName::compose(n + 1, fn_in) + ":mrcs";
-                MDin.addObject();
-                const long int i = MDin.index();
+                const long int i = MDin.addObject();
                 MDin.setValue(EMDL::IMAGE_NAME, fn_tmp, i);
                 MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             }
@@ -2543,8 +2537,7 @@ void Displayer::run() {
             if (highpass > 0.0)
                 highPassFilterMap(img(), highpass, angpix);
 
-            MDin.addObject();
-            const long int i = MDin.index();
+            const long int i = MDin.addObject();
             MDin.setValue(EMDL::IMAGE_NAME, fn_in, i);
             MDin.setValue(EMDL::IMAGE_OPTICS_GROUP, 1, i);
             RFLOAT new_scale = scale;

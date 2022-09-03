@@ -313,16 +313,12 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         std::ifstream f (fn_in);
         std::string line;
         while (std::getline(f, line)) {
-            MD.addObject();
-            const long int i = MD.index();
-            MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, line, i);
+            MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, line, MD.addObject());
         }
 
         fn_first = MD.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME, 0);
     } else {
-        MD.addObject();
-        const long int i = MD.index();
-        MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_in, i);
+        MD.setValue(EMDL::MICROGRAPH_MOVIE_NAME, fn_in, MD.addObject());
         fn_first = fn_in;
     }
 

@@ -81,8 +81,7 @@ int main(int argc, char *argv[]) {
             }
 
             if (qBest >= 0) {
-                out.addObject(src->getObject(qBest));
-                const int qNew = out.numberOfObjects() - 1;
+                const int qNew = out.addObject(src->getObject(qBest));
 
                 int randSubsetSrc = src->       getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, qBest);
                 int randSubsetRef = refByMic[m].getValue<int>(EMDL::PARTICLE_RANDOM_SUBSET, p);

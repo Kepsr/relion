@@ -1782,8 +1782,7 @@ void convertHelicalTubeCoordsToMetaDataTable(
                 }
                 #endif
 
-                MD_out.addObject();
-                const long int i = MD_out.index();
+                const long int i = MD_out.addObject();
                 MD_out.setValue(EMDL::IMAGE_COORD_X, xp, i);
                 MD_out.setValue(EMDL::IMAGE_COORD_Y, yp, i);
                 MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, tube_id + 1, i);
@@ -2154,8 +2153,7 @@ void convertHelicalSegmentCoordsToMetaDataTable(
         }
         #endif
         nr_segments++;
-        MD_out.addObject(MD_in.getObject());
-        const long int i = MD_out.index();
+        const long int i = MD_out.addObject(MD_in.getObject());
 
         /// TODO: check whether there is a bug...
         MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, i);
@@ -2245,8 +2243,7 @@ void convertXimdispHelicalSegmentCoordsToMetaDataTable(
         #endif
 
         nr_segments++;
-        MD_out.addObject();
-        const long int i = MD_out.index();
+        const long int i = MD_out.addObject();
         MD_out.setValue(EMDL::IMAGE_COORD_X, x, i);
         MD_out.setValue(EMDL::IMAGE_COORD_Y, y, i);
         MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
@@ -2342,8 +2339,7 @@ void convertXimdispHelicalTubeCoordsToMetaDataTable(
         dy = step_pix * sin(psi_rad);
 
         if (!cut_into_segments) {
-            MD_out.addObject();
-            const long int i = MD_out.index();
+            const long int i = MD_out.addObject();
             MD_out.setValue(EMDL::IMAGE_COORD_X, (x1 + x2) / 2.0, i);
             MD_out.setValue(EMDL::IMAGE_COORD_Y, (y1 + y2) / 2.0, i);
             MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
@@ -2381,8 +2377,7 @@ void convertXimdispHelicalTubeCoordsToMetaDataTable(
                 }
                 #endif
 
-                MD_out.addObject();
-                const long int i = MD_out.index();
+                const long int i = MD_out.addObject();
                 MD_out.setValue(EMDL::IMAGE_COORD_X, xp, i);
                 MD_out.setValue(EMDL::IMAGE_COORD_Y, yp, i);
                 MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
@@ -2494,8 +2489,7 @@ void convertEmanHelicalSegmentCoordsToMetaDataTable(
         #endif
 
         nr_segments++;
-        MD_out.addObject();
-        const long int i = MD_out.index();
+        const long int i = MD_out.addObject();
         MD_out.setValue(EMDL::IMAGE_COORD_X, x, i);
         MD_out.setValue(EMDL::IMAGE_COORD_Y, y, i);
         MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
@@ -2611,8 +2605,7 @@ void convertEmanHelicalTubeCoordsToMetaDataTable(
         y2 -= (width1 / 2.0 - trans_offset) * sin(psi_rad);
 
         if (!cut_into_segments) {
-            MD_out.addObject();
-            const long int i = MD_out.index();
+            const long int i = MD_out.addObject();
             MD_out.setValue(EMDL::IMAGE_COORD_X, ((x1 + x2) / 2.0), i);
             MD_out.setValue(EMDL::IMAGE_COORD_Y, ((y1 + y2) / 2.0), i);
             MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
@@ -2650,8 +2643,7 @@ void convertEmanHelicalTubeCoordsToMetaDataTable(
                 }
                 #endif
 
-                MD_out.addObject();
-                const long int i = MD_out.index();
+                const long int i = MD_out.addObject();
                 MD_out.setValue(EMDL::IMAGE_COORD_X, xp, i);
                 MD_out.setValue(EMDL::IMAGE_COORD_Y, yp, i);
                 MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, nr_tubes, i);
@@ -3425,8 +3417,7 @@ void simulateHelicalSegments(
             );
         }
 
-        MD.addObject();
-        const long int i = MD.index();
+        const long int i = MD.addObject();
         MD.setValue(EMDL::ORIENT_ROT, rot, i);
         MD.setValue(EMDL::ORIENT_TILT, new_tilt, i);
         MD.setValue(EMDL::ORIENT_PSI, new_psi, i);
@@ -4238,8 +4229,7 @@ void plotLatticePoints(MetaDataTable& MD, int x1, int y1, int x2, int y2) {
     MD.addLabel(EMDL::IMAGE_COORD_Y);
     for (int i = -10; i <= 10; i++)
     for (int j = -10; j <= 10; j++) {
-        MD.addObject();
-        const long int index = MD.index();
+        const long int index = MD.addObject();
         MD.setValue(EMDL::IMAGE_COORD_X, RFLOAT(i * x1 + j * x2), index);
         MD.setValue(EMDL::IMAGE_COORD_Y, RFLOAT(i * y1 + j * y2), index);
     }
@@ -4267,8 +4257,7 @@ void grabParticleCoordinates(FileName& fn_in, FileName& fn_out) {
         if (contain_z_coord)
         z = MD_in.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
 
-        MD_out.addObject();
-        const long int i = MD_out.index();
+        const long int i = MD_out.addObject();
         MD_out.setValue(EMDL::IMAGE_COORD_X, x, i);
         MD_out.setValue(EMDL::IMAGE_COORD_Y, y, i);
         if (contain_z_coord)
@@ -4638,8 +4627,7 @@ void HermiteInterpolateOne3DHelicalFilament(
 
                 // Add this segment to the list
                 nr_segments++;
-                MD_out.addObject();
-                const long int i = MD_out.index();
+                const long int i = MD_out.addObject();
                 MD_out.setValue(EMDL::IMAGE_COORD_X, xb, i);
                 MD_out.setValue(EMDL::IMAGE_COORD_Y, yb, i);
                 MD_out.setValue(EMDL::IMAGE_COORD_Z, zb, i);
@@ -4930,36 +4918,32 @@ void Interpolate3DCurves(
         MD_in.addLabel(EMDL::IMAGE_COORD_Y);
         MD_in.addLabel(EMDL::IMAGE_COORD_Z);
         // Mode 1 - Just use the manually picked points as control points
-        //for (int id = 0; id < xlist.size(); id++)
-        //{
-        //	MD_in.addObject();
-        //	MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[id]);
-        //	MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[id]);
-        //	MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[id]);
-        //}
+        // for (int id = 0; id < xlist.size(); id++) {
+        //     const long int i = MD_in.addObject();
+        //     MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[id], i);
+        //     MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[id], i);
+        //     MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[id], i);
+        // }
         // Mode 2 - Manually picked points are zigzag. Choose middle points of short line segments as control points.
         // Generate smooth curves
         // However, tilt angles of the segments around start- and end- points of the filaments deviate more from ~90 degrees.
         for (int id = 0; id < xlist.size(); id++) {
             // Start point
             if (id == 0) {
-                MD_in.addObject();
-                const long int i = MD_in.index();
+                const long int i = MD_in.addObject();
                 MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[0], i);
                 MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[0], i);
                 MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[0], i);
                 continue;
             }
             // Middle points of each short line segment
-            MD_in.addObject();
-            const long int i = MD_in.index();
+            const long int i = MD_in.addObject();
             MD_in.setValue(EMDL::IMAGE_COORD_X, (xlist[id] + xlist[id - 1]) / 2.0, i);
             MD_in.setValue(EMDL::IMAGE_COORD_Y, (ylist[id] + ylist[id - 1]) / 2.0, i);
             MD_in.setValue(EMDL::IMAGE_COORD_Z, (zlist[id] + zlist[id - 1]) / 2.0, i);
             // End point
             if (id == xlist.size() - 1) {
-                MD_in.addObject();
-                const long int i = MD_in.index();
+                const long int i = MD_in.addObject();
                 MD_in.setValue(EMDL::IMAGE_COORD_X, xlist[id], i);
                 MD_in.setValue(EMDL::IMAGE_COORD_Y, ylist[id], i);
                 MD_in.setValue(EMDL::IMAGE_COORD_Z, zlist[id], i);
@@ -5188,12 +5172,11 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
         img_str = mic_str + img_str;
         if (std::binary_search(mic_list.begin(), mic_list.end(), img_str)) {
             // Subtomogram selected
-            MD_out.addObject(MD_3d.getObject());
+            const long int i = MD_out.addObject(MD_3d.getObject());
             // For particle rescaling - reset pixel size
             if (auto_pixel_size) {
-                const long int i = MD_out.index();
                 MD_out.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, Dpix, i);
-                MD_out.setValue(EMDL::CTF_MAGNIFICATION, Mag, i);
+                MD_out.setValue(EMDL::CTF_MAGNIFICATION,       Mag,  i);
             }
         }
     }
