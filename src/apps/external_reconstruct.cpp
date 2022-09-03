@@ -58,22 +58,23 @@ class ext_recons_parameters {
 
         MetaDataTable MDlist, MDtau;
         MDlist.read(fn_star, "external_reconstruct_general");
-        fn_data_real   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL);
-        fn_data_imag   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG);
-        fn_weight      = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT);
-        fn_recons      = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT);
-        tau2_fudge     = MDlist.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_FUDGE_FACTOR);
-        padding_factor = MDlist.getValue<float>(EMDL::MLMODEL_PADDING_FACTOR);
-        ref_dim        = MDlist.getValue<int>(EMDL::MLMODEL_DIMENSIONALITY);
-        ori_size       = MDlist.getValue<int>(EMDL::MLMODEL_ORIGINAL_SIZE);
-        current_size   = MDlist.getValue<int>(EMDL::MLMODEL_CURRENT_SIZE);
+        const long int i = MDlist.index();
+        fn_data_real   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, i);
+        fn_data_imag   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, i);
+        fn_weight      = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT, i);
+        fn_recons      = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_RESULT, i);
+        tau2_fudge     = MDlist.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_FUDGE_FACTOR, i);
+        padding_factor = MDlist.getValue<float>(EMDL::MLMODEL_PADDING_FACTOR, i);
+        ref_dim        = MDlist.getValue<int>(EMDL::MLMODEL_DIMENSIONALITY, i);
+        ori_size       = MDlist.getValue<int>(EMDL::MLMODEL_ORIGINAL_SIZE, i);
+        current_size   = MDlist.getValue<int>(EMDL::MLMODEL_CURRENT_SIZE, i);
 
-        if (fn_out != "") { fn_recons = fn_out; }
+        if (!fn_out.empty()) { fn_recons = fn_out; }
 
         MDtau.read(fn_star, "external_reconstruct_tau2");
         tau2.resize(MDtau.numberOfObjects());
         for (long int i : MDtau) {
-            tau2[i] = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF);
+            tau2[i] = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF, i);
         }
 
     }

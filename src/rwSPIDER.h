@@ -269,17 +269,18 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
         #ifdef DEBUG
         std::cerr << "Non-empty MDMainHeader" << std::endl;
         #endif
+        const long int i = MDMainHeader.index();
         try {
-            header->fmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN);
+            header->fmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         } catch (const char *errmsg) {}
         try {
-            header->fmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX);
+            header->fmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX, i);
         } catch (const char *errmsg) {}
         try {
-            header->av   = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG);
+            header->av   = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG, i);
         } catch (const char *errmsg) {}
         try {
-            header->sig  = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV);
+            header->sig  = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
         } catch (const char *errmsg) {}
     }
     // For multi-image files

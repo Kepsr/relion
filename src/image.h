@@ -935,7 +935,7 @@ class Image {
      * @endcode
      */
     int dataType() const {
-        return MDMainHeader.getValue<int>(EMDL::IMAGE_DATATYPE);
+        return MDMainHeader.getValue<int>(EMDL::IMAGE_DATATYPE, MDMainHeader.index());
     }
 
     /** Sampling rate in X
@@ -946,7 +946,7 @@ class Image {
     */
     RFLOAT samplingRateX(const long int n = 0) const {
         if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X))
-            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
+            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, MDMainHeader.index());
         else return 1.0;
     }
 
@@ -958,7 +958,7 @@ class Image {
     */
     RFLOAT samplingRateY(const long int n = 0) const {
         if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))
-            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y);
+            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, MDMainHeader.index());
         else return 1.0;
     }
 

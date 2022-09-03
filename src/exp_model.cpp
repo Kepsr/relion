@@ -360,7 +360,7 @@ void Experiment::initialiseBodies(int nr_bodies) {
     const bool is_3d = MDimg.containsLabel(EMDL::ORIENT_ORIGIN_Z);
     for (auto i : MDimg) {
         MDbody.addObject();
-        const RFLOAT norm = MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION);
+        const RFLOAT norm = MDimg.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, i);
         MDbody.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, 0.0, i);
         MDbody.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, 0.0, i);
         MDbody.setValue(EMDL::ORIENT_ROT,   0.0, i);
@@ -527,11 +527,11 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
         if (index % check_abort_frequency == 0 && pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        const FileName fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME);
+        const FileName fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, index);
 
         const int optics_group = [&] () {
             try {
-                return MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
+                return MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, index) - 1;
             } catch (const char *errmsg) {
                 return 0;
             };
@@ -576,7 +576,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 const FileName new_fn_img = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                 Image<RFLOAT>::from_filename(fn_img).write(new_fn_img);
                 if (also_do_ctf_image) {
-                    const FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE);
+                    const FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE, MDimg.index());
                     const FileName new_fn_ctf = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                     Image<RFLOAT>::from_filename(fn_ctf).write(new_fn_ctf);
                 }
@@ -728,7 +728,7 @@ void Experiment::read(
         star_contains_micname = MDimg.containsLabel(EMDL::MICROGRAPH_NAME);
         if (star_contains_micname) {
             // See if the micrograph names contain an "@", i.e. whether they are movies and we are inside polishing or so.
-            FileName fn_mic = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+            const FileName fn_mic = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME, MDimg.index());
             if (fn_mic.contains("@")) {
                 is_mic_a_movie = true;
                 MDimg.newSort(EMDL::MICROGRAPH_NAME, true); // sort on part AFTER "@"
@@ -968,11 +968,12 @@ void Experiment::read(
             // If doing 3D helical reconstruction and PRIORs exist
             RFLOAT tilt = 0.0, psi = 0.0;
             if (have_tiltpsi)
-                tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT);
-            // If ANGLEs do not exist or they are all set to 0 (from a Class2D job), copy values of PRIORs to ANGLEs
+                tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT, i);
+            // If ANGLEs do not exist or they are all set to 0 (from a Class2D job),
+            // copy values of PRIORs to ANGLEs
             if (!have_tiltpsi || abs(tilt) < 0.001) {
-                tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR);
-                psi  = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR);
+                tilt = MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR, i);
+                psi  = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR, i);
                 MDimg.setValue(EMDL::ORIENT_TILT, tilt, i);
                 MDimg.setValue(EMDL::ORIENT_PSI,  psi,  i);
             }

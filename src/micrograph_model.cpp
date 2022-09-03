@@ -91,8 +91,8 @@ void ThirdOrderPolynomialModel::read(std::ifstream &fh, std::string block_name) 
         int idx;
         RFLOAT val;
         try {
-            idx = MD.getValue<int>(EMDL::MICROGRAPH_MOTION_COEFFS_IDX);
-            val = MD.getValue<RFLOAT>(EMDL::MICROGRAPH_MOTION_COEFF);
+            idx = MD.getValue<int>(EMDL::MICROGRAPH_MOTION_COEFFS_IDX, i);
+            val = MD.getValue<RFLOAT>(EMDL::MICROGRAPH_MOTION_COEFF, i);
         } catch (const char *errmsg) {
             REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: missing index or coefficients");
         }
@@ -380,12 +380,13 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
 
     // Read Image metadata
     MDglobal.readStar(in, "general");
+    const long int i = MDglobal.index();
 
     try {
-        width    = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_X);
-        height   = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_Y);
-        n_frames = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_Z);
-        fnMovie  = MDglobal.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME);
+        width    = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_X, i);
+        height   = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_Y, i);
+        n_frames = MDglobal.getValue<int>(EMDL::IMAGE_SIZE_Z, i);
+        fnMovie  = MDglobal.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME, i);
     } catch (const char *errmsg) {
         REPORT_ERROR("MicrographModel::read: insufficient general information in " + fn_in);
     }
@@ -394,7 +395,7 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
     globalShiftY.resize(n_frames, NOT_OBSERVED);
 
     #define TRY_ASSIGN_FROM_MDT(assignmenttarget, table, T, label, defaultvalue) \
-    try { (assignmenttarget) = (table).getValue<T>((label)); } \
+    try { (assignmenttarget) = (table).getValue<T>((label), i); } \
     catch (const char *errmsg) { (assignmenttarget) = (defaultvalue); }
 
     TRY_ASSIGN_FROM_MDT(fnGain,         MDglobal, std::string, EMDL::MICROGRAPH_GAIN_NAME,   "");
@@ -415,7 +416,7 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
 
     model = nullptr;
     try {
-        int model_version = MDglobal.getValue<int>(EMDL::MICROGRAPH_MOTION_MODEL_VERSION);
+        const int model_version = MDglobal.getValue<int>(EMDL::MICROGRAPH_MOTION_MODEL_VERSION, i);
         if (model_version == MOTION_MODEL_THIRD_ORDER_POLYNOMIAL) {
             model = new ThirdOrderPolynomialModel();  // Where does this memory get deallocated?
         } else if (model_version == (int) MOTION_MODEL_NULL) {
@@ -435,9 +436,9 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
 
     try {
         for (long int i : MDglobal) {
-            int frame  = MDglobal.getValue<int>(EMDL::MICROGRAPH_FRAME_NUMBER);
-            RFLOAT shiftX = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_X);
-            RFLOAT shiftY = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_Y);
+            const int frame = MDglobal.getValue<int>(EMDL::MICROGRAPH_FRAME_NUMBER, i);
+            const RFLOAT shiftX = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_X, i);
+            const RFLOAT shiftY = MDglobal.getValue<RFLOAT>(EMDL::MICROGRAPH_SHIFT_Y, i);
             // frame is 1-indexed!
             globalShiftX[frame - 1] = shiftX;
             globalShiftY[frame - 1] = shiftY;
@@ -450,8 +451,8 @@ void Micrograph::read(FileName fn_in, bool read_hotpixels) {
         MDhot.readStar(in, "hot_pixels");
         try {
             for (long int i : MDhot) {
-                RFLOAT x = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-                RFLOAT y = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
+                const RFLOAT x = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, i);
+                const RFLOAT y = MDhot.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, i);
                 hotpixelX.push_back((int) x);
                 hotpixelY.push_back((int) y);
             }

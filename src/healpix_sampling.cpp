@@ -25,7 +25,7 @@
 
 RFLOAT get_or_fallback(const MetaDataTable &MD, EMDL::EMDLabel label, RFLOAT fallback) {
     try {
-        return MD.getValue<RFLOAT>(label);
+        return MD.getValue<RFLOAT>(label, MD.index());
     } catch (const char *errmsg) {
         return fallback;
     }
@@ -171,12 +171,13 @@ void HealpixSampling::read(FileName fn_in) {
     in.close();
 
     try {
-        is_3D               = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D);
-        is_3d_trans         = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D_TRANS);
-        psi_step            = MD.getValue<RFLOAT>(EMDL::SAMPLING_PSI_STEP);
-        offset_range        = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_RANGE);
-        offset_step         = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_STEP);
-        perturbation_factor = MD.getValue<RFLOAT>(EMDL::SAMPLING_PERTURBATION_FACTOR);
+        const long int i = MD.index();
+        is_3D               = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D,               i);
+        is_3d_trans         = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D_TRANS,         i);
+        psi_step            = MD.getValue<RFLOAT>(EMDL::SAMPLING_PSI_STEP,            i);
+        offset_range        = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_RANGE,        i);
+        offset_step         = MD.getValue<RFLOAT>(EMDL::SAMPLING_OFFSET_STEP,         i);
+        perturbation_factor = MD.getValue<RFLOAT>(EMDL::SAMPLING_PERTURBATION_FACTOR, i);
     } catch (const char *errmsg) {
         REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table");
     }
@@ -192,9 +193,10 @@ void HealpixSampling::read(FileName fn_in) {
 
     if (is_3D) {
         try {
-            healpix_order = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER);
-            fn_sym        = MD.getValue<std::string>(EMDL::SAMPLING_SYMMETRY);
-            limit_tilt    = MD.getValue<RFLOAT>(EMDL::SAMPLING_LIMIT_TILT);
+            const long int i = MD.index();
+            healpix_order = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER, i);
+            fn_sym        = MD.getValue<std::string>(EMDL::SAMPLING_SYMMETRY, i);
+            limit_tilt    = MD.getValue<RFLOAT>(EMDL::SAMPLING_LIMIT_TILT, i);
         } catch (const char *errmsg) {
             REPORT_ERROR("HealpixSampling::readStar: incorrect sampling_general table for 3D sampling");
         }

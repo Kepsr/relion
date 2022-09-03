@@ -92,7 +92,7 @@ class stack_create_parameters {
         int xdim, ydim, zdim;
         for (long int ndim : MD) {
             if (is_first) {
-                const FileName fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+                const FileName fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, ndim);
                 in.read(fn_img);
                 xdim = in().xdim;
                 ydim = in().ydim;
@@ -101,7 +101,7 @@ class stack_create_parameters {
             }
 
             if (do_split_per_micrograph) {
-                fn_mic = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+                fn_mic = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME, ndim);
                 bool have_found = false;
                 for (int m = 0; m < fn_mics.size(); m++) {
                     if (fn_mic == fn_mics[m]) {
@@ -156,18 +156,18 @@ class stack_create_parameters {
             init_progress_bar(ndim);
             for (auto i : MD) {
 
-                const FileName fn_mymic = do_split_per_micrograph ? MD.getValue<std::string>(EMDL::MICROGRAPH_NAME) : "";
-                const int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP) - 1;
+                const FileName fn_mymic = do_split_per_micrograph ? MD.getValue<std::string>(EMDL::MICROGRAPH_NAME, i) : "";
+                const int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i) - 1;
                 const RFLOAT angpix = do_ignore_optics ? 1.0 : obsModel.getPixelSize(optics_group);
 
                 if (fn_mymic == fn_mic) {
 
-                    in.read(MD.getValue<std::string>(EMDL::IMAGE_NAME));
+                    in.read(MD.getValue<std::string>(EMDL::IMAGE_NAME, i));
 
                     if (do_apply_trans || do_apply_trans_only) {
-                        const RFLOAT ori_xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM) / angpix;
-                        const RFLOAT ori_yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) / angpix;
-                        const RFLOAT ori_psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI);
+                        const RFLOAT ori_xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i) / angpix;
+                        const RFLOAT ori_yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i) / angpix;
+                        const RFLOAT ori_psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI, i);
 
                         RFLOAT xoff, yoff, psi;
                         if (do_apply_trans_only) {

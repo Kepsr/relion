@@ -335,19 +335,20 @@ bool RelionJob::read(const string &fn, bool &is_continue, bool do_initialise) {
 
         MetaDataTable MDhead;
         MDhead.read(fn_star, "job");
-        type = MDhead.getValue<int>(EMDL::JOB_TYPE);
-        is_continue = this->is_continue = MDhead.getValue<bool>(EMDL::JOB_IS_CONTINUE);
+        const long int i = MDhead.index();
+        type = MDhead.getValue<int>(EMDL::JOB_TYPE, i);
+        is_continue = this->is_continue = MDhead.getValue<bool>(EMDL::JOB_IS_CONTINUE, i);
         if (do_initialise)
         initialise(type);
 
         MetaDataTable MDvals;
         MDvals.read(fn_star, "joboptions_values");
-        for (long int _ : MDvals) {
-            string label = MDvals.getValue<string>(EMDL::JOBOPTION_VARIABLE);
+        for (long int i : MDvals) {
+            const string label = MDvals.getValue<string>(EMDL::JOBOPTION_VARIABLE, i);
             if (joboptions.find(label) == joboptions.end()) {
                 std::cerr << "WARNING: cannot find " << label << " in the defined joboptions. Ignoring it ..." << std::endl;
             } else {
-                joboptions[label].value = MDvals.getValue<string>(EMDL::JOBOPTION_VALUE);
+                joboptions[label].value = MDvals.getValue<string>(EMDL::JOBOPTION_VALUE, i);
             }
         }
         have_read = true;

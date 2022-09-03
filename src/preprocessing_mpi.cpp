@@ -60,36 +60,35 @@ void PreprocessingMpi::runExtractParticles() {
 
         FileName fn_mic, fn_olddir = "";
         for (long int imic : MDmics) {
-            if (imic >= my_first_mic && imic <= my_last_mic) {
+            if (imic < my_first_mic || imic > my_last_mic) continue;
 
-                // Abort through the pipeline_control system
-                if (pipeline_control_check_abort_job())
-                    MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_ABORTED);
+            // Abort through the pipeline_control system
+            if (pipeline_control_check_abort_job())
+                MPI_Abort(MPI_COMM_WORLD, RELION_EXIT_ABORTED);
 
-                fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
-                int optics_group = obsModelMic.getOpticsGroup(MDmics);
+            fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, imic);
+            int optics_group = obsModelMic.getOpticsGroup(MDmics);
 
-                // Set the pixel size for this micrograph
-                angpix = obsModelMic.getPixelSize(optics_group);
-                // Also set the output_angpix (which could be rescaled)
-                output_angpix = angpix;
-                if (do_rescale)
-                    output_angpix *= (RFLOAT)extract_size / (RFLOAT)scale;
+            // Set the pixel size for this micrograph
+            angpix = obsModelMic.getPixelSize(optics_group);
+            // Also set the output_angpix (which could be rescaled)
+            output_angpix = angpix;
+            if (do_rescale)
+                output_angpix *= (RFLOAT)extract_size / (RFLOAT)scale;
 
-                // Check new-style outputdirectory exists and make it if not!
-                FileName fn_dir = getOutputFileNameRoot(fn_mic);
-                fn_dir = fn_dir.beforeLastOf("/");
-                if (fn_dir != fn_olddir && !exists(fn_dir)) {
-                    // Make a Particles directory
-                    int res = system(("mkdir -p " + fn_dir).c_str());
-                    fn_olddir = fn_dir;
-                }
-
-                if (verb > 0 && imic % barstep == 0)
-                    progress_bar(imic);
-
-                extractParticlesFromFieldOfView(fn_mic, imic);
+            // Check new-style outputdirectory exists and make it if not!
+            FileName fn_dir = getOutputFileNameRoot(fn_mic);
+            fn_dir = fn_dir.beforeLastOf("/");
+            if (fn_dir != fn_olddir && !exists(fn_dir)) {
+                // Make a Particles directory
+                int res = system(("mkdir -p " + fn_dir).c_str());
+                fn_olddir = fn_dir;
             }
+
+            if (verb > 0 && imic % barstep == 0)
+                progress_bar(imic);
+
+            extractParticlesFromFieldOfView(fn_mic, imic);
         }
     }
 

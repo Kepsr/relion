@@ -116,16 +116,17 @@ void HelixAligner::initialise() {
     // Also randomize random-number-generator for perturbations on the angles
     init_random_generator(random_seed);
 
-    if (fn_imgs != "") {
+    if (!fn_imgs.empty()) {
         // Get the image size
         MetaDataTable MD;
         MD.read(fn_imgs);
         FileName fn_img;
         Image<RFLOAT> img;
+        const int i = MD.index();
         if (MD.containsLabel(EMDL::IMAGE_NAME)) {
-            fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+            fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, i);
         } else if (MD.containsLabel(EMDL::MLMODEL_REF_IMAGE)) {
-            fn_img = MD.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
+            fn_img = MD.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE, i);
         } else {
             REPORT_ERROR("ERROR: input STAR file does not contain rlnImageName or rlnReferenceImage!");
         }
@@ -136,21 +137,22 @@ void HelixAligner::initialise() {
 
         // Get the pixel size
         if (MD.containsLabel(EMDL::CTF_MAGNIFICATION) && MD.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)) {
-            RFLOAT mag = MD.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
-            RFLOAT dstep = MD.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
+            RFLOAT mag = MD.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION, i);
+            RFLOAT dstep = MD.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
             RFLOAT my_angpix = 10000.0 * dstep / mag;
             std::cout << " Using pixel size from the input STAR file: " << my_angpix << std::endl;
             angpix = my_angpix;
         }
 
-    } else if (fn_mics != "") {
+    } else if (!fn_mics.empty()) {
         // Read in the micrographs STAR file
         MDmics.read(fn_mics);
 
         // Get the pixel size
         if (MDmics.containsLabel(EMDL::CTF_MAGNIFICATION) && MDmics.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)) {
-            RFLOAT mag = MDmics.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION);
-            RFLOAT dstep = MDmics.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE);
+            const long int i = MDmics.index();
+            RFLOAT mag = MDmics.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION, i);
+            RFLOAT dstep = MDmics.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
             RFLOAT my_angpix = 10000.0 * dstep / mag;
             std::cout << " Using pixel size from the input STAR file: " << my_angpix << std::endl;
             angpix = my_angpix;
@@ -161,8 +163,8 @@ void HelixAligner::initialise() {
             fn_coord_dir+="/";
 
         // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
-        for (long int _ : MDmics) {
-            FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        for (long int i : MDmics) {
+            FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
             FileName fn_pre, fn_jobnr, fn_post;
             decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
             FileName fn_coord = fn_coord_dir + fn_post.withoutExtension() + fn_coord_suffix;
@@ -178,7 +180,7 @@ void HelixAligner::initialise() {
         img.read(fn_inimodel);
         img().setXmippOrigin();
         if (angpix < 0.0) {
-            angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X);
+            angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.index());
             std::cout << " Using pixel size from the input file header: " << angpix << std::endl;
         }
         ori_size = img().xdim;
@@ -272,18 +274,19 @@ void HelixAligner::readImages() {
 
         FileName fn_img;
         Image<RFLOAT> img;
+        const long int i = MD.index();
         if (MD.containsLabel(EMDL::IMAGE_NAME)) {
-            fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+            fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, i);
         } else if (MD.containsLabel(EMDL::MLMODEL_REF_IMAGE)) {
-            fn_img = MD.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE);
+            fn_img = MD.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE, i);
         } else {
             REPORT_ERROR("ERROR: input STAR file does not contain rlnImageName or rlnReferenceImage!");
         }
         img.read(fn_img);
         img().setXmippOrigin();
         // Rethink this when expanding program to 3D!
-        RFLOAT yoff = MD.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) ? MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) : 0.0;
-        RFLOAT psi  = MD.containsLabel(EMDL::ORIENT_PSI)               ? MD.getValue<RFLOAT>(EMDL::ORIENT_PSI)               : 0.0;
+        RFLOAT yoff = MD.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM) ? MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i) : 0.0;
+        RFLOAT psi  = MD.containsLabel(EMDL::ORIENT_PSI)               ? MD.getValue<RFLOAT>(EMDL::ORIENT_PSI, i)               : 0.0;
         ori_psis.push_back(psi);
         ori_yoffs.push_back(yoff);
         // Apply the actual transformation
@@ -347,9 +350,9 @@ void HelixAligner::getHelicesFromMics() {
     // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
     // Surely imic should be part of the for loop?
     long int imic = 0;
-    for (long int _ : MDmics) {
+    for (long int i : MDmics) {
         imic++;
-        FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
         FileName fn_pre, fn_jobnr, fn_post;
         decomposePipelineFileName(fn_mic, fn_pre, fn_jobnr, fn_post);
         FileName fn_coord = fn_coord_dir + fn_post.withoutExtension() + fn_coord_suffix;
@@ -374,12 +377,10 @@ void HelixAligner::getHelicesFromMics() {
             // Get all start-end coordinate pairs
             std::vector<RFLOAT> x1_coord_list, y1_coord_list, x2_coord_list, y2_coord_list, pitch_list;
             RFLOAT xp, yp;
-            int MDobj_id = 0;
-            for (long int _ : MDcoords) {
-                MDobj_id++;
-                xp = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-                yp = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-                if (MDobj_id % 2) {
+            for (long int i : MDcoords) {
+                xp = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, i);
+                yp = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, i);
+                if (i % 2 == 0) {
                     x1_coord_list.push_back(xp);
                     y1_coord_list.push_back(yp);
                 } else {

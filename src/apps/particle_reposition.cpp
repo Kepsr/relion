@@ -95,9 +95,9 @@ class particle_reposition_parameters {
         init_progress_bar(DFi.numberOfObjects());
         long int imgno = 0;
         FileName fn_prevdir = "";
-        for (long int _ : DFi) {
+        for (long int i : DFi) {
 
-            FileName fn_mic = DFi.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+            FileName fn_mic = DFi.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
             FileName fn_mic_out = fn_out.empty() ? fn_mic : fn_mic.insertBeforeExtension("_" + fn_out);
             if (!fn_odir.empty()) {
                 FileName fn_pre, fn_jobnr, fn_post;
@@ -129,12 +129,12 @@ class particle_reposition_parameters {
             RFLOAT mean_mic = stats.avg;
             RFLOAT stddev_mic = stats.stddev;
 
-            int optics_group_mic = DFi.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+            int optics_group_mic = DFi.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
             RFLOAT mic_pixel_size = -1.0;
-            for (int i = 0; i < obsModelMics.opticsMdt.numberOfObjects(); i++) {
-                int my_optics_group = obsModelMics.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP);
+            for (int j = 0; j < obsModelMics.opticsMdt.numberOfObjects(); j++) {
+                const int my_optics_group = obsModelMics.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, j);
                 if (my_optics_group == optics_group_mic) {
-                    mic_pixel_size = obsModelMics.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE);
+                    mic_pixel_size = obsModelMics.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, j);
                     break;
                 }
             }

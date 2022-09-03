@@ -224,8 +224,8 @@ int manualpickerGuiWindow::fill() {
     viewmic_buttons.clear();
     viewctf_buttons.clear();
     number_picked.clear();
-    for (long int _ : MDin) {
-        fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+    for (long int i : MDin) {
+        fn_mic = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
         // Display the name of the micrograph
         global_fn_mics.push_back(fn_mic);
 
@@ -264,7 +264,7 @@ int manualpickerGuiWindow::fill() {
 
         // Button to display the CTF image
         if (global_has_ctf) {
-            fn_ctf = MDin.getValue<std::string>(EMDL::CTF_IMAGE);
+            fn_ctf = MDin.getValue<std::string>(EMDL::CTF_IMAGE, i);
             global_fn_ctfs.push_back(fn_ctf);
             // Button to display the CTF image
             Fl_Button *myviewctf = new Fl_Button(MXCOL3, current_y, MWCOL4, ystep - 5, "CTF");
@@ -273,12 +273,11 @@ int manualpickerGuiWindow::fill() {
             viewctf_buttons.push_back(myviewctf);
 
             Fl_Text_Buffer *textbuffDF = new Fl_Text_Buffer();
-            RFLOAT defocus = MDin.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);
+            RFLOAT defocus = MDin.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, i);
 
             std::ostringstream os;
             os << defocus;
-            std::string str = os.str();
-            textbuffDF->text(str.c_str());
+            textbuffDF->text(os.str().c_str());
 
             Fl_Text_Display* myDF = new Fl_Text_Display(MXCOL4, current_y, MWCOL4, ystep - 5);
             myDF->color(GUI_INPUT_COLOR, GUI_INPUT_COLOR);
@@ -316,8 +315,8 @@ void manualpickerGuiWindow::readOutputStarfile() {
         for (int imic = 0; imic < selected.size(); imic++) {
             FileName fn_mic_in = MDin.getValue<std::string>(EMDL::MICROGRAPH_NAME, imic);
             bool has_found = false;
-            for (long int _ : MDout) {
-                FileName fn_mic = MDout.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+            for (long int i : MDout) {
+                FileName fn_mic = MDout.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
                 // Which one in the input metadatatable was this one?
                 if (fn_mic == fn_mic_in) {
                     has_found = true;

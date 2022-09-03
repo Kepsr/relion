@@ -276,8 +276,8 @@ class prepare_subtomo {
             REPORT_ERROR("Tomogram STAR file " + fn_tomo_list + " should contain _rlnMicrographName!");
         // Check whether each tomogram sits in a separate folder
         fns_tomo.clear();
-        for (long int _ : MD_tomo) {
-            fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        for (long int i : MD_tomo) {
+            fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
             fns_tomo.push_back(fn1);
         }
         if (fns_tomo.size() < 1)
@@ -300,8 +300,8 @@ class prepare_subtomo {
         bool is_star_coords = false, is_txt_coords = false;
         MD_tmp.clear();
         img.clear();
-        for (long int _ : MD_tomo) {
-            fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+        for (long int i : MD_tomo) {
+            fn1 = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
             std::cout << " 3D reconstructed tomogram in STAR file: " << fn1 << std::flush;
 
             // Check 3D reconstructed tomogram
@@ -518,10 +518,10 @@ class prepare_subtomo {
             fout1 << std::endl;
         }
 
-        for (long int _ : MD_tomo) {
+        for (long int i : MD_tomo) {
             std::cout << std::endl;
 
-            FileName fn_tomo = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME);
+            FileName fn_tomo = MD_tomo.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
             std::cout << "#### Processing tomogram " << fn_tomo << " ... ####" << std::endl;
 
             FileName dir_ctf = fn_tomo.beforeLastOf("/") + "/Ctffind";
@@ -742,9 +742,9 @@ class prepare_subtomo {
                 !MD_ctf_results.containsLabel(EMDL::CTF_DEFOCUSV) ||
                 !MD_ctf_results.containsLabel(EMDL::MICROGRAPH_NAME)
             ) REPORT_ERROR("micrographs_ctf.star should contain _rlnDefocusU, _rlnDefocusV and _rlnMicrographName! Please check whether CTF estimation was done successfully.");
-            for (long int _ : MD_ctf_results) {
-                du = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU);
-                dv = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV);
+            for (long int i : MD_ctf_results) {
+                du = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, i);
+                dv = MD_ctf_results.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, i);
                 avg_defoci.push_back(du); // TODO: Why just read in defocusU but not with defocusV and defocusAngle ???
             }
             if (do_use_trials_for_ctffind) {
@@ -851,9 +851,9 @@ class prepare_subtomo {
                 REPORT_ERROR("MD_coords is empty! It reads from .coord or .star file: " + fn_coords);
             RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
             for (long int nr_subtomo : MD_coords) {
-                xx = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X);
-                yy = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y);
-                zz = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z);
+                xx = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, nr_subtomo);
+                yy = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, nr_subtomo);
+                zz = MD_coords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z, nr_subtomo);
 
                 write_star_file = (do_skip_ctf_correction && nr_subtomo == 0) || !do_skip_ctf_correction;
                 if (!write_star_file) continue; // TODO: check this! OK. I think it is fine.

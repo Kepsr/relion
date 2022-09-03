@@ -137,11 +137,11 @@ class ctf_toolbox_parameters {
                 int og = obsModel.getOpticsGroup(MD);
                 RFLOAT angpix = obsModel.getPixelSize(og);
 
-                FileName fn_img = MD.getValue<std::string>(do_mic_name ? EMDL::MICROGRAPH_NAME : EMDL::IMAGE_NAME);
+                FileName fn_img = MD.getValue<std::string>(do_mic_name ? EMDL::MICROGRAPH_NAME : EMDL::IMAGE_NAME, i_img);
                 FileName my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
 
                 // Now do the actual work
-                fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME);
+                fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, i_img);
 
                 Image<RFLOAT> img;
                 img.read(fn_img);

@@ -110,7 +110,7 @@ void ObservationModel::loadSafely(
             std::cerr << "Pixel size in rlnImagePixelSize will be copied to rlnMicrographPixelSize column. Please make sure this is correct!" << std::endl;
 
             for (long int i : obsModel.opticsMdt) {
-                RFLOAT image_angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE);
+                const RFLOAT image_angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, i);
                 obsModel.opticsMdt.setValue(EMDL::MICROGRAPH_PIXEL_SIZE, image_angpix, i);
             }
         }
@@ -727,7 +727,7 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
     {
         if (mtfImage[optGroup].find(s) == mtfImage[optGroup].end()) {
             if (mtfImage[optGroup].size() > 100) {
-                std::cerr << "Warning: " << (mtfImage[optGroup].size()+1)
+                std::cerr << "Warning: " << (mtfImage[optGroup].size() + 1)
                           << " mtf images in cache for the same ObservationModel." << std::endl;
             }
 
@@ -740,10 +740,10 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
             mtf_resol.resize(MDmtf.numberOfObjects());
             mtf_value.resize(mtf_resol);
 
-            RFLOAT resol_inv_pixel = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL);
+            RFLOAT resol_inv_pixel = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL, 0);
             for (long int i : MDmtf) {
                 direct::elem(mtf_resol, i) = resol_inv_pixel / originalAngpix[optGroup];  // resolution needs to be given in 1/Ang
-                direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE);
+                direct::elem(mtf_value, i) = MDmtf.getValue<RFLOAT>(EMDL::POSTPROCESS_MTF_VALUE, i);
                 if (direct::elem(mtf_value, i) < 1e-10) {
                     std::cerr << " i= " << i <<  " mtf_value[i]= " << direct::elem(mtf_value, i) << std::endl;
                     REPORT_ERROR("ERROR: zero or negative values encountered in MTF curve: " + fnMtfs[optGroup]);

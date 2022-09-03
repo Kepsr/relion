@@ -150,9 +150,9 @@ class MetaDataTable {
     static const int CurrentVersion = CURRENT_MDT_VERSION;
 
     template<class T>
-    T getValue(EMDL::EMDLabel label, long objectID = -1) const;
+    T getValue(EMDL::EMDLabel label, long int i) const;
 
-    std::string getValueToString(EMDL::EMDLabel label, long int objectID = -1) const;
+    std::string getValueToString(EMDL::EMDLabel label, long int i) const;
 
     inline std::pair<EMDL::EMDLabel, std::string> label_and_unknown(int i) const {
         const EMDL::EMDLabel label = activeLabels[i];
@@ -425,11 +425,8 @@ bool MetaDataTable::isTypeCompatible(EMDL::EMDLabel label) const {
 #endif
 
 /// Return value or, if the label does not exist, raise error.
-// objectID is 0-indexed.
 template<typename T>
-T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
-    // When called with the objectID argument omitted, this function is impure,
-    // since the result will depend on the variable member current_object.
+T MetaDataTable::getValue(EMDL::EMDLabel label, long i) const {
 
     if (label < 0 || label >= EMDL::LAST_LABEL) throw "Label not recognised";
 
@@ -444,15 +441,17 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long objectID) const {
 
     if (off < 0) throw "Negative offset";
 
-    if (objectID < 0) {
-        objectID = current_object - &*objects.begin();
+    if (i < 0) {
+        i = current_object - &*objects.begin();
     } else {
-        try { checkObjectID(objectID); } catch (const std::string &errmsg) {
+        try {
+            checkObjectID(i);
+        } catch (const std::string &errmsg) {
             REPORT_ERROR((std::string) __func__ + ": " + errmsg);
         }
     }
 
-    return objects[objectID]->getValue<T>(off);
+    return objects[i]->getValue<T>(off);
 }
 
 

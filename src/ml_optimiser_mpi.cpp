@@ -478,9 +478,9 @@ void MlOptimiserMpi::initialise() {
         int idx;
         MetaDataTable MDsigma;
         MDsigma.read(fn_sigma);
-        for (long int _  : MDsigma) {
-            const RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE);
-            idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX);
+        for (long int i : MDsigma) {
+            const RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE, i);
+            idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX, i);
             if (idx < Xsize(mymodel.sigma2_noise[0])) {
                 mymodel.sigma2_noise[0](idx) = val;
             }

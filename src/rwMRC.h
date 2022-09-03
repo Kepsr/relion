@@ -349,41 +349,43 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     if (!MDMainHeader.empty()) {
 
+        const long int i = MDMainHeader.index();
+
         // If MDMainHeader contains none of these,
         // we will be looping through `data` more times than necessary.
-        header->amin  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_MIN)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN)    : (float) min(data);
-        header->amax  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_MAX)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX)    : (float) max(data);
-        header->amean = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_AVG)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG)    : (float) average(data);
-        header->arms  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_STDDEV) ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV) : (float) computeStddev(data);
+        header->amin  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_MIN)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN,    i) : (float) min(data);
+        header->amax  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_MAX)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX,    i) : (float) max(data);
+        header->amean = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_AVG)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG,    i) : (float) average(data);
+        header->arms  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_STDDEV) ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV, i) : (float) computeStddev(data);
 
         // int nxStart, nyStart, nzStart;
 
         // RFLOAT aux;
-        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_X);
+        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_X, i);
         // if (std::isfinite(nxStart = aux - 0.5)) { header->nxStart = nxStart; }
 
         if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X)) {
-        const float srx = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_X),
+        const float srx = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_X, i),
                     xOrigin = header->nxStart * srx, a = header->nx * srx;
         if (std::isfinite(xOrigin)) { header->xOrigin = xOrigin; }
         if (std::isfinite(a))       { header->a       = a; }
         }
 
-        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Y, aux);
+        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Y, i, aux);
         // if (std::isfinite(nyStart = aux - 0.5)) { header->nyStart = nyStart; }
 
         if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))  {
-        const float sry = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Y),
+        const float sry = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Y, i),
                     yOrigin = header->nyStart * sry, b = header->ny * sry;
         if (std::isfinite(yOrigin)) { header->yOrigin = yOrigin; }
         if (std::isfinite(b))       { header->b       = b; }
         }
 
-        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Z);
+        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Z, i);
         // if (std::isfinite(nzStart = aux - 0.5)) { header->nzStart = nzStart; }
 
         if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Z))  {
-        const float srz = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Z),
+        const float srz = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Z, i),
                     zOrigin = header->nzStart * srz, c = header->nz * srz;
         if (std::isfinite(zOrigin)) { header->zOrigin = zOrigin; }
         if (std::isfinite(c))       { header->c       = c; }
