@@ -100,9 +100,6 @@ class MetaDataTable {
     std::vector<std::string> unknownLabelNames;
     std::vector<long> unknown_label_indices;
 
-    // Current object
-    MetaDataContainer **current_object;
-
     // Number of labels of each type
     long doubleLabels, intLabels, boolLabels, stringLabels, doubleVectorLabels, unknownLabels;
 
@@ -166,10 +163,8 @@ class MetaDataTable {
     template<class T>
     void setValue(EMDL::EMDLabel label, const T &value, long int i);
 
-    // The index of the current active object
-    inline long int index() const {
-        return current_object - &*objects.begin();
-    }
+    // The index of the last object
+    inline long int index() const { return objects.size() - 1; }
 
     void setUnknownValue(int labelPosition, const std::string &value);
     void setValueFromString(EMDL::EMDLabel label, const std::string &value, long int i);
@@ -203,7 +198,7 @@ class MetaDataTable {
     /* setObject(data, i)
      *  copies values from 'data' to object 'i'.
      *  The target object is assumed to exist.
-     *  If i < 0, then current_object is set.
+     *  If i < 0, then the last object is set.
      *  Undefined labels are inserted.
      *
      *  Use addObject() to set an object that does not yet exist */
@@ -212,7 +207,7 @@ class MetaDataTable {
     /* setValuesOfDefinedLabels(data, i)
      * copies values from 'data' to object 'i'.
      * The target object is assumed to exist.
-     * If i < 0, then current_object is set.
+     * If i < 0, then the last object is set.
      * Only already defined labels are considered.
      *
      * Use addValuesOfDefinedLabels() to add an object that does not yet exist */
@@ -223,24 +218,21 @@ class MetaDataTable {
 
     /* addObject()
      *  Adds a new object and initializes the defined labels with default values.
-     *  Afterwards, 'current_object' points to the newly added object.*/
+     */
     long int addObject();
 
     /* addObject(data)
      *  Adds a new object and sets its values to those from 'data'.
      *  The set of labels for the table is extended as necessary.
-     *  Afterwards, 'current_object' points to the newly added object.*/
+     */
     long int addObject(MetaDataContainer* data);
 
     /* addValuesOfDefinedLabels(data)
      *  Adds a new object and sets the already defined values to those from 'data'.
      *  Labels from 'data' that are not already defined are ignored.
-     *  Afterwards, 'current_object' points to the newly added object.*/
+     */
     void addValuesOfDefinedLabels(MetaDataContainer* data);
 
-    /* removeObject(i)
-     *  If i is not given, 'current_object' will be removed.
-     *  'current_object' is set to the last object in the list. */
     void removeObject(long i);
 
     /** MetaDataTable::iterator

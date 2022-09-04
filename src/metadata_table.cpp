@@ -53,7 +53,6 @@ inline std::string prependERROR(const std::string &s) {
 MetaDataTable::MetaDataTable():
     objects(0),
     label_indices(EMDL::LAST_LABEL, -1),
-    current_object(nullptr),
     doubleLabels(0),
     intLabels(0),
     boolLabels(0),
@@ -72,7 +71,6 @@ MetaDataTable::MetaDataTable(const MetaDataTable &MD):
     label_indices(MD.label_indices),
     unknown_label_indices(MD.unknown_label_indices),
     unknownLabelNames(MD.unknownLabelNames),
-    current_object(nullptr),
     doubleLabels(MD.doubleLabels),
     intLabels(MD.intLabels),
     boolLabels(MD.boolLabels),
@@ -100,7 +98,6 @@ MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
     label_indices = MD.label_indices;
     unknown_label_indices = MD.unknown_label_indices;
     unknownLabelNames = MD.unknownLabelNames;
-    current_object = &*objects.begin();
     doubleLabels = MD.doubleLabels;
     intLabels = MD.intLabels;
     boolLabels = MD.boolLabels;
@@ -135,7 +132,6 @@ void MetaDataTable::clear() {
     objects.clear();
 
     label_indices = std::vector<long>(EMDL::LAST_LABEL, -1);
-    current_object = &*objects.begin();
     unknown_label_indices.clear();
     unknownLabelNames.clear();
 
@@ -222,7 +218,7 @@ std::string MetaDataTable::getValueToString(EMDL::EMDLabel label, long i) const 
 void MetaDataTable::setUnknownValue(int i, const std::string &value) {
     long j = unknown_label_indices[i];
     if (j < 0) REPORT_ERROR("MetaDataTable::setUnknownValue BUG: j should not be negative here....");
-    (*current_object)->unknowns[j] = value;
+    objects.back()->unknowns[j] = value;
 }
 
 void MetaDataTable::setValueFromString(
@@ -617,8 +613,6 @@ long int MetaDataTable::addObject() {
         doubleLabels, intLabels, boolLabels, stringLabels,
         doubleVectorLabels, unknownLabels
     ));
-
-    current_object = &*objects.end() - 1;
     return index();  // numberOfObjects() - 1;
 }
 
@@ -630,7 +624,6 @@ long int MetaDataTable::addObject(MetaDataContainer* data) {
     ));
 
     setObject(data, objects.size() - 1);
-    current_object = &*objects.end() - 1;
     return index();
 }
 
@@ -642,7 +635,6 @@ void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
     ));
 
     setValuesOfDefinedLabels(data, objects.size() - 1);
-    current_object = &*objects.end() - 1;
 }
 
 void MetaDataTable::removeObject(long i) {
@@ -651,7 +643,6 @@ void MetaDataTable::removeObject(long i) {
         checkObjectID(i);
         delete objects[i];
         objects.erase(objects.begin() + i);
-        current_object = &*objects.end() - 1;
     } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
@@ -660,7 +651,7 @@ void MetaDataTable::removeObject(long i) {
 MetaDataContainer** MetaDataTable::goToObject(long int i) {
     try {
         checkObjectID(i);
-        return current_object = &*objects.begin() + i;
+        return &*objects.begin() + i;
     } catch (const std::string &errmsg) {
         REPORT_ERROR((std::string) __func__ + ": " + errmsg);
     }
@@ -976,13 +967,13 @@ void compareMetaDataTable(
         }
     }
 
-    for (long int current_object2 : MD2) {
-        // If there is no current_object2 in to_remove_from_only2
+    for (long int j : MD2) {
+        // If there is no j in to_remove_from_only2
         if (std::find(
-            to_remove_from_only2.begin(), to_remove_from_only2.end(), current_object2
+            to_remove_from_only2.begin(), to_remove_from_only2.end(), j
         ) == to_remove_from_only2.end()) {
-            // std::cerr << " doNOT remove current_object2= " << current_object2 << std::endl;
-            MDonly2.addObject(MD2.getObject(current_object2));
+            // std::cerr << " doNOT remove j= " << j << std::endl;
+            MDonly2.addObject(MD2.getObject(j));
         }
     }
 }
