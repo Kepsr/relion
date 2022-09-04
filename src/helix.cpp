@@ -2006,7 +2006,7 @@ void removeBadTiltHelicalSegmentsFromDataStar(
         tilt_deg = MD_in.getValue<RFLOAT>(EMDL::ORIENT_TILT, i);
         if (fabs(tilt_deg - 90.0) < max_dev_deg) {
             nr_segments_new++;
-            MD_out.addObject(MD_in.getObject());
+            MD_out.addObject(MD_in.getObject(i));
         }
     }
     MD_out.write(fn_out);
@@ -2043,7 +2043,7 @@ void removeBadPsiHelicalSegmentsFromDataStar(
             diff_psi = abs(diff_psi - 360.0);
         if (diff_psi < max_dev_deg) {
             nr_segments_new++;
-            MD_out.addObject(MD_in.getObject());
+            MD_out.addObject(MD_in.getObject(i));
         }
     }
     MD_out.write(fn_out);
@@ -2155,7 +2155,7 @@ void convertHelicalSegmentCoordsToMetaDataTable(
         }
         #endif
         nr_segments++;
-        const long int j = MD_out.addObject(MD_in.getObject());
+        const long int j = MD_out.addObject(MD_in.getObject(i));
 
         /// TODO: check whether there is a bug...
         MD_out.setValue(EMDL::ORIENT_PSI_PRIOR_FLIP_RATIO, psi_prior_flip_ratio, j);
@@ -3151,9 +3151,9 @@ void divideStarFile(FileName& fn_in, int nr) {
     line_id = 0;
     file_id = 0;
     MD.clear();
-    for (long int index : MD_in) {
+    for (long int i : MD_in) {
         line_id++;
-        MD.addObject(MD_in.getObject());
+        MD.addObject(MD_in.getObject(i));
         if (line_id % nr_lines == 0 && total_lines - line_id > nr_lines) {
             file_id++;
             fn_out = fn_in.withoutExtension() + "_sub" + integerToString(file_id, 6, '0');
@@ -3199,8 +3199,8 @@ void mergeStarFiles(FileName& fn_in) {
     for (file_id = 0; file_id < fns_list.size(); file_id++) {
         MD_in.clear();
         MD_in.read(fns_list[file_id]);
-        for (long int index : MD_in) {
-            MD_combined.addObject(MD_in.getObject());
+        for (long int i : MD_in) {
+            MD_combined.addObject(MD_in.getObject(i));
         }
         std::cout << "  " << MD_combined.numberOfObjects() << " objects loaded." << std::endl;
     }
@@ -3597,8 +3597,8 @@ void excludeLowCTFCCMicrographs(
     MD_out.clear();
     for (long int i : MD_in) {
         nr_mics_old++;
-        cc      = MD_in.getValue<RFLOAT>(EMDL::CTF_FOM, i);
-        EPA_res = MD_in.getValue<RFLOAT>(EMDL::CTF_MAXRES, i);
+        cc      = MD_in.getValue<RFLOAT>(EMDL::CTF_FOM,      i);
+        EPA_res = MD_in.getValue<RFLOAT>(EMDL::CTF_MAXRES,   i);
         dU      = MD_in.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, i);
         dV      = MD_in.getValue<RFLOAT>(EMDL::CTF_DEFOCUSV, i);
         if (
@@ -3608,7 +3608,7 @@ void excludeLowCTFCCMicrographs(
         ) {
             if (!contain_EPA_res && EPA_res <= EPA_lowest_res) {
                 nr_mics_new++;
-                MD_out.addObject(MD_in.getObject());
+                MD_out.addObject(MD_in.getObject(i));
             }
         }
     }
@@ -5168,7 +5168,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
         img_str = mic_str + img_str;
         if (std::binary_search(mic_list.begin(), mic_list.end(), img_str)) {
             // Subtomogram selected
-            const long int j = MD_out.addObject(MD_3d.getObject());
+            const long int j = MD_out.addObject(MD_3d.getObject(i));
             // For particle rescaling - reset pixel size
             if (auto_pixel_size) {
                 MD_out.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, Dpix, j);

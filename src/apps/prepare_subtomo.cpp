@@ -953,14 +953,14 @@ class prepare_subtomo {
                 // Write a new object to MD_part
                 FileName fn_extract_part = "Extract/" + fn_extract_job_alias + "/" + fn_tomo.withoutExtension() + integerToString(nr_subtomo + 1, 6, '0') + ".mrc";
                 const long int i = fn_coords.getExtension() == "star" ?
-                    MD_part.addObject(MD_coords.getObject()) : // Append extra information from MD_coords
+                    MD_part.addObject(MD_coords.getObject(nr_subtomo)) : // Append extra information from MD_coords
                     MD_part.addObject(); // Otherwise, add an empty object
                 MD_part.setValue(EMDL::MICROGRAPH_NAME, fn_tomo, i);
                 MD_part.setValue(EMDL::IMAGE_COORD_X, xx, i);
                 MD_part.setValue(EMDL::IMAGE_COORD_Y, yy, i);
                 MD_part.setValue(EMDL::IMAGE_COORD_Z, zz, i);
                 MD_part.setValue(EMDL::IMAGE_NAME, fn_extract_part, i);
-                MD_part.setValue(EMDL::CTF_IMAGE, fn_subtomo_mrc, i);
+                MD_part.setValue(EMDL::CTF_IMAGE,  fn_subtomo_mrc,  i);
                 MD_part.setValue(EMDL::CTF_MAGNIFICATION, Magnification, i);
                 MD_part.setValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, PixelSize, i);
             }

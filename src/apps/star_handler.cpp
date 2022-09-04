@@ -369,8 +369,8 @@ class star_handler_parameters {
                         // Add the line to the global obsModel
                         om.opticsMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, new_group, i);
 
-                        unique_opticsMdt.addObject();
-                        unique_opticsMdt.setObject(om.opticsMdt.getObject());
+                        const long int j = unique_opticsMdt.addObject();
+                        unique_opticsMdt.setObject(om.opticsMdt.getObject(i), j);
                     } else {
                         std::cout << " + Joining optics_groups with the same name: " << myname << std::endl;
                         std::cerr << " + WARNING: if these are different data sets, you might want to rename optics groups instead of joining them!" << std::endl;

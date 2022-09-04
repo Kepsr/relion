@@ -172,7 +172,7 @@ class MetaDataTable {
     }
 
     void setUnknownValue(int labelPosition, const std::string &value);
-    void setValueFromString(EMDL::EMDLabel label, const std::string &value, long int objectID = -1);
+    void setValueFromString(EMDL::EMDLabel label, const std::string &value, long int i);
 
     // Sort elements based on the values in the input label
     // (only numbers, no strings/bools)
@@ -197,26 +197,26 @@ class MetaDataTable {
     // Append all rows from 'app' to the end of the table and insert all missing labels.
     void append(const MetaDataTable &app);
 
-    // Get metadatacontainer for objectID (current_object if objectID < 0)
-    MetaDataContainer* getObject(long objectID = -1) const;
+    // Get metadata container at index i
+    MetaDataContainer* getObject(long int i) const;
 
-    /* setObject(data, objectID)
-     *  copies values from 'data' to object 'objectID'.
+    /* setObject(data, i)
+     *  copies values from 'data' to object 'i'.
      *  The target object is assumed to exist.
-     *  If objectID < 0, then current_object is set.
+     *  If i < 0, then current_object is set.
      *  Undefined labels are inserted.
      *
      *  Use addObject() to set an object that does not yet exist */
-    void setObject(MetaDataContainer* data, long objectID = -1);
+    void setObject(MetaDataContainer* data, long int i);
 
-    /* setValuesOfDefinedLabels(data, objectID)
-     * copies values from 'data' to object 'objectID'.
+    /* setValuesOfDefinedLabels(data, i)
+     * copies values from 'data' to object 'i'.
      * The target object is assumed to exist.
-     * If objectID < 0, then current_object is set.
+     * If i < 0, then current_object is set.
      * Only already defined labels are considered.
      *
      * Use addValuesOfDefinedLabels() to add an object that does not yet exist */
-    void setValuesOfDefinedLabels(MetaDataContainer* data, long objectID = -1);
+    void setValuesOfDefinedLabels(MetaDataContainer* data, long i);
 
     // reserve memory for this many lines
     void reserve(size_t capacity);
@@ -238,10 +238,10 @@ class MetaDataTable {
      *  Afterwards, 'current_object' points to the newly added object.*/
     void addValuesOfDefinedLabels(MetaDataContainer* data);
 
-    /* removeObject(objectID)
-     *  If objectID is not given, 'current_object' will be removed.
+    /* removeObject(i)
+     *  If i is not given, 'current_object' will be removed.
      *  'current_object' is set to the last object in the list. */
-    void removeObject(long objectID = -1);
+    void removeObject(long i);
 
     /** MetaDataTable::iterator
      *
@@ -252,7 +252,6 @@ class MetaDataTable {
      * }
      * @endcode
      *
-     * This is not thread-safe, because current_object is updated.
      */
     struct iterator {
 
@@ -284,7 +283,7 @@ class MetaDataTable {
         return iterator(this, objects.size());
     }
 
-    MetaDataContainer** goToObject(long objectID);
+    MetaDataContainer** goToObject(long i);
 
     // Read a STAR loop structure
     long int readStarLoop(std::ifstream &in, bool do_only_count = false);
@@ -442,7 +441,7 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long i) const {
     if (off < 0) throw "Negative offset";
 
     if (i < 0) {
-        i = current_object - &*objects.begin();
+        i = index();
     } else {
         try {
             checkObjectID(i);

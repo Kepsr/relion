@@ -708,8 +708,8 @@ void ParticleSubtractor::subtractOneParticle(
         opt.mydata.MDimg.setValue(EMDL::IMAGE_ORI_NAME, opt.mydata.particles[part_id].images[0].name, ori_img_id);
         //Also set the original order in the input STAR file for later combination
         opt.mydata.MDimg.setValue(EMDL::IMAGE_ID, ori_img_id, ori_img_id);
-        MDimg_out.addObject();
-        MDimg_out.setObject(opt.mydata.MDimg.getObject(ori_img_id));
+        const long int i = MDimg_out.addObject();
+        MDimg_out.setObject(opt.mydata.MDimg.getObject(ori_img_id), i);
 
         //printf("Writing: fn_orig = %s counter = %ld rank = %d optics_group = %d fn_img = %s SIZE = %d nr_particles_in_optics_group[optics_group] = %d\n", fn_orig.c_str(), counter, rank, optics_group+1, fn_img.c_str(), Xsize(img()), nr_particles_in_optics_group[optics_group]);
         img.setSamplingRateInHeader(my_pixel_size);
