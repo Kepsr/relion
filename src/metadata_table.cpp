@@ -79,11 +79,12 @@ MetaDataTable::MetaDataTable(const MetaDataTable &MD):
     activeLabels(MD.activeLabels)
 {
     for (size_t idx = 0; idx < MD.objects.size(); idx++) {
-        objects[idx] = new MetaDataContainer(*(MD.objects[idx]));
+        objects[idx] = new MetaDataContainer(*MD.objects[idx]);
         objects[idx]->table = this;
     }
 }
 
+// Copy assignment
 MetaDataTable& MetaDataTable::operator = (const MetaDataTable &MD) {
     if (this == &MD) return *this;
 
@@ -401,7 +402,6 @@ void MetaDataTable::sort(
 
         objects = objs;
     }
-    goToObject(0);  // reset pointer to the beginning of the table
 }
 
 void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_sort_after_at, bool do_sort_before_at) {
@@ -535,40 +535,32 @@ void MetaDataTable::append(const MetaDataTable &mdt) {
 
         setObjectUnsafe(mdt.getObject(i), objects.size() - 1);
     }
-
-    goToObject(0);  // reset pointer to the beginning of the table
 }
 
 
 MetaDataContainer* MetaDataTable::getObject(long int i) const {
-    try {
-        if (i < 0) { i = size() - 1; }
-        checkObjectID(i);
-        return objects[i];
-    } catch (const std::string &errmsg) {
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-    }
+    if (i < 0) { i = size() - 1; }
+    if (!checkBounds(i))
+        REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+            "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
+    return objects[i];
 }
 
 void MetaDataTable::setObject(MetaDataContainer* data, long int i) {
-    try {
-        if (i < 0) { i = size() - 1; }
-        checkObjectID(i);
-        addMissingLabels(*data->table);
-        setObjectUnsafe(data, i);
-    } catch (const std::string &errmsg) {
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-    }
+    if (i < 0) { i = size() - 1; }
+    if (!checkBounds(i))
+        REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+            "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
+    addMissingLabels(*data->table);
+    setObjectUnsafe(data, i);
 }
 
 void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long i) {
-    try {
-        if (i < 0) { i = size() - 1; }
-        checkObjectID(i);
-        setObjectUnsafe(data, i);
-    } catch (const std::string &errmsg) {
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-    }
+    if (i < 0) { i = size() - 1; }
+    if (!checkBounds(i))
+        REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+            "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
+    setObjectUnsafe(data, i);
 }
 
 void MetaDataTable::setObjectUnsafe(MetaDataContainer* data, long i) {
@@ -623,7 +615,6 @@ long int MetaDataTable::addObject(MetaDataContainer* data) {
         doubleLabels, intLabels, boolLabels, stringLabels,
         doubleVectorLabels, unknownLabels
     ));
-
     setObject(data, objects.size() - 1);
     return size() - 1;
 }
@@ -634,28 +625,16 @@ void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
         doubleLabels, intLabels, boolLabels,
         stringLabels, doubleVectorLabels, unknownLabels
     ));
-
     setValuesOfDefinedLabels(data, objects.size() - 1);
 }
 
 void MetaDataTable::removeObject(long i) {
-    try {
-        if (i < 0) { i = size() - 1; }
-        checkObjectID(i);
-        delete objects[i];
-        objects.erase(objects.begin() + i);
-    } catch (const std::string &errmsg) {
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-    }
-}
-
-MetaDataContainer** MetaDataTable::goToObject(long int i) {
-    try {
-        checkObjectID(i);
-        return &*objects.begin() + i;
-    } catch (const std::string &errmsg) {
-        REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-    }
+    if (i < 0) { i = size() - 1; }
+    if (!checkBounds(i))
+        REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+            "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
+    delete objects[i];
+    objects.erase(objects.begin() + i);
 }
 
 void MetaDataTable::printLabels(std::ostream &ost) {
@@ -665,12 +644,6 @@ void MetaDataTable::printLabels(std::ostream &ost) {
 
 void MetaDataTable::randomiseOrder() {
     std::random_shuffle(objects.begin(), objects.end());
-}
-
-// Bounds checking
-void MetaDataTable::checkObjectID(long i) const throw (std::string) {
-    if (i < 0 || i >= objects.size())
-        throw "object " + std::to_string(i) + " out of bounds! (" + std::to_string(objects.size()) + " objects present)";
 }
 
 //FIXME: does not support unknownLabels but this function is only used by relion_star_handler
@@ -1019,8 +992,6 @@ long int MetaDataTable::read(
         REPORT_ERROR((std::string) "MetaDataTable::read: File " + fn_read + " does not exist");
 
     return readStar(in, name, do_only_count);
-
-    goToObject(0);  // Go to the first object
 }
 
 long int MetaDataTable::readStarLoop(std::ifstream &in, bool do_only_count) {

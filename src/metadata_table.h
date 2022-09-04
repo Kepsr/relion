@@ -120,8 +120,6 @@ class MetaDataTable {
         return mdt;
     }
 
-    // Assignment
-    // Fill the new table with *copies* of all objects
     MetaDataTable& operator = (const MetaDataTable &MD);
 
     ~MetaDataTable();
@@ -229,8 +227,7 @@ class MetaDataTable {
         const MetaDataTable *mdt;
         long int i;
 
-        iterator(const MetaDataTable *mdt, long int i = 0):
-        i(i), mdt(mdt) {}
+        iterator(const MetaDataTable *mdt, long int i = 0): i(i), mdt(mdt) {}
 
         long int operator *() const { return i; }
 
@@ -245,8 +242,6 @@ class MetaDataTable {
     iterator begin() const { return iterator(this, 0); }
 
     iterator end() const { return iterator(this, objects.size()); }
-
-    MetaDataContainer** goToObject(long i);
 
     // Read a STAR loop structure
     long int readStarLoop(std::ifstream &in, bool do_only_count = false);
@@ -293,9 +288,7 @@ class MetaDataTable {
 
     private:
 
-    // Check if 'id' corresponds to an actual object.
-    // Throw if it does not.
-    void checkObjectID(long id) const throw (std::string);
+    inline bool checkBounds(long int i) const { return 0 <= i && i < objects.size(); }
 
     /* setObjectUnsafe(data)
      *  Same as setObject, but assumes that all labels are present. */
@@ -386,11 +379,9 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long i) const {
     if (i < 0) {
         i = size() - 1;
     } else {
-        try {
-            checkObjectID(i);
-        } catch (const std::string &errmsg) {
-            REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-        }
+        if (!checkBounds(i))
+            REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+                "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
     }
 
     return objects[i]->getValue<T>(off);
@@ -418,11 +409,9 @@ void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int i) {
     if (i < 0) {
         i = size() - 1;
     } else {
-        try {
-            checkObjectID(i);
-        } catch (const std::string &errmsg) {
-            REPORT_ERROR((std::string) __func__ + ": " + errmsg);
-        }
+        if (!checkBounds(i))
+            REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+                "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
     }
 
     if (off < 0) throw "Negative offset";
