@@ -141,7 +141,6 @@ void Preprocessing::initialise() {
         // Read the header of the micrograph to see how many frames there are.
         Image<RFLOAT> Imic;
 
-        MDmics.goToObject(0);
         FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
         Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
         Image<RFLOAT>::Dimensions dimensions = Imic.getDimensions();
@@ -1049,7 +1048,6 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
 
     RFLOAT mag2, dstep2, particle_angpix, rescale_fndata = 1.0;
     if (MDresult.size() > 0) {
-        MDresult.goToObject(0);
 
         bool contains_xy = MDresult.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) && MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);
         bool contains_z  = MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM);
