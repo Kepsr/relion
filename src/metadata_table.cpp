@@ -118,10 +118,6 @@ MetaDataTable::~MetaDataTable() {
     for (const auto &object : objects) delete object;
 }
 
-size_t MetaDataTable::numberOfObjects() const {
-    return objects.size();
-}
-
 void MetaDataTable::clear() {
     for (const auto &object : objects) delete object;
     objects.clear();
@@ -561,10 +557,6 @@ void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long i) {
     }
 }
 
-void MetaDataTable::reserve(size_t capacity) {
-    objects.reserve(capacity);
-}
-
 void MetaDataTable::setObjectUnsafe(MetaDataContainer* data, long i) {
     MetaDataContainer* obj = objects[i];
 
@@ -608,7 +600,7 @@ long int MetaDataTable::addObject() {
         doubleLabels, intLabels, boolLabels, stringLabels,
         doubleVectorLabels, unknownLabels
     ));
-    return index();  // numberOfObjects() - 1;
+    return index();
 }
 
 long int MetaDataTable::addObject(MetaDataContainer* data) {
@@ -934,15 +926,15 @@ MetaDataTable removeDuplicatedParticles(
     if (!MDin.containsLabel(mic_label))
         REPORT_ERROR("STAR file does not contain " + EMDL::label2Str(mic_label));
 
-    std::vector<RFLOAT> xs (MDin.numberOfObjects(), 0.0);
-    std::vector<RFLOAT> ys (MDin.numberOfObjects(), 0.0);
+    std::vector<RFLOAT> xs (MDin.size(), 0.0);
+    std::vector<RFLOAT> ys (MDin.size(), 0.0);
     std::vector<RFLOAT> zs;
     bool dataIs3D = false;
     if (MDin.containsLabel(EMDL::IMAGE_COORD_Z)) {
         if (!MDin.containsLabel(EMDL::ORIENT_ORIGIN_Z_ANGSTROM))
             REPORT_ERROR("You need rlnOriginZAngst to remove duplicated 3D particles");
         dataIs3D = true;
-        zs.resize(MDin.numberOfObjects(), 0.0);
+        zs.resize(MDin.size(), 0.0);
     }
 
     const auto grouped = group_particles_by_micrograph(
@@ -954,7 +946,7 @@ MetaDataTable removeDuplicatedParticles(
     const RFLOAT threshold_sq = threshold * threshold;
 
     // For each particle group, remove duplicates
-    std::vector<bool> valid (MDin.numberOfObjects(), true);
+    std::vector<bool> valid (MDin.size(), true);
     for (auto mic_name_and_object_indices : grouped) {
 
         // For every ordered pair of non-identical particles
@@ -991,7 +983,7 @@ MetaDataTable removeDuplicatedParticles(
 
     if (!fn_removed.empty()) MDremoved.write(fn_removed);
 
-    std::cout << "Removed " << MDremoved.numberOfObjects() << " duplicated objects from " << MDin.numberOfObjects() << " objects." << std::endl;
+    std::cout << "Removed " << MDremoved.size() << " duplicated objects from " << MDin.size() << " objects." << std::endl;
 
     return MDout;
 }

@@ -852,7 +852,7 @@ class helix_bilder_parameters {
             MD_3d.read(fn_in2);
             select3DsubtomoFrom2Dproj(MD_2d, MD_3d, MD_out);
             MD_out.write(fn_out);
-            std::cout << " Done! " << MD_out.numberOfObjects() << " out of " << MD_3d.numberOfObjects() << " subtomograms have been selected." << std::endl;
+            std::cout << " Done! " << MD_out.size() << " out of " << MD_3d.size() << " subtomograms have been selected." << std::endl;
         } else if (do_average_au_2d) {
             if (show_usage_for_an_option) {
                 displayEmptyLine();

@@ -2019,7 +2019,7 @@ long int PipeLineFlowChart::addProcessToUpwardsFlowChart(
 
     // See if there are any branchings side-wards, e.g. masks, 2D/3D references, coords, model, optimiser, etc
     long int result = -1;
-    if (pipeline.processList[new_process].inputNodeList.size() == 0) {
+    if (pipeline.processList[new_process].inputNodeList.empty()) {
         // Reached the top of the tree!
         return -1;
     }

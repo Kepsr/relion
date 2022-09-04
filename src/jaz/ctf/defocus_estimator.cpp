@@ -183,7 +183,7 @@ void DefocusEstimator::writeEPS(const MetaDataTable& mdt) {
     RFLOAT min_defocus = 99.e10;
     RFLOAT max_defocus = -99.e10;
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     for (int p = 0; p < pc; p++) {
         RFLOAT defU = mdt.getValue<RFLOAT>(EMDL::CTF_DEFOCUSU, p);

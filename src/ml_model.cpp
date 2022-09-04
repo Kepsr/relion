@@ -313,7 +313,7 @@ void MlModel::read(FileName fn_in) {
             auto &directions = pdf_direction[iclass];
             directions.clear();
             std::vector<RFLOAT> vdirections;
-            vdirections.reserve(MDclass.numberOfObjects());
+            vdirections.reserve(MDclass.size());
             for (long int i : MDclass) try {
                 vdirections.push_back(MDclass.getValue<RFLOAT>(EMDL::MLMODEL_PDF_ORIENT, i));
             } catch (const char *errmsg) {
@@ -797,7 +797,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
     if (!MD.containsLabel(EMDL::BODY_MASK_NAME))
         REPORT_ERROR("ERROR MlModel::initialiseBodyMasks: body-mask STAR file does not contain rlnBodyMaskName label.");
 
-    const auto n = MD.numberOfObjects();
+    const auto n = MD.size();
     masks_bodies           .resize(n);
     com_bodies             .resize(n);
     rotate_direction_bodies.resize(n);

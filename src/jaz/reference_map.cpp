@@ -199,9 +199,9 @@ std::vector<Image<Complex>> ReferenceMap::predictAll(
     bool applyCtf, bool applyTilt, bool applyShift, bool applyMtf, bool applyCtfPadding
 ) {
     // declare on first line to prevent copying
-    std::vector<Image<Complex>> out(mdt.numberOfObjects());
+    std::vector<Image<Complex>> out(mdt.size());
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     #pragma omp parallel for num_threads(threads)
     for (int p = 0; p < pc; p++) {
@@ -233,9 +233,9 @@ std::vector<Volume<gravis::t2Vector<Complex>>> ReferenceMap::predictAllComplexGr
     bool applyCtf, bool applyTilt, bool applyShift, bool applyMtf, bool applyCtfPadding
 ) {
     // declare on first line to prevent copying
-    std::vector<Volume<t2Vector<Complex>>> out(mdt.numberOfObjects());
+    std::vector<Volume<t2Vector<Complex>>> out(mdt.size());
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     #pragma omp parallel for num_threads(threads)
     for (int p = 0; p < pc; p++) {
@@ -275,9 +275,9 @@ std::vector<Image<Complex>> ReferenceMap::predictAll(
     bool applyCtf, bool applyTilt, bool applyShift
 ) {
     // declare on first line to prevent copying
-    std::vector<Image<Complex>> out(mdt.numberOfObjects());
+    std::vector<Image<Complex>> out(mdt.size());
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     #pragma omp parallel for num_threads(threads)
     for (int p = 0; p < pc; p++) {

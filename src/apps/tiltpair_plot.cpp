@@ -73,7 +73,7 @@ class tiltpair_plot_parameters {
         // Get the MDs for both untilted and tilted particles
         MDu.read(fn_unt);
         MDt.read(fn_til);
-        if (MDu.numberOfObjects() != MDt.numberOfObjects())
+        if (MDu.size() != MDt.size())
             REPORT_ERROR("Tiltpair plot ERROR: untilted and tilted STAR files have unequal number of entries.");
 
         // Get the symmetry point group

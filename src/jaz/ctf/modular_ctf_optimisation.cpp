@@ -23,7 +23,7 @@ mdt(mdt),
 obsModel(obsModel),
 obs(obs),
 pred(pred),
-particle_count(mdt.numberOfObjects()),
+particle_count(mdt.size()),
 num_treads(num_treads),
 frqWghByGroup(frqWghByGroup) {
 

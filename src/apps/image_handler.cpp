@@ -626,7 +626,7 @@ class image_handler_parameters {
         if (input_is_star) {
             do_ignore_optics = false;
             ObservationModel::loadSafely(fn_in, obsModel, MD, "discover", verb, false); // false means don't die upon failure
-            if (obsModel.opticsMdt.numberOfObjects() == 0) {
+            if (obsModel.opticsMdt.empty()) {
                 do_ignore_optics = true;
                 std::cout << " + WARNING: reading input STAR file without optics groups ..." << std::endl;
                 MD.read(fn_in);
@@ -656,7 +656,7 @@ class image_handler_parameters {
         int i_img = 0;
         time_config();
         if (verb > 0)
-            init_progress_bar(MD.numberOfObjects());
+            init_progress_bar(MD.size());
 
         bool do_md_out = false;
         for (long int index : MD) {
@@ -866,7 +866,7 @@ class image_handler_parameters {
         }
 
         if (verb > 0)
-            progress_bar(MD.numberOfObjects());
+            progress_bar(MD.size());
 
         if (do_md_out && fn_in.getExtension() == "star") {
             FileName fn_md_out = fn_in.insertBeforeExtension("_" + fn_out);

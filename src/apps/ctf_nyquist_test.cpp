@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     #pragma omp parallel for num_threads(threads)
     for (int p = 0; p < pc; p++) {

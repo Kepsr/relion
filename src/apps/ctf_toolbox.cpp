@@ -129,7 +129,7 @@ class ctf_toolbox_parameters {
             ObservationModel::loadSafely(fn_in, obsModel, MD);
             bool do_mic_name = obsModel.opticsMdt.name == "micrographs";
 
-            if (verb > 0) init_progress_bar(MD.numberOfObjects());
+            if (verb > 0) init_progress_bar(MD.size());
 
             for (long int i_img : MD) {
 
@@ -185,7 +185,7 @@ class ctf_toolbox_parameters {
                 if (verb > 0) progress_bar(i_img);
             }
 
-            if (verb > 0) progress_bar(MD.numberOfObjects());
+            if (verb > 0) progress_bar(MD.size());
 
             obsModel.save(MD, fn_in.insertBeforeExtension("_" + fn_out));
             std::cout << " + written out new particles STAR file in: " << fn_in.insertBeforeExtension("_" + fn_out) << std::endl;

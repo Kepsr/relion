@@ -3580,7 +3580,7 @@ string RelionJob::getCommandsMultiBodyJob(
 
         MetaDataTable MD;
         MD.read(joboptions["fn_bodies"].getString());
-        int nr_bodies = MD.numberOfObjects();
+        int nr_bodies = MD.size();
 
         if (is_continue) {
             int pos_it = joboptions["fn_cont"].getString().rfind("_it");

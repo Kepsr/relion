@@ -630,7 +630,7 @@ void FlexAnalyser::outputSelectedParticles(std::vector< std::vector<double> > &p
         fnt += "_max"+integerToString(max);
     fnt += ".star";
     data.obsModel.save(MDo, fnt, "particles");
-    std::cout << " Written out " << MDo.numberOfObjects() << " selected particles in " << fnt << std::endl;
+    std::cout << " Written out " << MDo.size() << " selected particles in " << fnt << std::endl;
 }
 
 void principalComponentsAnalysis(

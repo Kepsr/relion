@@ -11,7 +11,7 @@ void PlotMetaData::columnHistogram(
         REPORT_ERROR("ERROR: The column specified is not present in the MetaDataTable.");
 
     std::vector<RFLOAT> values;
-    values.reserve(mdt.numberOfObjects());
+    values.reserve(mdt.size());
     for (auto i : mdt) {
         if (EMDL::is<double>(label)) {
             values.push_back(mdt.getValue<double>(label, i));

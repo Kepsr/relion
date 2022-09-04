@@ -499,7 +499,7 @@ void Experiment::deleteDataOnScratch() {
 void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf_image, RFLOAT keep_free_scratch_Gb) {
     // This function relies on prepareScratchDirectory() being called before!
 
-    long int nr_part = MDimg.numberOfObjects();
+    long int nr_part = MDimg.size();
     int barstep;
     if (verb > 0 && do_copy) {
         std::cout << " Copying particles to scratch directory: " << fn_scratch << std::endl;
@@ -746,13 +746,13 @@ void Experiment::read(
         }
         #ifdef DEBUG_READ
         std::cerr << "Done sorting MDimg" << std::endl;
-        std::cerr << " MDimg.numberOfObjects()= " << MDimg.numberOfObjects() << std::endl;
+        std::cerr << " MDimg.size()= " << MDimg.size() << std::endl;
         timer.toc(tsort);
         timer.tic(tfill);
         long nr_read = 0;
         #endif
         // allocate 1 block of memory
-        particles.reserve(MDimg.numberOfObjects());
+        particles.reserve(MDimg.size());
 
         // Now Loop over all objects in the metadata file and fill the logical tree of the experiment
         long int last_part_id = -1;
@@ -761,7 +761,7 @@ void Experiment::read(
         int prev_optics_group = -999;
         //for (auto _ : MDimg)
         // Loop over all objects in MDimg (ori_part_id)
-        for (long int ori_img_id = 0; ori_img_id < MDimg.numberOfObjects(); ori_img_id++) {
+        for (long int ori_img_id = 0; ori_img_id < MDimg.size(); ori_img_id++) {
             // Get the optics group of this particle
             int optics_group = obsModel.getOpticsGroup(MDimg, ori_img_id);
 

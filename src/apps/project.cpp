@@ -167,7 +167,7 @@ class project_parameters {
                 std::cout << " Reading STAR file with angles for simulated images " << fn_ang << std::endl;
                 MDang_sim.read(fn_ang_simulate);
                 std::cout << " Done reading STAR file with angles for simulated images!" << std::endl;
-                if (MDang_sim.numberOfObjects() < MDang.numberOfObjects()) {
+                if (MDang_sim.size() < MDang.size()) {
                     REPORT_ERROR("ERROR: STAR file with angles for simulated images has fewer entries than the input STAR file with all angles.");
                 }
             }
@@ -240,7 +240,7 @@ class project_parameters {
             img.write(fn_out);
             std::cout << " Done writing " << fn_out << std::endl;
         } else {  // !do_only_one
-            init_progress_bar(MDang.numberOfObjects());
+            init_progress_bar(MDang.size());
             DFo.clear();
             rot = tilt = psi = xoff = yoff = zoff = 0.0;
 
@@ -256,7 +256,7 @@ class project_parameters {
                 }
             }
 
-            long int max_imgno = MDang.numberOfObjects() - 1;
+            long int max_imgno = MDang.size() - 1;
             for (long int imgno : MDang) {
                 rot  = MDang.getValue<RFLOAT>(EMDL::ORIENT_ROT, imgno);
                 tilt = MDang.getValue<RFLOAT>(EMDL::ORIENT_TILT, imgno);
@@ -504,12 +504,12 @@ class project_parameters {
 
                 if (imgno % 60 == 0) progress_bar(imgno);
             }
-            progress_bar(MDang.numberOfObjects());
+            progress_bar(MDang.size());
 
             // Write out STAR file with all information
             fn_img = fn_out + ".star";
             obsModel.save(DFo, fn_img);
-            std::cout << " Done writing " << MDang.numberOfObjects() << " images in " << fn_img << std::endl;
+            std::cout << " Done writing " << MDang.size() << " images in " << fn_img << std::endl;
 
         }
     }

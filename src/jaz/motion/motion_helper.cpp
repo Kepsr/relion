@@ -398,7 +398,7 @@ std::vector<std::vector<d2Vector>> MotionHelper::readTracksInPix(
         sts << p;
         mdt.readStar(ifs, sts.str());
 
-        fc = mdt.numberOfObjects();
+        fc = mdt.size();
 
         if (p > 0 && fc != lastFc) {
             REPORT_ERROR("MotionHelper::readTracks: broken file: " + fn + ".");

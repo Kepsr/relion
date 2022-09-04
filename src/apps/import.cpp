@@ -109,7 +109,7 @@ class import_parameters {
             if (do_continue && exists(old_fn_out)) {
                 MDopt.read(old_fn_out, "optics");
                 MDout.read(old_fn_out, tablename);
-                old_nr_files = MDout.numberOfObjects();
+                old_nr_files = MDout.size();
                 for (long int i : MDopt) {
                     const std::string old_optics_group_name = MDopt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, i);
                     if (old_optics_group_name == optics_group_name) {
@@ -119,7 +119,7 @@ class import_parameters {
                     }
                 }
                 if (do_new_optics_group) {
-                    optics_group_number = MDopt.numberOfObjects() + 1;
+                    optics_group_number = MDopt.size() + 1;
                 }
             }
 
@@ -179,7 +179,7 @@ class import_parameters {
             MDout.write(fh);
             fh.close();
 
-            long nr_new_files = MDout.numberOfObjects();
+            long nr_new_files = MDout.size();
             std::cout << " Written " << (fn_odir + fn_out) << " with " << nr_new_files << " items (" << (nr_new_files - old_nr_files) << " new items)" << std::endl;
         } else if (do_coordinates) {
             // Make the same directory structure of the coordinates
@@ -229,7 +229,7 @@ class import_parameters {
                 if (!particles_optics_group_name.validateCharactersStrict())
                     REPORT_ERROR("The optics group name may contain only numbers, alphabets and hyphen(-).");
 
-                if (obsModel.opticsMdt.numberOfObjects() != 1) {
+                if (obsModel.opticsMdt.size() != 1) {
                     obsModel.opticsMdt.write(std::cerr);
                     REPORT_ERROR(" ERROR: cannot rename particles optics groups when multiple ones are imported!");
                 }

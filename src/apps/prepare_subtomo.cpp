@@ -270,7 +270,7 @@ class prepare_subtomo {
             REPORT_ERROR("Cannot find the STAR file with all the tomograms " + fn_tomo_list);
         MD_tomo.clear();
         MD_tomo.read(fn_tomo_list);
-        if (MD_tomo.numberOfObjects() < 1)
+        if (MD_tomo.size() < 1)
             REPORT_ERROR("Tomogram STAR file " + fn_tomo_list + " is empty!");
         if (!MD_tomo.containsLabel(EMDL::MICROGRAPH_NAME))
             REPORT_ERROR("Tomogram STAR file " + fn_tomo_list + " should contain _rlnMicrographName!");
@@ -349,7 +349,7 @@ class prepare_subtomo {
                 while (getline(fin1, line, '\n')) {
                     words.clear();
                     tokenize(line, words);
-                    if (words.size() == 0) // Empty line
+                    if (words.empty())  // Empty line
                         continue;
                     if (words.size() != 1) // 1 blocks: tilt angle
                         REPORT_ERROR("Invalid .tlt file: " + fn2);
@@ -373,7 +373,7 @@ class prepare_subtomo {
             while (getline(fin1, line, '\n')) {
                 words.clear();
                 tokenize(line, words);
-                if (words.size() == 0) // Empty line
+                if (words.empty())  // Empty line
                     continue;
                 if (words.size() != 2) // 2 blocks: tilt angle, accumulated dose
                     REPORT_ERROR("Invalid .order file: " + fn2);
@@ -395,9 +395,9 @@ class prepare_subtomo {
                 MetaDataTable MD_this_tomo;
                 MD_this_tomo.clear();
                 MD_this_tomo.read(fn3);
-                if (MD_this_tomo.numberOfObjects() < 1)
+                if (MD_this_tomo.size() < 1)
                     REPORT_ERROR("Coordinates STAR file " + fn3 + " is empty!");
-                if (MD_tmp.numberOfObjects() < 1) {
+                if (MD_tmp.size() < 1) {
                     // MD_tmp is empty. 'fn3' is the first STAR file ever read.
                     MD_tmp = MD_this_tomo;
                 } else {
@@ -422,7 +422,7 @@ class prepare_subtomo {
                 while (getline(fin1, line, '\n')) {
                     words.clear();
                     tokenize(line, words);
-                    if (words.size() == 0) // Empty line
+                    if (words.empty()) // Empty line
                         continue;
                     if (words.size() != 3) // 3 blocks: x, y, z
                         REPORT_ERROR("Invalid .coords file: " + fn2);
@@ -585,7 +585,7 @@ class prepare_subtomo {
             while (getline(fin1, line, '\n')) {
                 words.clear();
                 tokenize(line, words);
-                if (words.size() == 0) // Empty line
+                if (words.empty())  // Empty line
                     continue;
                 if (words.size() != 1)
                     REPORT_ERROR("Invalid .tlt file: " + fn_tilt_txt);
@@ -601,7 +601,7 @@ class prepare_subtomo {
                 while (getline(fin1, line, '\n')) {
                     words.clear();
                     tokenize(line, words);
-                    if (words.size() == 0) // Empty line
+                    if (words.empty())  // Empty line
                         continue;
                     if (words.size() != 1)
                         REPORT_ERROR("Invalid .tlt trial file: " + fn_trial_tilt_txt);
@@ -726,7 +726,7 @@ class prepare_subtomo {
             while (getline(fin1, line, '\n')) {
                 words.clear();
                 tokenize(line, words);
-                if (words.size() == 0) // Empty line
+                if (words.empty())  // Empty line
                     continue;
                 if (words.size() != 2)
                     REPORT_ERROR("Invalid input file!");
@@ -823,7 +823,7 @@ class prepare_subtomo {
                 while (getline(fin1, line, '\n')) {
                     words.clear();
                     tokenize(line, words);
-                    if (words.size() == 0) // Empty line
+                    if (words.empty())  // Empty line
                         continue;
                     if (words.size() != 3)
                         REPORT_ERROR("Invalid input file: " + fn_coords);
@@ -847,7 +847,7 @@ class prepare_subtomo {
             }
 
             // Loop over every picked 3D point
-            if (MD_coords.numberOfObjects() < 1)
+            if (MD_coords.size() < 1)
                 REPORT_ERROR("MD_coords is empty! It reads from .coord or .star file: " + fn_coords);
             RFLOAT xx = 0.0, yy = 0.0, zz = 0.0;
             for (long int nr_subtomo : MD_coords) {

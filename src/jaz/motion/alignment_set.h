@@ -105,7 +105,7 @@ AlignmentSet<T>::AlignmentSet(
     globComp.resize(mc);
 
     for (int m = 0; m < mc; m++) {
-        const int pc = mdts[m].numberOfObjects();
+        const int pc = mdts[m].size();
 
         positions[m].resize(pc);
         globComp[m].resize(fc);

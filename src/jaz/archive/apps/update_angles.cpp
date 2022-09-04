@@ -218,12 +218,12 @@ int main(int argc, char *argv[]) {
     const bool quadratic = true;
 
     MetaDataTable mdtAll;
-    mdtAll.reserve(mdt0.numberOfObjects());
+    mdtAll.reserve(mdt0.size());
 
     for (long g = g0; g <= gc; g++) {
         std::cout << "micrograph " << g << " / " << mdts.size() <<"\n";
 
-        const int pc = mdts[g].numberOfObjects();
+        const int pc = mdts[g].size();
 
         std::vector<Image<Complex>> obsF = StackHelper::loadStackFS(
             &mdts[g], inPath, nr_omp_threads, &fts

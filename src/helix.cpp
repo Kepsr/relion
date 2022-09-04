@@ -1656,12 +1656,12 @@ void convertHelicalTubeCoordsToMetaDataTable(
     MD_in.clear();
     MD_out.clear();
     MD_in.read(fn_in);
-    if (MD_in.numberOfObjects() < 1) // Handle empty input files
+    if (MD_in.size() < 1) // Handle empty input files
         return;
 
     if (!MD_in.containsLabel(EMDL::IMAGE_COORD_X) || !MD_in.containsLabel(EMDL::IMAGE_COORD_Y))
         REPORT_ERROR("helix.cpp::convertHelicalTubeCoordsToMetaDataTable(): Input STAR file does not contain X and Y coordinates! Error(s) in " + fn_in);
-    if (MD_in.numberOfObjects() % 2)
+    if (MD_in.size() % 2)
         REPORT_ERROR("helix.cpp::convertHelicalTubeCoordsToMetaDataTable(): Input coordinates should be in pairs! Error(s) in" + fn_in);
 
     // Sjors added MDin_has_id and MDin_has_pitch to allow manual calculation of different cross-over distances to be carried onto the extracted segments...
@@ -1832,7 +1832,7 @@ void combineParticlePriorsWithKaiLocalCTF(
     MD_local_ctf.clear();
     MD_priors.read(fn_priors);
     MD_local_ctf.read(fn_local_ctf);
-    if (MD_priors.numberOfObjects() != MD_local_ctf.numberOfObjects())
+    if (MD_priors.size() != MD_local_ctf.size())
         REPORT_ERROR("helix.cpp::combineParticlePriorsWithKaiLocalCTF(): MetaDataTables to be combined are not of the same size.");
 
     if (
@@ -2118,7 +2118,7 @@ void convertHelicalSegmentCoordsToMetaDataTable(
     MD_in.clear();
     MD_out.clear();
     MD_in.read(fn_in);
-    if (MD_in.numberOfObjects() < 1) // Handle empty input files
+    if (MD_in.size() < 1) // Handle empty input files
         return;
 
     if (
@@ -2395,10 +2395,10 @@ void convertXimdispHelicalTubeCoordsToMetaDataTable(
     }
     fin.close();
 
-    total_segments = MD_out.numberOfObjects();
+    total_segments = MD_out.size();
     total_tubes = nr_tubes;
     std::cout << "Input XIMDISP coordinates = " << fn_in.c_str() << ", micrograph size = " << Xdim << " * " << Ydim
-              << ", box size = " << box_size_pix << ", tubes = " << nr_tubes << ", segments = " << MD_out.numberOfObjects() << "." << std::endl;
+              << ", box size = " << box_size_pix << ", tubes = " << nr_tubes << ", segments = " << MD_out.size() << "." << std::endl;
 }
 
 void convertEmanHelicalSegmentCoordsToMetaDataTable(
@@ -2661,10 +2661,10 @@ void convertEmanHelicalTubeCoordsToMetaDataTable(
     }
     fin.close();
 
-    total_segments = MD_out.numberOfObjects();
+    total_segments = MD_out.size();
     total_tubes = nr_tubes;
     std::cout << "Input EMAN2 coordinates = " << fn_in.c_str() << ", micrograph size = " << Xdim << " * " << Ydim
-              << ", box size = " << box_size_pix << ", tubes = " << nr_tubes << ", segments = " << MD_out.numberOfObjects() << "." << std::endl;
+              << ", box size = " << box_size_pix << ", tubes = " << nr_tubes << ", segments = " << MD_out.size() << "." << std::endl;
 }
 
 /*
@@ -3141,7 +3141,7 @@ void divideStarFile(FileName& fn_in, int nr) {
     MD_in.read(fn_in);
     std::cout << " Input file loaded." << std::endl;
 
-    total_lines = MD_in.numberOfObjects();
+    total_lines = MD_in.size();
     if (total_lines < nr)
         REPORT_ERROR("helix.cpp::divideStarFile: The number of total objects is smaller than the number of output files!");
     nr_lines = total_lines / nr;
@@ -3162,7 +3162,7 @@ void divideStarFile(FileName& fn_in, int nr) {
             MD.clear();
         }
     }
-    if (MD.numberOfObjects() != 0) {
+    if (MD.size() != 0) {
         file_id++;
         fn_out = fn_in.withoutExtension() + "_sub" + integerToString(file_id, 6, '0');
         fn_out = fn_out.addExtension("star");
@@ -3202,7 +3202,7 @@ void mergeStarFiles(FileName& fn_in) {
         for (long int i : MD_in) {
             MD_combined.addObject(MD_in.getObject(i));
         }
-        std::cout << "  " << MD_combined.numberOfObjects() << " objects loaded." << std::endl;
+        std::cout << "  " << MD_combined.size() << " objects loaded." << std::endl;
     }
 
     std::cout << " Writing the combined output file..." << std::endl;
@@ -3614,7 +3614,7 @@ void excludeLowCTFCCMicrographs(
     }
 
     std::cout << " Number of micrographs (input / output) = " << nr_mics_old << " / " << nr_mics_new << std::endl;
-    if (MD_out.numberOfObjects() < 1)
+    if (MD_out.size() < 1)
         std::cout << " No micrographs in output file!" << std::endl;
 
     MD_out.write(fn_out);
@@ -4035,7 +4035,7 @@ void updatePriorsForHelicalReconstruction(
     }
 
     // Check labels
-    if (MD.numberOfObjects() < 1)
+    if (MD.size() < 1)
         REPORT_ERROR("helix.cpp::updatePriorsForHelicalReconstruction: MetaDataTable is empty!");
     if (!MD.containsLabel(EMDL::IMAGE_NAME))
         REPORT_ERROR("helix.cpp::updatePriorsForHelicalReconstruction: rlnImageName is missing!");
@@ -4172,8 +4172,8 @@ void updatePriorsForHelicalReconstruction(
 
     if (verb > 0) {
 
-        long total_same_polarity = MD.numberOfObjects() - total_opposite_polarity;
-        RFLOAT opposite_percentage = 100.0 * (RFLOAT)(total_opposite_polarity) / (RFLOAT)(MD.numberOfObjects());
+        long total_same_polarity = MD.size() - total_opposite_polarity;
+        RFLOAT opposite_percentage = 100.0 * (RFLOAT)(total_opposite_polarity) / (RFLOAT)(MD.size());
         RFLOAT opposite_percentage_rot = 100.0 * (RFLOAT)(total_opposite_rot) / (RFLOAT)(total_same_rot + total_opposite_rot);
 
         std::cout << " Number of helical segments with same / opposite polarity to their psi priors: " << total_same_polarity << " / " << total_opposite_polarity << " (" << opposite_percentage << "%)" << std::endl;
@@ -4185,7 +4185,7 @@ void updatePriorsForHelicalReconstruction(
 void updateAngularPriorsForHelicalReconstructionFromLastIter(
     MetaDataTable& MD, bool keep_tilt_prior_fixed
 ) {
-    if (MD.numberOfObjects() < 1)
+    if (MD.size() < 1)
         REPORT_ERROR("helix.cpp::updateAngularPriorsForHelicalReconstruction: MetaDataTable is empty!");
 
     bool have_tilt       = MD.containsLabel(EMDL::ORIENT_TILT);
@@ -4502,7 +4502,7 @@ void HermiteInterpolateOne3DHelicalFilament(
     // DEBUG: Do not exclude particles on the edges
     // Xdim = Ydim = Zdim = 999999.0;
 
-    if (MD_in.numberOfObjects() <= 1)
+    if (MD_in.size() <= 1)
         REPORT_ERROR("helix.cpp::HermiteInterpolateOne3DHelicalFilament(): MetaDataTable should have at least two points for interpolation!");
     if (
         Xdim < box_size_pix || 
@@ -4890,7 +4890,7 @@ void Interpolate3DCurves(
             while (getline(fin, line, '\n')) {
                 words.clear();
                 tokenize(line, words);
-                if (words.size() == 0) // Empty line.
+                if (words.empty())  // Empty line.
                     continue;
                 if (words.size() != 3)
                     REPORT_ERROR("helix.cpp::Interpolate3DCurves(): Invalid input coordinate file " + fn_in);
@@ -4946,7 +4946,7 @@ void Interpolate3DCurves(
                 break;
             }
         }
-        //std::cout << MD_in.numberOfObjects() << std::endl; // DEBUG
+        //std::cout << MD_in.size() << std::endl; // DEBUG
         //fn_out = fn_in.beforeFirstOf(fn_in_root) + fn_out_root + ".star"; // DEBUG
         //MD_in.write(fn_out); // DEBUG
 
@@ -4960,7 +4960,7 @@ void Interpolate3DCurves(
         );
 
         // Output
-        if (MD_out.numberOfObjects() < 1) {
+        if (MD_out.size() < 1) {
             std::cout << " WARNING: No sub-tomograms have been interpolated on this helical filament!" << std::endl;
         } else {
             MD_all.append(MD_out);
@@ -4978,7 +4978,7 @@ void Interpolate3DCurves(
     //std::cout << " fn_out_root = " << fn_out_root << std::endl;
     //std::cout << " fn_out = " << fn_out << std::endl;
 
-    if (MD_all.numberOfObjects() < 1) {
+    if (MD_all.size() < 1) {
         std::cout << " ### Done! WARNING: No sub-tomograms have been interpolated! Please check whether you have done everything correctly." << std::endl;
     } else {
         MD_all.write(fn_out);
@@ -5073,7 +5073,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
 
     MD_out.clear();
 
-    if (MD_2d.numberOfObjects() < 1)
+    if (MD_2d.size() < 1)
         REPORT_ERROR("helix.cpp::select3DsubtomoFrom2Dproj(): MetaDataTable 2D projections is empty!");
     if (
         !MD_2d.containsLabel(EMDL::IMAGE_COORD_X)   || 
@@ -5085,7 +5085,7 @@ void select3DsubtomoFrom2Dproj(MetaDataTable& MD_2d, MetaDataTable& MD_3d, MetaD
     // For particle rescaling  - Does MD_2d contain Dpix and Magnification?
     auto_pixel_size = (MD_2d.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)) && (MD_2d.containsLabel(EMDL::CTF_MAGNIFICATION));
 
-    if (MD_3d.numberOfObjects() < 1)
+    if (MD_3d.size() < 1)
         REPORT_ERROR("helix.cpp::select3DsubtomoFrom2Dproj(): MetaDataTable 3D subtomograms is empty!");
     if (
         !MD_3d.containsLabel(EMDL::IMAGE_COORD_X)   ||
@@ -5196,7 +5196,7 @@ void averageAsymmetricUnits2D(
     MultidimArray<Complex> Fsum;
 
     long int imgno = 0;
-    init_progress_bar(MDimgs.numberOfObjects());
+    init_progress_bar(MDimgs.size());
     for (long int i : MDimgs) {
 
               FileName fn_img  = MDimgs.getValue<std::string>(EMDL::IMAGE_NAME, i);
@@ -5240,6 +5240,6 @@ void averageAsymmetricUnits2D(
 
         imgno++;
     }
-    progress_bar(MDimgs.numberOfObjects());
+    progress_bar(MDimgs.size());
 
 }

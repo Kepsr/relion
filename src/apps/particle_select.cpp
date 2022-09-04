@@ -50,8 +50,8 @@ int main(int argc, char *argv[]) {
 
         MetaDataTable* src = micToSource[micName];
 
-        const int pcRef = refByMic[m].numberOfObjects();
-        const int pcSrc = src->numberOfObjects();
+        const int pcRef = refByMic[m].size();
+        const int pcSrc = src->size();
 
         std::vector<d2Vector> posSrc(pcSrc);
 

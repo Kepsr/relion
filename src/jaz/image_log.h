@@ -134,7 +134,7 @@ void ImageLog::write(
         double originX, double originY, double originZ,
         double spacingX, double spacingY, double spacingZ)
 {
-    if (vec.size() == 0)
+    if (vec.empty())
     {
         std::cerr << "WARNING: nothing to write to " << fn << " - vector size is zero.\n";
         return;

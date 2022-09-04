@@ -422,7 +422,7 @@ void BFactorRefiner::writePerParticleEPS(const MetaDataTable& mdt) {
     plot2D.SetDrawLegend(false);
     plot2D.SetFlipY(true);
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     for (int p = 0; p < pc; p++) {
 

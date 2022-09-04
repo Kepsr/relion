@@ -78,7 +78,7 @@ class align_symmetry {
     }
 
     int search(MetaDataTable &MDang, Projector &projector) {
-        init_progress_bar(MDang.numberOfObjects());
+        init_progress_bar(MDang.size());
         long int best_at = 0;
         double best_diff2 = 1E99;
 
@@ -112,7 +112,7 @@ class align_symmetry {
             #endif
         }
 
-        progress_bar(MDang.numberOfObjects());
+        progress_bar(MDang.size());
 
         return best_at;
     }

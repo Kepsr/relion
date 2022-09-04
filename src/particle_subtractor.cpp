@@ -94,7 +94,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
     }
 
     opt.read(fn_opt, rank, true); // true means: prevent prereading all particle images
-    nr_particles_in_optics_group.resize(opt.mydata.obsModel.opticsMdt.numberOfObjects(), 0);
+    nr_particles_in_optics_group.resize(opt.mydata.obsModel.opticsMdt.size(), 0);
 
     // Overwrite the particles STAR file with a smaller subset
     if (!fn_sel.empty()) {
@@ -349,7 +349,7 @@ void ParticleSubtractor::saveStarFile(int myrank) {
     }
 
     #ifdef DEBUG
-    std::cout << "myrank = " << myrank << " size = " << size << " my_first = " << my_first << " my_last = " << my_last << " num_items = " << MD.numberOfObjects() << " writing to " << fn_star << std::endl;
+    std::cout << "myrank = " << myrank << " size = " << size << " my_first = " << my_first << " my_last = " << my_last << " num_items = " << MD.size() << " writing to " << fn_star << std::endl;
     #endif
 }
 
@@ -370,7 +370,7 @@ void ParticleSubtractor::combineStarFile(int myrank) {
     MDimg_out.deactivateLabel(EMDL::IMAGE_ID);
     opt.mydata.obsModel.save(MDimg_out, fn_out + "particles_subtracted.star");
 
-    std::cout << " + Saved STAR file with " << MDimg_out.numberOfObjects()
+    std::cout << " + Saved STAR file with " << MDimg_out.size()
               << " subtracted particles in " << fn_out << "particles_subtracted.star" << std::endl;
 
 }

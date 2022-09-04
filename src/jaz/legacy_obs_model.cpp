@@ -83,7 +83,7 @@ std::vector<Image<Complex>> LegacyObservationModel::predictObservations(
     Projector &proj, const MetaDataTable &mdt, int threads,
     bool applyCtf, bool applyTilt, bool applyShift
 ) const {
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
     std::vector<Image<Complex>> out(pc);
 
     #pragma omp parallel for num_threads(threads)

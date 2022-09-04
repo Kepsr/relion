@@ -110,15 +110,15 @@ class particle_symmetry_expand_parameters {
             DFi.read(fn_in);
         } else {
             ObservationModel::loadSafely(fn_in, obsModel, DFi, "particles", 1, false);
-            if (obsModel.opticsMdt.numberOfObjects() == 0) {
+            if (obsModel.opticsMdt.empty()) {
                 std::cerr << " + WARNGING: could not read optics groups table, proceeding without it ..." << std::endl;
                 DFi.read(fn_in);
                 do_ignore_optics = true;
             }
         }
 
-        int barstep = std::max(1, (int) DFi.numberOfObjects() / 60);
-        init_progress_bar(DFi.numberOfObjects());
+        int barstep = std::max(1, (int) DFi.size() / 60);
+        init_progress_bar(DFi.size());
         DFo.clear();
 
         // Loop over input MetadataTable
@@ -170,7 +170,7 @@ class particle_symmetry_expand_parameters {
             if (imgno % barstep == 0) progress_bar(imgno);
 
         }
-        progress_bar(DFi.numberOfObjects());
+        progress_bar(DFi.size());
 
 
         if (do_ignore_optics) {

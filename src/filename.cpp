@@ -462,15 +462,15 @@ int mktree(const FileName &fn_dir, mode_t mode)
     int mdret;
 
     // force trailing / so we can handle everything in loop
-    if(s[s.size()-1]!='/')
-        s+='/';
+    if (s[s.size() - 1] != '/')
+        s += '/';
 
-    while((pos=s.find_first_of('/',pre))!=std::string::npos)
+    while ((pos = s.find_first_of('/', pre)) != std::string::npos)
     {
-        dir=s.substr(0,pos++);
-        pre=pos;
+        dir = s.substr(0, pos++);
+        pre = pos;
         // if leading / first time is 0 length
-        if (dir.size() == 0)
+        if (dir.empty())
             continue;
 
         if ((mdret = mkdir(dir.c_str(), mode)) && errno != EEXIST)

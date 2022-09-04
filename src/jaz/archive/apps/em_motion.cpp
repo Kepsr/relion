@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
     Image<RFLOAT> stack0;
     stack0.read(finName, false);
 
-    const int pc0 = mdts[0].numberOfObjects();
+    const int pc0 = mdts[0].size();
     const bool zstack = stack0.data.zdim > 1;
     const int stackSize = zstack ? stack0.data.zdim : stack0.data.ndim;
     const int fc = stackSize / pc0;
@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
         std::stringstream stsg;
         stsg << g;
 
-        const int pc = mdts[g].numberOfObjects();
+        const int pc = mdts[g].size();
         pctot += pc;
 
         std::vector<std::vector<Image<Complex> > > movie;

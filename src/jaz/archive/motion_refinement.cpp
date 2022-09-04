@@ -661,7 +661,7 @@ std::vector<std::vector<d2Vector>> MotionRefinement::readTracks(std::string fn) 
     for (int p = 0; p < pc; p++) {
         mdt.readStar(ifs, std::to_string(p));
 
-        fc = mdt.numberOfObjects();
+        fc = mdt.size();
 
         if (p > 0 && fc != lastFc) {
             REPORT_ERROR("MotionRefinement::readTracks: broken file: "+fn+".");

@@ -345,7 +345,7 @@ void readRelionFormatMasksAndOperators(
         std::cout << " Reading list of masks from " << fn_info << "..." << std::endl;
 
     MD.read(fn_info);
-    if (MD.numberOfObjects() < 1)
+    if (MD.size() < 1)
         REPORT_ERROR("ERROR: STAR file " + (std::string)(fn_info) + " is empty!");
     if (
         !MD.containsLabel(EMDL::MASK_NAME)                ||
@@ -472,7 +472,7 @@ void readRelionFormatMasksWithoutOperators(
 
     MD.clear();
     MD.read(fn_info);
-    if (MD.numberOfObjects() < 2 || MD.numberOfObjects() > 999)
+    if (MD.size() < 2 || MD.size() > 999)
         REPORT_ERROR("ERROR: STAR file " + (std::string)(fn_info) + " should have 2~999 entries!");
     if (!MD.containsLabel(EMDL::MASK_NAME) || !MD.containsLabel(EMDL::AREA_ID))
         REPORT_ERROR("ERROR: Label EMDL::MASK_NAME and/or EMDL::AREA_ID are missing in STAR file " + (std::string)(fn_info) + " !");

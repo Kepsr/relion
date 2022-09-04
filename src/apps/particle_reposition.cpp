@@ -91,8 +91,8 @@ class particle_reposition_parameters {
 
 
         // Loop over all micrographs
-        int barstep = std::max(1, (int) DFi.numberOfObjects() / 60);
-        init_progress_bar(DFi.numberOfObjects());
+        int barstep = std::max(1, (int) DFi.size() / 60);
+        init_progress_bar(DFi.size());
         long int imgno = 0;
         FileName fn_prevdir = "";
         for (long int i : DFi) {
@@ -131,7 +131,7 @@ class particle_reposition_parameters {
 
             int optics_group_mic = DFi.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
             RFLOAT mic_pixel_size = -1.0;
-            for (int j = 0; j < obsModelMics.opticsMdt.numberOfObjects(); j++) {
+            for (int j = 0; j < obsModelMics.opticsMdt.size(); j++) {
                 const int my_optics_group = obsModelMics.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, j);
                 if (my_optics_group == optics_group_mic) {
                     mic_pixel_size = obsModelMics.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, j);
@@ -397,7 +397,7 @@ class particle_reposition_parameters {
             imgno++;
 
         } // end loop over input MetadataTable
-        progress_bar(DFi.numberOfObjects());
+        progress_bar(DFi.size());
 
         FileName fn_star_out = fn_odir + "micrographs_reposition.star";
         if (!fn_out.empty()) fn_star_out = fn_star_out.insertBeforeExtension("_" + fn_out);

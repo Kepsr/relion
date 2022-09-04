@@ -106,7 +106,7 @@ void ThirdOrderPolynomialModel::read(std::ifstream &fh, std::string block_name) 
         }
     }
 
-    if (MD.numberOfObjects() != NUM_COEFFS) {
+    if (MD.size() != NUM_COEFFS) {
         REPORT_ERROR("ThirdOrderPolynomialModel coefficients table: incomplete values");
     }
 }

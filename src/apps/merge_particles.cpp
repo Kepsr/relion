@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     MetaDataTable particleOut, opticsOut;
 
     for (int i = 0; i < srcCount; i++) {
-        const int ogc = obsModels[i].opticsMdt.numberOfObjects();
+        const int ogc = obsModels[i].opticsMdt.size();
         optGrTransl[i].resize(ogc);
 
         for (int g = 0; g < ogc; g++) {
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
             optGrTransl[i][g] = ogNew;
         }
 
-        const int pc = particleMdts[i].numberOfObjects();
+        const int pc = particleMdts[i].size();
 
         for (int p = 0; p < pc; p++) {
             const int pNew = particleOut.addObject(particleMdts[i].getObject(p));

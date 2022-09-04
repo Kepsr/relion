@@ -119,8 +119,8 @@ class stack_create_parameters {
 
         // If not splitting, just fill fn_mics and mics_ndim with one entry (to re-use loop below)
         if (!do_split_per_micrograph) {
-            fn_mics.push_back("");
-            mics_ndims.push_back(MD.numberOfObjects());
+            fn_mics.emplace_back();
+            mics_ndims.push_back(MD.size());
         }
 
         // Loop over all micrographs

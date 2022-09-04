@@ -44,7 +44,7 @@ Image<RFLOAT> RefinementHelper::drawFSC(
     double thresh
 ) {
     /// TODO: Also return dest1D
-    const int n = mdt->numberOfObjects();
+    const int n = mdt->size();
     const int w = 2 * (n - 1);
     const int h = 2 * (n - 1);
 
@@ -71,7 +71,7 @@ Image<RFLOAT> RefinementHelper::drawFSC(
 }
 
 Image<RFLOAT> RefinementHelper::computeSNR(const MetaDataTable *mdt, double eps) {
-    const int n = mdt->numberOfObjects();
+    const int n = mdt->size();
     const int w = 2 * (n - 1);
     const int h = 2 * (n - 1);
 
@@ -105,7 +105,7 @@ Image<RFLOAT> RefinementHelper::computeSigInvSq(
     const MetaDataTable *mdt, const std::vector<double> &signalPow,
     double eps
 ) {
-    const int n = mdt->numberOfObjects();
+    const int n = mdt->size();
     const int w = 2 * (n - 1);
     const int h = 2 * (n - 1);
 

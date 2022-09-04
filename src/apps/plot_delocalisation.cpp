@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
     std::vector<double> histWorst(maxBin, 0.0);
 
     for (int m = 0; m < allMdts.size(); m++) {
-        const int pc = allMdts[m].numberOfObjects();
+        const int pc = allMdts[m].size();
 
         const double mgContrib = allParts ? 1.0 : pc;
         const int p_max = allParts ? pc : 1;

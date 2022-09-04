@@ -415,7 +415,7 @@ void MotionRefiner::combineEPSAndSTARfiles() {
 
         // Remove absent optics groups; After this, NOTHING should be done except for saving. obsModel's internal data structure is now corrupted!
         int og = 0;
-        while (og < obsModel.opticsMdt.numberOfObjects()) {
+        while (og < obsModel.opticsMdt.size()) {
             RFLOAT og_angpix = obsModel.opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, og);
             if (og_angpix < 0) {
                 obsModel.opticsMdt.removeObject(og);
@@ -451,7 +451,7 @@ FileName MotionRefiner::getOutputFileNameRoot(
 void MotionRefiner::adaptMovieNames() {
     if (movie_toReplace != "") {
 
-        for (int i = 0; i < mdt0.numberOfObjects(); i++) {
+        for (int i = 0; i < mdt0.size(); i++) {
             std::string name = mdt0.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
 
             if (i == 0 && verb > 0) {

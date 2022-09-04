@@ -206,7 +206,7 @@ void MotionEstimator::process(
             exit(RELION_EXIT_ABORTED);
 
 
-        const int pc = mdts[g].numberOfObjects();
+        const int pc = mdts[g].size();
         if (pc == 0) continue;
 
         if (debug) {
@@ -347,7 +347,7 @@ void MotionEstimator::prepMicrograph(
     std::vector<std::vector<d2Vector>>& initialTracks,
     std::vector<d2Vector>& globComp
 ) {
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     std::vector<std::vector<d2Vector>> myInitialTracks;
     std::vector<d2Vector> myGlobComp;
@@ -381,7 +381,7 @@ void MotionEstimator::prepMicrograph(
 
     movieCC = MotionHelper::movieCC(movie, preds, dmgWeight, cc_pad, nr_omp_threads);
 
-    if (global_init || myInitialTracks.size() == 0) {
+    if (global_init || myInitialTracks.empty()) {
         std::vector<Image<RFLOAT>> ccSum = MotionHelper::addCCs(movieCC);
         std::vector<gravis::d2Vector> globTrack = MotionHelper::getGlobalTrack(ccSum, cc_pad);
         std::vector<gravis::d2Vector> globOffsets;
@@ -532,7 +532,7 @@ void MotionEstimator::updateFCC(
     std::vector<Image<RFLOAT>>& weights0,
     std::vector<Image<RFLOAT>>& weights1
 ) {
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     #pragma omp parallel for num_threads(nr_omp_threads)
     for (int p = 0; p < pc; p++) {

@@ -76,7 +76,7 @@ void cb_viewmic(Fl_Widget* w, void* data) {
             int my_nr_picked;
             if (exists(fn_coord)) {
                 MDcoord.read(fn_coord);
-                my_nr_picked = MDcoord.numberOfObjects();
+                my_nr_picked = MDcoord.size();
             } else {
                 my_nr_picked = 0;
             }
@@ -213,7 +213,7 @@ int manualpickerGuiWindow::fill() {
     int ystep = 35;
 
     imics.clear();
-    for (int ii = 0; ii < MDin.numberOfObjects(); ii++) {
+    for (int ii = 0; ii < MDin.size(); ii++) {
         imics.push_back(ii);
     }
 
@@ -355,7 +355,7 @@ void manualpickerGuiWindow::writeOutputStarfile() {
         }
     }
 
-    if (obsModel.opticsMdt.numberOfObjects() > 0) {
+    if (obsModel.opticsMdt.size() > 0) {
         obsModel.save(MDout, fn_sel, "micrographs");
     } else {
         MDout.write(fn_sel);
@@ -429,7 +429,7 @@ void manualpickerGuiWindow::cb_menubar_recount_i() {
         int my_nr_picked;
         if (exists(fn_coord)) {
             MDcoord.read(fn_coord);
-            my_nr_picked = MDcoord.numberOfObjects();
+            my_nr_picked = MDcoord.size();
         } else {
             my_nr_picked = 0;
         }

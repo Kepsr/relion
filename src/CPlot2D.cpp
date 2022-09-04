@@ -483,7 +483,7 @@ void CPlot2D::AddDataSet(int numPoints, double *xValues, double *yValues)
 void CPlot2D::AddDataSet(std::vector<RFLOAT> xValues, std::vector<RFLOAT> yValues)
 {
     CDataSet dataSet;
-    if (m_dataSets.size() == 0)
+    if (m_dataSets.empty())
     	dataSet.SetDatasetColor(1., 0., 0.);
     else if (m_dataSets.size() == 1)
     	dataSet.SetDatasetColor(0., 1., 0.);
@@ -508,7 +508,7 @@ void CPlot2D::AddDataSet(std::vector<RFLOAT> xValues, std::vector<RFLOAT> yValue
 void CPlot2D::AddDataSet(std::vector<RFLOAT> yValues)
 {
     CDataSet dataSet;
-    if (m_dataSets.size() == 0)
+    if (m_dataSets.empty())
     	dataSet.SetDatasetColor(1., 0., 0.);
     else if (m_dataSets.size() == 1)
     	dataSet.SetDatasetColor(0., 1., 0.);
