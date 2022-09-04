@@ -29,20 +29,12 @@
 #ifndef METADATA_TABLE_H
 #define METADATA_TABLE_H
 
-#include <map>
 #include <vector>
 #include <iostream>
-#include <iterator>
-#include <sstream>
-#include <time.h>
 #include <stdio.h>
-#include <sstream>
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
+#include "src/filename.h"
 #include "src/funcs.h"
 #include "src/args.h"
-#include "src/CPlot2D.h"
 #include "src/metadata_container.h"
 #include "src/metadata_label.h"
 
@@ -137,9 +129,7 @@ class MetaDataTable {
     // Is this a 1D list (as opposed to a 2D table)?
     bool isList;
 
-    inline bool empty() const {
-        return objects.empty();
-    }
+    inline bool empty() const { return objects.empty(); }
 
     size_t numberOfObjects() const;
     void clear();
@@ -245,19 +235,15 @@ class MetaDataTable {
      */
     struct iterator {
 
-        MetaDataTable *const mdt;
+        const MetaDataTable *mdt;
         long int i;
 
-        iterator(MetaDataTable *mdt, long int i = 0):
+        iterator(const MetaDataTable *mdt, long int i = 0):
         i(i), mdt(mdt) {}
 
-        long int operator *() const {
-            return i;
-        }
+        long int operator *() const { return i; }
 
-        iterator &operator ++() {
-            return *this;
-        }
+        iterator &operator ++() { return *this; }
 
         bool operator != (const iterator &other) const {
             return i != other.i || mdt != other.mdt;
@@ -265,21 +251,16 @@ class MetaDataTable {
 
     };
 
-    iterator begin() {
-        return iterator(this, 0);
-    }
+    iterator begin() const { return iterator(this, 0); }
 
-    iterator end() {
-        return iterator(this, objects.size());
-    }
+    iterator end() const { return iterator(this, objects.size()); }
 
     MetaDataContainer** goToObject(long i);
 
     // Read a STAR loop structure
     long int readStarLoop(std::ifstream &in, bool do_only_count = false);
 
-    /* Read a STAR list
-     * Return true if the list is followed by a loop, false otherwise */
+    // Read a STAR list and report on whether the list is followed by a loop
     bool readStarList(std::ifstream &in);
 
     /* Read a MetaDataTable from a STAR-format data block
@@ -303,27 +284,6 @@ class MetaDataTable {
 
     // Write to a single file
     void write(const FileName &fn_out);
-
-    // Make a histogram of a column
-    void columnHistogram(
-        EMDL::EMDLabel label, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
-        int verb = 0, CPlot2D *plot2D = NULL, long int nr_bin = -1,
-        RFLOAT hist_min = -LARGE_NUMBER, RFLOAT hist_max = LARGE_NUMBER,
-        bool do_fractional_instead = false, bool do_cumulative_instead = false
-    );
-
-    static void histogram(
-        std::vector<RFLOAT> &values, std::vector<RFLOAT> &histX, std::vector<RFLOAT> &histY,
-        int verb = 0, std::string title="Histogram", CPlot2D *plot2D = NULL, long int nr_bin = -1,
-        RFLOAT hist_min = -LARGE_NUMBER, RFLOAT hist_max = LARGE_NUMBER,
-        bool do_fractional_instead = false, bool do_cumulative_instead = false
-    );
-
-    void addToCPlot2D(
-        CPlot2D *plot2D, EMDL::EMDLabel xaxis, EMDL::EMDLabel yaxis,
-        double red=0., double green=0., double blue=0., double linewidth = 1.0,
-        std::string marker=""
-    );
 
     void printLabels(std::ostream &ost);
 
@@ -349,6 +309,8 @@ class MetaDataTable {
     /* setObjectUnsafe(data)
      *  Same as setObject, but assumes that all labels are present. */
     void setObjectUnsafe(MetaDataContainer *data, long objId);
+
+    friend struct PlotMetaData;
 
 };
 

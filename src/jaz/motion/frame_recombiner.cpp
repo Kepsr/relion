@@ -21,6 +21,7 @@
 #include "frame_recombiner.h"
 #include "motion_refiner.h"
 #include "motion_helper.h"
+#include "src/plot_metadata.h"
 
 #include <src/jaz/micrograph_handler.h>
 #include <src/jaz/obs_model.h>
@@ -548,7 +549,7 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
     plot2D.SetDrawLegend(false);
     plot2D.SetXAxisTitle("movie frame");
     plot2D.SetYAxisTitle("B-factor");
-    mdt.addToCPlot2D(&plot2D, EMDL::IMAGE_FRAME_NR, EMDL::POSTPROCESS_BFACTOR);
+    PlotMetaData::addToCPlot2D(mdt, &plot2D, EMDL::IMAGE_FRAME_NR, EMDL::POSTPROCESS_BFACTOR);
     plot2D.OutputPostScriptPlot(outPath + "bfactors.eps");
 
     CPlot2D plot2Db("Polishing scale-factors");
@@ -557,7 +558,7 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromFCC(
     plot2Db.SetDrawLegend(false);
     plot2Db.SetXAxisTitle("movie frame");
     plot2Db.SetYAxisTitle("Scale-factor");
-    mdt.addToCPlot2D(&plot2Db, EMDL::IMAGE_FRAME_NR, EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT);
+    PlotMetaData::addToCPlot2D(mdt, &plot2Db, EMDL::IMAGE_FRAME_NR, EMDL::POSTPROCESS_GUINIER_FIT_INTERCEPT);
     plot2Db.OutputPostScriptPlot(outPath + "scalefactors.eps");
 
     return freqWeights;

@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include "src/ctffind_runner.h"
 #include "src/multidim_array_statistics.h"
+#include "src/plot_metadata.h"
 #include <cmath>
 
 #ifdef CUDA
@@ -429,14 +430,15 @@ void CtffindRunner::joinCtffindResults() {
 
     obsModel.save(MDctf, fn_out+"micrographs_ctf.star", "micrographs");
 
-    std::vector<EMDL::EMDLabel> plot_labels;
-    plot_labels.push_back(EMDL::CTF_DEFOCUSU);
-    plot_labels.push_back(EMDL::CTF_DEFOCUS_ANGLE);
-    plot_labels.push_back(EMDL::CTF_ASTIGMATISM);
-    plot_labels.push_back(EMDL::CTF_MAXRES);
-    plot_labels.push_back(EMDL::CTF_PHASESHIFT);
-    plot_labels.push_back(EMDL::CTF_FOM);
-    plot_labels.push_back(EMDL::CTF_VALIDATIONSCORE);
+    std::vector<EMDL::EMDLabel> plot_labels {
+        EMDL::CTF_DEFOCUSU,
+        EMDL::CTF_DEFOCUS_ANGLE,
+        EMDL::CTF_ASTIGMATISM,
+        EMDL::CTF_MAXRES,
+        EMDL::CTF_PHASESHIFT,
+        EMDL::CTF_FOM,
+        EMDL::CTF_VALIDATIONSCORE
+    };
     FileName fn_eps, fn_eps_root = fn_out + "micrographs_ctf";
     std::vector<FileName> all_fn_eps;
     for (int i = 0; i < plot_labels.size(); i++) {
@@ -444,7 +446,7 @@ void CtffindRunner::joinCtffindResults() {
         if (MDctf.containsLabel(label)) {
             // Values for all micrographs
             CPlot2D *plot2Db = new CPlot2D(EMDL::label2Str(label) + " for all micrographs");
-            MDctf.addToCPlot2D(plot2Db, EMDL::UNDEFINED, label, 1.0);
+            PlotMetaData::addToCPlot2D(MDctf, plot2Db, EMDL::UNDEFINED, label, 1.0);
             plot2Db->SetDrawLegend(false);
             fn_eps = fn_eps_root + "_all_" + EMDL::label2Str(label) + ".eps";
             plot2Db->OutputPostScriptPlot(fn_eps);
@@ -454,7 +456,7 @@ void CtffindRunner::joinCtffindResults() {
                 // Histogram
                 std::vector<RFLOAT> histX, histY;
                 CPlot2D *plot2D = new CPlot2D("");
-                MDctf.columnHistogram(label, histX, histY, 0, plot2D);
+                PlotMetaData::columnHistogram(MDctf, label, histX, histY, 0, plot2D);
                 fn_eps = fn_eps_root + "_hist_" + EMDL::label2Str(label) + ".eps";
                 plot2D->OutputPostScriptPlot(fn_eps);
                 all_fn_eps.push_back(fn_eps);

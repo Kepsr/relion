@@ -336,28 +336,23 @@ ColourScheme IOParser::getColourScheme() {
 void untangleDeviceIDs(std::string &tangled, std::vector <std::vector<std::string>> &untangled) {
     // Handle GPU (device) assignments for each rank, if speficied
     size_t pos = 0;
-    std::string delim = ":";
+    std::string colon = ":";
     std::vector<std::string> allRankIDs;
-    std::string thisRankIDs, thisThreadID;
-    while ((pos = tangled.find(delim)) != std::string::npos) {
-        thisRankIDs = tangled.substr(0, pos);
-		// std::cout << "in loop " << thisRankIDs << std::endl;
-        tangled.erase(0, pos + delim.length());
-        allRankIDs.push_back(thisRankIDs);
+    while ((pos = tangled.find(colon)) != std::string::npos) {
+        allRankIDs.push_back(tangled.substr(0, pos));
+        tangled.erase(0, pos + colon.length());
     }
     allRankIDs.push_back(tangled);
 
     untangled.resize(allRankIDs.size());
     // Now handle the thread assignements in each rank
+    const std::string comma = ",";
     for (int i = 0; i < allRankIDs.size(); i++) {
         pos = 0;
-        delim = ",";
 		// std::cout  << "in 2nd loop "<< allRankIDs[i] << std::endl;
-        while ((pos = allRankIDs[i].find(delim)) != std::string::npos) {
-            thisThreadID = allRankIDs[i].substr(0, pos);
-			// std::cout << "in 3rd loop " << thisThreadID << std::endl;
-            allRankIDs[i].erase(0, pos + delim.length());
-            untangled[i].push_back(thisThreadID);
+        while ((pos = allRankIDs[i].find(comma)) != std::string::npos) {
+            untangled[i].push_back(allRankIDs[i].substr(0, pos));
+            allRankIDs[i].erase(0, pos + comma.length());
         }
         untangled[i].push_back(allRankIDs[i]);
     }

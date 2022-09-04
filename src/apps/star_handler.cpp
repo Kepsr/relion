@@ -25,6 +25,7 @@
 #include <src/jaz/obs_model.h>
 #include <src/pipeline_jobs.h>
 #include <cmath>
+#include "src/plot_metadata.h"
 
 class star_handler_parameters {
 
@@ -812,7 +813,7 @@ class star_handler_parameters {
 
         std::vector<RFLOAT> histX, histY;
         CPlot2D *plot2D = new CPlot2D("");
-        MD.columnHistogram(label, histY, histX, 1, plot2D, nr_bin, hist_min, hist_max, show_frac, show_cumulative);
+        PlotMetaData::columnHistogram(MD, label, histY, histX, 1, plot2D, nr_bin, hist_min, hist_max, show_frac, show_cumulative);
         FileName fn_eps = fn_out.withoutExtension()+".eps";
         plot2D->OutputPostScriptPlot(fn_eps);
         std::cout << " Done! written out " << fn_eps << std::endl;
