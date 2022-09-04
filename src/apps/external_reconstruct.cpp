@@ -43,18 +43,17 @@ class ext_recons_parameters {
     int verb;
     bool skip_gridding, do_map;
 
-
     void read(int argc, char **argv) {
         if (argc < 2) {
             REPORT_ERROR("  Usage: relion_external_reconstruct input.star");
         }
-        FileName fn_star = argv[1];
+        const FileName fn_star = argv[1];
         if (fn_star.getExtension() != "star") {
             REPORT_ERROR(" ERROR: input argument does not have a .star extension.");
         }
-        skip_gridding  = checkParameter(argc, argv, "--skip_gridding");
+        skip_gridding = checkParameter(argc, argv, "--skip_gridding");
         do_map = !checkParameter(argc, argv, "--no_map");
-        fn_out =  (checkParameter(argc, argv, "--o")) ? getParameter(argc, argv, "--o") : "";
+        fn_out =  checkParameter(argc, argv, "--o") ? getParameter(argc, argv, "--o") : "";
 
         MetaDataTable MDlist, MDtau;
         MDlist.read(fn_star, "external_reconstruct_general");
@@ -72,7 +71,7 @@ class ext_recons_parameters {
         if (!fn_out.empty()) { fn_recons = fn_out; }
 
         MDtau.read(fn_star, "external_reconstruct_tau2");
-        tau2.resize(MDtau.numberOfObjects());
+        tau2.resize(MDtau.size());
         for (long int i : MDtau) {
             tau2[i] = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF, i);
         }

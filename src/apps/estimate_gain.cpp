@@ -67,10 +67,10 @@ class estimate_gain {
 
         MDin.read(fn_movie_star, "movies");
         // Support non-optics group STAR files
-        if (MDin.numberOfObjects() == 0)
+        if (MDin.empty())
             MDin.read(fn_movie_star, "");
 
-        const int n_total_movies = MDin.numberOfObjects();
+        const int n_total_movies = MDin.size();
         if (n_total_movies == 0) {
             REPORT_ERROR("No movies in the input STAR file");
         } else {
@@ -121,7 +121,7 @@ class estimate_gain {
         if (max_frames > 0) {
             init_progress_bar(max_frames);
         } else {
-            init_progress_bar(MDin.numberOfObjects());
+            init_progress_bar(MDin.size());
         }
 
         for (long int i : MDin) {
@@ -185,7 +185,7 @@ class estimate_gain {
         if (max_frames > 0) {
             progress_bar(max_frames);
         } else {
-            progress_bar(MDin.numberOfObjects());
+            progress_bar(MDin.size());
         }
 
         for (int i = 1; i < n_threads; i++) {

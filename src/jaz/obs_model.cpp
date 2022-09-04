@@ -59,7 +59,7 @@ void ObservationModel::loadSafely(
     MetaDataTable opticsMdt;
     opticsMdt.read(filename, "optics");
 
-    if (opticsMdt.numberOfObjects() == 0) {
+    if (opticsMdt.empty()) {
         if (verb > 0) {
             std::cerr << "WARNING: " << filename << " seems to be from a previous version of Relion. Attempting conversion...\n";
             std::cerr << "         You should make sure metadata in the optics group table after conversion is correct.\n";
@@ -69,7 +69,7 @@ void ObservationModel::loadSafely(
         oldMdt.read(filename);
 
         StarConverter::convert_3p0_particlesTo_3p1(oldMdt, particlesMdt, opticsMdt, mytablename, do_die_upon_error);
-        if (!do_die_upon_error && opticsMdt.numberOfObjects() == 0) return;  // return an empty optics table if error was raised
+        if (!do_die_upon_error && opticsMdt.empty()) return;  // return an empty optics table if error was raised
 
         if (mytablename.empty() || mytablename == "discover") {
             particlesMdt.name =
@@ -80,7 +80,7 @@ void ObservationModel::loadSafely(
     }
 
     obsModel = ObservationModel(opticsMdt, do_die_upon_error);
-    if (!do_die_upon_error && obsModel.opticsMdt.numberOfObjects() == 0) return;  // return an empty optics table if error was raised
+    if (!do_die_upon_error && obsModel.opticsMdt.empty()) return;  // return an empty optics table if error was raised
 
     // make sure all optics groups are defined
 
@@ -143,11 +143,11 @@ ObservationModel::ObservationModel() {}
 
 ObservationModel::ObservationModel(const MetaDataTable &_opticsMdt, bool do_die_upon_error):
 opticsMdt(_opticsMdt),
-angpix(_opticsMdt.numberOfObjects()),
-lambda(_opticsMdt.numberOfObjects()),
-Cs(_opticsMdt.numberOfObjects()),
-boxSizes(_opticsMdt.numberOfObjects(), 0.0),
-CtfPremultiplied(_opticsMdt.numberOfObjects(), false
+angpix(_opticsMdt.size()),
+lambda(_opticsMdt.size()),
+Cs(_opticsMdt.size()),
+boxSizes(_opticsMdt.size(), 0.0),
+CtfPremultiplied(_opticsMdt.size(), false
 ) {
 
     if (
@@ -171,13 +171,13 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
 
     // symmetrical high-order aberrations:
     hasEvenZernike = opticsMdt.containsLabel(EMDL::IMAGE_EVEN_ZERNIKE_COEFFS);
-    evenZernikeCoeffs = std::vector<std::vector<double>>(opticsMdt.numberOfObjects(), std::vector<double>(0));
-    gammaOffset = std::vector<std::map<int, Image<RFLOAT>>>(opticsMdt.numberOfObjects());
+    evenZernikeCoeffs = std::vector<std::vector<double>>(opticsMdt.size(), std::vector<double>(0));
+    gammaOffset = std::vector<std::map<int, Image<RFLOAT>>>(opticsMdt.size());
 
     // antisymmetrical high-order aberrations:
     hasOddZernike = opticsMdt.containsLabel(EMDL::IMAGE_ODD_ZERNIKE_COEFFS);
-    oddZernikeCoeffs = std::vector<std::vector<double>>(opticsMdt.numberOfObjects(), std::vector<double>(0));
-    phaseCorr = std::vector<std::map<int, Image<Complex>>>(opticsMdt.numberOfObjects());
+    oddZernikeCoeffs = std::vector<std::vector<double>>(opticsMdt.size(), std::vector<double>(0));
+    phaseCorr = std::vector<std::map<int, Image<Complex>>>(opticsMdt.size());
 
     const bool hasTilt = opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_X) ||
                          opticsMdt.containsLabel(EMDL::IMAGE_BEAMTILT_Y);
@@ -188,23 +188,23 @@ CtfPremultiplied(_opticsMdt.numberOfObjects(), false
                      opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_10) ||
                      opticsMdt.containsLabel(EMDL::IMAGE_MAG_MATRIX_11);
 
-    magMatrices.resize(opticsMdt.numberOfObjects());
+    magMatrices.resize(opticsMdt.size());
 
     hasBoxSizes = opticsMdt.containsLabel(EMDL::IMAGE_SIZE);
 
     if (opticsMdt.containsLabel(EMDL::IMAGE_OPTICS_GROUP_NAME)) {
-        groupNames.resize(opticsMdt.numberOfObjects());
+        groupNames.resize(opticsMdt.size());
     }
 
     if (opticsMdt.containsLabel(EMDL::IMAGE_MTF_FILENAME)) {
-        fnMtfs.resize(opticsMdt.numberOfObjects());
-        mtfImage = std::vector<std::map<int, Image<RFLOAT>>>(opticsMdt.numberOfObjects());
+        fnMtfs.resize(opticsMdt.size());
+        mtfImage = std::vector<std::map<int, Image<RFLOAT>>>(opticsMdt.size());
     }
     if (opticsMdt.containsLabel(EMDL::MICROGRAPH_ORIGINAL_PIXEL_SIZE)) {
-        originalAngpix.resize(opticsMdt.numberOfObjects());
+        originalAngpix.resize(opticsMdt.size());
     }
 
-    for (int i = 0; i < opticsMdt.numberOfObjects(); i++) {
+    for (int i = 0; i < opticsMdt.size(); i++) {
         angpix[i] =
             opticsMdt.containsLabel(EMDL::IMAGE_PIXEL_SIZE) ?
             opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, i) :
@@ -595,7 +595,7 @@ bool ObservationModel::allPixelAndBoxSizesIdentical(const MetaDataTable &mdt) {
     int boxSize0 = getBoxSize(og0);
     double angpix0 = getPixelSize(og0);
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
 
     for (int p = 1; p < pc; p++) {
         int og = getOpticsGroup(mdt, p);
@@ -615,7 +615,7 @@ bool ObservationModel::allPixelAndBoxSizesIdentical(const MetaDataTable &mdt) {
 
 bool ObservationModel::containsGroup(const MetaDataTable &mdt, int group) {
 
-    const int pc = mdt.numberOfObjects();
+    const int pc = mdt.size();
     for (int p = 0; p < pc; p++) {
         if (getOpticsGroup(mdt, p) == group) {
             return true;
@@ -625,11 +625,11 @@ bool ObservationModel::containsGroup(const MetaDataTable &mdt, int group) {
 }
 
 int ObservationModel::numberOfOpticsGroups() const {
-    return opticsMdt.numberOfObjects();
+    return opticsMdt.size();
 }
 
 bool ObservationModel::opticsGroupsSorted() const {
-    for (int i = 0; i < opticsMdt.numberOfObjects(); i++) {
+    for (int i = 0; i < opticsMdt.size(); i++) {
         if (opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i) != i + 1) {
             return false;
         }
@@ -640,14 +640,14 @@ bool ObservationModel::opticsGroupsSorted() const {
 std::vector<int> ObservationModel::findUndefinedOptGroups(const MetaDataTable &partMdt) const {
 
     std::set<int> definedGroups;
-    for (int i = 0; i < opticsMdt.numberOfObjects(); i++) {
+    for (int i = 0; i < opticsMdt.size(); i++) {
         definedGroups.insert(opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i));
     }
 
     std::vector<int> out;
-    out.reserve(opticsMdt.numberOfObjects());
+    out.reserve(opticsMdt.size());
 
-    for (long int i = 0; i < partMdt.numberOfObjects(); i++) {
+    for (long int i = 0; i < partMdt.size(); i++) {
         int og = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
         if (definedGroups.find(og) == definedGroups.end()) {
             out.push_back(og);
@@ -660,21 +660,21 @@ std::vector<int> ObservationModel::findUndefinedOptGroups(const MetaDataTable &p
 void ObservationModel::sortOpticsGroups(MetaDataTable &partMdt) {
 
     std::map<int, int> old2new;
-    for (int i = 0; i < opticsMdt.numberOfObjects(); i++) {
+    for (int i = 0; i < opticsMdt.size(); i++) {
         int og = opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
         old2new[og] = i + 1;
         opticsMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, i + 1, i);
     }
 
-    for (long int i = 0; i < partMdt.numberOfObjects(); i++) {
+    for (long int i = 0; i < partMdt.size(); i++) {
         int og = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
         partMdt.setValue(EMDL::IMAGE_OPTICS_GROUP, old2new[og], i);
     }
 }
 
 std::vector<int> ObservationModel::getOptGroupsPresent(const MetaDataTable &partMdt) const {
-    const int gc = opticsMdt.numberOfObjects();
-    const long long int pc = partMdt.numberOfObjects();
+    const int gc = opticsMdt.size();
+    const long long int pc = partMdt.size();
 
     std::vector<bool> optGroupIsPresent(gc, false);
     for (long int p = 0; p < pc; p++) {
@@ -696,7 +696,7 @@ std::vector<std::pair<int, std::vector<int>>> ObservationModel::splitParticlesBy
 
     std::vector<int> presentGroups = ObservationModel::getOptGroupsPresent(partMdt);
     const int pogc = presentGroups.size();
-    const int ogc = opticsMdt.numberOfObjects();
+    const int ogc = opticsMdt.size();
 
     std::vector<int> groupToPresentGroup(ogc, -1);
 
@@ -711,7 +711,7 @@ std::vector<std::pair<int, std::vector<int>>> ObservationModel::splitParticlesBy
         out[pog] = std::make_pair(presentGroups[pog], std::vector<int>(0));
     }
 
-    const long long int pc = partMdt.numberOfObjects();
+    const long long int pc = partMdt.size();
 
     for (long int p = 0; p < pc; p++) {
         int og = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
@@ -737,7 +737,7 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
             MetaDataTable MDmtf;
             MDmtf.read(fnMtfs[optGroup]);
             MultidimArray<RFLOAT> mtf_resol, mtf_value;
-            mtf_resol.resize(MDmtf.numberOfObjects());
+            mtf_resol.resize(MDmtf.size());
             mtf_value.resize(mtf_resol);
 
             RFLOAT resol_inv_pixel = MDmtf.getValue<RFLOAT>(EMDL::RESOLUTION_INVPIXEL, 0);
@@ -751,7 +751,7 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
             }
 
             // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
-            int i = MDmtf.numberOfObjects();
+            int i = MDmtf.size();
             RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
             if (res_per_elem < 1e-10) REPORT_ERROR(" ERROR: the resolution in the MTF star file does not go up....");
 

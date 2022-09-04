@@ -112,7 +112,7 @@ int AberrationPlot::_run()
 
 			std::cout << "micrograph " << g << " / " << mdts.size() <<"\n";
 
-			const int pc = mdts[g].numberOfObjects();
+			const int pc = mdts[g].size();
 
 			std::vector<Image<Complex>> pred;
 			std::vector<Image<Complex>> obsF;
@@ -206,7 +206,7 @@ int AberrationPlot::_run()
 
 				std::cout << "micrograph " << g << " / " << mdts.size() <<"\n";
 
-				const int pc = mdts[g].numberOfObjects();
+				const int pc = mdts[g].size();
 
 				std::vector<Image<Complex> > pred;
 				std::vector<Image<Complex> > obsF;
@@ -324,11 +324,11 @@ int AberrationPlot::_run()
 
 
 		MetaDataTable mdtAll;
-		mdtAll.reserve(mdt0.numberOfObjects());
+		mdtAll.reserve(mdt0.size());
 
 		for (long g = minMG; g <= gc; g++)
 		{
-			const int pc = mdts[g].numberOfObjects();
+			const int pc = mdts[g].size();
 
 			for (long p = 0; p < pc; p++)
 			{

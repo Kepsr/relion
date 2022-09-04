@@ -267,7 +267,7 @@ void HelixAligner::readImages() {
 
     if (verb > 0) {
         std::cout << " Reading in all images ..." << std::endl;
-        init_progress_bar(MD.numberOfObjects());
+        init_progress_bar(MD.size());
     }
 
     for (long int ipart : MD) {
@@ -333,7 +333,7 @@ void HelixAligner::readImages() {
     }
 
     if (verb > 0)
-        progress_bar(MD.numberOfObjects());
+        progress_bar(MD.size());
 
     #ifdef DEBUG
     std::cerr << "done readImages" << std::endl;
@@ -344,7 +344,7 @@ void HelixAligner::readImages() {
 void HelixAligner::getHelicesFromMics() {
     if (verb > 0) {
         std::cout << " Reading in all micrographs ..." << std::endl;
-        init_progress_bar(MDmics.numberOfObjects());
+        init_progress_bar(MDmics.size());
     }
 
     // Loop over all micrographs in the input STAR file and warn of coordinate file or micrograph file do not exist
@@ -369,7 +369,7 @@ void HelixAligner::getHelicesFromMics() {
             // Read in the coordinate files
             MetaDataTable MDcoords;
             MDcoords.read(fn_coord);
-            if (MDcoords.numberOfObjects() % 2 == 1) {
+            if (MDcoords.size() % 2 == 1) {
                 std::cerr << " ERROR: odd number of entries in " << fn_coord << "! Skipping this micrograph... " << std::endl;
                 continue;
             }
@@ -567,14 +567,14 @@ void HelixAligner::getHelicesFromMics() {
         }
     }
     if (verb > 0)
-        progress_bar(MDmics.numberOfObjects());
+        progress_bar(MDmics.size());
 }
 
 void HelixAligner::initialiseClasses() {
     #ifdef DEBUG
     std::cerr << "Entering initialiseClasses" << std::endl;
     #endif
-    if (model.Aref.size() == 0)
+    if (model.Aref.empty())
         REPORT_ERROR("BUG: non-initialised model!");
 
     if (verb > 0)

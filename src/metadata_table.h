@@ -131,7 +131,10 @@ class MetaDataTable {
 
     inline bool empty() const { return objects.empty(); }
 
-    size_t numberOfObjects() const;
+    inline size_t size() const { return objects.size(); }
+
+    inline void reserve(size_t capacity) { objects.reserve(capacity); }
+
     void clear();
 
     template<class T>
@@ -200,9 +203,6 @@ class MetaDataTable {
      *
      * Use addValuesOfDefinedLabels() to add an object that does not yet exist */
     void setValuesOfDefinedLabels(MetaDataContainer* data, long i);
-
-    // reserve memory for this many lines
-    void reserve(size_t capacity);
 
     /* addObject()
      *  Adds a new object and initializes the defined labels with default values.

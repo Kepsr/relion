@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
     MetaDataTable partMdt;
     partMdt.read(particlesStar);
 
-    for (int p = 0; p < partMdt.numberOfObjects(); p++) {
+    for (int p = 0; p < partMdt.size(); p++) {
 
         d3Vector partCoord, partOff;
 

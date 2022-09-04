@@ -209,7 +209,7 @@ void MovieReconstructor::initialise() {
 
     // Read MetaData file, which should have the image names and their angles!
     ObservationModel::loadSafely(fn_sel, obsModel, DF, "particles", 0, false);
-    std::cout << "Read " << DF.numberOfObjects() << " particles." << std::endl;
+    std::cout << "Read " << DF.size() << " particles." << std::endl;
     data_angpixes = obsModel.getPixelSizes();
 
     if (verb > 0 && !DF.containsLabel(EMDL::PARTICLE_RANDOM_SUBSET)) {
@@ -322,7 +322,7 @@ void MovieReconstructor::backproject(int rank, int size) {
             // for (long int index : mdts[imov])
             // You cannot do this within omp parallel (because current_object changes)
             // Loop over particles
-            for (long int ipart = 0; ipart < mdts[imov].numberOfObjects(); ipart++) {
+            for (long int ipart = 0; ipart < mdts[imov].size(); ipart++) {
                 #ifndef DEBUG
                 progress_bar(imov);
                 #endif

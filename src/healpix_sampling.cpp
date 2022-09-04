@@ -771,7 +771,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
         }
 
         // If there were no directions at all, just select the single nearest one:
-        if (directions_prior.size() == 0) {
+        if (directions_prior.empty()) {
             pointer_dir_nonzeroprior.push_back(best_idir);
             // std::cerr << "No direction has been found" << std::endl;
             if (best_idir < 0)
@@ -870,7 +870,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbability(
     }
 
     // If there were no directions at all, just select the single nearest one:
-    if (psi_prior.size() == 0) {
+    if (psi_prior.empty()) {
         if (best_ipsi < 0)
             REPORT_ERROR("HealpixSampling::selectOrientationsWithNonZeroPriorProbability BUG: best_ipsi < 0");
         pointer_psi_nonzeroprior.push_back(best_ipsi);
@@ -1154,7 +1154,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
             directions_prior[idir] /= sumprior;
 
         // If there were no directions at all, just select the single nearest one:
-        if (directions_prior.size() == 0) {
+        if (directions_prior.empty()) {
             if (best_idir < 0)
                 REPORT_ERROR("HealpixSampling::selectOrientationsWithNonZeroPriorProbability BUG: best_idir < 0");
             pointer_dir_nonzeroprior.push_back(best_idir);
@@ -1237,7 +1237,7 @@ void HealpixSampling::selectOrientationsWithNonZeroPriorProbabilityFor3DHelicalR
         psi_prior[ipsi] /= sumprior;
 
     // If there were no directions at all, just select the single nearest one:
-    if (psi_prior.size() == 0) {
+    if (psi_prior.empty()) {
         if (best_ipsi < 0)
             REPORT_ERROR("HealpixSampling::selectOrientationsWithNonZeroPriorProbability BUG: best_ipsi < 0");
         pointer_psi_nonzeroprior.push_back(best_ipsi);

@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 	
 	double mu(0.0), var(0.0);
 	
-	for (int i = 0; i < mdt0.numberOfObjects(); i++) {
+	for (int i = 0; i < mdt0.size(); i++) {
 		
 		double u = mdt0.getValue(EMDL::CTF_DEFOCUSU, i);
 		double v = mdt0.getValue(EMDL::CTF_DEFOCUSU, i);
@@ -30,11 +30,11 @@ int main(int argc, char *argv[]) {
 		mu += a;
 	}
 	
-	mu /= (double) mdt0.numberOfObjects();
+	mu /= (double) mdt0.size();
 	
 	std::cout << "mu: " << mu << "\n";
 	
-	for (int i = 0; i < mdt0.numberOfObjects(); i++) {
+	for (int i = 0; i < mdt0.size(); i++) {
 		
 		double u = mdt0.getValue(EMDL::CTF_DEFOCUSU, i);
 		double v = mdt0.getValue(EMDL::CTF_DEFOCUSU, i);
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 		var += d * d;
 	}
 	
-	var /= (double) (mdt0.numberOfObjects() - 1);
+	var /= (double) (mdt0.size() - 1);
 	
 	std::cout << "sigma: " << sqrt(var) << "\n";
 	

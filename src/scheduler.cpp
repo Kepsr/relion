@@ -197,7 +197,7 @@ void  SchedulerOperator::readFromStarFile() const {
     RFLOAT mysum = 0.;
     RFLOAT myval;
     long ii = 0;
-    MultidimArray<RFLOAT> for_sorting(MD.numberOfObjects());
+    MultidimArray<RFLOAT> for_sorting(MD.size());
 
     long idx = isFloatVariable(input2) ? round(scheduler_global_floats[input2].value) : 0;
     if (
@@ -257,7 +257,7 @@ void  SchedulerOperator::readFromStarFile() const {
                 REPORT_ERROR("Give a positive or a negative value for input2 in sorted_idx: 1 is largest, -1 is smallest value");
             }
             if (idx < 0) {
-                idx += ii;  // smallest value is numberOfObjects - 1
+                idx += ii;  // smallest value is size - 1
             } else {
                 idx--; // now start counting at 0
             }
@@ -316,7 +316,7 @@ bool SchedulerOperator::performOperation() const {
         ObservationModel obsmodel;
         MetaDataTable MDimg;
         ObservationModel::loadSafely(scheduler_global_strings[input1].value, obsmodel, MDimg, mytablename);
-        scheduler_global_floats[output].value = MDimg.numberOfObjects();
+        scheduler_global_floats[output].value = MDimg.size();
     } else if (type == Schedule::FLOAT_OPERATOR_COUNT_WORDS) {
         // return zero for an undefined string
         if (scheduler_global_strings[input1].value == "undefined") {

@@ -236,7 +236,7 @@ void FrameRecombiner::process(
         if (pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        const int pc = mdts[g].numberOfObjects();
+        const int pc = mdts[g].size();
         if (pc == 0) continue;
 
         pctot += pc;
@@ -576,7 +576,7 @@ std::vector<Image<RFLOAT>> FrameRecombiner::weightsFromBfacs(
     MetaDataTable mdt;
     mdt.read(bfacFn);
 
-    fc = mdt.numberOfObjects();
+    fc = mdt.size();
 
     std::vector<d2Vector> bkFacs(fc);
 

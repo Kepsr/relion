@@ -50,7 +50,7 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
     MetaDataTable md2(mdt);
     md2.newSort(EMDL::MICROGRAPH_NAME);
 
-    const long lc = md2.numberOfObjects();
+    const long lc = md2.size();
     std::string lastName = "";
     long curInd = -1;
 
@@ -96,7 +96,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
     MetaDataTable md2(*mdt);
     md2.newSort(EMDL::IMAGE_NAME, true);
 
-    const long lc = md2.numberOfObjects();
+    const long lc = md2.size();
     std::string lastName = "";
     long curInd = -1;
 
@@ -123,8 +123,8 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
 std::vector<Image<RFLOAT>> StackHelper::loadStack(
     const MetaDataTable* mdt, std::string path, int threads
 ) {
-    std::vector<Image<RFLOAT>> out(mdt->numberOfObjects());
-    const long ic = mdt->numberOfObjects();
+    std::vector<Image<RFLOAT>> out(mdt->size());
+    const long ic = mdt->size();
 
     std::string fullName = mdt->getValue<std::string>(EMDL::IMAGE_NAME, 0);
     std::string name = fullName.substr(fullName.find("@") + 1);
@@ -146,13 +146,13 @@ std::vector<Image<Complex>> StackHelper::loadStackFS(
     const MetaDataTable& mdt, std::string path,
     int threads, bool centerParticle, ObservationModel* obs
 ) {
-    std::vector<Image<Complex>> out(mdt.numberOfObjects());
+    std::vector<Image<Complex>> out(mdt.size());
 
     if (centerParticle && obs == 0) {
         REPORT_ERROR("StackHelper::loadStackFS: centering particles requires an observation model.");
     }
 
-    const long ic = mdt.numberOfObjects();
+    const long ic = mdt.size();
 
     std::string fullName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
     std::string name = fullName.substr(fullName.find("@") + 1);
@@ -209,8 +209,8 @@ void StackHelper::saveStack(std::vector<Image<RFLOAT>> &stack, std::string fn) {
 std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
     const MetaDataTable* mdt, std::string moviePath
 ) {
-    std::vector<std::vector<Image<RFLOAT>>> out(mdt->numberOfObjects());
-    const long pc = mdt->numberOfObjects();
+    std::vector<std::vector<Image<RFLOAT>>> out(mdt->size());
+    const long pc = mdt->size();
 
     std::string fullName  = mdt->getValue<std::string>(EMDL::IMAGE_NAME, 0);
     std::string movieName = mdt->getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
@@ -252,8 +252,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
     const std::vector<std::vector<gravis::d2Vector>>* offsets_in,
     std::vector<std::vector<gravis::d2Vector>>* offsets_out
 ) {
-    std::vector<std::vector<Image<Complex>>> out(mdt->numberOfObjects());
-    const long pc = mdt->numberOfObjects();
+    std::vector<std::vector<Image<Complex>>> out(mdt->size());
+    const long pc = mdt->size();
 
     Image<float> mgStack;
     mgStack.read(movieFn, false);
@@ -467,8 +467,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
     const std::vector<std::vector<gravis::d2Vector>>* offsets_in,
     std::vector<std::vector<gravis::d2Vector>>* offsets_out
 ) {
-    std::vector<std::vector<Image<Complex>>> out(mdt->numberOfObjects());
-    const long pc = mdt->numberOfObjects();
+    std::vector<std::vector<Image<Complex>>> out(mdt->size());
+    const long pc = mdt->size();
 
     const int fc = Iframes.size();
     if (fc == 0)

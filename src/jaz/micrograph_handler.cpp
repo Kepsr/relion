@@ -67,7 +67,7 @@ void MicrographHandler::init(
             REPORT_ERROR(" The corrected_micrographs STAR file does not contain rlnMicrographMetadata label. Did you not run motion correction from the RELION-3.0 GUI?");
         }
 
-        for (int i = 0; i < corrMic.numberOfObjects(); i++) {
+        for (int i = 0; i < corrMic.size(); i++) {
             std::string micName  = corrMic.getValueToString(EMDL::MICROGRAPH_NAME,          i);
             std::string metaName = corrMic.getValueToString(EMDL::MICROGRAPH_METADATA_NAME, i);
             // remove the pipeline job prefix
@@ -177,7 +177,7 @@ std::vector<MetaDataTable> MicrographHandler::findLongEnoughMovies(
         }
     }
 
-    if (good.size() == 0) {
+    if (good.empty()) {
         REPORT_ERROR_STR(
             "ERROR: Not a single movie contains the requested number of frames (" << fc << ")"
         );

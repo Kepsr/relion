@@ -175,7 +175,7 @@ void MotionParamEstimator::init(
     for (int i = 0; i < order.size(); i++) {
         const int m = order[i];
 
-        const int pcm = allMdts[m].numberOfObjects();
+        const int pcm = allMdts[m].size();
 
         // motion estimation does not work on one single particle
         if (pcm < 2) continue;
@@ -193,7 +193,7 @@ void MotionParamEstimator::init(
             }
 
             mdts.push_back(rightGroup);
-            pc += rightGroup.numberOfObjects();
+            pc += rightGroup.size();
         }
 
         if (verb > 0) {
@@ -360,7 +360,7 @@ void MotionParamEstimator::evaluateParams(
 
     // Micrographs
     for (long g = 0; g < gc; g++) {
-        const int pc = mdts[g].numberOfObjects();
+        const int pc = mdts[g].size();
 
         if (pc < 2) continue; // not really needed, mdts are pre-screened
 
@@ -452,7 +452,7 @@ void MotionParamEstimator::prepAlignment() {
     int pctot = 0;
 
     for (long g = 0; g < gc; g++) {
-        const int pc = mdts[g].numberOfObjects();
+        const int pc = mdts[g].size();
 
         if (pc < 2) continue;
 

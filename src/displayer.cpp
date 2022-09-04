@@ -230,7 +230,7 @@ int basisViewerWindow::fillCanvas(
     FileName fn_img = MDin.getValue<std::string>(display_label, MDin.index());
     Image<RFLOAT> img;
     img.read(fn_img, false);
-    int nimgs = MDin.numberOfObjects();
+    int nimgs = MDin.size();
 
     switch (viewer_type) {
         case MULTIVIEWER: {
@@ -363,7 +363,7 @@ void basisViewerCanvas::fill(
     RFLOAT _sigma_contrast, RFLOAT _scale, int _ncol, bool _do_recenter, long int max_images, RFLOAT lowpass, RFLOAT highpass
 ) {
     ncol = _ncol;
-    int nr_imgs = MDin.numberOfObjects();
+    int nr_imgs = MDin.size();
     if (nr_imgs > 1) {
         xoff = BOX_OFFSET / 2;
         yoff = BOX_OFFSET / 2;
@@ -385,7 +385,7 @@ void basisViewerCanvas::fill(
     long int my_number, my_next_number, my_stack_first_ipos = 0;
     std::vector<long int> numbers_in_stack;
 
-    long int number_of_images = MDin.numberOfObjects();
+    long int number_of_images = MDin.size();
     if (max_images > 0 && max_images < number_of_images)
         number_of_images = max_images;
     boxes.clear();
@@ -728,7 +728,7 @@ void multiViewerCanvas::saveBackupSelection() {
     }
 
     for (long int ipos = 0; ipos < boxes.size(); ipos++) {
-        if (MDbackup.numberOfObjects() < ipos + 1)
+        if (MDbackup.size() < ipos + 1)
             MDbackup.addObject();
         // without the bool() cast, clang will interpret the formal template parameter
         // as a reference to a bit field, which is not the same as a boolean.
@@ -774,7 +774,7 @@ void multiViewerCanvas::loadBackupSelection(bool do_ask) {
 
     MDbackup.clear();
     MDbackup.read(fn_sel);
-    if (MDbackup.numberOfObjects() != boxes.size()) {
+    if (MDbackup.size() != boxes.size()) {
         std::cerr << "Warning: ignoring .relion_display_backup_selection.star with unexpected number of entries..." << std::endl;
         return;
     }
@@ -1077,7 +1077,7 @@ void multiViewerCanvas::saveSelectedParticles(int save_selected) {
     makeStarFileSelectedParticles(save_selected, MDpart);
     if (nr_regroups > 0)
         regroupSelectedParticles(MDpart, *MDgroups, nr_regroups);
-    int nparts = MDpart.numberOfObjects();
+    int nparts = MDpart.size();
     if (nparts > 0) {
         obsModel->save(MDpart, fn_selected_parts, "particles");
         std::cout << "Saved " << fn_selected_parts << " with " << nparts << " selected particles." << std::endl;
@@ -1122,7 +1122,7 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
     MDgroups.sort(EMDL::MLMODEL_GROUP_SCALE_CORRECTION);
 
     // Store original image order
-    long int nr_parts = MDdata.numberOfObjects();
+    long int nr_parts = MDdata.size();
     for (long int j = 0; j < nr_parts; j++)
         MDdata.setValue(EMDL::SORTED_IDX, j, j);
 
@@ -1182,7 +1182,7 @@ void regroupSelectedParticles(MetaDataTable &MDdata, MetaDataTable &MDgroups, in
 void multiViewerCanvas::showSelectedParticles(int save_selected) {
     MetaDataTable MDpart;
     makeStarFileSelectedParticles(save_selected, MDpart);
-    int nparts = MDpart.numberOfObjects();
+    int nparts = MDpart.size();
     if (nparts > 0) {
         basisViewerWindow win(MULTIVIEW_WINDOW_WIDTH, MULTIVIEW_WINDOW_HEIGHT, "Particles in the selected classes");
         win.fillCanvas(
@@ -1284,7 +1284,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
         if (do_recenter) {
             FileName fn_stack = fn_selected_imgs.withoutExtension()+".mrcs";
             Image<RFLOAT> img;
-            long int nr_images = MDout.numberOfObjects();
+            long int nr_images = MDout.size();
             for (long int i : MDout) {
                 FileName fn_img = MDout.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE, i);
                 img.read(fn_img);
@@ -1301,7 +1301,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
             }
         }
 
-        if (obsModel->opticsMdt.numberOfObjects() > 0 && !do_class) {
+        if (obsModel->opticsMdt.size() > 0 && !do_class) {
             if (
                 metadata_table_name == "micrographs" ||
                 !MDout.containsLabel(EMDL::IMAGE_NAME) &&
@@ -1594,7 +1594,7 @@ int pickerViewerCanvas::handle(int ev) {
             if (!MDcoords.empty()) {
                 // If there were already entries in MDcoords, then copy the last one.
                 // This will take care of re-picking in coordinate files from previous refinements
-                long int last_idx = MDcoords.numberOfObjects() - 1;
+                long int last_idx = MDcoords.size() - 1;
                 const long int i = MDcoords.addObject(MDcoords.getObject(last_idx));
                 try {
                     MDcoords.getValue<RFLOAT>(EMDL::ORIENT_ROT, i);
@@ -1730,7 +1730,7 @@ void pickerViewerCanvas::saveCoordinates(bool ask_filename) {
         MDnew.deactivateLabel(color_label);
         MDnew.write(fn_out); // write out a copy of the MDcoord to maintain the Z-score label active...
     }
-    std::cout << "Saved " << fn_out << " with " << MDcoords.numberOfObjects() << " selected coordinates." << std::endl;
+    std::cout << "Saved " << fn_out << " with " << MDcoords.size() << " selected coordinates." << std::endl;
 }
 
 void pickerViewerCanvas::loadCoordinates(bool ask_filename) {
@@ -2371,14 +2371,14 @@ int Displayer::runGui() {
                 ObservationModel::loadSafely(fn_in, obsModel, MD, "discover", 0, false); //false means dont die upon error
             }
             // Check the MD was loaded successfully with obsModel, otherwise read as ignore_optics
-            if (obsModel.opticsMdt.numberOfObjects() == 0) {
+            if (obsModel.opticsMdt.empty()) {
                 MD.read(fn_in);
             }
         }
 
         // Get which labels are stored in this metadatatable and generate choice menus for display and sorting
 
-        std::vector<EMDL::EMDLabel> activeLabels = MD.getActiveLabels();
+        const auto &activeLabels = MD.getActiveLabels();
         for (int ilab = 0; ilab < activeLabels.size(); ilab++) {
             if (EMDL::is<int>(activeLabels[ilab]) || EMDL::is<double>(activeLabels[ilab]))
                 win.sort_labels.push_back(EMDL::label2Str(activeLabels[ilab]));
@@ -2449,7 +2449,7 @@ void Displayer::run() {
                 ObservationModel::loadSafely(fn_in, obsModel, MDin, "discover", 0, false); //false means dont die upon error
             }
             // Check the MD was loaded successfully with obsModel, otherwise read as ignore_optics
-            if (obsModel.opticsMdt.numberOfObjects() == 0) MDin.read(fn_in);
+            if (obsModel.opticsMdt.empty()) MDin.read(fn_in);
         }
 
         // Check that label to display is present in the table

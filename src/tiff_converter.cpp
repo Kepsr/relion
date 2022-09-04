@@ -298,7 +298,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
         MD.read(fn_in, "movies");
 
         // Support non-optics group STAR files
-        if (MD.numberOfObjects() == 0)
+        if (MD.empty())
             MD.read(fn_in, "");
 
         try {
@@ -307,7 +307,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
             REPORT_ERROR("The input STAR file does not contain the rlnMicrographMovieName column");
         }
 
-        std::cout << "The number of movies in the input: " << MD.numberOfObjects() << std::endl;
+        std::cout << "The number of movies in the input: " << MD.size() << std::endl;
     } else if (fn_in_ext == "lst") {
         // treat as a simple list
         std::ifstream f (fn_in);
@@ -439,7 +439,7 @@ void TIFFConverter::processOneMovie(FileName fn_movie, FileName fn_tiff) {
 
 void TIFFConverter::run() {
     long int my_first, my_last;
-    divide_equally(MD.numberOfObjects(), total_ranks, rank, my_first, my_last); // MPI parallelization
+    divide_equally(MD.size(), total_ranks, rank, my_first, my_last); // MPI parallelization
 
     for (long i = my_first; i <= my_last; i++) {
         FileName fn_movie = MD.getValue<std::string>(EMDL::MICROGRAPH_MOVIE_NAME, i);

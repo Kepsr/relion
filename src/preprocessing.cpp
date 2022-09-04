@@ -253,7 +253,7 @@ void Preprocessing::run() {
 void Preprocessing::joinAllStarFiles() {
     FileName fn_ostar;
     int og;
-    std::cout << " Joining metadata of all particles from " << MDmics.numberOfObjects() << " micrographs in one STAR file..." << std::endl;
+    std::cout << " Joining metadata of all particles from " << MDmics.size() << " micrographs in one STAR file..." << std::endl;
 
     long int imic = 0, ibatch = 0;
     MetaDataTable MDout, MDmicnames, MDbatch;
@@ -268,7 +268,7 @@ void Preprocessing::joinAllStarFiles() {
             MetaDataTable MDonestack;
             MDonestack.read(fn_star);
 
-            if (MDout.numberOfObjects() > 0 && !MetaDataTable::compareLabels(MDout, MDonestack)) {
+            if (MDout.size() > 0 && !MetaDataTable::compareLabels(MDout, MDonestack)) {
                 std::cout << "The STAR file " << fn_star << " contains a column not present in others. Missing values will be filled by default values (0 or empty string)" << std::endl;
                 MDout.addMissingLabels(MDonestack);
                 MDonestack.addMissingLabels(MDout);
@@ -347,7 +347,7 @@ void Preprocessing::joinAllStarFiles() {
 
         // Remove absent optics groups; After this, NOTHING should be done except for saving. obsModel's internal data structure is now corrupted!
         og = 0;
-        while (og < myOutObsModel->opticsMdt.numberOfObjects()) {
+        while (og < myOutObsModel->opticsMdt.size()) {
             RFLOAT og_angpix = myOutObsModel->opticsMdt.getValue<RFLOAT>(EMDL::IMAGE_PIXEL_SIZE, og);
             if (og_angpix < 0) {
                 myOutObsModel->opticsMdt.removeObject(og);
@@ -357,12 +357,12 @@ void Preprocessing::joinAllStarFiles() {
         }
 
         ObservationModel::saveNew(MDout, myOutObsModel->opticsMdt, fn_part_star, "particles");
-        std::cout << " Written out STAR file with " << MDout.numberOfObjects() << " particles in " << fn_part_star<< std::endl;
+        std::cout << " Written out STAR file with " << MDout.size() << " particles in " << fn_part_star<< std::endl;
     }
 }
 
 void Preprocessing::runExtractParticles() {
-    long int nr_mics = MDmics.numberOfObjects();
+    long int nr_mics = MDmics.size();
 
     int barstep;
     if (verb > 0) {
@@ -575,7 +575,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
     }
     }
 
-    if (MDin.numberOfObjects() > 0) {
+    if (MDin.size() > 0) {
         {
         ifdefPREP_TIMING(TicToc tt (timer, TIMING_BIAS_CORRECT);)
         // Correct for bias in the picked coordinates
@@ -592,7 +592,7 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
         }
 
         // Warn for small groups
-        int npos = MDin.numberOfObjects();
+        int npos = MDin.size();
         if (npos < 10) {
             std::cerr << "Warning: There are only " << npos << " particles in micrograph " << fn_mic <<". Consider joining multiple micrographs into one group. "<< std::endl;
         }
@@ -1048,7 +1048,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
     }
 
     RFLOAT mag2, dstep2, particle_angpix, rescale_fndata = 1.0;
-    if (MDresult.numberOfObjects() > 0) {
+    if (MDresult.size() > 0) {
         MDresult.goToObject(0);
 
         bool contains_xy = MDresult.containsLabel(EMDL::ORIENT_ORIGIN_X_ANGSTROM) && MDresult.containsLabel(EMDL::ORIENT_ORIGIN_Y_ANGSTROM);

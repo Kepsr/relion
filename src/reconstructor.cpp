@@ -107,7 +107,7 @@ void Reconstructor::initialise() {
     // Read MetaData file, which should have the image names and their angles!
     if (fn_debug.empty()) {
         ObservationModel::loadSafely(fn_sel, obsModel, DF, "particles", 0, false);
-        if (obsModel.opticsMdt.numberOfObjects() == 0) {
+        if (obsModel.opticsMdt.empty()) {
             do_ignore_optics = true;
             DF.read(fn_sel);
         }
@@ -253,7 +253,7 @@ void Reconstructor::backproject(int rank, int size) {
     );
     backprojector.initZeros(2 * r_max);
 
-    long int nr_parts = DF.numberOfObjects();
+    long int nr_parts = DF.size();
     long int barstep = std::max(1l, nr_parts / (size * 120));
     if (verb > 0) {
         std::cout << " + Back-projecting all images ..." << std::endl;

@@ -854,7 +854,7 @@ void AutoPicker::generatePDFLogfile() {
         FileName fn_pick = getOutputRootName(fn_ori_micrographs[imic]) + "_" + fn_out + ".star";
         if (exists(fn_pick)) {
             MD.read(fn_pick);
-            long nr_pick = MD.numberOfObjects();
+            long nr_pick = MD.size();
             total_nr_picked += nr_pick;
             if (MD.containsLabel(EMDL::PARTICLE_AUTOPICK_FOM)) {
 
@@ -894,7 +894,7 @@ void AutoPicker::generatePDFLogfile() {
     plot2Db->OutputPostScriptPlot(fn_eps);
     all_fn_eps.push_back(fn_eps);
     delete plot2Db;
-    if (MDresult.numberOfObjects() > 3) {
+    if (MDresult.size() > 3) {
         CPlot2D *plot2D = new CPlot2D("");
         PlotMetaData::columnHistogram(MDresult, EMDL::MLMODEL_GROUP_NR_PARTICLES, histX, histY, 0, plot2D);
         fn_eps = fn_odir + "histogram_nrparts.eps";
@@ -911,7 +911,7 @@ void AutoPicker::generatePDFLogfile() {
     plot2Dc->OutputPostScriptPlot(fn_eps);
     all_fn_eps.push_back(fn_eps);
     delete plot2Dc;
-    if (MDresult.numberOfObjects() > 3) {
+    if (MDresult.size() > 3) {
         CPlot2D *plot2Dd = new CPlot2D("");
         PlotMetaData::columnHistogram(MDresult, EMDL::PARTICLE_AUTOPICK_FOM, histX, histY, 0, plot2Dd);
         fn_eps = fn_odir + "histogram_FOMs.eps";
@@ -2486,7 +2486,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
     }
 
     if (verb > 1)
-        std::cerr << "Picked " << MDout.numberOfObjects() << " of particles " << std::endl;
+        std::cerr << "Picked " << MDout.size() << " of particles " << std::endl;
     FileName fn = getOutputRootName(fn_mic) + "_" + fn_out + ".star";
     MDout.write(fn);
 }

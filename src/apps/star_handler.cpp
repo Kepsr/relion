@@ -169,7 +169,7 @@ class star_handler_parameters {
             MD.read(fn, tablename);
         } else {
             ObservationModel::loadSafely(fn, obsModel, MD, tablename, 1, false);
-            if (obsModel.opticsMdt.numberOfObjects() == 0) {
+            if (obsModel.opticsMdt.empty()) {
                 std::cerr << " + WARNGING: could not read optics groups table, proceeding without it ..." << std::endl;
                 MD.read(fn, tablename);
                 do_ignore_optics = true;
@@ -199,9 +199,9 @@ class star_handler_parameters {
         MetaDataTable MDonly1, MDonly2, MDboth;
         compareMetaDataTable(MD1, MD2, MDboth, MDonly1, MDonly2, label1, eps, label2, label3);
 
-        std::cout << MDboth.numberOfObjects()  << " entries occur in both input STAR files."        << std::endl;
-        std::cout << MDonly1.numberOfObjects() << " entries occur only in the 1st input STAR file." << std::endl;
-        std::cout << MDonly2.numberOfObjects() << " entries occur only in the 2nd input STAR file." << std::endl;
+        std::cout << MDboth.size()  << " entries occur in both input STAR files."        << std::endl;
+        std::cout << MDonly1.size() << " entries occur only in the 1st input STAR file." << std::endl;
+        std::cout << MDonly2.size() << " entries occur only in the 2nd input STAR file." << std::endl;
 
         write_check_ignore_optics(MDboth, fn_out.insertBeforeExtension("_both"), MD1.name);
         std::cout << " Written: " << fn_out.insertBeforeExtension("_both") << std::endl;
@@ -220,7 +220,7 @@ class star_handler_parameters {
         MetaDataTable MDout = subsetMetaDataTable(MDin, EMDL::str2Label(select_label), select_minval, select_maxval);
 
         write_check_ignore_optics(MDout, fn_out, MDin.name);
-        std::cout << " Written: " << fn_out << " with " << MDout.numberOfObjects() << " item(s)" << std::endl;
+        std::cout << " Written: " << fn_out << " with " << MDout.size() << " item(s)" << std::endl;
     }
 
     void select_by_str() {
@@ -246,7 +246,7 @@ class star_handler_parameters {
 
         std::cout << " Calculating average and stddev for all images ... " << std::endl;
         time_config();
-        init_progress_bar(MDin.numberOfObjects());
+        init_progress_bar(MDin.size());
 
 
         RFLOAT sum_avg = 0.0;
@@ -273,7 +273,7 @@ class star_handler_parameters {
                 progress_bar(ii);
         }
 
-        progress_bar(MDin.numberOfObjects());
+        progress_bar(MDin.size());
 
         sum_avg /= sum_n;
         sum_stddev /= sum_n;
@@ -574,7 +574,7 @@ class star_handler_parameters {
             MD.randomiseOrder();
         }
 
-        long int n_obj = MD.numberOfObjects();
+        long int n_obj = MD.size();
         if (n_obj == 0) {
             REPORT_ERROR("ERROR: empty STAR file...");
         }
@@ -606,7 +606,7 @@ class star_handler_parameters {
         for (int isplit = 0; isplit < nr_split; isplit ++) {
             const FileName fnt = fn_out.insertBeforeExtension("_split" + integerToString(isplit + 1));
             write_check_ignore_optics(MDouts[isplit], fnt, MD.name);
-            std::cout << " Written: " << fnt << " with " << MDouts[isplit].numberOfObjects() << " objects." << std::endl;
+            std::cout << " Written: " << fnt << " with " << MDouts[isplit].size() << " objects." << std::endl;
 
             MDnodes.addObject();
             MDnodes.setValue(EMDL::PIPELINE_NODE_NAME, fnt, isplit);

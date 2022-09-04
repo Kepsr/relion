@@ -28,7 +28,7 @@ void StarConverter::convert_3p0_particlesTo_3p1(
         }
     }
 
-    const int particleCount = in.numberOfObjects();
+    const int particleCount = in.size();
 
     std::vector<EMDL::EMDLabel> allOpticsLabels_double(0);
 
@@ -213,7 +213,7 @@ void StarConverter::unifyPixelSize(
         outOptics.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE) && 
         outOptics.containsLabel(EMDL::CTF_MAGNIFICATION)
     ) {
-        for (int i = 0; i < outOptics.numberOfObjects(); i++) {
+        for (int i = 0; i < outOptics.size(); i++) {
 
             double dstep = outOptics.getValue<double>(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
             double mag   = outOptics.getValue<double>(EMDL::CTF_MAGNIFICATION, i);
@@ -237,7 +237,7 @@ void StarConverter::unifyPixelSize(
 void StarConverter::translateOffsets(
     MetaDataTable &outParticles, const MetaDataTable &optics
 ) {
-    for (int i = 0; i < outParticles.numberOfObjects(); i++) {
+    for (int i = 0; i < outParticles.size(); i++) {
 
         int og = outParticles.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i) - 1;
         double angpix = optics.getValue<double>(EMDL::IMAGE_PIXEL_SIZE, og);

@@ -143,13 +143,13 @@ void CtffindRunner::initialise() {
         MetaDataTable MDin;
         ObservationModel::loadSafely(fn_in, obsModel, MDin, "micrographs", verb);
 
-        if (MDin.numberOfObjects() > 0 && !MDin.containsLabel(EMDL::MICROGRAPH_NAME))
+        if (MDin.size() > 0 && !MDin.containsLabel(EMDL::MICROGRAPH_NAME))
             REPORT_ERROR("ERROR: There is no rlnMicrographName label in the input micrograph STAR file.");
 
-        if (do_use_without_doseweighting && MDin.numberOfObjects() > 0 && !MDin.containsLabel(EMDL::MICROGRAPH_NAME_WODOSE))
+        if (do_use_without_doseweighting && MDin.size() > 0 && !MDin.containsLabel(EMDL::MICROGRAPH_NAME_WODOSE))
             REPORT_ERROR("ERROR: You are using --use_noDW, but there is no rlnMicrographNameNoDW label in the input micrograph STAR file.");
 
-        if (use_given_ps && MDin.numberOfObjects() > 0 && !MDin.containsLabel(EMDL::CTF_POWER_SPECTRUM))
+        if (use_given_ps && MDin.size() > 0 && !MDin.containsLabel(EMDL::CTF_POWER_SPECTRUM))
             REPORT_ERROR("ERROR: You are using --use_given_ps, but there is no rlnCtfPowerSpectrum label in the input micrograph STAR file.");
 
         fn_micrographs_all.clear();
@@ -297,7 +297,7 @@ void CtffindRunner::initialise() {
 
     if (do_use_gctf && fn_micrographs.size() > 0) {
         untangleDeviceIDs(gpu_ids, allThreadIDs);
-        if (allThreadIDs[0].size() == 0 || !std::isdigit(*gpu_ids.begin())) {
+        if (allThreadIDs[0].empty() || !std::isdigit(*gpu_ids.begin())) {
             #ifdef CUDA
             if (verb > 0)
                 std::cout << "gpu-ids were not specified, so threads will automatically be mapped to devices (incrementally)."<< std::endl;
@@ -452,7 +452,7 @@ void CtffindRunner::joinCtffindResults() {
             plot2Db->OutputPostScriptPlot(fn_eps);
             all_fn_eps.push_back(fn_eps);
             delete plot2Db;
-            if (MDctf.numberOfObjects() > 3) {
+            if (MDctf.size() > 3) {
                 // Histogram
                 std::vector<RFLOAT> histX, histY;
                 CPlot2D *plot2D = new CPlot2D("");
@@ -530,7 +530,7 @@ void CtffindRunner::executeGctf(
         for (size_t i = 0; i < allmicnames.size(); i++)
             command += " " + allmicnames[i];
 
-        if (allThreadIDs[0].size() == 0 || !std::isdigit(*gpu_ids.begin())) {
+        if (allThreadIDs[0].empty() || !std::isdigit(*gpu_ids.begin())) {
             // Automated mapping
             command += " -gid " + integerToString(rank % devCount);
         } else {

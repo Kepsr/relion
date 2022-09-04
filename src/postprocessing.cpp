@@ -243,7 +243,7 @@ void Postprocessing::divideByMtf(MultidimArray<Complex> &FT) {
 
     MetaDataTable MDmtf;
     MDmtf.read(fn_mtf);
-    int i = MDmtf.numberOfObjects();
+    int i = MDmtf.size();
     MultidimArray<RFLOAT> mtf_resol (i), mtf_value (i);
 
     for (long int i : MDmtf) {
@@ -255,7 +255,7 @@ void Postprocessing::divideByMtf(MultidimArray<Complex> &FT) {
         }
     }
 
-    i = MDmtf.numberOfObjects();
+    i = MDmtf.size();
     // Calculate slope of resolution (in 1/A) per element in the MTF array, in order to interpolate below
     const RFLOAT res_per_elem = (direct::elem(mtf_resol, i - 1) - direct::elem(mtf_resol, 0)) / (RFLOAT) i;
     if (res_per_elem < 1e-10)

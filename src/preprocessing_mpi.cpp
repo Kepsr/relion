@@ -44,7 +44,7 @@ void PreprocessingMpi::runExtractParticles() {
     if (node->rank < max_mpi_nodes) {
 
         // Each node until max_mpi_nodes does part of the work
-        long int nr_mics = MDmics.numberOfObjects();
+        long int nr_mics = MDmics.size();
         long int my_first_mic, my_last_mic;
         int my_nr_nodes = std::min(max_mpi_nodes, node->size);
         divide_equally(nr_mics, my_nr_nodes, node->rank, my_first_mic, my_last_mic);

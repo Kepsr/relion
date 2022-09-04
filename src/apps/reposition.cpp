@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     for (int m = 0; m < mgc; m++) {
         std::cout << m << " / " << mgc << "\n";
 
-        const int pc = allMdts[m].numberOfObjects();
+        const int pc = allMdts[m].size();
 
         std::vector<Image<Complex>> pred = reference.predictAll(
             allMdts[m], obsModel, ReferenceMap::Own, nr_omp_threads, true, true, false

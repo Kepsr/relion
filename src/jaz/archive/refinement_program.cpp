@@ -271,7 +271,7 @@ int RefinementProgram::init(int argc, char *argv[]) {
         }
 
         if (doesMovies && movie_toReplace != "") {
-            for (int i = 0; i < mdt0.numberOfObjects(); i++) {
+            for (int i = 0; i < mdt0.size(); i++) {
                 std::string name = mdt0.getValue(EMDL::MICROGRAPH_NAME, i);
 
                 if (i == 0) { std::cout << name << " -> "; }
@@ -326,7 +326,7 @@ int RefinementProgram::init(int argc, char *argv[]) {
         std::string micName, metaName;
 
 
-        for (int i = 0; i < corrMic.numberOfObjects(); i++) {
+        for (int i = 0; i < corrMic.size(); i++) {
             corrMic.getValueToString(EMDL::MICROGRAPH_NAME, micName, i);
             corrMic.getValueToString(EMDL::MICROGRAPH_METADATA_NAME, metaName, i);
 
@@ -361,7 +361,7 @@ void RefinementProgram::loadInitialMovieValues() {
         Image<RFLOAT> stack0;
         stack0.read(finName, false);
 
-        const int pc0 = mdts[0].numberOfObjects();
+        const int pc0 = mdts[0].size();
         const bool zstack = stack0.data.zdim > 1;
         const int stackSize = zstack ? stack0.data.zdim : stack0.data.ndim;
 
@@ -492,7 +492,7 @@ std::vector<std::vector<Image<Complex>>> RefinementProgram::loadMovie(
 }
 
 void RefinementProgram::setForAll(EMDLabel label, RFLOAT value) {
-    for (int i = 0; i < mdt0.numberOfObjects(); i++) {
+    for (int i = 0; i < mdt0.size(); i++) {
         mdt0.setValue(label, value, i);
     }
 }

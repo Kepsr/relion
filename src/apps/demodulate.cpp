@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         std::string fullName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
         std::string name = fullName.substr(fullName.find("@") + 1);
 
-        const int pc = mdt.numberOfObjects();
+        const int pc = mdt.size();
         for (int p = 0; p < pc; p++) {
             int opticsGroup = mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
             obsModel.demodulatePhase(opticsGroup, obs[p].data, p);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!r31) {
-        const int tpc = mdt1.numberOfObjects();
+        const int tpc = mdt1.size();
 
         std::vector<EMDL::EMDLabel> allOpticsLabels_double(0);
 

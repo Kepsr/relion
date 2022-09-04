@@ -205,7 +205,7 @@ void MotioncorrRunner::initialise() {
     if (fn_in.isStarFile()) {
         MetaDataTable MDin;
         ObservationModel::loadSafely(fn_in, obsModel, MDin, "movies", verb);
-        if (MDin.numberOfObjects() > 0 && !MDin.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME))
+        if (MDin.size() > 0 && !MDin.containsLabel(EMDL::MICROGRAPH_MOVIE_NAME))
             REPORT_ERROR("The input STAR file does not contain the rlnMicrographMovieName column. Are you sure you imported files as movies, not single frame images?");
 
         fn_micrographs.clear();
@@ -817,7 +817,7 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
             plot2Db->OutputPostScriptPlot(fn_eps);
             all_fn_eps.push_back(fn_eps);
             delete plot2Db;
-            if (MDavg.numberOfObjects() > 3) {
+            if (MDavg.size() > 3) {
                 // Histogram
                 std::vector<RFLOAT> histX, histY;
                 CPlot2D *plot2D = new CPlot2D("");
