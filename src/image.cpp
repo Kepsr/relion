@@ -319,7 +319,7 @@ void rescale(Image<RFLOAT> &I, int mysize) {
     resizeMap(I(), mysize);
 
     // Try to rescale entries in I.MDmainheader
-    const long int i = I.MDMainHeader.index();
+    const long int i = I.MDMainHeader.size() - 1;
     try {
         const auto sx = I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, i) * (RFLOAT) olddim / (RFLOAT) mysize;
         I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, sx, i);

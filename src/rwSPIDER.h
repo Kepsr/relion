@@ -156,7 +156,7 @@ int Image<T>::readSPIDER(long int img_select) {
     DataType datatype = Float;
 
     {
-    const long int i = MDMainHeader.index();
+    const long int i = MDMainHeader.size() - 1;
     MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->fmin, i);
     MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->fmax, i);
     MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->av,   i);
@@ -269,7 +269,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
         #ifdef DEBUG
         std::cerr << "Non-empty MDMainHeader" << std::endl;
         #endif
-        const long int i = MDMainHeader.index();
+        const long int i = MDMainHeader.size() - 1;
         try {
             header->fmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         } catch (const char *errmsg) {}

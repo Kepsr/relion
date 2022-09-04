@@ -52,7 +52,7 @@ void ReferenceMap::load(int verb, bool debug) {
         MetaDataTable MD;
         MD.read(fscFn, "general");
         try {
-            const long int i = MD.index();
+            const long int i = MD.size() - 1;
             fn_half1 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP1, i);
             fn_half2 = MD.getValue<std::string>(EMDL::POSTPROCESS_UNFIL_HALFMAP2, i);
             fn_mask  = MD.getValue<std::string>(EMDL::MASK_NAME, i);

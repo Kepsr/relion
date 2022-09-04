@@ -542,7 +542,7 @@ void MetaDataTable::append(const MetaDataTable &mdt) {
 
 MetaDataContainer* MetaDataTable::getObject(long int i) const {
     try {
-        if (i < 0) { i = index(); }
+        if (i < 0) { i = size() - 1; }
         checkObjectID(i);
         return objects[i];
     } catch (const std::string &errmsg) {
@@ -552,7 +552,7 @@ MetaDataContainer* MetaDataTable::getObject(long int i) const {
 
 void MetaDataTable::setObject(MetaDataContainer* data, long int i) {
     try {
-        if (i < 0) { i = index(); }
+        if (i < 0) { i = size() - 1; }
         checkObjectID(i);
         addMissingLabels(*data->table);
         setObjectUnsafe(data, i);
@@ -563,7 +563,7 @@ void MetaDataTable::setObject(MetaDataContainer* data, long int i) {
 
 void MetaDataTable::setValuesOfDefinedLabels(MetaDataContainer* data, long i) {
     try {
-        if (i < 0) { i = index(); }
+        if (i < 0) { i = size() - 1; }
         checkObjectID(i);
         setObjectUnsafe(data, i);
     } catch (const std::string &errmsg) {
@@ -614,7 +614,7 @@ long int MetaDataTable::addObject() {
         doubleLabels, intLabels, boolLabels, stringLabels,
         doubleVectorLabels, unknownLabels
     ));
-    return index();
+    return size() - 1;
 }
 
 long int MetaDataTable::addObject(MetaDataContainer* data) {
@@ -625,7 +625,7 @@ long int MetaDataTable::addObject(MetaDataContainer* data) {
     ));
 
     setObject(data, objects.size() - 1);
-    return index();
+    return size() - 1;
 }
 
 void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
@@ -640,7 +640,7 @@ void MetaDataTable::addValuesOfDefinedLabels(MetaDataContainer* data) {
 
 void MetaDataTable::removeObject(long i) {
     try {
-        if (i < 0) { i = index(); }
+        if (i < 0) { i = size() - 1; }
         checkObjectID(i);
         delete objects[i];
         objects.erase(objects.begin() + i);

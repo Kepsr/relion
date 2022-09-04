@@ -122,7 +122,7 @@ void HelixAligner::initialise() {
         MD.read(fn_imgs);
         FileName fn_img;
         Image<RFLOAT> img;
-        const int i = MD.index();
+        const int i = MD.size() - 1;
         if (MD.containsLabel(EMDL::IMAGE_NAME)) {
             fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, i);
         } else if (MD.containsLabel(EMDL::MLMODEL_REF_IMAGE)) {
@@ -150,7 +150,7 @@ void HelixAligner::initialise() {
 
         // Get the pixel size
         if (MDmics.containsLabel(EMDL::CTF_MAGNIFICATION) && MDmics.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)) {
-            const long int i = MDmics.index();
+            const long int i = MDmics.size() - 1;
             RFLOAT mag = MDmics.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION, i);
             RFLOAT dstep = MDmics.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
             RFLOAT my_angpix = 10000.0 * dstep / mag;
@@ -180,7 +180,7 @@ void HelixAligner::initialise() {
         img.read(fn_inimodel);
         img().setXmippOrigin();
         if (angpix < 0.0) {
-            angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.index());
+            angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.size() - 1);
             std::cout << " Using pixel size from the input file header: " << angpix << std::endl;
         }
         ori_size = img().xdim;
@@ -274,7 +274,7 @@ void HelixAligner::readImages() {
 
         FileName fn_img;
         Image<RFLOAT> img;
-        const long int i = MD.index();
+        const long int i = MD.size() - 1;
         if (MD.containsLabel(EMDL::IMAGE_NAME)) {
             fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, i);
         } else if (MD.containsLabel(EMDL::MLMODEL_REF_IMAGE)) {

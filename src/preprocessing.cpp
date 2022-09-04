@@ -827,7 +827,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         tilt_deg = psi_deg = 0.0;
         if (do_extract_helix) {
             // If priors do not exist, errors will occur in 'readHelicalCoordinates()'.
-            const long int i = MD.index();
+            const long int i = MD.size() - 1;
             tilt_deg = MD.getValue<RFLOAT>(EMDL::ORIENT_TILT_PRIOR, i);
             psi_deg  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR,  i);
         }
@@ -985,7 +985,7 @@ void Preprocessing::performPerImageOperations(
         return computeStats(Ipart());
     }();
 
-    const long int i = Ipart.MDMainHeader.index();
+    const long int i = Ipart.MDMainHeader.size() - 1;
 
     if (Ipart().getDim() == 3) {
         Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);

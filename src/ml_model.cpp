@@ -103,7 +103,7 @@ void MlModel::read(FileName fn_in) {
     // Read general stuff
     MetaDataTable MDlog;
     MDlog.readStar(in, "model_general");
-    const long int i = MDlog.index();
+    const long int i = MDlog.size() - 1;
     try {
         ref_dim                  = MDlog.getValue<int>(EMDL::MLMODEL_DIMENSIONALITY, i);
         ori_size                 = MDlog.getValue<int>(EMDL::MLMODEL_ORIGINAL_SIZE, i);
@@ -624,7 +624,7 @@ void MlModel::initialiseFromImages(
         // If this is a STAR file, ignore nr_classes and read all references from this file
         if (fn_ref.isStarFile()) {
             auto MDref = MetaDataTable::from_filename(fn_ref, "model_classes");
-            const long int i = MDref.index();
+            const long int i = MDref.size() - 1;
             try {
                 FileName fn_tmp = MDref.getValue<std::string>(EMDL::MLMODEL_REF_IMAGE, i);
             } catch (const char *errmsg) {
@@ -649,7 +649,7 @@ void MlModel::initialiseFromImages(
                 if (_ref_angpix > 0.0) {
                     pixel_size = _ref_angpix;
                 } else {
-                    RFLOAT header_pixel_size = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.index());
+                    RFLOAT header_pixel_size = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.size() - 1);
                     if (nr_classes == 0) {
                         pixel_size = header_pixel_size;
                     } else {
@@ -675,7 +675,7 @@ void MlModel::initialiseFromImages(
             if (_ref_angpix > 0.0) {
                 pixel_size = _ref_angpix;
             } else {
-                RFLOAT header_pixel_size = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.index());
+                RFLOAT header_pixel_size = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.size() - 1);
                 if (header_pixel_size <= 0) {
                     std::cerr << " header_pixel_size = " << header_pixel_size << std::endl;
                     REPORT_ERROR("MlModel::initialiseFromImages: Pixel size of reference image is not set!");

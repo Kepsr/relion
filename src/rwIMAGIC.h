@@ -158,7 +158,7 @@ int Image<T>::readIMAGIC(long int img_select) {
         header->densmax = header->avdens + header->sigma;
     }
 
-    const long int i = MDMainHeader.index();
+    const long int i = MDMainHeader.size() - 1;
     MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->densmin, i);
     MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->densmax, i);
     MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->avdens, i);
@@ -246,7 +246,7 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
     if (!MDMainHeader.empty()) {
 
-        const long int i = MDMainHeader.index();
+        const long int i = MDMainHeader.size() - 1;
 
         try {
             header->densmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN, i);

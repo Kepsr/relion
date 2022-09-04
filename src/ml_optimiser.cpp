@@ -904,7 +904,7 @@ void MlOptimiser::read(FileName fn_in, int rank, bool do_prevent_preread) {
     MD.readStar(in, "optimiser_general");
     in.close();
 
-    const long int i = MD.index();
+    const long int i = MD.size() - 1;
     try {
         fn_out = MD.getValue<std::string>(EMDL::OPTIMISER_OUTPUT_ROOTNAME, i);
         fn_model = MD.getValue<std::string>(EMDL::OPTIMISER_MODEL_STARFILE, i);
@@ -1117,7 +1117,7 @@ void MlOptimiser::write(bool do_write_sampling, bool do_write_data, bool do_writ
         MD.isList = true;
         MD.name = "optimiser_general";
         MD.addObject();
-        const long int i = MD.index();
+        const long int i = MD.size() - 1;
         MD.setValue(EMDL::OPTIMISER_OUTPUT_ROOTNAME, fn_out, i);
         if (do_split_random_halves) {
             MD.setValue(EMDL::OPTIMISER_MODEL_STARFILE, fn_model, i);
@@ -1411,7 +1411,7 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
     Image<RFLOAT> Isolvent;
     Isolvent.read(_fn_mask);
     Isolvent().setXmippOrigin();
-    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, Isolvent.MDMainHeader.index());
+    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, Isolvent.MDMainHeader.size() - 1);
 
     bool need_new_mask = false;
     if (fabs(mask_pixel_size-mymodel.pixel_size) > 0.001) {
@@ -2088,10 +2088,10 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                         long int dump;
                         fn_img.decompose(dump, fn_stack);
                         if (!exists(fn_stack))
-                            fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, MDimg.index());
+                            fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, MDimg.size() - 1);
                     }
                 } catch (const char *errmsg) {
-                    fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, MDimg.index());
+                    fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, MDimg.size() - 1);
                 }
 
                 FileName fn_stack;
@@ -2109,7 +2109,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             // 24 May 2015 - Shaoda & Sjors, Helical refinement
             RFLOAT psi_deg = 0.0, tilt_deg = 0.0;
             bool is_helical_segment = do_helical_refine || mymodel.ref_dim == 2 && helical_tube_outer_diameter > 0.0;
-            const long int i = MDimg.index();
+            const long int i = MDimg.size() - 1;
             if (is_helical_segment) {
                 try {
                     psi_deg = MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI_PRIOR, i);

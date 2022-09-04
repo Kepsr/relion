@@ -148,9 +148,6 @@ class MetaDataTable {
     template<class T>
     void setValue(EMDL::EMDLabel label, const T &value, long int i);
 
-    // The index of the last object
-    inline long int index() const { return objects.size() - 1; }
-
     void setUnknownValue(int labelPosition, const std::string &value);
     void setValueFromString(EMDL::EMDLabel label, const std::string &value, long int i);
 
@@ -387,7 +384,7 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long i) const {
     if (off < 0) throw "Negative offset";
 
     if (i < 0) {
-        i = index();
+        i = size() - 1;
     } else {
         try {
             checkObjectID(i);
@@ -419,7 +416,7 @@ void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int i) {
     }
 
     if (i < 0) {
-        i = index();
+        i = size() - 1;
     } else {
         try {
             checkObjectID(i);

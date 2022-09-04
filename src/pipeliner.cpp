@@ -1652,10 +1652,10 @@ void PipeLine::read(bool do_lock, std::string lock_message) {
 
     MetaDataTable MDgen, MDnode, MDproc, MDedge1, MDedge2;
 
-    // This if allows for older version of the pipeline without the jobcounter
+    // This if allows for older version of the pipeline without the job counter
     // TODO: remove after alpha-testing
     if (MDgen.readStar(in, "pipeline_general")) {
-        int jobcounter = MDgen.getValue<int>(EMDL::PIPELINE_JOB_COUNTER, MDgen.index());
+        const int job_counter = MDgen.getValue<int>(EMDL::PIPELINE_JOB_COUNTER, MDgen.size() - 1);
         if (job_counter < 0) REPORT_ERROR("PipeLine::read: rlnPipeLineJobCounter must not be negative!");
     }
 
@@ -1828,11 +1828,11 @@ void PipeLine::write(
     for (long int i = 0 ; i < processList.size(); i++) {
         const auto &process = processList[i];
         auto &mdt = fn_del.empty() || !deleteProcess[i] ? MDproc : MDproc_del;
-        const long int index = mdt.addObject();
-        mdt.setValue(EMDL::PIPELINE_PROCESS_NAME,   process.name,   index);
-        mdt.setValue(EMDL::PIPELINE_PROCESS_ALIAS,  process.alias,  index);
-        mdt.setValue(EMDL::PIPELINE_PROCESS_TYPE,   process.type,   index);
-        mdt.setValue(EMDL::PIPELINE_PROCESS_STATUS, process.status, index);
+        const long int j = mdt.addObject();
+        mdt.setValue(EMDL::PIPELINE_PROCESS_NAME,   process.name,   j);
+        mdt.setValue(EMDL::PIPELINE_PROCESS_ALIAS,  process.alias,  j);
+        mdt.setValue(EMDL::PIPELINE_PROCESS_TYPE,   process.type,   j);
+        mdt.setValue(EMDL::PIPELINE_PROCESS_STATUS, process.status, j);
     }
     #ifdef DEBUG
     MDproc.write(std::cerr);
@@ -1845,9 +1845,9 @@ void PipeLine::write(
     for (long int i = 0; i < nodeList.size(); i++) {
         const auto &node = nodeList[i];
         auto &mdt = fn_del.empty() || !deleteNode[i] ? MDnode : MDnode_del;
-        const long int index = mdt.addObject();
-        mdt.setValue(EMDL::PIPELINE_NODE_NAME, node.name, index);
-        mdt.setValue(EMDL::PIPELINE_NODE_TYPE, node.type, index);
+        const long int j = mdt.addObject();
+        mdt.setValue(EMDL::PIPELINE_NODE_NAME, node.name, j);
+        mdt.setValue(EMDL::PIPELINE_NODE_TYPE, node.type, j);
     }
     #ifdef DEBUG
     MDnode.write(std::cerr);
@@ -1861,9 +1861,9 @@ void PipeLine::write(
     for (long int i = 0; i < processList.size(); i++)
     for (long int input_node : processList[i].inputNodeList) {
         auto &mdt = !fn_del.empty() || !deleteProcess[i] && !deleteNode[input_node] ? MDedge1 : MDedge1_del;
-        const long int index = mdt.addObject();
-        mdt.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[input_node].name, index);
-        mdt.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name, index);
+        const long int j = mdt.addObject();
+        mdt.setValue(EMDL::PIPELINE_EDGE_FROM, nodeList[input_node].name, j);
+        mdt.setValue(EMDL::PIPELINE_EDGE_PROCESS, processList[i].name, j);
     }
     #ifdef DEBUG
     MDedge1.write(std::cerr);
@@ -1877,9 +1877,9 @@ void PipeLine::write(
     for (long int i = 0; i < processList.size(); i++)
     for (long int output_node : processList[i].outputNodeList) {
         auto &mdt = fn_del.empty() || !deleteProcess[i] && !deleteNode[output_node] ?  MDedge2 : MDedge2_del;
-        const long int index = mdt.addObject();
-        mdt.setValue(EMDL::PIPELINE_EDGE_PROCESS,  processList[i].name, index);
-        mdt.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[output_node].name, index);
+        const long int j = mdt.addObject();
+        mdt.setValue(EMDL::PIPELINE_EDGE_PROCESS,  processList[i].name, j);
+        mdt.setValue(EMDL::PIPELINE_EDGE_TO, nodeList[output_node].name, j);
     }
     MDedge2.write(fh);
     if (!fn_del.empty()) MDedge2_del.write(fh_del);

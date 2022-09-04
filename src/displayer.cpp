@@ -227,7 +227,7 @@ int basisViewerWindow::fillCanvas(
     Fl_Scroll scroll(0, 0, w(), h());
 
     // Pre-set the canvas to the correct size
-    FileName fn_img = MDin.getValue<std::string>(display_label, MDin.index());
+    FileName fn_img = MDin.getValue<std::string>(display_label, MDin.size() - 1);
     Image<RFLOAT> img;
     img.read(fn_img, false);
     int nimgs = MDin.size();
@@ -821,7 +821,7 @@ void multiViewerCanvas::printMetaData(int main_ipos) {
             if (box->selected == DISPLAYER_SELECTED) {
                 nselected_classes++;
                 // Get class number
-                int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.index());
+                int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.size() - 1);
                 for (long int i : *MDdata) {
                     if (MDdata->getValue<int>(EMDL::PARTICLE_CLASS, i) == myclass)
                     nselected_particles++;
@@ -880,7 +880,7 @@ void multiViewerCanvas::showAverage(bool selected, bool show_stddev) {
 
 void multiViewerCanvas::showOriginalImage(int ipos) {
     // Make system call because otherwise the green drawing for distance measurements doesn't work....
-    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.index());
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.size() - 1);
 
     system(("relion_display  --i " + fn_img + " --scale " + floatToString(ori_scale)
         + " --sigma_contrast " + floatToString(sigma_contrast)
@@ -897,7 +897,7 @@ void multiViewerCanvas::showOriginalImage(int ipos) {
     ).c_str());
 
     /*
-    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.index());
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.size() - 1);
     Image<RFLOAT> img;
     img.read(fn_img);
     basisViewerWindow win(ceil(ori_scale*Xsize(img())), ceil(ori_scale*Ysize(img())), fn_img.c_str());
@@ -956,7 +956,7 @@ void basisViewerCanvas::saveImage(int ipos) {
 
 void multiViewerCanvas::showFourierAmplitudes(int ipos) {
     // Make system call because otherwise the green drawing for distance measurements doesn't work....
-    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.index());
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.size() - 1);
     Image<RFLOAT> img;
     img.read(fn_img, false);
     if (Zsize(img()) > 1 || Nsize(img()) > 1) {
@@ -976,7 +976,7 @@ void multiViewerCanvas::showFourierAmplitudes(int ipos) {
 
 void multiViewerCanvas::showFourierPhaseAngles(int ipos) {
     // Make system call because otherwise the green drawing for distance measurements doesn't work....
-    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.index());
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.size() - 1);
     Image<RFLOAT> img;
     img.read(fn_img, false);
     if (Zsize(img()) > 1 || Nsize(img()) > 1) {
@@ -999,7 +999,7 @@ void multiViewerCanvas::showHelicalLayerLineProfile(int ipos) {
 
     std::string mydefault = std::string(default_pdf_viewer);
 
-    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.index());
+    FileName fn_img = boxes[ipos]->MDimg.getValue<std::string>(display_label, boxes[ipos]->MDimg.size() - 1);
     Image<RFLOAT> img;
     img.read(fn_img);
 
@@ -1020,7 +1020,7 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
     for (const auto *box : boxes) {
         if (box->selected == selected) {
             // Get class number
-            int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.index());
+            int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.size() - 1);
             for (long int i : *MDdata) {
                 if (MDdata->getValue<int>(EMDL::PARTICLE_CLASS, i) == myclass)
                     MDpart.addObject(MDdata->getObject(i));
@@ -1037,7 +1037,7 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
         for (const auto *box : boxes) {
             if (box->selected == selected) {
                 int nr_selected = 0;
-                int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.index());
+                int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.size() - 1);
                 for (long int i : MDtmp) {
                     if (MDtmp.getValue<int>(EMDL::PARTICLE_CLASS, i) == myclass) {
                         MDpart.addObject(MDtmp.getObject(i));
@@ -1210,7 +1210,7 @@ void multiViewerCanvas::saveTrainingSet() {
     // Now save the selected images in a MetaData file.
     MetaDataTable MDout;
     for (const auto *box : boxes) {
-        const long int i = MDout.addObject(box->MDimg.getObject(box->MDimg.index()));
+        const long int i = MDout.addObject(box->MDimg.getObject(box->MDimg.size() - 1));
         MDout.setValue(EMDL::SELECTED, box->selected, i);
     }
 
@@ -1272,7 +1272,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
     for (const auto *box : boxes) {
         if (box->selected == save_selected) {
             nsel++;
-            MDout.addObject(box->MDimg.getObject(box->MDimg.index()));
+            MDout.addObject(box->MDimg.getObject(box->MDimg.size() - 1));
         }
     }
     if (nsel > 0) {
@@ -1615,7 +1615,7 @@ int pickerViewerCanvas::handle(int ev) {
             } else {
                 MDcoords.addObject();
             }
-            const long int i = MDcoords.index();
+            const long int i = MDcoords.size() - 1;
             MDcoords.setValue(EMDL::IMAGE_COORD_X, xcoor, i);
             MDcoords.setValue(EMDL::IMAGE_COORD_Y, ycoor, i);
             // No autopicking, but still always fill in the parameters for autopicking with dummy values (to prevent problems in joining autopicked and manually picked coordinates)
@@ -2280,7 +2280,7 @@ void Displayer::initialise() {
         if (fn_in.isStarFile()) {
             // As of v3.1 the input STAR files should always store the pixel size, no more check necessary...
             if (do_ignore_optics && angpix > 0.0) {
-                obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, obsModel.opticsMdt.index());
+                obsModel.opticsMdt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, obsModel.opticsMdt.size() - 1);
             }
         } else {
             // if not a STAR file: always need command-line input for pixel

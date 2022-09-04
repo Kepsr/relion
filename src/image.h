@@ -935,7 +935,7 @@ class Image {
      * @endcode
      */
     int dataType() const {
-        return MDMainHeader.getValue<int>(EMDL::IMAGE_DATATYPE, MDMainHeader.index());
+        return MDMainHeader.getValue<int>(EMDL::IMAGE_DATATYPE, MDMainHeader.size() - 1);
     }
 
     /** Sampling rate in X
@@ -946,7 +946,7 @@ class Image {
     */
     RFLOAT samplingRateX(const long int n = 0) const {
         if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X))
-            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, MDMainHeader.index());
+            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, MDMainHeader.size() - 1);
         else return 1.0;
     }
 
@@ -958,7 +958,7 @@ class Image {
     */
     RFLOAT samplingRateY(const long int n = 0) const {
         if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))
-            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, MDMainHeader.index());
+            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, MDMainHeader.size() - 1);
         else return 1.0;
     }
 
@@ -970,7 +970,7 @@ class Image {
     // Set image statistics in the main header
     void setStatisticsInHeader() {
         const auto statistics = computeStats(data);
-        const long int i = MDMainHeader.index();
+        const long int i = MDMainHeader.size() - 1;
         MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    statistics.avg,    i);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, statistics.stddev, i);
         MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    statistics.min,    i);
@@ -978,20 +978,20 @@ class Image {
     }
 
     void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y , RFLOAT rate_z) {
-        const long int i = MDMainHeader.index();
+        const long int i = MDMainHeader.size() - 1;
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x, i);
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y, i);
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate_z, i);
     }
 
     void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y) {
-        const long int i = MDMainHeader.index();
+        const long int i = MDMainHeader.size() - 1;
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x, i);
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y, i);
     }
 
     void setSamplingRateInHeader(RFLOAT rate) {
-        const long int i = MDMainHeader.index();
+        const long int i = MDMainHeader.size() - 1;
         if (Xsize(data) > 1)
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate, i);
         if (Ysize(data) > 1)

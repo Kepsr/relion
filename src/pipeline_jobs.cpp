@@ -335,7 +335,7 @@ bool RelionJob::read(const string &fn, bool &is_continue, bool do_initialise) {
 
         MetaDataTable MDhead;
         MDhead.read(fn_star, "job");
-        const long int i = MDhead.index();
+        const long int i = MDhead.size() - 1;
         type = MDhead.getValue<int>(EMDL::JOB_TYPE, i);
         is_continue = this->is_continue = MDhead.getValue<bool>(EMDL::JOB_IS_CONTINUE, i);
         if (do_initialise)

@@ -659,11 +659,11 @@ class image_handler_parameters {
             init_progress_bar(MD.size());
 
         bool do_md_out = false;
-        for (long int index : MD) {
-            FileName fn_img = MD.getValue<std::string>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME, index);
+        for (long int i : MD) {
+            FileName fn_img = MD.getValue<std::string>(do_average_all_frames ? EMDL::MICROGRAPH_MOVIE_NAME : EMDL::IMAGE_NAME, i);
 
             // For fourfilter...
-            RFLOAT psi = maybe(0.0, [&] (){ return MD.getValue<RFLOAT>(EMDL::ORIENT_PSI, index); });
+            RFLOAT psi = maybe(0.0, [&] (){ return MD.getValue<RFLOAT>(EMDL::ORIENT_PSI, i); });
 
             Image<RFLOAT> Iin;
             // Initialise for the first image
@@ -764,9 +764,9 @@ class image_handler_parameters {
                 Iin.read(fn_img);
 
                 if (do_avg_ampl2_ali) {
-                    auto psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI, index);
-                    auto xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X, index);
-                    auto yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y, index);
+                    auto psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI,      i);
+                    auto xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X, i);
+                    auto yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y, i);
                     // Apply the actual transformation
                     Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
                     A.at(0, 2) = xoff;
@@ -832,8 +832,7 @@ class image_handler_parameters {
                 FileName my_fn_out;
 
                 if (fn_out.getExtension() == "mrcs" && !fn_out.contains("@")) {
-                    // index starts counting from 0, thus needs to be incremented.
-                    my_fn_out = FileName::compose(index + 1, fn_out);
+                    my_fn_out = FileName::compose(i + 1, fn_out);
                 } else {
                     if (input_is_stack) {
                         my_fn_out = fn_img.insertBeforeExtension("_" + fn_out);
@@ -850,7 +849,7 @@ class image_handler_parameters {
                 }
                 perImageOperations(Iin, my_fn_out, psi);
                 do_md_out = true;
-                MD.setValue(EMDL::IMAGE_NAME, my_fn_out, MD.index());
+                MD.setValue(EMDL::IMAGE_NAME, my_fn_out, MD.size() - 1);
             }
 
             i_img += ndim;

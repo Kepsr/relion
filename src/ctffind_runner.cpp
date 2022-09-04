@@ -579,7 +579,7 @@ void CtffindRunner::executeCtffind3(long int imic) {
         );
         // Calculate mean, stddev, min and max
         const auto stats = computeStats(I());
-        const long int i = I.MDMainHeader.index();
+        const long int i = I.MDMainHeader.size() - 1;
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max,    i);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg,    i);
@@ -659,7 +659,7 @@ void CtffindRunner::executeCtffind4(long int imic) {
         I().window(Xmipp::init(ctf_win), Xmipp::init(ctf_win), Xmipp::last(ctf_win), Xmipp::last(ctf_win));
         // Calculate mean, stddev, min and max
         const auto stats = computeStats(I());
-        const long int i = I.MDMainHeader.index();
+        const long int i = I.MDMainHeader.size() - 1;
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max,    i);
         I.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg,    i);
