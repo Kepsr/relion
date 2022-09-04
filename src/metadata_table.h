@@ -142,12 +142,6 @@ class MetaDataTable {
 
     std::string getValueToString(EMDL::EMDLabel label, long int i) const;
 
-    inline std::pair<EMDL::EMDLabel, std::string> label_and_unknown(int i) const {
-        const EMDL::EMDLabel label = activeLabels[i];
-        const std::string unknownLabelName = label == EMDL::UNKNOWN_LABEL ? unknownLabelNames[unknown_label_indices[i]] : "";
-        return {label, unknownLabelName};
-    }
-
     std::string getUnknownLabelNameAt(int i) const;
 
     // Set the value of label for the ith object (i >= 0)

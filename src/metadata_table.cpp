@@ -140,11 +140,28 @@ void MetaDataTable::clear() {
     activeLabels.clear();
 }
 
+std::pair<EMDL::EMDLabel, std::string> label_and_unknown(const MetaDataTable &mdt, int i) {
+    const EMDL::EMDLabel label = mdt.getActiveLabels()[i];
+    const std::string unknownLabelName = label == EMDL::UNKNOWN_LABEL ? mdt.getUnknownLabelNameAt(i) : "";
+    return {label, unknownLabelName};
+}
+
 std::map<EMDL::EMDLabel, std::string> labels_and_unknowns(const MetaDataTable& mdt) {
     std::map<EMDL::EMDLabel, std::string> map;
     for (int i = 0; i < mdt.getActiveLabels().size(); i++)
-        map.insert(mdt.label_and_unknown(i));
+        map.insert(label_and_unknown(mdt, i));
     return map;
+}
+
+std::vector<std::string> data_names(MetaDataTable mtd) {
+    std::vector<std::string> names;
+    const auto lus = labels_and_unknowns(mtd);
+    names.reserve(lus.size());
+    for (const auto &lu : lus) {
+        if (lu.first == EMDL::SORTED_IDX) continue;  // Don't expose (ugly) implementation details!
+        names.push_back(lu.first == EMDL::UNKNOWN_LABEL ? lu.second : EMDL::label2Str(lu.first));
+    }
+    return names;
 }
 
 std::string MetaDataTable::getUnknownLabelNameAt(int i) const {
@@ -412,12 +429,9 @@ void MetaDataTable::newSort(const EMDL::EMDLabel label, bool do_sort_after_at, b
 }
 
 bool MetaDataTable::containsLabel(const EMDL::EMDLabel label, const std::string &unknownLabel) const {
-    const bool is_known = label != EMDL::UNKNOWN_LABEL;
-    const auto map = labels_and_unknowns(*this);
-    return std::any_of(map.begin(), map.end(),
-        [&] (const std::pair<EMDL::EMDLabel, std::string> &lu) {
-        return label == lu.first && (is_known || unknownLabel == lu.second);
-    });
+    const auto names = data_names(*this);
+    const std::string target = label == EMDL::UNKNOWN_LABEL ? unknownLabel : EMDL::label2Str(label);
+    return std::find(names.begin(), names.end(), target) != names.end();
 }
 
 std::vector<EMDL::EMDLabel> MetaDataTable::getActiveLabels() const {
@@ -428,7 +442,7 @@ void MetaDataTable::deactivateLabel(EMDL::EMDLabel label, const std::string &unk
     const bool is_known = label != EMDL::UNKNOWN_LABEL;
     /// TODO: Get these erases out of this loop!
     for (int i = 0; i < activeLabels.size(); i++) {
-        const auto lu = label_and_unknown(i);
+        const auto lu = label_and_unknown(*this, i);
         if (label == lu.first && (is_known || unknownLabel == lu.second)) {
             activeLabels.erase(activeLabels.begin() + i);
             unknown_label_indices.erase(unknown_label_indices.begin() + i);
@@ -1182,19 +1196,6 @@ long int MetaDataTable::readStar(
     return 0;
 }
 
-std::vector<std::string> data_names(MetaDataTable mtd) {
-    std::vector<std::string> names;
-    const auto lus = labels_and_unknowns(mtd);
-    names.reserve(lus.size());
-    for (const auto &lu : lus) {
-        // EMDL::SORTED_IDX is only for internal use, never write it out!
-        if (lu.first != EMDL::SORTED_IDX) {
-            names.push_back(lu.first == EMDL::UNKNOWN_LABEL ? lu.second : EMDL::label2Str(lu.first));
-        }
-    }
-    return names;
-}
-
 // Writing
 
 void MetaDataTable::write(std::ostream& out) {
@@ -1254,7 +1255,7 @@ void MetaDataTable::write(std::ostream& out) {
         }
 
         for (long i = 0; i < activeLabels.size(); i++) {
-            const auto lu = label_and_unknown(i);
+            const auto lu = label_and_unknown(*this, i);
             const bool is_known = lu.first == EMDL::UNKNOWN_LABEL;
             const std::string name = is_known ? EMDL::label2Str(lu.first) : lu.second;
             const std::string item = is_known ?
