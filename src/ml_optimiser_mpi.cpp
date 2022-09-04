@@ -29,7 +29,9 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-
+#if !defined(__APPLE__)
+#include <malloc.h>
+#endif
 
 // Like modulo, but return the base instead of zero.
 // e.g. 0, 1, 2, 3, 4, 5, ... => 3, 1, 2, 3, 1, 2, ... (mod 3)

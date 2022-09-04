@@ -20,10 +20,12 @@
 
 #include "src/postprocessing.h"
 #include "src/pipeline_jobs.h"
+#include "src/plot_metadata.h"
 
 void Postprocessing::read(int argc, char **argv) {
 
     parser.setCommandLine(argc, argv);
+
     int gen_section = parser.addSection("General options");
     fn_I1 = parser.getOption("--i", "Input name of half1, e.g. run_half1_class001_unfil.mrc");
     fn_I2 = parser.getOption("--i2", "Input name of half2, (default replaces half1 from --i with half2)", "");
@@ -659,10 +661,10 @@ void Postprocessing::writeOutput() {
     CPlot2D *plot2D = new CPlot2D(title);
     plot2D->SetXAxisSize(600);
     plot2D->SetYAxisSize(400);
-    MDfsc.addToCPlot2D(plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_TRUE,          0.0, 0.0, 0.0, 2.0);
-    MDfsc.addToCPlot2D(plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_UNMASKED,      0.0, 1.0, 0.0);
-    MDfsc.addToCPlot2D(plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_MASKED,        0.0, 0.0, 1.0);
-    MDfsc.addToCPlot2D(plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_RANDOM_MASKED, 1.0, 0.0, 0.0);
+    PlotMetaData::addToCPlot2D(MDfsc, plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_TRUE,          0.0, 0.0, 0.0, 2.0);
+    PlotMetaData::addToCPlot2D(MDfsc, plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_UNMASKED,      0.0, 1.0, 0.0);
+    PlotMetaData::addToCPlot2D(MDfsc, plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_MASKED,        0.0, 0.0, 1.0);
+    PlotMetaData::addToCPlot2D(MDfsc, plot2D, EMDL::RESOLUTION, EMDL::POSTPROCESS_FSC_RANDOM_MASKED, 1.0, 0.0, 0.0);
     plot2D->SetXAxisTitle("resolution (1/A)");
     plot2D->SetYAxisTitle("Fourier Shell Correlation");
     plot2D->OutputPostScriptPlot(fn_out + "_fsc.eps");
@@ -720,30 +722,30 @@ void Postprocessing::writeOutput() {
     CPlot2D *plot2Dc = new CPlot2D("Guinier plots");
     plot2Dc->SetXAxisSize(600);
     plot2Dc->SetYAxisSize(400);
-    MDguinier.addToCPlot2D(
-        plot2Dc,
+    PlotMetaData::addToCPlot2D(
+        MDguinier, plot2Dc,
         EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
         EMDL::POSTPROCESS_GUINIER_VALUE_IN,
         0.0, 0.0, 0.0
     );
     if (!fn_mtf.empty())
-        MDguinier.addToCPlot2D(
-            plot2Dc,
+        PlotMetaData::addToCPlot2D(
+            MDguinier, plot2Dc,
             EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
             EMDL::POSTPROCESS_GUINIER_VALUE_INVMTF,
             0.0, 1.0, 0.0
         );
     if (do_fsc_weighting) {
-        MDextra1.addToCPlot2D(
-            plot2Dc,
+        PlotMetaData::addToCPlot2D(
+            MDextra1, plot2Dc,
             EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
             EMDL::POSTPROCESS_GUINIER_VALUE_WEIGHTED,
             0.0, 0.0, 1.0
         );
     }
     if (do_auto_bfac || abs(adhoc_bfac) > 0.0) {
-        MDextra2.addToCPlot2D(
-            plot2Dc,
+        PlotMetaData::addToCPlot2D(
+            MDextra2, plot2Dc,
             EMDL::POSTPROCESS_GUINIER_RESOL_SQUARED,
             EMDL::POSTPROCESS_GUINIER_VALUE_SHARPENED,
             1.0, 0.0, 0.0
@@ -1012,7 +1014,7 @@ void Postprocessing::run_locres(int rank, int size) {
             CPlot2D *plot2D = new CPlot2D("");
             const FileName fn_eps = fn_out + "_histogram.eps";
             std::vector<RFLOAT> histX, histY;
-            MetaDataTable::histogram(values, histX, histY, verb, "local resolution", plot2D);
+            PlotMetaData::histogram(values, histX, histY, verb, "local resolution", plot2D);
             plot2D->OutputPostScriptPlot(fn_eps);
             const FileName fn_log = fn_out.beforeLastOf("/") + "/histogram.pdf";
             joinMultipleEPSIntoSinglePDF(fn_log, {fn_eps});

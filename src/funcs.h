@@ -95,6 +95,7 @@ struct fit_point3D
     /// Weight of the point in the Least-Squares problem
     RFLOAT w;
 };
+
 void fitLeastSquaresPlane(const std::vector<fit_point3D> & points, RFLOAT &plane_a, RFLOAT &plane_b, RFLOAT &plane_c);
 
 /* ========================================================================= */

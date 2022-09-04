@@ -29,6 +29,7 @@
 #include "src/jaz/img_proc/image_op.h"
 #include "src/funcs.h"
 #include "src/renderEER.h"
+#include "src/plot_metadata.h"
 
 // #define TIMING
 #ifdef TIMING
@@ -810,7 +811,7 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
         if (MDavg.containsLabel(label)) {
             // Values for all micrographs
             CPlot2D *plot2Db = new CPlot2D(EMDL::label2Str(label) + " for all micrographs");
-            MDavg.addToCPlot2D(plot2Db, EMDL::UNDEFINED, label, 1.0);
+            PlotMetaData::addToCPlot2D(MDavg, plot2Db, EMDL::UNDEFINED, label, 1.0);
             plot2Db->SetDrawLegend(false);
             fn_eps = fn_eps_root + "_all_" + EMDL::label2Str(label) + ".eps";
             plot2Db->OutputPostScriptPlot(fn_eps);
@@ -820,7 +821,7 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
                 // Histogram
                 std::vector<RFLOAT> histX, histY;
                 CPlot2D *plot2D = new CPlot2D("");
-                MDavg.columnHistogram(label, histX, histY, 0, plot2D);
+                PlotMetaData::columnHistogram(MDavg, label, histX, histY, 0, plot2D);
                 fn_eps = fn_eps_root + "_hist_" + EMDL::label2Str(label) + ".eps";
                 plot2D->OutputPostScriptPlot(fn_eps);
                 all_fn_eps.push_back(fn_eps);

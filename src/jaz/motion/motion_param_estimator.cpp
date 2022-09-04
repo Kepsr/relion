@@ -27,6 +27,9 @@
 #include <src/jaz/index_sort.h>
 #include <src/jaz/img_proc/filter_helper.h>
 #include <src/jaz/vtk_helper.h>
+#if !defined(__APPLE__)
+#include <malloc.h>
+#endif
 
 
 using namespace gravis;

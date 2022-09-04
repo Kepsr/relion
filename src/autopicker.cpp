@@ -24,6 +24,7 @@
 #include "src/helix.h"
 #include "src/jaz/ctf_helper.h"
 #include "src/multidim_array_statistics.h"
+#include "src/plot_metadata.h"
 
 // #define DEBUG
 // #define DEBUG_HELIX
@@ -887,7 +888,7 @@ void AutoPicker::generatePDFLogfile() {
 
     MDresult.write(fn_odir + "summary.star");
     CPlot2D *plot2Db = new CPlot2D("Nr of picked particles for all micrographs");
-    MDresult.addToCPlot2D(plot2Db, EMDL::UNDEFINED, EMDL::MLMODEL_GROUP_NR_PARTICLES, 1.0);
+    PlotMetaData::addToCPlot2D(MDresult, plot2Db, EMDL::UNDEFINED, EMDL::MLMODEL_GROUP_NR_PARTICLES, 1.0);
     plot2Db->SetDrawLegend(false);
     fn_eps = fn_odir + "all_nr_parts.eps";
     plot2Db->OutputPostScriptPlot(fn_eps);
@@ -895,7 +896,7 @@ void AutoPicker::generatePDFLogfile() {
     delete plot2Db;
     if (MDresult.numberOfObjects() > 3) {
         CPlot2D *plot2D = new CPlot2D("");
-        MDresult.columnHistogram(EMDL::MLMODEL_GROUP_NR_PARTICLES,histX,histY,0, plot2D);
+        PlotMetaData::columnHistogram(MDresult, EMDL::MLMODEL_GROUP_NR_PARTICLES, histX, histY, 0, plot2D);
         fn_eps = fn_odir + "histogram_nrparts.eps";
         plot2D->SetTitle("Histogram of nr of picked particles per micrograph");
         plot2D->OutputPostScriptPlot(fn_eps);
@@ -904,7 +905,7 @@ void AutoPicker::generatePDFLogfile() {
     }
 
     CPlot2D *plot2Dc = new CPlot2D("Average autopick FOM for all micrographs");
-    MDresult.addToCPlot2D(plot2Dc, EMDL::UNDEFINED, EMDL::PARTICLE_AUTOPICK_FOM, 1.);
+    PlotMetaData::addToCPlot2D(MDresult, plot2Dc, EMDL::UNDEFINED, EMDL::PARTICLE_AUTOPICK_FOM, 1.);
     plot2Dc->SetDrawLegend(false);
     fn_eps = fn_odir + "all_FOMs.eps";
     plot2Dc->OutputPostScriptPlot(fn_eps);
@@ -912,7 +913,7 @@ void AutoPicker::generatePDFLogfile() {
     delete plot2Dc;
     if (MDresult.numberOfObjects() > 3) {
         CPlot2D *plot2Dd = new CPlot2D("");
-        MDresult.columnHistogram(EMDL::PARTICLE_AUTOPICK_FOM, histX, histY, 0, plot2Dd);
+        PlotMetaData::columnHistogram(MDresult, EMDL::PARTICLE_AUTOPICK_FOM, histX, histY, 0, plot2Dd);
         fn_eps = fn_odir + "histogram_FOMs.eps";
         plot2Dd->SetTitle("Histogram of average autopick FOM per micrograph");
         plot2Dd->OutputPostScriptPlot(fn_eps);
