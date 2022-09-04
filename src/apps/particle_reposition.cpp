@@ -177,13 +177,11 @@ class particle_reposition_parameters {
 
 
                     RFLOAT rot, tilt, psi, xcoord = 0.0, ycoord = 0.0, zcoord = 0.0;
-                    int iclass;
                     Matrix2D<RFLOAT> A;
                     Matrix1D<RFLOAT> offsets(3);
 
-
                     const long int i = MDcoord.addObject();
-                    MDcoord.setObject(optimiser.mydata.MDimg.getObject(ori_img_id));
+                    MDcoord.setObject(optimiser.mydata.MDimg.getObject(ori_img_id), i);
                     MDcoord.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, i);
 
                     xcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_X,            ori_img_id);
@@ -203,7 +201,7 @@ class particle_reposition_parameters {
                     // Offsets in pixels
                     offsets /= my_pixel_size;
 
-                    iclass = optimiser.mydata.MDimg.getValue<int>(EMDL::PARTICLE_CLASS, ori_img_id) - 1;
+                    const int iclass = optimiser.mydata.MDimg.getValue<int>(EMDL::PARTICLE_CLASS, ori_img_id) - 1;
 
                     A = Euler::angles2matrix(rot, tilt, psi);
                     if (do_ctf) {
@@ -382,17 +380,17 @@ class particle_reposition_parameters {
                 // Write out the new micrograph
                 Imic_out.write(fn_mic_out);
 
-                const long int i = MDmics_out.addObject();
-                MDmics_out.setObject(DFi.getObject());
-                MDmics_out.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, i);
+                const long int j = MDmics_out.addObject();
+                MDmics_out.setObject(DFi.getObject(i), j);
+                MDmics_out.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, j);
 
                 // Also write out a STAR file with the particles used
-                FileName fn_coord_out = fn_mic_out.withoutExtension()+ "_coord.star";
+                const FileName fn_coord_out = fn_mic_out.withoutExtension() + "_coord.star";
                 MDcoord.write(fn_coord_out);
                 MDcoord.clear();
             } else {
-                MDmics_out.addObject();
-                MDmics_out.setObject(DFi.getObject());
+                const long int j = MDmics_out.addObject();
+                MDmics_out.setObject(DFi.getObject(i), j);
             }
 
             if (imgno % barstep == 0) progress_bar(imgno);

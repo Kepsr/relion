@@ -489,13 +489,13 @@ class project_parameters {
 
                 // Set the image name to the output STAR file
                 const long int i = DFo.addObject();
-                DFo.setObject(MDang.getObject());
+                DFo.setObject(MDang.getObject(MDang.index()), i);
                 DFo.setValue(EMDL::IMAGE_NAME, fn_img, i);
 
                 if (do_simulate) {
-                    DFo.setValue(EMDL::ORIENT_ROT,  rot, i);
+                    DFo.setValue(EMDL::ORIENT_ROT,  rot,  i);
                     DFo.setValue(EMDL::ORIENT_TILT, tilt, i);
-                    DFo.setValue(EMDL::ORIENT_PSI,  psi, i);
+                    DFo.setValue(EMDL::ORIENT_PSI,  psi,  i);
                     DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix, i);
                     DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yoff * angpix, i);
                     if (do_3d_rot)

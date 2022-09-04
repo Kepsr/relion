@@ -143,7 +143,7 @@ class particle_symmetry_expand_parameters {
                         RFLOAT yp = y + xxt * sin(radians(-psi));
                         rotp = rot - z_pos * twist;
                         const long int i = DFo.addObject();
-                        DFo.setObject(DFi.getObject());
+                        DFo.setObject(DFi.getObject(imgno), i);
                         DFo.setValue(EMDL::ORIENT_ROT, rotp, i);
                         DFo.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xp, i);
                         DFo.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, yp, i);
@@ -151,8 +151,8 @@ class particle_symmetry_expand_parameters {
                 }
             } else {
                 // Get the original line from the STAR file
-                DFo.addObject();
-                DFo.setObject(DFi.getObject());
+                const long int i = DFo.addObject();
+                DFo.setObject(DFi.getObject(imgno), i);
                 // And loop over all symmetry mates
                 for (int isym = 0; isym < SL.SymsNo(); isym++) {
                     SL.get_matrices(isym, L, R);
@@ -160,10 +160,10 @@ class particle_symmetry_expand_parameters {
                     R.resize(3, 3); // as only the relative orientation is useful and not the translation
                     angles_t angles = Euler::apply_transf(L, R, rot, tilt, psi);
                     const long int i = DFo.addObject();
-                    DFo.setObject(DFi.getObject());
-                    DFo.setValue(EMDL::ORIENT_ROT,  angles.rot, i);
+                    DFo.setObject(DFi.getObject(imgno), i);
+                    DFo.setValue(EMDL::ORIENT_ROT,  angles.rot,  i);
                     DFo.setValue(EMDL::ORIENT_TILT, angles.tilt, i);
-                    DFo.setValue(EMDL::ORIENT_PSI,  angles.psi, i);
+                    DFo.setValue(EMDL::ORIENT_PSI,  angles.psi,  i);
                 }
             }
 

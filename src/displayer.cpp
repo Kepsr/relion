@@ -530,10 +530,10 @@ void basisViewerCanvas::fill(
     ysize_box = ceil(_scale * Ysize(image));
     DisplayBox *my_box = new DisplayBox(0, 0, xsize_box, ysize_box, "dummy");
     MetaDataTable MDtmp;
-    MDtmp.addObject();
+    const long int i = MDtmp.addObject();
     // FileName fn_tmp = "dummy";
     // MDtmp.setValue(EMDL::IMAGE_NAME, fn_tmp);
-    my_box->setData(image, MDtmp.getObject(), 0, minmax.first, minmax.second, _scale, true);
+    my_box->setData(image, MDtmp.getObject(i), 0, minmax.first, minmax.second, _scale, true);
     my_box->redraw();
     boxes.push_back(my_box);
 }
@@ -1023,7 +1023,7 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
             int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.index());
             for (long int i : *MDdata) {
                 if (MDdata->getValue<int>(EMDL::PARTICLE_CLASS, i) == myclass)
-                    MDpart.addObject(MDdata->getObject());
+                    MDpart.addObject(MDdata->getObject(i));
             }
         }
     }
@@ -1040,7 +1040,7 @@ void multiViewerCanvas::makeStarFileSelectedParticles(int selected, MetaDataTabl
                 int myclass = box->MDimg.getValue<int>(EMDL::PARTICLE_CLASS, box->MDimg.index());
                 for (long int i : MDtmp) {
                     if (MDtmp.getValue<int>(EMDL::PARTICLE_CLASS, i) == myclass) {
-                        MDpart.addObject(MDtmp.getObject());
+                        MDpart.addObject(MDtmp.getObject(i));
                         nr_selected++;
                         if (nr_selected >= max_nr_parts_per_class)
                             break;
@@ -1210,7 +1210,7 @@ void multiViewerCanvas::saveTrainingSet() {
     // Now save the selected images in a MetaData file.
     MetaDataTable MDout;
     for (const auto *box : boxes) {
-        const long int i = MDout.addObject(box->MDimg.getObject());
+        const long int i = MDout.addObject(box->MDimg.getObject(box->MDimg.index()));
         MDout.setValue(EMDL::SELECTED, box->selected, i);
     }
 
@@ -1272,7 +1272,7 @@ void multiViewerCanvas::saveSelected(int save_selected) {
     for (const auto *box : boxes) {
         if (box->selected == save_selected) {
             nsel++;
-            MDout.addObject(box->MDimg.getObject());
+            MDout.addObject(box->MDimg.getObject(box->MDimg.index()));
         }
     }
     if (nsel > 0) {
@@ -1635,7 +1635,7 @@ int pickerViewerCanvas::handle(int ev) {
                 RFLOAT ycoor_p = MDcoords.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, i) - ycoor;
 
                 if (xcoor_p * xcoor_p + ycoor_p * ycoor_p < rad2) {
-                    MDcoords.removeObject();
+                    MDcoords.removeObject(i);
                     break;
                 }
             }
