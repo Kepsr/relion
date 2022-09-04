@@ -57,7 +57,7 @@ class ext_recons_parameters {
 
         MetaDataTable MDlist, MDtau;
         MDlist.read(fn_star, "external_reconstruct_general");
-        const long int i = MDlist.index();
+        const long int i = MDlist.size() - 1;
         fn_data_real   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_REAL, i);
         fn_data_imag   = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_DATA_IMAG, i);
         fn_weight      = MDlist.getValue<std::string>(EMDL::OPTIMISER_EXTERNAL_RECONS_WEIGHT, i);
@@ -94,7 +94,7 @@ class ext_recons_parameters {
         const int r_max = current_size / 2;
         const int r_max2 = round(r_max * padding_factor) * round(r_max * padding_factor);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Idata()) {
-            if (ip * ip + jp * jp + kp * kp < r_max2) {
+            if (euclidsq(ip, jp, kp) < r_max2) {
                 BP.data  .elem(ip, jp, kp) = direct::elem(Idata(),   i, j, k);
                 BP.weight.elem(ip, jp, kp) = direct::elem(Iweight(), i, j, k);
             }

@@ -1668,7 +1668,7 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
 
     if (Xsize(img()) != Ysize(img()) || Xsize(img()) != Zsize(img()))
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
-    const long int i = img.MDMainHeader.index();
+    const long int i = img.MDMainHeader.size() - 1;
     x_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, i);
     y_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, i);
     z_angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z, i);
@@ -1819,7 +1819,7 @@ void separateMasksKMeans(
         REPORT_ERROR("ERROR: Image file " + fn_in + " is an invalid 3D map! (< 10 X 10 X 10 pixels)");
     if ( (Xsize(img()) != Ysize(img())) || (Xsize(img()) != Zsize(img())) )
         REPORT_ERROR("ERROR: Image file " + fn_in + " is not a 3D cubic map!");
-    const long int i = img.MDMainHeader.index();
+    const long int i = img.MDMainHeader.size() - 1;
     x_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X, i);
     y_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Y, i);
     z_angpix = img.MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_Z, i);

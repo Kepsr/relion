@@ -522,16 +522,16 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
 
     FileName prev_img_name = "/Unlikely$filename$?*!";
     int prev_optics_group = -999;
-    for (auto index : MDimg) {
+    for (auto i : MDimg) {
         // TODO: think about MPI_Abort here....
-        if (index % check_abort_frequency == 0 && pipeline_control_check_abort_job())
+        if (i % check_abort_frequency == 0 && pipeline_control_check_abort_job())
             exit(RELION_EXIT_ABORTED);
 
-        const FileName fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, index);
+        const FileName fn_img = MDimg.getValue<std::string>(EMDL::IMAGE_NAME, i);
 
         const int optics_group = [&] () {
             try {
-                return MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, index) - 1;
+                return MDimg.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i) - 1;
             } catch (const char *errmsg) {
                 return 0;
             };
@@ -576,7 +576,7 @@ void Experiment::copyParticlesToScratch(int verb, bool do_copy, bool also_do_ctf
                 const FileName new_fn_img = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                 Image<RFLOAT>::from_filename(fn_img).write(new_fn_img);
                 if (also_do_ctf_image) {
-                    const FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE, MDimg.index());
+                    const FileName fn_ctf = MDimg.getValue<std::string>(EMDL::CTF_IMAGE, MDimg.size() - 1);
                     const FileName new_fn_ctf = fn_scratch + "opticsgroup" + integerToString(optics_group + 1) + "_particle_ctf" + integerToString(nr_parts_on_scratch[optics_group] + 1) + ".mrc";
                     Image<RFLOAT>::from_filename(fn_ctf).write(new_fn_ctf);
                 }
@@ -728,7 +728,7 @@ void Experiment::read(
         star_contains_micname = MDimg.containsLabel(EMDL::MICROGRAPH_NAME);
         if (star_contains_micname) {
             // See if the micrograph names contain an "@", i.e. whether they are movies and we are inside polishing or so.
-            const FileName fn_mic = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME, MDimg.index());
+            const FileName fn_mic = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME, MDimg.size() - 1);
             if (fn_mic.contains("@")) {
                 is_mic_a_movie = true;
                 MDimg.newSort(EMDL::MICROGRAPH_NAME, true); // sort on part AFTER "@"

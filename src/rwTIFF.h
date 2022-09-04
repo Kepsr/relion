@@ -109,7 +109,7 @@ int Image<T>::readTIFF(
         REPORT_ERROR("Unsupported TIFF format.\n");
     }
 
-    const long int i = MDMainHeader.index();
+    const long int i = MDMainHeader.size() - 1;
     MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
     uint16 resolutionUnit;

@@ -1737,7 +1737,7 @@ void convertHelicalTubeCoordsToMetaDataTable(
 
         if (!cut_into_segments) {
             MD_out.addObject();
-            const long int i = MD_out.index();
+            const long int i = MD_out.size() - 1;
             MD_out.setValue(EMDL::IMAGE_COORD_X, ((x1 + x2) / 2.0), i);
             MD_out.setValue(EMDL::IMAGE_COORD_Y, ((y1 + y2) / 2.0), i);
             MD_out.setValue(EMDL::PARTICLE_HELICAL_TUBE_ID, (tube_id + 1), i);
@@ -2701,11 +2701,11 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
 
     // Count micrograph names
     map_mics.clear();
-    for (long int index : MD) {
+    for (long int j : MD) {
         mic_name.clear();
-        mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME, index);
+        mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME, j);
         if (divide_according_to_helical_tube_id) {
-            helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID, index);
+            helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID, j);
             if (helical_tube_id < 1)
                 REPORT_ERROR("helix.cpp::divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(): Helical tube ID should be positive integer!");
             mic_name += std::string("_TUBEID_");
@@ -2770,11 +2770,11 @@ void divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(
     if ( (ratio > 1.5) || ( (1. / ratio) > 1.5) )
         REPORT_ERROR("helix.cpp::divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(): Numbers of helical segments from two half sets are extremely unbalanced!");
 
-    for (long int index : MD) {
+    for (long int j : MD) {
         mic_name.clear();
-        mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME, index);
+        mic_name = MD.getValue<std::string>(EMDL::MICROGRAPH_NAME, j);
         if (divide_according_to_helical_tube_id) {
-            helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID, index);
+            helical_tube_id = MD.getValue<int>(EMDL::PARTICLE_HELICAL_TUBE_ID, j);
             if (helical_tube_id < 1)
                 REPORT_ERROR("helix.cpp::divideHelicalSegmentsFromMultipleMicrographsIntoRandomHalves(): Helical tube ID should be positive integer!");
             mic_name += std::string("_TUBEID_");
@@ -4231,9 +4231,9 @@ void plotLatticePoints(MetaDataTable& MD, int x1, int y1, int x2, int y2) {
     MD.addLabel(EMDL::IMAGE_COORD_Y);
     for (int i = -10; i <= 10; i++)
     for (int j = -10; j <= 10; j++) {
-        const long int index = MD.addObject();
-        MD.setValue(EMDL::IMAGE_COORD_X, RFLOAT(i * x1 + j * x2), index);
-        MD.setValue(EMDL::IMAGE_COORD_Y, RFLOAT(i * y1 + j * y2), index);
+        const long int k = MD.addObject();
+        MD.setValue(EMDL::IMAGE_COORD_X, RFLOAT(i * x1 + j * x2), k);
+        MD.setValue(EMDL::IMAGE_COORD_Y, RFLOAT(i * y1 + j * y2), k);
     }
 }
 
@@ -4449,11 +4449,11 @@ void normaliseHelicalSegments(
 
     if (!is_3D_data) {
         // Read the header of .mrcs stack
-        FileName img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME, MD.index());
+        FileName img_name = MD.getValue<std::string>(EMDL::IMAGE_NAME, MD.size() - 1);
         img_name = img_name.substr(img_name.find("@") + 1);
         // Set the pixel size in the file header
         auto img0 = Image<RFLOAT>::from_filename(img_name);
-        const long int j = img0.MDMainHeader.index();
+        const long int j = img0.MDMainHeader.size() - 1;
         img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, j);
         img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, j);
         img0.write(img_name);

@@ -135,7 +135,7 @@ void Reconstructor::initialise() {
     if (do_reconstruct_ctf) {
         output_boxsize = ctf_dim;
     } else {
-        fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME, DF.index());
+        fn_img = DF.getValue<std::string>(EMDL::IMAGE_NAME, DF.size() - 1);
 
         if (!image_path.empty()) {
             fn_img = image_path + "/" + fn_img.substr(fn_img.find_last_of("/") + 1);
@@ -167,7 +167,7 @@ void Reconstructor::initialise() {
             if (
                 DF.containsLabel(EMDL::CTF_MAGNIFICATION) && DF.containsLabel(EMDL::CTF_DETECTOR_PIXEL_SIZE)
             ) {
-                const long int i = DF.index();
+                const long int i = DF.size() - 1;
                 RFLOAT mag   = DF.getValue<RFLOAT>(EMDL::CTF_MAGNIFICATION, i);
                 RFLOAT dstep = DF.getValue<RFLOAT>(EMDL::CTF_DETECTOR_PIXEL_SIZE, i);
                 angpix = 10000.0 * dstep / mag;
@@ -376,7 +376,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     if (!fn_noise.empty()) {
         // TODO: Refactor code duplication from relion_project!
         FileName fn_group;
-        const long int i = DF.index();
+        const long int i = DF.size() - 1;
         if (DF.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
             fn_group = DF.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME, i);
         } else if (DF.containsLabel(EMDL::MICROGRAPH_NAME)) {

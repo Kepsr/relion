@@ -152,7 +152,7 @@ class project_parameters {
             MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, "optics1", i);
             MDopt.setValue(EMDL::CTF_VOLTAGE, 300.0, i);
             MDopt.setValue(EMDL::CTF_CS, 2.7, i);
-            angpix = vol.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, vol.MDMainHeader.index());
+            angpix = vol.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, vol.MDMainHeader.size() - 1);
             MDopt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, i);
             MDopt.setValue(EMDL::IMAGE_SIZE, Xsize(vol()), i);
             MDopt.setValue(EMDL::IMAGE_DIMENSIONALITY, do_3d_rot ? 3 : 2, i);
@@ -287,7 +287,7 @@ class project_parameters {
                 // Apply CTF if necessary
                 if (do_ctf || do_ctf2) {
                     if (do_3d_rot) {
-                        const FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE, MDang.index());
+                        const FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE, MDang.size() - 1);
                         auto Ictf = Image<RFLOAT>::from_filename(fn_ctf);
 
                         // Set the CTF-image in Fctf
@@ -329,13 +329,13 @@ class project_parameters {
                         //// 23 May 2014: for preparation of 1.3 release: removed reading a exp_model, replaced by just reading MDang
                         // This does however mean that I no longer know mic_id of this image: replace by 0....
                         FileName fn_group;
-                        const long int index = MDang.index();
+                        const long int j = MDang.size() - 1;
                         if (MDang.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-                            fn_group = MDang.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME, index);
+                            fn_group = MDang.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME, j);
                         } else {
                             if (MDang.containsLabel(EMDL::MICROGRAPH_NAME)) {
                                 FileName fn_orig, fn_pre, fn_jobnr;
-                                fn_orig = MDang.getValue<std::string>(EMDL::MICROGRAPH_NAME, index);
+                                fn_orig = MDang.getValue<std::string>(EMDL::MICROGRAPH_NAME, j);
                                 if (!decomposePipelineFileName(fn_orig, fn_pre, fn_jobnr, fn_group)) {
                                     fn_group = fn_orig; // Not a pipeline filename; use as is
                                 }
@@ -351,7 +351,7 @@ class project_parameters {
                         const auto &sigmas = model.sigma2_noise[i];
 
                         // RFLOAT normcorr = MDang.containsLabel(EMDL::IMAGE_NORM_CORRECTION) ?
-                        //     MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, MDang.index()) : 1.0;
+                        //     MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, MDang.size() - 1) : 1.0;
 
                         // Add coloured noise
                         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
@@ -377,8 +377,9 @@ class project_parameters {
 
                 // Subtract the projection from the corresponding experimental image
                 if (do_subtract_exp || do_simulate) {
-                    const FileName fn_expimg = MDang.getValue<std::string>(EMDL::IMAGE_NAME, MDang.index());
-                    MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg, MDang.index());  // Store fn_expimg in rlnOriginalParticleName
+                    const int i = MDang.size() - 1;
+                    const FileName fn_expimg = MDang.getValue<std::string>(EMDL::IMAGE_NAME, i);
+                    MDang.setValue(EMDL::IMAGE_ORI_NAME, fn_expimg, i);  // Store fn_expimg in rlnOriginalParticleName
                     const auto expimg = Image<RFLOAT>::from_filename(fn_expimg);
                     img() = expimg() - img();
                 }
@@ -429,7 +430,7 @@ class project_parameters {
                     // Apply CTF
                     if (do_ctf || do_ctf2) {
                         if (do_3d_rot) {
-                            const FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE, MDang.index());
+                            const FileName fn_ctf = MDang.getValue<std::string>(EMDL::CTF_IMAGE, MDang.size() - 1);
                             auto Ictf = Image<RFLOAT>::from_filename(fn_ctf);
                             Ictf().setXmippOrigin();
 
@@ -489,7 +490,7 @@ class project_parameters {
 
                 // Set the image name to the output STAR file
                 const long int i = DFo.addObject();
-                DFo.setObject(MDang.getObject(MDang.index()), i);
+                DFo.setObject(MDang.getObject(MDang.size() - 1), i);
                 DFo.setValue(EMDL::IMAGE_NAME, fn_img, i);
 
                 if (do_simulate) {

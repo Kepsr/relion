@@ -227,12 +227,12 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 
     offset = MRCSIZE + header->nsymbt;
 
-    const long int i = MDMainHeader.index();
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax, i);
+    const long int i = MDMainHeader.size() - 1;
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin,  i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax,  i);
     MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->amean, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms, i);
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
+    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms,  i);
+    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE,     (int)    datatype,      i);
 
     if (header->mx && header->a != 0)  // ux
         MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT)header->a / header->mx, i);
@@ -349,7 +349,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     if (!MDMainHeader.empty()) {
 
-        const long int i = MDMainHeader.index();
+        const long int i = MDMainHeader.size() - 1;
 
         // If MDMainHeader contains none of these,
         // we will be looping through `data` more times than necessary.

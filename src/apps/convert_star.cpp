@@ -69,7 +69,7 @@ class star_converter {
             }
 
             Micrograph mic(fn_meta);
-            const long int i = optOut.index();
+            const long int i = optOut.size() - 1;
 
             std::cout << "- voltage: " << mic.voltage << std::endl;
             optOut.setValue(EMDL::CTF_VOLTAGE, mic.voltage, i);

@@ -262,7 +262,7 @@ RFLOAT CtfHelper::readValue(
 
 // Write to an existing object in a MetaDataTable
 void CtfHelper::write(const CTF &ctf, MetaDataTable &MD) {
-    const long int i = MD.index();
+    const long int i = MD.size() - 1;
     // For versions >= 3.1: store kV, Cs, Q0 in optics table
     // MD.setValue(EMDL::CTF_VOLTAGE, ctf.kV);
     MD.setValue(EMDL::CTF_DEFOCUSU, ctf.DeltafU, i);

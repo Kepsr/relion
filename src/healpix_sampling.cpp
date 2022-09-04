@@ -25,7 +25,7 @@
 
 RFLOAT get_or_fallback(const MetaDataTable &MD, EMDL::EMDLabel label, RFLOAT fallback) {
     try {
-        return MD.getValue<RFLOAT>(label, MD.index());
+        return MD.getValue<RFLOAT>(label, MD.size() - 1);
     } catch (const char *errmsg) {
         return fallback;
     }
@@ -171,7 +171,7 @@ void HealpixSampling::read(FileName fn_in) {
     in.close();
 
     try {
-        const long int i = MD.index();
+        const long int i = MD.size() - 1;
         is_3D               = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D,               i);
         is_3d_trans         = MD.getValue<bool>  (EMDL::SAMPLING_IS_3D_TRANS,         i);
         psi_step            = MD.getValue<RFLOAT>(EMDL::SAMPLING_PSI_STEP,            i);
@@ -193,7 +193,7 @@ void HealpixSampling::read(FileName fn_in) {
 
     if (is_3D) {
         try {
-            const long int i = MD.index();
+            const long int i = MD.size() - 1;
             healpix_order = MD.getValue<int>(EMDL::SAMPLING_HEALPIX_ORDER, i);
             fn_sym        = MD.getValue<std::string>(EMDL::SAMPLING_SYMMETRY, i);
             limit_tilt    = MD.getValue<RFLOAT>(EMDL::SAMPLING_LIMIT_TILT, i);

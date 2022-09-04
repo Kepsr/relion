@@ -510,7 +510,7 @@ class helix_bilder_parameters {
             applySoftSphericalMask(
                 img(), RFLOAT(boxdim) * sphere_percentage, width_edge_pix
             );
-            const long int i = img.MDMainHeader.index();
+            const long int i = img.MDMainHeader.size() - 1;
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
@@ -587,7 +587,7 @@ class helix_bilder_parameters {
             applySoftSphericalMask(
                 img(), RFLOAT(boxdim) * sphere_percentage, width_edge_pix
             );
-            const long int i = img.MDMainHeader.index();
+            const long int i = img.MDMainHeader.size() - 1;
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
@@ -616,7 +616,7 @@ class helix_bilder_parameters {
                 cyl_inner_diameter_A / 2.0, cyl_outer_diameter_A / 2.0,
                 z_percentage, rise_A, twist_deg, width_edge_pix
             );
-            const long int i = img.MDMainHeader.index();
+            const long int i = img.MDMainHeader.size() - 1;
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
@@ -788,7 +788,7 @@ class helix_bilder_parameters {
                 }
             }
             img() = Msum / RFLOAT(nr_asu);
-            const long int i = img.MDMainHeader.index();
+            const long int i = img.MDMainHeader.size() - 1;
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, i);
             img.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, pixel_size_A, i);
