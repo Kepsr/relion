@@ -46,8 +46,6 @@
 #include "src/metadata_container.h"
 #include "src/metadata_label.h"
 
-const int CURRENT_MDT_VERSION = 30001;
-
 /*	class MetaDataTable:
  *
  *	- stores a table of values for an arbitrary subset of predefined EMDLabels
@@ -111,6 +109,8 @@ class MetaDataTable {
     // A comment for the metadata table
     std::string comment;
 
+    static const int CurrentVersion = 30001;
+
     // The version number of the file format (multiplied by 10,000)
     int version;
 
@@ -143,8 +143,6 @@ class MetaDataTable {
 
     size_t numberOfObjects() const;
     void clear();
-
-    static const int CurrentVersion = CURRENT_MDT_VERSION;
 
     template<class T>
     T getValue(EMDL::EMDLabel label, long int i) const;
