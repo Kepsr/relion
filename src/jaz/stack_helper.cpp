@@ -48,7 +48,7 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
     }
 
     MetaDataTable md2(mdt);
-    md2.newSort(EMDL::MICROGRAPH_NAME);
+    md2.newSort<MD::CompareStringsAt>(EMDL::MICROGRAPH_NAME);
 
     const long lc = md2.size();
     std::string lastName = "";
@@ -67,7 +67,7 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
     }
 
     for (int i = 0; i <= curInd; i++) {
-        out[i].newSort(EMDL::IMAGE_NAME, false, true);
+        out[i].newSort<MD::CompareStringsBeforeAtAt>(EMDL::IMAGE_NAME);
     }
 
     return out;
@@ -94,7 +94,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
     }
 
     MetaDataTable md2(*mdt);
-    md2.newSort(EMDL::IMAGE_NAME, true);
+    md2.newSort<MD::CompareStringsAfterAtAt>(EMDL::IMAGE_NAME);
 
     const long lc = md2.size();
     std::string lastName = "";
@@ -114,7 +114,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
     }
 
     for (int i = 0; i <= curInd; i++) {
-        out[i].newSort(EMDL::IMAGE_NAME, false, true);
+        out[i].newSort<MD::CompareStringsBeforeAtAt>(EMDL::IMAGE_NAME);
     }
 
     return out;

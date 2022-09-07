@@ -38,6 +38,20 @@
 #include "src/metadata_container.h"
 #include "src/metadata_label.h"
 
+namespace MD {
+
+struct CompareDoublesAt;
+
+struct CompareIntsAt;
+
+struct CompareStringsAt;
+
+struct CompareStringsAfterAtAt;
+
+struct CompareStringsBeforeAtAt;
+
+};
+
 /*	class MetaDataTable:
  *
  *	- stores a table of values for an arbitrary subset of predefined EMDLabels
@@ -89,9 +103,6 @@ class MetaDataTable {
 
     std::vector<std::string> unknownLabelNames;
     std::vector<long> unknown_label_indices;
-
-    // Number of labels of each type
-    long doubleLabels, intLabels, boolLabels, stringLabels, doubleVectorLabels, unknownLabels;
 
     public:
 
@@ -153,10 +164,13 @@ class MetaDataTable {
     // (only numbers, no strings/bools)
     void sort(EMDL::EMDLabel name, bool do_reverse = false, bool only_set_index = false, bool do_random = false);
 
-    void newSort(const EMDL::EMDLabel name, bool do_sort_after_at = false, bool do_sort_before_at = false);
+    template <typename Comparison>
+    void newSort(EMDL::EMDLabel label) {
+        std::stable_sort(objects.begin(), objects.end(), Comparison(label_indices[label]));
+    }
 
     // Does 'activeLabels' contain 'label'?
-    bool containsLabel(const EMDL::EMDLabel label, const std::string &unknownLabel="") const;
+    bool containsLabel(EMDL::EMDLabel label, const std::string &unknownLabel="") const;
 
     std::vector<EMDL::EMDLabel> getActiveLabels() const;
 
@@ -164,7 +178,7 @@ class MetaDataTable {
     void deactivateLabel(EMDL::EMDLabel label, const std::string &unknownLabel="");
 
     // Add a new label and update all objects
-    void addLabel(const EMDL::EMDLabel label, const std::string &unknownLabel="");
+    void addLabel(EMDL::EMDLabel label, const std::string &unknownLabel="");
 
     // Add missing labels that are present in 'app'.
     void addMissingLabels(const MetaDataTable &app);
@@ -241,7 +255,7 @@ class MetaDataTable {
 
     iterator begin() const { return iterator(this, 0); }
 
-    iterator end() const { return iterator(this, objects.size()); }
+    iterator end() const { return iterator(this, size()); }
 
     // Read a STAR loop structure
     long int readStarLoop(std::ifstream &in, bool do_only_count = false);
@@ -288,7 +302,7 @@ class MetaDataTable {
 
     private:
 
-    inline bool checkBounds(long int i) const { return 0 <= i && i < objects.size(); }
+    inline bool checkBounds(long int i) const { return 0 <= i && i < size(); }
 
     /* setObjectUnsafe(data)
      *  Same as setObject, but assumes that all labels are present. */
@@ -376,13 +390,10 @@ T MetaDataTable::getValue(EMDL::EMDLabel label, long i) const {
 
     if (off < 0) throw "Negative offset";
 
-    if (i < 0) {
-        i = size() - 1;
-    } else {
-        if (!checkBounds(i))
-            REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
-                "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
-    }
+    if (i < 0) { i = size() - 1; }
+    if (!checkBounds(i))
+        REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+            "(no " + std::to_string(i) + "th object in collection of " + std::to_string(size()) + " objects)");
 
     return objects[i]->getValue<T>(off);
 }
@@ -406,17 +417,90 @@ void MetaDataTable::setValue(EMDL::EMDLabel label, const T &value, long int i) {
         off = label_indices[label];
     }
 
-    if (i < 0) {
-        i = size() - 1;
-    } else {
-        if (!checkBounds(i))
-            REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
-                "(no " + std::to_string(i) + "th object in collection of " + std::to_string(objects.size()) + " objects)");
-    }
+    if (i < 0) { i = size() - 1; }
+    if (!checkBounds(i))
+        REPORT_ERROR((std::string) __func__ + ": Out of bounds!"
+            "(no " + std::to_string(i) + "th object in collection of " + std::to_string(size()) + " objects)");
 
     if (off < 0) throw "Negative offset";
 
     objects[i]->setValue(off, value);
 }
+
+// Comparators used for sorting (essentially lambdas)
+namespace MD {
+
+struct CompareAt {
+
+    long i;
+
+    CompareAt(long i): i(i) {}
+
+    // Dummy implementation
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const { return true; }
+
+};
+
+struct CompareDoublesAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        return lh->doubles[i] < rh->doubles[i];
+    }
+
+};
+
+struct CompareIntsAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        return lh->ints[i] < rh->ints[i];
+    }
+
+};
+
+struct CompareStringsAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        return lh->strings[i] < rh->strings[i];
+    }
+
+};
+
+struct CompareStringsAfterAtAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        std::string slh = lh->strings[i];
+        std::string srh = rh->strings[i];
+        return slh.substr(slh.find("@") + 1) < srh.substr(srh.find("@") + 1);
+    }
+
+};
+
+struct CompareStringsBeforeAtAt: public CompareAt {
+
+    using CompareAt::CompareAt;
+
+    bool operator()(MetaDataContainer *lh, MetaDataContainer *rh) const {
+        std::string slh = lh->strings[i];
+        std::string srh = rh->strings[i];
+        std::stringstream stslh, stsrh;
+        stslh << slh.substr(0, slh.find("@"));
+        stsrh << srh.substr(0, srh.find("@"));
+        long ilh, irh;
+        stslh >> ilh;
+        stsrh >> irh;
+        return ilh < irh;
+    }
+
+};
+
+};
 
 #endif

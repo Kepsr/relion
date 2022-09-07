@@ -731,10 +731,10 @@ void Experiment::read(
             const FileName fn_mic = MDimg.getValue<std::string>(EMDL::MICROGRAPH_NAME, MDimg.size() - 1);
             if (fn_mic.contains("@")) {
                 is_mic_a_movie = true;
-                MDimg.newSort(EMDL::MICROGRAPH_NAME, true); // sort on part AFTER "@"
+                MDimg.newSort<MD::CompareStringsAfterAtAt>(EMDL::MICROGRAPH_NAME);
             } else {
                 is_mic_a_movie = false;
-                MDimg.newSort(EMDL::MICROGRAPH_NAME); // just sort on fn_mic
+                MDimg.newSort<MD::CompareStringsAt>(EMDL::MICROGRAPH_NAME);
             }
 
             if (do_ignore_group_name)

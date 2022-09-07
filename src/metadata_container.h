@@ -21,32 +21,25 @@
 #ifndef METADATA_CONTAINER_H
 #define METADATA_CONTAINER_H
 
-#include <map>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <fstream>
 #include "src/funcs.h"
 #include "src/metadata_label.h"
 
 class MetaDataTable;
 
-class MetaDataContainer {
-
-    public:
+struct MetaDataContainer {
 
     MetaDataTable* table;
 
     std::vector<double> doubles;  // Extended precision
-    std::vector<long> ints;  // Extended precision
+    std::vector<long> ints;       // Extended precision
     std::vector<bool> bools;
     std::vector<std::string> strings;
-    std::vector<std::vector<double> > doubleVectors;
+    std::vector<std::vector<double>> doubleVectors;
     std::vector<std::string> unknowns;
 
     MetaDataContainer();
     MetaDataContainer(
-        MetaDataTable* table, long doubleCount, long intCount, long boolCount, 
+        MetaDataTable* table, long doubleCount, long intCount, long boolCount,
         long stringCount, long doubleVectorCount, long unknownCount
     );
     MetaDataContainer(MetaDataTable* table, MetaDataContainer* mdc);
