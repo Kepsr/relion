@@ -3247,7 +3247,7 @@ void sortHelicalTubeID(MetaDataTable& MD) {
 
         MD.setValue(EMDL::IMAGE_NAME, str_comment, i);
     }
-    MD.newSort(EMDL::IMAGE_NAME);
+    MD.newSort<MD::CompareStringsAt>(EMDL::IMAGE_NAME);
     nr_tubes = tubes.size();
     tubes.clear();
 

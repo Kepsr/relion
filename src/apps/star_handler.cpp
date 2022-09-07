@@ -535,13 +535,24 @@ class star_handler_parameters {
             // Don't want to mess up original order, so make a MDsort with only that label...
             FileName fn_prev = "";
             MetaDataTable MDsort;
+            MDsort.reserve(MDout.size());
             for (long int i : MDout) {
                 const FileName fn_this = MDout.getValue<std::string>(label, i);
                 MDsort.addObject();
                 MDsort.setValue(label, fn_this, i);
             }
-            // sort on the label
-            MDsort.newSort(label);
+
+            // Sort on the label
+            if (EMDL::is<int>(label)) {
+                MDsort.newSort<MD::CompareIntsAt>(label);
+            } else if (EMDL::is<double>(label)) {
+                MDsort.newSort<MD::CompareDoublesAt>(label);
+            } else if (EMDL::is<std::string>(label)) {
+                MDsort.newSort<MD::CompareStringsAt>(label);
+            } else {
+                REPORT_ERROR("Cannot sort this label: " + EMDL::label2Str(label));
+            }
+
             long int nr_duplicates = 0;
             for (long int i : MDsort) {
                 const FileName fn_this = MDsort.getValue<std::string>(label, i);
