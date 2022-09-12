@@ -728,6 +728,6 @@ void symmetriseMap(MultidimArray<RFLOAT> &img, FileName &fn_sym, bool do_wrap) {
     }
 
     // Overwrite the input
-    img = sum / (SL.SymsNo() + 1);
+    img = sum / RFLOAT(SL.SymsNo() + 1);
 
 }

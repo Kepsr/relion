@@ -164,7 +164,7 @@ inline long int Nsize(const MultidimArray<T> &v) { return v.ndim; }
  *
  * This macro is used to generate loops for the array in an easy manner.
  * It binds the names provided to logical indices which iterate over the data.
- * 
+ *
  * This macro is used to easily loop through a matrix.
  *
  * @code
@@ -1543,28 +1543,18 @@ class MultidimArray {
 
     //@}
 
-    /** @name Array "by" array operations.
+    /** @name Operations between two arrays
      *
-     * These are operations that are performed between two arrays of the
-     * SAME internal type (two integer vectors, two RFLOAT matrices, ...).
-     * If they are not of the same type,
-     * typeCast should be used to convert one of the arrays to the desired type.
-     * The result must have been defined to be of the same type as the operands.
+     * These operations are performed between two arrays of the same type.
+     * (typeCast can be used to convert an array to the appropriate type.)
+     * The result will be of the same type as the operands.
      *
-     * In this kind of operations each element of array 1 is operated with its
-     * homologous in array 2, it is very important that both have got the
-     * same size and starting origins. The result has also got the same
-     * shape as the two operated arrays and its former content is lost.
+     * In this kind of operations each component of the lhs array is reassigned
+     * according to the operation in question and its corresponding component in the rhs array.
+     * It is important that both have got the same size and shape.
+     * The result will have the same size and shape as the two operands.
      */
     //@{
-
-    MultidimArray<T> operator + (const MultidimArray<T> &arg) const;
-
-    MultidimArray<T> operator - (const MultidimArray<T> &arg) const;
-
-    MultidimArray<T> operator * (const MultidimArray<T> &arg) const;
-
-    MultidimArray<T> operator / (const MultidimArray<T> &arg) const;
 
     MultidimArray<T>& operator += (const MultidimArray<T> &arg);
 
@@ -1573,27 +1563,19 @@ class MultidimArray {
     MultidimArray<T>& operator *= (const MultidimArray<T> &arg);
 
     MultidimArray<T>& operator /= (const MultidimArray<T> &arg);
+
     //@}
 
-    /** @name Array "by" scalar operations
+    /** @name Scalar operations
      *
-     * Operations are between an array and a scalar (of the same type as the array).
-     * The result must have been defined to be of the same type as the operands.
+     * These operations are between an array and a scalar (of the array's value type).
+     * The result will be of the same type as the operands.
      *
-     * In this kind of operation each element of array 1 is operated with the given constant.
-     * The result has also got the same shape as the input array and its former content is lost
-     *
-     * Now would be a good time for ad-hoc polymorphism.
+     * In this kind of operation each element of the lhs array is reassigned
+     * according to the operation in question and the given scalar.
+     * The result will have the same shape as the input array.
      */
     //@{
-
-    MultidimArray<T> operator + (T scalar) const;
-
-    MultidimArray<T> operator - (T scalar) const;
-
-    MultidimArray<T> operator * (T scalar) const;
-
-    MultidimArray<T> operator / (T scalar) const;
 
     MultidimArray<T>& operator += (T scalar);
 
@@ -1603,32 +1585,6 @@ class MultidimArray {
 
     MultidimArray<T>& operator /= (T scalar);
 
-    //@}
-
-    /** @name Scalar "by" array operations
-     *
-     * These operations are between a scalar (of the same type as the array)
-     * and an array. The result must have been defined to be of the same type
-     * as the operand. The former content of the result array is lost after
-     * the operation.
-     *
-     * In this kind of operations the constant is operated with each element
-     * of array 2. The result has also got the same shape as the input array
-     * and its former content is lost
-     */
-    //@{
-
-    template <typename A>
-    friend MultidimArray<A> operator + (A scalar, const MultidimArray<A> &input);
-
-    template <typename A>
-    friend MultidimArray<A> operator - (A scalar, const MultidimArray<A> &input);
-
-    template <typename A>
-    friend MultidimArray<A> operator * (A scalar, const MultidimArray<A> &input);
-
-    template <typename A>
-    friend MultidimArray<A> operator / (A scalar, const MultidimArray<A> &input);
     //@}
 
     /// @name Initialization
@@ -2485,4 +2441,132 @@ static bool inZbounds (long int i, const MultidimArray<T> &arr) {
 template<>
 std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v);
 //@}
+
+/** Arithmetic
+ *
+ */
+
+// If either the lhs or rhs is an rvalue reference,
+// we can steal its resources instead of copy constructing our result.
+// If neither is an rvalue reference,
+// the overload that takes the lhs by value will copy construct the resources we need.
+
+// In order for this to be fast in the correct case,
+// we leave it up to the caller to check
+// that lhs and rhs are of the right size and shape
+// and to live with the consequences if they are not.
+
+// Move if you can, copy if you must
+
+template <typename T>
+inline MultidimArray<T> operator + (MultidimArray<T> lhs, const MultidimArray<T> &rhs) {
+    // return std::move(lhs += rhs);
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { lhs[i] += rhs[i]; }
+    return std::move(lhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator + (const MultidimArray<T> &lhs, MultidimArray<T> &&rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { rhs[i] = lhs[i] + rhs[i]; }  // Do not assume commutativity
+    return std::move(rhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator - (MultidimArray<T> lhs, const MultidimArray<T> &rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { lhs[i] -= rhs[i]; }
+    return std::move(lhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator - (const MultidimArray<T> &lhs, MultidimArray<T> &&rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { rhs[i] = lhs[i] - rhs[i]; }
+    return std::move(rhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator * (MultidimArray<T> lhs, const MultidimArray<T> &rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { lhs[i] *= rhs[i]; }
+    return std::move(lhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator * (const MultidimArray<T> &lhs, MultidimArray<T> &&rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { rhs[i] = lhs[i] * rhs[i]; }
+    return std::move(rhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator / (MultidimArray<T> lhs, const MultidimArray<T> &rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { lhs[i] /= rhs[i]; }
+    return std::move(lhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator / (const MultidimArray<T> &lhs, MultidimArray<T> &&rhs) {
+    const size_t n = std::min(lhs.size(), rhs.size());
+    for (long int i = 0; i < n; i++) { rhs[i] = lhs[i] / rhs[i]; }
+    return std::move(rhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator + (MultidimArray<T> lhs, T scalar) {
+    return std::move(lhs += scalar);
+}
+
+template <typename T>
+inline MultidimArray<T> operator - (MultidimArray<T> lhs, T scalar) {
+    return std::move(lhs -= scalar);
+}
+
+template <typename T>
+inline MultidimArray<T> operator * (MultidimArray<T> lhs, T scalar) {
+    return std::move(lhs *= scalar);
+}
+
+template <typename T>
+inline MultidimArray<T> operator / (MultidimArray<T> lhs, T scalar) {
+    return std::move(lhs /= scalar);
+}
+
+/** @name Scalar-by-array operations
+ *
+ * These operations are between an array and a scalar (of the array's value type).
+ * The result will be of the same type as the array.
+ *
+ * The operation in question is performed with the scalar on the lhs and each element of the array on the rhs.
+ * The result will have the same shape as the input array.
+ *
+ */
+
+template <typename T>
+inline MultidimArray<T> operator + (T scalar, MultidimArray<T> rhs) {
+    for (auto &x : rhs) { x = scalar + x; }
+    return std::move(rhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator - (T scalar, MultidimArray<T> rhs) {
+    for (auto &x : rhs) { x = scalar - x; }
+    return std::move(rhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator * (T scalar, MultidimArray<T> rhs) {
+    for (auto &x : rhs) { x = scalar * x; }
+    return std::move(rhs);
+}
+
+template <typename T>
+inline MultidimArray<T> operator / (T scalar, MultidimArray<T> rhs) {
+    for (auto &x : rhs) { x = scalar / x; }
+    return std::move(rhs);
+}
+
 #endif

@@ -117,30 +117,6 @@ void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArra
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator + (T scalar) const {
-    auto copy (*this);
-    return copy += scalar;
-}
-
-template <typename T>
-MultidimArray<T> MultidimArray<T>::operator - (T scalar) const {
-    auto copy (*this);
-    return copy -= scalar;
-}
-
-template <typename T>
-MultidimArray<T> MultidimArray<T>::operator * (T scalar) const {
-    auto copy (*this);
-    return copy *= scalar;
-}
-
-template <typename T>
-MultidimArray<T> MultidimArray<T>::operator / (T scalar) const {
-    auto copy (*this);
-    return copy /= scalar;
-}
-
-template <typename T>
 MultidimArray<T>& MultidimArray<T>::operator += (T scalar) {
     for (auto &x : *this) { x += scalar; }
     return *this;
@@ -190,30 +166,6 @@ inline MultidimArray<T>& pointwise(
 }
 
 template <typename T>
-MultidimArray<T> MultidimArray<T>::operator + (const MultidimArray<T> &arg) const {
-    auto copy (*this);
-    return copy += arg;
-}
-
-template <typename T>
-MultidimArray<T> MultidimArray<T>::operator - (const MultidimArray<T> &arg) const {
-    auto copy (*this);
-    return copy -= arg;
-}
-
-template <typename T>
-MultidimArray<T> MultidimArray<T>::operator * (const MultidimArray<T> &arg) const {
-    auto copy (*this);
-    return copy *= arg;
-}
-
-template <typename T>
-MultidimArray<T> MultidimArray<T>::operator / (const MultidimArray<T> &arg) const {
-    auto copy (*this);
-    return copy /= arg;
-}
-
-template <typename T>
 MultidimArray<T>& MultidimArray<T>::operator += (const MultidimArray<T> &arg) {
     return pointwise(*this, arg, +[] (T x, T y) -> T { return x + y; });
 }
@@ -233,48 +185,15 @@ MultidimArray<T>& MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
     return pointwise(*this, arg, +[] (T x, T y) -> T { return x / y; });
 }
 
-template <typename A>
-MultidimArray<A> operator + (A scalar, const MultidimArray<A> &input) {
-    auto copy (input);
-    for (auto &x : copy) { x = scalar + x; }
-    return copy;
-}
+#define INSTANTIATE_TEMPLATE(T) template class MultidimArray<T>;
 
-template <typename A>
-MultidimArray<A> operator - (A scalar, const MultidimArray<A> &input) {
-    auto copy (input);
-    for (auto &x : copy) { x = scalar - x; }
-    return copy;
-}
+INSTANTIATE_TEMPLATE(float)
+INSTANTIATE_TEMPLATE(double)
+INSTANTIATE_TEMPLATE(unsigned short)
+INSTANTIATE_TEMPLATE(short)
+INSTANTIATE_TEMPLATE(unsigned char)
+INSTANTIATE_TEMPLATE(signed char)
+INSTANTIATE_TEMPLATE(int)
+INSTANTIATE_TEMPLATE(Complex)
 
-template <typename A>
-MultidimArray<A> operator * (A scalar, const MultidimArray<A> &input) {
-    auto copy (input);
-    for (auto &x : copy) { x = scalar * x; }
-    return copy;
-}
-
-template <typename A>
-MultidimArray<A> operator / (A scalar, const MultidimArray<A> &input) {
-    auto copy (input);
-    for (auto &x : copy) { x = scalar / x; }
-    return copy;
-}
-
-#define INSTANTIATE_TEMPLATES(T) \
-    template class MultidimArray<T>; \
-    template MultidimArray<T> operator + (T scalar, const MultidimArray<T> &input); \
-    template MultidimArray<T> operator - (T scalar, const MultidimArray<T> &input); \
-    template MultidimArray<T> operator * (T scalar, const MultidimArray<T> &input); \
-    template MultidimArray<T> operator / (T scalar, const MultidimArray<T> &input);
-
-INSTANTIATE_TEMPLATES(float)
-INSTANTIATE_TEMPLATES(double)
-INSTANTIATE_TEMPLATES(unsigned short)
-INSTANTIATE_TEMPLATES(short)
-INSTANTIATE_TEMPLATES(unsigned char)
-INSTANTIATE_TEMPLATES(signed char)
-INSTANTIATE_TEMPLATES(int)
-INSTANTIATE_TEMPLATES(Complex)
-
-#undef INSTANTIATE_TEMPLATES
+#undef INSTANTIATE_TEMPLATE
