@@ -782,10 +782,11 @@ void MlModel::initialisePdfDirection(long long int newsize) {
     // If the pdf_direction were already filled (size!=0), and newsize=oldsize then leave them as they were
     // If they were still empty, or if the size changes, then initialise them with an even distribution
     for (int iclass = 0; iclass < nr_classes * nr_bodies; iclass++) {
-        long long int oldsize = pdf_direction[iclass].size();
+        auto &direction = pdf_direction[iclass];
+        long long int oldsize = direction.size();
         if (oldsize == 0 || oldsize != newsize) {
-            pdf_direction[iclass].resize(newsize);
-            pdf_direction[iclass].initConstant(1.0 / ((RFLOAT) nr_classes * newsize));
+            direction.resize(newsize);
+            direction = 1.0 / ((RFLOAT) nr_classes * newsize);
         }
     }
     nr_directions = newsize;

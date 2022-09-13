@@ -148,7 +148,7 @@ Image<RFLOAT> visualiseBand(
     const int sh = s / 2 + 1;
 
     Image<RFLOAT> one(s, sh);
-    one.data.initConstant(1);
+    one.data = 1;
 
     Image<RFLOAT> mask = FilterHelper::raisedCosEnvRingFreq2D(one, r0, r1, flank);
 

@@ -80,7 +80,7 @@ MultidimArray<T>& copyXY(MultidimArray<T> &dest, const MultidimArray<T> &src, lo
 template <typename T>
 MultidimArray<T>& copyXYZ_fourier(MultidimArray<T> &FT, long int n, long int rank) {
     FT.resize(n / 2 + 1, n, rank == 3 ? n : 1);
-    FT.initConstant(-1);
+    FT = -1;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         const int ires = round(euclid(ip, jp, kp));
         // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
@@ -2254,7 +2254,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 MultidimArray<Complex> Fimg = windowFourierTransform(Faux, wsum_model.current_size);
                 CenterFFTbySign(Fimg);
                 Fctf.resize(Fimg);
-                Fctf.initConstant(1.0);
+                Fctf = 1.0;
 
                 // Apply CTF if necessary (skip this for subtomograms!)
                 if (do_ctf_correction && mymodel.data_dim != 3) {
@@ -5060,7 +5060,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             std::cin >> c;
             #endif
         } else {
-            Fctf.initConstant(1.0);
+            Fctf = 1.0;
         }
 
         // Store Fctf
@@ -5576,7 +5576,7 @@ void MlOptimiser::getAllSquaredDifferences(
     long int exp_nr_oversampled_trans = sampling.oversamplingFactorTranslations(exp_current_oversampling);
 
     exp_Mweight.resize(exp_nr_images, mymodel.nr_classes * exp_nr_dir * exp_nr_psi * exp_nr_trans * exp_nr_oversampled_rot * exp_nr_oversampled_trans);
-    exp_Mweight.initConstant(-999.0);
+    exp_Mweight = -999.0;
     if (exp_ipass == 0)
         exp_Mcoarse_significant.clear();
 
@@ -6582,10 +6582,10 @@ void MlOptimiser::storeWeightedSums(
     Fimg.resize(exp_Fimg[0]);
     // Initialise Mctf to all-1 for if !do_ctf_corection
     Mctf.resize(exp_Fimg[0]);
-    Mctf.initConstant(1.0);
+    Mctf = 1.0;
     // Initialise Minvsigma2 to all-1 for if !do_map
     Minvsigma2.resize(exp_Fimg[0]);
-    Minvsigma2.initConstant(1.0);
+    Minvsigma2 = 1.0;
     if (do_shifts_onthefly) {
         Fimg_otfshift.resize(Frefctf);
         Fimg_otfshift_nomask.resize(Frefctf);
@@ -6725,7 +6725,7 @@ void MlOptimiser::storeWeightedSums(
                             }
                         } else {
                             // initialise because there are multiple particles and Mctf gets selfMultiplied for scale_correction
-                            Mctf.initConstant(1.0);
+                            Mctf = 1.0;
                             Frefctf = Fref;
                         }
                         if (do_scale_correction) {

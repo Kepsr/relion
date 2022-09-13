@@ -145,7 +145,7 @@ void ReferenceMap::load(int verb, bool debug) {
     } else {
         freqWeight1D = std::vector<double>(sh, 1.0);
         freqWeight = Image<RFLOAT>(s, sh);
-        freqWeight.data.initConstant(1.0);
+        freqWeight.data = 1.0;
     }
 
     k_out = sh;

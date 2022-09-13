@@ -985,9 +985,9 @@ class MultidimArray {
      * @endcode
      */
     MultidimArray<T>& setXmippOrigin() {
-        zinit = Xmipp::init(zdim);
-        yinit = Xmipp::init(ydim);
         xinit = Xmipp::init(xdim);
+        yinit = Xmipp::init(ydim);
+        zinit = Xmipp::init(zdim);
         return *this;
     }
 
@@ -1501,17 +1501,19 @@ class MultidimArray {
     /// @name Initialization
     /// @{
 
-    /** Same value in all components.
+    /** Assign from scalar
      *
-     * The constant must be of a type compatible with the array type, ie,
-     * you cannot assign a RFLOAT to an integer array without a casting.
+     * The scalar must be of the same type as the array type.
+     * You cannot assign a float to an int array without a casting.
      *
      * @code
-     * v.initConstant(3.14);
+     * MultidimArray<float> v (64, 64, 64);
+     * v = 3.14;
      * @endcode
      */
-    void initConstant(T scalar) {
+    MultidimArray<T>& operator = (T scalar) {
         for (auto &x : *this) { x = scalar; }
+        return *this;
     }
 
     /** Initialize to zeros following a pattern.

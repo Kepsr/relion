@@ -728,7 +728,7 @@ void getFourierTransformsAndCtfs(
                 }))
             }
         } else {
-            Fctf.initConstant(1.0);
+            Fctf = 1.0;
         }
         CTOC(accMLO->timer, "ctfCorr");
 

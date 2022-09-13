@@ -404,7 +404,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
     MultidimArray<RFLOAT> Fctf;
     Fctf.resize(F2D);
-    Fctf.initConstant(1.0);
+    Fctf = 1.0;
     MultidimArray<Complex> F2DP, F2DQ;
 
     // Apply CTF if necessary
