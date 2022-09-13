@@ -1,6 +1,7 @@
 #pragma once
 
-#include "multidim_array.h"
+#include <limits>
+#include "src/multidim_array.h"
 
 /// @name Statistical functions
 //@{

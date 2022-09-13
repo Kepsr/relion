@@ -94,8 +94,8 @@ void threshold_range(T *ptr, T a, T b) {
     if (*ptr > b) { *ptr = b; }
 }
 
-template <typename T>
-void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArray<int> *mask) {
+template <typename T, typename Allocator>
+void MultidimArray<T, Allocator>::threshold(const std::string &type, T a, T b, MultidimArray<int> *mask) {
 
     static const std::unordered_map<std::string, void (*)(T *ptr, T a, T b)> s2f {
         {"abs_above", &threshold_abs_above},
@@ -116,26 +116,26 @@ void MultidimArray<T>::threshold(const std::string &type, T a, T b, MultidimArra
     }
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator += (T scalar) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator += (T scalar) {
     for (auto &x : *this) { x += scalar; }
     return *this;
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator -= (T scalar) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator -= (T scalar) {
     for (auto &x : *this) { x -= scalar; }
     return *this;
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator *= (T scalar) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator *= (T scalar) {
     for (auto &x : *this) { x *= scalar; }
     return *this;
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator /= (T scalar) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator /= (T scalar) {
     for (auto &x : *this) { x /= scalar; }
     return *this;
 }
@@ -165,23 +165,23 @@ inline MultidimArray<T>& pointwise(
     return arg1;
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator += (const MultidimArray<T> &arg) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator += (const MultidimArray<T> &arg) {
     return pointwise(*this, arg, +[] (T x, T y) -> T { return x + y; });
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator -= (const MultidimArray<T> &arg) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator -= (const MultidimArray<T> &arg) {
     return pointwise(*this, arg, +[] (T x, T y) -> T { return x - y; });
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator *= (const MultidimArray<T> &arg) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator *= (const MultidimArray<T> &arg) {
     return pointwise(*this, arg, +[] (T x, T y) -> T { return x * y; });
 }
 
-template <typename T>
-MultidimArray<T>& MultidimArray<T>::operator /= (const MultidimArray<T> &arg) {
+template <typename T, typename Allocator>
+MultidimArray<T>& MultidimArray<T, Allocator>::operator /= (const MultidimArray<T> &arg) {
     return pointwise(*this, arg, +[] (T x, T y) -> T { return x / y; });
 }
 
