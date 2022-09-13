@@ -153,7 +153,7 @@ int Image<T>::readTIFF(
         }
     }
     data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
-    data.coreAllocateReuse();
+    data.coreAllocate();
 
     /*
     if (header->mx && header->a != 0)  // ux

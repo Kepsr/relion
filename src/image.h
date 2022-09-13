@@ -769,7 +769,7 @@ class Image {
             // Allocate memory for image data
             // (Assume xdim, ydim, zdim and ndim are already set)
             // if memory already allocated use it (no resize allowed)
-            data.coreAllocateReuse();
+            data.coreAllocate();
             size_t myoffset = offset + select_img * (pagesize + pad);
             // #define DEBUG
 

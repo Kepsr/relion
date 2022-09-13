@@ -45,22 +45,13 @@
 #ifndef MULTIDIM_ARRAY_H
 #define MULTIDIM_ARRAY_H
 
-#include <typeinfo>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include "src/allocators.h"
 #include "src/funcs.h"
 #include "src/error.h"
 #include "src/args.h"
 #include "src/matrix1d.h"
 #include "src/matrix2d.h"
 #include "src/complex.h"
-#include <limits>
-
-// Intel MKL provides an FFTW-like interface, so this is enough.
-#include <fftw3.h>
-#define RELION_ALIGNED_MALLOC fftw_malloc
-#define RELION_ALIGNED_FREE fftw_free
 
 extern int bestPrecision(float F, int _width);
 extern std::string floatToString(float F, int _width, int _prec);
@@ -81,11 +72,11 @@ extern std::string floatToString(float F, int _width, int _prec);
  */
 //@{
 
-/** Return the first X valid logical index
- */
-template <typename T>
+template <typename T, typename Allocator=relion_aligned_mallocator>
 class MultidimArray;
 
+/** Return the first X valid logical index
+ */
 template <typename T>
 inline long int Xinit(const MultidimArray<T> &v) { return v.xinit; }
 
@@ -256,11 +247,13 @@ namespace direct {
 //@}
 
 /// Xmipp arrays
-template<typename T>
+template<typename T, typename Allocator>
 class MultidimArray {
 
     using  index_t =          long int;
     using uindex_t = unsigned long int;
+
+    Allocator allocator;  // Either allocate memory or map to a file
 
     public:
 
@@ -301,43 +294,13 @@ class MultidimArray {
         return direct::elem(*this, i - xinit, j - yinit, k - zinit, l);
     }
 
-    private:
-
-    // Allocation-related member variables
-
-    bool mmapOn;  // Whether to allocate memory or map to a file
-    FileName mapFile;  // Mapped file name
-    int mFd;  // Mapped file handler
-
-    T* attempt_mmap(FileName &mapFile, int &mFd, off_t offset) {
-        mapFile.initRandom(8);
-        mapFile = mapFile.addExtension("tmp");
-
-        if ((mFd = open(mapFile.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1)
-            REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": Error creating map file.");
-
-        if (lseek(mFd, offset, SEEK_SET) == -1 || ::write(mFd, "", 1) == -1) {
-            // Use global ::write (conflict with MultidimArray<T>::write)
-            close(mFd);
-            REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": Error 'stretching' the map file.");
-        }
-
-        T *ptr;
-        if ((ptr = (T*) mmap(0, size() * sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
-            REPORT_ERROR((std::string) "MultidimArray<T>::" + __func__ + ": mmap failed.");
-        return ptr;
-
-    }
-
-    public:
-
     /// @name Constructors
     //@{
 
     // Default ctor
     MultidimArray():
     xdim(0), ydim(0), zdim(0), ndim(0), xinit(0), yinit(0), zinit(0),
-    data(nullptr), mmapOn(false), mFd(0) {}
+    data(nullptr), allocator(Allocator()) {}
 
     /** Size ctor
      * Construct an array (heap-allocate memory) and fill it with zeros.
@@ -351,23 +314,23 @@ class MultidimArray {
     MultidimArray(const MultidimArray<T> &other):
     xdim(other.xdim), ydim(other.ydim), zdim(other.zdim), ndim(other.ndim),
     xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
-    data(nullptr), mmapOn(false), mFd(0) {
+    data(nullptr), allocator(Allocator()) {
         resize(other);
         memcpy(data, other.data, sizeof(T) * size());
     }
 
     // Copy ctor with type cast
     template <typename U>
-    MultidimArray<T>(const MultidimArray<U> &other) {
+    MultidimArray(const MultidimArray<U> &other) {
         coreInit();
-        *this = other;
+        *this = other;  //  This is not defined!
     }
 
     // Move ctor
     MultidimArray(MultidimArray<T> &&other) noexcept:
     xdim(other.xdim), ydim(other.ydim), zdim(other.zdim), ndim(other.ndim),
     xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
-    data(other.data), mmapOn(false), mFd(0) { other.data = nullptr; }
+    data(other.data), allocator(Allocator()) { other.data = nullptr; }
 
     /** Constructor from a Matrix1D.
      * The Size constructor creates an array with memory associated,
@@ -418,79 +381,43 @@ class MultidimArray {
         yinit = 0;
         xinit = 0;
         data = nullptr;
-        mmapOn = false;
-        mFd = 0;
+        allocator = relion_aligned_mallocator();
     }
 
     /** Core allocate with dimensions.
      */
-    void coreAllocate(uindex_t _xdim, uindex_t _ydim, uindex_t _zdim, uindex_t _ndim) {
-        if (_xdim == 0 || _ydim == 0 || _zdim == 0 || _ndim == 0) {
+    void coreAllocate(uindex_t xdim, uindex_t ydim, uindex_t zdim, uindex_t ndim) {
+        if (xdim == 0 || ydim == 0 || zdim == 0 || ndim == 0) {
             clear();
             return;
         }
 
-        if (data)
-            REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
-        // Why? coreAllocate() will do this check too.
-
-        ndim = _ndim;
-        zdim = _zdim;
-        ydim = _ydim;
-        xdim = _xdim;
+        this->xdim = xdim;
+        this->ydim = ydim;
+        this->zdim = zdim;
+        this->ndim = ndim;
 
         coreAllocate();
     }
 
-    /** Core allocate without dimensions.
-     *
-     * The dimensions should be set beforehand.
+    /** Core allocate according to current size.
+     * Do nothing if data is not nullptr.
      */
     void coreAllocate() {
-
-        if (data)
-            REPORT_ERROR("Do not allocate space for an image if you have not first deallocated it!");
-
-        _allocate_memory();
-    }
-
-    void _allocate_memory() {
-        if (mmapOn) {
-            data = attempt_mmap(mapFile, mFd, size() * sizeof(T));
-        } else {
-            data = (T*) RELION_ALIGNED_MALLOC(size() * sizeof(T));
-            if (!data) REPORT_ERROR("Allocate: No space left");
-        }
-    }
-
-    /** Core allocate without dimensions.
-     *
-     * The dimensions should be set beforehand.
-     */
-    void coreAllocateReuse() {
         if (data) return;  // Memory already allocated
-        _allocate_memory();
+        data = (T*) allocator.allocate(size() * sizeof(T));
     }
 
-    void setMmap(bool mmap) { mmapOn = mmap; }
-
-    bool getMmap() { return mmapOn; }
+    bool getMmap() { return typeid(allocator) == typeid(mmapper); }
 
     /** Core deallocate.
      * Free all data.
      * Essential to avoid memory leaks.
      */
     void coreDeallocate() {
-        if (data) {
-            if (mmapOn) {
-                munmap(data, size() * sizeof(T));
-                close(mFd);
-                remove(mapFile.c_str());
-            } else {
-                RELION_ALIGNED_FREE(data);
-            }
-            data = nullptr;
-        }
+        if (!data) return;  // Memory not yet allocated
+        allocator.deallocate(data, size() * sizeof(T));
+        data = nullptr;
     }
 
     //@}
@@ -504,19 +431,19 @@ class MultidimArray {
      *
      */
     void setDimensions(index_t Xdim = 1, index_t Ydim = 1, index_t Zdim = 1, index_t Ndim = 1) {
-        ndim = Ndim;
-        zdim = Zdim;
-        ydim = Ydim;
         xdim = Xdim;
+        ydim = Ydim;
+        zdim = Zdim;
+        ndim = Ndim;
     }
 
     /** NOTE: When setXdim/setYdim/setZdim/setNdim are used, the array is not resized.
      * This should be done separately with coreAllocate()
      */
-    void setXdim(index_t Xdim) { xdim = Xdim; }
-    void setYdim(index_t Ydim) { ydim = Ydim; }
-    void setZdim(index_t Zdim) { zdim = Zdim; }
-    void setNdim(index_t Ndim) { ndim = Ndim; }
+    void setXdim(index_t xdim) { this->xdim = xdim; }
+    void setYdim(index_t ydim) { this->ydim = ydim; }
+    void setZdim(index_t zdim) { this->zdim = zdim; }
+    void setNdim(index_t ndim) { this->ndim = ndim; }
 
     /** Copy the shape parameters
      *
@@ -541,12 +468,13 @@ class MultidimArray {
      * limits.
      */
     void shrinkToFit() {
-        if (!data || mmapOn || size() <= 0)
+        if (!data || typeid(Allocator) != typeid(relion_aligned_mallocator) || size() <= 0)
             return;
+        size_t n = sizeof(T) * size();
         T* old_data = data;
-        data = (T*) RELION_ALIGNED_MALLOC(sizeof(T) * size());
-        memcpy(data, old_data, sizeof(T) * size());
-        RELION_ALIGNED_FREE(old_data);
+        data = (T*) allocator.allocate(n);
+        memcpy(data, old_data, n);
+        allocator.deallocate(old_data, n);
     }
 
     /**
@@ -561,13 +489,13 @@ class MultidimArray {
      * If shape is unchanged, then so is the data.
      * Otherwise, data is almost always destroyed.
      */
-    void reshape(index_t Xdim = 1, index_t Ydim = 1, index_t Zdim = 1, index_t Ndim = 1) {
+    void reshape(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
         if (data && size() == Xdim * Ydim * Zdim * Ndim) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
             return;
         }
 
-        if (Xdim <= 0 || Ydim <= 0 || Zdim <= 0 || Ndim <= 0) {
+        if (Xdim == 0 || Ydim == 0 || Zdim == 0 || Ndim == 0) {
             clear();
             return;
         }
@@ -580,8 +508,8 @@ class MultidimArray {
      *
      * No guarantee about the data stored
      */
-    template<typename T1>
-    void reshape(const MultidimArray<T1> &v) {
+    template<typename U>
+    void reshape(const MultidimArray<U> &v) {
         if (
             ndim != v.ndim || xdim != v.xdim ||
             ydim != v.ydim || zdim != v.zdim ||
@@ -606,11 +534,11 @@ class MultidimArray {
      */
     void resizeNoCp(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
 
-        const size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
-        if (NZYXdim == size() && data)
+        const size_t new_size = Ndim * Zdim * Ydim * Xdim;
+        if (new_size == size() && data)
             return;
 
-        if (NZYXdim == 0) {
+        if (new_size == 0) {
             clear();
             return;
         }
@@ -624,17 +552,10 @@ class MultidimArray {
         }
 
         // Ask for memory
-        int new_mFd = 0;
-        FileName new_mapFile;
-
         T *new_data;
 
         try {
-            if (mmapOn) {
-                new_data = attempt_mmap(new_mapFile, new_mFd, NZYXdim * sizeof(T) - 1);
-            } else {
-                new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
-            }
+            new_data = (T*) allocator.allocate(new_size * sizeof(T));
         } catch (std::bad_alloc &) {
             REPORT_ERROR("Allocate: No space left");
         }
@@ -645,8 +566,6 @@ class MultidimArray {
         // assign *this vector to the newly created
         setDimensions(Xdim, Ydim, Zdim, Ndim);
         data = new_data;
-        mFd = new_mFd;
-        mapFile = new_mapFile;
     }
 
     /** Resize to a given size
@@ -663,13 +582,13 @@ class MultidimArray {
      * @endcode
      */
     MultidimArray<T>& resize(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
-        size_t NZYXdim = Ndim * Zdim * Ydim * Xdim;
-        if (data && NZYXdim == size()) {
+        size_t new_size = Xdim * Ydim * Zdim * Ndim;
+        if (data && new_size == size()) {
             setDimensions(Xdim, Ydim, Zdim, Ndim);
             return *this;
         }
 
-        if (NZYXdim == 0) {
+        if (new_size == 0) {
             clear();
             return *this;
         }
@@ -684,15 +603,9 @@ class MultidimArray {
 
         // Ask for memory
         T *new_data;
-        int new_mFd = 0;
-        FileName new_mapFile;
 
         try {
-            if (mmapOn) {
-                new_data = attempt_mmap(new_mapFile, new_mFd, NZYXdim * sizeof(T) - 1);
-            } else {
-                new_data = (T*) RELION_ALIGNED_MALLOC(NZYXdim * sizeof(T));
-            }
+            new_data = (T*) allocator.allocate(new_size * sizeof(T));
         } catch (std::bad_alloc &) {
             REPORT_ERROR("Allocate: No space left");
         }
@@ -714,8 +627,6 @@ class MultidimArray {
         // assign *this vector to the newly created
         data = new_data;
         setDimensions(Xdim, Ydim, Zdim, Ndim);
-        mFd = new_mFd;
-        mapFile = new_mapFile;
         return *this;
     }
 
@@ -731,8 +642,8 @@ class MultidimArray {
      * // v2 has got now the same structure as v1
      * @endcode
      */
-    template<typename T1>
-    void resize(const MultidimArray<T1> &other) {
+    template<typename U>
+    void resize(const MultidimArray<U> &other) {
         if (
             ndim != other.ndim || xdim != other.xdim ||
             ydim != other.ydim || zdim != other.zdim ||
@@ -1002,8 +913,8 @@ class MultidimArray {
      *
      * Do these two arrays have the same shape (dimensions and origin)?
      */
-    template <typename T1>
-    inline bool sameShape(const MultidimArray<T1> &other) const {
+    template <typename U>
+    inline bool sameShape(const MultidimArray<U> &other) const {
         return getDimensions() == other.getDimensions() && // Same dimensions
                getOrigin()     == other.getOrigin();       // Same origin
     }
@@ -1612,17 +1523,10 @@ class MultidimArray {
      * v2.initZeros(v1);
      * @endcode
      */
-    template <typename T1>
-    void initZeros(const MultidimArray<T1> &op) {
-        if (!data || !sameShape(op)) { reshape(op); }
+    template <typename U>
+    void initZeros(const MultidimArray<U> &other) {
+        reshape(other);
         memset(data, 0, size() * sizeof(T));
-    }
-
-    template <typename T2>
-    static MultidimArray<T> zeros(const MultidimArray<T2> &arr1) {
-        MultidimArray<T> arr2(arr1);
-        arr2.initZeros();
-        return arr2;
     }
 
     /** Initialize to zeros with current size.
@@ -1640,55 +1544,26 @@ class MultidimArray {
 
     /** Initialize to zeros with a given size.
      */
-    void initZeros(long int Xdim) {
-        initZeros(1, 1, 1, Xdim);
-    }
-
-    static MultidimArray<T> zeros(long int Xdim) {
-        MultidimArray<T> arr (Xdim);
-        arr.initZeros();
-        return arr;
-    }
-
-    /** Initialize to zeros with a given size.
-     */
-    void initZeros(long int Ydim, long int Xdim) {
-        initZeros(1, 1, Ydim, Xdim);
-    }
-
-    static MultidimArray<T> zeros(long int Ydim, long int Xdim) {
-        MultidimArray<T> arr (Ydim, Xdim);
-        arr.initZeros();
-        return arr;
-    }
-
-    /** Initialize to zeros with a given size.
-     */
-    void initZeros(long int Zdim, long int Ydim, long int Xdim) {
-        initZeros(1, Zdim, Ydim, Xdim);
-    }
-
-    static MultidimArray<T> zeros(long int Zdim, long int Ydim, long int Xdim) {
-        MultidimArray<T> arr (Zdim, Ydim, Xdim);
-        arr.initZeros();
-        return arr;
-    }
-
-    /** Initialize to zeros with a given size.
-     */
-    inline void initZeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
+    inline void initZeros(long int Xdim, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
         if (xdim != Xdim || ydim != Ydim || zdim != Zdim || ndim != Ndim)
             reshape(Xdim, Ydim, Zdim, Ndim);
-        memset(data, 0, size() * sizeof(T));
+        initZeros();
     }
 
-    static MultidimArray<T> zeros(long int Ndim, long int Zdim, long int Ydim, long int Xdim) {
+    template <typename U>
+    static MultidimArray<T> zeros(const MultidimArray<U> &other) {
+        MultidimArray<T> self (other);
+        self.initZeros();
+        return self;
+    }
+
+    static MultidimArray<T> zeros(long int Xdim, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
         MultidimArray<T> arr (Xdim, Ydim, Zdim, Ndim);
         arr.initZeros();
         return arr;
     }
 
-    static MultidimArray<T> ones(long int Xdim = 1, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
+    static MultidimArray<T> ones(long int Xdim, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {
         MultidimArray<T> arr (Xdim, Ydim, Zdim, Ndim);
         memset(arr.data, 1, arr.size() * sizeof(T));
         return arr;
@@ -2300,38 +2175,26 @@ class MultidimArray {
 
 /** Conversion from one type to another.
  *
- * If we have an integer array and we need a RFLOAT one, we can use this
- * function. The conversion is done through a type casting of each element
- * If n >= 0, only the nth volumes will be converted, otherwise all ndim volumes
+ * If we have an integer array and we need a RFLOAT one,
+ * we can use this function.
+ * The conversion is done by static_cast-ing each element.
  */
-template<typename T1, typename T2>
-void typeCast(const MultidimArray<T1>& v1,  MultidimArray<T2>& v2, long n = -1) {
-    if (v1.size() == 0) {
-        v2.clear();
-        return;
+template<typename T, typename U>
+MultidimArray<U> typeCast(const MultidimArray<T>& vt) {
+    MultidimArray<U> vu;
+    if (vt.size() == 0) {
+        vu.clear();
+        return vu;
     }
 
-    if (n < 0) {
-        v2.resize(v1);
-        T1 *ptr1;
-        T2 *ptr2;
-        for (ptr1 = v1.begin(), ptr2 = v2.begin(); ptr1 != v1.end(); ++ptr1, ++ptr2) {
-            *ptr2 = static_cast<T2>(*ptr1);
-        }
-    } else {
-        v2.resize(v1.xdim, v1.ydim, v1.zdim);
-        for (long int k = 0; k < Zsize(v2); k++)
-        for (long int j = 0; j < Ysize(v2); j++)
-        for (long int i = 0; i < Xsize(v2); i++) {
-            direct::elem(v2, i, j, k) = static_cast<T2>(direct::elem(v1, i, j, k, n));
-        }
+    vu.resize(vt);
+    T *ptrt;
+    U *ptru;
+    for (ptrt = vt.begin(), ptru = vu.begin(); ptrt != vt.end(); ++ptrt, ++ptru) {
+        *ptru = static_cast<U>(*ptrt);
     }
+    return vu;
 }
-
-/** Force positive.
- *  Apply a median filter to negative values. Leave positive values.
- */
-void forcePositive(MultidimArray<RFLOAT> &V);
 
 template<typename T>
 bool operator == (const MultidimArray<T> &op1, const MultidimArray<T> &op2) {
@@ -2397,8 +2260,7 @@ std::ostream& operator << (std::ostream& ostrm, const MultidimArray<T> &v) {
 
     if (v.ydim == 1 && v.zdim == 1) {
         for (long int j = v.firstX(); j <= v.lastX(); j++) {
-            ostrm << floatToString((RFLOAT) v.elem(0, j, 0), 10, prec)
-            << std::endl;
+            ostrm << floatToString((RFLOAT) v.elem(0, j, 0), 10, prec) << std::endl;
         }
     } else {
         for (long int l = 0; l < v.ndim; l++) {
