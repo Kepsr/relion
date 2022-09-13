@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
         imgSnr = RefinementHelper::computeSNR(&fscMdt);
     } else {
         imgSnr = Image<RFLOAT>(s, sh);
-        imgSnr.data.initConstant(1.0);
+        imgSnr.data = 1.0;
     }
 
     std::cout << "transforming references...\n";

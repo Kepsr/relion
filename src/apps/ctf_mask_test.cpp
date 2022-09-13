@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     const int sh = s / 2 + 1;
 
     Image<RFLOAT> ctfImg(s, sh), one(s, sh);
-    one.data.initConstant(1.0);
+    one.data = 1.0;
 
     const double angpix = obsModel.getPixelSize(opticsGroup);
 

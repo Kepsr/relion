@@ -661,7 +661,7 @@ void AutoPicker::initialise() {
         // for removal of carbon areas with helices.
         if (autopick_helical_segments) {
 
-            Mcirc_mask.initConstant(1.0);
+            Mcirc_mask = 1.0;
             nr_pixels_avg_mask = Mcirc_mask.size();
 
             long int inner_radius = round(helical_tube_diameter / (2.0 * angpix));
@@ -1507,8 +1507,7 @@ void AutoPicker::pickCCFPeaks(
     // Remove too close peaks (retain the stronger ones while remove the weaker)
     Mrec.clear();
     Mrec.resize(Mccf);
-    Mrec.initConstant(-1);
-    Mrec.setXmippOrigin();
+    (Mrec = -1).setXmippOrigin();
     // Sort the peaks from the weakest to the strongest
     for (int new_id = 0; new_id < ccf_peak_list.size(); new_id++) {
         ccfPeak &peak = ccf_peak_list[new_id];
@@ -2239,11 +2238,9 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
     float scale = (float) workSize / (float) micrograph_size;
 
     Mbest_size.resize(workSize, workSize);
-    Mbest_size.initConstant(-999.0);
-    Mbest_size.setXmippOrigin();
+    (Mbest_size = -999.0).setXmippOrigin();
     Mbest_fom.resize(workSize, workSize);
-    Mbest_fom.initConstant(-999.0);
-    Mbest_fom.setXmippOrigin();
+    (Mbest_fom = -999.0).setXmippOrigin();
 
     if (!do_read_fom_maps) {
         // Always use the same random seed
@@ -2710,13 +2707,13 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         } else {
             Mccf_best_combined.clear();
             Mccf_best_combined.resize(workSize, workSize);
-            Mccf_best_combined.initConstant(-99.0e99);
+            Mccf_best_combined = -99.0e99;
             Mpsi_best_combined.clear();
             Mpsi_best_combined.resize(workSize, workSize);
-            Mpsi_best_combined.initConstant(-99.0e99);
+            Mpsi_best_combined = -99.0e99;
             Mclass_best_combined.clear();
             Mclass_best_combined.resize(workSize, workSize);
-            Mclass_best_combined.initConstant(-1.0);
+            Mclass_best_combined = -1.0;
         }
     }
 
@@ -2740,7 +2737,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         } else {
             {
             ifdefTIMING(TicToc tt (timer, TIMING_B3);)
-            Mccf_best.initConstant(-LARGE_NUMBER);
+            Mccf_best = -LARGE_NUMBER;
             bool is_first_psi = true;
             for (RFLOAT psi = 0.0; psi < 360.0; psi += psi_sampling) {
                 // Get the Euler matrix

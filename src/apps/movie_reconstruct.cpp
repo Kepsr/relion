@@ -487,7 +487,7 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
 
     MultidimArray<RFLOAT> Fctf;
     Fctf.resize(F2D);
-    Fctf.initConstant(1.0);
+    Fctf = 1.0;
 
     // Apply CTF if necessary
     if (do_ctf) {

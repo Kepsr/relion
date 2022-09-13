@@ -300,7 +300,7 @@ class image_handler_parameters {
             if (do_optimise_scale_subtract) {
                 if (fn_mask.empty()) {
                     Imask().resize(Iop());
-                    Imask().initConstant(1.0);
+                    Imask() = 1.0;
                 }
 
                 if (optimise_bfactor_subtract > 0.0) {

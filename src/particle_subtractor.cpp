@@ -510,7 +510,7 @@ void ParticleSubtractor::subtractOneParticle(
             );
         }
     } else {
-        Fctf.initConstant(1.0);
+        Fctf = 1.0;
     }
 
     MultidimArray<Complex> Fsubtrahend = MultidimArray<Complex>::zeros(Fimg);

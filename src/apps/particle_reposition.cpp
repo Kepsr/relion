@@ -294,7 +294,7 @@ class particle_reposition_parameters {
                     if (norm_radius > 0) {
                         Image<RFLOAT> Ipart;
                         Ipart().resize(Mpart_mic);
-                        Ipart().initConstant(mean_mic); // set areas outside the micrograph to average of micrograph (just like in preprocessing)
+                        Ipart() = mean_mic; // set areas outside the micrograph to average of micrograph (just like in preprocessing)
                         Imic_in().xinit = -round(xcoord);
                         Imic_in().yinit = -round(ycoord);
                         Imic_in().zinit = -round(zcoord);

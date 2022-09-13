@@ -1293,7 +1293,7 @@ MultidimArray<RFLOAT> padAndFloat2DMap(const MultidimArray<RFLOAT> &v, int facto
     // Pad and float output MultidimArray (2× original size by default)
     long int box_len = std::max(dimensions[0], dimensions[1]) * factor;
     MultidimArray<RFLOAT> out (box_len, box_len);
-    out.initConstant(bd_val - bg_val);
+    out = bd_val - bg_val;
     out.setXmippOrigin();
     for (long int j = 0; j < Ysize(v); j++)
     for (long int i = 0; i < Xsize(v); i++) {

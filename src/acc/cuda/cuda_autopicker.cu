@@ -676,13 +676,13 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         } else {
             Mccf_best_combined.clear();
             Mccf_best_combined.resize(basePckr->workSize, basePckr->workSize);
-            Mccf_best_combined.initConstant(-99.e99);
+            Mccf_best_combined = -99.e99;
             Mclass_best_combined.clear();
             Mclass_best_combined.resize(basePckr->workSize, basePckr->workSize);
-            Mclass_best_combined.initConstant(-1);
+            Mclass_best_combined = -1;
             Mpsi_best_combined.clear();
             Mpsi_best_combined.resize(basePckr->workSize, basePckr->workSize);
-            Mpsi_best_combined.initConstant(-99.e99);
+            Mpsi_best_combined = -99.e99;
         }
     }
 

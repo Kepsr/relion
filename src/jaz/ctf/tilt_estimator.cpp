@@ -293,7 +293,7 @@ void TiltEstimator::parametricFit(
             }
         } else {
             Image<RFLOAT> one(sh[og], s[og]);
-            one.data.initConstant(1);
+            one.data = 1;
 
             std::vector<double> Zernike_coeffs = TiltHelper::fitOddZernike(
                 xyNrm, wgh, angpix[og], obsModel->getMagMatrix(og), aberr_n_max, &fit
