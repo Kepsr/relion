@@ -116,30 +116,6 @@ void MultidimArray<T, Allocator>::threshold(const std::string &type, T a, T b, M
     }
 }
 
-template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator += (T scalar) {
-    for (auto &x : *this) { x += scalar; }
-    return *this;
-}
-
-template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator -= (T scalar) {
-    for (auto &x : *this) { x -= scalar; }
-    return *this;
-}
-
-template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator *= (T scalar) {
-    for (auto &x : *this) { x *= scalar; }
-    return *this;
-}
-
-template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator /= (T scalar) {
-    for (auto &x : *this) { x /= scalar; }
-    return *this;
-}
-
 /** Array by array
  *
  * This function must take two vectors of the same size, and operate element
@@ -151,38 +127,38 @@ MultidimArray<T>& MultidimArray<T, Allocator>::operator /= (T scalar) {
  */
 template <typename T>
 inline MultidimArray<T>& pointwise(
-    MultidimArray<T> &arg1, const MultidimArray<T> &arg2, T (*operation)(T, T)
+    MultidimArray<T> &lhs, const MultidimArray<T> &rhs, T (*operation)(T, T)
 ) {
-    if (!arg1.sameShape(arg2)) {
-        arg1.printShape();
-        arg2.printShape();
+    if (!lhs.sameShape(rhs)) {
+        lhs.printShape();
+        rhs.printShape();
         REPORT_ERROR((std::string) "Array_by_array: different shapes");
     }
     std::transform(
-        arg1.begin(), arg1.begin() + arg1.xdim * arg1.ydim * arg1.zdim,  // Disregard slices
-        arg2.begin(), arg1.begin(), operation
+        lhs.begin(), lhs.begin() + lhs.xdim * lhs.ydim * lhs.zdim,  // Disregard slices
+        rhs.begin(), lhs.begin(), operation
     );
-    return arg1;
+    return lhs;
 }
 
 template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator += (const MultidimArray<T> &arg) {
-    return pointwise(*this, arg, +[] (T x, T y) -> T { return x + y; });
+MultidimArray<T>& MultidimArray<T, Allocator>::operator += (const MultidimArray<T> &rhs) {
+    return pointwise(*this, rhs, +[] (T x, T y) -> T { return x + y; });
 }
 
 template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator -= (const MultidimArray<T> &arg) {
-    return pointwise(*this, arg, +[] (T x, T y) -> T { return x - y; });
+MultidimArray<T>& MultidimArray<T, Allocator>::operator -= (const MultidimArray<T> &rhs) {
+    return pointwise(*this, rhs, +[] (T x, T y) -> T { return x - y; });
 }
 
 template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator *= (const MultidimArray<T> &arg) {
-    return pointwise(*this, arg, +[] (T x, T y) -> T { return x * y; });
+MultidimArray<T>& MultidimArray<T, Allocator>::operator *= (const MultidimArray<T> &rhs) {
+    return pointwise(*this, rhs, +[] (T x, T y) -> T { return x * y; });
 }
 
 template <typename T, typename Allocator>
-MultidimArray<T>& MultidimArray<T, Allocator>::operator /= (const MultidimArray<T> &arg) {
-    return pointwise(*this, arg, +[] (T x, T y) -> T { return x / y; });
+MultidimArray<T>& MultidimArray<T, Allocator>::operator /= (const MultidimArray<T> &rhs) {
+    return pointwise(*this, rhs, +[] (T x, T y) -> T { return x / y; });
 }
 
 #define INSTANTIATE_TEMPLATE(T) template class MultidimArray<T>;

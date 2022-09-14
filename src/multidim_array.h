@@ -1399,27 +1399,6 @@ class MultidimArray {
 
     //@}
 
-    /** @name Scalar operations
-     *
-     * These operations are between an array and a scalar (of the array's value type).
-     * The result will be of the same type as the operands.
-     *
-     * In this kind of operation each element of the lhs array is reassigned
-     * according to the operation in question and the given scalar.
-     * The result will have the same shape as the input array.
-     */
-    //@{
-
-    MultidimArray<T>& operator += (T scalar);
-
-    MultidimArray<T>& operator -= (T scalar);
-
-    MultidimArray<T>& operator *= (T scalar);
-
-    MultidimArray<T>& operator /= (T scalar);
-
-    //@}
-
     /// @name Initialization
     /// @{
 
@@ -2246,7 +2225,6 @@ std::ostream& operator << (std::ostream &ostrm, const MultidimArray<Complex> &v)
 
 template <typename T>
 inline MultidimArray<T> operator + (MultidimArray<T> lhs, const MultidimArray<T> &rhs) {
-    // return std::move(lhs += rhs);
     const size_t n = std::min(lhs.size(), rhs.size());
     for (long int i = 0; i < n; i++) { lhs[i] += rhs[i]; }
     return std::move(lhs);
@@ -2301,6 +2279,37 @@ inline MultidimArray<T> operator / (const MultidimArray<T> &lhs, MultidimArray<T
     return std::move(rhs);
 }
 
+/** @name Scalar operations
+ *
+ * These operations are between an array and a scalar (of the array's value type).
+ * The result will be of the same type as the operands.
+ *
+ * In this kind of operation each element of the lhs array is reassigned
+ * according to the operation in question and the given scalar.
+ * The result will have the same shape as the input array.
+ */
+//@{
+
+template <typename T>
+inline MultidimArray<T>& operator += (MultidimArray<T> &lhs, T scalar) {
+    for (auto &x : lhs) x += scalar; return lhs;
+}
+
+template <typename T>
+inline MultidimArray<T>& operator -= (MultidimArray<T> &lhs, T scalar) {
+    for (auto &x : lhs) x -= scalar; return lhs;
+}
+
+template <typename T>
+inline MultidimArray<T>& operator *= (MultidimArray<T> &lhs, T scalar) {
+    for (auto &x : lhs) x *= scalar; return lhs;
+}
+
+template <typename T>
+inline MultidimArray<T>& operator /= (MultidimArray<T> &lhs, T scalar) {
+    for (auto &x : lhs) x /= scalar; return lhs;
+}
+
 template <typename T>
 inline MultidimArray<T> operator + (MultidimArray<T> lhs, T scalar) {
     return std::move(lhs += scalar);
@@ -2321,6 +2330,8 @@ inline MultidimArray<T> operator / (MultidimArray<T> lhs, T scalar) {
     return std::move(lhs /= scalar);
 }
 
+//@}
+
 /** @name Scalar-by-array operations
  *
  * These operations are between an array and a scalar (of the array's value type).
@@ -2333,26 +2344,22 @@ inline MultidimArray<T> operator / (MultidimArray<T> lhs, T scalar) {
 
 template <typename T>
 inline MultidimArray<T> operator + (T scalar, MultidimArray<T> rhs) {
-    for (auto &x : rhs) { x = scalar + x; }
-    return std::move(rhs);
+    for (auto &x : rhs) x = scalar + x; return std::move(rhs);
 }
 
 template <typename T>
 inline MultidimArray<T> operator - (T scalar, MultidimArray<T> rhs) {
-    for (auto &x : rhs) { x = scalar - x; }
-    return std::move(rhs);
+    for (auto &x : rhs) x = scalar - x; return std::move(rhs);
 }
 
 template <typename T>
 inline MultidimArray<T> operator * (T scalar, MultidimArray<T> rhs) {
-    for (auto &x : rhs) { x = scalar * x; }
-    return std::move(rhs);
+    for (auto &x : rhs) x = scalar * x; return std::move(rhs);
 }
 
 template <typename T>
 inline MultidimArray<T> operator / (T scalar, MultidimArray<T> rhs) {
-    for (auto &x : rhs) { x = scalar / x; }
-    return std::move(rhs);
+    for (auto &x : rhs) x = scalar / x; return std::move(rhs);
 }
 
 #endif
