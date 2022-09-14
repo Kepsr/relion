@@ -2067,12 +2067,9 @@ void BackProjector::windowToOridimRealSpace(
     {
     ifdefTIMING(TicToc tt (OriDimTimer, OrD7_window);)
     const long int init = Xmipp::init(ori_size), last = Xmipp::last(ori_size);
-    if (ref_dim == 2) {
-        Mout.window(init, init, last, last);
-    } else {
-        Mout.window(init, init, init, last, last, last);
-    }
-    Mout.setXmippOrigin();
+    Mout = (ref_dim == 2 ?
+        Mout.windowed(init, init, last, last) :
+        Mout.windowed(init, init, init, last, last, last)).setXmippOrigin();
     }
 
     // Normalisation factor of FFTW

@@ -690,10 +690,9 @@ void Reconstructor::applyCTFPandCTFQ(
 
                 // Re-box to a smaller size if necessary....
                 if (newbox > 0 && newbox < Ysize(Fin)) {
-                    Iapp.setXmippOrigin();
-                    Iapp.window(
-                        Xmipp::init(newbox), Xmipp::init(newbox),
-                        Xmipp::last(newbox), Xmipp::last(newbox)
+                    Iapp = Iapp.setXmippOrigin().windowed(
+                        Xmipp::init(newbox), Xmipp::last(newbox),
+                        Xmipp::init(newbox), Xmipp::last(newbox)
                     );
 
                 }

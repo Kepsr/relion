@@ -526,7 +526,7 @@ void HelixAligner::getHelicesFromMics() {
                             if (oldxsize != oldysize) {
                                 oldsize = std::max(oldxsize, oldysize);
                                 Idown.setXmippOrigin();
-                                Idown.window(
+                                Idown.windowed(
                                     Xmipp::init(oldsize), Xmipp::init(oldsize),
                                     Xmipp::last(oldsize), Xmipp::last(oldsize),
                                     avg
@@ -539,7 +539,7 @@ void HelixAligner::getHelicesFromMics() {
                                 int newxsize = make_even(round(oldxsize * angpix / down_angpix));
                                 int newysize = make_even(round(oldysize * angpix / down_angpix));
                                 Idown.setXmippOrigin();
-                                Idown.window(
+                                Idown.windowed(
                                     Xmipp::init(newysize), Xmipp::init(newxsize),
                                     Xmipp::last(newysize), Xmipp::last(newxsize)
                                 );

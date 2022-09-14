@@ -1443,12 +1443,11 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
 
         if (rank == 0) {
             // Only the leader writes out the new mask
-            Isolvent().setXmippOrigin();
-            Isolvent().window(
-                Xmipp::init(ref_box_size), Xmipp::init(ref_box_size), Xmipp::init(ref_box_size),
-                Xmipp::last(ref_box_size), Xmipp::last(ref_box_size), Xmipp::last(ref_box_size)
-            );
-            Isolvent().setXmippOrigin();
+            Isolvent() = Isolvent().setXmippOrigin().windowed(
+                Xmipp::init(ref_box_size), Xmipp::last(ref_box_size),
+                Xmipp::init(ref_box_size), Xmipp::last(ref_box_size),
+                Xmipp::init(ref_box_size), Xmipp::last(ref_box_size)
+            ).setXmippOrigin();
         }
     }
 
@@ -2187,15 +2186,16 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             if (fabs(Xsize(img()) - mymodel.ori_size) > 0) {
                 switch (mymodel.data_dim) {
                     case 2:
-                    img().window(
-                        Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size),
-                        Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
+                    img() = img().windowed(
+                        Xmipp::init(mymodel.ori_size), Xmipp::last(mymodel.ori_size),
+                        Xmipp::init(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
                     );
                     break;
                     case 3:
-                    img().window(
-                        Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size), Xmipp::init(mymodel.ori_size),
-                        Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
+                    img() = img().windowed(
+                        Xmipp::init(mymodel.ori_size), Xmipp::last(mymodel.ori_size),
+                        Xmipp::init(mymodel.ori_size), Xmipp::last(mymodel.ori_size),
+                        Xmipp::init(mymodel.ori_size), Xmipp::last(mymodel.ori_size)
                     );
                     break;
                 }

@@ -965,10 +965,9 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
             int my_small_size = std::min(my_xsize, my_ysize);
             const auto stats = computeStats(img);
 
-            img.window(
-                Xmipp::init(my_size), Xmipp::init(my_size),
-                Xmipp::last(my_size), Xmipp::last(my_size)
-            );
+            img = img.windowed(
+                Xmipp::init(my_size), Xmipp::last(my_size),
+                Xmipp::init(my_size), Xmipp::last(my_size));
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
@@ -991,10 +990,9 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
     img.setXmippOrigin();
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
-            img.window(
-                Xmipp::init(my_ysize), Xmipp::init(my_xsize),
-                Xmipp::last(my_ysize), Xmipp::last(my_xsize)
-            );
+            img = img.windowed(
+                Xmipp::init(my_ysize), Xmipp::last(my_ysize),
+                Xmipp::init(my_xsize), Xmipp::last(my_xsize));
         } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
@@ -1052,10 +1050,9 @@ void lowPassFilterMap(
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
             const auto stats = computeStats(img);
-            img.window(
-                Xmipp::init(my_size), Xmipp::init(my_size),
-                Xmipp::last(my_size), Xmipp::last(my_size)
-            );
+            img = img.windowed(
+                Xmipp::init(my_size), Xmipp::last(my_size), 
+                Xmipp::init(my_size), Xmipp::last(my_size));
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
@@ -1078,10 +1075,9 @@ void lowPassFilterMap(
     img.setXmippOrigin();
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
-            img.window(
-                Xmipp::init(my_ysize), Xmipp::init(my_xsize),
-                Xmipp::last(my_ysize), Xmipp::last(my_xsize)
-            );
+            img = img.windowed(
+                Xmipp::init(my_ysize), Xmipp::last(my_xsize),
+                Xmipp::init(my_xsize), Xmipp::last(my_ysize));
         } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }
@@ -1171,10 +1167,9 @@ void directionalFilterMap(
         if (img.getDim() == 2) {
             int my_small_size = std::min(my_xsize, my_ysize);
             const auto stats = computeStats(img);
-            img.window(
-                Xmipp::init(my_size), Xmipp::init(my_size),
-                Xmipp::last(my_size), Xmipp::last(my_size)
-            );
+            img = img.windowed(
+                Xmipp::init(my_size), Xmipp::last(my_size),
+                Xmipp::init(my_size), Xmipp::last(my_size));
             if (my_small_size == my_xsize) {
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                     if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
@@ -1197,10 +1192,9 @@ void directionalFilterMap(
     img.setXmippOrigin();
     if (my_xsize != my_ysize) {
         if (img.getDim() == 2) {
-            img.window(
-                Xmipp::init(my_ysize), Xmipp::init(my_xsize),
-                Xmipp::last(my_ysize), Xmipp::last(my_xsize)
-            );
+            img = img.windowed(
+                Xmipp::init(my_ysize), Xmipp::last(my_ysize),
+                Xmipp::init(my_xsize), Xmipp::last(my_xsize));
         } else {
             REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
         }

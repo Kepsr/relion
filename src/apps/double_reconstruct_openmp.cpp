@@ -168,12 +168,9 @@ class reconstruct_parameters {
 
                     // Re-box to a smaller size if necessary....
                     if (0 < newbox && newbox < YSIZE(Fin)) {
-                        Iapp.setXmippOrigin();
-                        Iapp.window(
-                            Xmipp::init(newbox), Xmipp::init(newbox),
-                            Xmipp::last(newbox), Xmipp::last(newbox)
-                        );
-
+                        Iapp = Iapp.setXmippOrigin().window(
+                            Xmipp::init(newbox), Xmipp::last(newbox),
+                            Xmipp::init(newbox), Xmipp::last(newbox));
                     }
 
                     // Back into Fourier-space

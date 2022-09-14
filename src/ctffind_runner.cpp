@@ -572,11 +572,9 @@ void CtffindRunner::executeCtffind3(long int imic) {
         // Read in micrograph, window and write out again
         Image<RFLOAT> I;
         I.read(fn_mic);
-        I().setXmippOrigin();
-        I().window(
-            Xmipp::init(ctf_win), Xmipp::init(ctf_win), 
-            Xmipp::last(ctf_win), Xmipp::last(ctf_win)
-        );
+        I() = I().setXmippOrigin().windowed(
+            Xmipp::init(ctf_win), Xmipp::last(ctf_win),
+            Xmipp::init(ctf_win), Xmipp::last(ctf_win));
         // Calculate mean, stddev, min and max
         const auto stats = computeStats(I());
         const long int i = I.MDMainHeader.size() - 1;
@@ -655,8 +653,9 @@ void CtffindRunner::executeCtffind4(long int imic) {
         fn_mic_win = fn_root + "_win.mrc";
         // Read in micrograph, window and write out again
         auto I = Image<RFLOAT>::from_filename(fn_mic);
-        I().setXmippOrigin();
-        I().window(Xmipp::init(ctf_win), Xmipp::init(ctf_win), Xmipp::last(ctf_win), Xmipp::last(ctf_win));
+        I() = I().setXmippOrigin().windowed(
+            Xmipp::init(ctf_win), Xmipp::last(ctf_win),
+            Xmipp::init(ctf_win), Xmipp::last(ctf_win));
         // Calculate mean, stddev, min and max
         const auto stats = computeStats(I());
         const long int i = I.MDMainHeader.size() - 1;

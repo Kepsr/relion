@@ -728,12 +728,9 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         {
         ifdefPREP_TIMING(TicToc tt (timer, TIMING_WINDOW);)
         // extract one particle in Ipart
-        if (dimensionality == 3) {
-            Imic().window(Ipart(), z0, y0, x0, zF, yF, xF);
-        } else {
-            Imic().window(Ipart(), y0, x0, yF, xF, mic_avg);
-        }
-        Ipart().setXmippOrigin();
+        Ipart() = (dimensionality == 3 ?
+            Imic().windowed(x0, xF, y0, yF, z0, zF) :
+            Imic().windowed(x0, xF, y0, yF, mic_avg)).setXmippOrigin();
         }
 
         // Premultiply the CTF of each particle, possibly in a bigger box (premultiply_ctf_extract_size)
@@ -758,7 +755,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
             Ipart() = transformer.inverseFourierTransform(FT);
 
             if (extract_size != premultiply_ctf_extract_size) {
-                Ipart().window(
+                Ipart() = Ipart().windowed(
                     Xmipp::init(extract_size), Xmipp::init(extract_size),
                     Xmipp::last(extract_size), Xmipp::last(extract_size)
                 );

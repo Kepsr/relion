@@ -690,14 +690,15 @@ void ParticleSubtractor::subtractOneParticle(
         if (boxsize > 0) {
             int dimensionality = img().getDim();
             if (dimensionality == 2) {
-                img().window(
-                    Xmipp::init(boxsize), Xmipp::init(boxsize),
-                    Xmipp::last(boxsize), Xmipp::last(boxsize)
+                img() = img().windowed(
+                    Xmipp::init(boxsize), Xmipp::last(boxsize),
+                    Xmipp::init(boxsize), Xmipp::last(boxsize)
                 );
             } else if (dimensionality == 3) {
-                img().window(
-                    Xmipp::init(boxsize), Xmipp::init(boxsize), Xmipp::init(boxsize),
-                    Xmipp::last(boxsize), Xmipp::last(boxsize), Xmipp::last(boxsize)
+                img() = img().windowed(
+                    Xmipp::init(boxsize), Xmipp::last(boxsize),
+                    Xmipp::init(boxsize), Xmipp::last(boxsize),
+                    Xmipp::init(boxsize), Xmipp::last(boxsize)
                 );
             }
         }
