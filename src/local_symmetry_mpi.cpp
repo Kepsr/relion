@@ -170,10 +170,8 @@ void local_symmetry_parameters_mpi::run() {
             #ifdef DEBUG
             std::cout << " Window: x0, y0, z0 = " << x0 << ", " << y0 << ", " << z0 << "; xf, yf, zf = " << xf << ", " << yf << ", " << zf << std::endl;
             #endif
-            mask().window(mask_cropped, z0, y0, x0, zf, yf, xf);
-            mask_cropped.setXmippOrigin();
-            map().window(src_cropped,   z0, y0, x0, zf, yf, xf);
-            src_cropped.setXmippOrigin();
+            mask_cropped = mask().windowed(x0, xf, y0, yf, z0, zf).setXmippOrigin();
+            src_cropped  = map ().windowed(x0, xf, y0, yf, z0, zf).setXmippOrigin();
 
             // Rescale the map and the mask (if binning_factor > 1), set 'newdim'.
             tmp_binning_factor = 1.0;
@@ -315,8 +313,7 @@ void local_symmetry_parameters_mpi::run() {
                 #ifdef DEBUG
                 std::cout << " Window: x0, y0, z0 = " << x0 << ", " << y0 << ", " << z0 << "; xf, yf, zf = " << xf << ", " << yf << ", " << zf << std::endl;
                 #endif
-                map().window(dest_cropped, z0, y0, x0, zf, yf, xf);
-                dest_cropped.setXmippOrigin();
+                dest_cropped = map().windowed(x0, xf, y0, yf, z0, zf).setXmippOrigin();
 
                 // Do the same rescaling
                 if (newdim != cropdim) {

@@ -339,14 +339,15 @@ void rewindow(Image<RFLOAT> &I, int size) {
     // Check 2D or 3D dimensionality
     switch (I().getDim()) {
 
-        case 2: I().window(
-            Xmipp::init(size), Xmipp::init(size),
-            Xmipp::last(size), Xmipp::last(size)
+        case 2: I() = I().windowed(
+            Xmipp::init(size), Xmipp::last(size),
+            Xmipp::init(size), Xmipp::last(size)
         ); break;
 
-        case 3: I().window(
-            Xmipp::init(size), Xmipp::init(size), Xmipp::init(size),
-            Xmipp::last(size), Xmipp::last(size), Xmipp::last(size)
+        case 3: I() = I().windowed(
+            Xmipp::init(size), Xmipp::last(size),
+            Xmipp::init(size), Xmipp::last(size),
+            Xmipp::init(size), Xmipp::last(size)
         ); break;
 
     }

@@ -498,10 +498,9 @@ class image_handler_parameters {
             int oldsize = oldxsize;
             if (oldxsize != oldysize && Iout().getDim() == 2) {
                 oldsize = std::max(oldxsize, oldysize);
-                Iout().setXmippOrigin();
-                Iout().window(
-                    Xmipp::init(oldsize), Xmipp::init(oldsize),
-                    Xmipp::last(oldsize), Xmipp::last(oldsize)
+                Iout() = Iout().setXmippOrigin().windowed(
+                    Xmipp::init(oldsize), Xmipp::last(oldsize),
+                    Xmipp::init(oldsize), Xmipp::last(oldsize)
                 );
             }
 
@@ -522,10 +521,9 @@ class image_handler_parameters {
             if (oldxsize != oldysize && Iout().getDim() == 2) {
                 int newxsize = make_even(round(oldxsize * (angpix / real_angpix)));
                 int newysize = make_even(round(oldysize * (angpix / real_angpix)));
-                Iout().setXmippOrigin();
-                Iout().window(
-                    Xmipp::init(newysize), Xmipp::init(newxsize),
-                    Xmipp::last(newysize), Xmipp::last(newxsize)
+                Iout() = Iout().setXmippOrigin().windowed(
+                    Xmipp::init(newysize), Xmipp::last(newysize), 
+                    Xmipp::init(newysize), Xmipp::last(newysize)
                 );
             }
 
@@ -537,20 +535,21 @@ class image_handler_parameters {
         if (new_box > 0 && new_box != Xsize(Iout())) {
             Iout().setXmippOrigin();
             if (Iout().getDim() == 2) {
-                Iout().window(
-                    Xmipp::init(new_box), Xmipp::init(new_box),
-                    Xmipp::last(new_box), Xmipp::last(new_box)
+                Iout() = Iout().windowed(
+                    Xmipp::init(new_box), Xmipp::last(new_box),
+                    Xmipp::init(new_box), Xmipp::last(new_box)
                 );
             } else if (Iout().getDim() == 3) {
-                Iout().window(
-                    Xmipp::init(new_box), Xmipp::init(new_box), Xmipp::init(new_box),
-                    Xmipp::last(new_box), Xmipp::last(new_box), Xmipp::last(new_box)
+                Iout() = Iout().windowed(
+                    Xmipp::init(new_box), Xmipp::last(new_box),
+                    Xmipp::init(new_box), Xmipp::last(new_box),
+                    Xmipp::init(new_box), Xmipp::last(new_box)
                 );
             }
             my_new_box_size = new_box;
         }
 
-        if (fn_sym != "")
+        if (!fn_sym.empty())
             symmetriseMap(Iout(), fn_sym);
 
         // Thresholding (can be done after any other operation)

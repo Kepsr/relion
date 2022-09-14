@@ -754,8 +754,7 @@ void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, l
     }
 
     // Now do the actual windowing in real-space
-    Min.window(z0, y0, x0, zF, yF, xF);
-    Min.setXmippOrigin();
+    Min = Min.windowed(x0, xF, y0, yF, z0, zF).setXmippOrigin();
 
     // If upsizing: mask the corners to prevent aliasing artefacts
     if (newdim > olddim) {

@@ -687,29 +687,6 @@ class MultidimArray {
         }
     }
 
-    /** Generic window routine (dim independent)
-     *
-     * This function will call to 3D,2D or 1D specific window routines
-     */
-    void window(
-        index_t n0, index_t z0, index_t y0, index_t x0,
-        index_t nF, index_t zF, index_t yF, index_t xF,
-        T init_value = 0, long n = 0
-    ) {
-        if (ndim > 1)
-            REPORT_ERROR("stack windowing not implemented");
-        if (zdim > 1) {
-            //call 3Dwindow
-            window(z0, y0, x0, zF, yF, xF, init_value, n);
-        } else if (ydim > 1) {
-            //call 2Dwindow
-            window(y0, x0, yF, xF, init_value, n);
-        } else if (xdim > 1) {
-            //call 1Dwindow
-            window(x0, xF, init_value, n);
-        }
-    }
-
     /** Put a 3D window to the nth volume
      *
      * The volume is windowed within the two positions given to this function.
@@ -736,34 +713,20 @@ class MultidimArray {
      * V1.window(0, 0, -1, 1, 1, 2);
      * @endcode
      */
-    void window(
-        MultidimArray<T> &result,
-        index_t z0, index_t y0, index_t x0,
-        index_t zF, index_t yF, index_t xF,
+    MultidimArray<T> windowed(
+        index_t x0, index_t xF, index_t y0, index_t yF, index_t z0, index_t zF,
         T init_value = 0, long n = 0
     ) const {
-        result.resize(xF - x0 + 1, yF - y0 + 1, zF - z0 + 1);
+        MultidimArray<T> result (xF - x0 + 1, yF - y0 + 1, zF - z0 + 1);
         result.xinit = x0;
         result.yinit = y0;
         result.zinit = z0;
-
         for (index_t k = z0; k <= zF; k++)
         for (index_t j = y0; j <= yF; j++)
         for (index_t i = x0; i <= xF; i++) {
-            result.elem(i, j, k) = inside(i, j, k) ?
-                elem(i, j, k, n) : init_value;
+            result.elem(i, j, k) = inside(i, j, k) ? elem(i, j, k, n) : init_value;
         }
-    }
-
-    // As above but acts on itself
-    void window(
-        index_t z0, index_t y0, index_t x0,
-        index_t zF, index_t yF, index_t xF,
-        T init_value = 0, long n = 0
-    ) {
-        MultidimArray<T> result;
-        window(result, z0, y0, x0, zF, yF, xF, init_value, n);
-        *this = std::move(result);
+        return result;
     }
 
     /** Put a 2D window to the nth matrix
@@ -785,32 +748,17 @@ class MultidimArray {
      * m1.window(-1, -1, 1, 2);
      * @endcode
      */
-    void window(
-        MultidimArray<T> &result,
-        index_t y0, index_t x0,
-        index_t yF, index_t xF,
+    MultidimArray<T> windowed(
+        index_t x0, index_t xF, index_t yF, index_t y0,
         T init_value = 0, long n = 0
     ) const {
-        result.resize(xF - x0 + 1, yF - y0 + 1);
+        MultidimArray<T> result (xF - x0 + 1, yF - y0 + 1);
         result.xinit = x0;
         result.yinit = y0;
-
         FOR_ALL_ELEMENTS_IN_ARRAY2D(result, i, j) {
-            result.elem(i, j) = inside(i, j) ?
-                elem(i, j, 0, n) : init_value;
+            result.elem(i, j) = inside(i, j) ? elem(i, j, 0, n) : init_value;
         }
-    }
-
-    // As above but acts on itself
-    void window(
-        index_t y0, index_t x0,
-        index_t yF, index_t xF,
-        T init_value = 0, long n = 0
-    ) {
-        MultidimArray<T> result;
-        window(result, y0, x0, yF, xF, init_value, n);
-        *this = result;
-
+        return result;
     }
 
     /** Put a 1D window to the nth vector
@@ -827,26 +775,15 @@ class MultidimArray {
      * v1.window(-3, 1);  // v1=[0 -2 -1 0 1]; v1.firstX() == -3
      * @endcode
      */
-    void window(
-        MultidimArray<T> &result,
-        index_t x0,
-        index_t xF,
-        T init_value = 0, long n = 0
+    MultidimArray<T> windowed(
+        index_t x0, index_t xF, T init_value = 0, long n = 0
     ) const {
-        result.resize(xF - x0 + 1);
+        MultidimArray<T> result (xF - x0 + 1);
         result.xinit = x0;
-
         for (index_t i = x0; i <= xF; i++) {
-            result.elem(i) = inside(i) ?
-                elem(i, 0, 0, n) : init_value;
-            }
-    }
-
-    // As above but acts on itself
-    void window(index_t x0, index_t xF, T init_value = 0, long n = 0) {
-        MultidimArray<T> result;
-        window(result, x0, xF, init_value, n);
-        *this = result;
+            result.elem(i) = inside(i) ? elem(i, 0, 0, n) : init_value;
+        }
+        return result;
     }
 
     /** Print shape of multidimensional array.
