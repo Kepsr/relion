@@ -373,13 +373,8 @@ class MultidimArray {
      * Initialize everything to 0
      */
     void coreInit() {
-        ndim = 1;
-        zdim = 1;
-        ydim = 1;
-        xdim = 0;
-        zinit = 0;
-        yinit = 0;
-        xinit = 0;
+        xdim = ydim = zdim = ndim = 0;
+        xinit = yinit = zinit = 0;
         data = nullptr;
         allocator = relion_aligned_mallocator();
     }
@@ -430,11 +425,11 @@ class MultidimArray {
      *  Note that the dataArray is NOT resized. This should be done separately with coreAllocate()
      *
      */
-    void setDimensions(index_t Xdim = 1, index_t Ydim = 1, index_t Zdim = 1, index_t Ndim = 1) {
-        xdim = Xdim;
-        ydim = Ydim;
-        zdim = Zdim;
-        ndim = Ndim;
+    void setDimensions(index_t xdim = 1, index_t ydim = 1, index_t zdim = 1, index_t ndim = 1) {
+        this->xdim = xdim;
+        this->ydim = ydim;
+        this->zdim = zdim;
+        this->ndim = ndim;
     }
 
     /** NOTE: When setXdim/setYdim/setZdim/setNdim are used, the array is not resized.
@@ -446,16 +441,15 @@ class MultidimArray {
     void setNdim(index_t ndim) { this->ndim = ndim; }
 
     /** Copy the shape parameters
-     *
      */
-    void copyShape(const MultidimArray<T> &m) {
-        xdim = m.xdim;
-        ydim = m.ydim;
-        zdim = m.zdim;
-        ndim = m.ndim;
-        xinit = m.xinit;
-        yinit = m.yinit;
-        zinit = m.zinit;
+    void copyShape(const MultidimArray<T> &other) {
+        xdim = other.xdim;
+        ydim = other.ydim;
+        zdim = other.zdim;
+        ndim = other.ndim;
+        xinit = other.xinit;
+        yinit = other.yinit;
+        zinit = other.zinit;
     }
 
     /** Shrink to fit
@@ -468,7 +462,7 @@ class MultidimArray {
      * limits.
      */
     void shrinkToFit() {
-        if (!data || typeid(Allocator) != typeid(relion_aligned_mallocator) || size() <= 0)
+        if (!data || typeid(Allocator) != typeid(relion_aligned_mallocator) || size() == 0)
             return;
         size_t n = sizeof(T) * size();
         T* old_data = data;
@@ -489,19 +483,19 @@ class MultidimArray {
      * If shape is unchanged, then so is the data.
      * Otherwise, data is almost always destroyed.
      */
-    void reshape(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
-        if (data && size() == Xdim * Ydim * Zdim * Ndim) {
-            setDimensions(Xdim, Ydim, Zdim, Ndim);
+    void reshape(uindex_t xdim = 1, uindex_t ydim = 1, uindex_t zdim = 1, uindex_t ndim = 1) {
+        if (data && size() == xdim * ydim * zdim * ndim) {
+            setDimensions(xdim, ydim, zdim, ndim);
             return;
         }
 
-        if (Xdim == 0 || Ydim == 0 || Zdim == 0 || Ndim == 0) {
+        if (xdim == 0 || ydim == 0 || zdim == 0 || ndim == 0) {
             clear();
             return;
         }
 
         coreDeallocate();
-        coreAllocate(Xdim, Ydim, Zdim, Ndim);
+        coreAllocate(xdim, ydim, zdim, ndim);
     }
 
     /** Adjust shape to match the target array
@@ -509,16 +503,12 @@ class MultidimArray {
      * No guarantee about the data stored
      */
     template<typename U>
-    void reshape(const MultidimArray<U> &v) {
-        if (
-            ndim != v.ndim || xdim != v.xdim ||
-            ydim != v.ydim || zdim != v.zdim ||
-            !data
-        ) { reshape(v.xdim, v.ydim, v.zdim, v.ndim); }
+    void reshape(const MultidimArray<U> &other) {
+        reshape(other.xdim, other.ydim, other.zdim, other.ndim);
 
-        xinit = v.xinit;
-        yinit = v.yinit;
-        zinit = v.zinit;
+        xinit = other.xinit;
+        yinit = other.yinit;
+        zinit = other.zinit;
     }
 
     /** Resize to a given size
@@ -532,10 +522,10 @@ class MultidimArray {
      * V1.resize(3, 3, 2);
      * @endcode
      */
-    void resizeNoCp(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
+    void resizeNoCp(uindex_t xdim = 1, uindex_t ydim = 1, uindex_t zdim = 1, uindex_t ndim = 1) {
 
-        const size_t new_size = Ndim * Zdim * Ydim * Xdim;
-        if (new_size == size() && data)
+        const size_t new_size = xdim * ydim * zdim * ndim;
+        if (data && size() == new_size)
             return;
 
         if (new_size == 0) {
@@ -564,7 +554,7 @@ class MultidimArray {
         coreDeallocate();
 
         // assign *this vector to the newly created
-        setDimensions(Xdim, Ydim, Zdim, Ndim);
+        setDimensions(xdim, ydim, zdim, ndim);
         data = new_data;
     }
 
@@ -581,10 +571,10 @@ class MultidimArray {
      * V1.resize(3, 3, 2);
      * @endcode
      */
-    MultidimArray<T>& resize(uindex_t Xdim = 1, uindex_t Ydim = 1, uindex_t Zdim = 1, uindex_t Ndim = 1) {
-        size_t new_size = Xdim * Ydim * Zdim * Ndim;
+    MultidimArray<T>& resize(uindex_t xdim = 1, uindex_t ydim = 1, uindex_t zdim = 1, uindex_t ndim = 1) {
+        size_t new_size = xdim * ydim * zdim * ndim;
         if (data && new_size == size()) {
-            setDimensions(Xdim, Ydim, Zdim, Ndim);
+            setDimensions(xdim, ydim, zdim, ndim);
             return *this;
         }
 
@@ -611,13 +601,13 @@ class MultidimArray {
         }
 
         // Copy needed elements, fill with 0 if necessary
-        for (index_t l = 0; l < Ndim; l++)
-        for (index_t k = 0; k < Zdim; k++)
-        for (index_t j = 0; j < Ydim; j++)
-        for (index_t i = 0; i < Xdim; i++) {
+        for (index_t l = 0; l < ndim; l++)
+        for (index_t k = 0; k < zdim; k++)
+        for (index_t j = 0; j < ydim; j++)
+        for (index_t i = 0; i < xdim; i++) {
             // 0 if out of bounds
-            new_data[i + j * Xdim + k * Xdim * Ydim + l * Xdim * Ydim * Zdim] = (
-                k >= zdim || i >= ydim || j >= xdim
+            new_data[i + j * xdim + k * xdim * ydim + l * xdim * ydim * zdim] = (
+                i >= this->xdim || j >= this->ydim || k >= this->zdim
             ) ? (T) 0.0 : direct::elem(*this, i, j, k);
         }
 
@@ -626,7 +616,7 @@ class MultidimArray {
 
         // assign *this vector to the newly created
         data = new_data;
-        setDimensions(Xdim, Ydim, Zdim, Ndim);
+        setDimensions(xdim, ydim, zdim, ndim);
         return *this;
     }
 
@@ -644,12 +634,7 @@ class MultidimArray {
      */
     template<typename U>
     void resize(const MultidimArray<U> &other) {
-        if (
-            ndim != other.ndim || xdim != other.xdim ||
-            ydim != other.ydim || zdim != other.zdim ||
-            !data
-        ) { resize(other.xdim, other.ydim, other.zdim, other.ndim); }
-
+        resize(other.xdim, other.ydim, other.zdim, other.ndim);
         xinit = other.xinit;
         yinit = other.yinit;
         zinit = other.zinit;
