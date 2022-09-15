@@ -573,9 +573,9 @@ void Reconstructor::reconstruct() {
         MetaDataTable MDfsc;
         MDfsc.read(fn_fsc);
         for (long int i : MDfsc) {
-            int    idx = MDfsc.getValue<int>(EMDL::SPECTRAL_IDX, i);
-            RFLOAT val = MDfsc.getValue<RFLOAT>(EMDL::MLMODEL_FSC_HALVES_REF, i);
-            fsc(idx) = val;
+            const int    idx = MDfsc.getValue<int>(EMDL::SPECTRAL_IDX, i);
+            const RFLOAT val = MDfsc.getValue<RFLOAT>(EMDL::MLMODEL_FSC_HALVES_REF, i);
+            fsc.elem(idx) = val;
         }
     }
 

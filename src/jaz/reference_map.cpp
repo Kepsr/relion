@@ -183,9 +183,9 @@ Image<RFLOAT> ReferenceMap::getHollowWeight(double kmin_ang, int s_out, double a
         double r = sqrt(x_ang * x_ang + y_ang * y_ang);
 
         if (r < 1.0 / kmin_ang || xx_ref >= sh || yy_ref < 0 || yy_ref >= s) {
-            out(y, x) = 0.0;
+            out.data.elem(y, x) = 0.0;
         } else {
-            out(y, x) = freqWeight(yy_ref, xx_ref);
+            out.data.elem(y, x) = freqWeight(yy_ref, xx_ref);
         }
     }
 

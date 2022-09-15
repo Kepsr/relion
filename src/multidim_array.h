@@ -235,7 +235,16 @@ namespace direct {
 
     // Direct array access
     template <typename T>
-    inline T& elem(const MultidimArray<T> &v, long int i, long int j = 0, long int k = 0, long int l = 0) {
+    inline const T& elem(const MultidimArray<T> &v, long int i, long int j = 0, long int k = 0, long int l = 0) {
+        return v.data[
+            i +
+            j * v.xdim +
+            k * v.xdim * v.ydim +
+            l * v.xdim * v.ydim * v.zdim];
+    }
+
+    template <typename T>
+    inline T& elem(MultidimArray<T> &v, long int i, long int j = 0, long int k = 0, long int l = 0) {
         return v.data[
             i +
             j * v.xdim +
@@ -290,7 +299,11 @@ class MultidimArray {
     T* end() const { return data + size(); }
 
     // Logical array access
-    inline T& elem(index_t i, index_t j = 0, index_t k = 0, index_t l = 0) const {
+    inline const T& elem(index_t i, index_t j = 0, index_t k = 0, index_t l = 0) const {
+        return direct::elem(*this, i - xinit, j - yinit, k - zinit, l);
+    }
+
+    inline T& elem(index_t i, index_t j = 0, index_t k = 0, index_t l = 0) {
         return direct::elem(*this, i - xinit, j - yinit, k - zinit, l);
     }
 
@@ -979,7 +992,7 @@ class MultidimArray {
      * val = V(vectorR3(1, -2, 0));
      * @endcode
      */
-    T& operator()(const Matrix1D<index_t> &v) const {
+    T& operator()(const Matrix1D<index_t> &v) {
         switch (v.size()) {
             case 1:
             return elem(XX(v));
@@ -1023,7 +1036,7 @@ class MultidimArray {
      * val = m(-2, 1);
      * @endcode
      */
-    inline T& operator()(index_t i, index_t j) const {
+    inline const T& operator()(index_t i, index_t j) const {
         return elem(i, j);
     }
 
@@ -1039,7 +1052,7 @@ class MultidimArray {
      * val = v(-2);
      * @endcode
      */
-    inline T& operator()(index_t i) const {
+    inline const T& operator()(index_t i) const {
         return elem(i);
     }
 
@@ -1078,7 +1091,7 @@ class MultidimArray {
      * V.setImage(0, m);
      * @endcode
      */
-    void setImage(long n, MultidimArray<T> &M) const {
+    void setImage(long n, const MultidimArray<T> &M) {
         if (xdim == 0)
             return;
 
@@ -1197,8 +1210,8 @@ class MultidimArray {
      * @code
      * std::vector<RFLOAT> v;
      * m.getCol(-1, v);
-        * @endcode
-        */
+     * @endcode
+     */
     void getCol(index_t j, MultidimArray<T> &v) const {
             if (xdim == 0 || ydim == 0) {
                 v.clear();
@@ -1210,7 +1223,7 @@ class MultidimArray {
 
         v.resize(ydim);
         for (index_t i = 0; i < ydim; i++)
-            v(i) = (*this)(i, j);
+            v.elem(i) = elem(i, j);
     }
 
     /** Set Column
@@ -1233,7 +1246,7 @@ class MultidimArray {
             REPORT_ERROR("setCol: Vector dimension different from matrix one");
 
         for (index_t i = 0; i < ydim; i++)
-            (*this)(i, j) = v(i);
+            elem(i, j) = v.elem(i);
     }
 
     /** Get row
@@ -1257,7 +1270,7 @@ class MultidimArray {
 
         v.resize(xdim);
         for (index_t j = 0; j < xdim; j++)
-            v(j) = (*this)(i, j);
+            v.elem(j) = elem(i, j);
     }
 
     /** Set Row
@@ -1279,7 +1292,7 @@ class MultidimArray {
             REPORT_ERROR("setRow: Vector dimension different from matrix one");
 
         for (index_t j = 0; j < xdim; j++)
-            (*this)(i, j) = v(j);
+            elem(i, j) = v.elem(j);
     }
 
     /** 3D Logical to physical index translation.

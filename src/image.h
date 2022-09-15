@@ -861,7 +861,11 @@ class Image {
     * I(-3, -3) = I(-3, -2);
     * @endcode
     */
-    T& operator () (int i, int j) const {
+    const T& operator () (int i, int j) const {
+        return data.elem(i, j);
+    }
+
+    T& operator () (int i, int j) {
         return data.elem(i, j);
     }
 
@@ -894,7 +898,11 @@ class Image {
      * I(-3, -3, 1) = I(-3, -2, 0);
      * @endcode
      */
-    inline T& operator () (int k, int i, int j) const {
+    inline const T& operator () (int k, int i, int j) const {
+        return data.elem(i, j, k);
+    }
+
+    inline T& operator () (int k, int i, int j) {
         return data.elem(i, j, k);
     }
 

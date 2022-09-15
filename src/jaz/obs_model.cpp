@@ -319,7 +319,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
 
         for (int y = 0; y < s_out;  y++)
         for (int x = 0; x < sh_out; x++) {
-            pred(y, x) *= f(ctfImg(y, x));
+            pred.elem(y, x) *= f(ctfImg(y, x));
         }
     }
 
@@ -416,24 +416,24 @@ void ObservationModel::divideByMtf(
             if (do_correct_average_mtf) {
                 for (int y = 0; y < s;  y++)
                 for (int x = 0; x < sh; x++) {
-                    obsImage(y, x) *= mtf(y, x) / avgmtf(y, x);
+                    obsImage.elem(y, x) *= mtf(y, x) / avgmtf(y, x);
                 }
             } else {
                 for (int y = 0; y < s;  y++)
                 for (int x = 0; x < sh; x++) {
-                    obsImage(y, x) *= mtf(y, x);
+                    obsImage.elem(y, x) *= mtf(y, x);
                 }
             }
         } else {
             if (do_correct_average_mtf) {
                 for (int y = 0; y < s;  y++)
                 for (int x = 0; x < sh; x++) {
-                    obsImage(y, x) *= avgmtf(y, x) / mtf(y, x);
+                    obsImage.elem(y, x) *= avgmtf(y, x) / mtf(y, x);
                 }
             } else {
                 for (int y = 0; y < s;  y++)
                 for (int x = 0; x < sh; x++) {
-                    obsImage(y, x) /= mtf(y, x);
+                    obsImage.elem(y, x) /= mtf(y, x);
                 }
             }
         }
@@ -458,7 +458,7 @@ void ObservationModel::demodulatePhase(
 
     for (int y = 0; y < s;  y++)
     for (int x = 0; x < sh; x++) {
-        obsImage(x, y) *= f(corr(x, y));
+        obsImage.elem(x, y) *= f(corr(x, y));
     }
 }
 
@@ -781,7 +781,7 @@ const Image<RFLOAT>& ObservationModel::getMtfImage(int optGroup, int s) {
                     RFLOAT y_1 = direct::elem(mtf_value, i_0 + 1);
                     mtf = y_0 + (y_1 - y_0) * (res - x_0) / (x_1 - x_0);
                 }
-                img(y, x) = mtf;
+                img.data.elem(y, x) = mtf;
             }
         }
     }
@@ -838,7 +838,7 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
 
                 }
 
-                img(y, x) = Complex::unit(phase);
+                img.data.elem(y, x) = Complex::unit(phase);
             }
         }
     }
@@ -880,7 +880,7 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
 
                 }
 
-                img(y, x) = phase;
+                img.data.elem(y, x) = phase;
             }
         }
     }

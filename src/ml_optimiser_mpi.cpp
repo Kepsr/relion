@@ -484,7 +484,7 @@ void MlOptimiserMpi::initialise() {
             const RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE, i);
             idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX, i);
             if (idx < Xsize(mymodel.sigma2_noise[0])) {
-                mymodel.sigma2_noise[0](idx) = val;
+                mymodel.sigma2_noise[0].elem(idx) = val;
             }
         }
         if (idx < Xsize(mymodel.sigma2_noise[0]) - 1 && verb > 0) {
@@ -494,7 +494,7 @@ void MlOptimiserMpi::initialise() {
         }
 
         mydata.getNumberOfImagesPerGroup(mymodel.nr_particles_per_group);
-        for (int igroup = 0; igroup< mymodel.nr_groups; igroup++) {
+        for (int igroup = 0; igroup < mymodel.nr_groups; igroup++) {
             // Use the same spectrum for all classes
             mymodel.sigma2_noise[igroup] =  mymodel.sigma2_noise[0];
             // We set wsum_model.sumw_group as in calculateSumOfPowerSpectraAndAverageImage
@@ -904,12 +904,12 @@ void MlOptimiserMpi::expectation() {
     }
 
     // Now perform real expectation step in parallel, use an on-demand leader-follower system
-    #define JOB_FIRST         (first_last_nr_images(0))
-    #define JOB_LAST          (first_last_nr_images(1))
-    #define JOB_NIMG          (first_last_nr_images(2))
-    #define JOB_LEN_FN_IMG    (first_last_nr_images(3))
-    #define JOB_LEN_FN_CTF    (first_last_nr_images(4))
-    #define JOB_LEN_FN_RECIMG (first_last_nr_images(5))
+    #define JOB_FIRST         (first_last_nr_images.elem(0))
+    #define JOB_LAST          (first_last_nr_images.elem(1))
+    #define JOB_NIMG          (first_last_nr_images.elem(2))
+    #define JOB_LEN_FN_IMG    (first_last_nr_images.elem(3))
+    #define JOB_LEN_FN_CTF    (first_last_nr_images.elem(4))
+    #define JOB_LEN_FN_RECIMG (first_last_nr_images.elem(5))
     #define JOB_NPAR (JOB_LAST - JOB_FIRST + 1)
 
     #ifdef CUDA
@@ -1102,7 +1102,7 @@ void MlOptimiserMpi::expectation() {
                 // The first time a follower reports it only asks for input, but does not send output of a previous processing task. In that case JOB_NIMG==0
                 // Otherwise, the leader needs to receive and handle the updated metadata from the followers
                 if (JOB_NIMG > 0) {
-                    exp_metadata.resize(JOB_NIMG, METADATA_LINE_LENGTH_BEFORE_BODIES + (mymodel.nr_bodies) * METADATA_NR_BODY_PARAMS);
+                    exp_metadata.resize(JOB_NIMG, METADATA_LINE_LENGTH_BEFORE_BODIES + mymodel.nr_bodies * METADATA_NR_BODY_PARAMS);
                     node->relion_MPI_Recv(exp_metadata.data, exp_metadata.size(), relion_MPI::DOUBLE, this_follower, MPITag::METADATA, MPI_COMM_WORLD, status);
 
                     // The leader monitors the changes in the optimal orientations and classes

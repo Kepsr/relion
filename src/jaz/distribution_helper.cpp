@@ -106,9 +106,9 @@ Image<double> DistributionHelper::drawHistogramStack(
 
         if (vi > height) { vi = height; }
 
-        for (int y = 0; y < vi; y++) { hist(f, y, b) = 1.0; }
+        for (int y = 0; y < vi; y++) { hist.data.elem(f, y, b) = 1.0; }
 
-        if (vi < height - 1) { hist(f, vi, b) = val - vi; }
+        if (vi < height - 1) { hist.data.elem(f, vi, b) = val - vi; }
     }
 
     return hist;
@@ -417,7 +417,7 @@ gravis::d2Vector DistributionHelper::findCorrupted2DExponential(
         }
 
         if (drawPlot) {
-            eImg(i, j) = e;
+            eImg.data.elem(i, j) = e;
         }
     }
 

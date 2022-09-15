@@ -310,9 +310,9 @@ void ParticleSubtractor::saveStarFile(int myrank) {
                 MD.setValue(EMDL::SPECTRAL_IDX, ires, ires);
                 MD.setValue(EMDL::RESOLUTION, opt.mymodel.getResolution(ires), ires);
                 MD.setValue(EMDL::RESOLUTION_ANGSTROM, opt.mymodel.getResolutionAngstrom(ires), ires);
-                MD.setValue(EMDL::MLMODEL_SSNR_REF, sum_S2(ires)/sum_N2(ires), ires);
-                MD.setValue(EMDL::MLMODEL_TAU2_REF, sum_S2(ires) / sum_count(ires) , ires);
-                MD.setValue(EMDL::MLMODEL_SIGMA2_NOISE, sum_N2(ires) / sum_count(ires) , ires);
+                MD.setValue(EMDL::MLMODEL_SSNR_REF, sum_S2.elem(ires) / sum_N2.elem(ires), ires);
+                MD.setValue(EMDL::MLMODEL_TAU2_REF, sum_S2.elem(ires) / sum_count.elem(ires) , ires);
+                MD.setValue(EMDL::MLMODEL_SIGMA2_NOISE, sum_N2.elem(ires) / sum_count.elem(ires) , ires);
             }
             std::cout << " Writing out STAR file with spectral SNR in: " << fn_out << "spectral_snr.star" << " ..." << std::endl;
             MD.write(fn_out+"spectral_snr.star");
@@ -654,16 +654,16 @@ void ParticleSubtractor::subtractOneParticle(
         // Don't write out subtracted image,
         // only accumulate power of the signal (in Fsubtrahend) divided by the power of the noise (now in Fimg)
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fimg) {
-            long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+            long int idx = round(euclid(ip, jp, kp));
             int idx_remapped = round(remap_image_sizes * idx);
             if (idx_remapped < opt.mymodel.ori_size / 2 + 1) {
                 RFLOAT S2 = norm(direct::elem(Fsubtrahend, i, j, k));
                 RFLOAT N2 = norm(direct::elem(Fimg,        i, j, k));
                 // division by two keeps the numbers similar to tau2 and sigma2_noise,
                 // which are per real/imaginary component
-                sum_S2(idx_remapped) += S2 / 2.0;
-                sum_N2(idx_remapped) += N2 / 2.0;
-                sum_count(idx_remapped) += 1.0;
+                sum_S2.elem(idx_remapped) += S2 / 2.0;
+                sum_N2.elem(idx_remapped) += N2 / 2.0;
+                sum_count.elem(idx_remapped) += 1.0;
             }
         }
     } else {

@@ -149,7 +149,14 @@ namespace FFTW {
      * @endcode
      */
     template <typename T>
-    T& elem(const MultidimArray<T> &V, int ip, int jp, int kp) {
+    T& elem(MultidimArray<T> &V, int ip, int jp, int kp) {
+        return direct::elem(V, ip,
+                            jp < 0 ? jp + Ysize(V) : jp,
+                            kp < 0 ? kp + Zsize(V) : kp);
+    }
+
+    template <typename T>
+    const T& elem(const MultidimArray<T> &V, int ip, int jp, int kp) {
         return direct::elem(V, ip,
                             jp < 0 ? jp + Ysize(V) : jp,
                             kp < 0 ? kp + Zsize(V) : kp);
@@ -163,7 +170,13 @@ namespace FFTW {
      * @endcode
      */
     template <typename T>
-    T& elem(const MultidimArray<T> &V, int ip, int jp) {
+    T& elem(MultidimArray<T> &V, int ip, int jp) {
+        return direct::elem(V, ip,
+                            jp < 0 ? jp + Ysize(V) : jp);
+    }
+
+    template <typename T>
+    const T& elem(const MultidimArray<T> &V, int ip, int jp) {
         return direct::elem(V, ip,
                             jp < 0 ? jp + Ysize(V) : jp);
     }
@@ -257,8 +270,7 @@ class FourierTransformer {
         can be any MultiDimarray (1D, 2D or 3D). */
     template <typename T>
     MultidimArray<T> inverseFourierTransform(const MultidimArray<tComplex<T> > &V) {
-        MultidimArray<T> IFT;
-        IFT.resize(2 * (Xsize(V) - 1), Ysize(V), Zsize(V));
+        MultidimArray<T> IFT (2 * (Xsize(V) - 1), Ysize(V), Zsize(V));
         setReal(IFT);
         setFourier(V);
         Transform(FFTW_BACKWARD);
@@ -358,13 +370,13 @@ class FourierTransformer {
 };
 
 // Randomize phases beyond the given F-space shell (index) of R-space input image
-MultidimArray<RFLOAT> randomizePhasesBeyond(const MultidimArray<RFLOAT> &I, int index);
+MultidimArray<RFLOAT> randomizePhasesBeyond(MultidimArray<RFLOAT> I, int index);
 
 // Randomize phases beyond the given F-space shell (index) of F-space input image
-MultidimArray<Complex> randomizePhasesBeyond(const MultidimArray<Complex> &FT, int index);
+void randomizePhasesBeyond(MultidimArray<Complex> &FT, int index);
 
 template <typename T>
-void CenterFFTbySign(MultidimArray <T> &v) {
+MultidimArray<T>& CenterFFTbySign(MultidimArray<T> &v) {
     // This technique does not work when the sizes of dimensions of iFFT(v) are odd.
     // Unfortunately, this cannot be checked within this function...
     // Forward and backward shifts are equivalent.
@@ -375,6 +387,7 @@ void CenterFFTbySign(MultidimArray <T> &v) {
         if (((i ^ j ^ k) & 1) != 0) // if ODD
             direct::elem(v, i, j, k) *= -1;
     }
+    return v;
 }
 
 
@@ -386,12 +399,8 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
     #ifndef FAST_CENTERFFT
     if (v.getDim() == 1) {
         // 1D
-        MultidimArray<T> aux;
-        int l, shift;
-
-        l = Xsize(v);
-        aux.reshape(l);
-        shift = l / 2;
+        int l = Xsize(v), shift = l / 2;
+        MultidimArray<T> aux (l);
 
         if (!forward) { shift = -shift; }
 
@@ -402,7 +411,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
                  if (ip <  0) { ip += l; }
             else if (ip >= l) { ip -= l; }
 
-            aux(ip) = direct::elem(v, i);
+            aux.elem(ip) = direct::elem(v, i);
         }
 
         // Copy the vector
@@ -412,10 +421,8 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         // 2D
 
         // Shift in the X direction
-        int l = Xsize(v);
-        MultidimArray<T> aux;
-        aux.reshape(l);
-        int shift = l / 2;
+        int l = Xsize(v), shift = l / 2;
+        MultidimArray<T> aux (l);
 
         if (!forward) { shift = -shift; }
 
@@ -427,7 +434,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
                      if (ip <  0) { ip += l; }
                 else if (ip >= l) { ip -= l; }
 
-                aux(ip) = direct::elem(v, i, j);
+                aux.elem(ip) = direct::elem(v, i, j);
             }
 
             // Copy the vector
@@ -436,9 +443,8 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         }
 
         // Shift in the Y direction
-        l = Ysize(v);
+        shift = (l = Ysize(v)) / 2;
         aux.reshape(l);
-        shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
@@ -450,7 +456,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
                      if (jp <  0) { jp += l; }
                 else if (jp >= l) { jp -= l; }
 
-                aux(jp) = direct::elem(v, i, j);
+                aux.elem(jp) = direct::elem(v, i, j);
             }
 
             // Copy the vector
@@ -459,13 +465,9 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         }
     } else if (v.getDim() == 3) {
         // 3D
-        MultidimArray<T> aux;
-        int l, shift;
-
         // Shift in the X direction
-        l = Xsize(v);
-        aux.reshape(l);
-        shift = l / 2;
+        int l = Xsize(v), shift = l / 2;
+        MultidimArray<T> aux (l);
 
         if (!forward) { shift = -shift; }
 
@@ -478,7 +480,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
                      if (ip <  0) { ip += l; }
                 else if (ip >= l) { ip -= l; }
 
-                aux(ip) = direct::elem(v, i, j, k);
+                aux.elem(ip) = direct::elem(v, i, j, k);
             }
 
             // Copy the vector
@@ -487,9 +489,8 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         }
 
         // Shift in the Y direction
-        l = Ysize(v);
+        shift = (l = Ysize(v)) / 2;
         aux.reshape(l);
-        shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
@@ -502,7 +503,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
                      if (jp <  0) { jp += l; }
                 else if (jp >= l) { jp -= l; }
 
-                aux(jp) = direct::elem(v, i, j, k);
+                aux.elem(jp) = direct::elem(v, i, j, k);
             }
 
             // Copy the vector
@@ -511,9 +512,8 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
         }
 
         // Shift in the Z direction
-        l = Zsize(v);
+        shift = (l = Zsize(v)) / 2;
         aux.reshape(l);
-        shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
@@ -526,7 +526,7 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
                      if (kp <  0) { kp += l; }
                 else if (kp >= l) { kp -= l; }
 
-                aux(kp) = direct::elem(v, i, j, k);
+                aux.elem(kp) = direct::elem(v, i, j, k);
             }
 
             // Copy the vector

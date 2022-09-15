@@ -1164,7 +1164,7 @@ void AutoPicker::pickAmyloids(
         const auto direct_indices = offset_to_direct_indices(Mccf, it - Mccf.begin());
         const auto Xmipp_indices = direct_indices_to_Xmipp_indices(Mccf, direct_indices[0], direct_indices[1], direct_indices[2], direct_indices[3]);
         const long int imax = Xmipp_indices[0], jmax = Xmipp_indices[1];
-        const float psi = Mpsi(imax, jmax);
+        const float psi = Mpsi.elem(imax, jmax);
 
         // Stop searching if all pixels are below min_ccf!
         // std::cerr << " ccf= " << ccf << " imax= " << imax << " jmax= " << jmax << std::endl;
