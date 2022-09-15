@@ -78,7 +78,7 @@ void ImageLog::write(
                 const int xx = (x+w/2)%w;
                 const int yy = (y+h/2)%h;
 
-                img2(z,y,x) = img(z,yy,xx);
+                img2.data.elem(z,y,x) = img.data.elem(z,yy,xx);
             }
 
             write(img2, fn, NoCenter, originX, originY, originZ, spacingX, spacingY, spacingZ);
@@ -97,7 +97,7 @@ void ImageLog::write(
                 const int yy = (y+h/2)%h;
                 const int zz = (z+d/2)%d;
 
-                img2(z,y,x) = img(zz,yy,xx);
+                img2.data.elem(z,y,x) = img.data.elem(zz,yy,xx);
             }
 
             write(img2, fn, NoCenter, originX, originY, originZ, spacingX, spacingY, spacingZ);

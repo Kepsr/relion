@@ -320,7 +320,7 @@ std::vector<double> DamageHelper::fitBFactors(
 
     for (int k = 0; k < kc; k++)
     for (int f = 0; f < fc; f++) {
-        debug(f,k) = scale[k] * exp(-0.5 * k * k / (sig[f] * sig[f]));
+        debug.data.elem(f, k) = scale[k] * exp(-0.5 * k * k / (sig[f] * sig[f]));
     }
 
     ImageLog::write(debug, "bfacs/debug");
@@ -421,21 +421,21 @@ Image<RFLOAT> DamageHelper::renderBkFit(
         const double a = sigScale.first[f].y;
         const double scale = noScale ? 1.0 : sigScale.second[k];
 
-        out(f, k) = scale * a * exp(-0.5 * k * k / (sigma * sigma));
+        out.data.elem(f, k) = scale * a * exp(-0.5 * k * k / (sigma * sigma));
     }
 
     return out;
 }
 
 Image<RFLOAT> DamageHelper::renderBkFit(std::vector<d2Vector> sig, int kc, int fc) {
-    Image<RFLOAT> out(kc, fc);
+    Image<RFLOAT> out (kc, fc);
 
     for (int k = 0; k < kc; k++)
     for (int f = 0; f < fc; f++) {
         const double sigma = sig[f].x;
         const double a = sig[f].y;
 
-        out(f, k) = a * exp(-0.5 * k * k / (sigma * sigma));
+        out.data.elem(f, k) = a * exp(-0.5 * k * k / (sigma * sigma));
     }
 
     return out;
@@ -555,11 +555,11 @@ static void normalise(std::vector<Image<T>> &images, const int kc, const int kc2
 
         double sum = 0.0;
         for (int f = 0; f < fc; f++) {
-            sum += images[f](y, x);
+            sum += images[f].data.elem(y, x);
         }
 
         for (int f = 0; f < fc; f++) {
-            images[f](y, x) /= sum;
+            images[f].data.elem(y, x) /= sum;
         }
     }
 }
@@ -580,7 +580,7 @@ std::vector<Image<RFLOAT>> DamageHelper::computeWeights(
             double yy = y < kc ? y : y - kc2;
             double r2 = x * x + yy * yy;
 
-            out[f](y, x) = exp(-0.5 * r2 / (bFacs[f] * bFacs[f]));
+            out[f].data.elem(y, x) = exp(-0.5 * r2 / (bFacs[f] * bFacs[f]));
         }
     }
 
@@ -605,7 +605,7 @@ std::vector<Image<RFLOAT>> DamageHelper::computeWeights(
             double yy = y < kc ? y : y - kc2;
             double r2 = x * x + yy * yy;
 
-            out[f](y, x) = bkFacs[f].y * exp(-0.5 * r2 / (bkFacs[f].x * bkFacs[f].x));
+            out[f].data.elem(y, x) = bkFacs[f].y * exp(-0.5 * r2 / (bkFacs[f].x * bkFacs[f].x));
         }
     }
 
@@ -634,7 +634,7 @@ std::vector<Image<RFLOAT>> DamageHelper::computeWeights(
             double yy = y < kc ? y : y - kc2;
             double r2 = x * x + yy * yy;
 
-            out[f](y, x) = bkFacs[f].y * damage(sqrt(r2), kc, angpix, dose, dmga, dmgb, dmgc)
+            out[f].data.elem(y, x) = bkFacs[f].y * damage(sqrt(r2), kc, angpix, dose, dmga, dmgb, dmgc)
                 * exp(-0.5 * r2 / (bkFacs[f].x * bkFacs[f].x));
         }
     }
@@ -662,15 +662,15 @@ std::vector<Image<RFLOAT>> DamageHelper::computeWeights(const Image<RFLOAT> &fcc
 
             int idx = r;
             if (idx >= kc) {
-                out[f](y, x) = 0.0;
+                out[f].data.elem(y, x) = 0.0;
             } else if (idx == kc - 1) {
-                out[f](y, x) = std::max(fcc(f, idx), 0.0);
+                out[f].data.elem(y, x) = std::max(fcc(f, idx), 0.0);
             } else {
                 const double rf = r - idx;
                 const double v0 = std::max(fcc(f, idx),     0.0);
                 const double v1 = std::max(fcc(f, idx + 1), 0.0);
 
-                out[f](y, x) = rf * v1 + (1.0 - rf) * v0;
+                out[f].data.elem(y, x) = rf * v1 + (1.0 - rf) * v0;
             }
         }
     }

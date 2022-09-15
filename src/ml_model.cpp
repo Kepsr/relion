@@ -271,15 +271,15 @@ void MlModel::read(FileName fn_in) {
         MDsigma.readStar(in, (nr_bodies > 1 ? "model_body_" : "model_class_") + integerToString(iclass + 1));
         for (long int i : MDsigma) try {
             const int idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX, i);
-            data_vs_prior_class   [iclass](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_DATA_VS_PRIOR_REF,  i);
-            tau2_class            [iclass](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF,  i);
-            fsc_halves_class      [iclass](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_FSC_HALVES_REF,  i);
-            sigma2_class          [iclass](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_REF,  i);
+            data_vs_prior_class   [iclass].elem(idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_DATA_VS_PRIOR_REF,  i);
+            tau2_class            [iclass].elem(idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF,  i);
+            fsc_halves_class      [iclass].elem(idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_FSC_HALVES_REF,  i);
+            sigma2_class          [iclass].elem(idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_REF,  i);
             // Backwards compatibility with STAR files without Fourier coverage
             try {
-            fourier_coverage_class[iclass](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_FOURIER_COVERAGE_REF,  i);
+            fourier_coverage_class[iclass].elem(idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_FOURIER_COVERAGE_REF,  i);
             } catch (const char *errmsg) {
-            fourier_coverage_class[iclass](idx) = 0.0;
+            fourier_coverage_class[iclass].elem(idx) = 0.0;
             }
         } catch (const char *errmsg) {
             REPORT_ERROR("MlModel::readStar: incorrect table model_class/body_" + integerToString(iclass + 1));
@@ -295,8 +295,8 @@ void MlModel::read(FileName fn_in) {
             MetaDataTable MDsigma;
             MDsigma.readStar(in, "model_group_" + integerToString(igroup + 1));
             for (long int i : MDsigma) try {
-                const int idx             = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX, i);
-                sigma2_noise[igroup](idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE, i);
+                const int idx                  = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX, i);
+                sigma2_noise[igroup].elem(idx) = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE, i);
             } catch (const char *errmsg) {
                 REPORT_ERROR("MlModel::readStar: incorrect table model_group_" + integerToString(igroup + 1));
             }
@@ -524,14 +524,14 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
             MDsigma.setValue(EMDL::SPECTRAL_IDX, i, i);
             MDsigma.setValue(EMDL::RESOLUTION, getResolution(i), i);
             MDsigma.setValue(EMDL::RESOLUTION_ANGSTROM, getResolutionAngstrom(i), i);
-            MDsigma.setValue(EMDL::MLMODEL_DATA_VS_PRIOR_REF, data_vs_prior_class[iclass](i), i);
-            MDsigma.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves_class[iclass](i), i);
-            MDsigma.setValue(EMDL::MLMODEL_FOURIER_COVERAGE_REF, fourier_coverage_class[iclass](i), i);
-            MDsigma.setValue(EMDL::MLMODEL_SIGMA2_REF, sigma2_class[iclass](i), i);
-            MDsigma.setValue(EMDL::MLMODEL_TAU2_REF, tau2_class[iclass](i), i);
+            MDsigma.setValue(EMDL::MLMODEL_DATA_VS_PRIOR_REF, data_vs_prior_class[iclass].elem(i), i);
+            MDsigma.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves_class[iclass].elem(i), i);
+            MDsigma.setValue(EMDL::MLMODEL_FOURIER_COVERAGE_REF, fourier_coverage_class[iclass].elem(i), i);
+            MDsigma.setValue(EMDL::MLMODEL_SIGMA2_REF, sigma2_class[iclass].elem(i), i);
+            MDsigma.setValue(EMDL::MLMODEL_TAU2_REF, tau2_class[iclass].elem(i), i);
             // Only write orientabilities if they have been determined
             if (Xsize(orientability_contrib[iclass]) == Xsize(tau2_class[iclass]))
-            MDsigma.setValue(EMDL::MLMODEL_ORIENTABILITY_CONTRIBUTION, orientability_contrib[iclass](i), i);
+            MDsigma.setValue(EMDL::MLMODEL_ORIENTABILITY_CONTRIBUTION, orientability_contrib[iclass].elem(i), i);
         }
         MDsigma.write(fh);
     }
@@ -556,7 +556,7 @@ void MlModel::write(FileName fn_out, HealpixSampling &sampling, bool do_write_bi
             for (int i = 0; i < Xsize(sigma2_noise[igroup]); i++) {
                 MDsigma.addObject();
                 // Some points in sigma2_noise arrays are never used...
-                RFLOAT sigma = sigma2_noise[igroup](i);
+                RFLOAT sigma = sigma2_noise[igroup].elem(i);
                 if (sigma > 0.0) {
                     MDsigma.setValue(EMDL::SPECTRAL_IDX, i, i);
                     MDsigma.setValue(EMDL::RESOLUTION, getResolution(i), i);
@@ -590,7 +590,7 @@ void  MlModel::readTauSpectrum(FileName fn_tau, int verb) {
         idx = MDtau.getValue<int>(EMDL::SPECTRAL_IDX, i);
         val = MDtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF, i);
         if (idx < Xsize(tau2_class[0]))
-            tau2_class[0](idx) = tau2_fudge_factor * val;
+            tau2_class[0].elem(idx) = tau2_fudge_factor * val;
     }
     if (idx < Xsize(tau2_class[0]) - 1) {
         if (verb > 0) std::cerr << " Warning: provided tau2-spectrum has fewer entries ("<< idx + 1 << ") than needed (" << Xsize(tau2_class[0]) << "). Set rest to zero..." << std::endl;

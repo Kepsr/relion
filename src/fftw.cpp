@@ -326,26 +326,23 @@ void FourierTransformer::enforceHermitianSymmetry() {
     }
 }
 
-MultidimArray<RFLOAT> randomizePhasesBeyond(const MultidimArray<RFLOAT> &v, int index) {
-
-    MultidimArray<RFLOAT> copy = v;
+MultidimArray<RFLOAT> randomizePhasesBeyond(MultidimArray<RFLOAT> v, int index) {
     FourierTransformer transformer;
-    auto &FT = transformer.FourierTransform(copy);
-    FT = randomizePhasesBeyond(FT, index);
+    auto &FT = transformer.FourierTransform(v);
+    randomizePhasesBeyond(FT, index);
     return transformer.inverseFourierTransform(FT);
 }
 
-MultidimArray<Complex> randomizePhasesBeyond(const MultidimArray<Complex> &FT, int index) {
-
+void randomizePhasesBeyond(MultidimArray<Complex> &FT, int index) {
     const int index2 = index * index;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         if (euclidsq(ip, jp, kp) >= index2) {
-            const RFLOAT mag = abs(direct::elem(FT, i, j, k));
+            Complex &x = direct::elem(FT, i, j, k);
+            const RFLOAT mag = abs(x);
             const RFLOAT phase = rnd_unif(0.0, 2.0 * PI);
-            direct::elem(FT, i, j, k) = Complex(mag * cos(phase), mag * sin(phase));
+            x = Complex(mag * cos(phase), mag * sin(phase));
         }
     }
-    return FT;
 }
 
 // Fourier ring correlation -----------------------------------------------
@@ -368,13 +365,13 @@ MultidimArray<RFLOAT> getFSC(
         Complex z2 = direct::elem(FT2, i, j, k);
         RFLOAT absz1 = abs(z1);
         RFLOAT absz2 = abs(z2);
-        num(idx) += (conj(z1) * z2).real;
-        den1(idx) += absz1 * absz1;
-        den2(idx) += absz2 * absz2;
+        num.elem(idx) += (conj(z1) * z2).real;
+        den1.elem(idx) += absz1 * absz1;
+        den2.elem(idx) += absz2 * absz2;
     }
 
     for (int i = Xinit(fsc); i <= Xlast(fsc); i++) {
-        fsc(i) = num(i) / sqrt(den1(i) * den2(i));
+        fsc.elem(i) = num.elem(i) / sqrt(den1.elem(i) * den2.elem(i));
     }
     return fsc;
 
@@ -408,9 +405,9 @@ std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationA
         if (idx >= Xsize(FT1)) continue;
         RFLOAT abs1 = abs(direct::elem(FT1, i, j, k));
         RFLOAT abs2 = abs(direct::elem(FT2, i, j, k));
-        mu1(idx) += abs1;
-        mu2(idx) += abs2;
-        radial_count(idx)++;
+        mu1.elem(idx) += abs1;
+        mu2.elem(idx) += abs2;
+        radial_count.elem(idx)++;
 
         // Phases
         RFLOAT phas1 = degrees(direct::elem(FT1, i, j, k).arg());
@@ -418,16 +415,16 @@ std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationA
         RFLOAT delta_phas = phas1 - phas2;
         if (delta_phas > +180.0) { delta_phas -= 360.0; }
         if (delta_phas < -180.0) { delta_phas += 360.0; }
-        dpr(idx) += delta_phas * delta_phas * (abs1 + abs2);
-        num(idx) += abs1 + abs2;
+        dpr.elem(idx) += delta_phas * delta_phas * (abs1 + abs2);
+        num.elem(idx) += abs1 + abs2;
     }
 
     // Get average amplitudes in each shell for both maps
     for (int i = Xinit(mu1); i <= Xlast(mu1); i++) {
-        if (radial_count(i) > 0) {
-            mu1(i) /= radial_count(i);
-            mu2(i) /= radial_count(i);
-            dpr(i) = sqrt(dpr(i) / num(i));
+        if (radial_count.elem(i) > 0) {
+            mu1.elem(i) /= radial_count.elem(i);
+            mu2.elem(i) /= radial_count.elem(i);
+            dpr.elem(i) = sqrt(dpr.elem(i) / num.elem(i));
         }
     }
 
@@ -435,16 +432,16 @@ std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationA
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         const int idx = round(euclid(ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
-        const RFLOAT z1 = abs(direct::elem(FT1, i, j, k)) - mu1(idx);
-        const RFLOAT z2 = abs(direct::elem(FT2, i, j, k)) - mu2(idx);
-        acorr(idx) += z1 * z2;
-        sig1(idx)  += z1 * z1;
-        sig2(idx)  += z2 * z2;
+        const RFLOAT z1 = abs(direct::elem(FT1, i, j, k)) - mu1.elem(idx);
+        const RFLOAT z2 = abs(direct::elem(FT2, i, j, k)) - mu2.elem(idx);
+        acorr.elem(idx) += z1 * z2;
+        sig1.elem(idx)  += z1 * z1;
+        sig2.elem(idx)  += z2 * z2;
     }
 
     for (int i = Xinit(acorr); i <= Xlast(acorr); i++) {
-        const RFLOAT divisor = sqrt(sig1(i) * sig2(i));
-        if (divisor > 0.0) { acorr(i) /= divisor; } else { acorr(i) = 1.0; }
+        const RFLOAT divisor = sqrt(sig1.elem(i) * sig2.elem(i));
+        if (divisor > 0.0) { acorr.elem(i) /= divisor; } else { acorr.elem(i) = 1.0; }
     }
 
     return {acorr, dpr};
@@ -864,7 +861,7 @@ RFLOAT getKullbackLeiblerDivergence(
             } else if (ihis >= histogram_size) {
                 ihis = histogram_size - 1;
             }
-            histogram(ihis)++;
+            histogram.elem(ihis)++;
             // Imaginary part
             ihis = round(diff.imag * histogram_factor);
             if (ihis < 0) {
@@ -872,7 +869,7 @@ RFLOAT getKullbackLeiblerDivergence(
             } else if (ihis > histogram_size) {
                 ihis = histogram_size;
             }
-            histogram(ihis)++;
+            histogram.elem(ihis)++;
 
         }
     }
@@ -891,13 +888,13 @@ RFLOAT getKullbackLeiblerDivergence(
     q_i.resize(histogram_size);
     for (int i = 0; i < histogram_size; i++) {
         // Data distribution
-        p_i(i) = (RFLOAT) histogram(i) / norm;
+        p_i.elem(i) = (RFLOAT) histogram.elem(i) / norm;
         // Theoretical distribution
         RFLOAT x = (RFLOAT) i / histogram_factor;
-        q_i(i) = gaussian1D(x - sigma_max, 1.0 , 0.0) / gaussnorm;
+        q_i.elem(i) = gaussian1D(x - sigma_max, 1.0 , 0.0) / gaussnorm;
 
-        if (p_i(i) > 0.0)
-            kl_divergence += p_i(i) * log (p_i(i) / q_i(i));
+        if (p_i.elem(i) > 0.0)
+            kl_divergence += p_i.elem(i) * log (p_i.elem(i) / q_i.elem(i));
     }
     return kl_divergence / (RFLOAT) histogram_size;
 }
@@ -1323,7 +1320,7 @@ MultidimArray<RFLOAT> amplitudeOrPhaseMap(
         if (
             ip > Xinit(amp) && ip < Xlast(amp) &&
             jp > Yinit(amp) && jp < Ylast(amp) &&
-            ip * ip + jp * jp < maxr2
+            euclidsq(ip, jp) < maxr2
         ) {
             RFLOAT val = f(FFTW::elem(FT, ip, jp));
             amp.elem(ip, jp) = amp.elem(-ip, -jp) = val;
@@ -1336,9 +1333,7 @@ MultidimArray<RFLOAT> amplitudeOrPhaseMap(
 void helicalLayerLineProfile(
     const MultidimArray<RFLOAT> &v, std::string title, std::string fn_eps
 ) {
-    long int XYdim, maxr2;
     std::vector<RFLOAT> ampl_list, ampr_list, nr_pix_list;
-
 
     // TODO: DO I NEED TO ROTATE THE ORIGINAL MULTIDIMARRAY BY 90 DEGREES ?
 
@@ -1347,7 +1342,7 @@ void helicalLayerLineProfile(
     if (
         Xsize(out) != Ysize(out) || Zsize(out) > 1 || Nsize(out) > 1
     ) REPORT_ERROR("fftw.cpp::helicalLayerLineProfile(): ERROR MultidimArray should be 2D square.");
-    XYdim = Xsize(out);
+    long int XYdim = Xsize(out);
 
     // Fourier Transform
     FourierTransformer transformer;
@@ -1356,7 +1351,7 @@ void helicalLayerLineProfile(
 
     // Statistics
     out.setXmippOrigin();
-    maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
+    long int maxr2 = (XYdim - 1) * (XYdim - 1) / 4;
     ampl_list.resize(Xsize(FT) + 2);
     ampr_list.resize(Xsize(FT) + 2);
     nr_pix_list.resize(Xsize(FT) + 2);
@@ -1364,7 +1359,7 @@ void helicalLayerLineProfile(
         ampl_list[ii] = ampr_list[ii] = nr_pix_list[ii] = 0.0;
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(FT) {
-        if (ip * ip + jp * jp < maxr2 && ip > 0) {
+        if (euclidsq(ip, jp) < maxr2 && ip > 0) {
             nr_pix_list[jp] += 1.0;
             ampl_list[jp] += FFTW::elem(FT,  ip, jp).abs();
             ampr_list[jp] += FFTW::elem(FT, -ip, jp).abs();

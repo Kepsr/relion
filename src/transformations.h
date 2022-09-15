@@ -677,15 +677,15 @@ void radialAverage(
         int distance = rounding ? round(idx.modulus()) : floor(idx.modulus());
 
         // Sum te value to the pixels with the same distance
-        radial_mean(distance) += m.elem(i, j, k);
+        radial_mean.elem(distance) += m.elem(i, j, k);
 
         // Count the pixel
-        radial_count(distance)++;
+        radial_count.elem(distance)++;
     }
 
     // Perform the mean
     for (int i = Xinit(radial_mean); i <= Xlast(radial_mean); i++) {
-        radial_mean(i) /= (T) radial_count(i);
+        radial_mean.elem(i) /= (T) radial_count.elem(i);
     }
 }
 

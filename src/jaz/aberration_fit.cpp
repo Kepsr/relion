@@ -87,7 +87,7 @@ Image<RFLOAT> AberrationFit::draw(AberrationBasis *fit, double angpix, int s) {
             v += fit->coefficients[i] * vals[i];
         }
 
-        vis(yi, xi) = v;
+        vis.data.elem(yi, xi) = v;
     }
 
     return vis;

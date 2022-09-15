@@ -80,14 +80,14 @@ Image<RFLOAT> ConvolutionHelper::gaussianKernel2D(
             }
         }
 
-        out(yy, xx) = exp(-0.5 * (x * x + y * y) / s2);
-        sum += out(yy, xx);
+        out.data.elem(yy, xx) = exp(-0.5 * (x * x + y * y) / s2);
+        sum += out.data.elem(yy, xx);
     }
 
     if (normalize) {
         for (int yy = 0; yy < h; yy++)
         for (int xx = 0; xx < w; xx++) {
-            out(yy, xx) /= sum;
+            out.data.elem(yy, xx) /= sum;
         }
     }
 

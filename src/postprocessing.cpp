@@ -328,16 +328,16 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
 
     // First calculate radial average, to normalize the power spectrum
     const int radius = Xsize(FT);
-    MultidimArray<int> radial_count(radius);
+    MultidimArray<int> radial_count (radius);
     auto ravg = MultidimArray<RFLOAT>::zeros(radius);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
         const int idx = round(euclid(ip, jp, kp));
         if (idx >= radius) continue;
-        ravg(idx) += norm(direct::elem(FT, i, j, k));
-        radial_count(idx)++;
+        ravg.elem(idx) += norm(direct::elem(FT, i, j, k));
+        radial_count.elem(idx)++;
     }
     for (int i = Xinit(ravg); i <= Xlast(ravg); i++) {
-        if (radial_count(i) > 0) { ravg(i) /= radial_count(i); }
+        if (radial_count.elem(i) > 0) { ravg.elem(i) /= radial_count.elem(i); }
     }
 
     // Apply correction only beyond low-res fitting of B-factors
@@ -360,7 +360,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
         }
 
         // Apply correction on the spectrum-corrected values!
-        const RFLOAT x = norm(direct::elem(FT, i, j, k)) / ravg(idx);
+        const RFLOAT x = norm(direct::elem(FT, i, j, k)) / ravg.elem(idx);
           sum3d.elem(best_ipp, best_jpp, best_kpp) += x;
         count3d.elem(best_ipp, best_jpp, best_kpp) += 1;
     }

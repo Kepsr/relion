@@ -1342,7 +1342,7 @@ void MlOptimiser::initialise() {
             idx = MDsigma.getValue<int>(EMDL::SPECTRAL_IDX, i);
             RFLOAT val = MDsigma.getValue<RFLOAT>(EMDL::MLMODEL_SIGMA2_NOISE, i);
             if (idx < Xsize(mymodel.sigma2_noise[0]))
-                mymodel.sigma2_noise[0](idx) = val;
+                mymodel.sigma2_noise[0].elem(idx) = val;
         }
         if (idx < Xsize(mymodel.sigma2_noise[0]) - 1) {
             if (verb > 0)
@@ -2210,10 +2210,10 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             MultidimArray<Complex> &Faux = transformer.FourierTransform(img());
 
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
-                long int idx = round(sqrt(kp * kp + ip * ip + jp * jp));
+                long int idx = round(euclid(ip, jp, kp));
                 if (idx < spectral_size) {
-                    ind_spectrum(idx) += norm(direct::elem(Faux, i, j, k));
-                    count(idx) += 1.0;
+                    ind_spectrum.elem(idx) += norm(direct::elem(Faux, i, j, k));
+                    count.elem(idx) += 1.0;
                 }
             }
             ind_spectrum /= count;
@@ -2252,8 +2252,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 //A *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                 // Construct initial references from random subsets
                 MultidimArray<Complex> Fimg = windowFourierTransform(Faux, wsum_model.current_size);
-                CenterFFTbySign(Fimg);
-                Fctf.resize(Fimg);
+                Fctf.resize(CenterFFTbySign(Fimg));
                 Fctf = 1.0;
 
                 // Apply CTF if necessary (skip this for subtomograms!)
@@ -4037,8 +4036,8 @@ void MlOptimiser::maximizationOtherParameters() {
         // Use sampling.NrDirections() to include all directions (also those with zero prior probability for any given image)
         if (!do_skip_align && !do_skip_rotate && !do_sgd) {
             for (int idir = 0; idir < sampling.NrDirections(); idir++) {
-                mymodel.pdf_direction[iclass](idir) *= mu;
-                mymodel.pdf_direction[iclass](idir) += (1.0 - mu) * wsum_model.pdf_direction[iclass](idir) / sum_weight;
+                mymodel.pdf_direction[iclass].elem(idir) *= mu;
+                mymodel.pdf_direction[iclass].elem(idir) += (1.0 - mu) * wsum_model.pdf_direction[iclass].elem(idir) / sum_weight;
             }
         }
     }
@@ -4381,7 +4380,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
         // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
         // Exclude points beyond Xsize(Npix_per_shell), and exclude half of the x=0 column that is stored twice in FFTW
         if (ires < mymodel.ori_size / 2 + 1 && (jp != 0 || ip >= 0))
-            Npix_per_shell(ires) += 1;
+            Npix_per_shell.elem(ires) += 1;
     }
 
     // Also set sizes for the images in all optics groups
@@ -7684,7 +7683,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             int ires = myMresol[n];
                             int ires_remapped = round(remap_image_sizes * ires);
                             if (ires > 0 && ires_remapped < Xsize(mymodel.sigma2_noise[group_id])) {
-                                my_snr += norm(F1[n] - F2[n]) / (2 * sigma2_fudge * mymodel.sigma2_noise[group_id](ires_remapped));
+                                my_snr += norm(F1[n] - F2[n]) / (2 * sigma2_fudge * mymodel.sigma2_noise[group_id].elem(ires_remapped));
                             }
                         }
 
@@ -7694,9 +7693,9 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                                 int ires = myMresol[n];
                                 int ires_remapped = round(remap_image_sizes * ires);
                                 if (ires > 0 && ires_remapped < Xsize(mymodel.sigma2_noise[group_id]))
-                                    mymodel.orientability_contrib[iclass](ires_remapped) +=
+                                    mymodel.orientability_contrib[iclass].elem(ires_remapped) +=
                                         norm(F1[n] - F2[n]) /
-                                        (2 * sigma2_fudge * mymodel.sigma2_noise[group_id](ires_remapped));
+                                        (2 * sigma2_fudge * mymodel.sigma2_noise[group_id].elem(ires_remapped));
                             }
                         }
 

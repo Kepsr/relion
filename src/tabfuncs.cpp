@@ -29,7 +29,7 @@ void TabSine::fillTable(const int _nr_elem) {
     tabulatedValues.resize(_nr_elem);
     for (int i = 0; i < _nr_elem; i++) {
         RFLOAT xx = (RFLOAT) i * sampling;
-        tabulatedValues(i) = sin(xx);
+        tabulatedValues.elem(i) = sin(xx);
     }
 }
 
@@ -49,7 +49,7 @@ void TabCosine::fillTable(const int _nr_elem) {
     tabulatedValues.resize(_nr_elem);
     for (int i = 0; i < _nr_elem; i++) {
         RFLOAT xx = (RFLOAT) i * sampling;
-        tabulatedValues(i) = cos(xx);
+        tabulatedValues.elem(i) = cos(xx);
     }
 }
 
@@ -72,7 +72,7 @@ void TabBlob::fillTable(const int _nr_elem) {
     tabulatedValues.resize(_nr_elem);
     for (int i = 0; i < _nr_elem; i++) {
         RFLOAT xx = (RFLOAT) i * sampling;
-        tabulatedValues(i) = kaiser_value(xx, radius, alpha, order);
+        tabulatedValues.elem(i) = kaiser_value(xx, radius, alpha, order);
     }
 }
 // Value access
@@ -97,7 +97,7 @@ void TabFtBlob::fillTable(const int _nr_elem) {
     tabulatedValues.resize(_nr_elem);
     for (int i = 0; i < _nr_elem; i++) {
         RFLOAT xx = (RFLOAT) i * sampling;
-        tabulatedValues(i) = kaiser_Fourier_value(xx, radius, alpha, order);
+        tabulatedValues.elem(i) = kaiser_Fourier_value(xx, radius, alpha, order);
     }
 }
 

@@ -444,13 +444,13 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             }
 
             if (outPs == moviePs) {
-                out[p][f]() = fts[t].FourierTransform(aux0[t]());
+                out[p][f].data = fts[t].FourierTransform(aux0[t].data);
             } else {
-                aux1[t]() = fts[t].FourierTransform(aux0[t]());
-                out[p][f] = FilterHelper::cropCorner2D(aux1[t], squareSize/2+1, squareSize);
+                aux1[t].data = fts[t].FourierTransform(aux0[t].data);
+                out[p][f] = FilterHelper::cropCorner2D(aux1[t], squareSize / 2 + 1, squareSize);
             }
 
-            out[p][f](0,0) = Complex(0.0,0.0);
+            out[p][f].data.elem(0,0) = Complex(0.0, 0.0);
         }
     }
 
@@ -558,13 +558,13 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             }
 
             if (outPs == moviePs) {
-                out[p][f]() = fts[t].FourierTransform(aux0[t]());
+                out[p][f].data = fts[t].FourierTransform(aux0[t].data);
             } else {
-                aux1[t]() = fts[t].FourierTransform(aux0[t]());
+                aux1[t].data = fts[t].FourierTransform(aux0[t].data);
                 out[p][f] = FilterHelper::cropCorner2D(aux1[t], squareSize / 2 + 1, squareSize);
             }
 
-            out[p][f](0, 0) = Complex(0.0, 0.0);
+            out[p][f].data.elem(0, 0) = Complex(0.0, 0.0);
         }
     }
 
@@ -658,9 +658,9 @@ void StackHelper::varianceNormalize(
 
     for (int f = 0; f < fc; f++) {
         for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                movie[f](y,x) /= scale;
-            }
+        for (int x = 0; x < w; x++) {
+            movie[f].data.elem(y, x) /= scale;
+        }
         }
     }
 }

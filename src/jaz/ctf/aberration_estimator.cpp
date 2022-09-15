@@ -120,12 +120,12 @@ void AberrationEstimator::processMicrograph(
                 double zz = zobs.real * zprd.real + zobs.imag * zprd.imag;
                 double nr = zprd.norm();
 
-                Axx[t](y, x) += nr * sg * sg;
-                Axy[t](y, x) += nr * cg * sg;
-                Ayy[t](y, x) += nr * cg * cg;
+                Axx[t].data.elem(y, x) += nr * sg * sg;
+                Axy[t].data.elem(y, x) += nr * cg * sg;
+                Ayy[t].data.elem(y, x) += nr * cg * cg;
 
-                bx[t](y, x) -= zz * sg;
-                by[t](y, x) -= zz * cg;
+                bx[t].data.elem(y, x) -= zz * sg;
+                by[t].data.elem(y, x) -= zz * cg;
             }
         }
 
@@ -243,14 +243,14 @@ void AberrationEstimator::parametricFit(
 
                 d2Vector opt = Ai * b;
 
-                optXY(y, x) = Complex(opt.x, opt.y);
-                phase(y, x) = std::abs(opt.x) > 0.0 ? atan2(opt.y, opt.x) : 0.0;
-                wgh  (y, x) = wgh0(y, x) * sqrt(std::abs(det));
+                optXY.data.elem(y, x) = Complex(opt.x, opt.y);
+                phase.data.elem(y, x) = std::abs(opt.x) > 0.0 ? atan2(opt.y, opt.x) : 0.0;
+                wgh  .data.elem(y, x) = wgh0(y, x) * sqrt(std::abs(det));
             } else {
-                optXY(y, x) = 0.0;
-                phase(y, x) = 0.0;
-                wgh0 (y, x) = 0.0;
-                wgh  (y, x) = 0.0;
+                optXY.data.elem(y, x) = 0.0;
+                phase.data.elem(y, x) = 0.0;
+                wgh0 .data.elem(y, x) = 0.0;
+                wgh  .data.elem(y, x) = 0.0;
             }
         }
 
@@ -263,8 +263,8 @@ void AberrationEstimator::parametricFit(
                 double ra = s[og] * angpix[og] / rp;
 
                 if (ra > xring0 && ra <= xring1) {
-                    wgh0(y, x) = 0.0;
-                    wgh (y, x) = 0.0;
+                    wgh0.data.elem(y, x) = 0.0;
+                    wgh .data.elem(y, x) = 0.0;
                 }
             }
         }

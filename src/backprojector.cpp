@@ -872,21 +872,21 @@ MultidimArray<RFLOAT> BackProjector::calculateDownSampledFourierShellCorrelation
         const Complex z1 = avg1.elem(i, j, k);
         const Complex z2 = avg2.elem(i, j, k);
 
-        num (idx) += dot(z1, z2);
-        den1(idx) += z1.norm();
-        den2(idx) += z2.norm();
+        num .elem(idx) += dot(z1, z2);
+        den1.elem(idx) += z1.norm();
+        den2.elem(idx) += z2.norm();
     }
 
     for (int i = Xinit(fsc); i <= Xlast(fsc); i++) {
-        if (den1(i) * den2(i) > 0.0) {
-            fsc(i) = num(i) / sqrt(den1(i) * den2(i));
+        if (den1.elem(i) * den2.elem(i) > 0.0) {
+            fsc.elem(i) = num.elem(i) / sqrt(den1.elem(i) * den2.elem(i));
         }
     }
 
     // Always set zero-resolution shell to FSC=1
     // Raimond Ravelli reported a problem with FSC=1 at res=0 on 13feb2013...
     // (because of a suboptimal normalisation scheme, but anyway)
-    fsc(0) = 1.0;
+    fsc.elem(0) = 1.0;
     return fsc;
 }
 
@@ -1092,8 +1092,8 @@ MultidimArray<RFLOAT> BackProjector::externalReconstruct(
     for (int i = 0; i < Xsize(tau2); i++) {
         MDtau.addObject();
         MDtau.setValue(EMDL::SPECTRAL_IDX, i, i);
-        MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2(i), i);
-        MDtau.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves(i), i);
+        MDtau.setValue(EMDL::MLMODEL_TAU2_REF, tau2.elem(i), i);
+        MDtau.setValue(EMDL::MLMODEL_FSC_HALVES_REF, fsc_halves.elem(i), i);
     }
 
     {
@@ -1137,13 +1137,13 @@ MultidimArray<RFLOAT> BackProjector::externalReconstruct(
             if (idx >= Xsize(tau2_io)) continue;
 
             if (MDnewtau.containsLabel(EMDL::MLMODEL_TAU2_REF)) {
-                tau2_io(idx)       = MDnewtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF, i);
-                data_vs_prior(idx) = tau2_io(idx) / sigma2_ref(idx);
+                tau2_io.elem(idx)       = MDnewtau.getValue<RFLOAT>(EMDL::MLMODEL_TAU2_REF, i);
+                data_vs_prior.elem(idx) = tau2_io.elem(idx) / sigma2_ref.elem(idx);
             } else if (MDnewtau.containsLabel(EMDL::POSTPROCESS_FSC_GENERAL)) {
-                idx                = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX, i);
-                fsc_halves_io(idx) = MDnewtau.getValue<RFLOAT>(EMDL::POSTPROCESS_FSC_GENERAL, i);
+                idx                     = MDnewtau.getValue<int>(EMDL::SPECTRAL_IDX, i);
+                fsc_halves_io.elem(idx) = MDnewtau.getValue<RFLOAT>(EMDL::POSTPROCESS_FSC_GENERAL, i);
 
-                RFLOAT myfsc = std::max(0.001, fsc_halves_io(idx));
+                RFLOAT myfsc = std::max(0.001, fsc_halves_io.elem(idx));
                 if (iswhole) {
                     // Factor two because of twice as many particles
                     // Sqrt-term to get 60-degree phase errors....
@@ -1152,8 +1152,8 @@ MultidimArray<RFLOAT> BackProjector::externalReconstruct(
                 myfsc = std::min(0.999, myfsc);
                 RFLOAT myssnr = myfsc / (1.0 - myfsc);
                 myssnr *= tau2_fudge;
-                tau2_io(idx) = myssnr * sigma2_ref(idx);
-                data_vs_prior(idx) = myssnr;
+                tau2_io.elem(idx) = myssnr * sigma2_ref.elem(idx);
+                data_vs_prior.elem(idx) = myssnr;
             } else {
                 REPORT_ERROR("ERROR: output STAR file from external reconstruct does not contain tau2 or FSC array");
             }

@@ -707,8 +707,8 @@ class image_handler_parameters {
                     MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
                         long int idx = round(euclidsq(ip, jp, kp));
-                        spectrum(idx) += direct::elem(Iop(), i, j, k);
-                        count(idx) += 1.0;
+                        spectrum.elem(idx) += direct::elem(Iop(), i, j, k);
+                        count.elem(idx) += 1.0;
                     }
                     for (int i = Xinit(spectrum); i <= Xlast(spectrum); i++) {
                         if (count.elem(i) > 0.0)
@@ -718,7 +718,7 @@ class image_handler_parameters {
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
                         long int idx = round(euclidsq(ip, jp, kp));
                         if (idx > minr_ampl_corr) {
-                            direct::elem(Iop(), i, j, k) /= spectrum(idx);
+                            direct::elem(Iop(), i, j, k) /= spectrum.elem(idx);
                         } else {
                             direct::elem(Iop(), i, j, k) = 1.0;
                         }
@@ -732,9 +732,9 @@ class image_handler_parameters {
                         REPORT_ERROR("Error: operate-image is not of the correct size");
 
                 if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali) {
-                    avg_ampl.initZeros(zdim, ydim, xdim / 2 + 1);
+                    avg_ampl = MultidimArray<RFLOAT>::zeros(xdim / 2 + 1, ydim, zdim);
                 } else if (do_average || do_average_all_frames) {
-                    avg_ampl.initZeros(zdim, ydim, xdim);
+                    avg_ampl = MultidimArray<RFLOAT>::zeros(xdim, ydim, zdim);
                 }
             }
 
@@ -752,8 +752,7 @@ class image_handler_parameters {
             } else if (do_calc_com) {
                 Matrix1D <RFLOAT> com(3);
                 Iin.read(fn_img);
-                Iin().setXmippOrigin();
-                Iin().centerOfMass(com);
+                Iin().setXmippOrigin().centerOfMass(com);
                 std::cout << fn_img << " : center of mass (relative to XmippOrigin)"
                                                  " x " << XX(com);
                 if (com.size() > 1) std::cout << " y " << YY(com);
