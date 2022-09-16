@@ -182,7 +182,7 @@ class BackProjector: public Projector {
     void set2DFourierTransform(
         const MultidimArray<Complex> &img_in,
         const Matrix2D<RFLOAT> &A,
-        const MultidimArray<RFLOAT> *Mweight = NULL,
+        const MultidimArray<RFLOAT> *Mweight = nullptr,
         RFLOAT r_ewald_sphere = -1.0,
         RFLOAT curvature = +1.0,
         Matrix2D<RFLOAT> *magMatrix = 0
@@ -222,7 +222,7 @@ class BackProjector: public Projector {
     void backrotate2D(
         const MultidimArray<Complex> &img_in,
         const Matrix2D<RFLOAT> &A,
-        const MultidimArray<RFLOAT> *Mweight = NULL,
+        const MultidimArray<RFLOAT> *Mweight = nullptr,
         Matrix2D<RFLOAT>* magMatrix = 0
     );
 
@@ -233,7 +233,7 @@ class BackProjector: public Projector {
     void backrotate3D(
         const MultidimArray<Complex> &img_in,
         const Matrix2D<RFLOAT> &A,
-        const MultidimArray<RFLOAT> *Mweight = NULL
+        const MultidimArray<RFLOAT> *Mweight = nullptr
     );
 
     /*
@@ -243,7 +243,7 @@ class BackProjector: public Projector {
     void backproject2Dto3D(
         const MultidimArray<Complex> &img_in,
         const Matrix2D<RFLOAT> &A,
-        const MultidimArray<RFLOAT> *Mweight = NULL,
+        const MultidimArray<RFLOAT> *Mweight = nullptr,
         RFLOAT r_ewald_sphere = -1.0,
         RFLOAT curvature = +1.0,
         Matrix2D<RFLOAT> *magMatrix = 0
@@ -256,26 +256,21 @@ class BackProjector: public Projector {
     void backproject1Dto2D(
         const MultidimArray<Complex> &img_in,
         const Matrix2D<RFLOAT> &A,
-        const MultidimArray<RFLOAT> *Mweight = NULL
+        const MultidimArray<RFLOAT> *Mweight = nullptr
     );
 
     /*
      * Get only the lowest resolution components from the data and weight array
      * (to be joined together for two independent halves in order to force convergence in the same orientation)
      */
-    void getLowResDataAndWeight(
-        MultidimArray<Complex> &lowres_data, 
-        MultidimArray<RFLOAT> &lowres_weight,
-        int lowres_r_max
-    );
+    std::pair<MultidimArray<Complex>, MultidimArray<RFLOAT>> getLowResDataAndWeight(int lowres_r_max);
 
     /*
      * Set only the lowest resolution components from the data and weight array
      * (to be joined together for two independent halves in order to force convergence in the same orientation)
      */
     void setLowResDataAndWeight(
-        MultidimArray<Complex> &lowres_data, 
-        MultidimArray<RFLOAT> &lowres_weight,
+        MultidimArray<Complex> &lowres_data, MultidimArray<RFLOAT> &lowres_weight,
         int lowres_r_max
     );
 
@@ -290,8 +285,7 @@ class BackProjector: public Projector {
      * From two of the straightforward downsampled averages, calculate an FSC curve
      */
     MultidimArray<RFLOAT> calculateDownSampledFourierShellCorrelation(
-        const MultidimArray<Complex> &avg1,
-        const MultidimArray<Complex> &avg2
+        const MultidimArray<Complex> &avg1, const MultidimArray<Complex> &avg2
     ) const;
 
     void updateSSNRarrays(
@@ -308,7 +302,7 @@ class BackProjector: public Projector {
     /* Get the 3D reconstruction, but perform it through a system call outside relion_refine!
     */
     MultidimArray<RFLOAT> externalReconstruct(
-        FileName &fn_out,
+        const FileName &fn_out,
         MultidimArray<RFLOAT> &fsc_halves_io,
         MultidimArray<RFLOAT> &tau2_io,
         MultidimArray<RFLOAT> &sigma2_ref,

@@ -747,8 +747,7 @@ void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, l
 
     }
 
-    Min = transformer.inverseFourierTransform(Fin);
-    Min.setXmippOrigin();
+    Min = transformer.inverseFourierTransform(Fin).setXmippOrigin();
     if (do_recenter) {
         CenterFFT(Min, false);
     }
@@ -950,6 +949,22 @@ void cropInFourierSpace(MultidimArray<T> &Fref, MultidimArray<T> &Fbinned) {
             direct::elem(Fbinned, x, y) =  direct::elem(Fref, x, nfy - new_nfy + y);
         }
     }
+}
+
+static MultidimArray<RFLOAT> real(const MultidimArray<Complex>& arr) {
+    MultidimArray<RFLOAT> out (arr.xdim, arr.ydim, arr.zdim, arr.ndim);
+    for (long int n = 0; n < out.size(); n++) {
+        out[n] = arr[n].real;
+    }
+    return out;
+}
+
+static MultidimArray<RFLOAT> imag(const MultidimArray<Complex>& arr) {
+    MultidimArray<RFLOAT> out (arr.xdim, arr.ydim, arr.zdim, arr.ndim);
+    for (long int n = 0; n < out.size(); n++) {
+        out[n] = arr[n].imag;
+    }
+    return out;
 }
 
 struct pthread_lock_guard {

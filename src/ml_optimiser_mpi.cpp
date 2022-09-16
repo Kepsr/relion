@@ -2310,7 +2310,7 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
     RFLOAT myres = std::max(low_resol_join_halves, 1.0 / mymodel.current_resolution);
     int lowres_r_max = ceil(mymodel.ori_size * mymodel.pixel_size / myres);
 
-    for (int ibody = 0; ibody< mymodel.nr_bodies; ibody++) {
+    for (int ibody = 0; ibody < mymodel.nr_bodies; ibody++) {
         #ifdef DEBUG
         std::cerr << " ibody= " << ibody << " node->rank= " << node->rank << " mymodel.keep_fixed_bodies[ibody]= " << mymodel.keep_fixed_bodies[ibody] << std::endl;
         #endif
@@ -2325,9 +2325,9 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
         #endif
 
         if (node->rank == reconstruct_rank1 || node->rank == reconstruct_rank2) {
-            MultidimArray<Complex> lowres_data;
-            MultidimArray<RFLOAT>  lowres_weight;
-            wsum_model.BPref[ibody].getLowResDataAndWeight(lowres_data, lowres_weight, lowres_r_max);
+            auto lowResDataAndWeight = wsum_model.BPref[ibody].getLowResDataAndWeight(lowres_r_max);  // Structured bindings
+            auto &lowres_data = lowResDataAndWeight.first;
+            auto &lowres_weight = lowResDataAndWeight.second;
 
             if (node->rank == reconstruct_rank2) {
                 MPI_Status status;
@@ -2350,7 +2350,6 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
                 node->relion_MPI_Recv(lowres_data.data, 2 * lowres_data.size(),   relion_MPI::DOUBLE, reconstruct_rank1, MPITag::IMAGE,  MPI_COMM_WORLD, status);
                 node->relion_MPI_Recv(lowres_weight.data,   lowres_weight.size(), relion_MPI::DOUBLE, reconstruct_rank1, MPITag::RFLOAT, MPI_COMM_WORLD, status);
 
-
             } else if (node->rank == reconstruct_rank1) {
 
                 #ifdef DEBUG
@@ -2359,17 +2358,15 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
                 std::cout << " Averaging half-reconstructions up to " << myres << " Angstrom resolution to prevent diverging orientations ..." << std::endl;
                 std::cout << " Note that only for higher resolutions the FSC-values are according to the gold-standard!" << std::endl;
                 MPI_Status status;
-                MultidimArray<Complex> lowres_data_half2;
-                MultidimArray<RFLOAT>  lowres_weight_half2;
-                lowres_data_half2.resize(lowres_data);
-                lowres_weight_half2.resize(lowres_weight);
+                auto lowres_data_half2   = MultidimArray<Complex>(lowres_data.xdim,   lowres_data.ydim,   lowres_data.zdim,   lowres_data.ndim);
+                auto lowres_weight_half2 = MultidimArray<RFLOAT> (lowres_weight.xdim, lowres_weight.ydim, lowres_weight.zdim, lowres_weight.ndim);
                 #ifdef DEBUG
                 std::cerr << "AAArank=1 lowresdata: "; lowres_data.printShape();
                 std::cerr << "AAArank=1 lowresdata_half2: "; lowres_data_half2.printShape();
                 std::cerr << "RANK1B: node->rank= " << node->rank << std::endl;
                 #endif
                 // The first follower receives the average from the second follower
-                node->relion_MPI_Recv(lowres_data_half2.data, 2 * lowres_data_half2.size(), relion_MPI::DOUBLE, reconstruct_rank2, MPITag::IMAGE, MPI_COMM_WORLD, status);
+                node->relion_MPI_Recv(lowres_data_half2.data, 2 * lowres_data_half2.size(), relion_MPI::DOUBLE, reconstruct_rank2, MPITag::IMAGE,  MPI_COMM_WORLD, status);
                 node->relion_MPI_Recv(lowres_weight_half2.data, lowres_weight_half2.size(), relion_MPI::DOUBLE, reconstruct_rank2, MPITag::RFLOAT, MPI_COMM_WORLD, status);
 
                 // The first follower calculates the average of the two lowres_data and lowres_weight arrays
@@ -2378,10 +2375,8 @@ void MlOptimiserMpi::joinTwoHalvesAtLowResolution() {
                 std::cerr << "BBBrank=1 lowresdata_half2: "; lowres_data_half2.printShape();
                 #endif
                 for (long int n = 0; n < lowres_data.size(); n++) {
-                    lowres_data[n] += lowres_data_half2[n];
-                    lowres_data[n] /= 2.0;
-                    lowres_weight[n] += lowres_weight_half2[n];
-                    lowres_weight[n] /= 2.0;
+                    (lowres_data[n]   += lowres_data_half2[n])   /= 2.0;
+                    (lowres_weight[n] += lowres_weight_half2[n]) /= 2.0;
                 }
 
                 // The first follower sends the average lowres_data and lowres_weight also back to the second follower
@@ -2439,9 +2434,8 @@ void MlOptimiserMpi::reconstructUnregularisedMapAndCalculateSolventCorrectedFSC(
                 reconstruction = translate(reconstruction, mymodel.com_bodies[ibody], DONT_WRAP);
             }
 
-            reconstruction.setXmippOrigin();
             // Update header information
-            Image<RFLOAT> img (std::move(reconstruction));
+            Image<RFLOAT> img (std::move(reconstruction.setXmippOrigin()));
             img.setStatisticsInHeader();
             img.setSamplingRateInHeader(mymodel.pixel_size);
             // And write the resulting model to disc
@@ -2552,20 +2546,10 @@ void MlOptimiserMpi::writeTemporaryDataAndWeightArrays() {
                 FileName::compose(fn_root + "_body",  ibody + 1,  "", 3) :
                 FileName::compose(fn_root + "_class", iclass + 1, "", 3) ;
             if (mymodel.pdf_class[iclass] > 0.0) {
-                const auto &data = wsum_model.BPref[ith_recons].data;
-                Image<RFLOAT> Ireal;
-                Ireal().resize(data);
-                for (long int n = 0; n < data.size(); n++) {
-                    Ireal()[n] = data[n].real;
-                }
-                Ireal.write(fn_tmp + "_data_real.mrc");
-                Image<RFLOAT> Iimag;
-                Iimag().resize(data);
-                for (long int n = 0; n < data.size(); n++) {
-                    Iimag()[n] = data[n].imag;
-                }
-                Iimag.write(fn_tmp + "_data_imag.mrc");
-                Image<RFLOAT>(wsum_model.BPref[ith_recons].weight).write(fn_tmp + "_weight.mrc");
+                const auto &bp = wsum_model.BPref[ith_recons];
+                Image<RFLOAT>(real(bp.data)).write(fn_tmp + "_data_real.mrc");
+                Image<RFLOAT>(imag(bp.data)).write(fn_tmp + "_data_imag.mrc");
+                Image<RFLOAT>(bp.weight).write(fn_tmp + "_weight.mrc");
             }
         }
         }

@@ -413,9 +413,7 @@ MultidimArray<RFLOAT> pad_ctf(
             const int jp = Fourier::J(result, j);
             // Don't take the last column from the half-transform
             for (int i = 0; i < Xsize(result) - 1; i++) {
-                // Make just one lookup on Mctf.data
-                RFLOAT mctfipj = Mctf.elem(i, jp);
-                direct::elem(result, i, j) = g(mctfipj);
+                direct::elem(result, i, j) = g(Mctf.elem(i, jp));
             }
         }
     }
@@ -433,7 +431,7 @@ MultidimArray<RFLOAT> CtfHelper::getFftwImage_padded(
     bool do_abs, bool do_only_flip_phases, bool do_intact_until_first_peak,
     bool do_damping, bool do_intact_after_first_peak
 ) {
-    bool ctf_premultiplied = obsModel && obsModel->getCtfPremultiplied(opticsGroup);
+    const bool ctf_premultiplied = obsModel && obsModel->getCtfPremultiplied(opticsGroup);
 
     int factor = ctf_premultiplied ? 4 : 2;
     // 2× padding (increased to 4× padding for pre-multiplied CTFs)
@@ -461,11 +459,12 @@ Complex _get_ctfp_(
 ) {
     RFLOAT x = (RFLOAT) ip / xs;
     RFLOAT y = (RFLOAT) jp / ys;
-    RFLOAT myangle = x * x + y * y > 0 ? acos(y / Pythag(x, y)) : 0; // dot-product with Y-axis: (0, 1)
+    const RFLOAT z2 = euclidsq(x, y);
+    const RFLOAT theta = z2 > 0 ? acos(y / z2) : 0; // dot-product with Y-axis: (0, 1)
 
     if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
     Complex ctfp = ctf.getCTFP(x, y, gamma_offset);
-    return (myangle >= anglerad) == is_positive ? ctfp : ctfp.conj();
+    return (theta >= anglerad) == is_positive ? ctfp : ctfp.conj();
 }
 
 // Generate a complete CTFP (complex) image (with sector along angle) ---------
@@ -478,7 +477,7 @@ MultidimArray<Complex> CtfHelper::getCTFPImage(
     if (angle < 0.0 || angle >= 360.0)
         REPORT_ERROR("CTF::getCTFPImage: angle should be in the interval [0,360)");
 
-    MultidimArray<Complex> result(Xdim, Ydim);
+    MultidimArray<Complex> result (Xdim, Ydim);
 
     // Flip angles greater than 180 degrees
     if (angle >= 180.0) {
@@ -542,25 +541,23 @@ MultidimArray<RFLOAT> CtfHelper::getCenteredImage(
     RFLOAT xs = (RFLOAT) Xsize(result) * Tm;
     RFLOAT ys = (RFLOAT) Ysize(result) * Tm;
 
-    // Maybe use the absolute value
-    auto f = do_abs ? [] (RFLOAT x) -> RFLOAT { return abs(x); }
-                    : [] (RFLOAT x) -> RFLOAT { return x; };
+    const auto maybe_do_abs = do_abs ?
+        [] (RFLOAT x) -> RFLOAT { return abs(x); } :
+        [] (RFLOAT x) -> RFLOAT { return x; };
 
-
-    // Maybe apply magnification
-    auto g = obsModel ? [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup)); }
-                      : [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void {};
+    const auto maybe_apply_magnification = obsModel ?
+        [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup)); } :
+        [] (ObservationModel *obsModel, int opticsGroup, RFLOAT &x, RFLOAT &y) -> void {};
 
     FOR_ALL_ELEMENTS_IN_ARRAY2D(result, i, j) {
         RFLOAT x = (RFLOAT) i / xs;
         RFLOAT y = (RFLOAT) j / ys;
-        g(obsModel, opticsGroup, x, y);
-        RFLOAT t = ctf.getCTF(
+        maybe_apply_magnification(obsModel, opticsGroup, x, y);
+        result.elem(i, j) = maybe_do_abs(ctf.getCTF(
             x, y,
             do_only_flip_phases, do_intact_until_first_peak,
             do_damping, 0.0, do_intact_after_first_peak
-        );
-        result.elem(i, j) = f(t);
+        ));
     }
     return result;
 }
@@ -581,9 +578,13 @@ MultidimArray<RFLOAT> CtfHelper::get1DProfile(
     auto g = obsModel ? [] (ObservationModel *obsModel, int opticsGroup, RFLOAT x, RFLOAT y) -> void { obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup)); }
                       : [] (ObservationModel *obsModel, int opticsGroup, RFLOAT x, RFLOAT y) -> void {};
 
-    for (int i = Xinit(result); i <= Xlast(result); i++) {
-        RFLOAT x = (RFLOAT) i * cos(radians(angle)) / xs;
-        RFLOAT y = (RFLOAT) i * sin(radians(angle)) / xs;
+    const auto theta = radians(angle);
+    const auto costpp = cos(theta) / xs;
+    const auto sintpp = sin(theta) / xs;
+
+    for (RFLOAT i = Xinit(result); i <= Xlast(result); i++) {
+        RFLOAT x = i * costpp;
+        RFLOAT y = i * sintpp;
         g(obsModel, opticsGroup, x, y);
         RFLOAT t = ctf.getCTF(
             x, y,
