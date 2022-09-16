@@ -51,7 +51,7 @@ void ParticleSubtractor::read(int argc, char **argv) {
     if (parser.checkForErrors())
         REPORT_ERROR("Errors encountered on the command line (see above), exiting...");
 
-    if ((fn_opt == "") == (fn_revert == ""))
+    if (fn_opt.empty() == fn_revert.empty())
         REPORT_ERROR("Please specify only one of --i OR --revert");
 }
 
@@ -84,11 +84,11 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
 
     if (rank > 0) verb = 0;
 
-    if (fn_revert != "")
+    if (!fn_revert.empty())
         return;
 
     // Make directory for output particles
-    if (fn_out[fn_out.length()-1] != '/') fn_out += "/";
+    if (fn_out[fn_out.length() - 1] != '/') fn_out += "/";
     if (verb > 0) {
         int res = system(("mkdir -p " + fn_out + "Particles").c_str());
     }
@@ -99,7 +99,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
     // Overwrite the particles STAR file with a smaller subset
     if (!fn_sel.empty()) {
         opt.mydata.clear();
-        bool is_helical_segment = opt.do_helical_refine || (opt.mymodel.ref_dim == 2 && opt.helical_tube_outer_diameter > 0.0);
+        bool is_helical_segment = opt.do_helical_refine || opt.mymodel.ref_dim == 2 && opt.helical_tube_outer_diameter > 0.0;
         opt.mydata.read(fn_sel, false, false, false, is_helical_segment);
     }
 
@@ -154,21 +154,21 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         // It will be used to make all Abody orientation matrices relative to (0,90,0) instead of the more logical (0,0,0)
         // This is useful, as psi-priors are ill-defined around tilt=0, as rot becomes the same as -psi!!
         A_rot90 = rotation3DMatrix(-90.0, 'Y', false);
-        A_rot90T = A_rot90.transpose();
 
         // Find out which body has the biggest overlap with the keepmask, use these orientations
         RFLOAT best_overlap = 0.0;
         subtract_body = -1;
         for (int ibody = 0; ibody < opt.mymodel.nr_bodies; ibody++) {
-            if (!Imask().sameShape(opt.mymodel.masks_bodies[ibody])) {
+            auto &body = opt.mymodel.masks_bodies[ibody];
+            if (!Imask().sameShape(body)) {
                 Imask().printShape();
-                opt.mymodel.masks_bodies[ibody].printShape();
+                body.printShape();
                 REPORT_ERROR("ERROR: input mask is not of same shape as body masks.");
             }
 
             RFLOAT overlap = 0.0;
             for (long int n = 0; n < Imask().size(); n++)
-                overlap += opt.mymodel.masks_bodies[ibody][n] * Imask()[n];
+                overlap += body[n] * Imask()[n];
 
             if (overlap > best_overlap) {
                 best_overlap = overlap;
@@ -181,21 +181,23 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
         // Apply the inverse of the keepmask to all the mask_bodies
         for (int obody = 0; obody < opt.mymodel.nr_bodies; obody++) {
             int ii = direct::elem(opt.mymodel.pointer_body_overlap, subtract_body, obody);
+            auto &body = opt.mymodel.masks_bodies[ii];
             for (long int n = 0; n < Imask().size(); n++) {
-                opt.mymodel.masks_bodies[ii][n] *= 1.0 - Imask()[n];
+                body[n] *= 1.0 - Imask()[n];  // Expression templates
             }
         }
     } else {
         // For normal refinement/classification: just apply the inverse of keepmask to the references
         for (int iclass = 0; iclass < opt.mymodel.nr_classes; iclass++) {
-            if (!Imask().sameShape(opt.mymodel.Iref[iclass])) {
+            auto &class_ = opt.mymodel.Iref[iclass];
+            if (!Imask().sameShape(class_)) {
                 Imask().printShape();
-                opt.mymodel.Iref[iclass].printShape();
+                class_.printShape();
                 REPORT_ERROR("ERROR: input mask is not of same shape as reference inside the optimiser.");
             }
 
             for (long int n = 0; n < Imask().size(); n++) {
-                opt.mymodel.Iref[iclass][n] *= 1.0 - Imask()[n];
+                class_[n] *= 1.0 - Imask()[n];  // Expression templates
             }
         }
     }
@@ -226,7 +228,7 @@ void ParticleSubtractor::revert() {
     // Swap image names
     for (long int i : MD) {
         const FileName f1 = MD.getValue<std::string>(EMDL::IMAGE_ORI_NAME, i);
-        const FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME, i);
+        const FileName f2 = MD.getValue<std::string>(EMDL::IMAGE_NAME,     i);
         MD.setValue(EMDL::IMAGE_ORI_NAME, f2, i);
         MD.setValue(EMDL::IMAGE_NAME,     f1, i);
     }
@@ -408,10 +410,9 @@ void ParticleSubtractor::subtractOneParticle(
     long int part_id, long int imgno, long int counter
 ) {
     // Read the particle image
-    Image<RFLOAT> img;
     long int ori_img_id = opt.mydata.particles[part_id].images[imgno].id;
     int optics_group = opt.mydata.getOpticsGroup(part_id, 0);
-    img.read(opt.mydata.particles[part_id].images[0].name);
+    auto img = Image<RFLOAT>::from_filename(opt.mydata.particles[part_id].images[0].name);
     img().setXmippOrigin();
 
     // Make sure gold-standard is adhered to!
@@ -426,7 +427,7 @@ void ParticleSubtractor::subtractOneParticle(
     RFLOAT remap_image_sizes = (opt.mymodel.ori_size * opt.mymodel.pixel_size) / (Xsize(img()) * my_pixel_size);
     Matrix1D<RFLOAT> my_old_offset(3), my_residual_offset(3), centering_offset(3);
     Matrix2D<RFLOAT> Aori;
-    RFLOAT rot, tilt, psi, xoff, yoff, zoff, mynorm, scale;
+    RFLOAT xoff, yoff, zoff, mynorm, scale;
     int myclass = 0;
     if (!ignore_class && opt.mydata.MDimg.containsLabel(EMDL::PARTICLE_CLASS)) {
         myclass = opt.mydata.MDimg.getValue<int>(EMDL::PARTICLE_CLASS, ori_img_id);
@@ -436,9 +437,9 @@ void ParticleSubtractor::subtractOneParticle(
         }
         myclass--; // Count from zero instead of one
     }
-    rot               = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
-    tilt              = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
-    psi               = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
+    RFLOAT rot        = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
+    RFLOAT tilt       = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
+    RFLOAT psi        = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
     XX(my_old_offset) = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
     YY(my_old_offset) = opt.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
     if (opt.mymodel.data_dim == 3)
@@ -474,17 +475,15 @@ void ParticleSubtractor::subtractOneParticle(
     }
 
     // Now that the particle is centered (for multibody), get the FourierTransform of the particle
-    MultidimArray<RFLOAT> Fctf;
     FourierTransformer transformer;
     MultidimArray<Complex> Fimg = transformer.FourierTransform(img());
     CenterFFTbySign(Fimg);
-    Fctf.resize(Fimg);
+    auto Fctf = MultidimArray<RFLOAT>::ones(Fimg.xdim, Fimg.ydim, Fimg.zdim, Fimg.ndim);
 
     if (opt.do_ctf_correction) {
         if (opt.mymodel.data_dim == 3) {
             FileName fn_ctf = opt.mydata.MDimg.getValue<std::string>(EMDL::CTF_IMAGE, ori_img_id);
-            Image<RFLOAT> Ictf;
-            Ictf.read(fn_ctf);
+            auto Ictf = Image<RFLOAT>::from_filename(fn_ctf);
 
             if (Xsize(Ictf()) == Ysize(Ictf())) {
                 // If there is a redundant half, get rid of it
@@ -509,8 +508,6 @@ void ParticleSubtractor::subtractOneParticle(
                 opt.ctf_phase_flipped, false, opt.intact_ctf_first_peak, true
             );
         }
-    } else {
-        Fctf = 1.0;
     }
 
     MultidimArray<Complex> Fsubtrahend = MultidimArray<Complex>::zeros(Fimg);
@@ -537,7 +534,7 @@ void ParticleSubtractor::subtractOneParticle(
             Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
             if (obody == subtract_body) { Aresi_subtract = Aresi; }
             // The real orientation to be applied is the obody transformation applied and the original one
-            Matrix2D<RFLOAT> Abody = Aori * (opt.mymodel.orient_bodies[obody]).transpose() * A_rot90 * Aresi * opt.mymodel.orient_bodies[obody];
+            Matrix2D<RFLOAT> Abody = Aori * opt.mymodel.orient_bodies[obody].transpose() * A_rot90 * Aresi * opt.mymodel.orient_bodies[obody];
             // Apply anisotropic mag and scaling
             if (opt.mydata.obsModel.hasMagMatrices) {
                 Abody *= opt.mydata.obsModel.anisoMag(optics_group);
@@ -554,7 +551,7 @@ void ParticleSubtractor::subtractOneParticle(
 
             // Projected COM for this body (using Aori, just like above for ibody and my_projected_com!!!)
             Matrix1D<RFLOAT> other_projected_com(3);
-            other_projected_com = Aori * (opt.mymodel.com_bodies[obody]);
+            other_projected_com = Aori * opt.mymodel.com_bodies[obody];
 
             // Subtract refined obody-displacement
             other_projected_com -= body_offset;
@@ -572,19 +569,15 @@ void ParticleSubtractor::subtractOneParticle(
         }
 
         // Set orientations back into the original RELION system of coordinates
-        Matrix2D<RFLOAT> Abody;
 
         // Write out the rot, tilt, psi as the combination of Aori and Aresi!! So get rid of the rotations around the tilt=90 axes,
-        Abody = Aori * (opt.mymodel.orient_bodies[subtract_body]).transpose() * A_rot90 * Aresi_subtract * opt.mymodel.orient_bodies[subtract_body];
+        Matrix2D<RFLOAT> Abody = Aori * opt.mymodel.orient_bodies[subtract_body].transpose() * A_rot90 * Aresi_subtract * opt.mymodel.orient_bodies[subtract_body];
         angles_t angles = Euler::matrix2angles(Abody);
-        rot = angles.rot;
-        tilt = angles.tilt;
-        psi = angles.psi;
 
         // Store the optimal orientations in the MDimg table
-        opt.mydata.MDimg.setValue(EMDL::ORIENT_ROT,  rot,  ori_img_id);
-        opt.mydata.MDimg.setValue(EMDL::ORIENT_TILT, tilt, ori_img_id);
-        opt.mydata.MDimg.setValue(EMDL::ORIENT_PSI,  psi,  ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_ROT,  angles.rot,  ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_TILT, angles.tilt, ori_img_id);
+        opt.mydata.MDimg.setValue(EMDL::ORIENT_PSI,  angles.psi,  ori_img_id);
 
         // Also get refined offset for this body
         XX(my_refined_ibody_offset) = opt.mydata.MDbodies[subtract_body].getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
@@ -595,8 +588,7 @@ void ParticleSubtractor::subtractOneParticle(
         my_refined_ibody_offset /= my_pixel_size;
 
         // re-center to new_center
-        my_residual_offset += my_refined_ibody_offset;
-        my_residual_offset += Abody * (opt.mymodel.com_bodies[subtract_body] - new_center * opt.mymodel.pixel_size / my_pixel_size);
+        my_residual_offset += my_refined_ibody_offset + Abody * (opt.mymodel.com_bodies[subtract_body] - new_center * opt.mymodel.pixel_size / my_pixel_size);
     } else {
         // Normal 3D classification/refinement: get the projection in rot,tilt,psi for the corresponding class
         Matrix2D<RFLOAT> A3D_pure_rot = Euler::angles2matrix(rot, tilt, psi);
@@ -620,17 +612,14 @@ void ParticleSubtractor::subtractOneParticle(
         }
     }
 
-
     // Apply the CTF to the subtrahend projection
     if (opt.do_ctf_correction) {
         if (opt.mydata.obsModel.getCtfPremultiplied(optics_group)) {
             for (long int n = 0; n < Fsubtrahend.size(); n++) {
-                Fsubtrahend.data[n] *= Fctf.data[n] * Fctf.data[n];
+                Fsubtrahend[n] *= Fctf[n] * Fctf[n];  // Expression templates
             }
         } else {
-            for (long int n = 0; n < Fsubtrahend.size(); n++) {
-                Fsubtrahend.data[n] *= Fctf.data[n];
-            }
+            Fsubtrahend *= Fctf;
         }
 
         // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
@@ -640,11 +629,10 @@ void ParticleSubtractor::subtractOneParticle(
         // true means do_multiply_instead
     }
 
-
     if (opt.do_scale_correction) {
         int group_id = opt.mydata.getGroupId(part_id, 0);
         RFLOAT scale = opt.mymodel.scale_correction[group_id];
-        for (auto &x : Fsubtrahend) { x *= scale; }
+        Fsubtrahend *= scale;
     }
 
     // Do the actual subtraction

@@ -402,9 +402,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         }
     }
 
-    MultidimArray<RFLOAT> Fctf;
-    Fctf.resize(F2D);
-    Fctf = 1.0;
+    auto Fctf = MultidimArray<RFLOAT>::ones(F2D.xdim, F2D.ydim, F2D.zdim, F2D.ndim);
     MultidimArray<Complex> F2DP, F2DQ;
 
     // Apply CTF if necessary
@@ -523,11 +521,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
                 name = image_path + "/" + name.substr(name.find_last_of("/") + 1);
             }
 
-            std::string wghName = name;
-            wghName = wghName.substr(0, wghName.find_last_of('.')) + "_weight.mrc";
-
-            Image<RFLOAT> wgh;
-            wgh.read(wghName);
+            const std::string wghName = name.substr(0, name.find_last_of('.')) + "_weight.mrc";
+            auto wgh = Image<RFLOAT>::from_filename(wghName);
 
             if (
                 Fctf.ndim != wgh().ndim ||
@@ -587,8 +582,7 @@ void Reconstructor::reconstruct() {
     Image<RFLOAT> vol;
     if (do_reconstruct_ctf) {
 
-        vol().initZeros(ctf_dim, ctf_dim, ctf_dim);
-        vol().setXmippOrigin();
+        vol() = MultidimArray<RFLOAT>::zeros(ctf_dim, ctf_dim, ctf_dim).setXmippOrigin();
 
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol(), i, j, k) {
             int jp = j;
@@ -617,19 +611,10 @@ void Reconstructor::reconstruct() {
     } else {
 
         if (do_debug) {
-            Image<RFLOAT> It;
-            FileName fn_tmp = fn_out.withoutExtension();
-            It().resize(backprojector.data);
-            for (long int n = 0; n < It().size(); n++) {
-                It()[n] = backprojector.data[n].real;
-            }
-            It.write(fn_tmp + "_data_real.mrc");
-            for (long int n = 0; n < It().size(); n++) {
-                It()[n] = backprojector.data[n].imag;
-            }
-            It.write(fn_tmp + "_data_imag.mrc");
-            It() = backprojector.weight;
-            It.write(fn_tmp + "_weight.mrc");
+            const std::string name = fn_out.withoutExtension();
+            Image<RFLOAT>(real(backprojector.data)).write(name + "_data_real.mrc");
+            Image<RFLOAT>(imag(backprojector.data)).write(name + "_data_imag.mrc");
+            Image<RFLOAT>(backprojector.weight).write(name + "_weight.mrc");
         }
 
         MultidimArray<RFLOAT> tau2, tmp;
@@ -734,7 +719,7 @@ void Reconstructor::applyCTFPandCTFQ(
                 // Only take the relevant sector now...
                 if (do_wrap_max) {
                     if (theta >= anglemin) {
-                        direct::elem(myCTFPorQ, i, j) = direct::elem(Fapp, i, j);
+                        direct::elem(myCTFPorQ,  i, j) = direct::elem(Fapp, i, j);
                     } else if (theta < anglemax) {
                         direct::elem(myCTFPorQb, i, j) = direct::elem(Fapp, i, j);
                     }
