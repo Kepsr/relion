@@ -47,155 +47,148 @@ int TIMING_INIT2  = proj_timer.setNew("PROJECTOR - init2");
 using namespace gravis;
 
 
-void trilinear(
-    RFLOAT &xp, RFLOAT &yp, RFLOAT &zp, const MultidimArray<Complex> &data,
-    MultidimArray<Complex> &f2d, int x, int i
-) {
-    // Only asymmetric half is stored
+struct Trilinear {
 
-    bool is_neg_x = xp < 0;
+    static Complex interpolate(
+        const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp, RFLOAT zp, 
+        Complex fallback
+    ) {
+        // Only asymmetric half is stored
+        bool is_neg_x = xp < 0;
 
-    if (is_neg_x) {
-        // Get complex conjugate hermitian symmetry pair
-        xp = -xp;
-        yp = -yp;
-        zp = -zp;
+        if (is_neg_x) {
+            // Get complex conjugate hermitian symmetry pair
+            xp = -xp;
+            yp = -yp;
+            zp = -zp;
+        }
+
+        // Trilinear interpolation (with physical coords)
+        // Subtract Yinit and Zinit to accelerate access to src (Xinit=0)
+        // In that way use direct::elem, rather than A3D_ELEM
+        const int x0 = floor(xp);
+        const RFLOAT fx = xp - x0;
+        const int x1 = x0 + 1;
+
+        int y0 = floor(yp);
+        const RFLOAT fy = yp - y0;
+        y0 -= Yinit(src);
+        const int y1 = y0 + 1;
+
+        int z0 = floor(zp);
+        const RFLOAT fz = zp - z0;
+        z0 -= Zinit(src);
+        const int z1 = z0 + 1;
+
+        // Avoid reading outside the box
+        if (
+            x0 < 0 || x0 + 1 >= src.xdim ||
+            y0 < 0 || y0 + 1 >= src.ydim ||
+            z0 < 0 || z0 + 1 >= src.zdim
+        ) return fallback;
+
+        // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
+        const Complex d000 = direct::elem(src, x0, y0, z0);
+        const Complex d001 = direct::elem(src, x1, y0, z0);
+        const Complex d010 = direct::elem(src, x0, y1, z0);
+        const Complex d011 = direct::elem(src, x1, y1, z0);
+        const Complex d100 = direct::elem(src, x0, y0, z1);
+        const Complex d101 = direct::elem(src, x1, y0, z1);
+        const Complex d110 = direct::elem(src, x0, y1, z1);
+        const Complex d111 = direct::elem(src, x1, y1, z1);
+
+        // Set the interpolated value in the 2D output array
+        const Complex dx00 = LIN_INTERP(fx, d000, d001);
+        const Complex dx01 = LIN_INTERP(fx, d100, d101);
+        const Complex dx10 = LIN_INTERP(fx, d010, d011);
+        const Complex dx11 = LIN_INTERP(fx, d110, d111);
+        const Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
+        const Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
+
+        const auto w = LIN_INTERP(fz, dxy0, dxy1);
+        return is_neg_x ? conj(w) : w;  // Take complex conjugate for half with negative x
     }
 
-    // Trilinear interpolation (with physical coords)
-    // Subtract Yinit and Zinit to accelerate access to data (Xinit=0)
-    // In that way use direct::elem, rather than A3D_ELEM
-    const int x0 = floor(xp);
-    const RFLOAT fx = xp - x0;
-    const int x1 = x0 + 1;
+    static Complex interpolate(const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp) {
+        // Only asymmetric half is stored
+        const bool is_neg_x = xp < 0;
 
-    int y0 = floor(yp);
-    const RFLOAT fy = yp - y0;
-    y0 -= Yinit(data);
-    const int y1 = y0 + 1;
+        if (is_neg_x) {
+            // Get complex conjugate hermitian symmetry pair
+            xp = -xp;
+            yp = -yp;
+        }
 
-    int z0 = floor(zp);
-    const RFLOAT fz = zp - z0;
-    z0 -= Zinit(data);
-    const int z1 = z0 + 1;
+        // Trilinear interpolation (with physical coords)
+        // Subtract Yinit to accelerate access to src (Xinit=0)
+        // In that way use direct::elem, rather than A3D_ELEM
+        const int x0 = floor(xp);
+        const RFLOAT fx = xp - x0;
+        const int x1 = x0 + 1;
 
-    // Avoid reading outside the box
-    if (
-        x0 < 0 || x0 + 1 >= data.xdim ||
-        y0 < 0 || y0 + 1 >= data.ydim ||
-        z0 < 0 || z0 + 1 >= data.zdim
-    ) return;
+        int y0 = floor(yp);
+        const RFLOAT fy = yp - y0;
+        y0 -= Yinit(src);
+        const int y1 = y0 + 1;
 
-    // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-    const Complex d000 = direct::elem(data, x0, y0, z0);
-    const Complex d001 = direct::elem(data, x1, y0, z0);
-    const Complex d010 = direct::elem(data, x0, y1, z0);
-    const Complex d011 = direct::elem(data, x1, y1, z0);
-    const Complex d100 = direct::elem(data, x0, y0, z1);
-    const Complex d101 = direct::elem(data, x1, y0, z1);
-    const Complex d110 = direct::elem(data, x0, y1, z1);
-    const Complex d111 = direct::elem(data, x1, y1, z1);
+        // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
+        const Complex d00 = direct::elem(src, x0, y0);
+        const Complex d01 = direct::elem(src, x1, y0);
+        const Complex d10 = direct::elem(src, x0, y1);
+        const Complex d11 = direct::elem(src, x1, y1);
 
-    // Set the interpolated value in the 2D output array
-    const Complex dx00 = LIN_INTERP(fx, d000, d001);
-    const Complex dx01 = LIN_INTERP(fx, d100, d101);
-    const Complex dx10 = LIN_INTERP(fx, d010, d011);
-    const Complex dx11 = LIN_INTERP(fx, d110, d111);
-    const Complex dxy0 = LIN_INTERP(fy, dx00, dx10);
-    const Complex dxy1 = LIN_INTERP(fy, dx01, dx11);
+        // Set the interpolated value in the 2D output array
+        const Complex dx0 = LIN_INTERP(fx, d00, d01);
+        const Complex dx1 = LIN_INTERP(fx, d10, d11);
 
-    direct::elem(f2d, i, x) = LIN_INTERP(fz, dxy0, dxy1);
-
-    // Take complex conjugate for half with negative x
-    if (is_neg_x) direct::elem(f2d, i, x) = conj(direct::elem(f2d, i, x));
-}
-
-
-void trilinear(
-    RFLOAT &xp, RFLOAT &yp, const MultidimArray<Complex> &data,
-    MultidimArray<Complex> &f1d, int x
-) {
-    // Only asymmetric half is stored
-    const bool is_neg_x = xp < 0;
-
-    if (is_neg_x) {
-        // Get complex conjugate hermitian symmetry pair
-        xp = -xp;
-        yp = -yp;
+        const auto w = LIN_INTERP(fy, dx0, dx1);
+        return is_neg_x ? conj(w) : w;  // Take complex conjugate for half with negative x
     }
 
-    // Trilinear interpolation (with physical coords)
-    // Subtract Yinit to accelerate access to data (Xinit=0)
-    // In that way use direct::elem, rather than A3D_ELEM
-    const int x0 = floor(xp);
-    const RFLOAT fx = xp - x0;
-    const int x1 = x0 + 1;
+};
 
-    int y0 = floor(yp);
-    const RFLOAT fy = yp - y0;
-    y0 -= Yinit(data);
-    const int y1 = y0 + 1;
+struct NearestNeighbour {
 
-    // Matrix access can be accelerated through pre-calculation of z0*xydim etc.
-    const Complex d00 = direct::elem(data, x0, y0);
-    const Complex d01 = direct::elem(data, x1, y0);
-    const Complex d10 = direct::elem(data, x0, y1);
-    const Complex d11 = direct::elem(data, x1, y1);
+    static Complex interpolate(
+        const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp, RFLOAT zp, 
+        Complex fallback
+    ) {
+        int x0 = round(xp);
+        int y0 = round(yp);
+        int z0 = round(zp);
 
-    // Set the interpolated value in the 2D output array
-    const Complex dx0 = LIN_INTERP(fx, d00, d01);
-    const Complex dx1 = LIN_INTERP(fx, d10, d11);
+        const bool is_neg_x = x0 < 0;
 
-    direct::elem(f1d, x) = LIN_INTERP(fy, dx0, dx1);
+        if (is_neg_x) {
+            // Get complex conjugate hermitian symmetry pair
+            x0 = -x0;
+            y0 = -y0;
+            z0 = -z0;
+        }
 
-    // Take complex conjugate for half with negative x
-    if (is_neg_x) direct::elem(f1d, x) = conj(direct::elem(f1d, x));
-}
+        const int xr = x0 - Xinit(src);
+        const int yr = y0 - Yinit(src);
+        const int zr = z0 - Zinit(src);
 
-void nearest_neighbour(
-    RFLOAT &xp, RFLOAT &yp, RFLOAT &zp, const MultidimArray<Complex> &data,
-    MultidimArray<Complex> &f2d,
-    int x, int i
-) {
-    int x0 = round(xp);
-    int y0 = round(yp);
-    int z0 = round(zp);
+        if (
+            xr < 0 || xr >= src.xdim ||
+            yr < 0 || yr >= src.ydim ||
+            zr < 0 || zr >= src.zdim
+        ) return fallback;
 
-    const bool is_neg_x = x0 < 0;
-
-    if (is_neg_x) {
-        // Get complex conjugate hermitian symmetry pair
-        x0 = -x0;
-        y0 = -y0;
-        z0 = -z0;
+        const auto w = direct::elem(src, xr, yr, zr);
+        return is_neg_x ? conj(w) : w;
     }
 
-    const int xr = x0 - Xinit(data);
-    const int yr = y0 - Yinit(data);
-    const int zr = z0 - Zinit(data);
+    static Complex interpolate(const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp) {
+        const int x0 = round(xp);
+        const int y0 = round(yp);
 
-    if (
-        xr < 0 || xr >= data.xdim ||
-        yr < 0 || yr >= data.ydim ||
-        zr < 0 || zr >= data.zdim
-    ) return;
+        const auto w = src.elem(x0, y0);
+        return x0 < 0 ? conj(w) : w;
+    }
 
-    direct::elem(f2d, i, x) = is_neg_x ?
-        conj(direct::elem(data, xr, yr, zr)) : data.elem(xr, yr, zr);
-        /// XXX: Should we be mixing direct::elem and MultidimArray::elem?
-}
-
-void nearest_neighbour(
-    RFLOAT &xp, RFLOAT &yp, const MultidimArray<Complex> &data, 
-    MultidimArray<Complex> &f1d, int x
-) {
-    const int x0 = round(xp);
-    const int y0 = round(yp);
-
-    direct::elem(f1d, x) = x0 < 0 ?
-        conj(data.elem(-x0, -y0)) : data.elem(x0, y0);
-}
-
+};
 
 void Projector::initialiseData(int current_size) {
     // By default r_max is half ori_size
@@ -697,22 +690,25 @@ void Projector::project(MultidimArray<Complex> &f2d, const Matrix2D<RFLOAT> &A) 
 
         const int x_max = floor(sqrt(r_max_out_2 - y * y));
 
-        for (int x = 0; x <= x_max; x++) {
-            // Guaranteed that: Pythag(x, y) < r_max_out
+        for (int j = 0; j <= x_max; j++) {
 
+            // Guaranteed that: Pythag(x, y) < r_max_out
+            const auto &x = j;
             // Get logical coordinates in the 3D map
-            RFLOAT xp = Ainv(0, 0) * x + Ainv(0, 1) * y;
-            RFLOAT yp = Ainv(1, 0) * x + Ainv(1, 1) * y;
-            RFLOAT zp = Ainv(2, 0) * x + Ainv(2, 1) * y;
+            const RFLOAT xp = Ainv(0, 0) * x + Ainv(0, 1) * y;
+            const RFLOAT yp = Ainv(1, 0) * x + Ainv(1, 1) * y;
+            const RFLOAT zp = Ainv(2, 0) * x + Ainv(2, 1) * y;
 
             const RFLOAT r_ref_2 = euclidsq(xp, yp, zp);
 
             if (r_ref_2 > r_max_ref_2) continue;
 
             if (interpolator == TRILINEAR || r_ref_2 < r_min_NN_ref_2) {
-                trilinear(xp, yp, zp, data, f2d, x, i);
+                direct::elem(f2d, i, j) = Trilinear::interpolate(
+                    data, xp, yp, zp, direct::elem(f2d, i, j));
             } else if (interpolator == NEAREST_NEIGHBOUR) {
-                nearest_neighbour(xp, yp, zp, data, f2d, x, i);
+                direct::elem(f2d, i, j) = NearestNeighbour::interpolate(
+                    data, xp, yp, zp, direct::elem(f2d, i, j));
             } else {
                 REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);
             }
@@ -845,28 +841,26 @@ void Projector::project2Dto1D(MultidimArray<Complex> &f1d, const Matrix2D<RFLOAT
 
     const int r_max_ref = r_max * padding_factor;
     const int r_max_ref_2 = r_max_ref * r_max_ref;
-
     const int r_min_NN_ref_2 = r_min_nn * r_min_nn * padding_factor * padding_factor;
 
-    for (int x = 0; x <= r_max_out; x++) {
+    for (int i = 0; i <= r_max_out; i++) {
         // Get logical coordinates in the 2D map
-        RFLOAT xp = Ainv(0, 0) * x;
-        RFLOAT yp = Ainv(1, 0) * x;
+        const RFLOAT xp = Ainv(0, 0) * i;
+        const RFLOAT yp = Ainv(1, 0) * i;
 
-        const RFLOAT r_ref_2 = xp * xp + yp * yp;
+        const RFLOAT r_ref_2 = euclidsq(xp, yp);
 
         if (r_ref_2 > r_max_ref_2) continue;
 
         if (interpolator == TRILINEAR || r_ref_2 < r_min_NN_ref_2) {
-            trilinear(xp, yp, data, f1d, x);
+            direct::elem(f1d, i) = Trilinear::interpolate(data, xp, yp);
         } else if (interpolator == NEAREST_NEIGHBOUR ) {
-            nearest_neighbour(xp, yp, data, f1d, x);
+            direct::elem(f1d, i) = NearestNeighbour::interpolate(data, xp, yp);
         } else {
             REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);
         }
     }
 }
-
 
 void Projector::rotate2D(MultidimArray<Complex> &f2d, const Matrix2D<RFLOAT> &A) const {
     // f2d should already be in the right size (ori_size,orihalfdim)
