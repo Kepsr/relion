@@ -169,6 +169,92 @@ struct Trilinear {
         return is_neg_x ? w : conj(w);
     }
 
+    static t2Vector<Complex> interpolate(
+        const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp, RFLOAT zp,
+        const Matrix2D<RFLOAT> &Ainv
+    ) {
+        // Only asymmetric half is stored
+        const bool is_neg_x = xp < 0;
+
+        if (is_neg_x) {
+            // Get complex conjugate hermitian symmetry pair
+            xp = -xp;
+            yp = -yp;
+            zp = -zp;
+        }
+
+        // Trilinear interpolation (with physical coords)
+        // Subtract Yinit and Zinit to accelerate access to data (Xinit = 0)
+        // In that way use direct::elem, rather than A3D_ELEM
+
+        int x0 = floor(xp);
+        double fx = xp - x0;
+        // x0 -= Xinit(src);
+        int x1 = x0 + 1;
+
+        int y0 = floor(yp);
+        double fy = yp - y0;
+        y0 -= Yinit(src);
+        int y1 = y0 + 1;
+
+        int z0 = floor(zp);
+        double fz = zp - z0;
+        z0 -= Zinit(src);
+        int z1 = z0 + 1;
+
+        if (
+            x0 < 0 || x0 + 1 >= src.xdim ||
+            y0 < 0 || y0 + 1 >= src.ydim ||
+            z0 < 0 || z0 + 1 >= src.zdim
+        ) return {Complex(0.0, 0.0), Complex(0.0, 0.0)};
+
+        Complex v000 = direct::elem(src, x0, y0, z0);
+        Complex v001 = direct::elem(src, x1, y0, z0);
+        Complex v010 = direct::elem(src, x0, y1, z0);
+        Complex v011 = direct::elem(src, x1, y1, z0);
+        Complex v100 = direct::elem(src, x0, y0, z1);
+        Complex v101 = direct::elem(src, x1, y0, z1);
+        Complex v110 = direct::elem(src, x0, y1, z1);
+        Complex v111 = direct::elem(src, x1, y1, z1);
+
+        Complex v00 = LIN_INTERP(fx, v000, v001);
+        Complex v10 = LIN_INTERP(fx, v100, v101);
+        Complex v01 = LIN_INTERP(fx, v010, v011);
+        Complex v11 = LIN_INTERP(fx, v110, v111);
+
+        Complex v0 = LIN_INTERP(fy, v00, v01);
+        Complex v1 = LIN_INTERP(fy, v10, v11);
+
+        // Complex v = LIN_INTERP(fz, v0, v1);
+
+        Complex v00_dx = v001 - v000;
+        Complex v10_dx = v101 - v100;
+        Complex v01_dx = v011 - v010;
+        Complex v11_dx = v111 - v110;
+        Complex v0_dx = LIN_INTERP(fy, v00_dx, v01_dx);
+        Complex v1_dx = LIN_INTERP(fy, v10_dx, v11_dx);
+        Complex v_dx  = LIN_INTERP(fz, v0_dx,  v1_dx);
+
+        Complex v0_dy = v01 - v00;
+        Complex v1_dy = v11 - v10;
+        Complex v_dy = LIN_INTERP(fz, v0_dy, v1_dy);
+
+        Complex v_dz = v1 - v0;
+
+        t3Vector<Complex> grad3D (v_dx, v_dy, v_dz);
+
+        // Take complex conjugate for half with negative x
+        if (is_neg_x) {
+            grad3D.x = -grad3D.x.conj();
+            grad3D.y = -grad3D.y.conj();
+            grad3D.z = -grad3D.z.conj();
+        }
+        return {
+            Ainv(0, 0) * grad3D.x + Ainv(1, 0) * grad3D.y + Ainv(2, 0) * grad3D.z,
+            Ainv(0, 1) * grad3D.x + Ainv(1, 1) * grad3D.y + Ainv(2, 1) * grad3D.z
+        };
+    }
+
     static Complex interpolate(const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp) {
         // Only asymmetric half is stored
         const bool is_neg_x = xp < 0;
@@ -814,88 +900,7 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
             double yp = Ainv(1, 0) * x + Ainv(1, 1) * y;
             double zp = Ainv(2, 0) * x + Ainv(2, 1) * y;
 
-            const bool is_neg_x = xp < 0;
-
-            // Only asymmetric half is stored
-            if (is_neg_x) {
-                // Get complex conjugate hermitian symmetry pair
-                xp = -xp;
-                yp = -yp;
-                zp = -zp;
-            }
-
-            // Trilinear interpolation (with physical coords)
-            // Subtract Yinit and Zinit to accelerate access to data (Xinit = 0)
-            // In that way use direct::elem, rather than A3D_ELEM
-
-            int x0 = floor(xp);
-            double fx = xp - x0;
-            // x0 -= Xinit(data);
-            int x1 = x0 + 1;
-
-            int y0 = floor(yp);
-            double fy = yp - y0;
-            y0 -= Yinit(data);
-            int y1 = y0 + 1;
-
-            int z0 = floor(zp);
-            double fz = zp - z0;
-            z0 -= Zinit(data);
-            int z1 = z0 + 1;
-
-            if (
-                x0 < 0 || x0 + 1 >= data.xdim ||
-                y0 < 0 || y0 + 1 >= data.ydim ||
-                z0 < 0 || z0 + 1 >= data.zdim
-            ) {
-                img_out(xx, yy, 0) = t2Vector<Complex>(Complex(0.0, 0.0), Complex(0.0, 0.0));
-                continue;
-            }
-
-            Complex v000 = direct::elem(data, x0, y0, z0);
-            Complex v001 = direct::elem(data, x1, y0, z0);
-            Complex v010 = direct::elem(data, x0, y1, z0);
-            Complex v011 = direct::elem(data, x1, y1, z0);
-            Complex v100 = direct::elem(data, x0, y0, z1);
-            Complex v101 = direct::elem(data, x1, y0, z1);
-            Complex v110 = direct::elem(data, x0, y1, z1);
-            Complex v111 = direct::elem(data, x1, y1, z1);
-
-            Complex v00 = LIN_INTERP(fx, v000, v001);
-            Complex v10 = LIN_INTERP(fx, v100, v101);
-            Complex v01 = LIN_INTERP(fx, v010, v011);
-            Complex v11 = LIN_INTERP(fx, v110, v111);
-
-            Complex v0 = LIN_INTERP(fy, v00, v01);
-            Complex v1 = LIN_INTERP(fy, v10, v11);
-
-            // Complex v = LIN_INTERP(fz, v0, v1);
-
-            Complex v00_dx = v001 - v000;
-            Complex v10_dx = v101 - v100;
-            Complex v01_dx = v011 - v010;
-            Complex v11_dx = v111 - v110;
-            Complex v0_dx = LIN_INTERP(fy, v00_dx, v01_dx);
-            Complex v1_dx = LIN_INTERP(fy, v10_dx, v11_dx);
-            Complex v_dx  = LIN_INTERP(fz, v0_dx,  v1_dx);
-
-            Complex v0_dy = v01 - v00;
-            Complex v1_dy = v11 - v10;
-            Complex v_dy = LIN_INTERP(fz, v0_dy, v1_dy);
-
-            Complex v_dz = v1 - v0;
-
-            t3Vector<Complex> grad3D(v_dx, v_dy, v_dz);
-
-            // Take complex conjugate for half with negative x
-            if (is_neg_x) {
-                grad3D.x = -(grad3D.x).conj();
-                grad3D.y = -(grad3D.y).conj();
-                grad3D.z = -(grad3D.z).conj();
-            }
-
-            img_out(xx, yy, 0).x = Ainv(0, 0) * grad3D.x + Ainv(1, 0) * grad3D.y + Ainv(2, 0) * grad3D.z;
-            img_out(xx, yy, 0).y = Ainv(0, 1) * grad3D.x + Ainv(1, 1) * grad3D.y + Ainv(2, 1) * grad3D.z;
+            img_out(xx, yy, 0) = Trilinear::interpolate(data, xp, yp, zp, Ainv);
         }
     }
 }
