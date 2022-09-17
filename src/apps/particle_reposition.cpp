@@ -250,7 +250,7 @@ class particle_reposition_parameters {
                         }
 
                         if (optimiser.mydata.obsModel.getCtfPremultiplied(optics_group)) {
-                            Fref *= Fctf * Fctf;
+                            Fref *= Fctf * Fctf;  // Expression templates
                         } else {
                             Fref *= Fctf;
                         }

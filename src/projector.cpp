@@ -46,6 +46,39 @@ int TIMING_INIT2  = proj_timer.setNew("PROJECTOR - init2");
 
 using namespace gravis;
 
+template <typename T>
+inline std::array<T, 2> matmul1_2(const Matrix2D<T> &A, T x) {
+    return {
+        A(0, 0) * x,
+        A(1, 0) * x,
+    };
+}
+
+template <typename T>
+inline std::array<T, 2> matmul2_2(const Matrix2D<T> &A, T x, T y) {
+    return {
+        A(0, 0) * x + A(0, 1) * y,
+        A(1, 0) * x + A(1, 1) * y,
+    };
+}
+
+template <typename T>
+inline std::array<T, 3> matmul2_3(const Matrix2D<T> &A, T x, T y) {
+    return {
+        A(0, 0) * x + A(0, 1) * y,
+        A(1, 0) * x + A(1, 1) * y,
+        A(2, 0) * x + A(2, 1) * y,
+    };
+}
+
+template <typename T>
+inline std::array<T, 3> matmul3_3(const Matrix2D<T> &A, T x, T y, T z) {
+    return {
+        A(0, 0) * x + A(0, 1) * y + A(0, 2) * z,
+        A(1, 0) * x + A(1, 1) * y + A(1, 2) * z,
+        A(2, 0) * x + A(2, 1) * y + A(2, 2) * z,
+    };
+}
 
 struct Trilinear {
 
@@ -485,7 +518,7 @@ void Projector::computeFourierTransformMap(
     #ifdef CUDA
 
     const int Faux_sz = (padoridim / 2 + 1) * padoridim * (ref_dim == 3 ? padoridim : 1);
-    n[0] = padoridim; n[1] = padoridim; n[2] = padoridim;
+    n[0] = n[1] = n[2] = padoridim;
 
     if (do_heavy && do_gpu) {
         cufftEstimateMany(ref_dim, n, nullptr, 0, 0, nullptr, 0, 0, cufft_type, 1, &ws_sz);
@@ -815,7 +848,7 @@ MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix2D<RFL
 
     auto f2d = MultidimArray<Complex>::zeros(xdim, ydim);
     // Use the inverse matrix
-    const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
+    const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
     const int r_max_out = Xsize(f2d) - 1;
@@ -848,9 +881,10 @@ MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix2D<RFL
             // Guaranteed that: Pythag(x, y) < r_max_out
             const auto &x = j;
             // Get logical coordinates in the 3D map
-            const RFLOAT xp = Ainv(0, 0) * x + Ainv(0, 1) * y;
-            const RFLOAT yp = Ainv(1, 0) * x + Ainv(1, 1) * y;
-            const RFLOAT zp = Ainv(2, 0) * x + Ainv(2, 1) * y;
+            const auto coords = matmul2_3(Ainv, RFLOAT(x), RFLOAT(y));
+            const RFLOAT xp = coords[0];
+            const RFLOAT yp = coords[1];
+            const RFLOAT zp = coords[2];
 
             const RFLOAT r_ref_2 = euclidsq(xp, yp, zp);
 
@@ -879,7 +913,7 @@ MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix2D<RFL
 Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix2D<RFLOAT>& A) {
 
     Volume<t2Vector<Complex>> img_out (sh, s, 1);
-    const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
+    const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     // Go from the 2D slice coordinates to the 3D coordinates
 
@@ -892,10 +926,10 @@ Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix
             if (x * x + y * y > sh * sh) continue;
 
             // Get logical coordinates in the 3D map
-            double xp = Ainv(0, 0) * x + Ainv(0, 1) * y;
-            double yp = Ainv(1, 0) * x + Ainv(1, 1) * y;
-            double zp = Ainv(2, 0) * x + Ainv(2, 1) * y;
-
+            const auto coords = matmul2_3(Ainv, x, y);
+            const double xp = coords[0];
+            const double yp = coords[1];
+            const double zp = coords[2];
             img_out(xx, yy, 0) = Trilinear::interpolate(data, xp, yp, zp, Ainv);
         }
     }
@@ -905,7 +939,7 @@ Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix
 MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix2D<RFLOAT> &A) const {
 
     auto f1d = MultidimArray<Complex>::zeros(xdim);
-    const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
+    const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
     const int r_max_out = Xsize(f1d) - 1;
@@ -916,9 +950,9 @@ MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix2D<RFLOAT>
 
     for (int i = 0; i <= r_max_out; i++) {
         // Get logical coordinates in the 2D map
-        const RFLOAT xp = Ainv(0, 0) * i;
-        const RFLOAT yp = Ainv(1, 0) * i;
-
+        const auto coords = matmul1_2(Ainv, RFLOAT(i));
+        const RFLOAT xp = coords[0];
+        const RFLOAT yp = coords[1];
         const RFLOAT r_ref_2 = euclidsq(xp, yp);
 
         if (r_ref_2 > r_max_ref_2) continue;
@@ -938,7 +972,7 @@ MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix2D<RF
 
     auto f2d = MultidimArray<Complex>::zeros(xdim, ydim);
     // Use the inverse matrix
-    const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
+    const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
     const int r_max_out = Xsize(f2d) - 1;
@@ -967,10 +1001,9 @@ MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix2D<RF
 
         for (int x = 0; x <= x_max; x++) {
             // Pythag(x, y) guaranteed to be < r_max_out
-
-            RFLOAT xp = Ainv(0, 0) * x + Ainv(0, 1) * y;
-            RFLOAT yp = Ainv(1, 0) * x + Ainv(1, 1) * y;
-
+            const auto coords = matmul2_2(Ainv, RFLOAT(x), RFLOAT(y));
+            const RFLOAT xp = coords[0];
+            const RFLOAT yp = coords[1];
             const int r_ref_2 = euclidsq(xp, yp);
 
             if (r_ref_2 > r_max_ref_2) continue;
@@ -993,7 +1026,7 @@ MultidimArray<Complex> Projector::rotate3D(int xdim, int ydim, int zdim, const M
     auto f3d = MultidimArray<Complex>::zeros(xdim, ydim, zdim);
 
     // Use the inverse matrix
-    const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
+    const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     const int r_max_out = Xsize(f3d) - 1;
     const int r_max_ref = r_max * padding_factor;
@@ -1028,10 +1061,10 @@ MultidimArray<Complex> Projector::rotate3D(int xdim, int ydim, int zdim, const M
 
         for (int x = 0; x <= x_max; x++) {
             // Get logical coordinates in the 3D map
-            RFLOAT xp = Ainv(0, 0) * x + Ainv(0, 1) * y + Ainv(0, 2) * z;
-            RFLOAT yp = Ainv(1, 0) * x + Ainv(1, 1) * y + Ainv(1, 2) * z;
-            RFLOAT zp = Ainv(2, 0) * x + Ainv(2, 1) * y + Ainv(2, 2) * z;
-
+            const auto coords = matmul3_3(Ainv, RFLOAT(x), RFLOAT(y), RFLOAT(z));
+            const RFLOAT xp = coords[0];
+            const RFLOAT yp = coords[1];
+            const RFLOAT zp = coords[2];
             const int r_ref_2 = euclidsq(xp, yp, zp);
 
             if (r_ref_2 > r_max_ref_2) continue;
