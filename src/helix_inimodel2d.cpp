@@ -599,16 +599,14 @@ void HelixAligner::initialiseClasses() {
 
         // Calculate all projected lines
         for (int i = 0; i < Xsize(model.Aref[0]); i++) {
-            MultidimArray<RFLOAT> myline(Ysize(model.Aref[0]));
-            MultidimArray<Complex> myFline(Ysize(model.Aref[0]) / 2 + 1);
             FourierTransformer transformer;
 
             RFLOAT rot = (RFLOAT) i * 360.0 / (Xsize(model.Aref[0]));
-            Matrix2D<RFLOAT> A2D = rotation2DMatrix(rot);
-            PP.get2DFourierTransform(myFline, A2D);
-            myline = transformer.inverseFourierTransform(myFline);
+            auto A2D = rotation2DMatrix(rot);
+            auto myFline = PP.get2DFourierTransform(Ysize(model.Aref[0]) / 2 + 1, 1, 1, A2D);
+            MultidimArray<RFLOAT> myline =
+                transformer.inverseFourierTransform(myFline).setXmippOrigin();
             // Shift the image back to the center...
-            myline.setXmippOrigin();
             CenterFFT(myline, false);
             for (int j = 0; j < Ysize(model.Aref[0]); j++)
                 direct::elem(model.Aref[0], i, j) = direct::elem(myline, j);
@@ -916,8 +914,8 @@ void HelixAligner::reconstruct2D(int iclass) {
 
         const RFLOAT rot = (RFLOAT) i * 360.0 / Xsize(model.Aref[iclass]);
         const Matrix2D<RFLOAT> A2D = rotation2DMatrix(rot);
-        myFlines[i].initZeros();
-        PP.get2DFourierTransform(myFlines[i], A2D);
+        myFlines[i] = PP.get2DFourierTransform(
+            myFlines[i].xdim, myFlines[i].ydim, myFlines[i].zdim, A2D);
         FourierTransformer transformer;
         MultidimArray<RFLOAT> line = transformer.inverseFourierTransform(myFlines[i]);
         // Shift the image back to the center...

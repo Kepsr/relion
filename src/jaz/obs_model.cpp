@@ -296,8 +296,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
     A3D *= scaleDifference(opticsGroup, s_ref, angpix_ref);
 
-    MultidimArray<Complex> pred = MultidimArray<Complex>::zeros(sh_out, s_out);
-    proj.get2DFourierTransform(pred, A3D);
+    auto pred = proj.get2DFourierTransform(sh_out, s_out, 1, A3D);
 
     if (applyShift) {
         shiftImageInFourierTransform(pred, s_out, s_out / 2 - xoff, s_out / 2 - yoff);
@@ -306,21 +305,19 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     if (applyCtf) {
         const CTF ctf = CtfHelper::makeCTF(partMdt, this, particle);
 
-        Image<RFLOAT> ctfImg(sh_out, s_out);
-        ctfImg() = CtfHelper::getFftwImage(
+        const auto ctfImg = CtfHelper::getFftwImage(
             ctf,
             sh_out, s_out, s_out, s_out, angpix[opticsGroup], this,
             false, false, false, true, applyCtfPadding
         );
 
-        // Maybe square
-        auto f = getCtfPremultiplied(opticsGroup) ? [] (RFLOAT x) { return x * x; }
-                                                  : [] (RFLOAT x) { return x; };
+        if (getCtfPremultiplied(opticsGroup))
+            for (long int i = 0; i < pred.size(); i++)
+                pred[i] *= ctfImg[i] * ctfImg[i];
+        else
+            for (long int i = 0; i < pred.size(); i++)
+                pred[i] *= ctfImg[i];
 
-        for (int y = 0; y < s_out;  y++)
-        for (int x = 0; x < sh_out; x++) {
-            pred.elem(y, x) *= f(ctfImg(y, x));
-        }
     }
 
     if (
@@ -355,11 +352,6 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
 
     int opticsGroup = partMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, particle) - 1;
 
-    const int s_out = boxSizes[opticsGroup];
-    const int sh_out = s_out / 2 + 1;
-
-    Volume<t2Vector<Complex>> out(sh_out, s_out, 1);
-
     double xoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, particle) / angpix[opticsGroup];
     double yoff = partMdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, particle) / angpix[opticsGroup];
 
@@ -367,11 +359,13 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
     double tilt = partMdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+    auto A3D = Euler::angles2matrix(rot, tilt, psi);
     if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
     A3D *= scaleDifference(opticsGroup, s_ref, angpix_ref);
 
-    proj.projectGradient(out, A3D);
+    const int s_out = boxSizes[opticsGroup];
+    const int sh_out = s_out / 2 + 1;
+    auto out = proj.projectGradient(sh_out, s_out, A3D);
 
     if (
         shiftPhases && opticsGroup < oddZernikeCoeffs.size() &&

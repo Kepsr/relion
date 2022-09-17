@@ -89,17 +89,14 @@ class align_symmetry {
             RFLOAT psi  = MDang.getValue<RFLOAT>(EMDL::ORIENT_PSI,  i);
 
             A3D = Euler::rotation3DMatrix(rot, tilt, psi);
-            MultidimArray<Complex> F2D;
-            F2D.initZeros();
-            projector.get2DFourierTransform(F2D, A3D);
+            auto F2D = projector.get2DFourierTransform(0, 0, 0, A3D);
 
             transformer.inverseFourierTransform();
             CenterFFT(rotated, false);
-            symmetrised = rotated;
-            symmetriseMap(symmetrised, fn_sym);
+            symmetriseMap(symmetrised = rotated, fn_sym);
 
             // non-weighted real-space squared difference
-            double diff2 = (rotated - symmetrised).sum2();  // Probably more efficient to do the sum in a loop
+            double diff2 = (rotated - symmetrised).sum2();  // Probably more efficient to do the sum in a loop (expression templates)
 
             if (best_diff2 > diff2) {
                 best_diff2 = diff2;
@@ -224,9 +221,9 @@ class align_symmetry {
 
         full_projector.computeFourierTransformMap(vol_in(), dummy, 2 * orig_size);
         A3D = Euler::rotation3DMatrix(rot, tilt, psi);
-        fFourier.initZeros(orig_size, orig_size, orig_size / 2 + 1);
         vol_out().reshape(vol_in());
-        full_projector.get2DFourierTransform(fFourier, A3D);
+        fFourier = full_projector.get2DFourierTransform(
+            orig_size / 2 + 1, orig_size, orig_size, A3D);
 
         vol_out() = transformer.inverseFourierTransform(fFourier);
         CenterFFT(vol_out(), false);

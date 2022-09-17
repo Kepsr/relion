@@ -60,9 +60,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, 0.0);
 
-        Image<Complex> spec = Image<Complex>::zeros(s, sh);
-
-        prj.get2DFourierTransform(spec.data, A3D);
+        Image<Complex> spec (prj.get2DFourierTransform(sh, s, 1, A3D));
 
         double defocus = DistributionHelper::sampleGauss(defocusMu, defocusSigma);
 

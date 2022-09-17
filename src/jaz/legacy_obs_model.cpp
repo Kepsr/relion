@@ -23,8 +23,6 @@ void LegacyObservationModel::predictObservation(
 
     const int s = proj.ori_size;
     const int sh = s / 2 + 1;
-    if (dest.xdim != sh || dest.ydim != s) { dest.resize(s, sh); }
-    dest.initZeros();
 
     double xoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X, particle);
     double yoff = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_Y, particle);
@@ -35,7 +33,7 @@ void LegacyObservationModel::predictObservation(
 
     Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
-    proj.get2DFourierTransform(dest, A3D);
+    dest = proj.get2DFourierTransform(sh, s, 1, A3D);
 
     if (applyShift) {
         shiftImageInFourierTransform(dest, s, s / 2 - xoff, s / 2 - yoff);

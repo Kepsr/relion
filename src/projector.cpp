@@ -383,8 +383,7 @@ void Projector::initialiseData(int current_size) {
     }
 
     // Set origin in the y.z-center, but on the left side for x.
-    data.setXmippOrigin();
-    data.xinit = 0;
+    data.setXmippOrigin().xinit = 0;
 
 }
 
@@ -812,13 +811,10 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
     }
 }
 
-void Projector::project(MultidimArray<Complex> &f2d, const Matrix2D<RFLOAT> &A) const {
-    // f2d should already be in the right size (ori_size,orihalfdim)
-    // AND the points outside r_max should already be zero...
-    // f2d.initZeros();
+MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const {
 
+    auto f2d = MultidimArray<Complex>::zeros(xdim, ydim);
     // Use the inverse matrix
-
     const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
@@ -876,14 +872,14 @@ void Projector::project(MultidimArray<Complex> &f2d, const Matrix2D<RFLOAT> &A) 
     #ifdef DEBUG
     std::cerr << "done with project..." << std::endl;
     #endif
+    return f2d;
 }
 
 
-void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFLOAT>& At) {
-    const int sh = img_out.dimx;
-    const int s  = img_out.dimy;
+Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix2D<RFLOAT>& A) {
 
-    const Matrix2D<RFLOAT> Ainv = At.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
+    Volume<t2Vector<Complex>> img_out (sh, s, 1);
+    const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     // Go from the 2D slice coordinates to the 3D coordinates
 
@@ -903,13 +899,12 @@ void Projector::projectGradient(Volume<t2Vector<Complex>>& img_out, Matrix2D<RFL
             img_out(xx, yy, 0) = Trilinear::interpolate(data, xp, yp, zp, Ainv);
         }
     }
+    return img_out;
 }
 
-void Projector::project2Dto1D(MultidimArray<Complex> &f1d, const Matrix2D<RFLOAT> &A) const {
-    // f1d should already be in the right size (ori_size,orihalfdim)
-    // AND the points outside r_max should already be zero...
-    // f1d.initZeros();
+MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix2D<RFLOAT> &A) const {
 
+    auto f1d = MultidimArray<Complex>::zeros(xdim);
     const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
     // The f2d image may be smaller than r_max, in that case also make sure not to fill the corners!
@@ -936,13 +931,12 @@ void Projector::project2Dto1D(MultidimArray<Complex> &f1d, const Matrix2D<RFLOAT
             REPORT_ERROR((std::string) "Unrecognized interpolator in Projector::" + __func__);
         }
     }
+    return f1d;
 }
 
-void Projector::rotate2D(MultidimArray<Complex> &f2d, const Matrix2D<RFLOAT> &A) const {
-    // f2d should already be in the right size (ori_size,orihalfdim)
-    // AND the points outside max_r should already be zero...
-    // f2d.initZeros();
+MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const {
 
+    auto f2d = MultidimArray<Complex>::zeros(xdim, ydim);
     // Use the inverse matrix
     const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
 
@@ -990,13 +984,13 @@ void Projector::rotate2D(MultidimArray<Complex> &f2d, const Matrix2D<RFLOAT> &A)
             }
         }
     }
+    return f2d;
 }
 
 
-void Projector::rotate3D(MultidimArray<Complex> &f3d, const Matrix2D<RFLOAT> &A) const {
-    // f3d should already be in the right size (ori_size,orihalfdim)
-    // AND the points outside max_r should already be zero
-    // f3d.initZeros();
+MultidimArray<Complex> Projector::rotate3D(int xdim, int ydim, int zdim, const Matrix2D<RFLOAT> &A) const {
+
+    auto f3d = MultidimArray<Complex>::zeros(xdim, ydim, zdim);
 
     // Use the inverse matrix
     const Matrix2D<RFLOAT> Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
@@ -1052,4 +1046,5 @@ void Projector::rotate3D(MultidimArray<Complex> &f3d, const Matrix2D<RFLOAT> &A)
         }
     }
     }
+    return f3d;
 }
