@@ -5094,11 +5094,11 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
                     Abody *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
 
-                    // Get the FT of the projection in the right direction
-                    MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
                     // The following line gets the correct pointer to account for overlap in the bodies
                     int oobody = direct::elem(mymodel.pointer_body_overlap, ibody, obody);
-                    mymodel.PPref[oobody].get2DFourierTransform(FTo, Abody);
+                    // Get the FT of the projection in the right direction
+                    auto FTo = mymodel.PPref[oobody].get2DFourierTransform(
+                        Fimg.xdim, Fimg.ydim, Fimg.zdim, Abody);
 
                     #ifdef DEBUG_BODIES
                     if (part_id == round(debug1)) {
@@ -5679,11 +5679,14 @@ void MlOptimiser::getAllSquaredDifferences(
                                 Abody =  Aori * (mymodel.orient_bodies[ibody]).transpose() * A_rot90 * A * mymodel.orient_bodies[ibody];
                                 if (mydata.obsModel.hasMagMatrices) { Abody *= mydata.obsModel.anisoMag(optics_group); }
                                 Abody *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
-                                (mymodel.PPref[ibody]).get2DFourierTransform(Fref, Abody);
+                                
+                                Fref = mymodel.PPref[ibody].get2DFourierTransform(
+                                    exp_local_Minvsigma2[0].xdim, exp_local_Minvsigma2[0].ydim, exp_local_Minvsigma2[0].zdim, Abody);
                             } else {
                                 if (mydata.obsModel.hasMagMatrices) { A *= mydata.obsModel.anisoMag(optics_group); }
                                 A *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
-                                mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
+                                Fref = mymodel.PPref[exp_iclass].get2DFourierTransform(
+                                    exp_local_Minvsigma2[0].xdim, exp_local_Minvsigma2[0].ydim, exp_local_Minvsigma2[0].zdim, A);
                             }
 
                             #ifdef TIMING
@@ -5951,8 +5954,8 @@ void MlOptimiser::getAllSquaredDifferences(
                                             std::cerr << "written Frefctf.spi" << std::endl;
 
                                             std::cerr << " exp_iclass= " << exp_iclass << std::endl;
-                                            Fref.resize(exp_local_Minvsigma2[img_id]);
-                                            (mymodel.PPref[exp_iclass]).get2DFourierTransform(Fref, A);
+                                            Fref = mymodel.PPref[exp_iclass].get2DFourierTransform(
+                                                exp_local_Minvsigma2[img_id].xdim, exp_local_Minvsigma2[img_id].ydim, exp_local_Minvsigma2[img_id].zdim, A);
                                             tt() = transformer3.inverseFourierTransform(Fref);
                                             CenterFFT(tt(),false);
                                             tt.write("Fref2.spi");
@@ -6671,9 +6674,11 @@ void MlOptimiser::storeWeightedSums(
                     // Project the reference map (into Fref)
                     if (!do_skip_maximization) {
                         if (mymodel.nr_bodies > 1) {
-                            mymodel.PPref[ibody].get2DFourierTransform(Fref, Abody);
+                            Fref = mymodel.PPref[ibody].get2DFourierTransform(
+                                exp_Fimg[0].xdim, exp_Fimg[0].ydim, exp_Fimg[0].zdim, Abody);
                         } else {
-                            mymodel.PPref[exp_iclass].get2DFourierTransform(Fref, A);
+                            Fref = mymodel.PPref[exp_iclass].get2DFourierTransform(
+                                exp_Fimg[0].xdim, exp_Fimg[0].ydim, exp_Fimg[0].zdim, A);
                         }
                     }
                     #ifdef TIMING
@@ -7572,17 +7577,12 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         RFLOAT yoff1 = 0.0;
                         RFLOAT zoff1 = 0.0;
 
-                        auto F1 = MultidimArray<Complex>::zeros(
-                            current_image_size / 2 + 1,
-                            current_image_size,
-                            mymodel.data_dim == 2 ? 1 : current_image_size
-                        );
-
                         // Get the FT of the first image
                         Matrix2D<RFLOAT> A1 = Euler::angles2matrix(rot1, tilt1, psi1);
                         if (mydata.obsModel.hasMagMatrices) { A1 *= mydata.obsModel.anisoMag(optics_group); }
                         A1 *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
-                        mymodel.PPref[iclass].get2DFourierTransform(F1, A1);
+                        auto F1 = mymodel.PPref[iclass].get2DFourierTransform(
+                            current_image_size / 2 + 1, current_image_size, mymodel.data_dim == 2 ? 1 : current_image_size, A1);
 
                         // Apply the angular or shift error
                         RFLOAT rot2  = rot1;
@@ -7628,13 +7628,10 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         }
 
                         // Get the FT of the second image
-                        auto F2 = mymodel.data_dim == 2 ? MultidimArray<Complex>::zeros(
-                            current_image_size / 2 + 1,
-                            current_image_size
-                        ) : MultidimArray<Complex>::zeros(
+                        auto F2 = MultidimArray<Complex>::zeros(
                             current_image_size / 2 + 1,
                             current_image_size,
-                            current_image_size
+                            mymodel.data_dim == 3 ? current_image_size : 1
                         );
 
                         if (imode == 0) {
@@ -7642,7 +7639,9 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                             Matrix2D<RFLOAT> A2 = Euler::angles2matrix(rot2, tilt2, psi2);
                             if (mydata.obsModel.hasMagMatrices) { A2 *= mydata.obsModel.anisoMag(optics_group); }
                             A2 *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
-                            mymodel.PPref[iclass].get2DFourierTransform(F2, A2);
+                            F2 = mymodel.PPref[iclass].get2DFourierTransform(
+                                current_image_size / 2 + 1, current_image_size,
+                                mymodel.data_dim == 3 ? current_image_size : 1, A2);
                         } else {
                             // Get shifted version
                             shiftImageInFourierTransform(

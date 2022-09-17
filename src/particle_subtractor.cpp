@@ -541,11 +541,11 @@ void ParticleSubtractor::subtractOneParticle(
             }
             Abody *= opt.mydata.obsModel.scaleDifference(optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
 
-            // Get the FT of the projection in the right direction
-            MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
             // The following line gets the correct pointer to account for overlap in the bodies
             int oobody = direct::elem(opt.mymodel.pointer_body_overlap, subtract_body, obody);
-            opt.mymodel.PPref[oobody].get2DFourierTransform(FTo, Abody);
+            // Get the FT of the projection in the right direction
+            auto FTo = opt.mymodel.PPref[oobody].get2DFourierTransform(
+                Fimg.xdim, Fimg.ydim, Fimg.zdim, Abody);
 
             // Body is centered at its own COM: move it back to its place in the original particle image
 
@@ -591,14 +591,15 @@ void ParticleSubtractor::subtractOneParticle(
         my_residual_offset += my_refined_ibody_offset + Abody * (opt.mymodel.com_bodies[subtract_body] - new_center * opt.mymodel.pixel_size / my_pixel_size);
     } else {
         // Normal 3D classification/refinement: get the projection in rot,tilt,psi for the corresponding class
-        Matrix2D<RFLOAT> A3D_pure_rot = Euler::angles2matrix(rot, tilt, psi);
+        auto A3D_pure_rot = Euler::angles2matrix(rot, tilt, psi);
 
         // Apply anisotropic mag and scaling
-        Matrix2D<RFLOAT> A3D = opt.mydata.obsModel.hasMagMatrices ?
+        auto A3D = opt.mydata.obsModel.hasMagMatrices ?
             A3D_pure_rot :
             A3D_pure_rot * opt.mydata.obsModel.anisoMag(optics_group);
         A3D *= opt.mydata.obsModel.scaleDifference(optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
-        opt.mymodel.PPref[myclass].get2DFourierTransform(Fsubtrahend, A3D);
+        Fsubtrahend = opt.mymodel.PPref[myclass].get2DFourierTransform(
+            Fimg.xdim, Fimg.ydim, Fimg.zdim, A3D);
 
         // Shift in opposite direction as offsets in the STAR file
         shiftImageInFourierTransform(

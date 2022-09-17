@@ -478,10 +478,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
     }
 
     // Subtract reference projection
-    MultidimArray<Complex> Fsub;
     if (!fn_sub.empty()) {
-        Fsub.resize(F2D);
-        projector.get2DFourierTransform(Fsub, A3D);
+        auto Fsub = projector.get2DFourierTransform(F2D.xdim, F2D.ydim, F2D.zdim, A3D);
 
         // Apply CTF if necessary
         if (do_ctf) { Fsub *= Fctf; }

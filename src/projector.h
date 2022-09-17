@@ -248,36 +248,35 @@ class Projector {
     * Get a 2D Fourier Transform from the 2D or 3D data array
     * Depending on the dimension of the map, this will be a projection or a rotation operation
     */
-    void get2DFourierTransform(MultidimArray<Complex> &img_out, const Matrix2D<RFLOAT> &A) const {
+    MultidimArray<Complex> get2DFourierTransform(int xdim, int ydim, int zdim, const Matrix2D<RFLOAT> &A) const {
         // Rotation of a 3D Fourier Transform
         if (data_dim == 3) {
             if (ref_dim != 3)
                 REPORT_ERROR("Projector::get3DFourierTransform%%ERROR: Dimension of the data array should be 3");
-            rotate3D(img_out, A);
-        } else if (data_dim == 1) {
-            project2Dto1D(img_out, A);
-        } else {
-            switch (ref_dim) {
+            return rotate3D(xdim, ydim, zdim, A);
+        }
 
-                case 2:
-                rotate2D(img_out, A);
-                break;
+        if (data_dim == 1)
+            return project2Dto1D(xdim, A);
 
-                case 3:
-                project(img_out, A);
-                break;
+        switch (ref_dim) {
 
-                default:
-                REPORT_ERROR("Projector::get2DSlice%%ERROR: Dimension of the data array should be 2 or 3");
+            case 2:
+            return rotate2D(xdim, ydim, A);
 
-            }
+            case 3:
+            return project(xdim, ydim, A);
+
+            default:
+            REPORT_ERROR("Projector::get2DSlice%%ERROR: Dimension of the data array should be 2 or 3");
+
         }
     }
 
     /*
     * Get a 2D slice from the 3D map (forward projection)
     */
-    void project(MultidimArray<Complex> &img_out, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> project(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const;
 
     /*
     * Get the two gradients (real and imaginary) of that slice.
@@ -285,21 +284,22 @@ class Projector {
     * Computing the gradient from a 2D projection would systematically
     * underestimate the magnitude of the gradient.
     */
-    void projectGradient(Volume<gravis::t2Vector<Complex>> &img_out, Matrix2D<RFLOAT> &A);
+    Volume<gravis::t2Vector<Complex>> projectGradient(int sh, int s, const Matrix2D<RFLOAT> &A);
 
     /*
     * Get a 1D slice from the 2D map (forward projection)
     */
-    void project2Dto1D(MultidimArray<Complex> &img_out, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> project2Dto1D(int xdim, const Matrix2D<RFLOAT> &A) const;
 
     /*
     * Get an in-plane rotated version of the 2D map (mere interpolation)
     */
-    void rotate2D(MultidimArray<Complex> &img_out, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> rotate2D(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const;
 
     /*
     * Get a rotated version of the 3D map (mere interpolation)
     */
-    void rotate3D(MultidimArray<Complex> &img_out, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> rotate3D(int xdim, int ydim, int zdim, const Matrix2D<RFLOAT> &A) const;
+
 };
 #endif

@@ -457,13 +457,11 @@ void AutoPicker::initialise() {
                 RFLOAT rot  = sampling.rot_angles [idir];
                 RFLOAT tilt = sampling.tilt_angles[idir];
                 Matrix2D<RFLOAT> A = Euler::angles2matrix(rot, tilt, 0.0);
-                Fref.initZeros();
-                projector.get2DFourierTransform(Fref, A);
+                Fref = projector.get2DFourierTransform(Mref.xdim / 2, Mref.ydim, Mref.zdim, A);
                 // Shift the image back to the center...
                 CenterFFTbySign(Fref);
                 transformer.inverseFourierTransform();
-                Mref.setXmippOrigin();
-                Mrefs.push_back(Mref);
+                Mrefs.push_back(Mref.setXmippOrigin());
 
                 if (verb > 0) {
                     // Also write out a stack with the 2D reference projections
@@ -476,8 +474,7 @@ void AutoPicker::initialise() {
             for (int n = 0; n < Nsize(Istk()); n++) {
                 Image<RFLOAT> Iref;
                 Istk().getImage(n, Iref());
-                Iref().setXmippOrigin();
-                Mrefs.push_back(Iref());
+                Mrefs.push_back(Iref().setXmippOrigin());
             }
         }
     }
@@ -2741,11 +2738,10 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             bool is_first_psi = true;
             for (RFLOAT psi = 0.0; psi < 360.0; psi += psi_sampling) {
                 // Get the Euler matrix
-                Matrix2D<RFLOAT> A = Euler::angles2matrix(0.0, 0.0, psi);
+                const auto A = Euler::angles2matrix(0.0, 0.0, psi);
 
                 // Now get the FT of the rotated (non-ctf-corrected) template
-                MultidimArray<Complex> Faux = MultidimArray<Complex>::zeros(downsize_mic, downsize_mic / 2 + 1);
-                PPref[iref].get2DFourierTransform(Faux, A);
+                auto Faux = PPref[iref].get2DFourierTransform(downsize_mic / 2 + 1, downsize_mic, 1, A);
 
                 #ifdef DEBUG
                 std::cerr << " psi= " << psi << std::endl;

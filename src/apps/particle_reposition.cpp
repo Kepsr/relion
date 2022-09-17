@@ -165,16 +165,12 @@ class particle_reposition_parameters {
                     found_one = true;
 
                     // Prepare transformer
-                    MultidimArray<Complex > Fref;
                     MultidimArray<RFLOAT> Mref;
                     if (optimiser.mymodel.data_dim == 3) {
                         Mref.resize(my_image_size, my_image_size, my_image_size);
-                        Fref.resize(my_image_size, my_image_size, my_image_size / 2 + 1);
                     } else {
                         Mref.resize(my_image_size, my_image_size);
-                        Fref.resize(my_image_size, my_image_size / 2 + 1);
                     }
-
 
                     RFLOAT rot, tilt, psi, xcoord = 0.0, ycoord = 0.0, zcoord = 0.0;
                     Matrix2D<RFLOAT> A;
@@ -205,14 +201,15 @@ class particle_reposition_parameters {
 
                     A = Euler::angles2matrix(rot, tilt, psi);
                     if (do_ctf) {
-                        if (optimiser.mydata.obsModel.hasMagMatrices) {
+                        if (optimiser.mydata.obsModel.hasMagMatrices)
                             A *= optimiser.mydata.obsModel.anisoMag(optics_group);
-                        }
                         A *= optimiser.mydata.obsModel.scaleDifference(optics_group, optimiser.mymodel.ori_size, optimiser.mymodel.pixel_size);
                     }
 
                     // Get the 2D image (in its ori_size)
-                    optimiser.mymodel.PPref[iclass].get2DFourierTransform(Fref, A);
+                    auto Fref = optimiser.mymodel.PPref[iclass].get2DFourierTransform(
+                        my_image_size / 2 + 1, my_image_size,
+                        optimiser.mymodel.data_dim == 3 ? my_image_size : 1, A);
 
                     shiftImageInFourierTransform(
                         Fref, my_image_size, -XX(offsets), -YY(offsets),

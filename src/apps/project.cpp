@@ -201,9 +201,9 @@ class project_parameters {
         projector.computeFourierTransformMap(vol(), dummy, 2 * r_max);
 
         if (do_only_one) {
-            Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
-            F2D.initZeros();
-            projector.get2DFourierTransform(F2D, A3D);
+            const auto A3D = Euler::rotation3DMatrix(rot, tilt, psi);
+            F2D = projector.get2DFourierTransform(
+                Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
             if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
                 Matrix1D<RFLOAT> shift(2);
                 XX(shift) = -xoff;
@@ -266,9 +266,9 @@ class project_parameters {
                 if (do_3d_rot)
                 zoff = MDang.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, imgno) / angpix;
 
-                Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
-                F2D.initZeros();
-                projector.get2DFourierTransform(F2D, A3D);
+                const auto A3D = Euler::rotation3DMatrix(rot, tilt, psi);
+                F2D = projector.get2DFourierTransform(
+                    Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
 
                 if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
                     Matrix1D<RFLOAT> shift(2);
@@ -410,8 +410,8 @@ class project_parameters {
                     }
 
                     Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
-                    F2D.initZeros();
-                    projector.get2DFourierTransform(F2D, A3D);
+                    F2D = projector.get2DFourierTransform(
+                        Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
 
                     if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
                         Matrix1D<RFLOAT> shift(2);

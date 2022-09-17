@@ -771,11 +771,11 @@ void getFourierTransformsAndCtfs(
                     }
                     Abody *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
 
-                    // Get the FT of the projection in the right direction
-                    MultidimArray<Complex> FTo = MultidimArray<Complex>::zeros(Fimg);
                     // The following line gets the correct pointer to account for overlap in the bodies
                     int oobody = direct::elem(baseMLO->mymodel.pointer_body_overlap, ibody, obody);
-                    baseMLO->mymodel.PPref[oobody].get2DFourierTransform(FTo, Abody);
+                    // Get the FT of the projection in the right direction
+                    auto FTo = baseMLO->mymodel.PPref[oobody].get2DFourierTransform(
+                        Fimg.xdim, Fimg.ydim, Fimg.zdim, Abody);
 
                     /********************************************************************************
                      * Currently CPU-memory for projectors is not deallocated when doing multibody
