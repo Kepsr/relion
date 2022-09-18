@@ -819,6 +819,19 @@ void Projector::computeFourierTransformMap(
 void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
     // Correct real-space map by dividing it by the Fourier transform of the interpolator(s)
     vol_in.setXmippOrigin();
+
+    const auto maybe_square =
+        interpolator == NEAREST_NEIGHBOUR && r_min_nn == 0 ?
+        +[] (RFLOAT x) { return x; } :
+        // NN interpolation is convolution with a rectangular pulse, which FT is a sinc function
+        interpolator == TRILINEAR || interpolator == NEAREST_NEIGHBOUR && r_min_nn > 0 ?
+        +[] (RFLOAT x) { return x * x; } :
+        // trilinear interpolation is convolution with a triangular pulse, which FT is a sinc^2 function
+        nullptr;
+
+    if (!maybe_square)
+        REPORT_ERROR((std::string) "BUG Projector::" + __func__ + ": unrecognised interpolator scheme.");
+
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in, i, j, k) {
         const RFLOAT r = euclid(i, j, k);
         if (r > 0.0) {
@@ -826,15 +839,7 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
             const RFLOAT sinc_theta = sinc(PI * rval);
             // RFLOAT ftblob = blob_Fourier_val(rval, blob) / blob_Fourier_val(0.0, blob);
             // Interpolation (goes with "interpolator") to go from arbitrary to fine grid
-            if (interpolator == NEAREST_NEIGHBOUR && r_min_nn == 0) {
-                // NN interpolation is convolution with a rectangular pulse, which FT is a sinc function
-                vol_in.elem(i, j, k) /= sinc_theta;
-            } else if (interpolator == TRILINEAR || interpolator == NEAREST_NEIGHBOUR && r_min_nn > 0) {
-                // trilinear interpolation is convolution with a triangular pulse, which FT is a sinc^2 function
-                vol_in.elem(i, j, k) /= sinc_theta * sinc_theta;
-            } else {
-                REPORT_ERROR((std::string) "BUG Projector::" + __func__ + ": unrecognised interpolator scheme.");
-            }
+            vol_in.elem(i, j, k) /= maybe_square(sinc_theta);
         // #define DEBUG_GRIDDING_CORRECT
         #ifdef DEBUG_GRIDDING_CORRECT
         if (i == 0 && j == 0 && k == 0)
@@ -879,13 +884,11 @@ MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix2D<RFL
         for (int j = 0; j <= x_max; j++) {
 
             // Guaranteed that: Pythag(x, y) < r_max_out
-            const auto &x = j;
             // Get logical coordinates in the 3D map
-            const auto coords = matmul2_3(Ainv, RFLOAT(x), RFLOAT(y));
-            const RFLOAT xp = coords[0];
-            const RFLOAT yp = coords[1];
-            const RFLOAT zp = coords[2];
-
+            const auto coords = matmul2_3(Ainv, RFLOAT(j), RFLOAT(y));
+            const auto &xp = coords[0];
+            const auto &yp = coords[1];
+            const auto &zp = coords[2];
             const RFLOAT r_ref_2 = euclidsq(xp, yp, zp);
 
             if (r_ref_2 > r_max_ref_2) continue;
@@ -914,22 +917,21 @@ Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix
 
     Volume<t2Vector<Complex>> img_out (sh, s, 1);
     const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
-
     // Go from the 2D slice coordinates to the 3D coordinates
 
+    const auto sh2 = sh * sh;
     for (int yy = 0; yy < s; yy++) {
         const double y = yy < sh ? yy : yy - s;
+        const double y2 = y * y;
 
-        for (int xx = 0; xx < sh; xx++) {
+        for (int xx = 0; xx < sh && xx <= sh2 - y2; xx++) {
             const double x = xx;
-
-            if (x * x + y * y > sh * sh) continue;
 
             // Get logical coordinates in the 3D map
             const auto coords = matmul2_3(Ainv, x, y);
-            const double xp = coords[0];
-            const double yp = coords[1];
-            const double zp = coords[2];
+            const double &xp = coords[0];
+            const double &yp = coords[1];
+            const double &zp = coords[2];
             img_out(xx, yy, 0) = Trilinear::interpolate(data, xp, yp, zp, Ainv);
         }
     }
@@ -951,8 +953,8 @@ MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix2D<RFLOAT>
     for (int i = 0; i <= r_max_out; i++) {
         // Get logical coordinates in the 2D map
         const auto coords = matmul1_2(Ainv, RFLOAT(i));
-        const RFLOAT xp = coords[0];
-        const RFLOAT yp = coords[1];
+        const auto &xp = coords[0];
+        const auto &yp = coords[1];
         const RFLOAT r_ref_2 = euclidsq(xp, yp);
 
         if (r_ref_2 > r_max_ref_2) continue;
@@ -1002,8 +1004,8 @@ MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix2D<RF
         for (int x = 0; x <= x_max; x++) {
             // Pythag(x, y) guaranteed to be < r_max_out
             const auto coords = matmul2_2(Ainv, RFLOAT(x), RFLOAT(y));
-            const RFLOAT xp = coords[0];
-            const RFLOAT yp = coords[1];
+            const auto &xp = coords[0];
+            const auto &yp = coords[1];
             const int r_ref_2 = euclidsq(xp, yp);
 
             if (r_ref_2 > r_max_ref_2) continue;
@@ -1062,9 +1064,9 @@ MultidimArray<Complex> Projector::rotate3D(int xdim, int ydim, int zdim, const M
         for (int x = 0; x <= x_max; x++) {
             // Get logical coordinates in the 3D map
             const auto coords = matmul3_3(Ainv, RFLOAT(x), RFLOAT(y), RFLOAT(z));
-            const RFLOAT xp = coords[0];
-            const RFLOAT yp = coords[1];
-            const RFLOAT zp = coords[2];
+            const auto &xp = coords[0];
+            const auto &yp = coords[1];
+            const auto &zp = coords[2];
             const int r_ref_2 = euclidsq(xp, yp, zp);
 
             if (r_ref_2 > r_max_ref_2) continue;
