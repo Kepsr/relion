@@ -2671,7 +2671,7 @@ void MlOptimiserMpi::compareTwoHalves() {
             wsum_model.BPref[0].decenter(avg1, avg, wsum_model.BPref[0].r_max * wsum_model.BPref[0].r_max);
             transformer_debug.inverseFourierTransform();
             const auto fnt = FileName::compose("downsampled_avg_half", node->rank, "spi");
-            CenterFFT(Mavg, true);
+            CenterFFT(Mavg, +1);
             Image<RFLOAT>(Mavg).write(fnt);
             #endif
 

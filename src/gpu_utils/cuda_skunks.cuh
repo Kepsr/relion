@@ -50,7 +50,7 @@ void computeFourierTransformMap(Projector *P, MultidimArray<RFLOAT> &vol_in, Mul
         Mpad.elem(i, j, k) = vol_in.elem(i, j, k);
 
     // Translate padded map to put origin of FT in the center
-    CenterFFT(Mpad, true);
+    CenterFFT(Mpad, +1);
 
     // Calculate the oversampled Fourier transform
     MultidimArray<Complex> &Faux = transformer.FourierTransform(Mpad);

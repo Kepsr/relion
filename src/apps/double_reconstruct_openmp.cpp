@@ -162,7 +162,7 @@ class reconstruct_parameters {
 
                     // Inverse Fourier transform and mask out the particle
                     Iapp = transformer.inverseFourierTransform(Fapp);
-                    CenterFFT(Iapp, false);
+                    CenterFFT(Iapp, -1);
 
                     softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 
@@ -174,7 +174,7 @@ class reconstruct_parameters {
                     }
 
                     // Back into Fourier-space
-                    CenterFFT(Iapp, true);
+                    CenterFFT(Iapp, +1);
                     Fapp = transformer.FourierTransform(Iapp);  // std::move?
 
                     // First time round: resize the output arrays
@@ -383,7 +383,7 @@ class reconstruct_parameters {
                             fom = table.getValue<RFLOAT>(EMDL::PARTICLE_FOM, p);
                         }
 
-                        CenterFFT(obsR[p](), true);
+                        CenterFFT(obsR[p](), +1);
 
                         const int sPad2D = paddedSizes2D[opticsGroup];
 

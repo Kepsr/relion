@@ -204,7 +204,8 @@ class FourierTransformer {
 
     public:
 
-    static inline int get_array_rank(const MultidimArray<RFLOAT> &arr) {
+    template <typename T>
+    static inline int get_array_rank(const MultidimArray<T> &arr) {
         return Zsize(arr) == 1 ? Ysize(arr) == 1 ? 1 : 2 : 3;
     }
 
@@ -282,8 +283,8 @@ class FourierTransformer {
 
     /** Return a complete Fourier transform (two halves).
     */
-    template <typename T>
-    void getCompleteFourier(T& V) {
+    MultidimArray<Complex> getCompleteFourier() {
+        MultidimArray<Complex> V;
         V.reshape(*fReal);
         switch (get_array_rank(V)) {
             case 1:
@@ -292,19 +293,20 @@ class FourierTransformer {
                     conj(direct::elem(fFourier, Xsize(*fReal) - i));
             } break;
             case 2:
-                for (long int j = 0; j < Ysize(V); j++)
-                for (long int i = 0; i < Xsize(V); i++) {
-                    direct::elem(V, i, j) = j < Xsize(fFourier) ? direct::elem(fFourier, i, j) :
-                        conj(direct::elem(fFourier, Xsize(*fReal) - j, (Ysize(*fReal) - i) % Ysize(*fReal)));
-                } break;
+            for (long int j = 0; j < Ysize(V); j++)
+            for (long int i = 0; i < Xsize(V); i++) {
+                direct::elem(V, i, j) = i < Xsize(fFourier) ? direct::elem(fFourier, i, j) :
+                    conj(direct::elem(fFourier, Xsize(*fReal) - i, (Ysize(*fReal) - j) % Ysize(*fReal)));
+            } break;
             case 3:
-                for (long int k = 0; k < Zsize(V); k++)
-                for (long int j = 0; j < Ysize(V); j++)
-                for (long int i = 0; i < Xsize(V); i++) {
-                    direct::elem(V, i, j, k) = j < Xsize(fFourier) ? direct::elem(fFourier, i, j, k) :
-                        conj(direct::elem(fFourier, Xsize(*fReal) - j, (Ysize(*fReal) - i) % Ysize(*fReal), (Zsize(*fReal) - k) % Zsize(*fReal)));
-                } break;
+            for (long int k = 0; k < Zsize(V); k++)
+            for (long int j = 0; j < Ysize(V); j++)
+            for (long int i = 0; i < Xsize(V); i++) {
+                direct::elem(V, i, j, k) = i < Xsize(fFourier) ? direct::elem(fFourier, i, j, k) :
+                    conj(direct::elem(fFourier, Xsize(*fReal) - i, (Ysize(*fReal) - j) % Ysize(*fReal), (Zsize(*fReal) - k) % Zsize(*fReal)));
+            } break;
         }
+        return V;
     }
 
     /** Set one half of the FT in fFourier from the input complete Fourier transform (two halves).
@@ -390,191 +392,153 @@ MultidimArray<T>& CenterFFTbySign(MultidimArray<T> &v) {
     return v;
 }
 
-
-/** Center an array, to have its origin at the origin of the FFTW
- *
+/** Center an array,
+ * so that its zero-frequency component lies at the origin.
+ * Like numpy.fft.fftshift.
  */
 template <typename T>
-void CenterFFT(MultidimArray<T>& v, bool forward) {
+void CenterFFT(MultidimArray<T> &v, int sign = +1) {
     #ifndef FAST_CENTERFFT
-    if (v.getDim() == 1) {
-        // 1D
-        int l = Xsize(v), shift = l / 2;
-        MultidimArray<T> aux (l);
 
-        if (!forward) { shift = -shift; }
+    MultidimArray<T> aux;
 
-        // Shift the input in an auxiliary vector
-        for (int i = 0; i < l; i++) {
-            int ip = i + shift;
+    switch (v.getDim()) {
+        case 1: {
 
-                 if (ip <  0) { ip += l; }
-            else if (ip >= l) { ip -= l; }
+        const int xdim = Xsize(v), xshift = (xdim + xdim / 2 * sign) % xdim;
 
-            aux.elem(ip) = direct::elem(v, i);
+        // Shift in x
+        aux.reshape(xdim);
+
+        for (int i = 0; i < xdim; i++) {
+            // Shift
+            const int ip = (i + xshift) % xdim;
+            direct::elem(aux, ip) = direct::elem(v, i);
         }
-
-        // Copy the vector
-        for (int i = 0; i < l; i++)
+        // Copy back
+        for (int i = 0; i < xdim; i++)
             direct::elem(v, i) = direct::elem(aux, i);
-    } else if (v.getDim() == 2) {
-        // 2D
 
-        // Shift in the X direction
-        int l = Xsize(v), shift = l / 2;
-        MultidimArray<T> aux (l);
+        } return;
+        case 2: {
 
-        if (!forward) { shift = -shift; }
+        const int xdim = Xsize(v), xshift = (xdim + xdim / 2 * sign) % xdim,
+                  ydim = Ysize(v), yshift = (ydim + ydim / 2 * sign) % ydim;
 
-        for (int j = 0; j < Ysize(v); j++) {
-            // Shift the input in an auxiliar vector
-            for (int i = 0; i < l; i++) {
-                int ip = i + shift;
+        // Shift in x
+        aux.reshape(xdim);
 
-                     if (ip <  0) { ip += l; }
-                else if (ip >= l) { ip -= l; }
-
-                aux.elem(ip) = direct::elem(v, i, j);
+        for (int j = 0; j < ydim; j++) {
+            // Shift
+            for (int i = 0; i < xdim; i++) {
+                const int ip = (i + xshift) % xdim;
+                direct::elem(aux, ip) = direct::elem(v, i, j);
             }
-
-            // Copy the vector
-            for (int i = 0; i < l; i++)
+            // Copy back
+            for (int i = 0; i < xdim; i++)
                 direct::elem(v, i, j) = direct::elem(aux, i);
         }
 
-        // Shift in the Y direction
-        shift = (l = Ysize(v)) / 2;
-        aux.reshape(l);
+        // Shift in y
+        aux.reshape(ydim);
 
-        if (!forward) { shift = -shift; }
-
-        for (int i = 0; i < Xsize(v); i++) {
-            // Shift the input in an auxiliar vector
-            for (int j = 0; j < j; i++) {
-                int jp = j + shift;
-
-                     if (jp <  0) { jp += l; }
-                else if (jp >= l) { jp -= l; }
-
-                aux.elem(jp) = direct::elem(v, i, j);
+        for (int i = 0; i < xdim; i++) {
+            // Shift
+            for (int j = 0; j < ydim; j++) {
+                const int jp = (j + yshift) % ydim;
+                direct::elem(aux, jp) = direct::elem(v, i, j);
             }
-
-            // Copy the vector
-            for (int j = 0; j < l; j++)
+            // Copy back
+            for (int j = 0; j < ydim; j++)
                 direct::elem(v, i, j) = direct::elem(aux, j);
         }
-    } else if (v.getDim() == 3) {
-        // 3D
-        // Shift in the X direction
-        int l = Xsize(v), shift = l / 2;
-        MultidimArray<T> aux (l);
 
-        if (!forward) { shift = -shift; }
+        } return;
+        case 3: {
 
-        for (int k = 0; k < Zsize(v); k++)
-        for (int j = 0; j < Ysize(v); j++) {
-            // Shift the input in an auxiliar vector
-            for (int i = 0; i < l; i++) {
-                int ip = i + shift;
+        const int xdim = Xsize(v), xshift = (xdim + xdim / 2 * sign) % xdim,
+                  ydim = Ysize(v), yshift = (ydim + ydim / 2 * sign) % ydim,
+                  zdim = Zsize(v), zshift = (zdim + zdim / 2 * sign) % zdim;
 
-                     if (ip <  0) { ip += l; }
-                else if (ip >= l) { ip -= l; }
+        // Shift in x
+        aux.reshape(xdim);
 
-                aux.elem(ip) = direct::elem(v, i, j, k);
+        for (int k = 0; k < zdim; k++)
+        for (int j = 0; j < ydim; j++) {
+            // Shift
+            for (int i = 0; i < xdim; i++) {
+                const int ip = (i + xshift) % xdim;
+                direct::elem(aux, ip) = direct::elem(v, i, j, k);
             }
-
-            // Copy the vector
-            for (int i = 0; i < l; i++)
+            // Copy back
+            for (int i = 0; i < xdim; i++)
                 direct::elem(v, i, j, k) = direct::elem(aux, i);
         }
 
-        // Shift in the Y direction
-        shift = (l = Ysize(v)) / 2;
-        aux.reshape(l);
+        // Shift in y
+        aux.reshape(ydim);
 
-        if (!forward) { shift = -shift; }
-
-        for (int k = 0; k < Zsize(v); k++)
-        for (int i = 0; i < Xsize(v); i++) {
-            // Shift the input in an auxiliar vector
-            for (int j = 0; j < l; j++) {
-                int jp = j + shift;
-
-                     if (jp <  0) { jp += l; }
-                else if (jp >= l) { jp -= l; }
-
-                aux.elem(jp) = direct::elem(v, i, j, k);
+        for (int k = 0; k < zdim; k++)
+        for (int i = 0; i < xdim; i++) {
+            // Shift
+            for (int j = 0; j < ydim; j++) {
+                const int jp = (j + yshift) % ydim;
+                direct::elem(aux, jp) = direct::elem(v, i, j, k);
             }
-
-            // Copy the vector
-            for (int j = 0; j < l; j++)
+            // Copy back
+            for (int j = 0; j < ydim; j++)
                 direct::elem(v, i, j, k) = direct::elem(aux, j);
         }
 
-        // Shift in the Z direction
-        shift = (l = Zsize(v)) / 2;
-        aux.reshape(l);
+        // Shift in z
+        aux.reshape(zdim);
 
-        if (!forward) { shift = -shift; }
-
-        for (int j = 0; j < Ysize(v); j++)
-        for (int i = 0; i < Xsize(v); i++) {
-            // Shift the input in an auxiliar vector
-            for (int k = 0; k < l; k++) {
-                int kp = k + shift;
-
-                     if (kp <  0) { kp += l; }
-                else if (kp >= l) { kp -= l; }
-
-                aux.elem(kp) = direct::elem(v, i, j, k);
+        for (int j = 0; j < ydim; j++)
+        for (int i = 0; i < xdim; i++) {
+            // Shift
+            for (int k = 0; k < zdim; k++) {
+                const int kp = (k + zshift) % zdim;
+                direct::elem(aux, kp) = direct::elem(v, i, j, k);
             }
-
-            // Copy the vector
-            for (int k = 0; k < l; k++)
+            // Copy back
+            for (int k = 0; k < zdim; k++)
                 direct::elem(v, i, j, k) = direct::elem(aux, k);
         }
-    } else {
+
+        } return;
+        default:
         v.printShape();
         REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
     }
     #else // FAST_CENTERFFT
-    if (v.getDim() == 1) {
-        // 1D
+    switch (v.getDim()) {
+        case 1: {
 
-        int l = Xsize(v);
+        int xdim = Xsize(v);
         MultidimArray<T> aux;
-        aux.reshape(l);
-        int shift = l / 2;
+        aux.reshape(xdim);
+        const int shift = xdim + (xdim / 2 * sign) % xdim;
 
-        if (!forward) { shift = -shift; }
-
-        // Shift the input in an auxiliary vector
-        for (int i = 0; i < l; i++) {
-            int ip = i + shift;
-
-                 if (ip <  0) { ip += l; }
-            else if (ip >= l) { ip -= l; }
-
+        // Shift
+        for (int i = 0; i < xdim; i++) {
+            const int ip = (i + shift) % xdim;
             aux(ip) = direct::elem(v, i);
         }
-
-        // Copy the vector
-        for (int i = 0; i < l; i++)
+        // Copy back
+        for (int i = 0; i < xdim; i++)
             direct::elem(v, i) = direct::elem(aux, i);
-    } else if (v.getDim() == 2 ) {
-        int batchSize = 1;
-        int xSize = Xsize(v);
-        int ySize = Ysize(v);
 
-        int xshift = xSize / 2;
-        int yshift = ySize / 2;
+    } return;
 
-        if (!forward) {
-            xshift = -xshift;
-            yshift = -yshift;
-        }
+    case 2: {
+        const int batchSize = 1;
+        const int xdim = Xsize(v),
+                  ydim = Ysize(v);
 
-        size_t image_size = xSize * ySize;
+        const int xshift = xdim / 2 * sign,
+                  yshift = ydim / 2 * sign;
+
+        size_t image_size = xdim * ydim;
         size_t isize2 = image_size / 2;
         int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
 
@@ -586,28 +550,22 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
             CpuKernels::centerFFT_2D<T>(
                 batchSize, pixel_start, pixel_end, v.data,
-                (size_t) xSize * ySize, xSize, ySize, xshift, yshift
+                (size_t) xdim * ydim, xdim, ydim, xshift, yshift
             );
         }
         );
-    } else if (v.getDim() == 3) {
-        int  batchSize = 1;
-        int xSize = Xsize(v);
-        int ySize = Ysize(v);
-        int zSize = Zsize(v);
+    } return;
 
-        if(zSize > 1) {
-            int xshift = xSize / 2;
-            int yshift = ySize / 2;
-            int zshift = zSize / 2;
+    case 3: {
+        const int batchSize = 1;
+        const int xdim = Xsize(v), ydim = Ysize(v),zdim = Zsize(v);
 
-            if (!forward) {
-                xshift = -xshift;
-                yshift = -yshift;
-                zshift = -zshift;
-            }
+        if (zdim > 1) {
+            int xshift = xdim / 2 * sign;
+            int yshift = ydim / 2 * sign;
+            int zshift = zdim / 2 * sign;
 
-            size_t image_size = xSize * ySize * zSize;
+            size_t image_size = xdim * ydim * zdim;
             size_t isize2 = image_size / 2;
             int block =ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
 			// for (int i = 0; i < block; i++){
@@ -618,20 +576,15 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
                 CpuKernels::centerFFT_3D<T>(
                     batchSize, pixel_start, pixel_end, v.data,
-                    (size_t) xSize * ySize * zSize, xSize, ySize, zSize, xshift, yshift, zshift
+                    (size_t) xdim * ydim * zdim, xdim, ydim, zdim, xshift, yshift, zshift
                 );
             }
             );
         } else {
-            int xshift = xSize / 2;
-            int yshift = ySize / 2;
+            int xshift = xdim / 2 * sign;
+            int yshift = ydim / 2 * sign;
 
-            if (!forward) {
-                xshift = -xshift;
-                yshift = -yshift;
-            }
-
-            size_t image_size = xSize * ySize;
+            size_t image_size = xdim * ydim;
             size_t isize2 = image_size / 2;
             int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
 			// for (int i = 0; i < blocks; i++) {
@@ -642,12 +595,13 @@ void CenterFFT(MultidimArray<T>& v, bool forward) {
 
                 CpuKernels::centerFFT_2D<T>(
                     batchSize, pixel_start, pixel_end, v.data,
-                    (size_t) xSize * ySize, xSize, ySize, xshift, yshift
+                    (size_t) xdim * ydim, xdim, ydim, xshift, yshift
                 );
             }
             );
         }
-    } else {
+    } return;
+    default:
         v.printShape();
         REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
     }
@@ -749,7 +703,7 @@ void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, l
 
     Min = transformer.inverseFourierTransform(Fin).setXmippOrigin();
     if (do_recenter) {
-        CenterFFT(Min, false);
+        CenterFFT(Min, -1);
     }
 
     // Now do the actual windowing in real-space
@@ -766,7 +720,7 @@ void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, l
 
     // Recenter FFT back again
     if (do_recenter)
-        CenterFFT(Min, true);
+        CenterFFT(Min, +1);
 
     // And do the inverse Fourier transform
     transformer.clear();

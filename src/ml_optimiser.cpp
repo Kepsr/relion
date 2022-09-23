@@ -3590,7 +3590,7 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         Fimg1 = exp_local_Fimgs_shifted[0][0];
         FourierTransformer transformer;
         tt() = transformer.inverseFourierTransform(Fimg1);
-        CenterFFT(tt(), false);
+        CenterFFT(tt(), -1);
         std::string fnm = mode + std::string("_out_shifted_image.mrc");
         tt.write(fnm);
         tt().resize(Xsize(Mresol_coarse[optics_group]), Ysize(Mresol_coarse[optics_group]));
@@ -3612,7 +3612,7 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         fnm = mode + std::string("_out_ctf.mrc");
         tt.write(fnm);
         // exp_local_Fctfs[0]), tt());
-        // CenterFFT(tt(),false);
+        // CenterFFT(tt(), -1);
         // fnm = mode + std::string("_out_ctf.mrc");
         // tt.write(fnm);
         fnm = mode + std::string("_out_10k_weights.txt");
@@ -5120,7 +5120,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                         */
                         Faux = windowFourierTransform(FTo, mymodel.ori_size);
                         img() = transformer.inverseFourierTransform(Faux);
-                        CenterFFT(img(), false);
+                        CenterFFT(img(), -1);
                         FileName fn_img = "unshifted.spi";
                         fn_img = fn_img.insertBeforeExtension("_ibody" + integerToString(ibody+1));
                         fn_img = fn_img.insertBeforeExtension("_obody" + integerToString(obody+1));
@@ -5240,14 +5240,14 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             if (part_id == round(debug1)) {
                 Faux = windowFourierTransform(exp_Fimg, image_full_size[optics_group]);
                 img() = transformer.inverseFourierTransform(Faux);
-                CenterFFT(img(), false);
+                CenterFFT(img(), -1);
                 fn_img = "exp_Fimgs_subtracted.spi";
                 fn_img = fn_img.insertBeforeExtension("_ibody" + integerToString(ibody+1));
                 img.write(fn_img);
                 std::cerr << "written " << fn_img << std::endl;
                 Faux = windowFourierTransform(exp_Fimg_nomask[img_id], image_full_size[optics_group]);
                 img() = transformer.inverseFourierTransform(Faux);
-                CenterFFT(img(), false);
+                CenterFFT(img(), -1);
                 fn_img = "exp_Fimgs_nomask_subtracted.spi";
                 fn_img = fn_img.insertBeforeExtension("_ibody" + integerToString(ibody+1));
                 img.write(fn_img);
@@ -5459,7 +5459,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                             MultidimArray<Complex> Faux = exp_local_Fimgs_shifted[img_id][my_trans_image];
                             MultidimArray<Complex> Fo = windowFourierTransform(Faux, mymodel.ori_size);
                             tt() = transformer.inverseFourierTransform(Fo);
-                            CenterFFT(tt(), false);
+                            CenterFFT(tt(), -1);
                             img_save_mask() += tt();
                             img_save_mask.write("translational_searches_mask_helix.spi");
                             std::cerr << " written translational_searches_mask_helix.spi; press any key to continue..." << std::endl;
@@ -5484,7 +5484,7 @@ void MlOptimiser::precalculateShiftedImagesCtfsAndInvSigma2s(bool do_also_unmask
                             copMultidimArray<Complex> Faux = exp_local_Fimgs_shifted_nomask[img_id][my_trans_image];
                             copMultidimArray<Complex> Fo = windowFourierTransform(Faux, mymodel.ori_size);
                             tt() = transformer.inverseFourierTransform(Fo);
-                            CenterFFT(tt(), false);
+                            CenterFFT(tt(), -1);
                             img_save_nomask() += tt();
                             img_save_nomask.write("translational_searches_nomask_helix.spi");
                             std::cerr << " written translational_searches_nomask_helix.spi; press any key to continue..." << std::endl;
@@ -5858,13 +5858,13 @@ void MlOptimiser::getAllSquaredDifferences(
                                             else
                                                 tt().resize(exp_current_image_size, exp_current_image_size);
                                             tt() = transformer.inverseFourierTransform(Fish);
-                                            CenterFFT(tt(),false);
+                                            CenterFFT(tt(), -1);
                                             FileName fnt = "Fimg.spi";
                                             // fnt = FileName::compose("Fimg_shift1_i", ihidden_over, "spi");
                                             tt.write(fnt);
 
                                             tt() = transformer.inverseFourierTransform(Frefctf);
-                                            CenterFFT(tt(), false);
+                                            CenterFFT(tt(), -1);
                                             fnt = "Fref.spi";
                                             // fnt = FileName::compose("Fref1_i", ihidden_over, "spi");
                                             tt.write(fnt);
@@ -5935,19 +5935,19 @@ void MlOptimiser::getAllSquaredDifferences(
                                                 exp_current_image_size = image_current_size[optics_group];
                                             tt().resize(exp_current_image_size, exp_current_image_size);
                                             tt() = transformer.inverseFourierTransform(Fish);
-                                            CenterFFT(tt(),false);
+                                            CenterFFT(tt(), -1);
                                             tt.write("Fimg_shift.spi");
                                             std::cerr << "written Fimg_shift.spi" << std::endl;
                                             FourierTransformer transformer2;
                                             tt().initZeros();
                                             tt() = transformer2.inverseFourierTransform(Frefctf);
-                                            CenterFFT(tt(),false);
+                                            CenterFFT(tt(), -1);
                                             tt.write("Frefctf.spi");
                                             std::cerr << "written Frefctf.spi" << std::endl;
                                             FourierTransformer transformer3;
                                             tt().initZeros();
                                             tt() = transformer3.inverseFourierTransform(Fref);
-                                            CenterFFT(tt(),false);
+                                            CenterFFT(tt(), -1);
                                             tt.write("Fref.spi");
                                             std::cerr << "written Fref.spi" << std::endl;
                                             std::cerr << " A= " << A << std::endl;
@@ -5957,7 +5957,7 @@ void MlOptimiser::getAllSquaredDifferences(
                                             Fref = mymodel.PPref[exp_iclass].get2DFourierTransform(
                                                 exp_local_Minvsigma2[img_id].xdim, exp_local_Minvsigma2[img_id].ydim, exp_local_Minvsigma2[img_id].zdim, A);
                                             tt() = transformer3.inverseFourierTransform(Fref);
-                                            CenterFFT(tt(),false);
+                                            CenterFFT(tt(), -1);
                                             tt.write("Fref2.spi");
                                             std::cerr << "written Fref2.spi" << std::endl;
                                             Image<RFLOAT> Itt;
@@ -6343,7 +6343,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
             MultidimArray<Complex> Faux = windowFourierTransform(exp_Fimg, mymodel.ori_size);
             It().resize(mymodel.ori_size, mymodel.ori_size);
             It() = transformer.inverseFourierTransform(Faux);
-            CenterFFT(It(), false);
+            CenterFFT(It(), -1);
             It.write("exp_Fimg.spi");
             std::cerr << "written exp_Fimgs.spi " << std::endl;
             */
@@ -6960,13 +6960,13 @@ void MlOptimiser::storeWeightedSums(
                                     Image<RFLOAT> tt;
                                     tt().resize(exp_current_image_size, exp_current_image_size);
                                     tt() = transformer.inverseFourierTransform(Ftt);
-                                    CenterFFT(tt(),false);
+                                    CenterFFT(tt(), -1);
                                     FileName fnt = "BPimg_body" + integerToString(ibody + 1, 1) + "_ihidden" + integerToString(ihidden_over) + ".spi";
                                     tt.write(fnt);
                                     Ftt = Frefctf;
                                     tt().resize(exp_current_image_size, exp_current_image_size);
                                     tt() = transformer.inverseFourierTransform(Ftt);
-                                    CenterFFT(tt(), false);
+                                    CenterFFT(tt(), -1);
                                     fnt = "Fref_body" + integerToString(ibody + 1, 1) + "_ihidden" + integerToString(ihidden_over) + ".spi";
                                     tt.write(fnt);
 

@@ -269,7 +269,7 @@ class particle_reposition_parameters {
 
                     // Take inverse transform
                     Mref = transformer.inverseFourierTransform(Fref);
-                    CenterFFT(Mref, false);
+                    CenterFFT(Mref, -1);
                     Mref.setXmippOrigin();
 
                     int mic_image_size = ceil(my_image_size * my_pixel_size / mic_pixel_size);

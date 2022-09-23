@@ -607,7 +607,7 @@ void HelixAligner::initialiseClasses() {
             MultidimArray<RFLOAT> myline =
                 transformer.inverseFourierTransform(myFline).setXmippOrigin();
             // Shift the image back to the center...
-            CenterFFT(myline, false);
+            CenterFFT(myline, -1);
             for (int j = 0; j < Ysize(model.Aref[0]); j++)
                 direct::elem(model.Aref[0], i, j) = direct::elem(myline, j);
         }
@@ -857,7 +857,7 @@ void HelixAligner::reconstruct2D(int iclass) {
         for (int j = 0; j < Ysize(model.Aref[iclass]); j++)
             direct::elem(myline, j) = direct::elem(model.Aref[iclass], i, j);
 
-        CenterFFT(myline, true);
+        CenterFFT(myline, +1);
         FourierTransformer transformer;
         MultidimArray<Complex> &myFline = transformer.FourierTransform(myline);
         myFlines.push_back(myFline);
@@ -919,7 +919,7 @@ void HelixAligner::reconstruct2D(int iclass) {
         FourierTransformer transformer;
         MultidimArray<RFLOAT> line = transformer.inverseFourierTransform(myFlines[i]);
         // Shift the image back to the center...
-        CenterFFT(line, false);
+        CenterFFT(line, -1);
 
         for (int j = 0; j < Ysize(model.Aref[iclass]); j++)
             direct::elem(model.Aref[iclass], i, j) = direct::elem(line, j);

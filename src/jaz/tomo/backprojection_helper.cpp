@@ -376,7 +376,7 @@ void BackprojectionHelper::backprojectDots(
     taperEdges(streakVol, taperX, taperY, taperZ);
     VolumeConverter::convert(streakVol, volRL);
 
-    CenterFFT(volRL.data, true);
+    CenterFFT(volRL.data, +1);
 
     FourierTransformer ft;
     spectrum.data = ft.FourierTransform(volRL());  // std::move?
@@ -458,7 +458,7 @@ void BackprojectionHelper::backprojectDotsFS(
     taperEdges(streakVol, taperX, taperY, taperZ);
     VolumeConverter::convert(streakVol, volRL);
 
-    CenterFFT(volRL.data, true);
+    CenterFFT(volRL.data, +1);
 
     dest.data = FourierTransformer{}.FourierTransform(volRL());
 }

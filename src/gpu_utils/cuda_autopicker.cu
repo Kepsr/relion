@@ -727,7 +727,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 Maux.data[i] = micTransformer.reals[i];
 
             CTICTOC(timer, "setXmippOrigin_FP_0", ({ Maux.setXmippOrigin(); })
-            /// TODO: check whether I need CenterFFT(Maux, false)
+            /// TODO: check whether I need CenterFFT(Maux, -1)
             // Sjors 20 Apr 2016: checked, somehow not needed.
 
             sum_ref_under_circ_mask = 0.0;

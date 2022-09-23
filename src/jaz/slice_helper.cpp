@@ -256,11 +256,11 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
 
     MultidimArray<RFLOAT> dest2r (2 * (dest2.data.xdim - 1), dest2.data.ydim);
     dest2r = FourierTransformer{}.inverseFourierTransform(dest2.data);
-    CenterFFT(dest2r, true);
+    CenterFFT(dest2r, +1);
 
     MultidimArray<RFLOAT> weightr (2 * (dest2.data.xdim - 1), dest2.data.ydim);
     weightr = FourierTransformer{}.inverseFourierTransform(weight.data);
-    CenterFFT(weightr, true);
+    CenterFFT(weightr, +1);
 
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
@@ -270,7 +270,7 @@ void SliceHelper::extractSpectralSlice(Image<Complex> &src, Image<RFLOAT> &dest,
 }
 
 void SliceHelper::insertSpectralSlices(
-        std::vector<Image<RFLOAT> > &src,
+        std::vector<Image<RFLOAT>> &src,
         std::vector<gravis::d3Matrix> proj,
         std::vector<gravis::d2Vector> volCentImg,
         Image<Complex> &dest, double thickness, double thicknessSlope, double imgPad) {
@@ -283,7 +283,7 @@ void SliceHelper::insertSpectralSlices(
 
     const int ic = src.size();
 
-    std::vector<Image<Complex> > srcSpectra(ic);
+    std::vector<Image<Complex>> srcSpectra(ic);
     std::vector<d2Vector> shifts(ic);
     std::vector<double> thz(ic);
 
@@ -292,7 +292,7 @@ void SliceHelper::insertSpectralSlices(
     for (int i = 0; i < ic; i++) {
         avgPad2D(src[i], img, imgPad);
 
-        CenterFFT(img.data, false);
+        CenterFFT(img.data, -1);
         srcSpectra[i].data = FourierTransformer{}.FourierTransform(img.data);
 
         shifts[i] = d2Vector(volCentImg[i].x - wir/2.0, volCentImg[i].y - hir/2.0);
@@ -374,7 +374,7 @@ void SliceHelper::insertSpectralSlices(
 
 
 void SliceHelper::insertWeightedSpectralSlices(
-        std::vector<Image<RFLOAT> > &src,
+        std::vector<Image<RFLOAT>> &src,
         std::vector<gravis::d3Matrix> proj,
         std::vector<gravis::d2Vector> volCentImg,
         std::vector<double> imgWeights,
@@ -388,7 +388,7 @@ void SliceHelper::insertWeightedSpectralSlices(
 
     const int ic = src.size();
 
-    std::vector<Image<Complex> > srcSpectra(ic);
+    std::vector<Image<Complex>> srcSpectra(ic);
     std::vector<d2Vector> shifts(ic);
     std::vector<double> thz(ic);
 
@@ -397,7 +397,7 @@ void SliceHelper::insertWeightedSpectralSlices(
     for (int i = 0; i < ic; i++) {
         avgPad2D(src[i], img, imgPad);
 
-        CenterFFT(img.data, false);
+        CenterFFT(img.data, -1);
         srcSpectra[i].data = FourierTransformer{}.FourierTransform(img.data);
 
         shifts[i] = d2Vector(volCentImg[i].x - wir/2.0, volCentImg[i].y - hir/2.0);
@@ -545,7 +545,7 @@ void SliceHelper::insertZSlice(const Image<T> &src, Image<T> &dest, long int z) 
 }
 
 template <typename T>
-Image<T> SliceHelper::consolidate(const std::vector<Image<T> > &src, bool toN) {
+Image<T> SliceHelper::consolidate(const std::vector<Image<T>> &src, bool toN) {
     const int w = src[0].data.xdim;
     const int h = src[0].data.ydim;
     const int ic = src.size();
