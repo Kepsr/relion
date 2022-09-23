@@ -1418,3 +1418,171 @@ MultidimArray<RFLOAT> generateBinaryHelicalFourierMask(
     }
     return mask;
 }
+
+template <typename T>
+void CenterFFT(MultidimArray<T> &v, int sign) {
+    #ifndef FAST_CENTERFFT
+
+    switch (v.getDim()) {
+        case 1: {
+
+        const int xdim = Xsize(v), xshift = (xdim + xdim / 2 * sign) % xdim;
+
+        // Shift in x
+        for (long int il = 0; il < gcd(xshift, xdim); il++)
+        for (long int ir = (il + xshift) % xdim; ir != il; (ir += xshift) %= xdim)
+            std::swap(direct::elem(v, il), direct::elem(v, ir));
+
+        } return;
+
+        case 2: {
+
+        const int xdim = Xsize(v), xshift = (xdim + xdim / 2 * sign) % xdim,
+                  ydim = Ysize(v), yshift = (ydim + ydim / 2 * sign) % ydim;
+
+        // Shift in x
+        for (long int j = 0; j < ydim; j++)
+        for (long int il = 0; il < gcd(xshift, xdim); il++)
+        for (long int ir = (il + xshift) % xdim; ir != il; (ir += xshift) %= xdim)
+            std::swap(direct::elem(v, il, j), direct::elem(v, ir, j));
+
+        // Shift in y
+        for (long int i = 0; i < xdim; i++)
+        for (long int jl = 0; jl < gcd(yshift, ydim); jl++)
+        for (long int jr = (jl + yshift) % ydim; jr != jl; (jr += yshift) %= ydim)
+            std::swap(direct::elem(v, i, jl), direct::elem(v, i, jr));
+
+        } return;
+
+        case 3: {
+
+        const int xdim = Xsize(v), xshift = (xdim + xdim / 2 * sign) % xdim,
+                  ydim = Ysize(v), yshift = (ydim + ydim / 2 * sign) % ydim,
+                  zdim = Zsize(v), zshift = (zdim + zdim / 2 * sign) % zdim;
+
+        // Shift in x
+        for (long int k = 0; k < zdim; k++)
+        for (long int j = 0; j < ydim; j++)
+        for (long int il = 0; il < gcd(xshift, xdim); il++)
+        for (long int ir = (il + xshift) % xdim; ir != il; (ir += xshift) %= xdim)
+            std::swap(direct::elem(v, il, j, k), direct::elem(v, ir, j, k));
+
+        // Shift in y
+        for (long int k = 0; k < zdim; k++)
+        for (long int i = 0; i < xdim; i++)
+        for (long int jl = 0; jl < gcd(yshift, ydim); jl++)
+        for (long int jr = (jl + yshift) % ydim; jr != jl; (jr += yshift) %= ydim)
+            std::swap(direct::elem(v, i, jl, k), direct::elem(v, i, jr, k));
+
+        // Shift in z
+        for (long int j = 0; j < ydim; j++)
+        for (long int i = 0; i < xdim; i++)
+        for (long int kl = 0; kl < gcd(zshift, zdim); kl++)
+        for (long int kr = (kl + zshift) % zdim; kr != kl; (kr += zshift) %= zdim)
+            std::swap(direct::elem(v, i, j, kl), direct::elem(v, i, j, kr));
+
+        } return;
+
+        default:
+        v.printShape();
+        REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
+    }
+    #else // FAST_CENTERFFT
+    switch (v.getDim()) {
+        case 1: {
+
+        int xdim = Xsize(v);
+        MultidimArray<T> aux;
+        aux.reshape(xdim);
+        const int shift = xdim + (xdim / 2 * sign) % xdim;
+
+        // Shift
+        for (int i = 0; i < xdim; i++) {
+            const int ip = (i + shift) % xdim;
+            aux(ip) = direct::elem(v, i);
+        }
+        // Copy back
+        for (int i = 0; i < xdim; i++)
+            direct::elem(v, i) = direct::elem(aux, i);
+
+    } return;
+
+    case 2: {
+        const int batchSize = 1;
+        const int xdim = Xsize(v),
+                  ydim = Ysize(v);
+
+        const int xshift = xdim / 2 * sign,
+                  yshift = ydim / 2 * sign;
+
+        size_t image_size = xdim * ydim;
+        size_t isize2 = image_size / 2;
+        int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
+
+		// for (int i = 0; i < blocks; i++) {
+        tbb::parallel_for(0, blocks, [&](int i) {
+            size_t pixel_start = i * CFTT_BLOCK_SIZE;
+            size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
+            if (pixel_end > isize2) { pixel_end = isize2; }
+
+            CpuKernels::centerFFT_2D<T>(
+                batchSize, pixel_start, pixel_end, v.data,
+                (size_t) xdim * ydim, xdim, ydim, xshift, yshift
+            );
+        }
+        );
+    } return;
+
+    case 3: {
+        const int batchSize = 1;
+        const int xdim = Xsize(v), ydim = Ysize(v),zdim = Zsize(v);
+
+        if (zdim > 1) {
+            int xshift = xdim / 2 * sign;
+            int yshift = ydim / 2 * sign;
+            int zshift = zdim / 2 * sign;
+
+            size_t image_size = xdim * ydim * zdim;
+            size_t isize2 = image_size / 2;
+            int block =ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
+			// for (int i = 0; i < block; i++){
+            tbb::parallel_for(0, block, [&](int i) {
+                size_t pixel_start = i * CFTT_BLOCK_SIZE;
+                size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
+                if (pixel_end > isize2) { pixel_end = isize2; }
+
+                CpuKernels::centerFFT_3D<T>(
+                    batchSize, pixel_start, pixel_end, v.data,
+                    (size_t) xdim * ydim * zdim, xdim, ydim, zdim, xshift, yshift, zshift
+                );
+            }
+            );
+        } else {
+            int xshift = xdim / 2 * sign;
+            int yshift = ydim / 2 * sign;
+
+            size_t image_size = xdim * ydim;
+            size_t isize2 = image_size / 2;
+            int blocks = ceilf((float) (image_size / (float) (2 * CFTT_BLOCK_SIZE)));
+			// for (int i = 0; i < blocks; i++) {
+            tbb::parallel_for(0, blocks, [&](int i) {
+                size_t pixel_start = i * CFTT_BLOCK_SIZE;
+                size_t pixel_end = (i + 1) * CFTT_BLOCK_SIZE;
+                if (pixel_end > isize2) { pixel_end = isize2; }
+
+                CpuKernels::centerFFT_2D<T>(
+                    batchSize, pixel_start, pixel_end, v.data,
+                    (size_t) xdim * ydim, xdim, ydim, xshift, yshift
+                );
+            }
+            );
+        }
+    } return;
+    default:
+        v.printShape();
+        REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
+    }
+    #endif	// FAST_CENTERFFT
+}
+
+template void CenterFFT(MultidimArray<double> &v, int sign);

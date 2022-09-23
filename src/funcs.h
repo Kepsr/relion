@@ -68,6 +68,20 @@ inline RFLOAT raised_cos(RFLOAT theta) {
     return 0.5 * (1.0 + cos(theta));
 }
 
+// When possible, just include from <numeric>
+template <typename T>
+T gcd(T a, T b) {
+    if (a == 0) return b;
+    if (b == 0) return a;
+    while (a != b) {
+        if (a > b)
+            a -= b;
+        else
+            b -= a;
+    }
+    return a;
+}
+
 /** Structure of the points to do least-squares straight-line fitting
  */
 struct fit_point2D
