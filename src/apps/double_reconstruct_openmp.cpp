@@ -270,12 +270,12 @@ class reconstruct_parameters {
 
             r_max = -1;
 
-            if (fn_sub != "") {
+            if (!fn_sub.empty()) {
                 sub.read(fn_sub);
                 subProjector.computeFourierTransformMap(sub(), dummy, 2 * r_max);
             }
 
-            std::vector<MetaDataTable> mdts = StackHelper::splitByStack(&mdt0);
+            std::vector<MetaDataTable> mdts = StackHelper::splitByStack(mdt0);
             const long gc = mdts.size();
 
             std::vector<Image<RFLOAT>> prevRefs(2);
@@ -316,7 +316,7 @@ class reconstruct_parameters {
                     MetaDataTable table = mdts[g];
 
                     try {
-                        obsR = StackHelper::loadStack(&table);
+                        obsR = StackHelper::loadStack(table);
                     } catch (RelionError XE) {
                         std::cerr << "warning: unable to load micrograph #" << (g + 1) << "\n";
                         continue;

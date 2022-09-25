@@ -60,7 +60,7 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
         if (curName != lastName) {
             lastName = curName;
             curInd++;
-            out.push_back(MetaDataTable());
+            out.emplace_back();
         }
 
         out[curInd].addObject(md2.getObject(i));
@@ -80,22 +80,22 @@ MetaDataTable StackHelper::merge(const std::vector<MetaDataTable> &mdts) {
     return out;
 }
 
-std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
-    std::vector<MetaDataTable> out(0);
+std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable &mdt) {
 
-    if (!mdt->containsLabel(EMDL::IMAGE_NAME)) {
+    if (!mdt.containsLabel(EMDL::IMAGE_NAME)) {
         REPORT_ERROR("StackHelper::splitByStack: " + EMDL::label2Str(EMDL::IMAGE_NAME) + " missing in meta_data_table.\n");
     }
 
-    std::string testString = mdt->getValue<std::string>(EMDL::IMAGE_NAME, 0);
+    std::string testString = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
 
     if (testString.find("@") < 0) {
         REPORT_ERROR("StackHelper::splitByStack: " + EMDL::label2Str(EMDL::IMAGE_NAME) + " does not contain an '@'.\n");
     }
 
-    MetaDataTable md2(*mdt);
+    MetaDataTable md2 (mdt);
     md2.newSort<MD::CompareStringsAfterAtAt>(EMDL::IMAGE_NAME);
 
+    std::vector<MetaDataTable> out(0);
     const long lc = md2.size();
     std::string lastName = "";
     long curInd = -1;
@@ -107,7 +107,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
         if (curName != lastName) {
             lastName = curName;
             curInd++;
-            out.push_back(MetaDataTable());
+            out.emplace_back();
         }
 
         out[curInd].addObject(md2.getObject(i));
@@ -121,21 +121,21 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable* mdt) {
 }
 
 std::vector<Image<RFLOAT>> StackHelper::loadStack(
-    const MetaDataTable* mdt, std::string path, int threads
+    const MetaDataTable &mdt, std::string path, int threads
 ) {
-    std::vector<Image<RFLOAT>> out(mdt->size());
-    const long ic = mdt->size();
+    std::vector<Image<RFLOAT>> out(mdt.size());
+    const long ic = mdt.size();
 
-    std::string fullName = mdt->getValue<std::string>(EMDL::IMAGE_NAME, 0);
+    std::string fullName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
     std::string name = fullName.substr(fullName.find("@") + 1);
 
-    if (path != "") {
+    if (!path.empty()) {
         name = path + "/" + name.substr(name.find_last_of("/") + 1);
     }
 
     #pragma omp parallel for num_threads(threads)
     for (long i = 0; i < ic; i++) {
-        std::string sliceName = mdt->getValue<std::string>(EMDL::IMAGE_NAME, i);
+        std::string sliceName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, i);
         out[i].read(sliceName, true, -1, false, true);
     }
 
@@ -157,7 +157,7 @@ std::vector<Image<Complex>> StackHelper::loadStackFS(
     std::string fullName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
     std::string name = fullName.substr(fullName.find("@") + 1);
 
-    if (path != "") {
+    if (!path.empty()) {
         name = path + "/" + name.substr(name.find_last_of("/") + 1);
     }
 
@@ -207,16 +207,16 @@ void StackHelper::saveStack(std::vector<Image<RFLOAT>> &stack, std::string fn) {
 }
 
 std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
-    const MetaDataTable* mdt, std::string moviePath
+    const MetaDataTable &mdt, std::string moviePath
 ) {
-    std::vector<std::vector<Image<RFLOAT>>> out(mdt->size());
-    const long pc = mdt->size();
+    std::vector<std::vector<Image<RFLOAT>>> out(mdt.size());
+    const long pc = mdt.size();
 
-    std::string fullName  = mdt->getValue<std::string>(EMDL::IMAGE_NAME, 0);
-    std::string movieName = mdt->getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
+    std::string fullName  = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
+    std::string movieName = mdt.getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
     std::string name = fullName.substr(fullName.find("@") + 1);
 
-    std::string finName = moviePath == "" ?
+    std::string finName = moviePath.empty() ?
         name : moviePath + "/" + movieName.substr(movieName.find_last_of("/") + 1);
 
     std::cout << "loading real: " << finName << "\n";
@@ -235,7 +235,7 @@ std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
         out[p] = std::vector<Image<RFLOAT>>(fc);
 
         for (long f = 0; f < fc; f++) {
-            out[p][f] = SliceHelper::extractStackSlice(in, f * pc + p);
+            out[p][f] = SliceHelper::getStackSlice(in, f * pc + p);
         }
     }
 
@@ -243,7 +243,7 @@ std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
 }
 
 std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
-    const MetaDataTable* mdt,
+    const MetaDataTable &mdt,
     Image<RFLOAT>* gainRef, MultidimArray<bool>* defectMask, std::string movieFn,
     double outPs, double coordsPs, double moviePs, double dataPs,
     int squareSize, int threads, // squareSize is the output box size in pixels after downsampling to outPs
@@ -252,8 +252,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
     const std::vector<std::vector<gravis::d2Vector>>* offsets_in,
     std::vector<std::vector<gravis::d2Vector>>* offsets_out
 ) {
-    std::vector<std::vector<Image<Complex>>> out(mdt->size());
-    const long pc = mdt->size();
+    const long pc = mdt.size();
 
     Image<float> mgStack;
     mgStack.read(movieFn, false);
@@ -298,9 +297,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         std::cout << "pc, fc = " << pc << ", " << fc << "\n";
     }
 
-    for (long p = 0; p < pc; p++) {
-        out[p] = std::vector<Image<Complex>>(fc);
-    }
+    using T = std::vector<Image<Complex>>;
+    std::vector<T> out (pc, T(fc));
 
     if (!loadData) return out;
 
@@ -313,8 +311,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
     std::vector<ParFourierTransformer> fts(threads);
 
-    std::vector<Image<RFLOAT>> aux0(threads);
-    std::vector<Image<Complex>> aux1(threads);
+    std::vector<Image<RFLOAT>>  aux0 (threads);
+    std::vector<Image<Complex>> aux1 (threads);
 
     for (int t = 0; t < threads; t++) {
         aux0[t] = Image<RFLOAT>(sqMg, sqMg);
@@ -323,7 +321,6 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
             aux1[t] = Image<Complex>(sqMg / 2 + 1,sqMg);
         }
     }
-
 
     int threads_f = saveMemory ? 1 : threads;
     int threads_p = saveMemory ? threads : 1;
@@ -406,8 +403,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
             out[p][f] = Image<Complex>(sqMg, sqMg);
 
-            double xpC = mdt->getValue<double>(EMDL::IMAGE_COORD_X, p);
-            double ypC = mdt->getValue<double>(EMDL::IMAGE_COORD_Y, p);
+            double xpC = mdt.getValue<double>(EMDL::IMAGE_COORD_X, p);
+            double ypC = mdt.getValue<double>(EMDL::IMAGE_COORD_Y, p);
 
             const double xpO = (int) (coordsPs * xpC / dataPs);
             const double ypO = (int) (coordsPs * ypC / dataPs);
@@ -459,7 +456,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
 /// TODO: TAKANORI Code duplication with above will be sorted out later!
 std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
-    const MetaDataTable* mdt, std::vector<MultidimArray<float>> &Iframes,
+    const MetaDataTable &mdt, std::vector<MultidimArray<float>> &Iframes,
     double outPs, double coordsPs, double moviePs, double dataPs,
     int squareSize, int threads,
     bool loadData,
@@ -467,8 +464,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
     const std::vector<std::vector<gravis::d2Vector>>* offsets_in,
     std::vector<std::vector<gravis::d2Vector>>* offsets_out
 ) {
-    std::vector<std::vector<Image<Complex>>> out(mdt->size());
-    const long pc = mdt->size();
+    std::vector<std::vector<Image<Complex>>> out(mdt.size());
+    const long pc = mdt.size();
 
     const int fc = Iframes.size();
     if (fc == 0)
@@ -519,8 +516,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
             out[p][f] = Image<Complex>(sqMg,sqMg);
 
-            double xpC = mdt->getValue<double>(EMDL::IMAGE_COORD_X, p);
-            double ypC = mdt->getValue<double>(EMDL::IMAGE_COORD_Y, p);
+            double xpC = mdt.getValue<double>(EMDL::IMAGE_COORD_X, p);
+            double ypC = mdt.getValue<double>(EMDL::IMAGE_COORD_Y, p);
 
             const double xpO = (int)(coordsPs * xpC / dataPs);
             const double ypO = (int)(coordsPs * ypC / dataPs);
@@ -570,37 +567,32 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
 
     return out;
 }
+
 std::vector<Image<Complex>> StackHelper::FourierTransform(
-    std::vector<Image<RFLOAT>>& stack
+    const std::vector<Image<RFLOAT>> &stack
 ) {
-    std::vector<Image<Complex>> out(stack.size());
-    const long ic = stack.size();
-
-    for (long i = 0; i < ic; i++) {
-        FourierTransformer ft;
-        out[i].data = ft.FourierTransform(stack[i].data);
+    std::vector<Image<Complex>> out;
+    out.reserve(stack.size());
+    FourierTransformer transformer;
+    for (const auto &image : stack) {
+        out.emplace_back(transformer.FourierTransform(image.data));
     }
-
     return out;
 }
 
 std::vector<Image<RFLOAT>> StackHelper::inverseFourierTransform(
-    std::vector<Image<Complex>>& stack
+    const std::vector<Image<Complex>> &stack
 ) {
-    const long ic = stack.size();
-    const int h = stack[0].data.ydim;
-    const int ww = stack[0].data.xdim;
-    const int w = 2*(ww - 1);
-
-    std::vector<Image<RFLOAT>> out(ic);
-    for (long i = 0; i < ic; i++) {
-        out[i] = Image<RFLOAT>(w, h);
-        out[i].data = FourierTransformer{}.inverseFourierTransform(stack[i].data);
+    std::vector<Image<RFLOAT>> out;
+    out.reserve(stack.size());
+    FourierTransformer transformer;
+    for (const auto &image : stack) {
+        out.emplace_back(transformer.inverseFourierTransform(image.data));
     }
     return out;
 }
 
-Image<RFLOAT> StackHelper::toSingleImage(const std::vector<Image<RFLOAT>> stack) {
+Image<RFLOAT> StackHelper::toSingleImage(const std::vector<Image<RFLOAT>> &stack) {
     const int s = stack.size();
 
     if (s < 1) return Image<RFLOAT>(0, 0, 0);
@@ -621,7 +613,7 @@ Image<RFLOAT> StackHelper::toSingleImage(const std::vector<Image<RFLOAT>> stack)
 }
 
 void StackHelper::varianceNormalize(
-    std::vector<Image<Complex>>& movie, bool circleCropped
+    std::vector<Image<Complex>> &movie, bool circleCropped
 ) {
     const int fc = movie.size();
     const int w = movie[0].data.xdim;

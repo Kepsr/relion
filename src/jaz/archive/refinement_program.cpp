@@ -293,7 +293,7 @@ int RefinementProgram::init(int argc, char *argv[]) {
             }
         }
 
-        mdts = StackHelper::splitByStack(&mdt0);
+        mdts = StackHelper::splitByStack(mdt0);
 
         gc = maxMG >= 0 ? maxMG : mdts.size() - 1;
         g0 = minMG;
@@ -456,7 +456,7 @@ std::vector<std::vector<Image<Complex>>> RefinementProgram::loadMovie(
             if (hasDefect) { micrograph.fillDefectAndHotpixels(defectMask); }
 
             movie = StackHelper::extractMovieStackFS(
-                &mdts[g], mgHasGain ? &lastGainRef : 0, hasDefect ? &defectMask : 0,
+                mdts[g], mgHasGain ? &lastGainRef : 0, hasDefect ? &defectMask : 0,
                 mgFn, angpix, coords_angpix, movie_angpix, s,
                 nr_omp_threads, true, firstFrame, lastFrame, hotCutoff, debugMov, saveMem
             );

@@ -1,9 +1,9 @@
-#include <src/jaz/vtk_helper.h>
-#include <src/jaz/obs_model.h>
-#include <src/jaz/stack_helper.h>
-#include <src/metadata_table.h>
-#include <src/args.h>
-
+#include "src/jaz/vtk_helper.h"
+#include "src/jaz/obs_model.h"
+#include "src/jaz/stack_helper.h"
+#include "src/metadata_table.h"
+#include "src/args.h"
+#include "src/jaz/parallel_ft.h"
 
 int main(int argc, char *argv[]) {
     std::string particlesFn, outPath;
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<ParFourierTransformer> fts(nr_omp_threads);
 
-    std::vector<MetaDataTable> mdts = StackHelper::splitByStack(&particlesMdt);
+    std::vector<MetaDataTable> mdts = StackHelper::splitByStack(particlesMdt);
 
     const int mc = mdts.size();
 

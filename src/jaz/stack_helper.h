@@ -21,83 +21,81 @@
 #ifndef STACK_HELPER_H
 #define STACK_HELPER_H
 
-#include <src/ctf.h>
-#include <src/image.h>
-#include <src/metadata_table.h>
-#include <src/jaz/optimization/optimization.h>
-#include <src/jaz/volume.h>
-#include <src/jaz/gravis/t2Matrix.h>
-#include <src/jaz/parallel_ft.h>
 #include <vector>
+#include "src/image.h"
+#include "src/metadata_table.h"
+#include "src/jaz/optimization/optimization.h"
+#include "src/jaz/gravis/t2Matrix.h"
+#include "src/jaz/obs_model.h"
 
-class Projector;
-class ObservationModel;
+namespace StackHelper {
 
-class StackHelper
-{
-	public:
-		
-		static std::vector<MetaDataTable> splitByMicrographName(const MetaDataTable& mdt);
-		
-		static MetaDataTable merge(const std::vector<MetaDataTable>& mdts);
-		
-		static std::vector<MetaDataTable> splitByStack(const MetaDataTable* mdt);
-		
-		static std::vector<Image<RFLOAT> > loadStack(
-				const MetaDataTable* mdt, std::string path = "", int threads = 1);
-		
-		static std::vector<Image<Complex> > loadStackFS(
-				const MetaDataTable& mdt, 
-				std::string path = "",
-				int threads = 1,
-				bool centerParticle = false,
-				ObservationModel* obs = 0);
-		
-		static void saveStack(std::vector<Image<RFLOAT> >& stack, std::string fn);
-		
-		static std::vector<std::vector<Image<RFLOAT>>> loadMovieStack(
-				const MetaDataTable* mdt, std::string moviePath);
-	
-		// For movies in file
-		static std::vector<std::vector<Image<Complex>>> extractMovieStackFS(
-				const MetaDataTable* mdt,
-				Image<RFLOAT>* gainRef, MultidimArray<bool>* defectMask, std::string movieFn,
-				double outPs, double coordsPs, double moviePs, double dataPs,
-				int squareSize, int threads,
-				bool loadData = true, int firstFrame = 0, int lastFrame = -1,
-				RFLOAT hot = -1.0, bool verbose = false, bool saveMemory = false,
-				const std::vector<std::vector<gravis::d2Vector>>* offsets_in = 0,
-				std::vector<std::vector<gravis::d2Vector>>* offsets_out = 0);
-				
-		// For movies in memory
-		static std::vector<std::vector<Image<Complex>>> extractMovieStackFS(
-				const MetaDataTable* mdt, std::vector<MultidimArray<float> > &mgStack,
-				double outPs, double coordsPs, double moviePs, double dataPs,
-				int squareSize, int threads,
-				bool loadData = true, 
-				bool verbose = false, 
-				const std::vector<std::vector<gravis::d2Vector>>* offsets_in = 0,
-				std::vector<std::vector<gravis::d2Vector>>* offsets_out = 0);
+    std::vector<MetaDataTable> splitByMicrographName(const MetaDataTable& mdt);
 
-		static std::vector<Image<Complex>> FourierTransform(std::vector<Image<RFLOAT> >& stack);
-		
-		static std::vector<Image<RFLOAT>> inverseFourierTransform(std::vector<Image<Complex> >& stack);
-		
-		static Image<RFLOAT> toSingleImage(const std::vector<Image<RFLOAT>> stack);
-		
-		static void varianceNormalize(
-					std::vector<Image<Complex>>& movie, 
-					bool circleCropped = false);
-		
-		static std::vector<double> powerSpectrum(
-					const std::vector<std::vector<Image<Complex>>>& stack);
-		
-		static std::vector<double> varSpectrum(
-					const std::vector<std::vector<Image<Complex>>>& stack);
-		
-		static std::vector<double> powerSpectrum(
-					const std::vector<std::vector<Image<Complex>>>& obs,
-					const std::vector<Image<Complex> >& signal);
+    MetaDataTable merge(const std::vector<MetaDataTable>& mdts);
+
+    std::vector<MetaDataTable> splitByStack(const MetaDataTable& mdt);
+
+    std::vector<Image<RFLOAT>> loadStack(
+        const MetaDataTable &mdt, std::string path = "", int threads = 1);
+
+    std::vector<Image<Complex>> loadStackFS(
+        const MetaDataTable& mdt,
+        std::string path = "",
+        int threads = 1,
+        bool centerParticle = false,
+        ObservationModel* obs = 0);
+
+    void saveStack(std::vector<Image<RFLOAT>>& stack, std::string fn);
+
+    std::vector<std::vector<Image<RFLOAT>>> loadMovieStack(
+        const MetaDataTable &mdt, std::string moviePath);
+
+    // For movies in file
+    std::vector<std::vector<Image<Complex>>> extractMovieStackFS(
+        const MetaDataTable &mdt,
+        Image<RFLOAT>* gainRef, MultidimArray<bool>* defectMask, std::string movieFn,
+        double outPs, double coordsPs, double moviePs, double dataPs,
+        int squareSize, int threads,
+        bool loadData = true, int firstFrame = 0, int lastFrame = -1,
+        RFLOAT hot = -1.0, bool verbose = false, bool saveMemory = false,
+        const std::vector<std::vector<gravis::d2Vector>>* offsets_in = 0,
+        std::vector<std::vector<gravis::d2Vector>>* offsets_out = 0);
+
+    // For movies in memory
+    std::vector<std::vector<Image<Complex>>> extractMovieStackFS(
+        const MetaDataTable &mdt, std::vector<MultidimArray<float>> &mgStack,
+        double outPs, double coordsPs, double moviePs, double dataPs,
+        int squareSize, int threads,
+        bool loadData = true,
+        bool verbose = false,
+        const std::vector<std::vector<gravis::d2Vector>>* offsets_in = 0,
+        std::vector<std::vector<gravis::d2Vector>>* offsets_out = 0);
+
+    // Map FT over stack
+    std::vector<Image<Complex>> FourierTransform(
+        const std::vector<Image<RFLOAT>> &stack);
+
+    // Map IFT over stack
+    std::vector<Image<RFLOAT>> inverseFourierTransform(
+        const std::vector<Image<Complex>> &stack);
+
+    Image<RFLOAT> toSingleImage(const std::vector<Image<RFLOAT>> &stack);
+
+    void varianceNormalize(
+        std::vector<Image<Complex>>& movie,
+        bool circleCropped = false);
+
+    std::vector<double> powerSpectrum(
+        const std::vector<std::vector<Image<Complex>>>& stack);
+
+    std::vector<double> varSpectrum(
+        const std::vector<std::vector<Image<Complex>>>& stack);
+
+    std::vector<double> powerSpectrum(
+        const std::vector<std::vector<Image<Complex>>>& obs,
+        const std::vector<Image<Complex>>& signal);
+
 };
 
 #endif

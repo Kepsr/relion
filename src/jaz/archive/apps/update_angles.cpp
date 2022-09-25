@@ -183,10 +183,9 @@ int main(int argc, char *argv[]) {
     projector1 = Projector(s, TRILINEAR, paddingFactor, 10, 2);
     projector1.computeFourierTransformMap(map1.data, dummy.data, map1.data.xdim);
 
-    MetaDataTable mdt0;
-    mdt0.read(starFn);
+    auto mdt0 = MetaDataTable::from_filename(starFn);
 
-    std::vector<MetaDataTable> mdts = StackHelper::splitByStack(&mdt0);
+    std::vector<MetaDataTable> mdts = StackHelper::splitByStack(mdt0);
 
     RFLOAT Cs = mdt0.getValue(EMDL::CTF_CS,      0);
     RFLOAT kV = mdt0.getValue(EMDL::CTF_VOLTAGE, 0);

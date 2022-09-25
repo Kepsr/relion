@@ -229,7 +229,7 @@ int main(int argc, char *argv[]) {
     Projector projector1(s, TRILINEAR, paddingFactor, 10, 2);
     projector1.computeFourierTransformMap(map1.data, dummy.data, s);
 
-    std::vector<MetaDataTable> mdts = StackHelper::splitByStack(&mdt0);
+    std::vector<MetaDataTable> mdts = StackHelper::splitByStack(mdt0);
 
     RFLOAT mag   = mdts[0].getValue(EMDL::CTF_MAGNIFICATION,       0);
     RFLOAT dstep = mdts[0].getValue(EMDL::CTF_DETECTOR_PIXEL_SIZE, 0);

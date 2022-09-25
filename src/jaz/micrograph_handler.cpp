@@ -392,7 +392,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
             #define OLD_CODE
             #ifdef OLD_CODE
             movie = StackHelper::extractMovieStackFS(
-                &mdt, mgHasGain ? &lastGainRef : 0, hasDefect ? &defectMask : 0,
+                mdt, mgHasGain ? &lastGainRef : 0, hasDefect ? &defectMask : 0,
                 mgFn, angpix, coords_angpix, movie_angpix, data_angpix, s,
                 nr_omp_threads, true, firstFrame, lastFrame,
                 hotCutoff, debug, saveMem, offsets_in, offsets_out
@@ -420,7 +420,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
             }
 
             movie = StackHelper::extractMovieStackFS(
-                &mdt, Iframes, angpix, coords_angpix, movie_angpix, data_angpix, s,
+                mdt, Iframes, angpix, coords_angpix, movie_angpix, data_angpix, s,
                 nr_omp_threads, true,
                 debug, offsets_in, offsets_out
             );
@@ -541,7 +541,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
             }
 
             movie = StackHelper::extractMovieStackFS(
-                &mdt, Iframes, angpix, coords_angpix, movie_angpix, data_angpix, s,
+                mdt, Iframes, angpix, coords_angpix, movie_angpix, data_angpix, s,
                 nr_omp_threads, true, debug, offsets_in, offsets_out
             );
         }
