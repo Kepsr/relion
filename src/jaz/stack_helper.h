@@ -49,7 +49,7 @@ namespace StackHelper {
     void saveStack(std::vector<Image<RFLOAT>>& stack, std::string fn);
 
     std::vector<std::vector<Image<RFLOAT>>> loadMovieStack(
-        const MetaDataTable &mdt, std::string moviePath);
+        const MetaDataTable &mdt, const std::string &moviePath);
 
     // For movies in file
     std::vector<std::vector<Image<Complex>>> extractMovieStackFS(

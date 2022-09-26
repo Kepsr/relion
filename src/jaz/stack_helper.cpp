@@ -37,7 +37,6 @@
 using namespace gravis;
 
 std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTable& mdt) {
-    std::vector<MetaDataTable> out(0);
 
     if (!mdt.containsLabel(EMDL::MICROGRAPH_NAME)) {
         REPORT_ERROR(
@@ -47,13 +46,13 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
         );
     }
 
-    MetaDataTable md2(mdt);
+    MetaDataTable md2 (mdt);
     md2.newSort<MD::CompareStringsAt>(EMDL::MICROGRAPH_NAME);
 
+    std::vector<MetaDataTable> out (0);
     const long lc = md2.size();
     std::string lastName = "";
     long curInd = -1;
-
     for (int i = 0; i < lc; i++) {
         std::string curName = md2.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
 
@@ -66,8 +65,8 @@ std::vector<MetaDataTable> StackHelper::splitByMicrographName(const MetaDataTabl
         out[curInd].addObject(md2.getObject(i));
     }
 
-    for (int i = 0; i <= curInd; i++) {
-        out[i].newSort<MD::CompareStringsBeforeAtAt>(EMDL::IMAGE_NAME);
+    for (auto &table: out) {
+        table.newSort<MD::CompareStringsBeforeAtAt>(EMDL::IMAGE_NAME);
     }
 
     return out;
@@ -95,7 +94,7 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable &mdt) {
     MetaDataTable md2 (mdt);
     md2.newSort<MD::CompareStringsAfterAtAt>(EMDL::IMAGE_NAME);
 
-    std::vector<MetaDataTable> out(0);
+    std::vector<MetaDataTable> out (0);
     const long lc = md2.size();
     std::string lastName = "";
     long curInd = -1;
@@ -113,8 +112,8 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable &mdt) {
         out[curInd].addObject(md2.getObject(i));
     }
 
-    for (int i = 0; i <= curInd; i++) {
-        out[i].newSort<MD::CompareStringsBeforeAtAt>(EMDL::IMAGE_NAME);
+    for (auto &table: out) {
+        table.newSort<MD::CompareStringsBeforeAtAt>(EMDL::IMAGE_NAME);
     }
 
     return out;
@@ -123,8 +122,6 @@ std::vector<MetaDataTable> StackHelper::splitByStack(const MetaDataTable &mdt) {
 std::vector<Image<RFLOAT>> StackHelper::loadStack(
     const MetaDataTable &mdt, std::string path, int threads
 ) {
-    std::vector<Image<RFLOAT>> out(mdt.size());
-    const long ic = mdt.size();
 
     std::string fullName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
     std::string name = fullName.substr(fullName.find("@") + 1);
@@ -133,6 +130,8 @@ std::vector<Image<RFLOAT>> StackHelper::loadStack(
         name = path + "/" + name.substr(name.find_last_of("/") + 1);
     }
 
+    std::vector<Image<RFLOAT>> out (mdt.size());
+    const long ic = mdt.size();
     #pragma omp parallel for num_threads(threads)
     for (long i = 0; i < ic; i++) {
         std::string sliceName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, i);
@@ -197,20 +196,16 @@ void StackHelper::saveStack(std::vector<Image<RFLOAT>> &stack, std::string fn) {
     const int h = stack[0].data.ydim;
     const int c = stack.size();
 
-    Image<RFLOAT> img(w, h, 1, c);
-
+    Image<RFLOAT> img (w, h, 1, c);
     for (int i = 0; i < c; i++) {
         SliceHelper::insertStackSlice(stack[i], img, i);
     }
-
     img.write(fn);
 }
 
 std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
-    const MetaDataTable &mdt, std::string moviePath
+    const MetaDataTable &mdt, const std::string &moviePath
 ) {
-    std::vector<std::vector<Image<RFLOAT>>> out(mdt.size());
-    const long pc = mdt.size();
 
     std::string fullName  = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
     std::string movieName = mdt.getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
@@ -221,25 +216,76 @@ std::vector<std::vector<Image<RFLOAT>>> StackHelper::loadMovieStack(
 
     std::cout << "loading real: " << finName << "\n";
 
-    Image<RFLOAT> in = Image<RFLOAT>::from_filename(finName);
+    const auto img = Image<RFLOAT>::from_filename(finName);
 
-    std::cout << "size = " << in.data.xdim << "x" << in.data.ydim << "x" << in.data.zdim << "x" << in.data.ndim << "\n";
+    const long pc = mdt.size();
+    std::cout << "size = " << img.data.xdim << "x" << img.data.ydim << "x" << img.data.zdim << "x" << img.data.ndim << "\n";
     std::cout << "pc = " << pc << "\n";
 
-    const int fc = in.data.ndim / pc;
+    const int fc = img.data.ndim / pc;
 
-    const int w = in.data.xdim;
-    const int h = in.data.ydim;
-
+    using Movie = std::vector<Image<RFLOAT>>;
+    std::vector<Movie> stack;
     for (long p = 0; p < pc; p++) {
-        out[p] = std::vector<Image<RFLOAT>>(fc);
-
+        Movie movie;
         for (long f = 0; f < fc; f++) {
-            out[p][f] = SliceHelper::getStackSlice(in, f * pc + p);
+            movie.push_back(SliceHelper::getStackSlice(img, f * pc + p));
         }
+        stack.push_back(std::move(movie));
     }
+    return stack;
+}
 
-    return out;
+void fix_defect(
+    Image<float> &muGraph, MultidimArray<bool> &defectMask,
+    int w0, int h0, int threads_p
+) {
+
+    RFLOAT frame_mean = 0, frame_std = 0;
+    long long n_valid = 0;
+
+    #pragma omp parallel for reduction(+:frame_mean, n_valid) num_threads(threads_p)
+    for (long int n = 0; n < muGraph.data.size(); n++) {
+        if (!defectMask[n]) continue;
+        frame_mean += muGraph.data[n];
+        n_valid++;
+    }
+    frame_mean /= n_valid;
+
+    #pragma omp parallel for reduction(+:frame_std) num_threads(threads_p)
+    for (long int n = 0; n < muGraph.data.size(); n++) {
+        if (!defectMask[n]) continue;
+        RFLOAT d = muGraph.data[n] - frame_mean;
+        frame_std += d * d;
+    }
+    frame_std = std::sqrt(frame_std / n_valid);
+
+    // 25 neighbours; should be enough even for super-resolution images.
+    const int NUM_MIN_OK = 6;
+    const int D_MAX = 2; // EER code path does not use this function
+    const int PBUF_SIZE = 100;
+    #pragma omp parallel for num_threads(threads_p)
+    for (long int j = 0; j < Ysize(muGraph.data); j++)
+    for (long int i = 0; i < Xsize(muGraph.data); i++) {
+        if (!direct::elem(defectMask, i, j)) continue;
+
+        int n_ok = 0;
+        RFLOAT pbuf[PBUF_SIZE];
+        for (int dy = -D_MAX; dy <= D_MAX; dy++) {
+            int y = j + dy;
+            if (y < 0 || y >= h0) continue;
+            for (int dx = -D_MAX; dx <= D_MAX; dx++) {
+                int x = i + dx;
+                if (x < 0 || x >= w0) continue;
+                if (direct::elem(defectMask, x, y)) continue;
+
+                pbuf[n_ok] = direct::elem(muGraph.data, x, y);
+                n_ok++;
+            }
+        }
+        direct::elem(muGraph.data, i, j) = n_ok > NUM_MIN_OK ?
+            pbuf[rand() % n_ok] : rnd_gaus(frame_mean, frame_std);
+    }
 }
 
 std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
@@ -309,18 +355,12 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         std::cout << "square size in micrograph: " << sqMg << "\n";
     }
 
-    std::vector<ParFourierTransformer> fts(threads);
+    std::vector<ParFourierTransformer> fts (threads);
 
-    std::vector<Image<RFLOAT>>  aux0 (threads);
-    std::vector<Image<Complex>> aux1 (threads);
-
-    for (int t = 0; t < threads; t++) {
-        aux0[t] = Image<RFLOAT>(sqMg, sqMg);
-
-        if (outPs != moviePs) {
-            aux1[t] = Image<Complex>(sqMg / 2 + 1,sqMg);
-        }
-    }
+    using R = Image<RFLOAT>;
+    using C = Image<Complex>;
+    std::vector<R> raux (threads, {sqMg, sqMg});
+    std::vector<C> caux (threads, outPs == moviePs ? C{} : C{sqMg / 2 + 1, sqMg});
 
     int threads_f = saveMemory ? 1 : threads;
     int threads_p = saveMemory ? threads : 1;
@@ -338,60 +378,14 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         for (long int y = 0; y < h0; y++)
         for (long int x = 0; x < w0; x++) {
 
-            RFLOAT gain = useGain ? direct::elem(gainRef->data, x, y) : 1.0;
+            const RFLOAT gain = useGain ? direct::elem(gainRef->data, x, y) : 1.0;
             RFLOAT val = direct::elem(muGraph.data, x, y);
             if (0.0 < hot && hot < val) { val = hot; }
 
             direct::elem(muGraph.data, x, y) = -gain * val;
         }
 
-        if (fixDefect) {
-            RFLOAT frame_mean = 0, frame_std = 0;
-            long long n_valid = 0;
-
-            #pragma omp parallel for reduction(+:frame_mean, n_valid) num_threads(threads_p)
-            for (long int n = 0; n < muGraph.data.size(); n++) {
-                if (!(*defectMask)[n]) continue;
-                frame_mean += muGraph.data[n];
-                n_valid ++;
-            }
-            frame_mean /=  n_valid;
-
-            #pragma omp parallel for reduction(+:frame_std) num_threads(threads_p)
-            for (long int n = 0; n < muGraph.data.size(); n++) {
-                if (!(*defectMask)[n]) continue;
-                RFLOAT d = muGraph.data[n] - frame_mean;
-                frame_std += d * d;
-            }
-            frame_std = std::sqrt(frame_std / n_valid);
-
-            // 25 neighbours; should be enough even for super-resolution images.
-            const int NUM_MIN_OK = 6;
-            const int D_MAX = 2; // EER code path does not use this function
-            const int PBUF_SIZE = 100;
-            #pragma omp parallel for num_threads(threads_p)
-            for (long int j = 0; j < Ysize(muGraph.data); j++)
-            for (long int i = 0; i < Xsize(muGraph.data); i++) {
-                if (!direct::elem(*defectMask, i, j)) continue;
-
-                int n_ok = 0;
-                RFLOAT pbuf[PBUF_SIZE];
-                for (int dy = -D_MAX; dy <= D_MAX; dy++) {
-                    int y = j + dy;
-                    if (y < 0 || y >= h0) continue;
-                    for (int dx = -D_MAX; dx <= D_MAX; dx++) {
-                        int x = i + dx;
-                        if (x < 0 || x >= w0) continue;
-                        if (direct::elem(*defectMask, x, y)) continue;
-
-                        pbuf[n_ok] = direct::elem(muGraph.data, x, y);
-                        n_ok++;
-                    }
-                }
-                direct::elem(muGraph.data, i, j) = n_ok > NUM_MIN_OK ?
-                    pbuf[rand() % n_ok] : rnd_gaus(frame_mean, frame_std);
-            }
-        }
+        if (fixDefect) fix_defect(muGraph, *defectMask, w0, h0, threads_p);
 
         /// TODO: TAKANORI: Cache muGraph HERE
 
@@ -437,17 +431,17 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 int yy = y0 + y;
                 if (yy < 0) { yy = 0; } else if (yy >= h0) { yy = h0 - 1; }
 
-                direct::elem(aux0[t].data, x, y) = direct::elem(muGraph.data, xx, yy);
+                direct::elem(raux[t].data, x, y) = direct::elem(muGraph.data, xx, yy);
             }
 
             if (outPs == moviePs) {
-                out[p][f].data = fts[t].FourierTransform(aux0[t].data);
+                out[p][f].data = fts[t].FourierTransform(raux[t].data);
             } else {
-                aux1[t].data = fts[t].FourierTransform(aux0[t].data);
-                out[p][f] = FilterHelper::cropCorner2D(aux1[t], squareSize / 2 + 1, squareSize);
+                caux[t].data = fts[t].FourierTransform(raux[t].data);
+                out[p][f] = FilterHelper::cropCorner2D(caux[t], squareSize / 2 + 1, squareSize);
             }
 
-            out[p][f].data.elem(0,0) = Complex(0.0, 0.0);
+            out[p][f].data.elem(0, 0) = Complex(0.0, 0.0);
         }
     }
 
@@ -464,9 +458,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
     const std::vector<std::vector<gravis::d2Vector>>* offsets_in,
     std::vector<std::vector<gravis::d2Vector>>* offsets_out
 ) {
-    std::vector<std::vector<Image<Complex>>> out(mdt.size());
-    const long pc = mdt.size();
 
+    const long pc = mdt.size();
     const int fc = Iframes.size();
     if (fc == 0)
         REPORT_ERROR("Empty Iframes passed to StackHelper::extractMovieStackFS");
@@ -480,47 +473,41 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         std::cout << "size: x = " << w0 << " y = " << h0 << "\n";
     }
 
-    for (long p = 0; p < pc; p++) {
-        out[p] = std::vector<Image<Complex>>(fc);
-    }
+    using T = std::vector<Image<Complex>>;
+    std::vector<T> out (pc, T(fc));
 
     if (!loadData) return out;
 
     const int sqMg = 2 * (int) (0.5 * squareSize * outPs / moviePs + 0.5);
+    // This should be equal to s_mov in frame_recombiner
 
     if (verbose) {
         std::cout << "square size in micrograph: " << sqMg << "\n";
     }
 
-    std::vector<ParFourierTransformer> fts(threads);
+    std::vector<ParFourierTransformer> fts (threads);
 
-    std::vector<Image<RFLOAT>>  aux0(threads);
-    std::vector<Image<Complex>> aux1(threads);
-
-    for (int t = 0; t < threads; t++) {
-        aux0[t] = Image<RFLOAT>(sqMg, sqMg);
-
-        if (outPs != moviePs) {
-            aux1[t] = Image<Complex>(sqMg / 2 + 1, sqMg);
-        }
-    }
+    using R = Image<RFLOAT>;
+    using C = Image<Complex>;
+    std::vector<R> raux (threads, {sqMg, sqMg});
+    std::vector<C> caux (threads, outPs == moviePs ? C{} : C{sqMg / 2 + 1, sqMg});
 
     #pragma omp parallel for num_threads(threads)
     for (long f = 0; f < fc; f++) {
         int tf = omp_get_thread_num();
 
-        if (verbose) { std::cout << (f + 1) << "/" << fc << "\n"; }
+        if (verbose) { std::cout << f + 1 << "/" << fc << "\n"; }
 
         for (long p = 0; p < pc; p++) {
             int t = tf;
 
-            out[p][f] = Image<Complex>(sqMg,sqMg);
+            out[p][f] = Image<Complex>(sqMg, sqMg);
 
             double xpC = mdt.getValue<double>(EMDL::IMAGE_COORD_X, p);
             double ypC = mdt.getValue<double>(EMDL::IMAGE_COORD_Y, p);
 
-            const double xpO = (int)(coordsPs * xpC / dataPs);
-            const double ypO = (int)(coordsPs * ypC / dataPs);
+            const double xpO = (int) (coordsPs * xpC / dataPs);
+            const double ypO = (int) (coordsPs * ypC / dataPs);
 
             int x0 = (int) round(xpO * dataPs / moviePs) - sqMg / 2;
             int y0 = (int) round(ypO * dataPs / moviePs) - sqMg / 2;
@@ -529,8 +516,8 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 double dxM = (*offsets_in)[p][f].x * outPs / moviePs;
                 double dyM = (*offsets_in)[p][f].y * outPs / moviePs;
 
-                int dxI = (int) round(dxM);
-                int dyI = (int) round(dyM);
+                int dxI = round(dxM);
+                int dyI = round(dyM);
 
                 x0 += dxI;
                 y0 += dyI;
@@ -551,14 +538,14 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 if (yy < 0) { yy = 0; } else if (yy >= h0) { yy = h0 - 1; }
 
                 // Note the MINUS here!!!
-                direct::elem(aux0[t].data, x, y) = -direct::elem(Iframes[f], xx, yy);
+                direct::elem(raux[t].data, x, y) = -direct::elem(Iframes[f], xx, yy);
             }
 
             if (outPs == moviePs) {
-                out[p][f].data = fts[t].FourierTransform(aux0[t].data);
+                out[p][f].data = fts[t].FourierTransform(raux[t].data);
             } else {
-                aux1[t].data = fts[t].FourierTransform(aux0[t].data);
-                out[p][f] = FilterHelper::cropCorner2D(aux1[t], squareSize / 2 + 1, squareSize);
+                caux[t].data = fts[t].FourierTransform(raux[t].data);
+                out[p][f] = FilterHelper::cropCorner2D(caux[t], squareSize / 2 + 1, squareSize);
             }
 
             out[p][f].data.elem(0, 0) = Complex(0.0, 0.0);
@@ -593,19 +580,19 @@ std::vector<Image<RFLOAT>> StackHelper::inverseFourierTransform(
 }
 
 Image<RFLOAT> StackHelper::toSingleImage(const std::vector<Image<RFLOAT>> &stack) {
-    const int s = stack.size();
 
+    const int s = stack.size();
     if (s < 1) return Image<RFLOAT>(0, 0, 0);
 
     const int w = stack[0].data.xdim;
     const int h = stack[0].data.ydim;
 
-    Image<RFLOAT> out(w, h, 1, s);
+    Image<RFLOAT> out (w, h, 1, s);
 
     for (int n = 0; n < s; n++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            direct::elem(out(), x, y, 0, n) = stack[n](y, x);
+            direct::elem(out.data, x, y, 0, n) = stack[n](y, x);
         }
     }
 
@@ -625,7 +612,7 @@ void StackHelper::varianceNormalize(
 
     const double rr = (w - 2) * (w - 2);
 
-    for (int f = 0; f < fc; f++) {
+    for (const auto &frame: movie) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
             if (x == 0 && y == 0) continue;
@@ -634,25 +621,24 @@ void StackHelper::varianceNormalize(
                 const double yy = y < w ? y : y - h;
                 const double xx = x;
 
-                if (xx * xx + yy * yy > rr) continue;
+                if (euclidsq(xx, yy) > rr) continue;
             }
 
             double scale = x > 0 ? 2.0 : 1.0;
 
-            var += scale * movie[f](y,x).norm();
+            var += scale * frame(y, x).norm();
             cnt += scale;
         }
     }
 
     const double scale = sqrt(wt * h * var / (cnt * fc));
 
-    //std::cout << "scale: " << scale << "\n";
+    // std::cout << "scale: " << scale << "\n";
 
-    for (int f = 0; f < fc; f++) {
-        for (int y = 0; y < h; y++) {
+    for (auto &frame: movie) {
+        for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            movie[f].data.elem(y, x) /= scale;
-        }
+            frame.data.elem(y, x) /= scale;
         }
     }
 }
@@ -660,23 +646,21 @@ void StackHelper::varianceNormalize(
 std::vector<double> StackHelper::powerSpectrum(
     const std::vector<std::vector<Image<Complex>>> &stack
 ) {
-    const int ic = stack.size();
-    const int fc = stack[0].size();
     const int w = stack[0][0].data.xdim;
     const int h = stack[0][0].data.ydim;
 
-    std::vector<double> out(w, 0.0), wgh(w, 0.0);
+    std::vector<double> out (w, 0.0), wgh (w, 0.0);
 
-    for (int i = 0; i < ic; i++)
-    for (int f = 0; f < fc; f++) {
+    for (const auto &substack: stack)
+    for (const auto &img: substack) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(stack[i][f].data, x, y);
+            const Complex z = direct::elem(img.data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = (int) sqrt(xx * xx + yy * yy);
+            const int r = euclid(xx, yy);
 
             if (r >= w) continue;
 
@@ -697,24 +681,22 @@ std::vector<double> StackHelper::powerSpectrum(
 std::vector<double> StackHelper::varSpectrum(
     const std::vector<std::vector<Image<Complex>>> &stack
 ) {
-    const int ic = stack.size();
-    const int fc = stack[0].size();
     const int w = stack[0][0].data.xdim;
     const int h = stack[0][0].data.ydim;
 
-    std::vector<double> out(w, 0.0), wgh(w, 0.0);
-    std::vector<Complex> mean(w, 0.0);
+    std::vector<double> out (w, 0.0), wgh (w, 0.0);
+    std::vector<Complex> mean (w, 0.0);
 
-    for (int i = 0; i < ic; i++)
-    for (int f = 0; f < fc; f++) {
+    for (const auto &substack: stack)
+    for (const auto &img: substack) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(stack[i][f].data, x, y);
+            const Complex z = direct::elem(img.data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = (int) sqrt(xx * xx + yy * yy);
+            const int r = euclid(xx, yy);
 
             if (r >= w) continue;
 
@@ -729,16 +711,16 @@ std::vector<double> StackHelper::varSpectrum(
         }
     }
 
-    for (int i = 0; i < ic; i++)
-    for (int f = 0; f < fc; f++) {
+    for (const auto &substack: stack)
+    for (const auto &img: substack) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(stack[i][f].data, x, y);
+            const Complex z = direct::elem(img.data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = sqrt(xx * xx + yy * yy);
+            const int r = euclid(xx, yy);
 
             if (r >= w) continue;
 
@@ -759,23 +741,23 @@ std::vector<double> StackHelper::powerSpectrum(
         const std::vector<std::vector<Image<Complex>>>& obs,
         const std::vector<Image<Complex>>& signal
     ) {
-    const int ic = obs.size();
-    const int fc = obs[0].size();
     const int w = obs[0][0].data.xdim;
     const int h = obs[0][0].data.ydim;
 
-    std::vector<double> out(w, 0.0), wgh(w, 0.0);
+    std::vector<double> out (w, 0.0), wgh (w, 0.0);
 
+    const int ic = obs.size();
+    const int fc = obs[0].size();
     for (int i = 0; i < ic; i++)
-    for (int f = 0; f < fc; f++) {
+    for (const auto &img: obs[i]) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            const Complex z = direct::elem(obs[i][f].data, x, y) - direct::elem(signal[i].data, x, y);
+            const Complex z = direct::elem(img.data, x, y) - direct::elem(signal[i].data, x, y);
 
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = sqrt(xx * xx + yy * yy);
+            const int r = euclid(xx, yy);
 
             if (r >= w) continue;
 
