@@ -42,10 +42,10 @@ namespace SliceHelper {
 
     void subsample(const Image<RFLOAT> &img, Image<RFLOAT> &dest);
 
-    void avgPad(const Volume<RFLOAT>& src, Volume<RFLOAT> &dest, double ratio);
-    void avgPad2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio);
+    template <int D>
+    void avgPad(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio);
 
-    void halveSpectrum2D(Image<Complex> &src, Image<Complex> &dest);
+    void halveSpectrum2D(const Image<Complex> &src, Image<Complex> &dest);
 
     void extractSpectralSlice(
         Image<Complex> &src, Image<RFLOAT> &dest,

@@ -1458,6 +1458,11 @@ class MultidimArray {
         memset(data, 0, size() * sizeof(T));
     }
 
+    template <typename U>
+    inline void fill(U u) {
+        for (auto& t: *this) t = u;
+    }
+
     /** Initialize to zeros with a given size.
      */
     inline void initZeros(long int Xdim, long int Ydim = 1, long int Zdim = 1, long int Ndim = 1) {

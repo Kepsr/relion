@@ -102,50 +102,42 @@ void SliceHelper::subsample(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
     }
 }
 
-void SliceHelper::avgPad(const Volume<RFLOAT> &src, Volume<RFLOAT> &dest, double ratio) {
-    int padX = ratio * src.dimx;
-    int padY = ratio * src.dimy;
-    int padZ = ratio * src.dimz;
+template <int D>
+double average(const MultidimArray<RFLOAT> &arr);
 
-    double avg = 0.0;
-
-    for (long int z = 0; z < src.dimz; z++)
-    for (long int y = 0; y < src.dimy; y++)
-    for (long int x = 0; x < src.dimx; x++) {
-        avg += src(x,y,z);
+template <>
+double average<2>(const MultidimArray<RFLOAT> &arr) {
+    double sum = 0.0;
+    for (long int y = 0; y < arr.ydim; y++)
+    for (long int x = 0; x < arr.xdim; x++) {
+        sum += direct::elem(arr, x, y);
     }
-
-    avg /= src.dimx * src.dimy * src.dimz;
-
-    dest.resize(src.dimx + 2*padX, src.dimy + 2*padY, src.dimz + 2*padZ);
-    dest.fill(avg);
-
-    for (long int z = 0; z < src.dimz; z++)
-    for (long int y = 0; y < src.dimy; y++)
-    for (long int x = 0; x < src.dimx; x++) {
-        dest(x+padX, y+padY, z+padZ) = src(x,y,z);
-    }
+    return sum / (arr.xdim * arr.ydim);
 }
 
-void SliceHelper::avgPad2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio) {
-    int padX = ratio * src.data.xdim;
-    int padY = ratio * src.data.ydim;
-
-    double avg = 0.0;
-
-    for (long int y = 0; y < src.data.ydim; y++)
-    for (long int x = 0; x < src.data.xdim; x++) {
-        avg += direct::elem(src.data, x, y);
+template <>
+double average<3>(const MultidimArray<RFLOAT> &arr) {
+    double sum = 0.0;
+    for (long int z = 0; z < arr.zdim; z++)
+    for (long int y = 0; y < arr.ydim; y++)
+    for (long int x = 0; x < arr.xdim; x++) {
+        sum += direct::elem(arr, x, y, z);
     }
+    return sum / (arr.xdim * arr.ydim * arr.zdim);
+}
 
-    avg /= src.data.xdim * src.data.ydim;
+namespace SliceHelper {
 
-    dest = Image<RFLOAT>(src.data.xdim + 2*padX, src.data.ydim + 2*padY);
+template <>
+void avgPad<2>(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio) {
 
-    for (long int y = 0; y < dest.data.ydim; y++)
-    for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, x, y) = avg;
-    }
+    const int padX = ratio * src.data.xdim;
+    const int padY = ratio * src.data.ydim;
+
+    const double avg = average<2>(src.data);
+
+    dest.data.resize(src.data.xdim + 2 * padX, src.data.ydim + 2 * padY);
+    dest.data.fill(avg);
 
     for (long int y = 0; y < src.data.ydim; y++)
     for (long int x = 0; x < src.data.xdim; x++) {
@@ -153,14 +145,36 @@ void SliceHelper::avgPad2D(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double
     }
 }
 
-void SliceHelper::halveSpectrum2D(Image<Complex> &src, Image<Complex> &dest) {
-    dest = Image<Complex>(src.data.xdim / 2 + 1, src.data.ydim);
+template <>
+void avgPad<3>(const Image<RFLOAT> &src, Image<RFLOAT> &dest, double ratio) {
+
+    const int padX = ratio * src.data.xdim;
+    const int padY = ratio * src.data.ydim;
+    const int padZ = ratio * src.data.zdim;
+
+    const double avg = average<3>(src.data);
+
+    dest.data.resize(src.data.xdim + 2 * padX, src.data.ydim + 2 * padY, src.data.zdim + 2 * padZ);
+    dest.data.fill(avg);
+
+    for (long int z = 0; z < src.data.zdim; z++)
+    for (long int y = 0; y < src.data.ydim; y++)
+    for (long int x = 0; x < src.data.xdim; x++) {
+        direct::elem(dest.data, x + padX, y + padY, z + padZ) = direct::elem(src.data, x, y, z);
+    }
+}
+
+};
+
+void SliceHelper::halveSpectrum2D(const Image<Complex> &src, Image<Complex> &dest) {
+
+    const int wd = src.data.xdim / 2 + 1;
+    const int hd = src.data.ydim;
+
+    dest.data.resize(wd, hd);
 
     const int xo = src.data.xdim / 2 + 1;
     const int yo = src.data.ydim / 2 + 1;
-
-    const int wd = dest.data.xdim;
-    const int hd = dest.data.ydim;
 
     for (long int y = 0; y < hd; y++)
     for (long int x = 0; x < wd; x++) {
@@ -184,32 +198,32 @@ void SliceHelper::extractSpectralSlice(
     Image<Complex> &src, Image<RFLOAT> &dest, d3Matrix proj,
     d2Vector volCentImg, double oversample
 ) {
-    const int wi = (double)dest.data.xdim;
-    const int hi = (double)dest.data.ydim;
+    const int wi = dest.data.xdim;
+    const int hi = dest.data.ydim;
 
-    const double wv = (double)src.data.xdim;
-    const double hv = (double)src.data.ydim;
-    const double dv = (double)src.data.zdim;
+    const double wv = src.data.xdim;
+    const double hv = src.data.ydim;
+    const double dv = src.data.zdim;
 
-    const double wios = oversample*wi;
-    const double hios = oversample*hi;
+    const double wios = oversample * wi;
+    const double hios = oversample * hi;
 
-    const int wiosI = ((int)wios)/2 + 1;
-    const int hiosI = ((int)hios);
+    const int wiosI = (int) wios / 2 + 1;
+    const int hiosI = (int) hios;
 
-    const int ciosX = ((int)wios)/2;
-    const int ciosY = ((int)hios)/2;
+    const int ciosX = (int) wios / 2;
+    const int ciosY = (int) hios / 2;
 
     MultidimArray<Complex> dest2  (wiosI, hiosI);
     MultidimArray<Complex> weight (wiosI, hiosI);
 
-    d2Vector shift(volCentImg.x - ciosX, volCentImg.y - ciosY);
+    d2Vector shift (volCentImg.x - ciosX, volCentImg.y - ciosY);
 
     for (long int y = 0; y < dest2.ydim; y++)
     for (long int x = 0; x < dest2.xdim; x++) {
         d3Vector pi((double)x/(double)(wiosI-1), 2.0*(double)y/(double)hiosI, 0.0);
 
-        if (pi.y >= 1.0) { pi.y -= 2.0; }
+        if (pi.y >= 1.0) pi.y -= 2.0;
 
         if (pi.norm2() > 1.0) {
             direct::elem(dest2, x, y) = Complex(0, 0);
@@ -273,6 +287,7 @@ struct insert_spectral_slices_stage {
     std::vector<Image<Complex>> srcSpectra;
     std::vector<d2Vector> shifts;
     std::vector<double> thz;
+    double wif, hif;
 
     insert_spectral_slices_stage(
         int ic,
@@ -282,7 +297,7 @@ struct insert_spectral_slices_stage {
         double wv, double hv, double dv,
         double wir, double hir,
         double imgPad
-    ): srcSpectra(ic), shifts(ic), thz(ic) {
+    ): srcSpectra(0), shifts(0), thz(0) {
         exec(ic, src, volCentImg, proj, wv, hv, dv, wir, hir, imgPad);
     }
 
@@ -297,18 +312,23 @@ struct insert_spectral_slices_stage {
         double wir, double hir,
         double imgPad
     ) {
+        srcSpectra.reserve(ic);
+        shifts.reserve(ic);
+        thz.reserve(ic);
         Image<RFLOAT> img;
         FourierTransformer transformer;
         for (int i = 0; i < ic; i++) {
-            SliceHelper::avgPad2D(src[i], img, imgPad);
+            SliceHelper::avgPad<2>(src[i], img, imgPad);
 
             CenterFFT(img.data, -1);
-            srcSpectra[i].data = transformer.FourierTransform(img.data);
+            srcSpectra.emplace_back(transformer.FourierTransform(img.data));
 
-            shifts[i] = d2Vector(volCentImg[i].x - wir / 2.0, volCentImg[i].y - hir / 2.0);
+            shifts.emplace_back(volCentImg[i].x - wir / 2.0, volCentImg[i].y - hir / 2.0);
 
-            thz[i] = 0.5 * d3Vector(wv * proj[i](2, 0), hv * proj[i](2, 1), dv * proj[i](2, 2)).length();
+            thz.push_back(0.5 * d3Vector(wv * proj[i](2, 0), hv * proj[i](2, 1), dv * proj[i](2, 2)).length());
         }
+        wif = srcSpectra[0].data.xdim;
+        hif = srcSpectra[0].data.ydim;
     }
 
 };
@@ -336,16 +356,17 @@ void SliceHelper::insertSpectralSlices(
     const auto &shifts     = subroutine.shifts;
     const auto &thz        = subroutine.thz;
 
-    const double wif = srcSpectra[0].data.xdim;
-    const double hif = srcSpectra[0].data.ydim;
+    const double &wif = subroutine.wif;
+    const double &hif = subroutine.hif;
 
     for (long int z = 0; z < dest.data.zdim; z++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        d3Vector pv((double)x/(wv-1), 2.0*(double)y/hv, 2.0*(double)z/dv);
 
-        if (pv.y > 1.0) pv.y = pv.y - 2.0;
-        if (pv.z > 1.0) pv.z = pv.z - 2.0;
+        d3Vector pv ((double) x / (wv - 1), 2.0 * (double) y / hv, 2.0 * (double) z / dv);
+
+        if (pv.y > 1.0) pv.y -= 2.0;
+        if (pv.z > 1.0) pv.z -= 2.0;
 
         if (pv.norm2() >= 1.0) {
             direct::elem(dest.data, x, y, z) = Complex(0, 0);
@@ -354,16 +375,14 @@ void SliceHelper::insertSpectralSlices(
 
         const double r = euclid(pv.x, pv.z);
 
-        Complex zs(0.0, 0.0);
+        Complex zs (0.0, 0.0);
         double wgh = 0.0;
 
         for (int i = 0; i < ic; i++) {
 
             d3Vector pi3 = proj[i] * pv;
 
-            if (pi3.x*pi3.x + pi3.y*pi3.y >= 1.0) {
-                continue;
-            }
+            if (euclidsq(pi3.x, pi3.y) >= 1.0) continue;
 
             const double za = thz[i] * std::abs(pi3.z);
 
@@ -377,23 +396,23 @@ void SliceHelper::insertSpectralSlices(
                 conj = true;
             }
 
-            double xi = (wif-1) * pi3.x;
+            double xi = (wif - 1) * pi3.x;
             double yi = hif * pi3.y / 2.0;
 
             if (yi < 0.0) yi += hif;
 
-            double phi = PI * (pi3.x * shifts[i].x + pi3.y * shifts[i].y);
-            Complex z0(cos(phi), sin(phi));
+            const double phi = PI * (pi3.x * shifts[i].x + pi3.y * shifts[i].y);
+            const Complex z0 (cos(phi), sin(phi));
 
             // double wgi = (1.0 - za / th_r) * (thickness / th_r);
-            double wgi = 1.0 - za / th_r;
+            const double wgi = 1.0 - za / th_r;
             const Complex zz = z0 * Interpolation::linearFFTW2D(srcSpectra[i], xi, yi);
 
             zs += wgi * (conj ? zz.conj() : zz);
             wgh += wgi;
         }
 
-        if (wgh > 1.0) { zs /= wgh; }
+        if (wgh > 1.0) zs /= wgh;
 
         direct::elem(dest.data, x, y, z) = zs;
     }
@@ -423,32 +442,31 @@ void SliceHelper::insertWeightedSpectralSlices(
     const auto &shifts     = subroutine.shifts;
     const auto &thz        = subroutine.thz;
 
-    const double wif = srcSpectra[0].data.xdim;
-    const double hif = srcSpectra[0].data.ydim;
+    const double &wif = subroutine.wif;
+    const double &hif = subroutine.hif;
 
     for (long int z = 0; z < dest.data.zdim; z++)
     for (long int y = 0; y < dest.data.ydim; y++)
     for (long int x = 0; x < dest.data.xdim; x++) {
-        d3Vector pv((double)x/(wv-1), 2.0*(double)y/hv, 2.0*(double)z/dv);
 
-        if (pv.y > 1.0) pv.y = pv.y - 2.0;
-        if (pv.z > 1.0) pv.z = pv.z - 2.0;
+        d3Vector pv ((double) x / (wv - 1), 2.0 * (double) y / hv, 2.0 * (double) z / dv);
+
+        if (pv.y > 1.0) pv.y -= 2.0;
+        if (pv.z > 1.0) pv.z -= 2.0;
 
         if (pv.norm2() >= 1.0) {
             direct::elem(dest.data, x, y, z) = Complex(0, 0);
             continue;
         }
 
-        Complex zs(0.0, 0.0);
+        Complex zs (0.0, 0.0);
         double wgh = 0.0;
 
         for (int i = 0; i < ic; i++) {
 
             d3Vector pi3 = proj[i] * pv;
 
-            if (pi3.x*pi3.x + pi3.y*pi3.y >= 1.0) {
-                continue;
-            }
+            if (euclidsq(pi3.x, pi3.y) >= 1.0) continue;
 
             const double za = thz[i] * std::abs(pi3.z);
 
@@ -467,15 +485,13 @@ void SliceHelper::insertWeightedSpectralSlices(
 
             if (yi < 0.0) yi += hif;
 
-            double phi = PI * (pi3.x * shifts[i].x + pi3.y * shifts[i].y);
-            Complex z0(cos(phi), sin(phi));
+            const double phi = PI * (pi3.x * shifts[i].x + pi3.y * shifts[i].y);
+            const Complex z0 (cos(phi), sin(phi));
 
-            double wgi = imgWeights[i] * (1.0 - za/th_r);
-            Complex zz = z0 * Interpolation::linearFFTW2D(srcSpectra[i], xi, yi);
+            const double wgi = imgWeights[i] * (1.0 - za / th_r);
+            const Complex zz = z0 * Interpolation::linearFFTW2D(srcSpectra[i], xi, yi);
 
-            if (conj) zz = zz.conj();
-
-            zs += wgi * zz;
+            zs += wgi * (conj ? zz.conj() : zz);
             wgh += wgi;
         }
 
@@ -542,7 +558,7 @@ Image<T> SliceHelper::consolidate(const std::vector<Image<T>> &src, bool toN) {
     const int zc = toN? 1 : ic;
     const int nc = toN? ic : 1;
 
-    Image<double> out(w, h, zc, nc);
+    Image<double> out (w, h, zc, nc);
 
     for (int i = 0; i < ic; i++) {
         if (src[i].data.xdim != w || src[i].data.ydim != h) {
