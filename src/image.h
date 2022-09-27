@@ -593,8 +593,8 @@ class Image {
                 // The default fill-order in the TIFF specification is MSB2LSB
                 // but IMOD assumes LSB2MSB even for TIFF.
                 // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
-                ptrDest[i * 2    ] = (T) ( page[i]       & 15); // 1111 = 1+2+4+8 = 15
-                ptrDest[i * 2 + 1] = (T) ((page[i] >> 4) & 15);
+                ptrDest[i * 2    ] = (T) ( page[i]       & 0b1111);
+                ptrDest[i * 2 + 1] = (T) ((page[i] >> 4) & 0b1111);
             }
             break;
 
@@ -750,7 +750,6 @@ class Image {
             datatypesize = gettypesize(datatype);
             pagesize = Xsize(data) * Ysize(data) * Zsize(data) * datatypesize;
         }
-        size_t haveread_n = 0; // number of pixels (not necessarily bytes!) processed so far
 
         if (data.getMmap() || datatype == UHalf) { delete mmapper; mmapper = nullptr; }
 
@@ -770,6 +769,7 @@ class Image {
             }
             fclose(fimg);
             data.data = reinterpret_cast<T*>(mmapper->allocate(pagesize, offset));
+            return 0;
         } else {
             // Reset select to get the correct offset
             if (select_img < 0) { select_img = 0; }
@@ -788,50 +788,17 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            const size_t pagemax = 1073741824; // 1 GB
-            char *page = (char *) callocator::allocate(std::max(pagesize, pagemax) * sizeof(char));
+            int err = page_allocate(pagesize, myoffset, pad, datatype, datatypesize);
 
-            // Because we requested XYsize to be even for UHalf, this is always safe.
-            if (fseek(fimg, myoffset, SEEK_SET) != 0) return -1;
+            #ifdef DEBUG
+            printf("DEBUG img_read_data: Finished reading and converting data\n");
+            #endif
 
-            for (size_t n = 0; n < Nsize(data); n++) {
-                for (size_t j = 0; j < pagesize; j += pagemax) {
-                    // pagesize size of object
-                    // Read next page. Divide pages larger than pagemax
-                    size_t readsize = pagesize - j;
-                    if (readsize > pagemax) { readsize = pagemax; }
-
-                    size_t readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
-
-                    #ifdef DEBUG
-                    std::cout << "NX = " << Xsize(data) << " NY = " << Ysize(data) << " NZ = " << Zsize(data) << std::endl;
-                    std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " readsize_n = " << readsize_n << std::endl;
-                    #endif
-
-                    // Read page from disc
-                    if (fread(page, readsize, 1, fimg) != 1) return -2;
-
-                    // swap per page
-                    if (swap) swapPage(page, readsize, datatype);
-                    // cast to T per page
-                    castPage2T(page, data.data + haveread_n, datatype, readsize_n);
-                    haveread_n += readsize_n;
-                }
-                if (pad > 0) {
-                    // fread(padpage, pad, 1, fimg);
-                    if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
-                }
-            }
-            // if (pad > 0) { callocator::deallocate(padpage, pad * sizeof(char)); }
-            if (page) { callocator::deallocate(page, pagesize * sizeof(char)); }
-
-        #ifdef DEBUG
-        printf("DEBUG img_read_data: Finished reading and converting data\n");
-        #endif
-
+            return err;
         }
-        return 0;
     }
+
+    int page_allocate(size_t pagesize, size_t off, unsigned long pad, DataType datatype, size_t datatypesize);
 
     /** Data access
      *

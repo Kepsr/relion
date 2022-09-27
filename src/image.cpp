@@ -77,6 +77,50 @@ size_t gettypesize(DataType type) throw (RelionError) {
 //     REPORT_ERROR("DataType::String2int; unknown datatype");
 // }
 
+template <typename T>
+int Image<T>::page_allocate(
+    size_t pagesize, size_t off, unsigned long pad,
+    DataType datatype, size_t datatypesize
+) {
+
+    size_t haveread_n = 0;  // Number of pixels (not necessarily bytes!) processed so far
+    const size_t pagemax = 1073741824; // 1 GB
+    char *page = (char *) callocator::allocate(std::max(pagesize, pagemax) * sizeof(char));
+    // Because we requested XYsize to be even for UHalf, this is always safe.
+    if (fseek(fimg, off, SEEK_SET) != 0) return -1;
+
+    for (size_t n = 0; n < Nsize(data); n++) {
+        for (size_t j = 0; j < pagesize; j += pagemax) {
+            // pagesize size of object
+            // Read next page. Divide pages larger than pagemax
+            size_t readsize = std::min(pagesize - j, pagemax);
+
+            size_t readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
+
+            #ifdef DEBUG
+            std::cout << "NX = " << Xsize(data) << " NY = " << Ysize(data) << " NZ = " << Zsize(data) << std::endl;
+            std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " readsize_n = " << readsize_n << std::endl;
+            #endif
+
+            // Read page from disc
+            if (fread(page, readsize, 1, fimg) != 1) return -2;
+
+            // swap per page
+            if (swap) swapPage(page, readsize, datatype);
+            // cast to T per page
+            castPage2T(page, data.data + haveread_n, datatype, readsize_n);
+            haveread_n += readsize_n;
+        }
+        if (pad > 0) {
+            // fread(padpage, pad, 1, fimg);
+            if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
+        }
+    }
+    // if (pad > 0) callocator::deallocate(padpage, pad * sizeof(char));
+    if (page) callocator::deallocate(page, pagesize * sizeof(char));
+    return 0;
+}
+
 // Some image-specific operations
 void normalise(
     Image<RFLOAT> &I,
