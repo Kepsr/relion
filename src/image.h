@@ -701,10 +701,10 @@ class Image {
      */
     void writePageAsDatatype(FILE *fimg, DataType datatype, size_t datasize_n ) {
         const size_t datasize = datasize_n * gettypesize(datatype);
-        char * fdata = (char *) askMemory(datasize);
+        char *fdata = (char *) callocator::allocate(datasize);
         castPage2Datatype(fdata, data.data, datatype, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
-        freeMemory(fdata, datasize);
+        callocator::deallocate(fdata, datasize);
     }
 
     /** Swap an entire page
@@ -789,7 +789,7 @@ class Image {
             #endif
 
             const size_t pagemax = 1073741824; // 1 GB
-            char *page = askMemory(std::max(pagesize, pagemax) * sizeof(char));
+            char *page = (char *) callocator::allocate(std::max(pagesize, pagemax) * sizeof(char));
 
             // Because we requested XYsize to be even for UHalf, this is always safe.
             if (fseek(fimg, myoffset, SEEK_SET) != 0) return -1;
@@ -822,8 +822,8 @@ class Image {
                     if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
                 }
             }
-            // if (pad > 0) { freeMemory(padpage, pad * sizeof(char)); }
-            if (page) { freeMemory(page, pagesize * sizeof(char)); }
+            // if (pad > 0) { callocator::deallocate(padpage, pad * sizeof(char)); }
+            if (page) { callocator::deallocate(page, pagesize * sizeof(char)); }
 
         #ifdef DEBUG
         printf("DEBUG img_read_data: Finished reading and converting data\n");

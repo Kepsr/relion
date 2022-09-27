@@ -143,7 +143,7 @@ template <class T> void ask_Tvolume(
 template <class T> void free_Tvolume(
     T *** &m, int nsl, int nsh, int nrl, int nrh, int ncl, int nch
 ) {
-    if (m != NULL) {
+    if (m) {
         for (int k = nsh; k >= nsl; k--) {
         for (int i = nrh; i >= nrl; i--)
         free((char*) (m[k][i] + ncl));
@@ -154,28 +154,42 @@ template <class T> void free_Tvolume(
     }
 }
 
-/** Allocates memory.
- * Adapted from Bsofts bfree
- *
- * A thin wrapper around calloc.
- * returns a char* pointing to allocated memory.
- * Successfully allocated memory is zero-initialised.
- * If calloc returns a nullptr, an exception is thrown.
- *
- */
-char* askMemory(size_t size) throw (RelionError);
+struct callocator {
 
-/** Frees allocated memory.
- * Adapted from Bsofts bfree
- * 
- * A thin wrapper around free.
- * Frees the memory pointed to by ptr, which is set thereafter to nullptr.
- * On success, returns 0.
- * If memsize is negative, does nothing and returns -1.
- *
-*/
-int freeMemory(void *ptr, size_t memsize);
+    /** Allocate memory
+     *
+     * A thin wrapper around calloc.
+     * returns a char* pointing to allocated memory.
+     * Successfully allocated memory is zero-initialised.
+     * If calloc returns a nullptr, an exception is thrown.
+     *
+     */
+    static void* allocate(size_t memsize) throw (RelionError) {
+        void *ptr = calloc(memsize, sizeof(char));
+        if (!ptr) {
+            std::cerr << "Failed to allocate " <<  memsize << " bytes." << std::endl;
+            REPORT_ERROR("Error in callocator::allocate");
+        }
+        return ptr;
+    }
+
+    /** Free allocated memory
+     * Adapted from Bsofts bfree
+     * 
+     * A thin wrapper around free.
+     * Frees the memory pointed to by ptr, which is set thereafter to nullptr.
+     * On success, returns 0.
+     * If memsize is negative, does nothing and returns -1.
+     *
+    */
+    static int deallocate(void *ptr, size_t memsize) {
+        if (memsize < 1) return -1;
+        free(ptr);
+        ptr = nullptr;
+        return 0;
+    }
+
+};
 
 //@}
 #endif
-

@@ -29,6 +29,7 @@
 #define RWSPIDER_H
 
 #include "src/image.h"
+#include <memory>
 
 const int SPIDERSIZE = 1024;  // Minimum size of the SPIDER header (variable)
 ///@defgroup Spider Spider File format
@@ -130,14 +131,14 @@ int Image<T>::readSPIDER(long int img_select) {
     #endif
     #undef DEBUG
 
-    SPIDERhead *header = new SPIDERhead;
-    if (fread(header, SPIDERSIZE, 1, fimg) < 1)
+    auto header = std::unique_ptr<SPIDERhead>(new SPIDERhead);
+    if (fread(header.get(), SPIDERSIZE, 1, fimg) < 1)
         REPORT_ERROR("rwSPIDER: cannot allocate memory for header");
 
     swap = 0;
 
     // Determine byte order and swap bytes if from different-endian machine
-    char*    b = (char *) header;
+    char*    b = (char *) header.get();
     int      i;
     int      extent = SPIDERSIZE - 180;  // exclude char bytes from swapping
     if (
@@ -184,7 +185,6 @@ int Image<T>::readSPIDER(long int img_select) {
 
     if (isStack && !dataflag) {
         // Don't read the individual header and the data if not necessary
-        delete header;
         return 0;
     }
 
@@ -198,8 +198,6 @@ int Image<T>::readSPIDER(long int img_select) {
         }
         offset += offset;
     }
-
-    delete header;
 
     #ifdef DEBUG
     size_t header_size = offset;
@@ -246,7 +244,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     if (fmod(SPIDERSIZE,lenbyt) != 0) { labrec++; }
     float labbyt = labrec * lenbyt;   // Size of header in bytes
     offset = (int) labbyt;
-    SPIDERhead *header = (SPIDERhead *) askMemory((int) labbyt * sizeof(char));
+    SPIDERhead *header = (SPIDERhead *) callocator::allocate((int) labbyt * sizeof(char));
 
     // Map the parameters
     header->lenbyt = lenbyt;  // Record length (bytes)
@@ -335,7 +333,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)  //header must change
         fwrite(header, offset, 1, fimg);
 
-    char* fdata = (char *) askMemory(datasize);
+    char *fdata = (char *) callocator::allocate(datasize);
     //think about writing in several chucks
 
     //write only once, ignore select_img
@@ -358,8 +356,8 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     fl.l_type   = F_UNLCK;
     fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
 
-    freeMemory(fdata, datasize);
-    freeMemory(header, (int) labbyt * sizeof(char));
+    callocator::deallocate(fdata, datasize);
+    callocator::deallocate(header, (int) labbyt * sizeof(char));
 
     return 0;
 }

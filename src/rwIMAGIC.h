@@ -30,6 +30,7 @@
 
 #include "src/metadata_label.h"
 #include "src/image.h"
+#include <memory>
 
 const int IMAGICSIZE = 1024;  // Size of the IMAGIC header for each image
 
@@ -121,13 +122,13 @@ int Image<T>::readIMAGIC(long int img_select) {
     printf("DEBUG readIMAGIC: Reading Imagic file\n");
     #endif
 
-    IMAGIChead *header = new IMAGIChead;
+    auto header = std::unique_ptr<IMAGIChead>(new IMAGIChead);
 
-    if (fread(header, IMAGICSIZE, 1, fhed) < 1)
+    if (fread(header.get(), IMAGICSIZE, 1, fhed) < 1)
         REPORT_ERROR((std::string) "readIMAGIC: header file of " + filename + " cannot be read");
 
     // Determine byte order and swap bytes if from little-endian machine
-    char *b = (char *) header;
+    char *b = (char *) header.get();
     long int extent = IMAGICSIZE - 916;  // exclude char bytes from swapping
     if (abs(header->nyear) > SWAPTRIG || header->ixlp > SWAPTRIG) {
         for (int i = 0; i < extent; i += 4)
@@ -147,7 +148,7 @@ int Image<T>::readIMAGIC(long int img_select) {
     data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
     replaceNsize = dims[3];
 
-    DataType datatype = determine_datatype(header);
+    DataType datatype = determine_datatype(header.get());
 
     // Set min-max values and other statistical values
     if (header->sigma == 0 && header->varian != 0) {
@@ -170,15 +171,12 @@ int Image<T>::readIMAGIC(long int img_select) {
 
     if (!dataflag) {
         // Don't read the individual header and the data if not necessary
-    	delete header;
     	return 0;
     }
 
    // Get the header information
     int error_fseek = img_select > -1 ? fseek(fhed, img_select * IMAGICSIZE, SEEK_SET) : fseek(fhed, 0, SEEK_SET);
     if (error_fseek != 0) return -1;
-
-    delete header;
 
     return readData(fimg, img_select, datatype, 0);
 
@@ -200,10 +198,8 @@ int Image<T>::readIMAGIC(long int img_select) {
 */
 template <typename T>
 void Image<T>::writeIMAGIC(long int img_select, int mode) {
-    //    if ( p->transform != NoTransform )
-    //        img_convert_fourier(p, Centered);
 
-    IMAGIChead *header = new IMAGIChead;
+    auto header = std::unique_ptr<IMAGIChead>(new IMAGIChead);
 
     const auto dims = data.getDimensions();
 
@@ -216,7 +212,7 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
     header->ifn    = dims[3] - 1;
 
     time_t timer;
-    time (&timer);
+    time(&timer);
     tm *t = localtime(&timer);
 
     header->ndate  = t->tm_mday;
@@ -290,16 +286,14 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         fseek(fimg, 0, SEEK_SET);
         fseek(fhed, 0, SEEK_SET);
     }
-    char* fdata = (char*) askMemory(datasize);
+    char* fdata = (char *) callocator::allocate(datasize);
 
     // Unlock
     fl.l_type   = F_UNLCK;
     fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
     fcntl(fileno(fhed), F_SETLK, &fl); /* unlocked */
 
-    freeMemory(fdata, datasize);
-
-    delete header;
+    callocator::deallocate(fdata, datasize);
 }
 
 #endif /* RWIMAGIC_H_ */

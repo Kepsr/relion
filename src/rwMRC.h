@@ -123,7 +123,7 @@ enum {
 };
 
 static int systype() {
-    char *test = (char*) askMemory(12);
+    char *test = (char *) callocator::allocate(12);
     int *itest = (int*) test;
     float *ftest = (float*) test;
     memcpy(test, "jbh     ", 8);
@@ -134,7 +134,7 @@ static int systype() {
     if (itest[0] == 543711850 && fabs(ftest[0] - 1.96837e-19) < 1e-23)
         type = LITTLEIEEE;
 
-    freeMemory(test, 12);
+    callocator::deallocate(test, 12);
 
     return type;
 }
@@ -189,7 +189,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
     printf("DEBUG readMRC: Reading MRC file\n");
     #endif
 
-    MRChead *header = (MRChead*) askMemory(sizeof(MRChead));
+    MRChead *header = (MRChead *) callocator::allocate(sizeof(MRChead));
     if (fread(header, MRCSIZE, 1, fimg) < 1)
         REPORT_ERROR("rwMRC: error in reading header of image " + name);
 
@@ -243,7 +243,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 
     if (isStack && !dataflag) {
         // Don't read the individual header and the data if not necessary
-        freeMemory(header, sizeof(MRChead));
+        callocator::deallocate(header, sizeof(MRChead));
         return 0;
     }
 
@@ -253,7 +253,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
     MD[0].write(std::cerr);
     #endif
 
-    freeMemory(header, sizeof(MRChead));
+    callocator::deallocate(header, sizeof(MRChead));
 
     return readData(fimg, img_select, datatype, 0);
 }
@@ -263,7 +263,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 */
 template <typename T>
 int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
-    MRChead *header = (MRChead *) askMemory(sizeof(MRChead));
+    MRChead *header = (MRChead *) callocator::allocate(sizeof(MRChead));
 
     // Map the parameters
     strncpy(header->map, "MAP ", 4);
@@ -444,10 +444,10 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     // Write header
     if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)
         fwrite(header, MRCSIZE, 1, fimg);
-    freeMemory(header, sizeof(MRChead));
+    callocator::deallocate(header, sizeof(MRChead));
 
     // write only once, ignore select_img
-    char* fdata = (char*) askMemory(datasize);
+    char* fdata = (char *) callocator::allocate(datasize);
     // think about writing in several chunks
 
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
@@ -470,7 +470,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     fl.l_type = F_UNLCK;
     fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
 
-    freeMemory(fdata, datasize);
+    callocator::deallocate(fdata, datasize);
 
     return 0;
 }
