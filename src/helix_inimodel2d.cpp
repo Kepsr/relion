@@ -180,7 +180,7 @@ void HelixAligner::initialise() {
         img.read(fn_inimodel);
         img().setXmippOrigin();
         if (angpix < 0.0) {
-            angpix = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.size() - 1);
+            angpix = img.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.header.size() - 1);
             std::cout << " Using pixel size from the input file header: " << angpix << std::endl;
         }
         ori_size = img().xdim;

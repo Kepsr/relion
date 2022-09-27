@@ -227,19 +227,19 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 
     offset = MRCSIZE + header->nsymbt;
 
-    const long int i = MDMainHeader.size() - 1;
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin,  i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax,  i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->amean, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms,  i);
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE,     (int)    datatype,      i);
+    const long int i = this->header.size() - 1;
+    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin,  i);
+    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax,  i);
+    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->amean, i);
+    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms,  i);
+    this->header.setValue(EMDL::IMAGE_DATATYPE,     (int)    datatype,      i);
 
     if (header->mx && header->a != 0)  // ux
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT)header->a / header->mx, i);
+        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT) header->a / header->mx, i);
     if (header->my && header->b != 0)  // yx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT)header->b / header->my, i);
+        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT) header->b / header->my, i);
     if (header->mz && header->c != 0)  // zx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT)header->c / header->mz, i);
+        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT) header->c / header->mz, i);
 
     if (isStack && !dataflag) {
         // Don't read the individual header and the data if not necessary
@@ -249,7 +249,7 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 
     // #define DEBUG
     #ifdef DEBUG
-    MDMainHeader.write(std::cerr);
+    header.write(std::cerr);
     MD[0].write(std::cerr);
     #endif
 
@@ -347,45 +347,45 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     header->nyStart = (int) 0;
     header->nzStart = (int) 0;
 
-    if (!MDMainHeader.empty()) {
+    if (!this->header.empty()) {
 
-        const long int i = MDMainHeader.size() - 1;
+        const long int i = this->header.size() - 1;
 
-        // If MDMainHeader contains none of these,
+        // If header contains none of these,
         // we will be looping through `data` more times than necessary.
-        header->amin  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_MIN)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN,    i) : (float) min(data);
-        header->amax  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_MAX)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX,    i) : (float) max(data);
-        header->amean = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_AVG)    ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG,    i) : (float) average(data);
-        header->arms  = MDMainHeader.containsLabel(EMDL::IMAGE_STATS_STDDEV) ? MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV, i) : (float) computeStddev(data);
+        header->amin  = this->header.containsLabel(EMDL::IMAGE_STATS_MIN)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN,    i) : (float) min(data);
+        header->amax  = this->header.containsLabel(EMDL::IMAGE_STATS_MAX)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX,    i) : (float) max(data);
+        header->amean = this->header.containsLabel(EMDL::IMAGE_STATS_AVG)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG,    i) : (float) average(data);
+        header->arms  = this->header.containsLabel(EMDL::IMAGE_STATS_STDDEV) ? this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i) : (float) computeStddev(data);
 
         // int nxStart, nyStart, nzStart;
 
         // RFLOAT aux;
-        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_X, i);
+        // aux = header.getValue<float>(EMDL::ORIENT_ORIGIN_X, i);
         // if (std::isfinite(nxStart = aux - 0.5)) { header->nxStart = nxStart; }
 
-        if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X)) {
-        const float srx = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_X, i),
+        if (this->header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X)) {
+        const float srx = this->header.template getValue<float>(EMDL::IMAGE_SAMPLINGRATE_X, i),
                     xOrigin = header->nxStart * srx, a = header->nx * srx;
         if (std::isfinite(xOrigin)) { header->xOrigin = xOrigin; }
         if (std::isfinite(a))       { header->a       = a; }
         }
 
-        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Y, i, aux);
+        // aux = header.getValue<float>(EMDL::ORIENT_ORIGIN_Y, i, aux);
         // if (std::isfinite(nyStart = aux - 0.5)) { header->nyStart = nyStart; }
 
-        if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))  {
-        const float sry = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Y, i),
+        if (this->header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))  {
+        const float sry = this->header.template getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Y, i),
                     yOrigin = header->nyStart * sry, b = header->ny * sry;
         if (std::isfinite(yOrigin)) { header->yOrigin = yOrigin; }
         if (std::isfinite(b))       { header->b       = b; }
         }
 
-        // aux = MDMainHeader.getValue<float>(EMDL::ORIENT_ORIGIN_Z, i);
+        // aux = header.getValue<float>(EMDL::ORIENT_ORIGIN_Z, i);
         // if (std::isfinite(nzStart = aux - 0.5)) { header->nzStart = nzStart; }
 
-        if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Z))  {
-        const float srz = MDMainHeader.getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Z, i),
+        if (this->header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Z))  {
+        const float srz = this->header.template getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Z, i),
                     zOrigin = header->nzStart * srz, c = header->nz * srz;
         if (std::isfinite(zOrigin)) { header->zOrigin = zOrigin; }
         if (std::isfinite(c))       { header->c       = c; }

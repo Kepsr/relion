@@ -309,8 +309,9 @@ void removeDust(
     }
 }
 
+
 void invert_contrast(Image<RFLOAT> &I) {
-    for (auto &x : I()) { x *= -1.0; }
+    for (auto &x : I()) { x = -x; }
 }
 
 void rescale(Image<RFLOAT> &I, int mysize) {
@@ -319,19 +320,19 @@ void rescale(Image<RFLOAT> &I, int mysize) {
     resizeMap(I(), mysize);
 
     // Try to rescale entries in I.MDmainheader
-    const long int i = I.MDMainHeader.size() - 1;
+    const long int i = I.header.size() - 1;
     try {
-        const auto sx = I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, i) * (RFLOAT) olddim / (RFLOAT) mysize;
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, sx, i);
+        const auto sx = I.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, i) * (RFLOAT) olddim / (RFLOAT) mysize;
+        I.header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, sx, i);
     } catch (const char *errmsg) {}
     try {
-        const auto sy = I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, i) * (RFLOAT) olddim / (RFLOAT) mysize;
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, sy, i);
+        const auto sy = I.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, i) * (RFLOAT) olddim / (RFLOAT) mysize;
+        I.header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, sy, i);
     } catch (const char *errmsg) {}
     if (I().getDim() == 3)
     try {
-        const auto sz = I.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z, i) * (RFLOAT) olddim / (RFLOAT) mysize;
-        I.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, sz, i);
+        const auto sz = I.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z, i) * (RFLOAT) olddim / (RFLOAT) mysize;
+        I.header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, sz, i);
     } catch (const char *errmsg) {}
 }
 
@@ -374,8 +375,8 @@ std::pair<RFLOAT, RFLOAT> getImageContrast(
     if (redo_minmax) {
         // Constrain image data to the interval [minval, maxval]
         for (auto &x : image) {
-                 if (x > maxval) { x = maxval; } 
-            else if (x < minval) { x = minval; }
+            if (x > maxval) x = maxval;
+            if (x < minval) x = minval;
         }
     }
 
@@ -387,7 +388,7 @@ int Image<T>::read(
     const FileName &name, bool readdata, long int select_img,
     bool mapData, bool is_2D
 ) {
-    if (name == "")
+    if (name.empty())
         REPORT_ERROR("ERROR: trying to read image with empty file name!");
     fImageHandler hFile;
     hFile.openFile(name);
@@ -400,7 +401,7 @@ void Image<T>::write(
     FileName name, long int select_img, bool isStack,
     int mode
 ) {
-    const FileName &fname = name == "" ? filename : name;
+    const FileName &fname = name.empty() ? filename : name;
     fImageHandler hFile;
     hFile.openFile(name, mode);
     _write(fname, hFile, select_img, isStack, mode);
@@ -419,7 +420,7 @@ int Image<T>::_read(
     dataflag = readdata;
 
     // Check whether to map the data or not
-    mmapOn = mapData;
+    mmapper = mapData ? new image_mmapper : nullptr;
 
     FileName ext_name = hFile.ext_name;
     fimg = hFile.fimg;
@@ -445,8 +446,8 @@ int Image<T>::_read(
     #undef DEBUG
 
     // Clear the header before reading
-    MDMainHeader.clear();
-    MDMainHeader.addObject();
+    header.clear();
+    header.addObject();
 
     if (
         ext_name.contains("spi") || ext_name.contains("xmp") ||
@@ -604,11 +605,11 @@ int Image<T>::readTiffInMemory(
     dataflag = readdata;
 
     // Check whether to map the data or not
-    mmapOn = mapData;
+    mmapper = mapData ? new image_mmapper : nullptr;
 
     //Just clear the header before reading
-    MDMainHeader.clear();
-    MDMainHeader.addObject();
+    header.clear();
+    header.addObject();
 
     TIFF* ftiff = TIFFClientOpen(
         "in-memory-tiff", "r", (thandle_t) &handle,

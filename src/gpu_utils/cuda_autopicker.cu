@@ -640,7 +640,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 fn_tmp = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
                 It.read(fn_tmp);
                 Mccf_best = It();
-                expected_Pratio = It.MDMainHeader.getValue(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the header of the image
+                expected_Pratio = It.header.getValue(EMDL::IMAGE_STATS_MAX);  // Retrieve expected_Pratio from the header of the image
 
                 fn_tmp = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestPSI.spi");
                 It.read(fn_tmp);
@@ -860,7 +860,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 Image<RFLOAT> It;
                 It() = Mccf_best;
                 // Store expected_Pratio in the header of the image..
-                It.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Store expected_Pratio in the header of the image
+                It.header.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio);  // Store expected_Pratio in the header of the image
                 fn_tmp = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
                 It.write(fn_tmp);
 

@@ -649,7 +649,7 @@ void MlModel::initialiseFromImages(
                 if (_ref_angpix > 0.0) {
                     pixel_size = _ref_angpix;
                 } else {
-                    RFLOAT header_pixel_size = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.size() - 1);
+                    RFLOAT header_pixel_size = img.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.header.size() - 1);
                     if (nr_classes == 0) {
                         pixel_size = header_pixel_size;
                     } else {
@@ -675,7 +675,7 @@ void MlModel::initialiseFromImages(
             if (_ref_angpix > 0.0) {
                 pixel_size = _ref_angpix;
             } else {
-                RFLOAT header_pixel_size = img.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.MDMainHeader.size() - 1);
+                RFLOAT header_pixel_size = img.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, img.header.size() - 1);
                 if (header_pixel_size <= 0) {
                     std::cerr << " header_pixel_size = " << header_pixel_size << std::endl;
                     REPORT_ERROR("MlModel::initialiseFromImages: Pixel size of reference image is not set!");

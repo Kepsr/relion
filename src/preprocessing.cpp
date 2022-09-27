@@ -981,13 +981,13 @@ void Preprocessing::performPerImageOperations(
         return computeStats(Ipart());
     }();
 
-    const long int i = Ipart.MDMainHeader.size() - 1;
+    const long int i = Ipart.header.size() - 1;
 
     if (Ipart().getDim() == 3) {
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    stats.max,    i);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg,    i);
-        Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev, i);
+        Ipart.header.setValue(EMDL::IMAGE_STATS_MIN,    stats.min,    i);
+        Ipart.header.setValue(EMDL::IMAGE_STATS_MAX,    stats.max,    i);
+        Ipart.header.setValue(EMDL::IMAGE_STATS_AVG,    stats.avg,    i);
+        Ipart.header.setValue(EMDL::IMAGE_STATS_STDDEV, stats.stddev, i);
         Ipart.setSamplingRateInHeader(output_angpix);
 
         {
@@ -1007,10 +1007,10 @@ void Preprocessing::performPerImageOperations(
         if (image_nr == nr_of_images - 1) {
             all_avg /= nr_of_images;
             all_stddev = sqrt(all_stddev / nr_of_images);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    all_minval, i);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    all_maxval, i);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    all_avg,    i);
-            Ipart.MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, all_stddev, i);
+            Ipart.header.setValue(EMDL::IMAGE_STATS_MIN,    all_minval, i);
+            Ipart.header.setValue(EMDL::IMAGE_STATS_MAX,    all_maxval, i);
+            Ipart.header.setValue(EMDL::IMAGE_STATS_AVG,    all_avg,    i);
+            Ipart.header.setValue(EMDL::IMAGE_STATS_STDDEV, all_stddev, i);
             Ipart.setSamplingRateInHeader(output_angpix);
         }
 

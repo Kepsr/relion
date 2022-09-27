@@ -152,7 +152,7 @@ class project_parameters {
             MDopt.setValue(EMDL::IMAGE_OPTICS_GROUP_NAME, "optics1", i);
             MDopt.setValue(EMDL::CTF_VOLTAGE, 300.0, i);
             MDopt.setValue(EMDL::CTF_CS, 2.7, i);
-            angpix = vol.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, vol.MDMainHeader.size() - 1);
+            angpix = vol.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, vol.header.size() - 1);
             MDopt.setValue(EMDL::IMAGE_PIXEL_SIZE, angpix, i);
             MDopt.setValue(EMDL::IMAGE_SIZE, Xsize(vol()), i);
             MDopt.setValue(EMDL::IMAGE_DIMENSIONALITY, do_3d_rot ? 3 : 2, i);

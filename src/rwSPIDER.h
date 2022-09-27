@@ -156,11 +156,11 @@ int Image<T>::readSPIDER(long int img_select) {
     DataType datatype = Float;
 
     {
-    const long int i = MDMainHeader.size() - 1;
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->fmin, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->fmax, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->av,   i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sig,  i);
+    const long int i = this->header.size() - 1;
+    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->fmin, i);
+    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->fmax, i);
+    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->av,   i);
+    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sig,  i);
     setSamplingRateInHeader((RFLOAT) header->scale);
     }
 
@@ -265,22 +265,22 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     header->iform = dims[2] <= 1 ? 1 : 2;  // 2D image or 3D volume?
     header->imami = 0; // never trust max/min
 
-    if (!MDMainHeader.empty()) {
+    if (!this->header.empty()) {
         #ifdef DEBUG
-        std::cerr << "Non-empty MDMainHeader" << std::endl;
+        std::cerr << "Non-empty header" << std::endl;
         #endif
-        const long int i = MDMainHeader.size() - 1;
+        const long int i = this->header.size() - 1;
         try {
-            header->fmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN, i);
+            header->fmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         } catch (const char *errmsg) {}
         try {
-            header->fmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX, i);
+            header->fmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
         } catch (const char *errmsg) {}
         try {
-            header->av   = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG, i);
+            header->av   = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
         } catch (const char *errmsg) {}
         try {
-            header->sig  = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
+            header->sig  = this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
         } catch (const char *errmsg) {}
     }
     // For multi-image files

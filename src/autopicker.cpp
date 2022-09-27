@@ -2725,7 +2725,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 Image<RFLOAT> I_bestCCF;
                 I_bestCCF.read(fn_bestCCF);
                 Mccf_best = I_bestCCF();
-                expected_Pratio = I_bestCCF.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_STATS_MAX, I_bestCCF.MDMainHeader.size() - 1);  // Retrieve expected_Pratio from the header of the image
+                expected_Pratio = I_bestCCF.header.getValue<RFLOAT>(EMDL::IMAGE_STATS_MAX, I_bestCCF.header.size() - 1);  // Retrieve expected_Pratio from the header of the image
 
                 const auto fn_bestPSI = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestPSI.spi");
                 Mpsi_best = Image<RFLOAT>::from_filename(fn_bestPSI)();
@@ -2889,7 +2889,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             if (do_write_fom_maps && !autopick_helical_segments) {
 
                 Image<RFLOAT> I_bestCCF (Mccf_best);
-                I_bestCCF.MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio, I_bestCCF.MDMainHeader.size() - 1);  // Store expected_Pratio in the header of the image
+                I_bestCCF.header.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio, I_bestCCF.header.size() - 1);  // Store expected_Pratio in the header of the image
                 const auto fn_bestCCF = FileName::compose(getOutputRootName(fn_mic) + "_" + fn_out + "_ref", iref, "_bestCCF.spi");
                 I_bestCCF.write(fn_bestCCF);
 

@@ -4453,9 +4453,9 @@ void normaliseHelicalSegments(
         img_name = img_name.substr(img_name.find("@") + 1);
         // Set the pixel size in the file header
         auto img0 = Image<RFLOAT>::from_filename(img_name);
-        const long int j = img0.MDMainHeader.size() - 1;
-        img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, j);
-        img0.MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, j);
+        const long int j = img0.header.size() - 1;
+        img0.header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, pixel_size_A, j);
+        img0.header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, pixel_size_A, j);
         img0.write(img_name);
     }
 }

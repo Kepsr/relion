@@ -158,13 +158,13 @@ int Image<T>::readIMAGIC(long int img_select) {
         header->densmax = header->avdens + header->sigma;
     }
 
-    const long int i = MDMainHeader.size() - 1;
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->densmin, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->densmax, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->avdens, i);
-    MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sigma, i);
+    const long int i = this->header.size() - 1;
+    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->densmin, i);
+    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->densmax, i);
+    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->avdens, i);
+    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sigma, i);
     setSamplingRateInHeader((RFLOAT) 1.0);
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
+    this->header.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
     offset = 0;   // separate header file
 
@@ -244,21 +244,21 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
     const size_t datasize = dims[0] * dims[1] * dims[2] * gettypesize(Float);
 
-    if (!MDMainHeader.empty()) {
+    if (!this->header.empty()) {
 
-        const long int i = MDMainHeader.size() - 1;
+        const long int i = this->header.size() - 1;
 
         try {
-            header->densmin = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MIN, i);
+            header->densmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         } catch (const char* errmsg) {}
         try {
-            header->densmax = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_MAX, i);
+            header->densmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
         } catch (const char* errmsg) {}
         try {
-            header->avdens = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_AVG, i);
+            header->avdens = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
         } catch (const char* errmsg) {}
         try {
-            const float sigma = MDMainHeader.getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
+            const float sigma = this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
             header->sigma = sigma;
             header->varian = sigma * sigma;
         } catch (const char* errmsg) {}

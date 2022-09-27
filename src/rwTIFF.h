@@ -109,8 +109,8 @@ int Image<T>::readTIFF(
         REPORT_ERROR("Unsupported TIFF format.\n");
     }
 
-    const long int i = MDMainHeader.size() - 1;
-    MDMainHeader.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
+    const long int i = header.size() - 1;
+    header.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
     uint16 resolutionUnit;
     float xResolution;
@@ -120,15 +120,15 @@ int Image<T>::readTIFF(
     ) {
         // We don't support anistropic pixel size
         if (resolutionUnit == RESUNIT_INCH) {
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(2.54E8 / xResolution), i);  // 1 inch = 2.54 cm
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(2.54E8 / xResolution), i);
+            header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(2.54E8 / xResolution), i);  // 1 inch = 2.54 cm
+            header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(2.54E8 / xResolution), i);
         } else if (resolutionUnit == RESUNIT_CENTIMETER) {
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(1.00E8 / xResolution), i);
-            MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(1.00E8 / xResolution), i);
+            header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, RFLOAT(1.00E8 / xResolution), i);
+            header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, RFLOAT(1.00E8 / xResolution), i);
         }
         #ifdef DEBUG_TIFF
         std::cout << "resolutionUnit = " << resolutionUnit << " xResolution = " << xResolution << std::endl;
-        std::cout << "pixel size = " << (RFLOAT) MDMainHeader.getValue(EMDL::IMAGE_SAMPLINGRATE_X) << std::endl;
+        std::cout << "pixel size = " << (RFLOAT) header.getValue(EMDL::IMAGE_SAMPLINGRATE_X) << std::endl;
         #endif
     }
 
@@ -157,11 +157,11 @@ int Image<T>::readTIFF(
 
     /*
     if (header->mx && header->a != 0)  // ux
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT) header->a / header->mx);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT) header->a / header->mx);
     if (header->my && header->b != 0)  // yx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT) header->b / header->my);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT) header->b / header->my);
     if (header->mz && header->c != 0)  // zx
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT) header->c / header->mz);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT) header->c / header->mz);
     */
 
     if (readdata) {

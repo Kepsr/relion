@@ -1411,7 +1411,7 @@ void MlOptimiser::checkMask(FileName &_fn_mask, int solvent_nr, int rank) {
     Image<RFLOAT> Isolvent;
     Isolvent.read(_fn_mask);
     Isolvent().setXmippOrigin();
-    RFLOAT mask_pixel_size = Isolvent.MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, Isolvent.MDMainHeader.size() - 1);
+    RFLOAT mask_pixel_size = Isolvent.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, Isolvent.header.size() - 1);
 
     bool need_new_mask = false;
     if (fabs(mask_pixel_size-mymodel.pixel_size) > 0.001) {

@@ -231,9 +231,9 @@ class fImageHandler {
 
     // Empty constructor
     fImageHandler() {
-        fimg = NULL;
-        fhed = NULL;
-        ftiff = NULL;
+        fimg = nullptr;
+        fhed = nullptr;
+        ftiff = nullptr;
         ext_name = "";
         exist = false;
     }
@@ -296,7 +296,7 @@ class fImageHandler {
             if (!(fhed = fopen(headName.c_str(), wmstr.c_str())))
                 REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + headName);
         } else {
-            fhed = NULL;
+            fhed = nullptr;
         }
 
     }
@@ -312,20 +312,51 @@ class fImageHandler {
         bool isTiff = ext_name.contains("tif");
         if (isTiff && ftiff) {
             TIFFClose(ftiff);
-            ftiff = NULL;
+            ftiff = nullptr;
         }
 
         if (!isTiff && fclose(fimg) != 0) {
             REPORT_ERROR((std::string) "Cannot close image file ");
         } else {
-            fimg = NULL;
+            fimg = nullptr;
         }
 
         if (fhed && fclose(fhed) != 0) {
             REPORT_ERROR((std::string) "Cannot close header file ");
         } else {
-            fhed = NULL;
+            fhed = nullptr;
         }
+    }
+
+};
+
+
+struct image_mmapper {
+
+    FileName mapFile;  // Mapped file name
+    int mFd;           // Mapped file handle
+    size_t mappedSize; // Size of the mapped file
+
+    image_mmapper(): mapFile(""), mFd(0), mappedSize(0) {}
+
+    void* allocate(size_t size, off_t offset) {
+
+        // mFd = open(mapFile.c_str(), O_RDWR, S_IREAD | S_IWRITE);
+        mFd = open(mapFile.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+        if (mFd == -1)
+            REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": Error opening the image file.");
+
+        mappedSize = size + offset;
+
+        char *ptr = (char*) mmap(0, mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0);
+        if (ptr == (void*) -1)
+            REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": mmap of image file failed.");
+        return ptr + offset;
+    }
+
+    void deallocate(void* ptr) {
+        munmap(ptr, mappedSize);
+        close(mFd);
     }
 
 };
@@ -344,7 +375,7 @@ class Image {
     public:
 
     MultidimArray<T> data;      // Image data
-    MetaDataTable MDMainHeader; // File metadata
+    MetaDataTable header; // File metadata
 
     // Why int x, y, z but long int n?
     struct Dimensions { int x, y, z; long int n; };
@@ -354,7 +385,6 @@ class Image {
     FileName filename; // File name
     FILE *fimg; // Image File handler
     FILE *fhed; // Image File header handler
-    bool stayOpen; // To maintain the image file open after read/write
     bool dataflag;  // Control reading of the data
     unsigned long i; // Current image number (may be > Nsize)
     unsigned long offset; // Data offset
@@ -362,26 +392,8 @@ class Image {
     long int replaceNsize; // Stack size in the replace case
     bool _exists;  // Does the target file exist? 0 if file does not exist or is not a stack.
 
-    // Allocation-related member variables
-
-    bool mmapOn; // Whether to alloc memory or map to a file
-    int mFd; // Mapped file handle
-    size_t mappedSize; // Size of the mapped file
-
-    void attempt_mmap(T *data, FileName &mapFile, int &mFd, size_t pagesize) {
-
-        // if ((mFd = open(mapFile.c_str(), O_RDWR, S_IREAD | S_IWRITE)) == -1)
-        if ((mFd = open(mapFile.c_str(), O_RDWR, S_IRUSR | S_IWUSR)) == -1)
-            REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": Error opening the image file.");
-
-        mappedSize = pagesize + offset;
-
-        char *map;
-        if ((map = (char*) mmap(0, mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0)) == (void*) -1)
-            REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": mmap of image file failed.");
-        data = reinterpret_cast<T*> (map + offset);
-
-    }
+    // Allocation
+    image_mmapper *mmapper;
 
     public:
 
@@ -393,17 +405,15 @@ class Image {
      * Image<RFLOAT> I;
      * @endcode
      */
-    Image() {
-        mmapOn = false;
+    Image(): mmapper(nullptr) {
         clear();
-        MDMainHeader.addObject();
+        header.addObject();
     }
 
-    Image(const MultidimArray<T> &arr) {
-        mmapOn = false;
+    Image(MultidimArray<T> arr): mmapper(nullptr) {
         clear();
-        MDMainHeader.addObject();
-        data = arr;
+        header.addObject();
+        data = std::move(arr);
     }
 
     static Image<RFLOAT> from_filename(const FileName &fn, bool readdata = true) {
@@ -421,11 +431,10 @@ class Image {
      * Image I(64,64);
      * @endcode
      */
-    Image(long int Xdim, long int Ydim, long int Zdim = 1, long int Ndim = 1) {
-        mmapOn = false;
+    Image(long int Xdim, long int Ydim, long int Zdim = 1, long int Ndim = 1): mmapper(nullptr) {
         clear();
         data.resize(Ndim, Zdim, Ydim, Xdim);
-        MDMainHeader.addObject();
+        header.addObject();
     }
 
     inline static Image<T> zeros(long int Xdim, long int Ydim, long int Zdim = 1, long int Ndim = 1) {
@@ -438,10 +447,9 @@ class Image {
      * Zero-initialize.
      */
     void clear() {
-        if (mmapOn) {
-            munmap(data.data - offset, mappedSize);
-            close(mFd);
-            data.data = NULL;
+        if (mmapper) {
+            mmapper->deallocate(data.data - offset);
+            data.data = nullptr;
         } else {
             data.clear();
         }
@@ -453,11 +461,12 @@ class Image {
         swap = 0;
         clearHeader();
         replaceNsize = 0;
-        mmapOn = false;
+        delete mmapper;
+        mmapper = nullptr;
     }
 
     // Clear the image header
-    void clearHeader() { MDMainHeader.clear(); }
+    void clearHeader() { header.clear(); }
 
     ~Image() { clear(); }
 
@@ -596,12 +605,12 @@ class Image {
         }
     }
 
-    template <typename T2>
+    template <typename U>
     void cast_page_from(char *page, T *dest, size_t pageSize) {
-        if (typeid(T) == typeid(T2)) {
+        if (typeid(T) == typeid(U)) {
             memcpy(dest, page, pageSize * sizeof(T));
         } else {
-            T2 *src = (T2 *) page;
+            U *src = (U *) page;
             for (size_t i = 0; i < pageSize; i++) {
                 dest[i] = (T) src[i];
             }
@@ -641,14 +650,14 @@ class Image {
             }
     }
 
-    template <typename T2>
+    template <typename U>
     void cast_page_to(char *page, T *src, size_t pageSize) {
-        if (typeid(T) == typeid(T2)) {
+        if (typeid(T) == typeid(U)) {
             memcpy(page, src, pageSize * sizeof(T));
         } else {
-            T2 *dest = (T2*) page;
+            U *dest = (U*) page;
             for (size_t i = 0; i < pageSize; i++) {
-                dest[i] = (T2) src[i];
+                dest[i] = (U) src[i];
             }
         }
     }
@@ -743,17 +752,16 @@ class Image {
         }
         size_t haveread_n = 0; // number of pixels (not necessarily bytes!) processed so far
 
-        // data.mmapOn takes priority over this->mmapOn
-        if (data.getMmap() || datatype == UHalf) { mmapOn = false; }
+        if (data.getMmap() || datatype == UHalf) { delete mmapper; mmapper = nullptr; }
 
-        // Flag to know that data is not going to be mapped although mmapOn is true
-        if (mmapOn && !checkMmapT(datatype)) {
+        // Flag to know that data is not going to be mapped although mmapper is not null
+        if (mmapper && !checkMmapT(datatype)) {
             std::cout << "WARNING: Image Class. File datatype and image declaration not compatible with mmap. Loading into memory." << std::endl;
-            mmapOn = false;
-            mFd = -1;
+            delete mmapper;
+            mmapper = nullptr;
         }
 
-        if (mmapOn) {
+        if (mmapper) {
             if (Nsize(data) > 1) {
                 REPORT_ERROR(
                     (std::string) "Image<T>::" + __func__ + ": mmap with multiple \
@@ -761,7 +769,7 @@ class Image {
                 );
             }
             fclose(fimg);
-            attempt_mmap(data.data, filename, mFd, pagesize);
+            data.data = reinterpret_cast<T*>(mmapper->allocate(pagesize, offset));
         } else {
             // Reset select to get the correct offset
             if (select_img < 0) { select_img = 0; }
@@ -840,7 +848,6 @@ class Image {
      */
     MultidimArray<T>& operator () () {
         /// NOTE: [jhooker] Is this the most intuitive way to acces data?
-        // Why not just make data public?
         return data;
     }
 
@@ -933,7 +940,7 @@ class Image {
 
     /* Is there label in the main header */
     bool mainContainsLabel(EMDL::EMDLabel label) const {
-        return MDMainHeader.containsLabel(label);
+        return header.containsLabel(label);
     }
 
     /** Data type
@@ -943,7 +950,7 @@ class Image {
      * @endcode
      */
     int dataType() const {
-        return MDMainHeader.getValue<int>(EMDL::IMAGE_DATATYPE, MDMainHeader.size() - 1);
+        return header.getValue<int>(EMDL::IMAGE_DATATYPE, header.size() - 1);
     }
 
     /** Sampling rate in X
@@ -953,8 +960,8 @@ class Image {
     * @endcode
     */
     RFLOAT samplingRateX(const long int n = 0) const {
-        if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X))
-            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, MDMainHeader.size() - 1);
+        if (header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X))
+            return header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_X, header.size() - 1);
         else return 1.0;
     }
 
@@ -965,8 +972,8 @@ class Image {
     * @endcode
     */
     RFLOAT samplingRateY(const long int n = 0) const {
-        if (MDMainHeader.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))
-            return MDMainHeader.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, MDMainHeader.size() - 1);
+        if (header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))
+            return header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Y, header.size() - 1);
         else return 1.0;
     }
 
@@ -978,34 +985,34 @@ class Image {
     // Set image statistics in the main header
     void setStatisticsInHeader() {
         const auto statistics = computeStats(data);
-        const long int i = MDMainHeader.size() - 1;
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_AVG,    statistics.avg,    i);
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_STDDEV, statistics.stddev, i);
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_MIN,    statistics.min,    i);
-        MDMainHeader.setValue(EMDL::IMAGE_STATS_MAX,    statistics.max,    i);
+        const long int i = header.size() - 1;
+        header.setValue(EMDL::IMAGE_STATS_AVG,    statistics.avg,    i);
+        header.setValue(EMDL::IMAGE_STATS_STDDEV, statistics.stddev, i);
+        header.setValue(EMDL::IMAGE_STATS_MIN,    statistics.min,    i);
+        header.setValue(EMDL::IMAGE_STATS_MAX,    statistics.max,    i);
     }
 
     void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y , RFLOAT rate_z) {
-        const long int i = MDMainHeader.size() - 1;
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x, i);
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y, i);
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate_z, i);
+        const long int i = header.size() - 1;
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x, i);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y, i);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate_z, i);
     }
 
     void setSamplingRateInHeader(RFLOAT rate_x, RFLOAT rate_y) {
-        const long int i = MDMainHeader.size() - 1;
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x, i);
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y, i);
+        const long int i = header.size() - 1;
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate_x, i);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate_y, i);
     }
 
     void setSamplingRateInHeader(RFLOAT rate) {
-        const long int i = MDMainHeader.size() - 1;
+        const long int i = header.size() - 1;
         if (Xsize(data) > 1)
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate, i);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, rate, i);
         if (Ysize(data) > 1)
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate, i);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, rate, i);
         if (Zsize(data) > 1)
-        MDMainHeader.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate, i);
+        header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, rate, i);
     }
 
     // Show image properties
