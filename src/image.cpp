@@ -102,7 +102,7 @@ int Image<T>::page_allocate(
             std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " readsize_n = " << readsize_n << std::endl;
             #endif
 
-            // Read page from disc
+            // Read page from disk
             if (fread(page, readsize, 1, fimg) != 1) return -2;
 
             // swap per page

@@ -91,6 +91,17 @@ enum DataType {
  */
 size_t gettypesize(DataType type) throw (RelionError);
 
+template <typename T, typename U>
+static void page_cast_copy(T *dest, U *src, size_t size) {
+    if (typeid(T) == typeid(U)) {
+        memcpy(dest, src, size * sizeof(T));
+    } else {
+        for (size_t i = 0; i < size; i++) {
+            dest[i] = (T) src[i];
+        }
+    }
+}
+
 /** WriteMode
  * To indicate the writing behavior.
  */
@@ -546,41 +557,50 @@ class Image {
             case Unknown_Type:
             REPORT_ERROR("ERROR: datatype is Unknown_Type");
 
-            case UChar:
-            cast_page_from<unsigned char>(page, ptrDest, pageSize);
-            break;
+            case UChar: {
+                using U = unsigned char;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case SChar:
-            cast_page_from<signed char>(page, ptrDest, pageSize);
-            break;
+            case SChar: {
+                using U = signed char;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case UShort:
-            cast_page_from<unsigned short>(page, ptrDest, pageSize);
-            break;
+            case UShort: {
+                using U = unsigned short;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case Short:
-            cast_page_from<short>(page, ptrDest, pageSize);
-            break;
+            case Short: {
+                using U = short;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case UInt:
-            cast_page_from<unsigned int>(page, ptrDest, pageSize);
-            break;
+            case UInt: {
+                using U = unsigned int;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case Int:
-            cast_page_from<int>(page, ptrDest, pageSize);
-            break;
+            case Int: {
+                using U = int;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case Long:
-            cast_page_from<long>(page, ptrDest, pageSize);
-            break;
+            case Long: {
+                using U = long;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case Float:
-            cast_page_from<float>(page, ptrDest, pageSize);
-            break;
+            case Float: {
+                using U = float;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
-            case Double:
-            cast_page_from<RFLOAT>(page, ptrDest, pageSize);
-            break;
+            case Double: {
+                using U = RFLOAT;
+                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
             case UHalf:
             if (pageSize % 2 != 0) {
@@ -605,61 +625,42 @@ class Image {
         }
     }
 
-    template <typename U>
-    void cast_page_from(char *page, T *dest, size_t pageSize) {
-        if (typeid(T) == typeid(U)) {
-            memcpy(dest, page, pageSize * sizeof(T));
-        } else {
-            U *src = (U *) page;
-            for (size_t i = 0; i < pageSize; i++) {
-                dest[i] = (T) src[i];
-            }
-        }
-    }
-
     /** Cast page from T to datatype
      *  input pointer char *
      */
     void castPage2Datatype(char *page, T *srcPtr, DataType datatype, size_t pageSize) {
         switch (datatype) {
 
-            case Float:
-            cast_page_to<float>(page, srcPtr, pageSize);
-            break;
+            case Float: {
+                using U = float;
+                page_cast_copy<T, U>(srcPtr, (U*) page, pageSize);
+            } break;
 
-            case Double:
-            cast_page_to<RFLOAT>(page, srcPtr, pageSize);
-            break;
+            case Double: {
+                using U = RFLOAT;
+                page_cast_copy<T, RFLOAT>(srcPtr, (U*) page, pageSize);
+            } break;
 
-            case Short:
-            cast_page_to<short>(page, srcPtr, pageSize);
-            break;
+            case Short: {
+                using U = short;
+                page_cast_copy<T, short>(srcPtr, (U*) page, pageSize);
+            } break;
 
-            case UShort:
-            cast_page_to<unsigned short>(page, srcPtr, pageSize);
-            break;
+            case UShort: {
+                using U = unsigned short;
+                page_cast_copy<T, unsigned short>(srcPtr, (U*) page, pageSize);
+            } break;
 
-            case UChar:
-            cast_page_to<unsigned char>(page, srcPtr, pageSize);
-            break;
+            case UChar: {
+                using U = unsigned char;
+                page_cast_copy<T, U>(srcPtr, (U*) page, pageSize);
+            } break;
 
             default:
             std::cerr << "outputDatatype= " << datatype << std::endl;
             REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
 
             }
-    }
-
-    template <typename U>
-    void cast_page_to(char *page, T *src, size_t pageSize) {
-        if (typeid(T) == typeid(U)) {
-            memcpy(page, src, pageSize * sizeof(T));
-        } else {
-            U *dest = (U*) page;
-            for (size_t i = 0; i < pageSize; i++) {
-                dest[i] = (U) src[i];
-            }
-        }
     }
 
     // Check file Datatype is same as T type to use mmap.
