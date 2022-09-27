@@ -189,22 +189,22 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
     printf("DEBUG readMRC: Reading MRC file\n");
     #endif
 
-    MRChead *header = (MRChead *) callocator::allocate(sizeof(MRChead));
-    if (fread(header, MRCSIZE, 1, fimg) < 1)
+    MRChead header;
+    if (fread(&header, MRCSIZE, 1, fimg) < 1)
         REPORT_ERROR("rwMRC: error in reading header of image " + name);
 
     // Determine byte order and swap bytes if from little-endian machine
     swap = 0;
-    if (abs(header->mode) > SWAPTRIG || abs(header->nx) > SWAPTRIG) {
+    if (abs(header.mode) > SWAPTRIG || abs(header.nx) > SWAPTRIG) {
         #ifdef DEBUG
         fprintf(stderr, "Warning: Swapping header byte order for 4-byte types\n");
         #endif
         swap = 1;
         const int extent = MRCSIZE - 800;  // exclude labels from swapping
-        for (int i = 0; i < extent; i += 4) swapbytes((char*) header + i, 4);
+        for (int i = 0; i < extent; i += 4) swapbytes((char*) &header + i, 4);
     }
 
-    std::array<int, 4> dims {header->nx, header->ny, header->nz, 1};
+    std::array<int, 4> dims {header.nx, header.ny, header.nz, 1};
 
     if (isStack) {
         std::swap(dims[2], dims[3]);
@@ -223,27 +223,26 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 
     data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
 
-    const DataType datatype = determine_datatype(header->mode, dims[0], dims[1]);
+    const DataType datatype = determine_datatype(header.mode, dims[0], dims[1]);
 
-    offset = MRCSIZE + header->nsymbt;
+    offset = MRCSIZE + header.nsymbt;
 
     const long int i = this->header.size() - 1;
-    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->amin,  i);
-    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->amax,  i);
-    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->amean, i);
-    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->arms,  i);
+    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header.amin,  i);
+    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header.amax,  i);
+    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header.amean, i);
+    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header.arms,  i);
     this->header.setValue(EMDL::IMAGE_DATATYPE,     (int)    datatype,      i);
 
-    if (header->mx && header->a != 0)  // ux
-        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT) header->a / header->mx, i);
-    if (header->my && header->b != 0)  // yx
-        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT) header->b / header->my, i);
-    if (header->mz && header->c != 0)  // zx
-        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT) header->c / header->mz, i);
+    if (header.mx && header.a != 0)  // ux
+        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_X, (RFLOAT) header.a / header.mx, i);
+    if (header.my && header.b != 0)  // yx
+        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_Y, (RFLOAT) header.b / header.my, i);
+    if (header.mz && header.c != 0)  // zx
+        this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT) header.c / header.mz, i);
 
     if (isStack && !dataflag) {
         // Don't read the individual header and the data if not necessary
-        callocator::deallocate(header, sizeof(MRChead));
         return 0;
     }
 
@@ -253,8 +252,6 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
     MD[0].write(std::cerr);
     #endif
 
-    callocator::deallocate(header, sizeof(MRChead));
-
     return readData(fimg, img_select, datatype, 0);
 }
 
@@ -263,22 +260,22 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 */
 template <typename T>
 int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
-    MRChead *header = (MRChead *) callocator::allocate(sizeof(MRChead));
 
+    MRChead header;
     // Map the parameters
-    strncpy(header->map, "MAP ", 4);
+    strncpy(header.map, "MAP ", 4);
     // Set CCP4 machine stamp
     switch (systype()) {
         case BIGIEEE:
-        header->machst[0] = header->machst[1] = 17;
+        header.machst[0] = header.machst[1] = 17;
         break;
         case LITTLEIEEE:
-        header->machst[0] = 68;
-        header->machst[1] = 65;
+        header.machst[0] = 68;
+        header.machst[1] = 65;
         break;
         case LITTLEVAX:
-        header->machst[0] = 34;
-        header->machst[1] = 65;
+        header.machst[0] = 34;
+        header.machst[1] = 65;
         break;
         case UNKNOWN_SYSTEM:
         REPORT_ERROR("Unkown system type in writeMRC machine stamp determination.");
@@ -287,7 +284,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     }
 
     /// FIXME: TO BE DONE WITH rwCCP4!!
-    // set_CCP4_machine_stamp(header->machst);
+    // set_CCP4_machine_stamp(header.machst);
     const long int Xdim = Xsize(data), Ydim = Ysize(data), 
                    Zdim = Zsize(data), Ndim = Nsize(data);
     long int imgStart = 0, imgEnd = Ndim;
@@ -299,9 +296,9 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
         imgStart = 0;
         imgEnd = 1;
     }
-    header->nx = Xdim;
-    header->ny = Ydim;
-    header->nz = isStack ? Ndim : Zdim;
+    header.nx = Xdim;
+    header.ny = Ydim;
+    header.nz = isStack ? Ndim : Zdim;
 
     // Convert T to datatype
     DataType output_type;
@@ -309,43 +306,43 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
         typeid(T) == typeid(unsigned char) ||
         typeid(T) == typeid(signed char)
     ) {
-        header->mode = 0;
+        header.mode = 0;
         output_type = UChar;
     } else if (typeid(T) == typeid(short)) {
-        header->mode = 1;
+        header.mode = 1;
         output_type = Short;
     } else if (
         typeid(T) == typeid(RFLOAT) ||
         typeid(T) == typeid(float)  ||
         typeid(T) == typeid(int)
     ) {
-        header->mode = 2;
+        header.mode = 2;
         output_type = Float;
     } else {
         REPORT_ERROR("ERROR write MRC image: invalid typeid(T)");
     }
 
     // Set this to zero till we decide if we want to update it
-    header->mx = header->nx;  // (int) (ua/ux + 0.5);
-    header->my = header->ny;  // (int) (ub/uy + 0.5);
-    header->mz = header->nz;  // (int) (uc/uz + 0.5);
-    header->mapc = 1;
-    header->mapr = 2;
-    header->maps = 3;
+    header.mx = header.nx;  // (int) (ua/ux + 0.5);
+    header.my = header.ny;  // (int) (ub/uy + 0.5);
+    header.mz = header.nz;  // (int) (uc/uz + 0.5);
+    header.mapc = 1;
+    header.mapr = 2;
+    header.maps = 3;
 
     // TODO: fix this!
-    header->a = (float) 0.0;  // ua;
-    header->b = (float) 0.0;  // ub;
-    header->c = (float) 0.0;  // uc;
-    header->alpha = (float) 90.0;
-    header->beta  = (float) 90.0;
-    header->gamma = (float) 90.0;
-    header->xOrigin = (float) 0.0;
-    header->yOrigin = (float) 0.0;
-    header->zOrigin = (float) 0.0;
-    header->nxStart = (int) 0;
-    header->nyStart = (int) 0;
-    header->nzStart = (int) 0;
+    header.a = (float) 0.0;  // ua;
+    header.b = (float) 0.0;  // ub;
+    header.c = (float) 0.0;  // uc;
+    header.alpha = (float) 90.0;
+    header.beta  = (float) 90.0;
+    header.gamma = (float) 90.0;
+    header.xOrigin = (float) 0.0;
+    header.yOrigin = (float) 0.0;
+    header.zOrigin = (float) 0.0;
+    header.nxStart = (int) 0;
+    header.nyStart = (int) 0;
+    header.nzStart = (int) 0;
 
     if (!this->header.empty()) {
 
@@ -353,51 +350,51 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
         // If header contains none of these,
         // we will be looping through `data` more times than necessary.
-        header->amin  = this->header.containsLabel(EMDL::IMAGE_STATS_MIN)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN,    i) : (float) min(data);
-        header->amax  = this->header.containsLabel(EMDL::IMAGE_STATS_MAX)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX,    i) : (float) max(data);
-        header->amean = this->header.containsLabel(EMDL::IMAGE_STATS_AVG)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG,    i) : (float) average(data);
-        header->arms  = this->header.containsLabel(EMDL::IMAGE_STATS_STDDEV) ? this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i) : (float) computeStddev(data);
+        header.amin  = this->header.containsLabel(EMDL::IMAGE_STATS_MIN)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN,    i) : (float) min(data);
+        header.amax  = this->header.containsLabel(EMDL::IMAGE_STATS_MAX)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX,    i) : (float) max(data);
+        header.amean = this->header.containsLabel(EMDL::IMAGE_STATS_AVG)    ? this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG,    i) : (float) average(data);
+        header.arms  = this->header.containsLabel(EMDL::IMAGE_STATS_STDDEV) ? this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i) : (float) computeStddev(data);
 
         // int nxStart, nyStart, nzStart;
 
         // RFLOAT aux;
         // aux = header.getValue<float>(EMDL::ORIENT_ORIGIN_X, i);
-        // if (std::isfinite(nxStart = aux - 0.5)) { header->nxStart = nxStart; }
+        // if (std::isfinite(nxStart = aux - 0.5)) { header.nxStart = nxStart; }
 
         if (this->header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_X)) {
         const float srx = this->header.template getValue<float>(EMDL::IMAGE_SAMPLINGRATE_X, i),
-                    xOrigin = header->nxStart * srx, a = header->nx * srx;
-        if (std::isfinite(xOrigin)) { header->xOrigin = xOrigin; }
-        if (std::isfinite(a))       { header->a       = a; }
+                    xOrigin = header.nxStart * srx, a = header.nx * srx;
+        if (std::isfinite(xOrigin)) { header.xOrigin = xOrigin; }
+        if (std::isfinite(a))       { header.a       = a; }
         }
 
         // aux = header.getValue<float>(EMDL::ORIENT_ORIGIN_Y, i, aux);
-        // if (std::isfinite(nyStart = aux - 0.5)) { header->nyStart = nyStart; }
+        // if (std::isfinite(nyStart = aux - 0.5)) { header.nyStart = nyStart; }
 
         if (this->header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Y))  {
         const float sry = this->header.template getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Y, i),
-                    yOrigin = header->nyStart * sry, b = header->ny * sry;
-        if (std::isfinite(yOrigin)) { header->yOrigin = yOrigin; }
-        if (std::isfinite(b))       { header->b       = b; }
+                    yOrigin = header.nyStart * sry, b = header.ny * sry;
+        if (std::isfinite(yOrigin)) { header.yOrigin = yOrigin; }
+        if (std::isfinite(b))       { header.b       = b; }
         }
 
         // aux = header.getValue<float>(EMDL::ORIENT_ORIGIN_Z, i);
-        // if (std::isfinite(nzStart = aux - 0.5)) { header->nzStart = nzStart; }
+        // if (std::isfinite(nzStart = aux - 0.5)) { header.nzStart = nzStart; }
 
         if (this->header.containsLabel(EMDL::IMAGE_SAMPLINGRATE_Z))  {
         const float srz = this->header.template getValue<float>(EMDL::IMAGE_SAMPLINGRATE_Z, i),
-                    zOrigin = header->nzStart * srz, c = header->nz * srz;
-        if (std::isfinite(zOrigin)) { header->zOrigin = zOrigin; }
-        if (std::isfinite(c))       { header->c       = c; }
+                    zOrigin = header.nzStart * srz, c = header.nz * srz;
+        if (std::isfinite(zOrigin)) { header.zOrigin = zOrigin; }
+        if (std::isfinite(c))       { header.c       = c; }
         }
 
     }
 
-    header->nsymbt = 0;
+    header.nsymbt = 0;
 
     // Create label "Relion version    date time"
     const int MRC_LABEL_LEN = 80;
-    header->nlabl = 1;
+    header.nlabl = 1;
 
     char label[MRC_LABEL_LEN] = "Relion ";
     time_t rawtime;
@@ -409,11 +406,11 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     #endif
     strcat(label, "   ");
     strftime(label + strlen(label), MRC_LABEL_LEN - strlen(label), "%d-%b-%y  %R:%S", timeinfo);
-    strncpy(header->labels, label, MRC_LABEL_LEN);
+    strncpy(header.labels, label, MRC_LABEL_LEN);
 
-    // strncpy(header->labels, p->label.c_str(), 799);
+    // strncpy(header.labels, p->label.c_str(), 799);
 
-    offset = MRCSIZE + header->nsymbt;
+    offset = MRCSIZE + header.nsymbt;
     const size_t datasize_n = Xdim * Ydim * Zdim;
     const size_t datasize = datasize_n * gettypesize(output_type);
 
@@ -424,9 +421,9 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     // For multi-image files
     if (mode == WRITE_APPEND && isStack) {
-        header->nz = replaceNsize + 1;
+        header.nz = replaceNsize + 1;
     }
-    //else header-> is correct
+    //else header. is correct
 
     //locking
     struct flock fl;
@@ -443,8 +440,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     // Write header
     if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)
-        fwrite(header, MRCSIZE, 1, fimg);
-    callocator::deallocate(header, sizeof(MRChead));
+        fwrite(&header, MRCSIZE, 1, fimg);
 
     // write only once, ignore select_img
     char* fdata = (char *) callocator::allocate(datasize);

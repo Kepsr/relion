@@ -29,7 +29,6 @@
 #define RWSPIDER_H
 
 #include "src/image.h"
-#include <memory>
 
 const int SPIDERSIZE = 1024;  // Minimum size of the SPIDER header (variable)
 ///@defgroup Spider Spider File format
@@ -131,45 +130,45 @@ int Image<T>::readSPIDER(long int img_select) {
     #endif
     #undef DEBUG
 
-    auto header = std::unique_ptr<SPIDERhead>(new SPIDERhead);
-    if (fread(header.get(), SPIDERSIZE, 1, fimg) < 1)
+    SPIDERhead header;
+    if (fread(&header, SPIDERSIZE, 1, fimg) < 1)
         REPORT_ERROR("rwSPIDER: cannot allocate memory for header");
 
     swap = 0;
 
     // Determine byte order and swap bytes if from different-endian machine
-    char*    b = (char *) header.get();
+    char*    b = (char *) &header;
     int      i;
     int      extent = SPIDERSIZE - 180;  // exclude char bytes from swapping
     if (
-        fabs(header->nrow)  > SWAPTRIG ||
-        fabs(header->iform) > SWAPTRIG ||
-        fabs(header->nslice) < 1
+        fabs(header.nrow)  > SWAPTRIG ||
+        fabs(header.iform) > SWAPTRIG ||
+        fabs(header.nslice) < 1
     ) {
         swap = 1;
         for (i = 0; i < extent; i += 4) { swapbytes(b + i, 4); }
     }
 
-    if (header->labbyt != header->labrec * header->lenbyt)
+    if (header.labbyt != header.labrec * header.lenbyt)
         REPORT_ERROR((std::string) "Invalid Spider file:  " + filename);
 
-    offset = (int) header->labbyt;
+    offset = (int) header.labbyt;
     DataType datatype = Float;
 
     {
     const long int i = this->header.size() - 1;
-    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->fmin, i);
-    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->fmax, i);
-    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->av,   i);
-    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sig,  i);
-    setSamplingRateInHeader((RFLOAT) header->scale);
+    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header.fmin, i);
+    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header.fmax, i);
+    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header.av,   i);
+    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header.sig,  i);
+    setSamplingRateInHeader((RFLOAT) header.scale);
     }
 
-    bool isStack = header->istack > 0;
+    bool isStack = header.istack > 0;
 
-    std::array<unsigned long int, 4> dims { (unsigned long int) header->nsam, (unsigned long int) header->nrow, (unsigned long int) header->nslice, 1 };
+    std::array<unsigned long int, 4> dims { (unsigned long int) header.nsam, (unsigned long int) header.nrow, (unsigned long int) header.nslice, 1 };
 
-    replaceNsize = isStack ? (dims[3] = header->maxim) : 0;
+    replaceNsize = isStack ? (dims[3] = header.maxim) : 0;
 
     /************
      * BELOW HERE DO NOT USE HEADER BUT LOCAL VARIABLES

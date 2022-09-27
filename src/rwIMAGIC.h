@@ -30,7 +30,6 @@
 
 #include "src/metadata_label.h"
 #include "src/image.h"
-#include <memory>
 
 const int IMAGICSIZE = 1024;  // Size of the IMAGIC header for each image
 
@@ -83,11 +82,11 @@ struct IMAGIChead {
     char history[228];      // 199-255   history
 } ;
 
-inline DataType determine_datatype(IMAGIChead *header) throw (RelionError) {
-    if (strstr(header->type, "PACK")) return UChar;
-    if (strstr(header->type, "INTG")) return Short;
-    if (strstr(header->type, "REAL")) return Float;
-    if (strstr(header->type, "RECO") || strstr(header->type,"COMP"))
+inline DataType determine_datatype(const IMAGIChead &header) throw (RelionError) {
+    if (strstr(header.type, "PACK")) return UChar;
+    if (strstr(header.type, "INTG")) return Short;
+    if (strstr(header.type, "REAL")) return Float;
+    if (strstr(header.type, "RECO") || strstr(header.type, "COMP"))
     REPORT_ERROR("readIMAGIC: only real-space images can be read into RELION");
 }
 
@@ -122,21 +121,20 @@ int Image<T>::readIMAGIC(long int img_select) {
     printf("DEBUG readIMAGIC: Reading Imagic file\n");
     #endif
 
-    auto header = std::unique_ptr<IMAGIChead>(new IMAGIChead);
-
-    if (fread(header.get(), IMAGICSIZE, 1, fhed) < 1)
+    IMAGIChead header;
+    if (fread(&header, IMAGICSIZE, 1, fhed) < 1)
         REPORT_ERROR((std::string) "readIMAGIC: header file of " + filename + " cannot be read");
 
     // Determine byte order and swap bytes if from little-endian machine
-    char *b = (char *) header.get();
+    char *b = (char *) &header;
     long int extent = IMAGICSIZE - 916;  // exclude char bytes from swapping
-    if (abs(header->nyear) > SWAPTRIG || header->ixlp > SWAPTRIG) {
+    if (abs(header.nyear) > SWAPTRIG || header.ixlp > SWAPTRIG) {
         for (int i = 0; i < extent; i += 4)
             if (i != 56)          // exclude type string
                 swapbytes(b + i, 4);
     }
 
-    std::array<unsigned long int, 4> dims { (unsigned long int) header->iylp, (unsigned long int) header->ixlp, 1, (unsigned long int) header->ifn + 1 };
+    std::array<unsigned long int, 4> dims { (unsigned long int) header.iylp, (unsigned long int) header.ixlp, 1, (unsigned long int) header.ifn + 1 };
 
     if (img_select > (long int) dims[3]) {
         REPORT_ERROR((std::string) "readImagic: Image number " + std::to_string(img_select) + " exceeds stack size " + std::to_string(dims[3]));
@@ -148,22 +146,22 @@ int Image<T>::readIMAGIC(long int img_select) {
     data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
     replaceNsize = dims[3];
 
-    DataType datatype = determine_datatype(header.get());
+    DataType datatype = determine_datatype(header);
 
     // Set min-max values and other statistical values
-    if (header->sigma == 0 && header->varian != 0) {
-        header->sigma = sqrt(header->varian);
+    if (header.sigma == 0 && header.varian != 0) {
+        header.sigma = sqrt(header.varian);
     }
-    if (header->densmax == 0 && header->densmin == 0 && header->sigma != 0) {
-        header->densmin = header->avdens - header->sigma;
-        header->densmax = header->avdens + header->sigma;
+    if (header.densmax == 0 && header.densmin == 0 && header.sigma != 0) {
+        header.densmin = header.avdens - header.sigma;
+        header.densmax = header.avdens + header.sigma;
     }
 
     const long int i = this->header.size() - 1;
-    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header->densmin, i);
-    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header->densmax, i);
-    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header->avdens, i);
-    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header->sigma, i);
+    this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header.densmin, i);
+    this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header.densmax, i);
+    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header.avdens, i);
+    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header.sigma, i);
     setSamplingRateInHeader((RFLOAT) 1.0);
     this->header.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
@@ -199,28 +197,28 @@ int Image<T>::readIMAGIC(long int img_select) {
 template <typename T>
 void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
-    auto header = std::unique_ptr<IMAGIChead>(new IMAGIChead);
+    IMAGIChead header;
 
     const auto dims = data.getDimensions();
 
     // Fill in the file header
-    header->nhfr   = 1;
-    header->npix2  = dims[0] * dims[1];
-    header->npixel = header->npix2;
-    header->iylp   = dims[0];
-    header->ixlp   = dims[1];
-    header->ifn    = dims[3] - 1;
+    header.nhfr   = 1;
+    header.npix2  = dims[0] * dims[1];
+    header.npixel = header.npix2;
+    header.iylp   = dims[0];
+    header.ixlp   = dims[1];
+    header.ifn    = dims[3] - 1;
 
     time_t timer;
     time(&timer);
     tm *t = localtime(&timer);
 
-    header->ndate  = t->tm_mday;
-    header->nmonth = t->tm_mon + 1;
-    header->nyear  = t->tm_year;
-    header->nhour  = t->tm_hour;
-    header->nminut = t->tm_min;
-    header->nsec   = t->tm_sec;
+    header.ndate  = t->tm_mday;
+    header.nmonth = t->tm_mon + 1;
+    header.nyear  = t->tm_year;
+    header.nhour  = t->tm_hour;
+    header.nminut = t->tm_min;
+    header.nsec   = t->tm_sec;
 
     // Convert T to datatype
     if (
@@ -228,12 +226,12 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         typeid(T) == typeid(float) ||
         typeid(T) == typeid(int)
     ) {
-        strncpy(header->type, "REAL", 4);
+        strncpy(header.type, "REAL", 4);
     } else if (
         typeid(T) == typeid(unsigned char) ||
         typeid(T) == typeid(signed char)
     ) {
-        strncpy(header->type, "PACK", 4);
+        strncpy(header.type, "PACK", 4);
     } else {
         REPORT_ERROR("ERROR write IMAGIC image: invalid typeid(T)");
     }
@@ -245,23 +243,23 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         const long int i = this->header.size() - 1;
 
         try {
-            header->densmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
+            header.densmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         } catch (const char* errmsg) {}
         try {
-            header->densmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
+            header.densmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
         } catch (const char* errmsg) {}
         try {
-            header->avdens = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
+            header.avdens = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
         } catch (const char* errmsg) {}
         try {
             const float sigma = this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
-            header->sigma = sigma;
-            header->varian = sigma * sigma;
+            header.sigma = sigma;
+            header.varian = sigma * sigma;
         } catch (const char* errmsg) {}
     }
 
-    memcpy(header->lastpr, "Xmipp", 5);
-    memcpy(header->name, filename.c_str(), 80);
+    memcpy(header.lastpr, "Xmipp", 5);
+    memcpy(header.name, filename.c_str(), 80);
 
     /*
      * BLOCK HEADER IF NEEDED
