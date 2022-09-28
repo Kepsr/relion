@@ -139,6 +139,28 @@ static int systype() {
     return type;
 }
 
+// Set CCP4 machine stamp
+static void set_CCP4_machine_stamp(char machst[4]) {
+    switch (systype()) {
+        case BIGIEEE:
+        machst[0] = 0x11;
+        machst[1] = 0x11;
+        break;
+        case LITTLEIEEE:
+        machst[0] = 0x44;
+        machst[1] = 0x41;
+        break;
+        case LITTLEVAX:
+        machst[0] = 0x22;
+        machst[1] = 0x41;
+        break;
+        case UNKNOWN_SYSTEM:
+        REPORT_ERROR("Unkown system type in writeMRC machine stamp determination.");
+        default:
+        break;
+    }
+}
+
 static DataType determine_datatype(int mode, int nx, int ny) throw (RelionError) {
 
     switch (mode) {
@@ -264,27 +286,8 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     MRChead header;
     // Map the parameters
     strncpy(header.map, "MAP ", 4);
-    // Set CCP4 machine stamp
-    switch (systype()) {
-        case BIGIEEE:
-        header.machst[0] = header.machst[1] = 17;
-        break;
-        case LITTLEIEEE:
-        header.machst[0] = 68;
-        header.machst[1] = 65;
-        break;
-        case LITTLEVAX:
-        header.machst[0] = 34;
-        header.machst[1] = 65;
-        break;
-        case UNKNOWN_SYSTEM:
-        REPORT_ERROR("Unkown system type in writeMRC machine stamp determination.");
-        default:
-        break;
-    }
+    set_CCP4_machine_stamp(header.machst);
 
-    /// FIXME: TO BE DONE WITH rwCCP4!!
-    // set_CCP4_machine_stamp(header.machst);
     const long int Xdim = Xsize(data), Ydim = Ysize(data), 
                    Zdim = Zsize(data), Ndim = Nsize(data);
     long int imgStart = 0, imgEnd = Ndim;

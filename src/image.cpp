@@ -106,7 +106,7 @@ int Image<T>::page_allocate(
             if (fread(page, readsize, 1, fimg) != 1) return -2;
 
             // swap per page
-            if (swap) swapPage(page, readsize, datatype);
+            if (swap) swapPage(page, readsize, gettypesize(datatype));
             // cast to T per page
             castPage2T(page, data.data + haveread_n, datatype, readsize_n);
             haveread_n += readsize_n;

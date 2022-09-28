@@ -84,6 +84,61 @@ enum DataType {
     UHalf,          // Signed 4-bit integer (SerialEM extension)
 };
 
+template <DataType datatype>
+struct DataType2type {
+    using type = void;
+};
+
+template <>
+struct DataType2type<UChar> {
+    using type = char;
+};
+
+template <>
+struct DataType2type<SChar> {
+    using type = char;
+};
+
+template <>
+struct DataType2type<UShort> {
+    using type = short;
+};
+
+template <>
+struct DataType2type<Short> {
+    using type = short;
+};
+
+template <>
+struct DataType2type<UInt> {
+    using type = int;
+};
+
+template <>
+struct DataType2type<Int> {
+    using type = int;
+};
+
+template <>
+struct DataType2type<Float> {
+    using type = float;
+};
+
+template <>
+struct DataType2type<Double> {
+    using type = RFLOAT;
+};
+
+template <>
+struct DataType2type<Boolean> {
+    using type = bool;
+};
+
+template <>
+struct DataType2type<UHalf> {
+    using type = unsigned char;
+};
+
 // Convert string to int corresponding to value in enum
 // int DataType::String2Int(std::string s);
 
@@ -120,6 +175,38 @@ static void page_cast_copy_half(T *dest, U *src, size_t size) throw (RelionError
         // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
         dest[i * 2    ] = (T) ( (src)[i]       & 0b1111);
         dest[i * 2 + 1] = (T) (((src)[i] >> 4) & 0b1111);
+    }
+}
+
+// Check file Datatype is same as T type to use mmap.
+template <typename T>
+static bool checkMmap(DataType datatype) {
+    switch (datatype) {
+        case Unknown_Type:
+        REPORT_ERROR("ERROR: datatype is Unknown_Type");
+        case UChar:
+        return typeid(T) == typeid(unsigned char);
+        case SChar:
+        return typeid(T) == typeid(signed char);
+        case UShort:
+        return typeid(T) == typeid(unsigned short);
+        case Short:
+        return typeid(T) == typeid(short);
+        case UInt:
+        return typeid(T) == typeid(unsigned int);
+        case Int:
+        return typeid(T) == typeid(int);
+        case Long:
+        return typeid(T) == typeid(long);
+        case Float:
+        return typeid(T) == typeid(float);
+        case Double:
+        return typeid(T) == typeid(RFLOAT);
+        case UHalf:
+        return false;
+        default:
+        std::cerr << "Datatype= " << datatype << std::endl;
+        REPORT_ERROR(" ERROR: cannot cast datatype to T");
     }
 }
 
@@ -569,8 +656,6 @@ class Image {
         int mode = WRITE_OVERWRITE
     );
 
-
-
     // Cast a page of data from type U (encoded by DataType) to type T
     void castPage2T(char *page, T *ptrDest, DataType datatype, size_t pageSize) {
         switch (datatype) {
@@ -671,69 +756,34 @@ class Image {
         }
     }
 
-    // Check file Datatype is same as T type to use mmap.
-    bool checkMmapT(DataType datatype) {
-
-        switch (datatype) {
-            case Unknown_Type:
-            REPORT_ERROR("ERROR: datatype is Unknown_Type");
-            case UChar:
-            return typeid(T) == typeid(unsigned char);
-            case SChar:
-            return typeid(T) == typeid(signed char);
-            case UShort:
-            return typeid(T) == typeid(unsigned short);
-            case Short:
-            return typeid(T) == typeid(short);
-            case UInt:
-            return typeid(T) == typeid(unsigned int);
-            case Int:
-            return typeid(T) == typeid(int);
-            case Long:
-            return typeid(T) == typeid(long);
-            case Float:
-            return typeid(T) == typeid(float);
-            case Double:
-            return typeid(T) == typeid(RFLOAT);
-            default:
-            std::cerr << "Datatype= " << datatype << std::endl;
-            REPORT_ERROR(" ERROR: cannot cast datatype to T");
-        }
-        //  int *iTemp = (int*) map;
-        //  ptrDest = reinterpret_cast<T*> (iTemp);
-    }
-
     /** Write an entire page as datatype
      *
      * A page of datasize_n elements T is cast to datatype and written to fimg
      * The memory for the casted page is allocated and freed internally.
      */
-    void writePageAsDatatype(FILE *fimg, DataType datatype, size_t datasize_n ) {
-        const size_t datasize = datasize_n * gettypesize(datatype);
+    template <DataType datatype>
+    void writePageAsDatatype(FILE *fimg, size_t datasize_n) {
+        const size_t datasize = datasize_n * sizeof(DataType2type<datatype>::type);
         char *fdata = (char *) callocator::allocate(datasize);
         castPage2Datatype(fdata, data.data, datatype, datasize_n);
         fwrite(fdata, datasize, 1, fimg);
         callocator::deallocate(fdata, datasize);
     }
 
-    /** Swap an entire page
-      * input pointer char *
-      */
-    void swapPage(char *page, size_t pageNrElements, DataType datatype) {
-        const size_t datatypesize = gettypesize(datatype);
+    // Swap a page of n elements, each of size size
+    void swapPage(char *page, size_t n, size_t size) {
         #ifdef DEBUG
             std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
-            << swap << " datatypesize= " << datatypesize
-            << " pageNrElements " << pageNrElements
+            << swap << " datatypesize= " << size
+            << " pageNrElements " << n
             << " datatype " << datatype
             << std::endl;
         #endif
 
         // Swap bytes if required
         if (swap >= 1) {
-            size_t increment = swap == 1 ? datatypesize : swap;
-            for (size_t i = 0; i < pageNrElements; i += increment)
-                swapbytes(page + i, increment);
+            const size_t di = swap == 1 ? size : swap;
+            for (size_t i = 0; i < n; i += di) swapbytes(page + i, di);
         }
     }
 
@@ -760,10 +810,10 @@ class Image {
             pagesize = Xsize(data) * Ysize(data) * Zsize(data) * datatypesize;
         }
 
-        if (data.getMmap() || datatype == UHalf) { delete mmapper; mmapper = nullptr; }
+        if (data.getMmap()) { delete mmapper; mmapper = nullptr; }
 
-        // Flag to know that data is not going to be mapped although mmapper is not null
-        if (mmapper && !checkMmapT(datatype)) {
+        // Check if mapping is possible
+        if (mmapper && !checkMmap<T>(datatype)) {
             std::cout << "WARNING: Image Class. File datatype and image declaration not compatible with mmap. Loading into memory." << std::endl;
             delete mmapper;
             mmapper = nullptr;

@@ -146,7 +146,7 @@ int Image<T>::readIMAGIC(long int img_select) {
     data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
     replaceNsize = dims[3];
 
-    DataType datatype = determine_datatype(header);
+    const DataType datatype = determine_datatype(header);
 
     // Set min-max values and other statistical values
     if (header.sigma == 0 && header.varian != 0) {
@@ -160,8 +160,8 @@ int Image<T>::readIMAGIC(long int img_select) {
     const long int i = this->header.size() - 1;
     this->header.setValue(EMDL::IMAGE_STATS_MIN,    (RFLOAT) header.densmin, i);
     this->header.setValue(EMDL::IMAGE_STATS_MAX,    (RFLOAT) header.densmax, i);
-    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header.avdens, i);
-    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header.sigma, i);
+    this->header.setValue(EMDL::IMAGE_STATS_AVG,    (RFLOAT) header.avdens,  i);
+    this->header.setValue(EMDL::IMAGE_STATS_STDDEV, (RFLOAT) header.sigma,   i);
     setSamplingRateInHeader((RFLOAT) 1.0);
     this->header.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
 
