@@ -154,18 +154,19 @@ template <class T> void free_Tvolume(
     }
 }
 
+template <typename T>
 struct callocator {
 
     /** Allocate memory
      *
      * A thin wrapper around calloc.
-     * returns a char* pointing to allocated memory.
+     * returns a T* pointing to allocated memory.
      * Successfully allocated memory is zero-initialised.
-     * If calloc returns a nullptr, an exception is thrown.
+     * If calloc returns nullptr, an exception is thrown.
      *
      */
-    static void* allocate(size_t memsize) throw (RelionError) {
-        void *ptr = calloc(memsize, sizeof(char));
+    static T* allocate(size_t memsize) throw (RelionError) {
+        T *ptr = (T *) calloc(memsize, sizeof(T));
         if (!ptr) {
             std::cerr << "Failed to allocate " <<  memsize << " bytes." << std::endl;
             REPORT_ERROR("Error in callocator::allocate");
@@ -177,15 +178,14 @@ struct callocator {
      * Adapted from Bsofts bfree
      * 
      * A thin wrapper around free.
-     * Frees the memory pointed to by ptr, which is set thereafter to nullptr.
+     * Frees the memory pointed to by ptr.
      * On success, returns 0.
      * If memsize is negative, does nothing and returns -1.
      *
     */
-    static int deallocate(void *ptr, size_t memsize) {
+    static int deallocate(T *ptr, size_t memsize) {
         if (memsize < 1) return -1;
         free(ptr);
-        ptr = nullptr;
         return 0;
     }
 

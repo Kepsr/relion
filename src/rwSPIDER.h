@@ -331,13 +331,14 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)  //header must change
         fwrite(&header, offset, 1, fimg);
 
-    char *fdata = (char *) callocator::allocate(datasize);
-    //think about writing in several chucks
+    const auto deleter = [datasize] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
+    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
+    // think about writing in several chucks
 
-    //write only once, ignore select_img
+    // write only once, ignore select_img
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        castPage2Datatype(fdata, data.data, Float, datasize_n);
-        fwrite(fdata, datasize, 1, fimg);
+        castPage2Datatype(page.get(), data.data, Float, datasize_n);
+        fwrite(page.get(), datasize, 1, fimg);
     } else {
         switch (mode) {
             case WRITE_APPEND:
@@ -353,8 +354,6 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     // I guess I do not need to unlock since we are going to close the file
     fl.l_type   = F_UNLCK;
     fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
-
-    callocator::deallocate(fdata, datasize);
 
     return 0;
 }

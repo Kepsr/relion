@@ -283,14 +283,12 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         fseek(fimg, 0, SEEK_SET);
         fseek(fhed, 0, SEEK_SET);
     }
-    char* fdata = (char *) callocator::allocate(datasize);
 
     // Unlock
     fl.l_type   = F_UNLCK;
     fcntl(fileno(fimg), F_SETLK, &fl);  // unlock
     fcntl(fileno(fhed), F_SETLK, &fl);  // unlock
 
-    callocator::deallocate(fdata, datasize);
 }
 
 #endif /* RWIMAGIC_H_ */

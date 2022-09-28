@@ -49,6 +49,7 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include <memory>
 #include <typeinfo>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -764,10 +765,10 @@ class Image {
     template <DataType datatype>
     void writePageAsDatatype(FILE *fimg, size_t datasize_n) {
         const size_t datasize = datasize_n * sizeof(DataType2type<datatype>::type);
-        char *fdata = (char *) callocator::allocate(datasize);
-        castPage2Datatype(fdata, data.data, datatype, datasize_n);
-        fwrite(fdata, datasize, 1, fimg);
-        callocator::deallocate(fdata, datasize);
+        const auto deleter = [] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
+        const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
+        castPage2Datatype(page.get(), data.data, datatype, datasize_n);
+        fwrite(page.get(), datasize, 1, fimg);
     }
 
     // Swap a page of n elements, each of size size
@@ -873,7 +874,7 @@ class Image {
      * @endcode
      */
     MultidimArray<T>& operator () () {
-        /// NOTE: [jhooker] Is this the most intuitive way to acces data?
+        /// NOTE: [jhooker] Is this the most intuitive way to access data?
         return data;
     }
 

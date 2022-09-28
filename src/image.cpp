@@ -17,6 +17,7 @@
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
  ***************************************************************************/
+#include <memory>
 #include "src/image.h"
 #include "src/rwSPIDER.h"
 #include "src/rwIMAGIC.h"
@@ -85,7 +86,9 @@ int Image<T>::page_allocate(
 
     size_t haveread_n = 0;  // Number of pixels (not necessarily bytes!) processed so far
     const size_t pagemax = 1073741824; // 1 GB
-    char *page = (char *) callocator::allocate(std::max(pagesize, pagemax) * sizeof(char));
+    const size_t size = std::max(pagesize, pagemax) * sizeof(char);
+    const auto deleter = [size] (char *ptr) { callocator<char>::deallocate(ptr, size); };
+    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(size), deleter);
     // Because we requested XYsize to be even for UHalf, this is always safe.
     if (fseek(fimg, off, SEEK_SET) != 0) return -1;
 
@@ -103,12 +106,12 @@ int Image<T>::page_allocate(
             #endif
 
             // Read page from disk
-            if (fread(page, readsize, 1, fimg) != 1) return -2;
+            if (fread(page.get(), readsize, 1, fimg) != 1) return -2;
 
             // swap per page
-            if (swap) swapPage(page, readsize, gettypesize(datatype));
+            if (swap) swapPage(page.get(), readsize, gettypesize(datatype));
             // cast to T per page
-            castPage2T(page, data.data + haveread_n, datatype, readsize_n);
+            castPage2T(page.get(), data.data + haveread_n, datatype, readsize_n);
             haveread_n += readsize_n;
         }
         if (pad > 0) {
@@ -116,8 +119,6 @@ int Image<T>::page_allocate(
             if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
         }
     }
-    // if (pad > 0) callocator::deallocate(padpage, pad * sizeof(char));
-    if (page) callocator::deallocate(page, pagesize * sizeof(char));
     return 0;
 }
 

@@ -25,6 +25,8 @@
         Created: 19990321 Modified: 20030723
 */
 
+#include <memory>
+
 #ifndef RWMRC_H
 #define RWMRC_H
 
@@ -123,20 +125,18 @@ enum {
 };
 
 static int systype() {
-    char *test = (char *) callocator::allocate(12);
-    int *itest = (int*) test;
-    float *ftest = (float*) test;
-    memcpy(test, "jbh     ", 8);
 
-    int type = UNKNOWN_SYSTEM;
+    const auto deleter = [] (char *ptr) { callocator<char>::deallocate(ptr, 12); };
+    const auto test = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(12), deleter);
+    int   *itest = (int*)   test.get();
+    float *ftest = (float*) test.get();
+    memcpy(test.get(), "jbh     ", 8);
+
     if (itest[0] == 1784834080 && fabs(ftest[0] - 6.84272e+25) < 1e+21)
-        type = BIGIEEE;
+        return BIGIEEE;
     if (itest[0] == 543711850 && fabs(ftest[0] - 1.96837e-19) < 1e-23)
-        type = LITTLEIEEE;
-
-    callocator::deallocate(test, 12);
-
-    return type;
+        return LITTLEIEEE;
+    return UNKNOWN_SYSTEM;
 }
 
 // Set CCP4 machine stamp
@@ -446,7 +446,9 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
         fwrite(&header, MRCSIZE, 1, fimg);
 
     // write only once, ignore select_img
-    char* fdata = (char *) callocator::allocate(datasize);
+    const auto deleter = [datasize] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
+    const auto p = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
+    char* fdata = p.get();
     // think about writing in several chunks
 
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
@@ -468,8 +470,6 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     // Unlock the file
     fl.l_type = F_UNLCK;
     fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
-
-    callocator::deallocate(fdata, datasize);
 
     return 0;
 }
