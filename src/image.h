@@ -569,9 +569,9 @@ class Image {
         int mode = WRITE_OVERWRITE
     );
 
-    /** Cast a page of data from type dataType to type Tdest
-     *	  input pointer char *
-     */
+
+
+    // Cast a page of data from type U (encoded by DataType) to type T
     void castPage2T(char *page, T *ptrDest, DataType datatype, size_t pageSize) {
         switch (datatype) {
 
@@ -635,9 +635,7 @@ class Image {
         }
     }
 
-    /** Cast page from T to datatype
-     *  input pointer char *
-     */
+    // Cast a page of data from type T to type U (encoded by DataType)
     void castPage2Datatype(char *page, T *srcPtr, DataType datatype, size_t pageSize) {
         switch (datatype) {
 

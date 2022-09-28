@@ -240,27 +240,26 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
 
     float lenbyt = sizeof(float) * dims[0];  // Record length (in bytes)
     float labrec = floor(SPIDERSIZE / lenbyt); // # header records
-    if (fmod(SPIDERSIZE,lenbyt) != 0) { labrec++; }
+    if (fmod(SPIDERSIZE, lenbyt) != 0) { labrec++; }
     float labbyt = labrec * lenbyt;   // Size of header in bytes
     offset = (int) labbyt;
-    SPIDERhead *header = (SPIDERhead *) callocator::allocate((int) labbyt * sizeof(char));
 
-    // Map the parameters
-    header->lenbyt = lenbyt;  // Record length (bytes)
-    header->labrec = labrec;  // # header records
-    header->labbyt = labbyt;  // Size of header (bytes)
+    SPIDERhead header;
+    header.lenbyt = lenbyt;  // Record length (bytes)
+    header.labrec = labrec;  // # header records
+    header.labbyt = labbyt;  // Size of header (bytes)
 
-    header->irec   = labrec + floor(Xsize(data) * Ysize(data) * Zsize(data) * sizeof(float) / lenbyt + 0.999999); // Total # records
-    header->nsam   = dims[0];
-    header->nrow   = dims[1];
-    header->nslice = dims[2];
+    header.irec   = labrec + floor(Xsize(data) * Ysize(data) * Zsize(data) * sizeof(float) / lenbyt + 0.999999); // Total # records
+    header.nsam   = dims[0];
+    header.nrow   = dims[1];
+    header.nslice = dims[2];
 
     #ifdef DEBUG
-    printf("DEBUG writeSPIDER: Size: %g %g %g\n", header->nsam, header->nrow, header->nslice);
+    printf("DEBUG writeSPIDER: Size: %g %g %g\n", header.nsam, header.nrow, header.nslice);
     #endif
 
-    header->iform = dims[2] <= 1 ? 1 : 2;  // 2D image or 3D volume?
-    header->imami = 0; // never trust max/min
+    header.iform = dims[2] <= 1 ? 1 : 2;  // 2D image or 3D volume?
+    header.imami = 0; // never trust max/min
 
     if (!this->header.empty()) {
         #ifdef DEBUG
@@ -268,29 +267,29 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
         #endif
         const long int i = this->header.size() - 1;
         try {
-            header->fmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
+            header.fmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         } catch (const char *errmsg) {}
         try {
-            header->fmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
+            header.fmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
         } catch (const char *errmsg) {}
         try {
-            header->av   = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
+            header.av   = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
         } catch (const char *errmsg) {}
         try {
-            header->sig  = this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
+            header.sig  = this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
         } catch (const char *errmsg) {}
     }
     // For multi-image files
     if (dims[3] > 1 || mode == WRITE_APPEND || isStack) {
-        header->istack = 2;
-        header->inuse =  1;
-        header->maxim = dims[3];
+        header.istack = 2;
+        header.inuse =  1;
+        header.maxim = dims[3];
         if (mode == WRITE_APPEND)
-        header->maxim = replaceNsize + 1;
+        header.maxim = replaceNsize + 1;
     } else {
-        header->istack = 0;
-        header->inuse = 0;
-        header->maxim = 1;
+        header.istack = 0;
+        header.inuse = 0;
+        header.maxim = 1;
     }
 
     // else end
@@ -299,30 +298,30 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     time(&timer);
     tm *t = localtime(&timer);
     while (t->tm_year > 100) { t->tm_year -= 100; }
-    sprintf(header->ctim, "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
-    sprintf(header->cdat, "%02d-%02d-%02d", t->tm_mday, t->tm_mon, t->tm_year);
+    sprintf(header.ctim, "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
+    sprintf(header.cdat, "%02d-%02d-%02d", t->tm_mday, t->tm_mon, t->tm_year);
 
     const size_t datasize_n = dims[0] * dims[1] * dims[2];
     const size_t datasize = datasize_n * gettypesize(Float);
 
     #ifdef DEBUG
-    printf("DEBUG writeSPIDER: Date and time: %s %s\n", header->cdat, header->ctim);
-    printf("DEBUG writeSPIDER: Text label: %s\n", header->ctit);
-    printf("DEBUG writeSPIDER: Header size: %g\n", header->labbyt);
-    printf("DEBUG writeSPIDER: Header records and record length: %g %g\n", header->labrec, header->lenbyt);
+    printf("DEBUG writeSPIDER: Date and time: %s %s\n", header.cdat, header.ctim);
+    printf("DEBUG writeSPIDER: Text label: %s\n", header.ctit);
+    printf("DEBUG writeSPIDER: Header size: %g\n", header.labbyt);
+    printf("DEBUG writeSPIDER: Header records and record length: %g %g\n", header.labrec, header.lenbyt);
     printf("DEBUG writeSPIDER: Data size: %ld\n", datasize);
     printf("DEBUG writeSPIDER: Data offset: %ld\n", offset);
     printf("DEBUG writeSPIDER: File %s\n", filename.c_str());
     #endif
 
     // locking
-    struct flock fl;
-
-    fl.l_type   = F_WRLCK;  /* F_RDLCK, F_WRLCK, F_UNLCK    */
-    fl.l_whence = SEEK_SET; /* SEEK_SET, SEEK_CUR, SEEK_END */
-    fl.l_start  = 0;        /* Offset from l_whence         */
-    fl.l_len    = 0;        /* length, 0 = to EOF           */
-    fl.l_pid    = getpid(); /* our PID                      */
+    struct flock fl {
+        .l_type   = F_WRLCK,   // F_RDLCK, F_WRLCK, F_UNLCK
+        .l_whence = SEEK_SET,  // SEEK_SET, SEEK_CUR, SEEK_END
+        .l_start  = 0,         // Offset from l_whence
+        .l_len    = 0,         // length, 0 = to EOF
+        .l_pid    = getpid(),  // our PID
+    };
 
     /*
      * BLOCK HEADER IF NEEDED
@@ -330,7 +329,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     fl.l_type   = F_WRLCK;
     fcntl(fileno(fimg), F_SETLKW, &fl); /* locked */
     if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)  //header must change
-        fwrite(header, offset, 1, fimg);
+        fwrite(&header, offset, 1, fimg);
 
     char *fdata = (char *) callocator::allocate(datasize);
     //think about writing in several chucks
@@ -356,7 +355,6 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
 
     callocator::deallocate(fdata, datasize);
-    callocator::deallocate(header, (int) labbyt * sizeof(char));
 
     return 0;
 }

@@ -423,20 +423,20 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     if (mode == WRITE_APPEND && isStack) {
         header.nz = replaceNsize + 1;
     }
-    //else header. is correct
+    // else header is correct
 
-    //locking
-    struct flock fl;
+    // locking
+    struct flock fl {
+        .l_type   = F_WRLCK,   // F_RDLCK, F_WRLCK, F_UNLCK
+        .l_whence = SEEK_SET,  // SEEK_SET, SEEK_CUR, SEEK_END
+        .l_start  = 0,         // Offset from l_whence
+        .l_len    = 0,         // length, 0 = to EOF
+        .l_pid    = getpid(),  // our PID
+    };
 
-    fl.l_type   = F_WRLCK;  /* F_RDLCK, F_WRLCK, F_UNLCK    */
-    fl.l_whence = SEEK_SET; /* SEEK_SET, SEEK_CUR, SEEK_END */
-    fl.l_start  = 0;        /* Offset from l_whence         */
-    fl.l_len    = 0;        /* length, 0 = to EOF           */
-    fl.l_pid    = getpid(); /* our PID                      */
-
-    //BLOCK
+    // BLOCK
     fl.l_type   = F_WRLCK;
-    fcntl(fileno(fimg), F_SETLKW, &fl); /* locked */
+    fcntl(fileno(fimg), F_SETLKW, &fl);  // locked
 
     // Write header
     if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)

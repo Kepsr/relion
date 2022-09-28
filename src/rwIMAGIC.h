@@ -197,22 +197,20 @@ int Image<T>::readIMAGIC(long int img_select) {
 template <typename T>
 void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
-    IMAGIChead header;
-
     const auto dims = data.getDimensions();
 
-    // Fill in the file header
+    time_t timer;
+    time(&timer);
+    tm *t = localtime(&timer);
+
+    // File header
+    IMAGIChead header;
     header.nhfr   = 1;
     header.npix2  = dims[0] * dims[1];
     header.npixel = header.npix2;
     header.iylp   = dims[0];
     header.ixlp   = dims[1];
     header.ifn    = dims[3] - 1;
-
-    time_t timer;
-    time(&timer);
-    tm *t = localtime(&timer);
-
     header.ndate  = t->tm_mday;
     header.nmonth = t->tm_mon + 1;
     header.nyear  = t->tm_year;
@@ -264,15 +262,16 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
     /*
      * BLOCK HEADER IF NEEDED
      */
-    struct flock fl;
+    struct flock fl {
+        .l_type   = F_WRLCK,   // F_RDLCK, F_WRLCK, F_UNLCK
+        .l_whence = SEEK_SET,  // SEEK_SET, SEEK_CUR, SEEK_END
+        .l_start  = 0,         // Offset from l_whence
+        .l_len    = 0,         // length, 0 = to EOF
+        .l_pid    = getpid(),  // our PID
+    };
 
-    fl.l_type   = F_WRLCK;  /* F_RDLCK, F_WRLCK, F_UNLCK    */
-    fl.l_whence = SEEK_SET; /* SEEK_SET, SEEK_CUR, SEEK_END */
-    fl.l_start  = 0;        /* Offset from l_whence         */
-    fl.l_len    = 0;        /* length, 0 = to EOF           */
-    fl.l_pid    = getpid(); /* our PID                      */
-    fcntl(fileno(fimg), F_SETLKW, &fl); /* locked */
-    fcntl(fileno(fhed), F_SETLKW, &fl); /* locked */
+    fcntl(fileno(fimg), F_SETLKW, &fl);  // lock
+    fcntl(fileno(fhed), F_SETLKW, &fl);  // lock
 
     if (mode == WRITE_APPEND) {
         fseek(fimg, 0, SEEK_END);
@@ -288,8 +287,8 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
     // Unlock
     fl.l_type   = F_UNLCK;
-    fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
-    fcntl(fileno(fhed), F_SETLK, &fl); /* unlocked */
+    fcntl(fileno(fimg), F_SETLK, &fl);  // unlock
+    fcntl(fileno(fhed), F_SETLK, &fl);  // unlock
 
     callocator::deallocate(fdata, datasize);
 }
