@@ -102,6 +102,27 @@ static void page_cast_copy(T *dest, U *src, size_t size) {
     }
 }
 
+// struct uhalf_t { unsigned char bits: 4; };
+
+// Unfortunately, we cannot partially specialise template functions
+template <typename T, typename U=unsigned char>
+static void page_cast_copy_half(T *dest, U *src, size_t size) throw (RelionError) {
+
+    if (size % 2 != 0) {
+        REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
+    }
+
+    for (size_t i = 0; 2 * i < size; i++) {
+        // Here we are assuming the fill-order is LSB2MSB according to IMOD's
+        // iiProcessReadLine() in libiimod/mrcsec.c.
+        // The default fill-order in the TIFF specification is MSB2LSB
+        // but IMOD assumes LSB2MSB even for TIFF.
+        // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
+        dest[i * 2    ] = (T) ( (src)[i]       & 0b1111);
+        dest[i * 2 + 1] = (T) (((src)[i] >> 4) & 0b1111);
+    }
+}
+
 /** WriteMode
  * To indicate the writing behavior.
  */
@@ -602,21 +623,10 @@ class Image {
                 page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
             } break;
 
-            case UHalf:
-            if (pageSize % 2 != 0) {
-                REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
-            }
-
-            for (size_t i = 0, ilim = pageSize / 2; i < ilim; i++) {
-                // Here we are assuming the fill-order is LSB2MSB according to IMOD's
-                // iiProcessReadLine() in libiimod/mrcsec.c.
-                // The default fill-order in the TIFF specification is MSB2LSB
-                // but IMOD assumes LSB2MSB even for TIFF.
-                // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
-                ptrDest[i * 2    ] = (T) ( page[i]       & 0b1111);
-                ptrDest[i * 2 + 1] = (T) ((page[i] >> 4) & 0b1111);
-            }
-            break;
+            case UHalf: {
+                using U = unsigned char;
+                page_cast_copy_half<T, U>(ptrDest, (U*) page, pageSize);
+            } break;
 
             default:
             std::cerr << "Datatype= " << datatype << std::endl;
@@ -660,7 +670,7 @@ class Image {
             std::cerr << "outputDatatype= " << datatype << std::endl;
             REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
 
-            }
+        }
     }
 
     // Check file Datatype is same as T type to use mmap.
