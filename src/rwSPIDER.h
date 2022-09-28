@@ -122,7 +122,7 @@ struct SPIDERhead {
   * @ingroup Spider
 */
 template <typename T>
-int Image<T>::readSPIDER(long int img_select) {
+DataType Image<T>::readSPIDER(long int img_select) {
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG
@@ -164,10 +164,9 @@ int Image<T>::readSPIDER(long int img_select) {
     setSamplingRateInHeader((RFLOAT) header.scale);
     }
 
-    bool isStack = header.istack > 0;
-
     std::array<unsigned long int, 4> dims { (unsigned long int) header.nsam, (unsigned long int) header.nrow, (unsigned long int) header.nslice, 1 };
 
+    isStack = header.istack > 0;
     replaceNsize = isStack ? (dims[3] = header.maxim) : 0;
 
     /************
@@ -182,13 +181,7 @@ int Image<T>::readSPIDER(long int img_select) {
         // Only handle stacks of images, not of volumes.
     );
 
-    if (isStack && !dataflag) {
-        // Don't read the individual header and the data if not necessary
-        return 0;
-    }
-
-    size_t pad = 0;
-
+    pad = 0;
     // image is in stack? and set right initial and final image
     if (isStack) {
         pad = offset;
@@ -205,8 +198,7 @@ int Image<T>::readSPIDER(long int img_select) {
     std::cerr << "DEBUG readSPIDER: img_select= " << img_select << " n= " << dims[3] << " pad = " << pad << std::endl;
     #endif
     // offset should point to the begin of the data
-    return readData(fimg, img_select, datatype, pad);
-
+    return datatype;
 }
 /************************************************************************
 @Function: writeSPIDER

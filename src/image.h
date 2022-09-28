@@ -484,18 +484,16 @@ struct image_mmapper {
 /** Swapping trigger.
  * Threshold file z size above which bytes are swapped.
  */
-#define SWAPTRIG 65535
+static const int SWAPTRIG = 0xffff;
 
-/** Template class for images.
- * The image class is the general image handling class.
- */
+// Generic image class template
 template<typename T>
 class Image {
 
     public:
 
-    MultidimArray<T> data;      // Image data
-    MetaDataTable header; // File metadata
+    MultidimArray<T> data;  // Image data
+    MetaDataTable header;   // File metadata
 
     // Why int x, y, z but long int n?
     struct Dimensions { int x, y, z; long int n; };
@@ -503,12 +501,12 @@ class Image {
     private:
 
     FileName filename; // File name
-    FILE *fimg; // Image File handler
-    FILE *fhed; // Image File header handler
-    bool dataflag;  // Control reading of the data
-    unsigned long i; // Current image number (may be > Nsize)
+    FILE *fimg;  // Image  file handle
+    FILE *fhed;  // Header file handle
+    bool isStack;
+    int swap;  // Perform byte swapping upon reading
+    size_t pad;
     unsigned long offset; // Data offset
-    int swap; // Perform byte swapping upon reading
     long int replaceNsize; // Stack size in the replace case
     bool _exists;  // Does the target file exist? 0 if file does not exist or is not a stack.
 
@@ -544,16 +542,15 @@ class Image {
 
     /** Constructor with size
      *
-     * A blank image (0.0 filled) is created with the given size. Pay attention
-     * to the dimension order: Y and then X.
+     * A blank image (0.0 filled) is created with the given size.
      *
      * @code
-     * Image I(64,64);
+     * Image I(64, 64);
      * @endcode
      */
     Image(long int Xdim, long int Ydim, long int Zdim = 1, long int Ndim = 1): mmapper(nullptr) {
         clear();
-        data.resize(Ndim, Zdim, Ydim, Xdim);
+        data.resize(Xdim, Ydim, Zdim, Ndim);
         header.addObject();
     }
 
@@ -563,44 +560,33 @@ class Image {
         return img;
     }
 
-    /** Clear.
-     * Zero-initialize.
-     */
     void clear() {
-        if (mmapper) {
-            mmapper->deallocate(data.data - offset);
-            data.data = nullptr;
-        } else {
-            data.clear();
-        }
-
-        dataflag = false;
-        i = 0;
-        filename = "";
-        offset = 0;
-        swap = 0;
-        clearHeader();
-        replaceNsize = 0;
+        if (mmapper) mmapper->deallocate(data.data - offset);
         delete mmapper;
         mmapper = nullptr;
-    }
 
-    // Clear the image header
-    void clearHeader() { header.clear(); }
+        header.clear();
+        data.clear();
+
+        filename.clear();
+        swap = 0;
+        offset = 0;
+        replaceNsize = 0;
+    }
 
     ~Image() { clear(); }
 
     // Read/write functions for different file formats
 
-    int readSPIDER(long int img_select);
+    DataType readSPIDER(long int img_select);
 
     int writeSPIDER(long int select_img=-1, bool isStack = false, int mode = WRITE_OVERWRITE);
 
-    int readMRC(long int img_select, bool isStack = false, const FileName &name = "") throw (RelionError);
+    DataType readMRC(long int img_select, bool isStack = false, const FileName &name = "") throw (RelionError);
 
     int writeMRC(long int img_select, bool isStack = false, int mode = WRITE_OVERWRITE);
 
-    int readIMAGIC(long int img_select);
+    DataType readIMAGIC(long int img_select);
 
     void writeIMAGIC(long int img_select = -1, int mode = WRITE_OVERWRITE);
 
@@ -763,7 +749,7 @@ class Image {
      * The memory for the casted page is allocated and freed internally.
      */
     template <DataType datatype>
-    void writePageAsDatatype(FILE *fimg, size_t datasize_n) {
+    void writePageAsDatatype(size_t datasize_n) {
         const size_t datasize = datasize_n * sizeof(DataType2type<datatype>::type);
         const auto deleter = [] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
         const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
@@ -789,14 +775,11 @@ class Image {
     }
 
     // Read the raw data
-    int readData(FILE *fimg, long int select_img, DataType datatype, unsigned long pad) {
+    int readData(long int select_img, DataType datatype) {
         // #define DEBUG
         #ifdef DEBUG
         std::cerr << "entering " << __func__ << std::endl;
-        std::cerr << " " << __func__ << " flag= " << dataflag << std::endl;
         #endif
-
-        if (!dataflag) return 0;
 
         size_t datatypesize; // bytes
         size_t pagesize; // bytes
@@ -848,7 +831,7 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            int err = page_allocate(pagesize, myoffset, pad, datatype, datatypesize);
+            int err = page_allocate(pagesize, myoffset, datatype, datatypesize);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");
@@ -858,7 +841,7 @@ class Image {
         }
     }
 
-    int page_allocate(size_t pagesize, size_t off, unsigned long pad, DataType datatype, size_t datatypesize);
+    int page_allocate(size_t pagesize, size_t off, DataType datatype, size_t datatypesize);
 
     /** Data access
      *
@@ -1130,6 +1113,9 @@ class Image {
         const FileName &name, fImageHandler &hFile, long int select_img=-1,
         bool isStack = false, int mode = WRITE_OVERWRITE
     );
+
+    template <typename U>
+    friend DataType mrc_read_header(Image<U> &image, long int img_select, bool isStack, const FileName &name) throw (RelionError);
 
 };
 

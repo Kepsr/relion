@@ -80,7 +80,7 @@ size_t gettypesize(DataType type) throw (RelionError) {
 
 template <typename T>
 int Image<T>::page_allocate(
-    size_t pagesize, size_t off, unsigned long pad,
+    size_t pagesize, size_t off,
     DataType datatype, size_t datatypesize
 ) {
 
@@ -458,11 +458,10 @@ int Image<T>::_read(
     const FileName &name, fImageHandler &hFile,
     bool readdata, long int select_img, bool mapData, bool is_2D
 ) {
-    // Exit code
-    int err = 0;
+    int err = 0;  // Exit code (negative is bad)
 
-    // Check whether to read the data or only the header
-    dataflag = readdata;
+    // readdata indicates whether to read the data or only the header
+    // We won't read the individual header and the data if not necessary
 
     // Check whether to map the data or not
     mmapper = mapData ? new image_mmapper : nullptr;
@@ -485,7 +484,7 @@ int Image<T>::_read(
         std::cerr << "READ\n" <<
         "name=" << name << std::endl;
         std::cerr << "ext= " << ext_name << std::endl;
-        std::cerr << " now reading: " << filename << " dataflag= " << dataflag
+        std::cerr << " now reading: " << filename << " readdata= " << readdata
         << " select_img "  << select_img << std::endl;
     #endif
     #undef DEBUG
@@ -498,29 +497,37 @@ int Image<T>::_read(
         ext_name.contains("spi") || ext_name.contains("xmp") ||
         ext_name.contains("stk") || ext_name.contains("vol")
     ) {
+        const DataType datatype = readSPIDER(select_img);
+        if (!isStack || readdata)
+        err = readData(select_img, datatype);
+    } else if (ext_name.contains("mrcs") ||
+               ext_name.contains("mrc") && is_2D) {
         // MRC stack MUST go BEFORE plain MRC
-        err = readSPIDER(select_img);
-    } else if (ext_name.contains("mrcs") || (is_2D && ext_name.contains("mrc"))) {
-        // MRC stack MUST go BEFORE plain MRC
-        err = readMRC(select_img, true, name);
+        const DataType datatype = readMRC(select_img, true, name);
+        if (!isStack || readdata)
+        err = readData(select_img, datatype);
     } else if (ext_name.contains("tif")) {
         err = readTIFF(hFile.ftiff, select_img, readdata, true, name);
     } else if (select_img >= 0 && ext_name.contains("mrc")) {
         REPORT_ERROR("Image::read ERROR: stacks of images in MRC-format should have extension .mrcs; .mrc extensions are reserved for 3D maps.");
     } else if (ext_name.contains("mrc")) {
         // MRC 3D map
-        err = readMRC(select_img, false, name);
+        const DataType datatype = readMRC(select_img, false, name);
+        if (!isStack || readdata)
+        err = readData(select_img, datatype);
     } else if (ext_name.contains("img") || ext_name.contains("hed")) {
-        // IMAGIC is always a stack
-        err = readIMAGIC(select_img);
+        const DataType datatype = readIMAGIC(select_img);
+        if (!isStack || readdata)
+        err = readData(select_img, datatype);
     } else if (ext_name.contains("dm")) {
         REPORT_ERROR("The Digital Micrograph format (DM3, DM4) is not supported. You can convert it to MRC by other programs, for example, dm2mrc in IMOD.");
     } else if (ext_name.contains("eer") || ext_name.contains("ecc")) {
         REPORT_ERROR("BUG: EER movies should be handled by EERRenderer, not by Image.");
     } else {
-        err = readSPIDER(select_img);
+        const DataType datatype = readSPIDER(select_img);
+        if (!isStack || readdata)
+        err = readData(select_img, datatype);
     }
-    // Negative errors are bad.
     return err;
 }
 
@@ -646,13 +653,11 @@ int Image<T>::readTiffInMemory(
     handle.buf = (unsigned char *) buf;
     handle.size = size;
     handle.pos = 0;
-    // Check whether to read the data or only the header
-    dataflag = readdata;
 
     // Check whether to map the data or not
     mmapper = mapData ? new image_mmapper : nullptr;
 
-    //Just clear the header before reading
+    // Just clear the header before reading
     header.clear();
     header.addObject();
 

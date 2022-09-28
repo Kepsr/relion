@@ -204,7 +204,7 @@ static DataType determine_datatype(int mode, int nx, int ny) throw (RelionError)
   * @ingroup MRC
 */
 template <typename T>
-int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) throw (RelionError) {
+DataType Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) throw (RelionError) {
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG
@@ -228,7 +228,8 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
 
     std::array<int, 4> dims {header.nx, header.ny, header.nz, 1};
 
-    if (isStack) {
+    pad = 0;
+    if (this->isStack = isStack) {
         std::swap(dims[2], dims[3]);
         replaceNsize = dims[3];
         if (img_select >= dims[3]) {
@@ -263,18 +264,13 @@ int Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) t
     if (header.mz && header.c != 0)  // zx
         this->header.setValue(EMDL::IMAGE_SAMPLINGRATE_Z, (RFLOAT) header.c / header.mz, i);
 
-    if (isStack && !dataflag) {
-        // Don't read the individual header and the data if not necessary
-        return 0;
-    }
-
     // #define DEBUG
     #ifdef DEBUG
     header.write(std::cerr);
     MD[0].write(std::cerr);
     #endif
 
-    return readData(fimg, img_select, datatype, 0);
+    return datatype;
 }
 
 /** MRC Writer
@@ -447,13 +443,12 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     // write only once, ignore select_img
     const auto deleter = [datasize] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
-    const auto p = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
-    char* fdata = p.get();
+    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
     // think about writing in several chunks
 
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        castPage2Datatype(fdata, data.data, output_type, datasize_n);
-        fwrite(fdata, datasize, 1, fimg);
+        castPage2Datatype(page.get(), data.data, output_type, datasize_n);
+        fwrite(page.get(), datasize, 1, fimg);
     } else {
         if (mode == WRITE_APPEND) {
             fseek(fimg, 0, SEEK_END);
@@ -462,8 +457,8 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
         }
 
         for (size_t i = imgStart; i < imgEnd; i++) {
-            castPage2Datatype(fdata, data.data + i * datasize_n, output_type, datasize_n);
-            fwrite(fdata, datasize, 1, fimg);
+            castPage2Datatype(page.get(), data.data + i * datasize_n, output_type, datasize_n);
+            fwrite(page.get(), datasize, 1, fimg);
         }
     }
 

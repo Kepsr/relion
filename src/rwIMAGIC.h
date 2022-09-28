@@ -116,7 +116,7 @@ inline DataType determine_datatype(const IMAGIChead &header) throw (RelionError)
 */
 
 template <typename T>
-int Image<T>::readIMAGIC(long int img_select) {
+DataType Image<T>::readIMAGIC(long int img_select) {
     #ifdef DEBUG
     printf("DEBUG readIMAGIC: Reading Imagic file\n");
     #endif
@@ -146,6 +146,10 @@ int Image<T>::readIMAGIC(long int img_select) {
     data.setDimensions(dims[0], dims[1], dims[2], dims[3]);
     replaceNsize = dims[3];
 
+    // IMAGIC is always a stack
+    isStack = true;
+    pad = 0;
+
     const DataType datatype = determine_datatype(header);
 
     // Set min-max values and other statistical values
@@ -167,16 +171,10 @@ int Image<T>::readIMAGIC(long int img_select) {
 
     offset = 0;   // separate header file
 
-    if (!dataflag) {
-        // Don't read the individual header and the data if not necessary
-    	return 0;
-    }
-
    // Get the header information
     int error_fseek = img_select > -1 ? fseek(fhed, img_select * IMAGICSIZE, SEEK_SET) : fseek(fhed, 0, SEEK_SET);
-    if (error_fseek != 0) return -1;
-
-    return readData(fimg, img_select, datatype, 0);
+    if (error_fseek != 0) throw -1;
+    return datatype;
 
 }
 
